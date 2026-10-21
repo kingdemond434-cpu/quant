@@ -783,7 +783,7 @@ def test_exposure_reads_both_venues_and_raises_on_an_unreadable_row() -> None:
 
 def test_the_fence_blocks_only_the_opposite_side_and_fails_closed_on_any_unknown() -> None:
     xa.publish("e8", {"XAUUSD": {"long": False, "short": True}}, source="test",
-               key=xa.account_key(7000102, "test"))
+               key=xa.account_key(31337, "E8-Test"))
     book, _why = xa.read_book("e8")
     assert book is not None
     assert xa.opposite_block(book, "XAUUSD", "buy_stop", account="e8")
@@ -800,7 +800,7 @@ def test_an_absent_stale_or_foreign_book_is_no_book(tmp_path) -> None:
     xa.book_path("e8").unlink()
     assert xa.read_book("e8")[0] is None
     xa.publish("e8", {}, source="t", now=datetime.now(tz=UTC) - timedelta(seconds=1000),
-               key=xa.account_key(7000102, "test"))
+               key=xa.account_key(31337, "E8-Test"))
     book, why = xa.read_book("e8")
     assert book is None and "old" in why
     xa.book_path("e8").write_text(json.dumps({"account": "fusion", "covers": "all",
@@ -914,7 +914,7 @@ def test_a_family_order_opposite_an_e8_position_is_refused_and_billed(
     sleeve = _fx_sleeve(USDNOK)                         # LONG
     dc.stamp_minlot_override([sleeve], frozenset(FOUR), EQUITY)
     xa.publish("e8", {"USDNOK": {"long": False, "short": True}}, source="test",
-               key=xa.account_key(7000102, "test"))
+               key=xa.account_key(31337, "E8-Test"))
     adapter._run_family(ns, {"armed": True}, [sleeve], EQUITY)
     assert venue.sent == []
     (row,) = [json.loads(ln) for ln in (tmp_path / "rails.jsonl").read_text().splitlines()]
@@ -940,7 +940,7 @@ def test_a_same_side_e8_position_does_not_block_and_the_fusion_book_is_published
     sleeve = _fx_sleeve(USDNOK)
     dc.stamp_minlot_override([sleeve], frozenset(FOUR), EQUITY)
     xa.publish("e8", {"USDNOK": {"long": True, "short": False}}, source="test",
-               key=xa.account_key(7000102, "test"))
+               key=xa.account_key(31337, "E8-Test"))
     adapter._run_family(ns, {"armed": True}, [sleeve], EQUITY)
     assert len(venue.sent) == 1
     book, _ = xa.read_book("fusion")

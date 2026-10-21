@@ -1215,6 +1215,14 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         _ckey = f"{str(sym).upper()}_{fam}_{s.get('selector') or 'asia'}"
         row_risk_usd = (float(cert[_ckey]) * e8_guard.START_BALANCE if _ckey in cert
                         else risk_usd)
+        # THE E8 CODE CEILING ON EVERY CERTIFIED ENTRY (r7.2, coordinator ruling): no E8 path is
+        # unpinned -- an FX sleeve the book funds above decision_core.E8_CERT_CEILING (0.006) is
+        # sized at the ceiling, and the cut is billed as a CAPPED `e8_cert_ceiling` line.
+        _capped_usd, _cut = cert_ceiling(row_risk_usd, _ckey)
+        if _cut is not None:
+            _record({"sleeve": row.get("sleeve"), "symbol": sym, **_cut}, now, armed)
+            row["ceiling_cut_from_usd"] = round(row_risk_usd, 2)
+            row_risk_usd = _capped_usd
         row["risk_usd"] = round(row_risk_usd, 2)
         row["risk_source"] = "cert_book" if _ckey in cert else "book RISK_FRAC"
         if not row_risk_usd > 0:
@@ -1345,6 +1353,25 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     doc["n_sent" if armed else "n_would_send"] = sent
     doc["risk_usd_per_trade"] = round(risk_usd, 2)
     return doc
+
+
+def cert_ceiling(risk_usd: float, key: str) -> tuple[float, dict[str, Any] | None]:
+    """(the risk an E8 certified entry may send, its CAPPED missed-growth row or None). Pure.
+
+    THE E8 CODE CEILING ON EVERY CERTIFIED ENTRY (r7.2, coordinator ruling): an entry the book
+    funds above `decision_core.E8_CERT_CEILING` x START_BALANCE is sent at the ceiling, and the
+    cut is billed `e8_cert_ceiling` (growth governance: every cap carries its ledger line)."""
+    from mt5desk.decision_core import E8_CERT_CEILING
+    from prop import e8_guard
+    cap_usd = E8_CERT_CEILING * e8_guard.START_BALANCE
+    if not risk_usd > cap_usd:
+        return risk_usd, None
+    book_frac = risk_usd / e8_guard.START_BALANCE
+    return cap_usd, {"status": "CAPPED", "rail": "e8_cert_ceiling",
+                     "why": (f"the book sizes {key} at {book_frac:g}; the code ceiling "
+                             f"E8_CERT_CEILING sends {E8_CERT_CEILING:g}"),
+                     "book_risk_frac": book_frac, "risk_frac": E8_CERT_CEILING,
+                     "missed_growth_risk_usd": round(risk_usd - cap_usd, 2)}
 
 
 def _record(row: dict[str, Any], now: datetime, armed: bool) -> None:

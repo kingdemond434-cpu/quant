@@ -250,64 +250,96 @@ def _alert_ledger_path() -> Path:
     return Path(os.environ.get(ALERT_LEDGER_ENV) or ALERT_LEDGER)
 
 
-def page_key(account: str, status: str) -> str | None:
-    """Open `account`'s key alert in the desk's alert ledger (`libs.ops.alert_ledger`, the path
-    bracket v5.1's e8_evidence pages through): its key is UNRESOLVABLE (no login, no server,
-    KEY_UNAVAILABLE), its declaration is the `invalid:` sentinel, or it does not match the
-    declaration. Names no value. Returns "OPEN" or None. Never raises."""
+def key_alert_id(account: str, source: str) -> str:
+    """The alert ONE CHECK owns for `account` (r7.2, audit r7.1 SF-2): each check opens and
+    closes only its own, so a fresh-but-old book read by the gateway can never close the alert
+    the venue's own key check opened (the flap r7.1 had)."""
+    return f"{KEY_ALERT_IDS.get(account, f'xacct_{account}_account_key_unresolvable')}.{source}"
+
+
+def _send(aid: str, status: str, sig: str, title: str, body: str) -> dict[str, Any]:
+    """Page through publish_sync v5e's helper (`libs.ops.provenance._page`: send_all to the
+    armed channels, deduplicated, repaged every 6h while it stands, one recovery page; a send
+    delivered to nobody is retried). On a tree without it: not sent, and the reason says so.
+    Never raises."""
+    try:
+        from libs.ops import provenance
+        helper = getattr(provenance, "_page", None)
+        if not callable(helper):
+            return {"sent": False, "reason": "no paging helper (publish_sync v5e absent)"}
+        res = helper(aid, status, sig, title, body)
+        return res if isinstance(res, dict) else {"sent": False}
+    except Exception as exc:
+        return {"sent": False, "reason": f"page failed ({type(exc).__name__})"}
+
+
+def page_key(account: str, status: str, *, source: str = "venue_key") -> str | None:
+    """Open `account`'s key alert for the check `source` in the desk's alert ledger AND page it
+    (r7.2, audit r7.1 MUST-FIX 2: the ledger alone reached nobody) through `alert_channels.
+    send_all` via v5e's helper. Statuses: UNRESOLVABLE (no login, no server, KEY_UNAVAILABLE),
+    UNDECLARED (no E8_ACCOUNT.json: the `e8_account_undeclared` rail), DECLARATION_INVALID (the
+    `invalid:` sentinel) or KEY_MISMATCH. Names no value. "OPEN" or None. Never raises."""
+    aid = key_alert_id(account, source)
+    rail = " (rail e8_account_undeclared: no new E8 gold risk)" if account == "e8" else ""
+    msg = (f"[cross_account] {account} account key, check {source}: {status}{rail}; the "
+           f"cross-account fence fails closed (no new gold leg against a key that does not "
+           f"resolve or join its declaration)")
+    opened = None
     try:
         from libs.ops.alert_ledger import AlertLedger
         ledger = AlertLedger(_alert_ledger_path())
-        ledger.observe(KEY_ALERT_IDS.get(account, f"xacct_{account}_account_key_unresolvable"),
-                       f"[cross_account] {account} account key: {status}; the cross-account "
-                       f"fence fails closed (no new gold leg on either account against a key "
-                       f"that does not resolve or join)", scope="RUNTIME")
+        ledger.observe(aid, msg, scope="RUNTIME")
         ledger.save()
-        return "OPEN"
+        opened = "OPEN"
     except Exception:
-        return None
+        opened = None
+    _send(aid, "OPEN", status, f"E8/FUSION ACCOUNT KEY: {account} {status}", msg)
+    return opened
 
 
-def clear_key_alert(account: str) -> str | None:
-    """Close `account`'s key alert once its key resolves AND joins its declaration again (the
-    check was re-run and passed). Reads the ledger only when it exists; "FIXED" or None."""
+def clear_key_alert(account: str, *, source: str = "venue_key") -> str | None:
+    """Close the alert THIS check (`source`) opened, once the same check resolves AND joins
+    again, and page the recovery once. Reads the ledger only when it exists; "FIXED" or None."""
+    aid = key_alert_id(account, source)
     try:
         path = _alert_ledger_path()
         if not path.exists():
             return None
         from libs.ops.alert_ledger import AlertLedger
         ledger = AlertLedger(path)
-        alert = ledger.alerts.get(KEY_ALERT_IDS.get(account, ""))
+        alert = ledger.alerts.get(aid)
         if alert is None or not alert.open:
             return None
-        ledger.verify(alert.id, still_firing=False)
+        ledger.verify(aid, still_firing=False)
         ledger.save()
-        return "FIXED"
     except Exception:
         return None
+    _send(aid, "OK", "recovered", f"E8/FUSION ACCOUNT KEY: {account} OK again ({source})",
+          f"[cross_account] {account} account key, check {source}: resolves and joins again")
+    return "FIXED"
 
 
 def _page_unresolvable(status: str) -> str | None:
-    """The E8 key cannot be resolved (`tradelocker_key_status`): page it."""
-    return page_key("e8", status)
+    """The E8 venue's own key cannot be resolved (`tradelocker_key_status`): page it."""
+    return page_key("e8", status, source="venue_key")
 
 
-def key_joins(account: str, key: object, want: str | None) -> bool:
-    """Does `key` join `account`'s declaration `want`? Pages when it does not (unresolvable key,
-    `invalid:` declaration, mismatch) and closes the alert when it does. An undeclared account
-    (`want` None) with a resolvable key joins nothing and is not paged here: the lanes refuse
-    new E8 gold risk on an absent E8_ACCOUNT.json themselves (r7.1)."""
+def key_joins(account: str, key: object, want: str | None, *, source: str) -> bool:
+    """Does `key` join `account`'s declaration `want`? Pages (for check `source`) when it does
+    not -- unresolvable key, `invalid:` declaration, mismatch -- and closes that check's own
+    alert when it does. An undeclared account (`want` None) with a resolvable key is not paged
+    here: E8-Gold refuses new E8 gold risk on it itself (`e8_account_check`)."""
     if not valid_key(key):
-        page_key(account, TL_KEY_UNAVAILABLE)
+        page_key(account, TL_KEY_UNAVAILABLE, source=source)
         return False
     if want is not None and str(want).startswith("invalid:"):
-        page_key(account, KEY_DECLARATION_INVALID)
+        page_key(account, KEY_DECLARATION_INVALID, source=source)
         return False
     if want is not None and key != want:
-        page_key(account, KEY_MISMATCH)
+        page_key(account, KEY_MISMATCH, source=source)
         return False
     if want is not None:
-        clear_key_alert(account)
+        clear_key_alert(account, source=source)
     return True
 
 
@@ -329,6 +361,7 @@ def tradelocker_key_status(venue: Any) -> tuple[str | None, str]:
     if not valid_key(key):
         _page_unresolvable(TL_KEY_UNAVAILABLE)          # r7.1: KEY_UNAVAILABLE pages too
         return None, TL_KEY_UNAVAILABLE
+    clear_key_alert("e8", source="venue_key")           # the same check that opened it
     return key, TL_OK
 
 
@@ -496,7 +529,7 @@ def publish(account: str, exposure: Exposure, *, source: str, key: str,
         raise RuntimeError("this publish's bounded call timed out; its lock is released, so it "
                            "may not write")
     want = expected_key(account) if account in ACCOUNTS else None
-    if not key_joins(account, key, want):
+    if not key_joins(account, key, want, source="publish"):
         if not valid_key(key):
             raise ValueError("a book must carry a valid account key (an unresolvable key "
                              "publishes nothing; the reader then fails closed on age)")
@@ -534,10 +567,10 @@ def mt5_book_checked(mt5: Any, account: str = "fusion") -> tuple[Exposure | None
     try:
         key = mt5_account_key(mt5)
     except Exception as exc:
-        page_key(account, TL_KEY_UNAVAILABLE)
+        page_key(account, TL_KEY_UNAVAILABLE, source="terminal_book")
         return None, f"the {account} terminal book is unreadable ({type(exc).__name__}: {exc})"
     want = expected_key(account)
-    if not key_joins(account, key, want):
+    if not key_joins(account, key, want, source="terminal_book"):
         return None, (f"the terminal is not on the declared {account} account; its book is "
                       f"not that account's")
     return book, f"{account} book read live"
@@ -601,7 +634,7 @@ def read_book(account: str, *, now: datetime | None = None, max_age_s: float = M
         return None, (f"the {account} book is {age:.0f}s old (limit {max_age_s:.0f}s); the "
                       f"{account} account's positions are unknown now")
     want = expect_key if expect_key is not None else expected_key(account)
-    if not key_joins(account, key, want):
+    if not key_joins(account, key, want, source="read_book"):
         return None, (f"the {account} book is of another account than the one this box "
                       f"declares; its positions are not this account's")
     try:

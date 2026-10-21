@@ -166,7 +166,10 @@ def _order_door_writes_to_tmp(tmp_path_factory, monkeypatch):
 
 
 #: The fake logins the conftest's flat books are keyed by (never a real account).
-CONFTEST_LOGINS = {"fusion": 7000101, "e8": 7000102}
+#: The E8 identity is the TEST VENUE's own (r7.2, audit r7.1 MF-1): every fake TLAPI handle the
+#: suite uses (`account_id`/`acc_id` 31337 on server "E8-Test") keys to the declared E8 account.
+CONFTEST_LOGINS = {"fusion": 7000101, "e8": 31337}
+CONFTEST_SERVERS = {"fusion": "test", "e8": "E8-Test"}
 
 
 def _stand_in_provenance() -> Any:
@@ -207,12 +210,14 @@ def _stand_in_provenance() -> Any:
 
 def _install_provenance(d: Path, monkeypatch: Any) -> None:
     import sys
-    key = d / "account_key.hmac"
-    key.write_text("conftest-box-key-" + "0" * 48, encoding="utf-8")
-    monkeypatch.setenv("QUANT_ACCOUNT_KEY_FILE", str(key))
     try:
+        # The real helper (v5e): `_account_key_in_tmp` already points it at the suite's
+        # throwaway key, and this fixture runs after it -- never a second key (r7.2).
         from libs.ops import provenance  # noqa: F401
     except ImportError:
+        key = d / "account_key.hmac"
+        key.write_text("conftest-box-key-" + "0" * 48, encoding="utf-8")
+        monkeypatch.setenv("QUANT_ACCOUNT_KEY_FILE", str(key))
         import libs.ops as _ops
         stand_in = _stand_in_provenance()
         monkeypatch.setitem(sys.modules, "libs.ops.provenance", stand_in)
@@ -220,7 +225,7 @@ def _install_provenance(d: Path, monkeypatch: Any) -> None:
 
 
 @pytest.fixture(autouse=True)
-def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch):
+def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch, _account_key_in_tmp):
     """THE CROSS-ACCOUNT FENCE'S (AND THE RAILS LEDGER'S) FILES NEVER LAND IN THE REPO FROM A
     TEST, AND EVERY TEST STARTS IN A READABLE WORLD. `mt5desk.cross_account` keeps both
     accounts' books and the placement lock under `data/xacct/`; here that directory is a fresh
@@ -250,10 +255,11 @@ def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch):
     # The E8 account is DECLARED (r7.1: an absent E8_ACCOUNT.json refuses new E8 gold risk), as
     # the conftest's E8 book's key; a test of the undeclared path deletes it.
     (d / "E8_ACCOUNT.json").write_text(json.dumps(
-        {"account_key": cross_account.account_key(CONFTEST_LOGINS["e8"], "test")}), "utf-8")
+        {"account_key": cross_account.account_key(CONFTEST_LOGINS["e8"], CONFTEST_SERVERS["e8"])}), "utf-8")
     for account in cross_account.ACCOUNTS:
         cross_account.publish(account, {}, source="conftest",
-                              key=cross_account.account_key(CONFTEST_LOGINS[account], "test"))
+                              key=cross_account.account_key(CONFTEST_LOGINS[account],
+                                                            CONFTEST_SERVERS[account]))
     # The Fusion book's rails ledger (mt5desk.fusion_rails) is box state too: a test that sends
     # a floor-lifted order would otherwise append its bill to the repo's data/ file.
     from mt5desk import fusion_rails

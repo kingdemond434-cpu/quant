@@ -1032,8 +1032,13 @@ def test_e8_gold_writes_a_reasoned_row_when_the_fusion_key_is_unresolvable(monke
     monkeypatch.delattr(ops, "provenance", raising=False)
     doc, venue, intents = mb._e8_harness(monkeypatch, tmp_path)
     assert venue.placed == [] and doc["placed"] == []
-    rows = [r for r in intents if r.get("rail") == "cross_account_opposite"]
-    assert rows and all("fail closed" in r["why"] for r in rows)
+    # r7.2: with no key function the venue's own E8 key is unresolvable too, so the account rail
+    # refuses first; either way the row is RAIL_BLOCKED and says why.
+    rows = [r for r in intents if r.get("rail") in ("cross_account_opposite",
+                                                    "e8_account_undeclared")]
+    assert rows and all(r["status"] == "RAIL_BLOCKED" and ("fail closed" in r["why"] or
+                                                           "no new E8 gold risk" in r["why"])
+                        for r in rows)
 
 
 def test_the_same_fake_tlapi_keys_identically_through_both_rules(monkeypatch) -> None:
@@ -1143,49 +1148,61 @@ def test_a_stale_book_above_the_code_ceiling_places_at_0006_and_bills_the_cut(
 
 def test_every_key_failure_pages_and_a_resolved_key_closes_the_alert(monkeypatch,
                                                                      tmp_path) -> None:
-    """r7.1 item 2: KEY_UNAVAILABLE, the `invalid:` sentinel and a key that does not match the
-    declaration each open the account's alert in the desk alert ledger; the next check that
-    resolves and joins closes it (FIXED), as v5.1 does."""
+    """r7.1 item 2, r7.2: KEY_UNAVAILABLE, the `invalid:` sentinel and a key that does not match
+    the declaration each open THAT CHECK's alert in the desk alert ledger and page it through
+    send_all (v5e's helper); the same check, resolving and joining again, closes it (FIXED) and
+    pages the recovery. Another check passing never closes it (no flap)."""
     import libs.ops as ops
+    from libs.ops import provenance
     from libs.ops.alert_ledger import AlertLedger
     from mt5desk import decision_core as _dc
     ledger = tmp_path / "alert_ledger.json"
     monkeypatch.setenv("E8_ALERT_LEDGER", str(ledger))
+    sent: list[tuple[str, str]] = []
+    monkeypatch.setattr(provenance, "SENDER",
+                        lambda title, body: sent.append((title, body)) or {"delivered": 1})
+    monkeypatch.setattr(provenance, "_PAGED", set())
+    monkeypatch.setattr(provenance, "_LAST_TRY", {})
+    monkeypatch.setattr(provenance, "_page_state_path", lambda: tmp_path / "page_state.json")
 
-    def state(account):
-        a = AlertLedger(ledger).alerts.get(xa.KEY_ALERT_IDS[account])
+    def state(account, source):
+        a = AlertLedger(ledger).alerts.get(xa.key_alert_id(account, source))
         return None if a is None else a.state
 
-    mine = xa.account_key(7000102, "test")              # the conftest's declared E8 key
-    # A key that does not match the declaration.
+    mine = xa.account_key(31337, "E8-Test")              # the conftest's declared E8 key
     with pytest.raises(ValueError, match="declares"):
         xa.publish("e8", {}, source="t", key=xa.account_key(7000999, "test"))
-    assert state("e8") == "OPEN" and xa.KEY_MISMATCH in AlertLedger(ledger).alerts[
-        xa.TL_ALERT_ID].message
-    xa.publish("e8", {}, source="t", key=mine)          # resolves and joins: closed
-    assert state("e8") == "FIXED"
+    assert state("e8", "publish") == "OPEN"
+    assert sent and xa.KEY_MISMATCH in sent[-1][0]               # it reached send_all
+    # ANOTHER check joining does not close it (r7.2, audit r7.1 SF-2) ...
+    assert xa.read_book("e8")[0] == {}
+    assert state("e8", "publish") == "OPEN"
+    # ... the same check does, and pages the recovery once.
+    xa.publish("e8", {}, source="t", key=mine)
+    assert state("e8", "publish") == "FIXED" and "OK again" in sent[-1][0]
     # KEY_UNAVAILABLE: a well-formed venue on a tree with no provenance.
     v = _tl_venue(credentials={"server": "E8-Live"}, account_id=4242)
-    saved = sys.modules.get("libs.ops.provenance")
     monkeypatch.setitem(sys.modules, "libs.ops.provenance", None)
     monkeypatch.delattr(ops, "provenance", raising=False)
     assert xa.tradelocker_key_status(v) == (None, xa.TL_KEY_UNAVAILABLE)
-    assert state("e8") == "REGRESSED"
-    assert xa.TL_KEY_UNAVAILABLE in AlertLedger(ledger).alerts[xa.TL_ALERT_ID].message
+    assert state("e8", "venue_key") == "OPEN"
     # The invalid: sentinel: a declared Fusion login whose key cannot be resolved.
     _dc.FUSION_ACCOUNT_FILE.write_text(json.dumps({"login": 7000101,
                                                    "server": _dc.FUSION_LIVE_SERVER}), "utf-8")
     assert xa.read_book("fusion")[0] is None
-    assert state("fusion") == "OPEN"
+    assert state("fusion", "read_book") == "OPEN"
     assert xa.KEY_DECLARATION_INVALID in AlertLedger(ledger).alerts[
-        xa.KEY_ALERT_IDS["fusion"]].message
-    # Provenance back: the Fusion key resolves and joins its declaration -> closed.
-    monkeypatch.setitem(sys.modules, "libs.ops.provenance", saved)
-    if saved is not None:
-        monkeypatch.setattr(ops, "provenance", saved, raising=False)
+        xa.key_alert_id("fusion", "read_book")].message
+    # Provenance back: the same checks resolve and join -> closed.
+    monkeypatch.setitem(sys.modules, "libs.ops.provenance", provenance)
+    monkeypatch.setattr(ops, "provenance", provenance, raising=False)
     xa.publish("fusion", {}, source="t", key=xa.account_key(7000101, _dc.FUSION_LIVE_SERVER))
-    assert xa.read_book("fusion")[0] == {} and state("fusion") == "FIXED"
-    assert "7000101" not in ledger.read_text("utf-8")            # the page names no value
+    assert xa.read_book("fusion")[0] == {} and state("fusion", "read_book") == "FIXED"
+    assert xa.tradelocker_key_status(_tl_venue(credentials={"server": "E8-Test"},
+                                               account_id=31337))[1] == xa.TL_OK
+    assert state("e8", "venue_key") == "FIXED"
+    blob = ledger.read_text("utf-8") + json.dumps(sent)
+    assert "7000101" not in blob and "31337" not in blob         # pages name no value
 
 
 def test_an_undeclared_e8_account_refuses_new_e8_gold_risk_with_a_reasoned_row(
@@ -1208,7 +1225,7 @@ def test_an_undeclared_e8_account_refuses_new_e8_gold_risk_with_a_reasoned_row(
                         and r["missed_growth_risk_usd"] > 0 for r in rows)
     assert "e8_account_undeclared" in fusion_rails.RAILS
     # Declared again (the conftest's own declaration): the same harness places.
-    xa.E8_ACCOUNT_FILE.write_text(json.dumps({"account_key": xa.account_key(7000102, "test")}),
+    xa.E8_ACCOUNT_FILE.write_text(json.dumps({"account_key": xa.account_key(31337, "E8-Test")}),
                                   "utf-8")
     (tmp_path / "again").mkdir()
     doc, venue, _ = real(monkeypatch, tmp_path / "again")
@@ -1238,3 +1255,113 @@ def test_void_and_absent_windows_bill_at_the_last_certified_0006(monkeypatch, tm
     (row,) = [r for r in intents if r.get("rail") == rail and r.get("window") == "asia"]
     assert row["missed_growth_risk_usd"] == round(100_000.0 * 0.006, 2)
     assert doc["placed"] == []
+
+
+# ---------------------------------------------------------------------- r7.2 (audit r7.1 HOLD)
+
+def _bad_declaration(kind: str, monkeypatch) -> None:
+    p = xa.E8_ACCOUNT_FILE
+    other = xa.account_key(7000999, "E8-Test")
+    if kind == "absent":
+        p.unlink(missing_ok=True)
+    elif kind == "empty":
+        p.write_text("", "utf-8")
+    elif kind == "torn":
+        p.write_text('{"account_key": "sha256:ab', "utf-8")
+    elif kind == "garbage":
+        p.write_text("\x00\xffnot json at all", "utf-8")
+    elif kind == "invalid_sentinel":           # parses, but no valid key -> the invalid: sentinel
+        p.write_text(json.dumps({"account_key": "sha256:NOTHEX"}), "utf-8")
+    elif kind == "wrong_account":
+        p.write_text(json.dumps({"account_key": other}), "utf-8")
+    elif kind == "unreadable":
+        class _Denied(type(p)):
+            def read_text(self, *a, **k):
+                raise PermissionError(13, "Permission denied")
+
+            def exists(self, *a, **k):
+                raise PermissionError(13, "Permission denied")
+
+        monkeypatch.setattr(xa, "E8_ACCOUNT_FILE", _Denied(str(p)))
+
+
+BAD_DECLARATIONS = ("absent", "empty", "torn", "garbage", "invalid_sentinel", "wrong_account",
+                    "unreadable")
+
+
+@pytest.mark.parametrize("kind", BAD_DECLARATIONS)
+def test_e8_gold_refuses_unless_the_declaration_joins_the_venues_own_key(
+        monkeypatch, tmp_path, kind) -> None:
+    """r7.2 MUST-FIX 1: r7.1 checked only exists(), so every one of these placed both legs. Each
+    now refuses new E8 gold with a billed RAIL_BLOCKED row, pages, and never aborts the pass
+    (a PermissionError included)."""
+    import test_fusion_minlot_book as mb
+    from libs.ops import provenance
+    sent: list[str] = []
+    monkeypatch.setattr(provenance, "SENDER",
+                        lambda title, body: sent.append(title) or {"delivered": 1})
+    monkeypatch.setattr(provenance, "_PAGED", set())
+    monkeypatch.setattr(provenance, "_LAST_TRY", {})
+    monkeypatch.setattr(provenance, "_page_state_path", lambda: tmp_path / "page_state.json")
+    _bad_declaration(kind, monkeypatch)
+    doc, venue, intents = mb._e8_harness(monkeypatch, tmp_path)   # returns: the pass completed
+    assert venue.placed == [] and doc["placed"] == []
+    assert doc["e8_account"]["ok"] is False
+    rows = [r for r in intents if r.get("rail") == "e8_account_undeclared"]
+    assert rows and all(r["status"] == "RAIL_BLOCKED" and r["missed_growth_risk_usd"] > 0
+                        and "no new E8 gold risk" in r["why"] for r in rows)
+    assert any("ACCOUNT KEY: e8" in t for t in sent), sent      # it reached send_all
+
+
+def test_the_conftest_venue_joins_its_declaration_and_places(monkeypatch, tmp_path) -> None:
+    """The contrast, now honest (audit r7.1: the harness venue did not match the declaration):
+    the venue's own key IS the declared one, the check says so, and both legs place."""
+    import test_fusion_minlot_book as mb
+    from prop import e8_gold as g
+    want = xa.expected_key("e8")
+    assert want == xa.account_key(31337, "E8-Test")
+    doc, venue, _ = mb._e8_harness(monkeypatch, tmp_path)
+    assert doc["e8_account"] == {"ok": True, "why": "the E8 declaration joins this venue's key"}
+    assert sorted(s for s, _ in venue.placed) == ["buy", "sell"]
+    assert g.e8_account_check(SimpleNamespace(_raw_api=SimpleNamespace(
+        acc_id=31337, _credentials={"server": "E8-Test"})))[0] is True
+
+
+@pytest.mark.parametrize("ok", [False, True])
+def test_the_0706_retry_honours_the_account_rail(monkeypatch, tmp_path, ok) -> None:
+    """r7.2 (audit r7.1 SF-1): a retry is new E8 gold risk; with the declaration not joining it
+    is held (not sent) and billed under `e8_account_undeclared`; joined, it goes ahead."""
+    import test_e8_reconnect as rc
+    from prop import e8_gold as g
+    monkeypatch.setattr(g, "INTENTS", tmp_path / "intents.jsonl")
+    (tmp_path / "intents.jsonl").write_text("", "utf-8")
+    monkeypatch.setattr(dc, "E8_GOLD_SEND_GRACE_MIN", 10.0)
+    v, st = rc._Venue(), rc._state()
+    doc = rc._retry(v, st, hour=7 + 6 / 60, account_ok=(ok, "test declaration"))
+    rows = [json.loads(ln) for ln in (tmp_path / "intents.jsonl").read_text().splitlines()
+            if ln.strip()]
+    held = [r for r in rows if r.get("rail") == "e8_account_undeclared"]
+    if ok:
+        assert v.sent and not held
+    else:
+        assert v.sent == [] and held and "retry held" in held[0]["why"]
+        assert any("does not join" in w for w in doc["retry_skipped"]["why"])
+    src = (_DESK / "prop" / "e8_gold.py").read_text("utf-8")
+    assert "account_ok=(e8_declared, e8_account_why)" in src       # run() wires it
+
+
+def test_the_e8_ceiling_binds_every_certified_entry_not_only_gold() -> None:
+    """r7.2 (coordinator ruling): e8_executor's FX sleeves are capped at E8_CERT_CEILING too, and
+    each cut is a CAPPED `e8_cert_ceiling` missed-growth row."""
+    from prop import e8_executor as ex
+    from prop import e8_guard
+    bal = e8_guard.START_BALANCE
+    usd, cut = ex.cert_ceiling(0.01 * bal, "USDJPY_session_range_breakout_asia")
+    assert usd == pytest.approx(0.006 * bal)
+    assert cut["status"] == "CAPPED" and cut["rail"] == "e8_cert_ceiling"
+    assert cut["missed_growth_risk_usd"] == round(0.004 * bal, 2)
+    assert ex.cert_ceiling(0.006 * bal, "k") == (0.006 * bal, None)
+    assert ex.cert_ceiling(0.002 * bal, "k") == (0.002 * bal, None)
+    src = (_DESK / "prop" / "e8_executor.py").read_text("utf-8")
+    i = src.index("_capped_usd, _cut = cert_ceiling(row_risk_usd, _ckey)")
+    assert src.index('row["risk_usd"] = round(row_risk_usd, 2)', i) > i   # before sizing

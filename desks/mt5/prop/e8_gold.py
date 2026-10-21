@@ -189,6 +189,38 @@ def window_sources(solve: dict[str, float] | None, cert: dict[str, float] | None
     return out
 
 
+def e8_account_check(venue: Any) -> tuple[bool, str]:
+    """(may new E8 gold risk go out, why). The E8 declaration (`cross_account.expected_key("e8")`,
+    read from E8_ACCOUNT.json) must be a valid key -- not absent, not the `invalid:` sentinel an
+    empty, torn, garbage or unreadable file reads as -- and EQUAL the venue's own key
+    (`tradelocker_account_key`). Every refusal pages (`cross_account.page_key`, which sends).
+    NEVER RAISES: a PermissionError on the declaration is a refusal, never an aborted pass."""
+    from mt5desk import cross_account as xa
+    try:
+        want = xa.expected_key("e8")
+    except Exception as exc:                       # OSError incl. PermissionError, anything
+        want = f"invalid:E8 declaration unreadable ({type(exc).__name__})"
+    if want is None:
+        xa.page_key("e8", "UNDECLARED", source="e8_gold")
+        return False, f"{xa.E8_ACCOUNT_FILE.name} is absent: the E8 account is undeclared"
+    if str(want).startswith("invalid:") or not xa.valid_key(want):
+        xa.page_key("e8", xa.KEY_DECLARATION_INVALID, source="e8_gold")
+        detail = str(want).removeprefix("invalid:") if str(want).startswith("invalid:") \
+            else "no valid key"
+        return False, f"{xa.E8_ACCOUNT_FILE.name} is not a valid declaration ({detail})"
+    try:
+        have = xa.tradelocker_account_key(venue)
+    except Exception:
+        have = None
+    if have is None:
+        return False, "the venue's own E8 account key is unresolvable (paged)"
+    if have != want:
+        xa.page_key("e8", xa.KEY_MISMATCH, source="e8_gold")
+        return False, f"{xa.E8_ACCOUNT_FILE.name} declares another account than this venue's"
+    xa.clear_key_alert("e8", source="e8_gold")
+    return True, "the E8 declaration joins this venue's key"
+
+
 def e8_grace() -> float:
     """`decision_core.E8_GOLD_SEND_GRACE_MIN`, read at call time (E8-Gold's own cadence)."""
     from mt5desk import decision_core as _dc
@@ -916,11 +948,15 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         if _v is not None and float(_v) > E8_CERT_CEILING:
             ceilinged[_w] = float(_v)
     kelly = {**(kelly or {}), **dict.fromkeys(ceilinged, E8_CERT_CEILING)}
-    # NO DECLARED E8 ACCOUNT, NO NEW E8 GOLD RISK (r7.1; audit r6/r7 should-fix): an absent
-    # E8_ACCOUNT.json used to skip the account check. Armed passes refuse every window with a
-    # reasoned, billed row until landing step 6 re-declares it.
+    # NO JOINED E8 ACCOUNT, NO NEW E8 GOLD RISK (r7.2, audit r7.1 MUST-FIX 1): r7.1 checked only
+    # that E8_ACCOUNT.json EXISTS, so a garbage, torn, empty or another account's declaration
+    # placed both legs. Now the declaration must be a valid key, never the `invalid:` sentinel,
+    # and EQUAL the venue's own key; the check never raises (PermissionError included), so it
+    # can never abort the pass or open-position management. Refusals are billed per window.
     from mt5desk import cross_account as _xa_decl
-    e8_declared = _xa_decl.E8_ACCOUNT_FILE.exists()
+    e8_declared, e8_account_why = (e8_account_check(venue) if armed
+                                   else (True, "disarmed: no new risk to refuse"))
+    doc["e8_account"] = {"ok": e8_declared, "why": e8_account_why}
     # WHERE EACH WINDOW'S NUMBER CAME FROM (r6): one label per window, never one for the lane --
     # "kelly_survival" was printed when the solve was absent and the cert book had sized asia.
     # A VOID cert book is `cert_book_void` for every unpinned window (r7; see above).
@@ -1091,9 +1127,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 "(reports/KELLY_SURVIVAL.json) funds this window at 0 risk")})
             continue
         if armed and not e8_declared:
-            why = (f"{_xa_decl.E8_ACCOUNT_FILE.name} is absent: the E8 account is undeclared, so "
-                   f"no book can be joined to it; no new E8 gold risk until it is re-declared "
-                   f"(README landing step 6)")
+            why = (f"{e8_account_why}; no new E8 gold risk until {_xa_decl.E8_ACCOUNT_FILE.name} "
+                   f"declares this venue's own key (README landing step 6)")
             doc["skipped"].append({"window": name, "why": why})
             log(f"[{name}] REFUSED: {why}")
             if _billed.get(f"e8_account_undeclared/{name}") != today:
@@ -1280,7 +1315,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                            xau_positions=xau_positions, positions_ok=positions_ok,
                            stood_down=stood_down, armed=armed, hist_rows=hist_rows,
                            history_ok="history_unreadable" not in doc, instrument_id=iid,
-                           mt5=mt5)
+                           mt5=mt5, account_ok=(e8_declared, e8_account_why))
         open_ids = {int(o.get("id")) for o in open_orders if o.get("id") is not None}
 
     # OUR OWN ORDERS AND POSITIONS, RE-DERIVED FROM THE VENUE EVERY PASS -- so a rollover (or a
@@ -1483,7 +1518,8 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                        open_orders: list[dict], orders_ok: bool, filled: dict[int, int],
                        xau_positions: list[dict], positions_ok: bool, stood_down: bool,
                        armed: bool, hist_rows: list[dict], history_ok: bool,
-                       instrument_id: int, mt5: Any = None) -> None:
+                       instrument_id: int, mt5: Any = None,
+                       account_ok: tuple[bool, str] = (True, "")) -> None:
     """Re-send the legs `retry_decisions` says still belong to a live window. Mutates `state`,
     appends to `doc["actions"]` and to `open_orders` (so the rest of the pass sees the new leg).
 
@@ -1499,7 +1535,10 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                                   ("the order book is unreadable", not orders_ok),
                                   ("the position book is unreadable", not positions_ok),
                                   ("the order history is unreadable", not history_ok),
-                                  ("the gold instrument id is unknown", not instrument_id))
+                                  ("the gold instrument id is unknown", not instrument_id),
+                                  # r7.2 (audit r7.1 SF-1): a retry is new E8 gold risk too.
+                                  (f"the E8 account does not join ({account_ok[1]})",
+                                   armed and not account_ok[0]))
              if bad]
     journal = _journal_read()
     if journal is None:
@@ -1510,6 +1549,21 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                    for side in (w.get("failed") or {})]
         doc["retry_skipped"] = {"why": blind, "legs": waiting}
         log(f"dropped legs {waiting} not re-sent this pass: {'; '.join(blind)}")
+        if armed and not account_ok[0]:
+            # Billed once per held leg per day, under the same rail as a refused placement.
+            _billed = state.setdefault("rail_logged", {})
+            today = now.date().isoformat()
+            for n, w in (state.get("windows") or {}).items():
+                for side, leg in (w.get("failed") or {}).items():
+                    if _billed.get(f"e8_account_undeclared/{n}/{side}") == today:
+                        continue
+                    _billed[f"e8_account_undeclared/{n}/{side}"] = today
+                    _record({"at": now.isoformat(timespec="seconds"), "window": n,
+                             "side": side, "status": "RAIL_BLOCKED",
+                             "rail": "e8_account_undeclared",
+                             "why": f"retry held: the E8 account does not join ({account_ok[1]})",
+                             "missed_growth_risk_usd": (leg or {}).get("risk_usd"),
+                             "armed": True})
         return
     try:
         bid, ask = venue.quote(SYMBOL)
