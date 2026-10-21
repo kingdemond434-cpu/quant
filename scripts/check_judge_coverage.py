@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from collections.abc import Mapping
 from contextlib import suppress
@@ -101,6 +102,77 @@ def _age_h(stamp: object, now: datetime) -> float | None:
     except ValueError:
         return None
     return max(0.0, (now.timestamp() - at.timestamp()) / 3600.0)
+
+
+PREWARM_DEFECT_MAX_DAYS = 14.0
+#: A stamp more than this far ahead of the reader's clock is a future stamp, not clock skew.
+FUTURE_SKEW_S = 900.0
+
+
+def _parse_utc(stamp: object) -> datetime | None:
+    try:
+        return datetime.fromisoformat(str(stamp or "").strip().replace("Z", "+00:00")
+                                      ).astimezone(UTC)
+    except ValueError:
+        return None
+
+
+def _sticky_checks(out: dict[str, Any], failures: list[str], tot: dict[str, Any],
+                   pw_now: Any, at: datetime) -> None:
+    best, base = tot.get("prewarm_fail_best"), tot.get("prewarm_fail_baseline")
+    defect = tot.get("prewarm_fail_defect")
+    defect = defect if isinstance(defect, dict) and defect.get("row") else None
+    if pw_now is None or not isinstance(best, (int, float)):
+        out["checks"].append({"metric": "prewarm_fail_sticky", "state": "UNMEASURED",
+                              "why": f"pre-warm share {pw_now}, best {best}: no sticky reading"})
+        return
+    if not all(math.isfinite(float(v)) for v in (pw_now, best, *(
+            [base] if isinstance(base, (int, float)) else []))):
+        failures.append("prewarm_fail_nonfinite")
+        out["checks"].append({"metric": "prewarm_fail_sticky", "state": "FAIL",
+                              "why": f"a non-finite sticky value (now {pw_now}, best {best}, "
+                                     f"baseline {base}) is no reading"})
+        return
+    now, tol = float(pw_now), PREWARM_TOLERANCE
+    named = (f"now {now:.1%}, best {float(best):.1%}, baseline "
+             f"{'-' if base is None else f'{float(base):.1%}'}")
+    if isinstance(base, (int, float)) and now > float(base) + tol:
+        failures.append("prewarm_fail_baseline")
+        out["checks"].append({"metric": "prewarm_fail_baseline", "state": "FAIL",
+                              "why": f"rose again over the open regression's baseline: {named}"})
+    if now > float(best) + tol and defect is None:
+        failures.append("prewarm_fail_unowned")
+        out["checks"].append({
+            "metric": "prewarm_fail_unowned", "state": "FAIL",
+            "why": (f"pre-warm failures are above the best on record with NO open register row "
+                    f"owning them ({named}): open a GAP_REGISTER row marked "
+                    f"metric:prewarm_fail_share")})
+        return
+    if defect is None:
+        out["checks"].append({"metric": "prewarm_fail_sticky", "state": "OK", "why": named})
+        return
+    # AN OPENING TIME NOBODY CAN READ, OR ONE IN THE FUTURE, IS AGED (audit of #372): otherwise a
+    # bogus stamp would hold the defect in WARN forever.
+    opened_at = _parse_utc(defect.get("opened_utc"))
+    if opened_at is None or opened_at.timestamp() > at.timestamp() + FUTURE_SKEW_S:
+        age_d: float = math.inf
+    else:
+        age_d = (at.timestamp() - opened_at.timestamp()) / 86400.0
+    # Recovery is the SAME condition that closes the defect -- back to best + tolerance; any
+    # smaller fall is still the regression.
+    if age_d > PREWARM_DEFECT_MAX_DAYS and now > float(best) + tol:
+        failures.append("prewarm_fail_defect_aged")
+        out["checks"].append({
+            "metric": "prewarm_fail_defect_aged", "state": "FAIL",
+            "why": (f"GAP row #{defect['row']} open "
+                    f"{'an unreadable/future time' if math.isinf(age_d) else f'{age_d:.0f}d'} "
+                    f"(over {PREWARM_DEFECT_MAX_DAYS:.0f}d) and not back to best + "
+                    f"{tol:.0%} ({named})")})
+        return
+    out["checks"].append({
+        "metric": "prewarm_fail_sticky", "state": "WARN",
+        "why": (f"OPEN regression owned by GAP row #{defect['row']} since "
+                f"{defect.get('opened_utc')}: {named}")})
 
 
 def judge(report: Path | None = None, *, require_state: bool = False,
@@ -359,6 +431,11 @@ def judge(report: Path | None = None, *, require_state: bool = False,
         out["checks"].append({"metric": "prewarm_fail_ratchet", "state": "OK",
                               "why": f"pre-warm failures {float(pw_was):.1%} -> "
                                      f"{float(pw_now):.1%}"})
+
+    # 7b. THE STICKY PRIOR (audit, 2026-10-13). The check above compares with the LAST reading,
+    #     so a regression that persists for one reading becomes the next one's baseline. These
+    #     only tighten: nothing that fails above stops failing.
+    _sticky_checks(out, failures, tot, pw_now, at)
 
     totals = doc.get("totals") or {}
     out["totals"] = {k: totals.get(k) for k in (

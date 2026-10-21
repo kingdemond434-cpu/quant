@@ -86,6 +86,7 @@ import argparse
 import contextlib
 import json
 import math
+import os
 import sys
 import time
 from collections import Counter
@@ -809,6 +810,16 @@ PARKED_NOT_RUN = {"NOT_RUN_DATA_MISSING": "data_missing",
 BUILD_FAILED_RETRY_DAYS = 7.0
 
 
+def _prewarm_submitted(path: Path | None = None) -> int | None:
+    """How many pre-warm builds the last sweep submitted: the sample behind its share."""
+    doc = _read(path or GATES_REPORT)
+    pw = (doc or {}).get("prewarm") if isinstance(doc, dict) else None
+    try:
+        return int(pw.get("submitted") or 0) if isinstance(pw, dict) else None
+    except (TypeError, ValueError):
+        return None
+
+
 def _prewarm_share(path: Path | None = None) -> float | None:
     """The share of the last sweep's pre-warm builds that failed on build or data."""
     doc = _read(path or GATES_REPORT)
@@ -821,6 +832,93 @@ def _prewarm_share(path: Path | None = None) -> float | None:
               if str(k) in ("NOT_RUN_DATA_MISSING", "NOT_RUN_BUILD_FAILED", "FAIL_3X", "ERROR",
                             "SAVE_FAILED"))
     return round(bad / sub, 6) if sub else None
+
+
+#: The best pre-warm failure share on record before the sticky prior existed: the box's reading
+#: of 2026-10-07 (JUDGE_COVERAGE totals.prewarm_fail_share = 0.163262, box commit c28d32bcd^).
+#: `best` only ever moves DOWN from here, so a ratchet file that lost it cannot re-baseline.
+PREWARM_FAIL_BEST_SEED = 0.163262
+PREWARM_STICKY_TOL = 0.02
+#: The GAP_REGISTER marker that names an OPEN row as the owner of a pre-warm regression.
+PREWARM_DEFECT_MARKER = "metric:prewarm_fail_share"
+GAP_REGISTER = BASE.parent.parent / "docs" / "GAP_REGISTER.md"
+PREWARM_STICKY_KEYS = ("prewarm_fail_best", "prewarm_fail_baseline", "prewarm_fail_defect")
+#: WHERE THE OPEN REGRESSION OPENED, fixed in code (audit of #372): a wiped or corrupt ratchet must
+#: not re-open row 214 at today's share with a fresh 14-day clock. A row that opens later than
+#: this one has no anchor and opens at its own first reading.
+PREWARM_DEFECT_ANCHORS = {"214": {"opened_utc": "2026-10-13T16:26:06+00:00",
+                                  "opened_share": 0.555807}}
+#: A sweep that submitted fewer pre-warm builds than this cannot set a new best: one tiny sweep at
+#: 0% would otherwise pin best at 0 and turn every normal reading into an unowned regression.
+PREWARM_MIN_SAMPLE = 200
+
+
+def open_defect_row(path: Path | None = None) -> str | None:
+    """The id of the OPEN GAP_REGISTER row that owns a pre-warm regression, or None.
+
+    A row OPENS ownership; it never closes it. Closure is the measured share coming back under
+    best + tolerance (prewarm_sticky), so a hand edit to the row cannot clear a regression."""
+    try:
+        text = (path or GAP_REGISTER).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    for line in text.splitlines():
+        if PREWARM_DEFECT_MARKER not in line or not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) >= 2 and cells[-1].lower().startswith("open") and cells[0].isdigit():
+            return cells[0]
+    return None
+
+
+def _finite(v: Any) -> float | None:
+    return float(v) if isinstance(v, (int, float)) and math.isfinite(float(v)) else None
+
+
+def prewarm_sticky(prior: dict[str, Any], now: float | None, row: str | None,
+                   at: str, sample: int | None = None) -> dict[str, Any]:
+    """Best ever, baseline since the defect opened, and the defect itself (audit, 2026-10-13).
+
+    `best` only falls. A share above best + tolerance with an OPEN register row opens the
+    defect, with `baseline` starting at the lowest regressed reading (the previous one included)
+    and only falling; the defect closes ONLY when a reading comes back to best + tolerance. The
+    fence reads all three: a further rise over baseline FAILs, a rise with no owner FAILs, an
+    owned one WARNs on every run, and one open 14 days without falling below where it opened
+    FAILs."""
+    last = _finite(prior.get("prewarm_fail_share"))
+    now = _finite(now)
+    big = sample is not None and sample >= PREWARM_MIN_SAMPLE
+    last_big = int(prior.get("prewarm_submitted") or 0) >= PREWARM_MIN_SAMPLE
+    cand = [v for v in (_finite(prior.get("prewarm_fail_best")), last if last_big else None,
+                        PREWARM_FAIL_BEST_SEED, now if big else None) if v is not None]
+    best = min(cand) if cand else None
+    defect = prior.get("prewarm_fail_defect")
+    defect = dict(defect) if isinstance(defect, dict) and defect.get("row") else None
+    baseline = _finite(prior.get("prewarm_fail_baseline"))
+    if now is None or best is None:
+        return {"prewarm_fail_best": best, "prewarm_fail_baseline": baseline,
+                "prewarm_fail_defect": defect}
+    regressed = now > best + PREWARM_STICKY_TOL
+    if not regressed:
+        return {"prewarm_fail_best": best, "prewarm_fail_baseline": None,
+                "prewarm_fail_defect": None}
+    if defect is None and row is not None:
+        prev = [v for v in (last, now) if v is not None and v > best + PREWARM_STICKY_TOL]
+        anchor = PREWARM_DEFECT_ANCHORS.get(str(row))
+        if anchor:
+            prev.append(float(anchor["opened_share"]))
+        baseline = min(prev)
+        defect = {"row": row, "opened_utc": anchor["opened_utc"] if anchor else at,
+                  "opened_share": (float(anchor["opened_share"]) if anchor else baseline)}
+    elif defect is not None:
+        anchor = PREWARM_DEFECT_ANCHORS.get(str(defect.get("row")))
+        if anchor:                      # the anchor wins over whatever a ratchet file carried
+            defect["opened_utc"] = anchor["opened_utc"]
+            defect["opened_share"] = float(anchor["opened_share"])
+            baseline = min(v for v in (baseline, float(anchor["opened_share"])) if v is not None)
+        baseline = now if baseline is None else min(baseline, now)
+    return {"prewarm_fail_best": best, "prewarm_fail_baseline": baseline,
+            "prewarm_fail_defect": defect}
 
 
 def name_not_run(path: Path | None = None) -> dict[str, dict[str, Any]]:
@@ -1793,6 +1891,14 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
                 "families": {}, "totals": {}, "quota": {}}
 
     prior = _read(ratchet or RATCHET) or {}
+    if not isinstance(prior, dict):
+        prior = {}
+    if ratchet is None and not any(prior.get(k) is not None for k in PREWARM_STICKY_KEYS):
+        # A LOST RATCHET IS NOT A FRESH START (audit of #372): the published report carries the
+        # same sticky values, so read them back from there before re-deriving anything.
+        _last = (_read(REPORT) or {}).get("totals") if isinstance(_read(REPORT), dict) else None
+        if isinstance(_last, dict):
+            prior = {**prior, **{k: _last.get(k) for k in PREWARM_STICKY_KEYS}}
     judged_cells, judged_total, judged_window = judged_index(ledger, now=at)
     bank_rows = unrunnable_bank()
     not_testable_ids = not_testable_index(bank_rows)
@@ -2031,6 +2137,7 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     covered = sum(1 for f, r in table.items() if r["unjudged"] > 0 and r["queued"] > 0)
     starved = sorted((f for f, r in table.items() if r["unjudged"] > 0 and r["queued"] == 0),
                      key=lambda f: -table[f]["unjudged"])
+    _pw_share = _prewarm_share()
     totals = {
         "docket_rows": len(rows),
         "mined": sum(mined.values()),
@@ -2080,9 +2187,13 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
                                - int(unknown.get("named_cells") or 0)),
         "not_run_named": len(not_run),
         "not_run_by_reason": dict(Counter(str(r.get("reason")) for r in not_run.values())),
-        "prewarm_fail_share": _prewarm_share(),
+        "prewarm_fail_share": _pw_share,
         "prior_prewarm_fail_share": (prior.get("prewarm_fail_share")
                                      if isinstance(prior, dict) else None),
+        "prewarm_submitted": _prewarm_submitted(),
+        **prewarm_sticky(prior if isinstance(prior, dict) else {}, _pw_share,
+                         open_defect_row(), at.isoformat(timespec="seconds"),
+                         _prewarm_submitted()),
         "prior_drain_status": (prior.get("drain_status") if isinstance(prior, dict) else None),
         "unrunnable_parked": unrunnable.get("parked_this_pass"),
         # THE BACKLOG'S UNIT and the non-judging moves, each its own figure, never drain.
@@ -2311,6 +2422,28 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
         return rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
 
+def _carry_sticky(totals: dict[str, Any], ratchet: Path) -> dict[str, Any]:
+    """The sticky keys to persist: this reading's where it computed them, else the last file's."""
+    if all(k in totals for k in PREWARM_STICKY_KEYS):
+        return {k: totals.get(k) for k in PREWARM_STICKY_KEYS}
+    old = _read(ratchet)
+    old = old if isinstance(old, dict) else {}
+    return {k: (totals[k] if k in totals else old.get(k)) for k in PREWARM_STICKY_KEYS}
+
+
+def _atomic_write(target: Path, text: str) -> None:
+    """Write a sibling and replace, so a reader never sees a torn ratchet (an empty prior would
+    wipe the sticky best, baseline and defect); on failure the previous file stays whole."""
+    tmp = target.with_name(f"{target.name}.{os.getpid()}.tmp")
+    tmp.write_text(text, "utf-8")
+    try:
+        os.replace(tmp, target)
+    except OSError:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+        raise
+
+
 def write(doc: dict[str, Any], *, report: Path | None = None,
           ratchet: Path | None = None) -> None:
     """Publish the table and advance the ratchet. A ratchet write is the NEXT reading's baseline."""
@@ -2324,7 +2457,7 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
                 dk.publish(keff)
             except OSError as exc:
                 doc.setdefault("keff_order", {})["publish_error"] = f"{type(exc).__name__}"
-    target.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    _atomic_write(target, json.dumps(doc, indent=1, default=str))
     fams = doc.get("families") or {}
     state = {
         "at": doc.get("at"),
@@ -2338,6 +2471,12 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
         "unknown_share": (doc.get("totals") or {}).get("unknown_share"),
         "unknown_share_basis": (doc.get("totals") or {}).get("unknown_share_basis"),
         "prewarm_fail_share": (doc.get("totals") or {}).get("prewarm_fail_share"),
+        # THE STICKY PRIOR (audit, 2026-10-13): kept beside the last reading so a regression can
+        # never become the next reading's baseline just by persisting.
+        # A reading that carries no sticky values (an empty docket) CARRIES THE PREVIOUS ONES
+        # FORWARD: nulling them would launder a regression on the next reading.
+        **_carry_sticky(doc.get("totals") or {}, ratchet or RATCHET),
+        "prewarm_submitted": (doc.get("totals") or {}).get("prewarm_submitted"),
         "drain_status": (doc.get("totals") or {}).get("drain_status"),
         "priors_cursor": (doc.get("priors_learned") or {}).get("cursor") or "",
         "why": ("the baseline the carried-cohort ratchet is measured against: rows already in "
@@ -2346,7 +2485,7 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
     }
     rt = ratchet or RATCHET
     rt.parent.mkdir(parents=True, exist_ok=True)
-    rt.write_text(json.dumps(state, indent=1, default=str), "utf-8")
+    _atomic_write(rt, json.dumps(state, indent=1, default=str))
 
 
 def render(doc: dict[str, Any]) -> list[str]:
