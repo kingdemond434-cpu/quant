@@ -292,6 +292,7 @@ def test_event_reaction_fires_again_from_the_measured_clock(tmp_path, monkeypatc
     high-impact history covers), run through the producer, read by the family. With no
     BAR_CLOCK.json the same cells place nothing (NEEDS_DATA(bar_clock), 0 fire days)."""
     import external_gauntlet as G
+
     from libs.research import bar_clock_release
 
     _summer_ledger(tmp_path)
