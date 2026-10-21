@@ -177,3 +177,32 @@ def test_the_e8_oco_key_equals_the_bracket_guard_evidence_key_for_one_tlapi_obje
         _REAL_TL(SimpleNamespace(_raw_api=SimpleNamespace(account_id=81234567,
                                                           server="E8-Live-Test"),
                                  _creds=SimpleNamespace(server="E8-Live-Test")))
+
+
+#: FIXED TEST VECTORS (the suite's throwaway key, b"0123456789abcdef" * 4, conftest
+#: `_account_key_file`): "sha256:" + HMAC-SHA256(key, "<login>@<server>")[:16] with the server
+#: passed as given -- case preserved, never lowercased. Bracket guard v5.1's e8_evidence key for
+#: the same TLAPI handle is this value byte for byte (its rule is restated in `_evidence_key`).
+VECTOR_E8 = ("sha256:ccd25414061507fe", 81234567, "E8-Live-Test")
+VECTOR_FTMO = ("sha256:9e6e987a65c2762b", 64567890, "FTMO-Server2")
+
+
+def test_the_keys_match_the_fixed_vectors_byte_for_byte(monkeypatch, tmp_path) -> None:
+    want, login, server = VECTOR_E8
+    api = SimpleNamespace(account_id=login, _credentials={"server": server})
+    assert _evidence_key(api) == want
+    assert _REAL_TL(SimpleNamespace(_raw_api=api)) == want
+    assert oco.oco_account_key(login, server) == want
+    assert xa.account_key(login, server) == want
+    # The server's case is the account's: a case-folded server is another key, never this one.
+    assert oco.oco_account_key(login, server.lower()) != want
+    want, login, server = VECTOR_FTMO
+    assert oco.oco_account_key(login, server) == want
+    term = SimpleNamespace(account_info=lambda: SimpleNamespace(login=login, server=server,
+                                                                trade_mode=0))
+    acct = tmp_path / "FTMO_LIVE_ACCOUNT.json"
+    acct.write_text(json.dumps({"login": login, "server": server, "trade_mode": 0,
+                                "initial_balance": 100_000.0, "account_type": "2-step"}),
+                    "utf-8")
+    monkeypatch.setattr(ff, "ACCOUNT_FILE", acct)
+    assert ff.bound_account(term)[0] == want                 # the follower and its ledger rows
