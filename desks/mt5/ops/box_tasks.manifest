@@ -91,7 +91,7 @@ TASK name="MT5-Shadow"             trigger="every 1 hour, at :55" runs="desks/mt
 TASK name="MT5-UniversalGate"      trigger="every 1 hour, at :07" runs="desks/mt5/research/universal_gate.py"        installer="NONE" lane="research"
 TASK name="MT5-QQuantShadow"       trigger="every 30 minutes, at :25" runs="desks/mt5/research/qquant_shadow.py"         installer="NONE" lane="research"
 TASK name="MT5-ResearchSupervisor" trigger="every 30 minutes, at :26" runs="desks/mt5/research/research_supervisor.py"   installer="NONE" lane="research"
-TASK name="MT5-QQuantGatesCertify" trigger="every 1 hour, at :27" runs="desks/mt5/research/qquant_gates.py"          installer="NONE" lane="research"
+TASK name="MT5-QQuantGatesCertify" trigger="every 1 hour, at :27" runs="desks/mt5/research/qquant_gates.py"          installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="research"
 
 # Declared here because their installers are in the repo and were read to write these lines.
 TASK name="MT5-Hourly"             trigger="every 1 hour (keep-alive of the 24/7 discovery resident)" runs="desks/mt5/research/department_resident.py" installer="desks/mt5/scripts/MT5Hourly.cmd" lane="research"
@@ -225,7 +225,7 @@ TASK name="MT5-CEODocket" trigger="every 1 hour, at :10" runs="ops/run_ceo_docke
 TASK name="MT5-ProcessHealth" trigger="every 30 minutes" runs="ops/run_process_health.cmd" installer="NONE" lane="ops"
 TASK name="MT5-ReleaseAuthority" trigger="every 15 minutes" runs="ops/run_release_authority.cmd" installer="NONE" lane="ops"
 TASK name="MT5-ResearchReports" trigger="at system start-up (resident)" runs="desks/mt5/scripts/run_research_reports.py" installer="NONE" lane="research"
-TASK name="MT5-RiskUnitsFence" trigger="every 1 hour, at :02" runs="scripts/check_risk_units.py" installer="NONE" lane="ops"
+TASK name="MT5-RiskUnitsFence" trigger="every 1 hour, at :02" runs="scripts/check_risk_units.py" installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="ops"
 TASK name="MT5-SealIfClean" trigger="legacy compatibility only" runs="retired; MT5-AdoptRelease owns sealing" installer="NONE" lane="ops"
 TASK name="MT5-AccountState" trigger="every 15 minutes" runs="ops/run_account_state.cmd" installer="NONE" lane="ops"
 TASK name="MT5-AllocatorFast" trigger="every 15 minutes" runs="desks/mt5/research/pf_allocator.py" installer="NONE" lane="research"
