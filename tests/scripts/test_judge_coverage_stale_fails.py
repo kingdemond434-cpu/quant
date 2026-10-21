@@ -82,3 +82,20 @@ def test_a_family_failure_reads_exactly_as_before(fence, tmp_path):
     out = fence.judge(_write(tmp_path, doc), require_state=True, now=NOW)
     assert out["why"] == "1 family(ies) failed a coverage rule: overnight_drift"
     assert fence.STALE_H == 6.0
+
+
+def test_a_future_dated_report_beyond_the_skew_is_undated_on_the_box(fence, tmp_path):
+    assert fence.FUTURE_SKEW_S == 300
+    ahead = _write(tmp_path, _healthy((NOW + timedelta(hours=2)).isoformat()))
+    doc = fence.judge(ahead, require_state=True, now=NOW)
+    assert doc["verdict"] == "FAIL" and doc["why"].startswith("the report is undated")
+    assert any(c["metric"] == "freshness" and "in the future" in c["why"]
+               for c in doc["checks"])
+    assert fence.judge(ahead, now=NOW)["verdict"] == "PASS"            # portable: unchanged
+
+
+def test_a_future_stamp_inside_the_skew_is_fresh(fence, tmp_path):
+    near = _write(tmp_path, _healthy((NOW + timedelta(seconds=240)).isoformat()))
+    assert fence.judge(near, require_state=True, now=NOW)["verdict"] == "PASS"
+    edge = _write(tmp_path, _healthy((NOW + timedelta(seconds=301)).isoformat()))
+    assert fence.judge(edge, require_state=True, now=NOW)["verdict"] == "FAIL"
