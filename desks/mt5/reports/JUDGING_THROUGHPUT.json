@@ -1,21 +1,21 @@
 {
- "at": "2026-10-21T04:53:51+00:00",
+ "at": "2026-10-21T05:44:27+00:00",
  "status": "MEASURED",
  "box": {
   "cores": 18,
   "market_closed": false,
   "source": "GlobalMemoryStatusEx",
   "total_phys_mb": 98297,
-  "free_phys_mb": 50389,
+  "free_phys_mb": 46042,
   "commit_limit_mb": 192505,
-  "commit_free_mb": 89027,
+  "commit_free_mb": 62301,
   "cpu_source": "psutil",
-  "busy_other_cores": 13.41,
-  "busy_judge_cores": 0.85,
+  "busy_other_cores": 15.09,
+  "busy_judge_cores": 0.57,
   "cpu_sample_s": 1.0,
   "terminal_running": true,
   "gateway_running": false,
-  "n_python": 70,
+  "n_python": 78,
   "terminal_source": "psutil",
   "is_judging_box": true
  },
@@ -38,7 +38,7 @@
   "burndown_outflow_unit": "settled",
   "burndown_source": "JUDGING_BURNDOWN.json",
   "source_at": "2026-10-03T12:38:16.788667+00:00",
-  "source_age_seconds": 1527329.689089,
+  "source_age_seconds": 1530369.694085,
   "why": "backpressure timestamp missing, invalid, future or stale; historical sweep is not current queue capacity"
  },
  "decision": {
@@ -52,7 +52,7 @@
   "shards_why": "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work across the measured worker allocation and computes program-level gates once on the union",
   "limiting_resource": "backlog_growing",
   "stood_down": false,
-  "why": "cores 15 (reserved 3), memory 32, commit 57 at 768MB a worker; the binding one is backlog_growing",
+  "why": "cores 15 (reserved 3), memory 29, commit 40 at 768MB a worker; the binding one is backlog_growing",
   "baseline": {
    "workers": 10,
    "memory_budget_mb": 8192.0,
@@ -106,63 +106,65 @@
  "limiting_resource": "backlog_growing",
  "rule": "throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the plan is floored at the sealed baseline so this organ can never throttle the judge; the live terminal always wins and standing down means returning to that baseline, not below it",
  "rate": {
-  "at": "2026-10-21T04:53:51+00:00",
+  "at": "2026-10-21T05:44:27+00:00",
   "verdicts": {
    "status": "MEASURED",
-   "rows_total": 970876,
+   "rows_total": 987360,
    "rows_unstamped": 0,
-   "last_verdict_at": "2026-10-20T21:26:59+00:00",
+   "last_verdict_at": "2026-10-21T05:13:03+00:00",
    "counts": {
-    "1h": 0,
-    "24h": 30083,
-    "7d": 107261
+    "1h": 16484,
+    "24h": 46567,
+    "7d": 123121
    },
    "count_basis": "changed verdict events; unchanged retests do not append",
    "first_terminal_counts": {
-    "1h": 0,
-    "24h": 17679,
-    "7d": 66196
+    "1h": 13778,
+    "24h": 31457,
+    "7d": 79541
    },
-   "first_terminal_cells": 358615,
+   "first_terminal_cells": 372393,
    "first_terminal_per_hour": {
-    "1h": 0.0,
-    "24h": 736.625,
-    "7d": 394.024
+    "1h": 13778.0,
+    "24h": 1310.708,
+    "7d": 473.458
    },
    "per_hour": {
-    "1h": 0.0,
-    "24h": 1253.458,
-    "7d": 638.458
+    "1h": 16484.0,
+    "24h": 1940.292,
+    "7d": 732.863
    }
   },
   "created": {
    "status": "MEASURED",
    "counts": {
-    "24h": 37469,
-    "7d": 290183
+    "24h": 35682,
+    "7d": 291157
    },
    "per_hour": {
-    "24h": 1561.208,
-    "7d": 1727.28
+    "24h": 1486.75,
+    "7d": 1733.077
    }
   },
-  "verdicts_per_hour": 1253.458,
-  "verdicts_per_day": 30083.0,
+  "verdicts_per_hour": 1940.292,
+  "verdicts_per_day": 46567.0,
   "verdict_rate_basis": "changed verdict events, not total completed tests",
-  "first_judged_per_day": 17679.0,
+  "first_judged_per_day": 31457.0,
   "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
-  "coverage_backlog_fresh": false,
-  "created_per_day": 37469.0,
-  "backlog": "UNMEASURED",
-  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
+  "coverage_backlog_fresh": true,
+  "created_per_day": 35682.0,
+  "backlog": 1243527,
+  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\JUDGE_COVERAGE.json totals.unjudged_total",
   "eta_to_drain": {
-   "status": "UNMEASURED",
-   "why": "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
+   "status": "GROWING",
+   "hours": null,
+   "net_per_day": -4225.0,
+   "why": "the judge returns fewer verdicts an hour than the desk creates cells; the backlog cannot drain at this rate"
   },
   "workers_planned": 15,
   "workers_last_sweep": "UNMEASURED",
   "cores_basis": "fixed_reservation"
  },
- "measure_seconds": 305.8,
- "seconds": 351.9
+ "measure_seconds": 122.4,
+ "seconds": 166.8
 }

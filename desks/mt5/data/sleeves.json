@@ -51396,7 +51396,9 @@
       "exec": "family_market",
       "retired_at": "2026-10-21T03:04:37+00:00",
       "retire_reason": "GBPSEK is outside the live sleeve universe ['AUDCHF', 'EURZAR', 'USDJPY', 'USDZAR', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "gbpsek|overnight_gap_decay|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     },
     {
       "name": "AUDNZD.clock_transition.asia@M30#hold_bars=2_label=broker_rollover_lead_bars=2_mode=out_of_side=1_stamp_hour=0",
@@ -51437,7 +51439,9 @@
       "exec": "family_market",
       "retired_at": "2026-10-21T03:04:37+00:00",
       "retire_reason": "AUDNZD is outside the live sleeve universe ['AUDCHF', 'EURZAR', 'USDJPY', 'USDZAR', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "audnzd|clock_transition|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     },
     {
       "name": "AUDNZD.clock_transition.asia@M30#hold_bars=2_label=tokyo_open_lead_bars=2_mode=out_of_side=1_stamp_hour=0",
@@ -51478,7 +51482,10 @@
       "exec": "family_market",
       "retired_at": "2026-10-21T03:04:37+00:00",
       "retire_reason": "AUDNZD is outside the live sleeve universe ['AUDCHF', 'EURZAR', 'USDJPY', 'USDZAR', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
-      "retired_by": "live_policy"
+      "retired_by": "live_policy",
+      "canonical_identity": "audnzd|clock_transition|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     }
-  ]
+  ],
+  "identity_stamped_at": "2026-10-21T05:38:57+00:00"
 }
