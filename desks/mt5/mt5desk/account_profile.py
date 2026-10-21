@@ -55,6 +55,7 @@ among them and the SIZE of them differ, and only those two are tuned here.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -289,6 +290,24 @@ def account_key(acc: dict[str, Any] | None) -> str | None:
     return f"{login}@{server}"
 
 
+def reason_label(acc: dict[str, Any] | None) -> str:
+    """How a REASON STRING names the connected account: its HMAC account key
+    (`libs.ops.provenance.account_key(login, server, create=False)`), or the text
+    "declared prop account" when that key is unavailable (no provenance on this tree, no box key,
+    an unreadable login). NEVER the "<login>@<server>" declaration key: these reasons reach
+    `cap_by_heat`'s note and gateway.log, and a log line is not where a login lives (coordinator
+    ruling, r7). Display only -- the declaration lookup still uses `account_key`. Never raises."""
+    try:
+        from libs.ops import provenance
+        key = provenance.account_key((acc or {}).get("login"), (acc or {}).get("server"),
+                                     create=False)
+    except Exception:
+        key = None
+    if isinstance(key, str) and re.fullmatch(r"sha256:[0-9a-f]{16}", key):
+        return f"account {key}"
+    return "declared prop account"
+
+
 def read_declarations(root: Path) -> tuple[dict[str, str] | None, str]:
     """The box's account declarations, or (None, why) when there are none to read.
 
@@ -358,14 +377,14 @@ def envelope_for_connected(acc: dict[str, Any] | None,
         # missing declaration. An operator reading "not named" after a torn write would go and
         # add a line that is already there.
         return E8_PRO, (
-            f"account {key} is not declared ({why}); failing closed to "
+            f"{reason_label(acc)} is not declared ({why}); failing closed to "
             f"{E8_PRO.name} rather than sizing an undeclared account at the live envelope")
     prof = PROFILES.get(name)
     if prof is None:
         return E8_PRO, (
-            f"account {key} is declared as {name!r}, which is not a known profile "
+            f"{reason_label(acc)} is declared as {name!r}, which is not a known profile "
             f"({', '.join(sorted(PROFILES))}); failing closed to {E8_PRO.name}")
-    return prof, f"account {key} is declared {prof.name} ({why})"
+    return prof, f"{reason_label(acc)} is declared {prof.name} ({why})"
 
 
 def venue_heat_cap(acc: dict[str, Any] | None, root: Path) -> tuple[float | None, str]:

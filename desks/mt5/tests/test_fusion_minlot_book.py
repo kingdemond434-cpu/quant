@@ -783,7 +783,7 @@ def test_exposure_reads_both_venues_and_raises_on_an_unreadable_row() -> None:
 
 def test_the_fence_blocks_only_the_opposite_side_and_fails_closed_on_any_unknown() -> None:
     xa.publish("e8", {"XAUUSD": {"long": False, "short": True}}, source="test",
-               key=xa.account_key("e8-test", "tl"))
+               key=xa.account_key(7000201, "tl"))
     book, _why = xa.read_book("e8")
     assert book is not None
     assert xa.opposite_block(book, "XAUUSD", "buy_stop", account="e8")
@@ -800,7 +800,7 @@ def test_an_absent_stale_or_foreign_book_is_no_book(tmp_path) -> None:
     xa.book_path("e8").unlink()
     assert xa.read_book("e8")[0] is None
     xa.publish("e8", {}, source="t", now=datetime.now(tz=UTC) - timedelta(seconds=1000),
-               key=xa.account_key("e8-test", "tl"))
+               key=xa.account_key(7000201, "tl"))
     book, why = xa.read_book("e8")
     assert book is None and "old" in why
     xa.book_path("e8").write_text(json.dumps({"account": "fusion", "covers": "all",
@@ -914,7 +914,7 @@ def test_a_family_order_opposite_an_e8_position_is_refused_and_billed(
     sleeve = _fx_sleeve(USDNOK)                         # LONG
     dc.stamp_minlot_override([sleeve], frozenset(FOUR), EQUITY)
     xa.publish("e8", {"USDNOK": {"long": False, "short": True}}, source="test",
-               key=xa.account_key("e8-test", "tl"))
+               key=xa.account_key(7000201, "tl"))
     adapter._run_family(ns, {"armed": True}, [sleeve], EQUITY)
     assert venue.sent == []
     (row,) = [json.loads(ln) for ln in (tmp_path / "rails.jsonl").read_text().splitlines()]
@@ -940,7 +940,7 @@ def test_a_same_side_e8_position_does_not_block_and_the_fusion_book_is_published
     sleeve = _fx_sleeve(USDNOK)
     dc.stamp_minlot_override([sleeve], frozenset(FOUR), EQUITY)
     xa.publish("e8", {"USDNOK": {"long": True, "short": False}}, source="test",
-               key=xa.account_key("e8-test", "tl"))
+               key=xa.account_key(7000201, "tl"))
     adapter._run_family(ns, {"armed": True}, [sleeve], EQUITY)
     assert len(venue.sent) == 1
     book, _ = xa.read_book("fusion")
@@ -982,7 +982,7 @@ def _e8_harness(monkeypatch, tmp_path, fusion_positions=(), fusion_orders=(),
         def __init__(self) -> None:
             super().__init__()
             self.placed: list[tuple] = []
-            self._raw_api = SimpleNamespace(acc_id=31337)
+            self._raw_api = SimpleNamespace(acc_id=31337, _credentials={"server": "E8-Test"})
 
         def place_stop(self, symbol, side, lot, *, price, stop, take_profit):
             self.placed.append((side, lot))
@@ -1132,8 +1132,7 @@ def test_a_book_names_its_account_hashed_and_a_wrong_or_unnamed_one_is_refused()
     doc.pop("account_key")
     xa.book_path("fusion").write_text(json.dumps(doc), encoding="utf-8")
     assert xa.read_book("fusion")[0] is None
-    with pytest.raises(ValueError):
-        xa.account_key(None, SERVER)
+    assert xa.account_key(None, SERVER) is None          # r7: unresolvable is None, fail closed
 
 
 def test_the_e8_gold_retry_goes_through_the_fence_and_the_lock() -> None:
@@ -1147,7 +1146,7 @@ def test_the_e8_gold_retry_goes_through_the_fence_and_the_lock() -> None:
     m = SimpleNamespace(account_info=lambda: SimpleNamespace(login=LOGIN, server=SERVER),
                         positions_get=lambda: (SimpleNamespace(symbol="XAUUSD", type=1),),
                         orders_get=lambda: ())
-    v = SimpleNamespace(_by_key={"XAUUSD": 6102}, _raw_api=SimpleNamespace(acc_id=7),
+    v = SimpleNamespace(_by_key={"XAUUSD": 6102}, _raw_api=SimpleNamespace(acc_id=7, _credentials={"server": "E8-Test"}),
                         positions=lambda: [], orders=lambda: [])
     doc: dict = {}
     res, why = g.fenced_send(m, v, doc, holder="t", side="buy_stop",
@@ -1244,7 +1243,7 @@ def test_the_account_key_value_is_checked_not_only_its_presence(key) -> None:
 
 
 def test_a_declared_e8_account_binds_the_e8_book(tmp_path, monkeypatch) -> None:
-    mine, other = xa.account_key("e8-acc", "tl"), xa.account_key("e8-other", "tl")
+    mine, other = xa.account_key(7000202, "tl"), xa.account_key(7000203, "tl")
     decl = tmp_path / "E8_ACCOUNT.json"
     monkeypatch.setattr(xa, "E8_ACCOUNT_FILE", decl)
     assert xa.expected_key("e8") is None                       # undeclared: format only
@@ -1321,7 +1320,7 @@ def test_a_hung_e8_send_releases_the_lock_and_is_a_failed_send(monkeypatch) -> N
                            orders_get=lambda symbol=None: (),
                            account_info=lambda: SimpleNamespace(login=LOGIN, server=SERVER))
     venue = SimpleNamespace(_by_key={"XAUUSD": 6102}, positions=lambda: [], orders=lambda: [],
-                            _raw_api=SimpleNamespace(acc_id=31337))
+                            _raw_api=SimpleNamespace(acc_id=31337, _credentials={"server": "E8-Test"}))
     lock = xa.XACCT_DIR / "placement.lock"
     t0 = time.monotonic()
     with pytest.raises(xa.LockedCallTimeout):

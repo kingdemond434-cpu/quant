@@ -35,7 +35,13 @@ break that the OS refuses (Windows WinError 5/32 on a file another process holds
 until that deadline, never spun on. Stop management never takes this lock.
 
 THE BOOKS NAME THEIR ACCOUNT, HASHED (`account_key`): a book of the wrong account is refused. The
-key is a truncated SHA-256 of "<login>@<server>", never the login itself, and no log line or
+key is the desk's ONE account key, `libs.ops.provenance.account_key` (publish_sync v5/v5c: a keyed
+HMAC of "<login>@<server>" under the box key, login and server normalised inside it) -- this
+module never hashes on its own (auditor key-join ruling, r7). Where that function cannot be
+imported, or returns None (no box key, an unreadable login, a TradeLocker server that cannot be
+read), the key is UNRESOLVABLE and the fence FAILS CLOSED: no book is published, and a declared
+account whose key cannot be resolved refuses every book -- an unresolvable key never reads as
+"the other account holds nothing". It is never the login itself, and no log line or
 report prints it. Its VALUE is checked, not only its presence: it must be exactly
 `sha256:<16 hex>` (`KEY_RE`), and when the box declares an account (Fusion's login in the
 gitignored FUSION_LIVE_ACCOUNT.json; E8's key in the gitignored `E8_ACCOUNT_FILE`) a book of any
@@ -52,7 +58,6 @@ Pure functions over readings, plus small atomic file helpers. Never sends anythi
 from __future__ import annotations
 
 import contextlib
-import hashlib
 import json
 import os
 import re
@@ -127,14 +132,31 @@ def same_instrument(a: str, b: str) -> bool:
     return a == b or (min(len(a), len(b)) >= 6 and (a.startswith(b) or b.startswith(a)))
 
 
-def account_key(login: object, server: object) -> str:
-    """A truncated SHA-256 of "<login>@<server>": names the account in a book without carrying
-    the login. RAISES on an unreadable login or server: a book of an unnamed account is no
-    book."""
-    if login in (None, "") or isinstance(login, bool) or server in (None, ""):
-        raise ValueError("the account's login or server is unreadable")
-    return "sha256:" + hashlib.sha256(
-        f"{norm_login(login)}@{str(server).strip()}".encode()).hexdigest()[:16]
+def account_key(login: object, server: object) -> str | None:
+    """The account's key, from the desk's ONE key function `libs.ops.provenance.account_key`
+    (which normalises the login and strips the server itself), or None -- UNRESOLVABLE, and every
+    caller fails closed on it. None when provenance cannot be imported (a tree without
+    publish_sync v5), when it returns None (no box key, an unreadable login), raises, or returns
+    anything but `sha256:<16 hex>`. There is NO local hash to fall back to: two functions that
+    hash one account two ways are how keys stop joining (auditor key-join ruling, r7)."""
+    prov = _provenance()
+    if prov is None:
+        return None
+    try:
+        key = prov.account_key(login, server, create=False)
+    except Exception:
+        return None
+    return key if valid_key(key) else None
+
+
+def _provenance() -> Any:
+    """`libs.ops.provenance`, imported at call time (so a box that gains it needs no restart of
+    this module's importers' logic), or None when it is not importable."""
+    try:
+        from libs.ops import provenance as prov
+    except Exception:
+        return None
+    return prov if callable(getattr(prov, "account_key", None)) else None
 
 
 def norm_login(login: object) -> str:
@@ -151,31 +173,108 @@ def norm_login(login: object) -> str:
 
 
 def mt5_account_key(mt5: Any) -> str:
+    """The MT5 terminal's account key. RAISES when it is unresolvable (every caller fails closed
+    on the exception: no book is read as this account's, none is published)."""
     acc = mt5.account_info()
     if acc is None:
         raise ValueError("the MT5 terminal did not answer account_info")
-    return account_key(getattr(acc, "login", None), getattr(acc, "server", None))
+    key = account_key(getattr(acc, "login", None), getattr(acc, "server", None))
+    if key is None:
+        raise ValueError("the MT5 account key is unresolvable (libs.ops.provenance absent, no "
+                         "box key, or an unreadable login); fail closed")
+    return key
 
 
-def tradelocker_account_key(venue: Any) -> str:
-    """The TradeLocker account: the SDK's account id, else the credentials' user on its server."""
+#: Why an E8 key is unresolvable (the statuses of bracket v5.1's `prop/e8_evidence`).
+TL_OK, TL_LOGIN_UNREADABLE, TL_SERVER_UNREADABLE, TL_KEY_UNAVAILABLE = (
+    "OK", "LOGIN_UNREADABLE", "SERVER_UNREADABLE", "KEY_UNAVAILABLE")
+#: The alert a missing E8 server or login opens in the desk's alert ledger
+#: (`libs.ops.alert_ledger.AlertLedger`, the path bracket v5.1's e8_evidence pages through).
+TL_ALERT_ID = "xacct_e8_account_key_unresolvable"
+ALERT_LEDGER_ENV = "E8_ALERT_LEDGER"
+ALERT_LEDGER = _DESK.parent.parent / "data" / "alert_ledger.json"
+
+
+def _tl_api(venue: Any) -> Any:
     api = getattr(venue, "_raw_api", None)
-    if api is None:
-        try:
-            api = venue._api
-        except Exception:
-            api = None
-    server = None
-    creds = getattr(venue, "_creds", None)
-    if creds is not None:
-        server = getattr(creds, "server", None)
-    for attr in ("acc_id", "account_id", "acc_num"):
-        v = getattr(api, attr, None)
-        if v not in (None, "") and not isinstance(v, bool):
-            return account_key(v, server or "tradelocker")
-    if creds is not None and getattr(creds, "username", None):
-        return account_key(creds.username, server or "tradelocker")
-    raise ValueError("the TradeLocker venue names no account")
+    if api is not None:
+        return api
+    try:
+        return venue._api
+    except Exception:
+        return None
+
+
+def tradelocker_identity(venue: Any) -> tuple[Any, str | None, str]:
+    """(login, server, status) of the E8 account, by EXACTLY bracket v5.1's `e8_evidence` rule,
+    so an OCO book, an evidence row and a stop exit key one account one way:
+
+      * login: TLAPI `account_id`, else `acc_id` (None, "", "0" and bools skipped), as the SDK
+        holds it (`provenance.account_key` normalises it). NEVER `acc_num`: it is the account's
+        index on the user (1, 2, ...), not its id.
+      * server: `api._credentials["server"]` (TLAPI 0.56.2 keeps {"username", "password",
+        "server"}; only the server is read). NEVER `api.server` (TLAPI has none: it reads None),
+        never the venue's `_creds.server`, never a "tradelocker" default.
+
+    Never raises."""
+    try:
+        api = _tl_api(venue)
+        login = None
+        for attr in ("account_id", "acc_id"):
+            v = getattr(api, attr, None)
+            if v is None or isinstance(v, bool) or str(v).strip() in ("", "0"):
+                continue
+            login = v
+            break
+        creds = getattr(api, "_credentials", None)
+        server = creds.get("server") if isinstance(creds, dict) else None
+        server = server.strip() if isinstance(server, str) and server.strip() else None
+    except Exception:
+        return None, None, TL_LOGIN_UNREADABLE
+    if login is None:
+        return None, server, TL_LOGIN_UNREADABLE
+    if server is None:
+        return login, None, TL_SERVER_UNREADABLE
+    return login, server, TL_OK
+
+
+def _page_unresolvable(status: str) -> str | None:
+    """Open the `TL_ALERT_ID` alert in the desk's alert ledger: the E8 key cannot be resolved
+    because the venue named no server or no login. Names no value. Never raises."""
+    try:
+        from libs.ops.alert_ledger import AlertLedger
+        ledger = AlertLedger(Path(os.environ.get(ALERT_LEDGER_ENV) or ALERT_LEDGER))
+        ledger.observe(TL_ALERT_ID, f"[cross_account] E8 account key unresolvable: {status}; "
+                       "the cross-account fence fails closed (no new gold leg on either "
+                       "account against an unresolvable key)", scope="RUNTIME")
+        ledger.save()
+        return "OPEN"
+    except Exception:
+        return None
+
+
+def tradelocker_key_status(venue: Any) -> tuple[str | None, str]:
+    """(the E8 account key or None, status). The key is
+    `libs.ops.provenance.account_key(login, server, create=False)` on `tradelocker_identity`'s
+    login and server; a missing login or server PAGES and is None (fail closed). Never raises."""
+    login, server, status = tradelocker_identity(venue)
+    if status != TL_OK:
+        _page_unresolvable(status)
+        return None, status
+    prov = _provenance()
+    if prov is None:
+        return None, TL_KEY_UNAVAILABLE
+    try:
+        key = prov.account_key(login, server, create=False)
+    except Exception:
+        return None, TL_KEY_UNAVAILABLE
+    return (key, TL_OK) if valid_key(key) else (None, TL_KEY_UNAVAILABLE)
+
+
+def tradelocker_account_key(venue: Any) -> str | None:
+    """The E8 (TradeLocker) account key, or None -- UNRESOLVABLE, and every caller fails closed
+    (`publish` refuses a None key, so the E8 book ages and its reader refuses it)."""
+    return tradelocker_key_status(venue)[0]
 
 
 def valid_key(key: object) -> bool:
@@ -201,9 +300,14 @@ def expected_key(account: str) -> str | None:
     try:
         from mt5desk import decision_core as _dc
         login, _ = _dc.fusion_live_login()
-        return account_key(login, _dc.FUSION_LIVE_SERVER) if login is not None else None
     except Exception:
         return None
+    if login is None:
+        return None
+    # A DECLARED login whose key cannot be resolved is an INVALID sentinel, never "undeclared":
+    # None here would skip the key check and let any book read as Fusion's (r7 key-join ruling).
+    return account_key(login, _dc.FUSION_LIVE_SERVER) or \
+        "invalid:the declared Fusion login's key is unresolvable (libs.ops.provenance or box key)"
 
 
 def book_path(account: str) -> Path:
@@ -331,7 +435,8 @@ def publish(account: str, exposure: Exposure, *, source: str, key: str,
         raise RuntimeError("this publish's bounded call timed out; its lock is released, so it "
                            "may not write")
     if not valid_key(key):
-        raise ValueError("a book must carry a valid account key")
+        raise ValueError("a book must carry a valid account key (an unresolvable key publishes "
+                         "nothing; the reader then fails closed on age)")
     want = expected_key(account)
     if want is not None and key != want:
         raise ValueError(f"the {account} venue is not on the account this box declares; "

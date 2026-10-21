@@ -551,7 +551,7 @@ def test_a_timed_out_send_holds_its_symbol_on_the_other_accounts_reading() -> No
 
 
 def test_an_abandoned_publish_never_writes() -> None:
-    key = xa.account_key("conftest-fusion", "test")
+    key = xa.account_key(7000101, "test")
     go = threading.Event()
 
     def late() -> None:
@@ -791,12 +791,10 @@ def test_every_account_key_call_normalises_the_login_to_one_type() -> None:
     assert k == xa.account_key("7000001", "FusionMarkets-Live") \
         == xa.account_key(" 7000001 ", " FusionMarkets-Live ") \
         == xa.account_key(7000001.0, "FusionMarkets-Live")
-    # Unchanged for an int login: no key the box already declared moves because of this.
-    import hashlib
-    assert k == "sha256:" + hashlib.sha256(b"7000001@FusionMarkets-Live").hexdigest()[:16]
-    assert xa.account_key("trader", "tl") != xa.account_key("trader2", "tl")
-    with pytest.raises(ValueError):
-        xa.account_key(True, "x")
+    assert xa.valid_key(k) and xa.account_key(7000002, "FusionMarkets-Live") != k
+    # r7: a username, a bool or None is no login -- None (unresolvable, fail closed), never raise.
+    assert xa.account_key("trader", "tl") is None and xa.account_key(True, "x") is None
+    assert xa.account_key(None, "x") is None
 
 
 # ------------------------------------------------------------------------------ r7 must-fixes
@@ -920,3 +918,194 @@ def test_the_watchdog_releases_the_singleton_before_the_successor(tmp_path, monk
     assert order == ["release 1234", "spawn", "exit 70"]
     src = (_DESK / "research" / "gateway_resident.py").read_text("utf-8")
     assert "_HANDLE = handle" in src
+
+
+# ------------------------------------------------- r7 additions: the one account key (auditor)
+
+def _prov_module(calls: list | None = None):
+    """A provenance stand-in that records how it is called (the v5c signature)."""
+    import types
+
+    def account_key(login, server, *, create=False):
+        if calls is not None:
+            calls.append((login, server, create))
+        if login is None or isinstance(login, bool) or not str(login).strip().isdigit():
+            return None
+        return "sha256:" + format(abs(hash((int(str(login).strip()), str(server).strip()))),
+                                  "016x")[:16]
+
+    mod = types.ModuleType("libs.ops.provenance")
+    mod.account_key = account_key
+    return mod
+
+
+def _tl_venue(*, credentials: object = None, server_attr: object = "NOT-THIS", **ids):
+    api = SimpleNamespace(server=server_attr, **ids)
+    if credentials is not None:
+        api._credentials = credentials
+    return SimpleNamespace(_raw_api=api, _creds=SimpleNamespace(server="NOR-THIS"))
+
+
+def test_every_account_key_delegates_to_provenance_and_never_hashes_alone(monkeypatch) -> None:
+    """Key-join ruling 1: cross_account.account_key and tradelocker_account_key are
+    provenance.account_key; with provenance not importable both are None (fail closed), never
+    a local sha256."""
+    import libs.ops as ops
+    calls: list = []
+    mod = _prov_module(calls)
+    monkeypatch.setitem(sys.modules, "libs.ops.provenance", mod)
+    monkeypatch.setattr(ops, "provenance", mod, raising=False)
+    assert xa.account_key(7000001, " Srv ") == mod.account_key(7000001, " Srv ")
+    assert calls[0] == (7000001, " Srv ", False)          # normalised INSIDE provenance
+    v = _tl_venue(credentials={"username": "u", "password": "p", "server": "E8-Live"},
+                  account_id=4242)
+    assert xa.tradelocker_account_key(v) == mod.account_key(4242, "E8-Live")
+    # Not importable: None, and no book can be published under it.
+    monkeypatch.setitem(sys.modules, "libs.ops.provenance", None)
+    monkeypatch.delattr(ops, "provenance", raising=False)
+    assert xa.account_key(7000001, "Srv") is None
+    assert xa.tradelocker_account_key(v) is None
+    with pytest.raises(ValueError):
+        xa.publish("e8", {}, source="t", key=xa.tradelocker_account_key(v))
+    src = (_DESK / "mt5desk" / "cross_account.py").read_text("utf-8")
+    assert "import hashlib" not in src and "hashlib.sha256(" not in src
+
+
+def test_the_e8_server_is_tlapi_credentials_only_and_a_missing_one_pages(monkeypatch,
+                                                                       tmp_path) -> None:
+    """Key-join ruling 2: the server is TLAPI 0.56.2's `_credentials["server"]`, never
+    `api.server`, `_creds.server` or a "tradelocker" default; missing -> None and a page."""
+    ledger = tmp_path / "alert_ledger.json"
+    monkeypatch.setenv("E8_ALERT_LEDGER", str(ledger))
+    good = _tl_venue(credentials={"server": " E8-Live "}, acc_id=31337)
+    assert xa.tradelocker_identity(good) == (31337, "E8-Live", xa.TL_OK)
+    assert xa.tradelocker_account_key(good) == xa.account_key(31337, "E8-Live")
+    assert not ledger.exists()
+    for creds in (None, {}, {"server": ""}, {"server": None}, SimpleNamespace(server="E8")):
+        v = _tl_venue(credentials=creds, acc_id=31337)
+        login, server, status = xa.tradelocker_identity(v)
+        assert server is None and status == xa.TL_SERVER_UNREADABLE, creds
+        assert xa.tradelocker_account_key(v) is None
+    doc = json.loads(ledger.read_text("utf-8"))
+    assert xa.TL_ALERT_ID in json.dumps(doc)
+    assert "31337" not in ledger.read_text("utf-8")            # the page names no value
+    # acc_num is an index, never the id.
+    v = _tl_venue(credentials={"server": "E8-Live"}, acc_num=1)
+    assert xa.tradelocker_identity(v)[2] == xa.TL_LOGIN_UNREADABLE
+    assert xa.tradelocker_account_key(v) is None
+
+
+def test_an_unresolvable_key_never_reads_as_a_flat_other_book(monkeypatch) -> None:
+    """Key-join ruling 3: a DECLARED Fusion login whose key cannot be resolved refuses the Fusion
+    book (it used to read as "undeclared" and skip the check), so the fence fails closed with a
+    reason; an E8 venue with no server publishes nothing, so its book ages and is refused."""
+    import libs.ops as ops
+    from mt5desk import decision_core as _dc
+    _dc.FUSION_ACCOUNT_FILE.write_text(json.dumps({"login": 7000101,
+                                                   "server": _dc.FUSION_LIVE_SERVER}), "utf-8")
+    xa.publish("fusion", {}, source="t", key=xa.account_key(7000101, _dc.FUSION_LIVE_SERVER))
+    assert xa.read_book("fusion")[0] == {}                  # resolvable: joins, reads flat
+    monkeypatch.setitem(sys.modules, "libs.ops.provenance", None)
+    monkeypatch.delattr(ops, "provenance", raising=False)
+    assert str(xa.expected_key("fusion")).startswith("invalid:")
+    book, why = xa.read_book("fusion")
+    assert book is None and "another account" in why
+    block = xa.opposite_block(book, "XAUUSD", "buy_stop", account="fusion", why_absent=why)
+    assert block and "fail closed" in block
+    m = SimpleNamespace(account_info=lambda: SimpleNamespace(login=7000101,
+                                                             server=_dc.FUSION_LIVE_SERVER),
+                        positions_get=lambda symbol=None: (), orders_get=lambda symbol=None: ())
+    book, why = xa.mt5_book_checked(m)
+    assert book is None and "unresolvable" in why
+    venue = SimpleNamespace(_by_key={"XAUUSD": 6102}, positions=lambda: [], orders=lambda: [],
+                            _raw_api=SimpleNamespace(acc_id=31337))     # no _credentials
+    with pytest.raises(ValueError):
+        xa.publish_tradelocker(venue, source="t")
+
+
+def test_e8_gold_writes_a_reasoned_row_when_the_fusion_key_is_unresolvable(monkeypatch,
+                                                                         tmp_path) -> None:
+    """Ruling 3 end to end on E8-Gold: no new gold leg, and a RAIL_BLOCKED row that says why."""
+    import libs.ops as ops
+    import test_fusion_minlot_book as mb
+    monkeypatch.setitem(sys.modules, "libs.ops.provenance", None)
+    monkeypatch.delattr(ops, "provenance", raising=False)
+    doc, venue, intents = mb._e8_harness(monkeypatch, tmp_path)
+    assert venue.placed == [] and doc["placed"] == []
+    rows = [r for r in intents if r.get("rail") == "cross_account_opposite"]
+    assert rows and all("fail closed" in r["why"] for r in rows)
+
+
+def test_the_same_fake_tlapi_keys_identically_through_both_rules(monkeypatch) -> None:
+    """cross_account's E8 identity is bracket v5.1's e8_evidence rule (8fe4edce): one fake TLAPI
+    object, one key, through both. Compared against prop.e8_evidence when the tree has it, and
+    always against the v5.1 rule reproduced verbatim below."""
+    import libs.ops as ops
+    mod = _prov_module()
+    monkeypatch.setitem(sys.modules, "libs.ops.provenance", mod)
+    monkeypatch.setattr(ops, "provenance", mod, raising=False)
+
+    def v51_key(venue):                     # e8_evidence.account_key_status, v5.1, verbatim rule
+        api = getattr(venue, "_raw_api", None)
+        api = api if api is not None else getattr(venue, "_api", None)
+        login = None
+        for attr in ("account_id", "acc_id"):
+            v = getattr(api, attr, None)
+            if v is None or isinstance(v, bool) or str(v).strip() in ("", "0"):
+                continue
+            login = v
+            break
+        creds = getattr(api, "_credentials", None)
+        server = creds.get("server") if isinstance(creds, dict) else None
+        server = server.strip() if isinstance(server, str) and server.strip() else None
+        if login is None or server is None:
+            return None
+        return mod.account_key(login, server, create=False)
+
+    cases = [_tl_venue(credentials={"server": "E8-Live"}, account_id=5, acc_id=9, acc_num=1),
+             _tl_venue(credentials={"server": " E8-Live "}, account_id="0", acc_id="77"),
+             _tl_venue(credentials={"server": "E8-Live"}, acc_num=3),
+             _tl_venue(credentials=None, account_id=5)]
+    try:
+        from prop import e8_evidence as ev
+    except ImportError:
+        ev = None
+    for v in cases:
+        assert xa.tradelocker_account_key(v) == v51_key(v)
+        if ev is not None and hasattr(ev, "account_key"):
+            assert xa.tradelocker_account_key(v) == ev.account_key(v)
+    assert xa.tradelocker_account_key(cases[0]) == mod.account_key(5, "E8-Live")
+
+
+def test_no_venue_reason_or_heat_cap_note_carries_a_login(tmp_path, monkeypatch) -> None:
+    """Coordinator ruling: the venue-bar and heat-cap reasons name the account by its HMAC key,
+    or "declared prop account" -- never "<login>@<server>" or the bare login."""
+    import re
+
+    import libs.ops as ops
+    from mt5desk import account_profile as ap
+    login, server = 9123457, "E8-Server-01"
+    acc = {"login": login, "server": server, "kind": "LIVE"}
+    p = tmp_path / Path(*ap.DECLARATIONS_REL.split("/"))
+    p.parent.mkdir(parents=True, exist_ok=True)
+    pattern = re.compile(rf"{login}|\d{{5,}}@\S+")
+    for prov in (_prov_module(), None):
+        monkeypatch.setitem(sys.modules, "libs.ops.provenance", prov)
+        if prov is None:
+            monkeypatch.delattr(ops, "provenance", raising=False)
+        else:
+            monkeypatch.setattr(ops, "provenance", prov, raising=False)
+        reasons = []
+        for decl in ({f"{login}@{server}": "e8-pro-v2"}, {f"{login}@{server}": "no-such"},
+                     {"1@other": "e8-pro-v2"}):
+            p.write_text(json.dumps({"accounts": decl}), "utf-8")
+            cap, why = ap.venue_heat_cap(acc, tmp_path)
+            reasons.append(why)
+            _, note = dc.cap_by_heat([{"name": f"s{i}", "q": 0.05} for i in range(4)], 10_000.0,
+                                     per_sleeve_q=0.05, allocation=(0.20, "measured"),
+                                     venue_cap=(0.015 if cap is None else cap, why))
+            reasons.append(note or "")
+        for r in reasons:
+            assert not pattern.search(r), r
+        label = "account sha256:" if prov is not None else "declared prop account"
+        assert all(label in r for r in reasons[::2]), reasons
