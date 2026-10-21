@@ -3641,18 +3641,44 @@ def close_refused_sleeve_ttls(st: dict, sleeves: list[dict]) -> None:
             continue
         tag = order_comment(str(name))
         if tag in roster_tags:
-            log(f"[{name}] OFF-ROSTER TTL skipped: its tag {tag!r} is shared with a roster sleeve")
-            srec.pop("open_ttl_until", None)
+            # THE DEADLINE IS KEPT (audit, 2026-10-13): dropping it made the twin's position
+            # unclosable by this loop for good. The shared tag's live row closes by that tag at its
+            # own deadline; this logs once, not every pass.
+            if not srec.get("ttl_shared_tag_logged"):
+                log(f"[{name}] OFF-ROSTER TTL deferred: its tag {tag!r} is shared with a roster "
+                    "sleeve; deadline kept")
+                srec["ttl_shared_tag_logged"] = True
             continue
-        held = [p for p in (mt5.positions_get() or [])
-                if str(getattr(p, "comment", "") or "") == tag]
+        # A FAILED READ IS NOT AN EMPTY BOOK (audit, 2026-10-14): `positions_get()` returns
+        # None when the terminal cannot answer, and reading that as "none of this tag" dropped
+        # the deadline with the position still open -- the orphan this loop exists to close.
+        book = mt5.positions_get()
+        if book is None:
+            log(f"[{name}] OFF-ROSTER TTL: venue positions unreadable; deadline kept")
+            continue
+        held = [p for p in book if str(getattr(p, "comment", "") or "") == tag]
+        armed = bool(st.get("armed") and GENERIC_EXEC_ENABLED.exists())
         for symbol in sorted({str(p.symbol) for p in held}):
             _book_target(str(name), symbol, 0.0, "ttl")
-            if st.get("armed") and GENERIC_EXEC_ENABLED.exists():
+            if armed:
                 log(f"[{name}] OFF-ROSTER TTL: closing its {symbol} position(s)")
                 close_sleeve_positions(st, symbol, str(name))
             else:
                 log(f"[{name}] SHADOW would TTL-close off-roster position(s) on {symbol}")
+        if armed and held:
+            # A CLOSE THAT DID NOT LAND KEEPS THE DEADLINE (audit, 2026-10-13): 10018 on a
+            # weekend TTL, or no tick, left the position open with nothing left to close it.
+            # The deadline goes only once the venue holds none of this tag.
+            after = mt5.positions_get()
+            if after is None:
+                log(f"[{name}] OFF-ROSTER TTL: venue positions unreadable after the close; "
+                    "deadline kept for the next pass")
+                continue
+            left = [p for p in after if str(getattr(p, "comment", "") or "") == tag]
+            if left:
+                log(f"[{name}] OFF-ROSTER TTL: {len(left)} position(s) still open after the "
+                    "close; deadline kept for the next pass")
+                continue
         srec.pop("open_ttl_until", None)
 
 
