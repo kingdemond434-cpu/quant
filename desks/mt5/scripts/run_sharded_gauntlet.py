@@ -1568,6 +1568,50 @@ def _published_env() -> dict[str, str]:
 _LAUNCH: dict[str, dict[str, str]] = {}
 
 
+#: ONE BLAS THREAD PER JUDGE PROCESS -- OFF BY DEFAULT, A SEALED-CLASS CHANGE (2026-10-20).
+#: Evidence for it (merge-scaling worker): with 18 cores busy and 14 judge workers each starting a
+#: full OpenBLAS pool, `eigvalsh(2500)` measured 16-18 s against 1.4 s single-threaded and a
+#: 10k-cell merge 61.6 s against 6.95 s.
+#: Why it is OFF (auditor ruling, 2026-10-20): eigvalsh's last bits differ at 1, 2 and 4 threads,
+#: and the trial census in mt5desk/canonical.py uses that eigvalsh; its ceil'd ratio feeds the
+#: sealed DSR effective-trial charge. So the thread count is not provably verdict-neutral and can
+#: change trial charging. The gauntlet-speed harness batches came back byte-identical at 1, 4 and
+#: 18 threads, but that is not a proof for every docket.
+#: It is armed ONLY by the switch file holding exactly {"enabled": true}. Before anyone arms it:
+#: a byte-compare of verdicts on a recorded sweep at 1 thread against default threads, and
+#: zuck's sign. With the file absent, unreadable or holding anything else the env is untouched,
+#: byte-identical to today. A thread count the operator exported by hand always wins.
+BLAS_SWITCH = DESK / "data" / "JUDGE_BLAS_SINGLE_THREAD.json"
+BLAS_THREAD_VARS = ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS")
+
+
+def _no_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    keys = [k for k, _ in pairs]
+    if len(keys) != len(set(keys)):
+        raise ValueError("duplicate key in the BLAS switch file")
+    return dict(pairs)
+
+
+def _blas_single_thread_armed(path: Path | None = None) -> bool:
+    """Armed ONLY by exactly {"enabled": true}: one key, the JSON literal true (`is True`, so 1,
+    1.0 and "true" do not arm it), and no duplicate keys (so a later `true` cannot hide behind an
+    earlier `false`). Anything else, or no file, is OFF."""
+    try:
+        doc = json.loads(Path(path or BLAS_SWITCH).read_text("utf-8"),
+                         object_pairs_hook=_no_duplicate_keys)
+    except (OSError, ValueError):
+        return False
+    return isinstance(doc, dict) and set(doc) == {"enabled"} and doc["enabled"] is True
+
+
+def _blas_env(env: dict[str, str], path: Path | None = None) -> dict[str, str]:
+    """Pin the sweep child's (the merge's) and its shards' BLAS pools to 1, only when armed."""
+    if _blas_single_thread_armed(path):
+        for k in BLAS_THREAD_VARS:
+            env.setdefault(k, "1")
+    return env
+
+
 def _sweep_env() -> dict[str, str]:
     """The env for the next sweep: the launch env with judging_throughput's LATEST numbers.
 
@@ -1583,7 +1627,7 @@ def _sweep_env() -> dict[str, str]:
         launched = _LAUNCH["proc"].get(k)
         if launched is None or launched == _LAUNCH["file"].get(k):
             env[k] = v
-    return env
+    return _blas_env(env)
 
 
 def _hang_limit_s(longest_sweep_s: float | None, consecutive_hangs: int = 0,
@@ -1738,11 +1782,17 @@ def _one_sweep_child(hang_s: float | None = None, *, poll_s: float = 60.0,
     """
     flags = 0
     if sys.platform == "win32":
-        # BELOW_NORMAL is the Task Scheduler's default priority (7) for MT5-Gauntlet, so the
-        # child keeps exactly the standing the judge has now: miners are never displaced by it.
-        flags = getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
+        # EQUAL TO THE MINERS, NEVER ABOVE (principal, 2026-10-20). The sweep child IS the judge's
+        # serial merge, so its class is the one that decides whether the merge gets a fair share.
+        # `judge_priority` measures every miner's class with psutil and returns the LOWEST of
+        # them (capped strictly below the live E8 clocks and at NORMAL); on any failure or an
+        # unmeasured census it returns BELOW_NORMAL -- the Task Scheduler's Priority 7 and
+        # exactly what this line hard-coded before. The shards inherit the child's class.
+        flags = _judge_flags()
     child = subprocess.Popen([sys.executable, "-u", str(Path(__file__).resolve()), "--once"],
                              cwd=DESK, env=_sweep_env(), creationflags=flags)
+    if sys.platform == "win32":
+        _record_launch_raise(flags, child.pid)
     sample = sampler or _sample_tree
     t0, wall0 = clock(), wall()
     tracker = _TreeProgress(t0, max_gap_s=(3.0 * poll_s) if poll_s > 0 else None)
@@ -1785,6 +1835,255 @@ def _one_sweep_child(hang_s: float | None = None, *, poll_s: float = 60.0,
         # Recorded here, so the next sweep's takeover does not re-report it as unrecorded.
         _write_json_atomic(HEARTBEAT, {**hb, "status": "KILLED_BY_RESIDENT", "why": why})
     return RESIDENT_HANG_RC
+
+
+#: The judge's priority decision for the last sweep child, published for the census.
+JUDGE_PRIORITY_DECISION = DESK / "reports" / "JUDGE_PRIORITY_SWEEP.json"
+
+
+def _judge_flags() -> int:
+    """The creation flag for the next sweep child (see `_one_sweep_child`). Never raises."""
+    import subprocess
+    fallback = int(getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0x4000))
+    try:
+        from scripts.judge_priority import sweep_creationflags
+        flags, reading = sweep_creationflags()
+    except Exception as exc:
+        flags, reading = fallback, {"target": {"status": "UNMEASURED",
+                                               "why": f"{type(exc).__name__}: {exc}"}}
+    _publish_priority("launcher", {"creationflags": int(flags), **reading})
+    return int(flags)
+
+
+def _record_launch_raise(flags: int, pid: int,
+                         revert: Callable[[dict[str, Any]], None] | None = None) -> dict[str, Any]:
+    """A child STARTED above BELOW_NORMAL is a raise the child itself will never see (it is born
+    at its target), so the launcher publishes its missed-growth line. If that line cannot be
+    written, the raise is UNDONE (the child is set back to BELOW_NORMAL, identity-checked by its
+    start time) and the outcome is published under `launcher_line` -- a raise is never left
+    standing silently (audit HOLD of d465792f118). Never raises."""
+    out: dict[str, Any]
+    try:
+        from scripts import judge_priority as jp
+        rank = jp.CLASS_RANK.get(int(flags))
+        if rank is None or rank <= jp.CLASS_RANK[jp.BELOW_NORMAL]:
+            return {"missed_growth_lines": 0, "changed": False}
+        change = {"pid": int(pid), "from": "BELOW_NORMAL", "to": jp.RANK_NAME[rank],
+                  "applied": True, "command": "run_sharded_gauntlet.py --once",
+                  "create_time": _create_time(pid)}
+        out = jp.account([change], "launcher", revert or _launch_revert)
+        out["change"] = change
+    except Exception as exc:
+        out = {"line": "UNMEASURED", "line_error": f"{type(exc).__name__}: {exc}",
+               "changed": "UNMEASURED", "pid": pid, "flags": flags}
+    _publish_priority("launcher_line", out)
+    return out
+
+
+def _create_time(pid: int) -> float | None:
+    try:
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+        return float(psutil.Process(int(pid)).create_time())
+    except Exception:
+        return None
+
+
+#: How many times the revert re-walks the tree for a shard spawned while it ran (audit HOLD of
+#: 1235ab79c10). The child is lowered first, so from the first walk on nothing new is born raised;
+#: the passes only catch a spawn that was already under way. The tree counts as settled only
+#: after TWO consecutive walks that find nothing above BELOW_NORMAL.
+LAUNCH_REVERT_PASSES = 8
+LAUNCH_REVERT_CLEAN_WALKS = 2
+
+
+def _own_tree(root: Any) -> tuple[list[Any], list[str]]:
+    """The judge's own tree, walked parent by parent: a node counts only if it started at or
+    after ITS OWN parent (audit HOLD of 1235ab79c10: psutil's recursive children compare each
+    descendant with the root alone, so an orphan miner whose dead parent's pid a shard reused
+    would be listed). A node that fails the check is skipped together with its subtree."""
+    out: list[Any] = []
+    errors: list[str] = []
+    stack = [(root, root.create_time())]
+    while stack:
+        parent, parent_born = stack.pop()
+        try:
+            kids = parent.children(recursive=False)
+        except Exception as exc:
+            errors.append(f"{getattr(parent, 'pid', '?')}: {type(exc).__name__}: {exc}")
+            continue
+        for k in kids:
+            try:
+                born = k.create_time()
+            except Exception as exc:
+                errors.append(f"{getattr(k, 'pid', '?')}: {type(exc).__name__}: {exc}")
+                continue
+            if born < parent_born:
+                continue                  # a reused parent pid: not this tree, never touched
+            out.append(k)
+            stack.append((k, born))
+    return out, errors
+
+
+def _launch_revert(change: dict[str, Any], process: Callable[[int], Any] | None = None) -> None:
+    """Set the sweep child AND EVERY DESCENDANT back to BELOW_NORMAL (audit HOLDs of f798fe7293d
+    and 1235ab79c10: the line write may wait on its lock while the child, born raised, already
+    starts shards that inherit its class). The child must still be the process just started (its
+    start time); each descendant must have started after its own parent. The child goes first,
+    and the tree is re-walked until two walks in a row find nothing above BELOW_NORMAL. Only
+    ever LOWERS, and only the judge's own tree. Raises LookupError, after trying every process,
+    if any could not be put back or the tree never settled -- the caller then reports the raise
+    as standing (UNMEASURED line), never `changed: False`."""
+    import psutil  # type: ignore[import-untyped,unused-ignore]
+
+    from scripts import judge_priority as jp
+    make = process or psutil.Process
+    bn = int(getattr(psutil, "BELOW_NORMAL_PRIORITY_CLASS", 10))
+    p = make(int(change["pid"]))
+    born = change.get("create_time")
+    if born is None or p.create_time() != born:
+        raise LookupError("pid reused or start time unreadable: not reverted")
+    p.nice(bn)
+    done, failed = [int(change["pid"])], []
+    settled, clean = False, 0
+    for _ in range(LAUNCH_REVERT_PASSES):
+        tree, errors = _own_tree(p)
+        lowered = 0
+        failed = list(errors)
+        for d in tree:
+            try:
+                rank = jp.rank_of(d.nice())
+                if rank is None or rank > jp.CLASS_RANK[jp.BELOW_NORMAL]:
+                    d.nice(bn)
+                    lowered += 1
+                    if int(d.pid) not in done:
+                        done.append(int(d.pid))
+            except Exception as exc:
+                failed.append(f"{getattr(d, 'pid', '?')}: {type(exc).__name__}: {exc}")
+        clean = clean + 1 if not lowered and not failed else 0
+        if clean >= LAUNCH_REVERT_CLEAN_WALKS:
+            settled = True
+            break
+    change["tree_reverted"] = done
+    if failed or not settled:
+        change["tree_unreverted"] = failed or [
+            f"tree not settled in {LAUNCH_REVERT_PASSES} passes"]
+        raise LookupError(f"{len(change['tree_unreverted'])} descendant(s) could not be put "
+                          f"back: {change['tree_unreverted'][:3]}")
+
+
+#: THE BACKPRESSURE CORE, REPUBLISHED AFTER EVERY SWEEP (2026-10-20). Measured on the box:
+#: GAUNTLET_BACKPRESSURE.json was stamped 2026-10-03 on 2026-10-20 because its full build only
+#: ran as an hourly leg that timed out on every pass. The core (capacity + 24h testing rate) is
+#: seconds of work. It is started by the SWEEP CHILD as it finishes (the child loads fresh code
+#: every sweep, so an adopted release takes effect without restarting the resident launcher),
+#: DETACHED so it never costs the judge a second, and ONE AT A TIME through a pid file whose
+#: process is checked by command line, so a slow one is skipped rather than stacked and a
+#: recycled pid is never mistaken for it. Nothing here kills anything.
+BACKPRESSURE_CORE_LOCK = DESK / "data" / "gauntlet_backpressure_core.json"
+BACKPRESSURE_CORE_TIMEOUT_S = 900.0
+
+
+def _core_alive(pid: int) -> bool:
+    try:
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+        cmd = " ".join(psutil.Process(int(pid)).cmdline())
+    except Exception:
+        return False
+    return "gauntlet_backpressure.py" in cmd and "--core" in cmd
+
+
+def _core_pid_file() -> tuple[int, float] | None:
+    """The previous core's (pid, started), or None when the file is absent OR MALFORMED.
+
+    A malformed file (valid JSON, wrong shape: {"pid": "abc"}, {"pid": [1]}, "started": "x")
+    is treated as absent, so the next start simply overwrites it -- it can never wedge every
+    later sweep (audit HOLD of d465792f118)."""
+    try:
+        prev = json.loads(BACKPRESSURE_CORE_LOCK.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(prev, dict):
+        return None
+    pid, started = prev.get("pid"), prev.get("started", 0.0)
+    if isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0:
+        return None
+    if isinstance(started, bool) or not isinstance(started, (int, float)):
+        return None
+    return pid, float(started)
+
+
+def _republish_backpressure(popen: Callable[..., Any] | None = None,
+                            alive: Callable[[int], bool] = _core_alive) -> str:
+    """Start `gauntlet_backpressure.py --core` unless the previous one is still running.
+
+    Never raises: every failure is returned as "FAILED: ..." so it can never replace the sweep's
+    return code."""
+    try:
+        return _republish_backpressure_body(popen, alive)
+    except Exception as exc:
+        return f"FAILED: {type(exc).__name__}: {exc}"
+
+
+def _republish_backpressure_body(popen: Callable[..., Any] | None,
+                                 alive: Callable[[int], bool]) -> str:
+    import subprocess
+    prev = _core_pid_file()
+    if prev is not None and alive(prev[0]):
+        age = time.time() - prev[1]
+        return ("PREVIOUS_OVERDUE" if age > BACKPRESSURE_CORE_TIMEOUT_S
+                else "SKIPPED_PREVIOUS_RUNNING")
+    script = DESK / "research" / "gauntlet_backpressure.py"
+    if not script.exists():
+        return "MISSING"
+    flags = 0
+    if sys.platform == "win32":
+        flags = int(getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0x4000)) | int(
+            getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
+    log = DESK / "logs" / "gauntlet_backpressure_core.log"
+    log.parent.mkdir(parents=True, exist_ok=True)
+    with log.open("ab") as fh:
+        child = (popen or subprocess.Popen)(
+            [sys.executable, "-u", str(script), "--core"], cwd=str(DESK),
+            stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+            creationflags=flags)
+    BACKPRESSURE_CORE_LOCK.parent.mkdir(parents=True, exist_ok=True)
+    BACKPRESSURE_CORE_LOCK.write_text(json.dumps({"pid": int(child.pid),
+                                                  "started": time.time()}), "utf-8")
+    return "STARTED"
+
+
+def _equalise_self() -> dict[str, Any]:
+    """Put THIS sweep process (the serial merge) at the rule's class before any shard starts.
+
+    The resident launcher only reloads its own code when it respawns; the sweep child is a fresh
+    interpreter every sweep. So the child re-derives the rule itself and raises -- or, if it was
+    started above the miners, lowers -- its own class to the target. The shards it starts
+    afterwards inherit it. Never raises; an unmeasured target changes nothing.
+    """
+    out: dict[str, Any] = {}
+    try:
+        from scripts import judge_priority as jp
+        c = jp.census(jp.snapshot())
+        t = c["target"]
+        out.update({"target": t, "verdict_before": c["verdict"]})
+        if t.get("status") != "MEASURED":
+            return {**out, "changed": False}
+        me = os.getpid()
+        rows = [r for r in c["rows"] if int(r.get("pid") or 0) == me]
+        for r in rows:
+            r["cls"] = "judge"            # this process IS the judge whatever its argv says
+        out["changes"] = jp.equalise(rows, t["rank"], apply=True)
+        # GROWTH GOVERNANCE: an applied change (raise or lower) publishes its missed-growth
+        # line, carried into MISSED_GROWTH.json by research/missed_growth.py. If the line cannot
+        # be written the change is REVERTED (identity-checked) and the outcome is said here --
+        # never "changed: False" for a process that moved (audit HOLD of d465792f118).
+        out.update(jp.account(out["changes"], "sweep_child", jp.revert_with(rows)))
+        return out
+    except Exception as exc:
+        why = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+        moved = [c for c in out.get("changes") or [] if c.get("applied")]
+        return {**out, "error": why, "target": out.get("target", why),
+                "changed": "UNMEASURED" if moved else False}
 
 
 def _heartbeat(state: dict[str, Any], stop: threading.Event, every_s: float) -> None:
@@ -2410,11 +2709,50 @@ def _sweep_once() -> int:
         from research.judging_throughput import apply_env
 
         apply_env()
+        # EQUAL TO THE MINERS, NEVER ABOVE (judge_cpu_fair_share): before any shard starts, so
+        # every shard inherits the class. Never raises.
+        _publish_priority("child", _equalise_self())
         _phase("plan")
         rc = _sweep_logged()
         return rc
     finally:
-        dog.finish(rc)
+        # ONE finally, BOTH behaviours: the watchdog records the outcome first, then the
+        # backpressure core is republished (detached, single-instance, never raises). Neither can
+        # stop the other: the republish runs even if `finish` raised.
+        try:
+            dog.finish(rc)
+        finally:
+            # GUARDED (audit HOLD of d465792f118): nothing the republish does can replace rc.
+            with contextlib.suppress(Exception):
+                _publish_priority("backpressure_core", _republish_backpressure())
+
+
+def _publish_priority(key: str, value: Any) -> None:
+    """Merge one block into JUDGE_PRIORITY_SWEEP.json under `key`; no writer erases another's.
+
+    The launcher writes `launcher`, the sweep child `child` and `backpressure_core`. A unique
+    temporary name per writer, so two processes can never replace each other's half-written file.
+    """
+    with contextlib.suppress(OSError, TypeError, ValueError):
+        base: dict[str, Any] = {}
+        with contextlib.suppress(OSError, ValueError):
+            got = json.loads(JUDGE_PRIORITY_DECISION.read_text("utf-8"))
+            base = got if isinstance(got, dict) else {}
+        base[key] = {"value": value, "pid": os.getpid(),
+                     "at": datetime.now(UTC).isoformat(timespec="seconds")}
+        # A LINE WHOSE SIDECAR WRITE FAILED TOO is kept here, under `unspilled`, past the next
+        # overwrite of `key` -- research/missed_growth.py carries it (audit HOLD of 1235ab79c10).
+        if isinstance(value, dict) and str(value.get("spill", "")).startswith("FAILED"):
+            kept = base.get("unspilled") if isinstance(base.get("unspilled"), dict) else {}
+            old = [x for x in kept.get("missed_growth") or [] if isinstance(x, dict)]
+            base["unspilled"] = {"spill": value["spill"], "missed_growth": [
+                *old, *(x for x in value.get("missed_growth") or [] if isinstance(x, dict))
+            ][-MISSED_GROWTH_HISTORY:]}
+        JUDGE_PRIORITY_DECISION.parent.mkdir(parents=True, exist_ok=True)
+        tmp = JUDGE_PRIORITY_DECISION.with_name(
+            f"{JUDGE_PRIORITY_DECISION.name}.{os.getpid()}.{uuid4().hex[:8]}.tmp")
+        tmp.write_text(json.dumps(base, default=str), encoding="utf-8")
+        os.replace(tmp, JUDGE_PRIORITY_DECISION)
 
 
 def _sweep_logged() -> int:

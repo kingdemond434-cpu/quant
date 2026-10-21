@@ -252,6 +252,10 @@ desks/mt5/data/task_queue.jsonl
 desks/mt5/data/dsr_trial_sharpes.jsonl
 desks/mt5/data/task_queue.subs.json
 desks/mt5/data/task_queue.watermark
+# judge_cpu_fair_share: per-box caches. The cadence state records what THIS box's scheduler
+# accepted; the core pid file names a process that exists only on the machine that wrote it.
+desks/mt5/data/gauntlet_cadence_state.json
+desks/mt5/data/gauntlet_backpressure_core.json
 
 # CREDENTIALS. Never tracked. secrets/ was NOT ignored until 2026-08-17 -- a FRED API key
 # landed there and `git check-ignore` returned no match, meaning one `git add -A` would have

@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 778,
-  "UNMEASURED": 38
+  "NEVER": 779,
+  "UNMEASURED": 39
  },
  "scope": {
-  "attested": 997,
+  "attested": 999,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -363,6 +363,17 @@
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "exe:desks/mt5/scripts/judge_stall_pager.py"
+    ]
+   },
+   {
+    "at": "2026-10-21T07:15:08+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:judge_alive",
+     "library:desks/mt5/scripts/judge_priority.py"
     ]
    }
   ]
@@ -25827,6 +25838,64 @@
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
    "measured_at": "2026-10-21T01:15:10+00:00"
+  },
+  {
+   "organ": "leg:judge_alive",
+   "kind": "leg",
+   "code": [
+    "scripts/check_judge_coverage.py"
+   ],
+   "clock": "hourly_cycle:judge_alive",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/JUDGE_COVERAGE.json",
+   "artifact_declared": "desks/mt5/reports/JUDGE_COVERAGE.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 205,
+   "artifact_bytes": 214179,
+   "artifact_sha256": "208518ba8e79152f4ccb4e929461935e935db015bcb058ebc6b5871984582698",
+   "summary": {
+    "verdict": "COVERED"
+   },
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-21T07:15:08+00:00"
+  },
+  {
+   "organ": "library:desks/mt5/scripts/judge_priority.py",
+   "kind": "library",
+   "code": [
+    "desks/mt5/scripts/judge_priority.py"
+   ],
+   "clock": "import:desks/mt5/scripts/run_sharded_gauntlet.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/JUDGE_PRIORITY.json",
+   "artifact_declared": "desks/mt5/reports/JUDGE_PRIORITY.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-21T07:15:08+00:00"
   }
  ],
  "ratchet": {
