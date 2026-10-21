@@ -536,3 +536,62 @@ def test_stalled_hint_is_false_before_the_first_finish_and_true_past_the_longest
     now[0] += 61.0  # 121 s since the last finish > 120 s longest shard, two still running
     sh = runner._sweep_phase()["shards"]
     assert sh["running"] == 2 and sh["stalled_hint"] is True
+
+
+def test_a_fast_failure_never_raises_the_stalled_hint(monkeypatch):
+    """Audit should-fix 1: one shard OOMs in 3 s early in a wave while fourteen healthy shards
+    still run. The crash is not a yardstick for a healthy shard, so longest_shard_s stays
+    UNMEASURED and the hint stays false however long the healthy shards take; only a SUCCESSFUL
+    shard sets the yardstick, and a failure never lengthens it."""
+    now = [1000.0]
+    monkeypatch.setattr(runner.time, "time", lambda: now[0])
+    runner._phase("build_shards")
+    runner._shard_progress("begin", "build", total=15)
+    for _ in range(15):
+        runner._shard_progress("start", "build")
+    now[0] += 3.0
+    runner._shard_progress("failed", "build", elapsed_s=3.0)
+    now[0] += 10.0  # 10 s since the crash > its 3 s, with 14 healthy shards still running
+    sh = runner._sweep_phase()["shards"]
+    assert (sh["running"], sh["failed"], sh["done_ok"]) == (14, 1, 0)
+    assert sh["longest_shard_s"] is None
+    assert sh["stalled_hint"] is False
+    now[0] += 7200.0  # still false hours later: nothing has SUCCEEDED, so nothing is measured
+    assert runner._sweep_phase()["shards"]["stalled_hint"] is False
+
+    # the first success sets the yardstick; a later longer failure does not stretch it
+    runner._shard_progress("ok", "build", elapsed_s=600.0)
+    runner._shard_progress("failed", "build", elapsed_s=5000.0)
+    sh = runner._sweep_phase()["shards"]
+    assert sh["longest_shard_s"] == 600.0 and sh["stalled_hint"] is False
+    now[0] += 601.0
+    sh = runner._sweep_phase()["shards"]
+    assert sh["running"] == 12 and sh["stalled_hint"] is True
+
+
+def test_a_failed_publish_leaves_no_tmp_file(monkeypatch, tmp_path):
+    """Audit should-fix 2: when os.replace raises (NTFS: the destination held open by a reader,
+    or read-only), both publishers swallow it as a report and unlink their per-pid/thread tmp
+    instead of leaking it."""
+    def deny(src, dst):
+        raise PermissionError(13, "Access is denied", str(dst))
+
+    monkeypatch.setattr(runner.os, "replace", deny)
+    runner._phase("build_shards")                     # SWEEP_PHASE publisher
+    runner._shard_progress("begin", "build", total=2)
+    runner._write_state({"status": "SWEEPING"})       # RESIDENT_STATE publisher
+    assert not runner.SWEEP_PHASE.exists() and not runner.RESIDENT_STATE.exists()
+    assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_the_shard_block_declares_its_hint_report_only():
+    """Audit should-fix 4 (III.16): nothing consumes stalled_hint yet, and the published block
+    says so in data, not only in prose. The pager v4 contract fields are untouched."""
+    import json
+
+    runner._phase("rule_shards")
+    runner._shard_progress("begin", "rule", total=1)
+    doc = json.loads(runner.SWEEP_PHASE.read_text("utf-8"))
+    assert {"pid", "sweep_started_utc", "phase", "phase_started_utc"} <= set(doc)
+    assert doc["phase"] == doc["shards"]["phase"] + "_shards"
+    assert doc["shards"]["stalled_hint_authority"] == "report_only"

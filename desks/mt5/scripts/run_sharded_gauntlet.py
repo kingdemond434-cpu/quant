@@ -13,10 +13,10 @@ import os
 import sys
 import threading
 import time
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
-from collections.abc import Callable
 from typing import Any
 from uuid import uuid4
 
@@ -305,7 +305,36 @@ RESIDENT_HANG_RC = 124
 #: and publishes after `rule` returns. Each sweep child stamps the phase it is in and the seconds
 #: each finished phase took; the resident folds that into JUDGE_RESIDENT.json (published) on
 #: every heartbeat and names the phase a hung sweep was killed in.
+#:
+#: SCHEMA OF JUDGE_SWEEP_PHASE.json (also published as JUDGE_RESIDENT.json["sweep_phase"]).
+#: The pager v4 contract reads ONLY `pid`, `sweep_started_utc`, `phase`, `phase_started_utc`;
+#: those four names and meanings are fixed. Top-level `phase` is the LAUNCHER's phase name, one
+#: of plan, build_shards, collect_and_cut, rule_shards, merge_and_publish, done; `phases` maps
+#: each closed phase to the seconds it took. While a shard wave runs, `shards` is present:
+#:   shards.phase      the JUDGE's protocol phase name, "build" or "rule". It is NOT the
+#:                     top-level name: top-level `phase` == shards.phase + "_shards" while that
+#:                     wave runs (build -> build_shards, rule -> rule_shards). The judge's name is
+#:                     kept because it is what the sealed judge passes to dispatch.
+#:   total             shards in the wave (each shard index counted once).
+#:   started           child ATTEMPTS started, retries included -- not shards; can exceed total.
+#:   done_ok           child attempts that exited ok. A shard succeeds at most once, so this is
+#:                     also the count of shards done, <= total.
+#:   failed            child ATTEMPTS that failed, a shard counted once per failed attempt -- not
+#:                     shards; failed=4 beside done_ok=5 of total=6 is legal (retries succeeded).
+#:   retries           attempts with attempt index > 0.
+#:   running           attempts started and not yet exited.
+#:   last_finish_epoch/last_finish_utc   the last attempt EXIT, ok or failed.
+#:   longest_shard_s   the longest SUCCESSFUL attempt in the wave; None until one succeeds. A
+#:                     failed attempt never sets it: a shard that OOMs in 3 s says nothing about
+#:                     how long a healthy shard takes.
+#:   seconds_since_last_finish   re-derived against the clock on every read.
+#:   stalled_hint      REPORT-ONLY (III.16 declared): no organ acts on it yet; the pager does not
+#:                     read `shards`. It is true only when done_ok > 0, running > 0 and the gap
+#:                     since the last finish exceeds longest_shard_s. Never true from absence.
+#:   stalled_hint_authority   always "report_only" until a consumer is wired; a consumer must
+#:                     change this string in the same commit that starts acting on the hint.
 SWEEP_PHASE = DESK / "reports" / "JUDGE_SWEEP_PHASE.json"
+STALLED_HINT_AUTHORITY = "report_only"
 _PHASE_DOC: dict[str, Any] = {}
 #: Guards `_PHASE_DOC` and its file: dispatch stamps shard progress from concurrent children.
 _PHASE_LOCK = threading.Lock()
@@ -356,17 +385,26 @@ def _fits(elapsed: float, limit: float | None, last_sweep_s: float | None) -> bo
     return elapsed + need <= limit
 
 
+def _write_atomic(path: Path, doc: dict[str, Any]) -> None:
+    """Write `doc` to `path` through a per-pid/thread tmp and os.replace. A report only: an
+    OSError is swallowed. The tmp is unlinked in `finally`, so a failed replace (on NTFS the
+    destination held open by a reader, or read-only) never leaves one behind -- and with a
+    per-thread name, leftovers would otherwise multiply."""
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+        os.replace(tmp, path)
+    except OSError:
+        pass  # a report; judging never stops for it
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink(missing_ok=True)
+
+
 def _flush_phase_doc() -> None:
     """Atomically publish `_PHASE_DOC` to SWEEP_PHASE. Caller holds `_PHASE_LOCK`."""
-    doc = {k: v for k, v in _PHASE_DOC.items() if k != "_t"}
-    try:
-        SWEEP_PHASE.parent.mkdir(parents=True, exist_ok=True)
-        tmp = SWEEP_PHASE.with_name(
-            f"{SWEEP_PHASE.name}.{os.getpid()}.{threading.get_ident()}.tmp")
-        tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
-        os.replace(tmp, SWEEP_PHASE)
-    except OSError:
-        pass  # a phase stamp is a report; judging never stops for it
+    _write_atomic(SWEEP_PHASE, {k: v for k, v in _PHASE_DOC.items() if k != "_t"})
 
 
 def _phase(name: str) -> None:
@@ -390,10 +428,11 @@ def _phase(name: str) -> None:
 def _shard_live(shards: dict[str, Any], now: float) -> dict[str, Any]:
     """Refresh the time-derived fields of a shard-progress block against `now`.
 
-    `stalled_hint` is a HINT, never a verdict: it is true only when at least one shard has
-    finished, at least one is still running, and the gap since the last finish exceeds the
-    longest single-shard time measured so far in this phase. Nothing finished yet is
-    UNMEASURED -- the hint stays false, because a hang is never inferred from absence.
+    `stalled_hint` is a REPORT-ONLY HINT, never a verdict: it is true only when at least one
+    shard has SUCCEEDED, at least one is still running, and the gap since the last finish
+    exceeds the longest successful shard time measured so far in this phase. Nothing succeeded
+    yet is UNMEASURED -- the hint stays false, because a hang is never inferred from absence,
+    and a fast failure (an early OOM) is not a measure of how long a healthy shard runs.
     """
     out = dict(shards)
     last = out.get("last_finish_epoch")
@@ -402,7 +441,9 @@ def _shard_live(shards: dict[str, Any], now: float) -> dict[str, Any]:
     out["seconds_since_last_finish"] = since
     out["stalled_hint"] = bool(
         since is not None and isinstance(longest, (int, float))
+        and int(out.get("done_ok") or 0) > 0
         and int(out.get("running") or 0) > 0 and since > float(longest))
+    out["stalled_hint_authority"] = STALLED_HINT_AUTHORITY
     return out
 
 
@@ -433,7 +474,8 @@ def _shard_progress(event: str, phase: str, *, total: int | None = None,
                 sh["running"] = max(0, sh["running"] - 1)
                 sh["last_finish_epoch"] = now
                 sh["last_finish_utc"] = datetime.now(UTC).isoformat(timespec="seconds")
-                if elapsed_s is not None:
+                # successful attempts only: a 3 s crash must not set the yardstick (audit)
+                if event == "ok" and elapsed_s is not None:
                     sh["longest_shard_s"] = round(max(float(sh["longest_shard_s"] or 0.0),
                                                       float(elapsed_s)), 1)
             _PHASE_DOC["shards"] = _shard_live(sh, now)
@@ -460,14 +502,7 @@ def _write_state(doc: dict[str, Any]) -> None:
     doc = {**doc, "heartbeat_utc": datetime.now(UTC).isoformat(timespec="seconds")}
     if doc.get("status") == "SWEEPING":
         doc["sweep_phase"] = _sweep_phase()
-    try:
-        RESIDENT_STATE.parent.mkdir(parents=True, exist_ok=True)
-        tmp = RESIDENT_STATE.with_name(
-            f"{RESIDENT_STATE.name}.{os.getpid()}.{threading.get_ident()}.tmp")
-        tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
-        os.replace(tmp, RESIDENT_STATE)
-    except OSError:
-        pass  # the heartbeat is a report; judging never stops for it
+    _write_atomic(RESIDENT_STATE, doc)  # the heartbeat is a report; judging never stops for it
 
 
 def _published_env() -> dict[str, str]:
