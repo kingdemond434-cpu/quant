@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-21T04:01:00.393379+00:00",
+  "swept_at": "2026-10-21T04:15:26.580778+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -262,7 +262,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.047,
+      "shadow_exp_r": 0.0506,
       "woke_on_shadow": false
     },
     "AUDSGD|pca_residual_asia": {
@@ -625,7 +625,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 48,
-      "shadow_exp_r": 0.1968,
+      "shadow_exp_r": 0.1947,
       "woke_on_shadow": false
     },
     "CHFDKK|formula_continuous": {
@@ -702,7 +702,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 16,
-      "shadow_exp_r": 0.3266,
+      "shadow_exp_r": 0.3205,
       "woke_on_shadow": false
     },
     "CHFDKK|spread_state_continuous": {
@@ -779,7 +779,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.274,
+      "shadow_exp_r": -0.2573,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -823,7 +823,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0686,
+      "shadow_exp_r": -0.5043,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
@@ -2110,7 +2110,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.7465,
+      "shadow_exp_r": -0.7488,
       "woke_on_shadow": false
     },
     "GBPMXN|carry_continuous": {
@@ -2132,7 +2132,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 50,
-      "shadow_exp_r": 0.6684,
+      "shadow_exp_r": 0.669,
       "woke_on_shadow": false
     },
     "GBPMXN|formula_asia": {
@@ -2143,7 +2143,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 48,
-      "shadow_exp_r": 0.6992,
+      "shadow_exp_r": 0.6984,
       "woke_on_shadow": false
     },
     "GBPMXN|macro_conditional_continuous": {
@@ -2198,7 +2198,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 42,
-      "shadow_exp_r": 0.7112,
+      "shadow_exp_r": 0.7104,
       "woke_on_shadow": false
     },
     "GBPNOK|carry_asia": {
@@ -4618,7 +4618,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1744,
+      "shadow_exp_r": -0.1748,
       "woke_on_shadow": false
     },
     "XAUAUD|momentum_volgate_continuous": {
