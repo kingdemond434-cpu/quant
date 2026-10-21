@@ -266,7 +266,9 @@ def test_account_like_names_and_keys_never_publish(desk: dict[str, Path], tmp_pa
     assert doc["nested"] == [{"keep": 6}]
     assert doc["notes"]["redacted_names"] == 2
     x = {r["symbol"]: r for r in doc["tape"]}["XAUUSD"]
-    assert x["invalid_partition_names"] == 1 and x["partition"] == "XAUUSD/20261021.parquet"
+    # v2.1: an 8-digit YYYYMMDD file name is a digit run like any other; the ISO day survives.
+    assert x["invalid_partition_names"] == 1
+    assert x["partition"] == f"XAUUSD/{bs.REDACTED}.parquet" and x["partition_day"] == "2026-10-21"
     assert bs.partition_day("55512345") is None and bs.partition_day("20261021") == "2026-10-21"
 
 
@@ -408,3 +410,179 @@ def test_it_is_always_run_so_rotation_never_skips_it_on_overrun() -> None:
     src = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '"research/bars_state.py", "--budget-s", "20"' in src
     assert hc.LEG_BUDGET_SEC["bars_state"] == 60
+
+
+# ------------------------------------------------------------------ v2.1: the audit's should-fixes
+def test_v21_digit_runs_are_redacted_anywhere_in_keys_and_values() -> None:
+    assert bs.account_like("XAU5551234") and bs.account_like("acct_55512_x")
+    assert not bs.account_like("US30") and not bs.account_like("JP225")
+    doc = {"host": "vmi3571445", "k5551234": "keep", "note": "login 5551234 on file",
+           "nested": [{"code": 5551234, "f": 55512.5, "small": 1234, "ok": True}],
+           "row_count": 54205, "age_h": 12345.6, "when": "2026-10-21T11:59:00+00:00"}
+    out = bs._scrub(doc)
+    text = json.dumps(out)
+    assert not re.search(r"\d{5,}", text.replace("54205", "").replace("12345.6", "")), text
+    assert out["host"] == f"vmi{bs.REDACTED}" and out[f"k{bs.REDACTED}"] == "keep"
+    assert out["note"] == f"login {bs.REDACTED} on file"
+    assert out["nested"] == [{"code": bs.REDACTED, "f": bs.REDACTED, "small": 1234, "ok": True}]
+    assert out["row_count"] == 54205 and out["age_h"] == 12345.6, "measurements are not accounts"
+    assert out["when"] == doc["when"], "an ISO stamp has no 5-digit run and must survive"
+
+
+def test_v21_every_number_the_report_emits_is_a_declared_measurement(desk: dict[str, Path]
+                                                                      ) -> None:
+    doc = bs.measure(**desk, now=NOW)
+    seen: set[str] = set()
+
+    def walk(o: Any, key: str | None = None) -> None:
+        if isinstance(o, dict):
+            for k, v in o.items():
+                walk(v, k)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v, key)
+        elif isinstance(o, (int, float)) and not isinstance(o, bool) and key:
+            seen.add(key)
+    walk(doc)
+    assert seen <= bs._MEASUREMENT_KEYS, seen - bs._MEASUREMENT_KEYS
+
+
+def test_v21_error_fields_carry_type_and_errno_never_a_path(tmp_path: Path) -> None:
+    secret = str(tmp_path / "C_Users_someone" / "secret_dir")
+    exc = PermissionError(13, "Permission denied", secret)
+    assert bs._exc_reason(exc) == "PermissionError errno=13"
+    assert bs._exc_reason(ValueError(f"bad value at {secret}")) == "ValueError"
+    assert health._exc_reason(exc) == "PermissionError errno=13"
+    bad = tmp_path / "u"
+    bad.mkdir()
+    (bad / "XAUUSD_H1.parquet").write_bytes(b"not a parquet at " + secret.encode())
+    doc = bs.measure(universe=bad, ticks=tmp_path / "t", tape_state=tmp_path / "s.json",
+                     now=NOW)
+    assert str(tmp_path) not in json.dumps(doc)
+    assert re.fullmatch(r"[A-Za-z]+( errno=\d+)?", doc["bars"][0]["reason"]), doc["bars"][0]
+    # The consumer's unreadable-report finding is the same shape.
+    rep = tmp_path / "BARS_STATE.json"
+    rep.mkdir()                       # reading a directory raises IsADirectoryError with the path
+    f = _findings(rep, NOW)
+    assert f[0]["level"] == "UNKNOWN" and str(tmp_path) not in f[0]["message"]
+    src = (DESK / "research" / "bars_state.py").read_text("utf-8")
+    assert "str(exc)[" not in src and ": {exc}" not in src
+
+
+def test_v21_unknown_market_state_never_gets_the_weekend_allowance(tmp_path: Path,
+                                                                   monkeypatch) -> None:
+    monkeypatch.setattr(health, "_market_closed", lambda now: None)
+    sunday = datetime(2026, 10, 25, 12, 0, tzinfo=UTC)
+    f = _findings(_report(tmp_path, bar_age=40.0, tick_age=1.0, generated=sunday), sunday)
+    assert [x["level"] for x in f] == ["UNKNOWN", "OK"], f
+    assert "limit 2h" in f[0]["message"] and "market state unknown" in f[0]["message"]
+    assert "limit 52h" not in json.dumps(f)
+
+
+# The two US/EU DST gap windows of 2026: the US moves on 03-08 and 11-01, Europe on 03-29 and
+# 10-25. The server is New York + 7h, so its H1 week runs broker Fri 23:00 (last bar) to
+# Mon 00:00 (first bar) in EVERY week, and the broker's UTC offset follows New York, not Europe.
+@pytest.mark.parametrize("fri_last,mon_first,utc_last,utc_first,gap_h", [
+    # winter -> US summer across 03-08 (the weekend the US clock moves): 48h of true UTC
+    ("2026-03-06T23:00", "2026-03-09T00:00", "2026-03-06T21:00", "2026-03-08T21:00", 48),
+    # inside the March gap week (US summer, Europe still winter): UTC+3, a 49h weekend
+    ("2026-03-20T23:00", "2026-03-23T00:00", "2026-03-20T20:00", "2026-03-22T21:00", 49),
+    # across Europe's 03-29 change: nothing moves on the server clock
+    ("2026-03-27T23:00", "2026-03-30T00:00", "2026-03-27T20:00", "2026-03-29T21:00", 49),
+    # across Europe's 10-25 change into the October gap week: still UTC+3
+    ("2026-10-23T23:00", "2026-10-26T00:00", "2026-10-23T20:00", "2026-10-25T21:00", 49),
+    # out of the gap week across the US's 11-01 change: 50h of true UTC
+    ("2026-10-30T23:00", "2026-11-02T00:00", "2026-10-30T20:00", "2026-11-01T22:00", 50),
+])
+def test_v21_dst_gap_weeks_pin_the_broker_weekend(fri_last: str, mon_first: str, utc_last: str,
+                                                  utc_first: str, gap_h: int) -> None:
+    last = bs.broker_to_utc(datetime.fromisoformat(fri_last))
+    first = bs.broker_to_utc(datetime.fromisoformat(mon_first))
+    assert last == datetime.fromisoformat(utc_last).replace(tzinfo=UTC)
+    assert first == datetime.fromisoformat(utc_first).replace(tzinfo=UTC)
+    assert (first - last) == timedelta(hours=gap_h) and gap_h + 1 < health.WEEKEND_STALE_H
+    assert bs.utc_to_broker(last) == datetime.fromisoformat(fri_last)
+    # The FX weekend reading: closed from server Sat 00:00 to Mon 01:00, open on either side.
+    sat0 = last + timedelta(hours=1)
+    assert health._market_closed(sat0 - timedelta(minutes=1)) is False
+    assert health._market_closed(sat0) is True
+    assert health._market_closed(first + timedelta(minutes=59)) is True
+    assert health._market_closed(first + timedelta(hours=1)) is False
+
+
+@pytest.mark.parametrize("monday,offset_h", [("2026-03-16", 3.0), ("2026-10-26", 3.0),
+                                             ("2026-03-02", 2.0), ("2026-11-02", 2.0)])
+def test_v21_gap_weeks_follow_new_york_not_europe(monday: str, offset_h: float) -> None:
+    from zoneinfo import ZoneInfo
+    m = datetime.fromisoformat(monday).date()
+    assert bs.ANCHOR is not None
+    assert bs._anchor_offset_h(m, bs.ANCHOR) == offset_h
+    anc = bs.fx_week_bounds(m, None)
+    alt = bs.fx_week_bounds(m, ZoneInfo(bs.EURO_WALL_TZ))
+    assert anc is not None and alt is not None
+    assert anc == (datetime.fromisoformat(f"{monday}T00:00"),
+                   datetime.fromisoformat(f"{monday}T00:00") + timedelta(days=5))
+    gap = monday in ("2026-03-16", "2026-10-26")
+    assert (anc != alt) is gap, "only the US/EU gap weeks tell the anchor from a European clock"
+    if gap:
+        assert alt[0] == anc[0] - timedelta(hours=1)
+
+
+def test_v21_desk_health_across_the_gap_weekends(tmp_path: Path) -> None:
+    # Sunday 22:30 UTC on 11-01 is server Mon 00:30: still the weekend; the Fri 23:00 bar
+    # (20:00Z Fri) is 50.5h old and inside the allowance.
+    t = datetime(2026, 11, 1, 22, 30, tzinfo=UTC)
+    f = _findings(_report(tmp_path, bar_age=50.5, tick_age=50.5, generated=t), t)
+    assert [x["level"] for x in f] == ["OK", "OK"], f
+    # Monday 01:30 server on 10-26 (22:30Z Sunday): the market is open; a Friday bar is STALE.
+    t = datetime(2026, 10, 25, 22, 30, tzinfo=UTC)
+    f = _findings(_report(tmp_path, bar_age=50.5, tick_age=0.1, generated=t), t)
+    assert f[0]["level"] == "PROBLEM" and "STALE" in f[0]["message"]
+
+
+def _h1_week(path: Path, open_wall: str, hours: int = 120) -> None:
+    """`hours` consecutive H1 broker stamps from `open_wall` (120 from an open = one FX week)."""
+    idx = pd.date_range(start=pd.Timestamp(open_wall, tz="UTC"), periods=hours, freq="1h",
+                        name="time")
+    df = pd.DataFrame({"open": 1.0, "close": 1.0}, index=idx)
+    pq.write_table(pa.Table.from_pandas(df), path)
+
+
+def test_v21_dst_check_agrees_with_the_anchor_and_catches_a_european_clock(tmp_path: Path
+                                                                           ) -> None:
+    uni = tmp_path / "u"
+    uni.mkdir()
+    _h1_week(uni / "EURUSD_H1.parquet", "2026-10-26 00:00")       # NY+7: Mon 00:00..Fri 23:00
+    # A European-wall broker in the same week: Sun 23:00 open, Fri 22:00 last bar.
+    _h1_week(uni / "GBPUSD_H1.parquet", "2026-10-25 23:00", hours=120)
+    after = datetime(2026, 10, 31, 12, tzinfo=UTC)
+    rep = bs.dst_check(datetime(2026, 10, 26).date(), datetime(2026, 10, 30).date(),
+                       universe=uni, symbols=("EURUSD", "GBPUSD", "USDJPY"), now=after)
+    rows = {r["file"]: r for r in rep["files"]}
+    eu = rows["EURUSD_H1.parquet"]
+    assert eu["status"] == "AGREES" and eu["weeks"][0]["gap_week"] is True
+    assert eu["weeks"][0]["first_bar"] == "2026-10-26T00:00:00"
+    assert eu["weeks"][0]["last_bar"] == "2026-10-30T23:00:00"
+    assert eu["weeks"][0]["anchor_utc_offset_h"] == [3.0] * 5
+    gb = rows["GBPUSD_H1.parquet"]
+    assert gb["status"] == "DISAGREES" and gb["weeks"][0]["fits"] == "europe_wall"
+    assert rows["USDJPY_H1.parquet"]["status"] == "UNMEASURED"
+    assert rep["verdict"] == "DISAGREES" and rep["window_complete"] is True
+    before = bs.dst_check(datetime(2026, 10, 26).date(), datetime(2026, 10, 30).date(),
+                          universe=uni, symbols=("EURUSD",), now=NOW)
+    assert before["window_complete"] is False
+
+
+def test_v21_dst_check_cli_is_read_only(tmp_path: Path, capsys) -> None:
+    uni = tmp_path / "u"
+    uni.mkdir()
+    _h1_week(uni / "EURUSD_H1.parquet", "2026-03-16 00:00")
+    before = sorted(p.name for p in tmp_path.rglob("*"))
+    rc = bs.main(["--dst-check", "2026-03-16", "2026-03-20", "--universe", str(uni),
+                  "--dst-symbols", "EURUSD", "--out", str(tmp_path / "never.json")])
+    assert rc == 0
+    assert sorted(p.name for p in tmp_path.rglob("*")) == before, "the check wrote a file"
+    rep = json.loads(capsys.readouterr().out)
+    assert rep["verdict"] == "AGREES" and rep["schema"] == "bars_state_dst_check/1"
+    assert bs.main(["--dst-check", "2026-10-26", "2026-10-30", "--universe", str(tmp_path / "x"),
+                    "--dst-symbols", "EURUSD"]) == 2, "nothing on disk is UNMEASURED, exit 2"

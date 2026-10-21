@@ -242,8 +242,18 @@ BAR_STALE_H = 2.0
 TICK_STALE_H = 2.0
 BARS_REPORT_STALE_H = 2.0
 #: The FX weekend: server Saturday and Sunday, plus the first server hour of Monday. Bars and ticks
-#: legitimately stop for ~48h; a Friday close read on Sunday is not a dead feed.
+#: legitimately stop for ~48h; a Friday close read on Sunday is not a dead feed. Broker H1 stamps
+#: run Fri 23:00 -> Mon 00:00 (49 broker hours), which is 48h of true UTC across the March US
+#: change and 50h across the November one; 52h covers both plus the first Monday hour.
+#: The allowance is granted ONLY on a POSITIVE reading of the weekend: when the market state is
+#: unknown (no anchor), the weekday limit applies and a breach reads UNKNOWN, never OK (v2.1).
 WEEKEND_STALE_H = 52.0
+
+
+def _exc_reason(exc: BaseException) -> str:
+    """What a published finding may say about an error: its type and errno, never str(exc)."""
+    errno = getattr(exc, "errno", None)
+    return type(exc).__name__ + (f" errno={errno}" if isinstance(errno, int) else "")
 
 
 def _market_closed(now: datetime) -> bool | None:
@@ -273,7 +283,7 @@ def check_bars_state(path: Path | None = None, now: datetime | None = None) -> N
         print()
         return
     except (OSError, ValueError) as exc:
-        _unknown(f"data/BARS_STATE.json unreadable ({exc})")
+        _unknown(f"data/BARS_STATE.json unreadable ({_exc_reason(exc)})")
         print()
         return
     summary = doc.get("summary") if isinstance(doc, dict) else None
@@ -292,13 +302,12 @@ def check_bars_state(path: Path | None = None, now: datetime | None = None) -> N
         _bad(f"BARS_STATE.json is {rep_age:.1f}h old (expected under {BARS_REPORT_STALE_H:.0f}h) "
              f"-- leg bars_state has stopped producing")
     closed = _market_closed(now)
-    allow = {True: WEEKEND_STALE_H, None: WEEKEND_STALE_H}
     for what, key, mkey, verdict_key, limit in (
             ("bar", "newest_bar_age_h", "newest_bar_file_mtime_age_h", "bars_verdict",
              BAR_STALE_H),
             ("tick", "newest_tick_age_h", "newest_tick_file_mtime_age_h", "tape_verdict",
              TICK_STALE_H)):
-        lim = allow.get(closed, limit)
+        lim = WEEKEND_STALE_H if closed is True else limit
         age = summary.get(key)
         verdict = summary.get(verdict_key) or "UNMEASURED"
         when = summary.get(f"newest_{what}_time_utc")
@@ -311,7 +320,10 @@ def check_bars_state(path: Path | None = None, now: datetime | None = None) -> N
         line = (f"newest {what} {age:.1f}h old (UTC {when}; {verdict_key} {verdict}; limit "
                 f"{lim:.0f}h{', market weekend' if closed else ''}"
                 f"{', market state unknown' if closed is None else ''})")
-        if age > lim:
+        if age > lim and closed is None:
+            _unknown(f"{line} -- over the weekday limit, and without the server anchor this "
+                     f"cannot tell a weekend from a dead {what} feed")
+        elif age > lim:
             _bad(f"{line} -- the box's {what} feed is STALE")
         elif verdict != "MEASURED":
             _unknown(f"{line}, but only part of the {what} store measured")

@@ -43,11 +43,18 @@ THE SUMMARY VERDICT IS A SHARE, NOT AN EXISTENCE PROOF. `bars_verdict` / `tape_v
 MEASURED only when at least MEASURED_SHARE (80%) of their rows measured, PARTIAL when some did,
 UNMEASURED when none did; `verdict` is the worse of the two.
 
-NAMES THAT LOOK LIKE ACCOUNT NUMBERS ARE NOT PUBLISHED. A symbol folder or bar file whose name is
-all digits and at least ACCOUNT_LIKE_DIGITS long is reported as `<redacted-numeric>` (UNMEASURED),
-and every account-shaped KEY is dropped before writing. `libs.ops.login_fence.is_login_key` is
-used when the base carries it; this base does not, so the local rule below applies. Value-level
-login detection belongs to the publication fence, not here.
+NAMES THAT LOOK LIKE ACCOUNT NUMBERS ARE NOT PUBLISHED. A symbol folder or bar file whose name
+CONTAINS a run of ACCOUNT_LIKE_DIGITS or more digits is reported as `<redacted-numeric>`
+(UNMEASURED), and every account-shaped KEY is dropped before writing.
+`libs.ops.login_fence.is_login_key` is used when the base carries it; this base does not, so the
+local rule below applies. Then, as the last fence (v2.1), every run of ACCOUNT_LIKE_DIGITS or more
+digits ANYWHERE in a key or a string value is replaced by `<redacted-numeric>`, and so is a number
+of that many integer digits under any key that is not a known measurement (`_MEASUREMENT_KEYS`:
+row counts, ages, shares). A tape partition named `YYYYMMDD` therefore publishes its
+`partition_day` (ISO) but not its file name.
+
+ERRORS PUBLISH THEIR TYPE AND ERRNO ONLY (v2.1). `str(exc)` carries local paths (and whatever a
+parser echoes back), so no published reason ever includes it: see `_exc_reason`.
 
 Exit 0 whenever the report was written (an UNMEASURED row is a measurement, not a crash); 1 only
 when the report itself could not be written.
@@ -95,10 +102,27 @@ FUTURE_SKEW = timedelta(minutes=10)
 BROKER_MAX_LEAD = timedelta(hours=3)
 #: A summary verdict reads MEASURED only when at least this share of its rows measured.
 MEASURED_SHARE = 0.8
-#: A name of this many digits or more, and nothing else, is treated as an account number.
+#: A run of this many digits or more, anywhere in a name, key or string, is treated as an account
+#: number and redacted.
 ACCOUNT_LIKE_DIGITS = 5
+_DIGIT_RUN = re.compile(rf"\d{{{ACCOUNT_LIKE_DIGITS},}}")
 REDACTED = "<redacted-numeric>"
+#: Numeric fields this organ emits as MEASUREMENTS; a number under any other key with
+#: ACCOUNT_LIKE_DIGITS or more integer digits is redacted like a string would be.
+_MEASUREMENT_KEYS = frozenset({
+    "row_count", "partitions", "invalid_partition_names", "age_h", "mtime_age_h",
+    "tape_state_last_run_age_h", "budget_s", "elapsed_s", "bar_files", "bar_files_measured",
+    "bars_measured_share", "newest_bar_age_h", "newest_bar_file_mtime_age_h", "tape_symbols",
+    "tape_symbols_measured", "tape_measured_share", "newest_tick_age_h",
+    "newest_tick_file_mtime_age_h", "newest_tape_run_age_h", "measured_share_threshold",
+    "redacted_names", "peak_rss_mb"})
 _LOGIN_TOKENS = ("login", "acct", "account", "passw", "secret", "token", "apikey")
+
+
+def _exc_reason(exc: BaseException) -> str:
+    """What a published error field may say: the exception's type and errno, never str(exc)."""
+    errno = getattr(exc, "errno", None)
+    return type(exc).__name__ + (f" errno={errno}" if isinstance(errno, int) else "")
 
 
 def _anchor() -> tuple[Any, int] | None:
@@ -127,6 +151,19 @@ def broker_to_utc(wall: datetime, anchor: tuple[Any, int] | None = None) -> date
     try:
         local = (wall.replace(tzinfo=None) - timedelta(hours=24 - midnight_hour))
         return local.replace(tzinfo=zone).astimezone(UTC)
+    except Exception:
+        return None
+
+
+def utc_to_broker(utc: datetime, anchor: tuple[Any, int] | None = None) -> datetime | None:
+    """True UTC as a naive broker wall time, through the server anchor. None when unavailable."""
+    a = anchor if anchor is not None else ANCHOR
+    if a is None:
+        return None
+    zone, midnight_hour = a
+    try:
+        local = utc.astimezone(zone).replace(tzinfo=None)
+        return local + timedelta(hours=24 - midnight_hour)
     except Exception:
         return None
 
@@ -213,7 +250,7 @@ def last_time(path: Path) -> dict[str, Any]:
         import pyarrow.compute as pc
         import pyarrow.parquet as pq
     except Exception as exc:  # pragma: no cover - pyarrow is a desk dependency
-        return {"status": "UNMEASURED", "reason": f"pyarrow unavailable: {type(exc).__name__}"}
+        return {"status": "UNMEASURED", "reason": f"pyarrow unavailable: {_exc_reason(exc)}"}
     try:
         pf = pq.ParquetFile(str(path))
         md = pf.metadata
@@ -253,11 +290,12 @@ def last_time(path: Path) -> dict[str, Any]:
         return {"status": "MEASURED", "row_count": rows, "time_column": col,
                 "wall": newest, "source": source}
     except Exception as exc:
-        return {"status": "UNMEASURED", "reason": f"{type(exc).__name__}: {str(exc)[:200]}"}
+        return {"status": "UNMEASURED", "reason": _exc_reason(exc)}
 
 
 def account_like(name: str) -> bool:
-    return name.isdigit() and len(name) >= ACCOUNT_LIKE_DIGITS
+    """A run of ACCOUNT_LIKE_DIGITS or more digits ANYWHERE in the name (re.search, not match)."""
+    return _DIGIT_RUN.search(name) is not None
 
 
 def split_bar_name(path: Path) -> tuple[str, str] | None:
@@ -301,7 +339,7 @@ def _read_tape_state(path: Path) -> tuple[dict[str, Any], str | None]:
     except FileNotFoundError:
         return {}, "tape_state.json absent"
     except Exception as exc:
-        return {}, f"tape_state.json unreadable: {type(exc).__name__}"
+        return {}, f"tape_state.json unreadable: {_exc_reason(exc)}"
     if not isinstance(doc, dict):
         return {}, "tape_state.json is not an object"
     return doc, None
@@ -422,7 +460,7 @@ def measure(*, universe: Path = UNIVERSE, ticks: Path = TICKS, tape_state: Path 
     try:
         bar_files = sorted(universe.glob("*.parquet"))
     except OSError as exc:
-        bar_files, bar_reason = [], f"universe directory unreadable: {type(exc).__name__}"
+        bar_files, bar_reason = [], f"universe directory unreadable: {_exc_reason(exc)}"
     for path in bar_files:
         named = split_bar_name(path)
         if named is None:
@@ -441,7 +479,7 @@ def measure(*, universe: Path = UNIVERSE, ticks: Path = TICKS, tape_state: Path 
             bars.append(_bar_row(path, sym, tf, at))
         except Exception as exc:
             bars.append({"symbol": sym, "timeframe": tf, "file": path.name,
-                         "status": "UNMEASURED", "reason": f"{type(exc).__name__}"})
+                         "status": "UNMEASURED", "reason": _exc_reason(exc)})
 
     state, state_reason = _read_tape_state(tape_state)
     symbols: set[str] = {str(k) for k in state}
@@ -468,7 +506,7 @@ def measure(*, universe: Path = UNIVERSE, ticks: Path = TICKS, tape_state: Path 
         except Exception as exc:
             # ONE BAD ENTRY COSTS ITS OWN ROW, NEVER THE REPORT (audit: NaN / 1e20 at :249).
             tape.append({"symbol": sym, "status": "UNMEASURED",
-                         "reason": f"bad tape entry: {type(exc).__name__}"})
+                         "reason": f"bad tape entry: {_exc_reason(exc)}"})
 
     def newest(rows: list[dict[str, Any]], key: str) -> dict[str, Any] | None:
         best = None
@@ -541,13 +579,29 @@ def _login_key_rule() -> Callable[[str], bool]:
         return _local_is_login_key
 
 
-def _scrub(obj: Any, rule: Callable[[str], bool] | None = None) -> Any:
-    """Drop every account-shaped key, recursively. Nothing here emits one; this is the fence."""
+def _redact_digits(text: str) -> str:
+    return _DIGIT_RUN.sub(REDACTED, text)
+
+
+def _scrub(obj: Any, rule: Callable[[str], bool] | None = None, key: str | None = None) -> Any:
+    """The fence, recursively: drop every account-shaped key, then redact every run of
+    ACCOUNT_LIKE_DIGITS+ digits in every key and string value, and every number that size under a
+    key that is not a known measurement. Nothing here emits one on purpose."""
     rule = rule or _login_key_rule()
     if isinstance(obj, dict):
-        return {k: _scrub(v, rule) for k, v in obj.items() if not rule(str(k))}
-    if isinstance(obj, list):
-        return [_scrub(v, rule) for v in obj]
+        return {_redact_digits(str(k)): _scrub(v, rule, str(k))
+                for k, v in obj.items() if not rule(str(k))}
+    if isinstance(obj, (list, tuple)):
+        return [_scrub(v, rule, key) for v in obj]
+    if isinstance(obj, str):
+        return _redact_digits(obj)
+    if isinstance(obj, (int, float)) and not isinstance(obj, bool) and key not in _MEASUREMENT_KEYS:
+        try:
+            whole = abs(int(obj))
+        except (ValueError, OverflowError):
+            return obj
+        if len(str(whole)) >= ACCOUNT_LIKE_DIGITS:
+            return REDACTED
     return obj
 
 
@@ -564,6 +618,178 @@ def write(doc: dict[str, Any], out: Path = OUT) -> None:
     write_text_resilient(out, text)
 
 
+# ---------------------------------------------------------------------------------------------
+# DST GAP-WEEK RE-CHECK (v2.1): do the box's Fusion bars sit where the E8 server anchor says?
+#
+# The anchor (`prop.e8_guard`: server = America/New_York + 7h) puts the FX week at broker
+# Mon 00:00 .. Fri 23:00 (H1 stamps) in EVERY week, because the NY 17:00 roll is server midnight.
+# A broker on European time (Europe/Athens wall clock, which is what "UTC+2 winter / UTC+3 summer"
+# is often taken to mean) agrees with it except in the US/EU DST gap weeks -- 2026-03-09..03-27
+# and 2026-10-26..10-30 -- where it would stamp a Sunday 23:00 open and a Friday 22:00 last bar.
+# So the gap weeks are the only weeks in which the bars themselves can falsify the anchor that
+# every true-UTC age in this report (and e8_guard.server_day) depends on. READ-ONLY: it reads one
+# column of the bar files it is pointed at, writes nothing, and is meant for the box RC queue:
+#
+#   python desks\mt5\research\bars_state.py --dst-check 2026-10-26 2026-10-30
+#
+# Exit 0: every file AGREES with the anchor; 1: some file DISAGREES; 2: nothing measured.
+# ---------------------------------------------------------------------------------------------
+DST_CHECK_SYMBOLS = ("EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "USDCHF", "NZDUSD")
+#: The contrast hypothesis the gap weeks can tell apart from the anchor.
+EURO_WALL_TZ = "Europe/Athens"
+#: Rows read per file at most; one H1 FX week is 120.
+DST_CHECK_MAX_ROWS = FALLBACK_MAX_ROWS
+
+
+def fx_week_bounds(monday: date, tz_wall: Any, anchor: tuple[Any, int] | None = None
+                   ) -> tuple[datetime, datetime] | None:
+    """(broker open, broker close) of the FX week starting `monday`, on one reading of the clock.
+
+    The week opens at Sunday 17:00 New York and closes at Friday 17:00 New York (true instants).
+    `tz_wall=None` maps them through the E8 anchor; a zone maps them to that zone's wall clock.
+    """
+    try:
+        from zoneinfo import ZoneInfo
+        ny = ZoneInfo("America/New_York")
+        sun = monday - timedelta(days=1)
+        fri = monday + timedelta(days=4)
+        o = datetime(sun.year, sun.month, sun.day, 17, tzinfo=ny)
+        c = datetime(fri.year, fri.month, fri.day, 17, tzinfo=ny)
+        if tz_wall is None:
+            bo, bc = utc_to_broker(o, anchor), utc_to_broker(c, anchor)
+            if bo is None or bc is None:
+                return None
+            return bo, bc
+        return (o.astimezone(tz_wall).replace(tzinfo=None),
+                c.astimezone(tz_wall).replace(tzinfo=None))
+    except Exception:
+        return None
+
+
+def _bar_walls_between(path: Path, lo: datetime, hi: datetime) -> tuple[list[datetime], str | None]:
+    """Naive broker wall stamps in [lo, hi), read from row groups whose footer range overlaps."""
+    try:
+        import pyarrow.parquet as pq
+        pf = pq.ParquetFile(str(path))
+        md = pf.metadata
+        col = _time_column(pf)
+        if col is None:
+            return [], "no time column in the footer schema"
+        ci = pf.schema_arrow.names.index(col)
+        unit = "ms" if col == "time_msc" else None
+        out: list[datetime] = []
+        read = 0
+        for g in range(md.num_row_groups):
+            rg = md.row_group(g)
+            st = rg.column(ci).statistics
+            if st is not None and st.has_min_max:
+                gmin, gmax = to_wall(st.min, unit), to_wall(st.max, unit)
+                if gmin is not None and gmax is not None and (gmax < lo or gmin >= hi):
+                    continue
+            read += rg.num_rows
+            if read > DST_CHECK_MAX_ROWS:
+                return [], f"window spans more than {DST_CHECK_MAX_ROWS:,} rows; not read"
+            for v in pf.read_row_group(g, columns=[col]).column(0).to_pylist():
+                w = to_wall(v, unit)
+                if w is not None and lo <= w < hi:
+                    out.append(w)
+        return sorted(out), None
+    except Exception as exc:
+        return [], _exc_reason(exc)
+
+
+def _anchor_offset_h(day: date, anchor: tuple[Any, int]) -> float | None:
+    """Broker minus UTC, in hours, at UTC noon of `day`, on the anchor's reading."""
+    noon = datetime(day.year, day.month, day.day, 12, tzinfo=UTC)
+    wall = utc_to_broker(noon, anchor)
+    return None if wall is None else (wall - noon.replace(tzinfo=None)).total_seconds() / 3600
+
+
+def dst_week_check(path: Path, start: date, end: date,
+                   anchor: tuple[Any, int] | None = None) -> dict[str, Any]:
+    """One bar file over the FX weeks touching [start, end], against the E8 anchor."""
+    from zoneinfo import ZoneInfo
+    a = anchor if anchor is not None else ANCHOR
+    row: dict[str, Any] = {"file": path.name, "window": [start.isoformat(), end.isoformat()]}
+    if a is None:
+        row.update(status="UNMEASURED", reason="server anchor unavailable")
+        return row
+    named = split_bar_name(path)
+    tf = named[1] if named else None
+    step = {"M1": 1, "M5": 5, "M15": 15, "M30": 30, "H1": 60, "H4": 240}.get(tf or "")
+    if step is None:
+        row.update(status="UNMEASURED", reason=f"timeframe {tf} is not checked")
+        return row
+    euro = ZoneInfo(EURO_WALL_TZ)
+    weeks: list[dict[str, Any]] = []
+    monday = start - timedelta(days=start.weekday())
+    agree = disagree = 0
+    while monday <= end:
+        anc, alt = fx_week_bounds(monday, None, a), fx_week_bounds(monday, euro, a)
+        if anc is None or alt is None:
+            row.update(status="UNMEASURED", reason="week bounds could not be derived")
+            return row
+        lo = min(anc[0], alt[0]) - timedelta(hours=24)
+        hi = max(anc[1], alt[1]) + timedelta(hours=24)
+        walls, why = _bar_walls_between(path, lo, hi)
+        last_expected = {"anchor": anc[1] - timedelta(minutes=step),
+                         "europe": alt[1] - timedelta(minutes=step)}
+        wk: dict[str, Any] = {
+            "monday": monday.isoformat(),
+            "anchor_open": _wall_iso(anc[0]), "anchor_last_bar": _wall_iso(last_expected["anchor"]),
+            "europe_open": _wall_iso(alt[0]), "europe_last_bar": _wall_iso(last_expected["europe"]),
+            "anchor_utc_offset_h": [_anchor_offset_h(monday + timedelta(days=i), a)
+                                    for i in range(5)],
+            "gap_week": anc != alt,
+        }
+        if why or not walls:
+            wk.update(status="UNMEASURED", reason=why or "no bars in the week on disk")
+        else:
+            first, last = walls[0], walls[-1]
+            outside = [w for w in walls if w < anc[0] or w >= anc[1]]
+            wk.update(first_bar=_wall_iso(first), last_bar=_wall_iso(last), bars=len(walls),
+                      bars_outside_anchor_week=len(outside))
+            fits_anchor = first == anc[0] and last == last_expected["anchor"] and not outside
+            fits_europe = first == alt[0] and last == last_expected["europe"]
+            if fits_anchor:
+                wk["status"] = "AGREES"
+                agree += 1
+            else:
+                wk["status"] = "DISAGREES"
+                wk["fits"] = "europe_wall" if fits_europe else "neither"
+                disagree += 1
+        weeks.append(wk)
+        monday += timedelta(days=7)
+    row["weeks"] = weeks
+    row["status"] = ("DISAGREES" if disagree else "AGREES" if agree else "UNMEASURED")
+    return row
+
+
+def dst_check(start: date, end: date, *, universe: Path = UNIVERSE,
+              symbols: tuple[str, ...] = DST_CHECK_SYMBOLS, timeframe: str = "H1",
+              now: datetime | None = None) -> dict[str, Any]:
+    at = now or datetime.now(UTC)
+    files = [universe / f"{s}_{timeframe}.parquet" for s in symbols]
+    rows = [dst_week_check(p, start, end) if p.is_file() else
+            {"file": p.name, "status": "UNMEASURED", "reason": "bar file absent"} for p in files]
+    statuses = {r["status"] for r in rows}
+    verdict = ("DISAGREES" if "DISAGREES" in statuses else
+               "AGREES" if "AGREES" in statuses else "UNMEASURED")
+    # The window's last FX close is Friday 17:00 New York; before that the week is not complete.
+    fri = end + timedelta(days=(4 - end.weekday()) % 7)
+    complete = None
+    try:
+        from zoneinfo import ZoneInfo
+        complete = at >= datetime(fri.year, fri.month, fri.day, 17,
+                                  tzinfo=ZoneInfo("America/New_York"))
+    except Exception:
+        pass
+    return {"schema": "bars_state_dst_check/1", "checked_at": _iso(at),
+            "anchor": ANCHOR_NAME, "contrast": EURO_WALL_TZ, "timeframe": timeframe,
+            "window": [start.isoformat(), end.isoformat()], "window_complete": complete,
+            "verdict": verdict, "files": rows}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--budget-s", type=float, default=DEFAULT_BUDGET_S)
@@ -571,14 +797,24 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--universe", type=Path, default=UNIVERSE)
     ap.add_argument("--ticks", type=Path, default=TICKS)
     ap.add_argument("--tape-state", type=Path, default=TAPE_STATE)
+    ap.add_argument("--dst-check", nargs=2, metavar=("START", "END"), default=None,
+                    help="READ-ONLY: re-check the FX bars over START..END (ISO days) against the "
+                         "E8 server anchor and print JSON; writes nothing")
+    ap.add_argument("--dst-symbols", default=",".join(DST_CHECK_SYMBOLS))
+    ap.add_argument("--dst-timeframe", default="H1")
     a = ap.parse_args(argv)
+    if a.dst_check:
+        rep = dst_check(date.fromisoformat(a.dst_check[0]), date.fromisoformat(a.dst_check[1]),
+                        universe=a.universe, timeframe=a.dst_timeframe,
+                        symbols=tuple(x for x in a.dst_symbols.split(",") if x))
+        print(json.dumps(_scrub(rep), indent=1))
+        return {"AGREES": 0, "DISAGREES": 1}.get(rep["verdict"], 2)
     doc = measure(universe=a.universe, ticks=a.ticks, tape_state=a.tape_state,
                   budget_s=a.budget_s)
     try:
         write(doc, a.out)
     except Exception as exc:
-        print(f"bars_state: could not write {a.out}: {type(exc).__name__}: {exc}",
-              file=sys.stderr)
+        print(f"bars_state: could not write the report: {_exc_reason(exc)}", file=sys.stderr)
         return 1
     s = doc["summary"]
     print(json.dumps({"out": str(a.out), "elapsed_s": doc["elapsed_s"],
