@@ -334,6 +334,7 @@ def test_one_unreadable_chart_blocks_its_own_cell_and_the_build_goes_on(monkeypa
     monkeypatch.setattr(eg, "build_cell", build)
     monkeypatch.setattr(eg, "_cell_last_day", lambda s, tf="H1": pd.Timestamp("2026-10-20"))
     monkeypatch.setattr(eg, "cache_load", lambda key: None)
+    monkeypatch.setattr(eg, "_cache_key", lambda *a, **k: "key")   # no replay identity read
     monkeypatch.setattr(eg, "_rss_mb", lambda: 0.0)
     blocked: list = []
     out = eg._build_specs(_specs(), {}, __import__("time").time(), {}, {}, set(), blocked)
@@ -357,6 +358,7 @@ def test_the_pool_gives_an_unreadable_chart_the_loops_own_verdict(monkeypatch) -
 
     monkeypatch.setattr(eg, "_cell_last_day", lambda s, tf="H1": pd.Timestamp("2026-10-20"))
     monkeypatch.setattr(eg, "cache_load", lambda key: None)
+    monkeypatch.setattr(eg, "_cache_key", lambda *a, **k: "key")   # no replay identity read
     monkeypatch.setattr(eg, "build_cell", lambda *a: (_ for _ in ()).throw(OSError("torn")))
     got = eg._warm_one(_specs()[0], {})
     assert got["status"] == "NOT_RUN_BUILD_FAILED"
