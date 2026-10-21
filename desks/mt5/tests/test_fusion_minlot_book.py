@@ -1152,6 +1152,9 @@ def test_the_e8_gold_retry_goes_through_the_fence_and_the_lock() -> None:
     from mt5desk import gold_oco
     doc: dict = {"gold_oco": {"date": "2026-10-15",
                               "key": gold_oco.oco_account_key(7, "tradelocker")}}
+    # The Fusion lane's gold state under the DECLARED account's key (the gate joins keys).
+    gold_oco.publish_lane("fusion", gold_oco.oco_account_key(LOGIN, SERVER), positions=[],
+                          orders=[], date="2026-10-15")
     res, why = g.fenced_send(m, v, doc, holder="t", side="buy_stop",
                              send=lambda: sent.append(1) or 99)
     assert res is None and why and "short" in why and sent == []
@@ -1326,6 +1329,8 @@ def test_a_hung_e8_send_releases_the_lock_and_is_a_failed_send(monkeypatch) -> N
                             _raw_api=SimpleNamespace(acc_id=31337, _credentials={"server": "E8-Test"}))
     from mt5desk import gold_oco
     _oco_key = gold_oco.oco_account_key(31337, "E8-Test")
+    gold_oco.publish_lane("fusion", gold_oco.oco_account_key(LOGIN, SERVER), positions=[],
+                          orders=[], date="2026-10-15")
     lock = xa.XACCT_DIR / "placement.lock"
     t0 = time.monotonic()
     with pytest.raises(xa.LockedCallTimeout):

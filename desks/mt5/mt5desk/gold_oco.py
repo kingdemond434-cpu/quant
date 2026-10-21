@@ -218,8 +218,7 @@ def tradelocker_oco_key(venue: Any) -> str:
     try:
         login, server = _xa.tradelocker_identity(venue)
     except Exception as exc:
-        raise IdentityUnavailable(f"the TradeLocker venue names no account "
-                                  f"({type(exc).__name__})") from None
+        raise IdentityUnavailable(f"the TradeLocker venue cannot be named: {exc}"[:200]) from None
     return oco_account_key(login, server)
 
 
