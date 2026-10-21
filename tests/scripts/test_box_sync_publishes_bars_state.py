@@ -193,3 +193,23 @@ def test_it_is_a_core_leg_before_publication() -> None:
     assert '"research/bars_state.py", "--budget-s", "20"' in src
     assert hc.LEG_BUDGET_SEC["bars_state"] <= 60
     assert layers.LEG_LAYER["bars_state"] == "meta"
+
+
+def test_it_is_always_run_so_rotation_never_skips_it_on_overrun() -> None:
+    import hourly_cycle as hc
+
+    from libs.ops import leg_rotation as LR
+    assert "bars_state" in LR.ALWAYS_RUN
+    roster = ["bars_state", "filler"]
+    att = LR.Attendance(runs={"bars_state": 50, "filler": 0})
+    att.last_at["bars_state"] = datetime.now(UTC).isoformat()
+    att.costs["bars_state"] = [9_000.0]
+    att.costs["filler"] = [1.0]
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=1.0)
+    assert "bars_state" in dec.admitted and "bars_state" not in dec.deferred
+    ok, why = dec.should_run("bars_state", att, elapsed_s=100_000.0)
+    assert ok, f"bars_state was yielded on overrun: {why}"
+    # The self-budget and the cap stay tight: always-run must not become a long leg.
+    src = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
+    assert '"research/bars_state.py", "--budget-s", "20"' in src
+    assert hc.LEG_BUDGET_SEC["bars_state"] == 60
