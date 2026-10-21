@@ -99,16 +99,15 @@ class Verdict:
 
 # ------------------------------------------------------------------ identity: ONE helper
 
-def _canon_login(login: object) -> object:
-    """Logins normalised to int where they are integral (publish_sync v5: the string "N" keys
-    differently from the int N, and one account must have one key whichever venue spells it)."""
-    if isinstance(login, bool):
-        return login
-    if isinstance(login, float) and login.is_integer():
-        return int(login)
-    if isinstance(login, str) and login.strip().isdigit():
-        return int(login.strip())
-    return login
+def _hash_login(login: object) -> object:
+    """The login as the keyed helper takes it, normalised by `cross_account.norm_login` (Fusion
+    r6) so a gold OCO key and a cross-account book key name one account one way: an int, an
+    integral float and a digit string all become the int; a username its stripped text. None,
+    "" and a bool stay unreadable (the keyed helper answers None on them)."""
+    if login is None or isinstance(login, bool) or str(login).strip() == "":
+        return None
+    canon = _xa.norm_login(login)
+    return int(canon) if canon.isdigit() else canon
 
 
 def oco_account_key(login: object, server: object) -> str:
@@ -131,7 +130,8 @@ def oco_account_key(login: object, server: object) -> str:
     if not callable(fn):
         raise IdentityUnavailable("the keyed-HMAC provenance.account_key has not landed "
                                   "(publish_sync v5); accounts cannot be named")
-    login = _canon_login(login)
+    login = _hash_login(login)
+    server = None if server is None else str(server).strip()
     try:
         key = fn(login, server, create=False)
     except Exception as exc:

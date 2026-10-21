@@ -87,6 +87,20 @@ def test_the_identity_is_keyed_never_the_plain_sha256_of_login_at_server() -> No
     assert oco.oco_account_key(float(FU_LOGIN), FU_SERVER) == key
 
 
+def test_the_oco_key_joins_the_r6_norm_login_spellings() -> None:
+    """Fusion r6's cross_account.norm_login: an int, an integral float and a padded digit string
+    are one account, and the server is stripped -- the OCO key follows it, so the two fences
+    name one account one way."""
+    key = oco.oco_account_key(FU_LOGIN, FU_SERVER)
+    for spelling in (FU_LOGIN, float(FU_LOGIN), f" {FU_LOGIN} ", str(FU_LOGIN)):
+        assert xa.norm_login(spelling) == str(FU_LOGIN)
+        assert oco.oco_account_key(spelling, f" {FU_SERVER} ") == key
+    assert oco.oco_account_key(" trader01 ", "tl") == oco.oco_account_key("trader01", "tl")
+    for bad in (None, "", "  ", True):
+        with pytest.raises(oco.IdentityUnavailable):
+            oco.oco_account_key(bad, FU_SERVER)
+
+
 def test_the_key_written_to_state_is_not_the_plain_sha256(monkeypatch) -> None:
     _world("oco")
     res = oco.claim_fill("fusion", fu_key(), "buy", date=DAY)
