@@ -1142,6 +1142,8 @@ def _capture_pages(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, str]]:
         return {"armed": 1, "delivered": 1}
 
     monkeypatch.setattr(ev, "SENDER", send)
+    # These tests pin the DIRECT fallback pager; the v5f outbox path is tested below.
+    monkeypatch.setattr(ev, "_PAGE", ev._page_direct)
     return sends
 
 
@@ -1224,6 +1226,7 @@ def test_v56_the_caller_never_waits_on_a_slow_send_or_a_held_lock(
         return {"armed": 1, "delivered": 1}
 
     monkeypatch.setattr(ev, "SENDER", slow)
+    monkeypatch.setattr(ev, "_PAGE", ev._page_direct)
     t0 = time.monotonic()
     assert ev.page_alert("e8_slow", "firing", firing=True) == "QUEUED"
     assert time.monotonic() - t0 < 0.5, "page_alert returned without waiting on the send"
@@ -1256,6 +1259,7 @@ def test_v56_a_sender_that_raises_is_swallowed_and_logged(
         raise ConnectionError("ntfy unreachable")
 
     monkeypatch.setattr(ev, "SENDER", boom)
+    monkeypatch.setattr(ev, "_PAGE", ev._page_direct)
     ev.page_alert("e8_boom", "firing", firing=True, log=said.append)
     assert ev.drain_pages(5.0) == 0
     assert any("sender raised ConnectionError" in x for x in said)
@@ -1328,3 +1332,107 @@ def test_v56_concurrent_writers_lose_no_alert(_ledger: Path) -> None:
         t.join(15.0)
     alerts = json.loads(_ledger.read_text("utf-8"))["alerts"]
     assert {f"e8_c{i}" for i in range(12)} <= set(alerts)
+
+
+# ------------------------------------------------------------- v5.6 on publish_sync v5f: the outbox
+
+
+@pytest.fixture
+def _outbox(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Any:
+    """v5f's provenance outbox in tmp, a fresh in-process dedupe, a recording fake sender."""
+    from libs.ops import provenance as pv
+
+    key = tmp_path / "data" / "secrets" / "account_key.hmac"
+    key.parent.mkdir(parents=True)
+    monkeypatch.setenv(pv.KEY_ENV, str(key))
+    monkeypatch.setenv(ev.ALERT_LEDGER_ENV, str(tmp_path / "data" / "alert_ledger.json"))
+    monkeypatch.setattr(pv, "_ENQUEUED", {})
+    monkeypatch.setattr(pv, "_ENQUEUE_FAILED", {})
+    monkeypatch.setattr(pv, "_LAST_TRY", {})
+    sent: list[tuple[str, str]] = []
+
+    def record(title: str, body: str) -> dict[str, Any]:
+        sent.append((title, body))
+        return {"armed": 1, "delivered": 1}
+
+    monkeypatch.setattr(pv, "SENDER", record)
+    monkeypatch.setattr(pv, "_default_sender", lambda: pytest.fail("the real sender was reached"))
+    pv.sent_log = sent  # type: ignore[attr-defined]
+    yield pv
+    ev.drain_pages(5.0)
+
+
+def _rows(pv: Any, aid: str) -> list[dict[str, Any]]:
+    path = pv._outbox_path()
+    if not path.exists():
+        return []
+    rows = [json.loads(x) for x in path.read_text("utf-8").splitlines() if x.strip()]
+    return [r for r in rows if r.get("aid") == aid]
+
+
+def test_v56f_the_pager_is_provenances_enqueue_only_page(_outbox: Any) -> None:
+    assert ev._PAGE is _outbox._page and ev._enqueue_only()
+
+
+def test_v56f_a_hanging_sender_never_blocks_either_alert_path(
+    _outbox: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import time
+
+    calls: list[str] = []
+
+    def hangs(title: str, body: str) -> dict[str, Any]:
+        calls.append(title)
+        time.sleep(30)
+        return {"delivered": 1}
+
+    monkeypatch.setattr(_outbox, "SENDER", hangs)
+    t0 = time.monotonic()
+    assert ev.page_alert("e8_hang", "firing", firing=True) == "QUEUED"
+    assert time.monotonic() - t0 < 0.5
+    t0 = time.monotonic()
+    assert ev.page_account_key(ev.AK_HELPER_ABSENT) == "OPEN"
+    assert time.monotonic() - t0 < 0.5
+    assert ev.drain_pages(5.0) == 0
+    assert calls == [], "nothing on either path called the sender"
+    assert _rows(_outbox, "e8_hang") and _rows(_outbox, ev.AK_ALERT_ID)
+
+
+def test_v56f_an_open_writes_one_outbox_row_that_deliver_pending_sends(_outbox: Any) -> None:
+    for _ in range(3):
+        ev.page_alert("e8_open", "committed risk unmeasurable", firing=True)
+        ev.drain_pages(5.0)
+    (row,) = _rows(_outbox, "e8_open")
+    assert row["status"] == "OPEN" and "unmeasurable" in row["body"]
+    res = _outbox.deliver_pending()
+    assert [x for x in res["sent"] if x["aid"] == "e8_open"] == [
+        {"aid": "e8_open", "sent": True, "status": "OPEN"}
+    ]
+    assert len(_outbox.sent_log) == 1
+    assert _outbox.deliver_pending()["sent"] == [], "a delivered OPEN is not re-sent"
+
+
+def test_v56f_a_close_writes_ok_and_the_recovery_is_paged_once(_outbox: Any) -> None:
+    ev.page_alert("e8_close", "firing", firing=True)
+    ev.drain_pages(5.0)
+    _outbox.deliver_pending()
+    ev.page_alert("e8_close", "", firing=False)
+    ev.drain_pages(5.0)
+    assert [r["status"] for r in _rows(_outbox, "e8_close")] == ["OK"]
+    res = _outbox.deliver_pending()
+    assert {"aid": "e8_close", "sent": True, "status": "OK"} in res["sent"]
+    assert len(_outbox.sent_log) == 2
+    assert _outbox.deliver_pending()["sent"] == []
+
+
+def test_v56f_page_account_key_enqueues_open_and_ok(_outbox: Any) -> None:
+    assert ev.page_account_key(ev.AK_SERVER_UNREADABLE) == "OPEN"
+    (row,) = _rows(_outbox, ev.AK_ALERT_ID)
+    assert row["status"] == "OPEN" and row["sig"] == ev.AK_SERVER_UNREADABLE
+    _outbox.deliver_pending()
+    assert ev.page_account_key(ev.AK_OK) == "FIXED"
+    assert [r["status"] for r in _rows(_outbox, ev.AK_ALERT_ID)] == ["OK"]
+    res = _outbox.deliver_pending()
+    assert {"aid": ev.AK_ALERT_ID, "sent": True, "status": "OK"} in res["sent"]
+    assert ev.page_account_key(ev.AK_OK) is None, "nothing open: no OK row"
+    assert _rows(_outbox, ev.AK_ALERT_ID) == []

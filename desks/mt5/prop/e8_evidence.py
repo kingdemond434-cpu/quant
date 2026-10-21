@@ -407,15 +407,21 @@ def page_account_key(status: str, log: Callable[[str], None] | None = None) -> s
 
     v5.6: the read-modify-save runs under ONE lock (`_ledger_txn`, the v5f AlertLedger
     semantics): an unreadable ledger is never saved over, and a busy lock gives up after
-    AK_LOCK_WAIT_S instead of going on unlocked. Nothing is sent from here."""
+    AK_LOCK_WAIT_S instead of going on unlocked.
+
+    On v5f each transition is also ENQUEUED (`_PAGE` = provenance._page): OPEN with the status
+    as its sig, OK on the close. An append, never a send, so this stays off the network."""
     try:
         path = _ledger_path()
         if status in AK_PAGE:
+            msg = (f"[e8_gold] account_key not stamped: {status}; "
+                   "stop exits and evidence carry no cross-account key")
             with _ledger_txn(path, AK_LOCK_WAIT_S) as txn:
-                txn.ledger.observe(AK_ALERT_ID, f"[e8_gold] account_key not stamped: {status}; "
-                                   "stop exits and evidence carry no cross-account key",
-                                   scope="RUNTIME")
+                txn.ledger.observe(AK_ALERT_ID, msg, scope="RUNTIME")
                 txn.dirty = True
+            if _enqueue_only():
+                with contextlib.suppress(Exception):
+                    _PAGE(AK_ALERT_ID, "OPEN", status, "E8 gold: account_key not stamped", msg)
             return "OPEN"
         if status == AK_OK and path.exists():
             with _ledger_txn(path, AK_LOCK_WAIT_S) as txn:
@@ -423,6 +429,10 @@ def page_account_key(status: str, log: Callable[[str], None] | None = None) -> s
                 if alert is not None and alert.open:
                     txn.ledger.verify(AK_ALERT_ID, still_firing=False)
                     txn.dirty = True
+            if txn.dirty and _enqueue_only():
+                with contextlib.suppress(Exception):
+                    _PAGE(AK_ALERT_ID, "OK", "recovered", "E8 gold: account_key stamped again",
+                          "the E8 pass stamps account_key again")
             return "FIXED" if txn.dirty else None
     except Exception as exc:
         _say(log, f"account-key alert not recorded ({type(exc).__name__})")
@@ -624,8 +634,22 @@ def _page_direct(aid: str, status: str, sig: str, title: str, body: str) -> dict
     return out
 
 
-#: THE PAGER. After publish_sync v5e/v5f lands: `_PAGE = provenance._page` (see above).
-_PAGE: Callable[[str, str, str, str, str], dict[str, Any]] = _page_direct
+#: THE PAGER: publish_sync v5f's enqueue-only `provenance._page` (the one-line switch, made on
+#: claude/e8-bracket-v5_6-on-v5f). It appends one outbox row and returns; v5f's
+#: `deliver_pending` (MT5-BoxHeartbeat every 5 min, MT5-ProcessHealth hourly) sends it, under its
+#: own lock, with v5f's dedupe and 6 h repage. `_page_direct` stays as the fallback for a tree
+#: without the helper.
+try:
+    from libs.ops import provenance as _provenance
+except Exception:  # pragma: no cover - a tree without publish_sync v5f
+    _provenance = None  # type: ignore[assignment]
+_PAGE: Callable[[str, str, str, str, str], dict[str, Any]] = (
+    _provenance._page if _provenance is not None else _page_direct)
+
+
+def _enqueue_only() -> bool:
+    """True when `_PAGE` is v5f's outbox (never a send), so every ledger write may call it."""
+    return _PAGE is not _page_direct
 _PENDING: list[Any] = []
 
 
@@ -644,9 +668,15 @@ def _alert_worker(aid: str, message: str, firing: bool,
             elif was_open:
                 txn.ledger.verify(aid, still_firing=False)
                 txn.dirty = True
-        if opened:
+        # v5f's deliverer reads only its outbox, so EVERY ledger write is mirrored there: OPEN on
+        # each firing write (v5f dedupes in-process and repages a standing incident every 6 h),
+        # OK on the close. With the direct fallback, only an opening sends.
+        if firing and (opened or _enqueue_only()):
             res = _PAGE(aid, "OPEN", aid, f"E8 gold: {aid}", message)
-            _say(log, f"alert {aid} opened; page {res.get('reason')}")
+            _say(log, f"alert {aid} {'opened' if opened else 'firing'}; page {res.get('reason')}")
+        elif txn.dirty and not firing and _enqueue_only():
+            res = _PAGE(aid, "OK", aid, f"E8 gold: {aid} cleared", f"{aid} no longer firing")
+            _say(log, f"alert {aid} closed; page {res.get('reason')}")
     except Exception as exc:
         _say(log, f"alert {aid} not recorded ({type(exc).__name__}: {exc})"[:200])
 
