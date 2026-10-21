@@ -786,25 +786,30 @@ def test_an_undelivered_identity_page_records_nothing_and_is_re_sent(monkeypatch
 
 
 def test_in_production_the_identity_page_goes_through_provenance_page(monkeypatch) -> None:
-    """v2s SF-1: with no test PAGER the page is v5e's `provenance._page` (on this base): its
-    delivered-only, atomic dedup -- an undelivered page is re-sent, a delivered one dedupes."""
+    """v2s SF-1 on r7.3 (v5f merged): with no test PAGER the page is v5f's enqueue-only
+    `provenance._page` -- nothing is sent on the order path; `deliver_pending` (the heartbeat)
+    delivers it, records only a DELIVERED page, and re-sends an undelivered one."""
     from libs.ops import provenance as p
     monkeypatch.setattr(oco, "PAGER", None)
-    monkeypatch.setattr(p, "_PAGED", set())
-    monkeypatch.setattr(p, "_LAST_TRY", {})
+    for name in ("_ENQUEUED", "_LAST_TRY", "_ENQUEUE_FAILED"):
+        monkeypatch.setattr(p, name, {})
     got: list[str] = []
     delivered = {"n": 0}
     monkeypatch.setattr(p, "SENDER", lambda t, b: (got.append(t),
                                                    {"armed": 1, "delivered": delivered["n"]})[1])
     why = "the box-held HMAC account key is absent"
     r1 = oco.page_identity("fusion", why)
-    assert r1["via"] == "provenance._page" and r1["sent"] is False and len(got) == 1
-    p._LAST_TRY.clear()                                  # past v5e's undelivered-retry throttle
+    assert r1["via"] == "provenance._page" and r1["sent"] is False and r1["queued"] is True
+    assert got == []                                     # nothing sent on the order path
+    p.deliver_pending()
+    assert len(got) == 1 and "fusion" in got[0]          # undelivered: nothing recorded
+    p._LAST_TRY.clear()                                  # past the undelivered-retry throttle
     delivered["n"] = 1
-    r2 = oco.page_identity("fusion", why)
-    assert r2["sent"] is True and len(got) == 2         # re-sent: the miss recorded nothing
-    assert oco.page_identity("fusion", why)["sent"] is False and len(got) == 2
-    assert not (Path(oco.ALERT_ROOT) / oco.PAGE_STATE_REL).exists()   # one dedup state: v5e's
+    p.deliver_pending()
+    assert len(got) == 2                                 # re-sent, not muted
+    p.deliver_pending()
+    assert len(got) == 2                                 # delivered: deduplicated
+    assert not (Path(oco.ALERT_ROOT) / oco.PAGE_STATE_REL).exists()   # one dedup state: v5f's
 
 
 def test_a_v5f_enqueue_only_page_is_reported_as_queued(monkeypatch) -> None:

@@ -144,18 +144,18 @@ ALERT_ROOT = _DESK.parent.parent
 PAGE_STATE_REL = "desks/mt5/logs/gold_oco_identity_alert.json"
 REPAGE_H = 6.0
 #: The pager: (title, body) -> result. Tests set it; None -> `provenance._page` when the tree
-#: carries it (publish_sync v5e, on this base), else alert_channels.send_all under ALERT_ROOT.
+#: carries it (publish_sync v5f on this base: enqueue-only), else alert_channels.send_all.
 PAGER: Callable[[str, str], dict[str, Any]] | None = None
 
 
 def _provenance_page() -> Callable[..., dict[str, Any]] | None:
     """publish_sync's `provenance._page(aid, status, sig, title, body) -> dict`, or None.
 
-    v5e (on this base) SENDS and records its dedup state only for a DELIVERED page, atomically.
-    v5f (local branch claude/publish-sync-v5f) keeps the signature and becomes ENQUEUE-ONLY: it
-    writes one outbox row, returns `sent` False and a `queued` field, and `deliver_pending`
-    (MT5-BoxHeartbeat) sends it off the order path. This module needs no change for v5f: it
-    reports what `_page` answered (`queued` included)."""
+    On this base (Fusion r7.3, which merges publish_sync v5f a446bcc0) `_page` is ENQUEUE-ONLY:
+    it writes one outbox row and returns `sent` False with a `queued` field; `deliver_pending`
+    (MT5-BoxHeartbeat, MT5-ProcessHealth) sends it off the order path and records only a
+    DELIVERED page, atomically. On a v5e tree the same call sends at once under the same
+    delivered-only rule; either way this module reports what `_page` answered."""
     root = str(Path(ALERT_ROOT))
     try:
         import sys as _sys
@@ -200,7 +200,8 @@ def page_identity(lane: str, why: str | None, *,
     v5e's rule): a send whose `delivered` is 0, absent or falsy writes no dedup state, so the
     next pass re-sends instead of muting the alert for REPAGE_H. The state is written
     atomically. In production (no test PAGER) delivery and dedup are `provenance._page`'s --
-    v5e's sender today, v5f's enqueue-only outbox once v5f lands (`queued` is then reported)."""
+    v5f's enqueue-only outbox on this base (`queued` is reported; nothing sends on the order
+    path), v5e's immediate send on an older tree."""
     root = Path(ALERT_ROOT)
     now = now or datetime.now(tz=UTC)
     path = root / PAGE_STATE_REL
