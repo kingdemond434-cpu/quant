@@ -69,7 +69,8 @@ def test_the_key_is_a_keyed_hmac_in_r5_s_format(_account_key_file: Path) -> None
     assert got != "sha256:" + hashlib.sha256(msg).hexdigest()[:16], "the invertible v4 key"
     assert provenance.account_key is libs_provenance.account_key, "one helper, not two"
     assert provenance.account_key(5551234.0, "S") == provenance.account_key(5551234, "S")
-    assert provenance.account_key("5551234", "S") != provenance.account_key(5551234, "S")
+    # v5c: a digit string is the same account as the int (norm_login); "" stays distinct from None
+    assert provenance.account_key("5551234", "S") == provenance.account_key(5551234, "S")
     assert provenance.account_key(1, "") != provenance.account_key(1, None)
     for bad in ((None, "S"), ("", "S"), (True, "S")):
         assert provenance.account_key(*bad) is None
@@ -196,9 +197,7 @@ def test_the_gateway_writes_the_key_and_never_the_raw_login() -> None:
      {"login": 5551234, "server": "", "kind": LIVE}),
     ({"login": 5551234, "server": "", "kind": LIVE},
      {"login": 5551234, "server": None, "kind": LIVE}),
-    ({"login": "5551234", "server": "S", "kind": LIVE},
-     {"login": 5551234, "server": "S", "kind": LIVE}),
-], ids=["N.0-writer", "N.0-reader", "empty-server", "empty-vs-none", "str-vs-int"])
+], ids=["N.0-writer", "N.0-reader", "empty-server", "empty-vs-none"])
 def test_the_n_point_0_and_empty_server_edges_decide_as_the_raw_comparison_did(
         writer: dict, reader: dict) -> None:
     old_row = {"account": writer["login"], "server": writer["server"],
@@ -381,3 +380,53 @@ def test_the_no_hard_link_fallback_creates_exclusively_and_fsyncs(
     assert flags and all(f & os.O_EXCL and f & os.O_CREAT for f in flags)
     assert len(synced) >= 2, "the temp file and the key itself must both be fsynced"
     assert len(path.read_bytes().strip()) >= 32
+
+
+# v5c (2026-10-21, coordinator): account_key is THE one account-key function and normalises
+# internally -- norm_login for the login, .strip() for the server. Fake logins only.
+_FORMS = (7000001, "7000001", " 7000001 ", 7000001.0, "\t7000001\n")
+
+
+@pytest.mark.parametrize("server", ["X", " X ", "X\n"], ids=["clean", "padded", "newline"])
+def test_every_form_of_one_login_and_server_is_one_key(server: str) -> None:
+    want = libs_provenance.account_key(7000001, "X")
+    assert want is not None and provenance.is_key(want)
+    for form in _FORMS:
+        assert libs_provenance.account_key(form, server) == want, (form, server)
+        assert libs_provenance.norm_login(form) == 7000001
+
+
+def test_a_different_login_or_server_is_a_different_key() -> None:
+    base = libs_provenance.account_key(7000001, "X")
+    assert libs_provenance.account_key(7000002, "X") != base
+    assert libs_provenance.account_key("7000002", " X ") != base
+    assert libs_provenance.account_key(7000001, "Y") != base
+    assert libs_provenance.account_key(7000001, None) != libs_provenance.account_key(7000001, "")
+
+
+@pytest.mark.parametrize("garbage", [
+    None, True, False, "", "   ", "7000001a", "7,000,001", "7000001.0", "-7000001", "+7000001",
+    "\u0667000001", 7000001.5, float("nan"), float("inf"), 0, -7000001, 0.0, b"7000001",
+    [7000001], {"login": 7000001}, object(),
+], ids=lambda g: type(g).__name__ + ":" + repr(g)[:12])
+def test_garbage_logins_fail_closed(garbage: object) -> None:
+    assert libs_provenance.norm_login(garbage) is None
+    assert libs_provenance.account_key(garbage, "X") is None
+    assert libs_provenance.account_key(garbage, "X", create=True) is None
+
+
+def test_an_int_login_with_a_clean_server_hashes_exactly_as_before(
+        _account_key_file: Path) -> None:
+    """Rows already stamped from the terminal's int login keep their key across v5c."""
+    key = _account_key_file.read_bytes().strip()
+    want = "sha256:" + hmac.new(key, b"7000001@X", hashlib.sha256).hexdigest()[:16]
+    assert libs_provenance.account_key(7000001, "X") == want
+
+
+def test_a_string_login_row_now_matches_its_int_account() -> None:
+    """THE ONE DECISION v5c CHANGES, on purpose: a writer handed "N" and a reader holding N are
+    the same account (the raw comparison said not). The terminal reports logins as ints."""
+    writer = {"login": "7000001", "server": "S", "kind": LIVE}
+    reader = {"login": 7000001, "server": "S", "kind": LIVE}
+    assert provenance.same_account(provenance.stamp(writer), reader) is True
+

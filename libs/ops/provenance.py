@@ -9,7 +9,8 @@ Fusion r5's book check validates -- or None, THE FAIL-CLOSED SENTINEL, when the 
 unreadable or no box key is held. It NEVER falls back to a bare sha256: the v4 key was an
 unsalted truncated sha256 of "<login>@<server>" with the server published in clear on the same
 row, and one core inverts an 8-digit login from that in about a minute. Every consumer (the
-desk's mt5desk.provenance, the gateway's intent stamp, the cross-account OCO lock) calls THIS.
+desk's mt5desk.provenance, the gateway's intent stamp, the cross-account OCO lock) calls THIS,
+and it normalises internally (v5c, `norm_login` + a stripped server), so no caller has to.
 
 THE KEY. `data/secrets/account_key.hmac` under the repository (gitignored with all of
 data/secrets/, never printed, never logged, never leaves the box), or the file named by
@@ -40,7 +41,7 @@ import re
 import secrets
 from pathlib import Path
 
-__all__ = ["KEY_ENV", "KEY_REL", "account_key", "is_key", "key_path"]
+__all__ = ["KEY_ENV", "KEY_REL", "account_key", "is_key", "key_path", "norm_login"]
 
 KEY_ENV = "QUANT_ACCOUNT_KEY_FILE"
 KEY_REL = "data/secrets/account_key.hmac"
@@ -136,19 +137,31 @@ def _box_key(create: bool = False) -> bytes | None:
     return None
 
 
-def _canon_login(login: object) -> str | None:
-    """The login as hash input. An integral float reads as its int (N.0 == N, as the raw
-    comparison always had it); a string is tagged so "123" stays distinct from 123."""
+_DIGITS = re.compile(r"[0-9]+")
+
+
+def norm_login(login: object) -> int | None:
+    """The ONE canonical form of an MT5 login: a positive int, or None (fail closed, never a
+    guess). v5c: `7000001`, `7000001.0`, `"7000001"` and `" 7000001 "` are all 7000001. A bool,
+    a non-integral or non-finite float, a string that is not ASCII digits after stripping,
+    zero, a negative, or any other type is None -- the gateway's `login or 0` for an unreadable
+    account must not key as account 0."""
     if login is None or isinstance(login, bool):
         return None
     if isinstance(login, float):
-        if not login.is_integer():
-            return f"f:{login!r}"
-        login = int(login)
-    if isinstance(login, int):
-        return str(login)
-    text = str(login)
-    return ("s:" + text) if text else None
+        if not login.is_integer():   # NaN and inf are not integral
+            return None
+        value = int(login)
+    elif isinstance(login, int):
+        value = login
+    elif isinstance(login, str):
+        text = login.strip()
+        if not _DIGITS.fullmatch(text):
+            return None
+        value = int(text)
+    else:
+        return None
+    return value if value > 0 else None
 
 
 def is_key(value: object) -> bool:
@@ -158,13 +171,18 @@ def is_key(value: object) -> bool:
 
 def account_key(login: object, server: object, *, create: bool = False) -> str | None:
     """"sha256:" + HMAC-SHA256(box key, "<login>@<server>")[:16], or None (fail closed) when the
-    login is unreadable or no box key is held. `create=True` is for writers on the box only."""
-    canon = _canon_login(login)
+    login is unreadable or no box key is held. `create=True` is for writers on the box only.
+
+    NORMALISES INTERNALLY (v5c): the login goes through `norm_login` (int, integral float and
+    digit string -- whitespace allowed -- are one account; anything else is None) and the server
+    is `.strip()`ped (None stays distinct from ""). An int login with a clean server hashes
+    exactly as before, so every key already stamped from the terminal's int login still holds."""
+    canon = norm_login(login)
     if canon is None:
         return None
     key = _box_key(create=create)
     if key is None:
         return None
-    srv = "\x00none" if server is None else str(server)
+    srv = "\x00none" if server is None else str(server).strip()
     mac = hmac.new(key, f"{canon}@{srv}".encode(), hashlib.sha256).hexdigest()
     return "sha256:" + mac[:16]
