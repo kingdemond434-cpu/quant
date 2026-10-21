@@ -493,10 +493,16 @@ def _csv_hits(text: str, sep: str) -> list[tuple[str, int]]:
 #: it sat under, or `<key withheld>` when that key is itself account-shaped -- never the value.
 VALUE_FINDING = "<declared account number as a value>"
 _KEY_WITHHELD = "<key withheld>"
-_NESTED_DEPTH = 4
+#: How deep a JSON document nested inside a string is followed (v5f.1: was 4, and a fifth level
+#: hid the number). Each level is a strictly shorter string, so the walk ends on its own; this is
+#: a backstop, and `seen` is the cycle guard (the same string is never parsed twice).
+_NESTED_DEPTH = 64
 _SEP_TABLE = {ord(c): None for c in _DIGIT_SEP}
 _HEX_VALUE = re.compile(r"[+]?0[xX]([0-9a-fA-F]{1,16})")
 _FLOAT_VALUE = re.compile(r"[+]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?")
+#: Delimiters a .csv is also read with (v5f.1: a `;`-delimited export hid every cell), when the
+#: file's head carries them. A .tsv is read with the tab.
+_CSV_DELIMS = (",", ";", "\t", "|")
 
 
 def _cheap_decoded(text: str) -> str:
@@ -505,57 +511,69 @@ def _cheap_decoded(text: str) -> str:
     return text if text.isascii() and "\\" not in text else _decoded(text)
 
 
-def _denoted(value: Any) -> str | None:
-    """The non-negative integer `value` denotes, as a digit string with no leading zeros, or
-    None. Booleans and non-integral numbers denote none; a string is decoded (escapes, invisible
-    characters, Unicode digits), its digit separators dropped, and read as decimal, integral
-    float / exponent, or 0x-hex."""
+def _denotations(value: Any) -> frozenset[str]:
+    """Every non-negative integer `value` can be read as, as digit strings with no leading
+    zeros. Booleans and non-integral numbers denote none. A string is decoded (escapes, invisible
+    characters, Unicode digits) and read EVERY way that applies (v5f.1): as an integral float or
+    exponent (`0005551234.00` is 5551234), as a separated integer with its separators dropped
+    (`555-1234`), and as 0x-hex -- one reading must never shadow another."""
     if isinstance(value, bool) or value is None:
-        return None
+        return frozenset()
     if isinstance(value, int):
-        return str(value) if value >= 0 else None
+        return frozenset({str(value)}) if value >= 0 else frozenset()
     if isinstance(value, float):
-        return str(int(value)) if value == value and abs(value) != float("inf") \
-            and value.is_integer() and value >= 0 else None
+        ok = value == value and abs(value) != float("inf") and value.is_integer() and value >= 0
+        return frozenset({str(int(value))}) if ok else frozenset()
     if not isinstance(value, str) or len(value) > 64:
-        return None
+        return frozenset()
     v = _cheap_decoded(value).strip().strip("\"'").strip()
     if not v:
-        return None
+        return frozenset()
+    out: set[str] = set()
     if m := _HEX_VALUE.fullmatch(v):
-        return str(int(m.group(1), 16))
-    flat = v.translate(_SEP_TABLE).lstrip("+")
-    if re.fullmatch(r"[0-9]+", flat) and (v[:1].isdigit() or v[-1:].isdigit()):
-        return str(int(flat))
+        out.add(str(int(m.group(1), 16)))
     if _FLOAT_VALUE.fullmatch(v):
         with contextlib.suppress(ValueError, OverflowError):
             f = float(v)
             if f.is_integer() and f >= 0:
-                return str(int(f))
-    return None
+                out.add(str(int(f)))
+    flat = v.translate(_SEP_TABLE).lstrip("+")
+    if re.fullmatch(r"[0-9]+", flat) and (v[:1].isdigit() or v[-1:].isdigit()):
+        out.add(str(int(flat)))
+    return frozenset(out)
+
+
+def _denoted(value: Any) -> str | None:
+    """One integer `value` denotes (the smallest), or None. Kept for callers; matching uses
+    `_denotations`."""
+    got = _denotations(value)
+    return min(got, key=lambda d: (len(d), d)) if got else None
 
 
 def _walk_values(node: Any, key: str, wanted: frozenset[str], depth: int,
                  out: list[str]) -> None:
     """Append the (withheld-if-account-shaped) key of every scalar that denotes a wanted
-    number. A string that is itself a JSON document is parsed and walked, `_NESTED_DEPTH` deep."""
+    number. A string that is itself a JSON document is parsed and walked, at any depth up to
+    `_NESTED_DEPTH`, each distinct string once."""
     stack: list[tuple[Any, str, int]] = [(node, key, depth)]
+    seen: set[str] = set()
     while stack:
         cur, k, d = stack.pop()
         if isinstance(cur, dict):
             for ck, cv in cur.items():
                 name = str(ck)
-                shown = _KEY_WITHHELD if (_denoted(name) is not None
+                shown = _KEY_WITHHELD if (_denotations(name)
                                           or re.search(r"\d{4}", _cheap_decoded(name))) else name
-                if _denoted(name) in wanted:
+                if _denotations(name) & wanted:
                     out.append(_KEY_WITHHELD)
                 stack.append((cv, shown, d))
         elif isinstance(cur, list):
             stack.extend((cv, k, d) for cv in cur)
         else:
-            if _denoted(cur) in wanted:
+            if _denotations(cur) & wanted:
                 out.append(k)
-            elif isinstance(cur, str) and d < _NESTED_DEPTH:
+            elif isinstance(cur, str) and d < _NESTED_DEPTH and cur not in seen:
+                seen.add(cur)
                 # as written first, then decoded (a doubly-encoded document is a quoted string
                 # until its escapes are undone)
                 for inner in (cur.strip(), _decoded(cur).strip().strip("\"'")):
@@ -565,24 +583,36 @@ def _walk_values(node: Any, key: str, wanted: frozenset[str], depth: int,
                             break
 
 
+def _csv_value_hits(text: str, suffix: str, wanted: frozenset[str]) -> set[tuple[str, int]]:
+    """Every cell, under every delimiter the file plausibly uses, walked as a value -- so a JSON
+    document inside a cell is parsed too (v5f.1)."""
+    flat = _drop_format(text)
+    head = flat[:4096]
+    delims = ("\t",) if suffix == ".tsv" else tuple(
+        d for d in _CSV_DELIMS if d == "," or d in head)
+    hits: set[tuple[str, int]] = set()
+    for delim in delims:
+        header: list[str] = []
+        for n, row in enumerate(csv.reader(io.StringIO(flat), delimiter=delim), start=1):
+            for i, cell in enumerate(row):
+                name = header[i].strip() if i < len(header) else f"column {i + 1}"
+                col = _KEY_WITHHELD if re.search(r"\d{4}", name) else name
+                keys: list[str] = []
+                _walk_values(cell, col, wanted, 0, keys)
+                hits.update((k, n) for k in keys)
+            if n == 1:
+                header = row
+    return hits
+
+
 def _value_hits(text: str, suffix: str, ids: frozenset[str]) -> list[tuple[str, int]]:
     """(key, line) for each declared number found as a VALUE in parsed JSON / JSONL / CSV."""
     if not ids:
         return []
     wanted = frozenset(str(int(i)) for i in ids if i.isdigit())
-    hits: set[tuple[str, int]] = set()
     if suffix in (".csv", ".tsv"):
-        rows = csv.reader(io.StringIO(_drop_format(text)),
-                          delimiter="\t" if suffix == ".tsv" else ",")
-        header: list[str] = []
-        for n, row in enumerate(rows, start=1):
-            for i, cell in enumerate(row):
-                if _denoted(cell) in wanted:
-                    name = header[i].strip() if i < len(header) else f"column {i + 1}"
-                    hits.add((_KEY_WITHHELD if re.search(r"\d{4}", name) else name, n))
-            if n == 1:
-                header = row
-        return sorted(hits, key=lambda h: (h[1], h[0]))
+        return sorted(_csv_value_hits(text, suffix, wanted), key=lambda h: (h[1], h[0]))
+    hits: set[tuple[str, int]] = set()
     stripped = text.strip()
     if not stripped or stripped[:1] not in "{[":
         return []
@@ -810,12 +840,20 @@ def main(argv: list[str] | None = None) -> int:
     out = args.artifact or (args.repo / "desks" / "mt5" / "reports" / "LOGIN_FENCE.json")
     _write(out, doc)                      # the artifact exists even if alerting fails below
     rc = 0
+    # THE LEDGER AND THE PAGE ARE INDEPENDENT (v5f.1): an AlertLedgerBusy / Unreadable from
+    # record_alert used to skip page(), so a refusal reached nobody exactly when the ledger was
+    # contended. Each is tried on its own; either failing is recorded, never swallowed.
     try:
         doc["alert"] = record_alert(doc, args.repo)
-        doc["page"] = page(doc, args.repo)
-    except Exception as exc:              # recorded, never swallowed
+    except Exception as exc:
         doc["alert_error"] = type(exc).__name__
-        print(f"login fence: alert/page failed ({type(exc).__name__})", file=sys.stderr)
+        print(f"login fence: alert failed ({type(exc).__name__})", file=sys.stderr)
+        rc = 3 if doc["status"] != "OK" else 0
+    try:
+        doc["page"] = page(doc, args.repo)
+    except Exception as exc:
+        doc["page_error"] = type(exc).__name__
+        print(f"login fence: page failed ({type(exc).__name__})", file=sys.stderr)
         rc = 3 if doc["status"] != "OK" else 0
     _write(out, doc)
     if rc:

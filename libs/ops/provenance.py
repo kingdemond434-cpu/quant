@@ -57,7 +57,9 @@ import operator
 import os
 import re
 import secrets
+import subprocess
 import sys
+import threading
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -147,6 +149,96 @@ def _default_sender() -> Sender:
 SENDER: Sender | None = None
 
 
+#: A well-formed outbox row (v5f.1): an alert id is a short token, never a dict's repr or an
+#: empty string, and a row with no title is never paged (it used to page with an empty one).
+_AID = re.compile(r"[A-Za-z0-9_.:@-]{1,80}")
+
+
+def _row_problem(r: Any) -> str | None:
+    """Why `r` is not a deliverable outbox row, or None."""
+    if not isinstance(r, dict):
+        return "not an object"
+    if not isinstance(r.get("aid"), str) or not _AID.fullmatch(r["aid"]):
+        return "aid is not a short token"
+    if r.get("status") not in ("OPEN", "OK"):
+        return "status is not OPEN or OK"
+    for k in ("sig", "title", "body", "at"):
+        if not isinstance(r.get(k), str):
+            return f"{k} is not a string"
+    if not r["title"].strip():
+        return "empty title"
+    try:
+        datetime.fromisoformat(r["at"])
+    except ValueError:
+        return "at is not a timestamp"
+    if not isinstance(r.get("needs_human", ""), str) or not isinstance(r.get("ledger", False),
+                                                                        bool):
+        return "needs_human / ledger mistyped"
+    return None
+
+
+#: THE FAST PATH (v5f.1). The heartbeat drains the outbox every 5 minutes, so a KEY_MISMATCH or
+#: UNDECLARED incident paged up to 5 minutes late while trading sat failed-closed. Each successful
+#: enqueue now also KICKS one deliverer: a daemon thread starts a detached, below-normal
+#: `python -m libs.ops.provenance --deliver-alerts` child and the caller returns at once. Best
+#: effort -- the heartbeat still delivers whatever the kick did not -- and throttled to one kick
+#: per IMMEDIATE_DRAIN_MIN_S per process. `QUANT_ALERT_IMMEDIATE_DRAIN=0` turns it off.
+IMMEDIATE_DRAIN_ENV = "QUANT_ALERT_IMMEDIATE_DRAIN"
+IMMEDIATE_DRAIN_MIN_S = 30.0
+_DRAIN_CHILD_ENV = "QUANT_ALERT_DRAIN_CHILD"
+#: Tests replace this; None means `_spawn_drain_child`, which a pytest process never runs.
+DRAIN_SPAWNER: Callable[[], Any] | None = None
+_LAST_KICK: list[float] = []
+
+
+def _spawn_drain_child() -> subprocess.Popen[bytes]:
+    """The detached deliverer, below normal priority; it lowers itself again on start."""
+    cmd = [sys.executable, "-m", "libs.ops.provenance", "--deliver-alerts"]
+    common: dict[str, Any] = {"stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL,
+                              "stderr": subprocess.DEVNULL, "close_fds": True, "cwd": str(_REPO),
+                              "env": {**os.environ, _DRAIN_CHILD_ENV: "1"}}
+    if sys.platform == "win32":
+        base = (getattr(subprocess, "DETACHED_PROCESS", 0x8)
+                | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x200)
+                | getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0x4000))
+        try:
+            return subprocess.Popen(cmd, creationflags=base | 0x01000000, **common)
+        except OSError:
+            return subprocess.Popen(cmd, creationflags=base, **common)
+    return subprocess.Popen(cmd, start_new_session=True, **common)
+
+
+def _run_kick(spawner: Callable[[], Any]) -> None:
+    with contextlib.suppress(Exception):
+        proc = spawner()
+        wait = getattr(proc, "wait", None)
+        if callable(wait):          # reap it (POSIX zombie); never kill it
+            with contextlib.suppress(Exception):
+                wait(timeout=600)
+
+
+def _kick_drain() -> bool:
+    """Start the immediate deliverer without waiting for it. NEVER RAISES, NEVER BLOCKS: the
+    caller pays for one thread start."""
+    try:
+        if os.environ.get(IMMEDIATE_DRAIN_ENV, "1") == "0" or os.environ.get(_DRAIN_CHILD_ENV):
+            return False
+        now = time.monotonic()
+        if _LAST_KICK and now - _LAST_KICK[0] < IMMEDIATE_DRAIN_MIN_S:
+            return False
+        spawner = DRAIN_SPAWNER
+        if spawner is None:
+            if "PYTEST_CURRENT_TEST" in os.environ:
+                return False        # a test never starts a real deliverer unless it asks to
+            spawner = _spawn_drain_child
+        _LAST_KICK[:] = [now]
+        threading.Thread(target=_run_kick, args=(spawner,), daemon=True,
+                         name="account-key-alert-drain").start()
+        return True
+    except Exception:
+        return False
+
+
 def _enqueue(aid: str, status: str, sig: str, title: str, body: str,
              needs_human: str = "", *, ledger: bool = False) -> bool:
     """THE ONLY ALERT WORK ON THE ORDER PATH (v5f): append one line to the outbox. No network,
@@ -154,6 +246,13 @@ def _enqueue(aid: str, status: str, sig: str, title: str, body: str,
     and a send there (12 s per channel, repeated when the page state could not be written or the
     sender raised) delayed the protective leg. Delivery is `deliver_pending`, run by
     MT5-BoxHeartbeat every 5 minutes and by MT5-ProcessHealth hourly. NEVER RAISES."""
+    doc = {"at": datetime.now(UTC).isoformat(timespec="microseconds"), "pid": os.getpid(),
+           "aid": aid, "status": status, "sig": sig, "title": title,
+           "body": body[:1500] if isinstance(body, str) else body,
+           "needs_human": needs_human[:600] if isinstance(needs_human, str) else needs_human,
+           "ledger": ledger}
+    if _row_problem(doc) is not None:
+        return False                # never write a row the deliverer would quarantine
     path = _outbox_path()
     memo = (str(path), aid, f"{status}|{sig}")
     now = time.monotonic()
@@ -164,10 +263,7 @@ def _enqueue(aid: str, status: str, sig: str, title: str, body: str,
     if failed is not None and now - failed < RETRY_UNDELIVERED_S:
         return False
     try:
-        row = json.dumps({"at": datetime.now(UTC).isoformat(timespec="microseconds"),
-                          "pid": os.getpid(), "aid": aid, "status": status, "sig": sig,
-                          "title": title, "body": body[:1500],
-                          "needs_human": needs_human[:600], "ledger": ledger}) + "\n"
+        row = json.dumps(doc) + "\n"
         path.parent.mkdir(parents=True, exist_ok=True)
         fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
         try:
@@ -183,6 +279,7 @@ def _enqueue(aid: str, status: str, sig: str, title: str, body: str,
     for m in [m for m in _ENQUEUED if m[0] == memo[0] and m[1] == aid and m != memo]:
         _ENQUEUED.pop(m, None)
     _ENQUEUED[memo] = now
+    _kick_drain()
     return True
 
 
@@ -232,7 +329,7 @@ def _page(aid: str, status: str, sig: str, title: str, body: str) -> dict[str, A
     try:
         if status not in ("OPEN", "OK"):
             return {"sent": False, "queued": False, "reason": f"unknown status {status!r}"}
-        queued = _enqueue(str(aid), status, str(sig), str(title), str(body))
+        queued = _enqueue(aid, status, sig, title, body)   # validated: a dict aid is refused
         return {"sent": False, "queued": queued,
                 "reason": ("queued: delivered off the order path by deliver_pending" if queued
                            else "deduplicated or enqueue throttled (this process)")}
@@ -280,14 +377,32 @@ def _drain(outbox: Path) -> list[tuple[Path, list[dict[str, Any]]]]:
     out: list[tuple[Path, list[dict[str, Any]]]] = []
     for f in sorted(outbox.parent.glob(outbox.name + ".*.draining")):
         rows: list[dict[str, Any]] = []
+        bad: list[str] = []
         with contextlib.suppress(OSError):
             for line in f.read_text("utf-8", errors="replace").splitlines():
-                with contextlib.suppress(ValueError):
+                if not line.strip():
+                    continue
+                try:
                     r = json.loads(line)
-                    if isinstance(r, dict) and r.get("aid") and r.get("status") in ("OPEN", "OK"):
-                        rows.append(r)
+                except ValueError:
+                    r = None
+                why = "not JSON" if r is None else _row_problem(r)
+                if why is None:
+                    rows.append(r)
+                else:
+                    bad.append(json.dumps({"why": why, "line": line[:4000]}))
+        if bad:
+            _quarantine(outbox, bad)
         out.append((f, rows))
     return out
+
+
+def _quarantine(outbox: Path, lines: list[str]) -> None:
+    """Malformed outbox rows are KEPT, never paged and never silently dropped (v5f.1)."""
+    with contextlib.suppress(OSError):
+        q = outbox.with_name("account_key_outbox.quarantine.jsonl")
+        with open(q, "a", encoding="utf-8") as fh:
+            fh.write("".join(x + "\n" for x in lines))
 
 
 def _to_ledger(applied: dict[str, dict[str, Any]]) -> str:
@@ -330,7 +445,6 @@ def deliver_pending() -> dict[str, Any]:
                 out["error"] = "page state unreadable: nothing drained"
                 return out
             drained = _drain(_outbox_path())
-            applied: dict[str, dict[str, Any]] = {}
             for _f, rows in drained:
                 for r in rows:
                     out["rows"] += 1
@@ -341,21 +455,32 @@ def deliver_pending() -> dict[str, Any]:
                         continue
                     w = {**w, "want": r["status"], "sig": str(r.get("sig") or ""),
                          "ledger": bool(r.get("ledger")),
+                         "ledger_pending": bool(r.get("ledger")) or bool(w.get("ledger_pending")),
                          "want_at": str(r.get("at") or ""), "title": str(r.get("title") or ""),
                          "body": str(r.get("body") or ""),
                          "needs_human": str(r.get("needs_human") or "")}
                     state[aid] = w
-                    if w["ledger"]:
-                        applied[aid] = w
             if drained:
                 _write_json(state_path, state)          # the rows are now held in the state
                 for f, _rows in drained:
                     with contextlib.suppress(OSError):
                         f.unlink()
+            # THE LEDGER WRITE IS RETRIED, NEVER DROPPED (v5f.1). A row's NEEDS_HUMAN entry is
+            # held as `ledger_pending` in the page state (which has absorbed the outbox row) until
+            # a transaction lands; a Busy or Unreadable ledger leaves it pending for the next pass.
+            applied = {aid: w for aid, w in state.items()
+                       if isinstance(w, dict) and w.get("ledger_pending")}
             out["ledger"] = _to_ledger(applied)
+            if applied and out["ledger"] == "written":
+                for w in applied.values():
+                    w["ledger_pending"] = False
+                _write_json(state_path, state)
+            elif applied:
+                out["ledger_pending"] = sorted(applied)
             now = datetime.now(UTC)
             for aid, w in list(state.items()):
-                if not isinstance(w, dict) or w.get("want") not in ("OPEN", "OK"):
+                if not isinstance(w, dict) or w.get("want") not in ("OPEN", "OK") \
+                        or not _AID.fullmatch(str(aid)) or not str(w.get("title") or "").strip():
                     continue
                 got_p = w.get("paged")
                 paged: dict[str, Any] = got_p if isinstance(got_p, dict) else {}
@@ -660,6 +785,18 @@ def account_key(login: object, server: object, *, create: bool = False) -> str |
     return "sha256:" + mac[:16]
 
 
+def _lower_own_priority() -> None:
+    """The immediate deliverer runs below normal: it must never compete with the order path.
+    Only this process is touched."""
+    with contextlib.suppress(Exception):
+        import psutil  # type: ignore[import-untyped,unused-ignore]
+        me = psutil.Process()
+        if sys.platform == "win32":
+            me.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+        else:
+            me.nice(max(me.nice(), 10))
+
+
 def main(argv: list[str] | None = None) -> int:
     """`--create-first-time --at-the-laptop`: the one key-creating entry point. Prints the
     verdict only, never the key. rc 0 created, 1 refused."""
@@ -673,6 +810,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="the principal is present; without it nothing is created")
     args = ap.parse_args(argv)
     if args.deliver_alerts:
+        if os.environ.get(_DRAIN_CHILD_ENV):
+            _lower_own_priority()
         res = deliver_pending()
         print(json.dumps({k: res.get(k) for k in ("rows", "sent", "ledger", "error")}))
         return 0

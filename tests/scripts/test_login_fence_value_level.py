@@ -95,3 +95,79 @@ def test_the_value_is_read_through_the_same_decoding_as_the_text() -> None:
     # fullwidth digits and an invisible character inside the value
     v = chr(0xFF10) * 2 + _ID[:3] + chr(0x200B) + _ID[3:]
     assert _value_rows("x.json", json.dumps({"symbol_id": v}))
+
+
+# v5f.1 (audit should-fixes on v5f): a decimal-string login, `;`-delimited CSV, JSON inside a CSV
+# cell, and JSON nested five or more levels deep are all read as values.
+def test_a_numeric_string_with_a_decimal_is_read_as_its_integer() -> None:
+    for v in ("000" + _ID + ".00", _ID + ".0", "+000" + _ID + ".000"):
+        assert _value_rows("x.json", json.dumps({"symbol_id": v})), v
+    assert _value_rows("x.json", json.dumps({"symbol_id": "000" + _ID + ".5"})) == []
+
+
+@pytest.mark.parametrize("delim", [";", "|", "\t"])
+def test_a_csv_with_another_delimiter_is_read(delim: str) -> None:
+    text = delim.join(["time", "ref", "profit"]) + "\n" + delim.join(["t", "000" + _ID, "1"])
+    rows = _value_rows("x.csv", text + "\n")
+    assert [r["key"] for r in rows] == [f"{lf.VALUE_FINDING} under ref"]
+
+
+def test_json_inside_a_csv_cell_is_walked() -> None:
+    cell = json.dumps({"meta": {"acct_ref": "000" + _ID}}).replace('"', '""')
+    rows = _value_rows("x.csv", f'time,blob\nt,"{cell}"\n')
+    assert [r["key"] for r in rows] == [f"{lf.VALUE_FINDING} under acct_ref"]
+    semi = json.dumps({"q": _HEX}).replace('"', '""')
+    assert _value_rows("x.csv", f'time;blob\nt;"{semi}"\n')
+
+
+# Each level of string-nesting doubles the escaping, so 12 levels is already ~100 KB of text; the
+# walk itself goes to _NESTED_DEPTH (64) and that bound is pinned separately below.
+@pytest.mark.parametrize("levels", [5, 8, 12])
+def test_json_nested_many_levels_deep_is_followed(levels: int) -> None:
+    doc: object = {"inner": "000" + _ID}
+    for _ in range(levels):
+        doc = {"wrap": json.dumps(doc)}
+    rows = _value_rows("x.json", json.dumps(doc))
+    assert [r["key"] for r in rows] == [f"{lf.VALUE_FINDING} under inner"]
+
+
+def test_the_nesting_bound_is_at_least_32() -> None:
+    assert lf._NESTED_DEPTH >= 32
+
+
+def test_a_repeated_nested_string_is_parsed_once_and_ends() -> None:
+    import time
+    inner = json.dumps({"a": [json.dumps({"b": 1})] * 2000})
+    t0 = time.monotonic()
+    assert _value_rows("x.json", json.dumps({"x": [inner] * 50})) == []
+    assert time.monotonic() - t0 < 5.0
+
+
+def test_an_alert_ledger_busy_never_skips_the_page(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: object) -> None:
+    import io
+    import sys
+    from pathlib import Path
+
+    from libs.ops.alert_ledger import AlertLedgerBusy
+    root = Path(str(tmp_path))
+    paged: list[str] = []
+
+    def busy(doc: dict[str, object], root: object = None) -> str:
+        raise AlertLedgerBusy("held")
+
+    def page(doc: dict[str, object], root: object = None, **kw: object) -> dict[str, object]:
+        paged.append(str(doc["status"]))
+        return {"sent": True}
+
+    monkeypatch.setattr(lf, "declared_ids", lambda repo: frozenset())
+    monkeypatch.setattr(lf, "judge", lambda repo, entries, ids: {
+        "status": "REFUSED", "refused": ["desks/mt5/data/x.json"], "findings": {}})
+    monkeypatch.setattr(lf, "record_alert", busy)
+    monkeypatch.setattr(lf, "page", page)
+    monkeypatch.setattr(sys, "stdin", io.StringIO(""))
+    art = root / "F.json"
+    assert lf.main(["--repo", str(root), "--artifact", str(art)]) == 3
+    assert paged == ["REFUSED"], "a busy ledger skipped the page"
+    doc = json.loads(art.read_text("utf-8"))
+    assert doc["alert_error"] == "AlertLedgerBusy" and doc["page"] == {"sent": True}
