@@ -25,13 +25,31 @@ FTMO'S RULES, enforced before any new order:
   * no new entry within GAP_GUARD_H of a market close (gold's daily close, 17:00 New York);
   * under 2,000 server requests a day: new risk stops at REQUEST_BUDGET trade requests per CET
     day, closes and cancels at REQUEST_HARD_CAP;
-  * the 5% daily and 10% maximum loss, measured from the balance at midnight CET (re-derived from
-    the deal history every pass): the order is refused when its risk, with E8's measured 24.13-pt
-    stop slippage added to the stop distance, plus today's loss could reach 5% of the initial
-    balance, or the equity after it could reach 90% of it.
+  * the daily loss limit OF THE DECLARED ACCOUNT TYPE (v2, audit must-fix 9): 5% for a 2-Step
+    account, 3% for a 1-Step (`ACCOUNT_TYPES`; an undeclared or unknown type binds nothing), and
+    the 10% maximum loss, measured from the balance at midnight CET (re-derived from the deal
+    history every pass): the order is refused when its risk, with E8's measured 24.13-pt stop
+    slippage added to the stop distance, plus today's loss could reach the daily limit of the
+    initial balance, or the equity after it could reach 90% of it.
+  * THE LOT CAP (v2, audit must-fix 10): 0.009 of equity over a narrow E8 stop is a large lot,
+    and FTMO flags a trade "much larger than usual". The lot is capped at MAX_NOTIONAL_X times
+    equity in notional (lot x contract x price) and at the account file's optional "max_lot". A
+    lot the cap clips is journalled as a RAIL_BLOCKED row under rail `ftmo_lot_cap` with the risk
+    it held back -- its missed-growth line (research/missed_growth.published_ftmo_follower_lines).
+
+ONCE PER E8 FILL, AND ONCE A DAY, WHATEVER THE STATE FILE SAYS (v2, audit must-fix 4). The
+follow is keyed to E8's position id (`followed`, kept across days) AND to the FTMO account's own
+MAGIC history: any MAGIC gold order or deal on today's server date (`history_spent`) means the
+day is spent, so a lost or torn state file can never produce a second order; an unreadable
+history places nothing. The state is marked BEFORE the send and written atomically (tmp, flush,
+fsync, os.replace, retried on Windows' PermissionError).
+
+A FILL AGAINST THE DAY'S DIRECTION is closed at once (gold_oco.positions_to_flatten), and an
+account the keyed helper cannot name PAGES (gold_oco.page_identity).
 
 ACCOUNT BINDING. `data/FTMO_LIVE_ACCOUNT.json` (gitignored, written by the principal's own step,
-never committed): {"login", "server", "trade_mode", "initial_balance"}. The terminal's
+never committed): {"login", "server", "trade_mode", "initial_balance", "account_type"} with
+account_type "2-step" or "1-step", and optionally "max_lot". The terminal's
 account_info must match login, server and trade_mode, or the lane does nothing at all. The account
 is named only by `gold_oco.oco_account_key` (the keyed HMAC); the login is never logged.
 
@@ -50,6 +68,7 @@ import contextlib
 import json
 import os
 import sys
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -93,6 +112,16 @@ COMMENT = "FTgold_asia"
 SLIP_ALLOWANCE_PTS = 24.13
 DAILY_LOSS_FRAC = 0.05
 MAX_LOSS_FRAC = 0.10
+#: FTMO's daily loss limit by account type (audit v2 must-fix 9): 2-Step 5%, 1-Step 3%.
+ACCOUNT_TYPES = {"2-step": 0.05, "1-step": 0.03}
+#: THE LOT CAP (audit v2 must-fix 10): notional (lot x contract x price) at most this many
+#: times equity. At 100k equity, gold at 4,000 and 100 oz a lot that is 1.25 lots -- 0.009 of
+#: equity reaches it only on a stop under 7.2 points. The cap's clip is billed (LOT_CAP_RAIL).
+MAX_NOTIONAL_X = 5.0
+LOT_CAP_RAIL = "ftmo_lot_cap"
+#: E8 position ids followed, kept this many (they span days: once per E8 fill, ever).
+FOLLOWED_KEEP = 60
+_WRITE_TRIES = 10
 #: FTMO's trading day: midnight CET/CEST.
 DAY_TZ = "Europe/Prague"
 GAP_GUARD_H = 2.0
@@ -214,19 +243,37 @@ def lot_for(frac: float, equity: float, dist: float, contract: float, *, vmin: f
     return round(lot, 8) if lot >= vmin else 0.0
 
 
+def lot_cap(equity: float, price: float, contract: float, *, vstep: float,
+            declared: object = None) -> tuple[float, str]:
+    """(the largest lot the follower may send, why). Pure. MAX_NOTIONAL_X x equity in notional,
+    floored to the volume step, and never above a declared `max_lot`. 0.0 when unreadable."""
+    if not (equity > 0 and price > 0 and contract > 0 and vstep > 0):
+        return 0.0, "the notional cap is unmeasurable (equity, price or contract unreadable)"
+    cap = int(MAX_NOTIONAL_X * equity / (price * contract) / vstep + 1e-9) * vstep
+    why = f"{MAX_NOTIONAL_X:g}x equity in notional = {cap:.2f} lot"
+    try:
+        dl = float(declared) if declared not in (None, "") else None  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        dl = None
+    if dl is not None and dl > 0 and dl < cap:
+        cap, why = dl, f"the account file's max_lot {dl:g}"
+    return round(cap, 8), why
+
+
 def trade_risk(lot: float, dist: float, contract: float) -> float:
     """Dollars at risk if the stop fills E8's measured slippage through its level."""
     return (float(dist) + SLIP_ALLOWANCE_PTS) * float(lot) * float(contract)
 
 
 def loss_guard(initial: float, day_start_balance: float, equity: float,
-               new_risk: float) -> tuple[bool, str]:
-    """FTMO's 5% daily and 10% maximum loss: may `new_risk` be added now?"""
-    daily = DAILY_LOSS_FRAC * initial
+               new_risk: float, *, daily_frac: float = DAILY_LOSS_FRAC) -> tuple[bool, str]:
+    """FTMO's daily (`daily_frac`: 5% 2-Step, 3% 1-Step) and 10% maximum loss: may `new_risk`
+    be added now?"""
+    daily = daily_frac * initial
     today_loss = max(0.0, day_start_balance - equity)
     floor = initial * (1.0 - MAX_LOSS_FRAC)
     why = (f"today's loss {today_loss:,.2f} + this trade {new_risk:,.2f} (stop + "
-           f"{SLIP_ALLOWANCE_PTS} pt slip) against the {DAILY_LOSS_FRAC:.0%} daily limit "
+           f"{SLIP_ALLOWANCE_PTS} pt slip) against the {daily_frac:.0%} daily limit "
            f"{daily:,.2f}; equity {equity:,.2f} - risk against the {MAX_LOSS_FRAC:.0%} floor "
            f"{floor:,.2f}")
     if today_loss + new_risk >= daily:
@@ -289,6 +336,31 @@ def mirrored_stop(e8_doc: dict[str, Any], e8_position_id: str, side: str,
     return best if best is not None and best != current else None
 
 
+def history_spent(mt5: Any, today: str, now: datetime) -> tuple[bool | None, str]:
+    """(spent, why): has this account ANY MAGIC gold order or deal dated `today` on the server
+    clock (`gold_oco.trading_date`, as every lane dates its day)? None when the history cannot
+    be read -- the caller then places nothing. The window queried is wide (two days back, one
+    ahead: the API's datetime reading of server time is not trusted) and filtered by each row's
+    own server timestamp."""
+    since, until = now - timedelta(days=2), now + timedelta(days=1)
+    orders = mt5.history_orders_get(since, until)
+    deals = mt5.history_deals_get(since, until)
+    if orders is None or deals is None:
+        return None, "the FTMO order/deal history is unreadable"
+    for kind, rows, field in (("order", orders, "time_setup"), ("deal", deals, "time")):
+        for r in rows:
+            if int(getattr(r, "magic", 0) or 0) != MAGIC:
+                continue
+            if _xa.norm(getattr(r, "symbol", "")) != _xa.norm(SYMBOL):
+                continue
+            ts = getattr(r, field, None)
+            if not isinstance(ts, (int, float)) or isinstance(ts, bool) or ts <= 0:
+                return True, f"a MAGIC gold {kind} with an unreadable time (counted as today's)"
+            if _oco.trading_date(float(ts)) == today:
+                return True, f"a MAGIC gold {kind} is already on today's ({today}) history"
+    return False, "no MAGIC gold order or deal today"
+
+
 # ------------------------------------------------------------------ the account
 
 def _canon(login: object) -> object:
@@ -314,6 +386,10 @@ def bound_account(mt5: Any) -> tuple[str | None, dict[str, Any], str]:
         want_mode = int(doc["trade_mode"])
     except (TypeError, ValueError):
         return None, {}, "data/FTMO_LIVE_ACCOUNT.json carries an unreadable trade_mode/balance"
+    acct_type = str(doc.get("account_type") or "").strip().lower()
+    if acct_type not in ACCOUNT_TYPES:
+        return None, {}, ("data/FTMO_LIVE_ACCOUNT.json must declare account_type \"2-step\" or "
+                          "\"1-step\" (FTMO's daily loss limit is 5% or 3% by type)")
     acc = mt5.account_info()
     if acc is None:
         return None, {}, "the FTMO terminal did not answer account_info"
@@ -328,7 +404,9 @@ def bound_account(mt5: Any) -> tuple[str | None, dict[str, Any], str]:
         key = _oco.oco_account_key(getattr(acc, "login", None), getattr(acc, "server", None))
     except _oco.IdentityUnavailable as exc:
         return None, {}, f"gold OCO identity: {exc}"
-    return key, {"initial_balance": initial, "trade_mode": want_mode}, "account bound"
+    return key, {"initial_balance": initial, "trade_mode": want_mode, "account_type": acct_type,
+                 "daily_loss_frac": ACCOUNT_TYPES[acct_type],
+                 "max_lot": doc.get("max_lot")}, "account bound"
 
 
 # ------------------------------------------------------------------ the pass
@@ -356,7 +434,14 @@ def _send(mt5: Any, st: dict[str, Any], req: dict[str, Any], *, cet: str,
 
 
 def _skip(doc: dict[str, Any], st: dict[str, Any], reason: str, why: str, *, today: str,
-          now: datetime, missed_usd: float | None = None, alert: bool = False) -> None:
+          now: datetime, missed_usd: float | None = None, alert: bool = False,
+          rail: str = RAIL) -> None:
+    """A refused (RAIL_BLOCKED) or waiting (SKIPPED) pass, journalled once per reason per day.
+    A refusal bills the risk it held back: `missed_usd`, else the pass's planned risk
+    (`doc["planned_usd"]`: the ftmo fraction x equity) -- None only when that is unreadable,
+    and missed_growth then counts it unpriced (audit v2 must-fix 5)."""
+    if missed_usd is None and reason not in ("wait", "already_followed"):
+        missed_usd = doc.get("planned_usd")
     doc["skipped"].append({"reason": reason, "why": why})
     if alert:
         doc["alerts"].append(why)
@@ -365,7 +450,8 @@ def _skip(doc: dict[str, Any], st: dict[str, Any], reason: str, why: str, *, tod
     if seen.get(reason) != today:
         seen[reason] = today
         _record({"at": now.isoformat(timespec="seconds"), "window": WINDOW, "lane": LANE,
-                 "status": "RAIL_BLOCKED" if reason != "wait" else "SKIPPED", "rail": RAIL,
+                 "status": ("SKIPPED" if reason in ("wait", "already_followed")
+                            else "RAIL_BLOCKED"), "rail": rail,
                  "reason": reason, "why": why,
                  "missed_growth_risk_usd": None if missed_usd is None else round(missed_usd, 2)})
 
@@ -383,8 +469,12 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     if key is None:
         doc.update({"status": "ACCOUNT_REFUSED", "why": why})
         log(f"account refused: {why}")
+        if why.startswith("gold OCO identity"):
+            doc["alerts"].append(why)
+            doc["page"] = _oco.page_identity(LANE, why)
         _write_out(doc, None)
         return doc
+    _oco.page_identity(LANE, None)
     tick = mt5.symbol_info_tick(SYMBOL)
     if tick is None:
         doc["status"] = "NO_TICK"
@@ -395,10 +485,14 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     hour = srv.hour + srv.minute / 60.0
     cet, cet_midnight = cet_day(now)
     st = _read_json(STATE)
+    if STATE.exists() and not isinstance(st, dict):
+        # A torn state is survivable: the history check below is the once-a-day authority.
+        doc["state_unreadable"] = "ftmo_follower_state.json is torn; the MAGIC history decides"
     st = st if isinstance(st, dict) else {}
     if st.get("date") != today:
         st = {"date": today, "windows": {}, "requests": st.get("requests") or {},
-              "logged": {}}
+              "logged": {}, "followed": st.get("followed") or {}}
+    st.setdefault("followed", {})
     doc.update({"server_time": srv.isoformat(), "hour": round(hour, 3), "trading_date": today})
 
     # This account's gold state for every other lane, and the claim of any fill here.
@@ -412,6 +506,7 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     action, sig, fwhy = follow_decision(e8_doc, entry, entry_why, e8_lane, lane_why,
                                         today=today, now=now)
     doc["follow"] = {"action": action, "why": fwhy, "signal": sig}
+    doc["planned_usd"] = _planned_usd(mt5)
 
     positions = mt5.positions_get(symbol=SYMBOL)
     orders = mt5.orders_get(symbol=SYMBOL)
@@ -448,11 +543,23 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
             act["shadow"] = True
         log(f"[{WINDOW}] cancel resting order {o.ticket}: {act['why']} -> {act.get('ok')}")
         doc["actions"].append(act)
+    # A FILL AGAINST THE DAY'S DIRECTION IS CLOSED AT ONCE (gold_oco v2, must-fix 6).
+    _rows = [{"p": p, "id": int(p.ticket),
+              "side": "long" if int(getattr(p, "type", -1)) == 0 else "short",
+              "opened_date": _oco.trading_date(float(p.time))
+              if isinstance(getattr(p, "time", None), (int, float)) else None}
+             for p in own_pos]
+    _flat = {r["id"] for r in _oco.positions_to_flatten(entry if entry_why is None else None,
+                                                        _rows, date=today)}
     for p in own_pos:
         side = "long" if int(getattr(p, "type", -1)) == 0 else "short"
-        if hour >= CLOSE_HOUR:
+        if int(p.ticket) in _flat or hour >= CLOSE_HOUR:
             act = {"act": "close", "position": int(p.ticket), "ok": False,
-                   "why": "the gold book's close hour"}
+                   "why": ("it is against today's gold direction (flattened at once)"
+                           if int(p.ticket) in _flat else "the gold book's close hour")}
+            if int(p.ticket) in _flat:
+                doc["alerts"].append(f"FTMO gold {side} position against today's direction: "
+                                     f"flattened")
             if armed:
                 tk = mt5.symbol_info_tick(SYMBOL)
                 try:
@@ -503,6 +610,13 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
         pass
     elif action != "follow" or sig is None:
         _skip(doc, st, "wait" if action == "wait" else action, fwhy, today=today, now=now)
+    elif str(sig["e8_position_id"]) in st["followed"]:
+        _skip(doc, st, "already_followed", (f"E8 position {sig['e8_position_id']} was already "
+                                            f"followed ({st['followed'][str(sig['e8_position_id'])]})"
+                                            ), today=today, now=now)
+    elif (spent := history_spent(mt5, today, now))[0] is not False:
+        _skip(doc, st, "history_unreadable" if spent[0] is None else "already_followed",
+              spent[1], today=today, now=now)
     else:
         _place(mt5, st, doc, sig, key=key, decl=decl, armed=armed, today=today, now=now,
                hour=hour, cet=cet, cet_midnight=cet_midnight, book_ok=book_ok,
@@ -567,6 +681,24 @@ def _place(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[str, Any
         _skip(doc, st, "unsizeable", f"{frac:.4f} of equity at a {dist:.2f} stop is below the "
                                      f"minimum lot", today=today, now=now, missed_usd=want_usd)
         return
+    cap, cap_why = lot_cap(equity, float(sig["price"]), contract, vstep=vstep,
+                           declared=decl.get("max_lot"))
+    if lot > cap:
+        clipped_usd = (lot - cap) * dist * contract
+        capped = cap if cap >= vmin else 0.0
+        _record({"at": now.isoformat(timespec="seconds"), "window": WINDOW, "lane": LANE,
+                 "status": "RAIL_BLOCKED", "rail": LOT_CAP_RAIL, "reason": "lot_cap",
+                 "why": f"lot {lot:g} clipped to {capped:g} ({cap_why}) at a {dist:.2f} stop",
+                 "lot_uncapped": lot, "lot": capped,
+                 "missed_growth_risk_usd": round(want_usd if not capped > 0 else clipped_usd,
+                                                 2)})
+        log(f"[{WINDOW}] lot cap: {lot:g} -> {capped:g} ({cap_why})")
+        doc["lot_cap"] = {"uncapped": lot, "lot": capped, "why": cap_why}
+        if not capped > 0:
+            _skip(doc, st, "lot_cap", f"the lot cap ({cap_why}) is below the minimum lot",
+                  today=today, now=now, missed_usd=want_usd, rail=LOT_CAP_RAIL)
+            return
+        lot = capped
     risk = trade_risk(lot, dist, contract)
     try:
         start = day_start_balance(mt5, balance, cet_midnight, now)
@@ -574,7 +706,8 @@ def _place(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[str, Any
         _skip(doc, st, "loss_guard", f"today's starting balance is unmeasurable ({exc})",
               today=today, now=now, missed_usd=want_usd)
         return
-    ok, gwhy = loss_guard(float(decl["initial_balance"]), start, equity, risk)
+    ok, gwhy = loss_guard(float(decl["initial_balance"]), start, equity, risk,
+                          daily_frac=float(decl.get("daily_loss_frac") or DAILY_LOSS_FRAC))
     doc["loss_guard"] = gwhy
     if not ok:
         _skip(doc, st, "loss_guard", gwhy, today=today, now=now, missed_usd=want_usd)
@@ -597,6 +730,22 @@ def _place(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[str, Any
            "type": types[kind], "price": float(sig["price"]), "sl": float(sig["sl"]),
            "tp": float(sig["tp"]), "deviation": 20, "magic": MAGIC, "comment": COMMENT,
            "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_RETURN}
+    # WRITE-AHEAD: the follow is marked spent, and the state written atomically, BEFORE the send,
+    # so a crash or a lost reply can never send a second order for this E8 fill.
+    st["followed"][str(sig["e8_position_id"])] = row["at"]
+    if len(st["followed"]) > FOLLOWED_KEEP:
+        st["followed"] = dict(sorted(st["followed"].items(), key=lambda kv: str(kv[1]))
+                              [-FOLLOWED_KEEP:])
+    st["windows"][WINDOW] = {"placed_at": row["at"], "placed_hour": hour, "side": side,
+                             "kind": kind, "order_id": None, "lot": lot,
+                             "e8_position_id": sig["e8_position_id"], "status": "SENDING"}
+    try:
+        _atomic_write(STATE, json.dumps(st, indent=1, default=str))
+    except OSError as exc:
+        row.update({"status": "REJECTED", "why": f"state write-ahead failed ({exc}); not sent"})
+        _record(row)
+        log(f"[{WINDOW}] NOT SENT: {row['why']}")
+        return
     try:
         res = _send(mt5, st, req, cet=cet)
     except Exception as exc:
@@ -616,16 +765,43 @@ def _place(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[str, Any
     log(f"[{WINDOW}] {row['status']} {kind} {lot} {SYMBOL} @ {sig['price']:.2f} -> {code}")
 
 
+def _atomic_write(path: Path, text: str) -> None:
+    """tmp beside `path`, flush, fsync, os.replace -- retried on PermissionError, which Windows
+    raises while a reader holds the destination open. RAISES OSError when it cannot land."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write(text)
+        fh.flush()
+        os.fsync(fh.fileno())
+    for attempt in range(_WRITE_TRIES):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            if attempt == _WRITE_TRIES - 1:
+                with contextlib.suppress(OSError):
+                    tmp.unlink()
+                raise
+            time.sleep(0.1)
+
+
+def _planned_usd(mt5: Any) -> float | None:
+    """The pass's planned risk: the ftmo block's gold_asia fraction x equity, or None."""
+    try:
+        frac = float((load_cert_book(CERT_BOOK_FILE, "ftmo") or {}).get(CERT_KEY) or 0.0)
+        equity = float(mt5.account_info().equity)
+    except Exception:
+        return None
+    return round(frac * equity, 2) if frac > 0 and equity > 0 else None
+
+
 def _write_out(doc: dict[str, Any], st: dict[str, Any] | None) -> None:
     try:
         if st is not None:
-            STATE.parent.mkdir(parents=True, exist_ok=True)
-            STATE.write_text(json.dumps(st, indent=1, default=str), encoding="utf-8")
+            _atomic_write(STATE, json.dumps(st, indent=1, default=str))
             doc["state"] = st
-        OUT.parent.mkdir(parents=True, exist_ok=True)
-        tmp = OUT.with_suffix(".tmp")
-        tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
-        os.replace(tmp, OUT)
+        _atomic_write(OUT, json.dumps(doc, indent=1, default=str))
     except OSError as exc:
         log(f"state/report write failed: {exc}")
 
