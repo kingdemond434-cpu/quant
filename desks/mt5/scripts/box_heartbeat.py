@@ -177,11 +177,32 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
     return doc
 
 
+#: THE JUDGE STALL PAGER RIDES THIS CLOCK (2026-10-21). A stalled judge is an organ gone quiet,
+#: and this is the five-minute watchdog that already runs on the box, so `judge_stall_pager.py`
+#: is invoked here rather than given a task of its own that would wait on a human to install it.
+#: A bounded subprocess: its outcome is its own (JUDGE_STALL.json and its page state), and
+#: nothing it does -- a hang, a crash, a pager failure -- can touch this heartbeat's ping,
+#: verdict or exit code.
+JUDGE_STALL = BASE / "scripts" / "judge_stall_pager.py"
+#: Inside the task's 2-minute ExecutionTimeLimit, after this heartbeat has already pinged and
+#: written its report.
+JUDGE_STALL_TIMEOUT_S = 60.0
+
+
+def _judge_stall() -> None:
+    with contextlib.suppress(Exception):
+        import subprocess
+        subprocess.run([sys.executable, "-W", "ignore", str(JUDGE_STALL)], cwd=str(ROOT),
+                       capture_output=True, timeout=JUDGE_STALL_TIMEOUT_S, check=False)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
     doc = run(dry_run=a.dry_run)
+    if not a.dry_run:
+        _judge_stall()
     print(json.dumps({"verdict": doc["verdict"], "failing": doc["failing"],
                       "ping": doc["ping"]["status"]}))
     return 0
