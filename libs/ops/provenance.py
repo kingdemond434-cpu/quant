@@ -36,12 +36,14 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import hmac
+import operator
 import os
 import re
 import secrets
 from pathlib import Path
 
-__all__ = ["KEY_ENV", "KEY_REL", "account_key", "is_key", "key_path", "norm_login"]
+__all__ = ["ALERT_KEY", "ALERT_USERNAME", "KEY_ENV", "KEY_REL", "RESTORE_STEP", "account_key",
+           "is_key", "key_path", "key_state", "norm_login"]
 
 KEY_ENV = "QUANT_ACCOUNT_KEY_FILE"
 KEY_REL = "data/secrets/account_key.hmac"
@@ -51,6 +53,88 @@ _MIN_KEY_BYTES = 32
 #: path -> ((inode, size, mtime_ns), key). Keyed on all three (v5c) so a key REPLACED in place --
 #: same mtime granularity, new inode or size -- is re-read rather than served from the cache.
 _KEY_CACHE: dict[str, tuple[tuple[int, int, int], bytes]] = {}
+
+
+#: THE ALERTS (v5d). A short or unreadable key, or a login that is a username, makes
+#: `account_key` fail closed -- and fail-closed must never be silent. Each opens ONE alert per
+#: incident in the desk's AlertLedger (`data/alert_ledger.json`, the path the placement interlock
+#: uses), marked NEEDS_HUMAN because no command can repair it; a valid read closes the key alert
+#: (FIXED), so the next incident opens again (REGRESSED). Never the key's bytes, never the login:
+#: only the state, the size and the restore step.
+ALERT_KEY = "account_key_unusable"
+ALERT_USERNAME = "account_key_non_numeric_login"
+RESTORE_STEP = ("restore data/secrets/account_key.hmac from the laptop backup and NEVER "
+                "regenerate it (a new key orphans every row hashed under the old one)")
+#: (ledger, alert id, detail) already recorded by THIS process: once per incident, not per row.
+_ALERTED: set[tuple[str, str, str]] = set()
+
+
+def _alert_ledger_path() -> Path:
+    """The ledger beside the key's secrets directory: <repo>/data/alert_ledger.json for the box
+    key, and inside the temp tree for a test's key -- so a test never touches the repo's copy."""
+    return key_path().parent.parent / "alert_ledger.json"
+
+
+def _alert(aid: str, detail: str, message: str) -> None:
+    """Open `aid` once per incident. NEVER RAISES: an alert that fails must not turn a fail-closed
+    None into an exception on the money path."""
+    ledger_path = _alert_ledger_path()
+    memo = (str(ledger_path), aid, detail)
+    if memo in _ALERTED:
+        return
+    try:
+        from libs.ops.alert_ledger import AlertLedger
+        ledger = AlertLedger(ledger_path)
+        known = ledger.alerts.get(aid)
+        if known is None or not known.open or known.message != message:
+            ledger.observe(aid, message[:600], scope="RUNTIME")
+            ledger.needs_human(aid, RESTORE_STEP if aid == ALERT_KEY else
+                               "fix the caller to pass the numeric MT5 login, never a username")
+            ledger.save()
+        _ALERTED.add(memo)
+    except Exception:
+        return
+
+
+def _alert_clear() -> None:
+    """A usable key read after an incident closes the key alert (verified by this very read)."""
+    ledger_path = _alert_ledger_path()
+    if not any(m[0] == str(ledger_path) and m[1] == ALERT_KEY for m in _ALERTED):
+        return
+    try:
+        from libs.ops.alert_ledger import AlertLedger
+        ledger = AlertLedger(ledger_path)
+        known = ledger.alerts.get(ALERT_KEY)
+        if known is not None and known.open:
+            ledger.verify(ALERT_KEY, still_firing=False)
+            ledger.save()
+    except Exception:
+        return
+    finally:
+        _ALERTED.difference_update({m for m in _ALERTED
+                                    if m[0] == str(ledger_path) and m[1] == ALERT_KEY})
+
+
+def key_state() -> dict[str, object]:
+    """The key file's STATE for health organs: present / short / unreadable / absent, and its size
+    in bytes. NEVER its contents. `path` is the repo-relative default or the env override's name."""
+    path = key_path()
+    where = KEY_REL if not os.environ.get(KEY_ENV) else f"${KEY_ENV}"
+    try:
+        size = path.stat().st_size
+    except FileNotFoundError:
+        return {"path": where, "state": "absent", "size_bytes": None,
+                "min_bytes": _MIN_KEY_BYTES}
+    except OSError as exc:
+        return {"path": where, "state": "unreadable", "size_bytes": None,
+                "min_bytes": _MIN_KEY_BYTES, "why": type(exc).__name__}
+    try:
+        n = len(path.read_bytes().strip())
+    except OSError as exc:
+        return {"path": where, "state": "unreadable", "size_bytes": size,
+                "min_bytes": _MIN_KEY_BYTES, "why": type(exc).__name__}
+    return {"path": where, "state": "present" if n >= _MIN_KEY_BYTES else "short",
+            "size_bytes": size, "min_bytes": _MIN_KEY_BYTES}
 
 
 def key_path() -> Path:
@@ -120,20 +204,38 @@ def _create_in_place(path: Path, body: bytes) -> None:
 
 
 def _box_key(create: bool = False) -> bytes | None:
-    """The HMAC key's bytes, or None (no usable key: callers fail closed). Never printed."""
+    """The HMAC key's bytes, or None (no usable key: callers fail closed). Never printed. A short
+    or unreadable key (or one that cannot be created) also opens ALERT_KEY, once per incident."""
     path = key_path()
     for _ in range(2):
         try:
-            return _read_key(path)
+            got = _read_key(path)
         except FileNotFoundError:
             if not create:
                 return None
             try:
                 _create_key(path)
-            except OSError:
+            except OSError as exc:
+                _alert(ALERT_KEY, f"uncreatable:{type(exc).__name__}",
+                       f"account key could not be created ({type(exc).__name__}); every stamp "
+                       f"fails closed (account_key None). {RESTORE_STEP}")
                 return None
-        except OSError:
+            continue
+        except OSError as exc:
+            _alert(ALERT_KEY, f"unreadable:{type(exc).__name__}",
+                   f"account key unreadable ({type(exc).__name__}); every stamp fails closed "
+                   f"(account_key None). {RESTORE_STEP}")
             return None
+        if got is None:
+            size = None
+            with contextlib.suppress(OSError):
+                size = path.stat().st_size
+            _alert(ALERT_KEY, f"short:{size}",
+                   f"account key short ({size} bytes, need {_MIN_KEY_BYTES}); every stamp fails "
+                   f"closed (account_key None). {RESTORE_STEP}")
+            return None
+        _alert_clear()
+        return got
     return None
 
 
@@ -148,19 +250,24 @@ def norm_login(login: object) -> int | None:
     account must not key as account 0."""
     if login is None or isinstance(login, bool):
         return None
-    if isinstance(login, float):
+    if isinstance(login, float):     # np.float64 is a float
         if not login.is_integer():   # NaN and inf are not integral
             return None
         value = int(login)
-    elif isinstance(login, int):
-        value = login
     elif isinstance(login, str):
         text = login.strip()
         if not _DIGITS.fullmatch(text):
             return None
         value = int(text)
-    else:
+    elif isinstance(login, (bytes, bytearray, memoryview)):
         return None
+    else:
+        # int and every integer-like type -- np.int64, np.uint32, ... -- by `__index__`, so numpy
+        # is never imported here (v5d). np.bool_ and Decimal have no `__index__`: None.
+        try:
+            value = operator.index(login)  # type: ignore[arg-type]
+        except TypeError:
+            return None
     return value if value > 0 else None
 
 
@@ -179,6 +286,11 @@ def account_key(login: object, server: object, *, create: bool = False) -> str |
     exactly as before, so every key already stamped from the terminal's int login still holds."""
     canon = norm_login(login)
     if canon is None:
+        if isinstance(login, str) and login.strip() and not _DIGITS.fullmatch(login.strip()):
+            # A USERNAME (v5d): keyed None, and never silently. The name itself is never written.
+            _alert(ALERT_USERNAME, "username",
+                   "account_key was handed a non-numeric login string (a username?); it keyed "
+                   "None and the row carries no account. Pass the numeric MT5 login.")
         return None
     key = _box_key(create=create)
     if key is None:

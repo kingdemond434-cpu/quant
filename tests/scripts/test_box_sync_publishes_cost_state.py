@@ -602,10 +602,11 @@ def test_more_separators_and_slash_colon_parens_split_a_declared_number(text: st
     assert lf.ID_FINDING in [h["key"] for h in got], text
 
 
-@pytest.mark.parametrize("text", ["1/555/1234", "555:1234:9", "(1) 555 1234", "555 1234 (2)",
-                                  "12:555:1234", "555    1234    5"],
-                         ids=["slash-prefix", "colon-suffix", "paren-prefix", "paren-suffix",
-                              "clock", "spaced-suffix"])
+# v5d: "(1) 555 1234" and "555 1234 (2)" left this list. They are the auditor's
+# `acct 555-1234 (2 trades)` shape -- a tight `) ` / ` (` boundary, then something else -- and are
+# now pinned as CAUGHT below. A run identical to the number's own separator still continues it.
+@pytest.mark.parametrize("text", ["1/555/1234", "555:1234:9", "12:555:1234", "555    1234    5"],
+                         ids=["slash-prefix", "colon-suffix", "clock", "spaced-suffix"])
 def test_the_adjacent_digit_rule_holds_across_the_new_separators(text: str) -> None:
     assert lf.findings("desks/mt5/data/x.json", text.encode(), _SIDS) == [], text
 
@@ -665,3 +666,80 @@ def test_the_cli_refuses_a_declaration_key_blob_and_never_writes_it(
     out = capsys.readouterr().out
     assert out.split() == ["desks/mt5/reports/X.json"], "the blob must be refused"
     assert "7000001" not in art.read_text("utf-8") and "7000001" not in out
+
+
+# v5d (2026-10-21, audit hold on v5c). Fake declared number 5551234 throughout.
+def _escape(text: str, levels: int) -> str:
+    """`text` JSON-string-escaped `levels` times (1 = `\\u200b`, 2 = `\\\\u200b`, ...)."""
+    for _ in range(levels):
+        text = json.dumps(text)[1:-1]
+    return text
+
+
+@pytest.mark.parametrize("levels", [1, 2, 3], ids=["single", "double", "triple"])
+@pytest.mark.parametrize("ch", ["\u200b", "\U000e0001", "\U0001d173", "\u0665"],
+                         ids=["zwsp", "tag-astral-pair", "music-astral-pair", "arabic-digit"])
+def test_escaped_forms_of_a_declared_number_are_decoded_to_a_fixpoint(
+        levels: int, ch: str) -> None:
+    raw = f"{_SID[:3]}{ch}{_SID[3:]}" if ch != "\u0665" else _SID.replace("5", ch, 1)
+    text = '{"note": "' + _escape(raw, levels) + '"}'
+    assert "\\u" in text and not any(ord(c) > 127 for c in text), text   # escaped only
+    got = lf.findings("desks/mt5/data/x.json", text.encode(), _SIDS)
+    assert lf.ID_FINDING in [h["key"] for h in got], text
+
+
+@pytest.mark.parametrize("levels", [1, 2, 3], ids=["single", "double", "triple"])
+@pytest.mark.parametrize("raw", [f"{_SID}@FusionMarkets-Live", f"{_SID}\u200b@Srv-1",
+                                 f"{_SID}@\U000e0041Srv-1"],
+                         ids=["plain-at", "zwsp-before-at", "tag-after-at"])
+def test_escaped_at_server_forms_are_caught_with_nothing_declared(levels: int, raw: str) -> None:
+    text = json.dumps({"why": _escape(raw, levels - 1)}, ensure_ascii=True)
+    text = text.replace("@", "\\u0040") if levels == 1 else text
+    got = lf.findings("desks/mt5/data/x.json", text.encode())
+    assert "<login@server>" in [h["key"] for h in got], text
+
+
+def test_an_escaped_backslash_is_not_read_as_an_escape() -> None:
+    """`\\\\u0035` is a literal backslash then `u0035`: one level decodes it to `\\u0035`, the
+    next to `5`. The v5c decoder read the second backslash as an escape and left a stray one."""
+    assert lf._unescape_once("\\\\u0035") == "\\u0035"
+    assert lf._unescape_once(lf._unescape_once("\\\\u0035")) == "5"
+    assert lf._unescape_once("\\ud83d\\ude00") == "\U0001f600"
+    assert lf._unescape_once("a\\nb") == "a\\nb", "\\n is never undone: line numbers hold"
+
+
+@pytest.mark.parametrize("text", ["acct 555-1234 (2 trades)", "555 1234 / 2",
+                                  "ref 555-1234: 3 fills", "(1) 555 1234", "555 1234 (2)"],
+                         ids=["acct-paren-count", "slash-count", "colon-fills",
+                              "paren-prefix", "paren-suffix"])
+def test_a_tight_boundary_ends_the_number(text: str) -> None:
+    got = lf.findings("desks/mt5/data/x.json", text.encode(), _SIDS)
+    assert lf.ID_FINDING in [h["key"] for h in got], text
+
+
+_DI = {"cgj": "\u034f", "hangul-choseong-filler": "\u115f", "hangul-jungseong-filler": "\u1160",
+       "khmer-aq": "\u17b4", "khmer-aa": "\u17b5", "mongolian-fvs1": "\u180b",
+       "mongolian-vs": "\u180e", "mongolian-fvs4": "\u180f", "hangul-filler": "\u3164",
+       "vs1": "\ufe00", "vs16": "\ufe0f", "halfwidth-hangul-filler": "\uffa0",
+       "tag-e0000": "\U000e0000", "tag-space": "\U000e0020", "vs17": "\U000e0100",
+       "e0fff": "\U000e0fff"}
+
+
+@pytest.mark.parametrize("ch", list(_DI.values()), ids=list(_DI))
+@pytest.mark.parametrize("escaped", [False, True], ids=["literal", "json-escaped"])
+def test_a_default_ignorable_character_inside_a_declared_number_is_dropped(
+        ch: str, escaped: bool) -> None:
+    raw = f"refused for {_SID[:3]}{ch}{_SID[3:]}."
+    text = json.dumps({"note": raw}, ensure_ascii=escaped)
+    got = lf.findings("desks/mt5/data/x.json", text.encode(), _SIDS)
+    assert lf.ID_FINDING in [h["key"] for h in got], repr(text)
+
+
+def test_the_default_ignorable_table_is_declared_and_covers_the_audit_list() -> None:
+    table = lf._ignorable_table()
+    for cp in (0x034F, 0x115F, 0x1160, 0x17B4, 0x17B5, *range(0x180B, 0x1810), 0x3164,
+               *range(0xFE00, 0xFE10), 0xFFA0, 0xE0000, 0xE0FFF, 0x00AD, 0x200B, 0xFEFF):
+        assert cp in table, hex(cp)
+    for cp in (ord("5"), ord("@"), ord(" "), 0x00A0, ord("\n")):
+        assert cp not in table, hex(cp)
+

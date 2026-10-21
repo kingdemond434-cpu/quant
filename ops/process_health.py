@@ -316,6 +316,26 @@ def _contracts() -> dict[str, tuple[str, int, str]]:
         return {}
 
 
+#: Account-key states that are a definite fault: every stamp fails closed until a human restores
+#: the key from backup (libs/ops/provenance.RESTORE_STEP). `absent` is not one: a writer creates it.
+KEY_FAULT_STATES = frozenset({"short", "unreadable"})
+
+
+def account_key_file() -> dict[str, Any]:
+    """The account key file's STATE (present / short / unreadable / absent) and SIZE, never its
+    contents, from libs/ops/provenance.key_state. UNMEASURED if that cannot be read."""
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.ops import provenance
+        state = dict(provenance.key_state())
+        if state.get("state") in KEY_FAULT_STATES:
+            state["restore"] = provenance.RESTORE_STEP
+        return state
+    except Exception as exc:
+        return {"state": "UNMEASURED", "why": type(exc).__name__}
+
+
 def build() -> dict[str, Any]:
     contracts = _contracts()
     now = datetime.now(tz=UTC)
@@ -448,6 +468,14 @@ def build() -> dict[str, Any]:
     run_history_read = scheduler_status == "OK schtasks"
     brief_faults = [r for r in rows if r["verdict"] in BRIEF_DEFINITE_FAULTS
                     and not r.get("expected_disabled")]
+    key = account_key_file()
+    key_fault = key.get("state") in KEY_FAULT_STATES
+    status = ("UNMEASURED" if not rows or not scheduler_status.startswith("OK ")
+              else ("ATTENTION" if brief_faults else "UNMEASURED")
+              if not run_history_read
+              else "OK" if not bad else "ATTENTION")
+    if key_fault:
+        status = "ATTENTION"   # a definite fault: the worst finding wins over UNMEASURED too
     return {
         "at": now.isoformat(timespec="seconds"),
         "host": __import__("socket").gethostname(),
@@ -463,12 +491,12 @@ def build() -> dict[str, Any]:
         # read can still see (NOT_SCHEDULED, DISABLED, STALE, NO_ARTIFACT) headlines ATTENTION --
         # the worst finding wins. With no such fault the headline is UNMEASURED, never OK: an
         # all-OK board there would be OK about results nobody read.
-        "status": ("UNMEASURED" if not rows or not scheduler_status.startswith("OK ")
-                   else ("ATTENTION" if brief_faults else "UNMEASURED")
-                   if not run_history_read
-                   else "OK" if not bad else "ATTENTION"),
+        # A SHORT OR UNREADABLE ACCOUNT KEY (v5d) is ATTENTION too: every ledger stamp then
+        # fails closed (account_key None), and fail-closed must never be silent.
+        "status": status,
         "run_history": "MEASURED" if run_history_read else "UNMEASURED",
-        "n_needing_attention": len(bad),
+        "n_needing_attention": len(bad) + int(key_fault),
+        "account_key_file": key,
         "processes": rows,
     }
 

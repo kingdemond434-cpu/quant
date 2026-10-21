@@ -430,3 +430,129 @@ def test_a_string_login_row_now_matches_its_int_account() -> None:
     reader = {"login": 7000001, "server": "S", "kind": LIVE}
     assert provenance.same_account(provenance.stamp(writer), reader) is True
 
+
+
+# v5d (2026-10-21, audit hold on v5c): fail-closed is never silent. A short or unreadable key,
+# and a username handed in as a login, each open ONE alert per incident in the AlertLedger beside
+# the key's secrets directory (a temp ledger here, never the repo's data/alert_ledger.json).
+_REPO_LEDGER = Path(__file__).resolve().parents[3] / "data" / "alert_ledger.json"
+
+
+def _ledger_alerts(path: Path) -> dict[str, Any]:
+    import json
+    return json.loads(path.read_text("utf-8"))["alerts"] if path.exists() else {}
+
+
+@pytest.fixture
+def _box(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
+    key = tmp_path / "data" / "secrets" / "account_key.hmac"
+    key.parent.mkdir(parents=True)
+    monkeypatch.setenv(libs_provenance.KEY_ENV, str(key))
+    monkeypatch.setattr(libs_provenance, "_ALERTED", set())
+    return key, tmp_path / "data" / "alert_ledger.json"
+
+
+def _repo_ledger_digest() -> str | None:
+    return (hashlib.sha256(_REPO_LEDGER.read_bytes()).hexdigest()
+            if _REPO_LEDGER.exists() else None)
+
+
+def test_a_short_key_pages_once_with_the_restore_step_and_never_its_bytes(
+        _box: tuple[Path, Path]) -> None:
+    key, ledger = _box
+    before = _repo_ledger_digest()
+    key.write_bytes(b"ab12")                            # what a crash mid-write leaves
+    for _ in range(5):
+        assert provenance.account_key(7000001, "S", create=True) is None
+    alerts = _ledger_alerts(ledger)
+    assert set(alerts) == {libs_provenance.ALERT_KEY}
+    a = alerts[libs_provenance.ALERT_KEY]
+    assert a["state"] == "NEEDS_HUMAN" and len([h for h in a["history"] if "OPEN" in h]) == 1
+    assert "restore data/secrets/account_key.hmac from the laptop backup" in a["message"]
+    assert "never regenerate" in a["message"].lower() and "4 bytes" in a["message"]
+    assert "ab12" not in ledger.read_text("utf-8"), "the key's bytes reached the ledger"
+    assert key.read_bytes() == b"ab12", "a short key was regenerated"
+    assert _repo_ledger_digest() == before, "the repo's alert ledger was touched"
+    # a second process (fresh memo) is the SAME incident: still one OPEN
+    libs_provenance._ALERTED.clear()
+    assert provenance.account_key(7000001, "S") is None
+    a = _ledger_alerts(ledger)[libs_provenance.ALERT_KEY]
+    assert len([h for h in a["history"] if " OPEN" in h]) == 1
+
+
+def test_an_unreadable_key_pages_and_a_restored_key_closes_the_incident(
+        _box: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+    key, ledger = _box
+    key.write_bytes(b"k" * 64)
+    real = Path.read_bytes
+
+    def denied(self: Path) -> bytes:
+        if self == key:
+            raise PermissionError("denied")
+        return real(self)
+
+    monkeypatch.setattr(Path, "read_bytes", denied)
+    libs_provenance._KEY_CACHE.clear()
+    assert provenance.account_key(7000001, "S") is None
+    a = _ledger_alerts(ledger)[libs_provenance.ALERT_KEY]
+    assert a["state"] == "NEEDS_HUMAN" and "unreadable (PermissionError)" in a["message"]
+    assert libs_provenance.key_state()["state"] == "unreadable"
+    monkeypatch.setattr(Path, "read_bytes", real)
+    assert provenance.account_key(7000001, "S") is not None      # restored
+    assert _ledger_alerts(ledger)[libs_provenance.ALERT_KEY]["state"] == "FIXED"
+
+
+def test_key_state_reports_state_and_size_never_contents(_box: tuple[Path, Path]) -> None:
+    key, _ledger = _box
+    assert libs_provenance.key_state()["state"] == "absent"
+    key.write_bytes(b"ab12")
+    st = libs_provenance.key_state()
+    assert st["state"] == "short" and st["size_bytes"] == 4 and "ab12" not in repr(st)
+    key.write_bytes(b"k" * 64)
+    st = libs_provenance.key_state()
+    assert st["state"] == "present" and st["size_bytes"] == 64 and "kkkk" not in repr(st)
+
+
+@pytest.mark.parametrize("name", ["trader.alice", "alice@example.invalid", "x7000001"],
+                         ids=["dotted", "email", "letter-prefix"])
+def test_a_username_login_keys_none_and_pages_once_without_the_name(
+        _box: tuple[Path, Path], name: str) -> None:
+    key, ledger = _box
+    key.write_bytes(b"k" * 64)
+    for _ in range(3):
+        assert provenance.account_key(name, "S", create=True) is None
+    row = provenance.stamp({"login": name, "server": "S", "kind": LIVE})
+    assert row["account_key"] is None and "account" not in row
+    alerts = _ledger_alerts(ledger)
+    assert set(alerts) == {libs_provenance.ALERT_USERNAME}
+    a = alerts[libs_provenance.ALERT_USERNAME]
+    assert len([h for h in a["history"] if " OPEN" in h]) == 1
+    assert name not in ledger.read_text("utf-8"), "the username reached the ledger"
+
+
+def test_garbage_that_is_not_a_username_does_not_page(_box: tuple[Path, Path]) -> None:
+    key, ledger = _box
+    key.write_bytes(b"k" * 64)
+    for g in (None, 0, -1, 7000001.5, b"7000001", "", "  "):
+        assert provenance.account_key(g, "S") is None
+    assert _ledger_alerts(ledger) == {}
+
+
+def test_numpy_integer_logins_key_like_an_int() -> None:
+    np = pytest.importorskip("numpy")
+    want = libs_provenance.account_key(7000001, "X")
+    for v in (np.int64(7000001), np.int32(7000001), np.uint32(7000001), np.uint64(7000001),
+              np.float64(7000001.0)):
+        assert libs_provenance.norm_login(v) == 7000001, type(v)
+        assert libs_provenance.account_key(v, "X") == want
+    for bad in (np.True_, np.int64(0), np.int64(-7), np.float64(7000001.5)):
+        assert libs_provenance.norm_login(bad) is None, repr(bad)
+
+
+def test_numpy_is_not_imported_by_the_module() -> None:
+    import subprocess
+    code = ("import sys; import libs.ops.provenance as p; p.norm_login(7); "
+            "print('numpy' in sys.modules)")
+    out = subprocess.run([sys.executable, "-c", code], cwd=str(_DESK.parents[1]),
+                         capture_output=True, text=True, check=True).stdout.strip()
+    assert out == "False"

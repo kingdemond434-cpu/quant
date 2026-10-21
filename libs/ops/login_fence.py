@@ -32,10 +32,12 @@ rewrites rows), so that case is real and fails closed. Bumping a pin is a code c
 with `--measure-prefix` (prints counts and a hash, never content). The pins go when the
 principal scrubs history (`git filter-repo` is theirs alone).
 
-ENCODINGS AND FORMS (audit v5): UTF-16LE/BE, fullwidth digits (NFKC), Arabic-Indic and Extended
+ENCODINGS AND FORMS (audit v5): UTF-16LE/BE, every invisible character dropped (Cf and
+Default_Ignorable, v5c/v5d), fullwidth digits (NFKC), Arabic-Indic and Extended
 Arabic-Indic digits (folded to ASCII, v5b), a declared number split by separators between its
-digits (`555-1234`, `5,551,234`, `555 1234`, `555.1234`; v5b), up to six levels of
-backslash-escaped JSON, `\\u` escapes, hex and base64 runs that decode to text, float and
+digits (`555-1234`, `5,551,234`, `555 1234`, `555.1234`; v5b), up to four levels of
+backslash-escaped JSON (surrogate pairs joined; v5d), `\\u` escapes, hex and base64 runs
+that decode to text, float and
 exponent values (`5551234.0`, `5.551234e6`), the keys `mt5_account`, `live_account`, `acct`,
 `login2` and their kin, the prose `account N` / `account #N`, `N@server`, the MT5 journal's
 `'N': authorized`, XML elements and attributes, a CSV whose header sits under a preamble, and a
@@ -146,7 +148,15 @@ _XML_ELEM = re.compile(r"<\s*(?P<key>[A-Za-z][\w\-.:]{0,40})(?:\s[^<>]*)?>\s*"
                        r"(?P<val>" + _NUM + r")\s*</\s*(?P=key)\s*>")
 _HEX_RUN = re.compile(r"(?<![0-9A-Fa-f])(?:[0-9A-Fa-f]{2}){8,}(?![0-9A-Fa-f])")
 _B64_RUN = re.compile(r"(?<![A-Za-z0-9+/=_-])[A-Za-z0-9+/_-]{16,}={0,2}(?![A-Za-z0-9+/=_-])")
-_UESC = re.compile(r"\\u([0-9a-fA-F]{4})")
+#: ONE LEVEL of backslash-unescaping, tokenised left to right (v5d): an escaped backslash `\\`
+#: is consumed as one token BEFORE a `\uXXXX` can be read, so `\\u200b` (double-escaped) becomes
+#: `\u200b` on this pass and the character on the next -- never a stray `\` beside a decoded one.
+#: Only `\\`, `\"`, `\'`, `\/` and `\uXXXX` are undone; `\n` and the rest stay two characters
+#: so line numbers never move.
+_ESC = re.compile(r"""\\(?:(\\)|(["'/])|u([0-9a-fA-F]{4}))""")
+_SURROGATE_PAIR = re.compile("[\ud800-\udbff][\udc00-\udfff]")
+#: Escape levels undone (v5d): single, double and triple escaping all decode, with one to spare.
+_UNESCAPE_PASSES = 4
 
 #: THE DECLARED ACCOUNT NUMBERS, matched ANYWHERE (audit addendum to v4, 2026-10-20). The key/value
 #: rules above only see a login sitting under a login-shaped key; "refused for <ID>.", "acc_<ID>"
@@ -211,19 +221,49 @@ _SEP_MAX = 16
 _SEP_CLASS = "[" + re.escape(_DIGIT_SEP) + "]{0," + str(_SEP_MAX) + "}"
 
 
+#: Default_Ignorable_Code_Point, DECLARED (v5d), from the Unicode Character Database's
+#: DerivedCoreProperties.txt (https://www.unicode.org/Public/UCD/latest/ucd/DerivedCoreProperties.txt,
+#: property `Default_Ignorable_Code_Point`, Unicode 15.1). The stdlib's unicodedata exposes no
+#: such property, so the ranges are written here; every Cf character is added from unicodedata at
+#: run time (`_ignorable_table`), so a Cf the table misses is still dropped.
+DEFAULT_IGNORABLE: tuple[tuple[int, int], ...] = (
+    (0x00AD, 0x00AD),    # SOFT HYPHEN
+    (0x034F, 0x034F),    # COMBINING GRAPHEME JOINER
+    (0x061C, 0x061C),    # ARABIC LETTER MARK
+    (0x115F, 0x1160),    # HANGUL CHOSEONG / JUNGSEONG FILLER
+    (0x17B4, 0x17B5),    # KHMER VOWEL INHERENT AQ / AA
+    (0x180B, 0x180F),    # MONGOLIAN FREE VARIATION SELECTORS, VOWEL SEPARATOR
+    (0x200B, 0x200F),    # ZWSP, ZWNJ, ZWJ, LRM, RLM
+    (0x202A, 0x202E),    # bidi embeddings and overrides
+    (0x2060, 0x206F),    # WJ, invisible operators, bidi isolates, deprecated format chars
+    (0x3164, 0x3164),    # HANGUL FILLER
+    (0xFE00, 0xFE0F),    # VARIATION SELECTORS 1-16
+    (0xFEFF, 0xFEFF),    # ZWNBSP / BOM
+    (0xFFA0, 0xFFA0),    # HALFWIDTH HANGUL FILLER
+    (0xFFF0, 0xFFF8),    # unassigned, reserved ignorable
+    (0x1BCA0, 0x1BCA3),  # SHORTHAND FORMAT CONTROLS
+    (0x1D173, 0x1D17A),  # MUSICAL SYMBOL BEGIN/END BEAM ...
+    (0xE0000, 0xE0FFF),  # TAGS, VARIATION SELECTORS SUPPLEMENT, reserved
+)
+
+
 @functools.lru_cache(maxsize=1)
-def _cf_table() -> dict[int, None]:
-    """Every Unicode format (Cf) code point -> deleted, for str.translate. Built once, lazily."""
-    return {cp: None for cp in range(sys.maxunicode + 1)
-            if unicodedata.category(chr(cp)) == "Cf"}
+def _ignorable_table() -> dict[int, None]:
+    """Every Default_Ignorable code point and every Cf character -> deleted, for str.translate.
+    Built once, lazily."""
+    table: dict[int, None] = {cp: None for lo, hi in DEFAULT_IGNORABLE
+                              for cp in range(lo, hi + 1)}
+    table.update({cp: None for cp in range(sys.maxunicode + 1)
+                  if unicodedata.category(chr(cp)) == "Cf"})
+    return table
 
 
 def _drop_format(text: str) -> str:
-    """Remove every Unicode Cf (format) character -- ZWSP U+200B, ZWNJ U+200C, ZWJ U+200D,
-    LRM U+200E, RLM U+200F, WJ U+2060, BOM U+FEFF, soft hyphen U+00AD and the rest. They are
-    invisible, so `555<ZWSP>1234` reads as the number to a human and must to the fence too
-    (v5c, audit hold on v5b). None of them is a line break, so line numbers are unchanged."""
-    return text if text.isascii() else text.translate(_cf_table())
+    """Remove every invisible character -- each Unicode Cf (format) character (ZWSP, ZWNJ, ZWJ,
+    LRM, RLM, WJ, BOM, soft hyphen, ...; v5c) and each Default_Ignorable code point (CGJ, the
+    variation selectors, the Hangul fillers, the tag range; v5d). Invisible, so `555<ZWSP>1234`
+    reads as the number to a human and must to the fence too. None is a line break."""
+    return text if text.isascii() else text.translate(_ignorable_table())
 
 
 def _ascii_digits(text: str) -> str:
@@ -236,18 +276,49 @@ def _ascii_digits(text: str) -> str:
     return re.sub(r"(?![0-9])\d", lambda m: str(unicodedata.decimal(m.group(0))), text)
 
 
-def _bounded(body: str, start: int, end: int) -> bool:
-    """No digit touches [start, end), even across up to `_SEP_MAX` separator characters -- so the
-    split form of an ID inside a longer separated number (`1,555,1234`) is that other number."""
-    i, k = start - 1, 0
-    while i >= 0 and k < _SEP_MAX and body[i] in _DIGIT_SEP:
-        i, k = i - 1, k + 1
-    if i >= 0 and body[i].isdigit():
-        return False
-    j, k = end, 0
-    while j < len(body) and k < _SEP_MAX and body[j] in _DIGIT_SEP:
-        j, k = j + 1, k + 1
-    return not (j < len(body) and body[j].isdigit())
+#: Separators that END a number rather than join its groups (v5d): whitespace and `/ : ( )`.
+_TIGHT = frozenset("/:()")
+
+
+def _side_clear(run: str, beyond: str, internal: str | None) -> bool:
+    """Is the number bounded on this side? `run` is the separator run between the match and
+    `beyond` (the next non-separator character, "" at the edge of the text)."""
+    if not beyond.isdigit():
+        return True
+    if not run:
+        return False                       # a digit touches the match: a longer number
+    # A run holding whitespace or / : ( ) is a TIGHT boundary (v5d, audit hold on v5c): `acct
+    # 555-1234 (2 trades)`, `555 1234 / 2`, `ref 555-1234: 3 fills` name the account and then
+    # something else. Unless the run is exactly the separator the number's own groups use --
+    # `1/555/1234`, `12:555:1234`, `555    1234    5` continue one longer number.
+    tight = any(c.isspace() or c in _TIGHT for c in run)
+    return tight and run != internal
+
+
+def _bounded(body: str, start: int, end: int, internal: str | None = None) -> bool:
+    """No digit continues [start, end) across up to `_SEP_MAX` separator characters -- so the
+    split form of an ID inside a longer separated number (`1,555,1234`) is that other number --
+    with the TIGHT boundary above. `internal` is the separator run the match itself uses between
+    its digit groups when that is one uniform run, else None."""
+    i = start
+    while i > 0 and start - i < _SEP_MAX and body[i - 1] in _DIGIT_SEP:
+        i -= 1
+    j = end
+    while j < len(body) and j - end < _SEP_MAX and body[j] in _DIGIT_SEP:
+        j += 1
+    before = body[i - 1] if i > 0 else ""
+    after = body[j] if j < len(body) else ""
+    return (_side_clear(body[i:start], before, internal)
+            and _side_clear(body[end:j], after, internal))
+
+
+_SEP_RUN = re.compile("[" + re.escape(_DIGIT_SEP) + "]+")
+
+
+def _internal_run(match: str) -> str | None:
+    """The one separator run a split match uses between its groups, or None if none or mixed."""
+    runs = set(_SEP_RUN.findall(match))
+    return runs.pop() if len(runs) == 1 else None
 
 
 def _id_hits(views: list[tuple[str, int | None]], ids: frozenset[str]) -> list[int]:
@@ -263,7 +334,7 @@ def _id_hits(views: list[tuple[str, int | None]], ids: frozenset[str]) -> list[i
             for m in re.finditer(plain, body):
                 lines.add(at if at is not None else body.count("\n", 0, m.start()) + 1)
             for m in re.finditer(split, body):
-                if _bounded(body, m.start(), m.end()):
+                if _bounded(body, m.start(), m.end(), _internal_run(m.group(0))):
                     lines.add(at if at is not None else body.count("\n", 0, m.start()) + 1)
     return sorted(lines)
 
@@ -293,20 +364,34 @@ def _account_shaped(val: str) -> bool:
     return f.is_integer() and 1000 <= f < 1e12
 
 
+def _unescape_once(text: str) -> str:
+    """One level of backslash-escaping undone (see `_ESC`), surrogate pairs joined into the one
+    astral code point they encode (`json.dumps` writes U+E0001 as `\\udb40\\udc01`; v5d)."""
+    def one(m: re.Match[str]) -> str:
+        if m.group(1) is not None:
+            return "\\"
+        if m.group(2) is not None:
+            return m.group(2)
+        return chr(int(m.group(3), 16))
+    out = _ESC.sub(one, text)
+    return _SURROGATE_PAIR.sub(
+        lambda m: chr(0x10000 + ((ord(m.group(0)[0]) - 0xD800) << 10)
+                      + (ord(m.group(0)[1]) - 0xDC00)), out)
+
+
 def _decoded(text: str) -> str:
-    """`\\uXXXX` escapes and up to six levels of backslash-escaping undone, fullwidth and
-    other compatibility forms folded (NFKC), so fullwidth digits read as ASCII digits, and every
-    other Unicode decimal digit (Arabic-Indic, Extended Arabic-Indic) folded to ASCII (v5b).
-    Every Cf format character is dropped first (v5c) -- after the escapes are undone, so a
-    JSON-escaped `\\u200b` is dropped as well as a literal one."""
+    """Backslash escaping undone to a fixpoint, at most `_UNESCAPE_PASSES` levels (v5d: an escaped
+    backslash is consumed before a `\\uXXXX` is read, and surrogate pairs are joined), every
+    invisible character dropped (Cf, v5c; Default_Ignorable, v5d), compatibility forms folded
+    (NFKC: fullwidth digits) and every Unicode decimal digit folded to ASCII (v5b)."""
     out = text
-    for _ in range(6):
-        nxt = _UESC.sub(lambda m: chr(int(m.group(1), 16)), out)
-        nxt = nxt.replace("\\\\", "\\").replace('\\"', '"').replace("\\'", "'")
+    for _ in range(_UNESCAPE_PASSES):
+        nxt = _unescape_once(out)
         if nxt == out:
             break
         out = nxt
-    return _ascii_digits(unicodedata.normalize("NFKC", _drop_format(out)))
+    out = unicodedata.normalize("NFKC", _drop_format(out))
+    return _ascii_digits(_drop_format(out))   # NFKC can map onto an ignorable (U+3164 -> U+1160)
 
 
 def _as_text(data: bytes) -> str:

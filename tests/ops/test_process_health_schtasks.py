@@ -545,3 +545,29 @@ def test_a_malformed_expected_disabled_entry_reads_attention_and_never_raises(
     assert doc["status"] == "ATTENTION" and doc["n_needing_attention"] == 1
     entry, err = ph.expected_disabled("MT5-AdoptRelease")
     assert entry is None and err
+
+
+# v5d (2026-10-21): process_health reads the account key file's STATE (never its contents), and a
+# short or unreadable key is ATTENTION -- fail-closed stamping is never silent.
+@pytest.mark.parametrize("body, state, headline",
+                         [(b"ab12", "short", "ATTENTION"), (b"k" * 64, "present", "OK"),
+                          (None, "absent", "OK")],
+                         ids=["short", "present", "absent"])
+def test_the_account_key_file_state_is_reported_and_a_short_key_is_attention(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, body: bytes | None, state: str,
+    headline: str
+) -> None:
+    key = tmp_path / "secrets" / "account_key.hmac"
+    key.parent.mkdir(parents=True)
+    if body is not None:
+        key.write_bytes(body)
+    monkeypatch.setenv("QUANT_ACCOUNT_KEY_FILE", str(key))
+    _fake(monkeypatch, BRIEF_ADOPT, VERBOSE_ADOPT)
+    doc, _by = _build(monkeypatch, tmp_path, _GW_ONLY)
+    k = doc["account_key_file"]
+    assert k["state"] == state and doc["status"] == headline
+    assert k["size_bytes"] == (None if body is None else len(body))
+    if body is not None:
+        assert body.decode() not in repr(k), "the key's contents reached the report"
+    if state == "short":
+        assert "laptop backup" in k["restore"] and doc["n_needing_attention"] == 1
