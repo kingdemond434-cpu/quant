@@ -301,7 +301,9 @@ def test_missing_equity_sends_nothing_and_bills_missed_growth(
 
     monkeypatch.setattr(venue, "account", account)
     doc = g.run(venue, h._MT5(), armed=True)
-    assert venue.sent == [] and doc["equity"] == 0.0
+    # v5.3: a refused equity is published null / UNMEASURED, never 0.0
+    assert venue.sent == [] and doc["equity"] is None
+    assert doc["equity_status"] == "UNMEASURED" and doc["risk_usd"] is None
     (row,) = _decisions(doc)
     assert (row["outcome"], row["reason"]) == ("DEFERRED", ev.R_EQUITY_UNREADABLE)
     (bill,) = [r for r in bg._journal(tmp_path) if r.get("rail") == g.EQUITY_UNREADABLE_RAIL]
@@ -817,3 +819,193 @@ def test_the_scrub_catches_subacc_acc_dot_and_account_number(text: str) -> None:
 )
 def test_the_scrub_leaves_prices_and_ordinary_words(text: str) -> None:
     assert ev.scrub(text) == text
+
+
+# ------------------------------------------------------------- v5.3 (audit HOLD on 0a19b657)
+
+
+class _StopIdVenue(_AccountVenue):
+    """EURUSD long whose stop exists ONLY as a resting order named by stopLossId."""
+
+    def orders(self, symbol: str | None = None) -> list[dict]:
+        return [
+            {
+                "id": 5551,
+                "tradableInstrumentId": 7001,
+                "side": "sell",
+                "qty": 0.5,
+                "stopPrice": 1.0980,
+                "positionId": 801,
+            }
+        ]
+
+
+def _eurusd_stop_by_id() -> dict[str, Any]:
+    return {**_eurusd(None), "stopLossId": 5551}
+
+
+def test_mf1_an_fx_stop_held_only_as_stop_loss_id_is_read(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """MF1: before v5.3 the non-XAU stop was read from row["stopLoss"] only, so this position
+    read as stopless and froze every gold window. It now prices exactly as the stopLoss case."""
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
+    venue = _StopIdVenue()
+    venue._positions = [_eurusd_stop_by_id()]
+    doc = g.run(venue, h._MT5(), armed=True)
+    (row,) = doc["committed_risk"]["foreign"]
+    slip_usd = 24.13 / 4300.2 * 1.1001 * 0.5 * 100_000
+    assert row["kind"] == "position" and row["stop"] == pytest.approx(1.0980)
+    assert row["risk_usd"] == pytest.approx(0.0020 * 50_000 + slip_usd, rel=1e-3)
+    assert row["slip_source"].startswith("unmeasured EURUSD")
+    assert not [d for d in doc["decisions"] if d["reason"] == ev.R_RISK_UNMEASURABLE]
+    assert venue.sent, "the gold window is no longer frozen by the FX position"
+
+
+def test_mf2_a_risk_budget_deferral_is_billed_once_per_window_per_day(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """MF2: the unshrunk risk_budget deferral bills its withheld risk, once per window per day."""
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
+    monkeypatch.setattr(g, "RISK_FRAC", 0.02)
+    venue = bg._Venue()
+    doc = g.run(venue, h._MT5(), armed=True)
+    assert venue.sent == []
+    (bill,) = [r for r in bg._journal(tmp_path) if r.get("rail") == g.RISK_BUDGET_RAIL]
+    assert bill["status"] == "RAIL_BLOCKED" and bill["reason"] == ev.R_RISK_BUDGET
+    assert bill["window"] == "afternoon"
+    assert bill["missed_growth_risk_usd"] == pytest.approx(2000.0)
+    assert bill["committed_risk_usd"] == pytest.approx(doc["committed_risk"]["total_usd"])
+    g.run(venue, h._MT5(), armed=True)
+    assert len([r for r in bg._journal(tmp_path) if r.get("rail") == g.RISK_BUDGET_RAIL]) == 1
+    sys.path.insert(0, str(_DESK / "research"))
+    import missed_growth as mg
+
+    monkeypatch.setattr(mg, "E8_INTENTS", tmp_path / "intents.json")
+    (line,) = [x for x in mg.published_e8_gold_lines()["lines"] if x["rail"] == g.RISK_BUDGET_RAIL]
+    assert line["n_blocked"] == 1 and line["risk_withheld_usd"] == pytest.approx(2000.0)
+
+
+def _fx_hist_row(oid: int, side: str, stop: float, fill: float, **kw: Any) -> dict[str, Any]:
+    return {
+        "id": oid,
+        "status": "Filled",
+        "tradableInstrumentId": 7001,
+        "positionId": 801,
+        "side": side,
+        "stopPrice": stop,
+        "avgPrice": fill,
+        "isOpen": "false",
+        **kw,
+    }
+
+
+def test_fx_stop_exits_are_closing_fills_with_adverse_slip_only() -> None:
+    names = {6102: "XAUUSD", 7001: "EURUSD"}
+    rows = [
+        _fx_hist_row(1, "sell", 1.1000, 1.0989),  # long stopped 11 points through
+        _fx_hist_row(2, "buy", 1.1000, 1.0995),  # filled to the good side: 0
+        _fx_hist_row(3, "buy", 1.1000, 1.1010, isOpen="true"),  # an FX ENTRY stop, never
+        _fx_hist_row(4, "sell", 1.1000, 1.0990, isOpen=None),  # unknown flag, never
+        _fx_hist_row(5, "sell", 4300.0, 4290.0, tradableInstrumentId=6102),  # gold, never
+        _fx_hist_row(6, "sell", 1.1000, 1.0990, tradableInstrumentId=9999),  # uncatalogued
+        _fx_hist_row(7, "sell", 1.1000, 1.0990, status="Cancelled"),
+    ]
+    out = g.fx_stop_exits_from_history(rows, names, xau_instrument_id=6102)
+    assert [r["order_id"] for r in out] == [1, 2]
+    assert out[0]["slip_frac"] == pytest.approx(0.0011 / 1.1, rel=1e-6)
+    assert out[1]["slip_frac"] == 0.0
+    assert {r["symbol"] for r in out} == {"EURUSD"}
+
+
+def test_fx_slip_is_measured_per_symbol_only_from_twenty_exits(tmp_path: Path) -> None:
+    path = tmp_path / "fx.jsonl"
+    rows = [{"order_id": i, "symbol": "EURUSD", "slip_frac": 0.0001} for i in range(20)]
+    rows += [{"order_id": 100 + i, "symbol": "EURCHF", "slip_frac": 0.0002} for i in range(19)]
+    rows += [{"order_id": 200 + i, "symbol": "GBPUSD", "slip_frac": 0.0} for i in range(25)]
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    got = g.fx_slip_fractions(path)
+    assert got["EURUSD"] == {"n": 20, "slip_frac": pytest.approx(0.0001), "status": "MEASURED"}
+    assert got["EURCHF"]["status"] == "UNMEASURED" and got["EURCHF"]["slip_frac"] is None
+    assert got["GBPUSD"]["status"] == "UNMEASURED", "a zero p95 is not no slip"
+    assert g.fx_slip_fractions(tmp_path / "absent.jsonl") == {}
+
+
+def test_a_measured_fx_slip_prices_the_fx_stop_and_says_so(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
+    fx = tmp_path / "fx.jsonl"
+    fx.write_text(
+        "".join(
+            json.dumps({"order_id": i, "symbol": "EURUSD", "slip_frac": 0.0001}) + "\n"
+            for i in range(20)
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(g, "FX_STOP_EXITS", fx)
+    venue = _AccountVenue()
+    venue._positions = [_eurusd(1.0980)]
+    doc = g.run(venue, h._MT5(), armed=True)
+    (row,) = doc["committed_risk"]["foreign"]
+    assert row["risk_usd"] == pytest.approx(0.0020 * 50_000 + 0.0001 * 1.1001 * 50_000, rel=1e-3)
+    assert row["slip_source"].startswith("measured:") and row["slip_fraction"] == 0.0001
+
+
+def test_a_full_pass_journals_the_fx_lanes_stop_exits(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
+    fx = tmp_path / "fx.jsonl"
+    monkeypatch.setattr(g, "FX_STOP_EXITS", fx)
+
+    class _HistApi(h._Api):
+        @staticmethod
+        def get_all_orders(history: bool = False, lookback_period: str = "") -> list:
+            return [_fx_hist_row(31, "sell", 1.1000, 1.0995)]
+
+    venue = _AccountVenue()
+    venue._api = _HistApi()  # type: ignore[assignment]
+    doc = g.run(venue, h._MT5(), armed=True)
+    assert doc["fx_stop_exits_recorded"] == 1
+    g.run(venue, h._MT5(), armed=True)
+    (row,) = [json.loads(x) for x in fx.read_text("utf-8").splitlines()]
+    assert row["symbol"] == "EURUSD" and row["slip_frac"] == pytest.approx(0.0005 / 1.1, abs=1e-8)
+
+
+def test_committed_slip_is_the_larger_of_pooled_and_every_windows_p95(tmp_path: Path) -> None:
+    path = tmp_path / "slip.json"
+    path.write_text(
+        json.dumps(
+            {
+                "status": "MEASURED",
+                "n": 40,
+                "slip_points": 20.0,
+                "windows": {
+                    "asia": {"status": "MEASURED", "n": 20, "slip_points": 31.5},
+                    "afternoon": {"status": "MEASURED", "n": 20, "slip_points": 12.0},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    pts, src = g.committed_slip_points(path)
+    assert pts == 31.5 and "asia" in src
+    assert g.committed_slip_points(tmp_path / "none.json")[0] == g.DEFAULT_SLIP_POINTS
+
+
+def test_the_pass_charges_committed_risk_at_the_worst_window_slip(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    slip = {
+        "status": "MEASURED",
+        "n": 40,
+        "slip_points": 20.0,
+        "windows": {"asia": {"status": "MEASURED", "n": 20, "slip_points": 31.5}},
+    }
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard(), slip=slip)
+    venue = _AccountVenue()
+    venue._positions = [_eurusd(1.0980)]
+    doc = g.run(venue, h._MT5(), armed=True)
+    assert doc["committed_risk"]["slip_points"] == 31.5
+    assert "asia" in doc["committed_risk"]["slip_source"]

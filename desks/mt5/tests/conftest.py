@@ -170,6 +170,8 @@ def _e8_gold_slip_writes_to_tmp(tmp_path_factory, monkeypatch):
         for g in live:
             monkeypatch.setattr(g, "BRACKET_SLIP_FILE", d / "E8_GOLD_SLIP.json")
             monkeypatch.setattr(g, "STOP_EXITS", d / "e8_gold_stop_exits.jsonl")
+            if hasattr(g, "FX_STOP_EXITS"):
+                monkeypatch.setattr(g, "FX_STOP_EXITS", d / "e8_fx_stop_exits.jsonl")
     yield
 
 
