@@ -4390,9 +4390,18 @@ def main() -> None:
                   lambda: _producer("orthogonality_yield",
                                     "research/orthogonality_yield.py",
                                     "--once", "--budget-s", "120"))
+    # THE LEG REUSES THE MERGE'S TABLE INSTEAD OF COMPUTING IT A SECOND TIME. `catch_up_intake`
+    # above runs merge_hypotheses -> order_docket -> build -> write in this same cycle, so a
+    # second build here duplicated a full pass over the docket and the ledger, and that copy
+    # was the one killed at this leg's cap on the box. `--reuse-fresh` computes nothing: it
+    # exits 0 only when the published table is this cycle's (stamped after
+    # QUANT_PIPELINE_STARTED_AT, ratchet in step, merge report of this cycle written after it),
+    # and otherwise exits 4 with reports/JUDGE_COVERAGE_REUSE.json naming why. It never writes
+    # the table, so a stale table stays stale under its own `at`. The cap is unchanged.
     jcv = _costed("judge_coverage", lambda: _producer("judge_coverage",
                                                       "research/judge_coverage.py",
-                                                      "--once", "--budget-s", "120"))
+                                                      "--once", "--reuse-fresh",
+                                                      "--budget-s", "120"))
     # EFFECTIVE TRIALS: the multiplicity budget is charged in independent TESTS, not in docket
     # rows. Measures nominal vs effective per family (participation ratio of (grid cell, content)
     # identities within each mechanism), publishes the ratio, and writes the corrected campaign
