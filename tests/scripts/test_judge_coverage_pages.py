@@ -200,3 +200,21 @@ def test_unmeasured_neither_pages_nor_clears(fence, tmp_path):
     assert not out["sent"] and len(ch.sent) == 1
     state = json.loads((tmp_path / fence.PAGE_STATE_REL).read_text("utf-8"))
     assert "red" in state["open"]
+
+
+def test_the_page_state_is_written_atomically(fence, tmp_path, monkeypatch):
+    """tmp + os.replace: a failed replace leaves the previous state intact and no tmp behind."""
+    ch = Channel()
+    _pass(fence, tmp_path, _report(NOW, red=True), NOW, ch)
+    state = tmp_path / fence.PAGE_STATE_REL
+    before = state.read_bytes()
+
+    def refuse(src, dst):
+        raise PermissionError("locked")
+
+    monkeypatch.setattr(fence.os, "replace", refuse)
+    t = NOW + timedelta(hours=1)
+    out = _pass(fence, tmp_path, _report(t), t, ch)
+    assert out["state_write_error"].startswith("PermissionError")
+    assert state.read_bytes() == before
+    assert list(state.parent.glob("*.tmp")) == []
