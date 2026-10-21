@@ -87,6 +87,7 @@ import contextlib
 import gc
 import json
 import math
+import os
 import sys
 import time
 from collections import Counter, deque
@@ -102,6 +103,9 @@ STUDY_BANK = HYP / "study_bank.json"
 GATE_LEDGER = HYP / "gate_verdict_ledger.jsonl"
 REPORTS = BASE / "reports"
 REPORT = REPORTS / "JUDGE_COVERAGE.json"
+#: Written ONLY by a pass that stopped at its budget, and cleared by the next completed pass's
+#: commit. It never touches REPORT, which keeps its own `at` and ages out under the fence's lease.
+TIMEOUT_REPORT = REPORTS / "JUDGE_COVERAGE_TIMEOUT.json"
 #: research/occupancy_map.py's hourly artifact: target cells and per-candidate orthogonality.
 OCCUPANCY_REPORT = REPORTS / "OCCUPANCY_MAP.json"
 RATCHET = BASE / "data" / "judge_backlog_ratchet.json"
@@ -237,6 +241,9 @@ def _read_memo(path: Path) -> Any:
     """`_read`, served from the pass memo when one is open. Callers must not mutate the result."""
     if _PASS is None:
         return _read(path)
+    staged = _PASS.get(("staged_json", str(path)))
+    if staged is not None:
+        return staged                  # this pass's own uncommitted write of the file
     key = _stat_key(path)
     if key is None:
         return _read(path)
@@ -352,6 +359,190 @@ def _ledger_scan(path: Path) -> _LedgerScan | None:
         if not scan.err:
             _PASS[slot] = scan
     return scan
+
+
+#: ONE PASS PERSISTS AS ONE TRANSACTION (2026-10-21). A pass writes six things: the learned
+#: priors, the unrunnable bank, the readmission log, the conversion handoff, the report (with the
+#: k_eff order) and the ratchet. The ratchet carries the cursor (`priors_cursor`) that says which
+#: verdicts the priors already hold, and the re-admissions (`readmitted_to_next`) that the next
+#: reading's cohort is measured against. The priors and the bank used to be written mid-pass and
+#: the ratchet at the end, so a pass killed in between (the cycle's timeout) left the posterior
+#: taught and the cursor not advanced. The next pass then taught the same verdicts AGAIN, and the
+#: bank and readmission log moved while the ratchet did not.
+#:
+#: Now every write inside a pass is STAGED beside its target (`<name>.jc-txn-<id>`) and committed
+#: together: a manifest naming every (staged, final) pair is written atomically -- the COMMIT
+#: POINT -- and the staged files are renamed over their targets. A kill before the manifest leaves
+#: every target exactly as it was (the staged orphans are swept later). A kill after it is ROLLED
+#: FORWARD by the next pass before it reads anything. Either way all six move together or none do.
+TXN_TAG = ".jc-txn-"
+TXN_MANIFEST_PREFIX = "judge_coverage_txn-"
+#: A staged file older than this with no manifest naming it belongs to a killed pass.
+TXN_ORPHAN_AGE_S = 3600.0
+#: os.replace onto a file another process holds open fails on Windows; a reader holds it briefly.
+TXN_REPLACE_TRIES = 25
+TXN_REPLACE_WAIT_S = 0.2
+
+
+def _replace_retry(src: Path, dst: Path) -> None:
+    for attempt in range(TXN_REPLACE_TRIES):
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            if attempt == TXN_REPLACE_TRIES - 1:
+                raise
+            time.sleep(TXN_REPLACE_WAIT_S)
+
+
+def _apply_ops(ops: list[list[Any]]) -> None:
+    """Apply a committed manifest. Idempotent: a staged file already renamed is simply absent."""
+    for op, final, staged in ops:
+        dst = Path(final)
+        if op == "replace":
+            src = Path(staged)
+            if src.exists():
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                _replace_retry(src, dst)
+        elif op == "delete":
+            with contextlib.suppress(FileNotFoundError):
+                dst.unlink()
+
+
+class _Txn:
+    """The staged writes of one pass, committed together at `write` (or at the end of `build`)."""
+
+    def __init__(self, manifest_dir: Path) -> None:
+        self.id = f"{os.getpid()}-{time.time_ns()}"
+        self.manifest_dir = manifest_dir
+        self.ops: dict[str, list[Any]] = {}
+        self.staged_dirs: list[Path] = []
+
+    def staged_path(self, final: Path) -> Path:
+        return final.with_name(f"{final.name}{TXN_TAG}{self.id}")
+
+    def put_staged(self, final: Path, staged: Path) -> None:
+        self.ops[str(final)] = ["replace", str(final), str(staged)]
+
+    def put_text(self, final: Path, text: str) -> None:
+        """`final.write_text(text, "utf-8")`, staged. Raises OSError as the write would."""
+        final.parent.mkdir(parents=True, exist_ok=True)
+        staged = self.staged_path(final)
+        staged.write_text(text, "utf-8")
+        self.put_staged(final, staged)
+
+    def delete(self, final: Path) -> None:
+        self.ops[str(final)] = ["delete", str(final), None]
+
+    def staged_dir(self, final_dir: Path) -> Path:
+        d = final_dir / f"{TXN_TAG}{self.id}"
+        self.staged_dirs.append(d)
+        return d
+
+    def manifest(self) -> Path:
+        return self.manifest_dir / f"{TXN_MANIFEST_PREFIX}{self.id}.json"
+
+    def write_manifest(self) -> Path:
+        """THE COMMIT POINT: once this file exists, the pass's writes WILL all land."""
+        path = self.manifest()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(path.name + ".tmp")
+        tmp.write_text(json.dumps({"id": self.id, "ops": list(self.ops.values())}), "utf-8")
+        _replace_retry(tmp, path)
+        return path
+
+    def commit(self) -> None:
+        if self.ops:
+            manifest = self.write_manifest()
+            _apply_ops(list(self.ops.values()))
+            manifest.unlink()
+        self._drop_dirs()
+
+    def discard(self) -> None:
+        for op, _final, staged in self.ops.values():
+            if op == "replace" and staged:
+                with contextlib.suppress(OSError):
+                    Path(staged).unlink()
+        self.ops.clear()
+        self._drop_dirs()
+
+    def _drop_dirs(self) -> None:
+        import shutil
+        for d in self.staged_dirs:
+            shutil.rmtree(d, ignore_errors=True)
+        self.staged_dirs.clear()
+
+
+def _txn_dirs(ratchet: Path | None = None) -> list[Path]:
+    """Every directory a pass stages into, for recovery and the orphan sweep."""
+    dirs = [(ratchet or RATCHET).parent, RATCHET.parent, UNRUNNABLE_BANK.parent,
+            CONVERSION_HANDOFF.parent, REPORT.parent]
+    with contextlib.suppress(Exception):
+        root = str(BASE.parents[1])
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.research import research_priors
+        dirs.append(Path(research_priors.STATE_DIR))
+    out: list[Path] = []
+    for d in dirs:
+        if d not in out:
+            out.append(d)
+    return out
+
+
+def recover_transactions(ratchet: Path | None = None) -> int:
+    """Roll forward every committed manifest a killed pass left, then sweep staged orphans.
+
+    Runs before a pass reads anything, so a pass never reads a half-moved state. Returns how
+    many manifests were rolled forward. A manifest that cannot be applied raises: reading on
+    from a half-moved state would be the inconsistency this exists to prevent.
+    """
+    rolled = 0
+    dirs = _txn_dirs(ratchet)
+    for d in dirs:
+        for m in sorted(d.glob(f"{TXN_MANIFEST_PREFIX}*.json")) if d.is_dir() else []:
+            try:
+                doc = json.loads(m.read_text("utf-8"))
+            except (OSError, ValueError):
+                doc = None
+            if isinstance(doc, dict) and isinstance(doc.get("ops"), list):
+                _apply_ops(doc["ops"])
+                rolled += 1
+            m.unlink()
+    cutoff = time.time() - TXN_ORPHAN_AGE_S
+    for d in dirs:
+        for p in d.glob(f"*{TXN_TAG}*") if d.is_dir() else []:
+            with contextlib.suppress(OSError):
+                if p.stat().st_mtime >= cutoff:
+                    continue                     # possibly a live pass's; swept next time
+                if p.is_dir():
+                    import shutil
+                    shutil.rmtree(p, ignore_errors=True)
+                else:
+                    p.unlink()
+    return rolled
+
+
+def _txn_current() -> _Txn | None:
+    return _PASS.get(("txn",)) if _PASS is not None else None
+
+
+class JudgeCoverageTimeout(Exception):
+    """The pass reached its stop before committing: nothing it staged is written."""
+
+    def __init__(self, phase: str, elapsed_s: float) -> None:
+        super().__init__(f"budget reached at {phase} after {elapsed_s:.1f}s")
+        self.phase = phase
+        self.elapsed_s = elapsed_s
+
+
+def _check_budget(phase: str) -> None:
+    """Stop the pass, uncommitted, when its deadline has passed (see `main`)."""
+    if _PASS is None:
+        return
+    deadline = _PASS.get(("deadline",))
+    if deadline is not None and time.monotonic() > deadline[1]:
+        raise JudgeCoverageTimeout(phase, time.monotonic() - deadline[0])
 
 
 def _ts(raw: object) -> datetime | None:
@@ -783,10 +974,12 @@ def family_priors(families: list[str],
     except Exception:
         def prior_for(_dim: str, _key: str) -> Any:                  # type: ignore[misc]
             raise RuntimeError("research_priors unavailable")
+    _staged_dir = _PASS.get(("priors_dir",)) if _PASS is not None else None
     for fam in families:
         row = {"p": 0.5, "p_optimistic": 1.0, "n": 0.0, "status": 0.0, "source": 0.0}
         try:
-            pr = prior_for("family", fam)
+            pr = (prior_for("family", fam) if _staged_dir is None
+                  else prior_for("family", fam, state_dir=_staged_dir))
             row = {"p": float(pr.mean), "p_optimistic": float(pr.interval()[1]),
                    "n": float(pr.n), "status": 1.0 if pr.status == "POSTERIOR" else 0.0,
                    "source": 0.0}
@@ -903,7 +1096,23 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
         high = max(high, at)
     if out["recorded"]:
         try:
-            save(state, state_dir)
+            txn = _txn_current()
+            if txn is None:
+                save(state, state_dir)
+            else:
+                # STAGED with the ratchet that carries this pass's cursor (see `_Txn`): the
+                # posterior and the cursor land together or not at all, so a killed pass can
+                # never leave verdicts taught that the next pass will teach again.
+                from libs.research import research_priors as _rp
+                final_dir = Path(state_dir or _rp.STATE_DIR)
+                staged_dir = txn.staged_dir(final_dir)
+                save(state, staged_dir)
+                for _name in ("beta.json", "dirichlet.json"):
+                    txn.put_staged(final_dir / _name, staged_dir / _name)
+                if state_dir is None and _PASS is not None:
+                    # The rest of this pass reads the posterior it just taught, as it did when
+                    # the save landed in place (`family_priors`).
+                    _PASS[("priors_dir",)] = staged_dir
         except Exception as exc:                                         # pragma: no cover
             out.update(status="UNMEASURED", why=f"save failed: {type(exc).__name__}: {exc}")
     out["families"] = len(seen_fams)
@@ -1319,17 +1528,24 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         elif was_nt:
             _count_readmit(prev)            # re-named OUT of the class: owed again
         bank[cell] = entry
+    txn = _txn_current()
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps(bank, indent=1, default=str), "utf-8")
+        if txn is None:
+            target.write_text(json.dumps(bank, indent=1, default=str), "utf-8")
+        else:
+            txn.put_text(target, json.dumps(bank, indent=1, default=str))
     except OSError:
         pass
     else:
         # The next read of the bank in this pass is of the file just written; its parse is this
         # mapping (every value here is a JSON value), so the pass does not parse it back.
-        _wk = _stat_key(target) if _PASS is not None else None
-        if _PASS is not None and _wk is not None:
-            _PASS[("json", *_wk)] = bank
+        if txn is not None and _PASS is not None:
+            _PASS[("staged_json", str(target))] = bank
+        else:
+            _wk = _stat_key(target) if _PASS is not None else None
+            if _PASS is not None and _wk is not None:
+                _PASS[("json", *_wk)] = bank
     n_re = sum(readmitted_nt.values())
     # ONE LINE EVERY PASS, ZEROS INCLUDED (audit of PR #290, M1): the burn-down reads a missing
     # or stale log as UNMEASURED, so a quiet pass must still say "0" by writing it.
@@ -1338,9 +1554,19 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         # Beside the bank it describes, so a test's bank never writes the desk's log.
         lp = log or target.parent / READMISSION_LOG.name
         lp.parent.mkdir(parents=True, exist_ok=True)
-        with lp.open("a", encoding="utf-8") as fh:
+        dest = lp
+        if txn is not None:
+            # The whole log is staged (old bytes + this line) and renamed at commit: a rename is
+            # idempotent under roll-forward, where a second append would not be.
+            dest = txn.staged_path(lp)
+            if lp.exists():
+                import shutil
+                shutil.copyfile(lp, dest)
+        with dest.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps({"at": at, "readmitted": n_re,
                                  "by_reason": readmitted_nt_reason}) + "\n")
+        if txn is not None:
+            txn.put_staged(lp, dest)
     except OSError:
         pass
     return {"parked_this_pass": added, "readmitted_on_bar_growth": len(readmitted),
@@ -2063,27 +2289,57 @@ def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
                      "missing_input": _missing_input(cls, row), "why": row.get("why"),
                      "first_parked_utc": row.get("parked_at")})
     target = path or CONVERSION_HANDOFF
+    txn = _txn_current()
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps({"schema_version": CONVERSION_HANDOFF_SCHEMA,
-                                      "generated_utc": at, "n": len(rows), "rows": rows},
-                                     indent=1, default=str), "utf-8")
+        text = json.dumps({"schema_version": CONVERSION_HANDOFF_SCHEMA,
+                           "generated_utc": at, "n": len(rows), "rows": rows},
+                          indent=1, default=str)
+        if txn is None:
+            target.write_text(text, "utf-8")
+        else:
+            txn.put_text(target, text)
     except OSError:
         # Never leave the previous pass's file to read as this pass's count.
-        with contextlib.suppress(OSError):
-            target.unlink()
+        if txn is not None:
+            txn.delete(target)
+        else:
+            with contextlib.suppress(OSError):
+                target.unlink()
         return -1
     return len(rows)
 
 
 def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = None,
-          ratchet: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
+          ratchet: Path | None = None, now: datetime | None = None,
+          defer: bool = False, deadline: tuple[float, float] | None = None) -> dict[str, Any]:
     """The per-family coverage table, the quotas, and the carried-cohort ratchet.
 
     Run inside a pass memo, so each input file is parsed once however many readers need it.
+    Every write the pass makes (priors, bank, readmission log, handoff) is staged in one
+    transaction (`_Txn`). With `defer=False` it is committed when the table is built, exactly
+    where those writes used to land. With `defer=True` it rides on the doc and `write` commits
+    it TOGETHER with the report and the ratchet, so a pass killed before `write` changes nothing.
+    `deadline` is (start, stop) on the monotonic clock: past `stop` the pass raises
+    `JudgeCoverageTimeout` and its staged writes are discarded.
     """
-    with _pass_memo():
-        return _build(docket, ledger=ledger, ratchet=ratchet, now=now)
+    recover_transactions(ratchet)
+    txn = _Txn((ratchet or RATCHET).parent)
+    try:
+        with _pass_memo() as memo:
+            memo[("txn",)] = txn
+            if deadline is not None:
+                memo[("deadline",)] = deadline
+            doc = _build(docket, ledger=ledger, ratchet=ratchet, now=now)
+            memo.pop(("txn",), None)
+    except BaseException:
+        txn.discard()
+        raise
+    if defer:
+        doc["_txn"] = txn
+    else:
+        txn.commit()
+    return doc
 
 
 def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = None,
@@ -2096,8 +2352,10 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
                 "why": "the judging docket is absent or empty -- nothing mined to cover",
                 "families": {}, "totals": {}, "quota": {}}
 
+    _check_budget("docket_read")
     prior = _read(ratchet or RATCHET) or {}
     judged_cells, judged_total, judged_window = judged_index(ledger, now=at)
+    _check_budget("ledger")
     bank_rows = unrunnable_bank()
     not_testable_ids = not_testable_index(bank_rows)
     _id_fn = _cell_id_fn()
@@ -2123,6 +2381,7 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         except TypeError:                                   # an unhashable stamp: parse it
             return _ts(raw)
 
+    _check_budget("cell_ids")
     mined = _mined(rows)
     banned = banned_from_capital()
     study_only: dict[str, int] = {}
@@ -2188,6 +2447,7 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         else:
             oldest.setdefault(fam, None)
 
+    _check_budget("backlog")
     capacity = measured_capacity(judged_total, ledger, now=at)
     # TEACH THE PRIOR BEFORE SPENDING IT: every verdict since the last reading updates its
     # family's posterior, so the ranking below is spending a number this desk actually learned.
@@ -2210,11 +2470,13 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     # MARGINAL k_eff, STAMPED BEFORE THE RANKING READS IT (research/docket_keff.py). Reorders
     # only: the family factor lifts a family's share of the remainder, the per-cell stamp orders
     # rows inside each family stream. Nothing is removed and the floor is untouched.
+    _check_budget("bank")
     keff = keff_stamp(rows)
     # OCCUPANCY + ORTHOGONALITY, stamped beside k_eff (research/occupancy_map.py). Reorders only.
     occ = occupancy_stamp(rows)
     ranking = rank_by_value(backlog, rows, capacity)
     quota = allocate(backlog, capacity, ranking=ranking)
+    _check_budget("ranking")
     judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
     study_rows = [r for r in rows if str(r.get("family") or "") in banned]
     # Mark the variants BEFORE the order is taken, so the head this table reports is the head
@@ -2225,6 +2487,7 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     ordered = coverage_order(judgeable, quota, unjudged_ids,
                              limit=max(int(capacity), 0)) + study_rows
     head = ordered[:capacity]
+    _check_budget("order")
     if keff.get("status") == "MEASURED":
         dk = _docket_keff()
         if dk is not None:
@@ -2554,8 +2817,11 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
 def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | None
                   ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     try:
-        doc = build(rows, now=now)
+        doc = build(rows, now=now, defer=publish)
         if not doc.get("families"):
+            _txn = doc.pop("_txn", None)
+            if _txn is not None:
+                _txn.commit()
             return rows, doc
         quota = {str(k): int(v) for k, v in (doc.get("quota") or {}).items()}
         banned = banned_from_capital()
@@ -2639,8 +2905,31 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
 
 
 def write(doc: dict[str, Any], *, report: Path | None = None,
-          ratchet: Path | None = None) -> None:
-    """Publish the table and advance the ratchet. A ratchet write is the NEXT reading's baseline."""
+          ratchet: Path | None = None,
+          deadline: tuple[float, float] | None = None) -> None:
+    """Publish the table and advance the ratchet. A ratchet write is the NEXT reading's baseline.
+
+    ONE COMMIT. The report, the k_eff order and the ratchet are staged with whatever the pass
+    staged (`build(defer=True)`: priors, bank, readmission log, handoff) and committed together.
+    A pass past its `deadline` raises `JudgeCoverageTimeout` here, before the commit point, and
+    writes nothing.
+    """
+    txn = doc.pop("_txn", None)
+    if not isinstance(txn, _Txn):
+        recover_transactions(ratchet)
+        txn = _Txn((ratchet or RATCHET).parent)
+    try:
+        _write_staged(doc, txn, report=report, ratchet=ratchet)
+        if deadline is not None and time.monotonic() > deadline[1]:
+            raise JudgeCoverageTimeout("commit", time.monotonic() - deadline[0])
+    except BaseException:
+        txn.discard()
+        raise
+    txn.commit()
+
+
+def _write_staged(doc: dict[str, Any], txn: _Txn, *, report: Path | None,
+                  ratchet: Path | None) -> None:
     target = report or REPORT
     target.parent.mkdir(parents=True, exist_ok=True)
     keff = doc.pop("_keff_detail", None)
@@ -2648,10 +2937,16 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
         dk = _docket_keff()
         if dk is not None:
             try:
-                dk.publish(keff)
+                _kp = Path(dk.REPORT)
+                _kp.parent.mkdir(parents=True, exist_ok=True)
+                dk.publish(keff, path=txn.staged_path(_kp))
+                txn.put_staged(_kp, txn.staged_path(_kp))
             except OSError as exc:
                 doc.setdefault("keff_order", {})["publish_error"] = f"{type(exc).__name__}"
-    target.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    txn.put_text(target, json.dumps(doc, indent=1, default=str))
+    if report is None:
+        # A completed pass clears the previous timeout's artifact in the same commit.
+        txn.delete(TIMEOUT_REPORT)
     fams = doc.get("families") or {}
     state = {
         "at": doc.get("at"),
@@ -2672,8 +2967,7 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
                 "cell leaves a cohort exactly one way -- by being judged"),
     }
     rt = ratchet or RATCHET
-    rt.parent.mkdir(parents=True, exist_ok=True)
-    rt.write_text(json.dumps(state, indent=1, default=str), "utf-8")
+    txn.put_text(rt, json.dumps(state, indent=1, default=str))
 
 
 def render(doc: dict[str, Any]) -> list[str]:
@@ -2706,6 +3000,53 @@ def render(doc: dict[str, Any]) -> list[str]:
     return lines
 
 
+#: The exit code of a pass that stopped at its budget: a failure, never a verdict.
+TIMEOUT_EXIT = 3
+#: What a pass keeps in hand after its stop for the commit (renames, plus the report write).
+COMMIT_MARGIN_S = 15.0
+
+
+def stop_after_s(budget_s: float) -> tuple[float, float | None]:
+    """(the second the pass stops itself at, the cycle's kill cap or None).
+
+    THE PRODUCER NOW ENFORCES ITS BUDGET -- AND NEVER BELOW THE CAP THE CYCLE GRANTS. The hourly
+    cycle tells the child its real kill cap in QUANT_LEG_BUDGET_S. That cap is at least
+    `--budget-s` plus the write margin, because `_self_stop_floor_s` makes it so. Stopping at
+    `--budget-s` itself would turn a pass that finishes inside the cap into a failure, opening a
+    stale window the cycle never imposed. So the stop is the later of the declared budget and
+    the cap minus the commit margin. Everything past that point is a kill the cycle would have
+    made anyway, and the pass now meets it uncommitted and with a named TIMEOUT, never
+    mid-write. Run by hand, with no cap given, the declared budget is the stop.
+    """
+    cap: float | None = None
+    with contextlib.suppress(KeyError, TypeError, ValueError):
+        cap = float(os.environ["QUANT_LEG_BUDGET_S"])
+    if cap is None or cap <= 0:
+        return float(budget_s), None
+    return max(float(budget_s), cap - COMMIT_MARGIN_S), cap
+
+
+def write_timeout(exc: JudgeCoverageTimeout, *, budget_s: float, stop_s: float,
+                  cap_s: float | None, started: datetime,
+                  path: Path | None = None) -> Path:
+    """The TIMEOUT artifact: what stopped, where, and that nothing was committed. Atomic."""
+    target = path or TIMEOUT_REPORT
+    doc = {"at": started.isoformat(timespec="seconds"),
+           "verdict": "TIMEOUT", "phase": exc.phase, "elapsed_s": round(exc.elapsed_s, 2),
+           "budget_s": budget_s, "stop_s": round(stop_s, 2), "leg_cap_s": cap_s,
+           "committed": False,
+           "report_untouched": str(REPORT),
+           "why": ("the pass reached its stop before its commit point; every staged write "
+                   "(priors, bank, readmission log, handoff, report, ratchet) was discarded, so "
+                   f"{REPORT.name} still carries the `at` of the pass it describes and the "
+                   "fence's STALE_H lease ages it out -- it is never restamped as fresh")}
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = target.with_name(target.name + ".tmp")
+    tmp.write_text(json.dumps(doc, indent=1), "utf-8")
+    _replace_retry(tmp, target)
+    return target
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="judge coverage by unjudged backlog, per family")
     ap.add_argument("--once", action="store_true", help="one pass (the hourly leg's mode)")
@@ -2714,11 +3055,21 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--no-write", action="store_true", help="measure without advancing the ratchet")
     args = ap.parse_args(argv)
     t0 = time.time()
-    doc = build()
-    doc["elapsed_s"] = round(time.time() - t0, 2)
-    doc["budget_s"] = args.budget_s
-    if not args.no_write:
-        write(doc)
+    stop_s, cap_s = stop_after_s(args.budget_s)
+    m0 = time.monotonic()
+    deadline = (m0, m0 + stop_s)
+    try:
+        doc = build(defer=not args.no_write, deadline=deadline)
+        doc["elapsed_s"] = round(time.time() - t0, 2)
+        doc["budget_s"] = args.budget_s
+        if not args.no_write:
+            write(doc, deadline=deadline)
+    except JudgeCoverageTimeout as exc:
+        out = write_timeout(exc, budget_s=args.budget_s, stop_s=stop_s, cap_s=cap_s,
+                            started=datetime.fromtimestamp(t0, tz=UTC))
+        print(f"judge coverage: TIMEOUT -- {exc}; nothing committed, {REPORT.name} left as it "
+              f"was (its own `at` ages it out); see {out.name}", flush=True)
+        return TIMEOUT_EXIT
     if args.json:
         print(json.dumps(doc, indent=1, default=str))
     else:
