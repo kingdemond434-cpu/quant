@@ -165,6 +165,98 @@ def _order_door_writes_to_tmp(tmp_path_factory, monkeypatch):
     yield
 
 
+#: The fake logins the conftest's flat books are keyed by (never a real account).
+CONFTEST_LOGINS = {"fusion": 7000101, "e8": 7000102}
+
+
+def _stand_in_provenance() -> Any:
+    """A test double with `libs.ops.provenance.account_key`'s v5c contract, for a tree that does
+    not carry provenance.py yet: a positive integer login (int, integral float or digit string,
+    whitespace allowed) on a stripped server, keyed HMAC-SHA256 under a fixed TEST key; anything
+    else is None. Never used on a tree that has the real module."""
+    import hashlib
+    import hmac
+    import types
+
+    def norm_login(login: object) -> int | None:
+        if login is None or isinstance(login, bool):
+            return None
+        if isinstance(login, float):
+            return int(login) if login.is_integer() and login > 0 else None
+        if isinstance(login, int):
+            return login if login > 0 else None
+        if isinstance(login, str) and login.strip().isascii() and login.strip().isdigit():
+            return int(login.strip()) or None
+        return None
+
+    def account_key(login: object, server: object, *, create: bool = False) -> str | None:
+        canon = norm_login(login)
+        if canon is None:
+            return None
+        srv = "\x00none" if server is None else str(server).strip()
+        mac = hmac.new(b"conftest-box-key-" + b"0" * 32, f"{canon}@{srv}".encode(),
+                       hashlib.sha256).hexdigest()
+        return "sha256:" + mac[:16]
+
+    mod = types.ModuleType("libs.ops.provenance")
+    mod.account_key = account_key  # type: ignore[attr-defined]
+    mod.norm_login = norm_login  # type: ignore[attr-defined]
+    mod.STAND_IN = True  # type: ignore[attr-defined]
+    return mod
+
+
+def _install_provenance(d: Path, monkeypatch: Any) -> None:
+    import sys
+    key = d / "account_key.hmac"
+    key.write_text("conftest-box-key-" + "0" * 48, encoding="utf-8")
+    monkeypatch.setenv("QUANT_ACCOUNT_KEY_FILE", str(key))
+    try:
+        from libs.ops import provenance  # noqa: F401
+    except ImportError:
+        import libs.ops as _ops
+        stand_in = _stand_in_provenance()
+        monkeypatch.setitem(sys.modules, "libs.ops.provenance", stand_in)
+        monkeypatch.setattr(_ops, "provenance", stand_in, raising=False)
+
+
+@pytest.fixture(autouse=True)
+def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch):
+    """THE CROSS-ACCOUNT FENCE'S (AND THE RAILS LEDGER'S) FILES NEVER LAND IN THE REPO FROM A
+    TEST, AND EVERY TEST STARTS IN A READABLE WORLD. `mt5desk.cross_account` keeps both
+    accounts' books and the placement lock under `data/xacct/`; here that directory is a fresh
+    tmp one holding a just-published, FLAT book for each account, so a lane under test sees
+    "the other account holds nothing" -- exactly what it saw before the fence existed. A test of
+    the fence itself writes its own books (or deletes these) to exercise the refusals."""
+    from mt5desk import cross_account
+    d = tmp_path_factory.mktemp("xacct")
+    monkeypatch.setattr(cross_account, "XACCT_DIR", d)
+    # Per-process lock state never leaks between tests (re-entry, released tokens, the miss
+    # cooldown).
+    monkeypatch.setattr(cross_account, "_HELD", {})
+    monkeypatch.setattr(cross_account, "_RELEASED", set())
+    monkeypatch.setattr(cross_account, "_MISSED_AT", [])
+    # HERMETIC ON THE BOX TOO: the box declares its real accounts in gitignored files
+    # (FUSION_LIVE_ACCOUNT.json, E8_ACCOUNT.json), and a declared account makes every test book
+    # "another account's". A test of the binding points these at its own tmp copies.
+    from mt5desk import decision_core as _dc
+    monkeypatch.setattr(cross_account, "E8_ACCOUNT_FILE", d / "E8_ACCOUNT.json")
+    monkeypatch.setattr(_dc, "FUSION_ACCOUNT_FILE", d / "FUSION_LIVE_ACCOUNT.json")
+    # THE ONE ACCOUNT KEY (r7): cross_account delegates to libs.ops.provenance.account_key. The
+    # real module (publish_sync v5c) is used when this tree has it, keyed by a tmp box key; on a
+    # tree without it, `_PROVENANCE_STAND_IN` reproduces its contract (digit logins only, the
+    # server stripped, None fails closed). A test of the fail-closed path removes it.
+    _install_provenance(d, monkeypatch)
+    monkeypatch.setenv("E8_ALERT_LEDGER", str(d / "alert_ledger.json"))   # the E8 key page
+    for account in cross_account.ACCOUNTS:
+        cross_account.publish(account, {}, source="conftest",
+                              key=cross_account.account_key(CONFTEST_LOGINS[account], "test"))
+    # The Fusion book's rails ledger (mt5desk.fusion_rails) is box state too: a test that sends
+    # a floor-lifted order would otherwise append its bill to the repo's data/ file.
+    from mt5desk import fusion_rails
+    monkeypatch.setattr(fusion_rails, "LEDGER", d / "fusion_book_rails.jsonl")
+    yield d
+
+
 @pytest.fixture
 def portable_gateway(monkeypatch, tmp_path):
     """Import the entire venue adapter on every OS; no SDK operation is permitted.

@@ -204,12 +204,22 @@ class _Venue:
         return 901
 
 
+def _flat_fusion_terminal() -> Any:
+    from types import SimpleNamespace
+    return SimpleNamespace(
+        account_info=lambda: SimpleNamespace(login=1, server="FusionMarkets-Live", trade_mode=2),
+        positions_get=lambda *a, **k: (), orders_get=lambda *a, **k: ())
+
+
 def _retry(venue: _Venue, st: dict, *, hour: float = 8.0, **kw: Any) -> dict:
     from datetime import UTC, datetime
     doc: dict = {"actions": []}
     args = {"open_orders": list(venue.book), "orders_ok": True, "filled": {},
             "xau_positions": [], "positions_ok": True, "stood_down": False, "armed": True,
-            "hist_rows": [], "history_ok": True, "instrument_id": IID, **kw}
+            "hist_rows": [], "history_ok": True, "instrument_id": IID,
+            # A FLAT Fusion terminal: the retry is cross-account fenced (audit round 2) and
+            # fails closed without one; the fence itself is pinned in test_fusion_minlot_book.
+            "mt5": _flat_fusion_terminal(), **kw}
     g._retry_failed_legs(venue, st, doc, hour=hour, now=datetime.now(UTC), **args)
     return doc
 
@@ -219,6 +229,11 @@ def _no_journal(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(g, "INTENTS", tmp_path / "intents.jsonl")
     monkeypatch.setattr(g, "LOG", tmp_path / "log")
     (tmp_path / "intents.jsonl").write_text("", "utf-8")     # a readable, empty journal
+    # The late-gold-send rule (decision_core.GOLD_SEND_GRACE_MIN, r6) is lifted: these tests
+    # drive the retry mechanics at clocks past the 5-minute grace; test_fusion_book_r6.py pins the rule.
+    from mt5desk import decision_core as _dc_grace
+    monkeypatch.setattr(_dc_grace, "GOLD_SEND_GRACE_MIN", 24 * 60.0)
+    monkeypatch.setattr(_dc_grace, "E8_GOLD_SEND_GRACE_MIN", 24 * 60.0)
 
 
 def test_the_pass_re_sends_the_leg_and_moves_it_into_the_bracket() -> None:

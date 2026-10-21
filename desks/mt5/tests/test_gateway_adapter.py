@@ -1254,6 +1254,10 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
     """`main` and the placement path exec'd from the source, over the real core, with the
     pause file read by THE REAL READER (`mt5desk.config.gateway_paused`) pointed at a private
     data/ directory, and every venue read, file write and sibling adapter faked."""
+    # The clock is 09:30 server, 2.5h past asia's 07:00: the late-gold-send rule (r6,
+    # decision_core.GOLD_SEND_GRACE_MIN) is lifted for these mechanics tests and pinned in
+    # test_fusion_book_r6.py, which runs `main` with it back on.
+    monkeypatch.setattr(dc, "GOLD_SEND_GRACE_MIN", 24 * 60.0)
     data = tmp_path / "data"
     data.mkdir(exist_ok=True)
     # Keep the real staleness guard, but give this isolated fake venue its own
@@ -1284,6 +1288,9 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
         "sleeve_set": lambda: dc.roster({}, [])[0],
         "manage_open_positions": lambda st, sleeves: None,
         "release_gate": lambda: (True, "release identity ok (test)"),
+        # The armed-deadman gate (r6) is faked like the release gate; test_fusion_book_r6.py runs
+        # `main` with the REAL reader and no stamp, and pins that nothing is sent.
+        "fusion_deadman_armed": lambda: (True, "fusion deadman LIVE (test)"),
         "regime_hibernate": lambda sleeves: set(),
         "load_sleeves": lambda: [],
         "ledger_rows": lambda: [],
@@ -1335,7 +1342,8 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
     return _exec(("main", "_past_cancel_hour", "place_bracket", "note_placement",
                   "_rejection_streak_expired", "load_state", "save_state", "now",
                   "_sleeve_identity", "resolve_pending_bracket", "bracket_lane_lot",
-                  "_book_key", "order_comment", "_sleeve_positions", "close_sleeve_positions", "family_position_tags", "scalp_position_tags", "_send_error"), ns)
+                  "_book_key", "order_comment", "_sleeve_positions", "close_sleeve_positions", "family_position_tags", "scalp_position_tags", "_send_error",
+                  "gold_one_at_risk"), ns)
 
 
 def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(
@@ -1373,7 +1381,11 @@ def test_a_second_pass_in_one_day_recovers_the_bracket_the_terminal_holds_and_se
     ns["main"]()                                          # same day, state intact: the guard
     assert len(mt5.sent) == 2
 
-    mt5.pending = [SimpleNamespace(ticket=i + 1, symbol="XAUUSD", price_open=r["price"])
+    # The resting legs carry the window's own comment, as the venue's do: the one-gold-at-risk
+    # guard (decision_core.gold_at_risk_block) lets a window's OWN pending bracket through to
+    # this recovery path and blocks only another window's, or an unlabelled one.
+    mt5.pending = [SimpleNamespace(ticket=i + 1, symbol="XAUUSD", price_open=r["price"],
+                                   comment=r["comment"])
                    for i, r in enumerate(mt5.sent)]
     ns["_state_file"].write_text(json.dumps({"armed": True, "brackets": {},
                                              "last_bracket_date": None}), "utf-8")
@@ -1391,10 +1403,12 @@ def test_fusion_suppresses_the_same_opposing_gold_leg_as_e8(tmp_path, monkeypatc
     mt5 = _Terminal(rows, *_quote(rows))
     # Any readable open long XAU exposure makes a new sell-stop a self-hedge.  The position is
     # deliberately manual (magic 0), proving the rule reads economic exposure rather than a
-    # fragile comment convention.
+    # fragile comment convention.  Its stop is at break-even (sl == entry): since the
+    # one-gold-trade-at-risk guard, a long still AT RISK blocks the whole window, so the
+    # self-hedge fence is exercised on the exposure that guard lets through.
     mt5.positions = [SimpleNamespace(symbol="XAUUSD", type=mt5.POSITION_TYPE_BUY,
                                      volume=0.01, magic=0, comment="manual", ticket=77,
-                                     price_open=2000.0, sl=1900.0, tp=2200.0,
+                                     price_open=2000.0, sl=2000.0, tp=2200.0,
                                      time=int(_WHEN.timestamp()))]
     ns = _main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
 

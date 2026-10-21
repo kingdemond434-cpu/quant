@@ -228,6 +228,12 @@ def _claim_singleton() -> object | None:
         return True
 
 
+#: The slot this process holds, for `run_gateway_loop`'s watchdog: it releases the slot before it
+#: spawns a successor (audit r6 should-fix 3). From the watchdog thread `ReleaseMutex` fails (the
+#: main thread owns it) but `CloseHandle` drops the last handle, which destroys the named mutex.
+_HANDLE: object | None = None
+
+
 def _release_singleton(handle: object) -> None:
     """Hand the slot back BEFORE the successor is started, so it can claim it at once."""
     try:
@@ -282,10 +288,12 @@ def _spawn_successor() -> bool:
 
 
 def main() -> int:
+    global _HANDLE
     handle = _claim_singleton()
     if handle is None:
         print("another resident gateway already holds the slot; exiting")
         return 0
+    _HANDLE = handle
     import run_gateway_loop
     try:
         from mt5desk import gateway as _gw

@@ -643,6 +643,95 @@ def published_gate_lines() -> dict[str, Any]:
             "adopted": doc.get("adopted")}
 
 
+#: THE FUSION BOOK'S RAILS (audit HOLD on fusion_book_go_live 50ef074f9, 2026-10-20): the
+#: one-gold-at-risk veto, the cross-account opposite-side fence, the Fusion daily-loss rail, and
+#: the book's 0.01 floor lift and lot ceiling. Like the stop-geometry gate they register no rail
+#: (the register is sealed), so their lines are PUBLISHED on their own ledgers and carried here:
+#: the gateway's `data/fusion_book_rails.jsonl` (mt5desk.fusion_rails) and the E8 lanes'
+#: RAIL_BLOCKED rows for `cross_account_opposite` in their intents journals.
+FUSION_RAILS = BASE / "data" / "fusion_book_rails.jsonl"
+E8_EXEC_INTENTS = BASE / "data" / "e8_intents.jsonl"
+FUSION_RAIL_NAMES = ("one_gold_at_risk", "cross_account_opposite", "fusion_daily_loss",
+                     "fusion_book_floor_lift", "fusion_book_ceiling", "fusion_trade_risk_cap",
+                     "principal_zero_pin", "cert_book_absent_window", "gold_late_send",
+                     "cert_book_void", "gold_retry_abandoned")
+
+#: The rails the E8 lanes bill in their intents journals (RAIL_BLOCKED rows; a late gold send is
+#: a SKIPPED row with reason late_send).
+_E8_BILLED_RAILS = ("cross_account_opposite", "principal_zero_pin", "cert_book_absent_window",
+                    "gold_late_send", "cert_book_void", "gold_retry_abandoned")
+
+
+def _jsonl(p: Path) -> list[dict[str, Any]] | None:
+    """Rows of a JSONL file; [] when absent, None when unreadable."""
+    if not p.exists():
+        return []
+    try:
+        out = []
+        for ln in p.read_text("utf-8").splitlines():
+            if ln.strip():
+                row = json.loads(ln)
+                if isinstance(row, dict):
+                    out.append(row)
+        return out
+    except (OSError, ValueError):
+        return None
+
+
+def published_fusion_book_lines() -> dict[str, Any]:
+    """The Fusion book's rails, one bill per rail, from the ledgers that record them.
+
+    Each veto line names the lot and risk fraction it held back; each lift or ceiling line the
+    lot it added or clipped. None of them is priced in log-wealth here -- whether a held-back
+    order would have won is not in the line -- so every rail with lines is UNMEASURED with its
+    count and its held-back (or added) risk published, and a rail with none is NOT_BINDING. An
+    ABSENT or unreadable ledger is UNMEASURED, never a clean zero (L1.28a; audit round 2): the
+    gateway creates the ledger every pass (`fusion_rails.ensure`), so absent means this machine
+    has not received it, not that no rail fired."""
+    rows = _jsonl(FUSION_RAILS) if FUSION_RAILS.exists() else None
+    e8_rows: list[dict[str, Any]] = []
+    unreadable: list[str] = []
+    if rows is None:
+        unreadable.append(FUSION_RAILS.name)
+        rows = []
+    for jp in (E8_INTENTS, E8_EXEC_INTENTS):
+        got = _jsonl(jp) if jp.exists() else None
+        if got is None:
+            unreadable.append(jp.name)
+            continue
+        e8_rows += [r for r in got if r.get("status") in ("RAIL_BLOCKED", "SKIPPED")
+                    and r.get("rail") in _E8_BILLED_RAILS]
+    lines: dict[str, Any] = {}
+    for rail in FUSION_RAIL_NAMES:
+        mine = [r for r in rows if r.get("rail") == rail]
+        e8 = [r for r in e8_rows if r.get("rail") == rail]
+        blind = FUSION_RAILS.name in unreadable or (
+            rail in _E8_BILLED_RAILS
+            and any(n != FUSION_RAILS.name for n in unreadable))
+        if not mine and not e8:
+            lines[rail] = {"verdict": UNMEASURED if blind else NOT_BINDING, "n": 0}
+            continue
+        fr = [float(r["risk_frac"]) for r in mine
+              if isinstance(r.get("risk_frac"), (int, float)) and not isinstance(r.get(
+                  "risk_frac"), bool)]
+        lots = [float(r["lot"]) for r in mine
+                if isinstance(r.get("lot"), (int, float)) and not isinstance(r.get("lot"), bool)]
+        usd = [float(r["missed_growth_risk_usd"]) for r in e8
+               if isinstance(r.get("missed_growth_risk_usd"), (int, float))]
+        lines[rail] = {"verdict": UNMEASURED, "n": len(mine) + len(e8),
+                       "n_fusion": len(mine), "n_e8": len(e8),
+                       "risk_frac_total": round(sum(fr), 6), "lots_total": round(sum(lots), 4),
+                       "e8_undeployed_risk_usd": round(sum(usd), 2),
+                       "last_at": (mine or e8)[-1].get("at"),
+                       "why": ("the line records what the rail held back, added or clipped, "
+                               "not what the order would have earned; published, not priced")}
+    out: dict[str, Any] = {"source": f"data/{FUSION_RAILS.name} + E8 intents RAIL_BLOCKED",
+                           "rails": lines}
+    if unreadable:
+        out["unreadable"] = unreadable
+    return out
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -760,7 +849,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            "calibration": cal, "calibration_changes": changed, "review_tasks": len(tasks),
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
-           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines()},
+           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
+                                    "fusion_book_rails": published_fusion_book_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

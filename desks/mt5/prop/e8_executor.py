@@ -35,6 +35,7 @@ Artifacts: desks/mt5/reports/E8_EXEC.json      (the pass, every sleeve, why)
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sys
 import time
@@ -922,6 +923,15 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
     doc["outstanding_stop_risk_usd"] = (round(outstanding_usd, 2)
                                          if outstanding_usd is not None else None)
     doc["outstanding_stop_risk_why"] = outstanding_why
+    # THIS ACCOUNT'S BOOK FOR THE FUSION LANE'S CROSS-ACCOUNT FENCE (mt5desk.cross_account),
+    # published UNDER the placement lock from a broker reading taken under it -- never from the
+    # snapshot above, which another lane's send may already have outdated (audit round 2). A
+    # book that cannot be read, or a lock not taken, is not published (never raises).
+    from mt5desk import cross_account as _xa
+    _pub_why = _xa.publish_under_lock(
+        lambda: _xa.publish_tradelocker(venue, source="e8_executor"), holder="e8_executor:pass")
+    if _pub_why:
+        doc["xacct_unpublished"] = _pub_why
     # THE DEDUPE KEY IS THE INSTRUMENT AND SIDE, BECAUSE THIS VENUE HAS NO COMMENTS.
     #
     # MEASURED 2026-09-15, and it cost the account 0.85% in half an hour. This read
@@ -1270,24 +1280,56 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             doc["sleeves"].append(row)
             continue
         if armed:
-            # SEND-TO-ACK, MEASURED AROUND THE ONE CALL THAT CROSSES THE WIRE. Without it a prop
-            # order carried no latency at all, so the shortfall model had nothing to price waiting
-            # with on this book. `perf_counter` for the duration, wall clocks for the two ends.
-            _t0 = time.perf_counter()
-            _sent_at = datetime.now(tz=UTC)
-            try:
-                row["order_id"] = venue.place(sym, side, lot, stop=float(g.stop),
-                                              take_profit=float(g.target))
-                row["status"] = "SENT"
-                row["sent_at"] = _sent_at.isoformat()
-                row["acked_at"] = datetime.now(tz=UTC).isoformat()
-                row["latency_send_to_ack_ms"] = round(
-                    (time.perf_counter() - _t0) * 1000.0, 3)
-                _pending_legs[sym] = (_pending_legs.get(sym, 0.0)
-                                      + (1.0 if side == "buy" else -1.0) * float(lot))
-            except Exception as exc:
-                row["status"] = "REJECTED"
-                row["why"] = f"{type(exc).__name__}: {str(exc)[:140]}"
+            # THE CROSS-ACCOUNT OPPOSITE-SIDE FENCE (mt5desk.cross_account; audit HOLD
+            # 2026-10-20): refused when the FUSION account holds or rests the opposite side of
+            # this symbol. This lane has no terminal, so it reads the Fusion book the gateway and
+            # E8-Gold publish; absent, stale or unreadable -> refused (fail closed). Read, send
+            # and publish run under the one placement lock both lanes take.
+            from mt5desk import cross_account as _xa
+            with _xa.placement_lock(f"e8_executor:{row.get('sleeve') or sym}") as _xlocked:
+                if not _xlocked:
+                    _xwhy: str | None = ("cross-account fence: the placement lock is held by "
+                                         "the other account's lane; fail closed")
+                else:
+                    _fbook, _fwhy = _xa.read_book("fusion")
+                    _xwhy = _xa.opposite_block(_fbook, sym, side, account="fusion",
+                                               why_absent=_fwhy)
+                if _xwhy is None:
+                    # SEND-TO-ACK, MEASURED AROUND THE ONE CALL THAT CROSSES THE WIRE. Without it
+                    # a prop order carried no latency at all, so the shortfall model had nothing
+                    # to price waiting with on this book. `perf_counter` for the duration, wall
+                    # clocks for the two ends.
+                    _t0 = time.perf_counter()
+                    _sent_at = datetime.now(tz=UTC)
+                    try:
+                        # BOUNDED UNDER THE LOCK (audit round 4): a hung call raises
+                        # LockedCallTimeout -> REJECTED below; it may still have landed.
+                        row["order_id"] = _xa.bounded(
+                            lambda: venue.place(sym, side, lot, stop=float(g.stop),
+                                                take_profit=float(g.target)),
+                            what=f"e8_executor:{sym} send", account="e8", symbol=sym)
+                        row["status"] = "SENT"
+                        row["sent_at"] = _sent_at.isoformat()
+                        row["acked_at"] = datetime.now(tz=UTC).isoformat()
+                        row["latency_send_to_ack_ms"] = round(
+                            (time.perf_counter() - _t0) * 1000.0, 3)
+                        _pending_legs[sym] = (_pending_legs.get(sym, 0.0)
+                                              + (1.0 if side == "buy" else -1.0) * float(lot))
+                    except Exception as exc:
+                        row["status"] = "REJECTED"
+                        row["why"] = f"{type(exc).__name__}: {str(exc)[:140]}"
+                    with contextlib.suppress(Exception):
+                        _xa.bounded(
+                            lambda: _xa.publish_tradelocker(venue, source="e8_executor"),
+                            timeout_s=_xa.LOCKED_PUBLISH_TIMEOUT_S, what="e8_executor publish")
+            if _xwhy is not None:
+                row["status"] = "RAIL_BLOCKED"
+                row["rail"] = "cross_account_opposite"
+                row["why"] = _xwhy
+                row["missed_growth_risk_usd"] = round(row_risk_usd, 2)
+                doc["sleeves"].append(row)
+                _record(row, now, armed)
+                continue
         else:
             row["status"] = "WOULD_SEND"
         sent += 1
