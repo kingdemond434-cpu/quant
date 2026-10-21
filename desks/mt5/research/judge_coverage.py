@@ -1434,6 +1434,11 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                 out_written = True
             except OSError:
                 out_written = False
+            finally:
+                # A WRITE THAT DID NOT LAND LEAVES NO .tmp BEHIND (audit of 1e2f27789): after a
+                # replace the file is gone already; after a failure it is this pass's own debris.
+                with contextlib.suppress(OSError):
+                    tmp.unlink(missing_ok=True)
         if out_written:
             # BORN ON EVERY SUCCESSFUL WRITE THAT FINDS NO MARKER (audit of fcef73b92), not only
             # on FIRST: a failed marker write, or a sidecar older than the marker, would otherwise
@@ -1457,6 +1462,9 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                 bank_write = "WRITTEN"
             except OSError:
                 bank_write = "WRITE_FAILED"
+            finally:
+                with contextlib.suppress(OSError):
+                    tmp_bank.unlink(missing_ok=True)
         if bank_write == "WRITTEN":
             # COUNTED ONLY ONCE THE BANK LANDED: a readmission the disk never saw is not one.
             for old in popped.values():

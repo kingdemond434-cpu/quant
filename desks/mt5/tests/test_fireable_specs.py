@@ -615,6 +615,27 @@ def test_readmissions_count_only_after_the_bank_write_lands(tmp_path, monkeypatc
     assert json.loads(log.read_text("utf-8").splitlines()[-1])["state"] == "WRITE_FAILED"
 
 
+def test_a_write_that_fails_leaves_no_tmp_behind(tmp_path, monkeypatch) -> None:
+    """WRITE_FAILED on both the sidecar and the bank: each .tmp was written and never replaced,
+    and both are unlinked in a finally (audit of 1e2f27789)."""
+    bank_path = _readmittable_bank(tmp_path)
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "NEEDS_DATA"})
+    tried: list[Path] = []
+
+    def refuse(src, dst):
+        assert src.exists()                                 # the .tmp really was written
+        tried.append(src)
+        raise OSError("disk full")
+    monkeypatch.setattr(jc, "_replace_retry", refuse)
+    named = {"GBPUSD.event_reaction.p=1": {"reason": "needs_data", "sym": "GBPUSD",
+                                           "family": "event_reaction", "tf": "H1"}}
+    got = jc.update_unrunnable_bank(named, at="2026-10-22T00:00:00+00:00", path=bank_path)
+    assert got["bank_write"] == "WRITE_FAILED"
+    assert {p.name for p in tried} >= {bank_path.name + ".tmp"}
+    assert not list(tmp_path.rglob("*.tmp")), sorted(tmp_path.rglob("*.tmp"))
+
+
 def test_a_locked_pass_logs_locked_not_a_measured_zero(tmp_path, monkeypatch) -> None:
     bank_path = _readmittable_bank(tmp_path)
     _live_foreign_lock(tmp_path)
