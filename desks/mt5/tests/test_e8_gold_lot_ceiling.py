@@ -122,38 +122,47 @@ def test_the_capped_leg_is_fitted_to_the_budget_not_deferred(
     monkeypatch.setattr(g, "DEFAULT_SLIP_POINTS", 400.0)
     venue = _Venue(contract=10.0)
     doc = g.run(venue, h._MT5(), armed=True)
-    assert sorted(venue.sent) == [("buy", 0.44, 4310.0), ("sell", 0.44, 4290.0)]
+    # The ceiling fit sends 0.44; with BOTH legs slipping 400 points (v5) the floor then fits
+    # 2,400 / (10 x (67 + 800)) = 0.277 -> 0.27. Never deferred.
+    assert sorted(venue.sent) == [("buy", 0.27, 4310.0), ("sell", 0.27, 4290.0)]
     assert [p["window"] for p in doc["placed"]] == ["afternoon"]
     assert not [s for s in doc["skipped"] if s["window"] == "afternoon"]
     ceil = [x for x in doc["shrunk"] if x["rail"] == g.LOT_CEILING_RAIL]
-    assert ceil and ceil[-1]["lots"] == {"buy_stop": 0.44, "sell_stop": 0.44}
     assert ceil[0]["unshrunk_lots"] == {"buy_stop": 1.49, "sell_stop": 1.49}
+    assert ceil[-1]["unshrunk_lots"] == {"buy_stop": 0.75, "sell_stop": 0.75}
+    (floor,) = [x for x in doc["shrunk"] if x["rail"] == g.DAILY_FLOOR_RAIL]
+    assert floor["unshrunk_lots"] == {"buy_stop": 0.44, "sell_stop": 0.44}
+    assert not [d for d in doc["decisions"] if d["reason"] == "risk_budget"]
 
 
 def test_a_100oz_leg_over_the_ceiling_is_fitted_and_sent(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """The venue's real contract. 3% of 100k over a 33.5-point stop is 0.89 lots, capped to 0.75;
-    the budget (1,920 over 100 x (33.5 + 24.13)) fits 0.33; the floor (2,500 over
-    100 x (2 x 33.5 + 24.13)) fits 0.27. The window is SENT at 0.27, with every cut billed."""
+    the budget (1,920 over 100 x (33.5 + 24.13)) fits 0.33; the floor (2,400 after the margin,
+    over 100 x (2 x 33.5 + 2 x 24.13)) fits 0.20. The window is SENT at 0.20, every cut billed."""
     _sandbox(monkeypatch, tmp_path)
     monkeypatch.setattr(g, "RISK_FRAC", 0.03)
     venue = _Venue(contract=100.0)
     doc = g.run(venue, h._MT5(), armed=True)
-    assert sorted(venue.sent) == [("buy", 0.27, 4310.0), ("sell", 0.27, 4290.0)]
+    assert sorted(venue.sent) == [("buy", 0.20, 4310.0), ("sell", 0.20, 4290.0)]
     assert [p["window"] for p in doc["placed"]] == ["afternoon"]
     rails = [x["rail"] for x in doc["shrunk"]]
     assert g.LOT_CEILING_RAIL in rails and g.DAILY_FLOOR_RAIL in rails
-    assert doc["shrunk"][-1]["lots"] == {"buy_stop": 0.27, "sell_stop": 0.27}
+    assert doc["shrunk"][-1]["lots"] == {"buy_stop": 0.20, "sell_stop": 0.20}
     rows = _journal(tmp_path)
     sent = [r for r in rows if r["status"] == "SENT"]
-    assert len(sent) == 2 and all(r["lot"] == 0.27 for r in sent)
-    assert all(r["risk_usd"] == pytest.approx(33.5 * 0.27 * 100) for r in sent)
+    assert len(sent) == 2 and all(r["lot"] == 0.20 for r in sent)
+    assert all(r["risk_usd"] == pytest.approx(33.5 * 0.20 * 100) for r in sent)
     shrunk = [r for r in rows if r["status"] == "RAIL_SHRUNK"]
     assert {r["rail"] for r in shrunk} >= {g.LOT_CEILING_RAIL, g.DAILY_FLOOR_RAIL}
     assert sum(r["missed_growth_risk_usd"] for r in shrunk) == pytest.approx(
-        3000.0 - 33.5 * 0.27 * 100, abs=1.0
+        3000.0 - 33.5 * 0.20 * 100, abs=1.0
     )
+    # The shrunk window is PLACED evidence with the rails that cut it named (v5 must-fix 2).
+    (dec,) = [d for d in doc["decisions"] if d["window"] == "afternoon"]
+    assert (dec["outcome"], dec["reason"]) == ("PLACED", "placed")
+    assert "lot_ceiling" in dec["why"] and "bracket_daily_floor" in dec["why"]
 
 
 def test_a_capped_leg_that_cannot_fit_writes_a_reasoned_row(
@@ -170,6 +179,8 @@ def test_a_capped_leg_that_cannot_fit_writes_a_reasoned_row(
     (row,) = [r for r in _journal(tmp_path) if r["status"] == "RAIL_BLOCKED"]
     assert row["rail"] == g.LOT_CEILING_RAIL and row["reason"] == g.LOT_CEILING_REASON
     assert row["missed_growth_risk_usd"] > 0
+    (dec,) = [d for d in doc["decisions"] if d["window"] == "afternoon"]
+    assert (dec["outcome"], dec["reason"]) == ("SKIPPED", g.LOT_CEILING_REASON)
 
 
 def test_cap_lot_is_pure_and_only_ever_shrinks() -> None:

@@ -4,9 +4,11 @@
    PASSED) this lane cancels its own journalled entry orders still resting, so a twin placed
    before the verdict cannot fill after it. Filled positions, their stops and orders the lane did
    not send are never touched; a failed cancel is logged, never raised, and retried next pass.
-2. Both legs' risk to their stops plus ONE leg's slip in POINTS at the lot sent (measured p95 once
-   20 stop exits exist, else 24.13) must fit the nearer of today's and the static floor; a bracket
-   that does not is SHRUNK to fit, and skipped (with a row) only under the venue minimum.
+2. Both legs' risk to their stops plus EVERY leg's slip in POINTS at its lot (v5: until the
+   cross-account OCO lands both legs can fill and both slip; measured p95 once 20 stop exits
+   exist and it is above zero, else 24.13) must fit the nearer of today's and the static floor,
+   net of committed risk and ROOM_MARGIN_USD; a bracket that does not is SHRUNK to fit, and
+   skipped (with a row) only under the venue minimum.
 3. A target past the daily profit cap headroom is shrunk to fit it, never refused whole.
 
 The fixture is test_e8_gold_guard_and_open_risk's: the afternoon window is due at 17:30 with a
@@ -134,7 +136,7 @@ def _rail_skips(doc: dict[str, Any], rail: str) -> list[dict[str, Any]]:
 def test_placement_is_unchanged_when_no_rail_binds(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    # 2 x 500 + 24.13 x 0.14 x 100 = 1,338 <= 2,500; the 938 USD target is inside the 2,000 cap.
+    # 2 x 500 + 24.13 x 0.28 x 100 = 1,676 <= 2,400; the 938 USD target is inside the 2,000 cap.
     _sandbox(monkeypatch, tmp_path, guard=_guard())
     venue = _Venue()
     doc = g.run(venue, h._MT5(), armed=True)
@@ -157,10 +159,16 @@ def _shrinks(doc: dict[str, Any], rail: str) -> list[dict[str, Any]]:
     return [x for x in doc.get("shrunk") or [] if x["rail"] == rail]
 
 
-def test_slip_is_one_legs_points_at_the_lot_sent_not_r() -> None:
+def test_slip_is_every_legs_points_at_its_lot_not_r() -> None:
     risk = {"buy_stop": 950.0, "sell_stop": 950.0}
     lots = {"buy_stop": 0.28, "sell_stop": 0.28}
-    assert g.bracket_floor_need(risk, lots, 24.13, 100.0) == pytest.approx(1900 + 24.13 * 28)
+    assert g.BRACKET_SLIP_ALL_LEGS is True, "until the cross-account OCO lands"
+    # v5 must-fix 6: both legs fill and both slip 24.13 points.
+    assert g.bracket_floor_need(risk, lots, 24.13, 100.0) == pytest.approx(1900 + 24.13 * 56)
+    # The v4 single-leg case stays available for when the OCO lands.
+    assert g.bracket_floor_need(risk, lots, 24.13, 100.0, all_legs=False) == pytest.approx(
+        1900 + 24.13 * 28
+    )
     # The same 24.13 points weighs the same dollars at a 13-point or a 110-point stop.
     assert g.bracket_floor_need(
         {"buy_stop": 0.0}, {"buy_stop": 0.5}, 24.13, 100.0
@@ -170,43 +178,46 @@ def test_slip_is_one_legs_points_at_the_lot_sent_not_r() -> None:
 def test_max_asia_risk_on_a_fresh_day_is_shrunk_a_step_to_fit(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    # 0.95%: 2 x 950 + 24.13 x 28 = 2,576 > 2,500 -> one lot L = 2,500 / (100 x (67 + 24.13))
-    # = 0.274 -> 0.27 on both legs. The 1,809 USD target fits the cap.
+    # 0.95%: 2 x 950 + 24.13 x 56 = 3,251 > 2,500 - 100 margin -> one lot
+    # L = 2,400 / (100 x (67 + 2 x 24.13)) = 0.208 -> 0.20 on both legs. The target fits the cap.
     _sandbox(monkeypatch, tmp_path, guard=_guard())
     monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
     venue = _Venue()
     doc = g.run(venue, h._MT5(), armed=True)
-    assert sorted(venue.sent) == [("buy", 0.27, 4310.0), ("sell", 0.27, 4290.0)]
+    assert sorted(venue.sent) == [("buy", 0.20, 4310.0), ("sell", 0.20, 4290.0)]
     (cut,) = _shrinks(doc, g.DAILY_FLOOR_RAIL)
     assert cut["unshrunk_lots"] == {"buy_stop": 0.28, "sell_stop": 0.28}
-    assert cut["room_to_floor"] == pytest.approx(2500.0)
+    assert cut["room_to_floor"] == pytest.approx(2500.0 - g.ROOM_MARGIN_USD)
+    assert cut["room_margin_usd"] == g.ROOM_MARGIN_USD and cut["committed_usd"] == 0.0
+    assert 2 * 670.0 + 24.13 * 40 <= 2400.0
     assert not _shrinks(doc, g.PROFIT_CAP_RAIL)
 
 
 def test_a_down_day_shrinks_both_legs_to_fit_and_bills_the_cut(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    # Down 100: 2,400 of room. 2 x 949.05 + 24.13 x 28 = 2,574 -> L = 2,400 / 9,113 = 0.263 ->
-    # 0.26 on both legs, 871 USD a leg; 2 x 871 + 24.13 x 26 = 2,369 <= 2,400.
+    # Down 100: 2,400 to the floor, 2,300 after the margin. 2 x 949.05 + 24.13 x 56 = 3,249 ->
+    # L = 2,300 / 11,526 = 0.1995 -> 0.19 on both legs, 636.5 USD a leg;
+    # 2 x 636.5 + 24.13 x 38 = 2,190 <= 2,300.
     _sandbox(monkeypatch, tmp_path, guard=_guard(99_900.0))
     monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
     venue = _Venue(equity=99_900.0)
     doc = g.run(venue, h._MT5(), armed=True)
     assert doc["guard_decision"]["verdict"] == "OK"
-    assert sorted(venue.sent) == [("buy", 0.26, 4310.0), ("sell", 0.26, 4290.0)]
+    assert sorted(venue.sent) == [("buy", 0.19, 4310.0), ("sell", 0.19, 4290.0)]
     (cut,) = _shrinks(doc, g.DAILY_FLOOR_RAIL)
     assert cut["reason"] == g.DAILY_FLOOR_REASON
     assert cut["slip_points"] == g.DEFAULT_SLIP_POINTS
-    assert cut["room_to_floor"] == pytest.approx(2400.0)
-    assert cut["risk_usd"] == pytest.approx(871.0)
-    assert cut["missed_growth_risk_usd"] == pytest.approx(938.0 - 871.0)
-    assert 2 * 871.0 + 24.13 * 26 <= 2400.0
+    assert cut["room_to_floor"] == pytest.approx(2300.0)
+    assert cut["risk_usd"] == pytest.approx(636.5)
+    assert cut["missed_growth_risk_usd"] == pytest.approx(938.0 - 636.5)
+    assert 2 * 636.5 + 24.13 * 38 <= 2300.0
     rows = _journal(tmp_path)
     (billed,) = [r for r in rows if r.get("rail") == g.DAILY_FLOOR_RAIL]
     assert billed["status"] == "RAIL_SHRUNK" and billed.get("order_id") is None
     sent = [r for r in rows if r["status"] == "SENT"]
     assert all(
-        r["risk_usd"] == 871.0
+        r["risk_usd"] == 636.5
         and r["shrunk"] == {"unshrunk_lot": 0.28, "by": [g.DAILY_FLOOR_REASON]}
         for r in sent
     )
@@ -219,7 +230,7 @@ def test_a_down_day_shrinks_both_legs_to_fit_and_bills_the_cut(
     monkeypatch.setattr(mg, "E8_INTENTS", tmp_path / "intents.json")
     (line,) = mg.published_e8_gold_lines()["lines"]
     assert line["rail"] == g.DAILY_FLOOR_RAIL and line["n_shrunk"] == 1
-    assert line["cost"]["risk_withheld_usd"] == pytest.approx(67.0)
+    assert line["cost"]["risk_withheld_usd"] == pytest.approx(301.5)
     assert line["saving"]["verdict"] == mg.UNMEASURED
 
 
@@ -227,14 +238,15 @@ def test_the_floor_fit_respects_the_static_floor(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     # Day started 91,000, equity 90,900: 2,175 to today's floor but only 900 to the static
-    # 90,000. 2 x 454.5 + 24.13 x 13 = 1,223 > 900 -> L = 900 / 9,113 = 0.099 -> 0.09.
+    # 90,000, 800 after the margin. 2 x 454.5 + 24.13 x 26 = 1,536 > 800 -> L = 800 / 11,526
+    # = 0.069 -> 0.06.
     _sandbox(monkeypatch, tmp_path, guard=_guard(90_900.0, day_start=91_000.0))
     venue = _Venue(equity=90_900.0)
     doc = g.run(venue, h._MT5(), armed=True)
     assert doc["guard_decision"]["verdict"] == "OK"
-    assert sorted(venue.sent) == [("buy", 0.09, 4310.0), ("sell", 0.09, 4290.0)]
+    assert sorted(venue.sent) == [("buy", 0.06, 4310.0), ("sell", 0.06, 4290.0)]
     (cut,) = _shrinks(doc, g.DAILY_FLOOR_RAIL)
-    assert cut["room_to_floor"] == pytest.approx(900.0)
+    assert cut["room_to_floor"] == pytest.approx(800.0)
 
 
 def test_a_bracket_that_cannot_fit_above_the_venue_minimum_is_skipped_with_a_row(
@@ -256,6 +268,9 @@ def test_a_bracket_that_cannot_fit_above_the_venue_minimum_is_skipped_with_a_row
     assert skip["missed_growth_risk_usd"] == pytest.approx(949.05)
     (row,) = [r for r in _journal(tmp_path) if r.get("rail") == g.DAILY_FLOOR_RAIL]
     assert row["status"] == "RAIL_BLOCKED"
+    # v5 must-fix 2: the skip is EVIDENCE, SKIPPED under the rail's own non-exempt reason.
+    (dec,) = [d for d in doc["decisions"] if d["window"] == "afternoon"]
+    assert (dec["outcome"], dec["reason"]) == ("SKIPPED", g.DAILY_FLOOR_REASON)
     saved = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
     assert saved["windows"]["afternoon"]["skipped"] == g.DAILY_FLOOR_RAIL
     again = g.run(venue, h._MT5(), armed=True)
@@ -273,6 +288,18 @@ def test_floor_fit_lots_is_pure() -> None:
         contract_size=100.0,
         min_lot=0.01,
         quantise=q,
+    )
+    # 2,400 / (100 x (67 + 2 x 24.13)) = 0.208: every leg slips (v5).
+    assert why is None and fit == {"buy_stop": 0.20, "sell_stop": 0.20}
+    fit, why = g.floor_fit_lots(
+        {"buy_stop": 0.28, "sell_stop": 0.28},
+        both,
+        slip_points=24.13,
+        room=2400.0,
+        contract_size=100.0,
+        min_lot=0.01,
+        quantise=q,
+        all_legs=False,
     )
     assert why is None and fit == {"buy_stop": 0.26, "sell_stop": 0.26}
     fit, why = g.floor_fit_lots(
@@ -301,7 +328,7 @@ def test_a_shrunk_leg_is_budgeted_against_the_floor_at_its_shrunk_risk(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     # 949 USD at a 10 oz contract needs 2.83 lots; the ceiling sends 0.75 (251.25 USD a leg):
-    # 2 x 251.25 + 24.13 x 7.5 = 683.5 fits the 2,400.
+    # 2 x 251.25 + 24.13 x 15 = 864 fits the 2,300.
     _sandbox(monkeypatch, tmp_path, guard=_guard(99_900.0))
     monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
     venue = _Venue(equity=99_900.0)
@@ -324,15 +351,33 @@ def test_the_lanes_measured_slip_replaces_the_default_at_20_exits(
         monkeypatch,
         tmp_path,
         guard=_guard(99_900.0),
+        slip={"status": "MEASURED", "slip_points": 3.0, "n": 20},
+    )
+    monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
+    venue = _Venue(equity=99_900.0)
+    doc = g.run(venue, h._MT5(), armed=True)
+    assert doc["bracket_slip"]["slip_points"] == 3.0
+    assert doc["bracket_slip"]["source"] == "E8_GOLD_SLIP.json (p95 of 20 stop exits)"
+    assert not _shrinks(doc, g.DAILY_FLOOR_RAIL)  # 2 x 949 + 3 x 56 = 2,066 <= 2,300
+    assert len(venue.sent) == 2
+
+
+def test_a_measured_zero_slip_reads_the_points_floor_never_zero(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """v5 must-fix 4: twenty exits that filled at the level are not "no slip"."""
+    _sandbox(
+        monkeypatch,
+        tmp_path,
+        guard=_guard(99_900.0),
         slip={"status": "MEASURED", "slip_points": 0.0, "n": 20},
     )
     monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
     venue = _Venue(equity=99_900.0)
     doc = g.run(venue, h._MT5(), armed=True)
-    assert doc["bracket_slip"]["slip_points"] == 0.0
-    assert doc["bracket_slip"]["source"] == "E8_GOLD_SLIP.json (p95 of 20 stop exits)"
-    assert not _shrinks(doc, g.DAILY_FLOOR_RAIL)  # 2 x 949 = 1,898 <= 2,400
-    assert len(venue.sent) == 2
+    assert doc["bracket_slip"]["slip_points"] == g.DEFAULT_SLIP_POINTS == 24.13
+    assert "is not > 0" in doc["bracket_slip"]["source"]
+    assert sorted(venue.sent) == [("buy", 0.19, 4310.0), ("sell", 0.19, 4290.0)]
 
 
 @pytest.mark.parametrize(
@@ -615,6 +660,9 @@ def test_an_unmeasurable_rail_defers_and_never_raises(
     assert venue.sent == [] and "bracket rails unmeasurable" in " ".join(
         str(s.get("why")) for s in doc["skipped"]
     )
+    # v5 must-fix 2: the exception path leaves a DEFERRED row (risk_unmeasurable).
+    (dec,) = [d for d in doc["decisions"] if d["window"] == "afternoon"]
+    assert (dec["outcome"], dec["reason"]) == ("DEFERRED", "risk_unmeasurable")
     saved = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
     assert "afternoon" not in saved["windows"], "a deferral is not a spent window"
 
