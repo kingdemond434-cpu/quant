@@ -223,6 +223,11 @@ MERGE_OUTPUTS = (DESK / "reports" / "universal_gates_external.json",
                  DESK / "reports" / "UNIVERSAL_SURVIVORS.json")
 MERGE_SNAPSHOT = DESK / "reports" / ".judge_merge_snapshot"
 MISSED_GROWTH_HISTORY = 50
+#: How many billed resume keys GAUNTLET_STALL.json remembers. A resume is billed by whichever end
+#: path reaches it first, and every later path must see that it was. `missed_growth` holds only
+#: the last MISSED_GROWTH_HISTORY lines of every kind, so the keys are kept on their own list, which
+#: no writer rebuilds away.
+BILLED_RESUME_HISTORY = 256
 #: What the sealed judge's plan resume did this sweep (written by `external_gauntlet._resume_plan`
 #: and `_run_shards` beside the plan, in the judge's SHARD_DIR, as PLAN_RESUME_NAME; stamped with
 #: the sweep's pid): the cells it set aside and the wall it saved.
@@ -651,7 +656,11 @@ def record_stall(reason: str, *, detail: str = "", shard: dict[str, Any] | None 
     mg = [*(prev.get("missed_growth") or []),
           _missed_growth_line(reason, lost_s, f"sweep pid {row['pid']} {reason}: {detail[:200]}")
           ][-MISSED_GROWTH_HISTORY:]
-    doc = {**row, **_lock_stamp(prev), "consecutive": consecutive, "history": history,
+    # WHAT A STALL RECORD MUST NOT DROP (audit HOLD of 9c0976b76): this doc is rebuilt from `row`,
+    # and it used to drop the last resume line and so the only record that a resume had been
+    # billed. The next end path then billed the same resume again.
+    carried = {k: prev[k] for k in ("plan_resume", "billed_resume_keys") if k in prev}
+    doc = {**row, **carried, **_lock_stamp(prev), "consecutive": consecutive, "history": history,
            "missed_growth": mg,
            "last_clear_utc": prev.get("last_clear_utc"),
            "next_run": ("starts fresh: the sealed protocol re-plans every unfinished shard's "
@@ -746,15 +755,25 @@ def record_resume_delay(rc: int, *, sweep_t0: float | None = None,
         return None
     prev = _read_json(STALL)
     key = f"{who}@{doc.get('at')}"
-    if (prev.get("plan_resume") or {}).get("resume_key") == key:
+    # BILLED ONCE, BY THE DURABLE RECORD (audit HOLD of 9c0976b76): the keys list, every line in
+    # the missed-growth history, and the last resume line. Reading only the last one double-billed
+    # whenever a stall record was written between two end paths.
+    billed = {str(k) for k in (prev.get("billed_resume_keys") or [])}
+    billed |= {str(m.get("resume_key")) for m in (prev.get("missed_growth") or [])
+               if isinstance(m, dict) and m.get("resume_key")}
+    last = prev.get("plan_resume")
+    if isinstance(last, dict) and last.get("resume_key"):
+        billed.add(str(last["resume_key"]))
+    if key in billed:
         return None
     if sweep_s is None:
         sweep_s = (time.time() - t0) if isinstance(t0, float) else None
     line = {**_resume_delay_line(doc, sweep_s, plan_kept=rc != 0),
             "resume_key": key, "ended": ended, "rc": rc}
     mg = [*(prev.get("missed_growth") or []), line][-MISSED_GROWTH_HISTORY:]
+    keys = [*(prev.get("billed_resume_keys") or []), key][-BILLED_RESUME_HISTORY:]
     _write_json_atomic(STALL, {**prev, **_lock_stamp(prev), "missed_growth": mg,
-                               "plan_resume": line})
+                               "plan_resume": line, "billed_resume_keys": keys})
     with contextlib.suppress(Exception):
         print(f"{datetime.now(UTC).isoformat()} plan resume: {line['cost']['cells_delayed']} "
               f"cell(s) delayed, {line['benefit']['judge_s_saved']} judge s saved", flush=True)

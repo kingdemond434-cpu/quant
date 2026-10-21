@@ -1307,3 +1307,71 @@ def test_the_launcher_reads_the_resume_record_where_the_judge_writes_it():
     if not hasattr(judge, "PLAN_RESUME_NAME"):
         pytest.skip("the funnel v2 sealed patch is not applied to the judge")
     assert Path(judge.SHARD_DIR) / judge.PLAN_RESUME_NAME == REAL_PLAN_RESUME
+
+
+# ------------------------------------- one resume, one bill (audit HOLD of 9c0976b76)
+def _resume_lines() -> list:
+    return [m for m in _stall().get("missed_growth") or []
+            if m.get("rail") == "gauntlet_plan_resume"]
+
+
+def test_a_breach_then_a_stalled_shard_bills_the_resume_once(monkeypatch):
+    """The breach bills it; the main thread's ShardStalled writes a stall record (which used to
+    drop `plan_resume`) and then reaches its own bill."""
+    monkeypatch.setattr(runner, "_kill_descendants", lambda pid: {"killed": 0, "orphans": []})
+    monkeypatch.setattr(runner, "restore_merge_outputs", lambda **kw: [])
+    monkeypatch.setattr(runner, "_release_own_locks", lambda: [])
+    runner._PHASE_DOC.update(phases={}, _t0=time.time() - 500.0)
+    _resume_record()
+    dog, _exits = _dog(time.monotonic, _FakeTree())
+    dog.breach("no_progress", "test", {"phase": "build_shards"})
+    runner.record_stall("shard_no_progress", detail="the wave's own stall record")
+    assert runner.record_resume_delay(runner.STALL_RC, ended="shard_stalled") is None
+    assert len(_resume_lines()) == 1
+    assert _stall()["plan_resume"]["ended"] == "watchdog_no_progress", "carried through"
+
+
+def test_a_line_written_before_a_death_is_not_billed_again_by_the_takeover():
+    """The sweep billed its resume and died before `finish()` stamped the heartbeat: the next
+    sweep's takeover records it died_unrecorded and reaches the bill again."""
+    dead = subprocess.Popen([sys.executable, "-c", "pass"])
+    dead.wait()
+    _write_hb(dead.pid, beat_age_s=5, create_time=1.0)
+    _resume_record(pid=dead.pid)
+    first = runner.record_resume_delay(runner.STALL_RC, pid=dead.pid, sweep_s=100.0,
+                                       ended="shard_stalled")
+    assert first is not None
+    assert runner.take_over_stale()["action"] == "recorded_dead"
+    assert len(_resume_lines()) == 1
+    assert _stall()["reason"] == "died_unrecorded"
+
+
+def test_a_breach_then_a_resident_kill_bills_the_resume_once(monkeypatch):
+    """The child's watchdog billed it and the resident still kills the tree: the resident's
+    stall record and its own bill must not add a second line."""
+    child = _Child(polls=None)
+    monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: child)
+    monkeypatch.setattr(runner, "_kill_sweep_tree", lambda pid: {"killed": 1, "orphans": []})
+    monkeypatch.setattr(runner, "_sweep_env", lambda: {})
+    _resume_record(pid=child.pid)
+    assert runner.record_resume_delay(runner.STALL_RC, pid=child.pid, sweep_s=50.0,
+                                      ended="watchdog_no_progress") is not None
+    t, tree = [0.0], _FakeTree()
+
+    def clock():
+        t[0] += 60.0
+        return t[0]
+
+    assert runner._one_sweep_child(None, poll_s=0.0, clock=clock, sampler=tree) \
+        == runner.RESIDENT_HANG_RC
+    assert len(_resume_lines()) == 1
+
+
+def test_the_billed_keys_outlive_the_missed_growth_window():
+    runner._PHASE_DOC.update(phases={}, _t0=time.time() - 100.0)
+    _resume_record()
+    assert runner.record_resume_delay(runner.STALL_RC) is not None
+    for i in range(runner.MISSED_GROWTH_HISTORY + 5):    # push the line out of the window
+        runner.record_stall(f"filler_{i}", detail="x")
+    assert not _resume_lines()
+    assert runner.record_resume_delay(runner.STALL_RC, ended="late") is None
