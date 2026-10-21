@@ -68,9 +68,13 @@ def test_absent_file_is_none(tmp_path: Path) -> None:
 def test_e8_gold_maps_book_keys_to_window_names() -> None:
     pytest.importorskip("MetaTrader5")
     from prop import e8_gold
-    assert e8_gold.cert_gold_windows(E8) == {"asia": 0.010}
-    assert e8_gold.window_risk("asia", {"asia": 0.010}) == (0.010, "kelly_survival")
-    assert e8_gold.window_risk("london_am", {"asia": 0.010})[0] == e8_gold.RISK_FRAC
+    windows = e8_gold.cert_gold_windows(E8)
+    assert windows == {"asia": 0.006, "london_am": 0.0, "afternoon": 0.0}
+    assert e8_gold.window_risk("asia", windows) == (0.006, "kelly_survival")
+    # The pinned windows stand aside; only a window the book does NOT name falls back.
+    assert e8_gold.window_risk("london_am", windows) == (0.0, "kelly_survival")
+    assert e8_gold.window_risk("afternoon", windows) == (0.0, "kelly_survival")
+    assert e8_gold.window_risk("london_am", {"asia": 0.006})[0] == e8_gold.RISK_FRAC
 
 
 def test_gateway_overlays_only_the_named_keys(monkeypatch: pytest.MonkeyPatch,
