@@ -418,6 +418,31 @@ function Push-Logged {
     return $rc
 }
 
+# THE LOGIN FENCE ON THIS WIRE (audit v2 + v3, 2026-10-14). It covers the login-shaped keys
+# libs/ops/login_fence.py names -- login, login_id, account, account_number, accountLogin,
+# mt5_login and their kin, plain, escaped or \u-encoded, and CSV columns -- with an
+# account-shaped value, and every account number the box declares (QUANT_FENCE_ACCOUNT_IDS,
+# ACCOUNT_PROFILES.json) wherever it stands between non-digits. It does NOT make every
+# published byte login-free: the sealed legacy
+# prefixes of live_ledger.jsonl and order_intents.jsonl still carry the raw login in `account`.
+# They are PINNED as {records, sha256} measured on LIVE (LEGACY_PIN there); every row after
+# the pin is judged and a changed prefix is refused. rc 2 (unreadable declarations) and rc 3 (a
+# refusal that could not be alerted or paged) both publish nothing below.
+# It runs on the BLOBS about to be committed (after hash-object and the sleeves sanitiser), so
+# the bytes it judged are the bytes published. A refusal drops that path from this pass, writes
+# desks/mt5/reports/LOGIN_FENCE.json and opens `state_login_fence_refusal` in the alert ledger;
+# the value never reaches this log, the artifact or the alert. If the fence cannot run (no
+# interpreter, a crash) NOTHING is published: it fails closed, and BOX_STATE_FLOW shows STALLED.
+# The interpreter is resolved as Adopt-And-Seal.ps1 resolves it: the venv, `py -3`, `python`.
+function Resolve-FencePython {
+    param([string]$RepoRoot)
+    $venv = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+    if (Test-Path $venv) { return @($venv) }
+    if (Get-Command py -ErrorAction SilentlyContinue) { return @("py", "-3") }
+    if (Get-Command python -ErrorAction SilentlyContinue) { return @("python") }
+    return @()
+}
+
 function Publish-StateOnto {
     param([string]$RepoRoot, [string]$Branch, [string[]]$Paths)
     if (-not $Paths -or $Paths.Count -eq 0) { Write-SyncLog "publish: no state paths"; return $false }
@@ -467,6 +492,40 @@ function Publish-StateOnto {
             return $false
         }
         $blobs[$i] = $pubBlob[0]
+    }
+    # THE LOGIN FENCE, ON THE FINAL BLOBS (see Resolve-FencePython above for the contract).
+    $pyCmd = @(Resolve-FencePython -RepoRoot $RepoRoot)
+    if ($pyCmd.Count -eq 0) {
+        Write-SyncLog "publish: login fence has no python interpreter (.venv, py, python); nothing published"
+        return $false
+    }
+    $fenceIn = for ($i = 0; $i -lt $Paths.Count; $i++) { "$($blobs[$i])`t$($Paths[$i])" }
+    $fenceScript = Join-Path $RepoRoot "libs\ops\login_fence.py"
+    $pyArgs = @($pyCmd | Select-Object -Skip 1)
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $refused = @($fenceIn | & $pyCmd[0] @pyArgs $fenceScript --repo $RepoRoot 2>$null |
+                     Where-Object { $_ -match '\S' } | ForEach-Object { "$_".Trim() })
+        $fenceRc = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+    if ($fenceRc -ne 0) {
+        Write-SyncLog "publish: login fence failed rc=$fenceRc; nothing published (it fails closed)"
+        return $false
+    }
+    if ($refused.Count -gt 0) {
+        foreach ($rel in $refused) {
+            Write-SyncLog "publish: REFUSED $rel -- login-shaped key with an account-shaped value (value withheld; see desks/mt5/reports/LOGIN_FENCE.json); fix its writer"
+        }
+        $keepPaths = @(); $keepBlobs = @()
+        for ($i = 0; $i -lt $Paths.Count; $i++) {
+            if ($refused -contains $Paths[$i]) { continue }
+            $keepPaths += $Paths[$i]; $keepBlobs += $blobs[$i]
+        }
+        $Paths = [string[]]$keepPaths; $blobs = $keepBlobs
+        if ($Paths.Count -eq 0) { Write-SyncLog "publish: every state path refused; nothing published"; return $false }
     }
     $entries = for ($i = 0; $i -lt $Paths.Count; $i++) {
         "100644 blob $($blobs[$i])`t$($Paths[$i])"
@@ -692,6 +751,23 @@ $reportPaths = @(
     # (`account_ref`), never the id; the ledger is bounded at 1 MB by its writer.
     "desks/mt5/data/e8_gold_heartbeat.json",
     "desks/mt5/data/e8_decision_ledger.jsonl",
+    # THE COST AND TAPE STATE THE BOX MEASURES (2026-10-20). Each was fresh on the box while the
+    # branch held the 2026-09-23 copy carried in by the orphan root, because no list here named
+    # it: every reader off the box (pf_allocator, entry_timing, stop_geometry_derivation,
+    # expression_factory, desk_economics, the PIT audit) charged costs four weeks old.
+    #   cost_surface.json       per-symbol/per-hour spread quantiles from the bars (~1 MB, under
+    #                           the cap); no account field at all
+    #   cost_truth_quotes.json  the broker's quoted contract terms and deal costs; its writer
+    #                           (research/cost_truth.py) WITHHOLDS the login, and
+    #                           tests/ops/test_live_infrastructure_is_not_published.py fences it
+    #   tape/tape_state.json    the tick recorder's per-symbol cursor (last tick, last run)
+    # None holds a credential; tests/scripts/test_box_sync_publishes_cost_state.py pins that.
+    "desks/mt5/data/cost_surface.json",
+    "desks/mt5/data/cost_truth_quotes.json",
+    # the login fence's own verdict (2026-10-20): which state paths it refused, by key name
+    # only, so a false positive that stops a file publishing is visible off the box
+    "desks/mt5/reports/LOGIN_FENCE.json",
+    "desks/mt5/data/tape/tape_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable
