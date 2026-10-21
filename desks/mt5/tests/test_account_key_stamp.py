@@ -359,8 +359,8 @@ def test_without_hard_links_an_existing_key_is_never_replaced(
     assert path.read_bytes() == theirs, "an existing key was overwritten"
     want = "sha256:" + hmac.new(theirs, b"7@S", hashlib.sha256).hexdigest()[:16]
     assert got == want
-    assert sorted(p.name for p in path.parent.iterdir() if not p.name.endswith(".json")) \
-        == [path.name]
+    assert sorted(p.name for p in path.parent.iterdir()
+                  if not p.name.endswith((".json", ".jsonl"))) == [path.name]
 
 
 def test_the_no_hard_link_fallback_creates_exclusively_and_fsyncs(
@@ -477,14 +477,19 @@ def _box(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
     key = tmp_path / "data" / "secrets" / "account_key.hmac"
     key.parent.mkdir(parents=True)
     monkeypatch.setenv(libs_provenance.KEY_ENV, str(key))
-    monkeypatch.setattr(libs_provenance, "_ALERTED", set())
-    monkeypatch.setattr(libs_provenance, "_PAGED", set())
+    monkeypatch.setattr(libs_provenance, "_ENQUEUED", {})
+    monkeypatch.setattr(libs_provenance, "_ENQUEUE_FAILED", {})
     monkeypatch.setattr(libs_provenance, "_LAST_TRY", {})
     monkeypatch.setattr(libs_provenance, "SENDER", _PAGES.send)
     _PAGES.sent.clear()
     _PAGES.delivered = 1
     # v5e: under a key override the alert state sits in the directory HOLDING the key
     return key, key.parent / "alert_ledger.json"
+
+
+def _deliver() -> dict[str, Any]:
+    """v5f: the order path only enqueues; the heartbeat delivers. Tests deliver explicitly."""
+    return libs_provenance.deliver_pending()
 
 
 def _repo_ledger_digest() -> str | None:
@@ -499,6 +504,7 @@ def test_a_short_key_pages_once_with_the_restore_step_and_never_its_bytes(
     key.write_bytes(b"ab12")                            # what a crash mid-write leaves
     for _ in range(5):
         assert provenance.account_key(7000001, "S", create=True) is None
+    _deliver()
     alerts = _ledger_alerts(ledger)
     assert set(alerts) == {libs_provenance.ALERT_KEY}
     a = alerts[libs_provenance.ALERT_KEY]
@@ -510,8 +516,9 @@ def test_a_short_key_pages_once_with_the_restore_step_and_never_its_bytes(
     assert key.read_bytes() == b"ab12", "a short key was regenerated"
     assert _repo_ledger_digest() == before, "the repo's alert ledger was touched"
     # a second process (fresh memo) is the SAME incident: still one OPEN
-    libs_provenance._ALERTED.clear()
+    libs_provenance._ENQUEUED.clear()
     assert provenance.account_key(7000001, "S") is None
+    _deliver()
     a = _ledger_alerts(ledger)[libs_provenance.ALERT_KEY]
     assert len([h for h in a["history"] if " OPEN" in h]) == 1
 
@@ -530,11 +537,13 @@ def test_an_unreadable_key_pages_and_a_restored_key_closes_the_incident(
     monkeypatch.setattr(Path, "read_bytes", denied)
     libs_provenance._KEY_CACHE.clear()
     assert provenance.account_key(7000001, "S") is None
+    _deliver()
     a = _ledger_alerts(ledger)[libs_provenance.ALERT_KEY]
     assert a["state"] == "NEEDS_HUMAN" and "unreadable (PermissionError)" in a["message"]
     assert libs_provenance.key_state()["state"] == "unreadable"
     monkeypatch.setattr(Path, "read_bytes", real)
     assert provenance.account_key(7000001, "S") is not None      # restored
+    _deliver()
     assert _ledger_alerts(ledger)[libs_provenance.ALERT_KEY]["state"] == "FIXED"
 
 
@@ -559,6 +568,7 @@ def test_a_username_login_keys_none_and_pages_once_without_the_name(
         assert provenance.account_key(name, "S", create=True) is None
     row = provenance.stamp({"login": name, "server": "S", "kind": LIVE})
     assert row["account_key"] is None and "account" not in row
+    _deliver()
     alerts = _ledger_alerts(ledger)
     assert set(alerts) == {libs_provenance.ALERT_USERNAME}
     a = alerts[libs_provenance.ALERT_USERNAME]
@@ -571,6 +581,7 @@ def test_garbage_that_is_not_a_username_does_not_page(_box: tuple[Path, Path]) -
     key.write_bytes(b"k" * 64)
     for g in (None, 0, -1, 7000001.5, b"7000001", "", "  "):
         assert provenance.account_key(g, "S") is None
+    _deliver()
     assert _ledger_alerts(ledger) == {}
 
 
@@ -603,20 +614,25 @@ def test_a_short_key_pages_through_the_sender_once_and_recovers_once(
     key.write_bytes(b"ab12")
     for _ in range(10):
         assert provenance.account_key(7000001, "S", create=True) is None
+    assert _PAGES.sent == [], "the order path sent a page"
+    _deliver()
     assert len(_PAGES.sent) == 1
     title, body = _PAGES.sent[0]
     assert "UNUSABLE" in title and "quant-keys" in body and "ab12" not in title + body
-    libs_provenance._PAGED.clear()                         # a fresh process: same incident
+    libs_provenance._ENQUEUED.clear()                      # a fresh process: same incident
     assert provenance.account_key(7000001, "S") is None
+    _deliver()
     assert len(_PAGES.sent) == 1, "repaged inside the 6h window"
     key.write_bytes(b"k" * 64)                             # restored from the backup
     libs_provenance._KEY_CACHE.clear()
     assert provenance.account_key(7000001, "S") is not None
+    _deliver()
     assert len(_PAGES.sent) == 2 and "OK again" in _PAGES.sent[1][0]
     assert _ledger_alerts(ledger)[libs_provenance.ALERT_KEY]["state"] == "FIXED"
     libs_provenance._KEY_CACHE.clear()
-    libs_provenance._PAGED.clear()
+    libs_provenance._ENQUEUED.clear()
     assert provenance.account_key(7000001, "S") is not None
+    _deliver()
     assert len(_PAGES.sent) == 2, "the recovery paged twice"
 
 
@@ -626,14 +642,15 @@ def test_an_undelivered_page_is_not_a_page_and_is_re_sent(
     key.write_bytes(b"ab12")
     _PAGES.delivered = 0
     assert provenance.account_key(7000001, "S", create=True) is None
-    assert provenance.account_key(7000001, "S", create=True) is None
+    _deliver()
+    _deliver()
     assert len(_PAGES.sent) == 1, "the undelivered retry was not throttled"
     monkeypatch.setattr(libs_provenance, "RETRY_UNDELIVERED_S", 0.0)
-    assert provenance.account_key(7000001, "S", create=True) is None
+    _deliver()
     assert len(_PAGES.sent) == 2, "an undelivered page was recorded as paged"
     _PAGES.delivered = 1
-    assert provenance.account_key(7000001, "S", create=True) is None
-    assert provenance.account_key(7000001, "S", create=True) is None
+    _deliver()
+    _deliver()
     assert len(_PAGES.sent) == 3
 
 
@@ -642,12 +659,13 @@ def test_a_fresh_process_closes_an_alert_another_process_opened(
     key, ledger = _box
     key.write_bytes(b"ab12")
     assert provenance.account_key(7000001, "S") is None
+    _deliver()
     assert _ledger_alerts(ledger)[libs_provenance.ALERT_KEY]["state"] == "NEEDS_HUMAN"
     key.write_bytes(b"k" * 64)
-    libs_provenance._ALERTED.clear()                       # a new process knows nothing
-    libs_provenance._PAGED.clear()
+    libs_provenance._ENQUEUED.clear()                      # a new process knows nothing
     libs_provenance._KEY_CACHE.clear()
     assert provenance.account_key(7000001, "S") is not None
+    _deliver()
     assert _ledger_alerts(ledger)[libs_provenance.ALERT_KEY]["state"] == "FIXED"
 
 
@@ -659,6 +677,7 @@ def test_a_lost_key_is_never_regenerated_by_a_writer_and_pages(
         row = provenance.stamp({"login": 7000001, "server": "S", "kind": LIVE})
         assert row["account_key"] is None and "account" not in row
     assert not key.exists(), "a writer regenerated a lost key"
+    _deliver()
     assert len(_PAGES.sent) == 1 and "ABSENT" in _ledger_alerts(ledger)[
         libs_provenance.ALERT_KEY]["message"]
 
@@ -667,6 +686,7 @@ def test_a_reader_with_no_key_does_not_page(_box: tuple[Path, Path]) -> None:
     """Off the box (the VPS) a reader with no key is the design, not an incident."""
     _key, ledger = _box
     assert provenance.account_key(7000001, "S") is None
+    _deliver()
     assert _PAGES.sent == [] and _ledger_alerts(ledger) == {}
 
 
@@ -676,10 +696,11 @@ def test_the_alert_state_follows_the_key_override(tmp_path: Path,
     key.parent.mkdir(parents=True)
     key.write_bytes(b"ab12")
     monkeypatch.setenv(libs_provenance.KEY_ENV, str(key))
-    monkeypatch.setattr(libs_provenance, "_ALERTED", set())
-    monkeypatch.setattr(libs_provenance, "_PAGED", set())
+    monkeypatch.setattr(libs_provenance, "_ENQUEUED", {})
+    monkeypatch.setattr(libs_provenance, "_ENQUEUE_FAILED", {})
     monkeypatch.setattr(libs_provenance, "SENDER", _PAGES.send)
     assert provenance.account_key(7, "S") is None
+    _deliver()
     assert (key.parent / "alert_ledger.json").exists()
     assert not (tmp_path / "deep" / "alert_ledger.json").exists(), "the grandparent got it"
 

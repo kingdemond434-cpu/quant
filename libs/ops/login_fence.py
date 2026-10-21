@@ -484,6 +484,129 @@ def _csv_hits(text: str, sep: str) -> list[tuple[str, int]]:
     return sorted(hits, key=lambda h: (h[1], h[0]))
 
 
+#: THE DECLARED NUMBER AS A VALUE, UNDER ANY KEY (v5f, the BARS_STATE audit). The text matcher
+#: above sees the number only as it is SPELLED in the file; a structured value can spell it so no
+#: digit run matches -- `5.551234e6`, `0005551234`, `"0x54b3a2"`, `5551234.000`, a JSON document
+#: escaped inside a string -- under a key nobody would call a login (`"symbol_id"`, `"n"`,
+#: `"magic"`). So JSON, JSONL and CSV/TSV are also PARSED and every scalar (and every key) is read
+#: as the integer it denotes and compared with the declared numbers. The finding names the key
+#: it sat under, or `<key withheld>` when that key is itself account-shaped -- never the value.
+VALUE_FINDING = "<declared account number as a value>"
+_KEY_WITHHELD = "<key withheld>"
+_NESTED_DEPTH = 4
+_SEP_TABLE = {ord(c): None for c in _DIGIT_SEP}
+_HEX_VALUE = re.compile(r"[+]?0[xX]([0-9a-fA-F]{1,16})")
+_FLOAT_VALUE = re.compile(r"[+]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?")
+
+
+def _cheap_decoded(text: str) -> str:
+    """`_decoded`, skipped when it is the identity: plain ASCII with no escape (NFKC, the digit
+    fold and the invisible-character drop change nothing there). Keeps a large CSV linear."""
+    return text if text.isascii() and "\\" not in text else _decoded(text)
+
+
+def _denoted(value: Any) -> str | None:
+    """The non-negative integer `value` denotes, as a digit string with no leading zeros, or
+    None. Booleans and non-integral numbers denote none; a string is decoded (escapes, invisible
+    characters, Unicode digits), its digit separators dropped, and read as decimal, integral
+    float / exponent, or 0x-hex."""
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, int):
+        return str(value) if value >= 0 else None
+    if isinstance(value, float):
+        return str(int(value)) if value == value and abs(value) != float("inf") \
+            and value.is_integer() and value >= 0 else None
+    if not isinstance(value, str) or len(value) > 64:
+        return None
+    v = _cheap_decoded(value).strip().strip("\"'").strip()
+    if not v:
+        return None
+    if m := _HEX_VALUE.fullmatch(v):
+        return str(int(m.group(1), 16))
+    flat = v.translate(_SEP_TABLE).lstrip("+")
+    if re.fullmatch(r"[0-9]+", flat) and (v[:1].isdigit() or v[-1:].isdigit()):
+        return str(int(flat))
+    if _FLOAT_VALUE.fullmatch(v):
+        with contextlib.suppress(ValueError, OverflowError):
+            f = float(v)
+            if f.is_integer() and f >= 0:
+                return str(int(f))
+    return None
+
+
+def _walk_values(node: Any, key: str, wanted: frozenset[str], depth: int,
+                 out: list[str]) -> None:
+    """Append the (withheld-if-account-shaped) key of every scalar that denotes a wanted
+    number. A string that is itself a JSON document is parsed and walked, `_NESTED_DEPTH` deep."""
+    stack: list[tuple[Any, str, int]] = [(node, key, depth)]
+    while stack:
+        cur, k, d = stack.pop()
+        if isinstance(cur, dict):
+            for ck, cv in cur.items():
+                name = str(ck)
+                shown = _KEY_WITHHELD if (_denoted(name) is not None
+                                          or re.search(r"\d{4}", _cheap_decoded(name))) else name
+                if _denoted(name) in wanted:
+                    out.append(_KEY_WITHHELD)
+                stack.append((cv, shown, d))
+        elif isinstance(cur, list):
+            stack.extend((cv, k, d) for cv in cur)
+        else:
+            if _denoted(cur) in wanted:
+                out.append(k)
+            elif isinstance(cur, str) and d < _NESTED_DEPTH:
+                # as written first, then decoded (a doubly-encoded document is a quoted string
+                # until its escapes are undone)
+                for inner in (cur.strip(), _decoded(cur).strip().strip("\"'")):
+                    if inner[:1] in "{[":
+                        with contextlib.suppress(ValueError, RecursionError):
+                            stack.append((json.loads(inner), k, d + 1))
+                            break
+
+
+def _value_hits(text: str, suffix: str, ids: frozenset[str]) -> list[tuple[str, int]]:
+    """(key, line) for each declared number found as a VALUE in parsed JSON / JSONL / CSV."""
+    if not ids:
+        return []
+    wanted = frozenset(str(int(i)) for i in ids if i.isdigit())
+    hits: set[tuple[str, int]] = set()
+    if suffix in (".csv", ".tsv"):
+        rows = csv.reader(io.StringIO(_drop_format(text)),
+                          delimiter="\t" if suffix == ".tsv" else ",")
+        header: list[str] = []
+        for n, row in enumerate(rows, start=1):
+            for i, cell in enumerate(row):
+                if _denoted(cell) in wanted:
+                    name = header[i].strip() if i < len(header) else f"column {i + 1}"
+                    hits.add((_KEY_WITHHELD if re.search(r"\d{4}", name) else name, n))
+            if n == 1:
+                header = row
+        return sorted(hits, key=lambda h: (h[1], h[0]))
+    stripped = text.strip()
+    if not stripped or stripped[:1] not in "{[":
+        return []
+    docs: list[tuple[Any, int]] = []
+    try:
+        docs.append((json.loads(stripped), 0))
+    except (ValueError, RecursionError):
+        for n, line in enumerate(text.splitlines(), start=1):
+            ln = line.strip()
+            if ln[:1] in "{[":
+                with contextlib.suppress(ValueError, RecursionError):
+                    docs.append((json.loads(ln), n))
+    for doc, n in docs:
+        keys: list[str] = []
+        _walk_values(doc, "<top level>", wanted, 0, keys)
+        for k in keys:
+            lineno = n
+            if not lineno:   # a whole document: the line of the key's first appearance
+                at = text.find(json.dumps(k)) if k not in (_KEY_WITHHELD, "<top level>") else -1
+                lineno = text.count("\n", 0, at) + 1 if at >= 0 else 1
+            hits.add((k, lineno))
+    return sorted(hits, key=lambda h: (h[1], h[0]))
+
+
 def _judged(rel: str, data: bytes) -> tuple[bytes, int, list[dict[str, Any]]]:
     """(bytes to judge, line offset, prefix findings) for `rel`: a pinned path's prefix is cut
     off only when it still hashes to its pin; otherwise the whole file is judged AND refused."""
@@ -510,7 +633,9 @@ def findings(rel: str, data: bytes, ids: frozenset[str] = frozenset()) -> list[d
     if suffix in (".csv", ".tsv"):
         hits += _csv_hits(text, "\t" if suffix == ".tsv" else ",")
     out += [{"key": k, "line": line + offset} for k, line in sorted(set(hits))]
-    return out + [{"key": ID_FINDING, "line": line + offset} for line in _id_hits(views, ids)]
+    out += [{"key": ID_FINDING, "line": line + offset} for line in _id_hits(views, ids)]
+    return out + [{"key": f"{VALUE_FINDING} under {k}", "line": line + offset}
+                  for k, line in _value_hits(text, suffix, ids)]
 
 
 def _blobs(repo: Path, ids: list[str]) -> list[bytes | None]:
