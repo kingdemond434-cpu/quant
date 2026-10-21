@@ -397,7 +397,10 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
                   # allocator book key and the shared order-comment helper.
                   "_sleeve_positions", "_book_key", "order_comment", "_exec_route", "_send_error",
                   # 2026-09-16: the per-symbol same-side cap and its refusal journal
-                  "same_side_count", "journal_refusal"), ns)
+                  "same_side_count", "journal_refusal",
+                  # OCO v2s MF-A: every XAU send asks the gold direction lock first
+                  "gold_oco_send_refusal", "gold_oco_after_send", "bill_gold_oco_send",
+                  "_order_risk_usd"), ns)
 
 
 def _run_family(ns: dict, st: dict, sleeves: list[dict], equity: float) -> None:
@@ -1343,7 +1346,8 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
                   "_rejection_streak_expired", "load_state", "save_state", "now",
                   "_sleeve_identity", "resolve_pending_bracket", "bracket_lane_lot",
                   "_book_key", "order_comment", "_sleeve_positions", "close_sleeve_positions", "family_position_tags", "scalp_position_tags", "_send_error",
-                  "gold_one_at_risk"), ns)
+                  "gold_one_at_risk", "cancel_gold_against_direction",
+                  "flatten_gold_against_direction", "_missed_usd"), ns)
 
 
 def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(

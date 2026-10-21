@@ -22,6 +22,10 @@
   "NZDJPY_clock_transition_asia": 0.0,
   "AUDCHF_overnight_gap_decay_asia": 0.0
  },
+ "ftmo": {
+  "gold_asia": 0.009
+ },
+ "ftmo_by": "coordinator 2026-10-21 (FTMO follower, URGENT): gold_asia at 0.009 of equity per trade, read only by prop/ftmo_follower.py, which places one order a day in E8's filled gold_asia direction and is standby until data/FTMO_FOLLOWER_ARMED exists.",
  "e8_by": "principal zuck 2026-10-20 21:52Z: \"trade only gold asia for fusion and mt5 and increase risk fr gold asia to maximum for max pass probability while max speed on e8\" -- gold_asia at 0.006 (the box's value, coordinator 2026-10-20 after the audit HOLD on r5: Max-growth, sizing/e8_gold_asia_max_pass_2026-10-20.md -- 0.006 stands while both legs trade; 0.007 only with the cross-account OCO; supersedes 0.0095), gold_london_am and gold_afternoon at 0.0 (also code pins, decision_core.PRINCIPAL_ZERO[\"e8\"]). Supersedes zuck 2026-10-20 16:55Z max-pass solve, re-confirmed 17:16Z: gold_asia, gold_london_am and gold_afternoon at 0.0075 each. USDJPY, NZDJPY and AUDCHF stay at 0.0 (zuck 17:02Z: USDJPY is not added to either account). Supersedes: principal zuck, decision card cmsg_012XFUfE12Rvggnu86fDb8pr1miNkYN9MrEoqLvGcMpBDA option 'Add USDJPY' 2026-10-14T05:54:44Z (USDJPY at 0.004, gold_asia at 0.0075), over the 2026-10-13 21:25Z book cmsg_012XFUfE12Rvggnu86fDb8prYF2bx4BV24eVPLfJMbNLxD. USDJPY is held at 0.0, FORWARD-ONLY, until certificate external.USDJPY.session_range_breakout.rr=2.5_wb=12 is re-certified from a clean lineage (live_sleeve_policy reddit_lineage_quarantine; CERT_BOOK_LIVE excluded). The approved target, once certified, is 0.004.",
  "e8_pins": {
   "gold_asia": "gateway window gold_asia, clock XAUUSD.asia",
