@@ -210,11 +210,12 @@ _HEAT_BASE_LEGS = 3
 MAX_HEAT_CEILING = HEAT_HARD_CEILING
 
 #: How stale the allocator's book may be before the gateway stops believing its heat number. One
-#: hour: the allocator's own heavy clock. A stale artifact falls back to the derived formula
-#: below -- fail-closed, because an old book is a claim about an opportunity set that has moved.
-#: Derived from the producer's cadence: the allocator's heavy clock fires every 3600s, so one
-#: hour is exactly one missed run. A stale artifact falls back to the derived formula below --
-#: fail-closed, because an old book is a claim about an opportunity set that has moved.
+#: hour, read on the FILE's mtime: every allocator pass rewrites reports/pf_allocation.json --
+#: MT5-AllocatorFast every 5 min and the hourly `normal` pass -- so one hour is several missed
+#: runs. It is NOT tied to the heavy admission scan, which runs every 4th hourly pass since
+#: 2026-10-21 (hourly_cycle.ADMISSION_SCAN_HEAVY_CADENCE_S) and ages inside the file, not the
+#: file itself. A stale artifact falls back to the derived formula below -- fail-closed, because
+#: an old book is a claim about an opportunity set that has moved.
 _ALLOC_MAX_AGE_S = 3600
 
 #: MT5 retcodes this desk has actually seen, and what each one means for the operator.

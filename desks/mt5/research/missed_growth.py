@@ -732,6 +732,44 @@ def published_fusion_book_lines() -> dict[str, Any]:
     return out
 
 
+#: Extra hours each STANDBY -> LIVE promotion waits under the 4-hourly heavy scan, against the
+#: ~2.6 h cadence before it: the audit's simulation of 2026-10-14 put the second distinct scan
+#: 6.1 h after a candidate appears against 4.1 h before.
+ADMISSION_CADENCE_EXTRA_DELAY_H = 2.1
+SLEEVES = BASE / "data" / "sleeves.json"
+
+
+def measure_admission_cadence(r: Any, alloc: dict[str, Any], _fv: dict) -> dict[str, Any]:
+    """What the 4-hourly heavy scan costs in forward log-wealth: every candidate the last scan
+    ADMITTED that is not yet LIVE forgoes its measured delta E[log W]/day for the extra wait.
+
+    Billed per daily sample as -sum(delta) x EXTRA_DELAY_H / 24 over the admitted-not-LIVE set.
+    A candidate that waits several days is billed on each, which OVER-bills the rail -- the
+    anti-timid side. The stale growth curve the non-heavy passes reuse longer is not separately
+    priceable from this artifact and is named, not assumed free.
+    """
+    adm = alloc.get("admission") if isinstance(alloc.get("admission"), dict) else {}
+    if not adm or adm.get("status") != "MEASURED":
+        return {"verdict": UNMEASURED, "why": "no MEASURED admission scan on this host"}
+    try:
+        rows = json.loads(SLEEVES.read_text("utf-8")).get("sleeves") or []
+    except (OSError, ValueError, AttributeError):
+        rows = []
+    live = {str(s.get("name")) for s in rows
+            if isinstance(s, dict) and str(s.get("status") or "").upper() == "LIVE"}
+    cands = adm.get("candidates") if isinstance(adm.get("candidates"), dict) else {}
+    waiting: dict[str, float] = {}
+    for name in adm.get("admitted") or []:
+        d = _num((cands.get(name) or {}).get("delta_elogw_per_day"))
+        if str(name) not in live and d is not None and d > 0:
+            waiting[str(name)] = d
+    cost = sum(waiting.values()) * ADMISSION_CADENCE_EXTRA_DELAY_H / 24.0
+    return {"verdict": "SAMPLE" if waiting else NOT_BINDING,
+            "value_logw_per_day": round(-cost, 10), "sample": True,
+            "waiting": sorted(waiting), "extra_delay_h": ADMISSION_CADENCE_EXTRA_DELAY_H,
+            "unpriced": "longer reuse of the heavy growth curve on normal/fast passes"}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 

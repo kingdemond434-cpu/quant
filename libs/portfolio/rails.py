@@ -167,6 +167,16 @@ RAILS: tuple[Rail, ...] = (
     Rail("e8_unowned_position_block", "integrity",
          "prop.e8_gold._retry_failed_legs <- position_since_failure",
          "measure_e8_unowned_block"),
+    # THE HEAVY ADMISSION SCAN EVERY 4TH HOURLY PASS (2026-10-21, principal: Option B), was every
+    # ~2.6 h measured. An `inertia` by effect: a STANDBY row needs TWO distinct admitting scans
+    # (promoter.reconcile_capital, `admit_scan`), so each promotion now waits ~2.1 h longer
+    # (audit 2026-10-14 simulation: second scan 6.1 h after the candidate appears, against
+    # 4.1 h), and non-heavy passes reuse the last heavy growth curve longer. What it buys is CPU
+    # for judging and mining, which this ledger cannot price in log-wealth -- so it is billed
+    # one-sided, and a COSTS_GROWTH verdict queues it for review like any binary rail.
+    Rail("admission_scan_cadence", "inertia",
+         "hourly_cycle._allocator_mode_for_the_hour + research_supervisor heavy cadence (4 h)",
+         "measure_admission_cadence"),
 )
 
 _CACHE: dict[str, Any] = {"mtime": None, "doc": {}}
