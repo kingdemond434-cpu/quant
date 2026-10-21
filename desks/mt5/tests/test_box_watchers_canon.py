@@ -31,3 +31,24 @@ def test_watcher_body_is_the_box_original(name: str) -> None:
     start = next(i for i, line in enumerate(lines) if not line.startswith(b"#"))
     body = b"\n".join(lines[start:]).replace(b"\n", b"\r\n")
     assert hashlib.sha256(body).hexdigest() == BOX_SHA256[name]
+
+
+INSTALLER = WATCHERS.parent / "install_box_watchers_canon.ps1"
+
+
+def test_installer_sets_the_battery_switches_explicitly() -> None:
+    text = INSTALLER.read_text("utf-8")
+    assert "-AllowStartIfOnBatteries" in text and "-DontStopIfGoingOnBatteries" in text
+
+
+def test_e8_window_guard_is_a_required_component() -> None:
+    import sys
+
+    root = WATCHERS.parents[3]
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    from desks.mt5.ops import components
+
+    assert "MT5-E8WindowGuard" in components.REQUIRED_TASKS
+    specs = {s.component_id: s for s in components.manifest_task_specs()}
+    assert specs["task:MT5-E8WindowGuard"].criticality == "required"

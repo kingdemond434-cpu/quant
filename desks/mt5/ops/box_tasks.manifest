@@ -248,6 +248,8 @@ TASK name="E8-Executor" trigger="every 5 minutes" runs="desks/mt5/prop/e8_execut
 TASK name="E8-Book" trigger="every 1 hour" runs="desks/mt5/prop/e8_book.py" installer="desks/mt5/scripts/install_e8_tasks.ps1" lane="prop"
 TASK name="E8-Spreads" trigger="every 1 hour, at :02" runs="desks/mt5/prop/e8_spread_sampler.py" installer="NONE" lane="prop"
 # The two hand-registered box watchers (2026-10-21), ported from C:\opt\quant-ops into the repo.
+# MT5-E8WindowGuard is REQUIRED (components.REQUIRED_TASKS): it cancels orders, so a stopped guard
+# must alarm. The lane column stays "prop" because that is the lane it serves.
 TASK name="MT5-FTMOFollow" trigger="every 1 minute" runs="desks/mt5/scripts/watchers/ftmo_follow.py" installer="desks/mt5/scripts/install_box_watchers_canon.ps1" lane="prop"
 TASK name="MT5-E8WindowGuard" trigger="every 1 minute" runs="desks/mt5/scripts/watchers/e8_window_guard.py" installer="desks/mt5/scripts/install_box_watchers_canon.ps1" lane="prop"
 TASK name="MT5-Healers" trigger="every 1 hour, at :48" runs="ops/run_healers.cmd" installer="NONE" lane="research"
