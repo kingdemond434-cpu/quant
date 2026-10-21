@@ -390,11 +390,12 @@ def _zero_judged(doc: dict[str, Any], sweep_result: Path) -> dict[str, Any]:
     head, tail = _top_values(ht[0], indent), _top_values(ht[1], indent)
     vals = {"n_judged": head["n_judged"], "n_cells": head["n_cells"],
             "swept_at": tail["swept_at"]}
-    read, streamed = ends, ht[2]                   # a file the ends cover is read in full
+    read, streamed = ends, False
     # STREAM WHENEVER THE TOP-LEVEL n_judged IS NOT IN THE HEAD (audit of f4ba99308): n_cells
     # sits second and counts UNMEASURED cells too, while n_judged follows four census blocks
-    # (external_gauntlet.py:3325 vs :3347), so n_cells from the head is not a stand-in.
-    if not streamed and not (vals["n_judged"] and vals["swept_at"]):
+    # (external_gauntlet.py:3325 vs :3347), so n_cells from the head is not a stand-in. A file
+    # the two ends cover is small, and is streamed too rather than stitched from the ends.
+    if ht[2] or not (vals["n_judged"] and vals["swept_at"]):
         scanned = _scan_top(sweep_result, indent)
         if scanned is None:
             return {"open": None, "read": "stream failed",
