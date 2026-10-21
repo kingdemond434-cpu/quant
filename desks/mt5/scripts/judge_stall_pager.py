@@ -577,6 +577,8 @@ def _page(reading: dict[str, Any], *, root: Path, now: datetime, sender: Sender 
     # UNMEASURED_SHARE of a full window opens `inputs_unmeasured`.
     hist = _unmeasured_history(prev.get("unmeasured_hist"), inc, now)
     inc["inputs_unmeasured"] = _unmeasured_verdict(hist, inc, now)
+    if isinstance(reading.get("incidents"), dict):    # the artifact carries the verdict it paged
+        reading["incidents"]["inputs_unmeasured"] = inc["inputs_unmeasured"]
 
     is_open = {k for k in INCIDENTS if (inc.get(k) or {}).get("open") is True}
     # A per-incident UNMEASURED reading neither opens nor clears that incident.
