@@ -146,6 +146,15 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
     prev: dict[str, Any] = {}
     with contextlib.suppress(OSError, ValueError):
         prev = json.loads(out.read_text("utf-8"))
+    # A CRASHING JUDGE STALL PAGER IS A FAILING CHECK (audit of e759c01f6). `main` records the
+    # pager's exit in this file after each run; a failed one fails the NEXT heartbeat, so the
+    # healthchecks.io /fail route -- which needs no alert channel -- says so off the box.
+    js = prev.get("judge_stall_pager") if isinstance(prev, dict) else None
+    if isinstance(js, dict) and "ok" in js:
+        doc.setdefault("checks", {})["judge_stall_pager"] = {
+            "rc": js.get("rc"), "at": js.get("at"), "fail": not js.get("ok")}
+        doc["failing"] = sorted(k for k, v in doc["checks"].items() if v.get("fail"))
+        doc["verdict"] = "FAIL" if doc["failing"] else "OK"
     body = (f"box {doc['verdict']}: " + (", ".join(
         f"{k} {json.dumps({a: b for a, b in doc['checks'][k].items() if a != 'fail'})}"
         for k in doc["failing"]) or "all organs fresh"))
@@ -189,11 +198,29 @@ JUDGE_STALL = BASE / "scripts" / "judge_stall_pager.py"
 JUDGE_STALL_TIMEOUT_S = 60.0
 
 
-def _judge_stall() -> None:
-    with contextlib.suppress(Exception):
-        import subprocess
-        subprocess.run([sys.executable, "-W", "ignore", str(JUDGE_STALL)], cwd=str(ROOT),
-                       capture_output=True, timeout=JUDGE_STALL_TIMEOUT_S, check=False)
+def _judge_stall(out: Path = OUT) -> dict[str, Any]:
+    """Run the pager, bounded, and record its exit in this heartbeat's own report. Never raises.
+
+    The rc is recorded rather than discarded (audit of e759c01f6): exit 0 is a pager that ran;
+    anything else -- a send error, an unwritable state, a crash, the timeout -- is `ok: false`,
+    and `run` turns it into a failing check on the next heartbeat."""
+    import subprocess
+    at = datetime.now(UTC).isoformat(timespec="seconds")
+    try:
+        r = subprocess.run([sys.executable, "-W", "ignore", str(JUDGE_STALL)], cwd=str(ROOT),
+                           capture_output=True, timeout=JUDGE_STALL_TIMEOUT_S, check=False)
+        rec: dict[str, Any] = {"at": at, "rc": r.returncode, "ok": r.returncode == 0}
+    except subprocess.TimeoutExpired:
+        rec = {"at": at, "rc": "TIMEOUT", "ok": False}
+    except Exception as exc:
+        rec = {"at": at, "rc": f"ERROR {type(exc).__name__}", "ok": False}
+    with contextlib.suppress(OSError, ValueError, TypeError):
+        doc = json.loads(out.read_text("utf-8"))
+        doc["judge_stall_pager"] = rec
+        tmp = out.with_name(f"{out.name}.tmp")
+        tmp.write_text(json.dumps(doc, indent=1), "utf-8")
+        tmp.replace(out)
+    return rec
 
 
 def main(argv: list[str] | None = None) -> int:

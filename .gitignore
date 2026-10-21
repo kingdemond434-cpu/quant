@@ -466,6 +466,9 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/GAUNTLET_BACKPRESSURE.json
 !desks/mt5/reports/JUDGE_COVERAGE.json
 !desks/mt5/reports/JUDGE_RESIDENT.json
+# the judge stall pager's reading and page outcome (2026-10-21): its age on origin is the
+# off-box evidence that the pager itself is running
+!desks/mt5/reports/JUDGE_STALL.json
 !desks/mt5/reports/EFFECTIVE_BREADTH.json
 !desks/mt5/reports/BREADTH_MANDATE.json
 !desks/mt5/reports/TIER1_SCORECARD.json
