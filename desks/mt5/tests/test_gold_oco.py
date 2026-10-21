@@ -1083,7 +1083,8 @@ def test_default_family_xau_waits_for_e8_then_follows_it(tmp_path, monkeypatch) 
     (tmp_path / "b").mkdir()
     mt5b, nsb, _ = _family_xau(tmp_path / "b", monkeypatch)
     ga._run_family(nsb, {"armed": True}, [ga._sleeve(symbol="XAUUSD")], 10_000.0)
-    assert mt5b.sent == [] and any("direction is short" in x for x in nsb["_logs"])
+    assert mt5b.sent == [] and any("NOT SENT: gold OCO" in x and "short" in x
+                                   for x in nsb["_logs"])
 
 
 def test_default_family_xau_with_e8s_direction_is_sent(tmp_path, monkeypatch) -> None:
