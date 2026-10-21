@@ -218,15 +218,24 @@ def test_fusion_short_first_cancels_e8s_buy_stop(monkeypatch) -> None:
     assert g.oco_block(doc, "sell_stop") is None
 
 
-def test_on_a_day_e8_itself_set_its_own_two_legs_keep_their_behaviour() -> None:
+def test_on_a_day_e8_set_its_own_twin_is_cancelled_and_never_re_placed() -> None:
+    """v2 growth upgrade (supersedes v1's rule 8; audit must-fix 4): E8's first fill cancels
+    E8's OWN twin through the direction lock -- the twin no longer waits on E8's history-driven
+    twin cancel -- and the gate refuses an E8 leg against the day E8 itself set."""
     from prop import e8_gold as g
     _world("oco")
     assert oco.claim_fill("e8", e8_key(), "buy", date=DAY)["won"]
     venue, state = _E8Venue(), _e8_state()
     doc: dict = {"gold_oco": {"date": DAY, "key": e8_key()}, "actions": []}
-    assert g.oco_cancel_opposite(venue, state, doc, {501, 502}, armed=True) == set()
-    assert venue.cancelled == []                             # its own twin cancel owns this
-    assert oco.gate("e8", "sell_stop", key=e8_key(), date=DAY).allowed
+    assert g.oco_cancel_opposite(venue, state, doc, {501, 502}, armed=True) == {502}
+    assert venue.cancelled == [502]
+    entry, _ = oco.day_entry(DAY)
+    assert entry is not None and [c["order_id"] for c in entry["legs_cancelled"]] == ["502"]
+    assert not oco.gate("e8", "sell_stop", key=e8_key(), date=DAY).allowed
+    assert oco.gate("e8", "buy_stop", key=e8_key(), date=DAY).allowed
+    assert oco.legs_to_cancel("e8", entry, [{"id": 1, "side": "long"},
+                                            {"id": 2, "side": "short"}]) == [
+        {"id": 2, "side": "short"}]
 
 
 # ======================================================================== both fill in one pass
@@ -553,3 +562,191 @@ def test_no_raw_login_in_any_written_state() -> None:
     assert blob
     for login in (E8_LOGIN, FU_LOGIN, FT_LOGIN):
         assert str(login) not in blob
+
+
+# ======================================================================== v2: blind cancels all
+
+def test_cancel_plan_cancels_every_leg_when_the_direction_state_is_unreadable() -> None:
+    legs = [{"id": 1, "side": "long"}, {"id": 2, "side": "short"}]
+    plan, why = oco.cancel_plan("fusion", None, "the gold direction state is torn", legs)
+    assert plan == legs and "unreadable" in why
+    plan, _ = oco.cancel_plan("fusion", None, None, legs)
+    assert plan == []                                         # readable, no direction yet
+
+
+def test_the_gateway_with_a_torn_direction_state_cancels_every_resting_gold_leg(
+        monkeypatch, tmp_path) -> None:
+    _world("oco")
+    oco.claim_fill("e8", e8_key(), "buy", date=DAY)
+    _tear(oco.direction_path())
+    rows = ga._gold_rows()
+    mt5 = _GwTerminal(rows, *ga._quote(rows))
+    mt5.pending = [_gw_order(11, 4), _gw_order(12, 5),
+                   SimpleNamespace(ticket=13, symbol="XAUUSD", type=4, magic=0,
+                                   price_open=2000.0, comment="manual")]
+    ns = ga._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    gone = ns["cancel_gold_against_direction"]({"armed": True}, "fusion", fu_key(), DAY)
+    assert gone == 2 and [o.ticket for o in mt5.pending] == [13]     # manual never touched
+
+
+def test_e8_with_a_torn_direction_state_cancels_its_resting_legs() -> None:
+    from prop import e8_gold as g
+    _world("oco")
+    oco.claim_fill("fusion", fu_key(), "sell", date=DAY)
+    _tear(oco.direction_path())
+    venue, state = _E8Venue(), _e8_state()
+    doc: dict = {"gold_oco": {"date": DAY, "key": e8_key()}, "actions": []}
+    assert g.oco_cancel_opposite(venue, state, doc, {501, 502}, armed=True) == {501, 502}
+    assert sorted(venue.cancelled) == [501, 502] and doc["gold_oco_unreadable"]
+    assert any("blind" in a for a in doc["alerts"])
+
+
+def test_a_leg_that_filled_before_its_cancel_is_not_noted_as_cancelled(
+        monkeypatch, tmp_path) -> None:
+    _world("oco")
+    assert oco.claim_fill("e8", e8_key(), "buy", date=DAY)["won"]
+    rows = ga._gold_rows()
+
+    class _Filling(_GwTerminal):
+        def order_send(self, req: dict) -> SimpleNamespace:
+            if req.get("action") == self.TRADE_ACTION_REMOVE:
+                # The sell stop filled between the read and the remove.
+                self.pending = [o for o in self.pending if int(o.ticket) != int(req["order"])]
+                self.positions = [SimpleNamespace(ticket=12, identifier=12, symbol="XAUUSD",
+                                                  type=1, magic=MAGIC, volume=0.05,
+                                                  comment="DWgold_asia", time=0)]
+                return SimpleNamespace(retcode=10013, order=req["order"], comment="filled")
+            return super().order_send(req)
+
+        def positions_get(self, symbol=None):
+            return list(getattr(self, "positions", []))
+    mt5 = _Filling(rows, *ga._quote(rows))
+    mt5.pending = [_gw_order(12, 5)]
+    ns = ga._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    assert ns["cancel_gold_against_direction"]({"armed": True}, "fusion", fu_key(), DAY) == 0
+    entry, _ = oco.day_entry(DAY)
+    assert entry is not None and entry["legs_cancelled"] == []
+
+
+# ======================================================================== v2: flatten
+
+def test_positions_to_flatten_takes_only_todays_wrong_side_fills() -> None:
+    entry = {"direction": "long"}
+    pos = [{"id": 1, "side": "short", "opened_date": DAY},
+           {"id": 2, "side": "long", "opened_date": DAY},
+           {"id": 3, "side": "short", "opened_date": "2026-10-20"},     # carried: not touched
+           {"id": 4, "side": "sell", "opened_date": None}]              # undated: today's
+    assert [p["id"] for p in oco.positions_to_flatten(entry, pos, date=DAY)] == [1, 4]
+    assert oco.positions_to_flatten(None, pos, date=DAY) == []
+
+
+def test_the_gateway_flattens_its_own_wrong_side_gold_fill_and_alerts_a_manual_one(
+        monkeypatch, tmp_path) -> None:
+    _world("oco")
+    assert oco.claim_fill("e8", e8_key(), "buy", date=DAY)["won"]
+    rows = ga._gold_rows()
+    epoch = int(datetime.fromisoformat(DAY + "T08:00:00+00:00").timestamp())
+
+    class _Pos(_GwTerminal):
+        def positions_get(self, symbol=None):
+            return [SimpleNamespace(ticket=21, symbol="XAUUSD", type=1, magic=MAGIC,
+                                    volume=0.05, comment="DWgold_asia", time=epoch),
+                    SimpleNamespace(ticket=22, symbol="XAUUSD", type=1, magic=0,
+                                    volume=0.10, comment="", time=epoch),
+                    SimpleNamespace(ticket=23, symbol="XAUUSD", type=0, magic=MAGIC,
+                                    volume=0.05, comment="DWgold_asia", time=epoch)]
+    mt5 = _Pos(rows, *ga._quote(rows))
+    ns = ga._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    assert ns["flatten_gold_against_direction"]({"armed": True}, "fusion", DAY) == 1
+    deals = [r for r in mt5.sent if r.get("action") == mt5.TRADE_ACTION_DEAL]
+    assert [(d["position"], d["type"]) for d in deals] == [(21, mt5.ORDER_TYPE_BUY)]
+    assert any("MANUAL" in ln for ln in ns["log"].__self__)
+
+
+def test_e8_flattens_its_own_twin_fill_against_the_direction() -> None:
+    from prop import e8_gold as g
+    _world("oco")
+    assert oco.claim_fill("e8", e8_key(), "buy", date=DAY)["won"]
+    ms = int(datetime.fromisoformat(DAY + "T08:00:00+00:00").timestamp() * 1000)
+
+    class _V(_E8Venue):
+        closed: ClassVar[list[int]] = []
+
+        def close(self, position_id: int) -> bool:
+            self.closed.append(int(position_id))
+            return True
+    venue, state = _V(), _e8_state()
+    state["windows"]["asia"]["position_id"] = 9001                    # the buy stop's position
+    doc: dict = {"gold_oco": {"date": DAY, "key": e8_key()}, "actions": []}
+    xau = [{"id": 9001, "side": "buy", "openDate": ms},
+           {"id": 9002, "side": "sell", "openDate": ms},             # the twin, filled
+           {"id": 9003, "side": "sell", "openDate": ms}]             # not this lane's
+    out = g.oco_flatten_opposite(venue, state, doc, xau, {502: 9002}, armed=True)
+    assert out == {9002} and venue.closed == [9002]
+    assert [a["act"] for a in doc["actions"]] == ["oco_direction_flatten"]
+    assert len([a for a in doc["alerts"] if "against" in a]) == 2
+
+
+# ======================================================================== v2: the identity page
+
+def test_a_missing_key_pages_once_dedupes_and_pages_the_recovery(monkeypatch) -> None:
+    t0 = datetime(2026, 10, 21, 6, 0, tzinfo=UTC)
+    oco.PAGES.clear()
+    assert oco.page_identity("fusion", "the box-held HMAC account key is absent", now=t0)["sent"]
+    assert oco.page_identity("fusion", "the box-held HMAC account key is absent",
+                             now=t0 + timedelta(hours=1))["reason"] == "deduplicated"
+    assert oco.page_identity("fusion", "the box-held HMAC account key is absent",
+                             now=t0 + timedelta(hours=7))["sent"]
+    assert oco.page_identity("fusion", None, now=t0 + timedelta(hours=8))["reason"] == "recovered"
+    assert oco.page_identity("fusion", None, now=t0 + timedelta(hours=9))["sent"] is False
+    assert len(oco.PAGES) == 3 and "fusion" in oco.PAGES[0][0]
+    from libs.ops.alert_ledger import AlertLedger
+    led = AlertLedger(Path(oco.ALERT_ROOT) / "data" / "alert_ledger.json")
+    assert not led.alerts[f"{oco.ALERT_ID}:fusion"].open
+    monkeypatch.setattr(oco, "PAGER", lambda t, b: 1 / 0)
+    assert "error" in oco.page_identity("e8", "boom", now=t0)       # never raises
+
+
+def test_e8_with_no_box_key_pages(monkeypatch, tmp_path) -> None:
+    from libs.ops import provenance as p
+    _world("oco")
+    oco.PAGES.clear()
+    monkeypatch.setenv(p.KEY_ENV, str(tmp_path / "absent.hmac"))
+    doc, venue, _intents, _h = _e8_harness(monkeypatch, tmp_path)
+    assert venue.placed == [] and any("e8" in t for t, _b in oco.PAGES)
+    assert any("identity" in a for a in doc.get("alerts") or [])
+    assert str(E8_LOGIN) not in str(oco.PAGES)
+
+
+# ======================================================================== v2: every refusal bills
+
+def test_a_retry_refusal_bills_dollars_never_none() -> None:
+    from prop import e8_gold as g
+    assert g.leg_missed_usd({"risk_usd": 412.5}) == 412.5
+    assert g.leg_missed_usd({"lot": 0.3, "price": 4340.0, "sl": 4320.0}) == pytest.approx(600.0)
+    assert g.leg_missed_usd({}) == 0.0
+
+
+def test_the_gateways_gold_lines_carry_their_dollars_into_missed_growth(
+        monkeypatch, tmp_path) -> None:
+    from research import missed_growth as mg
+    ns: dict[str, Any] = {}
+    exec(compile(ga.ast.Module(body=[n for n in ga._GW_TREE.body
+                                     if getattr(n, "name", None) == "_missed_usd"],
+                               type_ignores=[]), "gateway", "exec"), ns)
+    assert ns["_missed_usd"](100_000.0, 0.0075) == 750.0 and ns["_missed_usd"](None, 0.1) is None
+    rails = tmp_path / "rails.jsonl"
+    rails.write_text("\n".join(json.dumps(r) for r in (
+        {"rail": oco.RAIL, "lot": 0.05, "risk_frac": 0.0075, "missed_growth_risk_usd": 750.0},
+        {"rail": oco.RAIL, "lot": 0.05, "risk_frac": 0.0075, "missed_growth_risk_usd": None},
+        {"rail": "cross_account_opposite", "lot": 0.05, "risk_frac": 0.0075,
+         "missed_growth_risk_usd": 750.0})) + "\n", "utf-8")
+    monkeypatch.setattr(mg, "FUSION_RAILS", rails)
+    monkeypatch.setattr(mg, "E8_INTENTS", tmp_path / "absent1.jsonl")
+    monkeypatch.setattr(mg, "E8_EXEC_INTENTS", tmp_path / "absent2.jsonl")
+    (tmp_path / "absent1.jsonl").write_text("", "utf-8")
+    (tmp_path / "absent2.jsonl").write_text("", "utf-8")
+    out = mg.published_fusion_book_lines()["rails"]
+    assert out[oco.RAIL]["fusion_undeployed_risk_usd"] == 750.0
+    assert out[oco.RAIL]["n_unpriced"] == 1
+    assert out["cross_account_opposite"]["fusion_undeployed_risk_usd"] == 750.0
