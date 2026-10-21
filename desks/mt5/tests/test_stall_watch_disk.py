@@ -12,6 +12,7 @@ which is somebody quietly restoring the single-tier version or the give-up line.
 """
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 
@@ -49,52 +50,134 @@ def test_there_is_a_real_ladder_not_one_pool() -> None:
     assert names[1] == "gauntlet_cache"
 
 
-#: The judge's cache-prune rule: an entry older than 3 days by mtime.
-_PRUNE_RULE = re.compile(r"_t\.time\(\) - _\w+\.stat\(\)\.st_mtime > 3 \* 86400")
+#: The judge's cache-prune rule, as an AST shape: `_t.time() - <x>.stat().st_mtime > 3 * 86400`.
+_DAYS, _DAY_S = 3, 86400
+_STOPS = (ast.Return, ast.Raise, ast.Break, ast.Continue)
+
+
+def _is_const(node: ast.AST, value: object) -> bool:
+    return (isinstance(node, ast.Constant) and type(node.value) is type(value)
+            and node.value == value)
+
+
+def _is_prune_rule(test: ast.AST) -> bool:
+    """EXACTLY the rule and nothing else: one `>` comparison, no `and`/`or`, no extra factor."""
+    if not (isinstance(test, ast.Compare) and len(test.ops) == 1
+            and isinstance(test.ops[0], ast.Gt) and len(test.comparators) == 1):
+        return False
+    left, right = test.left, test.comparators[0]
+    if not (isinstance(left, ast.BinOp) and isinstance(left.op, ast.Sub)):
+        return False
+    now, mtime = left.left, left.right
+    return (isinstance(now, ast.Call) and not now.args and not now.keywords
+            and isinstance(now.func, ast.Attribute) and now.func.attr == "time"
+            and isinstance(now.func.value, ast.Name) and now.func.value.id == "_t"
+            and isinstance(mtime, ast.Attribute) and mtime.attr == "st_mtime"
+            and isinstance(mtime.value, ast.Call) and isinstance(mtime.value.func, ast.Attribute)
+            and mtime.value.func.attr == "stat"
+            and isinstance(right, ast.BinOp) and isinstance(right.op, ast.Mult)
+            and _is_const(right.left, _DAYS) and _is_const(right.right, _DAY_S))
+
+
+def _is_unlink(stmt: ast.stmt) -> bool:
+    return (isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Call)
+            and isinstance(stmt.value.func, ast.Attribute) and stmt.value.func.attr == "unlink")
+
+
+def _statically_false(test: ast.AST) -> bool:
+    """A guard that can never be true: a falsy constant, `not <truthy constant>`, or an `and`
+    with any such operand."""
+    if isinstance(test, ast.Constant):
+        return not test.value
+    if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
+        return isinstance(test.operand, ast.Constant) and bool(test.operand.value)
+    if isinstance(test, ast.BoolOp) and isinstance(test.op, ast.And):
+        return any(_statically_false(v) for v in test.values)
+    return False
+
+
+def _reaches_live_prune(stmts: list[ast.stmt]) -> bool:
+    for stmt in stmts:
+        if isinstance(stmt, ast.If) and _is_prune_rule(stmt.test):
+            for inner in stmt.body:
+                if isinstance(inner, _STOPS):
+                    break
+                if _is_unlink(inner):
+                    return True
+        guard_false = isinstance(stmt, (ast.If, ast.While)) and _statically_false(stmt.test)
+        blocks = [getattr(stmt, f, None) for f in ("orelse", "finalbody")]
+        if not guard_false:
+            blocks.insert(0, getattr(stmt, "body", None))
+        blocks += [h.body for h in getattr(stmt, "handlers", None) or []]
+        if any(isinstance(b, list) and b and _reaches_live_prune(b) for b in blocks):
+            return True
+        if isinstance(stmt, (ast.Return, ast.Raise)):
+            return False                  # everything after it in this block is dead code
+    return False
 
 
 def _judge_prunes_past_three_days(src: str) -> bool:
-    """The rule is LIVE CODE that DELETES, not merely text that matches (audit of 9c0976b76: the
-    bare regex still passed with the `unlink` removed or the rule commented out).
-
-    True only when a non-comment `if` line carries the rule, outside any trailing comment, and
-    the block it guards -- the lines indented deeper beneath it -- calls `.unlink(` in code."""
-    lines = src.splitlines()
-    for i, line in enumerate(lines):
-        code = line.split("#", 1)[0]
-        if not code.lstrip().startswith("if ") or not _PRUNE_RULE.search(code):
-            continue
-        indent = len(line) - len(line.lstrip())
-        for nxt in lines[i + 1:]:
-            if not nxt.strip():
-                continue
-            if len(nxt) - len(nxt.lstrip()) <= indent:
-                break
-            if ".unlink(" in nxt.split("#", 1)[0]:
-                return True
-    return False
+    """The rule is LIVE CODE that DELETES, read from the AST (v2.2, audit of e9175a8aa: a line
+    scan still passed `and False`, `if False and`, a nested `if False:`, an early return and a
+    `* 0`). True only when an `if` whose test IS the rule -- exactly, with nothing and-ed or
+    multiplied into it -- carries an `.unlink(...)` call as a DIRECT statement of its body, with
+    no return/raise/break/continue before it in that body, and the `if` is reachable: no
+    enclosing `if`/`while` is statically false and no statement before it in any enclosing
+    block returns or raises. A string or a docstring is not code and never counts.
+    """
+    try:
+        tree = ast.parse(src)
+    except SyntaxError:
+        return False
+    return _reaches_live_prune(tree.body)
 
 
 def test_the_prune_pin_fails_when_the_rule_is_disarmed() -> None:
     """Each way to keep the text and lose the behaviour reads False."""
-    live = ("        if _t.time() - _e.stat().st_mtime > 3 * 86400:\n"
-            "            Path(_e.path).unlink(missing_ok=True)\n")
+    def fn(body: str) -> str:
+        return "def prune():\n    import time as _t\n" + body
+
+    live = fn("    for _e in entries:\n"
+              "        if _t.time() - _e.stat().st_mtime > 3 * 86400:\n"
+              "            Path(_e.path).unlink(missing_ok=True)\n"
+              "            n += 1\n")
     assert _judge_prunes_past_three_days(live)
-    glob = ("            if _t.time() - _f.stat().st_mtime > 3 * 86400:\n"
-            "                _f.unlink(missing_ok=True)\n")
+    glob = fn("    try:\n"
+              "        for _f in CACHE_DIR.glob('*.npz'):\n"
+              "            if _t.time() - _f.stat().st_mtime > 3 * 86400:\n"
+              "                _f.unlink(missing_ok=True)\n"
+              "    except OSError:\n"
+              "        pass\n")
     assert _judge_prunes_past_three_days(glob)
-    no_unlink = live.replace("Path(_e.path).unlink(missing_ok=True)", "pass")
-    commented = "".join("# " + ln + "\n" for ln in live.splitlines())
-    unlink_commented = live.replace("Path(_e.path).unlink", "# Path(_e.path).unlink")
-    rule_in_comment = ("        if True:  # _t.time() - _e.stat().st_mtime > 3 * 86400\n"
-                       "            Path(_e.path).unlink(missing_ok=True)\n")
-    unlink_outside = ("        if _t.time() - _e.stat().st_mtime > 3 * 86400:\n"
-                      "            pass\n"
-                      "        Path(_e.path).unlink(missing_ok=True)\n")
-    four_days = live.replace("> 3 * 86400", "> 4 * 86400")
-    for disarmed in (no_unlink, commented, unlink_commented, rule_in_comment, unlink_outside,
-                     four_days):
-        assert not _judge_prunes_past_three_days(disarmed), disarmed
+    rule = "_t.time() - _e.stat().st_mtime > 3 * 86400"
+    unlink = "Path(_e.path).unlink(missing_ok=True)"
+    disarmed = {
+        "no_unlink": live.replace(unlink, "pass"),
+        "commented": "".join("# " + ln + "\n" for ln in live.splitlines()),
+        "unlink_commented": live.replace(unlink, "pass  # " + unlink),
+        "rule_in_comment": live.replace(f"if {rule}:", f"if True:  # {rule}"),
+        "unlink_outside": live.replace(f"            {unlink}\n", "            pass\n")
+        + f"    {unlink}\n",
+        "four_days": live.replace("> 3 * 86400", "> 4 * 86400"),
+        # the auditor's disarmed variants (audit of e9175a8aa)
+        "and_false": live.replace(f"if {rule}:", f"if {rule} and False:"),
+        "if_false_and": live.replace(f"if {rule}:", f"if False and {rule}:"),
+        "rule_in_docstring": fn(f'    """if {rule}:\n        {unlink}"""\n'),
+        "rule_in_string": fn(f"    _s = 'if {rule}: {unlink}'\n"),
+        "nested_if_false": live.replace(f"            {unlink}\n",
+                                        f"            if False:\n                {unlink}\n"),
+        "early_return": live.replace(f"            {unlink}\n",
+                                     f"            return\n            {unlink}\n"),
+        "early_return_outer": live.replace("    for _e in entries:\n",
+                                           "    return\n    for _e in entries:\n"),
+        "times_zero": live.replace("> 3 * 86400", "> 3 * 86400 * 0"),
+        "rule_times_zero": live.replace(
+            f"if {rule}:", "if (_t.time() - _e.stat().st_mtime) * 0 > 3 * 86400:"),
+        "outer_if_false": live.replace("    for _e in entries:\n",
+                                       "    if False:\n     for _e in entries:\n"),
+    }
+    for name, src in disarmed.items():
+        assert not _judge_prunes_past_three_days(src), (name, src)
 
 
 def test_todays_gauntlet_cache_goes_last_and_the_shard_plan_never() -> None:
