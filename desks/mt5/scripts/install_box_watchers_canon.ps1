@@ -4,18 +4,19 @@
 # C:\opt\quant-ops\ftmo_follow.py and C:\opt\quant-ops\e8_window_guard.py, a directory no release
 # carries. desks\mt5\scripts\watchers\ now holds both, byte-identical to the box originals apart
 # from a header comment (pinned by desks\mt5\tests\test_box_watchers_canon.py). This file changes
-# ONLY the script path in each task's action; the registration is otherwise the one the box runs:
+# the script path in each task's action and pins the two battery switches (see below); the
+# registration is otherwise the one the box runs:
 #
 #   principal  S-1-5-18 (SYSTEM), ServiceAccount, RunLevel Highest (XML: HighestAvailable)
 #   trigger    every 1 minute (PT1M), indefinitely
 #   settings   MultipleInstances IgnoreNew, ExecutionTimeLimit PT5M, StartWhenAvailable,
 #              AllowStartIfOnBatteries, DontStopIfGoingOnBatteries
+#   action     cmd.exe /d /s /c "cd /d C:\opt\quant && "<python>" -u -W ignore <script>
+#                 >> C:\opt\quant\desks\mt5\logs\<task>.log 2>&1"
 #
 # The two battery switches are SET HERE, not inherited: New-ScheduledTaskSettingsSet defaults to
 # DisallowStartIfOnBatteries + StopIfGoingOnBatteries, and a guard that cancels orders must run
 # like an always-on server whatever the host reports about its power source.
-#   action     cmd.exe /d /s /c "cd /d C:\opt\quant && "<python>" -u -W ignore <script>
-#                 >> C:\opt\quant\desks\mt5\logs\<task>.log 2>&1"
 #
 # Idempotent: an existing task is updated in place (Set-ScheduledTask), a missing one registered,
 # and the action/principal/trigger/settings are read back from the scheduler and printed, so the
