@@ -47,6 +47,7 @@ from contextlib import suppress
 from dataclasses import fields
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -2780,6 +2781,57 @@ def _corr_to_book(cand: np.ndarray, held: dict[str, float],
     return float(np.corrcoef(stream, c)[0, 1])
 
 
+#: Where the admission scan keeps each candidate's last DETERMINISTIC re-solve (2026-10-21).
+ADMISSION_CACHE = CACHE / "admission_cache.json"
+#: Bump when anything `optimise` computes for a candidate changes outside its inputs' bytes.
+ADMISSION_CACHE_VERSION = 1
+
+
+def _admission_scan_key(ev: Sequence[SleeveEvidence], worlds: Worlds, cfg: WorldConfig,
+                        cap: float, target: float | None) -> str:
+    """Digest of everything every candidate's re-solve reads that is common to the whole scan.
+
+    The evidence of EVERY sleeve (`optimise` truncates every series to the shortest, builds the
+    correlation over all of them and seeds its random start over all of them), the world tensor
+    the solve scores on, the config, the cap and target, the solver's own source, and the cache
+    version. Any byte different -> a different key -> every candidate re-solves.
+    """
+    import inspect
+
+    from libs.portfolio import robust_elog as _re
+    h = hashlib.sha256(f"admission-v{ADMISSION_CACHE_VERSION}".encode("ascii"))
+    h.update(decision_state_fingerprint(ev, cfg).encode("ascii"))
+    for arr in (worlds.r, worlds.crisis, worlds.mu_draws):
+        a = np.ascontiguousarray(arr)
+        h.update(str((a.dtype.str, a.shape)).encode("ascii"))
+        h.update(a.tobytes())
+    h.update(json.dumps([list(worlds.names), list(getattr(worlds, "regimes", ()) or ()),
+                         repr(cap), repr(target)]).encode("utf-8"))
+    h.update(hashlib.sha256(inspect.getsource(_re).encode("utf-8")).digest())
+    return h.hexdigest()
+
+
+def _admission_candidate_key(scan_key: str, name: str, ub: Mapping[str, float],
+                             ws: Mapping[str, float], iterations: int) -> str:
+    """The scan key plus everything specific to one candidate's re-solve: its name, the bounds
+    that admit exactly the held set plus it, its warm start and the iteration budget."""
+    blob = json.dumps([scan_key, name, sorted((k, repr(float(v))) for k, v in ub.items()),
+                       sorted((k, repr(float(v))) for k, v in ws.items()), int(iterations)])
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def _read_admission_cache(path: Path | None) -> dict[str, Any]:
+    """{candidate key: stored result}; anything unreadable is an empty cache (a full re-solve)."""
+    if path is None:
+        return {}
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+        rows = doc.get("rows") if isinstance(doc, dict) else None
+        return dict(rows) if isinstance(rows, dict) else {}
+    except (OSError, ValueError, AttributeError):
+        return {}
+
+
 def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfig, *,
                        incumbent: dict[str, float], bounds: dict[str, float],
                        total_heat: float,
@@ -2790,8 +2842,17 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
                        margin_frac: float = ADMISSION_MARGIN_FRAC,
                        warm: dict[str, dict[str, float]] | None = None,
                        explore_share: float = EXPLORE_SHARE,
-                       explore_seed: int | None = None) -> dict[str, Any]:
+                       explore_seed: int | None = None,
+                       cache_path: Path | None = None) -> dict[str, Any]:
     """dE[log W]_i = E[log W | book + i] - E[log W | book], on ONE world population.
+
+    UNCHANGED INPUTS ARE NOT RE-SOLVED (2026-10-21, judge core budget). `cache_path`, when given,
+    keeps each candidate's last re-solve under a key covering EVERY input `optimise` reads for it
+    (`_admission_scan_key` + `_admission_candidate_key`). A hit replays the stored result; the
+    rest of the row is computed exactly as on a re-solve, so the output is bit-identical. Only a
+    solve that finished WITHOUT hitting its wall-clock budget is stored: a budget-hit solve
+    depends on how fast the machine was, so it is not a function of its inputs and always
+    re-solves. Fail closed: a miss, a missing field or an unreadable cache is a full re-solve.
 
         "Don't rank candidates primarily by Sharpe. Rank by dE[log W] after adding the candidate
          to the existing portfolio. A Sharpe-1.2 strategy at correlation -0.2 to the book can be
@@ -2924,6 +2985,11 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
 
     warm_in = {str(k): v for k, v in (warm or {}).items() if isinstance(v, dict) and v}
     solve_s: list[float] = []
+    cache_in = _read_admission_cache(cache_path)
+    cache_out: dict[str, Any] = {}
+    scan_key = (_admission_scan_key(ev, worlds, cfg, cap, target)
+                if cache_path is not None else "")
+    n_hits = 0
     for name in cand_names:
         e = by_name[name]
         sharpe = _annual_sharpe(e.daily_r)
@@ -2942,13 +3008,34 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
               else {**base_heat, name: 0.0})
         deadline = (time.time() + float(budget_s)) if budget_s and budget_s > 0 else None
         t_c = time.time()
-        try:
-            ext = optimise(ev, hard_cap=cap, target=target, cfg=cfg, worlds=worlds,
-                           max_per_sleeve=_ub(allowed_base | {name}),
-                           warm_start=ws, iterations=iterations, deadline=deadline)
-        except ValueError as exc:
-            doc["unscored"][name] = f"re-solve refused ({exc}); NOT admitted"
-            continue
+        ub_c = _ub(allowed_base | {name})
+        ckey = (_admission_candidate_key(scan_key, name, ub_c, ws, iterations)
+                if cache_path is not None else "")
+        hit = cache_in.get(ckey) if ckey else None
+        ext: Any = None
+        if isinstance(hit, dict):
+            try:
+                ext = SimpleNamespace(
+                    heat={str(k): float(v) for k, v in hit["heat"].items()},
+                    mean_log_growth=float(hit["mean_log_growth"]),
+                    converged=bool(hit["converged"]), iterations=int(hit["iterations"]),
+                    budget_hit=False)
+                n_hits += 1
+            except (KeyError, TypeError, ValueError, AttributeError):
+                ext = None                                  # fail closed: re-solve
+        if ext is None:
+            try:
+                ext = optimise(ev, hard_cap=cap, target=target, cfg=cfg, worlds=worlds,
+                               max_per_sleeve=ub_c,
+                               warm_start=ws, iterations=iterations, deadline=deadline)
+            except ValueError as exc:
+                doc["unscored"][name] = f"re-solve refused ({exc}); NOT admitted"
+                continue
+        if ckey and not ext.budget_hit:
+            cache_out[ckey] = {"heat": {k: float(v) for k, v in ext.heat.items()},
+                               "mean_log_growth": float(ext.mean_log_growth),
+                               "converged": bool(ext.converged),
+                               "iterations": int(ext.iterations)}
         solve_s.append(time.time() - t_c)
         row.update({"solve_s": round(solve_s[-1], 3), "iterations": int(ext.iterations),
                     "budget_hit": bool(ext.budget_hit),
@@ -3017,6 +3104,18 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
     doc["n_unscored"] = len(doc["unscored"])
     doc["n_partial"] = len(doc["partial"])
     doc["elapsed_s"] = round(time.time() - t0, 1)
+    if cache_path is not None:
+        doc["cache"] = {"hits": n_hits, "stored": len(cache_out),
+                        "rule": "replayed only on an exact key over every input; budget-hit "
+                                "solves are never stored"}
+        try:
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = cache_path.with_name(f".{cache_path.name}.{os.getpid()}.tmp")
+            tmp.write_text(json.dumps({"version": ADMISSION_CACHE_VERSION, "rows": cache_out},
+                                      allow_nan=True), encoding="utf-8")
+            os.replace(tmp, cache_path)
+        except OSError as exc:
+            doc["cache"]["write_error"] = f"{type(exc).__name__}: {exc}"
     doc["per_candidate_s"] = (round(float(np.mean(solve_s)), 3) if solve_s else None)
     doc["max_candidate_s"] = (round(float(max(solve_s)), 3) if solve_s else None)
     doc["status"] = "MEASURED"
@@ -4316,7 +4415,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                                        # One draw per UTC day: the explored set is stable across
                                        # the hourly passes of a day instead of re-drawn hourly.
                                        explore_seed=int(seed) + int(datetime.now(UTC)
-                                                                    .strftime("%Y%m%d")))
+                                                                    .strftime("%Y%m%d")),
+                                       cache_path=ADMISSION_CACHE)
         _log(f"admission: {admission.get('status')} -- {admission.get('n_admitted', 0)}/"
              f"{admission.get('priced', 0)} priced candidate(s) raise robust growth "
              f"(basis={admission.get('basis')}, {admission.get('elapsed_s', 0)}s, "
