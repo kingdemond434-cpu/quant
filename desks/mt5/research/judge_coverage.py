@@ -84,11 +84,14 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import gc
 import json
 import math
+import os
 import sys
 import time
-from collections import Counter
+from collections import Counter, deque
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -100,6 +103,9 @@ STUDY_BANK = HYP / "study_bank.json"
 GATE_LEDGER = HYP / "gate_verdict_ledger.jsonl"
 REPORTS = BASE / "reports"
 REPORT = REPORTS / "JUDGE_COVERAGE.json"
+#: Written ONLY by a pass that stopped at its budget, and cleared by the next completed pass's
+#: commit. It never touches REPORT, which keeps its own `at` and ages out under the fence's lease.
+TIMEOUT_REPORT = REPORTS / "JUDGE_COVERAGE_TIMEOUT.json"
 #: research/occupancy_map.py's hourly artifact: target cells and per-candidate orthogonality.
 OCCUPANCY_REPORT = REPORTS / "OCCUPANCY_MAP.json"
 RATCHET = BASE / "data" / "judge_backlog_ratchet.json"
@@ -189,14 +195,462 @@ def _read(path: Path) -> Any:
         return None
 
 
+#: ONE PASS READS EACH INPUT ONCE (2026-10-21). On the box the hourly leg timed out three times
+#: in one day against its 120 s budget, and JUDGE_COVERAGE.json then went stale. The cost was not
+#: the arithmetic. The same inputs were parsed again and again in one pass: the 273 MB gate ledger
+#: five times (and read whole twice), the 900,500-verdict gauntlet report seven times, and the
+#: 530k-row unrunnable bank three times. Inside `build` (and `order_docket`) a PASS MEMO now holds
+#: each parse, keyed by the file's path, mtime_ns and size, so a file that changes mid-pass is read
+#: again. Outside a pass nothing is cached and every reader behaves as it always did. The memo
+#: never outlives the pass, so a later pass in the same process (a test, or `order_docket` called
+#: twice) re-reads everything from disk.
+_PASS: dict[Any, Any] | None = None
+
+
+@contextlib.contextmanager
+def _pass_memo() -> Iterator[dict[Any, Any]]:
+    """Open a pass memo, or join the one already open (`order_docket` -> `build`)."""
+    global _PASS
+    if _PASS is not None:
+        yield _PASS
+        return
+    # THE CYCLE COLLECTOR IS PAUSED FOR THE PASS. A pass holds ~40M live containers (the 1.6M
+    # docket rows and their params); every full collection walks all of them and finds nothing,
+    # because a pass builds no reference cycles worth collecting. Measured at box scale: ~20 s of
+    # a ~100 s pass. Reference counting still frees everything; the collector's state is restored.
+    gc_was = gc.isenabled()
+    gc.disable()
+    _PASS = {}
+    try:
+        yield _PASS
+    finally:
+        _PASS = None
+        if gc_was:
+            gc.enable()
+
+
+def _stat_key(path: Path) -> tuple[str, int, int, int, int] | None:
+    """The memo's identity for a file. Inode and ctime are in it as well as mtime and size,
+    because a same-size rewrite that preserves mtime (`scp -p`, `cp -p`, an rsync of the same
+    length) was served stale within a pass on mtime and size alone (audit of c5390bc6a). A
+    rename over the path changes the inode; an in-place rewrite changes ctime."""
+    try:
+        st = path.stat()
+    except OSError:
+        return None
+    return (str(path), st.st_mtime_ns, st.st_size, st.st_ino, st.st_ctime_ns)
+
+
+def _read_memo(path: Path) -> Any:
+    """`_read`, served from the pass memo when one is open. Callers must not mutate the result."""
+    if _PASS is None:
+        return _read(path)
+    staged = _PASS.get(("staged_json", str(path)))
+    if staged is not None:
+        return staged                  # this pass's own uncommitted write of the file
+    key = _stat_key(path)
+    if key is None:
+        return _read(path)
+    slot = ("json", *key)
+    if slot not in _PASS:
+        _PASS[slot] = _read(path)
+    return _PASS[slot]
+
+
+def _pass_value(name: str, fn: Any) -> Any:
+    """A value computed once per pass (and on every call outside one)."""
+    if _PASS is None:
+        return fn()
+    slot = ("value", name)
+    if slot not in _PASS:
+        _PASS[slot] = fn()
+    return _PASS[slot]
+
+
+#: How many trailing ledger lines the pass memo keeps for `learn_priors` (its default `limit`).
+LEARN_TAIL = 20_000
+
+
+class _LedgerScan:
+    """Everything the gate-ledger readers need, gathered in ONE streamed pass over the file.
+
+    Each reader below used to stream (or `readlines()`) the whole ledger itself. The filters are
+    unchanged. Every row is parsed once, and what depends on `now` (the 1 h, 24 h, 7 d and 168 h
+    windows) is kept as per-row timestamps, so each reader applies its own cut afterwards exactly
+    as before. `err` records an OSError at open or mid-read; each reader then takes its own
+    original OSError branch over the rows read before the error.
+    """
+
+    __slots__ = ("cell_seen", "err", "judged_at", "judged_total", "live_at", "passed", "tail")
+
+    def __init__(self, path: Path) -> None:
+        self.err = False
+        self.cell_seen: set[str] = set()
+        #: per family, rows that carry a real verdict (judged_index's all-time count; the
+        #: realised pass rates' denominator is the same filter).
+        self.judged_total: dict[str, int] = {}
+        self.passed: dict[str, int] = {}
+        #: (family, timestamp-or-None) for every JUDGED row: judged_index's window and capacity.
+        self.judged_at: list[tuple[str, float | None]] = []
+        #: (timestamp, is_unknown) for every non-NOT_RUN row with a timestamp: sustained_rate.
+        self.live_at: list[tuple[float, bool]] = []
+        self.tail: deque[str] = deque(maxlen=LEARN_TAIL)
+        loads = json.loads
+        # The sweep stamps every verdict of one pass with ONE `at`, so a stamp repeats thousands
+        # of times: each distinct stamp is parsed once.
+        stamps: dict[Any, float | None] = {}
+        tail_append = self.tail.append
+        judged_append = self.judged_at.append
+        live_append = self.live_at.append
+        total, passed, seen = self.judged_total, self.passed, self.cell_seen
+        try:
+            with path.open("r", encoding="utf-8", errors="replace") as fh:
+                for raw in fh:
+                    tail_append(raw)
+                    line = raw.strip()
+                    if not line:
+                        continue
+                    try:
+                        row = loads(line)
+                    except ValueError:
+                        continue
+                    if not isinstance(row, dict):
+                        continue
+                    if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
+                        continue
+                    ok = row.get("passed")
+                    unk = ok is not True and str(row.get("terminal_gate") or "") in ("", "UNKNOWN")
+                    raw_at = row.get("at")
+                    try:
+                        ts = stamps[(type(raw_at), raw_at)]
+                    except KeyError:
+                        at = _ts(raw_at)
+                        ts = stamps[(type(raw_at), raw_at)] = (
+                            at.timestamp() if at is not None else None)
+                    except TypeError:                       # an unhashable stamp
+                        at = _ts(raw_at)
+                        ts = at.timestamp() if at is not None else None
+                    if ts is not None:
+                        live_append((ts, unk))
+                    if unk:
+                        continue
+                    fam = str(row.get("family") or "")
+                    cell = str(row.get("cell") or "")
+                    if cell:
+                        seen.add(cell)
+                    judged_append((fam, ts))
+                    if not fam:
+                        continue
+                    total[fam] = total.get(fam, 0) + 1
+                    if ok is True or str(ok).lower() == "true":
+                        passed[fam] = passed.get(fam, 0) + 1
+        except OSError:
+            self.err = True
+
+
+def _ledger_scan(path: Path) -> _LedgerScan | None:
+    """The pass memo's ledger scan, or None outside a pass (the caller then reads as before)."""
+    if _PASS is None:
+        return None
+    key = _stat_key(path)
+    if key is None:
+        return _LedgerScan(path)                # absent or unstatable: its OSError branch
+    slot = ("ledger", *key)
+    scan = _PASS.get(slot)
+    if scan is None:
+        scan = _LedgerScan(path)
+        # An I/O error mid-read is not memoised: the next reader meets the file afresh, as it did.
+        if not scan.err:
+            _PASS[slot] = scan
+    return scan
+
+
+#: ONE PASS PERSISTS AS ONE TRANSACTION (2026-10-21). A pass writes six things: the learned
+#: priors, the unrunnable bank, the readmission log, the conversion handoff, the report (with the
+#: k_eff order) and the ratchet. The ratchet carries the cursor (`priors_cursor`) that says which
+#: verdicts the priors already hold, and the re-admissions (`readmitted_to_next`) that the next
+#: reading's cohort is measured against. The priors and the bank used to be written mid-pass and
+#: the ratchet at the end, so a pass killed in between (the cycle's timeout) left the posterior
+#: taught and the cursor not advanced. The next pass then taught the same verdicts AGAIN, and the
+#: bank and readmission log moved while the ratchet did not.
+#:
+#: Now every write inside a pass is STAGED beside its target (`<name>.jc-txn-<id>`) and committed
+#: together: a manifest naming every (staged, final) pair is written atomically -- the COMMIT
+#: POINT -- and the staged files are renamed over their targets. A kill before the manifest leaves
+#: every target exactly as it was (the staged orphans are swept later). A kill after it is ROLLED
+#: FORWARD by the next pass before it reads anything. Either way all six move together or none do.
+TXN_TAG = ".jc-txn-"
+TXN_MANIFEST_PREFIX = "judge_coverage_txn-"
+#: A staged file older than this with no manifest naming it belongs to a killed pass.
+TXN_ORPHAN_AGE_S = 3600.0
+#: os.replace onto a file another process holds open fails on Windows; a reader holds it briefly.
+TXN_REPLACE_TRIES = 25
+#: A manifest recovery cannot parse is renamed with this suffix: kept, named, never applied.
+TXN_GARBAGE_SUFFIX = ".garbage"
+TXN_REPLACE_WAIT_S = 0.2
+
+
+def _replace_retry(src: Path, dst: Path) -> None:
+    for attempt in range(TXN_REPLACE_TRIES):
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            if attempt == TXN_REPLACE_TRIES - 1:
+                raise
+            time.sleep(TXN_REPLACE_WAIT_S)
+
+
+def _atomic_write_text(target: Path, text: str) -> None:
+    """`target.write_text(text)` that a reader never sees half-written: the bytes go to a
+    sibling and are renamed over the target (Windows-safe, see `_replace_retry`). Raises
+    OSError as the plain write would, and leaves no sibling behind when it does."""
+    tmp = target.with_name(f"{target.name}.tmp-{os.getpid()}")
+    try:
+        tmp.write_text(text, "utf-8")
+        _replace_retry(tmp, target)
+    except OSError:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+        raise
+
+
+def _fstat(path: Path) -> list[int] | None:
+    """(mtime_ns, size) of a file, or None when it is absent: what a manifest records."""
+    try:
+        st = path.stat()
+    except OSError:
+        return None
+    return [st.st_mtime_ns, st.st_size]
+
+
+class TxnRecoveryRefused(RuntimeError):
+    """A committed manifest that cannot be rolled forward without clobbering or half-applying.
+    The manifest is KEPT; every pass refuses to read on until it is resolved by hand."""
+
+
+def _apply_ops(ops: list[list[Any]], *, checked: bool = False) -> None:
+    """Apply a committed manifest. Idempotent: a staged file already renamed is simply absent.
+
+    `checked` is recovery's mode (audit of v2.1). Every op is classified BEFORE any is applied:
+    PENDING (staged present, target as it was at the commit point), APPLIED (staged gone, target
+    is the staged file renamed: same mtime and size), or a refusal -- the target changed since
+    the commit point (another writer; rolling forward would clobber it) or the staged file is
+    missing and the target is not it (rolling the rest forward would half-apply the pass). A
+    refusal raises `TxnRecoveryRefused` and applies NOTHING. Two recoveries racing on one
+    manifest meet a file the other already moved; that is suppressed, never raised.
+    """
+    if checked:
+        bad: list[str] = []
+        for entry in ops:
+            op, final, staged = entry[0], entry[1], entry[2]
+            pre = entry[3] if len(entry) > 3 else None
+            post = entry[4] if len(entry) > 4 else None
+            if op != "replace":
+                continue
+            dst_now = _fstat(Path(final))
+            if Path(staged).exists():
+                if len(entry) > 3 and dst_now != pre:
+                    bad.append(f"{Path(final).name}: changed since the commit point")
+            elif len(entry) > 4 and dst_now != post:
+                bad.append(f"{Path(final).name}: staged file missing and target is not it")
+        if bad:
+            raise TxnRecoveryRefused("; ".join(bad))
+    for entry in ops:
+        op, final, staged = entry[0], entry[1], entry[2]
+        dst = Path(final)
+        if op == "replace":
+            src = Path(staged)
+            if src.exists():
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                with contextlib.suppress(FileNotFoundError):
+                    _replace_retry(src, dst)
+        elif op == "delete":
+            with contextlib.suppress(FileNotFoundError):
+                dst.unlink()
+
+
+class _Txn:
+    """The staged writes of one pass, committed together at `write` (or at the end of `build`)."""
+
+    def __init__(self, manifest_dir: Path) -> None:
+        self.id = f"{os.getpid()}-{time.time_ns()}"
+        self.manifest_dir = manifest_dir
+        self.ops: dict[str, list[Any]] = {}
+        self.staged_dirs: list[Path] = []
+
+    def staged_path(self, final: Path) -> Path:
+        return final.with_name(f"{final.name}{TXN_TAG}{self.id}")
+
+    def put_staged(self, final: Path, staged: Path) -> None:
+        self.ops[str(final)] = ["replace", str(final), str(staged)]
+
+    def put_text(self, final: Path, text: str) -> None:
+        """`final.write_text(text, "utf-8")`, staged. Raises OSError as the write would."""
+        final.parent.mkdir(parents=True, exist_ok=True)
+        staged = self.staged_path(final)
+        staged.write_text(text, "utf-8")
+        self.put_staged(final, staged)
+
+    def delete(self, final: Path) -> None:
+        self.ops[str(final)] = ["delete", str(final), None]
+
+    def staged_dir(self, final_dir: Path) -> Path:
+        d = final_dir / f"{TXN_TAG}{self.id}"
+        self.staged_dirs.append(d)
+        return d
+
+    def manifest(self) -> Path:
+        return self.manifest_dir / f"{TXN_MANIFEST_PREFIX}{self.id}.json"
+
+    def write_manifest(self) -> Path:
+        """THE COMMIT POINT: once this file exists, the pass's writes WILL all land."""
+        path = self.manifest()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(path.name + ".tmp")
+        # Each replace records the target's (mtime_ns, size) at the commit point and the staged
+        # file's, so recovery can tell "not yet moved", "moved" and "someone else wrote it".
+        ops = [[op, final, staged, _fstat(Path(final)), _fstat(Path(staged))]
+               if op == "replace" else [op, final, staged]
+               for op, final, staged in self.ops.values()]
+        tmp.write_text(json.dumps({"id": self.id, "ops": ops}), "utf-8")
+        _replace_retry(tmp, path)
+        return path
+
+    def commit(self) -> None:
+        if self.ops:
+            manifest = self.write_manifest()
+            _apply_ops(list(self.ops.values()))
+            # A concurrent recovery may have rolled this manifest forward and removed it.
+            with contextlib.suppress(FileNotFoundError):
+                manifest.unlink()
+        self._drop_dirs()
+
+    def discard(self) -> None:
+        for op, _final, staged in self.ops.values():
+            if op == "replace" and staged:
+                with contextlib.suppress(OSError):
+                    Path(staged).unlink()
+        self.ops.clear()
+        self._drop_dirs()
+
+    def _drop_dirs(self) -> None:
+        import shutil
+        for d in self.staged_dirs:
+            shutil.rmtree(d, ignore_errors=True)
+        self.staged_dirs = []
+
+
+def _txn_dirs(ratchet: Path | None = None) -> list[Path]:
+    """Every directory a pass stages into, for recovery and the orphan sweep."""
+    dirs = [(ratchet or RATCHET).parent, RATCHET.parent, UNRUNNABLE_BANK.parent,
+            CONVERSION_HANDOFF.parent, REPORT.parent]
+    with contextlib.suppress(Exception):
+        root = str(BASE.parents[1])
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.research import research_priors
+        dirs.append(Path(research_priors.STATE_DIR))
+    out: list[Path] = []
+    for d in dirs:
+        if d not in out:
+            out.append(d)
+    return out
+
+
+def recover_transactions(ratchet: Path | None = None) -> int:
+    """Roll forward every committed manifest a killed pass left, then sweep staged orphans.
+
+    Runs before a pass reads anything, so a pass never reads a half-moved state. Returns how
+    many manifests were rolled forward. A manifest that cannot be applied raises: reading on
+    from a half-moved state would be the inconsistency this exists to prevent.
+    """
+    rolled = 0
+    dirs = _txn_dirs(ratchet)
+    for d in dirs:
+        for m in sorted(d.glob(f"{TXN_MANIFEST_PREFIX}*.json")) if d.is_dir() else []:
+            try:
+                doc = json.loads(m.read_text("utf-8"))
+            except FileNotFoundError:
+                continue                         # a concurrent recovery finished it
+            except (OSError, ValueError):
+                doc = None
+            if not (isinstance(doc, dict) and isinstance(doc.get("ops"), list)
+                    and all(isinstance(o, list) and len(o) >= 3 for o in doc["ops"])):
+                # NOT A COMMIT ANYONE CAN READ: set aside under a name that says so, never
+                # deleted without trace and never applied.
+                aside = m.with_name(m.name + TXN_GARBAGE_SUFFIX)
+                with contextlib.suppress(OSError):
+                    _replace_retry(m, aside)
+                print(f"judge coverage: unreadable transaction manifest set aside as "
+                      f"{aside.name}", file=sys.stderr, flush=True)
+                continue
+            try:
+                _apply_ops(doc["ops"], checked=True)
+            except TxnRecoveryRefused as exc:
+                raise TxnRecoveryRefused(f"{m.name} kept, nothing applied: {exc}") from None
+            rolled += 1
+            with contextlib.suppress(FileNotFoundError):
+                m.unlink()
+    # Staged files a kept or set-aside manifest names are evidence, not orphans.
+    named: set[str] = set()
+    for d in dirs:
+        for m in d.glob(f"{TXN_MANIFEST_PREFIX}*") if d.is_dir() else []:
+            with contextlib.suppress(OSError, ValueError, TypeError, AttributeError):
+                for o in json.loads(m.read_text("utf-8")).get("ops") or []:
+                    if isinstance(o, list) and len(o) >= 3 and o[2]:
+                        named.add(str(o[2]))
+    cutoff = time.time() - TXN_ORPHAN_AGE_S
+    for d in dirs:
+        for p in d.glob(f"*{TXN_TAG}*") if d.is_dir() else []:
+            if str(p) in named or any(n.startswith(str(p) + os.sep) for n in named):
+                continue
+            with contextlib.suppress(OSError):
+                if p.stat().st_mtime >= cutoff:
+                    continue                     # possibly a live pass's; swept next time
+                if p.is_dir():
+                    import shutil
+                    shutil.rmtree(p, ignore_errors=True)
+                else:
+                    p.unlink()
+    return rolled
+
+
+def _txn_current() -> _Txn | None:
+    return _PASS.get(("txn",)) if _PASS is not None else None
+
+
+class JudgeCoverageTimeout(Exception):
+    """The pass reached its stop before committing: nothing it staged is written."""
+
+    def __init__(self, phase: str, elapsed_s: float) -> None:
+        super().__init__(f"budget reached at {phase} after {elapsed_s:.1f}s")
+        self.phase = phase
+        self.elapsed_s = elapsed_s
+
+
+def _check_budget(phase: str) -> None:
+    """Stop the pass, uncommitted, when its deadline has passed (see `main`)."""
+    if _PASS is None:
+        return
+    deadline = _PASS.get(("deadline",))
+    if deadline is not None and time.monotonic() > deadline[1]:
+        raise JudgeCoverageTimeout(phase, time.monotonic() - deadline[0])
+
+
 def _ts(raw: object) -> datetime | None:
+    """Every stamp this organ reads, parsed one way. A stamp with no offset is UTC -- the desk's
+    writers stamp UTC -- never this machine's local time, which shifted naive stamps by the
+    box's offset (audit of v2.1; every reader since v2.3: capacity, judged index, sustained
+    rate, the bank's ages, the docket's first_seen, the ratchet, the priors)."""
     txt = str(raw or "").strip()
     if not txt:
         return None
     try:
-        return datetime.fromisoformat(txt.replace("Z", "+00:00")).astimezone(UTC)
+        t = datetime.fromisoformat(txt.replace("Z", "+00:00"))
     except ValueError:
         return None
+    return (t.replace(tzinfo=UTC) if t.tzinfo is None else t).astimezone(UTC)
 
 
 def _cell_id(row: dict[str, Any]) -> str | None:
@@ -205,20 +659,35 @@ def _cell_id(row: dict[str, Any]) -> str | None:
     Two implementations of an identity are two identities, and the whole measurement here turns
     on matching a docket row to the verdict the sealed judge recorded for it.
     """
-    try:
-        desk = str(BASE)
-        if desk not in sys.path:
-            sys.path.insert(0, desk)
-        from research.frontier_identity import docket_cell_id
-    except Exception:
+    fn = _cell_id_fn()
+    if fn is None:
         return None
     try:
-        return str(docket_cell_id(row))
+        return str(fn(row))
     except Exception:
         return None
+
+
+def _cell_id_fn() -> Any:
+    """`frontier_identity.docket_cell_id`, imported once per pass instead of once per row."""
+    def _load() -> Any:
+        try:
+            desk = str(BASE)
+            if desk not in sys.path:
+                sys.path.insert(0, desk)
+            from research.frontier_identity import docket_cell_id
+        except Exception:
+            return None
+        return docket_cell_id
+    return _pass_value("cell_id_fn", _load)
 
 
 def live_families() -> frozenset[str]:
+    """The live family registry, read once per pass (see `_live_families`)."""
+    return frozenset(_pass_value("live_families", _live_families))
+
+
+def _live_families() -> frozenset[str]:
     """Every family the desk can actually resolve -- the registry's live set, never a literal.
 
     An unreadable registry returns EMPTY and the caller then falls back to the docket's own
@@ -235,6 +704,11 @@ def live_families() -> frozenset[str]:
 
 
 def banned_from_capital() -> frozenset[str]:
+    """The live-capital ban list, read once per pass (see `_banned_from_capital`)."""
+    return frozenset(_pass_value("banned_from_capital", _banned_from_capital))
+
+
+def _banned_from_capital() -> frozenset[str]:
     """Families the desk has forbidden from live capital, read from the policy that enforces it.
 
     `merge_hypotheses` already routes these rows OUT of the judging docket and into the study
@@ -266,6 +740,12 @@ def judged_index(path: Path | None = None, *, now: datetime | None = None,
     total: dict[str, int] = {}
     in_window: dict[str, int] = {}
     cutoff = (now or datetime.now(tz=UTC)).timestamp() - window_h * 3600.0
+    scan = _ledger_scan(path or GATE_LEDGER)
+    if scan is not None:
+        for fam, ts in scan.judged_at:
+            if fam and ts is not None and ts >= cutoff:
+                in_window[fam] = in_window.get(fam, 0) + 1
+        return set(scan.cell_seen), dict(scan.judged_total), in_window
     # STREAMED, never `readlines()` (2026-10-07): the ledger holds every changed verdict the desk
     # has written, and loading it whole on each hourly pass is how this report went 56 h stale.
     try:
@@ -322,30 +802,42 @@ def measured_capacity(judged_total: dict[str, int], ledger: Path | None = None,
     """
     best = 0
     cutoff = (now or datetime.now(tz=UTC)).timestamp() - CAPACITY_LOOKBACK_H * 3600.0
-    per_hour: dict[str, int] = {}
-    try:
-        with (ledger or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            for line in fh:
-                line = line.strip()
-                if not line:
+    per_hour: dict[Any, int] = {}
+    scan = _ledger_scan(ledger or GATE_LEDGER)
+    if scan is not None:
+        if not scan.err:
+            # The UTC clock hour, keyed by its epoch hour: the same buckets as the strftime key
+            # below (UTC hours are epoch-aligned), and only the bucket COUNTS are read.
+            for _fam, ts in scan.judged_at:
+                if ts is None or ts < cutoff:
                     continue
-                try:
-                    row = json.loads(line)
-                except ValueError:
-                    continue
-                if not isinstance(row, dict):
-                    continue
-                if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
-                    continue
-                if row.get("passed") is not True and str(row.get("terminal_gate") or "") in ("", "UNKNOWN"):
-                    continue
-                at = _ts(row.get("at"))
-                if at is None or at.timestamp() < cutoff:
-                    continue
-                key = at.strftime("%Y-%m-%dT%H")
-                per_hour[key] = per_hour.get(key, 0) + 1
-    except OSError:
-        per_hour = {}
+                hk = int(ts // 3600.0)
+                per_hour[hk] = per_hour.get(hk, 0) + 1
+    else:
+        try:
+            with (ledger or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        row = json.loads(line)
+                    except ValueError:
+                        continue
+                    if not isinstance(row, dict):
+                        continue
+                    if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
+                        continue
+                    if row.get("passed") is not True and str(
+                            row.get("terminal_gate") or "") in ("", "UNKNOWN"):
+                        continue
+                    at = _ts(row.get("at"))
+                    if at is None or at.timestamp() < cutoff:
+                        continue
+                    key = at.strftime("%Y-%m-%dT%H")
+                    per_hour[key] = per_hour.get(key, 0) + 1
+        except OSError:
+            per_hour = {}
     if per_hour:
         best = max(per_hour.values())
     return max(best, CAPACITY_FLOOR, sum(judged_total.values()) // 24)
@@ -371,6 +863,19 @@ def sustained_rate(ledger: Path | None = None, *, now: datetime | None = None) -
     # ruling. That is what the 7-day "43%" was; it is published here so it is never again set
     # against a per-sweep figure computed over a different denominator (see `unknown_breakdown`).
     unknown = {"24h": 0, "7d": 0}
+    scan = _ledger_scan(ledger or GATE_LEDGER)
+    if scan is not None:
+        if scan.err:
+            return {"status": "UNMEASURED", "why": "gate ledger unreadable"}
+        c24, c7 = cuts["24h"], cuts["7d"]
+        for ts, _unk in scan.live_at:
+            if ts >= c24:
+                counts["24h"] += 1
+                unknown["24h"] += int(_unk)
+            if ts >= c7:
+                counts["7d"] += 1
+                unknown["7d"] += int(_unk)
+        return _sustained_doc(counts, unknown)
     try:
         with (ledger or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
             for line in fh:
@@ -396,6 +901,10 @@ def sustained_rate(ledger: Path | None = None, *, now: datetime | None = None) -
                         unknown[w] += int(_unk)
     except OSError:
         return {"status": "UNMEASURED", "why": "gate ledger unreadable"}
+    return _sustained_doc(counts, unknown)
+
+
+def _sustained_doc(counts: dict[str, int], unknown: dict[str, int]) -> dict[str, Any]:
     return {"status": "MEASURED", "counts": counts,
             "per_hour_24h": round(counts["24h"] / 24.0, 3),
             "per_hour_7d": round(counts["7d"] / 168.0, 3),
@@ -484,6 +993,11 @@ def realised_pass_rates(path: Path | None = None) -> dict[str, dict[str, float]]
     """
     judged: dict[str, int] = {}
     passed: dict[str, int] = {}
+    scan = _ledger_scan(path or GATE_LEDGER)
+    if scan is not None:
+        if scan.err:
+            return {}
+        return _realised_doc(scan.judged_total, scan.passed)
     try:
         with (path or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
             lines = fh.readlines()
@@ -514,6 +1028,10 @@ def realised_pass_rates(path: Path | None = None) -> dict[str, dict[str, float]]
         judged[fam] = judged.get(fam, 0) + 1
         if ok is True or str(ok).lower() == "true":
             passed[fam] = passed.get(fam, 0) + 1
+    return _realised_doc(judged, passed)
+
+
+def _realised_doc(judged: dict[str, int], passed: dict[str, int]) -> dict[str, dict[str, float]]:
     out: dict[str, dict[str, float]] = {}
     for fam, n in judged.items():
         k = passed.get(fam, 0)
@@ -554,10 +1072,12 @@ def family_priors(families: list[str],
     except Exception:
         def prior_for(_dim: str, _key: str) -> Any:                  # type: ignore[misc]
             raise RuntimeError("research_priors unavailable")
+    _staged_dir = _PASS.get(("priors_dir",)) if _PASS is not None else None
     for fam in families:
         row = {"p": 0.5, "p_optimistic": 1.0, "n": 0.0, "status": 0.0, "source": 0.0}
         try:
-            pr = prior_for("family", fam)
+            pr = (prior_for("family", fam) if _staged_dir is None
+                  else prior_for("family", fam, state_dir=_staged_dir))
             row = {"p": float(pr.mean), "p_optimistic": float(pr.interval()[1]),
                    "n": float(pr.n), "status": 1.0 if pr.status == "POSTERIOR" else 0.0,
                    "source": 0.0}
@@ -572,8 +1092,18 @@ def family_priors(families: list[str],
     return out
 
 
+#: How far past the pass's own clock a verdict's `at` may sit and still be a reading. Beyond
+#: it the stamp is read as UNMEASURED: one future-dated row taught would carry the cursor to
+#: its date and freeze learning until the wall clock got there. It is the desk's one clock-skew
+#: tolerance (`dsr_inputs.FUTURE_SKEW_S`, 300 s), imported rather than restated (audit of v2.1).
+if str(BASE.parents[1]) not in sys.path:
+    sys.path.insert(0, str(BASE.parents[1]))
+from libs.research.dsr_inputs import FUTURE_SKEW_S as PRIORS_FUTURE_SKEW_S  # noqa: E402
+
+
 def learn_priors(ledger: Path | None = None, *, since: str = "",
-                 limit: int = 20_000, state_dir: Path | None = None) -> dict[str, Any]:
+                 limit: int = 20_000, state_dir: Path | None = None,
+                 now: datetime | None = None) -> dict[str, Any]:
     """FEED THE PRIOR THE RANKING SPENDS. Every new gate verdict updates its family's posterior.
 
     THE LOOP WAS OPEN AND THE RANKING WOULD HAVE BEEN FLAT FOREVER. Measured when this was
@@ -598,11 +1128,36 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
     except Exception as exc:
         out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
         return out
-    try:
-        with (ledger or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            lines = fh.readlines()[-limit:]
-    except OSError as exc:
-        out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
+    scan = _ledger_scan(ledger or GATE_LEDGER) if 0 < limit <= LEARN_TAIL else None
+    if scan is not None and not scan.err:
+        lines = list(scan.tail)[-limit:]
+    else:
+        # Outside a pass, or a ledger the scan could not read: the original read, whose OSError
+        # names the cause in `why`.
+        try:
+            with (ledger or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
+                lines = fh.readlines()[-limit:]
+        except OSError as exc:
+            out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
+            return out
+    _clock = now or datetime.now(tz=UTC)
+    _horizon = _clock.timestamp() + PRIORS_FUTURE_SKEW_S
+    _since_ts = _ts(since) if since else None
+    if since and _since_ts is not None and _since_ts.timestamp() > _horizon:
+        # The same freeze, already stored: a cursor past this clock skips every verdict until
+        # the clock reaches it. Named and kept, exactly as a cursor that is not a timestamp.
+        out.update(status="UNMEASURED",
+                   why=f"stored priors_cursor is in the future: {since[:80]!r}; kept as it is")
+        return out
+    if since and _since_ts is None:
+        # A STORED CURSOR THAT IS NOT A TIMESTAMP FREEZES LEARNING SILENTLY (audit of
+        # c5390bc6a): "garbage" sorts above every ISO stamp, so `at <= since` skipped every
+        # verdict from then on and the pass still read OK. It is not a reading of where the
+        # ledger was taught to, so nothing is taught against it -- teaching from the start
+        # would double-count every verdict already in the posterior -- and the cursor is kept
+        # as it is, named here, for whoever repairs it.
+        out.update(status="UNMEASURED",
+                   why=f"stored priors_cursor is not a timestamp: {since[:80]!r}; kept as it is")
         return out
     state = load(state_dir)
     taught = state.get("beta") if isinstance(state, dict) else None
@@ -620,7 +1175,7 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
             untaught.add(fam_seen)
     out["backfilled_families"] = len(untaught)
     seen_fams: set[str] = set()
-    high = since
+    high, high_ts = since, _since_ts
     for line in lines:
         line = line.strip()
         if not line:
@@ -643,9 +1198,20 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
         # `since` alone. A family with NO stored row has demonstrably never been taught, so it is
         # backfilled whatever the cursor says. It gains a row on the first such pass and is
         # cursor-governed from then on, so this cannot double-count a family twice.
-        if since and at <= since and fam not in untaught:
+        # PARSED, NOT LEXICAL (audit of v2.1): a `+05:30` cursor compared as a string skipped
+        # about 5.5 h of later UTC rows. Equal-format stamps order the same either way.
+        _at_ts = _ts(at)
+        if (_since_ts is not None and _at_ts is not None and _at_ts <= _since_ts
+                and fam not in untaught):
             continue
         if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
+            continue
+        if _at_ts is None or _at_ts.timestamp() > _horizon:
+            # A VERDICT WHOSE `at` IS NOT A TIMESTAMP IS READ AS UNMEASURED, and never taught:
+            # taught, it would either become the cursor (a garbage stamp sorts above every ISO
+            # one and freezes learning) or be re-taught on every pass the cursor cannot pass it.
+            # A stamp more than PRIORS_FUTURE_SKEW_S past this pass's clock is the same freeze.
+            out["unmeasured_at"] = int(out.get("unmeasured_at") or 0) + 1
             continue
         passed = row.get("passed")
         survived = passed is True or str(passed).lower() == "true"
@@ -665,10 +1231,27 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
             continue
         seen_fams.add(fam)
         out["recorded"] = int(out["recorded"]) + 1
-        high = max(high, at)
+        if high_ts is None or _at_ts > high_ts:
+            high, high_ts = at, _at_ts
     if out["recorded"]:
         try:
-            save(state, state_dir)
+            txn = _txn_current()
+            if txn is None:
+                save(state, state_dir)
+            else:
+                # STAGED with the ratchet that carries this pass's cursor (see `_Txn`): the
+                # posterior and the cursor land together or not at all, so a killed pass can
+                # never leave verdicts taught that the next pass will teach again.
+                from libs.research import research_priors as _rp
+                final_dir = Path(state_dir or _rp.STATE_DIR)
+                staged_dir = txn.staged_dir(final_dir)
+                save(state, staged_dir)
+                for _name in ("beta.json", "dirichlet.json"):
+                    txn.put_staged(final_dir / _name, staged_dir / _name)
+                if state_dir is None and _PASS is not None:
+                    # The rest of this pass reads the posterior it just taught, as it did when
+                    # the save landed in place (`family_priors`).
+                    _PASS[("priors_dir",)] = staged_dir
         except Exception as exc:                                         # pragma: no cover
             out.update(status="UNMEASURED", why=f"save failed: {type(exc).__name__}: {exc}")
     out["families"] = len(seen_fams)
@@ -710,7 +1293,7 @@ def unknown_breakdown(path: Path | None = None) -> dict[str, Any]:
     per family, how many of its cells never fired at all. Nothing here removes a cell -- a
     never-firing spec on a short history can fire on a longer one, and an order is not a ban.
     """
-    doc = _read(path or GATES_REPORT)
+    doc = _read_memo(path or GATES_REPORT)
     out: dict[str, Any] = {"status": "UNMEASURED", "source": str(path or GATES_REPORT)}
     verdicts = (doc or {}).get("verdicts") if isinstance(doc, dict) else None
     if not isinstance(verdicts, list) or not verdicts:
@@ -795,6 +1378,18 @@ def _bar_bytes(sym: str, tf: str = "H1") -> int:
         return 0
 
 
+def _bar_bytes_pass(sym: str, tf: str = "H1") -> int:
+    """`_bar_bytes`, measured once per chart per pass for the namers (one stat per verdict was
+    ~50k stats a pass). Outside a pass it is `_bar_bytes`. `readmit_due` keeps its own snapshot."""
+    if _PASS is None:
+        return _bar_bytes(sym, tf)
+    sizes = _PASS.setdefault(("bar_bytes",), {})
+    k = (sym, tf)
+    if k not in sizes:
+        sizes[k] = _bar_bytes(sym, tf)
+    return int(sizes[k])
+
+
 #: THE OTHER HALF OF THE PERMANENT CELL LEAK (2026-09-30). A cell the judge could not BUILD --
 #: its bars absent on its own chart, or its signal construction failing -- is recorded
 #: `passed: None, downstream_status: NOT_RUN_*`, which `judged_index` rightly refuses to call
@@ -811,7 +1406,7 @@ BUILD_FAILED_RETRY_DAYS = 7.0
 
 def _prewarm_share(path: Path | None = None) -> float | None:
     """The share of the last sweep's pre-warm builds that failed on build or data."""
-    doc = _read(path or GATES_REPORT)
+    doc = _read_memo(path or GATES_REPORT)
     pw = (doc or {}).get("prewarm") if isinstance(doc, dict) else None
     if not isinstance(pw, dict):
         return None
@@ -825,7 +1420,7 @@ def _prewarm_share(path: Path | None = None) -> float | None:
 
 def name_not_run(path: Path | None = None) -> dict[str, dict[str, Any]]:
     """Every cell the judge could not build, with its named reason and the bars it needs."""
-    doc = _read(path or GATES_REPORT)
+    doc = _read_memo(path or GATES_REPORT)
     out: dict[str, dict[str, Any]] = {}
     verdicts = (doc or {}).get("verdicts") if isinstance(doc, dict) else None
     if not isinstance(verdicts, list):
@@ -844,7 +1439,7 @@ def name_not_run(path: Path | None = None) -> dict[str, dict[str, Any]]:
             if f" {cand} parquet" in f" {why}":
                 tf = cand
         out[cell] = {"reason": reason, "sym": sym, "family": v.get("family"), "tf": tf,
-                     "days": 0, "bar_bytes": _bar_bytes(sym, tf), "why": why[:200],
+                     "days": 0, "bar_bytes": _bar_bytes_pass(sym, tf), "why": why[:200],
                      "route": ("bars absent on the cell's own chart: re-admitted the moment "
                                "they appear" if reason == "data_missing" else
                                "signal construction failed: re-admitted on bar growth or after "
@@ -859,8 +1454,22 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
     the sealed judge's own verdict rows to a reason per CELL, and the residue that cannot be
     joined is named too (`no_verdict_row`) rather than left inside a bucket. A new cause appears
     as its own name the day it appears.
+
+    One pass names once: `build` reads this three times (directly, through `unknown_breakdown`
+    and through `judging_failures`), so inside a pass memo the table is computed once per
+    version of the report and each caller gets its own copy of the outer mapping.
     """
-    doc = _read(path or GATES_REPORT)
+    key = _stat_key(path or GATES_REPORT) if _PASS is not None else None
+    if _PASS is None or key is None:
+        return _name_unknowns(path)
+    slot = ("named_unknowns", *key)
+    if slot not in _PASS:
+        _PASS[slot] = _name_unknowns(path)
+    return dict(_PASS[slot])
+
+
+def _name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    doc = _read_memo(path or GATES_REPORT)
     out: dict[str, dict[str, Any]] = {}
     verdicts = (doc or {}).get("verdicts") if isinstance(doc, dict) else None
     if not isinstance(verdicts, list):
@@ -881,7 +1490,7 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
         _head = cell.split(".", 1)[0]
         if "@" in _head and _head.rsplit("@", 1)[1].upper() in _BAR_COST:
             tf = _head.rsplit("@", 1)[1].upper()          # `cell_id` writes `<sym>@<TF>.`
-        bars = _bar_bytes(sym, tf)
+        bars = _bar_bytes_pass(sym, tf)
         # WHAT THE WRITER SAYS, WHEN IT SAYS IT (patch unknown_verdict_named): the judge names the
         # cause it saw -- an exception while building the series, a history the lockbox carve
         # consumed, signals that never became trades -- and that beats any inference made here.
@@ -944,7 +1553,9 @@ REQUIRED_INPUT_KEY: dict[str, str] = {"relative_value": "peer_symbol",
 
 
 def unrunnable_bank(path: Path | None = None) -> dict[str, dict[str, Any]]:
-    doc = _read(path or UNRUNNABLE_BANK)
+    # A fresh outer mapping every call: `update_unrunnable_bank` pops and assigns into its copy,
+    # and the rows themselves are only ever replaced, never edited, so the parse can be shared.
+    doc = _read_memo(path or UNRUNNABLE_BANK)
     if not isinstance(doc, dict):
         return {}
     return {str(k): v for k, v in doc.items() if isinstance(v, dict)}
@@ -1056,11 +1667,24 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         elif was_nt:
             _count_readmit(prev)            # re-named OUT of the class: owed again
         bank[cell] = entry
+    txn = _txn_current()
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps(bank, indent=1, default=str), "utf-8")
+        if txn is None:
+            _atomic_write_text(target, json.dumps(bank, indent=1, default=str))
+        else:
+            txn.put_text(target, json.dumps(bank, indent=1, default=str))
     except OSError:
         pass
+    else:
+        # The next read of the bank in this pass is of the file just written; its parse is this
+        # mapping (every value here is a JSON value), so the pass does not parse it back.
+        if txn is not None and _PASS is not None:
+            _PASS[("staged_json", str(target))] = bank
+        else:
+            _wk = _stat_key(target) if _PASS is not None else None
+            if _PASS is not None and _wk is not None:
+                _PASS[("json", *_wk)] = bank
     n_re = sum(readmitted_nt.values())
     # ONE LINE EVERY PASS, ZEROS INCLUDED (audit of PR #290, M1): the burn-down reads a missing
     # or stale log as UNMEASURED, so a quiet pass must still say "0" by writing it.
@@ -1069,9 +1693,19 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         # Beside the bank it describes, so a test's bank never writes the desk's log.
         lp = log or target.parent / READMISSION_LOG.name
         lp.parent.mkdir(parents=True, exist_ok=True)
-        with lp.open("a", encoding="utf-8") as fh:
+        dest = lp
+        if txn is not None:
+            # The whole log is staged (old bytes + this line) and renamed at commit: a rename is
+            # idempotent under roll-forward, where a second append would not be.
+            dest = txn.staged_path(lp)
+            if lp.exists():
+                import shutil
+                shutil.copyfile(lp, dest)
+        with dest.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps({"at": at, "readmitted": n_re,
                                  "by_reason": readmitted_nt_reason}) + "\n")
+        if txn is not None:
+            txn.put_staged(lp, dest)
     except OSError:
         pass
     return {"parked_this_pass": added, "readmitted_on_bar_growth": len(readmitted),
@@ -1450,21 +2084,30 @@ def structural_cell(row: dict[str, Any]) -> str:
     variants inside one family, chart, session, regime, direction and representation matter too.
     Threshold-only parameter changes do not, and no structural distinction certifies an edge.
     """
-    params = row.get("params") or {}
+    return _grid_and_structural(row)[1]
 
-    def axis(*values: Any) -> str:
-        chosen = next((v for v in values if v is not None and str(v).strip()), "?")
-        return str(chosen).strip().lower()
-    return "|".join((
-        grid_cell(row), axis(params.get("timeframe"), row.get("timeframe"), "H1"),
-        axis(row.get("session"), row.get("selector"), params.get("session"),
-             params.get("selector")),
-        axis(row.get("regime"), row.get("condition"), params.get("regime"),
-             params.get("condition")),
-        axis(row.get("direction"), row.get("side"), params.get("direction"),
-             params.get("side")),
-        axis(row.get("representation"), params.get("representation"),
-             params.get("feature")),
+
+def _axis(*values: Any) -> str:
+    """The first value that is present and non-blank, lower-cased; `?` when none is."""
+    for v in values:
+        if v is not None:
+            txt = str(v).strip()
+            if txt:
+                return txt.lower()
+    return "?"
+
+
+def _grid_and_structural(row: dict[str, Any]) -> tuple[str, str]:
+    """(`grid_cell`, `structural_cell`) of one row, the grid key computed once for both."""
+    params = row.get("params") or {}
+    grid = grid_cell(row)
+    get, pget = row.get, params.get
+    return grid, "|".join((
+        grid, _axis(pget("timeframe"), get("timeframe"), "H1"),
+        _axis(get("session"), get("selector"), pget("session"), pget("selector")),
+        _axis(get("regime"), get("condition"), pget("regime"), pget("condition")),
+        _axis(get("direction"), get("side"), pget("direction"), pget("side")),
+        _axis(get("representation"), pget("representation"), pget("feature")),
     ))
 
 
@@ -1483,23 +2126,34 @@ def variant_split(rows: list[dict[str, Any]],
     itself uses, so the row that would have gone first still goes first.
     """
     ids = unjudged_ids or set()
-
-    def _fresh(row: dict[str, Any]) -> int:
-        cid = str(row.get("_cell") or "")
-        return 0 if (not ids or cid in ids) else 1
-
-    order = sorted(range(len(rows)),
-                   key=lambda i: (_fresh(rows[i]), str(rows[i].get("first_seen") or "9999"), i))
+    # The claim order is (never-judged first, then oldest `first_seen`, then docket position).
+    # Built as two stable sorts on `first_seen` -- the never-judged rows, then the rest -- which
+    # is the same order as one sort on that triple, and every row's keys are read in ONE
+    # sequential walk: at box scale a random-order walk of 1.45M rows cost ~6 s in cache misses.
+    n = len(rows)
+    first = [""] * n
+    cells: list[tuple[str, str]] = [("", "")] * n
+    fresh_idx: list[int] = []
+    stale_idx: list[int] = []
+    for i, row in enumerate(rows):
+        first[i] = str(row.get("first_seen") or "9999")
+        cells[i] = _grid_and_structural(row)
+        (fresh_idx if (not ids or str(row.get("_cell") or "") in ids) else stale_idx).append(i)
+    key = first.__getitem__
+    order = sorted(fresh_idx, key=key) + sorted(stale_idx, key=key)
     seen: set[str] = set()
     grid_seen: set[str] = set()
-    variants = 0
+    marks = [0] * n
     for i in order:
-        cell = structural_cell(rows[i])
-        is_variant = 1 if cell in seen else 0
-        seen.add(cell)
-        grid_seen.add(grid_cell(rows[i]))
-        rows[i]["_variant"] = is_variant
-        variants += is_variant
+        grid, cell = cells[i]
+        if cell in seen:
+            marks[i] = 1
+        else:
+            seen.add(cell)
+        grid_seen.add(grid)
+    for i, row in enumerate(rows):
+        row["_variant"] = marks[i]
+    variants = sum(marks)
     return {"rows": len(rows), "unseen_mechanisms": len(rows) - variants, "variants": variants,
             "distinct_grid_cells": len(grid_seen),
             "distinct_structural_cells": len(seen),
@@ -1517,7 +2171,8 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
                    unjudged_ids: set[str] | None = None, *,
                    demote_variants: bool = True,
                    use_keff: bool = True,
-                   use_occupancy: bool = True) -> list[dict[str, Any]]:
+                   use_occupancy: bool = True,
+                   limit: int | None = None) -> list[dict[str, Any]]:
     """Weighted interleave of the families, so EVERY PREFIX of the docket is family-balanced.
 
     Each family is emitted on its own virtual clock ticking at 1/quota, and the family whose next
@@ -1544,6 +2199,10 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
     No row is dropped. A family with no quota still ships, after the quota'd stream, because the
     docket this returns is the whole docket and the judge's budget -- not this order -- decides
     where the hour stops.
+
+    `limit` returns only the first `limit` rows of that same order (a reader that measures the
+    head, never one that ships a docket). The merge is a pure function of each stream's prefix,
+    so stopping it early changes no row it has already emitted.
     """
     if not rows:
         return []
@@ -1575,7 +2234,8 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
         w = float(max(quota.get(fam, 0), 1))
         heapq.heappush(heap, (1.0 / w, fam, 0))
     out: list[dict[str, Any]] = []
-    while heap:
+    stop = len(rows) if limit is None else max(int(limit), 0)
+    while heap and len(out) < stop:
         vtime, fam, idx = heapq.heappop(heap)
         out.append(streams[fam][idx])
         nxt = idx + 1
@@ -1692,7 +2352,7 @@ def judging_failures(path: Path | None = None,
         else:
             into[cls] = into.get(cls, 0) + n
 
-    doc = _read(path or GATES_REPORT)
+    doc = _read_memo(path or GATES_REPORT)
     verdicts = (doc or {}).get("verdicts") if isinstance(doc, dict) else None
     if isinstance(verdicts, list):
         for v in verdicts:
@@ -1768,22 +2428,61 @@ def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
                      "missing_input": _missing_input(cls, row), "why": row.get("why"),
                      "first_parked_utc": row.get("parked_at")})
     target = path or CONVERSION_HANDOFF
+    txn = _txn_current()
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps({"schema_version": CONVERSION_HANDOFF_SCHEMA,
-                                      "generated_utc": at, "n": len(rows), "rows": rows},
-                                     indent=1, default=str), "utf-8")
+        text = json.dumps({"schema_version": CONVERSION_HANDOFF_SCHEMA,
+                           "generated_utc": at, "n": len(rows), "rows": rows},
+                          indent=1, default=str)
+        if txn is None:
+            _atomic_write_text(target, text)
+        else:
+            txn.put_text(target, text)
     except OSError:
         # Never leave the previous pass's file to read as this pass's count.
-        with contextlib.suppress(OSError):
-            target.unlink()
+        if txn is not None:
+            txn.delete(target)
+        else:
+            with contextlib.suppress(OSError):
+                target.unlink()
         return -1
     return len(rows)
 
 
 def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = None,
-          ratchet: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
-    """The per-family coverage table, the quotas, and the carried-cohort ratchet."""
+          ratchet: Path | None = None, now: datetime | None = None,
+          defer: bool = False, deadline: tuple[float, float] | None = None) -> dict[str, Any]:
+    """The per-family coverage table, the quotas, and the carried-cohort ratchet.
+
+    Run inside a pass memo, so each input file is parsed once however many readers need it.
+    Every write the pass makes (priors, bank, readmission log, handoff) is staged in one
+    transaction (`_Txn`). With `defer=False` it is committed when the table is built, exactly
+    where those writes used to land. With `defer=True` it rides on the doc and `write` commits
+    it TOGETHER with the report and the ratchet, so a pass killed before `write` changes nothing.
+    `deadline` is (start, stop) on the monotonic clock: past `stop` the pass raises
+    `JudgeCoverageTimeout` and its staged writes are discarded.
+    """
+    recover_transactions(ratchet)
+    txn = _Txn((ratchet or RATCHET).parent)
+    try:
+        with _pass_memo() as memo:
+            memo[("txn",)] = txn
+            if deadline is not None:
+                memo[("deadline",)] = deadline
+            doc = _build(docket, ledger=ledger, ratchet=ratchet, now=now)
+            memo.pop(("txn",), None)
+    except BaseException:
+        txn.discard()
+        raise
+    if defer:
+        doc["_txn"] = txn
+    else:
+        txn.commit()
+    return doc
+
+
+def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = None,
+           ratchet: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
     rows = docket if docket is not None else (_read(DOCKET) or [])
     rows = [r for r in rows if isinstance(r, dict)]
@@ -1792,13 +2491,36 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
                 "why": "the judging docket is absent or empty -- nothing mined to cover",
                 "families": {}, "totals": {}, "quota": {}}
 
+    _check_budget("docket_read")
     prior = _read(ratchet or RATCHET) or {}
     judged_cells, judged_total, judged_window = judged_index(ledger, now=at)
+    _check_budget("ledger")
     bank_rows = unrunnable_bank()
     not_testable_ids = not_testable_index(bank_rows)
+    _id_fn = _cell_id_fn()
     for row in rows:
-        row["_cell"] = _cell_id(row)
+        if _id_fn is None:
+            row["_cell"] = None
+            continue
+        try:
+            row["_cell"] = str(_id_fn(row))
+        except Exception:
+            row["_cell"] = None
+    # `first_seen` parsed once per row: the backlog loop and the carried-cohort loop both read it.
+    _seen_at: dict[Any, datetime | None] = {}
 
+    def _first_seen(row: dict[str, Any]) -> datetime | None:
+        raw = row.get("first_seen")
+        k = (type(raw), raw)
+        try:
+            return _seen_at[k]
+        except KeyError:
+            v = _seen_at[k] = _ts(raw)
+            return v
+        except TypeError:                                   # an unhashable stamp: parse it
+            return _ts(raw)
+
+    _check_budget("cell_ids")
     mined = _mined(rows)
     banned = banned_from_capital()
     study_only: dict[str, int] = {}
@@ -1807,6 +2529,25 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     backlog: dict[str, int] = {}
     oldest: dict[str, float | None] = {}
     unjudged_ids: set[str] = set()
+    prior_fams = prior.get("families") if isinstance(prior, dict) else {}
+    prior_fams = prior_fams if isinstance(prior_fams, dict) else {}
+    prior_at_raw = _ts(prior.get("at") if isinstance(prior, dict) else None)
+    # A PRIOR READING ON ANOTHER UNIT IS NO BASELINE (`BACKLOG_BASIS`). The first pass after the
+    # not-testable class shipped would otherwise subtract a backlog that held the whole parked
+    # stock from one that does not, and book the difference as an hour of drain. That pass
+    # re-bases: carried, drained and the drain status are UNMEASURED, and the next pass ratchets.
+    prior_basis = prior.get("backlog_basis") if isinstance(prior, dict) else None
+    rebased = prior_at_raw is not None and prior_basis != BACKLOG_BASIS
+    prior_at = None if rebased else prior_at_raw
+    prior_ts = prior_at.timestamp() if prior_at is not None else None
+    # THE CARRIED COHORT: rows already in the backlog at the previous reading and STILL unjudged.
+    # It can only fall, because a cell leaves it exactly one way -- by being judged -- once the
+    # two non-judging moves are booked by name: PARKED (the cell entered the not-testable class
+    # since the prior reading, `not_testable_since`) leaves the cohort without a ruling, and
+    # READMITTED (the prior pass's bank update returned it) joins it without being minted.
+    # Counted in the SAME pass over the docket as the backlog (one walk of 1.6M rows, not two).
+    carried: dict[str, int] = {}
+    parked_since: dict[str, int] = {}
     for row in rows:
         fam = str(row.get("family") or "")
         cid = row.get("_cell")
@@ -1817,6 +2558,16 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
             # counted, named and kept -- it is simply not something the hour is allocated to.
             study_only[fam] = study_only.get(fam, 0) + 1
             continue
+        if prior_ts is not None:
+            _seen = _first_seen(row)
+            if _seen is not None and not _seen.timestamp() > prior_ts:
+                if cid and cid in not_testable_ids:
+                    _brow = bank_rows.get(str(cid)) or {}
+                    _since = _ts(_brow.get("not_testable_since") or _brow.get("parked_at"))
+                    if _since is not None and _since.timestamp() >= prior_ts:
+                        parked_since[fam] = parked_since.get(fam, 0) + 1
+                else:
+                    carried[fam] = carried.get(fam, 0) + 1
         if cid and cid in not_testable_ids:
             # JUDGED TO THE LIMIT OF ITS DATA: named, counted, kept, and back in the backlog when
             # the bank re-admits it (`NOT_TESTABLE_REASONS`).
@@ -1827,7 +2578,7 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         backlog[fam] = backlog.get(fam, 0) + 1
         if cid:
             unjudged_ids.add(str(cid))
-        seen = _ts(row.get("first_seen"))
+        seen = _first_seen(row)
         if seen is not None:
             age = max(0.0, (at.timestamp() - seen.timestamp()) / 3600.0)
             prev = oldest.get(fam)
@@ -1835,10 +2586,12 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         else:
             oldest.setdefault(fam, None)
 
+    _check_budget("backlog")
     capacity = measured_capacity(judged_total, ledger, now=at)
     # TEACH THE PRIOR BEFORE SPENDING IT: every verdict since the last reading updates its
     # family's posterior, so the ranking below is spending a number this desk actually learned.
-    learned = learn_priors(ledger, since=str((prior or {}).get("priors_cursor") or ""))
+    learned = learn_priors(ledger, since=str((prior or {}).get("priors_cursor") or ""),
+                           now=at)
     realised_seen = realised_pass_rates(ledger)
     unknown = unknown_breakdown()
     named_unknowns = name_unknowns()
@@ -1857,18 +2610,24 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     # MARGINAL k_eff, STAMPED BEFORE THE RANKING READS IT (research/docket_keff.py). Reorders
     # only: the family factor lifts a family's share of the remainder, the per-cell stamp orders
     # rows inside each family stream. Nothing is removed and the floor is untouched.
+    _check_budget("bank")
     keff = keff_stamp(rows)
     # OCCUPANCY + ORTHOGONALITY, stamped beside k_eff (research/occupancy_map.py). Reorders only.
     occ = occupancy_stamp(rows)
     ranking = rank_by_value(backlog, rows, capacity)
     quota = allocate(backlog, capacity, ranking=ranking)
+    _check_budget("ranking")
     judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
     study_rows = [r for r in rows if str(r.get("family") or "") in banned]
     # Mark the variants BEFORE the order is taken, so the head this table reports is the head
     # that actually ships (`order_docket` re-derives the same marks and measures what they freed).
     variant_split(judgeable, unjudged_ids)
-    ordered = coverage_order(judgeable, quota, unjudged_ids) + study_rows
+    # Only the head is read here (the queued census and the k_eff head census both stop at
+    # `capacity`), so the interleave stops there too; `order_docket` takes the whole order.
+    ordered = coverage_order(judgeable, quota, unjudged_ids,
+                             limit=max(int(capacity), 0)) + study_rows
     head = ordered[:capacity]
+    _check_budget("order")
     if keff.get("status") == "MEASURED":
         dk = _docket_keff()
         if dk is not None:
@@ -1878,41 +2637,6 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         fam = str(row.get("family") or "")
         queued[fam] = queued.get(fam, 0) + 1
 
-    prior_fams = prior.get("families") if isinstance(prior, dict) else {}
-    prior_fams = prior_fams if isinstance(prior_fams, dict) else {}
-    prior_at_raw = _ts(prior.get("at") if isinstance(prior, dict) else None)
-    # A PRIOR READING ON ANOTHER UNIT IS NO BASELINE (`BACKLOG_BASIS`). The first pass after the
-    # not-testable class shipped would otherwise subtract a backlog that held the whole parked
-    # stock from one that does not, and book the difference as an hour of drain. That pass
-    # re-bases: carried, drained and the drain status are UNMEASURED, and the next pass ratchets.
-    prior_basis = prior.get("backlog_basis") if isinstance(prior, dict) else None
-    rebased = prior_at_raw is not None and prior_basis != BACKLOG_BASIS
-    prior_at = None if rebased else prior_at_raw
-    # THE CARRIED COHORT: rows already in the backlog at the previous reading and STILL unjudged.
-    # It can only fall, because a cell leaves it exactly one way -- by being judged -- once the
-    # two non-judging moves are booked by name: PARKED (the cell entered the not-testable class
-    # since the prior reading, `not_testable_since`) leaves the cohort without a ruling, and
-    # READMITTED (the prior pass's bank update returned it) joins it without being minted.
-    carried: dict[str, int] = {}
-    parked_since: dict[str, int] = {}
-    if prior_at is not None:
-        for row in rows:
-            cid = row.get("_cell")
-            if cid and cid in judged_cells:
-                continue
-            if str(row.get("family") or "") in banned:
-                continue
-            seen = _ts(row.get("first_seen"))
-            if seen is None or seen.timestamp() > prior_at.timestamp():
-                continue
-            fam = str(row.get("family") or "")
-            if cid and cid in not_testable_ids:
-                _since = _ts((bank_rows.get(str(cid)) or {}).get("not_testable_since")
-                             or (bank_rows.get(str(cid)) or {}).get("parked_at"))
-                if _since is not None and _since.timestamp() >= prior_at.timestamp():
-                    parked_since[fam] = parked_since.get(fam, 0) + 1
-                continue
-            carried[fam] = carried.get(fam, 0) + 1
 
     fams = sorted(set(mined) | set(backlog) | set(judged_window) | live_families())
     table: dict[str, dict[str, Any]] = {}
@@ -2226,9 +2950,19 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
     backlog. A failure here returns the rows untouched, because an ordering organ must never be
     able to cost the desk a docket (L1.28a).
     """
+    with _pass_memo():
+        return _order_docket(rows, publish=publish, now=now)
+
+
+def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | None
+                  ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    doc: dict[str, Any] | None = None
     try:
-        doc = build(rows, now=now)
+        doc = build(rows, now=now, defer=publish)
         if not doc.get("families"):
+            _txn = doc.pop("_txn", None)
+            if _txn is not None:
+                _txn.commit()
             return rows, doc
         quota = {str(k): int(v) for k, v in (doc.get("quota") or {}).items()}
         banned = banned_from_capital()
@@ -2308,12 +3042,39 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
             write(doc)
         return ordered, doc
     except Exception as exc:                                             # pragma: no cover
+        # A deferred pass that failed after build must not leave its staging in live dirs.
+        _left = doc.pop("_txn", None) if isinstance(doc, dict) else None
+        if isinstance(_left, _Txn):
+            _left.discard()
         return rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
 
 def write(doc: dict[str, Any], *, report: Path | None = None,
-          ratchet: Path | None = None) -> None:
-    """Publish the table and advance the ratchet. A ratchet write is the NEXT reading's baseline."""
+          ratchet: Path | None = None,
+          deadline: tuple[float, float] | None = None) -> None:
+    """Publish the table and advance the ratchet. A ratchet write is the NEXT reading's baseline.
+
+    ONE COMMIT. The report, the k_eff order and the ratchet are staged with whatever the pass
+    staged (`build(defer=True)`: priors, bank, readmission log, handoff) and committed together.
+    A pass past its `deadline` raises `JudgeCoverageTimeout` here, before the commit point, and
+    writes nothing.
+    """
+    txn = doc.pop("_txn", None)
+    if not isinstance(txn, _Txn):
+        recover_transactions(ratchet)
+        txn = _Txn((ratchet or RATCHET).parent)
+    try:
+        _write_staged(doc, txn, report=report, ratchet=ratchet)
+        if deadline is not None and time.monotonic() > deadline[1]:
+            raise JudgeCoverageTimeout("commit", time.monotonic() - deadline[0])
+    except BaseException:
+        txn.discard()
+        raise
+    txn.commit()
+
+
+def _write_staged(doc: dict[str, Any], txn: _Txn, *, report: Path | None,
+                  ratchet: Path | None) -> None:
     target = report or REPORT
     target.parent.mkdir(parents=True, exist_ok=True)
     keff = doc.pop("_keff_detail", None)
@@ -2321,10 +3082,16 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
         dk = _docket_keff()
         if dk is not None:
             try:
-                dk.publish(keff)
+                _kp = Path(dk.REPORT)
+                _kp.parent.mkdir(parents=True, exist_ok=True)
+                dk.publish(keff, path=txn.staged_path(_kp))
+                txn.put_staged(_kp, txn.staged_path(_kp))
             except OSError as exc:
                 doc.setdefault("keff_order", {})["publish_error"] = f"{type(exc).__name__}"
-    target.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    txn.put_text(target, json.dumps(doc, indent=1, default=str))
+    if report is None:
+        # A completed pass clears the previous timeout's artifact in the same commit.
+        txn.delete(TIMEOUT_REPORT)
     fams = doc.get("families") or {}
     state = {
         "at": doc.get("at"),
@@ -2345,8 +3112,7 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
                 "cell leaves a cohort exactly one way -- by being judged"),
     }
     rt = ratchet or RATCHET
-    rt.parent.mkdir(parents=True, exist_ok=True)
-    rt.write_text(json.dumps(state, indent=1, default=str), "utf-8")
+    txn.put_text(rt, json.dumps(state, indent=1, default=str))
 
 
 def render(doc: dict[str, Any]) -> list[str]:
@@ -2379,19 +3145,93 @@ def render(doc: dict[str, Any]) -> list[str]:
     return lines
 
 
+#: The exit code of a pass that stopped at its budget: a failure, never a verdict.
+TIMEOUT_EXIT = 3
+#: The exit code of a pass that met a committed manifest it could not safely roll forward.
+RECOVERY_REFUSED_EXIT = 5
+#: What a pass keeps in hand after its stop for the commit (renames, plus the report write).
+COMMIT_MARGIN_S = 15.0
+
+
+def stop_after_s(budget_s: float) -> tuple[float, float | None]:
+    """(the second the pass stops itself at, the cycle's kill cap or None).
+
+    THE PRODUCER NOW ENFORCES ITS BUDGET -- AND NEVER BELOW THE CAP THE CYCLE GRANTS. The hourly
+    cycle tells the child its real kill cap in QUANT_LEG_BUDGET_S. That cap is at least
+    `--budget-s` plus the write margin, because `_self_stop_floor_s` makes it so. Stopping at
+    `--budget-s` itself would turn a pass that finishes inside the cap into a failure, opening a
+    stale window the cycle never imposed. So the stop is the later of the declared budget and
+    the cap minus the commit margin. Everything past that point is a kill the cycle would have
+    made anyway, and the pass now meets it uncommitted and with a named TIMEOUT, never
+    mid-write. Run by hand, with no cap given, the declared budget is the stop.
+    """
+    cap: float | None = None
+    with contextlib.suppress(KeyError, TypeError, ValueError):
+        cap = float(os.environ["QUANT_LEG_BUDGET_S"])
+    if cap is None or cap <= 0:
+        return float(budget_s), None
+    return max(float(budget_s), cap - COMMIT_MARGIN_S), cap
+
+
+def write_timeout(exc: JudgeCoverageTimeout, *, budget_s: float, stop_s: float,
+                  cap_s: float | None, started: datetime,
+                  path: Path | None = None) -> Path:
+    """The TIMEOUT artifact: what stopped, where, and that nothing was committed. Atomic."""
+    target = path or TIMEOUT_REPORT
+    doc = {"at": started.isoformat(timespec="seconds"),
+           "verdict": "TIMEOUT", "phase": exc.phase, "elapsed_s": round(exc.elapsed_s, 2),
+           "budget_s": budget_s, "stop_s": round(stop_s, 2), "leg_cap_s": cap_s,
+           "committed": False,
+           "report_untouched": str(REPORT),
+           "why": ("the pass reached its stop before its commit point; every staged write "
+                   "(priors, bank, readmission log, handoff, report, ratchet) was discarded, so "
+                   f"{REPORT.name} still carries the `at` of the pass it describes and the "
+                   "fence's STALE_H lease ages it out -- it is never restamped as fresh")}
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = target.with_name(target.name + ".tmp")
+    tmp.write_text(json.dumps(doc, indent=1), "utf-8")
+    _replace_retry(tmp, target)
+    return target
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="judge coverage by unjudged backlog, per family")
     ap.add_argument("--once", action="store_true", help="one pass (the hourly leg's mode)")
-    ap.add_argument("--budget-s", type=float, default=120.0)
+    ap.add_argument("--budget-s", type=float, default=120.0,
+                    help="the pass stops itself, UNCOMMITTED, with reports/"
+                         "JUDGE_COVERAGE_TIMEOUT.json and exit 3, at the later of this and the "
+                         "cycle's kill cap (QUANT_LEG_BUDGET_S) minus the commit margin")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--no-write", action="store_true", help="measure without advancing the ratchet")
     args = ap.parse_args(argv)
     t0 = time.time()
-    doc = build()
-    doc["elapsed_s"] = round(time.time() - t0, 2)
-    doc["budget_s"] = args.budget_s
-    if not args.no_write:
-        write(doc)
+    stop_s, cap_s = stop_after_s(args.budget_s)
+    m0 = time.monotonic()
+    deadline = (m0, m0 + stop_s)
+    try:
+        # Always deferred: --no-write then DISCARDS the pass's staging, so it saves nothing of
+        # its own (audit of v2.1: it used to commit priors, bank and handoff without the
+        # cursor). Recovery of an earlier pass's committed manifest still runs first, as it
+        # must before anything reads.
+        doc = build(defer=True, deadline=deadline)
+        doc["elapsed_s"] = round(time.time() - t0, 2)
+        doc["budget_s"] = args.budget_s
+        if not args.no_write:
+            write(doc, deadline=deadline)
+        else:
+            _staged = doc.pop("_txn", None)
+            if isinstance(_staged, _Txn):
+                _staged.discard()
+    except TxnRecoveryRefused as exc:
+        print(f"judge coverage: RECOVERY REFUSED -- {exc}; nothing read or written. Resolve "
+              f"the kept manifest by hand", file=sys.stderr, flush=True)
+        return RECOVERY_REFUSED_EXIT
+    except JudgeCoverageTimeout as exc:
+        out = write_timeout(exc, budget_s=args.budget_s, stop_s=stop_s, cap_s=cap_s,
+                            started=datetime.fromtimestamp(t0, tz=UTC))
+        print(f"judge coverage: TIMEOUT -- {exc}; nothing committed, {REPORT.name} left as it "
+              f"was (its own `at` ages it out); see {out.name}", flush=True)
+        return TIMEOUT_EXIT
     if args.json:
         print(json.dumps(doc, indent=1, default=str))
     else:

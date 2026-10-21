@@ -926,6 +926,24 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
     "maintain_miners": (2,),
 }
 
+#: The other side of the same rule: exit codes a leg uses to NAME a failure. They stay failures
+#: (`exit_code=N`, never a verdict) and the ledger row carries the name after it, so a reader
+#: sees what failed without opening the leg. A code here must never also be in VERDICT_EXITS.
+#:   judge_coverage 3 -- the pass met its budget and committed nothing (JUDGE_COVERAGE_TIMEOUT.json)
+#:   judge_coverage 5 -- a committed transaction manifest could not be rolled forward safely; it
+#:                       is kept and every pass refuses until it is resolved by hand
+NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
+    "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 5: "RECOVERY_REFUSED"},
+}
+
+
+def _exit_outcome(name: str, code: int) -> str:
+    """The ledger outcome for leg `name` exiting non-zero with `code`."""
+    if code in VERDICT_EXITS.get(name, ()):
+        return f"verdict_exit={code}"
+    label = NAMED_FAILURE_EXITS.get(name, {}).get(code)
+    return f"exit_code={code}:{label}" if label else f"exit_code={code}"
+
 
 #: THE HOURLY CYCLE COULD NOT FINISH IN AN HOUR, AND ITS TAIL NEVER RAN (measured 2026-09-16).
 #: One full pass sums the legs' budgets: backtest 36 min, deepen 20, daily 15, and six legs at
@@ -1656,8 +1674,9 @@ def _costed(name: str, fn):
             # there, a verdict still ends a leg non-zero, and a code NOT on the declared list is
             # still a failure. What changes is that a reader can tell them apart.
             _code = out["exit_code"]
-            outcome = (f"verdict_exit={_code}" if _code in VERDICT_EXITS.get(name, ())
-                       else f"exit_code={_code}")
+            outcome = _exit_outcome(name, _code)
+            if ":" in outcome:
+                print(f"  LEG FAILED {name}: {outcome}", flush=True)
     _close(outcome, outputs=_leg_artifacts(name))
     _emit_leg(name, outcome)
     _advance_watermark(name, outcome)
@@ -1971,8 +1990,13 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Regional parity reads every pack and two reports and writes three small files; measured
     # at ~10 s on a build box. The cap sits above its own --budget-s for the usual reason.
     "regional_parity": 400,
-    # Judge coverage stops itself at --budget-s 120; it reads two files and sorts. The cap sits
-    # above its own budget for the reason every other leg's does.
+    # Judge coverage DECLARES --budget-s 120. It reads the docket, the whole gate ledger, the
+    # gauntlet report and the unrunnable bank, and ranks every docket row -- measured ~70 s on a
+    # build-box replica of the box's inputs, 131 s before c5390bc6a, and killed at this cap on
+    # the box at 2026-10-20 19:44Z. Since v2 it stops itself, UNCOMMITTED, with a named
+    # JUDGE_COVERAGE_TIMEOUT.json and exit 3, at the later of 120 s and this cap (as exported
+    # in QUANT_LEG_BUDGET_S) minus its commit margin -- so it never stops earlier than the kill
+    # it replaces, and a stopped pass changes no file. The cap is unchanged.
     "judge_coverage": 300,
     # Orthogonality yield is one indexed scan of the candidate registry, one pass over the gate
     # ledger and 79 leave-one-out SVDs of a 79 x ~1000 indicator matrix. Measured 2026-09-23 on
