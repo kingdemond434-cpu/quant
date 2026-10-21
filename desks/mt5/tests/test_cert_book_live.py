@@ -61,6 +61,10 @@ def test_e8_gold_maps_book_keys_to_window_names() -> None:
     from prop import e8_gold
     assert e8_gold.cert_gold_windows(E8) == {"asia": 0.010}
     assert e8_gold.window_risk("asia", {"asia": 0.010}) == (0.010, "kelly_survival")
+    # A window the certified book names is labelled by the book, over the solve's number.
+    assert e8_gold.window_risk("asia", {"asia": 0.0075}, {"asia": 0.010}) == (0.010, "cert_book")
+    assert e8_gold.window_risk("london_am", {"london_am": 0.0}, {"asia": 0.010}) == (
+        0.0, "kelly_survival")
     assert e8_gold.window_risk("london_am", {"asia": 0.010})[0] == e8_gold.RISK_FRAC
 
 

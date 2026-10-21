@@ -129,12 +129,17 @@ def cert_gold_windows(cert: dict[str, float] | None) -> dict[str, float]:
     return {k.removeprefix("gold_"): v for k, v in (cert or {}).items() if k.startswith("gold_")}
 
 
-def window_risk(name: str, kelly: dict[str, float] | None) -> tuple[float, str]:
+def window_risk(name: str, kelly: dict[str, float] | None,
+                cert: dict[str, float] | None = None) -> tuple[float, str]:
     """(risk fraction of equity for window `name`, where it came from). Pure.
 
-    The solve's number when it holds one for this window -- 0 means the window stands aside
-    because every size it could send lowers the pass rate or breaks survival -- else RISK_FRAC.
+    The principal's certified book when it names this window, else the solve's number when it
+    holds one -- 0 means the window stands aside because every size it could send lowers the
+    pass rate or breaks survival -- else RISK_FRAC. The label names the source that set the
+    number, so a journalled leg sized by the certified book never reads as the solve's.
     """
+    if cert and name in cert:
+        return float(cert[name]), "cert_book"
     if kelly is not None and name in kelly:
         return float(kelly[name]), "kelly_survival"
     return RISK_FRAC, "policy RISK_FRAC"
@@ -601,11 +606,10 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     # THE PRINCIPAL'S CERTIFIED BOOK OVERRIDES THE SOLVE PER WINDOW (data/CERT_BOOK_LIVE.json,
     # 2026-10-07). Its gold keys are the gateway's (`gold_asia`); this lane names windows bare.
     cert = cert_gold_windows(load_cert_book(CERT_BOOK_FILE, "e8"))
-    if cert:
-        kelly = {**(kelly or {}), **cert}
     doc.update({"equity": equity, "risk_usd": round(risk_usd, 2),
                 "cert_book_windows": cert or None,
-                "sizing_source": "kelly_survival" if kelly is not None else "policy RISK_FRAC",
+                "sizing_source": ("cert_book" if cert else
+                                  "kelly_survival" if kelly is not None else "policy RISK_FRAC"),
                 "kelly_risk": kelly})
     guard = _read_json(GUARD, {})
     stood_down = bool(guard.get("stood_down"))
@@ -663,11 +667,10 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         due_now = []
     for due in due_now:
         name, spec = due["window"], due["spec"]
-        frac, frac_src = window_risk(name, kelly)
+        frac, frac_src = window_risk(name, kelly, cert)
         if not frac > 0:
             doc["skipped"].append({"window": name, "why": (
-                "stands aside: the survival-constrained growth solve "
-                "(reports/KELLY_SURVIVAL.json) funds this window at 0 risk")})
+                f"stands aside: {frac_src} funds this window at 0 risk")})
             continue
         risk_usd = equity * frac
         legs: dict[str, dict] = {}
