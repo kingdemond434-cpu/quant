@@ -3,7 +3,7 @@
   "company": "Fusion Markets Pty Ltd",
   "currency": "EUR",
   "leverage": 500,
-  "login": 495044,
+  "login_withheld": true,
   "margin_mode": 2,
   "server": "FusionMarkets-Live"
  },
