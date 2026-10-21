@@ -46,8 +46,10 @@ from typing import Any
 
 _ROOT = Path(__file__).resolve().parents[2]
 
-#: Published by `desks/mt5/research/futures_lead_lag.py`, which measures the offset against a feed
-#: whose stamps are epoch seconds and therefore UTC by definition.
+#: Published hourly by `desks/mt5/research/bar_clock_probe.py` (leg `bar_clock_probe`): dated
+#: `spans` read off the terminal (broker server time against the box's UTC clock), and a
+#: season-wide `per_season` offset only from `research/futures_lead_lag.py`'s multi-year
+#: cross-venue reading (a feed stamped in epoch seconds) that no span contradicts.
 CLOCK_REL = "desks/mt5/reports/BAR_CLOCK.json"
 
 #: The season windows the offsets were measured on, as (month, day) bounds. Mirrors
@@ -81,6 +83,42 @@ def _file_offsets(root: Path) -> dict[str, int]:
         off = block.get("offset_h")
         if isinstance(off, int) and block.get("agrees_across_pairs"):
             out[str(name)] = off
+    return out
+
+
+def _parse(raw: Any) -> datetime | None:
+    try:
+        when = datetime.fromisoformat(str(raw))
+    except (TypeError, ValueError):
+        return None
+    return when if when.tzinfo is not None else when.replace(tzinfo=UTC)
+
+
+def spans(root: Path | None = None) -> list[tuple[datetime, datetime, int, int]]:
+    """(first, last, offset_h, n) for every MEASURED span `research/bar_clock_probe.py` read off
+    the terminal (broker server time against the box's UTC clock). A span answers ONLY for the
+    instants between its own first and last capture, shoulder months included: there the offset
+    was read, not inferred. A CONFLICT span (a second opinion disagreed) answers nothing."""
+    out = []
+    for block in _read(Path(root or _ROOT)).get("spans") or []:
+        if not isinstance(block, dict) or block.get("status") != "MEASURED":
+            continue
+        lo, hi, off = _parse(block.get("first")), _parse(block.get("last")), block.get("offset_h")
+        if lo is None or hi is None or not isinstance(off, int) or hi < lo:
+            continue
+        out.append((lo, hi, off, int(block.get("n") or 0)))
+    return out
+
+
+def _changeovers(root: Path) -> list[tuple[datetime, datetime, int, int]]:
+    """(after, before, from_h, to_h): measured changeovers. Inside one no offset is knowable."""
+    out = []
+    for block in _read(root).get("transitions") or []:
+        if not isinstance(block, dict):
+            continue
+        lo, hi = _parse(block.get("after")), _parse(block.get("before"))
+        if lo is not None and hi is not None:
+            out.append((lo, hi, int(block.get("from_h") or 0), int(block.get("to_h") or 0)))
     return out
 
 
@@ -188,11 +226,26 @@ def to_bar_time(when: datetime, root: Path | None = None, *, fallback: bool = Fa
     caller that does not opt in sees exactly the old behaviour.
     """
     base = Path(root or _ROOT)
+    at = _aware(when)
+    measured = spans(base)
+    for s_lo, s_hi, off, n in measured:
+        if s_lo <= at <= s_hi:
+            return when + timedelta(hours=off), OK, (
+                f"BAR_CLOCK.json span {s_lo.date()}..{s_hi.date()} ({n} terminal captures of "
+                f"broker server time against UTC): shifted {off:+d}h into the bars' own frame")
+    for c_lo, c_hi, a, b in _changeovers(base):
+        if c_lo < at < c_hi:
+            return None, UNMEASURED, (
+                f"{when.date()} lies inside the measured changeover {c_lo}..{c_hi} ({a:+d}h to "
+                f"{b:+d}h); which side of it this instant fell on is not knowable")
     table = offsets(root)
     rel_off, rel_win = _release(base) if fallback else ({}, {})
     if not table and not rel_off:
         return None, UNMEASURED, (
-            "no measured bar clock on disk: run desks/mt5/research/futures_lead_lag.py"
+            ("no measured bar clock covers this instant" if measured else
+             "no measured bar clock on disk")
+            + ": run desks/mt5/research/bar_clock_probe.py on the box that holds the terminal "
+            "(it folds in research/futures_lead_lag.py's cross-venue reading)"
             + (" (and the release-spike reading of libs/research/bar_clock_release.py resolved "
                "no season)" if fallback else "")
             + ". The bars are broker-stamped and no offset is knowable, so the join cannot be "
