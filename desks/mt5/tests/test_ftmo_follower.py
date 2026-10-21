@@ -80,6 +80,7 @@ class _MT5:
         if req["action"] == self.TRADE_ACTION_PENDING:
             self.orders.append(SimpleNamespace(ticket=ticket, symbol="XAUUSD", type=req["type"],
                                                magic=req["magic"], price_open=req["price"],
+                                               sl=req["sl"], volume_current=req["volume"],
                                                time_setup=self.tick))
         if req["action"] == self.TRADE_ACTION_REMOVE:
             self.hist_orders += [o for o in self.orders if o.ticket == req["order"]]
@@ -303,6 +304,76 @@ def test_the_resting_ftmo_order_is_cancelled_when_e8_no_longer_shows_a_live_fill
     removes = [r for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_REMOVE]
     assert [r["order"] for r in removes] == [resting.ticket] and mt5.orders == []
     assert len(_entries(mt5)) == 1                               # and never a second order
+
+
+def _cancel_bills() -> list[dict]:
+    return [r for r in _rows() if r.get("status") == "RAIL_BLOCKED"
+            and str(r.get("reason") or "").startswith("cancel_")]
+
+
+def test_a_stale_e8_cancel_is_billed_with_the_orders_risk_once_per_window_per_day(
+        world, monkeypatch) -> None:
+    """v2s MF-B: the resting entry cancelled on `e8_stale` is risk held back. The "one order"
+    step writes nothing while an own order exists, so the cancel itself is the bill: one
+    RAIL_BLOCKED row at the cancelled order's own risk (volume x |price - sl| x contract)."""
+    mt5 = _MT5()
+    _pass(mt5)
+    (resting,) = mt5.orders
+    risk = round(resting.volume_current * abs(resting.price_open - resting.sl) * 100.0, 2)
+    assert risk > 0
+    later = NOW + timedelta(minutes=10)                     # E8's report is 600 s old > 540 s
+    doc = _pass(mt5, now=later)
+    assert doc["follow"]["action"] == "e8_stale"
+    assert [r["order"] for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_REMOVE] == [
+        resting.ticket]
+    (row,) = _cancel_bills()
+    assert row["rail"] == ff.RAIL and row["reason"] == "cancel_e8_stale"
+    assert row["order_id"] == resting.ticket and row["missed_growth_risk_usd"] == risk
+    # Once per window per day: further stale passes add no second bill (and no order).
+    _pass(mt5, now=later + timedelta(minutes=1))
+    assert len(_cancel_bills()) == 1 and len(_entries(mt5)) == 1
+    # ... and missed_growth reads it on the follower's own line.
+    from research import missed_growth as mg
+    monkeypatch.setattr(mg, "FTMO_INTENTS", Path(ff.INTENTS))
+    line = mg.published_ftmo_follower_lines()["rails"][ff.RAIL]
+    assert line["by_reason"].get("cancel_e8_stale") == 1
+    assert line["undeployed_risk_usd"] >= risk
+
+
+@pytest.mark.parametrize("change", ["e8_position_gone", "e8_unreadable"])
+def test_every_e8_driven_cancel_is_billed(world, change: str) -> None:
+    mt5 = _MT5()
+    _pass(mt5)
+    (resting,) = mt5.orders
+    if change == "e8_position_gone":
+        oco.publish_lane("e8", world.e8_key, positions=[], orders=[], date=DAY)
+    else:
+        world.report.unlink()
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    (row,) = _cancel_bills()
+    assert row["order_id"] == resting.ticket and row["missed_growth_risk_usd"] > 0
+
+
+def test_a_session_end_cancel_is_not_a_refusal_and_is_not_billed(world) -> None:
+    mt5 = _MT5()
+    _pass(mt5)
+    mt5.tick = int((NOW + timedelta(hours=3 + 5)).timestamp())   # 13:30 server: session over
+    _pass(mt5, now=NOW + timedelta(hours=5))
+    assert mt5.orders == [] and _cancel_bills() == []
+
+
+def test_the_cancel_touches_only_this_lanes_magic(world) -> None:
+    """A foreign (manual or other-EA) gold order on the FTMO account is never removed, even when
+    E8 goes stale -- the follower's cancel is MAGIC 341955 only."""
+    assert ff.MAGIC == 341955
+    mt5 = _MT5()
+    _pass(mt5)
+    mt5.orders.append(SimpleNamespace(ticket=4242, symbol="XAUUSD", type=mt5.ORDER_TYPE_BUY_STOP,
+                                      magic=777, price_open=4345.0, sl=4325.0,
+                                      volume_current=0.5, time_setup=mt5.tick))
+    _pass(mt5, now=NOW + timedelta(minutes=10))
+    removed = [r["order"] for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_REMOVE]
+    assert 4242 not in removed and any(o.ticket == 4242 for o in mt5.orders)
 
 
 def test_the_resting_order_dies_with_the_asia_session(world) -> None:
