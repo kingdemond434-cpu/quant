@@ -156,6 +156,7 @@ def test_needs_data_returns_when_the_input_appears_not_when_bars_grow(monkeypatc
 
 
 def test_intake_order_tails_needs_data_and_keeps_every_row(monkeypatch) -> None:
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 1_000)
     monkeypatch.setattr(jc, "_fire_probe", lambda s, f: (
         {"status": "NEEDS_DATA", "missing_input": "bar_clock"} if f == "event_reaction"
         else {"status": "UNMEASURED", "why": "family not probed"}))
@@ -180,3 +181,81 @@ def test_never_fire_ground_still_counts_renamed_cells() -> None:
 def test_probed_families_resolve_to_the_function_the_judge_calls(fam) -> None:
     fn = F._resolved(fam)
     assert fn is (family_cot_positioning if fam == "cot_positioning" else family_event_reaction)
+
+
+# ------------------------------------------------------------- audit of c72ecfc53 (should-fixes)
+
+def test_a_missing_season_offset_is_named_bar_clock_not_calendar_history(monkeypatch) -> None:
+    """Summer measured, winter not: a winter-only calendar lacks the CLOCK, not history."""
+    _events(monkeypatch, ["2026-01-08 12:30", "2026-01-15 12:30"])
+    monkeypatch.setattr(bar_clock, "offsets", lambda root=None: {"summer": 3})
+    got = F.probe("EURUSD", "event_reaction")
+    assert got["status"] == F.NEEDS_DATA and got["missing_input"] == "bar_clock"
+    assert got["dropped"] == {bar_clock.UNMEASURED: 2}
+
+
+def test_the_probe_leaves_the_familys_drop_counter_as_it_found_it(monkeypatch) -> None:
+    from mt5desk import family_event_reaction as fer
+    _events(monkeypatch, ["2026-10-02 12:30"])
+    monkeypatch.setattr(bar_clock, "offsets", lambda root=None: {"summer": 3, "winter": 2})
+    monkeypatch.setattr(fer, "_DROPPED", {"X": 7})
+    F.probe("EURUSD", "event_reaction")
+    assert fer._DROPPED == {"X": 7}
+
+
+def test_intake_order_does_not_tail_a_needs_data_row_with_no_bars(monkeypatch) -> None:
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: (
+        {"status": "NEEDS_DATA", "missing_input": "bar_clock"} if f == "event_reaction"
+        else {"status": "UNMEASURED", "why": "family not probed"}))
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 0 if sym == "NOBARS" else 1_000)
+    rows = [{"sym": "NOBARS", "family": "event_reaction", "n": 0},
+            {"sym": "EURUSD", "family": "event_reaction", "n": 1},
+            {"sym": "EURUSD", "family": "carry", "n": 2}]
+    out, doc = jc.fireability_order(list(rows))
+    assert [r["n"] for r in out] == [0, 2, 1]
+    assert doc["rows_needs_data_to_tail"] == 1 and doc["rows_needs_data_kept_no_bars"] == 1
+
+
+def test_the_readmit_clock_is_exactly_ninety_days(monkeypatch) -> None:
+    assert jc.READMIT_MAX_DAYS == 90.0
+    now = datetime(2026, 10, 20, tzinfo=UTC)
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "NEEDS_DATA"})
+    base = {"reason": "needs_data", "sym": "EURCZK", "family": "cot_positioning", "tf": "H1",
+            "days": 0, "bar_bytes": 100}
+    for age, due in ((89.9, False), (90.0, True), (90.1, True)):
+        row = {**base, "parked_at": (now - timedelta(days=age)).isoformat()}
+        assert jc.readmit_due(row, now=now) is due, age
+    never = {**base, "reason": "never_fires"}
+    for age, due in ((89.9, False), (90.0, True)):
+        row = {**never, "parked_at": (now - timedelta(days=age)).isoformat()}
+        assert jc.readmit_due(row, now=now) is due, age
+
+
+def test_a_clock_readmitted_cell_still_missing_its_input_keeps_its_handoff_row(
+        tmp_path, monkeypatch) -> None:
+    now = datetime(2026, 10, 20, tzinfo=UTC)
+    bank_path = tmp_path / "unrunnable_specs.json"
+    row = {"reason": "needs_data", "sym": "EURCZK", "family": "cot_positioning", "tf": "H1",
+           "days": 0, "bar_bytes": 100, "missing_input": "cot_series:EURCZK",
+           "parked_at": (now - timedelta(days=91)).isoformat()}
+    bank_path.write_text(json.dumps({"EURCZK.cot_positioning.p=1": row}), "utf-8")
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    status = {"v": "NEEDS_DATA"}
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": status["v"]})
+    got = jc.update_unrunnable_bank({}, at=now.isoformat(), path=bank_path)
+    assert got["bank_size"] == 0 and got["needs_data_outstanding"] == 1
+    out = jc.needs_data_outstanding(tmp_path / jc.NEEDS_DATA_OUTSTANDING.name)
+    handoff = tmp_path / "conversion_handoff.json"
+    assert jc.write_conversion_handoff({}, at="t", path=handoff, outstanding=out) == 1
+    hrow = json.loads(handoff.read_text("utf-8"))["rows"][0]
+    assert hrow["still_missing_after_readmit"] is True
+    assert hrow["missing_input"]["input"] == "cot_series:EURCZK"
+    status["v"] = "PRESENT"                                    # the input appeared
+    got = jc.update_unrunnable_bank({}, at=now.isoformat(), path=bank_path)
+    assert got["needs_data_outstanding"] == 0
+
+
+def test_needs_data_axes_name_only_organs_that_read_them() -> None:
+    axes = jc.FAILURE_ROUTES["needs_data"]["axes"]
+    assert "acquire_named_input" not in axes and "proxy_series" not in axes

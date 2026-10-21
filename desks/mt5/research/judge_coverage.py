@@ -1058,6 +1058,26 @@ def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
 READMISSION_LOG = HYP / "not_testable_readmissions.jsonl"
 
 
+#: NEEDS_DATA CELLS RE-ADMITTED BY THE CLOCK WHILE THEIR INPUT IS STILL MISSING (audit of
+#: c72ecfc53). After READMIT_MAX_DAYS such a cell leaves the bank, and the handoff is written from
+#: the bank, so its per-cell demand vanished (measured 1 -> 0) while the input it lacks was still
+#: absent. This sidecar keeps the row -- beside the bank, rewritten every pass -- until the probe
+#: stops answering NEEDS_DATA or the cell is parked again, and the handoff reads it.
+NEEDS_DATA_OUTSTANDING = HYP / "needs_data_outstanding.json"
+
+
+def needs_data_outstanding(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    doc = _read(path or NEEDS_DATA_OUTSTANDING)
+    if not isinstance(doc, dict):
+        return {}
+    return {str(k): v for k, v in doc.items() if isinstance(v, dict)}
+
+
+def _still_needs_data(row: dict[str, Any]) -> bool:
+    return _fire_probe(str(row.get("sym") or ""), str(row.get("family") or "")).get(
+        "status") == "NEEDS_DATA"
+
+
 def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                            path: Path | None = None,
                            log: Path | None = None) -> dict[str, Any]:
@@ -1085,10 +1105,14 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         readmitted_nt[fam] = readmitted_nt.get(fam, 0) + 1
         readmitted_nt_reason[rsn] = readmitted_nt_reason.get(rsn, 0) + 1
 
+    out_path = target.parent / NEEDS_DATA_OUTSTANDING.name
+    outstanding = needs_data_outstanding(out_path)
     for cell in readmitted:
         old = bank.pop(cell, None)
         if isinstance(old, dict) and old.get("reason") in NOT_TESTABLE_REASONS:
             _count_readmit(old)
+        if isinstance(old, dict) and old.get("reason") == "needs_data" and _still_needs_data(old):
+            outstanding[cell] = {**old, "readmitted_at": at}
     added = 0
     for cell, row in named.items():
         if row.get("reason") == "missing_bars":
@@ -1110,6 +1134,13 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         target.write_text(json.dumps(bank, indent=1, default=str), "utf-8")
     except OSError:
         pass
+    # Parked again (the bank holds it) or the input appeared: the sidecar row has done its job.
+    outstanding = {c: r for c, r in outstanding.items()
+                   if c not in bank and _still_needs_data(r)}
+    try:
+        out_path.write_text(json.dumps(outstanding, indent=1, default=str), "utf-8")
+    except OSError:
+        pass
     n_re = sum(readmitted_nt.values())
     # ONE LINE EVERY PASS, ZEROS INCLUDED (audit of PR #290, M1): the burn-down reads a missing
     # or stale log as UNMEASURED, so a quiet pass must still say "0" by writing it.
@@ -1127,7 +1158,8 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
             "readmitted_not_testable": n_re,
             "readmitted_not_testable_by_family": readmitted_nt,
             "readmitted_not_testable_by_reason": readmitted_nt_reason,
-            "bank_size": len(bank), "path": str(target)}
+            "bank_size": len(bank), "needs_data_outstanding": len(outstanding),
+            "path": str(target)}
 
 
 def family_value(path: Path | None = None) -> tuple[dict[str, float], float]:
@@ -1708,8 +1740,9 @@ FAILURE_ROUTES: dict[str, dict[str, Any]] = {
     "untestable_as_specified": {"owner": "converter",
                                 "axes": ["event_study", "coarser_timeframe", "regime_child",
                                          "cross_asset_transplant"]},
-    "needs_data": {"owner": "converter",
-                   "axes": ["acquire_named_input", "proxy_series", "cross_asset_transplant"]},
+    # `acquire_named_input` and `proxy_series` were listed here with no organ reading them (audit
+    # of c72ecfc53); the named input itself rides in `missing_input`, which is what is read.
+    "needs_data": {"owner": "converter", "axes": ["cross_asset_transplant"]},
     "budget_deferred": {"owner": "judge", "axes": ["next_sweep_by_unlock_value"]},
     "save_fail": {"owner": "judge", "axes": ["rebuild_next_sweep"]},
     "unnamed": {"owner": "judge", "axes": ["name_the_reason"]},
@@ -1803,7 +1836,8 @@ def _missing_input(cls: str, row: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
-                             path: Path | None = None) -> int:
+                             path: Path | None = None,
+                             outstanding: dict[str, dict[str, Any]] | None = None) -> int:
     """Hand every parked cell the converter owns to the converter, with its class and axes.
 
     Written every pass, EMPTY included, so absence never reads as zero. `trial_family` is the
@@ -1812,7 +1846,11 @@ def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
     (`conversion_attempts.jsonl`); this writer never touches it.
     """
     rows = []
-    for cell, row in sorted(bank.items()):
+    # A NEEDS_DATA cell re-admitted by the clock while its input is still missing keeps its row
+    # (`NEEDS_DATA_OUTSTANDING`); the bank's own row wins when the cell is parked again.
+    merged = {**{c: {**r, "still_missing_after_readmit": True}
+                 for c, r in (outstanding or {}).items()}, **bank}
+    for cell, row in sorted(merged.items()):
         cls = failure_class(row.get("reason")) or "unnamed"
         route = FAILURE_ROUTES.get(cls, {})
         if route.get("owner") != "converter":
@@ -1822,7 +1860,10 @@ def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
                      "symbol": row.get("sym"), "timeframe": row.get("tf") or "H1",
                      "reason": row.get("reason"), "class": cls, "axes": route.get("axes"),
                      "missing_input": _missing_input(cls, row), "why": row.get("why"),
-                     "first_parked_utc": row.get("parked_at")})
+                     "first_parked_utc": row.get("parked_at"),
+                     **({"readmitted_at": row.get("readmitted_at"),
+                         "still_missing_after_readmit": True}
+                        if row.get("still_missing_after_readmit") else {})})
     target = path or CONVERSION_HANDOFF
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -1905,7 +1946,7 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     _bank_now = unrunnable_bank()
     failures = judging_failures(bank=_bank_now)
     failures["handed_to_converter"] = write_conversion_handoff(
-        _bank_now, at=at.isoformat(timespec="seconds"))
+        _bank_now, at=at.isoformat(timespec="seconds"), outstanding=needs_data_outstanding())
     bars_wanted: dict[str, int] = {}
     for _r in not_run.values():
         if _r.get("reason") == "data_missing":
@@ -2288,12 +2329,19 @@ def fireability_order(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
     by_family: dict[str, int] = {}
     by_input: dict[str, int] = {}
     probed = 0
+    no_bars = 0
     for r in rows:
         fam, sym = str(r.get("family") or ""), _row_sym(r)
         res = _fire_probe(sym, fam)
         if res.get("status") != "UNMEASURED" or res.get("why") != "family not probed":
             probed += 1
-        if res.get("status") == "NEEDS_DATA":
+        if res.get("status") == "NEEDS_DATA" and _bar_bytes(sym, _tf_of(r)) <= 0:
+            # NO BARS EITHER (audit of c72ecfc53): 75 of 123 tagged cells had no bar file, so the
+            # judge's build fails BY NAME and that failure is what asks for the bars. Tailing
+            # such a row would defer the bar demand behind an input it does not yet bind on.
+            live.append(r)
+            no_bars += 1
+        elif res.get("status") == "NEEDS_DATA":
             tail.append(r)
             by_family[fam] = by_family.get(fam, 0) + 1
             mi = str(res.get("missing_input") or "")
@@ -2302,6 +2350,7 @@ def fireability_order(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
             live.append(r)
     return live + tail, {
         "rows": len(rows), "rows_probed": probed, "rows_needs_data_to_tail": len(tail),
+        "rows_needs_data_kept_no_bars": no_bars,
         "by_family": dict(sorted(by_family.items(), key=lambda kv: -kv[1])),
         "by_missing_input": dict(sorted(by_input.items(), key=lambda kv: -kv[1])[:40]),
         "rule": ("a row whose family's own input guard returns no signal on the inputs the "

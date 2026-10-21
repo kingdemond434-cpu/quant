@@ -1,6 +1,6 @@
 """Can this cell's family fire on the inputs the judge would hand it? Asked of the family itself.
 
-    python desks/mt5/research/fire_inputs.py EURCZK cot_positioning     # one probe, printed
+    from research.fire_inputs import probe; probe("EURCZK", "cot_positioning")   # a library
 
 WHY (coordinator queue row 176 follow-up, 2026-10-20). The last sweep wrote 9,854 never_fires
 verdicts. On the four largest families, measured on this tree with the judge's own build path
@@ -111,24 +111,35 @@ def _probe_event(sym: str) -> dict[str, Any]:
         return {"status": UNMEASURED, "why": "no calendar: the judge names this a build failure"}
     from mt5desk import family_event_reaction as fer
     _seen = dict(fer._DROPPED)            # the family's drop counter is not this probe's to move
+    fer._DROPPED.clear()
     try:
         times = _event_times(events_for_symbol(events, sym), sym, clock="utc")
+        dropped = dict(fer._DROPPED)      # THIS call's drops, by the family's own reason
     finally:
         fer._DROPPED.clear()
         fer._DROPPED.update(_seen)
     if times:
         return {"status": PRESENT, "input": "event_calendar", "placeable_events": len(times)}
-    if not bar_clock.offsets():
+    # THE LABEL IS THE FAMILY'S OWN DROP REASON (audit of c72ecfc53). Keying it off "is there any
+    # offset at all" called a missing SEASON offset `event_calendar_history`; the input that is
+    # missing there is the bar clock. Only events dropped as shoulder-month, with every event's
+    # season measured, are a calendar-history gap.
+    n_unmeasured = int(dropped.get(bar_clock.UNMEASURED, 0))
+    n_shoulder = int(dropped.get(bar_clock.SHOULDER, 0))
+    if n_unmeasured:
         missing, why = "bar_clock", (
-            "no measured bar clock (desks/mt5/reports/BAR_CLOCK.json, written by "
-            "research/futures_lead_lag.py): to_bar_time drops every event, so "
-            "family_event_reaction returns [] on any bars")
+            f"{n_unmeasured} of {len(events)} calendar events fall in a season with no measured "
+            "bar-clock offset (desks/mt5/reports/BAR_CLOCK.json, written by "
+            "research/futures_lead_lag.py, does not answer it): to_bar_time drops them, and "
+            f"{n_shoulder} more fall in a shoulder month, so family_event_reaction returns [] on "
+            "any bars")
     else:
         missing, why = "event_calendar_history", (
-            f"none of the {len(events)} calendar events converts onto the bar clock (every one "
-            "falls in a shoulder month or an unmeasured season), so family_event_reaction "
-            "returns [] on any bars")
+            f"all {n_shoulder} of the {len(events)} calendar events fall in a shoulder month, "
+            "where to_bar_time refuses a conversion; the calendar holds no event inside a "
+            "measured season, so family_event_reaction returns [] on any bars")
     return {"status": NEEDS_DATA, "missing_input": missing, "why": why,
+            "dropped": dropped,
             "stamp": f"{len(events)}|{sorted(bar_clock.offsets().items())}"}
 
 
@@ -153,8 +164,3 @@ def probe(sym: str, family: str, params: dict[str, Any] | None = None,
     if memo is not None:
         memo[key] = out
     return out
-
-
-if __name__ == "__main__":                                              # pragma: no cover
-    import json
-    print(json.dumps(probe(sys.argv[1], sys.argv[2]), indent=1, default=str))
