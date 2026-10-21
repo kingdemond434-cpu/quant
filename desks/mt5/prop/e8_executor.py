@@ -1362,6 +1362,7 @@ def cert_ceiling(risk_usd: float, key: str) -> tuple[float, dict[str, Any] | Non
     funds above `decision_core.E8_CERT_CEILING` x START_BALANCE is sent at the ceiling, and the
     cut is billed `e8_cert_ceiling` (growth governance: every cap carries its ledger line)."""
     from mt5desk.decision_core import E8_CERT_CEILING
+    from prop import e8_guard
     cap_usd = E8_CERT_CEILING * e8_guard.START_BALANCE
     if not risk_usd > cap_usd:
         return risk_usd, None
