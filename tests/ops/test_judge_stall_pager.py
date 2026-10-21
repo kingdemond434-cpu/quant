@@ -560,3 +560,19 @@ def test_the_prewarm_limit_is_derived_from_the_fresh_budget(jsp, tmp_path, monke
     assert jsp.fresh_budget_s(tmp_path / "absent.json", tmp_path / "no.json")[0] == 7_000.0
     monkeypatch.setenv("GAUNTLET_FRESH_BUDGET_SEC", "nonsense")
     assert jsp.fresh_budget_s(tmp_path / "absent.json", tmp_path / "no.json")[0] == 8_640.0
+
+
+def test_a_key_pushed_past_the_ends_is_still_read_by_streaming(jsp, tmp_path):
+    """external_gauntlet appends keys after swept_at; a big one must not read as UNMEASURED."""
+    end = NOW - timedelta(hours=2)
+    doc = {"last_sweep_ended_utc": _iso(end), "last_sweep_s": 20_000.0, "last_rc": 0}
+    big = tmp_path / "universal_gates_external.json"
+    body = {"trial_census": ["x" * 100] * 20_000, "n_judged": 12, "verdicts": [],
+            "swept_at": _iso(end - timedelta(minutes=30)),
+            "gate_ledger": ["y" * 100] * 5_000}
+    big.write_text(json.dumps(body, indent=2), "utf-8")
+    z = jsp._zero_judged(doc, big)
+    assert z["open"] is False and z["cells"] == 12 and z["read"].startswith("streamed")
+    small = tmp_path / "s.json"
+    small.write_text(json.dumps({"n_cells": 3, "swept_at": _iso(end)}, indent=2), "utf-8")
+    assert jsp._zero_judged(doc, small)["read"].startswith("first ")

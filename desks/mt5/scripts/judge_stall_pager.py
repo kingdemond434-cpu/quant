@@ -19,7 +19,10 @@ WHAT IT READS, and nothing else (it never touches the judge, its priority or its
   * `desks/mt5/reports/JUDGE_RESIDENT.json` -- status, heartbeat, resident pid and start, the
     last sweep's end, length and exit code, and the sweep child's pid, start and phase;
   * `desks/mt5/reports/universal_gates_external.json` -- the judge's own result for the sweep
-    it last completed (`swept_at`, `n_cells`), for the zero-judged-sweep incident only.
+    it last completed (top-level `swept_at`, `n_judged`, else `n_cells`), for the
+    zero-judged-sweep incident only. It is ~88 MB, so only its first 1 MB and last 256 KB are
+    read and matched line-wise, never parsed; a key the ends miss is streamed for, not guessed;
+  * `GAUNTLET_FRESH_BUDGET_SEC`, for the prewarm phase limit (`fresh_budget_s`).
 
 THE INCIDENTS, each its own persisted key. EVERY THRESHOLD IS MEASURED, from the git history of
 JUDGING_THROUGHPUT.json (242 snapshots, 2026-10-07..10-20) and JUDGE_RESIDENT.json (492
@@ -315,6 +318,32 @@ def _result_head_tail(path: Path) -> tuple[str, str] | None:
 #: Top-level keys of the judge's result (json.dumps indent=2 puts them two spaces in).
 _TOP_INT = r'(?m)^  "{key}": (\d+)'
 _TOP_STAMP = re.compile(r'(?m)^  "swept_at": "([^"]+)"')
+_COUNT_KEYS = ("n_judged", "n_cells")
+
+
+def _scan_top(path: Path) -> tuple[str, str] | None:
+    """The fallback when the ends miss a key: every top-level line, streamed, never parsed.
+
+    external_gauntlet writes `n_judged` after several census blocks and appends keys after
+    `swept_at`, so a block that grows can push either key out of the bytes read from the ends.
+    Missing them would read UNMEASURED and page falsely; this costs one streamed pass, and only
+    on a run where the cheap read missed.
+    """
+    head: list[str] = []
+    tail: list[str] = []
+    try:
+        with path.open("rb") as fh:
+            for raw in fh:
+                if not raw.startswith(b'  "') or raw.startswith(b'   '):
+                    continue
+                line = raw.decode("utf-8", "replace").rstrip("\r\n")
+                if line.startswith('  "swept_at": '):
+                    tail.append(line)
+                elif any(line.startswith(f'  "{k}": ') for k in _COUNT_KEYS):
+                    head.append(line)
+    except OSError:
+        return None
+    return "\n".join(head), "\n".join(tail)
 
 
 def _zero_judged(doc: dict[str, Any], sweep_result: Path) -> dict[str, Any]:
@@ -326,6 +355,10 @@ def _zero_judged(doc: dict[str, Any], sweep_result: Path) -> dict[str, Any]:
     if doc.get("last_rc") not in (0, "0"):
         return {"open": False, "why": f"last sweep rc {doc.get('last_rc')}: not a completed sweep"}
     ht = _result_head_tail(sweep_result)
+    read = f"first {RESULT_HEAD_BYTES} and last {RESULT_TAIL_BYTES} bytes"
+    if ht is not None and not (_TOP_STAMP.search(ht[1]) and any(
+            re.search(_TOP_INT.format(key=k), ht[0]) for k in _COUNT_KEYS)):
+        ht, read = _scan_top(sweep_result), "streamed top-level lines (the ends missed a key)"
     stamps = [_stamp(m.group(1)) for m in _TOP_STAMP.finditer(ht[1])] if ht else []
     swept = next((t for t in reversed(stamps) if t is not None), None)
     try:
@@ -341,15 +374,15 @@ def _zero_judged(doc: dict[str, Any], sweep_result: Path) -> dict[str, Any]:
                                       f"{end.isoformat(timespec='seconds')}) -- an rc-0 sweep "
                                       f"that wrote no result reads this way")}
     cells = None
-    for key in ("n_judged", "n_cells"):
+    for key in _COUNT_KEYS:
         m = re.search(_TOP_INT.format(key=key), ht[0])
         if m:
             cells, basis = int(m.group(1)), key
             break
     if cells is None:
-        return {"open": None, "why": f"{UNMEASURED}: {sweep_result.name} names no cell count "
-                                     f"in its first {RESULT_HEAD_BYTES} bytes"}
-    return {"open": cells == 0, "cells": cells, "basis": basis,
+        return {"open": None, "read": read,
+                "why": f"{UNMEASURED}: {sweep_result.name} names no top-level cell count"}
+    return {"open": cells == 0, "cells": cells, "basis": basis, "read": read,
             "why": (f"the sweep that ended {doc.get('last_sweep_ended_utc')} judged {cells} "
                     f"cell(s) ({basis})")}
 
