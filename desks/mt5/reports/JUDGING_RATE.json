@@ -1,5 +1,5 @@
 {
- "at": "2026-10-21T16:04:15+00:00",
+ "at": "2026-10-21T16:41:47+00:00",
  "verdicts": {
   "status": "MEASURED",
   "rows_total": 990973,
@@ -31,12 +31,12 @@
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 15660,
-   "7d": 286883
+   "24h": 15662,
+   "7d": 286893
   },
   "per_hour": {
-   "24h": 652.5,
-   "7d": 1707.637
+   "24h": 652.583,
+   "7d": 1707.696
   }
  },
  "verdicts_per_hour": 1086.167,
@@ -44,13 +44,15 @@
  "verdict_rate_basis": "changed verdict events, not total completed tests",
  "first_judged_per_day": 21029.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
- "coverage_backlog_fresh": false,
- "created_per_day": 15660.0,
- "backlog": "UNMEASURED",
- "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
+ "coverage_backlog_fresh": true,
+ "created_per_day": 15662.0,
+ "backlog": 1229816,
+ "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\JUDGE_COVERAGE.json totals.unjudged_total",
  "eta_to_drain": {
-  "status": "UNMEASURED",
-  "why": "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
+  "status": "DRAINING",
+  "hours": 5499.5,
+  "days": 229.14,
+  "net_per_hour": 223.625
  },
  "workers_planned": 15,
  "workers_last_sweep": "UNMEASURED",
