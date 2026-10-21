@@ -147,7 +147,16 @@ def judge(report: Path | None = None, *, require_state: bool = False,
                          else "; this tree holds no judge-coverage state (L1.28a)"))
         return out
 
+    # A STALE OR UNDATED REPORT FAILS THE BOX (2026-10-21, audit of the coverage pager). Until
+    # now `--require-state` appended a freshness FAIL row and then computed the verdict from the
+    # family rules alone, so a report the judge had stopped writing hours ago still read PASS with
+    # rc 0 whenever its last reading happened to be healthy -- and an `at` that was missing or
+    # unparseable skipped the freshness check entirely. On the box the report's own lease is the
+    # claim that the organ is running (L1.49), so either case is a failure of the verdict, not a
+    # row beside it. The portable and source-view readings are unchanged: stale is UNMEASURED
+    # there, and an undated report is judged as before.
     age = _age_h(doc.get("at"), at)
+    failures: list[str] = []
     if age is not None and age > STALE_H:
         out["checks"].append({"metric": "freshness", "state": "FAIL" if require_state else "WARN",
                               "why": f"report is {age:.1f}h old, past the {STALE_H:.0f}h lease"})
@@ -155,11 +164,17 @@ def judge(report: Path | None = None, *, require_state: bool = False,
             out["verdict"] = "UNMEASURED"
             out["why"] = "stale exported coverage cannot establish current desk state"
             return out
+        failures.append("report_stale")
+    elif age is None and require_state:
+        out["checks"].append({"metric": "freshness", "state": "FAIL",
+                              "why": (f"report `at` is missing or unparseable "
+                                      f"({str(doc.get('at'))[:40]!r}): its age against the "
+                                      f"{STALE_H:.0f}h lease cannot be shown")})
+        failures.append("report_undated")
 
     fams: dict[str, Any] = {f: r for f, r in (doc.get("families") or {}).items()
                             if isinstance(r, dict)}
     judged_any = sum(int(r.get("judged_window") or 0) for r in fams.values())
-    failures: list[str] = []
 
     # 1. STARVATION: unjudged cells and no place in the queue.
     starved = sorted((f for f, r in fams.items()
@@ -406,8 +421,13 @@ def judge(report: Path | None = None, *, require_state: bool = False,
                         for r in ranking[:5]]
     out["worst_backlog"] = (doc.get("worst_backlog") or [])[:5]
     out["verdict"] = "FAIL" if failures else "PASS"
-    out["why"] = (f"{len(set(failures))} family(ies) failed a coverage rule: "
-                  + ", ".join(sorted(set(failures))[:6])) if failures else (
+    lease = [f for f in ("report_stale", "report_undated") if f in failures]
+    rules = sorted(set(failures) - set(lease))
+    out["why"] = "; ".join(
+        ([f"the report is {'stale past its lease' if 'report_stale' in lease else 'undated'} "
+          f"(--require-state)"] if lease else [])
+        + ([f"{len(rules)} family(ies) failed a coverage rule: " + ", ".join(rules[:6])]
+           if rules else [])) if failures else (
         "every family holding unjudged cells is queued, its carried backlog fell, and none sits "
         "past its own window")
     return out
