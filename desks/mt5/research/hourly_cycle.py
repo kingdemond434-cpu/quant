@@ -1168,7 +1168,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
                      "excursions", "exit_accounts",
-                     "entry_timing", "cost_to_edge", "exit_study",
+                     "entry_timing", "execution_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
                      "net_edge", "cost_truth", "cost_surfaces", "trade_pathology"),
@@ -3581,6 +3581,17 @@ def entry_timing() -> dict:
     return _producer("entry_timing", "research/entry_timing.py")
 
 
+def execution_timing() -> dict:
+    """THE CHEAPEST MINUTE INSIDE EACH LIVE SLEEVE'S OWN PLACING HOUR, NET OF EDGE DECAY.
+
+    Extends `entry_timing` (hour-level) down to the minute from the sub-hour bars on disk, and
+    charges every cheaper-but-later minute the drift it forgoes at its upper 2-SE bound, so a
+    cheaper fill that gives the edge back reads net worse. Report only: it never changes a
+    signal, a window or the gateway. H1-only symbols read UNMEASURED, never cheap.
+    """
+    return _producer("execution_timing", "research/execution_timing.py")
+
+
 def queue_cycle() -> dict:
     """THE QUEUE'S CLOCK -- five modules that formed a complete loop and were never instantiated.
 
@@ -3795,6 +3806,7 @@ def main() -> None:
     emf = _costed("edges_macro_fusion_sweep", edges_macro_fusion_sweep)
     # BEFORE queue_cycle, which turns its uncovered cells into owned recertification tasks.
     ety = _costed("entry_timing", entry_timing)
+    exm = _costed("execution_timing", execution_timing)
     # AFTER the coverage legs: the governor aims the search from the map they just published.
     qcy = _costed("queue_cycle", queue_cycle)
     # THE OTHER HALF OF THE SAME LEDGER. A certificate whose `shadow_spec.params` is None passed
@@ -5968,7 +5980,7 @@ def main() -> None:
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
                     "alpha_evolution": aev, "research_bandit": rbd, "closed_loop": clp,
                     "alpha_periodic_table": pt, "queue_cycle": qcy,
-                    "microstructure_census": mx, "entry_timing": ety,
+                    "microstructure_census": mx, "entry_timing": ety, "execution_timing": exm,
                     "spread_provenance": sp, "tape_features": tf,
                     "futures_lead_lag": fll, "time_joins": tj, "allocator_join": aj,
                     "fred_macro": fm,
