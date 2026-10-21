@@ -1011,3 +1011,97 @@ def test_every_xau_send_site_in_the_gateway_asks_the_gold_lock_under_the_placeme
         send = body.index("mt5.order_send(", lock)
         assert lock < gate < send
         assert body.count("TRADE_ACTION_DEAL") == 1
+
+
+# ================================================== v2s SF-3: the DEFAULT mode (no mode file)
+# The conftest runs the gateway in full "oco" mode; the box runs with NO mode file, which is
+# fallback for every non-E8 lane: Fusion's MINLOT gold_asia waits for E8's first fill, then
+# follows E8's direction. These pin that default (unchanged; the principal confirms it).
+
+def _default_world(day: str) -> None:
+    oco.MODE_FILE.unlink(missing_ok=True)
+    oco.publish_lane("e8", e8_key(), positions=[], orders=[], date=day)
+
+
+def _e8_fills(day: str, side: str) -> None:
+    oco.publish_lane("e8", e8_key(), positions=[{"id": 3, "side": side, "opened_date": day}],
+                     orders=[], date=day)
+    assert oco.claim_fill("e8", e8_key(), side, date=day)["won"]
+
+
+def test_the_default_is_fallback_with_e8_leading_and_ftmo_undeclared() -> None:
+    oco.MODE_FILE.unlink(missing_ok=True)
+    assert oco.configured_mode("e8") == "leader"
+    assert oco.configured_mode("fusion") == "fallback"
+    assert oco.configured_mode("ftmo") == "fallback"
+    assert oco.declared_lanes() == ("e8", "fusion")
+    # FTMO is not a gold lane until the mode file declares it: it places nothing by default.
+    v = oco.gate("ftmo", "buy_stop", key=oco.oco_account_key(FT_LOGIN, FT_SERVER), date=DAY)
+    assert not v.allowed and "not declared" in v.why
+
+
+def test_default_fusion_bracket_waits_for_e8_and_the_wait_is_billed(monkeypatch, tmp_path):
+    _default_world(ga._DAY)
+    oco.publish_lane("fusion", fu_key(), positions=[], orders=[], date=ga._DAY)
+    rows = ga._gold_rows()
+    mt5 = _GwTerminal(rows, *ga._quote(rows))
+    ns = ga._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    ns["main"]()
+    assert mt5.sent == []
+    billed = _oco_rail_rows()
+    assert {r["side"] for r in billed} == {"buy_stop", "sell_stop"}
+    assert all("no E8 fill yet" in r["why"] and r["missed_growth_risk_usd"] is not None
+               for r in billed)
+    # A Fusion fill of its own never sets the day in fallback: still nothing until E8 fills.
+    oco.claim_fill("fusion", fu_key(), "buy", date=ga._DAY)
+    assert not oco.gate("fusion", "buy_stop", key=fu_key(), date=ga._DAY).allowed
+
+
+@pytest.mark.parametrize("e8_side,placed", [("long", "ORDER_TYPE_BUY_STOP"),
+                                             ("short", "ORDER_TYPE_SELL_STOP")])
+def test_default_fusion_bracket_follows_e8s_direction_only(monkeypatch, tmp_path, e8_side,
+                                                          placed) -> None:
+    _default_world(ga._DAY)
+    _e8_fills(ga._DAY, e8_side)
+    rows = ga._gold_rows()
+    mt5 = _GwTerminal(rows, *ga._quote(rows))
+    ns = ga._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    ns["main"]()
+    assert [r["type"] for r in mt5.sent] == [getattr(mt5, placed)]
+
+
+def test_default_family_xau_waits_for_e8_then_follows_it(tmp_path, monkeypatch) -> None:
+    mt5, ns, day = _family_xau(tmp_path, monkeypatch)
+    _default_world(day)
+    sleeve = ga._sleeve(symbol="XAUUSD")                      # a LONG family sleeve
+    ga._run_family(ns, {"armed": True}, [sleeve], 10_000.0)
+    assert mt5.sent == []
+    (row,) = _oco_rail_rows()
+    assert "no E8 fill yet" in row["why"] and row["missed_growth_risk_usd"] > 0
+    # E8 fills SHORT: the long family send stays refused (billed once that day and side).
+    _e8_fills(day, "short")
+    mt5b, nsb, _ = _family_xau(tmp_path / "b", monkeypatch)
+    ga._run_family(nsb, {"armed": True}, [ga._sleeve(symbol="XAUUSD")], 10_000.0)
+    assert mt5b.sent == [] and any("direction is short" in x for x in nsb["_logs"])
+
+
+def test_default_family_xau_with_e8s_direction_is_sent(tmp_path, monkeypatch) -> None:
+    mt5, ns, day = _family_xau(tmp_path, monkeypatch)
+    _default_world(day)
+    _e8_fills(day, "long")
+    ga._run_family(ns, {"armed": True}, [ga._sleeve(symbol="XAUUSD")], 10_000.0)
+    assert len(mt5.sent) == 1 and mt5.sent[0]["type"] == mt5.ORDER_TYPE_BUY
+
+
+def test_default_scalp_xau_waits_for_e8_then_follows_it(tmp_path) -> None:
+    (tmp_path / "probe").mkdir()
+    want = _scalp_side(tmp_path)
+    mt5, ns, day = _scalp_xau(tmp_path)
+    _default_world(day)
+    sp._run_scalp(ns, {"armed": True}, [sp._sleeve()], 10_000.0)
+    assert mt5.sent == [] and "no E8 fill yet" in _oco_rail_rows()[0]["why"]
+    _e8_fills(day, want)
+    (tmp_path / "c").mkdir()
+    mt5c, nsc, _ = _scalp_xau(tmp_path / "c")
+    sp._run_scalp(nsc, {"armed": True}, [sp._sleeve()], 10_000.0)
+    assert len(mt5c.sent) == 1
