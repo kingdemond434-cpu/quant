@@ -308,60 +308,142 @@ def bind_account(label: str) -> None:
     with contextlib.suppress(Exception):
         _PASS_ACCOUNT[0] = str(label or UNMEASURED)
         _PASS_ACCOUNT_KEY[0] = None
+        _PASS_ACCOUNT_KEY_STATUS[0] = AK_HELPER_ABSENT
 
 
-def _int_login(value: Any) -> int | None:
-    """The login normalised to an int (so 1234567, "1234567" and 1234567.0 key alike), or None."""
-    if value is None or isinstance(value, bool):
-        return None
+#: Why the pass carries no account stamp (v5.1, the auditor's key-join ruling), or OK.
+AK_OK = "OK"
+AK_HELPER_ABSENT = "HELPER_ABSENT"          # libs.ops.provenance not on this tree: dormant
+AK_LOGIN_UNREADABLE = "LOGIN_UNREADABLE"    # the SDK handle names no account id
+AK_SERVER_UNREADABLE = "SERVER_UNREADABLE"  # TLAPI `_credentials` carries no server
+AK_KEY_UNAVAILABLE = "KEY_UNAVAILABLE"      # the helper answered no well-shaped key
+#: A stamp that is missing because the venue could not be read is a fault, not a dormant
+#: feature: it is paged through the desk's alert ledger (`page_account_key`).
+AK_PAGE = frozenset({AK_LOGIN_UNREADABLE, AK_SERVER_UNREADABLE})
+#: The alert the page opens (libs/ops/alert_ledger.AlertLedger) and where the ledger lives.
+AK_ALERT_ID = "e8_account_key_unstamped"
+ALERT_LEDGER_ENV = "E8_ALERT_LEDGER"
+ALERT_LEDGER = DESK.parent.parent / "data" / "alert_ledger.json"
+_PASS_ACCOUNT_KEY_STATUS: list[str] = [AK_HELPER_ABSENT]
+
+
+def _tl_api(venue: Any) -> Any:
+    api = getattr(venue, "_raw_api", None)
+    return api if api is not None else getattr(venue, "_api", None)
+
+
+def tradelocker_login(venue: Any) -> Any:
+    """The account id from the TLAPI handle (`account_id`, else `acc_id`), as the SDK holds it,
+    or None. Not normalised here: `provenance.account_key` normalises the login itself. `acc_num`
+    is the account's index on the user (1, 2, ...), never the id, so it is not read."""
     try:
-        if isinstance(value, float):
-            return int(value) if value.is_integer() and value > 0 else None
-        text = str(value).strip()
-        if not text.isdigit():
-            return None
-        n = int(text)
-        return n if n > 0 else None
-    except Exception:
-        return None
-
-
-def tradelocker_identity(venue: Any) -> tuple[int, str] | None:
-    """(login as int, server) of the TradeLocker venue, read the way the cross-account OCO reads
-    it (`_raw_api` else `_api`; acc_id, account_id, acc_num; `_creds.server` else "tradelocker"),
-    or None. An INPUT to `account_key` only: never stored, logged or printed. Never raises."""
-    try:
-        api = getattr(venue, "_raw_api", None)
-        if api is None:
-            api = getattr(venue, "_api", None)
-        creds = getattr(venue, "_creds", None)
-        server = getattr(creds, "server", None) if creds is not None else None
-        for attr in ("acc_id", "account_id", "acc_num"):
-            login = _int_login(getattr(api, attr, None))
-            if login is not None:
-                return login, str(server or "tradelocker")
+        api = _tl_api(venue)
+        for attr in ("account_id", "acc_id"):
+            v = getattr(api, attr, None)
+            if v is None or isinstance(v, bool) or str(v).strip() in ("", "0"):
+                continue
+            return v
     except Exception:
         return None
     return None
 
 
-def account_key(venue: Any) -> str | None:
-    """The HMAC account stamp of `venue`'s account, or None (fail closed). Never raises."""
+def tradelocker_server(venue: Any) -> str | None:
+    """The E8 server from TLAPI 0.56.2's `_credentials` dict ({"username", "password",
+    "server"}), or None. NEVER `api.server`: TLAPI has no such attribute, so a read of it is
+    None and keyed every account to one server. Only the server is read. Never raises."""
+    try:
+        creds = getattr(_tl_api(venue), "_credentials", None)
+        server = creds.get("server") if isinstance(creds, dict) else None
+        return server.strip() if isinstance(server, str) and server.strip() else None
+    except Exception:
+        return None
+
+
+def account_key_status(venue: Any) -> tuple[str | None, str]:
+    """(the HMAC account stamp or None, why). Fails CLOSED: no helper, no login, no server or no
+    well-shaped answer is no stamp. Never raises."""
     try:
         import importlib
 
         # libs/ops/provenance.py lands with publish_sync v5; absent -> ImportError -> no stamp.
-        provenance = importlib.import_module("libs.ops.provenance")
+        try:
+            provenance = importlib.import_module("libs.ops.provenance")
+        except ImportError:
+            return None, AK_HELPER_ABSENT
         helper = getattr(provenance, "account_key", None)
         if not callable(helper):
-            return None
-        ident = tradelocker_identity(venue)
-        if ident is None:
-            return None
-        key = helper(ident[0], ident[1], create=False)
-        return key if isinstance(key, str) and ACCOUNT_KEY_SHAPE.match(key) else None
+            return None, AK_HELPER_ABSENT
+        login = tradelocker_login(venue)
+        if login is None:
+            return None, AK_LOGIN_UNREADABLE
+        server = tradelocker_server(venue)
+        if server is None:
+            return None, AK_SERVER_UNREADABLE
+        key = helper(login, server, create=False)
+        if isinstance(key, str) and ACCOUNT_KEY_SHAPE.match(key):
+            return key, AK_OK
+        return None, AK_KEY_UNAVAILABLE
     except Exception:
-        return None
+        return None, AK_KEY_UNAVAILABLE
+
+
+def account_key(venue: Any) -> str | None:
+    """The HMAC account stamp of `venue`'s account, or None (fail closed). Never raises."""
+    return account_key_status(venue)[0]
+
+
+def page_account_key(status: str, log: Callable[[str], None] | None = None) -> str | None:
+    """Open (or, once stamped again, close) the `AK_ALERT_ID` alert in the desk's alert ledger.
+    Only a status in AK_PAGE opens it; a dormant helper does not. Returns "OPEN", "FIXED" or
+    None. Never raises, and never touches a placement."""
+    try:
+        from libs.ops.alert_ledger import AlertLedger
+
+        path = Path(os.environ.get(ALERT_LEDGER_ENV) or ALERT_LEDGER)
+        if status in AK_PAGE:
+            ledger = AlertLedger(path)
+            ledger.observe(AK_ALERT_ID, f"[e8_gold] account_key not stamped: {status}; "
+                           "stop exits and evidence carry no cross-account key", scope="RUNTIME")
+            ledger.save()
+            return "OPEN"
+        if status == AK_OK and path.exists():
+            ledger = AlertLedger(path)
+            alert = ledger.alerts.get(AK_ALERT_ID)
+            if alert is not None and alert.open:
+                ledger.verify(AK_ALERT_ID, still_firing=False)
+                ledger.save()
+                return "FIXED"
+    except Exception as exc:
+        _say(log, f"account-key alert not recorded ({type(exc).__name__})")
+    return None
+
+
+def bind_pass_account_key(venue: Any, doc: dict[str, Any] | None = None,
+                          log: Callable[[str], None] | None = None) -> str:
+    """Derive, bind and report this pass's account stamp: the key (or None), its status on the
+    pass report, an alert line in `doc["alerts"]` and a page when the venue could not be read.
+    Returns the status. Never raises."""
+    key, status = account_key_status(venue)
+    bind_account_key(key)
+    with contextlib.suppress(Exception):
+        _PASS_ACCOUNT_KEY_STATUS[0] = status
+        if doc is not None:
+            doc["account_key_status"] = status
+            if status in AK_PAGE:
+                doc.setdefault("alerts", []).append(
+                    f"account_key not stamped ({status}): failing closed, no key written")
+    if status in AK_PAGE:
+        _say(log, f"ACCOUNT KEY NOT STAMPED ({status}); failing closed, paging")
+    page_account_key(status, log)
+    return status
+
+
+def bound_account_key_status() -> str:
+    try:
+        return str(_PASS_ACCOUNT_KEY_STATUS[0])
+    except Exception:
+        return AK_KEY_UNAVAILABLE
 
 
 def bind_account_key(key: str | None) -> None:
@@ -710,6 +792,7 @@ def write_heartbeat(status: str, *, at: datetime, armed: bool, account: str = UN
             doc["key_id"] = key_id()
         doc = publishable(doc, account)
         doc["account_key"] = bound_account_key()
+        doc["account_key_status"] = bound_account_key_status()
         text = json.dumps(doc, indent=1, default=str) + "\n"
     except Exception as exc:
         _say(log, f"E8 heartbeat not built ({type(exc).__name__}: {exc}); pass unaffected")

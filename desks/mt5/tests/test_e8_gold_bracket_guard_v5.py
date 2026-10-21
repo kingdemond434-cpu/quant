@@ -22,7 +22,7 @@ import json
 import sys
 import types
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 
@@ -293,14 +293,40 @@ def test_both_legs_filled_and_slipped_fit_the_room(
 # ------------------------------------------------------------- 7. the account stamp
 
 
-class _StampedVenue(bg._Venue):
-    """An SDK handle carrying a FAKE account id as a string, and a server on its credentials."""
+class _StampApi(h._Api):
+    """The TLAPI 0.56.2 shape: an int `account_id` and a `_credentials` dict with the server.
+    `server` is deliberately None, as on TLAPI (it has no such attribute of its own)."""
 
-    class _StampApi(h._Api):
-        acc_id = str(_FAKE_ID)
+    account_id = _FAKE_ID
+    acc_num = 1
+    server = None
+    _credentials: ClassVar[dict[str, Any]] = {
+        "username": "nobody@example.invalid",
+        "password": "x",
+        "server": "FAKE-DEMO",
+    }
+
+
+class _NoServerApi(h._Api):
+    account_id = _FAKE_ID
+    server = "NOT-THIS-ONE"  # never read: only `_credentials` names the server
+    _credentials: ClassVar[dict[str, Any]] = {
+        "username": "nobody@example.invalid",
+        "password": "x",
+        "server": None,
+    }
+
+
+class _StampedVenue(bg._Venue):
+    """A venue whose SDK handle carries a FAKE account id and the server in `_credentials`."""
 
     _api = _StampApi()
-    _creds = types.SimpleNamespace(server="FAKE-DEMO", username="nobody@example.invalid")
+    # A venue-side server must not be read either: the key's server is TLAPI's own.
+    _creds = types.SimpleNamespace(server="NOT-THIS-ONE-EITHER")
+
+
+class _NoServerVenue(bg._Venue):
+    _api = _NoServerApi()
 
 
 def _fake_provenance(monkeypatch: pytest.MonkeyPatch, result: Any = _FAKE_KEY) -> list[Any]:
@@ -356,9 +382,10 @@ def test_the_helper_stamps_stop_exits_and_evidence_with_an_int_login(
 ) -> None:
     calls = _fake_provenance(monkeypatch)
     venue = _StampedVenue()
-    assert ev.tradelocker_identity(venue) == (_FAKE_ID, "FAKE-DEMO")
-    assert ev.account_key(venue) == _FAKE_KEY
-    assert calls == [(_FAKE_ID, "FAKE-DEMO", False)], "int login, create=False"
+    assert ev.tradelocker_login(venue) == _FAKE_ID
+    assert ev.tradelocker_server(venue) == "FAKE-DEMO"
+    assert ev.account_key_status(venue) == (_FAKE_KEY, ev.AK_OK)
+    assert calls == [(_FAKE_ID, "FAKE-DEMO", False)], "the SDK's int login, create=False"
     assert isinstance(calls[0][0], int)
     monkeypatch.setattr(g, "STOP_EXITS", tmp_path / "exits.jsonl")
     ev.bind_account(f"tradelocker:{_FAKE_ID}")
@@ -398,23 +425,76 @@ def test_a_helper_answer_that_is_not_an_hmac_key_is_no_stamp(
 @pytest.mark.parametrize(
     "raw,login",
     [
-        (str(_FAKE_ID), _FAKE_ID),
         (_FAKE_ID, _FAKE_ID),
-        (float(_FAKE_ID), _FAKE_ID),
-        ("4818273x", None),
+        (str(_FAKE_ID), str(_FAKE_ID)),
         (True, None),
         ("", None),
         (0, None),
+        (None, None),
     ],
 )
-def test_the_login_is_normalised_to_int(raw: Any, login: int | None) -> None:
-    class _V:
-        _api = types.SimpleNamespace(acc_id=raw)
+def test_the_login_is_passed_through_for_provenance_to_normalise(raw: Any, login: Any) -> None:
+    """v5.1: no local int(): provenance.account_key normalises the login itself. A missing,
+    zero or bool id is no login. `acc_num` (the account's index, 1, 2, ...) is never the id."""
 
-    ident = ev.tradelocker_identity(_V())
-    assert (ident[0] if ident else None) == login
-    if ident:
-        assert ident[1] == "tradelocker"
+    class _V:
+        _api = types.SimpleNamespace(account_id=raw, acc_num=1)
+
+    assert ev.tradelocker_login(_V()) == login
+
+
+# ------------------------------------------------------------- v5.1: the server is TLAPI's own
+
+
+def test_the_server_is_read_from_tlapi_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = _fake_provenance(monkeypatch)
+    assert ev.tradelocker_server(_StampedVenue()) == "FAKE-DEMO"
+    assert ev.account_key(_StampedVenue()) == _FAKE_KEY
+    assert calls[-1][1] == "FAKE-DEMO"
+
+
+def test_api_server_is_never_read(monkeypatch: pytest.MonkeyPatch) -> None:
+    """TLAPI's `server` is None; a fake one on the handle or on the venue's creds is ignored."""
+    calls = _fake_provenance(monkeypatch)
+    assert ev.tradelocker_server(_NoServerVenue()) is None
+
+    class _Bare:
+        _api = types.SimpleNamespace(account_id=_FAKE_ID, server="SOMETHING")
+
+    assert ev.tradelocker_server(_Bare()) is None
+    assert ev.account_key_status(_Bare()) == (None, ev.AK_SERVER_UNREADABLE)
+    assert calls == [], "the helper is never called without TLAPI's server"
+
+
+def test_a_missing_server_fails_closed_and_pages(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _fake_provenance(monkeypatch)
+    ledger_path = tmp_path / "alert_ledger.json"
+    monkeypatch.setenv(ev.ALERT_LEDGER_ENV, str(ledger_path))
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
+    doc = g.run(_NoServerVenue(), h._MT5(), armed=True)
+    assert doc["account_key_status"] == ev.AK_SERVER_UNREADABLE
+    assert any("account_key not stamped" in a for a in doc.get("alerts") or [])
+    beat = json.loads(ev.heartbeat_path().read_text("utf-8"))
+    assert beat["account_key"] is None and beat["account_key_status"] == ev.AK_SERVER_UNREADABLE
+    rows = [json.loads(x) for x in ev.decisions_path().read_text("utf-8").splitlines()]
+    assert rows and all(r["account_key"] is None for r in rows)
+    alerts = json.loads(ledger_path.read_text("utf-8"))
+    assert ev.AK_ALERT_ID in json.dumps(alerts)
+    # Placement is untouched by the missing stamp.
+    assert [p["window"] for p in doc["placed"]] == ["afternoon"]
+    # The next pass that stamps again closes the page.
+    assert ev.page_account_key(ev.AK_OK) == "FIXED"
+
+
+def test_a_dormant_helper_never_pages(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setitem(sys.modules, "libs.ops.provenance", None)
+    ledger_path = tmp_path / "alert_ledger.json"
+    monkeypatch.setenv(ev.ALERT_LEDGER_ENV, str(ledger_path))
+    doc: dict[str, Any] = {}
+    assert ev.bind_pass_account_key(_NoServerVenue(), doc) == ev.AK_HELPER_ABSENT
+    assert "alerts" not in doc and not ledger_path.exists()
 
 
 # ------------------------------------------------------------- the scrub leaks (evidence v5 note)

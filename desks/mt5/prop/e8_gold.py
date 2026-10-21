@@ -1211,7 +1211,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     account = e8_evidence.account_label(venue)
     # Text clipped below is scrubbed of this account's id BEFORE it is cut (e8_evidence.clip).
     e8_evidence.bind_account(account)
-    e8_evidence.bind_account_key(e8_evidence.account_key(venue))
+    # The cross-account stamp: server from TLAPI `_credentials`; unreadable -> no key, paged.
+    e8_evidence.bind_pass_account_key(venue, doc, log)
     doc.update({"host": host, "account": account})
     tick = mt5.symbol_info_tick(SYMBOL)
     rates = mt5.copy_rates_from_pos(SYMBOL, mt5.TIMEFRAME_H1, 0, 400)
