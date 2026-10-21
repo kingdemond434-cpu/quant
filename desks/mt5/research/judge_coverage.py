@@ -1012,8 +1012,15 @@ def family_priors(families: list[str],
     return out
 
 
+#: How far past the pass's own clock a verdict's `at` may sit and still be a reading. Beyond
+#: it the stamp is read as UNMEASURED: one future-dated row taught would carry the cursor to
+#: its date and freeze learning until the wall clock got there.
+PRIORS_FUTURE_SKEW_S = 600.0
+
+
 def learn_priors(ledger: Path | None = None, *, since: str = "",
-                 limit: int = 20_000, state_dir: Path | None = None) -> dict[str, Any]:
+                 limit: int = 20_000, state_dir: Path | None = None,
+                 now: datetime | None = None) -> dict[str, Any]:
     """FEED THE PRIOR THE RANKING SPENDS. Every new gate verdict updates its family's posterior.
 
     THE LOOP WAS OPEN AND THE RANKING WOULD HAVE BEEN FLAT FOREVER. Measured when this was
@@ -1050,7 +1057,16 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
         except OSError as exc:
             out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
             return out
-    if since and _ts(since) is None:
+    _clock = now or datetime.now(tz=UTC)
+    _horizon = _clock.timestamp() + PRIORS_FUTURE_SKEW_S
+    _since_ts = _ts(since) if since else None
+    if since and _since_ts is not None and _since_ts.timestamp() > _horizon:
+        # The same freeze, already stored: a cursor past this clock skips every verdict until
+        # the clock reaches it. Named and kept, exactly as a cursor that is not a timestamp.
+        out.update(status="UNMEASURED",
+                   why=f"stored priors_cursor is in the future: {since[:80]!r}; kept as it is")
+        return out
+    if since and _since_ts is None:
         # A STORED CURSOR THAT IS NOT A TIMESTAMP FREEZES LEARNING SILENTLY (audit of
         # c5390bc6a): "garbage" sorts above every ISO stamp, so `at <= since` skipped every
         # verdict from then on and the pass still read OK. It is not a reading of where the
@@ -1103,10 +1119,12 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
             continue
         if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
             continue
-        if _ts(at) is None:
+        _at_ts = _ts(at)
+        if _at_ts is None or _at_ts.timestamp() > _horizon:
             # A VERDICT WHOSE `at` IS NOT A TIMESTAMP IS READ AS UNMEASURED, and never taught:
             # taught, it would either become the cursor (a garbage stamp sorts above every ISO
             # one and freezes learning) or be re-taught on every pass the cursor cannot pass it.
+            # A stamp more than PRIORS_FUTURE_SKEW_S past this pass's clock is the same freeze.
             out["unmeasured_at"] = int(out.get("unmeasured_at") or 0) + 1
             continue
         passed = row.get("passed")
@@ -2485,7 +2503,8 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     capacity = measured_capacity(judged_total, ledger, now=at)
     # TEACH THE PRIOR BEFORE SPENDING IT: every verdict since the last reading updates its
     # family's posterior, so the ranking below is spending a number this desk actually learned.
-    learned = learn_priors(ledger, since=str((prior or {}).get("priors_cursor") or ""))
+    learned = learn_priors(ledger, since=str((prior or {}).get("priors_cursor") or ""),
+                           now=at)
     realised_seen = realised_pass_rates(ledger)
     unknown = unknown_breakdown()
     named_unknowns = name_unknowns()

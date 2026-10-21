@@ -328,3 +328,35 @@ def test_writes_outside_a_pass_are_atomic(tmp_path: Path, monkeypatch: pytest.Mo
     monkeypatch.undo()
     jc._atomic_write_text(target, "new")
     assert target.read_text("utf-8") == "new"
+
+
+def test_a_future_dated_verdict_is_unmeasured_and_never_becomes_the_cursor(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    p = _point(monkeypatch, tmp_path)
+    rows = _inputs(tmp_path)
+    with p["ledger"].open("a", encoding="utf-8") as fh:
+        for at in (NOW + timedelta(minutes=11), NOW + timedelta(days=400)):
+            fh.write(json.dumps({"at": at.isoformat(), "cell": "F.alpha.p=1", "family": "alpha",
+                                 "passed": False, "terminal_gate": "in_sample_screen"}) + "\n")
+        # Inside the tolerance: a reading, taught once.
+        fh.write(json.dumps({"at": (NOW + timedelta(minutes=9)).isoformat(),
+                             "cell": "N.alpha.p=1", "family": "alpha", "passed": False,
+                             "terminal_gate": "in_sample_screen"}) + "\n")
+    doc = jc.build([dict(r) for r in rows], now=NOW, defer=True)
+    learned = doc["priors_learned"]
+    jc.write(doc)
+    assert learned["unmeasured_at"] == 2
+    assert learned["cursor"] == (NOW + timedelta(minutes=9)).isoformat()
+    assert _family_n(p) == {"alpha": 31, "beta": 30, "gamma": 30}
+    _pass(rows)
+    assert _family_n(p) == {"alpha": 31, "beta": 30, "gamma": 30}, "and never twice"
+
+
+def test_a_future_stored_cursor_is_unmeasured_and_kept(tmp_path: Path,
+                                                       monkeypatch: pytest.MonkeyPatch) -> None:
+    p = _point(monkeypatch, tmp_path)
+    _inputs(tmp_path)
+    ahead = (NOW + timedelta(days=30)).isoformat()
+    out = jc.learn_priors(p["ledger"], since=ahead, now=NOW)
+    assert out["status"] == "UNMEASURED" and "in the future" in out["why"]
+    assert out["cursor"] == ahead and out["recorded"] == 0
