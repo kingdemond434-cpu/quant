@@ -63,6 +63,35 @@ DESK = ROOT / "desks" / "mt5"
 REPORT = DESK / "reports" / "JUDGE_COVERAGE.json"
 RATCHET = DESK / "data" / "judge_backlog_ratchet.json"
 AUDIT = DESK / "reports" / "judge_coverage_fence.json"
+#: The hourly `judge_alive` leg's own verdict (`--liveness`), so it never overwrites the
+#: coverage fence's audit.
+LIVENESS_AUDIT = DESK / "reports" / "judge_alive_fence.json"
+#: A FAIL PAGES (audit of 7cf2ece90): `research/issue_board.py` collects alarm files from the
+#: repo's `data/`; this one exists exactly while the hourly judge_alive verdict is FAIL.
+LIVENESS_ALARM = ROOT / "data" / "JUDGE_ALIVE_ALARM.txt"
+
+
+def sync_alarm(doc: Mapping[str, Any], path: Path | None = None) -> None:
+    """Raise the alarm file on a FAIL; clear it on PASS (amber included). UNMEASURED leaves it
+    as it was: absence of evidence neither raises nor clears a page."""
+    target = path or LIVENESS_ALARM
+    verdict = str(doc.get("verdict") or "")
+    with suppress(OSError):
+        if verdict == "FAIL":
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(f"judge_alive FAIL at {doc.get('generated_utc')}: "
+                              f"{doc.get('why')}\n", encoding="utf-8")
+        elif verdict == "PASS" and target.exists():
+            target.unlink()
+#: THE JUDGE'S OWN PULSE (2026-10-20), written by `desks/mt5/scripts/run_sharded_gauntlet.py`.
+#: Coverage alone could not see a sweep that never ends: pid 7324 sat 14 h in its merge while
+#: every report here still read a healthy, merely slow judge. The heartbeat carries the sweep's
+#: progress and deadlines; the stall artifact names a breach the watchdog acted on.
+GAUNTLET_HEARTBEAT = DESK / "reports" / "GAUNTLET_HEARTBEAT.json"
+GAUNTLET_STALL = DESK / "reports" / "GAUNTLET_STALL.json"
+#: Mirrors `run_sharded_gauntlet.HEARTBEAT_STALE_S`: a RUNNING heartbeat older than this means
+#: the sweep's watchdog itself is wedged (it beats at least once a minute).
+HEARTBEAT_STALE_S = 600.0
 
 #: A report older than this is stale: the organ runs at intake, hourly, so three hours of silence
 #: means the clock stopped. Generous because a box reboot or a long sweep is not a law breach.
@@ -103,8 +132,98 @@ def _age_h(stamp: object, now: datetime) -> float | None:
     return max(0.0, (now.timestamp() - at.timestamp()) / 3600.0)
 
 
+def judge_liveness(now: datetime | None = None, *, heartbeat: Path | None = None,
+                   stall: Path | None = None) -> dict[str, Any]:
+    """Is the judge alive and getting somewhere? One check row: PASS / WARN / FAIL / UNMEASURED.
+
+    FAIL when the watchdog KILLED a sweep for making no progress (STALLED) and no finished sweep
+    has cleared it since, or when a RUNNING heartbeat has gone stale (the watchdog itself is
+    wedged). WARN -- amber, never red -- when a sweep is SLOW: past a phase or run threshold but
+    still burning CPU (audit HOLD of 2832cebd1: pid 7324 was slow, not stuck, and finished rc 0).
+    Absent artifacts are UNMEASURED (L1.28a) -- never a pass dressed as one.
+    """
+    at = now or datetime.now(tz=UTC)
+    hb_doc, st_doc = _read(heartbeat or GAUNTLET_HEARTBEAT), _read(stall or GAUNTLET_STALL)
+    hb = hb_doc if isinstance(hb_doc, dict) else {}
+    st = st_doc if isinstance(st_doc, dict) else {}
+    if not hb and not st:
+        return {"metric": "judge_alive", "state": "UNMEASURED",
+                "why": "no GAUNTLET_HEARTBEAT.json or GAUNTLET_STALL.json: the sweep watchdog "
+                       "has not reported on this tree"}
+    if str(st.get("status") or "") == "STALLED":
+        return {"metric": "judge_alive", "state": "FAIL", "stall": {
+                    k: st.get(k) for k in ("reason", "detail", "stalled_utc", "phase", "shard",
+                                           "consecutive", "pid", "lost_s")},
+                "why": (f"the judge STALLED ({st.get('reason')}) at {st.get('stalled_utc')} in "
+                        f"phase {st.get('phase')}, {st.get('consecutive')} consecutive; no "
+                        f"sweep has finished since: {str(st.get('detail') or '')[:200]}")}
+    if str(hb.get("status") or "") == "RUNNING":
+        beat_h = _age_h(hb.get("beat_utc"), at)
+        if beat_h is not None and beat_h * 3600.0 > HEARTBEAT_STALE_S:
+            return {"metric": "judge_alive", "state": "FAIL",
+                    "why": (f"sweep pid {hb.get('pid')} reads RUNNING but its heartbeat is "
+                            f"{beat_h * 60.0:.0f} min old (> {HEARTBEAT_STALE_S / 60.0:.0f} min):"
+                            f" the sweep's watchdog is wedged or the process was frozen")}
+        past_h = _age_h(hb.get("run_deadline_utc"), at)
+        if past_h is not None and past_h * 3600.0 > HEARTBEAT_STALE_S:
+            return {"metric": "judge_alive", "state": "WARN",
+                    "why": (f"SLOW: sweep pid {hb.get('pid')} is past its run threshold "
+                            f"{hb.get('run_deadline_utc')} in phase {hb.get('phase')} and still "
+                            f"progressing (idle {hb.get('idle_s')}s); it is left to finish")}
+    if str(st.get("status") or "") == "SLOW" or hb.get("slow"):
+        slow = st.get("slow") if isinstance(st.get("slow"), dict) else {}
+        return {"metric": "judge_alive", "state": "WARN", "slow": slow,
+                "why": (f"SLOW: {slow.get('reason') or hb.get('slow')} at "
+                        f"{slow.get('slow_utc')} in phase {slow.get('phase') or hb.get('phase')}"
+                        f" -- past a threshold, still progressing, not killed")}
+    return {"metric": "judge_alive", "state": "PASS",
+            "why": (f"heartbeat {hb.get('status') or 'absent'} (phase {hb.get('phase')}, last "
+                    f"beat {hb.get('beat_utc')}); stall record {st.get('status') or 'absent'}")}
+
+
+def liveness_fence(*, require_state: bool = False, now: datetime | None = None,
+                   heartbeat: Path | None = None, stall: Path | None = None) -> dict[str, Any]:
+    """The hourly `judge_alive` leg's verdict: the liveness row alone, as a fence document.
+
+    Off the box (no `--require-state`) a FAIL is a WARN, as in `judge`: a commit is never blamed
+    for a box incident. UNMEASURED stays UNMEASURED (L1.28a)."""
+    row = judge_liveness(now, heartbeat=heartbeat, stall=stall)
+    if row["state"] == "FAIL" and not require_state:
+        row = {**row, "state": "WARN"}
+    # WARN (SLOW, amber) exits 0 and says so in `state`: a slow sweep is never a failed leg.
+    verdict = {"PASS": "PASS", "WARN": "PASS", "FAIL": "FAIL"}.get(row["state"], "UNMEASURED")
+    return {"generated_utc": (now or datetime.now(tz=UTC)).isoformat(timespec="seconds"),
+            "fence": "judge_alive", "verdict": verdict, "state": row["state"],
+            "why": row["why"], "checks": [row]}
+
+
 def judge(report: Path | None = None, *, require_state: bool = False,
-          now: datetime | None = None) -> dict[str, Any]:
+          now: datetime | None = None, liveness: bool | None = None,
+          heartbeat: Path | None = None, stall: Path | None = None) -> dict[str, Any]:
+    """The coverage verdict, with the judge's own liveness folded in.
+
+    `liveness` None reads it only for the desk's REAL report (`report` None), so a test that
+    hands in its own coverage report is never coloured by whatever the box last published. On
+    the box (`--require-state`) a dead or stalled judge FAILS; anywhere else it is a WARN, the
+    same split the freshness rule makes, because a commit cannot be blamed for a box incident.
+    """
+    out = _coverage(report, require_state=require_state, now=now)
+    if liveness is None:
+        liveness = report is None
+    if not liveness:
+        return out
+    row = judge_liveness(now, heartbeat=heartbeat, stall=stall)
+    if row["state"] == "FAIL" and not require_state:
+        row = {**row, "state": "WARN"}
+    out.setdefault("checks", []).append(row)
+    if row["state"] == "FAIL":
+        out["verdict"] = "FAIL"
+        out["why"] = f"judge_alive: {row['why']}; " + str(out.get("why") or "")
+    return out
+
+
+def _coverage(report: Path | None = None, *, require_state: bool = False,
+              now: datetime | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
     path = report or REPORT
     doc = _read(path)
@@ -428,9 +547,19 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--report", default=None)
     ap.add_argument("--audit", default=str(AUDIT))
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--liveness", action="store_true",
+                    help="the hourly judge_alive leg: the sweep watchdog's heartbeat and stall "
+                         "record only, written to reports/judge_alive_fence.json")
     args = ap.parse_args(argv)
-    doc = judge(report=Path(args.report) if args.report else None,
-                require_state=bool(args.require_state))
+    if args.liveness:
+        doc = liveness_fence(require_state=bool(args.require_state))
+        if args.require_state:          # only the box's own verdict pages
+            sync_alarm(doc)
+        if args.audit == str(AUDIT):
+            args.audit = str(LIVENESS_AUDIT)
+    else:
+        doc = judge(report=Path(args.report) if args.report else None,
+                    require_state=bool(args.require_state))
     if args.json:
         print(json.dumps(doc, indent=1, ensure_ascii=False, default=str))
     else:
@@ -442,7 +571,8 @@ def main(argv: list[str] | None = None) -> int:
     return _exit(doc["verdict"])
 
 
-__all__ = ["RATCHET", "REPORT", "RULE", "STALE_H", "WINDOW_SLACK", "judge", "main", "render"]
+__all__ = ["GAUNTLET_HEARTBEAT", "GAUNTLET_STALL", "RATCHET", "REPORT", "RULE", "STALE_H",
+           "WINDOW_SLACK", "judge", "judge_liveness", "liveness_fence", "main", "render"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover
