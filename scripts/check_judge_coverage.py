@@ -93,7 +93,14 @@ def _write(path: Path, doc: Mapping[str, Any]) -> None:
     path.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
 
 
-def _age_h(stamp: object, now: datetime) -> float | None:
+#: How far ahead of this clock a report's `at` may sit and still be read as fresh: the repo's
+#: existing tolerance (libs/research/dsr_inputs.FUTURE_SKEW_S, global_research_acceptance
+#: MAX_FUTURE_SKEW_S). Beyond it, --require-state reads the stamp as undated.
+FUTURE_SKEW_S = 300
+
+
+def _signed_age_h(stamp: object, now: datetime) -> float | None:
+    """Hours since `stamp`, NEGATIVE when it is in the future; None when absent or unparseable."""
     txt = str(stamp or "").strip()
     if not txt:
         return None
@@ -101,7 +108,12 @@ def _age_h(stamp: object, now: datetime) -> float | None:
         at = datetime.fromisoformat(txt.replace("Z", "+00:00")).astimezone(UTC)
     except ValueError:
         return None
-    return max(0.0, (now.timestamp() - at.timestamp()) / 3600.0)
+    return (now.timestamp() - at.timestamp()) / 3600.0
+
+
+def _age_h(stamp: object, now: datetime) -> float | None:
+    raw = _signed_age_h(stamp, now)
+    return None if raw is None else max(0.0, raw)
 
 
 #: THE PORTABLE HALF NEVER JUDGES BOX STATE (2026-10-20, auditor ruling 2026-10-14 route 2,
@@ -155,7 +167,17 @@ def judge(report: Path | None = None, *, require_state: bool = False,
     # claim that the organ is running (L1.49), so either case is a failure of the verdict, not a
     # row beside it. The portable and source-view readings are unchanged: stale is UNMEASURED
     # there, and an undated report is judged as before.
-    age = _age_h(doc.get("at"), at)
+    #
+    # A FUTURE STAMP IS NOT FRESHNESS (2026-10-21, audit of cbea9e8d9). `_age_h` clamps at zero,
+    # so an `at` ahead of this clock read as a report written this instant -- a clock step or a
+    # bad writer would hold the lease open forever. Past FUTURE_SKEW_S ahead, --require-state
+    # reads the stamp as UNDATED (FAIL); inside the skew it is fresh, and the portable reading is
+    # unchanged.
+    raw_age = _signed_age_h(doc.get("at"), at)
+    future = raw_age is not None and raw_age < -FUTURE_SKEW_S / 3600.0
+    age = None if raw_age is None else max(0.0, raw_age)
+    if require_state and future:
+        age = None
     failures: list[str] = []
     if age is not None and age > STALE_H:
         out["checks"].append({"metric": "freshness", "state": "FAIL" if require_state else "WARN",
@@ -167,9 +189,13 @@ def judge(report: Path | None = None, *, require_state: bool = False,
         failures.append("report_stale")
     elif age is None and require_state:
         out["checks"].append({"metric": "freshness", "state": "FAIL",
-                              "why": (f"report `at` is missing or unparseable "
-                                      f"({str(doc.get('at'))[:40]!r}): its age against the "
-                                      f"{STALE_H:.0f}h lease cannot be shown")})
+                              "why": ((f"report `at` {str(doc.get('at'))[:40]!r} is "
+                                       f"{-float(raw_age or 0.0):.2f}h in the future, past the "
+                                       f"{FUTURE_SKEW_S}s skew") if future else
+                                      f"report `at` is missing or unparseable "
+                                      f"({str(doc.get('at'))[:40]!r})")
+                                     + f": its age against the {STALE_H:.0f}h lease cannot be "
+                                       "shown"})
         failures.append("report_undated")
 
     fams: dict[str, Any] = {f: r for f, r in (doc.get("families") or {}).items()
@@ -663,9 +689,9 @@ def main(argv: list[str] | None = None) -> int:
     return _exit(doc["verdict"])
 
 
-__all__ = ["BOX_STATE_ELSEWHERE", "INCIDENTS", "PAGE_STATE_REL", "RATCHET", "REPAGE_H", "REPORT",
-           "RULE", "SOURCE_VIEW_ENV", "STALE_H", "WINDOW_SLACK", "incidents", "judge", "main",
-           "page_coverage", "render"]
+__all__ = ["BOX_STATE_ELSEWHERE", "FUTURE_SKEW_S", "INCIDENTS", "PAGE_STATE_REL", "RATCHET",
+           "REPAGE_H", "REPORT", "RULE", "SOURCE_VIEW_ENV", "STALE_H", "WINDOW_SLACK",
+           "incidents", "judge", "main", "page_coverage", "render"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover
