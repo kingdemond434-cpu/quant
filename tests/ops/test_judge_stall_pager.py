@@ -695,8 +695,7 @@ def test_a_huge_budget_is_capped_at_the_residents_hang_cap(jsp, tmp_path, monkey
     paths["throughput"] = tp
     d = jsp.measure(NOW, pid_alive=_alive, **paths)
     assert d["thresholds"]["unknown_phase_limit_h"] == jsp.UNKNOWN_PHASE_LIMIT_H == 18.0
-    assert d["thresholds"]["phase_limit_h"]["prewarm"] == round(
-        1.5 * (48 * 3600 + 1_100) / 3600, 2)
+    assert d["thresholds"]["phase_limit_h"]["prewarm"] == 48.0     # never past the hang cap
     assert d["incidents"]["phase_overrun"]["open"] is True      # unknown limit not widened
 
 
@@ -712,3 +711,70 @@ def test_a_lone_unmeasured_read_after_a_gap_does_not_page(jsp, tmp_path):
     d = _series(jsp, tmp_path, ch, [45], torn_after_gap)[0]
     assert d["page"]["opened"] == ["inputs_unmeasured"]
     assert jsp.UNMEASURED_MIN_READS == 2
+
+
+# ---- v5 (audit of c483ae765) ----
+
+@pytest.mark.parametrize("value", [None, "0", False, True, [0], 0.0, "abc"])
+@pytest.mark.parametrize("big", [False, True])
+def test_a_present_non_int_n_judged_reads_unmeasured_never_n_cells(jsp, tmp_path, value, big):
+    end = NOW - timedelta(hours=2)
+    body: dict[str, Any] = {"n_cells": 500}
+    if big:
+        body["trial_census"] = ["c" * 100] * 20_000      # n_judged past the head: streamed
+    body.update({"n_judged": value, "verdicts": [],
+                 "swept_at": _iso(end - timedelta(minutes=30))})
+    f = tmp_path / "r.json"
+    f.write_text(json.dumps(body, indent=2), "utf-8")
+    z = jsp._zero_judged(_done(end), f)
+    assert z["open"] is None and "not an int" in z["why"] and z["read"]
+    assert "cells" not in z
+
+
+def test_a_plain_int_n_judged_still_reads(jsp, tmp_path):
+    end = NOW - timedelta(hours=2)
+    for v, opened in ((0, True), (17, False), (-1, False)):
+        f = tmp_path / f"r{v}.json"
+        f.write_text(json.dumps({"n_cells": 500, "n_judged": v, "verdicts": [],
+                                 "swept_at": _iso(end)}, indent=2), "utf-8")
+        z = jsp._zero_judged(_done(end), f)
+        assert z["open"] is opened and z["cells"] == v and z["basis"] == "n_judged"
+
+
+@pytest.mark.parametrize("cadence", [30, 31, 45, 60, 120])
+@pytest.mark.parametrize("which", ["resident", "zero_judged_sweep"])
+def test_persistent_unmeasured_pages_whatever_the_run_spacing(jsp, tmp_path, cadence, which):
+    """48 straight UNMEASURED runs at or past the window: two in a row must page."""
+    ch = Channel()
+
+    def gone(t: datetime, p: dict) -> None:
+        if which == "resident":
+            p["resident"].write_text("{torn", "utf-8")
+        else:
+            p["sweep_result"].unlink()
+
+    docs = _series(jsp, tmp_path, ch, [i * cadence for i in range(48)], gone)
+    opened = [i for i, d in enumerate(docs) if "inputs_unmeasured" in d["page"]["opened"]]
+    assert opened, f"never paged at a {cadence}-min cadence"
+    bound = jsp._bound_min("zero_judged_sweep" if which != "resident" else "resident_dead")
+    assert opened[0] * cadence <= max(bound, cadence) + cadence  # by the 2nd read past bound
+    assert len(ch.sent) >= 1
+
+
+def test_spaced_runs_with_one_clean_reading_between_do_not_page(jsp, tmp_path):
+    """The flap rule is kept: at a 60-min cadence, alternating torn/clean never pairs up."""
+    ch = Channel()
+
+    def alternate(t: datetime, p: dict) -> None:
+        if int((t - NOW).total_seconds() // 3600) % 2:
+            p["resident"].write_text("{torn", "utf-8")
+
+    docs = _series(jsp, tmp_path, ch, [i * 60 for i in range(12)], alternate)
+    assert all(d["incidents"]["inputs_unmeasured"]["open"] is False for d in docs)
+    assert ch.sent == []
+
+
+def test_the_prewarm_limit_never_exceeds_the_hang_cap(jsp):
+    assert jsp.phase_limits(jsp.RESIDENT_HANG_CAP_S)["prewarm"] == 48.0
+    assert jsp.phase_limits(8_640.0)["prewarm"] == round(1.5 * 9_740 / 3600, 2)
+    assert jsp.phase_limits(1e9)["prewarm"] == 48.0

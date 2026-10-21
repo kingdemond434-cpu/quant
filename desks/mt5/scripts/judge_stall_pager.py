@@ -346,11 +346,22 @@ def _top_re(indent: str, key: str, value: str) -> re.Pattern[str]:
 
 
 def _top_values(text: str, indent: str) -> dict[str, list[str]]:
+    # A count key's line is recorded WHATEVER its value (audit of c483ae765): a top-level
+    # `n_judged` that is null, "0", a bool or a list is PRESENT, and must read UNMEASURED rather
+    # than fall through to n_cells as though the key were absent. `_count` judges the value.
     vals: dict[str, list[str]] = {}
     for k in _COUNT_KEYS:
-        vals[k] = _top_re(indent, k, r"(-?\d+)").findall(text)
+        vals[k] = [v.strip() for v in _top_re(indent, k, r"([^\r\n]*?),?[ \t]*\r?$").findall(text)]
     vals["swept_at"] = _top_re(indent, "swept_at", r'"([^"]+)"').findall(text)
     return vals
+
+
+_PLAIN_INT = re.compile(r"-?\d+")
+
+
+def _count(raw: str) -> int | None:
+    """A count line's value as a plain JSON int, or None (null, a string, a bool, a list...)."""
+    return int(raw) if _PLAIN_INT.fullmatch(raw) else None
 
 
 def _scan_top(path: Path, indent: str) -> dict[str, list[str]] | None:
@@ -417,11 +428,18 @@ def _zero_judged(doc: dict[str, Any], sweep_result: Path) -> dict[str, Any]:
                         f"{end.isoformat(timespec='seconds')}) -- an rc-0 sweep that wrote no "
                         f"result reads this way")}
     if vals["n_judged"]:
-        cells, basis = int(vals["n_judged"][0]), "n_judged"
-    elif streamed and vals["n_cells"]:
+        got = _count(vals["n_judged"][0])
+        if got is None:
+            return {"open": None, "read": read, "value": vals["n_judged"][0][:40],
+                    "why": (f"{UNMEASURED}: {sweep_result.name}'s top-level n_judged is "
+                            f"{vals['n_judged'][0][:40]!r}, not an int -- and a present "
+                            f"n_judged is never replaced by n_cells")}
+        cells, basis = got, "n_judged"
+    elif streamed and vals["n_cells"] and _count(vals["n_cells"][0]) is not None:
         # Only once the whole file is known to carry no n_judged: external_gauntlet's
         # no-gate-1 branch (:3886-3895) writes n_cells 0 and no n_judged.
-        cells, basis = int(vals["n_cells"][0]), "n_cells (the result carries no n_judged)"
+        cells = _count(vals["n_cells"][0]) or 0
+        basis = "n_cells (the result carries no n_judged)"
     else:
         return {"open": None, "read": read,
                 "why": f"{UNMEASURED}: {sweep_result.name} names no top-level cell count"}
@@ -477,7 +495,10 @@ def fresh_budget_s(throughput: Path = THROUGHPUT, env_file: Path = ENV_FILE) -> 
 
 def phase_limits(budget_s: float) -> dict[str, float]:
     limits = dict(PHASE_LIMIT_H)
-    limits["prewarm"] = round(1.5 * (budget_s + PREWARM_SLACK_S) / 3600.0, 2)
+    # Never past the resident's own kill (audit of c483ae765): a phase it would have killed at
+    # 48 h cannot be healthy at 72 h.
+    limits["prewarm"] = round(min(1.5 * (budget_s + PREWARM_SLACK_S),
+                                  RESIDENT_HANG_CAP_S) / 3600.0, 2)
     return limits
 
 
@@ -624,12 +645,17 @@ def _unmeasured_history(raw: object, inc: dict[str, dict[str, Any]],
     out: dict[str, list[list[Any]]] = {}
     for k in _TRACKED:
         rows = raw.get(k) if isinstance(raw, dict) else None
-        kept: list[list[Any]] = []
+        valid: list[list[Any]] = []
         for row in rows if isinstance(rows, list) else ():
             with contextlib.suppress(TypeError, ValueError, IndexError):
                 t = datetime.fromisoformat(str(row[0]))
-                if now - keep <= t <= now:
-                    kept.append([t.isoformat(timespec="seconds"), 1 if row[1] else 0])
+                if t <= now:
+                    valid.append([t, 1 if row[1] else 0])
+        valid.sort(key=lambda r: r[0])
+        # The newest earlier reading is always kept, however old: it is the one two consecutive
+        # UNMEASURED readings are counted against when the runs are spaced past the window.
+        recent = [r for r in valid if r[0] >= now - keep] or valid[-1:]
+        kept = [[t.isoformat(timespec="seconds"), u] for t, u in recent]
         kept.append([now.isoformat(timespec="seconds"),
                      1 if (inc.get(k) or {}).get("open") is None else 0])
         out[k] = kept
@@ -646,10 +672,20 @@ def _unmeasured_verdict(hist: dict[str, list[list[Any]]], inc: dict[str, dict[st
         if not stamps or min(t for t, _ in stamps) > now - bound:
             continue                         # the window is not yet full: no verdict
         window = [u for t, u in stamps if t > now - bound]
-        # A lone reading after a gap in the runs is not a window: one UNMEASURED read then
-        # would page at once (audit of f4ba99308).
-        if len(window) >= UNMEASURED_MIN_READS and sum(window) / len(window) >= UNMEASURED_SHARE:
-            offenders.append(f"{k} UNMEASURED on {sum(window)}/{len(window)} reads over "
+        before = [u for t, u in sorted(stamps) if t <= now - bound][-1:]
+        if len(window) >= UNMEASURED_MIN_READS:
+            # THE FLAP RULE: a share of a window that holds enough readings.
+            hit = sum(window) / len(window) >= UNMEASURED_SHARE
+            reads = window
+        else:
+            # RUNS SPACED AT OR PAST THE WINDOW (audit of c483ae765): the window holds one
+            # reading, so the last reading before it is counted too, and the two must BOTH be
+            # UNMEASURED -- two consecutive UNMEASURED readings page whatever their spacing, and
+            # a lone one after a clean reading does not (audit of f4ba99308).
+            reads = before + window
+            hit = len(reads) >= UNMEASURED_MIN_READS and all(reads)
+        if hit:
+            offenders.append(f"{k} UNMEASURED on {sum(reads)}/{len(reads)} reads over "
                              f"{_bound_min(k):g} min: {(inc.get(k) or {}).get('why')}")
     if offenders:
         return {"open": True, "incidents": [o.split(" ", 1)[0] for o in offenders],
