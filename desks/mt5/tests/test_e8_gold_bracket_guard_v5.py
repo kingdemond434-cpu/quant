@@ -904,15 +904,19 @@ def test_fx_stop_exits_are_closing_fills_with_adverse_slip_only() -> None:
     names = {6102: "XAUUSD", 7001: "EURUSD"}
     rows = [
         _fx_hist_row(1, "sell", 1.1000, 1.0989),  # long stopped 11 points through
-        _fx_hist_row(2, "buy", 1.1000, 1.0995),  # filled to the good side: 0
+        _fx_hist_row(2, "buy", 1.1000, 1.0995, positionId=802),  # good side: 0
         _fx_hist_row(3, "buy", 1.1000, 1.1010, isOpen="true"),  # an FX ENTRY stop, never
         _fx_hist_row(4, "sell", 1.1000, 1.0990, isOpen=None),  # unknown flag, never
         _fx_hist_row(5, "sell", 4300.0, 4290.0, tradableInstrumentId=6102),  # gold, never
         _fx_hist_row(6, "sell", 1.1000, 1.0990, tradableInstrumentId=9999),  # uncatalogued
         _fx_hist_row(7, "sell", 1.1000, 1.0990, status="Cancelled"),
     ]
-    out = g.fx_stop_exits_from_history(rows, names, xau_instrument_id=6102)
+    out = g.fx_stop_exits_from_history(
+        rows, names, xau_instrument_id=6102, seen_open={"801": "buy", "802": "sell"}
+    )
     assert [r["order_id"] for r in out] == [1, 2]
+    # row 3 is a filled buy OPENING 801, so row 1 also joins through the history
+    assert [r["joined_by"] for r in out] == ["history", "position_book"]
     assert out[0]["slip_frac"] == pytest.approx(0.0011 / 1.1, rel=1e-6)
     assert out[1]["slip_frac"] == 0.0
     assert {r["symbol"] for r in out} == {"EURUSD"}
@@ -927,7 +931,7 @@ def test_fx_slip_is_measured_per_symbol_only_from_twenty_exits(tmp_path: Path) -
     got = g.fx_slip_fractions(path)
     assert got["EURUSD"] == {"n": 20, "slip_frac": pytest.approx(0.0001), "status": "MEASURED"}
     assert got["EURCHF"]["status"] == "UNMEASURED" and got["EURCHF"]["slip_frac"] is None
-    assert got["GBPUSD"]["status"] == "UNMEASURED", "a zero p95 is not no slip"
+    assert got["GBPUSD"]["status"] == "P95_ZERO", "a zero p95 is not no slip"
     assert g.fx_slip_fractions(tmp_path / "absent.jsonl") == {}
 
 
@@ -966,6 +970,7 @@ def test_a_full_pass_journals_the_fx_lanes_stop_exits(
 
     venue = _AccountVenue()
     venue._api = _HistApi()  # type: ignore[assignment]
+    venue._positions = [_eurusd(1.0980)]  # the lane sees long 801 open, so its stop joins
     doc = g.run(venue, h._MT5(), armed=True)
     assert doc["fx_stop_exits_recorded"] == 1
     g.run(venue, h._MT5(), armed=True)
@@ -1009,3 +1014,154 @@ def test_the_pass_charges_committed_risk_at_the_worst_window_slip(
     doc = g.run(venue, h._MT5(), armed=True)
     assert doc["committed_risk"]["slip_points"] == 31.5
     assert "asia" in doc["committed_risk"]["slip_source"]
+
+
+# ------------------------------------------------------------- v5.5 (follow-up to CLEAR v5.4)
+
+_KEY_A = "sha256:aaaaaaaaaaaaaaaa"
+_KEY_B = "sha256:bbbbbbbbbbbbbbbb"
+
+
+def test_v55_an_fx_entry_stop_is_never_counted() -> None:
+    """A filled buy STOP marked isOpen=false (wrongly) on the position it opened: the position is
+    long, so a buy is on its own side and never joins -- neither by the book nor by history."""
+    names = {7001: "EURUSD"}
+    entry = _fx_hist_row(41, "buy", 1.1000, 1.1000, positionId=900)
+    assert g.fx_stop_exits_from_history([entry], names, xau_instrument_id=6102) == []
+    assert (
+        g.fx_stop_exits_from_history(
+            [entry], names, xau_instrument_id=6102, seen_open={"900": "buy"}
+        )
+        == []
+    )
+
+
+def test_v55_an_unjoined_closing_order_is_never_counted() -> None:
+    names = {7001: "EURUSD"}
+    orphan = _fx_hist_row(42, "sell", 1.1000, 1.0990, positionId=901)
+    assert g.fx_stop_exits_from_history([orphan], names, xau_instrument_id=6102) == []
+    other = {"999": "buy"}  # the lane saw a different position open
+    assert (
+        g.fx_stop_exits_from_history([orphan], names, xau_instrument_id=6102, seen_open=other) == []
+    )
+
+
+def test_v55_a_closing_stop_joins_through_a_different_opening_fill() -> None:
+    names = {7001: "EURUSD"}
+    opener = _fx_hist_row(50, "buy", 0.0, 1.1005, positionId=902, isOpen="true")
+    close = _fx_hist_row(51, "sell", 1.0980, 1.0978, positionId=902)
+    (row,) = g.fx_stop_exits_from_history([opener, close], names, xau_instrument_id=6102)
+    assert row["order_id"] == 51 and row["joined_by"] == "history"
+
+
+def _fx_rows(path: Path, key: Any, n: int, frac: float, start: int) -> list[dict[str, Any]]:
+    rows = [{"order_id": start + i, "symbol": "EURUSD", "slip_frac": frac} for i in range(n)]
+    if key is not None:
+        for r in rows:
+            r["account_key"] = key
+    return rows
+
+
+def test_v55_fx_slip_is_read_only_from_the_accounts_own_rows(tmp_path: Path) -> None:
+    path = tmp_path / "fx.jsonl"
+    rows = _fx_rows(path, _KEY_A, 20, 0.0003, 0)
+    rows += _fx_rows(path, _KEY_B, 25, 0.0009, 100)
+    rows += _fx_rows(path, None, 25, 0.0007, 200)
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    a = g.fx_slip_fractions(path, account_key=_KEY_A)["EURUSD"]
+    assert a["n"] == 20 and a["slip_frac"] == pytest.approx(0.0003)
+    assert g.fx_slip_fractions(path, account_key=None)["EURUSD"]["n"] == 25
+    assert "EURUSD" not in g.fx_slip_fractions(path, account_key="sha256:cccccccccccccccc")
+    ev.bind_account_key(_KEY_B)
+    try:
+        assert g.fx_slip_fractions(path)["EURUSD"]["slip_frac"] == pytest.approx(0.0009)
+    finally:
+        ev.bind_account_key(None)
+
+
+def test_v55_the_gold_slip_file_is_scoped_to_its_account(tmp_path: Path) -> None:
+    from prop import e8_gold_slip
+
+    exits, out = tmp_path / "exits.jsonl", tmp_path / "slip.json"
+    rows = [
+        {"order_id": i, "side": "sell", "stop": 4300.0, "fill": 4290.0, "account_key": _KEY_B}
+        for i in range(25)
+    ]
+    rows += [
+        {"order_id": 100 + i, "side": "sell", "stop": 4300.0, "fill": 4299.0} for i in range(25)
+    ]
+    exits.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    doc = e8_gold_slip.refresh(exits=exits, out=out, measured_at="2026-10-21", account_key=_KEY_A)
+    assert doc["n"] == 0 and doc["account_scoped"] and doc["account_key"] == _KEY_A
+    doc = e8_gold_slip.refresh(exits=exits, out=out, measured_at="2026-10-21", account_key=_KEY_B)
+    assert doc["n"] == 25 and doc["status"] == "MEASURED"
+    ev.bind_account_key(_KEY_B)
+    try:
+        assert g.bracket_slip(out)[0] == pytest.approx(10.0)
+        ev.bind_account_key(_KEY_A)  # a new account never inherits B's slip
+        pts, src = g.bracket_slip(out)
+        assert pts == g.DEFAULT_SLIP_POINTS and "not measured for this account" in src
+    finally:
+        ev.bind_account_key(None)
+    assert g.bracket_slip(out)[0] == g.DEFAULT_SLIP_POINTS, "an unkeyed pass ignores B's file"
+    legacy = tmp_path / "legacy.json"
+    legacy.write_text(json.dumps({"status": "MEASURED", "n": 30, "slip_points": 9.0}), "utf-8")
+    assert g.bracket_slip(legacy)[0] == 9.0
+    ev.bind_account_key(_KEY_A)
+    try:
+        assert g.bracket_slip(legacy)[0] == g.DEFAULT_SLIP_POINTS, "unscoped rows never count"
+    finally:
+        ev.bind_account_key(None)
+
+
+def test_v55_a_zero_p95_reads_as_the_floor_not_measured(tmp_path: Path) -> None:
+    p = tmp_path / "slip.json"
+    p.write_text(json.dumps({"status": "MEASURED", "n": 30, "slip_points": 0.0}), "utf-8")
+    pts, src = g.bracket_slip(p)
+    assert pts == g.DEFAULT_SLIP_POINTS and src.startswith("floor (p95_zero)")
+    fx = tmp_path / "fx.jsonl"
+    fx.write_text(
+        "".join(
+            json.dumps({"order_id": i, "symbol": "EURUSD", "slip_frac": 0.0}) + "\n"
+            for i in range(30)
+        ),
+        encoding="utf-8",
+    )
+    got = g.fx_slip_fractions(fx, account_key=None)["EURUSD"]
+    assert got["status"] == "P95_ZERO" and got["slip_frac"] is None
+    price = g.foreign_pricer(_AccountVenue(), slip_fraction=0.0056, fx_slip={"EURUSD": got})
+    _, meta = price(_eurusd(1.0980), "position")
+    assert meta["slip_source"].startswith("floor (p95_zero)") and meta["slip_fraction"] == 0.0056
+
+
+def test_v55_risk_unmeasurable_is_billed_once_and_paged(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import os
+
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
+    ledger_path = Path(os.environ[ev.ALERT_LEDGER_ENV])
+    venue = _AccountVenue()
+    venue._positions = [_eurusd(None)]  # no stop: the account's risk cannot be bounded
+    doc = g.run(venue, h._MT5(), armed=True)
+    assert venue.sent == [] and doc["risk_unmeasurable_page"] == "OPEN"
+    (bill,) = [r for r in bg._journal(tmp_path) if r.get("rail") == g.RISK_UNMEASURABLE_RAIL]
+    assert bill["status"] == "RAIL_BLOCKED" and bill["reason"] == ev.R_RISK_UNMEASURABLE
+    assert isinstance(bill["missed_growth_risk_usd"], float) and bill["missed_growth_risk_usd"] > 0
+    alert = json.loads(ledger_path.read_text("utf-8"))["alerts"][g.RISK_UNMEASURABLE_ALERT_ID]
+    assert alert["state"] == "OPEN"
+    doc = g.run(venue, h._MT5(), armed=True)
+    assert "risk_unmeasurable_page" not in doc, "paged once, not every pass"
+    assert len([r for r in bg._journal(tmp_path) if r.get("rail") == g.RISK_UNMEASURABLE_RAIL]) == 1
+    sys.path.insert(0, str(_DESK / "research"))
+    import missed_growth as mg
+
+    monkeypatch.setattr(mg, "E8_INTENTS", tmp_path / "intents.json")
+    (line,) = [
+        x for x in mg.published_e8_gold_lines()["lines"] if x["rail"] == g.RISK_UNMEASURABLE_RAIL
+    ]
+    assert line["n_blocked"] == 1 and line["risk_withheld_usd"] > 0
+    venue._positions = [_eurusd(1.0980)]  # the stop is readable again: the page closes
+    g.run(venue, h._MT5(), armed=True)
+    alert = json.loads(ledger_path.read_text("utf-8"))["alerts"][g.RISK_UNMEASURABLE_ALERT_ID]
+    assert alert["state"] == "FIXED"

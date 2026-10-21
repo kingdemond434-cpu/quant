@@ -376,7 +376,7 @@ def test_a_measured_zero_slip_reads_the_points_floor_never_zero(
     venue = _Venue(equity=99_900.0)
     doc = g.run(venue, h._MT5(), armed=True)
     assert doc["bracket_slip"]["slip_points"] == g.DEFAULT_SLIP_POINTS == 24.13
-    assert "is not > 0" in doc["bracket_slip"]["source"]
+    assert doc["bracket_slip"]["source"].startswith("floor (p95_zero)")  # v5.5 label
     assert sorted(venue.sent) == [("buy", 0.19, 4310.0), ("sell", 0.19, 4290.0)]
 
 

@@ -232,6 +232,14 @@ EQUITY_UNREADABLE_RAIL = "e8_gold_equity_unreadable"
 #: of the dropped sends in the audit sample and unbilled until now: journalled RAIL_BLOCKED once
 #: per window per server day, `missed_growth_risk_usd` = the window's unshrunk risk.
 RISK_BUDGET_RAIL = "e8_gold_concurrent_risk_budget"
+#: v5.5: a due window that sent nothing because the account's committed risk could not be bounded
+#: (a dangling stopLossId, an unpriceable instrument, an unreadable book). Journalled RAIL_BLOCKED
+#: once per window per server day with the window's certified risk as `missed_growth_risk_usd`,
+#: and paged once through the desk's alert ledger (RISK_UNMEASURABLE_ALERT_ID) until it clears.
+RISK_UNMEASURABLE_RAIL = "e8_gold_risk_unmeasurable"
+RISK_UNMEASURABLE_ALERT_ID = "e8_gold_risk_unmeasurable"
+#: v5.5: how many FX position sides the lane remembers having seen open (state["fx_open_seen"]).
+FX_OPEN_SEEN_MAX = 500
 PROFIT_CAP_RAIL = "e8_gold_daily_profit_cap"
 #: Their decision reason codes (prop/e8_evidence; see the README's merge note for the fence).
 DAILY_FLOOR_REASON = "bracket_daily_floor"
@@ -351,6 +359,13 @@ def bracket_slip(path: Path | None = None, *, window: str | None = None) -> tupl
         doc = json.loads(p.read_text(encoding="utf-8-sig"))
         if not isinstance(doc, dict):
             return DEFAULT_SLIP_POINTS, f"{default}: {p.name} is not an object"
+        # ONE ACCOUNT'S SLIP IS NEVER ANOTHER'S (v5.5): a keyed pass reads only a file measured
+        # for its own account_key; an unscoped (pre-v5.5) or other-account file is the floor.
+        key = e8_evidence.bound_account_key()
+        if key is not None and (not doc.get("account_scoped") or doc.get("account_key") != key):
+            return DEFAULT_SLIP_POINTS, f"{default}: {p.name} was not measured for this account"
+        if key is None and doc.get("account_scoped") and doc.get("account_key") is not None:
+            return DEFAULT_SLIP_POINTS, f"{default}: {p.name} was measured for a keyed account"
         wins = doc.get("windows")
         wdoc = wins.get(window) if window and isinstance(wins, dict) else None
         if isinstance(wdoc, dict) and str(wdoc.get("status") or "") == "MEASURED":
@@ -371,6 +386,10 @@ def bracket_slip(path: Path | None = None, *, window: str | None = None) -> tupl
         # missing, non-finite or negative all read the 24.13-point floor; never zero slip.
         if isinstance(raw, bool) or not isinstance(raw, (int, float)) \
                 or not math.isfinite(float(raw)) or float(raw) <= 0:
+            if isinstance(raw, (int, float)) and not isinstance(raw, bool) \
+                    and math.isfinite(float(raw)) and float(raw) == 0.0:
+                return DEFAULT_SLIP_POINTS, (f"floor (p95_zero): {p.name} p95 of {n} stop exits "
+                                             f"is 0, so DEFAULT_SLIP_POINTS is used")
             return DEFAULT_SLIP_POINTS, f"{default}: {p.name} slip_points={raw!r} is not > 0"
         return float(raw), f"{p.name} (p95 of {n} stop exits)"
     except Exception as exc:
@@ -526,13 +545,36 @@ def _closing(row: dict[str, Any]) -> bool:
     return str(v).strip().lower() in ("false", "0")
 
 
+def _side(v: Any) -> str:
+    return str(v or "").strip().lower()
+
+
 def fx_stop_exits_from_history(hist_rows: list[dict[str, Any]], names: dict[int, str], *,
-                               xau_instrument_id: int | None) -> list[dict[str, Any]]:
+                               xau_instrument_id: int | None,
+                               seen_open: dict[str, str] | None = None) -> list[dict[str, Any]]:
     """The FX lane's filled protective stops on this account, from the venue order history: one
     row per FILLED, CLOSING (`isOpen` false) order with a stopPrice and a fill price on a non-XAU
     instrument the catalogue names. `slip_frac` is the ADVERSE fill-through as a share of the
     stop level (a sell stop filled below it, a buy stop above); a fill through to the good side
-    is 0. Pure."""
+    is 0. Pure.
+
+    v5.5: `isOpen` is not trusted alone. The order must ALSO JOIN to a position on the closing
+    side of it, the structural join gold uses (`stop_exits_from_history`): either a DIFFERENT
+    filled order in the history opened its `positionId` on the opposite side, or the lane saw
+    that position open on the opposite side (`seen_open`, {str(position id): side}, recorded by
+    `run` from the venue's position book). An entry stop is on its own position's side, so it
+    never joins, and an order whose position nothing shows open never counts."""
+    opened: dict[int, set[str]] = {}
+    for h in hist_rows:
+        try:
+            if str(h.get("status") or "").lower() != "filled" or not h.get("positionId") \
+                    or h.get("id") is None or _closing(h):
+                continue
+            opened.setdefault(int(h["positionId"]), set()).add(
+                f"{int(h['id'])}:{_side(h.get('side'))}")
+        except (TypeError, ValueError):
+            continue
+    seen = {str(k): _side(v) for k, v in (seen_open or {}).items()}
     out: list[dict[str, Any]] = []
     for h in hist_rows:
         try:
@@ -552,8 +594,19 @@ def fx_stop_exits_from_history(hist_rows: list[dict[str, Any]], names: dict[int,
         if not (stop > 0 and fill > 0 and side in ("buy", "sell")
                 and math.isfinite(stop) and math.isfinite(fill)):
             continue
+        try:
+            oid, pid = int(h["id"]), int(h.get("positionId") or 0)
+        except (TypeError, ValueError):
+            continue
+        other = "sell" if side == "buy" else "buy"
+        by_history = any(e != f"{oid}:{side}" and e.endswith(f":{other}")
+                         for e in opened.get(pid, set()))
+        by_book = pid != 0 and seen.get(str(pid)) == other
+        if not (by_history or by_book):
+            continue
         adverse = (fill - stop) if side == "buy" else (stop - fill)
-        out.append({"order_id": int(h["id"]), "symbol": sym, "instrument_id": iid,
+        out.append({"order_id": oid, "symbol": sym, "instrument_id": iid, "position_id": pid,
+                    "joined_by": "history" if by_history else "position_book",
                     "side": side, "stop": stop, "fill": fill,
                     "slip_frac": round(max(0.0, adverse) / stop, 8), "venue_ms": _order_ms(h)})
     return out
@@ -580,15 +633,27 @@ def _record_fx_stop_exits(rows: list[dict[str, Any]], *, now: datetime) -> int:
         return 0
 
 
-def fx_slip_fractions(path: Path | None = None) -> dict[str, dict[str, Any]]:
+_BOUND: Any = object()
+
+
+def fx_slip_fractions(path: Path | None = None, *,
+                      account_key: Any = _BOUND) -> dict[str, dict[str, Any]]:
     """Per symbol: {"n", "slip_frac" (p95 share of price) or None, "status"} from the FX stop-exit
-    journal. MEASURED only on at least MIN_SLIP_EXITS exits with a p95 above zero (a zero p95 is
-    not "no slip", as for gold); otherwise UNMEASURED. Never raises: unreadable is empty."""
+    journal. MEASURED only on at least MIN_SLIP_EXITS exits with a p95 above zero; a zero p95 on
+    enough exits is P95_ZERO (not "no slip", as for gold), fewer exits UNMEASURED. Never raises:
+    unreadable is empty.
+
+    v5.5: only rows stamped with `account_key` (default: the pass's bound key) count, so a new
+    account never inherits another's slip; a row with no stamp never counts toward a keyed
+    account, and an unkeyed pass reads only unstamped rows."""
     from prop import e8_gold_slip
     p = FX_STOP_EXITS if path is None else path
+    key = e8_evidence.bound_account_key() if account_key is _BOUND else account_key
     by_sym: dict[str, list[float]] = {}
     try:
         for r in e8_gold_slip.read_stop_exits(p):
+            if r.get("account_key") != key:
+                continue
             x = r.get("slip_frac")
             if isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) \
                     and x >= 0 and r.get("symbol"):
@@ -598,10 +663,28 @@ def fx_slip_fractions(path: Path | None = None) -> dict[str, dict[str, Any]]:
     out: dict[str, dict[str, Any]] = {}
     for sym, xs in by_sym.items():
         q = e8_gold_slip.quantile(xs, e8_gold_slip.QUANTILE)
-        ok = len(xs) >= MIN_SLIP_EXITS and math.isfinite(q) and q > 0
+        enough = len(xs) >= MIN_SLIP_EXITS and math.isfinite(q)
+        ok = enough and q > 0
         out[sym] = {"n": len(xs), "slip_frac": round(q, 8) if ok else None,
-                    "status": "MEASURED" if ok else "UNMEASURED"}
+                    "status": "MEASURED" if ok else "P95_ZERO" if enough else "UNMEASURED"}
     return out
+
+
+def _remember_fx_open(state: dict[str, Any], positions: list[dict[str, Any]],
+                      xau_positions: list[dict[str, Any]]) -> None:
+    """Record each non-XAU position's side under state["fx_open_seen"] (v5.5), so a later closing
+    stop on it joins to a position the lane saw open. Never raises."""
+    with contextlib.suppress(Exception):
+        xau = {id(p) for p in xau_positions}
+        seen = state.setdefault("fx_open_seen", {})
+        for p in positions:
+            side = _side(p.get("side"))
+            if id(p) in xau or p.get("id") is None or side not in ("buy", "sell"):
+                continue
+            seen.pop(str(int(p["id"])), None)
+            seen[str(int(p["id"]))] = side
+        while len(seen) > FX_OPEN_SEEN_MAX:
+            seen.pop(next(iter(seen)))
 
 
 def committed_slip_points(path: Path | None = None) -> tuple[float, str]:
@@ -653,7 +736,8 @@ def publish_slip(*, now: datetime) -> dict[str, Any]:
     try:
         from prop import e8_gold_slip
         d = e8_gold_slip.refresh(exits=STOP_EXITS, out=BRACKET_SLIP_FILE,
-                                 measured_at=now.date().isoformat())
+                                 measured_at=now.date().isoformat(),
+                                 account_key=e8_evidence.bound_account_key())
         keep = ("status", "n", "unit", "slip_points", "provisional_p95_points", "p50_points",
                 "max_points", "measured_at", "sources", "min_n", "windows")
         pub = {k: d[k] for k in keep if k in d}
@@ -945,7 +1029,11 @@ def rollover_state(state: dict, today: str) -> dict:
         if n.startswith("carried:") or w.get("closed") or w.get("position_id") is None:
             continue
         carried[f"{old_date}/{n}" if n in carried else n] = w
-    return {"date": today, "windows": {}, "carried": carried}
+    out: dict[str, Any] = {"date": today, "windows": {}, "carried": carried}
+    seen = state.get("fx_open_seen")
+    if isinstance(seen, dict) and seen:
+        out["fx_open_seen"] = dict(list(seen.items())[-FX_OPEN_SEEN_MAX:])
+    return out
 
 
 def own_entry_orders(journal: list[dict], state: dict) -> dict[int, dict]:
@@ -1306,6 +1394,9 @@ def foreign_pricer(venue: Any, *, slip_fraction: float,
         if m.get("status") == "MEASURED" and isinstance(f, (int, float)) \
                 and not isinstance(f, bool) and math.isfinite(f) and f > 0:
             return float(f), f"measured: {FX_STOP_EXITS.name} p95 of {m.get('n')} {sym} stop exits"
+        if m.get("status") == "P95_ZERO":
+            return float(slip_fraction), (f"floor (p95_zero): {sym} p95 of {m.get('n')} stop "
+                                          f"exits is 0; gold slip as a share of price")
         return float(slip_fraction), (f"unmeasured {sym} (n={m.get('n', 0)} of {MIN_SLIP_EXITS}): "
                                       f"gold slip as a share of price")
 
@@ -1597,6 +1688,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         iid = venue.instrument_id(SYMBOL)
         venue_positions = venue.positions()
         xau_positions = gold_positions(venue_positions, iid)
+        _remember_fx_open(state, venue_positions, xau_positions)
     except Exception as exc:
         # An unreadable position book must fail CLOSED for new placements.  Otherwise the one
         # check intended to prevent a second/opposite XAU leg disappears precisely when the API
@@ -1699,16 +1791,37 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                                              fx_slip=fx_slip_fractions()))
             doc["committed_risk"]["total_usd"] = round(committed, 2)
             doc["committed_risk"]["slip_source"] = held_src
+            # The risk is measurable again: close the page if one is open (v5.5).
+            e8_evidence.page_alert(RISK_UNMEASURABLE_ALERT_ID, "", firing=False, log=log)
         except Exception as exc:
             why = (e8_evidence.clip(
                 f"concurrent open risk unmeasurable ({type(exc).__name__}: {exc}", 200)
                    + "); no window placed this pass")
+            ru_billed = state.setdefault("risk_unmeasurable_billed", [])
+            new_bill = False
             for due in due_now:
                 doc["skipped"].append({"window": due["window"], "why": why})
                 with contextlib.suppress(Exception):
                     decided.note(due["window"], e8_evidence.DEFERRED,
                                  e8_evidence.R_RISK_UNMEASURABLE, why)
+                if due["window"] not in ru_billed:
+                    # MISSED GROWTH (Rule 1, v5.5), once per window per server day: the window
+                    # was due and sent nothing because the account's risk could not be bounded.
+                    ru_billed.append(due["window"])
+                    new_bill = True
+                    w_risk: float | None = None
+                    with contextlib.suppress(Exception):
+                        w_risk = round(equity * window_risk(due["window"], kelly)[0], 2)
+                    _record({"at": now.isoformat(timespec="seconds"), "window": due["window"],
+                             "status": "RAIL_BLOCKED", "rail": RISK_UNMEASURABLE_RAIL,
+                             "reason": e8_evidence.R_RISK_UNMEASURABLE, "why": why,
+                             "missed_growth_risk_usd": w_risk, "armed": bool(armed)})
                 log(f"[{due['window']}] DEFERRED: {why}")
+            if new_bill:
+                doc["risk_unmeasurable_page"] = e8_evidence.page_alert(
+                    RISK_UNMEASURABLE_ALERT_ID,
+                    f"[e8_gold] committed risk unmeasurable, gold windows deferred: {why}",
+                    firing=True, log=log)
             due_now = []
     room = float(guard_decision.room_to_daily_floor) if guard_decision is not None else 0.0
     try:
@@ -2046,7 +2159,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         try:
             names = {int(v): str(k) for k, v in dict(venue._by_key).items()}
             doc["fx_stop_exits_recorded"] = _record_fx_stop_exits(
-                fx_stop_exits_from_history(hist_rows, names, xau_instrument_id=iid or None),
+                fx_stop_exits_from_history(hist_rows, names, xau_instrument_id=iid or None,
+                                           seen_open=state.get("fx_open_seen")),
                 now=now)
         except Exception as exc:
             log(f"FX stop exits not derived ({type(exc).__name__}: {exc})")

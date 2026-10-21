@@ -169,6 +169,10 @@ def measure(
     }
 
 
+#: `refresh`'s default: measure every row, unscoped (the CLI's reading).
+ALL_ACCOUNTS: Any = object()
+
+
 def read_fills(path: Path) -> list[dict[str, Any]]:
     with path.open(encoding="utf-8-sig", newline="") as fh:
         return [dict(r) for r in csv.DictReader(fh)]
@@ -209,10 +213,16 @@ def refresh(
     out: Path = OUT,
     measured_at: str | None = None,
     notes: list[str] | None = None,
+    account_key: Any = ALL_ACCOUNTS,
 ) -> dict[str, Any]:
     """Re-measure from the lane's stop-exit journal and write the file. Called by `e8_gold`'s
     pass; a previous file's notes and other sources are carried forward so its provenance is not
-    lost (the journal's own line is re-counted)."""
+    lost (the journal's own line is re-counted).
+
+    v5.5: with `account_key` (the pass's HMAC stamp, or None for an unkeyed pass) only rows
+    stamped with exactly that key are measured, and the file says so (`account_scoped`,
+    `account_key`), so a new account never inherits another's slip and an unstamped row never
+    counts toward a keyed account. The CLI default (ALL_ACCOUNTS) measures every row, unscoped."""
     kept: list[str] = []
     try:
         prev = json.loads(out.read_text(encoding="utf-8"))
@@ -225,12 +235,17 @@ def refresh(
             str(x) for x in prev.get("sources") or [] if not str(x).startswith(f"data/{exits.name}")
         ]
     rows = read_stop_exits(exits)
+    if account_key is not ALL_ACCOUNTS:
+        rows = [r for r in rows if r.get("account_key") == account_key]
     doc = measure(
         rows,
         sources=[*kept, f"data/{exits.name} ({len(rows)} rows)"],
         measured_at=measured_at or datetime.now(tz=UTC).date().isoformat(),
         notes=notes,
     )
+    if account_key is not ALL_ACCOUNTS:
+        doc["account_scoped"] = True
+        doc["account_key"] = account_key
     write(doc, out)
     return doc
 

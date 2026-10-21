@@ -426,6 +426,32 @@ def page_account_key(status: str, log: Callable[[str], None] | None = None) -> s
     return None
 
 
+def page_alert(aid: str, message: str, *, firing: bool,
+               log: Callable[[str], None] | None = None) -> str | None:
+    """Open (firing) or close an alert in the desk's alert ledger, the path `page_account_key`
+    uses. The ledger holds one alert per id, so a repeat observe is the same page, not a new one.
+    Returns "OPEN", "FIXED" or None. Never raises, and never touches a placement."""
+    try:
+        from libs.ops.alert_ledger import AlertLedger
+
+        path = Path(os.environ.get(ALERT_LEDGER_ENV) or ALERT_LEDGER)
+        if firing:
+            ledger = AlertLedger(path)
+            ledger.observe(aid, clip(scrub(message), 300), scope="RUNTIME")
+            ledger.save()
+            return "OPEN"
+        if path.exists():
+            ledger = AlertLedger(path)
+            alert = ledger.alerts.get(aid)
+            if alert is not None and alert.open:
+                ledger.verify(aid, still_firing=False)
+                ledger.save()
+                return "FIXED"
+    except Exception as exc:
+        _say(log, f"alert {aid} not recorded ({type(exc).__name__})")
+    return None
+
+
 def bind_pass_account_key(venue: Any, doc: dict[str, Any] | None = None,
                           log: Callable[[str], None] | None = None) -> str:
     """Derive, bind and report this pass's account stamp: the key (or None), its status on the
