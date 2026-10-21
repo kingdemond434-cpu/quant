@@ -239,3 +239,17 @@ def test_the_tracked_quotes_copy_is_detected_and_the_scrub_clears_it() -> None:
     assert new is not None and len(dropped) == n_login_keys
     n_after = len(lf.findings(QUOTES, new, ids))
     assert n_after == 0, f"the scrubbed copy still has {n_after} finding(s)"
+
+
+def test_the_tracked_quotes_copy_ships_in_the_withheld_form() -> None:
+    """v5g rewrote the tracked copy: the fence reads it as CLEAN against the ledgers' logins.
+    COUNT-ONLY, like the test above."""
+    held = subprocess.run(["git", "-C", str(ROOT), "show", f"HEAD:{QUOTES}"],
+                          capture_output=True, check=True).stdout
+    acct = json.loads(held)["account"]
+    assert sum(1 for k in acct if lf.is_login_key(str(k))) == 0
+    assert acct["login_withheld"] is True
+    ids = _ledger_logins()
+    assert ids, "the ledgers' legacy prefixes carry the login this is compared against"
+    assert len(lf.findings(QUOTES, held, ids)) == 0
+    assert aw.scrub_for_publish(QUOTES, held) == (None, []), "already in the writer's form"
