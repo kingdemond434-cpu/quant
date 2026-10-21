@@ -219,9 +219,67 @@ def test_an_unreadable_e8_state_places_nothing_and_says_why(world, damage: str) 
                          now=datetime.now(tz=UTC) - timedelta(seconds=oco.MAX_STATE_AGE_S + 5))
     mt5 = _MT5()
     doc = _pass(mt5)
-    assert mt5.sent == [] and doc["follow"]["action"] == "unreadable"
+    want = "e8_stale" if damage in ("stale", "e8_lane_stale") else "unreadable"
+    assert mt5.sent == [] and doc["follow"]["action"] == want
     (row,) = [r for r in _rows() if r.get("status") == "RAIL_BLOCKED"]
-    assert row["rail"] == ff.RAIL and row["reason"] == "unreadable" and row["why"]
+    assert row["rail"] == ff.RAIL and row["reason"] == want and row["why"]
+
+
+# ======================================================================== v2r: E8 staleness
+
+def test_the_e8_staleness_bound_is_one_pass_plus_its_grace_from_e8s_cadence(
+        monkeypatch) -> None:
+    """300 s (one E8 pass) + the 4-min run limit r7's E8_GOLD_SEND_GRACE_MIN (10 = 1 + 5 + 4)
+    is derived from; an unreadable grace leaves one bare pass (tighter, never looser)."""
+    from mt5desk import decision_core as dc
+    # The gateway (MetaTrader5-only, not importable here) re-exports the same constant.
+    gw_src = (Path(dc.__file__).parent / "gateway.py").read_text("utf-8")
+    assert "E8_GOLD_SEND_GRACE_MIN as E8_GOLD_SEND_GRACE_MIN" in gw_src
+    assert dc.E8_GOLD_SEND_GRACE_MIN == 10.0
+    limit, basis = ff.e8_stale_limit_s()
+    assert limit == 540.0 and "300s" in basis
+    monkeypatch.setattr(dc, "E8_GOLD_SEND_GRACE_MIN", 12.0)       # read at call time
+    assert ff.e8_stale_limit_s()[0] == 660.0
+    for bad in ("x", float("nan"), 3.0):
+        monkeypatch.setattr(dc, "E8_GOLD_SEND_GRACE_MIN", bad)
+        assert ff.e8_stale_limit_s()[0] == 300.0
+
+
+@pytest.mark.parametrize(("age_s", "places"), [(530, True), (550, False)])
+def test_an_e8_report_older_than_the_bound_is_refused_and_billed(world, age_s: int,
+                                                                 places: bool) -> None:
+    world.report.write_text(json.dumps(_e8_report(at=NOW - timedelta(seconds=age_s))), "utf-8")
+    mt5 = _MT5()
+    doc = _pass(mt5)
+    if places:
+        assert doc["follow"]["action"] == "follow" and len(_entries(mt5)) == 1
+        return
+    assert mt5.sent == [] and doc["follow"]["action"] == "e8_stale"
+    assert "limit 540s" in doc["follow"]["why"]
+    (row,) = [r for r in _rows() if r.get("status") == "RAIL_BLOCKED"]
+    assert row["reason"] == "e8_stale" and row["rail"] == ff.RAIL
+    assert row["missed_growth_risk_usd"] == doc["planned_usd"] and doc["planned_usd"] > 0
+
+
+def test_an_e8_gold_state_past_the_bound_but_inside_the_oco_bound_is_refused(world) -> None:
+    """545 s: the OCO's own 600 s bound would still read it; the follower does not."""
+    oco.publish_lane("e8", world.e8_key, positions=[{"id": E8_POS, "side": "long",
+                                                     "opened_date": DAY}],
+                     orders=[], date=DAY, now=datetime.now(tz=UTC) - timedelta(seconds=545))
+    assert oco.read_lane("e8")[0] is not None
+    mt5 = _MT5()
+    doc = _pass(mt5)
+    assert mt5.sent == [] and doc["follow"]["action"] == "e8_stale"
+
+
+def test_missed_growth_bills_the_stale_e8_refusal(world, monkeypatch) -> None:
+    from research import missed_growth as mg
+    monkeypatch.setattr(mg, "FTMO_INTENTS", Path(ff.INTENTS))
+    world.report.write_text(json.dumps(_e8_report(at=NOW - timedelta(minutes=11))), "utf-8")
+    doc = _pass(_MT5())
+    line = mg.published_ftmo_follower_lines()["rails"]["ftmo_follower"]
+    assert line["by_reason"] == {"e8_stale": 1}
+    assert line["undeployed_risk_usd"] == doc["planned_usd"] and line["n_unpriced"] == 0
 
 
 # ======================================================================== the twin-cancel mirror
@@ -646,7 +704,7 @@ def test_a_fee_the_deal_does_not_carry_is_null_with_its_reason(world) -> None:
 
 
 def test_a_fee_not_read_off_the_deal_is_refused() -> None:
-    with pytest.raises(ValueError, match="never 0.0"):
+    with pytest.raises(ValueError, match=r"never 0\.0"):
         ff.append_fills([{"book": "ftmo", "position_id": 1, "commission": -3.5,
                           "fees_measured": ["swap"]}])
 
@@ -655,7 +713,7 @@ def test_a_fee_not_read_off_the_deal_is_refused() -> None:
 def test_the_ledger_refuses_a_login_field_and_a_zero_fee(world, field: str) -> None:
     with pytest.raises(ValueError, match=field):
         ff.append_fills([{"book": "ftmo", "position_id": 1, field: "x"}])
-    with pytest.raises(ValueError, match="never 0.0"):
+    with pytest.raises(ValueError, match=r"never 0\.0"):
         ff.append_fills([{"book": "ftmo", "position_id": 1, "commission": 0.0}])
     assert _ledger() == []
 

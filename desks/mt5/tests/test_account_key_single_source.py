@@ -25,10 +25,11 @@ for _p in (str(_DESK), str(_DESK.parent.parent)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from libs.ops import provenance  # noqa: E402
 from mt5desk import cross_account as xa  # noqa: E402
 from mt5desk import gold_oco as oco  # noqa: E402
 from prop import ftmo_follower as ff  # noqa: E402
+
+from libs.ops import provenance  # noqa: E402
 
 LOGIN, SERVER = 64567890, "FTMO-Server2"                 # fake
 SPELLINGS = [LOGIN, str(LOGIN), float(LOGIN), f" {LOGIN} "]
@@ -177,8 +178,9 @@ def test_the_e8_oco_key_equals_the_bracket_guard_evidence_key_for_one_tlapi_obje
 
 
 #: FIXED TEST VECTORS (the throwaway key b"0123456789abcdef" * 4, pinned in the test):
-#: "sha256:" + HMAC-SHA256(key, "<login>@<server>")[:16] with the server passed as given -- case preserved, never lowercased. Bracket guard v5.1's e8_evidence key for
-#: the same TLAPI handle is this value byte for byte (its rule is restated in `_evidence_key`).
+#: "sha256:" + HMAC-SHA256(key, "<login>@<server>")[:16] with the server passed as given --
+#: case preserved, never lowercased. Bracket guard v5.1's e8_evidence key for the same TLAPI
+#: handle is this value byte for byte (its rule is restated in `_evidence_key`).
 VECTOR_E8 = ("sha256:ccd25414061507fe", 81234567, "E8-Live-Test")
 VECTOR_FTMO = ("sha256:9e6e987a65c2762b", 64567890, "FTMO-Server2")
 

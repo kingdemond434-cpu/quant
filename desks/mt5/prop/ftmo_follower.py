@@ -117,8 +117,33 @@ PROP_FEE_FIELDS = (("commission", "commission"), ("swap", "swap"), ("fees", "fee
 PROP_FEES_MEASURED = "MEASURED"
 #: E8-Gold's pass report (prop/e8_gold.OUT), the first of the three readings this lane follows.
 E8_REPORT = DESK / "reports" / "E8_GOLD.json"
-#: E8-Gold passes every five minutes: two passes, the gold OCO's bound (MAX_STATE_AGE_S).
-E8_REPORT_MAX_AGE_S = _oco.MAX_STATE_AGE_S
+#: E8'S STALENESS BOUND (v2r fix 2): one E8 pass plus its grace, DERIVED FROM E8'S CADENCE the
+#: way r7 derives `decision_core.E8_GOLD_SEND_GRACE_MIN` (install_e8_tasks.ps1: first pass at
+#: +1 min, `RepetitionInterval 5 min`, `LimitMinutes 4`; 10 = 1 + 5 + 4). A healthy E8 rewrites
+#: its report and its gold state at least once per pass; the grace beyond the pass is the pass's
+#: own run limit, 10 - 1 - 5 = 4 min. So the follower refuses to place on an E8 state older
+#: than 300 + 240 = 540 s (it was the OCO's 600 s two-pass bound), and bills each refusal.
+E8_PASS_S = 300.0
+E8_FIRST_PASS_OFFSET_MIN = 1.0
+
+
+def e8_stale_limit_s() -> tuple[float, str]:
+    """(the age in seconds past which E8's report or gold state is stale, its derivation). The
+    grace is read at call time from `decision_core.E8_GOLD_SEND_GRACE_MIN` (gateway re-exports
+    it); when that is unreadable the grace is 0 and the bound is one bare pass (fail closed:
+    a tighter bound refuses, never places)."""
+    try:
+        from mt5desk import decision_core as _dc
+        grace_min = float(_dc.E8_GOLD_SEND_GRACE_MIN) - E8_FIRST_PASS_OFFSET_MIN \
+            - E8_PASS_S / 60.0
+        if not math.isfinite(grace_min) or grace_min < 0.0:
+            raise ValueError(grace_min)
+    except Exception:
+        return E8_PASS_S, "one E8 pass (300s); E8_GOLD_SEND_GRACE_MIN unreadable, no grace"
+    return E8_PASS_S + grace_min * 60.0, (
+        f"one E8 pass (300s) + its {grace_min:g}-min run limit (E8_GOLD_SEND_GRACE_MIN "
+        f"{E8_FIRST_PASS_OFFSET_MIN:g} + 5 + {grace_min:g})")
+
 MAGIC = 341955
 COMMENT = "FTgold_asia"
 #: E8's measured stop slippage (2026-09-24: a buy stop filled 24.13 points through its level).
@@ -179,7 +204,9 @@ def follow_decision(e8_doc: Any, entry: dict[str, Any] | None, entry_why: str | 
                     e8_lane: dict[str, Any] | None, lane_why: str, *, today: str,
                     now: datetime) -> tuple[str, dict[str, Any] | None, str]:
     """("follow", signal, why) when E8's gold_asia has a live filled leg today, else
-    ("wait" | "stand_aside" | "unreadable", None, why). Pure.
+    ("wait" | "stand_aside" | "e8_stale" | "unreadable", None, why). Pure. "e8_stale": E8's
+    report or gold state is older than `e8_stale_limit_s` (one pass + its grace) -- refused and
+    billed, never followed.
 
     The signal is E8's filled leg: {"side", "price", "sl", "tp", "e8_position_id"}. Anything but
     "follow" means no new FTMO order, and any resting FTMO entry is cancelled."""
@@ -189,9 +216,12 @@ def follow_decision(e8_doc: Any, entry: dict[str, Any] | None, entry_why: str | 
     if at is None:
         return "unreadable", None, "E8's pass report carries no readable timestamp"
     age = (now - at).total_seconds()
-    if not (-60.0 <= age <= E8_REPORT_MAX_AGE_S):
-        return "unreadable", None, (f"E8's pass report is {age:.0f}s old (limit "
-                                    f"{E8_REPORT_MAX_AGE_S:.0f}s); E8 is not running")
+    limit, basis = e8_stale_limit_s()
+    if age < -60.0:
+        return "unreadable", None, f"E8's pass report is stamped {-age:.0f}s in the future"
+    if age > limit:
+        return "e8_stale", None, (f"E8's pass report is {age:.0f}s old (limit {limit:.0f}s: "
+                                  f"{basis}); E8 is not running, nothing is followed")
     if e8_doc.get("status") != "OK":
         return "unreadable", None, f"E8's last pass is {e8_doc.get('status')!r}, not OK"
     state = e8_doc.get("state")
@@ -203,6 +233,9 @@ def follow_decision(e8_doc: Any, entry: dict[str, Any] | None, entry_why: str | 
     if entry_why is not None:
         return "unreadable", None, f"the gold direction state: {entry_why}"
     if e8_lane is None:
+        if " old (limit " in str(lane_why):                 # gold_oco.read_lane's age refusal
+            return "e8_stale", None, (f"E8's published gold state: {lane_why} (bound: "
+                                      f"{e8_stale_limit_s()[1]})")
         return "unreadable", None, f"E8's published gold state: {lane_why}"
     gd = e8_doc.get("guard_decision")
     stood_down = bool(e8_doc.get("guard")) or (isinstance(gd, dict)
@@ -683,7 +716,7 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
 
     e8_doc = _read_json(E8_REPORT)
     entry, entry_why = _oco.day_entry(today)
-    e8_lane, lane_why = _oco.read_lane("e8")
+    e8_lane, lane_why = _oco.read_lane("e8", max_age_s=e8_stale_limit_s()[0])
     action, sig, fwhy = follow_decision(e8_doc, entry, entry_why, e8_lane, lane_why,
                                         today=today, now=now)
     doc["follow"] = {"action": action, "why": fwhy, "signal": sig}
@@ -797,9 +830,10 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     elif action != "follow" or sig is None:
         _skip(doc, st, "wait" if action == "wait" else action, fwhy, today=today, now=now)
     elif str(sig["e8_position_id"]) in st["followed"]:
-        _skip(doc, st, "already_followed", (f"E8 position {sig['e8_position_id']} was already "
-                                            f"followed ({st['followed'][str(sig['e8_position_id'])]})"
-                                            ), today=today, now=now)
+        pid_s = str(sig["e8_position_id"])
+        _skip(doc, st, "already_followed",
+              f"E8 position {pid_s} was already followed ({st['followed'][pid_s]})",
+              today=today, now=now)
     elif (spent := history_spent(mt5, today, now))[0] is not False:
         _skip(doc, st, "history_unreadable" if spent[0] is None else "already_followed",
               spent[1], today=today, now=now)
