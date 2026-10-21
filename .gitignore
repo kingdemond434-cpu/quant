@@ -457,6 +457,13 @@ desks/mt5/data/import_stems_cache.json
 # committed summary of the gitignored gate_verdict_ledger.jsonl and universal_gates_external.json.
 !desks/mt5/reports/GATE_VERDICT_DIGEST.json
 !desks/mt5/reports/BOX_STATE_FLOW.json
+!desks/mt5/reports/BOX_HEARTBEAT.json
+!desks/mt5/reports/JUDGING_BURNDOWN.json
+!desks/mt5/reports/WORLD_LAB.json
+!desks/mt5/reports/EXPRESSION_FACTORY.json
+!desks/mt5/reports/RELEASE_GATE.json
+!desks/mt5/reports/ADOPTION_HEARTBEAT.json
+!desks/mt5/reports/ADOPTION_STATE.json
 # THE FRESHNESS FENCE'S REPORT AND THE DESK HEALTH REPORT (2026-09-30), published by the same
 # $relPaths: CRO D17 reads box_state_age_hours off the branch, and the plain-English desk health
 # check had no reader off the box at all.
