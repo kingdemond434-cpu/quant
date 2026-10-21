@@ -2621,12 +2621,15 @@ def gold_send_late(window: str | None, hour: float,
     if sig is None:
         return None
     grace = float(GOLD_SEND_GRACE_MIN if grace_min is None else grace_min)
-    late_min = (float(hour) - sig) * 60.0
+    # Rounded to the microminute: a fractional hour (7 + 10/60) is 10.000000000000036 min
+    # in binary, and a pass exactly at the edge of its grace must not read as late.
+    late_min = round((float(hour) - sig) * 60.0, 6)
     if late_min <= grace:
         return None
+    src = "GOLD_SEND_GRACE_MIN" if grace_min is None else "the caller's grace"
     return (f"late_send: {win} opens {int(sig):02d}:00 server, now {float(hour):.2f} is "
-            f"{late_min:.0f} min after it (grace {grace:g} min, decision_core."
-            f"GOLD_SEND_GRACE_MIN); the certified bracket is the one placed at its signal hour")
+            f"{late_min:.0f} min after it (grace {grace:g} min, {src}); the certified "
+            f"bracket is the one placed at its signal hour")
 
 
 def bracket_deadline(sleeve: str, window: str | None = None,

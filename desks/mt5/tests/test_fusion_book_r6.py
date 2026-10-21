@@ -323,8 +323,12 @@ def test_fresh_kelly_under_a_void_cert_book_sends_nothing_on_any_window(
                        if k in ("asia", "london_am", "afternoon"))
     rows = [json.loads(ln) for ln in (tmp_path / "0" / "intents.json").read_text().splitlines()
             if ln.strip()]
-    (row,) = [r for r in rows if r.get("rail") == "cert_book_void"]   # once per window per day
-    assert row["window"] == "asia" and row["missed_growth_risk_usd"] > 0
+    # One line per pass here: each _e8 call re-seeds the day's state, so the once-per-window-
+    # per-day dedupe (state["pin_logged"], shared with the pin rail) restarts with it.
+    void_rows = [r for r in rows if r.get("rail") == "cert_book_void"]
+    assert len(void_rows) == 3
+    assert all(r["window"] == "asia" and r["status"] == "RAIL_BLOCKED"
+               and r["missed_growth_risk_usd"] > 0 for r in void_rows)
 
 
 def test_an_enabled_book_missing_london_am_sends_nothing_even_with_the_pin_lifted(
