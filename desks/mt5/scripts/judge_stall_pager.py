@@ -56,6 +56,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import os
 import re
 import sys
 from collections.abc import Callable
@@ -253,6 +254,18 @@ def measure(now: datetime | None = None, *, ledger: Path = LEDGER,
     return out
 
 
+def _write_atomic(path: Path, text: str) -> None:
+    """tmp + os.replace, so a reader (or a killed run) never sees a half-written file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    try:
+        tmp.write_text(text, "utf-8")
+        os.replace(tmp, path)
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink(missing_ok=True)
+
+
 def _default_sender(root: Path) -> Sender:
     def send(title: str, body: str) -> Any:
         from libs.ops import alert_channels
@@ -341,10 +354,9 @@ def _page(reading: dict[str, Any], *, root: Path, now: datetime, sender: Sender 
                 state_open[k].pop("last_error", None)
                 state_open[k].pop("last_error_at", None)
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps({"at": stamp, "open": state_open, "last": {
+        _write_atomic(path, json.dumps({"at": stamp, "open": state_open, "last": {
             k: out.get(k) for k in ("sent", "title", "armed", "delivered", "error", "opened",
-                                    "reminded", "resolved")}}, indent=1, default=str), "utf-8")
+                                    "reminded", "resolved")}}, indent=1, default=str))
     except OSError as exc:
         out["state_write_error"] = f"{type(exc).__name__}: {exc}"[:200]
     return out
@@ -369,8 +381,7 @@ def run(*, dry_run: bool = False, out: Path = OUT, root: Path | None = None,
         return doc
     doc["page"] = page(doc, root=root, now=now, sender=sender)
     with contextlib.suppress(OSError):
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+        _write_atomic(out, json.dumps(doc, indent=1, default=str))
     return doc
 
 
