@@ -8,7 +8,12 @@
 #
 #   principal  S-1-5-18 (SYSTEM), ServiceAccount, RunLevel Highest (XML: HighestAvailable)
 #   trigger    every 1 minute (PT1M), indefinitely
-#   settings   MultipleInstances IgnoreNew, ExecutionTimeLimit PT5M, StartWhenAvailable
+#   settings   MultipleInstances IgnoreNew, ExecutionTimeLimit PT5M, StartWhenAvailable,
+#              AllowStartIfOnBatteries, DontStopIfGoingOnBatteries
+#
+# The two battery switches are SET HERE, not inherited: New-ScheduledTaskSettingsSet defaults to
+# DisallowStartIfOnBatteries + StopIfGoingOnBatteries, and a guard that cancels orders must run
+# like an always-on server whatever the host reports about its power source.
 #   action     cmd.exe /d /s /c "cd /d C:\opt\quant && "<python>" -u -W ignore <script>
 #                 >> C:\opt\quant\desks\mt5\logs\<task>.log 2>&1"
 #
@@ -37,7 +42,8 @@ $tasks = [ordered]@{
 
 $principal = New-ScheduledTaskPrincipal -UserId 'S-1-5-18' -LogonType ServiceAccount -RunLevel Highest
 $settings  = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew `
-                -ExecutionTimeLimit (New-TimeSpan -Minutes 5) -StartWhenAvailable
+                -ExecutionTimeLimit (New-TimeSpan -Minutes 5) -StartWhenAvailable `
+                -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 
 foreach ($name in $tasks.Keys) {
     $script = $tasks[$name]
@@ -64,5 +70,6 @@ foreach ($name in $tasks.Keys) {
     Write-Host ("    principal {0} / {1} / {2}" -f $t.Principal.UserId, $t.Principal.LogonType, $t.Principal.RunLevel)
     Write-Host ("    trigger   every {0} for {1}" -f $t.Triggers[0].Repetition.Interval, $(if ($t.Triggers[0].Repetition.Duration) { $t.Triggers[0].Repetition.Duration } else { 'indefinitely' }))
     Write-Host ("    settings  {0} / limit {1} / StartWhenAvailable {2}" -f $t.Settings.MultipleInstances, $t.Settings.ExecutionTimeLimit, $t.Settings.StartWhenAvailable)
+    Write-Host ("    battery   DisallowStartIfOnBatteries {0} / StopIfGoingOnBatteries {1}" -f $t.Settings.DisallowStartIfOnBatteries, $t.Settings.StopIfGoingOnBatteries)
     Write-Host ("    state     {0}" -f $t.State)
 }
