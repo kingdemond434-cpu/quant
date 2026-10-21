@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-21T12:00:14.180220+00:00",
+  "swept_at": "2026-10-21T12:15:27.198109+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1009,8 +1009,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 74,
-      "shadow_exp_r": 0.1276,
+      "shadow_n": 75,
+      "shadow_exp_r": 0.1456,
       "woke_on_shadow": false
     },
     "CHFSGD|pca_residual_continuous": {
@@ -1967,7 +1967,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1809,
+      "shadow_exp_r": -0.1041,
       "woke_on_shadow": false
     },
     "GBPDKK|overnight_gap_decay_continuous": {
@@ -1988,8 +1988,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 31,
-      "shadow_exp_r": -0.1269,
+      "shadow_n": 32,
+      "shadow_exp_r": -0.159,
       "woke_on_shadow": false
     },
     "GBPDKK|spread_state_continuous": {
@@ -2209,7 +2209,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1221,
+      "shadow_exp_r": -0.1163,
       "woke_on_shadow": false
     },
     "GBPNOK|carry_continuous": {
@@ -2264,7 +2264,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5624,
+      "shadow_exp_r": -0.5923,
       "woke_on_shadow": false
     },
     "GBPNOK|overnight_gap_decay_asia": {
@@ -2407,7 +2407,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4926,
+      "shadow_exp_r": -0.4479,
       "woke_on_shadow": false
     },
     "GBPSEK|overnight_gap_decay_asia": {
@@ -2605,7 +2605,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2116,
+      "shadow_exp_r": -0.2083,
       "woke_on_shadow": false
     },
     "GBPZAR|overnight_gap_decay_asia": {
@@ -3760,7 +3760,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0259,
+      "shadow_exp_r": 0.0254,
       "woke_on_shadow": false
     },
     "USDMXN|macro_conditional_continuous": {
@@ -4035,7 +4035,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3404,
+      "shadow_exp_r": -0.3129,
       "woke_on_shadow": false
     },
     "USDSGD|overnight_drift_continuous": {
