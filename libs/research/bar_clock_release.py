@@ -56,7 +56,12 @@ UNIVERSE_REL = "desks/mt5/data/universe"
 #: Liquid instruments quoted in the currencies the calendar's high-impact releases name. The
 #: first chart that exists, finest first, is read; an absent instrument simply does not vote.
 INSTRUMENTS: tuple[str, ...] = ("XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD",
-                                "NZDUSD", "USDCHF")
+                                "NZDUSD", "USDCHF",
+                                # NON-USD-QUOTED VOTERS (audit of b9d37faaa): every USD pair reads
+                                # the same USD releases, so agreement among them is one reading
+                                # counted several times. A cross reads its own currencies' releases.
+                                "AUDCAD", "NZDCAD", "EURGBP", "EURAUD", "GBPAUD", "EURJPY",
+                                "GBPJPY", "AUDJPY", "CADJPY", "NZDJPY", "AUDNZD", "EURCHF")
 CHARTS: tuple[str, ...] = ("M5", "M15", "H1")
 
 #: Candidate offsets, wider than any broker uses so the answer is not boxed in by the search.
@@ -64,6 +69,12 @@ CANDIDATES: tuple[int, ...] = tuple(range(-2, 7))
 
 MIN_EVENTS = 5
 MIN_INSTRUMENTS = 3
+#: Distinct release instants behind the agreed offset, counted once however many instruments
+#: read them (audit of b9d37faaa: seven USD voters read the same 18 instants).
+MIN_INDEPENDENT_RELEASES = 10
+#: Per-release agreement: the winner's share of releases, and the most an adjacent hour may hold.
+MIN_RELEASE_SHARE = 0.6
+MAX_ADJACENT_SHARE = 0.2
 MIN_SPIKE = 2.0
 MIN_MARGIN = 1.5
 
@@ -150,7 +161,21 @@ def _bars(root: Path, symbol: str) -> tuple[str, Any] | None:
 
 
 def _instrument(chart_frame: tuple[str, Any], times: list[Any]) -> dict[str, Any]:
-    """The offset at which this instrument's release spike sits, or None when unclear."""
+    """The offset at which this instrument's release spike sits, or None when unclear.
+
+    THREE REFUSALS, each from an audit probe (JUDGE_DEAD_FAMILIES_28014bbde / b9d37faaa):
+
+      * THE FLOOR IS COUNTED AT THE OFFSETS THAT DECIDE. `MIN_EVENTS` releases must have bars at
+        the winning offset AND at the runner-up. The largest sample over all candidates let +3
+        resolve from 2 releases when 6 of 8 had no bar there.
+      * A MIXED HISTORY IS REFUSED, NEVER VOTED. Each release's own peak offset is read; the
+        winner must hold at least MIN_RELEASE_SHARE of the releases, and an ADJACENT offset may
+        hold at most MAX_ADJACENT_SHARE of the pair. A 5/3 split resolved to its majority would
+        place the minority an hour off -- an hour EARLY when the majority is the smaller offset,
+        which is a look-ahead.
+      * `releases` names the instants that support the answer, so the season can count
+        independent release instants rather than instruments that read the same ones.
+    """
     import numpy as np
     import pandas as pd
     chart, frame = chart_frame
@@ -162,34 +187,60 @@ def _instrument(chart_frame: tuple[str, Any], times: list[Any]) -> dict[str, Any
     step = pd.Timedelta(frame.index.to_series().diff().median())
     width = max(step, pd.Timedelta(minutes=10))
     index = rng.index
-    spikes: dict[int, float] = {}
-    n_used = 0
-    for k in CANDIDATES:
-        vals = []
-        for t in times:
+    per_k: dict[int, dict[Any, float]] = {k: {} for k in CANDIDATES}
+    for t in times:
+        for k in CANDIDATES:
             start = (t.tz_convert("UTC").tz_localize(None) + pd.Timedelta(hours=k)).floor(step)
             lo = int(index.searchsorted(start, side="left"))
             hi = int(index.searchsorted(start + width, side="left"))
             if hi > lo:
-                vals.append(float(rng.iloc[lo:hi].max()) / base)
-        if vals:
-            spikes[k] = float(np.median(vals))
-            n_used = max(n_used, len(vals))
-    out: dict[str, Any] = {"chart": chart, "n_releases": n_used,
+                per_k[k][t] = float(rng.iloc[lo:hi].max()) / base
+    spikes = {k: float(np.median(list(v.values()))) for k, v in per_k.items() if v}
+    n_at = {k: len(v) for k, v in per_k.items() if v}
+    out: dict[str, Any] = {"chart": chart, "n_releases_by_offset": {str(k): n for k, n in
+                                                                    n_at.items()},
                            "spike_by_offset": {str(k): round(v, 3) for k, v in spikes.items()}}
-    if n_used < MIN_EVENTS or len(spikes) < 2:
-        return {**out, "offset_h": None, "why": f"{n_used} releases on bars, under {MIN_EVENTS}"}
+    if len(spikes) < 2:
+        return {**out, "offset_h": None, "why": "fewer than two candidate offsets on bars"}
     ranked = sorted(spikes.items(), key=lambda kv: kv[1], reverse=True)
-    (best_k, best), (_k2, second) = ranked[0], ranked[1]
+    (best_k, best), (k2, second) = ranked[0], ranked[1]
+    if n_at[best_k] < MIN_EVENTS or n_at[k2] < MIN_EVENTS:
+        return {**out, "offset_h": None,
+                "why": (f"{n_at[best_k]} releases on bars at the winning {best_k:+d}h and "
+                        f"{n_at[k2]} at the runner-up {k2:+d}h, under {MIN_EVENTS}")}
     if best < MIN_SPIKE or best < MIN_MARGIN * second:
         return {**out, "offset_h": None,
                 "why": f"no clear spike: best {best:.2f}x at {best_k:+d}h, next {second:.2f}x"}
-    return {**out, "offset_h": int(best_k)}
+    # Each release's own peak, over the offsets it has bars at.
+    peaks: dict[Any, int] = {}
+    for t in times:
+        got = {k: per_k[k][t] for k in CANDIDATES if t in per_k[k]}
+        if got:
+            peaks[t] = max(got, key=lambda k: got[k])
+    n_best = sum(1 for k in peaks.values() if k == best_k)
+    share = n_best / len(peaks) if peaks else 0.0
+    out["release_share_at_offset"] = round(share, 3)
+    if share < MIN_RELEASE_SHARE:
+        return {**out, "offset_h": None,
+                "why": (f"mixed history: only {n_best} of {len(peaks)} releases peak at "
+                        f"{best_k:+d}h (under {MIN_RELEASE_SHARE:.0%})")}
+    for adj in (best_k - 1, best_k + 1):
+        n_adj = sum(1 for k in peaks.values() if k == adj)
+        if n_adj and n_adj / (n_best + n_adj) > MAX_ADJACENT_SHARE:
+            return {**out, "offset_h": None,
+                    "why": (f"mixed history: {n_adj} releases peak at {adj:+d}h beside {n_best} "
+                            f"at {best_k:+d}h; an hour's split is refused, never voted")}
+    support = sorted(t for t, k in peaks.items() if k == best_k)
+    return {**out, "offset_h": int(best_k), "releases": [t.isoformat() for t in support]}
+
+
+def _usd_quoted(symbol: str) -> bool:
+    return "USD" in (symbol[:3], symbol[3:6])
 
 
 def measure(root: Path) -> dict[str, Any]:
-    """{per_season: {name: {offset_h, agrees_across_pairs, readings}}} from the release spikes."""
-    from libs.research.bar_clock import SEASON_WINDOWS, season_of
+    """{per_season: {name: {offset_h, agrees_across_pairs, window, readings}}}."""
+    from libs.research.bar_clock import SEASON_WINDOWS, season_instance, season_of
     releases = _releases(root)
     frames = {s: fb for s in INSTRUMENTS if (fb := _bars(root, s)) is not None}
     per_season: dict[str, Any] = {}
@@ -200,16 +251,42 @@ def measure(root: Path) -> dict[str, Any]:
             times = [t for t, c in releases
                      if c & ccys and season_of(t.to_pydatetime()) == season]
             readings[sym] = _instrument(fb, times)
-        offs = {r["offset_h"] for r in readings.values() if r.get("offset_h") is not None}
-        voters = sum(1 for r in readings.values() if r.get("offset_h") is not None)
-        agrees = len(offs) == 1 and voters >= MIN_INSTRUMENTS
+        resolved = {s: r for s, r in readings.items() if r.get("offset_h") is not None}
+        offs = {r["offset_h"] for r in resolved.values()}
+        support = sorted({t for r in resolved.values() for t in r.get("releases", [])})
+        non_usd = sorted(s for s in resolved if not _usd_quoted(s))
+        why = ""
+        if len(offs) > 1:
+            why = f"resolved instruments disagree: {sorted(offs)}"
+        elif len(resolved) < MIN_INSTRUMENTS:
+            why = f"{len(resolved)} instruments resolve, under {MIN_INSTRUMENTS}"
+        elif len(support) < MIN_INDEPENDENT_RELEASES:
+            why = (f"{len(support)} independent release instants support it, under "
+                   f"{MIN_INDEPENDENT_RELEASES}")
+        elif not non_usd:
+            why = ("every agreeing instrument quotes USD: they read the same releases, so no "
+                   "independent (non-USD-quoted) instrument confirms the clock")
+        agrees = not why
+        window = None
+        if agrees:
+            instances = sorted({season_instance(pd_ts(t)) for t in support})
+            window = {"instances": instances, "first": support[0], "last": support[-1],
+                      "n_releases": len(support), "instruments": sorted(resolved),
+                      "non_usd_instruments": non_usd}
         per_season[season] = {"offset_h": next(iter(offs)) if agrees else None,
-                              "agrees_across_pairs": agrees, "instruments_resolved": voters,
+                              "agrees_across_pairs": agrees, "instruments_resolved":
+                              len(resolved), "independent_releases": len(support),
+                              "window": window, "why": why or "resolved",
                               "readings": readings}
     return {"measured_by": ("release-spike alignment: the bar labelled release+k hours carries "
                             "the day's range spike only at the broker's true offset; releases are "
                             "UTC-stamped by the calendar with their own offset"),
             "n_releases": len(releases), "per_season": per_season}
+
+
+def pd_ts(raw: str) -> Any:
+    import pandas as pd
+    return pd.Timestamp(raw).to_pydatetime()
 
 
 def _signature(root: Path) -> tuple[tuple[str, int, int], ...]:
@@ -246,10 +323,20 @@ def reading(root: Path) -> dict[str, Any]:
 
 
 def offsets(root: Path) -> dict[str, int]:
-    """Season -> offset, for seasons the release spikes resolve unanimously. {} otherwise."""
+    """Season -> offset, for seasons the release spikes resolve. {} otherwise."""
     out: dict[str, int] = {}
     for name, block in (reading(root).get("per_season") or {}).items():
         if isinstance(block, dict) and isinstance(block.get("offset_h"), int) \
                 and block.get("agrees_across_pairs"):
             out[str(name)] = int(block["offset_h"])
+    return out
+
+
+def windows(root: Path) -> dict[str, dict[str, Any]]:
+    """Season -> the window the offset was measured on: season instances, first/last release."""
+    out: dict[str, dict[str, Any]] = {}
+    for name, block in (reading(root).get("per_season") or {}).items():
+        if isinstance(block, dict) and block.get("agrees_across_pairs") \
+                and isinstance(block.get("window"), dict):
+            out[str(name)] = block["window"]
     return out

@@ -73,6 +73,7 @@ def _events(monkeypatch, stamps: list[str]) -> pd.DatetimeIndex:
 def test_event_reaction_without_a_bar_clock_is_needs_data(monkeypatch) -> None:
     ev = _events(monkeypatch, ["2026-06-05 12:30", "2026-07-03 12:30"])
     monkeypatch.setattr(bar_clock, "offsets", lambda root=None: {})
+    monkeypatch.setattr(bar_clock, "_release", lambda root: ({}, {}))
     got = F.probe("EURUSD", "event_reaction")
     assert got["status"] == F.NEEDS_DATA and got["missing_input"] == "bar_clock"
     assert family_event_reaction(_bars(), events=events_for_symbol(ev, "EURUSD"),
@@ -82,6 +83,7 @@ def test_event_reaction_without_a_bar_clock_is_needs_data(monkeypatch) -> None:
 def test_event_reaction_in_shoulder_months_only_is_needs_data(monkeypatch) -> None:
     ev = _events(monkeypatch, ["2026-10-02 12:30", "2026-10-09 12:30"])
     monkeypatch.setattr(bar_clock, "offsets", lambda root=None: {"summer": 3, "winter": 2})
+    monkeypatch.setattr(bar_clock, "_release", lambda root: ({}, {}))
     got = F.probe("EURUSD", "event_reaction")
     assert got["status"] == F.NEEDS_DATA and got["missing_input"] == "event_calendar_history"
     assert family_event_reaction(_bars(4000), events=events_for_symbol(ev, "EURUSD"),
@@ -91,6 +93,7 @@ def test_event_reaction_in_shoulder_months_only_is_needs_data(monkeypatch) -> No
 def test_event_reaction_with_placeable_events_is_present(monkeypatch) -> None:
     _events(monkeypatch, ["2026-06-05 12:30", "2026-07-03 12:30"])
     monkeypatch.setattr(bar_clock, "offsets", lambda root=None: {"summer": 3, "winter": 2})
+    monkeypatch.setattr(bar_clock, "_release", lambda root: ({}, {}))
     got = F.probe("EURUSD", "event_reaction")
     assert got["status"] == F.PRESENT and got["placeable_events"] == 2
 
@@ -190,6 +193,7 @@ def test_a_missing_season_offset_is_named_bar_clock_not_calendar_history(monkeyp
     """Summer measured, winter not: a winter-only calendar lacks the CLOCK, not history."""
     _events(monkeypatch, ["2026-01-08 12:30", "2026-01-15 12:30"])
     monkeypatch.setattr(bar_clock, "offsets", lambda root=None: {"summer": 3})
+    monkeypatch.setattr(bar_clock, "_release", lambda root: ({}, {}))
     got = F.probe("EURUSD", "event_reaction")
     assert got["status"] == F.NEEDS_DATA and got["missing_input"] == "bar_clock"
     assert got["dropped"] == {bar_clock.UNMEASURED: 2}
@@ -199,6 +203,7 @@ def test_the_probe_leaves_the_familys_drop_counter_as_it_found_it(monkeypatch) -
     from mt5desk import family_event_reaction as fer
     _events(monkeypatch, ["2026-10-02 12:30"])
     monkeypatch.setattr(bar_clock, "offsets", lambda root=None: {"summer": 3, "winter": 2})
+    monkeypatch.setattr(bar_clock, "_release", lambda root: ({}, {}))
     monkeypatch.setattr(fer, "_DROPPED", {"X": 7})
     F.probe("EURUSD", "event_reaction")
     assert fer._DROPPED == {"X": 7}

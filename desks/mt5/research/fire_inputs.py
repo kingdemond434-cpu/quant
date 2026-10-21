@@ -12,7 +12,8 @@ spec is wrong:
     (`desks/mt5/reports/BAR_CLOCK.json`, written by `research/futures_lead_lag.py`, or the
     release-spike reading `libs/research/bar_clock_release.py` takes from the desk's own calendar
     and bars) every event is dropped. In a shoulder month (16 Sep - 30 Nov, 16 Feb - 30 Apr)
-    every event of a calendar that holds only recent weeks is dropped too. Either way the family returns [] on any bars.
+    every event of a calendar that holds only recent weeks is dropped too. Either way the family
+    returns [] on any bars.
   * `cot_positioning`: `orthogonal_sweep._cot_frame(sym)` serves a series only for the symbols
     `scripts/refresh_cot_zcache.py` maps (11) or from the legacy JSON files. Every other symbol
     gets `cot=None`, and the family returns [] on its first line.
@@ -111,16 +112,22 @@ def _probe_event(sym: str) -> dict[str, Any]:
         # cell and nothing here claims it.
         return {"status": UNMEASURED, "why": "no calendar: the judge names this a build failure"}
     from mt5desk import family_event_reaction as fer
-    _seen = dict(fer._DROPPED)            # the family's drop counter is not this probe's to move
+    _seen = dict(fer._DROPPED)            # the family's counters are not this probe's to move
+    _seen_c = dict(fer._CONVERTED)
     fer._DROPPED.clear()
+    fer._CONVERTED.clear()
     try:
         times = _event_times(events_for_symbol(events, sym), sym, clock="utc")
         dropped = dict(fer._DROPPED)      # THIS call's drops, by the family's own reason
+        placed = dict(fer._CONVERTED)     # and which clock placed the rest
     finally:
         fer._DROPPED.clear()
         fer._DROPPED.update(_seen)
+        fer._CONVERTED.clear()
+        fer._CONVERTED.update(_seen_c)
     if times:
-        return {"status": PRESENT, "input": "event_calendar", "placeable_events": len(times)}
+        return {"status": PRESENT, "input": "event_calendar", "placeable_events": len(times),
+                "clock": placed, "dropped": dropped}
     # THE LABEL IS THE FAMILY'S OWN DROP REASON (audit of c72ecfc53). Keying it off "is there any
     # offset at all" called a missing SEASON offset `event_calendar_history`; the input that is
     # missing there is the bar clock. Only events dropped as shoulder-month, with every event's
@@ -142,7 +149,8 @@ def _probe_event(sym: str) -> dict[str, Any]:
             "measured season, so family_event_reaction returns [] on any bars")
     return {"status": NEEDS_DATA, "missing_input": missing, "why": why,
             "dropped": dropped,
-            "stamp": f"{len(events)}|{sorted(bar_clock.offsets().items())}"}
+            "stamp": (f"{len(events)}|{sorted(bar_clock.offsets().items())}"
+                      f"|{sorted(bar_clock.release_offsets().items())}")}
 
 
 def probe(sym: str, family: str, params: dict[str, Any] | None = None,
