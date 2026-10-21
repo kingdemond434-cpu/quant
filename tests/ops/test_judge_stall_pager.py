@@ -1,6 +1,7 @@
-"""THE JUDGE STALL PAGER (2026-10-21, v2 after the audit of e759c01f6): each incident pages once,
-reminds at 6h, resolves once -- and UNMEASURED, unknown phases, pid reuse, a stuck idle resident,
-a zero-cell sweep, an unreadable host identity and a killed send all page instead of going quiet.
+"""THE JUDGE STALL PAGER (2026-10-21, v3 after the audits of e759c01f6 and e60b42212): each
+incident pages once, reminds at 6h, resolves once -- and UNMEASURED (persistent or flapping),
+unknown phases, pid reuse, a stuck idle resident, a zero-cell or result-less sweep, an unreadable
+host identity and a killed send all page instead of going quiet.
 
 The channel is always mocked and pid liveness injected: no test reaches a network, reads a
 credential or probes a real process.
@@ -71,10 +72,14 @@ def _world(tmp: Path, now: datetime, *, verdict_h: float = 1.0, hb_min: float = 
     res.write_text(json.dumps(resident if resident is not None else doc), "utf-8")
     sweep = tmp / "universal_gates_external.json"
     if cells is not None:
-        sweep.write_text(json.dumps({"swept_at": _iso(end - timedelta(minutes=30)),
-                                     "n_cells": cells}), "utf-8")
+        # the judge's own layout: indent=2, counts at the head, swept_at after the verdicts
+        sweep.write_text(json.dumps({"n_cells": cells, "n_judged": cells, "verdicts": [],
+                                     "swept_at": _iso(end - timedelta(minutes=30))},
+                                    indent=2), "utf-8")
+    elif sweep.exists():
+        sweep.unlink()
     return {"ledger": ledger, "resident": res, "throughput": tmp / "absent.json",
-            "sweep_result": sweep}
+            "sweep_result": sweep, "env_file": tmp / "absent.env.json"}
 
 
 def _step(jsp, tmp: Path, now: datetime, ch: Channel, alive=_alive, on_box=True, **kw) -> dict:
@@ -386,3 +391,172 @@ def test_the_artifact_is_published_from_the_box():
     sync = (REPO / "desks/mt5/scripts/sync_shadow_to_git.ps1").read_text("utf-8")
     assert '"desks/mt5/reports/JUDGE_STALL.json"' in sync
     assert "!desks/mt5/reports/JUDGE_STALL.json" in (REPO / ".gitignore").read_text("utf-8")
+
+
+# ---- v3 (audit of e60b42212): every incident that stays UNMEASURED past a bound pages ----
+
+def _series(jsp, tmp: Path, ch: Channel, minutes, write) -> list[dict]:
+    """Run the pager at NOW + each minute, letting `write(t, paths)` shape that reading."""
+    docs = []
+    for m in minutes:
+        t = NOW + timedelta(minutes=m)
+        paths = _world(tmp, t)
+        write(t, paths)
+        docs.append(jsp.run(now=t, root=tmp, sender=ch, on_box=True,
+                            out=tmp / "JUDGE_STALL.json", pid_alive=_alive, **paths))
+    return docs
+
+
+def _resident(doc: dict) -> Any:
+    return lambda t, p: p["resident"].write_text(json.dumps(doc), "utf-8")
+
+
+def test_a_resident_with_no_heartbeat_pages_after_the_bound(jsp, tmp_path):
+    ch = Channel()
+    doc = {"pid": 111, "status": "BACKOFF", "started_utc": _iso(NOW - timedelta(days=2)),
+           "last_sweep_ended_utc": _iso(NOW), "last_sweep_s": 100.0, "last_rc": 1}
+    docs = _series(jsp, tmp_path, ch, range(0, 30, 5), _resident(doc))
+    assert docs[0]["incidents"]["resident_dead"]["open"] is None
+    assert ch.sent == []
+    d = _series(jsp, tmp_path, ch, [jsp.UNMEASURED_PAGE_MIN], _resident(doc))[0]
+    assert d["page"]["opened"] == ["inputs_unmeasured"]
+    assert d["incidents"]["inputs_unmeasured"]["incidents"] == ["resident_dead"]
+    assert "no heartbeat stamp" in ch.sent[0][1]
+
+
+def test_a_bare_running_status_pages(jsp, tmp_path):
+    ch = Channel()
+    docs = _series(jsp, tmp_path, ch, range(0, 35, 5), _resident({"status": "RUNNING"}))
+    inc = docs[-1]["incidents"]
+    assert inc["resident_dead"]["open"] is None and inc["sweep_overdue"]["open"] is None
+    assert docs[-1]["page"]["opened"] == ["inputs_unmeasured"] and len(ch.sent) == 1
+    assert set(inc["inputs_unmeasured"]["incidents"]) == {"resident_dead", "sweep_overdue"}
+
+
+def test_a_sweep_child_with_no_start_stamp_pages(jsp, tmp_path):
+    ch = Channel()
+
+    def strip(t: datetime, p: dict) -> None:
+        doc = json.loads(p["resident"].read_text("utf-8"))
+        del doc["sweep_phase"]["sweep_started_utc"]
+        p["resident"].write_text(json.dumps(doc), "utf-8")
+
+    def alive(pid: object, started: datetime | None) -> bool | None:
+        return None if started is None else True           # as _pid_alive reads it
+
+    for m in range(0, 35, 5):
+        t = NOW + timedelta(minutes=m)
+        paths = _world(tmp_path, t)
+        strip(t, paths)
+        d = jsp.run(now=t, root=tmp_path, sender=ch, on_box=True,
+                    out=tmp_path / "JUDGE_STALL.json", pid_alive=alive, **paths)
+    assert d["incidents"]["sweep_dead"]["open"] is None
+    assert d["page"]["opened"] == ["inputs_unmeasured"]
+    assert d["incidents"]["inputs_unmeasured"]["incidents"] == ["sweep_dead"]
+
+
+def test_an_rc0_sweep_that_wrote_no_result_pages_at_its_longer_bound(jsp, tmp_path):
+    """run_sharded's early returns exit 0 and write no result: UNMEASURED, then a page."""
+    assert jsp.UNMEASURED_BOUND_MIN["zero_judged_sweep"] == 120.0
+    ch = Channel()
+
+    def missing(t: datetime, p: dict) -> None:
+        p["sweep_result"].unlink()
+
+    docs = _series(jsp, tmp_path, ch, range(0, 120, 5), missing)
+    assert docs[6]["incidents"]["zero_judged_sweep"]["open"] is None       # 30 min: no page
+    assert ch.sent == []
+    d = _series(jsp, tmp_path, ch, [120], missing)[0]
+    assert d["page"]["opened"] == ["inputs_unmeasured"]
+    assert d["incidents"]["inputs_unmeasured"]["incidents"] == ["zero_judged_sweep"]
+
+
+def test_a_result_from_another_sweep_reads_unmeasured_and_pages(jsp, tmp_path):
+    ch = Channel()
+
+    def stale(t: datetime, p: dict) -> None:            # stamped a day before the last sweep
+        p["sweep_result"].write_text(json.dumps({"n_cells": 5, "verdicts": [],
+                                                 "swept_at": _iso(t - timedelta(days=1))},
+                                                indent=2), "utf-8")
+
+    docs = _series(jsp, tmp_path, ch, range(0, 125, 5), stale)
+    assert docs[0]["incidents"]["zero_judged_sweep"]["open"] is None
+    assert "inside the last sweep" in docs[0]["incidents"]["zero_judged_sweep"]["why"]
+    assert docs[-1]["page"]["opened"] == ["inputs_unmeasured"] and len(ch.sent) == 1
+
+
+def test_a_flapping_input_pages_and_a_single_torn_read_does_not(jsp, tmp_path):
+    ch = Channel()
+    # torn on five reads of six inside the window (the clean read is the 4th)
+    def flap(t: datetime, p: dict) -> None:
+        if t != NOW + timedelta(minutes=15):
+            p["resident"].write_text("{torn", "utf-8")
+
+    docs = _series(jsp, tmp_path, ch, range(0, 35, 5), flap)
+    assert docs[3]["incidents"]["resident_dead"]["open"] is False          # one clean read
+    assert docs[-1]["page"]["opened"] == ["inputs_unmeasured"] and len(ch.sent) == 1
+    quiet = tmp_path / "q"
+    quiet.mkdir()
+    ch2 = Channel()
+
+    def once(t: datetime, p: dict) -> None:
+        if t == NOW + timedelta(minutes=15):
+            p["resident"].write_text("{torn", "utf-8")
+
+    docs = _series(jsp, quiet, ch2, range(0, 65, 5), once)
+    assert all(d["incidents"]["inputs_unmeasured"]["open"] is False for d in docs)
+    assert ch2.sent == []
+
+
+def test_the_done_phase_has_a_short_limit(jsp, tmp_path):
+    assert jsp.PHASE_LIMIT_H["done"] == 1.0
+    ok = _step(jsp, tmp_path, NOW, Channel(), phase="done", phase_h=0.5)
+    assert ok["incidents"]["phase_overrun"]["open"] is False
+    hung = _step(jsp, tmp_path, NOW, Channel(), phase="done", phase_h=1.1)
+    assert hung["incidents"]["phase_overrun"]["open"] is True
+    assert hung["incidents"]["phase_overrun"]["known_phase"] is True
+
+
+def test_the_sweep_result_is_read_from_its_ends_only(jsp, tmp_path, monkeypatch):
+    end = NOW - timedelta(hours=2)
+    doc = {"last_sweep_ended_utc": _iso(end), "last_sweep_s": 20_000.0, "last_rc": 0}
+    big = tmp_path / "universal_gates_external.json"
+    body = {"n_cells": 40_000, "n_judged": 0,
+            "verdicts": [{"cell": f"c{i}", "verdict": "FAIL" * 20} for i in range(40_000)],
+            "swept_at": _iso(end - timedelta(minutes=30))}
+    big.write_text(json.dumps(body, indent=2), "utf-8")
+    assert big.stat().st_size > jsp.RESULT_HEAD_BYTES + jsp.RESULT_TAIL_BYTES
+    monkeypatch.setattr(json, "loads", lambda *a, **k: pytest.fail("parsed the result"))
+    z = jsp._zero_judged(doc, big)
+    assert z["open"] is True and z["cells"] == 0 and z["basis"] == "n_judged"
+    # a key nested inside a verdict (deeper indent) is never read as the top-level count
+    nested = tmp_path / "n.json"
+    nested.write_text(json.dumps({"verdicts": [{"n_cells": 0}],
+                                  "swept_at": _iso(end - timedelta(minutes=30))}, indent=2),
+                      "utf-8")
+    assert jsp._zero_judged(doc, nested)["open"] is None
+
+
+def test_the_prewarm_limit_is_derived_from_the_fresh_budget(jsp, tmp_path, monkeypatch):
+    monkeypatch.delenv("GAUNTLET_FRESH_BUDGET_SEC", raising=False)
+    tp = tmp_path / "JUDGING_THROUGHPUT.json"
+    tp.write_text(json.dumps({"decision": {"fresh_budget_s": 4_000.0}}), "utf-8")
+    env = tmp_path / "judging_throughput.env.json"
+    assert jsp.fresh_budget_s(tp, env) == (4_000.0, "JUDGING_THROUGHPUT.json "
+                                                    "decision.fresh_budget_s")
+    assert jsp.phase_limits(4_000.0)["prewarm"] == round(1.5 * 5_100 / 3600, 2)
+    paths = _world(tmp_path, NOW, phase="prewarm", phase_h=2.2)
+    paths["throughput"] = tp
+    d = jsp.measure(NOW, pid_alive=_alive, **paths)
+    assert d["incidents"]["phase_overrun"]["open"] is True              # 2.2h > 2.12h
+    assert d["thresholds"]["prewarm_budget_s"] == 4_000.0
+    paths["throughput"] = tmp_path / "absent.json"
+    d2 = jsp.measure(NOW, pid_alive=_alive, **paths)
+    assert d2["incidents"]["phase_overrun"]["open"] is False            # 8,640 s -> 4.06h
+    assert d2["thresholds"]["prewarm_budget_source"].startswith("UNMEASURED")
+    env.write_text(json.dumps({"env": {"GAUNTLET_FRESH_BUDGET_SEC": "6000"}}), "utf-8")
+    assert jsp.fresh_budget_s(tmp_path / "absent.json", env)[0] == 6_000.0
+    monkeypatch.setenv("GAUNTLET_FRESH_BUDGET_SEC", "7000")
+    assert jsp.fresh_budget_s(tmp_path / "absent.json", tmp_path / "no.json")[0] == 7_000.0
+    monkeypatch.setenv("GAUNTLET_FRESH_BUDGET_SEC", "nonsense")
+    assert jsp.fresh_budget_s(tmp_path / "absent.json", tmp_path / "no.json")[0] == 8_640.0

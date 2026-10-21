@@ -41,9 +41,11 @@ snapshots, 2026-10-14..10-21), and the evidence is beside each constant below:
                      past IDLE_OVERDUE_H in any other live status -- which is how a resident stuck
                      in LANE_HELD or BACKOFF reads, since neither ever reaches phase_overrun.
   zero_judged_sweep  the last sweep completed rc 0 and the judge's own result for it judged 0 cells.
-  inputs_unmeasured  a core input (the verdict source, JUDGE_RESIDENT.json, or the phase of a
-                     SWEEPING resident) has been unreadable, torn or empty for UNMEASURED_PAGE_MIN.
-                     UNMEASURED is a verdict here, and a verdict that persists pages.
+  inputs_unmeasured  ANY incident above has read UNMEASURED (`open: None`) for at least
+                     UNMEASURED_SHARE of its readings over a full window of UNMEASURED_PAGE_MIN
+                     (UNMEASURED_BOUND_MIN overrides it per incident). A window share, not a
+                     streak, so an input torn on five reads of six still pages. UNMEASURED is a
+                     verdict here, and a verdict that persists pages.
   host_unreadable    libs.ops.host_identity raised. The pager fails TOWARD paging: it treats the
                      host as the box, writes its artifact and pages this incident with the rest.
 
@@ -121,15 +123,25 @@ PID_START_SKEW_S = 300
 #:   merge_and_publish  4,340 ..  6,108 s (max 1.70 h)  -> 3 h    (1.5x, rounded up)
 #: The 10-20 merge_and_publish of 51,198 s (14.2 h, the 64,711 s sweep) is NOT in the healthy
 #: set: it held every verdict for 14 h, and it is exactly what this incident is for.
-#: `prewarm` and `plan_handoff` are the phases judge_plan_phase adds: prewarm runs against its
-#: 8,640 s budget plus ~1,100 s of slack, so 1.5x (8,640 + 1,100) s = 4.06 h; plan_handoff is a
-#: handoff with no measured history yet, so the 1 h floor.
+#: `prewarm` and `plan_handoff` are the phases judge_plan_phase adds (4f34489ed). The pre-warm
+#: pool runs until `_build_t0 + GAUNTLET_FRESH_BUDGET_SEC` -- 8,640 s of a 9,729 s plan when it
+#: was measured -- plus ~1,100 s of slack, so its limit is 1.5 x (budget + 1,100) s, with the
+#: budget DERIVED on every run (`fresh_budget_s`): JUDGING_THROUGHPUT.json's
+#: `decision.fresh_budget_s`, else the published env file, else this process's env, else the
+#: measured 8,640 s (the larger, so an unreadable budget never shortens the limit).
+#: plan_handoff has no measured history yet, so the 1 h floor. `done` is the instant between
+#: `run_sharded` returning and the child exiting (run_sharded_gauntlet._sweep_once): seconds
+#: when healthy, so the 1 h floor, and an exit hang no longer reads as an 18 h unknown phase.
+PREWARM_SLACK_S = 1_100
+PREWARM_BUDGET_MEASURED_S = 8_640.0
 PHASE_LIMIT_H: dict[str, float] = {"plan": 4.5, "build_shards": 18.0, "collect_and_cut": 1.0,
                                    "rule_shards": 1.0, "merge_and_publish": 3.0,
-                                   "prewarm": round(1.5 * (8_640 + 1_100) / 3600.0, 2),
-                                   "plan_handoff": 1.0}
+                                   "prewarm": round(1.5 * (PREWARM_BUDGET_MEASURED_S
+                                                           + PREWARM_SLACK_S) / 3600.0, 2),
+                                   "plan_handoff": 1.0, "done": 1.0}
 #: A phase with no measurement gets the most generous known limit, and is named unknown.
 UNKNOWN_PHASE_LIMIT_H = max(PHASE_LIMIT_H.values())
+ENV_FILE = BASE / "data" / "judging_throughput.env.json"
 #: SWEEP OVERDUE. MEASURED: healthy completed sweeps (last_sweep_s, rc 0) ran 36 .. 61,111 s
 #: (17,283 / 20,221 / 24,352 / 24,745 / 34,564 / 52,043 / 54,327 / 61,111; the 64,711 s sweep is
 #: the 14.2 h-merge incident above). The resident starts the next sweep at once: end -> next
@@ -141,8 +153,19 @@ HEALTHY_SWEEP_MAX_S = 61_111
 INTER_SWEEP_MAX_S = 300
 SWEEP_OVERDUE_H = round(1.5 * (HEALTHY_SWEEP_MAX_S + INTER_SWEEP_MAX_S) / 3600.0, 2)
 IDLE_OVERDUE_H = 1.0
-#: Minutes a core input may stay UNMEASURED before `inputs_unmeasured` opens.
+#: Minutes of window over which an incident's UNMEASURED readings are counted, the share of
+#: them that opens `inputs_unmeasured`, and the per-incident overrides. zero_judged_sweep takes
+#: two hours: the judge's result is a ~88 MB file rewritten at the end of a sweep, so a read can
+#: catch it mid-write, but an rc-0 sweep that never wrote one (external_gauntlet.run_sharded's
+#: early returns: no survivors, a firewall halt, an empty input) stays UNMEASURED until the next
+#: sweep ends -- hours -- and that is the case this bound exists to page.
 UNMEASURED_PAGE_MIN = 30.0
+UNMEASURED_SHARE = 0.5
+UNMEASURED_BOUND_MIN: dict[str, float] = {"zero_judged_sweep": 120.0}
+#: Bytes of the sweep result read from each end: its top-level counts sit near the head and its
+#: `swept_at` near the tail, so the ~88 MB body is never parsed.
+RESULT_HEAD_BYTES = 1024 * 1024
+RESULT_TAIL_BYTES = 256 * 1024
 #: Minutes before an unconfirmed (in-flight) send is retried: a run killed mid-send must not
 #: re-page every five minutes, and must not lose the page either.
 INFLIGHT_RETRY_MIN = 30.0
@@ -275,60 +298,118 @@ def _overdue(doc: dict[str, Any], at: datetime, status: str) -> dict[str, Any]:
                     f"status {status or '?'}; limit {limit:g}h")}
 
 
+def _result_head_tail(path: Path) -> tuple[str, str] | None:
+    """The first RESULT_HEAD_BYTES and last RESULT_TAIL_BYTES of the sweep result, as text."""
+    try:
+        with path.open("rb") as fh:
+            head = fh.read(RESULT_HEAD_BYTES)
+            fh.seek(0, 2)
+            size = fh.tell()
+            fh.seek(max(0, size - RESULT_TAIL_BYTES))
+            tail = fh.read()
+    except OSError:
+        return None
+    return head.decode("utf-8", "replace"), tail.decode("utf-8", "replace")
+
+
+#: Top-level keys of the judge's result (json.dumps indent=2 puts them two spaces in).
+_TOP_INT = r'(?m)^  "{key}": (\d+)'
+_TOP_STAMP = re.compile(r'(?m)^  "swept_at": "([^"]+)"')
+
+
 def _zero_judged(doc: dict[str, Any], sweep_result: Path) -> dict[str, Any]:
     end = _stamp(doc.get("last_sweep_ended_utc"))
     if end is None:
-        return {"open": None, "why": f"{UNMEASURED}: no completed sweep recorded"}
+        # A resident that has not finished a sweep since it started (the field is not carried
+        # across a restart) has no sweep to judge yet; sweep_overdue owns that wait.
+        return {"open": False, "why": "no completed sweep since this resident started"}
     if doc.get("last_rc") not in (0, "0"):
         return {"open": False, "why": f"last sweep rc {doc.get('last_rc')}: not a completed sweep"}
-    res = _read_json(sweep_result)
-    swept = _stamp(res.get("swept_at")) if isinstance(res, dict) else None
+    ht = _result_head_tail(sweep_result)
+    stamps = [_stamp(m.group(1)) for m in _TOP_STAMP.finditer(ht[1])] if ht else []
+    swept = next((t for t in reversed(stamps) if t is not None), None)
     try:
         length = float(doc.get("last_sweep_s") or 0.0)
     except (TypeError, ValueError):
         length = 0.0
     lo = end - timedelta(seconds=length + PID_START_SKEW_S)
     hi = end + timedelta(seconds=PID_START_SKEW_S)
-    if not isinstance(res, dict) or swept is None or not lo <= swept <= hi:
+    if ht is None or swept is None or not lo <= swept <= hi:
         return {"open": None, "why": (f"{UNMEASURED}: {sweep_result.name} carries no result "
                                       f"stamped inside the last sweep "
                                       f"({lo.isoformat(timespec='seconds')} .. "
-                                      f"{end.isoformat(timespec='seconds')})")}
-    n = res.get("n_cells")
-    if n is None and isinstance(res.get("verdicts"), list):
-        n = len(res["verdicts"])
+                                      f"{end.isoformat(timespec='seconds')}) -- an rc-0 sweep "
+                                      f"that wrote no result reads this way")}
+    cells = None
+    for key in ("n_judged", "n_cells"):
+        m = re.search(_TOP_INT.format(key=key), ht[0])
+        if m:
+            cells, basis = int(m.group(1)), key
+            break
+    if cells is None:
+        return {"open": None, "why": f"{UNMEASURED}: {sweep_result.name} names no cell count "
+                                     f"in its first {RESULT_HEAD_BYTES} bytes"}
+    return {"open": cells == 0, "cells": cells, "basis": basis,
+            "why": (f"the sweep that ended {doc.get('last_sweep_ended_utc')} judged {cells} "
+                    f"cell(s) ({basis})")}
+
+
+def fresh_budget_s(throughput: Path = THROUGHPUT, env_file: Path = ENV_FILE) -> tuple[float, str]:
+    """GAUNTLET_FRESH_BUDGET_SEC as the judge will run it, and where it was read."""
+    doc = _read_json(throughput)
+    dec = doc.get("decision") if isinstance(doc, dict) else None
+    raw = dec.get("fresh_budget_s") if isinstance(dec, dict) else None
+    src = f"{throughput.name} decision.fresh_budget_s"
+    if not isinstance(raw, (int, float)):
+        env = _read_json(env_file)
+        vals = env.get("env") if isinstance(env, dict) else None
+        raw = vals.get("GAUNTLET_FRESH_BUDGET_SEC") if isinstance(vals, dict) else None
+        src = f"{env_file.name} GAUNTLET_FRESH_BUDGET_SEC"
+    if raw is None:
+        raw, src = os.environ.get("GAUNTLET_FRESH_BUDGET_SEC"), "env GAUNTLET_FRESH_BUDGET_SEC"
     try:
-        cells = int(n)  # type: ignore[arg-type]
+        val = float(raw)  # type: ignore[arg-type]
     except (TypeError, ValueError):
-        return {"open": None, "why": f"{UNMEASURED}: {sweep_result.name} names no cell count"}
-    return {"open": cells == 0, "cells": cells,
-            "why": f"the sweep that ended {doc.get('last_sweep_ended_utc')} judged {cells} cell(s)"}
+        return PREWARM_BUDGET_MEASURED_S, "UNMEASURED: the measured 8,640 s"
+    if val <= 0:
+        return PREWARM_BUDGET_MEASURED_S, "UNMEASURED: the measured 8,640 s"
+    return val, src
+
+
+def phase_limits(budget_s: float) -> dict[str, float]:
+    limits = dict(PHASE_LIMIT_H)
+    limits["prewarm"] = round(1.5 * (budget_s + PREWARM_SLACK_S) / 3600.0, 2)
+    return limits
 
 
 def measure(now: datetime | None = None, *, ledger: Path = LEDGER,
             throughput: Path = THROUGHPUT, resident: Path = RESIDENT,
-            sweep_result: Path = SWEEP_RESULT,
+            sweep_result: Path = SWEEP_RESULT, env_file: Path = ENV_FILE,
             pid_alive: PidAlive = _pid_alive) -> dict[str, Any]:
     """Each incident: True (open), False (clear) or None (UNMEASURED), with its reading."""
     at = now or datetime.now(tz=UTC)
+    budget, budget_src = fresh_budget_s(throughput, env_file)
+    limits = phase_limits(budget)
+    unknown_limit = max(UNKNOWN_PHASE_LIMIT_H, *limits.values())
     out: dict[str, Any] = {"at": at.isoformat(timespec="seconds"), "incidents": {},
-                           "unmeasured_inputs": [],
                            "thresholds": {"no_verdict_h": NO_VERDICT_H,
                                           "heartbeat_stale_min": HEARTBEAT_STALE_MIN,
-                                          "phase_limit_h": PHASE_LIMIT_H,
-                                          "unknown_phase_limit_h": UNKNOWN_PHASE_LIMIT_H,
+                                          "phase_limit_h": limits,
+                                          "prewarm_budget_s": budget,
+                                          "prewarm_budget_source": budget_src,
+                                          "unknown_phase_limit_h": unknown_limit,
                                           "sweep_overdue_h": SWEEP_OVERDUE_H,
                                           "idle_overdue_h": IDLE_OVERDUE_H,
-                                          "unmeasured_page_min": UNMEASURED_PAGE_MIN}}
+                                          "unmeasured_page_min": UNMEASURED_PAGE_MIN,
+                                          "unmeasured_share": UNMEASURED_SHARE,
+                                          "unmeasured_bound_min": UNMEASURED_BOUND_MIN}}
     inc: dict[str, dict[str, Any]] = out["incidents"]
-    gaps: list[str] = out["unmeasured_inputs"]
 
     lv = last_verdict(at, ledger=ledger, throughput=throughput)
     out["last_verdict"] = lv
     lv_at = _stamp(lv.get("at"))
     if lv_at is None:
         inc["no_verdict"] = {"open": None, "why": lv.get("why")}
-        gaps.append(f"verdict source: {lv.get('why')}")
     else:
         h = (at - lv_at).total_seconds() / 3600.0
         inc["no_verdict"] = {"open": h > NO_VERDICT_H, "hours": round(h, 2),
@@ -341,7 +422,6 @@ def measure(now: datetime | None = None, *, ledger: Path = LEDGER,
         for k in ("resident_dead", "sweep_dead", "phase_overrun", "sweep_overdue",
                   "zero_judged_sweep"):
             inc[k] = {"open": None, "why": why}
-        gaps.append(why)
         return out
     status = str(doc.get("status") or "")
     out["resident"] = {"status": status, "pid": doc.get("pid"),
@@ -363,7 +443,6 @@ def measure(now: datetime | None = None, *, ledger: Path = LEDGER,
         why = f"{UNMEASURED}: resident SWEEPING but JUDGE_RESIDENT.json carries no sweep_phase"
         inc["sweep_dead"] = {"open": None, "why": why}
         inc["phase_overrun"] = {"open": None, "why": why}
-        gaps.append(why)
         return out
     child = pid_alive(phase.get("pid"), _stamp(phase.get("sweep_started_utc")))
     inc["sweep_dead"] = {"open": None if child is None else not child, "pid": phase.get("pid"),
@@ -373,10 +452,9 @@ def measure(now: datetime | None = None, *, ledger: Path = LEDGER,
     if started is None or not name:
         why = f"{UNMEASURED}: sweep phase {name or '?'} carries no name or no start stamp"
         inc["phase_overrun"] = {"open": None, "phase": name or None, "why": why}
-        gaps.append(why)
         return out
-    known = name in PHASE_LIMIT_H
-    limit = PHASE_LIMIT_H.get(name, UNKNOWN_PHASE_LIMIT_H)
+    known = name in limits
+    limit = limits.get(name, unknown_limit)
     h = max(0.0, (at - started).total_seconds() / 3600.0)
     inc["phase_overrun"] = {
         "open": h > limit, "phase": name, "hours": round(h, 2), "known_phase": known,
@@ -431,6 +509,52 @@ def _landing(row: dict[str, Any], now: datetime) -> bool:
     return t is not None and t <= now and (now - t).total_seconds() / 60.0 < INFLIGHT_RETRY_MIN
 
 
+#: The incidents whose own UNMEASURED reading is tracked (the two meta-incidents are not).
+_TRACKED = tuple(k for k in INCIDENTS if k not in ("inputs_unmeasured", "host_unreadable"))
+
+
+def _bound_min(k: str) -> float:
+    return float(UNMEASURED_BOUND_MIN.get(k, UNMEASURED_PAGE_MIN))
+
+
+def _unmeasured_history(raw: object, inc: dict[str, dict[str, Any]],
+                        now: datetime) -> dict[str, list[list[Any]]]:
+    """Append this run's reading (1 = UNMEASURED) per tracked incident; keep two windows."""
+    keep = timedelta(minutes=2 * max([UNMEASURED_PAGE_MIN, *UNMEASURED_BOUND_MIN.values()]))
+    out: dict[str, list[list[Any]]] = {}
+    for k in _TRACKED:
+        rows = raw.get(k) if isinstance(raw, dict) else None
+        kept: list[list[Any]] = []
+        for row in rows if isinstance(rows, list) else ():
+            with contextlib.suppress(TypeError, ValueError, IndexError):
+                t = datetime.fromisoformat(str(row[0]))
+                if now - keep <= t <= now:
+                    kept.append([t.isoformat(timespec="seconds"), 1 if row[1] else 0])
+        kept.append([now.isoformat(timespec="seconds"),
+                     1 if (inc.get(k) or {}).get("open") is None else 0])
+        out[k] = kept
+    return out
+
+
+def _unmeasured_verdict(hist: dict[str, list[list[Any]]], inc: dict[str, dict[str, Any]],
+                        now: datetime) -> dict[str, Any]:
+    """Open when an incident read UNMEASURED on >= UNMEASURED_SHARE of a FULL window."""
+    offenders: list[str] = []
+    for k, rows in hist.items():
+        bound = timedelta(minutes=_bound_min(k))
+        stamps = [(datetime.fromisoformat(str(t)), int(u)) for t, u in rows]
+        if not stamps or min(t for t, _ in stamps) > now - bound:
+            continue                         # the window is not yet full: no verdict
+        window = [u for t, u in stamps if t > now - bound]
+        if window and sum(window) / len(window) >= UNMEASURED_SHARE:
+            offenders.append(f"{k} UNMEASURED on {sum(window)}/{len(window)} reads over "
+                             f"{_bound_min(k):g} min: {(inc.get(k) or {}).get('why')}")
+    if offenders:
+        return {"open": True, "incidents": [o.split(" ", 1)[0] for o in offenders],
+                "why": "; ".join(offenders)[:600]}
+    return {"open": False, "why": "no incident has stayed UNMEASURED past its bound"}
+
+
 def _page(reading: dict[str, Any], *, root: Path, now: datetime, sender: Sender | None,
           repage_h: float) -> dict[str, Any]:
     path = root / PAGE_STATE_REL
@@ -448,20 +572,11 @@ def _page(reading: dict[str, Any], *, root: Path, now: datetime, sender: Sender 
     inc: dict[str, dict[str, Any]] = {k: dict(v) for k, v in
                                       (reading.get("incidents") or {}).items()}
 
-    # UNMEASURED IS A VERDICT THAT PAGES ONCE IT PERSISTS (audit of e759c01f6, must-fix 1).
-    gaps = [str(g) for g in reading.get("unmeasured_inputs") or ()]
-    since: datetime | None = None
-    if gaps:
-        since = _ts(prev, "unmeasured_since")
-        if since is None or since > now:
-            since = now
-        mins = (now - since).total_seconds() / 60.0
-        inc["inputs_unmeasured"] = {
-            "open": mins >= UNMEASURED_PAGE_MIN, "minutes": round(mins, 1),
-            "why": (f"UNMEASURED for {mins:.0f} min (limit {UNMEASURED_PAGE_MIN:g}): "
-                    + "; ".join(gaps))[:400]}
-    else:
-        inc["inputs_unmeasured"] = {"open": False, "why": "every core input was read"}
+    # UNMEASURED IS A VERDICT THAT PAGES ONCE IT PERSISTS (audits of e759c01f6 and e60b42212).
+    # EVERY incident's reading is kept, and any that read UNMEASURED on at least
+    # UNMEASURED_SHARE of a full window opens `inputs_unmeasured`.
+    hist = _unmeasured_history(prev.get("unmeasured_hist"), inc, now)
+    inc["inputs_unmeasured"] = _unmeasured_verdict(hist, inc, now)
 
     is_open = {k for k in INCIDENTS if (inc.get(k) or {}).get("open") is True}
     # A per-incident UNMEASURED reading neither opens nor clears that incident.
@@ -501,8 +616,7 @@ def _page(reading: dict[str, Any], *, root: Path, now: datetime, sender: Sender 
         try:
             _write_atomic(path, json.dumps({
                 "at": stamp,
-                "unmeasured_since": None if since is None else since.isoformat(
-                    timespec="seconds"),
+                "unmeasured_hist": hist,
                 "open": state_open, "resolving": resolving, "last": {
                     k: out.get(k) for k in ("sent", "title", "armed", "delivered", "error",
                                             "opened", "reminded", "resolved")}},
@@ -620,8 +734,9 @@ def main(argv: list[str] | None = None) -> int:
 
 __all__ = ["FUTURE_SKEW_S", "HEARTBEAT_STALE_MIN", "IDLE_OVERDUE_H", "INCIDENTS",
            "NO_VERDICT_H", "PAGE_STATE_REL", "PHASE_LIMIT_H", "REPAGE_H", "SWEEP_OVERDUE_H",
-           "UNKNOWN_PHASE_LIMIT_H", "UNMEASURED_PAGE_MIN", "last_verdict", "main", "measure",
-           "page", "run"]
+           "UNKNOWN_PHASE_LIMIT_H", "UNMEASURED_BOUND_MIN", "UNMEASURED_PAGE_MIN",
+           "UNMEASURED_SHARE", "fresh_budget_s", "last_verdict", "main", "measure", "page",
+           "phase_limits", "run"]
 
 
 if __name__ == "__main__":
