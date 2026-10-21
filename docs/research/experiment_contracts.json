@@ -190,6 +190,21 @@
     "threshold": 20,
     "after": "30 days in which 20 or more of the drill rows stay UNMEASURED on the box: the scorecard grades nothing and the drills it reads are not running"
    }
+  },
+  "bar_clock_probe": {
+   "hypothesis": "Reading broker server time (newest tick, confirmed by the current H1 bar's open) against the box's UTC clock every hour turns the bar clock from absent into dated measured spans, so the UTC-stamped calendar events the event lane can place rise from zero.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "evidence.n_instants",
+    "better": "up",
+    "organ": "report:BAR_CLOCK.json"
+   },
+   "falsifier": {
+    "metric": "evidence.n_instants",
+    "op": "==",
+    "threshold": 0,
+    "after": "48h on the trading box: no fresh capture instant, so the probe never reached the terminal and the clock is still unmeasured"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

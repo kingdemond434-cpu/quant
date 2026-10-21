@@ -67,6 +67,9 @@ UNMEASURED = "UNMEASURED"
 CONFLICT = "CONFLICT"
 
 CLOCK_REL = "desks/mt5/reports/BAR_CLOCK.json"
+#: The same file as an absolute path, the binding the component registry reads an organ's own
+#: artifact from (`desks/mt5/ops/components.own_artifact`).
+OUT = ROOT / "desks" / "mt5" / "reports" / "BAR_CLOCK.json"
 LEDGER_REL = "desks/mt5/data/bar_clock_probes.jsonl"
 FUTURES_REL = "desks/mt5/reports/FUTURES_LEAD_LAG.json"
 STORED_REL = "desks/mt5/data/broker_clock_measured.json"
