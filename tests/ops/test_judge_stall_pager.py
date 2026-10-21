@@ -575,7 +575,8 @@ def test_a_key_pushed_past_the_ends_is_still_read_by_streaming(jsp, tmp_path):
     assert z["open"] is False and z["cells"] == 12 and z["read"].startswith("streamed")
     small = tmp_path / "s.json"
     small.write_text(json.dumps({"n_cells": 3, "swept_at": _iso(end)}, indent=2), "utf-8")
-    assert jsp._zero_judged(doc, small)["read"].startswith("first ")
+    assert jsp._zero_judged(doc, small)["read"] == "streamed top-level lines (the ends cover " \
+        "the file)"
 
 
 # ---- v4 (audit of f4ba99308) ----
@@ -595,6 +596,11 @@ def test_n_cells_in_the_head_never_stands_in_for_a_later_n_judged(jsp, tmp_path)
     z = jsp._zero_judged(_done(end), f)
     assert z["open"] is True and z["cells"] == 0 and z["basis"] == "n_judged"
     assert z["read"].startswith("streamed")
+    big = tmp_path / "big.json"                    # past head + tail: the ends miss n_judged
+    body["trial_census"] = ["c" * 100] * 20_000
+    big.write_text(json.dumps(body, indent=2), "utf-8")
+    zb = jsp._zero_judged(_done(end), big)
+    assert zb["open"] is True and zb["read"].endswith("(the ends missed a key)")
 
 
 def test_n_cells_is_used_only_when_the_whole_file_has_no_n_judged(jsp, tmp_path):

@@ -400,7 +400,8 @@ def _zero_judged(doc: dict[str, Any], sweep_result: Path) -> dict[str, Any]:
         if scanned is None:
             return {"open": None, "read": "stream failed",
                     "why": f"{UNMEASURED}: {sweep_result.name} unreadable while streaming"}
-        vals, read, streamed = scanned, "streamed top-level lines (the ends missed a key)", True
+        why = "the ends cover the file" if ht[2] else "the ends missed a key"
+        vals, read, streamed = scanned, f"streamed top-level lines ({why})", True
     stamps = [_stamp(s) for s in vals["swept_at"]]
     swept = next((t for t in reversed(stamps) if t is not None), None)
     try:
