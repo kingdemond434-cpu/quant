@@ -113,8 +113,10 @@ def oco_account_key(login: object, server: object) -> str:
     prop-ledger key are one value. A READER: it never creates the box key. RAISES
     IdentityUnavailable -- and the caller places no gold leg and writes a reasoned row -- when
     that helper has not landed, when the box-held key is absent or short, when its answer is not
-    a key, or when its answer IS the plain sha256 of login@server (an unkeyed key publishes the
-    login). The exception text never carries the login."""
+    a key. No hashing happens here or anywhere but `libs.ops.provenance.account_key` (auditor
+    key-join ruling); the login is normalised (`cross_account.hash_login`) before the call, which
+    is idempotent with the helper's own normalisation (publish_sync v5c). The exception text
+    never carries the login."""
     try:
         key = _xa.account_key(login, server)
     except ValueError as exc:
@@ -122,12 +124,6 @@ def oco_account_key(login: object, server: object) -> str:
         if "unreadable" in msg and "key" not in msg:
             msg = "the login or server is unreadable"
         raise IdentityUnavailable(msg) from None
-    canon = _xa.hash_login(login)
-    srv = str(server).strip()
-    plain = "sha256:" + hashlib.sha256(f"{canon}@{srv}".encode()).hexdigest()[:16]
-    if key == plain:
-        raise IdentityUnavailable("provenance.account_key answered the UNKEYED sha256 of "
-                                  "login@server, which reverses to the login")
     return key
 
 
@@ -607,6 +603,28 @@ def observe_fills(lane: str, key: str, positions: list[dict[str, Any]], *, date:
 
 # ------------------------------------------------------------------ the gate
 
+def _key_join_refusal(lane: str, key: object) -> str | None:
+    """Why `lane`'s account key does not JOIN, or None. A key that cannot be resolved, or that
+    differs from the key the box declares for that account (`cross_account.expected_key`: Fusion
+    from its declared live login, E8 from E8_ACCOUNT.json), is never read as "that account holds
+    nothing" (auditor key-join ruling): the gate fails closed on it. A lane with no declaration
+    (FTMO; or none on this box) is checked for shape only."""
+    if not _xa.valid_key(key):
+        return f"the {lane} account key is unresolvable"
+    try:
+        want = _xa.expected_key(lane) if lane in _xa.ACCOUNTS else None
+    except Exception as exc:
+        return f"the {lane} declared account key is unreadable ({type(exc).__name__})"
+    if want is None:
+        return None
+    if not _xa.valid_key(want):
+        return f"the {lane} account declaration is invalid ({want})"
+    if want != key:
+        return (f"the {lane} gold state's account key does not join the key the box declares "
+                f"for that account (a pin under another key: re-declare it)")
+    return None
+
+
 def gate(lane: str | None, side: object, *, key: str | None, date: str,
          now: datetime | None = None) -> Verdict:
     """May `lane` place a gold leg of `side` today? FAILS CLOSED on anything it cannot read."""
@@ -626,6 +644,9 @@ def gate(lane: str | None, side: object, *, key: str | None, date: str,
     entry, dwhy = day_entry(date)
     if dwhy is not None:
         return Verdict(False, f"gold OCO: {dwhy}; fail closed")
+    jwhy = _key_join_refusal(lane, key)
+    if jwhy:
+        return Verdict(False, f"gold OCO: {jwhy}; fail closed")
     states: dict[str, dict[str, Any]] = {}
     for other in lanes:
         if other == lane:
@@ -633,6 +654,12 @@ def gate(lane: str | None, side: object, *, key: str | None, date: str,
         st, why = read_lane(other, now=now)
         if st is None:
             return Verdict(False, f"gold OCO: {why}; fail closed")
+        jwhy = _key_join_refusal(other, st.get("account_key"))
+        if jwhy is None and st.get("account_key") == key:
+            jwhy = (f"the {other} gold state carries THIS lane's account key: two lanes on one "
+                    f"account cannot be read as two books")
+        if jwhy:
+            return Verdict(False, f"gold OCO: {jwhy}; fail closed")
         states[other] = st
     mode = configured_mode(lane, doc)
     if mode == "oco" and any(int(st.get("protocol") or 0) != PROTOCOL for st in states.values()):

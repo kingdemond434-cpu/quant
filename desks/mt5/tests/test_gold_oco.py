@@ -42,7 +42,7 @@ ga = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ga)
 
 #: Fake logins (never a real account). Distinctive, so a leak is findable by substring.
-E8_LOGIN, E8_SERVER = 81234567, "tradelocker"
+E8_LOGIN, E8_SERVER = 81234567, "E8-Live-Test"
 FU_LOGIN, FU_SERVER = 72345678, "FusionMarkets-Test"
 FT_LOGIN, FT_SERVER = 63456789, "FTMO-Test"
 DAY = "2026-10-21"
@@ -149,14 +149,6 @@ def test_no_box_key_means_no_identity_and_no_gold_leg(monkeypatch, tmp_path) -> 
     assert not v.allowed and "keyed" in v.why
 
 
-def test_an_unkeyed_provenance_helper_is_refused(monkeypatch) -> None:
-    from libs.ops import provenance as p
-    monkeypatch.setattr(p, "account_key", lambda login, server, create=False: (
-        "sha256:" + hashlib.sha256(f"{login}@{server}".encode()).hexdigest()[:16]))
-    with pytest.raises(oco.IdentityUnavailable, match="UNKEYED"):
-        oco.oco_account_key(FU_LOGIN, FU_SERVER)
-
-
 def test_a_missing_provenance_helper_is_refused(monkeypatch) -> None:
     from libs.ops import provenance as p
     monkeypatch.delattr(p, "account_key")
@@ -165,8 +157,15 @@ def test_a_missing_provenance_helper_is_refused(monkeypatch) -> None:
 
 
 def test_venue_identities_go_through_the_one_helper() -> None:
-    venue = SimpleNamespace(_raw_api=SimpleNamespace(acc_id=E8_LOGIN), _creds=None)
-    assert REAL_TL_KEY(venue) == oco.oco_account_key(E8_LOGIN, "tradelocker")
+    # TLAPI 0.56.2 keeps the server in `_credentials`; `api.server` is None and is never read.
+    venue = SimpleNamespace(_raw_api=SimpleNamespace(acc_id=E8_LOGIN, server=None,
+                                                     _credentials={"server": E8_SERVER}),
+                            _creds=None)
+    assert REAL_TL_KEY(venue) == oco.oco_account_key(E8_LOGIN, E8_SERVER)
+    # No server anywhere fails closed (v1 fell back to a constant that joins nothing).
+    with pytest.raises(oco.IdentityUnavailable, match="server"):
+        REAL_TL_KEY(SimpleNamespace(_raw_api=SimpleNamespace(acc_id=E8_LOGIN, server=None,
+                                                             _credentials={}), _creds=None))
     term = SimpleNamespace(account_info=lambda: SimpleNamespace(login=FU_LOGIN, server=FU_SERVER))
     assert REAL_MT5_KEY(term) == fu_key()
     with pytest.raises(oco.IdentityUnavailable):
@@ -377,7 +376,8 @@ def _e8_harness(monkeypatch, tmp_path, *, fusion_positions=(), fusion_orders=())
         def __init__(self) -> None:
             super().__init__()
             self.placed: list[tuple] = []
-            self._raw_api = SimpleNamespace(acc_id=E8_LOGIN)
+            self._raw_api = SimpleNamespace(acc_id=E8_LOGIN,
+                                            _credentials={"server": E8_SERVER})
 
         def place_stop(self, symbol, side, lot, *, price, stop, take_profit):
             self.placed.append((side, lot))
@@ -443,7 +443,7 @@ def test_e8_in_a_readable_world_places_both_legs_and_publishes_keyed_states(
     _doc, venue, _intents, h = _e8_harness(monkeypatch, tmp_path)
     assert sorted(s for s, _ in venue.placed) == ["buy", "sell"]
     st, _ = oco.read_lane("e8")
-    assert st is not None and st["account_key"] == oco.oco_account_key(E8_LOGIN, "tradelocker")
+    assert st is not None and st["account_key"] == oco.oco_account_key(E8_LOGIN, E8_SERVER)
     # NO RAW LOGIN ANYWHERE THE PASS WROTE: the xacct states, the report, the state, the journal.
     texts = [f.read_text("utf-8", errors="replace") for f in xa.XACCT_DIR.iterdir()
              if f.is_file()]
