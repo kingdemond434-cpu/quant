@@ -7,8 +7,8 @@ imports the sealed judge and changes it only when the first shard wave starts. T
 * gate 0 and the build preflight;
 * the cache prune and the order;
 * novelty and the yield allocation;
-* the WHOLE pre-warm pool (now published as its own phase, "prewarm"), which runs until `_build_t0 + GAUNTLET_FRESH_BUDGET_SEC` (8,640 s on the
-  box).
+* the WHOLE pre-warm pool (now published as its own phase, "prewarm"), which runs until
+  `_build_t0 + GAUNTLET_FRESH_BUDGET_SEC` (8,640 s on the box).
 
 The last two plans took 9,302 s and 9,729 s. Nothing inside them was published until the pool's
 closing "PRE-WARM:" line, so a plan 1h45m in could not be told from a hung one.
@@ -89,7 +89,7 @@ def _iso(t: float | None = None) -> str:
 class PlanTracker:
     """Hold the plan's step and progress inside `doc` (the launcher's phase document)."""
 
-    def __init__(self, doc: dict[str, Any], path: Path, *, clock=time.time,
+    def __init__(self, doc: dict[str, Any], path: Path, *, clock: Any = time.time,
                  on_phase: Any = None) -> None:
         self.doc, self.path, self.clock = doc, Path(path), clock
         #: The launcher's `_phase`: called when a step is a sweep phase of its own.
@@ -185,7 +185,7 @@ class _Tee:
         self._inner, self._tracker, self._pending = inner, tracker, ""
 
     def write(self, s: str) -> int:
-        n = self._inner.write(s)
+        n = int(self._inner.write(s) or 0)
         try:
             if self._tracker._in_plan():
                 self._pending += s

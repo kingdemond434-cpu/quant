@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from scripts import judge_plan_progress as jpp  # noqa: E402
+from scripts import judge_plan_progress as jpp
 
 #: The plan's own lines, verbatim shapes from the sealed judge (LIVE f56bc72f and stack f70c5147).
 PLAN_LOG = """\
@@ -30,7 +30,7 @@ CACHE PRUNE: 900000 cached cell(s) scanned, 1000 older than 3 days removed in 41
   docket order: 1000 never-judged cell(s) first, then 1199000 in symbol-rotation order
   yield allocation: 600000 of 1200000 cell(s) this sweep (strength 0.70, floor 15%)
 PRE-WARM START: 600000 cell(s) in docket order, 15 worker(s), build budget ends in 8100s
-PRE-WARM: 15 worker(s) warmed 9000 cell(s) in 8100s (500000 already cached, 3 failed, 90000 not reached)
+PRE-WARM: 15 worker(s) warmed 9000 cell(s) in 8100s (500000 already cached, 3 failed, 9 not)
 SHARDED SWEEP: 600000 planned cell(s) across 15 shard(s)
 """
 
@@ -137,7 +137,8 @@ def test_attach_only_where_the_sealed_image_declares_the_hook(tmp_path) -> None:
         PLAN_PROGRESS_HOOK = None
 
     assert tr.attach(Old) is False and not hasattr(Old, "PLAN_PROGRESS_HOOK")
-    assert tr.attach(New) is True and New.PLAN_PROGRESS_HOOK == tr.progress
+    assert tr.attach(New) is True
+    assert New.PLAN_PROGRESS_HOOK == tr.progress  # noqa: SIM300
 
 
 def test_a_broken_tracker_never_breaks_the_log(tmp_path) -> None:
