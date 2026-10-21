@@ -385,7 +385,7 @@ def test_e8_with_no_box_key_places_nothing_and_says_why(monkeypatch, tmp_path) -
 def test_e8_in_a_readable_world_places_both_legs_and_publishes_keyed_states(
         monkeypatch, tmp_path) -> None:
     _world("oco")
-    doc, venue, _intents, h = _e8_harness(monkeypatch, tmp_path)
+    _doc, venue, _intents, h = _e8_harness(monkeypatch, tmp_path)
     assert sorted(s for s, _ in venue.placed) == ["buy", "sell"]
     st, _ = oco.read_lane("e8")
     assert st is not None and st["account_key"] == oco.oco_account_key(E8_LOGIN, "tradelocker")
