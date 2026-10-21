@@ -163,21 +163,24 @@ def test_the_evidence_ledger_holds_the_rail_skip(
 def test_step_two_keeps_room_margin_usd_clear_of_the_floor(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """At 0.5% of 99,000: 0.14 lots, need 2 x 495 + 2 x 24.13 x 14 = 1,665.6. The room to
-    today's floor sits between need and need + ROOM_MARGIN_USD, so v4 would have sent 0.14 with
-    under 100 USD to spare; v5 cuts the bracket until it clears the margin."""
+    """At 0.71% of a fresh 100k day: 0.21 lots, need 2 x 710 + 2 x 24.13 x 21 = 2,433.5, which
+    is under the 2,500 to today's floor but inside its last ROOM_MARGIN_USD. v4 sent it with 67
+    USD to spare; v5 cuts the bracket until it clears the margin."""
     assert g.ROOM_MARGIN_USD == 100.0
-    # Day started 99,750; equity 99,000: 99,000 - 97,256.25 = 1,743.75 to today's floor.
-    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard(99_000.0, day_start=99_750.0))
-    venue = bg._Venue(equity=99_000.0)
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
+    monkeypatch.setattr(g, "RISK_FRAC", 0.0071)
+    venue = bg._Venue()
     doc = g.run(venue, h._MT5(), armed=True)
-    room = float(doc["guard_decision"]["room_to_daily_floor"])
-    lots0 = {"buy_stop": 0.14, "sell_stop": 0.14}
-    need0 = 2 * 495.0 + 2 * 24.13 * 14
+    room = min(
+        float(doc["guard_decision"]["room_to_daily_floor"]),
+        float(doc["guard_decision"]["room_to_static_floor"]),
+    )
+    need0 = 2 * 710.0 + 2 * 24.13 * 21
     assert need0 <= room < need0 + g.ROOM_MARGIN_USD, (need0, room)
     (cut,) = bg._shrinks(doc, g.DAILY_FLOOR_RAIL)
-    assert cut["unshrunk_lots"] == lots0
+    assert cut["unshrunk_lots"] == {"buy_stop": 0.21, "sell_stop": 0.21}
     sent = {side: lot for side, lot, _px in venue.sent}
+    assert sent == {"buy": 0.20, "sell": 0.20}
     assert _bracket_need(sent) <= room - g.ROOM_MARGIN_USD
 
 
