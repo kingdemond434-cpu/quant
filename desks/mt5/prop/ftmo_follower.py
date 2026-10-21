@@ -60,6 +60,7 @@ for _p in (str(DESK), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mt5desk import cross_account as _xa  # noqa: E402
 from mt5desk import gold_oco as _oco  # noqa: E402
 from mt5desk import position_manager as _pm  # noqa: E402
 from mt5desk.decision_core import (  # noqa: E402
@@ -291,7 +292,9 @@ def mirrored_stop(e8_doc: dict[str, Any], e8_position_id: str, side: str,
 # ------------------------------------------------------------------ the account
 
 def _canon(login: object) -> object:
-    return _oco._canon_login(login)
+    """Fusion r6's one login type (cross_account.norm_login): the terminal's int and the
+    declaration's string name one account."""
+    return None if login in (None, "") else _xa.norm_login(login)
 
 
 def bound_account(mt5: Any) -> tuple[str | None, dict[str, Any], str]:
@@ -315,7 +318,7 @@ def bound_account(mt5: Any) -> tuple[str | None, dict[str, Any], str]:
     if acc is None:
         return None, {}, "the FTMO terminal did not answer account_info"
     if _canon(getattr(acc, "login", None)) != _canon(doc["login"]) \
-            or str(getattr(acc, "server", "")) != str(doc["server"]):
+            or str(getattr(acc, "server", "")).strip() != str(doc["server"]).strip():
         return None, {}, ("the terminal is on another account than data/FTMO_LIVE_ACCOUNT.json "
                           "declares; nothing is done")
     if int(getattr(acc, "trade_mode", -1)) != want_mode:
