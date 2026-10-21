@@ -930,10 +930,11 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #: (`exit_code=N`, never a verdict) and the ledger row carries the name after it, so a reader
 #: sees what failed without opening the leg. A code here must never also be in VERDICT_EXITS.
 #:   judge_coverage 3 -- the pass met its budget and committed nothing (JUDGE_COVERAGE_TIMEOUT.json)
+#:   judge_coverage 4 -- --reuse-fresh found no fresh same-cycle table (JUDGE_COVERAGE_REUSE.json)
 #:   judge_coverage 5 -- a committed transaction manifest could not be rolled forward safely; it
 #:                       is kept and every pass refuses until it is resolved by hand
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
-    "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 5: "RECOVERY_REFUSED"},
+    "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
 }
 
 
@@ -4390,9 +4391,18 @@ def main() -> None:
                   lambda: _producer("orthogonality_yield",
                                     "research/orthogonality_yield.py",
                                     "--once", "--budget-s", "120"))
+    # THE LEG REUSES THE MERGE'S TABLE INSTEAD OF COMPUTING IT A SECOND TIME. `catch_up_intake`
+    # above runs merge_hypotheses -> order_docket -> build -> write in this same cycle, so a
+    # second build here duplicated a full pass over the docket and the ledger, and that copy
+    # was the one killed at this leg's cap on the box. `--reuse-fresh` computes nothing: it
+    # exits 0 only when the published table is this cycle's (stamped after
+    # QUANT_PIPELINE_STARTED_AT, ratchet in step, merge report of this cycle written after it),
+    # and otherwise exits 4 with reports/JUDGE_COVERAGE_REUSE.json naming why. It never writes
+    # the table, so a stale table stays stale under its own `at`. The cap is unchanged.
     jcv = _costed("judge_coverage", lambda: _producer("judge_coverage",
                                                       "research/judge_coverage.py",
-                                                      "--once", "--budget-s", "120"))
+                                                      "--once", "--reuse-fresh",
+                                                      "--budget-s", "120"))
     # EFFECTIVE TRIALS: the multiplicity budget is charged in independent TESTS, not in docket
     # rows. Measures nominal vs effective per family (participation ratio of (grid cell, content)
     # identities within each mechanism), publishes the ratio, and writes the corrected campaign

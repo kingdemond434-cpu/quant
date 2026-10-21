@@ -3194,6 +3194,123 @@ def write_timeout(exc: JudgeCoverageTimeout, *, budget_s: float, stop_s: float,
     return target
 
 
+#: The leg's verdict when it REUSES the coverage `merge_hypotheses` published this cycle.
+REUSE_REPORT = REPORTS / "JUDGE_COVERAGE_REUSE.json"
+#: The merge's own report: when it ran, for which cycle. Written after the docket, so a merge
+#: that died before shipping its docket never leaves one stamped with this cycle.
+MERGE_REPORT = HYP / "merge_report.json"
+#: The exit of a leg that found no fresh same-cycle coverage to reuse. Non-zero: the cycle
+#: books the leg FAILED, and the stale report stays stale under its own `at`.
+REUSE_STALE_EXIT = 4
+#: How far ahead of this clock a report's stamp may sit before it is read as not a reading.
+REUSE_FUTURE_SKEW_S = 120.0
+
+
+def _cycle_started_at() -> datetime | None:
+    raw = os.environ.get("QUANT_PIPELINE_STARTED_AT", "").strip()
+    return _ts(raw) if raw else None
+
+
+def reuse_fresh(*, started_at: datetime | None = None, now: datetime | None = None,
+                report: Path | None = None, ratchet: Path | None = None,
+                merge_report: Path | None = None, docket: Path | None = None,
+                out: Path | None = None) -> tuple[bool, dict[str, Any]]:
+    """THE LEG'S SECOND COMPUTATION, REPLACED BY A CHECK OF THE FIRST.
+
+    `merge_hypotheses` runs `order_docket` -> `build` -> `write` inside this same hourly cycle
+    (`catch_up_intake`, before this leg), so the leg's own `build` + `write` was a second full
+    computation of the same table, and on the box it is the one that was killed at its cap.
+    This reads what the merge published and decides whether it IS this cycle's coverage. It
+    never writes JUDGE_COVERAGE.json or the ratchet, so it cannot make an old table look new:
+    the report keeps its own `at`, and `check_judge_coverage` ages it by that.
+
+    FRESH means every one of these holds, and anything else FAILS CLOSED:
+      * the cycle's start is known (QUANT_PIPELINE_STARTED_AT) -- with no cycle there is
+        nothing to be fresh for;
+      * the report parses, carries `variant_demotion` (only `order_docket` writes it, so this
+        is the merge's table and not a hand run) and a non-empty `families`;
+      * its `at` is a timestamp at or after the cycle's start, and not in the future;
+      * the ratchet carries the same `at`, so both halves of that `write` landed;
+      * `merge_report.json` names this cycle, started no later than the report, and was
+        written after it -- so the docket the table describes is the docket that shipped.
+
+    Returns (fresh, verdict); the verdict is also written to `out` (JUDGE_COVERAGE_REUSE.json)
+    atomically, whichever way it goes.
+    """
+    t = now or datetime.now(tz=UTC)
+    started = started_at if started_at is not None else _cycle_started_at()
+    rp, rt = report or REPORT, ratchet or RATCHET
+    mp, dp = merge_report or MERGE_REPORT, docket or DOCKET
+    why: list[str] = []
+    verdict: dict[str, Any] = {
+        "at": t.isoformat(timespec="seconds"), "mode": "reuse_merge_coverage",
+        "cycle_started_at": started.isoformat(timespec="seconds") if started else None,
+        "report": str(rp), "report_untouched": True}
+
+    def _load(path: Path) -> Any:
+        try:
+            return json.loads(path.read_text("utf-8"))
+        except (OSError, ValueError):
+            return None
+
+    def _mtime(path: Path) -> float | None:
+        try:
+            return path.stat().st_mtime
+        except OSError:
+            return None
+
+    doc = _load(rp)
+    rep_at = _ts(doc.get("at")) if isinstance(doc, dict) else None
+    verdict["report_at"] = rep_at.isoformat(timespec="seconds") if rep_at else None
+    if started is None:
+        why.append("no cycle start (QUANT_PIPELINE_STARTED_AT unset or not a timestamp)")
+    if not isinstance(doc, dict):
+        why.append("JUDGE_COVERAGE.json missing or unreadable")
+    else:
+        if rep_at is None:
+            why.append("report `at` missing or not a timestamp")
+        if "variant_demotion" not in doc:
+            why.append("report was not written by order_docket (no variant_demotion)")
+        if not doc.get("families"):
+            why.append("report holds no families")
+    if rep_at is not None:
+        if started is not None and rep_at < started.replace(microsecond=0):
+            why.append("report predates this cycle")
+        if (rep_at - t).total_seconds() > REUSE_FUTURE_SKEW_S:
+            why.append("report `at` is in the future")
+    rdoc = _load(rt)
+    if rep_at is not None and (not isinstance(rdoc, dict) or _ts(rdoc.get("at")) != rep_at):
+        why.append("ratchet does not carry the report's `at` (the write did not complete)")
+    mdoc = _load(mp)
+    m_cycle = _ts(mdoc.get("pipeline_started_at")) if isinstance(mdoc, dict) else None
+    m_at = _ts(mdoc.get("merged_at")) if isinstance(mdoc, dict) else None
+    if not isinstance(mdoc, dict):
+        why.append("merge_report.json missing or unreadable")
+    else:
+        if started is None or m_cycle != started.replace(microsecond=0):
+            why.append("merge_report.json is not this cycle's")
+        if m_at is None or (rep_at is not None and m_at > rep_at):
+            why.append("merge_report.json did not start before the report")
+    r_m, m_m, d_m = _mtime(rp), _mtime(mp), _mtime(dp)
+    if r_m is not None and (m_m is None or m_m < r_m or d_m is None or d_m < r_m):
+        why.append("the docket or merge report was not written after the coverage report "
+                   "(the merge that ordered it did not ship)")
+    fresh = not why
+    verdict["verdict"] = "REUSED" if fresh else "STALE"
+    verdict["fresh"] = fresh
+    if rep_at is not None:
+        verdict["report_age_s"] = round((t - rep_at).total_seconds(), 1)
+    if why:
+        verdict["why"] = why
+    target = out or REUSE_REPORT
+    with contextlib.suppress(OSError):
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_name(f"{target.name}.tmp-{os.getpid()}")
+        tmp.write_text(json.dumps(verdict, indent=1), "utf-8")
+        _replace_retry(tmp, target)
+    return fresh, verdict
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="judge coverage by unjudged backlog, per family")
     ap.add_argument("--once", action="store_true", help="one pass (the hourly leg's mode)")
@@ -3203,7 +3320,18 @@ def main(argv: list[str] | None = None) -> int:
                          "cycle's kill cap (QUANT_LEG_BUDGET_S) minus the commit margin")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--no-write", action="store_true", help="measure without advancing the ratchet")
+    ap.add_argument("--reuse-fresh", action="store_true",
+                    help="compute nothing: verify that merge_hypotheses published this cycle's "
+                         "coverage and exit 0, or exit 4 with JUDGE_COVERAGE_REUSE.json naming "
+                         "why not. Never writes the report or the ratchet")
     args = ap.parse_args(argv)
+    if args.reuse_fresh:
+        fresh, verdict = reuse_fresh()
+        print(json.dumps(verdict, indent=1) if args.json else
+              f"judge coverage: {verdict['verdict']} report_at={verdict.get('report_at')} "
+              f"cycle={verdict.get('cycle_started_at')}"
+              + ("" if fresh else " -- " + "; ".join(verdict.get("why") or [])))
+        return 0 if fresh else REUSE_STALE_EXIT
     t0 = time.time()
     stop_s, cap_s = stop_after_s(args.budget_s)
     m0 = time.monotonic()
@@ -3259,6 +3387,7 @@ __all__ = [
     "order_docket",
     "rank_by_value",
     "render",
+    "reuse_fresh",
     "unknown_breakdown",
     "unrunnable_bank",
     "update_unrunnable_bank",
