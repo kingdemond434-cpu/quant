@@ -121,6 +121,12 @@ def _sandbox(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *, placed: tuple[s
     # Likewise the late-gold-send rule (decision_core.GOLD_SEND_GRACE_MIN, r6): the clock here is
     # 17:30 server, past the 5-minute grace; test_fusion_book_r6.py pins the rule itself.
     monkeypatch.setattr(_dc, "GOLD_SEND_GRACE_MIN", 24 * 60.0)
+    monkeypatch.setattr(_dc, "E8_GOLD_SEND_GRACE_MIN", 24 * 60.0)
+    # A VOID cert book sizes every E8 window at 0 since r7, so these mechanics run under an
+    # enabled book that funds all three windows at RISK_FRAC (what a void book used to give).
+    (tmp_path / "cert_book_file.json").write_text(json.dumps({"enabled": True, "e8": {
+        "gold_asia": g.RISK_FRAC, "gold_london_am": g.RISK_FRAC,
+        "gold_afternoon": g.RISK_FRAC}}), encoding="utf-8")
     gp = tmp_path / "e8_guard_state.json"
     if guard is not None:
         gp.write_text(json.dumps(guard), encoding="utf-8")

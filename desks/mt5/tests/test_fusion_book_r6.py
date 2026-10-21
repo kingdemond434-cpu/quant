@@ -244,12 +244,15 @@ def _e8(monkeypatch, tmp_path, *, hour: float, kelly: dict | None, cert: object,
     if principal:      # the sandbox lifts the pin for its mechanics tests; these test the pin
         monkeypatch.setitem(dc.PRINCIPAL_ZERO, "e8", dc.GOLD_ASIA_ONLY_ZERO)
     monkeypatch.setattr(dc, "GOLD_SEND_GRACE_MIN", 5.0)      # the sandbox lifts it too
+    monkeypatch.setattr(dc, "E8_GOLD_SEND_GRACE_MIN", 10.0)
     if kelly is not None:
         (tmp_path / "kelly_file.json").write_text(json.dumps({
             "generated_at": datetime.now(tz=UTC).isoformat(),
             "e8": {"status": "OK", "windows": {k: {"risk_frac": v} for k, v in kelly.items()}}}),
             encoding="utf-8")
-    if cert is not None:
+    if cert is None:      # the sandbox writes a funded book; None means an ABSENT (void) book
+        (tmp_path / "cert_book_file.json").unlink(missing_ok=True)
+    else:
         (tmp_path / "cert_book_file.json").write_text(
             cert if isinstance(cert, str) else json.dumps(cert), encoding="utf-8")
     day = h._DAY
@@ -300,29 +303,28 @@ def test_fresh_kelly_under_a_valid_cert_book_london_sends_nothing_and_asia_is_th
                                     "afternoon": "pinned_zero"}
 
 
-@pytest.mark.parametrize("void", VOID_BOOKS[1:])
-def test_fresh_kelly_under_a_void_cert_book_keeps_both_pins_and_asia_is_the_solve(
+@pytest.mark.parametrize("void", VOID_BOOKS)
+def test_fresh_kelly_under_a_void_cert_book_sends_nothing_on_any_window(
         monkeypatch, tmp_path, void) -> None:
-    """Void book: london_am/afternoon stay at 0 (the code pin, whatever Kelly says); asia is the
-    fresh survival-constrained solve -- the safe choice documented in e8_gold.run: standing the
-    one funded window aside for a torn file is a Rule-1 loss, and the solve is itself the
-    survival-bounded size. Without a fresh solve asia is RISK_FRAC (0.005, below the box's
-    0.006)."""
-    for hour in (LONDON_H, AFTERNOON_H):
-        doc, intents = _e8(monkeypatch, tmp_path, hour=hour, kelly=FRESH_KELLY, cert=void)
-        assert doc["placed"] == [], doc["placed"]
-        assert doc["sizing_source"]["london_am"] == "pinned_zero"
-        assert doc["sizing_source"]["afternoon"] == "pinned_zero"
-        assert doc["kelly_risk"]["london_am"] == 0.0 == doc["kelly_risk"]["afternoon"]
-        assert any(r.get("rail") == "principal_zero_pin" and r["missed_growth_risk_usd"] > 0
-                   for r in intents)
-    (tmp_path / "k").mkdir()
-    doc, intents = _e8(monkeypatch, tmp_path / "k", hour=ASIA_H, kelly=FRESH_KELLY, cert=void)
-    assert _placed(doc, intents)["asia"] == {(0.005, "kelly_survival")}
-    (tmp_path / "nk").mkdir()
-    doc, intents = _e8(monkeypatch, tmp_path / "nk", hour=ASIA_H, kelly=None, cert=void)
-    assert _placed(doc, intents)["asia"] == {(0.005, "RISK_FRAC")}
-    assert doc["sizing_source"]["asia"] == "RISK_FRAC"
+    """AUDIT r6 MUST-FIX 1 (ruling): a void cert book sizes every E8 window at 0 -- no KELLY or
+    RISK_FRAC fallback (the solve's grid reaches 0.015). london_am/afternoon are labelled by the
+    code pin, asia `cert_book_void`, each with its missed-growth line."""
+    for i, hour in enumerate((ASIA_H, LONDON_H, AFTERNOON_H)):
+        (tmp_path / str(i)).mkdir()
+        for kelly in (FRESH_KELLY, {"asia": 0.015, "london_am": 0.01, "afternoon": 0.0075},
+                      None):
+            doc, intents = _e8(monkeypatch, tmp_path / str(i), hour=hour, kelly=kelly,
+                               cert=void)
+            assert doc["placed"] == [], (hour, kelly, doc["placed"])
+            assert doc["sizing_source"] == {"asia": "cert_book_void",
+                                            "london_am": "pinned_zero",
+                                            "afternoon": "pinned_zero"}
+            assert all(v == 0.0 for k, v in doc["kelly_risk"].items()
+                       if k in ("asia", "london_am", "afternoon"))
+    rows = [json.loads(ln) for ln in (tmp_path / "0" / "intents.json").read_text().splitlines()
+            if ln.strip()]
+    (row,) = [r for r in rows if r.get("rail") == "cert_book_void"]   # once per window per day
+    assert row["window"] == "asia" and row["missed_growth_risk_usd"] > 0
 
 
 def test_an_enabled_book_missing_london_am_sends_nothing_even_with_the_pin_lifted(
@@ -385,6 +387,11 @@ def fd(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setattr(mod, attr, data / p)
     monkeypatch.setattr(mod, "BREACH_LOG", tmp_path / "logs" / "fusion_deadman.log")
     monkeypatch.setitem(sys.modules, "MetaTrader5", base._NoTerminal())
+    # The arming precondition (r7): a readable ledger of the DECLARED Fusion live account.
+    monkeypatch.setattr(mod, "FUSION_ACCOUNT", data / "FUSION_LIVE_ACCOUNT.json")
+    (data / "FUSION_LIVE_ACCOUNT.json").write_text(json.dumps(
+        {"login": 7_000_001, "server": "FusionMarkets-Live"}), encoding="utf-8")
+    (data / "live_ledger.jsonl").write_text("", encoding="utf-8")
     (data / "gateway_state.json").write_text(json.dumps({
         "equity": 20_000.0, "margin_free": 15_000.0, "position": [], "pending": [],
         "last_reconcile": datetime.now(tz=UTC).isoformat()}), encoding="utf-8")
@@ -432,10 +439,11 @@ def test_resting_pendings_alone_make_a_stale_gateway(fd) -> None:
     assert fd.evaluate({**acct, "pending": []}, [], [], 20_000.0) == []
 
 
-def _stamp(tmp_path: Path, mode: str, age_s: float) -> Path:
+def _stamp(tmp_path: Path, mode: str, age_s: float, **extra) -> Path:
     p = tmp_path / "stamp.json"
     p.write_text(json.dumps({"mode": mode, "checked_at": (
-        datetime.now(tz=UTC) - timedelta(seconds=age_s)).isoformat()}), "utf-8")
+        datetime.now(tz=UTC) - timedelta(seconds=age_s)).isoformat(),
+        "broker_day": "2026-10-21", "ledger": {"ok": True, "why": "test"}, **extra}), "utf-8")
     return p
 
 
@@ -737,7 +745,11 @@ def test_fusion_gold_asia_late_sends_nothing_and_bills_it(tmp_path, monkeypatch,
     assert len([r for r in ns["_intents"] if r.get("reason") == "late_send"]) == 1
 
 
-@pytest.mark.parametrize("hour,placed", [(ASIA_H, True), (7 + 6 / 60, False), (9.5, False)])
+@pytest.mark.parametrize("hour,placed", [(7 + 1 / 60, True),       # the 07:01 pass
+                                         (7 + 6 / 60, True),       # its retry pass, 07:06
+                                         (7 + 10 / 60, True),      # open + E8 grace
+                                         (7 + 11 / 60, False),     # open + grace + 1 min
+                                         (9.5, False)])            # another hour
 def test_e8_gold_asia_on_time_late_and_another_hour(monkeypatch, tmp_path, hour,
                                                     placed) -> None:
     doc, intents = _e8(monkeypatch, tmp_path, hour=hour, kelly=None, cert=VALID)
@@ -755,10 +767,11 @@ def test_an_e8_retry_past_the_grace_is_abandoned() -> None:
     from prop import e8_gold as g
     st = {"windows": {"asia": {"orders": {}, "position_id": None,
                                "failed": {"buy_stop": {"price": 4340.0, "attempts": 1}}}}}
-    (dec,) = g.retry_decisions(st, 7 + 6 / 60, 4300.0, 4300.4, {})
-    assert dec["act"] == "abandon" and "late_send" in dec["why"]
-    (dec,) = g.retry_decisions(st, 7 + 2 / 60, 4300.0, 4300.4, {})
-    assert dec["act"] == "retry"
+    for hour in (7 + 1 / 60, 7 + 6 / 60, 7 + 10 / 60):    # the 07:01 pass and its retries
+        (dec,) = g.retry_decisions(st, hour, 4300.0, 4300.4, {})
+        assert dec["act"] == "retry", hour
+    (dec,) = g.retry_decisions(st, 7 + 11 / 60, 4300.0, 4300.4, {})
+    assert dec["act"] == "abandon" and dec["late"] and "late_send" in dec["why"]
 
 
 def test_late_sends_are_billed_in_missed_growth() -> None:
@@ -780,3 +793,126 @@ def test_every_account_key_call_normalises_the_login_to_one_type() -> None:
     assert xa.account_key("trader", "tl") != xa.account_key("trader2", "tl")
     with pytest.raises(ValueError):
         xa.account_key(True, "x")
+
+
+# ------------------------------------------------------------------------------ r7 must-fixes
+
+def test_the_e8_grace_is_its_own_and_derived_from_its_cadence() -> None:
+    assert dc.E8_GOLD_SEND_GRACE_MIN == 10.0 and dc.GOLD_SEND_GRACE_MIN == 5.0
+    ps1 = (_DESK / "scripts" / "install_e8_tasks.ps1").read_text("utf-8")
+    block = ps1[ps1.index('-Name "E8-Gold"'):ps1.index('-Name "E8-Book"')]
+    assert "AddMinutes(1)" in block and "New-TimeSpan -Minutes 5" in block
+    assert "-LimitMinutes 4" in block                          # 1 + 5 + 4 = 10
+    assert dc.gold_send_late("asia", 7 + 10 / 60, dc.E8_GOLD_SEND_GRACE_MIN) is None
+    assert dc.gold_send_late("asia", 7 + 11 / 60, dc.E8_GOLD_SEND_GRACE_MIN)
+
+
+def test_each_abandoned_e8_retry_is_billed(monkeypatch, tmp_path) -> None:
+    import test_e8_reconnect as rc
+    from prop import e8_gold as g
+    monkeypatch.setattr(g, "INTENTS", tmp_path / "intents.jsonl")
+    (tmp_path / "intents.jsonl").write_text("", "utf-8")
+    monkeypatch.setattr(dc, "E8_GOLD_SEND_GRACE_MIN", 10.0)
+    v, st = rc._Venue(), rc._state()
+    rc._retry(v, st, hour=7 + 30 / 60)
+    assert v.sent == []
+    rows = [json.loads(ln) for ln in (tmp_path / "intents.jsonl").read_text().splitlines()
+            if ln.strip()]
+    (row,) = [r for r in rows if r.get("status") == "SKIPPED"]
+    assert row["rail"] == "gold_late_send" and row["reason"] == "late_send"
+    assert "missed_growth_risk_usd" in row
+    from mt5desk import fusion_rails
+
+    from research import missed_growth as mg
+
+    for rail in ("gold_retry_abandoned", "cert_book_void"):
+        assert rail in fusion_rails.RAILS and rail in mg.FUSION_RAIL_NAMES
+
+
+@pytest.mark.parametrize("setup,why", [
+    ("absent", "absent or unreadable"), ("no_account", "FUSION_LIVE_ACCOUNT.json"),
+    ("torn_middle", "does not parse")])
+def test_arming_refuses_an_unmeasured_ledger_and_the_gate_refuses_it_too(fd, setup,
+                                                                          why) -> None:
+    fd.ARMED_MARKER.write_text(json.dumps({"armed_by": "zuck"}), "utf-8")
+    if setup == "absent":
+        fd.LEDGER.unlink()
+    elif setup == "no_account":
+        fd.FUSION_ACCOUNT.unlink()
+    else:
+        fd.LEDGER.write_text('{"a": 1}\n{torn\n{"b": 2}\n', "utf-8")
+    assert fd.main(dry_run=False) == 0
+    stamp = json.loads(fd.STAMP.read_text("utf-8"))
+    assert stamp["mode"] == "DRY-RUN" and stamp["ledger"]["ok"] is False
+    assert "ledger is UNMEASURED" in stamp["armed"]["refused"] and why in stamp["ledger"]["why"]
+    assert not dc.fusion_deadman_armed(fd.STAMP)[0]
+
+
+def test_the_ledger_is_filtered_to_the_declared_live_account(fd) -> None:
+    rows = [{"account": 7_000_001, "server": "FusionMarkets-Live", "account_kind": "live",
+             "pl_quote": -1.0, "time": "2026-10-21T01:00:00+00:00"},
+            {"account": 7_000_002, "server": "FusionMarkets-Live", "account_kind": "live",
+             "pl_quote": -9_999.0, "time": "2026-10-21T01:00:00+00:00"},
+            {"account": 7_000_001, "server": "FusionMarkets-Demo", "account_kind": "demo",
+             "pl_quote": -9_999.0, "time": "2026-10-21T01:00:00+00:00"}]
+    fd.LEDGER.write_text("\n".join(json.dumps(r) for r in rows) + "\n{torn", "utf-8")
+    got, why = fd.ledger_checked()
+    assert got is not None and [r["pl_quote"] for r in got] == [-1.0] and "1 live row" in why
+
+
+def test_a_gate_stamp_without_a_ledger_check_or_with_a_dateless_daily_loss_refuses(
+        tmp_path) -> None:
+    ok, _ = dc.fusion_deadman_armed(_stamp(tmp_path, "LIVE", 5))
+    assert ok
+    p = tmp_path / "s.json"
+    p.write_text(json.dumps({"mode": "LIVE", "checked_at": datetime.now(tz=UTC).isoformat(),
+                             "broker_day": "2026-10-21"}), "utf-8")
+    ok, why = dc.fusion_deadman_armed(p)
+    assert not ok and "ledger UNMEASURED" in why
+    ok, why = dc.fusion_deadman_armed(_stamp(tmp_path, "LIVE", 5, halt_codes=["DAILY_LOSS"]))
+    assert not ok and "no day field" in why
+    ok, why = dc.fusion_deadman_armed(_stamp(tmp_path, "LIVE", 5, halt_codes=["DAILY_LOSS"],
+                                             daily_loss_day="2026-10-20"))
+    assert ok                                          # yesterday's latch is not today's halt
+
+
+def test_no_send_goes_out_without_an_in_flight_hold(monkeypatch) -> None:
+    sent: list[int] = []
+
+    def refuse(*a, **k):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(xa.os, "replace", refuse)
+    with pytest.raises(OSError):
+        xa.bounded(lambda: sent.append(1), timeout_s=1.0, what="send", account="e8",
+                   symbol="XAUUSD")
+    assert sent == []
+    monkeypatch.undo()
+    # A send that returns clears its hold; one that raised keeps it (it may have landed).
+    assert xa.bounded(lambda: 7, timeout_s=1.0, account="e8", symbol="XAUUSD") == 7
+    assert xa.inflight("e8") == set()
+
+    def boom():
+        raise ConnectionError("reset after the request was written")
+
+    with pytest.raises(ConnectionError):
+        xa.bounded(boom, timeout_s=1.0, account="e8", symbol="XAUUSD")
+    assert xa.inflight("e8") == {"XAUUSD"}
+
+
+def test_the_watchdog_releases_the_singleton_before_the_successor(tmp_path, monkeypatch) -> None:
+    pytest.importorskip("MetaTrader5")
+    loop = _load("_r7_gateway_loop", _DESK / "research" / "run_gateway_loop.py")
+    monkeypatch.setattr(loop, "LOCK", tmp_path / "gateway.lock")
+    monkeypatch.setattr(loop, "WATCHDOG_STAMP", tmp_path / "GATEWAY_WATCHDOG.json")
+    order: list[str] = []
+    fake_main = SimpleNamespace(_HANDLE=1234,
+                                _release_singleton=lambda h: order.append(f"release {h}"),
+                                _spawn_successor=lambda: order.append("spawn"))
+    monkeypatch.setitem(sys.modules, "__main__", fake_main)
+    import os
+    monkeypatch.setattr(os, "_exit", lambda code: order.append(f"exit {code}"))
+    loop._watchdog_fire(time.time())
+    assert order == ["release 1234", "spawn", "exit 70"]
+    src = (_DESK / "research" / "gateway_resident.py").read_text("utf-8")
+    assert "_HANDLE = handle" in src

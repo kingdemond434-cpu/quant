@@ -233,6 +233,7 @@ def _no_journal(tmp_path, monkeypatch) -> None:
     # drive the retry mechanics at clocks past the 5-minute grace; test_fusion_book_r6.py pins the rule.
     from mt5desk import decision_core as _dc_grace
     monkeypatch.setattr(_dc_grace, "GOLD_SEND_GRACE_MIN", 24 * 60.0)
+    monkeypatch.setattr(_dc_grace, "E8_GOLD_SEND_GRACE_MIN", 24 * 60.0)
 
 
 def test_the_pass_re_sends_the_leg_and_moves_it_into_the_bracket() -> None:
