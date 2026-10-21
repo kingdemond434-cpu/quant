@@ -81,7 +81,8 @@ def _world(mode_fusion: str = "fallback") -> None:
 def test_the_identity_is_keyed_never_the_plain_sha256_of_login_at_server() -> None:
     key = oco.oco_account_key(FU_LOGIN, FU_SERVER)
     plain = "sha256:" + hashlib.sha256(f"{FU_LOGIN}@{FU_SERVER}".encode()).hexdigest()[:16]
-    assert xa.valid_key(key) and key != plain and key != xa.account_key(FU_LOGIN, FU_SERVER)
+    assert xa.valid_key(key) and key != plain
+    assert key == xa.account_key(FU_LOGIN, FU_SERVER)            # ONE helper: the fence's key
     # One account, one key, however the venue spells its login.
     assert oco.oco_account_key(str(FU_LOGIN), FU_SERVER) == key
     assert oco.oco_account_key(float(FU_LOGIN), FU_SERVER) == key
@@ -99,6 +100,34 @@ def test_the_oco_key_joins_the_r6_norm_login_spellings() -> None:
     for bad in (None, "", "  ", True):
         with pytest.raises(oco.IdentityUnavailable):
             oco.oco_account_key(bad, FU_SERVER)
+
+
+def test_the_oco_key_equals_the_bracket_guard_evidence_key_and_the_fence_key() -> None:
+    """THE KEY JOIN (coordinator, OCO v2): bracket guard v5's evidence lane stamps
+    `provenance.account_key(int(login), server, create=False)`; the OCO key, the existing
+    fence's `cross_account.account_key` and the FTMO prop-ledger key are that same value."""
+    from libs.ops import provenance as p
+    for login, server in ((FU_LOGIN, FU_SERVER), (E8_LOGIN, E8_SERVER), (FT_LOGIN, FT_SERVER)):
+        evidence = p.account_key(int(login), server, create=False)
+        assert evidence is not None and xa.valid_key(evidence)
+        assert oco.oco_account_key(login, server) == evidence
+        assert oco.oco_account_key(str(login), server) == evidence
+        assert xa.account_key(login, server) == evidence
+        assert evidence != "sha256:" + hashlib.sha256(
+            f"{login}@{server}".encode()).hexdigest()[:16]
+
+
+def test_the_fence_has_no_plain_sha256_fallback(monkeypatch, tmp_path) -> None:
+    """With no box key the fence's own key refuses (its readers fail closed): no plain sha256
+    is ever computed in its place and written to a book."""
+    from libs.ops import provenance as p
+    monkeypatch.setenv(p.KEY_ENV, str(tmp_path / "absent.hmac"))
+    with pytest.raises(ValueError, match="absent"):
+        xa.account_key(FU_LOGIN, FU_SERVER)
+    term = SimpleNamespace(account_info=lambda: SimpleNamespace(login=FU_LOGIN, server=FU_SERVER),
+                           positions_get=lambda symbol=None: [], orders_get=lambda symbol=None: [])
+    with pytest.raises(ValueError):
+        xa.publish_mt5(term, source="t")
 
 
 def test_the_key_written_to_state_is_not_the_plain_sha256(monkeypatch) -> None:
@@ -122,8 +151,8 @@ def test_no_box_key_means_no_identity_and_no_gold_leg(monkeypatch, tmp_path) -> 
 
 def test_an_unkeyed_provenance_helper_is_refused(monkeypatch) -> None:
     from libs.ops import provenance as p
-    monkeypatch.setattr(p, "account_key", lambda login, server, create=False:
-                        xa.account_key(login, server))
+    monkeypatch.setattr(p, "account_key", lambda login, server, create=False: (
+        "sha256:" + hashlib.sha256(f"{login}@{server}".encode()).hexdigest()[:16]))
     with pytest.raises(oco.IdentityUnavailable, match="UNKEYED"):
         oco.oco_account_key(FU_LOGIN, FU_SERVER)
 

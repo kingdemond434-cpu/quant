@@ -104,55 +104,31 @@ class Verdict:
 
 # ------------------------------------------------------------------ identity: ONE helper
 
-def _hash_login(login: object) -> object:
-    """The login as the keyed helper takes it, normalised by `cross_account.norm_login` (Fusion
-    r6) so a gold OCO key and a cross-account book key name one account one way: an int, an
-    integral float and a digit string all become the int; a username its stripped text. None,
-    "" and a bool stay unreadable (the keyed helper answers None on them)."""
-    if login is None or isinstance(login, bool) or str(login).strip() == "":
-        return None
-    canon = _xa.norm_login(login)
-    return int(canon) if canon.isdigit() else canon
-
-
 def oco_account_key(login: object, server: object) -> str:
     """THE ONE IDENTITY HELPER: the keyed-HMAC account key of `login@server`.
 
-    Delegates to `libs.ops.provenance.account_key(login, server, create=False)` (publish_sync v5,
-    re-exported by mt5desk.provenance): "sha256:" + HMAC-SHA256(box key, "<login>@<server>")[:16].
-    A READER: it never creates the box key. RAISES IdentityUnavailable -- and the caller places no
-    gold leg and writes a reasoned row -- when that helper has not landed, when the box-held key
-    is absent or short (it answers None), when its answer is not a key, or when its answer IS the
-    plain sha256 of login@server (an unkeyed key publishes the login). The exception text never
-    carries the login."""
+    It IS `cross_account.account_key` (OCO v2 key join): `libs.ops.provenance.account_key(
+    <int login>, <server>, create=False)`, the helper and the int login the bracket guard v5
+    evidence lane stamps, so the OCO key, the fence's book key, the evidence key and the FTMO
+    prop-ledger key are one value. A READER: it never creates the box key. RAISES
+    IdentityUnavailable -- and the caller places no gold leg and writes a reasoned row -- when
+    that helper has not landed, when the box-held key is absent or short, when its answer is not
+    a key, or when its answer IS the plain sha256 of login@server (an unkeyed key publishes the
+    login). The exception text never carries the login."""
     try:
-        from libs.ops import provenance as _prov
-    except Exception as exc:
-        raise IdentityUnavailable(f"libs.ops.provenance is unimportable "
-                                  f"({type(exc).__name__}); the keyed account_key "
-                                  f"(publish_sync v5) has not landed") from None
-    fn = getattr(_prov, "account_key", None)
-    if not callable(fn):
-        raise IdentityUnavailable("the keyed-HMAC provenance.account_key has not landed "
-                                  "(publish_sync v5); accounts cannot be named")
-    login = _hash_login(login)
-    server = None if server is None else str(server).strip()
-    try:
-        key = fn(login, server, create=False)
-    except Exception as exc:
-        raise IdentityUnavailable(f"provenance.account_key raised {type(exc).__name__}") from None
-    if key is None:
-        raise IdentityUnavailable("the box-held HMAC account key is absent or short (or the "
-                                  "login is unreadable); accounts cannot be named")
-    if not _xa.valid_key(key):
-        raise IdentityUnavailable("provenance.account_key did not answer a sha256:<16 hex> key")
-    plain: str | None = None
-    with contextlib.suppress(ValueError):
-        plain = _xa.account_key(login, server)
-    if plain is not None and key == plain:
+        key = _xa.account_key(login, server)
+    except ValueError as exc:
+        msg = str(exc)
+        if "unreadable" in msg and "key" not in msg:
+            msg = "the login or server is unreadable"
+        raise IdentityUnavailable(msg) from None
+    canon = _xa.hash_login(login)
+    srv = str(server).strip()
+    plain = "sha256:" + hashlib.sha256(f"{canon}@{srv}".encode()).hexdigest()[:16]
+    if key == plain:
         raise IdentityUnavailable("provenance.account_key answered the UNKEYED sha256 of "
                                   "login@server, which reverses to the login")
-    return str(key)
+    return key
 
 
 #: The identity alert (audit v2 must-fix 8): a missing or unkeyed HMAC key stops every gold leg
