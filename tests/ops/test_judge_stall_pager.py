@@ -826,8 +826,8 @@ def test_the_head_drops_its_cut_last_line(jsp, tmp_path):
             f'  "swept_at": "{_iso(end - timedelta(minutes=30))}"\n}}\n')
     f = tmp_path / "r.json"
     f.write_text(text, "utf-8")
-    assert text.encode().index(b'"n_judged": 1') + len('"n_judged": 1') + 2 \
-        == jsp.RESULT_HEAD_BYTES
+    cut_at = text.encode().index(b'"n_judged": 1') + len('"n_judged": 1')
+    assert cut_at == jsp.RESULT_HEAD_BYTES              # the head ends on '...: 1' of '10.5'
     head = jsp._result_head_tail(f)[0]
     assert '"n_judged"' not in head and head.endswith("\n")
     z = jsp._zero_judged(_done(end), f)
