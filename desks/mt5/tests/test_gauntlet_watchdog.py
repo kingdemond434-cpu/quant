@@ -46,6 +46,7 @@ def _isolated(monkeypatch, tmp_path):
         ("STALL", "GAUNTLET_STALL.json"),
         ("PHASE_TIMES", "judge_phase_times.json"),
         ("MERGE_SNAPSHOT", "snap"),
+        ("PLAN_RESUME", "plan_resume.json"),
     ):
         monkeypatch.setattr(runner, name, tmp_path / fname)
     monkeypatch.setattr(
@@ -1185,8 +1186,100 @@ def test_a_killed_resumed_sweep_bounds_the_delay_by_the_plans_remaining_age():
     cost = line["cost"]
     assert cost["plan_kept_for_the_next_sweep"] is True
     assert cost["delay_s_ceiling"] == pytest.approx(6400.0 + cost["delay_s_floor"], abs=1.0)
-    want = 120 * cost["delay_s_ceiling"] / 3600
+    want = (120 + 17) * cost["delay_s_ceiling"] / 3600   # kept deferrals wait it out too
     assert cost["cell_hours_ceiling"] == pytest.approx(want, abs=0.1)
+
+
+def test_the_deferrals_a_reused_shard_keeps_are_billed_in_the_cell_hours():
+    """Audit should-fix of 2ce73d6a3: a kept deferral waits for the next full plan exactly like
+    a cell the plan never had, so the cell-hours bill both; `cells_delayed` keeps its meaning."""
+    runner._PHASE_DOC.update(phases={}, _t0=time.time() - 3600.0)
+    cost = runner.record_resume_delay(0, path=_resume_record())["cost"]
+    assert cost["cells_delayed"] == 120 and cost["cells_kept_deferred"] == 17
+    assert cost["cells_billed"] == 137
+    assert cost["cell_hours_floor"] == pytest.approx(137 * cost["delay_s_floor"] / 3600, abs=0.01)
+    none_kept = runner._resume_delay_line({"cells_not_in_this_plan": 5}, 3600.0, plan_kept=False)
+    assert none_kept["cost"]["cells_billed"] == 5 and none_kept["cost"]["cell_hours_floor"] == 5.0
+
+
+def test_one_resume_is_billed_once_whoever_writes_it():
+    runner._PHASE_DOC.update(phases={}, _t0=time.time() - 100.0)
+    _resume_record()
+    first = runner.record_resume_delay(runner.STALL_RC, ended="shard_stalled")
+    assert first is not None and first["ended"] == "shard_stalled"
+    assert first["rc"] == runner.STALL_RC and first["resume_key"].startswith(f"{os.getpid()}@")
+    assert runner.record_resume_delay(runner.STALL_RC, ended="watchdog_no_progress") is None
+    lines = [m for m in _stall()["missed_growth"] if m.get("rail") == "gauntlet_plan_resume"]
+    assert len(lines) == 1
+
+
+def test_the_watchdogs_breach_bills_the_resume_before_it_exits(monkeypatch):
+    """The breach is a kill of THIS sweep, and a kill keeps the plan for the next resume: it is
+    the delay most worth billing, and it used to write no line at all."""
+    monkeypatch.setattr(runner, "_kill_descendants", lambda pid: {"killed": 0, "orphans": []})
+    monkeypatch.setattr(runner, "restore_merge_outputs", lambda **kw: [])
+    monkeypatch.setattr(runner, "_release_own_locks", lambda: [])
+    runner._PHASE_DOC.update(phases={}, _t0=time.time() - 500.0)
+    _resume_record()
+    dog, exits = _dog(time.monotonic, _FakeTree())
+    dog.breach("no_progress", "test", {"phase": "build_shards"})
+    assert exits == [runner.STALL_RC]
+    line = _stall()["plan_resume"]
+    assert line["ended"] == "watchdog_no_progress"
+    assert line["cost"]["plan_kept_for_the_next_sweep"] is True
+    assert 490 <= line["cost"]["delay_s_floor"] <= 600
+
+
+def test_a_stalled_shard_bills_the_resume_before_the_sweep_returns():
+    import inspect
+
+    src = inspect.getsource(runner._sweep_logged)
+    stalled = src.index("except ShardStalled")
+    assert stalled < src.index('record_resume_delay(STALL_RC, ended="shard_stalled")') \
+        < src.index("return STALL_RC")
+
+
+def test_the_resident_bills_the_resume_of_the_sweep_it_kills(monkeypatch):
+    child = _Child(polls=None)
+    monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: child)
+    monkeypatch.setattr(runner, "_kill_sweep_tree", lambda pid: {"killed": 1, "orphans": []})
+    monkeypatch.setattr(runner, "_sweep_env", lambda: {})
+    _resume_record(pid=child.pid)
+    t, tree = [0.0], _FakeTree()
+
+    def clock():
+        t[0] += 60.0
+        return t[0]
+
+    assert runner._one_sweep_child(None, poll_s=0.0, clock=clock, sampler=tree) \
+        == runner.RESIDENT_HANG_RC
+    line = _stall()["plan_resume"]
+    assert line["ended"] == "resident_kill" and line["rc"] == runner.RESIDENT_HANG_RC
+    assert line["resume_key"].startswith(f"{child.pid}@")
+    assert line["cost"]["plan_kept_for_the_next_sweep"] is True
+    assert line["cost"]["delay_s_floor"] > runner.NO_PROGRESS_S, "the wall the child ran"
+    # the resident never bills its OWN pid's record, only the child's
+    assert runner.record_resume_delay(runner.RESIDENT_HANG_RC, pid=child.pid + 1) is None
+
+
+def test_a_dead_resumed_sweep_is_billed_to_its_last_beat():
+    dead = subprocess.Popen([sys.executable, "-c", "pass"])
+    dead.wait()
+    _write_hb(dead.pid, beat_age_s=5, create_time=1.0)
+    _resume_record(pid=dead.pid)
+    assert runner.take_over_stale()["action"] == "recorded_dead"
+    line = _stall()["plan_resume"]
+    assert line["ended"] == "died_unrecorded" and line["resume_key"].startswith(f"{dead.pid}@")
+    # started_utc is 605 s before now and the last beat 5 s: the floor is the 600 s it was alive
+    assert line["cost"]["delay_s_floor"] == pytest.approx(600.0, abs=2.0)
+
+
+def test_a_takeover_kill_bills_the_killed_sweeps_resume():
+    import inspect
+
+    src = inspect.getsource(runner.take_over_stale)
+    assert '_bill_killed_resume(pid, hb, t, "takeover_kill")' in src
+    assert '_bill_killed_resume(pid, hb, beat, "died_unrecorded")' in src
 
 
 def test_only_this_sweeps_resume_publishes_a_line():

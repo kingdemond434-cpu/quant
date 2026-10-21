@@ -675,6 +675,11 @@ def _resume_delay_line(doc: dict[str, Any], sweep_s: float | None, *,
         return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
 
     cells = int(_num("cells_not_in_this_plan") or 0)
+    # A DEFERRAL A REUSED SHARD KEEPS WAITS THE SAME WINDOW (audit should-fix of 2ce73d6a3):
+    # it is judged by the next full plan, exactly like a cell the plan never had, so the
+    # cell-hours bill both. `cells_delayed` stays the not-in-plan count it always was.
+    kept = int(_num("cells_kept_deferred") or 0)
+    billed = cells + kept
     age, max_age = _num("plan_age_s"), _num("max_age_s")
     floor_s = round(float(sweep_s), 1) if sweep_s is not None else None
     ceil_s = (None if floor_s is None or age is None or max_age is None
@@ -690,12 +695,13 @@ def _resume_delay_line(doc: dict[str, Any], sweep_s: float | None, *,
                      "cells_changed_replanned": int(_num("cells_changed_replanned") or 0),
                      "cells_removed": int(_num("cells_removed") or 0),
                      # deferred by the killed sweep's budget and kept so by shard reuse
-                     "cells_kept_deferred": int(_num("cells_kept_deferred") or 0),
+                     "cells_kept_deferred": kept,
+                     "cells_billed": billed,
                      "delay_s_floor": floor_s, "delay_s_ceiling": ceil_s,
                      "cell_hours_floor": (None if floor_s is None
-                                          else round(cells * floor_s / 3600.0, 2)),
+                                          else round(billed * floor_s / 3600.0, 2)),
                      "cell_hours_ceiling": (None if ceil_s is None
-                                            else round(cells * ceil_s / 3600.0, 2)),
+                                            else round(billed * ceil_s / 3600.0, 2)),
                      "plan_kept_for_the_next_sweep": plan_kept,
                      "basis": ("floor: this sweep's own wall, which every delayed cell waited "
                                "out; ceiling: the plan's remaining resumable age plus that wall "
@@ -706,7 +712,7 @@ def _resume_delay_line(doc: dict[str, Any], sweep_s: float | None, *,
                         "judge_s_saved": round(sum(saved), 1) if saved else None},
             "why": (f"the sweep resumed a plan {age if age is not None else '?'}s old: "
                     f"{cells} docket cell(s) not in it wait for the next full plan and "
-                    f"{int(_num('cells_kept_deferred') or 0)} stay deferred in reused shards, "
+                    f"{kept} stay deferred in reused shards, "
                     "against "
                     f"{round(sum(saved), 1) if saved else 'UNMEASURED'} judge wall-seconds "
                     "not spent re-planning and re-building; the E[log W] price of either side "
@@ -715,20 +721,37 @@ def _resume_delay_line(doc: dict[str, Any], sweep_s: float | None, *,
 
 @_stall_locked
 def record_resume_delay(rc: int, *, sweep_t0: float | None = None,
-                        path: Path | None = None) -> dict[str, Any] | None:
+                        path: Path | None = None, pid: int | None = None,
+                        sweep_s: float | None = None,
+                        ended: str = "returned") -> dict[str, Any] | None:
     """Publish the resume's two-sided missed-growth line on GAUNTLET_STALL.json, where
-    `research/missed_growth.py` carries the watchdog's lines. Only for THIS sweep's resume:
-    the sealed judge stamps its record with this process's pid and the time it resumed, so an
-    older record (or none: the plan was made, not resumed) publishes nothing."""
+    `research/missed_growth.py` carries the watchdog's lines. Only for ONE sweep's resume: the
+    sealed judge stamps its record with the resuming process's pid and the time it resumed, so
+    an older record (or none: the plan was made, not resumed) publishes nothing.
+
+    EVERY WAY A RESUMED SWEEP ENDS WRITES IT (audit should-fix of 2ce73d6a3), not only a normal
+    return: a stalled shard and the watchdog's breach (`pid` is this process), and a kill from
+    outside -- the resident's and the takeover's, and a death the takeover finds unrecorded --
+    which pass the KILLED sweep's `pid`, its start and the wall it measurably ran. A kill is
+    exactly the case that keeps the plan for the next resume, so it is the delay most worth
+    billing. `ended` names which path wrote it. One resume is billed once: a second writer for
+    the same pid and resume stamp publishes nothing."""
     doc = _read_json(path or PLAN_RESUME)
     at = _ts(doc.get("at"))
-    t0 = sweep_t0 if sweep_t0 is not None else _PHASE_DOC.get("_t0")
-    if (not doc.get("resumed") or doc.get("pid") != os.getpid() or at is None
+    who = os.getpid() if pid is None else int(pid)
+    t0 = sweep_t0 if sweep_t0 is not None else (
+        _PHASE_DOC.get("_t0") if pid is None else None)
+    if (not doc.get("resumed") or doc.get("pid") != who or at is None
             or (isinstance(t0, float) and at < t0 - 2.0)):
         return None
-    sweep_s = (time.time() - t0) if isinstance(t0, float) else None
-    line = _resume_delay_line(doc, sweep_s, plan_kept=rc != 0)
     prev = _read_json(STALL)
+    key = f"{who}@{doc.get('at')}"
+    if (prev.get("plan_resume") or {}).get("resume_key") == key:
+        return None
+    if sweep_s is None:
+        sweep_s = (time.time() - t0) if isinstance(t0, float) else None
+    line = {**_resume_delay_line(doc, sweep_s, plan_kept=rc != 0),
+            "resume_key": key, "ended": ended, "rc": rc}
     mg = [*(prev.get("missed_growth") or []), line][-MISSED_GROWTH_HISTORY:]
     _write_json_atomic(STALL, {**prev, **_lock_stamp(prev), "missed_growth": mg,
                                "plan_resume": line})
@@ -1561,7 +1584,7 @@ def _one_sweep_child(hang_s: float | None = None, *, poll_s: float = 60.0,
     child = subprocess.Popen([sys.executable, "-u", str(Path(__file__).resolve()), "--once"],
                              cwd=DESK, env=_sweep_env(), creationflags=flags)
     sample = sampler or _sample_tree
-    t0 = clock()
+    t0, wall0 = clock(), wall()
     tracker = _TreeProgress(t0, max_gap_s=(3.0 * poll_s) if poll_s > 0 else None)
     idle_kill_s = no_progress_s() + HEARTBEAT_STALE_S
     noted: set[str] = set()
@@ -1595,6 +1618,9 @@ def _one_sweep_child(hang_s: float | None = None, *, poll_s: float = 60.0,
     record_stall("resident_kill", detail=f"sweep pid {child.pid}: {why}", pid=child.pid,
                  last_heartbeat=hb if hb.get("pid") == child.pid else {},
                  lost_s=round(now - t0, 1), kill=kill, restored=restored)
+    with contextlib.suppress(Exception):
+        record_resume_delay(RESIDENT_HANG_RC, pid=child.pid, sweep_t0=wall0,
+                            sweep_s=round(now - t0, 1), ended="resident_kill")
     if hb.get("pid") == child.pid and hb.get("status") == "RUNNING":
         # Recorded here, so the next sweep's takeover does not re-report it as unrecorded.
         _write_json_atomic(HEARTBEAT, {**hb, "status": "KILLED_BY_RESIDENT", "why": why})
@@ -1897,6 +1923,18 @@ def _tree_cpu_s(sample: dict[str, Any] | None) -> float | None:
     return None if sample is None else float(sum((sample.get("cpu") or {}).values()))
 
 
+def _bill_killed_resume(pid: int, hb: dict[str, Any], end: float | None, ended: str) -> None:
+    """The killed (or dead) sweep's resume line, billed from its heartbeat: it ran from its
+    `started_utc` to `end` (the kill, or for a death nobody saw, its LAST BEAT -- the latest
+    moment it is known to have been alive, so the floor is never overstated)."""
+    start = _ts(hb.get("started_utc"))
+    wall_s = (round(max(0.0, end - start), 1)
+              if isinstance(start, float) and isinstance(end, float) else None)
+    with contextlib.suppress(Exception):
+        record_resume_delay(RESIDENT_HANG_RC if ended != "died_unrecorded" else 1, pid=pid,
+                            sweep_t0=start, sweep_s=wall_s, ended=ended)
+
+
 def take_over_stale(now: float | None = None, *, sample_s: float | None = None,
                     sleep: Callable[[float], Any] = time.sleep,
                     sampler: Callable[[int], dict[str, Any] | None] | None = None,
@@ -1942,6 +1980,7 @@ def take_over_stale(now: float | None = None, *, sample_s: float | None = None,
             + (f"; restored {restored}" if restored else "")
             + (f"; NOT restored {dict(_RESTORE_REFUSED)}" if _RESTORE_REFUSED else "")),
             pid=pid, counts=False, last_heartbeat=hb, restored=restored)
+        _bill_killed_resume(pid, hb, beat, "died_unrecorded")
         _write_json_atomic(HEARTBEAT, {**hb, "status": "DEAD",
                                        "noticed_utc": _iso(t), "noticed_by": os.getpid()})
         return {"action": "recorded_dead", "pid": pid, "restored": restored}
@@ -2001,6 +2040,7 @@ def take_over_stale(now: float | None = None, *, sample_s: float | None = None,
     record_stall("takeover", detail=(f"sweep pid {pid} {why}; killed {kill.get('killed')} "
                                      f"process(es), orphans {kill.get('orphans')}"),
                  pid=pid, last_heartbeat=hb, kill=kill, restored=restored)
+    _bill_killed_resume(pid, hb, t, "takeover_kill")
     _write_json_atomic(HEARTBEAT, {**hb, "status": "KILLED_BY_TAKEOVER",
                                    "noticed_utc": _iso(t), "noticed_by": os.getpid()})
     return {"action": "killed", "pid": pid, "killed": kill.get("killed"), "why": why}
@@ -2147,6 +2187,8 @@ class SweepWatchdog:
         released = _release_own_locks()
         record_stall(reason, detail=detail, shard=shard, last_heartbeat=doc,
                      lost_s=round(self.clock() - self.started, 1), kill=kill, restored=restored)
+        with contextlib.suppress(Exception):   # bookkeeping: never in the way of the exit
+            record_resume_delay(STALL_RC, ended=f"watchdog_{reason}")
         self.breached = {"reason": reason, "detail": detail, "killed": kill.get("killed"),
                          "orphans": kill.get("orphans"), "locks_released": released,
                          "restored_from_merge_snapshot": restored}
@@ -2265,6 +2307,8 @@ def _sweep_logged() -> int:
                 rc = int(judge.run_sharded(_shards(), _timed_dispatch))
             except ShardStalled as exc:
                 print(f"{datetime.now(UTC).isoformat()} sweep stopped: {exc}", flush=True)
+                with contextlib.suppress(Exception):
+                    record_resume_delay(STALL_RC, ended="shard_stalled")
                 return STALL_RC
             _phase("done")
             with contextlib.suppress(Exception):   # bookkeeping: never a reason to fail a sweep
