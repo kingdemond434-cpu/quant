@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-10-21T04:35:06.337105+00:00",
+ "updated_at": "2026-10-21T05:48:00.832866+00:00",
  "status": "UNAVAILABLE",
  "reason": "Codex CLI is not installed on the VPS; deterministic cycle preserved",
  "controller_rc": 127,
