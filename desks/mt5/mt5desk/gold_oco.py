@@ -107,24 +107,32 @@ class Verdict:
 def oco_account_key(login: object, server: object) -> str:
     """THE ONE IDENTITY HELPER: the keyed-HMAC account key of `login@server`.
 
-    It IS `cross_account.account_key` (OCO v2 key join): `libs.ops.provenance.account_key(
-    <int login>, <server>, create=False)`, the helper and the int login the bracket guard v5
-    evidence lane stamps, so the OCO key, the fence's book key, the evidence key and the FTMO
-    prop-ledger key are one value. A READER: it never creates the box key. RAISES
-    IdentityUnavailable -- and the caller places no gold leg and writes a reasoned row -- when
-    that helper has not landed, when the box-held key is absent or short, when its answer is not
-    a key. No hashing happens here or anywhere but `libs.ops.provenance.account_key` (auditor
-    key-join ruling); the login is normalised (`cross_account.hash_login`) before the call, which
-    is idempotent with the helper's own normalisation (publish_sync v5c). The exception text
-    never carries the login."""
-    try:
-        key = _xa.account_key(login, server)
-    except ValueError as exc:
-        msg = str(exc)
-        if "unreadable" in msg and "key" not in msg:
-            msg = "the login or server is unreadable"
-        raise IdentityUnavailable(msg) from None
-    return key
+    It IS `cross_account.account_key` (Fusion r7), which delegates to the desk's one key function
+    `libs.ops.provenance.account_key(login, server, create=False)` -- that function normalises
+    the login and strips the server itself (publish_sync v5c/v5d) -- so the OCO key, the fence's
+    book key, the evidence key and the FTMO prop-ledger key are one value. A READER: it never
+    creates the box key. No hashing happens here.
+
+    r7's `account_key` answers None when it cannot name the account; this helper RAISES
+    IdentityUnavailable instead -- and the caller places no gold leg and writes a reasoned row.
+    The checks below only explain WHY (for the row and the page); they compute no key. The
+    exception text never carries the login."""
+    if server is None or str(server).strip() == "":
+        raise IdentityUnavailable("the account's server is unreadable")
+    key = _xa.account_key(login, server)
+    if key is not None:
+        return str(key)
+    prov = _xa._provenance()
+    if prov is None:
+        raise IdentityUnavailable("the keyed-HMAC provenance.account_key has not landed")
+    canon = None
+    with contextlib.suppress(Exception):
+        canon = prov.norm_login(login)
+    if canon is None:
+        raise IdentityUnavailable("the account's login is unreadable (or is a username, not a "
+                                  "numeric login)")
+    raise IdentityUnavailable("the box-held HMAC account key is absent or short (or the helper "
+                              "did not answer a sha256:<16 hex> key); accounts cannot be named")
 
 
 #: The identity alert (audit v2 must-fix 8): a missing or unkeyed HMAC key stops every gold leg
@@ -215,12 +223,21 @@ def mt5_oco_key(mt5: Any) -> str:
 
 def tradelocker_oco_key(venue: Any) -> str:
     """The keyed account key of the TradeLocker account under `venue`: EXACTLY bracket guard
-    v5.1's evidence key (`cross_account.tradelocker_account_key`: TLAPI account_id/acc_id and
-    `_credentials["server"]`, handed to `provenance.account_key` with no local normalisation)."""
+    v5.1's evidence key (r7's `cross_account.tradelocker_key_status`: TLAPI account_id/acc_id and
+    `_credentials["server"]`, handed to `provenance.account_key`; a missing login or server
+    pages). RAISES IdentityUnavailable naming the status (never the login) when it is None."""
     try:
-        return _xa.tradelocker_account_key(venue)
+        key, status = _xa.tradelocker_key_status(venue)
     except Exception as exc:
-        raise IdentityUnavailable(f"the TradeLocker venue cannot be named: {exc}"[:200]) from None
+        raise IdentityUnavailable(f"the TradeLocker venue cannot be named "
+                                  f"({type(exc).__name__})") from None
+    if key is None:
+        why = {_xa.TL_LOGIN_UNREADABLE: "it names no account id",
+               _xa.TL_SERVER_UNREADABLE: "it names no server in _credentials",
+               _xa.TL_KEY_UNAVAILABLE: "the box-held HMAC account key did not answer"}.get(
+                   status, "unresolvable")
+        raise IdentityUnavailable(f"the TradeLocker venue cannot be named: {why} ({status})")
+    return str(key)
 
 
 def gateway_lane() -> str | None:

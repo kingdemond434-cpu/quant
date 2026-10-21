@@ -48,14 +48,10 @@ def _reference() -> str:
 @pytest.mark.parametrize("server", SERVERS)
 @pytest.mark.parametrize("login", SPELLINGS)
 def test_provenance_itself(login: object, server: str) -> None:
-    """The helper's OWN normalisation lands in publish_sync v5c (claude/publish-sync-schtasks).
-    On a base without it a str login or a padded server keys differently when called raw; every
-    desk caller below normalises before the call, so the desk's keys join either way."""
-    got = provenance.account_key(login, server, create=False)
-    if got != _reference():
-        pytest.xfail("TODO (final restack): provenance.account_key does not normalise its "
-                     "inputs on this base; v5c's internal normalisation makes this pass")
-    assert got == _reference()
+    """publish_sync v5c's internal normalisation is on this base (v2r restack onto v5d): a str
+    login, an integral float, a padded digit string and a padded server all key as the evidence
+    lane's int login does. STRICT -- no xfail remains on the key path."""
+    assert provenance.account_key(login, server, create=False) == _reference()
 
 
 @pytest.mark.parametrize("server", SERVERS)
@@ -76,10 +72,8 @@ def test_the_venue_readers(login: object, server: str) -> None:
                                                      _credentials={"server": server}),
                             _creds=None)
     # The E8 path is bracket guard v5.1's evidence rule EXACTLY: the TLAPI login as the SDK holds
-    # it, no local normalisation (TLAPI's ids are ints, so it is the reference there).
-    assert _REAL_TL(venue) == provenance.account_key(login, server.strip(), create=False)
-    if isinstance(login, int):
-        assert _REAL_TL(venue) == ref
+    # it, handed to provenance (which normalises it, v5c) -- so every spelling is the reference.
+    assert _REAL_TL(venue) == provenance.account_key(login, server.strip(), create=False) == ref
 
 
 @pytest.mark.parametrize("server", SERVERS)
@@ -139,7 +133,10 @@ def _evidence_key(api: object) -> str | None:
     """bracket guard v5.1's `prop/e8_evidence.account_key_status`, restated (e8_evidence is not
     on this base): login = TLAPI `account_id`, else `acc_id` (never `acc_num`); server =
     `api._credentials["server"]` stripped (never `api.server`, never the venue Credentials,
-    never a default); key = provenance.account_key(login, server, create=False)."""
+    never a default); key = provenance.account_key(login, server, create=False).
+
+    TODO (bracket v5 lands): replace this restatement with `prop.e8_evidence` itself, so the
+    test pins the evidence lane's own code rather than a copy of its rule."""
     login = None
     for attr in ("account_id", "acc_id"):
         v = getattr(api, attr, None)

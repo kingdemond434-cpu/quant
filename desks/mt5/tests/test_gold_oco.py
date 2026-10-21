@@ -96,8 +96,8 @@ def test_the_oco_key_joins_the_r6_norm_login_spellings() -> None:
     for spelling in (FU_LOGIN, float(FU_LOGIN), f" {FU_LOGIN} ", str(FU_LOGIN)):
         assert xa.norm_login(spelling) == str(FU_LOGIN)
         assert oco.oco_account_key(spelling, f" {FU_SERVER} ") == key
-    assert oco.oco_account_key(" trader01 ", "tl") == oco.oco_account_key("trader01", "tl")
-    for bad in (None, "", "  ", True):
+    # A username is not a login (publish_sync v5d keys it None and alerts): it names nothing.
+    for bad in (None, "", "  ", True, " trader01 "):
         with pytest.raises(oco.IdentityUnavailable):
             oco.oco_account_key(bad, FU_SERVER)
 
@@ -122,8 +122,7 @@ def test_the_fence_has_no_plain_sha256_fallback(monkeypatch, tmp_path) -> None:
     is ever computed in its place and written to a book."""
     from libs.ops import provenance as p
     monkeypatch.setenv(p.KEY_ENV, str(tmp_path / "absent.hmac"))
-    with pytest.raises(ValueError, match="absent"):
-        xa.account_key(FU_LOGIN, FU_SERVER)
+    assert xa.account_key(FU_LOGIN, FU_SERVER) is None          # r7: unresolvable is None
     term = SimpleNamespace(account_info=lambda: SimpleNamespace(login=FU_LOGIN, server=FU_SERVER),
                            positions_get=lambda symbol=None: [], orders_get=lambda symbol=None: [])
     with pytest.raises(ValueError):
