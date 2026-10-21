@@ -727,7 +727,7 @@ def test_a_present_non_int_n_judged_reads_unmeasured_never_n_cells(jsp, tmp_path
     f = tmp_path / "r.json"
     f.write_text(json.dumps(body, indent=2), "utf-8")
     z = jsp._zero_judged(_done(end), f)
-    assert z["open"] is None and "not an int" in z["why"] and z["read"]
+    assert z["open"] is None and "not a non-negative int" in z["why"] and z["read"]
     assert "cells" not in z
 
 
