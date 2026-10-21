@@ -20,6 +20,7 @@ import pandas as pd
 import pytest
 
 DESK = Path(__file__).resolve().parent.parent
+_ROOT_DIR = DESK.parent.parent
 for p in (DESK, DESK / "research", DESK.parent.parent):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
@@ -322,3 +323,160 @@ def test_a_torn_sidecar_that_cannot_be_moved_is_left_exactly_as_found(tmp_path,
     got = _sidecar_pass(tmp_path, monkeypatch, at="2026-10-22T00:00:00+00:00")
     assert got["needs_data_outstanding"] == "UNMEASURED"
     assert side.read_text("utf-8") == "{torn"
+
+
+# ------------------------------------------------- audit of fcef73b92: markers, retries, lock
+
+def _readmittable_bank(tmp_path: Path) -> Path:
+    now = datetime(2026, 10, 21, tzinfo=UTC)
+    bank_path = tmp_path / "unrunnable_specs.json"
+    row = {"reason": "needs_data", "sym": "EURCZK", "family": "cot_positioning", "tf": "H1",
+           "days": 0, "bar_bytes": 100, "missing_input": "cot_series:EURCZK",
+           "parked_at": (now - timedelta(days=91)).isoformat()}
+    bank_path.write_text(json.dumps({"EURCZK.cot_positioning.p=1": row}), "utf-8")
+    return bank_path
+
+
+def test_every_sidecar_file_and_marker_is_gitignored() -> None:
+    import fnmatch
+    lines = [ln.strip() for ln in (_ROOT_DIR / ".gitignore").read_text("utf-8").splitlines()]
+    base = "desks/mt5/data/hypotheses/needs_data_outstanding.json"
+    for suffix in ("", ".born", ".torn-20261021T0000-1", ".vanished-x", ".tmp", ".lock"):
+        assert any(fnmatch.fnmatch(base + suffix, ln) for ln in lines if ln and
+                   not ln.startswith(("#", "!"))), suffix
+
+
+def test_a_failed_born_write_is_retried_so_a_later_vanish_is_never_zero(tmp_path,
+                                                                         monkeypatch) -> None:
+    """Audit probe: born write fails, then the sidecar vanishes -> must not re-FIRST to 0."""
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    real = Path.write_text
+
+    def no_born(self, *a, **k):
+        if self.name.endswith(".born"):
+            raise OSError("disk full")
+        return real(self, *a, **k)
+    monkeypatch.setattr(Path, "write_text", no_born)
+    first = _sidecar_pass(tmp_path, monkeypatch)
+    assert first["needs_data_outstanding_state"] == jc.OUTSTANDING_FIRST
+    assert not (tmp_path / (side.name + ".born")).exists()
+    monkeypatch.setattr(Path, "write_text", real)
+    assert _sidecar_pass(tmp_path, monkeypatch)["needs_data_outstanding_state"] == "MEASURED"
+    assert (tmp_path / (side.name + ".born")).exists(), "born on the next successful write"
+    side.unlink()
+    gone = _sidecar_pass(tmp_path, monkeypatch, at="2026-10-23T00:00:00+00:00")
+    assert gone["needs_data_outstanding"] == "UNMEASURED"
+    assert gone["needs_data_outstanding_state"] == jc.OUTSTANDING_VANISHED
+
+
+def test_a_sidecar_born_before_the_marker_existed_is_marked_and_cannot_vanish_to_zero(
+        tmp_path, monkeypatch) -> None:
+    """Audit probe: a sidecar holding a row and no marker, then deleted -> must not read 0."""
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    side.write_text(json.dumps({"c": {"reason": "needs_data", "sym": "EURCZK",
+                                      "family": "cot_positioning"}}), "utf-8")
+    got = _sidecar_pass(tmp_path, monkeypatch)
+    assert got["needs_data_outstanding"] == 1
+    assert (tmp_path / (side.name + ".born")).exists()
+    side.unlink()
+    assert _sidecar_pass(tmp_path, monkeypatch)["needs_data_outstanding"] == "UNMEASURED"
+
+
+def test_an_exists_that_raises_reads_unmeasured_and_holds_the_rows_back(tmp_path,
+                                                                        monkeypatch) -> None:
+    bank_path = _readmittable_bank(tmp_path)
+    real = Path.exists
+
+    def denied(self, *a, **k):
+        if self.name.startswith(jc.NEEDS_DATA_OUTSTANDING.name):
+            raise PermissionError("denied")
+        return real(self, *a, **k)
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "NEEDS_DATA"})
+    monkeypatch.setattr(Path, "exists", denied)
+    got = jc.update_unrunnable_bank({}, at="2026-10-21T00:00:00+00:00", path=bank_path)
+    assert got["needs_data_outstanding"] == "UNMEASURED"
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_UNREADABLE
+    assert got["bank_size"] == 1 and got["needs_data_readmit_held_back"] == 1
+
+
+def test_a_transient_read_error_is_retried_not_classed_torn(tmp_path, monkeypatch) -> None:
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    _sidecar_pass(tmp_path, monkeypatch)
+    real = Path.read_text
+    calls = {"n": 0}
+
+    def flaky(self, *a, **k):
+        if self.name == side.name:
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise PermissionError("sharing violation")
+        return real(self, *a, **k)
+    monkeypatch.setattr(jc, "OUTSTANDING_READ_PAUSE_S", 0.0)
+    monkeypatch.setattr(Path, "read_text", flaky)
+    assert jc.read_needs_data_outstanding(side)[1] == jc.OUTSTANDING_MEASURED
+    assert not list(tmp_path.glob(side.name + ".torn-*"))
+
+
+def test_a_persistent_read_error_leaves_the_file_and_holds_the_rows_back(tmp_path,
+                                                                         monkeypatch) -> None:
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    _sidecar_pass(tmp_path, monkeypatch)
+    before = side.read_bytes()
+    bank_path = _readmittable_bank(tmp_path)
+    real = Path.read_text
+
+    def locked(self, *a, **k):
+        if self.name == side.name:
+            raise PermissionError("sharing violation")
+        return real(self, *a, **k)
+    monkeypatch.setattr(jc, "OUTSTANDING_READ_PAUSE_S", 0.0)
+    monkeypatch.setattr(Path, "read_text", locked)
+    got = jc.update_unrunnable_bank({}, at="2026-10-22T00:00:00+00:00", path=bank_path)
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_UNREADABLE
+    assert got["needs_data_outstanding"] == "UNMEASURED"
+    assert got["bank_size"] == 1 and got["needs_data_readmit_held_back"] == 1
+    assert side.read_bytes() == before and not list(tmp_path.glob(side.name + ".torn-*"))
+
+
+def test_two_tears_in_the_same_second_keep_both_copies(tmp_path, monkeypatch) -> None:
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    _sidecar_pass(tmp_path, monkeypatch)
+    for torn in ("{torn one", "{torn two"):
+        side.write_text(torn, "utf-8")
+        _sidecar_pass(tmp_path, monkeypatch, at="2026-10-22T00:00:00+00:00")
+    kept = sorted(p.read_text("utf-8") for p in tmp_path.glob(side.name + ".torn-*"))
+    assert kept == ["{torn one", "{torn two"]
+
+
+def test_a_failed_replace_is_write_failed_and_the_rows_stay_parked(tmp_path,
+                                                                   monkeypatch) -> None:
+    _sidecar_pass(tmp_path, monkeypatch)
+    bank_path = _readmittable_bank(tmp_path)
+
+    def refuse(self, target):
+        raise OSError("read-only destination")
+    monkeypatch.setattr(Path, "replace", refuse)
+    got = jc.update_unrunnable_bank({}, at="2026-10-22T00:00:00+00:00", path=bank_path)
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_WRITE_FAILED
+    assert got["needs_data_outstanding"] == "UNMEASURED"
+    assert got["bank_size"] == 1 and got["readmitted_on_bar_growth"] == 0
+    assert got["readmitted_not_testable"] == 0
+
+
+def test_a_held_lock_is_locked_and_a_stale_one_is_broken(tmp_path, monkeypatch) -> None:
+    import os as _os
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    _sidecar_pass(tmp_path, monkeypatch)
+    bank_path = _readmittable_bank(tmp_path)
+    lock = tmp_path / (side.name + ".lock")
+    lock.write_text("{}", "utf-8")
+    monkeypatch.setattr(jc, "OUTSTANDING_LOCK_WAIT_S", 0.0)
+    got = jc.update_unrunnable_bank({}, at="2026-10-22T00:00:00+00:00", path=bank_path)
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_LOCKED
+    assert got["needs_data_outstanding"] == "UNMEASURED" and got["bank_size"] == 1
+    old = lock.stat().st_mtime - jc.OUTSTANDING_LOCK_STALE_S - 10
+    _os.utime(lock, (old, old))
+    got = jc.update_unrunnable_bank({}, at="2026-10-23T00:00:00+00:00", path=bank_path)
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_MEASURED
+    assert got["needs_data_outstanding"] == 1 and not lock.exists()

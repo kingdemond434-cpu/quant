@@ -86,6 +86,7 @@ import argparse
 import contextlib
 import json
 import math
+import os
 import sys
 import time
 from collections import Counter
@@ -1066,19 +1067,37 @@ READMISSION_LOG = HYP / "not_testable_readmissions.jsonl"
 NEEDS_DATA_OUTSTANDING = HYP / "needs_data_outstanding.json"
 
 
-#: THE SIDECAR'S STATES (audit of 3857d4bcd). An absent or torn sidecar is NOT an empty one: the
-#: rows it held exist nowhere else (the bank popped them at readmit), so neither may read as 0
-#: and a file that could not be read is never overwritten.
+#: THE SIDECAR'S STATES (audits of 3857d4bcd and fcef73b92). An absent or torn sidecar is NOT an
+#: empty one: the rows it held exist nowhere else (the bank popped them at readmit), so neither may
+#: read as 0, and a file that could not be read is never overwritten.
 #:
-#:   MEASURED   read cleanly, and nothing is set aside.
-#:   FIRST      absent, and never born here (no `.born` marker): the one creation allowed.
-#:   VANISHED   absent after it was born: its rows are lost to this organ. A named
-#:              `.vanished-<at>` marker is written; UNMEASURED until a person removes it.
-#:   TORN       present and unreadable: moved aside UNTOUCHED to `.torn-<at>`; UNMEASURED until a
-#:              person removes the set-aside file. If it cannot be moved, nothing is written.
-#:   SET_ASIDE  read cleanly, but an earlier torn/vanished file is still set aside: UNMEASURED.
+#:   MEASURED      read cleanly, nothing set aside, and this pass's write landed.
+#:   FIRST         absent, and never born here (no `.born` marker): the one creation allowed.
+#:   VANISHED      absent after it was born: its rows are lost to this organ. A named
+#:                 `.vanished-<at>` marker is written; UNMEASURED until a person removes it.
+#:   TORN          present but not JSON (ValueError): moved aside UNTOUCHED to a unique
+#:                 `.torn-<at>[-n]`; UNMEASURED until a person removes it. If it cannot be moved,
+#:                 nothing is written.
+#:   UNREADABLE    an OSError (a Windows sharing violation, a permission) persisted through the
+#:                 retries, on the read or on `exists`: UNMEASURED, the file is NOT moved, and no
+#:                 row is readmitted into it this pass.
+#:   SET_ASIDE     read cleanly, but an earlier torn/vanished file is still set aside: UNMEASURED.
+#:   LOCKED        another pass holds the sidecar lock: UNMEASURED, untouched, nothing readmitted
+#:                 into it.
+#:   WRITE_FAILED  this pass's write did not land: UNMEASURED; the rows bound for it stay parked.
+#:
+#: Every file here is `needs_data_outstanding.json*`, one gitignore line (`.born`, `.torn-*`,
+#: `.vanished-*`, `.tmp`, `.lock`): a committed marker would read VANISHED in every other checkout.
 OUTSTANDING_MEASURED, OUTSTANDING_FIRST = "MEASURED", "FIRST"
 OUTSTANDING_VANISHED, OUTSTANDING_TORN, OUTSTANDING_SET_ASIDE = "VANISHED", "TORN", "SET_ASIDE"
+OUTSTANDING_UNREADABLE, OUTSTANDING_LOCKED = "UNREADABLE", "LOCKED"
+OUTSTANDING_WRITE_FAILED = "WRITE_FAILED"
+#: A transient read error is retried this many times, this far apart, before it is UNREADABLE.
+OUTSTANDING_READ_TRIES = 3
+OUTSTANDING_READ_PAUSE_S = 0.2
+#: How long a pass waits for the sidecar lock, and when a lock left by a dead pass is broken.
+OUTSTANDING_LOCK_WAIT_S = 30.0
+OUTSTANDING_LOCK_STALE_S = 900.0
 
 
 def _born_marker(path: Path) -> Path:
@@ -1086,19 +1105,49 @@ def _born_marker(path: Path) -> Path:
 
 
 def _set_aside(path: Path) -> list[str]:
-    return sorted(p.name for p in path.parent.glob(path.name + ".torn-*")) + sorted(
-        p.name for p in path.parent.glob(path.name + ".vanished-*"))
+    try:
+        return sorted(p.name for p in path.parent.glob(path.name + ".torn-*")) + sorted(
+            p.name for p in path.parent.glob(path.name + ".vanished-*"))
+    except OSError:
+        return [f"{path.name}.<unlistable>"]
+
+
+def _aside_name(path: Path, kind: str, at: str) -> Path:
+    """A name no earlier set-aside file holds, so two tears in one second never collide."""
+    base = f"{path.name}.{kind}-{_stamp(at)}"
+    cand, n = path.with_name(base), 0
+    while cand.exists():
+        n += 1
+        cand = path.with_name(f"{base}-{n}")
+    return cand
 
 
 def read_needs_data_outstanding(path: Path | None = None
                                 ) -> tuple[dict[str, dict[str, Any]], str]:
     """(rows, state). Rows are what could be read; the state says whether that is the truth."""
     target = path or NEEDS_DATA_OUTSTANDING
-    if not target.exists():
-        return {}, (OUTSTANDING_VANISHED if _born_marker(target).exists() else OUTSTANDING_FIRST)
     try:
-        doc = json.loads(target.read_text("utf-8"))
-    except (OSError, ValueError):
+        exists = target.exists()
+        born = _born_marker(target).exists()
+    except OSError:
+        return {}, OUTSTANDING_UNREADABLE
+    if not exists:
+        return {}, (OUTSTANDING_VANISHED if born else OUTSTANDING_FIRST)
+    text: str | None = None
+    for attempt in range(OUTSTANDING_READ_TRIES):
+        try:
+            text = target.read_text("utf-8")
+            break
+        except ValueError:                  # undecodable bytes: torn, not transient
+            return {}, OUTSTANDING_TORN
+        except OSError:
+            if attempt + 1 < OUTSTANDING_READ_TRIES:
+                time.sleep(OUTSTANDING_READ_PAUSE_S)
+    if text is None:
+        return {}, OUTSTANDING_UNREADABLE
+    try:
+        doc = json.loads(text)
+    except ValueError:
         return {}, OUTSTANDING_TORN
     if not isinstance(doc, dict):
         return {}, OUTSTANDING_TORN
@@ -1113,6 +1162,42 @@ def needs_data_outstanding(path: Path | None = None) -> dict[str, dict[str, Any]
 
 def _stamp(at: str) -> str:
     return "".join(ch for ch in str(at) if ch.isalnum()) or "unstamped"
+
+
+@contextlib.contextmanager
+def _outstanding_lock(path: Path, at: str) -> Any:
+    """An exclusive `.lock` beside the sidecar for the read-modify-write. Yields False on no lock."""
+    lock = path.with_name(path.name + ".lock")
+    deadline = time.monotonic() + OUTSTANDING_LOCK_WAIT_S
+    held = False
+    while True:
+        try:
+            lock.parent.mkdir(parents=True, exist_ok=True)
+            fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fh.write(json.dumps({"at": at, "pid": os.getpid()}))
+            held = True
+            break
+        except FileExistsError:
+            try:
+                age = time.time() - lock.stat().st_mtime
+            except OSError:
+                age = 0.0
+            if age > OUTSTANDING_LOCK_STALE_S:
+                with contextlib.suppress(OSError):
+                    lock.unlink()
+                continue
+            if time.monotonic() >= deadline:
+                break
+            time.sleep(0.5)
+        except OSError:
+            break
+    try:
+        yield held
+    finally:
+        if held:
+            with contextlib.suppress(OSError):
+                lock.unlink()
 
 
 def _still_needs_data(row: dict[str, Any]) -> bool:
@@ -1148,61 +1233,92 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         readmitted_nt_reason[rsn] = readmitted_nt_reason.get(rsn, 0) + 1
 
     out_path = target.parent / NEEDS_DATA_OUTSTANDING.name
-    outstanding, out_state = read_needs_data_outstanding(out_path)
-    out_writable = True
-    if out_state == OUTSTANDING_TORN:
-        # NEVER OVERWRITE WHAT COULD NOT BE READ: set it aside untouched, under a name, and say so.
+    with _outstanding_lock(out_path, at) as locked:
+        if locked:
+            outstanding, out_state = read_needs_data_outstanding(out_path)
+        else:
+            outstanding, out_state = {}, OUTSTANDING_LOCKED
+        out_writable = out_state in (OUTSTANDING_MEASURED, OUTSTANDING_FIRST,
+                                     OUTSTANDING_SET_ASIDE, OUTSTANDING_VANISHED)
+        if out_state == OUTSTANDING_TORN:
+            # NEVER OVERWRITE WHAT COULD NOT BE READ: set it aside untouched, under its own name.
+            try:
+                out_path.rename(_aside_name(out_path, "torn", at))
+                out_writable = True
+            except OSError:
+                out_writable = False        # cannot move it: leave it exactly as found
+        elif out_state == OUTSTANDING_VANISHED:
+            with contextlib.suppress(OSError), _aside_name(out_path, "vanished", at).open(
+                    "x", encoding="utf-8") as fh:
+                fh.write(json.dumps({"at": at, "why": "the sidecar was born here and is now "
+                                     "absent; the rows it held are not recoverable"}))
+        # A ROW BOUND FOR THE SIDECAR LEAVES THE BANK ONLY IF THE SIDECAR CAN TAKE IT: with the
+        # sidecar locked, unreadable or unmovable it stays parked and is re-asked next pass.
+        held_back: list[str] = []
+        popped: dict[str, dict[str, Any]] = {}
+        to_side: set[str] = set()
+        for cell in readmitted:
+            old = bank.get(cell)
+            bound = (isinstance(old, dict) and old.get("reason") == "needs_data"
+                     and _still_needs_data(old))
+            if bound and not out_writable:
+                held_back.append(cell)
+                continue
+            popped[cell] = bank.pop(cell)
+            if bound:
+                to_side.add(cell)
+                outstanding[cell] = {**popped[cell], "readmitted_at": at}
+        added = 0
+        for cell, row in named.items():
+            if row.get("reason") == "missing_bars":
+                continue                   # owned by the conversion organ, not filtered here
+            prev = bank.get(cell)
+            if prev is None:
+                added += 1
+            prev = prev if isinstance(prev, dict) else {}
+            was_nt = prev.get("reason") in NOT_TESTABLE_REASONS
+            is_nt = row.get("reason") in NOT_TESTABLE_REASONS
+            entry = {**row, "parked_at": prev.get("parked_at") or at}
+            if is_nt:
+                entry["not_testable_since"] = ((prev.get("not_testable_since") or at)
+                                               if was_nt else at)
+            elif was_nt:
+                _count_readmit(prev)        # re-named OUT of the class: owed again
+            bank[cell] = entry
+        # Parked again (the bank holds it) or the input appeared: the sidecar row is done.
+        outstanding = {c: r for c, r in outstanding.items()
+                       if c not in bank and _still_needs_data(r)}
+        out_written = False
+        if out_writable:
+            try:
+                tmp = out_path.with_name(out_path.name + ".tmp")
+                tmp.write_text(json.dumps(outstanding, indent=1, default=str), "utf-8")
+                tmp.replace(out_path)
+                out_written = True
+            except OSError:
+                out_written = False
+        if out_written:
+            # BORN ON EVERY SUCCESSFUL WRITE THAT FINDS NO MARKER (audit of fcef73b92), not only
+            # on FIRST: a failed marker write, or a sidecar older than the marker, would otherwise
+            # read MEASURED forever and re-FIRST to 0 the day it vanished.
+            with contextlib.suppress(OSError):
+                if not _born_marker(out_path).exists():
+                    _born_marker(out_path).write_text(json.dumps({"born_at": at}), "utf-8")
+        elif to_side:
+            # The write did not land: the rows bound for it go back to the bank, unreadmitted.
+            for cell in to_side:
+                bank[cell] = popped.pop(cell)
+            held_back.extend(sorted(to_side))
+        if out_writable and not out_written:
+            out_state = OUTSTANDING_WRITE_FAILED
+        for old in popped.values():
+            if isinstance(old, dict) and old.get("reason") in NOT_TESTABLE_REASONS:
+                _count_readmit(old)
         try:
-            out_path.rename(out_path.with_name(f"{out_path.name}.torn-{_stamp(at)}"))
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(json.dumps(bank, indent=1, default=str), "utf-8")
         except OSError:
-            out_writable = False            # cannot move it: leave it exactly as found
-    elif out_state == OUTSTANDING_VANISHED:
-        with contextlib.suppress(OSError):
-            out_path.with_name(f"{out_path.name}.vanished-{_stamp(at)}").write_text(
-                json.dumps({"at": at, "why": "the sidecar was born here and is now absent; the "
-                            "rows it held are not recoverable by this organ"}), "utf-8")
-    for cell in readmitted:
-        old = bank.pop(cell, None)
-        if isinstance(old, dict) and old.get("reason") in NOT_TESTABLE_REASONS:
-            _count_readmit(old)
-        if isinstance(old, dict) and old.get("reason") == "needs_data" and _still_needs_data(old):
-            outstanding[cell] = {**old, "readmitted_at": at}
-    added = 0
-    for cell, row in named.items():
-        if row.get("reason") == "missing_bars":
-            continue                       # owned by the conversion organ, not filtered here
-        prev = bank.get(cell)
-        if prev is None:
-            added += 1
-        prev = prev if isinstance(prev, dict) else {}
-        was_nt = prev.get("reason") in NOT_TESTABLE_REASONS
-        is_nt = row.get("reason") in NOT_TESTABLE_REASONS
-        entry = {**row, "parked_at": prev.get("parked_at") or at}
-        if is_nt:
-            entry["not_testable_since"] = (prev.get("not_testable_since") or at) if was_nt else at
-        elif was_nt:
-            _count_readmit(prev)            # re-named OUT of the class: owed again
-        bank[cell] = entry
-    try:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps(bank, indent=1, default=str), "utf-8")
-    except OSError:
-        pass
-    # Parked again (the bank holds it) or the input appeared: the sidecar row has done its job.
-    outstanding = {c: r for c, r in outstanding.items()
-                   if c not in bank and _still_needs_data(r)}
-    out_written = False
-    if out_writable:
-        try:
-            tmp = out_path.with_name(out_path.name + ".tmp")
-            tmp.write_text(json.dumps(outstanding, indent=1, default=str), "utf-8")
-            tmp.replace(out_path)
-            out_written = True
-            if out_state == OUTSTANDING_FIRST:
-                # THE ONE EXPLICIT CREATION: from now on, absence means the file vanished.
-                _born_marker(out_path).write_text(json.dumps({"born_at": at}), "utf-8")
-        except OSError:
-            out_written = False
+            pass
     out_measured = (out_written and out_state in (OUTSTANDING_MEASURED, OUTSTANDING_FIRST)
                     and not _set_aside(out_path))
     n_re = sum(readmitted_nt.values())
@@ -1218,7 +1334,8 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                                  "by_reason": readmitted_nt_reason}) + "\n")
     except OSError:
         pass
-    return {"parked_this_pass": added, "readmitted_on_bar_growth": len(readmitted),
+    return {"parked_this_pass": added, "readmitted_on_bar_growth": len(popped),
+            "needs_data_readmit_held_back": len(held_back),
             "readmitted_not_testable": n_re,
             "readmitted_not_testable_by_family": readmitted_nt,
             "readmitted_not_testable_by_reason": readmitted_nt_reason,
