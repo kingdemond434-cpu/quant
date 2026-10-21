@@ -1,5 +1,5 @@
 {
- "at": "2026-10-21T22:51:49+00:00",
+ "at": "2026-10-21T23:49:39+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,9 +9,9 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-10-21T22:49:59+00:00",
+   "at": "2026-10-21T23:48:18+00:00",
    "bandit_at": "2026-10-21T03:25:28.197779+00:00",
-   "hour": "2026-10-21T22",
+   "hour": "2026-10-21T23",
    "arm": "treated",
    "wanted_s": 480,
    "floor_s": 240,
@@ -21,14 +21,14 @@
    "surplus_s": 1297.1,
    "surplus_why": "department 'discovery' measured spare 1297s/hour",
    "contract": {
-    "n_treated": 33,
+    "n_treated": 32,
     "n_control": 8,
-    "mean_treated": 0.636364,
+    "mean_treated": 0.65625,
     "mean_control": 0.0,
-    "delta": 0.636364,
-    "t": 7.483,
+    "delta": 0.65625,
+    "t": 7.693,
     "verdict": "ADMITTED",
-    "why": "Welch t=7.483 over 33 treated vs 8 held-out leg-runs in the last 14 days",
+    "why": "Welch t=7.693 over 32 treated vs 8 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "trial": true,
@@ -112,7 +112,7 @@
   }
  },
  "authoritative": true,
- "authority_why": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=7.483)",
+ "authority_why": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=7.693)",
  "contract": {
   "gain": "INFO_PER_COMPUTE",
   "metric": "control_arm.admitted",
@@ -124,14 +124,14 @@
   "admitted": 1.0,
   "legs": {
    "alpha_evolution": {
-    "n_treated": 33,
+    "n_treated": 32,
     "n_control": 8,
-    "mean_treated": 0.636364,
+    "mean_treated": 0.65625,
     "mean_control": 0.0,
-    "delta": 0.636364,
-    "t": 7.483,
+    "delta": 0.65625,
+    "t": 7.693,
     "verdict": "ADMITTED",
-    "why": "Welch t=7.483 over 33 treated vs 8 held-out leg-runs in the last 14 days",
+    "why": "Welch t=7.693 over 32 treated vs 8 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "deepen": {
