@@ -795,8 +795,12 @@ def test_in_production_the_identity_page_goes_through_provenance_page(monkeypatc
         monkeypatch.setattr(p, name, {})
     got: list[str] = []
     delivered = {"n": 0}
-    monkeypatch.setattr(p, "SENDER", lambda t, b: (got.append(t),
-                                                   {"armed": 1, "delivered": delivered["n"]})[1])
+    # Only this alert's sends are counted: the suite's outbox is shared by every test.
+    monkeypatch.setattr(p, "SENDER", lambda t, b: (
+        got.append(t) if t.startswith("GOLD OCO") else None,
+        {"armed": 1, "delivered": delivered["n"]})[1])
+    p.deliver_pending()                                  # drain what earlier tests enqueued
+    p._LAST_TRY.clear()
     why = "the box-held HMAC account key is absent"
     r1 = oco.page_identity("fusion", why)
     assert r1["via"] == "provenance._page" and r1["sent"] is False and r1["queued"] is True
