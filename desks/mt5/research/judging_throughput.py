@@ -964,14 +964,40 @@ def apply_cadence(minutes: int, box: dict[str, Any]) -> dict[str, Any]:
                     "is not a repetition this organ can re-arm, and the judge is idle")}
 
 
+def _attempt_module() -> Any:
+    """The attempt marker's module, under whichever name this module itself was imported."""
+    try:
+        from research import judging_rate_attempt as mod
+    except ImportError:
+        from desks.mt5.research import judging_rate_attempt as mod  # type: ignore[no-redef]
+    return mod
+
+
 def _write_atomic(path: Path, doc: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + f".{os.getpid()}.tmp")
-    tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
-    os.replace(tmp, path)
+    """tmp then `os.replace`, with the Windows PermissionError retry (judging_rate_attempt)."""
+    _attempt_module().write_atomic(path, doc)
 
 
-def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> dict[str, Any]:
+#: THE ATTEMPT MARKER (2026-10-21). Written first by every `run()` and rewritten at each phase,
+#: so a pass that dies -- or is killed at its budget -- leaves the phase it died in on disk, and
+#: JUDGING_RATE.json reads STALE with that reason instead of a silent old value. Published beside
+#: JUDGING_RATE.json by sync_shadow_to_git.ps1; read by `judging_rate_attempt.read_rate`.
+#: None means "beside RATE_OUT" (reports/JUDGING_RATE.attempt.json), so anything that points the
+#: rate elsewhere -- a test, a dry run on another box -- moves the marker with it.
+ATTEMPT_OUT: Path | None = None
+
+
+def _attempt_path() -> Path:
+    return ATTEMPT_OUT if ATTEMPT_OUT is not None else RATE_OUT.with_name(
+        RATE_OUT.stem + ".attempt.json")
+#: Wall clock the verdict-ledger stream may spend. On overrun the rate is UNMEASURED with the
+#: reason, never a partial count read as a whole one. Inside the leg's 300 s `--budget-s` with
+#: room for everything else the pass does; never used to change the leg's own budget.
+RATE_STREAM_BUDGET_S = 150.0
+
+
+def run(write: bool = True, now: datetime | None = None, apply: bool = True,
+        rate_budget_s: float | None = None) -> dict[str, Any]:
     """Measure the box, size the judge, PUBLISH, and only then apply where it is read.
 
     ORDER IS THE FIX (CRO 2026-09-30). Every artifact -- the env file, JUDGING_RATE.json and
@@ -979,14 +1005,41 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
     apply can no longer cost the hour its measurement (it cost 4.4 h of JUDGING_RATE staleness).
     The apply is best-effort inside `APPLY_BUDGET_S`, each call inside `SUBPROCESS_TIMEOUT_S`,
     and its outcome is written into JUDGING_THROUGHPUT.json by a second, equally atomic write.
+
+    THE MARKER AND THE EARLY RATE (2026-10-21). JUDGING_RATE.json sat at 01:52Z for hours while
+    the box kept publishing: the pass measured the box, the queue, the plan, the schtasks limit
+    and a ~970k-row ledger before writing anything, so a pass killed anywhere in that left the old
+    file and no reason. Now the first write is the attempt marker (ATTEMPT_OUT), rewritten as each
+    phase is entered; the rate is measured right after the (pure) plan and written BEFORE the
+    schtasks query, the env file and the apply; and the ledger stream is bounded by
+    `rate_budget_s`, past which the rate is UNMEASURED with the reason.
     """
     import time as _time
 
     t0 = _time.monotonic()
+    attempt = _attempt_module().Attempt(_now(now), _attempt_path(), enabled=write)
+    attempt.phase("started")
+    attempt.phase("measure_box")
     box = measure_box(now)
     costs = declared_costs()
+    attempt.phase("queue")
     queue = measure_queue()
+    attempt.phase("plan")
     decision = plan(box, queue, costs)
+    # THE RATE NEEDS ONLY THE QUEUE AND THE PLAN'S workers/cores_basis, so it is measured and
+    # PUBLISHED here, before the schtasks query, the env write and the apply can cost it the hour.
+    attempt.phase("rate")
+    _budget = RATE_STREAM_BUDGET_S if rate_budget_s is None else float(rate_budget_s)
+    try:
+        rate = measure_rate(queue, decision, now, deadline_s=_budget)
+    except Exception as exc:     # a broken rate read must never cost the sizing decision
+        rate = {"at": _now(now).isoformat(timespec="seconds"), "status": UNMEASURED,
+                "why": f"{type(exc).__name__}: {exc}"}
+    if write:
+        rate["attempt"] = attempt.pointer()
+        _write_atomic(RATE_OUT, rate)
+        attempt.phase("rate_written")
+    attempt.phase("task_limit")
     # THE BUILD BUDGET, FROM THE TASK'S OWN LIMIT. Measured 2026-09-24: the pre-warm shares the
     # build deadline and spent 2,874 s of a 2,700 s budget on a 250,992-cell docket, leaving
     # 67,910 cells never built. This gives the judge the wall clock its own scheduled task already
@@ -1028,17 +1081,15 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
                  "judge; the live terminal always wins and standing down means returning to that "
                  "baseline, not below it"),
     }
-    try:
-        payload["rate"] = measure_rate(queue, decision, now)
-    except Exception as exc:     # a broken rate read must never cost the sizing decision
-        payload["rate"] = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    payload["rate"] = rate
     if write:
         write_env(decision, box=box)
         applied["env_file"] = str(ENV_FILE)
         applied["process_env"] = apply_env()
-        _write_atomic(RATE_OUT, payload["rate"])
         payload["measure_seconds"] = round(_time.monotonic() - t0, 1)
+        payload["attempt"] = attempt.pointer()
         _write_atomic(OUT, payload)
+        attempt.phase("written")
     if apply:
         _APPLY_DEADLINE[:] = [_time.monotonic() + APPLY_BUDGET_S]
         try:
@@ -1057,6 +1108,8 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
     payload["seconds"] = round(_time.monotonic() - t0, 1)
     if write:
         _write_atomic(OUT, payload)
+        attempt.phase("applied" if apply else "written", done=True,
+                      seconds=payload["seconds"])
         try:
             from libs.ops.events import leg_events
             leg_events("judging_throughput", "OK", workers=int(decision["workers"]),
@@ -1069,12 +1122,26 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
 _AT = re.compile(r'"at"\s*:\s*"([^"]+)"')
 
 
-def _verdict_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
+#: Rows between deadline checks: one `time.monotonic()` per this many lines is noise.
+_DEADLINE_EVERY = 4096
+
+
+def _verdict_counts(now: datetime, path: Path | None = None,
+                    deadline_s: float | None = None) -> dict[str, Any]:
     """Verdict rows the judge appended in the last 1h / 24h / 7d, from its own ledger.
 
     Streams the file and reads only each row's `at` stamp, so a multi-million-row ledger costs
-    one pass and constant memory. An absent ledger is UNMEASURED -- never zero verdicts."""
-    from research.judging_burndown import classify
+    one pass and constant memory. An absent ledger is UNMEASURED -- never zero verdicts.
+
+    BOUNDED BY `deadline_s` (2026-10-21). On a box paging at ~1.6 GB free the ~970k-row stream is
+    the slowest step of the pass; past the deadline it stops and the counts are UNMEASURED with
+    the rows read and the reason -- a prefix of the ledger is never published as its rate."""
+    import time as _time
+
+    try:
+        from research.judging_burndown import classify
+    except ImportError:
+        from desks.mt5.research.judging_burndown import classify  # type: ignore[no-redef]
 
     p = GATE_LEDGER if path is None else path
     if not p.exists():
@@ -1085,9 +1152,18 @@ def _verdict_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
     first_counts = dict.fromkeys(cuts, 0)
     first_terminal_cells: set[str] = set()
     total, unstamped, last = 0, 0, ""
+    t_start = _time.monotonic()
+    stop_at = None if deadline_s is None else t_start + float(deadline_s)
     try:
         with p.open("r", encoding="utf-8", errors="replace") as fh:
-            for line in fh:
+            for n_line, line in enumerate(fh):
+                if (stop_at is not None and n_line % _DEADLINE_EVERY == 0
+                        and _time.monotonic() > stop_at):
+                    return {"status": UNMEASURED, "rows_read": total,
+                            "why": (f"{p.name} stream overran its {float(deadline_s):.0f} s "
+                                    f"deadline after {total:,} rows "
+                                    f"({_time.monotonic() - t_start:.0f} s): verdicts/hour is "
+                                    "UNMEASURED this pass, never a partial count")}
                 if not line.strip():
                     continue
                 total += 1
@@ -1173,14 +1249,15 @@ def _creation_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
 
 def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
                  now: datetime | None = None, *, ledger: Path | None = None,
-                 registry: Path | None = None) -> dict[str, Any]:
+                 registry: Path | None = None,
+                 deadline_s: float | None = None) -> dict[str, Any]:
     """VERDICTS/HOUR AGAINST THE BACKLOG, and how long the backlog takes to drain.
 
     ETA = backlog / (verdicts/hour - created/hour), both over the same 24 h window. A judge that
     judges slower than the desk creates never drains: that is reported as GROWING with the net
     growth per day, not as a large finite number. Any missing input makes the ETA UNMEASURED."""
     t = _now(now)
-    ver = _verdict_counts(t, ledger)
+    ver = _verdict_counts(t, ledger, deadline_s=deadline_s)
     cre = _creation_counts(t, registry)
     # One sweep can cover only a prefix of the full docket. Its remainder is not
     # the institutional backlog and must never drive a claim of full clearance.
@@ -1224,6 +1301,11 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
         eta["why"] = "verdict or creation rate UNMEASURED"
     return {
         "at": t.isoformat(timespec="seconds"),
+        # The verdict count is this artifact's measurement: when it is UNMEASURED (absent ledger,
+        # overrun deadline) the whole rate says so, so no reader takes the other fields as a pass.
+        "status": "MEASURED" if ver.get("status") == "MEASURED" else UNMEASURED,
+        **({} if ver.get("status") == "MEASURED"
+           else {"why": f"verdicts: {ver.get('why') or 'UNMEASURED'}"}),
         "verdicts": ver, "created": cre,
         "verdicts_per_hour": vph if vph is not None else UNMEASURED,
         "verdicts_per_day": round(vph * 24.0, 1) if vph is not None else UNMEASURED,
@@ -1269,7 +1351,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true",
                     help="measure and print; write no artifact and apply nothing")
     args = ap.parse_args(argv)
-    payload = run(write=not args.dry_run, apply=not args.dry_run)
+    payload = run(write=not args.dry_run, apply=not args.dry_run,
+                  rate_budget_s=min(RATE_STREAM_BUDGET_S, max(args.budget_s, 1.0) * 0.5))
     print(render(payload))
     return 0
 
