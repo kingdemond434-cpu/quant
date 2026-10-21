@@ -615,3 +615,53 @@ def test_the_adjacent_digit_rule_holds_across_the_new_separators(text: str) -> N
                          ids=["oecd", "oecd-zwsp", "oecd-parens", "oecd-slash-colon"])
 def test_oecd_ids_still_pass_with_the_v5c_normalisation(text: str) -> None:
     assert lf.findings("desks/mt5/reports/PIT_LAG_CENSUS.json", text.encode(), _SIDS) == [], text
+
+
+# v5c (2026-10-21): `account_profile.declaration_key` is the PLAIN "<login>@<server>" -- the raw
+# login, by design, for the box-local declarations file. A blob carrying one must never publish.
+def _declaration_key(login: object, server: object) -> str:
+    import sys
+    desk = str(ROOT / "desks" / "mt5")
+    if desk not in sys.path:
+        sys.path.insert(0, desk)
+    from mt5desk import account_profile
+    key = account_profile.declaration_key({"login": login, "server": server})
+    assert key is not None
+    return key
+
+
+@pytest.mark.parametrize("ids", [frozenset(), frozenset({"7000001"})],
+                         ids=["nothing-declared", "declared"])
+@pytest.mark.parametrize("shape", [
+    "{key}",
+    '{{"note": "account {key} is declared E8 One (declared in ACCOUNT_PROFILES.json)"}}',
+    '{{"accounts": {{"{key}": "e8-one"}}}}',
+    "2026-10-21T00:00:00+00:00 PORTFOLIO HEAT CAP: VENUE bar 3.50% [account {key} is declared]",
+], ids=["bare", "why-sentence", "declarations-shape", "gateway-log-line"])
+def test_the_fence_refuses_a_blob_carrying_a_declaration_key(shape: str,
+                                                             ids: frozenset[str]) -> None:
+    key = _declaration_key("7000001", "Srv-1")       # fake login, fake server
+    assert key == "7000001@Srv-1"
+    got = lf.findings("desks/mt5/reports/X.json", shape.format(key=key).encode(), ids)
+    assert got, shape
+    assert {h["key"] for h in got} & {"<login@server>", lf.ID_FINDING}
+    assert "7000001" not in json.dumps(got), "a finding must never carry the login"
+
+
+def test_the_cli_refuses_a_declaration_key_blob_and_never_writes_it(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import io
+    key = _declaration_key(" 7000001 ".strip(), "Srv-1")
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    blob = _git(tmp_path, "hash-object", "-w", "--stdin",
+                data=json.dumps({"why": f"account {key} is declared"}).encode())
+    monkeypatch.delenv(lf.ID_ENV, raising=False)
+    monkeypatch.setattr(lf, "record_alert", lambda doc, root=None: "OPEN")
+    monkeypatch.setattr(lf, "page", lambda doc, root=None: {})
+    monkeypatch.setattr("sys.stdin", io.StringIO(f"{blob}\tdesks/mt5/reports/X.json\n"))
+    art = tmp_path / "F.json"
+    assert lf.main(["--repo", str(tmp_path), "--artifact", str(art)]) == 0
+    out = capsys.readouterr().out
+    assert out.split() == ["desks/mt5/reports/X.json"], "the blob must be refused"
+    assert "7000001" not in art.read_text("utf-8") and "7000001" not in out
