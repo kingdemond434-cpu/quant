@@ -128,21 +128,26 @@ def test_the_fallback_answers_only_near_the_releases_it_was_measured_on(tmp_path
                      (datetime(2026, 8, 6, 12, 0, tzinfo=UTC), True),
                      (datetime(2026, 8, 7, 13, 0, tzinfo=UTC), False),
                      (datetime(2026, 5, 4, 12, 0, tzinfo=UTC), False)):
-        got, status, why = bc.to_bar_time(when, root, fallback=True)
+        _got, status, why = bc.to_bar_time(when, root, fallback=True)
         assert (status == bc.OK_RELEASE) is ok, (when, status, why)
         if not ok:
             assert "outside that window" in why and "+/-14 days" in why
 
 
-def test_the_adjacent_hour_test_is_exclusive(tmp_path):
-    """2 of 10 releases peaking an hour early refuses; 1 of 10 does not."""
+def test_the_adjacent_hour_test_is_direction_aware_and_exclusive(tmp_path):
+    """A LATER minority enters before its news when converted at the winner: 2 of 10 refuses,
+    1 of 10 does not. An EARLIER minority is placed an hour late, never early: it resolves."""
     times = _RELEASES[:10]
-    for n_early, resolves in ((2, False), (1, True)):
-        root = tmp_path / str(n_early)
-        early = set(times[:n_early])
-        _bars(root, "EURUSD", lambda t, e=early: 2 if t in e else 3, seed=3)
+    for n_off, minority, resolves in ((2, 4, False), (1, 4, True), (2, 2, True), (3, 2, True)):
+        root = tmp_path / f"{n_off}_{minority}"
+        odd = set(times[:n_off])
+        _bars(root, "EURUSD", lambda t, o=odd, m=minority: m if t in o else 3, seed=3)
         got = rel._instrument(rel._bars(root, "EURUSD"), list(times))
-        assert (got["offset_h"] == 3) is resolves, got.get("why")
+        assert (got["offset_h"] == 3) is resolves, (n_off, minority, got.get("why"))
+        if minority == 2 and resolves:
+            assert got["early_minority"] == n_off
+        if not resolves:
+            assert "LATER" in got["why"]
 
 
 def test_the_floor_is_counted_at_the_winning_offset_not_the_largest_sample(tmp_path):
@@ -164,17 +169,21 @@ def test_the_floor_is_counted_at_the_winning_offset_not_the_largest_sample(tmp_p
 
 
 def test_a_mixed_history_is_refused_never_voted(tmp_path):
-    """5 releases at +2 beside 3 at +3: the majority would place the minority an hour EARLY."""
-    for split in (5, 4):
-        root = tmp_path / str(split)
+    """Under the winner's share, any split refuses; above it, a LATER minority (whose events the
+    winner would enter before their news) refuses and an EARLIER one resolves."""
+    for n_usd, n_cad, minority, refused in ((5, 5, 2, True), (2, 1, 4, True), (1, 1, 2, False)):
+        root = tmp_path / f"{n_usd}_{n_cad}_{minority}"
         rel._CACHE.clear()
         _calendar(root, _rows())
-        early = set(_USD[:split]) | set(_CAD[:split])
+        odd = set(_USD[:n_usd]) | set(_CAD[:n_cad])
         for i, sym in enumerate(_VOTERS):
-            _bars(root, sym, lambda t, e=early: 2 if t in e else 3, seed=i)
-        assert rel.offsets(root) == {}, split
-        assert "mixed history" in rel.reading(root)["per_season"]["summer"]["readings"][
-            "EURUSD"]["why"]
+            _bars(root, sym, lambda t, o=odd, m=minority: m if t in o else 3, seed=i)
+        if refused:
+            assert rel.offsets(root) == {}, (n_usd, n_cad, minority)
+            assert "mixed history" in rel.reading(root)["per_season"]["summer"]["readings"][
+                "EURUSD"]["why"]
+        else:
+            assert rel.offsets(root) == {"summer": 3}, rel.reading(root)["per_season"]
 
 
 def test_usd_quoted_voters_alone_are_one_reading_and_refuse(tmp_path):

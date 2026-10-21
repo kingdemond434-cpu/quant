@@ -363,4 +363,72 @@ def test_event_reaction_fires_again_from_the_measured_clock(tmp_path, monkeypatc
         assert obj, G.LAST_BUILD_FAILURE
         sigs = obj["sigs"] or []
         days[sym] = len(G.daily_series(obj["df"], sigs, obj["costs"])) if sigs else 0
-    assert days == {"XAUUSD": 12, "EURUSD": 9, "USDJPY": 11}
+    # Fires again, on every instrument. (On this tree: 12, 9 and 11 days -- the exact counts
+    # depend on the calendar vintages and bars present, so only "fires" is pinned.)
+    assert all(n > 0 for n in days.values()), days
+
+
+# ----------------------------------------------------------- one pass, one instant --
+def test_a_capture_pass_that_straddles_a_minute_is_one_instant():
+    t = datetime(2026, 7, 1, 12, 0, 59, 900000, tzinfo=UTC)
+    a, b = _row(t, 3, "EURUSD"), _row(t + timedelta(milliseconds=400), 3, "USDJPY")
+    for r in (a, b):
+        r["pass_id"] = _ms(t)
+    points, _ = bp.instants([a, b])
+    assert len(points) == 1 and points[0]["symbols"] == ["EURUSD", "USDJPY"]
+    del a["pass_id"], b["pass_id"]                     # minute grouping would split them
+    assert len(bp.instants([a, b])[0]) == 2
+
+
+# ------------------------------------------------------------------- the capped ledger --
+def _spans_of(doc: dict) -> list[tuple]:
+    return [(s["first"], s["last"], s["offset_h"], s["n"]) for s in doc["spans"]]
+
+
+def test_compaction_caps_the_ledger_and_loses_no_evidence(tmp_path, monkeypatch):
+    rows = _hourly(datetime(2026, 7, 1, tzinfo=UTC), datetime(2026, 8, 10, tzinfo=UTC),
+                   lambda _t: 3)
+    for r in rows:
+        r["pass_id"] = r["local_ms"]
+    _ledger(tmp_path, rows)
+    before = _build(tmp_path, monkeypatch)
+    now = _ms(datetime(2026, 8, 10, tzinfo=UTC))
+    got = bp.compact(tmp_path, now_ms=now, max_rows=500, keep_days=14)
+    assert got["compacted"] > 0
+    left = (tmp_path / Path(*bp.LEDGER_REL.split("/"))).read_text("utf-8").splitlines()
+    assert len(left) == got["kept"] < len(rows)
+    after = _build(tmp_path, monkeypatch)
+    assert _spans_of(after) == _spans_of(before)
+    assert after["evidence"]["n_probe_rows"] == before["evidence"]["n_probe_rows"]
+    assert after["evidence"]["n_instants"] == before["evidence"]["n_instants"]
+    assert after["evidence"]["verdicts"] == before["evidence"]["verdicts"]
+    # A second pass under the cap changes nothing.
+    assert bp.compact(tmp_path, now_ms=now, max_rows=500, keep_days=14)["compacted"] == 0
+    assert _spans_of(_build(tmp_path, monkeypatch)) == _spans_of(before)
+
+
+def test_a_crash_between_summary_and_ledger_rewrite_double_counts_nothing(tmp_path,
+                                                                          monkeypatch):
+    rows = _hourly(datetime(2026, 7, 1, tzinfo=UTC), datetime(2026, 8, 10, tzinfo=UTC),
+                   lambda _t: 3)
+    _ledger(tmp_path, rows)
+    before = _build(tmp_path, monkeypatch)
+    ledger = tmp_path / Path(*bp.LEDGER_REL.split("/"))
+    raw = ledger.read_text("utf-8")
+    bp.compact(tmp_path, now_ms=_ms(datetime(2026, 8, 10, tzinfo=UTC)), max_rows=500)
+    ledger.write_text(raw, encoding="utf-8")              # the rewrite never landed
+    after = _build(tmp_path, monkeypatch)
+    assert _spans_of(after) == _spans_of(before)
+    assert after["evidence"]["n_probe_rows"] == before["evidence"]["n_probe_rows"]
+
+
+def test_an_unreadable_summary_is_never_compacted_over(tmp_path, monkeypatch):
+    _ledger(tmp_path, _hourly(datetime(2026, 7, 1, tzinfo=UTC),
+                              datetime(2026, 8, 10, tzinfo=UTC), lambda _t: 3))
+    summ = tmp_path / Path(*bp.SUMMARY_REL.split("/"))
+    summ.write_text("{torn", encoding="utf-8")
+    got = bp.compact(tmp_path, now_ms=_ms(datetime(2026, 8, 10, tzinfo=UTC)), max_rows=10)
+    assert got["compacted"] == 0 and "unreadable" in got["why"]
+    assert summ.read_text("utf-8") == "{torn"
+    doc = _build(tmp_path, monkeypatch)
+    assert any(bp.SUMMARY_REL in u for u in doc["evidence"]["unreadable"])

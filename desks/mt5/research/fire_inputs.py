@@ -9,7 +9,7 @@ spec is wrong:
 
   * `event_reaction`: the judge hands the family every calendar event, and the family places each
     one on the bar clock with `libs.research.bar_clock.to_bar_time`. With no measured bar clock
-    (`desks/mt5/reports/BAR_CLOCK.json`, written by `research/futures_lead_lag.py`, or the
+    (`desks/mt5/reports/BAR_CLOCK.json`, written hourly by `research/bar_clock_probe.py`, or the
     release-spike reading `libs/research/bar_clock_release.py` takes from the desk's own calendar
     and bars) every event is dropped. In a shoulder month (16 Sep - 30 Nov, 16 Feb - 30 Apr)
     every event of a calendar that holds only recent weeks is dropped too. Either way the family
@@ -137,8 +137,8 @@ def _probe_event(sym: str) -> dict[str, Any]:
     if n_unmeasured:
         missing, why = "bar_clock", (
             f"{n_unmeasured} of {len(events)} calendar events fall in a season with no measured "
-            "bar-clock offset (desks/mt5/reports/BAR_CLOCK.json, written by "
-            "research/futures_lead_lag.py, does not answer it, and the release-spike reading of "
+            "bar-clock offset (desks/mt5/reports/BAR_CLOCK.json, written hourly by "
+            "research/bar_clock_probe.py, does not answer it, and the release-spike reading of "
             "libs/research/bar_clock_release.py does not resolve it): to_bar_time drops them, and "
             f"{n_shoulder} more fall in a shoulder month, so family_event_reaction returns [] on "
             "any bars")
@@ -150,7 +150,8 @@ def _probe_event(sym: str) -> dict[str, Any]:
     return {"status": NEEDS_DATA, "missing_input": missing, "why": why,
             "dropped": dropped,
             "stamp": (f"{len(events)}|{sorted(bar_clock.offsets().items())}"
-                      f"|{sorted(bar_clock.release_offsets().items())}")}
+                      f"|{sorted(bar_clock.release_offsets().items())}"
+                      f"|{[(str(a), str(b), o) for a, b, o, _ in bar_clock.spans()]}")}
 
 
 def probe(sym: str, family: str, params: dict[str, Any] | None = None,

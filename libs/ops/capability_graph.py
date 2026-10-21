@@ -717,7 +717,8 @@ NODES: tuple[Node, ...] = (
     # The ONE writer of BAR_CLOCK.json: terminal server time against UTC, appended to its ledger,
     # with the release-spike and futures cross-venue readings as second opinions.
     Node("bar_clock_probe", "desks/mt5/research/bar_clock_probe.py",
-         writes=("desks/mt5/reports/BAR_CLOCK.json", "desks/mt5/data/bar_clock_probes.jsonl"),
+         writes=("desks/mt5/reports/BAR_CLOCK.json", "desks/mt5/data/bar_clock_probes.jsonl",
+                 "desks/mt5/data/bar_clock_probes.summary.json"),
          reads=("desks/mt5/reports/FUTURES_LEAD_LAG.json",
                 "desks/mt5/data/intelligence/ff_calendar_vintage", "desks/mt5/data/universe/")),
     Node("time_joins", "scripts/check_time_joins.py",
