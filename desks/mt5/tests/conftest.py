@@ -334,3 +334,52 @@ def _account_key_in_tmp(_account_key_file: Path, monkeypatch: pytest.MonkeyPatch
     test gets a throwaway key instead. A test about the absent key points the env elsewhere."""
     from libs.ops import provenance as _acct_prov
     monkeypatch.setenv(_acct_prov.KEY_ENV, str(_account_key_file))
+
+
+@pytest.fixture(autouse=True)
+def _gold_oco_world(_cross_account_books_in_tmp: Path, _account_key_in_tmp: None,
+                    monkeypatch: pytest.MonkeyPatch) -> Path:
+    """THE GOLD DIRECTION LOCK'S FILES NEVER LAND IN THE REPO, AND EVERY TEST STARTS IN A
+    READABLE WORLD (mt5desk.gold_oco). Its state lives beside the books in the tmp `xacct` dir;
+    here the mode file is a tmp one in FULL OCO mode for Fusion and each lane has a fresh, FLAT
+    gold state -- so a lane under test sees what it saw before the lock existed (no direction,
+    nothing on the other account). Venue and terminal stubs that name no account are named by a
+    fake login through the REAL keyed helper. A test of the lock itself writes its own world, and
+    `tests/test_gold_oco.py` restores the real identity readers."""
+    from mt5desk import gold_oco
+    mode = _cross_account_books_in_tmp / "GOLD_OCO_MODE.json"
+    mode.write_text('{"lanes": ["e8", "fusion"], "modes": {"fusion": "oco"}}', encoding="utf-8")
+    monkeypatch.setattr(gold_oco, "MODE_FILE", mode)
+    # The identity pager pages into a tmp root through a recording stub: no test ever reaches
+    # the repo's alert ledger or a real channel. `gold_oco.PAGES` (test-only) holds what it sent.
+    paged: list[tuple[str, str]] = []
+    monkeypatch.setattr(gold_oco, "ALERT_ROOT", _cross_account_books_in_tmp / "alert_root")
+    monkeypatch.setattr(gold_oco, "PAGER", lambda title, body: (
+        paged.append((title, body)), {"armed": 1, "delivered": 1})[1])
+    monkeypatch.setattr(gold_oco, "PAGES", paged, raising=False)
+    real_tl, real_mt5 = gold_oco.tradelocker_oco_key, gold_oco.mt5_oco_key
+
+    # E8 is named by the DECLARED identity (r7.1 declares E8_ACCOUNT.json from the venue's own
+    # key, `tradelocker_account_key`, as production does): a fallback or flat state under any
+    # other key is "another account" and the OCO's key join refuses it -- correctly (v2s).
+    e8_declared = gold_oco.oco_account_key(CONFTEST_LOGINS["e8"], CONFTEST_SERVERS["e8"])
+
+    def tl_key(venue: object) -> str:
+        try:
+            return real_tl(venue)
+        except gold_oco.IdentityUnavailable:
+            return e8_declared
+
+    def mt5_key(mt5: object) -> str:
+        try:
+            return real_mt5(mt5)
+        except gold_oco.IdentityUnavailable:
+            return gold_oco.oco_account_key(990002, "conftest-fusion")
+
+    monkeypatch.setattr(gold_oco, "tradelocker_oco_key", tl_key)
+    monkeypatch.setattr(gold_oco, "mt5_oco_key", mt5_key)
+    for i, lane in enumerate(gold_oco.DEFAULT_LANES):
+        key = e8_declared if lane == "e8" else gold_oco.oco_account_key(990001 + i,
+                                                                         f"conftest-{lane}")
+        gold_oco.publish_lane(lane, key, positions=[], orders=[], date="2026-01-01")
+    return _cross_account_books_in_tmp

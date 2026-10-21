@@ -655,13 +655,15 @@ FUSION_RAIL_NAMES = ("one_gold_at_risk", "cross_account_opposite", "fusion_daily
                      "fusion_book_floor_lift", "fusion_book_ceiling", "fusion_trade_risk_cap",
                      "principal_zero_pin", "cert_book_absent_window", "gold_late_send",
                      "cert_book_void", "gold_retry_abandoned", "e8_cert_ceiling",
-                     "cert_book_zero", "e8_account_undeclared")
+                     "cert_book_zero", "e8_account_undeclared",
+                     "gold_oco_direction_lock")
 
 #: The rails the E8 lanes bill in their intents journals (RAIL_BLOCKED rows; a late gold send is
 #: a SKIPPED row with reason late_send).
 _E8_BILLED_RAILS = ("cross_account_opposite", "principal_zero_pin", "cert_book_absent_window",
                     "gold_late_send", "cert_book_void", "gold_retry_abandoned",
-                    "e8_cert_ceiling", "cert_book_zero", "e8_account_undeclared")
+                    "e8_cert_ceiling", "cert_book_zero", "e8_account_undeclared",
+                    "gold_oco_direction_lock")
 
 
 def _jsonl(p: Path) -> list[dict[str, Any]] | None:
@@ -720,10 +722,18 @@ def published_fusion_book_lines() -> dict[str, Any]:
                 if isinstance(r.get("lot"), (int, float)) and not isinstance(r.get("lot"), bool)]
         usd = [float(r["missed_growth_risk_usd"]) for r in e8
                if isinstance(r.get("missed_growth_risk_usd"), (int, float))]
+        # The gateway's gold_oco / cross_account_opposite lines carry their dollars too (gold
+        # OCO v2, audit must-fix 5); a line without a number is counted, never read as zero.
+        fusd = [float(r["missed_growth_risk_usd"]) for r in mine
+                if isinstance(r.get("missed_growth_risk_usd"), (int, float))
+                and not isinstance(r.get("missed_growth_risk_usd"), bool)]
         lines[rail] = {"verdict": UNMEASURED, "n": len(mine) + len(e8),
                        "n_fusion": len(mine), "n_e8": len(e8),
                        "risk_frac_total": round(sum(fr), 6), "lots_total": round(sum(lots), 4),
                        "e8_undeployed_risk_usd": round(sum(usd), 2),
+                       "fusion_undeployed_risk_usd": round(sum(fusd), 2),
+                       "n_unpriced": (len(e8) - len(usd)) + (
+                           sum(1 for r in mine if "missed_growth_risk_usd" in r) - len(fusd)),
                        "last_at": (mine or e8)[-1].get("at"),
                        "why": ("the line records what the rail held back, added or clipped, "
                                "not what the order would have earned; published, not priced")}
@@ -732,6 +742,44 @@ def published_fusion_book_lines() -> dict[str, Any]:
     if unreadable:
         out["unreadable"] = unreadable
     return out
+
+
+#: THE FTMO FOLLOWER'S RAILS (gold OCO v2, audit must-fix 5): prop/ftmo_follower.py journals
+#: every refusal as a RAIL_BLOCKED row (rail ftmo_follower, with its reason) and every lot its
+#: cap clipped (rail ftmo_lot_cap) in its own intents journal; they register no rail (the
+#: register is sealed), so their lines are published here beside the Fusion book's.
+FTMO_INTENTS = BASE / "data" / "ftmo_follower_intents.jsonl"
+FTMO_RAIL_NAMES = ("ftmo_follower", "ftmo_lot_cap")
+
+
+def published_ftmo_follower_lines() -> dict[str, Any]:
+    """The FTMO follower's rails, one bill per rail and per reason. An ABSENT journal is
+    NOT_BINDING only in the sense that nothing was journalled on this machine -- the follower is
+    standby until armed and writes its journal on its first refusal; an UNREADABLE one is
+    UNMEASURED. Rows with a dollar figure sum into `undeployed_risk_usd`; rows without one are
+    counted in `n_unpriced`, never read as zero. Published, not priced in log-wealth."""
+    rows = _jsonl(FTMO_INTENTS) if FTMO_INTENTS.exists() else []
+    if rows is None:
+        return {"source": f"data/{FTMO_INTENTS.name}", "unreadable": [FTMO_INTENTS.name],
+                "rails": {r: {"verdict": UNMEASURED, "n": 0} for r in FTMO_RAIL_NAMES}}
+    lines: dict[str, Any] = {}
+    for rail in FTMO_RAIL_NAMES:
+        mine = [r for r in rows if r.get("rail") == rail and r.get("status") == "RAIL_BLOCKED"]
+        if not mine:
+            lines[rail] = {"verdict": NOT_BINDING, "n": 0}
+            continue
+        usd = [float(r["missed_growth_risk_usd"]) for r in mine
+               if isinstance(r.get("missed_growth_risk_usd"), (int, float))
+               and not isinstance(r.get("missed_growth_risk_usd"), bool)]
+        by: dict[str, int] = {}
+        for r in mine:
+            by[str(r.get("reason") or "")] = by.get(str(r.get("reason") or ""), 0) + 1
+        lines[rail] = {"verdict": UNMEASURED, "n": len(mine), "by_reason": by,
+                       "undeployed_risk_usd": round(sum(usd), 2),
+                       "n_unpriced": len(mine) - len(usd), "last_at": mine[-1].get("at"),
+                       "why": ("the line records the risk the follower held back or clipped, "
+                               "not what the order would have earned; published, not priced")}
+    return {"source": f"data/{FTMO_INTENTS.name} RAIL_BLOCKED", "rails": lines}
 
 
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
@@ -852,7 +900,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
            "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
-                                    "fusion_book_rails": published_fusion_book_lines()},
+                                    "fusion_book_rails": published_fusion_book_lines(),
+                                    "ftmo_follower_rails": published_ftmo_follower_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

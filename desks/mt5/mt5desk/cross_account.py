@@ -172,6 +172,15 @@ def norm_login(login: object) -> str:
     return str(int(text)) if text.isdigit() else text
 
 
+def mt5_identity(mt5: Any) -> tuple[object, object]:
+    """(login, server) of the MT5 account under `mt5`. RAISES when the terminal does not answer.
+    The pair is an INPUT to a key function only: never store, log or print it."""
+    acc = mt5.account_info()
+    if acc is None:
+        raise ValueError("the MT5 terminal did not answer account_info")
+    return getattr(acc, "login", None), getattr(acc, "server", None)
+
+
 def mt5_account_key(mt5: Any) -> str:
     """The MT5 terminal's account key. RAISES when it is unresolvable (every caller fails closed
     on the exception: no book is read as this account's, none is published)."""
@@ -495,6 +504,14 @@ def tradelocker_exposure(venue: Any, positions: list[dict[str, Any]] | None = No
         return sym
 
     rows: list[tuple[object, object]] = [(name(p), p.get("side")) for p in positions]
+    rows += [(name(o), o.get("side")) for o in tradelocker_entry_orders(positions, orders)]
+    return exposure_from_rows(rows)
+
+
+def tradelocker_entry_orders(positions: list[dict[str, Any]],
+                             orders: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The resting ENTRY orders among `orders`: every order that is not an open position's
+    protective stop or target (see `tradelocker_exposure` for the rule). Pure."""
     protective: set[str] = set()
     position_ids: set[str] = set()
     for p in positions:
@@ -503,12 +520,10 @@ def tradelocker_exposure(venue: Any, positions: list[dict[str, Any]] | None = No
         for k in ("stopLossId", "takeProfitId", "stopOrderId", "takeProfitOrderId"):
             if p.get(k) not in (None, "", 0):
                 protective.add(str(p.get(k)))
-    for o in orders:
-        if str(o.get("id")) in protective or (o.get("positionId") not in (None, "", 0)
-                                              and str(o.get("positionId")) in position_ids):
-            continue                                    # a protective stop/target, not an entry
-        rows.append((name(o), o.get("side")))
-    return exposure_from_rows(rows)
+    return [o for o in orders
+            if not (str(o.get("id")) in protective
+                    or (o.get("positionId") not in (None, "", 0)
+                        and str(o.get("positionId")) in position_ids))]
 
 
 def merge(a: Exposure, b: Exposure) -> Exposure:
