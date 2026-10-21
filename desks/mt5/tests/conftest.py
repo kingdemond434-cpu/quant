@@ -210,12 +210,14 @@ def _stand_in_provenance() -> Any:
 
 def _install_provenance(d: Path, monkeypatch: Any) -> None:
     import sys
-    key = d / "account_key.hmac"
-    key.write_text("conftest-box-key-" + "0" * 48, encoding="utf-8")
-    monkeypatch.setenv("QUANT_ACCOUNT_KEY_FILE", str(key))
     try:
+        # The real helper (v5e): `_account_key_in_tmp` already points it at the suite's
+        # throwaway key, and this fixture runs after it -- never a second key (r7.2).
         from libs.ops import provenance  # noqa: F401
     except ImportError:
+        key = d / "account_key.hmac"
+        key.write_text("conftest-box-key-" + "0" * 48, encoding="utf-8")
+        monkeypatch.setenv("QUANT_ACCOUNT_KEY_FILE", str(key))
         import libs.ops as _ops
         stand_in = _stand_in_provenance()
         monkeypatch.setitem(sys.modules, "libs.ops.provenance", stand_in)
@@ -223,7 +225,7 @@ def _install_provenance(d: Path, monkeypatch: Any) -> None:
 
 
 @pytest.fixture(autouse=True)
-def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch):
+def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch, _account_key_in_tmp):
     """THE CROSS-ACCOUNT FENCE'S (AND THE RAILS LEDGER'S) FILES NEVER LAND IN THE REPO FROM A
     TEST, AND EVERY TEST STARTS IN A READABLE WORLD. `mt5desk.cross_account` keeps both
     accounts' books and the placement lock under `data/xacct/`; here that directory is a fresh

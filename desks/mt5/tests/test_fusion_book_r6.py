@@ -1163,6 +1163,7 @@ def test_every_key_failure_pages_and_a_resolved_key_closes_the_alert(monkeypatch
                         lambda title, body: sent.append((title, body)) or {"delivered": 1})
     monkeypatch.setattr(provenance, "_PAGED", set())
     monkeypatch.setattr(provenance, "_LAST_TRY", {})
+    monkeypatch.setattr(provenance, "_page_state_path", lambda: tmp_path / "page_state.json")
 
     def state(account, source):
         a = AlertLedger(ledger).alerts.get(xa.key_alert_id(account, source))
@@ -1301,6 +1302,7 @@ def test_e8_gold_refuses_unless_the_declaration_joins_the_venues_own_key(
                         lambda title, body: sent.append(title) or {"delivered": 1})
     monkeypatch.setattr(provenance, "_PAGED", set())
     monkeypatch.setattr(provenance, "_LAST_TRY", {})
+    monkeypatch.setattr(provenance, "_page_state_path", lambda: tmp_path / "page_state.json")
     _bad_declaration(kind, monkeypatch)
     doc, venue, intents = mb._e8_harness(monkeypatch, tmp_path)   # returns: the pass completed
     assert venue.placed == [] and doc["placed"] == []
