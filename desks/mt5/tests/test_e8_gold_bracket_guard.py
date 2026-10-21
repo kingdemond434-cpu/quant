@@ -46,9 +46,9 @@ class _FlatMT5(h._MT5):
     def account_info() -> Any:
         from types import SimpleNamespace
 
-        from conftest import CONFTEST_LOGINS, CONFTEST_SERVERS
-        return SimpleNamespace(login=CONFTEST_LOGINS["fusion"],
-                               server=CONFTEST_SERVERS["fusion"], trade_mode=2)
+        # Fake: the conftest's CONFTEST_LOGINS/SERVERS["fusion"], written out because a
+        # `from conftest import` resolves to whichever conftest a wide run loaded first.
+        return SimpleNamespace(login=7000101, server="test", trade_mode=2)
 
     @staticmethod
     def positions_get(*_a: Any, **_k: Any) -> tuple:
