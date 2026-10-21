@@ -72,6 +72,26 @@ def test_the_judges_own_lines_name_each_plan_step_and_its_counts(tmp_path) -> No
     assert all(v > 0 for v in on_disk["plan_steps"].values())
 
 
+def test_the_prewarm_pool_is_published_as_its_own_phase(tmp_path, monkeypatch) -> None:
+    """Desk health 2026-10-21: the pool was 8,640 s of a 9,729 s "plan"; it is now phase prewarm,
+    and the launcher's own phase clock times it."""
+    from scripts import run_sharded_gauntlet as runner
+
+    monkeypatch.setattr(runner, "SWEEP_PHASE", tmp_path / "JUDGE_SWEEP_PHASE.json")
+    monkeypatch.setattr(runner, "_PHASE_DOC", {})
+    clock = iter(float(t) for t in range(100, 10_000, 50))
+    monkeypatch.setattr(runner.time, "time", lambda: next(clock))
+    runner._phase("plan")
+    tr = jpp.PlanTracker(runner._PHASE_DOC, runner.SWEEP_PHASE, on_phase=runner._phase,
+                         clock=lambda: 0.0)
+    tee = tr.tee(io.StringIO())
+    tee.write(PLAN_LOG)
+    runner._phase("build_shards")                  # what `_timed_dispatch` does next
+    doc = json.loads(runner.SWEEP_PHASE.read_text("utf-8"))
+    assert list(doc["phases"]) == ["plan", "prewarm", "plan_handoff"]
+    assert doc["phase"] == "build_shards" and doc["plan_step"] == "dispatch"
+
+
 def test_a_line_split_across_writes_is_still_one_marker(tmp_path) -> None:
     tr, doc, _ = _tracker(tmp_path)
     tee = tr.tee(io.StringIO())
@@ -136,7 +156,7 @@ def test_a_broken_tracker_never_breaks_the_log(tmp_path) -> None:
 def test_the_launcher_wires_the_tee_and_the_hook() -> None:
     src = (Path(__file__).resolve().parents[1] / "scripts" / "run_sharded_gauntlet.py").read_text(
         "utf-8")
-    assert "PlanTracker(_PHASE_DOC, SWEEP_PHASE)" in src
+    assert "PlanTracker(_PHASE_DOC, SWEEP_PHASE, on_phase=_phase)" in src
     assert "sys.stdout = sys.stderr = plan.tee(log)" in src
     assert "plan.attach(judge)" in src
 

@@ -7,7 +7,7 @@ imports the sealed judge and changes it only when the first shard wave starts. T
 * gate 0 and the build preflight;
 * the cache prune and the order;
 * novelty and the yield allocation;
-* the WHOLE pre-warm pool, which runs until `_build_t0 + GAUNTLET_FRESH_BUDGET_SEC` (8,640 s on the
+* the WHOLE pre-warm pool (now published as its own phase, "prewarm"), which runs until `_build_t0 + GAUNTLET_FRESH_BUDGET_SEC` (8,640 s on the
   box).
 
 The last two plans took 9,302 s and 9,729 s. Nothing inside them was published until the pool's
@@ -66,6 +66,14 @@ COUNTS: tuple[tuple[re.Pattern[str], str], ...] = tuple((re.compile(p), f) for p
     (r"^PRE-WARM START: (\d+) cell", "prewarm_cells"),
     (r"^SHARDED SWEEP: (\d+) planned", "planned_cells"),
 ))
+#: Steps that are SWEEP PHASES of their own (desk health, 2026-10-21: "publish prewarm as its own
+#: phase"). The pre-warm pool is most of what used to read "plan" -- 8,640 s of a 9,729 s plan --
+#: so it gets its own entry in `phases`, its own phase-start stamp and, under the stall watchdog,
+#: its own SLOW threshold. The plan's earlier steps stay phase "plan"; the pool's closing line
+#: through the first dispatch (`plan.pkl`, resume record) is "plan_handoff".
+PHASE_OF_STEP = {"prewarm": "prewarm", "plan_handoff": "plan_handoff"}
+#: The sweep phases this tracker reads lines in.
+PLAN_PHASES = frozenset({"plan", *PHASE_OF_STEP.values()})
 #: Seconds between progress writes; a step change always writes.
 WRITE_EVERY_S = 15.0
 #: The longest unfinished line kept while scanning for markers (a huge print is passed through,
@@ -81,14 +89,17 @@ def _iso(t: float | None = None) -> str:
 class PlanTracker:
     """Hold the plan's step and progress inside `doc` (the launcher's phase document)."""
 
-    def __init__(self, doc: dict[str, Any], path: Path, *, clock=time.time) -> None:
+    def __init__(self, doc: dict[str, Any], path: Path, *, clock=time.time,
+                 on_phase: Any = None) -> None:
         self.doc, self.path, self.clock = doc, Path(path), clock
+        #: The launcher's `_phase`: called when a step is a sweep phase of its own.
+        self.on_phase = on_phase
         self._last_write = 0.0
         self._step_t: float | None = None
 
     # ---------------------------------------------------------------- state
     def _in_plan(self) -> bool:
-        return self.doc.get("phase") == "plan"
+        return self.doc.get("phase") in PLAN_PHASES
 
     def step(self, name: str, line: str | None = None) -> None:
         """Open step `name` (closing the current one) and write the phase document now."""
@@ -106,6 +117,13 @@ class PlanTracker:
         self.doc["plan_step_started_utc"] = _iso(now)
         if line:
             self.doc["plan_last_marker"] = line[:200]
+        phase = PHASE_OF_STEP.get(name)
+        if phase and self.on_phase is not None and self.doc.get("phase") != phase:
+            try:
+                self.on_phase(phase)        # writes the document itself
+                return
+            except Exception:
+                pass
         self.flush(force=True)
 
     def progress(self, step: str | None = None, **counts: Any) -> None:

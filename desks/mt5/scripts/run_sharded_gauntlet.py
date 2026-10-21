@@ -2223,7 +2223,7 @@ def _sweep_logged() -> int:
         # WHERE THE PLAN IS (judge_plan_progress): the judge's own log lines name its step, and
         # the sealed image's progress hook, where it has one, its counts. Reports only.
         from scripts.judge_plan_progress import PlanTracker
-        plan = PlanTracker(_PHASE_DOC, SWEEP_PHASE)
+        plan = PlanTracker(_PHASE_DOC, SWEEP_PHASE, on_phase=_phase)
         plan.step("lane_and_docket")
         sys.stdout = sys.stderr = plan.tee(log)
         try:
