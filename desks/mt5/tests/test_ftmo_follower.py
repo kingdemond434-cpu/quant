@@ -358,7 +358,13 @@ def test_a_session_end_cancel_is_not_a_refusal_and_is_not_billed(world) -> None:
     mt5 = _MT5()
     _pass(mt5)
     mt5.tick = int((NOW + timedelta(hours=3 + 5)).timestamp())   # 13:30 server: session over
-    _pass(mt5, now=NOW + timedelta(hours=5))
+    # E8 is current (its report rewritten this pass), so the session end alone cancels.
+    world.report.write_text(json.dumps(_e8_report(at=NOW + timedelta(hours=5))), "utf-8")
+    oco.publish_lane("e8", world.e8_key,
+                     positions=[{"id": E8_POS, "side": "long", "opened_date": DAY}], orders=[],
+                     date=DAY)
+    doc = _pass(mt5, now=NOW + timedelta(hours=5))
+    assert doc["follow"]["action"] == "follow"
     assert mt5.orders == [] and _cancel_bills() == []
 
 
