@@ -726,9 +726,17 @@ def heal_clocks() -> dict:
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
 
 
-#: The admission scan's own cadence is the supervisor's hourly heavy pass; twice that is "the
-#: supervisor has missed a pass", which is the condition this roster steps in on.
-ADMISSION_SCAN_MAX_AGE_S = 2 * 3600.0
+#: HEAVY CADENCE: EVERY 4 HOURS (2026-10-21), was hourly. The heavy admission scan is the
+#: allocator's most expensive pass; running it every 4th hour frees that CPU for judging and
+#: mining. `normal` still runs every hour and rewrites reports/pf_allocation.json (so the
+#: gateway's mtime check in decision_core is untouched); only the scan's `measured_utc` ages.
+#: Every consumer of that stamp expires it at 26 h (pf_allocator.ADMISSION_MAX_AGE_S,
+#: promoter.ADMISSION_MAX_AGE_H, capability_graph), far above 4 h. The threshold sits half an
+#: hour under the cadence because the scan is stamped a few minutes into the pass it ran in:
+#: at the 4th hour its age reads ~3h55m, and a strict 4 h bar would slip heavy to every 5th.
+#: A missing/unmeasured scan or an unpriced rostered sleeve still forces heavy at once.
+ADMISSION_SCAN_HEAVY_CADENCE_S = 4 * 3600.0
+ADMISSION_SCAN_MAX_AGE_S = ADMISSION_SCAN_HEAVY_CADENCE_S - 1800.0
 
 #: How long the hypothesis-lane sweep may go unrefreshed before it is swept again. A week of H1
 #: bars is ~120 rows against the ~54,000 each symbol carries, so this clock exists to stop the

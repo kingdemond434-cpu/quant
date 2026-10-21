@@ -49,9 +49,9 @@ def test_a_fresh_measured_scan_keeps_the_hourly_normal(tmp_path: Path) -> None:
     assert hourly_cycle._allocator_mode_for_the_hour(art, NOW) == "normal"
 
 
-def test_a_scan_older_than_two_supervisor_passes_means_heavy(tmp_path: Path) -> None:
+def test_a_scan_past_the_heavy_cadence_means_heavy(tmp_path: Path) -> None:
     art = _art(tmp_path, {"status": "MEASURED",
-                          "measured_utc": (NOW - timedelta(hours=2, minutes=1)).isoformat()})
+                          "measured_utc": (NOW - timedelta(hours=3, minutes=31)).isoformat()})
     assert hourly_cycle._allocator_mode_for_the_hour(art, NOW) == "heavy"
 
 
@@ -65,8 +65,9 @@ def test_a_carried_scan_ages_from_its_real_measurement(tmp_path: Path) -> None:
     assert hourly_cycle._allocator_mode_for_the_hour(art, NOW) == "heavy"
 
 
-def test_the_window_is_twice_the_supervisor_cadence() -> None:
-    assert hourly_cycle.ADMISSION_SCAN_MAX_AGE_S == 2 * 3600.0
+def test_the_window_is_the_four_hour_heavy_cadence() -> None:
+    assert hourly_cycle.ADMISSION_SCAN_HEAVY_CADENCE_S == 4 * 3600.0
+    assert hourly_cycle.ADMISSION_SCAN_MAX_AGE_S == 3.5 * 3600.0
 
 
 # ----------------------------------------- a scan that never priced a rostered sleeve is stale
@@ -126,7 +127,7 @@ def test_only_live_and_standby_rows_count_and_an_empty_roster_defers_to_the_age_
 
 def test_a_stale_scan_is_heavy_before_the_roster_is_even_read(tmp_path: Path) -> None:
     art = _art(tmp_path, {"status": "MEASURED",
-                          "measured_utc": (NOW - timedelta(hours=3)).isoformat(),
+                          "measured_utc": (NOW - timedelta(hours=4)).isoformat(),
                           "universe": {"xau_m15_anti_breakout": {}}})
     roster = _roster(tmp_path, [_SCALP])
     assert hourly_cycle._allocator_mode_for_the_hour(art, NOW, roster) == "heavy"
