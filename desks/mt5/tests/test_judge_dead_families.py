@@ -114,8 +114,35 @@ def test_a_clock_measured_on_2026_says_nothing_about_2024_or_2025(tmp_path):
         got, status, why = bc.to_bar_time(when, root, fallback=True)
         assert got is None and status == bc.UNMEASURED, when
         assert "outside that window" in why
-    assert bc.to_bar_time(datetime(2026, 9, 10, 12, 30, tzinfo=UTC), root,
+    assert bc.to_bar_time(datetime(2026, 8, 5, 12, 30, tzinfo=UTC), root,
                           fallback=True)[1] == bc.OK_RELEASE
+
+
+def test_the_fallback_answers_only_near_the_releases_it_was_measured_on(tmp_path):
+    """Measured on 2026-07-02..07-23: it answers 14 days either side, not all of summer 2026."""
+    root = _tree(tmp_path, dict.fromkeys(_VOTERS, 3))
+    win = rel.windows(root)["summer"]
+    assert win["first"].startswith("2026-07-02") and win["last"].startswith("2026-07-23")
+    for when, ok in ((datetime(2026, 6, 18, 12, 30, tzinfo=UTC), True),
+                     (datetime(2026, 6, 17, 12, 0, tzinfo=UTC), False),
+                     (datetime(2026, 8, 6, 12, 0, tzinfo=UTC), True),
+                     (datetime(2026, 8, 7, 13, 0, tzinfo=UTC), False),
+                     (datetime(2026, 5, 4, 12, 0, tzinfo=UTC), False)):
+        got, status, why = bc.to_bar_time(when, root, fallback=True)
+        assert (status == bc.OK_RELEASE) is ok, (when, status, why)
+        if not ok:
+            assert "outside that window" in why and "+/-14 days" in why
+
+
+def test_the_adjacent_hour_test_is_exclusive(tmp_path):
+    """2 of 10 releases peaking an hour early refuses; 1 of 10 does not."""
+    times = _RELEASES[:10]
+    for n_early, resolves in ((2, False), (1, True)):
+        root = tmp_path / str(n_early)
+        early = set(times[:n_early])
+        _bars(root, "EURUSD", lambda t, e=early: 2 if t in e else 3, seed=3)
+        got = rel._instrument(rel._bars(root, "EURUSD"), list(times))
+        assert (got["offset_h"] == 3) is resolves, got.get("why")
 
 
 def test_the_floor_is_counted_at_the_winning_offset_not_the_largest_sample(tmp_path):

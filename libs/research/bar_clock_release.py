@@ -72,7 +72,8 @@ MIN_INSTRUMENTS = 3
 #: Distinct release instants behind the agreed offset, counted once however many instruments
 #: read them (audit of b9d37faaa: seven USD voters read the same 18 instants).
 MIN_INDEPENDENT_RELEASES = 10
-#: Per-release agreement: the winner's share of releases, and the most an adjacent hour may hold.
+#: Per-release agreement: the winner's share of releases, and the share an adjacent hour must stay
+#: UNDER (exclusive, audit of 0742dcb1b: 2 of 10 releases an hour early is refused).
 MIN_RELEASE_SHARE = 0.6
 MAX_ADJACENT_SHARE = 0.2
 MIN_SPIKE = 2.0
@@ -170,8 +171,8 @@ def _instrument(chart_frame: tuple[str, Any], times: list[Any]) -> dict[str, Any
         resolve from 2 releases when 6 of 8 had no bar there.
       * A MIXED HISTORY IS REFUSED, NEVER VOTED. Each release's own peak offset is read; the
         winner must hold at least MIN_RELEASE_SHARE of the releases, and an ADJACENT offset may
-        hold at most MAX_ADJACENT_SHARE of the pair. A 5/3 split resolved to its majority would
-        place the minority an hour off -- an hour EARLY when the majority is the smaller offset,
+        hold LESS than MAX_ADJACENT_SHARE of the pair (exclusive: 2 of 10 refuses). A 5/3 split
+        resolved to its majority would place the minority an hour off -- an hour EARLY when the majority is the smaller offset,
         which is a look-ahead.
       * `releases` names the instants that support the answer, so the season can count
         independent release instants rather than instruments that read the same ones.
@@ -226,7 +227,7 @@ def _instrument(chart_frame: tuple[str, Any], times: list[Any]) -> dict[str, Any
                         f"{best_k:+d}h (under {MIN_RELEASE_SHARE:.0%})")}
     for adj in (best_k - 1, best_k + 1):
         n_adj = sum(1 for k in peaks.values() if k == adj)
-        if n_adj and n_adj / (n_best + n_adj) > MAX_ADJACENT_SHARE:
+        if n_adj and n_adj / (n_best + n_adj) >= MAX_ADJACENT_SHARE:
             return {**out, "offset_h": None,
                     "why": (f"mixed history: {n_adj} releases peak at {adj:+d}h beside {n_best} "
                             f"at {best_k:+d}h; an hour's split is refused, never voted")}

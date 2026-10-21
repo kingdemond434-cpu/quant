@@ -40,7 +40,7 @@ it makes a backtest better than the strategy.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -152,6 +152,26 @@ def season_of(when: datetime) -> str | None:
     return None
 
 
+#: How far either side of the first and last measured release the release-spike clock answers
+#: (audit of 0742dcb1b: the whole season instance reached 3.5 months before the first release).
+#: The season windows already exclude every changeover; this keeps the claim near its evidence.
+RELEASE_MARGIN_DAYS = 14
+
+
+def _aware(when: datetime) -> datetime:
+    return when if when.tzinfo is not None else when.replace(tzinfo=UTC)
+
+
+def _window_bounds(win: dict[str, Any]) -> tuple[datetime | None, datetime | None]:
+    try:
+        first = _aware(datetime.fromisoformat(str(win.get("first"))))
+        last = _aware(datetime.fromisoformat(str(win.get("last"))))
+    except (TypeError, ValueError):
+        return None, None
+    margin = timedelta(days=RELEASE_MARGIN_DAYS)
+    return first - margin, last + margin
+
+
 def to_bar_time(when: datetime, root: Path | None = None, *, fallback: bool = False
                 ) -> tuple[datetime | None, str, str]:
     """Convert a genuinely-UTC instant into the stamp the bar index would carry.
@@ -162,9 +182,9 @@ def to_bar_time(when: datetime, root: Path | None = None, *, fallback: bool = Fa
 
     PROVENANCE IS IN THE STATUS (audit of b9d37faaa). `CONVERTED` means `BAR_CLOCK.json`
     answered. `CONVERTED_RELEASE_SPIKE` means the caller opted in (`fallback=True`) and the
-    release-spike reading answered, inside the season instance it was measured on; the why names
-    that window. Outside it the answer is UNMEASURED: a three-week 2026 reading says nothing
-    about 2024. A caller that does not opt in sees exactly the old behaviour.
+    release-spike reading answered, inside the season instance it was measured on AND within
+    RELEASE_MARGIN_DAYS of its first and last measured release; the why names that window.
+    Outside it the answer is UNMEASURED: a three-week 2026 reading says nothing about 2024. A caller that does not opt in sees exactly the old behaviour.
     """
     base = Path(root or _ROOT)
     table = offsets(root)
@@ -193,10 +213,13 @@ def to_bar_time(when: datetime, root: Path | None = None, *, fallback: bool = Fa
         inst = season_instance(when)
         span = (f"{', '.join(win.get('instances') or [])} on {win.get('n_releases')} releases "
                 f"{str(win.get('first'))[:10]}..{str(win.get('last'))[:10]}")
-        if inst not in (win.get("instances") or []):
+        lo, hi = _window_bounds(win)
+        if inst not in (win.get("instances") or []) or lo is None or hi is None \
+                or not (lo <= _aware(when) <= hi):
             return None, UNMEASURED, (
-                f"the release-spike clock was measured on {span}; {when.date()} ({inst}) is "
-                "outside that window, so no offset is knowable for it")
+                f"the release-spike clock was measured on {span} (+/-{RELEASE_MARGIN_DAYS} "
+                f"days); {when.date()} ({inst}) is outside that window, so no offset is "
+                "knowable for it")
         off = rel_off[season]
         return when + timedelta(hours=off), OK_RELEASE, (
             f"release_spike ({span}): shifted {off:+d}h into the bars' own frame ({season})")
