@@ -51530,7 +51530,10 @@
         "version_hash": "23e8fb8a30993a50",
         "ok": true,
         "problems": []
-      }
+      },
+      "canonical_identity": "eurzar|carry|asia",
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
     }
-  ]
+  ],
+  "identity_stamped_at": "2026-10-21T20:23:22+00:00"
 }
