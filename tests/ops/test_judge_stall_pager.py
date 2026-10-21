@@ -762,7 +762,7 @@ def test_persistent_unmeasured_pages_whatever_the_run_spacing(jsp, tmp_path, cad
 
 
 def test_spaced_runs_with_one_clean_reading_between_do_not_page(jsp, tmp_path):
-    """The flap rule is kept: at a 60-min cadence, alternating torn/clean never pairs up."""
+    """Spaced runs need two UNMEASURED in a row; a window with enough reads keeps the flap rule."""
     ch = Channel()
 
     def alternate(t: datetime, p: dict) -> None:
@@ -770,8 +770,12 @@ def test_spaced_runs_with_one_clean_reading_between_do_not_page(jsp, tmp_path):
             p["resident"].write_text("{torn", "utf-8")
 
     docs = _series(jsp, tmp_path, ch, [i * 60 for i in range(12)], alternate)
-    assert all(d["incidents"]["inputs_unmeasured"]["open"] is False for d in docs)
-    assert ch.sent == []
+    # resident_dead's 30-min window holds one reading, and its predecessor is clean every time
+    assert all("resident_dead" not in (d["incidents"]["inputs_unmeasured"].get("incidents")
+                                       or ()) for d in docs)
+    # zero_judged_sweep's 120-min window holds two, so the FLAP rule judges it: torn on half
+    # its reads is the share that pages (unchanged since v3)
+    assert docs[-1]["incidents"]["inputs_unmeasured"]["incidents"] == ["zero_judged_sweep"]
 
 
 def test_the_prewarm_limit_never_exceeds_the_hang_cap(jsp):
