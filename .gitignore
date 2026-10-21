@@ -471,6 +471,11 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/TIER1_SCORECARD.json
 !desks/mt5/reports/ALT_DATA_YIELD.json
 !desks/mt5/reports/PRODUCER_YIELD.json
+# the LLM lab's pass, coverage and style-hold line (2026-10-13), published by the box sync
+!desks/mt5/reports/LLM_LAB.json
+!desks/mt5/reports/LLM_COVERAGE.json
+!desks/mt5/reports/LAB_STYLE_HOLDS.json
+!desks/mt5/reports/ELECTION_CALENDAR.json
 !desks/mt5/reports/RESEARCH_PRODUCTIVITY.json
 !desks/mt5/reports/FORWARD_ENROLMENT.json
 !desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json

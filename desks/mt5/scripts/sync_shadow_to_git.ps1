@@ -680,6 +680,13 @@ $reportPaths = @(
     "desks/mt5/reports/TIER1_SCORECARD.json",
     "desks/mt5/reports/ALT_DATA_YIELD.json",
     "desks/mt5/reports/PRODUCER_YIELD.json",
+    # the LLM research lab's pass, its every-free-model coverage and the style hold's
+    # missed-growth line (2026-10-13): written by llm_lab on the box and read off it by the
+    # coverage fence and the hourly stale sweep, which found both absent on the branch
+    "desks/mt5/reports/LLM_LAB.json",
+    "desks/mt5/reports/LLM_COVERAGE.json",
+    "desks/mt5/reports/LAB_STYLE_HOLDS.json",
+    "desks/mt5/reports/ELECTION_CALENDAR.json",
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json",
     "desks/mt5/reports/FORWARD_ENROLMENT.json",
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
