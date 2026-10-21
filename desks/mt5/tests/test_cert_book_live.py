@@ -18,11 +18,18 @@ from mt5desk import live_policy  # noqa: E402
 from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book  # noqa: E402
 from mt5desk.sizing import MAX_RISK_FRAC  # noqa: E402
 
-FUSION = {"EURZAR_overnight_gap_decay_asia": 0.098, "USDZAR_overnight_gap_decay_asia": 0.100,
-          "AUDCHF_overnight_gap_decay_asia": 0.100, "gold_asia": 0.082}
+#: The box's live blocks as read 2026-10-20 23:20Z, committed for parity (2026-10-21). Fusion's
+#: gap_decay sleeves stand aside (principal 2026-10-13) and its gold_asia 0.082 was removed; the
+#: Fusion go-live replaces this block through apply_fusion_state.py.
+FUSION = {"EURZAR_overnight_gap_decay_asia": 0.0, "USDZAR_overnight_gap_decay_asia": 0.0,
+          "AUDCHF_overnight_gap_decay_asia": 0.0, "gold_asia": 0.0}
 #: AUDCHF stands aside on E8 only (principal 2026-10-13 20:40Z): forward clock -0.68R/trade over 10
 #: trades (t=-2.28), and E8 pays out on payouts, not on Fusion's E[log W]. Fusion keeps its 10%.
-E8 = {"gold_asia": 0.010, "AUDCHF_overnight_gap_decay_asia": 0.0}
+#: gold_asia only (principal 2026-10-20 21:52Z), at 0.006 after the measured-slip rerun; the two other
+#: gold windows are pinned at an explicit 0.0 because an absent key falls back to RISK_FRAC.
+E8 = {"gold_asia": 0.006, "gold_london_am": 0.0, "gold_afternoon": 0.0,
+      "USDJPY_session_range_breakout_asia": 0.0, "NZDJPY_clock_transition_asia": 0.0,
+      "AUDCHF_overnight_gap_decay_asia": 0.0}
 
 
 def _write(tmp_path: Path, doc: dict) -> Path:
@@ -35,7 +42,9 @@ def test_committed_book_carries_the_principals_sizes() -> None:
     assert load_cert_book(CERT_BOOK_FILE, "fusion") == FUSION
     assert load_cert_book(CERT_BOOK_FILE, "e8") == E8
     for book in (FUSION, E8):
-        assert not any(k.startswith("USDJPY") or k.startswith("CHFNOK") for k in book)
+        # A quarantined sleeve may be PINNED at 0.0, never funded.
+        assert not any(v > 0 for k, v in book.items()
+                       if k.startswith("USDJPY") or k.startswith("CHFNOK"))
 
 
 @pytest.mark.parametrize("doc", [
