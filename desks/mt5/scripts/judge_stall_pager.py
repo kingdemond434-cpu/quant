@@ -77,6 +77,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import math
 import os
 import re
 import sys
@@ -145,6 +146,10 @@ PHASE_LIMIT_H: dict[str, float] = {"plan": 4.5, "build_shards": 18.0, "collect_a
 #: A phase with no measurement gets the most generous known limit, and is named unknown.
 UNKNOWN_PHASE_LIMIT_H = max(PHASE_LIMIT_H.values())
 ENV_FILE = BASE / "data" / "judging_throughput.env.json"
+#: The resident kills any sweep past this (run_sharded_gauntlet.RESIDENT_HANG_CAP_S, 48 h), so a
+#: published budget above it is capped here: no phase can legitimately outlive it. Not imported
+#: (that module is the judge); test_judge_stall_pager pins the two values together.
+RESIDENT_HANG_CAP_S = 48 * 3600.0
 #: SWEEP OVERDUE. MEASURED: healthy completed sweeps (last_sweep_s, rc 0) ran 36 .. 61,111 s
 #: (17,283 / 20,221 / 24,352 / 24,745 / 34,564 / 52,043 / 54,327 / 61,111; the 64,711 s sweep is
 #: the 14.2 h-merge incident above). The resident starts the next sweep at once: end -> next
@@ -164,6 +169,8 @@ IDLE_OVERDUE_H = 1.0
 #: sweep ends -- hours -- and that is the case this bound exists to page.
 UNMEASURED_PAGE_MIN = 30.0
 UNMEASURED_SHARE = 0.5
+#: Readings a window must hold before it can page.
+UNMEASURED_MIN_READS = 2
 UNMEASURED_BOUND_MIN: dict[str, float] = {"zero_judged_sweep": 120.0}
 #: Bytes of the sweep result read from each end: its top-level counts sit near the head and its
 #: `swept_at` near the tail, so the ~88 MB body is never parsed.
@@ -301,49 +308,63 @@ def _overdue(doc: dict[str, Any], at: datetime, status: str) -> dict[str, Any]:
                     f"status {status or '?'}; limit {limit:g}h")}
 
 
-def _result_head_tail(path: Path) -> tuple[str, str] | None:
-    """The first RESULT_HEAD_BYTES and last RESULT_TAIL_BYTES of the sweep result, as text."""
+def _result_head_tail(path: Path) -> tuple[str, str, bool] | None:
+    """The first RESULT_HEAD_BYTES and last RESULT_TAIL_BYTES of the sweep result, as text.
+
+    The tail's first line is dropped unless the tail starts at byte 0: it begins mid-line, so
+    its indentation -- the only thing that says a key is top-level -- is not there to read. The
+    third element says whether the two reads cover the whole file.
+    """
     try:
         with path.open("rb") as fh:
             head = fh.read(RESULT_HEAD_BYTES)
             fh.seek(0, 2)
             size = fh.tell()
-            fh.seek(max(0, size - RESULT_TAIL_BYTES))
+            start = max(0, size - RESULT_TAIL_BYTES)
+            fh.seek(start)
             tail = fh.read()
     except OSError:
         return None
-    return head.decode("utf-8", "replace"), tail.decode("utf-8", "replace")
+    if start > 0:
+        cut = tail.find(b"\n")
+        tail = tail[cut + 1:] if cut >= 0 else b""
+    return (head.decode("utf-8", "replace"), tail.decode("utf-8", "replace"),
+            size <= RESULT_HEAD_BYTES + RESULT_TAIL_BYTES)
 
 
-#: Top-level keys of the judge's result (json.dumps indent=2 puts them two spaces in).
-_TOP_INT = r'(?m)^  "{key}": (\d+)'
-_TOP_STAMP = re.compile(r'(?m)^  "swept_at": "([^"]+)"')
+#: The result's top-level keys. The top-level indent is NOT assumed (the writer uses indent=2
+#: today, external_gauntlet.py:4012): it is read from the first key line, the one after the
+#: opening `{`, and a key is top-level only when its line starts with exactly that indent and
+#: then a quote. A pretty-printer indents each depth by the same width, so a nested key's line
+#: always carries more. A result with no such line (compact, or not an object) reads UNMEASURED.
+_FIRST_KEY = re.compile(r'\A\s*\{[ \t]*\r?\n([ \t]+)"')
 _COUNT_KEYS = ("n_judged", "n_cells")
 
 
-def _scan_top(path: Path) -> tuple[str, str] | None:
-    """The fallback when the ends miss a key: every top-level line, streamed, never parsed.
+def _top_re(indent: str, key: str, value: str) -> re.Pattern[str]:
+    return re.compile(rf'(?m)^{re.escape(indent)}"{key}": {value}')
 
-    external_gauntlet writes `n_judged` after several census blocks and appends keys after
-    `swept_at`, so a block that grows can push either key out of the bytes read from the ends.
-    Missing them would read UNMEASURED and page falsely; this costs one streamed pass, and only
-    on a run where the cheap read missed.
-    """
-    head: list[str] = []
-    tail: list[str] = []
+
+def _top_values(text: str, indent: str) -> dict[str, list[str]]:
+    vals: dict[str, list[str]] = {}
+    for k in _COUNT_KEYS:
+        vals[k] = _top_re(indent, k, r"(-?\d+)").findall(text)
+    vals["swept_at"] = _top_re(indent, "swept_at", r'"([^"]+)"').findall(text)
+    return vals
+
+
+def _scan_top(path: Path, indent: str) -> dict[str, list[str]] | None:
+    """Every top-level line of the result, streamed and never parsed: the definitive read."""
+    want = tuple(f'{indent}"{k}": '.encode() for k in (*_COUNT_KEYS, "swept_at"))
+    lines: list[str] = []
     try:
         with path.open("rb") as fh:
             for raw in fh:
-                if not raw.startswith(b'  "') or raw.startswith(b'   '):
-                    continue
-                line = raw.decode("utf-8", "replace").rstrip("\r\n")
-                if line.startswith('  "swept_at": '):
-                    tail.append(line)
-                elif any(line.startswith(f'  "{k}": ') for k in _COUNT_KEYS):
-                    head.append(line)
+                if raw.startswith(want):
+                    lines.append(raw.decode("utf-8", "replace").rstrip("\r\n"))
     except OSError:
         return None
-    return "\n".join(head), "\n".join(tail)
+    return _top_values("\n".join(lines), indent)
 
 
 def _zero_judged(doc: dict[str, Any], sweep_result: Path) -> dict[str, Any]:
@@ -354,12 +375,32 @@ def _zero_judged(doc: dict[str, Any], sweep_result: Path) -> dict[str, Any]:
         return {"open": False, "why": "no completed sweep since this resident started"}
     if doc.get("last_rc") not in (0, "0"):
         return {"open": False, "why": f"last sweep rc {doc.get('last_rc')}: not a completed sweep"}
+    ends = f"first {RESULT_HEAD_BYTES} and last {RESULT_TAIL_BYTES} bytes"
     ht = _result_head_tail(sweep_result)
-    read = f"first {RESULT_HEAD_BYTES} and last {RESULT_TAIL_BYTES} bytes"
-    if ht is not None and not (_TOP_STAMP.search(ht[1]) and any(
-            re.search(_TOP_INT.format(key=k), ht[0]) for k in _COUNT_KEYS)):
-        ht, read = _scan_top(sweep_result), "streamed top-level lines (the ends missed a key)"
-    stamps = [_stamp(m.group(1)) for m in _TOP_STAMP.finditer(ht[1])] if ht else []
+    if ht is None:
+        return {"open": None, "read": "unreadable",
+                "why": f"{UNMEASURED}: {sweep_result.name} absent or unreadable -- an rc-0 "
+                       f"sweep that wrote no result reads this way"}
+    first = _FIRST_KEY.match(ht[0])
+    if first is None:
+        return {"open": None, "read": ends,
+                "why": f"{UNMEASURED}: {sweep_result.name} has no indented top-level key line "
+                       f"(compact, torn or not an object): its layout is unrecognised"}
+    indent = first.group(1)
+    head, tail = _top_values(ht[0], indent), _top_values(ht[1], indent)
+    vals = {"n_judged": head["n_judged"], "n_cells": head["n_cells"],
+            "swept_at": tail["swept_at"]}
+    read, streamed = ends, ht[2]                   # a file the ends cover is read in full
+    # STREAM WHENEVER THE TOP-LEVEL n_judged IS NOT IN THE HEAD (audit of f4ba99308): n_cells
+    # sits second and counts UNMEASURED cells too, while n_judged follows four census blocks
+    # (external_gauntlet.py:3325 vs :3347), so n_cells from the head is not a stand-in.
+    if not streamed and not (vals["n_judged"] and vals["swept_at"]):
+        scanned = _scan_top(sweep_result, indent)
+        if scanned is None:
+            return {"open": None, "read": "stream failed",
+                    "why": f"{UNMEASURED}: {sweep_result.name} unreadable while streaming"}
+        vals, read, streamed = scanned, "streamed top-level lines (the ends missed a key)", True
+    stamps = [_stamp(s) for s in vals["swept_at"]]
     swept = next((t for t in reversed(stamps) if t is not None), None)
     try:
         length = float(doc.get("last_sweep_s") or 0.0)
@@ -367,19 +408,19 @@ def _zero_judged(doc: dict[str, Any], sweep_result: Path) -> dict[str, Any]:
         length = 0.0
     lo = end - timedelta(seconds=length + PID_START_SKEW_S)
     hi = end + timedelta(seconds=PID_START_SKEW_S)
-    if ht is None or swept is None or not lo <= swept <= hi:
-        return {"open": None, "why": (f"{UNMEASURED}: {sweep_result.name} carries no result "
-                                      f"stamped inside the last sweep "
-                                      f"({lo.isoformat(timespec='seconds')} .. "
-                                      f"{end.isoformat(timespec='seconds')}) -- an rc-0 sweep "
-                                      f"that wrote no result reads this way")}
-    cells = None
-    for key in _COUNT_KEYS:
-        m = re.search(_TOP_INT.format(key=key), ht[0])
-        if m:
-            cells, basis = int(m.group(1)), key
-            break
-    if cells is None:
+    if swept is None or not lo <= swept <= hi:
+        return {"open": None, "read": read,
+                "why": (f"{UNMEASURED}: {sweep_result.name} carries no result stamped inside "
+                        f"the last sweep ({lo.isoformat(timespec='seconds')} .. "
+                        f"{end.isoformat(timespec='seconds')}) -- an rc-0 sweep that wrote no "
+                        f"result reads this way")}
+    if vals["n_judged"]:
+        cells, basis = int(vals["n_judged"][0]), "n_judged"
+    elif streamed and vals["n_cells"]:
+        # Only once the whole file is known to carry no n_judged: external_gauntlet's
+        # no-gate-1 branch (:3886-3895) writes n_cells 0 and no n_judged.
+        cells, basis = int(vals["n_cells"][0]), "n_cells (the result carries no n_judged)"
+    else:
         return {"open": None, "read": read,
                 "why": f"{UNMEASURED}: {sweep_result.name} names no top-level cell count"}
     return {"open": cells == 0, "cells": cells, "basis": basis, "read": read,
@@ -387,26 +428,49 @@ def _zero_judged(doc: dict[str, Any], sweep_result: Path) -> dict[str, Any]:
                     f"cell(s) ({basis})")}
 
 
-def fresh_budget_s(throughput: Path = THROUGHPUT, env_file: Path = ENV_FILE) -> tuple[float, str]:
-    """GAUNTLET_FRESH_BUDGET_SEC as the judge will run it, and where it was read."""
-    doc = _read_json(throughput)
-    dec = doc.get("decision") if isinstance(doc, dict) else None
-    raw = dec.get("fresh_budget_s") if isinstance(dec, dict) else None
-    src = f"{throughput.name} decision.fresh_budget_s"
-    if not isinstance(raw, (int, float)):
-        env = _read_json(env_file)
-        vals = env.get("env") if isinstance(env, dict) else None
-        raw = vals.get("GAUNTLET_FRESH_BUDGET_SEC") if isinstance(vals, dict) else None
-        src = f"{env_file.name} GAUNTLET_FRESH_BUDGET_SEC"
-    if raw is None:
-        raw, src = os.environ.get("GAUNTLET_FRESH_BUDGET_SEC"), "env GAUNTLET_FRESH_BUDGET_SEC"
+def _budget_value(raw: object) -> float | None:
+    """A usable budget: a finite positive number. A bool is not a number here."""
+    if raw is None or isinstance(raw, bool):
+        return None
     try:
         val = float(raw)  # type: ignore[arg-type]
     except (TypeError, ValueError):
-        return PREWARM_BUDGET_MEASURED_S, "UNMEASURED: the measured 8,640 s"
-    if val <= 0:
-        return PREWARM_BUDGET_MEASURED_S, "UNMEASURED: the measured 8,640 s"
-    return val, src
+        return None
+    return val if math.isfinite(val) and val > 0 else None
+
+
+def fresh_budget_s(throughput: Path = THROUGHPUT, env_file: Path = ENV_FILE) -> tuple[float, str]:
+    """GAUNTLET_FRESH_BUDGET_SEC as the judge will run it, and where it was read.
+
+    The first source holding a finite positive number wins; a bool, NaN, an infinity, zero or a
+    negative is rejected and named. The value is capped at RESIDENT_HANG_CAP_S: no sweep phase
+    outlives it, so a budget above it cannot widen the prewarm limit past what the resident
+    itself enforces. Nothing usable reads UNMEASURED at the measured 8,640 s.
+    """
+    doc = _read_json(throughput)
+    dec = doc.get("decision") if isinstance(doc, dict) else None
+    env = _read_json(env_file)
+    vals = env.get("env") if isinstance(env, dict) else None
+    sources = (
+        (f"{throughput.name} decision.fresh_budget_s",
+         dec.get("fresh_budget_s") if isinstance(dec, dict) else None),
+        (f"{env_file.name} GAUNTLET_FRESH_BUDGET_SEC",
+         vals.get("GAUNTLET_FRESH_BUDGET_SEC") if isinstance(vals, dict) else None),
+        ("env GAUNTLET_FRESH_BUDGET_SEC", os.environ.get("GAUNTLET_FRESH_BUDGET_SEC")))
+    rejected: list[str] = []
+    for src, raw in sources:
+        if raw is None:
+            continue
+        val = _budget_value(raw)
+        if val is None:
+            rejected.append(f"{src}={str(raw)[:24]!r}")
+            continue
+        if val > RESIDENT_HANG_CAP_S:
+            return RESIDENT_HANG_CAP_S, (f"{src}={val:g} capped at RESIDENT_HANG_CAP_S "
+                                         f"{RESIDENT_HANG_CAP_S:g} s (run_sharded_gauntlet.py)")
+        return val, src
+    note = f" (rejected: {', '.join(rejected)})" if rejected else ""
+    return PREWARM_BUDGET_MEASURED_S, f"UNMEASURED: the measured 8,640 s{note}"
 
 
 def phase_limits(budget_s: float) -> dict[str, float]:
@@ -423,7 +487,8 @@ def measure(now: datetime | None = None, *, ledger: Path = LEDGER,
     at = now or datetime.now(tz=UTC)
     budget, budget_src = fresh_budget_s(throughput, env_file)
     limits = phase_limits(budget)
-    unknown_limit = max(UNKNOWN_PHASE_LIMIT_H, *limits.values())
+    # The unknown-phase limit stays the MEASURED one: a derived prewarm never widens it.
+    unknown_limit = UNKNOWN_PHASE_LIMIT_H
     out: dict[str, Any] = {"at": at.isoformat(timespec="seconds"), "incidents": {},
                            "thresholds": {"no_verdict_h": NO_VERDICT_H,
                                           "heartbeat_stale_min": HEARTBEAT_STALE_MIN,
@@ -579,7 +644,9 @@ def _unmeasured_verdict(hist: dict[str, list[list[Any]]], inc: dict[str, dict[st
         if not stamps or min(t for t, _ in stamps) > now - bound:
             continue                         # the window is not yet full: no verdict
         window = [u for t, u in stamps if t > now - bound]
-        if window and sum(window) / len(window) >= UNMEASURED_SHARE:
+        # A lone reading after a gap in the runs is not a window: one UNMEASURED read then
+        # would page at once (audit of f4ba99308).
+        if len(window) >= UNMEASURED_MIN_READS and sum(window) / len(window) >= UNMEASURED_SHARE:
             offenders.append(f"{k} UNMEASURED on {sum(window)}/{len(window)} reads over "
                              f"{_bound_min(k):g} min: {(inc.get(k) or {}).get('why')}")
     if offenders:

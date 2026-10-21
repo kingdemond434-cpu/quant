@@ -576,3 +576,133 @@ def test_a_key_pushed_past_the_ends_is_still_read_by_streaming(jsp, tmp_path):
     small = tmp_path / "s.json"
     small.write_text(json.dumps({"n_cells": 3, "swept_at": _iso(end)}, indent=2), "utf-8")
     assert jsp._zero_judged(doc, small)["read"].startswith("first ")
+
+
+# ---- v4 (audit of f4ba99308) ----
+
+def _done(end: datetime) -> dict:
+    return {"last_sweep_ended_utc": _iso(end), "last_sweep_s": 20_000.0, "last_rc": 0}
+
+
+def test_n_cells_in_the_head_never_stands_in_for_a_later_n_judged(jsp, tmp_path):
+    """The auditor's probe: 1.3 MB, n_cells 500 second, n_judged 0 after a census block."""
+    end = NOW - timedelta(hours=2)
+    body = {"hunt": "h", "n_cells": 500, "trial_census": ["c" * 100] * 12_000, "n_judged": 0,
+            "verdicts": [], "swept_at": _iso(end - timedelta(minutes=30))}
+    f = tmp_path / "r.json"
+    f.write_text(json.dumps(body, indent=2), "utf-8")
+    assert 1.2e6 < f.stat().st_size < 1.4e6
+    z = jsp._zero_judged(_done(end), f)
+    assert z["open"] is True and z["cells"] == 0 and z["basis"] == "n_judged"
+    assert z["read"].startswith("streamed")
+
+
+def test_n_cells_is_used_only_when_the_whole_file_has_no_n_judged(jsp, tmp_path):
+    """external_gauntlet's no-gate-1 branch writes n_cells 0 and no n_judged."""
+    end = NOW - timedelta(hours=2)
+    body = {"n_cells": 0, "big": ["z" * 100] * 15_000, "verdicts": [],
+            "swept_at": _iso(end - timedelta(minutes=30))}
+    f = tmp_path / "r.json"
+    f.write_text(json.dumps(body, indent=2), "utf-8")
+    z = jsp._zero_judged(_done(end), f)
+    assert z["open"] is True and z["basis"].startswith("n_cells") and z["read"].startswith("str")
+
+
+@pytest.mark.parametrize("indent", [1, 4, "\t"])
+def test_the_top_level_indent_is_read_not_assumed(jsp, tmp_path, indent):
+    end = NOW - timedelta(hours=2)
+    body = {"meta": {"n_judged": 7, "swept_at": _iso(end)}, "n_judged": 3,
+            "verdicts": [{"n_judged": 9}], "swept_at": _iso(end - timedelta(minutes=30))}
+    f = tmp_path / "r.json"
+    f.write_text(json.dumps(body, indent=indent), "utf-8")
+    z = jsp._zero_judged(_done(end), f)
+    assert z["cells"] == 3 and z["basis"] == "n_judged"
+    compact = tmp_path / "c.json"
+    compact.write_text(json.dumps(body), "utf-8")
+    c = jsp._zero_judged(_done(end), compact)
+    assert c["open"] is None and "unrecognised" in c["why"] and c["read"]
+
+
+def test_the_tail_drops_its_partial_first_line(jsp, tmp_path):
+    """A tail that starts inside a nested line's indent must not read it as top-level."""
+    end = NOW - timedelta(hours=2)
+    body = {"n_judged": 4, "census": ["c" * 100] * 12_000, "verdicts": [],
+            "swept_at": _iso(end - timedelta(minutes=30)),
+            "gate_ledger": {"inner": {"swept_at": _iso(end - timedelta(days=3))}}}
+    text = json.dumps(body, indent=2).encode()
+    cut = text.index(b'      "swept_at"') + 4       # the tail opens with '  "swept_at"'
+    assert cut > jsp.RESULT_HEAD_BYTES
+    f = tmp_path / "r.json"
+    f.write_bytes(text + b"\n" * (cut + jsp.RESULT_TAIL_BYTES - len(text)))
+    assert f.stat().st_size - jsp.RESULT_TAIL_BYTES == cut
+    ht = jsp._result_head_tail(f)
+    assert not ht[1].startswith('  "swept_at"')       # the partial first line is gone
+    z = jsp._zero_judged(_done(end), f)
+    assert z["open"] is False and z["cells"] == 4
+
+
+def test_the_unmeasured_branches_all_carry_a_read_field(jsp, tmp_path):
+    end = NOW - timedelta(hours=2)
+    assert jsp._zero_judged(_done(end), tmp_path / "absent.json")["read"] == "unreadable"
+    stale = tmp_path / "s.json"
+    stale.write_text(json.dumps({"n_judged": 1, "swept_at": _iso(end - timedelta(days=2))},
+                                indent=2), "utf-8")
+    z = jsp._zero_judged(_done(end), stale)
+    assert z["open"] is None and z["read"]
+
+
+@pytest.mark.parametrize("raw", [float("inf"), float("nan"), True, "Infinity", "nan", 0, -5])
+def test_a_bool_or_non_finite_budget_falls_back_to_the_measured_figure(jsp, tmp_path,
+                                                                       monkeypatch, raw):
+    monkeypatch.delenv("GAUNTLET_FRESH_BUDGET_SEC", raising=False)
+    env = tmp_path / "e.json"
+    env.write_text(json.dumps({"env": {"GAUNTLET_FRESH_BUDGET_SEC": raw}}), "utf-8")
+    val, src = jsp.fresh_budget_s(tmp_path / "absent.json", env)
+    assert val == 8_640.0 and src.startswith("UNMEASURED") and "rejected" in src
+    tp = tmp_path / "t.json"
+    tp.write_text(json.dumps({"decision": {"fresh_budget_s": raw}}), "utf-8")
+    assert jsp.fresh_budget_s(tp, tmp_path / "no.json")[0] == 8_640.0
+    limits = jsp.phase_limits(jsp.fresh_budget_s(tp, tmp_path / "no.json")[0])
+    assert all(v == v and v < 100 for v in limits.values())      # finite, never NaN
+
+
+def test_a_rejected_source_falls_through_to_the_next_good_one(jsp, tmp_path, monkeypatch):
+    monkeypatch.delenv("GAUNTLET_FRESH_BUDGET_SEC", raising=False)
+    tp = tmp_path / "t.json"
+    tp.write_text(json.dumps({"decision": {"fresh_budget_s": True}}), "utf-8")
+    env = tmp_path / "e.json"
+    env.write_text(json.dumps({"env": {"GAUNTLET_FRESH_BUDGET_SEC": "5000"}}), "utf-8")
+    assert jsp.fresh_budget_s(tp, env) == (5_000.0, "e.json GAUNTLET_FRESH_BUDGET_SEC")
+
+
+def test_a_huge_budget_is_capped_at_the_residents_hang_cap(jsp, tmp_path, monkeypatch):
+    import re
+    src = (REPO / "desks/mt5/scripts/run_sharded_gauntlet.py").read_text("utf-8")
+    m = re.search(r"(?m)^RESIDENT_HANG_CAP_S = (\d+) \* 3600\.0", src)
+    assert m and float(m.group(1)) * 3600.0 == jsp.RESIDENT_HANG_CAP_S == 48 * 3600.0
+    monkeypatch.delenv("GAUNTLET_FRESH_BUDGET_SEC", raising=False)
+    tp = tmp_path / "t.json"
+    tp.write_text(json.dumps({"decision": {"fresh_budget_s": 1e12}}), "utf-8")
+    val, label = jsp.fresh_budget_s(tp, tmp_path / "no.json")
+    assert val == jsp.RESIDENT_HANG_CAP_S and "capped at RESIDENT_HANG_CAP_S" in label
+    paths = _world(tmp_path, NOW, phase="brand_new_phase", phase_h=jsp.UNKNOWN_PHASE_LIMIT_H + 1)
+    paths["throughput"] = tp
+    d = jsp.measure(NOW, pid_alive=_alive, **paths)
+    assert d["thresholds"]["unknown_phase_limit_h"] == jsp.UNKNOWN_PHASE_LIMIT_H == 18.0
+    assert d["thresholds"]["phase_limit_h"]["prewarm"] == round(
+        1.5 * (48 * 3600 + 1_100) / 3600, 2)
+    assert d["incidents"]["phase_overrun"]["open"] is True      # unknown limit not widened
+
+
+def test_a_lone_unmeasured_read_after_a_gap_does_not_page(jsp, tmp_path):
+    ch = Channel()
+
+    def torn_after_gap(t: datetime, p: dict) -> None:
+        if t >= NOW + timedelta(minutes=40):
+            p["resident"].write_text("{torn", "utf-8")
+
+    docs = _series(jsp, tmp_path, ch, [0, 40], torn_after_gap)
+    assert docs[-1]["incidents"]["inputs_unmeasured"]["open"] is False and ch.sent == []
+    d = _series(jsp, tmp_path, ch, [45], torn_after_gap)[0]
+    assert d["page"]["opened"] == ["inputs_unmeasured"]
+    assert jsp.UNMEASURED_MIN_READS == 2
