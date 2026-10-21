@@ -89,7 +89,9 @@ import json
 import math
 import os
 import sys
+import threading
 import time
+import uuid
 from collections import Counter, deque
 from collections.abc import Iterator
 from datetime import UTC, datetime
@@ -166,6 +168,9 @@ UNKNOWN_REASON_CLASS: dict[str, str] = {
     "no_terminal_gate_recorded": DEFECT,
     # the names `name_unknowns` gives a bank row
     "never_fires": NOT_TESTABLE,
+    # a never-firing cell whose family PROVABLY emits nothing for want of a named input
+    # (`research/fire_inputs.py`): parked like never_fires, re-admitted when the input appears
+    "needs_data": NOT_TESTABLE,
     "missing_bars": DEFECT,
     "missing_identity_input": DEFECT,
     "unnamed": DEFECT,
@@ -391,9 +396,15 @@ TXN_REPLACE_WAIT_S = 0.2
 
 
 def _replace_retry(src: Path, dst: Path) -> None:
+    """`src.replace(dst)`, retrying a PermissionError (a reader holding `dst` open on Windows).
+
+    THE ONE DEFINITION (merge of v2.3 with dead families v4.4, 2026-10-21): both carried one,
+    and the later def silently replaced the earlier for every caller. `Path.replace` IS
+    `os.replace`; it is spelled through `Path` so v4.4's tests, which patch `Path.replace`,
+    reach the sidecar and bank writes; v2.3's tests patch `_replace_retry` itself."""
     for attempt in range(TXN_REPLACE_TRIES):
         try:
-            os.replace(src, dst)
+            Path(src).replace(dst)
             return
         except PermissionError:
             if attempt == TXN_REPLACE_TRIES - 1:
@@ -1447,6 +1458,27 @@ def name_not_run(path: Path | None = None) -> dict[str, dict[str, Any]]:
     return out
 
 
+#: One probe per (family, symbol) per process pass: both probed families' answers depend on
+#: the symbol alone (`fire_inputs.probe`). Cleared by `_fire_probe_reset` at each pass start.
+_FIRE_MEMO: dict[tuple[str, str], dict[str, Any]] = {}
+
+
+def _fire_probe_reset() -> None:
+    _FIRE_MEMO.clear()
+
+
+def _fire_probe(sym: str, family: str) -> dict[str, Any]:
+    """`research.fire_inputs.probe`, or UNMEASURED when it cannot be imported (fail open)."""
+    try:
+        try:
+            from fire_inputs import probe
+        except ImportError:                                    # pragma: no cover - import context
+            from research.fire_inputs import probe  # type: ignore[no-redef]
+        return probe(sym, family, memo=_FIRE_MEMO)
+    except Exception as exc:                                   # never costs the pass
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {str(exc)[:120]}"}
+
+
 def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
     """EVERY UNKNOWN GETS A NAMED REASON. The class stops existing as a category.
 
@@ -1527,6 +1559,19 @@ def _name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
             route = ("the judge named no scarcity for this cell (no series built, or no reason "
                      "given): a defect the desk owes a fix for, kept in the backlog and re-asked "
                      f"after {BUILD_FAILED_RETRY_DAYS:.0f} days like a build failure")
+        elif days == 0 and (_fire := _fire_probe(sym, fam)).get("status") == "NEEDS_DATA":
+            # NAMED FOR THE INPUT IT LACKS (2026-10-20). The family's own guard returns [] on the
+            # inputs the judge hands it, on any bars, so this is not scarcity of signals: it is a
+            # missing input, handed to the converter by name and re-admitted when it appears.
+            reason, route = "needs_data", (
+                f"the family cannot fire without {_fire.get('missing_input')}: "
+                f"{_fire.get('why')}. Re-admitted the moment that input is present")
+            out[cell] = {"reason": reason, "route": route, "sym": sym, "family": fam,
+                         "tf": tf, "days": days, "bar_bytes": bars, "why": why[:200],
+                         "missing_input": _fire.get("missing_input"),
+                         "input_stamp": _fire.get("stamp"),
+                         **({"detail": declared} if declared else {})}
+            continue
         elif days == 0:
             reason, route = "never_fires", ("the spec produced not one daily observation on bars "
                                             "that ARE present: an unrunnable spec, filtered at "
@@ -1594,6 +1639,18 @@ def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
         if key not in bar_sizes:
             bar_sizes[key] = _bar_bytes(*key)
         bars = bar_sizes[key]
+    if row.get("reason") == "needs_data":
+        # THE INPUT IS THE BINDING CAUSE: the family returns [] on any bars without it, so bar
+        # growth cannot change the outcome. Back the moment the probe stops answering NEEDS_DATA
+        # (the input appeared, or the probe can no longer say: fail open toward judging), and
+        # after READMIT_MAX_DAYS regardless, like every parked cell.
+        if _fire_probe(str(row.get("sym") or ""), str(row.get("family") or "")).get(
+                "status") != "NEEDS_DATA":
+            return True
+        _pa = _ts(row.get("parked_at"))
+        _tn = now or datetime.now(tz=UTC)
+        return (_pa is not None
+                and (_tn.timestamp() - _pa.timestamp()) / 86400.0 >= READMIT_MAX_DAYS)
     if parked_bytes <= 0:
         return bars > 0
     if row.get("reason") in ("build_failed", "series_exception", "no_series", "unnamed",
@@ -1620,6 +1677,266 @@ def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
 READMISSION_LOG = HYP / "not_testable_readmissions.jsonl"
 
 
+#: NEEDS_DATA CELLS RE-ADMITTED BY THE CLOCK WHILE THEIR INPUT IS STILL MISSING (audit of
+#: c72ecfc53). After READMIT_MAX_DAYS such a cell leaves the bank, and the handoff is written from
+#: the bank, so its per-cell demand vanished (measured 1 -> 0) while the input it lacks was still
+#: absent. This sidecar keeps the row -- beside the bank, rewritten every pass -- until the probe
+#: stops answering NEEDS_DATA or the cell is parked again, and the handoff reads it.
+NEEDS_DATA_OUTSTANDING = HYP / "needs_data_outstanding.json"
+
+
+#: THE SIDECAR'S STATES (audits of 3857d4bcd and fcef73b92). An absent or torn sidecar is NOT an
+#: empty one: the rows it held exist nowhere else (the bank popped them at readmit), so neither may
+#: read as 0, and a file that could not be read is never overwritten.
+#:
+#:   MEASURED      read cleanly, nothing set aside, and this pass's write landed.
+#:   FIRST         absent, and never born here (no `.born` marker): the one creation allowed.
+#:   VANISHED      absent after it was born: its rows are lost to this organ. A named
+#:                 `.vanished-<at>` marker is written; UNMEASURED until a person removes it.
+#:   TORN          present but not JSON (ValueError): moved aside UNTOUCHED to a unique
+#:                 `.torn-<at>[-n]`; UNMEASURED until a person removes it. If it cannot be moved,
+#:                 nothing is written.
+#:   UNREADABLE    an OSError (a Windows sharing violation, a permission) persisted through the
+#:                 retries, on the read or on `exists`: UNMEASURED, the file is NOT moved, and no
+#:                 row is readmitted into it this pass.
+#:   SET_ASIDE     read cleanly, but an earlier torn/vanished file is still set aside: UNMEASURED.
+#:   LOCKED        another pass holds the sidecar lock: UNMEASURED, untouched, nothing readmitted
+#:                 into it.
+#:   WRITE_FAILED  this pass's write did not land: UNMEASURED; the rows bound for it stay parked.
+#:
+#: Every file here is `needs_data_outstanding.json*`, one gitignore line (`.born`, `.torn-*`,
+#: `.vanished-*`, `.tmp`, `.lock`): a committed marker would read VANISHED in every other checkout.
+OUTSTANDING_MEASURED, OUTSTANDING_FIRST = "MEASURED", "FIRST"
+OUTSTANDING_VANISHED, OUTSTANDING_TORN, OUTSTANDING_SET_ASIDE = "VANISHED", "TORN", "SET_ASIDE"
+OUTSTANDING_UNREADABLE, OUTSTANDING_LOCKED = "UNREADABLE", "LOCKED"
+OUTSTANDING_WRITE_FAILED = "WRITE_FAILED"
+#: A transient read error is retried this many times, this far apart, before it is UNREADABLE.
+OUTSTANDING_READ_TRIES = 3
+OUTSTANDING_READ_PAUSE_S = 0.2
+#: How long a pass waits for the sidecar lock, and when a lock left by a dead pass is broken.
+OUTSTANDING_LOCK_WAIT_S = 30.0
+OUTSTANDING_LOCK_STALE_S = 900.0
+#: A held lock's mtime is refreshed this often, so a pass longer than the stale window keeps it;
+#: only a lock whose holder stopped beating (a dead pass) ever reads as stale.
+OUTSTANDING_LOCK_BEAT_S = 60.0
+
+
+def _born_marker(path: Path) -> Path:
+    return path.with_name(path.name + ".born")
+
+
+def _set_aside(path: Path) -> list[str]:
+    try:
+        return sorted(p.name for p in path.parent.glob(path.name + ".torn-*")) + sorted(
+            p.name for p in path.parent.glob(path.name + ".vanished-*"))
+    except OSError:
+        return [f"{path.name}.<unlistable>"]
+
+
+def _aside_name(path: Path, kind: str, at: str) -> Path:
+    """A name no earlier set-aside file holds, so two tears in one second never collide."""
+    base = f"{path.name}.{kind}-{_stamp(at)}"
+    cand, n = path.with_name(base), 0
+    while cand.exists():
+        n += 1
+        cand = path.with_name(f"{base}-{n}")
+    return cand
+
+
+def read_needs_data_outstanding(path: Path | None = None
+                                ) -> tuple[dict[str, dict[str, Any]], str]:
+    """(rows, state). Rows are what could be read; the state says whether that is the truth."""
+    target = path or NEEDS_DATA_OUTSTANDING
+    staged = _PASS.get(("staged_json", str(target))) if _PASS is not None else None
+    if isinstance(staged, dict):
+        # This pass's own uncommitted (v2.3 transaction) write of the sidecar.
+        return ({str(k): v for k, v in staged.items() if isinstance(v, dict)},
+                OUTSTANDING_SET_ASIDE if _set_aside(target) else OUTSTANDING_MEASURED)
+    try:
+        exists = target.exists()
+        born = _born_marker(target).exists()
+    except OSError:
+        return {}, OUTSTANDING_UNREADABLE
+    if not exists:
+        return {}, (OUTSTANDING_VANISHED if born else OUTSTANDING_FIRST)
+    text: str | None = None
+    for attempt in range(OUTSTANDING_READ_TRIES):
+        try:
+            text = target.read_text("utf-8")
+            break
+        except ValueError:                  # undecodable bytes: torn, not transient
+            return {}, OUTSTANDING_TORN
+        except OSError:
+            if attempt + 1 < OUTSTANDING_READ_TRIES:
+                time.sleep(OUTSTANDING_READ_PAUSE_S)
+    if text is None:
+        return {}, OUTSTANDING_UNREADABLE
+    try:
+        doc = json.loads(text)
+    except ValueError:
+        return {}, OUTSTANDING_TORN
+    if not isinstance(doc, dict):
+        return {}, OUTSTANDING_TORN
+    rows = {str(k): v for k, v in doc.items() if isinstance(v, dict)}
+    return rows, (OUTSTANDING_SET_ASIDE if _set_aside(target) else OUTSTANDING_MEASURED)
+
+
+def needs_data_outstanding(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    """The rows that could be read (for the handoff); `read_needs_data_outstanding` has the state."""
+    return read_needs_data_outstanding(path)[0]
+
+
+def _stamp(at: str) -> str:
+    return "".join(ch for ch in str(at) if ch.isalnum()) or "unstamped"
+
+
+class _SidecarLock:
+    """One pass's hold on the sidecar's `.lock` (which also guards the unrunnable bank).
+
+    THREE PROPERTIES (audit of 1fb3db5f1):
+      * EXCLUSIVE CREATION: `O_CREAT | O_EXCL`, carrying this pass's random `token`.
+      * A HEARTBEAT: a daemon thread refreshes the lock's mtime every OUTSTANDING_LOCK_BEAT_S, so
+        a pass longer than OUTSTANDING_LOCK_STALE_S is never taken over; only a holder that
+        stopped beating -- a dead pass -- leaves a stale lock.
+      * ATOMIC TAKEOVER: a stale lock is RENAMED to a unique `.lock.stale-<hex>` (one renamer wins;
+        the other sees it gone), and the moved file is checked to be the same stale lock that
+        was read. If a live lock was moved instead, it is linked back (a link fails rather than
+        overwrite). And because no move can be undone perfectly under every race, the holder
+        re-checks `owned()` before every write: a pass that lost its lock writes nothing.
+    """
+
+    def __init__(self, path: Path, at: str) -> None:
+        self.path = path.with_name(path.name + ".lock")
+        self.at = at
+        self.token = uuid.uuid4().hex
+        self.held = False
+        self.lost = False
+        self._stop = threading.Event()
+        self._beat: threading.Thread | None = None
+
+    def __bool__(self) -> bool:
+        return self.held
+
+    def _read(self, p: Path) -> tuple[dict[str, Any] | None, float | None]:
+        try:
+            st = p.stat()
+            doc = json.loads(p.read_text("utf-8") or "{}")
+        except (OSError, ValueError):
+            return None, None
+        return (doc if isinstance(doc, dict) else {}), st.st_mtime
+
+    def _token(self) -> tuple[str, Any]:
+        """("OK", token) | ("ABSENT", None) | ("UNREADABLE", None), retrying a transient read
+        (a Windows sharing violation while another process stats or beats the file)."""
+        for attempt in range(OUTSTANDING_READ_TRIES):
+            try:
+                doc = json.loads(self.path.read_text("utf-8") or "{}")
+                return "OK", (doc.get("token") if isinstance(doc, dict) else None)
+            except FileNotFoundError:
+                return "ABSENT", None
+            except (OSError, ValueError):
+                if attempt + 1 < OUTSTANDING_READ_TRIES:
+                    time.sleep(OUTSTANDING_READ_PAUSE_S)
+        return "UNREADABLE", None
+
+    def owned(self) -> bool:
+        """True only on a clean read of this pass's token. Unreadable is NOT owned: a write
+        gated on it waits for the next pass rather than risk racing a new holder."""
+        if not self.held or self.lost:
+            return False
+        state, token = self._token()
+        return state == "OK" and token == self.token
+
+    def _take_stale(self) -> bool:
+        doc, mtime = self._read(self.path)
+        if doc is None or mtime is None or time.time() - mtime <= OUTSTANDING_LOCK_STALE_S:
+            return False
+        aside = self.path.with_name(f"{self.path.name}.stale-{uuid.uuid4().hex}")
+        try:
+            os.rename(self.path, aside)
+        except OSError:
+            return False                          # another pass moved it first
+        moved, moved_mtime = self._read(aside)
+        if moved is not None and moved_mtime is not None \
+                and moved.get("token") == doc.get("token") \
+                and time.time() - moved_mtime > OUTSTANDING_LOCK_STALE_S:
+            with contextlib.suppress(OSError):
+                aside.unlink()
+            return True
+        # A LIVE lock replaced the stale one between the read and the move: put it back.
+        with contextlib.suppress(OSError):
+            os.link(aside, self.path)
+        with contextlib.suppress(OSError):
+            aside.unlink()
+        return False
+
+    def _beat_loop(self) -> None:
+        while not self._stop.wait(OUTSTANDING_LOCK_BEAT_S):
+            state, token = self._token()
+            if state == "UNREADABLE":
+                continue                  # transient: try again next beat, never declare lost
+            if state == "ABSENT" or token != self.token:
+                self.lost = True
+                return
+            with contextlib.suppress(OSError):
+                os.utime(self.path)
+
+    def acquire(self) -> bool:
+        deadline = time.monotonic() + OUTSTANDING_LOCK_WAIT_S
+        while True:
+            try:
+                self.path.parent.mkdir(parents=True, exist_ok=True)
+                fd = os.open(str(self.path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                    fh.write(json.dumps({"at": self.at, "pid": os.getpid(),
+                                         "token": self.token}))
+                self.held = True
+                break
+            except FileExistsError:
+                if self._take_stale():
+                    continue
+                if time.monotonic() >= deadline:
+                    break
+                time.sleep(0.5)
+            except OSError:
+                break
+        if self.held:
+            self._beat = threading.Thread(target=self._beat_loop, daemon=True,
+                                          name="needs-data-outstanding-lock")
+            self._beat.start()
+        return self.held
+
+    def release(self) -> None:
+        self._stop.set()
+        if self._beat is not None:
+            self._beat.join(timeout=5)
+        # Unlink whenever the file still carries OUR token, even after a beat flagged a loss: a
+        # lock left behind would block every pass for the whole stale window.
+        state, token = self._token()
+        if state == "OK" and token == self.token:
+            with contextlib.suppress(OSError):
+                self.path.unlink()
+        self.held = False
+
+
+@contextlib.contextmanager
+def _outstanding_lock(path: Path, at: str) -> Any:
+    """Hold the sidecar's lock for the bank's and sidecar's read-modify-write. Yields the
+    `_SidecarLock`, which is falsy when the lock was not taken."""
+    lk = _SidecarLock(path, at)
+    lk.acquire()
+    try:
+        yield lk
+    finally:
+        if lk.held:
+            lk.release()
+
+
+def _still_needs_data(row: dict[str, Any]) -> bool:
+    return _fire_probe(str(row.get("sym") or ""), str(row.get("family") or "")).get(
+        "status") == "NEEDS_DATA"
+
+
 def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                            path: Path | None = None,
                            log: Path | None = None) -> dict[str, Any]:
@@ -1632,12 +1949,9 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     leaves the backlog -- the coverage table books that as PARKING, never as drain.
     """
     target = path or UNRUNNABLE_BANK
-    bank = unrunnable_bank(target)
     now_ts = _ts(at)
     bar_sizes: dict[tuple[str, str], int] = {}
     parkable = {c for c, r in named.items() if r.get("reason") != "missing_bars"}
-    readmitted = [cell for cell, row in bank.items()
-                  if cell not in parkable and readmit_due(row, now=now_ts, bar_sizes=bar_sizes)]
     readmitted_nt: dict[str, int] = {}
     readmitted_nt_reason: dict[str, int] = {}
 
@@ -1647,44 +1961,164 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         readmitted_nt[fam] = readmitted_nt.get(fam, 0) + 1
         readmitted_nt_reason[rsn] = readmitted_nt_reason.get(rsn, 0) + 1
 
-    for cell in readmitted:
-        old = bank.pop(cell, None)
-        if isinstance(old, dict) and old.get("reason") in NOT_TESTABLE_REASONS:
-            _count_readmit(old)
-    added = 0
-    for cell, row in named.items():
-        if row.get("reason") == "missing_bars":
-            continue                       # owned by the conversion organ, not filtered here
-        prev = bank.get(cell)
-        if prev is None:
-            added += 1
-        prev = prev if isinstance(prev, dict) else {}
-        was_nt = prev.get("reason") in NOT_TESTABLE_REASONS
-        is_nt = row.get("reason") in NOT_TESTABLE_REASONS
-        entry = {**row, "parked_at": prev.get("parked_at") or at}
-        if is_nt:
-            entry["not_testable_since"] = (prev.get("not_testable_since") or at) if was_nt else at
-        elif was_nt:
-            _count_readmit(prev)            # re-named OUT of the class: owed again
-        bank[cell] = entry
-    txn = _txn_current()
-    try:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        if txn is None:
-            _atomic_write_text(target, json.dumps(bank, indent=1, default=str))
+    out_path = target.parent / NEEDS_DATA_OUTSTANDING.name
+    out_written = False
+    bank_write = "SKIPPED_LOCKED"
+    # THE BANK IS READ, CHANGED AND WRITTEN UNDER THE SAME LOCK AS THE SIDECAR (audit of
+    # 1fb3db5f1): a bank read before the lock could be overwritten by a pass that read it
+    # earlier, and a LOCKED pass that wrote its bank anyway raced the holder's write.
+    with _outstanding_lock(out_path, at) as locked:
+        bank = unrunnable_bank(target)
+        readmitted = ([cell for cell, row in bank.items() if cell not in parkable
+                       and readmit_due(row, now=now_ts, bar_sizes=bar_sizes)]
+                      if locked else [])
+        if locked:
+            outstanding, out_state = read_needs_data_outstanding(out_path)
         else:
-            txn.put_text(target, json.dumps(bank, indent=1, default=str))
-    except OSError:
-        pass
-    else:
-        # The next read of the bank in this pass is of the file just written; its parse is this
-        # mapping (every value here is a JSON value), so the pass does not parse it back.
-        if txn is not None and _PASS is not None:
-            _PASS[("staged_json", str(target))] = bank
+            outstanding, out_state = {}, OUTSTANDING_LOCKED
+        out_writable = out_state in (OUTSTANDING_MEASURED, OUTSTANDING_FIRST,
+                                     OUTSTANDING_SET_ASIDE, OUTSTANDING_VANISHED)
+        if out_state == OUTSTANDING_TORN:
+            # NEVER OVERWRITE WHAT COULD NOT BE READ: set it aside untouched, under its own name.
+            try:
+                out_path.rename(_aside_name(out_path, "torn", at))
+                out_writable = True
+            except OSError:
+                out_writable = False        # cannot move it: leave it exactly as found
+        elif out_state == OUTSTANDING_VANISHED:
+            with contextlib.suppress(OSError), _aside_name(out_path, "vanished", at).open(
+                    "x", encoding="utf-8") as fh:
+                fh.write(json.dumps({"at": at, "why": "the sidecar was born here and is now "
+                                     "absent; the rows it held are not recoverable"}))
+        # A ROW BOUND FOR THE SIDECAR LEAVES THE BANK ONLY IF THE SIDECAR CAN TAKE IT: with the
+        # sidecar locked, unreadable or unmovable it stays parked and is re-asked next pass.
+        held_back: list[str] = []
+        popped: dict[str, dict[str, Any]] = {}
+        to_side: set[str] = set()
+        for cell in readmitted:
+            old = bank.get(cell)
+            bound = (isinstance(old, dict) and old.get("reason") == "needs_data"
+                     and _still_needs_data(old))
+            if bound and not out_writable:
+                held_back.append(cell)
+                continue
+            popped[cell] = bank.pop(cell)
+            if bound:
+                to_side.add(cell)
+                outstanding[cell] = {**popped[cell], "readmitted_at": at}
+        added = 0
+        for cell, row in (named if locked else {}).items():
+            if row.get("reason") == "missing_bars":
+                continue                   # owned by the conversion organ, not filtered here
+            prev = bank.get(cell)
+            if prev is None:
+                added += 1
+            prev = prev if isinstance(prev, dict) else {}
+            was_nt = prev.get("reason") in NOT_TESTABLE_REASONS
+            is_nt = row.get("reason") in NOT_TESTABLE_REASONS
+            entry = {**row, "parked_at": prev.get("parked_at") or at}
+            if is_nt:
+                entry["not_testable_since"] = ((prev.get("not_testable_since") or at)
+                                               if was_nt else at)
+            elif was_nt:
+                _count_readmit(prev)        # re-named OUT of the class: owed again
+            bank[cell] = entry
+        # Parked again (the bank holds it) or the input appeared: the sidecar row is done.
+        outstanding = {c: r for c, r in outstanding.items()
+                       if c not in bank and _still_needs_data(r)}
+        if locked and not locked.owned():
+            # THE LOCK WAS LOST MID-PASS (moved by a takeover race): write nothing at all.
+            out_state, out_writable, locked_lost = OUTSTANDING_LOCKED, False, True
+            for cell in to_side:
+                bank[cell] = popped.pop(cell)
+            held_back.extend(sorted(to_side))
+            to_side = set()
         else:
-            _wk = _stat_key(target) if _PASS is not None else None
-            if _PASS is not None and _wk is not None:
-                _PASS[("json", *_wk)] = bank
+            locked_lost = False
+        # Inside a judge_coverage pass (v2.3 `_Txn`) the sidecar, its birth marker and the bank
+        # are STAGED and renamed together at the pass's commit point, so a pass killed or timed
+        # out before it changes none of them (merge resolution, 2026-10-21); outside a pass each
+        # is written now, tmp + replace, under this lock, exactly as v4.4 writes it.
+        txn = _txn_current()
+        if out_writable:
+            tmp = out_path.with_name(out_path.name + ".tmp")
+            try:
+                if txn is None:
+                    tmp.write_text(json.dumps(outstanding, indent=1, default=str), "utf-8")
+                    _replace_retry(tmp, out_path)
+                else:
+                    txn.put_text(out_path, json.dumps(outstanding, indent=1, default=str))
+                out_written = True
+            except OSError:
+                out_written = False
+            finally:
+                # A WRITE THAT DID NOT LAND LEAVES NO .tmp BEHIND (audit of 1e2f27789): after a
+                # replace the file is gone already; after a failure it is this pass's own debris.
+                with contextlib.suppress(OSError):
+                    tmp.unlink(missing_ok=True)
+            if out_written and txn is not None and _PASS is not None:
+                # Later reads in this pass see the staged sidecar (read_needs_data_outstanding).
+                _PASS[("staged_json", str(out_path))] = outstanding
+        if out_written:
+            # BORN ON EVERY SUCCESSFUL WRITE THAT FINDS NO MARKER (audit of fcef73b92), not only
+            # on FIRST: a failed marker write, or a sidecar older than the marker, would otherwise
+            # read MEASURED forever and re-FIRST to 0 the day it vanished.
+            with contextlib.suppress(OSError):
+                if not _born_marker(out_path).exists():
+                    born_text = json.dumps({"born_at": at})
+                    if txn is None:
+                        _born_marker(out_path).write_text(born_text, "utf-8")
+                    else:
+                        txn.put_text(_born_marker(out_path), born_text)
+        elif to_side:
+            # The write did not land: the rows bound for it go back to the bank, unreadmitted.
+            for cell in to_side:
+                bank[cell] = popped.pop(cell)
+            held_back.extend(sorted(to_side))
+        if out_writable and not out_written:
+            out_state = OUTSTANDING_WRITE_FAILED
+        if locked and not locked_lost and locked.owned():
+            # Inside a judge_coverage pass (v2.3 `_Txn`) the bank is STAGED here and renamed at
+            # the pass's commit point, so a pass killed or timed out before it leaves the bank as
+            # it was; outside one it is written now, tmp + replace, under this lock.
+            tmp_bank = target.with_name(target.name + ".tmp")
+            try:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                if txn is None:
+                    tmp_bank.write_text(json.dumps(bank, indent=1, default=str), "utf-8")
+                    _replace_retry(tmp_bank, target)
+                else:
+                    txn.put_text(target, json.dumps(bank, indent=1, default=str))
+                bank_write = "WRITTEN"
+            except OSError:
+                bank_write = "WRITE_FAILED"
+            finally:
+                with contextlib.suppress(OSError):
+                    tmp_bank.unlink(missing_ok=True)
+            if bank_write == "WRITTEN" and _PASS is not None:
+                # The next read of the bank in this pass is of the file just written; its parse
+                # is this mapping (every value here is a JSON value), so the pass does not parse
+                # it back (v2.3).
+                if txn is not None:
+                    _PASS[("staged_json", str(target))] = bank
+                else:
+                    _wk = _stat_key(target)
+                    if _wk is not None:
+                        _PASS[("json", *_wk)] = bank
+        if bank_write == "WRITTEN":
+            # COUNTED ONLY ONCE THE BANK LANDED: a readmission the disk never saw is not one.
+            for old in popped.values():
+                if isinstance(old, dict) and old.get("reason") in NOT_TESTABLE_REASONS:
+                    _count_readmit(old)
+        else:
+            # Not ours to write, or the write failed: nothing this pass changed is on disk, and
+            # nothing counts.
+            bank = unrunnable_bank(target)
+            added, popped = 0, {}
+            readmitted_nt.clear()
+            readmitted_nt_reason.clear()
+    out_measured = (out_written and out_state in (OUTSTANDING_MEASURED, OUTSTANDING_FIRST)
+                    and not _set_aside(out_path))
     n_re = sum(readmitted_nt.values())
     # ONE LINE EVERY PASS, ZEROS INCLUDED (audit of PR #290, M1): the burn-down reads a missing
     # or stale log as UNMEASURED, so a quiet pass must still say "0" by writing it.
@@ -1694,6 +2128,7 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         lp = log or target.parent / READMISSION_LOG.name
         lp.parent.mkdir(parents=True, exist_ok=True)
         dest = lp
+        txn = _txn_current()
         if txn is not None:
             # The whole log is staged (old bytes + this line) and renamed at commit: a rename is
             # idempotent under roll-forward, where a second append would not be.
@@ -1702,17 +2137,27 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                 import shutil
                 shutil.copyfile(lp, dest)
         with dest.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps({"at": at, "readmitted": n_re,
-                                 "by_reason": readmitted_nt_reason}) + "\n")
+            # A pass that did not hold the bank says so: LOCKED is not a measured zero, and the
+            # burn-down neither counts it nor takes freshness from it.
+            line = ({"at": at, "state": "LOCKED"} if bank_write == "SKIPPED_LOCKED" else
+                    {"at": at, "readmitted": n_re, "by_reason": readmitted_nt_reason,
+                     **({"state": bank_write} if bank_write != "WRITTEN" else {})})
+            fh.write(json.dumps(line) + "\n")
         if txn is not None:
             txn.put_staged(lp, dest)
     except OSError:
         pass
-    return {"parked_this_pass": added, "readmitted_on_bar_growth": len(readmitted),
+    return {"parked_this_pass": added, "readmitted_on_bar_growth": len(popped),
+            "needs_data_readmit_held_back": len(held_back),
             "readmitted_not_testable": n_re,
             "readmitted_not_testable_by_family": readmitted_nt,
             "readmitted_not_testable_by_reason": readmitted_nt_reason,
-            "bank_size": len(bank), "path": str(target)}
+            "bank_size": len(bank),
+            "needs_data_outstanding": len(outstanding) if out_measured else "UNMEASURED",
+            "needs_data_outstanding_state": out_state,
+            "needs_data_outstanding_set_aside": _set_aside(out_path),
+            "bank_write": bank_write,
+            "path": str(target)}
 
 
 def family_value(path: Path | None = None) -> tuple[dict[str, float], float]:
@@ -2295,6 +2740,7 @@ FAILURE_CLASS: dict[str, str] = {
     "no_trades": "untestable_as_specified",
     "too_rare": "untestable_as_specified",
     "never_fires": "untestable_as_specified",
+    "needs_data": "needs_data",
     "missing_identity_input": "unnamed",
     "no_terminal_gate_recorded": "unnamed",
     "unnamed": "unnamed",
@@ -2318,6 +2764,9 @@ FAILURE_ROUTES: dict[str, dict[str, Any]] = {
     "untestable_as_specified": {"owner": "converter",
                                 "axes": ["event_study", "coarser_timeframe", "regime_child",
                                          "cross_asset_transplant"]},
+    # `acquire_named_input` and `proxy_series` were listed here with no organ reading them (audit
+    # of c72ecfc53); the named input itself rides in `missing_input`, which is what is read.
+    "needs_data": {"owner": "converter", "axes": ["cross_asset_transplant"]},
     "budget_deferred": {"owner": "judge", "axes": ["next_sweep_by_unlock_value"]},
     "save_fail": {"owner": "judge", "axes": ["rebuild_next_sweep"]},
     "unnamed": {"owner": "judge", "axes": ["name_the_reason"]},
@@ -2403,11 +2852,16 @@ def _missing_input(cls: str, row: dict[str, Any]) -> dict[str, Any] | None:
     if cls == "no_series":
         return {"kind": "series", "symbol": sym, "timeframe": tf, "clock": BAR_CLOCK,
                 "why": str(row.get("why") or "")[:200]}
+    if cls == "needs_data":
+        return {"kind": "input", "input": row.get("missing_input"), "symbol": sym,
+                "family": row.get("family"), "timeframe": tf,
+                "why": str(row.get("route") or "")[:300]}
     return None
 
 
 def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
-                             path: Path | None = None) -> int:
+                             path: Path | None = None,
+                             outstanding: dict[str, dict[str, Any]] | None = None) -> int:
     """Hand every parked cell the converter owns to the converter, with its class and axes.
 
     Written every pass, EMPTY included, so absence never reads as zero. `trial_family` is the
@@ -2416,7 +2870,11 @@ def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
     (`conversion_attempts.jsonl`); this writer never touches it.
     """
     rows = []
-    for cell, row in sorted(bank.items()):
+    # A NEEDS_DATA cell re-admitted by the clock while its input is still missing keeps its row
+    # (`NEEDS_DATA_OUTSTANDING`); the bank's own row wins when the cell is parked again.
+    merged = {**{c: {**r, "still_missing_after_readmit": True}
+                 for c, r in (outstanding or {}).items()}, **bank}
+    for cell, row in sorted(merged.items()):
         cls = failure_class(row.get("reason")) or "unnamed"
         route = FAILURE_ROUTES.get(cls, {})
         if route.get("owner") != "converter":
@@ -2426,7 +2884,10 @@ def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
                      "symbol": row.get("sym"), "timeframe": row.get("tf") or "H1",
                      "reason": row.get("reason"), "class": cls, "axes": route.get("axes"),
                      "missing_input": _missing_input(cls, row), "why": row.get("why"),
-                     "first_parked_utc": row.get("parked_at")})
+                     "first_parked_utc": row.get("parked_at"),
+                     **({"readmitted_at": row.get("readmitted_at"),
+                         "still_missing_after_readmit": True}
+                        if row.get("still_missing_after_readmit") else {})})
     target = path or CONVERSION_HANDOFF
     txn = _txn_current()
     try:
@@ -2484,6 +2945,7 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
 def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = None,
            ratchet: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
+    _fire_probe_reset()            # inputs are read afresh every pass, never across passes
     rows = docket if docket is not None else (_read(DOCKET) or [])
     rows = [r for r in rows if isinstance(r, dict)]
     if not rows:
@@ -2600,8 +3062,11 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
                                         at=at.isoformat(timespec="seconds"))
     _bank_now = unrunnable_bank()
     failures = judging_failures(bank=_bank_now)
+    _outstanding, _out_state = read_needs_data_outstanding()
     failures["handed_to_converter"] = write_conversion_handoff(
-        _bank_now, at=at.isoformat(timespec="seconds"))
+        _bank_now, at=at.isoformat(timespec="seconds"), outstanding=_outstanding)
+    # The handoff count covers rows that could be READ; this says whether that is all of them.
+    failures["needs_data_outstanding_state"] = _out_state
     bars_wanted: dict[str, int] = {}
     for _r in not_run.values():
         if _r.get("reason") == "data_missing":
@@ -2928,7 +3393,7 @@ def never_fire_pairs(bank: dict[str, dict[str, Any]],
                      fired: set[tuple[str, str]]) -> set[tuple[str, str]]:
     counts: dict[tuple[str, str], int] = {}
     for row in bank.values():
-        if row.get("reason") != "never_fires":
+        if row.get("reason") not in ("never_fires", "needs_data"):
             continue
         key = (str(row.get("family") or ""), str(row.get("sym") or ""))
         counts[key] = counts.get(key, 0) + 1
@@ -2937,6 +3402,51 @@ def never_fire_pairs(bank: dict[str, dict[str, Any]],
 
 def _row_sym(row: dict[str, Any]) -> str:
     return str(row.get("sym") or row.get("symbol") or "")
+
+
+def fireability_order(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """THE INTAKE TAG: rows whose family provably cannot fire on today's inputs rank last.
+
+    ORDER ONLY, the never_fire_ground rule applied before the first verdict instead of after the
+    twentieth. Every row stays in the docket, minted and visible, and is judged -- and counted --
+    by the sealed judge exactly as before whenever its turn comes; the published block names each
+    held row's missing input. A NEEDS_DATA cell's family returns [] on any bars
+    (`research/fire_inputs.py`), so its series is empty, adds no date to the lockbox union and
+    enters no program matrix: moving it changes no other cell's verdict
+    (`test_fire_prescreen_not_separable.py`). UNMEASURED probes are not tagged (fail open).
+    """
+    live: list[dict[str, Any]] = []
+    tail: list[dict[str, Any]] = []
+    by_family: dict[str, int] = {}
+    by_input: dict[str, int] = {}
+    probed = 0
+    no_bars = 0
+    for r in rows:
+        fam, sym = str(r.get("family") or ""), _row_sym(r)
+        res = _fire_probe(sym, fam)
+        if res.get("status") != "UNMEASURED" or res.get("why") != "family not probed":
+            probed += 1
+        if res.get("status") == "NEEDS_DATA" and _bar_bytes(sym, _tf_of(r)) <= 0:
+            # NO BARS EITHER (audit of c72ecfc53): 75 of 123 tagged cells had no bar file, so the
+            # judge's build fails BY NAME and that failure is what asks for the bars. Tailing
+            # such a row would defer the bar demand behind an input it does not yet bind on.
+            live.append(r)
+            no_bars += 1
+        elif res.get("status") == "NEEDS_DATA":
+            tail.append(r)
+            by_family[fam] = by_family.get(fam, 0) + 1
+            mi = str(res.get("missing_input") or "")
+            by_input[mi] = by_input.get(mi, 0) + 1
+        else:
+            live.append(r)
+    return live + tail, {
+        "rows": len(rows), "rows_probed": probed, "rows_needs_data_to_tail": len(tail),
+        "rows_needs_data_kept_no_bars": no_bars,
+        "by_family": dict(sorted(by_family.items(), key=lambda kv: -kv[1])),
+        "by_missing_input": dict(sorted(by_input.items(), key=lambda kv: -kv[1])[:40]),
+        "rule": ("a row whose family's own input guard returns no signal on the inputs the "
+                 "judge would hand it ranks after every other row; nothing dropped, nothing "
+                 "skipped, every row still judged and counted by the sealed judge in its turn")}
 
 
 def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
@@ -3004,6 +3514,7 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
                 "min_never_fires": SIBLING_NEVER_FIRES_MIN,
                 "rule": ("a (family, symbol) with this many parked never-firing cells and no "
                          "verdict with a named gate ranks after every other row; nothing dropped")}
+        ordered_j, doc["fireability"] = fireability_order(ordered_j)
         ordered = ordered_j + study
         was, now_ = _unseen_in_prefix(before, cap), _unseen_in_prefix(ordered_j, cap)
         # THE ORDERING EVIDENCE: what the judge's measured capacity head holds under the shipped

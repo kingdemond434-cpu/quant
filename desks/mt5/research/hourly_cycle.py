@@ -1168,8 +1168,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "committees", "committee_ensembles", "rejection_throughput"),
                     "validate"),
     # macro: the cross-asset / macro brain
-    **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
-                     "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
+    **dict.fromkeys(("fred_macro", "futures_lead_lag", "bar_clock_probe", "causal_graph",
+                     "residual_factors", "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
                      "counterfactual_world", "opportunity_forecast", "forecast_contract",
                      "exposure_decomposition", "event_response_atlas", "causal_lab",
                      "event_graph_lab",
@@ -3416,6 +3416,21 @@ def futures_lead_lag() -> dict:
     return _producer("futures_lead_lag", "research/futures_lead_lag.py")
 
 
+def bar_clock_probe() -> dict:
+    """THE BAR CLOCK, READ OFF THE TERMINAL, AND THE ONE WRITER OF BAR_CLOCK.json.
+
+    Without a measured clock `libs/research/bar_clock` drops every UTC-stamped event, correctly,
+    and `family_event_reaction` read NEEDS_DATA(bar_clock) with 199 events and 0 fire days
+    (judge dead-families v4, 2026-10-21). This reads broker server time (newest tick, confirmed
+    by the current H1 bar's open) against the box's UTC clock on every pass, appends it to
+    `data/bar_clock_probes.jsonl`, and publishes dated spans plus the futures cross-venue season
+    offsets no span contradicts. A host with no attached terminal captures nothing and publishes
+    from the ledger; with no evidence at all it publishes UNMEASURED, never a guess. AFTER
+    futures_lead_lag, whose report it reads.
+    """
+    return _producer("bar_clock_probe", "research/bar_clock_probe.py")
+
+
 def edges_macro_fusion_sweep() -> dict:
     """THE EDGE LIBRARY RE-RANKED AT THE COST THE ACCOUNT ACTUALLY CHARGES.
 
@@ -3818,6 +3833,7 @@ def main() -> None:
     sp = _costed("spread_provenance", spread_provenance)
     tf = _costed("tape_features", tape_features)
     fll = _costed("futures_lead_lag", futures_lead_lag)
+    bcp = _costed("bar_clock_probe", bar_clock_probe)
     tj = _costed("time_joins", time_joins)
     aj = _costed("allocator_join", allocator_join)
     # BEFORE pf_allocator, which conditions on the state this refreshes.
@@ -6006,7 +6022,8 @@ def main() -> None:
                     "alpha_periodic_table": pt, "queue_cycle": qcy,
                     "microstructure_census": mx, "entry_timing": ety,
                     "spread_provenance": sp, "tape_features": tf,
-                    "futures_lead_lag": fll, "time_joins": tj, "allocator_join": aj,
+                    "futures_lead_lag": fll, "bar_clock_probe": bcp, "time_joins": tj,
+                    "allocator_join": aj,
                     "fred_macro": fm,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
