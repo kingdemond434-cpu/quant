@@ -37,7 +37,7 @@ import os
 import subprocess
 import sys
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -233,6 +233,93 @@ def check_artifacts() -> None:
     print()
 
 
+#: BARS_STATE.json (research/bars_state.py, core leg `bars_state`, run just before this one).
+BARS_STATE = DESK / "data" / "BARS_STATE.json"
+#: Hours after which the newest bar / newest tick on the box is a finding while the market is open,
+#: and how old the report itself may be. The ages are the report's TRUE-UTC ages (converted through
+#: the server anchor), never a broker stamp subtracted from UTC.
+BAR_STALE_H = 2.0
+TICK_STALE_H = 2.0
+BARS_REPORT_STALE_H = 2.0
+#: The FX weekend: server Saturday and Sunday, plus the first server hour of Monday. Bars and ticks
+#: legitimately stop for ~48h; a Friday close read on Sunday is not a dead feed.
+WEEKEND_STALE_H = 52.0
+
+
+def _market_closed(now: datetime) -> bool | None:
+    """Is the FX market in its weekend at `now` (server clock = New York + 7h)? None if unknown."""
+    try:
+        from zoneinfo import ZoneInfo
+        if str(DESK) not in sys.path:
+            sys.path.insert(0, str(DESK))
+        from prop.e8_guard import SERVER_ANCHOR_TZ, SERVER_MIDNIGHT_ET_HOUR
+        server = (now.astimezone(ZoneInfo(SERVER_ANCHOR_TZ))
+                  + timedelta(hours=24 - int(SERVER_MIDNIGHT_ET_HOUR)))
+    except Exception:
+        return None
+    return server.weekday() >= 5 or (server.weekday() == 0 and server.hour < 1)
+
+
+def check_bars_state(path: Path | None = None, now: datetime | None = None) -> None:
+    """THE BOX'S BAR AND TICK FEED, read from BARS_STATE.json: newest bar age, newest tick age."""
+    _section("ARE THE BOX'S BARS AND TICKS FRESH  (data/BARS_STATE.json)")
+    p = path or (DESK / "data" / BARS_STATE.name)
+    now = now or datetime.now(UTC)
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except FileNotFoundError:
+        _unknown("data/BARS_STATE.json is absent -- leg bars_state has not run here; bar and "
+                 "tick freshness is UNMEASURED, not fine")
+        print()
+        return
+    except (OSError, ValueError) as exc:
+        _unknown(f"data/BARS_STATE.json unreadable ({exc})")
+        print()
+        return
+    summary = doc.get("summary") if isinstance(doc, dict) else None
+    if not isinstance(summary, dict):
+        _unknown("BARS_STATE.json carries no summary -- freshness is UNMEASURED")
+        print()
+        return
+    try:
+        gen = datetime.fromisoformat(str(doc.get("generated_at")))
+        rep_age = (now - gen).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        rep_age = None
+    if rep_age is None:
+        _unknown("BARS_STATE.json has no readable generated_at")
+    elif rep_age > BARS_REPORT_STALE_H:
+        _bad(f"BARS_STATE.json is {rep_age:.1f}h old (expected under {BARS_REPORT_STALE_H:.0f}h) "
+             f"-- leg bars_state has stopped producing")
+    closed = _market_closed(now)
+    allow = {True: WEEKEND_STALE_H, None: WEEKEND_STALE_H}
+    for what, key, mkey, verdict_key, limit in (
+            ("bar", "newest_bar_age_h", "newest_bar_file_mtime_age_h", "bars_verdict",
+             BAR_STALE_H),
+            ("tick", "newest_tick_age_h", "newest_tick_file_mtime_age_h", "tape_verdict",
+             TICK_STALE_H)):
+        lim = allow.get(closed, limit)
+        age = summary.get(key)
+        verdict = summary.get(verdict_key) or "UNMEASURED"
+        when = summary.get(f"newest_{what}_time_utc")
+        if not isinstance(age, (int, float)):
+            mt = summary.get(mkey)
+            extra = (f"; the youngest measured file was written {mt:.1f}h ago"
+                     if isinstance(mt, (int, float)) else "")
+            _unknown(f"newest {what} age is UNMEASURED ({verdict_key} {verdict}){extra}")
+            continue
+        line = (f"newest {what} {age:.1f}h old (UTC {when}; {verdict_key} {verdict}; limit "
+                f"{lim:.0f}h{', market weekend' if closed else ''}"
+                f"{', market state unknown' if closed is None else ''})")
+        if age > lim:
+            _bad(f"{line} -- the box's {what} feed is STALE")
+        elif verdict != "MEASURED":
+            _unknown(f"{line}, but only part of the {what} store measured")
+        else:
+            _ok(line)
+    print()
+
+
 def check_state_flow() -> None:
     """A FRESH meter that says STALLED is still a stall: read its verdict, not only its age."""
     _section("IS THE BOX'S STATE REACHING ORIGIN")
@@ -355,6 +442,7 @@ def main(argv: list[str] | None = None) -> int:
     check_tasks()
     check_processes()
     check_artifacts()
+    check_bars_state()
     check_state_flow()
     check_stall_watch_alerts()
     check_gateway_state()

@@ -5756,14 +5756,15 @@ def main() -> None:
     # box_state_age_hours and the NOT-ARMED line; DESK_HEALTH.json every PROBLEM/UNKNOWN finding),
     # so the push below delivers THIS hour's verdicts. The fence exits 1 on STALE/UNMEASURED and
     # the leg reads FAILED then -- loud, and it gates nothing: `publish_state` runs regardless.
+    # BAR AND TICK FRESHNESS, BEFORE THE PUSH THAT CARRIES IT (2026-10-21), and before
+    # `desk_health`, which reads BARS_STATE.json and flags a stale feed. Footer reads under a 20 s
+    # self-budget; fail-soft, it gates nothing and never touches the terminal or an account.
+    bst = _costed("bars_state", lambda: _producer(
+        "bars_state", "research/bars_state.py", "--budget-s", "20"))
     bsf = _costed("box_state_freshness", lambda: _producer(
         "box_state_freshness", "scripts/check_box_state_freshness.py"))
     dhl = _costed("desk_health", lambda: _producer(
         "desk_health", "scripts/check_desk_health.py", "--out"))
-    # BAR AND TICK FRESHNESS, BEFORE THE PUSH THAT CARRIES IT (2026-10-21). Footer reads under a
-    # 20 s self-budget; fail-soft, it gates nothing and never touches the terminal or an account.
-    bst = _costed("bars_state", lambda: _producer(
-        "bars_state", "research/bars_state.py", "--budget-s", "20"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
