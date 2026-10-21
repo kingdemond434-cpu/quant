@@ -610,3 +610,80 @@ def test_the_shard_block_declares_its_hint_report_only():
     assert {"pid", "sweep_started_utc", "phase", "phase_started_utc"} <= set(doc)
     assert doc["phase"] == doc["shards"]["phase"] + "_shards"
     assert doc["shards"]["stalled_hint_authority"] == "report_only"
+
+
+def test_a_wave_with_slow_reports_and_shard_events_shares_one_phase_doc(monkeypatch, tmp_path):
+    """The merge of judge plan phase v2.2 with shard progress v2: one sweep's phase document
+    carries the plan's phases (opened by PlanTracker through `_phase`), the shard wave's
+    start/ok/failed block, and the wave's `slow()` reports, all at once. The SLOW record names
+    the shard and the launcher's phase from the same document; the internal `_t0`/`_t` stamps
+    stay out of the published file while `_own_elapsed_s` still reads `_t0`; and the next phase
+    opens without the shard block."""
+    import json
+    import threading
+
+    from scripts.judge_plan_progress import PlanTracker
+
+    now = [1000.0]
+    monkeypatch.setattr(runner.time, "time", lambda: now[0])
+    runner._phase("plan")
+    plan = PlanTracker(runner._PHASE_DOC, runner.SWEEP_PHASE, on_phase=runner._phase,
+                       clock=lambda: now[0])
+    plan.step("lane_and_docket")
+    now[0] += 30.0
+    plan.line("PRE-WARM START: 12 cells")              # opens the sweep phase "prewarm"
+    now[0] += 50.0
+    plan.line("PRE-WARM: 12 warmed")                    # opens "plan_handoff"
+    now[0] += 20.0
+    runner._phase("build_shards")
+
+    class _Tracker:
+        def idle_s(self, _now: float) -> float:
+            return 4.0
+
+    failures_left = {2: 1}
+    lock = threading.Lock()
+
+    def fake_run(argv, **kwargs):
+        shard = int(argv[-2])
+        if shard in (0, 3):  # past the SLOW threshold, still progressing: amber, left running
+            kwargs["on_slow"](kwargs["slow_s"] + 5.0, _Tracker())
+        with lock:
+            if failures_left.get(shard, 0):
+                failures_left[shard] -= 1
+                raise RuntimeError("transient")
+
+    monkeypatch.setattr(runner, "run", fake_run)
+    runner.dispatch(tmp_path / "shards", 4, "build")
+
+    # the slow() reports: counted for the watchdog and recorded amber, named by shard and phase
+    assert runner._progress_snapshot()["slow"] == 2
+    stall = json.loads(runner.STALL.read_text("utf-8"))
+    assert stall["status"] == "SLOW"
+    slow_rows = [r for r in stall["history"] if r["kind"] == "SLOW"]
+    assert sorted(r["shard"]["k"] for r in slow_rows) == [0, 3]
+    assert all(r["reason"] == "shard_slow" and r["phase"] == "build_shards"
+               and r["shard"]["phase"] == "build"
+               and r["shard"]["receipt"].endswith("-attempt-0.log") for r in slow_rows)
+
+    # the start/ok/failed events, in the same published document as the plan's phases
+    doc = json.loads(runner.SWEEP_PHASE.read_text("utf-8"))
+    sh = doc["shards"]
+    assert (sh["phase"], sh["total"], sh["started"], sh["done_ok"], sh["failed"],
+            sh["retries"], sh["running"]) == ("build", 4, 5, 4, 1, 1, 0)
+    assert sh["stalled_hint"] is False and sh["stalled_hint_authority"] == "report_only"
+    assert doc["phase"] == "build_shards" == sh["phase"] + "_shards"
+    assert doc["phases"] == {"plan": 30.0, "prewarm": 50.0, "plan_handoff": 20.0}
+    assert doc["plan_step"] == "plan_handoff"
+    assert {"pid", "sweep_started_utc", "phase", "phase_started_utc"} <= set(doc)
+    assert not [k for k in doc if k.startswith("_")]   # `_t0` and `_t` are never published
+    assert runner._PHASE_DOC["_t0"] == 1000.0
+    assert runner._own_elapsed_s() == 100.0
+
+    # the next phase opens without the shard block, keeping the plan's measured phases
+    now[0] += 7.0
+    runner._phase("collect_and_cut")
+    doc = json.loads(runner.SWEEP_PHASE.read_text("utf-8"))
+    assert "shards" not in doc and doc["phases"]["build_shards"] == 7.0
+    assert doc["phases"]["prewarm"] == 50.0
+    assert not [k for k in doc if k.startswith("_")]
