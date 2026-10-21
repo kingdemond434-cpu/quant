@@ -59,7 +59,11 @@ def test_todays_gauntlet_cache_goes_last_and_the_shard_plan_never() -> None:
     assert by["gauntlet_cache"] == "3"
     judge = (Path(__file__).resolve().parents[1] / "scripts" / "external_gauntlet.py").read_text(
         "utf-8")
-    assert "_t.time() - _f.stat().st_mtime > 3 * 86400" in judge   # the rule this tier mirrors
+    # the rule this tier mirrors: > 3 days by mtime. Pinned by the RULE, not the loop variable:
+    # the plan-phase image (a02f095c) reads mtime from an `os.scandir` entry (`_e`) where the
+    # 46392548 image stats a globbed Path (`_f`); both are the same 3-day mtime prune.
+    assert re.search(r"_t\.time\(\) - _\w+\.stat\(\)\.st_mtime > 3 \* 86400", judge), \
+        "the judge's own cache prune is no longer > 3 days by mtime; re-derive this tier's age"
     assert tiers[-1] == ("gauntlet_cache_today", "0")
     assert "\\gauntlet_cache\\shards" in BLOCK
 
