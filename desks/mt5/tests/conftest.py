@@ -215,3 +215,20 @@ def _openrouter_key_info_offline(tmp_path_factory: pytest.TempPathFactory,
     monkeypatch.setattr(openrouter_guard, "KEY_INFO",
                         tmp_path_factory.mktemp("openrouter") / "openrouter_key.json")
     monkeypatch.setattr(openrouter_guard, "NETWORK", False)
+
+
+@pytest.fixture(scope="session")
+def _account_key_file(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """A throwaway HMAC key for the suite (fixed bytes, so keys are reproducible run to run)."""
+    path = tmp_path_factory.mktemp("account_key") / "account_key.hmac"
+    path.write_bytes(b"0123456789abcdef" * 4)
+    return path
+
+
+@pytest.fixture(autouse=True)
+def _account_key_in_tmp(_account_key_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """THE SUITE NEVER READS OR CREATES THE BOX'S ACCOUNT KEY (2026-10-20). `account_key(...,
+    create=True)` would otherwise write data/secrets/account_key.hmac into the checkout; every
+    test gets a throwaway key instead. A test about the absent key points the env elsewhere."""
+    from libs.ops import provenance as _acct_prov
+    monkeypatch.setenv(_acct_prov.KEY_ENV, str(_account_key_file))

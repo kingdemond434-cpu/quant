@@ -1160,9 +1160,12 @@ def _record_intent(**row) -> str | None:
         # which is the half of the shortfall model that prices WAITING. Both names are written
         # now (the old one unchanged, so nothing that reads it moves) and the two wall clocks the
         # round trip sits between are stamped, so send-to-fill is a fact and not a subtraction a
-        # reader has to guess at. `account` separates the live book from the prop book: until now
-        # an intent row named neither, and the two accounts' fills could only be told apart after
-        # the deal closed. RECORDING ONLY -- no branch below this changes an order.
+        # reader has to guess at. `account_key` separates the live book from the prop book: until
+        # now an intent row named neither, and the two accounts' fills could only be told apart
+        # after the deal closed. It is the hashed login@server (provenance.account_key), never the
+        # raw login -- this file is tracked and published (2026-10-20); rows written before then
+        # carry the raw `account` and are hashed on read. RECORDING ONLY -- no branch below this
+        # changes an order.
         with contextlib.suppress(Exception):
             _lat = row.get("latency_ms")
             if _lat is not None:
@@ -1174,10 +1177,14 @@ def _record_intent(**row) -> str | None:
                         "sent_at",
                         (_ack - timedelta(milliseconds=float(_lat))).isoformat())
         with contextlib.suppress(Exception):
-            if row.get("account") is None:
+            if row.get("account_key") is None:
                 _ai = mt5.account_info()
                 if _ai is not None:
-                    row.setdefault("account", int(getattr(_ai, "login", 0) or 0))
+                    from mt5desk.provenance import account_key as _akey
+                    # keyed HMAC (libs/ops/provenance.py); None = no box key: fail closed
+                    row.setdefault("account_key", _akey(int(getattr(_ai, "login", 0) or 0),
+                                                        str(getattr(_ai, "server", "") or ""),
+                                                        create=True))
                     row.setdefault("server", str(getattr(_ai, "server", "") or ""))
                     from mt5desk.provenance import account_kind as _akind
                     row.setdefault(
