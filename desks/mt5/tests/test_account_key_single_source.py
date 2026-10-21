@@ -75,7 +75,11 @@ def test_the_venue_readers(login: object, server: str) -> None:
     venue = SimpleNamespace(_raw_api=SimpleNamespace(acc_id=login, server=None,
                                                      _credentials={"server": server}),
                             _creds=None)
-    assert _REAL_TL(venue) == ref
+    # The E8 path is bracket guard v5.1's evidence rule EXACTLY: the TLAPI login as the SDK holds
+    # it, no local normalisation (TLAPI's ids are ints, so it is the reference there).
+    assert _REAL_TL(venue) == provenance.account_key(login, server.strip(), create=False)
+    if isinstance(login, int):
+        assert _REAL_TL(venue) == ref
 
 
 @pytest.mark.parametrize("server", SERVERS)
@@ -129,3 +133,47 @@ def test_an_unresolvable_or_non_joining_key_never_reads_as_an_empty_book(tmp_pat
     # This lane's own key not joining its declaration refuses too.
     oco.publish_lane("e8", e8, positions=[], orders=[], date=day)
     assert not oco.gate("e8", "buy_stop", key=fu, date=day).allowed
+
+
+def _evidence_key(api: object) -> str | None:
+    """bracket guard v5.1's `prop/e8_evidence.account_key_status`, restated (e8_evidence is not
+    on this base): login = TLAPI `account_id`, else `acc_id` (never `acc_num`); server =
+    `api._credentials["server"]` stripped (never `api.server`, never the venue Credentials,
+    never a default); key = provenance.account_key(login, server, create=False)."""
+    login = None
+    for attr in ("account_id", "acc_id"):
+        v = getattr(api, attr, None)
+        if v is None or isinstance(v, bool) or str(v).strip() in ("", "0"):
+            continue
+        login = v
+        break
+    creds = getattr(api, "_credentials", None)
+    server = creds.get("server") if isinstance(creds, dict) else None
+    if login is None or not isinstance(server, str) or not server.strip():
+        return None
+    return provenance.account_key(login, server.strip(), create=False)
+
+
+def test_the_e8_oco_key_equals_the_bracket_guard_evidence_key_for_one_tlapi_object() -> None:
+    """One fake TLAPI handle, decoys on every attribute the evidence lane refuses to read."""
+    api = SimpleNamespace(account_id=81234567, acc_id=99999999, acc_num=1,
+                          server="decoy-api-server",
+                          _credentials={"username": "u", "password": "p",
+                                        "server": " E8-Live-Test "})
+    venue = SimpleNamespace(_raw_api=api, _creds=SimpleNamespace(server="decoy-creds-server",
+                                                                 username="u"))
+    ev = _evidence_key(api)
+    assert ev is not None and xa.valid_key(ev)
+    assert _REAL_TL(venue) == ev == xa.tradelocker_account_key(venue)
+    assert ev == oco.oco_account_key(81234567, "E8-Live-Test")
+    # acc_id only (no account_id): still the evidence rule.
+    api2 = SimpleNamespace(acc_id=81234567, acc_num=2, _credentials={"server": "E8-Live-Test"})
+    assert _REAL_TL(SimpleNamespace(_raw_api=api2)) == _evidence_key(api2) == ev
+    # acc_num alone names nothing; no _credentials server fails closed (no default).
+    with pytest.raises(oco.IdentityUnavailable):
+        _REAL_TL(SimpleNamespace(_raw_api=SimpleNamespace(acc_num=1, _credentials={
+            "server": "E8-Live-Test"})))
+    with pytest.raises(oco.IdentityUnavailable, match="server"):
+        _REAL_TL(SimpleNamespace(_raw_api=SimpleNamespace(account_id=81234567,
+                                                          server="E8-Live-Test"),
+                                 _creds=SimpleNamespace(server="E8-Live-Test")))

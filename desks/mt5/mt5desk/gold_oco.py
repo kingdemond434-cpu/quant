@@ -214,12 +214,13 @@ def mt5_oco_key(mt5: Any) -> str:
 
 
 def tradelocker_oco_key(venue: Any) -> str:
-    """The keyed account key of the TradeLocker account under `venue`."""
+    """The keyed account key of the TradeLocker account under `venue`: EXACTLY bracket guard
+    v5.1's evidence key (`cross_account.tradelocker_account_key`: TLAPI account_id/acc_id and
+    `_credentials["server"]`, handed to `provenance.account_key` with no local normalisation)."""
     try:
-        login, server = _xa.tradelocker_identity(venue)
+        return _xa.tradelocker_account_key(venue)
     except Exception as exc:
         raise IdentityUnavailable(f"the TradeLocker venue cannot be named: {exc}"[:200]) from None
-    return oco_account_key(login, server)
 
 
 def gateway_lane() -> str | None:
