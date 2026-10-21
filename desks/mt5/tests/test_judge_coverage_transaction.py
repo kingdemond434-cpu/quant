@@ -35,6 +35,12 @@ NOW = datetime(2026, 10, 20, 20, 0, tzinfo=UTC)
 FAMS = ("alpha", "beta", "gamma")
 
 
+class _Frozen(datetime):
+    @classmethod
+    def now(cls, tz=None):  # type: ignore[override]
+        return NOW if tz is None else NOW.astimezone(tz)
+
+
 def _point(monkeypatch: pytest.MonkeyPatch, d: Path) -> dict[str, Path]:
     """Every path a pass reads or writes, under `d`."""
     paths = {"bank": d / "unrunnable_specs.json", "ratchet": d / "judge_backlog_ratchet.json",
@@ -54,6 +60,10 @@ def _point(monkeypatch: pytest.MonkeyPatch, d: Path) -> dict[str, Path]:
     monkeypatch.setattr(jc, "DOCKET", paths["docket"])
     monkeypatch.setattr(dk, "REPORT", paths["keff"])
     monkeypatch.setattr(research_priors, "STATE_DIR", paths["priors"])
+    # Freeze the two clocks a pass stamps into what it persists, so a re-run is comparable
+    # byte for byte with the run it must reproduce.
+    monkeypatch.setattr(research_priors, "datetime", _Frozen)
+    monkeypatch.setattr(dk, "datetime", _Frozen)
     return paths
 
 
@@ -95,8 +105,10 @@ def _state(p: dict[str, Path]) -> dict[str, object]:
             return {k: strip(v) for k, v in x.items() if k not in ("last_at", "updated_at")}
         return x
     out: dict[str, object] = {}
+    root = str(p["bank"].parent)                 # the report names its own paths; mask the dir
     for k in ("bank", "ratchet", "report", "handoff", "log", "timeout"):
-        out[k] = p[k].read_bytes() if p[k].exists() else None
+        out[k] = (p[k].read_text("utf-8").replace(json.dumps(root)[1:-1], "<D>")
+                  .replace(root, "<D>") if p[k].exists() else None)
     for name in ("beta.json", "dirichlet.json"):
         f = p["priors"] / name
         out[name] = strip(json.loads(f.read_text("utf-8"))) if f.exists() else None
