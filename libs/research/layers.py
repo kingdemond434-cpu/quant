@@ -610,6 +610,8 @@ LEG_LAYER: dict[str, str] = {
     # what it produces, the same rule as the rest of this table.
     "acquire_datasets": "information", "dukascopy_backfill": "information",
     "free_stack_hunt": "information", "free_stack_proposer": "prediction",
+    # the state-gated wrappers' cells are claims about where a base's entry pays: prediction
+    "state_gate_proposer": "prediction",
     "factory_throughput": "prediction",
     "source_experiment_census": "information", "world_dataset_hunt": "information",
     "world_macro_proposer": "prediction",
@@ -617,7 +619,8 @@ LEG_LAYER: dict[str, str] = {
     "excursions": "exit", "exit_accounts": "exit",
     "state_replay_audit": "execution", "why_not_report": "execution",
     "forward_calibration": "prediction",
-    "certificate_clock_law": "meta", "desk_self_heal": "meta", "mission_control": "meta",
+    "certificate_clock_law": "meta", "measurability": "meta", "desk_self_heal": "meta",
+    "mission_control": "meta",
     "tier5_acceptance": "meta",
 }
 
