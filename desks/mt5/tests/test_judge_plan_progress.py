@@ -279,8 +279,11 @@ def test_a_run_starts_no_cell_after_the_deadline(monkeypatch) -> None:
 
 
 # ------------------------------------------- next seal rotation: an unreadable chart (sealed)
-unreadable = pytest.mark.skipif(not hasattr(eg, "_unreadable_chart"),
-                                reason="judge_plan_phase next-rotation patch not applied")
+#: v2.1 (audit of 602887dc): a resource fault raises, and the label names WHICH input failed.
+unreadable = pytest.mark.skipif(
+    not hasattr(eg, "_unreadable_chart")
+    or "sym" not in __import__("inspect").signature(getattr(eg, "_unreadable_why", len)).parameters,
+    reason="judge_plan_phase next-rotation v2.1 patch not applied")
 
 
 def _body_corrupt_parquet(path: Path) -> Path:
@@ -303,9 +306,39 @@ def _body_corrupt_parquet(path: Path) -> Path:
     return path
 
 
+def _good_parquet(path: Path) -> Path:
+    import pandas as pd
+
+    idx = pd.date_range("2026-01-01", periods=500, freq="5min", tz="UTC")
+    pd.DataFrame({"close": range(500)}, index=idx).to_parquet(path)
+    return path
+
+
 def _specs():
     return [{"sym": "BAD", "family": "fam", "params": {"timeframe": "M5", "k": 1}},
             {"sym": "OK", "family": "fam", "params": {"timeframe": "M5", "k": 2}}]
+
+
+@pytest.fixture
+def uni(tmp_path, monkeypatch):
+    import pandas as pd
+
+    _body_corrupt_parquet(tmp_path / "BAD_M5.parquet")
+    _good_parquet(tmp_path / "OK_M5.parquet")
+    monkeypatch.setattr(eg, "UNI", tmp_path)
+    monkeypatch.setattr(eg, "_LAST_DAY", {})
+    monkeypatch.setattr(eg, "_FRAME_CACHE", eg.OrderedDict())
+    monkeypatch.setattr(eg, "_cell_last_day", lambda s, tf="H1": pd.Timestamp("2026-10-20"))
+    monkeypatch.setattr(eg, "cache_load", lambda key: None)
+    monkeypatch.setattr(eg, "_cache_key", lambda *a, **k: "key")   # no replay identity read
+    monkeypatch.setattr(eg, "_rss_mb", lambda: 0.0)
+    return tmp_path
+
+
+def _build(specs):
+    blocked: list = []
+    out = eg._build_specs(specs, {}, __import__("time").time(), {}, {}, set(), blocked)
+    return out, blocked
 
 
 @unreadable
@@ -323,25 +356,41 @@ def test_a_body_corrupt_chart_reads_present_and_its_read_is_named_unreadable(
 
 
 @unreadable
-def test_one_unreadable_chart_blocks_its_own_cell_and_the_build_goes_on(monkeypatch) -> None:
-    import pandas as pd
+def test_a_resource_fault_is_never_filed_as_data() -> None:
+    import pyarrow as pa
 
+    assert not eg._unreadable_chart(MemoryError())
+    assert not eg._unreadable_chart(pa.ArrowMemoryError("oom"))
+    assert not eg._unreadable_chart(PermissionError(13, "locked", "X_M5.parquet"))
+
+
+@unreadable
+@pytest.mark.parametrize("fault", [MemoryError("oom"), PermissionError(13, "locked")])
+def test_an_oom_or_a_locked_file_raises_out_of_the_build(uni, monkeypatch, fault) -> None:
+    def build(sym, family, params, meta):
+        raise fault
+
+    monkeypatch.setattr(eg, "build_cell", build)
+    with pytest.raises(type(fault)):
+        _build(_specs())
+    # the pool's worker turns any raise into ERROR -- never a terminal verdict, so the spec stays
+    # in the docket and the shard builds it again; what it must NOT be is a BUILD_FAILED park
+    assert eg._warm_one(_specs()[0], {})["status"] == "ERROR"
+
+
+@unreadable
+def test_one_unreadable_chart_blocks_its_own_cell_and_the_build_goes_on(uni, monkeypatch) -> None:
     def build(sym, family, params, meta):
         if sym == "BAD":
-            raise OSError("Couldn't deserialize thrift: Deserializing page header failed.")
+            return eg._bars_for(sym, "M5")             # the real read: OSError from thrift
         return None                                   # an ordinary build failure, named after
 
     monkeypatch.setattr(eg, "build_cell", build)
-    monkeypatch.setattr(eg, "_cell_last_day", lambda s, tf="H1": pd.Timestamp("2026-10-20"))
-    monkeypatch.setattr(eg, "cache_load", lambda key: None)
-    monkeypatch.setattr(eg, "_cache_key", lambda *a, **k: "key")   # no replay identity read
-    monkeypatch.setattr(eg, "_rss_mb", lambda: 0.0)
-    blocked: list = []
-    out = eg._build_specs(_specs(), {}, __import__("time").time(), {}, {}, set(), blocked)
+    out, blocked = _build(_specs())
     assert [b["sym"] for b in blocked] == ["BAD", "OK"], "the shard went on past the bad file"
     assert blocked[0]["downstream_status"] == "NOT_RUN_BUILD_FAILED"
-    assert blocked[0]["why"].startswith("UNREADABLE_CHART: the M5 parquet")
-    assert not blocked[1]["why"].startswith("UNREADABLE_CHART")
+    assert blocked[0]["why"].startswith("UNREADABLE_CHART: the M5 parquet BAD_M5.parquet")
+    assert not blocked[1]["why"].startswith("UNREADABLE")
     assert out["cell_objs"] == [] and out["built_fresh"] == 0
 
     def defect(sym, family, params, meta):
@@ -349,16 +398,24 @@ def test_one_unreadable_chart_blocks_its_own_cell_and_the_build_goes_on(monkeypa
 
     monkeypatch.setattr(eg, "build_cell", defect)
     with pytest.raises(KeyError):
-        eg._build_specs(_specs(), {}, __import__("time").time(), {}, {}, set(), [])
+        _build(_specs())
 
 
 @unreadable
-def test_the_pool_gives_an_unreadable_chart_the_loops_own_verdict(monkeypatch) -> None:
-    import pandas as pd
+def test_another_inputs_failure_is_never_labelled_as_this_charts_body(uni, monkeypatch) -> None:
+    """OK's own chart reads whole: an OSError from inside its build was some OTHER input."""
+    monkeypatch.setattr(eg, "build_cell",
+                        lambda *a: (_ for _ in ()).throw(OSError("peer chart refused")))
+    _out, blocked = _build(_specs()[1:])
+    assert blocked[0]["why"].startswith("UNREADABLE_INPUT: the M5 chart reads whole")
+    missing = FileNotFoundError(2, "No such file", "data/cot/EUR.csv")
+    monkeypatch.setattr(eg, "build_cell", lambda *a: (_ for _ in ()).throw(missing))
+    _out, blocked = _build(_specs()[1:])
+    assert blocked[0]["why"].startswith("INPUT_MISSING: data/cot/EUR.csv")
 
-    monkeypatch.setattr(eg, "_cell_last_day", lambda s, tf="H1": pd.Timestamp("2026-10-20"))
-    monkeypatch.setattr(eg, "cache_load", lambda key: None)
-    monkeypatch.setattr(eg, "_cache_key", lambda *a, **k: "key")   # no replay identity read
+
+@unreadable
+def test_the_pool_gives_an_unreadable_chart_the_loops_own_verdict(uni, monkeypatch) -> None:
     monkeypatch.setattr(eg, "build_cell", lambda *a: (_ for _ in ()).throw(OSError("torn")))
     got = eg._warm_one(_specs()[0], {})
     assert got["status"] == "NOT_RUN_BUILD_FAILED"
