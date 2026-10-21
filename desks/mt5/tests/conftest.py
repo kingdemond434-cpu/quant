@@ -157,6 +157,25 @@ def measured_dsr_inputs_module(tmp_path_factory: pytest.TempPathFactory) -> Iter
 
 
 @pytest.fixture(autouse=True)
+def _e8_gold_slip_writes_to_tmp(tmp_path_factory, monkeypatch):
+    """THE E8 GOLD SLIP FILE NEVER LANDS IN THE REPO FROM A TEST. `e8_gold.run` re-measures and
+    writes data/E8_GOLD_SLIP.json (and appends data/e8_gold_stop_exits.jsonl) on every pass, so
+    any test that drives the lane would otherwise rewrite the tracked file. A test that sets its
+    own paths afterwards still wins."""
+    import sys
+    mods = [sys.modules.get(k) for k in ("prop.e8_gold", "desks.mt5.prop.e8_gold")]
+    live = [g for g in mods if g is not None and hasattr(g, "BRACKET_SLIP_FILE")]
+    if live:
+        d = tmp_path_factory.mktemp("e8_gold_slip")
+        for g in live:
+            monkeypatch.setattr(g, "BRACKET_SLIP_FILE", d / "E8_GOLD_SLIP.json")
+            monkeypatch.setattr(g, "STOP_EXITS", d / "e8_gold_stop_exits.jsonl")
+            if hasattr(g, "FX_STOP_EXITS"):
+                monkeypatch.setattr(g, "FX_STOP_EXITS", d / "e8_fx_stop_exits.jsonl")
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _order_door_writes_to_tmp(tmp_path_factory, monkeypatch):
     """THE ORDER DOOR'S LEDGER NEVER LANDS IN THE REPO FROM A TEST. `mt5desk.order_door` appends
     one row per money action to `desks/mt5/data/order_door_ledger.jsonl` -- the box's real
@@ -265,6 +284,21 @@ def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch, _account_key_in_t
     from mt5desk import fusion_rails
     monkeypatch.setattr(fusion_rails, "LEDGER", d / "fusion_book_rails.jsonl")
     yield d
+
+
+@pytest.fixture(autouse=True)
+def _e8_evidence_writes_to_tmp(tmp_path_factory, monkeypatch):
+    """THE E8 GOLD LANE'S HEARTBEAT AND DECISION LEDGER NEVER LAND IN THE REPO FROM A TEST.
+    `prop/e8_evidence.py` writes both under `desks/mt5/data/` -- the box's placement evidence,
+    read by scripts/check_placement_interlock.py -- and every test that drives `e8_gold.run`."""
+    where = tmp_path_factory.mktemp("e8_evidence")
+    monkeypatch.setenv("E8_EVIDENCE_DIR", str(where))
+    # ...and the account pseudonym's key is never created under the repo's data/secrets/.
+    monkeypatch.setenv("E8_EVIDENCE_KEY_FILE", str(where / "e8_evidence.key"))
+    monkeypatch.delenv("E8_EVIDENCE_KEY", raising=False)
+    # ...and an unstamped-account page never lands in the repo's data/alert_ledger.json.
+    monkeypatch.setenv("E8_ALERT_LEDGER", str(where / "alert_ledger.json"))
+    yield
 
 
 @pytest.fixture
