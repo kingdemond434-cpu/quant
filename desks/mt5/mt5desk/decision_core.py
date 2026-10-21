@@ -2618,6 +2618,7 @@ E8_GOLD_SEND_GRACE_MIN = 10.0
 #: missed_growth (growth governance: every cap carries its ledger line). It is also the LAST
 #: CERTIFIED e8 value, which void, absent and zero windows are billed at. RAISED ONLY BY A
 #: PRINCIPAL EDIT of this line: the planned 0.007 under the OCO needs that edit.
+#: Derived from that solver's two-leg max-pass result (computed 2026-10-20), not chosen here.
 E8_CERT_CEILING = 0.006
 
 
