@@ -1,0 +1,1750 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "JP 225Cash Index Cash (.JP225Cash) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/.JP225Cash/",
+  "published": "2026-10-21T04:12:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "82400874b275cc3f4db2",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US 500 Index Cash (.US500Cash) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/.US500Cash/",
+  "published": "2026-10-21T04:12:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "24e7a9959476e3d5351e",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US TECH Index Cash (.USTECHCash) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/.USTECHCash/",
+  "published": "2026-10-21T04:13:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d246a28d6665e15e7341",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US 30 Index Cash (.US30Cash) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/.US30Cash/",
+  "published": "2026-10-21T04:13:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ce79556307aae73646ba",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Spot Brent Crude Oil (BRENT) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/BRENT/",
+  "published": "2026-10-21T04:13:05+00:00",
+  "symbols": [
+   "XTIUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b3553cdb6751e60fcebc",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "80 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "brent crude"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "204ea0441382"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Spot WTI Light Crude Oil (WTI) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/WTI/",
+  "published": "2026-10-21T04:13:06+00:00",
+  "symbols": [
+   "XTIUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "abb6b187cfc79cb05db7",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "80 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "wti"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "204ea0441382"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "BitCoin vs US Dollar (BTCUSD) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/BTCUSD/",
+  "published": "2026-10-21T04:13:08+00:00",
+  "symbols": [
+   "BTCUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f875161eb012bdcaf355",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e27\u0e34\u0e18\u0e35\u0e40\u0e1b\u0e34\u0e14\u0e1a\u0e31\u0e0d\u0e0a\u0e35\u0e40\u0e17\u0e23\u0e14 - \u0e04\u0e39\u0e48\u0e21\u0e37\u0e2d\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e1c\u0e39\u0e49\u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e49\u0e19 - RoboForex",
+  "url": "https://th.roboforex.com/beginners/start/beginner/",
+  "published": "2026-10-21T04:13:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "76246bf5a4182a9f952e",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e1e\u0e37\u0e49\u0e19\u0e17\u0e35\u0e48\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01 - \u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e41\u0e25\u0e30\u0e01\u0e32\u0e23\u0e15\u0e31\u0e49\u0e07\u0e04\u0e48\u0e32\u0e1a\u0e31\u0e0d\u0e0a\u0e35 - RoboForex",
+  "url": "https://th.roboforex.com/beginners/start/account-management/",
+  "published": "2026-10-21T04:13:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "aca293e7a90d39c65723",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e27\u0e34\u0e18\u0e35\u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e49\u0e19\u0e01\u0e32\u0e23\u0e40\u0e17\u0e23\u0e14 - \u0e04\u0e39\u0e48\u0e21\u0e37\u0e2d\u0e2a\u0e39\u0e48\u0e15\u0e25\u0e32\u0e14\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19 - RoboForex",
+  "url": "https://th.roboforex.com/beginners/start/how-to-trade-forex/",
+  "published": "2026-10-21T04:13:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5b104556c2ab6c0339ba",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e01\u0e23\u0e32\u0e1f\u0e01\u0e32\u0e23\u0e40\u0e17\u0e23\u0e14\u0e17\u0e32\u0e07\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19 - \u0e23\u0e32\u0e04\u0e32\u0e2a\u0e14\u0e1f\u0e23\u0e35\u0e17\u0e31\u0e48\u0e27\u0e17\u0e31\u0e49\u0e07\u0e15\u0e25\u0e32\u0e14 - RoboForex",
+  "url": "https://th.roboforex.com/beginners/info/charts/",
+  "published": "2026-10-21T04:13:15+00:00",
+  "symbols": [
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ff57bc252a2e2207894c",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "MetaTrader 4 \u0e41\u0e25\u0e30 5 \u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a iOS - \u0e14\u0e32\u0e27\u0e19\u0e4c\u0e42\u0e2b\u0e25\u0e14\u0e41\u0e25\u0e30\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/terminals/iphonetrader/",
+  "published": "2026-10-21T04:13:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7ead319b3ad178f7c540",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "MetaTrader 4 \u0e41\u0e25\u0e30 5 \u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a Android - \u0e14\u0e32\u0e27\u0e19\u0e4c\u0e42\u0e2b\u0e25\u0e14\u0e41\u0e25\u0e30\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/terminals/androidtrader/",
+  "published": "2026-10-21T04:13:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "818401bc272dc074ae97",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Expert Advisors - \u0e42\u0e23\u0e1a\u0e2d\u0e17\u0e40\u0e17\u0e23\u0e14\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a MT4 \u0e41\u0e25\u0e30 MT5 - RoboForex",
+  "url": "https://th.roboforex.com/beginners/info/expert-advisors/",
+  "published": "2026-10-21T04:13:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2facc7e815661a7c4fbb",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.fi.html",
+  "published": "2026-10-21T04:13:22+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "fi",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fi.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bc25cc7fa1998f0deca8",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "tase"
+     ],
+     "transfer_only": [
+      "tase->indices (TASE)"
+     ],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.fr.html",
+  "published": "2026-10-21T04:13:24+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f0fc386e436b2a402652",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.ga.html",
+  "published": "2026-10-21T04:13:26+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "ga",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ga.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5c14f421b0647e20a3c5",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.hr.html",
+  "published": "2026-10-21T04:13:28+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "hr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "11c0c9a302387fdcc53b",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.hu.html",
+  "published": "2026-10-21T04:13:30+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "hu",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hu.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cbb1cfda7b1ace3c539c",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.it.html",
+  "published": "2026-10-21T04:13:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "it",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.it.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "423242007b203cdafe06",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Two per cent inflation target",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/pricestab/html/index.lt.html",
+  "published": "2026-10-21T04:13:34+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "lt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.lt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7f3ad9d24eeaeb51dca1",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Cuenta de saldo remunerada Trading 212: 4,2% EUR en (QMMF) y m\u00e1s",
+  "url": "https://www.rankia.com/blog/mejores-brokers/6381481-trading-212-cuenta-remunerada",
+  "published": "2026-10-21T04:13:36+00:00",
+  "symbols": [
+   "NAS100",
+   "UK100",
+   "E35",
+   "EURGBP",
+   "USDPLN",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9fa44ac6b79936b3806b",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "Eso s\u00ed, conviene saber de entrada que ese 4,2% en euros es una tasa promocional de bienvenida limitada a los 4 primeros meses desde la apertura de la cuenta.",
+    "lang": "es",
+    "quantities": [
+     "euro",
+     "tasa",
+     "apertura"
+    ],
+    "direction": [
+     "entrada"
+    ],
+    "horizon": [
+     "mes",
+     "apertura"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "UK100",
+      "E35",
+      "EURGBP",
+      "USDPLN",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "ftse",
+      "ibex",
+      "eur/gbp",
+      "zloty",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5b1c9dc4f700"
+   },
+   {
+    "claim": "Si el inter\u00e9s diario cae por debajo de 0,01 euros, se acumular\u00e1 hasta alcanzar 0,01 o m\u00e1s, momento en el que se pagar\u00e1.",
+    "lang": "es",
+    "quantities": [
+     "euro"
+    ],
+    "direction": [
+     "cae"
+    ],
+    "horizon": [
+     "diario"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "UK100",
+      "E35",
+      "EURGBP",
+      "USDPLN",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "ftse",
+      "ibex",
+      "eur/gbp",
+      "zloty",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c097598b5b4d"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Trading 212 opiniones 2026: comisiones y plataforma",
+  "url": "https://www.rankia.com/blog/mejores-brokers/5314401-review-trading-212-broker-opiniones-comisiones-plataformas-mas",
+  "published": "2026-10-21T04:13:38+00:00",
+  "symbols": [
+   "NAS100",
+   "UK100",
+   "E35",
+   "EURGBP",
+   "USDPLN",
+   "USDHUF",
+   "USDCZK",
+   "USDDKK",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "585484d65a81bbe23ed7",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "com Web y chatbot \ud83d\udde3\ufe0f Atenci\u00f3n en castellano S\u00ed, por correo o chatbot \ud83c\udf1f Producto destacado Cuenta remunerada al 4,2% (en euros) sobre el saldo no invertido* Saber m\u00e1s *Promoci\u00f3n aplicada durante 4 meses desde la apertura de cuenta (despu\u00e9s 2,5%) \u00bfCu\u00e1les son las ventajas y las desventajas de invertir con Trading 212?",
+    "lang": "es",
+    "quantities": [
+     "euro",
+     "apertura"
+    ],
+    "direction": [
+     "venta"
+    ],
+    "horizon": [
+     "mes",
+     "apertura"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "UK100",
+      "E35",
+      "EURGBP",
+      "USDPLN",
+      "USDHUF",
+      "USDCZK",
+      "USDDKK",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "ftse",
+      "ibex",
+      "eur/gbp",
+      "pln",
+      "huf",
+      "czk",
+      "dkk",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDSGD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b64d4313be0f"
+   },
+   {
+    "claim": "A cambio, el prestamista, obtiene una serie de intereses diarios (compartidos con Trading 212), sin renunciar por ello a su derecho de recibir dividendos, o poder vender las acciones prestadas cuando considere.",
+    "lang": "es",
+    "quantities": [
+     "cambio"
+    ],
+    "direction": [
+     "vend"
+    ],
+    "horizon": [
+     "diario"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "UK100",
+      "E35",
+      "EURGBP",
+      "USDPLN",
+      "USDHUF",
+      "USDCZK",
+      "USDDKK",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "ftse",
+      "ibex",
+      "eur/gbp",
+      "pln",
+      "huf",
+      "czk",
+      "dkk",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDSGD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c43bdb4cbd53"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Mejores apps para invertir en bolsa 2026: ranking",
+  "url": "https://www.rankia.com/blog/mejores-brokers/5380595-mejores-app-para-hacer-trading",
+  "published": "2026-10-21T04:13:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "267d4a532a5234ec4479",
+  "host": "www.rankia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Mejores plataformas de trading 2026 | Ranking y precios",
+  "url": "https://www.rankia.com/blog/mejores-brokers/4590786-mejores-plataformas-trading",
+  "published": "2026-10-21T04:13:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRAD\u00cdA"
+  ],
+  "patterns": [
+   "auction",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "49ea367c1a9742fa29ae",
+  "host": "www.rankia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Mejores apps para invertir en bolsa 2026: ranking",
+  "url": "https://www.rankia.com/blog/sistemas-de-trading/5380595-mejores-app-para-hacer-trading",
+  "published": "2026-10-21T04:13:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0394e23ec3f07c792afe",
+  "host": "www.rankia.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "1\u5206\u949fK\u7ebf\uff08\u9644\u76d8\u53e3\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_bar1m_derived",
+  "published": "2026-10-21T04:13:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0f4c7ca31b27a0b1cd5b",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6da8\u8dcc\u505c\u4ef7\u683c\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_limit_price",
+  "published": "2026-10-21T04:13:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e6922421ee8866c327e5",
+  "host": "bigquant.com",
+  "claims": [
+   {
+    "claim": "\u6b64\u5916\uff0c\u6da8\u8dcc\u505c\u4ef7\u683c\u4e5f\u662f\u6784\u5efa\u548c\u9a8c\u8bc1\u8bb8\u591a\u4ea4\u6613\u7b56\u7565\u7684\u5173\u952e\u5143\u7d20\uff0c\u6bd4\u5982\u53cd\u5f39\u7b56\u7565\u3001\u5c3e\u76d8\u6da8\u505c\u6253\u5f00\u7b56\u7565\u7b49\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u53cd\u5f39"
+    ],
+    "direction": [
+     "\u53cd\u5f39",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u5c3e\u76d8"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\u8dcc\u505c"
+     ],
+     "transfer_only": [
+      "\u8dcc\u505c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "eb3ea235049b"
+   },
+   {
+    "claim": "A\uff1a\u5728\u4e2d\u56fdA\u80a1\u5e02\u573a\u4e2d\uff0c\u6bcf\u53ea\u80a1\u7968\u7684\u6da8\u8dcc\u505c\u4ef7\u683c\u662f\u7531\u524d\u4e00\u4ea4\u6613\u65e5\u7684\u6536\u76d8\u4ef7\u548c\u5f53\u65e5\u7684\u590d\u6743\u56e0\u5b50\u51b3\u5b9a\u7684\uff0c\u6da8\u505c\u4ef7\u4e3a\u524d\u4e00\u4ea4\u6613\u65e5\u6536\u76d8\u4ef7\u4e58\u4ee5\u590d\u6743\u56e0\u5b50\u4e58\u4ee51.",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5f53\u65e5",
+     "\u4ea4\u6613\u65e5"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "a\u80a1",
+      "\u8dcc\u505c"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)",
+      "\u8dcc\u505c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "bf8f0254f111"
+   },
+   {
+    "claim": "1\uff0c\u8dcc\u505c\u4ef7\u4e3a\u524d\u4e00\u4ea4\u6613\u65e5\u6536\u76d8\u4ef7\u4e58\u4ee5\u590d\u6743\u56e0\u5b50\u4e58\u4ee50.",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u4ea4\u6613\u65e5"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\u8dcc\u505c"
+     ],
+     "transfer_only": [
+      "\u8dcc\u505c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "ddeed7ead105"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u52a0\u6743\u5e73\u5747\u4ef7\u683c\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_wap",
+  "published": "2026-10-21T04:13:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "203dbc23b5fb9c887e8d",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u9f99\u864e\u699c\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_dragon_list",
+  "published": "2026-10-21T04:13:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9424e1467ca129c9d43d",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5357\u5317\u5411\u5206\u949f\u8d44\u91d1\u6d41\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_moneyflow_ns",
+  "published": "2026-10-21T04:13:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "75af2e7a6aa328117ae6",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u57fa\u672c\u4fe1\u606f\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_basic_info",
+  "published": "2026-10-21T04:14:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "870393f2ee4bae85510f",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u672c\u6570\u636e-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_shares",
+  "published": "2026-10-21T04:14:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a53e70f92e192c2d6c13",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ver o c\u00f3digo fonte de \u00abAlgoritmo\u00bb - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/w/index.php?title=Algoritmo&action=edit&section=4",
+  "published": "2026-10-21T04:14:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "efd23978103e0986eb41",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Crear unha conta - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/w/index.php?title=Especial:Crear_unha_conta&returnto=Categor%C3%ADa%3AAlgoritmos",
+  "published": "2026-10-21T04:14:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9710f9be651062f4e354",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Acceder ao sistema - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/w/index.php?title=Especial:Iniciar_sesi%C3%B3n&returnto=Categor%C3%ADa%3AAlgoritmos",
+  "published": "2026-10-21T04:14:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "gl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "beba2047c046ff1f3073",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Categor\u00eda:Algoritmos - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/w/index.php?title=Categor%C3%ADa:Algoritmos&veaction=edit",
+  "published": "2026-10-21T04:14:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dff1bb37256d8acbbd3f",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Ver o c\u00f3digo fonte de \u00abCategor\u00eda:Algoritmos\u00bb - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/w/index.php?title=Categor%C3%ADa:Algoritmos&action=edit",
+  "published": "2026-10-21T04:14:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "69ef9a41749ee89c1722",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Categor\u00eda:Algoritmos: Historial de revisi\u00f3ns - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/w/index.php?title=Categor%C3%ADa:Algoritmos&action=history",
+  "published": "2026-10-21T04:14:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "gl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "da02e5f49254823f129d",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "MetaTrader 5\u53d6\u5f15\u30d7\u30e9\u30c3\u30c8\u30d5\u30a9\u30fc\u30e0\u306e\u7121\u511f\u30c0\u30a6\u30f3\u30ed\u30fc\u30c9",
+  "url": "https://www.metatrader5.com/ja/download",
+  "published": "2026-10-21T04:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "endpoints": [
+   "https://www.metatrader5.com/llms.txt",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader5.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader5.com/ja/download",
+   "https://www.metatrader5.com/ja/download.md",
+   "https://www.metatrader5.com/en/download",
+   "https://www.metatrader5.com/es/download",
+   "https://www.metatrader5.com/fr/download",
+   "https://www.metatrader5.com/pt/download",
+   "https://www.metatrader5.com/ru/download",
+   "https://www.metatrader5.com/zh/download",
+   "https://www.metatrader5.com/de/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader5.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=ja&amp;utm_source=www.metatrader5.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=ja&amp;utm_source=www.metatrader5.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=ja&amp;utm_source=www.metatrader5.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader5.com&amp;utm_campaign=install.metaquotes"
+  ],
+  "n_endpoints": 16,
+  "vault_sha": "9d9dea5d381a13d5b1bf",
+  "host": "www.metatrader5.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Baixar a plataforma de negocia\u00e7\u00e3o MetaTrader 5 de gra\u00e7a",
+  "url": "https://www.metatrader5.com/pt/download",
+  "published": "2026-10-21T04:14:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pt",
+  "endpoints": [
+   "https://www.metatrader5.com/llms.txt",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader5.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader5.com/pt/download",
+   "https://www.metatrader5.com/pt/download.md",
+   "https://www.metatrader5.com/en/download",
+   "https://www.metatrader5.com/es/download",
+   "https://www.metatrader5.com/fr/download",
+   "https://www.metatrader5.com/ja/download",
+   "https://www.metatrader5.com/ru/download",
+   "https://www.metatrader5.com/zh/download",
+   "https://www.metatrader5.com/de/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader5.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=pt&amp;utm_source=www.metatrader5.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=pt&amp;utm_source=www.metatrader5.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=pt&amp;utm_source=www.metatrader5.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader5.com&amp;utm_campaign=install.metaquotes"
+  ],
+  "n_endpoints": 16,
+  "vault_sha": "464a80fec144bacfadb7",
+  "host": "www.metatrader5.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "ASX Futures End of Day Data - Futures Total Traded at close of trade date 01/10/24",
+  "url": "https://www.asx.com.au/data/markets/futures/reports/EODWebMarketSummary241001SFT.htm",
+  "published": "2026-10-21T04:14:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a9492a5feaf714528dc4",
+  "host": "www.asx.com.au",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Networking Fundamentals Every Developer Should Understand | Quantt",
+  "url": "https://www.quantt.co.uk/resources/networking-fundamentals-for-developers",
+  "published": "2026-10-21T04:14:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "32b21f9f4fbe4566398d",
+  "host": "www.quantt.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Statistics for Quantitative Trading | Quantt",
+  "url": "https://www.quantt.co.uk/resources/statistics-for-quantitative-trading",
+  "published": "2026-10-21T04:14:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "243b9a38dc9094e89791",
+  "host": "www.quantt.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Quant Developer Interview Questions: 25 Real Examples 2026 | Quantt",
+  "url": "https://www.quantt.co.uk/resources/quant-developer-interview-questions",
+  "published": "2026-10-21T04:14:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "30M"
+  ],
+  "patterns": [
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a13d760abe370a38b2b2",
+  "host": "www.quantt.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Leveraged Gold-Currency Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/gld-usd/leveraged-gold-currency-strategy",
+  "published": "2026-10-21T04:14:29+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "correlation",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6cfb6154096d2213a2a0",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Crypto & Leveraged Top 2 Strategy | Logical Invest",
+  "url": "http://www.logical-invest.com/app/strategy/clt2/crypto-leveraged-top-2-strategy",
+  "published": "2026-10-21T04:14:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "http://www.logical-invest.com/app/manifest.json",
+   "http://www.logical-invest.com/wp-content/Amcharts/amcharts/plugins/export/export.css"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e7173bddfc9d3400b898",
+  "host": "www.logical-invest.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Candle Pavio | QuantBrasil",
+  "url": "https://quantbrasil.com.br/candle-pavio/",
+  "published": "2026-10-21T04:14:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "W1"
+  ],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "48a3a45517f17d40a59c",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Turnaround | QuantBrasil",
+  "url": "https://quantbrasil.com.br/turnaround/",
+  "published": "2026-10-21T04:14:33+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "96d3bffd2bf9b75c6aaf",
+  "host": "quantbrasil.com.br",
+  "claims": [
+   {
+    "claim": "A entrada d\u00e1-se no fechamento, ap\u00f3s n dias consecutivos de queda.",
+    "lang": "pt",
+    "quantities": [
+     "fechamento"
+    ],
+    "direction": [
+     "entrada",
+     "queda"
+    ],
+    "horizon": [
+     "fechamento",
+     "dia"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p",
+      "ibov"
+     ],
+     "transfer_only": [
+      "ibov->indices (B3)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ad137a46afda"
+   }
+  ],
+  "n_claims": 1
+ }
+]
