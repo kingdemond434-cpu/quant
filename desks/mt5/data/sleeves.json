@@ -51568,7 +51568,9 @@
         "timeframe": "M5",
         "ttl_bars": 96
       },
-      "exec": "family_market"
+      "exec": "family_market",
+      "admit_streak": 0,
+      "admit_scan": "2026-10-21T17:48:17.682129+00:00"
     }
   ]
 }
