@@ -815,6 +815,22 @@ def _backup_state() -> str:
         return f"FAILED ({type(exc).__name__})"
 
 
+def _deliver_account_key_alerts() -> str:
+    """The hourly second deliverer of the account-key alert outbox (v5f; MT5-BoxHeartbeat is
+    the 5-minute one). Real tree only, like `_backup_state`. NEVER RAISES."""
+    if Path(__file__).resolve().parent.parent != ROOT:
+        return "SKIPPED (ROOT is not this checkout)"
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.ops import provenance
+        res = provenance.deliver_pending()
+        return f"{res.get('rows', 0)} row(s), {len(res.get('sent') or [])} send(s)" + (
+            f", {res['error']}" if res.get("error") else "")
+    except Exception as exc:
+        return f"FAILED ({type(exc).__name__})"
+
+
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if "--retry-scheduler" in args:
@@ -851,6 +867,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {r['verdict']:<14} {r['name']:<32} {age:>7}  {r['why'][:70]}")
     print(f"-> {OUT}")
     print(f"backup state: {_backup_state()}")
+    print(f"account key alerts: {_deliver_account_key_alerts()}")
     return 0
 
 

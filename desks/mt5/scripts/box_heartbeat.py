@@ -184,7 +184,20 @@ def main(argv: list[str] | None = None) -> int:
     doc = run(dry_run=a.dry_run)
     print(json.dumps({"verdict": doc["verdict"], "failing": doc["failing"],
                       "ping": doc["ping"]["status"]}))
+    if not a.dry_run:
+        print(json.dumps({"account_key_alerts": deliver_account_key_alerts()}))
     return 0
+
+
+def deliver_account_key_alerts() -> dict[str, Any]:
+    """Deliver the account-key alert outbox (v5f): the order path only enqueues, this 5-minute
+    task delivers, so no page is ever sent between order_send and a bracket leg. NEVER RAISES."""
+    try:
+        from libs.ops import provenance
+        res = provenance.deliver_pending()
+        return {k: res.get(k) for k in ("rows", "sent", "ledger", "error")}
+    except Exception as exc:
+        return {"error": type(exc).__name__}
 
 
 if __name__ == "__main__":

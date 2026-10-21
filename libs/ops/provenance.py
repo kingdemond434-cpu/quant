@@ -33,6 +33,11 @@ one page on recovery, and a send that `delivered` 0 is not a page). A valid read
 any process. The restore step is RESTORE_STEP; process_health reports the key's and the backup's
 state (never contents, never a hash).
 
+NOTHING ON THE ORDER PATH TOUCHES THE NETWORK (v5f). `account_key` runs between order_send and
+the next bracket leg, so it only APPENDS a row to an outbox (`_enqueue`); `deliver_pending`, run
+by MT5-BoxHeartbeat every 5 minutes and MT5-ProcessHealth hourly (or `python -m
+libs.ops.provenance --deliver-alerts`), writes the AlertLedger and pages, under one OS lock.
+
 LOSING THE KEY ORPHANS EVERY HASHED ROW (they read as no provenance, never as another account).
 Back it up with the box's other secrets. Off the box, with no key, a hashed row can be grouped by
 its key string but never recomputed from a login.
@@ -85,14 +90,19 @@ RESTORE_STEP = ("restore data/secrets/account_key.hmac from the box-local backup
                 "NEVER regenerate it -- if the key is lost, every account_key changes and "
                 "E8_ACCOUNT.json must be re-declared")
 REPAGE_H = 6.0
-#: An undelivered page is retried at most this often by one process (the money path calls
-#: account_key per row; a dead channel must not cost a network attempt per row).
+#: An undelivered page is retried at most this often by one deliverer process.
 RETRY_UNDELIVERED_S = 300.0
 Sender = Callable[[str, str], dict[str, Any]]
-#: (ledger, alert id, detail) whose LEDGER entry this process already wrote.
-_ALERTED: set[tuple[str, str, str]] = set()
-#: (page state, alert id, sig) this process already saw DELIVERED; and last undelivered attempt.
-_PAGED: set[tuple[str, str, str]] = set()
+#: THE ORDER PATH'S IN-PROCESS DEDUPE (v5f): (outbox, alert id, status|sig) -> monotonic time it
+#: was last enqueued. It EXPIRES after REPAGE_H, so a process that lives for days
+#: (gateway_resident) re-enqueues a standing incident every 6h and the deliverer repages it --
+#: a set that never expired made a long-lived process page an incident once, then never again.
+_ENQUEUED: dict[tuple[str, str, str], float] = {}
+#: outbox -> monotonic time of the last FAILED append (v5f: the retry time is recorded in the
+#: except branch too, so a full disk or a denied outbox costs one attempt per window, never one
+#: per row on the money path).
+_ENQUEUE_FAILED: dict[str, float] = {}
+#: (page state, alert id, status|sig) -> monotonic time of the deliverer's last failed send.
 _LAST_TRY: dict[tuple[str, str, str], float] = {}
 
 
@@ -114,6 +124,11 @@ def _page_state_path() -> Path:
     return _REPO / "desks" / "mt5" / "logs" / "account_key_page.json"
 
 
+def _outbox_path() -> Path:
+    """The alert OUTBOX beside the page state: one JSON line per enqueued alert row."""
+    return _page_state_path().with_name("account_key_outbox.jsonl")
+
+
 def _default_sender() -> Sender:
     """alert_channels.send_all against the channels config beside the alert state: the box's
     data/secrets/alert_channels.json; under a key override, one in the override's directory (so
@@ -132,95 +147,254 @@ def _default_sender() -> Sender:
 SENDER: Sender | None = None
 
 
-def _page(aid: str, status: str, sig: str, title: str, body: str) -> dict[str, Any]:
-    """Page `aid` (login_fence.page's idiom). status "OPEN" pages on a new `sig`, again every
-    REPAGE_H while it stands; "OK" pages once on recovery. A send whose `delivered` is 0, absent
-    or falsy is NOT a page: nothing is recorded and a later call re-sends. NEVER RAISES."""
+def _enqueue(aid: str, status: str, sig: str, title: str, body: str,
+             needs_human: str = "", *, ledger: bool = False) -> bool:
+    """THE ONLY ALERT WORK ON THE ORDER PATH (v5f): append one line to the outbox. No network,
+    no lock, no ledger read -- `account_key` runs between order_send and the next bracket leg,
+    and a send there (12 s per channel, repeated when the page state could not be written or the
+    sender raised) delayed the protective leg. Delivery is `deliver_pending`, run by
+    MT5-BoxHeartbeat every 5 minutes and by MT5-ProcessHealth hourly. NEVER RAISES."""
+    path = _outbox_path()
+    memo = (str(path), aid, f"{status}|{sig}")
+    now = time.monotonic()
+    last = _ENQUEUED.get(memo)
+    if last is not None and now - last < REPAGE_H * 3600:
+        return False
+    failed = _ENQUEUE_FAILED.get(str(path))
+    if failed is not None and now - failed < RETRY_UNDELIVERED_S:
+        return False
     try:
-        path = _page_state_path()
-        memo = (str(path), aid, f"{status}|{sig}")
-        if memo in _PAGED:
-            return {"sent": False, "reason": "deduplicated (this process)"}
-        last_try = _LAST_TRY.get(memo)
-        if last_try is not None and time.monotonic() - last_try < RETRY_UNDELIVERED_S:
-            return {"sent": False, "reason": "undelivered, retry throttled"}
-        try:
-            doc = json.loads(path.read_text("utf-8"))
-            doc = doc if isinstance(doc, dict) else {}
-        except (OSError, ValueError):
-            doc = {}
-        got = doc.get(aid)
-        prev: dict[str, Any] = got if isinstance(got, dict) else {}
-        now = datetime.now(UTC)
-        last = None
-        with contextlib.suppress(TypeError, ValueError):
-            last = datetime.fromisoformat(str(prev.get("paged_at")))
-        if status == "OPEN":
-            if prev.get("status") == "OPEN" and prev.get("sig") == sig and last is not None \
-                    and (now - last).total_seconds() / 3600 < REPAGE_H:
-                _PAGED.add(memo)
-                return {"sent": False, "reason": "deduplicated"}
-        elif prev.get("status") != "OPEN":
-            _PAGED.add(memo)
-            return {"sent": False, "reason": "OK: nothing to page"}
-        res = (SENDER or _default_sender())(title, body[:1500])
-        res = res if isinstance(res, dict) else {}
-        if not res.get("delivered"):
-            _LAST_TRY[memo] = time.monotonic()
-            return {"sent": False, "reason": "undelivered, re-sent later",
-                    "armed": res.get("armed"), "delivered": res.get("delivered")}
-        doc[aid] = {"status": status, "sig": sig, "paged_at": now.isoformat(timespec="seconds")}
+        row = json.dumps({"at": datetime.now(UTC).isoformat(timespec="microseconds"),
+                          "pid": os.getpid(), "aid": aid, "status": status, "sig": sig,
+                          "title": title, "body": body[:1500],
+                          "needs_human": needs_human[:600], "ledger": ledger}) + "\n"
         path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
-        tmp.write_text(json.dumps(doc, indent=1), "utf-8")
-        os.replace(tmp, path)
-        _PAGED.add(memo)
-        _LAST_TRY.pop(memo, None)
-        return {"sent": True, "armed": res.get("armed"), "delivered": res.get("delivered")}
-    except Exception as exc:
-        return {"sent": False, "reason": f"page failed ({type(exc).__name__})"}
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+        try:
+            os.write(fd, row.encode("utf-8"))
+        finally:
+            os.close(fd)
+    except Exception:
+        _ENQUEUE_FAILED[str(path)] = now
+        return False
+    _ENQUEUE_FAILED.pop(str(path), None)
+    # a new state for this alert supersedes the other one's memo (an incident after a recovery,
+    # or a recovery after an incident, is enqueued at once)
+    for m in [m for m in _ENQUEUED if m[0] == memo[0] and m[1] == aid and m != memo]:
+        _ENQUEUED.pop(m, None)
+    _ENQUEUED[memo] = now
+    return True
 
 
 def _alert(aid: str, detail: str, message: str) -> None:
-    """Open `aid` once per incident in the AlertLedger, and page it. NEVER RAISES: an alert that
-    fails must not turn a fail-closed None into an exception on the money path."""
-    ledger_path = _alert_ledger_path()
-    memo = (str(ledger_path), aid, detail)
-    if memo not in _ALERTED:
-        try:
-            from libs.ops.alert_ledger import AlertLedger
-            ledger = AlertLedger(ledger_path)
-            known = ledger.alerts.get(aid)
-            if known is None or not known.open or known.message != message:
-                ledger.observe(aid, message[:600], scope="RUNTIME")
-                ledger.needs_human(aid, RESTORE_STEP if aid == ALERT_KEY else
-                                   "fix the caller to pass the numeric MT5 login, never a username")
-                ledger.save()
-            _ALERTED.add(memo)
-        except Exception:
-            pass
+    """Enqueue `aid` OPEN. The deliverer writes the AlertLedger (NEEDS_HUMAN) and pages."""
     title = ("ACCOUNT KEY UNUSABLE: ledger stamps fail closed" if aid == ALERT_KEY
              else "ACCOUNT KEY: a non-numeric login was keyed None")
-    _page(aid, "OPEN", detail, title, message)
+    why = (RESTORE_STEP if aid == ALERT_KEY else
+           "fix the caller to pass the numeric MT5 login, never a username")
+    _enqueue(aid, "OPEN", detail, title, message, needs_human=why, ledger=True)
 
 
 def _alert_clear() -> None:
-    """A usable key, read after any incident -- by this process or another -- closes the key
-    alert (verified by this very read) and pages the recovery once. Called on a key-cache miss
-    only, so a process pays one ledger read per key it loads, not one per row."""
+    """A usable key was read (on a key-cache miss only): enqueue the recovery. The deliverer
+    closes the alert (verified by this read) and pages the recovery ONCE across every process.
+    Only when there is an incident to close -- one queued, or one the page state holds open --
+    so a box that never had one writes nothing. Two small local reads, never a lock or a send."""
+    try:
+        open_incident = _outbox_path().exists()
+        if not open_incident:
+            st = _read_state(_page_state_path())
+            w = (st or {}).get(ALERT_KEY)
+            open_incident = st is None or (isinstance(w, dict) and (
+                w.get("want") == "OPEN"
+                or (isinstance(w.get("paged"), dict) and w["paged"].get("status") == "OPEN")))
+        if not open_incident and _alert_ledger_path().exists():
+            from libs.ops.alert_ledger import AlertLedger
+            known = AlertLedger(_alert_ledger_path()).alerts.get(ALERT_KEY)
+            open_incident = known is not None and known.open
+    except Exception:
+        open_incident = True     # unsure: enqueue, the deliverer decides
+    if not open_incident:
+        return
+    _enqueue(ALERT_KEY, "OK", "recovered", "ACCOUNT KEY OK again",
+             "the account key reads as a usable key again; ledger stamps carry account_key",
+             ledger=True)
+
+
+def _page(aid: str, status: str, sig: str, title: str, body: str) -> dict[str, Any]:
+    """THE v5e ENTRY POINT, KEPT (v5f): same signature, same "never raises, returns a dict with
+    `sent`", now ENQUEUE-ONLY -- so a caller written against v5e (Fusion r7.2's cross_account
+    page_key / clear_key_alert) goes off the order path with no change. Its rules are v5e's:
+    "OPEN" pages a new `sig` and again every REPAGE_H while it stands; "OK" pages once, only
+    after a delivered OPEN; `delivered` 0 is not a page. The page itself is sent by
+    `deliver_pending`, so `sent` is always False here and `queued` says whether a row was
+    written; like v5e's `_page`, it never writes the AlertLedger."""
+    try:
+        if status not in ("OPEN", "OK"):
+            return {"sent": False, "queued": False, "reason": f"unknown status {status!r}"}
+        queued = _enqueue(str(aid), status, str(sig), str(title), str(body))
+        return {"sent": False, "queued": queued,
+                "reason": ("queued: delivered off the order path by deliver_pending" if queued
+                           else "deduplicated or enqueue throttled (this process)")}
+    except Exception as exc:
+        return {"sent": False, "queued": False, "reason": f"page failed ({type(exc).__name__})"}
+
+
+def _read_state(path: Path) -> dict[str, Any] | None:
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except FileNotFoundError:
+        return {}
+    except (OSError, ValueError):
+        return None
+    return doc if isinstance(doc, dict) else None
+
+
+def _write_json(path: Path, doc: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.{time.monotonic_ns()}.tmp")
+    try:
+        with open(tmp, "w", encoding="utf-8") as fh:
+            fh.write(json.dumps(doc, indent=1))
+            fh.flush()
+            os.fsync(fh.fileno())
+        for attempt in range(20):
+            try:
+                os.replace(tmp, path)
+                return
+            except PermissionError:
+                if attempt == 19:
+                    raise
+                time.sleep(0.05 * (attempt + 1))
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+
+
+def _drain(outbox: Path) -> list[tuple[Path, list[dict[str, Any]]]]:
+    """Move the outbox aside (appenders open it per row, so a rename takes every finished row and
+    later rows start a new file) and read it with any earlier drain a crash left behind."""
+    with contextlib.suppress(FileNotFoundError, PermissionError):
+        os.replace(outbox, outbox.with_name(
+            f"{outbox.name}.{os.getpid()}.{time.time_ns()}.draining"))
+    out: list[tuple[Path, list[dict[str, Any]]]] = []
+    for f in sorted(outbox.parent.glob(outbox.name + ".*.draining")):
+        rows: list[dict[str, Any]] = []
+        with contextlib.suppress(OSError):
+            for line in f.read_text("utf-8", errors="replace").splitlines():
+                with contextlib.suppress(ValueError):
+                    r = json.loads(line)
+                    if isinstance(r, dict) and r.get("aid") and r.get("status") in ("OPEN", "OK"):
+                        rows.append(r)
+        out.append((f, rows))
+    return out
+
+
+def _to_ledger(applied: dict[str, dict[str, Any]]) -> str:
+    """Write each alert's newest state to the AlertLedger, in ONE locked transaction."""
+    if not applied:
+        return "nothing to write"
     try:
         from libs.ops.alert_ledger import AlertLedger
-        ledger = AlertLedger(_alert_ledger_path())
-        known = ledger.alerts.get(ALERT_KEY)
-        if known is not None and known.open:
-            ledger.verify(ALERT_KEY, still_firing=False)
-            ledger.save()
-    except Exception:
-        pass
-    _ALERTED.difference_update({m for m in _ALERTED if m[1] == ALERT_KEY})
-    _PAGED.difference_update({m for m in _PAGED if m[1] == ALERT_KEY})
-    _page(ALERT_KEY, "OK", "recovered", "ACCOUNT KEY OK again",
-          "the account key reads as a usable key again; ledger stamps carry account_key")
+        with AlertLedger.transaction(_alert_ledger_path()) as ledger:
+            for aid, w in applied.items():
+                known = ledger.alerts.get(aid)
+                if w["want"] == "OPEN":
+                    if known is None or not known.open or known.message != w["body"][:600]:
+                        ledger.observe(aid, w["body"][:600], scope="RUNTIME")
+                        ledger.needs_human(aid, w.get("needs_human") or "see the alert")
+                elif known is not None and known.open:
+                    ledger.verify(aid, still_firing=False)
+        return "written"
+    except Exception as exc:
+        return f"not written ({type(exc).__name__})"
+
+
+def deliver_pending() -> dict[str, Any]:
+    """DELIVER THE OUTBOX, OFF THE ORDER PATH (v5f). One deliverer at a time, under an OS lock.
+
+    Each alert's newest enqueued row becomes its WANTED state in the page-state file; then:
+    OPEN pages on a new incident (or a new detail), and again when the incident was re-observed
+    and REPAGE_H has passed since the last page; OK pages once, only if the last delivered page
+    was OPEN. The page state is read, decided on, sent and written UNDER THE LOCK, so the
+    recovery fires exactly once across processes. A send that raises or `delivered` 0 is not a
+    page: the wanted state stays and the next pass sends it. A page state that cannot be read
+    stops the pass before the outbox is drained, so no row is lost. NEVER RAISES."""
+    out: dict[str, Any] = {"rows": 0, "sent": [], "ledger": None}
+    try:
+        from libs.ops.alert_ledger import os_lock
+        state_path = _page_state_path()
+        with os_lock(state_path.with_name(state_path.name + ".flock"), timeout_s=30):
+            state = _read_state(state_path)
+            if state is None:
+                out["error"] = "page state unreadable: nothing drained"
+                return out
+            drained = _drain(_outbox_path())
+            applied: dict[str, dict[str, Any]] = {}
+            for _f, rows in drained:
+                for r in rows:
+                    out["rows"] += 1
+                    aid = str(r["aid"])
+                    got = state.get(aid)
+                    w: dict[str, Any] = got if isinstance(got, dict) else {}
+                    if str(r.get("at") or "") < str(w.get("want_at") or ""):
+                        continue
+                    w = {**w, "want": r["status"], "sig": str(r.get("sig") or ""),
+                         "ledger": bool(r.get("ledger")),
+                         "want_at": str(r.get("at") or ""), "title": str(r.get("title") or ""),
+                         "body": str(r.get("body") or ""),
+                         "needs_human": str(r.get("needs_human") or "")}
+                    state[aid] = w
+                    if w["ledger"]:
+                        applied[aid] = w
+            if drained:
+                _write_json(state_path, state)          # the rows are now held in the state
+                for f, _rows in drained:
+                    with contextlib.suppress(OSError):
+                        f.unlink()
+            out["ledger"] = _to_ledger(applied)
+            now = datetime.now(UTC)
+            for aid, w in list(state.items()):
+                if not isinstance(w, dict) or w.get("want") not in ("OPEN", "OK"):
+                    continue
+                got_p = w.get("paged")
+                paged: dict[str, Any] = got_p if isinstance(got_p, dict) else {}
+                last = None
+                with contextlib.suppress(TypeError, ValueError):
+                    last = datetime.fromisoformat(str(paged.get("at")))
+                if w["want"] == "OPEN":
+                    due = (paged.get("status") != "OPEN" or paged.get("sig") != w.get("sig")
+                           or (last is not None and str(w.get("want_at")) > str(paged.get("at"))
+                               and (now - last).total_seconds() / 3600 >= REPAGE_H))
+                else:
+                    due = paged.get("status") == "OPEN"
+                if not due:
+                    continue
+                memo = (str(state_path), aid, f"{w['want']}|{w.get('sig')}")
+                tried = _LAST_TRY.get(memo)
+                if tried is not None and time.monotonic() - tried < RETRY_UNDELIVERED_S:
+                    continue
+                try:
+                    res = (SENDER or _default_sender())(str(w.get("title")),
+                                                        str(w.get("body"))[:1500])
+                except Exception as exc:
+                    _LAST_TRY[memo] = time.monotonic()     # v5f: recorded on a raise too
+                    out["sent"].append({"aid": aid, "sent": False,
+                                        "reason": f"sender raised ({type(exc).__name__})"})
+                    continue
+                res = res if isinstance(res, dict) else {}
+                if not res.get("delivered"):
+                    _LAST_TRY[memo] = time.monotonic()
+                    out["sent"].append({"aid": aid, "sent": False, "reason": "undelivered"})
+                    continue
+                w["paged"] = {"status": w["want"], "sig": w.get("sig"),
+                              "at": now.isoformat(timespec="microseconds")}
+                _write_json(state_path, state)
+                _LAST_TRY.pop(memo, None)
+                out["sent"].append({"aid": aid, "sent": True, "status": w["want"]})
+    except Exception as exc:
+        out["error"] = f"{type(exc).__name__}"
+    return out
 
 
 def key_state() -> dict[str, object]:
@@ -491,10 +665,17 @@ def main(argv: list[str] | None = None) -> int:
     verdict only, never the key. rc 0 created, 1 refused."""
     import argparse
     ap = argparse.ArgumentParser(description="the account key's one creating entry point")
-    ap.add_argument("--create-first-time", action="store_true", required=True)
+    mode = ap.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--create-first-time", action="store_true")
+    mode.add_argument("--deliver-alerts", action="store_true",
+                      help="deliver the alert outbox (off the order path; v5f)")
     ap.add_argument("--at-the-laptop", action="store_true",
                     help="the principal is present; without it nothing is created")
     args = ap.parse_args(argv)
+    if args.deliver_alerts:
+        res = deliver_pending()
+        print(json.dumps({k: res.get(k) for k in ("rows", "sent", "ledger", "error")}))
+        return 0
     ok, why = create_account_key_first_time(operator_present=bool(args.at_the_laptop))
     print(why)
     return 0 if ok else 1
