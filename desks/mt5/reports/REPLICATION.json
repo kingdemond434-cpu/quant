@@ -1,5 +1,5 @@
 {
- "at": "2026-10-21T19:37:00+00:00",
+ "at": "2026-10-21T20:41:51+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -24,10 +24,10 @@
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "AUDSGD.clock_transition.p=39ec47e132030e47",
-   "certificate": "external.AUDSGD.clock_transition.p=39ec47e132030e47",
-   "fp": "09057667929e7984",
-   "symbol": "AUDSGD",
+   "key": "EURSGD.clock_transition.p=39ec47e132030e47",
+   "certificate": "external.EURSGD.clock_transition.p=39ec47e132030e47",
+   "fp": "9f57fd4e127a73d8",
+   "symbol": "EURSGD",
    "family": "clock_transition",
    "verdict": "UNMEASURED",
    "why": [
@@ -38,10 +38,10 @@
   },
   {
    "lane": "certificate",
-   "key": "CHFDKK.clock_transition.p=39ec47e132030e47",
-   "certificate": "external.CHFDKK.clock_transition.p=39ec47e132030e47",
-   "fp": "d3e528672c4c8253",
-   "symbol": "CHFDKK",
+   "key": "EURZAR.clock_transition.p=39ec47e132030e47",
+   "certificate": "external.EURZAR.clock_transition.p=39ec47e132030e47",
+   "fp": "a20fb852b8090df4",
+   "symbol": "EURZAR",
    "family": "clock_transition",
    "verdict": "UNMEASURED",
    "why": [
@@ -52,10 +52,10 @@
   },
   {
    "lane": "certificate",
-   "key": "CHFNOK.clock_transition.p=39ec47e132030e47",
-   "certificate": "external.CHFNOK.clock_transition.p=39ec47e132030e47",
-   "fp": "dc343b2ab8a60312",
-   "symbol": "CHFNOK",
+   "key": "GBPDKK.clock_transition.p=39ec47e132030e47",
+   "certificate": "external.GBPDKK.clock_transition.p=39ec47e132030e47",
+   "fp": "311f444748139f61",
+   "symbol": "GBPDKK",
    "family": "clock_transition",
    "verdict": "UNMEASURED",
    "why": [
@@ -66,10 +66,10 @@
   },
   {
    "lane": "certificate",
-   "key": "CHFSGD.clock_transition.p=39ec47e132030e47",
-   "certificate": "external.CHFSGD.clock_transition.p=39ec47e132030e47",
-   "fp": "ac91518d490ae38b",
-   "symbol": "CHFSGD",
+   "key": "GBPJPY.clock_transition.p=39ec47e132030e47",
+   "certificate": "external.GBPJPY.clock_transition.p=39ec47e132030e47",
+   "fp": "d2e2c8dd4648a4a8",
+   "symbol": "GBPJPY",
    "family": "clock_transition",
    "verdict": "UNMEASURED",
    "why": [
@@ -80,142 +80,64 @@
   },
   {
    "lane": "certificate",
-   "key": "EURMXN.clock_transition.p=39ec47e132030e47",
-   "certificate": "external.EURMXN.clock_transition.p=39ec47e132030e47",
-   "fp": "675d863ea7fabd1f",
-   "symbol": "EURMXN",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "EURNOK.clock_transition.p=39ec47e132030e47",
-   "certificate": "external.EURNOK.clock_transition.p=39ec47e132030e47",
-   "fp": "5e8270e7496821df",
-   "symbol": "EURNOK",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "EURNZD.clock_transition.p=39ec47e132030e47",
-   "certificate": "external.EURNZD.clock_transition.p=39ec47e132030e47",
-   "fp": "786b3ae6dc14b81e",
-   "symbol": "EURNZD",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "EURSEK.clock_transition.p=39ec47e132030e47",
-   "certificate": "external.EURSEK.clock_transition.p=39ec47e132030e47",
-   "fp": "4e3c503288592be3",
-   "symbol": "EURSEK",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "forward",
-   "key": "EURILS.macro_conditional.continuous@M15#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
-   "symbol": "EURILS",
-   "family": "macro_conditional",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'macro_conditional'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "EURILS.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
-   "symbol": "EURILS",
-   "family": "macro_conditional",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'macro_conditional'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "EURMXN.macro_conditional.continuous@M15#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
-   "symbol": "EURMXN",
-   "family": "macro_conditional",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'macro_conditional'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "EURMXN.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
-   "symbol": "EURMXN",
-   "family": "macro_conditional",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'macro_conditional'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPHUF.macro_conditional.continuous@M15#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
-   "symbol": "GBPHUF",
-   "family": "macro_conditional",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'macro_conditional'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPHUF.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
-   "symbol": "GBPHUF",
-   "family": "macro_conditional",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'macro_conditional'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPMXN.macro_conditional.continuous@M15#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
+   "key": "GBPMXN.clock_transition.p=39ec47e132030e47",
+   "certificate": "external.GBPMXN.clock_transition.p=39ec47e132030e47",
+   "fp": "4797ef0cc36f7308",
    "symbol": "GBPMXN",
+   "family": "clock_transition",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'clock_transition'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPSEK.clock_transition.p=39ec47e132030e47",
+   "certificate": "external.GBPSEK.clock_transition.p=39ec47e132030e47",
+   "fp": "95e8496e3768464e",
+   "symbol": "GBPSEK",
+   "family": "clock_transition",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'clock_transition'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPSGD.clock_transition.p=39ec47e132030e47",
+   "certificate": "external.GBPSGD.clock_transition.p=39ec47e132030e47",
+   "fp": "4d5667e56bad4759",
+   "symbol": "GBPSGD",
+   "family": "clock_transition",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'clock_transition'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPZAR.clock_transition.p=39ec47e132030e47",
+   "certificate": "external.GBPZAR.clock_transition.p=39ec47e132030e47",
+   "fp": "08292392c6a5fd70",
+   "symbol": "GBPZAR",
+   "family": "clock_transition",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'clock_transition'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "forward",
+   "key": "GBPUSD.macro_conditional.continuous@M15#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
+   "symbol": "GBPUSD",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -227,12 +149,90 @@
   },
   {
    "lane": "forward",
-   "key": "GBPMXN.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
-   "symbol": "GBPMXN",
+   "key": "GBPUSD.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
+   "symbol": "GBPUSD",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
     "no written specification in the spec book for family 'macro_conditional'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "GER40.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "symbol": "GER40",
+   "family": "macro_conditional",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'macro_conditional'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NAS100.cross_asset_residual.continuous@M15#entry_z=2.0_factor_symbols=['US500', 'UST10Y', 'EURUSD']_lookback=240_rr=1.5_ttl_bars=48",
+   "symbol": "NAS100",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NAS100.cross_asset_residual.continuous@M15#entry_z=2.5_factor_symbols=['US500', 'UST10Y', 'EURUSD']_lookback=240_rr=1.5_ttl_bars=48",
+   "symbol": "NAS100",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NAS100.macro_conditional.continuous@M15#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "symbol": "NAS100",
+   "family": "macro_conditional",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'macro_conditional'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NAS100.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "symbol": "NAS100",
+   "family": "macro_conditional",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'macro_conditional'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NAS100.cross_asset_residual.continuous@M30#entry_z=2.0_factor_symbols=['US500', 'UST10Y', 'EURUSD']_lookback=120_rr=1.5_ttl_bars=48",
+   "symbol": "NAS100",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
    ],
    "ours": {},
    "theirs": {},
@@ -242,68 +242,68 @@
  "quarantined": [],
  "unmeasured": [
   {
-   "what": "AUDSGD.clock_transition.p=39ec47e132030e47",
+   "what": "EURSGD.clock_transition.p=39ec47e132030e47",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "CHFDKK.clock_transition.p=39ec47e132030e47",
+   "what": "EURZAR.clock_transition.p=39ec47e132030e47",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "CHFNOK.clock_transition.p=39ec47e132030e47",
+   "what": "GBPDKK.clock_transition.p=39ec47e132030e47",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "CHFSGD.clock_transition.p=39ec47e132030e47",
+   "what": "GBPJPY.clock_transition.p=39ec47e132030e47",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "EURMXN.clock_transition.p=39ec47e132030e47",
+   "what": "GBPMXN.clock_transition.p=39ec47e132030e47",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "EURNOK.clock_transition.p=39ec47e132030e47",
+   "what": "GBPSEK.clock_transition.p=39ec47e132030e47",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "EURNZD.clock_transition.p=39ec47e132030e47",
+   "what": "GBPSGD.clock_transition.p=39ec47e132030e47",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "EURSEK.clock_transition.p=39ec47e132030e47",
+   "what": "GBPZAR.clock_transition.p=39ec47e132030e47",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "EURILS.macro_conditional.continuous@M15#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
+   "what": "GBPUSD.macro_conditional.continuous@M15#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "EURILS.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
+   "what": "GBPUSD.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "EURMXN.macro_conditional.continuous@M15#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
+   "what": "GER40.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=-1_ttl_bars=96",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "EURMXN.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
+   "what": "NAS100.cross_asset_residual.continuous@M15#entry_z=2.0_factor_symbols=['US500', 'UST10Y', 'EURUSD']_lookback=240_rr=1.5_ttl_bars=48",
+   "why": "no written specification in the spec book for family 'cross_asset_residual'"
+  },
+  {
+   "what": "NAS100.cross_asset_residual.continuous@M15#entry_z=2.5_factor_symbols=['US500', 'UST10Y', 'EURUSD']_lookback=240_rr=1.5_ttl_bars=48",
+   "why": "no written specification in the spec book for family 'cross_asset_residual'"
+  },
+  {
+   "what": "NAS100.macro_conditional.continuous@M15#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=-1_ttl_bars=96",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "GBPHUF.macro_conditional.continuous@M15#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
+   "what": "NAS100.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=-1_ttl_bars=96",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "GBPHUF.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
-   "why": "no written specification in the spec book for family 'macro_conditional'"
-  },
-  {
-   "what": "GBPMXN.macro_conditional.continuous@M15#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
-   "why": "no written specification in the spec book for family 'macro_conditional'"
-  },
-  {
-   "what": "GBPMXN.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
-   "why": "no written specification in the spec book for family 'macro_conditional'"
+   "what": "NAS100.cross_asset_residual.continuous@M30#entry_z=2.0_factor_symbols=['US500', 'UST10Y', 'EURUSD']_lookback=120_rr=1.5_ttl_bars=48",
+   "why": "no written specification in the spec book for family 'cross_asset_residual'"
   }
  ],
  "recorded": {
@@ -312,9 +312,9 @@
   "candidates": 0
  },
  "cursor": {
-  "forward": 546,
-  "at": "2026-10-21T18:42:08+00:00",
-  "certificates": 923
+  "forward": 554,
+  "at": "2026-10-21T19:37:00+00:00",
+  "certificates": 931
  },
  "notes": [],
  "independence": {
@@ -331,24 +331,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURMXN_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURNOK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURNZD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURSEK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURILS_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURILS_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURMXN_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURMXN_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPHUF_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPHUF_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_M15.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURZAR_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPDKK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPZAR_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPUSD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPUSD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GER40_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M30.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 4.11
+ "seconds": 15.58
 }
