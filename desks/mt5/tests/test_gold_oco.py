@@ -799,3 +799,148 @@ def test_the_gateways_gold_lines_carry_their_dollars_into_missed_growth(
     assert out[oco.RAIL]["fusion_undeployed_risk_usd"] == 750.0
     assert out[oco.RAIL]["n_unpriced"] == 1
     assert out["cross_account_opposite"]["fusion_undeployed_risk_usd"] == 750.0
+
+
+# ================================================== v2s MF-A: family and scalp XAU sends
+
+_sp_spec = importlib.util.spec_from_file_location("_gold_oco_scalp_harness",
+                                                  _DESK / "tests" / "test_scalp_promotion.py")
+assert _sp_spec is not None and _sp_spec.loader is not None
+sp = importlib.util.module_from_spec(_sp_spec)
+_sp_spec.loader.exec_module(sp)
+
+
+def _oco_rail_rows() -> list[dict]:
+    p = Path(fusion_rails.LEDGER)
+    if not p.exists():
+        return []
+    return [r for r in (json.loads(ln) for ln in p.read_text("utf-8").splitlines() if ln.strip())
+            if r.get("rail") == oco.RAIL]
+
+
+def _day_world(day: str, *, setter: str, direction: str) -> None:
+    """Full OCO mode on e8 + fusion + ftmo; `setter`'s fill set `day`'s `direction` and it still
+    holds that position; every other lane flat."""
+    _mode(["e8", "fusion", "ftmo"], fusion="oco", ftmo="oco")
+    keys = {"e8": e8_key(), "ftmo": oco.oco_account_key(FT_LOGIN, FT_SERVER)}
+    for lane, key in keys.items():
+        pos = [{"id": 5, "side": direction, "opened_date": day}] if lane == setter else []
+        oco.publish_lane(lane, key, positions=pos, orders=[], date=day)
+    assert oco.claim_fill(setter, keys[setter], direction, date=day)["won"]
+
+
+def _family_xau(tmp_path: Path, monkeypatch) -> tuple[Any, dict, str]:
+    rows = ga._rows()
+    mt5 = ga._fake_mt5(rows)
+    t = rows[-1]["time"]
+    mt5.symbol_info_tick = lambda symbol: SimpleNamespace(bid=1.1100, ask=1.1102, time=t)
+    ns = ga._family_ns(tmp_path, mt5, monkeypatch, armed_file=True, sig_hour=ga._sig_hour(rows))
+    return mt5, ns, oco.trading_date(t)
+
+
+@pytest.mark.parametrize("setter", ["e8", "ftmo"])
+def test_a_family_xau_send_against_the_days_direction_is_refused_and_billed(
+        tmp_path, monkeypatch, setter) -> None:
+    """MF-A: the family lane's XAUUSD market DEAL asks gold_oco.gate (the bracket path's gate)
+    under the placement lock. The sleeve buys; the day is SHORT (set by E8, or by FTMO, which
+    the old E8-only fence never saw): nothing is sent, and the refusal is a billed RAIL_BLOCKED
+    line carrying the order's own risk."""
+    mt5, ns, day = _family_xau(tmp_path, monkeypatch)
+    _day_world(day, setter=setter, direction="short")
+    ga._run_family(ns, {"armed": True}, [ga._sleeve(symbol="XAUUSD")], 10_000.0)
+    assert mt5.sent == []
+    assert any("FAMILY-EXEC NOT SENT" in x and "gold OCO" in x for x in ns["_logs"])
+    (row,) = _oco_rail_rows()
+    assert row["status"] == "RAIL_BLOCKED" and row["side"] == "buy" and row["day"] == day
+    assert row["exec_lane"] == "family_market" and row["lane"] == "fusion"
+    # 0.12 lot x |1.1102 - 1.1050| x (1.0 / 0.00001): the order's own risk, priced.
+    assert row["missed_growth_risk_usd"] == pytest.approx(62.4)
+    assert row["risk_frac"] == pytest.approx(62.4 / 10_000.0)
+
+
+def test_a_family_xau_send_with_the_days_direction_passes_and_republishes(
+        tmp_path, monkeypatch) -> None:
+    mt5, ns, day = _family_xau(tmp_path, monkeypatch)
+    _day_world(day, setter="ftmo", direction="long")
+    ga._run_family(ns, {"armed": True}, [ga._sleeve(symbol="XAUUSD")], 10_000.0)
+    (req,) = mt5.sent
+    assert req["type"] == mt5.ORDER_TYPE_BUY and req["symbol"] == "XAUUSD"
+    assert _oco_rail_rows() == []
+
+
+def test_a_family_xau_send_with_an_unreadable_gold_state_fails_closed_and_bills(
+        tmp_path, monkeypatch) -> None:
+    mt5, ns, day = _family_xau(tmp_path, monkeypatch)
+    _day_world(day, setter="e8", direction="long")
+    oco.lane_path("ftmo").write_text("{torn", "utf-8")
+    ga._run_family(ns, {"armed": True}, [ga._sleeve(symbol="XAUUSD")], 10_000.0)
+    assert mt5.sent == []
+    (row,) = _oco_rail_rows()
+    assert "fail closed" in row["why"] and row["missed_growth_risk_usd"] > 0
+
+
+def test_a_non_gold_family_send_never_asks_the_gold_lock(tmp_path, monkeypatch) -> None:
+    rows = ga._rows()
+    mt5 = ga._fake_mt5(rows)
+    ns = ga._family_ns(tmp_path, mt5, monkeypatch, armed_file=True, sig_hour=ga._sig_hour(rows))
+    oco.MODE_FILE.write_text("{torn", "utf-8")             # a gold lock that would refuse
+    ga._run_family(ns, {"armed": True}, [ga._sleeve()], 10_000.0)
+    assert len(mt5.sent) == 1 and _oco_rail_rows() == []
+
+
+def _scalp_xau(tmp_path: Path) -> tuple[Any, dict, str]:
+    bars = sp._with_forming(sp._bars(recent=True))
+    mt5 = sp._fake_mt5(bars)
+    mt5.symbol_info = lambda symbol: SimpleNamespace(volume_min=0.01, volume_step=0.01,
+                                                     trade_tick_size=0.01, trade_tick_value=1.0)
+    ns = sp._ns(tmp_path, mt5, armed_file=True)
+    return mt5, ns, oco.trading_date(int(bars.index[-1].timestamp()))
+
+
+def _scalp_side(tmp_path: Path) -> str:
+    """The side the scalp fixture's signal takes, read from a send in an open world."""
+    mt5, ns, day = _scalp_xau(tmp_path / "probe")
+    sp._run_scalp(ns, {"armed": True}, [sp._sleeve()], 10_000.0)
+    (req,) = mt5.sent
+    return "long" if req["type"] == mt5.ORDER_TYPE_BUY else "short"
+
+
+@pytest.mark.parametrize("setter", ["e8", "ftmo"])
+def test_a_scalp_xau_send_against_the_days_direction_is_refused_and_billed(
+        tmp_path, setter) -> None:
+    (tmp_path / "probe").mkdir()
+    want = _scalp_side(tmp_path)
+    mt5, ns, day = _scalp_xau(tmp_path)
+    _day_world(day, setter=setter, direction=oco.opposite(want))
+    sp._run_scalp(ns, {"armed": True}, [sp._sleeve()], 10_000.0)
+    assert mt5.sent == []
+    assert any("SCALP-EXEC NOT SENT" in x and "gold OCO" in x for x in ns["_logs"])
+    (row,) = _oco_rail_rows()
+    assert row["status"] == "RAIL_BLOCKED" and row["exec_lane"] == "scalp_market"
+    assert row["side"] == ("buy" if want == "long" else "sell") and row["day"] == day
+    assert isinstance(row["missed_growth_risk_usd"], float) and row["missed_growth_risk_usd"] > 0
+    # Billed once per sleeve, day and side: the same refusal on the next pass adds no line.
+    sp._run_scalp(ns, {"armed": True}, [sp._sleeve()], 10_000.0)
+    assert len(_oco_rail_rows()) == 1
+
+
+def test_a_scalp_xau_send_with_the_days_direction_passes(tmp_path) -> None:
+    (tmp_path / "probe").mkdir()
+    want = _scalp_side(tmp_path)
+    mt5, ns, day = _scalp_xau(tmp_path)
+    _day_world(day, setter="e8", direction=want)
+    sp._run_scalp(ns, {"armed": True}, [sp._sleeve()], 10_000.0)
+    assert len(mt5.sent) == 1 and _oco_rail_rows() == []
+
+
+def test_every_xau_send_site_in_the_gateway_asks_the_gold_lock_under_the_placement_lock() -> None:
+    """Source shape: each TRADE_ACTION_DEAL send on the family and scalp lanes sits inside a
+    `placement_lock` block that asks `gold_oco_send_refusal` before `order_send`."""
+    src = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
+    for fn in ("def run_family_sleeves(", "def run_scalp_sleeves("):
+        body = src.split(fn, 1)[1].split("\ndef ", 1)[0]
+        lock = body.index("_xa.placement_lock(")
+        gate = body.index("gold_oco_send_refusal(", lock)
+        send = body.index("mt5.order_send(", lock)
+        assert lock < gate < send
+        assert body.count("TRADE_ACTION_DEAL") == 1
