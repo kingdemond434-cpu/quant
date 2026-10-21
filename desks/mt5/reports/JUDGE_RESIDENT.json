@@ -17,14 +17,15 @@
  "uptime_s": 86020.6,
  "last_sweep_ended_utc": "2026-10-20T21:34:46+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-10-21T03:05:05+00:00",
+ "heartbeat_utc": "2026-10-21T03:20:09+00:00",
  "sweep_phase": {
   "pid": 17544,
   "sweep_started_utc": "2026-10-20T21:34:49+00:00",
   "phases": {
-   "plan": 10395.9
+   "plan": 10395.9,
+   "build_shards": 10223.9
   },
-  "phase": "build_shards",
-  "phase_started_utc": "2026-10-21T00:28:05+00:00"
+  "phase": "collect_and_cut",
+  "phase_started_utc": "2026-10-21T03:18:28+00:00"
  }
 }
