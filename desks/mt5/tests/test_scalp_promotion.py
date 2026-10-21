@@ -447,6 +447,9 @@ def _ns(tmp_path: Path, mt5: SimpleNamespace, *, armed_file: bool) -> dict:
                   "MIN_STOP_SPREAD_MULT",
                   # ...and caps same-side exposure per symbol before pricing the lot.
                   "same_side_count", "MAX_SAME_SIDE_PER_SYMBOL",
+                  # ...and asks the gold direction lock before every XAU send (OCO v2s MF-A).
+                  "gold_oco_send_refusal", "gold_oco_after_send", "bill_gold_oco_send",
+                  "_order_risk_usd",
                   # ...and reads `last_error` through `_send_error` when a send comes back empty.
                   "_send_error"), ns)
 
