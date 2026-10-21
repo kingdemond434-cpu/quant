@@ -1,15 +1,15 @@
 {
-  "updated_at": "2026-10-21T17:21:59+00:00",
-  "configured_sleeves": 654,
-  "represented_sleeves": 654,
+  "updated_at": "2026-10-21T19:14:35+00:00",
+  "configured_sleeves": 650,
+  "represented_sleeves": 650,
   "certified_sleeves_total": 1048,
-  "forward_clocks_total": 654,
+  "forward_clocks_total": 650,
   "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
   "n_distinct_param_hashes": 211,
   "n_mechanisms": 11,
-  "retired_shadow_sleeves": 217,
+  "retired_shadow_sleeves": 221,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 603,
+  "sleeves_with_forward_trades": 599,
   "zero_trade_clocks": {
     "count": 51,
     "by_status": {
@@ -18,7 +18,7 @@
       "IDENTITY_BROKEN": 9
     },
     "age_measured": 51,
-    "median_age_days": 15.869,
+    "median_age_days": 15.947,
     "mature_14d_without_trade": 43,
     "fresh_attempts": 42,
     "naturally_inactive": 41,
@@ -42,7 +42,7 @@
     "177 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 1601.012,
+  "seconds": 4735.602,
   "gateway_armed": true,
   "promoted_live_sleeves": [
     "EURZAR.carry.asia@M5#input_symbol=EURZAR_require_quiet=False_session=ny"
