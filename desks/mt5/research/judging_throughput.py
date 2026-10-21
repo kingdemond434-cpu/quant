@@ -1325,11 +1325,20 @@ def _write_atomic(path: Path, doc: Any) -> None:
 #: None means "beside RATE_OUT" (reports/JUDGING_RATE.attempt.json), so anything that points the
 #: rate elsewhere -- a test, a dry run on another box -- moves the marker with it.
 ATTEMPT_OUT: Path | None = None
+#: THE PUBLISHED MARKER IS NAMED HERE, IN THE SCHEDULED ORGAN (v1.1). `judging_rate_attempt` only
+#: supplies the writer and the reader and names no artifact of its own, so the dead-architecture
+#: census attributes the marker to this hourly leg instead of counting a clockless new organ.
+ATTEMPT_PUBLISHED = BASE / "reports" / "JUDGING_RATE.attempt.json"
+_RATE_PUBLISHED = RATE_OUT
 
 
 def _attempt_path() -> Path:
-    return ATTEMPT_OUT if ATTEMPT_OUT is not None else RATE_OUT.with_name(
-        RATE_OUT.stem + ".attempt.json")
+    if ATTEMPT_OUT is not None:
+        return ATTEMPT_OUT
+    if RATE_OUT == _RATE_PUBLISHED:
+        ATTEMPT_PUBLISHED.parent.mkdir(parents=True, exist_ok=True)
+        return ATTEMPT_PUBLISHED
+    return RATE_OUT.with_name(RATE_OUT.stem + ".attempt" + RATE_OUT.suffix)
 #: Wall clock the verdict-ledger stream may spend. On overrun the rate is UNMEASURED with the
 #: reason, never a partial count read as a whole one. Inside the leg's 300 s `--budget-s` with
 #: room for everything else the pass does; never used to change the leg's own budget.
@@ -1382,8 +1391,17 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
                 "why": f"{type(exc).__name__}: {exc}"}
     if write:
         rate["attempt"] = attempt.pointer()
-        _write_atomic(RATE_OUT, rate)
-        attempt.phase("rate_written")
+        # GUARDED (v1.1): a failed rate write must not cost the env file and JUDGING_THROUGHPUT,
+        # which on the old order were written first. The failure rides the marker, so the rate on
+        # disk reads STALE with the error instead of silently old.
+        try:
+            _write_atomic(RATE_OUT, rate)
+        except Exception as exc:
+            rate_write_error = f"{type(exc).__name__}: {exc}"
+            attempt.note(rate_write_error=rate_write_error)
+            attempt.phase("rate_write_failed")
+        else:
+            attempt.phase("rate_written")
     # THE BUILD BUDGET, FROM THE TASK'S OWN LIMIT. Measured 2026-09-24: the pre-warm shares the
     # build deadline and spent 2,874 s of a 2,700 s budget on a 250,992-cell docket, leaving
     # 67,910 cells never built. This gives the judge the wall clock its own scheduled task already
@@ -1581,14 +1599,15 @@ def _verdict_counts(now: datetime, path: Path | None = None,
     first_terminal_cells: set[str] = set()
     total, unstamped, last = 0, 0, ""
     t_start = _time.monotonic()
-    stop_at = None if deadline_s is None else t_start + float(deadline_s)
+    budget_s = None if deadline_s is None else float(deadline_s)
+    stop_at = None if budget_s is None else t_start + budget_s
     try:
         with p.open("r", encoding="utf-8", errors="replace") as fh:
             for n_line, line in enumerate(fh):
                 if (stop_at is not None and n_line % _DEADLINE_EVERY == 0
                         and _time.monotonic() > stop_at):
                     return {"status": UNMEASURED, "rows_read": total,
-                            "why": (f"{p.name} stream overran its {float(deadline_s):.0f} s "
+                            "why": (f"{p.name} stream overran its {budget_s or 0.0:.0f} s "
                                     f"deadline after {total:,} rows "
                                     f"({_time.monotonic() - t_start:.0f} s): verdicts/hour is "
                                     "UNMEASURED this pass, never a partial count")}
@@ -1645,17 +1664,45 @@ def _verdict_counts(now: datetime, path: Path | None = None,
                          "7d": round(counts["7d"] / 168.0, 3)}}
 
 
-def _creation_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
-    """Cells the desk CREATED in the last 24h / 7d, from the registry's own created_at."""
+#: Wall clock the registry's creation count may spend (v1.1), on top of the ledger stream's own.
+CREATION_BUDGET_S = 30.0
+#: SQLite VM instructions between deadline checks.
+_SQLITE_PROGRESS_EVERY = 1000
+
+
+def _creation_counts(now: datetime, path: Path | None = None,
+                     deadline_s: float | None = None) -> dict[str, Any]:
+    """Cells the desk CREATED in the last 24h / 7d, from the registry's own created_at.
+
+    BOUNDED BY `deadline_s` (v1.1), like `_verdict_counts`: the busy timeout is capped by it and a
+    progress handler interrupts the scan past it, so an overrun is UNMEASURED with the reason --
+    a count is never published from a query that did not finish."""
     import sqlite3
+    import time as _time
 
     p = REGISTRY if path is None else path
     if not p.exists():
         return {"status": UNMEASURED, "why": f"{p.name} absent: creation rate is UNMEASURED"}
+    t_start = _time.monotonic()
+    budget_s = None if deadline_s is None else float(deadline_s)
+    stop_at = None if budget_s is None else t_start + budget_s
+
+    def _overran() -> dict[str, Any]:
+        return {"status": UNMEASURED,
+                "why": (f"{p.name} creation count overran its {budget_s or 0.0:.0f} s deadline "
+                        f"({_time.monotonic() - t_start:.0f} s): creation rate is UNMEASURED "
+                        "this pass, never a partial count")}
+
+    if stop_at is not None and _time.monotonic() > stop_at:
+        return _overran()
+    busy_s = 30.0 if budget_s is None else max(0.0, min(30.0, budget_s))
     try:
-        c = sqlite3.connect(f"file:{p.as_posix()}?mode=ro", uri=True, timeout=30)
+        c = sqlite3.connect(f"file:{p.as_posix()}?mode=ro", uri=True, timeout=busy_s)
     except sqlite3.Error as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    if stop_at is not None:
+        _stop = stop_at
+        c.set_progress_handler(lambda: int(_time.monotonic() > _stop), _SQLITE_PROGRESS_EVERY)
     try:
         cut_24h = (now - timedelta(hours=24)).isoformat(timespec="seconds")
         cut_7d = (now - timedelta(hours=168)).isoformat(timespec="seconds")
@@ -1668,6 +1715,8 @@ def _creation_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
         ).fetchone()
         out = {"24h": int(n_24h), "7d": int(n_7d)}
     except sqlite3.Error as exc:
+        if stop_at is not None and _time.monotonic() > stop_at:
+            return _overran()
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
     finally:
         c.close()
@@ -1687,7 +1736,8 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
     growth per day, not as a large finite number. Any missing input makes the ETA UNMEASURED."""
     t = _now(now)
     ver = _verdict_counts(t, ledger, deadline_s=deadline_s, extra_cuts=extra_cuts)
-    cre = _creation_counts(t, registry)
+    cre = _creation_counts(t, registry, deadline_s=(
+        None if deadline_s is None else min(float(deadline_s), CREATION_BUDGET_S)))
     # One sweep can cover only a prefix of the full docket. Its remainder is not
     # the institutional backlog and must never drive a claim of full clearance.
     backlog = (UNMEASURED if queue.get("depth_scope") == "sweep"
