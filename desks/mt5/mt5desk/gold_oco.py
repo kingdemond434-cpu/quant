@@ -143,8 +143,50 @@ ALERT_ID = "gold_oco_identity_unavailable"
 ALERT_ROOT = _DESK.parent.parent
 PAGE_STATE_REL = "desks/mt5/logs/gold_oco_identity_alert.json"
 REPAGE_H = 6.0
-#: The pager: (title, body) -> result. None -> alert_channels.send_all under ALERT_ROOT.
+#: The pager: (title, body) -> result. Tests set it; None -> `provenance._page` when the tree
+#: carries it (publish_sync v5e, on this base), else alert_channels.send_all under ALERT_ROOT.
 PAGER: Callable[[str, str], dict[str, Any]] | None = None
+
+
+def _provenance_page() -> Callable[..., dict[str, Any]] | None:
+    """publish_sync's `provenance._page(aid, status, sig, title, body) -> dict`, or None.
+
+    v5e (on this base) SENDS and records its dedup state only for a DELIVERED page, atomically.
+    v5f (local branch claude/publish-sync-v5f) keeps the signature and becomes ENQUEUE-ONLY: it
+    writes one outbox row, returns `sent` False and a `queued` field, and `deliver_pending`
+    (MT5-BoxHeartbeat) sends it off the order path. This module needs no change for v5f: it
+    reports what `_page` answered (`queued` included)."""
+    root = str(Path(ALERT_ROOT))
+    try:
+        import sys as _sys
+        if root not in _sys.path:
+            _sys.path.insert(0, root)
+        from libs.ops import provenance
+    except Exception:
+        return None
+    fn = getattr(provenance, "_page", None)
+    return fn if callable(fn) else None
+
+
+def _save_page_state(path: Path, state: dict[str, Any]) -> None:
+    """The local dedup state, ATOMICALLY (tmp beside it, fsync, os.replace -- retried while
+    Windows holds the destination open). RAISES OSError when it cannot land."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write(json.dumps(state, sort_keys=True))
+        fh.flush()
+        os.fsync(fh.fileno())
+    for attempt in range(_WRITE_TRIES):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            if attempt == _WRITE_TRIES - 1:
+                with contextlib.suppress(OSError):
+                    tmp.unlink()
+                raise
+            time.sleep(0.05)
 
 
 def page_identity(lane: str, why: str | None, *,
@@ -152,21 +194,18 @@ def page_identity(lane: str, why: str | None, *,
     """Page that `lane`'s account cannot be named (why set), or that it can again (why None).
 
     Never raises (a trading loop calls it): a failure is returned as {"sent": False, "error"}.
-    The page names the lane and the reason only -- `IdentityUnavailable` never carries a login."""
+    The page names the lane and the reason only -- `IdentityUnavailable` never carries a login.
+
+    THE PAGE IS RECORDED ONLY WHEN IT WAS DELIVERED (v2s, audit v2r SF-1; login_fence's and
+    v5e's rule): a send whose `delivered` is 0, absent or falsy writes no dedup state, so the
+    next pass re-sends instead of muting the alert for REPAGE_H. The state is written
+    atomically. In production (no test PAGER) delivery and dedup are `provenance._page`'s --
+    v5e's sender today, v5f's enqueue-only outbox once v5f lands (`queued` is then reported)."""
     root = Path(ALERT_ROOT)
     now = now or datetime.now(tz=UTC)
     path = root / PAGE_STATE_REL
     out: dict[str, Any] = {"sent": False}
     try:
-        try:
-            prev_all = json.loads(path.read_text("utf-8"))
-            prev_all = prev_all if isinstance(prev_all, dict) else {}
-        except (OSError, ValueError):
-            prev_all = {}
-        prev = prev_all.get(lane) if isinstance(prev_all.get(lane), dict) else {}
-        last = None
-        with contextlib.suppress(TypeError, ValueError):
-            last = datetime.fromisoformat(str(prev.get("paged_at")))
         import sys as _sys
         if str(root) not in _sys.path:
             _sys.path.insert(0, str(root))
@@ -176,22 +215,45 @@ def page_identity(lane: str, why: str | None, *,
         if why is not None:
             ledger.observe(alert_id, f"gold OCO {lane}: {why}"[:600], scope="RUNTIME")
             ledger.save()
+            status, sig = "OPEN", why
+            title = f"GOLD OCO: {lane} places NO gold -- its account cannot be named"
+            body = (f"{why}\nEvery gold leg on the {lane} account is refused until the box-held "
+                    f"HMAC account key (data/secrets/account_key.hmac) answers again.")
+        else:
+            alert = ledger.alerts.get(alert_id)
+            if alert is not None and alert.open:
+                ledger.verify(alert_id, still_firing=False)
+                ledger.save()
+            status, sig = "OK", "recovered"
+            title = f"GOLD OCO: {lane} account named again"
+            body = f"the {lane} account is keyed again; gold legs are gated as usual"
+        prov_page = None if PAGER is not None else _provenance_page()
+        if prov_page is not None:
+            res = prov_page(alert_id, status, sig, title, body[:1500])
+            res = res if isinstance(res, dict) else {}
+            return {"sent": bool(res.get("sent")), "queued": res.get("queued"),
+                    "reason": res.get("reason") or ("recovered" if status == "OK" else "paged"),
+                    "armed": res.get("armed"), "delivered": res.get("delivered"),
+                    "via": "provenance._page"}
+        # THE LOCAL PATH (a test PAGER, or a tree without provenance._page): v5e's rules here.
+        try:
+            prev_all = json.loads(path.read_text("utf-8"))
+            prev_all = prev_all if isinstance(prev_all, dict) else {}
+        except (OSError, ValueError):
+            prev_all = {}
+        prev = prev_all.get(lane) if isinstance(prev_all.get(lane), dict) else {}
+        last = None
+        with contextlib.suppress(TypeError, ValueError):
+            last = datetime.fromisoformat(str(prev.get("paged_at")))
+        if status == "OPEN":
             if prev.get("why") != why:
                 reason = "changed"
             elif last is None or (now - last).total_seconds() / 3600.0 >= REPAGE_H:
                 reason = f"still standing after {REPAGE_H:g}h"
             else:
                 return {"sent": False, "reason": "deduplicated"}
-            title = f"GOLD OCO: {lane} places NO gold -- its account cannot be named"
-            body = (f"{why}\nEvery gold leg on the {lane} account is refused until the box-held "
-                    f"HMAC account key (data/secrets/account_key.hmac) answers again.")
         elif prev.get("why"):
-            alert = ledger.alerts.get(alert_id)
-            if alert is not None and alert.open:
-                ledger.verify(alert_id, still_firing=False)
-                ledger.save()
-            reason, title = "recovered", f"GOLD OCO: {lane} account named again"
-            body = f"the {lane} account is keyed again; gold legs are gated as usual"
+            reason = "recovered"
         else:
             return {"sent": False, "reason": "OK: nothing to page"}
         if PAGER is not None:
@@ -201,11 +263,14 @@ def page_identity(lane: str, why: str | None, *,
             res = alert_channels.send_all(title, body[:1500],
                                           config=root / "data/secrets/alert_channels.json",
                                           ledger=root / "data/alert_delivery.jsonl")
+        res = res if isinstance(res, dict) else {}
+        out = {"sent": bool(res.get("delivered")), "reason": reason, "armed": res.get("armed"),
+               "delivered": res.get("delivered")}
+        if not res.get("delivered"):
+            out["reason"] = f"{reason}: undelivered, re-sent next pass (nothing recorded)"
+            return out
         prev_all[lane] = {"why": why, "paged_at": now.isoformat(timespec="seconds")}
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(prev_all, sort_keys=True), "utf-8")
-        out = {"sent": True, "reason": reason, "armed": (res or {}).get("armed"),
-               "delivered": (res or {}).get("delivered")}
+        _save_page_state(path, prev_all)
     except Exception as exc:
         out = {"sent": False, "error": f"{type(exc).__name__}: {exc}"[:200]}
     return out
