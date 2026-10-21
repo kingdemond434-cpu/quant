@@ -350,6 +350,13 @@ def _gold_oco_world(_cross_account_books_in_tmp: Path, _account_key_in_tmp: None
     mode = _cross_account_books_in_tmp / "GOLD_OCO_MODE.json"
     mode.write_text('{"lanes": ["e8", "fusion"], "modes": {"fusion": "oco"}}', encoding="utf-8")
     monkeypatch.setattr(gold_oco, "MODE_FILE", mode)
+    # The identity pager pages into a tmp root through a recording stub: no test ever reaches
+    # the repo's alert ledger or a real channel. `gold_oco.PAGES` (test-only) holds what it sent.
+    paged: list[tuple[str, str]] = []
+    monkeypatch.setattr(gold_oco, "ALERT_ROOT", _cross_account_books_in_tmp / "alert_root")
+    monkeypatch.setattr(gold_oco, "PAGER", lambda title, body: (
+        paged.append((title, body)), {"armed": 1, "delivered": 1})[1])
+    monkeypatch.setattr(gold_oco, "PAGES", paged, raising=False)
     real_tl, real_mt5 = gold_oco.tradelocker_oco_key, gold_oco.mt5_oco_key
 
     def tl_key(venue: object) -> str:

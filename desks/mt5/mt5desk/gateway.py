@@ -1639,14 +1639,15 @@ def cancel_gold_against_direction(st: dict, lane: str, key: str | None, day_key:
     resting gold legs on the other side are removed (MAGIC only: manual orders are never touched;
     they still block the other accounts through the published gold state). Each removal is
     confirmed absent and noted in the direction state's `legs_cancelled`. Shadow logs only.
-    Returns how many were removed. An unreadable direction state cancels nothing (and places
-    nothing: the gate fails closed on the same reading)."""
+    Returns how many were removed.
+
+    v2 (audit must-fix 7): an UNREADABLE direction state cancels EVERY resting MAGIC gold leg
+    (`gold_oco.cancel_plan`): no leg is provably on the day's side, and the gate already refuses
+    new ones on the same reading. A leg that is absent after the remove but OPEN AS A POSITION
+    filled in between: it is not counted or noted as cancelled (the flatten leg takes it)."""
     from mt5desk import gold_oco as _oco
     entry, why = _oco.day_entry(day_key)
-    if why is not None:
-        log(f"gold OCO: {why}; no direction cancel this pass (no gold leg is placed either)")
-        return 0
-    if entry is None:
+    if why is None and entry is None:
         return 0
     legs = []
     for o in (mt5.orders_get(symbol=GOLD_SYMBOL) or []):
@@ -1657,12 +1658,14 @@ def cancel_gold_against_direction(st: dict, lane: str, key: str | None, day_key:
             continue
         legs.append({"id": int(o.ticket), "side": ("long" if t in (0, 2, 4, 6) else
                                                    "short" if t in (1, 3, 5, 7) else None)})
+    plan, reason = _oco.cancel_plan(lane, entry, why, legs)
+    if why is not None and plan:
+        log(f"ALERT gold OCO: {reason}")
     removed = 0
-    for leg in _oco.legs_to_cancel(lane, entry, legs):
+    for leg in plan:
         ticket = int(leg["id"])
         if not st.get("armed"):
-            log(f"SHADOW gold OCO would cancel {leg['side']} order {ticket}: today's direction "
-                f"is {entry.get('direction')} (first fill on {entry.get('first_fill_lane')})")
+            log(f"SHADOW gold OCO would cancel {leg['side']} order {ticket}: {reason}")
             continue
         try:
             res = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": ticket,
@@ -1677,12 +1680,82 @@ def cancel_gold_against_direction(st: dict, lane: str, key: str | None, day_key:
             log(f"gold OCO cancel NOT CONFIRMED for order {ticket} "
                 f"retcode={getattr(res, 'retcode', None)}; it remains live")
             continue
+        if any(ticket in (int(getattr(p, "ticket", 0) or 0), int(getattr(p, "identifier", 0) or 0))
+               for p in (mt5.positions_get(symbol=GOLD_SYMBOL) or [])):
+            log(f"ALERT gold OCO: order {ticket} FILLED before its cancel landed; not counted as "
+                f"cancelled (the flatten leg reads it)")
+            continue
         removed += 1
-        if key:
+        if key and entry is not None:
             _oco.note_cancelled(day_key, lane, key, ticket, leg["side"], holder="gateway")
-        log(f"gold OCO cancelled {leg['side']} order {ticket}: today's direction is "
-            f"{entry.get('direction')} (first fill on {entry.get('first_fill_lane')})")
+        log(f"gold OCO cancelled {leg['side']} order {ticket}: {reason}")
     return removed
+
+
+def _missed_usd(equity: object, q: object) -> float | None:
+    """The dollars a refused gold leg would have put at risk (equity x its realised q): the
+    missed-growth bill of a gold_oco / cross_account_opposite line (audit v2 must-fix 5). None
+    only when either is unreadable -- the line then counts as unpriced, never as zero."""
+    try:
+        e, f = float(equity), float(q)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+    return round(e * f, 2) if e > 0 and f >= 0 else None
+
+
+def flatten_gold_against_direction(st: dict, lane: str, day_key: str) -> int:
+    """A GOLD FILL AGAINST THE DAY'S DIRECTION IS CLOSED AT ONCE (gold_oco v2, audit must-fix 6).
+
+    This desk's own (MAGIC) gold positions opened today on the side opposite the day's
+    direction -- a leg that filled before its cancel landed, or a race the lock lost -- are closed
+    at market the pass they are seen; logging the conflict was not enough. A manual position on
+    the wrong side is never touched here: it is ALERTED (it still blocks the other accounts
+    through the published state). An unreadable direction state flattens nothing (no side is
+    known; the cancel leg has already taken every resting leg). Shadow logs only. Returns how
+    many closes were acknowledged."""
+    from mt5desk import gold_oco as _oco
+    entry, why = _oco.day_entry(day_key)
+    if why is not None or entry is None:
+        return 0
+    rows = []
+    for p in (mt5.positions_get(symbol=GOLD_SYMBOL) or []):
+        t = int(getattr(p, "type", -1))
+        ts = getattr(p, "time", None)
+        rows.append({"p": p, "id": int(getattr(p, "ticket", 0) or 0),
+                     "side": "long" if t == 0 else "short" if t == 1 else None,
+                     "opened_date": _oco.trading_date(ts) if isinstance(ts, (int, float))
+                     and not isinstance(ts, bool) and ts > 0 else None,
+                     "own": int(getattr(p, "magic", 0) or 0) == MAGIC})
+    closed = 0
+    for row in _oco.positions_to_flatten(entry, rows, date=day_key):
+        p = row["p"]
+        what = (f"gold {row['side']} position {row['id']} against {day_key}'s direction "
+                f"{entry.get('direction')} (first fill on {entry.get('first_fill_lane')})")
+        if not row["own"]:
+            log(f"ALERT gold OCO: a MANUAL {what}; not this desk's to close")
+            continue
+        if not st.get("armed"):
+            log(f"SHADOW gold OCO would FLATTEN {what}")
+            continue
+        tick = mt5.symbol_info_tick(GOLD_SYMBOL)
+        if tick is None:
+            log(f"ALERT gold OCO: no tick; cannot flatten {what} this pass")
+            continue
+        try:
+            res = mt5.order_send({
+                "action": mt5.TRADE_ACTION_DEAL, "symbol": GOLD_SYMBOL, "volume": p.volume,
+                "type": (mt5.ORDER_TYPE_SELL if row["side"] == "long" else mt5.ORDER_TYPE_BUY),
+                "position": int(p.ticket),
+                "price": tick.bid if row["side"] == "long" else tick.ask,
+                "deviation": 20, "magic": MAGIC, "comment": order_comment("oco_flatten")})
+        except Exception as exc:
+            log(f"ALERT gold OCO: FLATTEN FAILED for {what}: {type(exc).__name__}: {exc}")
+            continue
+        rc = getattr(res, "retcode", None) if res is not None else None
+        ok = rc in (10008, 10009)
+        closed += int(ok)
+        log(f"{'' if ok else 'ALERT '}gold OCO FLATTEN {what} -> retcode={rc}")
+    return closed
 
 
 def collapse_opposing_gold_positions(st: dict) -> int:
@@ -4686,10 +4759,27 @@ def main() -> None:
             except Exception as exc:
                 _gone = 0
                 log(f"gold OCO: direction cancel failed ({type(exc).__name__}: {exc})")
+            try:
+                _gone += flatten_gold_against_direction(st, _oco_lane, day_key)
+            except Exception as exc:
+                log(f"ALERT gold OCO: direction flatten failed ({type(exc).__name__}: {exc})")
             if not _gone:
-                break                         # republish only when a leg was removed
-    elif _oco_why:
-        log(f"gold OCO: {_oco_why}")
+                break                         # republish only when a leg or position went
+    else:
+        # UNNAMED: nothing is published or claimed, but the cancel leg still runs -- against the
+        # day's direction, or EVERY resting desk gold leg when the direction state is unreadable
+        # (gold_oco v2 must-fix 7).
+        if _oco_why:
+            log(f"gold OCO: {_oco_why}")
+        if _oco_lane:
+            try:
+                cancel_gold_against_direction(st, _oco_lane, None, day_key)
+            except Exception as exc:
+                log(f"gold OCO: direction cancel failed ({type(exc).__name__}: {exc})")
+    if _oco_lane:
+        _page = _oco.page_identity(_oco_lane, None if _oco_key else _oco_why)
+        if _page.get("sent") or _page.get("error"):
+            log(f"gold OCO identity page: {_page}")
 
     # THE SCALP LANE'S OWN MANAGEMENT, HERE AND NOT INSIDE ITS EXECUTOR (2026-09-09). A basket
     # the broker has closed and a basket past its time exit are POSITIONS, and this desk's
@@ -5277,14 +5367,16 @@ def main() -> None:
                         _rails_seen[f"{_oco.RAIL}/{s['name']}/{_leg}"] = day_key
                         _rails.line(_oco.RAIL, sleeve=s["name"], symbol=s["symbol"], side=_leg,
                                     day=day_key, lot=lot, risk_frac=q_real, why=_w,
-                                    lane=_oco_lane)
+                                    lane=_oco_lane,
+                                    missed_growth_risk_usd=_missed_usd(equity, q_real))
                 for _leg, _w in _xblocked.items():
                     log(f"[{s['name']}] {_leg} NOT SENT: {_w}")
                     if _rails_seen.get(f"cross_account_opposite/{s['name']}/{_leg}") != day_key:
                         _rails_seen[f"cross_account_opposite/{s['name']}/{_leg}"] = day_key
                         _rails.line("cross_account_opposite", sleeve=s["name"],
                                     symbol=s["symbol"], side=_leg, day=day_key, lot=lot,
-                                    risk_frac=q_real, why=_w)
+                                    risk_frac=q_real, why=_w,
+                                    missed_growth_risk_usd=_missed_usd(equity, q_real))
                 if {"buy_stop", "sell_stop"} <= _all_blocked:
                     log(f"[{s['name']}] bracket NOT placed: every leg is fenced this pass; "
                         f"retried next pass")

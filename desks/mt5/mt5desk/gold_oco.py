@@ -25,8 +25,13 @@ THE RULE.
      fill that day, then only E8's direction. Full OCO mode (any lane may lead) is taken only when
      `data/GOLD_OCO_MODE.json` says `"oco"` for the lane AND every declared lane's fresh state
      carries this PROTOCOL -- i.e. every lane is running code that honours the lock.
-  7. E8 (the LEADER) keeps its own two-leg behaviour on a day E8 itself set; on a day another
-     account set, E8's opposite resting leg is cancelled and its opposite leg is not placed.
+  7. ONE DIRECTION A DAY ON EVERY ACCOUNT, E8 INCLUDED (v2; supersedes v1's rule 8, which let
+     E8's own two legs keep their behaviour on a day E8 set). On the first fill anywhere, every
+     opposite resting gold leg is cancelled the pass it is seen -- E8's own twin among them -- no
+     new opposite leg is placed, and a fill that lands against the direction anyway (a whipsaw
+     inside one pass) is FLATTENED at once (`positions_to_flatten`). A blind lock cancels every
+     resting gold leg (`cancel_plan`), and an account that cannot be named PAGES
+     (`page_identity`), as well as placing nothing.
 
 THE STALENESS BOUND, MAX_STATE_AGE_S = 600 s. The slowest lane is E8-Gold, one pass every five
 minutes (the gateway passes every minute). Two E8 passes tolerate one late or lock-skipped pass;
@@ -150,6 +155,82 @@ def oco_account_key(login: object, server: object) -> str:
     return str(key)
 
 
+#: The identity alert (audit v2 must-fix 8): a missing or unkeyed HMAC key stops every gold leg
+#: on the account, so it is PAGED through the desk's alert path (libs.ops.alert_channels, the
+#: AlertLedger), not only logged -- login_fence's idiom: on a change, again every REPAGE_H while
+#: it stands, once on recovery. `ALERT_ROOT` is the repository root (tests point it at a tmp dir).
+ALERT_ID = "gold_oco_identity_unavailable"
+ALERT_ROOT = _DESK.parent.parent
+PAGE_STATE_REL = "desks/mt5/logs/gold_oco_identity_alert.json"
+REPAGE_H = 6.0
+#: The pager: (title, body) -> result. None -> alert_channels.send_all under ALERT_ROOT.
+PAGER: Callable[[str, str], dict[str, Any]] | None = None
+
+
+def page_identity(lane: str, why: str | None, *,
+                  now: datetime | None = None) -> dict[str, Any]:
+    """Page that `lane`'s account cannot be named (why set), or that it can again (why None).
+
+    Never raises (a trading loop calls it): a failure is returned as {"sent": False, "error"}.
+    The page names the lane and the reason only -- `IdentityUnavailable` never carries a login."""
+    root = Path(ALERT_ROOT)
+    now = now or datetime.now(tz=UTC)
+    path = root / PAGE_STATE_REL
+    out: dict[str, Any] = {"sent": False}
+    try:
+        try:
+            prev_all = json.loads(path.read_text("utf-8"))
+            prev_all = prev_all if isinstance(prev_all, dict) else {}
+        except (OSError, ValueError):
+            prev_all = {}
+        prev = prev_all.get(lane) if isinstance(prev_all.get(lane), dict) else {}
+        last = None
+        with contextlib.suppress(TypeError, ValueError):
+            last = datetime.fromisoformat(str(prev.get("paged_at")))
+        import sys as _sys
+        if str(root) not in _sys.path:
+            _sys.path.insert(0, str(root))
+        from libs.ops.alert_ledger import AlertLedger
+        ledger = AlertLedger(root / "data" / "alert_ledger.json")
+        alert_id = f"{ALERT_ID}:{lane}"
+        if why is not None:
+            ledger.observe(alert_id, f"gold OCO {lane}: {why}"[:600], scope="RUNTIME")
+            ledger.save()
+            if prev.get("why") != why:
+                reason = "changed"
+            elif last is None or (now - last).total_seconds() / 3600.0 >= REPAGE_H:
+                reason = f"still standing after {REPAGE_H:g}h"
+            else:
+                return {"sent": False, "reason": "deduplicated"}
+            title = f"GOLD OCO: {lane} places NO gold -- its account cannot be named"
+            body = (f"{why}\nEvery gold leg on the {lane} account is refused until the box-held "
+                    f"HMAC account key (data/secrets/account_key.hmac) answers again.")
+        elif prev.get("why"):
+            alert = ledger.alerts.get(alert_id)
+            if alert is not None and alert.open:
+                ledger.verify(alert_id, still_firing=False)
+                ledger.save()
+            reason, title = "recovered", f"GOLD OCO: {lane} account named again"
+            body = f"the {lane} account is keyed again; gold legs are gated as usual"
+        else:
+            return {"sent": False, "reason": "OK: nothing to page"}
+        if PAGER is not None:
+            res = PAGER(title, body[:1500])
+        else:
+            from libs.ops import alert_channels
+            res = alert_channels.send_all(title, body[:1500],
+                                          config=root / "data/secrets/alert_channels.json",
+                                          ledger=root / "data/alert_delivery.jsonl")
+        prev_all[lane] = {"why": why, "paged_at": now.isoformat(timespec="seconds")}
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(prev_all, sort_keys=True), "utf-8")
+        out = {"sent": True, "reason": reason, "armed": (res or {}).get("armed"),
+               "delivered": (res or {}).get("delivered")}
+    except Exception as exc:
+        out = {"sent": False, "error": f"{type(exc).__name__}: {exc}"[:200]}
+    return out
+
+
 def mt5_oco_key(mt5: Any) -> str:
     """The keyed account key of the MT5 account under `mt5`."""
     try:
@@ -211,15 +292,53 @@ def legs_to_cancel(lane: str, entry: dict[str, Any] | None,
                    own_legs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """The lane's OWN resting gold legs the day's direction cancels. Pure.
 
-    None when no direction is set, and none for the leader on a day it set itself (its own twin
-    cancel keeps its current behaviour). A leg whose side cannot be read is cancelled: it is not
-    provably the day's direction."""
+    None when no direction is set. On every lane -- the leader included (v2 growth upgrade,
+    audit must-fix 4: E8's twin was left to E8's own five-minute twin cancel, so a whipsaw could
+    fill both legs) -- every resting leg against the day's direction is cancelled the pass the
+    direction is seen, the first fill's own twin among them. A leg whose side cannot be read is
+    cancelled: it is not provably the day's direction."""
     if not entry or side_of(entry.get("direction")) is None:
-        return []
-    if lane == LEADER and entry.get("first_fill_lane") == LEADER:
         return []
     d = side_of(entry.get("direction"))
     return [leg for leg in own_legs if side_of(leg.get("side")) != d]
+
+
+def cancel_plan(lane: str, entry: dict[str, Any] | None, why: str | None,
+                own_legs: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str]:
+    """(the lane's own resting gold legs to cancel now, why). Pure.
+
+    BLIND IS CANCEL-ALL (audit v2 must-fix 7): when the direction state cannot be read (`why`
+    set), no leg is provably on the day's side, so EVERY resting gold leg on the lane's book is
+    cancelled -- a resting stop is a fill the lock can no longer veto. Otherwise
+    `legs_to_cancel`."""
+    if why is not None:
+        return list(own_legs), f"the gold direction state is unreadable ({why}); every resting " \
+                               f"gold leg is cancelled"
+    d = (entry or {}).get("direction")
+    return legs_to_cancel(lane, entry, own_legs), (
+        f"today's gold direction is {d} (first fill on {(entry or {}).get('first_fill_lane')})")
+
+
+def positions_to_flatten(entry: dict[str, Any] | None, own_positions: list[dict[str, Any]],
+                         *, date: str) -> list[dict[str, Any]]:
+    """The lane's OWN gold positions OPENED TODAY against the day's direction. Pure.
+
+    A FILL AGAINST THE DIRECTION IS FLATTENED AT ONCE (audit v2 must-fix 6): logging the
+    conflict is not enough, the account then carries a position the lock exists to prevent. A
+    position carried from an earlier day is not touched (it predates the day's direction; it still
+    blocks the other side through `gate`). A position whose open date cannot be read counts as
+    today's (the cautious reading for a position that IS open on the wrong side)."""
+    d = side_of((entry or {}).get("direction"))
+    if d is None:
+        return []
+    out = []
+    for p in own_positions:
+        opened = p.get("opened_date")
+        if opened not in (None, "") and str(opened) != str(date):
+            continue
+        if side_of(p.get("side")) != d:
+            out.append(p)
+    return out
 
 
 # ------------------------------------------------------------------ files
@@ -552,9 +671,6 @@ def gate(lane: str | None, side: object, *, key: str | None, date: str,
                                   f"here could fill against it", mode)
     if entry is not None:
         d, first = side_of(entry.get("direction")), entry.get("first_fill_lane")
-        if lane == LEADER and first == LEADER:
-            return Verdict(True, f"gold OCO: {date} set {d} by E8 itself; E8's own legs keep "
-                                 f"their behaviour", mode)
         if mode == "fallback" and first != LEADER:
             return Verdict(False, f"gold OCO fallback: {date}'s direction was set by {first}, "
                                   f"and fallback copies only E8's first fill", mode)
