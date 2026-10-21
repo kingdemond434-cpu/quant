@@ -1,0 +1,22 @@
+[
+  {
+    "source": "youtube",
+    "title": "EURUSD , 15 Min ORB Strategy Backtest | 03 September 2026 | New York Session | FVG setup | Day 3",
+    "channel": "AlgoTradePath",
+    "url": "https://youtube.com/watch?v=kgEv3ch8Yo4",
+    "published": "2026-10-16T13:30:34Z",
+    "symbols": [
+      "EURUSD"
+    ],
+    "timeframes": [
+      [
+        "15",
+        "Min"
+      ]
+    ],
+    "patterns": [
+      "FVG"
+    ],
+    "confidence": 0.44999999999999996
+  }
+]
