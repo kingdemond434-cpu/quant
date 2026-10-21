@@ -1,58 +1,60 @@
 {
- "at": "2026-10-19T22:51:50+00:00",
+ "at": "2026-10-21T05:44:27+00:00",
  "verdicts": {
   "status": "MEASURED",
-  "rows_total": 940793,
+  "rows_total": 987360,
   "rows_unstamped": 0,
-  "last_verdict_at": "2026-10-17T20:34:08+00:00",
+  "last_verdict_at": "2026-10-21T05:13:03+00:00",
   "counts": {
-   "1h": 0,
-   "24h": 0,
-   "7d": 77178
+   "1h": 16484,
+   "24h": 46567,
+   "7d": 123121
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
-   "1h": 0,
-   "24h": 0,
-   "7d": 48517
+   "1h": 13778,
+   "24h": 31457,
+   "7d": 79541
   },
-  "first_terminal_cells": 340936,
+  "first_terminal_cells": 372393,
   "first_terminal_per_hour": {
-   "1h": 0.0,
-   "24h": 0.0,
-   "7d": 288.792
+   "1h": 13778.0,
+   "24h": 1310.708,
+   "7d": 473.458
   },
   "per_hour": {
-   "1h": 0.0,
-   "24h": 0.0,
-   "7d": 459.393
+   "1h": 16484.0,
+   "24h": 1940.292,
+   "7d": 732.863
   }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 147454,
-   "7d": 263744
+   "24h": 35682,
+   "7d": 291157
   },
   "per_hour": {
-   "24h": 6143.917,
-   "7d": 1569.905
+   "24h": 1486.75,
+   "7d": 1733.077
   }
  },
- "verdicts_per_hour": 0.0,
- "verdicts_per_day": 0.0,
+ "verdicts_per_hour": 1940.292,
+ "verdicts_per_day": 46567.0,
  "verdict_rate_basis": "changed verdict events, not total completed tests",
- "first_judged_per_day": 0.0,
+ "first_judged_per_day": 31457.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
- "coverage_backlog_fresh": false,
- "created_per_day": 147454.0,
- "backlog": "UNMEASURED",
- "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
+ "coverage_backlog_fresh": true,
+ "created_per_day": 35682.0,
+ "backlog": 1243527,
+ "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\JUDGE_COVERAGE.json totals.unjudged_total",
  "eta_to_drain": {
-  "status": "UNMEASURED",
-  "why": "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
+  "status": "GROWING",
+  "hours": null,
+  "net_per_day": -4225.0,
+  "why": "the judge returns fewer verdicts an hour than the desk creates cells; the backlog cannot drain at this rate"
  },
- "workers_planned": 10,
+ "workers_planned": 15,
  "workers_last_sweep": "UNMEASURED",
  "cores_basis": "fixed_reservation"
 }

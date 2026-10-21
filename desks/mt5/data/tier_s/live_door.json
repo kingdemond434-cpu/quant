@@ -1,10 +1,6 @@
 {
- "generated_utc": "2026-10-19T22:43:40.499263+00:00",
- "n_live": 3,
- "rows": {
-  "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": "DOOR_ERROR: the fdr check raised DoorReadError: ONLINE_FDR_ROWS.json stale or undated (> 6h): its hourly verifier has stopped reporting; withheld until it runs clean",
-  "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": "DOOR_ERROR: the fdr check raised DoorReadError: ONLINE_FDR_ROWS.json stale or undated (> 6h): its hourly verifier has stopped reporting; withheld until it runs clean",
-  "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007": "DOOR_ERROR: the fdr check raised DoorReadError: ONLINE_FDR_ROWS.json stale or undated (> 6h): its hourly verifier has stopped reporting; withheld until it runs clean"
- },
+ "generated_utc": "2026-10-21T07:44:43.487829+00:00",
+ "n_live": 0,
+ "rows": {},
  "consumer": "research/promoter.py automatic retirement (desktop batch: promoter.py is sealed)"
 }
