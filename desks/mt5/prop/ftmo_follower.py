@@ -647,6 +647,43 @@ def _send(mt5: Any, st: dict[str, Any], req: dict[str, Any], *, cet: str,
     return mt5.order_send(req)
 
 
+def order_risk_usd(mt5: Any, order: Any) -> float | None:
+    """The account-currency risk of a resting MAGIC entry to its stop: volume x |price - sl| x
+    the contract size. None when any of them is unreadable (the bill is then UNPRICED, never 0)."""
+    try:
+        vol = float(getattr(order, "volume_current", None) or getattr(order, "volume_initial"))
+        dist = abs(float(order.price_open) - float(order.sl))
+        contract = float(mt5.symbol_info(SYMBOL).trade_contract_size)
+    except (AttributeError, TypeError, ValueError):
+        return None
+    risk = vol * dist * contract
+    return round(risk, 2) if math.isfinite(risk) and risk > 0 and float(order.sl) > 0 else None
+
+
+def _bill_cancel(mt5: Any, doc: dict[str, Any], st: dict[str, Any], order: Any, *, reason: str,
+                 why: str, today: str, now: datetime) -> None:
+    """One RAIL_BLOCKED row for a cancelled resting entry, once per window per trading day
+    (`st["logged"]["cancel/<window>"]`), billed at the order's own risk -- the pass's planned
+    risk when the order's levels cannot be read. Never raises (a trading loop calls it)."""
+    try:
+        seen = st.setdefault("logged", {})
+        slot = f"cancel/{WINDOW}"
+        if seen.get(slot) == today:
+            return
+        usd = order_risk_usd(mt5, order)
+        if usd is None:
+            usd = doc.get("planned_usd")
+        seen[slot] = today
+        _record({"at": now.isoformat(timespec="seconds"), "window": WINDOW, "lane": LANE,
+                 "status": "RAIL_BLOCKED", "rail": RAIL, "reason": reason,
+                 "why": f"resting order {int(order.ticket)} cancelled: {why}",
+                 "order_id": int(order.ticket),
+                 "missed_growth_risk_usd": None if usd is None else round(float(usd), 2)})
+        doc.setdefault("billed_cancels", []).append(int(order.ticket))
+    except Exception as exc:
+        log(f"[{WINDOW}] the cancel bill was not written ({type(exc).__name__}: {exc})")
+
+
 def _skip(doc: dict[str, Any], st: dict[str, Any], reason: str, why: str, *, today: str,
           now: datetime, missed_usd: float | None = None, alert: bool = False,
           rail: str = RAIL) -> None:
@@ -757,6 +794,15 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
             act["shadow"] = True
         log(f"[{WINDOW}] cancel resting order {o.ticket}: {act['why']} -> {act.get('ok')}")
         doc["actions"].append(act)
+        if act["ok"] and why_cancel != "the asia window's session is over":
+            # THE CANCEL IS A REFUSAL TOO (OCO v2s, audit v2r MF-B): an entry withdrawn because
+            # E8's state is stale, unreadable or no longer shows the fill (or the order is
+            # against E8's direction) is risk the lane held back. The "one order" step below
+            # writes nothing while an own order or position exists, so the bill is written HERE:
+            # one RAIL_BLOCKED row per window per day, carrying the cancelled order's own risk.
+            _bill_cancel(mt5, doc, st, o, reason=("cancel_" + action if action != "follow"
+                                                  else "cancel_against_direction"),
+                         why=why_cancel, today=today, now=now)
     # A FILL AGAINST THE DAY'S DIRECTION IS CLOSED AT ONCE (gold_oco v2, must-fix 6).
     _rows = [{"p": p, "id": int(p.ticket),
               "side": "long" if int(getattr(p, "type", -1)) == 0 else "short",
@@ -873,6 +919,43 @@ def _place(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[str, Any
         _skip(doc, st, "gap_guard", f"within {GAP_GUARD_H:g}h of gold's market close (FTMO: no "
                                     f"gap trading)", today=today, now=now)
         return
+    # THE DECISION AND THE SEND ARE ONE, UNDER THE PLACEMENT LOCK (OCO v2s, audit v2r SF-2):
+    # the gate, its live re-read of every lane, the sizing and the send run while no other lane
+    # can place or publish -- so in "oco" mode no other account's fill can land between this
+    # lane's reading and its order. The lane's own book is re-read and republished under it too.
+    with _xa.placement_lock(f"ftmo_follower:{WINDOW}") as locked:
+        if not locked:
+            _skip(doc, st, "gold_oco", "gold OCO: the placement lock is held by another lane; "
+                                       "fail closed (retried next pass)", today=today, now=now)
+            return
+        _place_locked(mt5, st, doc, sig, key=key, decl=decl, armed=armed, today=today, now=now,
+                      hour=hour, cet=cet, cet_midnight=cet_midnight, tick=tick)
+
+
+def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[str, Any], *,
+                  key: str, decl: dict[str, Any], armed: bool, today: str, now: datetime,
+                  hour: float, cet: str, cet_midnight: datetime, tick: Any) -> None:
+    """`_place`'s decision and send. Called ONLY under `cross_account.placement_lock`."""
+    side = sig["side"]
+    live_pos, live_ord = mt5.positions_get(symbol=SYMBOL), mt5.orders_get(symbol=SYMBOL)
+    if live_pos is None or live_ord is None:
+        _skip(doc, st, "book_unreadable", "the FTMO terminal did not answer positions/orders "
+                                          "under the placement lock", today=today, now=now)
+        return
+    against = [int(getattr(x, "ticket", 0) or 0) for x in [*live_pos, *live_ord]
+               if _side_of_type(int(getattr(x, "type", -1))) not in (None, side)]
+    if against:
+        _skip(doc, st, "opposite_exposure", (f"FTMO holds or rests gold against E8's {side} "
+                                             f"({against}); this lane never opens the other way"),
+              today=today, now=now, alert=True)
+        return
+    resync = _oco.sync_lane(LANE, key, lambda: _oco.mt5_gold_rows(mt5), date=today,
+                            holder="ftmo_follower:place")
+    if not resync.get("published"):
+        _skip(doc, st, "gold_oco", f"gold OCO: this lane's gold state was not republished under "
+                                   f"the lock ({resync.get('why')}); fail closed",
+              today=today, now=now)
+        return
     v = _oco.gate(LANE, side, key=key, date=today)
     if not v.allowed:
         _skip(doc, st, "gold_oco", v.why, today=today, now=now)
@@ -983,6 +1066,10 @@ def _place(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[str, Any
                              "e8_position_id": sig["e8_position_id"], "status": row["status"]}
     doc["placed"].append(row)
     log(f"[{WINDOW}] {row['status']} {kind} {lot} {SYMBOL} @ {sig['price']:.2f} -> {code}")
+    # The resting order is in this lane's published gold state before the lock is released.
+    after = _oco.sync_lane(LANE, key, lambda: _oco.mt5_gold_rows(mt5), date=today,
+                           holder="ftmo_follower:sent")
+    doc["gold_oco"]["republished_after_send"] = bool(after.get("published"))
 
 
 def _atomic_write(path: Path, text: str) -> None:
