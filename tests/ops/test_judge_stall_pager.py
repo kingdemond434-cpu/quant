@@ -733,7 +733,7 @@ def test_a_present_non_int_n_judged_reads_unmeasured_never_n_cells(jsp, tmp_path
 
 def test_a_plain_int_n_judged_still_reads(jsp, tmp_path):
     end = NOW - timedelta(hours=2)
-    for v, opened in ((0, True), (17, False), (-1, False)):
+    for v, opened in ((0, True), (17, False)):
         f = tmp_path / f"r{v}.json"
         f.write_text(json.dumps({"n_cells": 500, "n_judged": v, "verdicts": [],
                                  "swept_at": _iso(end)}, indent=2), "utf-8")
@@ -782,3 +782,67 @@ def test_the_prewarm_limit_never_exceeds_the_hang_cap(jsp):
     assert jsp.phase_limits(jsp.RESIDENT_HANG_CAP_S)["prewarm"] == 48.0
     assert jsp.phase_limits(8_640.0)["prewarm"] == round(1.5 * 9_740 / 3600, 2)
     assert jsp.phase_limits(1e9)["prewarm"] == 48.0
+
+
+# ---- v6 (audit of 98bb7726c) ----
+
+@pytest.mark.parametrize("big", [False, True])
+@pytest.mark.parametrize("key", ["n_judged", "n_cells"])
+def test_a_negative_count_reads_unmeasured(jsp, tmp_path, big, key):
+    end = NOW - timedelta(hours=2)
+    body: dict[str, Any] = {"hunt": "h"}
+    if big:
+        body["trial_census"] = ["c" * 100] * 20_000
+    body.update({key: -1, "verdicts": [], "swept_at": _iso(end - timedelta(minutes=30))})
+    f = tmp_path / "r.json"
+    f.write_text(json.dumps(body, indent=2), "utf-8")
+    z = jsp._zero_judged(_done(end), f)
+    assert z["open"] is None and "cells" not in z
+    assert jsp._count("-0") == 0 and jsp._count("-1") is None
+
+
+def test_conflicting_duplicate_n_judged_reads_unmeasured(jsp, tmp_path):
+    end = NOW - timedelta(hours=2)
+    stamp = _iso(end - timedelta(minutes=30))
+    f = tmp_path / "r.json"
+    f.write_text('{\n  "n_judged": 5,\n  "verdicts": [],\n  "n_judged": 0,\n'
+                 f'  "swept_at": "{stamp}"\n}}\n', "utf-8")
+    z = jsp._zero_judged(_done(end), f)
+    assert z["open"] is None and "conflicting duplicates" in z["why"]
+    same = tmp_path / "s.json"
+    same.write_text('{\n  "n_judged": 0,\n  "n_judged": 0,\n'
+                    f'  "swept_at": "{stamp}"\n}}\n', "utf-8")
+    assert jsp._zero_judged(_done(end), same)["open"] is True       # agreeing duplicates read
+
+
+def test_the_head_drops_its_cut_last_line(jsp, tmp_path):
+    """A value straddling RESULT_HEAD_BYTES must not read as its truncation."""
+    end = NOW - timedelta(hours=2)
+    prefix = '{\n  "hunt": "'
+    line = '  "n_judged": 10.5,\n'
+    # place the cut just after '  "n_judged": 1'
+    fill = jsp.RESULT_HEAD_BYTES - len(prefix) - len('",\n') - len('  "n_judged": 1')
+    text = (prefix + "h" * fill + '",\n' + line + '  "big": "' + "b" * 400_000 + '",\n'
+            f'  "swept_at": "{_iso(end - timedelta(minutes=30))}"\n}}\n')
+    f = tmp_path / "r.json"
+    f.write_text(text, "utf-8")
+    assert text.encode().index(b'"n_judged": 1') + len('"n_judged": 1') + 2 \
+        == jsp.RESULT_HEAD_BYTES
+    head = jsp._result_head_tail(f)[0]
+    assert '"n_judged"' not in head and head.endswith("\n")
+    z = jsp._zero_judged(_done(end), f)
+    assert z["open"] is None and z["read"].startswith("streamed")      # 10.5, not 1
+
+
+def test_a_gap_past_keep_does_not_delay_the_page(jsp, tmp_path):
+    """clean, a 250-min gap, then UNMEASURED every 10 min: pages on the second U."""
+    ch = Channel()
+
+    def torn_after(t: datetime, p: dict) -> None:
+        if t > NOW:
+            p["resident"].write_text("{torn", "utf-8")
+
+    docs = _series(jsp, tmp_path, ch, [0, 250, 260, 270], torn_after)
+    assert docs[1]["page"]["opened"] == [] and docs[2]["page"]["opened"] == ["inputs_unmeasured"]
+    hist = _state(jsp, tmp_path)["unmeasured_hist"]["resident_dead"]
+    assert hist[0][0] == _iso(NOW)                       # the reading before the gap is kept

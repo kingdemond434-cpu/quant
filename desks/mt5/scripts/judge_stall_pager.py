@@ -315,7 +315,9 @@ def _result_head_tail(path: Path) -> tuple[str, str, bool] | None:
 
     The tail's first line is dropped unless the tail starts at byte 0: it begins mid-line, so
     its indentation -- the only thing that says a key is top-level -- is not there to read. The
-    third element says whether the two reads cover the whole file.
+    head's last line is dropped unless the head is the whole file: a value cut at the byte
+    limit would read as a different value (`10.5` as `1`). The third element says whether the
+    two reads cover the whole file.
     """
     try:
         with path.open("rb") as fh:
@@ -330,6 +332,8 @@ def _result_head_tail(path: Path) -> tuple[str, str, bool] | None:
     if start > 0:
         cut = tail.find(b"\n")
         tail = tail[cut + 1:] if cut >= 0 else b""
+    if size > len(head):
+        head = head[:head.rfind(b"\n") + 1]           # -1 + 1: no whole line at all
     return (head.decode("utf-8", "replace"), tail.decode("utf-8", "replace"),
             size <= RESULT_HEAD_BYTES + RESULT_TAIL_BYTES)
 
@@ -362,8 +366,18 @@ _PLAIN_INT = re.compile(r"-?\d+")
 
 
 def _count(raw: str) -> int | None:
-    """A count line's value as a plain JSON int, or None (null, a string, a bool, a list...)."""
-    return int(raw) if _PLAIN_INT.fullmatch(raw) else None
+    """A count line's value as a plain non-negative JSON int, or None (null, a string, a bool,
+    a list, a float -- or a negative, which no count can be: audit of 98bb7726c)."""
+    if not _PLAIN_INT.fullmatch(raw):
+        return None
+    val = int(raw)
+    return val if val >= 0 else None
+
+
+def _one(values: list[str]) -> str | None:
+    """The key's one value; None when it appears with conflicting values. json.loads keeps the
+    LAST duplicate and this reader would keep the first, so a conflict is not a measurement."""
+    return values[0] if len(set(values)) == 1 else None
 
 
 def _scan_top(path: Path, indent: str) -> dict[str, list[str]] | None:
@@ -430,17 +444,20 @@ def _zero_judged(doc: dict[str, Any], sweep_result: Path) -> dict[str, Any]:
                         f"{end.isoformat(timespec='seconds')}) -- an rc-0 sweep that wrote no "
                         f"result reads this way")}
     if vals["n_judged"]:
-        got = _count(vals["n_judged"][0])
+        one = _one(vals["n_judged"])
+        got = None if one is None else _count(one)
         if got is None:
-            return {"open": None, "read": read, "value": vals["n_judged"][0][:40],
+            shown = " / ".join(dict.fromkeys(vals["n_judged"]))[:60]
+            what = "conflicting duplicates" if one is None else "not a non-negative int"
+            return {"open": None, "read": read, "value": shown,
                     "why": (f"{UNMEASURED}: {sweep_result.name}'s top-level n_judged is "
-                            f"{vals['n_judged'][0][:40]!r}, not an int -- and a present "
-                            f"n_judged is never replaced by n_cells")}
+                            f"{shown!r}, {what} -- and a present n_judged is never replaced "
+                            f"by n_cells")}
         cells, basis = got, "n_judged"
-    elif streamed and vals["n_cells"] and _count(vals["n_cells"][0]) is not None:
+    elif streamed and vals["n_cells"] and _count(_one(vals["n_cells"]) or "") is not None:
         # Only once the whole file is known to carry no n_judged: external_gauntlet's
         # no-gate-1 branch (:3886-3895) writes n_cells 0 and no n_judged.
-        cells = _count(vals["n_cells"][0]) or 0
+        cells = _count(_one(vals["n_cells"]) or "") or 0
         basis = "n_cells (the result carries no n_judged)"
     else:
         return {"open": None, "read": read,
@@ -656,7 +673,11 @@ def _unmeasured_history(raw: object, inc: dict[str, dict[str, Any]],
         valid.sort(key=lambda r: r[0])
         # The newest earlier reading is always kept, however old: it is the one two consecutive
         # UNMEASURED readings are counted against when the runs are spaced past the window.
-        recent = [r for r in valid if r[0] >= now - keep] or valid[-1:]
+        # ...and kept beside the recent ones, so a gap longer than `keep` never empties the
+        # window's predecessor and delays a page by a bound (audit of 98bb7726c).
+        recent = [r for r in valid if r[0] >= now - keep]
+        older = [r for r in valid if r[0] < now - keep][-1:]
+        recent = older + recent
         kept = [[t.isoformat(timespec="seconds"), u] for t, u in recent]
         kept.append([now.isoformat(timespec="seconds"),
                      1 if (inc.get(k) or {}).get("open") is None else 0])
