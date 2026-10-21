@@ -756,6 +756,73 @@ def test_a_missing_key_pages_once_dedupes_and_pages_the_recovery(monkeypatch) ->
     assert "error" in oco.page_identity("e8", "boom", now=t0)       # never raises
 
 
+def test_an_undelivered_identity_page_records_nothing_and_is_re_sent(monkeypatch) -> None:
+    """v2s SF-1: a page whose `delivered` is 0 is NOT a page -- no dedup state is written, so the
+    next pass re-sends it (it used to be muted for REPAGE_H). A delivered one is recorded,
+    atomically (no temp file left), and then deduplicated."""
+    t0 = datetime(2026, 10, 21, 6, 0, tzinfo=UTC)
+    sent: list[str] = []
+    delivered = {"n": 0}
+    monkeypatch.setattr(oco, "PAGER", lambda t, b: (sent.append(t),
+                                                    {"armed": 1, "delivered": delivered["n"]})[1])
+    state = Path(oco.ALERT_ROOT) / oco.PAGE_STATE_REL
+    why = "the box-held HMAC account key is absent"
+    r1 = oco.page_identity("fusion", why, now=t0)
+    assert r1["sent"] is False and "undelivered" in r1["reason"] and not state.exists()
+    r2 = oco.page_identity("fusion", why, now=t0 + timedelta(minutes=5))
+    assert r2["reason"] != "deduplicated" and len(sent) == 2          # re-sent, not muted
+    delivered["n"] = 1
+    assert oco.page_identity("fusion", why, now=t0 + timedelta(minutes=10))["sent"] is True
+    assert json.loads(state.read_text("utf-8"))["fusion"]["why"] == why
+    assert not [x for x in state.parent.iterdir() if x.name.endswith(".tmp")]
+    assert oco.page_identity("fusion", why,
+                             now=t0 + timedelta(minutes=15))["reason"] == "deduplicated"
+    # An undelivered RECOVERY is not recorded either: the next pass re-sends it.
+    delivered["n"] = 0
+    assert oco.page_identity("fusion", None, now=t0 + timedelta(hours=1))["sent"] is False
+    assert json.loads(state.read_text("utf-8"))["fusion"]["why"] == why
+    delivered["n"] = 1
+    assert oco.page_identity("fusion", None, now=t0 + timedelta(hours=2))["reason"] == "recovered"
+
+
+def test_in_production_the_identity_page_goes_through_provenance_page(monkeypatch) -> None:
+    """v2s SF-1: with no test PAGER the page is v5e's `provenance._page` (on this base): its
+    delivered-only, atomic dedup -- an undelivered page is re-sent, a delivered one dedupes."""
+    from libs.ops import provenance as p
+    monkeypatch.setattr(oco, "PAGER", None)
+    monkeypatch.setattr(p, "_PAGED", set())
+    monkeypatch.setattr(p, "_LAST_TRY", {})
+    got: list[str] = []
+    delivered = {"n": 0}
+    monkeypatch.setattr(p, "SENDER", lambda t, b: (got.append(t),
+                                                   {"armed": 1, "delivered": delivered["n"]})[1])
+    why = "the box-held HMAC account key is absent"
+    r1 = oco.page_identity("fusion", why)
+    assert r1["via"] == "provenance._page" and r1["sent"] is False and len(got) == 1
+    p._LAST_TRY.clear()                                  # past v5e's undelivered-retry throttle
+    delivered["n"] = 1
+    r2 = oco.page_identity("fusion", why)
+    assert r2["sent"] is True and len(got) == 2         # re-sent: the miss recorded nothing
+    assert oco.page_identity("fusion", why)["sent"] is False and len(got) == 2
+    assert not (Path(oco.ALERT_ROOT) / oco.PAGE_STATE_REL).exists()   # one dedup state: v5e's
+
+
+def test_a_v5f_enqueue_only_page_is_reported_as_queued(monkeypatch) -> None:
+    """publish_sync v5f keeps `_page(aid, status, sig, title, body) -> dict` and makes it
+    enqueue-only (`sent` False, `queued` True). page_identity reports that unchanged."""
+    from libs.ops import provenance as p
+    monkeypatch.setattr(oco, "PAGER", None)
+    calls: list[tuple] = []
+    monkeypatch.setattr(p, "_page", lambda aid, status, sig, title, body: (
+        calls.append((aid, status, sig)),
+        {"sent": False, "queued": True, "reason": "queued: delivered off the order path"})[1])
+    r = oco.page_identity("e8", "the TradeLocker venue cannot be named")
+    assert r["queued"] is True and r["sent"] is False and r["via"] == "provenance._page"
+    assert calls == [(f"{oco.ALERT_ID}:e8", "OPEN", "the TradeLocker venue cannot be named")]
+    oco.page_identity("e8", None)
+    assert calls[-1] == (f"{oco.ALERT_ID}:e8", "OK", "recovered")
+
+
 def test_e8_with_no_box_key_pages(monkeypatch, tmp_path) -> None:
     from libs.ops import provenance as p
     _world("oco")
