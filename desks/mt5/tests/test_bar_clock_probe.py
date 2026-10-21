@@ -34,12 +34,16 @@ def _ms(when: datetime) -> int:
 
 
 def _row(when: datetime, offset_h: int, sym: str = "EURUSD", *, age_s: float = 2.0,
-         bar: bool = True) -> dict:
+         bar: bool = True, live: bool | None = None) -> dict:
+    """One capture. `live` defaults to whether the tick is young enough for the capture to
+    have SEEN it advance; a stale tick carries no liveness proof (age_bound_ms None)."""
     local = _ms(when)
     server = local + offset_h * H - int(age_s * 1000)
     srv_hour = (local + offset_h * H) // H * H
+    live = age_s <= 60 if live is None else live
     return {"source": "terminal", "symbol": sym, "local_ms": local, "server_ms": server,
-            "bar_open_ms": srv_hour if bar else None}
+            "bar_open_ms": srv_hour if bar else None,
+            "age_bound_ms": int(max(age_s, 0.25) * 1000) if live else None}
 
 
 def _ledger(root: Path, rows: list[dict]) -> None:
@@ -72,11 +76,50 @@ def test_a_fresh_tick_and_its_bar_read_the_offset():
     assert bp.read_probe(_row(t, 2, bar=False)) == (2, "FRESH_TICK")
 
 
-def test_a_stale_tick_is_rejected_never_rounded():
-    """A weekend tick 36h old lands between hours; rounding it would invent an offset."""
+def test_a_tick_without_proof_of_liveness_is_never_read():
+    """A weekend tick exactly 5h old sits ON a whole hour, so nearness would read it as +3-5 = -2;
+    the bar check cannot catch it (the last bar is just as old). Only an advancing tick counts."""
     t = datetime(2026, 7, 4, 12, 0, tzinfo=UTC)
-    assert bp.read_probe(_row(t, 3, age_s=36 * 3600 + 1800)) == (None, "STALE")
-    assert bp.read_probe(_row(t, 3, age_s=600)) == (None, "STALE")
+    row = _row(t, 3, age_s=5 * 3600)
+    row["bar_open_ms"] = (row["server_ms"]) // H * H          # the last bar, as old as the tick
+    assert bp.read_probe(row) == (None, "NOT_LIVE")
+    row["age_bound_ms"] = 5 * 3600 * 1000                     # a bound, but far too loose
+    assert bp.read_probe(row) == (None, "NOT_LIVE")
+
+
+def test_a_live_tick_off_the_hour_is_stale_never_rounded():
+    """Proved live but 10 minutes off a whole hour: the box clock is wrong, not the broker."""
+    t = datetime(2026, 7, 1, 12, 0, tzinfo=UTC)
+    assert bp.read_probe(_row(t, 3, age_s=600, live=True)) == (None, "STALE")
+
+
+class _FakeMt5:
+    """Ticks advance on the symbols in `ticking`; the rest are frozen, as on a weekend."""
+
+    TIMEFRAME_H1 = 16385
+
+    def __init__(self, offset_h: int, ticking: set[str]) -> None:
+        self.off, self.ticking, self.frozen = offset_h, ticking, {}
+
+    def symbol_info_tick(self, sym):
+        import time as _t
+        now = int(_t.time() * 1000) + self.off * H
+        if sym not in self.ticking:
+            now = self.frozen.setdefault(sym, now - 5 * H)       # exactly 5h stale
+        return type("T", (), {"time_msc": now})()
+
+    def copy_rates_from_pos(self, sym, _tf, _pos, _n):
+        tick = self.symbol_info_tick(sym).time_msc
+        return [{"time": tick // H * H // 1000}]
+
+
+def test_the_capture_reads_only_symbols_it_saw_tick():
+    rows, note = bp._watch(_FakeMt5(3, {"EURUSD", "USDJPY"}), ("EURUSD", "USDJPY", "XAUUSD"),
+                           wait_s=1.0, poll_ms=20)
+    got = {r["symbol"]: bp.read_probe(r) for r in rows}
+    assert got["EURUSD"][0] == 3 and got["USDJPY"][0] == 3
+    assert got["XAUUSD"] == (None, "NOT_LIVE")
+    assert note.startswith("2 of 3")
 
 
 def test_a_bar_on_another_clock_refuses_the_reading():
@@ -109,7 +152,7 @@ def test_stale_rows_alone_stay_unmeasured(tmp_path, monkeypatch):
     t = datetime(2026, 7, 4, 12, 0, tzinfo=UTC)
     _ledger(tmp_path, [_row(t + timedelta(hours=i), 3, age_s=40_000) for i in range(10)])
     doc = _build(tmp_path, monkeypatch)
-    assert doc["status"] == bp.UNMEASURED and doc["evidence"]["verdicts"]["STALE"] == 10
+    assert doc["status"] == bp.UNMEASURED and doc["evidence"]["verdicts"]["NOT_LIVE"] == 10
 
 
 def test_main_on_a_host_without_a_terminal_writes_unmeasured(tmp_path, monkeypatch):
@@ -250,8 +293,8 @@ def test_the_tick_recorders_clock_rows_are_read_too(tmp_path, monkeypatch):
     clock.mkdir(parents=True)
     t0 = datetime(2026, 7, 1, 9, 0, tzinfo=UTC)
     lines = []
-    for i in range(5):
-        r = _row(t0 + timedelta(hours=i), 3, bar=False)
+    for i in range(5):                       # the recorder's one-minute beat, advancing ticks
+        r = _row(t0 + timedelta(minutes=i), 3, bar=False)
         lines.append(json.dumps({"at": "x", "symbol": r["symbol"], "local_ms": r["local_ms"],
                                  "server_ms": r["server_ms"],
                                  "skew_ms": r["server_ms"] - r["local_ms"]}))
@@ -259,7 +302,14 @@ def test_the_tick_recorders_clock_rows_are_read_too(tmp_path, monkeypatch):
     monkeypatch.setattr(bp, "release_opinion", lambda _r: {"per_season": {}})
     doc = bp.build(tmp_path, tape_clock=clock)
     assert doc["evidence"]["tape_rows"] == 5
+    assert doc["evidence"]["verdicts"] == {"NOT_LIVE": 1, "FRESH_TICK": 4}  # first has no prior
     assert doc["spans"][0]["sources"] == ["tape_clock_probe"]
+
+
+def test_tape_rows_an_hour_apart_prove_nothing():
+    rows = [{"symbol": "EURUSD", "local_ms": _ms(datetime(2026, 7, 1, h, tzinfo=UTC)),
+             "server_ms": _ms(datetime(2026, 7, 1, h, tzinfo=UTC)) + 3 * H} for h in range(5)]
+    assert all(r["age_bound_ms"] is None for r in bp._tape_liveness(rows))
 
 
 # ------------------------------------------------------------------------------ wiring --

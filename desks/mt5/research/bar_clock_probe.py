@@ -13,11 +13,13 @@ days. The answer is not to loosen the rule. It is to MEASURE the clock where the
 WHAT IT MEASURES. Each hourly pass, where an MT5 terminal is attached, it reads for a few liquid
 symbols the newest tick's `time_msc` (the server's own stamp, broker wall time encoded as epoch
 milliseconds, the same clock the H1 index carries) and the current H1 bar's open time, and pairs
-them with the box's UTC clock at the moment of the call. A fresh tick puts `server - utc` within
-seconds of a whole number of hours, and that number is the offset; the current bar must then open
-at `floor_hour(utc + offset)`, so the BAR INDEX itself confirms it. Every reading is appended to
-`desks/mt5/data/bar_clock_probes.jsonl` (state the box keeps and carries), and the tick recorder's
-own `clock_probe` rows (`<tape root>/clock/*.jsonl`) are read too when a tape exists.
+them with the box's UTC clock at the moment of the call. It watches each symbol until its tick
+ADVANCES, which proves the tick is at most one poll old; only then does `server - utc` sit within
+seconds of a whole number of hours, and that number is the offset (a stale tick can sit near a
+whole hour by chance, so nearness alone is never taken as freshness). The current bar must then
+open at `floor_hour(utc + offset)`, so the BAR INDEX itself confirms it. Every reading is
+appended to `desks/mt5/data/bar_clock_probes.jsonl` (state the box keeps and carries), and the tick
+recorder's own `clock_probe` rows (`<tape root>/clock/*.jsonl`) are read too when a tape exists.
 
 WHAT IT PUBLISHES -- dated SPANS, never a rule. A span is a maximal run of capture instants that
 agree on one offset with no gap longer than MAX_PROBE_GAP_H. `bar_clock.to_bar_time` converts an
@@ -78,9 +80,17 @@ STORED_REL = "desks/mt5/data/broker_clock_measured.json"
 PROBE_SYMBOLS: tuple[str, ...] = ("EURUSD", "USDJPY", "GBPUSD", "XAUUSD", "AUDUSD")
 
 HOUR_MS = 3_600_000
-#: A tick is FRESH when `server - utc` lies this close to a whole hour. A stale tick (weekend,
-#: session break, dead feed) lands between hours and is rejected, never rounded.
+#: A reading counts only with a PROOF OF LIVENESS: `age_bound_ms`, an upper bound on the tick's
+#: age, no larger than this. Closeness to a whole hour is NOT such a proof -- a weekend tick
+#: that happens to be 5h00m30s old sits 30s from a whole hour and would read as an offset 5h
+#: wrong, and the bar check cannot catch it because the last bar is just as old. So the capture
+#: watches each symbol until its time_msc ADVANCES (a new tick arrived between two polls, so it
+#: is at most one poll old), and a tick-recorder row is live only when the previous row on the
+#: same symbol, at most this long before it, carried an older tick.
 FRESH_TOL_MS = 120_000
+#: The capture's poll beat and how long it waits for a symbol to tick.
+POLL_MS = 250
+WAIT_FOR_TICK_S = 30.0
 #: Offsets a broker could plausibly run; anything outside is a broken reading, not a timezone.
 OFFSET_MIN, OFFSET_MAX = -12, 14
 #: Capture instants a span needs before it converts anything.
@@ -123,30 +133,58 @@ def capture(symbols: tuple[str, ...] = PROBE_SYMBOLS) -> tuple[list[dict[str, An
                         "terminal, or none running)")
     except Exception as exc:
         return [], f"NO_TERMINAL: {type(exc).__name__}: {str(exc)[:120]}"
+    return _watch(mt5, symbols)
+
+
+def _watch(mt5: Any, symbols: tuple[str, ...], *, wait_s: float = WAIT_FOR_TICK_S,
+           poll_ms: int = POLL_MS) -> tuple[list[dict[str, Any]], str]:
+    """Poll every symbol until its newest tick changes; that tick is at most one poll old.
+
+    A symbol that does not tick inside `wait_s` (weekend, session break, dead feed) is recorded
+    with `age_bound_ms: None` and reads NOT_LIVE -- the evidence of a closed market, kept.
+    """
+    def tick_ms(sym: str) -> int:
+        try:
+            t = mt5.symbol_info_tick(sym)
+        except Exception:
+            return 0
+        return int(getattr(t, "time_msc", 0) or 0) if t is not None else 0
+
+    first = {sym: tick_ms(sym) for sym in symbols}
+    last_poll = {sym: _now_ms() for sym in symbols}
+    seen: dict[str, tuple[int, int, int]] = {}            # sym -> (local_ms, server_ms, bound)
+    deadline = time.monotonic() + wait_s
+    while len(seen) < len(symbols) and time.monotonic() < deadline:
+        time.sleep(poll_ms / 1000)
+        for sym in symbols:
+            if sym in seen:
+                continue
+            before = _now_ms()
+            got = tick_ms(sym)
+            after = _now_ms()
+            if got > 0 and first[sym] > 0 and got != first[sym]:
+                seen[sym] = ((before + after) // 2, got, after - last_poll[sym])
+            last_poll[sym] = after
     rows: list[dict[str, Any]] = []
     for sym in symbols:
-        try:
-            before = _now_ms()
-            tick = mt5.symbol_info_tick(sym)
-            after = _now_ms()
-            rates = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_H1, 0, 1)
-        except Exception:
-            continue
-        server_ms = int(getattr(tick, "time_msc", 0) or 0) if tick is not None else 0
-        if server_ms <= 0:
+        if sym in seen:
+            local_ms, server_ms, bound = seen[sym]
+        elif first[sym] > 0:
+            local_ms, server_ms, bound = _now_ms(), tick_ms(sym) or first[sym], None
+        else:
             continue
         bar_ms: int | None = None
         with contextlib.suppress(Exception):
+            rates = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_H1, 0, 1)
             if rates is not None and len(rates):
                 bar_ms = int(rates[0]["time"]) * 1000
-        local_ms = (before + after) // 2
         rows.append({"at": datetime.fromtimestamp(local_ms / 1000, tz=UTC)
                      .isoformat(timespec="seconds"),
                      "source": "terminal", "symbol": sym, "local_ms": local_ms,
-                     "server_ms": server_ms, "bar_open_ms": bar_ms,
-                     "call_ms": after - before})
-    return rows, (f"{len(rows)} of {len(symbols)} symbols read" if rows
-                  else "terminal attached but no symbol returned a tick")
+                     "server_ms": server_ms, "bar_open_ms": bar_ms, "age_bound_ms": bound})
+    live = sum(1 for r in rows if r["age_bound_ms"] is not None)
+    return rows, (f"{live} of {len(symbols)} symbols ticked inside {wait_s:g}s"
+                  + ("" if live else " (market closed or feed silent: nothing is read)"))
 
 
 def append_ledger(root: Path, rows: list[dict[str, Any]]) -> str | None:
@@ -216,19 +254,44 @@ def load_probes(root: Path, tape_clock: Path | None) -> tuple[list[dict[str, Any
             except OSError as exc:
                 acct["unreadable"].append(f"{path.name}: {type(exc).__name__}")
                 continue
-            rows.extend({**r, "source": "tape_clock_probe", "bar_open_ms": None} for r in got)
+            rows.extend(_tape_liveness(got))
             acct["tape_rows"] += len(got)
             acct["unparseable_lines"] += bad
     return rows, acct
 
 
+def _tape_liveness(got: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The tick recorder's rows carry no liveness proof of their own; derive one per symbol from
+    the row before: a newer tick than that row's, at most FRESH_TOL_MS later, is that fresh."""
+    out: list[dict[str, Any]] = []
+    prev: dict[str, tuple[int, int]] = {}
+    for r in sorted(got, key=lambda x: int(x.get("local_ms") or 0)):
+        try:
+            lm, sm, sym = int(r["local_ms"]), int(r["server_ms"]), str(r.get("symbol") or "")
+        except (KeyError, TypeError, ValueError):
+            out.append({**r, "source": "tape_clock_probe"})
+            continue
+        bound = None
+        if sym in prev:
+            plm, psm = prev[sym]
+            if sm > psm and 0 < lm - plm <= FRESH_TOL_MS:
+                bound = lm - plm
+        prev[sym] = (lm, sm)
+        out.append({**r, "source": "tape_clock_probe", "bar_open_ms": None,
+                    "age_bound_ms": bound})
+    return out
+
+
 def read_probe(row: dict[str, Any]) -> tuple[int | None, str]:
     """(offset_h, verdict) for one probe row. The offset is READ or it is None -- never rounded
-    out of a stale tick."""
+    out of a stale tick, and never read off a tick with no proof that it is fresh."""
     try:
         local_ms, server_ms = int(row["local_ms"]), int(row["server_ms"])
     except (KeyError, TypeError, ValueError):
         return None, "MALFORMED"
+    bound = row.get("age_bound_ms")
+    if not isinstance(bound, int) or isinstance(bound, bool) or not 0 <= bound <= FRESH_TOL_MS:
+        return None, "NOT_LIVE"
     skew = server_ms - local_ms
     k = round(skew / HOUR_MS)
     if abs(skew - k * HOUR_MS) > FRESH_TOL_MS:
