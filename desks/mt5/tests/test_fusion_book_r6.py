@@ -1161,8 +1161,8 @@ def test_every_key_failure_pages_and_a_resolved_key_closes_the_alert(monkeypatch
     sent: list[tuple[str, str]] = []
     monkeypatch.setattr(provenance, "SENDER",
                         lambda title, body: sent.append((title, body)) or {"delivered": 1})
-    monkeypatch.setattr(provenance, "_PAGED", set())
-    monkeypatch.setattr(provenance, "_LAST_TRY", {})
+    monkeypatch.setattr(provenance, "_ENQUEUED", {})        # v5f: enqueue-only, per test
+    monkeypatch.setattr(provenance, "_ENQUEUE_FAILED", {})
     monkeypatch.setattr(provenance, "_page_state_path", lambda: tmp_path / "page_state.json")
 
     def state(account, source):
@@ -1173,12 +1173,15 @@ def test_every_key_failure_pages_and_a_resolved_key_closes_the_alert(monkeypatch
     with pytest.raises(ValueError, match="declares"):
         xa.publish("e8", {}, source="t", key=xa.account_key(7000999, "test"))
     assert state("e8", "publish") == "OPEN"
+    assert sent == []                                  # v5f: nothing is sent on the order path
+    provenance.deliver_pending()                       # ... the heartbeat delivers it
     assert sent and xa.KEY_MISMATCH in sent[-1][0]               # it reached send_all
     # ANOTHER check joining does not close it (r7.2, audit r7.1 SF-2) ...
     assert xa.read_book("e8")[0] == {}
     assert state("e8", "publish") == "OPEN"
     # ... the same check does, and pages the recovery once.
     xa.publish("e8", {}, source="t", key=mine)
+    provenance.deliver_pending()
     assert state("e8", "publish") == "FIXED" and "OK again" in sent[-1][0]
     # KEY_UNAVAILABLE: a well-formed venue on a tree with no provenance.
     v = _tl_venue(credentials={"server": "E8-Live"}, account_id=4242)
@@ -1300,11 +1303,13 @@ def test_e8_gold_refuses_unless_the_declaration_joins_the_venues_own_key(
     sent: list[str] = []
     monkeypatch.setattr(provenance, "SENDER",
                         lambda title, body: sent.append(title) or {"delivered": 1})
-    monkeypatch.setattr(provenance, "_PAGED", set())
-    monkeypatch.setattr(provenance, "_LAST_TRY", {})
+    monkeypatch.setattr(provenance, "_ENQUEUED", {})        # v5f: enqueue-only, per test
+    monkeypatch.setattr(provenance, "_ENQUEUE_FAILED", {})
     monkeypatch.setattr(provenance, "_page_state_path", lambda: tmp_path / "page_state.json")
     _bad_declaration(kind, monkeypatch)
     doc, venue, intents = mb._e8_harness(monkeypatch, tmp_path)   # returns: the pass completed
+    assert sent == []                                  # v5f: nothing is sent on the order path
+    provenance.deliver_pending()
     assert venue.placed == [] and doc["placed"] == []
     assert doc["e8_account"]["ok"] is False
     rows = [r for r in intents if r.get("rail") == "e8_account_undeclared"]
@@ -1362,6 +1367,355 @@ def test_the_e8_ceiling_binds_every_certified_entry_not_only_gold() -> None:
     assert cut["missed_growth_risk_usd"] == round(0.004 * bal, 2)
     assert ex.cert_ceiling(0.006 * bal, "k") == (0.006 * bal, None)
     assert ex.cert_ceiling(0.002 * bal, "k") == (0.002 * bal, None)
+    # r7.3: the run path applies it to the FINAL post-multiplier risk (size_certified_entry).
     src = (_DESK / "prop" / "e8_executor.py").read_text("utf-8")
-    i = src.index("_capped_usd, _cut = cert_ceiling(row_risk_usd, _ckey)")
-    assert src.index('row["risk_usd"] = round(row_risk_usd, 2)', i) > i   # before sizing
+    assert "_capped_usd, _cut = cert_ceiling(row_risk_usd, _ckey)" not in src
+    assert "_, cut = cert_ceiling(final_usd, key)" in src
+
+
+# ---------------------------------------------------------------------- r7.3 (audit r7.2 HOLD)
+#
+# MF1 (coordinator ruling): v5f (a446bcc0) is merged under r7.x -- `provenance._page` only
+# enqueues, so a hanging or raising sender can never hold the order path. These pin it in time.
+# MF2 (ruling (a)): the E8 ceiling binds the FINAL post-multiplier risk.
+
+def _pager(monkeypatch, tmp_path, kind: str):
+    """A SENDER that hangs (blocks on an event, up to 5 s) or raises, and records each call with
+    whether the placement lock was held at that moment."""
+    import contextlib
+
+    from libs.ops import provenance
+    monkeypatch.setenv("E8_ALERT_LEDGER", str(tmp_path / "alert_ledger.json"))
+    monkeypatch.setattr(provenance, "_ENQUEUED", {})
+    monkeypatch.setattr(provenance, "_ENQUEUE_FAILED", {})
+    monkeypatch.setattr(provenance, "_page_state_path", lambda: tmp_path / "page_state.json")
+    release = threading.Event()
+    held: list[bool] = []
+    calls: list[tuple[str, bool]] = []
+
+    def sender(title, body):
+        calls.append((title, bool(held)))
+        if kind == "raise":
+            raise RuntimeError("pager down")
+        release.wait(5.0)
+        return {"delivered": 1}
+
+    monkeypatch.setattr(provenance, "SENDER", sender)
+    real_lock = xa.placement_lock
+    entered: list[float] = []
+
+    @contextlib.contextmanager
+    def lock(*a, **k):
+        with real_lock(*a, **k) as got:
+            entered.append(time.perf_counter())
+            held.append(True)
+            try:
+                yield got
+            finally:
+                held.pop()
+
+    monkeypatch.setattr(xa, "placement_lock", lock)
+    return SimpleNamespace(calls=calls, entered=entered, release=release, held=held)
+
+
+@pytest.mark.parametrize("sender_kind", ["hang", "raise"])
+@pytest.mark.parametrize("case", ["joined", "wrong_account", "venue_key_none"])
+def test_a_hanging_or_raising_sender_never_delays_management_or_placement(
+        monkeypatch, tmp_path, sender_kind, case) -> None:
+    """r7.3 MF1: with a page already queued and the pass paging again (a wrong declaration, or a
+    venue key that does not resolve), management and placement both START within 0.5 s of the
+    pass, the sender is NEVER called on the order path, and never while placement_lock is held.
+    Delivery happens later, off the path, and a raising sender does not escape it."""
+    import test_fusion_minlot_book as mb
+    from libs.ops import provenance
+    from libs.ops.alert_ledger import AlertLedger
+    from prop import e8_gold as g
+    pg = _pager(monkeypatch, tmp_path, sender_kind)
+    xa.page_key("fusion", xa.KEY_MISMATCH, source="read_book")      # a page already pending
+    if case == "wrong_account":
+        _bad_declaration("wrong_account", monkeypatch)
+    elif case == "venue_key_none":
+        monkeypatch.setattr(xa, "tradelocker_account_key", lambda venue: None)
+    managed: list[float] = []
+    real_manage = g.manage_actions
+
+    def manage(*a, **k):
+        managed.append(time.perf_counter())
+        return real_manage(*a, **k)
+
+    monkeypatch.setattr(g, "manage_actions", manage)
+    t0 = time.perf_counter()
+    doc, venue, _ = mb._e8_harness(monkeypatch, tmp_path)
+    elapsed = time.perf_counter() - t0
+    assert pg.calls == []                              # nothing sends on the order path
+    assert elapsed < 2.0                               # never the 5 s hang
+    assert managed and managed[0] - t0 < 0.5, (managed, t0)
+    if case == "joined":
+        assert sorted(s for s, _ in venue.placed) == ["buy", "sell"]
+        assert pg.entered and pg.entered[0] - t0 < 0.5
+    else:
+        assert venue.placed == [] and doc["e8_account"]["ok"] is False
+        alert = AlertLedger(tmp_path / "alert_ledger.json").alerts.get(
+            xa.key_alert_id("e8", "e8_gold"))
+        assert alert is not None and alert.state == "OPEN"
+        want = xa.KEY_MISMATCH if case == "wrong_account" else xa.TL_KEY_UNAVAILABLE
+        assert want in alert.message                   # r7.3 SF: a None key pages itself
+    # Delivery, off the path: a thread for the hang (released), in-line for the raise.
+    if sender_kind == "hang":
+        t = threading.Thread(target=provenance.deliver_pending, daemon=True)
+        t.start()
+        deadline = time.monotonic() + 3.0
+        while not pg.calls and time.monotonic() < deadline:
+            time.sleep(0.01)
+        pg.release.set()
+        t.join(5.0)
+    else:
+        provenance.deliver_pending()                   # never raises
+    assert pg.calls and not any(h for _, h in pg.calls)  # never under placement_lock
+
+
+def test_management_and_placement_start_under_half_a_second_with_a_hung_sender(
+        monkeypatch, tmp_path) -> None:
+    """r7.3 MF1, stated as the auditor asked: elapsed time from pass start to management and to
+    placement, with a sender that would hang for 5 s. Measured, not inferred."""
+    import test_fusion_minlot_book as mb
+    pg = _pager(monkeypatch, tmp_path, "hang")
+    xa.page_key("e8", xa.KEY_MISMATCH, source="publish")
+    t0 = time.perf_counter()
+    _doc, venue, _ = mb._e8_harness(monkeypatch, tmp_path)
+    assert time.perf_counter() - t0 < 2.0              # a 5 s hang never entered the pass
+    assert pg.entered and pg.entered[0] - t0 < 0.5
+    assert sorted(s for s, _ in venue.placed) == ["buy", "sell"]
+    assert pg.calls == []
+    pg.release.set()
+
+
+@pytest.mark.parametrize("sender_kind", ["hang", "raise"])
+def test_the_gateways_read_book_e8_only_enqueues(monkeypatch, tmp_path, sender_kind) -> None:
+    """r7.3 MF1 (gateway.py :3709 / :4229 / :5162): `_xa.read_book("e8")` reaches the pager only
+    through key_joins -> page_key -> _send -> provenance._page (enqueue-only). A mismatched
+    declaration pages, returns at once, and calls no sender."""
+    import ast
+
+    from libs.ops import provenance
+    pg = _pager(monkeypatch, tmp_path, sender_kind)
+    xa.publish("e8", {}, source="t", key=xa.account_key(31337, "E8-Test"))
+    _bad_declaration("wrong_account", monkeypatch)
+    t0 = time.perf_counter()
+    book, _why = xa.read_book("e8")
+    assert time.perf_counter() - t0 < 0.5
+    assert book is None and pg.calls == []
+    assert provenance._outbox_path().exists()
+    gw = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
+    assert gw.count('_xa.read_book("e8")') == 3 and "send_all" not in gw
+    xs = (_DESK / "mt5desk" / "cross_account.py").read_text("utf-8")
+    calls = {n.func.attr for n in ast.walk(ast.parse(xs))
+             if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)}
+    assert "send_all" not in calls and 'getattr(provenance, "_page", None)' in xs
+    pg.release.set()
+
+
+# -- MF2: the post-multiplier ceiling, through the executor's own sizing stage and run() --------
+
+class _FxVenue:
+    """EURUSD-style: 100,000 contract, 0.01 step, USD quote. 10 pips = $100/lot."""
+
+    def __init__(self, vmin: float = 0.01) -> None:
+        self._vmin = vmin
+        self._by_key = {"EURUSD": 1}
+        self._raw_api = SimpleNamespace()
+
+    def min_lot(self, symbol):
+        return self._vmin
+
+    def details(self, symbol):
+        return {"contractSize": 100_000, "lotStep": 0.01, "currency": "USD"}
+
+    def quote(self, symbol):
+        return 1.10000, 1.10002
+
+
+def _mults(monkeypatch, fade=1.0, leg=1.0, macro=1.0) -> None:
+    from mt5desk import leg_balance, macro_view
+    from prop import e8_executor as ex
+    monkeypatch.setattr(ex, "twin_fade", lambda *a, **k: (fade, "t"))
+    monkeypatch.setattr(leg_balance, "multiplier", lambda *a, **k: (leg, "leg"))
+    monkeypatch.setattr(macro_view, "multiplier", lambda *a, **k: (macro, "macro"))
+
+
+def _size(book_frac: float, venue=None, stop=0.0010):
+    from prop import e8_executor as ex
+    from prop import e8_guard
+    row: dict = {}
+    out = ex.size_certified_entry(
+        venue or _FxVenue(), "EURUSD", "buy", "session_range_breakout",
+        SimpleNamespace(ttl_bars=None), stop, book_frac * e8_guard.START_BALANCE,
+        "EURUSD_session_range_breakout_asia", now=datetime(2026, 10, 21, tzinfo=UTC),
+        leg_positions=[], pending_legs={}, row=row)
+    return (*out, row)
+
+
+def test_leg_and_macro_at_their_maxima_are_held_to_0006_post_multiplier(monkeypatch) -> None:
+    """r7.3 MF2: book 0.006 x leg 1.45 x macro 1.4 = 0.01218 used to go out. The executor's
+    sizing stage (the one run() calls) sends 0.006 and bills the cut CAPPED e8_cert_ceiling."""
+    _mults(monkeypatch, leg=1.45, macro=1.4)
+    lot, _basis, risk, cut, row = _size(0.006)
+    assert row["leg_mult"] == 1.45 and row["macro_mult"] == 1.4
+    assert lot == pytest.approx(6.00) and risk == pytest.approx(600.0)
+    assert cut["status"] == "CAPPED" and cut["rail"] == "e8_cert_ceiling"
+    # 6.00 x 2.03 = 12.18 in decimal; the venue-step FLOOR of the binary product is 12.17 lots.
+    assert cut["wanted_risk_frac"] == pytest.approx(0.01217)
+    assert cut["risk_frac"] == pytest.approx(0.006)
+    assert cut["missed_growth_risk_usd"] == pytest.approx(617.0)
+    assert "post-multiplier" in cut["why"]
+
+
+@pytest.mark.parametrize("book,leg,macro,lot", [(0.002, 1.45, 1.4, 4.06),   # boost, under it
+                                                (0.004, 0.5, 1.0, 2.00),    # scaled down
+                                                (0.006, 1.0, 1.0, 6.00)])   # exactly at it
+def test_below_the_ceiling_every_multiplier_applies_untouched(monkeypatch, book, leg, macro,
+                                                             lot) -> None:
+    _mults(monkeypatch, leg=leg, macro=macro)
+    got, _basis, risk, cut, _row = _size(book)
+    assert cut is None and got == pytest.approx(lot) and risk == pytest.approx(lot * 100.0)
+
+
+def test_lot_for_risk_refuses_a_min_lot_lift_over_the_ceiling_and_it_is_billed(
+        monkeypatch) -> None:
+    """r7.3 SF: a venue minimum of 1.0 lot on a 100-pip stop risks $1,000 > $600: refused and
+    billed RAIL_BLOCKED e8_cert_ceiling, never lifted. Without a ceiling (gold's call) the old
+    lift stands."""
+    from prop import e8_executor as ex
+    _mults(monkeypatch)
+    v = _FxVenue(vmin=1.0)
+    lot, basis = ex.lot_for_risk(v, "EURUSD", 0.0100, 300.0, ceiling_usd=600.0)
+    assert lot == 0.0 and basis.startswith(ex.CEILING_REFUSED)
+    assert ex.lot_for_risk(v, "EURUSD", 0.0100, 300.0)[0] == 1.0        # no ceiling: unchanged
+    assert ex.lot_for_risk(v, "EURUSD", 0.0050, 300.0, ceiling_usd=600.0)[0] == 1.0  # $500 ok
+    lot, _b, risk, cut, _row = _size(0.003, venue=v, stop=0.0100)
+    assert lot == 0.0 and risk == 0.0
+    assert cut["status"] == "RAIL_BLOCKED" and cut["rail"] == "e8_cert_ceiling"
+    assert cut["missed_growth_risk_usd"] == pytest.approx(300.0)
+    # A multiplier lift that lands under the minimum's cap is refused the same way.
+    _mults(monkeypatch, leg=1.45, macro=1.4)
+    lot, _b, _risk, cut, _row = _size(0.006, venue=_FxVenue(vmin=1.0), stop=0.0070)
+    assert cut["status"] == "RAIL_BLOCKED" and lot == 0.0                 # 1 lot = $700 > $600
+
+
+def _run_one_fx_sleeve(monkeypatch, tmp_path, *, cert_frac: float, room: float,
+                       leg=1.0, macro=1.0):
+    """Drive e8_executor.run() end to end on one certified EURUSD sleeve (shadow), every
+    authority door stubbed open, so the sizing stage, the ceiling and the daily floor run in
+    the order run() puts them."""
+    import admission_integrity
+    from mt5desk import decision_core as _dc
+    from mt5desk import families, family_call, kelly_sizing, order_door
+    from prop import e8_executor as ex
+    from prop import e8_guard
+
+    from libs.tiers import promotion_authority
+    _mults(monkeypatch, leg=leg, macro=macro)
+    now = datetime(2026, 10, 21, 8, 0, tzinfo=UTC)
+    idx = pd.date_range(end=now, periods=80, freq="h", tz=UTC)
+    frame = pd.DataFrame({"open": 1.1, "high": 1.101, "low": 1.099, "close": 1.1}, index=idx)
+    sig = SimpleNamespace(time=idx[-2], side=1, stop=1.10002 - 0.0010, target=1.1020,
+                          ttl_bars=None)
+    book = tmp_path / "E8_BOOK.json"
+    book.write_text(json.dumps({"generated_utc": now.isoformat(), "risk_frac": 0.005,
+                                "sleeves": [{"symbol": "EURUSD",
+                                             "family": "session_range_breakout",
+                                             "selector": "asia", "key": "c1"}]}), "utf-8")
+    certf = tmp_path / "CERT_BOOK_LIVE.json"
+    certf.write_text(json.dumps({"excluded": {}}), "utf-8")
+    monkeypatch.setattr(ex, "BOOK", book)
+    monkeypatch.setattr(ex, "INTENTS", tmp_path / "e8_intents.jsonl")
+    monkeypatch.setattr(kelly_sizing, "CERT_BOOK_FILE", certf)
+    monkeypatch.setattr(kelly_sizing, "load_cert_book",
+                        lambda p, v: {"EURUSD_session_range_breakout_asia": cert_frac})
+    monkeypatch.setattr(order_door, "guard_venue", lambda v, caller=None: v)
+    monkeypatch.setattr(e8_guard, "assess", lambda eq, now=None: SimpleNamespace(
+        may_open=True, flatten=False, room_to_daily_floor=room, as_dict=lambda: {},
+        verdict=SimpleNamespace(value="OK"), why=""))
+    monkeypatch.setattr(ex, "manage_breakeven", lambda *a, **k: [])
+    monkeypatch.setattr(ex, "outstanding_stop_risk", lambda *a, **k: (0.0, "flat"))
+    monkeypatch.setattr(xa, "publish_under_lock", lambda *a, **k: None)
+    monkeypatch.setattr(admission_integrity.IntegrityGate, "load", classmethod(
+        lambda cls: SimpleNamespace(alarm={}, replication=lambda c, f: (
+            admission_integrity.REPLICATED, "ok"))))
+    monkeypatch.setattr(promotion_authority, "block", lambda cid: None)
+    monkeypatch.setattr(families, "get_family_func", lambda fam: (lambda fr, **k: [sig]))
+    monkeypatch.setattr(family_call, "certified_session_filter", lambda sigs, s: sigs)
+    monkeypatch.setattr(ex, "_frame", lambda api, iid, tf="H1": frame)
+    monkeypatch.setattr(ex, "_call_params", lambda *a, **k: {})
+
+    def _no_bracket(*a, **k):
+        raise RuntimeError("levels kept")
+
+    monkeypatch.setattr(_dc, "family_bracket", _no_bracket)
+
+    class _V(_FxVenue):
+        def account(self):
+            return {"equity": 100_000.0}
+
+        def positions(self):
+            return []
+
+        def orders(self):
+            return []
+
+        def instrument_id(self, sym):
+            return 1
+
+    doc = ex.run(_V(), armed=False, now=now, entry_enabled=True)
+    ip = tmp_path / "e8_intents.jsonl"
+    intents = ([json.loads(ln) for ln in ip.read_text("utf-8").splitlines() if ln.strip()]
+               if ip.exists() else [])
+    (row,) = [r for r in doc["sleeves"] if r["symbol"] == "EURUSD"]
+    return doc, row, intents
+
+
+def test_run_itself_caps_the_final_risk_and_bills_it(monkeypatch, tmp_path) -> None:
+    """r7.3 MF2, INSIDE run(): a certified EURUSD sleeve at 0.006 with leg 1.45 x macro 1.4 is
+    sized 6.00 lots ($600 = 0.006), not 12.17, and one CAPPED e8_cert_ceiling row is written."""
+    _doc, row, intents = _run_one_fx_sleeve(monkeypatch, tmp_path, cert_frac=0.006,
+                                           room=10_000.0, leg=1.45, macro=1.4)
+    assert row["status"] == "WOULD_SEND", row
+    assert row["lot"] == pytest.approx(6.00) and row["risk_usd"] == pytest.approx(600.0)
+    assert row["book_risk_usd"] == pytest.approx(600.0)
+    assert row["ceiling_cut_from_usd"] == pytest.approx(1217.0)      # 12.17 lots wanted
+    (cut,) = [r for r in intents if r.get("rail") == "e8_cert_ceiling"]
+    assert cut["status"] == "CAPPED" and cut["missed_growth_risk_usd"] == pytest.approx(617.0)
+    # Below the ceiling, the boost goes out whole.
+    (tmp_path / "b").mkdir()
+    _doc, row, intents = _run_one_fx_sleeve(monkeypatch, tmp_path / "b", cert_frac=0.002,
+                                            room=10_000.0, leg=1.45, macro=1.4)
+    assert row["status"] == "WOULD_SEND" and row["lot"] == pytest.approx(4.06)
+    assert not [r for r in intents if r.get("rail") == "e8_cert_ceiling"]
+
+
+def test_the_daily_floor_is_checked_with_post_multiplier_risk(monkeypatch, tmp_path) -> None:
+    """r7.3 SF: book $200 x 1.45 x 1.4 = $406. With $300 left to the floor it is refused (the
+    pre-multiplier $200 would have passed); with $500 it goes."""
+    _doc, row, _ = _run_one_fx_sleeve(monkeypatch, tmp_path, cert_frac=0.002, room=300.0,
+                                      leg=1.45, macro=1.4)
+    assert row["status"] == "WOULD_BREACH_DAILY" and "$406" in row["why"], row
+    (tmp_path / "b").mkdir()
+    _doc, row, _ = _run_one_fx_sleeve(monkeypatch, tmp_path / "b", cert_frac=0.002, room=500.0,
+                                      leg=1.45, macro=1.4)
+    assert row["status"] == "WOULD_SEND"
+
+
+def test_gold_is_unaffected_by_the_post_multiplier_ceiling(monkeypatch, tmp_path) -> None:
+    """r7.3 MF2: gold keeps its own min(book, ceiling) and carries no multipliers -- with leg and
+    macro pinned at their maxima, gold still places at 0.006 / its book, and e8_gold never
+    calls the FX sizing stage nor passes a ceiling to lot_for_risk."""
+    _mults(monkeypatch, leg=1.45, macro=1.4)
+    stale = {"enabled": True, "e8": {"gold_asia": 0.01, "gold_london_am": 0.0,
+                                     "gold_afternoon": 0.0}}
+    doc, intents = _e8(monkeypatch, tmp_path, hour=ASIA_H, kelly=None, cert=stale)
+    assert _placed(doc, intents)["asia"] == {(0.006, "cert_book")}
+    (tmp_path / "b").mkdir()
+    doc, intents = _e8(monkeypatch, tmp_path / "b", hour=ASIA_H, kelly=None, cert=VALID)
+    assert _placed(doc, intents)["asia"] == {(0.006, "cert_book")}
+    gsrc = (_DESK / "prop" / "e8_gold.py").read_text("utf-8")
+    assert "size_certified_entry" not in gsrc and "ceiling_usd" not in gsrc
