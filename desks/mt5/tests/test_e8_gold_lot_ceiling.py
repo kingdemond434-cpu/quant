@@ -60,8 +60,8 @@ class _FlatMT5(h._MT5):
 class _Venue(h._Venue):
     """The shared fake, able to take an armed send, with a settable contract size."""
 
-    def __init__(self, contract: float = 100.0) -> None:
-        super().__init__()
+    def __init__(self, contract: float = 100.0, equity: float = 100_000.0) -> None:
+        super().__init__(equity=equity)
         self._contract = contract
         self.sent: list[tuple[str, float, float]] = []
 
@@ -75,8 +75,9 @@ class _Venue(h._Venue):
         return 7000 + len(self.sent)
 
 
-def _sandbox(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, override: Any = None) -> Path:
-    h._sandbox(monkeypatch, tmp_path)
+def _sandbox(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, override: Any = None,
+             guard: dict[str, Any] | None = None) -> Path:
+    h._sandbox(monkeypatch, tmp_path, guard=guard)
     p = tmp_path / "E8_GOLD_MAX_LOT.json"
     if override is not None:
         p.write_text(
@@ -163,26 +164,31 @@ def test_the_capped_leg_is_fitted_to_the_budget_not_deferred(
 def test_a_100oz_leg_over_the_ceiling_is_fitted_and_sent(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """The venue's real contract. 3% of 100k over a 33.5-point stop is 0.89 lots, capped to 0.75;
-    the budget (1,920 over 100 x (33.5 + 24.13)) fits 0.33; the floor (2,400 after the margin,
-    over 100 x (2 x 33.5 + 2 x 24.13)) fits 0.20. The window is SENT at 0.20, every cut billed."""
-    _sandbox(monkeypatch, tmp_path)
-    monkeypatch.setattr(g, "RISK_FRAC", 0.03)
-    venue = _Venue(contract=100.0)
+    """The venue's real contract. Re-cut on live: the book's 3% is capped by the r7.1 code
+    ceiling to 0.6%, so the lot ceiling is set where it binds (0.15) and the day is down 700.
+    0.6% of 99,300 over a 33.5-point stop is 0.17 lots, capped to 0.15; the budget (1,360 over
+    100 x (33.5 + 24.13)) fits 0.23; the floor (1,700 after the margin, over
+    100 x (2 x 33.5 + 2 x 24.13)) fits 0.14. The window is SENT at 0.14, every cut billed."""
+    from test_e8_gold_bracket_guard import _cert_book, _guard
+
+    _sandbox(monkeypatch, tmp_path, override={"max_lot": 0.15}, guard=_guard(99_300.0))
+    _cert_book(tmp_path, 0.03)
+    venue = _Venue(contract=100.0, equity=99_300.0)
     doc = g.run(venue, _FlatMT5(), armed=True)
-    assert sorted(venue.sent) == [("buy", 0.20, 4310.0), ("sell", 0.20, 4290.0)]
+    assert sorted(venue.sent) == [("buy", 0.14, 4310.0), ("sell", 0.14, 4290.0)]
     assert [p["window"] for p in doc["placed"]] == ["afternoon"]
     rails = [x["rail"] for x in doc["shrunk"]]
     assert g.LOT_CEILING_RAIL in rails and g.DAILY_FLOOR_RAIL in rails
-    assert doc["shrunk"][-1]["lots"] == {"buy_stop": 0.20, "sell_stop": 0.20}
+    assert doc["shrunk"][-1]["lots"] == {"buy_stop": 0.14, "sell_stop": 0.14}
     rows = _journal(tmp_path)
     sent = [r for r in rows if r["status"] == "SENT"]
-    assert len(sent) == 2 and all(r["lot"] == 0.20 for r in sent)
-    assert all(r["risk_usd"] == pytest.approx(33.5 * 0.20 * 100) for r in sent)
+    assert len(sent) == 2 and all(r["lot"] == 0.14 for r in sent)
+    assert all(r["risk_usd"] == pytest.approx(33.5 * 0.14 * 100) for r in sent)
     shrunk = [r for r in rows if r["status"] == "RAIL_SHRUNK"]
     assert {r["rail"] for r in shrunk} >= {g.LOT_CEILING_RAIL, g.DAILY_FLOOR_RAIL}
+    # From the window's certified risk at the ceiling (0.6% of 99,300) to what is sent.
     assert sum(r["missed_growth_risk_usd"] for r in shrunk) == pytest.approx(
-        3000.0 - 33.5 * 0.20 * 100, abs=1.0
+        595.8 - 33.5 * 0.14 * 100, abs=1.0
     )
     # The shrunk window is PLACED evidence with the rails that cut it named (v5 must-fix 2).
     (dec,) = [d for d in doc["decisions"] if d["window"] == "afternoon"]
@@ -193,8 +199,12 @@ def test_a_100oz_leg_over_the_ceiling_is_fitted_and_sent(
 def test_a_capped_leg_that_cannot_fit_writes_a_reasoned_row(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    _sandbox(monkeypatch, tmp_path)
-    monkeypatch.setattr(g, "RISK_FRAC", 0.03)
+    from test_e8_gold_bracket_guard import _cert_book
+
+    # Re-cut on live: the book's 3% is capped to 0.6% (0.17 lots), so the lot ceiling is set
+    # where it binds (0.15); the capped leg then cannot fit the budget with 100,000 points of slip.
+    _sandbox(monkeypatch, tmp_path, override={"max_lot": 0.15})
+    _cert_book(tmp_path, 0.03)
     monkeypatch.setattr(g, "DEFAULT_SLIP_POINTS", 100_000.0)
     venue = _Venue(contract=100.0)
     doc = g.run(venue, _FlatMT5(), armed=True)

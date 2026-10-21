@@ -52,6 +52,13 @@ def _decisions(doc: dict[str, Any], window: str = "afternoon") -> list[dict[str,
     return [d for d in doc["decisions"] if d["window"] == window]
 
 
+def _locked_short(qty: float) -> dict[str, Any]:
+    """A short opened at 4330 whose stop is ratcheted to 4310: not AT RISK, but at the 4300.4
+    mark it can give back 9.6 points plus 24.13 points of stop slip, 3,373 USD a lot (v5.2)."""
+    return {"id": 501, "tradableInstrumentId": 6102, "side": "sell", "qty": qty,
+            "avgPrice": 4330.0, "stopLoss": 4310.0, "stopLossId": 0}
+
+
 def _bracket_need(lots: dict[str, float], stop: float = 33.5, contract: float = 100.0) -> float:
     """Both legs to their stops plus both legs' default slip, in USD."""
     return float(sum(lot * contract * (stop + g.DEFAULT_SLIP_POINTS) for lot in lots.values()))
@@ -63,23 +70,26 @@ def _bracket_need(lots: dict[str, float], stop: float = 33.5, contract: float = 
 def test_the_floor_fit_subtracts_a_break_even_winners_give_back(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """A 0.2-lot short opened at 4330 with its stop ratcheted to 4310 is not AT RISK (the
-    one-at-a-time rule lets the afternoon window place), but the mark is 4300.4: 9.6 points x 0.2
-    x 100 oz = 192 USD of open profit can go back, and its stop fills 24.13 points through
-    (v5.2): 482.6 more. Committed 674.6, so the room is 2,500 - 674.6 - 100 = 1,725.4.
+    """A 0.22-lot short opened at 4330 with its stop ratcheted to 4310 is not AT RISK (the
+    one-at-a-time rule lets the afternoon window place), but the mark is 4300.4: 9.6 points x
+    0.22 x 100 oz = 211.2 USD of open profit can go back, and its stop fills 24.13 points through
+    (v5.2): 530.86 more. Committed 742.06; on a day down 700 the room is 1,800 - 742.06 - 100 =
+    957.94.
 
-    At 1.2% the agreeing sell leg is 0.35 lots and needs 0.35 x 100 x (33.5 + 24.13) = 2,017 >
-    1,725.4, so L = 1,725.4 / 5,763 = 0.299 -> 0.29.
+    Re-cut on live: the book's 1.2% is capped by the r7.1 code ceiling to 0.6% = 595.8 USD, so
+    the agreeing sell leg is 0.17 lots and needs 595.8 + 0.17 x 100 x 24.13 = 1,006 > 957.94
+    (and 1.25 x (742.06 + 595.8) = 1,672 <= 1,700 passes the concurrent budget first), so
+    L = 957.94 / 5,763 = 0.166 -> 0.16.
     """
-    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
-    monkeypatch.setattr(g, "RISK_FRAC", 0.012)
-    venue = bg._Venue()
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard(99_300.0))
+    bg._cert_book(tmp_path, 0.012)
+    venue = bg._Venue(equity=99_300.0)
     venue._positions = [
         {
             "id": 501,
             "tradableInstrumentId": 6102,
             "side": "sell",
-            "qty": 0.2,
+            "qty": 0.22,
             "avgPrice": 4330.0,
             "stopLoss": 4310.0,
             "stopLossId": 0,
@@ -87,13 +97,13 @@ def test_the_floor_fit_subtracts_a_break_even_winners_give_back(
     ]
     doc = g.run(venue, bg._FlatMT5(), armed=True)
     (pos,) = doc["committed_risk"]["positions"]
-    assert pos["at_risk"] is False and pos["stop_risk_usd"] == pytest.approx(192.0)
-    assert pos["slip_usd"] == pytest.approx(482.6)
-    assert venue.sent == [("sell", 0.29, 4290.0)]
+    assert pos["at_risk"] is False and pos["stop_risk_usd"] == pytest.approx(211.2)
+    assert pos["slip_usd"] == pytest.approx(530.86)
+    assert venue.sent == [("sell", 0.16, 4290.0)]
     (cut,) = bg._shrinks(doc, g.DAILY_FLOOR_RAIL)
-    assert cut["committed_usd"] == pytest.approx(674.6)
-    assert cut["room_to_floor"] == pytest.approx(2500.0 - 674.6 - g.ROOM_MARGIN_USD)
-    assert 674.6 + _bracket_need({"sell_stop": 0.29}) <= 2500.0 - g.ROOM_MARGIN_USD
+    assert cut["committed_usd"] == pytest.approx(742.06)
+    assert cut["room_to_floor"] == pytest.approx(1800.0 - 742.06 - g.ROOM_MARGIN_USD)
+    assert 742.06 + _bracket_need({"sell_stop": 0.16}) <= 1800.0 - g.ROOM_MARGIN_USD
 
 
 # ------------------------------------------------------------- v5.2: committed slip, account-wide
@@ -365,16 +375,21 @@ def test_the_ceiling_fit_runs_before_any_risk_budget_deferral(
 def test_an_unshrunk_window_over_the_budget_is_deferred_with_a_row(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """2% at 100 oz: 0.59 lots, under the ceiling; 2,000 x 1.25 > 2,400 -> DEFERRED, risk_budget,
-    with the evidence row v4 never wrote, and the window is not spent."""
+    """Re-cut on live: the book's 2% is capped by the r7.1 code ceiling to 0.6% = 600 USD (0.17
+    lots, under the lot ceiling), which alone fits the budget, so the account carries a locked
+    0.4-lot short (not at risk; 1,349.2 USD it can still give back): (1,349.2 + 600) x 1.25 =
+    2,436.5 > 2,500 - 100 -> DEFERRED, risk_budget, with the evidence row v4 never wrote, and
+    the window is not spent."""
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
-    monkeypatch.setattr(g, "RISK_FRAC", 0.02)
+    bg._cert_book(tmp_path, 0.02)
     venue = bg._Venue()
+    venue._positions = [_locked_short(0.4)]
     doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert venue.sent == []
+    assert doc["committed_risk"]["total_usd"] == pytest.approx(1349.2)
     (row,) = _decisions(doc)
     assert (row["outcome"], row["reason"]) == ("DEFERRED", ev.R_RISK_BUDGET)
-    assert row["risk_usd"] == pytest.approx(2000.0)
+    assert row["risk_usd"] == pytest.approx(600.0)
     saved = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
     assert "afternoon" not in saved["windows"]
 
@@ -386,9 +401,9 @@ def test_the_evidence_ledger_holds_the_rail_skip(
         monkeypatch,
         tmp_path,
         guard=bg._guard(99_900.0),
-        slip={"status": "MEASURED", "slip_points": 100_000.0, "n": 25},
+        slip=bg._scoped({"status": "MEASURED", "slip_points": 100_000.0, "n": 25}),
     )
-    monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
+    bg._cert_book(tmp_path, 0.0095)
     g.run(bg._Venue(equity=99_900.0), bg._FlatMT5(), armed=True)
     lines = ev.decisions_path().read_text(encoding="utf-8").splitlines()
     (row,) = [json.loads(x) for x in lines if '"afternoon"' in x]
@@ -405,24 +420,26 @@ def test_the_evidence_ledger_holds_the_rail_skip(
 def test_step_two_keeps_room_margin_usd_clear_of_the_floor(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """At 0.71% of a fresh 100k day: 0.21 lots, need 2 x 710 + 2 x 24.13 x 21 = 2,433.5, which
-    is under the 2,500 to today's floor but inside its last ROOM_MARGIN_USD. v4 sent it with 67
-    USD to spare; v5 cuts the bracket until it clears the margin."""
+    """Re-cut on live: the book's 0.71% is capped by the r7.1 code ceiling to 0.6%, so the same
+    geometry is set on a day down 460: 0.6% of 99,540 = 597.24 USD, 0.17 lots, need
+    2 x 597.24 + 2 x 24.13 x 17 = 2,014.9, which is under the 2,040 to today's floor but inside
+    its last ROOM_MARGIN_USD. v4 sent it with 25 USD to spare; v5 cuts the bracket until it
+    clears the margin: L = 1,940 / 11,526 = 0.168 -> 0.16."""
     assert g.ROOM_MARGIN_USD == 100.0
-    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
-    monkeypatch.setattr(g, "RISK_FRAC", 0.0071)
-    venue = bg._Venue()
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard(99_540.0))
+    bg._cert_book(tmp_path, 0.0071)
+    venue = bg._Venue(equity=99_540.0)
     doc = g.run(venue, bg._FlatMT5(), armed=True)
     room = min(
         float(doc["guard_decision"]["room_to_daily_floor"]),
         float(doc["guard_decision"]["room_to_static_floor"]),
     )
-    need0 = 2 * 710.0 + 2 * 24.13 * 21
+    need0 = 2 * 0.006 * 99_540.0 + 2 * 24.13 * 17
     assert need0 <= room < need0 + g.ROOM_MARGIN_USD, (need0, room)
     (cut,) = bg._shrinks(doc, g.DAILY_FLOOR_RAIL)
-    assert cut["unshrunk_lots"] == {"buy_stop": 0.21, "sell_stop": 0.21}
+    assert cut["unshrunk_lots"] == {"buy_stop": 0.17, "sell_stop": 0.17}
     sent = {side: lot for side, lot, _px in venue.sent}
-    assert sent == {"buy": 0.20, "sell": 0.20}
+    assert sent == {"buy": 0.16, "sell": 0.16}
     assert _bracket_need(sent) <= room - g.ROOM_MARGIN_USD
 
 
@@ -469,7 +486,7 @@ def test_a_lift_to_the_venue_minimum_is_judged_at_the_lifted_risk(
     It fits 2,400 (2 x 335 + 2 x 24.13 x 10 = 1,152.6), so it is sent, and the journal bills the
     risk the leg really carries."""
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
-    monkeypatch.setattr(g, "RISK_FRAC", 0.002)
+    bg._cert_book(tmp_path, 0.002)
     venue = _TenthLotVenue()
     doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert sorted(venue.sent) == [("buy", 0.1, 4310.0), ("sell", 0.1, 4290.0)]
@@ -485,7 +502,7 @@ def test_a_lift_that_does_not_fit_is_never_sent(
     the certified 182.2 USD a leg would 'fit' (2 x 182.2 + 482.6 = 847), but the 0.1 lot the venue
     forces risks 335 a leg: 1,152.6 > 1,000, and 0.1 cannot be cut. RAIL_BLOCKED, with a row."""
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard(91_100.0, day_start=91_100.0))
-    monkeypatch.setattr(g, "RISK_FRAC", 0.002)
+    bg._cert_book(tmp_path, 0.002)
     venue = _TenthLotVenue(equity=91_100.0)
     doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert venue.sent == [] and doc["placed"] == []
@@ -724,8 +741,15 @@ def test_a_missing_server_fails_closed_and_pages(
     assert rows and all(r["account_key"] is None for r in rows)
     alerts = json.loads(ledger_path.read_text("utf-8"))
     assert ev.AK_ALERT_ID in json.dumps(alerts)
-    # Placement is untouched by the missing stamp.
-    assert [p["window"] for p in doc["placed"]] == ["afternoon"]
+    # Re-cut on live: with no server the venue's own key is unresolvable, so r7.1's account rail
+    # refuses new E8 gold risk (fail closed), and the refusal is a REFUSED decision row (ruling
+    # (c)) rather than an absent one. The report stamps no key, never the raw login (ruling (e)).
+    assert doc["placed"] == []
+    (row,) = [r for r in rows if r["window"] == "afternoon"]
+    assert (row["outcome"], row["reason"], row["taken"]) == (
+        ev.REFUSED, ev.R_ACCOUNT_UNDECLARED, False)
+    assert doc["account_key"] is None and doc["account_key_status"] == ev.AK_SERVER_UNREADABLE
+    assert "account" not in doc
     # The next pass that stamps again closes the page.
     assert ev.page_account_key(ev.AK_OK) == "FIXED"
 
@@ -865,16 +889,19 @@ def test_mf1_an_fx_stop_held_only_as_stop_loss_id_is_read(
 def test_mf2_a_risk_budget_deferral_is_billed_once_per_window_per_day(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """MF2: the unshrunk risk_budget deferral bills its withheld risk, once per window per day."""
+    """MF2: the unshrunk risk_budget deferral bills its withheld risk, once per window per day.
+    Re-cut on live: the budget binds at the 0.006 code ceiling beside a locked 0.4-lot short (as
+    in test_an_unshrunk_window_over_the_budget_is_deferred_with_a_row): 600 USD withheld."""
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
-    monkeypatch.setattr(g, "RISK_FRAC", 0.02)
+    bg._cert_book(tmp_path, 0.02)
     venue = bg._Venue()
+    venue._positions = [_locked_short(0.4)]
     doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert venue.sent == []
     (bill,) = [r for r in bg._journal(tmp_path) if r.get("rail") == g.RISK_BUDGET_RAIL]
     assert bill["status"] == "RAIL_BLOCKED" and bill["reason"] == ev.R_RISK_BUDGET
     assert bill["window"] == "afternoon"
-    assert bill["missed_growth_risk_usd"] == pytest.approx(2000.0)
+    assert bill["missed_growth_risk_usd"] == pytest.approx(600.0)
     assert bill["committed_risk_usd"] == pytest.approx(doc["committed_risk"]["total_usd"])
     g.run(venue, bg._FlatMT5(), armed=True)
     assert len([r for r in bg._journal(tmp_path) if r.get("rail") == g.RISK_BUDGET_RAIL]) == 1
@@ -883,7 +910,7 @@ def test_mf2_a_risk_budget_deferral_is_billed_once_per_window_per_day(
 
     monkeypatch.setattr(mg, "E8_INTENTS", tmp_path / "intents.json")
     (line,) = [x for x in mg.published_e8_gold_lines()["lines"] if x["rail"] == g.RISK_BUDGET_RAIL]
-    assert line["n_blocked"] == 1 and line["risk_withheld_usd"] == pytest.approx(2000.0)
+    assert line["n_blocked"] == 1 and line["risk_withheld_usd"] == pytest.approx(600.0)
 
 
 def _fx_hist_row(oid: int, side: str, stop: float, fill: float, **kw: Any) -> dict[str, Any]:
@@ -942,7 +969,9 @@ def test_a_measured_fx_slip_prices_the_fx_stop_and_says_so(
     fx = tmp_path / "fx.jsonl"
     fx.write_text(
         "".join(
-            json.dumps({"order_id": i, "symbol": "EURUSD", "slip_frac": 0.0001}) + "\n"
+            # Stamped with the pass's account_key: a keyed pass reads only its own rows (v5.5).
+            json.dumps({"order_id": i, "symbol": "EURUSD", "slip_frac": 0.0001,
+                        "account_key": bg._pass_key()}) + "\n"
             for i in range(20)
         ),
         encoding="utf-8",
@@ -1008,7 +1037,7 @@ def test_the_pass_charges_committed_risk_at_the_worst_window_slip(
         "slip_points": 20.0,
         "windows": {"asia": {"status": "MEASURED", "n": 20, "slip_points": 31.5}},
     }
-    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard(), slip=slip)
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard(), slip=bg._scoped(slip))
     venue = _AccountVenue()
     venue._positions = [_eurusd(1.0980)]
     doc = g.run(venue, bg._FlatMT5(), armed=True)
@@ -1436,3 +1465,46 @@ def test_v56f_page_account_key_enqueues_open_and_ok(_outbox: Any) -> None:
     assert {"aid": ev.AK_ALERT_ID, "sent": True, "status": "OK"} in res["sent"]
     assert ev.page_account_key(ev.AK_OK) is None, "nothing open: no OK row"
     assert _rows(_outbox, ev.AK_ALERT_ID) == []
+
+
+# ------------------------------------------------------------- re-cut on live: rulings (c), (e)
+
+
+def test_recut_an_account_refusal_is_a_refused_decision_row(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Ruling (c): when r7.1's account rail refuses new E8 gold risk (here: E8_ACCOUNT.json
+    absent), the window is still a decision row -- REFUSED, e8_account_undeclared, not taken,
+    with its reason -- beside the billed RAIL_BLOCKED intents row. Nothing is sent."""
+    from mt5desk import cross_account as xa
+
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
+    xa.E8_ACCOUNT_FILE.unlink()
+    venue = bg._Venue()
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
+    assert venue.sent == [] and doc["placed"] == []
+    (row,) = _decisions(doc)
+    assert (row["outcome"], row["reason"], row["taken"]) == (
+        ev.REFUSED, ev.R_ACCOUNT_UNDECLARED, False)
+    assert "undeclared" in row["why"] and row["risk_usd"] == pytest.approx(500.0)
+    (led,) = [json.loads(x) for x in ev.decisions_path().read_text("utf-8").splitlines()
+              if '"afternoon"' in x]
+    assert (led["outcome"], led["reason"]) == (ev.REFUSED, ev.R_ACCOUNT_UNDECLARED)
+    (bill,) = [r for r in bg._journal(tmp_path) if r.get("rail") == "e8_account_undeclared"]
+    assert bill["status"] == "RAIL_BLOCKED" and bill["missed_growth_risk_usd"] == 500.0
+
+
+def test_recut_the_pass_report_stamps_the_account_key_never_the_login(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Ruling (e): E8_GOLD.json carries the pass's HMAC account_key (provenance.account_key, the
+    stamp the heartbeat and decision rows carry) and its status, never `tradelocker:<login>`."""
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
+    doc = g.run(bg._Venue(), bg._FlatMT5(), armed=True)
+    assert "account" not in doc
+    assert doc["account_key"] == bg._pass_key() and doc["account_key_status"] == ev.AK_OK
+    assert ev.ACCOUNT_KEY_SHAPE.match(doc["account_key"])
+    text = Path(g.OUT).read_text("utf-8")
+    assert '"account_key": "' + bg._pass_key() + '"' in text
+    # The heartbeat block carries only the keyed pseudonym (`account_ref`), never the label.
+    assert "tradelocker:31337" not in text and '"account":' not in text

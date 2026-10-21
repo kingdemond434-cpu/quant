@@ -144,6 +144,30 @@ def _sandbox(
     return p
 
 
+def _cert_book(tmp_path: Path, frac: float) -> None:
+    """The windows' certified risk, set where LIVE sizes from (re-cut on live, test-only): the
+    enabled cert book `h._sandbox` writes, at `frac` for all three windows. The code ceiling
+    `decision_core.E8_CERT_CEILING` (0.006, r7.1) still caps it and bills the cut; never lifted."""
+    (tmp_path / "cert_book_file.json").write_text(json.dumps({"enabled": True, "e8": {
+        "gold_asia": frac, "gold_london_am": frac, "gold_afternoon": frac}}), encoding="utf-8")
+
+
+def _pass_key() -> str:
+    """The pass's own account_key: `e8_evidence.account_key` of the shared fake venue, which
+    carries the conftest's declared E8 identity (h._Api). Keyed passes read only slip measured
+    for that key (v5.5), so a fixture's slip is stamped with it (re-cut on live, test-only)."""
+    from prop import e8_evidence
+
+    key = e8_evidence.account_key(h._Venue())
+    assert key is not None
+    return key
+
+
+def _scoped(doc: dict[str, Any]) -> dict[str, Any]:
+    """A slip document measured for the pass's account (`e8_gold_slip.refresh`'s scoping)."""
+    return {**doc, "account_scoped": True, "account_key": _pass_key()}
+
+
 def _journal(tmp_path: Path) -> list[dict[str, Any]]:
     path = tmp_path / "intents.json"
     if not path.exists():
@@ -200,50 +224,55 @@ def test_slip_is_every_legs_points_at_its_lot_not_r() -> None:
     ) == pytest.approx(24.13 * 50)
 
 
-def test_max_asia_risk_on_a_fresh_day_is_shrunk_a_step_to_fit(
+def test_max_asia_risk_on_a_fresh_day_fits_at_the_e8_cert_ceiling(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    # 0.95%: 2 x 950 + 24.13 x 56 = 3,251 > 2,500 - 100 margin -> one lot
-    # L = 2,400 / (100 x (67 + 2 x 24.13)) = 0.208 -> 0.20 on both legs. The target fits the cap.
+    # Re-cut on live: a book at 0.95% is capped by the r7.1 code ceiling to 0.6% = 600 USD,
+    # 0.17 lots (569.5 USD a leg), billed CAPPED e8_cert_ceiling for the 350 USD it withholds.
+    # 2 x 600 + 24.13 x 34 = 2,020 <= 2,500 - 100 margin: on a fresh day the bracket FITS, so
+    # the floor rail does not bind (it bound at 0.95%, which the ceiling no longer sends).
     _sandbox(monkeypatch, tmp_path, guard=_guard())
-    monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
+    _cert_book(tmp_path, 0.0095)
     venue = _Venue()
     doc = g.run(venue, _FlatMT5(), armed=True)
-    assert sorted(venue.sent) == [("buy", 0.20, 4310.0), ("sell", 0.20, 4290.0)]
-    (cut,) = _shrinks(doc, g.DAILY_FLOOR_RAIL)
-    assert cut["unshrunk_lots"] == {"buy_stop": 0.28, "sell_stop": 0.28}
-    assert cut["room_to_floor"] == pytest.approx(2500.0 - g.ROOM_MARGIN_USD)
-    assert cut["room_margin_usd"] == g.ROOM_MARGIN_USD and cut["committed_usd"] == 0.0
-    assert 2 * 670.0 + 24.13 * 40 <= 2400.0
+    assert sorted(venue.sent) == [("buy", 0.17, 4310.0), ("sell", 0.17, 4290.0)]
+    assert not _shrinks(doc, g.DAILY_FLOOR_RAIL)
+    need = 2 * 600.0 + 24.13 * 34
+    assert need <= 2500.0 - g.ROOM_MARGIN_USD
+    (cap,) = [r for r in _journal(tmp_path) if r.get("rail") == "e8_cert_ceiling"]
+    assert cap["status"] == "CAPPED" and cap["risk_frac"] == pytest.approx(0.006)
+    assert cap["missed_growth_risk_usd"] == pytest.approx(100_000 * (0.0095 - 0.006))
     assert not _shrinks(doc, g.PROFIT_CAP_RAIL)
 
 
 def test_a_down_day_shrinks_both_legs_to_fit_and_bills_the_cut(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    # Down 100: 2,400 to the floor, 2,300 after the margin. 2 x 949.05 + 24.13 x 56 = 3,249 ->
-    # L = 2,300 / 11,526 = 0.1995 -> 0.19 on both legs, 636.5 USD a leg;
-    # 2 x 636.5 + 24.13 x 38 = 2,190 <= 2,300.
-    _sandbox(monkeypatch, tmp_path, guard=_guard(99_900.0))
-    monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
-    venue = _Venue(equity=99_900.0)
+    # Down 700 (re-cut on live: at the 0.006 code ceiling a 100 USD down day fits): 1,800 to
+    # the floor, 1,700 after the margin. The book's 0.95% is capped to 0.6% = 595.8 USD, 0.17
+    # lots (569.5 USD a leg). 2 x 595.8 + 24.13 x 34 = 2,012 > 1,700 ->
+    # L = 1,700 / 11,526 = 0.1475 -> 0.14 on both legs, 469 USD a leg;
+    # 2 x 469 + 24.13 x 28 = 1,613.6 <= 1,700.
+    _sandbox(monkeypatch, tmp_path, guard=_guard(99_300.0))
+    _cert_book(tmp_path, 0.0095)
+    venue = _Venue(equity=99_300.0)
     doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["guard_decision"]["verdict"] == "OK"
-    assert sorted(venue.sent) == [("buy", 0.19, 4310.0), ("sell", 0.19, 4290.0)]
+    assert sorted(venue.sent) == [("buy", 0.14, 4310.0), ("sell", 0.14, 4290.0)]
     (cut,) = _shrinks(doc, g.DAILY_FLOOR_RAIL)
     assert cut["reason"] == g.DAILY_FLOOR_REASON
     assert cut["slip_points"] == g.DEFAULT_SLIP_POINTS
-    assert cut["room_to_floor"] == pytest.approx(2300.0)
-    assert cut["risk_usd"] == pytest.approx(636.5)
-    assert cut["missed_growth_risk_usd"] == pytest.approx(938.0 - 636.5)
-    assert 2 * 636.5 + 24.13 * 38 <= 2300.0
+    assert cut["room_to_floor"] == pytest.approx(1700.0)
+    assert cut["risk_usd"] == pytest.approx(469.0)
+    assert cut["missed_growth_risk_usd"] == pytest.approx(569.5 - 469.0)
+    assert 2 * 469.0 + 24.13 * 28 <= 1700.0
     rows = _journal(tmp_path)
     (billed,) = [r for r in rows if r.get("rail") == g.DAILY_FLOOR_RAIL]
     assert billed["status"] == "RAIL_SHRUNK" and billed.get("order_id") is None
     sent = [r for r in rows if r["status"] == "SENT"]
     assert all(
-        r["risk_usd"] == 636.5
-        and r["shrunk"] == {"unshrunk_lot": 0.28, "by": [g.DAILY_FLOOR_REASON]}
+        r["risk_usd"] == 469.0
+        and r["shrunk"] == {"unshrunk_lot": 0.17, "by": [g.DAILY_FLOOR_REASON]}
         for r in sent
     )
     assert "MISSED GROWTH" in (tmp_path / "log.json").read_text(encoding="utf-8")
@@ -255,7 +284,7 @@ def test_a_down_day_shrinks_both_legs_to_fit_and_bills_the_cut(
     monkeypatch.setattr(mg, "E8_INTENTS", tmp_path / "intents.json")
     (line,) = mg.published_e8_gold_lines()["lines"]
     assert line["rail"] == g.DAILY_FLOOR_RAIL and line["n_shrunk"] == 1
-    assert line["cost"]["risk_withheld_usd"] == pytest.approx(301.5)
+    assert line["cost"]["risk_withheld_usd"] == pytest.approx(100.5)
     assert line["saving"]["verdict"] == mg.UNMEASURED
 
 
@@ -281,16 +310,17 @@ def test_a_bracket_that_cannot_fit_above_the_venue_minimum_is_skipped_with_a_row
         monkeypatch,
         tmp_path,
         guard=_guard(99_900.0),
-        slip={"status": "MEASURED", "slip_points": 100_000.0, "n": 25},
+        slip=_scoped({"status": "MEASURED", "slip_points": 100_000.0, "n": 25}),
     )
-    monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
+    _cert_book(tmp_path, 0.0095)
     venue = _Venue(equity=99_900.0)
     doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["bracket_slip"]["slip_points"] == 100_000.0
     assert venue.sent == [] and doc["placed"] == []
     (skip,) = _rail_skips(doc, g.DAILY_FLOOR_RAIL)
     assert "venue minimum" in skip["why"] and skip["reason"] == g.DAILY_FLOOR_REASON
-    assert skip["missed_growth_risk_usd"] == pytest.approx(949.05)
+    # The window's certified risk at the 0.006 code ceiling (re-cut on live): 0.6% of 99,900.
+    assert skip["missed_growth_risk_usd"] == pytest.approx(599.4)
     (row,) = [r for r in _journal(tmp_path) if r.get("rail") == g.DAILY_FLOOR_RAIL]
     assert row["status"] == "RAIL_BLOCKED"
     # v5 must-fix 2: the skip is EVIDENCE, SKIPPED under the rail's own non-exempt reason.
@@ -355,7 +385,7 @@ def test_a_shrunk_leg_is_budgeted_against_the_floor_at_its_shrunk_risk(
     # 949 USD at a 10 oz contract needs 2.83 lots; the ceiling sends 0.75 (251.25 USD a leg):
     # 2 x 251.25 + 24.13 x 15 = 864 fits the 2,300.
     _sandbox(monkeypatch, tmp_path, guard=_guard(99_900.0))
-    monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
+    _cert_book(tmp_path, 0.0095)
     venue = _Venue(equity=99_900.0)
     monkeypatch.setattr(
         venue, "details", lambda symbol: {"contractSize": 10.0, "currency": "USD", "lotStep": 0.01}
@@ -376,14 +406,14 @@ def test_the_lanes_measured_slip_replaces_the_default_at_20_exits(
         monkeypatch,
         tmp_path,
         guard=_guard(99_900.0),
-        slip={"status": "MEASURED", "slip_points": 3.0, "n": 20},
+        slip=_scoped({"status": "MEASURED", "slip_points": 3.0, "n": 20}),
     )
-    monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
+    _cert_book(tmp_path, 0.0095)
     venue = _Venue(equity=99_900.0)
     doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["bracket_slip"]["slip_points"] == 3.0
     assert doc["bracket_slip"]["source"] == "E8_GOLD_SLIP.json (p95 of 20 stop exits)"
-    assert not _shrinks(doc, g.DAILY_FLOOR_RAIL)  # 2 x 949 + 3 x 56 = 2,066 <= 2,300
+    assert not _shrinks(doc, g.DAILY_FLOOR_RAIL)  # 2 x 599.4 + 3 x 34 = 1,301 <= 2,300
     assert len(venue.sent) == 2
 
 
@@ -395,14 +425,15 @@ def test_a_measured_zero_slip_reads_the_points_floor_never_zero(
         monkeypatch,
         tmp_path,
         guard=_guard(99_900.0),
-        slip={"status": "MEASURED", "slip_points": 0.0, "n": 20},
+        slip=_scoped({"status": "MEASURED", "slip_points": 0.0, "n": 20}),
     )
-    monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
+    _cert_book(tmp_path, 0.0095)
     venue = _Venue(equity=99_900.0)
     doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["bracket_slip"]["slip_points"] == g.DEFAULT_SLIP_POINTS == 24.13
     assert doc["bracket_slip"]["source"].startswith("floor (p95_zero)")  # v5.5 label
-    assert sorted(venue.sent) == [("buy", 0.19, 4310.0), ("sell", 0.19, 4290.0)]
+    # At the 0.006 ceiling: 2 x 599.4 + 24.13 x 34 = 2,019 <= 2,300, so 0.17 is sent unshrunk.
+    assert sorted(venue.sent) == [("buy", 0.17, 4310.0), ("sell", 0.17, 4290.0)]
 
 
 @pytest.mark.parametrize(
@@ -471,12 +502,15 @@ def test_the_slip_is_the_p95_of_stop_exit_fill_through_in_points() -> None:
     assert few["provisional_p95_points"] > 0 and few["missing"]
 
 
-def test_a_measured_slip_file_is_read(tmp_path: Path) -> None:
+def test_a_measured_slip_file_is_read(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    from prop import e8_evidence
     from prop import e8_gold_slip as es
+
+    monkeypatch.setattr(e8_evidence, "_PASS_ACCOUNT_KEY", [_pass_key()])
 
     rows = [{"side": "buy", "stop": 4000.0, "fill": 4000.0 + k} for k in range(25)]
     path = tmp_path / "E8_GOLD_SLIP.json"
-    es.write(es.measure(rows, sources=["t"], measured_at="2026-10-20"), path)
+    es.write(_scoped(es.measure(rows, sources=["t"], measured_at="2026-10-20")), path)
     slip, src = g.bracket_slip(path)
     assert slip == pytest.approx(es.quantile([float(k) for k in range(25)], 0.95), abs=1e-4)
     assert src == "E8_GOLD_SLIP.json (p95 of 25 stop exits)"
@@ -607,14 +641,19 @@ def test_a_failing_slip_publication_never_blocks_placement(
     assert doc["slip"]["guard_slip_points"] == g.DEFAULT_SLIP_POINTS
 
 
-def test_a_windows_own_measured_slip_is_used_for_that_window_only(tmp_path: Path) -> None:
+def test_a_windows_own_measured_slip_is_used_for_that_window_only(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from prop import e8_evidence
     from prop import e8_gold_slip as es
+
+    monkeypatch.setattr(e8_evidence, "_PASS_ACCOUNT_KEY", [_pass_key()])
 
     rows = [
         {"side": "buy", "stop": 4000.0, "fill": 4001.0, "window": "asia"} for _ in range(20)
     ] + [{"side": "buy", "stop": 4000.0, "fill": 4030.0, "window": "afternoon"}]
     path = tmp_path / "E8_GOLD_SLIP.json"
-    es.write(es.measure(rows, sources=["t"], measured_at="2026-10-20"), path)
+    es.write(_scoped(es.measure(rows, sources=["t"], measured_at="2026-10-20")), path)
     assert g.bracket_slip(path, window="asia")[0] == pytest.approx(1.0)
     pooled = g.bracket_slip(path, window="afternoon")[0]
     assert pooled == g.bracket_slip(path)[0]

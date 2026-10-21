@@ -257,6 +257,8 @@ _EXPECTED_BREACH = {
     ev.R_GUARD_UNREADABLE, ev.R_POSITIONS_UNREADABLE, "guard_stood_down", ev.R_VENUE_REJECTED,
     # Bracket guard v4: a rail refuses only below the venue minimum, and that breaches.
     ev.R_LOT_CEILING, ev.R_BRACKET_DAILY_FLOOR, ev.R_DAILY_PROFIT_CAP,
+    # r7.1's account rail (re-cut on live, ruling (c)): REFUSED, never exempt.
+    ev.R_ACCOUNT_UNDECLARED,
 }
 
 
@@ -327,7 +329,14 @@ def _retry_state(orders: dict | None = None) -> dict:
     return {"date": "2026-09-28", "windows": {"asia": w}, "carried": {}}
 
 
-def _retry(monkeypatch, tmp_path, venue: _RetryVenue, st: dict, *, hour: float = 8.0,
+#: The retry clock: 07:03 server, inside E8's 10-minute send grace after the 07:00 asia signal
+#: (decision_core.E8_GOLD_SEND_GRACE_MIN, r6). At the old 08:00 r6 refuses the re-send as late
+#: (billed late_send), which is pinned in test_fusion_book_r6; these tests are about the
+#: evidence a re-send writes (re-cut on live, test-only).
+_RETRY_HOUR = 7.05
+
+
+def _retry(monkeypatch, tmp_path, venue: _RetryVenue, st: dict, *, hour: float = _RETRY_HOUR,
            **kw: Any) -> ev.Decisions:
     monkeypatch.setattr(g, "INTENTS", tmp_path / "intents.jsonl")
     monkeypatch.setattr(g, "LOG", tmp_path / "log")
@@ -397,7 +406,7 @@ def test_a_retry_without_a_collector_sends_exactly_the_same(monkeypatch, tmp_pat
     v2, st2 = _RetryVenue(), _retry_state()
     monkeypatch.setattr(g, "INTENTS", tmp_path / "intents2.jsonl")
     (tmp_path / "intents2.jsonl").write_text("", "utf-8")
-    g._retry_failed_legs(v2, st2, {"actions": []}, hour=8.0, now=datetime.now(UTC),
+    g._retry_failed_legs(v2, st2, {"actions": []}, hour=_RETRY_HOUR, now=datetime.now(UTC),
                          open_orders=[], orders_ok=True, filled={}, xau_positions=[],
                          positions_ok=True, stood_down=False, armed=True, hist_rows=[],
                          history_ok=True, instrument_id=316, **_fusion_kw())
@@ -572,7 +581,15 @@ def test_a_refused_replace_changes_nothing_a_pass_places(monkeypatch, tmp_path) 
 
     _sandbox(monkeypatch, tmp_path)
     monkeypatch.setenv(ev.DIR_ENV, str(tmp_path / "other_evidence"))
-    monkeypatch.setattr(ev.os, "replace", refuse)
+    # Only the EVIDENCE writer's replace is refused (re-cut on live, test-only): `ev.os` is the
+    # process's os module, and on live the placement lock and the cross-account books replace
+    # files too -- refusing those fails the send closed, which is not what this test pins.
+    import os as _os
+    import types
+    evidence_os = types.ModuleType("os")
+    evidence_os.__dict__.update(_os.__dict__)
+    evidence_os.replace = refuse  # type: ignore[attr-defined]
+    monkeypatch.setattr(ev, "os", evidence_os)
     venue2 = _ArmedVenue()
     doc = g.run(venue2, _FlatMT5(), armed=True)
     assert venue2.sent == sent and doc["placed"] == base["placed"]
@@ -634,6 +651,9 @@ def test_both_evidence_files_are_published_by_the_box() -> None:
 
 class _IdApi:
     account_id = 7654321
+    # Re-cut on live (test-only): TLAPI's server, so the venue's own key resolves; r7.1 refuses
+    # new E8 gold risk from a venue whose key is unresolvable or undeclared.
+    _credentials = {"server": "E8-Test"}  # noqa: RUF012
 
     @staticmethod
     def get_all_orders(history: bool = False, lookback_period: str = "") -> list:
@@ -644,11 +664,32 @@ class _IdVenue(_ArmedVenue):
     _api = _IdApi()
 
 
+def _declare_id_account() -> None:
+    """Declare THIS fake account as the box's E8 account (r7.1's E8_ACCOUNT.json, the conftest's
+    tmp copy), as landing step 6 does for the real one, so the id tests reach the send and the
+    retry they exist to scrub (re-cut on live, test-only; the account rail itself is pinned in
+    test_fusion_book_r6 and test_e8_gold_bracket_guard_v5)."""
+    from mt5desk import cross_account as xa
+    from mt5desk import gold_oco
+
+    key = xa.account_key(_IdApi.account_id, _IdApi._credentials["server"])
+    assert key
+    xa.E8_ACCOUNT_FILE.write_text(json.dumps({"account_key": key}), "utf-8")
+    xa.publish("e8", {}, source="test", key=key)
+    gold_oco.publish_lane("e8", gold_oco.oco_account_key(_IdApi.account_id,
+                                                         _IdApi._credentials["server"]),
+                          positions=[], orders=[], date="2026-01-01")
+
+
 def test_no_account_id_reaches_either_published_file(monkeypatch, tmp_path) -> None:
     """The repository is public: only the keyed pseudonym is written, never the id."""
     _sandbox(monkeypatch, tmp_path)
+    _declare_id_account()
     doc = g.run(_IdVenue(), _FlatMT5(), armed=True)
-    assert doc["account"] == "tradelocker:7654321"          # the unpublished pass report only
+    # Ruling (e), re-cut on live: the pass report too carries the HMAC stamp, never the id.
+    assert "account" not in doc and doc["account_key"] == ev.bound_account_key()
+    assert doc["account_key"] is not None and doc["account_key_status"] == ev.AK_OK
+    assert "7654321" not in Path(g.OUT).read_text("utf-8")
     for path in (ev.heartbeat_path(), ev.decisions_path()):
         text = path.read_text("utf-8")
         assert "7654321" not in text, path
@@ -711,6 +752,7 @@ def test_a_refusal_never_publishes_the_account_id(monkeypatch, tmp_path) -> None
     """Must-fix 1 (v3): the id reached the ledger through `why` on every refusal path -- the
     leg-loop send, the retry, and the stand-down via positions_unreadable."""
     _sandbox(monkeypatch, tmp_path)
+    _declare_id_account()
     venue = _RefusingIdVenue()
     g.run(venue, _FlatMT5(), armed=True)          # leg loop refuses; the retry refuses again
     g.run(venue, _FlatMT5(), armed=True)          # a later pass re-sends and is refused
@@ -720,6 +762,7 @@ def test_a_refusal_never_publishes_the_account_id(monkeypatch, tmp_path) -> None
     leaked = [p for p in (ev.heartbeat_path(), ev.decisions_path())
               if "7654321" in p.read_text("utf-8")]
     _sandbox(monkeypatch, tmp_path)
+    _declare_id_account()
     monkeypatch.setenv(ev.DIR_ENV, str(tmp_path / "stand_down"))
     g.run(_PositionsLeakVenue(), _FlatMT5(), armed=True)
     assert any(r["reason"] == ev.R_POSITIONS_UNREADABLE for r in _rows()), _rows()
@@ -788,6 +831,7 @@ def test_the_id_touching_a_letter_underscore_or_dot_never_publishes(
     Driven through the leg loop and the retry (two armed passes) and the stand-down."""
     refusing, positions_leak = _leaky_venues(msg)
     _sandbox(monkeypatch, tmp_path)
+    _declare_id_account()
     g.run(refusing, _FlatMT5(), armed=True)
     g.run(refusing, _FlatMT5(), armed=True)
     rows = _rows()
@@ -795,6 +839,7 @@ def test_the_id_touching_a_letter_underscore_or_dot_never_publishes(
     leaked = [p for p in (ev.heartbeat_path(), ev.decisions_path())
               if "7654321" in p.read_text("utf-8")]
     _sandbox(monkeypatch, tmp_path)
+    _declare_id_account()
     monkeypatch.setenv(ev.DIR_ENV, str(tmp_path / "stand_down"))
     g.run(positions_leak, _FlatMT5(), armed=True)
     assert any(r["reason"] == ev.R_POSITIONS_UNREADABLE and ev.REDACTED in r["why"]
@@ -884,12 +929,14 @@ class _CutVenue(_IdVenue):
 
 def test_an_id_at_the_cut_never_publishes_a_prefix(monkeypatch, tmp_path) -> None:
     _sandbox(monkeypatch, tmp_path)
+    _declare_id_account()
     venue = _CutVenue()
     venue.positions = lambda: []                                    # type: ignore[method-assign]
     g.run(venue, _FlatMT5(), armed=True)                            # leg loop: the 200 cut
     g.run(venue, _FlatMT5(), armed=True)                            # retry: the 200 cut
     texts = [ev.decisions_path().read_text("utf-8"), ev.heartbeat_path().read_text("utf-8")]
     _sandbox(monkeypatch, tmp_path)
+    _declare_id_account()
     monkeypatch.setenv(ev.DIR_ENV, str(tmp_path / "stand_down"))
     g.run(_CutVenue(), _FlatMT5(), armed=True)                      # positions: the 160 cut
     texts += [ev.decisions_path().read_text("utf-8"), ev.heartbeat_path().read_text("utf-8")]
