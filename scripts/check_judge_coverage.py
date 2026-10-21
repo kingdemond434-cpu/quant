@@ -591,15 +591,21 @@ def _page_coverage(doc: Mapping[str, Any], report_doc: Any, *, root: Path, now: 
                 state_open[k]["paged_at"] = stamp
                 state_open[k].pop("last_error", None)
                 state_open[k].pop("last_error_at", None)
+    # tmp + os.replace: a run killed mid-write (the rotation's per-fence timeout) must never leave
+    # a half-written state file, which would read as "nothing open" and re-page every incident.
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps({"at": stamp, "verdict": doc.get("verdict"),
-                                    "open": state_open,
-                                    "last": {k: out.get(k) for k in (
-                                        "sent", "title", "armed", "delivered", "error",
-                                        "opened", "reminded", "resolved")}},
-                                   indent=1, default=str), "utf-8")
+        tmp.write_text(json.dumps({"at": stamp, "verdict": doc.get("verdict"),
+                                   "open": state_open,
+                                   "last": {k: out.get(k) for k in (
+                                       "sent", "title", "armed", "delivered", "error",
+                                       "opened", "reminded", "resolved")}},
+                                  indent=1, default=str), "utf-8")
+        os.replace(tmp, path)
     except OSError as exc:
+        with suppress(OSError):
+            tmp.unlink(missing_ok=True)
         out["state_write_error"] = f"{type(exc).__name__}: {exc}"[:200]
     return out
 
