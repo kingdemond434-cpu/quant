@@ -258,10 +258,12 @@ def key_alert_id(account: str, source: str) -> str:
 
 
 def _send(aid: str, status: str, sig: str, title: str, body: str) -> dict[str, Any]:
-    """Page through publish_sync v5e's helper (`libs.ops.provenance._page`: send_all to the
-    armed channels, deduplicated, repaged every 6h while it stands, one recovery page; a send
-    delivered to nobody is retried). On a tree without it: not sent, and the reason says so.
-    Never raises."""
+    """Page through publish_sync's helper `libs.ops.provenance._page`. Under v5f (a446bcc0,
+    which lands with or before r7.x, never after) it ONLY ENQUEUES to the provenance outbox and
+    returns at once: `deliver_pending` (BoxHeartbeat, ProcessHealth) sends it to the armed
+    channels later, deduplicated, repaged while it stands, one recovery page -- so no sender,
+    hung or raising, ever runs on the order path or under placement_lock. On a tree without the
+    helper: not sent, and the reason says so. Never raises."""
     try:
         from libs.ops import provenance
         helper = getattr(provenance, "_page", None)
@@ -275,8 +277,8 @@ def _send(aid: str, status: str, sig: str, title: str, body: str) -> dict[str, A
 
 def page_key(account: str, status: str, *, source: str = "venue_key") -> str | None:
     """Open `account`'s key alert for the check `source` in the desk's alert ledger AND page it
-    (r7.2, audit r7.1 MUST-FIX 2: the ledger alone reached nobody) through `alert_channels.
-    send_all` via v5e's helper. Statuses: UNRESOLVABLE (no login, no server, KEY_UNAVAILABLE),
+    (r7.2, audit r7.1 MUST-FIX 2: the ledger alone reached nobody) through `_send` -> v5f's
+    enqueue-only `provenance._page` (delivered off the order path). Statuses: UNRESOLVABLE (no login, no server, KEY_UNAVAILABLE),
     UNDECLARED (no E8_ACCOUNT.json: the `e8_account_undeclared` rail), DECLARATION_INVALID (the
     `invalid:` sentinel) or KEY_MISMATCH. Names no value. "OPEN" or None. Never raises."""
     aid = key_alert_id(account, source)

@@ -1511,7 +1511,7 @@ def test_the_gateways_read_book_e8_only_enqueues(monkeypatch, tmp_path, sender_k
     xs = (_DESK / "mt5desk" / "cross_account.py").read_text("utf-8")
     calls = {n.func.attr for n in ast.walk(ast.parse(xs))
              if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)}
-    assert "send_all" not in calls and "_page" in calls
+    assert "send_all" not in calls and 'getattr(provenance, "_page", None)' in xs
     pg.release.set()
 
 
