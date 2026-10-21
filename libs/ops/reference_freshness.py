@@ -1081,6 +1081,19 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
         note="SEALED and CLEARED: zero removal acts in the file. Recorded so the audit is a "
              "measurement rather than an absence.",
     ),
+    DestructivePath(
+        path_id="judge_coverage.txn_drop_dirs",
+        module="desks/mt5/research/judge_coverage.py",
+        function="_drop_dirs",
+        removes="the staging directories THIS pass created (research_priors/.jc-txn-<own id>), "
+                "after its commit renamed their files out or its discard abandoned them",
+        reference="the pass's own in-memory list of the directories it made (self.staged_dirs)",
+        status="positive",
+        note="Removes nothing it did not create this pass, under a name carrying its own "
+             "transaction id; no file's absence or staleness is read as a licence. Judge-owned "
+             "state is never inside: committed files were renamed over their targets first. "
+             "Declared 2026-10-21 (audit of judge_coverage v2.1, MF1).",
+    ),
 )
 
 
