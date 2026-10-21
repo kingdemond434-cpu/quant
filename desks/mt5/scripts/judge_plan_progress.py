@@ -163,7 +163,11 @@ class PlanTracker:
                                        if not str(k).startswith("_")}, indent=1, default=str),
                            encoding="utf-8")
             os.replace(tmp, self.path)
-        except OSError:
+        except (OSError, RuntimeError):
+            # RuntimeError: `self.doc` is the launcher's `_PHASE_DOC`, and this flush iterates it
+            # without `_PHASE_LOCK`; a dispatch thread changing it mid-walk raises "dictionary
+            # changed size during iteration" (audit of a971d83da, should-fix 2). The stamp is
+            # skipped, the next flush writes it.
             pass  # a progress stamp is a report; judging never stops for it
 
     # ---------------------------------------------------------------- wiring

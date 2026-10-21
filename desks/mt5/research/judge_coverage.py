@@ -92,6 +92,7 @@ import sys
 import threading
 import time
 import uuid
+import weakref
 from collections import Counter, deque
 from collections.abc import Iterator
 from datetime import UTC, datetime
@@ -489,6 +490,45 @@ class _Txn:
         self.manifest_dir = manifest_dir
         self.ops: dict[str, list[Any]] = {}
         self.staged_dirs: list[Path] = []
+        # THE BANK'S LOCK IS HELD UNTIL THIS PASS'S COMMIT (audit of the judge speed train
+        # a5847f82a, R9 MUST-FIX). `update_unrunnable_bank` reads, changes and stages the bank and
+        # the sidecar under `_outstanding_lock`; they land only at `commit`. Releasing the lock
+        # in between let a second pass read the pre-commit bank and commit over this one -- the
+        # probe lost this pass's park and its readmission line. So the lock is ADOPTED here and
+        # released only once the staged writes have landed (`commit`) or been dropped
+        # (`discard`). `guarded` names the writes made under each lock: if the lock was lost
+        # before the commit they are dropped, as v4.4's "lost the lock mid-pass: write nothing".
+        self.locks: dict[str, _SidecarLock] = {}
+        self.guarded: dict[str, set[str]] = {}
+        # Lines appended to a log AT THE COMMIT, under that log's lock (see `append_line`).
+        self.appends: list[tuple[Path, str, Path, str, str]] = []
+        # A txn dropped without commit or discard (a test's simulated kill, an unhandled path)
+        # must not keep the lock for the 15-minute stale window: release it when it is collected
+        # or at interpreter exit. A real kill takes the beat thread with it, and the stale rule
+        # (OUTSTANDING_LOCK_STALE_S) frees the lock exactly as it did before.
+        self._release_at_gc = weakref.finalize(self, _release_locks, self.locks)
+
+    def adopt_lock(self, path: Path, lock: _SidecarLock) -> None:
+        """Keep `lock` (held, guarding `path`) until this txn commits or discards."""
+        self.locks[str(path)] = lock
+
+    def held_lock(self, path: Path) -> _SidecarLock | None:
+        return self.locks.get(str(path))
+
+    def guard(self, path: Path, final: Path) -> None:
+        """`final` was staged under the lock guarding `path`; it lands only while that holds."""
+        self.guarded.setdefault(str(path), set()).add(str(final))
+
+    def append_line(self, final: Path, line: str, *, lock_path: Path, at: str,
+                    if_lost: str) -> None:
+        """Append `line` to `final` AT THE COMMIT, under the lock guarding `lock_path`.
+
+        The whole log is still staged (old bytes + the line) and renamed with the rest, which
+        is idempotent under roll-forward (v2.3). What moved is WHEN the old bytes are read: at
+        the commit, under the lock, so a second pass cannot read the log before this pass's
+        line lands and then rename its own copy over it. `if_lost` replaces the line when the
+        lock this pass held was lost before the commit (its bank update is then dropped)."""
+        self.appends.append((final, line, lock_path, at, if_lost))
 
     def staged_path(self, final: Path) -> Path:
         return final.with_name(f"{final.name}{TXN_TAG}{self.id}")
@@ -515,7 +555,13 @@ class _Txn:
         return self.manifest_dir / f"{TXN_MANIFEST_PREFIX}{self.id}.json"
 
     def write_manifest(self) -> Path:
-        """THE COMMIT POINT: once this file exists, the pass's writes WILL all land."""
+        """THE COMMIT POINT: once this file exists, the pass's writes WILL all land.
+
+        The writes guarded by a lock this pass lost are dropped first, and the pending log lines
+        are staged onto the logs as they stand now, under their lock (R9), so the manifest
+        names them like every other write."""
+        self._drop_lost()
+        self._land_appends()
         path = self.manifest()
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_name(path.name + ".tmp")
@@ -529,27 +575,92 @@ class _Txn:
         return path
 
     def commit(self) -> None:
-        if self.ops:
-            manifest = self.write_manifest()
-            _apply_ops(list(self.ops.values()))
-            # A concurrent recovery may have rolled this manifest forward and removed it.
-            with contextlib.suppress(FileNotFoundError):
-                manifest.unlink()
-        self._drop_dirs()
+        try:
+            if self.ops or self.appends:
+                manifest = self.write_manifest()
+                _apply_ops(list(self.ops.values()))
+                # A concurrent recovery may have rolled this manifest forward and removed it.
+                with contextlib.suppress(FileNotFoundError):
+                    manifest.unlink()
+            self._drop_dirs()
+        finally:
+            _release_locks(self.locks)
 
     def discard(self) -> None:
-        for op, _final, staged in self.ops.values():
-            if op == "replace" and staged:
+        try:
+            for op, _final, staged in self.ops.values():
+                if op == "replace" and staged:
+                    with contextlib.suppress(OSError):
+                        Path(staged).unlink()
+            self.ops.clear()
+            self.appends.clear()
+            self._drop_dirs()
+        finally:
+            _release_locks(self.locks)
+
+    def _drop_lost(self) -> None:
+        """A lock this pass adopted and no longer owns: its guarded writes do not land."""
+        for key, lk in list(self.locks.items()):
+            if lk.owned():
+                continue
+            for final in self.guarded.pop(key, set()):
+                entry = self.ops.pop(final, None)
+                if entry and entry[0] == "replace" and entry[2]:
+                    with contextlib.suppress(OSError):
+                        Path(entry[2]).unlink()
+            self.appends = [(f, (alt if str(lp) == key else ln), lp, at, alt)
+                            for f, ln, lp, at, alt in self.appends]
+            print(f"judge coverage: lost {lk.path.name} before the commit; the bank and sidecar "
+                  f"this pass staged are dropped (re-asked next pass)", file=sys.stderr,
+                  flush=True)
+            self.locks.pop(key, None)
+            lk.release()               # unlinks only a file that still carries our token
+
+    def _land_appends(self) -> None:
+        """Stage each pending log line onto the log AS IT IS NOW, under the log's lock.
+
+        A pass that adopted the lock (it held the bank) already holds it. One that did not (its
+        bank update was LOCKED) tries once, without waiting, so the commit is never delayed: if
+        another pass holds it, the LOCKED line is not written rather than risk renaming a stale
+        copy over the holder's line. A LOCKED line is no reading -- the burn-down neither counts
+        it nor takes freshness from it -- so nothing measured is lost."""
+        import shutil
+        pending, self.appends = self.appends, []
+        for final, line, lock_path, at, _alt in pending:
+            if self.held_lock(lock_path) is None:
+                lk = _SidecarLock(lock_path, at)
+                if not lk.acquire(wait_s=0.0):
+                    print(f"judge coverage: {lk.path.name} held by another pass at the commit; "
+                          f"this pass's LOCKED line to {final.name} is not written",
+                          file=sys.stderr, flush=True)
+                    continue
+                self.adopt_lock(lock_path, lk)
+            dest = self.staged_path(final)
+            try:
+                final.parent.mkdir(parents=True, exist_ok=True)
+                if final.exists():
+                    shutil.copyfile(final, dest)
+                with dest.open("a", encoding="utf-8") as fh:
+                    fh.write(line + "\n")
+            except OSError:
                 with contextlib.suppress(OSError):
-                    Path(staged).unlink()
-        self.ops.clear()
-        self._drop_dirs()
+                    dest.unlink(missing_ok=True)
+                continue           # a failed log write is caught by the log's staleness rule
+            self.put_staged(final, dest)
 
     def _drop_dirs(self) -> None:
         import shutil
         for d in self.staged_dirs:
             shutil.rmtree(d, ignore_errors=True)
         self.staged_dirs = []
+
+
+def _release_locks(locks: dict[str, Any]) -> None:
+    """Release every lock a txn adopted (commit, discard, or the txn's collection)."""
+    for key in list(locks):
+        lk = locks.pop(key, None)
+        if lk is not None and lk.held:
+            lk.release()
 
 
 def _txn_dirs(ratchet: Path | None = None) -> list[Path]:
@@ -1881,8 +1992,9 @@ class _SidecarLock:
             with contextlib.suppress(OSError):
                 os.utime(self.path)
 
-    def acquire(self) -> bool:
-        deadline = time.monotonic() + OUTSTANDING_LOCK_WAIT_S
+    def acquire(self, wait_s: float | None = None) -> bool:
+        """Take the lock, waiting up to `wait_s` (default OUTSTANDING_LOCK_WAIT_S)."""
+        deadline = time.monotonic() + (OUTSTANDING_LOCK_WAIT_S if wait_s is None else wait_s)
         while True:
             try:
                 self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -1932,6 +2044,27 @@ def _outstanding_lock(path: Path, at: str) -> Any:
             lk.release()
 
 
+@contextlib.contextmanager
+def _bank_lock(path: Path, at: str, txn: _Txn | None) -> Any:
+    """`_outstanding_lock`, except that inside a pass (`txn`) the lock is handed to the txn and
+    held until the pass's commit or discard (audit of a5847f82a, R9): the bank and sidecar it
+    guards are staged here but land at the commit, so releasing it here let a second pass read
+    the pre-commit bank and commit over this one. A pass that already holds it reuses it."""
+    if txn is None:
+        with _outstanding_lock(path, at) as lk:
+            yield lk
+        return
+    held = txn.held_lock(path)
+    if held is not None:
+        yield held
+        return
+    lk = _SidecarLock(path, at)
+    lk.acquire()
+    if lk.held:
+        txn.adopt_lock(path, lk)
+    yield lk
+
+
 def _still_needs_data(row: dict[str, Any]) -> bool:
     return _fire_probe(str(row.get("sym") or ""), str(row.get("family") or "")).get(
         "status") == "NEEDS_DATA"
@@ -1964,10 +2097,13 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     out_path = target.parent / NEEDS_DATA_OUTSTANDING.name
     out_written = False
     bank_write = "SKIPPED_LOCKED"
+    txn = _txn_current()
     # THE BANK IS READ, CHANGED AND WRITTEN UNDER THE SAME LOCK AS THE SIDECAR (audit of
     # 1fb3db5f1): a bank read before the lock could be overwritten by a pass that read it
-    # earlier, and a LOCKED pass that wrote its bank anyway raced the holder's write.
-    with _outstanding_lock(out_path, at) as locked:
+    # earlier, and a LOCKED pass that wrote its bank anyway raced the holder's write. Inside a
+    # pass the lock is held on until the pass's commit (`_bank_lock`), where the staged writes
+    # land (audit of a5847f82a, R9).
+    with _bank_lock(out_path, at, txn) as locked:
         bank = unrunnable_bank(target)
         readmitted = ([cell for cell, row in bank.items() if cell not in parkable
                        and readmit_due(row, now=now_ts, bar_sizes=bar_sizes)]
@@ -2039,7 +2175,6 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         # are STAGED and renamed together at the pass's commit point, so a pass killed or timed
         # out before it changes none of them (merge resolution, 2026-10-21); outside a pass each
         # is written now, tmp + replace, under this lock, exactly as v4.4 writes it.
-        txn = _txn_current()
         if out_writable:
             tmp = out_path.with_name(out_path.name + ".tmp")
             try:
@@ -2048,6 +2183,7 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                     _replace_retry(tmp, out_path)
                 else:
                     txn.put_text(out_path, json.dumps(outstanding, indent=1, default=str))
+                    txn.guard(out_path, out_path)
                 out_written = True
             except OSError:
                 out_written = False
@@ -2070,6 +2206,7 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                         _born_marker(out_path).write_text(born_text, "utf-8")
                     else:
                         txn.put_text(_born_marker(out_path), born_text)
+                        txn.guard(out_path, _born_marker(out_path))
         elif to_side:
             # The write did not land: the rows bound for it go back to the bank, unreadmitted.
             for cell in to_side:
@@ -2089,6 +2226,7 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                     _replace_retry(tmp_bank, target)
                 else:
                     txn.put_text(target, json.dumps(bank, indent=1, default=str))
+                    txn.guard(out_path, target)
                 bank_write = "WRITTEN"
             except OSError:
                 bank_write = "WRITE_FAILED"
@@ -2127,24 +2265,22 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         # Beside the bank it describes, so a test's bank never writes the desk's log.
         lp = log or target.parent / READMISSION_LOG.name
         lp.parent.mkdir(parents=True, exist_ok=True)
-        dest = lp
-        txn = _txn_current()
+        # A pass that did not hold the bank says so: LOCKED is not a measured zero, and the
+        # burn-down neither counts it nor takes freshness from it.
+        locked_line = {"at": at, "state": "LOCKED"}
+        line = (locked_line if bank_write == "SKIPPED_LOCKED" else
+                {"at": at, "readmitted": n_re, "by_reason": readmitted_nt_reason,
+                 **({"state": bank_write} if bank_write != "WRITTEN" else {})})
         if txn is not None:
             # The whole log is staged (old bytes + this line) and renamed at commit: a rename is
-            # idempotent under roll-forward, where a second append would not be.
-            dest = txn.staged_path(lp)
-            if lp.exists():
-                import shutil
-                shutil.copyfile(lp, dest)
-        with dest.open("a", encoding="utf-8") as fh:
-            # A pass that did not hold the bank says so: LOCKED is not a measured zero, and the
-            # burn-down neither counts it nor takes freshness from it.
-            line = ({"at": at, "state": "LOCKED"} if bank_write == "SKIPPED_LOCKED" else
-                    {"at": at, "readmitted": n_re, "by_reason": readmitted_nt_reason,
-                     **({"state": bank_write} if bank_write != "WRITTEN" else {})})
-            fh.write(json.dumps(line) + "\n")
-        if txn is not None:
-            txn.put_staged(lp, dest)
+            # idempotent under roll-forward, where a second append would not be. The old bytes
+            # are read AT THE COMMIT, under the bank's lock (`_Txn.append_line`), so no other
+            # pass can rename a copy taken before this line landed over it (R9).
+            txn.append_line(lp, json.dumps(line), lock_path=out_path, at=at,
+                            if_lost=json.dumps(locked_line))
+        else:
+            with lp.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(line) + "\n")
     except OSError:
         pass
     return {"parked_this_pass": added, "readmitted_on_bar_growth": len(popped),

@@ -461,3 +461,19 @@ def test_a_chart_gone_since_the_plan_is_input_missing_not_unreadable(uni, monkey
                         lambda *a: (_ for _ in ()).throw(OSError("torn read")))
     _out, blocked = _build(_specs()[1:])
     assert blocked[0]["why"].startswith("INPUT_MISSING: the M5 chart")
+
+
+def test_a_flush_that_meets_a_concurrent_change_is_skipped_never_raised(tmp_path) -> None:
+    """Audit of a971d83da, should-fix 2: `flush` walks the launcher's `_PHASE_DOC` without
+    `_PHASE_LOCK`, and a dispatch thread changing it mid-walk raises RuntimeError ("dictionary
+    changed size during iteration"). The stamp is a report: it is skipped, never raised."""
+    class _Changing(dict):
+        def items(self):  # type: ignore[override]
+            raise RuntimeError("dictionary changed size during iteration")
+
+    path = tmp_path / "JUDGE_SWEEP_PHASE.json"
+    tr = jpp.PlanTracker(_Changing(pid=1, phase="plan", phases={}), path, clock=_Clock())
+    tr.flush(force=True)                         # raised RuntimeError before the fix
+    tr.step("lane_and_docket")                   # and through step's own forced flush
+    assert not path.exists(), "nothing half-written: the next flush writes the stamp"
+    assert not list(tmp_path.glob("*.tmp")), "and no tmp is left behind"

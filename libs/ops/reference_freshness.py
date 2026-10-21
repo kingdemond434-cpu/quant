@@ -1109,6 +1109,22 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "state is never inside: committed files were renamed over their targets first. "
              "Declared 2026-10-21 (audit of judge_coverage v2.1, MF1).",
     ),
+    DestructivePath(
+        path_id="judge_coverage.txn_drop_lost",
+        module="desks/mt5/research/judge_coverage.py",
+        function="_drop_lost",
+        removes="THIS pass's own staged bank/sidecar/.born writes (ops popped from its "
+                "uncommitted manifest, their .jc-txn-<own id> files unlinked) before its commit "
+                "point, when the bank lock it adopted is no longer its own",
+        reference="the lock file's token read back and found not to be this pass's "
+                  "(`_SidecarLock.owned()` false): a positive reading, never an absence",
+        status="positive",
+        note="Withholds writes this pass staged and has not landed; no persisted file, row or "
+             "certificate is touched -- the bank and sidecar on disk stay exactly as the lock's "
+             "new holder left them, and the rows are re-asked next pass. v4.4's 'lost the lock "
+             "mid-pass: write nothing', applied at the commit point. Declared 2026-10-21 "
+             "(judge speed train fix1, audit R9).",
+    ),
 )
 
 

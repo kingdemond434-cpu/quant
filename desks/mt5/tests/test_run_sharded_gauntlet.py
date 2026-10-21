@@ -687,3 +687,68 @@ def test_a_wave_with_slow_reports_and_shard_events_shares_one_phase_doc(monkeypa
     assert "shards" not in doc and doc["phases"]["build_shards"] == 7.0
     assert doc["phases"]["prewarm"] == 50.0
     assert not [k for k in doc if k.startswith("_")]
+
+
+def test_phase_and_shard_progress_never_lose_a_count_under_the_phase_lock(
+        tmp_path, monkeypatch) -> None:
+    """Audit of a971d83da, should-fix 1: `_phase` (the launcher's thread) and `_shard_progress`
+    (dispatch's child threads) read-modify-write `_PHASE_DOC` and its file under `_PHASE_LOCK`.
+
+    Every "start" event is counted exactly once: in the shard block a `_phase` closed (and
+    popped), or in the block left at the end. The critical section is widened with a sleep
+    inside it so that, without the lock, a thread that read the block before a `_phase` popped
+    it writes it back (a resurrected count) or two threads increment one stale copy (a lost
+    count); `_flush_phase_doc` also iterates a dict another thread is changing. Replacing
+    `_PHASE_LOCK` with a no-op context fails this test."""
+    import threading
+    import time as _time
+
+    popped: list[dict] = []
+
+    class _Doc(dict):
+        def pop(self, key, *default):  # type: ignore[override]
+            val = super().pop(key, *default)
+            if key == "shards" and isinstance(val, dict):
+                popped.append(val)
+            return val
+
+    monkeypatch.setattr(runner, "SWEEP_PHASE", tmp_path / "JUDGE_SWEEP_PHASE.json")
+    monkeypatch.setattr(runner, "_PHASE_DOC", _Doc())
+    live = runner._shard_live
+
+    def slow_live(shards, now):
+        _time.sleep(0.0005)                      # inside the critical section
+        return live(shards, now)
+
+    monkeypatch.setattr(runner, "_shard_live", slow_live)
+    runner._phase("build_shards")
+    threads, per_thread, errors = 6, 60, []
+    go = threading.Event()
+
+    def child() -> None:
+        go.wait()
+        for _ in range(per_thread):
+            runner._shard_progress("start", "build")
+
+    def launcher() -> None:
+        go.wait()
+        try:
+            for i in range(120):
+                runner._phase("build_shards" if i % 2 else "rule_shards")
+                _time.sleep(0.0005)
+        except Exception as exc:                 # e.g. dict changed size during iteration
+            errors.append(exc)
+
+    workers = [threading.Thread(target=child) for _ in range(threads)]
+    workers.append(threading.Thread(target=launcher))
+    for w in workers:
+        w.start()
+    go.set()
+    for w in workers:
+        w.join(timeout=120)
+    assert not [w for w in workers if w.is_alive()], "no deadlock"
+    assert not errors, errors
+    final = runner._PHASE_DOC.get("shards") or {}
+    counted = sum(int(b.get("started") or 0) for b in popped) + int(final.get("started") or 0)
+    assert counted == threads * per_thread, (
+        f"{counted} starts counted for {threads * per_thread} events")
