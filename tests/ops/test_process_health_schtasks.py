@@ -389,24 +389,45 @@ def test_a_localised_running_state_excuses_an_overlap_code(
      '"HostName","TaskName"\r\n"BOX","\\MT5-Gateway"\r\n'],
     ids=["timeout", "oserror", "empty", "no-result-columns"],
 )
-def test_a_brief_only_read_is_an_unmeasured_headline(
+def test_a_brief_only_read_with_no_fault_is_an_unmeasured_headline(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, verbose: Any
 ) -> None:
-    _fake(monkeypatch, BRIEF, verbose)
+    healthy = "".join(ln + "\r\n" for ln in BRIEF.split("\r\n")
+                      if "MT5-Old" not in ln and "quoted" not in ln)
+    _fake(monkeypatch, healthy, verbose)
     contracts = {"MT5-Hourly": CONTRACTS["MT5-Hourly"], "MT5-Gateway": CONTRACTS["MT5-Gateway"]}
     doc, by = _build(monkeypatch, tmp_path, contracts)
     assert doc["scheduler_status"].startswith("OK schtasks (brief")
-    assert {by[n]["verdict"] for n in contracts} == {"OK"}   # rows alone would read green
+    assert {r["verdict"] for r in by.values()} <= {"OK", "UNCONTRACTED"}  # no definite fault
     assert doc["status"] == "UNMEASURED" and doc["run_history"] == "UNMEASURED"
 
 
-def test_a_brief_only_read_with_real_trouble_is_still_not_ok(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+@pytest.mark.parametrize(
+    "contracts, fault",
+    [
+        (CONTRACTS, "NOT_SCHEDULED"),  # MT5-Vanished has a contract and no task
+        ({"MT5-Old": ("fresh.json", 120, "disabled")}, "DISABLED"),
+        ({"MT5-Hourly": ("stale.json", 1, "stale")}, "STALE"),
+        ({"MT5-Hourly": ("absent.json", 120, "absent")}, "NO_ARTIFACT"),
+    ],
+    ids=["not-scheduled", "disabled", "stale", "no-artifact"],
+)
+def test_a_brief_only_read_with_a_definite_fault_headlines_attention(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, contracts: dict[str, Any], fault: str
 ) -> None:
+    """Coordinator ruling 2026-10-21: the worst finding wins, so a fault the brief read can see
+    is ATTENTION, not UNMEASURED."""
+    import os
+    import time
+    stale = tmp_path / "stale.json"
+    stale.write_text("{}", "utf-8")
+    old = time.time() - 3600
+    os.utime(stale, (old, old))
     _fake(monkeypatch, BRIEF, subprocess.TimeoutExpired(["schtasks", "/v"], 90))
-    doc, by = _build(monkeypatch, tmp_path, CONTRACTS)
-    assert by["MT5-Vanished"]["verdict"] == "NOT_SCHEDULED"
-    assert doc["status"] == "UNMEASURED" and doc["n_needing_attention"] >= 1
+    doc, by = _build(monkeypatch, tmp_path, contracts)
+    assert doc["scheduler_status"].startswith("OK schtasks (brief")
+    assert fault in {r["verdict"] for r in by.values()}
+    assert doc["status"] == "ATTENTION" and doc["run_history"] == "UNMEASURED"
 
 
 def test_both_reads_landing_is_a_measured_headline(

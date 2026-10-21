@@ -157,6 +157,13 @@ def parse_schtasks_csv(text: str) -> list[dict[str, str]]:
     return rows
 
 
+#: Verdicts a brief-only read (no run history) establishes for certain. Any of them makes a
+#: brief-only headline ATTENTION; FAILING cannot arise there (no result code was read) but is
+#: listed so a future change that reads one cannot hide it.
+BRIEF_DEFINITE_FAULTS = frozenset({"NOT_SCHEDULED", "DISABLED", "STALE", "NO_ARTIFACT",
+                                   "FAILING"})
+
+
 def _missing(rows: list[dict[str, str]], fields: tuple[str, ...]) -> list[str]:
     """The required columns the dump's header did not carry (every row shares one header)."""
     return [f for f in fields if rows and f not in rows[0]]
@@ -392,6 +399,7 @@ def build() -> dict[str, Any]:
     bad = [r for r in rows if r["verdict"] in ("NOT_SCHEDULED", "SCHEDULER_UNMEASURED",
                                              "FAILING", "NO_ARTIFACT", "STALE")]
     run_history_read = scheduler_status == "OK schtasks"
+    brief_faults = [r for r in rows if r["verdict"] in BRIEF_DEFINITE_FAULTS]
     return {
         "at": now.isoformat(timespec="seconds"),
         "host": __import__("socket").gethostname(),
@@ -402,12 +410,14 @@ def build() -> dict[str, Any]:
         # is how a dead gateway hides behind a green majority. An unread scheduler, or a board
         # with no rows at all (UNMEASURED inventory and `_contracts()` swallowing a failed
         # import), is UNMEASURED: zero rows of trouble out of zero rows read is not "OK".
-        # A BRIEF-ONLY READ IS UNMEASURED TOO (v5b): the inventory landed but the verbose read
-        # (last run, last result) failed or timed out, so no row's run history was read and an
-        # all-OK board would be OK about results nobody saw. The rows still judge what the brief
-        # read can (NOT_SCHEDULED, DISABLED, STALE) and n_needing_attention still counts them.
+        # A BRIEF-ONLY READ (v5b, coordinator ruling 2026-10-21): the inventory landed but the
+        # verbose read (last run, last result) failed or timed out. A DEFINITE fault the brief
+        # read can still see (NOT_SCHEDULED, DISABLED, STALE, NO_ARTIFACT) headlines ATTENTION --
+        # the worst finding wins. With no such fault the headline is UNMEASURED, never OK: an
+        # all-OK board there would be OK about results nobody read.
         "status": ("UNMEASURED" if not rows or not scheduler_status.startswith("OK ")
-                   or not run_history_read
+                   else ("ATTENTION" if brief_faults else "UNMEASURED")
+                   if not run_history_read
                    else "OK" if not bad else "ATTENTION"),
         "run_history": "MEASURED" if run_history_read else "UNMEASURED",
         "n_needing_attention": len(bad),
