@@ -444,10 +444,14 @@ def test_e8_with_no_box_key_places_nothing_and_says_why(monkeypatch, tmp_path) -
     assert venue.placed == [] and doc["gold_oco"]["key"] is None
     blocked = [r for r in intents if r.get("status") == "RAIL_BLOCKED"]
     # Both fences now name accounts by the one keyed helper, so with no box key the existing
-    # two-account fence refuses first (its book cannot be named) and the OCO behind it too.
-    assert blocked and all(r["rail"] in (oco.RAIL, "cross_account_opposite")
-                           and ("HMAC" in r["why"] or "no box key" in r["why"])
-                           and "fail closed" in r["why"] for r in blocked)
+    # two-account fence refuses first (its book cannot be named) and the OCO behind it too. On
+    # r7.1+ the account rail refuses before either: the venue's own key is unresolvable, so the
+    # declaration cannot be joined (`e8_account_undeclared`, billed). Every refusal names why.
+    assert blocked and all(
+        (r["rail"] in (oco.RAIL, "cross_account_opposite")
+         and ("HMAC" in r["why"] or "no box key" in r["why"]) and "fail closed" in r["why"])
+        or (r["rail"] == "e8_account_undeclared" and "unresolvable" in r["why"])
+        for r in blocked)
 
 
 def test_e8_in_a_readable_world_places_both_legs_and_publishes_keyed_states(
