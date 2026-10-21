@@ -250,6 +250,8 @@ desks/mt5/data/daily_cycle_state.json
 desks/mt5/data/task_queue.jsonl
 # box-local append-only ledger behind reports/DSR_INPUTS.json (its sha256 is in the report)
 desks/mt5/data/dsr_trial_sharpes.jsonl
+# E8 FX closing-stop slip ledger (bracket guard v5.3): a fill ledger, box-local like the others.
+desks/mt5/data/e8_fx_stop_exits.jsonl
 desks/mt5/data/task_queue.subs.json
 desks/mt5/data/task_queue.watermark
 
