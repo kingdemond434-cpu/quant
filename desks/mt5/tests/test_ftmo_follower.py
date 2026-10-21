@@ -604,8 +604,12 @@ def test_a_closed_ftmo_position_lands_in_the_prop_fills_ledger_once(world) -> No
     assert (row["sl"], row["tp"], row["intended_entry"]) == (4320.0, 4380.0, 4340.0)
     assert row["exit_reason"] == "stop" and row["pl_quote"] == -927.0
     assert row["r_multiple"] == pytest.approx(-20.6 / 20.4, abs=1e-4)
-    assert row["commission"] is None and row["swap"] is None and row["fees"] is None
-    assert row["fees_status"].startswith("UNMEASURED")
+    # v2r fix 1: the fees are READ off the position's MT5 deals (entry + exit), a measured 0.0
+    # included, and the net result follows from them.
+    assert (row["commission"], row["swap"], row["fees"]) == (-7.0, 0.0, 0.0)
+    assert row["fees_status"] == "MEASURED"
+    assert row["fees_measured"] == ["commission", "swap", "fees"]
+    assert row["pl_net_quote"] == -934.0
     assert xa.valid_key(row["account_key"])
     assert row["account_key"] == oco.oco_account_key(FT_LOGIN, FT_SERVER)
     text = Path(ff.PROP_LEDGER).read_text("utf-8")
@@ -624,6 +628,27 @@ def test_an_open_position_is_not_written_and_a_ledger_failure_costs_no_order(
     monkeypatch.setattr(ff, "append_fills", lambda rows, path=None: 1 / 0)
     doc = _pass(mt5, now=NOW + timedelta(minutes=1))
     assert "ZeroDivisionError" in doc["fills_ledger"]["why"] and doc["status"] == "OK"
+
+
+def test_a_fee_the_deal_does_not_carry_is_null_with_its_reason(world) -> None:
+    """A deal with no `fee` (an older terminal build) keeps the fee null and says so; the fields
+    it does carry are still measured, and the row is written."""
+    mt5 = _MT5()
+    _closed_trade(mt5)
+    mt5.deals = tuple(SimpleNamespace(**{k: v for k, v in vars(d).items() if k != "fee"})
+                      for d in mt5.deals)
+    assert _pass(mt5)["fills_ledger"]["written"] == 1
+    (row,) = _ledger()
+    assert row["fees"] is None and (row["commission"], row["swap"]) == (-7.0, 0.0)
+    assert row["fees_status"].startswith("PARTIAL") and "fee (2 of 2 deals" in row[
+        "fees_status"]
+    assert row["fees_measured"] == ["commission", "swap"] and row["pl_net_quote"] is None
+
+
+def test_a_fee_not_read_off_the_deal_is_refused() -> None:
+    with pytest.raises(ValueError, match="never 0.0"):
+        ff.append_fills([{"book": "ftmo", "position_id": 1, "commission": -3.5,
+                          "fees_measured": ["swap"]}])
 
 
 @pytest.mark.parametrize("field", ["login", "account", "username", "account_id"])

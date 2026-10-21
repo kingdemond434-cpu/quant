@@ -66,6 +66,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import math
 import os
 import sys
 import time
@@ -108,8 +109,12 @@ PROP_LEDGER = DESK / "data" / "live_ledger_prop.jsonl"
 PROP_SCHEMA = "prop-fills-v1"
 #: prop/fills_ledger.append's refusal list: a row carrying any of these is never written.
 PROP_BANNED = ("account", "login", "username", "password", "acc_num", "account_id")
-PROP_FEES_STATUS = ("UNMEASURED on this row: the fills ledger carries no fee as 0.0; the MT5 "
-                    "deal's commission, swap and fee are not reconciled into it yet")
+#: THE FEES (v2r fix 1): commission, swap and fee are READ from the position's MT5 deals (its
+#: entry deal and every exit deal, summed per field) -- `fees_status` "MEASURED" when all three
+#: are read off every deal, a measured 0.0 included. A field a deal truly does not carry is null,
+#: never 0.0, and `fees_status` names which field and why (`fees_measured` lists the read ones).
+PROP_FEE_FIELDS = (("commission", "commission"), ("swap", "swap"), ("fees", "fee"))
+PROP_FEES_MEASURED = "MEASURED"
 #: E8-Gold's pass report (prop/e8_gold.OUT), the first of the three readings this lane follows.
 E8_REPORT = DESK / "reports" / "E8_GOLD.json"
 #: E8-Gold passes every five minutes: two passes, the gold OCO's bound (MAX_STATE_AGE_S).
@@ -377,6 +382,31 @@ def _iso_epoch(ts: object) -> str | None:
     return datetime.fromtimestamp(float(ts), tz=UTC).isoformat(timespec="seconds")
 
 
+def deal_fees(deals: list[Any]) -> tuple[dict[str, float | None], list[str], str]:
+    """({row field: sum or None}, the measured row fields, fees_status) over a position's MT5
+    deals. A field is the sum of the deals' own values when EVERY deal carries a number for it
+    (a measured 0.0 is a measurement); else None -- the deal lacks it -- and the status names
+    the field and the deal count. Pure."""
+    out: dict[str, float | None] = {}
+    measured: list[str] = []
+    missing: list[str] = []
+    for field, attr in PROP_FEE_FIELDS:
+        vals = [getattr(d, attr, None) for d in deals]
+        if deals and all(isinstance(v, (int, float)) and not isinstance(v, bool)
+                         and math.isfinite(float(v)) for v in vals):
+            out[field] = round(sum(float(v) for v in vals), 2)
+            measured.append(field)
+        else:
+            n = sum(1 for v in vals if not (isinstance(v, (int, float))
+                                            and not isinstance(v, bool)))
+            out[field] = None
+            missing.append(f"{attr} ({n} of {len(deals)} deals carry no number)")
+    if not missing:
+        return out, measured, PROP_FEES_MEASURED
+    return out, measured, ("PARTIAL: " if measured else "UNMEASURED: ") + (
+        "the MT5 deal history lacks " + ", ".join(missing) + "; null, never 0.0")
+
+
 def compose_fills(deals: Any, orders: Any, open_ids: set[int], *, account_key: str | None,
                   contract: float | None, recorded_at: str) -> list[dict[str, Any]]:
     """prop-fills-v1 rows (prop/fills_ledger.compose's field names) for every CLOSED FTMO
@@ -419,6 +449,9 @@ def compose_fills(deals: Any, orders: Any, open_ids: set[int], *, account_key: s
         dist = abs(entry_px - sl) if sl else None
         volume = float(getattr(e, "volume", 0.0) or 0.0)
         pl = [getattr(d, "profit", None) for d in outs]
+        fees, fees_measured, fees_status = deal_fees([e, *outs])
+        pl_quote = (round(sum(float(x) for x in pl), 2)
+                    if all(isinstance(x, (int, float)) for x in pl) else None)
         rows.append({
             "schema": PROP_SCHEMA, "book": LANE, "venue": "mt5", "lane": "ftmo_follower",
             "provenance": "ftmo_follower:mt5_deal_history", "recorded_at": recorded_at,
@@ -438,10 +471,13 @@ def compose_fills(deals: Any, orders: Any, open_ids: set[int], *, account_key: s
             "r_basis": "price: side x (exit - entry) / |entry - sent stop|, gross of fees",
             "r_unreconstructible": not dist,
             "risk_quote": (round(dist * volume * contract, 6) if dist and contract else None),
-            "pl_quote": (round(sum(float(x) for x in pl), 2)
-                         if all(isinstance(x, (int, float)) for x in pl) else None),
+            "pl_quote": pl_quote,
             "quote_ccy": "USD", "pl_basis": "the MT5 exit deals' profit, gross of fees",
-            "commission": None, "swap": None, "fees": None, "fees_status": PROP_FEES_STATUS,
+            **fees, "fees_status": fees_status, "fees_measured": fees_measured,
+            "fees_basis": "sum over the position's entry and exit MT5 deals",
+            "pl_net_quote": (round(pl_quote + sum(v for v in fees.values() if v is not None), 2)
+                             if pl_quote is not None and fees_status == PROP_FEES_MEASURED
+                             else None),
             "position_id": pid, "entry_order": int(getattr(e, "order", 0) or 0) or None,
             "close_order": int(getattr(last, "order", 0) or 0) or None,
             "n_exit_orders": len(outs), "server": "FTMO", "account_kind": "prop",
@@ -462,8 +498,11 @@ def append_fills(rows: list[dict[str, Any]], path: Path | None = None) -> int:
         for banned in PROP_BANNED:
             if banned in r:
                 raise ValueError(f"refusing a prop ledger row carrying {banned!r}")
-        if r.get("commission") == 0.0 or r.get("fees") == 0.0 or r.get("swap") == 0.0:
-            raise ValueError("a prop ledger fee is null with fees_status, never 0.0")
+        read = r.get("fees_measured") if isinstance(r.get("fees_measured"), list) else []
+        for field, _attr in PROP_FEE_FIELDS:
+            if r.get(field) is not None and field not in read:
+                raise ValueError(f"a prop ledger {field} not read off the MT5 deal is null "
+                                 "with fees_status, never 0.0 or a guess")
     have: set[str] = set()
     if path.exists():
         for ln in path.read_text("utf-8", errors="replace").splitlines():
