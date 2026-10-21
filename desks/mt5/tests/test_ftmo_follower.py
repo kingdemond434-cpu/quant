@@ -418,7 +418,9 @@ def test_the_follower_re_reads_every_lane_at_decision_time(world) -> None:
     fired: list[bool] = []
 
     def positions_get(symbol: str | None = None) -> list:
-        if any(v > 0 for v in xa._HELD.values()) and not fired:
+        # The follower's own decision-time read (by symbol, under the lock) -- not the pass-start
+        # publish (`mt5_gold_rows` reads every symbol) and not the management read (no lock).
+        if symbol == "XAUUSD" and any(v > 0 for v in xa._HELD.values()) and not fired:
             fired.append(True)        # inside the placement lock: Fusion just sold gold
             oco.publish_lane("fusion", oco.oco_account_key(72345678, "FusionMarkets-Test"),
                              positions=[{"id": 1, "side": "short", "opened_date": DAY}],
