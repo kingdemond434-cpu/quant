@@ -90,7 +90,9 @@ def test_a_tick_without_proof_of_liveness_is_never_read():
 def test_a_live_tick_off_the_hour_is_stale_never_rounded():
     """Proved live but 10 minutes off a whole hour: the box clock is wrong, not the broker."""
     t = datetime(2026, 7, 1, 12, 0, tzinfo=UTC)
-    assert bp.read_probe(_row(t, 3, age_s=600, live=True)) == (None, "STALE")
+    row = _row(t, 3, age_s=600, live=True)
+    row["age_bound_ms"] = 250                                  # it ticked; the box clock is off
+    assert bp.read_probe(row) == (None, "STALE")
 
 
 class _FakeMt5:
