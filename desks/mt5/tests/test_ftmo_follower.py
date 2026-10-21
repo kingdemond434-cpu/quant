@@ -104,7 +104,7 @@ def _e8_report(*, at: datetime = NOW, status: str = "OK", guard: str | None = No
 def world(monkeypatch, tmp_path) -> SimpleNamespace:
     """E8 filled its asia buy stop today (position 777 open long), the direction state says so,
     FTMO is declared, its account file and the ftmo cert block are in place, and it is ARMED."""
-    for name in ("STATE", "OUT", "INTENTS", "LOG"):
+    for name in ("STATE", "OUT", "INTENTS", "LOG", "PROP_LEDGER"):
         monkeypatch.setattr(ff, name, tmp_path / f"{name.lower()}.json")
     acct = tmp_path / "FTMO_LIVE_ACCOUNT.json"
     acct.write_text(json.dumps({"login": FT_LOGIN, "server": FT_SERVER, "trade_mode": 0,
@@ -563,3 +563,107 @@ def test_a_missing_hmac_key_pages(world, monkeypatch, tmp_path) -> None:
     assert doc["status"] == "ACCOUNT_REFUSED" and mt5.sent == []
     assert doc["page"]["sent"] is True
     assert oco.PAGES and "ftmo" in oco.PAGES[-1][0] and str(FT_LOGIN) not in str(oco.PAGES)
+
+
+# ======================================================================== v2: the prop fills ledger
+
+def _closed_trade(mt5: _MT5, *, pid: int = 9101) -> None:
+    """An FTMO long that entered at 4340.4 and was stopped at 4319.8, on the MAGIC history."""
+    mt5.hist_orders.append(SimpleNamespace(ticket=pid, symbol="XAUUSD", magic=ff.MAGIC,
+                                           time_setup=TICK, type=4, price_open=4340.0,
+                                           sl=4320.0, tp=4380.0))
+    mt5.deals = (
+        SimpleNamespace(ticket=1, order=pid, position_id=pid, symbol="XAUUSD", magic=ff.MAGIC,
+                        entry=0, type=0, volume=0.45, price=4340.4, time=TICK + 60, profit=0.0,
+                        commission=-3.5, swap=0.0, fee=0.0, reason=0),
+        SimpleNamespace(ticket=2, order=pid + 1, position_id=pid, symbol="XAUUSD",
+                        magic=ff.MAGIC, entry=1, type=1, volume=0.45, price=4319.8,
+                        time=TICK + 600, profit=-927.0, commission=-3.5, swap=0.0, fee=0.0,
+                        reason=4),
+        SimpleNamespace(ticket=3, order=77, position_id=4242, symbol="XAUUSD", magic=0,
+                        entry=0, type=1, volume=1.0, price=4300.0, time=TICK, profit=0.0))
+
+
+def _ledger() -> list[dict]:
+    p = Path(ff.PROP_LEDGER)
+    return [json.loads(ln) for ln in p.read_text("utf-8").splitlines() if ln.strip()] \
+        if p.exists() else []
+
+
+def test_a_closed_ftmo_position_lands_in_the_prop_fills_ledger_once(world) -> None:
+    mt5 = _MT5()
+    _closed_trade(mt5)
+    doc = _pass(mt5)
+    assert doc["fills_ledger"]["written"] == 1
+    _pass(mt5, now=NOW + timedelta(minutes=1))                   # deduped by ftmo:<position>
+    (row,) = _ledger()
+    assert row["schema"] == "prop-fills-v1" and row["book"] == "ftmo"
+    assert f"{row['book']}:{row['position_id']}" == "ftmo:9101"
+    assert (row["entry_side"], row["side"], row["entry_price"], row["fill_price"]) == (
+        0, 1, 4340.4, 4319.8)
+    assert (row["sl"], row["tp"], row["intended_entry"]) == (4320.0, 4380.0, 4340.0)
+    assert row["exit_reason"] == "stop" and row["pl_quote"] == -927.0
+    assert row["r_multiple"] == pytest.approx(-20.6 / 20.4, abs=1e-4)
+    assert row["commission"] is None and row["swap"] is None and row["fees"] is None
+    assert row["fees_status"].startswith("UNMEASURED")
+    assert xa.valid_key(row["account_key"])
+    assert row["account_key"] == oco.oco_account_key(FT_LOGIN, FT_SERVER)
+    text = Path(ff.PROP_LEDGER).read_text("utf-8")
+    assert str(FT_LOGIN) not in text and FT_SERVER not in text
+    assert not any(k in row for k in ff.PROP_BANNED)
+
+
+def test_an_open_position_is_not_written_and_a_ledger_failure_costs_no_order(
+        world, monkeypatch) -> None:
+    mt5 = _MT5()
+    _closed_trade(mt5)
+    mt5.positions = [SimpleNamespace(ticket=9101, symbol="XAUUSD", type=0, magic=ff.MAGIC,
+                                     volume=0.45, sl=4320.0, tp=4380.0, time=TICK)]
+    assert _pass(mt5)["fills_ledger"]["written"] == 0 and _ledger() == []
+    mt5.positions = []
+    monkeypatch.setattr(ff, "append_fills", lambda rows, path=None: 1 / 0)
+    doc = _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert "ZeroDivisionError" in doc["fills_ledger"]["why"] and doc["status"] == "OK"
+
+
+@pytest.mark.parametrize("field", ["login", "account", "username", "account_id"])
+def test_the_ledger_refuses_a_login_field_and_a_zero_fee(world, field: str) -> None:
+    with pytest.raises(ValueError, match=field):
+        ff.append_fills([{"book": "ftmo", "position_id": 1, field: "x"}])
+    with pytest.raises(ValueError, match="never 0.0"):
+        ff.append_fills([{"book": "ftmo", "position_id": 1, "commission": 0.0}])
+    assert _ledger() == []
+
+
+_WRITER = """
+import sys
+sys.path[:0] = [sys.argv[1], sys.argv[2]]
+from pathlib import Path
+from prop import ftmo_follower as ff
+book, base = sys.argv[4], int(sys.argv[5])
+path = Path(sys.argv[3])
+for i in range(150):
+    row = {"schema": "prop-fills-v1", "book": book, "position_id": base + i, "pad": "x" * 900}
+    if book == "ftmo":
+        ff.append_fills([row], path)
+    else:   # E8's writer: one line per write on an O_APPEND descriptor, as fills_ledger does
+        import json, os
+        fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+        os.write(fd, (json.dumps(row) + "\\n").encode())
+        os.close(fd)
+"""
+
+
+def test_two_writers_never_tear_a_line(world, tmp_path) -> None:
+    import subprocess
+    script = tmp_path / "writer.py"
+    script.write_text(_WRITER, "utf-8")
+    path = tmp_path / "shared_prop_ledger.jsonl"
+    procs = [subprocess.Popen([sys.executable, str(script), str(_DESK), str(_DESK.parent.parent),
+                               str(path), book, str(base)])
+             for book, base in (("ftmo", 1000), ("e8", 5000))]
+    assert all(p.wait(timeout=120) == 0 for p in procs)
+    rows = [json.loads(ln) for ln in path.read_text("utf-8").splitlines()]
+    assert len(rows) == 300
+    assert {f"{r['book']}:{r['position_id']}" for r in rows} == (
+        {f"ftmo:{1000 + i}" for i in range(150)} | {f"e8:{5000 + i}" for i in range(150)})

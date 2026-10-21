@@ -102,6 +102,14 @@ STATE = DESK / "data" / "ftmo_follower_state.json"
 OUT = DESK / "reports" / "FTMO_FOLLOWER.json"
 INTENTS = DESK / "data" / "ftmo_follower_intents.jsonl"
 LOG = DESK / "logs" / "ftmo_follower.log"
+#: THE PROP FILLS LEDGER (prop/fills_ledger.py, schema prop-fills-v1; E8 appends to it too):
+#: every closed FTMO position, book "ftmo", so FTMO is measured from its first trade.
+PROP_LEDGER = DESK / "data" / "live_ledger_prop.jsonl"
+PROP_SCHEMA = "prop-fills-v1"
+#: prop/fills_ledger.append's refusal list: a row carrying any of these is never written.
+PROP_BANNED = ("account", "login", "username", "password", "acc_num", "account_id")
+PROP_FEES_STATUS = ("UNMEASURED on this row: the fills ledger carries no fee as 0.0; the MT5 "
+                    "deal's commission, swap and fee are not reconciled into it yet")
 #: E8-Gold's pass report (prop/e8_gold.OUT), the first of the three readings this lane follows.
 E8_REPORT = DESK / "reports" / "E8_GOLD.json"
 #: E8-Gold passes every five minutes: two passes, the gold OCO's bound (MAX_STATE_AGE_S).
@@ -361,6 +369,140 @@ def history_spent(mt5: Any, today: str, now: datetime) -> tuple[bool | None, str
     return False, "no MAGIC gold order or deal today"
 
 
+# ------------------------------------------------------------------ the prop fills ledger
+
+def _iso_epoch(ts: object) -> str | None:
+    if not isinstance(ts, (int, float)) or isinstance(ts, bool) or ts <= 0:
+        return None
+    return datetime.fromtimestamp(float(ts), tz=UTC).isoformat(timespec="seconds")
+
+
+def compose_fills(deals: Any, orders: Any, open_ids: set[int], *, account_key: str | None,
+                  contract: float | None, recorded_at: str) -> list[dict[str, Any]]:
+    """prop-fills-v1 rows (prop/fills_ledger.compose's field names) for every CLOSED FTMO
+    position in the MAGIC deal history: an entry deal (DEAL_ENTRY_IN) and at least one exit
+    deal (OUT / OUT_BY) on one position id, the position no longer open. Pure. Nothing is
+    invented: an unpriced or still-open position is not written."""
+    by_pos: dict[int, list[Any]] = {}
+    for d in deals or []:
+        if int(getattr(d, "magic", 0) or 0) != MAGIC:
+            continue
+        if _xa.norm(getattr(d, "symbol", "")) != _xa.norm(SYMBOL):
+            continue
+        pid = int(getattr(d, "position_id", 0) or 0)
+        if pid:
+            by_pos.setdefault(pid, []).append(d)
+    sent = {int(getattr(o, "ticket", 0) or 0): o for o in orders or []}
+    rows: list[dict[str, Any]] = []
+    for pid, ds in sorted(by_pos.items()):
+        if pid in open_ids:
+            continue
+        ins = [d for d in ds if int(getattr(d, "entry", -1)) == 0]
+        outs = [d for d in ds if int(getattr(d, "entry", -1)) in (1, 3)]
+        if not ins or not outs:
+            continue
+        e = min(ins, key=lambda d: float(getattr(d, "time", 0) or 0))
+        dirn = 1 if int(getattr(e, "type", -1)) == 0 else -1 if int(getattr(e, "type", -1)) == 1 \
+            else 0
+        try:
+            entry_px = float(e.price)
+            q_tot = sum(float(d.volume) for d in outs)
+            exit_px = sum(float(d.price) * float(d.volume) for d in outs) / q_tot
+        except (AttributeError, TypeError, ValueError, ZeroDivisionError):
+            continue
+        if dirn == 0 or not (entry_px > 0 and exit_px > 0):
+            continue
+        last = max(outs, key=lambda d: float(getattr(d, "time", 0) or 0))
+        o = sent.get(int(getattr(e, "order", 0) or 0))
+        sl = float(getattr(o, "sl", 0.0) or 0.0) or None if o is not None else None
+        tp = float(getattr(o, "tp", 0.0) or 0.0) or None if o is not None else None
+        dist = abs(entry_px - sl) if sl else None
+        volume = float(getattr(e, "volume", 0.0) or 0.0)
+        pl = [getattr(d, "profit", None) for d in outs]
+        rows.append({
+            "schema": PROP_SCHEMA, "book": LANE, "venue": "mt5", "lane": "ftmo_follower",
+            "provenance": "ftmo_follower:mt5_deal_history", "recorded_at": recorded_at,
+            "time": _iso_epoch(getattr(last, "time", None)), "sleeve": CERT_KEY,
+            "symbol": SYMBOL, "entry_side": 0 if dirn == 1 else 1, "side": 1 if dirn == 1 else 0,
+            "entry_time": _iso_epoch(getattr(e, "time", None)),
+            "exit_time": _iso_epoch(getattr(last, "time", None)),
+            "timestamp_basis": "mt5_server_epoch", "venue_clock_skew_ms": None,
+            "entry_time_box_utc": None, "entry_price": entry_px,
+            "intended_entry": (float(getattr(o, "price_open", 0.0) or 0.0) or None
+                               if o is not None else None),
+            "sl": sl, "tp": tp, "volume": volume, "fill_price": round(exit_px, 6),
+            "exit_reason": {4: "stop", 5: "target"}.get(int(getattr(last, "reason", -1)),
+                                                         "close"),
+            "exit_order_type": None,
+            "r_multiple": (round(dirn * (exit_px - entry_px) / dist, 4) if dist else None),
+            "r_basis": "price: side x (exit - entry) / |entry - sent stop|, gross of fees",
+            "r_unreconstructible": not dist,
+            "risk_quote": (round(dist * volume * contract, 6) if dist and contract else None),
+            "pl_quote": (round(sum(float(x) for x in pl), 2)
+                         if all(isinstance(x, (int, float)) for x in pl) else None),
+            "quote_ccy": "USD", "pl_basis": "the MT5 exit deals' profit, gross of fees",
+            "commission": None, "swap": None, "fees": None, "fees_status": PROP_FEES_STATUS,
+            "position_id": pid, "entry_order": int(getattr(e, "order", 0) or 0) or None,
+            "close_order": int(getattr(last, "order", 0) or 0) or None,
+            "n_exit_orders": len(outs), "server": "FTMO", "account_kind": "prop",
+            "account_key": account_key,
+            "account_key_status": "keyed (gold_oco.oco_account_key)" if account_key
+            else "UNMEASURED: no keyed account key"})
+    return rows
+
+
+def append_fills(rows: list[dict[str, Any]], path: Path | None = None) -> int:
+    """Append rows the ledger does not hold, deduped by "ftmo:" + position id. TWO WRITERS (E8
+    appends here too): each row is ONE os.write of one whole line on an O_APPEND descriptor, so
+    the OS places every line at the end in one piece and no writer can interleave into or
+    overwrite another's. Refuses any row carrying a login-shaped field (fills_ledger.append's
+    rule). Returns how many were written; RAISES OSError / ValueError."""
+    path = Path(path or PROP_LEDGER)
+    for r in rows:
+        for banned in PROP_BANNED:
+            if banned in r:
+                raise ValueError(f"refusing a prop ledger row carrying {banned!r}")
+        if r.get("commission") == 0.0 or r.get("fees") == 0.0 or r.get("swap") == 0.0:
+            raise ValueError("a prop ledger fee is null with fees_status, never 0.0")
+    have: set[str] = set()
+    if path.exists():
+        for ln in path.read_text("utf-8", errors="replace").splitlines():
+            with contextlib.suppress(ValueError):
+                d = json.loads(ln)
+                if isinstance(d, dict):
+                    have.add(f"{d.get('book')}:{d.get('position_id')}")
+    new = [r for r in rows if f"ftmo:{r.get('position_id')}" not in have]
+    if not new:
+        return 0
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_BINARY", 0),
+                 0o644)
+    try:
+        for r in new:
+            os.write(fd, (json.dumps(r, default=str, sort_keys=True) + "\n").encode("utf-8"))
+    finally:
+        os.close(fd)
+    return len(new)
+
+
+def record_fills(mt5: Any, key: str | None, open_ids: set[int], now: datetime) -> dict[str, Any]:
+    """Write every closed FTMO position to the prop fills ledger. NEVER RAISES: a ledger that
+    cannot be written costs a row, never an order."""
+    try:
+        since, until = now - timedelta(days=2), now + timedelta(days=1)
+        deals = mt5.history_deals_get(since, until)
+        orders = mt5.history_orders_get(since, until)
+        if deals is None or orders is None:
+            return {"written": 0, "why": "the deal/order history is unreadable"}
+        info = mt5.symbol_info(SYMBOL)
+        contract = float(getattr(info, "trade_contract_size", 0.0) or 0.0) or None
+        rows = compose_fills(deals, orders, open_ids, account_key=key, contract=contract,
+                             recorded_at=now.isoformat(timespec="seconds"))
+        return {"written": append_fills(rows), "closed_seen": len(rows)}
+    except Exception as exc:
+        return {"written": 0, "why": f"{type(exc).__name__}: {exc}"[:160]}
+
+
 # ------------------------------------------------------------------ the account
 
 def _canon(login: object) -> object:
@@ -603,6 +745,11 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
         else:
             act["shadow"] = True
         doc["actions"].append(act)
+
+    # ---------------------------------------------------------------- the fills ledger
+    doc["fills_ledger"] = record_fills(mt5, key, {int(p.ticket) for p in positions}, now)
+    if doc["fills_ledger"].get("written"):
+        log(f"prop fills ledger: {doc['fills_ledger']['written']} closed FTMO position(s)")
 
     # ---------------------------------------------------------------- the one order
     placed_today = WINDOW in st["windows"]
