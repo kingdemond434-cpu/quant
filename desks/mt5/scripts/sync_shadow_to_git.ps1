@@ -568,6 +568,11 @@ $relPaths = @(
     # artifact. TIER1_SCORECARD counted them (silent_scheduled_failures = 11) while the file it
     # counted stayed on the box, so no reader on this branch could say WHICH eleven.
     "desks/mt5/reports/process_health.json",
+    # WHETHER THE COST STATE IS CURRENT (2026-10-14). cost_surface.json, carry_state.json and the
+    # triangle tape never crossed this wire, so origin's copies (09-23, 08-29, 09-16) could not
+    # tell a dead producer from an unpublished file. The hourly `cost_state_fresh` leg reads
+    # their own stamps here and this carries the verdict.
+    "desks/mt5/reports/COST_STATE_FRESHNESS.json",
     # THE LANE STATE FILES. Until 2026-09-06 the only thing that crossed this wire was the
     # 424-byte health SUMMARY, so no reader on the other side could see a single sleeve: not its
     # status, not its forward n, not its expectancy, not its day count. That is why "are the two

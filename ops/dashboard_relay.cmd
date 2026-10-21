@@ -48,17 +48,32 @@ set "OPTS=-i %KEY% -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o Batc
 
 if not exist "C:\opt\quant\desks\mt5\reports\shadow" mkdir "C:\opt\quant\desks\mt5\reports\shadow"
 
+set BAD=0
 "%SCP%" %OPTS% -q "%SRC%:C:/opt/quant/web/desk_state.json"                              "C:\opt\quant\web\desk_state.json" 2>>"%LOG%"
+if errorlevel 1 set /a BAD+=1
 "%SCP%" %OPTS% -q "%SRC%:C:/opt/quant/web/equity_history.jsonl"                         "C:\opt\quant\web\equity_history.jsonl" 2>>"%LOG%"
+if errorlevel 1 set /a BAD+=1
 "%SCP%" %OPTS% -q "%SRC%:C:/opt/quant/desks/mt5/data/account_state.json"                "C:\opt\quant\desks\mt5\data\account_state.json" 2>>"%LOG%"
+if errorlevel 1 set /a BAD+=1
 "%SCP%" %OPTS% -q "%SRC%:C:/opt/quant/desks/mt5/data/gateway_state.json"                "C:\opt\quant\desks\mt5\data\gateway_state.json" 2>>"%LOG%"
+if errorlevel 1 set /a BAD+=1
 "%SCP%" %OPTS% -q "%SRC%:C:/opt/quant/desks/mt5/data/release_identity.json"             "C:\opt\quant\desks\mt5\data\release_identity.json" 2>>"%LOG%"
+if errorlevel 1 set /a BAD+=1
 "%SCP%" %OPTS% -q "%SRC%:C:/opt/quant/desks/mt5/data/regime_state.json"                 "C:\opt\quant\desks\mt5\data\regime_state.json" 2>>"%LOG%"
+if errorlevel 1 set /a BAD+=1
 "%SCP%" %OPTS% -q "%SRC%:C:/opt/quant/desks/mt5/data/stall_watch.json"                  "C:\opt\quant\desks\mt5\data\stall_watch.json" 2>>"%LOG%"
+if errorlevel 1 set /a BAD+=1
 "%SCP%" %OPTS% -q "%SRC%:C:/opt/quant/desks/mt5/reports/shadow/shadow_health.json"      "C:\opt\quant\desks\mt5\reports\shadow\shadow_health.json" 2>>"%LOG%"
+if errorlevel 1 set /a BAD+=1
 "%SCP%" %OPTS% -q "%SRC%:C:/opt/quant/desks/mt5/reports/shadow/scalp_shadow_state.json" "C:\opt\quant\desks\mt5\reports\shadow\scalp_shadow_state.json" 2>>"%LOG%"
+if errorlevel 1 set /a BAD+=1
 "%SCP%" %OPTS% -q "%SRC%:C:/opt/quant/desks/mt5/reports/shadow/shadow_state.json"       "C:\opt\quant\desks\mt5\reports\shadow\shadow_state.json" 2>>"%LOG%"
+if errorlevel 1 set /a BAD+=1
 "%SCP%" %OPTS% -q "%SRC%:C:/opt/quant/desks/mt5/reports/UNIVERSAL_SURVIVORS.json"       "C:\opt\quant\desks\mt5\reports\UNIVERSAL_SURVIVORS.json" 2>>"%LOG%"
+if errorlevel 1 set /a BAD+=1
 
-if errorlevel 1 (echo %DATE% %TIME% relay pass FAILED>>"%LOG%") else (echo %DATE% %TIME% relay pass complete>>"%LOG%")
+rem EVERY COPY COUNTS, AND THE EXIT SAYS SO (2026-10-14). `if errorlevel 1` here saw only the LAST
+rem scp, and the file then returned 0 regardless, so ten failed copies read as a green task.
+if %BAD% GTR 0 (echo %DATE% %TIME% relay pass FAILED: %BAD% of 11 copies>>"%LOG%" & exit /b 1)
+echo %DATE% %TIME% relay pass complete>>"%LOG%"
 exit /b 0
