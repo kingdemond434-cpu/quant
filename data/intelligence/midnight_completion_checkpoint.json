@@ -3,16 +3,26 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
+   "finished_at": "2026-10-21T01:46:35.855583+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
+  },
+  "external_queue_projection": {
+   "finished_at": "2026-10-21T01:47:40.266266+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
+  },
+  "external_queue_reconciliation": {
    "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-external-pipeline.service"
+    "/home/quant/quant-platform/.venv/bin/python",
+    "scripts/reconcile_external_queue.py"
    ],
    "passes_completed": 0,
-   "started_at": "2026-10-21T00:42:33.696031+00:00",
+   "started_at": "2026-10-21T01:47:53.089983+00:00",
    "status": "RUNNING"
   }
  },
- "updated_at": "2026-10-21T00:42:33.696031+00:00"
+ "updated_at": "2026-10-21T01:47:53.089983+00:00"
 }
