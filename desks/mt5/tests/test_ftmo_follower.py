@@ -382,6 +382,58 @@ def test_the_cancel_touches_only_this_lanes_magic(world) -> None:
     assert 4242 not in removed and any(o.ticket == 4242 for o in mt5.orders)
 
 
+def test_the_follower_gate_and_send_run_under_the_placement_lock(world, monkeypatch) -> None:
+    """v2s SF-2: the gate (and the send after it) run while this process holds the one
+    cross-account placement lock, and the lane state is republished before it is released."""
+    held: list[bool] = []
+    real_gate = oco.gate
+
+    def gate(*a: Any, **k: Any) -> Any:
+        held.append(any(v > 0 for v in xa._HELD.values()))
+        return real_gate(*a, **k)
+
+    monkeypatch.setattr(ff._oco, "gate", gate)
+    mt5 = _MT5()
+    real_send = mt5.order_send
+    sent_held: list[bool] = []
+
+    def send(req: dict) -> Any:
+        sent_held.append(any(v > 0 for v in xa._HELD.values()))
+        return real_send(req)
+
+    mt5.order_send = send  # type: ignore[method-assign]
+    doc = _pass(mt5)
+    assert held == [True] and sent_held == [True] and len(_entries(mt5)) == 1
+    assert doc["gold_oco"]["republished_after_send"] is True
+    st, why = oco.read_lane("ftmo")
+    assert st is not None, why
+    assert [o["side"] for o in st["orders"]] == ["long"]          # the resting order, published
+
+
+def test_the_follower_re_reads_every_lane_at_decision_time(world) -> None:
+    """v2s SF-2: a Fusion short that lands after the pass's first reading -- but before the
+    decision -- is seen by the gate under the lock: nothing is sent and the refusal is billed."""
+    mt5 = _MT5()
+    real = mt5.positions_get
+    fired: list[bool] = []
+
+    def positions_get(symbol: str | None = None) -> list:
+        if any(v > 0 for v in xa._HELD.values()) and not fired:
+            fired.append(True)        # inside the placement lock: Fusion just sold gold
+            oco.publish_lane("fusion", oco.oco_account_key(72345678, "FusionMarkets-Test"),
+                             positions=[{"id": 1, "side": "short", "opened_date": DAY}],
+                             orders=[], date=DAY)
+        return real(symbol)
+
+    mt5.positions_get = positions_get  # type: ignore[method-assign]
+    doc = _pass(mt5)
+    assert fired and _entries(mt5) == []
+    assert any(sk["reason"] == "gold_oco" and "fusion holds an open gold short" in sk["why"]
+               for sk in doc["skipped"])
+    assert any(r.get("reason") == "gold_oco" and r["status"] == "RAIL_BLOCKED"
+               and r["missed_growth_risk_usd"] is not None for r in _rows())
+
+
 def test_the_resting_order_dies_with_the_asia_session(world) -> None:
     mt5 = _MT5()
     _pass(mt5)
