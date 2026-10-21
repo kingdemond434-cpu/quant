@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-21T18:30:16.773229+00:00",
+  "swept_at": "2026-10-21T18:45:45.587525+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1329,7 +1329,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.9276,
+      "shadow_exp_r": -0.9352,
       "woke_on_shadow": false
     },
     "EURILS|formula_asia": {
@@ -1351,7 +1351,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.224,
+      "shadow_exp_r": -0.1879,
       "woke_on_shadow": false
     },
     "EURILS|macro_conditional_continuous": {
@@ -1890,7 +1890,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0991,
+      "shadow_exp_r": 0.1178,
       "woke_on_shadow": false
     },
     "GBPCHF|clock_transition_asia": {
@@ -1922,8 +1922,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 48,
-      "shadow_exp_r": 0.3912,
+      "shadow_n": 49,
+      "shadow_exp_r": 0.396,
       "woke_on_shadow": false
     },
     "GBPCHF|overnight_gap_decay_asia": {
@@ -4419,8 +4419,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 24,
-      "shadow_exp_r": -0.4615,
+      "shadow_n": 34,
+      "shadow_exp_r": -0.1114,
       "woke_on_shadow": false
     },
     "XAGUSD|cross_asset_residual_continuous": {
@@ -4849,7 +4849,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.2132,
+      "shadow_exp_r": 0.2142,
       "woke_on_shadow": false
     },
     "XAUEUR|macro_conditional_continuous": {
@@ -4981,7 +4981,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 46,
-      "shadow_exp_r": 0.1058,
+      "shadow_exp_r": 0.107,
       "woke_on_shadow": false
     },
     "XAUUSD|cross_asset_residual_asia": {
@@ -5388,7 +5388,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0651,
+      "shadow_exp_r": -0.0708,
       "woke_on_shadow": false
     },
     "XZNUSD|correlation_regime_continuous": {
