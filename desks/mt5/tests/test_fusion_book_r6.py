@@ -1161,8 +1161,8 @@ def test_every_key_failure_pages_and_a_resolved_key_closes_the_alert(monkeypatch
     sent: list[tuple[str, str]] = []
     monkeypatch.setattr(provenance, "SENDER",
                         lambda title, body: sent.append((title, body)) or {"delivered": 1})
-    monkeypatch.setattr(provenance, "_PAGED", set())
-    monkeypatch.setattr(provenance, "_LAST_TRY", {})
+    monkeypatch.setattr(provenance, "_ENQUEUED", {})        # v5f: enqueue-only, per test
+    monkeypatch.setattr(provenance, "_ENQUEUE_FAILED", {})
     monkeypatch.setattr(provenance, "_page_state_path", lambda: tmp_path / "page_state.json")
 
     def state(account, source):
@@ -1173,12 +1173,15 @@ def test_every_key_failure_pages_and_a_resolved_key_closes_the_alert(monkeypatch
     with pytest.raises(ValueError, match="declares"):
         xa.publish("e8", {}, source="t", key=xa.account_key(7000999, "test"))
     assert state("e8", "publish") == "OPEN"
+    assert sent == []                                  # v5f: nothing is sent on the order path
+    provenance.deliver_pending()                       # ... the heartbeat delivers it
     assert sent and xa.KEY_MISMATCH in sent[-1][0]               # it reached send_all
     # ANOTHER check joining does not close it (r7.2, audit r7.1 SF-2) ...
     assert xa.read_book("e8")[0] == {}
     assert state("e8", "publish") == "OPEN"
     # ... the same check does, and pages the recovery once.
     xa.publish("e8", {}, source="t", key=mine)
+    provenance.deliver_pending()
     assert state("e8", "publish") == "FIXED" and "OK again" in sent[-1][0]
     # KEY_UNAVAILABLE: a well-formed venue on a tree with no provenance.
     v = _tl_venue(credentials={"server": "E8-Live"}, account_id=4242)
@@ -1300,11 +1303,13 @@ def test_e8_gold_refuses_unless_the_declaration_joins_the_venues_own_key(
     sent: list[str] = []
     monkeypatch.setattr(provenance, "SENDER",
                         lambda title, body: sent.append(title) or {"delivered": 1})
-    monkeypatch.setattr(provenance, "_PAGED", set())
-    monkeypatch.setattr(provenance, "_LAST_TRY", {})
+    monkeypatch.setattr(provenance, "_ENQUEUED", {})        # v5f: enqueue-only, per test
+    monkeypatch.setattr(provenance, "_ENQUEUE_FAILED", {})
     monkeypatch.setattr(provenance, "_page_state_path", lambda: tmp_path / "page_state.json")
     _bad_declaration(kind, monkeypatch)
     doc, venue, intents = mb._e8_harness(monkeypatch, tmp_path)   # returns: the pass completed
+    assert sent == []                                  # v5f: nothing is sent on the order path
+    provenance.deliver_pending()
     assert venue.placed == [] and doc["placed"] == []
     assert doc["e8_account"]["ok"] is False
     rows = [r for r in intents if r.get("rail") == "e8_account_undeclared"]
