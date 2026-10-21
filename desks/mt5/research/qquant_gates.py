@@ -184,6 +184,22 @@ def worker_cell(cell: dict) -> tuple:
         return (sym, fam, side, win, state, None, str(e))
 
 
+def dsr_bar(n_obs: int, campaign_trials: int, sweep_variance: float) -> tuple[int, float, str]:
+    """(n_trials, variance_of_sharpes, basis) for the deflated-Sharpe gate: THE BASIS THE
+    ATTESTATION THIS FILE STAMPS DECLARES (audit 2026-10-13, T8 blocker b).
+
+    Under the fixed per-cell bar (`gate_policy.dsr_hurdle_inputs`, the principal's Tier S ruling
+    2026-10-13: N=5, null variance 1/(T-1)) this judges on exactly that bar, so `gate_policy`
+    stamped below is the bar actually applied. Where that policy is not in force the legacy
+    campaign charge and sweep variance stand, which is what the legacy attestation declares."""
+    import gate_policy as _gp
+    fixed = getattr(_gp, "dsr_hurdle_inputs", None)
+    if fixed is not None:
+        n_t, var, basis = fixed(int(n_obs))
+        return int(n_t), float(var), str(basis)
+    return int(campaign_trials), float(sweep_variance), "campaign_trials_x_sweep_variance"
+
+
 def worker_eval(row: dict, pbo_val: float, spa_p: float, n_trials: int,
                 sharpes: np.ndarray) -> dict:
     """The original gauntlet evaluation for ONE survivor (identical code path).
@@ -210,11 +226,12 @@ def worker_eval(row: dict, pbo_val: float, spa_p: float, n_trials: int,
     stages["economic_prior"] = {"passed": True,
                                 "message": "mechanism documented at hunt registration"}
     stages["in_sample_screen"] = {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)}
-    dsr = deflated_sharpe_ratio(arr, n_trials=n_trials,
-                                variance_of_sharpes=float(sharpes.var(ddof=1)),
+    dsr_trials, dsr_var, dsr_basis = dsr_bar(len(arr), n_trials, float(sharpes.var(ddof=1)))
+    dsr = deflated_sharpe_ratio(arr, n_trials=dsr_trials, variance_of_sharpes=dsr_var,
                                 threshold=DSR_THRESHOLD)
     stages["deflated_sharpe"] = {"passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),
-                                 "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials}
+                                 "sr0": round(float(dsr.sr0_threshold), 4),
+                                 "n_trials": dsr_trials, "basis": dsr_basis}
     stages["pbo"] = {"passed": bool(pbo_val <= PBO_THRESHOLD), "pbo": round(float(pbo_val), 4)}
     stages["reality_check_spa"] = {"passed": bool(spa_p < SPA_ALPHA),
                                    "p_value": round(float(spa_p), 4)}

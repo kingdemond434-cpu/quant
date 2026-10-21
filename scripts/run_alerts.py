@@ -442,6 +442,35 @@ def _checks() -> list[tuple[str, str]]:
                     "diggers are dead on arrival. Fix on the VPS: "
                     "sudo -u quant -i ; claude setup-token"))
     out.extend(_digger_health())
+    out.extend(_forward_evidence_hold_alarms())
+    return out
+
+
+#: the promoter's long-hold alarm (audit 2026-10-13); absent until the promoter hold lands
+_FE_HOLD_ALARM = Path("desks/mt5/data/forward_evidence_hold_alarm.json")
+
+
+def _forward_evidence_hold_alarms(path: Path | None = None) -> list[tuple[str, str]]:
+    """Page on every PROMOTION CANDIDATE the forward-evidence hold has kept over its alarm age.
+
+    The promoter refreshes an entry each 15-minute pass while it holds it, so an entry whose
+    `last_held_at` is over an hour old is a released hold, never paged. Names only, no values."""
+    try:
+        doc = json.loads((path or _FE_HOLD_ALARM).read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    held = doc.get("held") if isinstance(doc, dict) and isinstance(doc.get("held"), dict) else {}
+    out: list[tuple[str, str]] = []
+    for name in doc.get("alarm") or []:
+        last = (held.get(name) or {}).get("last_held_at")
+        age = stamp_age_h({"ts": last}) if last else (None, None)
+        if age[0] is None or age[0] > 1.0:
+            continue
+        out.append((f"forward_evidence_hold_{name}",
+                    f"promotion candidate {name} held by the forward-evidence hold for over "
+                    f"{doc.get('alarm_after_h', 24)}h since "
+                    f"{(held.get(name) or {}).get('first_held_at')}: its clock cannot measure it "
+                    f"-- {str((held.get(name) or {}).get('why') or '')[:120]}"))
     return out
 
 
