@@ -385,6 +385,8 @@ TXN_MANIFEST_PREFIX = "judge_coverage_txn-"
 TXN_ORPHAN_AGE_S = 3600.0
 #: os.replace onto a file another process holds open fails on Windows; a reader holds it briefly.
 TXN_REPLACE_TRIES = 25
+#: A manifest recovery cannot parse is renamed with this suffix: kept, named, never applied.
+TXN_GARBAGE_SUFFIX = ".garbage"
 TXN_REPLACE_WAIT_S = 0.2
 
 
@@ -413,15 +415,56 @@ def _atomic_write_text(target: Path, text: str) -> None:
         raise
 
 
-def _apply_ops(ops: list[list[Any]]) -> None:
-    """Apply a committed manifest. Idempotent: a staged file already renamed is simply absent."""
-    for op, final, staged in ops:
+def _fstat(path: Path) -> list[int] | None:
+    """(mtime_ns, size) of a file, or None when it is absent: what a manifest records."""
+    try:
+        st = path.stat()
+    except OSError:
+        return None
+    return [st.st_mtime_ns, st.st_size]
+
+
+class TxnRecoveryRefused(RuntimeError):
+    """A committed manifest that cannot be rolled forward without clobbering or half-applying.
+    The manifest is KEPT; every pass refuses to read on until it is resolved by hand."""
+
+
+def _apply_ops(ops: list[list[Any]], *, checked: bool = False) -> None:
+    """Apply a committed manifest. Idempotent: a staged file already renamed is simply absent.
+
+    `checked` is recovery's mode (audit of v2.1). Every op is classified BEFORE any is applied:
+    PENDING (staged present, target as it was at the commit point), APPLIED (staged gone, target
+    is the staged file renamed: same mtime and size), or a refusal -- the target changed since
+    the commit point (another writer; rolling forward would clobber it) or the staged file is
+    missing and the target is not it (rolling the rest forward would half-apply the pass). A
+    refusal raises `TxnRecoveryRefused` and applies NOTHING. Two recoveries racing on one
+    manifest meet a file the other already moved; that is suppressed, never raised.
+    """
+    if checked:
+        bad: list[str] = []
+        for entry in ops:
+            op, final, staged = entry[0], entry[1], entry[2]
+            pre = entry[3] if len(entry) > 3 else None
+            post = entry[4] if len(entry) > 4 else None
+            if op != "replace":
+                continue
+            dst_now = _fstat(Path(final))
+            if Path(staged).exists():
+                if len(entry) > 3 and dst_now != pre:
+                    bad.append(f"{Path(final).name}: changed since the commit point")
+            elif len(entry) > 4 and dst_now != post:
+                bad.append(f"{Path(final).name}: staged file missing and target is not it")
+        if bad:
+            raise TxnRecoveryRefused("; ".join(bad))
+    for entry in ops:
+        op, final, staged = entry[0], entry[1], entry[2]
         dst = Path(final)
         if op == "replace":
             src = Path(staged)
             if src.exists():
                 dst.parent.mkdir(parents=True, exist_ok=True)
-                _replace_retry(src, dst)
+                with contextlib.suppress(FileNotFoundError):
+                    _replace_retry(src, dst)
         elif op == "delete":
             with contextlib.suppress(FileNotFoundError):
                 dst.unlink()
@@ -465,7 +508,12 @@ class _Txn:
         path = self.manifest()
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_name(path.name + ".tmp")
-        tmp.write_text(json.dumps({"id": self.id, "ops": list(self.ops.values())}), "utf-8")
+        # Each replace records the target's (mtime_ns, size) at the commit point and the staged
+        # file's, so recovery can tell "not yet moved", "moved" and "someone else wrote it".
+        ops = [[op, final, staged, _fstat(Path(final)), _fstat(Path(staged))]
+               if op == "replace" else [op, final, staged]
+               for op, final, staged in self.ops.values()]
+        tmp.write_text(json.dumps({"id": self.id, "ops": ops}), "utf-8")
         _replace_retry(tmp, path)
         return path
 
@@ -473,7 +521,9 @@ class _Txn:
         if self.ops:
             manifest = self.write_manifest()
             _apply_ops(list(self.ops.values()))
-            manifest.unlink()
+            # A concurrent recovery may have rolled this manifest forward and removed it.
+            with contextlib.suppress(FileNotFoundError):
+                manifest.unlink()
         self._drop_dirs()
 
     def discard(self) -> None:
@@ -488,7 +538,7 @@ class _Txn:
         import shutil
         for d in self.staged_dirs:
             shutil.rmtree(d, ignore_errors=True)
-        self.staged_dirs.clear()
+        self.staged_dirs = []
 
 
 def _txn_dirs(ratchet: Path | None = None) -> list[Path]:
@@ -521,15 +571,40 @@ def recover_transactions(ratchet: Path | None = None) -> int:
         for m in sorted(d.glob(f"{TXN_MANIFEST_PREFIX}*.json")) if d.is_dir() else []:
             try:
                 doc = json.loads(m.read_text("utf-8"))
+            except FileNotFoundError:
+                continue                         # a concurrent recovery finished it
             except (OSError, ValueError):
                 doc = None
-            if isinstance(doc, dict) and isinstance(doc.get("ops"), list):
-                _apply_ops(doc["ops"])
-                rolled += 1
-            m.unlink()
+            if not (isinstance(doc, dict) and isinstance(doc.get("ops"), list)
+                    and all(isinstance(o, list) and len(o) >= 3 for o in doc["ops"])):
+                # NOT A COMMIT ANYONE CAN READ: set aside under a name that says so, never
+                # deleted without trace and never applied.
+                aside = m.with_name(m.name + TXN_GARBAGE_SUFFIX)
+                with contextlib.suppress(OSError):
+                    _replace_retry(m, aside)
+                print(f"judge coverage: unreadable transaction manifest set aside as "
+                      f"{aside.name}", file=sys.stderr, flush=True)
+                continue
+            try:
+                _apply_ops(doc["ops"], checked=True)
+            except TxnRecoveryRefused as exc:
+                raise TxnRecoveryRefused(f"{m.name} kept, nothing applied: {exc}") from None
+            rolled += 1
+            with contextlib.suppress(FileNotFoundError):
+                m.unlink()
+    # Staged files a kept or set-aside manifest names are evidence, not orphans.
+    named: set[str] = set()
+    for d in dirs:
+        for m in d.glob(f"{TXN_MANIFEST_PREFIX}*") if d.is_dir() else []:
+            with contextlib.suppress(OSError, ValueError, TypeError, AttributeError):
+                for o in json.loads(m.read_text("utf-8")).get("ops") or []:
+                    if isinstance(o, list) and len(o) >= 3 and o[2]:
+                        named.add(str(o[2]))
     cutoff = time.time() - TXN_ORPHAN_AGE_S
     for d in dirs:
         for p in d.glob(f"*{TXN_TAG}*") if d.is_dir() else []:
+            if str(p) in named or any(n.startswith(str(p) + os.sep) for n in named):
+                continue
             with contextlib.suppress(OSError):
                 if p.stat().st_mtime >= cutoff:
                     continue                     # possibly a live pass's; swept next time
@@ -1014,8 +1089,24 @@ def family_priors(families: list[str],
 
 #: How far past the pass's own clock a verdict's `at` may sit and still be a reading. Beyond
 #: it the stamp is read as UNMEASURED: one future-dated row taught would carry the cursor to
-#: its date and freeze learning until the wall clock got there.
-PRIORS_FUTURE_SKEW_S = 600.0
+#: its date and freeze learning until the wall clock got there. It is the desk's one clock-skew
+#: tolerance (`dsr_inputs.FUTURE_SKEW_S`, 300 s), imported rather than restated (audit of v2.1).
+if str(BASE.parents[1]) not in sys.path:
+    sys.path.insert(0, str(BASE.parents[1]))
+from libs.research.dsr_inputs import FUTURE_SKEW_S as PRIORS_FUTURE_SKEW_S  # noqa: E402
+
+
+def _ts_utc(raw: object) -> datetime | None:
+    """`_ts`, except a stamp with no offset is read as UTC -- the ledger's writer stamps UTC --
+    never as this machine's local time, which shifted naive stamps by the box's offset."""
+    txt = str(raw or "").strip()
+    if not txt:
+        return None
+    try:
+        t = datetime.fromisoformat(txt.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return (t.replace(tzinfo=UTC) if t.tzinfo is None else t).astimezone(UTC)
 
 
 def learn_priors(ledger: Path | None = None, *, since: str = "",
@@ -1059,7 +1150,7 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
             return out
     _clock = now or datetime.now(tz=UTC)
     _horizon = _clock.timestamp() + PRIORS_FUTURE_SKEW_S
-    _since_ts = _ts(since) if since else None
+    _since_ts = _ts_utc(since) if since else None
     if since and _since_ts is not None and _since_ts.timestamp() > _horizon:
         # The same freeze, already stored: a cursor past this clock skips every verdict until
         # the clock reaches it. Named and kept, exactly as a cursor that is not a timestamp.
@@ -1092,7 +1183,7 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
             untaught.add(fam_seen)
     out["backfilled_families"] = len(untaught)
     seen_fams: set[str] = set()
-    high = since
+    high, high_ts = since, _since_ts
     for line in lines:
         line = line.strip()
         if not line:
@@ -1115,11 +1206,14 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
         # `since` alone. A family with NO stored row has demonstrably never been taught, so it is
         # backfilled whatever the cursor says. It gains a row on the first such pass and is
         # cursor-governed from then on, so this cannot double-count a family twice.
-        if since and at <= since and fam not in untaught:
+        # PARSED, NOT LEXICAL (audit of v2.1): a `+05:30` cursor compared as a string skipped
+        # about 5.5 h of later UTC rows. Equal-format stamps order the same either way.
+        _at_ts = _ts_utc(at)
+        if (_since_ts is not None and _at_ts is not None and _at_ts <= _since_ts
+                and fam not in untaught):
             continue
         if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
             continue
-        _at_ts = _ts(at)
         if _at_ts is None or _at_ts.timestamp() > _horizon:
             # A VERDICT WHOSE `at` IS NOT A TIMESTAMP IS READ AS UNMEASURED, and never taught:
             # taught, it would either become the cursor (a garbage stamp sorts above every ISO
@@ -1145,7 +1239,8 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
             continue
         seen_fams.add(fam)
         out["recorded"] = int(out["recorded"]) + 1
-        high = max(high, at)
+        if high_ts is None or _at_ts > high_ts:
+            high, high_ts = at, _at_ts
     if out["recorded"]:
         try:
             txn = _txn_current()
@@ -2869,6 +2964,7 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
 
 def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | None
                   ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    doc: dict[str, Any] | None = None
     try:
         doc = build(rows, now=now, defer=publish)
         if not doc.get("families"):
@@ -2954,6 +3050,10 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
             write(doc)
         return ordered, doc
     except Exception as exc:                                             # pragma: no cover
+        # A deferred pass that failed after build must not leave its staging in live dirs.
+        _left = doc.pop("_txn", None) if isinstance(doc, dict) else None
+        if isinstance(_left, _Txn):
+            _left.discard()
         return rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
 
@@ -3055,6 +3155,8 @@ def render(doc: dict[str, Any]) -> list[str]:
 
 #: The exit code of a pass that stopped at its budget: a failure, never a verdict.
 TIMEOUT_EXIT = 3
+#: The exit code of a pass that met a committed manifest it could not safely roll forward.
+RECOVERY_REFUSED_EXIT = 5
 #: What a pass keeps in hand after its stop for the commit (renames, plus the report write).
 COMMIT_MARGIN_S = 15.0
 
@@ -3115,11 +3217,23 @@ def main(argv: list[str] | None = None) -> int:
     m0 = time.monotonic()
     deadline = (m0, m0 + stop_s)
     try:
-        doc = build(defer=not args.no_write, deadline=deadline)
+        # Always deferred: --no-write then DISCARDS the pass's staging, so it saves nothing of
+        # its own (audit of v2.1: it used to commit priors, bank and handoff without the
+        # cursor). Recovery of an earlier pass's committed manifest still runs first, as it
+        # must before anything reads.
+        doc = build(defer=True, deadline=deadline)
         doc["elapsed_s"] = round(time.time() - t0, 2)
         doc["budget_s"] = args.budget_s
         if not args.no_write:
             write(doc, deadline=deadline)
+        else:
+            _staged = doc.pop("_txn", None)
+            if isinstance(_staged, _Txn):
+                _staged.discard()
+    except TxnRecoveryRefused as exc:
+        print(f"judge coverage: RECOVERY REFUSED -- {exc}; nothing read or written. Resolve "
+              f"the kept manifest by hand", file=sys.stderr, flush=True)
+        return RECOVERY_REFUSED_EXIT
     except JudgeCoverageTimeout as exc:
         out = write_timeout(exc, budget_s=args.budget_s, stop_s=stop_s, cap_s=cap_s,
                             started=datetime.fromtimestamp(t0, tz=UTC))

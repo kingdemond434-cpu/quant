@@ -10,13 +10,14 @@ TIMEOUT artifact, and never earlier than the cap the cycle grants.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import subprocess
 import sys
 import textwrap
 import time
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -335,18 +336,18 @@ def test_a_future_dated_verdict_is_unmeasured_and_never_becomes_the_cursor(
     p = _point(monkeypatch, tmp_path)
     rows = _inputs(tmp_path)
     with p["ledger"].open("a", encoding="utf-8") as fh:
-        for at in (NOW + timedelta(minutes=11), NOW + timedelta(days=400)):
+        for at in (NOW + timedelta(minutes=6), NOW + timedelta(days=400)):
             fh.write(json.dumps({"at": at.isoformat(), "cell": "F.alpha.p=1", "family": "alpha",
                                  "passed": False, "terminal_gate": "in_sample_screen"}) + "\n")
-        # Inside the tolerance: a reading, taught once.
-        fh.write(json.dumps({"at": (NOW + timedelta(minutes=9)).isoformat(),
+        # Inside the tolerance (dsr_inputs.FUTURE_SKEW_S, 300 s): a reading, taught once.
+        fh.write(json.dumps({"at": (NOW + timedelta(minutes=4)).isoformat(),
                              "cell": "N.alpha.p=1", "family": "alpha", "passed": False,
                              "terminal_gate": "in_sample_screen"}) + "\n")
     doc = jc.build([dict(r) for r in rows], now=NOW, defer=True)
     learned = doc["priors_learned"]
     jc.write(doc)
     assert learned["unmeasured_at"] == 2
-    assert learned["cursor"] == (NOW + timedelta(minutes=9)).isoformat()
+    assert learned["cursor"] == (NOW + timedelta(minutes=4)).isoformat()
     assert _family_n(p) == {"alpha": 31, "beta": 30, "gamma": 30}
     _pass(rows)
     assert _family_n(p) == {"alpha": 31, "beta": 30, "gamma": 30}, "and never twice"
@@ -360,3 +361,145 @@ def test_a_future_stored_cursor_is_unmeasured_and_kept(tmp_path: Path,
     out = jc.learn_priors(p["ledger"], since=ahead, now=NOW)
     assert out["status"] == "UNMEASURED" and "in the future" in out["why"]
     assert out["cursor"] == ahead and out["recorded"] == 0
+
+
+
+# --- v2.2: the audit of v2.1 ---
+
+def _committed_not_applied(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """A pass killed exactly at its commit point: manifest written, no rename made."""
+    p = _point(monkeypatch, tmp_path / "run")
+    rows = _inputs(tmp_path / "run")
+    doc = jc.build([dict(r) for r in rows], now=NOW, defer=True)
+    txn = doc.pop("_txn")
+    jc._write_staged(doc, txn, report=None, ratchet=None)
+    manifest = txn.write_manifest()
+    jc._PASS = None
+    return p, txn, manifest
+
+
+def test_the_skew_is_the_desks_one_tolerance() -> None:
+    from libs.research import dsr_inputs
+    assert jc.PRIORS_FUTURE_SKEW_S is dsr_inputs.FUTURE_SKEW_S
+    assert jc.PRIORS_FUTURE_SKEW_S == 300
+
+
+def test_recovery_refuses_to_clobber_a_target_written_after_the_commit_point(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    p, _txn, manifest = _committed_not_applied(tmp_path, monkeypatch)
+    beta = p["priors"] / "beta.json"
+    beta.parent.mkdir(parents=True, exist_ok=True)
+    beta.write_text('{"written": "by another organ after the commit point"}', "utf-8")
+    before = _state(p)
+    with pytest.raises(jc.TxnRecoveryRefused, match=r"beta\.json: changed since the commit"):
+        jc.recover_transactions()
+    assert _state(p) == before, "NOTHING applied: not the report, not the ratchet"
+    assert manifest.exists(), "the manifest is kept for whoever resolves it"
+    # And the orphan sweep never takes the staged files a kept manifest names.
+    old = time.time() - jc.TXN_ORPHAN_AGE_S - 60
+    for x in (tmp_path / "run").rglob(f"*{jc.TXN_TAG}*"):
+        os.utime(x, (old, old))
+    with pytest.raises(jc.TxnRecoveryRefused):
+        jc.recover_transactions()
+    assert all(Path(o[2]).exists() for o in json.loads(manifest.read_text("utf-8"))["ops"]
+               if o[0] == "replace")
+    rc = jc.main(["--once", "--budget-s", "600"])
+    assert rc == jc.RECOVERY_REFUSED_EXIT and _state(p) == before
+
+
+def test_a_missing_staged_file_fails_loud_and_never_half_applies(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    p, txn, manifest = _committed_not_applied(tmp_path, monkeypatch)
+    before = _state(p)
+    Path(txn.ops[str(p["ratchet"])][2]).unlink()            # the ratchet's staged copy is gone
+    with pytest.raises(jc.TxnRecoveryRefused, match=r"judge_backlog_ratchet\.json: staged file"):
+        jc.recover_transactions()
+    assert _state(p) == before, "the report did not move without the ratchet"
+    assert manifest.exists()
+
+
+def test_a_partly_applied_commit_and_a_second_recovery_both_complete(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    p, _txn, manifest = _committed_not_applied(tmp_path, monkeypatch)
+    ops = json.loads(manifest.read_text("utf-8"))["ops"]
+    jc._apply_ops(ops[:3])                                  # killed three renames in
+    assert jc.recover_transactions() == 1
+    after = _state(p)
+    assert not manifest.exists()
+    assert jc.recover_transactions() == 0 and _state(p) == after
+    # A concurrent recovery that already finished: the replays meet absent files, silently.
+    jc._apply_ops(ops, checked=True)
+    assert _state(p) == after
+
+
+def test_an_unreadable_manifest_is_set_aside_by_name(tmp_path: Path,
+                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    p = _point(monkeypatch, tmp_path)
+    _inputs(tmp_path)
+    before = _state(p)
+    bad = p["ratchet"].parent / f"{jc.TXN_MANIFEST_PREFIX}1-2.json"
+    bad.write_text("{torn", "utf-8")
+    assert jc.recover_transactions() == 0
+    assert not bad.exists()
+    assert (bad.parent / (bad.name + jc.TXN_GARBAGE_SUFFIX)).read_text("utf-8") == "{torn"
+    assert _state(p) == before
+    assert jc.recover_transactions() == 0, "set aside once, never re-read as a manifest"
+
+
+def test_order_docket_failing_after_build_leaves_no_staging(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    p = _point(monkeypatch, tmp_path)
+    rows = _inputs(tmp_path)
+    before = _state(p)
+
+    def boom() -> frozenset[str]:
+        raise RuntimeError("after build")
+    monkeypatch.setattr(jc, "banned_from_capital", boom)
+    out, doc = jc.order_docket([dict(r) for r in rows], publish=True, now=NOW)
+    assert doc["verdict"] == "UNMEASURED" and len(out) == len(rows)
+    assert not _leftovers(tmp_path), "no staged file left in a live dir"
+    assert _state(p) == before
+
+
+def test_no_write_saves_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    p = _point(monkeypatch, tmp_path)
+    _inputs(tmp_path)
+    before = _state(p)
+    assert jc.main(["--once", "--no-write", "--budget-s", "600"]) == 0
+    assert _state(p) == before, "not the priors, not the bank, not the handoff"
+    assert not _leftovers(tmp_path)
+
+
+def test_naive_stamps_are_utc_and_the_cursor_compares_instants(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    p = _point(monkeypatch, tmp_path)
+    lines = []
+    for i in range(6):                         # naive UTC, 1..6 h old: all readings, none future
+        t = (NOW - timedelta(hours=1 + i)).replace(tzinfo=None)
+        lines.append({"at": t.isoformat(), "cell": f"N{i}.alpha.p=1", "family": "alpha",
+                      "passed": False, "terminal_gate": "in_sample_screen"})
+    p["ledger"].parent.mkdir(parents=True, exist_ok=True)
+    p["ledger"].write_text("".join(json.dumps(r) + "\n" for r in lines), "utf-8")
+    # West of UTC a naive stamp read as LOCAL lands hours in the future and is deferred.
+    old_tz = os.environ.get("TZ")
+    os.environ["TZ"] = "America/New_York"
+    try:
+        with contextlib.suppress(AttributeError):
+            time.tzset()
+        first = jc.learn_priors(p["ledger"], since="", now=NOW)
+    finally:
+        if old_tz is None:
+            os.environ.pop("TZ", None)
+        else:
+            os.environ["TZ"] = old_tz
+        with contextlib.suppress(AttributeError):
+            time.tzset()
+    assert first["recorded"] == 6 and not first.get("unmeasured_at")
+    # A cursor in +05:30 at NOW-3h30m. As a STRING it sorts after every row above (0 taught);
+    # as an INSTANT it is after the three rows 4..6 h old, so the three newer ones teach.
+    cur = (NOW - timedelta(hours=3, minutes=30)).astimezone(
+        timezone(timedelta(hours=5, minutes=30))).isoformat()
+    assert all(r["at"] < cur for r in lines), "the lexical comparison would skip them all"
+    out = jc.learn_priors(p["ledger"], since=cur, now=NOW)
+    assert out["recorded"] == 3
+    assert out["cursor"] == lines[0]["at"]
