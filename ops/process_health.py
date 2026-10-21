@@ -336,6 +336,26 @@ def account_key_file() -> dict[str, Any]:
         return {"state": "UNMEASURED", "why": type(exc).__name__}
 
 
+#: Backup states that are a definite fault. `not_applicable` (off the box, or no live key to
+#: compare -- which `account_key_file` already reports) is not.
+BACKUP_FAULT_STATES = frozenset({"missing", "mismatch", "unreadable"})
+
+
+def account_key_backup() -> dict[str, Any]:
+    """libs/ops/provenance.key_backup_state: present / size / matches, never contents or hash."""
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.ops import provenance
+        state = dict(provenance.key_backup_state())
+        if state.get("state") in BACKUP_FAULT_STATES:
+            state["restore"] = ("copy data/secrets/account_key.hmac to the backup (never the "
+                                "other way unless the live key is the one lost)")
+        return state
+    except Exception as exc:
+        return {"state": "UNMEASURED", "why": type(exc).__name__}
+
+
 def build() -> dict[str, Any]:
     contracts = _contracts()
     now = datetime.now(tz=UTC)
@@ -469,12 +489,14 @@ def build() -> dict[str, Any]:
     brief_faults = [r for r in rows if r["verdict"] in BRIEF_DEFINITE_FAULTS
                     and not r.get("expected_disabled")]
     key = account_key_file()
+    backup = account_key_backup()
     key_fault = key.get("state") in KEY_FAULT_STATES
+    backup_fault = backup.get("state") in BACKUP_FAULT_STATES
     status = ("UNMEASURED" if not rows or not scheduler_status.startswith("OK ")
               else ("ATTENTION" if brief_faults else "UNMEASURED")
               if not run_history_read
               else "OK" if not bad else "ATTENTION")
-    if key_fault:
+    if key_fault or backup_fault:
         status = "ATTENTION"   # a definite fault: the worst finding wins over UNMEASURED too
     return {
         "at": now.isoformat(timespec="seconds"),
@@ -495,8 +517,11 @@ def build() -> dict[str, Any]:
         # fails closed (account_key None), and fail-closed must never be silent.
         "status": status,
         "run_history": "MEASURED" if run_history_read else "UNMEASURED",
-        "n_needing_attention": len(bad) + int(key_fault),
+        "n_needing_attention": len(bad) + int(key_fault) + int(backup_fault),
         "account_key_file": key,
+        # THE BACKUP (v5e): present, size, and whether it matches the live key -- a hash compare
+        # done in-process; no hash is ever printed or written. Missing or mismatched: ATTENTION.
+        "account_key_backup": backup,
         "processes": rows,
     }
 

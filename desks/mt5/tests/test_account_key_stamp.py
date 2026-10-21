@@ -97,14 +97,21 @@ def test_no_box_key_is_the_none_sentinel_never_a_bare_hash(
     assert missing.read_bytes() == b"short"
 
 
-def test_the_writer_creates_the_key_once_and_never_prints_it(
+def _first(root: Path) -> tuple[bool, str]:
+    """The ONE key-creating entry point (v5e), sitting at the laptop, over a temp repo root."""
+    return libs_provenance.create_account_key_first_time(operator_present=True, root=root)
+
+
+def test_the_first_time_entry_point_creates_the_key_once_and_never_prints_it(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
         capsys: pytest.CaptureFixture[str]) -> None:
     path = tmp_path / "secrets" / "account_key.hmac"
     monkeypatch.setenv(libs_provenance.KEY_ENV, str(path))
+    assert _first(tmp_path)[0] is True
     a = provenance.account_key(7, "S", create=True)
-    assert path.exists() and len(path.read_bytes().strip()) >= 32
+    assert a is not None and path.exists() and len(path.read_bytes().strip()) >= 32
     body = path.read_bytes()
+    assert _first(tmp_path)[0] is False, "a second creation over an existing key"
     assert provenance.account_key(7, "S", create=True) == a == provenance.account_key(7, "S")
     assert path.read_bytes() == body
     out = capsys.readouterr()
@@ -249,7 +256,8 @@ def test_the_key_is_written_to_a_temp_file_fsynced_and_linked_into_place(
 
     monkeypatch.setattr(libs_provenance.os, "fsync", fsync)
     monkeypatch.setattr(libs_provenance.os, "link", link)
-    assert provenance.account_key(7, "S", create=True) is not None
+    assert _first(tmp_path)[0] is True
+    assert provenance.account_key(7, "S") is not None
     assert synced and linked and linked[0][1] == str(path)
     assert sorted(p.name for p in path.parent.iterdir()) == [path.name], "a temp file was left"
 
@@ -263,6 +271,7 @@ def test_without_hard_links_the_key_is_still_created_once(
         raise OSError("hard links not supported")
 
     monkeypatch.setattr(libs_provenance.os, "link", no_link)
+    assert _first(tmp_path)[0] is True
     a = provenance.account_key(7, "S", create=True)
     assert a is not None and len(path.read_bytes().strip()) >= 32
     assert sorted(p.name for p in path.parent.iterdir()) == [path.name]
@@ -301,8 +310,10 @@ def test_a_crash_before_the_link_leaves_no_key_and_no_temp_file(
         raise OSError("disk full")
 
     monkeypatch.setattr(libs_provenance.os, "fsync", crash)
+    assert _first(tmp_path)[0] is False
     assert provenance.account_key(7, "S", create=True) is None
-    assert list(path.parent.iterdir()) == [], "a torn key or temp file was left behind"
+    assert [p.name for p in path.parent.iterdir() if p.name.endswith(".hmac") or ".tmp" in p.name] \
+        == [], "a torn key or temp file was left behind"
     row = provenance.stamp({"login": 7, "server": "S", "kind": LIVE})
     assert "account" not in row and row["account_key"] is None
 
@@ -343,11 +354,13 @@ def test_without_hard_links_an_existing_key_is_never_replaced(
 
     monkeypatch.setattr(libs_provenance.os, "link", racing_link)
     monkeypatch.setattr(libs_provenance.os, "replace", no_replace)
+    _first(tmp_path)
     got = provenance.account_key(7, "S", create=True)
     assert path.read_bytes() == theirs, "an existing key was overwritten"
     want = "sha256:" + hmac.new(theirs, b"7@S", hashlib.sha256).hexdigest()[:16]
     assert got == want
-    assert sorted(p.name for p in path.parent.iterdir()) == [path.name]
+    assert sorted(p.name for p in path.parent.iterdir() if not p.name.endswith(".json")) \
+        == [path.name]
 
 
 def test_the_no_hard_link_fallback_creates_exclusively_and_fsyncs(
@@ -376,6 +389,7 @@ def test_the_no_hard_link_fallback_creates_exclusively_and_fsyncs(
     monkeypatch.setattr(libs_provenance.os, "link", no_link)
     monkeypatch.setattr(libs_provenance.os, "replace",
                         lambda a, b: (_ for _ in ()).throw(AssertionError("replace")))
+    assert _first(tmp_path)[0] is True
     assert provenance.account_key(7, "S", create=True) is not None
     assert flags and all(f & os.O_EXCL and f & os.O_CREAT for f in flags)
     assert len(synced) >= 2, "the temp file and the key itself must both be fsynced"
@@ -443,13 +457,34 @@ def _ledger_alerts(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text("utf-8"))["alerts"] if path.exists() else {}
 
 
+class _Pages:
+    """A fake pager: records (title, body) and answers with `delivered`. Never a real channel."""
+
+    def __init__(self) -> None:
+        self.sent: list[tuple[str, str]] = []
+        self.delivered = 1
+
+    def send(self, title: str, body: str) -> dict[str, Any]:
+        self.sent.append((title, body))
+        return {"armed": 1, "delivered": self.delivered}
+
+
+_PAGES = _Pages()
+
+
 @pytest.fixture
 def _box(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
     key = tmp_path / "data" / "secrets" / "account_key.hmac"
     key.parent.mkdir(parents=True)
     monkeypatch.setenv(libs_provenance.KEY_ENV, str(key))
     monkeypatch.setattr(libs_provenance, "_ALERTED", set())
-    return key, tmp_path / "data" / "alert_ledger.json"
+    monkeypatch.setattr(libs_provenance, "_PAGED", set())
+    monkeypatch.setattr(libs_provenance, "_LAST_TRY", {})
+    monkeypatch.setattr(libs_provenance, "SENDER", _PAGES.send)
+    _PAGES.sent.clear()
+    _PAGES.delivered = 1
+    # v5e: under a key override the alert state sits in the directory HOLDING the key
+    return key, key.parent / "alert_ledger.json"
 
 
 def _repo_ledger_digest() -> str | None:
@@ -468,7 +503,8 @@ def test_a_short_key_pages_once_with_the_restore_step_and_never_its_bytes(
     assert set(alerts) == {libs_provenance.ALERT_KEY}
     a = alerts[libs_provenance.ALERT_KEY]
     assert a["state"] == "NEEDS_HUMAN" and len([h for h in a["history"] if "OPEN" in h]) == 1
-    assert "restore data/secrets/account_key.hmac from the laptop backup" in a["message"]
+    assert "C:\\ProgramData\\quant-keys" in a["message"] and "zuck" in a["message"]
+    assert "E8_ACCOUNT.json must be re-declared" in a["message"]
     assert "never regenerate" in a["message"].lower() and "4 bytes" in a["message"]
     assert "ab12" not in ledger.read_text("utf-8"), "the key's bytes reached the ledger"
     assert key.read_bytes() == b"ab12", "a short key was regenerated"
@@ -556,3 +592,177 @@ def test_numpy_is_not_imported_by_the_module() -> None:
     out = subprocess.run([sys.executable, "-c", code], cwd=str(_DESK.parents[1]),
                          capture_output=True, text=True, check=True).stdout.strip()
     assert out == "False"
+
+
+# v5e (2026-10-21, audit hold on v5d). Fail-closed PAGES through alert_channels.send_all (a fake
+# sender here, never the real channels), deduped; delivered 0 is not a page; a lost key is never
+# regenerated by a writer; the backup is checked by an in-process compare.
+def test_a_short_key_pages_through_the_sender_once_and_recovers_once(
+        _box: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+    key, ledger = _box
+    key.write_bytes(b"ab12")
+    for _ in range(10):
+        assert provenance.account_key(7000001, "S", create=True) is None
+    assert len(_PAGES.sent) == 1
+    title, body = _PAGES.sent[0]
+    assert "UNUSABLE" in title and "quant-keys" in body and "ab12" not in title + body
+    libs_provenance._PAGED.clear()                         # a fresh process: same incident
+    assert provenance.account_key(7000001, "S") is None
+    assert len(_PAGES.sent) == 1, "repaged inside the 6h window"
+    key.write_bytes(b"k" * 64)                             # restored from the backup
+    libs_provenance._KEY_CACHE.clear()
+    assert provenance.account_key(7000001, "S") is not None
+    assert len(_PAGES.sent) == 2 and "OK again" in _PAGES.sent[1][0]
+    assert _ledger_alerts(ledger)[libs_provenance.ALERT_KEY]["state"] == "FIXED"
+    libs_provenance._KEY_CACHE.clear()
+    libs_provenance._PAGED.clear()
+    assert provenance.account_key(7000001, "S") is not None
+    assert len(_PAGES.sent) == 2, "the recovery paged twice"
+
+
+def test_an_undelivered_page_is_not_a_page_and_is_re_sent(
+        _box: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+    key, _ledger = _box
+    key.write_bytes(b"ab12")
+    _PAGES.delivered = 0
+    assert provenance.account_key(7000001, "S", create=True) is None
+    assert provenance.account_key(7000001, "S", create=True) is None
+    assert len(_PAGES.sent) == 1, "the undelivered retry was not throttled"
+    monkeypatch.setattr(libs_provenance, "RETRY_UNDELIVERED_S", 0.0)
+    assert provenance.account_key(7000001, "S", create=True) is None
+    assert len(_PAGES.sent) == 2, "an undelivered page was recorded as paged"
+    _PAGES.delivered = 1
+    assert provenance.account_key(7000001, "S", create=True) is None
+    assert provenance.account_key(7000001, "S", create=True) is None
+    assert len(_PAGES.sent) == 3
+
+
+def test_a_fresh_process_closes_an_alert_another_process_opened(
+        _box: tuple[Path, Path]) -> None:
+    key, ledger = _box
+    key.write_bytes(b"ab12")
+    assert provenance.account_key(7000001, "S") is None
+    assert _ledger_alerts(ledger)[libs_provenance.ALERT_KEY]["state"] == "NEEDS_HUMAN"
+    key.write_bytes(b"k" * 64)
+    libs_provenance._ALERTED.clear()                       # a new process knows nothing
+    libs_provenance._PAGED.clear()
+    libs_provenance._KEY_CACHE.clear()
+    assert provenance.account_key(7000001, "S") is not None
+    assert _ledger_alerts(ledger)[libs_provenance.ALERT_KEY]["state"] == "FIXED"
+
+
+def test_a_lost_key_is_never_regenerated_by_a_writer_and_pages(
+        _box: tuple[Path, Path]) -> None:
+    key, ledger = _box
+    for _ in range(3):
+        assert provenance.account_key(7000001, "S", create=True) is None
+        row = provenance.stamp({"login": 7000001, "server": "S", "kind": LIVE})
+        assert row["account_key"] is None and "account" not in row
+    assert not key.exists(), "a writer regenerated a lost key"
+    assert len(_PAGES.sent) == 1 and "ABSENT" in _ledger_alerts(ledger)[
+        libs_provenance.ALERT_KEY]["message"]
+
+
+def test_a_reader_with_no_key_does_not_page(_box: tuple[Path, Path]) -> None:
+    """Off the box (the VPS) a reader with no key is the design, not an incident."""
+    _key, ledger = _box
+    assert provenance.account_key(7000001, "S") is None
+    assert _PAGES.sent == [] and _ledger_alerts(ledger) == {}
+
+
+def test_the_alert_state_follows_the_key_override(tmp_path: Path,
+                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    key = tmp_path / "deep" / "dir" / "account_key.hmac"
+    key.parent.mkdir(parents=True)
+    key.write_bytes(b"ab12")
+    monkeypatch.setenv(libs_provenance.KEY_ENV, str(key))
+    monkeypatch.setattr(libs_provenance, "_ALERTED", set())
+    monkeypatch.setattr(libs_provenance, "_PAGED", set())
+    monkeypatch.setattr(libs_provenance, "SENDER", _PAGES.send)
+    assert provenance.account_key(7, "S") is None
+    assert (key.parent / "alert_ledger.json").exists()
+    assert not (tmp_path / "deep" / "alert_ledger.json").exists(), "the grandparent got it"
+
+
+@pytest.mark.parametrize("why", ["no-flag", "e8-declared", "hashed-rows", "key-exists"])
+def test_the_first_time_entry_point_refuses(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                            why: str) -> None:
+    key = tmp_path / "data" / "secrets" / "account_key.hmac"
+    monkeypatch.setenv(libs_provenance.KEY_ENV, str(key))
+    data = tmp_path / "desks" / "mt5" / "data"
+    data.mkdir(parents=True)
+    flag = why != "no-flag"
+    if why == "e8-declared":
+        (data / "E8_ACCOUNT.json").write_text("{}", "utf-8")
+    if why == "hashed-rows":
+        (data / "live_ledger.jsonl").write_text(
+            '{"sleeve": "x"}\n{"account_key": "sha256:0123456789abcdef", "server": "S"}\n',
+            "utf-8")
+    if why == "key-exists":
+        key.parent.mkdir(parents=True)
+        key.write_bytes(b"ab12")
+    ok, msg = libs_provenance.create_account_key_first_time(operator_present=flag, root=tmp_path)
+    assert ok is False and msg.startswith("refused")
+    if why == "key-exists":
+        assert key.read_bytes() == b"ab12"
+    else:
+        assert not key.exists()
+
+
+def test_the_first_time_cli_needs_the_laptop_flag(tmp_path: Path,
+                                                  monkeypatch: pytest.MonkeyPatch,
+                                                  capsys: pytest.CaptureFixture[str]) -> None:
+    key = tmp_path / "secrets" / "account_key.hmac"
+    monkeypatch.setenv(libs_provenance.KEY_ENV, str(key))
+    monkeypatch.setattr(libs_provenance, "_REPO", tmp_path)
+    assert libs_provenance.main(["--create-first-time"]) == 1 and not key.exists()
+    assert libs_provenance.main(["--create-first-time", "--at-the-laptop"]) == 0
+    body = key.read_bytes().strip()
+    assert len(body) >= 32 and body.decode() not in capsys.readouterr().out
+
+
+def test_only_the_first_time_entry_point_creates_a_key() -> None:
+    """No other code path in the repository reaches `_create_key`."""
+    import subprocess
+    root = _DESK.parents[1]
+    out = subprocess.run(["git", "grep", "-n", "_create_key(", "--", "*.py"], cwd=root,
+                         capture_output=True, text=True, check=False).stdout.splitlines()
+    calls = [ln for ln in out if "/tests/" not in ln and not ln.startswith("tests/")
+             and "def _create_key" not in ln]
+    assert calls and all(ln.startswith("libs/ops/provenance.py:") for ln in calls), calls
+    src = (root / "libs" / "ops" / "provenance.py").read_text("utf-8")
+    body = src[src.index("def create_account_key_first_time"):]
+    assert "_create_key(path)" in body[:body.index("\ndef ")]
+    assert src.count("_create_key(path)") == 1
+
+
+@pytest.mark.parametrize("backup, state, matches", [
+    (b"k" * 64, "ok", True), (b"x" * 64, "mismatch", False), (None, "missing", None)],
+    ids=["match", "mismatch", "missing"])
+def test_the_backup_is_compared_in_process_and_its_hash_never_leaves(
+        _box: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+        backup: bytes | None, state: str, matches: bool | None) -> None:
+    key, _ledger = _box
+    key.write_bytes(b"k" * 64)
+    bpath = tmp_path / "quant-keys" / "account_key.hmac"
+    if backup is not None:
+        bpath.parent.mkdir(parents=True)
+        bpath.write_bytes(backup)
+    monkeypatch.setenv(libs_provenance.BACKUP_ENV, str(bpath))
+    st = libs_provenance.key_backup_state()
+    assert st["state"] == state and st["matches"] is matches
+    assert st["present"] is (backup is not None)
+    text = repr(st)
+    for secret in (b"k" * 64, backup or b"-"):
+        assert hashlib.sha256(secret).hexdigest() not in text
+        assert hashlib.sha256(secret).hexdigest()[:16] not in text
+        assert secret.decode() not in text
+
+
+def test_the_backup_check_is_not_applicable_off_the_box(_box: tuple[Path, Path],
+                                                        monkeypatch: pytest.MonkeyPatch) -> None:
+    key, _ledger = _box
+    key.write_bytes(b"k" * 64)
+    monkeypatch.delenv(libs_provenance.BACKUP_ENV, raising=False)
+    monkeypatch.setattr(libs_provenance.os, "name", "posix")
+    assert libs_provenance.key_backup_state()["state"] == "not_applicable"

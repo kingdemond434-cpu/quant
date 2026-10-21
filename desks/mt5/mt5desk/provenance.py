@@ -40,11 +40,12 @@ key is not invertible. The FORMAT is unchanged ("sha256:" + 16 lowercase hex), w
 Fusion r5's book check validates, but the VALUE is no longer r4/r5's bare hash: a reader that
 recomputes keys must use this function and the box key, never a bare sha256.
 
-NO KEY, NO HASH. The writer (`stamp`, the gateway's intent stamp) creates the key once, on the box,
-the first time it needs one (temp file, fsync, hard link: create-if-absent, so two processes cannot
-race two keys). If it cannot, the row FAILS CLOSED (v5b): `account_key` is None and
-`account_withheld` is True -- never the raw login, never a bare sha256 -- so it is evidence for no
-account until the key is restored. A reader never creates a key: with none,
+NO KEY, NO HASH. The writers (`stamp`, the gateway's intent stamp) pass `create=True`, which since
+v5e creates NOTHING: a lost key is never silently regenerated (the one creating entry point is
+libs.ops.provenance.create_account_key_first_time). With no usable key the row FAILS CLOSED (v5b):
+`account_key` is None and `account_withheld` is True -- never the raw login, never a bare sha256
+-- and the helper PAGES, so it is evidence for no account until the key is restored. A reader
+never creates a key either: with none,
 a hashed row matches nothing (UNMEASURED), exactly as a row with no provenance always has.
 LOSING THE KEY ORPHANS EVERY HASHED ROW for `same_account` (they read as no provenance, never as
 another account); back it up with the box's other secrets.

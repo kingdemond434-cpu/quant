@@ -743,3 +743,20 @@ def test_the_default_ignorable_table_is_declared_and_covers_the_audit_list() -> 
     for cp in (ord("5"), ord("@"), ord(" "), 0x00A0, ord("\n")):
         assert cp not in table, hex(cp)
 
+
+# v5e (2026-10-21): a run that differs from the number's own group separator ends it --
+# `x,555-1234,2` and `555-1234,2 lots` name the account and then a list item. The same-separator
+# tail `555 1234 2` continues the number (like `1,555,1234`): ruled either way, pinned NOT caught.
+@pytest.mark.parametrize("text", ["x,555-1234,2", "555-1234,2 lots", "555.1234,7", "a;555-1234,2"],
+                         ids=["comma-list", "comma-lots", "dot-then-comma", "semicolon-list"])
+def test_a_different_separator_after_the_number_ends_it(text: str) -> None:
+    got = lf.findings("desks/mt5/data/x.json", text.encode(), _SIDS)
+    assert lf.ID_FINDING in [h["key"] for h in got], text
+
+
+@pytest.mark.parametrize("text", ["555 1234 2", "1,555,1234", "555-1234-6", "9.555.1234"],
+                         ids=["same-space-tail", "same-comma-head", "same-hyphen-tail",
+                              "same-dot-head"])
+def test_the_same_separator_continues_the_number(text: str) -> None:
+    assert lf.findings("desks/mt5/data/x.json", text.encode(), _SIDS) == [], text
+

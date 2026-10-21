@@ -292,7 +292,11 @@ def _side_clear(run: str, beyond: str, internal: str | None) -> bool:
     # something else. Unless the run is exactly the separator the number's own groups use --
     # `1/555/1234`, `12:555:1234`, `555    1234    5` continue one longer number.
     tight = any(c.isspace() or c in _TIGHT for c in run)
-    return tight and run != internal
+    # A run that differs from the number's OWN group separator ends it too (v5e): `x,555-1234,2`
+    # and `555-1234,2 lots` are the account then a list item -- a number grouped with `-` does
+    # not continue with `,`. A run equal to it continues the number: `1,555,1234` and (ruled
+    # either way, pinned as a different number) the same-separator tail `555 1234 2`.
+    return run != internal and (tight or internal is not None)
 
 
 def _bounded(body: str, start: int, end: int, internal: str | None = None) -> bool:

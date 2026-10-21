@@ -570,4 +570,33 @@ def test_the_account_key_file_state_is_reported_and_a_short_key_is_attention(
     if body is not None:
         assert body.decode() not in repr(k), "the key's contents reached the report"
     if state == "short":
-        assert "laptop backup" in k["restore"] and doc["n_needing_attention"] == 1
+        assert "quant-keys" in k["restore"] and doc["n_needing_attention"] == 1
+
+
+# v5e (2026-10-21): the key's BACKUP is reported (present, size, matches -- never a hash) and a
+# missing or mismatched backup is ATTENTION.
+@pytest.mark.parametrize("backup, state, headline",
+                         [(b"k" * 64, "ok", "OK"), (b"x" * 64, "mismatch", "ATTENTION"),
+                          (None, "missing", "ATTENTION")],
+                         ids=["match", "mismatch", "missing"])
+def test_the_account_key_backup_is_reported_and_a_bad_one_is_attention(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, backup: bytes | None, state: str,
+    headline: str
+) -> None:
+    import hashlib
+    key = tmp_path / "secrets" / "account_key.hmac"
+    key.parent.mkdir(parents=True)
+    key.write_bytes(b"k" * 64)
+    bpath = tmp_path / "quant-keys" / "account_key.hmac"
+    if backup is not None:
+        bpath.parent.mkdir(parents=True)
+        bpath.write_bytes(backup)
+    monkeypatch.setenv("QUANT_ACCOUNT_KEY_FILE", str(key))
+    monkeypatch.setenv("QUANT_ACCOUNT_KEY_BACKUP", str(bpath))
+    _fake(monkeypatch, BRIEF_ADOPT, VERBOSE_ADOPT)
+    doc, _by = _build(monkeypatch, tmp_path, _GW_ONLY)
+    b = doc["account_key_backup"]
+    assert b["state"] == state and doc["status"] == headline
+    assert b["size_bytes"] == (None if backup is None else 64)
+    assert hashlib.sha256(b"k" * 64).hexdigest() not in repr(doc)
+    assert doc["n_needing_attention"] == (0 if state == "ok" else 1)
