@@ -225,6 +225,12 @@ def test_the_replace_retries_a_windows_permission_error(tmp_path: Path, monkeypa
     assert not list(tmp_path.glob("*.tmp"))
 
 
+def test_the_marker_sits_beside_the_rate_it_explains(tmp_path: Path, monkeypatch) -> None:
+    assert jt._attempt_path() == jra.ATTEMPT_PATH, "the default is the published path"
+    monkeypatch.setattr(jt, "RATE_OUT", tmp_path / "JUDGING_RATE.json")
+    assert jt._attempt_path() == tmp_path / "JUDGING_RATE.attempt.json"
+
+
 def test_the_box_publishes_the_marker() -> None:
     from libs.ops import state_publication as sp
     assert jra.ATTEMPT_REL in sp.published_paths(_ROOT)

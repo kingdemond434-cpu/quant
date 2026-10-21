@@ -982,7 +982,14 @@ def _write_atomic(path: Path, doc: Any) -> None:
 #: so a pass that dies -- or is killed at its budget -- leaves the phase it died in on disk, and
 #: JUDGING_RATE.json reads STALE with that reason instead of a silent old value. Published beside
 #: JUDGING_RATE.json by sync_shadow_to_git.ps1; read by `judging_rate_attempt.read_rate`.
-ATTEMPT_OUT = BASE / "reports" / "JUDGING_RATE.attempt.json"
+#: None means "beside RATE_OUT" (reports/JUDGING_RATE.attempt.json), so anything that points the
+#: rate elsewhere -- a test, a dry run on another box -- moves the marker with it.
+ATTEMPT_OUT: Path | None = None
+
+
+def _attempt_path() -> Path:
+    return ATTEMPT_OUT if ATTEMPT_OUT is not None else RATE_OUT.with_name(
+        RATE_OUT.stem + ".attempt.json")
 #: Wall clock the verdict-ledger stream may spend. On overrun the rate is UNMEASURED with the
 #: reason, never a partial count read as a whole one. Inside the leg's 300 s `--budget-s` with
 #: room for everything else the pass does; never used to change the leg's own budget.
@@ -1010,7 +1017,7 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
     import time as _time
 
     t0 = _time.monotonic()
-    attempt = _attempt_module().Attempt(_now(now), ATTEMPT_OUT, enabled=write)
+    attempt = _attempt_module().Attempt(_now(now), _attempt_path(), enabled=write)
     attempt.phase("started")
     attempt.phase("measure_box")
     box = measure_box(now)
