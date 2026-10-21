@@ -391,6 +391,7 @@ def build() -> dict[str, Any]:
 
     bad = [r for r in rows if r["verdict"] in ("NOT_SCHEDULED", "SCHEDULER_UNMEASURED",
                                              "FAILING", "NO_ARTIFACT", "STALE")]
+    run_history_read = scheduler_status == "OK schtasks"
     return {
         "at": now.isoformat(timespec="seconds"),
         "host": __import__("socket").gethostname(),
@@ -401,8 +402,14 @@ def build() -> dict[str, Any]:
         # is how a dead gateway hides behind a green majority. An unread scheduler, or a board
         # with no rows at all (UNMEASURED inventory and `_contracts()` swallowing a failed
         # import), is UNMEASURED: zero rows of trouble out of zero rows read is not "OK".
+        # A BRIEF-ONLY READ IS UNMEASURED TOO (v5b): the inventory landed but the verbose read
+        # (last run, last result) failed or timed out, so no row's run history was read and an
+        # all-OK board would be OK about results nobody saw. The rows still judge what the brief
+        # read can (NOT_SCHEDULED, DISABLED, STALE) and n_needing_attention still counts them.
         "status": ("UNMEASURED" if not rows or not scheduler_status.startswith("OK ")
+                   or not run_history_read
                    else "OK" if not bad else "ATTENTION"),
+        "run_history": "MEASURED" if run_history_read else "UNMEASURED",
         "n_needing_attention": len(bad),
         "processes": rows,
     }

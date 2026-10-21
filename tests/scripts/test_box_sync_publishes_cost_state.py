@@ -426,7 +426,8 @@ def test_zero_declared_ids_is_unmeasured_keeps_the_alert_open_and_pages(
     monkeypatch.setattr(lf, "record_alert",
                         lambda doc, root=None: alerts.append(doc["status"]) or "OPEN")
     monkeypatch.setattr(lf, "_default_sender",
-                        lambda root: lambda t, b: pages.append((t, b)) or {"armed": 1})
+                        lambda root: lambda t, b: pages.append((t, b))
+                        or {"armed": 1, "delivered": 1})
     rc, doc = _cli(tmp_path, monkeypatch, b'{"clean": true}')
     assert rc == 0 and doc["status"] == "UNMEASURED" and doc["declared_ids"] == "UNMEASURED"
     assert alerts == ["UNMEASURED"] and doc["alert"] == "OPEN"
@@ -490,3 +491,79 @@ def test_the_box_declarations_are_gitignored() -> None:
     rc = subprocess.run(["git", "-C", str(ROOT), "check-ignore", "-q", lf.DECLARATIONS_REL],
                         check=False).returncode
     assert rc == 0, "ACCOUNT_PROFILES.json would publish every declared account number"
+
+
+# v5b (2026-10-21). SPLIT AND NON-ASCII DIGIT FORMS OF A DECLARED NUMBER, an undelivered page,
+# and the N@server boundary kept. Every number here is synthetic.
+_SID = "5551234"
+_SIDS = frozenset({_SID})
+_AR = "".join(chr(0x0660 + int(d)) for d in _SID)       # Arabic-Indic
+_EAR = "".join(chr(0x06F0 + int(d)) for d in _SID)      # Extended Arabic-Indic
+
+
+@pytest.mark.parametrize("text", [
+    "refused for 555-1234.", "acct 5,551,234", "x 555 1234 y", "555.1234", "555 - 1234",
+    "555\u20131234", "555'1234", "555_1234", "5\u00a0551\u00a0234",
+    f"refused for {_AR}.", f"acc_{_EAR}", f"{_AR[:3]}-{_AR[3:]}", f'{{"note": "{_EAR}"}}',
+    "\\u0665\\u0665\\u0665\\u0661\\u0662\\u0663\\u0664",
+], ids=["hyphen", "thousands", "spaces", "dot", "spaced-hyphen", "en-dash", "apostrophe",
+        "underscore", "nbsp", "arabic-indic", "extended-arabic-indic", "arabic-split",
+        "arabic-in-json", "arabic-u-escaped"])
+def test_a_split_or_non_ascii_declared_number_is_refused(text: str) -> None:
+    got = lf.findings("desks/mt5/data/x.json", text.encode(), _SIDS)
+    assert lf.ID_FINDING in [h["key"] for h in got], text
+    assert _SID not in json.dumps(got)
+
+
+@pytest.mark.parametrize("text", ["1,555,1234", "555-12345", "9.555.1234", "555-1234-6",
+                                  "5551 2345", "2026-10-21 12:34"],
+                         ids=["inside-thousands", "longer-tail", "longer-dotted",
+                              "phone-tail", "shifted", "timestamp"])
+def test_a_split_number_that_only_contains_the_digits_is_not_it(text: str) -> None:
+    assert lf.findings("desks/mt5/data/x.json", text.encode(), _SIDS) == [], text
+
+
+def test_a_contiguous_declared_number_still_hits_beside_a_separator() -> None:
+    """The split form is ADDED; the v4 digit-bounded match is unchanged (`ID.0` still hits)."""
+    for text in (f"{_SID}.0", f"{_SID}-x", f"login {_SID}, ok"):
+        assert lf.ID_FINDING in [h["key"] for h in
+                                 lf.findings("desks/mt5/data/x.json", text.encode(), _SIDS)]
+
+
+def test_arabic_indic_digits_trip_the_key_rules_with_nothing_declared() -> None:
+    for text in (f'{{"login": {_AR}}}', f'{{"account": "{_EAR}"}}', f"{_AR}@FusionMarkets-Live"):
+        assert lf.findings("desks/mt5/data/x.json", text.encode()), text
+
+
+def test_a_declared_number_written_in_arabic_indic_digits_is_declared_in_ascii(
+        tmp_path: Path) -> None:
+    assert lf.declared_ids(tmp_path, {lf.ID_ENV: _AR}) == _SIDS
+
+
+@pytest.mark.parametrize("text", ['{"id": "DSD_X_2023@DF_X"}',
+                                  "DSD_X_\u0662\u0660\u0662\u0663@DF_X", "v1.2023@DF"],
+                         ids=["oecd", "oecd-arabic-digits", "dotted"])
+def test_n_at_server_keeps_its_non_word_boundary(text: str) -> None:
+    assert lf.findings("desks/mt5/reports/PIT_LAG_CENSUS.json", text.encode()) == [], text
+
+
+def test_an_undelivered_page_is_not_a_page_and_the_next_pass_resends(tmp_path: Path) -> None:
+    from datetime import UTC, datetime, timedelta
+    sent: list[str] = []
+    answers = [{"armed": 1, "delivered": 0}, {"armed": 0}, None, {"armed": 1, "delivered": 1}]
+
+    def sender(t: str, b: str) -> Any:
+        sent.append(t)
+        return answers[len(sent) - 1]
+
+    doc = {"status": "REFUSED", "n_refused": 1,
+           "refused": {"desks/mt5/data/a.json": [{"key": "login", "line": 3}]}}
+    t0 = datetime(2026, 10, 21, tzinfo=UTC)
+    for i in range(3):   # delivered 0, delivered absent, a non-dict answer: none of them paged
+        got = lf.page(doc, tmp_path, sender=sender, now=t0 + timedelta(minutes=i))
+        assert got["sent"] is False and "undelivered" in got["reason"]
+        assert not (tmp_path / lf.PAGE_STATE_REL).exists(), "silence was recorded as a page"
+    assert lf.page(doc, tmp_path, sender=sender, now=t0 + timedelta(minutes=3))["sent"]
+    assert not lf.page(doc, tmp_path, sender=sender, now=t0 + timedelta(minutes=4))["sent"]
+    assert len(sent) == 4
+

@@ -379,3 +379,39 @@ def test_a_localised_running_state_excuses_an_overlap_code(
     )
     _doc, by = _build(monkeypatch, tmp_path, {"MT5-Gateway": ("fresh.json", 120, "gateway")})
     assert by["MT5-Gateway"]["verdict"] == "OK"
+
+
+# v5b (2026-10-21): a brief-only read lands the inventory but no run history, so the HEADLINE is
+# UNMEASURED -- an all-OK board there would be OK about results nobody read.
+@pytest.mark.parametrize(
+    "verbose",
+    [subprocess.TimeoutExpired(["schtasks", "/v"], 90), OSError("boom"), "",
+     '"HostName","TaskName"\r\n"BOX","\\MT5-Gateway"\r\n'],
+    ids=["timeout", "oserror", "empty", "no-result-columns"],
+)
+def test_a_brief_only_read_is_an_unmeasured_headline(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, verbose: Any
+) -> None:
+    _fake(monkeypatch, BRIEF, verbose)
+    contracts = {"MT5-Hourly": CONTRACTS["MT5-Hourly"], "MT5-Gateway": CONTRACTS["MT5-Gateway"]}
+    doc, by = _build(monkeypatch, tmp_path, contracts)
+    assert doc["scheduler_status"].startswith("OK schtasks (brief")
+    assert {by[n]["verdict"] for n in contracts} == {"OK"}   # rows alone would read green
+    assert doc["status"] == "UNMEASURED" and doc["run_history"] == "UNMEASURED"
+
+
+def test_a_brief_only_read_with_real_trouble_is_still_not_ok(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _fake(monkeypatch, BRIEF, subprocess.TimeoutExpired(["schtasks", "/v"], 90))
+    doc, by = _build(monkeypatch, tmp_path, CONTRACTS)
+    assert by["MT5-Vanished"]["verdict"] == "NOT_SCHEDULED"
+    assert doc["status"] == "UNMEASURED" and doc["n_needing_attention"] >= 1
+
+
+def test_both_reads_landing_is_a_measured_headline(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _fake(monkeypatch, BRIEF, VERBOSE)
+    doc, _by = _build(monkeypatch, tmp_path, {"MT5-Gateway": CONTRACTS["MT5-Gateway"]})
+    assert doc["run_history"] == "MEASURED" and doc["status"] in ("OK", "ATTENTION")

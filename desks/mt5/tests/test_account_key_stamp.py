@@ -76,11 +76,12 @@ def test_the_key_is_a_keyed_hmac_in_r5_s_format(_account_key_file: Path) -> None
 
 def test_the_helper_s_signature_is_stable() -> None:
     sig = inspect.signature(libs_provenance.account_key)
-    assert str(sig) == "(login: 'object', server: 'object', *, create: 'bool' = False) -> 'str | None'"
+    assert str(sig) == ("(login: 'object', server: 'object', *, create: 'bool' = False)"
+                        " -> 'str | None'")
 
 
-def test_no_box_key_is_the_none_sentinel_never_a_bare_hash(tmp_path: Path,
-                                                            monkeypatch: pytest.MonkeyPatch) -> None:
+def test_no_box_key_is_the_none_sentinel_never_a_bare_hash(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     missing = tmp_path / "secrets" / "account_key.hmac"
     monkeypatch.setenv(libs_provenance.KEY_ENV, str(missing))
     assert provenance.account_key(5551234, "S") is None
@@ -94,9 +95,9 @@ def test_no_box_key_is_the_none_sentinel_never_a_bare_hash(tmp_path: Path,
     assert missing.read_bytes() == b"short"
 
 
-def test_the_writer_creates_the_key_once_and_never_prints_it(tmp_path: Path,
-                                                            monkeypatch: pytest.MonkeyPatch,
-                                                            capsys: pytest.CaptureFixture[str]) -> None:
+def test_the_writer_creates_the_key_once_and_never_prints_it(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str]) -> None:
     path = tmp_path / "secrets" / "account_key.hmac"
     monkeypatch.setenv(libs_provenance.KEY_ENV, str(path))
     a = provenance.account_key(7, "S", create=True)
@@ -186,11 +187,16 @@ def test_the_gateway_writes_the_key_and_never_the_raw_login() -> None:
 
 
 @pytest.mark.parametrize("writer,reader", [
-    ({"login": 5551234.0, "server": "S", "kind": LIVE}, {"login": 5551234, "server": "S", "kind": LIVE}),
-    ({"login": 5551234, "server": "S", "kind": LIVE}, {"login": 5551234.0, "server": "S", "kind": LIVE}),
-    ({"login": 5551234, "server": "", "kind": LIVE}, {"login": 5551234, "server": "", "kind": LIVE}),
-    ({"login": 5551234, "server": "", "kind": LIVE}, {"login": 5551234, "server": None, "kind": LIVE}),
-    ({"login": "5551234", "server": "S", "kind": LIVE}, {"login": 5551234, "server": "S", "kind": LIVE}),
+    ({"login": 5551234.0, "server": "S", "kind": LIVE},
+     {"login": 5551234, "server": "S", "kind": LIVE}),
+    ({"login": 5551234, "server": "S", "kind": LIVE},
+     {"login": 5551234.0, "server": "S", "kind": LIVE}),
+    ({"login": 5551234, "server": "", "kind": LIVE},
+     {"login": 5551234, "server": "", "kind": LIVE}),
+    ({"login": 5551234, "server": "", "kind": LIVE},
+     {"login": 5551234, "server": None, "kind": LIVE}),
+    ({"login": "5551234", "server": "S", "kind": LIVE},
+     {"login": 5551234, "server": "S", "kind": LIVE}),
 ], ids=["N.0-writer", "N.0-reader", "empty-server", "empty-vs-none", "str-vs-int"])
 def test_the_n_point_0_and_empty_server_edges_decide_as_the_raw_comparison_did(
         writer: dict, reader: dict) -> None:
@@ -198,3 +204,104 @@ def test_the_n_point_0_and_empty_server_edges_decide_as_the_raw_comparison_did(
                "account_kind": writer["kind"]}
     assert provenance.same_account(provenance.stamp(writer), reader) is \
         _old_same_account(old_row, reader)
+
+
+# v5b (2026-10-21): the key is written temp-file -> fsync -> hard link, a 0-byte or short key is
+# NO key, and with no key the writer fails closed -- never the raw login, never a bare sha256.
+@pytest.mark.parametrize("body", [b"", b"   \n", b"x" * 31], ids=["empty", "blank", "short"])
+def test_a_zero_byte_or_short_key_is_no_key_and_the_stamp_fails_closed(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: bytes) -> None:
+    path = tmp_path / "secrets" / "account_key.hmac"
+    path.parent.mkdir(parents=True)
+    path.write_bytes(body)
+    monkeypatch.setenv(libs_provenance.KEY_ENV, str(path))
+    assert libs_provenance._box_key() is None
+    assert libs_provenance._box_key(create=True) is None
+    assert path.read_bytes() == body, "a short key was overwritten (orphans its rows)"
+    acc = {"login": 5551234, "server": "FusionMarkets-Live", "kind": LIVE}
+    row = provenance.stamp(acc)
+    assert row["account_key"] is None and row["account_withheld"] is True
+    assert "account" not in row, "the writer stamped the raw login with no key"
+    assert "5551234" not in repr(row)
+    msg = b"5551234@FusionMarkets-Live"
+    assert ("sha256:" + hashlib.sha256(msg).hexdigest()[:16]) not in repr(row)
+    assert provenance.same_account(row, acc) is False
+
+
+def test_the_key_is_written_to_a_temp_file_fsynced_and_linked_into_place(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import os
+    path = tmp_path / "secrets" / "account_key.hmac"
+    monkeypatch.setenv(libs_provenance.KEY_ENV, str(path))
+    synced: list[int] = []
+    linked: list[tuple[str, str]] = []
+    real_fsync, real_link = os.fsync, os.link
+
+    def fsync(fd: int) -> None:
+        synced.append(fd)
+        real_fsync(fd)
+
+    def link(src: str, dst: str) -> None:
+        assert Path(src).parent == path.parent, "the temp file must sit beside the key"
+        assert len(Path(src).read_bytes().strip()) >= 32, "linked before the bytes were written"
+        linked.append((str(src), str(dst)))
+        real_link(src, dst)
+
+    monkeypatch.setattr(libs_provenance.os, "fsync", fsync)
+    monkeypatch.setattr(libs_provenance.os, "link", link)
+    assert provenance.account_key(7, "S", create=True) is not None
+    assert synced and linked and linked[0][1] == str(path)
+    assert sorted(p.name for p in path.parent.iterdir()) == [path.name], "a temp file was left"
+
+
+def test_without_hard_links_the_key_is_replaced_in_only_while_absent(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    path = tmp_path / "secrets" / "account_key.hmac"
+    monkeypatch.setenv(libs_provenance.KEY_ENV, str(path))
+
+    def no_link(src: str, dst: str) -> None:
+        raise OSError("hard links not supported")
+
+    monkeypatch.setattr(libs_provenance.os, "link", no_link)
+    a = provenance.account_key(7, "S", create=True)
+    assert a is not None and len(path.read_bytes().strip()) >= 32
+    assert sorted(p.name for p in path.parent.iterdir()) == [path.name]
+
+
+def test_an_existing_read_only_key_is_never_replaced(tmp_path: Path,
+                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    """os.replace onto a read-only file raises WinError 5 on the box; an existing key -- read-only
+    or not, usable or not -- is never a replace target."""
+    import os
+    import stat
+    path = tmp_path / "secrets" / "account_key.hmac"
+    path.parent.mkdir(parents=True)
+    path.write_bytes(b"k" * 40)
+    os.chmod(path, stat.S_IREAD)
+    monkeypatch.setenv(libs_provenance.KEY_ENV, str(path))
+    replaced: list[str] = []
+    monkeypatch.setattr(libs_provenance.os, "replace",
+                        lambda a, b: replaced.append(str(b)))
+    try:
+        a = provenance.account_key(7, "S", create=True)
+        libs_provenance._create_key(path)        # a racing writer finds a key: no-op
+        assert a == provenance.account_key(7, "S")
+        assert path.read_bytes() == b"k" * 40 and replaced == []
+        assert sorted(p.name for p in path.parent.iterdir()) == [path.name]
+    finally:
+        os.chmod(path, stat.S_IREAD | stat.S_IWRITE)
+
+
+def test_a_crash_before_the_link_leaves_no_key_and_no_temp_file(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    path = tmp_path / "secrets" / "account_key.hmac"
+    monkeypatch.setenv(libs_provenance.KEY_ENV, str(path))
+
+    def crash(fd: int) -> None:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(libs_provenance.os, "fsync", crash)
+    assert provenance.account_key(7, "S", create=True) is None
+    assert list(path.parent.iterdir()) == [], "a torn key or temp file was left behind"
+    row = provenance.stamp({"login": 7, "server": "S", "kind": LIVE})
+    assert "account" not in row and row["account_key"] is None

@@ -41,9 +41,10 @@ Fusion r5's book check validates, but the VALUE is no longer r4/r5's bare hash: 
 recomputes keys must use this function and the box key, never a bare sha256.
 
 NO KEY, NO HASH. The writer (`stamp`, the gateway's intent stamp) creates the key once, on the box,
-the first time it needs one (O_EXCL, so two processes cannot race two keys). If it cannot, the row
-keeps the old raw `account` -- the money path keeps its evidence -- and the publish fence
-(libs/ops/login_fence.py) refuses that file, which pages. A reader never creates a key: with none,
+the first time it needs one (temp file, fsync, hard link: create-if-absent, so two processes cannot
+race two keys). If it cannot, the row FAILS CLOSED (v5b): `account_key` is None and
+`account_withheld` is True -- never the raw login, never a bare sha256 -- so it is evidence for no
+account until the key is restored. A reader never creates a key: with none,
 a hashed row matches nothing (UNMEASURED), exactly as a row with no provenance always has.
 LOSING THE KEY ORPHANS EVERY HASHED ROW for `same_account` (they read as no provenance, never as
 another account); back it up with the box's other secrets.
@@ -112,9 +113,23 @@ if str(_REPO) not in sys.path:
     sys.path.append(str(_REPO))
 from libs.ops.provenance import KEY_ENV, KEY_REL, account_key, is_key, key_path  # noqa: E402
 
-__all__ = ["DEMO", "LIVE", "UNKNOWN", "KEY_ENV", "KEY_REL", "account_key", "account_kind",
-           "current_account", "is_key", "key_path", "row_account", "row_key", "same_account",
-           "split_by_account", "stamp"]
+__all__ = [
+    "DEMO",
+    "KEY_ENV",
+    "KEY_REL",
+    "LIVE",
+    "UNKNOWN",
+    "account_key",
+    "account_kind",
+    "current_account",
+    "is_key",
+    "key_path",
+    "row_account",
+    "row_key",
+    "same_account",
+    "split_by_account",
+    "stamp",
+]
 
 
 def row_key(row: dict) -> str | None:
@@ -171,11 +186,13 @@ def split_by_account(rows: list[dict]) -> dict[tuple, list[dict]]:
 
 def stamp(acc: dict) -> dict:
     """The provenance fields to merge into a ledger row: the keyed `account_key`, never the raw
-    login. If no box key can be held, the row keeps the raw `account` (the evidence survives)
-    and the publish fence refuses the file (see the module docstring)."""
+    login. FAILS CLOSED (v5b): if no usable box key can be held, `account_key` is None and the
+    row carries `account_withheld: True` -- never the raw login and never a bare sha256. Such a
+    row matches no account in `same_account` (no provenance), which is the price of a public
+    repository: the login must not cross the state wire even when the key is missing."""
     key = account_key(acc.get("login"), acc.get("server"), create=True)
     out: dict[str, Any] = {"account_key": key, "server": acc.get("server"),
                            "account_kind": acc.get("kind", UNKNOWN)}
     if key is None and acc.get("login") is not None:
-        out["account"] = acc.get("login")
+        out["account_withheld"] = True
     return out

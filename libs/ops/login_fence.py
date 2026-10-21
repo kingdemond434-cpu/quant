@@ -32,7 +32,9 @@ rewrites rows), so that case is real and fails closed. Bumping a pin is a code c
 with `--measure-prefix` (prints counts and a hash, never content). The pins go when the
 principal scrubs history (`git filter-repo` is theirs alone).
 
-ENCODINGS AND FORMS (audit v5): UTF-16LE/BE, fullwidth digits (NFKC), up to six levels of
+ENCODINGS AND FORMS (audit v5): UTF-16LE/BE, fullwidth digits (NFKC), Arabic-Indic and Extended
+Arabic-Indic digits (folded to ASCII, v5b), a declared number split by separators between its
+digits (`555-1234`, `5,551,234`, `555 1234`, `555.1234`; v5b), up to six levels of
 backslash-escaped JSON, `\\u` escapes, hex and base64 runs that decode to text, float and
 exponent values (`5551234.0`, `5.551234e6`), the keys `mt5_account`, `live_account`, `acct`,
 `login2` and their kin, the prose `account N` / `account #N`, `N@server`, the MT5 journal's
@@ -174,7 +176,7 @@ def declared_ids(root: Path, env: dict[str, str] | None = None) -> frozenset[str
     (a bare top-level mapping of such keys is read too)."""
     import os
     env = dict(os.environ) if env is None else env
-    raw = [t for t in re.split(r"[,\s]+", env.get(ID_ENV, "").strip()) if t]
+    raw = [_ascii_digits(t) for t in re.split(r"[,\s]+", env.get(ID_ENV, "").strip()) if t]
     bad = [t for t in raw if not _ACCOUNT_SHAPED.fullmatch(t)]
     if bad:
         raise FenceConfigError(f"{ID_ENV} carries {len(bad)} token(s) that are not 4-12 digits")
@@ -187,7 +189,7 @@ def declared_ids(root: Path, env: dict[str, str] | None = None) -> frozenset[str
             accounts = doc.get("accounts", doc)
             if not isinstance(accounts, dict):
                 raise ValueError("'accounts' is not an object")
-            logins = [str(k).split("@", 1)[0].strip() for k in accounts]
+            logins = [_ascii_digits(str(k).split("@", 1)[0].strip()) for k in accounts]
             if any(not _ACCOUNT_SHAPED.fullmatch(x) for x in logins):
                 raise ValueError("a key's login half is not 4-12 digits")
             raw += logins
@@ -196,13 +198,52 @@ def declared_ids(root: Path, env: dict[str, str] | None = None) -> frozenset[str
     return frozenset(raw)
 
 
+#: Characters a writer puts between the digits of one number (v5b): `555-1234`, `5,551,234`,
+#: `555 1234`, `555.1234`, `555'1234`, `555_1234`, and the Unicode dashes and spaces NFKC keeps.
+_DIGIT_SEP = " \t-,.'_\u2010\u2011\u2012\u2013\u2014\u2015\u2212\u2019\u00a0\u2009\u202f"
+_SEP_MAX = 3   # `555 - 1234` is three separator characters
+_SEP_CLASS = "[" + re.escape(_DIGIT_SEP) + "]{0," + str(_SEP_MAX) + "}"
+
+
+def _ascii_digits(text: str) -> str:
+    """Every Unicode decimal digit (Arabic-Indic U+0660-0669, Extended Arabic-Indic
+    U+06F0-06F9, Devanagari, ...) as its ASCII digit. One character for one, so line numbers and
+    offsets are unchanged. NFKC folds fullwidth digits but NOT these, which are not compatibility
+    forms (v5b)."""
+    if text.isascii():
+        return text
+    return re.sub(r"(?![0-9])\d", lambda m: str(unicodedata.decimal(m.group(0))), text)
+
+
+def _bounded(body: str, start: int, end: int) -> bool:
+    """No digit touches [start, end), even across up to `_SEP_MAX` separator characters -- so the
+    split form of an ID inside a longer separated number (`1,555,1234`) is that other number."""
+    i, k = start - 1, 0
+    while i >= 0 and k < _SEP_MAX and body[i] in _DIGIT_SEP:
+        i, k = i - 1, k + 1
+    if i >= 0 and body[i].isdigit():
+        return False
+    j, k = end, 0
+    while j < len(body) and k < _SEP_MAX and body[j] in _DIGIT_SEP:
+        j, k = j + 1, k + 1
+    return not (j < len(body) and body[j].isdigit())
+
+
 def _id_hits(views: list[tuple[str, int | None]], ids: frozenset[str]) -> list[int]:
-    """Line numbers where a declared number stands alone between non-digits, in any view."""
+    r"""Line numbers where a declared number stands alone between non-digits, in any view --
+    contiguous (`(?<!\d)ID(?!\d)`, as before, so `ID.0` still hits) or SPLIT by separators
+    between its digits (`555-1234`, `5,551,234`; v5b), the split form digit-bounded across
+    separators too."""
     lines: set[int] = set()
     for body, at in views:
         for n in ids:
-            for m in re.finditer(r"(?<!\d)" + re.escape(n) + r"(?!\d)", body):
+            plain = r"(?<!\d)" + re.escape(n) + r"(?!\d)"
+            split = _SEP_CLASS.join(re.escape(d) for d in n)
+            for m in re.finditer(plain, body):
                 lines.add(at if at is not None else body.count("\n", 0, m.start()) + 1)
+            for m in re.finditer(split, body):
+                if _bounded(body, m.start(), m.end()):
+                    lines.add(at if at is not None else body.count("\n", 0, m.start()) + 1)
     return sorted(lines)
 
 
@@ -233,7 +274,8 @@ def _account_shaped(val: str) -> bool:
 
 def _decoded(text: str) -> str:
     """`\\uXXXX` escapes and up to six levels of backslash-escaping undone, fullwidth and
-    other compatibility forms folded (NFKC), so fullwidth digits read as ASCII digits."""
+    other compatibility forms folded (NFKC), so fullwidth digits read as ASCII digits, and every
+    other Unicode decimal digit (Arabic-Indic, Extended Arabic-Indic) folded to ASCII (v5b)."""
     out = text
     for _ in range(6):
         nxt = _UESC.sub(lambda m: chr(int(m.group(1), 16)), out)
@@ -241,7 +283,7 @@ def _decoded(text: str) -> str:
         if nxt == out:
             break
         out = nxt
-    return unicodedata.normalize("NFKC", out)
+    return _ascii_digits(unicodedata.normalize("NFKC", out))
 
 
 def _as_text(data: bytes) -> str:
@@ -448,8 +490,10 @@ def _default_sender(root: Path) -> Sender:
 def page(doc: dict[str, Any], root: Path | None = None, *, sender: Sender | None = None,
          now: datetime | None = None, repage_h: float = REPAGE_H) -> dict[str, Any]:
     """Page a REFUSED or UNMEASURED pass off the box (state_publication.page_flow's idiom):
-    on a change, again every `repage_h` hours while it stands, once on recovery to OK. The page
-    names paths and key names only. RAISES if the sender does: the CLI turns that into rc 3."""
+    on a change, again every `repage_h` hours while it stands, once on recovery to OK. A send
+    whose `delivered` is 0 or falsy is NOT a page: nothing is recorded and the next pass
+    re-sends. The page names paths and key names only. RAISES if the sender does: the CLI turns
+    that into rc 3."""
     base = Path(root or ROOT)
     now = now or datetime.now(UTC)
     status = str(doc.get("status") or "UNMEASURED")
@@ -478,6 +522,12 @@ def page(doc: dict[str, Any], root: Path | None = None, *, sender: Sender | None
         return {"sent": False, "reason": "OK: nothing to page"}
     body = f"{_why(doc) or status}\n(values withheld; see desks/mt5/reports/LOGIN_FENCE.json)"
     res = (sender or _default_sender(base))(title, body[:1500])
+    res = res if isinstance(res, dict) else {}
+    # A page that reached NOBODY was not a page (v5b): `delivered` 0, absent or falsy leaves the
+    # dedup state untouched, so the next pass sends it again instead of deduplicating silence.
+    if not res.get("delivered"):
+        return {"sent": False, "reason": f"{reason}: undelivered, re-sent next pass",
+                "armed": res.get("armed"), "delivered": res.get("delivered")}
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({"status": status, "sig": sig,
                                 "paged_at": now.isoformat(timespec="seconds")}), "utf-8")
