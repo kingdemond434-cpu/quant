@@ -195,3 +195,10 @@ def test_the_hourly_leg_reuses_and_keeps_its_cap() -> None:
     sys.path.insert(0, str(DESK / "research"))
     import hourly_cycle as hc
     assert hc.LEG_BUDGET_SEC["judge_coverage"] == 300, "the cap is not this change's to move"
+
+
+def test_a_stale_reuse_is_a_named_failure_in_the_cycle() -> None:
+    sys.path.insert(0, str(DESK / "research"))
+    import hourly_cycle as hc
+    assert hc._exit_outcome("judge_coverage", jc.REUSE_STALE_EXIT) == "exit_code=4:REUSE_STALE"
+    assert jc.REUSE_STALE_EXIT not in hc.VERDICT_EXITS.get("judge_coverage", ())

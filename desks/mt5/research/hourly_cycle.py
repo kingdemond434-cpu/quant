@@ -930,10 +930,11 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #: (`exit_code=N`, never a verdict) and the ledger row carries the name after it, so a reader
 #: sees what failed without opening the leg. A code here must never also be in VERDICT_EXITS.
 #:   judge_coverage 3 -- the pass met its budget and committed nothing (JUDGE_COVERAGE_TIMEOUT.json)
+#:   judge_coverage 4 -- --reuse-fresh found no fresh same-cycle table (JUDGE_COVERAGE_REUSE.json)
 #:   judge_coverage 5 -- a committed transaction manifest could not be rolled forward safely; it
 #:                       is kept and every pass refuses until it is resolved by hand
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
-    "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 5: "RECOVERY_REFUSED"},
+    "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
 }
 
 
