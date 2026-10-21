@@ -176,15 +176,19 @@ def test_the_e8_oco_key_equals_the_bracket_guard_evidence_key_for_one_tlapi_obje
                                  _creds=SimpleNamespace(server="E8-Live-Test")))
 
 
-#: FIXED TEST VECTORS (the suite's throwaway key, b"0123456789abcdef" * 4, conftest
-#: `_account_key_file`): "sha256:" + HMAC-SHA256(key, "<login>@<server>")[:16] with the server
-#: passed as given -- case preserved, never lowercased. Bracket guard v5.1's e8_evidence key for
+#: FIXED TEST VECTORS (the throwaway key b"0123456789abcdef" * 4, pinned in the test):
+#: "sha256:" + HMAC-SHA256(key, "<login>@<server>")[:16] with the server passed as given -- case preserved, never lowercased. Bracket guard v5.1's e8_evidence key for
 #: the same TLAPI handle is this value byte for byte (its rule is restated in `_evidence_key`).
 VECTOR_E8 = ("sha256:ccd25414061507fe", 81234567, "E8-Live-Test")
 VECTOR_FTMO = ("sha256:9e6e987a65c2762b", 64567890, "FTMO-Server2")
 
 
 def test_the_keys_match_the_fixed_vectors_byte_for_byte(monkeypatch, tmp_path) -> None:
+    # The vectors' own key, pinned here: r7's fence fixture installs its own throwaway key
+    # over the suite's, and a vector is only a vector under the key it was computed with.
+    vk = tmp_path / "vector_key.hmac"
+    vk.write_bytes(b"0123456789abcdef" * 4)
+    monkeypatch.setenv(provenance.KEY_ENV, str(vk))
     want, login, server = VECTOR_E8
     api = SimpleNamespace(account_id=login, _credentials={"server": server})
     assert _evidence_key(api) == want

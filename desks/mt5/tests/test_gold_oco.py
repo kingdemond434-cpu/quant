@@ -433,7 +433,8 @@ def test_e8_with_no_box_key_places_nothing_and_says_why(monkeypatch, tmp_path) -
     # Both fences now name accounts by the one keyed helper, so with no box key the existing
     # two-account fence refuses first (its book cannot be named) and the OCO behind it too.
     assert blocked and all(r["rail"] in (oco.RAIL, "cross_account_opposite")
-                           and "HMAC" in r["why"] and "fail closed" in r["why"] for r in blocked)
+                           and ("HMAC" in r["why"] or "no box key" in r["why"])
+                           and "fail closed" in r["why"] for r in blocked)
 
 
 def test_e8_in_a_readable_world_places_both_legs_and_publishes_keyed_states(
