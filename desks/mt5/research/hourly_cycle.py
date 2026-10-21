@@ -1971,8 +1971,13 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Regional parity reads every pack and two reports and writes three small files; measured
     # at ~10 s on a build box. The cap sits above its own --budget-s for the usual reason.
     "regional_parity": 400,
-    # Judge coverage stops itself at --budget-s 120; it reads two files and sorts. The cap sits
-    # above its own budget for the reason every other leg's does.
+    # Judge coverage DECLARES --budget-s 120. It reads the docket, the whole gate ledger, the
+    # gauntlet report and the unrunnable bank, and ranks every docket row -- measured ~70 s on a
+    # build-box replica of the box's inputs, 131 s before c5390bc6a, and killed at this cap on
+    # the box at 2026-10-20 19:44Z. Since v2 it stops itself, UNCOMMITTED, with a named
+    # JUDGE_COVERAGE_TIMEOUT.json and exit 3, at the later of 120 s and this cap (as exported
+    # in QUANT_LEG_BUDGET_S) minus its commit margin -- so it never stops earlier than the kill
+    # it replaces, and a stopped pass changes no file. The cap is unchanged.
     "judge_coverage": 300,
     # Orthogonality yield is one indexed scan of the candidate registry, one pass over the gate
     # ledger and 79 leave-one-out SVDs of a 79 x ~1000 indicator matrix. Measured 2026-09-23 on

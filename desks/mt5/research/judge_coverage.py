@@ -229,12 +229,16 @@ def _pass_memo() -> Iterator[dict[Any, Any]]:
             gc.enable()
 
 
-def _stat_key(path: Path) -> tuple[str, int, int] | None:
+def _stat_key(path: Path) -> tuple[str, int, int, int, int] | None:
+    """The memo's identity for a file. Inode and ctime are in it as well as mtime and size,
+    because a same-size rewrite that preserves mtime (`scp -p`, `cp -p`, an rsync of the same
+    length) was served stale within a pass on mtime and size alone (audit of c5390bc6a). A
+    rename over the path changes the inode; an in-place rewrite changes ctime."""
     try:
         st = path.stat()
     except OSError:
         return None
-    return (str(path), st.st_mtime_ns, st.st_size)
+    return (str(path), st.st_mtime_ns, st.st_size, st.st_ino, st.st_ctime_ns)
 
 
 def _read_memo(path: Path) -> Any:
@@ -393,6 +397,20 @@ def _replace_retry(src: Path, dst: Path) -> None:
             if attempt == TXN_REPLACE_TRIES - 1:
                 raise
             time.sleep(TXN_REPLACE_WAIT_S)
+
+
+def _atomic_write_text(target: Path, text: str) -> None:
+    """`target.write_text(text)` that a reader never sees half-written: the bytes go to a
+    sibling and are renamed over the target (Windows-safe, see `_replace_retry`). Raises
+    OSError as the plain write would, and leaves no sibling behind when it does."""
+    tmp = target.with_name(f"{target.name}.tmp-{os.getpid()}")
+    try:
+        tmp.write_text(text, "utf-8")
+        _replace_retry(tmp, target)
+    except OSError:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+        raise
 
 
 def _apply_ops(ops: list[list[Any]]) -> None:
@@ -1032,6 +1050,16 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
         except OSError as exc:
             out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
             return out
+    if since and _ts(since) is None:
+        # A STORED CURSOR THAT IS NOT A TIMESTAMP FREEZES LEARNING SILENTLY (audit of
+        # c5390bc6a): "garbage" sorts above every ISO stamp, so `at <= since` skipped every
+        # verdict from then on and the pass still read OK. It is not a reading of where the
+        # ledger was taught to, so nothing is taught against it -- teaching from the start
+        # would double-count every verdict already in the posterior -- and the cursor is kept
+        # as it is, named here, for whoever repairs it.
+        out.update(status="UNMEASURED",
+                   why=f"stored priors_cursor is not a timestamp: {since[:80]!r}; kept as it is")
+        return out
     state = load(state_dir)
     taught = state.get("beta") if isinstance(state, dict) else None
     taught_fams = set((taught or {}).get("family") or {}) if isinstance(taught, dict) else set()
@@ -1074,6 +1102,12 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
         if since and at <= since and fam not in untaught:
             continue
         if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
+            continue
+        if _ts(at) is None:
+            # A VERDICT WHOSE `at` IS NOT A TIMESTAMP IS READ AS UNMEASURED, and never taught:
+            # taught, it would either become the cursor (a garbage stamp sorts above every ISO
+            # one and freezes learning) or be re-taught on every pass the cursor cannot pass it.
+            out["unmeasured_at"] = int(out.get("unmeasured_at") or 0) + 1
             continue
         passed = row.get("passed")
         survived = passed is True or str(passed).lower() == "true"
@@ -1532,7 +1566,7 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
         if txn is None:
-            target.write_text(json.dumps(bank, indent=1, default=str), "utf-8")
+            _atomic_write_text(target, json.dumps(bank, indent=1, default=str))
         else:
             txn.put_text(target, json.dumps(bank, indent=1, default=str))
     except OSError:
@@ -2296,7 +2330,7 @@ def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
                            "generated_utc": at, "n": len(rows), "rows": rows},
                           indent=1, default=str)
         if txn is None:
-            target.write_text(text, "utf-8")
+            _atomic_write_text(target, text)
         else:
             txn.put_text(target, text)
     except OSError:
@@ -3050,7 +3084,10 @@ def write_timeout(exc: JudgeCoverageTimeout, *, budget_s: float, stop_s: float,
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="judge coverage by unjudged backlog, per family")
     ap.add_argument("--once", action="store_true", help="one pass (the hourly leg's mode)")
-    ap.add_argument("--budget-s", type=float, default=120.0)
+    ap.add_argument("--budget-s", type=float, default=120.0,
+                    help="the pass stops itself, UNCOMMITTED, with reports/"
+                         "JUDGE_COVERAGE_TIMEOUT.json and exit 3, at the later of this and the "
+                         "cycle's kill cap (QUANT_LEG_BUDGET_S) minus the commit margin")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--no-write", action="store_true", help="measure without advancing the ratchet")
     args = ap.parse_args(argv)

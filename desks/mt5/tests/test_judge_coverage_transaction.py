@@ -266,3 +266,65 @@ def test_the_stop_never_falls_below_the_cap_the_cycle_grants(
     assert jc.stop_after_s(120.0) == (300.0 - jc.COMMIT_MARGIN_S, 300.0)
     monkeypatch.setenv("QUANT_LEG_BUDGET_S", "100")      # a cap below the budget: budget wins
     assert jc.stop_after_s(120.0) == (120.0, 100.0)
+
+
+# --- the audit of c5390bc6a's should-fixes, folded into this commit ---
+
+def test_a_garbage_verdict_stamp_is_unmeasured_and_never_becomes_the_cursor(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    p = _point(monkeypatch, tmp_path)
+    rows = _inputs(tmp_path)
+    with p["ledger"].open("a", encoding="utf-8") as fh:
+        for junk in ("garbage", "{'x': 1}", "NaN", "zz"):
+            fh.write(json.dumps({"at": junk, "cell": "J.alpha.p=1", "family": "alpha",
+                                 "passed": False, "terminal_gate": "in_sample_screen"}) + "\n")
+    doc = jc.build([dict(r) for r in rows], now=NOW, defer=True)
+    learned = doc["priors_learned"]
+    jc.write(doc)
+    assert learned["unmeasured_at"] == 4
+    assert _family_n(p) == {"alpha": 30, "beta": 30, "gamma": 30}, "junk is never taught"
+    cursor = json.loads(p["ratchet"].read_text("utf-8"))["priors_cursor"]
+    assert jc._ts(cursor) is not None and cursor == learned["cursor"]
+    # And the next pass, over the same ledger, teaches nothing again.
+    _pass(rows)
+    assert _family_n(p) == {"alpha": 30, "beta": 30, "gamma": 30}
+
+
+def test_a_garbage_stored_cursor_is_unmeasured_and_kept(tmp_path: Path,
+                                                        monkeypatch: pytest.MonkeyPatch) -> None:
+    p = _point(monkeypatch, tmp_path)
+    _inputs(tmp_path)
+    out = jc.learn_priors(p["ledger"], since="garbage")
+    assert out["status"] == "UNMEASURED" and "not a timestamp" in out["why"]
+    assert out["cursor"] == "garbage" and out["recorded"] == 0
+    assert not (p["priors"] / "beta.json").exists(), "nothing taught against a non-reading"
+
+
+def test_the_memo_sees_a_same_size_rewrite_that_keeps_its_mtime(tmp_path: Path) -> None:
+    f = tmp_path / "x.json"
+    f.write_text('{"v": 1}', "utf-8")
+    st = f.stat()
+    with jc._pass_memo():
+        assert jc._read_memo(f) == {"v": 1}
+        tmp = tmp_path / "x.new"
+        tmp.write_text('{"v": 2}', "utf-8")               # same size, as `scp -p` delivers it
+        os.utime(tmp, ns=(st.st_atime_ns, st.st_mtime_ns))
+        os.replace(tmp, f)
+        assert f.stat().st_mtime_ns == st.st_mtime_ns and f.stat().st_size == st.st_size
+        assert jc._read_memo(f) == {"v": 2}
+
+
+def test_writes_outside_a_pass_are_atomic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    target = tmp_path / "t.json"
+    target.write_text("old", "utf-8")
+
+    def refuse(src: Path, dst: Path) -> None:
+        raise PermissionError("held open")
+    monkeypatch.setattr(jc, "_replace_retry", refuse)
+    with pytest.raises(OSError):
+        jc._atomic_write_text(target, "new")
+    assert target.read_text("utf-8") == "old", "a failed write leaves the old bytes whole"
+    assert sorted(x.name for x in tmp_path.iterdir()) == ["t.json"], "and no sibling"
+    monkeypatch.undo()
+    jc._atomic_write_text(target, "new")
+    assert target.read_text("utf-8") == "new"
