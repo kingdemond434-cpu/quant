@@ -172,8 +172,8 @@ def _instrument(chart_frame: tuple[str, Any], times: list[Any]) -> dict[str, Any
       * A MIXED HISTORY IS REFUSED, NEVER VOTED. Each release's own peak offset is read; the
         winner must hold at least MIN_RELEASE_SHARE of the releases, and an ADJACENT offset may
         hold LESS than MAX_ADJACENT_SHARE of the pair (exclusive: 2 of 10 refuses). A 5/3 split
-        resolved to its majority would place the minority an hour off -- an hour EARLY when the majority is the smaller offset,
-        which is a look-ahead.
+        resolved to its majority would place the minority an hour off -- an hour EARLY when the
+        majority is the smaller offset, which is a look-ahead.
       * `releases` names the instants that support the answer, so the season can count
         independent release instants rather than instruments that read the same ones.
     """

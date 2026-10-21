@@ -184,7 +184,8 @@ def to_bar_time(when: datetime, root: Path | None = None, *, fallback: bool = Fa
     answered. `CONVERTED_RELEASE_SPIKE` means the caller opted in (`fallback=True`) and the
     release-spike reading answered, inside the season instance it was measured on AND within
     RELEASE_MARGIN_DAYS of its first and last measured release; the why names that window.
-    Outside it the answer is UNMEASURED: a three-week 2026 reading says nothing about 2024. A caller that does not opt in sees exactly the old behaviour.
+    Outside it the answer is UNMEASURED: a three-week 2026 reading says nothing about 2024. A
+    caller that does not opt in sees exactly the old behaviour.
     """
     base = Path(root or _ROOT)
     table = offsets(root)
