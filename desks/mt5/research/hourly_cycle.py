@@ -1042,6 +1042,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `publish_state` leg right after them carries to origin. Before this the fence rode only the
     # 48h law-gate rotation and the health check ran on no clock at all.
     "box_state_freshness", "desk_health",
+    # HOW FRESH THE BOX'S BARS AND TICKS ARE (2026-10-21): parquet footers only, ~0.4 s and one
+    # report (data/BARS_STATE.json) that `publish_state` right after it carries. Bars never cross
+    # the wire, so this is the only off-box evidence that the feed is alive. Non-money-path.
+    "bars_state",
 })
 
 
@@ -1812,6 +1816,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Review + promotion-door verdicts take seconds on the live box. The full Tier S run can
     # time out before its final door organ, leaving E8's fail-closed input stale for >6h.
     "tier_s_door": 180,
+    # BARS_STATE.json stops itself at --budget-s 20 (marking what it did not reach UNMEASURED);
+    # the cap sits just above, so MT5-Hourly, which already overruns, can lose at most a minute.
+    "bars_state": 60,
     # THE UNKNOWN-SHARE CENSUS, once per UTC day: a fixed 6,000-cell sample took 1,955 s on the
     # box. It stops building at UNKNOWN_CENSUS_BUILD_S (1,800) and then carves and names causes;
     # the cap sits above both and the document is checkpointed, so a kill still publishes.
@@ -5753,6 +5760,10 @@ def main() -> None:
         "box_state_freshness", "scripts/check_box_state_freshness.py"))
     dhl = _costed("desk_health", lambda: _producer(
         "desk_health", "scripts/check_desk_health.py", "--out"))
+    # BAR AND TICK FRESHNESS, BEFORE THE PUSH THAT CARRIES IT (2026-10-21). Footer reads under a
+    # 20 s self-budget; fail-soft, it gates nothing and never touches the terminal or an account.
+    bst = _costed("bars_state", lambda: _producer(
+        "bars_state", "research/bars_state.py", "--budget-s", "20"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
@@ -5941,6 +5952,7 @@ def main() -> None:
                     "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
                     "box_state_freshness": bsf, "desk_health": dhl,
+                    "bars_state": bst,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,

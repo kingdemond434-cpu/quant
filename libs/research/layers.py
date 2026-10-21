@@ -239,6 +239,9 @@ LEG_LAYER: dict[str, str] = {
     "forward_evidence_tracker": "meta",
     # The box-state freshness fence and the desk health report, hourly before publication.
     "box_state_freshness": "meta", "desk_health": "meta",
+    # The box's bar and tick freshness report, hourly before publication: the machine measuring
+    # its own inputs, not any strategy.
+    "bars_state": "meta",
     # THE 2026-09-16 BLUEPRINT ORGANS (Tier-1 phases C/D).
     "axis_registry": "information", "forced_flow_calendar": "information",
     "standing_questions": "information",

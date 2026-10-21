@@ -668,6 +668,10 @@ $reportPaths = @(
     "desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json",
     "desks/mt5/reports/RESEARCH_BUDGET.json",
     "desks/mt5/data/research_budget.json",
+    # how fresh the box's bars and ticks are (2026-10-21, research/bars_state.py, core leg
+    # bars_state): last bar time, rows and mtime per file, newest tick per symbol. The parquets
+    # themselves stay off this wire (see Publish-StateOnto's 408 history); this is their meter.
+    "desks/mt5/data/BARS_STATE.json",
     "desks/mt5/reports/JUDGING_RATE.json",
     "desks/mt5/reports/JUDGING_THROUGHPUT.json",
     "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json",
