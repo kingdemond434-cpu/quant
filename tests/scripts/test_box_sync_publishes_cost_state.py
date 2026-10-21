@@ -77,7 +77,9 @@ def test_no_credential_shaped_key(rel: str) -> None:
 
 def test_the_quotes_writer_withholds_the_login() -> None:
     src = (ROOT / "desks" / "mt5" / "research" / "cost_truth.py").read_text("utf-8")
-    assert '"login_withheld"' in src, (
+    # v5g: the writer stamps the block through the helper the publisher also applies
+    helper = (ROOT / "libs" / "ops" / "account_withhold.py").read_text("utf-8")
+    assert "account_block(acct)" in src and '"login_withheld"' in helper, (
         "cost_truth.py no longer withholds the login, and its quotes file is now published "
         "from the box every hour")
 

@@ -72,8 +72,8 @@ ALLOWED: dict[str, str] = {
     # clears itself. Delete each entry once the box has rewritten the file -- the
     # stale-exemption test below fails until you do.
     "desks/mt5/data/cost_truth_quotes.json":
-        "box-written state; writer fixed in desks/mt5/research/cost_truth.py, clears on the "
-        "box's next write",
+        "box-written state; writer fixed in desks/mt5/research/cost_truth.py, and since v5g "
+        "the publisher withholds the login on the next sync (libs/ops/account_withhold.py)",
 }
 
 

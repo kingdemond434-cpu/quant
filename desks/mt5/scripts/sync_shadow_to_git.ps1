@@ -499,9 +499,43 @@ function Publish-StateOnto {
         Write-SyncLog "publish: login fence has no python interpreter (.venv, py, python); nothing published"
         return $false
     }
+    $pyArgs = @($pyCmd | Select-Object -Skip 1)
+    # THE LOGIN IS WITHHELD BEFORE IT IS JUDGED (v5g, 2026-10-21). cost_truth_quotes.json is
+    # rewritten only when its terminal read succeeds, so a copy stamped by older code keeps its
+    # `account.login` on disk indefinitely and the fence below would refuse it forever -- leaving
+    # origin's leaky copy in place. libs/ops/account_withhold.py applies cost_truth.py's own rule
+    # (one helper, `withhold_login`) to the BLOB: `account.login` becomes `login_withheld: true`,
+    # re-serialised as the writer serialises it, and the new blob replaces the old one here. The
+    # fence still judges the final blob, so a file the scrub could not parse is refused below.
+    # Any failure publishes nothing (fails closed), exactly as the fence does.
+    $scrubIn = for ($i = 0; $i -lt $Paths.Count; $i++) { "$($blobs[$i])`t$($Paths[$i])" }
+    $scrubScript = Join-Path $RepoRoot "libs\ops\account_withhold.py"
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $scrubbed = @($scrubIn | & $pyCmd[0] @pyArgs $scrubScript --repo $RepoRoot 2>$null |
+                      Where-Object { $_ -match '\S' } | ForEach-Object { "$_".Trim() })
+        $scrubRc = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+    if ($scrubRc -ne 0 -or $scrubbed.Count -ne $Paths.Count) {
+        Write-SyncLog "publish: account withhold failed rc=$scrubRc ($($scrubbed.Count)/$($Paths.Count) rows); nothing published (it fails closed)"
+        return $false
+    }
+    for ($i = 0; $i -lt $Paths.Count; $i++) {
+        $blob, $rel = "$($scrubbed[$i])" -split "`t", 2
+        if ($rel -ne $Paths[$i] -or "$blob" -notmatch '^[0-9a-f]{40}$') {
+            Write-SyncLog "publish: account withhold returned a malformed row $i; nothing published"
+            return $false
+        }
+        if ($blob -ne $blobs[$i]) {
+            Write-SyncLog "publish: WITHHELD the login in $rel before publishing (value withheld)"
+            $blobs[$i] = $blob
+        }
+    }
     $fenceIn = for ($i = 0; $i -lt $Paths.Count; $i++) { "$($blobs[$i])`t$($Paths[$i])" }
     $fenceScript = Join-Path $RepoRoot "libs\ops\login_fence.py"
-    $pyArgs = @($pyCmd | Select-Object -Skip 1)
     $prev = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try {
@@ -517,7 +551,7 @@ function Publish-StateOnto {
     }
     if ($refused.Count -gt 0) {
         foreach ($rel in $refused) {
-            Write-SyncLog "publish: REFUSED $rel -- login-shaped key with an account-shaped value (value withheld; see desks/mt5/reports/LOGIN_FENCE.json); fix its writer"
+            Write-SyncLog "publish: REFUSED $rel -- not staged: a login-shaped key with an account-shaped value or a declared account number (value withheld; file and key in desks/mt5/reports/LOGIN_FENCE.json); fix its writer"
         }
         $keepPaths = @(); $keepBlobs = @()
         for ($i = 0; $i -lt $Paths.Count; $i++) {
