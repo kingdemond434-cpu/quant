@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-20T17:43:59.997158+00:00",
+ "generated_utc": "2026-10-21T00:42:43.878151+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -8011,7 +8011,7 @@
    }
   },
   "external.CHFDKK@M5.carry.p=fd2a39101ff87214": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "carry",
    "theory": {
@@ -8022,7 +8022,7 @@
    }
   },
   "external.CHFDKK@M5.carry.p=f8cedda66933fc21": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "carry",
    "theory": {
@@ -8033,7 +8033,7 @@
    }
   },
   "external.CHFDKK@M5.carry.p=40c550cadeb104ef": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "carry",
    "theory": {
@@ -8044,7 +8044,7 @@
    }
   },
   "external.CHFNOK@M5.carry.p=2b59cf46f35a255f": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "carry",
    "theory": {
@@ -8055,7 +8055,7 @@
    }
   },
   "external.CHFNOK@M5.carry.p=b85e15bb6f4de3a6": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "carry",
    "theory": {
@@ -8066,7 +8066,7 @@
    }
   },
   "external.CHFNOK@M5.carry.p=f8cedda66933fc21": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "carry",
    "theory": {
@@ -8077,7 +8077,7 @@
    }
   },
   "external.EURMXN@M5.carry.p=293e093906095113": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "carry",
    "theory": {
@@ -8088,7 +8088,7 @@
    }
   },
   "external.EURMXN@M5.carry.p=01d149b33d794ec7": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "carry",
    "theory": {
@@ -8627,7 +8627,7 @@
    }
   },
   "external.CHFNOK.carry.p=06ce6393f9e72dff": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "carry",
    "theory": {
@@ -8638,7 +8638,7 @@
    }
   },
   "external.CHFNOK.carry.p=815ef86cb6f89aa7": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "carry",
    "theory": {
@@ -8649,7 +8649,7 @@
    }
   },
   "external.CHFNOK.carry.p=46a9bc283ef7ebe8": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "carry",
    "theory": {
@@ -8660,7 +8660,7 @@
    }
   },
   "external.CHFNOK.carry.p=22919a59d9397d26": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "carry",
    "theory": {
@@ -8671,7 +8671,7 @@
    }
   },
   "external.CHFNOK.carry.p=2f562b631c1b8082": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "carry",
    "theory": {
@@ -8682,7 +8682,7 @@
    }
   },
   "external.CHFNOK.carry.p=c252da621d69f678": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "carry",
    "theory": {
@@ -8693,7 +8693,7 @@
    }
   },
   "external.CHFNOK.carry.p=1411b3f63fcd5316": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "carry",
    "theory": {
@@ -8704,7 +8704,7 @@
    }
   },
   "external.CHFNOK.carry.p=fbc5f862e2ee43d5": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "carry",
    "theory": {
