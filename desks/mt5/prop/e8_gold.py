@@ -906,6 +906,21 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     from mt5desk.decision_core import PRINCIPAL_ZERO
     pinned = cert_gold_windows(dict.fromkeys(PRINCIPAL_ZERO["e8"], 0.0))
     kelly = {**(kelly or {}), **pinned}
+    # THE CODE CEILING (r7.1, decision_core.E8_CERT_CEILING, principal pin): every window is
+    # min(book, 0.006) whatever the book says -- a stale enabled book at 0.01 places at 0.006,
+    # and the cut is billed `e8_cert_ceiling` at placement. Raised only by a principal edit.
+    from mt5desk.decision_core import E8_CERT_CEILING
+    ceilinged: dict[str, float] = {}
+    for _w, _h, _r in GOLD_WINDOWS:
+        _v = (kelly or {}).get(_w)
+        if _v is not None and float(_v) > E8_CERT_CEILING:
+            ceilinged[_w] = float(_v)
+    kelly = {**(kelly or {}), **dict.fromkeys(ceilinged, E8_CERT_CEILING)}
+    # NO DECLARED E8 ACCOUNT, NO NEW E8 GOLD RISK (r7.1; audit r6/r7 should-fix): an absent
+    # E8_ACCOUNT.json used to skip the account check. Armed passes refuse every window with a
+    # reasoned, billed row until landing step 6 re-declares it.
+    from mt5desk import cross_account as _xa_decl
+    e8_declared = _xa_decl.E8_ACCOUNT_FILE.exists()
     # WHERE EACH WINDOW'S NUMBER CAME FROM (r6): one label per window, never one for the lane --
     # "kelly_survival" was printed when the solve was absent and the cert book had sized asia.
     # A VOID cert book is `cert_book_void` for every unpinned window (r7; see above).
@@ -913,7 +928,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     doc.update({"equity": equity, "risk_usd": round(risk_usd, 2),
                 "cert_book_windows": cert or None,
                 "sizing_source": sources,
-                "kelly_risk": kelly})
+                "kelly_risk": kelly,
+                "e8_cert_ceiling": {"ceiling": E8_CERT_CEILING, "cut": ceilinged}})
     # THE ONE GUARD DECIDES (2026-10-20). This read the raw `stood_down` flag out of the guard's
     # state file, which only the executor's `assess` call ever rolled to a new server day: on
     # 2026-10-15 a flag latched on 10-14 stood the gold book down from 00:01Z to 23:56Z with no
@@ -1049,14 +1065,53 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                          "rail": ("principal_zero_pin" if name in pinned
                                   else "cert_book_void" if name in void
                                   else "cert_book_absent_window"), "why": why,
-                         "missed_growth_risk_usd": round(equity * RISK_FRAC, 2),
+                         # Void and absent windows are billed at the LAST CERTIFIED e8 value
+                         # (E8_CERT_CEILING, r7.1), the pin at the policy RISK_FRAC.
+                         "missed_growth_risk_usd": round(equity * (
+                             RISK_FRAC if name in pinned else E8_CERT_CEILING), 2),
                          "armed": bool(armed)})
             continue
+        _billed = state.setdefault("rail_logged", {})
         if not frac > 0:
+            if frac_src == "cert_book":
+                # A CERT-BOOK ZERO IS A CAP TOO (r7.1): gold_asia 0.0 in the book writes its
+                # missed-growth line, billed at the last certified value.
+                why = (f"the cert book (CERT_BOOK_LIVE.json e8) sets gold_{name} to 0.0; "
+                       f"stands aside")
+                doc["skipped"].append({"window": name, "why": why})
+                if _billed.get(f"cert_book_zero/{name}") != today:
+                    _billed[f"cert_book_zero/{name}"] = today
+                    _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                             "status": "RAIL_BLOCKED", "rail": "cert_book_zero", "why": why,
+                             "missed_growth_risk_usd": round(equity * E8_CERT_CEILING, 2),
+                             "armed": bool(armed)})
+                continue
             doc["skipped"].append({"window": name, "why": (
                 "stands aside: the survival-constrained growth solve "
                 "(reports/KELLY_SURVIVAL.json) funds this window at 0 risk")})
             continue
+        if armed and not e8_declared:
+            why = (f"{_xa_decl.E8_ACCOUNT_FILE.name} is absent: the E8 account is undeclared, so "
+                   f"no book can be joined to it; no new E8 gold risk until it is re-declared "
+                   f"(README landing step 6)")
+            doc["skipped"].append({"window": name, "why": why})
+            log(f"[{name}] REFUSED: {why}")
+            if _billed.get(f"e8_account_undeclared/{name}") != today:
+                _billed[f"e8_account_undeclared/{name}"] = today
+                _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                         "status": "RAIL_BLOCKED", "rail": "e8_account_undeclared", "why": why,
+                         "missed_growth_risk_usd": round(equity * frac, 2), "armed": True})
+            continue
+        if name in ceilinged and _billed.get(f"e8_cert_ceiling/{name}") != today:
+            _billed[f"e8_cert_ceiling/{name}"] = today
+            _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                     "status": "CAPPED", "rail": "e8_cert_ceiling",
+                     "why": (f"the book sizes {name} at {ceilinged[name]:g}; the code ceiling "
+                             f"E8_CERT_CEILING sends {E8_CERT_CEILING:g}"),
+                     "book_risk_frac": ceilinged[name], "risk_frac": E8_CERT_CEILING,
+                     "missed_growth_risk_usd": round(
+                         equity * (ceilinged[name] - E8_CERT_CEILING), 2),
+                     "armed": bool(armed)})
         risk_usd = equity * frac
         # FIRST: one gold trade at risk at a time (`one_at_risk_blocker`). SECOND, a fail-safe
         # under it: everything committed plus this window, grossed up for slippage, must fit the

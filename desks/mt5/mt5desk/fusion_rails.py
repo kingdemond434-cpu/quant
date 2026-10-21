@@ -35,7 +35,8 @@ LEDGER = _DESK / "data" / "fusion_book_rails.jsonl"
 RAILS = ("one_gold_at_risk", "cross_account_opposite", "fusion_daily_loss",
          "fusion_book_floor_lift", "fusion_book_ceiling", "fusion_trade_risk_cap",
          "principal_zero_pin", "cert_book_absent_window", "gold_late_send",
-         "cert_book_void", "gold_retry_abandoned")
+         "cert_book_void", "gold_retry_abandoned", "e8_cert_ceiling",
+         "cert_book_zero", "e8_account_undeclared")
 #: Lines this process could not write (rail -> count). The gateway logs it every pass.
 WRITE_FAILURES: dict[str, int] = {}
 

@@ -222,6 +222,7 @@ from mt5desk.decision_core import (
     FX_EUR as FX_EUR,
 )
 from mt5desk.decision_core import (  # the late-gold-send rule (Judge 2026-10-21, r6)
+    E8_CERT_CEILING as E8_CERT_CEILING,
     E8_GOLD_SEND_GRACE_MIN as E8_GOLD_SEND_GRACE_MIN,
     GOLD_SEND_GRACE_MIN as GOLD_SEND_GRACE_MIN,
 )
