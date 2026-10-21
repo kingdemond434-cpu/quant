@@ -218,24 +218,90 @@ def e8_barrier(r: np.ndarray, h: np.ndarray, equity: float = E8_INITIAL
 #: THE E8 BOOK'S GOLD WINDOWS COME FROM THE BOOK THE E8 LANE TRADES (2026-10-20). `prop/e8_gold.py`
 #: lays `data/CERT_BOOK_LIVE.json`'s `e8` block over this file's `e8` windows, so a window the
 #: book does not fund must be 0 HERE too: otherwise the solve hands it a positive fraction
-#: (measured: afternoon 0.0025) that the lane would place. The book currently names gold_asia
-#: only, so london_am and afternoon are 0 and the solve spends its search on asia alone.
+#: (measured: afternoon 0.0025) that the lane would place. The repo copy of the book names
+#: gold_asia (0.01) and AUDCHF only, so london_am and afternoon are 0 here.
+#: FAILS CLOSED: an absent, torn, disabled or invalid book enables NO gold window (UNMEASURED).
 CERT_BOOK = BASE / "data" / "CERT_BOOK_LIVE.json"
+#: The rail name the zeroed windows are billed under (published on this artifact, carried by
+#: research/missed_growth.kelly_e8_window_lines; libs/portfolio/rails.py is sealed).
+E8_WINDOW_RAIL = "e8_gold_window_book"
+E8_WINDOW_REASON = "principal order: gold_asia-only book"
 
 
 def e8_enabled_windows(path: Path | None = None) -> tuple[tuple[str, ...], str]:
     """(the gold windows the live E8 book funds, where that came from). Pure read.
 
-    A window is enabled when the certified book (enabled, valid) names `gold_<window>` in its `e8`
-    block with a positive fraction. An absent, disabled or invalid book, or one naming no gold
-    key at all, restricts nothing: every window stays in the solve, as before this existed.
+    A window is enabled when the certified book (enabled, valid per `load_cert_book`) names
+    `gold_<window>` in its `e8` block with a positive fraction. FAIL CLOSED: an absent, torn,
+    disabled or invalid book, or one naming no gold key, enables nothing and says UNMEASURED.
     """
     from mt5desk.kelly_sizing import load_cert_book
     book = load_cert_book(path or CERT_BOOK, "e8")
     if not book or not any(k.startswith("gold_") for k in book):
-        return WINDOWS, "all windows (no valid e8 gold keys in CERT_BOOK_LIVE.json)"
+        return (), ("UNMEASURED: no valid e8 gold keys in CERT_BOOK_LIVE.json "
+                    "(absent, torn, disabled or invalid); no E8 gold window enabled")
     on = tuple(w for w in WINDOWS if book.get(f"gold_{w}", 0.0) > 0)
     return on, f"CERT_BOOK_LIVE.json e8 block: {list(on)}"
+
+
+def _e8_search(r8: np.ndarray, eq: float, on: tuple[str, ...]
+               ) -> tuple[tuple[float, ...], dict[str, Any]] | None:
+    """Fastest median pass inside survival over the windows in `on` (others held at 0)."""
+    grids = [E8_RISKS if w in on else (0.0,) for w in WINDOWS]
+    best: tuple[tuple[float, float], tuple[float, ...], dict[str, Any]] | None = None
+    for risks in itertools.product(*grids):
+        if not any(risks):
+            continue
+        res = e8_barrier(r8, np.array(risks), eq)
+        if (res["p_floor"] or 0.0) + (res["p_daily"] or 0.0) > EPS_DEATH:
+            continue
+        md = res["median_days"] if res["median_days"] is not None else float("inf")
+        key = (-md, res["p_pass"] or 0.0)
+        if best is None or key > best[0]:
+            best = (key, risks, res)
+    return None if best is None else (best[1], best[2])
+
+
+def e8_window_missed_growth(free: tuple[tuple[float, ...], dict[str, Any]] | None,
+                            held: tuple[tuple[float, ...], dict[str, Any]] | None,
+                            on: tuple[str, ...], at: str) -> list[dict[str, Any]]:
+    """One TWO-SIDED line per gold window the book disables (growth governance Rule 1).
+
+    Compares the solve free over all three windows against the book-restricted solve, on E8's
+    own objective (P(pass), then median days). A window the free solve also left at 0 is a
+    measured NOT_BINDING zero; one it sized is COSTS_GROWTH when the free book passes more
+    (or as often, faster), EARNS_ITS_PLACE when the restricted book is better. `value` is the
+    P(pass) the restriction forgoes (negative = growth forgone). PUBLISHED, never appended to
+    data/missed_growth.jsonl (that ledger is keyed by the sealed rails register)."""
+    lines: list[dict[str, Any]] = []
+    for k, w in enumerate(WINDOWS):
+        if w in on:
+            continue
+        line: dict[str, Any] = {
+            "day": at[:10], "at": at, "rail": f"{E8_WINDOW_RAIL}:{w}", "kind": "veto",
+            "units": "E8 P(pass) (the solve's own objective; median days alongside)",
+            "window": w, "reason": E8_WINDOW_REASON}
+        if free is None or held is None:
+            line.update(value=None, verdict="UNMEASURED",
+                        unmeasured="one of the two E8 solves found no surviving book")
+            lines.append(line)
+            continue
+        refused = free[0][k]
+        fp, hp = free[1]["p_pass"] or 0.0, held[1]["p_pass"] or 0.0
+        fd, hd = free[1]["median_days"], held[1]["median_days"]
+        line.update(refused_risk_frac=refused, held_risk_frac=0.0,
+                    p_pass_free=round(fp, 4), p_pass_held=round(hp, 4),
+                    median_days_free=fd, median_days_held=hd)
+        if refused == 0:
+            line.update(value=0.0, verdict="NOT_BINDING")
+        else:
+            dp = hp - fp
+            faster_free = fd is not None and (hd is None or fd < hd)
+            costs = dp < 0 or (dp == 0 and faster_free)
+            line.update(value=round(dp, 6),
+                        verdict="COSTS_GROWTH" if costs else "EARNS_ITS_PLACE")
+        lines.append(line)
+    return lines
 
 
 def solve(*, seed: int = 0, cert_book: Path | None = None) -> dict[str, Any]:
@@ -344,26 +410,28 @@ def solve(*, seed: int = 0, cert_book: Path | None = None) -> dict[str, Any]:
     eq_e8 = eq8 or E8_INITIAL
     on8, on8_src = e8_enabled_windows(cert_book)
     e8["enabled_windows"], e8["enabled_source"] = list(on8), on8_src
-    grids = [E8_RISKS if w in on8 else (0.0,) for w in WINDOWS]
-    best8: tuple[tuple[float, float], tuple[float, ...], dict[str, Any]] | None = None
-    for risks in itertools.product(*grids):
-        if not any(risks):
-            continue
-        res = e8_barrier(r8, np.array(risks), eq_e8)
-        if (res["p_floor"] or 0.0) + (res["p_daily"] or 0.0) > EPS_DEATH:
-            continue
-        md = res["median_days"] if res["median_days"] is not None else float("inf")
-        key = (-md, res["p_pass"] or 0.0)
-        if best8 is None or key > best8[0]:
-            best8 = (key, risks, res)
+    zero = {w: {"risk_frac": 0.0} for w in WINDOWS}
+    if not on8:
+        # FAIL CLOSED: no window is funded, and the block says why. Readers treat a non-OK
+        # block as absent; the windows are published at 0 so no number here can fund one.
+        e8.update({"status": on8_src, "windows": zero, "missed_growth": []})
+        doc["e8"] = e8
+        return doc
+    held = _e8_search(r8, eq_e8, on8)
+    free = held if on8 == WINDOWS else _e8_search(r8, eq_e8, WINDOWS)
     today8 = e8_barrier(r8, np.array([0.005 if w in on8 else 0.0 for w in WINDOWS]), eq_e8)
-    if best8 is None:
-        e8["status"] = "NO_SURVIVING_BOOK: every size fails the account too often; today stands"
+    e8["missed_growth"] = e8_window_missed_growth(free, held, on8, doc["generated_at"])
+    if held is None:
+        e8.update({"status": "NO_SURVIVING_BOOK: every size fails the account too often; "
+                             "today stands", "windows": zero})
     else:
         e8.update({"status": "OK",
-                   "windows": {w: {"risk_frac": best8[1][k]} for k, w in enumerate(WINDOWS)},
-                   "chosen": best8[2], "today": today8,
-                   "vs_today": {"delta_p_pass": round((best8[2]["p_pass"] or 0.0)
+                   "windows": {w: {"risk_frac": held[0][k] if w in on8 else 0.0}
+                               for k, w in enumerate(WINDOWS)},
+                   "chosen": held[1], "today": today8,
+                   "free_of_book": {"windows": dict(zip(WINDOWS, free[0], strict=True)),
+                                    "result": free[1]} if free else None,
+                   "vs_today": {"delta_p_pass": round((held[1]["p_pass"] or 0.0)
                                                       - (today8["p_pass"] or 0.0), 4)}})
     doc["e8"] = e8
     return doc
@@ -723,6 +791,9 @@ def main(argv: list[str] | None = None) -> int:
     # allocator never priced (`_replayed_certificates`, cached a day) and searches O(n^2); on a
     # box holding hundreds of certificates that outran the leg's cycle budget, the leg was killed
     # before its single write, and the gold sizing went stale with it (last write 2026-10-11).
+    if a.book:
+        doc["book"] = {"status": "UNMEASURED: pending -- the certified-book solve runs after "
+                                 "this write; this block is replaced when it finishes"}
     _write(a.out, doc)
     if a.book:
         doc["book"] = solve_book()

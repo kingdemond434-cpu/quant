@@ -643,6 +643,38 @@ def published_gate_lines() -> dict[str, Any]:
             "adopted": doc.get("adopted")}
 
 
+#: The E8 gold-window book restriction (kelly_survival, 2026-10-21): each window the
+#: CERT_BOOK_LIVE e8 block disables is billed on the solve's own artifact against the solve free
+#: of the book, two-sided, and carried here. Same freshness rule as the stop-geometry lines.
+KELLY_SURVIVAL = BASE / "reports" / "KELLY_SURVIVAL.json"
+
+
+def kelly_e8_window_lines() -> dict[str, Any]:
+    """The E8 window-book lines from reports/KELLY_SURVIVAL.json; stale/absent is UNMEASURED."""
+    doc = _json(KELLY_SURVIVAL)
+    e8 = doc.get("e8") if isinstance(doc, dict) else None
+    if not isinstance(e8, dict):
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "no reports/KELLY_SURVIVAL.json e8 block on this host"}
+    try:
+        at = datetime.fromisoformat(str(doc.get("generated_at")))
+        age_h = (datetime.now(tz=UTC) - at).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        age_h = math.inf
+    if not age_h <= STOP_GEOMETRY_MAX_AGE_H:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "KELLY_SURVIVAL.json is stale or unstamped"}
+    lines = [x for x in (e8.get("missed_growth") or []) if isinstance(x, dict)]
+    if not lines:
+        return {"verdict": UNMEASURED if str(e8.get("status", "")).startswith("UNMEASURED")
+                else NOT_BINDING, "lines": [], "why": e8.get("enabled_source")}
+    vs = {x.get("verdict") for x in lines}
+    verdict = (UNMEASURED if UNMEASURED in vs else COSTS if COSTS in vs
+               else EARNS if EARNS in vs else NOT_BINDING)
+    return {"verdict": verdict, "source": "reports/KELLY_SURVIVAL.json",
+            "units": "E8 P(pass)", "age_h": round(age_h, 2), "lines": lines}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -760,7 +792,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            "calibration": cal, "calibration_changes": changed, "review_tasks": len(tasks),
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
-           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines()},
+           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
+                                    "e8_gold_window_book": kelly_e8_window_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

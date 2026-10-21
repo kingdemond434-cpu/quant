@@ -39,9 +39,69 @@ def _book(tmp: Path, e8: dict, enabled: bool = True) -> Path:
 def test_enabled_windows_follow_the_book(tmp_path: Path) -> None:
     on, _ = ks.e8_enabled_windows(_book(tmp_path, {"gold_asia": 0.01, "AUDCHF_x_asia": 0.0}))
     assert on == ("asia",)
-    on, _ = ks.e8_enabled_windows(_book(tmp_path, {"gold_asia": 0.01}, enabled=False))
-    assert on == ks.WINDOWS
-    assert ks.e8_enabled_windows(tmp_path / "absent.json")[0] == ks.WINDOWS
+
+
+@pytest.mark.parametrize("case", ["absent", "torn", "disabled", "invalid", "no_gold"])
+def test_enabled_windows_fail_closed(tmp_path: Path, case: str) -> None:
+    p = tmp_path / "CERT_BOOK_LIVE.json"
+    if case == "torn":
+        p.write_text('{"enabled": true, "e8": {"gold_as', encoding="utf-8")
+    elif case == "disabled":
+        _book(tmp_path, {"gold_asia": 0.01}, enabled=False)
+    elif case == "invalid":
+        _book(tmp_path, {"gold_asia": -0.01})
+    elif case == "no_gold":
+        _book(tmp_path, {"AUDCHF_x_asia": 0.0})
+    on, src = ks.e8_enabled_windows(p)
+    assert on == () and src.startswith("UNMEASURED")
+
+
+@needs_worlds
+def test_a_failed_book_funds_no_e8_window(tmp_path: Path) -> None:
+    doc = ks.solve(cert_book=tmp_path / "absent.json")
+    e8 = doc["e8"]
+    assert e8["status"].startswith("UNMEASURED")
+    assert all(v["risk_frac"] == 0.0 for v in e8["windows"].values())
+    out = tmp_path / "K.json"
+    ks._write(out, doc)
+    assert load_kelly_survival(out, "e8") is None      # non-OK: the reader takes nothing from it
+
+
+@needs_worlds
+def test_each_disabled_window_carries_a_two_sided_missed_growth_line(tmp_path: Path) -> None:
+    e8 = ks.solve(cert_book=_book(tmp_path, {"gold_asia": 0.01}))["e8"]
+    lines = {x["window"]: x for x in e8["missed_growth"]}
+    assert set(lines) == {"london_am", "afternoon"}
+    for x in lines.values():
+        assert x["reason"] == "principal order: gold_asia-only book"
+        assert x["verdict"] in ("COSTS_GROWTH", "EARNS_ITS_PLACE", "NOT_BINDING", "UNMEASURED")
+        if x["verdict"] == "NOT_BINDING":
+            assert x["refused_risk_frac"] == 0.0 and x["value"] == 0.0
+        elif x["verdict"] != "UNMEASURED":
+            assert x["refused_risk_frac"] > 0 and isinstance(x["value"], float)
+
+
+def test_missed_growth_lines_are_two_sided() -> None:
+    at = "2026-10-21T00:00:00+00:00"
+    free = ((0.005, 0.0, 0.0025), {"p_pass": 0.80, "median_days": 30.0})
+    worse = ((0.005, 0.0, 0.0), {"p_pass": 0.75, "median_days": 33.0})
+    better = ((0.005, 0.0, 0.0), {"p_pass": 0.85, "median_days": 33.0})
+    by = {x["window"]: x for x in ks.e8_window_missed_growth(free, worse, ("asia",), at)}
+    assert by["london_am"]["verdict"] == "NOT_BINDING"
+    assert by["afternoon"]["verdict"] == "COSTS_GROWTH" and by["afternoon"]["value"] < 0
+    by = {x["window"]: x for x in ks.e8_window_missed_growth(free, better, ("asia",), at)}
+    assert by["afternoon"]["verdict"] == "EARNS_ITS_PLACE" and by["afternoon"]["value"] > 0
+
+
+def test_missed_growth_carries_the_kelly_e8_lines(tmp_path: Path, monkeypatch) -> None:
+    import missed_growth as mg
+    p = tmp_path / "K.json"
+    monkeypatch.setattr(mg, "KELLY_SURVIVAL", p)
+    assert mg.kelly_e8_window_lines()["verdict"] == mg.UNMEASURED
+    line = {"window": "afternoon", "verdict": "COSTS_GROWTH", "value": -0.01}
+    p.write_text(json.dumps({"generated_at": datetime.now(tz=UTC).isoformat(),
+                             "e8": {"status": "OK", "missed_growth": [line]}}), encoding="utf-8")
+    assert mg.kelly_e8_window_lines()["verdict"] == mg.COSTS
 
 
 def test_the_live_book_funds_gold_asia_only_on_e8() -> None:
@@ -76,6 +136,7 @@ def test_a_failing_book_solve_still_leaves_a_fresh_gold_block(tmp_path: Path,
     with pytest.raises(TimeoutError):
         ks.main(["--book", "--out", str(out)])
     doc = json.loads(out.read_text(encoding="utf-8"))
+    assert doc["book"]["status"].startswith("UNMEASURED: pending")
     age = (datetime.now(tz=UTC) - datetime.fromisoformat(doc["generated_at"])).total_seconds()
     assert age < 600 and "e8" in doc and "fusion" in doc
 
@@ -118,18 +179,30 @@ def test_the_cycle_producer_actually_writes_the_artifact(tmp_path: Path) -> None
 
 
 # ------------------------------------------------------------------ composition in prop/e8_gold
-def test_the_cert_book_wins_over_kelly_per_window_in_e8_gold() -> None:
+def _merged(e8_gold, kelly: dict, book: dict | None) -> dict:
+    cert = e8_gold.cert_gold_windows(book)
+    return {**(kelly or {}), **cert} if cert else kelly
+
+
+@pytest.mark.parametrize("which", ["synthetic", "repo"])
+def test_the_cert_book_wins_over_kelly_per_window_in_e8_gold(which: str) -> None:
     """prop/e8_gold.run merges `kelly = {**(kelly or {}), **cert}`: a window the cert book names
     takes the book's value, whatever kelly says (up or down); kelly only fills unnamed windows."""
     e8_gold = pytest.importorskip("prop.e8_gold", reason="ships with the desk")
+    from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
     src = (_DESK / "prop" / "e8_gold.py").read_text(encoding="utf-8")
     assert "kelly = {**(kelly or {}), **cert}" in src, "composition changed: cert must win"
-    kelly = {"asia": 0.005, "london_am": 0.0, "afternoon": 0.0}
-    cert = e8_gold.cert_gold_windows({"gold_asia": 0.006, "gold_london_am": 0.0,
-                                      "gold_afternoon": 0.0, "AUDCHF_x_asia": 0.0})
-    merged = {**(kelly or {}), **cert}
-    assert e8_gold.window_risk("asia", merged) == (0.006, "kelly_survival")
-    assert e8_gold.window_risk("london_am", merged)[0] == 0.0
-    assert e8_gold.window_risk("afternoon", merged)[0] == 0.0
-    up = {**{"asia": 0.015}, **cert}       # kelly cannot override the book upward either
-    assert e8_gold.window_risk("asia", up)[0] == 0.006
+    if which == "repo":
+        book = load_cert_book(CERT_BOOK_FILE, "e8")
+        assert book is not None and book.get("gold_asia", 0) > 0
+        asia = book["gold_asia"]
+    else:
+        book = {"gold_asia": 0.006, "gold_london_am": 0.0, "gold_afternoon": 0.0,
+                "AUDCHF_x_asia": 0.0}
+        asia = 0.006
+    revived = {"asia": 0.005, "london_am": 0.0, "afternoon": 0.0}   # what the writer emits now
+    for kelly_asia in (0.005, 0.015):
+        m = _merged(e8_gold, {**revived, "asia": kelly_asia}, book)
+        assert e8_gold.window_risk("asia", m)[0] == asia            # book wins, up or down
+        assert e8_gold.window_risk("london_am", m)[0] == 0.0
+        assert e8_gold.window_risk("afternoon", m)[0] == 0.0
