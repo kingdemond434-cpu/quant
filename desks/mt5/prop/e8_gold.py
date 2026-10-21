@@ -218,6 +218,9 @@ STOP_EXITS = DESK / "data" / "e8_gold_stop_exits.jsonl"
 #: Each is a NON-EXEMPT evidence reason (prop/e8_evidence + scripts/check_placement_interlock):
 #: lot_ceiling, bracket_daily_floor, daily_profit_cap.
 DAILY_FLOOR_RAIL = "e8_gold_bracket_daily_floor"
+#: v5.2: a due window that sent nothing because equity was missing or unreadable (never sized
+#: from balance), journalled RAIL_BLOCKED once per window per day; its risk is UNMEASURED.
+EQUITY_UNREADABLE_RAIL = "e8_gold_equity_unreadable"
 PROFIT_CAP_RAIL = "e8_gold_daily_profit_cap"
 #: Their decision reason codes (prop/e8_evidence; see the README's merge note for the fence).
 DAILY_FLOOR_REASON = "bracket_daily_floor"
@@ -1012,53 +1015,186 @@ def one_at_risk_blocker(detail: dict[str, Any]) -> str | None:
     return None
 
 
-def committed_risk(positions: list[dict], open_orders: list[dict], journal: list[dict],
-                   state: dict, *, bid: float, ask: float, contract_size: float
-                   ) -> tuple[float, dict[str, Any]]:
-    """Risk already on the account in gold, before a new window is placed.
+def _protective_ids(positions: list[dict[str, Any]], open_orders: list[dict[str, Any]]) -> set[int]:
+    """Order ids that protect an open position (its stop or target), not entries."""
+    ids: set[int] = set()
+    for p in positions:
+        for k in ("stopLossId", "takeProfitId"):
+            with contextlib.suppress(TypeError, ValueError):
+                if p.get(k):
+                    ids.add(int(p[k]))
+    for o in open_orders:
+        with contextlib.suppress(TypeError, ValueError):
+            if o.get("id") is not None and o.get("positionId"):
+                ids.add(int(o["id"]))
+    return ids
 
-    * every OPEN XAU position, to its current stop (`position_risk_usd`);
-    * every RESTING entry leg this lane placed (its journalled `risk_usd`), with a bracket
-      counted ONCE at its larger leg -- one fill cancels the other, so only one can become risk.
 
-    Raises ValueError when a position's stop cannot be read: a position with no readable stop is
-    unbounded risk, and new risk is not added on top of an unknown.
+def entry_order_risk_usd(order: dict[str, Any], *, slip_points: float, contract_size: float,
+                         usd_per_point: float = 1.0) -> float:
+    """A resting ENTRY order this lane did not send: its lot to its own stop, plus `slip_points`
+    of fill-through, in USD. Raises ValueError when it carries no absolute stop -- a resting
+    entry with no stop is unbounded risk, and new risk is not added on top of it."""
+    level = float(order.get("stopPrice") or order.get("price") or 0.0)
+    sl = order.get("stopLoss")
+    sl_type = str(order.get("stopLossType") or "absolute").lower()
+    qty = float(order.get("qty") or 0.0)
+    if not (level > 0) or not (qty > 0) or sl in (None, "", 0) or sl_type != "absolute":
+        raise ValueError(f"resting order {order.get('id')} has no readable level/qty/absolute "
+                         f"stop: its risk to the floor is unbounded")
+    dist = abs(level - float(sl))
+    return (dist + float(slip_points)) * qty * float(contract_size) * float(usd_per_point)
+
+
+def committed_risk(positions: list[dict[str, Any]], open_orders: list[dict[str, Any]],
+                   journal: list[dict[str, Any]],
+                   state: dict[str, Any], *, bid: float, ask: float, contract_size: float,
+                   slip_points: float = 0.0, instrument_id: int | None = None,
+                   foreign_positions: list[dict[str, Any]] | None = None,
+                   price_foreign: Any = None) -> tuple[float, dict[str, Any]]:
+    """Risk already on the E8 ACCOUNT, in USD, before a new window is placed -- the worst case
+    the daily limit sees, which is account-wide (v5.2, audit HOLD on 8fe4edce):
+
+    * every OPEN XAU position, to its current stop from the further of entry and mark
+      (`position_risk_usd`: a break-even winner's give-back counts), PLUS `slip_points` of
+      fill-through on its whole quantity -- a break-even stop still fills at market;
+    * EVERY resting entry leg this lane placed, each at (|price - sl| + slip) x lot x contract --
+      not a bracket once at its larger leg: until the cross-account OCO lands, both can fill;
+    * every resting XAU ENTRY order on the account this lane did not send, the same way
+      (`entry_order_risk_usd`);
+    * every NON-XAU position and resting entry order (`foreign_positions`, the non-XAU rows of
+      `open_orders`), priced by `price_foreign(row, kind)` at its stop distance plus slip.
+
+    Raises ValueError when anything cannot be bounded: a position with no readable stop (its
+    adverse distance to the floor is the whole room), a resting entry with no stop, a foreign
+    row that cannot be priced in USD. The caller defers every window with a reasoned row.
+    `slip_points=0.0` reproduces the stop-level reading (unit tests of the bookkeeping).
     """
+    slip = max(0.0, float(slip_points))
+    c = float(contract_size)
+    foreign_positions = list(foreign_positions or [])
+
+    def _is_xau(o: dict[str, Any]) -> bool:
+        iid = o.get("tradableInstrumentId")
+        return instrument_id is None or iid in (None, "", 0) or int(iid) == int(instrument_id)
+
     by_id = {int(o["id"]): o for o in open_orders if o.get("id") is not None}
     pos_rows: list[dict[str, Any]] = []
     for p in positions:
         stop_order = by_id.get(int(p.get("stopLossId") or 0)) or {}
         stop = float(stop_order.get("stopPrice") or p.get("stopLoss") or 0.0)
-        usd = position_risk_usd(p, stop, bid=bid, ask=ask, contract_size=contract_size)
-        pos_rows.append({"position_id": p.get("id"), "stop": stop, "risk_usd": round(usd, 2),
-                         "at_risk": stop_is_at_risk(p, stop)})
+        usd = position_risk_usd(p, stop, bid=bid, ask=ask, contract_size=c)
+        slip_usd = slip * float(p.get("qty") or 0.0) * c
+        pos_rows.append({"position_id": p.get("id"), "stop": stop,
+                         "risk_usd": round(usd + slip_usd, 2), "stop_risk_usd": round(usd, 2),
+                         "slip_usd": round(slip_usd, 2), "at_risk": stop_is_at_risk(p, stop)})
     # THE JOURNAL IS THE LANE'S MARK ON THE VENUE; the state's legs cover a lost journal row.
-    legs: dict[int, tuple[str, float]] = {}
+    legs: dict[int, tuple[str, tuple[Any, Any, Any, Any]]] = {}
+
+    def _leg_risk(price: Any, sl: Any, lot: Any, fallback: Any) -> float:
+        try:
+            pr, s_, lt = float(price or 0), float(sl or 0), float(lot or 0)
+        except (TypeError, ValueError):
+            pr = s_ = lt = 0.0
+        if pr > 0 and s_ > 0 and lt > 0:
+            return (abs(pr - s_) + slip) * lt * c
+        if fallback is not None and lt > 0:
+            return float(fallback) + slip * lt * c
+        if fallback is not None and slip == 0.0:
+            return float(fallback)
+        raise ValueError("a resting leg of this lane carries no level, stop or lot")
+
     for row in journal:
         if row.get("status") != "SENT" or row.get("order_id") is None:
             continue
-        risk = row.get("risk_usd")
-        if risk is None:
-            risk = (abs(float(row.get("price") or 0) - float(row.get("sl") or 0))
-                    * float(row.get("lot") or 0) * float(contract_size))
         legs[int(row["order_id"])] = (f"{str(row.get('at') or '')[:10]}/{row.get('window')}",
-                                      float(risk))
+                                      (row.get("price"), row.get("sl"), row.get("lot"),
+                                       row.get("risk_usd")))
     today = str(state.get("date") or "")
     for bucket in ("carried", "windows"):
         for name, w in (state.get(bucket) or {}).items():
             for leg in (w.get("orders") or {}).values():
                 if leg.get("id") is None or int(leg["id"]) in legs:
                     continue
-                risk = (abs(float(leg.get("price") or 0) - float(leg.get("sl") or 0))
-                        * float(leg.get("lot") or 0) * float(contract_size))
-                legs[int(leg["id"])] = (f"{today}/{name}", risk)
+                legs[int(leg["id"])] = (f"{today}/{name}",
+                                        (leg.get("price"), leg.get("sl"), leg.get("lot"), None))
     brackets: dict[str, float] = {}
-    for oid, (group, risk) in legs.items():
+    for oid, (group, raw) in legs.items():
         if oid in by_id:                                  # still resting at the venue
-            brackets[group] = max(brackets.get(group, 0.0), risk)
-    total = sum(r["risk_usd"] for r in pos_rows) + sum(brackets.values())
+            risk = _leg_risk(*raw)
+            brackets[group] = brackets.get(group, 0.0) + risk
+    protective = _protective_ids([*positions, *foreign_positions], open_orders)
+    foreign_rows: list[dict[str, Any]] = []
+    for oid, o in by_id.items():
+        if oid in legs or oid in protective:
+            continue
+        if _is_xau(o):
+            usd = entry_order_risk_usd(o, slip_points=slip, contract_size=c)
+        else:
+            if price_foreign is None:
+                raise ValueError(f"resting order {oid} is on another instrument and cannot be "
+                                 f"priced: the account-wide limit cannot be bounded")
+            usd = float(price_foreign(o, "order"))
+        foreign_rows.append({"order_id": oid, "kind": "order", "risk_usd": round(usd, 2)})
+    for p in foreign_positions:
+        if price_foreign is None:
+            raise ValueError(f"position {p.get('id')} is on another instrument and cannot be "
+                             f"priced: the account-wide limit cannot be bounded")
+        usd = float(price_foreign(p, "position"))
+        foreign_rows.append({"position_id": p.get("id"), "kind": "position",
+                             "risk_usd": round(usd, 2)})
+    total = (sum(r["risk_usd"] for r in pos_rows) + sum(brackets.values())
+             + sum(r["risk_usd"] for r in foreign_rows))
+    if not math.isfinite(total):
+        raise ValueError("committed risk is not finite")
     return total, {"positions": pos_rows,
-                   "pending_brackets": {k: round(v, 2) for k, v in brackets.items()}}
+                   "pending_brackets": {k: round(v, 2) for k, v in brackets.items()},
+                   "foreign": foreign_rows, "slip_points": slip}
+
+
+def foreign_pricer(venue: Any, *, slip_fraction: float) -> Any:
+    """A `price_foreign(row, kind)` for NON-XAU rows on the E8 account: USD to the row's stop plus
+    a slip of `slip_fraction` x its price -- the gold slip carried across instruments as a share
+    of price (24.13 points of a ~4,300 gold price is ~0.56%; a 0.82R slip measured on gold says
+    nothing about a EURUSD stop's points). Converted at the venue's own quote, the way
+    `e8_executor.lot_for_risk` converts. RAISES ValueError for anything it cannot bound: an
+    instrument the catalogue cannot name, no contract size, no USD rate, no stop."""
+    from prop.e8_executor import _quote_ccy_from_symbol, _usd_per_unit
+
+    names: dict[int, str] = {}
+    with contextlib.suppress(Exception):
+        names = {int(v): str(k) for k, v in dict(venue._by_key).items()}
+
+    def _price(row: dict[str, Any], kind: str) -> float:
+        iid = int(row.get("tradableInstrumentId") or 0)
+        sym = names.get(iid)
+        if not sym:
+            raise ValueError(f"{kind} {row.get('id')}: instrument {iid} is not in the catalogue")
+        d = venue.details(sym)
+        contract = next((float(d[k]) for k in ("contractSize", "contract_size", "lotSize")
+                         if isinstance(d.get(k), (int, float)) and d[k] > 0), None)
+        if contract is None:
+            raise ValueError(f"{kind} {row.get('id')}: {sym} states no contract size")
+        ccy = str(d.get("currency") or d.get("quoteCurrency") or _quote_ccy_from_symbol(sym)
+                  ).upper()
+        usdf = 1.0 if ccy == "USD" else _usd_per_unit(venue, ccy) if ccy else None
+        if usdf is None:
+            raise ValueError(f"{kind} {row.get('id')}: no USD rate for {sym}")
+        b, a = venue.quote(sym)
+        if kind == "order":
+            level = float(row.get("stopPrice") or row.get("price") or 0.0)
+            return entry_order_risk_usd(row, slip_points=float(slip_fraction) * level,
+                                        contract_size=contract, usd_per_point=usdf)
+        stop = float(row.get("stopLoss") or 0.0)
+        if not stop > 0:
+            raise ValueError(f"position {row.get('id')} on {sym} has no readable stop: its "
+                             f"adverse distance to the floor is the whole room")
+        usd = position_risk_usd(row, stop, bid=float(b), ask=float(a), contract_size=contract)
+        mark = (float(b) + float(a)) / 2.0
+        return (usd + float(slip_fraction) * mark * float(row.get("qty") or 0.0) * contract) \
+            * usdf
+
+    return _price
 
 
 def risk_budget_allows(committed: float, new_risk: float, room: float) -> tuple[bool, str]:
@@ -1234,8 +1370,19 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     # Evidence rows a failed write kept ride across the rollover (prop/e8_evidence.py); nothing
     # a placement reads is touched.
     e8_evidence.carry_pending(prior, state)
-    acct = venue.account()
-    equity = float(acct.get("equity") or acct.get("balance") or 0.0)
+    # EQUITY OR NOTHING (v5.2, audit HOLD on 8fe4edce): balance hides the floating loss the
+    # daily limit is measured on, so a missing, unreadable or balance-derived equity is no equity
+    # -- no order, a reasoned row per due window (stand_down_reason -> equity_unreadable) and a
+    # missed-growth line (EQUITY_UNREADABLE_RAIL) -- never a fallback to balance.
+    try:
+        acct = venue.account()
+        raw_equity = acct.get("equity")
+        equity = float(raw_equity) if isinstance(raw_equity, (int, float)) \
+            and not isinstance(raw_equity, bool) and not acct.get("equity_from_balance") \
+            and math.isfinite(float(raw_equity)) else 0.0
+    except Exception as exc:
+        acct, equity = {}, 0.0
+        doc["account_unreadable"] = e8_evidence.clip(f"{type(exc).__name__}: {exc}", 160)
     risk_usd = equity * RISK_FRAC
     kelly = load_kelly_survival(KELLY_FILE, "e8")
     # THE PRINCIPAL'S CERTIFIED BOOK OVERRIDES THE SOLVE PER WINDOW (data/CERT_BOOK_LIVE.json,
@@ -1300,8 +1447,18 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         try:
             code = e8_evidence.stand_down_reason(equity, guard_decision, doc)
             why = str(doc.get("guard") or doc.get("positions_unreadable") or code)
+            billed = state.setdefault("equity_unreadable_billed", [])
             for due in plan(df, hour, state):
                 decided.note(due["window"], e8_evidence.DEFERRED, code, why)
+                if code == e8_evidence.R_EQUITY_UNREADABLE and due["window"] not in billed:
+                    # MISSED GROWTH (Rule 1), once per window per server day: the window was due
+                    # and sent nothing because equity could not be read. Its size is UNMEASURED
+                    # (sizing it from balance is exactly what this refuses to do).
+                    billed.append(due["window"])
+                    _record({"at": now.isoformat(timespec="seconds"), "window": due["window"],
+                             "status": "RAIL_BLOCKED", "rail": EQUITY_UNREADABLE_RAIL,
+                             "reason": e8_evidence.R_EQUITY_UNREADABLE, "why": why,
+                             "missed_growth_risk_usd": None, "armed": bool(armed)})
         except Exception as exc:
             log(f"stand-down evidence not derived ({type(exc).__name__}: {exc})")
     # THE SELF-HEDGE RULE IS PER LEG, NOT PER BRACKET (principal, 2026-09-24).
@@ -1347,7 +1504,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         # Anything unreadable -- the order book, the journal, a position's stop -- refuses every
         # window this pass and marks none placed, so the next pass decides again.
         try:
-            budget_orders = venue.orders(SYMBOL)
+            # THE WHOLE ACCOUNT'S BOOK (v5.2): E8's daily limit is account-wide, so every resting
+            # order and every position counts, not only this symbol's.
+            budget_orders = venue.orders(None)
             journal = [] if not INTENTS.exists() else _journal_read()
             if journal is None:
                 raise ValueError("the intents journal is unreadable, so this lane's resting "
@@ -1356,9 +1515,14 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 contract = float(venue.details(SYMBOL).get("contractSize") or XAU_OZ_PER_LOT)
             except Exception:
                 contract = XAU_OZ_PER_LOT
+            pooled_slip = bracket_slip()[0]
+            xau_ids = {id(p) for p in xau_positions}
+            mid = (float(bid) + float(ask)) / 2.0
             committed, doc["committed_risk"] = committed_risk(
                 xau_positions, budget_orders, journal, state, bid=float(bid), ask=float(ask),
-                contract_size=contract)
+                contract_size=contract, slip_points=pooled_slip, instrument_id=iid or None,
+                foreign_positions=[p for p in venue_positions if id(p) not in xau_ids],
+                price_foreign=foreign_pricer(venue, slip_fraction=pooled_slip / mid))
             doc["committed_risk"]["total_usd"] = round(committed, 2)
         except Exception as exc:
             why = (e8_evidence.clip(

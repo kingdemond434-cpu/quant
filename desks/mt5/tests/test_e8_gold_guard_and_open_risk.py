@@ -226,7 +226,8 @@ def test_the_third_window_waits_while_the_first_two_are_open_at_full_risk(
     doc = g.run(venue, _MT5(), armed=False)
     assert _placed(doc) == []
     assert "one gold trade at risk at a time" in _why(doc, "afternoon")
-    assert doc["committed_risk"]["total_usd"] == pytest.approx(1_500.0, abs=25)
+    # v5.2: 750 to each stop plus 24.13 points of slip on each 0.5 lot (1,206.5 apiece).
+    assert doc["committed_risk"]["total_usd"] == pytest.approx(1_500.0 + 2 * 1_206.5, abs=25)
 
 
 def test_the_slip_buffered_floor_check_alone_refuses_the_third_window() -> None:
@@ -238,11 +239,23 @@ def test_the_slip_buffered_floor_check_alone_refuses_the_third_window() -> None:
 
 def test_a_break_even_ratcheted_position_frees_the_window(monkeypatch, tmp_path) -> None:
     _sandbox(monkeypatch, tmp_path, placed=("asia", "london_am"))
-    # both stops ratcheted to the entry: neither is at risk any more
-    venue = _Venue([_short(100, 9100), _short(101, 9101)], {9100: _ENTRY, 9101: _ENTRY - 1.0})
+    # one stop ratcheted to the entry: not at risk, so the one-at-a-time rule frees the window;
+    # its 24.13 points of slip on 0.5 lot (1,206.5) still count against the floor (v5.2).
+    venue = _Venue([_short(100, 9100)], {9100: _ENTRY})
     doc = g.run(venue, _MT5(), armed=False)
     assert _placed(doc) == ["afternoon"], doc["skipped"]
     assert all(not r["at_risk"] for r in doc["committed_risk"]["positions"])
+    assert doc["committed_risk"]["positions"][0]["slip_usd"] == pytest.approx(1_206.5)
+
+
+def test_two_break_even_positions_still_carry_their_slip_and_defer(monkeypatch, tmp_path) -> None:
+    """v5.2 (audit HOLD on 8fe4edce): neither is at risk, but 2 x 1,206.5 of stop slip is.
+    (2,413 + 500) x 1.25 > 2,400, so the window waits under the concurrent budget."""
+    _sandbox(monkeypatch, tmp_path, placed=("asia", "london_am"))
+    venue = _Venue([_short(100, 9100), _short(101, 9101)], {9100: _ENTRY, 9101: _ENTRY - 1.0})
+    doc = g.run(venue, _MT5(), armed=False)
+    assert _placed(doc) == []
+    assert "concurrent risk would reach today's floor" in _why(doc, "afternoon")
 
 
 def test_one_position_still_at_risk_blocks_even_beside_a_break_even_one(
@@ -253,7 +266,7 @@ def test_one_position_still_at_risk_blocks_even_beside_a_break_even_one(
     assert _placed(doc) == [] and "101" in _why(doc, "afternoon")
 
 
-def test_a_resting_bracket_counts_once_at_its_larger_leg_and_blocks() -> None:
+def test_a_resting_bracket_counts_every_leg_and_blocks() -> None:
     journal = [
         {"status": "SENT", "order_id": 1, "window": "asia", "side": "buy_stop",
          "at": "2026-10-15T04:00:00+00:00", "risk_usd": 750.0},
@@ -263,8 +276,9 @@ def test_a_resting_bracket_counts_once_at_its_larger_leg_and_blocks() -> None:
     resting = [{"id": 1, "stopPrice": 4310.0}, {"id": 2, "stopPrice": 4290.0}]
     total, detail = g.committed_risk([], resting, journal, {"date": "2026-10-15"},
                                      bid=4300.0, ask=4300.4, contract_size=100.0)
-    assert total == pytest.approx(750.0)
-    assert detail["pending_brackets"] == {"2026-10-15/asia": 750.0}
+    # v5.2: BOTH legs count -- until the cross-account OCO lands, both can fill.
+    assert total == pytest.approx(750.0 + 700.0)
+    assert detail["pending_brackets"] == {"2026-10-15/asia": 1450.0}
     assert "bracket(s) 2026-10-15/asia still rest" in str(g.one_at_risk_blocker(detail))
     # a leg that is no longer resting at the venue is not counted
     total, detail = g.committed_risk([], [], journal, {}, bid=4300.0, ask=4300.4,

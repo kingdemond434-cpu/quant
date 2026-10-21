@@ -269,6 +269,10 @@ class TradeLockerVenue:
                     break
         if "equity" not in out and "balance" in out:
             out["equity"] = out["balance"] + out.get("open_pnl", 0.0)
+            if "open_pnl" not in out:
+                # Balance alone hides the floating loss. Flagged, so a reader that must not size
+                # from balance (prop/e8_gold, v5.2) can refuse it; others read it as before.
+                out["equity_from_balance"] = 1.0
         if "equity" not in out:
             raise VenueError(f"account state carries no equity; keys were {sorted(st)}")
         return out

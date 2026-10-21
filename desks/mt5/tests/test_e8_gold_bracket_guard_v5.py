@@ -63,23 +63,23 @@ def _bracket_need(lots: dict[str, float], stop: float = 33.5, contract: float = 
 def test_the_floor_fit_subtracts_a_break_even_winners_give_back(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    """A short opened at 4330 with its stop ratcheted to 4310 is not AT RISK (the one-at-a-time
-    rule lets the afternoon window place), but the mark is 4300.4, so 9.6 points x 1 lot x 100 oz
-    = 960 USD of open profit can still go back to today's floor. v4 fitted the new bracket to the
-    whole 2,500 of room; v5 fits it to 2,500 - 960 - 100 = 1,440.
+    """A 0.2-lot short opened at 4330 with its stop ratcheted to 4310 is not AT RISK (the
+    one-at-a-time rule lets the afternoon window place), but the mark is 4300.4: 9.6 points x 0.2
+    x 100 oz = 192 USD of open profit can go back, and its stop fills 24.13 points through
+    (v5.2): 482.6 more. Committed 674.6, so the room is 2,500 - 674.6 - 100 = 1,725.4.
 
-    The book is short, so only the agreeing sell leg is sized: 950 USD -> 0.28 lots needs
-    950 + 24.13 x 28 = 1,626 > 1,440, so L = 1,440 / (100 x (33.5 + 24.13)) = 0.249 -> 0.24.
+    At 1.2% the agreeing sell leg is 0.35 lots and needs 0.35 x 100 x (33.5 + 24.13) = 2,017 >
+    1,725.4, so L = 1,725.4 / 5,763 = 0.299 -> 0.29.
     """
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
-    monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
+    monkeypatch.setattr(g, "RISK_FRAC", 0.012)
     venue = bg._Venue()
     venue._positions = [
         {
             "id": 501,
             "tradableInstrumentId": 6102,
             "side": "sell",
-            "qty": 1.0,
+            "qty": 0.2,
             "avgPrice": 4330.0,
             "stopLoss": 4310.0,
             "stopLossId": 0,
@@ -87,13 +87,253 @@ def test_the_floor_fit_subtracts_a_break_even_winners_give_back(
     ]
     doc = g.run(venue, h._MT5(), armed=True)
     (pos,) = doc["committed_risk"]["positions"]
-    assert pos["at_risk"] is False and pos["risk_usd"] == pytest.approx(960.0)
-    assert venue.sent == [("sell", 0.24, 4290.0)]
+    assert pos["at_risk"] is False and pos["stop_risk_usd"] == pytest.approx(192.0)
+    assert pos["slip_usd"] == pytest.approx(482.6)
+    assert venue.sent == [("sell", 0.29, 4290.0)]
     (cut,) = bg._shrinks(doc, g.DAILY_FLOOR_RAIL)
-    assert cut["committed_usd"] == pytest.approx(960.0)
-    assert cut["room_to_floor"] == pytest.approx(2500.0 - 960.0 - g.ROOM_MARGIN_USD)
-    # What the account can now lose today: the give-back plus the new leg slipped.
-    assert 960.0 + _bracket_need({"sell_stop": 0.24}) <= 2500.0 - g.ROOM_MARGIN_USD
+    assert cut["committed_usd"] == pytest.approx(674.6)
+    assert cut["room_to_floor"] == pytest.approx(2500.0 - 674.6 - g.ROOM_MARGIN_USD)
+    assert 674.6 + _bracket_need({"sell_stop": 0.29}) <= 2500.0 - g.ROOM_MARGIN_USD
+
+
+# ------------------------------------------------------------- v5.2: committed slip, account-wide
+
+
+@pytest.mark.parametrize("frac", [0.005, 0.0095])
+def test_the_auditors_break_even_long_on_a_91k_day_sends_nothing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, frac: float
+) -> None:
+    """The audit's probe (HOLD on 8fe4edce): a 0.5-lot break-even long on a 91k day. Day start
+    91,000, equity 91,900: 1,900 to the static floor. The long (entry and stop 4288, mark 4300)
+    gives back 600 at its stop and 1,206.5 more when the stop slips 24.13 points. v5 counted only
+    the 600, fitted a new buy leg to 1,200 and could lose ~2,555-2,995 against 1,900. v5.2
+    counts 1,806.5, leaves no room, and sends nothing."""
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard(91_900.0, day_start=91_000.0))
+    monkeypatch.setattr(g, "RISK_FRAC", frac)
+    venue = bg._Venue(equity=91_900.0)
+    venue._positions = [
+        {
+            "id": 601,
+            "tradableInstrumentId": 6102,
+            "side": "buy",
+            "qty": 0.5,
+            "avgPrice": 4288.0,
+            "stopLoss": 4288.0,
+            "stopLossId": 0,
+        }
+    ]
+    doc = g.run(venue, h._MT5(), armed=True)
+    (pos,) = doc["committed_risk"]["positions"]
+    assert pos["at_risk"] is False
+    assert pos["stop_risk_usd"] == pytest.approx(600.0)
+    assert pos["slip_usd"] == pytest.approx(1206.5)
+    assert venue.sent == [] and doc["placed"] == []
+    room = float(doc["guard_decision"]["room_to_static_floor"])
+    assert room == pytest.approx(1900.0)
+    # What v5 would have risked: a leg fitted to the room net of the 600 only.
+    v5_room = room - 600.0 - g.ROOM_MARGIN_USD
+    assert 600.0 + 1206.5 + min(v5_room, _bracket_need({"buy_stop": 0.13})) > room
+    (row,) = _decisions(doc)
+    assert row["outcome"] in ("SKIPPED", "DEFERRED") and row["taken"] is False
+
+
+def test_every_resting_leg_counts_with_its_slip() -> None:
+    journal = [
+        {
+            "status": "SENT",
+            "order_id": 1,
+            "window": "asia",
+            "price": 4310.0,
+            "sl": 4276.5,
+            "lot": 0.2,
+            "at": "2026-10-15T04:00:00+00:00",
+        },
+        {
+            "status": "SENT",
+            "order_id": 2,
+            "window": "asia",
+            "price": 4290.0,
+            "sl": 4323.5,
+            "lot": 0.2,
+            "at": "2026-10-15T04:00:00+00:00",
+        },
+    ]
+    resting = [{"id": 1, "stopPrice": 4310.0}, {"id": 2, "stopPrice": 4290.0}]
+    total, _detail = g.committed_risk(
+        [],
+        resting,
+        journal,
+        {"date": "2026-10-15"},
+        bid=4300.0,
+        ask=4300.4,
+        contract_size=100.0,
+        slip_points=24.13,
+    )
+    assert total == pytest.approx(2 * (33.5 + 24.13) * 0.2 * 100)
+
+
+def test_a_foreign_xau_entry_order_counts_and_one_without_a_stop_refuses() -> None:
+    foreign = {
+        "id": 77,
+        "tradableInstrumentId": 6102,
+        "qty": 0.1,
+        "stopPrice": 4320.0,
+        "stopLoss": 4300.0,
+        "stopLossType": "absolute",
+    }
+    total, detail = g.committed_risk(
+        [],
+        [foreign],
+        [],
+        {},
+        bid=4300.0,
+        ask=4300.4,
+        contract_size=100.0,
+        slip_points=24.13,
+        instrument_id=6102,
+    )
+    assert total == pytest.approx((20.0 + 24.13) * 0.1 * 100)
+    assert detail["foreign"][0]["order_id"] == 77
+    with pytest.raises(ValueError, match="unbounded"):
+        g.committed_risk(
+            [],
+            [{**foreign, "stopLoss": None}],
+            [],
+            {},
+            bid=4300.0,
+            ask=4300.4,
+            contract_size=100.0,
+            slip_points=24.13,
+            instrument_id=6102,
+        )
+
+
+class _AccountVenue(bg._Venue):
+    """The E8 account also holds EURUSD: catalogue, details and a quote for it."""
+
+    _by_key: ClassVar[dict[str, int]] = {"XAUUSD": 6102, "EURUSD": 7001}
+
+    def details(self, symbol: str) -> dict[str, Any]:
+        if symbol == "EURUSD":
+            return {"contractSize": 100_000.0, "currency": "USD", "lotStep": 0.01}
+        return {"contractSize": 100.0, "currency": "USD", "lotStep": 0.01}
+
+    def quote(self, symbol: str) -> tuple[float, float]:
+        return (1.1000, 1.1002) if symbol == "EURUSD" else (4300.0, 4300.4)
+
+
+def _eurusd(stop: float | None) -> dict[str, Any]:
+    return {
+        "id": 801,
+        "tradableInstrumentId": 7001,
+        "side": "buy",
+        "qty": 0.5,
+        "avgPrice": 1.1000,
+        "stopLoss": stop,
+        "stopLossId": 0,
+    }
+
+
+def test_a_non_xau_position_counts_at_its_stop_plus_slip(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """EURUSD long 0.5 lot, stop 20 pips under: 0.0020 x 50,000 = 100 USD to its stop, plus the
+    gold slip carried as a share of price (24.13 / 4,300.2 of 1.1001) on 50,000 units."""
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
+    venue = _AccountVenue()
+    venue._positions = [_eurusd(1.0980)]
+    doc = g.run(venue, h._MT5(), armed=True)
+    (row,) = doc["committed_risk"]["foreign"]
+    slip_usd = 24.13 / 4300.2 * 1.1001 * 0.5 * 100_000
+    assert row["kind"] == "position"
+    assert row["risk_usd"] == pytest.approx(0.0020 * 50_000 + slip_usd, rel=1e-3)
+    assert doc["committed_risk"]["total_usd"] == pytest.approx(row["risk_usd"], abs=0.02)
+
+
+def test_a_non_xau_position_with_no_stop_sends_nothing_with_a_row(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
+    venue = _AccountVenue()
+    venue._positions = [_eurusd(None)]
+    doc = g.run(venue, h._MT5(), armed=True)
+    assert venue.sent == []
+    (row,) = _decisions(doc)
+    assert (row["outcome"], row["reason"]) == ("DEFERRED", ev.R_RISK_UNMEASURABLE)
+    assert "whole room" in row["why"]
+
+
+def test_a_position_on_an_instrument_the_catalogue_cannot_name_sends_nothing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
+    venue = bg._Venue()  # no catalogue: the EURUSD row cannot be priced
+    venue._positions = [_eurusd(1.0980)]
+    doc = g.run(venue, h._MT5(), armed=True)
+    assert venue.sent == []
+    (row,) = _decisions(doc)
+    assert (row["outcome"], row["reason"]) == ("DEFERRED", ev.R_RISK_UNMEASURABLE)
+
+
+# ------------------------------------------------------------- v5.2: equity or nothing
+
+
+@pytest.mark.parametrize(
+    "acct",
+    [
+        {"balance": 100_000.0},
+        {"balance": 100_000.0, "equity": None},
+        {"equity": float("nan"), "balance": 100_000.0},
+        {"equity": 100_000.0, "balance": 100_000.0, "equity_from_balance": 1.0},
+        "raise",
+    ],
+)
+def test_missing_equity_sends_nothing_and_bills_missed_growth(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, acct: Any
+) -> None:
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
+    venue = bg._Venue()
+
+    def account() -> dict[str, Any]:
+        if acct == "raise":
+            raise ConnectionError("account state endpoint returned HTML")
+        return dict(acct)
+
+    monkeypatch.setattr(venue, "account", account)
+    doc = g.run(venue, h._MT5(), armed=True)
+    assert venue.sent == [] and doc["equity"] == 0.0
+    (row,) = _decisions(doc)
+    assert (row["outcome"], row["reason"]) == ("DEFERRED", ev.R_EQUITY_UNREADABLE)
+    (bill,) = [r for r in bg._journal(tmp_path) if r.get("rail") == g.EQUITY_UNREADABLE_RAIL]
+    assert bill["status"] == "RAIL_BLOCKED" and bill["missed_growth_risk_usd"] is None
+    g.run(venue, h._MT5(), armed=True)
+    assert (
+        len([r for r in bg._journal(tmp_path) if r.get("rail") == g.EQUITY_UNREADABLE_RAIL]) == 1
+    ), "billed once per window per day"
+    sys.path.insert(0, str(_DESK / "research"))
+    import missed_growth as mg
+
+    monkeypatch.setattr(mg, "E8_INTENTS", tmp_path / "intents.json")
+    (line,) = [
+        x for x in mg.published_e8_gold_lines()["lines"] if x["rail"] == g.EQUITY_UNREADABLE_RAIL
+    ]
+    assert line["n_blocked"] == 1 and line["saving"]["verdict"] == mg.UNMEASURED
+
+
+def test_the_venue_flags_an_equity_derived_from_balance_alone() -> None:
+    from prop.tradelocker_venue import TradeLockerVenue
+
+    class _Api:
+        def __init__(self, st: dict[str, Any]) -> None:
+            self.st = st
+
+        def get_account_state(self) -> dict[str, Any]:
+            return self.st
+
+    alone = TradeLockerVenue(api=_Api({"balance": 100_000.0})).account()
+    assert alone.get("equity_from_balance") == 1.0
+    floating = TradeLockerVenue(api=_Api({"balance": 100_000.0, "openNetPnL": -400.0})).account()
+    assert floating["equity"] == 99_600.0 and "equity_from_balance" not in floating
 
 
 # ------------------------------------------------------------- 2. evidence and its ordering
@@ -488,13 +728,70 @@ def test_a_missing_server_fails_closed_and_pages(
     assert ev.page_account_key(ev.AK_OK) == "FIXED"
 
 
-def test_a_dormant_helper_never_pages(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_a_dormant_helper_pages(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """v5.2: HELPER_ABSENT pages too -- once OCO v2 reads the key, a silent None is a join that
+    fails without anyone knowing."""
     monkeypatch.setitem(sys.modules, "libs.ops.provenance", None)
     ledger_path = tmp_path / "alert_ledger.json"
     monkeypatch.setenv(ev.ALERT_LEDGER_ENV, str(ledger_path))
     doc: dict[str, Any] = {}
-    assert ev.bind_pass_account_key(_NoServerVenue(), doc) == ev.AK_HELPER_ABSENT
-    assert "alerts" not in doc and not ledger_path.exists()
+    assert ev.bind_pass_account_key(_StampedVenue(), doc) == ev.AK_HELPER_ABSENT
+    assert any("HELPER_ABSENT" in a for a in doc["alerts"])
+    assert ev.AK_ALERT_ID in ledger_path.read_text("utf-8")
+
+
+@pytest.mark.parametrize("answer", [None, "sha256:short"])
+def test_a_keyless_answer_pages(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, answer: Any
+) -> None:
+    """No box key (the helper answers None) or a login of -5 (no key) is KEY_UNAVAILABLE and
+    pages (v5.2)."""
+    _fake_provenance(monkeypatch, result=answer)
+    ledger_path = tmp_path / "alert_ledger.json"
+    monkeypatch.setenv(ev.ALERT_LEDGER_ENV, str(ledger_path))
+    doc: dict[str, Any] = {}
+    assert ev.bind_pass_account_key(_StampedVenue(), doc) == ev.AK_KEY_UNAVAILABLE
+    assert {ev.AK_KEY_UNAVAILABLE, ev.AK_HELPER_ABSENT} <= ev.AK_PAGE
+    assert ev.AK_ALERT_ID in ledger_path.read_text("utf-8")
+
+
+#: The auditor's reference derivation (v5c provenance.account_key): "sha256:" + the first 16 hex
+#: of HMAC-SHA256(box key, f"{norm_login}@{server.strip()}"). A fixed vector, computed once, with
+#: a throwaway key, a FAKE login and a server whose case and padding must survive to the helper.
+_VECTOR_KEY = b"a" * 64
+_VECTOR_SERVER = " FAKE-Demo-Server "
+_VECTOR = "sha256:3e29c239439974ee"
+
+
+def test_the_key_matches_the_auditors_reference_vector(monkeypatch: pytest.MonkeyPatch) -> None:
+    import hashlib
+    import hmac
+
+    seen: list[Any] = []
+
+    def account_key(login: object, server: object, *, create: bool = False) -> str | None:
+        seen.append((login, server, create))
+        canon = str(int(login)) if isinstance(login, int) else None  # type: ignore[call-overload]
+        if canon is None:
+            return None
+        srv = str(server).strip()
+        mac = hmac.new(_VECTOR_KEY, f"{canon}@{srv}".encode(), hashlib.sha256).hexdigest()
+        return "sha256:" + mac[:16]
+
+    mod = types.ModuleType("libs.ops.provenance")
+    mod.account_key = account_key  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "libs.ops.provenance", mod)
+
+    class _Api(h._Api):
+        account_id = _FAKE_ID
+        _credentials: ClassVar[dict[str, Any]] = {"server": _VECTOR_SERVER}
+
+    class _V:
+        _api = _Api()
+
+    assert ev.account_key(_V()) == _VECTOR
+    # The server reached the helper RAW: unstripped and with its case.
+    assert seen == [(_FAKE_ID, _VECTOR_SERVER, False)]
 
 
 # ------------------------------------------------------------- the scrub leaks (evidence v5 note)

@@ -159,8 +159,10 @@ def test_a_one_at_risk_deferral_held_for_many_passes_is_one_row(monkeypatch, tmp
     [row] = _rows()
     assert (row["outcome"], row["reason"]) == ("DEFERRED", "one_at_risk")
     assert "one gold trade at risk" in row["why"] and row["risk_usd"] > 0
-    # The earlier trades ratchet to break-even: the window places, and that is a new row.
-    freed = _Venue([_short(100, 9100), _short(101, 9101)], {9100: _ENTRY, 9101: _ENTRY})
+    # One earlier trade has closed and the other ratcheted to break-even: the window places,
+    # and that is a new row. (Two break-even 0.5-lot shorts still carry 2,413 USD of stop slip,
+    # which the concurrent budget refuses -- v5.2.)
+    freed = _Venue([_short(100, 9100)], {9100: _ENTRY})
     g.run(freed, _FlatMT5(), armed=False)
     assert [(r["outcome"], r["reason"]) for r in _rows()] == [
         ("DEFERRED", "one_at_risk"), ("WOULD_PLACE", "shadow_unarmed")]

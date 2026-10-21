@@ -317,9 +317,12 @@ AK_HELPER_ABSENT = "HELPER_ABSENT"          # libs.ops.provenance not on this tr
 AK_LOGIN_UNREADABLE = "LOGIN_UNREADABLE"    # the SDK handle names no account id
 AK_SERVER_UNREADABLE = "SERVER_UNREADABLE"  # TLAPI `_credentials` carries no server
 AK_KEY_UNAVAILABLE = "KEY_UNAVAILABLE"      # the helper answered no well-shaped key
-#: A stamp that is missing because the venue could not be read is a fault, not a dormant
-#: feature: it is paged through the desk's alert ledger (`page_account_key`).
-AK_PAGE = frozenset({AK_LOGIN_UNREADABLE, AK_SERVER_UNREADABLE})
+#: EVERY missing stamp pages (v5.2, audit HOLD on 8fe4edce): an unreadable login or server, a
+#: helper that answered no key (no box key, a login of -5), and a helper that is not on the tree
+#: -- once OCO v2 reads the key, a silent None is a join that fails without anyone knowing.
+#: Paged through the desk's alert ledger (`page_account_key`); only OK closes the page.
+AK_PAGE = frozenset({AK_LOGIN_UNREADABLE, AK_SERVER_UNREADABLE, AK_KEY_UNAVAILABLE,
+                     AK_HELPER_ABSENT})
 #: The alert the page opens (libs/ops/alert_ledger.AlertLedger) and where the ledger lives.
 AK_ALERT_ID = "e8_account_key_unstamped"
 ALERT_LEDGER_ENV = "E8_ALERT_LEDGER"
@@ -351,11 +354,15 @@ def tradelocker_login(venue: Any) -> Any:
 def tradelocker_server(venue: Any) -> str | None:
     """The E8 server from TLAPI 0.56.2's `_credentials` dict ({"username", "password",
     "server"}), or None. NEVER `api.server`: TLAPI has no such attribute, so a read of it is
-    None and keyed every account to one server. Only the server is read. Never raises."""
+    None and keyed every account to one server. Only the server is read. Never raises.
+
+    v5.2: the server is passed RAW -- no strip, no case-folding. `provenance.account_key` (v5c)
+    strips it itself, so the key is the HMAC of the normalised login, "@", and the stripped
+    server, exactly as the auditor's reference derivation has it. A blank server is no server."""
     try:
         creds = getattr(_tl_api(venue), "_credentials", None)
         server = creds.get("server") if isinstance(creds, dict) else None
-        return server.strip() if isinstance(server, str) and server.strip() else None
+        return server if isinstance(server, str) and server.strip() else None
     except Exception:
         return None
 
@@ -395,8 +402,8 @@ def account_key(venue: Any) -> str | None:
 
 def page_account_key(status: str, log: Callable[[str], None] | None = None) -> str | None:
     """Open (or, once stamped again, close) the `AK_ALERT_ID` alert in the desk's alert ledger.
-    Only a status in AK_PAGE opens it; a dormant helper does not. Returns "OPEN", "FIXED" or
-    None. Never raises, and never touches a placement."""
+    Every status in AK_PAGE opens it (v5.2: a dormant helper and a keyless answer too).
+    Returns "OPEN", "FIXED" or None. Never raises, and never touches a placement."""
     try:
         from libs.ops.alert_ledger import AlertLedger
 
