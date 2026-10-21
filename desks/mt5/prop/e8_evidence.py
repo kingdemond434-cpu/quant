@@ -90,12 +90,24 @@ REDACTED = "<account>"
 #: otherwise; prices, lots and order ids never follow that word in this lane's prose.
 #: v5: the word may be followed by `_` or `-` (`acc_<id>`, `account-<id>`), which `\b` refused
 #: because `_` is a word character -- the leak when the pass does not know its own id.
+#: Bracket guard v5 (auditor's evidence v5 note): `subacc_<id>` (a `sub` prefix the `(?<![a-z])`
+#: refused), `acc.<id>` (a dot separator) and `accountNumber=<id>` (a `number` suffix) leaked too.
 _ACCOUNT_IN_TEXT = re.compile(
-    r"(?i)((?<![a-z])acc(?:ount)?(?:s|_?id|_?num|num)?(?![a-z])[\s\\/:=#\"'_\-]*)(\d{2,})")
+    r"(?i)((?<![a-z])(?:sub[_\-]?)?acc(?:ount)?(?:s|_?id|_?number|_?num|num)?(?![a-z])"
+    r"[\s\\/:=#\"'_.\-]*)(\d{2,})")
 #: The account this pass trades, bound by `e8_gold.run` (`bind_account`) so that text clipped
 #: deep in the pass -- a retry's refusal, a position-book error -- is scrubbed of the id BEFORE it
 #: is cut (v5: a bare id at the cut left a 2-6 digit prefix the later scrub could not match).
 _PASS_ACCOUNT: list[str] = [UNMEASURED]
+#: THE CROSS-LANE ACCOUNT STAMP (bracket guard v5, must-fix 7 and the evidence v5 note): the same
+#: `account_key` the cross-account OCO books carry, so an E8 evidence row, a stop exit and an OCO
+#: book join on one value. It is `libs.ops.provenance.account_key(login, server, create=False)`
+#: -- "sha256:" + 16 hex of an HMAC under the box key -- and nothing else: when that helper is not
+#: on this tree (it lands with publish_sync v5), or holds no key, or the login is not an integer,
+#: there is NO stamp. Never the raw login, never a plain sha256 of it (reversed by enumerating
+#: ten million ids). Bound per pass by `bind_account_key`, reset by `bind_account`.
+_PASS_ACCOUNT_KEY: list[str | None] = [None]
+ACCOUNT_KEY_SHAPE = re.compile(r"^sha256:[0-9a-f]{16}$")
 #: Rows a failed write keeps for the next pass. A day writes a handful; this is weeks of them.
 PENDING_MAX = 500
 #: The ledger is bounded: past LEDGER_MAX_BYTES it is rewritten to its newest LEDGER_KEEP_LINES.
@@ -291,9 +303,81 @@ def _raw_id(label: str) -> str | None:
 
 
 def bind_account(label: str) -> None:
-    """Bind the pass's raw account label for `clip` and an account-less `scrub`. Never raises."""
+    """Bind the pass's raw account label for `clip` and an account-less `scrub`; the pass's
+    account stamp is reset (`bind_account_key` sets it again). Never raises."""
     with contextlib.suppress(Exception):
         _PASS_ACCOUNT[0] = str(label or UNMEASURED)
+        _PASS_ACCOUNT_KEY[0] = None
+
+
+def _int_login(value: Any) -> int | None:
+    """The login normalised to an int (so 1234567, "1234567" and 1234567.0 key alike), or None."""
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        if isinstance(value, float):
+            return int(value) if value.is_integer() and value > 0 else None
+        text = str(value).strip()
+        if not text.isdigit():
+            return None
+        n = int(text)
+        return n if n > 0 else None
+    except Exception:
+        return None
+
+
+def tradelocker_identity(venue: Any) -> tuple[int, str] | None:
+    """(login as int, server) of the TradeLocker venue, read the way the cross-account OCO reads
+    it (`_raw_api` else `_api`; acc_id, account_id, acc_num; `_creds.server` else "tradelocker"),
+    or None. An INPUT to `account_key` only: never stored, logged or printed. Never raises."""
+    try:
+        api = getattr(venue, "_raw_api", None)
+        if api is None:
+            api = getattr(venue, "_api", None)
+        creds = getattr(venue, "_creds", None)
+        server = getattr(creds, "server", None) if creds is not None else None
+        for attr in ("acc_id", "account_id", "acc_num"):
+            login = _int_login(getattr(api, attr, None))
+            if login is not None:
+                return login, str(server or "tradelocker")
+    except Exception:
+        return None
+    return None
+
+
+def account_key(venue: Any) -> str | None:
+    """The HMAC account stamp of `venue`'s account, or None (fail closed). Never raises."""
+    try:
+        import importlib
+
+        # libs/ops/provenance.py lands with publish_sync v5; absent -> ImportError -> no stamp.
+        provenance = importlib.import_module("libs.ops.provenance")
+        helper = getattr(provenance, "account_key", None)
+        if not callable(helper):
+            return None
+        ident = tradelocker_identity(venue)
+        if ident is None:
+            return None
+        key = helper(ident[0], ident[1], create=False)
+        return key if isinstance(key, str) and ACCOUNT_KEY_SHAPE.match(key) else None
+    except Exception:
+        return None
+
+
+def bind_account_key(key: str | None) -> None:
+    """Bind the pass's account stamp (only a well-shaped one; anything else binds None)."""
+    with contextlib.suppress(Exception):
+        _PASS_ACCOUNT_KEY[0] = key if isinstance(key, str) and ACCOUNT_KEY_SHAPE.match(key) \
+            else None
+
+
+def bound_account_key() -> str | None:
+    """The account stamp bound for this pass, or None."""
+    try:
+        key = _PASS_ACCOUNT_KEY[0]
+        return key if isinstance(key, str) and ACCOUNT_KEY_SHAPE.match(key) else None
+    except Exception:
+        return None
 
 
 def clip(text: Any, limit: int, account: str | None = None) -> str:
@@ -504,15 +588,21 @@ def record_decisions(decided: Decisions | list[dict[str, Any]], state: dict[str,
         stamp = now.isoformat(timespec="seconds")
         ref = account_ref(account)
         kid = key_id() if not ref.endswith(":" + UNKEYED) else None
+        akey = bound_account_key()
         for row in new:
             sleeve = f"{LANE}:{row['window']}"
-            lines.append(publishable({
+            line = publishable({
                 "decided_at": stamp, "lane": LANE, "account_ref": ref, "key_id": kid,
                 "sleeve": sleeve, "strategy_id": sleeve, "symbol": symbol,
                 "server_date": server_date, "armed": bool(armed),
                 "host": host.get("hostname"), "machine_id": host.get("machine_id"),
                 "host_verdict": host.get("verdict"), **row,
-            }, account))
+            }, account)
+            # The stamp goes on AFTER the scrub: it is an HMAC, never the id, and a hex run that
+            # happened to contain the id's digits must not be mangled into a key nothing joins.
+            if isinstance(line, dict):
+                line["account_key"] = akey
+            lines.append(line)
         # Rows kept by a failed write are scrubbed again on the way out: an OLDER build kept them
         # (v4), and this build's scrub is the one that publishes them.
         out = [*(publishable(r, account) for r in pending), *lines]
@@ -619,6 +709,7 @@ def write_heartbeat(status: str, *, at: datetime, armed: bool, account: str = UN
         if not str(doc["account_ref"]).endswith(":" + UNKEYED):
             doc["key_id"] = key_id()
         doc = publishable(doc, account)
+        doc["account_key"] = bound_account_key()
         text = json.dumps(doc, indent=1, default=str) + "\n"
     except Exception as exc:
         _say(log, f"E8 heartbeat not built ({type(exc).__name__}: {exc}); pass unaffected")

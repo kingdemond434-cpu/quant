@@ -33,6 +33,7 @@ lane keeps its default. A number is never invented here.
 
     python prop/e8_gold_slip.py [--fills <csv>]... [--measured-at 2026-10-20]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -107,37 +108,65 @@ def _per_window(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     for w, xs in sorted(by.items()):
         p95, mx = round(quantile(xs, QUANTILE), 4), round(max(xs), 4)
         if len(xs) < MIN_EXITS:
-            out[w] = {"status": "UNMEASURED", "n": len(xs), "provisional_p95_points": p95,
-                      "max_points": mx}
+            out[w] = {
+                "status": "UNMEASURED",
+                "n": len(xs),
+                "provisional_p95_points": p95,
+                "max_points": mx,
+            }
         else:
-            out[w] = {"status": "MEASURED", "n": len(xs), "slip_points": round(max(0.0, p95), 4),
-                      "max_points": mx}
+            out[w] = {
+                "status": "MEASURED",
+                "n": len(xs),
+                "slip_points": round(max(0.0, p95), 4),
+                "max_points": mx,
+            }
     return out
 
 
-def measure(rows: list[dict[str, Any]], *, sources: list[str], measured_at: str,
-            notes: list[str] | None = None) -> dict[str, Any]:
+def measure(
+    rows: list[dict[str, Any]],
+    *,
+    sources: list[str],
+    measured_at: str,
+    notes: list[str] | None = None,
+) -> dict[str, Any]:
     """The E8_GOLD_SLIP.json document for these stop exits. Pure."""
     samples = [x for x in (exit_slip_points(r) for r in rows) if x is not None]
-    base: dict[str, Any] = {"measured_at": measured_at, "n": len(samples),
-                            "rows_read": len(rows), "quantile": QUANTILE, "unit": "points",
-                            "min_n": MIN_EXITS,
-                            "measure": "one stop exit's fill beyond its level, in price points",
-                            "sources": list(sources)}
+    base: dict[str, Any] = {
+        "measured_at": measured_at,
+        "n": len(samples),
+        "rows_read": len(rows),
+        "quantile": QUANTILE,
+        "unit": "points",
+        "min_n": MIN_EXITS,
+        "measure": "one stop exit's fill beyond its level, in price points",
+        "sources": list(sources),
+    }
     if notes:
         base["notes"] = list(notes)
     base["windows"] = _per_window(rows)
     if len(samples) < MIN_EXITS:
-        doc = {**base, "status": "UNMEASURED", "missing": list(MISSING),
-               "why": (f"{len(samples)} stop exits measured, under {MIN_EXITS}: the lane keeps "
-                       f"its default slip")}
+        doc = {
+            **base,
+            "status": "UNMEASURED",
+            "missing": list(MISSING),
+            "why": (
+                f"{len(samples)} stop exits measured, under {MIN_EXITS}: the lane keeps "
+                f"its default slip"
+            ),
+        }
         if samples:
             doc["provisional_p95_points"] = round(quantile(samples, QUANTILE), 4)
             doc["max_points"] = round(max(samples), 4)
         return doc
-    return {**base, "status": "MEASURED",
-            "slip_points": round(max(0.0, quantile(samples, QUANTILE)), 4),
-            "p50_points": round(quantile(samples, 0.5), 4), "max_points": round(max(samples), 4)}
+    return {
+        **base,
+        "status": "MEASURED",
+        "slip_points": round(max(0.0, quantile(samples, QUANTILE)), 4),
+        "p50_points": round(quantile(samples, 0.5), 4),
+        "max_points": round(max(samples), 4),
+    }
 
 
 def read_fills(path: Path) -> list[dict[str, Any]]:
@@ -174,8 +203,13 @@ def write(doc: dict[str, Any], path: Path = OUT) -> Path:
     return path
 
 
-def refresh(*, exits: Path = STOP_EXITS, out: Path = OUT, measured_at: str | None = None,
-            notes: list[str] | None = None) -> dict[str, Any]:
+def refresh(
+    *,
+    exits: Path = STOP_EXITS,
+    out: Path = OUT,
+    measured_at: str | None = None,
+    notes: list[str] | None = None,
+) -> dict[str, Any]:
     """Re-measure from the lane's stop-exit journal and write the file. Called by `e8_gold`'s
     pass; a previous file's notes and other sources are carried forward so its provenance is not
     lost (the journal's own line is re-counted)."""
@@ -187,12 +221,16 @@ def refresh(*, exits: Path = STOP_EXITS, out: Path = OUT, measured_at: str | Non
     if isinstance(prev, dict):
         if notes is None:
             notes = [str(x) for x in prev.get("notes") or []]
-        kept = [str(x) for x in prev.get("sources") or []
-                if not str(x).startswith(f"data/{exits.name}")]
+        kept = [
+            str(x) for x in prev.get("sources") or [] if not str(x).startswith(f"data/{exits.name}")
+        ]
     rows = read_stop_exits(exits)
-    doc = measure(rows, sources=[*kept, f"data/{exits.name} ({len(rows)} rows)"],
-                  measured_at=measured_at or datetime.now(tz=UTC).date().isoformat(),
-                  notes=notes)
+    doc = measure(
+        rows,
+        sources=[*kept, f"data/{exits.name} ({len(rows)} rows)"],
+        measured_at=measured_at or datetime.now(tz=UTC).date().isoformat(),
+        notes=notes,
+    )
     write(doc, out)
     return doc
 
@@ -201,8 +239,12 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--fills", type=Path, action="append", default=[])
     ap.add_argument("--source", action="append", default=[])
-    ap.add_argument("--note", action="append", default=[],
-                    help="context recorded on the file; never counted as a sample")
+    ap.add_argument(
+        "--note",
+        action="append",
+        default=[],
+        help="context recorded on the file; never counted as a sample",
+    )
     ap.add_argument("--measured-at", default=datetime.now(tz=UTC).date().isoformat())
     ap.add_argument("--exits", type=Path, default=STOP_EXITS)
     ap.add_argument("--out", type=Path, default=OUT)
@@ -215,8 +257,9 @@ def main(argv: list[str] | None = None) -> int:
         sources.append(f"{p} ({len(extra)} rows)")
     doc = measure(rows, sources=sources, measured_at=a.measured_at, notes=a.note)
     write(doc, a.out)
-    print(f"E8 GOLD SLIP {doc['status']} n={doc['n']} slip_points={doc.get('slip_points')} "
-          f"-> {a.out}")
+    print(
+        f"E8 GOLD SLIP {doc['status']} n={doc['n']} slip_points={doc.get('slip_points')} -> {a.out}"
+    )
     return 0
 
 
