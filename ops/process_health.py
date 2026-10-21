@@ -34,6 +34,7 @@ import io
 import json
 import subprocess
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -70,6 +71,13 @@ def _tasks() -> tuple[list[dict[str, str]], str]:
     On the trading box a full verbose ``schtasks`` query can hang for two minutes while
     ``Get-ScheduledTask`` and its pipelined info query finish in about 13 seconds. An unreadable
     inventory must never turn every contracted organ into the false claim NOT_SCHEDULED.
+
+    NOR MAY IT BLIND THE WHOLE BOARD (measured 2026-10-14 00:45Z): Get-ScheduledTask timed out
+    at 45 s and the verbose schtasks at 20 s, so all 73 rows read SCHEDULER_UNMEASURED and the
+    hung gauntlet, the stopped hourly and the missing reports were invisible. So the full query
+    gets more room, and when both full queries fail each CONTRACTED task is asked for by name,
+    one short query each inside one budget: a sick scheduler that cannot list 400 tasks can
+    usually still answer for one.
     """
     script = r"""
 $ErrorActionPreference = 'Stop'
@@ -104,7 +112,7 @@ ConvertTo-Json -InputObject $rows -Depth 3 -Compress
         try:
             proc = subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive",
                                    "-Command", script], capture_output=True, text=True,
-                                  timeout=45)
+                                  timeout=FULL_QUERY_TIMEOUT_S)
             if proc.returncode == 0 and proc.stdout.strip():
                 parsed = json.loads(proc.stdout)
                 if isinstance(parsed, list) and all(isinstance(r, dict) for r in parsed):
@@ -114,7 +122,7 @@ ConvertTo-Json -InputObject $rows -Depth 3 -Compress
             errors.append(f"powershell {type(exc).__name__}: {exc}")
     try:
         proc = subprocess.run(["schtasks", "/query", "/v", "/fo", "CSV"],
-                              capture_output=True, text=True, timeout=20)
+                              capture_output=True, text=True, timeout=FULL_QUERY_TIMEOUT_S)
         if proc.returncode == 0 and proc.stdout.strip():
             rows = []
             for row in csv.DictReader(io.StringIO(proc.stdout)):
@@ -125,7 +133,44 @@ ConvertTo-Json -InputObject $rows -Depth 3 -Compress
         errors.append(f"schtasks exit {proc.returncode}: {proc.stderr.strip()[:160]}")
     except (OSError, subprocess.SubprocessError) as exc:
         errors.append(f"schtasks {type(exc).__name__}: {exc}")
+    rows = _tasks_by_name(sorted({n.split(" (", 1)[0] for n in _contracts()}))
+    if rows:
+        return rows, f"OK schtasks per task ({len(rows)} contracted; full inventory failed: " \
+            + "; ".join(errors)[:200] + ")"
     return [], "UNMEASURED: " + "; ".join(errors)
+
+
+#: Room for one full inventory query (Get-ScheduledTask, then verbose schtasks). Was 45 s / 20 s.
+FULL_QUERY_TIMEOUT_S = 90
+#: The per-task fallback: one short query per contracted task, all inside one budget.
+PER_TASK_TIMEOUT_S = 8
+PER_TASK_BUDGET_S = 180
+
+
+def _tasks_by_name(names: list[str]) -> list[dict[str, str]]:
+    """Ask the scheduler for each named task separately. Tasks it does not answer for are left
+    out (their rows then read SCHEDULER_UNMEASURED, never NOT_SCHEDULED): only a task the
+    scheduler explicitly says does not exist is absent from a measured inventory."""
+    rows: list[dict[str, str]] = []
+    deadline = time.monotonic() + PER_TASK_BUDGET_S
+    for name in names:
+        left = deadline - time.monotonic()
+        if left <= 0:
+            break
+        try:
+            proc = subprocess.run(["schtasks", "/query", "/tn", name, "/v", "/fo", "CSV"],
+                                  capture_output=True, text=True,
+                                  timeout=min(PER_TASK_TIMEOUT_S, left))
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if proc.returncode != 0:
+            continue
+        for row in csv.DictReader(io.StringIO(proc.stdout)):
+            got = (row.get("TaskName") or "").strip()
+            if got and got != "TaskName":
+                rows.append(row)
+                break
+    return rows
 
 
 def _normalise_code(raw: Any) -> int:
@@ -223,13 +268,22 @@ def build() -> dict[str, Any]:
         if organ in seen:
             continue
         age = _age_min(ROOT / artifact)
-        inventory_ok = scheduler_status.startswith("OK ")
+        inventory_ok = scheduler_status.startswith("OK ") and "per task" not in scheduler_status
         # Parenthesised contracts describe an artifact of an existing scheduled task, not a
         # second Windows task. Treating the name as a task manufactured 31 NOT_SCHEDULED alarms
         # on this box and buried real gateway/allocator failures beneath them.
         parent = organ.split(" (", 1)[0] if " (" in organ else ""
         is_component = bool(parent and parent in seen)
-        if not inventory_ok:
+        # The artifact's age is measured whether or not the scheduler answered: a missing or
+        # stale artifact is a fact about the organ, and saying so beats a blind board.
+        if not inventory_ok and age is None and not is_component:
+            verdict, why = "NO_ARTIFACT", (f"{artifact} does not exist (scheduler unread: "
+                                          f"{scheduler_status[:120]})")
+        elif not inventory_ok and age is not None and max_age and age > max_age \
+                and not is_component:
+            verdict, why = "STALE", (f"{age:.0f} min old against a {max_age} min contract "
+                                     f"(scheduler unread: {scheduler_status[:120]})")
+        elif not inventory_ok and not is_component:
             verdict, why = "SCHEDULER_UNMEASURED", scheduler_status
         elif is_component and age is None:
             verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"

@@ -100,6 +100,8 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/reports/OCCUPANCY_MAP.json",
     "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
     "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json",
+    # CLOCK_LIVENESS (hourly leg clock_liveness, 2026-10-14): forward-clock liveness, off the box.
+    "desks/mt5/reports/CLOCK_LIVENESS.json",
     # The rest of the Tier S promotion door's evidence, on the same sync (2026-09-30).
     "desks/mt5/data/tier_s/door_verdicts.json",
     "desks/mt5/data/tier_s/PROMOTION_FREEZE.json",

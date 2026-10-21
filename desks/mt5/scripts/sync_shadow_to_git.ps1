@@ -635,6 +635,8 @@ $relPaths = @(
     "desks/mt5/reports/OCCUPANCY_MAP.json",
     "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
     "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json",
+    # CLOCK_LIVENESS (hourly leg clock_liveness, 2026-10-14): forward-clock liveness, off the box.
+    "desks/mt5/reports/CLOCK_LIVENESS.json",
     # THE REST OF THE TIER S PROMOTION DOOR'S EVIDENCE (2026-09-30). `promotion_authority` reads
     # six box-local files to decide whether a candidate may go LIVE: live_door (above), the door
     # verdicts, the immune system's PROMOTION_FREEZE, the regression stop's RELEASE_STOP, the
