@@ -1,0 +1,3406 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Chevron Corporation stocks CFD (CVX) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/CVX/",
+  "published": "2026-10-21T12:12:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "51e0700805d73a081db0",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Newmont Mining Corporation stocks CFD (NEM) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/NEM/",
+  "published": "2026-10-21T12:12:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0c1275e1e698e63225cf",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "JPMorgan Chase &amp; Co. stocks CFD (JPM) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/JPM/",
+  "published": "2026-10-21T12:12:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4d2d0629a57633567d25",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Bank of America Corporation stocks CFD (BAC) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/BAC/",
+  "published": "2026-10-21T12:12:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ece24d9efde26089ecc9",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "eBay Inc. stocks CFD (EBAY) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/EBAY/",
+  "published": "2026-10-21T12:12:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "840b461363e5cfa16d3b",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Meta Platforms Inc stocks CFD (META) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/META/",
+  "published": "2026-10-21T12:12:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "71d60ac81b5d6afc9d35",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Canadian Dollar (AUDCAD.p) | Pro | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan/AUDCAD.p/",
+  "published": "2026-10-21T12:12:38+00:00",
+  "symbols": [
+   "AUDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f8954860dd2957d9daf7",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Canadian Dollar (EURCAD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/EURCAD.p/",
+  "published": "2026-10-21T12:12:39+00:00",
+  "symbols": [
+   "EURCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4dd7a61facd4a550bf23",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Swiss Franc (EURCHF.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/EURCHF.p/",
+  "published": "2026-10-21T12:12:41+00:00",
+  "symbols": [
+   "EURCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2ff74583f9eed41176d5",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Great Britain Pound (EURGBP.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/EURGBP.p/",
+  "published": "2026-10-21T12:12:43+00:00",
+  "symbols": [
+   "EURGBP",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "83b0daf7c4a2da051609",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency GBP 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 26.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD",
+      "EURGBP"
+     ],
+     "mentioned": [
+      "pound",
+      "eurgbp"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "af8e76ec44c0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Japanese Yen (EURJPY.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/EURJPY.p/",
+  "published": "2026-10-21T12:12:45+00:00",
+  "symbols": [
+   "EURJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8617f34bcfb3c282f080",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 14.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "EURJPY"
+     ],
+     "mentioned": [
+      "yen",
+      "eurjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "66c5801231df"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs New Zealand Dollar (EURNZD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/EURNZD.p/",
+  "published": "2026-10-21T12:12:47+00:00",
+  "symbols": [
+   "EURNZD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8720da670a6488445529",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs US Dollar (EURUSD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/EURUSD.p/",
+  "published": "2026-10-21T12:12:49+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "26dc0e07bf5301f6099e",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency USD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 19.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "15ad27297d9f"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Australian Dollar (GBPAUD.p) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/GBPAUD.p/",
+  "published": "2026-10-21T12:12:51+00:00",
+  "symbols": [
+   "GBPAUD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4891f44e53bf5ed53628",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency AUD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 19.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "da2264b3e80d"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategia Eurosystemu w&amp;nbsp;sprawie got&amp;oacute;wki",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.pl.html",
+  "published": "2026-10-21T12:12:52+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a7087c47db3faa832b9b",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Estrat\u00e9gia de numer\u00e1rio do Eurosistema",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.pt.html",
+  "published": "2026-10-21T12:12:54+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "30b2abd2ad49266fbe75",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategia privind numerarul a Eurosistemului",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.ro.html",
+  "published": "2026-10-21T12:12:56+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ro",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ro.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ae744f752e5879f3c2c7",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Hotovostn&amp;aacute; strat&amp;eacute;gia Eurosyst&amp;eacute;mu",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.sk.html",
+  "published": "2026-10-21T12:12:58+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sk",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sk.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "996eb02018baae918d29",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategija Eurosistema o gotovini",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.sl.html",
+  "published": "2026-10-21T12:13:01+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c8ac1d289ac4cea4e35a",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Eurosystemets kontantstrategi",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.sv.html",
+  "published": "2026-10-21T12:13:02+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c2f57afc77676d03b5b4",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Re-Optimizing 3rd Party MultiWalk Strategy | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/59583984",
+  "published": "2026-10-21T12:13:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "05986f420b8c320bffd5",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Re-Optimizing Your Own MultiWalk Strategy | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/59583985",
+  "published": "2026-10-21T12:13:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5d1bea3b00838250a119",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Basics Of Monte Carlo Testing | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22714816",
+  "published": "2026-10-21T12:13:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5964a9abd9311c27e10e",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Monte Carlo Analysis - Single Strategy | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22714817",
+  "published": "2026-10-21T12:13:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "49cb58ee3ca5992942cd",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Enhanced Monte Carlo To Improve Pass Rate | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/52915629",
+  "published": "2026-10-21T12:13:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1029c4507fb15ff317c3",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Monte Carlo Analysis - Two Strategies | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/22714818",
+  "published": "2026-10-21T12:13:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "be35260170f20d34b597",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Portfolio Monte Carlo | Ultimate Algo Trading",
+  "url": "https://ultimate-algo-trading.teachable.com/courses/strategy-factory-workshop/lectures/51707736",
+  "published": "2026-10-21T12:13:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0ac8b28426ccf35b800c",
+  "host": "ultimate-algo-trading.teachable.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Swing trading IBEX35 (52/138) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=52",
+  "published": "2026-10-21T12:13:17+00:00",
+  "symbols": [
+   "EUSTX50",
+   "E35",
+   "NAS100",
+   "GER40",
+   "UK100",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "011f47924c8327114eb9",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "Me quedo con mi posici\u00f3n \"inversora\" de largu\u00edsimo plazo, dos Eurostoxx grandes comprados, y todav\u00eda con dos minis del Ibex comprados como posici\u00f3n \"especuladora\" de corto plazo.",
+    "lang": "es",
+    "quantities": [
+     "euro",
+     "ibex"
+    ],
+    "direction": [
+     "compra",
+     "corto"
+    ],
+    "horizon": [
+     "corto plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "EUSTX50",
+      "E35"
+     ],
+     "mentioned": [
+      "eurostoxx",
+      "ibex"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "9a55600365cf"
+   },
+   {
+    "claim": "Lo siento por nuestro \u00edndice pero sus vencimientos mensuales son una casta\u00f1a y, a largo plazo, suponen una pasta en comisiones.",
+    "lang": "es",
+    "quantities": [
+     "\u00edndice",
+     "vencimiento"
+    ],
+    "direction": [
+     "largo"
+    ],
+    "horizon": [
+     "mensual",
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "GER40",
+      "UK100",
+      "EUSTX50",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "dax",
+      "ftse",
+      "eurostoxx",
+      "ibex35",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "la ni\u00f1a: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b9f2cbbc4c64"
+   },
+   {
+    "claim": "2 Responder #771 Re: Swing trading IBEX35 Ver mensaje de Raquelole Boquerito 06/01/25 16:38 Raquel, yo, desde hace m\u00e1s de 30 a\u00f1os, siempre estoy \"largo\", y lo \u00fanico que hago es subir o bajar la exposici\u00f3n en funci\u00f3n de la situaci\u00f3n del mercado.",
+    "lang": "es",
+    "quantities": [
+     "ibex"
+    ],
+    "direction": [
+     "largo",
+     "baja"
+    ],
+    "horizon": [
+     "swing"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b0f3a95b619c"
+   },
+   {
+    "claim": "2 Responder #773 Re: Swing trading IBEX35 Manuel Palomar Seguir 06/01/25 17:22 \u00bf Estaremos ante un p\u00e1nico alcista epif\u00e1nico ?",
+    "lang": "es",
+    "quantities": [
+     "ibex"
+    ],
+    "direction": [
+     "alcista"
+    ],
+    "horizon": [
+     "swing"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "9989c35f146e"
+   },
+   {
+    "claim": "Te\u00f3ricamente , el factor estacional deber\u00eda jugar todav\u00eda a favor pero ya se ha `podido ver el nulo eco tenido en las \u00faltimas sesiones propensas otrora a rallies y dem\u00e1s argumentos alcistas.",
+    "lang": "es",
+    "quantities": [
+     "estacional",
+     "factor"
+    ],
+    "direction": [
+     "alcista",
+     "rallies"
+    ],
+    "horizon": [
+     "sesion"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "GER40",
+      "UK100",
+      "EUSTX50",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "dax",
+      "ftse",
+      "eurostoxx",
+      "ibex35",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "la ni\u00f1a: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d15f6073187e"
+   },
+   {
+    "claim": "Hay que esperar a ma\u00f1ana a ver si confirma y hay un impulso al alza o no.",
+    "lang": "es",
+    "quantities": [
+     "impulso"
+    ],
+    "direction": [
+     "alza"
+    ],
+    "horizon": [
+     "ma\u00f1ana"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "GER40",
+      "UK100",
+      "EUSTX50",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "dax",
+      "ftse",
+      "eurostoxx",
+      "ibex35",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "la ni\u00f1a: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "200585ca733a"
+   }
+  ],
+  "n_claims": 6
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Swing trading IBEX35 (54/138) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=54",
+  "published": "2026-10-21T12:13:19+00:00",
+  "symbols": [
+   "E35",
+   "GER40",
+   "EUSTX50"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1d9a2e654956e48b503a",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "4 Responder #798 Re: Swing trading IBEX35 Ver mensaje de Boquerito Vinagretto Seguir 10/01/25 14:04 Totalmente de acuerdo en tu visi\u00f3n para el largo plazo.",
+    "lang": "es",
+    "quantities": [
+     "ibex"
+    ],
+    "direction": [
+     "largo"
+    ],
+    "horizon": [
+     "swing",
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "9db81934e389"
+   },
+   {
+    "claim": "Pr\u00f3xima compra 1 Responder #802 Re: Swing trading IBEX35 Boquerito 13/01/25 10:31 Bueno, pues me acabo de lanzar al DAX, aprovechando las bajadas de primera hora de hoy lunes.",
+    "lang": "es",
+    "quantities": [
+     "ibex",
+     "dax"
+    ],
+    "direction": [
+     "compra",
+     "baja"
+    ],
+    "horizon": [
+     "swing",
+     "hora"
+    ],
+    "instruments": {
+     "analogues": [
+      "GER40",
+      "E35"
+     ],
+     "mentioned": [
+      "dax",
+      "ibex35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "77863ee76f5a"
+   },
+   {
+    "claim": "Quedo con mi posici\u00f3n a largo plazo habitual (\"inversora\") con dos contratos futuro grande de Eurostoxx vencimiento marzo (si me gusta la operativa DAX, cuando venzan los cambiar\u00e9 por un contrato del DAX).",
+    "lang": "es",
+    "quantities": [
+     "euro",
+     "vencimiento",
+     "dax"
+    ],
+    "direction": [
+     "largo"
+    ],
+    "horizon": [
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "GER40",
+      "EUSTX50"
+     ],
+     "mentioned": [
+      "dax",
+      "eurostoxx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f9763df8c7d6"
+   },
+   {
+    "claim": "A corto plazo estoy tambi\u00e9n en compra, y ahora con mayor riesgo: mantengo a\u00fan dos futuros minis del IBEX y ahora a\u00f1ado un micro del DAX.",
+    "lang": "es",
+    "quantities": [
+     "ibex",
+     "dax"
+    ],
+    "direction": [
+     "corto",
+     "compra"
+    ],
+    "horizon": [
+     "corto plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "GER40",
+      "E35"
+     ],
+     "mentioned": [
+      "dax",
+      "ibex"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "3f0b526342bd"
+   },
+   {
+    "claim": "As\u00ed que me quedar\u00e9 como estoy ahora, subiendo un poco el CFD del IBEX para cubrir la compra que has hecho esta ma\u00f1ana y serguir replic\u00e1ndote.",
+    "lang": "es",
+    "quantities": [
+     "ibex"
+    ],
+    "direction": [
+     "compra"
+    ],
+    "horizon": [
+     "ma\u00f1ana"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "33971e9283e5"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Swing trading IBEX35 (96/138) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=96",
+  "published": "2026-10-21T12:13:21+00:00",
+  "symbols": [
+   "E35"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7b0065be8cea9fab6191",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "ejemplos como el que hemos vivido en el Ibex estos d\u00edas, con un recorte del jueves al viernes del -3,7% desde m\u00e1ximos, seguido de un rebote hoy del 2,23% desde m\u00ednimos en tan solo dos d\u00edas de mercado, y la frecuencia con la que se est\u00e1n produciendo estos movimientos, .",
+    "lang": "es",
+    "quantities": [
+     "ibex",
+     "m\u00e1ximo",
+     "m\u00ednimo"
+    ],
+    "direction": [
+     "rebote"
+    ],
+    "horizon": [
+     "d\u00eda"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "8591802632cc"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Swing trading IBEX35 (40/138) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=40",
+  "published": "2026-10-21T12:13:23+00:00",
+  "symbols": [
+   "E35",
+   "FRA40",
+   "NAS100",
+   "GER40",
+   "UK100",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "1H"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.95,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ba46ac8fc85d75a001ff",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "Parece que, al menos en tendencia diaria, el IBEX ha decidido encaminarse hacia el sur, as\u00ed que estos d\u00edas buscar\u00e9 una entrada a largo.",
+    "lang": "es",
+    "quantities": [
+     "tendencia",
+     "ibex"
+    ],
+    "direction": [
+     "entrada",
+     "largo"
+    ],
+    "horizon": [
+     "d\u00eda"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "46a571bc2724"
+   },
+   {
+    "claim": "2 Responder #591 Re: Swing trading IBEX35 Raquelole Seguir 13/11/24 20:59 Buenas noches, Yo tambi\u00e9n tanteo entrar en largo, creo que esta vez lo voy a intentar con el CAC 40.",
+    "lang": "es",
+    "quantities": [
+     "ibex"
+    ],
+    "direction": [
+     "largo"
+    ],
+    "horizon": [
+     "swing"
+    ],
+    "instruments": {
+     "analogues": [
+      "FRA40",
+      "E35"
+     ],
+     "mentioned": [
+      "cac 40",
+      "ibex35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4cb9e462d856"
+   },
+   {
+    "claim": "Si miramos el gr\u00e1fico diario, se puede ver que la bajada se ha detenido en la media simple de 100 sesiones, que posiblemente haya hecho de soporte, al menos, al primer toque.",
+    "lang": "es",
+    "quantities": [
+     "soporte"
+    ],
+    "direction": [
+     "baja"
+    ],
+    "horizon": [
+     "diario",
+     "sesion"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "GER40",
+      "UK100",
+      "FRA40",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "dax",
+      "ftse",
+      "cac 40",
+      "ibex35",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDSGD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "745b51517b6d"
+   },
+   {
+    "claim": "Si la vela de esta semana marcase el final de la consolidaci\u00f3n/correcci\u00f3n, NO se habr\u00eda cumplido la proyecci\u00f3n del peque\u00f1o doble techo.",
+    "lang": "es",
+    "quantities": [
+     "vela"
+    ],
+    "direction": [
+     "correcci\u00f3n"
+    ],
+    "horizon": [
+     "semana"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "GER40",
+      "UK100",
+      "FRA40",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "dax",
+      "ftse",
+      "cac 40",
+      "ibex35",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDSGD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3b56a48a8ef5"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Swing trading IBEX35 (72/138) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=72",
+  "published": "2026-10-21T12:13:25+00:00",
+  "symbols": [
+   "NAS100",
+   "E35",
+   "GER40",
+   "UK100",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3606599b011e7fe42190",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "Saludos 1 Responder #1067 Re: Swing trading IBEX35 Nasdaq Marc 02/02/25 13:56 Si ma\u00f1ana los \u00edndices abren a la baja de forma substancial, que es de lo que tiene pinta, bajar\u00e9 el SL del corto al punto de entrada (break even).",
+    "lang": "es",
+    "quantities": [
+     "ibex",
+     "\u00edndice"
+    ],
+    "direction": [
+     "baja",
+     "corto"
+    ],
+    "horizon": [
+     "swing",
+     "ma\u00f1ana"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "E35"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "ibex35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "87cc935bd3f9"
+   },
+   {
+    "claim": "Saludos 2 Responder #1068 Re: Swing trading IBEX35 Ver mensaje de Cyrano76 8carlos88 Seguir 03/02/25 08:02 Buenos dias Cyrano, parece que la apertura va ser con gap a la baja, eso confirmar\u00eda el patr\u00f3n envolvente que comentas?",
+    "lang": "es",
+    "quantities": [
+     "ibex",
+     "apertura",
+     "gap"
+    ],
+    "direction": [
+     "baja"
+    ],
+    "horizon": [
+     "swing",
+     "apertura"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "82d14f7d8b75"
+   },
+   {
+    "claim": "A corto plazo, los niveles clave son el m\u00ednimo del viernes, 12357, cuyo gap podr\u00eda intentar cubrirse, y por debajo el m\u00ednimo de hoy, 12105, que es desde donde ha entrado dinero.",
+    "lang": "es",
+    "quantities": [
+     "m\u00ednimo",
+     "gap"
+    ],
+    "direction": [
+     "corto"
+    ],
+    "horizon": [
+     "corto plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "GER40",
+      "UK100",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "dax",
+      "ftse",
+      "ibex35",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD",
+      "USDSGD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR",
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e5fdc934b0fc"
+   },
+   {
+    "claim": "3 Responder #1077 Re: Swing trading IBEX35 Ver mensaje de Manuel Palomar 8carlos88 Seguir 03/02/25 12:49 Manuel en cortos/largos soy super novato(sobre todo el funcionamiento con el broker), en invertir en bolsa ya lo comente, llevo mas de 15 a\u00f1os pero invirtiendo en acciones directamente.",
+    "lang": "es",
+    "quantities": [
+     "ibex"
+    ],
+    "direction": [
+     "corto",
+     "largo"
+    ],
+    "horizon": [
+     "swing"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex35"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "f4fc035d0461"
+   },
+   {
+    "claim": "Gracias 1 Responder #1078 Re: Swing trading IBEX35 Nasdaq Marc 03/02/25 13:54 Pues yo como os dije ayer, he puesto SL en la entrada y adem\u00e1s he quitado el take profit, lo dejar\u00e9 correr por si esta ca\u00edda por la guerra de aranceles de Trump va en serio.",
+    "lang": "es",
+    "quantities": [
+     "ibex"
+    ],
+    "direction": [
+     "entrada"
+    ],
+    "horizon": [
+     "swing"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "E35"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "ibex35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f1045d3b5596"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Swing trading IBEX35 (83/138) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=83",
+  "published": "2026-10-21T12:13:31+00:00",
+  "symbols": [
+   "E35",
+   "NAS100",
+   "US500",
+   "US30",
+   "GER40",
+   "UK100",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "422d63754d0e8275fd97",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "P\u00e1gina 83 / 138 #1231 Re: Swing trading IBEX35 Ver mensaje de Cyrano76 Raquelole Seguir 04/04/25 08:33 Lateral parece ser que est\u00e1 desde principios de marzo, intervalo12800-13400, cuando hace esto rompe bruscamente, veremos hacia d\u00f3nde.",
+    "lang": "es",
+    "quantities": [
+     "ibex",
+     "lateral"
+    ],
+    "direction": [
+     "rompe"
+    ],
+    "horizon": [
+     "swing"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "fbf02ab8aba1"
+   },
+   {
+    "claim": "Pr\u00f3xima venta 12650 Pr\u00f3xima compra 12100 2 Responder #1234 Re: Swing trading IBEX35 Dem\u00f3stenes Demos Seguir 06/04/25 12:43 La verdad es que tengo que reconocer que se hace raro que la correcci\u00f3n de la bolsa se est\u00e9 liderando desde Estados Unidos.",
+    "lang": "es",
+    "quantities": [
+     "ibex"
+    ],
+    "direction": [
+     "venta",
+     "compra"
+    ],
+    "horizon": [
+     "swing"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f35f03e91ef6"
+   },
+   {
+    "claim": "Gr\u00e1fico del DJ de Transportes con velas semanales En este gr\u00e1fico tambi\u00e9n se puede observar c\u00f3mo la l\u00ednea discontinua que marca el punto medio del canal tambi\u00e9n ha hecho varias veces de soporte desde octubre de 2022, aunque finalmente se ha cruzado a la baja.",
+    "lang": "es",
+    "quantities": [
+     "vela",
+     "soporte"
+    ],
+    "direction": [
+     "baja"
+    ],
+    "horizon": [
+     "semanal"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US30",
+      "GER40",
+      "UK100",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "sp500",
+      "dow",
+      "dax",
+      "ftse",
+      "ibex35",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "56361d2e024a"
+   },
+   {
+    "claim": "Lleva ya una bajada desde el m\u00e1ximo que hizo en noviembre de 2024 hasta el m\u00ednimo de esta semana de un -28.",
+    "lang": "es",
+    "quantities": [
+     "m\u00e1ximo",
+     "m\u00ednimo"
+    ],
+    "direction": [
+     "baja"
+    ],
+    "horizon": [
+     "semana"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US30",
+      "GER40",
+      "UK100",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "sp500",
+      "dow",
+      "dax",
+      "ftse",
+      "ibex35",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8bada24faf61"
+   },
+   {
+    "claim": "Buen finde, y suerte a todos \ud83c\udf40 4 Responder #1241 Re: Swing trading IBEX35 Ver mensaje de Cyrano76 Manuel Palomar Seguir 11/04/25 23:22 Hola Cyrano , lo de estos d\u00edas no se como calificarlo , creo que aun permanezco en estado de shock despu\u00e9s de ver como tras abrir un largo en 12760 pensando que se trataba de una buena compra , el \u00edndice se desplomaba a 11200 .",
+    "lang": "es",
+    "quantities": [
+     "ibex",
+     "\u00edndice"
+    ],
+    "direction": [
+     "largo",
+     "compra"
+    ],
+    "horizon": [
+     "swing",
+     "d\u00eda"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4a31791c62c8"
+   },
+   {
+    "claim": "A pesar del traqueteo del mercado, no he encontrado oportunidades estos \u00faltimos d\u00edas, pero sigo muy atento mirando todos los cierres y buscando posibles entradas.",
+    "lang": "es",
+    "quantities": [
+     "cierre"
+    ],
+    "direction": [
+     "entrada"
+    ],
+    "horizon": [
+     "d\u00eda",
+     "cierre"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "US500",
+      "US30",
+      "GER40",
+      "UK100",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "sp500",
+      "dow",
+      "dax",
+      "ftse",
+      "ibex35",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "af38a53739b0"
+   }
+  ],
+  "n_claims": 6
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Swing trading IBEX35 (84/138) - Rankia",
+  "url": "https://www.rankia.com/foros/bolsa/temas/6464187-swing-trading-ibex35?page=84",
+  "published": "2026-10-21T12:13:33+00:00",
+  "symbols": [
+   "E35",
+   "NAS100",
+   "GER40",
+   "UK100",
+   "FRA40",
+   "EUSTX50",
+   "NETH25",
+   "BTCUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es-es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c3f4e00f321c1bdc9e16",
+  "host": "www.rankia.com",
+  "claims": [
+   {
+    "claim": "Aqu\u00ed ten\u00e9is la tabla con el resumen: Resumen anual Suerte a todos \ud83c\udf40 3 Responder #1252 Re: Swing trading IBEX35 Inversor2030 Seguir 02/05/25 11:17 Vendido mayo 12795 Vendido mayo 13400 Pr\u00f3xima venta 13700 Pr\u00f3xima compra 13150 Responder #1253 Re: Swing trading IBEX35 Dem\u00f3stenes Demos Seguir 03/05/25 12:34 Vela semanal verde para el IBEX, 4a consecutiva.",
+    "lang": "es",
+    "quantities": [
+     "ibex",
+     "vela"
+    ],
+    "direction": [
+     "vend",
+     "venta"
+    ],
+    "horizon": [
+     "swing",
+     "semanal"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0e8adadc1d6f"
+   },
+   {
+    "claim": "Si el \u00edndice consiguiese hacer una nueva vela verde la pr\u00f3xima semana y se aleja m\u00e1s de un +1% del m\u00e1ximo de marzo, entonces a mi me parecer\u00eda ya muy raro que si baja de nuevo hasta el m\u00ednimo de abril (el punto A del gr\u00e1fico), despu\u00e9s venga m\u00e1s bajada (porque realmente se estuviese construyendo un patr\u00f3n de 'doble techo' y no una simple ABC 'plana' consolidativa).",
+    "lang": "es",
+    "quantities": [
+     "\u00edndice",
+     "vela",
+     "m\u00e1ximo",
+     "m\u00ednimo"
+    ],
+    "direction": [
+     "baja"
+    ],
+    "horizon": [
+     "semana"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "GER40",
+      "UK100",
+      "FRA40",
+      "EUSTX50",
+      "NETH25",
+      "E35",
+      "BTCUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "ndx",
+      "dax",
+      "ftse",
+      "cac",
+      "eurostoxx",
+      "aex",
+      "ibex35",
+      "bitcoin",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "168096c3a547"
+   },
+   {
+    "claim": "Suerte a todos \ud83c\udf40 2 Responder #1256 Re: Swing trading IBEX35 Agostini Seguir 09/05/25 00:04 Buenas a tod@s, desde el 22 de marzo que compr\u00e9 Grifols lo \u00fanico que recibo son palos.",
+    "lang": "es",
+    "quantities": [
+     "ibex"
+    ],
+    "direction": [
+     "compr"
+    ],
+    "horizon": [
+     "swing"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "312ee0a5de90"
+   },
+   {
+    "claim": "Responder #1259 Re: Swing trading IBEX35 Ver mensaje de Agostini Naticris Seguir 10/05/25 08:47 Pues si, en esto no lo hab\u00eda pensado, pero es como dices tambi\u00e9n te has perdido el coste de oportunidad ,desde que compraste Grifols estarias ganando un 10% + \u00f2 -.",
+    "lang": "es",
+    "quantities": [
+     "ibex"
+    ],
+    "direction": [
+     "compra"
+    ],
+    "horizon": [
+     "swing"
+    ],
+    "instruments": {
+     "analogues": [
+      "E35"
+     ],
+     "mentioned": [
+      "ibex35"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b0f9f1f2efa1"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "WIZC3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/WIZC3/",
+  "published": "2026-10-21T12:13:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "43f02c80c3d9c7bd83e7",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "PLPL3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/PLPL3/",
+  "published": "2026-10-21T12:13:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9bbafb99b22e465bb23f",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "QUAL3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/QUAL3/",
+  "published": "2026-10-21T12:13:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "02e6512e4e4baa99b954",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "LREN3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/LREN3/",
+  "published": "2026-10-21T12:13:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "96efce09c7897703405d",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ASAI3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/ASAI3/",
+  "published": "2026-10-21T12:13:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a13bdf481b97e5c67251",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "PETR4: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/PETR4/",
+  "published": "2026-10-21T12:13:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "52d28fa6f9c2b7a8d6dd",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "PETR3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/PETR3/",
+  "published": "2026-10-21T12:13:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e9701474d71d6fb14411",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u5206\u6790\uff08\u8425\u8fd0\u80fd\u529b\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_operating",
+  "published": "2026-10-21T12:13:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5fdb1084d01bf23f01ad",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u5206\u6790\uff08\u6210\u957f\u80fd\u529b\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_growth",
+  "published": "2026-10-21T12:13:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2d3db7682395c6f6872f",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u76c8\u5229\u9884\u6d4b\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_forecast_consensus_rolling",
+  "published": "2026-10-21T12:13:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fd4dc5116e1fc86b6b52",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u52a1\u884d\u751f\uff08\u6700\u65b0\u5e74\u62a5\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_financial_ly_shift__CAIXIN",
+  "published": "2026-10-21T12:14:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "594f6b67af4a085f33a4",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6307\u6570\u65e5\u884c\u60c5\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_index_bar1d",
+  "published": "2026-10-21T12:14:04+00:00",
+  "symbols": [
+   "XAUUSD",
+   "HK50",
+   "SUGAR"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dd6919ac0bdbf4a6c94c",
+  "host": "bigquant.com",
+  "claims": [
+   {
+    "claim": "\u8be5\u8868\u8be6\u7ec6\u8bb0\u5f55\u4e86\u80a1\u7968\u5e38\u89c1\u7684\u5bbd\u57fa\u6307\u6570\u6bcf\u65e5\u7684\u4ea4\u6613\u6570\u636e\uff0c\u5305\u62ec\u6307\u6570\u4ee3\u7801\u3001\u6307\u6570\u7b80\u79f0\u3001\u5f00\u9ad8\u4f4e\u6536\u3001\u6628\u6536\u76d8\u4ef7\u3001\u6210\u4ea4\u91cf\u3001\u6210\u4ea4\u989d\u3001\u6da8\u8dcc\u53ca\u6da8\u8dcc\u5e45\u7b49\uff0c\u63d0\u4f9b\u4e86\u80a1\u7968\u6307\u6570\u6bcf\u65e5\u7684\u5e02\u573a\u8868\u73b0\u6982\u89c8\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf",
+     "\u6536\u76d8"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6bcf\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "SUGAR"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u4e0a\u8bc1",
+      "\u767d\u7cd6",
+      "\u751f\u732a",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u4e0a\u8bc1->indices (China A-share)",
+      "\u751f\u732a->softs",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6e0bf89e0607"
+   },
+   {
+    "claim": "* \u7ecf\u6d4e\u9884\u6d4b\uff1a\u7ecf\u6d4e\u5b66\u5bb6\u53ef\u4ee5\u5229\u7528\u6307\u6570\u884c\u60c5\u6570\u636e\u8868\u6765\u9884\u6d4b\u672a\u6765\u51e0\u4e2a\u6708\u6216\u51e0\u5e74\u7684\u7ecf\u6d4e\u53d1\u5c55\u8d8b\u52bf\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u8d8b\u52bf"
+    ],
+    "direction": [
+     "\u9884\u6d4b"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "SUGAR"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u4e0a\u8bc1",
+      "\u767d\u7cd6",
+      "\u751f\u732a",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u4e0a\u8bc1->indices (China A-share)",
+      "\u751f\u732a->softs",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7a13e529def5"
+   },
+   {
+    "claim": "``` \u8868\u7ed3\u6784 \u5b57\u6bb5 \u5b57\u6bb5\u7c7b\u578b \u5b57\u6bb5\u63cf\u8ff0 low double \u6700\u4f4e\u4ef7 high double \u6700\u9ad8\u4ef7 turn double - change double \u6da8\u8dcc change_ratio double \u6da8\u8dcc\u5e45 __PARTITION__ int64 - date timestamp[ns] - open double \u5f00\u76d8\u4ef7 volume int64 \u6210\u4ea4\u91cf instrument string \u6307\u6570\u4ee3\u7801 close double \u6536\u76d8\u4ef7 amount double \u6210\u4ea4\u989d pre_close double \u6628\u6536\u76d8\u4ef7 name string \u6307\u6570\u7b80\u79f0 \u8868\u540d\uff1acn_stock_index_bar1d \u8d77\u59cb\u65f6\u95f4\uff1a 2023-07-01T18:11:10.",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf",
+     "\u5f00\u76d8",
+     "\u6536\u76d8",
+     "open"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "open",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "SUGAR"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "\u4e0a\u8bc1",
+      "\u767d\u7cd6",
+      "\u751f\u732a",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "\u4e0a\u8bc1->indices (China A-share)",
+      "\u751f\u732a->softs",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "87fa24d2e8a3"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6982\u5ff5\u6307\u6570\u884c\u60c5\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_index_concept_bar1d",
+  "published": "2026-10-21T12:14:07+00:00",
+  "symbols": [
+   "XAUUSD",
+   "HK50",
+   "SUGAR"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.95,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "270e26e3a9791cd86c75",
+  "host": "bigquant.com",
+  "claims": [
+   {
+    "claim": "``` \u8868\u7ed3\u6784 \u5b57\u6bb5 \u5b57\u6bb5\u7c7b\u578b \u5b57\u6bb5\u63cf\u8ff0 low double \u6700\u4f4e\u4ef7 high double \u6700\u9ad8\u4ef7 turn double \u6362\u624b\u7387 change double \u6da8\u8dcc change_ratio double \u6da8\u8dcc\u5e45 __PARTITION__ int64 - date timestamp[ns] - open double \u5f00\u76d8\u4ef7 volume double \u6210\u4ea4\u91cf instrument string \u6307\u6570\u4ee3\u7801 close double \u6536\u76d8\u4ef7 amount double \u6210\u4ea4\u989d pre_close double \u6628\u6536\u76d8\u4ef7 name string \u6307\u6570\u7b80\u79f0 \u8868\u540d\uff1acn_stock_index_concept_bar1d \u8d77\u59cb\u65f6\u95f4\uff1a 2024-03-18T14:50:08.",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf",
+     "\u5f00\u76d8",
+     "\u6536\u76d8",
+     "open"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "open",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "HK50",
+      "SUGAR"
+     ],
+     "mentioned": [
+      "\u9ec4\u91d1",
+      "\u6e2f\u80a1",
+      "a\u80a1",
+      "\u767d\u7cd6",
+      "\u73bb\u7483",
+      "\u751f\u732a",
+      "\u53ef\u8f6c\u503a"
+     ],
+     "transfer_only": [
+      "a\u80a1->indices (China A-share)",
+      "\u73bb\u7483->energy",
+      "\u751f\u732a->softs",
+      "\u53ef\u8f6c\u503a->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e0e2f416fbb7"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6307\u6570\u6210\u5206\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_index_component",
+  "published": "2026-10-21T12:14:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d1aad67c2578f7117897",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Fed - System Analytical Work",
+  "url": "https://www.federalreserve.gov/monetarypolicy/review-of-monetary-policy-strategy-tools-and-communications-system-analytical-work-2025.htm",
+  "published": "2026-10-21T12:14:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6c7bbc8c3606f1b41758",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Fed - Related Speeches",
+  "url": "https://www.federalreserve.gov/monetarypolicy/review-of-monetary-policy-strategy-tools-and-communications-related-speeches-2025.htm",
+  "published": "2026-10-21T12:14:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c067b87fd8b642ce62b0",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Fed - Historical Statements on Longer-Run Goals and Monetary Policy Strategy",
+  "url": "https://www.federalreserve.gov/monetarypolicy/historical-statements-on-longer-run-goals-and-monetary-policy-strategy.htm",
+  "published": "2026-10-21T12:14:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "65ddca175fc3af7408b4",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Fed - Implications of Inflation Dynamics for Monetary Policy Strategies",
+  "url": "https://www.federalreserve.gov/econres/feds/implications-of-inflation-dynamics-for-monetary-policy-strategies.htm",
+  "published": "2026-10-21T12:14:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.federalreserve.gov/econres/feds/files/feds2025072.zip"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9bb2d2b695e82d98e309",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Conference on Monetary Policy Strategy, Tools, and Communication Practices (A Fed Listens Event)",
+  "url": "https://www.federalreserve.gov/conferences/conference-monetary-policy-strategy-tools-communications-20190605.htm",
+  "published": "2026-10-21T12:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "de130ccefeb55515581b",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Federal Reserve announces additional information about the periodic review of its monetary policy strategy, tools, and communications",
+  "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20241122a.htm",
+  "published": "2026-10-21T12:14:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b2acd97eba3d929e6e53",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Fed - Finance and Economics Discussion Series (FEDS)",
+  "url": "https://www.federalreserve.gov/econres/feds/index.htm",
+  "published": "2026-10-21T12:14:25+00:00",
+  "symbols": [
+   "US500",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "gap",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.federalreserve.gov/econres/feds/files/feds2026006.zip",
+   "https://www.federalreserve.gov/econres/feds/files/feds2026004.zip",
+   "https://www.federalreserve.gov/econres/feds/files/feds2026003.zip",
+   "https://www.federalreserve.gov/econres/feds/files/feds2026002.zip",
+   "https://www.federalreserve.gov/econres/feds/files/feds2026001.zip",
+   "https://www.federalreserve.gov/econres/feds/exports-borders-distance-and-plant-size.htm",
+   "https://www.federalreserve.gov/econres/feds/importing-exporting-and-firm-level-employment-volatility.htm",
+   "https://www.federalreserve.gov/econres/feds/does-exporting-improve-matching-evidence-from-french-employer-employee-data.htm",
+   "https://www.federalreserve.gov/econres/feds/institutions-and-return-predictability-in-oil-exporting-countries.htm",
+   "https://www.federalreserve.gov/econres/feds/exporters-of-services-a-look-at-us-exporters-outside-of-the-manufacturing-sector.htm",
+   "https://www.federalreserve.gov/econres/feds/the-great-recession-and-a-missing-generation-of-exporters.htm",
+   "https://www.federalreserve.gov/econres/feds/exporting-and-frictions-in-input-markets-evidence-from-chinese-data.htm"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "8da26be68eee9ae29949",
+  "host": "www.federalreserve.gov",
+  "claims": [
+   {
+    "claim": "Empirical analysis using S&P 500 options demonstrates that the boosted tree-based specification achieves the lowest out-of-sample forecast errors across all horizons, reducing one-month-ahead RMSE by 13 percent versus the benchmark SHAR model.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "16f71c56a56e"
+   },
+   {
+    "claim": "The estimated tree presents economically interpretable segmentation: short-dated options exhibit higher daily persistence but lower monthly persistence than long-dated options, while deep out-of-the-money calls or puts display distinct dynamics from near-the-money contracts.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "short",
+     "higher"
+    ],
+    "horizon": [
+     "daily",
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "10-year treasury"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "24f75f365e2f"
+   },
+   {
+    "claim": "Using a matched panel of 73 banks from 2000 to 2019, we find that quarterly mail volume growth was 18 percent lower when banks reported tightening credit card lending standards, a relationship robust to including credit demand indicators.",
+    "lang": "en",
+    "quantities": [
+     "volume"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "quarterly"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "10-year treasury"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e43d8188f807"
+   },
+   {
+    "claim": "Using confidential HMDA data, we estimate that a one standard deviation increase in mortgage demand raises mortgage rate spreads by 3 to 8 basis points, loan quantities by 20 to 32 percent, and application processing times by 3 to 5 days.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "basis"
+    ],
+    "direction": [
+     "increase"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "10-year treasury"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6aeeca0fd250"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "https://forex.eastmoney.com/CNY.html",
+  "published": "2026-10-21T12:14:27+00:00",
+  "symbols": [
+   "USDCNH"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5da4fb0cf3c3029c0fdd",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u524d\u4e09\u5b63\u5ea6\u4eba\u6c11\u5e01\u5bf9\u7f8e\u5143\u5373\u671f\u6c47\u7387\u5347\u503c\u8d854% \u540e\u7eed\u5982\u4f55.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u6c47\u7387"
+    ],
+    "direction": [
+     "\u5347\u503c"
+    ],
+    "horizon": [
+     "\u5b63\u5ea6"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDCNH"
+     ],
+     "mentioned": [
+      "\u4eba\u6c11\u5e01"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "eee5639861df"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "https://forex.eastmoney.com/EUR.html",
+  "published": "2026-10-21T12:14:29+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDJPY",
+   "EURJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "13447c1d81c1de11ca3f",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u6cd5\u56fd\u8d22\u653f\u62c5\u5fe7\u52a0\u5267 \u6b27\u5143\u8dcc\u81f317\u4e2a\u6708\u4f4e\u70b9 \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u6da8\u5e45\u8fbe0.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0b409833f08d"
+   },
+   {
+    "claim": "\u7f8e\u5143\u5151\u591a\u6570G10\u8d27\u5e01\u8d70\u5f3a\uff0c\u6b27\u5143\u8dcc\u81f3\u4e00\u4e2a\u6708\u4f4e\u70b9 \u6b27\u76df\u5b98\u5458\u8b66\u544a\u6b27\u76df\u7ecf\u6d4e\u6216\u5c06\u9762\u4e34\u201c\u6ede\u80c0\u201d \u6b27\u5143\u5151\u7f8e\u5143\u8dcc\u81f31.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u8d70\u5f3a",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u4e00\u4e2a\u6708",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "160eb2fa281a"
+   },
+   {
+    "claim": "1500 \u5237\u65b08\u6708\u521d\u4ee5\u6765\u65b0\u4f4e \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u6da8\u5e45\u6269\u5927\u81f30.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u6269\u5927",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u65e5\u5185",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b7d32d77a381"
+   },
+   {
+    "claim": "18 \u4e3a7\u6708\u521d\u4ee5\u6765\u9996\u6b21 \u6b27\u5143\u5151\u65e5\u5143EUR/JPY\u6da8\u81f3173.",
+    "lang": "zh",
+    "quantities": [
+     "\u6b27\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "USDJPY",
+      "EURJPY"
+     ],
+     "mentioned": [
+      "\u6b27\u5143",
+      "\u65e5\u5143",
+      "eur/jpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "18d9efd2bd74"
+   },
+   {
+    "claim": "9 \u521b\u4e0b\u903e\u4e00\u5e74\u65b0\u9ad8 \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u8dcc\u5e45\u8fbe0.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "d9d5558e22cf"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "https://forex.eastmoney.com/GBP.html",
+  "published": "2026-10-21T12:14:31+00:00",
+  "symbols": [
+   "GBPUSD",
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1cb84ae4bb60666fa9a6",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u82f1\u9551\u5151\u7f8e\u5143\u5728\u82f1\u56fd\u592e\u884c\u516c\u5e03\u51b3\u5b9a\u540e\u7ef4\u6301\u6da8\u52bf \u3010\u73af\u7403\u8d22\u7ecf\u3011\u82f1\u56fd3\u6708\u5e73\u5747\u623f\u4ef7\u73af\u6bd4\u4e0b\u8dcc0.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u82f1\u9551",
+     "\u592e\u884c"
+    ],
+    "direction": [
+     "\u4e0b\u8dcc",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u82f1\u9551"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u82f1\u56fd\u592e\u884c: policy: BoE -> GBP"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "1207d8dd8ea3"
+   },
+   {
+    "claim": "3394 \u82f1\u9551/\u7f8e\u5143\u521b\u4e0b4\u6708\u4efd\u4ee5\u6765\u6700\u5927\u8dcc\u5e45 \u8dcc1.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u82f1\u9551"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u82f1\u9551"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4059dba080ed"
+   },
+   {
+    "claim": "\u82f1\u9551\u5151\u7f8e\u5143\u65e5\u5185\u8dcc\u8d851% \u82f1\u9551\u5151\u7f8e\u5143GBP/USD\u7ad9\u4e0a1.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u82f1\u9551"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u82f1\u9551"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "683a9f635600"
+   },
+   {
+    "claim": "36 \u4e3a2022\u5e742\u6708\u4ee5\u6765\u9996\u6b21 \u6b27\u5143\u5151\u82f1\u9551\u8dcc\u81f34\u67083\u65e5\u4ee5\u6765\u6700\u4f4e \u82f1\u9551\u5151\u7f8e\u5143\u4e0a\u6da80.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u6b27\u5143",
+     "\u82f1\u9551"
+    ],
+    "direction": [
+     "\u4e0a\u6da8",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143",
+      "\u82f1\u9551"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e6155240a3f4"
+   },
+   {
+    "claim": "54% \u6b27\u5143\u5151\u7f8e\u5143\u65e5\u5185\u8dcc1.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u6b27\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "\u6b27\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0634f28279db"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "https://forex.eastmoney.com/JPY.html",
+  "published": "2026-10-21T12:14:33+00:00",
+  "symbols": [
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3fd2c406ade367a875f8",
+  "host": "forex.eastmoney.com",
+  "claims": [
+   {
+    "claim": "\u65e5\u672c\u8d22\u52a1\u5927\u81e3\u7247\u5c71\u768b\u6708\uff1a\u5e02\u573a\u5bf9\u65e5\u5143\u75b2\u8f6f\u5b58\u5728\u8bef\u89e3 \u7f8e\u5143/\u65e5\u5143\u4e0a\u6da81% \u5df4\u514b\u83b1\uff1a\u65e5\u672c\u592e\u884c\u9700\u91ca\u653e\u989d\u5916\u9e70\u6d3e\u4fe1\u53f7\u624d\u80fd\u6258\u4f4f\u65e5\u5143.",
+    "lang": "zh",
+    "quantities": [
+     "\u7f8e\u5143",
+     "\u65e5\u5143",
+     "\u592e\u884c"
+    ],
+    "direction": [
+     "\u4e0a\u6da8",
+     "\u6da8"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u65e5\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u672c\u592e\u884c: policy: BoJ / MoF intervention -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8ca09cecea13"
+   },
+   {
+    "claim": "69 \u7f8e\u5143\u5151\u65e5\u5143\u65e5\u5185\u8dcc1.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u65e5\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e0b649503b13"
+   },
+   {
+    "claim": "70%\u4e0b\u7834156\u5927\u5173 \u7f8e\u5143/\u65e5\u5143\u8fde\u7eed\u7b2c\u4e09\u4e2a\u4ea4\u6613\u65e5\u7a81\u7834160\u5173\u53e3 \u65e5\u5143\u8d70\u5f3a \u65e5\u672c\u653f\u5e9c\u636e\u6089\u652f\u6301\u65e5\u672c\u592e\u884c\u52a0\u5feb\u5347\u606f\u6b65\u4f10 \u7f8e\u5143\u5151\u65e5\u5143\u5931\u5b88157 \u7f8e\u5143\u5151\u65e5\u5143\u53cd\u5f39\uff0c\u76ee\u524d\u62a5159.",
+    "lang": "zh",
+    "quantities": [
+     "\u7a81\u7834",
+     "\u53cd\u5f39",
+     "\u7f8e\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u8d70\u5f3a",
+     "\u53cd\u5f39"
+    ],
+    "horizon": [
+     "\u4ea4\u6613\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u65e5\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u672c\u592e\u884c: policy: BoJ / MoF intervention -> JPY"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "453d5e93838e"
+   },
+   {
+    "claim": "31% \u7f8e\u5143\u5151\u65e5\u5143\u65e5\u5185\u8dcc\u5e45\u6269\u5927\u81f32% \u7f8e\u5143\u5151\u65e5\u5143\u77ed\u7ebf\u8df3\u6c34 \u65e5\u5185\u8dcc\u5e45\u8fbe1.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u6269\u5927",
+     "\u8df3\u6c34"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u65e5\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "f7d5e2bc4399"
+   },
+   {
+    "claim": "29% \u65e5\u5143\u5151\u7f8e\u5143\u518d\u5ea6\u8dcc\u81f31986\u5e74\u4ee5\u6765\u6700\u4f4e\u6c34\u5e73 \u7f8e\u5143\u5151\u65e5\u5143\u7ad9\u4e0a162 \u65e5\u5185\u6da80.",
+    "lang": "zh",
+    "quantities": [
+     "\u65e5\u5185",
+     "\u7f8e\u5143",
+     "\u65e5\u5143"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u65e5\u5185"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "\u65e5\u5143"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "195d5e1452bd"
+   }
+  ],
+  "n_claims": 5
+ }
+]
