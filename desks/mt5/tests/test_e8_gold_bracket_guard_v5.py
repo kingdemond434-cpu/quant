@@ -85,7 +85,7 @@ def test_the_floor_fit_subtracts_a_break_even_winners_give_back(
             "stopLossId": 0,
         }
     ]
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     (pos,) = doc["committed_risk"]["positions"]
     assert pos["at_risk"] is False and pos["stop_risk_usd"] == pytest.approx(192.0)
     assert pos["slip_usd"] == pytest.approx(482.6)
@@ -122,7 +122,7 @@ def test_the_auditors_break_even_long_on_a_91k_day_sends_nothing(
             "stopLossId": 0,
         }
     ]
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     (pos,) = doc["committed_risk"]["positions"]
     assert pos["at_risk"] is False
     assert pos["stop_risk_usd"] == pytest.approx(600.0)
@@ -242,7 +242,7 @@ def test_a_non_xau_position_counts_at_its_stop_plus_slip(
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
     venue = _AccountVenue()
     venue._positions = [_eurusd(1.0980)]
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     (row,) = doc["committed_risk"]["foreign"]
     slip_usd = 24.13 / 4300.2 * 1.1001 * 0.5 * 100_000
     assert row["kind"] == "position"
@@ -256,7 +256,7 @@ def test_a_non_xau_position_with_no_stop_sends_nothing_with_a_row(
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
     venue = _AccountVenue()
     venue._positions = [_eurusd(None)]
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert venue.sent == []
     (row,) = _decisions(doc)
     assert (row["outcome"], row["reason"]) == ("DEFERRED", ev.R_RISK_UNMEASURABLE)
@@ -269,7 +269,7 @@ def test_a_position_on_an_instrument_the_catalogue_cannot_name_sends_nothing(
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
     venue = bg._Venue()  # no catalogue: the EURUSD row cannot be priced
     venue._positions = [_eurusd(1.0980)]
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert venue.sent == []
     (row,) = _decisions(doc)
     assert (row["outcome"], row["reason"]) == ("DEFERRED", ev.R_RISK_UNMEASURABLE)
@@ -300,7 +300,7 @@ def test_missing_equity_sends_nothing_and_bills_missed_growth(
         return dict(acct)
 
     monkeypatch.setattr(venue, "account", account)
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     # v5.3: a refused equity is published null / UNMEASURED, never 0.0
     assert venue.sent == [] and doc["equity"] is None
     assert doc["equity_status"] == "UNMEASURED" and doc["risk_usd"] is None
@@ -308,7 +308,7 @@ def test_missing_equity_sends_nothing_and_bills_missed_growth(
     assert (row["outcome"], row["reason"]) == ("DEFERRED", ev.R_EQUITY_UNREADABLE)
     (bill,) = [r for r in bg._journal(tmp_path) if r.get("rail") == g.EQUITY_UNREADABLE_RAIL]
     assert bill["status"] == "RAIL_BLOCKED" and bill["missed_growth_risk_usd"] is None
-    g.run(venue, h._MT5(), armed=True)
+    g.run(venue, bg._FlatMT5(), armed=True)
     assert (
         len([r for r in bg._journal(tmp_path) if r.get("rail") == g.EQUITY_UNREADABLE_RAIL]) == 1
     ), "billed once per window per day"
@@ -354,7 +354,7 @@ def test_the_ceiling_fit_runs_before_any_risk_budget_deferral(
         venue, "details", lambda symbol: {"contractSize": 10.0, "currency": "USD", "lotStep": 0.01}
     )
     assert not g.risk_budget_allows(0.0, 3000.0, 2500.0)[0]
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert sorted(venue.sent) == [("buy", 0.75, 4310.0), ("sell", 0.75, 4290.0)]
     rows = _decisions(doc)
     assert [r["reason"] for r in rows] == ["placed"]
@@ -370,7 +370,7 @@ def test_an_unshrunk_window_over_the_budget_is_deferred_with_a_row(
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
     monkeypatch.setattr(g, "RISK_FRAC", 0.02)
     venue = bg._Venue()
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert venue.sent == []
     (row,) = _decisions(doc)
     assert (row["outcome"], row["reason"]) == ("DEFERRED", ev.R_RISK_BUDGET)
@@ -389,7 +389,7 @@ def test_the_evidence_ledger_holds_the_rail_skip(
         slip={"status": "MEASURED", "slip_points": 100_000.0, "n": 25},
     )
     monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
-    g.run(bg._Venue(equity=99_900.0), h._MT5(), armed=True)
+    g.run(bg._Venue(equity=99_900.0), bg._FlatMT5(), armed=True)
     lines = ev.decisions_path().read_text(encoding="utf-8").splitlines()
     (row,) = [json.loads(x) for x in lines if '"afternoon"' in x]
     assert (row["outcome"], row["reason"], row["taken"]) == (
@@ -412,7 +412,7 @@ def test_step_two_keeps_room_margin_usd_clear_of_the_floor(
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
     monkeypatch.setattr(g, "RISK_FRAC", 0.0071)
     venue = bg._Venue()
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     room = min(
         float(doc["guard_decision"]["room_to_daily_floor"]),
         float(doc["guard_decision"]["room_to_static_floor"]),
@@ -471,7 +471,7 @@ def test_a_lift_to_the_venue_minimum_is_judged_at_the_lifted_risk(
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
     monkeypatch.setattr(g, "RISK_FRAC", 0.002)
     venue = _TenthLotVenue()
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert sorted(venue.sent) == [("buy", 0.1, 4310.0), ("sell", 0.1, 4290.0)]
     sent = [r for r in bg._journal(tmp_path) if r["status"] == "SENT"]
     assert all(r["risk_usd"] == pytest.approx(335.0) for r in sent)
@@ -487,7 +487,7 @@ def test_a_lift_that_does_not_fit_is_never_sent(
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard(91_100.0, day_start=91_100.0))
     monkeypatch.setattr(g, "RISK_FRAC", 0.002)
     venue = _TenthLotVenue(equity=91_100.0)
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert venue.sent == [] and doc["placed"] == []
     (skip,) = bg._rail_skips(doc, g.DAILY_FLOOR_RAIL)
     assert skip["need_usd"] == pytest.approx(2 * 335.0 + 2 * 24.13 * 10)
@@ -520,7 +520,7 @@ def test_both_legs_filled_and_slipped_fit_the_room(
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard(equity, day_start=day_start))
     monkeypatch.setattr(g, "RISK_FRAC", frac)
     venue = bg._Venue(equity=equity)
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     gd = doc.get("guard_decision") or {}
     if not venue.sent:
         assert not gd.get("may_open", False) or doc["skipped"], "a no-send leaves a row"
@@ -645,7 +645,7 @@ def test_a_full_pass_stamps_the_ledger_and_heartbeat(
     _fake_provenance(monkeypatch)
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
     venue = _StampedVenue()
-    g.run(venue, h._MT5(), armed=True)
+    g.run(venue, bg._FlatMT5(), armed=True)
     beat = json.loads(ev.heartbeat_path().read_text("utf-8"))
     assert beat["account_key"] == _FAKE_KEY
     rows = [json.loads(x) for x in ev.decisions_path().read_text("utf-8").splitlines()]
@@ -715,7 +715,7 @@ def test_a_missing_server_fails_closed_and_pages(
     ledger_path = tmp_path / "alert_ledger.json"
     monkeypatch.setenv(ev.ALERT_LEDGER_ENV, str(ledger_path))
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
-    doc = g.run(_NoServerVenue(), h._MT5(), armed=True)
+    doc = g.run(_NoServerVenue(), bg._FlatMT5(), armed=True)
     assert doc["account_key_status"] == ev.AK_SERVER_UNREADABLE
     assert any("account_key not stamped" in a for a in doc.get("alerts") or [])
     beat = json.loads(ev.heartbeat_path().read_text("utf-8"))
@@ -852,7 +852,7 @@ def test_mf1_an_fx_stop_held_only_as_stop_loss_id_is_read(
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
     venue = _StopIdVenue()
     venue._positions = [_eurusd_stop_by_id()]
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     (row,) = doc["committed_risk"]["foreign"]
     slip_usd = 24.13 / 4300.2 * 1.1001 * 0.5 * 100_000
     assert row["kind"] == "position" and row["stop"] == pytest.approx(1.0980)
@@ -869,14 +869,14 @@ def test_mf2_a_risk_budget_deferral_is_billed_once_per_window_per_day(
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
     monkeypatch.setattr(g, "RISK_FRAC", 0.02)
     venue = bg._Venue()
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert venue.sent == []
     (bill,) = [r for r in bg._journal(tmp_path) if r.get("rail") == g.RISK_BUDGET_RAIL]
     assert bill["status"] == "RAIL_BLOCKED" and bill["reason"] == ev.R_RISK_BUDGET
     assert bill["window"] == "afternoon"
     assert bill["missed_growth_risk_usd"] == pytest.approx(2000.0)
     assert bill["committed_risk_usd"] == pytest.approx(doc["committed_risk"]["total_usd"])
-    g.run(venue, h._MT5(), armed=True)
+    g.run(venue, bg._FlatMT5(), armed=True)
     assert len([r for r in bg._journal(tmp_path) if r.get("rail") == g.RISK_BUDGET_RAIL]) == 1
     sys.path.insert(0, str(_DESK / "research"))
     import missed_growth as mg
@@ -950,7 +950,7 @@ def test_a_measured_fx_slip_prices_the_fx_stop_and_says_so(
     monkeypatch.setattr(g, "FX_STOP_EXITS", fx)
     venue = _AccountVenue()
     venue._positions = [_eurusd(1.0980)]
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     (row,) = doc["committed_risk"]["foreign"]
     assert row["risk_usd"] == pytest.approx(0.0020 * 50_000 + 0.0001 * 1.1001 * 50_000, rel=1e-3)
     assert row["slip_source"].startswith("measured:") and row["slip_fraction"] == 0.0001
@@ -971,9 +971,9 @@ def test_a_full_pass_journals_the_fx_lanes_stop_exits(
     venue = _AccountVenue()
     venue._api = _HistApi()  # type: ignore[assignment]
     venue._positions = [_eurusd(1.0980)]  # the lane sees long 801 open, so its stop joins
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert doc["fx_stop_exits_recorded"] == 1
-    g.run(venue, h._MT5(), armed=True)
+    g.run(venue, bg._FlatMT5(), armed=True)
     (row,) = [json.loads(x) for x in fx.read_text("utf-8").splitlines()]
     assert row["symbol"] == "EURUSD" and row["slip_frac"] == pytest.approx(0.0005 / 1.1, abs=1e-8)
 
@@ -1011,7 +1011,7 @@ def test_the_pass_charges_committed_risk_at_the_worst_window_slip(
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard(), slip=slip)
     venue = _AccountVenue()
     venue._positions = [_eurusd(1.0980)]
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert doc["committed_risk"]["slip_points"] == 31.5
     assert "asia" in doc["committed_risk"]["slip_source"]
 
@@ -1157,7 +1157,7 @@ def test_v55_risk_unmeasurable_is_billed_once_and_paged(
     ledger_path = Path(os.environ[ev.ALERT_LEDGER_ENV])
     venue = _AccountVenue()
     venue._positions = [_eurusd(None)]  # no stop: the account's risk cannot be bounded
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert venue.sent == [] and doc["risk_unmeasurable_page"] == "QUEUED"
     assert ev.drain_pages(5.0) == 0
     assert len(sends) == 1 and "unmeasurable" in sends[0][1], "v5.6: it is a page"
@@ -1166,7 +1166,7 @@ def test_v55_risk_unmeasurable_is_billed_once_and_paged(
     assert isinstance(bill["missed_growth_risk_usd"], float) and bill["missed_growth_risk_usd"] > 0
     alert = json.loads(ledger_path.read_text("utf-8"))["alerts"][g.RISK_UNMEASURABLE_ALERT_ID]
     assert alert["state"] == "OPEN"
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert "risk_unmeasurable_page" not in doc, "paged once, not every pass"
     assert ev.drain_pages(5.0) == 0 and len(sends) == 1
     assert len([r for r in bg._journal(tmp_path) if r.get("rail") == g.RISK_UNMEASURABLE_RAIL]) == 1
@@ -1179,7 +1179,7 @@ def test_v55_risk_unmeasurable_is_billed_once_and_paged(
     ]
     assert line["n_blocked"] == 1 and line["risk_withheld_usd"] > 0
     venue._positions = [_eurusd(1.0980)]  # the stop is readable again: the page closes
-    g.run(venue, h._MT5(), armed=True)
+    g.run(venue, bg._FlatMT5(), armed=True)
     assert ev.drain_pages(5.0) == 0 and len(sends) == 1, "a close is not a page"
     alert = json.loads(ledger_path.read_text("utf-8"))["alerts"][g.RISK_UNMEASURABLE_ALERT_ID]
     assert alert["state"] == "FIXED"
@@ -1275,12 +1275,12 @@ def test_v56_a_raising_alert_path_never_defers_a_window_or_escapes_run(
     monkeypatch.setattr(ev, "page_alert", raises)
     venue = _AccountVenue()
     venue._positions = [_eurusd(1.0980)]  # measurable: the close call runs and raises
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, bg._FlatMT5(), armed=True)
     assert venue.sent, "the close call's raise did not defer the window"
     assert not [d for d in doc["decisions"] if d["reason"] == ev.R_RISK_UNMEASURABLE]
     venue = _AccountVenue()
     venue._positions = [_eurusd(None)]  # unmeasurable: the open call runs and raises
-    doc = g.run(venue, h._MT5(), armed=True)  # never escapes run()
+    doc = g.run(venue, bg._FlatMT5(), armed=True)  # never escapes run()
     assert venue.sent == []
 
 

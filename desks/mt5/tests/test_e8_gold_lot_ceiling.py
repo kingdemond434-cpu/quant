@@ -32,6 +32,31 @@ import test_e8_gold_guard_and_open_risk as h  # noqa: E402
 from prop import e8_gold as g  # noqa: E402
 
 
+class _FlatMT5(h._MT5):
+    """The test terminal, also answering as the conftest's FLAT Fusion account (re-cut on live,
+    fixture alignment only). LIVE's cross-account fence (r6/r7, `cross_account.mt5_book_checked`)
+    reads the Fusion book from this terminal under the placement lock and fails closed without
+    it; these tests are about the bracket rails, so the terminal shows a readable, flat book on
+    the conftest's declared Fusion identity. The fence itself is pinned in test_fusion_minlot_book
+    and test_gold_oco."""
+
+    @staticmethod
+    def account_info() -> Any:
+        from types import SimpleNamespace
+
+        from conftest import CONFTEST_LOGINS, CONFTEST_SERVERS
+        return SimpleNamespace(login=CONFTEST_LOGINS["fusion"],
+                               server=CONFTEST_SERVERS["fusion"], trade_mode=2)
+
+    @staticmethod
+    def positions_get(*_a: Any, **_k: Any) -> tuple:
+        return ()
+
+    @staticmethod
+    def orders_get(*_a: Any, **_k: Any) -> tuple:
+        return ()
+
+
 class _Venue(h._Venue):
     """The shared fake, able to take an armed send, with a settable contract size."""
 
@@ -73,7 +98,7 @@ def test_a_window_under_the_ceiling_is_sent_unchanged(
 ) -> None:
     _sandbox(monkeypatch, tmp_path)
     venue = _Venue()
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["lot_ceiling"] == {"max_lot": g.GOLD_MAX_LOT, "source": "default GOLD_MAX_LOT"}
     assert "shrunk" not in doc
     assert sorted(venue.sent) == [("buy", 0.14, 4310.0), ("sell", 0.14, 4290.0)]
@@ -89,7 +114,7 @@ def test_a_leg_over_the_ceiling_is_sent_at_the_ceiling_and_the_withheld_risk_bil
 ) -> None:
     _sandbox(monkeypatch, tmp_path)
     venue = _Venue(contract=10.0)  # 500 USD / (33.5 x 10) = 1.49 lots
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert sorted(venue.sent) == [("buy", 0.75, 4310.0), ("sell", 0.75, 4290.0)]
     assert [p["window"] for p in doc["placed"]] == ["afternoon"]
     (shrink,) = doc["shrunk"]
@@ -107,7 +132,7 @@ def test_a_leg_over_the_ceiling_is_sent_at_the_ceiling_and_the_withheld_risk_bil
     assert all(r["shrunk"] == {"unshrunk_lot": 1.49, "by": [g.LOT_CEILING_REASON]} for r in sent)
     assert "SHRUNK" in (tmp_path / "log.json").read_text(encoding="utf-8")
     # The window is placed: the next pass neither re-sends nor bills it again.
-    again = g.run(venue, h._MT5(), armed=True)
+    again = g.run(venue, _FlatMT5(), armed=True)
     assert len(venue.sent) == 2 and "shrunk" not in again
     assert len([r for r in _journal(tmp_path) if r.get("rail") == g.LOT_CEILING_RAIL]) == 1
 
@@ -121,7 +146,7 @@ def test_the_capped_leg_is_fitted_to_the_budget_not_deferred(
     _sandbox(monkeypatch, tmp_path)
     monkeypatch.setattr(g, "DEFAULT_SLIP_POINTS", 400.0)
     venue = _Venue(contract=10.0)
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     # The ceiling fit sends 0.44; with BOTH legs slipping 400 points (v5) the floor then fits
     # 2,400 / (10 x (67 + 800)) = 0.277 -> 0.27. Never deferred.
     assert sorted(venue.sent) == [("buy", 0.27, 4310.0), ("sell", 0.27, 4290.0)]
@@ -144,7 +169,7 @@ def test_a_100oz_leg_over_the_ceiling_is_fitted_and_sent(
     _sandbox(monkeypatch, tmp_path)
     monkeypatch.setattr(g, "RISK_FRAC", 0.03)
     venue = _Venue(contract=100.0)
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert sorted(venue.sent) == [("buy", 0.20, 4310.0), ("sell", 0.20, 4290.0)]
     assert [p["window"] for p in doc["placed"]] == ["afternoon"]
     rails = [x["rail"] for x in doc["shrunk"]]
@@ -172,7 +197,7 @@ def test_a_capped_leg_that_cannot_fit_writes_a_reasoned_row(
     monkeypatch.setattr(g, "RISK_FRAC", 0.03)
     monkeypatch.setattr(g, "DEFAULT_SLIP_POINTS", 100_000.0)
     venue = _Venue(contract=100.0)
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert venue.sent == [] and doc["placed"] == []
     (skip,) = [s for s in doc["skipped"] if s.get("rail") == g.LOT_CEILING_RAIL]
     assert skip["reason"] == g.LOT_CEILING_REASON and "venue minimum" in skip["why"]
@@ -194,7 +219,7 @@ def test_the_box_override_is_read(monkeypatch: pytest.MonkeyPatch, tmp_path: Pat
     _sandbox(monkeypatch, tmp_path, override={"max_lot": 0.10})
     assert g.gold_max_lot() == (0.10, "E8_GOLD_MAX_LOT.json")
     venue = _Venue()  # 0.14 lots, over a 0.10 ceiling
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert sorted(venue.sent) == [("buy", 0.10, 4310.0), ("sell", 0.10, 4290.0)]
     (shrink,) = doc["shrunk"]
     assert shrink["max_lot"] == 0.10 and shrink["max_lot_source"] == "E8_GOLD_MAX_LOT.json"
@@ -205,7 +230,7 @@ def test_a_raised_override_lets_a_larger_leg_through(
 ) -> None:
     _sandbox(monkeypatch, tmp_path, override={"max_lot": 2.0})
     venue = _Venue(contract=10.0)
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert "shrunk" not in doc
     assert sorted(venue.sent) == [("buy", 1.49, 4310.0), ("sell", 1.49, 4290.0)]
 
@@ -244,7 +269,7 @@ def test_an_invalid_override_falls_back_to_the_default(
     lot, src = g.gold_max_lot(min_lot=0.01)
     assert lot == g.GOLD_MAX_LOT and src.startswith("default GOLD_MAX_LOT (")
     venue = _Venue(contract=10.0)
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["lot_ceiling"]["max_lot"] == g.GOLD_MAX_LOT
     assert sorted(venue.sent) == [("buy", 0.75, 4310.0), ("sell", 0.75, 4290.0)], (
         "a bad override never switches the ceiling off, nor idles the lane"
@@ -271,7 +296,7 @@ def test_missed_growth_publishes_the_ceiling_two_sided(
     journal.write_text(json.dumps({"status": "SENT", "order_id": 1}) + "\n", encoding="utf-8")
     assert mg.published_e8_gold_lines()["verdict"] == mg.NOT_BINDING
     _sandbox(monkeypatch, tmp_path)
-    g.run(_Venue(contract=10.0), h._MT5(), armed=True)
+    g.run(_Venue(contract=10.0), _FlatMT5(), armed=True)
     out = mg.published_e8_gold_lines()
     (line,) = out["lines"]
     assert line["rail"] == g.LOT_CEILING_RAIL and line["n_shrunk"] == 1

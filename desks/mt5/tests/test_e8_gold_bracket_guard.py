@@ -33,6 +33,31 @@ import test_e8_gold_guard_and_open_risk as h  # noqa: E402
 from prop import e8_gold as g  # noqa: E402
 from prop import e8_guard  # noqa: E402
 
+
+class _FlatMT5(h._MT5):
+    """The test terminal, also answering as the conftest's FLAT Fusion account (re-cut on live,
+    fixture alignment only). LIVE's cross-account fence (r6/r7, `cross_account.mt5_book_checked`)
+    reads the Fusion book from this terminal under the placement lock and fails closed without
+    it; these tests are about the bracket rails, so the terminal shows a readable, flat book on
+    the conftest's declared Fusion identity. The fence itself is pinned in test_fusion_minlot_book
+    and test_gold_oco."""
+
+    @staticmethod
+    def account_info() -> Any:
+        from types import SimpleNamespace
+
+        from conftest import CONFTEST_LOGINS, CONFTEST_SERVERS
+        return SimpleNamespace(login=CONFTEST_LOGINS["fusion"],
+                               server=CONFTEST_SERVERS["fusion"], trade_mode=2)
+
+    @staticmethod
+    def positions_get(*_a: Any, **_k: Any) -> tuple:
+        return ()
+
+    @staticmethod
+    def orders_get(*_a: Any, **_k: Any) -> tuple:
+        return ()
+
 #: The journal row of a placed leg, exactly as it was before these rails existed.
 _SENT_KEYS = {
     "at",
@@ -139,7 +164,7 @@ def test_placement_is_unchanged_when_no_rail_binds(
     # 2 x 500 + 24.13 x 0.28 x 100 = 1,676 <= 2,400; the 938 USD target is inside the 2,000 cap.
     _sandbox(monkeypatch, tmp_path, guard=_guard())
     venue = _Venue()
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["guard_decision"]["verdict"] == "OK"
     assert sorted(venue.sent) == [("buy", 0.14, 4310.0), ("sell", 0.14, 4290.0)]
     assert [p["window"] for p in doc["placed"]] == ["afternoon"]
@@ -183,7 +208,7 @@ def test_max_asia_risk_on_a_fresh_day_is_shrunk_a_step_to_fit(
     _sandbox(monkeypatch, tmp_path, guard=_guard())
     monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
     venue = _Venue()
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert sorted(venue.sent) == [("buy", 0.20, 4310.0), ("sell", 0.20, 4290.0)]
     (cut,) = _shrinks(doc, g.DAILY_FLOOR_RAIL)
     assert cut["unshrunk_lots"] == {"buy_stop": 0.28, "sell_stop": 0.28}
@@ -202,7 +227,7 @@ def test_a_down_day_shrinks_both_legs_to_fit_and_bills_the_cut(
     _sandbox(monkeypatch, tmp_path, guard=_guard(99_900.0))
     monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
     venue = _Venue(equity=99_900.0)
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["guard_decision"]["verdict"] == "OK"
     assert sorted(venue.sent) == [("buy", 0.19, 4310.0), ("sell", 0.19, 4290.0)]
     (cut,) = _shrinks(doc, g.DAILY_FLOOR_RAIL)
@@ -222,7 +247,7 @@ def test_a_down_day_shrinks_both_legs_to_fit_and_bills_the_cut(
         for r in sent
     )
     assert "MISSED GROWTH" in (tmp_path / "log.json").read_text(encoding="utf-8")
-    again = g.run(venue, h._MT5(), armed=True)
+    again = g.run(venue, _FlatMT5(), armed=True)
     assert len(venue.sent) == 2 and "shrunk" not in again
     sys.path.insert(0, str(_DESK / "research"))
     import missed_growth as mg
@@ -242,7 +267,7 @@ def test_the_floor_fit_respects_the_static_floor(
     # = 0.069 -> 0.06.
     _sandbox(monkeypatch, tmp_path, guard=_guard(90_900.0, day_start=91_000.0))
     venue = _Venue(equity=90_900.0)
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["guard_decision"]["verdict"] == "OK"
     assert sorted(venue.sent) == [("buy", 0.06, 4310.0), ("sell", 0.06, 4290.0)]
     (cut,) = _shrinks(doc, g.DAILY_FLOOR_RAIL)
@@ -260,7 +285,7 @@ def test_a_bracket_that_cannot_fit_above_the_venue_minimum_is_skipped_with_a_row
     )
     monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
     venue = _Venue(equity=99_900.0)
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["bracket_slip"]["slip_points"] == 100_000.0
     assert venue.sent == [] and doc["placed"] == []
     (skip,) = _rail_skips(doc, g.DAILY_FLOOR_RAIL)
@@ -273,7 +298,7 @@ def test_a_bracket_that_cannot_fit_above_the_venue_minimum_is_skipped_with_a_row
     assert (dec["outcome"], dec["reason"]) == ("SKIPPED", g.DAILY_FLOOR_REASON)
     saved = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
     assert saved["windows"]["afternoon"]["skipped"] == g.DAILY_FLOOR_RAIL
-    again = g.run(venue, h._MT5(), armed=True)
+    again = g.run(venue, _FlatMT5(), armed=True)
     assert venue.sent == [] and not _rail_skips(again, g.DAILY_FLOOR_RAIL)
 
 
@@ -335,7 +360,7 @@ def test_a_shrunk_leg_is_budgeted_against_the_floor_at_its_shrunk_risk(
     monkeypatch.setattr(
         venue, "details", lambda symbol: {"contractSize": 10.0, "currency": "USD", "lotStep": 0.01}
     )
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert not _shrinks(doc, g.DAILY_FLOOR_RAIL)
     assert sorted(venue.sent) == [("buy", 0.75, 4310.0), ("sell", 0.75, 4290.0)]
     assert _shrinks(doc, g.LOT_CEILING_RAIL)[0]["risk_usd"] == pytest.approx(251.25)
@@ -355,7 +380,7 @@ def test_the_lanes_measured_slip_replaces_the_default_at_20_exits(
     )
     monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
     venue = _Venue(equity=99_900.0)
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["bracket_slip"]["slip_points"] == 3.0
     assert doc["bracket_slip"]["source"] == "E8_GOLD_SLIP.json (p95 of 20 stop exits)"
     assert not _shrinks(doc, g.DAILY_FLOOR_RAIL)  # 2 x 949 + 3 x 56 = 2,066 <= 2,300
@@ -374,7 +399,7 @@ def test_a_measured_zero_slip_reads_the_points_floor_never_zero(
     )
     monkeypatch.setattr(g, "RISK_FRAC", 0.0095)
     venue = _Venue(equity=99_900.0)
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["bracket_slip"]["slip_points"] == g.DEFAULT_SLIP_POINTS == 24.13
     assert doc["bracket_slip"]["source"].startswith("floor (p95_zero)")  # v5.5 label
     assert sorted(venue.sent) == [("buy", 0.19, 4310.0), ("sell", 0.19, 4290.0)]
@@ -554,7 +579,7 @@ def test_every_pass_publishes_the_slip_per_window_in_points(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     _sandbox(monkeypatch, tmp_path, guard=_guard())
-    doc = g.run(_Venue(), h._MT5(), armed=True)
+    doc = g.run(_Venue(), _FlatMT5(), armed=True)
     pub = doc["slip"]
     assert pub["status"] == "UNMEASURED" and pub["n"] == 0 and pub["unit"] == "points"
     assert pub["guard_slip_points"] == g.DEFAULT_SLIP_POINTS == 24.13
@@ -576,7 +601,7 @@ def test_a_failing_slip_publication_never_blocks_placement(
     monkeypatch.setattr(es, "refresh", boom)
     _sandbox(monkeypatch, tmp_path, guard=_guard())
     venue = _Venue()
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert sorted(venue.sent) == [("buy", 0.14, 4310.0), ("sell", 0.14, 4290.0)]
     assert doc["slip"]["status"] == "UNMEASURED" and "disk full" in doc["slip"]["error"]
     assert doc["slip"]["guard_slip_points"] == g.DEFAULT_SLIP_POINTS
@@ -605,7 +630,7 @@ def test_a_target_past_the_profit_cap_headroom_is_shrunk_to_fit(
     # the lot is cut to 500 / 6,700 = 0.0746 -> 0.07, a 469 USD target.
     _sandbox(monkeypatch, tmp_path, guard=_guard(101_500.0))
     venue = _Venue(equity=101_500.0)
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["guard_decision"]["verdict"] == "OK"
     assert sorted(venue.sent) == [("buy", 0.07, 4310.0), ("sell", 0.07, 4290.0)]
     (cut,) = _shrinks(doc, g.PROFIT_CAP_RAIL)
@@ -625,7 +650,7 @@ def test_a_headroom_too_small_for_the_minimum_lot_skips_with_a_row(
     # Up 1,995: 5 USD left, which 0.01 lots (67 USD of target) cannot fit.
     _sandbox(monkeypatch, tmp_path, guard=_guard(101_995.0))
     venue = _Venue(equity=101_995.0)
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["guard_decision"]["verdict"] == "OK"
     assert venue.sent == [] and doc["placed"] == []
     (skip,) = _rail_skips(doc, g.PROFIT_CAP_RAIL)
@@ -656,7 +681,7 @@ def test_an_unmeasurable_rail_defers_and_never_raises(
 
     monkeypatch.setattr(g, "bracket_floor_need", boom)
     venue = _Venue()
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert venue.sent == [] and "bracket rails unmeasurable" in " ".join(
         str(s.get("why")) for s in doc["skipped"]
     )
@@ -723,7 +748,7 @@ def test_a_refusing_verdict_cancels_our_resting_legs_only(
     _sandbox(monkeypatch, tmp_path, guard=guard)
     _resting_bracket(tmp_path)
     venue = _Venue(equity=equity, resting=[*_OWN, _PROTECTIVE, _HUMAN])
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["guard_decision"]["verdict"] == verdict
     assert sorted(venue.cancelled) == list(_OWN)
     assert venue.resting == [_PROTECTIVE, _HUMAN], "a stop or a human's order is never touched"
@@ -745,7 +770,7 @@ def test_an_ok_verdict_leaves_the_resting_bracket_alone(
     _sandbox(monkeypatch, tmp_path, guard=_guard())
     _resting_bracket(tmp_path)
     venue = _Venue(resting=[*_OWN, _PROTECTIVE, _HUMAN])
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     assert doc["guard_decision"]["verdict"] == "OK"
     assert venue.cancelled == []
     assert not [a for a in doc["actions"] if a["act"] == g.STAND_DOWN_CANCEL]
@@ -758,13 +783,13 @@ def test_a_failed_cancel_is_logged_never_raised_and_retried_next_pass(
     _sandbox(monkeypatch, tmp_path, guard=_guard(stood_down=True))
     _resting_bracket(tmp_path)
     venue = _Venue(resting=[*_OWN], cancel_fails=2, cancel_raises=raises)
-    doc = g.run(venue, h._MT5(), armed=True)
+    doc = g.run(venue, _FlatMT5(), armed=True)
     acts = [a for a in doc["actions"] if a["act"] == g.STAND_DOWN_CANCEL]
     assert len(acts) == 2 and not any(a["ok"] for a in acts)
     assert all("tried again next pass" in a["why"] for a in acts)
     assert venue.resting == list(_OWN)
     assert f"{g.STAND_DOWN_CANCEL} FAILED" in (tmp_path / "log.json").read_text(encoding="utf-8")
-    again = g.run(venue, h._MT5(), armed=True)
+    again = g.run(venue, _FlatMT5(), armed=True)
     assert sorted(venue.cancelled) == list(_OWN) and venue.resting == []
     assert all(a["ok"] for a in again["actions"] if a["act"] == g.STAND_DOWN_CANCEL)
 
