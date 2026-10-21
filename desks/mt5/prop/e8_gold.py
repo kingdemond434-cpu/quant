@@ -74,6 +74,8 @@ from mt5desk.kelly_sizing import (  # noqa: E402
     load_kelly_survival,
 )
 
+from prop import e8_evidence  # noqa: E402
+
 SYMBOL = "XAUUSD"
 #: Per-trade risk on the prop account, as a fraction of equity (docs/PROP_FIRM_E8.md).
 RISK_FRAC = 0.005
@@ -1165,11 +1167,20 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     now = datetime.now(tz=UTC)
     doc: dict[str, Any] = {"at": now.isoformat(timespec="seconds"), "armed": bool(armed),
                            "symbol": SYMBOL, "placed": [], "actions": [], "skipped": []}
+    # WHICH HOST RAN THIS PASS, AND ON WHICH ACCOUNT (prop/e8_evidence.py). Both reads never
+    # raise; they are recorded on the report, the heartbeat and every decision row.
+    host = e8_evidence.host_block()
+    account = e8_evidence.account_label(venue)
+    # Text clipped below is scrubbed of this account's id BEFORE it is cut (e8_evidence.clip).
+    e8_evidence.bind_account(account)
+    doc.update({"host": host, "account": account})
     tick = mt5.symbol_info_tick(SYMBOL)
     rates = mt5.copy_rates_from_pos(SYMBOL, mt5.TIMEFRAME_H1, 0, 400)
     if tick is None or rates is None or len(rates) < 60:
         doc["status"] = "NO_BARS"
         log("no XAUUSD tick or bars from the terminal; nothing decided")
+        doc["heartbeat"] = e8_evidence.write_heartbeat(
+            "NO_BARS", at=now, armed=armed, account=account, host=host, log=log)
         return doc
     import pandas as pd
     df = h1_frame(rates)
@@ -1178,7 +1189,11 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     today = str(tnow.date())
     doc.update({"server_time": tnow.isoformat(), "hour": round(hour, 3)})
 
-    state = rollover_state(_read_json(STATE, {}), today)
+    prior = _read_json(STATE, {})
+    state = rollover_state(prior, today)
+    # Evidence rows a failed write kept ride across the rollover (prop/e8_evidence.py); nothing
+    # a placement reads is touched.
+    e8_evidence.carry_pending(prior, state)
     acct = venue.account()
     equity = float(acct.get("equity") or acct.get("balance") or 0.0)
     risk_usd = equity * RISK_FRAC
@@ -1216,7 +1231,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                     f"exposure only")
         except Exception as exc:
             stood_down = True
-            doc["guard"] = f"guard unreadable ({type(exc).__name__}: {exc}"[:200] + ")"
+            doc["guard"] = e8_evidence.clip(
+                f"guard unreadable ({type(exc).__name__}: {exc}", 200) + ")"
             log(f"guard raised {type(exc).__name__}: {exc}; no new placements this pass")
 
     bid, ask = venue.quote(SYMBOL)
@@ -1230,10 +1246,24 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         # is unhealthy.
         iid, venue_positions, xau_positions = 0, [], []
         stood_down = True
-        doc["positions_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+        doc["positions_unreadable"] = e8_evidence.clip(f"{type(exc).__name__}: {exc}", 160)
         log("position book unreadable; no new E8 gold placement this pass")
     # -------------------------------------------------------------- placements
+    # EVERY DUE WINDOW'S DECISION IS EVIDENCE (prop/e8_evidence.py): collected here, written once
+    # after the placement block, only when a window's outcome or reason changes for the day.
+    decided = e8_evidence.Decisions(
+        risk_of=lambda n: equity * window_risk(n, kelly)[0] if equity > 0 else None)
     due_now = [] if stood_down else plan(df, hour, state)
+    if stood_down:
+        # Evidence only: the windows that WOULD be due, so a stand-down that lasts all day leaves
+        # a row the placement interlock can read. Nothing below reads this list.
+        try:
+            code = e8_evidence.stand_down_reason(equity, guard_decision, doc)
+            why = str(doc.get("guard") or doc.get("positions_unreadable") or code)
+            for due in plan(df, hour, state):
+                decided.note(due["window"], e8_evidence.DEFERRED, code, why)
+        except Exception as exc:
+            log(f"stand-down evidence not derived ({type(exc).__name__}: {exc})")
     # THE SELF-HEDGE RULE IS PER LEG, NOT PER BRACKET (principal, 2026-09-24).
     #
     # TradeLocker can hold opposite XAU positions, so a second two-sided bracket placed while one
@@ -1265,6 +1295,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                    f"{', '.join(str(p.get('id')) for p in xau_positions)}; deferred to prevent "
                    f"self-hedging")
             doc["skipped"].append({"window": due["window"], "why": why})
+            with contextlib.suppress(Exception):
+                decided.note(due["window"], e8_evidence.DEFERRED,
+                             e8_evidence.R_SIDE_UNREADABLE, why)
             log(f"[{due['window']}] DEFERRED: {why}")
         due_now = []
     committed: float | None = None
@@ -1288,10 +1321,14 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 contract_size=contract)
             doc["committed_risk"]["total_usd"] = round(committed, 2)
         except Exception as exc:
-            why = (f"concurrent open risk unmeasurable ({type(exc).__name__}: {exc}"[:200]
+            why = (e8_evidence.clip(
+                f"concurrent open risk unmeasurable ({type(exc).__name__}: {exc}", 200)
                    + "); no window placed this pass")
             for due in due_now:
                 doc["skipped"].append({"window": due["window"], "why": why})
+                with contextlib.suppress(Exception):
+                    decided.note(due["window"], e8_evidence.DEFERRED,
+                                 e8_evidence.R_RISK_UNMEASURABLE, why)
                 log(f"[{due['window']}] DEFERRED: {why}")
             due_now = []
     room = float(guard_decision.room_to_daily_floor) if guard_decision is not None else 0.0
@@ -1314,6 +1351,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             doc["skipped"].append({"window": name, "why": (
                 "stands aside: the survival-constrained growth solve "
                 "(reports/KELLY_SURVIVAL.json) funds this window at 0 risk")})
+            with contextlib.suppress(Exception):
+                decided.note(name, e8_evidence.SKIPPED, e8_evidence.R_KELLY_ZERO,
+                             doc["skipped"][-1]["why"], risk_usd=0.0)
             continue
         risk_usd = equity * frac
         # FIRST: one gold trade at risk at a time (`one_at_risk_blocker`). SECOND, a fail-safe
@@ -1324,8 +1364,14 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         if blocker is None and placed_this_pass:
             blocker = (f"one gold trade at risk at a time: {', '.join(placed_this_pass)} was "
                        f"placed earlier in this pass")
+        # The concurrent-risk budget is NOT checked here (audit HOLD on v4, must-fix 2): the lot
+        # ceiling below FITS a capped leg to that budget first, and only an unshrunk window that
+        # fails it is deferred under the exempt R_RISK_BUDGET, inside the sizing block.
+        blocker_code = e8_evidence.R_ONE_AT_RISK
         if blocker is not None:
             doc["skipped"].append({"window": name, "why": blocker})
+            with contextlib.suppress(Exception):
+                decided.note(name, e8_evidence.DEFERRED, blocker_code, blocker, risk_usd=risk_usd)
             log(f"[{name}] DEFERRED: {blocker}")
             continue
         # SIZING, v4 (audit HOLD on 3ce5aaf85): every leg this window would send is sized BEFORE
@@ -1523,7 +1569,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 log(f"[{name}] PLACED {side} {lot} {SYMBOL} @ {s['price']:.2f} sl {s['sl']:.2f} "
                     f"tp {s['tp']:.2f} -> order {oid}")
             except Exception as exc:
-                row.update({"status": "REJECTED", "why": f"{type(exc).__name__}: {exc}"[:200]})
+                row.update({"status": "REJECTED",
+                            "why": e8_evidence.clip(f"{type(exc).__name__}: {exc}", 200)})
                 log(f"[{name}] REJECTED {side}: {row['why']} (will retry while the window holds)")
                 failed[side] = {**{k: row[k] for k in ("price", "sl", "tp", "lot", "risk_usd")},
                                 "attempts": 1, "why": row["why"],
@@ -1539,6 +1586,14 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         if legs or failed:
             placed_this_pass.append(name)
         doc["placed"].append({"window": name, "legs": legs})
+        try:
+            outcome, reason, why, sent_lot = e8_evidence.window_outcome(
+                legs, failed, armed=armed, unsizeable=any(
+                    r.get("window") == name and r.get("status") == "UNSIZEABLE"
+                    for r in doc["skipped"]))
+            decided.note(name, outcome, reason, why, lot=sent_lot, risk_usd=risk_usd)
+        except Exception as exc:
+            log(f"[{name}] decision evidence not derived ({type(exc).__name__}: {exc})")
 
     # -------------------------------------------------------------- management
     try:
@@ -1577,7 +1632,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         positions_ok = False
         xau_positions = []
         position_ids = set()
-        doc["positions_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+        doc["positions_unreadable"] = e8_evidence.clip(f"{type(exc).__name__}: {exc}", 160)
 
     # -------------------------------------------------------------- stand-down cancels
     # THE GUARD'S REFUSAL REACHES WHAT ALREADY RESTS (see STAND_DOWN_CANCEL): a twin placed
@@ -1598,8 +1653,17 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                            orders_ok="orders_unreadable" not in doc, filled=filled,
                            xau_positions=xau_positions, positions_ok=positions_ok,
                            stood_down=stood_down, armed=armed, hist_rows=hist_rows,
-                           history_ok="history_unreadable" not in doc, instrument_id=iid)
+                           history_ok="history_unreadable" not in doc, instrument_id=iid,
+                           decided=decided)
         open_ids = {int(o.get("id")) for o in open_orders if o.get("id") is not None}
+
+    # The decisions are written AFTER every placement and every re-send of a dropped leg this
+    # pass, so a write that fails or hangs on the disk has no order left to delay, and a re-send
+    # is on the same row set as the window it belongs to; it never raises (e8_evidence).
+    doc["decisions"] = decided.rows
+    doc["decisions_recorded"] = len(e8_evidence.record_decisions(
+        decided, state, now=now, server_date=today, account=account, armed=armed, host=host,
+        symbol=SYMBOL, log=log))
 
     # OUR OWN ORDERS AND POSITIONS, RE-DERIVED FROM THE VENUE EVERY PASS -- so a rollover (or a
     # lost state file) can neither orphan a position from management nor leave a GTC leg resting.
@@ -1774,6 +1838,16 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     doc["slip"] = publish_slip(now=now)
     doc.setdefault("status", "OK")
     try:
+        beat_extra: dict[str, Any] = {
+            "server_time": doc.get("server_time"), "hour": doc.get("hour"),
+            "guard": (doc.get("guard_decision") or {}).get("verdict") or doc.get("guard"),
+            "open_xau_positions": len(xau_positions), "decisions": len(decided.rows)}
+    except Exception as exc:
+        beat_extra = {"extra_unreadable": f"{type(exc).__name__}: {exc}"[:160]}
+    doc["heartbeat"] = e8_evidence.write_heartbeat(
+        str(doc["status"]), at=now, armed=armed, account=account, host=host, log=log,
+        extra=beat_extra)
+    try:
         STATE.parent.mkdir(parents=True, exist_ok=True)
         STATE.write_text(json.dumps(state, indent=1, default=str), encoding="utf-8")
         OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -1788,9 +1862,15 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                        open_orders: list[dict], orders_ok: bool, filled: dict[int, int],
                        xau_positions: list[dict], positions_ok: bool, stood_down: bool,
                        armed: bool, hist_rows: list[dict], history_ok: bool,
-                       instrument_id: int) -> None:
+                       instrument_id: int,
+                       decided: e8_evidence.Decisions | None = None) -> None:
     """Re-send the legs `retry_decisions` says still belong to a live window. Mutates `state`,
     appends to `doc["actions"]` and to `open_orders` (so the rest of the pass sees the new leg).
+
+    EVERY OUTCOME IS EVIDENCE (prop/e8_evidence.py, v2): a re-send or an adopted landed send is
+    a PLACED row, an abandoned leg a row of its own (`abandon_reason`), a re-send the venue
+    refused again a `venue_rejected` deferral. Noted into `decided`, which never raises and is
+    read by nothing that sends.
 
     Fails CLOSED: nothing is re-sent on a disarmed pass, with the order book, the order history
     or the position book unreadable (a duplicate or a self-hedge is worse than a missing leg), or
@@ -1853,6 +1933,12 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             act["why"] = dec["why"]
             log(f"[{name}] {side} dropped leg abandoned: {dec['why']}")
             doc["actions"].append(act)
+            with contextlib.suppress(Exception):
+                if decided is not None:
+                    decided.note(name, e8_evidence.SKIPPED,
+                                 e8_evidence.abandon_reason(dec["why"], w),
+                                 f"{side} abandoned: {dec['why']}", lot=leg.get("lot"),
+                                 risk_usd=leg.get("risk_usd"))
             continue
         levels = {k: leg[k] for k in ("price", "sl", "tp", "lot")}
         done = [o for o in hist_rows if str(o.get("status") or "").lower() == "filled"]
@@ -1897,6 +1983,10 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             log(f"[{name}] {side} dropped leg abandoned: {why}; MISSED GROWTH "
                 f"({UNOWNED_BLOCK_RAIL}): the leg's {float(missed):.0f} USD of certified risk "
                 "is not deployed")
+            with contextlib.suppress(Exception):
+                if decided is not None:
+                    decided.note(name, e8_evidence.SKIPPED, e8_evidence.R_UNOWNED_POSITION,
+                                 f"{side} abandoned: {why}", lot=leg.get("lot"), risk_usd=missed)
             continue
         row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
                **levels, "armed": True, "retry_of": leg.get("first_at")}
@@ -1913,12 +2003,17 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                     f"-> order {oid} (attempt {int(leg.get('attempts') or 0) + 1})")
             except Exception as exc:
                 leg["attempts"] = int(leg.get("attempts") or 0) + 1
-                leg["why"] = f"{type(exc).__name__}: {exc}"[:200]
+                leg["why"] = e8_evidence.clip(f"{type(exc).__name__}: {exc}", 200)
                 row.update({"status": "REJECTED", "why": leg["why"]})
                 act.update({"ok": False, "why": leg["why"]})
                 log(f"[{name}] {side} retry REJECTED: {leg['why']}")
                 _record(row)
                 doc["actions"].append(act)
+                with contextlib.suppress(Exception):
+                    if decided is not None:
+                        decided.note(name, e8_evidence.DEFERRED, e8_evidence.R_VENUE_REJECTED,
+                                     f"{side} re-send refused: {leg['why']}", lot=leg.get("lot"),
+                                     risk_usd=leg.get("risk_usd"))
                 continue
         _record(row)
         w.setdefault("orders", {})[side] = {"id": int(oid), **levels}
@@ -1928,6 +2023,12 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                             "stopPrice": float(leg["price"])})
         act.update({"ok": True, "order_id": int(oid), "adopted": bool(row.get("adopted"))})
         doc["actions"].append(act)
+        with contextlib.suppress(Exception):
+            if decided is not None:
+                decided.note(name, e8_evidence.PLACED, e8_evidence.R_PLACED,
+                             (f"{side}: the failed send had landed, adopted order {oid}"
+                              if row.get("adopted") else f"{side} re-sent -> order {oid}"),
+                             lot=leg.get("lot"), risk_usd=leg.get("risk_usd"))
     for w in (state.get("windows") or {}).values():
         if "failed" in w and not w["failed"]:
             del w["failed"]
@@ -2006,11 +2107,15 @@ def main(argv: list[str] | None = None) -> int:
 
 def _failed_pass(status: str, *, armed: bool) -> None:
     """Publish connection failure without altering durable window/order state."""
+    at = datetime.now(UTC)
+    e8_evidence.bind_account(e8_evidence.UNMEASURED)
+    beat = e8_evidence.write_heartbeat(status, at=at, armed=armed, log=log)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     temporary = OUT.with_suffix(".tmp")
-    temporary.write_text(json.dumps({"at": datetime.now(UTC).isoformat(),
+    temporary.write_text(json.dumps({"at": at.isoformat(),
                                      "status": status, "armed": armed,
                                      "placed": [], "actions": [], "skipped": [],
+                                     "host": (beat or {}).get("host"),
                                      "why": "connection failed; no placement evaluated"}), "utf-8")
     temporary.replace(OUT)
 

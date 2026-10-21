@@ -685,6 +685,13 @@ $reportPaths = @(
     "desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json",
     "desks/mt5/reports/FORWARD_CLOCK_LEDGER.json",
     "desks/mt5/reports/shadow/precert_shadow_state.json",
+    # THE E8 GOLD LANE'S PLACEMENT EVIDENCE (2026-10-20). prop/e8_evidence.py writes both on every
+    # five-minute E8-Gold pass; scripts/check_placement_interlock.py judges the lane from them.
+    # Until now they existed only on the box, so no reader off it could say whether the E8 book
+    # was placing or which host had sent its orders. The account is written as a keyed pseudonym
+    # (`account_ref`), never the id; the ledger is bounded at 1 MB by its writer.
+    "desks/mt5/data/e8_gold_heartbeat.json",
+    "desks/mt5/data/e8_decision_ledger.jsonl",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable
