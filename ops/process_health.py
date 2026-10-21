@@ -70,6 +70,10 @@ RESULT_MEANING: dict[int, str] = {
 #: timed out at this same 45 s on every pass of 2026-10-20, which marked all 73 tasks
 #: SCHEDULER_UNMEASURED. The brief CSV query returns there in about 6 s.
 SCHTASKS_TIMEOUT_S = 45
+#: The verbose `/fo csv /v` read gets its own bound. Measured on the trading box 2026-10-20
+#: 23:4xZ (73 desk tasks, 513 rows): 28.3 s, against 6.2 s for the brief query -- so the shared
+#: 45 s left it under 1.6x headroom on a loaded box. About 3x the measurement, rounded up.
+SCHTASKS_VERBOSE_TIMEOUT_S = 90
 
 #: The columns the verdict reads. The brief query (`/fo csv`) carries the first three; the
 #: verbose one (`/fo csv /v`) adds the run history. A row with no "Last Result" column is
@@ -107,8 +111,9 @@ class SchtasksUnreadable(ValueError):
 
 def _run_schtasks(args: list[str]) -> tuple[int, str, str]:
     """One `schtasks` call, bounded. Raises OSError/SubprocessError for the caller to name."""
+    bound = SCHTASKS_VERBOSE_TIMEOUT_S if "/v" in args else SCHTASKS_TIMEOUT_S
     proc = subprocess.run(["schtasks", *args], capture_output=True, text=True,
-                          errors="replace", timeout=SCHTASKS_TIMEOUT_S)
+                          errors="replace", timeout=bound)
     return proc.returncode, proc.stdout or "", proc.stderr or ""
 
 

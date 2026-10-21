@@ -61,7 +61,7 @@ def _fake(monkeypatch: pytest.MonkeyPatch, brief: Any, verbose: Any) -> list[lis
     def run(cmd: list[str], **kw: Any) -> subprocess.CompletedProcess[str]:
         calls.append(list(cmd))
         assert cmd[0] == "schtasks", f"the probe ran {cmd[0]!r}; it must be schtasks only"
-        assert kw.get("timeout") == 45, kw
+        assert kw.get("timeout") == (90 if "/v" in cmd else 45), kw
         answer = verbose if "/v" in cmd else brief
         if isinstance(answer, BaseException):
             raise answer
@@ -73,6 +73,11 @@ def _fake(monkeypatch: pytest.MonkeyPatch, brief: Any, verbose: Any) -> list[lis
 
 def test_the_timeout_is_kept_at_45_seconds() -> None:
     assert ph.SCHTASKS_TIMEOUT_S == 45
+
+
+def test_the_verbose_query_has_its_own_90_second_bound() -> None:
+    # Measured 28.3 s for the verbose read on the trading box (2026-10-20); 45 s was under 1.6x.
+    assert ph.SCHTASKS_VERBOSE_TIMEOUT_S == 90
 
 
 def test_brief_csv_parses_folders_quotes_and_drops_microsoft() -> None:
