@@ -678,6 +678,14 @@ $reportPaths = @(
     # the judge stall pager's last reading (2026-10-21): open incidents, page outcome, and by its
     # age whether the pager itself is still running on MT5-BoxHeartbeat
     "desks/mt5/reports/JUDGE_STALL.json",
+    # the --once sweep's own watchdog (2026-10-20): its heartbeat (phase, shard counts, deadlines,
+    # tree CPU/RSS) and the named stall it acted on -- a hung sweep reads STALLED off the box
+    "desks/mt5/reports/GAUNTLET_HEARTBEAT.json",
+    "desks/mt5/reports/GAUNTLET_STALL.json",
+    # the hourly judge_alive leg's verdict, and the deepening worker's memory guard (deferred
+    # tasks, consecutive tripped passes, and its missed-growth line) -- audit of 2832cebd1
+    "desks/mt5/reports/judge_alive_fence.json",
+    "desks/mt5/reports/DEEPENING_MEMORY_GUARD.json",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json",
     "desks/mt5/reports/BREADTH_MANDATE.json",
     "desks/mt5/reports/TIER1_SCORECARD.json",

@@ -469,6 +469,10 @@ desks/mt5/data/import_stems_cache.json
 # the judge stall pager's reading and page outcome (2026-10-21): its age on origin is the
 # off-box evidence that the pager itself is running
 !desks/mt5/reports/JUDGE_STALL.json
+!desks/mt5/reports/GAUNTLET_HEARTBEAT.json
+!desks/mt5/reports/GAUNTLET_STALL.json
+!desks/mt5/reports/judge_alive_fence.json
+!desks/mt5/reports/DEEPENING_MEMORY_GUARD.json
 !desks/mt5/reports/EFFECTIVE_BREADTH.json
 !desks/mt5/reports/BREADTH_MANDATE.json
 !desks/mt5/reports/TIER1_SCORECARD.json
@@ -493,6 +497,8 @@ judge_coverage_txn-*
 desks/mt5/reports/JUDGE_COVERAGE_TIMEOUT.json.tmp
 desks/mt5/data/hypotheses/unrunnable_specs.json.tmp-*
 desks/mt5/data/hypotheses/conversion_handoff.json.tmp-*
+# per-shard verdict publications (sealed judge, IDEA_QUEUE 159): a provisional copy, never state
+desks/mt5/data/hypotheses/shard_verdicts/
 # THE OPEN BOOK, PER POSITION (ops/publish_account_state.py, 2026-10-07). The repository is
 # public: tickets, sizes and stops never reach a tracked file. Last line on purpose, after every
 # negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.

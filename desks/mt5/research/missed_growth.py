@@ -643,6 +643,33 @@ def published_gate_lines() -> dict[str, Any]:
             "adopted": doc.get("adopted")}
 
 
+#: THE JUDGE'S WATCHDOG AND THE DEEPENING MEMORY GUARD (audit of 2832cebd1, 2026-10-20). Neither
+#: registers a rail (the register is sealed), so each publishes its missed-growth lines on its
+#: own artifact: a sweep the watchdog killed (or found dead) discards its whole wall, and a
+#: deepening pass the memory guard stopped defers tasks to the next hour.
+GAUNTLET_STALL = BASE / "reports" / "GAUNTLET_STALL.json"
+DEEPENING_GUARD = BASE / "reports" / "DEEPENING_MEMORY_GUARD.json"
+
+
+def organ_published_lines(path: Path, *, recent: int = 20) -> dict[str, Any]:
+    """An organ's own published missed-growth lines, read from its artifact. Absent -> UNMEASURED
+    (said, never a clean zero); present with no lines -> NOT_BINDING (the rail never cost)."""
+    doc = _json(path)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": f"no {path.parent.name}/{path.name} on this host: the organ has not run"}
+    lines = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)][-recent:]
+    if not lines:
+        return {"verdict": NOT_BINDING, "lines": [], "source": f"reports/{path.name}",
+                "why": "the organ has published no missed-growth line: it never cost a wall"}
+    lost = [float(x["lost_s"]) for x in lines if isinstance(x.get("lost_s"), (int, float))]
+    return {"verdict": UNMEASURED if any(x.get("verdict") == UNMEASURED for x in lines)
+            else COSTS, "source": f"reports/{path.name}", "lines": lines,
+            "n_lines": len(lines), "lost_s": round(sum(lost), 1) if lost else None,
+            "consecutive": doc.get("consecutive", doc.get("consecutive_tripped")),
+            "why": "measured cost in its own units; the E[log W] price is UNMEASURED"}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -760,7 +787,10 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            "calibration": cal, "calibration_changes": changed, "review_tasks": len(tasks),
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
-           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines()},
+           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
+                                    "gauntlet_watchdog": organ_published_lines(GAUNTLET_STALL),
+                                    "deepening_memory_guard": organ_published_lines(
+                                        DEEPENING_GUARD)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
