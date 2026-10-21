@@ -1204,13 +1204,27 @@ class _SidecarLock:
             return None, None
         return (doc if isinstance(doc, dict) else {}), st.st_mtime
 
+    def _token(self) -> tuple[str, Any]:
+        """("OK", token) | ("ABSENT", None) | ("UNREADABLE", None), retrying a transient read
+        (a Windows sharing violation while another process stats or beats the file)."""
+        for attempt in range(OUTSTANDING_READ_TRIES):
+            try:
+                doc = json.loads(self.path.read_text("utf-8") or "{}")
+                return "OK", (doc.get("token") if isinstance(doc, dict) else None)
+            except FileNotFoundError:
+                return "ABSENT", None
+            except (OSError, ValueError):
+                if attempt + 1 < OUTSTANDING_READ_TRIES:
+                    time.sleep(OUTSTANDING_READ_PAUSE_S)
+        return "UNREADABLE", None
+
     def owned(self) -> bool:
+        """True only on a clean read of this pass's token. Unreadable is NOT owned: a write
+        gated on it waits for the next pass rather than risk racing a new holder."""
         if not self.held or self.lost:
             return False
-        doc, _ = self._read(self.path)
-        if not doc:
-            return False
-        return bool(doc.get("token") == self.token)
+        state, token = self._token()
+        return state == "OK" and token == self.token
 
     def _take_stale(self) -> bool:
         doc, mtime = self._read(self.path)
@@ -1237,7 +1251,10 @@ class _SidecarLock:
 
     def _beat_loop(self) -> None:
         while not self._stop.wait(OUTSTANDING_LOCK_BEAT_S):
-            if not self.owned():
+            state, token = self._token()
+            if state == "UNREADABLE":
+                continue                  # transient: try again next beat, never declare lost
+            if state == "ABSENT" or token != self.token:
                 self.lost = True
                 return
             with contextlib.suppress(OSError):
@@ -1272,10 +1289,25 @@ class _SidecarLock:
         self._stop.set()
         if self._beat is not None:
             self._beat.join(timeout=5)
-        if self.owned():
+        # Unlink whenever the file still carries OUR token, even after a beat flagged a loss: a
+        # lock left behind would block every pass for the whole stale window.
+        state, token = self._token()
+        if state == "OK" and token == self.token:
             with contextlib.suppress(OSError):
                 self.path.unlink()
         self.held = False
+
+
+def _replace_retry(src: Path, dst: Path) -> None:
+    """`src.replace(dst)`, retrying a PermissionError (a reader holding `dst` open on Windows)."""
+    for attempt in range(OUTSTANDING_READ_TRIES):
+        try:
+            src.replace(dst)
+            return
+        except PermissionError:
+            if attempt + 1 >= OUTSTANDING_READ_TRIES:
+                raise
+            time.sleep(OUTSTANDING_READ_PAUSE_S)
 
 
 @contextlib.contextmanager
@@ -1398,7 +1430,7 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
             try:
                 tmp = out_path.with_name(out_path.name + ".tmp")
                 tmp.write_text(json.dumps(outstanding, indent=1, default=str), "utf-8")
-                tmp.replace(out_path)
+                _replace_retry(tmp, out_path)
                 out_written = True
             except OSError:
                 out_written = False
@@ -1417,19 +1449,22 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         if out_writable and not out_written:
             out_state = OUTSTANDING_WRITE_FAILED
         if locked and not locked_lost and locked.owned():
-            for old in popped.values():
-                if isinstance(old, dict) and old.get("reason") in NOT_TESTABLE_REASONS:
-                    _count_readmit(old)
             try:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 tmp_bank = target.with_name(target.name + ".tmp")
                 tmp_bank.write_text(json.dumps(bank, indent=1, default=str), "utf-8")
-                os.replace(tmp_bank, target)
+                _replace_retry(tmp_bank, target)
                 bank_write = "WRITTEN"
             except OSError:
                 bank_write = "WRITE_FAILED"
+        if bank_write == "WRITTEN":
+            # COUNTED ONLY ONCE THE BANK LANDED: a readmission the disk never saw is not one.
+            for old in popped.values():
+                if isinstance(old, dict) and old.get("reason") in NOT_TESTABLE_REASONS:
+                    _count_readmit(old)
         else:
-            # Not ours to write: nothing this pass changed reaches disk, and nothing counts.
+            # Not ours to write, or the write failed: nothing this pass changed is on disk, and
+            # nothing counts.
             bank = unrunnable_bank(target)
             added, popped = 0, {}
             readmitted_nt.clear()
@@ -1445,8 +1480,12 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         lp = log or target.parent / READMISSION_LOG.name
         lp.parent.mkdir(parents=True, exist_ok=True)
         with lp.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps({"at": at, "readmitted": n_re,
-                                 "by_reason": readmitted_nt_reason}) + "\n")
+            # A pass that did not hold the bank says so: LOCKED is not a measured zero, and the
+            # burn-down neither counts it nor takes freshness from it.
+            line = ({"at": at, "state": "LOCKED"} if bank_write == "SKIPPED_LOCKED" else
+                    {"at": at, "readmitted": n_re, "by_reason": readmitted_nt_reason,
+                     **({"state": bank_write} if bank_write != "WRITTEN" else {})})
+            fh.write(json.dumps(line) + "\n")
     except OSError:
         pass
     return {"parked_this_pass": added, "readmitted_on_bar_growth": len(popped),

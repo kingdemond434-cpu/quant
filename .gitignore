@@ -479,6 +479,7 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/LEDGER_VIEW_ADOPTION.json
 # Judge-owned box state, read on the box only (audit of PR #290): never published by a git add sweep.
 desks/mt5/data/hypotheses/unrunnable_specs.json
+desks/mt5/data/hypotheses/unrunnable_specs.json.tmp
 desks/mt5/data/hypotheses/conversion_handoff.json
 # The sidecar AND its markers (.born, .torn-*, .vanished-*, .tmp, .lock): box-local state; a
 # committed marker reads VANISHED in every other checkout (audit of fcef73b92).

@@ -523,7 +523,8 @@ def test_a_pass_that_loses_its_lock_mid_pass_writes_nothing(tmp_path, monkeypatc
     assert got["bank_write"] == "SKIPPED_LOCKED" and got["bank_size"] == 1
     assert bank_path.read_text("utf-8") == before and not side.exists()
     lock = tmp_path / (side.name + ".lock")
-    assert json.loads(lock.read_text("utf-8"))["token"] == "someone-else"   # left to its owner
+    owner = json.loads(lock.read_text("utf-8"))["token"]
+    assert owner == "someone-else"                           # left to its owner
 
 
 def test_the_stale_takeover_is_atomic(tmp_path, monkeypatch) -> None:
@@ -547,7 +548,8 @@ def test_the_stale_takeover_is_atomic(tmp_path, monkeypatch) -> None:
         real_rename(src, dst)
     monkeypatch.setattr(jc.os, "rename", race)
     assert b._take_stale() is False
-    assert json.loads(lock.read_text("utf-8"))["token"] == "live"
+    restored = json.loads(lock.read_text("utf-8"))["token"]
+    assert restored == "live"
     assert not list(tmp_path.glob(side.name + ".lock.stale-*"))
 
 
@@ -566,3 +568,83 @@ def test_the_heartbeat_keeps_a_long_pass_s_lock(tmp_path, monkeypatch) -> None:
     assert rival.acquire() is True
     rival.release()
     assert not (tmp_path / (side.name + ".lock")).exists()
+
+
+# ------------------------------------------------------------- v4.2 should-fixes (dea8c4d56) --
+def test_a_replace_blocked_by_a_reader_is_retried(tmp_path, monkeypatch) -> None:
+    bank_path = _readmittable_bank(tmp_path)
+    monkeypatch.setattr(jc, "OUTSTANDING_READ_PAUSE_S", 0.0)
+    real, calls = Path.replace, {"n": 0}
+
+    def flaky(self, target):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise PermissionError("sharing violation")
+        return real(self, target)
+    monkeypatch.setattr(Path, "replace", flaky)
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "NEEDS_DATA"})
+    got = jc.update_unrunnable_bank({}, at="2026-10-22T00:00:00+00:00", path=bank_path)
+    assert got["bank_write"] == "WRITTEN" and calls["n"] >= 3
+
+
+def test_readmissions_count_only_after_the_bank_write_lands(tmp_path, monkeypatch) -> None:
+    now = datetime(2026, 10, 21, tzinfo=UTC)
+    bank_path = tmp_path / "unrunnable_specs.json"
+    row = {"reason": "not_testable_spec", "sym": "EURUSD", "family": "event_reaction",
+           "tf": "H1", "days": 0, "bar_bytes": 1,
+           "parked_at": (now - timedelta(days=91)).isoformat(),
+           "not_testable_since": (now - timedelta(days=91)).isoformat()}
+    bank_path.write_text(json.dumps({"EURUSD.event_reaction.p=1": row}), "utf-8")
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "PRESENT"})
+    if row["reason"] not in jc.NOT_TESTABLE_REASONS:
+        row["reason"] = sorted(jc.NOT_TESTABLE_REASONS)[0]
+        bank_path.write_text(json.dumps({"EURUSD.event_reaction.p=1": row}), "utf-8")
+    real = jc._replace_retry
+
+    def refuse(src, dst):
+        if dst == bank_path:
+            raise OSError("disk full")
+        return real(src, dst)
+    monkeypatch.setattr(jc, "_replace_retry", refuse)
+    log = tmp_path / "log.jsonl"
+    got = jc.update_unrunnable_bank({}, at="2026-10-22T00:00:00+00:00", path=bank_path, log=log)
+    assert got["bank_write"] == "WRITE_FAILED"
+    assert got["readmitted_not_testable"] == 0 and got["readmitted_on_bar_growth"] == 0
+    assert json.loads(log.read_text("utf-8").splitlines()[-1])["state"] == "WRITE_FAILED"
+
+
+def test_a_locked_pass_logs_locked_not_a_measured_zero(tmp_path, monkeypatch) -> None:
+    bank_path = _readmittable_bank(tmp_path)
+    _live_foreign_lock(tmp_path)
+    monkeypatch.setattr(jc, "OUTSTANDING_LOCK_WAIT_S", 0.0)
+    log = tmp_path / "log.jsonl"
+    jc.update_unrunnable_bank({}, at="2026-10-22T00:00:00+00:00", path=bank_path, log=log)
+    line = json.loads(log.read_text("utf-8").splitlines()[-1])
+    assert line == {"at": "2026-10-22T00:00:00+00:00", "state": "LOCKED"}
+    from research import judging_burndown as jb
+    got = jb.readmissions(datetime(2026, 10, 22, 0, 30, tzinfo=UTC), log)
+    assert got["status"] == jb.UNMEASURED                  # a LOCKED line is no reading
+
+
+def test_a_transient_heartbeat_read_never_loses_the_lock(tmp_path, monkeypatch) -> None:
+    import time as _t
+    monkeypatch.setattr(jc, "OUTSTANDING_LOCK_BEAT_S", 0.02)
+    monkeypatch.setattr(jc, "OUTSTANDING_READ_PAUSE_S", 0.0)
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    lk = jc._SidecarLock(side, "a")
+    assert lk.acquire()
+    real, state = Path.read_text, {"fail": 6}
+
+    def flaky(self, *a, **k):
+        if self == lk.path and state["fail"] > 0:
+            state["fail"] -= 1
+            raise PermissionError("sharing violation")
+        return real(self, *a, **k)
+    monkeypatch.setattr(Path, "read_text", flaky)
+    _t.sleep(0.3)
+    assert not lk.lost and lk.owned()
+    lk.lost = True                                          # even if a beat had flagged it,
+    lk.release()                                            # our own token is still unlinked
+    assert not lk.path.exists()
