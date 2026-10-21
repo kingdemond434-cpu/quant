@@ -133,7 +133,21 @@ def account_key(login: object, server: object) -> str:
     book."""
     if login in (None, "") or isinstance(login, bool) or server in (None, ""):
         raise ValueError("the account's login or server is unreadable")
-    return "sha256:" + hashlib.sha256(f"{login}@{server}".encode()).hexdigest()[:16]
+    return "sha256:" + hashlib.sha256(
+        f"{norm_login(login)}@{str(server).strip()}".encode()).hexdigest()[:16]
+
+
+def norm_login(login: object) -> str:
+    """ONE LOGIN TYPE AT EVERY CALL (auditor, r6): an int, an integral float and a digit string
+    are the same account (`7000001`, `7000001.0`, `" 7000001 "` -> "7000001"); a username keeps
+    its own text, stripped. Every `account_key` caller -- the terminal's int login, the box's
+    declared login, the TradeLocker acc_id -- therefore names one account one way."""
+    if isinstance(login, int) and not isinstance(login, bool):
+        return str(login)
+    if isinstance(login, float) and login.is_integer():
+        return str(int(login))
+    text = str(login).strip()
+    return str(int(text)) if text.isdigit() else text
 
 
 def mt5_account_key(mt5: Any) -> str:

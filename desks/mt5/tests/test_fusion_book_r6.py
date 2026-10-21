@@ -767,3 +767,16 @@ def test_late_sends_are_billed_in_missed_growth() -> None:
     from research import missed_growth as mg
 
     assert "gold_late_send" in fusion_rails.RAILS and "gold_late_send" in mg.FUSION_RAIL_NAMES
+
+
+def test_every_account_key_call_normalises_the_login_to_one_type() -> None:
+    k = xa.account_key(7000001, "FusionMarkets-Live")
+    assert k == xa.account_key("7000001", "FusionMarkets-Live") \
+        == xa.account_key(" 7000001 ", " FusionMarkets-Live ") \
+        == xa.account_key(7000001.0, "FusionMarkets-Live")
+    # Unchanged for an int login: no key the box already declared moves because of this.
+    import hashlib
+    assert k == "sha256:" + hashlib.sha256(b"7000001@FusionMarkets-Live").hexdigest()[:16]
+    assert xa.account_key("trader", "tl") != xa.account_key("trader2", "tl")
+    with pytest.raises(ValueError):
+        xa.account_key(True, "x")
