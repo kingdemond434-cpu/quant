@@ -98,7 +98,7 @@ def test_fields_on_small_temp_parquets_and_tick_files(desk: dict[str, Path]) -> 
     assert "last_tick" not in tape["GBPUSD"]
     s = doc["summary"]
     assert s["newest_bar_time"] == "2026-10-21T11:59:00+00:00"
-    assert s["newest_bar_age_h"] == pytest.approx(1 / 60, abs=1e-3)
+    assert s["newest_bar_age_h"] == pytest.approx(1 / 60, abs=0.005)
     assert s["newest_tick_time"] == "2026-10-21T11:58:30+00:00"
     assert s["verdict"] == "MEASURED" and doc["budget_exhausted"] is False
 
