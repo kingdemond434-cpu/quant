@@ -38,6 +38,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 from mt5desk import account_profile as _acct_real  # noqa: E402
 from mt5desk import config as _cfg  # noqa: E402
 from mt5desk import decision_core as dc  # noqa: E402
+from mt5desk.broker_clock import broker_to_utc  # noqa: E402
 from mt5desk import provenance as _prov_real  # noqa: E402
 from mt5desk.sizing import decay_factor  # noqa: E402
 
@@ -1157,7 +1158,8 @@ def test_no_bracket_is_sent_at_or_after_the_cancel_hour() -> None:
     sig = loop.index('if hour < s["sig_hour"]:')
     cancel = loop.index("if _past_cancel_hour(hour):")
     assert sig < cancel < loop.index("sym = mt5.symbol_info(s[\"symbol\"])")
-    assert "st[\"placement_pass\"] = tnow.isoformat()" in _GW_SRC
+    assert 'st["placement_pass"] = _now_utc.isoformat(timespec="seconds")' in _GW_SRC
+    assert 'st["placement_pass_clock"] = "utc"' in _GW_SRC
 
 
 # ------------------------------------------- main(): the pause file and placement idempotence
@@ -1170,14 +1172,18 @@ def test_no_bracket_is_sent_at_or_after_the_cancel_hour() -> None:
 #: A Tuesday, 09:30 UTC: past the asia window's 07:00 signal hour, before london_am (13:00),
 #: afternoon (17:00), the 19:30 close and the 20:30 cancel. `main()` dates the tick against the
 #: wall clock, so the clock it reads is pinned here too.
+#: `_WHEN` is the BROKER's clock -- the tick and the bars are stamped in it, and the windows are
+#: written in it. The wall clock the gateway reads is that instant's true UTC (06:30 on this
+#: date, New York on daylight time), which is how the stale-tick gate ages a live tick as fresh.
 _WHEN = datetime(2026, 9, 8, 9, 30, tzinfo=UTC)
+_WHEN_UTC = broker_to_utc(_WHEN).to_pydatetime()
 _DAY = "2026-09-08"
 
 
 class _Clock(datetime):
     @classmethod
     def now(cls, tz=None):
-        return _WHEN.astimezone(tz) if tz else _WHEN.replace(tzinfo=None)
+        return _WHEN_UTC.astimezone(tz) if tz else _WHEN_UTC.replace(tzinfo=None)
 
 
 def _gold_rows(n: int = 400) -> list[dict]:
