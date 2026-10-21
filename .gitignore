@@ -462,6 +462,7 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/RESEARCH_BUDGET.json
 !desks/mt5/data/research_budget.json
 !desks/mt5/reports/JUDGING_RATE.json
+!desks/mt5/reports/JUDGING_RATE.attempt.json
 !desks/mt5/reports/JUDGING_THROUGHPUT.json
 !desks/mt5/reports/GAUNTLET_BACKPRESSURE.json
 !desks/mt5/reports/JUDGE_COVERAGE.json

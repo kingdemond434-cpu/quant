@@ -669,6 +669,9 @@ $reportPaths = @(
     "desks/mt5/reports/RESEARCH_BUDGET.json",
     "desks/mt5/data/research_budget.json",
     "desks/mt5/reports/JUDGING_RATE.json",
+    # the judging_throughput pass that wrote it, or the phase the last pass died in (2026-10-21):
+    # without it a killed pass leaves an old JUDGING_RATE that reads as current
+    "desks/mt5/reports/JUDGING_RATE.attempt.json",
     "desks/mt5/reports/JUDGING_THROUGHPUT.json",
     "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json",
     "desks/mt5/reports/JUDGE_COVERAGE.json",
