@@ -5508,20 +5508,20 @@ def main() -> None:
                         not o.get("blocked") and o.get("retcode") in (10008, 10009)
                         for o in (res.get("orders") or [])):
                     _gold_placed_this_pass.append(s["name"])
-                    # Republish this lane's gold state at once, under this lock (v2s SF-2): no
-                    # other lane decides on a reading older than these resting legs.
-                    if _oco_lane and _oco_key:
-                        _resync = _oco.sync_lane(_oco_lane, _oco_key,
-                                                 lambda: _oco.mt5_gold_rows(mt5),
-                                                 date=day_key, holder="gateway:bracket")
-                        if not _resync.get("published"):
-                            log(f"gold OCO: {_oco_lane} gold state not republished after "
-                                f"[{s['name']}] ({_resync.get('why')}); next pass")
                 try:
                     _xa.publish_mt5(mt5, source="gateway")
                 except Exception as exc:
                     log(f"cross-account: Fusion book not published after [{s['name']}] "
                         f"({type(exc).__name__}: {exc})")
+                # Republish this lane's gold state at once, under this lock (v2s SF-2): no other
+                # lane decides on a reading older than the legs this pass just rested.
+                if s["symbol"] == GOLD_SYMBOL and st.get("armed") and _oco_lane and _oco_key:
+                    _resync = _oco.sync_lane(_oco_lane, _oco_key,
+                                             lambda: _oco.mt5_gold_rows(mt5),
+                                             date=day_key, holder="gateway:bracket")
+                    if not _resync.get("published"):
+                        log(f"gold OCO: {_oco_lane} gold state not republished after "
+                            f"[{s['name']}] ({_resync.get('why')}); next pass")
             # A FLOOR LIFT IS A CAPITAL MODIFIER TOO (GROWTH GOVERNANCE): an order the book sent
             # at the 0.01 floor above its 0.75% target is billed once per window per day.
             _bt = s.get("fusion_book_target")
