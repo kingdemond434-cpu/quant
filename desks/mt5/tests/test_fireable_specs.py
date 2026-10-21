@@ -259,3 +259,66 @@ def test_a_clock_readmitted_cell_still_missing_its_input_keeps_its_handoff_row(
 def test_needs_data_axes_name_only_organs_that_read_them() -> None:
     axes = jc.FAILURE_ROUTES["needs_data"]["axes"]
     assert "acquire_named_input" not in axes and "proxy_series" not in axes
+
+
+# ------------------------------------------------- audit of 3857d4bcd: absent / torn sidecar
+
+def _sidecar_pass(tmp_path, monkeypatch, at: str = "2026-10-21T00:00:00+00:00") -> dict:
+    bank_path = tmp_path / "unrunnable_specs.json"
+    if not bank_path.exists():
+        bank_path.write_text("{}", "utf-8")
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "NEEDS_DATA"})
+    return jc.update_unrunnable_bank({}, at=at, path=bank_path)
+
+
+def test_the_first_creation_is_the_only_absence_that_measures(tmp_path, monkeypatch) -> None:
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    assert jc.read_needs_data_outstanding(side) == ({}, jc.OUTSTANDING_FIRST)
+    got = _sidecar_pass(tmp_path, monkeypatch)
+    assert got["needs_data_outstanding"] == 0
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_FIRST
+    assert side.exists() and (tmp_path / (side.name + ".born")).exists()
+    assert _sidecar_pass(tmp_path, monkeypatch)["needs_data_outstanding_state"] == "MEASURED"
+
+
+def test_a_vanished_sidecar_is_unmeasured_and_named(tmp_path, monkeypatch) -> None:
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    _sidecar_pass(tmp_path, monkeypatch)
+    side.unlink()
+    got = _sidecar_pass(tmp_path, monkeypatch, at="2026-10-22T00:00:00+00:00")
+    assert got["needs_data_outstanding"] == "UNMEASURED"
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_VANISHED
+    assert got["needs_data_outstanding_set_aside"] == [
+        f"{side.name}.vanished-20261022T0000000000"]
+    again = _sidecar_pass(tmp_path, monkeypatch, at="2026-10-23T00:00:00+00:00")
+    assert again["needs_data_outstanding"] == "UNMEASURED"           # until a person clears it
+
+
+def test_a_torn_sidecar_is_never_overwritten_and_is_set_aside_by_name(tmp_path,
+                                                                       monkeypatch) -> None:
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    _sidecar_pass(tmp_path, monkeypatch)
+    torn = '{"EURCZK.cot_positioning.p=1": {"reason": "needs_da'
+    side.write_text(torn, "utf-8")
+    got = _sidecar_pass(tmp_path, monkeypatch, at="2026-10-22T00:00:00+00:00")
+    assert got["needs_data_outstanding"] == "UNMEASURED"
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_TORN
+    aside = tmp_path / f"{side.name}.torn-20261022T0000000000"
+    assert aside.read_text("utf-8") == torn, "the unreadable bytes are kept exactly"
+    assert got["needs_data_outstanding_set_aside"] == [aside.name]
+    assert _sidecar_pass(tmp_path, monkeypatch)["needs_data_outstanding"] == "UNMEASURED"
+
+
+def test_a_torn_sidecar_that_cannot_be_moved_is_left_exactly_as_found(tmp_path,
+                                                                       monkeypatch) -> None:
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    _sidecar_pass(tmp_path, monkeypatch)
+    side.write_text("{torn", "utf-8")
+
+    def refuse(self, target):
+        raise OSError("locked")
+    monkeypatch.setattr(Path, "rename", refuse)
+    got = _sidecar_pass(tmp_path, monkeypatch, at="2026-10-22T00:00:00+00:00")
+    assert got["needs_data_outstanding"] == "UNMEASURED"
+    assert side.read_text("utf-8") == "{torn"
