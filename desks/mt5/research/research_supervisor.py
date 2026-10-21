@@ -120,7 +120,8 @@ TARGETS = [
 #:
 #: The cadences: fast re-solves EVERY MINUTE on the cached world population, normal rebuilds
 #: evidence and the no-trade filter every 15 min, heavy resamples the worlds and re-measures the
-#: growth curve every 4 h (hourly until 2026-10-21). ONE allocator process at a time; the mode is the most overdue of the
+#: growth curve every 4 h (hourly until 2026-10-21). ONE allocator process at a time; the mode is
+#: the most overdue of the
 #: three. The gateway consumes the newest book every minute and the no-trade filter, not this
 #: clock, decides whether the book is worth trading toward (dE[log W] > turnover + slippage +
 #: the uncertainty buffer), so a faster clock makes the book fresher without making it churn.
