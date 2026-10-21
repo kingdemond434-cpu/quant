@@ -1,5 +1,5 @@
 {
- "at": "2026-10-21T12:19:08+00:00",
+ "at": "2026-10-21T12:29:52+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,7 +9,7 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-10-21T12:18:44+00:00",
+   "at": "2026-10-21T12:28:25+00:00",
    "bandit_at": "2026-10-21T03:25:28.197779+00:00",
    "hour": "2026-10-21T12",
    "arm": "control",
@@ -50,7 +50,7 @@
    "graveyard_factor": 1.0,
    "graveyard_why": "graveyard: no survival row for source 'alpha_evolution'; par",
    "paradigm_factor": 1.0,
-   "paradigm_why": "paradigm census: leg 'alpha_evolution' is ['symbolic_regression', 'bayesian_optimisation', 'gflownet_flow_matching'] at share 0.0237 vs equal share 0.0667 = x0.36 -> x1.00 (one-sided)",
+   "paradigm_why": "paradigm census: leg 'alpha_evolution' is ['symbolic_regression', 'bayesian_optimisation', 'gflownet_flow_matching'] at share 0.0168 vs equal share 0.0667 = x0.25 -> x1.00 (one-sided)",
    "factor": 2.0,
    "applied_s": 240,
    "applied": true,
