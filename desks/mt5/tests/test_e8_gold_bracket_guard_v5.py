@@ -1134,17 +1134,31 @@ def test_v55_a_zero_p95_reads_as_the_floor_not_measured(tmp_path: Path) -> None:
     assert meta["slip_source"].startswith("floor (p95_zero)") and meta["slip_fraction"] == 0.0056
 
 
+def _capture_pages(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, str]]:
+    sends: list[tuple[str, str]] = []
+
+    def send(title: str, body: str) -> dict[str, Any]:
+        sends.append((title, body))
+        return {"armed": 1, "delivered": 1}
+
+    monkeypatch.setattr(ev, "SENDER", send)
+    return sends
+
+
 def test_v55_risk_unmeasurable_is_billed_once_and_paged(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     import os
 
     bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
+    sends = _capture_pages(monkeypatch)
     ledger_path = Path(os.environ[ev.ALERT_LEDGER_ENV])
     venue = _AccountVenue()
     venue._positions = [_eurusd(None)]  # no stop: the account's risk cannot be bounded
     doc = g.run(venue, h._MT5(), armed=True)
-    assert venue.sent == [] and doc["risk_unmeasurable_page"] == "OPEN"
+    assert venue.sent == [] and doc["risk_unmeasurable_page"] == "QUEUED"
+    assert ev.drain_pages(5.0) == 0
+    assert len(sends) == 1 and "unmeasurable" in sends[0][1], "v5.6: it is a page"
     (bill,) = [r for r in bg._journal(tmp_path) if r.get("rail") == g.RISK_UNMEASURABLE_RAIL]
     assert bill["status"] == "RAIL_BLOCKED" and bill["reason"] == ev.R_RISK_UNMEASURABLE
     assert isinstance(bill["missed_growth_risk_usd"], float) and bill["missed_growth_risk_usd"] > 0
@@ -1152,6 +1166,7 @@ def test_v55_risk_unmeasurable_is_billed_once_and_paged(
     assert alert["state"] == "OPEN"
     doc = g.run(venue, h._MT5(), armed=True)
     assert "risk_unmeasurable_page" not in doc, "paged once, not every pass"
+    assert ev.drain_pages(5.0) == 0 and len(sends) == 1
     assert len([r for r in bg._journal(tmp_path) if r.get("rail") == g.RISK_UNMEASURABLE_RAIL]) == 1
     sys.path.insert(0, str(_DESK / "research"))
     import missed_growth as mg
@@ -1163,5 +1178,153 @@ def test_v55_risk_unmeasurable_is_billed_once_and_paged(
     assert line["n_blocked"] == 1 and line["risk_withheld_usd"] > 0
     venue._positions = [_eurusd(1.0980)]  # the stop is readable again: the page closes
     g.run(venue, h._MT5(), armed=True)
+    assert ev.drain_pages(5.0) == 0 and len(sends) == 1, "a close is not a page"
     alert = json.loads(ledger_path.read_text("utf-8"))["alerts"][g.RISK_UNMEASURABLE_ALERT_ID]
     assert alert["state"] == "FIXED"
+
+
+# ------------------------------------------------------------- v5.6 (audit HOLD on 04e58c70)
+
+
+@pytest.fixture
+def _ledger(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
+    path = tmp_path / "alerts" / "alert_ledger.json"
+    monkeypatch.setenv(ev.ALERT_LEDGER_ENV, str(path))
+    yield path
+    ev.drain_pages(5.0)
+
+
+def test_v56_a_page_is_sent_only_when_the_alert_opens(
+    monkeypatch: pytest.MonkeyPatch, _ledger: Path
+) -> None:
+    sends = _capture_pages(monkeypatch)
+    for _ in range(3):
+        assert ev.page_alert("e8_probe", "firing", firing=True) == "QUEUED"
+        ev.drain_pages(5.0)
+    assert len(sends) == 1, "a standing alert re-observed is not a new page"
+    ev.page_alert("e8_probe", "", firing=False)
+    ev.drain_pages(5.0)
+    assert len(sends) == 1, "a close is not a page"
+    assert json.loads(_ledger.read_text("utf-8"))["alerts"]["e8_probe"]["state"] == "FIXED"
+    ev.page_alert("e8_probe", "again", firing=True)  # FIXED -> REGRESSED re-opens: a page
+    ev.drain_pages(5.0)
+    assert len(sends) == 2
+
+
+def test_v56_the_caller_never_waits_on_a_slow_send_or_a_held_lock(
+    monkeypatch: pytest.MonkeyPatch, _ledger: Path
+) -> None:
+    import threading
+    import time
+
+    gate = threading.Event()
+
+    def slow(title: str, body: str) -> dict[str, Any]:
+        gate.wait(5.0)
+        return {"armed": 1, "delivered": 1}
+
+    monkeypatch.setattr(ev, "SENDER", slow)
+    t0 = time.monotonic()
+    assert ev.page_alert("e8_slow", "firing", firing=True) == "QUEUED"
+    assert time.monotonic() - t0 < 0.5, "page_alert returned without waiting on the send"
+    held = threading.Event()
+    release = threading.Event()
+
+    def hold() -> None:
+        with ev._os_lock(_ledger.with_name(_ledger.name + ".flock"), 1.0):
+            held.set()
+            release.wait(5.0)
+
+    gate.set()
+    ev.drain_pages(5.0)
+    th = threading.Thread(target=hold, daemon=True)
+    th.start()
+    held.wait(2.0)
+    t0 = time.monotonic()
+    assert ev.page_alert("e8_slow", "", firing=False) == "QUEUED"
+    assert time.monotonic() - t0 < 0.5, "page_alert returned without waiting on the lock"
+    release.set()
+    th.join(2.0)
+
+
+def test_v56_a_sender_that_raises_is_swallowed_and_logged(
+    monkeypatch: pytest.MonkeyPatch, _ledger: Path
+) -> None:
+    said: list[str] = []
+
+    def boom(title: str, body: str) -> dict[str, Any]:
+        raise ConnectionError("ntfy unreachable")
+
+    monkeypatch.setattr(ev, "SENDER", boom)
+    ev.page_alert("e8_boom", "firing", firing=True, log=said.append)
+    assert ev.drain_pages(5.0) == 0
+    assert any("sender raised ConnectionError" in x for x in said)
+
+
+def test_v56_a_raising_alert_path_never_defers_a_window_or_escapes_run(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    def raises(*a: Any, **k: Any) -> str:
+        raise RuntimeError("alert path broken")
+
+    bg._sandbox(monkeypatch, tmp_path, guard=bg._guard())
+    monkeypatch.setattr(ev, "page_alert", raises)
+    venue = _AccountVenue()
+    venue._positions = [_eurusd(1.0980)]  # measurable: the close call runs and raises
+    doc = g.run(venue, h._MT5(), armed=True)
+    assert venue.sent, "the close call's raise did not defer the window"
+    assert not [d for d in doc["decisions"] if d["reason"] == ev.R_RISK_UNMEASURABLE]
+    venue = _AccountVenue()
+    venue._positions = [_eurusd(None)]  # unmeasurable: the open call runs and raises
+    doc = g.run(venue, h._MT5(), armed=True)  # never escapes run()
+    assert venue.sent == []
+
+
+def test_v56_an_unreadable_ledger_is_never_saved_over(_ledger: Path) -> None:
+    _ledger.mkdir(parents=True)  # a directory: it exists and cannot be read as a file
+    with pytest.raises(ev.AlertLedgerUnreadable), ev._ledger_txn(_ledger, 1.0) as txn:
+        txn.dirty = True
+    assert _ledger.is_dir()
+
+
+def test_v56_an_unparseable_ledger_is_set_aside_not_lost(_ledger: Path) -> None:
+    _ledger.parent.mkdir(parents=True)
+    _ledger.write_text("{torn", "utf-8")
+    with ev._ledger_txn(_ledger, 1.0) as txn:
+        txn.ledger.observe("e8_x", "m", scope="RUNTIME")
+        txn.dirty = True
+    assert "e8_x" in json.loads(_ledger.read_text("utf-8"))["alerts"]
+    (aside,) = list(_ledger.parent.glob("alert_ledger.json.unparseable-*"))
+    assert aside.read_text("utf-8") == "{torn"
+
+
+def test_v56_a_held_lock_is_never_shared_the_waiter_gives_up(
+    monkeypatch: pytest.MonkeyPatch, _ledger: Path
+) -> None:
+    lock = _ledger.with_name(_ledger.name + ".flock")
+    monkeypatch.setattr(ev, "AK_LOCK_WAIT_S", 0.1)
+    with ev._os_lock(lock, 1.0):
+        with pytest.raises(ev.AlertLedgerBusy), ev._ledger_txn(_ledger, 0.1):
+            pass
+        assert ev.page_account_key(ev.AK_HELPER_ABSENT) is None, "busy: nothing written"
+    assert not _ledger.exists()
+    assert lock.exists(), "the sidecar is never deleted"
+    assert ev.page_account_key(ev.AK_HELPER_ABSENT) == "OPEN"
+    assert ev.AK_ALERT_ID in json.loads(_ledger.read_text("utf-8"))["alerts"]
+
+
+def test_v56_concurrent_writers_lose_no_alert(_ledger: Path) -> None:
+    import threading
+
+    def write(i: int) -> None:
+        with ev._ledger_txn(_ledger, 10.0) as txn:
+            txn.ledger.observe(f"e8_c{i}", "m", scope="RUNTIME")
+            txn.dirty = True
+
+    ts = [threading.Thread(target=write, args=(i,)) for i in range(12)]
+    for t in ts:
+        t.start()
+    for t in ts:
+        t.join(15.0)
+    alerts = json.loads(_ledger.read_text("utf-8"))["alerts"]
+    assert {f"e8_c{i}" for i in range(12)} <= set(alerts)

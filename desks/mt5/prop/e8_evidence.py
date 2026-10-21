@@ -64,7 +64,7 @@ import json
 import os
 import re
 from collections.abc import Callable
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -403,53 +403,285 @@ def account_key(venue: Any) -> str | None:
 def page_account_key(status: str, log: Callable[[str], None] | None = None) -> str | None:
     """Open (or, once stamped again, close) the `AK_ALERT_ID` alert in the desk's alert ledger.
     Every status in AK_PAGE opens it (v5.2: a dormant helper and a keyless answer too).
-    Returns "OPEN", "FIXED" or None. Never raises, and never touches a placement."""
-    try:
-        from libs.ops.alert_ledger import AlertLedger
+    Returns "OPEN", "FIXED" or None. Never raises, and never touches a placement.
 
-        path = Path(os.environ.get(ALERT_LEDGER_ENV) or ALERT_LEDGER)
+    v5.6: the read-modify-save runs under ONE lock (`_ledger_txn`, the v5f AlertLedger
+    semantics): an unreadable ledger is never saved over, and a busy lock gives up after
+    AK_LOCK_WAIT_S instead of going on unlocked. Nothing is sent from here."""
+    try:
+        path = _ledger_path()
         if status in AK_PAGE:
-            ledger = AlertLedger(path)
-            ledger.observe(AK_ALERT_ID, f"[e8_gold] account_key not stamped: {status}; "
-                           "stop exits and evidence carry no cross-account key", scope="RUNTIME")
-            ledger.save()
+            with _ledger_txn(path, AK_LOCK_WAIT_S) as txn:
+                txn.ledger.observe(AK_ALERT_ID, f"[e8_gold] account_key not stamped: {status}; "
+                                   "stop exits and evidence carry no cross-account key",
+                                   scope="RUNTIME")
+                txn.dirty = True
             return "OPEN"
         if status == AK_OK and path.exists():
-            ledger = AlertLedger(path)
-            alert = ledger.alerts.get(AK_ALERT_ID)
-            if alert is not None and alert.open:
-                ledger.verify(AK_ALERT_ID, still_firing=False)
-                ledger.save()
-                return "FIXED"
+            with _ledger_txn(path, AK_LOCK_WAIT_S) as txn:
+                alert = txn.ledger.alerts.get(AK_ALERT_ID)
+                if alert is not None and alert.open:
+                    txn.ledger.verify(AK_ALERT_ID, still_firing=False)
+                    txn.dirty = True
+            return "FIXED" if txn.dirty else None
     except Exception as exc:
         _say(log, f"account-key alert not recorded ({type(exc).__name__})")
     return None
 
 
+# ------------------------------------------------------------------ the alert ledger and pager
+#
+# v5.6 (audit HOLD on 04e58c70, must-fix "page_alert is not a page"). v5.5's page_alert wrote
+# alert_ledger.json and nothing else -- no organ forwards that ledger to a channel -- and did it
+# synchronously on the order path. Now:
+#
+#   * page_alert QUEUES the work on a daemon thread and returns at once; `run()` never waits on it
+#     (the pass's `main` drains it, bounded, after the pass, so a short-lived process still
+#     delivers -- `drain_pages`).
+#   * the ledger's read-modify-save runs under ONE OS lock (`_ledger_txn`), mirroring publish_sync
+#     v5f's `AlertLedger.transaction`: the same `<ledger>.flock` sidecar, never deleted, never
+#     broken as stale, a wait that expires gives up (no second holder), and a ledger that exists
+#     but cannot be read is never saved over (an unparseable one is set aside, kept).
+#   * the page is SENT only on the transition to open (absent, FIXED -> firing); a standing
+#     alert re-observed is ledger dedup, not a new page. The send goes through `_PAGE`, which has
+#     `libs.ops.provenance._page`'s signature (aid, status, sig, title, body) -> dict and never
+#     raises; here it is `_page_direct`: alert_channels.send_all on its own daemon thread, joined
+#     for at most PAGE_TIMEOUT_S, every exception swallowed and logged.
+#
+# THE ONE-LINE SWITCH once publish_sync v5e/v5f is merged (v5f's `_page` is enqueue-only, so the
+# send leaves this process entirely):
+#
+#     _PAGE = provenance._page      # from libs.ops import provenance
+#
+# and `_ledger_txn` may then be replaced by `AlertLedger.transaction` (same lock file).
+
+#: How long a page's send may run before the worker gives up waiting on it (it is never awaited
+#: by `run`; this bounds the worker thread and `drain_pages`).
+PAGE_TIMEOUT_S = 15.0
+#: The ledger lock wait: the queued worker may wait this long; the synchronous account-key page
+#: (pass start, before any order) waits less.
+LOCK_WAIT_S = 10.0
+AK_LOCK_WAIT_S = 2.0
+
+
+class AlertLedgerBusy(TimeoutError):
+    """The ledger lock was not obtained within the wait: nothing was written."""
+
+
+class AlertLedgerUnreadable(OSError):
+    """The ledger exists and could not be read: saving now would replace it with less."""
+
+
+def _ledger_path() -> Path:
+    return Path(os.environ.get(ALERT_LEDGER_ENV) or ALERT_LEDGER)
+
+
+@contextlib.contextmanager
+def _os_lock(lock: Path, timeout_s: float) -> Any:
+    """An exclusive OS lock on a sidecar that is never deleted (v5f's `os_lock`): msvcrt on
+    Windows, flock elsewhere. Released when the handle closes, including on a crash, so there is
+    no stale lock to break and never a second holder. A wait that expires RAISES."""
+    import sys
+    import time
+
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    fh = open(lock, "a+b")  # noqa: SIM115 -- held for the whole body, closed below
+    try:
+        if fh.tell() == 0:
+            fh.write(b"\0")
+            fh.flush()
+        deadline = time.monotonic() + timeout_s
+        while True:
+            try:
+                if sys.platform == "win32":
+                    import msvcrt
+                    fh.seek(0)
+                    msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)  # type: ignore[attr-defined]
+                else:
+                    import fcntl
+                    fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except (OSError, ImportError) as exc:
+                if time.monotonic() >= deadline:
+                    raise AlertLedgerBusy(f"{lock.name} held for {timeout_s:g}s") from exc
+                time.sleep(0.02)
+        try:
+            yield
+        finally:
+            with contextlib.suppress(OSError, ImportError):
+                if sys.platform == "win32":
+                    import msvcrt
+                    fh.seek(0)
+                    msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)  # type: ignore[attr-defined]
+                else:
+                    import fcntl
+                    fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+    finally:
+        fh.close()
+
+
+class _Txn:
+    def __init__(self, ledger: Any) -> None:
+        self.ledger = ledger
+        self.dirty = False
+
+
+@contextlib.contextmanager
+def _ledger_txn(path: Path, timeout_s: float = LOCK_WAIT_S) -> Any:
+    """Lock, read, yield, and (only when the body set `dirty`) write atomically -- one critical
+    section. A ledger that exists and cannot be read raises AlertLedgerUnreadable and writes
+    nothing; one that reads but does not parse is moved aside (kept) and started afresh. The
+    write is temp file + fsync + os.replace, never `AlertLedger.save` (whose v5f form takes this
+    same lock, which would deadlock here)."""
+    import time
+    from dataclasses import asdict
+
+    from libs.ops.alert_ledger import AlertLedger
+
+    with _os_lock(path.with_name(path.name + ".flock"), timeout_s):
+        try:
+            text: str | None = path.read_text("utf-8")
+        except FileNotFoundError:
+            text = None
+        except OSError as exc:
+            raise AlertLedgerUnreadable(f"{path.name}: {type(exc).__name__}; not saved over") \
+                from exc
+        if text is not None:
+            try:
+                raw = json.loads(text)
+                if not isinstance(raw, dict) or not isinstance(raw.get("alerts") or {}, dict):
+                    raise ValueError("not a ledger")
+            except ValueError:
+                with contextlib.suppress(OSError):
+                    os.replace(path, path.with_name(f"{path.name}.unparseable-{time.time_ns()}"))
+        led = AlertLedger(path)
+        txn = _Txn(led)
+        yield txn
+        if not txn.dirty:
+            return
+        body = json.dumps({
+            "updated": datetime.now(UTC).isoformat(),
+            "alerts": {a.id: asdict(a) for a in led.alerts.values()},
+            "note": ("`last_seen` is dedup state and `state` is truth -- they are never the same "
+                     "field. Suppressing a repeat makes the pager quieter and does nothing about "
+                     "the condition."),
+        }, indent=1)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+        with open(tmp, "w", encoding="utf-8") as fh:
+            fh.write(body)
+            fh.flush()
+            os.fsync(fh.fileno())
+        for attempt in range(20):
+            try:
+                os.replace(tmp, path)
+                break
+            except PermissionError:
+                if attempt == 19:
+                    raise
+                time.sleep(0.05)
+
+
+#: Tests (and only tests) replace this; None means alert_channels.send_all, against the channels
+#: config beside the alert ledger when $E8_ALERT_LEDGER overrides it (so a test's temp ledger can
+#: never reach the real channels), else the box's data/secrets/alert_channels.json.
+SENDER: Callable[[str, str], Any] | None = None
+
+
+def _default_send(title: str, body: str) -> Any:
+    from libs.ops import alert_channels
+
+    override = os.environ.get(ALERT_LEDGER_ENV)
+    if override:
+        base = Path(override).parent
+        return alert_channels.send_all(title, body, config=base / "secrets" / "alert_channels.json",
+                                       ledger=base / "alert_delivery.jsonl")
+    return alert_channels.send_all(title, body)
+
+
+def _page_direct(aid: str, status: str, sig: str, title: str, body: str) -> dict[str, Any]:
+    """`provenance._page`'s signature and contract (never raises, a dict back): the send runs on
+    its own daemon thread, joined for at most PAGE_TIMEOUT_S, every exception swallowed."""
+    import threading
+
+    out: dict[str, Any] = {"sent": False, "reason": "timed out"}
+
+    def _go() -> None:
+        try:
+            res = (SENDER or _default_send)(title, body[:1500])
+            res = res if isinstance(res, dict) else {}
+            out.update(sent=bool(res.get("delivered")), reason="sent" if res.get("delivered")
+                       else "undelivered", delivered=res.get("delivered"), armed=res.get("armed"))
+        except Exception as exc:
+            out.update(sent=False, reason=f"sender raised {type(exc).__name__}")
+
+    try:
+        t = threading.Thread(target=_go, daemon=True, name=f"e8-send-{aid}")
+        t.start()
+        t.join(PAGE_TIMEOUT_S)
+    except Exception as exc:
+        out.update(sent=False, reason=f"not started ({type(exc).__name__})")
+    return out
+
+
+#: THE PAGER. After publish_sync v5e/v5f lands: `_PAGE = provenance._page` (see above).
+_PAGE: Callable[[str, str, str, str, str], dict[str, Any]] = _page_direct
+_PENDING: list[Any] = []
+
+
+def _alert_worker(aid: str, message: str, firing: bool,
+                  log: Callable[[str], None] | None) -> None:
+    """Off the order path: the ledger transition under the lock, then a page on OPEN only."""
+    try:
+        path = _ledger_path()
+        opened = False
+        with _ledger_txn(path) as txn:
+            alert = txn.ledger.alerts.get(aid)
+            was_open = alert is not None and alert.open
+            if firing:
+                txn.ledger.observe(aid, message, scope="RUNTIME")
+                txn.dirty, opened = True, not was_open
+            elif was_open:
+                txn.ledger.verify(aid, still_firing=False)
+                txn.dirty = True
+        if opened:
+            res = _PAGE(aid, "OPEN", aid, f"E8 gold: {aid}", message)
+            _say(log, f"alert {aid} opened; page {res.get('reason')}")
+    except Exception as exc:
+        _say(log, f"alert {aid} not recorded ({type(exc).__name__}: {exc})"[:200])
+
+
 def page_alert(aid: str, message: str, *, firing: bool,
                log: Callable[[str], None] | None = None) -> str | None:
-    """Open (firing) or close an alert in the desk's alert ledger, the path `page_account_key`
-    uses. The ledger holds one alert per id, so a repeat observe is the same page, not a new one.
-    Returns "OPEN", "FIXED" or None. Never raises, and never touches a placement."""
+    """QUEUE an alert transition and return at once: "QUEUED", "NOTHING" (a close with no ledger
+    on disk) or None. The worker opens (firing) or closes the alert in the desk's alert ledger
+    under one lock and PAGES only when it opens. Never raises, never blocks the caller."""
     try:
-        from libs.ops.alert_ledger import AlertLedger
+        if not firing and not _ledger_path().exists():
+            return "NOTHING"
+        import threading
 
-        path = Path(os.environ.get(ALERT_LEDGER_ENV) or ALERT_LEDGER)
-        if firing:
-            ledger = AlertLedger(path)
-            ledger.observe(aid, clip(scrub(message), 300), scope="RUNTIME")
-            ledger.save()
-            return "OPEN"
-        if path.exists():
-            ledger = AlertLedger(path)
-            alert = ledger.alerts.get(aid)
-            if alert is not None and alert.open:
-                ledger.verify(aid, still_firing=False)
-                ledger.save()
-                return "FIXED"
+        msg = str(clip(scrub(message), 300)) if message else ""
+        t = threading.Thread(target=_alert_worker, args=(aid, msg, firing, log), daemon=True,
+                             name=f"e8-alert-{aid}")
+        t.start()
+        _PENDING[:] = [x for x in _PENDING if x.is_alive()] + [t]
+        return "QUEUED"
     except Exception as exc:
-        _say(log, f"alert {aid} not recorded ({type(exc).__name__})")
-    return None
+        _say(log, f"alert {aid} not queued ({type(exc).__name__})")
+        return None
+
+
+def drain_pages(timeout_s: float = PAGE_TIMEOUT_S + LOCK_WAIT_S) -> int:
+    """Wait (bounded) for queued alert work; returns how many are still running. Called by the
+    pass's `main` AFTER `run` returns -- never from the order path -- and by tests."""
+    import time
+
+    deadline = time.monotonic() + max(0.0, timeout_s)
+    for t in list(_PENDING):
+        t.join(max(0.0, deadline - time.monotonic()))
+    _PENDING[:] = [x for x in _PENDING if x.is_alive()]
+    return len(_PENDING)
 
 
 def bind_pass_account_key(venue: Any, doc: dict[str, Any] | None = None,

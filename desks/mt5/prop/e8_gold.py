@@ -1791,8 +1791,10 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                                              fx_slip=fx_slip_fractions()))
             doc["committed_risk"]["total_usd"] = round(committed, 2)
             doc["committed_risk"]["slip_source"] = held_src
-            # The risk is measurable again: close the page if one is open (v5.5).
-            e8_evidence.page_alert(RISK_UNMEASURABLE_ALERT_ID, "", firing=False, log=log)
+            # The risk is measurable again: close the alert if one is open (v5.5). Queued, never
+            # awaited, and suppressed (v5.6): an alert can never defer a window or escape run().
+            with contextlib.suppress(Exception):
+                e8_evidence.page_alert(RISK_UNMEASURABLE_ALERT_ID, "", firing=False, log=log)
         except Exception as exc:
             why = (e8_evidence.clip(
                 f"concurrent open risk unmeasurable ({type(exc).__name__}: {exc}", 200)
@@ -1818,10 +1820,11 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                              "missed_growth_risk_usd": w_risk, "armed": bool(armed)})
                 log(f"[{due['window']}] DEFERRED: {why}")
             if new_bill:
-                doc["risk_unmeasurable_page"] = e8_evidence.page_alert(
-                    RISK_UNMEASURABLE_ALERT_ID,
-                    f"[e8_gold] committed risk unmeasurable, gold windows deferred: {why}",
-                    firing=True, log=log)
+                with contextlib.suppress(Exception):
+                    doc["risk_unmeasurable_page"] = e8_evidence.page_alert(
+                        RISK_UNMEASURABLE_ALERT_ID,
+                        f"[e8_gold] committed risk unmeasurable, gold windows deferred: {why}",
+                        firing=True, log=log)
             due_now = []
     room = float(guard_decision.room_to_daily_floor) if guard_decision is not None else 0.0
     try:
@@ -2639,6 +2642,10 @@ def main(argv: list[str] | None = None) -> int:
                 doc = run(venue, mt5, armed=armed)
     finally:
         mt5.shutdown()
+        # Queued alert work (v5.6) is drained AFTER the pass, bounded, so a short-lived process
+        # still delivers it; nothing on the order path ever waited on it.
+        with contextlib.suppress(Exception):
+            e8_evidence.drain_pages()
     log(f"e8 gold: {'ARMED' if armed else 'SHADOW'} hour={doc.get('hour')} "
         f"equity={doc.get('equity')} placed={len(doc.get('placed') or [])} "
         f"actions={len(doc.get('actions') or [])} skipped={len(doc.get('skipped') or [])} "
