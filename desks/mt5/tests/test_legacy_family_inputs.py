@@ -152,3 +152,15 @@ def test_warmer_refuses_bad_identity_before_loading_primary_bars(monkeypatch,tmp
     key,outcome=warmer._warm_one({'ckey':'unbuildable-control','sym':'XAUUSD',
                                 'family':'usd_session_shock','params':{},'tf':'M5'})
     assert key=='unbuildable-control' and outcome.startswith('failed|BLOCKED_RULES:')
+
+
+def test_required_identity_refusals_are_build_failures_and_complete_specs_pass():
+    # 2026-10-20 sweep 23324: 7,266 pre-warm build failures were these two deterministic refusals.
+    # BLOCKED_ is what `main` files as NOT_RUN_BUILD_FAILED before the build budget is spent.
+    for fam, params in (("lead_lag", {}), ("calendar_month", {"side_bias": 1})):
+        why = input_preflight(fam, params)
+        assert why is not None and why.startswith("BLOCKED_RULES")
+    assert input_preflight("lead_lag", {"driver_symbol": "EURUSD"}) is None
+    assert input_preflight("calendar_month", {"active_month": 12, "side_bias": -1}) is None
+    # Present but out of range is the family's call, exactly as before.
+    assert input_preflight("calendar_month", {"active_month": 13, "side_bias": 1}) is None

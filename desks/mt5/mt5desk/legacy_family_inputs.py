@@ -33,6 +33,25 @@ def input_preflight(family, params):
         hour = params.get("stamp_hour", -1)
         if isinstance(hour, bool) or not isinstance(hour, int) or not 0 <= hour <= 23:
             return "BLOCKED_RULES: clock_transition requires an integer stamp_hour in 0..23"
+    # REQUIRED IDENTITY, NAMED BEFORE THE BUILD BUDGET IS SPENT (2026-10-20). Box sweep 23324's
+    # pre-warm returned 9,718 NOT_RUN_BUILD_FAILED of 21,112 completions, and 7,266 of them were
+    # these two deterministic refusals: 3,898 lead_lag "no driver_symbol on the cell" and 3,368
+    # calendar_month TypeError "missing 2 required keyword-only arguments: 'active_month' and
+    # 'side_bias'". Each one loaded bars and held a pool worker before failing. A failed build is
+    # never stamped seen, so the same cells sat at the head of the never-judged docket and were
+    # re-attempted first on every sweep. Refused here they leave in `modifier_preflight` with the
+    # same NOT_RUN_BUILD_FAILED status and their reason in the report, never reach a worker, and
+    # are re-read every sweep, so a cell whose producer adds the field is judged that sweep.
+    # Only what the builder already refuses is refused: an empty driver (`build_cell`'s own test)
+    # and an ABSENT calendar key (the TypeError). A present but out-of-range value still goes to
+    # the family, which answers it as it always has.
+    if family == "lead_lag" and not params.get("driver_symbol"):
+        return "BLOCKED_RULES: lead_lag: no driver_symbol on the cell"
+    if family == "calendar_month":
+        missing = [k for k in ("active_month", "side_bias") if k not in params]
+        if missing:
+            return ("BLOCKED_RULES: calendar_month requires a source-specified "
+                    + " and ".join(missing) + " on the candidate")
     if family == "usd_session_shock":
         _, why = fx_driver(params)
         if why != "ok":
