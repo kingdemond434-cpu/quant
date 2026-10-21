@@ -357,7 +357,7 @@ def test_an_enabled_book_missing_asia_stands_asia_aside_with_a_missed_growth_lin
     assert any("absent from the enabled cert book" in str(s.get("why")) for s in doc["skipped"])
     (row,) = [r for r in intents if r.get("window") == "asia"]
     assert row["rail"] == "cert_book_absent_window" and row["status"] == "RAIL_BLOCKED"
-    assert row["missed_growth_risk_usd"] == round(100_000.0 * 0.005, 2)
+    assert row["missed_growth_risk_usd"] == round(100_000.0 * dc.E8_CERT_CEILING, 2)   # r7.1
 
 
 def test_window_sources_name_the_real_source_per_window() -> None:
@@ -1109,3 +1109,132 @@ def test_no_venue_reason_or_heat_cap_note_carries_a_login(tmp_path, monkeypatch)
             assert not pattern.search(r), r
         label = "account sha256:" if prov is not None else "declared prop account"
         assert all(label in r for r in reasons[::2]), reasons
+
+
+# ---------------------------------------------------------------------- r7.1 (audit r7 SFs)
+
+def test_a_stale_book_above_the_code_ceiling_places_at_0006_and_bills_the_cut(
+        monkeypatch, tmp_path) -> None:
+    """r7.1 item 1: E8 gold risk is min(book, E8_CERT_CEILING) whatever the book says; the cut
+    is billed `e8_cert_ceiling` (status CAPPED) and missed_growth reads it."""
+    from mt5desk import fusion_rails
+    assert dc.E8_CERT_CEILING == 0.006
+    src = (_DESK / "mt5desk" / "decision_core.py").read_text("utf-8")
+    block = src[src.index("E8 GOLD'S CODE CEILING"):src.index("E8_CERT_CEILING = 0.006")]
+    assert "zuck" in block and "Max-growth" in block and "PRINCIPAL EDIT" in block
+    stale = {"enabled": True, "e8": {"gold_asia": 0.01, "gold_london_am": 0.0,
+                                     "gold_afternoon": 0.0}}
+    doc, intents = _e8(monkeypatch, tmp_path, hour=ASIA_H, kelly=None, cert=stale)
+    assert _placed(doc, intents)["asia"] == {(0.006, "cert_book")}
+    assert doc["e8_cert_ceiling"] == {"ceiling": 0.006, "cut": {"asia": 0.01}}
+    (cut,) = [r for r in intents if r.get("rail") == "e8_cert_ceiling"]
+    assert cut["status"] == "CAPPED" and cut["book_risk_frac"] == 0.01
+    assert cut["missed_growth_risk_usd"] == round(100_000.0 * 0.004, 2)
+    from research import missed_growth as mg
+    assert "e8_cert_ceiling" in mg.FUSION_RAIL_NAMES and "e8_cert_ceiling" in fusion_rails.RAILS
+    ms = (_DESK / "research" / "missed_growth.py").read_text("utf-8")
+    assert '("RAIL_BLOCKED", "SKIPPED", "CAPPED")' in ms
+    # At or below the ceiling nothing is cut.
+    (tmp_path / "b").mkdir()
+    doc, intents = _e8(monkeypatch, tmp_path / "b", hour=ASIA_H, kelly=None, cert=VALID)
+    assert doc["e8_cert_ceiling"]["cut"] == {}
+    assert not [r for r in intents if r.get("rail") == "e8_cert_ceiling"]
+
+
+def test_every_key_failure_pages_and_a_resolved_key_closes_the_alert(monkeypatch,
+                                                                     tmp_path) -> None:
+    """r7.1 item 2: KEY_UNAVAILABLE, the `invalid:` sentinel and a key that does not match the
+    declaration each open the account's alert in the desk alert ledger; the next check that
+    resolves and joins closes it (FIXED), as v5.1 does."""
+    import libs.ops as ops
+    from libs.ops.alert_ledger import AlertLedger
+    from mt5desk import decision_core as _dc
+    ledger = tmp_path / "alert_ledger.json"
+    monkeypatch.setenv("E8_ALERT_LEDGER", str(ledger))
+
+    def state(account):
+        a = AlertLedger(ledger).alerts.get(xa.KEY_ALERT_IDS[account])
+        return None if a is None else a.state
+
+    mine = xa.account_key(7000102, "test")              # the conftest's declared E8 key
+    # A key that does not match the declaration.
+    with pytest.raises(ValueError, match="declares"):
+        xa.publish("e8", {}, source="t", key=xa.account_key(7000999, "test"))
+    assert state("e8") == "OPEN" and xa.KEY_MISMATCH in AlertLedger(ledger).alerts[
+        xa.TL_ALERT_ID].message
+    xa.publish("e8", {}, source="t", key=mine)          # resolves and joins: closed
+    assert state("e8") == "FIXED"
+    # KEY_UNAVAILABLE: a well-formed venue on a tree with no provenance.
+    v = _tl_venue(credentials={"server": "E8-Live"}, account_id=4242)
+    saved = sys.modules.get("libs.ops.provenance")
+    monkeypatch.setitem(sys.modules, "libs.ops.provenance", None)
+    monkeypatch.delattr(ops, "provenance", raising=False)
+    assert xa.tradelocker_key_status(v) == (None, xa.TL_KEY_UNAVAILABLE)
+    assert state("e8") == "REGRESSED"
+    assert xa.TL_KEY_UNAVAILABLE in AlertLedger(ledger).alerts[xa.TL_ALERT_ID].message
+    # The invalid: sentinel: a declared Fusion login whose key cannot be resolved.
+    _dc.FUSION_ACCOUNT_FILE.write_text(json.dumps({"login": 7000101,
+                                                   "server": _dc.FUSION_LIVE_SERVER}), "utf-8")
+    assert xa.read_book("fusion")[0] is None
+    assert state("fusion") == "OPEN"
+    assert xa.KEY_DECLARATION_INVALID in AlertLedger(ledger).alerts[
+        xa.KEY_ALERT_IDS["fusion"]].message
+    # Provenance back: the Fusion key resolves and joins its declaration -> closed.
+    monkeypatch.setitem(sys.modules, "libs.ops.provenance", saved)
+    if saved is not None:
+        monkeypatch.setattr(ops, "provenance", saved, raising=False)
+    xa.publish("fusion", {}, source="t", key=xa.account_key(7000101, _dc.FUSION_LIVE_SERVER))
+    assert xa.read_book("fusion")[0] == {} and state("fusion") == "FIXED"
+    assert "7000101" not in ledger.read_text("utf-8")            # the page names no value
+
+
+def test_an_undeclared_e8_account_refuses_new_e8_gold_risk_with_a_reasoned_row(
+        monkeypatch, tmp_path) -> None:
+    """r7.1 item 3: E8_ACCOUNT.json absent -> no new E8 gold leg on an armed pass, and one
+    billed RAIL_BLOCKED `e8_account_undeclared` row per window per day (it used to skip the
+    account check)."""
+    from mt5desk import fusion_rails
+    import test_fusion_minlot_book as mb
+    real = mb._e8_harness
+
+    def harness(monkeypatch, tmp_path):
+        xa.E8_ACCOUNT_FILE.unlink(missing_ok=True)
+        return real(monkeypatch, tmp_path)
+
+    doc, venue, intents = harness(monkeypatch, tmp_path)
+    assert venue.placed == [] and doc["placed"] == []
+    rows = [r for r in intents if r.get("rail") == "e8_account_undeclared"]
+    assert rows and all(r["status"] == "RAIL_BLOCKED" and "E8_ACCOUNT.json is absent" in r["why"]
+                        and r["missed_growth_risk_usd"] > 0 for r in rows)
+    assert "e8_account_undeclared" in fusion_rails.RAILS
+    # Declared again (the conftest's own declaration): the same harness places.
+    xa.E8_ACCOUNT_FILE.write_text(json.dumps({"account_key": xa.account_key(7000102, "test")}),
+                                  "utf-8")
+    (tmp_path / "again").mkdir()
+    doc, venue, _ = real(monkeypatch, tmp_path / "again")
+    assert sorted(s for s, _ in venue.placed) == ["buy", "sell"]
+
+
+def test_a_cert_book_zero_on_gold_asia_writes_its_missed_growth_line(monkeypatch,
+                                                                     tmp_path) -> None:
+    """r7.1 item 4: gold_asia 0.0 in the book stood aside with a Kelly reason and no line."""
+    zero = {"enabled": True, "e8": {"gold_asia": 0.0, "gold_london_am": 0.0,
+                                    "gold_afternoon": 0.0}}
+    doc, intents = _e8(monkeypatch, tmp_path, hour=ASIA_H, kelly=FRESH_KELLY, cert=zero)
+    assert doc["placed"] == [] and doc["sizing_source"]["asia"] == "cert_book"
+    (row,) = [r for r in intents if r.get("rail") == "cert_book_zero"]
+    assert row["window"] == "asia" and row["status"] == "RAIL_BLOCKED"
+    assert row["missed_growth_risk_usd"] == round(100_000.0 * 0.006, 2)
+    assert any("sets gold_asia to 0.0" in str(s.get("why")) for s in doc["skipped"])
+
+
+@pytest.mark.parametrize("cert,rail", [(None, "cert_book_void"),
+                                       ({"enabled": True, "e8": {"gold_london_am": 0.0}},
+                                        "cert_book_absent_window")])
+def test_void_and_absent_windows_bill_at_the_last_certified_0006(monkeypatch, tmp_path, cert,
+                                                                 rail) -> None:
+    """r7.1 item 5: billed at E8_CERT_CEILING (0.006), not RISK_FRAC (0.005)."""
+    doc, intents = _e8(monkeypatch, tmp_path, hour=ASIA_H, kelly=FRESH_KELLY, cert=cert)
+    (row,) = [r for r in intents if r.get("rail") == rail and r.get("window") == "asia"]
+    assert row["missed_growth_risk_usd"] == round(100_000.0 * 0.006, 2)
+    assert doc["placed"] == []

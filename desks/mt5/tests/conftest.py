@@ -247,6 +247,10 @@ def _cross_account_books_in_tmp(tmp_path_factory, monkeypatch):
     # server stripped, None fails closed). A test of the fail-closed path removes it.
     _install_provenance(d, monkeypatch)
     monkeypatch.setenv("E8_ALERT_LEDGER", str(d / "alert_ledger.json"))   # the E8 key page
+    # The E8 account is DECLARED (r7.1: an absent E8_ACCOUNT.json refuses new E8 gold risk), as
+    # the conftest's E8 book's key; a test of the undeclared path deletes it.
+    (d / "E8_ACCOUNT.json").write_text(json.dumps(
+        {"account_key": cross_account.account_key(CONFTEST_LOGINS["e8"], "test")}), "utf-8")
     for account in cross_account.ACCOUNTS:
         cross_account.publish(account, {}, source="conftest",
                               key=cross_account.account_key(CONFTEST_LOGINS[account], "test"))

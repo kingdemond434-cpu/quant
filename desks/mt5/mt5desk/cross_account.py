@@ -238,19 +238,77 @@ def tradelocker_identity(venue: Any) -> tuple[Any, str | None, str]:
     return login, server, TL_OK
 
 
-def _page_unresolvable(status: str) -> str | None:
-    """Open the `TL_ALERT_ID` alert in the desk's alert ledger: the E8 key cannot be resolved
-    because the venue named no server or no login. Names no value. Never raises."""
+#: The alert each account's key opens while it cannot be resolved or does not join its
+#: declaration (`page_key`), and closes once it does again (`clear_key_alert`) -- v5.1's idiom.
+KEY_ALERT_IDS = {"e8": TL_ALERT_ID, "fusion": "xacct_fusion_account_key_unresolvable"}
+#: Why a key pages (beside the TL_* statuses): the declaration itself is invalid or unresolvable
+#: (the `invalid:` sentinel), or the venue's key is another account's than the declared one.
+KEY_DECLARATION_INVALID, KEY_MISMATCH = "DECLARATION_INVALID", "KEY_MISMATCH"
+
+
+def _alert_ledger_path() -> Path:
+    return Path(os.environ.get(ALERT_LEDGER_ENV) or ALERT_LEDGER)
+
+
+def page_key(account: str, status: str) -> str | None:
+    """Open `account`'s key alert in the desk's alert ledger (`libs.ops.alert_ledger`, the path
+    bracket v5.1's e8_evidence pages through): its key is UNRESOLVABLE (no login, no server,
+    KEY_UNAVAILABLE), its declaration is the `invalid:` sentinel, or it does not match the
+    declaration. Names no value. Returns "OPEN" or None. Never raises."""
     try:
         from libs.ops.alert_ledger import AlertLedger
-        ledger = AlertLedger(Path(os.environ.get(ALERT_LEDGER_ENV) or ALERT_LEDGER))
-        ledger.observe(TL_ALERT_ID, f"[cross_account] E8 account key unresolvable: {status}; "
-                       "the cross-account fence fails closed (no new gold leg on either "
-                       "account against an unresolvable key)", scope="RUNTIME")
+        ledger = AlertLedger(_alert_ledger_path())
+        ledger.observe(KEY_ALERT_IDS.get(account, f"xacct_{account}_account_key_unresolvable"),
+                       f"[cross_account] {account} account key: {status}; the cross-account "
+                       f"fence fails closed (no new gold leg on either account against a key "
+                       f"that does not resolve or join)", scope="RUNTIME")
         ledger.save()
         return "OPEN"
     except Exception:
         return None
+
+
+def clear_key_alert(account: str) -> str | None:
+    """Close `account`'s key alert once its key resolves AND joins its declaration again (the
+    check was re-run and passed). Reads the ledger only when it exists; "FIXED" or None."""
+    try:
+        path = _alert_ledger_path()
+        if not path.exists():
+            return None
+        from libs.ops.alert_ledger import AlertLedger
+        ledger = AlertLedger(path)
+        alert = ledger.alerts.get(KEY_ALERT_IDS.get(account, ""))
+        if alert is None or not alert.open:
+            return None
+        ledger.verify(alert.id, still_firing=False)
+        ledger.save()
+        return "FIXED"
+    except Exception:
+        return None
+
+
+def _page_unresolvable(status: str) -> str | None:
+    """The E8 key cannot be resolved (`tradelocker_key_status`): page it."""
+    return page_key("e8", status)
+
+
+def key_joins(account: str, key: object, want: str | None) -> bool:
+    """Does `key` join `account`'s declaration `want`? Pages when it does not (unresolvable key,
+    `invalid:` declaration, mismatch) and closes the alert when it does. An undeclared account
+    (`want` None) with a resolvable key joins nothing and is not paged here: the lanes refuse
+    new E8 gold risk on an absent E8_ACCOUNT.json themselves (r7.1)."""
+    if not valid_key(key):
+        page_key(account, TL_KEY_UNAVAILABLE)
+        return False
+    if want is not None and str(want).startswith("invalid:"):
+        page_key(account, KEY_DECLARATION_INVALID)
+        return False
+    if want is not None and key != want:
+        page_key(account, KEY_MISMATCH)
+        return False
+    if want is not None:
+        clear_key_alert(account)
+    return True
 
 
 def tradelocker_key_status(venue: Any) -> tuple[str | None, str]:
@@ -262,13 +320,16 @@ def tradelocker_key_status(venue: Any) -> tuple[str | None, str]:
         _page_unresolvable(status)
         return None, status
     prov = _provenance()
-    if prov is None:
+    key = None
+    if prov is not None:
+        try:
+            key = prov.account_key(login, server, create=False)
+        except Exception:
+            key = None
+    if not valid_key(key):
+        _page_unresolvable(TL_KEY_UNAVAILABLE)          # r7.1: KEY_UNAVAILABLE pages too
         return None, TL_KEY_UNAVAILABLE
-    try:
-        key = prov.account_key(login, server, create=False)
-    except Exception:
-        return None, TL_KEY_UNAVAILABLE
-    return (key, TL_OK) if valid_key(key) else (None, TL_KEY_UNAVAILABLE)
+    return key, TL_OK
 
 
 def tradelocker_account_key(venue: Any) -> str | None:
@@ -434,11 +495,11 @@ def publish(account: str, exposure: Exposure, *, source: str, key: str,
     if threading.get_ident() in _ABANDONED:
         raise RuntimeError("this publish's bounded call timed out; its lock is released, so it "
                            "may not write")
-    if not valid_key(key):
-        raise ValueError("a book must carry a valid account key (an unresolvable key publishes "
-                         "nothing; the reader then fails closed on age)")
-    want = expected_key(account)
-    if want is not None and key != want:
+    want = expected_key(account) if account in ACCOUNTS else None
+    if not key_joins(account, key, want):
+        if not valid_key(key):
+            raise ValueError("a book must carry a valid account key (an unresolvable key "
+                             "publishes nothing; the reader then fails closed on age)")
         raise ValueError(f"the {account} venue is not on the account this box declares; "
                          f"its book is not published as {account}'s")
     p = book_path(account)
@@ -468,11 +529,15 @@ def mt5_book_checked(mt5: Any, account: str = "fusion") -> tuple[Exposure | None
     read, or when the terminal is on another account than the one this box declares."""
     try:
         book = mt5_exposure(mt5)
-        key = mt5_account_key(mt5)
     except Exception as exc:
         return None, f"the {account} terminal book is unreadable ({type(exc).__name__}: {exc})"
+    try:
+        key = mt5_account_key(mt5)
+    except Exception as exc:
+        page_key(account, TL_KEY_UNAVAILABLE)
+        return None, f"the {account} terminal book is unreadable ({type(exc).__name__}: {exc})"
     want = expected_key(account)
-    if want is not None and key != want:
+    if not key_joins(account, key, want):
         return None, (f"the terminal is not on the declared {account} account; its book is "
                       f"not that account's")
     return book, f"{account} book read live"
@@ -536,7 +601,7 @@ def read_book(account: str, *, now: datetime | None = None, max_age_s: float = M
         return None, (f"the {account} book is {age:.0f}s old (limit {max_age_s:.0f}s); the "
                       f"{account} account's positions are unknown now")
     want = expect_key if expect_key is not None else expected_key(account)
-    if want is not None and key != want:
+    if not key_joins(account, key, want):
         return None, (f"the {account} book is of another account than the one this box "
                       f"declares; its positions are not this account's")
     try:
