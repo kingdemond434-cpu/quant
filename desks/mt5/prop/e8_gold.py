@@ -25,8 +25,12 @@ SIZED FOR THIS ACCOUNT, NOT COPIED FROM THE OTHER. E8 risks RISK_FRAC of equity 
 `lot_for_risk`, which reads the venue's own contract size.
 
 SHADOW UNLESS data/E8_GOLD_ARMED EXISTS. Unarmed passes log the exact orders they would send.
-The daily guard `e8_guard_state.json` (written by the E8 executor) stands new placements down
-when it says so; management of what is already open never stands down.
+The daily guard (`e8_guard.assess`, the one guard, shared with the E8 executor) stands new
+placements down on any verdict but OK; management of what is already open never stands down.
+ONE GOLD TRADE AT RISK AT A TIME: a window waits while an earlier XAU position still has its stop
+short of break-even or an earlier bracket still rests (`one_at_risk_blocker`), and as a fail-safe
+the gold risk committed plus its own must fit the guard's room to today's floor (SLIP_BUFFER).
+A leg that would need more than GOLD_MAX_LOT is sent at the ceiling, smaller, never skipped.
 
     python prop/e8_gold.py            one pass, shadow unless armed
     python prop/e8_gold.py --armed    one pass, armed for this pass only
@@ -36,6 +40,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import math
 import sys
 import time
 from datetime import UTC, datetime, timedelta
@@ -106,6 +111,100 @@ XAU_OZ_PER_LOT = 100.0  # fallback for a leg journalled before risk_usd was kept
 UNMEASURED_SKEW_MS = 24 * 3600 * 1000
 #: The growth-governance rail the unowned-position block is billed under (libs/portfolio/rails).
 UNOWNED_BLOCK_RAIL = "e8_unowned_position_block"
+# CONCURRENT OPEN RISK (2026-10-20). The three windows place independently and the AGREEING leg is
+# placed while an earlier window is still open, so three windows at 0.75% each can be live in
+# the same direction at once: 2.25% of the account to the stops, and more once a stop fills
+# through its level. E8's daily floor is 2.5%. Before any window is placed, the risk already
+# committed (open positions to their current stops, this lane's resting legs) plus the new
+# window's must fit inside the guard's `room_to_daily_floor`, after both of these:
+#: Stops on this venue fill at market, not at the level: 2026-09-24 a buy stop filled 24 points
+#: through. Every committed dollar is grossed up by this before it is compared with the room, so
+#: 2.25% of stop risk reads as ~2.8% and cannot be placed against a 2.5% floor.
+SLIP_BUFFER = 1.25
+#: Kept clear of the floor on top of the buffer: spread and commission on the closes, and the
+#: equity read being seconds old. 0.10% of the starting balance.
+ROOM_MARGIN_USD = 100.0
+# A STOP MOVE THE VENUE KEEPS REFUSING IS BOUNDED (2026-10-20). On 2026-09-25 an asia short's
+# break-even ratchet was refused by TradeLocker pass after pass; each refusal was logged and the
+# same modify re-sent five minutes later, forever, while the trade gave back ~680 USD. After this
+# many consecutive venue refusals for one position the lane stops re-sending: a position in profit
+# beyond the break-even trigger is closed at market (the protection the stop could not give),
+# otherwise its existing stop is held and the refusal raised as an alert.
+MAX_STOP_REFUSALS = 3
+# A LOT CEILING ON EVERY GOLD LEG (2026-10-20). `lot_for_risk` sizes a leg as the window's risk
+# over its stop distance and nothing bounded the quotient: a tight range at 1% of a 100k account
+# needs 0.75 lots at a 13.3-point stop and 2.0 at a 5-point one, and a stop that tight on gold is
+# inside the noise a stop order fills through. What the ceiling really bounds is DOLLARS PER POINT
+# of fill-through: at 0.75 lots a 2,500 USD daily floor takes a 23-27 point slip to reach.
+#
+# v2 (audit HOLD on 6f94d45cc, 2026-10-20): SHRINK, NEVER SKIP. v1 skipped the whole window, which
+# fails growth-governance Rule 1: a tight stop is exactly where a capped leg is safe (its risk,
+# ceiling x stop x contract, is at most the certified risk, and the dollars-per-point bound is
+# kept), and skipping forwent 38-87 USD a window against <= 35 shrunk. So every leg over the
+# ceiling is sent AT the ceiling; the window's budget is re-checked on the shrunk risk plus the
+# points-slip allowance (`bracket_slip`, points), and v4 FITS the lot to that budget rather than
+# deferring a window that can never pass it; and the risk withheld is journalled (status
+# RAIL_SHRUNK, rail LOT_CEILING_RAIL, reason LOT_CEILING_REASON) and published two-sided by
+# `research/missed_growth.published_e8_gold_lines` -- the risk withheld, the saving UNMEASURED.
+GOLD_MAX_LOT = 0.75
+#: E8's own position cap on XAUUSD, in lots. An override above it is no ceiling at all.
+GOLD_MAX_LOT_CAP = 20.0
+#: The box may move the ceiling without a code change: {"max_lot": <lots>}. Absent means
+#: GOLD_MAX_LOT. Unreadable, non-numeric, non-finite, <= 0, above GOLD_MAX_LOT_CAP or below the
+#: venue's minimum lot (which would idle the lane) also means GOLD_MAX_LOT, said in the pass
+#: report -- a bad file never switches the ceiling off, and never sets one the venue cannot send.
+GOLD_MAX_LOT_FILE = DESK / "data" / "E8_GOLD_MAX_LOT.json"
+#: The name the withheld risk is journalled under (status RAIL_SHRUNK, missed_growth_risk_usd).
+#: Not yet in libs/portfolio/rails.py, which is a sealed file: registering it is the principal's.
+LOT_CEILING_RAIL = "e8_gold_lot_ceiling"
+#: The decision reason code a shrunk window carries (prop/e8_evidence: R_LOT_CEILING, NOT exempt
+#: in scripts/check_placement_interlock.py).
+LOT_CEILING_REASON = "lot_ceiling"
+# A STAND-DOWN CANCELS THIS LANE'S RESTING LEGS (2026-10-20). A guard verdict other than OK
+# (STOOD_DOWN, CAPPED, BREACHED, PASSED) used to stop new placements only, so the twin of a
+# bracket placed before the verdict still rested at the venue and could fill into a day the guard
+# had closed. Every pass on which `assess().may_open` is False now cancels this lane's own
+# journalled entry orders still resting (`stand_down_cancels`); filled positions and their stops
+# are never touched, and a cancel the venue refuses is logged and tried again next pass.
+STAND_DOWN_CANCEL = "stand_down_cancel"
+# A TWO-LEGGED BRACKET IS BUDGETED AGAINST TODAY'S FLOOR (2026-10-20; v4 per the audit HOLD on
+# 3ce5aaf85). One fill cancels the other, but the OCO is this lane's 5-minute pass, not the
+# venue's: in a fast spike both legs can fill and stop out before the pass sees the first. So
+# both legs' risk to their stops PLUS ONE LEG'S SLIP IN POINTS at the lot sent must fit the
+# nearer of the guard's floors:
+#
+#     sum(leg_risk) + slip_points x lot x contract  <=  min(room_to_daily_floor, room_to_static)
+#
+# SLIP IS IN POINTS, NEVER R. The worst measured fill-through, 24.13 points on 2026-09-24, was
+# 0.82R of a 29.55-point stop, but 1.86R of a 13-point one and 0.22R of a 110-point one: a slip in
+# R mis-prices every stop but the one it was measured on. 0 of 41 E8 window-days filled both legs,
+# so one leg carries the slip. A bracket that does not fit is SHRUNK, both legs alike, until it
+# does (`floor_fit_lots`), journalled RAIL_SHRUNK; only a leg under the venue minimum skips the
+# window (RAIL_BLOCKED, with its reason).
+#: The worst measured single-leg fill-through on this venue, in price points (2026-09-24).
+DEFAULT_SLIP_POINTS = 24.13
+#: Stop exits the lane must have measured before their p95 replaces DEFAULT_SLIP_POINTS.
+MIN_SLIP_EXITS = 20
+#: The lane's measured slip, written by `prop/e8_gold_slip.py` from its own stop exits:
+#: {"status": "MEASURED", "slip_points": <p95, points>, "n", "measured_at", "sources"}. Absent,
+#: not MEASURED, n < MIN_SLIP_EXITS, unreadable, non-finite or negative -> DEFAULT_SLIP_POINTS.
+BRACKET_SLIP_FILE = DESK / "data" / "E8_GOLD_SLIP.json"
+#: Where the lane records each stop exit it can see in the venue's order history (one row per
+#: filled protective stop of a position its own entry opened), for `e8_gold_slip` to measure.
+STOP_EXITS = DESK / "data" / "e8_gold_stop_exits.jsonl"
+# A TAKE-PROFIT THE DAILY CAP WOULD STRIP IS SHRUNK, NOT REFUSED (v4). E8 strips profit above the
+# daily cap at rollover, so a target past the guard's `profit_cap_headroom` earns nothing beyond
+# it while its stop still costs in full. Refusing the trade (v3) cost most fresh days above about
+# 105.3k equity to save 10-108 USD of stripped excess; the lot is now cut so the target fits the
+# headroom (`profit_fit_lots`), and only a lot under the venue minimum skips.
+#: The rails these binds are journalled under (RAIL_SHRUNK / RAIL_BLOCKED, missed_growth_risk_usd).
+#: Each is a NON-EXEMPT evidence reason (prop/e8_evidence + scripts/check_placement_interlock):
+#: lot_ceiling, bracket_daily_floor, daily_profit_cap.
+DAILY_FLOOR_RAIL = "e8_gold_bracket_daily_floor"
+PROFIT_CAP_RAIL = "e8_gold_daily_profit_cap"
+#: Their decision reason codes (prop/e8_evidence; see the README's merge note for the fence).
+DAILY_FLOOR_REASON = "bracket_daily_floor"
+PROFIT_CAP_REASON = "daily_profit_cap"
 # Terminal reconnection (2026-09-30: ~70 min of "No IPC connection" in one day). Each attempt
 # drops the dead IPC handle and re-attaches; the waits are seconds inside a 5-minute pass.
 MT5_RETRY_WAITS_S = (0.0, 2.0, 5.0, 15.0, 30.0)
@@ -138,6 +237,292 @@ def window_risk(name: str, kelly: dict[str, float] | None) -> tuple[float, str]:
     if kelly is not None and name in kelly:
         return float(kelly[name]), "kelly_survival"
     return RISK_FRAC, "policy RISK_FRAC"
+
+
+def gold_max_lot(path: Path | None = None, *, min_lot: float | None = None
+                 ) -> tuple[float, str]:
+    """(the lot ceiling for one gold leg, where it came from). Never raises.
+
+    `path` (default GOLD_MAX_LOT_FILE) may hold {"max_lot": <lots>}. A missing file is the
+    default; a file that cannot be read, or a value that is not a finite number above zero, is
+    above GOLD_MAX_LOT_CAP, or is below `min_lot` (the venue's minimum, when it is known), is
+    also the default, with the reason in the source string -- never a ceiling of zero or none.
+    """
+    p = GOLD_MAX_LOT_FILE if path is None else path
+    try:
+        if not p.exists():
+            return GOLD_MAX_LOT, "default GOLD_MAX_LOT"
+        doc = json.loads(p.read_text(encoding="utf-8-sig"))
+        raw = doc.get("max_lot") if isinstance(doc, dict) else None
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)) \
+                or not math.isfinite(float(raw)) or not float(raw) > 0:
+            return GOLD_MAX_LOT, (f"default GOLD_MAX_LOT ({p.name} max_lot={raw!r} is not a "
+                                  f"positive number)")
+        if float(raw) > GOLD_MAX_LOT_CAP:
+            return GOLD_MAX_LOT, (f"default GOLD_MAX_LOT ({p.name} max_lot={raw!r} is above "
+                                  f"E8's {GOLD_MAX_LOT_CAP:g}-lot XAUUSD cap: no ceiling at all)")
+        if min_lot is not None and float(raw) < float(min_lot) - 1e-12:
+            return GOLD_MAX_LOT, (f"default GOLD_MAX_LOT ({p.name} max_lot={raw!r} is below the "
+                                  f"venue minimum {float(min_lot):g}: it would idle the lane)")
+        return float(raw), p.name
+    except Exception as exc:
+        return GOLD_MAX_LOT, f"default GOLD_MAX_LOT ({p.name} unreadable: {type(exc).__name__})"
+
+
+def cap_lot(lot: float, max_lot: float, quantise: Any = None) -> tuple[float, bool]:
+    """(the lot to send, whether the ceiling shrank it). Pure.
+
+    A lot at or under the ceiling is returned as it came. One over it is sent AT the ceiling
+    (passed through `quantise`, the venue's lot step, when given) -- shrunk, never skipped.
+    """
+    if not float(lot) > float(max_lot) + 1e-9:
+        return float(lot), False
+    capped = float(max_lot) if quantise is None else float(quantise(float(max_lot)))
+    return min(capped, float(max_lot)), True
+
+
+def shrunk_budget_risk(lot: float, stop_dist: float, contract_size: float,
+                       slip_points: float = DEFAULT_SLIP_POINTS) -> float:
+    """A shrunk leg's risk for the budget: its stop at the level PLUS `slip_points` of
+    fill-through, at the leg's own dollars per point. Pure."""
+    per_point = float(lot) * float(contract_size)
+    return per_point * (float(stop_dist) + float(slip_points))
+
+
+def ceiling_budget_lot(committed: float, room: float, stop_dist: float, contract_size: float,
+                       slip_points: float) -> float:
+    """The largest lot whose `shrunk_budget_risk` still passes `risk_budget_allows`. Pure.
+
+    (committed + L x contract x (stop + slip)) x SLIP_BUFFER <= room - ROOM_MARGIN_USD, solved for
+    L. v3 deferred a ceiling-shrunk window that failed this check, and at a stop under about 13
+    points on a 100 oz contract it fails on every pass: never sent, never journalled. v4 sends L.
+    """
+    unit = float(contract_size) * (float(stop_dist) + float(slip_points))
+    if not unit > 0:
+        return 0.0
+    return max(0.0, ((float(room) - ROOM_MARGIN_USD) / SLIP_BUFFER - float(committed)) / unit)
+
+
+def bracket_slip(path: Path | None = None, *, window: str | None = None) -> tuple[float, str]:
+    """(one leg's fill-through allowance in price POINTS, where it came from). Never raises.
+
+    The measured p95 from `path` (default BRACKET_SLIP_FILE) once it holds at least
+    MIN_SLIP_EXITS stop exits; otherwise DEFAULT_SLIP_POINTS, the worst single-leg slip measured,
+    with the reason in the source string. With `window`, that window's own p95 is used when its
+    block is MEASURED on at least MIN_SLIP_EXITS of its exits; otherwise the pooled rule above.
+    """
+    p = BRACKET_SLIP_FILE if path is None else path
+    default = "default DEFAULT_SLIP_POINTS (worst measured single-leg slip, 2026-09-24)"
+    try:
+        if not p.exists():
+            return DEFAULT_SLIP_POINTS, f"{default}: no {p.name}"
+        doc = json.loads(p.read_text(encoding="utf-8-sig"))
+        if not isinstance(doc, dict):
+            return DEFAULT_SLIP_POINTS, f"{default}: {p.name} is not an object"
+        wins = doc.get("windows")
+        wdoc = wins.get(window) if window and isinstance(wins, dict) else None
+        if isinstance(wdoc, dict) and str(wdoc.get("status") or "") == "MEASURED":
+            wn, wraw = wdoc.get("n"), wdoc.get("slip_points")
+            if isinstance(wn, int) and not isinstance(wn, bool) and wn >= MIN_SLIP_EXITS \
+                    and isinstance(wraw, (int, float)) and not isinstance(wraw, bool) \
+                    and math.isfinite(float(wraw)) and float(wraw) >= 0:
+                return float(wraw), f"{p.name} [{window}] (p95 of {wn} stop exits)"
+        n = doc.get("n")
+        if str(doc.get("status") or "") != "MEASURED":
+            return DEFAULT_SLIP_POINTS, f"{default}: {p.name} is {doc.get('status')}, n={n}"
+        if isinstance(n, bool) or not isinstance(n, int) or n < MIN_SLIP_EXITS:
+            return DEFAULT_SLIP_POINTS, (f"{default}: {p.name} has n={n!r}, under "
+                                         f"{MIN_SLIP_EXITS} stop exits")
+        raw = doc.get("slip_points")
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)) \
+                or not math.isfinite(float(raw)) or float(raw) < 0:
+            return DEFAULT_SLIP_POINTS, f"{default}: {p.name} slip_points={raw!r} is not >= 0"
+        return float(raw), f"{p.name} (p95 of {n} stop exits)"
+    except Exception as exc:
+        return DEFAULT_SLIP_POINTS, f"{default}: {p.name} unreadable ({type(exc).__name__})"
+
+
+def bracket_floor_need(leg_risk: dict[str, float], lots: dict[str, float], slip_points: float,
+                       contract_size: float) -> float:
+    """Every leg's risk to its stop plus ONE leg's slip at the largest lot sent, in USD. Pure."""
+    if not lots:
+        return 0.0
+    return (sum(float(v) for v in leg_risk.values())
+            + float(slip_points) * max(float(x) for x in lots.values()) * float(contract_size))
+
+
+def floor_room(guard_decision: Any) -> float:
+    """The nearer of the guard's two floors: today's (daily) and the account's (static)."""
+    return min(float(guard_decision.room_to_daily_floor),
+               float(guard_decision.room_to_static_floor))
+
+
+def fit_lots(lots: dict[str, float], caps: dict[str, float], *, min_lot: float | None,
+             quantise: Any = None) -> tuple[dict[str, float] | None, dict[str, float], str | None]:
+    """Cut each leg to its cap: (new lots, {side: lot before} for the legs cut, None), or
+    (None, {}, why) when a cut leg would fall under the venue minimum. Never raises a lot. Pure.
+    """
+    out: dict[str, float] = {}
+    before: dict[str, float] = {}
+    for side, lot in lots.items():
+        cap = float(caps.get(side, math.inf))
+        if float(lot) <= cap + 1e-12:
+            out[side] = float(lot)
+            continue
+        if not cap > 0 or (min_lot is not None and cap < float(min_lot) - 1e-12):
+            return None, {}, (f"{side} would need {max(cap, 0.0):.4f} lots, under the venue "
+                              f"minimum {float(min_lot or 0):g}")
+        q = float(quantise(cap)) if quantise is not None else cap
+        out[side] = min(q, cap, float(lot))
+        before[side] = float(lot)
+    return out, before, None
+
+
+def floor_fit_lots(lots: dict[str, float], dists: dict[str, float], *, slip_points: float,
+                   room: float, contract_size: float, min_lot: float | None,
+                   quantise: Any = None) -> tuple[dict[str, float] | None, str | None]:
+    """Shrink BOTH legs so the bracket fits the floor: (new lots, None), or (None, why). Pure.
+
+    One common lot L for every leg, the largest with sum(L x stop_k x contract) + slip_points x L x
+    contract <= room. A leg is never made bigger; a leg under the venue minimum cannot be sent.
+    """
+    if not lots:
+        return dict(lots), None
+    unit = float(contract_size) * (sum(float(dists[k]) for k in lots) + float(slip_points))
+    cap = float(room) / unit if unit > 0 else 0.0
+    out, _before, why = fit_lots(lots, dict.fromkeys(lots, cap), min_lot=min_lot,
+                                 quantise=quantise)
+    if out is None:
+        return None, f"bracket cannot fit {float(room):,.0f} USD of floor room even shrunk: {why}"
+    risk = {k: float(dists[k]) * v * float(contract_size) for k, v in out.items()}
+    need = bracket_floor_need(risk, out, slip_points, contract_size)
+    if need > float(room) + 1e-9:
+        return None, (f"bracket cannot fit the floor: the shrunk legs still need {need:,.0f} USD "
+                      f"against {float(room):,.0f}")
+    return out, None
+
+
+def leg_target_profit(spec_leg: dict[str, Any], lot: float, contract_size: float) -> float:
+    """Dollars a leg makes if its take-profit fills at the level. Pure."""
+    return (abs(float(spec_leg["tp"]) - float(spec_leg["price"])) * float(lot)
+            * float(contract_size))
+
+
+def profit_fit_caps(spec: dict[str, Any], sides: Any, headroom: float,
+                    contract_size: float) -> dict[str, float]:
+    """Each leg's largest lot whose take-profit still fits the cap headroom. Pure."""
+    caps: dict[str, float] = {}
+    for side in sides:
+        per_lot = leg_target_profit(spec[side], 1.0, contract_size)
+        caps[side] = max(0.0, float(headroom)) / per_lot if per_lot > 0 else math.inf
+    return caps
+
+
+def stop_exits_from_history(hist_rows: list[dict[str, Any]], filled: dict[int, int],
+                            own: dict[int, dict[str, Any]]) -> list[dict[str, Any]]:
+    """The protective-stop fills of positions this lane's own entries opened, from the venue's
+    order history: one row per exit with its side, stop level and fill price. Pure.
+
+    A row qualifies when it is FILLED, carries a stopPrice and a fill price, belongs to a position
+    one of our entry orders opened, and is not itself one of our entry orders -- so a take-profit
+    (a limit, no stopPrice), an entry stop and anything on a position we did not open never count.
+    """
+    entry_of = {int(pid): int(oid) for oid, pid in filled.items() if int(oid) in own}
+    owned = set(entry_of)
+    entry_fill: dict[int, float] = {}
+    for h in hist_rows:
+        try:
+            if h.get("id") is not None and int(h["id"]) in own:
+                entry_fill[int(h["id"])] = float(h.get("avgPrice") or h.get("filledPrice") or 0.0)
+        except (TypeError, ValueError):
+            continue
+    out: list[dict[str, Any]] = []
+    for h in hist_rows:
+        try:
+            if str(h.get("status") or "").lower() != "filled" or h.get("id") is None:
+                continue
+            oid, pid = int(h["id"]), int(h.get("positionId") or 0)
+            if oid in own or pid not in owned:
+                continue
+            stop = float(h.get("stopPrice") or 0.0)
+            fill = float(h.get("avgPrice") or h.get("filledPrice") or 0.0)
+            side = str(h.get("side") or "").lower()
+        except (TypeError, ValueError):
+            continue
+        if stop > 0 and fill > 0 and side in ("buy", "sell") \
+                and math.isfinite(stop) and math.isfinite(fill):
+            row: dict[str, Any] = {"order_id": oid, "position_id": pid, "side": side,
+                                   "stop": stop, "fill": fill, "venue_ms": _order_ms(h)}
+            leg = own.get(entry_of[pid]) or {}
+            if leg.get("window"):
+                row["window"] = str(leg["window"])
+            try:
+                trigger = float(leg.get("price") or 0.0)
+            except (TypeError, ValueError):
+                trigger = 0.0
+            entry = entry_fill.get(entry_of[pid], 0.0)
+            entry_side = str(leg.get("side") or "").lower()
+            entry_side = {"buy_stop": "buy", "sell_stop": "sell"}.get(entry_side, entry_side)
+            if trigger > 0 and entry > 0 and entry_side in ("buy", "sell") \
+                    and math.isfinite(trigger) and math.isfinite(entry):
+                row.update(trigger=trigger, entry=entry, entry_side=entry_side)
+            out.append(row)
+    return out
+
+
+def _record_stop_exits(rows: list[dict[str, Any]], *, now: datetime) -> int:
+    """Append the stop exits not yet journalled. Never raises; `publish_slip` re-measures."""
+    try:
+        from prop import e8_gold_slip
+        seen = {int(r["order_id"]) for r in e8_gold_slip.read_stop_exits(STOP_EXITS)
+                if r.get("order_id") is not None}
+        new = [r for r in rows if int(r["order_id"]) not in seen]
+        if new:
+            STOP_EXITS.parent.mkdir(parents=True, exist_ok=True)
+            with STOP_EXITS.open("a", encoding="utf-8") as fh:
+                for r in new:
+                    fh.write(json.dumps({"at": now.isoformat(timespec="seconds"), **r}) + "\n")
+        return len(new)
+    except Exception as exc:
+        log(f"stop-exit journal not updated ({type(exc).__name__}: {exc})")
+        return 0
+
+
+def publish_slip(*, now: datetime) -> dict[str, Any]:
+    """Re-measure the slip from the lane's stop-exit journal, write E8_GOLD_SLIP.json and return
+    the publication for E8_GOLD.json: overall and PER WINDOW, in points, with n, p95, max,
+    measured_at and sources. Called on every pass AFTER placement, so it can never delay a send.
+
+    NEVER RAISES. Any failure is logged and published as UNMEASURED with the error, and the guard
+    keeps DEFAULT_SLIP_POINTS (`bracket_slip` reads only a MEASURED file with n >= 20).
+    """
+    try:
+        from prop import e8_gold_slip
+        d = e8_gold_slip.refresh(exits=STOP_EXITS, out=BRACKET_SLIP_FILE,
+                                 measured_at=now.date().isoformat())
+        keep = ("status", "n", "unit", "slip_points", "provisional_p95_points", "p50_points",
+                "max_points", "measured_at", "sources", "min_n", "windows")
+        pub = {k: d[k] for k in keep if k in d}
+        pub["guard_slip_points"] = bracket_slip()[0]
+        return pub
+    except Exception as exc:
+        log(f"slip not published ({type(exc).__name__}: {exc}); guard keeps "
+            f"{DEFAULT_SLIP_POINTS:g} points")
+        return {"status": "UNMEASURED", "n": 0, "unit": "points",
+                "measured_at": now.date().isoformat(), "sources": [],
+                "error": f"{type(exc).__name__}: {exc}"[:160],
+                "guard_slip_points": DEFAULT_SLIP_POINTS}
+
+
+def stand_down_cancels(open_ids: set[int], filled: dict[int, int],
+                       own: dict[int, dict[str, Any]]) -> list[int]:
+    """This lane's own entry orders still RESTING at the venue: what a stand-down cancels. Pure.
+
+    Only ids the lane journalled as its own sends (`own_entry_orders`) qualify, so a position's
+    protective stop or target, and anything a human placed, are never in the list; an id the venue
+    reports as filled is a position now and is left alone too.
+    """
+    return sorted(int(oid) for oid in open_ids if int(oid) in own and int(oid) not in filled)
 
 
 def plan(df: Any, hour: float, state: dict, *, tick_size: float = 0.01,
@@ -512,7 +897,207 @@ def trail_decision(position: dict, window: dict, bars: Any, current_stop: float,
                        cost_per_unit=float(cost_per_unit), spread=max(0.0, float(spread)))
 
 
+def stop_refusal_response(position: dict, window: dict, *, bid: float, ask: float,
+                          cost_per_unit: float = 0.0) -> tuple[str, str]:
+    """What to do with a position whose stop moves the venue has refused MAX_STOP_REFUSALS times.
+
+    ("close", why) when it stands in profit at least BREAKEVEN_TRIGGER_R beyond its entry, net of
+    the round-trip cost, at the price it would close on (bid for a long, ask for a short): the
+    ratchet exists to protect exactly that profit and the venue will not let it. Otherwise
+    ("hold", why): the stop already resting is kept and nothing more is sent. Pure.
+    """
+    side = 1 if str(position.get("side") or "").lower() == "buy" else -1
+    leg = (window.get("orders") or {}).get("buy_stop" if side == 1 else "sell_stop") or {}
+    entry = float(position.get("avgPrice") or leg.get("price") or 0.0)
+    dist = abs(entry - float(leg.get("sl") or 0.0))
+    if not (entry > 0 and dist > 0):
+        return "hold", "entry or original stop unreadable; the resting stop is held"
+    mark = float(bid) if side == 1 else float(ask)
+    r_now = (side * (mark - entry) - float(cost_per_unit)) / dist
+    trigger = _pm.BREAKEVEN_TRIGGER_R
+    if r_now >= trigger:
+        return "close", (f"+{r_now:.2f}R at {mark:.2f}, beyond the {trigger}R break-even trigger, "
+                         f"and the venue refuses to move the stop: closed at market")
+    return "hold", (f"{r_now:+.2f}R at {mark:.2f}, short of the {trigger}R trigger: the resting "
+                    f"stop is held and no further stop move is sent")
+
+
+def position_risk_usd(position: dict, stop: float, *, bid: float, ask: float,
+                      contract_size: float) -> float:
+    """Dollars this open position loses if its stop fills AT the level, measured from whichever
+    is further from the stop: the entry, or the current mark (bid for a long, ask for a short).
+
+    From the entry, a stop at or beyond it -- ratcheted to break-even or better -- risks nothing.
+    From the mark, a winner still has its floating profit to give back, and the guard's room is
+    measured on EQUITY, which already includes that profit; leaving it out would let a winning
+    break-even leg fund new risk with money the floor can still take back.
+    """
+    side = str(position.get("side") or "").strip().lower()
+    entry = float(position.get("avgPrice") or 0.0)
+    qty = float(position.get("qty") or 0.0)
+    if side not in ("buy", "sell") or not (entry > 0) or not (qty > 0) or not (stop > 0):
+        raise ValueError(f"position {position.get('id')} has no readable side/entry/qty/stop")
+    sign = 1.0 if side == "buy" else -1.0
+    mark = float(bid) if side == "buy" else float(ask)
+    per_unit = max(0.0, sign * (entry - stop), sign * (mark - stop))
+    return per_unit * qty * float(contract_size)
+
+
+def stop_is_at_risk(position: dict, stop: float) -> bool:
+    """Is this position's stop still on the losing side of its entry (not yet at break-even)?"""
+    side = str(position.get("side") or "").strip().lower()
+    entry = float(position.get("avgPrice") or 0.0)
+    return (entry - float(stop)) > 0 if side == "buy" else (float(stop) - entry) > 0
+
+
+def one_at_risk_blocker(detail: dict[str, Any]) -> str | None:
+    """ONE GOLD TRADE AT RISK AT A TIME ON E8 -- the reason a window must wait, or None.
+
+    Gold is force-closed only at CLOSE_HOUR, so all three windows can be open together, and the
+    agreeing-leg rule lets them stack in one direction. The max-growth simulation (2026-10-20,
+    sizing/e8_three_gold_2026-10-20.md) put that at an 8-31% daily-breach rate at 0.75% per
+    window, and at 0% breach with a 65-89% pass rate when a window waits while an earlier one is
+    still at risk. "At risk" is a position whose stop is not yet at break-even or better, or a
+    resting bracket of this lane that has not filled or been cancelled; a position ratcheted to
+    break-even risks nothing and does not block.
+    """
+    risky = [str(r["position_id"]) for r in detail.get("positions") or [] if r.get("at_risk")]
+    pending = sorted((detail.get("pending_brackets") or {}).keys())
+    if risky:
+        return (f"one gold trade at risk at a time: position(s) {', '.join(risky)} still have "
+                f"their stop short of break-even")
+    if pending:
+        return (f"one gold trade at risk at a time: bracket(s) {', '.join(pending)} still rest "
+                f"at the venue")
+    return None
+
+
+def committed_risk(positions: list[dict], open_orders: list[dict], journal: list[dict],
+                   state: dict, *, bid: float, ask: float, contract_size: float
+                   ) -> tuple[float, dict[str, Any]]:
+    """Risk already on the account in gold, before a new window is placed.
+
+    * every OPEN XAU position, to its current stop (`position_risk_usd`);
+    * every RESTING entry leg this lane placed (its journalled `risk_usd`), with a bracket
+      counted ONCE at its larger leg -- one fill cancels the other, so only one can become risk.
+
+    Raises ValueError when a position's stop cannot be read: a position with no readable stop is
+    unbounded risk, and new risk is not added on top of an unknown.
+    """
+    by_id = {int(o["id"]): o for o in open_orders if o.get("id") is not None}
+    pos_rows: list[dict[str, Any]] = []
+    for p in positions:
+        stop_order = by_id.get(int(p.get("stopLossId") or 0)) or {}
+        stop = float(stop_order.get("stopPrice") or p.get("stopLoss") or 0.0)
+        usd = position_risk_usd(p, stop, bid=bid, ask=ask, contract_size=contract_size)
+        pos_rows.append({"position_id": p.get("id"), "stop": stop, "risk_usd": round(usd, 2),
+                         "at_risk": stop_is_at_risk(p, stop)})
+    # THE JOURNAL IS THE LANE'S MARK ON THE VENUE; the state's legs cover a lost journal row.
+    legs: dict[int, tuple[str, float]] = {}
+    for row in journal:
+        if row.get("status") != "SENT" or row.get("order_id") is None:
+            continue
+        risk = row.get("risk_usd")
+        if risk is None:
+            risk = (abs(float(row.get("price") or 0) - float(row.get("sl") or 0))
+                    * float(row.get("lot") or 0) * float(contract_size))
+        legs[int(row["order_id"])] = (f"{str(row.get('at') or '')[:10]}/{row.get('window')}",
+                                      float(risk))
+    today = str(state.get("date") or "")
+    for bucket in ("carried", "windows"):
+        for name, w in (state.get(bucket) or {}).items():
+            for leg in (w.get("orders") or {}).values():
+                if leg.get("id") is None or int(leg["id"]) in legs:
+                    continue
+                risk = (abs(float(leg.get("price") or 0) - float(leg.get("sl") or 0))
+                        * float(leg.get("lot") or 0) * float(contract_size))
+                legs[int(leg["id"])] = (f"{today}/{name}", risk)
+    brackets: dict[str, float] = {}
+    for oid, (group, risk) in legs.items():
+        if oid in by_id:                                  # still resting at the venue
+            brackets[group] = max(brackets.get(group, 0.0), risk)
+    total = sum(r["risk_usd"] for r in pos_rows) + sum(brackets.values())
+    return total, {"positions": pos_rows,
+                   "pending_brackets": {k: round(v, 2) for k, v in brackets.items()}}
+
+
+def risk_budget_allows(committed: float, new_risk: float, room: float) -> tuple[bool, str]:
+    """May a window risking `new_risk` be added to `committed`, against `room` to today's floor?"""
+    need = (float(committed) + float(new_risk)) * SLIP_BUFFER
+    allowed = float(room) - ROOM_MARGIN_USD
+    why = (f"committed {committed:,.0f} + this window {new_risk:,.0f} USD, x{SLIP_BUFFER} slippage "
+           f"= {need:,.0f}, against {room:,.0f} to today's floor less a {ROOM_MARGIN_USD:,.0f} "
+           f"margin = {allowed:,.0f}")
+    return need <= allowed, why
+
+
 # ------------------------------------------------------------------ the pass
+
+class _CutBook:
+    """One window's sizing as each rail cuts it: the lots, the legs' risk and the cuts made."""
+
+    def __init__(self, sized: dict[str, tuple[float, str]], leg_risk: dict[str, float],
+                 dists: dict[str, float], contract: float, risk_usd: float,
+                 cuts: list[dict[str, Any]]) -> None:
+        self.sized, self.leg_risk, self.dists = sized, leg_risk, dists
+        self.contract, self.risk_usd, self.cuts = contract, risk_usd, cuts
+
+    def apply(self, new: dict[str, float], before: dict[str, float], rail: str, reason: str,
+              why: str, **extra: Any) -> None:
+        """Take the cut legs to their new lots; record the cut with the risk it withheld."""
+        risk_before = max(self.leg_risk.values()) if self.leg_risk else self.risk_usd
+        for k, lot in new.items():
+            if k in before:
+                self.sized[k] = (lot, self.sized[k][1])
+                self.leg_risk[k] = self.dists[k] * lot * self.contract
+        if before:
+            self.cuts.append({"rail": rail, "reason": reason, "why": why,
+                              "unshrunk_lots": dict(before),
+                              "withheld": max(0.0, risk_before - max(self.leg_risk.values())),
+                              **extra})
+
+
+def _cancel_on_stand_down(venue: Any, state: dict[str, Any], doc: dict[str, Any], *,
+                          open_ids: set[int], filled: dict[int, int], armed: bool,
+                          verdict: str) -> set[int]:
+    """Cancel this lane's resting entry legs because the guard refuses new risk. Never raises.
+
+    Returns the ids the venue acknowledged as cancelled. A refused or failed cancel is logged and
+    left in place; the next pass, still refused by the guard, tries it again.
+    """
+    try:
+        own = own_entry_orders(_journal_rows(), state)
+        targets = stand_down_cancels(open_ids, filled, own)
+    except Exception as exc:
+        doc["stand_down_cancel_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+        log(f"stand-down cancel could not list our resting legs ({type(exc).__name__}: {exc}); "
+            f"tried again next pass")
+        return set()
+    done: set[int] = set()
+    for oid in targets:
+        win = str(own[oid].get("window"))
+        row = (state.get("windows") or {}).get(win) or (state.get("carried") or {}).get(win) or {}
+        act: dict[str, Any] = {"act": STAND_DOWN_CANCEL, "window": win, "order_id": oid,
+                               "verdict": verdict, "ok": False}
+        try:
+            if armed or not row.get("shadow", False):
+                if venue.cancel(int(oid)):
+                    act["ok"] = True
+                    done.add(oid)
+                    log(f"[{win}] {STAND_DOWN_CANCEL}: guard {verdict}; our resting entry order "
+                        f"{oid} cancelled")
+                else:
+                    act["why"] = "venue did not acknowledge the cancel; tried again next pass"
+            else:
+                act.update({"ok": True, "shadow": True})
+                log(f"[{win}] SHADOW would cancel resting entry order {oid} (guard {verdict})")
+        except Exception as exc:
+            act["why"] = f"{type(exc).__name__}: {exc}"[:160] + "; tried again next pass"
+        if not act["ok"]:
+            log(f"[{win}] {STAND_DOWN_CANCEL} FAILED for order {oid}: {act['why']}")
+        doc["actions"].append(act)
+    return done
+
 
 def _read_json(p: Path, default: Any) -> Any:
     try:
@@ -607,11 +1192,32 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 "cert_book_windows": cert or None,
                 "sizing_source": "kelly_survival" if kelly is not None else "policy RISK_FRAC",
                 "kelly_risk": kelly})
-    guard = _read_json(GUARD, {})
-    stood_down = bool(guard.get("stood_down"))
-    if stood_down:
-        doc["guard"] = "stood down: no new placements this pass"
-        log("guard stood down; managing open exposure only")
+    # THE ONE GUARD DECIDES (2026-10-20). This read the raw `stood_down` flag out of the guard's
+    # state file, which only the executor's `assess` call ever rolled to a new server day: on
+    # 2026-10-15 a flag latched on 10-14 stood the gold book down from 00:01Z to 23:56Z with no
+    # placement, and the flag-only read never saw CAPPED, BREACHED or PASSED at all. `assess` is
+    # the verdict; it re-anchors a stale day itself. An equity that cannot be read is not
+    # anchored on (a zero would be persisted as the day's start), and a guard that raises refuses.
+    from prop import e8_guard
+    guard_decision: Any = None
+    if not equity > 0:
+        stood_down = True
+        doc["guard"] = "equity unreadable: no new placements this pass"
+        log("guard not consulted: the venue reported no equity; managing open exposure only")
+    else:
+        try:
+            guard_decision = e8_guard.assess(equity, now=now, state_path=GUARD)
+            doc["guard_decision"] = guard_decision.as_dict()
+            stood_down = not guard_decision.may_open
+            if stood_down:
+                doc["guard"] = (f"{guard_decision.verdict.value}: no new placements this pass "
+                                f"({guard_decision.why})")
+                log(f"guard {guard_decision.verdict.value}: {guard_decision.why}; managing open "
+                    f"exposure only")
+        except Exception as exc:
+            stood_down = True
+            doc["guard"] = f"guard unreadable ({type(exc).__name__}: {exc}"[:200] + ")"
+            log(f"guard raised {type(exc).__name__}: {exc}; no new placements this pass")
 
     bid, ask = venue.quote(SYMBOL)
     try:
@@ -661,8 +1267,48 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             doc["skipped"].append({"window": due["window"], "why": why})
             log(f"[{due['window']}] DEFERRED: {why}")
         due_now = []
+    committed: float | None = None
+    contract = XAU_OZ_PER_LOT
+    if due_now:
+        # CONCURRENT OPEN RISK, measured once, before any window is placed (see SLIP_BUFFER).
+        # Anything unreadable -- the order book, the journal, a position's stop -- refuses every
+        # window this pass and marks none placed, so the next pass decides again.
+        try:
+            budget_orders = venue.orders(SYMBOL)
+            journal = [] if not INTENTS.exists() else _journal_read()
+            if journal is None:
+                raise ValueError("the intents journal is unreadable, so this lane's resting "
+                                 "legs cannot be counted")
+            try:
+                contract = float(venue.details(SYMBOL).get("contractSize") or XAU_OZ_PER_LOT)
+            except Exception:
+                contract = XAU_OZ_PER_LOT
+            committed, doc["committed_risk"] = committed_risk(
+                xau_positions, budget_orders, journal, state, bid=float(bid), ask=float(ask),
+                contract_size=contract)
+            doc["committed_risk"]["total_usd"] = round(committed, 2)
+        except Exception as exc:
+            why = (f"concurrent open risk unmeasurable ({type(exc).__name__}: {exc}"[:200]
+                   + "); no window placed this pass")
+            for due in due_now:
+                doc["skipped"].append({"window": due["window"], "why": why})
+                log(f"[{due['window']}] DEFERRED: {why}")
+            due_now = []
+    room = float(guard_decision.room_to_daily_floor) if guard_decision is not None else 0.0
+    try:
+        _min = float(venue.min_lot(SYMBOL))
+        venue_min_lot: float | None = _min if math.isfinite(_min) and _min > 0 else None
+    except Exception:
+        venue_min_lot = None
+    max_lot, max_lot_src = gold_max_lot(min_lot=venue_min_lot)
+    doc["lot_ceiling"] = {"max_lot": max_lot, "source": max_lot_src}
+    slip_pts, slip_src = bracket_slip()
+    doc["bracket_slip"] = {"slip_points": slip_pts, "source": slip_src, "windows": {}}
+    placed_this_pass: list[str] = []
     for due in due_now:
         name, spec = due["window"], due["spec"]
+        slip_pts, slip_src = bracket_slip(window=name)
+        doc["bracket_slip"]["windows"][name] = {"slip_points": slip_pts, "source": slip_src}
         frac, frac_src = window_risk(name, kelly)
         if not frac > 0:
             doc["skipped"].append({"window": name, "why": (
@@ -670,6 +1316,166 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 "(reports/KELLY_SURVIVAL.json) funds this window at 0 risk")})
             continue
         risk_usd = equity * frac
+        # FIRST: one gold trade at risk at a time (`one_at_risk_blocker`). SECOND, a fail-safe
+        # under it: everything committed plus this window, grossed up for slippage, must fit the
+        # guard's room to today's floor. Either refusal defers the window without marking it
+        # placed, so a later pass inside its session places it once the earlier risk is gone.
+        blocker = one_at_risk_blocker(doc.get("committed_risk") or {})
+        if blocker is None and placed_this_pass:
+            blocker = (f"one gold trade at risk at a time: {', '.join(placed_this_pass)} was "
+                       f"placed earlier in this pass")
+        if blocker is not None:
+            doc["skipped"].append({"window": name, "why": blocker})
+            log(f"[{name}] DEFERRED: {blocker}")
+            continue
+        # SIZING, v4 (audit HOLD on 3ce5aaf85): every leg this window would send is sized BEFORE
+        # any is sent, then each rail that binds CUTS the lot rather than refusing the window --
+        #   1. the lot ceiling (GOLD_MAX_LOT), and the budget on the capped leg plus slip;
+        #   2. today's floor (and the static one) for both legs plus one leg's slip in points;
+        #   3. the daily profit cap: no target past the guard's headroom.
+        # A cut is journalled RAIL_SHRUNK with the risk it withheld. A rail is a skip only when its
+        # lot would fall under the venue minimum, and then it writes a RAIL_BLOCKED row with its
+        # reason and marks the window spent. `sized[side]` is the lot the send loop sends.
+        sized: dict[str, tuple[float, str]] = {}
+        leg_risk: dict[str, float] = {}
+        dists: dict[str, float] = {}
+        for side in ("buy_stop", "sell_stop"):
+            s = spec[side]
+            if side == blocked or not leg_is_legal(side, float(s["price"]), float(bid),
+                                                   float(ask))[0]:
+                continue
+            dist = abs(float(s["price"]) - float(s["sl"]))
+            lot, basis = lot_for_risk(venue, SYMBOL, dist, risk_usd)
+            sized[side] = (_quantise(lot, venue, SYMBOL), basis)
+            leg_risk[side] = risk_usd
+            dists[side] = dist
+        cuts: list[dict[str, Any]] = []
+        rail_skip: dict[str, Any] | None = None
+
+        def _quant(x: float) -> float:
+            return float(_quantise(x, venue, SYMBOL))
+
+        book = _CutBook(sized, leg_risk, dists, contract, risk_usd, cuts)
+        _apply = book.apply
+        try:
+            # 1. THE LOT CEILING, then the budget on what the capped leg risks with its slip.
+            capped, before, _ = fit_lots({k: v[0] for k, v in sized.items()},
+                                         dict.fromkeys(sized, max_lot), min_lot=None,
+                                         quantise=_quant)
+            if capped is not None and before:
+                over = ", ".join(f"{k} {v:g}" for k, v in sorted(before.items()))
+                _apply(capped, before, LOT_CEILING_RAIL, LOT_CEILING_REASON,
+                       f"lot ceiling: {over} lots shrunk to the {max_lot:g}-lot ceiling for one "
+                       f"gold leg", max_lot=max_lot, max_lot_source=max_lot_src)
+                caps = {k: ceiling_budget_lot(committed or 0.0, room, dists[k], contract,
+                                              slip_pts) for k in before}
+                fitted, cut, cut_why = fit_lots({k: sized[k][0] for k in sized}, caps,
+                                                min_lot=venue_min_lot, quantise=_quant)
+                if fitted is None:
+                    rail_skip = {"rail": LOT_CEILING_RAIL, "reason": LOT_CEILING_REASON,
+                                 "why": (f"lot ceiling: the capped leg cannot fit the "
+                                         f"concurrent-risk budget with {slip_pts:g} points of "
+                                         f"slip: {cut_why}"),
+                                 "slip_points": slip_pts}
+                elif cut:
+                    _apply(fitted, cut, LOT_CEILING_RAIL, LOT_CEILING_REASON,
+                           f"lot ceiling: capped leg cut further to fit the concurrent-risk "
+                           f"budget with {slip_pts:g} points of slip",
+                           slip_points=slip_pts, slip_source=slip_src)
+            else:
+                fits, budget_why = risk_budget_allows(committed or 0.0, risk_usd, room)
+                if not fits:
+                    blocker = f"concurrent risk would reach today's floor: {budget_why}"
+                    doc["skipped"].append({"window": name, "why": blocker})
+                    log(f"[{name}] DEFERRED: {blocker}")
+                    continue
+            # 2. TODAY'S FLOOR (and the static floor) for both legs plus one leg's slip.
+            if rail_skip is None and sized:
+                if guard_decision is None:
+                    raise ValueError("no guard decision to budget against")
+                room_floor = floor_room(guard_decision)
+                lots_now = {k: v[0] for k, v in sized.items()}
+                need = bracket_floor_need(leg_risk, lots_now, slip_pts, contract)
+                if need > room_floor + 1e-9:
+                    fit, fit_why = floor_fit_lots(lots_now, dists, slip_points=slip_pts,
+                                                  room=room_floor, contract_size=contract,
+                                                  min_lot=venue_min_lot, quantise=_quant)
+                    floor_extra = {"slip_points": slip_pts, "slip_source": slip_src,
+                                   "room_to_floor": round(room_floor, 2),
+                                   "need_usd": round(need, 2)}
+                    if fit is None:
+                        rail_skip = {"rail": DAILY_FLOOR_RAIL, "reason": DAILY_FLOOR_REASON,
+                                     "why": str(fit_why), **floor_extra}
+                    else:
+                        # Judged on what each leg actually risks at its lot from here on.
+                        for k in fit:
+                            leg_risk[k] = dists[k] * sized[k][0] * contract
+                        _apply(fit, {k: lots_now[k] for k in fit if fit[k] < lots_now[k] - 1e-12},
+                               DAILY_FLOOR_RAIL, DAILY_FLOOR_REASON,
+                               (f"bracket floor: {len(fit)} legs plus {slip_pts:g} points of "
+                                f"one leg's slip needed {need:,.0f} USD against "
+                                f"{room_floor:,.0f} to the nearer floor; shrunk to fit"),
+                               **floor_extra)
+            # 3. THE DAILY PROFIT CAP: no target past the headroom the guard reports.
+            if rail_skip is None and sized:
+                headroom = float(guard_decision.profit_cap_headroom)
+                caps = profit_fit_caps(spec, sized.keys(), headroom, contract)
+                fitted, cut, cut_why = fit_lots({k: v[0] for k, v in sized.items()}, caps,
+                                                min_lot=venue_min_lot, quantise=_quant)
+                cap_extra = {"profit_cap_headroom_usd": round(headroom, 2)}
+                if fitted is None:
+                    rail_skip = {"rail": PROFIT_CAP_RAIL, "reason": PROFIT_CAP_REASON,
+                                 "why": (f"daily profit cap: {headroom:,.0f} USD of counted "
+                                         f"profit left today: {cut_why}"), **cap_extra}
+                elif cut:
+                    _apply(fitted, cut, PROFIT_CAP_RAIL, PROFIT_CAP_REASON,
+                           (f"daily profit cap: target cut to fit the {headroom:,.0f} USD of "
+                            f"counted profit left today; the excess would be stripped"),
+                           **cap_extra)
+        except Exception as exc:
+            why = (f"bracket rails unmeasurable ({type(exc).__name__}: {exc}"[:200]
+                   + "); deferred")
+            doc["skipped"].append({"window": name, "why": why})
+            log(f"[{name}] DEFERRED: {why}")
+            continue
+        if rail_skip is not None:
+            rail = str(rail_skip["rail"])
+            skip = {"window": name, **rail_skip, "missed_growth_risk_usd": round(risk_usd, 2)}
+            doc["skipped"].append(skip)
+            _record({"at": now.isoformat(timespec="seconds"), **skip,
+                     "status": "RAIL_BLOCKED", "risk_frac": frac, "armed": bool(armed),
+                     "levels": {k: {f: float(spec[k][f]) for f in ("price", "sl", "tp")}
+                                for k in sized}})
+            state["windows"][name] = {"placed_at": now.isoformat(timespec="seconds"),
+                                      "placed_hour": hour, "hi": due["hi"], "lo": due["lo"],
+                                      "orders": {}, "position_id": None, "shadow": not armed,
+                                      "skipped": rail, "why": skip["why"]}
+            log(f"[{name}] SKIPPED: {skip['why']}; MISSED GROWTH ({rail}): the window's "
+                f"{risk_usd:.0f} USD of certified risk is not deployed")
+            continue
+        window_risk_usd = max(leg_risk.values()) if leg_risk else risk_usd
+        shrunk_by: dict[str, dict[str, Any]] = {}
+        for cut_row in cuts:
+            # MISSED GROWTH (GROWTH_GOVERNANCE Rule 1), two-sided: the risk each cut withheld is
+            # journalled; what the smaller leg saved is UNMEASURED (published_e8_gold_lines).
+            shrink = {"window": name, "rail": cut_row["rail"], "reason": cut_row["reason"],
+                      "why": cut_row["why"] + "; sent smaller, not skipped",
+                      "lots": {k: v[0] for k, v in sized.items()},
+                      "unshrunk_lots": cut_row["unshrunk_lots"],
+                      "risk_usd": round(window_risk_usd, 2),
+                      "certified_risk_usd": round(risk_usd, 2),
+                      "missed_growth_risk_usd": round(cut_row["withheld"], 2),
+                      **{k: v for k, v in cut_row.items()
+                         if k not in ("rail", "reason", "why", "unshrunk_lots", "withheld")}}
+            doc.setdefault("shrunk", []).append(shrink)
+            _record({"at": now.isoformat(timespec="seconds"), **shrink, "status": "RAIL_SHRUNK",
+                     "risk_frac": frac, "armed": bool(armed)})
+            log(f"[{name}] SHRUNK: {shrink['why']}; MISSED GROWTH ({cut_row['rail']}): "
+                f"{cut_row['withheld']:.0f} USD of risk withheld")
+            for k, lot in cut_row["unshrunk_lots"].items():
+                shrunk_by.setdefault(k, {"unshrunk_lot": lot, "by": []})["by"].append(
+                    cut_row["reason"])
+        committed = (committed or 0.0) + window_risk_usd
         legs: dict[str, dict] = {}
         failed: dict[str, dict] = {}
         for side in ("buy_stop", "sell_stop"):
@@ -687,13 +1493,15 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 doc["skipped"].append({"window": name, "side": side, "why": why})
                 log(f"[{name}] {side} not available: {why}")
                 continue
-            lot, basis = lot_for_risk(venue, SYMBOL, dist, risk_usd)
-            lot = _quantise(lot, venue, SYMBOL)
+            lot, basis = sized[side]
             row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
                    "price": float(s["price"]), "sl": float(s["sl"]), "tp": float(s["tp"]),
-                   "lot": lot, "stop_dist": round(dist, 2), "risk_usd": round(risk_usd, 2),
+                   "lot": lot, "stop_dist": round(dist, 2),
+                   "risk_usd": round(leg_risk.get(side, risk_usd), 2),
                    "sizing": basis, "risk_frac": frac, "risk_source": frac_src,
                    "armed": bool(armed)}
+            if side in shrunk_by:
+                row["shrunk"] = shrunk_by[side]
             if not (lot > 0):
                 row["status"] = "UNSIZEABLE"
                 doc["skipped"].append(row)
@@ -702,7 +1510,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             if not armed:
                 row["status"] = "WOULD_PLACE"
                 log(f"[{name}] SHADOW would place {side} {lot} {SYMBOL} @ {s['price']:.2f} "
-                    f"sl {s['sl']:.2f} tp {s['tp']:.2f} (risk {risk_usd:.0f} USD)")
+                    f"sl {s['sl']:.2f} tp {s['tp']:.2f} (risk {row['risk_usd']:.0f} USD)")
                 _record(row)
                 legs[side] = {"id": None, **{k: row[k] for k in ("price", "sl", "tp", "lot")}}
                 continue
@@ -728,6 +1536,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                                   "orders": legs, "position_id": None, "shadow": not armed}
         if failed:
             state["windows"][name]["failed"] = failed
+        if legs or failed:
+            placed_this_pass.append(name)
         doc["placed"].append({"window": name, "legs": legs})
 
     # -------------------------------------------------------------- management
@@ -748,6 +1558,16 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 filled[int(o["id"])] = int(o["positionId"])
     except Exception as exc:
         doc["history_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+    # THE SLIP IS MEASURED FROM THE LANE'S OWN STOP EXITS (prop/e8_gold_slip.py): each protective
+    # stop that filled on a position our entry opened is journalled once, and E8_GOLD_SLIP.json is
+    # re-measured from the journal. Never raises; nothing below reads it this pass.
+    if hist_rows:
+        try:
+            exits = stop_exits_from_history(hist_rows, filled,
+                                            own_entry_orders(_journal_rows(), state))
+            doc["stop_exits_recorded"] = _record_stop_exits(exits, now=now)
+        except Exception as exc:
+            log(f"stop exits not derived ({type(exc).__name__}: {exc})")
     positions_ok = True
     try:
         venue_positions = venue.positions()
@@ -758,6 +1578,19 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         xau_positions = []
         position_ids = set()
         doc["positions_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+
+    # -------------------------------------------------------------- stand-down cancels
+    # THE GUARD'S REFUSAL REACHES WHAT ALREADY RESTS (see STAND_DOWN_CANCEL): a twin placed
+    # before the verdict must not fill after it. Only on the guard's own verdict -- an unreadable
+    # equity or guard is not a verdict -- and only when the order book was read this pass.
+    if guard_decision is not None and not guard_decision.may_open \
+            and "orders_unreadable" not in doc:
+        gone = _cancel_on_stand_down(venue, state, doc, open_ids=open_ids, filled=filled,
+                                     armed=armed, verdict=str(guard_decision.verdict.value))
+        if gone:
+            open_orders = [o for o in open_orders if o.get("id") is None
+                           or int(o["id"]) not in gone]
+            open_ids -= gone
 
     # -------------------------------------------------------------- dropped legs
     if any(w.get("failed") for w in (state.get("windows") or {}).values()):
@@ -806,6 +1639,36 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         if mapped is None or not (current_stop > 0):
             continue
         name, w = mapped
+        refused = w.get("stop_refusals") or {}
+        if int(refused.get("count") or 0) >= MAX_STOP_REFUSALS:
+            # BOUNDED: no more stop moves for this position (see MAX_STOP_REFUSALS).
+            verdict, why = stop_refusal_response(
+                p, w, bid=float(bid), ask=float(ask),
+                cost_per_unit=E8_ROUND_TRIP_PER_PRICE_UNIT)
+            if verdict == "close":
+                act = {"act": "stop_refused_close", "window": name, "position_id": int(p["id"]),
+                       "why": why, "ok": False}
+                try:
+                    if armed or not w.get("shadow", False):
+                        act["ok"] = bool(venue.close(int(p["id"])))
+                    else:
+                        act.update({"ok": True, "shadow": True})
+                    if act["ok"]:
+                        w["closed"] = True
+                    else:
+                        act["why"] += "; the venue did not acknowledge the close"
+                except Exception as exc:
+                    act["why"] += f"; close FAILED: {type(exc).__name__}: {exc}"[:160]
+                log(f"[{name}] ALERT position {p['id']}: {act['why']}")
+                doc.setdefault("alerts", []).append(act["why"])
+                doc["actions"].append(act)
+            elif not refused.get("held"):
+                refused["held"] = True
+                log(f"[{name}] ALERT position {p['id']}: {why}")
+                doc.setdefault("alerts", []).append(f"position {p['id']}: {why}")
+                doc["actions"].append({"act": "stop_refused_hold", "window": name,
+                                       "position_id": int(p["id"]), "why": why, "ok": True})
+            continue
         decision = trail_decision(
             p, w, df, current_stop,
             cost_per_unit=E8_ROUND_TRIP_PER_PRICE_UNIT,
@@ -848,6 +1711,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 action["ok"] = True
                 action["shadow"] = True
             if action["ok"]:
+                w.pop("stop_refusals", None)
                 log(f"[{name}] {'SHADOW would ratchet' if action.get('shadow') else 'RATCHET'} "
                     f"position {p['id']} stop {current_stop:.2f} -> "
                     f"{float(decision.new_stop):.2f}; {decision.reason}")
@@ -857,6 +1721,17 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         except Exception as exc:
             action["why"] = f"{type(exc).__name__}: {exc}"[:160]
             log(f"[{name}] stop ratchet FAILED: {action['why']}")
+        if not action["ok"]:
+            count = int((w.get("stop_refusals") or {}).get("count") or 0) + 1
+            w["stop_refusals"] = {"count": count, "last_at": now.isoformat(timespec="seconds"),
+                                  "last_why": action.get("why")}
+            action["refusals"] = count
+            if count >= MAX_STOP_REFUSALS:
+                log(f"[{name}] ALERT position {p['id']}: the venue refused {count} stop moves in "
+                    f"a row; no further moves are sent (close if beyond the break-even trigger, "
+                    f"else hold the resting stop)")
+                doc.setdefault("alerts", []).append(
+                    f"position {p['id']}: {count} consecutive stop moves refused by the venue")
         doc["actions"].append(action)
     # Positions carried from a previous day are closed at the close hour like today's.
     for name, w in list((state.get("carried") or {}).items()):
@@ -893,6 +1768,10 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         doc["actions"].append(act)
     state["windows"] = {n: w for n, w in state["windows"].items() if not n.startswith("carried:")}
 
+    # THE SLIP IS PUBLISHED ON EVERY PASS, AFTER PLACEMENT (coordinator, hourly pass 15): overall
+    # and per window, in points, into E8_GOLD_SLIP.json and this report. `publish_slip` never
+    # raises; a failure publishes UNMEASURED and the guard keeps DEFAULT_SLIP_POINTS.
+    doc["slip"] = publish_slip(now=now)
     doc.setdefault("status", "OK")
     try:
         STATE.parent.mkdir(parents=True, exist_ok=True)

@@ -88,10 +88,18 @@ def _tracked() -> list[str]:
     return [ln.strip() for ln in out.stdout.splitlines() if ln.strip()]
 
 
+#: DIGIT BOUNDARIES, NEVER `\b` AND NEVER A BARE DOT (audit 2026-10-20). `\b` misses
+#: "acc_<ID>" and "x<ID>" (a word character on both sides), and the previous `(?![\d.])` missed an
+#: identifier ending a sentence, "refused for <ID>.". What is excluded is exactly a longer digit
+#: run and a decimal: a digit, or a digit-and-dot, before; a digit, or a dot-and-digit, after.
+_BEFORE = r"(?<!\d)(?<!\d\.)"
+_AFTER = r"(?!\d)(?!\.\d)"
+
+
 def _contains_identifier(text: str, needle: str) -> bool:
     # A measured decimal such as 7.495044 is not an account identifier.
     # Keep integer tokens, quoted identifiers and prose identifiers detectable.
-    return re.search(r"(?<![\d.])" + re.escape(needle) + r"(?![\d.])", text) is not None
+    return re.search(_BEFORE + re.escape(needle) + _AFTER, text) is not None
 
 
 def test_identifier_matching_preserves_real_identifiers():
@@ -101,6 +109,11 @@ def test_identifier_matching_preserves_real_identifiers():
     assert _contains_identifier('"account": "' + needle + '"', needle)
     assert not _contains_identifier('"q99": 7.' + needle, needle)
     assert not _contains_identifier('"sample": 1' + needle + '2', needle)
+    assert not _contains_identifier('"q": ' + needle + '.5', needle)
+    # The cases `\b` and the old dot rule missed (audit 2026-10-20).
+    assert _contains_identifier('refused for ' + needle + '.', needle)
+    assert _contains_identifier('acc_' + needle, needle)
+    assert _contains_identifier('x' + needle, needle)
 
 
 def _hits(needle: str) -> list[str]:
@@ -166,3 +179,102 @@ def test_the_allowlist_entries_actually_still_need_the_exemption() -> None:
     assert not unneeded, (
         f"these files no longer contain a forbidden identifier and their exemption is stale: "
         f"{unneeded}. Delete the ALLOWED entries.")
+
+
+# --------------------------------------------------------------------- the E8 evaluation login
+#: THE E8 LOGIN IS FENCED BY ITS HASH, so this file does not publish what it forbids. A 7-digit
+#: login hashed with SHA-256 is NOT secret -- 10^7 candidates invert it in seconds -- so the hash
+#: only keeps the literal out of every grep and scrape of the repository; it is not a key.
+E8_LOGIN_SHA256 = "12267253143788f9bf7ac2e80724ab2323240c4f4cb14d8904cb10e6d1af9494"
+E8_LOGIN_DIGITS = 7
+#: Where the login was published and scrubbed (2026-10-20), plus the whole prop desk. A path
+#: ending in "/" covers every tracked file under it.
+E8_LOGIN_FENCED: tuple[str, ...] = (
+    "desks/mt5/prop/",
+    "desks/mt5/research/prop_barrier.py",
+    "docs/PROP_FIRM_E8.md",
+    "docs/cro/evidence/20261009/repair-closure.json",
+    "docs/cro/evidence/20261009/repair-closure-final-checkpoint.json",
+)
+
+
+#: Every written form of a whole number the fence reads (audit 2026-10-20, v4), each between
+#: digit boundaries -- never `\b`: a plain run, the same with a zero fraction ("<ID>.0", what a
+#: float column prints), scientific notation ("1.234567e6", "1.234567E+06") and thousands
+#: separators ("1,234,567", "1 234 567", "1_234_567", with a no-break or thin space too). A
+#: candidate counts only when it is a whole number with exactly `digits` digits.
+_SEP = "[,_ \u00a0\u202f]"
+_NUMBER_FORMS = (
+    re.compile(_BEFORE + r"(\d+)(?:\.0+)?(?!\d|\.\d|[eE][+-]?\d)"),
+    re.compile(_BEFORE + r"(\d+(?:\.\d+)?[eE][+-]?\d+)(?![\d.])"),
+    re.compile(_BEFORE + r"(\d{1,3}(?:" + _SEP + r"\d{3})+)(?:\.0+)?(?!\d|\.\d)"),
+)
+
+
+def _whole_numbers(text: str) -> set[str]:
+    """Every whole number written in `text`, in any of `_NUMBER_FORMS`, as plain digits."""
+    from decimal import Decimal, InvalidOperation
+    out: set[str] = set()
+    for i, form in enumerate(_NUMBER_FORMS):
+        for m in form.finditer(text):
+            raw = m.group(1)
+            if i == 0:
+                out.add(raw)
+            elif i == 1:
+                try:
+                    v = Decimal(raw)
+                except InvalidOperation:
+                    continue
+                if v == v.to_integral_value() and abs(v.adjusted()) < 64:
+                    out.add(str(int(v)))
+            else:
+                out.add(re.sub(_SEP, "", raw))
+    return out
+
+
+def _carries_hashed_identifier(text: str, sha256: str, digits: int) -> bool:
+    """Does `text` write, in any form `_whole_numbers` reads, a `digits`-digit whole number whose
+    sha256 is `sha256`?"""
+    import hashlib
+    return any(len(n) == int(digits) and hashlib.sha256(n.encode()).hexdigest() == sha256
+               for n in _whole_numbers(text))
+
+
+def test_the_hashed_matcher_uses_digit_boundaries() -> None:
+    import hashlib
+    probe = "1234567"
+    sha = hashlib.sha256(probe.encode()).hexdigest()
+    for hit in ("refused for " + probe + ".", "acc_" + probe, "x" + probe,
+                '"login": ' + probe + ",", "E8TradeLockerPro/" + probe):
+        assert _carries_hashed_identifier(hit, sha, 7), hit
+    for miss in ("1" + probe, probe + "8", "7." + probe, probe + ".5", "123456"):
+        assert not _carries_hashed_identifier(miss, sha, 7), miss
+
+
+def test_the_hashed_matcher_reads_every_written_form_of_the_number() -> None:
+    """A FAKE identifier, never the login: its float, scientific and grouped spellings."""
+    import hashlib
+    probe = "1234567"
+    sha = hashlib.sha256(probe.encode()).hexdigest()
+    for hit in (probe + ".0", '"login": ' + probe + ".00,", "login " + probe + ".0.",
+                "1.234567e6", "1.234567E+06", "12.34567e5", "login=1.234567e6;",
+                "1,234,567", "acct 1,234,567.", "1 234 567", "1_234_567",
+                "1\u00a0234\u00a0567", "1\u202f234\u202f567", "1,234,567.0"):
+        assert _carries_hashed_identifier(hit, sha, 7), hit
+    for miss in (probe + ".05", "1.2345675e6", "1.234567e7", "1.234567e5", "11,234,567",
+                 "1,234,5678", "1,234,567.5", "1,234,567,000", "0.1234567",
+                 "1 23 4567", "12,34,567"):
+        assert not _carries_hashed_identifier(miss, sha, 7), miss
+
+
+def test_the_e8_login_is_in_no_fenced_file() -> None:
+    tracked = [t.replace("\\", "/") for t in _tracked()]
+    fenced = sorted(t for t in tracked if any(
+        t == f or (f.endswith("/") and t.startswith(f)) for f in E8_LOGIN_FENCED))
+    missing = [f for f in E8_LOGIN_FENCED if not f.endswith("/") and f not in fenced]
+    assert not missing, f"fenced paths no longer tracked: {missing}"
+    offenders = [t for t in fenced if _carries_hashed_identifier(
+        (ROOT / t).read_text(encoding="utf-8", errors="replace"), E8_LOGIN_SHA256,
+        E8_LOGIN_DIGITS)]
+    assert not offenders, ("the E8 evaluation login is committed in: " + ", ".join(offenders)
+                           + ". Replace it with a neutral description.")

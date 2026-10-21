@@ -1,6 +1,6 @@
 """THE ONLY THING ALLOWED TO REFUSE AN ORDER FOR A PROP REASON, and the account's whole defence.
 
-E8 Pro, $100,000, account 2478877. The rules it enforces, from the invoice and the dashboard:
+E8 Pro, the $100,000 evaluation account. The rules it enforces, from the invoice and the dashboard:
 
     profit target      10%   -> $110,000 equity and the evaluation is over
     max drawdown       10%   STATIC -- a floor at $90,000 that never trails
@@ -38,7 +38,9 @@ State:    desks/mt5/data/e8_guard_state.json   (the day's opening balance; the b
 """
 from __future__ import annotations
 
+import contextlib
 import json
+import os
 import sys
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -113,6 +115,15 @@ class Decision:
     def may_open(self) -> bool:
         return self.verdict is Verdict.OK
 
+    @property
+    def profit_cap_headroom(self) -> float:
+        """Dollars of profit today can still COUNT before the daily cap strips the excess.
+
+        The cap less today's profit so far (a losing day leaves the whole cap): the figure the OK
+        verdict's `why` states. A lane uses it to refuse a target the cap would strip.
+        """
+        return START_BALANCE * DAILY_PROFIT_CAP - max(float(self.day_pnl), 0.0)
+
     def as_dict(self) -> dict[str, Any]:
         return {
             "verdict": self.verdict.value, "why": self.why,
@@ -160,8 +171,48 @@ def load_state(path: Path = STATE) -> dict[str, Any]:
 
 
 def save_state(state: dict[str, Any], path: Path = STATE) -> None:
+    """Write the day's state WHOLE, so a reader never sees half a file.
+
+    TWO WRITERS SINCE 2026-10-20. `e8_gold` now asks `assess` itself (it used to read the raw
+    flag), so the gold lane and the executor both persist this file. A torn write read back by
+    the other is "unreadable" to `load_state`, which re-anchors the day on current equity -- so
+    the write goes to a sibling and is swapped in. Windows refuses `os.replace` onto a file another
+    process holds open (WinError 5); that case falls back to the plain in-place write this
+    function always made, rather than failing the pass that called it.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(state, indent=1), encoding="utf-8")
+    body = json.dumps(state, indent=1)
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    try:
+        tmp.write_text(body, encoding="utf-8")
+        os.replace(tmp, path)
+    except OSError:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+        path.write_text(body, encoding="utf-8")
+
+
+def today_state(state: dict[str, Any], equity: float, now: datetime | None = None
+                ) -> dict[str, Any]:
+    """The state AS IT APPLIES TO THE CURRENT SERVER DAY -- the one reader of this file's flags.
+
+    THE DAY STAMP IS PART OF EVERY FLAG IN THIS FILE. `stood_down` latches for a server day, not
+    forever: a state written yesterday says nothing about today, so a stamp from any other day is
+    replaced by a fresh anchor on `equity` with nothing latched. On 2026-10-15 `e8_gold` read the
+    raw `stood_down` from the 10-14 file and stood the gold book down for the whole of the next
+    server day, because only the executor's `assess` call ever rolled the file and it had not run.
+    """
+    st = dict(state)
+    day = server_day(now)
+    if st.get("day") != day:
+        st = {"day": day, "day_start": float(equity), "peak_equity": float(equity),
+              "stood_down": False}
+    return st
+
+
+def stood_down_today(state: dict[str, Any], now: datetime | None = None) -> bool:
+    """Is the voluntary stand-down latched FOR THE CURRENT SERVER DAY? Yesterday's never counts."""
+    return state.get("day") == server_day(now) and bool(state.get("stood_down"))
 
 
 def assess(equity: float, *, now: datetime | None = None, state: dict[str, Any] | None = None,
@@ -174,11 +225,7 @@ def assess(equity: float, *, now: datetime | None = None, state: dict[str, Any] 
     would silently get a fresh 2.5% of room -- the floor would follow the losses down, which is
     the one direction a floor must never move.
     """
-    st = dict(load_state(state_path) if state is None else state)
-    day = server_day(now)
-    if st.get("day") != day:
-        st = {"day": day, "day_start": float(equity), "peak_equity": float(equity),
-              "stood_down": False}
+    st = today_state(load_state(state_path) if state is None else state, equity, now)
     st["peak_equity"] = max(float(st.get("peak_equity", equity)), float(equity))
 
     # EVERY THRESHOLD IS ROUNDED TO CENTS BEFORE IT IS COMPARED. `100_000.0 * 1.10` is
@@ -224,7 +271,7 @@ def assess(equity: float, *, now: datetime | None = None, state: dict[str, Any] 
     if _c(equity) >= _c(START_BALANCE * (1.0 + PROFIT_TARGET)):
         return done(Verdict.PASSED, f"equity {equity:,.0f} has reached the "
                                     f"{PROFIT_TARGET:.0%} target; stop trading", flatten=True)
-    if _c(equity) <= _c(stand_floor) or st.get("stood_down"):
+    if _c(equity) <= _c(stand_floor) or stood_down_today(st, now):
         st["stood_down"] = True
         return done(Verdict.STOOD_DOWN,
                     f"down {day_pnl:,.0f} today, at or past the voluntary {STAND_DOWN:.2%} "

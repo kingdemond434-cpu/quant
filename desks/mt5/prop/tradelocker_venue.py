@@ -1,6 +1,6 @@
 """THE SECOND VENUE THIS DESK HAS EVER HAD, and the first that is not MetaTrader.
 
-E8 Pro account 2478877 is provisioned on **TradeLocker**. Every order this desk has ever sent
+The E8 Pro evaluation account is on **TradeLocker**. Every order this desk has ever sent
 went through the `MetaTrader5` package into a local terminal on the Windows box; that account has
 no terminal and never will. This module is the adapter, and it is deliberately nothing more than
 one: it speaks TradeLocker and it speaks the desk's own vocabulary, and the DECISIONS stay where
