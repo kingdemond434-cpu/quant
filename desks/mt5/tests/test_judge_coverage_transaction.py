@@ -503,3 +503,57 @@ def test_naive_stamps_are_utc_and_the_cursor_compares_instants(
     out = jc.learn_priors(p["ledger"], since=cur, now=NOW)
     assert out["recorded"] == 3
     assert out["cursor"] == lines[0]["at"]
+
+
+# --- v2.3 ---
+
+def test_recovery_refused_and_timeout_are_named_failures_in_the_cycle() -> None:
+    """Exit 5 (and 3) can never read as a clean pass or as a verdict: the cycle's ledger row
+    is `exit_code=N:<NAME>` and the codes are the producer's own constants."""
+    if str(DESK / "research") not in sys.path:
+        sys.path.insert(0, str(DESK / "research"))
+    import hourly_cycle as hc
+    assert hc._exit_outcome("judge_coverage", jc.RECOVERY_REFUSED_EXIT) == \
+        "exit_code=5:RECOVERY_REFUSED"
+    assert hc._exit_outcome("judge_coverage", jc.TIMEOUT_EXIT) == "exit_code=3:TIMEOUT_UNCOMMITTED"
+    assert hc._exit_outcome("judge_coverage", 1) == "exit_code=1"
+    for code in hc.NAMED_FAILURE_EXITS["judge_coverage"]:
+        assert code not in hc.VERDICT_EXITS.get("judge_coverage", ()), "a failure, never a verdict"
+    from libs.ops.write_or_explain import DEFECTS, observe
+    rec = observe("judge_coverage", {}, {"exit_code": jc.RECOVERY_REFUSED_EXIT},
+                  verdict_exits=hc.VERDICT_EXITS.get("judge_coverage", ()))
+    assert rec.get("verdict") in DEFECTS, rec
+
+
+def test_every_reader_takes_a_naive_stamp_as_utc(tmp_path: Path) -> None:
+    """The judged index, capacity and sustained rate read the same ledger the same way whether
+    its stamps carry +00:00 or no offset, on a box west of UTC."""
+    rows = [{"at": (NOW - timedelta(minutes=17 * i)).isoformat(), "cell": f"C{i}.alpha.p={i}",
+             "family": ("alpha", "beta")[i % 2], "passed": i % 9 == 0,
+             "terminal_gate": ("PASSED" if i % 9 == 0 else "in_sample_screen")}
+            for i in range(400)]
+    aware, naive = tmp_path / "aware.jsonl", tmp_path / "naive.jsonl"
+    aware.write_text("".join(json.dumps(r) + "\n" for r in rows), "utf-8")
+    naive.write_text("".join(json.dumps({**r, "at": r["at"].replace("+00:00", "")}) + "\n"
+                             for r in rows), "utf-8")
+
+    def read(ledger: Path) -> tuple[object, ...]:
+        cells, total, window = jc.judged_index(ledger, now=NOW)
+        return (sorted(cells), total, window, jc.measured_capacity(total, ledger, now=NOW),
+                jc.sustained_rate(ledger, now=NOW))
+    ref = read(aware)
+    old_tz = os.environ.get("TZ")
+    os.environ["TZ"] = "America/New_York"
+    try:
+        with contextlib.suppress(AttributeError):
+            time.tzset()
+        got = read(naive)
+    finally:
+        if old_tz is None:
+            os.environ.pop("TZ", None)
+        else:
+            os.environ["TZ"] = old_tz
+        with contextlib.suppress(AttributeError):
+            time.tzset()
+    assert got == ref
+    assert jc._ts("2026-10-20T20:00:00") == NOW

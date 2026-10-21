@@ -639,13 +639,18 @@ def _check_budget(phase: str) -> None:
 
 
 def _ts(raw: object) -> datetime | None:
+    """Every stamp this organ reads, parsed one way. A stamp with no offset is UTC -- the desk's
+    writers stamp UTC -- never this machine's local time, which shifted naive stamps by the
+    box's offset (audit of v2.1; every reader since v2.3: capacity, judged index, sustained
+    rate, the bank's ages, the docket's first_seen, the ratchet, the priors)."""
     txt = str(raw or "").strip()
     if not txt:
         return None
     try:
-        return datetime.fromisoformat(txt.replace("Z", "+00:00")).astimezone(UTC)
+        t = datetime.fromisoformat(txt.replace("Z", "+00:00"))
     except ValueError:
         return None
+    return (t.replace(tzinfo=UTC) if t.tzinfo is None else t).astimezone(UTC)
 
 
 def _cell_id(row: dict[str, Any]) -> str | None:
@@ -1096,19 +1101,6 @@ if str(BASE.parents[1]) not in sys.path:
 from libs.research.dsr_inputs import FUTURE_SKEW_S as PRIORS_FUTURE_SKEW_S  # noqa: E402
 
 
-def _ts_utc(raw: object) -> datetime | None:
-    """`_ts`, except a stamp with no offset is read as UTC -- the ledger's writer stamps UTC --
-    never as this machine's local time, which shifted naive stamps by the box's offset."""
-    txt = str(raw or "").strip()
-    if not txt:
-        return None
-    try:
-        t = datetime.fromisoformat(txt.replace("Z", "+00:00"))
-    except ValueError:
-        return None
-    return (t.replace(tzinfo=UTC) if t.tzinfo is None else t).astimezone(UTC)
-
-
 def learn_priors(ledger: Path | None = None, *, since: str = "",
                  limit: int = 20_000, state_dir: Path | None = None,
                  now: datetime | None = None) -> dict[str, Any]:
@@ -1150,7 +1142,7 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
             return out
     _clock = now or datetime.now(tz=UTC)
     _horizon = _clock.timestamp() + PRIORS_FUTURE_SKEW_S
-    _since_ts = _ts_utc(since) if since else None
+    _since_ts = _ts(since) if since else None
     if since and _since_ts is not None and _since_ts.timestamp() > _horizon:
         # The same freeze, already stored: a cursor past this clock skips every verdict until
         # the clock reaches it. Named and kept, exactly as a cursor that is not a timestamp.
@@ -1208,7 +1200,7 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
         # cursor-governed from then on, so this cannot double-count a family twice.
         # PARSED, NOT LEXICAL (audit of v2.1): a `+05:30` cursor compared as a string skipped
         # about 5.5 h of later UTC rows. Equal-format stamps order the same either way.
-        _at_ts = _ts_utc(at)
+        _at_ts = _ts(at)
         if (_since_ts is not None and _at_ts is not None and _at_ts <= _since_ts
                 and fam not in untaught):
             continue
