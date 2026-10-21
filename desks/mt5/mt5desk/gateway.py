@@ -221,6 +221,13 @@ from mt5desk.decision_core import (
 from mt5desk.decision_core import (
     FX_EUR as FX_EUR,
 )
+from mt5desk.decision_core import (  # the late-gold-send rule (Judge 2026-10-21, r6)
+    E8_GOLD_SEND_GRACE_MIN as E8_GOLD_SEND_GRACE_MIN,
+    GOLD_SEND_GRACE_MIN as GOLD_SEND_GRACE_MIN,
+)
+from mt5desk.decision_core import (
+    gold_send_late as gold_send_late,
+)
 from mt5desk.decision_core import (
     GOLD_WINDOWS as GOLD_WINDOWS,
 )
@@ -285,6 +292,58 @@ from mt5desk.decision_core import (
     min_lot_risk_eur as min_lot_risk_eur,
 )
 from mt5desk.decision_core import (
+    gold_at_risk_block as gold_at_risk_block,
+)
+from mt5desk.decision_core import (
+    MINLOT_OVERRIDE_SLEEVES as MINLOT_OVERRIDE_SLEEVES,
+    MINLOT_OVERRIDE_FILE as MINLOT_OVERRIDE_FILE,
+    MINLOT_OVERRIDE_LOT as MINLOT_OVERRIDE_LOT,
+)
+from mt5desk.decision_core import (
+    minlot_override_active as minlot_override_active,
+)
+from mt5desk.decision_core import (
+    minlot_override_size as minlot_override_size,
+)
+from mt5desk.decision_core import (
+    minlot_floor_risk_frac as minlot_floor_risk_frac,
+)
+from mt5desk.decision_core import (
+    cert_book_zero as cert_book_zero,
+)
+from mt5desk.decision_core import (
+    FUSION_DEADMAN_MAX_AGE_S as FUSION_DEADMAN_MAX_AGE_S,
+    FUSION_DEADMAN_STAMP as FUSION_DEADMAN_STAMP,
+    fusion_deadman_armed as fusion_deadman_armed,
+)
+from mt5desk.decision_core import (  # the principal's zeros, in code (audit r5 must-fix 1, 2)
+    GAP_DECAY_ZERO as GAP_DECAY_ZERO,
+    GOLD_ASIA_ONLY_ZERO as GOLD_ASIA_ONLY_ZERO,
+    PRINCIPAL_ZERO as PRINCIPAL_ZERO,
+    SCALP_LANE_ZERO as SCALP_LANE_ZERO,
+    book_name as book_name,
+    cert_zero_row as cert_zero_row,
+    principal_zero as principal_zero,
+)
+from mt5desk.decision_core import (
+    MINLOT_OVERRIDE_TARGET_FRAC as MINLOT_OVERRIDE_TARGET_FRAC,
+    FUSION_LIVE_SERVER as FUSION_LIVE_SERVER,
+    FUSION_ACCOUNT_FILE as FUSION_ACCOUNT_FILE,
+    fusion_live_login as fusion_live_login,
+    FUSION_DAILY_LOSS_FRAC as FUSION_DAILY_LOSS_FRAC,
+    FUSION_MAX_TRADE_RISK_FRAC as FUSION_MAX_TRADE_RISK_FRAC,
+    FUSION_TRADE_RISK_REFUSAL as FUSION_TRADE_RISK_REFUSAL,
+)
+from mt5desk.decision_core import (
+    fusion_daily_loss as fusion_daily_loss,
+)
+from mt5desk.decision_core import (
+    minlot_override_rows as minlot_override_rows,
+)
+from mt5desk.decision_core import (
+    stamp_minlot_override as stamp_minlot_override,
+)
+from mt5desk.decision_core import (
     stamp_feed_health as stamp_feed_health,
 )
 from mt5desk.decision_core import (
@@ -314,7 +373,8 @@ from mt5desk.gateway_config_fallback import (
 def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
                  symbol: str = GOLD_SYMBOL, info: object | None = None,
                  risk_frac: float | None = None,
-                 decay_faded: object = None, from_book: bool = False) -> float:
+                 decay_faded: object = None, from_book: bool = False, *,
+                 cert_zero: bool = False) -> float:
     """Dynamic lot for a promoted sleeve -- `decision_core.promoted_lot`, bound here by name.
 
     A `def` AND NOT A BARE RE-EXPORT, for one reason: scripts/check_risk_units.py (L1.67)
@@ -325,7 +385,7 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
     live authority otherwise, the L1.59 fade is reduce-only, and no heat is no lot.
     """
     return _core.promoted_lot(equity, live_n, dist_usd, symbol, info, risk_frac, decay_faded,
-                              from_book=from_book)
+                              from_book=from_book, cert_zero=cert_zero)
 
 
 def auto_lot(equity: float, dist_usd: float | None = None,
@@ -522,7 +582,7 @@ def _book_key(s: dict, book: dict[str, float] | None) -> str | None:
     # window, so the version is not part of its identity to the book, and the join emptied on a
     # suffix. Only `_v<digits>` is stripped and only when the full name missed, so a book key that
     # carries its own version still matches exactly first and a genuine miss stays a miss.
-    base = re.sub(r"_v\d+$", "", name)
+    base = book_name(name)        # ONE RULE with the cert-book zero (decision_core.book_name)
     if base != name:
         if base in book:
             return base
@@ -635,15 +695,28 @@ def allocator_book() -> tuple[dict[str, float] | None, str]:
     fraction downstream, and the heat cap still runs after this.
     """
     book, why = _allocator_book()
+    # THE PRINCIPAL'S ZEROS ARE LAID LAST AND NEED NO FILE (decision_core.PRINCIPAL_ZERO, audit
+    # r5 must-fix 1): pf.book funded the retired xau_m5_anti_breakout_overlap at 0.042909 on
+    # 2026-10-20, and a void cert book used to hand every pinned key back to the allocator.
+    # NO BOOK AT ALL STAYS None ("rank but do not size"), as before: the pins are enforced per row
+    # anyway (cert_zero_row in the sizing loop, promoted_lot, gold_book_lot), with or without one.
+    pins = dict.fromkeys(PRINCIPAL_ZERO["fusion"], 0.0)
     try:
         from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
         cert = load_cert_book(CERT_BOOK_FILE, "fusion")
     except Exception as exc:
-        return book, f"{why}; cert book unreadable ({type(exc).__name__}: {exc})"
+        if book is None:
+            return None, (f"{why}; cert book unreadable ({type(exc).__name__}: {exc}); "
+                          f"principal zeros apply per row")
+        return ({**book, **pins},
+                f"{why}; cert book unreadable ({type(exc).__name__}: {exc}); "
+                f"{len(pins)} principal zeros")
     if not cert:
-        return book, why
-    return {**(book or {}), **cert}, f"{why}; cert book sets {len(cert)}"
-
+        if book is None:
+            return None, f"{why}; principal zeros apply per row (no allocator book)"
+        return {**book, **pins}, f"{why}; {len(pins)} principal zeros (no cert book)"
+    return ({**(book or {}), **cert, **pins},
+            f"{why}; cert book sets {len(cert)}; {len(pins)} principal zeros")
 
 def cap_by_heat(sleeves: list[dict], equity: float,
                 per_sleeve_q: float | None = None,
@@ -1224,7 +1297,8 @@ def _recent_intents(limit: int = 5000) -> list[dict]:
 
 
 def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
-                  sleeve_row: dict | None = None, blocked_side: str | None = None) -> dict:
+                  sleeve_row: dict | None = None, blocked_side: str | None = None,
+                  blocked_why: str | None = None) -> dict:
     """Send the bracket legs that agree with the current book.
 
     ``blocked_side`` is the shared gold self-hedge rule: once XAU is directional, the leg that
@@ -1255,13 +1329,18 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
     for side in ("buy_stop", "sell_stop"):
         s = spec[side]
         if side == blocked_side:
-            why_blocked = "opposing gold leg suppressed; same strategy never pays to hedge itself"
+            # `blocked_why` names a cross-account fence; without it the leg is the self-hedge.
+            why_blocked = blocked_why or ("opposing gold leg suppressed; same strategy never "
+                                          "pays to hedge itself")
             log(f"NOT SENT [{sleeve}] {side}: {why_blocked}")
             sent.append({"side": side, "retcode": None, "blocked": True,
                          "comment": why_blocked})
             _record_decision(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
                              price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
-                             taken=False, reason="self_hedge_prevented", detail=why_blocked)
+                             taken=False,
+                             reason=("cross_account_opposite" if blocked_why
+                                     else "self_hedge_prevented"),
+                             detail=why_blocked)
             continue
         # STOPS_LEVEL ZERO MEANS NO MINIMUM DISTANCE, NOT "ANY PRICE IS LEGAL" (fixed 2026-09-14).
         #
@@ -2278,6 +2357,84 @@ def _load_retired_gold() -> dict:
     return _core.load_retired_gold(GOLD_RETIRED_FILE)
 
 
+def gold_one_at_risk(name: str, placed_this_pass: tuple[str, ...] | list[str] = (),
+                     day_key: str | None = None) -> str | None:
+    """Why gold window `name` may not be placed now under ONE GOLD TRADE AT RISK, or None.
+
+    As strict as E8's (`prop.e8_gold.one_at_risk_blocker` + `committed_risk`): this account's
+    XAUUSD positions and pending orders, the gold windows already placed THIS PASS, and every
+    ticket the intents journal recorded today for ANOTHER gold window, through
+    `decision_core.gold_at_risk_block`. A terminal or journal that cannot answer blocks; an
+    absent journal is an empty one (nothing has been sent yet), as on E8.
+    """
+    try:
+        positions = mt5.positions_get(symbol=GOLD_SYMBOL)
+        orders = mt5.orders_get(symbol=GOLD_SYMBOL)
+    except Exception as exc:
+        return f"positions/orders unreadable ({type(exc).__name__}: {exc}); fail closed"
+    lane_tickets: list[int] | None = []
+    try:
+        from mt5desk.config import desk_root
+        journal = desk_root() / "data" / "order_intents.jsonl"
+        lines = journal.read_text("utf-8").splitlines()[-5000:] if journal.exists() else []
+        for ln in lines:
+            if not ln.strip():
+                continue
+            row = json.loads(ln)
+            sleeve = str(row.get("sleeve") or "")
+            if row.get("symbol") != GOLD_SYMBOL or not sleeve.startswith("gold_") \
+                    or sleeve == name or row.get("ticket") is None:
+                continue
+            if day_key and not str(row.get("time") or "").startswith(day_key):
+                continue
+            lane_tickets.append(int(row["ticket"]))  # type: ignore[union-attr]
+    except Exception:
+        lane_tickets = None
+    return gold_at_risk_block(positions, orders, own_tag=order_comment(name),
+                              placed_this_pass=tuple(placed_this_pass),
+                              lane_tickets=lane_tickets)
+
+
+def minlot_override_roster(sleeves: list[dict[str, object]],
+                           equity: float) -> list[dict[str, object]]:
+    """The roster with the principal's minimum-lot book applied (decision_core.MINLOT_OVERRIDE_*).
+
+    Reads data/MINLOT_OVERRIDE.json against this terminal's account (login, server and kind,
+    against the box-only data/FUSION_LIVE_ACCOUNT.json), appends each pinned FX row the
+    LIVE-only roster does not carry (by exact name, pin, status and TODAY's live policy -- see
+    `decision_core.minlot_override_rows`), and marks the entries the sizers then send at exactly
+    the override's lot. Absent or unreadable file: nothing appended, nothing marked.
+    """
+    try:
+        _acc = _prov.current_account(mt5.account_info())
+    except Exception:
+        _acc = {}
+    active, why = minlot_override_active(_acc.get("login"), server=_acc.get("server"),
+                                         kind=_acc.get("kind"))
+    log(why)
+    out = list(sleeves)
+    if active:
+        have = {str(s.get("name") or "") for s in out}
+        extra, notes = minlot_override_rows(SLEEVES_FILE, active, admitted=have)
+        for note in notes:
+            log(note)
+        if extra:
+            # Through `roster` itself, so a pinned row reaches the lanes in exactly the shape a
+            # LIVE row of the same spec would; every gold window is passed as retired so none is
+            # emitted twice.
+            retired_all = {f"gold_{w[0]}": {"reason": "minlot_override: rows only"}
+                           for w in GOLD_WINDOWS}
+            built, _ = roster(retired_all, extra)
+            for s in built:
+                if str(s.get("name") or "") not in have:
+                    out.append(s)
+                    have.add(str(s.get("name") or ""))
+                    log(f"MINLOT_OVERRIDE admits pinned row {s.get('name')} ({s.get('symbol')})")
+    for note in stamp_minlot_override(out, active, equity):
+        log(note)
+    return out
+
+
 def sleeve_set() -> list[dict]:
     """All active sleeves: gold book + promoted, with window metadata.
 
@@ -3230,11 +3387,35 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         # `from_book=` spelled literally: see `bracket_lane_lot` for why the fence greps it.
         lot = promoted_lot(equity, n_live, dist, s["symbol"], sym, s.get("risk_frac"),
                            s.get("decay_faded"),
-                           from_book=(s.get("sized_by") == "allocator_book"))
+                           from_book=(s.get("sized_by") == "allocator_book"),
+                           cert_zero=cert_zero_row(s))
     except Exception as exc:
         return {"ok": False, "stage": "unpriceable", "considered": True,
                 "why": f"cannot price risk ({exc}); skipped",
                 "mark": bool(step.mark), "last_bar": last_bar, "note": step.note}
+    # THE PRINCIPAL'S FUSION BOOK: a named sleeve targets 0.75% risk at this signal's own stop
+    # with a 0.01-lot floor (`decision_core.minlot_override_size`). The modifiers below may refuse
+    # it or damp it, but never enlarge it past the book's own lot (`min` after the envelope).
+    _ov: float | None = None
+    _ov_target, _ov_basis = 0.0, ""
+    _book_size = minlot_override_size(s, s["symbol"], sym, equity, dist)
+    if _book_size is not None:
+        _ov, _ov_target, _ov_basis = _book_size
+        if not (_ov > 0.0):
+            if _ov_basis.startswith(FUSION_TRADE_RISK_REFUSAL):
+                # THE PER-TRADE REFUSAL IS A MISSED-GROWTH LINE, NEVER SILENT (audit round 2).
+                from mt5desk import fusion_rails as _rails
+                _rails.line_once("fusion_trade_risk_cap",
+                                 f"{s['name']}/{datetime.now(tz=UTC).date().isoformat()}",
+                                 sleeve=s["name"], symbol=s["symbol"], dist=dist,
+                                 lot=MINLOT_OVERRIDE_LOT,
+                                 risk_frac=minlot_floor_risk_frac(s["symbol"], sym, equity,
+                                                                  dist),
+                                 why=_ov_basis)
+            return {"ok": False, "stage": "fusion_book_refused", "considered": True,
+                    "why": _ov_basis, "mark": bool(step.mark), "last_bar": last_bar,
+                    "note": step.note}
+        lot = float(_ov)
     # CURRENCY-LEG BALANCE, TWO-SIDED (2026-09-15). Measured that day: eight forex positions
     # closed, all eight on their stop, -34.05 EUR -- and six of them were ONE bet, because
     # EURCHF short x4 and USDCHF short x2 are both long CHF. The desk could already SEE this
@@ -3356,6 +3537,15 @@ def resolve_family_order(st: dict, s: dict, equity: float,
             return {"ok": False, "stage": "risk_envelope", "considered": True,
                     "mark": False, "last_bar": last_bar,
                     "why": f"final risk envelope unmeasured ({type(exc).__name__}: {exc})"}
+    _book_clipped_from: float | None = None
+    if _ov is not None and float(lot) > 0.0:
+        # THE BOOK'S OWN LOT IS A CEILING ON THE MODIFIERS, NEVER A LIFT: `min`, so a lot the
+        # envelope or the leg balance brought down stays down (audit HOLD, 2026-10-20), and a
+        # leg/macro boost above the book's lot is clipped back to it (billed at the send site,
+        # rail `fusion_book_ceiling`).
+        if float(lot) > float(_ov) + 1e-12:
+            _book_clipped_from = float(lot)
+        lot = min(float(lot), float(_ov))
     return {"ok": True, "stage": "ok", "why": "resolved", "considered": True,
             "lot": float(lot), "dist": float(dist),
             "sym": sym, "tick": tick, "entry_ref": float(entry_ref), "signal": g, "side": side,
@@ -3365,7 +3555,10 @@ def resolve_family_order(st: dict, s: dict, equity: float,
             "leg_mult": float(leg_mult), "leg_why": leg_why,
             "macro_mult": float(macro_mult), "macro_why": macro_why,
             "risk_envelope_capped": risk_envelope_capped,
-            "basis": (f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live})"
+            "fusion_book_lot": _ov, "fusion_book_target": _ov_target,
+            "fusion_book_clipped_from": _book_clipped_from,
+            "basis": ((f"{_ov_basis}; " if _ov is not None else "")
+                      + f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live})"
                       f"{' from the allocator book' if from_book else ''} at the signal's own "
                       f"{dist:.5g} stop; {leg_why}; {macro_why}")}
 
@@ -3501,14 +3694,52 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         if not margin_ok(s["symbol"], lot, entry_ref):
             log(f"[{name}] FAMILY-EXEC SKIPPED: margin tight (lot={lot})")
             continue
-        _t0 = time.perf_counter()
-        res = mt5.order_send({
-            "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": lot,
-            "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
-            "price": entry_ref, "sl": float(g.stop), "tp": float(g.target),
-            "deviation": 20, "magic": MAGIC, "comment": order_comment(name),
-        })
-        _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
+        # THE CROSS-ACCOUNT OPPOSITE-SIDE FENCE (mt5desk.cross_account): refused when E8 holds or
+        # rests the opposite side of this symbol, or its book cannot be read; read, send and
+        # publish run under the one placement lock.
+        from mt5desk import cross_account as _xa
+        from mt5desk import fusion_rails as _rails
+        _xwhy: str | None = None
+        with _xa.placement_lock(f"gateway:{name}") as _xlocked:
+            if not _xlocked:
+                _xwhy = ("cross-account fence: the placement lock is held by the other "
+                         "account's lane; fail closed")
+            else:
+                _e8_book, _e8_why = _xa.read_book("e8")
+                _xwhy = _xa.opposite_block(_e8_book, s["symbol"], side, account="e8",
+                                           why_absent=_e8_why)
+            if _xwhy is None:
+                _t0 = time.perf_counter()
+                res = mt5.order_send({
+                    "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": lot,
+                    "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
+                    "price": entry_ref, "sl": float(g.stop), "tp": float(g.target),
+                    "deviation": 20, "magic": MAGIC, "comment": order_comment(name),
+                })
+                _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
+                try:
+                    _xa.publish_mt5(mt5, source="gateway")
+                except Exception as exc:
+                    log(f"cross-account: Fusion book not published after [{name}] "
+                        f"({type(exc).__name__}: {exc})")
+        if _xwhy is not None:
+            log(f"[{name}] FAMILY-EXEC NOT SENT: {_xwhy}")
+            journal_refusal(name, s["symbol"], side, "cross_account_opposite", _xwhy, lot=lot,
+                            price=entry_ref)
+            _rails.line("cross_account_opposite", sleeve=name, symbol=s["symbol"],
+                        side=("buy" if side == 1 else "sell"), lot=lot, why=_xwhy)
+            continue
+        # THE BOOK'S CAPITAL MODIFIERS, BILLED WHERE THE ORDER WENT (GROWTH GOVERNANCE): a 0.01
+        # floor above the 0.75% target, and a leg/macro boost clipped back to the book's lot.
+        _bt = plan.get("fusion_book_target")
+        if plan.get("fusion_book_lot") is not None and isinstance(_bt, (int, float)) \
+                and lot > float(_bt) + 1e-9:
+            _rails.line("fusion_book_floor_lift", sleeve=name, symbol=s["symbol"], lot=lot,
+                        target_lot=float(_bt), target_risk_frac=MINLOT_OVERRIDE_TARGET_FRAC)
+        if plan.get("fusion_book_clipped_from") is not None:
+            _rails.line("fusion_book_ceiling", sleeve=name, symbol=s["symbol"], lot=lot,
+                        lot_before_clip=plan["fusion_book_clipped_from"],
+                        leg_mult=plan.get("leg_mult"), macro_mult=plan.get("macro_mult"))
         rc = res.retcode if res else None
         _record_intent(sleeve=name, symbol=s["symbol"],
                        side=("buy" if side == 1 else "sell"), lot=lot,
@@ -3849,7 +4080,8 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
         try:
             lot = promoted_lot(equity, n_live, dist, s["symbol"], sym, s.get("risk_frac"),
                                s.get("decay_faded"),
-                               from_book=(s.get("sized_by") == "allocator_book"))
+                               from_book=(s.get("sized_by") == "allocator_book"),
+                               cert_zero=cert_zero_row(s))
         except Exception as exc:
             return {"ok": False, "stage": "unpriceable", "forming": forming, "mark": True,
                     "why": f"cannot price add-on risk ({exc}); skipped"}
@@ -3909,7 +4141,8 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
     try:
         lot = promoted_lot(equity, n_live, plan.stop_dist, s["symbol"], sym, s.get("risk_frac"),
                            s.get("decay_faded"),
-                           from_book=(s.get("sized_by") == "allocator_book"))
+                           from_book=(s.get("sized_by") == "allocator_book"),
+                           cert_zero=cert_zero_row(s))
     except Exception as exc:
         return {"ok": False, "stage": "unpriceable", "forming": forming, "mark": True,
                 "why": f"cannot price risk ({exc}); skipped"}
@@ -3984,14 +4217,39 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             log(f"[{name}] SCALP-EXEC{' add-on' if is_addon else ''} SKIPPED: margin tight "
                 f"(lot={per})")
             continue
-        _t0 = time.perf_counter()
-        res = mt5.order_send({
-            "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": per,
-            "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
-            "price": price, "sl": stop, "tp": tp,
-            "deviation": 20, "magic": MAGIC, "comment": order_comment(name),
-        })
-        _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
+        # THE CROSS-ACCOUNT OPPOSITE-SIDE FENCE, as on the family lane (mt5desk.cross_account).
+        from mt5desk import cross_account as _xa
+        _xwhy: str | None = None
+        with _xa.placement_lock(f"gateway:{name}") as _xlocked:
+            if not _xlocked:
+                _xwhy = ("cross-account fence: the placement lock is held by the other "
+                         "account's lane; fail closed")
+            else:
+                _e8_book, _e8_why = _xa.read_book("e8")
+                _xwhy = _xa.opposite_block(_e8_book, s["symbol"], side, account="e8",
+                                           why_absent=_e8_why)
+            if _xwhy is None:
+                _t0 = time.perf_counter()
+                res = mt5.order_send({
+                    "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": per,
+                    "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
+                    "price": price, "sl": stop, "tp": tp,
+                    "deviation": 20, "magic": MAGIC, "comment": order_comment(name),
+                })
+                _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
+                try:
+                    _xa.publish_mt5(mt5, source="gateway")
+                except Exception as exc:
+                    log(f"cross-account: Fusion book not published after [{name}] "
+                        f"({type(exc).__name__}: {exc})")
+        if _xwhy is not None:
+            log(f"[{name}] SCALP-EXEC NOT SENT: {_xwhy}")
+            journal_refusal(name, s["symbol"], side, "cross_account_opposite", _xwhy, lot=per,
+                            price=price)
+            from mt5desk import fusion_rails as _rails
+            _rails.line("cross_account_opposite", sleeve=name, symbol=s["symbol"],
+                        side=("buy" if side == 1 else "sell"), lot=per, why=_xwhy)
+            continue
         rc = res.retcode if res else None
         _record_intent(sleeve=name, symbol=s["symbol"],
                        side=("buy" if side == 1 else "sell"), lot=per, intended=price,
@@ -4078,6 +4336,12 @@ def resolve_pending_bracket(s: dict, hour: float, today) -> dict:
         return {"ok": False, "stage": "session_ended",
                 "why": f"{_win} session ended at {window_end_hour(_win):.1f} server; a bracket "
                        f"placed at {hour:.1f} would trade a stale range"}
+    # A LATE GOLD SEND IS REFUSED (Judge 2026-10-21, r6): past signal hour + GOLD_SEND_GRACE_MIN
+    # the bracket is not the certified one. Refused HERE, before the heat cap, so no budget is
+    # reserved for it; the placement loop writes its SKIPPED row and missed-growth line.
+    _late = gold_send_late(_win, hour)
+    if _late:
+        return {"ok": False, "stage": "late_send", "why": _late}
     sym = mt5.symbol_info(s["symbol"])
     if sym is None:
         return {"ok": False, "stage": "no_symbol_info", "why": f"no symbol_info {s['symbol']}"}
@@ -4127,12 +4391,30 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
     GOLD_WINDOWS rows alone. The principal removed the special 0.02 floor; the
     allocator's target and the symbol's own venue minimum govern implementability.
     """
+    _book_size = minlot_override_size(s, s["symbol"], sym, equity, dist)
+    if _book_size is not None:
+        # THE PRINCIPAL'S FUSION BOOK (decision_core.MINLOT_OVERRIDE_SLEEVES): 0.75% risk at this
+        # bracket's own stop with a 0.01 floor, inside the per-order MAX_RISK_FRAC envelope; an
+        # allocator zero sends nothing. `fusion_book_target` is kept on the row so the send site can
+        # bill a floor lift (rail `fusion_book_floor_lift`).
+        _blot, _btarget, _bbasis = _book_size
+        s["fusion_book_target"] = float(_btarget)
+        if not (_blot > 0.0) and _bbasis.startswith(FUSION_TRADE_RISK_REFUSAL):
+            # THE PER-TRADE REFUSAL IS A MISSED-GROWTH LINE, NEVER SILENT (audit round 2).
+            from mt5desk import fusion_rails as _rails
+            _rails.line_once("fusion_trade_risk_cap",
+                             f"{s['name']}/{datetime.now(tz=UTC).date().isoformat()}",
+                             sleeve=s["name"], symbol=s["symbol"], dist=dist,
+                             lot=MINLOT_OVERRIDE_LOT,
+                             risk_frac=minlot_floor_risk_frac(s["symbol"], sym, equity, dist),
+                             why=_bbasis)
+        return float(_blot), _bbasis
     mode = s.get("lot")
     if mode == "auto":
         return gold_book_lot(
             equity, dist, sym,
             s.get("risk_frac") if s.get("sized_by") == "allocator_book" else None,
-            s.get("decay_faded"))
+            s.get("decay_faded"), name=s.get("name"))
     if mode == "auto_ramp":
         n_live = sleeve_live_n(s["name"])
         from_book = s.get("sized_by") == "allocator_book"
@@ -4142,7 +4424,8 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
         # fraction reaching the venue UN-RE-SHRUNK -- is one a rename could silently drop.
         lot = promoted_lot(equity, n_live, dist, s["symbol"], sym,
                            s.get("risk_frac"), s.get("decay_faded"),
-                           from_book=(s.get("sized_by") == "allocator_book"))
+                           from_book=(s.get("sized_by") == "allocator_book"),
+                           cert_zero=cert_zero_row(s))
         return float(lot), (
             f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live})"
             f"{' from the allocator book' if from_book else ''}"
@@ -4214,6 +4497,14 @@ def main() -> None:
         save_state(st)
 
     sleeves = sleeve_set()
+    try:
+        sleeves = minlot_override_roster(sleeves, equity)
+    except Exception as exc:
+        # FAIL CLOSED: an override that cannot be read is off, and every mark it may have left
+        # is cleared, so the pass sizes exactly as sovereignty sizes it.
+        for _s in sleeves:
+            _s.pop("minlot_override", None)
+        log(f"MINLOT_OVERRIDE off this pass ({type(exc).__name__}: {exc})")
 
     # RESTART HOLDING A POSITION (2026-09-30). Every pass is a fresh process, so every pass is a
     # restart: before management and before anything new is placed, the venue's own book under
@@ -4267,6 +4558,48 @@ def main() -> None:
     NEW_RISK_OK, _ident_why = release_gate()
     if not NEW_RISK_OK:
         log(f"RELEASE IDENTITY refuses NEW risk: {_ident_why} -- managing open positions only")
+    # THE ARMED DEADMAN (audit r5 must-fix 4): no new Fusion risk unless the ruin rail's stamp
+    # reads LIVE and is fresh. A hung pass is bounded by run_gateway_loop's watchdog; what is
+    # already open is bounded by the rail, which flattens from its own process.
+    _dm_ok, _dm_why = fusion_deadman_armed()
+    if not _dm_ok:
+        NEW_RISK_OK = False
+        log(f"{_dm_why} -- managing open positions only")
+    # THE FUSION DAILY-LOSS RAIL (decision_core.fusion_daily_loss, FUSION_DAILY_LOSS_FRAC): at
+    # -10% of the server day's starting equity the account takes no new risk for the rest of the
+    # day, through the same NEW_RISK_OK gate every lane already obeys (so no bar is burned), and
+    # the resting gold brackets are cancelled once. Management above has already run.
+    from mt5desk import fusion_rails as _rails_pass
+    if not _rails_pass.ensure():
+        log("fusion rails: the ledger cannot be created; every rail line this pass is lost")
+    if _rails_pass.WRITE_FAILURES:
+        log(f"fusion rails: lines NOT written in this process: {_rails_pass.WRITE_FAILURES}")
+    _dl_was_down = st.get("daily_loss_stood_down") == day_key
+    _dl_down, _dl_why = fusion_daily_loss(st, equity, day_key)
+    if _dl_down:
+        NEW_RISK_OK = False
+        log(f"{_dl_why} -- managing open positions only")
+        if not _dl_was_down and st.get("daily_loss_stood_down") == day_key:
+            from mt5desk import fusion_rails as _rails
+            _rails.line("fusion_daily_loss", day=day_key, equity=round(equity, 2),
+                        start=(st.get("day_start_equity") or {}).get("equity"),
+                        frac=FUSION_DAILY_LOSS_FRAC, why=_dl_why)
+            try:
+                cancel_pending(st, GOLD_SYMBOL)
+            except Exception as exc:
+                log(f"daily-loss rail: resting gold brackets not cancelled "
+                    f"({type(exc).__name__}: {exc}); they still carry their stops")
+    save_state(st)
+    # THE FUSION BOOK FOR THE OTHER ACCOUNT'S FENCE (mt5desk.cross_account), every pass, so an E8
+    # lane never reads a book older than this pass. Never takes the pass down.
+    # Under the placement lock, from a reading taken under it (audit round 2, must-fix 2): a
+    # snapshot older than an E8 lane's send can never overwrite the book that send produced.
+    from mt5desk import cross_account as _xa
+    _pub_why = _xa.publish_under_lock(lambda: _xa.publish_mt5(mt5, source="gateway"),
+                                      holder="gateway:pass")
+    if _pub_why:
+        log(f"cross-account: Fusion book not published ({_pub_why}); the E8 lanes fail closed "
+            f"on a stale book")
 
     # THE SCALP LANE'S OWN MANAGEMENT, HERE AND NOT INSIDE ITS EXECUTOR (2026-09-09). A basket
     # the broker has closed and a basket past its time exit are POSITIONS, and this desk's
@@ -4369,6 +4702,18 @@ def main() -> None:
         if from_book:
             _s["risk_frac"] = float(_book[_key])
             _s["sized_by"] = "allocator_book"
+            _s["book_key"] = _key
+        if cert_zero_row(_s):
+            # A PRINCIPAL ZERO (code pin or cert book) sends nothing on every lane and path; the
+            # forgone sleeve is a missed-growth line once per sleeve per day.
+            _s["risk_frac"], _s["sized_by"] = 0.0, "allocator_book"
+            from mt5desk import fusion_rails as _rails
+            _rails.line_once("principal_zero_pin",
+                             f"{_s['name']}/{datetime.now(tz=UTC).date().isoformat()}",
+                             sleeve=_s["name"], symbol=_s.get("symbol"), book_key=_key,
+                             code_pin=principal_zero(_s["name"]) or principal_zero(_key),
+                             why="principal zero (decision_core.PRINCIPAL_ZERO / CERT_BOOK_LIVE "
+                                 "0.0); no order")
         if _s.get("exec") not in ("family_market", "scalp_market"):
             # EVERY BRACKET-LANE SLEEVE IS BILLED AT THE ORDER IT WILL ACTUALLY SEND -- gold,
             # promoted and fixed-lot alike. Three external audit rounds found the same defect
@@ -4588,6 +4933,8 @@ def main() -> None:
     except Exception as exc:
         log(f"netting measurement FAILED (trading unaffected): {type(exc).__name__}: {exc}")
     save_state(st)
+    # Gold windows placed so far in THIS pass: the one-gold-at-risk rule counts them, as E8's does.
+    _gold_placed_this_pass: list[str] = []
     if st["last_bracket_date"] == day_key:
         for s in sleeves:
             if s.get("exec") in ("family_market", "scalp_market"):
@@ -4641,6 +4988,20 @@ def main() -> None:
                     log(f"[{s['name']}] SKIPPED: {_pend['why']}")
                 elif _pend["stage"] == "session_ended":
                     log(f"[{s['name']}] NOT PLACED: {_pend['why']}")
+                elif _pend["stage"] == "late_send":
+                    log(f"[{s['name']}] SKIPPED: {_pend['why']}")
+                    # One SKIPPED row and one missed-growth line per window per day.
+                    _rails_seen = st.setdefault("rails_logged", {})
+                    if _rails_seen.get(f"gold_late_send/{s['name']}") != day_key:
+                        _rails_seen[f"gold_late_send/{s['name']}"] = day_key
+                        _record_intent(sleeve=s["name"], symbol=s["symbol"], side=None,
+                                       lot=None, status="SKIPPED", reason="late_send",
+                                       why=_pend["why"], hour=round(float(hour), 3))
+                        from mt5desk import fusion_rails as _rails
+                        _rails.line("gold_late_send", sleeve=s["name"], symbol=s["symbol"],
+                                    day=day_key, hour=round(float(hour), 3),
+                                    risk_frac=s.get("risk_frac"), why=_pend["why"])
+                        save_state(st)
                 continue
             sym, df = _pend["sym"], _pend["df"]
             hi, lo, spec, dist = _pend["hi"], _pend["lo"], _pend["spec"], _pend["dist"]
@@ -4655,6 +5016,23 @@ def main() -> None:
             if not (lot > 0):
                 log(f"[{s['name']}] SKIPPED: allocator gave this sleeve no heat")
                 continue
+            if s.get("lot") == "auto" and s.get("symbol") == GOLD_SYMBOL:
+                # ONE GOLD TRADE AT RISK AT A TIME (Max-growth ruling, 2026-10-20): three windows
+                # at the 0.01 floor stacked ~17% of equity at risk. An earlier window's position
+                # still at risk, or its bracket still resting, holds this window back; a
+                # break-even-ratcheted position does not. Unreadable venue -> not placed.
+                _gold_why = gold_one_at_risk(s["name"], _gold_placed_this_pass, day_key)
+                if _gold_why:
+                    log(f"[{s['name']}] NOT PLACED (one gold trade at risk): {_gold_why}")
+                    # Its missed-growth line, once per window per day (GROWTH GOVERNANCE): the
+                    # lot and fraction this veto held back. `missed_growth` publishes the bill.
+                    _rails_seen = st.setdefault("rails_logged", {})
+                    if _rails_seen.get(f"one_gold_at_risk/{s['name']}") != day_key:
+                        _rails_seen[f"one_gold_at_risk/{s['name']}"] = day_key
+                        from mt5desk import fusion_rails as _rails
+                        _rails.line("one_gold_at_risk", sleeve=s["name"], symbol=s["symbol"],
+                                    day=day_key, lot=lot, risk_frac=q_real, why=_gold_why)
+                    continue
             log(f"[{s['name']}] stop {dist:.5g} -> lot {lot:.2f} "
                 f"(realised q {q_real:.2%})")
             # THE INVARIANT, ASSERTED WHERE THE MONEY IS:
@@ -4741,11 +5119,14 @@ def main() -> None:
             if not NEW_RISK_OK:
                 # The bracket is computed and written as a not-taken decision, so the ledger
                 # shows what the sealed code would have placed while the running code could not.
-                log(f"[{s['name']}] bracket NOT placed: release identity refuses new risk")
+                log(f"[{s['name']}] bracket NOT placed: "
+                    f"{'the daily-loss rail' if _dl_down else 'release identity'} refuses new "
+                    f"risk")
                 try:
                     _record_decision(sleeve=s["name"], symbol=s["symbol"], side=None, lot=lot,
                                      price=None, sl=None, tp=None, taken=False,
-                                     reason="release_identity_refused", detail=spec)
+                                     reason=("fusion_daily_loss" if _dl_down
+                                             else "release_identity_refused"), detail=spec)
                 except Exception as exc:
                     log(f"release-refusal record failed (non-fatal) [{s['name']}]: "
                         f"{type(exc).__name__}: {exc}")
@@ -4761,8 +5142,65 @@ def main() -> None:
             if _direction is None:
                 log(f"[{s['name']}] bracket NOT placed: an open gold position side is unreadable")
                 continue
-            res = place_bracket(st, spec, s["name"], s["symbol"], lot, sleeve_row=s,
-                                blocked_side=OPPOSING_LEG.get(_direction))
+            # THE CROSS-ACCOUNT OPPOSITE-SIDE FENCE (mt5desk.cross_account; audit HOLD on
+            # 50ef074f9). A leg opposite an open or resting E8 position on this symbol is not
+            # sent; with both legs blocked the window waits (not marked placed) and is retried
+            # next pass. An E8 book that cannot be read, or the placement lock held by an E8
+            # lane, blocks both legs. Read, send and publish run under the one placement lock.
+            from mt5desk import cross_account as _xa
+            from mt5desk import fusion_rails as _rails
+            with _xa.placement_lock(f"gateway:{s['name']}") as _xlocked:
+                _xblocked: dict[str, str] = {}
+                if not st.get("armed"):
+                    pass                               # shadow sends nothing; nothing to fence
+                elif not _xlocked:
+                    for _leg in ("buy_stop", "sell_stop"):
+                        _xblocked[_leg] = ("cross-account fence: the placement lock is held by "
+                                           "the other account's lane; fail closed")
+                else:
+                    _e8_book, _e8_why = _xa.read_book("e8")
+                    for _leg in ("buy_stop", "sell_stop"):
+                        _w = _xa.opposite_block(_e8_book, s["symbol"], _leg, account="e8",
+                                                why_absent=_e8_why)
+                        if _w:
+                            _xblocked[_leg] = _w
+                _self_blocked = OPPOSING_LEG.get(_direction)
+                _all_blocked = set(_xblocked) | ({_self_blocked} if _self_blocked else set())
+                _rails_seen = st.setdefault("rails_logged", {})
+                for _leg, _w in _xblocked.items():
+                    log(f"[{s['name']}] {_leg} NOT SENT: {_w}")
+                    if _rails_seen.get(f"cross_account_opposite/{s['name']}/{_leg}") != day_key:
+                        _rails_seen[f"cross_account_opposite/{s['name']}/{_leg}"] = day_key
+                        _rails.line("cross_account_opposite", sleeve=s["name"],
+                                    symbol=s["symbol"], side=_leg, day=day_key, lot=lot,
+                                    risk_frac=q_real, why=_w)
+                if {"buy_stop", "sell_stop"} <= _all_blocked:
+                    log(f"[{s['name']}] bracket NOT placed: every leg is fenced this pass; "
+                        f"retried next pass")
+                    save_state(st)
+                    continue
+                _blocked_leg = next(iter(_all_blocked)) if _all_blocked else None
+                res = place_bracket(st, spec, s["name"], s["symbol"], lot, sleeve_row=s,
+                                    blocked_side=_blocked_leg,
+                                    blocked_why=_xblocked.get(_blocked_leg or ""))
+                if s["symbol"] == GOLD_SYMBOL and any(
+                        not o.get("blocked") and o.get("retcode") in (10008, 10009)
+                        for o in (res.get("orders") or [])):
+                    _gold_placed_this_pass.append(s["name"])
+                try:
+                    _xa.publish_mt5(mt5, source="gateway")
+                except Exception as exc:
+                    log(f"cross-account: Fusion book not published after [{s['name']}] "
+                        f"({type(exc).__name__}: {exc})")
+            # A FLOOR LIFT IS A CAPITAL MODIFIER TOO (GROWTH GOVERNANCE): an order the book sent
+            # at the 0.01 floor above its 0.75% target is billed once per window per day.
+            _bt = s.get("fusion_book_target")
+            if isinstance(_bt, (int, float)) and lot > float(_bt) + 1e-9 \
+                    and _rails_seen.get(f"fusion_book_floor_lift/{s['name']}") != day_key:
+                _rails_seen[f"fusion_book_floor_lift/{s['name']}"] = day_key
+                _rails.line("fusion_book_floor_lift", sleeve=s["name"], symbol=s["symbol"],
+                            day=day_key, lot=lot, target_lot=float(_bt), risk_frac=q_real,
+                            target_risk_frac=MINLOT_OVERRIDE_TARGET_FRAC)
             # THE LOT IS RECORDED WITH THE BRACKET (2026-09-09). Without it, the next pass had
             # to RE-SIZE an order the venue was already holding in order to charge heat for it --
             # a different number at a different equity, so the cap priced a trade the book does

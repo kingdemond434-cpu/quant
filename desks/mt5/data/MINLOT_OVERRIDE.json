@@ -1,0 +1,14 @@
+{
+ "enabled": true,
+ "lot": 0.01,
+ "target_risk": 0.0075,
+ "server": "FusionMarkets-Live",
+ "sleeves": [
+  "gold_asia",
+  "usdnok_carry_asia_p_ff35bb7c8427d66f",
+  "eurils_formula_asia_p_673857a649d3c271",
+  "eurzar_carry_asia_p_8339edce23032d21"
+ ],
+ "by": "principal zuck, BOOKS_PATCH v5, approved 2026-10-13 (sizing/seven_sleeve_2026-10-13/BOOKS_PATCH.md); widened 2026-10-20 16:58Z to all three gold windows; narrowed 2026-10-20 21:52Z to gold_asia and the three FX sleeves (zuck: \"trade only gold asia for fusion and mt5\"; gold_london_am and gold_afternoon are out, and pinned at 0.0 in CERT_BOOK_LIVE.json's fusion block); sizing changed 2026-10-20 (coordinator, after the audit HOLD on 50ef074f9): 0.75% risk per sleeve with a 0.01-lot floor",
+ "rule": "Read by mt5desk/gateway.py through decision_core.minlot_override_active only; no organ writes it. It can only NARROW decision_core.MINLOT_OVERRIDE_SLEEVES. Each named sleeve sends max(0.01, the lot at 0.75% risk at its own stop), inside the per-order MAX_RISK_FRAC envelope; an allocator book that pins it at 0 sends nothing, and with ALLOCATOR_SOVEREIGN.json {\"enabled\": false} the revert path's floors size it -- except a name the principal pinned at 0 (decision_core.PRINCIPAL_ZERO in code, or CERT_BOOK_LIVE.json's fusion block at 0.0), which sends nothing on either path (decision_core.cert_book_zero). OFF (sovereign sizing for all) when absent, unreadable, enabled is not true, lot is not 0.01, target_risk is not 0.0075, server is not FusionMarkets-Live, the file carries an \"account\" (a live login is never committed), the box-only data/FUSION_LIVE_ACCOUNT.json (gitignored) is absent or unreadable, or the terminal is not on that declared login, on FusionMarkets-Live, as a live (real-money) account. Stop without a push: \"enabled\": false."
+}

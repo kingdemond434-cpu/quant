@@ -252,6 +252,14 @@ desks/mt5/data/task_queue.jsonl
 desks/mt5/data/dsr_trial_sharpes.jsonl
 desks/mt5/data/task_queue.subs.json
 desks/mt5/data/task_queue.watermark
+# Cross-account fence (mt5desk.cross_account): each account's book as THIS box's lanes last read
+# it, and the placement lock. A book or lock carried to another checkout would be read there as
+# the live account's state; both are box-local by construction.
+desks/mt5/data/xacct/
+# The Fusion live login the Fusion book is bound to (decision_core.FUSION_ACCOUNT_FILE). A live
+# brokerage login is never tracked (tests/ops/test_live_infrastructure_is_not_published.py); the
+# operator writes this once on the box.
+desks/mt5/data/FUSION_LIVE_ACCOUNT.json
 
 # CREDENTIALS. Never tracked. secrets/ was NOT ignored until 2026-08-17 -- a FRED API key
 # landed there and `git check-ignore` returned no match, meaning one `git add -A` would have
@@ -491,3 +499,16 @@ desks/mt5/data/account_positions.json
 desks/mt5/data/account_positions.json.tmp
 # The box's account declarations ("<login>@<server>" keys): box-local, never published (audit v5).
 desks/mt5/data/ACCOUNT_PROFILES.json
+
+# apply_fusion_state.py's backups and temp files (patches/fusion_book_go_live). A backup of
+# FUSION_LIVE_ACCOUNT.json carries the live login, and box-repair stages desks/mt5/data with
+# `git add -A`, so these must never be trackable. Kept last: in gitignore the last match wins.
+desks/mt5/data/*.bak_fusionbook
+desks/mt5/data/*.bak_fusionbook.*
+desks/mt5/data/*.tmp_fusionbook
+desks/mt5/data/FUSION_LIVE_ACCOUNT.json*
+# The E8 account key this box trades (cross_account.E8_ACCOUNT_FILE): box-local, like the books.
+desks/mt5/data/E8_ACCOUNT.json*
+# The principal's arming marker for the Fusion ruin rail (proposals/fusion_deadman.py ARMED_MARKER):
+# only zuck creates it, on the box; no adoption, restore or session may carry it in.
+desks/mt5/data/FUSION_DEADMAN_ARMED.json*
