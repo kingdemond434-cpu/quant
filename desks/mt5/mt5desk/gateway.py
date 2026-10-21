@@ -221,6 +221,12 @@ from mt5desk.decision_core import (
 from mt5desk.decision_core import (
     FX_EUR as FX_EUR,
 )
+from mt5desk.decision_core import (  # the late-gold-send rule (Judge 2026-10-21, r6)
+    GOLD_SEND_GRACE_MIN as GOLD_SEND_GRACE_MIN,
+)
+from mt5desk.decision_core import (
+    gold_send_late as gold_send_late,
+)
 from mt5desk.decision_core import (
     GOLD_WINDOWS as GOLD_WINDOWS,
 )
@@ -691,19 +697,25 @@ def allocator_book() -> tuple[dict[str, float] | None, str]:
     # THE PRINCIPAL'S ZEROS ARE LAID LAST AND NEED NO FILE (decision_core.PRINCIPAL_ZERO, audit
     # r5 must-fix 1): pf.book funded the retired xau_m5_anti_breakout_overlap at 0.042909 on
     # 2026-10-20, and a void cert book used to hand every pinned key back to the allocator.
-    pins = {k: 0.0 for k in PRINCIPAL_ZERO["fusion"]}
+    # NO BOOK AT ALL STAYS None ("rank but do not size"), as before: the pins are enforced per row
+    # anyway (cert_zero_row in the sizing loop, promoted_lot, gold_book_lot), with or without one.
+    pins = dict.fromkeys(PRINCIPAL_ZERO["fusion"], 0.0)
     try:
         from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
         cert = load_cert_book(CERT_BOOK_FILE, "fusion")
     except Exception as exc:
-        return ({**(book or {}), **pins},
+        if book is None:
+            return None, (f"{why}; cert book unreadable ({type(exc).__name__}: {exc}); "
+                          f"principal zeros apply per row")
+        return ({**book, **pins},
                 f"{why}; cert book unreadable ({type(exc).__name__}: {exc}); "
                 f"{len(pins)} principal zeros")
     if not cert:
-        return {**(book or {}), **pins}, f"{why}; {len(pins)} principal zeros (no cert book)"
+        if book is None:
+            return None, f"{why}; principal zeros apply per row (no allocator book)"
+        return {**book, **pins}, f"{why}; {len(pins)} principal zeros (no cert book)"
     return ({**(book or {}), **cert, **pins},
             f"{why}; cert book sets {len(cert)}; {len(pins)} principal zeros")
-
 
 def cap_by_heat(sleeves: list[dict], equity: float,
                 per_sleeve_q: float | None = None,
@@ -4316,6 +4328,12 @@ def resolve_pending_bracket(s: dict, hour: float, today) -> dict:
         return {"ok": False, "stage": "session_ended",
                 "why": f"{_win} session ended at {window_end_hour(_win):.1f} server; a bracket "
                        f"placed at {hour:.1f} would trade a stale range"}
+    # A LATE GOLD SEND IS REFUSED (Judge 2026-10-21, r6): past signal hour + GOLD_SEND_GRACE_MIN
+    # the bracket is not the certified one. Refused HERE, before the heat cap, so no budget is
+    # reserved for it; the placement loop writes its SKIPPED row and missed-growth line.
+    _late = gold_send_late(_win, hour)
+    if _late:
+        return {"ok": False, "stage": "late_send", "why": _late}
     sym = mt5.symbol_info(s["symbol"])
     if sym is None:
         return {"ok": False, "stage": "no_symbol_info", "why": f"no symbol_info {s['symbol']}"}
@@ -4962,6 +4980,20 @@ def main() -> None:
                     log(f"[{s['name']}] SKIPPED: {_pend['why']}")
                 elif _pend["stage"] == "session_ended":
                     log(f"[{s['name']}] NOT PLACED: {_pend['why']}")
+                elif _pend["stage"] == "late_send":
+                    log(f"[{s['name']}] SKIPPED: {_pend['why']}")
+                    # One SKIPPED row and one missed-growth line per window per day.
+                    _rails_seen = st.setdefault("rails_logged", {})
+                    if _rails_seen.get(f"gold_late_send/{s['name']}") != day_key:
+                        _rails_seen[f"gold_late_send/{s['name']}"] = day_key
+                        _record_intent(sleeve=s["name"], symbol=s["symbol"], side=None,
+                                       lot=None, status="SKIPPED", reason="late_send",
+                                       why=_pend["why"], hour=round(float(hour), 3))
+                        from mt5desk import fusion_rails as _rails
+                        _rails.line("gold_late_send", sleeve=s["name"], symbol=s["symbol"],
+                                    day=day_key, hour=round(float(hour), 3),
+                                    risk_frac=s.get("risk_frac"), why=_pend["why"])
+                        save_state(st)
                 continue
             sym, df = _pend["sym"], _pend["df"]
             hi, lo, spec, dist = _pend["hi"], _pend["lo"], _pend["spec"], _pend["dist"]

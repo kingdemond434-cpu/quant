@@ -65,8 +65,15 @@ def _no_cert_book_pins(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """This file prices the charge against the send, not the principal's book: the committed
     CERT_BOOK_LIVE.json pins gold_london_am at 0.0 (zuck 2026-10-20 21:52Z), which sends nothing
     by design (test_fusion_minlot_book.test_a_cert_book_zero_sends_nothing_on_either_path)."""
+    from mt5desk import decision_core as _dc
     from mt5desk import kelly_sizing
     monkeypatch.setattr(kelly_sizing, "CERT_BOOK_FILE", tmp_path / "no_cert_book.json")
+    # The same pin lives in code since r6 (decision_core.PRINCIPAL_ZERO): lifted here for the
+    # same reason; test_fusion_book_r6.py pins that it holds.
+    monkeypatch.setitem(_dc.PRINCIPAL_ZERO, "fusion", frozenset())
+    # And the late-gold-send rule (GOLD_SEND_GRACE_MIN, r6): this file resolves at clocks past
+    # the 5-minute grace; test_fusion_book_r6.py pins the rule.
+    monkeypatch.setattr(_dc, "GOLD_SEND_GRACE_MIN", 24 * 60.0)
 
 
 class _GoldInfo:

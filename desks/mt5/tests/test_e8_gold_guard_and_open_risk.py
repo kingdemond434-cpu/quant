@@ -118,6 +118,9 @@ def _sandbox(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *, placed: tuple[s
     # lifted here; test_fusion_book_r6.py pins that the pin itself holds.
     from mt5desk import decision_core as _dc
     monkeypatch.setitem(_dc.PRINCIPAL_ZERO, "e8", frozenset())
+    # Likewise the late-gold-send rule (decision_core.GOLD_SEND_GRACE_MIN, r6): the clock here is
+    # 17:30 server, past the 5-minute grace; test_fusion_book_r6.py pins the rule itself.
+    monkeypatch.setattr(_dc, "GOLD_SEND_GRACE_MIN", 24 * 60.0)
     gp = tmp_path / "e8_guard_state.json"
     if guard is not None:
         gp.write_text(json.dumps(guard), encoding="utf-8")

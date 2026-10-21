@@ -1254,6 +1254,10 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
     """`main` and the placement path exec'd from the source, over the real core, with the
     pause file read by THE REAL READER (`mt5desk.config.gateway_paused`) pointed at a private
     data/ directory, and every venue read, file write and sibling adapter faked."""
+    # The clock is 09:30 server, 2.5h past asia's 07:00: the late-gold-send rule (r6,
+    # decision_core.GOLD_SEND_GRACE_MIN) is lifted for these mechanics tests and pinned in
+    # test_fusion_book_r6.py, which runs `main` with it back on.
+    monkeypatch.setattr(dc, "GOLD_SEND_GRACE_MIN", 24 * 60.0)
     data = tmp_path / "data"
     data.mkdir(exist_ok=True)
     # Keep the real staleness guard, but give this isolated fake venue its own

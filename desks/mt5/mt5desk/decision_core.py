@@ -2578,6 +2578,36 @@ def window_session_ended(window: str | None, hour: float) -> bool:
     return end is not None and float(hour) >= end
 
 
+#: THE GOLD SEND GRACE, in minutes after a window's signal hour (Judge 2026-10-21, r6 must-fix).
+#: Fusion gold_asia was sent at 08:56, 16:50 and 15:28 server against its 07:00 placement, and
+#: +27 / +57 min late inside the hour. DERIVED, not chosen: the box's order_intents.jsonl (as
+#: published in a34ecef3, 296 rows) holds 44 first sends of a gold window on a day. Measured
+#: minutes after the signal hour, on the server clock (UTC + prop/e8_guard.server_offset_hours):
+#: a healthy cluster of 21 sends at 0.0..4.45 min (p95 4.2), then a gap to 7.2, then outage
+#: tails to 590. The gateway runs every minute, so the healthy cluster IS the on-time
+#: distribution; its p95 (4.2) rounded up to a whole pass is 5 minutes. Anything later is a pass
+#: that restarted or stalled, not the certified bracket placed at its signal hour.
+GOLD_SEND_GRACE_MIN = 5.0
+
+
+def gold_send_late(window: str | None, hour: float,
+                   grace_min: float | None = None) -> str | None:
+    """Why a gold window's bracket may NOT be sent at server `hour` because it is past its
+    signal hour + `GOLD_SEND_GRACE_MIN`, or None (on time, or not a gold window). Pure."""
+    win = book_name(window)
+    win = win[len("gold_"):] if win.startswith("gold_") else win
+    sig = next((float(w[1]) for w in GOLD_WINDOWS if w[0] == win), None)
+    if sig is None:
+        return None
+    grace = float(GOLD_SEND_GRACE_MIN if grace_min is None else grace_min)
+    late_min = (float(hour) - sig) * 60.0
+    if late_min <= grace:
+        return None
+    return (f"late_send: {win} opens {int(sig):02d}:00 server, now {float(hour):.2f} is "
+            f"{late_min:.0f} min after it (grace {grace:g} min, decision_core."
+            f"GOLD_SEND_GRACE_MIN); the certified bracket is the one placed at its signal hour")
+
+
 def bracket_deadline(sleeve: str, window: str | None = None,
                      now: datetime | None = None) -> datetime:
     """When this sleeve's bracket stops belonging to the session whose range formed it.

@@ -62,6 +62,7 @@ from mt5desk.decision_core import (  # noqa: E402
     atr_last,
     book_direction,
     bracket_from_bars,
+    gold_send_late,
     h1_frame,
     window_end_hour,
     window_session_ended,
@@ -185,6 +186,22 @@ def window_sources(solve: dict[str, float] | None, cert: dict[str, float] | None
     return out
 
 
+def late_windows(hour: float, state: dict) -> list[tuple[str, str]]:
+    """(window, why) for each gold window `plan` holds back ONLY for being late: not placed
+    today, past its signal hour, before the cancel hour and its session's end, but past
+    signal hour + GOLD_SEND_GRACE_MIN. Pure."""
+    out: list[tuple[str, str]] = []
+    windows = state.get("windows") or {}
+    for name, sig_hour, _rng in GOLD_WINDOWS:
+        if name in windows or hour < float(sig_hour) or hour >= CANCEL_HOUR \
+                or window_session_ended(name, hour):
+            continue
+        why = gold_send_late(name, hour)
+        if why:
+            out.append((name, why))
+    return out
+
+
 def plan(df: Any, hour: float, state: dict, *, tick_size: float = 0.01,
          stops_level: int = 0) -> list[dict]:
     """Windows due NOW: not yet placed today, at or past their signal hour, before the cancel
@@ -202,6 +219,10 @@ def plan(df: Any, hour: float, state: dict, *, tick_size: float = 0.01,
             # session already left: 2026-09-21 all three windows went out at 20:29 server in one
             # pass, and 2026-09-24 a 3h-late london_am sat on the afternoon's level and both
             # stopped in the same second (-950 USD). See decision_core.window_session_ended.
+            continue
+        if gold_send_late(name, hour):
+            # PAST SIGNAL HOUR + GOLD_SEND_GRACE_MIN (Judge 2026-10-21, r6): not the certified
+            # bracket. `late_windows` names it so `run` writes its SKIPPED row.
             continue
         built = bracket_from_bars(df, rng, sig_hour, tick_size, stops_level)
         if built is None:
@@ -247,6 +268,9 @@ def retry_decisions(state: dict, hour: float, bid: float, ask: float, filled: di
                 out.append({**base, "act": "abandon", "why": "the other leg filled"})
             elif hour >= CANCEL_HOUR or window_session_ended(name, hour):
                 out.append({**base, "act": "abandon", "why": "the window's session is over"})
+            elif gold_send_late(name, hour):
+                # A retry is a send too: past signal hour + GOLD_SEND_GRACE_MIN it is late (r6).
+                out.append({**base, "act": "abandon", "why": str(gold_send_late(name, hour))})
             elif int(leg.get("attempts") or 0) >= MAX_LEG_RETRIES:
                 out.append({**base, "act": "abandon",
                             "why": f"{MAX_LEG_RETRIES} sends failed"})
@@ -917,6 +941,18 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                   positions=None if "positions_unreadable" in doc else venue_positions)
     # -------------------------------------------------------------- placements
     due_now = [] if stood_down else plan(df, hour, state)
+    # A LATE GOLD SEND IS REFUSED (Judge 2026-10-21, r6; decision_core.GOLD_SEND_GRACE_MIN): a
+    # SKIPPED row with reason late_send and its missed-growth line, once per window per day.
+    for _lname, _lwhy in ([] if stood_down else late_windows(hour, state)):
+        doc["skipped"].append({"window": _lname, "why": _lwhy})
+        _lfrac = window_risk(_lname, kelly)[0]
+        _lseen = state.setdefault("pin_logged", {})
+        if _lfrac > 0 and _lseen.get(f"late/{_lname}") != today:
+            _lseen[f"late/{_lname}"] = today
+            _record({"at": now.isoformat(timespec="seconds"), "window": _lname,
+                     "status": "SKIPPED", "reason": "late_send", "rail": "gold_late_send",
+                     "why": _lwhy, "risk_frac": _lfrac,
+                     "missed_growth_risk_usd": round(equity * _lfrac, 2), "armed": bool(armed)})
     # THE SELF-HEDGE RULE IS PER LEG, NOT PER BRACKET (principal, 2026-09-24).
     #
     # TradeLocker can hold opposite XAU positions, so a second two-sided bracket placed while one

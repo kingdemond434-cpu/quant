@@ -182,10 +182,15 @@ def test_allocator_book_lays_the_principal_zeros_over_pf_book_whatever_the_cert_
     for k in (*SCALP, "gold_london_am", "gold_afternoon"):
         assert book[k] == 0.0, (k, why)
     assert book["XAUUSD_anti_donchian_breakout"] == 0.03     # an unpinned key is the allocator's
-    # And with no allocator book at all, the pins are still the whole book.
+    # No allocator book: the cert book alone (with the pins over it) when it is valid, else None
+    # (rank, do not size) -- and the per-row pin holds either way.
     ns = adapter._exec(("allocator_book",), {"_allocator_book": lambda: (None, "no proof")})
-    book, _ = ns["allocator_book"]()
-    assert book is not None and all(book[k] == 0.0 for k in SCALP)
+    book, why = ns["allocator_book"]()
+    if doc == "committed":
+        assert book is not None and all(book[k] == 0.0 for k in SCALP)
+    else:
+        assert book is None and "principal zeros apply per row" in why
+    assert all(dc.cert_zero_row({"name": k}) for k in SCALP)
 
 
 def _scalp_row(name: str, risk_frac: float) -> dict:
@@ -238,6 +243,7 @@ def _e8(monkeypatch, tmp_path, *, hour: float, kelly: dict | None, cert: object,
     h._sandbox(monkeypatch, tmp_path)
     if principal:      # the sandbox lifts the pin for its mechanics tests; these test the pin
         monkeypatch.setitem(dc.PRINCIPAL_ZERO, "e8", dc.GOLD_ASIA_ONLY_ZERO)
+    monkeypatch.setattr(dc, "GOLD_SEND_GRACE_MIN", 5.0)      # the sandbox lifts it too
     if kelly is not None:
         (tmp_path / "kelly_file.json").write_text(json.dumps({
             "generated_at": datetime.now(tz=UTC).isoformat(),
@@ -266,16 +272,18 @@ def _e8(monkeypatch, tmp_path, *, hour: float, kelly: dict | None, cert: object,
     return doc, intents
 
 
-ASIA_H, LONDON_H = 7.5, 13.5
+ASIA_H, LONDON_H, AFTERNOON_H = 7 + 2 / 60, 13 + 2 / 60, 17 + 2 / 60     # on time
 FRESH_KELLY = {"asia": 0.005, "london_am": 0.0025, "afternoon": 0.004}
 VALID = {"enabled": True, "fusion": {"gold_london_am": 0.0},
          "e8": {"gold_asia": 0.006, "gold_london_am": 0.0, "gold_afternoon": 0.0}}
 
 
-def _placed(doc) -> dict[str, set]:
-    out: dict[str, set] = {}
-    for p in doc["placed"]:
-        out.setdefault(p["window"], set()).add((p["risk_frac"], p["risk_source"]))
+def _placed(doc, intents=()) -> dict[str, set]:
+    """{window placed this pass: {(risk_frac, risk_source)} of its legs' intent rows}."""
+    out: dict[str, set] = {p["window"]: set() for p in doc["placed"]}
+    for r in intents:
+        if r.get("window") in out and "risk_source" in r:
+            out[r["window"]].add((r["risk_frac"], r["risk_source"]))
     return out
 
 
@@ -285,8 +293,9 @@ def test_fresh_kelly_under_a_valid_cert_book_london_sends_nothing_and_asia_is_th
     assert "london_am" not in _placed(doc)
     assert doc["kelly_risk"]["london_am"] == 0.0
     assert doc["sizing_source"]["london_am"] == "pinned_zero"
-    doc, _ = _e8(monkeypatch, tmp_path, hour=ASIA_H, kelly=FRESH_KELLY, cert=VALID)
-    assert _placed(doc)["asia"] == {(0.006, "cert_book")}
+    (tmp_path / "a").mkdir()
+    doc, intents = _e8(monkeypatch, tmp_path / "a", hour=ASIA_H, kelly=FRESH_KELLY, cert=VALID)
+    assert _placed(doc, intents)["asia"] == {(0.006, "cert_book")}
     assert doc["sizing_source"] == {"asia": "cert_book", "london_am": "pinned_zero",
                                     "afternoon": "pinned_zero"}
 
@@ -299,7 +308,7 @@ def test_fresh_kelly_under_a_void_cert_book_keeps_both_pins_and_asia_is_the_solv
     one funded window aside for a torn file is a Rule-1 loss, and the solve is itself the
     survival-bounded size. Without a fresh solve asia is RISK_FRAC (0.005, below the box's
     0.006)."""
-    for hour in (LONDON_H, 17.5):
+    for hour in (LONDON_H, AFTERNOON_H):
         doc, intents = _e8(monkeypatch, tmp_path, hour=hour, kelly=FRESH_KELLY, cert=void)
         assert doc["placed"] == [], doc["placed"]
         assert doc["sizing_source"]["london_am"] == "pinned_zero"
@@ -307,11 +316,12 @@ def test_fresh_kelly_under_a_void_cert_book_keeps_both_pins_and_asia_is_the_solv
         assert doc["kelly_risk"]["london_am"] == 0.0 == doc["kelly_risk"]["afternoon"]
         assert any(r.get("rail") == "principal_zero_pin" and r["missed_growth_risk_usd"] > 0
                    for r in intents)
-    doc, _ = _e8(monkeypatch, tmp_path, hour=ASIA_H, kelly=FRESH_KELLY, cert=void)
-    assert _placed(doc)["asia"] == {(0.005, "kelly_survival")}
+    (tmp_path / "k").mkdir()
+    doc, intents = _e8(monkeypatch, tmp_path / "k", hour=ASIA_H, kelly=FRESH_KELLY, cert=void)
+    assert _placed(doc, intents)["asia"] == {(0.005, "kelly_survival")}
     (tmp_path / "nk").mkdir()
-    doc, _ = _e8(monkeypatch, tmp_path / "nk", hour=ASIA_H, kelly=None, cert=void)
-    assert _placed(doc)["asia"] == {(0.005, "RISK_FRAC")}
+    doc, intents = _e8(monkeypatch, tmp_path / "nk", hour=ASIA_H, kelly=None, cert=void)
+    assert _placed(doc, intents)["asia"] == {(0.005, "RISK_FRAC")}
     assert doc["sizing_source"]["asia"] == "RISK_FRAC"
 
 
@@ -488,7 +498,8 @@ def test_an_overlong_pass_ends_its_own_process_and_frees_the_lock(tmp_path, monk
     monkeypatch.setattr(loop, "WATCHDOG_STAMP", tmp_path / "GATEWAY_WATCHDOG.json")
     fired = threading.Event()
     codes: list[int] = []
-    monkeypatch.setattr(loop.os, "_exit", lambda code: (codes.append(code), fired.set()))
+    import os
+    monkeypatch.setattr(os, "_exit", lambda code: (codes.append(code), fired.set()))
     dog = loop.start_watchdog(0.05)
     assert fired.wait(5.0)
     dog.cancel()
@@ -501,7 +512,9 @@ def test_an_overlong_pass_ends_its_own_process_and_frees_the_lock(tmp_path, monk
     time.sleep(0.8)
     assert not fired.is_set()
     src = (_DESK / "research" / "run_gateway_loop.py").read_text("utf-8")
-    assert src.index("start_watchdog(") < src.index("gateway.main()")
+    body = src[src.index("\ndef main("):]
+    assert body.index("dog = start_watchdog()") < body.index("gateway.main()")
+    assert "dog.cancel()" in body
 
 
 # ------------------------------------------------- a timed-out send keeps the symbol held
@@ -660,3 +673,97 @@ def test_the_daily_loss_rolls_over_at_the_servers_midnight(fd) -> None:
                 "day_start_equity": {"date": fd.broker_day(b), "equity": 20_000.0}}
         assert [c for c, _ in fd.evaluate(anch, [], [], 20_000.0, now=b)] == ["DAILY_LOSS"]
         assert fd.evaluate(anch, [], [], 20_000.0, now=a) == []
+
+
+# ------------------------------------------------- a late gold send is refused (Judge, r6)
+
+def test_the_grace_is_the_measured_constant_and_the_rule_is_pure() -> None:
+    assert dc.GOLD_SEND_GRACE_MIN == 5.0
+    assert dc.gold_send_late("asia", 7.0) is None
+    assert dc.gold_send_late("gold_asia", 7 + 5 / 60) is None
+    assert "late_send" in dc.gold_send_late("gold_asia", 7 + 6 / 60)
+    assert "late_send" in dc.gold_send_late("gold_london_am_v3", 13 + 6 / 60)
+    assert dc.gold_send_late("eurusd_asia", 23.0) is None             # not a gold window
+    # The Judge's sends, on the 07:00 broker placement: every one is refused.
+    for hour in (8 + 56 / 60, 16 + 50 / 60, 15 + 28 / 60, 7 + 27 / 60, 7 + 57 / 60):
+        assert dc.gold_send_late("gold_asia", hour), hour
+
+
+def _fusion_main_at(tmp_path, monkeypatch, when):
+    idx = pd.date_range(end=pd.Timestamp(when).floor("h"), periods=400, freq="h")
+    rows = [{"time": int(t.timestamp()), "open": 2000.0 + i * 0.01, "high": 2001.0 + i * 0.01,
+             "low": 1999.0 + i * 0.01, "close": 2000.2 + i * 0.01, "tick_volume": 50.0}
+            for i, t in enumerate(idx)]
+    hi, lo, _ = dc.bracket_from_bars(dc.h1_frame(rows), None, 7, 0.01, 20)
+    mid = (hi + lo) / 2.0
+
+    class _At(adapter._Terminal):
+        def symbol_info_tick(self, symbol):
+            return SimpleNamespace(time=int(when.timestamp()), bid=self.bid, ask=self.ask)
+
+    class _Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return when.astimezone(tz) if tz else when.replace(tzinfo=None)
+
+    mt5 = _At(rows, mid - 0.05, mid + 0.05)
+    ns = adapter._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    ns["datetime"] = _Clock
+    monkeypatch.setattr(dc, "GOLD_SEND_GRACE_MIN", 5.0)     # _main_ns lifts it; the rule is on
+    ns["main"]()
+    return mt5, ns
+
+
+def test_fusion_gold_asia_sends_on_time(tmp_path, monkeypatch) -> None:
+    mt5, ns = _fusion_main_at(tmp_path, monkeypatch, datetime(2026, 9, 8, 7, 2, tzinfo=UTC))
+    assert len(mt5.sent) == 2 and {r["comment"] for r in mt5.sent} == {"DWgold_asia"}
+    assert not any(r.get("reason") == "late_send" for r in ns["_intents"])
+
+
+@pytest.mark.parametrize("when", [datetime(2026, 9, 8, 7, 6, tzinfo=UTC),     # open+grace+1
+                                  datetime(2026, 9, 8, 9, 30, tzinfo=UTC)])   # another hour
+def test_fusion_gold_asia_late_sends_nothing_and_bills_it(tmp_path, monkeypatch, when) -> None:
+    from mt5desk import fusion_rails
+    mt5, ns = _fusion_main_at(tmp_path, monkeypatch, when)
+    assert mt5.sent == []
+    (row,) = [r for r in ns["_intents"] if r.get("reason") == "late_send"]
+    assert row["status"] == "SKIPPED" and row["sleeve"] == "gold_asia"
+    lines = [json.loads(ln) for ln in fusion_rails.LEDGER.read_text("utf-8").splitlines()
+             if ln.strip()]
+    assert any(ln.get("rail") == "gold_late_send" and ln.get("sleeve") == "gold_asia"
+               for ln in lines)
+    # Once per window per day, however many passes refuse it.
+    ns["main"]()
+    assert len([r for r in ns["_intents"] if r.get("reason") == "late_send"]) == 1
+
+
+@pytest.mark.parametrize("hour,placed", [(ASIA_H, True), (7 + 6 / 60, False), (9.5, False)])
+def test_e8_gold_asia_on_time_late_and_another_hour(monkeypatch, tmp_path, hour,
+                                                    placed) -> None:
+    doc, intents = _e8(monkeypatch, tmp_path, hour=hour, kelly=None, cert=VALID)
+    assert ("asia" in _placed(doc)) is placed
+    late = [r for r in intents if r.get("reason") == "late_send"]
+    if placed:
+        assert late == []
+    else:
+        (row,) = late
+        assert row["status"] == "SKIPPED" and row["rail"] == "gold_late_send"
+        assert row["missed_growth_risk_usd"] == round(100_000.0 * 0.006, 2)
+
+
+def test_an_e8_retry_past_the_grace_is_abandoned() -> None:
+    from prop import e8_gold as g
+    st = {"windows": {"asia": {"orders": {}, "position_id": None,
+                               "failed": {"buy_stop": {"price": 4340.0, "attempts": 1}}}}}
+    (dec,) = g.retry_decisions(st, 7 + 6 / 60, 4300.0, 4300.4, {})
+    assert dec["act"] == "abandon" and "late_send" in dec["why"]
+    (dec,) = g.retry_decisions(st, 7 + 2 / 60, 4300.0, 4300.4, {})
+    assert dec["act"] == "retry"
+
+
+def test_late_sends_are_billed_in_missed_growth() -> None:
+    from mt5desk import fusion_rails
+
+    from research import missed_growth as mg
+
+    assert "gold_late_send" in fusion_rails.RAILS and "gold_late_send" in mg.FUSION_RAIL_NAMES

@@ -653,10 +653,12 @@ FUSION_RAILS = BASE / "data" / "fusion_book_rails.jsonl"
 E8_EXEC_INTENTS = BASE / "data" / "e8_intents.jsonl"
 FUSION_RAIL_NAMES = ("one_gold_at_risk", "cross_account_opposite", "fusion_daily_loss",
                      "fusion_book_floor_lift", "fusion_book_ceiling", "fusion_trade_risk_cap",
-                     "principal_zero_pin", "cert_book_absent_window")
+                     "principal_zero_pin", "cert_book_absent_window", "gold_late_send")
 
-#: The rails the E8 lanes bill in their intents journals (RAIL_BLOCKED rows).
-_E8_BILLED_RAILS = ("cross_account_opposite", "principal_zero_pin", "cert_book_absent_window")
+#: The rails the E8 lanes bill in their intents journals (RAIL_BLOCKED rows; a late gold send is
+#: a SKIPPED row with reason late_send).
+_E8_BILLED_RAILS = ("cross_account_opposite", "principal_zero_pin", "cert_book_absent_window",
+                    "gold_late_send")
 
 
 def _jsonl(p: Path) -> list[dict[str, Any]] | None:
@@ -696,7 +698,7 @@ def published_fusion_book_lines() -> dict[str, Any]:
         if got is None:
             unreadable.append(jp.name)
             continue
-        e8_rows += [r for r in got if r.get("status") == "RAIL_BLOCKED"
+        e8_rows += [r for r in got if r.get("status") in ("RAIL_BLOCKED", "SKIPPED")
                     and r.get("rail") in _E8_BILLED_RAILS]
     lines: dict[str, Any] = {}
     for rail in FUSION_RAIL_NAMES:
