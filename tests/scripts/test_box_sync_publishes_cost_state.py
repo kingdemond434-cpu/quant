@@ -567,3 +567,51 @@ def test_an_undelivered_page_is_not_a_page_and_the_next_pass_resends(tmp_path: P
     assert not lf.page(doc, tmp_path, sender=sender, now=t0 + timedelta(minutes=4))["sent"]
     assert len(sent) == 4
 
+
+
+# v5c (2026-10-21, audit hold on v5b). Every Unicode Cf (format) character is dropped before
+# matching, literal or JSON-escaped; more separators, and `/ : ( )`. Synthetic numbers only.
+_CF = {"zwsp": "​", "zwnj": "‌", "zwj": "‍", "wj": "⁠", "bom": "﻿",
+       "lrm": "‎", "rlm": "‏", "soft-hyphen": "­"}
+
+
+@pytest.mark.parametrize("ch", list(_CF.values()), ids=list(_CF))
+@pytest.mark.parametrize("escaped", [False, True], ids=["literal", "json-escaped"])
+def test_a_format_character_inside_a_declared_number_is_dropped(ch: str, escaped: bool) -> None:
+    mark = f"\\u{ord(ch):04x}" if escaped else ch
+    text = f'{{"note": "refused for {_SID[:3]}{mark}{_SID[3:]}."}}'
+    got = lf.findings("desks/mt5/data/x.json", text.encode(), _SIDS)
+    assert lf.ID_FINDING in [h["key"] for h in got], repr(text)
+    assert _SID not in json.dumps(got)
+
+
+@pytest.mark.parametrize("ch", list(_CF.values()), ids=list(_CF))
+def test_a_format_character_does_not_hide_a_login_key_or_value(ch: str) -> None:
+    for text in (f'{{"login": {_SID[:2]}{ch}{_SID[2:]}}}', f'{{"lo{ch}gin": {_SID}}}',
+                 f"time,Login\nt,{_SID[:4]}{ch}{_SID[4:]}\n"):
+        rel = "desks/mt5/data/x.csv" if text.startswith("time") else "desks/mt5/data/x.json"
+        assert lf.findings(rel, text.encode()), repr(text)
+
+
+@pytest.mark.parametrize("text", [
+    "555 -  - 1234", "555 ,  1234", "(555) 1234", "555/1234", "555:1234", "(555)-(1234)",
+    "555" + " " * 10 + "1234",
+], ids=["four-plus", "four-mixed", "parens", "slash", "colon", "parens-hyphen", "ten-spaces"])
+def test_more_separators_and_slash_colon_parens_split_a_declared_number(text: str) -> None:
+    got = lf.findings("desks/mt5/data/x.json", text.encode(), _SIDS)
+    assert lf.ID_FINDING in [h["key"] for h in got], text
+
+
+@pytest.mark.parametrize("text", ["1/555/1234", "555:1234:9", "(1) 555 1234", "555 1234 (2)",
+                                  "12:555:1234", "555    1234    5"],
+                         ids=["slash-prefix", "colon-suffix", "paren-prefix", "paren-suffix",
+                              "clock", "spaced-suffix"])
+def test_the_adjacent_digit_rule_holds_across_the_new_separators(text: str) -> None:
+    assert lf.findings("desks/mt5/data/x.json", text.encode(), _SIDS) == [], text
+
+
+@pytest.mark.parametrize("text", ['{"id": "DSD_X_2023@DF_X"}', "DSD_X_2023​@DF_X",
+                                  "(DSD_X_2023@DF_X)", "a/DSD_X_2023@DF_X:1"],
+                         ids=["oecd", "oecd-zwsp", "oecd-parens", "oecd-slash-colon"])
+def test_oecd_ids_still_pass_with_the_v5c_normalisation(text: str) -> None:
+    assert lf.findings("desks/mt5/reports/PIT_LAG_CENSUS.json", text.encode(), _SIDS) == [], text

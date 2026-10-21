@@ -17,8 +17,9 @@ data/secrets/, never printed, never logged, never leaves the box), or the file n
 NEVER overwritten (that would orphan every row hashed under it). Only an ABSENT file is created,
 only when `create=True` -- which is for WRITERS on the box: the key is written to a temp file in
 the same directory, fsynced, and hard-linked into place (create-if-absent, so two processes cannot
-race two keys and a crash cannot leave a torn one; v5b). A 0-byte or short file reads as NO key.
-A reader never creates one: with none, it gets None.
+race two keys and a crash cannot leave a torn one; v5b); with no hard links, an exclusive create
+of the key path itself (v5c) -- never a replace, so an existing key is never overwritten. A
+0-byte or short file reads as NO key. A reader never creates one: with none, it gets None.
 
 LOSING THE KEY ORPHANS EVERY HASHED ROW (they read as no provenance, never as another account).
 Back it up with the box's other secrets. Off the box, with no key, a hashed row can be grouped by
@@ -46,7 +47,9 @@ KEY_REL = "data/secrets/account_key.hmac"
 _REPO = Path(__file__).resolve().parents[2]
 _KEY_SHAPE = re.compile(r"sha256:[0-9a-f]{16}")
 _MIN_KEY_BYTES = 32
-_KEY_CACHE: dict[str, tuple[int, bytes]] = {}
+#: path -> ((inode, size, mtime_ns), key). Keyed on all three (v5c) so a key REPLACED in place --
+#: same mtime granularity, new inode or size -- is re-read rather than served from the cache.
+_KEY_CACHE: dict[str, tuple[tuple[int, int, int], bytes]] = {}
 
 
 def key_path() -> Path:
@@ -58,14 +61,15 @@ def _read_key(path: Path) -> bytes | None:
     """The key file's bytes if it is a usable key, else None. A 0-byte, short or torn file is
     NO KEY (never a weaker one): every caller then fails closed."""
     st = path.stat()
+    ident = (st.st_ino, st.st_size, st.st_mtime_ns)
     hit = _KEY_CACHE.get(str(path))
-    if hit is not None and hit[0] == st.st_mtime_ns and st.st_size >= _MIN_KEY_BYTES:
+    if hit is not None and hit[0] == ident and st.st_size >= _MIN_KEY_BYTES:
         return hit[1]
     raw = path.read_bytes().strip()
     if len(raw) < _MIN_KEY_BYTES:
         _KEY_CACHE.pop(str(path), None)
         return None
-    _KEY_CACHE[str(path)] = (st.st_mtime_ns, raw)
+    _KEY_CACHE[str(path)] = (ident, raw)
     return raw
 
 
@@ -74,15 +78,20 @@ def _create_key(path: Path) -> None:
 
     os.link is create-if-absent on POSIX and Windows alike (FileExistsError if a key is there),
     so a crash can never leave a torn key at `path` and an existing key -- even a short one, or a
-    read-only one, where os.replace raises WinError 5 -- is never overwritten. On a filesystem
-    with no hard links the fallback is os.replace, taken ONLY while `path` is still absent; the
-    race window that leaves is closed by the re-read, which keeps whichever key landed."""
+    read-only one, where os.replace raises WinError 5 -- is never overwritten.
+
+    NO HARD LINKS (v5c): the fallback is an EXCLUSIVE CREATE of `path` itself (O_CREAT|O_EXCL),
+    the key written into it directly, flushed and fsynced. There is no replace at all, so no
+    race can overwrite a key that already exists: a second writer gets FileExistsError and
+    re-reads. The cost is that a crash mid-write can leave a short file there; it reads as NO
+    key (fail closed) and is never overwritten, so a human restores the key."""
     path.parent.mkdir(parents=True, exist_ok=True)
+    body = secrets.token_hex(32).encode()
     tmp = path.with_name(f".{path.name}.{os.getpid()}.{secrets.token_hex(4)}.tmp")
     fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     try:
         with os.fdopen(fd, "wb") as fh:
-            fh.write(secrets.token_hex(32).encode())
+            fh.write(body)
             fh.flush()
             os.fsync(fh.fileno())
         try:
@@ -90,12 +99,23 @@ def _create_key(path: Path) -> None:
         except FileExistsError:
             pass  # another writer won the race; the caller re-reads theirs
         except OSError:
-            # No hard links on this filesystem. Replace only onto an ABSENT key, never over one.
-            if not path.exists():
-                os.replace(tmp, path)
+            _create_in_place(path, body)
     finally:
         with contextlib.suppress(OSError):
             tmp.unlink()
+
+
+def _create_in_place(path: Path, body: bytes) -> None:
+    """The no-hard-link fallback: create `path` exclusively and write `body` into it. An existing
+    key -- any key, any size, read-only or not -- is left exactly as it is."""
+    try:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        return
+    with os.fdopen(fd, "wb") as fh:
+        fh.write(body)
+        fh.flush()
+        os.fsync(fh.fileno())
 
 
 def _box_key(create: bool = False) -> bytes | None:

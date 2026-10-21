@@ -60,6 +60,7 @@ import base64
 import binascii
 import contextlib
 import csv
+import functools
 import hashlib
 import io
 import json
@@ -199,10 +200,30 @@ def declared_ids(root: Path, env: dict[str, str] | None = None) -> frozenset[str
 
 
 #: Characters a writer puts between the digits of one number (v5b): `555-1234`, `5,551,234`,
-#: `555 1234`, `555.1234`, `555'1234`, `555_1234`, and the Unicode dashes and spaces NFKC keeps.
-_DIGIT_SEP = " \t-,.'_\u2010\u2011\u2012\u2013\u2014\u2015\u2212\u2019\u00a0\u2009\u202f"
-_SEP_MAX = 3   # `555 - 1234` is three separator characters
+#: `555 1234`, `555.1234`, `555'1234`, `555_1234`, the Unicode dashes and spaces NFKC keeps, and
+#: (v5c) `/`, `:`, `(` and `)` -- `(555) 1234`, `555/1234`, `555:1234`.
+_DIGIT_SEP = (" \t-,.'_/:()"
+              "\u2010\u2011\u2012\u2013\u2014\u2015\u2212\u2019\u00a0\u2009\u202f")
+#: Up to this many separator characters between two digits (v5c: was 3, so `555 -  1234` with
+#: four slipped through). Bounded so the split pattern stays linear; the boundary check walks the
+#: same distance, so a digit beyond a run of separators still makes it a different number.
+_SEP_MAX = 16
 _SEP_CLASS = "[" + re.escape(_DIGIT_SEP) + "]{0," + str(_SEP_MAX) + "}"
+
+
+@functools.lru_cache(maxsize=1)
+def _cf_table() -> dict[int, None]:
+    """Every Unicode format (Cf) code point -> deleted, for str.translate. Built once, lazily."""
+    return {cp: None for cp in range(sys.maxunicode + 1)
+            if unicodedata.category(chr(cp)) == "Cf"}
+
+
+def _drop_format(text: str) -> str:
+    """Remove every Unicode Cf (format) character -- ZWSP U+200B, ZWNJ U+200C, ZWJ U+200D,
+    LRM U+200E, RLM U+200F, WJ U+2060, BOM U+FEFF, soft hyphen U+00AD and the rest. They are
+    invisible, so `555<ZWSP>1234` reads as the number to a human and must to the fence too
+    (v5c, audit hold on v5b). None of them is a line break, so line numbers are unchanged."""
+    return text if text.isascii() else text.translate(_cf_table())
 
 
 def _ascii_digits(text: str) -> str:
@@ -275,7 +296,9 @@ def _account_shaped(val: str) -> bool:
 def _decoded(text: str) -> str:
     """`\\uXXXX` escapes and up to six levels of backslash-escaping undone, fullwidth and
     other compatibility forms folded (NFKC), so fullwidth digits read as ASCII digits, and every
-    other Unicode decimal digit (Arabic-Indic, Extended Arabic-Indic) folded to ASCII (v5b)."""
+    other Unicode decimal digit (Arabic-Indic, Extended Arabic-Indic) folded to ASCII (v5b).
+    Every Cf format character is dropped first (v5c) -- after the escapes are undone, so a
+    JSON-escaped `\\u200b` is dropped as well as a literal one."""
     out = text
     for _ in range(6):
         nxt = _UESC.sub(lambda m: chr(int(m.group(1), 16)), out)
@@ -283,7 +306,7 @@ def _decoded(text: str) -> str:
         if nxt == out:
             break
         out = nxt
-    return _ascii_digits(unicodedata.normalize("NFKC", out))
+    return _ascii_digits(unicodedata.normalize("NFKC", _drop_format(out)))
 
 
 def _as_text(data: bytes) -> str:
@@ -356,7 +379,7 @@ def _pairs(views: list[tuple[str, int | None]]) -> list[tuple[str, int]]:
 def _csv_hits(text: str, sep: str) -> list[tuple[str, int]]:
     """Login-named columns with an account-shaped value under ANY header row (a preamble above
     the header does not hide it), and account hits inside any cell (a JSON object in a cell)."""
-    rows = list(csv.reader(io.StringIO(text), delimiter=sep))
+    rows = list(csv.reader(io.StringIO(_drop_format(text)), delimiter=sep))
     hits: set[tuple[str, int]] = set()
     cols: dict[int, str] = {}
     for n, row in enumerate(rows, start=1):

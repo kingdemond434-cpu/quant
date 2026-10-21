@@ -34,7 +34,7 @@ import io
 import json
 import subprocess
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -169,6 +169,30 @@ EXPECTED_DISABLED: dict[str, dict[str, str]] = {
         "date": "2026-10-21",
     },
 }
+
+
+def expected_disabled(name: str) -> tuple[dict[str, str] | None, str]:
+    """(entry, error) for `name` in EXPECTED_DISABLED. NEVER RAISES (v5c). An entry is honoured
+    only when it is a mapping with a non-empty str `reason` and an ISO `date`; anything else is
+    (None, why) -- so a malformed entry leaves the task an ordinary DISABLED fault (ATTENTION),
+    never a silent pass and never a crash of the board."""
+    try:
+        if not isinstance(EXPECTED_DISABLED, dict):
+            return None, f"EXPECTED_DISABLED is a {type(EXPECTED_DISABLED).__name__}, not a mapping"
+        entry = EXPECTED_DISABLED.get(name)
+        if entry is None:
+            return None, ""
+        if not isinstance(entry, dict):
+            return None, f"EXPECTED_DISABLED[{name!r}] is a {type(entry).__name__}, not a mapping"
+        reason, when = entry.get("reason"), entry.get("date")
+        if not isinstance(reason, str) or not reason.strip():
+            return None, f"EXPECTED_DISABLED[{name!r}] has no reason"
+        if not isinstance(when, str):
+            return None, f"EXPECTED_DISABLED[{name!r}] has no date"
+        date.fromisoformat(when.strip())
+        return {"reason": reason.strip(), "date": when.strip()}, ""
+    except Exception as exc:   # a bad date, an unhashable name: malformed, never fatal
+        return None, f"EXPECTED_DISABLED[{name!r}] malformed ({type(exc).__name__})"
 
 
 #: Verdicts a brief-only read (no run history) establishes for certain. Any of them makes a
@@ -327,9 +351,11 @@ def build() -> dict[str, Any]:
             verdict, why = "SCHEDULER_UNMEASURED", str(t["TaskInfoError"])
         elif _states & STATE_DISABLED:
             verdict, why = "DISABLED", "the scheduler will never start this"
-            if name in EXPECTED_DISABLED:
-                _exp = EXPECTED_DISABLED[name]
+            _exp, _exp_err = expected_disabled(name)
+            if _exp is not None:
                 why = f"EXPECTED (since {_exp['date']}): {_exp['reason']}"
+            elif _exp_err:
+                why += f"; {_exp_err}, so it is not excused"
         elif not _states or not _states <= STATE_LIVE:
             verdict, why = "SCHEDULER_UNMEASURED", (
                 f"task state {sorted(_states) or 'blank'} not recognised: whether the scheduler "
@@ -364,8 +390,7 @@ def build() -> dict[str, Any]:
             "artifact_age_min": None if age is None else round(age, 1),
             "contract_max_age_min": max_age or None,
             "purpose": purpose or None,
-            "expected_disabled": (dict(EXPECTED_DISABLED[name])
-                                  if verdict == "DISABLED" and name in EXPECTED_DISABLED
+            "expected_disabled": (expected_disabled(name)[0] if verdict == "DISABLED"
                                   else None),
         })
 

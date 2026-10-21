@@ -504,10 +504,44 @@ def test_an_expected_disabled_adopt_release_does_not_raise_attention(
 
 def test_every_expected_disabled_entry_names_a_reason_and_a_date() -> None:
     from datetime import date
-    assert "MT5-AdoptRelease" in ph.EXPECTED_DISABLED
+    assert set(ph.EXPECTED_DISABLED) == {"MT5-AdoptRelease"}, (
+        "pinned (v5c): a new excuse is a reviewed change")
     for name, entry in ph.EXPECTED_DISABLED.items():
         assert str(entry.get("reason") or "").strip(), f"{name}: no reason"
         assert len(entry["reason"].strip()) >= 20, f"{name}: a reason, not a word"
         raw = str(entry.get("date") or "").strip()
         assert raw, f"{name}: no date"
         date.fromisoformat(raw)   # YYYY-MM-DD, or this raises
+
+
+# v5c (2026-10-21): a malformed EXPECTED_DISABLED entry is NOT an excuse and never raises.
+@pytest.mark.parametrize(
+    "table",
+    [
+        {"MT5-AdoptRelease": {"reason": "disabled on purpose for a reviewed reason"}},
+        {"MT5-AdoptRelease": {"date": "2026-10-21"}},
+        {"MT5-AdoptRelease": {"reason": "   ", "date": "2026-10-21"}},
+        {"MT5-AdoptRelease": {"reason": "disabled on purpose for a reason", "date": "21/10/2026"}},
+        {"MT5-AdoptRelease": {"reason": 5, "date": 20261021}},
+        {"MT5-AdoptRelease": "disabled on purpose"},
+        {"MT5-AdoptRelease": ["reason", "date"]},
+        ["MT5-AdoptRelease"],
+    ],
+    ids=["no-date", "no-reason", "blank-reason", "bad-date", "bad-types", "str-entry",
+         "list-entry", "table-not-a-dict"],
+)
+@pytest.mark.parametrize("brief_only", [False, True], ids=["both-reads", "brief-only"])
+def test_a_malformed_expected_disabled_entry_reads_attention_and_never_raises(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, table: Any, brief_only: bool
+) -> None:
+    monkeypatch.setattr(ph, "EXPECTED_DISABLED", table)
+    verbose: Any = (subprocess.TimeoutExpired(["schtasks", "/v"], 90) if brief_only
+                    else VERBOSE_ADOPT)
+    _fake(monkeypatch, BRIEF_ADOPT, verbose)
+    doc, by = _build(monkeypatch, tmp_path, _GW_ONLY)
+    row = by["MT5-AdoptRelease"]
+    assert row["verdict"] == "DISABLED" and row["expected_disabled"] is None
+    assert not row["why"].startswith("EXPECTED")
+    assert doc["status"] == "ATTENTION" and doc["n_needing_attention"] == 1
+    entry, err = ph.expected_disabled("MT5-AdoptRelease")
+    assert entry is None and err

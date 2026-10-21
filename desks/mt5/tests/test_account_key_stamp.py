@@ -21,6 +21,7 @@ import inspect
 import itertools
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -254,7 +255,7 @@ def test_the_key_is_written_to_a_temp_file_fsynced_and_linked_into_place(
     assert sorted(p.name for p in path.parent.iterdir()) == [path.name], "a temp file was left"
 
 
-def test_without_hard_links_the_key_is_replaced_in_only_while_absent(
+def test_without_hard_links_the_key_is_still_created_once(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     path = tmp_path / "secrets" / "account_key.hmac"
     monkeypatch.setenv(libs_provenance.KEY_ENV, str(path))
@@ -305,3 +306,78 @@ def test_a_crash_before_the_link_leaves_no_key_and_no_temp_file(
     assert list(path.parent.iterdir()) == [], "a torn key or temp file was left behind"
     row = provenance.stamp({"login": 7, "server": "S", "kind": LIVE})
     assert "account" not in row and row["account_key"] is None
+
+
+# v5c (2026-10-21): the key cache is keyed on (inode, size, mtime); the no-hard-link fallback is
+# an exclusive create of the key path, never a replace.
+def test_a_key_replaced_in_place_is_re_read_even_at_the_same_mtime(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import os
+    path = tmp_path / "account_key.hmac"
+    path.write_bytes(b"a" * 40)
+    monkeypatch.setenv(libs_provenance.KEY_ENV, str(path))
+    first = provenance.account_key(7, "S")
+    st = path.stat()
+    new = tmp_path / "new.hmac"
+    new.write_bytes(b"b" * 40)                       # same size
+    os.utime(new, ns=(st.st_atime_ns, st.st_mtime_ns))  # same mtime
+    os.replace(new, path)                            # new inode
+    assert path.stat().st_mtime_ns == st.st_mtime_ns
+    second = provenance.account_key(7, "S")
+    assert first is not None and second is not None and first != second, "served a stale key"
+
+
+def test_without_hard_links_an_existing_key_is_never_replaced(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The race the v5b fallback left open: another writer lands a key between the absent check
+    and the replace. v5c has no replace: an exclusive create finds theirs and keeps it."""
+    path = tmp_path / "secrets" / "account_key.hmac"
+    monkeypatch.setenv(libs_provenance.KEY_ENV, str(path))
+    theirs = b"t" * 64
+
+    def racing_link(src: str, dst: str) -> None:
+        Path(dst).write_bytes(theirs)                # the other writer wins, right now
+        raise OSError("hard links not supported")
+
+    def no_replace(a: str, b: str) -> None:
+        raise AssertionError("os.replace was called on the key path")
+
+    monkeypatch.setattr(libs_provenance.os, "link", racing_link)
+    monkeypatch.setattr(libs_provenance.os, "replace", no_replace)
+    got = provenance.account_key(7, "S", create=True)
+    assert path.read_bytes() == theirs, "an existing key was overwritten"
+    want = "sha256:" + hmac.new(theirs, b"7@S", hashlib.sha256).hexdigest()[:16]
+    assert got == want
+    assert sorted(p.name for p in path.parent.iterdir()) == [path.name]
+
+
+def test_the_no_hard_link_fallback_creates_exclusively_and_fsyncs(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import os
+    path = tmp_path / "secrets" / "account_key.hmac"
+    monkeypatch.setenv(libs_provenance.KEY_ENV, str(path))
+    flags: list[int] = []
+    synced: list[int] = []
+    real_open, real_fsync = os.open, os.fsync
+
+    def spy_open(p: Any, f: int, *a: Any, **kw: Any) -> int:
+        if not kw and Path(p) == path:
+            flags.append(f)
+        return real_open(p, f, *a, **kw)
+
+    def spy_fsync(fd: int) -> None:
+        synced.append(fd)
+        real_fsync(fd)
+
+    def no_link(src: str, dst: str) -> None:
+        raise OSError("hard links not supported")
+
+    monkeypatch.setattr(libs_provenance.os, "open", spy_open)
+    monkeypatch.setattr(libs_provenance.os, "fsync", spy_fsync)
+    monkeypatch.setattr(libs_provenance.os, "link", no_link)
+    monkeypatch.setattr(libs_provenance.os, "replace",
+                        lambda a, b: (_ for _ in ()).throw(AssertionError("replace")))
+    assert provenance.account_key(7, "S", create=True) is not None
+    assert flags and all(f & os.O_EXCL and f & os.O_CREAT for f in flags)
+    assert len(synced) >= 2, "the temp file and the key itself must both be fsynced"
+    assert len(path.read_bytes().strip()) >= 32
