@@ -435,3 +435,104 @@ def test_a_sweep_names_its_phase_and_a_kill_records_it(monkeypatch) -> None:
                     limit_s=None, max_sweeps=2, heartbeat_s=60)
     st = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
     assert st["killed_in_phase"]["phase"] == "merge_and_publish"
+
+
+# ------------------------------------------------------------------ shard progress (published)
+def _shards_doc() -> dict:
+    import json
+
+    return json.loads(runner.SWEEP_PHASE.read_text("utf-8"))["shards"]
+
+
+def test_shard_progress_counts_a_wave_with_one_failure_and_a_retry(monkeypatch, tmp_path):
+    """A wave of four with shard 2 failing once: the published block counts every start, the
+    failure and the retry, and the retry's success lands in done_ok."""
+    failures_left = {2: 1}
+
+    def fake_run(argv, **kwargs):
+        shard = int(argv[-2])
+        if failures_left.get(shard, 0):
+            failures_left[shard] -= 1
+            raise RuntimeError("transient")
+
+    monkeypatch.setattr(runner, "run", fake_run)
+    runner._phase("build_shards")
+    runner.dispatch(tmp_path / "shards", 4, "build")
+    sh = _shards_doc()
+    assert sh["phase"] == "build" and sh["total"] == 4
+    assert (sh["started"], sh["done_ok"], sh["failed"], sh["retries"], sh["running"]) == (
+        5, 4, 1, 1, 0)
+    assert sh["last_finish_utc"] and sh["longest_shard_s"] is not None
+    assert sh["seconds_since_last_finish"] is not None
+    assert sh["stalled_hint"] is False  # nothing running: never a hang
+
+    # the resident's heartbeat carries it, and the next phase starts without it
+    runner._write_state({"status": "SWEEPING"})
+    import json
+    st = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
+    assert st["sweep_phase"]["shards"]["done_ok"] == 4
+    runner._phase("collect_and_cut")
+    assert "shards" not in json.loads(runner.SWEEP_PHASE.read_text("utf-8"))
+
+
+def test_shard_progress_writes_are_atomic_under_concurrency(monkeypatch, tmp_path):
+    """Sixteen concurrent children stamping at once never leave a torn or lost count, and a
+    reader polling the file throughout always parses it."""
+    import json
+    import threading
+    import time
+
+    monkeypatch.setenv("GAUNTLET_SHARD_CONCURRENCY", "16")
+    stop = threading.Event()
+    torn: list[str] = []
+
+    def reader() -> None:
+        while not stop.is_set():
+            try:
+                text = runner.SWEEP_PHASE.read_text("utf-8")
+            except OSError:
+                continue
+            try:
+                json.loads(text)
+            except ValueError:
+                torn.append(text)
+
+    def fake_run(argv, **kwargs):
+        time.sleep(0.005)
+
+    monkeypatch.setattr(runner, "run", fake_run)
+    runner._phase("rule_shards")
+    t = threading.Thread(target=reader)
+    t.start()
+    try:
+        runner.dispatch(tmp_path / "shards", 64, "rule")
+    finally:
+        stop.set()
+        t.join()
+    assert not torn
+    sh = _shards_doc()
+    assert (sh["total"], sh["started"], sh["done_ok"], sh["failed"], sh["running"]) == (
+        64, 64, 64, 0, 0)
+    assert not list(runner.SWEEP_PHASE.parent.glob("*.tmp"))
+
+
+def test_stalled_hint_is_false_before_the_first_finish_and_true_past_the_longest(monkeypatch):
+    """Nothing finished is UNMEASURED, never a hang; a gap longer than the longest measured shard
+    while a child still runs is the hint."""
+    now = [1000.0]
+    monkeypatch.setattr(runner.time, "time", lambda: now[0])
+    runner._phase("build_shards")
+    runner._shard_progress("begin", "build", total=3)
+    for _ in range(3):
+        runner._shard_progress("start", "build")
+    now[0] = 100_000.0  # a very long silence with nothing finished
+    sh = runner._sweep_phase()["shards"]
+    assert sh["seconds_since_last_finish"] is None and sh["stalled_hint"] is False
+
+    runner._shard_progress("ok", "build", elapsed_s=120.0)
+    now[0] += 60.0
+    sh = runner._sweep_phase()["shards"]
+    assert sh["seconds_since_last_finish"] == 60.0 and sh["stalled_hint"] is False
+    now[0] += 61.0  # 121 s since the last finish > 120 s longest shard, two still running
+    sh = runner._sweep_phase()["shards"]
+    assert sh["running"] == 2 and sh["stalled_hint"] is True
