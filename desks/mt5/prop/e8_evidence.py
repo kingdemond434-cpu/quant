@@ -122,6 +122,9 @@ PLACED = "PLACED"
 WOULD_PLACE = "WOULD_PLACE"
 DEFERRED = "DEFERRED"
 SKIPPED = "SKIPPED"
+#: New E8 gold risk refused because the E8 account declaration does not join this venue's key
+#: (e8_gold.e8_account_check, r7.1-r7.3). Not taken; its reason is never exempt.
+REFUSED = "REFUSED"
 
 # REASON CODES -- stable, short, never prose, because the fence's run is "consecutive rows sharing
 # one reason" and a reason carrying position ids or dollar figures would never repeat. The prose
@@ -161,6 +164,10 @@ R_CROSS_ACCOUNT_OPPOSITE = "cross_account_opposite"
 R_LOT_CEILING = "lot_ceiling"
 R_BRACKET_DAILY_FLOOR = "bracket_daily_floor"
 R_DAILY_PROFIT_CAP = "daily_profit_cap"
+#: The r7.1 account rail's refusal (REFUSED): the E8 declaration is absent, invalid, another
+#: account's, or the venue's own key is unresolvable. NOT exempt: a run of it means the lane is
+#: not trading because of who it thinks it is, which the fence must see (re-cut on live, (c)).
+R_ACCOUNT_UNDECLARED = "e8_account_undeclared"
 #: The guard's own verdicts, as `guard_<verdict>` (e8_guard.Verdict, lower-cased).
 GUARD_PREFIX = "guard_"
 

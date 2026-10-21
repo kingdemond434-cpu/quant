@@ -1935,7 +1935,11 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     e8_evidence.bind_account(account)
     # The cross-account stamp: server from TLAPI `_credentials`; unreadable -> no key, paged.
     e8_evidence.bind_pass_account_key(venue, doc, log)
-    doc.update({"host": host, "account": account})
+    # THE REPORT CARRIES THE HMAC STAMP, NEVER THE RAW LOGIN (re-cut on live, ruling (e)):
+    # `account` (`tradelocker:<id>`) stays in this pass only, for `clip`/`scrub` and the
+    # heartbeat's pseudonym. No key -> null, with the status saying why.
+    doc.update({"host": host, "account_key": e8_evidence.bound_account_key(),
+                "account_key_status": e8_evidence.bound_account_key_status()})
     tick = mt5.symbol_info_tick(SYMBOL)
     rates = mt5.copy_rates_from_pos(SYMBOL, mt5.TIMEFRAME_H1, 0, 400)
     if tick is None or rates is None or len(rates) < 60:
@@ -2288,6 +2292,12 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                    f"declares this venue's own key (README landing step 6)")
             doc["skipped"].append({"window": name, "why": why})
             log(f"[{name}] REFUSED: {why}")
+            # The refusal is a decision row too (re-cut on live, ruling (c)): REFUSED with
+            # its own reason code, so the placement interlock sees the window and never reads
+            # a refused pass as a pass that decided nothing.
+            with contextlib.suppress(Exception):
+                decided.note(name, e8_evidence.REFUSED, e8_evidence.R_ACCOUNT_UNDECLARED, why,
+                             risk_usd=round(equity * frac, 2))
             if _billed.get(f"e8_account_undeclared/{name}") != today:
                 _billed[f"e8_account_undeclared/{name}"] = today
                 _record({"at": now.isoformat(timespec="seconds"), "window": name,
