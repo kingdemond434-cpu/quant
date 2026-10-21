@@ -215,3 +215,63 @@ def test_gate0_partition_is_unchanged_by_the_hook(monkeypatch) -> None:
     monkeypatch.setattr(eg, "PLAN_PROGRESS_HOOK", lambda step, **kw: seen.append(step))
     with_hook = eg.partition_at_economic_prior([dict(s) for s in specs], meta)
     assert with_hook == base and seen and set(seen) == {"gate0"}
+
+
+# ------------------------------------------- the pre-warm pool deals a chart's run to one worker
+chunked = pytest.mark.skipif(not hasattr(eg, "PREWARM_CHUNK"),
+                             reason="judge_plan_phase sealed patch not applied")
+
+
+def _fake_warm_one(spec, meta):                      # module level: picklable for the pool
+    import os as _os
+    st = {"w": "WARMED", "h": "HIT", "f": "NOT_RUN_BUILD_FAILED"}[spec["params"]["k"][0]]
+    return {"sym": spec["sym"], "family": spec["family"], "tf": "M5", "status": st,
+            "why": "fake" if st.startswith("NOT_RUN") else "", "pid": _os.getpid()}
+
+
+def _docket():
+    kinds = "wwhwfwwhww" * 4
+    return [{"sym": f"S{(i // 6) % 3}", "family": "fam",
+             "params": {"timeframe": "M5", "k": f"{kinds[i]}{i}"}} for i in range(len(kinds))]
+
+
+@chunked
+@pytest.mark.parametrize("chunk", [1, 3, 8])
+def test_the_chunked_pool_gives_every_cell_the_same_outcome(monkeypatch, chunk) -> None:
+    import multiprocessing as mp
+    if mp.get_start_method(allow_none=True) not in (None, "fork") or sys.platform == "win32":
+        pytest.skip("the fake worker is installed by fork")
+    monkeypatch.setattr(eg, "_warm_one", _fake_warm_one)
+    monkeypatch.setattr(eg, "WORKERS", 2)
+    monkeypatch.setattr(eg, "PREWARM_CHUNK", 1)
+    base = eg._prewarm_cache(_docket(), {}, __import__("time").time() + 600)
+    monkeypatch.setattr(eg, "PREWARM_CHUNK", chunk)
+    got = eg._prewarm_cache(_docket(), {}, __import__("time").time() + 600)
+    for k in ("submitted", "warmed", "hit", "failed", "unreached", "failures",
+              "failure_reasons", "built_symbols", "failed_cells"):
+        assert got[k] == base[k], k
+    assert got["submitted"] == len(_docket()) and got["unreached"] == 0
+
+
+@chunked
+def test_a_run_never_crosses_a_chart_or_the_chunk_size() -> None:
+    specs = _docket()
+    runs: list[list] = []
+    for sp in specs:                                   # the rule `_submit_next` applies
+        if runs and len(runs[-1]) < eg.PREWARM_CHUNK and eg._chart_of(runs[-1][0]) == \
+                eg._chart_of(sp):
+            runs[-1].append(sp)
+        else:
+            runs.append([sp])
+    assert [sp for r in runs for sp in r] == specs     # order kept, nothing dropped
+    assert all(len({eg._chart_of(s) for s in r}) == 1 for r in runs)
+
+
+@chunked
+def test_a_run_starts_no_cell_after_the_deadline(monkeypatch) -> None:
+    calls = []
+    monkeypatch.setattr(eg, "_warm_one", lambda sp, meta: calls.append(sp) or {"status": "HIT"})
+    rows = eg._warm_run(_docket()[:3], {}, deadline=0.0)
+    assert calls == [] and [r["status"] for r in rows] == ["UNREACHED"] * 3
+    rows = eg._warm_run(_docket()[:3], {}, deadline=__import__("time").time() + 600)
+    assert len(calls) == 3 and [r["status"] for r in rows] == ["HIT"] * 3
