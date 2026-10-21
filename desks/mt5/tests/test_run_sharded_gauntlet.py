@@ -450,3 +450,163 @@ def test_a_sweep_names_its_phase_and_a_kill_records_it(monkeypatch) -> None:
                     limit_s=None, max_sweeps=2, heartbeat_s=60)
     st = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
     assert st["killed_in_phase"]["phase"] == "merge_and_publish"
+
+
+# ------------------------------------------------------------------ shard progress (published)
+def _shards_doc() -> dict:
+    import json
+
+    return json.loads(runner.SWEEP_PHASE.read_text("utf-8"))["shards"]
+
+
+def test_shard_progress_counts_a_wave_with_one_failure_and_a_retry(monkeypatch, tmp_path):
+    """A wave of four with shard 2 failing once: the published block counts every start, the
+    failure and the retry, and the retry's success lands in done_ok."""
+    failures_left = {2: 1}
+
+    def fake_run(argv, **kwargs):
+        shard = int(argv[-2])
+        if failures_left.get(shard, 0):
+            failures_left[shard] -= 1
+            raise RuntimeError("transient")
+
+    monkeypatch.setattr(runner, "run", fake_run)
+    runner._phase("build_shards")
+    runner.dispatch(tmp_path / "shards", 4, "build")
+    sh = _shards_doc()
+    assert sh["phase"] == "build" and sh["total"] == 4
+    assert (sh["started"], sh["done_ok"], sh["failed"], sh["retries"], sh["running"]) == (
+        5, 4, 1, 1, 0)
+    assert sh["last_finish_utc"] and sh["longest_shard_s"] is not None
+    assert sh["seconds_since_last_finish"] is not None
+    assert sh["stalled_hint"] is False  # nothing running: never a hang
+
+    # the resident's heartbeat carries it, and the next phase starts without it
+    runner._write_state({"status": "SWEEPING"})
+    import json
+    st = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
+    assert st["sweep_phase"]["shards"]["done_ok"] == 4
+    runner._phase("collect_and_cut")
+    assert "shards" not in json.loads(runner.SWEEP_PHASE.read_text("utf-8"))
+
+
+def test_shard_progress_writes_are_atomic_under_concurrency(monkeypatch, tmp_path):
+    """Sixteen concurrent children stamping at once never leave a torn or lost count, and a
+    reader polling the file throughout always parses it."""
+    import json
+    import threading
+    import time
+
+    monkeypatch.setenv("GAUNTLET_SHARD_CONCURRENCY", "16")
+    stop = threading.Event()
+    torn: list[str] = []
+
+    def reader() -> None:
+        while not stop.is_set():
+            try:
+                text = runner.SWEEP_PHASE.read_text("utf-8")
+            except OSError:
+                continue
+            try:
+                json.loads(text)
+            except ValueError:
+                torn.append(text)
+
+    def fake_run(argv, **kwargs):
+        time.sleep(0.005)
+
+    monkeypatch.setattr(runner, "run", fake_run)
+    runner._phase("rule_shards")
+    t = threading.Thread(target=reader)
+    t.start()
+    try:
+        runner.dispatch(tmp_path / "shards", 64, "rule")
+    finally:
+        stop.set()
+        t.join()
+    assert not torn
+    sh = _shards_doc()
+    assert (sh["total"], sh["started"], sh["done_ok"], sh["failed"], sh["running"]) == (
+        64, 64, 64, 0, 0)
+    assert not list(runner.SWEEP_PHASE.parent.glob("*.tmp"))
+
+
+def test_stalled_hint_is_false_before_the_first_finish_and_true_past_the_longest(monkeypatch):
+    """Nothing finished is UNMEASURED, never a hang; a gap longer than the longest measured shard
+    while a child still runs is the hint."""
+    now = [1000.0]
+    monkeypatch.setattr(runner.time, "time", lambda: now[0])
+    runner._phase("build_shards")
+    runner._shard_progress("begin", "build", total=3)
+    for _ in range(3):
+        runner._shard_progress("start", "build")
+    now[0] = 100_000.0  # a very long silence with nothing finished
+    sh = runner._sweep_phase()["shards"]
+    assert sh["seconds_since_last_finish"] is None and sh["stalled_hint"] is False
+
+    runner._shard_progress("ok", "build", elapsed_s=120.0)
+    now[0] += 60.0
+    sh = runner._sweep_phase()["shards"]
+    assert sh["seconds_since_last_finish"] == 60.0 and sh["stalled_hint"] is False
+    now[0] += 61.0  # 121 s since the last finish > 120 s longest shard, two still running
+    sh = runner._sweep_phase()["shards"]
+    assert sh["running"] == 2 and sh["stalled_hint"] is True
+
+
+def test_a_fast_failure_never_raises_the_stalled_hint(monkeypatch):
+    """Audit should-fix 1: one shard OOMs in 3 s early in a wave while fourteen healthy shards
+    still run. The crash is not a yardstick for a healthy shard, so longest_shard_s stays
+    UNMEASURED and the hint stays false however long the healthy shards take; only a SUCCESSFUL
+    shard sets the yardstick, and a failure never lengthens it."""
+    now = [1000.0]
+    monkeypatch.setattr(runner.time, "time", lambda: now[0])
+    runner._phase("build_shards")
+    runner._shard_progress("begin", "build", total=15)
+    for _ in range(15):
+        runner._shard_progress("start", "build")
+    now[0] += 3.0
+    runner._shard_progress("failed", "build", elapsed_s=3.0)
+    now[0] += 10.0  # 10 s since the crash > its 3 s, with 14 healthy shards still running
+    sh = runner._sweep_phase()["shards"]
+    assert (sh["running"], sh["failed"], sh["done_ok"]) == (14, 1, 0)
+    assert sh["longest_shard_s"] is None
+    assert sh["stalled_hint"] is False
+    now[0] += 7200.0  # still false hours later: nothing has SUCCEEDED, so nothing is measured
+    assert runner._sweep_phase()["shards"]["stalled_hint"] is False
+
+    # the first success sets the yardstick; a later longer failure does not stretch it
+    runner._shard_progress("ok", "build", elapsed_s=600.0)
+    runner._shard_progress("failed", "build", elapsed_s=5000.0)
+    sh = runner._sweep_phase()["shards"]
+    assert sh["longest_shard_s"] == 600.0 and sh["stalled_hint"] is False
+    now[0] += 601.0
+    sh = runner._sweep_phase()["shards"]
+    assert sh["running"] == 12 and sh["stalled_hint"] is True
+
+
+def test_a_failed_publish_leaves_no_tmp_file(monkeypatch, tmp_path):
+    """Audit should-fix 2: when os.replace raises (NTFS: the destination held open by a reader,
+    or read-only), both publishers swallow it as a report and unlink their per-pid/thread tmp
+    instead of leaking it."""
+    def deny(src, dst):
+        raise PermissionError(13, "Access is denied", str(dst))
+
+    monkeypatch.setattr(runner.os, "replace", deny)
+    runner._phase("build_shards")                     # SWEEP_PHASE publisher
+    runner._shard_progress("begin", "build", total=2)
+    runner._write_state({"status": "SWEEPING"})       # RESIDENT_STATE publisher
+    assert not runner.SWEEP_PHASE.exists() and not runner.RESIDENT_STATE.exists()
+    assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_the_shard_block_declares_its_hint_report_only():
+    """Audit should-fix 4 (III.16): nothing consumes stalled_hint yet, and the published block
+    says so in data, not only in prose. The pager v4 contract fields are untouched."""
+    import json
+
+    runner._phase("rule_shards")
+    runner._shard_progress("begin", "rule", total=1)
+    doc = json.loads(runner.SWEEP_PHASE.read_text("utf-8"))
+    assert {"pid", "sweep_started_utc", "phase", "phase_started_utc"} <= set(doc)
+    assert doc["phase"] == doc["shards"]["phase"] + "_shards"
+    assert doc["shards"]["stalled_hint_authority"] == "report_only"
