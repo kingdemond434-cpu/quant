@@ -32,6 +32,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from scripts import run_sharded_gauntlet as runner  # noqa: E402
 
 psutil = pytest.importorskip("psutil")
+#: the launcher's own path, read before the fixture points PLAN_RESUME into tmp
+REAL_PLAN_RESUME = runner.PLAN_RESUME
 
 
 @pytest.fixture(autouse=True)
@@ -1304,4 +1306,4 @@ def test_the_launcher_reads_the_resume_record_where_the_judge_writes_it():
 
     if not hasattr(judge, "PLAN_RESUME_NAME"):
         pytest.skip("the funnel v2 sealed patch is not applied to the judge")
-    assert Path(judge.SHARD_DIR) / judge.PLAN_RESUME_NAME == runner.PLAN_RESUME
+    assert Path(judge.SHARD_DIR) / judge.PLAN_RESUME_NAME == REAL_PLAN_RESUME
