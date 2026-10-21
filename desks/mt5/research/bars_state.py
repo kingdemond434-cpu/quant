@@ -375,6 +375,9 @@ def _tape_row(sym: str, entry: Any, ticks: Path, now: datetime) -> dict[str, Any
     elif entry.get("last_tick_ms") is not None:
         row["tape_state_reason"] = "last_tick_ms is not a readable time stamp"
     run = _utc_iso_or_none(entry.get("last_run")) if entry else None
+    if run is not None and (run > now + FUTURE_SKEW or run.year < MIN_PLAUSIBLE_YEAR):
+        row["tape_state_last_run_reason"] = "last_run is future-dated or implausible"
+        run = None
     row.update(tape_state_last_run=_iso(run), tape_state_last_run_age_h=_age_h(now, run))
     parts, bad = _tick_partitions(ticks / sym)
     if bad:

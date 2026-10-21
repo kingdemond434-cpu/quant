@@ -123,6 +123,9 @@ def test_fields_on_small_temp_parquets_and_tick_files(desk: dict[str, Path]) -> 
     assert x["tape_state_last_tick"] == "2026-10-21T11:57:30"
     assert x["tape_state_last_run"] == "2026-10-21T11:00:00+00:00"
     assert x["tape_state_last_run_age_h"] == pytest.approx(1.0)
+    late = bs.measure(**desk, now=NOW - timedelta(hours=2))
+    xl = {r["symbol"]: r for r in late["tape"]}["XAUUSD"]
+    assert xl["tape_state_last_run"] is None and xl["tape_state_last_run_reason"]
     gbp = {r["symbol"]: r for r in doc["tape"]}["GBPUSD"]
     assert gbp["status"] == "UNMEASURED" and "last_tick" not in gbp
     s = doc["summary"]
@@ -216,8 +219,8 @@ def test_unreadable_input_is_unmeasured_never_fresh(tmp_path: Path) -> None:
     assert gone["summary"]["verdict"] == "UNMEASURED" and gone["notes"]["bars_reason"]
 
 
-def test_a_bad_tape_state_entry_costs_its_own_row_only(desk: dict[str, Path],
-                                                       tmp_path: Path) -> None:
+def test_a_bad_tape_state_entry_costs_its_own_row_only(desk: dict[str, Path], tmp_path: Path,
+                                                       monkeypatch) -> None:
     """Audit: NaN raised ValueError and 1e20 OSError, and the whole report was not written."""
     state = json.loads(desk["tape_state"].read_text("utf-8"))
     state.update({"NANSYM": {"last_tick_ms": float("nan")},
@@ -226,6 +229,8 @@ def test_a_bad_tape_state_entry_costs_its_own_row_only(desk: dict[str, Path],
                   "NOTDICT": 7,
                   "NESTED": {"last_tick_ms": 1, "last_run": {"acct_no": int(FAKE_ACCOUNT)}}})
     desk["tape_state"].write_text(json.dumps(state), "utf-8")
+    real = bs.measure
+    monkeypatch.setattr(bs, "measure", lambda **k: real(**k, now=NOW))
     out = tmp_path / "BARS_STATE.json"
     assert bs.main(["--out", str(out), "--universe", str(desk["universe"]),
                     "--ticks", str(desk["ticks"]), "--tape-state", str(desk["tape_state"])]) == 0
@@ -248,7 +253,7 @@ def test_account_like_names_and_keys_never_publish(desk: dict[str, Path], tmp_pa
     _bars(desk["universe"] / f"{FAKE_ACCOUNT}_H1.parquet", "2026-10-21 09:00", 5, "time")
     real = bs.measure
     monkeypatch.setattr(bs, "measure", lambda **k: {
-        **real(**k), "account": {"login": 1}, "login": 1, "acct_no": 2, "mt5_login": 3,
+        **real(**k, now=NOW), "account": {"login": 1}, "login": 1, "acct_no": 2, "mt5_login": 3,
         "accountLogin": 4, "nested": [{"Acct-Number": 5, "keep": 6}]})
     out = tmp_path / "BARS_STATE.json"
     assert bs.main(["--out", str(out), "--universe", str(desk["universe"]),
