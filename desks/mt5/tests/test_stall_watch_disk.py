@@ -49,6 +49,54 @@ def test_there_is_a_real_ladder_not_one_pool() -> None:
     assert names[1] == "gauntlet_cache"
 
 
+#: The judge's cache-prune rule: an entry older than 3 days by mtime.
+_PRUNE_RULE = re.compile(r"_t\.time\(\) - _\w+\.stat\(\)\.st_mtime > 3 \* 86400")
+
+
+def _judge_prunes_past_three_days(src: str) -> bool:
+    """The rule is LIVE CODE that DELETES, not merely text that matches (audit of 9c0976b76: the
+    bare regex still passed with the `unlink` removed or the rule commented out).
+
+    True only when a non-comment `if` line carries the rule, outside any trailing comment, and
+    the block it guards -- the lines indented deeper beneath it -- calls `.unlink(` in code."""
+    lines = src.splitlines()
+    for i, line in enumerate(lines):
+        code = line.split("#", 1)[0]
+        if not code.lstrip().startswith("if ") or not _PRUNE_RULE.search(code):
+            continue
+        indent = len(line) - len(line.lstrip())
+        for nxt in lines[i + 1:]:
+            if not nxt.strip():
+                continue
+            if len(nxt) - len(nxt.lstrip()) <= indent:
+                break
+            if ".unlink(" in nxt.split("#", 1)[0]:
+                return True
+    return False
+
+
+def test_the_prune_pin_fails_when_the_rule_is_disarmed() -> None:
+    """Each way to keep the text and lose the behaviour reads False."""
+    live = ("        if _t.time() - _e.stat().st_mtime > 3 * 86400:\n"
+            "            Path(_e.path).unlink(missing_ok=True)\n")
+    assert _judge_prunes_past_three_days(live)
+    glob = ("            if _t.time() - _f.stat().st_mtime > 3 * 86400:\n"
+            "                _f.unlink(missing_ok=True)\n")
+    assert _judge_prunes_past_three_days(glob)
+    no_unlink = live.replace("Path(_e.path).unlink(missing_ok=True)", "pass")
+    commented = "".join("# " + ln + "\n" for ln in live.splitlines())
+    unlink_commented = live.replace("Path(_e.path).unlink", "# Path(_e.path).unlink")
+    rule_in_comment = ("        if True:  # _t.time() - _e.stat().st_mtime > 3 * 86400\n"
+                       "            Path(_e.path).unlink(missing_ok=True)\n")
+    unlink_outside = ("        if _t.time() - _e.stat().st_mtime > 3 * 86400:\n"
+                      "            pass\n"
+                      "        Path(_e.path).unlink(missing_ok=True)\n")
+    four_days = live.replace("> 3 * 86400", "> 4 * 86400")
+    for disarmed in (no_unlink, commented, unlink_commented, rule_in_comment, unlink_outside,
+                     four_days):
+        assert not _judge_prunes_past_three_days(disarmed), disarmed
+
+
 def test_todays_gauntlet_cache_goes_last_and_the_shard_plan_never() -> None:
     """The early tier deletes only what the judge's own > 3-day prune would delete next sweep (a
     weekend or a frozen symbol keeps one data-day for days, and a hit never touches mtime); the
@@ -62,7 +110,7 @@ def test_todays_gauntlet_cache_goes_last_and_the_shard_plan_never() -> None:
     # the rule this tier mirrors: > 3 days by mtime. Pinned by the RULE, not the loop variable:
     # the plan-phase image (a02f095c) reads mtime from an `os.scandir` entry (`_e`) where the
     # 46392548 image stats a globbed Path (`_f`); both are the same 3-day mtime prune.
-    assert re.search(r"_t\.time\(\) - _\w+\.stat\(\)\.st_mtime > 3 \* 86400", judge), \
+    assert _judge_prunes_past_three_days(judge), \
         "the judge's own cache prune is no longer > 3 days by mtime; re-derive this tier's age"
     assert tiers[-1] == ("gauntlet_cache_today", "0")
     assert "\\gauntlet_cache\\shards" in BLOCK
