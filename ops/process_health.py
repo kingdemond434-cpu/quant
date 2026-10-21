@@ -157,6 +157,20 @@ def parse_schtasks_csv(text: str) -> list[dict[str, str]]:
     return rows
 
 
+#: Tasks that are DISABLED ON PURPOSE. A DISABLED task raises the headline to ATTENTION on every
+#: read (v5b, coordinator ruling 2026-10-21) except one listed here: its row still reads DISABLED
+#: and carries `expected_disabled` (this entry), but it is not a fault. Every entry names who
+#: decided it and why, and the date; tests/ops/test_process_health_schtasks.py fails without
+#: them. Remove the entry when the task is meant to run again.
+EXPECTED_DISABLED: dict[str, dict[str, str]] = {
+    "MT5-AdoptRelease": {
+        "reason": "disabled on purpose by the principal: the box does not self-adopt until the "
+                  "release path is resumed",
+        "date": "2026-10-21",
+    },
+}
+
+
 #: Verdicts a brief-only read (no run history) establishes for certain. Any of them makes a
 #: brief-only headline ATTENTION; FAILING cannot arise there (no result code was read) but is
 #: listed so a future change that reads one cannot hide it.
@@ -313,6 +327,9 @@ def build() -> dict[str, Any]:
             verdict, why = "SCHEDULER_UNMEASURED", str(t["TaskInfoError"])
         elif _states & STATE_DISABLED:
             verdict, why = "DISABLED", "the scheduler will never start this"
+            if name in EXPECTED_DISABLED:
+                _exp = EXPECTED_DISABLED[name]
+                why = f"EXPECTED (since {_exp['date']}): {_exp['reason']}"
         elif not _states or not _states <= STATE_LIVE:
             verdict, why = "SCHEDULER_UNMEASURED", (
                 f"task state {sorted(_states) or 'blank'} not recognised: whether the scheduler "
@@ -347,6 +364,9 @@ def build() -> dict[str, Any]:
             "artifact_age_min": None if age is None else round(age, 1),
             "contract_max_age_min": max_age or None,
             "purpose": purpose or None,
+            "expected_disabled": (dict(EXPECTED_DISABLED[name])
+                                  if verdict == "DISABLED" and name in EXPECTED_DISABLED
+                                  else None),
         })
 
     # A CONTRACTED ORGAN WITH NO SCHEDULED TASK IS THE LOUDEST ROW ON THE BOARD. It means the desk
@@ -396,10 +416,13 @@ def build() -> dict[str, Any]:
     for r in rows:
         counts[str(r["verdict"])] = counts.get(str(r["verdict"]), 0) + 1
 
+    # DISABLED IS A FAULT (v5b ruling) unless the task is EXPECTED_DISABLED.
     bad = [r for r in rows if r["verdict"] in ("NOT_SCHEDULED", "SCHEDULER_UNMEASURED",
-                                             "FAILING", "NO_ARTIFACT", "STALE")]
+                                             "FAILING", "NO_ARTIFACT", "STALE")
+           or (r["verdict"] == "DISABLED" and not r.get("expected_disabled"))]
     run_history_read = scheduler_status == "OK schtasks"
-    brief_faults = [r for r in rows if r["verdict"] in BRIEF_DEFINITE_FAULTS]
+    brief_faults = [r for r in rows if r["verdict"] in BRIEF_DEFINITE_FAULTS
+                    and not r.get("expected_disabled")]
     return {
         "at": now.isoformat(timespec="seconds"),
         "host": __import__("socket").gethostname(),

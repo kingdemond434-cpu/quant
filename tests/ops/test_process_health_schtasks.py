@@ -436,3 +436,78 @@ def test_both_reads_landing_is_a_measured_headline(
     _fake(monkeypatch, BRIEF, VERBOSE)
     doc, _by = _build(monkeypatch, tmp_path, {"MT5-Gateway": CONTRACTS["MT5-Gateway"]})
     assert doc["run_history"] == "MEASURED" and doc["status"] in ("OK", "ATTENTION")
+
+
+# v5b ruling 2 (2026-10-21): DISABLED raises the headline to ATTENTION on every read, except a
+# task in EXPECTED_DISABLED, whose row still reads DISABLED and says it is expected.
+BRIEF_ADOPT = (
+    '"TaskName","Next Run Time","Status"\r\n'
+    '"\\MT5-Gateway","20/10/2026 19:00:00","Running"\r\n'
+    '"\\MT5-AdoptRelease","N/A","Disabled"\r\n'
+)
+VERBOSE_HEAD = (
+    '"HostName","TaskName","Next Run Time","Status","Logon Mode","Last Run Time","Last Result",'
+    '"Author","Task To Run","Scheduled Task State"\r\n'
+)
+VERBOSE_ADOPT = VERBOSE_HEAD + (
+    '"BOX","\\MT5-Gateway","20/10/2026 19:00:00","Running","Interactive only",'
+    '"20/10/2026 18:00:00","267009","quant","cmd","Enabled"\r\n'
+    '"BOX","\\MT5-AdoptRelease","N/A","Disabled","Interactive only","N/A","0","quant","ps",'
+    '"Disabled"\r\n'
+)
+_GW_ONLY = {"MT5-Gateway": ("fresh.json", 120, "gateway")}
+
+
+def _with_disabled(text: str, name: str) -> str:
+    return text.replace("MT5-AdoptRelease", name)
+
+
+def test_disabled_raises_attention_with_both_reads(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _fake(monkeypatch, _with_disabled(BRIEF_ADOPT, "MT5-Other"),
+          _with_disabled(VERBOSE_ADOPT, "MT5-Other"))
+    doc, by = _build(monkeypatch, tmp_path, _GW_ONLY)
+    assert doc["run_history"] == "MEASURED"
+    assert by["MT5-Gateway"]["verdict"] == "OK"
+    assert by["MT5-Other"]["verdict"] == "DISABLED"
+    assert by["MT5-Other"]["expected_disabled"] is None
+    assert doc["status"] == "ATTENTION" and doc["n_needing_attention"] == 1
+
+
+def test_disabled_raises_attention_in_a_brief_only_read(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _fake(monkeypatch, _with_disabled(BRIEF_ADOPT, "MT5-Other"),
+          subprocess.TimeoutExpired(["schtasks", "/v"], 90))
+    doc, by = _build(monkeypatch, tmp_path, _GW_ONLY)
+    assert doc["run_history"] == "UNMEASURED"
+    assert by["MT5-Other"]["verdict"] == "DISABLED"
+    assert doc["status"] == "ATTENTION" and doc["n_needing_attention"] == 1
+
+
+@pytest.mark.parametrize("brief_only", [False, True], ids=["both-reads", "brief-only"])
+def test_an_expected_disabled_adopt_release_does_not_raise_attention(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, brief_only: bool
+) -> None:
+    verbose: Any = (subprocess.TimeoutExpired(["schtasks", "/v"], 90) if brief_only
+                    else VERBOSE_ADOPT)
+    _fake(monkeypatch, BRIEF_ADOPT, verbose)
+    doc, by = _build(monkeypatch, tmp_path, _GW_ONLY)
+    row = by["MT5-AdoptRelease"]
+    assert row["verdict"] == "DISABLED", "the row still shows it is disabled"
+    assert row["expected_disabled"] == ph.EXPECTED_DISABLED["MT5-AdoptRelease"]
+    assert row["why"].startswith("EXPECTED")
+    assert doc["n_needing_attention"] == 0
+    assert doc["status"] == ("UNMEASURED" if brief_only else "OK")
+
+
+def test_every_expected_disabled_entry_names_a_reason_and_a_date() -> None:
+    from datetime import date
+    assert "MT5-AdoptRelease" in ph.EXPECTED_DISABLED
+    for name, entry in ph.EXPECTED_DISABLED.items():
+        assert str(entry.get("reason") or "").strip(), f"{name}: no reason"
+        assert len(entry["reason"].strip()) >= 20, f"{name}: a reason, not a word"
+        raw = str(entry.get("date") or "").strip()
+        assert raw, f"{name}: no date"
+        date.fromisoformat(raw)   # YYYY-MM-DD, or this raises
