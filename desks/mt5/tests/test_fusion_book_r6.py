@@ -1563,9 +1563,10 @@ def test_leg_and_macro_at_their_maxima_are_held_to_0006_post_multiplier(monkeypa
     assert row["leg_mult"] == 1.45 and row["macro_mult"] == 1.4
     assert lot == pytest.approx(6.00) and risk == pytest.approx(600.0)
     assert cut["status"] == "CAPPED" and cut["rail"] == "e8_cert_ceiling"
-    assert cut["wanted_risk_frac"] == pytest.approx(0.01218)
+    # 6.00 x 2.03 = 12.18 in decimal; the venue-step FLOOR of the binary product is 12.17 lots.
+    assert cut["wanted_risk_frac"] == pytest.approx(0.01217)
     assert cut["risk_frac"] == pytest.approx(0.006)
-    assert cut["missed_growth_risk_usd"] == pytest.approx(618.0)
+    assert cut["missed_growth_risk_usd"] == pytest.approx(617.0)
     assert "post-multiplier" in cut["why"]
 
 
@@ -1666,23 +1667,24 @@ def _run_one_fx_sleeve(monkeypatch, tmp_path, *, cert_frac: float, room: float,
             return 1
 
     doc = ex.run(_V(), armed=False, now=now, entry_enabled=True)
-    intents = [json.loads(ln) for ln in (tmp_path / "e8_intents.jsonl").read_text(
-        "utf-8").splitlines() if ln.strip()]
+    ip = tmp_path / "e8_intents.jsonl"
+    intents = ([json.loads(ln) for ln in ip.read_text("utf-8").splitlines() if ln.strip()]
+               if ip.exists() else [])
     (row,) = [r for r in doc["sleeves"] if r["symbol"] == "EURUSD"]
     return doc, row, intents
 
 
 def test_run_itself_caps_the_final_risk_and_bills_it(monkeypatch, tmp_path) -> None:
     """r7.3 MF2, INSIDE run(): a certified EURUSD sleeve at 0.006 with leg 1.45 x macro 1.4 is
-    sized 6.00 lots ($600 = 0.006), not 12.18, and one CAPPED e8_cert_ceiling row is written."""
+    sized 6.00 lots ($600 = 0.006), not 12.17, and one CAPPED e8_cert_ceiling row is written."""
     _doc, row, intents = _run_one_fx_sleeve(monkeypatch, tmp_path, cert_frac=0.006,
                                            room=10_000.0, leg=1.45, macro=1.4)
     assert row["status"] == "WOULD_SEND", row
     assert row["lot"] == pytest.approx(6.00) and row["risk_usd"] == pytest.approx(600.0)
     assert row["book_risk_usd"] == pytest.approx(600.0)
-    assert row["ceiling_cut_from_usd"] == pytest.approx(1218.0)
+    assert row["ceiling_cut_from_usd"] == pytest.approx(1217.0)      # 12.17 lots wanted
     (cut,) = [r for r in intents if r.get("rail") == "e8_cert_ceiling"]
-    assert cut["status"] == "CAPPED" and cut["missed_growth_risk_usd"] == pytest.approx(618.0)
+    assert cut["status"] == "CAPPED" and cut["missed_growth_risk_usd"] == pytest.approx(617.0)
     # Below the ceiling, the boost goes out whole.
     (tmp_path / "b").mkdir()
     _doc, row, intents = _run_one_fx_sleeve(monkeypatch, tmp_path / "b", cert_frac=0.002,
