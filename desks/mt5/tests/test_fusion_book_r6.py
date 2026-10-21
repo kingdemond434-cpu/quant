@@ -1156,7 +1156,7 @@ def test_every_key_failure_pages_and_a_resolved_key_closes_the_alert(monkeypatch
         a = AlertLedger(ledger).alerts.get(xa.KEY_ALERT_IDS[account])
         return None if a is None else a.state
 
-    mine = xa.account_key(7000102, "test")              # the conftest's declared E8 key
+    mine = xa.account_key(31337, "E8-Test")              # the conftest's declared E8 key
     # A key that does not match the declaration.
     with pytest.raises(ValueError, match="declares"):
         xa.publish("e8", {}, source="t", key=xa.account_key(7000999, "test"))
@@ -1208,7 +1208,7 @@ def test_an_undeclared_e8_account_refuses_new_e8_gold_risk_with_a_reasoned_row(
                         and r["missed_growth_risk_usd"] > 0 for r in rows)
     assert "e8_account_undeclared" in fusion_rails.RAILS
     # Declared again (the conftest's own declaration): the same harness places.
-    xa.E8_ACCOUNT_FILE.write_text(json.dumps({"account_key": xa.account_key(7000102, "test")}),
+    xa.E8_ACCOUNT_FILE.write_text(json.dumps({"account_key": xa.account_key(31337, "E8-Test")}),
                                   "utf-8")
     (tmp_path / "again").mkdir()
     doc, venue, _ = real(monkeypatch, tmp_path / "again")

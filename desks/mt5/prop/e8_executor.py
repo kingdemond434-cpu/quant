@@ -1215,6 +1215,22 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         _ckey = f"{str(sym).upper()}_{fam}_{s.get('selector') or 'asia'}"
         row_risk_usd = (float(cert[_ckey]) * e8_guard.START_BALANCE if _ckey in cert
                         else risk_usd)
+        # THE E8 CODE CEILING ON EVERY CERTIFIED ENTRY (r7.2, coordinator ruling): no E8 path is
+        # unpinned -- an FX sleeve the book funds above decision_core.E8_CERT_CEILING (0.006) is
+        # sized at the ceiling, and the cut is billed as a CAPPED `e8_cert_ceiling` line.
+        from mt5desk.decision_core import E8_CERT_CEILING
+        _cap_usd = E8_CERT_CEILING * e8_guard.START_BALANCE
+        if row_risk_usd > _cap_usd:
+            _record({"sleeve": row.get("sleeve"), "symbol": sym, "status": "CAPPED",
+                     "rail": "e8_cert_ceiling",
+                     "why": (f"the book sizes {_ckey} at "
+                             f"{row_risk_usd / e8_guard.START_BALANCE:g}; the code ceiling "
+                             f"E8_CERT_CEILING sends {E8_CERT_CEILING:g}"),
+                     "book_risk_frac": row_risk_usd / e8_guard.START_BALANCE,
+                     "risk_frac": E8_CERT_CEILING,
+                     "missed_growth_risk_usd": round(row_risk_usd - _cap_usd, 2)}, now, armed)
+            row["ceiling_cut_from_usd"] = round(row_risk_usd, 2)
+            row_risk_usd = _cap_usd
         row["risk_usd"] = round(row_risk_usd, 2)
         row["risk_source"] = "cert_book" if _ckey in cert else "book RISK_FRAC"
         if not row_risk_usd > 0:
