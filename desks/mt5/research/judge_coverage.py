@@ -88,7 +88,9 @@ import json
 import math
 import os
 import sys
+import threading
 import time
+import uuid
 from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
@@ -1098,6 +1100,9 @@ OUTSTANDING_READ_PAUSE_S = 0.2
 #: How long a pass waits for the sidecar lock, and when a lock left by a dead pass is broken.
 OUTSTANDING_LOCK_WAIT_S = 30.0
 OUTSTANDING_LOCK_STALE_S = 900.0
+#: A held lock's mtime is refreshed this often, so a pass longer than the stale window keeps it;
+#: only a lock whose holder stopped beating (a dead pass) ever reads as stale.
+OUTSTANDING_LOCK_BEAT_S = 60.0
 
 
 def _born_marker(path: Path) -> Path:
@@ -1164,40 +1169,126 @@ def _stamp(at: str) -> str:
     return "".join(ch for ch in str(at) if ch.isalnum()) or "unstamped"
 
 
+class _SidecarLock:
+    """One pass's hold on the sidecar's `.lock` (which also guards the unrunnable bank).
+
+    THREE PROPERTIES (audit of 1fb3db5f1):
+      * EXCLUSIVE CREATION: `O_CREAT | O_EXCL`, carrying this pass's random `token`.
+      * A HEARTBEAT: a daemon thread refreshes the lock's mtime every OUTSTANDING_LOCK_BEAT_S, so
+        a pass longer than OUTSTANDING_LOCK_STALE_S is never taken over; only a holder that
+        stopped beating -- a dead pass -- leaves a stale lock.
+      * ATOMIC TAKEOVER: a stale lock is RENAMED to a unique `.lock.stale-<hex>` (one renamer wins;
+        the other sees it gone), and the moved file is checked to be the same stale lock that
+        was read. If a live lock was moved instead, it is linked back (a link fails rather than
+        overwrite). And because no move can be undone perfectly under every race, the holder
+        re-checks `owned()` before every write: a pass that lost its lock writes nothing.
+    """
+
+    def __init__(self, path: Path, at: str) -> None:
+        self.path = path.with_name(path.name + ".lock")
+        self.at = at
+        self.token = uuid.uuid4().hex
+        self.held = False
+        self.lost = False
+        self._stop = threading.Event()
+        self._beat: threading.Thread | None = None
+
+    def __bool__(self) -> bool:
+        return self.held
+
+    def _read(self, p: Path) -> tuple[dict[str, Any] | None, float | None]:
+        try:
+            st = p.stat()
+            doc = json.loads(p.read_text("utf-8") or "{}")
+        except (OSError, ValueError):
+            return None, None
+        return (doc if isinstance(doc, dict) else {}), st.st_mtime
+
+    def owned(self) -> bool:
+        if not self.held or self.lost:
+            return False
+        doc, _ = self._read(self.path)
+        if not doc:
+            return False
+        return bool(doc.get("token") == self.token)
+
+    def _take_stale(self) -> bool:
+        doc, mtime = self._read(self.path)
+        if doc is None or mtime is None or time.time() - mtime <= OUTSTANDING_LOCK_STALE_S:
+            return False
+        aside = self.path.with_name(f"{self.path.name}.stale-{uuid.uuid4().hex}")
+        try:
+            os.rename(self.path, aside)
+        except OSError:
+            return False                          # another pass moved it first
+        moved, moved_mtime = self._read(aside)
+        if moved is not None and moved_mtime is not None \
+                and moved.get("token") == doc.get("token") \
+                and time.time() - moved_mtime > OUTSTANDING_LOCK_STALE_S:
+            with contextlib.suppress(OSError):
+                aside.unlink()
+            return True
+        # A LIVE lock replaced the stale one between the read and the move: put it back.
+        with contextlib.suppress(OSError):
+            os.link(aside, self.path)
+        with contextlib.suppress(OSError):
+            aside.unlink()
+        return False
+
+    def _beat_loop(self) -> None:
+        while not self._stop.wait(OUTSTANDING_LOCK_BEAT_S):
+            if not self.owned():
+                self.lost = True
+                return
+            with contextlib.suppress(OSError):
+                os.utime(self.path)
+
+    def acquire(self) -> bool:
+        deadline = time.monotonic() + OUTSTANDING_LOCK_WAIT_S
+        while True:
+            try:
+                self.path.parent.mkdir(parents=True, exist_ok=True)
+                fd = os.open(str(self.path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                    fh.write(json.dumps({"at": self.at, "pid": os.getpid(),
+                                         "token": self.token}))
+                self.held = True
+                break
+            except FileExistsError:
+                if self._take_stale():
+                    continue
+                if time.monotonic() >= deadline:
+                    break
+                time.sleep(0.5)
+            except OSError:
+                break
+        if self.held:
+            self._beat = threading.Thread(target=self._beat_loop, daemon=True,
+                                          name="needs-data-outstanding-lock")
+            self._beat.start()
+        return self.held
+
+    def release(self) -> None:
+        self._stop.set()
+        if self._beat is not None:
+            self._beat.join(timeout=5)
+        if self.owned():
+            with contextlib.suppress(OSError):
+                self.path.unlink()
+        self.held = False
+
+
 @contextlib.contextmanager
 def _outstanding_lock(path: Path, at: str) -> Any:
-    """An exclusive `.lock` beside the sidecar for the read-modify-write. Yields False on no lock."""
-    lock = path.with_name(path.name + ".lock")
-    deadline = time.monotonic() + OUTSTANDING_LOCK_WAIT_S
-    held = False
-    while True:
-        try:
-            lock.parent.mkdir(parents=True, exist_ok=True)
-            fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            with os.fdopen(fd, "w", encoding="utf-8") as fh:
-                fh.write(json.dumps({"at": at, "pid": os.getpid()}))
-            held = True
-            break
-        except FileExistsError:
-            try:
-                age = time.time() - lock.stat().st_mtime
-            except OSError:
-                age = 0.0
-            if age > OUTSTANDING_LOCK_STALE_S:
-                with contextlib.suppress(OSError):
-                    lock.unlink()
-                continue
-            if time.monotonic() >= deadline:
-                break
-            time.sleep(0.5)
-        except OSError:
-            break
+    """Hold the sidecar's lock for the bank's and sidecar's read-modify-write. Yields the
+    `_SidecarLock`, which is falsy when the lock was not taken."""
+    lk = _SidecarLock(path, at)
+    lk.acquire()
     try:
-        yield held
+        yield lk
     finally:
-        if held:
-            with contextlib.suppress(OSError):
-                lock.unlink()
+        if lk.held:
+            lk.release()
 
 
 def _still_needs_data(row: dict[str, Any]) -> bool:
@@ -1217,12 +1308,9 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     leaves the backlog -- the coverage table books that as PARKING, never as drain.
     """
     target = path or UNRUNNABLE_BANK
-    bank = unrunnable_bank(target)
     now_ts = _ts(at)
     bar_sizes: dict[tuple[str, str], int] = {}
     parkable = {c for c, r in named.items() if r.get("reason") != "missing_bars"}
-    readmitted = [cell for cell, row in bank.items()
-                  if cell not in parkable and readmit_due(row, now=now_ts, bar_sizes=bar_sizes)]
     readmitted_nt: dict[str, int] = {}
     readmitted_nt_reason: dict[str, int] = {}
 
@@ -1233,7 +1321,16 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         readmitted_nt_reason[rsn] = readmitted_nt_reason.get(rsn, 0) + 1
 
     out_path = target.parent / NEEDS_DATA_OUTSTANDING.name
+    out_written = False
+    bank_write = "SKIPPED_LOCKED"
+    # THE BANK IS READ, CHANGED AND WRITTEN UNDER THE SAME LOCK AS THE SIDECAR (audit of
+    # 1fb3db5f1): a bank read before the lock could be overwritten by a pass that read it
+    # earlier, and a LOCKED pass that wrote its bank anyway raced the holder's write.
     with _outstanding_lock(out_path, at) as locked:
+        bank = unrunnable_bank(target)
+        readmitted = ([cell for cell, row in bank.items() if cell not in parkable
+                       and readmit_due(row, now=now_ts, bar_sizes=bar_sizes)]
+                      if locked else [])
         if locked:
             outstanding, out_state = read_needs_data_outstanding(out_path)
         else:
@@ -1269,7 +1366,7 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                 to_side.add(cell)
                 outstanding[cell] = {**popped[cell], "readmitted_at": at}
         added = 0
-        for cell, row in named.items():
+        for cell, row in (named if locked else {}).items():
             if row.get("reason") == "missing_bars":
                 continue                   # owned by the conversion organ, not filtered here
             prev = bank.get(cell)
@@ -1288,7 +1385,15 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         # Parked again (the bank holds it) or the input appeared: the sidecar row is done.
         outstanding = {c: r for c, r in outstanding.items()
                        if c not in bank and _still_needs_data(r)}
-        out_written = False
+        if locked and not locked.owned():
+            # THE LOCK WAS LOST MID-PASS (moved by a takeover race): write nothing at all.
+            out_state, out_writable, locked_lost = OUTSTANDING_LOCKED, False, True
+            for cell in to_side:
+                bank[cell] = popped.pop(cell)
+            held_back.extend(sorted(to_side))
+            to_side = set()
+        else:
+            locked_lost = False
         if out_writable:
             try:
                 tmp = out_path.with_name(out_path.name + ".tmp")
@@ -1311,14 +1416,24 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
             held_back.extend(sorted(to_side))
         if out_writable and not out_written:
             out_state = OUTSTANDING_WRITE_FAILED
-        for old in popped.values():
-            if isinstance(old, dict) and old.get("reason") in NOT_TESTABLE_REASONS:
-                _count_readmit(old)
-        try:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(json.dumps(bank, indent=1, default=str), "utf-8")
-        except OSError:
-            pass
+        if locked and not locked_lost and locked.owned():
+            for old in popped.values():
+                if isinstance(old, dict) and old.get("reason") in NOT_TESTABLE_REASONS:
+                    _count_readmit(old)
+            try:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                tmp_bank = target.with_name(target.name + ".tmp")
+                tmp_bank.write_text(json.dumps(bank, indent=1, default=str), "utf-8")
+                os.replace(tmp_bank, target)
+                bank_write = "WRITTEN"
+            except OSError:
+                bank_write = "WRITE_FAILED"
+        else:
+            # Not ours to write: nothing this pass changed reaches disk, and nothing counts.
+            bank = unrunnable_bank(target)
+            added, popped = 0, {}
+            readmitted_nt.clear()
+            readmitted_nt_reason.clear()
     out_measured = (out_written and out_state in (OUTSTANDING_MEASURED, OUTSTANDING_FIRST)
                     and not _set_aside(out_path))
     n_re = sum(readmitted_nt.values())
@@ -1343,6 +1458,7 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
             "needs_data_outstanding": len(outstanding) if out_measured else "UNMEASURED",
             "needs_data_outstanding_state": out_state,
             "needs_data_outstanding_set_aside": _set_aside(out_path),
+            "bank_write": bank_write,
             "path": str(target)}
 
 

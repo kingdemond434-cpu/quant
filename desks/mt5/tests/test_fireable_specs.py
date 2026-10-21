@@ -341,7 +341,8 @@ def test_every_sidecar_file_and_marker_is_gitignored() -> None:
     import fnmatch
     lines = [ln.strip() for ln in (_ROOT_DIR / ".gitignore").read_text("utf-8").splitlines()]
     base = "desks/mt5/data/hypotheses/needs_data_outstanding.json"
-    for suffix in ("", ".born", ".torn-20261021T0000-1", ".vanished-x", ".tmp", ".lock"):
+    for suffix in ("", ".born", ".torn-20261021T0000-1", ".vanished-x", ".tmp", ".lock",
+                   ".lock.stale-0f"):
         assert any(fnmatch.fnmatch(base + suffix, ln) for ln in lines if ln and
                    not ln.startswith(("#", "!"))), suffix
 
@@ -480,3 +481,88 @@ def test_a_held_lock_is_locked_and_a_stale_one_is_broken(tmp_path, monkeypatch) 
     got = jc.update_unrunnable_bank({}, at="2026-10-23T00:00:00+00:00", path=bank_path)
     assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_MEASURED
     assert got["needs_data_outstanding"] == 1 and not lock.exists()
+
+
+# ------------------------------------------------- the lock guards the bank too (1fb3db5f1) --
+def _live_foreign_lock(tmp_path: Path) -> Path:
+    lock = tmp_path / (jc.NEEDS_DATA_OUTSTANDING.name + ".lock")
+    lock.write_text(json.dumps({"token": "someone-else", "pid": 1}), "utf-8")
+    return lock
+
+
+def test_a_locked_pass_neither_reads_into_nor_writes_the_bank(tmp_path, monkeypatch) -> None:
+    bank_path = _readmittable_bank(tmp_path)
+    before = bank_path.read_text("utf-8")
+    _live_foreign_lock(tmp_path)
+    monkeypatch.setattr(jc, "OUTSTANDING_LOCK_WAIT_S", 0.0)
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "NEEDS_DATA"})
+    named = {"EURUSD.event_reaction.p=1": {"reason": "needs_data", "sym": "EURUSD",
+                                           "family": "event_reaction", "tf": "H1"}}
+    got = jc.update_unrunnable_bank(named, at="2026-10-22T00:00:00+00:00", path=bank_path)
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_LOCKED
+    assert got["bank_write"] == "SKIPPED_LOCKED"
+    assert got["parked_this_pass"] == 0 and got["readmitted_on_bar_growth"] == 0
+    assert bank_path.read_text("utf-8") == before            # not one byte written
+
+
+def test_a_pass_that_loses_its_lock_mid_pass_writes_nothing(tmp_path, monkeypatch) -> None:
+    bank_path = _readmittable_bank(tmp_path)
+    before = bank_path.read_text("utf-8")
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    real = jc.read_needs_data_outstanding
+
+    def steal(path=None):
+        _live_foreign_lock(tmp_path)                         # a takeover race replaced it
+        return real(path)
+    monkeypatch.setattr(jc, "read_needs_data_outstanding", steal)
+    monkeypatch.setattr(jc, "_bar_bytes", lambda sym, tf="H1": 100)
+    monkeypatch.setattr(jc, "_fire_probe", lambda s, f: {"status": "NEEDS_DATA"})
+    got = jc.update_unrunnable_bank({}, at="2026-10-22T00:00:00+00:00", path=bank_path)
+    assert got["needs_data_outstanding_state"] == jc.OUTSTANDING_LOCKED
+    assert got["bank_write"] == "SKIPPED_LOCKED" and got["bank_size"] == 1
+    assert bank_path.read_text("utf-8") == before and not side.exists()
+    lock = tmp_path / (side.name + ".lock")
+    assert json.loads(lock.read_text("utf-8"))["token"] == "someone-else"   # left to its owner
+
+
+def test_the_stale_takeover_is_atomic(tmp_path, monkeypatch) -> None:
+    import os as _os
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    lock = tmp_path / (side.name + ".lock")
+    lock.write_text(json.dumps({"token": "dead"}), "utf-8")
+    old = lock.stat().st_mtime - jc.OUTSTANDING_LOCK_STALE_S - 10
+    _os.utime(lock, (old, old))
+    a, b = jc._SidecarLock(side, "a"), jc._SidecarLock(side, "b")
+    assert a._take_stale() is True and not lock.exists()
+    assert b._take_stale() is False                          # nothing left to take
+    # Between B's read of the stale lock and its move, a live holder replaced it: B moves the
+    # live lock, sees a different token, and links it back untouched.
+    lock.write_text(json.dumps({"token": "dead"}), "utf-8")
+    _os.utime(lock, (old, old))
+    real_rename = _os.rename
+
+    def race(src, dst):
+        Path(src).write_text(json.dumps({"token": "live"}), "utf-8")   # fresh mtime too
+        real_rename(src, dst)
+    monkeypatch.setattr(jc.os, "rename", race)
+    assert b._take_stale() is False
+    assert json.loads(lock.read_text("utf-8"))["token"] == "live"
+    assert not list(tmp_path.glob(side.name + ".lock.stale-*"))
+
+
+def test_the_heartbeat_keeps_a_long_pass_s_lock(tmp_path, monkeypatch) -> None:
+    import time as _t
+    monkeypatch.setattr(jc, "OUTSTANDING_LOCK_BEAT_S", 0.05)
+    monkeypatch.setattr(jc, "OUTSTANDING_LOCK_STALE_S", 0.3)
+    monkeypatch.setattr(jc, "OUTSTANDING_LOCK_WAIT_S", 0.0)
+    side = tmp_path / jc.NEEDS_DATA_OUTSTANDING.name
+    holder = jc._SidecarLock(side, "long")
+    assert holder.acquire()
+    _t.sleep(0.8)                                            # longer than the stale window
+    rival = jc._SidecarLock(side, "rival")
+    assert rival.acquire() is False and holder.owned()
+    holder.release()
+    assert rival.acquire() is True
+    rival.release()
+    assert not (tmp_path / (side.name + ".lock")).exists()
