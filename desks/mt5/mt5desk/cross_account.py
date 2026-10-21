@@ -631,26 +631,49 @@ def inflight_path(account: str) -> Path:
 
 def mark_inflight(account: str, symbol: object, *, now: datetime | None = None,
                   hold_s: float = MAX_AGE_S) -> None:
-    """Record that a send on `account`/`symbol` timed out and MAY STILL LAND: until `hold_s` has
+    """Record that a send on `account`/`symbol` is IN FLIGHT and MAY LAND: until `hold_s` has
     passed, `read_book(account)` reports BOTH sides of that symbol as held, so the other account
     cannot take the opposite side of an order its book does not show yet (audit r5 should-fix).
-    Never raises (a failure to mark is logged by the caller's own timeout path)."""
+
+    RAISES when the hold cannot be written (audit r6 should-fix 4, r7 must-fix 4): `bounded`
+    writes it BEFORE the send and does not send without it, so a failure is never silent."""
     sym = norm(symbol)
     if not sym:
-        return
-    with contextlib.suppress(Exception):
+        raise ValueError(f"no in-flight hold for an unreadable symbol {symbol!r}")
+    p = inflight_path(account)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+        doc = doc if isinstance(doc, dict) else {}
+    except FileNotFoundError:
+        doc = {}
+    except ValueError:
+        doc = {}                                  # a torn hold file is rewritten, holding more
+    until = (now or datetime.now(tz=UTC)).timestamp() + float(hold_s)
+    doc[sym] = max(float(doc.get(sym) or 0.0), until)
+    tmp = p.with_name(f"{p.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    tmp.write_text(json.dumps(doc, sort_keys=True), encoding="utf-8")
+    os.replace(tmp, p)
+
+
+def clear_inflight(account: str, symbol: object) -> bool:
+    """Drop the hold `bounded` wrote for a send that RETURNED. False (the hold stays, failing
+    closed until it expires) when the file cannot be rewritten."""
+    sym = norm(symbol)
+    try:
         p = inflight_path(account)
-        p.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            doc = json.loads(p.read_text(encoding="utf-8"))
-            doc = doc if isinstance(doc, dict) else {}
-        except (OSError, ValueError):
-            doc = {}
-        until = (now or datetime.now(tz=UTC)).timestamp() + float(hold_s)
-        doc[sym] = max(float(doc.get(sym) or 0.0), until)
-        tmp = p.with_name(f"{p.name}.{os.getpid()}.tmp")
+        doc = json.loads(p.read_text(encoding="utf-8"))
+        if not isinstance(doc, dict) or sym not in doc:
+            return True
+        doc.pop(sym, None)
+        tmp = p.with_name(f"{p.name}.{os.getpid()}.{threading.get_ident()}.tmp")
         tmp.write_text(json.dumps(doc, sort_keys=True), encoding="utf-8")
         os.replace(tmp, p)
+        return True
+    except FileNotFoundError:
+        return True
+    except (OSError, ValueError):
+        return False
 
 
 def inflight(account: str, *, now: datetime | None = None) -> set[str]:
@@ -676,10 +699,17 @@ def bounded(fn: Any, *, timeout_s: float | None = None, what: str = "send",
     caller treats it as a failed send whose outcome is unknown, never as "not sent". An exception
     `fn` raises is re-raised here unchanged.
 
-    `account` and `symbol` (a send): on a timeout the symbol is marked IN FLIGHT on that account
-    (`mark_inflight`) BEFORE this returns, so the caller's lock is released only once the other
-    account's readers see both sides held. A timed-out thread can never publish (`_ABANDONED`)."""
+    `account` and `symbol` (a send): the symbol is marked IN FLIGHT on that account BEFORE the
+    send starts (`mark_inflight`, for the timeout plus a minute); if that hold cannot be written
+    this RAISES and nothing is sent (r7 must-fix 4: no send without a hold). A send that returns
+    clears it; one that times out extends it to `MAX_AGE_S`, so the caller's lock is released
+    only with the other account's readers seeing both sides held. A timed-out thread can never
+    publish (`_ABANDONED`)."""
     box: dict[str, Any] = {}
+    limit = float(LOCKED_SEND_TIMEOUT_S if timeout_s is None else timeout_s)
+    held = account is not None and symbol is not None
+    if held:
+        mark_inflight(account, symbol, hold_s=limit + 60.0)   # raises: no send without a hold
 
     def run() -> None:
         try:
@@ -691,17 +721,20 @@ def bounded(fn: Any, *, timeout_s: float | None = None, what: str = "send",
 
     t = threading.Thread(target=run, name=f"xacct-bounded:{what}"[:60], daemon=True)
     t.start()
-    limit = float(LOCKED_SEND_TIMEOUT_S if timeout_s is None else timeout_s)
     t.join(max(0.0, limit))
     if t.is_alive():
         if t.ident is not None:
             _ABANDONED.add(t.ident)
-        if account is not None and symbol is not None:
-            mark_inflight(account, symbol)
+        if held:
+            with contextlib.suppress(Exception):  # the pre-send hold stands if this fails
+                mark_inflight(account, symbol)
         raise LockedCallTimeout(f"{what} did not return within {limit:g}s under the placement "
                                 f"lock; it may still land")
     if "e" in box:
+        # A send that RAISED may still have reached the venue: its short pre-send hold stands.
         raise box["e"]
+    if held:
+        clear_inflight(account, symbol)
     return box.get("v")
 
 

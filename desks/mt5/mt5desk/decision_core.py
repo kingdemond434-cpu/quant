@@ -1230,11 +1230,22 @@ def fusion_deadman_armed(path: Path | None = None, *,
         mode = doc.get("mode") if isinstance(doc, dict) else None
         return False, (f"fusion deadman: mode {mode!r}, not LIVE -- the rail is not armed "
                        f"(principal marker data/FUSION_DEADMAN_ARMED.json); no new Fusion risk")
-    # A CURRENT-DAY DAILY_LOSS HALT (r6): the rail's latch for the broker day it stamped.
-    if "DAILY_LOSS" in (doc.get("halt_codes") or []) and doc.get("daily_loss_day") \
-            and doc.get("daily_loss_day") == doc.get("broker_day"):
-        return False, (f"fusion deadman: DAILY_LOSS halt set for broker day "
-                       f"{doc.get('broker_day')}; no new Fusion risk until it clears")
+    # A CURRENT-DAY DAILY_LOSS HALT (r6): the rail's latch for the broker day it stamped. A LIVE
+    # stamp that carries DAILY_LOSS with no day (or no broker_day) cannot be dated, so it is
+    # treated as today's (audit r6 should-fix 2, r7 must-fix 5).
+    if "DAILY_LOSS" in (doc.get("halt_codes") or []):
+        if not doc.get("daily_loss_day") or not doc.get("broker_day"):
+            return False, ("fusion deadman: LIVE stamp carries DAILY_LOSS with no day field; "
+                           "cannot be dated, so no new Fusion risk")
+        if doc.get("daily_loss_day") == doc.get("broker_day"):
+            return False, (f"fusion deadman: DAILY_LOSS halt set for broker day "
+                           f"{doc.get('broker_day')}; no new Fusion risk until it clears")
+    # THE LEDGER WAS MEASURED (r7 must-fix 3): a stamp whose pass could not read the declared
+    # account's live ledger judged no realised loss at all.
+    ledger = doc.get("ledger")
+    if not (isinstance(ledger, dict) and ledger.get("ok") is True):
+        why = ledger.get("why") if isinstance(ledger, dict) else "the stamp carries no ledger check"
+        return False, f"fusion deadman: live ledger UNMEASURED ({why}); no new Fusion risk"
     try:
         at = datetime.fromisoformat(str(doc.get("checked_at")))
         if at.tzinfo is None:
@@ -2588,6 +2599,16 @@ def window_session_ended(window: str | None, hour: float) -> bool:
 #: distribution; its p95 (4.2) rounded up to a whole pass is 5 minutes. Anything later is a pass
 #: that restarted or stalled, not the certified bracket placed at its signal hour.
 GOLD_SEND_GRACE_MIN = 5.0
+
+#: E8'S OWN GRACE (audit r6 MUST-FIX 2). The Fusion number above is derived for a gateway that runs
+#: every minute; E8-Gold runs every 5 minutes at :01, :06, ... (install_e8_tasks.ps1:88,
+#: `AddMinutes(1)`, `RepetitionInterval 5 min`, `LimitMinutes 4`). Under 5.0 the window got ONE
+#: pass a day (07:01) and every failed-leg retry was abandoned. DERIVED FROM THE CADENCE: the
+#: first pass sends at +1, its retry pass starts at +6 and may run to its 4-minute limit, so the
+#: last healthy send is at 1 + 5 + 4 = 10 minutes. E8's intents ledger (data/e8_gold_intents.jsonl)
+#: is box-local and in no commit (searched a34ecef3, c68c360e, f082bef8 and all history), so the
+#: ledger cross-check is UNMEASURED here; README r7 gives the one-line box measurement.
+E8_GOLD_SEND_GRACE_MIN = 10.0
 
 
 def gold_send_late(window: str | None, hour: float,

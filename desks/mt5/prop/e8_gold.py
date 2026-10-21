@@ -165,16 +165,19 @@ def window_risk(name: str, kelly: dict[str, float] | None) -> tuple[float, str]:
 
 
 def window_sources(solve: dict[str, float] | None, cert: dict[str, float] | None,
-                   absent: dict[str, str] | None, pinned: dict[str, float] | None
-                   ) -> dict[str, str]:
+                   absent: dict[str, str] | None, pinned: dict[str, float] | None,
+                   void: dict[str, str] | None = None) -> dict[str, str]:
     """{window: where its risk fraction came from}. Pure. Precedence matches the merge in `run`:
-    `pinned_zero` (decision_core.PRINCIPAL_ZERO["e8"]) > `cert_book_absent` (an enabled book that
-    does not name the window: 0.0) > `cert_book` > `kelly_survival` (a fresh solve) > `RISK_FRAC`.
+    `pinned_zero` (decision_core.PRINCIPAL_ZERO["e8"]) > `cert_book_void` (no readable book: 0.0)
+    > `cert_book_absent` (an enabled book that does not name the window: 0.0) > `cert_book` >
+    `kelly_survival` (a fresh solve) > `RISK_FRAC`.
     """
     out: dict[str, str] = {}
     for name, _h, _r in GOLD_WINDOWS:
         if name in (pinned or {}):
             out[name] = "pinned_zero"
+        elif name in (void or {}):
+            out[name] = "cert_book_void"
         elif name in (absent or {}):
             out[name] = "cert_book_absent"
         elif name in (cert or {}):
@@ -184,6 +187,12 @@ def window_sources(solve: dict[str, float] | None, cert: dict[str, float] | None
         else:
             out[name] = "RISK_FRAC"
     return out
+
+
+def e8_grace() -> float:
+    """`decision_core.E8_GOLD_SEND_GRACE_MIN`, read at call time (E8-Gold's own cadence)."""
+    from mt5desk import decision_core as _dc
+    return float(_dc.E8_GOLD_SEND_GRACE_MIN)
 
 
 def late_windows(hour: float, state: dict) -> list[tuple[str, str]]:
@@ -196,7 +205,7 @@ def late_windows(hour: float, state: dict) -> list[tuple[str, str]]:
         if name in windows or hour < float(sig_hour) or hour >= CANCEL_HOUR \
                 or window_session_ended(name, hour):
             continue
-        why = gold_send_late(name, hour)
+        why = gold_send_late(name, hour, e8_grace())
         if why:
             out.append((name, why))
     return out
@@ -220,7 +229,7 @@ def plan(df: Any, hour: float, state: dict, *, tick_size: float = 0.01,
             # pass, and 2026-09-24 a 3h-late london_am sat on the afternoon's level and both
             # stopped in the same second (-950 USD). See decision_core.window_session_ended.
             continue
-        if gold_send_late(name, hour):
+        if gold_send_late(name, hour, e8_grace()):
             # PAST SIGNAL HOUR + GOLD_SEND_GRACE_MIN (Judge 2026-10-21, r6): not the certified
             # bracket. `late_windows` names it so `run` writes its SKIPPED row.
             continue
@@ -268,9 +277,10 @@ def retry_decisions(state: dict, hour: float, bid: float, ask: float, filled: di
                 out.append({**base, "act": "abandon", "why": "the other leg filled"})
             elif hour >= CANCEL_HOUR or window_session_ended(name, hour):
                 out.append({**base, "act": "abandon", "why": "the window's session is over"})
-            elif gold_send_late(name, hour):
-                # A retry is a send too: past signal hour + GOLD_SEND_GRACE_MIN it is late (r6).
-                out.append({**base, "act": "abandon", "why": str(gold_send_late(name, hour))})
+            elif gold_send_late(name, hour, e8_grace()):
+                # A retry is a send too: past signal hour + E8_GOLD_SEND_GRACE_MIN it is late.
+                out.append({**base, "act": "abandon", "late": True,
+                            "why": str(gold_send_late(name, hour, e8_grace()))})
             elif int(leg.get("attempts") or 0) >= MAX_LEG_RETRIES:
                 out.append({**base, "act": "abandon",
                             "why": f"{MAX_LEG_RETRIES} sends failed"})
@@ -872,9 +882,19 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     # AN ENABLED BOOK IS A WHITELIST FOR THE GOLD WINDOWS (audit hourly pass 15): a window the
     # loaded book does not name stands aside at 0.0, never RISK_FRAC -- a book writer that drops a
     # key must not reopen a window. This holds for gold_asia too: asia must be named to trade.
-    # A VOID book (None) is covered by the code pins below and, for asia, by the solve/RISK_FRAC.
+    # A VOID BOOK SIZES EVERY WINDOW AT 0 (audit r6 MUST-FIX 1, ruling): absent, torn, disabled
+    # or one value out of range names no window -- Fix B's own rule -- so no KELLY_SURVIVAL solve
+    # (its grid reaches 0.015) and no RISK_FRAC (not a certified number) may size E8 instead.
+    # Each window is billed `cert_book_void` with its missed-growth line.
     absent: dict[str, str] = {}
-    if _cert_raw is not None:
+    void: dict[str, str] = {}
+    if _cert_raw is None:
+        for _w, _h, _r in GOLD_WINDOWS:
+            void[_w] = ("the cert book is void (CERT_BOOK_LIVE.json absent, unreadable, disabled, "
+                        "e8 block missing or a value out of range); stands aside at 0 -- no "
+                        "Kelly or RISK_FRAC fallback on E8")
+        kelly = {**(kelly or {}), **dict.fromkeys(void, 0.0)}
+    else:
         for _w, _h, _r in GOLD_WINDOWS:
             if _w not in cert:
                 absent[_w] = (f"absent from the enabled cert book (CERT_BOOK_LIVE.json e8 has no "
@@ -888,11 +908,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     kelly = {**(kelly or {}), **pinned}
     # WHERE EACH WINDOW'S NUMBER CAME FROM (r6): one label per window, never one for the lane --
     # "kelly_survival" was printed when the solve was absent and the cert book had sized asia.
-    # VOID CERT BOOK, gold_asia: the fresh survival-constrained solve if it names asia, else
-    # RISK_FRAC (0.005, below the box's certified 0.006). Standing asia aside on a torn file would
-    # throw away the one funded window's growth for a file fault (Rule 1); the solve is itself the
-    # pass-rate/survival-constrained size, and london_am/afternoon stay pinned whatever is void.
-    sources = window_sources(_solve, cert, absent, pinned)
+    # A VOID cert book is `cert_book_void` for every unpinned window (r7; see above).
+    sources = window_sources(_solve, cert, absent, pinned, void)
     doc.update({"equity": equity, "risk_usd": round(risk_usd, 2),
                 "cert_book_windows": cert or None,
                 "sizing_source": sources,
@@ -1018,10 +1035,10 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         name, spec = due["window"], due["spec"]
         frac, _ = window_risk(name, kelly)
         frac_src = sources.get(name, "RISK_FRAC")
-        if name in pinned or name in absent:
-            why = (absent[name] if name not in pinned else
-                   "principal zero (zuck 2026-10-20 21:52Z: gold asia only; "
-                   "decision_core.GOLD_ASIA_ONLY_ZERO); no order")
+        if name in pinned or name in absent or name in void:
+            why = ("principal zero (zuck 2026-10-20 21:52Z: gold asia only; "
+                   "decision_core.GOLD_ASIA_ONLY_ZERO); no order" if name in pinned
+                   else void[name] if name in void else absent[name])
             doc["skipped"].append({"window": name, "why": why})
             # One missed-growth line per window per day (research/missed_growth reads it).
             _seen = state.setdefault("pin_logged", {})
@@ -1030,6 +1047,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 _record({"at": now.isoformat(timespec="seconds"), "window": name,
                          "status": "RAIL_BLOCKED",
                          "rail": ("principal_zero_pin" if name in pinned
+                                  else "cert_book_void" if name in void
                                   else "cert_book_absent_window"), "why": why,
                          "missed_growth_risk_usd": round(equity * RISK_FRAC, 2),
                          "armed": bool(armed)})
@@ -1475,6 +1493,16 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             act["why"] = dec["why"]
             log(f"[{name}] {side} dropped leg abandoned: {dec['why']}")
             doc["actions"].append(act)
+            if dec["why"] != "the other leg filled":
+                # EACH ABANDONED RETRY IS BILLED (audit r6 MUST-FIX 2): the leg's own risk is
+                # the growth forgone. The OCO cancelling a filled bracket's twin forgoes nothing.
+                _record({"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
+                         "status": "SKIPPED",
+                         "reason": "late_send" if dec.get("late") else "retry_abandoned",
+                         "rail": "gold_late_send" if dec.get("late") else "gold_retry_abandoned",
+                         "why": dec["why"], "lot": leg.get("lot"),
+                         "missed_growth_risk_usd": leg.get("risk_usd"), "armed": True,
+                         "retry_of": leg.get("first_at")})
             continue
         levels = {k: leg[k] for k in ("price", "sl", "tp", "lot")}
         done = [o for o in hist_rows if str(o.get("status") or "").lower() == "filled"]

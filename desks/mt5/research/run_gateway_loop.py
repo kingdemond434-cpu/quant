@@ -79,8 +79,14 @@ def _watchdog_fire(started: float) -> None:
                                   encoding="utf-8")
     with contextlib.suppress(Exception):
         LOCK.unlink(missing_ok=True)
-    # A resident loop gets a successor at once (the keep-alive trigger is the backstop).
+    # A resident loop gets a successor at once (the keep-alive trigger is the backstop). The
+    # singleton is released FIRST (audit r6 should-fix 3), or the successor sees the slot held
+    # and exits, and the desk waits for the keep-alive tick.
     res = sys.modules.get("__main__")
+    release = getattr(res, "_release_singleton", None)
+    if callable(release) and getattr(res, "_HANDLE", None) is not None:
+        with contextlib.suppress(Exception):
+            release(res._HANDLE)
     spawn = getattr(res, "_spawn_successor", None)
     if callable(spawn):
         with contextlib.suppress(Exception):

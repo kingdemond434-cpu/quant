@@ -185,6 +185,48 @@ def ledger_rows() -> list[dict]:
     return out
 
 
+#: The box's declared Fusion live login (gitignored; decision_core.FUSION_ACCOUNT_FILE) and its
+#: server: the ledger rows this rail judges are THAT account's live rows and nothing else.
+FUSION_ACCOUNT = BASE / "data" / "FUSION_LIVE_ACCOUNT.json"
+FUSION_LIVE_SERVER = "FusionMarkets-Live"
+
+
+def ledger_checked(path: Path | None = None,
+                   account_path: Path | None = None) -> tuple[list[dict] | None, str]:
+    """(the declared Fusion LIVE account's ledger rows, why) -- or (None, why) when that cannot be
+    MEASURED (audit r6: an absent ledger read as zero loss). None when the ledger is absent or
+    unreadable, a line other than a torn LAST line does not parse, or the box declares no Fusion
+    login. Rows are filtered to `account == login`, `server == FUSION_LIVE_SERVER` and
+    `account_kind == "live"`; an empty filtered list IS a measurement (no trade yet)."""
+    p = path or LEDGER
+    ap = account_path or FUSION_ACCOUNT
+    try:
+        decl = json.loads(ap.read_text(encoding="utf-8-sig"))
+        login = decl.get("login") if isinstance(decl, dict) else None
+        if isinstance(login, bool) or not isinstance(login, int) or login <= 0 \
+                or decl.get("server") != FUSION_LIVE_SERVER:
+            return None, f"{ap.name} declares no integer login on {FUSION_LIVE_SERVER}"
+    except (OSError, ValueError) as exc:
+        return None, f"{ap.name} absent or unreadable ({type(exc).__name__})"
+    try:
+        lines = p.read_text("utf-8").splitlines()
+    except (OSError, ValueError) as exc:
+        return None, f"{p.name} absent or unreadable ({type(exc).__name__}); loss UNMEASURED"
+    rows: list[dict] = []
+    body = [ln.strip() for ln in lines if ln.strip()]
+    for i, line in enumerate(body):
+        try:
+            r = json.loads(line)
+        except ValueError:
+            if i == len(body) - 1:
+                continue                          # a torn last line is a write in progress
+            return None, f"{p.name} line {i + 1} does not parse; loss UNMEASURED"
+        if isinstance(r, dict) and r.get("account_kind") == "live" \
+                and r.get("server") == FUSION_LIVE_SERVER and r.get("account") == login:
+            rows.append(r)
+    return rows, f"{len(rows)} live row(s) of the declared Fusion account in {p.name}"
+
+
 def realised_pl_since(rows: list[dict], since: datetime) -> float:
     total = 0.0
     for r in rows:
@@ -537,7 +579,11 @@ def main(dry_run: bool = True) -> int:
     if stamp.get("consecutive_day") != day:
         stamp["consecutive"] = 0                  # a confirm count never spans broker days
 
-    breaches = evaluate(account, positions, ledger_rows(), peak,
+    # THE LEDGER IS A PRECONDITION (audit r6): absent or unreadable is UNMEASURED, never a zero
+    # loss. The realised rule is skipped (nothing is assumed), arming refuses, and a LIVE stamp
+    # carrying ledger.ok == False makes the gateway's gate refuse new Fusion risk.
+    led_rows, led_why = ledger_checked()
+    breaches = evaluate(account, positions, led_rows or [], peak,
                         tuple(stamp.get('halt_codes') or ()), expected=expected)
     codes = [c for c, _ in breaches]
     messages = [m for _, m in breaches]
@@ -553,7 +599,12 @@ def main(dry_run: bool = True) -> int:
     if not dry_run and stamp.get("mode") != "LIVE":
         today_halt = ("DAILY_LOSS" in (stamp.get("halt_codes") or [])
                       and stamp.get("daily_loss_day") == day) or "DAILY_LOSS" in codes
-        if today_halt:
+        if led_rows is None:
+            refused = (f"arming refused: the live ledger is UNMEASURED ({led_why}); the rail "
+                       f"stays DRY-RUN until it reads the declared account's ledger")
+            log(refused)
+            dry_run = True
+        elif today_halt:
             refused = (f"arming refused: a DAILY_LOSS halt is set for broker day {day}; the rail "
                        f"stays DRY-RUN (no flatten) and arms on the next broker day")
             log(refused)
@@ -589,6 +640,8 @@ def main(dry_run: bool = True) -> int:
     stamp["armed"] = {"principal": armed, "why": armed_why,
                       "live_requested_but_unarmed": demoted, "refused": refused}
     stamp["broker_day"] = day
+    stamp["ledger"] = {"ok": led_rows is not None, "why": led_why,
+                       "rows": len(led_rows) if led_rows is not None else None}
     stamp["stale_daily_loss_cleared"] = stale_cleared
     stamp["checked_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
     stamp["readings"] = {"equity": account["equity"], "margin_free": account["margin_free"],
