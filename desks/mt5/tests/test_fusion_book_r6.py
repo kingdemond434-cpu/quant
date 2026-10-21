@@ -1208,6 +1208,8 @@ def test_an_undeclared_e8_account_refuses_new_e8_gold_risk_with_a_reasoned_row(
                         and r["missed_growth_risk_usd"] > 0 for r in rows)
     assert "e8_account_undeclared" in fusion_rails.RAILS
     # Declared again (the conftest's own declaration): the same harness places.
+    xa.E8_ACCOUNT_FILE.write_text(json.dumps({"account_key": xa.account_key(7000102, "test")}),
+                                  "utf-8")
     (tmp_path / "again").mkdir()
     doc, venue, _ = real(monkeypatch, tmp_path / "again")
     assert sorted(s for s, _ in venue.placed) == ["buy", "sell"]
