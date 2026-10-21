@@ -1146,12 +1146,14 @@ def test_the_e8_gold_retry_goes_through_the_fence_and_the_lock() -> None:
     m = SimpleNamespace(account_info=lambda: SimpleNamespace(login=LOGIN, server=SERVER),
                         positions_get=lambda: (SimpleNamespace(symbol="XAUUSD", type=1),),
                         orders_get=lambda: ())
-    v = SimpleNamespace(_by_key={"XAUUSD": 6102}, _raw_api=SimpleNamespace(acc_id=7, _credentials={"server": "E8-Test"}),
+    v = SimpleNamespace(_by_key={"XAUUSD": 6102}, _raw_api=SimpleNamespace(acc_id=31337, _credentials={"server": "E8-Test"}),
                         positions=lambda: [], orders=lambda: [])
     # The pass's gold OCO context (`oco_sync` sets it in `run`): no direction yet, full OCO.
     from mt5desk import gold_oco
+    # E8 is the conftest's DECLARED identity (31337 on E8-Test; r7.1 declares E8_ACCOUNT.json
+    # from the venue key), so the OCO's key join holds (v2s).
     doc: dict = {"gold_oco": {"date": "2026-10-15",
-                              "key": gold_oco.oco_account_key(7, "tradelocker")}}
+                              "key": gold_oco.oco_account_key(31337, "E8-Test")}}
     # The Fusion lane's gold state under the DECLARED account's key (the gate joins keys).
     gold_oco.publish_lane("fusion", gold_oco.oco_account_key(LOGIN, SERVER), positions=[],
                           orders=[], date="2026-10-15")
