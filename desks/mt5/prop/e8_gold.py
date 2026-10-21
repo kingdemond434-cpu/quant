@@ -213,6 +213,10 @@ def e8_account_check(venue: Any) -> tuple[bool, str]:
     except Exception:
         have = None
     if have is None:
+        # PAGED HERE, BY THIS CHECK (r7.3): not left to `tradelocker_key_status`'s own page, which
+        # a raising venue read or a later refactor of that function would silently drop. The
+        # e8_gold check's own alert id, so its recovery below closes exactly this one.
+        xa.page_key("e8", xa.TL_KEY_UNAVAILABLE, source="e8_gold")
         return False, "the venue's own E8 account key is unresolvable (paged)"
     if have != want:
         xa.page_key("e8", xa.KEY_MISMATCH, source="e8_gold")
