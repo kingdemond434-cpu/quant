@@ -2041,6 +2041,21 @@ def _live_state() -> tuple[str | None, dict[str, list[dict]], int]:
     return phase, trades, off
 
 
+def edge_monitor_hazard(names: list[str]) -> dict[str, float]:
+    """P(edge <= 0) per sleeve from reports/EDGE_MONITOR.json; {} when stale, absent or broken."""
+    try:
+        from research.portfolio_controller import hazard_for
+    except ImportError:
+        try:
+            from portfolio_controller import hazard_for  # type: ignore[no-redef]
+        except ImportError:
+            return {}
+    try:
+        return hazard_for(names)
+    except Exception:
+        return {}
+
+
 def hazard_by_sleeve(drift: dict[str, Any] | None) -> dict[str, float]:
     """P(edge breaks next horizon | history) per sleeve, from drift_monitor's nine channels.
 
@@ -3629,6 +3644,12 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # the previous tilt of the posterior mean runs instead, billed by the `hazard_shrink` rail.
     # Exactly one of the two runs: the hazard is one fact and is charged once.
     _haz = hazard_by_sleeve(drift_doc)
+    # THE ONLINE EDGE MONITOR (portfolio_controller phase 1, 2026-10-13). Where the controller
+    # holds a fresh per-sleeve posterior, P(edge <= 0) from the sleeve's own certificate prior,
+    # forward clock and live fills REPLACES the drift hazard for that sleeve -- both ways: a
+    # sleeve whose evidence improved is charged less decay and earns more heat, one whose edge
+    # has turned is charged up to the blanket. Stale or absent report: the drift hazard stands.
+    _haz.update(edge_monitor_hazard([e.name for e in ev]))
     _blanket = WorldConfig().decay_prob
     if HAZARD_MODE == "mean_shrink":
         hazard_meta = apply_hazard_shrink(ev, _haz)

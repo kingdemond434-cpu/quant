@@ -1037,6 +1037,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "stop_geometry_derivation",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
     "decay_monitor", "fill_markout",
+    # THE PORTFOLIO CONTROLLER, phase 1 (2026-10-13): per-sleeve edge posteriors, decay alarm and
+    # the posterior E[log W] fraction, run before the allocator that reads its hazard. Seconds.
+    "portfolio_controller",
     # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
     # and the plain-English desk health check, each seconds, each writing a report that the
     # `publish_state` leg right after them carries to origin. Before this the fence rode only the
@@ -5168,6 +5171,11 @@ def main() -> None:
     # shrinks and vetoes nothing.
     sad = _costed("state_admission", lambda: _producer(
         "state_admission", "research/state_admission_run.py"))
+    # THE ONLINE EDGE MONITOR BEFORE THE ALLOCATOR (2026-10-13): `pf_allocator` reads
+    # reports/EDGE_MONITOR.json's per-sleeve P(edge <= 0) as decay_prob_i, so it runs first.
+    # The box also runs it every five minutes (MT5-PortfolioController); this leg is the floor.
+    pctl = _costed("portfolio_controller", lambda: _producer(
+        "portfolio_controller", "research/portfolio_controller.py"))
     pa = _costed("pf_allocator", lambda: _producer(
         "pf_allocator", "research/pf_allocator.py", "--mode", _allocator_mode_for_the_hour()))
     # DID THE MONEY BRAIN ACTUALLY PRODUCE, PROVE AND PUBLISH -- and on what? (2026-09-23.) Runs
@@ -5944,6 +5952,7 @@ def main() -> None:
                     "kelly_survival": kls,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk,
+                    "portfolio_controller": pctl,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
