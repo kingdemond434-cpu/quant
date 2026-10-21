@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-21T21:08:38+00:00",
+  "updated_at": "2026-10-21T22:34:39+00:00",
   "configured_sleeves": 649,
   "represented_sleeves": 649,
   "certified_sleeves_total": 1048,
@@ -18,7 +18,7 @@
       "IDENTITY_BROKEN": 9
     },
     "age_measured": 51,
-    "median_age_days": 16.026,
+    "median_age_days": 16.086,
     "mature_14d_without_trade": 43,
     "fresh_attempts": 42,
     "naturally_inactive": 41,
@@ -42,14 +42,28 @@
     "177 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 4589.824,
+  "seconds": 2337.124,
   "gateway_armed": true,
   "promoted_live_sleeves": [
-    "EURZAR.carry.asia@M5#input_symbol=EURZAR_require_quiet=False_session=ny"
+    "gold_asia",
+    "xauusd_cross_asset_residual_asia_p_2479d0d883199a4b",
+    "xauusd_cross_asset_residual_asia_p_cec9a82bd34685dc",
+    "xauusd_cross_asset_residual_asia_p_e95ea804f8e3f059"
   ],
   "promoted_live_certificate_rows": [
-    "EURZAR.carry.asia@M5#input_symbol=EURZAR_require_quiet=False_session=ny"
+    "gold_asia_v2",
+    "gold_asia_v3",
+    "gold_asia_v4",
+    "xauusd_cross_asset_residual_asia_p_e95ea804f8e3f059",
+    "xauusd_cross_asset_residual_asia_p_2479d0d883199a4b",
+    "xauusd_cross_asset_residual_asia_p_cec9a82bd34685dc"
   ],
-  "live_exposure_aliases": {},
+  "live_exposure_aliases": {
+    "gold_asia": [
+      "gold_asia_v2",
+      "gold_asia_v3",
+      "gold_asia_v4"
+    ]
+  },
   "status": "ENROLMENT_GAP"
 }
