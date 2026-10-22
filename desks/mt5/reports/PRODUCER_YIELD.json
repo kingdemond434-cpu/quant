@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-22T16:47:31+00:00",
+ "generated_utc": "2026-10-22T16:51:06+00:00",
  "law": "EVERY PRODUCER PRODUCES, OR IT IS REPLACED BY A NAMED ALTERNATIVE. Zero output is DEAD and carries a replacement; low output is STARVED and carries a budget question; no artifact is UNMEASURED and carries neither.",
  "window_days": 3.0,
  "median_rows": 616,
@@ -1275,14 +1275,14 @@
   "set_aside": {
    "available": true,
    "path": "desks\\mt5\\reports\\SET_ASIDE_LEDGER.json",
-   "at": "2026-10-22T16:42:14+00:00",
+   "at": "2026-10-22T16:52:14+00:00",
    "organs": [
     "alpha_lineage_search",
     "causal_lab",
     "sares"
    ],
    "stages": 9,
-   "set_aside_total": 33195,
+   "set_aside_total": 33216,
    "worst": [
     {
      "stage": "alpha_lineage_search/shared_ancestors",
@@ -1300,16 +1300,16 @@
     },
     {
      "stage": "alpha_lineage_search/untried_mutations",
-     "set_aside": 546,
-     "kept": 1040,
-     "considered": 1586,
+     "set_aside": 567,
+     "kept": 1080,
+     "considered": 1647,
      "ordering": "-len(untried), -n_nodes"
     },
     {
      "stage": "alpha_lineage_search/abandoned_branches",
      "set_aside": 0,
-     "kept": 312,
-     "considered": 312,
+     "kept": 324,
+     "considered": 324,
      "ordering": "-posterior_upper, -age_days"
     },
     {
