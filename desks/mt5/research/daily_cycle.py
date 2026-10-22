@@ -25,11 +25,15 @@ key, so a double call is safe even if this guard is bypassed.
 
 from __future__ import annotations
 
+import contextlib
 import json
+import os
 import sys
+import time
 import traceback
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import IO
 
 BASE = Path(__file__).resolve().parent.parent
 for p in (str(BASE), str(BASE / "research"), str(BASE / "scripts")):
@@ -800,6 +804,119 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         return 0 if run_step(want, fns[want])["ok"] else 1
     force = "--force" in argv
+    # ONE CHAIN AT A TIME (2026-10-22). Taken BEFORE the stamp is read, so a caller admitted after
+    # another chain ends sees every step that chain stamped. See `_chain_lock`.
+    lock = _chain_lock()
+    if lock is None:
+        return 0
+    try:
+        return _run_chain(force)
+    finally:
+        with contextlib.suppress(OSError):
+            lock.close()
+
+
+def _lock_path() -> Path:
+    """The chain lock, beside the stamp it guards: `data/.job_locks/` is gitignored with every
+    other per-machine lock, and deriving it from STAMP keeps a test's chain off the box's lock."""
+    return STAMP.parent / ".job_locks" / "daily_cycle.lock"
+
+
+def _try_lock(path: Path) -> IO[str] | None:
+    """Non-blocking OS lock on `path`: the open handle, or None while another process holds it.
+    The kernel releases it when the holder dies, so a killed chain never leaves a stale lock."""
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fh = open(path, "a+", encoding="utf-8")  # noqa: SIM115 -- held for the whole chain
+    except OSError:
+        return None
+    try:
+        if sys.platform == "win32":
+            import msvcrt
+            fh.seek(0)
+            msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        fh.close()
+        return None
+    with contextlib.suppress(OSError):
+        fh.seek(0)
+        fh.truncate()
+        fh.write(f"{os.getpid()} {datetime.now(UTC).isoformat(timespec='seconds')}\n")
+        fh.flush()
+    return fh
+
+
+#: The longest a caller with no deadline of its own waits for a bounded holder. The bounded
+#: caller (the hourly `daily` leg) is killed at DAILY_CYCLE_HOURLY_BUDGET_SEC, 900 s by default,
+#: so this outlasts it twice over.
+UNBOUNDED_WAIT_S = 1800.0
+LOCK_POLL_S = 15.0
+
+
+class _Unlocked:
+    """Stands in for a lock handle when the lock could not be had: closing it is a no-op."""
+
+    def close(self) -> None:
+        return None
+
+
+def _chain_lock() -> IO[str] | _Unlocked | None:
+    """Admit this process to the chain, or say why it stands down. None means stand down.
+
+    WHAT TWO CHAINS AT ONCE COST, read from the schedule. `MT5-Daily` runs this chain at 23:50
+    box time with no deadline, and it runs for hours (9.4 h observed 2026-10-21): seventeen
+    proposers on 300-3,600 s budgets each, then the rest. Meanwhile the `forward` department
+    resident runs the hourly `daily` leg on every pass, which starts this same file under a 900 s
+    kill. Nothing stopped the two overlapping, so each such pass:
+      * re-ran, from its beginning, the very step `MT5-Daily` was executing (a step is stamped
+        only when it ends), then was killed before it could stamp it -- 900 s of a core spent to
+        produce nothing that survives; and
+      * after 00:00 UTC started the NEW day's chain from step one while `MT5-Daily` was still
+        finishing the old one -- and every step `MT5-Daily` completed rewrote the stamp with the
+        OLD date, so the next pass saw the new day as unstarted and began it again from the top.
+    One chain at a time removes both. No step is skipped and none runs less often: the chain that
+    holds the lock runs every step it would have run, and a step already stamped today is still
+    never repeated.
+
+    WHO WAITS AND WHO LEAVES. A caller that runs under a cycle plan (`HOURLY_PLAN` is set -- the
+    hourly leg, killed at its budget) stands down at once: its next pass is minutes away and the
+    holder is doing the same work. A caller with no plan (the `MT5-Daily` task, or a hand run)
+    has no deadline and WAITS for the holder, then re-reads the stamp, so a short hourly run that
+    happened to hold the lock at 23:50 can never cost the day its long steps. If the wait outlasts
+    UNBOUNDED_WAIT_S the caller runs anyway, exactly as it did before this lock existed -- the
+    lock can remove a duplicate, never a run.
+    """
+    path = _lock_path()
+    fh = _try_lock(path)
+    if fh is not None:
+        return fh
+    holder = ""
+    with contextlib.suppress(OSError):
+        holder = path.read_text(encoding="utf-8").strip()
+    if str(os.environ.get("HOURLY_PLAN", "") or "").strip():
+        dlog(f"another daily chain holds the lock ({holder or 'holder unreadable'}); this "
+             f"bounded caller stands down -- the holder runs the same steps, and the next "
+             f"pass re-reads the stamp")
+        return None
+    dlog(f"another daily chain holds the lock ({holder or 'holder unreadable'}); waiting up "
+         f"to {UNBOUNDED_WAIT_S:.0f}s for it, then re-reading the stamp")
+    waited = 0.0
+    while waited < UNBOUNDED_WAIT_S:
+        time.sleep(LOCK_POLL_S)
+        waited += LOCK_POLL_S
+        fh = _try_lock(path)
+        if fh is not None:
+            dlog(f"chain lock acquired after {waited:.0f}s")
+            return fh
+    dlog(f"chain lock still held after {UNBOUNDED_WAIT_S:.0f}s; running without it, as before "
+         f"the lock existed")
+    return _Unlocked()
+
+
+def _run_chain(force: bool) -> int:
     today = datetime.now(UTC).date().isoformat()
     stamp = _load_stamp()
 
