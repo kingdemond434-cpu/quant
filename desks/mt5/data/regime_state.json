@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-22T01:45:10.379110+00:00",
+  "swept_at": "2026-10-22T02:00:05.898158+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -228,8 +228,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 47,
-      "shadow_exp_r": 0.6867,
+      "shadow_n": 48,
+      "shadow_exp_r": 0.6688,
       "woke_on_shadow": false
     },
     "AUDSGD|cross_asset_residual_asia": {
@@ -262,7 +262,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.1328,
+      "shadow_exp_r": 0.0903,
       "woke_on_shadow": false
     },
     "AUDSGD|pca_residual_asia": {
@@ -272,8 +272,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 40,
-      "shadow_exp_r": 0.2096,
+      "shadow_n": 43,
+      "shadow_exp_r": 0.1955,
       "woke_on_shadow": false
     },
     "AUDUSD|discovered_asia": {
@@ -779,7 +779,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0529,
+      "shadow_exp_r": -0.1892,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -800,8 +800,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 60,
-      "shadow_exp_r": 0.7215,
+      "shadow_n": 61,
+      "shadow_exp_r": 0.7297,
       "woke_on_shadow": false
     },
     "CHFNOK|formula_asia": {
@@ -811,8 +811,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 48,
-      "shadow_exp_r": 0.5475,
+      "shadow_n": 47,
+      "shadow_exp_r": 0.5411,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_asia": {
@@ -823,7 +823,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0112,
+      "shadow_exp_r": -0.4061,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
@@ -866,8 +866,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 48,
-      "shadow_exp_r": 0.6212,
+      "shadow_n": 47,
+      "shadow_exp_r": 0.6163,
       "woke_on_shadow": false
     },
     "CHFPLN|carry_continuous": {
@@ -2131,8 +2131,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 50,
-      "shadow_exp_r": 0.669,
+      "shadow_n": 47,
+      "shadow_exp_r": 0.6586,
       "woke_on_shadow": false
     },
     "GBPMXN|formula_asia": {
