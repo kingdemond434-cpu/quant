@@ -52,10 +52,19 @@ from libs.portfolio.execution_cost import (  # noqa: E402
     MEASURED,
     REGISTRY_DEFECT,
     UNMEASURED,
+    CHARGED_AT_SOURCE,
     cost_ratio,
-    costs_for,
     fill_hour,
 )
+from libs.portfolio.execution_cost import costs_for as _costs_for  # noqa: E402
+
+
+def costs_for(*a, **k):
+    """The FLAT-evidence correction these tests pin (`charged_at_source=False`). Since
+    2026-10-13 the forward clocks charge the fill hour at source and the default applies no
+    bias; `test_default_charges_nothing_twice` pins that."""
+    k.setdefault("charged_at_source", False)
+    return _costs_for(*a, **k)
 
 #: A symbol whose spread the registry CAN attribute, priced 3x higher at its own fill hour than
 #: the pooled number the replay charged.
@@ -268,3 +277,12 @@ def test_a_cost_bias_lowers_the_posterior_mean_and_can_unfund_a_sleeve() -> None
     # sleeve "a" must be strictly worse once its true cost is charged; "b" is untouched
     assert w_dear.r[:, :, 0].mean() < w_cheap.r[:, :, 0].mean()
     assert w_dear.r[:, :, 1].mean() == pytest.approx(w_cheap.r[:, :, 1].mean(), abs=1e-6)
+
+
+def test_default_charges_nothing_twice():
+    """The replay charges the entry hour at source, so the default bias is zero and named."""
+    row = _costs_for(_sleeve(), GOOD_SURFACE, registry=GOOD_REGISTRY)["sleeves"][
+        "EURZAR_overnight_gap_decay_asia"]
+    assert row["source"] == CHARGED_AT_SOURCE
+    assert row["cost_bias_r"] == 0.0
+    assert row["ratio_raw"] > 1.0, "the ratio is still measured and published"

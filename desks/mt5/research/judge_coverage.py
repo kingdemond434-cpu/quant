@@ -809,6 +809,40 @@ PARKED_NOT_RUN = {"NOT_RUN_DATA_MISSING": "data_missing",
 BUILD_FAILED_RETRY_DAYS = 7.0
 
 
+def _cost_fields_unmeasured(path: Path | None = None) -> dict[str, Any]:
+    """Every registry symbol whose spread, swap or commission field is zero, missing or stale.
+
+    A certificate or forward clock priced on one of these reads UNMEASURED and is queued for
+    repricing (`research/entry_hour_cost.py` owns the rule and the staleness thresholds); this
+    publishes the count and the symbol list by field so the queue is visible every hour. An
+    unreadable registry is UNMEASURED by name, never an empty (clean) list.
+    """
+    try:
+        reg = json.loads((path or (UNIVERSE / "universe.json")).read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return {"status": f"UNMEASURED: registry unreadable ({type(exc).__name__})",
+                "n_symbols": None, "by_field": {}}
+    try:
+        from research.entry_hour_cost import unmeasured_fields
+    except ImportError:  # pragma: no cover - path variant
+        from desks.mt5.research.entry_hour_cost import (  # type: ignore[import-not-found,no-redef]
+            unmeasured_fields,
+        )
+    block: dict[str, Any] = {"status": "MEASURED", **unmeasured_fields(reg)}
+    # THE ENTRY-HOUR MISPRICING SWEEP: symbols whose flat charged scalar (registry, or the
+    # surface's stored pooled value) is more than 2x off an hour's own charge, by hour.
+    try:
+        from research.entry_hour_cost import charged_vs_hour, load_surface
+    except ImportError:  # pragma: no cover - path variant
+        from desks.mt5.research.entry_hour_cost import (  # type: ignore[import-not-found,no-redef]
+            charged_vs_hour,
+            load_surface,
+        )
+    sweep = charged_vs_hour(load_surface(), reg)
+    block["hour_mispriced"] = {k: v for k, v in sweep.items() if k != "by_symbol"}
+    return block
+
+
 def _prewarm_share(path: Path | None = None) -> float | None:
     """The share of the last sweep's pre-warm builds that failed on build or data."""
     doc = _read(path or GATES_REPORT)
@@ -2081,6 +2115,8 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         "not_run_named": len(not_run),
         "not_run_by_reason": dict(Counter(str(r.get("reason")) for r in not_run.values())),
         "prewarm_fail_share": _prewarm_share(),
+        # ZERO / MISSING / STALE COST FIELDS (2026-10-13): priced as UNMEASURED, never as free.
+        "cost_fields_unmeasured": _cost_fields_unmeasured(),
         "prior_prewarm_fail_share": (prior.get("prewarm_fail_share")
                                      if isinstance(prior, dict) else None),
         "prior_drain_status": (prior.get("drain_status") if isinstance(prior, dict) else None),

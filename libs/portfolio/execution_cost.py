@@ -240,11 +240,25 @@ def cost_ratio(surface: Mapping[str, Any] | None, symbol: str,
                f"against the {pooled:.0f} pts the replay charged ({r:.2f}x)"), detail
 
 
+#: THE REPLAY NOW CHARGES THE HOUR AT SOURCE (2026-10-13). Every forward clock prices its trades
+#: through `research/entry_hour_cost.py` (shadow_forward.per_symbol_costs, qquant_shadow): the
+#: cost model carries the surface's per-(weekday, hour) spread table and the engine charges each
+#: trade the slot where it crosses the ask. The evidence the allocator reads is therefore ALREADY
+#: net of the fill-hour spread, and adding `base_cost_r * (ratio - 1)` on top would charge the
+#: same spread twice -- the double charge this module's own rule forbids ("correcting it belongs
+#: in the replay, at source"). The ratio is still measured and published per sleeve; its bias is
+#: zero, sourced CHARGED_AT_SOURCE. A caller replaying FLAT evidence passes
+#: `charged_at_source=False` to get the old correction back.
+CHARGED_AT_SOURCE = "CHARGED_AT_SOURCE"
+REPLAY_CHARGES_ENTRY_HOUR = True
+
+
 def costs_for(sleeves: Sequence[Mapping[str, Any]],
               surface: Mapping[str, Any] | None, *,
               registry: Mapping[str, Any] | None = None,
               base_cost_r: float = BASE_COST_R,
-              max_ratio: float = MAX_RATIO) -> dict[str, Any]:
+              max_ratio: float = MAX_RATIO,
+              charged_at_source: bool = REPLAY_CHARGES_ENTRY_HOUR) -> dict[str, Any]:
     """Per-sleeve execution cost bias, in R per trade, with every refusal named.
 
     Each entry of `sleeves` needs `name`, `symbol`, and either `selector` or a name that carries
@@ -283,7 +297,7 @@ def costs_for(sleeves: Sequence[Mapping[str, Any]],
         # and is reported -- but applying it would raise the sleeve's mean on the strength of a
         # cost model, and sizing up on a model is the one direction this desk does not take from
         # an instrument that has never been validated against a real fill.
-        bias = float(base_cost_r) * max(0.0, applied - 1.0)
+        bias = 0.0 if charged_at_source else float(base_cost_r) * max(0.0, applied - 1.0)
         if ratio > 1.0:
             n_under += 1
             if worst is None or ratio > worst[0]:
@@ -297,7 +311,8 @@ def costs_for(sleeves: Sequence[Mapping[str, Any]],
             "cost_r": round(float(base_cost_r) * applied, 6),
             "ratio": round(applied, 4), "ratio_raw": round(float(ratio), 4),
             "clipped": bool(applied < ratio),
-            "source": MEASURED, "why": why, **detail,
+            "source": CHARGED_AT_SOURCE if charged_at_source else MEASURED, "why": why,
+            **detail,
         }
     n = len(out)
     summary = {
