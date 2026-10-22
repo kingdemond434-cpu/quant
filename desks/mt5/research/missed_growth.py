@@ -661,6 +661,31 @@ STOP_GEOMETRY = BASE / "reports" / "STOP_GEOMETRY_DERIVATION.json"
 STOP_GEOMETRY_MAX_AGE_H = 6.0
 
 
+#: The lockbox re-certification ledger. Its holdback (certificates waiting for a fresh verdict)
+#: registers no rail either; its line is published on that artifact and carried here.
+LOCKBOX_RECERT = BASE / "reports" / "LOCKBOX_RECERT.json"
+
+
+def lockbox_holdback_lines() -> dict[str, Any]:
+    """The re-judge holdback's missed-growth line, read from LOCKBOX_RECERT.json. UNMEASURED
+    value by construction: the held certificates' growth is unknown until they are re-judged."""
+    doc = _json(LOCKBOX_RECERT)
+    if not doc:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "no reports/LOCKBOX_RECERT.json on this host"}
+    lines = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)]
+    # NOT_BINDING NEEDS A MEASURED RECERT (audit 2026-10-20, v2 delta): a recert that could read
+    # nothing has no lines because it saw nothing, not because nothing is held.
+    unread = str(doc.get("status") or "") == UNMEASURED
+    return {"verdict": UNMEASURED if (lines or unread) else NOT_BINDING,
+            "source": "reports/LOCKBOX_RECERT.json", "at": doc.get("generated_utc"),
+            "lines": lines,
+            "why": ("held certificates' growth is unknown until re-judged" if lines else
+                    "the re-certification itself is UNMEASURED, so whether anything is held "
+                    "is unknown" if unread else
+                    "no certificate is held for a re-judge")}
+
+
 def published_gate_lines() -> dict[str, Any]:
     """The stop-geometry robustness gate's missed-growth lines, read from its own report.
 
@@ -1142,7 +1167,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         unspilled=JUDGE_PRIORITY_RECORDS),
                                     "deepening_memory_guard": organ_published_lines(
                                         DEEPENING_GUARD),
-                                    "mass_screen_counted_m": mass_screen_counted_m_lines()},
+                                    "mass_screen_counted_m": mass_screen_counted_m_lines(),
+                                    "lockbox_rejudge_holdback": lockbox_holdback_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

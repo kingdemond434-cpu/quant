@@ -40,6 +40,10 @@ GAUNTLET = (_DESK / "scripts" / "external_gauntlet.py").read_text("utf-8")
 
 def _stages(passed: bool = True, extra: dict[str, Any] | None = None) -> dict[str, Any]:
     out: dict[str, Any] = {name: {"passed": True} for name in GATES}
+    # a held-out v4 lockbox: a passing row without one is held back by the re-stamp guard
+    out["lockbox"] = {"passed": True, "lockbox_sharpe": 0.31, "cut": "2024-12-19",
+                      "basis": ATTESTATION["lockbox_basis"]}
+    out["walk_forward"] = {"passed": True, "oos_sharpe": 0.52}
     if not passed:
         out["lockbox"] = {"passed": False}
     out.update(extra or {})

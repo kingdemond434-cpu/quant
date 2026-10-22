@@ -329,6 +329,9 @@ def test_main_publishes_without_a_terminal_and_never_crashes(
     monkeypatch.setattr(CT, "SPREAD_PROVENANCE", tmp_path / "SPREAD_PROVENANCE.json")
     monkeypatch.setattr(CT, "VERIFIED", tmp_path / "spread_repair_verified.json")
     monkeypatch.setattr(CT, "SLEEVE_REGISTRY", tmp_path / "sleeve_registry.json")
+    # the tracked event log is never written by a test (audit 2026-10-20)
+    from libs.ops import events as _events
+    monkeypatch.setattr(_events, "PATH", tmp_path / "events.jsonl")
     (tmp_path / "universe.json").write_text(json.dumps(
         {"EURCHF": {"median_spread_pts": 0.5, "tick_size": 1e-5, "contract_size": 1e5}}), "utf-8")
     (tmp_path / "live_ledger.jsonl").write_text(
@@ -351,7 +354,8 @@ def test_main_publishes_without_a_terminal_and_never_crashes(
 def _report(at: str, *, symbols: list[dict[str, object]], comm: float = 5.625) -> dict[str, object]:
     return {"at": at, "overcharge_tolerance": 1.5, "stale_after_s": 4 * 3600,
             "n_symbols": len(symbols), "terminal_status": CT.MEASURED,
-            "commission": {"total_overcharge": comm}, "symbols": symbols}
+            "commission": {"total_overcharge": comm}, "symbols": symbols,
+            "quotes": {"verdict": "FRESH", "at": at, "why": "test"}}
 
 
 def _sym(symbol: str, charged: float, ref: float, verdict: str,
@@ -494,3 +498,133 @@ def test_the_cost_wire_is_a_declared_edge_the_watchdog_checks() -> None:
     spine = (ROOT / "desks" / "mt5" / "research" / "net_edge_spine.py").read_text("utf-8")
     assert "EXECUTION_COST_SURFACE.json" in organ and "EXECUTION_COST_SURFACE.json" in spine
     assert "COST_SURFACE.json" in organ
+
+
+# ------------------------------------------- stale cached quotes and zero spreads (2026-10-20)
+
+
+def _info(at: str, spread: float | None = 3.0) -> dict[str, object]:
+    return {"at": at, "spread": spread, "point": 1e-5, "digits": 5}
+
+
+def test_a_cached_reading_older_than_the_limit_is_not_a_quote() -> None:
+    old = (datetime.now(UTC) - timedelta(seconds=CT.QUOTES_STALE_AFTER_S + 60)).isoformat()
+    new = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
+    assert CT.quote_is_fresh(_info(new)) and not CT.quote_is_fresh(_info(old))
+    assert not CT.quote_is_fresh({"spread": 3.0}), "an unstamped reading is never fresh"
+    rep = CT.build({}, None, None, {"status": CT.MODELLED, "symbols": {"EURCHF": _info(old)}},
+                   [], [], None, None, ["EURCHF"])
+    assert rep["symbols"][0]["quoted"]["status"] == CT.UNMEASURED
+    assert "not a quote" in rep["symbols"][0]["quoted"]["why"]
+
+
+def test_the_freshness_block_names_a_stale_cache_and_its_zero_spreads() -> None:
+    old = "2026-09-23T05:13:05+00:00"
+    snap = {"at": old, "cached_at": old,
+            "symbols": {"A": _info(old, 0.0), "B": _info(old, None), "C": _info(old, 4.0)}}
+    got = CT.quotes_freshness(snap, measured_now=False)
+    assert got["verdict"] == "STALE" and got["n_stale"] == 3
+    assert got["zero_or_absent_spread_symbols"] == ["A", "B"]
+    assert CT.quotes_freshness({"symbols": {}}, measured_now=False)["verdict"] == CT.UNMEASURED
+
+
+def test_a_zero_or_absent_live_spread_is_never_a_price() -> None:
+    now = datetime.now(UTC).isoformat()
+    for raw in (0.0, None):
+        got = CT.quoted_reading(_info(now, raw), [], None)
+        assert got["live_spread_pts"] is None
+        assert got["live_spread_status"] == CT.UNMEASURED and got["live_spread_raw"] == raw
+    assert CT.quoted_reading(_info(now, 7.0), [], None)["live_spread_pts"] == 7.0
+
+
+def test_a_zero_quote_never_verifies_a_correction_toward_zero() -> None:
+    """`p90 or live` handed back a 0.0 live snapshot as the quote: 165 -> 3 read TOWARD 0."""
+    got = CT.repair_verification(_prov(165.0, 3.0), [_quoted_row("GBPCHF", 0.0, 0.0, 0.0)])
+    assert got["verified_symbols"] == [] and got["rows"][0]["verdict"] == "UNVERIFIED"
+
+
+def test_the_surface_never_prices_a_zero_spread_as_zero() -> None:
+    got = CT.execution_surface([_symbol_row("EURUSD", slip_n=9, slip_p50=0.01, ref=0.0,
+                                            stop=150.0)])
+    assert got["n_cells"] == 0 and got["deferred"][0]["status"] == CT.UNMEASURED
+    row = _symbol_row("EURUSD", slip_n=9, slip_p50=0.01, ref=0.0, stop=150.0)
+    row["compare"]["quoted_p90_pts"] = 3.0
+    got = CT.execution_surface([row])
+    assert got["net_alpha"][0]["spread_r_at_fills"] == pytest.approx(3.0 / 150.0)
+
+
+def test_fence_fails_a_fresh_report_priced_from_stale_quotes() -> None:
+    rep = _report(datetime.now(UTC).isoformat(), symbols=[_sym("A", 1.0, 1.0, "OK", 1.0)])
+    rep["quotes"] = {"verdict": "STALE", "at": "2026-09-23T05:13:05+00:00", "why": "old"}
+    got = FENCE.judge(rep, {"commission_total_overcharge": 9.0}, None)
+    assert got["verdict"] == FENCE.QUOTES_STALE and got["exit"] == 2
+    rep["quotes"]["verdict"] = "FRESH"
+    assert FENCE.judge(rep, {"commission_total_overcharge": 9.0}, None)["exit"] == 0
+
+
+def test_one_stale_reading_makes_the_set_stale() -> None:
+    now = datetime.now(UTC).isoformat()
+    old = (datetime.now(UTC) - timedelta(seconds=CT.QUOTES_STALE_AFTER_S + 60)).isoformat()
+    got = CT.quotes_freshness({"symbols": {"A": _info(now), "B": _info(old)}}, measured_now=True)
+    assert got["verdict"] == "STALE" and got["n_stale"] == 1
+    assert CT.quotes_freshness({"symbols": {"A": _info(now)}}, measured_now=True)["verdict"] \
+        == "FRESH"
+    assert CT.QUOTES_STALE_AFTER_S <= 12 * 3600
+
+
+def test_stale_quotes_never_mask_an_overcharge() -> None:
+    rep = _report(datetime.now(UTC).isoformat(),
+                  symbols=[_sym("NEWX", 9.0, 1.0, CT.OVERCHARGED, 9.0)])
+    rep["quotes"] = {"verdict": "STALE", "at": "2026-09-23T05:13:05+00:00", "why": "old"}
+    got = FENCE.judge(rep, {"commission_total_overcharge": 9.0}, None)
+    assert got["verdict"] == FENCE.OVERCHARGED and got["exit"] == 2
+    assert [f["verdict"] for f in got["findings"]] == [FENCE.OVERCHARGED, FENCE.QUOTES_STALE]
+
+
+def test_the_terminal_is_never_spawned_when_the_helper_cannot_be_imported(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    import types
+    calls: list[str] = []
+    fake = types.SimpleNamespace(initialize=lambda *a, **k: calls.append("init") or True,
+                                 terminal_info=lambda: None, last_error=lambda: (0, ""))
+    monkeypatch.setitem(sys.modules, "MetaTrader5", fake)
+    monkeypatch.setitem(sys.modules, "research.mt5_session", None)
+    got = CT.terminal_snapshot(["EURUSD"], 1.0, 10)
+    assert got["status"] == CT.UNMEASURED and calls == []
+
+
+def test_fence_never_reads_missing_or_unmeasured_quotes_as_ok(tmp_path: Path) -> None:
+    """Audit 2026-10-20 v2 delta must-fix 1: no quotes block, or UNMEASURED quotes, is UNMEASURED,
+    and an UNMEASURED verdict never lowers the ratchet."""
+    rep = _report(datetime.now(UTC).isoformat(), symbols=[_sym("A", 1.0, 1.0, "OK", 1.0)])
+    declared = {"overcharged_symbols": ["GBPCHF"], "commission_total_overcharge": 9.0}
+    rep.pop("quotes")
+    got = FENCE.judge(rep, declared, None)
+    assert got["verdict"] == FENCE.UNMEASURED and got["exit"] == 0
+    assert FENCE.rewrite_ratchet(tmp_path / "r.json", got, declared) is False
+    rep["quotes"] = {"verdict": "UNMEASURED", "why": "no terminal reading"}
+    got = FENCE.judge(rep, declared, None)
+    assert got["verdict"] == FENCE.UNMEASURED and "UNMEASURED" in got["why"]
+    rep["quotes"]["verdict"] = "FRESH"
+    assert FENCE.judge(rep, declared, None)["verdict"] == FENCE.OK
+
+
+def test_a_future_stamped_reading_is_not_fresh() -> None:
+    """Audit 2026-10-20 v2 delta: a reading stamped in the future has no knowable age."""
+    future = (datetime.now(UTC) + timedelta(hours=3)).isoformat()
+    assert CT.quote_is_fresh(_info(future)) is False
+    skew = (datetime.now(UTC) + timedelta(seconds=5)).isoformat()
+    assert CT.quote_is_fresh(_info(skew)) is True
+    got = CT.quotes_freshness({"at": future, "symbols": {"A": _info(future)}},
+                              measured_now=False)
+    assert got["verdict"] == "STALE"
+
+
+def test_a_symbol_that_left_the_universe_never_holds_the_set_stale() -> None:
+    now = datetime.now(UTC).isoformat()
+    old = (datetime.now(UTC) - timedelta(seconds=CT.QUOTES_STALE_AFTER_S + 60)).isoformat()
+    snap = {"symbols": {"A": _info(now), "GONE": _info(old)}}
+    assert CT.quotes_freshness(snap, measured_now=True)["verdict"] == "STALE"
+    got = CT.quotes_freshness(snap, measured_now=True, universe={"A": {}})
+    assert got["verdict"] == "FRESH"
+    assert got["outside_universe_symbols"] == ["GONE"] and got["n_outside_universe"] == 1

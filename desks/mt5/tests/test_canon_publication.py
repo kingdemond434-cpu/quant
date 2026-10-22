@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 DESK = Path(__file__).resolve().parents[1]
+ROOT = DESK.parents[1]
 for _p in (str(DESK.parents[1]), str(DESK), str(DESK / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
@@ -25,8 +26,14 @@ from research.gate_policy import ATTESTATION, GATES  # noqa: E402
 from research import canon_publication as cp  # noqa: E402
 
 
-def _passing_gates() -> dict[str, dict[str, bool]]:
-    return {name: {"passed": True} for name in GATES}
+def _passing_gates() -> dict[str, dict]:
+    """Ten passes, with gate 9 a held-out v4 lockbox (carved, under the attestation's basis,
+    unlike WF): a row without one is held back for a re-judge by the canon's re-stamp guard."""
+    gates: dict[str, dict] = {name: {"passed": True} for name in GATES}
+    gates["lockbox"] = {"passed": True, "lockbox_sharpe": 0.31, "cut": "2024-12-19",
+                        "basis": ATTESTATION["lockbox_basis"]}
+    gates["walk_forward"] = {"passed": True, "oos_sharpe": 0.52}
+    return gates
 
 
 def _report(survivors: dict[str, dict], swept_at: str) -> dict:
@@ -304,3 +311,180 @@ def test_the_leg_is_on_a_clock_and_belongs_to_a_layer() -> None:
     cycle = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '"canon_publication", "research/canon_publication.py"' in cycle
     assert '"canon_publication": cpub' in cycle
+
+
+# ------------------------------------------------------------ no re-stamp (2026-10-20)
+
+
+def _v2_row(sym: str, sr: float = 0.5) -> dict:
+    """A row judged before the reserved lockbox: gate 9 is gate 7's number, never carved."""
+    row = _row(sym)
+    row["gates"]["lockbox"] = {"passed": True, "lockbox_sharpe": sr}
+    row["gates"]["walk_forward"] = {"passed": True, "oos_sharpe": sr}
+    return row
+
+
+def _v4_row(sym: str) -> dict:
+    return _row(sym)
+
+
+def test_a_row_judged_before_the_reserved_lockbox_is_never_restamped(desk: Path) -> None:
+    """Measured 2026-10-20: 12 + 7 canon rows under the v3 header with v2 gates."""
+    report, seal = desk / "reports" / "u.json", desk / "data" / "canon.json"
+    seal.write_text(json.dumps({"n": 3, "survivors": {
+        "external.OLD": _v2_row("EURNOK"), "external.HELD": _v4_row("GBPSEK"),
+        "external.NEW": _v4_row("AUDCHF")}}), "utf-8")
+    rep = _report({"external.NEW": _v4_row("AUDCHF")}, "2026-10-20T11:00:00+00:00")
+    rep["pending_rejudge"] = {"external.HELD": {}}
+    report.write_text(json.dumps(rep), "utf-8")
+
+    rec = cp.publish(report, seal)
+
+    assert rec["status"] == "SEALED"
+    doc = json.loads(seal.read_text("utf-8"))
+    assert set(doc["survivors"]) == {"external.NEW"}
+    assert set(doc["pending_rejudge"]) == {"external.OLD", "external.HELD"}
+    assert doc["pending_rejudge"]["external.OLD"]["pending_reason"].startswith(
+        "LOCKBOX_NOT_INDEPENDENT")
+    assert "outside its survivor set" in doc["pending_rejudge"]["external.HELD"]["pending_reason"]
+    assert doc["revocation"][-1]["left_survivor_set"] == 2
+    assert doc["revocation"][-1]["keys"] == ["external.HELD", "external.OLD"]
+    assert rec["held_for_rejudge"] == 2
+
+
+def test_a_fresh_verdict_brings_a_pending_row_back(desk: Path) -> None:
+    report, seal = desk / "reports" / "u.json", desk / "data" / "canon.json"
+    seal.write_text(json.dumps({"n": 0, "survivors": {},
+                                "pending_rejudge": {"external.OLD": _v2_row("EURNOK")}}),
+                    "utf-8")
+    report.write_text(json.dumps(_report({"external.OLD": _v4_row("EURNOK")},
+                                         "2026-10-21T00:00:00+00:00")), "utf-8")
+
+    rec = cp.publish(report, seal)
+
+    doc = json.loads(seal.read_text("utf-8"))
+    assert set(doc["survivors"]) == {"external.OLD"} and "pending_rejudge" not in doc
+    assert doc["survivors"]["external.OLD"]["gates"]["lockbox"]["cut"] == "2024-12-19"
+    assert rec["held_for_rejudge"] == 0
+
+
+def test_a_row_with_no_lockbox_number_is_held_back(desk: Path) -> None:
+    """Auditor's ruling 2026-10-20: a missing gate 9 is never a pass; the hold is reversible."""
+    report, seal = desk / "reports" / "u.json", desk / "data" / "canon.json"
+    bare = _row("EURUSD")
+    bare["gates"]["lockbox"] = {"passed": True}
+    seal.write_text(json.dumps({"n": 1, "survivors": {"external.BARE": bare}}), "utf-8")
+    report.write_text(json.dumps(_report({}, "2026-10-20T11:00:00+00:00")), "utf-8")
+    cp.publish(report, seal)
+    doc = json.loads(seal.read_text("utf-8"))
+    assert doc["survivors"] == {} and "no numeric lockbox" in \
+        doc["pending_rejudge"]["external.BARE"]["pending_reason"]
+
+
+def test_the_revocation_record_only_grows(desk: Path) -> None:
+    report, seal = desk / "reports" / "u.json", desk / "data" / "canon.json"
+    seal.write_text(json.dumps({"n": 1, "survivors": {"external.A": _v2_row("EURNOK")},
+                                "revocation": {"kind": "legacy", "at": "2026-09-01"}}), "utf-8")
+    report.write_text(json.dumps(_report({}, "2026-10-20T11:00:00+00:00")), "utf-8")
+    cp.publish(report, seal)
+    first = json.loads(seal.read_text("utf-8"))["revocation"]
+    doc = json.loads(seal.read_text("utf-8"))
+    doc["survivors"]["external.B"] = _v2_row("GBPNOK")
+    seal.write_text(json.dumps(doc), "utf-8")
+    cp.publish(report, seal)
+    second = json.loads(seal.read_text("utf-8"))["revocation"]
+    assert len(first) == 2 and len(second) == 3 and second[:2] == first
+    assert second[0]["kind"] == "legacy"
+
+
+def test_a_row_the_judge_keeps_republishing_adds_one_revocation_and_keeps_its_wait(
+        desk: Path) -> None:
+    """Audit 2026-10-20 v2 delta: dedupe on (kind, keys), not `at`; `pending_since` survives."""
+    report, seal = desk / "reports" / "u.json", desk / "data" / "canon.json"
+    seal.write_text(json.dumps({"n": 0, "survivors": {}}), "utf-8")
+    report.write_text(json.dumps(_report({"external.A": _v2_row("EURNOK")},
+                                         "2026-10-20T11:00:00+00:00")), "utf-8")
+    cp.publish(report, seal)
+    first = json.loads(seal.read_text("utf-8"))
+    since = first["pending_rejudge"]["external.A"]["pending_since"]
+    for _ in range(3):
+        cp.publish(report, seal)
+    doc = json.loads(seal.read_text("utf-8"))
+    assert "external.A" not in doc["survivors"]
+    assert doc["pending_rejudge"]["external.A"]["pending_since"] == since
+    held = [e for e in doc["revocation"] if e.get("keys") == ["external.A"]]
+    assert len(held) == 1 and held[0]["at"] == first["revocation"][-1]["at"]
+
+
+def test_the_authority_heal_never_undoes_the_holdback(desk: Path,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit 2026-10-20: heal_canon copied the report over the canon, deleting the holdback."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "check_authority_ratchet", ROOT / "scripts" / "check_authority_ratchet.py")
+    assert spec and spec.loader
+    ratchet = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ratchet)
+    report, seal = desk / "reports" / "u.json", desk / "data" / "canon.json"
+    seal.write_text(json.dumps({"n": 2, "survivors": {
+        "external.OLD": _v2_row("EURNOK"), "external.NEW": _v4_row("AUDCHF")},
+        "retired_certificates": {"external.GONE": {"retired_reason": "x"}}}), "utf-8")
+    # the judge's report still lists the stale row (it has not reached it this sweep)
+    report.write_text(json.dumps(_report({"external.OLD": _v2_row("EURNOK"),
+                                          "external.NEW": _v4_row("AUDCHF")},
+                                         "2026-10-20T11:00:00+00:00")), "utf-8")
+    cp.publish(report, seal)
+    monkeypatch.setattr(ratchet, "AUTHORITY_FILE", report)
+    monkeypatch.setattr(ratchet, "CANON_FILE", seal)
+    monkeypatch.setattr(ratchet, "hold", lambda *a, **k: __import__("contextlib").nullcontext())
+    assert ratchet.heal_canon() is None, "a held key must count as accounted"
+    # and when the authority file IS ahead, the heal merges and keeps the canon's blocks
+    rep = json.loads(report.read_text("utf-8"))
+    rep["survivors"]["external.FRESH"] = _v4_row("GBPCHF")
+    report.write_text(json.dumps(rep), "utf-8")
+    assert ratchet.heal_canon()
+    doc = json.loads(seal.read_text("utf-8"))
+    assert set(doc["survivors"]) == {"external.NEW", "external.FRESH"}
+    assert "external.OLD" in doc["pending_rejudge"]
+    assert "external.GONE" in doc["retired_certificates"]
+    assert doc["revocation"], "the revocation history survives the heal"
+
+
+# ------------------------------------- LAWS 7 declarations of the lockbox acts (lockbox v3.1)
+# libs/ops/reference_freshness.DESTRUCTIVE_PATHS declares these three acts `positive`; the tests
+# pin the claim each note makes, so a change that starts removing on an absence fails here.
+
+def test_restamp_holdback_moves_nothing_on_an_absent_report_or_basis() -> None:
+    merged = {"a": {"gates": {}}, "b": {"gates": {}}}
+    pending, moved = cp.restamp_holdback(dict(merged), {}, {}, set(), {"no": "basis"}, "t")
+    assert (pending, moved) == ({}, [])
+    pending, moved = cp.restamp_holdback(dict(merged), {}, {}, set(), None, "t")
+    assert (pending, moved) == ({}, [])
+
+
+def test_restamp_holdback_moves_never_drops_and_keeps_the_wait() -> None:
+    merged = {"a": {"gates": {}}, "b": {"gates": {}}}
+    seal = {"pending_rejudge": {"a": {"pending_since": "2026-10-01"}, "c": {"x": 1}}}
+    report = {"pending_rejudge": {"a": {}}}
+    pending, moved = cp.restamp_holdback(merged, seal, report, set(), None, "now")
+    assert moved == ["a"] and set(merged) == {"b"}
+    assert pending["a"]["pending_since"] == "2026-10-01" and "c" in pending
+    # a key the judge republished leaves pending only because it is back in `merged`
+    merged2 = {"c": {"gates": {}}}
+    pending2, _ = cp.restamp_holdback(merged2, seal, {}, {"c"}, None, "now")
+    assert "c" not in pending2 and "c" in merged2
+
+
+def test_merge_heal_removes_no_record() -> None:
+    import importlib.util
+    root = Path(__file__).resolve().parents[3]
+    spec = importlib.util.spec_from_file_location(
+        "check_authority_ratchet", root / "scripts" / "check_authority_ratchet.py")
+    assert spec and spec.loader
+    ar = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ar)
+    canon = {"survivors": {"a": {}}, "pending_rejudge": {"p": {"r": 1}}, "extra": 1}
+    auth = {"survivors": {"a": {}, "p": {}, "s": {}}, "retired_certificates": {}}
+    out = ar.merge_heal(auth, canon)
+    assert set(out["survivors"]) == {"a", "s"} and out["pending_rejudge"] == {"p": {"r": 1}}
+    assert out["extra"] == 1 and "retired_certificates" not in out   # empty block: no row in it

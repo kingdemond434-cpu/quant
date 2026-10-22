@@ -1086,6 +1086,61 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "not reach goes to pending_rejudge and is carried, never dropped, and a universe "
              "(symbol_eligibility) verdict is not taken as a verdict on the certificate.",
     ),
+    # LOCKBOX RE-CERT (2026-10-20, lockbox v3.1). Three acts the lockbox stack added and the tree
+    # scan found (each writes `retired_certificates`/`pending_rejudge` vocabulary). Each was read
+    # for removal-on-absence; none drops a record, and each moves or empties only on a PRESENT
+    # reading, so all three are positive rather than code changes.
+    DestructivePath(
+        path_id="canon_publication.publish.pending_block",
+        module="desks/mt5/research/canon_publication.py",
+        function="publish",
+        removes="the seal's previous `pending_rejudge` block key, rewritten from this pass's "
+                "`pending` (restamp_holdback's output) in the same write",
+        reference="restamp_holdback's pending block for this pass (old pending minus keys the "
+                  "judge republished)",
+        status="positive",
+        note="NO RECORD LEAVES: the key is popped and immediately re-set from `pending`, which "
+             "starts as a copy of the old block. A pending row leaves it only when the judge "
+             "republished that key this pass (a fresh verdict, positive evidence), and then it is "
+             "in `survivors`. The never-shrink check above it refuses the write unless every key "
+             "of the old seal is in survivors, aliases or pending. An absent or unreadable report "
+             "with nothing recovered returns NO_REPORT before this line, seal untouched.",
+    ),
+    DestructivePath(
+        path_id="canon_publication.restamp_holdback",
+        module="desks/mt5/research/canon_publication.py",
+        function="restamp_holdback",
+        removes="survivor rows MOVED (never dropped) from the seal's survivor set into its "
+                "`pending_rejudge`, with pending_reason and the original pending_since; and "
+                "pending rows popped when the judge republished the key",
+        reference="the judge's attested report (its pending_rejudge/retired_certificates blocks) "
+                  "and the gate_policy attestation stamped on this seal",
+        status="positive",
+        note="A MOVE ON A PRESENT READING. Refusal 1 needs the judge's own report to hold the key "
+             "(an absent report holds nothing). Refusal 2 needs the stamped attestation (the "
+             "report's, or the spec's own ATTESTATION) to DECLARE a reserved-lockbox basis (no "
+             "basis returns None, so nothing moves) and the row's own gates showing no "
+             "independent lockbox reading. A certificate with no gate "
+             "9 reading is not a pass (L1.28a); the auditor ruled 2026-10-20 that the holdback is "
+             "the honest reversible state, and the row returns on the judge's next fresh verdict. "
+             "Every moved row is counted in the publish() never-shrink check and appended to the "
+             "seal's revocation log. A popped pending key is one the judge republished this pass.",
+    ),
+    DestructivePath(
+        path_id="authority_ratchet.merge_heal",
+        module="scripts/check_authority_ratchet.py",
+        function="merge_heal",
+        removes="an EMPTY pending_rejudge/retired_certificates block key; and from the healed "
+                "survivors, every key the canon or the authority file holds in either block",
+        reference="the canon's and the authority file's own pending_rejudge/retired_certificates "
+                  "blocks",
+        status="positive",
+        note="REMOVES NO RECORD. The block key is popped only when BOTH sides' blocks are empty "
+             "(the union is {}), so no row is in it. A key is kept out of `survivors` only because "
+             "a held block positively names it, and it stays in that block (the canon's row wins "
+             "on a shared key); every other block the canon carries is kept, and the revocation "
+             "history is unioned, never shrunk.",
+    ),
     DestructivePath(
         path_id="allocator_proof.no_destructive_path",
         module="libs/portfolio/allocator_proof.py",
