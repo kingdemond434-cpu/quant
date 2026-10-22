@@ -2,14 +2,14 @@
   "label": "daily",
   "seed": 20260930,
   "docket": "C:\\opt\\quant\\desks\\mt5\\data\\hypotheses\\external_survivors.json",
-  "docket_unique_cells": 1528913,
+  "docket_unique_cells": 1521020,
   "sample": 6000,
   "overlay": [],
   "complete": false,
   "stage": "siblings_minted",
-  "utc_day": "2026-10-21",
-  "started_at": "2026-10-21T13:56:44+00:00",
-  "written_at": "2026-10-21T14:04:45+00:00",
+  "utc_day": "2026-10-22",
+  "started_at": "2026-10-22T06:27:20+00:00",
+  "written_at": "2026-10-22T06:29:22+00:00",
   "cells_planned": 6046,
   "cells_visited": 0,
   "judge": {
@@ -20,14 +20,14 @@
   },
   "coarse_proxy": false,
   "memory": {
-    "available_mb": 47957,
-    "rss_cap_mb": 11989,
-    "peak_rss_mb": 414
+    "available_mb": 60489,
+    "rss_cap_mb": 15122,
+    "peak_rss_mb": 496
   },
   "lockbox_cut": null,
   "lockbox_frac": null,
   "cells_carved_at_own_tail": null,
-  "elapsed_s": 398.5,
+  "elapsed_s": 114.9,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 115,
