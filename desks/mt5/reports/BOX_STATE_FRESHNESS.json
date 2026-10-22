@@ -1,10 +1,10 @@
 {
   "schema": "box_state_freshness/1",
-  "measured_at": "2026-10-22T12:57:25+00:00",
+  "measured_at": "2026-10-22T15:48:26+00:00",
   "threshold_h": 6.0,
   "box_author": "Contabo",
-  "age_h": 0.12,
-  "box_state_age_hours": 0.12,
+  "age_h": 0.02,
+  "box_state_age_hours": 0.02,
   "box_state_flow": {
     "verdict": "FLOWING",
     "why": "origin carries box state 0.0h old",
@@ -30,7 +30,7 @@
   },
   "stall_watch_alerts": {
     "status": "MEASURED",
-    "checked_at": "2026-10-22T12:51:06.3921263Z",
+    "checked_at": "2026-10-22T15:20:54.2035711Z",
     "state_flow": "FLOWING",
     "state_flow_watch": "METER_SILENT",
     "alerts_armed": 1,
@@ -39,27 +39,27 @@
   "ref": "refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3",
   "published_paths": 66,
   "newest_box_commit": {
-    "sha": "f03fa5eef6",
+    "sha": "532ef7bf55",
     "author": "Codex",
-    "at": "2026-10-22T12:50:28+00:00"
+    "at": "2026-10-22T15:35:22+00:00"
   },
   "stamps_inside_state": {
     "desks/mt5/reports/shadow/shadow_health.json": "2026-10-22T12:12:15+00:00",
     "desks/mt5/reports/GATE_VERDICT_DIGEST.json": "2026-10-22T07:11:59+00:00",
     "desks/mt5/reports/BOX_STATE_FLOW.json": "2026-10-22T07:14:38+00:00",
-    "desks/mt5/reports/BOX_STATE_FRESHNESS.json": "2026-10-22T10:40:20+00:00",
+    "desks/mt5/reports/BOX_STATE_FRESHNESS.json": "2026-10-22T12:57:25+00:00",
     "desks/mt5/reports/DESK_HEALTH.json": "2026-10-20T06:14:24+00:00",
     "desks/mt5/reports/shadow/scalp_shadow_state.json": "2026-10-22T12:12:06+00:00",
     "desks/mt5/reports/shadow/qquant_shadow_state.json": "2026-10-22T12:25:06+00:00",
     "desks/mt5/reports/shadow/external_shadow_state.json": "2026-10-22T12:20:20+00:00",
-    "desks/mt5/reports/shadow/shadow_state.json": "2026-10-22T12:33:01+00:00",
+    "desks/mt5/reports/shadow/shadow_state.json": "2026-10-22T15:24:04+00:00",
     "desks/mt5/data/account_state.json": "2026-10-22T12:30:09+00:00",
     "desks/mt5/data/RELEASE.json": "2026-10-17T23:51:51+00:00",
     "desks/mt5/data/tier_s/box_evidence.json": "2026-10-22T11:52:41+00:00",
     "desks/mt5/data/tier_s/live_door.json": "2026-10-22T11:37:36+00:00",
     "desks/mt5/reports/NULL_LAB.json": "2026-10-22T11:19:44+00:00",
-    "desks/mt5/reports/KNOWN_BY_DATE.json": "2026-10-22T10:53:03+00:00",
-    "desks/mt5/reports/PIT_LAG_CENSUS.json": "2026-10-22T10:53:03+00:00",
+    "desks/mt5/reports/KNOWN_BY_DATE.json": "2026-10-22T14:43:37+00:00",
+    "desks/mt5/reports/PIT_LAG_CENSUS.json": "2026-10-22T14:43:38+00:00",
     "desks/mt5/reports/DSR_INPUTS.json": "2026-10-17T01:02:55+00:00",
     "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json": "2026-10-16T19:13:43+00:00",
     "desks/mt5/data/tier_s/door_verdicts.json": "2026-10-22T11:37:36+00:00",
@@ -70,16 +70,16 @@
     "desks/mt5/reports/EFFECTIVE_BREADTH.json": "2026-10-20T13:59:26+00:00",
     "desks/mt5/reports/BREADTH_MANDATE.json": "2026-10-19T09:09:24+00:00",
     "desks/mt5/reports/TIER1_SCORECARD.json": "2026-10-20T12:52:06+00:00",
-    "desks/mt5/reports/ALT_DATA_YIELD.json": "2026-10-22T12:50:16+00:00",
-    "desks/mt5/reports/PRODUCER_YIELD.json": "2026-10-22T10:05:42+00:00",
-    "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json": "2026-10-22T08:11:26+00:00"
+    "desks/mt5/reports/ALT_DATA_YIELD.json": "2026-10-22T15:42:54+00:00",
+    "desks/mt5/reports/PRODUCER_YIELD.json": "2026-10-22T15:46:58+00:00",
+    "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json": "2026-10-22T13:42:29+00:00"
   },
   "stamps_ignored_not_box_written": {
     "desks/mt5/data/cost_truth_quotes.json": "Claude"
   },
-  "newest_stamp_inside_state": "2026-10-22T12:50:16+00:00",
+  "newest_stamp_inside_state": "2026-10-22T15:46:58+00:00",
   "basis": "stamp_inside_state",
   "verdict": "FRESH",
-  "why": "box state on refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3 is 0.1h old",
+  "why": "box state on refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3 is 0.0h old",
   "alerts_line": null
 }
