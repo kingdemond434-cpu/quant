@@ -1,0 +1,2302 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Netting vs Hedging Accounts: Key Differences Explained",
+  "url": "https://roboforex.com/blog/education/netting-vs-hedging-what-is-the-difference/",
+  "published": "2026-10-22T12:12:30+00:00",
+  "symbols": [
+   "XAUUSD",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "USDTRY",
+   "TSMC",
+   "Tesla"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "gap",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f91e73cc059f3c187d38",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "The Netting Account System With the Netting system, a position in the opposite direction will close the first one if they are the same volume: 1 lot buy will be closed by 1 lot sale.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "volume"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "TSMC",
+      "Tesla"
+     ],
+     "mentioned": [
+      "xau",
+      "eur/usd",
+      "gbp/usd",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "tsmc",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "rba: policy: RBA -> AUD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "55793f357210"
+   },
+   {
+    "claim": "hedging account in trading netting account in trading Further reading Analysis 37 min SpaceX Stock Price Prediction: How the 800 MHz Deal Moves SPCX, Verizon, AT&T and T-Mobile SpaceX is buying 800 MHz spectrum for Starlink Mobile, and telecom stocks fell the next day.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "fell"
+    ],
+    "horizon": [
+     "next day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "TSMC",
+      "Tesla"
+     ],
+     "mentioned": [
+      "xau",
+      "eur/usd",
+      "gbp/usd",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "tsmc",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "rba: policy: RBA -> AUD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5478439ed5ff"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "All articles with the tag: copy trading in forex - RoboForex Blog",
+  "url": "https://roboforex.com/blog/tag/copy-trading-in-forex/",
+  "published": "2026-10-22T12:12:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4dd34fc8469b0f4eb00b",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "All articles with the tag: copyfx investment platform - RoboForex Blog",
+  "url": "https://roboforex.com/blog/tag/copyfx-investment-platform/",
+  "published": "2026-10-22T12:12:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "914f9a1019237bcdf161",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "All articles with the tag: r stockstrader trading platform - RoboForex Blog",
+  "url": "https://roboforex.com/blog/tag/r-stockstrader-trading-platform/",
+  "published": "2026-10-22T12:12:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "274a59b3b4b3e1cfdf7c",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Your First MQL5 Expert Advisor: Ready-Made Code | RoboForex Blog",
+  "url": "https://roboforex.com/blog/education/first-mql5-expert-advisor/",
+  "published": "2026-10-22T12:12:38+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "XAUUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "USDTRY",
+   "TSMC",
+   "Tesla"
+  ],
+  "timeframes": [
+   "H1"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "gap",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5986e2edec978e3e9594",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "trading robot Further reading Analysis 37 min SpaceX Stock Price Prediction: How the 800 MHz Deal Moves SPCX, Verizon, AT&T and T-Mobile SpaceX is buying 800 MHz spectrum for Starlink Mobile, and telecom stocks fell the next day.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "fell"
+    ],
+    "horizon": [
+     "next day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "TSMC",
+      "Tesla"
+     ],
+     "mentioned": [
+      "emas",
+      "eurusd",
+      "gbpusd",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "tsmc",
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "rba: policy: RBA -> AUD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e129d04c1dba"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Week Ahead: US CPI Forecast After the ECB Decision",
+  "url": "https://roboforex.com/blog/analysis/market-week-ahead-september-7-11-us-cpi-forecast/",
+  "published": "2026-10-22T12:12:40+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XCUUSD",
+   "GER40",
+   "UK100",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "USDTRY",
+   "UST10Y",
+   "UKGILT",
+   "TSMC",
+   "Tesla"
+  ],
+  "timeframes": [
+   "H4"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "gap",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b7e5cb5bb1eafd629909",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "This week hands the market two answers instead: the ECB decides on Thursday, and the US CPI forecast arrives on Friday as the last major number before the Fed meets in September.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "EURUSD"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "659a43f9c4ee"
+   },
+   {
+    "claim": "A 25 basis point rise on both the deposit rate and the key rate is close to fully priced, which moves the whole question onto the comments from Christine Lagarde and the updated staff assessments of the Eurozone economy.",
+    "lang": "en",
+    "quantities": [
+     "basis",
+     "rate",
+     "close"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "lagarde: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "ef0b3cd5344d"
+   },
+   {
+    "claim": "It arrives in the same session as US inflation, so volatility on the currency market could rise noticeably.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "volatility"
+    ],
+    "direction": [
+     "rise"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XCUUSD",
+      "GER40",
+      "UK100",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "UST10Y",
+      "UKGILT",
+      "TSMC",
+      "Tesla"
+     ],
+     "mentioned": [
+      "xau",
+      "copper",
+      "dax",
+      "ftse 100",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "treasuries",
+      "gilts",
+      "tsmc",
+      "tesla",
+      "iron ore"
+     ],
+     "transfer_only": [
+      "iron ore->metals/energy"
+     ],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "bank of england: policy: BoE -> GBP",
+      "rba: policy: RBA -> AUD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b461974ee50d"
+   },
+   {
+    "claim": "aud/usd forecast eur/usd forecast gbp/usd forecast market week ahead us 500 forecast Further reading Analysis 37 min SpaceX Stock Price Prediction: How the 800 MHz Deal Moves SPCX, Verizon, AT&T and T-Mobile SpaceX is buying 800 MHz spectrum for Starlink Mobile, and telecom stocks fell the next day.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast",
+     "fell"
+    ],
+    "horizon": [
+     "week",
+     "next day"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "gbp/usd",
+      "aud/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "6976903206ec"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Week Ahead: Non-Farm Payrolls Forecast Tests the Fed",
+  "url": "https://roboforex.com/blog/analysis/market-week-ahead-august-31-september-4-non-farm-payrolls-forecast/",
+  "published": "2026-10-22T12:12:42+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "US500",
+   "USDX",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "USDTRY",
+   "UST10Y",
+   "TSMC",
+   "Tesla"
+  ],
+  "timeframes": [
+   "H4"
+  ],
+  "patterns": [
+   "basis",
+   "carry",
+   "gap",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "37297bed0b5b2aee48db",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "After the weak Non-Farm Payrolls print of the previous month, any further sign of cooling would strengthen expectations of a near-term Fed rate cut.",
+    "lang": "en",
+    "quantities": [
+     "rate",
+     "cut"
+    ],
+    "direction": [
+     "strengthen"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "UST10Y",
+      "TSMC",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "brent",
+      "s&p 500",
+      "dollar index",
+      "eur/usd",
+      "gbp/usd",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "treasuries",
+      "tsmc",
+      "tesla",
+      "iron ore"
+     ],
+     "transfer_only": [
+      "iron ore->metals/energy"
+     ],
+     "indirect": [],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "rba: policy: RBA -> AUD",
+      "bank of canada: policy: BoC -> CAD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b71361421d97"
+   },
+   {
+    "claim": "Price holds below the middle Bollinger band, MACD is gradually recovering while staying close to neutral, and the stochastic turns down after an attempt higher.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "US500",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDTRY",
+      "UST10Y",
+      "TSMC",
+      "Tesla"
+     ],
+     "mentioned": [
+      "gold",
+      "brent",
+      "s&p 500",
+      "dollar index",
+      "eur/usd",
+      "gbp/usd",
+      "usd/jpy",
+      "aud/usd",
+      "usd/cad",
+      "try",
+      "treasuries",
+      "tsmc",
+      "tesla",
+      "iron ore"
+     ],
+     "transfer_only": [
+      "iron ore->metals/energy"
+     ],
+     "indirect": [],
+     "channels": [
+      "the fed: policy: Fed -> dollar and US equities",
+      "ecb: policy: ECB -> EUR",
+      "rba: policy: RBA -> AUD",
+      "bank of canada: policy: BoC -> CAD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b88411002202"
+   },
+   {
+    "claim": "aud/usd forecast eur/usd forecast market week ahead s&p 500 forecast usd/cad forecast Further reading Analysis 37 min SpaceX Stock Price Prediction: How the 800 MHz Deal Moves SPCX, Verizon, AT&T and T-Mobile SpaceX is buying 800 MHz spectrum for Starlink Mobile, and telecom stocks fell the next day.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "forecast",
+     "fell"
+    ],
+    "horizon": [
+     "week",
+     "next day"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "EURUSD",
+      "AUDUSD",
+      "USDCAD"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "eur/usd",
+      "aud/usd",
+      "usd/cad"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e8af4fabd110"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Australian Dollar (GBPAUD) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPAUD/",
+  "published": "2026-10-22T12:12:42+00:00",
+  "symbols": [
+   "GBPAUD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "304417e1b80fe6321ed2",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Canadian Dollar (GBPCAD) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPCAD/",
+  "published": "2026-10-22T12:12:44+00:00",
+  "symbols": [
+   "GBPCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "787673a970b0253aa83e",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Swiss Franc (GBPCHF) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPCHF/",
+  "published": "2026-10-22T12:12:46+00:00",
+  "symbols": [
+   "GBPCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c0af0968e6377b59245a",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Japanese Yen (GBPJPY) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPJPY/",
+  "published": "2026-10-22T12:12:48+00:00",
+  "symbols": [
+   "GBPJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fef606f0856af0aa7242",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs New Zealand Dollar (GBPNZD) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPNZD/",
+  "published": "2026-10-22T12:12:50+00:00",
+  "symbols": [
+   "GBPNZD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3c6ebf875f5d2b19a213",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs US Dollar (GBPUSD) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GBPUSD/",
+  "published": "2026-10-22T12:12:53+00:00",
+  "symbols": [
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9022b33e6aafc358f0e4",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euro vs Australian Dollar (EURAUD) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/EURAUD/",
+  "published": "2026-10-22T12:12:54+00:00",
+  "symbols": [
+   "EURAUD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4de39243eda9a4972b8a",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.lv.html",
+  "published": "2026-10-22T12:12:55+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "lv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.lv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fff3cffd064fdda9483b",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.mt.html",
+  "published": "2026-10-22T12:12:58+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "mt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.mt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "dbcd894d8b9e5b5dab8b",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.nl.html",
+  "published": "2026-10-22T12:12:59+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "nl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.nl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "663843769e3729642522",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.pl.html",
+  "published": "2026-10-22T12:13:01+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "27f8a1a60594151a06a2",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.pt.html",
+  "published": "2026-10-22T12:13:03+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "974ce428be2a18190bbf",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.ro.html",
+  "published": "2026-10-22T12:13:05+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ro",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ro.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7b0b50ac6f40a8272e18",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Evaluating our strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/strategy-review/html/index.sk.html",
+  "published": "2026-10-22T12:13:07+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sk",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sk.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c8e7620f6952021b4d68",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse Forex - 17/05/2022 19:08:29 - Investir - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/forex-fxcm/detail/460719456/",
+  "published": "2026-10-22T12:13:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "41afe297e4ac43dd8655",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse Forex - 23/03/2021 13:57:13 - Trader sur le forex sous Boursorama - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/forex-fxcm/detail/457703678/",
+  "published": "2026-10-22T12:13:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "98cf230b5d68919c02c2",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse Forex - 06/06/2020 19:58:32 - Un PEA chez Boursorama permet-il d&#039;investir en FOREX ? - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/forex-fxcm/detail/455101760/",
+  "published": "2026-10-22T12:13:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "75af662c62f8fd9a54d3",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse Forex - 22/04/2020 17:12:32 - impossible de passer un ordre sur usd/eur. On me dit erreur technique... - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/forex-fxcm/detail/454592121/",
+  "published": "2026-10-22T12:13:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1c4e10e17fd39f30f6fd",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse Forex - 13/02/2020 23:00:53 - Paire EUR USD : mise a jour au 13 / 02 / 2020 - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/forex-fxcm/detail/453821541/",
+  "published": "2026-10-22T12:13:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ab3fd68a5d87d3c923f5",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse Forex - 01/12/2019 07:37:23 - Paire EUR USD : point mensuel d&#039;analyse technique dynamique fin novembre - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/forex-fxcm/detail/453316538/",
+  "published": "2026-10-22T12:13:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e13239e43fc628e24cce",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Forum Bourse Forex - 01/10/2019 15:30:17 - Analyse technique dynamique de la paire EUR/USD en fin de 3eme trimestre 2019 - Boursorama",
+  "url": "https://www.boursorama.com/bourse/forum/forex-fxcm/detail/452919311/",
+  "published": "2026-10-22T12:13:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.35,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.boursorama.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7adb90b178f99be119e0",
+  "host": "www.boursorama.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Easy steps how to adjust charts for the smooth backtesting [Video]",
+  "url": "https://forextester.com/views",
+  "published": "2026-10-22T12:13:23+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "H1",
+   "M5"
+  ],
+  "patterns": [],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f6d126dadf56e7fcd65c",
+  "host": "forextester.com",
+  "claims": [
+   {
+    "claim": "Show bid level \u2014 displays at which price the sell order will be filled if you open a sell market order.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8b8cb8e832f9"
+   },
+   {
+    "claim": "Show ask level \u2014 shows at which price the buy order will be filled if you open a buy market order.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ce58dd922d91"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to Read Statistics From Backtesting and Learn Forex Better",
+  "url": "https://forextester.com/statistics",
+  "published": "2026-10-22T12:13:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4355aef18de2a681eb10",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Top 23 Exclusive Benefits of the Forex Trading Simulator [Screenshots]",
+  "url": "https://forextester.com/screens?screen=detailedstatistics",
+  "published": "2026-10-22T12:13:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://forextester.com/templates/pic/screens/export-to-excel.png",
+   "https://forextester.com/templates/pic/screens/download-new-data.png",
+   "https://forextester.com/download"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "fc06bd2979c64eda74f5",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Confused with Forex historical data? A simple way to manage it [Video]",
+  "url": "https://forextester.com/datacenter",
+  "published": "2026-10-22T12:13:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "M30"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cc9bdf65add24f0a9394",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Confused with Forex historical data? A simple way to manage it [Video]",
+  "url": "https://forextester.com/DataCenter",
+  "published": "2026-10-22T12:13:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "M30"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "62ad5264ebf0a632ca27",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Value your time? Save projects while using the best trading simulator",
+  "url": "https://forextester.com/projects",
+  "published": "2026-10-22T12:13:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1691703001fcff07d0f8",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Searching for the best settings of the Moving Averages? [Check here]",
+  "url": "https://forextester.com/optimizer",
+  "published": "2026-10-22T12:13:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1",
+   "INTRADAY",
+   "M1",
+   "M15",
+   "M30",
+   "M5"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c04f23c63ef158e67c0b",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Suportes e Resist\u00eancias | QuantBrasil",
+  "url": "https://quantbrasil.com.br/suportes-e-resistencias",
+  "published": "2026-10-22T12:13:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d47eb094d564667bc8eb",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Melhorias na plataforma de cointegra\u00e7\u00e3o | QuantBrasil",
+  "url": "https://quantbrasil.com.br/releases/melhorias-na-plataforma-de-cointegracao/",
+  "published": "2026-10-22T12:13:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3b377c9b8a726dfeb479",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Perfil local | QuantBrasil",
+  "url": "https://quantbrasil.com.br/docs/cli/perfil/",
+  "published": "2026-10-22T12:13:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "db807a87da9d3d8f12b0",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Instala\u00e7\u00e3o | QuantBrasil",
+  "url": "https://quantbrasil.com.br/docs/cli/instalacao/",
+  "published": "2026-10-22T12:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "48d944b1c63b031d3dff",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "AZEV4: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/AZEV4/",
+  "published": "2026-10-22T12:13:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a64565ff269955d6ab4a",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "DIRR3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/DIRR3/",
+  "published": "2026-10-22T12:13:49+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bb2697f6b551706e414e",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "analysis of ES Pct and Pts swing using Excel Data Analysis Tool | atoast2trading",
+  "url": "https://atoast2trading.wordpress.com/2015/12/12/analysis-of-es-pct-and-pts-swing-using-excel-data-analysis-tool/",
+  "published": "2026-10-22T12:13:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://atoast2trading.wordpress.com/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1cba820340ff2ddeeb63",
+  "host": "atoast2trading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ES/DAX 9th Dec 2015 | atoast2trading",
+  "url": "https://atoast2trading.wordpress.com/2015/12/09/esdax-9th-dec-2015/",
+  "published": "2026-10-22T12:13:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://atoast2trading.wordpress.com/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a84931f45c9dbbde7ccb",
+  "host": "atoast2trading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "COT 30th November 2015 | atoast2trading",
+  "url": "https://atoast2trading.wordpress.com/2015/11/30/cot-30th-november-2015/",
+  "published": "2026-10-22T12:13:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "flow",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://atoast2trading.wordpress.com/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7f6b6de8dc4a5b47ded2",
+  "host": "atoast2trading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Scatter plot of Put/Call ratio | atoast2trading",
+  "url": "https://atoast2trading.wordpress.com/2015/11/06/scatter-plot-of-putcall-ratio/",
+  "published": "2026-10-22T12:13:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://atoast2trading.wordpress.com/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8e306bcb17ccb88aa31a",
+  "host": "atoast2trading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Charts 13 Sep 2015 | atoast2trading",
+  "url": "https://atoast2trading.wordpress.com/2015/09/13/charts-13-sep-2015/",
+  "published": "2026-10-22T12:13:58+00:00",
+  "symbols": [
+   "EURUSD",
+   "XAUUSD",
+   "US500",
+   "GER40",
+   "USDX",
+   "USDBRL",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "flow",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://atoast2trading.wordpress.com/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3e68528187b3231ece3b",
+  "host": "atoast2trading.wordpress.com",
+  "claims": [
+   {
+    "claim": "Some people are expecting bonds and stocks to fall together however I note that they both finished last week more or less unchanged (September vs December rate hike seems to be a foregone conclusion for most, it\u2019s about the timing and size of potential increases).",
+    "lang": "en",
+    "quantities": [
+     "stocks",
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "fall"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "GER40",
+      "USDX",
+      "EURUSD",
+      "USDBRL",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "s&p",
+      "dax",
+      "dollar index",
+      "eurusd",
+      "brl",
+      "treasuries"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "40aadbb67ffc"
+   },
+   {
+    "claim": "Weekly chart \u2013 Friday held on to make the week close green (selling from 10500 on Wed, going to watch that level closely to see if sellers continue after last weeks US indices contract roll.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "continue",
+     "contract"
+    ],
+    "horizon": [
+     "weekly",
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "US500",
+      "GER40",
+      "USDX",
+      "EURUSD",
+      "USDBRL",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "s&p",
+      "dax",
+      "dollar index",
+      "eurusd",
+      "brl",
+      "treasuries"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "dd092395717e"
+   },
+   {
+    "claim": "Gold sees price weakness this week and a fall in commercial shorts and leveraged longs (presumably in advance of Interest Rate decision next week).",
+    "lang": "en",
+    "quantities": [
+     "rate decision"
+    ],
+    "direction": [
+     "fall"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "425df2ae09df"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Thought of the Day&#8230; | atoast2trading",
+  "url": "https://atoast2trading.wordpress.com/2015/09/05/thought-of-the-day-7/",
+  "published": "2026-10-22T12:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://atoast2trading.wordpress.com/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "93bf8d1407f2b807503f",
+  "host": "atoast2trading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Charts September 5th 2015 | atoast2trading",
+  "url": "https://atoast2trading.wordpress.com/2015/09/05/charts-september-5th-2015/",
+  "published": "2026-10-22T12:14:01+00:00",
+  "symbols": [
+   "XAUUSD",
+   "GER40",
+   "USDX"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "basis",
+   "mean_reversion",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://atoast2trading.wordpress.com/downloads/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ac5b532c9c88569c3bd2",
+  "host": "atoast2trading.wordpress.com",
+  "claims": [
+   {
+    "claim": "Dipped below 10000 on Friday \u2013 bounces at end of day on Thurs after ECB and Fri after NFP got sold into.",
+    "lang": "en",
+    "quantities": [
+     "nfp"
+    ],
+    "direction": [
+     "bounces"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "fd9e6940189f"
+   },
+   {
+    "claim": "Only 2 of the last 10 days had positive delta at the close.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "positive"
+    ],
+    "horizon": [
+     "days",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "GER40",
+      "USDX"
+     ],
+     "mentioned": [
+      "gold",
+      "dax",
+      "dollar index"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "75fa0d0d149f"
+   },
+   {
+    "claim": "The COT chart showed leveraged money getting heavily short the market on week ending Tuesday 1st Sep.",
+    "lang": "en",
+    "quantities": [
+     "cot"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "GER40",
+      "USDX"
+     ],
+     "mentioned": [
+      "gold",
+      "dax",
+      "dollar index"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "918497e95ca4"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex/CFD Trading Platform | Online Currency Trading Platform | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/dealstation/",
+  "published": "2026-10-22T12:14:02+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/MetaTrader5.pkg.zip",
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt4/MetaTrader4.dmg",
+   "https://download.terminal.free/cdn/mobile/mt4/ios?hl=en",
+   "https://download.terminal.free/cdn/mobile/mt4/android?hl=en"
+  ],
+  "n_endpoints": 14,
+  "vault_sha": "10dc47794b7d1f7e1a9a",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Open a Live account : Once you have gained some confidence, open a Live account at Dukascopy Bank and start trading.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "gained"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "eur/usd",
+      "gbp/usd",
+      "usd/jpy",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "36a3bd4fe5d1"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "JForex API :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+  "published": "2026-10-22T12:14:04+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/french/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/deutsch/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/russian/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/spanish/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/pl/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/cz/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/pt/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/it/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/sk/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/chinese/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/arabic/forex/api/jforex-api/",
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "5f59e2818c500241c00b",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FIX API :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+  "published": "2026-10-22T12:14:06+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/french/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/deutsch/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/russian/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/spanish/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/pl/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/cz/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/pt/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/it/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/sk/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/chinese/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/arabic/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "bdac9f27d5e23f5219ca",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Dukascopy Support Board &bull; Index page",
+  "url": "https://www.dukascopy.com/swiss/english/forex/jforex/forum/",
+  "published": "2026-10-22T12:14:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-gb",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "61e25e8456904135144c",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Webinars :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/webinars/",
+  "published": "2026-10-22T12:14:10+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "1cd66413c0cdc4ce1f6f",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "SMS notification service fees :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/forex-trading-accounts/sms-notification/",
+  "published": "2026-10-22T12:14:12+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "5b136759fb35c3979695",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Open Forex/CFD Demo Account | Practice Forex Trading for Free with Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/demo-fx-account/",
+  "published": "2026-10-22T12:14:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "b69e6f8726ac8fedca36",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download the Axi App for mobile trading in EU: Axi Trading Platform",
+  "url": "https://www.axi.com/eu/trading-platforms/axi-trading-platform",
+  "published": "2026-10-22T12:14:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5acadbf57c72e9637384",
+  "host": "www.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Autochartist for MT4 / Axi EU",
+  "url": "https://www.axi.com/eu/trading-tools/autochartist",
+  "published": "2026-10-22T12:14:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b74de98ec233f7e8ae2f",
+  "host": "www.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Calculators / Axi EU",
+  "url": "https://www.axi.com/eu/trading-tools/trading-calculators",
+  "published": "2026-10-22T12:14:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "91f8583fec273477ecc3",
+  "host": "www.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Economic Calendar: Live European and Global Events / Axi EU",
+  "url": "https://www.axi.com/eu/trading-tools/economic-calendar",
+  "published": "2026-10-22T12:14:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9d4ff3c3eead8b4c374d",
+  "host": "www.axi.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
