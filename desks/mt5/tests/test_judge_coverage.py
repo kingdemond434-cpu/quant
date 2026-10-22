@@ -572,7 +572,10 @@ def test_judging_failures_counts_per_class_and_names_the_unrouted(tmp_path: Path
             "z": {"reason": "build_failed"}}
     f = jc.judging_failures(rep, bank=bank)
     assert f["last_sweep_status"] == "MEASURED"
-    assert f["last_sweep"] == {"budget_deferred": 1, "fail_3x": 4, "no_bars": 2}
+    # 2 data-missing cells in the rows; the pool failed 9, so the 7 the rows never named are
+    # booked too (a pool failure reaches the rows as BUDGET_DEFERRED, not as its own kind), and
+    # the one deferred row is one of those pool cells, so it leaves budget_deferred: additive.
+    assert f["last_sweep"] == {"fail_3x": 4, "no_bars": 9}
     assert f["unrouted"] == {"NOT_RUN_SOMETHING_NEW": 1} and f["verdict"] == "UNROUTED"
     assert f["parked"] == {"build_fail": 1, "no_bars": 1, "untestable_as_specified": 1}
     assert f["parked_to_converter"] == 3 and f["terminal_classes"] == []
@@ -600,3 +603,106 @@ def test_parked_cells_are_handed_to_the_converter(tmp_path: Path) -> None:
     # EMPTY IS WRITTEN: absence must never read as zero cells awaiting conversion.
     assert jc.write_conversion_handoff({}, at="t", path=out) == 0
     assert json.loads(out.read_text("utf-8"))["rows"] == []
+
+
+def test_prewarm_failures_publish_kinds_and_named_reasons(tmp_path: Path) -> None:
+    rep = tmp_path / "gates.json"
+    rep.write_text(json.dumps({"verdicts": [], "prewarm": {
+        "submitted": 10, "warmed": 3, "hit": 1, "failed": 6, "unreached": 0,
+        "failures": {"SAVE_FAILED": 4, "NOT_RUN_BUILD_FAILED": 2},
+        "failure_reasons": {"UNMEASURED: SAVE_FAILED": 4, "BLOCKED_x: no column": 2}}}), "utf-8")
+    f = jc.judging_failures(rep, bank={})
+    pw = f["prewarm"]
+    assert pw["status"] == "MEASURED" and pw["submitted"] == 10
+    assert pw["failures"] == {"NOT_RUN_BUILD_FAILED": 2, "SAVE_FAILED": 4}
+    assert pw["top_reasons"][0] == {"why": "UNMEASURED: SAVE_FAILED", "n": 4}
+    assert f["last_sweep"]["build_fail"] == 2           # the pool's, never in the rows
+    assert jc.prewarm_failures({})["status"] == "UNMEASURED"
+
+
+def test_a_pool_build_failure_ruled_as_a_modifier_is_booked_once(tmp_path: Path) -> None:
+    """The sealed loop rules a pool BUILD_FAILED whose reason names a modifier as a
+    NOT_RUN_MODIFIER row; that row and the pool's BUILD_FAILED count are one cell, not two."""
+    rep = tmp_path / "gates.json"
+    rep.write_text(json.dumps({"verdicts": [
+        {"cell": "a", "downstream_status": "NOT_RUN_MODIFIER", "why": "NOT_RUN_MODIFIER: regime"},
+        {"cell": "b", "downstream_status": "NOT_RUN_BUILD_FAILED", "why": "BLOCKED_x"}],
+        "prewarm": {"failures": {"NOT_RUN_BUILD_FAILED": 3},
+                    "failure_reasons": {"NOT_RUN_MODIFIER: regime": 1, "BLOCKED_x": 2}}}),
+        "utf-8")
+    f = jc.judging_failures(rep, bank={})
+    assert f["last_sweep"] == {"build_fail": 2, "modifier_refused": 1}
+
+
+def test_an_unrelated_modifier_refusal_never_hides_a_pool_failure(tmp_path: Path) -> None:
+    """A preflight modifier refusal never reached the pool, so it cancels none of its failures:
+    one such row plus one pool failure books build_fail 1 and modifier_refused 1."""
+    rep = tmp_path / "gates.json"
+    rep.write_text(json.dumps({"verdicts": [
+        {"cell": "a", "downstream_status": "NOT_RUN_MODIFIER",
+         "why": "NOT_RUN_MODIFIER: side_mode unsupported"}],
+        "prewarm": {"failures": {"NOT_RUN_BUILD_FAILED": 1},
+                    "failure_reasons": {"BLOCKED_x: no column": 1}}}), "utf-8")
+    f = jc.judging_failures(rep, bank={})
+    assert f["last_sweep"] == {"build_fail": 1, "modifier_refused": 1}
+
+
+def test_preflight_blocks_never_hide_pool_failures_and_each_cell_has_one_class(
+        tmp_path: Path) -> None:
+    """Audit of #369: a build-PREFLIGHT block never reaches the pool, so it must not cancel a
+    pool failure (10 pool + 8 preflight = 18, not 10); and a pool cell the loop then deferred
+    is counted once, under build_fail, never also under budget_deferred."""
+    pre = [{"cell": f"p{i}", "downstream_status": "NOT_RUN_BUILD_FAILED",
+            "why": "NOT_RUN_BUILD_FAILED: BLOCKED_MODIFIER x"} for i in range(8)]
+    dfr = [{"cell": f"d{i}", "downstream_status": "NOT_RUN_BUILD_BUDGET_DEFERRED"}
+           for i in range(12)]
+    rep = tmp_path / "gates.json"
+    rep.write_text(json.dumps({"verdicts": pre + dfr, "prewarm": {
+        "failures": {"NOT_RUN_BUILD_FAILED": 10, "FAIL_3X": "bad"},
+        "failure_reasons": {"BLOCKED_x at C:\\opt\\quant\\desks\\mt5\\a.py": 6,
+                            "BLOCKED_x at desks\\mt5\\a.py": 4}}}), "utf-8")
+    f = jc.judging_failures(rep, bank={})
+    assert f["last_sweep"] == {"budget_deferred": 2, "build_fail": 18}
+    assert f["prewarm"]["failures"]["FAIL_3X"] is None            # malformed: named, never 0
+    assert f["prewarm"]["top_reasons"] == [{"why": "BLOCKED_x at desks\\mt5\\a.py", "n": 10}]
+    empty = tmp_path / "empty.json"
+    empty.write_text(json.dumps({"prewarm": {"failures": {}}}), "utf-8")
+    assert jc.judging_failures(empty, bank={})["prewarm"]["status"] == "MEASURED"
+
+
+def test_only_pool_cells_the_rows_show_deferred_leave_budget_deferred(tmp_path: Path) -> None:
+    """Audit of #369: a FAIL_3X cell the loop rebuilt and judged was never deferred, and an
+    unclassified kind is no deferred cell either; neither may shrink budget_deferred."""
+    dfr = [{"cell": f"d{i}", "downstream_status": "NOT_RUN_BUILD_BUDGET_DEFERRED"}
+           for i in range(4)]
+    rep = tmp_path / "gates.json"
+    rep.write_text(json.dumps({"verdicts": dfr, "prewarm": {
+        "failures": {"FAIL_3X": 2, "WEIRD": 2}}}), "utf-8")
+    f = jc.judging_failures(rep, bank={})
+    assert f["last_sweep"]["budget_deferred"] == 4
+    # once the sealed patch stamps the kind on the deferred row, that cell is counted once
+    rows = [*dfr[:3], {**dfr[3], "prewarm_status": "FAIL_3X"}]
+    rep.write_text(json.dumps({"verdicts": rows, "prewarm": {
+        "failures": {"FAIL_3X": 2}}}), "utf-8")
+    f = jc.judging_failures(rep, bank={})
+    assert f["last_sweep"] == {"budget_deferred": 3, "fail_3x": 2}
+
+
+def test_a_malformed_pool_count_is_named_never_a_clean_zero(tmp_path: Path) -> None:
+    rep = tmp_path / "gates.json"
+    rep.write_text(json.dumps({"verdicts": [], "prewarm": {
+        "failures": {"NOT_RUN_BUILD_FAILED": "garbage"}}}), "utf-8")
+    f = jc.judging_failures(rep, bank={})
+    assert f["unrouted"] == {"MALFORMED_COUNT:NOT_RUN_BUILD_FAILED": 1}
+    assert f["verdict"] == "UNROUTED"
+    assert f["prewarm"]["failures"] == {"NOT_RUN_BUILD_FAILED": None}
+    assert f["prewarm"]["malformed_counts"] == ["NOT_RUN_BUILD_FAILED"]
+
+
+def test_pool_cells_beyond_the_deferred_rows_are_recorded(tmp_path: Path) -> None:
+    rep = tmp_path / "gates.json"
+    rep.write_text(json.dumps({"verdicts": [
+        {"cell": "d", "downstream_status": "NOT_RUN_BUILD_BUDGET_DEFERRED"}],
+        "prewarm": {"failures": {"NOT_RUN_BUILD_FAILED": 3}}}), "utf-8")
+    f = jc.judging_failures(rep, bank={})
+    assert f["last_sweep"] == {"build_fail": 3} and f["deferred_excess_unmatched"] == 2
