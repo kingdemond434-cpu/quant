@@ -1,0 +1,27 @@
+{
+ "at": "2026-10-22T20:52:33+00:00",
+ "status": "UNMEASURED",
+ "n_checked": 58,
+ "n_refused": 0,
+ "n_declared_ids": 0,
+ "declared_ids": "UNMEASURED",
+ "refused": {},
+ "legacy_pins": {
+  "desks/mt5/data/live_ledger.jsonl": {
+   "records": 257,
+   "sha256": "3434b6fd8e853786c599616df339cb537db9e103b834a8bd423e327101d28301"
+  },
+  "desks/mt5/data/order_intents.jsonl": {
+   "records": 296,
+   "sha256": "18f1e28960b0e9c0c47df740aa2f1420d5c4bf9f11687dbcca2da3ce81e32f5e"
+  }
+ },
+ "rule": "login-shaped key with an account-shaped value, key-less account forms, and declared account numbers; values are never recorded",
+ "alert": "OPEN",
+ "page": {
+  "sent": true,
+  "reason": "changed",
+  "armed": 1,
+  "delivered": 1
+ }
+}
