@@ -175,6 +175,10 @@ UNKNOWN_REASON_CLASS: dict[str, str] = {
     "missing_bars": DEFECT,
     "missing_identity_input": DEFECT,
     "unnamed": DEFECT,
+    # a never-judged cell whose build PROVABLY refuses for want of an input absent on this host
+    # (`research/build_input_probe.py`): parked out of the docket, kept in the backlog (the desk
+    # still owes the input), re-admitted the pass every named input is present again
+    "build_input_missing": DEFECT,
 }
 
 
@@ -1737,6 +1741,48 @@ READMIT_MAX_DAYS = 90.0
 CPCV_MIN_DAYS = 60
 
 
+#: The bank reason `research/build_input_probe.py` parks under (its `REASON`; a test pins them).
+BUILD_INPUT_MISSING = "build_input_missing"
+
+
+def _build_input_probe() -> Any:
+    """The probe module, or None when it cannot be imported (then nothing is named)."""
+    try:
+        try:
+            import build_input_probe as probe  # type: ignore[import-not-found]
+        except ImportError:                                    # pragma: no cover - import context
+            from research import build_input_probe as probe  # type: ignore[no-redef]
+        return probe
+    except Exception:
+        return None
+
+
+def _build_inputs_present(row: dict[str, Any]) -> bool:
+    """Every input a `build_input_missing` row names is present again (fail open: True)."""
+    probe = _build_input_probe()
+    if probe is None:
+        return True
+    try:
+        ctx = _pass_value("build_input_probe_ctx", probe._Pass)
+        return bool(probe.all_present(row.get("missing"), ctx))
+    except Exception:
+        return True
+
+
+def probe_build_inputs(rows: list[dict[str, Any]], judged: Any,
+                       bank: dict[str, dict[str, Any]], banned: Any
+                       ) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    """`build_input_probe.name` over the docket, or nothing named with the reason why."""
+    probe = _build_input_probe()
+    if probe is None:
+        return {}, {"status": "UNMEASURED", "why": "build_input_probe could not be imported"}
+    try:
+        ctx = _pass_value("build_input_probe_ctx", probe._Pass)
+        return probe.name(rows, judged=judged, bank=bank, banned=banned, ctx=ctx)
+    except Exception as exc:                                   # never costs the pass
+        return {}, {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {str(exc)[:200]}"}
+
+
 def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
                 bar_sizes: dict[tuple[str, str], int] | None = None) -> bool:
     """True when a parked cell's history has grown enough, or it has waited long enough."""
@@ -1757,6 +1803,16 @@ def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
         # after READMIT_MAX_DAYS regardless, like every parked cell.
         if _fire_probe(str(row.get("sym") or ""), str(row.get("family") or "")).get(
                 "status") != "NEEDS_DATA":
+            return True
+        _pa = _ts(row.get("parked_at"))
+        _tn = now or datetime.now(tz=UTC)
+        return (_pa is not None
+                and (_tn.timestamp() - _pa.timestamp()) / 86400.0 >= READMIT_MAX_DAYS)
+    if row.get("reason") == BUILD_INPUT_MISSING:
+        # THE NAMED INPUT IS THE BINDING CAUSE, not the cell's own history: back the pass every
+        # input the probe named is present again (an unreadable probe reads present: fail open
+        # toward judging), and after READMIT_MAX_DAYS regardless, like every parked cell.
+        if _build_inputs_present(row):
             return True
         _pa = _ts(row.get("parked_at"))
         _tn = now or datetime.now(tz=UTC)
@@ -2877,6 +2933,7 @@ FAILURE_CLASS: dict[str, str] = {
     "too_rare": "untestable_as_specified",
     "never_fires": "untestable_as_specified",
     "needs_data": "needs_data",
+    "build_input_missing": "input_missing",
     "missing_identity_input": "unnamed",
     "no_terminal_gate_recorded": "unnamed",
     "unnamed": "unnamed",
@@ -2903,6 +2960,9 @@ FAILURE_ROUTES: dict[str, dict[str, Any]] = {
     # `acquire_named_input` and `proxy_series` were listed here with no organ reading them (audit
     # of c72ecfc53); the named input itself rides in `missing_input`, which is what is read.
     "needs_data": {"owner": "converter", "axes": ["cross_asset_transplant"]},
+    # The named inputs (peer/factor/leg/driver bars, a surface, a COT series) ride in `missing`;
+    # `conversion_maximiser.backfill_bars` is the organ that reads bar demand.
+    "input_missing": {"owner": "converter", "axes": ["backfill_bars"]},
     "budget_deferred": {"owner": "judge", "axes": ["next_sweep_by_unlock_value"]},
     "save_fail": {"owner": "judge", "axes": ["rebuild_next_sweep"]},
     "unnamed": {"owner": "judge", "axes": ["name_the_reason"]},
@@ -2987,6 +3047,10 @@ def _missing_input(cls: str, row: dict[str, Any]) -> dict[str, Any] | None:
                 "file": f"universe/{sym}_{tf}.parquet", "clock": BAR_CLOCK}
     if cls == "no_series":
         return {"kind": "series", "symbol": sym, "timeframe": tf, "clock": BAR_CLOCK,
+                "why": str(row.get("why") or "")[:200]}
+    if cls == "input_missing":
+        return {"kind": "inputs", "inputs": row.get("missing"), "symbol": sym,
+                "family": row.get("family"), "timeframe": tf,
                 "why": str(row.get("why") or "")[:200]}
     if cls == "needs_data":
         return {"kind": "input", "input": row.get("missing_input"), "symbol": sym,
@@ -3194,7 +3258,11 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     unknown = unknown_breakdown()
     named_unknowns = name_unknowns()
     not_run = name_not_run()
-    unrunnable = update_unrunnable_bank({**named_unknowns, **not_run},
+    # CELLS WHOSE BUILD MUST FAIL, NAMED BEFORE THE DOCKET SHIPS (`research/build_input_probe`).
+    # The judge's own words win: a cell it named this pass keeps the judge's reason.
+    built_probe, probe_census = probe_build_inputs(rows, judged_cells, bank_rows, banned)
+    _check_budget("build_input_probe")
+    unrunnable = update_unrunnable_bank({**built_probe, **named_unknowns, **not_run},
                                         at=at.isoformat(timespec="seconds"))
     _bank_now = unrunnable_bank()
     failures = judging_failures(bank=_bank_now)
@@ -3468,6 +3536,7 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
             "neither judged nor passed, because nobody looked is not a failure"),
         "unknown_reasons": unknown,
         "unrunnable": unrunnable,
+        "build_input_probe": probe_census,
         "keff_order": _keff_summary(keff),
         "_keff_detail": keff,
         "occupancy_order": occ,
