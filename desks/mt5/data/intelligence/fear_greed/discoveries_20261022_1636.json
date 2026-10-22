@@ -1,0 +1,16 @@
+[
+  {
+    "source": "cnn_fear_greed",
+    "type": "extreme_sentiment",
+    "reading": "extreme_fear",
+    "score": 22.3516483516484,
+    "rating": "extreme fear",
+    "symbols": [
+      "US500",
+      "NAS100",
+      "XAUUSD"
+    ],
+    "confidence": 0.105934065934064,
+    "description": "Fear & Greed: 22.3516483516484 (extreme fear) - contrarian buy signal"
+  }
+]
