@@ -172,6 +172,24 @@ def test_a_price_already_through_the_level_rests_a_limit_at_it_never_a_chase(wor
     assert req["type"] == mt5.ORDER_TYPE_BUY_LIMIT and req["price"] == 4340.0
 
 
+def test_gold_is_selected_into_market_watch_before_the_tick_is_read(world) -> None:
+    """2026-10-22: XAUUSD absent from the FTMO terminal's Market Watch read NO_TICK every pass."""
+    mt5 = _MT5()
+    calls: list[tuple] = []
+    seen = mt5.symbol_info_tick
+
+    def select(symbol: str, enable: bool) -> bool:
+        calls.append((symbol, enable))
+        return True
+
+    def tick(symbol: str) -> SimpleNamespace:
+        assert calls == [("XAUUSD", True)], "the tick was read before the symbol was selected"
+        return seen(symbol)
+
+    mt5.symbol_select, mt5.symbol_info_tick = select, tick
+    assert _pass(mt5)["status"] == "OK"
+
+
 def test_before_e8_fills_nothing_is_placed(world) -> None:
     world.report.write_text(json.dumps(_e8_report(position_id=None)), "utf-8")
     mt5 = _MT5()
