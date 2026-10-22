@@ -726,6 +726,12 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
         _write_out(doc, None)
         return doc
     _oco.page_identity(LANE, None)
+    # MARKET WATCH IS TERMINAL STATE (2026-10-22). The armed follower read NO_TICK every pass
+    # because XAUUSD was not in the FTMO terminal's Market Watch, and a terminal reset drops it
+    # again. Selecting the symbol is idempotent and places nothing.
+    select = getattr(mt5, "symbol_select", None)
+    if callable(select) and not select(SYMBOL, True):
+        log(f"symbol_select({SYMBOL}) refused; the tick read below decides")
     tick = mt5.symbol_info_tick(SYMBOL)
     if tick is None:
         doc["status"] = "NO_TICK"
