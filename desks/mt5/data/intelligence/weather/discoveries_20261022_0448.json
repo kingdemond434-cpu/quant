@@ -1,0 +1,24 @@
+[
+  {
+    "source": "weather",
+    "type": "hurricane",
+    "name": "Josephine",
+    "symbols": [
+      "USOIL",
+      "NATGAS"
+    ],
+    "confidence": 0.5,
+    "description": "Active hurricane Josephine - may impact energy prices"
+  },
+  {
+    "source": "weather",
+    "type": "hurricane",
+    "name": "Vance",
+    "symbols": [
+      "USOIL",
+      "NATGAS"
+    ],
+    "confidence": 0.5,
+    "description": "Active hurricane Vance - may impact energy prices"
+  }
+]
