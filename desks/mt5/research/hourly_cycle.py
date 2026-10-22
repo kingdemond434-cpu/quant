@@ -279,6 +279,11 @@ def frontier_report(health: dict) -> None:
     print(f"frontier report written ({rep['swept_at']})", flush=True)
 
 
+#: `daily_cycle.EXIT_STOOD_DOWN`, restated so this cycle never imports the chain to read one int;
+#: `test_daily_cycle_single_chain` pins the two equal.
+DAILY_CYCLE_STOOD_DOWN = 75
+
+
 def daily() -> dict:
     """The operating chain -- shadow -> promoter -> markout -- run once per UTC day.
 
@@ -301,8 +306,14 @@ def daily() -> dict:
         r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target)],
                       capture_output=True, text=True, cwd=str(BASE),
                       timeout=timeout_s, check=False)
+        # STOOD_DOWN IS NOT OK (v1.1). `daily_cycle` exits EXIT_STOOD_DOWN (75) when another
+        # chain holds its lock and this bounded caller ran nothing; recording that as OK would
+        # credit this leg with a chain it never ran. It is not a failure either: the holder is
+        # running the same steps.
+        status = ("OK" if r.returncode == 0
+                  else "STOOD_DOWN" if r.returncode == DAILY_CYCLE_STOOD_DOWN else "FAILED")
         return {"exit_code": int(r.returncode),
-                "status": "OK" if r.returncode == 0 else "FAILED",
+                "status": status,
                 "tail": (r.stdout or r.stderr or "")[-500:],
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
     except subprocess.TimeoutExpired as exc:

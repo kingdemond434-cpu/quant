@@ -26,6 +26,7 @@ key, so a double call is safe even if this guard is bypassed.
 from __future__ import annotations
 
 import contextlib
+import errno
 import json
 import os
 import sys
@@ -808,12 +809,19 @@ def main(argv: list[str] | None = None) -> int:
     # another chain ends sees every step that chain stamped. See `_chain_lock`.
     lock = _chain_lock()
     if lock is None:
-        return 0
+        # A DISTINCT EXIT, NOT 0 (v1.1). The hourly leg maps it to STOOD_DOWN, so a pass that ran
+        # nothing is never recorded as a pass that ran the chain (`hourly_cycle.daily`).
+        return EXIT_STOOD_DOWN
     try:
-        return _run_chain(force)
+        return _run_chain(force, lock)
     finally:
         with contextlib.suppress(OSError):
             lock.close()
+
+
+#: The exit of a bounded caller that stood down behind another chain. 75 is EX_TEMPFAIL ("try
+#: again later"), which is exactly what it means; `hourly_cycle.daily` reads it as STOOD_DOWN.
+EXIT_STOOD_DOWN = 75
 
 
 def _lock_path() -> Path:
@@ -822,14 +830,27 @@ def _lock_path() -> Path:
     return STAMP.parent / ".job_locks" / "daily_cycle.lock"
 
 
+class LockUnavailable(OSError):
+    """The lock FILE could not be opened or locked for a reason other than another holder: a
+    permission, path or disk fault. It is never read as contention (v1.1): a caller that stood
+    down on it would stand down on every pass, run nothing and leave no artifact."""
+
+
+#: The errnos a non-blocking lock attempt raises when ANOTHER process holds the lock: flock
+#: gives EWOULDBLOCK/EAGAIN, msvcrt.locking gives EACCES or EDEADLOCK. Anything else is a fault.
+_HELD_ERRNOS = frozenset(e for e in (errno.EAGAIN, errno.EWOULDBLOCK, errno.EACCES,
+                                     getattr(errno, "EDEADLOCK", errno.EDEADLK), errno.EDEADLK))
+
+
 def _try_lock(path: Path) -> IO[str] | None:
     """Non-blocking OS lock on `path`: the open handle, or None while another process holds it.
-    The kernel releases it when the holder dies, so a killed chain never leaves a stale lock."""
+    Raises LockUnavailable when the file itself cannot be opened or locked. The kernel releases
+    the lock when the holder dies, so a killed chain never leaves a stale lock."""
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         fh = open(path, "a+", encoding="utf-8")  # noqa: SIM115 -- held for the whole chain
-    except OSError:
-        return None
+    except OSError as exc:
+        raise LockUnavailable(f"cannot open {path}: {type(exc).__name__}: {exc}") from exc
     try:
         if sys.platform == "win32":
             import msvcrt
@@ -838,9 +859,11 @@ def _try_lock(path: Path) -> IO[str] | None:
         else:
             import fcntl
             fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except OSError:
+    except OSError as exc:
         fh.close()
-        return None
+        if exc.errno in _HELD_ERRNOS:
+            return None
+        raise LockUnavailable(f"cannot lock {path}: {type(exc).__name__}: {exc}") from exc
     with contextlib.suppress(OSError):
         fh.seek(0)
         fh.truncate()
@@ -857,10 +880,34 @@ LOCK_POLL_S = 15.0
 
 
 class _Unlocked:
-    """Stands in for a lock handle when the lock could not be had: closing it is a no-op."""
+    """A chain running WITHOUT the lock (the wait ran out, or the lock file is faulty).
+
+    It is not a licence to run unlocked to the end (v1.1, audit should-fix 1): a chain lasts
+    hours, and once the first holder exits, hourly legs would take the free lock and run beside
+    this one for the rest of it. So `retry()` is called before every step, and the first one
+    that gets the lock keeps it for the remainder -- from then on this IS the one chain."""
+
+    def __init__(self) -> None:
+        self.handle: IO[str] | None = None
+
+    @property
+    def held(self) -> bool:
+        return self.handle is not None
+
+    def retry(self) -> bool:
+        if self.handle is None:
+            try:
+                self.handle = _try_lock(_lock_path())
+            except LockUnavailable:
+                return False
+            if self.handle is not None:
+                dlog("chain lock acquired between steps; the rest of this chain runs under it")
+        return self.handle is not None
 
     def close(self) -> None:
-        return None
+        if self.handle is not None:
+            self.handle.close()
+            self.handle = None
 
 
 def _chain_lock() -> IO[str] | _Unlocked | None:
@@ -886,19 +933,27 @@ def _chain_lock() -> IO[str] | _Unlocked | None:
     holder is doing the same work. A caller with no plan (the `MT5-Daily` task, or a hand run)
     has no deadline and WAITS for the holder, then re-reads the stamp, so a short hourly run that
     happened to hold the lock at 23:50 can never cost the day its long steps. If the wait outlasts
-    UNBOUNDED_WAIT_S the caller runs anyway, exactly as it did before this lock existed -- the
-    lock can remove a duplicate, never a run.
+    UNBOUNDED_WAIT_S the caller runs anyway -- the lock can remove a duplicate, never a run --
+    and keeps retrying the lock between steps (`_Unlocked.retry`).
+
+    A FAULTY LOCK FILE IS NOT A HOLDER. If the file cannot be opened or locked for any reason
+    other than contention, that is logged and EVERY caller runs, unlocked and retrying, exactly as
+    before the lock existed: a fault must never turn into a stand-down on every pass.
     """
     path = _lock_path()
-    fh = _try_lock(path)
+    try:
+        fh = _try_lock(path)
+    except LockUnavailable as exc:
+        dlog(f"chain lock UNAVAILABLE ({exc}); running without it and retrying between steps")
+        return _Unlocked()
     if fh is not None:
         return fh
     holder = ""
     with contextlib.suppress(OSError):
         holder = path.read_text(encoding="utf-8").strip()
     if str(os.environ.get("HOURLY_PLAN", "") or "").strip():
-        dlog(f"another daily chain holds the lock ({holder or 'holder unreadable'}); this "
-             f"bounded caller stands down -- the holder runs the same steps, and the next "
+        dlog(f"STOOD_DOWN: another daily chain holds the lock ({holder or 'holder unreadable'}); "
+             f"this bounded caller runs nothing -- the holder runs the same steps, and the next "
              f"pass re-reads the stamp")
         return None
     dlog(f"another daily chain holds the lock ({holder or 'holder unreadable'}); waiting up "
@@ -907,16 +962,43 @@ def _chain_lock() -> IO[str] | _Unlocked | None:
     while waited < UNBOUNDED_WAIT_S:
         time.sleep(LOCK_POLL_S)
         waited += LOCK_POLL_S
-        fh = _try_lock(path)
+        try:
+            fh = _try_lock(path)
+        except LockUnavailable as exc:
+            dlog(f"chain lock UNAVAILABLE ({exc}); running without it and retrying between steps")
+            return _Unlocked()
         if fh is not None:
             dlog(f"chain lock acquired after {waited:.0f}s")
             return fh
-    dlog(f"chain lock still held after {UNBOUNDED_WAIT_S:.0f}s; running without it, as before "
-         f"the lock existed")
+    dlog(f"chain lock still held after {UNBOUNDED_WAIT_S:.0f}s; running without it and retrying "
+         f"the lock before every step")
     return _Unlocked()
 
 
-def _run_chain(force: bool) -> int:
+def _write_stamp(today: str, steps: dict[str, dict]) -> bool:
+    """Write today's stamp, merged with whatever is on disk NOW. Never moves `last_run` back.
+
+    THE STAMP IS RE-READ AT EVERY WRITE (v1.1, audit should-fix 2). The chain used to write the
+    copy it loaded at its start, so a chain that began on day D and was still running after
+    00:00 UTC rewrote a day-D+1 stamp back to D on every step -- and the next caller saw D+1 as
+    never started. Now: a stamp on disk for a LATER day wins (this write is refused and logged,
+    the later day's progress stands); a stamp for the SAME day is merged step by step, so a step
+    another process stamped is never erased; an older or absent stamp is replaced.
+    """
+    disk = _load_stamp()
+    on_disk = str(disk.get("last_run") or "")
+    if on_disk > today:
+        dlog(f"stamp NOT written: it already records {on_disk}, later than this chain's {today}; "
+             f"last_run never moves backwards")
+        return False
+    merged_steps = {**(disk.get("steps") or {}), **steps} if on_disk == today else dict(steps)
+    STAMP.parent.mkdir(parents=True, exist_ok=True)
+    STAMP.write_text(json.dumps({**disk, "last_run": today, "steps": merged_steps}, indent=2),
+                     encoding="utf-8")
+    return True
+
+
+def _run_chain(force: bool, lock: IO[str] | _Unlocked | None = None) -> int:
     today = datetime.now(UTC).date().isoformat()
     stamp = _load_stamp()
 
@@ -955,24 +1037,28 @@ def _run_chain(force: bool) -> int:
     # while every hour spent its full budget re-running the same first steps. Stamping each step
     # makes a killed pass RESUME: the next hour runs only what has not run today.
     results: dict[str, dict] = {}
-    STAMP.parent.mkdir(parents=True, exist_ok=True)
     for name, fn in todo:
+        if isinstance(lock, _Unlocked) and not lock.held:
+            # RUNNING UNLOCKED, SO ANOTHER CHAIN MAY HAVE RUN THIS STEP SINCE WE PLANNED (v1.1).
+            # Try for the lock first; either way, a step the stamp on disk now names for today is
+            # not run a second time (unless --force, which re-runs by definition).
+            lock.retry()
+            if not force:
+                now = _load_stamp()
+                if now.get("last_run") == today and name in (now.get("steps") or {}):
+                    dlog(f"{name}: already stamped today by another chain; not repeated")
+                    continue
         results[name] = run_step(name, fn)
-        STAMP.write_text(json.dumps({**stamp, "last_run": today,
-                                     "steps": {**prior, **results}}, indent=2),
-                         encoding="utf-8")
+        _write_stamp(today, {**prior, **results})
 
     # THE STAMP RECORDS THE ATTEMPT, NOT A SUCCESS. Marking the day done only on a clean run would
     # make a broken step retry every hour, and a step that fails at 09:00 because the terminal is
     # shut fails identically at 10:00 -- turning one honest failure into a log full of them. The
     # per-step outcome is kept alongside so the failure stays visible and `--force` is the explicit
-    # way to try again.
-    stamp["last_run"] = today
-    # Merge, never replace: a catch-up pass must not erase the outcomes of the steps that ran
-    # earlier today, or the next tick would read them as never-run and loop on them forever.
-    stamp["steps"] = {**prior, **results}
-    STAMP.parent.mkdir(parents=True, exist_ok=True)
-    STAMP.write_text(json.dumps(stamp, indent=2), encoding="utf-8")
+    # way to try again. Merge, never replace: a catch-up pass must not erase the outcomes of the
+    # steps that ran earlier today, or the next tick would read them as never-run and loop on them
+    # forever (`_write_stamp` merges with the stamp as it stands on disk at this moment).
+    _write_stamp(today, {**prior, **results})
 
     failed = [n for n, r in results.items() if not r["ok"]]
     dlog(f"daily cycle {today} done" + (f" -- FAILED: {', '.join(failed)}" if failed else ""))
