@@ -17,14 +17,17 @@
  "uptime_s": 167317.7,
  "last_sweep_ended_utc": "2026-10-21T20:09:42+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-10-21T23:05:38+00:00",
+ "heartbeat_utc": "2026-10-22T07:12:26+00:00",
  "sweep_phase": {
   "pid": 26072,
   "sweep_started_utc": "2026-10-21T20:10:09+00:00",
   "phases": {
-   "plan": 10168.9
+   "plan": 10168.9,
+   "build_shards": 12575.6,
+   "collect_and_cut": 263.2,
+   "rule_shards": 71.0
   },
-  "phase": "build_shards",
-  "phase_started_utc": "2026-10-21T22:59:38+00:00"
+  "phase": "merge_and_publish",
+  "phase_started_utc": "2026-10-22T02:34:47+00:00"
  }
 }

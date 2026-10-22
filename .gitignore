@@ -512,3 +512,9 @@ desks/mt5/data/E8_ACCOUNT.json*
 # The principal's arming marker for the Fusion ruin rail (proposals/fusion_deadman.py ARMED_MARKER):
 # only zuck creates it, on the box; no adoption, restore or session may carry it in.
 desks/mt5/data/FUSION_DEADMAN_ARMED.json*
+# The gold direction lock's mode switch (mt5desk.gold_oco.MODE_FILE): box-local, like the books.
+desks/mt5/data/GOLD_OCO_MODE.json*
+# The FTMO follower's account declaration and its arming marker (prop/ftmo_follower.py): the
+# principal's own box-local files, never committed.
+desks/mt5/data/FTMO_LIVE_ACCOUNT.json*
+desks/mt5/data/FTMO_FOLLOWER_ARMED
