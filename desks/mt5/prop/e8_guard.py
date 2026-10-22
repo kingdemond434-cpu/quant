@@ -1,6 +1,6 @@
 """THE ONLY THING ALLOWED TO REFUSE AN ORDER FOR A PROP REASON, and the account's whole defence.
 
-E8 Pro, $100,000, account 2478877. The rules it enforces, from the invoice and the dashboard:
+E8 Pro, the $100,000 evaluation account. The rules it enforces, from the invoice and the dashboard:
 
     profit target      10%   -> $110,000 equity and the evaluation is over
     max drawdown       10%   STATIC -- a floor at $90,000 that never trails
@@ -114,6 +114,15 @@ class Decision:
     @property
     def may_open(self) -> bool:
         return self.verdict is Verdict.OK
+
+    @property
+    def profit_cap_headroom(self) -> float:
+        """Dollars of profit today can still COUNT before the daily cap strips the excess.
+
+        The cap less today's profit so far (a losing day leaves the whole cap): the figure the OK
+        verdict's `why` states. A lane uses it to refuse a target the cap would strip.
+        """
+        return START_BALANCE * DAILY_PROFIT_CAP - max(float(self.day_pnl), 0.0)
 
     def as_dict(self) -> dict[str, Any]:
         return {

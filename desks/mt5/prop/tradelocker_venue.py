@@ -1,6 +1,6 @@
 """THE SECOND VENUE THIS DESK HAS EVER HAD, and the first that is not MetaTrader.
 
-E8 Pro account 2478877 is provisioned on **TradeLocker**. Every order this desk has ever sent
+The E8 Pro evaluation account is on **TradeLocker**. Every order this desk has ever sent
 went through the `MetaTrader5` package into a local terminal on the Windows box; that account has
 no terminal and never will. This module is the adapter, and it is deliberately nothing more than
 one: it speaks TradeLocker and it speaks the desk's own vocabulary, and the DECISIONS stay where
@@ -269,6 +269,10 @@ class TradeLockerVenue:
                     break
         if "equity" not in out and "balance" in out:
             out["equity"] = out["balance"] + out.get("open_pnl", 0.0)
+            if "open_pnl" not in out:
+                # Balance alone hides the floating loss. Flagged, so a reader that must not size
+                # from balance (prop/e8_gold, v5.2) can refuse it; others read it as before.
+                out["equity_from_balance"] = 1.0
         if "equity" not in out:
             raise VenueError(f"account state carries no equity; keys were {sorted(st)}")
         return out

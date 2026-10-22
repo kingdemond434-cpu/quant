@@ -782,6 +782,64 @@ def published_ftmo_follower_lines() -> dict[str, Any]:
     return {"source": f"data/{FTMO_INTENTS.name} RAIL_BLOCKED", "rails": lines}
 
 
+#: E8 gold's own rails journal their binds on E8_INTENTS under rails named with this prefix.
+E8_GOLD_RAIL_PREFIX = "e8_gold_"
+#: The statuses a bind is journalled with: a window not sent, and a window sent smaller.
+E8_GOLD_RAIL_STATUSES = ("RAIL_BLOCKED", "RAIL_SHRUNK")
+
+
+def published_e8_gold_lines() -> dict[str, Any]:
+    """E8 gold's unregistered rails (lot ceiling and kin), billed TWO-SIDED from the journal.
+
+    `prop/e8_gold.py` journals every bind of its own rails (`rail` starting E8_GOLD_RAIL_PREFIX,
+    status RAIL_BLOCKED or RAIL_SHRUNK, `missed_growth_risk_usd` = the certified risk withheld).
+    The rails are not in the sealed register (libs/portfolio/rails.py), so, as the stop-geometry
+    gate does, their lines are PUBLISHED here rather than appended to LEDGER. Each line carries
+    both sides: the cost (risk withheld, a number) and the saving (what the smaller or absent leg
+    spared in a fill-through tail), which the journal cannot observe and so is UNMEASURED --
+    never a clean zero. A missing journal is UNMEASURED; one with no bind is NOT_BINDING."""
+    try:
+        text = E8_INTENTS.read_text("utf-8")
+    except (OSError, UnicodeDecodeError):
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": "the E8 intents journal is missing or unreadable"}
+    lines: dict[str, dict[str, Any]] = {}
+    for raw in text.splitlines():
+        try:
+            row = json.loads(raw) if raw.strip() else None
+        except ValueError:
+            continue
+        if not isinstance(row, dict) or row.get("status") not in E8_GOLD_RAIL_STATUSES:
+            continue
+        rail = str(row.get("rail") or "")
+        if not rail.startswith(E8_GOLD_RAIL_PREFIX):
+            continue
+        ln = lines.setdefault(rail, {"rail": rail, "n": 0, "n_blocked": 0, "n_shrunk": 0,
+                                     "risk_withheld_usd": 0.0, "first_at": row.get("at"),
+                                     "last_at": None})
+        ln["n"] += 1
+        ln["n_shrunk" if row["status"] == "RAIL_SHRUNK" else "n_blocked"] += 1
+        risk = row.get("missed_growth_risk_usd")
+        if isinstance(risk, (int, float)) and not isinstance(risk, bool):
+            ln["risk_withheld_usd"] += float(risk)
+        ln["last_at"] = row.get("at")
+    out = []
+    for ln in lines.values():
+        ln["risk_withheld_usd"] = round(ln["risk_withheld_usd"], 2)
+        ln["cost"] = {"risk_withheld_usd": ln["risk_withheld_usd"],
+                      "note": "risk, not forgone profit, which can be R:R times larger"}
+        ln["saving"] = {"verdict": UNMEASURED,
+                        "why": "the fill-through loss the rail spared is not observable from "
+                               "the journal; published as unmeasured, never priced as zero"}
+        ln["verdict"] = UNMEASURED
+        out.append(ln)
+    if not out:
+        return {"verdict": NOT_BINDING, "lines": [], "n": 0,
+                "why": "no E8 gold rail has bound on this host"}
+    return {"verdict": UNMEASURED, "source": "data/e8_gold_intents.jsonl",
+            "n": sum(x["n"] for x in out), "lines": sorted(out, key=lambda x: -x["n"])}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -901,7 +959,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            # here so the bill sits beside the rails' (never appended to the ledger).
            "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
                                     "fusion_book_rails": published_fusion_book_lines(),
-                                    "ftmo_follower_rails": published_ftmo_follower_lines()},
+                                    "ftmo_follower_rails": published_ftmo_follower_lines(),
+                                    "e8_gold_rails": published_e8_gold_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
