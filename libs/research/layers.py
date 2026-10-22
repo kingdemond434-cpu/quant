@@ -62,6 +62,7 @@ LEG_LAYER: dict[str, str] = {
     # A leg with no layer is an hour of compute that `opportunity_cost` cannot attribute, so
     # "what did the desk NOT test this hour" silently omits it.
     "futures_lead_lag": "information", "tape_features": "information",
+    "bar_clock_probe": "information",
     # prediction: turning information into a claim about returns
     "intake_catchup": "prediction",
     "compile_candidates": "prediction", "merge_docket": "prediction", "search": "prediction",
@@ -208,6 +209,8 @@ LEG_LAYER: dict[str, str] = {
     # Whether the desk has stopped placing without saying so is a measurement of its own
     # execution wiring, not an act on the book: meta.
     "placement_interlock": "meta",
+    # Whether the judge's own sweep is alive and progressing is the machine watching itself: meta.
+    "judge_alive": "meta",
     # THE TIER-1 CLOSED-LOOP B ROWS (2026-09-23).
     # Whether the running code may create new exposure, which scientist earned what, which
     # structures have started surviving again, and one EVIG price over every research resource

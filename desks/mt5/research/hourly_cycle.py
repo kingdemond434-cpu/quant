@@ -926,6 +926,25 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
     "maintain_miners": (2,),
 }
 
+#: The other side of the same rule: exit codes a leg uses to NAME a failure. They stay failures
+#: (`exit_code=N`, never a verdict) and the ledger row carries the name after it, so a reader
+#: sees what failed without opening the leg. A code here must never also be in VERDICT_EXITS.
+#:   judge_coverage 3 -- the pass met its budget and committed nothing (JUDGE_COVERAGE_TIMEOUT.json)
+#:   judge_coverage 4 -- --reuse-fresh found no fresh same-cycle table (JUDGE_COVERAGE_REUSE.json)
+#:   judge_coverage 5 -- a committed transaction manifest could not be rolled forward safely; it
+#:                       is kept and every pass refuses until it is resolved by hand
+NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
+    "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
+}
+
+
+def _exit_outcome(name: str, code: int) -> str:
+    """The ledger outcome for leg `name` exiting non-zero with `code`."""
+    if code in VERDICT_EXITS.get(name, ()):
+        return f"verdict_exit={code}"
+    label = NAMED_FAILURE_EXITS.get(name, {}).get(code)
+    return f"exit_code={code}:{label}" if label else f"exit_code={code}"
+
 
 #: THE HOURLY CYCLE COULD NOT FINISH IN AN HOUR, AND ITS TAIL NEVER RAN (measured 2026-09-16).
 #: One full pass sums the legs' budgets: backtest 36 min, deepen 20, daily 15, and six legs at
@@ -959,6 +978,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # in the law gate's `--rotate` rotation, which reaches a given state fence every few hours.
     # It reads three small files and writes one, so it runs on BOTH plans, every hour.
     "placement_interlock",
+    # THE JUDGE'S PULSE, EVERY HOUR (audit of 2832cebd1, 2026-10-20): the sweep watchdog's
+    # heartbeat and stall record were read only by the law gate's rotation, which reaches a given
+    # fence every few hours -- so a stalled judge could sit unread that long. Two small JSON reads.
+    "judge_alive",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
     # CANON PUBLICATION IS CORE. `MT5-Gauntlet` is the judge's own hourly task, so a sweep can
     # complete on a pass this cycle never ran; if the seal were only refreshed on the heavy plan
@@ -1149,8 +1172,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "committees", "committee_ensembles", "rejection_throughput"),
                     "validate"),
     # macro: the cross-asset / macro brain
-    **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
-                     "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
+    **dict.fromkeys(("fred_macro", "futures_lead_lag", "bar_clock_probe", "causal_graph",
+                     "residual_factors", "weak_signals", "edges_macro_fusion_sweep", "strategy_paths",
                      "counterfactual_world", "opportunity_forecast", "forecast_contract",
                      "exposure_decomposition", "event_response_atlas", "causal_lab",
                      "event_graph_lab",
@@ -1660,8 +1683,9 @@ def _costed(name: str, fn):
             # there, a verdict still ends a leg non-zero, and a code NOT on the declared list is
             # still a failure. What changes is that a reader can tell them apart.
             _code = out["exit_code"]
-            outcome = (f"verdict_exit={_code}" if _code in VERDICT_EXITS.get(name, ())
-                       else f"exit_code={_code}")
+            outcome = _exit_outcome(name, _code)
+            if ":" in outcome:
+                print(f"  LEG FAILED {name}: {outcome}", flush=True)
     _close(outcome, outputs=_leg_artifacts(name))
     _emit_leg(name, outcome)
     _advance_watermark(name, outcome)
@@ -1978,8 +2002,13 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Regional parity reads every pack and two reports and writes three small files; measured
     # at ~10 s on a build box. The cap sits above its own --budget-s for the usual reason.
     "regional_parity": 400,
-    # Judge coverage stops itself at --budget-s 120; it reads two files and sorts. The cap sits
-    # above its own budget for the reason every other leg's does.
+    # Judge coverage DECLARES --budget-s 120. It reads the docket, the whole gate ledger, the
+    # gauntlet report and the unrunnable bank, and ranks every docket row -- measured ~70 s on a
+    # build-box replica of the box's inputs, 131 s before c5390bc6a, and killed at this cap on
+    # the box at 2026-10-20 19:44Z. Since v2 it stops itself, UNCOMMITTED, with a named
+    # JUDGE_COVERAGE_TIMEOUT.json and exit 3, at the later of 120 s and this cap (as exported
+    # in QUANT_LEG_BUDGET_S) minus its commit margin -- so it never stops earlier than the kill
+    # it replaces, and a stopped pass changes no file. The cap is unchanged.
     "judge_coverage": 300,
     # Orthogonality yield is one indexed scan of the candidate registry, one pass over the gate
     # ledger and 79 leave-one-out SVDs of a 79 x ~1000 indicator matrix. Measured 2026-09-23 on
@@ -2975,6 +3004,16 @@ def placement_interlock() -> dict:
     return _producer("placement_interlock", "scripts/check_placement_interlock.py")
 
 
+def judge_alive() -> dict:
+    """`judge_alive`: is the judge's --once sweep alive and progressing? `scripts/
+    check_judge_coverage.py --liveness --require-state` reads the sweep watchdog's
+    GAUNTLET_HEARTBEAT.json and GAUNTLET_STALL.json and writes reports/judge_alive_fence.json:
+    FAIL on a no-progress kill no finished sweep has cleared or a wedged watchdog, amber (exit 0)
+    on a SLOW sweep that is still burning CPU. Hourly here, and in the law gate's rotation."""
+    return _producer("judge_alive", "scripts/check_judge_coverage.py", "--liveness",
+                     "--require-state")
+
+
 def pit_canaries() -> dict:
     """`pit_canaries`: planted past/now/future rows read point-in-time every hour; green only
     when the future row is invisible at now (closed-loop `truth.pit_canaries_green`)."""
@@ -3384,6 +3423,21 @@ def futures_lead_lag() -> dict:
     return _producer("futures_lead_lag", "research/futures_lead_lag.py")
 
 
+def bar_clock_probe() -> dict:
+    """THE BAR CLOCK, READ OFF THE TERMINAL, AND THE ONE WRITER OF BAR_CLOCK.json.
+
+    Without a measured clock `libs/research/bar_clock` drops every UTC-stamped event, correctly,
+    and `family_event_reaction` read NEEDS_DATA(bar_clock) with 199 events and 0 fire days
+    (judge dead-families v4, 2026-10-21). This reads broker server time (newest tick, confirmed
+    by the current H1 bar's open) against the box's UTC clock on every pass, appends it to
+    `data/bar_clock_probes.jsonl`, and publishes dated spans plus the futures cross-venue season
+    offsets no span contradicts. A host with no attached terminal captures nothing and publishes
+    from the ledger; with no evidence at all it publishes UNMEASURED, never a guess. AFTER
+    futures_lead_lag, whose report it reads.
+    """
+    return _producer("bar_clock_probe", "research/bar_clock_probe.py")
+
+
 def edges_macro_fusion_sweep() -> dict:
     """THE EDGE LIBRARY RE-RANKED AT THE COST THE ACCOUNT ACTUALLY CHARGES.
 
@@ -3786,6 +3840,7 @@ def main() -> None:
     sp = _costed("spread_provenance", spread_provenance)
     tf = _costed("tape_features", tape_features)
     fll = _costed("futures_lead_lag", futures_lead_lag)
+    bcp = _costed("bar_clock_probe", bar_clock_probe)
     tj = _costed("time_joins", time_joins)
     aj = _costed("allocator_join", allocator_join)
     # BEFORE pf_allocator, which conditions on the state this refreshes.
@@ -3867,6 +3922,7 @@ def main() -> None:
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
     pil = _costed("placement_interlock", placement_interlock)
+    jal = _costed("judge_alive", judge_alive)
     myd = _costed("mutation_yield", mutation_yield)
     # DELAYED TRUTH (principal F12, 2026-09-12; wired 2026-09-16): realised R credited back
     # to the scientist that proposed each cell, live when the live ledger is thick enough,
@@ -4373,9 +4429,18 @@ def main() -> None:
                   lambda: _producer("orthogonality_yield",
                                     "research/orthogonality_yield.py",
                                     "--once", "--budget-s", "120"))
+    # THE LEG REUSES THE MERGE'S TABLE INSTEAD OF COMPUTING IT A SECOND TIME. `catch_up_intake`
+    # above runs merge_hypotheses -> order_docket -> build -> write in this same cycle, so a
+    # second build here duplicated a full pass over the docket and the ledger, and that copy
+    # was the one killed at this leg's cap on the box. `--reuse-fresh` computes nothing: it
+    # exits 0 only when the published table is this cycle's (stamped after
+    # QUANT_PIPELINE_STARTED_AT, ratchet in step, merge report of this cycle written after it),
+    # and otherwise exits 4 with reports/JUDGE_COVERAGE_REUSE.json naming why. It never writes
+    # the table, so a stale table stays stale under its own `at`. The cap is unchanged.
     jcv = _costed("judge_coverage", lambda: _producer("judge_coverage",
                                                       "research/judge_coverage.py",
-                                                      "--once", "--budget-s", "120"))
+                                                      "--once", "--reuse-fresh",
+                                                      "--budget-s", "120"))
     # EFFECTIVE TRIALS: the multiplicity budget is charged in independent TESTS, not in docket
     # rows. Measures nominal vs effective per family (participation ratio of (grid cell, content)
     # identities within each mechanism), publishes the ratio, and writes the corrected campaign
@@ -5780,7 +5845,7 @@ def main() -> None:
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "mass_screen": msc,
                     "session_variant_remap": svr, "candidate_conservation": ccv,
-                    "pit_canaries": pcn, "placement_interlock": pil,
+                    "pit_canaries": pcn, "placement_interlock": pil, "judge_alive": jal,
                     "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,
@@ -5970,7 +6035,8 @@ def main() -> None:
                     "alpha_periodic_table": pt, "queue_cycle": qcy,
                     "microstructure_census": mx, "entry_timing": ety,
                     "spread_provenance": sp, "tape_features": tf,
-                    "futures_lead_lag": fll, "time_joins": tj, "allocator_join": aj,
+                    "futures_lead_lag": fll, "bar_clock_probe": bcp, "time_joins": tj,
+                    "allocator_join": aj,
                     "fred_macro": fm,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,

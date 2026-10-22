@@ -74,7 +74,7 @@ def test_installer_is_declared_idempotent_and_hooked_into_adoption() -> None:
 
     inst = INSTALLER.read_text("utf-8")
     assert "$TaskName = 'MT5-FrontierAudit'" in inst
-    assert "param([switch]$IfMissing)" in inst
+    assert "param([switch]$IfMissing, [switch]$EnsureSingleInstance)" in inst
     assert "run_frontier_audit.cmd" in inst
     assert "AddHours(5).AddMinutes(10)" in inst
     # -IfMissing returns before any Unregister, so a live task is never touched.

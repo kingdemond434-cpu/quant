@@ -859,24 +859,182 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     }
 
 
+#: THE CORE REPUBLISH (2026-10-20). Measured on the box: GAUNTLET_BACKPRESSURE.json was stamped
+#: 2026-10-03 on 2026-10-20 -- the full build streams the 5.7M-line hypothesis graph TWICE and
+#: timed out its hourly leg on every pass, so `judging_throughput` read the queue as UNMEASURED
+#: for seventeen days. The judge's controllers need two things from this file: the last sweep's
+#: `capacity` (root scalars streamed off the sweep report) and the 24h testing rate (the verdict
+#: ledger, date-filtered by regex before any decode). `build_core` measures exactly those, never
+#: touches the graph or the registry, and is run (a) by the resident judge launcher after EVERY
+#: sweep and (b) at the START of every full run, so a full build that is killed still leaves a
+#: fresh core behind. Every heavy block it does not re-measure is carried forward UNCHANGED under
+#: `full_at`, so no reader can mistake a carried window for a fresh one.
+CORE_WINDOW_H = 24.0
+
+
+def _core_testing(at: datetime) -> dict[str, Any]:
+    """The 24h testing rate, from the verdict ledger alone. An absent or unreadable ledger is
+    UNMEASURED -- never 0.0, which would read as a judge that judged nothing."""
+    note: dict[str, str] = {}
+    since = at - timedelta(hours=CORE_WINDOW_H)
+    vers = verdicts(_read_jsonl(GATE_LEDGER, note, since=since))
+    state = note.get(GATE_LEDGER.name, "READ")
+    if state not in ("READ",) and not str(state).startswith("TRUNCATED_KEPT_NEWEST"):
+        return {"status": UNMEASURED_CORE, "verdicts": UNMEASURED_CORE,
+                "cells_judged": UNMEASURED_CORE, "per_hour": UNMEASURED_CORE,
+                "passed": UNMEASURED_CORE, "ledger": state,
+                "measured_at": at.isoformat(timespec="seconds"), "source": "build_core"}
+    v = [r for r in vers if r.get("_t") is not None and r["_t"] >= since]
+    judged = {str(r.get("cell") or "") for r in v if r.get("passed") is not None}
+    return {"status": "MEASURED", "verdicts": len(v), "cells_judged": len(judged),
+            "per_hour": round(len(judged) / CORE_WINDOW_H, 3),
+            "passed": sum(1 for r in v if r.get("passed") is True), "ledger": state,
+            "measured_at": at.isoformat(timespec="seconds"), "source": "build_core"}
+
+
+UNMEASURED_CORE = "UNMEASURED"
+
+
+def build_core(now: datetime | None = None, prev: dict[str, Any] | None = None,
+               testing: dict[str, Any] | None = None,
+               cap: dict[str, Any] | None = None) -> dict[str, Any]:
+    """The cheap, every-sweep half of the report, merged onto the previous full report.
+
+    ONE VINTAGE PER BLOCK (audit of be6a305b7): the core never edits `windows` -- a fresh
+    testing rate divided into a backlog carried from an old full build is a number of no
+    vintage. The fresh rate goes to `core.testing_24h`; `capacity` is the sweep's own reading.
+    """
+    at = now or _now()
+    note: dict[str, str] = {}
+    testing = testing if testing is not None else _core_testing(at)
+    cap = cap if cap is not None else capacity(note, at)
+    doc: dict[str, Any] = dict(prev) if isinstance(prev, dict) else {}
+    full_at = doc.get("full_at") or (doc.get("at") if doc.get("mode") != "core" else None)
+    doc.update({
+        "at": at.isoformat(timespec="seconds"), "mode": "core", "full_at": full_at,
+        "capacity": cap,
+        "core": {"at": at.isoformat(timespec="seconds"), "inputs": dict(note),
+                 "testing_24h": testing,
+                 "re_measured": ["capacity", "core.testing_24h"],
+                 "carried_from_full_at": full_at,
+                 "why": ("every block other than `capacity` and `core.testing_24h` is the last "
+                         "FULL build's, stamped `full_at`, and unchanged; a reader that needs "
+                         "a fresh window must check `full_at`, never `at`")},
+    })
+    return doc
+
+
+#: Both writers of OUT -- the detached core after every sweep and the hourly full build -- hold
+#: this lock for their read-merge-write, so a core can never replace a full build that finished
+#: between its read and its write (audit of be6a305b7).
+WRITE_LOCK_WAIT_S = 30.0
+
+
+def _write_lock(path: Path, wait_s: float = WRITE_LOCK_WAIT_S) -> Any:
+    try:
+        from libs.research.artifact_chain import _locked
+        return _locked(path, wait_s)
+    except Exception:  # pragma: no cover - libs always present on the box
+        import contextlib
+        return contextlib.nullcontext(False)
+
+
+def write_core(now: datetime | None = None, path: Path | None = None) -> Path | None:
+    """Measure the core, then merge it onto the CURRENT report under the write lock.
+
+    The measurement happens outside the lock (it reads the ledger); only read-merge-write is
+    serialised. No lock inside the wait -> nothing is written (the full build is writing a
+    fresher file), and None says so.
+    """
+    target = path or OUT
+    at = now or _now()
+    testing, cap = _core_testing(at), capacity({}, at)
+    with _write_lock(target) as held:
+        if not held:
+            return None
+        prev = _read_json(target, {})
+        return _write_unlocked(build_core(at, prev if isinstance(prev, dict) else None,
+                                          testing=testing, cap=cap), target)
+
+
 def _atomic_write(path: Path, text: str) -> Path:
+    """Atomic replace through a temporary name UNIQUE to this writer (two writers sharing one
+    `.tmp` could each rename the other's half-written bytes into place)."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{os.urandom(4).hex()}.tmp")
     tmp.write_text(text, encoding="utf-8")
     os.replace(tmp, path)
     return path
 
 
+def _write_unlocked(doc: dict[str, Any], path: Path) -> Path:
+    return _atomic_write(path, json.dumps(doc, indent=1, default=str))
+
+
 def write(doc: dict[str, Any], path: Path | None = None) -> Path:
-    return _atomic_write(path or OUT, json.dumps(doc, indent=1, default=str))
+    """The full build's write, under the same lock as the core's (tolerant: a lock that cannot
+    be had in the wait still writes -- the full build is the fresher of the two)."""
+    target = path or OUT
+    with _write_lock(target):
+        prev = _read_json(target, {})
+        return _write_unlocked(_keep_fresher_core(doc, prev if isinstance(prev, dict) else {}),
+                               target)
+
+
+def _stamp(value: Any) -> datetime | None:
+    try:
+        got = datetime.fromisoformat(str(value))
+    except (TypeError, ValueError):
+        return None
+    return got if got.tzinfo else got.replace(tzinfo=UTC)
+
+
+def _keep_fresher_core(doc: dict[str, Any], prev: dict[str, Any]) -> dict[str, Any]:
+    """A full build measured at `doc.at` must not replace a core measured AFTER it (audit HOLD
+    of d465792f118: capacity went sweep#3 -> sweep#2 and the core block vanished). The core's
+    two blocks -- `capacity` and `core` -- are carried over when they are the fresher reading;
+    every other block is the full build's."""
+    core = prev.get("core")
+    if not isinstance(core, dict):
+        return doc
+    core_at, full_at = _stamp(core.get("at")), _stamp(doc.get("at"))
+    if core_at is None or full_at is None or core_at <= full_at:
+        return doc
+    out = dict(doc)
+    out["core"] = {**core, "carried_from_full_at": doc.get("full_at") or doc.get("at"),
+                   "kept_over_full_build_at": doc.get("at")}
+    if "capacity" in prev:
+        out["capacity"] = prev["capacity"]
+    return out
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dry-run", action="store_true",
                     help="measure and print; write no report and no prior")
+    ap.add_argument("--core", action="store_true",
+                    help="re-measure only capacity and the 24h testing rate (seconds, not the "
+                         "graph) and publish them over the last full report; run every sweep")
     a = ap.parse_args(argv)
+    if a.core:
+        if a.dry_run:
+            core = build_core(prev=_read_json(OUT, {}) or None)
+            print(f"gauntlet backpressure core {core['at']} (dry run): "
+                  f"testing={core['core']['testing_24h']}")
+            return 0
+        print(f"-> {write_core() or 'NOT WRITTEN (write lock held by the full build)'}  "
+              "(core: capacity + 24h testing re-measured)")
+        return 0
+    if not a.dry_run:
+        # THE CORE GOES FIRST, so a full build killed by its leg budget still republishes the two
+        # blocks the judge's controllers read. Best effort: a core failure never stops the build.
+        try:
+            write_core()
+        except Exception as exc:  # pragma: no cover - defensive; the full build follows
+            print(f"  core republish failed: {type(exc).__name__}: {exc}")
     doc = build()
+    doc["mode"] = "full"
+    doc["full_at"] = doc["at"]
     w = doc["windows"][WINDOWS[0][0]]
     print(f"gauntlet backpressure {doc['at']}")
     for name, _ in WINDOWS:
