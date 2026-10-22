@@ -1,0 +1,54 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Quant-Arena: Benchmarking LLM Agents for Quantitative Trading Research",
+    "summary": "Quantitative research is an iterative loop: a researcher proposes a market hypothesis, implements it as an executable signal, tests it on historical data, and decides what to keep. Existing benchmarks",
+    "url": "https://arxiv.org/abs/2610.30113v1",
+    "published": "2026-10-21T17:54:01Z",
+    "trading_terms": [
+      "trading"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Quant-Arena: Benchmarking LLM Agents for Quantitative Trading Research",
+    "summary": "Quantitative research is an iterative loop: a researcher proposes a market hypothesis, implements it as an executable signal, tests it on historical data, and decides what to keep. Existing benchmarks",
+    "url": "https://arxiv.org/abs/2610.30113v1",
+    "published": "2026-10-21T17:54:01Z",
+    "trading_terms": [
+      "trading"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Quant-Arena: Benchmarking LLM Agents for Quantitative Trading Research",
+    "summary": "Quantitative research is an iterative loop: a researcher proposes a market hypothesis, implements it as an executable signal, tests it on historical data, and decides what to keep. Existing benchmarks",
+    "url": "https://arxiv.org/abs/2610.30113v1",
+    "published": "2026-10-21T17:54:01Z",
+    "trading_terms": [
+      "trading"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Quant-Arena: Benchmarking LLM Agents for Quantitative Trading Research",
+    "summary": "Quantitative research is an iterative loop: a researcher proposes a market hypothesis, implements it as an executable signal, tests it on historical data, and decides what to keep. Existing benchmarks",
+    "url": "https://arxiv.org/abs/2610.30113v1",
+    "published": "2026-10-21T17:54:01Z",
+    "trading_terms": [
+      "trading"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]
