@@ -1,5 +1,5 @@
 {
- "at": "2026-10-22T07:41:41+00:00",
+ "at": "2026-10-22T08:40:50+00:00",
  "verdicts": {
   "status": "MEASURED",
   "rows_total": 998885,
@@ -31,12 +31,12 @@
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 16012,
-   "7d": 295077
+   "24h": 17762,
+   "7d": 290981
   },
   "per_hour": {
-   "24h": 667.167,
-   "7d": 1756.411
+   "24h": 740.083,
+   "7d": 1732.03
   }
  },
  "verdicts_per_hour": 480.208,
@@ -44,13 +44,15 @@
  "verdict_rate_basis": "changed verdict events, not total completed tests",
  "first_judged_per_day": 8768.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
- "coverage_backlog_fresh": false,
- "created_per_day": 16012.0,
- "backlog": "UNMEASURED",
- "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
+ "coverage_backlog_fresh": true,
+ "created_per_day": 17762.0,
+ "backlog": 1222590,
+ "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\JUDGE_COVERAGE.json totals.unjudged_total",
  "eta_to_drain": {
-  "status": "UNMEASURED",
-  "why": "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
+  "status": "GROWING",
+  "hours": null,
+  "net_per_day": -8994.0,
+  "why": "the judge returns fewer verdicts an hour than the desk creates cells; the backlog cannot drain at this rate"
  },
  "workers_planned": 15,
  "workers_last_sweep": "UNMEASURED",

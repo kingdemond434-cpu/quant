@@ -1,5 +1,5 @@
 {
- "at": "2026-10-22T07:37:38+00:00",
+ "at": "2026-10-22T08:38:11+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -24,10 +24,10 @@
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "AUDCHF@M5.formula.p=4f8841504607c179",
-   "certificate": "external.AUDCHF@M5.formula.p=4f8841504607c179",
-   "fp": "bb96ef09898920de",
-   "symbol": "AUDCHF",
+   "key": "AUDJPY@M30.formula.p=91a46644e0a43513",
+   "certificate": "external.AUDJPY@M30.formula.p=91a46644e0a43513",
+   "fp": "adec22cefd540db5",
+   "symbol": "AUDJPY",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -38,10 +38,10 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDCAD@M5.formula.p=389fe42767236de9",
-   "certificate": "external.NZDCAD@M5.formula.p=389fe42767236de9",
-   "fp": "7183742b36ec935c",
-   "symbol": "NZDCAD",
+   "key": "AUDNZD@M30.formula.p=bdcd8535d09fc6e9",
+   "certificate": "external.AUDNZD@M30.formula.p=bdcd8535d09fc6e9",
+   "fp": "db6ac8e20aca8690",
+   "symbol": "AUDNZD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -52,10 +52,10 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDCAD@M5.formula.p=7a491b1e4ceef593",
-   "certificate": "external.NZDCAD@M5.formula.p=7a491b1e4ceef593",
-   "fp": "6088d07343325c39",
-   "symbol": "NZDCAD",
+   "key": "AUDSGD@M30.formula.p=4a23899008366c37",
+   "certificate": "external.AUDSGD@M30.formula.p=4a23899008366c37",
+   "fp": "22da52919b560e0f",
+   "symbol": "AUDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -66,10 +66,10 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDCAD@M5.formula.p=6274e7f36faf273e",
-   "certificate": "external.NZDCAD@M5.formula.p=6274e7f36faf273e",
-   "fp": "66e4c21b099aeacd",
-   "symbol": "NZDCAD",
+   "key": "AUDSGD@M30.formula.p=fa4928fb3d69e54d",
+   "certificate": "external.AUDSGD@M30.formula.p=fa4928fb3d69e54d",
+   "fp": "7ef68597e7bf14a1",
+   "symbol": "AUDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -80,10 +80,10 @@
   },
   {
    "lane": "certificate",
-   "key": "NZDCAD@M5.formula.p=c1d3f23f928c3e36",
-   "certificate": "external.NZDCAD@M5.formula.p=c1d3f23f928c3e36",
-   "fp": "a90d87f759776931",
-   "symbol": "NZDCAD",
+   "key": "AUDSGD@M30.formula.p=96e557d6db5ba6d8",
+   "certificate": "external.AUDSGD@M30.formula.p=96e557d6db5ba6d8",
+   "fp": "7d8b827739133274",
+   "symbol": "AUDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -94,10 +94,10 @@
   },
   {
    "lane": "certificate",
-   "key": "USDSGD@M5.formula.p=62d2558450b20630",
-   "certificate": "external.USDSGD@M5.formula.p=62d2558450b20630",
-   "fp": "a72a74f52a31e94e",
-   "symbol": "USDSGD",
+   "key": "AUDSGD@M30.formula.p=a0d25fca7dacc2a6",
+   "certificate": "external.AUDSGD@M30.formula.p=a0d25fca7dacc2a6",
+   "fp": "3b167c90833ee65b",
+   "symbol": "AUDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -108,10 +108,10 @@
   },
   {
    "lane": "certificate",
-   "key": "USDSGD@M5.formula.p=f307a1653bb11036",
-   "certificate": "external.USDSGD@M5.formula.p=f307a1653bb11036",
-   "fp": "098a18e25c2d1ff9",
-   "symbol": "USDSGD",
+   "key": "AUDSGD@M30.formula.p=acf1a6a6e410b2b7",
+   "certificate": "external.AUDSGD@M30.formula.p=acf1a6a6e410b2b7",
+   "fp": "72cbade057fca054",
+   "symbol": "AUDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -122,10 +122,10 @@
   },
   {
    "lane": "certificate",
-   "key": "AUDCHF@M30.formula.p=a0d25fca7dacc2a6",
-   "certificate": "external.AUDCHF@M30.formula.p=a0d25fca7dacc2a6",
-   "fp": "71becd85809e1edb",
-   "symbol": "AUDCHF",
+   "key": "AUDSGD@M30.formula.p=57d64550a8638e16",
+   "certificate": "external.AUDSGD@M30.formula.p=57d64550a8638e16",
+   "fp": "4f594a9551cad1dd",
+   "symbol": "AUDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -136,8 +136,8 @@
   },
   {
    "lane": "forward",
-   "key": "NAS100.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=-1_ttl_bars=96",
-   "symbol": "NAS100",
+   "key": "XAUEUR.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "symbol": "XAUEUR",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -149,8 +149,8 @@
   },
   {
    "lane": "forward",
-   "key": "NAS100.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=-1_ttl_bars=96",
-   "symbol": "NAS100",
+   "key": "XAUEUR.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "symbol": "XAUEUR",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -162,8 +162,8 @@
   },
   {
    "lane": "forward",
-   "key": "NOKSEK.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
-   "symbol": "NOKSEK",
+   "key": "XCUUSD.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "symbol": "XCUUSD",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -175,8 +175,8 @@
   },
   {
    "lane": "forward",
-   "key": "NZDCAD.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
-   "symbol": "NZDCAD",
+   "key": "XPTUSD.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
+   "symbol": "XPTUSD",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -188,8 +188,8 @@
   },
   {
    "lane": "forward",
-   "key": "XAGEUR.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=-1_ttl_bars=96",
-   "symbol": "XAGEUR",
+   "key": "XPTUSD.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
+   "symbol": "XPTUSD",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -201,12 +201,12 @@
   },
   {
    "lane": "forward",
-   "key": "XAGEUR.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
-   "symbol": "XAGEUR",
-   "family": "macro_conditional",
+   "key": "BTCUSD.drawdown_conditional.continuous",
+   "symbol": "BTCUSD",
+   "family": "drawdown_conditional",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'macro_conditional'"
+    "no written specification in the spec book for family 'drawdown_conditional'"
    ],
    "ours": {},
    "theirs": {},
@@ -214,12 +214,12 @@
   },
   {
    "lane": "forward",
-   "key": "XAGEUR.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=-1_ttl_bars=96",
-   "symbol": "XAGEUR",
-   "family": "macro_conditional",
+   "key": "BTCUSD.level_breakout.continuous",
+   "symbol": "BTCUSD",
+   "family": "level_breakout",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'macro_conditional'"
+    "no written specification in the spec book for family 'level_breakout'"
    ],
    "ours": {},
    "theirs": {},
@@ -227,12 +227,12 @@
   },
   {
    "lane": "forward",
-   "key": "XAGEUR.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
-   "symbol": "XAGEUR",
-   "family": "macro_conditional",
+   "key": "BTCUSD.momentum_volgate.continuous",
+   "symbol": "BTCUSD",
+   "family": "momentum_volgate",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'macro_conditional'"
+    "no written specification in the spec book for family 'momentum_volgate'"
    ],
    "ours": {},
    "theirs": {},
@@ -242,68 +242,68 @@
  "quarantined": [],
  "unmeasured": [
   {
-   "what": "AUDCHF@M5.formula.p=4f8841504607c179",
+   "what": "AUDJPY@M30.formula.p=91a46644e0a43513",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDCAD@M5.formula.p=389fe42767236de9",
+   "what": "AUDNZD@M30.formula.p=bdcd8535d09fc6e9",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDCAD@M5.formula.p=7a491b1e4ceef593",
+   "what": "AUDSGD@M30.formula.p=4a23899008366c37",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDCAD@M5.formula.p=6274e7f36faf273e",
+   "what": "AUDSGD@M30.formula.p=fa4928fb3d69e54d",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NZDCAD@M5.formula.p=c1d3f23f928c3e36",
+   "what": "AUDSGD@M30.formula.p=96e557d6db5ba6d8",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD@M5.formula.p=62d2558450b20630",
+   "what": "AUDSGD@M30.formula.p=a0d25fca7dacc2a6",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD@M5.formula.p=f307a1653bb11036",
+   "what": "AUDSGD@M30.formula.p=acf1a6a6e410b2b7",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "AUDCHF@M30.formula.p=a0d25fca7dacc2a6",
+   "what": "AUDSGD@M30.formula.p=57d64550a8638e16",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "NAS100.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "what": "XAUEUR.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=-1_ttl_bars=96",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "NAS100.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "what": "XAUEUR.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=-1_ttl_bars=96",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "NOKSEK.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
+   "what": "XCUUSD.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=-1_ttl_bars=96",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "NZDCAD.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
+   "what": "XPTUSD.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "XAGEUR.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=-1_ttl_bars=96",
+   "what": "XPTUSD.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "XAGEUR.macro_conditional.continuous@M5#atr_n=20_regime_high=0.5_rr=2.0_side_in_high=1_ttl_bars=96",
-   "why": "no written specification in the spec book for family 'macro_conditional'"
+   "what": "BTCUSD.drawdown_conditional.continuous",
+   "why": "no written specification in the spec book for family 'drawdown_conditional'"
   },
   {
-   "what": "XAGEUR.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=-1_ttl_bars=96",
-   "why": "no written specification in the spec book for family 'macro_conditional'"
+   "what": "BTCUSD.level_breakout.continuous",
+   "why": "no written specification in the spec book for family 'level_breakout'"
   },
   {
-   "what": "XAGEUR.macro_conditional.continuous@M5#atr_n=20_regime_high=0.7_rr=2.0_side_in_high=1_ttl_bars=96",
-   "why": "no written specification in the spec book for family 'macro_conditional'"
+   "what": "BTCUSD.momentum_volgate.continuous",
+   "why": "no written specification in the spec book for family 'momentum_volgate'"
   }
  ],
  "recorded": {
@@ -312,9 +312,9 @@
   "candidates": 0
  },
  "cursor": {
-  "forward": 626,
-  "at": "2026-10-22T06:37:41+00:00",
-  "certificates": 1003
+  "forward": 634,
+  "at": "2026-10-22T07:37:38+00:00",
+  "certificates": 1011
  },
  "notes": [],
  "independence": {
@@ -331,24 +331,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NOKSEK_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_M5.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDJPY_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDNZD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XCUUSD_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XPTUSD_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XPTUSD_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 5.42
+ "seconds": 6.51
 }
