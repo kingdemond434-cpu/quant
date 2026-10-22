@@ -45,9 +45,20 @@ class Channel:
         return dict(self.result)
 
 
+#: A healthy report from the merged producer (image companions onto speed train r2,
+#: 2026-10-22) also carries judge-rate's rate block and floor-reach's tape block: under
+#: --require-state an absent one FAILS by design (L1.49, "the box owes it").
+_RATE_AND_TAPE: dict[str, Any] = {
+    "judging_rate": {"status": "MEASURED", "verdicts_24h": 150_000, "target_per_day": 150_000},
+    "tape": {"status": "MEASURED", "families": {},
+             "depth": {"status": "MEASURED", "meets_need": False, "max_days": 1,
+                       "days_needed": 60}}}
+
+
 def _report(at: datetime, *, red: bool = False, judged: int = 5) -> dict[str, Any]:
     fam = {"unjudged": 10, "queued": 0 if red else 3, "judged_window": judged}
-    return {"at": at.isoformat(), "families": {"overnight_drift": fam}}
+    return {"at": at.isoformat(), "families": {"overnight_drift": fam},
+            **json.loads(json.dumps(_RATE_AND_TAPE))}
 
 
 def _pass(fence, tmp_path: Path, rep: dict[str, Any], now: datetime, ch: Channel) -> dict:
