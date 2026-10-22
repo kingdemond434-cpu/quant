@@ -168,6 +168,20 @@ def _pinned(arg: ast.expr, scope: ast.AST | None = None, depth: int = 0) -> bool
     if isinstance(arg, ast.Name) and scope is not None and depth < 3 and arg.id != "BAR_N":
         vals = [n.value for n in ast.walk(scope) if isinstance(n, ast.Assign)
                 and any(isinstance(t, ast.Name) and t.id == arg.id for t in n.targets)]
+        # THE T8 HURDLE IS A PIN (merge resolution of trial-count-guard with the T8 sealed set,
+        # 2026-10-22). `n, var, basis = dsr_hurdle_inputs(T)` hands back the sealed
+        # `gate_policy.DSR_FIXED_TRIALS` (N=5, read from the sealed gate_spec) whatever T is;
+        # `test_the_t8_hurdle_count_is_the_bar` pins that constant at or below BAR_N. Only the
+        # FIRST element of the unpack is the count; any other binding of the name still decides.
+        unpacked = [n for n in ast.walk(scope) if isinstance(n, ast.Assign)
+                    and any(isinstance(t, ast.Tuple) and t.elts and isinstance(t.elts[0], ast.Name)
+                            and t.elts[0].id == arg.id for t in n.targets)]
+        if unpacked:
+            vals = [*vals, *(ast.Call(func=ast.Name(id="bar_n", ctx=ast.Load()), args=[],
+                                      keywords=[])
+                             if isinstance(n.value, ast.Call)
+                             and _callee(n.value) == "dsr_hurdle_inputs" else n.value
+                             for n in unpacked)]
         vals += [n.value for n in ast.walk(scope) if isinstance(n, ast.AnnAssign)
                  and isinstance(n.target, ast.Name) and n.target.id == arg.id and n.value]
         return bool(vals) and all(_pinned(v, scope, depth + 1) for v in vals)

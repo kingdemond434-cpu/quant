@@ -110,6 +110,51 @@ def test_the_rerun_share_is_published_and_ratchets_only_after_the_dedupe(tmp_pat
     assert rr["state"] == "FAIL"
 
 
+def test_the_t8_hurdle_count_is_a_pin_and_nothing_else_unpacked_is(tmp_path: Path) -> None:
+    """MERGE RESOLUTION (image companions + the T8 sealed set, 2026-10-22). After the re-sign the
+    sealed judge, universal_gate, ug_remote, gate_calibration and qquant_gates charge
+    `n, var, basis = dsr_hurdle_inputs(len(arr))` -- the fixed T8 bar -- and the fence read that
+    count as a moving N: qquant FAILED at once and the four sealed sites stayed "owed" forever,
+    FAILING after SEALED_DEADLINE although the bar no longer moves."""
+    root = _tree(tmp_path, {"desks/mt5/research/after_t8.py": (
+        "from research.gate_policy import dsr_hurdle_inputs\n"
+        "from libs.validation.dsr import deflated_sharpe_ratio\n"
+        "def a(arr):\n"
+        "    _n_cell, _cell_var, _basis = dsr_hurdle_inputs(len(arr))\n"
+        "    return deflated_sharpe_ratio(arr, n_trials=_n_cell, variance_of_sharpes=_cell_var)\n"
+        "def b(arr, n):\n"
+        "    n_trials, var_sharpes, method = dsr_hurdle_inputs(n)\n"
+        "    return deflated_sharpe_ratio(arr, n_trials=n_trials,\n"
+        "                                 variance_of_sharpes=var_sharpes)\n"
+        ), "desks/mt5/research/still_moving.py": (
+        "from libs.validation.dsr import deflated_sharpe_ratio\n"
+        "def c(arr, census):\n"
+        "    n, var = census.count(), 1.0\n"
+        "    return deflated_sharpe_ratio(arr, n_trials=n)\n"
+        "def d(arr):\n"
+        "    var, n, basis = dsr_hurdle_inputs(len(arr))\n"
+        "    return deflated_sharpe_ratio(arr, n_trials=n)\n"
+        "def e(arr, total):\n"
+        "    n, _v, _b = dsr_hurdle_inputs(len(arr))\n"
+        "    n = total\n"
+        "    return deflated_sharpe_ratio(arr, n_trials=n)\n")})
+    sites = fence.scan(root)["unpinned"]
+    assert {(h["file"].rsplit("/", 1)[-1], h["line"]) for h in sites} == {
+        ("still_moving.py", 4), ("still_moving.py", 7), ("still_moving.py", 11)}
+
+
+def test_the_t8_hurdle_count_is_the_bar() -> None:
+    """The rule above is sound only while the sealed constant sits at or below BAR_N."""
+    sys.path.insert(0, str(ROOT / "desks" / "mt5"))
+    from research import gate_policy
+
+    if not hasattr(gate_policy, "dsr_hurdle_inputs"):
+        pytest.skip("the T8 sealed set is not applied: no site can call dsr_hurdle_inputs")
+    assert gate_policy.DSR_FIXED_TRIALS <= tcg.BAR_N
+    assert {gate_policy.dsr_hurdle_inputs(t)[0] for t in (2, 60, 10_000)} == {
+        gate_policy.DSR_FIXED_TRIALS}
+
+
 def test_the_live_tree_passes_its_own_fence() -> None:
     doc = fence.judge(ROOT, now=NOW)
     assert _check(doc, "unpinned_bar_calls")["state"] == "OK", \
