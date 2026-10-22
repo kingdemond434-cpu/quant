@@ -47,7 +47,12 @@ def test_the_sealed_steps_still_run_in_the_order_restated() -> None:
     at = [main_src.find(m) for m in marks]
     assert all(a >= 0 for a in at), dict(zip(marks, at, strict=True))
     assert at == sorted(at), "the sealed docket steps were reordered"
-    assert 'if row_tf and row_tf != "H1" and "timeframe" not in params:' in main_src
+    # The row's chart folded into params: in `main`, or (external_gauntlet_speed.patch) in the
+    # `_docket_key` helper its one-pass docket read calls.
+    key_src = inspect.getsource(G._docket_key) if hasattr(G, "_docket_key") else ""
+    assert ('if row_tf and row_tf != "H1" and "timeframe" not in params:' in main_src
+            or ("_docket_key(h)" in main_src
+                and 'if row_tf and row_tf != "H1" and "timeframe" not in params:' in key_src))
     assert "stamped_only = bool(unstamped_n and stamped_n)" in main_src
 
 

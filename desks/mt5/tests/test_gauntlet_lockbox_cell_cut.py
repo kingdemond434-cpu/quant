@@ -68,7 +68,11 @@ def test_the_sweep_and_a_shard_carve_with_the_same_rule() -> None:
     carved at the same per-cell cut as the baseline."""
     src = Path(eg.__file__).read_text("utf-8")
     assert "_cell_cut = [cell_dev_cut(_s, _lock_cut" in src and "for _s in _full_daily]" in src
-    assert "x[x.index < _cell_cut[_k]]" in src
+    # The stress arm's carve: the boolean mask, or (external_gauntlet_speed.patch) the same
+    # split by binary search through `_split_at`, pinned to the masks in
+    # test_gauntlet_speed_equivalence.py.
+    assert ("x[x.index < _cell_cut[_k]]" in src
+            or "_split_at(x, _cell_cut[_k])[0]" in src)
     assert '"cut_basis"' in src
     if "def _shard_rule" in src:
         rule = src[src.index("def _shard_rule"):]
