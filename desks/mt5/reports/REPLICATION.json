@@ -1,5 +1,5 @@
 {
- "at": "2026-10-22T10:39:46+00:00",
+ "at": "2026-10-22T11:37:25+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -24,10 +24,10 @@
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "GBPDKK@M30.formula.p=91fc7568021e9607",
-   "certificate": "external.GBPDKK@M30.formula.p=91fc7568021e9607",
-   "fp": "bac50135bafdb814",
-   "symbol": "GBPDKK",
+   "key": "USDSGD@M30.formula.p=8e94f98c429072c6",
+   "certificate": "external.USDSGD@M30.formula.p=8e94f98c429072c6",
+   "fp": "15094cfd086eafcb",
+   "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -38,10 +38,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPDKK@M30.formula.p=a5e88bd497d107f3",
-   "certificate": "external.GBPDKK@M30.formula.p=a5e88bd497d107f3",
-   "fp": "4e09d28228d5e73d",
-   "symbol": "GBPDKK",
+   "key": "USDSGD@M30.formula.p=acf1a6a6e410b2b7",
+   "certificate": "external.USDSGD@M30.formula.p=acf1a6a6e410b2b7",
+   "fp": "703c32b4f7bd7cd5",
+   "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -52,10 +52,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSEK@M30.formula.p=0740934a0cc3e9c9",
-   "certificate": "external.GBPSEK@M30.formula.p=0740934a0cc3e9c9",
-   "fp": "8474bd0bddaf3137",
-   "symbol": "GBPSEK",
+   "key": "USDSGD@M30.formula.p=5f2e65d403c3b046",
+   "certificate": "external.USDSGD@M30.formula.p=5f2e65d403c3b046",
+   "fp": "6be5d56fb1c99948",
+   "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -66,10 +66,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPSEK@M30.formula.p=3f6a671ac359040f",
-   "certificate": "external.GBPSEK@M30.formula.p=3f6a671ac359040f",
-   "fp": "04ee66ef5805757d",
-   "symbol": "GBPSEK",
+   "key": "USDSGD@M30.formula.p=b118b6e751ed89c2",
+   "certificate": "external.USDSGD@M30.formula.p=b118b6e751ed89c2",
+   "fp": "5a25d71789c06133",
+   "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -80,10 +80,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPZAR@M30.formula.p=e3546fd98a9fe3e4",
-   "certificate": "external.GBPZAR@M30.formula.p=e3546fd98a9fe3e4",
-   "fp": "9f61dd23fd6413e0",
-   "symbol": "GBPZAR",
+   "key": "USDSGD@M30.formula.p=6128c8a2ce1a3a1e",
+   "certificate": "external.USDSGD@M30.formula.p=6128c8a2ce1a3a1e",
+   "fp": "5d1a9c185af28fd9",
+   "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -94,10 +94,10 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPZAR@M30.formula.p=85d244b49eaad1ff",
-   "certificate": "external.GBPZAR@M30.formula.p=85d244b49eaad1ff",
-   "fp": "ad925f707a57e645",
-   "symbol": "GBPZAR",
+   "key": "USDSGD@M30.formula.p=53a88f00930fc316",
+   "certificate": "external.USDSGD@M30.formula.p=53a88f00930fc316",
+   "fp": "5484286a0091f396",
+   "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -108,10 +108,10 @@
   },
   {
    "lane": "certificate",
-   "key": "USDSEK@M30.formula.p=91fc7568021e9607",
-   "certificate": "external.USDSEK@M30.formula.p=91fc7568021e9607",
-   "fp": "fd90aeefb27ec514",
-   "symbol": "USDSEK",
+   "key": "USDSGD@M30.formula.p=aa73176f3bc58761",
+   "certificate": "external.USDSGD@M30.formula.p=aa73176f3bc58761",
+   "fp": "829a209498fef8f8",
+   "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
@@ -122,9 +122,9 @@
   },
   {
    "lane": "certificate",
-   "key": "USDSGD@M30.formula.p=f414abd5011238f6",
-   "certificate": "external.USDSGD@M30.formula.p=f414abd5011238f6",
-   "fp": "190df6477ca76fa9",
+   "key": "USDSGD@M30.formula.p=967d2b5df3e35f20",
+   "certificate": "external.USDSGD@M30.formula.p=967d2b5df3e35f20",
+   "fp": "2fc82f7a31039f3b",
    "symbol": "USDSGD",
    "family": "formula",
    "verdict": "UNMEASURED",
@@ -136,60 +136,8 @@
   },
   {
    "lane": "forward",
-   "key": "XAUUSD.engulfing_reversal.continuous",
-   "symbol": "XAUUSD",
-   "family": "engulfing_reversal",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'engulfing_reversal'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAUUSD.level_breakout.continuous",
-   "symbol": "XAUUSD",
-   "family": "level_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'level_breakout'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAUUSD.range_reversion.continuous",
-   "symbol": "XAUUSD",
-   "family": "range_reversion",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'range_reversion'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAUUSD.vol_mean_reversion.continuous",
-   "symbol": "XAUUSD",
-   "family": "vol_mean_reversion",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'vol_mean_reversion'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GER40.trend_ma_cross.continuous",
-   "symbol": "GER40",
+   "key": "NAS100.trend_ma_cross.continuous",
+   "symbol": "NAS100",
    "family": "trend_ma_cross",
    "verdict": "UNMEASURED",
    "why": [
@@ -201,8 +149,8 @@
   },
   {
    "lane": "forward",
-   "key": "NAS100.momentum_volgate.continuous",
-   "symbol": "NAS100",
+   "key": "US30.momentum_volgate.continuous",
+   "symbol": "US30",
    "family": "momentum_volgate",
    "verdict": "UNMEASURED",
    "why": [
@@ -214,12 +162,12 @@
   },
   {
    "lane": "forward",
-   "key": "NAS100.pin_bar_reversal.continuous",
-   "symbol": "NAS100",
-   "family": "pin_bar_reversal",
+   "key": "US30.spread_state.continuous",
+   "symbol": "US30",
+   "family": "spread_state",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'pin_bar_reversal'"
+    "no written specification in the spec book for family 'spread_state'"
    ],
    "ours": {},
    "theirs": {},
@@ -227,12 +175,64 @@
   },
   {
    "lane": "forward",
-   "key": "NAS100.range_reversion.continuous",
-   "symbol": "NAS100",
-   "family": "range_reversion",
+   "key": "US30.trend_ma_cross.continuous",
+   "symbol": "US30",
+   "family": "trend_ma_cross",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'range_reversion'"
+    "no written specification in the spec book for family 'trend_ma_cross'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "US30.vol_transition.continuous",
+   "symbol": "US30",
+   "family": "vol_transition",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'vol_transition'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "US30.volume_spike.continuous",
+   "symbol": "US30",
+   "family": "volume_spike",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'volume_spike'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAGUSD.carry.continuous",
+   "symbol": "XAGUSD",
+   "family": "carry",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'carry'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAGUSD.comex_settlement.continuous",
+   "symbol": "XAGUSD",
+   "family": "comex_settlement",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'comex_settlement'"
    ],
    "ours": {},
    "theirs": {},
@@ -242,68 +242,68 @@
  "quarantined": [],
  "unmeasured": [
   {
-   "what": "GBPDKK@M30.formula.p=91fc7568021e9607",
+   "what": "USDSGD@M30.formula.p=8e94f98c429072c6",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPDKK@M30.formula.p=a5e88bd497d107f3",
+   "what": "USDSGD@M30.formula.p=acf1a6a6e410b2b7",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSEK@M30.formula.p=0740934a0cc3e9c9",
+   "what": "USDSGD@M30.formula.p=5f2e65d403c3b046",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPSEK@M30.formula.p=3f6a671ac359040f",
+   "what": "USDSGD@M30.formula.p=b118b6e751ed89c2",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPZAR@M30.formula.p=e3546fd98a9fe3e4",
+   "what": "USDSGD@M30.formula.p=6128c8a2ce1a3a1e",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPZAR@M30.formula.p=85d244b49eaad1ff",
+   "what": "USDSGD@M30.formula.p=53a88f00930fc316",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSEK@M30.formula.p=91fc7568021e9607",
+   "what": "USDSGD@M30.formula.p=aa73176f3bc58761",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "USDSGD@M30.formula.p=f414abd5011238f6",
+   "what": "USDSGD@M30.formula.p=967d2b5df3e35f20",
    "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "XAUUSD.engulfing_reversal.continuous",
-   "why": "no written specification in the spec book for family 'engulfing_reversal'"
-  },
-  {
-   "what": "XAUUSD.level_breakout.continuous",
-   "why": "no written specification in the spec book for family 'level_breakout'"
-  },
-  {
-   "what": "XAUUSD.range_reversion.continuous",
-   "why": "no written specification in the spec book for family 'range_reversion'"
-  },
-  {
-   "what": "XAUUSD.vol_mean_reversion.continuous",
-   "why": "no written specification in the spec book for family 'vol_mean_reversion'"
-  },
-  {
-   "what": "GER40.trend_ma_cross.continuous",
+   "what": "NAS100.trend_ma_cross.continuous",
    "why": "no written specification in the spec book for family 'trend_ma_cross'"
   },
   {
-   "what": "NAS100.momentum_volgate.continuous",
+   "what": "US30.momentum_volgate.continuous",
    "why": "no written specification in the spec book for family 'momentum_volgate'"
   },
   {
-   "what": "NAS100.pin_bar_reversal.continuous",
-   "why": "no written specification in the spec book for family 'pin_bar_reversal'"
+   "what": "US30.spread_state.continuous",
+   "why": "no written specification in the spec book for family 'spread_state'"
   },
   {
-   "what": "NAS100.range_reversion.continuous",
-   "why": "no written specification in the spec book for family 'range_reversion'"
+   "what": "US30.trend_ma_cross.continuous",
+   "why": "no written specification in the spec book for family 'trend_ma_cross'"
+  },
+  {
+   "what": "US30.vol_transition.continuous",
+   "why": "no written specification in the spec book for family 'vol_transition'"
+  },
+  {
+   "what": "US30.volume_spike.continuous",
+   "why": "no written specification in the spec book for family 'volume_spike'"
+  },
+  {
+   "what": "XAGUSD.carry.continuous",
+   "why": "no written specification in the spec book for family 'carry'"
+  },
+  {
+   "what": "XAGUSD.comex_settlement.continuous",
+   "why": "no written specification in the spec book for family 'comex_settlement'"
   }
  ],
  "recorded": {
@@ -312,9 +312,9 @@
   "candidates": 0
  },
  "cursor": {
-  "forward": 650,
-  "at": "2026-10-22T09:38:58+00:00",
-  "certificates": 1027
+  "forward": 658,
+  "at": "2026-10-22T10:39:46+00:00",
+  "certificates": 1035
  },
  "notes": [],
  "independence": {
@@ -331,24 +331,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPDKK_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPDKK_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPZAR_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPZAR_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSEK_M30.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GER40_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDSGD_M30.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\US30_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\US30_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\US30_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\US30_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\US30_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGUSD_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 8.4
+ "seconds": 4.68
 }
