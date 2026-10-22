@@ -5,11 +5,11 @@
   "docket_unique_cells": 1521020,
   "sample": 6000,
   "overlay": [],
-  "complete": false,
-  "stage": "carving",
+  "complete": true,
+  "stage": "complete",
   "utc_day": "2026-10-22",
   "started_at": "2026-10-22T06:27:20+00:00",
-  "written_at": "2026-10-22T07:03:28+00:00",
+  "written_at": "2026-10-22T07:06:29+00:00",
   "cells_planned": 6046,
   "cells_visited": 6046,
   "judge": {
@@ -22,12 +22,12 @@
   "memory": {
     "available_mb": 60489,
     "rss_cap_mb": 15122,
-    "peak_rss_mb": 809
+    "peak_rss_mb": 739
   },
   "lockbox_cut": "2023-03-27",
   "lockbox_frac": 0.2,
   "cells_carved_at_own_tail": 102,
-  "elapsed_s": 2160.9,
+  "elapsed_s": 2341.6,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 115,
@@ -73,7 +73,17 @@
       "short_history_after_cut": 6,
       "signals_no_trades": 1
     },
-    "unknown_by_cause": {},
+    "unknown_by_cause": {
+      "never_fires": 91,
+      "session_excludes_fire_hour": 57,
+      "input_absent:orderflow_imbalance": 25,
+      "input_absent:liquidity_regime": 16,
+      "too_rare": 15,
+      "session_thins_below_60": 8,
+      "lockbox_consumed_history": 8,
+      "short_history_after_cut": 6,
+      "signals_no_trades": 1
+    },
     "unknown_by_family": {
       "formula": 35,
       "orderflow_imbalance": 25,
@@ -146,7 +156,17 @@
       "short_history_after_cut": 6,
       "signals_no_trades": 1
     },
-    "unknown_by_cause": {},
+    "unknown_by_cause": {
+      "never_fires": 91,
+      "session_excludes_fire_hour": 57,
+      "input_absent:orderflow_imbalance": 25,
+      "input_absent:liquidity_regime": 16,
+      "too_rare": 15,
+      "session_thins_below_60": 8,
+      "lockbox_consumed_history": 8,
+      "short_history_after_cut": 6,
+      "signals_no_trades": 1
+    },
     "unknown_by_family": {
       "formula": 35,
       "orderflow_imbalance": 25,
