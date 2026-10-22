@@ -93,7 +93,7 @@ import threading
 import time
 import uuid
 import weakref
-from collections import Counter, deque
+from collections import Counter
 from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
@@ -122,6 +122,11 @@ WINDOW_H = 1.0
 #: what makes a nine-cell family reachable at all; without it proportional allocation is a
 #: winner-take-all rule that rediscovers the exact starvation this organ was built to end.
 FLOOR_SHARE = 0.25
+#: The share of the measured hour handed to TAPE families (`tape_families`, derived from code)
+#: AFTER the breadth floor and BEFORE the value remainder. Bounded: the 25% floor is untouched
+#: (every family keeps its floor) and the value walk keeps at least
+#: 1 - FLOOR_SHARE - TAPE_PRIORITY_SHARE of the hour.
+TAPE_PRIORITY_SHARE = 0.20
 
 #: The judge's capacity is MEASURED from its own ledger (the busiest recent hour), never assumed
 #: off a machine size -- CLAUDE.md's 8 GB/96 GB note is the standing lesson about inventing one.
@@ -194,11 +199,33 @@ NOT_TESTABLE_REASONS: frozenset[str] = frozenset(
 BACKLOG_BASIS = "unjudged_excl_not_testable"
 
 
+#: ONE READ OF THE SEALED JUDGE'S REPORT PER PASS (2026-10-14). `universal_gates_external.json`
+#: is ~625 MB on the box and six readers inside one `build` each parsed it afresh. While `build`
+#: runs this memo holds that ONE file, keyed on its size and mtime, and is dropped when the pass
+#: ends -- so nothing stays resident between passes and no other file (the bank is rewritten
+#: mid-pass) is ever served from it.
+_GATES_MEMO: dict[tuple[str, int, int], Any] | None = None
+
+
 def _read(path: Path) -> Any:
+    memo = _GATES_MEMO
+    key: tuple[str, int, int] | None = None
+    if memo is not None and path.name == GATES_REPORT.name:
+        try:
+            st = path.stat()
+            key = (str(path), st.st_mtime_ns, st.st_size)
+        except OSError:
+            key = None
+        if key is not None and key in memo:
+            return memo[key]
     try:
-        return json.loads(path.read_text("utf-8"))
+        doc = json.loads(path.read_text("utf-8"))
     except (OSError, ValueError):
-        return None
+        doc = None
+    if memo is not None and key is not None:
+        memo.clear()
+        memo[key] = doc
+    return doc
 
 
 #: ONE PASS READS EACH INPUT ONCE (2026-10-21). On the box the hourly leg timed out three times
@@ -273,102 +300,12 @@ def _pass_value(name: str, fn: Any) -> Any:
     return _PASS[slot]
 
 
-#: How many trailing ledger lines the pass memo keeps for `learn_priors` (its default `limit`).
-LEARN_TAIL = 20_000
-
-
-class _LedgerScan:
-    """Everything the gate-ledger readers need, gathered in ONE streamed pass over the file.
-
-    Each reader below used to stream (or `readlines()`) the whole ledger itself. The filters are
-    unchanged. Every row is parsed once, and what depends on `now` (the 1 h, 24 h, 7 d and 168 h
-    windows) is kept as per-row timestamps, so each reader applies its own cut afterwards exactly
-    as before. `err` records an OSError at open or mid-read; each reader then takes its own
-    original OSError branch over the rows read before the error.
-    """
-
-    __slots__ = ("cell_seen", "err", "judged_at", "judged_total", "live_at", "passed", "tail")
-
-    def __init__(self, path: Path) -> None:
-        self.err = False
-        self.cell_seen: set[str] = set()
-        #: per family, rows that carry a real verdict (judged_index's all-time count; the
-        #: realised pass rates' denominator is the same filter).
-        self.judged_total: dict[str, int] = {}
-        self.passed: dict[str, int] = {}
-        #: (family, timestamp-or-None) for every JUDGED row: judged_index's window and capacity.
-        self.judged_at: list[tuple[str, float | None]] = []
-        #: (timestamp, is_unknown) for every non-NOT_RUN row with a timestamp: sustained_rate.
-        self.live_at: list[tuple[float, bool]] = []
-        self.tail: deque[str] = deque(maxlen=LEARN_TAIL)
-        loads = json.loads
-        # The sweep stamps every verdict of one pass with ONE `at`, so a stamp repeats thousands
-        # of times: each distinct stamp is parsed once.
-        stamps: dict[Any, float | None] = {}
-        tail_append = self.tail.append
-        judged_append = self.judged_at.append
-        live_append = self.live_at.append
-        total, passed, seen = self.judged_total, self.passed, self.cell_seen
-        try:
-            with path.open("r", encoding="utf-8", errors="replace") as fh:
-                for raw in fh:
-                    tail_append(raw)
-                    line = raw.strip()
-                    if not line:
-                        continue
-                    try:
-                        row = loads(line)
-                    except ValueError:
-                        continue
-                    if not isinstance(row, dict):
-                        continue
-                    if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
-                        continue
-                    ok = row.get("passed")
-                    unk = ok is not True and str(row.get("terminal_gate") or "") in ("", "UNKNOWN")
-                    raw_at = row.get("at")
-                    try:
-                        ts = stamps[(type(raw_at), raw_at)]
-                    except KeyError:
-                        at = _ts(raw_at)
-                        ts = stamps[(type(raw_at), raw_at)] = (
-                            at.timestamp() if at is not None else None)
-                    except TypeError:                       # an unhashable stamp
-                        at = _ts(raw_at)
-                        ts = at.timestamp() if at is not None else None
-                    if ts is not None:
-                        live_append((ts, unk))
-                    if unk:
-                        continue
-                    fam = str(row.get("family") or "")
-                    cell = str(row.get("cell") or "")
-                    if cell:
-                        seen.add(cell)
-                    judged_append((fam, ts))
-                    if not fam:
-                        continue
-                    total[fam] = total.get(fam, 0) + 1
-                    if ok is True or str(ok).lower() == "true":
-                        passed[fam] = passed.get(fam, 0) + 1
-        except OSError:
-            self.err = True
-
-
-def _ledger_scan(path: Path) -> _LedgerScan | None:
-    """The pass memo's ledger scan, or None outside a pass (the caller then reads as before)."""
-    if _PASS is None:
-        return None
-    key = _stat_key(path)
-    if key is None:
-        return _LedgerScan(path)                # absent or unstatable: its OSError branch
-    slot = ("ledger", *key)
-    scan = _PASS.get(slot)
-    if scan is None:
-        scan = _LedgerScan(path)
-        # An I/O error mid-read is not memoised: the next reader meets the file afresh, as it did.
-        if not scan.err:
-            _PASS[slot] = scan
-    return scan
+#: THE GATE LEDGER IS READ THROUGH `ledger_index` (merge resolution, 2026-10-22). Coverage v2.3
+#: gathered every ledger reader into one streamed scan per pass (`_LedgerScan`); judge-rate
+#: replaced the same six readers with one incremental index caught up from a persisted byte
+#: watermark (`research/gate_ledger_index.py`), so a pass costs what the judge wrote since the
+#: last one rather than one full scan. The index answers every reader the scan did, so the scan
+#: is gone; its naive-stamp rule (a stamp with no offset is UTC) is restated in the index.
 
 
 #: ONE PASS PERSISTS AS ONE TRANSACTION (2026-10-21). A pass writes six things: the learned
@@ -775,6 +712,68 @@ def _ts(raw: object) -> datetime | None:
     return (t.replace(tzinfo=UTC) if t.tzinfo is None else t).astimezone(UTC)
 
 
+#: THE LEDGER IS READ ONCE, INCREMENTALLY (2026-10-14, `research/gate_ledger_index.py`). Six
+#: readers here each re-parsed the whole append-only gate ledger on every pass; they now answer
+#: from one index caught up from a persisted byte watermark, so a pass costs what the judge wrote
+#: since the last one. The desk's own ledger persists its index under reports/ (gitignored, a
+#: cache); any other path (a test's ledger) is indexed in-process only.
+LEDGER_INDEX_STATE = REPORTS / "judge_ledger_index.pkl"
+_DEFAULT_LEDGER = GATE_LEDGER
+_LEDGER_INDEXES: dict[str, Any] = {}
+#: The monotonic deadline the ledger catch-up honours while a budgeted `build` runs (`main`).
+_LEDGER_DEADLINE: list[float] = []
+
+
+def ledger_index(path: Path | None = None) -> Any:
+    """The gate ledger's index, caught up to EOF (or to the pass's ledger deadline)."""
+    desk = str(BASE)
+    if desk not in sys.path:
+        sys.path.insert(0, desk)
+    from research.gate_ledger_index import LedgerIndex
+
+    p = Path(path or GATE_LEDGER)
+    persist = p == _DEFAULT_LEDGER and GATE_LEDGER == _DEFAULT_LEDGER
+    key = str(p)
+    idx = _LEDGER_INDEXES.get(key)
+    if idx is None:
+        idx = LedgerIndex.load(p, LEDGER_INDEX_STATE if persist else None)
+        _LEDGER_INDEXES[key] = idx
+    done = idx.catch_up(deadline=_LEDGER_DEADLINE[0] if _LEDGER_DEADLINE else None)
+    if persist and (done.get("consumed_bytes") or done.get("rebuilt")):
+        idx.save(LEDGER_INDEX_STATE)
+    return idx
+
+
+def _tail_lines(path: Path, limit: int) -> list[str]:
+    """`open(path).readlines()[-limit:]`, read from the END of the file: O(limit), not O(file).
+
+    Same text semantics as the text-mode read it replaces (UTF-8, errors replaced, universal
+    newlines), so `learn_priors` sees exactly the rows it saw before.
+    """
+    if limit <= 0:
+        return []
+    with path.open("rb") as fh:
+        fh.seek(0, 2)
+        pos, data = fh.tell(), b""
+        # Enough bytes for `limit` complete lines plus the one cut at the front.
+        while pos > 0 and max(data.count(b"\n"), data.count(b"\r")) <= limit:
+            step = min(pos, 1 << 20)
+            pos -= step
+            fh.seek(pos)
+            data = fh.read(step) + data
+    if pos > 0:
+        cut = data.find(b"\n")
+        if cut < 0:
+            cut = data.find(b"\r")
+        data = data[cut + 1:] if cut >= 0 else b""
+    text = data.decode("utf-8", "replace").replace("\r\n", "\n").replace("\r", "\n")
+    lines = text.split("\n")
+    out = [ln + "\n" for ln in lines[:-1]]
+    if lines[-1]:
+        out.append(lines[-1])
+    return out[-limit:]
+
+
 def _cell_id(row: dict[str, Any]) -> str | None:
     """The gauntlet's OWN identity function, imported, never re-implemented.
 
@@ -858,48 +857,11 @@ def judged_index(path: Path | None = None, *, now: datetime | None = None,
     `UNKNOWN` is the sealed evaluator's unmeasured path, even when it carries passed=False.
     Neither that path nor a `NOT_RUN_*` deferral clears the backlog or earns judge capacity.
     """
-    seen: set[str] = set()
-    total: dict[str, int] = {}
-    in_window: dict[str, int] = {}
+    # ONE INCREMENTAL INDEX, not a full parse per call (2026-10-14, `ledger_index`): the same
+    # rule, folded once per appended row. Returns copies, so a caller can never edit the index.
     cutoff = (now or datetime.now(tz=UTC)).timestamp() - window_h * 3600.0
-    scan = _ledger_scan(path or GATE_LEDGER)
-    if scan is not None:
-        for fam, ts in scan.judged_at:
-            if fam and ts is not None and ts >= cutoff:
-                in_window[fam] = in_window.get(fam, 0) + 1
-        return set(scan.cell_seen), dict(scan.judged_total), in_window
-    # STREAMED, never `readlines()` (2026-10-07): the ledger holds every changed verdict the desk
-    # has written, and loading it whole on each hourly pass is how this report went 56 h stale.
-    try:
-        with (path or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            for line in fh:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    row = json.loads(line)
-                except ValueError:
-                    continue
-                if not isinstance(row, dict):
-                    continue
-                if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
-                    continue
-                if row.get("passed") is not True and str(
-                        row.get("terminal_gate") or "") in ("", "UNKNOWN"):
-                    continue
-                fam = str(row.get("family") or "")
-                cell = str(row.get("cell") or "")
-                if cell:
-                    seen.add(cell)
-                if not fam:
-                    continue
-                total[fam] = total.get(fam, 0) + 1
-                at = _ts(row.get("at"))
-                if at is not None and at.timestamp() >= cutoff:
-                    in_window[fam] = in_window.get(fam, 0) + 1
-    except OSError:
-        pass
-    return seen, total, in_window
+    idx = ledger_index(path)
+    return set(idx.judged_cells), dict(idx.judged_total), idx.window_judged(cutoff)
 
 
 def not_testable_index(bank: dict[str, dict[str, Any]] | None = None
@@ -924,42 +886,7 @@ def measured_capacity(judged_total: dict[str, int], ledger: Path | None = None,
     """
     best = 0
     cutoff = (now or datetime.now(tz=UTC)).timestamp() - CAPACITY_LOOKBACK_H * 3600.0
-    per_hour: dict[Any, int] = {}
-    scan = _ledger_scan(ledger or GATE_LEDGER)
-    if scan is not None:
-        if not scan.err:
-            # The UTC clock hour, keyed by its epoch hour: the same buckets as the strftime key
-            # below (UTC hours are epoch-aligned), and only the bucket COUNTS are read.
-            for _fam, ts in scan.judged_at:
-                if ts is None or ts < cutoff:
-                    continue
-                hk = int(ts // 3600.0)
-                per_hour[hk] = per_hour.get(hk, 0) + 1
-    else:
-        try:
-            with (ledger or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-                for line in fh:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    try:
-                        row = json.loads(line)
-                    except ValueError:
-                        continue
-                    if not isinstance(row, dict):
-                        continue
-                    if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
-                        continue
-                    if row.get("passed") is not True and str(
-                            row.get("terminal_gate") or "") in ("", "UNKNOWN"):
-                        continue
-                    at = _ts(row.get("at"))
-                    if at is None or at.timestamp() < cutoff:
-                        continue
-                    key = at.strftime("%Y-%m-%dT%H")
-                    per_hour[key] = per_hour.get(key, 0) + 1
-        except OSError:
-            per_hour = {}
+    per_hour = ledger_index(ledger).judged_per_hour(cutoff)
     if per_hour:
         best = max(per_hour.values())
     return max(best, CAPACITY_FLOOR, sum(judged_total.values()) // 24)
@@ -985,48 +912,11 @@ def sustained_rate(ledger: Path | None = None, *, now: datetime | None = None) -
     # ruling. That is what the 7-day "43%" was; it is published here so it is never again set
     # against a per-sweep figure computed over a different denominator (see `unknown_breakdown`).
     unknown = {"24h": 0, "7d": 0}
-    scan = _ledger_scan(ledger or GATE_LEDGER)
-    if scan is not None:
-        if scan.err:
-            return {"status": "UNMEASURED", "why": "gate ledger unreadable"}
-        c24, c7 = cuts["24h"], cuts["7d"]
-        for ts, _unk in scan.live_at:
-            if ts >= c24:
-                counts["24h"] += 1
-                unknown["24h"] += int(_unk)
-            if ts >= c7:
-                counts["7d"] += 1
-                unknown["7d"] += int(_unk)
-        return _sustained_doc(counts, unknown)
-    try:
-        with (ledger or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            for line in fh:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    row = json.loads(line)
-                except ValueError:
-                    continue
-                if not isinstance(row, dict):
-                    continue
-                if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
-                    continue
-                at = _ts(row.get("at"))
-                if at is None:
-                    continue
-                _unk = (row.get("passed") is not True
-                        and str(row.get("terminal_gate") or "") in ("", "UNKNOWN"))
-                for w, cut in cuts.items():
-                    if at.timestamp() >= cut:
-                        counts[w] += 1
-                        unknown[w] += int(_unk)
-    except OSError:
+    if not Path(ledger or GATE_LEDGER).is_file():
         return {"status": "UNMEASURED", "why": "gate ledger unreadable"}
-    return _sustained_doc(counts, unknown)
-
-
-def _sustained_doc(counts: dict[str, int], unknown: dict[str, int]) -> dict[str, Any]:
+    idx = ledger_index(ledger)
+    for w, cut in cuts.items():
+        counts[w], unknown[w], _ = idx.window_rows(cut)
     return {"status": "MEASURED", "counts": counts,
             "per_hour_24h": round(counts["24h"] / 24.0, 3),
             "per_hour_7d": round(counts["7d"] / 168.0, 3),
@@ -1038,6 +928,63 @@ def _sustained_doc(counts: dict[str, int], unknown: dict[str, int]) -> dict[str,
                                  if counts["7d"] else None),
             # The drain rate above counts an UNKNOWN as judged; this is the rate of RULINGS.
             "named_per_hour_24h": round((counts["24h"] - unknown["24h"]) / 24.0, 3)}
+
+
+#: THE JUDGING RATE THE DESK OWES (principal, 2026-10-14 06:21Z: "judging speed and quantity per
+#: day should be maximised using every way possible to maximum so it judges even 100-200k cells a
+#: day"). The floor is the middle of that range. `scripts/check_judge_coverage.py` fails the box
+#: below it; nothing here throttles a miner or moves a gate to reach it.
+JUDGING_RATE_TARGET_PER_DAY = 150_000
+
+
+def judging_rate(ledger: Path | None = None, *, now: datetime | None = None) -> dict[str, Any]:
+    """VERDICTS PER DAY, from the judge's own verdict ledger: rolling 24 h and the hourly series.
+
+    A verdict is `judged_index`'s unit -- a ledger row with a named terminal gate or a pass. The
+    sealed writer appends one row per CHANGED verdict, so a re-judge that lands on the same gate
+    is not counted again: this is the rate of new rulings, which is the rate the backlog drains
+    at. UNKNOWN rows (the judge's unmeasured path) are counted beside it, never in it.
+    An absent ledger is UNMEASURED, never zero. An index the pass's deadline stopped short of
+    EOF is PARTIAL: its count is a lower bound, and the unread bytes are named.
+    """
+    t = now or datetime.now(tz=UTC)
+    p = Path(ledger or GATE_LEDGER)
+    out: dict[str, Any] = {"target_per_day": JUDGING_RATE_TARGET_PER_DAY,
+                           "basis": ("gate_verdict_ledger.jsonl rows with a named terminal gate "
+                                     "or a pass, stamped in the last 24 h (one row per changed "
+                                     "verdict; NOT_RUN and UNKNOWN excluded)")}
+    if not p.is_file():
+        out.update(status="UNMEASURED", why=f"{p.name} absent: verdicts/day is UNMEASURED")
+        return out
+    idx = ledger_index(ledger)
+    now_ts = t.timestamp()
+    rows, unknown, judged = idx.window_rows(now_ts - 86400.0, now_ts)
+    first = (now_ts // 3600.0) * 3600.0 - 23 * 3600.0
+    series = [{"hour": datetime.fromtimestamp(h, UTC).strftime("%Y-%m-%dT%H"),
+               "verdicts": j, "unknown": u, "rows": a}
+              for h, a, u, j in idx.hourly(first, 24)]
+    catch = idx.last_catch_up or {}
+    status = "MEASURED" if idx.complete else "PARTIAL"
+    out.update(
+        status=status,
+        verdicts_24h=judged, unknown_24h=unknown, rows_24h=rows,
+        verdicts_per_day=judged,
+        verdicts_per_hour_24h=round(judged / 24.0, 3),
+        needed_per_hour=round(JUDGING_RATE_TARGET_PER_DAY / 24.0, 1),
+        meets_target=judged >= JUDGING_RATE_TARGET_PER_DAY,
+        shortfall_per_day=max(0, JUDGING_RATE_TARGET_PER_DAY - judged),
+        share_of_target=round(judged / float(JUDGING_RATE_TARGET_PER_DAY), 6),
+        last_verdict_at=(datetime.fromtimestamp(idx.max_ts, UTC).isoformat(timespec="seconds")
+                         if idx.max_ts else None),
+        per_hour=series,
+        ledger_index={"complete": idx.complete, "behind_bytes": idx.behind_bytes,
+                      "offset": idx.offset, "rows_indexed": idx.rows_read,
+                      "consumed_bytes": catch.get("consumed_bytes"),
+                      "rebuilt": catch.get("rebuilt"), "seconds": catch.get("seconds")})
+    if status == "PARTIAL":
+        out["why"] = (f"the pass's deadline stopped the ledger index {idx.behind_bytes} bytes "
+                      "short of EOF: the count is a lower bound and the next pass resumes there")
+    return out
 
 
 def drain(backlog_now: int, per_hour: float | None, *, prior_backlog: int | None,
@@ -1113,47 +1060,13 @@ def realised_pass_rates(path: Path | None = None) -> dict[str, dict[str, float]]
     Beta(1,1): mean 0.5, upper bound 1.0, which is how an unjudged family stays EXPLORED rather
     than being ranked below a family measured to fail.
     """
-    judged: dict[str, int] = {}
-    passed: dict[str, int] = {}
-    scan = _ledger_scan(path or GATE_LEDGER)
-    if scan is not None:
-        if scan.err:
-            return {}
-        return _realised_doc(scan.judged_total, scan.passed)
-    try:
-        with (path or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            lines = fh.readlines()
-    except OSError:
+    if not Path(path or GATE_LEDGER).is_file():
         return {}
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            row = json.loads(line)
-        except ValueError:
-            continue
-        if not isinstance(row, dict):
-            continue
-        if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
-            continue
-        fam = str(row.get("family") or "")
-        if not fam:
-            continue
-        ok = row.get("passed")
-        gate = str(row.get("terminal_gate") or "")
-        # AN UNMEASURED CELL IS NOT A FAILURE. `UNKNOWN` is the sealed judge's unmeasured path, so
-        # it counts toward nothing here: charging it as a rejection would teach the aim that a
-        # family does not work when what happened is that nobody looked.
-        if ok is not True and gate in ("", "UNKNOWN"):
-            continue
-        judged[fam] = judged.get(fam, 0) + 1
-        if ok is True or str(ok).lower() == "true":
-            passed[fam] = passed.get(fam, 0) + 1
-    return _realised_doc(judged, passed)
-
-
-def _realised_doc(judged: dict[str, int], passed: dict[str, int]) -> dict[str, dict[str, float]]:
+    # The index folds this exact rule once per appended row (`gate_ledger_index`), instead of the
+    # whole-file `readlines()` this used to do on every pass.
+    idx = ledger_index(path)
+    judged: dict[str, int] = dict(idx.judged_total)
+    passed: dict[str, int] = dict(idx.passed_total)
     out: dict[str, dict[str, float]] = {}
     for fam, n in judged.items():
         k = passed.get(fam, 0)
@@ -1250,18 +1163,13 @@ def learn_priors(ledger: Path | None = None, *, since: str = "",
     except Exception as exc:
         out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
         return out
-    scan = _ledger_scan(ledger or GATE_LEDGER) if 0 < limit <= LEARN_TAIL else None
-    if scan is not None and not scan.err:
-        lines = list(scan.tail)[-limit:]
-    else:
-        # Outside a pass, or a ledger the scan could not read: the original read, whose OSError
-        # names the cause in `why`.
-        try:
-            with (ledger or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-                lines = fh.readlines()[-limit:]
-        except OSError as exc:
-            out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
-            return out
+    try:
+        # The last `limit` lines, read from the END (`_tail_lines`): the same rows the old
+        # whole-file `readlines()[-limit:]` kept, without reading the other 800k first.
+        lines = _tail_lines(Path(ledger or GATE_LEDGER), limit)
+    except OSError as exc:
+        out.update(status="UNMEASURED", why=f"{type(exc).__name__}: {exc}")
+        return out
     _clock = now or datetime.now(tz=UTC)
     _horizon = _clock.timestamp() + PRIORS_FUTURE_SKEW_S
     _since_ts = _ts(since) if since else None
@@ -1772,8 +1680,16 @@ CPCV_MIN_DAYS = 60
 
 
 def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
-                bar_sizes: dict[tuple[str, str], int] | None = None) -> bool:
-    """True when a parked cell's history has grown enough, or it has waited long enough."""
+                bar_sizes: dict[tuple[str, str], int] | None = None,
+                memo: bool = False) -> bool:
+    """True when a parked cell's history has grown enough, or it has waited long enough.
+
+    `memo=True` (the bank update passes it when it can fingerprint the build code): a row
+    `memoised` under a code identity (`_memoised`) is NOT re-admitted by the blind
+    BUILD_FAILED_RETRY_DAYS timer -- a deterministic failure re-run on unchanged code and
+    unchanged bars fails again. Its code changing is handled by the canary in
+    `update_unrunnable_bank`; bar growth and READMIT_MAX_DAYS below still re-admit it.
+    """
     parked_bytes = int(row.get("bar_bytes") or 0)
     key = (str(row.get("sym") or ""), str(row.get("tf") or "H1"))
     # A pass measures each chart once. Never retain this snapshot across passes: new
@@ -1799,7 +1715,8 @@ def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
     if parked_bytes <= 0:
         return bars > 0
     if row.get("reason") in ("build_failed", "series_exception", "no_series", "unnamed",
-                             "observations_under_60_days", "no_terminal_gate_recorded"):
+                             "observations_under_60_days", "no_terminal_gate_recorded") \
+            and not (memo and _memoised(row)):
         _at = _ts(row.get("parked_at"))
         _t = now or datetime.now(tz=UTC)
         if _at is not None and (_t.timestamp() - _at.timestamp()) / 86400.0 \
@@ -1814,6 +1731,224 @@ def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
     t = now or datetime.now(tz=UTC)
     return (parked_at is not None
             and (t.timestamp() - parked_at.timestamp()) / 86400.0 >= READMIT_MAX_DAYS)
+
+
+#: MEMOISED BUILD FAILURES (2026-10-14). A cell whose build failed DETERMINISTICALLY is re-run by
+#: the judge only when an input that could change the outcome changed: its bars (the growth rule
+#: above, and READMIT_MAX_DAYS) or the code that builds it. Before this, every `build_failed` /
+#: `no_series` / `series_exception` row came back after BUILD_FAILED_RETRY_DAYS whatever had
+#: changed -- the raw COT families alone parked ~26k cells on one TypeError and re-paid the build
+#: for all of them weekly, on code that had not moved (floor_starvation_2026-10-14.md).
+#:
+#: THE KEY IS (cell, input fingerprint). The data half is the bar file size already on the row;
+#: the code half is `build_code_identity()` -- the sealed judge's own replay identity (the code
+#: its series cache is keyed on) plus the other modules `build_cell` imports. A row parked under
+#: identity A is `_memoised`; when the identity moves to B, ONE CANARY per failure signature
+#: (family, symbol, chart, reason, the error text) is re-admitted, not the whole bank. If the
+#: canary fails the same way under B, its siblings are re-stamped B and stay parked; if it is
+#: judged, or fails differently, every sibling is re-admitted. A canary with no evidence after
+#: BUILD_FAILED_RETRY_DAYS releases its siblings -- never worse than the old timer.
+#:
+#: WHICH CODE A REPORT RAN IS NOT WRITTEN IN IT, so the memo only trusts what it can bound: an
+#: identity is CERTAIN once MEMO_CERTAIN_GENERATIONS distinct sealed reports have been seen
+#: under it and MEMO_CERTAIN_H hours have passed (a sweep that spanned the release cannot be the
+#: third report since). A row parked under an uncertain identity keeps the old weekly timer, and
+#: canary evidence is read only from a report generation that began after the canary was set.
+MEMO_REASONS = frozenset({"build_failed", "no_series", "series_exception"})
+MEMO_CERTAIN_GENERATIONS = 3
+MEMO_CERTAIN_H = 6.0
+CANARIES_PER_SIGNATURE = 1
+MEMO_STATE_NAME = "unrunnable_memo.json"
+#: Modules `external_gauntlet.build_cell` imports beyond the sealed replay identity's own list.
+BUILD_PATH_EXTRA = ("desks/mt5/mt5desk/family_inputs.py", "desks/mt5/mt5desk/family_call.py",
+                    "desks/mt5/mt5desk/universe_registry.py", "desks/mt5/research/edge_search.py",
+                    "desks/mt5/research/cost_surface.py", "desks/mt5/research/h1_source.py")
+
+
+def sealed_replay_identity(root: Path | None = None) -> str | None:
+    """`external_gauntlet._replay_code_identity()`, restated (a drift test pins the two equal).
+
+    The sealed judge imports pandas and sizes a worker pool at import; this organ must not, so the
+    file list and the digest are restated here verbatim. None when any file is unreadable.
+    """
+    import hashlib
+
+    base = root or BASE.parent.parent
+    desk = base / "desks" / "mt5"
+    paths = [desk / "scripts" / "external_gauntlet.py",
+             desk / "research" / "orthogonal_sweep.py"]
+    paths.extend(desk / "mt5desk" / name for name in
+                 ("engine.py", "cell_modifiers.py", "data.py", "legacy_family_inputs.py"))
+    paths.extend((desk / "mt5desk").glob("famil*.py"))
+    digest = hashlib.sha256()
+    try:
+        for path in sorted(set(paths)):
+            name = path.relative_to(base).as_posix()
+            digest.update(name.encode("utf-8") + b"\0"
+                          + path.read_bytes().replace(b"\r\n", b"\n") + b"\0")
+    except (OSError, ValueError):
+        return None
+    return digest.hexdigest()
+
+
+def build_code_identity(root: Path | None = None) -> str | None:
+    """The build path's code fingerprint: the sealed replay identity plus BUILD_PATH_EXTRA."""
+    import hashlib
+
+    base = root or BASE.parent.parent
+    sealed = sealed_replay_identity(base)
+    if sealed is None:
+        return None
+    digest = hashlib.sha256(sealed.encode("ascii"))
+    for rel in BUILD_PATH_EXTRA:
+        try:
+            body = (base / rel).read_bytes().replace(b"\r\n", b"\n")
+        except OSError:
+            body = b"\0ABSENT"
+        digest.update(rel.encode("utf-8") + b"\0" + body + b"\0")
+    return digest.hexdigest()[:24]
+
+
+def failure_signature(row: dict[str, Any]) -> str:
+    """Cells that share this failed the same way on the same instrument and chart.
+
+    Digits in the error text are folded (`#`) so a row count or a date in a message does not
+    split a signature; the symbol stays in the key, because data is per symbol."""
+    import re
+
+    sym = str(row.get("sym") or "")
+    why = str(row.get("why") or row.get("detail") or "")
+    if sym:
+        why = why.replace(sym, "<sym>")
+    why = re.sub(r"\d+", "#", why)[:160]
+    return "|".join((str(row.get("family") or ""), sym, str(row.get("tf") or ""),
+                     str(row.get("reason") or ""), why))
+
+
+def _memoised(row: dict[str, Any]) -> bool:
+    """A bank row parked under a CERTAIN code identity for a deterministic build failure."""
+    return bool(row.get("code_fp")) and row.get("reason") in MEMO_REASONS
+
+
+def _memo_state(target: Path) -> dict[str, Any]:
+    try:
+        doc = json.loads((target.parent / MEMO_STATE_NAME).read_text("utf-8"))
+    except (OSError, ValueError):
+        return {"code": {}, "canaries": {}}
+    if not isinstance(doc, dict):
+        return {"code": {}, "canaries": {}}
+    doc.setdefault("code", {})
+    doc.setdefault("canaries", {})
+    return doc
+
+
+def _report_mtime(path: Path | None = None) -> float | None:
+    try:
+        return (path or GATES_REPORT).stat().st_mtime
+    except OSError:
+        return None
+
+
+def _memo_pass(bank: dict[str, dict[str, Any]], named: dict[str, dict[str, Any]],
+               state: dict[str, Any], *, code_fp: str, at: str, now_ts: datetime | None,
+               report_mtime: float | None, judged: set[str] | None,
+               excluded: set[str]) -> dict[str, Any]:
+    """One pass of the memo: track the identity, resolve canaries, start new ones.
+
+    Mutates `bank` (siblings released, canaries popped, siblings re-stamped) and `state`.
+    Returns (stats, the cells re-admitted, the canary cells that must NOT be re-parked yet).
+    """
+    stats: dict[str, Any] = {"code_fp": code_fp, "certain": False, "canaries_started": 0,
+                             "canaries_confirmed": 0, "canaries_released": 0,
+                             "siblings_restamped": 0, "siblings_released": 0,
+                             "canaries_waiting": 0}
+    t = (now_ts or datetime.now(tz=UTC)).timestamp()
+    code_raw = state.get("code")
+    code: dict[str, Any] = code_raw if isinstance(code_raw, dict) else {}
+    if code.get("fp") != code_fp:
+        code = {"fp": code_fp, "since": at, "report_mtimes": []}
+    gens = [float(m) for m in (code.get("report_mtimes") or [])]
+    if report_mtime is not None and report_mtime not in gens:
+        gens = [*gens, report_mtime][-MEMO_CERTAIN_GENERATIONS:]
+    code["report_mtimes"] = gens
+    since = _ts(code.get("since"))
+    certain = (len(gens) >= MEMO_CERTAIN_GENERATIONS and since is not None
+               and (t - since.timestamp()) / 3600.0 >= MEMO_CERTAIN_H)
+    state["code"] = code
+    stats["certain"] = certain
+    readmit: set[str] = set()
+    hold_out: set[str] = set()
+    can_raw = state.get("canaries")
+    canaries: dict[str, Any] = can_raw if isinstance(can_raw, dict) else {}
+
+    def _siblings(sig: str) -> list[str]:
+        return [c for c, r in bank.items()
+                if _memoised(r) and r.get("signature") == sig and r.get("code_fp") != code_fp]
+
+    for sig in list(canaries):
+        rec = canaries[sig] if isinstance(canaries[sig], dict) else {}
+        if rec.get("code_fp") != code_fp:
+            del canaries[sig]                         # the code moved again: start over
+            continue
+        seen = [float(m) for m in (rec.get("report_mtimes") or [])]
+        if report_mtime is not None and report_mtime not in seen:
+            seen.append(report_mtime)
+        rec["report_mtimes"] = seen[-4:]
+        cells = [str(c) for c in (rec.get("cells") or [])]
+        # Judged at any time since it was set: it built, so the failure did not persist.
+        judged_now = bool(judged) and any(c in judged for c in cells)  # type: ignore[operator]
+        # Evidence from a report is admissible only from the SECOND generation after the canary
+        # was set: the first may come from a sweep that was already running when it was set.
+        admissible = len(seen) >= 3
+        named_sigs = {failure_signature(named[c]) for c in cells if c in named}
+        if judged_now or (admissible and named_sigs and named_sigs != {sig}):
+            for c in _siblings(sig):
+                bank.pop(c, None)
+                readmit.add(c)
+                stats["siblings_released"] += 1
+            del canaries[sig]
+            stats["canaries_released"] += 1
+            continue
+        if admissible and named_sigs == {sig}:
+            for c in _siblings(sig):
+                bank[c]["code_fp"] = code_fp
+                stats["siblings_restamped"] += 1
+            del canaries[sig]
+            stats["canaries_confirmed"] += 1
+            continue
+        set_at = _ts(rec.get("at"))
+        if set_at is not None and (t - set_at.timestamp()) / 86400.0 >= BUILD_FAILED_RETRY_DAYS:
+            for c in _siblings(sig):
+                bank.pop(c, None)
+                readmit.add(c)
+                stats["siblings_released"] += 1
+            del canaries[sig]
+            stats["canaries_released"] += 1
+            continue
+        hold_out.update(c for c in cells if c in named)  # too early to read: judge it again
+        stats["canaries_waiting"] += 1
+    if certain:
+        groups: dict[str, list[str]] = {}
+        for c, r in bank.items():
+            if c in excluded or not _memoised(r) or r.get("code_fp") == code_fp:
+                continue
+            groups.setdefault(str(r.get("signature") or failure_signature(r)), []).append(c)
+        for sig, cells in groups.items():
+            if sig in canaries:
+                continue
+            pick = sorted(cells, key=lambda c: (str(bank[c].get("parked_at") or ""), c))[
+                :CANARIES_PER_SIGNATURE]
+            for c in pick:
+                bank.pop(c, None)
+                readmit.add(c)
+            canaries[sig] = {"code_fp": code_fp, "cells": pick, "at": at,
+                             "report_mtimes": [report_mtime] if report_mtime is not None else []}
+            stats["canaries_started"] += 1
+    state["canaries"] = canaries
+    stats["signatures_in_flight"] = len(canaries)
+    stats["_readmit"] = readmit
+    stats["_hold_out"] = hold_out
+    return stats
 
 
 #: WHEN NOT-TESTABLE CELLS RETURN TO THE BACKLOG, one line per pass that re-admitted any: the
@@ -2106,7 +2241,10 @@ def _still_needs_data(row: dict[str, Any]) -> bool:
 
 def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                            path: Path | None = None,
-                           log: Path | None = None) -> dict[str, Any]:
+                           log: Path | None = None,
+                           code_fp: str | None = None,
+                           judged: set[str] | None = None,
+                           report_mtime: float | None = None) -> dict[str, Any]:
     """Park every newly-named unrunnable cell, and RE-ADMIT any whose bars have since grown.
 
     A cell the latest report names AGAIN is updated in place and never re-admitted on the same
@@ -2114,11 +2252,16 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     rename never restarts the READMIT_MAX_DAYS clock. `not_testable_since` is stamped when a row
     ENTERS the not-testable class (new, or re-named out of a defect), which is the moment it
     leaves the backlog -- the coverage table books that as PARKING, never as drain.
+
+    `code_fp` (the build path's identity, `build_code_identity`) switches on the build-failure
+    memo (MEMO_REASONS above): deterministic failures are keyed on (cell, bars, code) and re-run
+    only when one of those moves. Without it the bank behaves exactly as before.
     """
     target = path or UNRUNNABLE_BANK
     now_ts = _ts(at)
     bar_sizes: dict[tuple[str, str], int] = {}
     parkable = {c for c, r in named.items() if r.get("reason") != "missing_bars"}
+    memo_on = bool(code_fp)
     readmitted_nt: dict[str, int] = {}
     readmitted_nt_reason: dict[str, int] = {}
 
@@ -2140,8 +2283,14 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     with _bank_lock(out_path, at, txn) as locked:
         bank = unrunnable_bank(target)
         readmitted = ([cell for cell, row in bank.items() if cell not in parkable
-                       and readmit_due(row, now=now_ts, bar_sizes=bar_sizes)]
+                       and readmit_due(row, now=now_ts, bar_sizes=bar_sizes, memo=memo_on)]
                       if locked else [])
+        # What the memo saved this pass: memoised rows the blind weekly timer would have re-run.
+        _readmitted_set = set(readmitted)
+        memo_held = (sum(1 for cell, row in bank.items()
+                         if cell not in parkable and cell not in _readmitted_set
+                         and _memoised(row) and readmit_due(row, now=now_ts, bar_sizes=bar_sizes))
+                     if memo_on and locked else 0)
         if locked:
             outstanding, out_state = read_needs_data_outstanding(out_path)
         else:
@@ -2176,10 +2325,32 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
             if bound:
                 to_side.add(cell)
                 outstanding[cell] = {**popped[cell], "readmitted_at": at}
+        # THE BUILD-FAILURE MEMO (judge-rate), run under the same lock as the bank it mutates
+        # (merge resolution onto coverage v2.3, 2026-10-22): its sibling releases and canary pops
+        # ride in this pass's bank write and are discarded with it; its state lands only with it.
+        memo: dict[str, Any] = {"status": "OFF", "why": "no build-code identity this pass"}
+        hold_out: set[str] = set()
+        memo_state: dict[str, Any] = {}
+        if memo_on and not locked:
+            memo = {"status": "SKIPPED_LOCKED",
+                    "why": "the bank lock is held by another pass: nothing memoised here"}
+        elif memo_on:
+            memo_state = _memo_state(target)
+            memo = _memo_pass(bank, named, memo_state, code_fp=str(code_fp), at=at,
+                              now_ts=now_ts, report_mtime=report_mtime, judged=judged,
+                              excluded=parkable)
+            hold_out = memo.pop("_hold_out")
+            memo_readmit = memo.pop("_readmit")
+            memo["readmitted"] = len(memo_readmit)
+            memo["held_by_memo"] = memo_held
+            memo["status"] = "ON"
+        certain = bool(memo.get("certain"))
         added = 0
         for cell, row in (named if locked else {}).items():
             if row.get("reason") == "missing_bars":
                 continue                   # owned by the conversion organ, not filtered here
+            if cell in hold_out:
+                continue                   # a canary too early to read: judged once more
             prev = bank.get(cell)
             if prev is None:
                 added += 1
@@ -2192,6 +2363,12 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                                                if was_nt else at)
             elif was_nt:
                 _count_readmit(prev)        # re-named OUT of the class: owed again
+            entry.pop("code_fp", None)
+            entry.pop("signature", None)
+            if memo_on and certain and row.get("reason") in MEMO_REASONS:
+                # MEMOISED: parked under a code identity this desk is sure the report ran.
+                entry["code_fp"] = code_fp
+                entry["signature"] = failure_signature(row)
             bank[cell] = entry
         # Parked again (the bank holds it) or the input appeared: the sidecar row is done.
         outstanding = {c: r for c, r in outstanding.items()
@@ -2267,6 +2444,17 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
             finally:
                 with contextlib.suppress(OSError):
                     tmp_bank.unlink(missing_ok=True)
+            if bank_write == "WRITTEN" and memo.get("status") == "ON":
+                # The memo's state is written only beside a bank write that landed (staged with
+                # it inside a pass), so its canaries never describe a bank the disk never saw.
+                memo_path = target.parent / MEMO_STATE_NAME
+                memo_text = json.dumps(memo_state, indent=1, default=str)
+                with contextlib.suppress(OSError):
+                    if txn is None:
+                        memo_path.write_text(memo_text, "utf-8")
+                    else:
+                        txn.put_text(memo_path, memo_text)
+                        txn.guard(out_path, memo_path)
             if bank_write == "WRITTEN" and _PASS is not None:
                 # The next read of the bank in this pass is of the file just written; its parse
                 # is this mapping (every value here is a JSON value), so the pass does not parse
@@ -2289,6 +2477,11 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
             added, popped = 0, {}
             readmitted_nt.clear()
             readmitted_nt_reason.clear()
+            if memo.get("status") == "ON":
+                memo.update(status="NOT_PERSISTED",
+                            why="the bank write did not land: the memo's pass went with it")
+    if memo_on:
+        memo["memoised_rows"] = sum(1 for r in bank.values() if _memoised(r))
     out_measured = (out_written and out_state in (OUTSTANDING_MEASURED, OUTSTANDING_FIRST)
                     and not _set_aside(out_path))
     n_re = sum(readmitted_nt.values())
@@ -2319,6 +2512,7 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         pass
     return {"parked_this_pass": added, "readmitted_on_bar_growth": len(popped),
             "needs_data_readmit_held_back": len(held_back),
+            "build_failure_memo": memo,
             "readmitted_not_testable": n_re,
             "readmitted_not_testable_by_family": readmitted_nt,
             "readmitted_not_testable_by_reason": readmitted_nt_reason,
@@ -2628,7 +2822,10 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
 
 def allocate(backlog: dict[str, int], capacity: int,
              floor_share: float = FLOOR_SHARE,
-             ranking: list[dict[str, Any]] | None = None) -> dict[str, int]:
+             ranking: list[dict[str, Any]] | None = None, *,
+             priority: frozenset[str] | set[str] | None = None,
+             priority_share: float = TAPE_PRIORITY_SHARE,
+             tranche_out: dict[str, int] | None = None) -> dict[str, int]:
     """Quota per family: an equal FLOOR for every family holding backlog, then BY VALUE.
 
     THE FLOOR IS THE BREADTH MANDATE AND IT NEVER MOVES. Every family holding an unjudged cell
@@ -2656,6 +2853,36 @@ def allocate(backlog: dict[str, int], capacity: int,
     spare = capacity - sum(quota.values())
     if spare <= 0:
         return quota
+    # THE TAPE TRANCHE (principal 2026-10-14: the tick tape must produce certificates). After the
+    # floor -- which every family has already received, so nothing here can starve anyone -- the
+    # PRIORITY families (the derived tape families) share up to `priority_share` of the hour,
+    # split evenly and each capped at its own backlog; what they cannot use flows on to the value
+    # remainder below. Published per family as `tape_priority`, and kept OUT of `remainder`, so
+    # the fence's remainder-follows-ranking check reads the value walk alone.
+    pri = sorted(f for f in (priority or ()) if f in live)
+    if pri and priority_share > 0:
+        pool = min(spare, int(capacity * max(0.0, min(1.0, priority_share))))
+        left = list(pri)
+        while pool > 0 and left:
+            each = max(1, pool // len(left))
+            nxt = []
+            for f in left:
+                take = min(each, live[f] - quota[f], pool)
+                if take > 0:
+                    quota[f] += take
+                    pool -= take
+                    spare -= take
+                    if tranche_out is not None:
+                        tranche_out[f] = tranche_out.get(f, 0) + take
+                if live[f] - quota[f] > 0:
+                    nxt.append(f)
+                if pool <= 0:
+                    break
+            if nxt == left and each == 0:
+                break
+            left = nxt
+        if spare <= 0:
+            return quota
     if ranking:
         for row in ranking:
             fam = str(row.get("family") or "")
@@ -3080,9 +3307,521 @@ def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
     return len(rows)
 
 
+#: A FAMILY THAT HAS NEVER BEEN JUDGED MAY NOT WAIT LONGER THAN THIS (2026-10-14). Measured on
+#: the box 2026-10-13: `orderflow_imbalance` (49,108 mined, oldest 782 h) and `liquidity_regime`
+#: (39,319) had judged_total 0 while each carried a 244-cell floor quota every hour, and the four
+#: raw COT families (~30k mined) the same. Two days is generous against an hourly judge: a family
+#: that cannot get ONE real verdict in 48 h is not queued, it is unreachable, and the fence
+#: (`scripts/check_judge_coverage.py`) fails it on the box with the reasons published here.
+NEVER_JUDGED_MAX_AGE_H = 48.0
+
+TAPE_DIR = BASE / "data" / "tape" / "ticks"
+#: THE TICK TAPE MUST PRODUCE CERTIFICATES, NOT CELLS (principal 2026-10-14 07:25Z: "Tick n moat
+#: recorder must be mined 24/7 n if must produce cells n certis always make sure it does ... always
+#: maximise it"). Which families are TAPE families is DERIVED FROM CODE, never listed: a family is
+#: one when the branch that builds it calls a reader of `data/tape/ticks` -- in the sealed judge's
+#: `build_cell` (`elif family ...:` whose body calls one of TAPE_READERS) or in the orthogonal
+#: sweep's `kwargs_by_family` (a family handed a value `_tape_series` returned). A new tape family
+#: is picked up the hour its builder lands; a family whose input is merely DERIVED from bars
+#: (execution_state's surface is the H1 parquets' spread/tick_volume columns,
+#: `microstructure_miner`) is not one, and the derivation says so by not finding a reader.
+TAPE_READERS = frozenset({"_tape_series", "_tape_minutes"})
+TAPE_SOURCES = (BASE / "scripts" / "external_gauntlet.py",
+                BASE / "research" / "orthogonal_sweep.py")
+#: A tape family's tape is stale (the recorder idle) when its newest day file is older than this.
+TAPE_STALE_DAYS = 3
+#: THE CERTIFICATE BAR FOR THE TAPE AS A WHOLE: tape families together judged past this many
+#: cells, with the tape deep enough, and not one certificate -> the fence fails. At a 1% per-cell
+#: pass rate (the low end of what producing families measure) P(0 of 500) = 0.99**500 = 0.66%, so
+#: zero certificates past 500 judged is a defect to name, not bad luck.
+TAPE_CERT_MIN_JUDGED = 500
+UNIVERSAL_SURVIVORS = REPORTS / "UNIVERSAL_SURVIVORS.json"
+
+
+def _family_test_names(test: Any) -> set[str]:
+    """Family names an `if family == "x"` / `if family in {...}` test selects, else empty."""
+    import ast
+    if not isinstance(test, ast.Compare) or len(test.ops) != 1:
+        return set()
+    if not (isinstance(test.left, ast.Name) and test.left.id == "family"):
+        return set()
+    comp = test.comparators[0]
+    if isinstance(test.ops[0], ast.Eq) and isinstance(comp, ast.Constant):
+        return {str(comp.value)} if isinstance(comp.value, str) else set()
+    if isinstance(test.ops[0], ast.In) and isinstance(comp, (ast.Set, ast.Tuple, ast.List)):
+        return {str(e.value) for e in comp.elts
+                if isinstance(e, ast.Constant) and isinstance(e.value, str)}
+    return set()
+
+
+def _calls_reader(nodes: list[Any]) -> bool:
+    import ast
+    for n in nodes:
+        for sub in ast.walk(n):
+            if isinstance(sub, ast.Call):
+                f = sub.func
+                name = f.attr if isinstance(f, ast.Attribute) else getattr(f, "id", "")
+                if name in TAPE_READERS:
+                    return True
+    return False
+
+
+def derive_tape_families(sources: tuple[Path, ...] | None = None
+                         ) -> tuple[frozenset[str], dict[str, Any]]:
+    """(tape families, provenance) read from the builders' own source. See TAPE_READERS."""
+    import ast
+    fams: set[str] = set()
+    by_source: dict[str, list[str]] = {}
+    unreadable: list[str] = []
+    for src in sources if sources is not None else TAPE_SOURCES:
+        try:
+            tree = ast.parse(Path(src).read_text("utf-8"))
+        except (OSError, SyntaxError, ValueError):
+            unreadable.append(str(src))
+            continue
+        found: set[str] = set()
+        tape_vars: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.If) and _calls_reader(node.body):
+                found |= _family_test_names(node.test)
+            if isinstance(node, ast.Assign) and _calls_reader([node.value]):
+                for t in node.targets:
+                    for el in ast.walk(t):
+                        if isinstance(el, ast.Name):
+                            tape_vars.add(el.id)
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Assign) and isinstance(node.value, ast.Dict)):
+                continue
+            if not any(isinstance(t, ast.Name) and t.id == "kwargs_by_family"
+                       for t in node.targets):
+                continue
+            for k, v in zip(node.value.keys, node.value.values, strict=False):
+                if not (isinstance(k, ast.Constant) and isinstance(k.value, str)):
+                    continue
+                names = {n.id for n in ast.walk(v) if isinstance(n, ast.Name)}
+                if names & tape_vars or _calls_reader([v]):
+                    found.add(k.value)
+        by_source[Path(src).name] = sorted(found)
+        fams |= found
+    return frozenset(fams), {"readers": sorted(TAPE_READERS), "by_source": by_source,
+                             "unreadable": unreadable,
+                             "status": "MEASURED" if by_source else "UNMEASURED"}
+
+
+_TAPE_FAMILY_CACHE: dict[str, Any] = {}
+
+
+def tape_families() -> frozenset[str]:
+    """The derived tape families, cached on the sources' mtimes (one parse per code change)."""
+    key = []
+    for src in TAPE_SOURCES:
+        try:
+            key.append(f"{src}:{src.stat().st_mtime_ns}")
+        except OSError:
+            key.append(f"{src}:absent")
+    k = "|".join(key)
+    if _TAPE_FAMILY_CACHE.get("key") != k:
+        fams, prov = derive_tape_families()
+        _TAPE_FAMILY_CACHE.update({"key": k, "fams": fams, "prov": prov})
+    return frozenset(_TAPE_FAMILY_CACHE["fams"])
+
+
+def tape_certificates(path: Path | None = None) -> tuple[dict[str, int] | None, str]:
+    """Certified sleeves per family from UNIVERSAL_SURVIVORS (None when unreadable)."""
+    p = path or UNIVERSAL_SURVIVORS
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None, f"{p.name} absent or unreadable"
+    surv = doc.get("survivors") if isinstance(doc, dict) else None
+    rows = surv.values() if isinstance(surv, dict) else (surv if isinstance(surv, list) else [])
+    out: dict[str, int] = {}
+    for c in rows:
+        if not isinstance(c, dict):
+            continue
+        spec = c.get("shadow_spec") if isinstance(c.get("shadow_spec"), dict) else {}
+        fam = (spec or {}).get("family") or c.get("family")
+        if isinstance(fam, str) and fam:
+            out[fam] = out.get(fam, 0) + 1
+    return out, p.name
+#: The held-out floor the sealed policy carves from every series (gate_policy.LOCKBOX_MIN_DAYS),
+#: read from the policy when importable and never re-declared as authority here.
+LOCKBOX_MIN_DAYS_FALLBACK = 40
+
+
+def parked_in_bank(rows: list[dict[str, Any]], bank: dict[str, dict[str, Any]],
+                   judged_cells: set[str], not_testable_ids: dict[str, str] | set[str],
+                   banned: frozenset[str] | set[str]
+                   ) -> tuple[dict[str, int], dict[str, dict[str, int]], dict[str, str]]:
+    """Unjudged backlog rows the bank holds OUT of the shipped docket, per family and reason.
+
+    These are exactly the rows `order_docket` removes before the gauntlet reads the file, so they
+    can be given no share of the hour. Not-testable rows are already outside the backlog and are
+    not counted twice. Returns (count per family, count per family per reason, one sample `why`
+    per family)."""
+    count: dict[str, int] = {}
+    by_reason: dict[str, dict[str, int]] = {}
+    why: dict[str, str] = {}
+    if not bank:
+        return count, by_reason, why
+    for row in rows:
+        cid = str(row.get("_cell") or "")
+        if not cid or cid in judged_cells or cid in not_testable_ids:
+            continue
+        fam = str(row.get("family") or "")
+        if fam in banned:
+            continue
+        b = bank.get(cid)
+        if not isinstance(b, dict):
+            continue
+        reason = str(b.get("reason") or "unnamed")
+        count[fam] = count.get(fam, 0) + 1
+        slot = by_reason.setdefault(fam, {})
+        slot[reason] = slot.get(reason, 0) + 1
+        if fam not in why and b.get("why"):
+            why[fam] = str(b.get("why"))[:200]
+    return count, by_reason, why
+
+
+def sweep_census_by_family(path: Path | None = None) -> dict[str, dict[str, dict[str, int]]]:
+    """The last sweep's fate per family: downstream status and UNKNOWN reason counts.
+
+    Read from the sealed judge's own report (memoised for the pass). An absent report is an empty
+    census -- the caller says so -- never zero failures."""
+    doc = _read(path or GATES_REPORT)
+    verdicts = (doc or {}).get("verdicts") if isinstance(doc, dict) else None
+    out: dict[str, dict[str, dict[str, int]]] = {}
+    if not isinstance(verdicts, list):
+        return out
+    for v in verdicts:
+        if not isinstance(v, dict):
+            continue
+        fam = str(v.get("family") or "")
+        if not fam:
+            continue
+        slot = out.setdefault(fam, {"status": {}, "unknown_reason": {}, "terminal_gate": {}})
+        st = str(v.get("downstream_status") or "")
+        if st:
+            slot["status"][st] = slot["status"].get(st, 0) + 1
+        gate = str(v.get("terminal_gate") or ("PASSED" if v.get("passed") else "UNKNOWN"))
+        slot["terminal_gate"][gate] = slot["terminal_gate"].get(gate, 0) + 1
+        if v.get("unmeasured") or gate == "UNKNOWN":
+            r = str(v.get("unknown_reason") or "")
+            if r:
+                slot["unknown_reason"][r] = slot["unknown_reason"].get(r, 0) + 1
+    return out
+
+
+def _lockbox_min_days() -> int:
+    try:
+        desk = str(BASE)
+        if desk not in sys.path:
+            sys.path.insert(0, desk)
+        from research.gate_policy import LOCKBOX_MIN_DAYS
+        return int(LOCKBOX_MIN_DAYS)
+    except Exception:
+        return LOCKBOX_MIN_DAYS_FALLBACK
+
+
+def _tape_day(stem: str) -> str | None:
+    """'2026-09-16' and '20260916' (the two tape writers) -> '2026-09-16'; else None."""
+    d = stem.replace("-", "")
+    if len(d) != 8 or not d.isdigit():
+        return None
+    return f"{d[:4]}-{d[4:6]}-{d[6:]}"
+
+
+def tape_depth(root: Path | None = None, *, now: datetime | None = None) -> dict[str, Any]:
+    """How many TRADING days of tick tape the box holds per symbol -- the history a tape family
+    can use -- and, when short, how long until the deepest symbol is judgeable.
+
+    Counted from the day files themselves (`<SYM>/<DAY>.parquet`), cheap and never assumed. A day
+    is a distinct date with a file (the recorder writes no file on a day without ticks), so the
+    count IS trading days; the two writers' spellings of one date count once. The ETA assumes the
+    recorder keeps writing one trading day per weekday (5 per 7 calendar days) and is withheld
+    (None, with the reason) when the newest file is older than TAPE_STALE_DAYS -- an idle recorder
+    has no ETA."""
+    base = root or TAPE_DIR
+    need = CPCV_MIN_DAYS + _lockbox_min_days()
+    if not base.is_dir():
+        return {"status": "UNMEASURED", "why": f"no tape store at {base}", "days_needed": need}
+    days: list[int] = []
+    last: str | None = None
+    first: str | None = None
+    for d in base.iterdir():
+        if not d.is_dir():
+            continue
+        dates = {x for x in (_tape_day(f.stem) for f in d.glob("*.parquet")) if x}
+        if not dates:
+            continue
+        days.append(len(dates))
+        last = max(last or "", max(dates))
+        first = min(first or "9999", min(dates))
+    if not days:
+        return {"status": "UNMEASURED", "why": "the tape store holds no symbol",
+                "days_needed": need}
+    days.sort()
+    at = now or datetime.now(tz=UTC)
+    out: dict[str, Any] = {
+        "status": "MEASURED", "symbols": len(days), "max_days": days[-1],
+        "median_days": days[len(days) // 2],
+        "symbols_at_need": sum(1 for n in days if n >= need), "days_needed": need,
+        "days_needed_rule": f"{CPCV_MIN_DAYS} development days + lockbox floor "
+                            f"{need - CPCV_MIN_DAYS} (gate_policy.LOCKBOX_MIN_DAYS)",
+        "first_day": first, "last_day": last}
+    out["meets_need"] = out["symbols_at_need"] > 0
+    try:
+        idle = (at.date() - datetime.fromisoformat(str(last)).date()).days
+    except ValueError:
+        idle = None
+    out["recorder_idle_days"] = idle
+    short = max(0, need - days[-1])
+    out["short_trading_days"] = short
+    if short == 0:
+        out["eta_days_to_judgeable"] = 0
+        out["eta_rule"] = "the deepest symbol already holds the need"
+    elif idle is None or idle > TAPE_STALE_DAYS:
+        out["eta_days_to_judgeable"] = None
+        out["eta_rule"] = (f"UNMEASURED: the newest tape day is {last} ({idle} days old, past "
+                           f"{TAPE_STALE_DAYS}) -- the recorder is idle, so no date can be given")
+    else:
+        out["eta_days_to_judgeable"] = math.ceil(short * 7 / 5)
+        out["eta_rule"] = (f"{short} trading days short on the deepest symbol, at 5 trading "
+                           f"days per 7 calendar days")
+    return out
+
+
+def tape_tranche_gate(tape_fams: frozenset[str] | set[str], shippable: dict[str, int],
+                      capacity: int, depth: dict[str, Any]) -> dict[str, Any]:
+    """Which tape families may draw the tranche THIS hour, and the share returned to value.
+
+    The tranche (principal 2026-10-14) is kept, but only for cells the judge can actually rule
+    on: a tape family draws it when the tape holds the need (60 development days + lockbox on at
+    least one symbol, `tape_depth.meets_need`) AND the family has shippable cells. Below the need
+    every tape cell can only come back UNKNOWN (too short a series), so the whole share is handed
+    back to the value remainder this hour (audit of ad7d4ac6a, must-fix 1)."""
+    pool = int(max(capacity, 0) * max(0.0, min(1.0, TAPE_PRIORITY_SHARE)))
+    ready = depth.get("status") == "MEASURED" and bool(depth.get("meets_need"))
+    fams = sorted(f for f in tape_fams if ready and int(shippable.get(f, 0)) > 0)
+    if not tape_fams:
+        why = "no tape family derived from the builders' code"
+    elif depth.get("status") != "MEASURED":
+        why = f"tape depth UNMEASURED ({depth.get('why')}): no tape cell is known judgeable"
+    elif not ready:
+        why = (f"tape below its need ({depth.get('max_days')} trading days on the deepest symbol "
+               f"vs {depth.get('days_needed')}; ETA {depth.get('eta_days_to_judgeable')}d): a "
+               "tape cell can only return UNKNOWN, so the share goes back to value")
+    elif not fams:
+        why = "tape at need but no tape family has a shippable cell"
+    else:
+        why = "tape at need: the tape families with shippable cells draw the tranche"
+    return {"in_force": bool(fams), "families": fams, "share": TAPE_PRIORITY_SHARE,
+            "pool": pool if fams else 0, "returned_to_value": 0 if fams else pool, "why": why}
+
+
+def tape_tranche_missed_growth(shippable: dict[str, int], capacity: int,
+                               ranking: list[dict[str, Any]], quota: dict[str, int],
+                               tranche: dict[str, int], rec: dict[str, Any], *,
+                               at: datetime) -> dict[str, Any]:
+    """The tranche's cost, measured: cells each non-tape family lost against the same allocation
+    without the tranche, valued at the ranking's ev_per_cell. Unused pool is returned to value
+    (`returned_to_value` grows by it). Every pass emits a line: zero when nothing was displaced
+    (NOT_BINDING), never silence."""
+    used = sum(tranche.values())
+    out: dict[str, Any] = {"used": used}
+    if rec.get("in_force"):
+        out["returned_to_value"] = max(0, int(rec.get("pool") or 0) - used)
+    plain = allocate(shippable, capacity, ranking=ranking)
+    # AN UNKNOWN EV IS NEVER A ZERO (audit of 58765e3eb, should-fix). A family absent from the
+    # ranking, or ranked with a missing or non-finite ev_per_cell, has no measured value per
+    # cell; its displaced cells are counted, and the line's value reads UNMEASURED.
+    ev: dict[str, float] = {}
+    for r in ranking:
+        raw = r.get("ev_per_cell")
+        if isinstance(raw, (int, float)) and not isinstance(raw, bool) \
+                and math.isfinite(float(raw)):
+            ev[str(r.get("family"))] = float(raw)
+    displaced = {f: n - quota.get(f, 0) for f, n in plain.items()
+                 if f not in tranche and n - quota.get(f, 0) > 0}
+    cells = sum(displaced.values())
+    unvalued = {f: n for f, n in displaced.items() if f not in ev}
+    priced = -sum(ev[f] * n for f, n in displaced.items() if f in ev)
+    value: float | None = None if unvalued else round(priced, 10)
+    line: dict[str, Any] = {
+        "day": at.date().isoformat(), "at": at.isoformat(timespec="seconds"),
+        "rail": "judge_tape_tranche", "kind": "opportunity_cost",
+        "units": "expected value (ranking ev_per_cell x cells) of value-ranked judge cells the "
+                 "tape tranche displaced this hour",
+        "cells_displaced": cells, "by_family": dict(sorted(
+            displaced.items(), key=lambda kv: -kv[1])[:20]),
+        "tranche_cells": used, "value": value,
+        "value_status": "UNMEASURED" if unvalued else "MEASURED",
+        "unvalued_cells": sum(unvalued.values()),
+        "value_priced_part": round(priced, 10),
+        # BINDING IS KEYED ON CELLS, NOT ON VALUE: a displaced cell from a family valued at 0 or
+        # not valued at all was still taken from the value walk, so it is never NOT_BINDING.
+        "verdict": "COSTS_GROWTH" if cells > 0 else "NOT_BINDING",
+        "why": ("the tape tranche (principal 2026-10-14) moves judge cells from the value "
+                "remainder to the tape families; this is what that move forgoes at the "
+                "ranking's own expected value. PUBLISHED in JUDGE_COVERAGE.json, never appended "
+                "to data/missed_growth.jsonl (libs/portfolio/rails.py is sealed)")}
+    if unvalued:
+        line["why"] += (f"; {sum(unvalued.values())} displaced cells come from families with no "
+                        "measured ev_per_cell, so the value is UNMEASURED (never a zero)")
+    if not displaced and used == 0:
+        line["why"] = f"tranche not in force this hour ({rec.get('why')}): nothing displaced"
+    out["missed_growth_line"] = line
+    return out
+
+
+def tape_block(table: dict[str, dict[str, Any]], named_24h: dict[str, int],
+               *, depth: dict[str, Any] | None = None,
+               certs: tuple[dict[str, int] | None, str] | None = None) -> dict[str, Any]:
+    """THE TAPE BLOCK of JUDGE_COVERAGE.json: does the tick tape produce certificates?
+
+    Per derived tape family: mined, shippable, judged_total, named verdicts in the last 24 h,
+    certificates and oldest unjudged age; the tape's depth in trading days against the need, with
+    the ETA when short. UNMEASURED when the tape state (or the certificate canon) is absent --
+    never a zero standing in for "nobody looked"."""
+    fams = sorted(tape_families())
+    depth = tape_depth() if depth is None else depth
+    cert_counts, cert_src = tape_certificates() if certs is None else certs
+    rows: dict[str, dict[str, Any]] = {}
+    for f in fams:
+        r = table.get(f) or {}
+        rows[f] = {"mined": int(r.get("mined") or 0),
+                   "shippable": int(r.get("shippable") or 0),
+                   "quota": int(r.get("quota") or 0),
+                   "tape_priority": int(r.get("tape_priority") or 0),
+                   "judged_total": int(r.get("judged_total") or 0),
+                   "named_verdicts_24h": int(named_24h.get(f, 0)),
+                   "certificates": (int(cert_counts.get(f, 0)) if cert_counts is not None
+                                    else None),
+                   "oldest_unjudged_age_h": r.get("oldest_unjudged_age_h")}
+    status = "MEASURED"
+    why: list[str] = []
+    if depth.get("status") != "MEASURED":
+        status = "UNMEASURED"
+        why.append(f"tape depth UNMEASURED: {depth.get('why')}")
+    if cert_counts is None:
+        status = "UNMEASURED"
+        why.append(f"certificates UNMEASURED: {cert_src}")
+    if not fams:
+        status = "UNMEASURED"
+        why.append("no tape family derived from the builders' code "
+                   f"({(_TAPE_FAMILY_CACHE.get('prov') or {}).get('unreadable')})")
+    return {"status": status, "why": "; ".join(why) or "measured",
+            "families": rows,
+            "derived_from": _TAPE_FAMILY_CACHE.get("prov"),
+            "depth": depth,
+            "certificate_source": cert_src,
+            "certificates_total": (sum(int(v["certificates"] or 0) for v in rows.values())
+                                   if cert_counts is not None else None),
+            "judged_total": sum(v["judged_total"] for v in rows.values()),
+            "named_verdicts_24h": sum(v["named_verdicts_24h"] for v in rows.values()),
+            "priority_share": TAPE_PRIORITY_SHARE,
+            "cert_min_judged": TAPE_CERT_MIN_JUDGED,
+            "rule": ("tape families are DERIVED from the builders' source (a branch that calls "
+                     f"{sorted(TAPE_READERS)}); after the {FLOOR_SHARE:.0%} breadth floor they "
+                     "take "
+                     f"up to {TAPE_PRIORITY_SHARE:.0%} of the hour before the value remainder, "
+                     "which the sealed interleave reads as its WFQ weight (clamped there). "
+                     "scripts/check_judge_coverage.py fails, armed, a tape family with mined cells "
+                     "and no named verdict in 24 h once the tape meets the need, and tape families "
+                     f"with 0 certificates past {TAPE_CERT_MIN_JUDGED} judged")}
+
+
+def never_judged_families(table: dict[str, dict[str, Any]],
+                          parked_by_reason: dict[str, dict[str, int]] | None = None,
+                          parked_why: dict[str, str] | None = None,
+                          census: dict[str, dict[str, dict[str, int]]] | None = None,
+                          tape: dict[str, Any] | None = None) -> dict[str, dict[str, Any]]:
+    """Every family with mined cells and judged_total 0, with its oldest wait and named reasons."""
+    out: dict[str, dict[str, Any]] = {}
+    hits = [f for f, r in table.items()
+            if int(r.get("mined") or 0) > 0 and int(r.get("judged_total") or 0) == 0
+            and r.get("judging_status") != "STUDY_ONLY"]
+    if not hits:
+        return out
+    census = sweep_census_by_family() if census is None else census
+    _tape_fams = tape_families()
+    if tape is None and any(f in _tape_fams for f in hits):
+        tape = tape_depth()
+    for fam in sorted(hits, key=lambda f: -float(table[f].get("oldest_unjudged_age_h") or 0.0)):
+        row = table[fam]
+        parts: list[str] = []
+        pk = (parked_by_reason or {}).get(fam) or {}
+        if pk:
+            parts.append("parked in the unrunnable bank (filtered from the docket): " + ", ".join(
+                f"{k}={v}" for k, v in sorted(pk.items(), key=lambda kv: -kv[1])[:4])
+                + (f" -- e.g. {(parked_why or {}).get(fam)}" if (parked_why or {}).get(fam)
+                   else ""))
+        cs = census.get(fam) or {}
+        if cs:
+            st = cs.get("status") or {}
+            gates = cs.get("terminal_gate") or {}
+            ur = cs.get("unknown_reason") or {}
+            parts.append("last sweep: " + ", ".join(
+                f"{k}={v}" for k, v in sorted({**gates, **st}.items(),
+                                              key=lambda kv: -kv[1])[:5])
+                + ((" ; UNKNOWN reasons " + ", ".join(
+                    f"{k}={v}" for k, v in sorted(ur.items(), key=lambda kv: -kv[1])[:4]))
+                   if ur else ""))
+        elif census == {}:
+            parts.append("last sweep: the sealed judge's report is absent here (UNMEASURED)")
+        else:
+            parts.append("last sweep: no verdict row for this family at all")
+        if fam in _tape_fams and isinstance(tape, dict):
+            if tape.get("status") == "MEASURED":
+                parts.append(
+                    f"input: conditions on the tick tape; median {tape.get('median_days')} / max "
+                    f"{tape.get('max_days')} tape days per symbol against {tape.get('days_needed')}"
+                    f" needed (60 development + lockbox floor); {tape.get('symbols_at_need')} of "
+                    f"{tape.get('symbols')} symbols reach it")
+            else:
+                parts.append(f"input: conditions on the tick tape, {tape.get('why')}")
+        if int(row.get("shippable") or 0) > 0 and int(row.get("quota") or 0) > 0:
+            parts.append(f"{row.get('shippable')} cell(s) ship with quota {row.get('quota')}, so "
+                         "the sealed judge receives them; its own build order decides reach")
+        out[fam] = {"mined": int(row.get("mined") or 0),
+                    "unjudged": int(row.get("unjudged") or 0),
+                    "shippable": int(row.get("shippable") or 0),
+                    "parked_unrunnable": int(row.get("parked_unrunnable") or 0),
+                    "quota": int(row.get("quota") or 0),
+                    "oldest_unjudged_age_h": row.get("oldest_unjudged_age_h"),
+                    "reason": "; ".join(parts) if parts else "no published reason"}
+    return out
+
+
+#: Stages `build` may DEFER when its deadline has passed (`main --budget-s`). Each is a reading or
+#: an ordering refinement whose input persists, so deferral is queueing, never loss: the priors'
+#: cursor stays where it was, the k_eff/occupancy terms rank every row exactly as an unstamped
+#: row does, and the never-judged census is re-derived next pass. The bank update, the backlog,
+#: the quotas and the judging rate are never deferred.
+DEFERRABLE_STAGES = ("learn_priors", "keff_stamp", "occupancy_stamp", "never_judged")
+#: The share of the budget the ledger catch-up may use before the rest of the pass runs.
+LEDGER_BUDGET_SHARE = 0.5
+
+
+class _Budget:
+    """A monotonic deadline checked between units of work; what is skipped is named."""
+
+    def __init__(self, deadline: float | None) -> None:
+        self.deadline = deadline
+        self.deferred: list[str] = []
+
+    def allow(self, stage: str) -> bool:
+        if self.deadline is not None and time.monotonic() >= self.deadline:
+            self.deferred.append(stage)
+            return False
+        return True
+
+
 def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = None,
           ratchet: Path | None = None, now: datetime | None = None,
-          defer: bool = False, deadline: tuple[float, float] | None = None) -> dict[str, Any]:
+          defer: bool = False, deadline: float | None = None,
+          ledger_deadline: float | None = None,
+          stop: tuple[float, float] | None = None) -> dict[str, Any]:
     """The per-family coverage table, the quotas, and the carried-cohort ratchet.
 
     Run inside a pass memo, so each input file is parsed once however many readers need it.
@@ -3090,21 +3829,39 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     transaction (`_Txn`). With `defer=False` it is committed when the table is built, exactly
     where those writes used to land. With `defer=True` it rides on the doc and `write` commits
     it TOGETHER with the report and the ratchet, so a pass killed before `write` changes nothing.
-    `deadline` is (start, stop) on the monotonic clock: past `stop` the pass raises
-    `JudgeCoverageTimeout` and its staged writes are discarded.
+
+    TWO CLOCKS, ONE ORDER (merge resolution of judge-rate's budget with coverage v2.3's stop,
+    2026-10-22). `deadline` / `ledger_deadline` are `time.monotonic()` instants (`main
+    --budget-s`): the ledger catch-up stops at the second and leaves the rest of the file queued
+    past its watermark; DEFERRABLE_STAGES are skipped past the first and named in `budget`, and
+    the report is still written. `stop` is (start, stop) on the same clock, the later of the
+    budget and the cycle's kill cap less the commit margin (`stop_after_s`): past it the pass
+    raises `JudgeCoverageTimeout` and its staged writes are discarded. The deferral therefore
+    always acts first; the stop is the backstop for a pass the deferral could not bring home.
     """
-    recover_transactions(ratchet)
-    txn = _Txn((ratchet or RATCHET).parent)
+    global _GATES_MEMO
+    outer = _GATES_MEMO is not None
+    if not outer:
+        _GATES_MEMO = {}
+    _LEDGER_DEADLINE[:] = [ledger_deadline] if ledger_deadline is not None else []
     try:
-        with _pass_memo() as memo:
-            memo[("txn",)] = txn
-            if deadline is not None:
-                memo[("deadline",)] = deadline
-            doc = _build(docket, ledger=ledger, ratchet=ratchet, now=now)
-            memo.pop(("txn",), None)
-    except BaseException:
-        txn.discard()
-        raise
+        recover_transactions(ratchet)
+        txn = _Txn((ratchet or RATCHET).parent)
+        try:
+            with _pass_memo() as memo:
+                memo[("txn",)] = txn
+                if stop is not None:
+                    memo[("deadline",)] = stop
+                doc = _build(docket, ledger=ledger, ratchet=ratchet, now=now,
+                             budget=_Budget(deadline))
+                memo.pop(("txn",), None)
+        except BaseException:
+            txn.discard()
+            raise
+    finally:
+        _LEDGER_DEADLINE[:] = []
+        if not outer:
+            _GATES_MEMO = None
     if defer:
         doc["_txn"] = txn
     else:
@@ -3113,15 +3870,18 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
 
 
 def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = None,
-           ratchet: Path | None = None, now: datetime | None = None) -> dict[str, Any]:
+           ratchet: Path | None = None, now: datetime | None = None,
+           budget: _Budget | None = None) -> dict[str, Any]:
     at = now or datetime.now(tz=UTC)
     _fire_probe_reset()            # inputs are read afresh every pass, never across passes
+    budget = budget or _Budget(None)
     rows = docket if docket is not None else (_read(DOCKET) or [])
     rows = [r for r in rows if isinstance(r, dict)]
     if not rows:
         return {"at": at.isoformat(timespec="seconds"), "verdict": "UNMEASURED",
                 "why": "the judging docket is absent or empty -- nothing mined to cover",
-                "families": {}, "totals": {}, "quota": {}}
+                "families": {}, "totals": {}, "quota": {},
+                "judging_rate": judging_rate(ledger, now=at)}
 
     _check_budget("docket_read")
     prior = _read(ratchet or RATCHET) or {}
@@ -3222,14 +3982,18 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     capacity = measured_capacity(judged_total, ledger, now=at)
     # TEACH THE PRIOR BEFORE SPENDING IT: every verdict since the last reading updates its
     # family's posterior, so the ranking below is spending a number this desk actually learned.
-    learned = learn_priors(ledger, since=str((prior or {}).get("priors_cursor") or ""),
-                           now=at)
+    _cursor = str((prior or {}).get("priors_cursor") or "")
+    learned = (learn_priors(ledger, since=_cursor, now=at) if budget.allow("learn_priors") else
+               {"status": "DEFERRED", "recorded": 0, "families": 0, "cursor": _cursor,
+                "why": "the pass's --budget-s deadline passed: every row past the cursor waits"})
     realised_seen = realised_pass_rates(ledger)
     unknown = unknown_breakdown()
     named_unknowns = name_unknowns()
     not_run = name_not_run()
     unrunnable = update_unrunnable_bank({**named_unknowns, **not_run},
-                                        at=at.isoformat(timespec="seconds"))
+                                        at=at.isoformat(timespec="seconds"),
+                                        code_fp=build_code_identity(), judged=judged_cells,
+                                        report_mtime=_report_mtime())
     _bank_now = unrunnable_bank()
     failures = judging_failures(bank=_bank_now)
     _outstanding, _out_state = read_needs_data_outstanding()
@@ -3246,13 +4010,36 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     # only: the family factor lifts a family's share of the remainder, the per-cell stamp orders
     # rows inside each family stream. Nothing is removed and the floor is untouched.
     _check_budget("bank")
-    keff = keff_stamp(rows)
+    keff: dict[str, Any] = (keff_stamp(rows) if budget.allow("keff_stamp") else
+                            {"status": "DEFERRED", "why": "the pass's --budget-s deadline passed"})
     # OCCUPANCY + ORTHOGONALITY, stamped beside k_eff (research/occupancy_map.py). Reorders only.
-    occ = occupancy_stamp(rows)
+    occ: dict[str, Any] = (occupancy_stamp(rows) if budget.allow("occupancy_stamp") else
+                           {"status": "DEFERRED", "why": "the pass's --budget-s deadline passed"})
+    # THE QUOTA IS SPENT ON WHAT SHIPS (2026-10-14). `order_docket` removes every cell the
+    # unrunnable bank holds before the docket is written, so a quota computed over the whole
+    # backlog promised hours to cells the sealed judge never receives: measured on the box
+    # 2026-10-13, 230,180 rows filtered from the docket while `queued` still claimed them, and the
+    # raw COT families -- ranked first on an unlearned prior, each given its WHOLE backlog -- held
+    # 0 judged. The backlog, the cohort and the drain are unchanged (a parked defect is still owed,
+    # audit of PR #290); only the allocation and the shipped head now describe the docket the
+    # judge reads, and every parked cell is published per family with its named reason.
+    parked_unrunnable, parked_by_reason, parked_why = parked_in_bank(
+        rows, _bank_now, judged_cells, not_testable_ids, banned)
+    shippable = {f: max(0, n - parked_unrunnable.get(f, 0)) for f, n in backlog.items()}
     ranking = rank_by_value(backlog, rows, capacity)
-    quota = allocate(backlog, capacity, ranking=ranking)
+    tape_fams = tape_families()
+    tape_depth_now = tape_depth(now=at) if tape_fams else {"status": "UNMEASURED",
+                                                           "why": "no tape family derived"}
+    tape_tranche: dict[str, int] = {}
+    tranche_rec = tape_tranche_gate(tape_fams, shippable, capacity, tape_depth_now)
+    quota = allocate(shippable, capacity, ranking=ranking,
+                     priority=frozenset(tranche_rec["families"]),
+                     tranche_out=tape_tranche)
+    tranche_rec.update(tape_tranche_missed_growth(
+        shippable, capacity, ranking, quota, tape_tranche, tranche_rec, at=at))
     _check_budget("ranking")
-    judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
+    judgeable = [r for r in rows if str(r.get("family") or "") not in banned
+                 and str(r.get("_cell") or "") not in _bank_now]
     study_rows = [r for r in rows if str(r.get("family") or "") in banned]
     # Mark the variants BEFORE the order is taken, so the head this table reports is the head
     # that actually ships (`order_docket` re-derives the same marks and measures what they freed).
@@ -3295,6 +4082,11 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         table[fam] = {
             "mined": mined.get(fam, 0),
             "queued": queued.get(fam, 0),
+            # What the docket actually carries for this family, and what the bank holds back
+            # from it by named reason (`parked_in_bank`). unjudged = shippable + parked_unrunnable.
+            "shippable": shippable.get(fam, 0),
+            "parked_unrunnable": parked_unrunnable.get(fam, 0),
+            "parked_by_reason": dict(sorted((parked_by_reason.get(fam) or {}).items())),
             "judged_window": judged_window.get(fam, 0),
             "judged_total": judged_total.get(fam, 0),
             "unjudged": back,
@@ -3358,6 +4150,8 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
                          for f, n in backlog.items())
     total_backlog = sum(backlog.values())
     rate = sustained_rate(ledger, now=at)
+    rate_doc = judging_rate(ledger, now=at)
+    _ledger_catch = dict(rate_doc.get("ledger_index") or {})
     _prior_total = (sum(int(v.get("unjudged", 0)) for v in prior_fams.values()
                         if isinstance(v, dict)) if prior_at is not None else None)
     _parked_total = sum(parked_since.values()) if prior_at is not None else 0
@@ -3372,9 +4166,11 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     for row in ranking:
         fam = str(row["family"])
         row["quota"] = quota.get(fam, 0)
-        row["floor"] = min(backlog.get(fam, 0), max(1, int(capacity * FLOOR_SHARE) // max(
-            sum(1 for v in backlog.values() if v > 0), 1)))
-        row["remainder"] = max(0, row["quota"] - row["floor"])
+        row["shippable"] = shippable.get(fam, 0)
+        row["floor"] = min(shippable.get(fam, 0), max(1, int(capacity * FLOOR_SHARE) // max(
+            sum(1 for v in shippable.values() if v > 0), 1)))
+        row["tape_priority"] = tape_tranche.get(fam, 0)
+        row["remainder"] = max(0, row["quota"] - row["floor"] - row["tape_priority"])
         row["value_at_risk"] = row["ev_per_cell"] * row["unjudged"]
         row["value_deferred"] = row["ev_per_cell"] * max(0, row["unjudged"] - row["quota"])
     for fam, row in table.items():
@@ -3385,10 +4181,31 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
                         "p_optimistic": rk["p_optimistic"], "prior_status": rk["prior_status"],
                         "value_at_risk": rk["value_at_risk"],
                         "value_deferred": rk["value_deferred"],
-                        "floor": rk["floor"], "remainder": rk["remainder"]})
+                        "floor": rk["floor"], "remainder": rk["remainder"],
+                        "tape_priority": rk["tape_priority"]})
 
-    covered = sum(1 for f, r in table.items() if r["unjudged"] > 0 and r["queued"] > 0)
-    starved = sorted((f for f, r in table.items() if r["unjudged"] > 0 and r["queued"] == 0),
+    # NEVER JUDGED, NAMED (2026-10-14): every family that has mined cells and not one real
+    # verdict, with the oldest wait and every reason this desk can read for it.
+    for fam, row in table.items():
+        row["tape_priority"] = tape_tranche.get(fam, 0)
+    # A DEFERRED STEP IS NOT A ZERO (audit of 0bf4ce83e): when the budget skips this stage the
+    # count is published as "DEFERRED", never `len({}) == 0` -- "no family is never-judged" is a
+    # claim this pass did not measure. The fence keeps its own reading from the family table.
+    never_judged_measured = budget.allow("never_judged")
+    never_judged = (never_judged_families(table, parked_by_reason, parked_why)
+                    if never_judged_measured else {})
+    # THE TAPE BLOCK (2026-10-14): named verdicts per tape family in the last 24 h, read by the
+    # same judged rule as `judged_index` (a real terminal gate or a pass; UNKNOWN never counts).
+    _named_24h = judged_index(ledger, now=at, window_h=24.0)[2] if tape_fams else {}
+    tape = tape_block(table, _named_24h, depth=tape_depth_now)
+    tape["tranche"] = tranche_rec
+    for fam, nj in never_judged.items():
+        table[fam]["never_judged_reason"] = nj["reason"]
+    # A family whose whole backlog is parked ships nothing and is given nothing: it is not
+    # starved by the order, it is held by the bank with a named reason (and, if it has never
+    # been judged at all, by the never-judged class above). Starvation is about SHIPPED cells.
+    covered = sum(1 for f, r in table.items() if r["shippable"] > 0 and r["queued"] > 0)
+    starved = sorted((f for f, r in table.items() if r["shippable"] > 0 and r["queued"] == 0),
                      key=lambda f: -table[f]["unjudged"])
     totals = {
         "docket_rows": len(rows),
@@ -3460,14 +4277,25 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         "not_testable_total": sum(not_testable.values()),
         "not_testable_by_reason": not_testable_by_reason,
         "unrunnable_bank": unrunnable.get("bank_size"),
+        "shippable_total": sum(shippable.values()),
+        "parked_unrunnable_total": sum(parked_unrunnable.values()),
+        "families_never_judged": len(never_judged) if never_judged_measured else "DEFERRED",
         # EVERY WAY THE JUDGE FAILED TO RULE, per class, each with its route out (no terminal
         # class exists): what the hourly pass reads to hunt judging's own unoptimalities.
         "judging_failures": failures,
         "oldest_unjudged_age_h": (round(max(v for v in oldest.values() if v is not None), 2)
                                   if any(v is not None for v in oldest.values()) else None),
+        # THE RATE THE PRINCIPAL SET (150k verdicts/day), from the judge's own ledger.
+        "verdicts_24h": rate_doc.get("verdicts_24h"),
+        "judging_rate_target_per_day": JUDGING_RATE_TARGET_PER_DAY,
+        "judging_rate_status": rate_doc.get("status"),
     }
     return {
         "at": at.isoformat(timespec="seconds"),
+        "judging_rate": rate_doc,
+        "budget": {"deadline_hit": bool(budget.deferred), "deferred_stages": budget.deferred,
+                   "deferrable": list(DEFERRABLE_STAGES),
+                   "ledger_index": _ledger_catch},
         "verdict": "COVERED" if not starved else "STARVED",
         "why": ("every family holding unjudged cells is in this hour's queue at its own quota"
                 if not starved else
@@ -3481,6 +4309,21 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         "totals": totals,
         "quota": quota,
         "starved": starved[:20],
+        "never_judged": never_judged,
+        "never_judged_status": "MEASURED" if never_judged_measured else "DEFERRED",
+        "tape": tape,
+        # THE TAPE TRANCHE'S MISSED-GROWTH LINE (audit of ad7d4ac6a): what the tranche took from
+        # the value remainder, by family, at the ranking's own ev per cell. Published here in the
+        # shape `research_departments` / `stop_geometry_derivation` use, never appended to
+        # data/missed_growth.jsonl (that ledger is keyed by the sealed libs/portfolio/rails.RAILS).
+        "missed_growth_lines": [tranche_rec["missed_growth_line"]],
+        "never_judged_rule": (
+            "a family with mined cells and judged_total 0 (no real terminal gate or pass ever "
+            "recorded), with its oldest unjudged age and every reason published: cells parked "
+            "in the unrunnable bank by reason, the last sweep's NOT_RUN / UNKNOWN status for the "
+            "family, and any structural input the family's builder lacks. "
+            "scripts/check_judge_coverage.py fails one older than "
+            f"{NEVER_JUDGED_MAX_AGE_H:.0f}h on the box"),
         "unmined_live_families": unmined[:40],
         # THE RANKING IS PUBLISHED SO THE CHOICE IS INSPECTABLE -- and so the fence can check that
         # the remainder actually followed it, which is what stops a future session quietly
@@ -3544,21 +4387,7 @@ SIBLING_NEVER_FIRES_MIN = 20
 
 def fired_pairs(path: Path | None = None) -> set[tuple[str, str]]:
     """(family, sym) pairs holding at least one verdict with a named gate -- they CAN fire."""
-    out: set[tuple[str, str]] = set()
-    try:
-        with (path or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
-            for line in fh:
-                if '"UNKNOWN"' in line or not line.strip():
-                    continue
-                try:
-                    row = json.loads(line)
-                except ValueError:
-                    continue
-                if isinstance(row, dict) and row.get("terminal_gate"):
-                    out.add((str(row.get("family") or ""), str(row.get("sym") or "")))
-    except OSError:
-        pass
-    return out
+    return set(ledger_index(path).fired)
 
 
 def never_fire_pairs(bank: dict[str, dict[str, Any]],
@@ -3800,7 +4629,12 @@ def _write_staged(doc: dict[str, Any], txn: _Txn, *, report: Path | None,
 
 def render(doc: dict[str, Any]) -> list[str]:
     t = doc.get("totals") or {}
+    jr = doc.get("judging_rate") or {}
     lines = [f"judge coverage: {doc.get('verdict')} -- {doc.get('why')}",
+             f"  judging rate {jr.get('status')}: {jr.get('verdicts_24h')} verdicts in 24h vs "
+             f"target {jr.get('target_per_day', JUDGING_RATE_TARGET_PER_DAY)}/day"
+             + (f" (short {jr.get('shortfall_per_day')}/day)"
+                if jr.get("meets_target") is False else ""),
              f"  families mined {t.get('families_mined')} / with backlog "
              f"{t.get('families_with_backlog')} / queued this hour {t.get('families_queued')}; "
              f"unjudged {t.get('unjudged_total')} on capacity {t.get('capacity_measured')}"]
@@ -3825,6 +4659,17 @@ def render(doc: dict[str, Any]) -> list[str]:
     for row in (doc.get("worst_backlog") or [])[:5]:
         lines.append(f"  {row['family']}: mined {row['mined']} unjudged {row['unjudged']} "
                      f"queued {row['queued']} oldest {row['oldest_unjudged_age_h']}h")
+    lines.append(render_tape(doc.get("tape")))
+    # EVERY MISSED-GROWTH LINE IS PRINTED (audit of 58765e3eb, must-fix): a bill nobody reads
+    # is not a bill. The tranche's own line is printed inside render_tape; any other line the
+    # report carries is printed here, so the hourly leg's output shows all of them.
+    tape_raw = doc.get("tape")
+    tape: dict[str, Any] = tape_raw if isinstance(tape_raw, dict) else {}
+    tranche_raw = tape.get("tranche")
+    shown = tranche_raw.get("missed_growth_line") if isinstance(tranche_raw, dict) else None
+    for ln in doc.get("missed_growth_lines") or []:
+        if isinstance(ln, dict) and ln != shown:
+            lines.append(render_missed_growth_line(ln))
     return lines
 
 
@@ -3994,6 +4839,59 @@ def reuse_fresh(*, started_at: datetime | None = None, now: datetime | None = No
     return fresh, verdict
 
 
+def render_missed_growth_line(line: dict[str, Any]) -> str:
+    """One missed-growth line: rail, verdict, cells displaced, value (UNMEASURED, never 0)."""
+    value = line.get("value")
+    shown = ("UNMEASURED" if not isinstance(value, (int, float))
+             else f"{float(value):.3e}")
+    by = line.get("by_family") or {}
+    top = ", ".join(f"{f} {n}" for f, n in list(by.items())[:3])
+    return (f"  missed growth [{line.get('rail')}] {line.get('verdict')}: "
+            f"{line.get('cells_displaced')} cells displaced"
+            + (f" ({top})" if top else "")
+            + f", value {shown}"
+            + (f" ({line.get('unvalued_cells')} cells unvalued)"
+               if line.get("unvalued_cells") else ""))
+
+
+def render_tranche(tranche: Any) -> list[str]:
+    """The tape tranche: share given, used, returned to value, displaced, and its bill."""
+    if not isinstance(tranche, dict):
+        return ["  tape tranche: UNMEASURED -- this report carries no tranche record"]
+    line = tranche.get("missed_growth_line")
+    displaced = line.get("cells_displaced") if isinstance(line, dict) else None
+    value = line.get("value") if isinstance(line, dict) else None
+    out = [f"  tape tranche [{'IN FORCE' if tranche.get('in_force') else 'RETURNED'}]: share "
+           f"{tranche.get('share')} given (pool {tranche.get('pool')} cells), used "
+           f"{tranche.get('used')}, returned to value {tranche.get('returned_to_value')}, "
+           f"cells displaced {displaced}, value "
+           f"{'UNMEASURED' if not isinstance(value, (int, float)) else f'{float(value):.3e}'}"
+           f" -- {tranche.get('why')}"]
+    if isinstance(line, dict):
+        out.append(render_missed_growth_line(line))
+    else:
+        out.append("  missed growth [judge_tape_tranche] UNMEASURED: no line on this report")
+    return out
+
+
+def render_tape(tape: Any) -> str:
+    """The tape block: depth vs need (ETA), judged, named 24 h, certificates; then the tranche
+    (share given, used, returned, cells displaced, value) and its missed-growth line."""
+    if not isinstance(tape, dict):
+        return "  tape: UNMEASURED -- this report carries no tape block"
+    d = tape.get("depth") or {}
+    depth = (f"depth {d.get('max_days')} max / {d.get('median_days')} median trading days vs "
+             f"{d.get('days_needed')} needed ({d.get('symbols_at_need')}/{d.get('symbols')} "
+             f"symbols at need; ETA {d.get('eta_days_to_judgeable')}d)"
+             if d.get("status") == "MEASURED" else f"depth UNMEASURED ({d.get('why')})")
+    fams = ", ".join(f"{f} judged {r.get('judged_total')} / 24h {r.get('named_verdicts_24h')} / "
+                     f"certs {r.get('certificates')}"
+                     for f, r in sorted((tape.get("families") or {}).items()))
+    head = (f"  tape [{tape.get('status')}]: {depth}; certificates "
+            f"{tape.get('certificates_total')}; {fams or 'no tape family derived'}")
+    return "\n".join([head, *render_tranche(tape.get("tranche"))])
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="judge coverage by unjudged backlog, per family")
     ap.add_argument("--once", action="store_true", help="one pass (the hourly leg's mode)")
@@ -4016,19 +4914,31 @@ def main(argv: list[str] | None = None) -> int:
               + ("" if fresh else " -- " + "; ".join(verdict.get("why") or [])))
         return 0 if fresh else REUSE_STALE_EXIT
     t0 = time.time()
+    # --budget-s IS ENFORCED (2026-10-14). It used to be stamped into the report and never read,
+    # while the hourly_cycle comment said the leg "stops itself" at it; the leg ran into its 300 s
+    # cap instead and the report, written only at the end, went stale for days. Now the ledger
+    # catch-up stops at LEDGER_BUDGET_SHARE of the budget (the unread tail stays queued past the
+    # watermark) and DEFERRABLE_STAGES are skipped past the budget, so the report is written.
+    # The hard stop (`stop_after_s`, coverage v2.3) stays behind both as the backstop: a pass
+    # still running at the later of the budget and the cycle's cap less the commit margin is
+    # discarded whole, never committed half-written (merge resolution, 2026-10-22).
     stop_s, cap_s = stop_after_s(args.budget_s)
     m0 = time.monotonic()
-    deadline = (m0, m0 + stop_s)
+    stop = (m0, m0 + stop_s)
+    budget_s = float(args.budget_s) if args.budget_s and args.budget_s > 0 else None
     try:
         # Always deferred: --no-write then DISCARDS the pass's staging, so it saves nothing of
         # its own (audit of v2.1: it used to commit priors, bank and handoff without the
         # cursor). Recovery of an earlier pass's committed manifest still runs first, as it
         # must before anything reads.
-        doc = build(defer=True, deadline=deadline)
+        doc = build(defer=True, stop=stop,
+                    deadline=(m0 + budget_s) if budget_s else None,
+                    ledger_deadline=(m0 + budget_s * LEDGER_BUDGET_SHARE) if budget_s else None)
         doc["elapsed_s"] = round(time.time() - t0, 2)
         doc["budget_s"] = args.budget_s
+        doc["budget_enforced"] = budget_s is not None
         if not args.no_write:
-            write(doc, deadline=deadline)
+            write(doc, deadline=stop)
         else:
             _staged = doc.pop("_txn", None)
             if isinstance(_staged, _Txn):
@@ -4070,6 +4980,9 @@ __all__ = [
     "order_docket",
     "rank_by_value",
     "render",
+    "render_missed_growth_line",
+    "render_tape",
+    "render_tranche",
     "reuse_fresh",
     "unknown_breakdown",
     "unrunnable_bank",

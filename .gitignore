@@ -506,6 +506,7 @@ desks/mt5/data/import_stems_cache.json
 # Judge-owned box state, read on the box only (audit of PR #290): never published by a git add sweep.
 desks/mt5/data/hypotheses/unrunnable_specs.json
 desks/mt5/data/hypotheses/unrunnable_specs.json.tmp
+desks/mt5/data/hypotheses/unrunnable_memo.json
 desks/mt5/data/hypotheses/conversion_handoff.json
 # judge_coverage's one-pass transaction (desks/mt5/research/judge_coverage.py, `_Txn`): staged
 # copies of judge-owned state (bank, handoff, priors, report, ratchet), the commit manifests,

@@ -206,31 +206,128 @@ def _resample_rule(timeframe: str) -> str:
     return f"{timeframe_minutes(timeframe)}min"
 
 
-@lru_cache(maxsize=1)
-def _ticks(symbol: str):
-    """This symbol's recent tick tape as one indexed frame, or None. ONE symbol resident.
+#: THE TAPE CACHE IS PER SYMBOL AND BOUNDED BY BYTES (2026-10-14, audit of 4f28cd04). One symbol
+#: resident (`lru_cache(maxsize=1)`) re-read a symbol's WHOLE tape -- every day file -- each time
+#: the sweep came back to it after another symbol, and the sweep interleaves symbols (factor legs,
+#: the floor interleave's units). A minute aggregate is ~32 bytes x 1,440 rows a day (~17 MB a
+#: tape-year), so a few symbols fit easily; the bound is both a count and a byte budget so the
+#: 8 GB build box, which holds the live terminal, is never the one that pays for it. Least recently
+#: used goes first; the most recent entry is always kept, so a cache smaller than one symbol still
+#: serves that symbol's charts from one read, as before.
+TAPE_CACHE_MAX_SYMBOLS = 8
+TAPE_CACHE_MAX_BYTES = 256 * 1024 * 1024
 
-    Read once per SYMBOL rather than once per (symbol, chart). The concat of thirty tick vintages
-    is the expensive half of `_tape_series` and it is chart-independent -- only the resample rule
-    differs -- so a sweep that now visits a symbol on up to seven charts would otherwise re-read
-    and re-parse the same thirty files seven times. `maxsize=1` because the sweep finishes a
-    symbol's charts before moving on and a tick frame is far larger than a bar frame.
+
+class _SymbolLRU:
+    """`fn(symbol)` cached per symbol, evicted least-recently-used past a count OR byte bound.
+    Keeps the `cache_clear()` / `cache_info()` surface of `functools.lru_cache`. A None result
+    (no tape) is held in a separate set of names, so it costs no slot."""
+
+    MAX_ABSENT = 4096
+
+    def __init__(self, fn, max_items: int, max_bytes: int) -> None:
+        self._fn, self._max_items, self._max_bytes = fn, max_items, max_bytes
+        self._store: OrderedDict[str, tuple[object, int]] = OrderedDict()
+        self._absent: set[str] = set()
+        self.hits = self.misses = 0
+        self.__doc__, self.__wrapped__ = fn.__doc__, fn
+
+    @staticmethod
+    def _size(v: object) -> int:
+        try:
+            return int(v.memory_usage(index=True, deep=False).sum())  # type: ignore[attr-defined]
+        except Exception:
+            return 0
+
+    def __call__(self, symbol: str):
+        if symbol in self._store:
+            self._store.move_to_end(symbol)
+            self.hits += 1
+            return self._store[symbol][0]
+        if symbol in self._absent:
+            self.hits += 1
+            return None
+        self.misses += 1
+        v = self._fn(symbol)
+        if v is None:
+            # A symbol with NO tape is remembered apart (audit of ad7d4ac6a): it must never take
+            # one of the bounded slots and evict a symbol that has a tape to re-read.
+            if len(self._absent) >= self.MAX_ABSENT:
+                self._absent.clear()
+            self._absent.add(symbol)
+            return None
+        self._store[symbol] = (v, self._size(v))
+        while len(self._store) > 1 and (
+                len(self._store) > self._max_items
+                or sum(b for _, b in self._store.values()) > self._max_bytes):
+            self._store.popitem(last=False)
+        return v
+
+    def cache_clear(self) -> None:
+        self._store.clear()
+        self._absent.clear()
+        self.hits = self.misses = 0
+
+    def cache_info(self) -> dict[str, int]:
+        return {"hits": self.hits, "misses": self.misses, "currsize": len(self._store),
+                "absent": len(self._absent),
+                "bytes": sum(b for _, b in self._store.values()),
+                "max_items": self._max_items, "max_bytes": self._max_bytes}
+
+
+def _tape_minutes_uncached(symbol: str):
+    """This symbol's WHOLE tick tape as exact one-minute aggregates, or None (cached per symbol
+    by `_tape_minutes`, bounded by TAPE_CACHE_MAX_SYMBOLS / TAPE_CACHE_MAX_BYTES).
+
+    THE TAPE FAMILIES COULD NEVER BE JUDGED, AND THIS WAS THE CEILING (2026-10-14). The reader kept
+    the last THIRTY day files (`sorted(...)[-30:]`) because it concatenated raw ticks and a month of
+    them was the memory it could afford. Thirty calendar days is at most ~22 trading days, and the
+    sealed judge needs 60 development days plus the lockbox floor, so every `orderflow_imbalance`
+    and `liquidity_regime` cell built with a conditioning series that existed on at most 30 days of
+    a multi-year bar history and came back UNKNOWN -- for ever, however much tape the box had
+    recorded. Measured on the box 2026-10-13: 49,108 and 39,319 cells mined, judged_total 0, the
+    gate ledger holding 17,300 and 27,585 UNKNOWN rows for them and not one named gate.
+
+    THE FIX IS EXACT, NOT A WIDER GUESS. Every day file is read alone and reduced onto a one-minute
+    grid of ADDITIVE sums -- spread sum, tick count, net mid-step sum -- so any chart on the ladder
+    (all whole minutes) is recovered exactly by summing minutes: spread mean = sum / count, flow =
+    step sum. Peak memory is ONE day of ticks plus ~1,440 small rows per day held, lower than the
+    thirty-day concatenation it replaces, and the whole tape is now usable. The mid step across a
+    day boundary is taken against the previous file's last mid, as the concatenated series did.
     """
+    import numpy as np
     import pandas as pd
     d = TAPE / symbol
     if not d.exists():
         return None
-    frames = []
-    for f in sorted(d.glob("*.parquet"))[-30:]:
+    parts = []
+    last_mid: float | None = None
+    for f in sorted(d.glob("*.parquet")):
         try:
-            frames.append(pd.read_parquet(f, columns=["ts", "bid", "ask"]))
+            t = pd.read_parquet(f, columns=["ts", "bid", "ask"])
         except Exception:
             continue
-    if not frames:
+        t["ts"] = pd.to_datetime(t["ts"], utc=True)
+        t = t.dropna(subset=["bid", "ask"]).sort_values("ts", kind="mergesort").set_index("ts")
+        if t.empty:
+            continue
+        mid = (t["ask"] + t["bid"]) / 2.0
+        diff = mid.diff()
+        if last_mid is not None:
+            diff.iloc[0] = float(mid.iloc[0]) - last_mid
+        # Flow proxy: net sign of mid changes. Not true aggressor data -- the tape has no trade
+        # side -- so it is labelled a proxy rather than passed off as order flow.
+        step = pd.Series(np.sign(diff.to_numpy(dtype=float)), index=t.index).fillna(0.0)
+        g = pd.DataFrame({"spread_sum": (t["ask"] - t["bid"]).astype(float),
+                          "spread_n": 1.0, "step_sum": step}).resample("1min").sum()
+        parts.append(g[g["spread_n"] > 0])
+        last_mid = float(mid.iloc[-1])
+    if not parts:
         return None
-    t = pd.concat(frames, ignore_index=True)
-    t["ts"] = pd.to_datetime(t["ts"], utc=True)
-    return t.dropna(subset=["bid", "ask"]).sort_values("ts").set_index("ts")
+    return pd.concat(parts).groupby(level=0).sum().sort_index()
+
+
+_tape_minutes = _SymbolLRU(_tape_minutes_uncached, TAPE_CACHE_MAX_SYMBOLS, TAPE_CACHE_MAX_BYTES)
 
 
 def _tape_series(symbol: str, index, timeframe: str = "H1"):
@@ -243,16 +340,16 @@ def _tape_series(symbol: str, index, timeframe: str = "H1"):
     `liquidity_regime` and `orderflow_imbalance` is that the book moves faster than price does,
     which is exactly the claim a fine chart exists to test.
     """
-    t = _ticks(symbol)
-    if t is None:
+    m = _tape_minutes(symbol)
+    if m is None:
         return None, None
     rule = _resample_rule(timeframe)
-    spread = (t["ask"] - t["bid"]).resample(rule).mean()
-    mid = ((t["ask"] + t["bid"]) / 2.0)
-    # Flow proxy: net sign of mid changes within the bar. Not true aggressor data -- the tape has
-    # no trade side -- so it is labelled a proxy rather than passed off as order flow.
-    step = mid.diff().apply(lambda x: 1 if x > 0 else (-1 if x < 0 else 0))
-    flow = step.resample(rule).sum()
+    agg = m.resample(rule).sum()
+    n = agg["spread_n"]
+    # A bar with no tick has no spread (NaN, as a mean of nothing) and zero net flow (a sum of
+    # nothing), exactly what resampling the raw ticks returned.
+    spread = agg["spread_sum"] / n.where(n > 0)
+    flow = agg["step_sum"]
     return spread.reindex(index).ffill(), flow.reindex(index).ffill()
 
 

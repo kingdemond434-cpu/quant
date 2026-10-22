@@ -108,7 +108,7 @@ def sealed_docket(G: Any, meta: dict) -> tuple[list[dict], dict[str, int]]:
             cells[key] = {"sym": sym, "family": fam, "params": params,
                           "mechanism_status": h.get("mechanism_status"),
                           "mechanism_note": h.get("mechanism_note"),
-                          "prejudge_flagged": bool(((h.get("prejudge") or {}).get("flags")))}
+                          "prejudge_flagged": bool((h.get("prejudge") or {}).get("flags"))}
     census["cells"] = len(cells)
     eligible, rejected = G.partition_at_economic_prior(list(cells.values()), meta)
     census["rejected_at_prior"] = len(rejected)
@@ -248,18 +248,68 @@ def allocate(G: Any, specs: list[dict]) -> list[dict]:
     raw = {f: max(yields.get(f, prior), 1e-9) for f in by_fam}
     tot = sum(raw.values()) or 1.0
     n_fam = len(by_fam)
-    keep: list[dict] = []
+    takes: dict[str, list[dict]] = {}
+    wants: dict[str, int] = {}
     for fam, rows in by_fam.items():
         share = (G.YIELD_ALLOCATION_STRENGTH * (raw[fam] / tot)
                  + (1.0 - G.YIELD_ALLOCATION_STRENGTH) / n_fam)
         share = min(share, G.YIELD_MAX_SHARE)
         want = max(round(share * len(specs)), int(G.YIELD_MIN_SHARE * len(rows)), 1)
-        keep.extend(rows[:want])
+        wants[fam] = want
+        takes[fam] = rows[:want]
+    steered = _steered_keep(G, specs, wants, set(by_fam))
+    if steered is not None:
+        return steered
+    # THE SEALED JUDGE'S OWN EMISSION ORDER, whichever it is (2026-10-14). The takes were
+    # concatenated family by family; the floor-reach patch (judging/floor_reach_sealed_v2.patch)
+    # interleaves them through `external_gauntlet._floor_interleave`. Calling the judge's helper
+    # when it exists keeps this restatement identical to the sealed trim before AND after it lands.
+    inter = getattr(G, "_floor_interleave", None)
+    keep: list[dict] = (list(inter(takes)) if callable(inter)
+                        else [sp for rows in takes.values() for sp in rows])
     explored, _axes = G._explore_unmeasured_axes(specs, keep)
     keep.extend(explored)
     orthogonal, _rec = G._orthogonality_floor(specs, keep)
     keep.extend(orthogonal)
     return keep
+
+
+def _steered_keep(G: Any, specs: list[dict], wants: dict[str, int],
+                  families: set[str]) -> list[dict] | None:
+    """The sealed judge's keep UNDER A BREADTH STEER, or None when the judge would not steer.
+
+    Restates the steered branch of `allocate_by_yield` (sealed patch breadth_enforcer_judge_yield,
+    stack 8872aa6c onward) from the SAME callables it uses: the judge's own `_breadth_steer` (one
+    staleness rule), the enforcer's `steered_yield_order` (one order definition), the judge's
+    `_floor_interleave_steered` when the floor-reach patch has landed (judging/
+    floor_reach_sealed_v2.patch), and the judge's exploration and orthogonality floors. A judge
+    without `_breadth_steer` (LIVE before the breadth patch) never steers, and neither does this;
+    any failure the judge would treat as "steer unusable, legacy trim" is None here too."""
+    steer_fn = getattr(G, "_breadth_steer", None)
+    if not callable(steer_fn):
+        return None
+    try:
+        steer = steer_fn()
+    except Exception:
+        return None
+    if not steer:
+        return None
+    try:
+        from research.breadth_enforcer import SATURATED, class_of, steered_yield_order
+        order_, budget, rec = steered_yield_order(specs, wants, steer)
+    except Exception:
+        return None
+    if rec is None:
+        return None
+    head, tail = list(order_[:budget]), list(order_[budget:])
+    inter = getattr(G, "_floor_interleave_steered", None)
+    if callable(inter):
+        head = list(inter(head, steer))
+    sat_set = {f for f in families if class_of(f, steer) == SATURATED}
+    explored, _axes = G._explore_unmeasured_axes(specs, head)
+    orthogonal, _rec = G._orthogonality_floor(specs, head + explored, saturated=sat_set)
+    added = {id(s) for s in head + explored + orthogonal}
+    return head + explored + orthogonal + [s for s in tail if id(s) not in added]
 
 
 def sealed_keep(G: Any, specs: list[dict], *, novelty: bool = True) -> tuple[list[dict], dict]:

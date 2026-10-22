@@ -1148,10 +1148,141 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
                     "COSTS_GROWTH is weakened within its bounds (tunable) or queued for review "
                     "(binary); a rail is never strengthened by this loop")}
+    # The judge's tape tranche registers no rail either (rails.py is sealed): its line rides
+    # JUDGE_COVERAGE.json and is carried here beside the other gates' (audit of 58765e3eb).
+    try:
+        tranche_line = judge_tape_tranche_lines()
+    except Exception as exc:              # one bad artifact never costs the rails their lines
+        tranche_line = _bad_line(f"{type(exc).__name__}: {exc}", "RAISED")
+    doc["published_gate_lines"]["judge_tape_tranche"] = tranche_line
     if write:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     return doc
+
+
+#: The hourly judge-coverage leg's report. Its tape tranche (principal 2026-10-14) moves judge
+#: cells off the value walk, and its missed-growth line is PUBLISHED there as
+#: `missed_growth_lines` (rail `judge_tape_tranche`), never appended to LEDGER.
+JUDGE_COVERAGE = BASE / "reports" / "JUDGE_COVERAGE.json"
+#: The leg is hourly: a report older than this is six missed passes, not today's tranche.
+JUDGE_COVERAGE_MAX_AGE_H = 6.0
+#: A stamp this far in the future is clock skew between writer and reader; beyond it the report
+#: is FUTURE_DATED and UNMEASURED, never read as fresh (audit of bd241ee4a).
+JUDGE_COVERAGE_MAX_SKEW_H = 0.25
+JUDGE_TAPE_TRANCHE_RAIL = "judge_tape_tranche"
+
+
+def _bad_line(why: str, reason: str, age_h: float | None = None) -> dict[str, Any]:
+    out: dict[str, Any] = {"verdict": UNMEASURED, "lines": [], "reason": reason, "why": why}
+    if age_h is not None:
+        out["age_h"] = round(age_h, 2)
+    return out
+
+
+#: No hour's judge allocation displaces more cells than this; a larger count is not a count.
+MAX_CELLS_DISPLACED = 10**9
+
+
+def _count(raw: Any) -> int | None:
+    """A displaced-cell count: a whole number in [0, MAX_CELLS_DISPLACED], or None (never
+    coerced). A missing count arrives here as None and is therefore malformed, never 0."""
+    if isinstance(raw, bool):
+        return None
+    if isinstance(raw, int):
+        return raw if 0 <= raw <= MAX_CELLS_DISPLACED else None
+    if isinstance(raw, float) and math.isfinite(raw) and raw.is_integer() \
+            and 0 <= raw <= MAX_CELLS_DISPLACED:
+        return int(raw)
+    return None
+
+
+def _finite(raw: Any) -> float | None:
+    """A value as a finite float, or None: bools, non-numbers, NaN, inf and ints too large for a
+    float (10**400 overflows the conversion) are all rejected, never raised."""
+    if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+        return None
+    try:
+        f = float(raw)
+    except (OverflowError, ValueError):
+        return None
+    return f if math.isfinite(f) else None
+
+
+def judge_tape_tranche_lines(now: datetime | None = None) -> dict[str, Any]:
+    """The judge tape tranche's missed-growth line, read from JUDGE_COVERAGE.json.
+
+    The line counts the value-ranked judge cells the tranche displaced this hour (against the
+    same allocation without it) and values them at the ranking's ev_per_cell. Any displaced cell
+    is COSTS_GROWTH whatever its value; a value the ranking could not price (None) is UNMEASURED,
+    said so, never summed as zero. A missing, stale, FUTURE-DATED, non-object or malformed report
+    (a count that is not a whole number, a non-finite value) is UNMEASURED with its reason, and
+    never raises: one bad artifact must not cost the other rails their lines (audit of
+    bd241ee4a)."""
+    doc: Any = _json(JUDGE_COVERAGE)
+    if not isinstance(doc, dict):
+        return _bad_line("reports/JUDGE_COVERAGE.json is not a JSON object", "MALFORMED")
+    if not doc:
+        return _bad_line("no reports/JUDGE_COVERAGE.json on this host: the hourly "
+                         "judge_coverage leg has not written one", "ABSENT")
+    try:
+        at = datetime.fromisoformat(str(doc.get("at")))
+        if at.tzinfo is None:
+            at = at.replace(tzinfo=UTC)
+        age_h = ((now or datetime.now(tz=UTC)) - at).total_seconds() / 3600.0
+    except (TypeError, ValueError, OverflowError):
+        age_h = math.nan
+    if not math.isfinite(age_h):
+        return _bad_line("the judge-coverage report is unstamped or its stamp is unreadable: "
+                         "the tranche's state today is unknown", "UNSTAMPED")
+    if age_h < -JUDGE_COVERAGE_MAX_SKEW_H:
+        return _bad_line(f"the judge-coverage report is stamped {-age_h:.2f}h in the future "
+                         f"(beyond the {JUDGE_COVERAGE_MAX_SKEW_H:g}h clock-skew allowance): "
+                         "it is not this hour's reading", "FUTURE_DATED", age_h)
+    if age_h > JUDGE_COVERAGE_MAX_AGE_H:
+        return _bad_line(f"the judge-coverage report is older than {JUDGE_COVERAGE_MAX_AGE_H:g}h: "
+                         "the tranche's state today is unknown", "STALE", age_h)
+    raw_lines = doc.get("missed_growth_lines")
+    if raw_lines is not None and not isinstance(raw_lines, list):
+        return _bad_line("missed_growth_lines is not a list", "MALFORMED", age_h)
+    lines = [x for x in (raw_lines or [])
+             if isinstance(x, dict) and x.get("rail") == JUDGE_TAPE_TRANCHE_RAIL]
+    if not lines:
+        return _bad_line("the report carries no judge_tape_tranche line (a pre-tranche build, or "
+                         "an empty docket that allocated nothing)", "NO_LINE", age_h)
+    # The producer always writes cells_displaced (judge_coverage.tape_tranche_missed_growth):
+    # a line without it is malformed, and an absent count never resolves to a clean 0.
+    counts = [_count(x.get("cells_displaced")) for x in lines]
+    if any(c is None for c in counts):
+        return _bad_line("a judge_tape_tranche line's cells_displaced is missing or not a whole "
+                         f"number in [0, {MAX_CELLS_DISPLACED}]", "MALFORMED", age_h)
+    values: list[float | None] = []
+    for x, c in zip(lines, counts, strict=True):
+        v = x.get("value")
+        if v is None:
+            values.append(None)                        # unpriced by the producer: said so
+            continue
+        f = _finite(v)
+        if f is None:
+            return _bad_line("a judge_tape_tranche line's value is not a finite number",
+                             "MALFORMED", age_h)
+        if c == 0 and f != 0.0:
+            return _bad_line("a judge_tape_tranche line displaces 0 cells yet carries a nonzero "
+                             "value: internally inconsistent", "MALFORMED", age_h)
+        values.append(f)
+    cells = sum(c for c in counts if c is not None)
+    unpriced = any(v is None for v in values)
+    total = sum(v for v in values if v is not None)    # may overflow to inf: checked below
+    if not math.isfinite(total):
+        return _bad_line("the judge_tape_tranche lines' values sum to a non-finite number",
+                         "MALFORMED", age_h)
+    verdict = COSTS if (cells > 0 or any(x.get("verdict") == COSTS for x in lines)) \
+        else NOT_BINDING
+    return {"verdict": verdict, "source": "reports/JUDGE_COVERAGE.json",
+            "age_h": round(age_h, 2), "lines": lines, "cells_displaced": cells,
+            "value": None if unpriced else round(total, 12),
+            "value_status": UNMEASURED if unpriced else "MEASURED",
+            "units": lines[0].get("units")}
 
 
 def main() -> int:
@@ -1166,6 +1297,10 @@ def main() -> int:
         print(f"  {name:26s} {v.get('kind', ''):9s} {v.get('verdict', ''):16s}{extra}")
     if d["calibration_changes"]:
         print(f"  calibration: {d['calibration_changes']}")
+    for gate, g in (d.get("published_gate_lines") or {}).items():
+        extra = "".join(f" {k}={g[k]}" for k in ("cells_displaced", "value", "n_held")
+                        if k in g)
+        print(f"  {gate:26s} {'gate':9s} {g.get('verdict', ''):16s}{extra}")
     if d.get("aggression_verdict"):
         print(f"  aggression: {d['aggression_verdict']} unused_upside={d['unused_upside_heat']}")
     print(f"written: {OUT}")
