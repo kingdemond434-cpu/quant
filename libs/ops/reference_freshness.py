@@ -682,6 +682,22 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "needed. An absent or unparseable output keeps it. It retires no evidence row.",
     ),
     DestructivePath(
+        path_id="gate_ledger_index.prune",
+        module="desks/mt5/research/gate_ledger_index.py",
+        function="_prune",
+        removes="in-memory per-timestamp count buckets of the gate-ledger index (a derived cache "
+                "of the append-only ledger, persisted under reports/ as a cache) older than "
+                "KEEP_BUCKET_S before the newest stamp the index has folded",
+        reference="the newest `at` the index itself folded from the ledger (max_ts), read in the "
+                  "same pass",
+        status="positive",
+        note="Arrived with judge-rate (656093a84); declared when the image companions were "
+             "merged onto the speed train (2026-10-22), where the tree scan read 7/6 without it. "
+             "It acts only on a stamp that EXISTS (no max_ts: nothing is pruned), removes only "
+             "aggregates the ledger still holds row by row, and keeps four weeks of margin past "
+             "the widest reader window (168 h). No ledger row, verdict or record is touched.",
+    ),
+    DestructivePath(
         path_id="forward_cure_route.accumulate",
         module="desks/mt5/research/forward_cure_route.py",
         function="accumulate",
