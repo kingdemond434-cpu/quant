@@ -407,9 +407,12 @@ def manifest_rows(path: Path | None = None) -> list[dict[str, str]]:
 #: Lanes whose failure costs MONEY or the desk's ability to know it is broken. These are the only
 #: `required` box tasks: a research task that misses an hour costs an hour of research.
 REQUIRED_LANES: frozenset[str] = frozenset({"money"})
-#: Tasks that are required whatever their lane, because the control plane itself rides on them.
+#: Tasks that are required whatever their lane, because the control plane itself rides on them --
+#: or, for MT5-E8WindowGuard (2026-10-21), because it is the fail-open guard that CANCELS ORDERS
+#: outside the E8 window: its lane is "prop", which alone would census it `optional`, and a
+#: stopped guard must raise the required-component alarm rather than go quiet.
 REQUIRED_TASKS: frozenset[str] = frozenset(
-    {"MT5-ClockFixer", "MT5-GatewayResident", "MT5-AdoptRelease"}
+    {"MT5-ClockFixer", "MT5-GatewayResident", "MT5-AdoptRelease", "MT5-E8WindowGuard"}
 )
 
 
