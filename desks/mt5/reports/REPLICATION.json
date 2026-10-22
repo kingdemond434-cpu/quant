@@ -1,5 +1,5 @@
 {
- "at": "2026-10-21T23:43:04+00:00",
+ "at": "2026-10-22T00:45:33+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -17,114 +17,16 @@
  },
  "n": 16,
  "counts": {
-  "REPLICATED": 1,
+  "REPLICATED": 3,
   "MISMATCH": 0,
-  "UNMEASURED": 15
+  "UNMEASURED": 13
  },
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "AUDSGD.clock_transition.p=b95e974aac459e97",
-   "certificate": "external.AUDSGD.clock_transition.p=b95e974aac459e97",
-   "fp": "043cb09b3a2ed9cc",
-   "symbol": "AUDSGD",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "CHFSGD.clock_transition.p=7f79288b204e4928",
-   "certificate": "external.CHFSGD.clock_transition.p=7f79288b204e4928",
-   "fp": "7810af5534795ac3",
-   "symbol": "CHFSGD",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "EURCHF.clock_transition.p=ad7bb861939ff1dd",
-   "certificate": "external.EURCHF.clock_transition.p=ad7bb861939ff1dd",
-   "fp": "8dcf191760b92422",
-   "symbol": "EURCHF",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "EURCHF.clock_transition.p=2133289359eb72ef",
-   "certificate": "external.EURCHF.clock_transition.p=2133289359eb72ef",
-   "fp": "4343095e591fc5a9",
-   "symbol": "EURCHF",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "EURCHF.clock_transition.p=d2848be1d174af3c",
-   "certificate": "external.EURCHF.clock_transition.p=d2848be1d174af3c",
-   "fp": "6048c69e6da175b1",
-   "symbol": "EURCHF",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "EURSGD.clock_transition.p=7f79288b204e4928",
-   "certificate": "external.EURSGD.clock_transition.p=7f79288b204e4928",
-   "fp": "8019f6275d0e125e",
-   "symbol": "EURSGD",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "EURSGD.clock_transition.p=33faf75946da2e88",
-   "certificate": "external.EURSGD.clock_transition.p=33faf75946da2e88",
-   "fp": "17f80ff42b316d86",
-   "symbol": "EURSGD",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPMXN.clock_transition.p=7f79288b204e4928",
-   "certificate": "external.GBPMXN.clock_transition.p=7f79288b204e4928",
-   "fp": "4c2cf6227e98cbb4",
+   "key": "GBPMXN.clock_transition.p=e80a04d19803a4c6",
+   "certificate": "external.GBPMXN.clock_transition.p=e80a04d19803a4c6",
+   "fp": "a436026375618b2f",
    "symbol": "GBPMXN",
    "family": "clock_transition",
    "verdict": "UNMEASURED",
@@ -135,86 +37,234 @@
    "theirs": {}
   },
   {
-   "lane": "forward",
-   "key": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.0_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=240_rr=1.5_ttl_bars=48",
-   "symbol": "XTIUSD",
-   "family": "cross_asset_residual",
+   "lane": "certificate",
+   "key": "GBPMXN.clock_transition.p=0ca25a2a97630244",
+   "certificate": "external.GBPMXN.clock_transition.p=0ca25a2a97630244",
+   "fp": "72feb538cd3f7b41",
+   "symbol": "GBPMXN",
+   "family": "clock_transition",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
+    "no written specification in the spec book for family 'clock_transition'"
    ],
    "ours": {},
-   "theirs": {},
-   "divergence": {}
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPMXN.clock_transition.p=2133289359eb72ef",
+   "certificate": "external.GBPMXN.clock_transition.p=2133289359eb72ef",
+   "fp": "7d210c33d28fb484",
+   "symbol": "GBPMXN",
+   "family": "clock_transition",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'clock_transition'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPMXN.clock_transition.p=9af535ec0bbe3451",
+   "certificate": "external.GBPMXN.clock_transition.p=9af535ec0bbe3451",
+   "fp": "485e963fd7c6c8cf",
+   "symbol": "GBPMXN",
+   "family": "clock_transition",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'clock_transition'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "SGDJPY.clock_transition.p=7f79288b204e4928",
+   "certificate": "external.SGDJPY.clock_transition.p=7f79288b204e4928",
+   "fp": "a90bca414de6f755",
+   "symbol": "SGDJPY",
+   "family": "clock_transition",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'clock_transition'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "XAUUSD.clock_transition.p=777a92da6bf78078",
+   "certificate": "external.XAUUSD.clock_transition.p=777a92da6bf78078",
+   "fp": "43a9756dcf386f96",
+   "symbol": "XAUUSD",
+   "family": "clock_transition",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'clock_transition'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "XAUUSD.clock_transition.p=39249b788f391241",
+   "certificate": "external.XAUUSD.clock_transition.p=39249b788f391241",
+   "fp": "4a325d62ed5f2a47",
+   "symbol": "XAUUSD",
+   "family": "clock_transition",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'clock_transition'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "XAUUSD.clock_transition.p=7785fe2f84d075de",
+   "certificate": "external.XAUUSD.clock_transition.p=7785fe2f84d075de",
+   "fp": "93a4377a639fca34",
+   "symbol": "XAUUSD",
+   "family": "clock_transition",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'clock_transition'"
+   ],
+   "ours": {},
+   "theirs": {}
   },
   {
    "lane": "forward",
-   "key": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.5_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=120_rr=1.5_ttl_bars=48",
-   "symbol": "XTIUSD",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.5_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=240_rr=1.5_ttl_bars=48",
-   "symbol": "XTIUSD",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "BTCUSD.monday_gap",
-   "symbol": "BTCUSD",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "BTCUSD.session_range_breakout",
-   "symbol": "BTCUSD",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "CADJPY.asia.FAILED_BREAK",
+   "key": "CADJPY.london_am.NORMAL_DAY",
    "symbol": "CADJPY",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "EURJPY.asia.FAILED_BREAK",
+   "symbol": "EURJPY",
    "family": "session_range_breakout",
    "verdict": "REPLICATED",
    "why": [
-    "21/27 trades matched, P&L +11.32R vs +5.50R, position state and costs agree"
+    "19/26 trades matched, P&L +3.31R vs +2.81R, position state and costs agree"
+   ],
+   "ours": {
+    "n_fills": 38,
+    "pnl_R": 3.306,
+    "cost": {
+     "spread_per_lot": 500.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 184.573,
+     "basis": "universe_registry"
+    },
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
+   },
+   "theirs": {
+    "n_trades": 26,
+    "cost_fields": null,
+    "forward_start": "2026-08-25T23:26:08.836906+00:00"
+   },
+   "divergence": {
+    "n_ledger": 26,
+    "n_rebuilt": 38,
+    "matched": 19,
+    "match_share": 0.731,
+    "fill_ratio": 1.462,
+    "median_abs_dR": 0.0323,
+    "pnl_ledger_R": 2.807,
+    "pnl_rebuilt_R": 3.306,
+    "open_ledger": false,
+    "open_rebuilt": false
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "EURJPY.asia.NORMAL_DAY",
+   "symbol": "EURJPY",
+   "family": "session_range_breakout",
+   "verdict": "REPLICATED",
+   "why": [
+    "19/26 trades matched, P&L +3.31R vs +2.81R, position state and costs agree"
+   ],
+   "ours": {
+    "n_fills": 38,
+    "pnl_R": 3.306,
+    "cost": {
+     "spread_per_lot": 500.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 184.573,
+     "basis": "universe_registry"
+    },
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
+   },
+   "theirs": {
+    "n_trades": 26,
+    "cost_fields": null,
+    "forward_start": "2026-08-25T23:26:08.836910+00:00"
+   },
+   "divergence": {
+    "n_ledger": 26,
+    "n_rebuilt": 38,
+    "matched": 19,
+    "match_share": 0.731,
+    "fill_ratio": 1.462,
+    "median_abs_dR": 0.0323,
+    "pnl_ledger_R": 2.807,
+    "pnl_rebuilt_R": 3.306,
+    "open_ledger": false,
+    "open_rebuilt": false
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "EURJPY.london_am",
+   "symbol": "EURJPY",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "GBPAUD.session_range_breakout",
+   "symbol": "GBPAUD",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "GBPJPY.asia",
+   "symbol": "GBPJPY",
+   "family": "session_range_breakout",
+   "verdict": "REPLICATED",
+   "why": [
+    "20/27 trades matched, P&L +6.40R vs +5.10R, position state and costs agree"
    ],
    "ours": {
     "n_fills": 39,
-    "pnl_R": 11.321,
+    "pnl_R": 6.398,
     "cost": {
-     "spread_per_lot": 200.0,
+     "spread_per_lot": 400.0,
      "commission_per_lot": 2.0,
-     "quote_per_account": 184.575,
+     "quote_per_account": 184.573,
      "basis": "universe_registry"
     },
     "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
@@ -222,25 +272,25 @@
    "theirs": {
     "n_trades": 27,
     "cost_fields": null,
-    "forward_start": "2026-08-25T23:26:08.836882+00:00"
+    "forward_start": "2026-08-25T23:25:02.264930+00:00"
    },
    "divergence": {
     "n_ledger": 27,
     "n_rebuilt": 39,
-    "matched": 21,
-    "match_share": 0.778,
+    "matched": 20,
+    "match_share": 0.741,
     "fill_ratio": 1.444,
-    "median_abs_dR": 0.0606,
-    "pnl_ledger_R": 5.497,
-    "pnl_rebuilt_R": 11.321,
+    "median_abs_dR": 0.0263,
+    "pnl_ledger_R": 5.105,
+    "pnl_rebuilt_R": 6.398,
     "open_ledger": false,
     "open_rebuilt": false
    }
   },
   {
    "lane": "forward",
-   "key": "CADJPY.fair_value_gap",
-   "symbol": "CADJPY",
+   "key": "GBPJPY.fair_value_gap",
+   "symbol": "GBPJPY",
    "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
@@ -252,8 +302,8 @@
   },
   {
    "lane": "forward",
-   "key": "CADJPY.level_breakout",
-   "symbol": "CADJPY",
+   "key": "GBPJPY.level_breakout",
+   "symbol": "GBPJPY",
    "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
@@ -267,75 +317,67 @@
  "quarantined": [],
  "unmeasured": [
   {
-   "what": "AUDSGD.clock_transition.p=b95e974aac459e97",
+   "what": "GBPMXN.clock_transition.p=e80a04d19803a4c6",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "CHFSGD.clock_transition.p=7f79288b204e4928",
+   "what": "GBPMXN.clock_transition.p=0ca25a2a97630244",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "EURCHF.clock_transition.p=ad7bb861939ff1dd",
+   "what": "GBPMXN.clock_transition.p=2133289359eb72ef",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "EURCHF.clock_transition.p=2133289359eb72ef",
+   "what": "GBPMXN.clock_transition.p=9af535ec0bbe3451",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "EURCHF.clock_transition.p=d2848be1d174af3c",
+   "what": "SGDJPY.clock_transition.p=7f79288b204e4928",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "EURSGD.clock_transition.p=7f79288b204e4928",
+   "what": "XAUUSD.clock_transition.p=777a92da6bf78078",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "EURSGD.clock_transition.p=33faf75946da2e88",
+   "what": "XAUUSD.clock_transition.p=39249b788f391241",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "GBPMXN.clock_transition.p=7f79288b204e4928",
+   "what": "XAUUSD.clock_transition.p=7785fe2f84d075de",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.0_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=240_rr=1.5_ttl_bars=48",
-   "why": "no written specification in the spec book for family 'cross_asset_residual'"
-  },
-  {
-   "what": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.5_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=120_rr=1.5_ttl_bars=48",
-   "why": "no written specification in the spec book for family 'cross_asset_residual'"
-  },
-  {
-   "what": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.5_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=240_rr=1.5_ttl_bars=48",
-   "why": "no written specification in the spec book for family 'cross_asset_residual'"
-  },
-  {
-   "what": "BTCUSD.monday_gap",
+   "what": "CADJPY.london_am.NORMAL_DAY",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "BTCUSD.session_range_breakout",
+   "what": "EURJPY.london_am",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "CADJPY.fair_value_gap",
+   "what": "GBPAUD.session_range_breakout",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "CADJPY.level_breakout",
+   "what": "GBPJPY.fair_value_gap",
+   "why": "no forward ledger on this box for this row"
+  },
+  {
+   "what": "GBPJPY.level_breakout",
    "why": "no forward ledger on this box for this row"
   }
  ],
  "recorded": {
   "quarantined": 0,
-  "memory": 1,
+  "memory": 3,
   "candidates": 0
  },
  "cursor": {
-  "forward": 578,
-  "at": "2026-10-21T22:44:42+00:00",
-  "certificates": 955
+  "forward": 586,
+  "at": "2026-10-21T23:43:04+00:00",
+  "certificates": 963
  },
  "notes": [],
  "independence": {
@@ -352,24 +394,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURSGD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURSGD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\SGDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CADJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CADJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CADJPY_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPAUD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 54.49
+ "seconds": 63.59
 }
