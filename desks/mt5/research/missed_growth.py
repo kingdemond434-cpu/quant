@@ -782,6 +782,54 @@ def published_ftmo_follower_lines() -> dict[str, Any]:
     return {"source": f"data/{FTMO_INTENTS.name} RAIL_BLOCKED", "rails": lines}
 
 
+#: THE HEAVY ADMISSION SCAN EVERY 4TH HOURLY PASS (2026-10-21, principal zuck: Option B), was
+#: every ~2.6 h measured. Like the stop-geometry gate it registers no rail (the register is
+#: sealed), so its line is PUBLISHED here beside the rails. A STANDBY row needs TWO distinct
+#: admitting scans (promoter.reconcile_capital, `admit_scan`): the audit's simulation of
+#: 2026-10-14 put the second scan 6.1 h after a candidate appears against 4.1 h before, so
+#: 2.1 h of each ~6.1 h wait is the cadence's doing.
+ADMISSION_CADENCE_EXTRA_DELAY_H = 2.1
+ADMISSION_CADENCE_WAIT_H = 6.1
+SLEEVES = BASE / "data" / "sleeves.json"
+
+
+def admission_cadence_line(alloc: dict[str, Any]) -> dict[str, Any]:
+    """What the 4-hourly heavy scan costs in forward log-wealth, as a published line.
+
+    Every candidate the last scan ADMITTED that is not yet LIVE is forgoing its measured
+    delta E[log W]/day while it waits; EXTRA_DELAY_H / WAIT_H of that wait is the cadence's.
+    So the line is -sum(delta) x 2.1/6.1 per day while candidates wait, which integrates to
+    sum(delta) x 2.1 h per promotion. The longer reuse of the heavy growth curve on normal/fast
+    passes is not priceable from this artifact and is named, not assumed free. An unreadable
+    roster or an unmeasured scan is UNMEASURED, never a bill or a zero.
+    """
+    adm = alloc.get("admission") if isinstance(alloc.get("admission"), dict) else {}
+    if not adm or adm.get("status") != "MEASURED":
+        return {"verdict": UNMEASURED, "why": "no MEASURED admission scan on this host"}
+    try:
+        rows = json.loads(SLEEVES.read_text("utf-8")).get("sleeves")
+        if not isinstance(rows, list):
+            raise ValueError("sleeves is not a list")
+    except (OSError, ValueError, AttributeError) as exc:
+        return {"verdict": UNMEASURED, "why": f"data/sleeves.json unreadable: {exc}"}
+    live = {str(s.get("name")) for s in rows
+            if isinstance(s, dict) and str(s.get("status") or "").upper() == "LIVE"}
+    cands = adm.get("candidates") if isinstance(adm.get("candidates"), dict) else {}
+    waiting: dict[str, float] = {}
+    for name in adm.get("admitted") or []:
+        d = _num((cands.get(name) or {}).get("delta_elogw_per_day"))
+        if str(name) not in live and d is not None and d > 0:
+            waiting[str(name)] = d
+    share = ADMISSION_CADENCE_EXTRA_DELAY_H / ADMISSION_CADENCE_WAIT_H
+    cost = sum(waiting.values()) * share
+    return {"verdict": COSTS if waiting else NOT_BINDING,
+            "source": "reports/pf_allocation.json admission + data/sleeves.json",
+            "value_logw_per_day": round(-cost, 12), "waiting": sorted(waiting),
+            "extra_delay_h": ADMISSION_CADENCE_EXTRA_DELAY_H,
+            "wait_h": ADMISSION_CADENCE_WAIT_H,
+            "unpriced": "longer reuse of the heavy growth curve on normal/fast passes"}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -901,7 +949,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            # here so the bill sits beside the rails' (never appended to the ledger).
            "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
                                     "fusion_book_rails": published_fusion_book_lines(),
-                                    "ftmo_follower_rails": published_ftmo_follower_lines()},
+                                    "ftmo_follower_rails": published_ftmo_follower_lines(),
+                                    "admission_scan_cadence": admission_cadence_line(alloc)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
