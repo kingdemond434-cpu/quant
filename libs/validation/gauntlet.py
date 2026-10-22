@@ -163,8 +163,9 @@ class Gauntlet:
             [sharpe_ratio(candidate.strategy_matrix[:, k])
              for k in range(candidate.strategy_matrix.shape[1])]
         )
+        from libs.research.trial_count_guard import bar_n  # fixed N; n_trials is reported
         dsr = deflated_sharpe_ratio(
-            candidate.returns, n_trials=n_trials,
+            candidate.returns, n_trials=min(n_trials, bar_n(n_trials)),
             variance_of_sharpes=float(sharpes.var(ddof=1)) if len(sharpes) >= 2 else 1e-6,
             threshold=self.dsr_threshold,
         )

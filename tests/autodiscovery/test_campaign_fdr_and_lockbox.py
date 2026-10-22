@@ -43,6 +43,11 @@ class TestCampaignFdr:
         now costs you the good candidates too. Nothing is lost outright -- the orchestrator demotes
         to PAPER rather than rejecting -- but it will not reach the registry that cycle.
         """
+        # RE-AUDIT 2026-10-20: each rank is charged min(its own BH charge m/i, BAR_N), never
+        # fewer than BAR_N trials once m/i >= BAR_N. p = 0.04 at rank 3 of 20 faces
+        # alpha * max(3/20, 1/5) = 0.02, the same refusal Bonferroni at the fixed N gives (and
+        # LIVE's 0.015 gave). The 2026-10-14 transform (all three pass) rested on the pinned
+        # family size that let ranks past the fifth reach raw alpha.
         mask, _ = campaign_fdr([0.96] * 3 + [0.50] * 17)
         assert sum(mask) == 0
 

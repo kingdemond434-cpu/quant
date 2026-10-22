@@ -377,7 +377,8 @@ def step_gauntlet(survivors):
             "economic_prior": {"passed": True, "message": "discovered via external channel"},
             "in_sample_screen": {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)},
         }
-        dsr = deflated_sharpe_ratio(arr, n_trials=n_trials, variance_of_sharpes=sh_var, threshold=DSR_THRESHOLD)
+        from libs.research.trial_count_guard import bar_n  # fixed N; n_trials is reported
+        dsr = deflated_sharpe_ratio(arr, n_trials=min(n_trials, bar_n(n_trials)), variance_of_sharpes=sh_var, threshold=DSR_THRESHOLD)
         stages["deflated_sharpe"] = {"passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),
                                      "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials}
         stages["pbo"] = {"passed": pbo_ok, "pbo": round(pbo_val, 4)}

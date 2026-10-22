@@ -967,6 +967,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_reconcile", "clock_liveness", "certificate_clock_law",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    # NO BAR EVER RISES WITH A TRIAL COUNT (principal 2026-10-13): a 3 s tree scan, every hour.
+    "trial_inflation",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
@@ -1250,6 +1252,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "runtime_attestation", "self_repair", "desk_self_heal",
                      "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
                      "research_live_identity",
+                     # THE BAR'S N, WATCHED: the machine measuring its own multiplicity: meta.
+                     "trial_inflation",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
                      "unknown_census"), "meta"),
@@ -5680,6 +5684,11 @@ def main() -> None:
         "meta_rnd", "research/meta_rnd.py", "--once", "--budget-s", "180"))
     ac = _costed("acceptance", lambda: _producer(
         "acceptance", "scripts/check_acceptance_properties.py"))
+    # NO BAR EVER RISES WITH A TRIAL COUNT (principal 2026-10-13: "permanently monitored ... so
+    # it never inflates"). Publishes TRIAL_INFLATION.json: unpinned bar calls, sealed sites owed
+    # to the T8 re-sign, and the ledger's re-run share; the same check gates every push.
+    tif = _costed("trial_inflation", lambda: _producer(
+        "trial_inflation", "scripts/check_trial_inflation.py", "--report"))
     # THE REBUILT 25-SEP LANES (2026-09-30), after every leg whose output they read:
     #   build_failure_bank    compile_candidates, run_external_backtest and the sealed gauntlet's
     #                         report -> why cells never BUILT, ranked into fix work
@@ -6002,7 +6011,8 @@ def main() -> None:
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
-                    "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
+                    "opportunity_cost": oc, "acceptance": ac, "trial_inflation": tif,
+                    "opportunity_forecast": ofc,
                     "build_failure_bank": bfb, "trade_pathology": tpa,
                     "experiment_contracts": exc_, "health_board": hbd,
                     "preregistration": prg, "organ_census": ogc,

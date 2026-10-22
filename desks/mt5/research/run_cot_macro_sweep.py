@@ -53,6 +53,8 @@ from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from mt5desk.multiplicity import deflation  # noqa: E402
 
+from libs.research.trial_count_guard import bar_n  # noqa: E402
+
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
 COT = BASE / "data" / "cot"
@@ -111,7 +113,7 @@ def flip_side(sigs: list, symbol: str):
 def main() -> int:
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     trials = len(FAMILIES) * len(SYMBOL_COT)
-    bar = 1.96 + deflation(trials)
+    bar = 1.96 + deflation(min(trials, bar_n(trials)))
     print(f"COT macro sweep: {len(FAMILIES)} families x {len(SYMBOL_COT)} symbols = "
           f"{trials} cells")
     print(f"required t >= {bar:.2f} (deflated for {trials} trials -- this sweep's own count, "

@@ -104,12 +104,13 @@ def generation_roi(
             novel.append(c)
 
     total_trials = n_trials_prior + len(novel)
+    from libs.research.trial_count_guard import bar_n  # fixed N; the count is reported only
     survivors = 0
     sr0 = 0.0
     for c in novel:
         res = deflated_sharpe_ratio(
             np.asarray(c.returns, dtype="float64"),
-            n_trials=max(2, total_trials),
+            n_trials=min(max(2, total_trials), bar_n(total_trials)),  # never above max(2, n)
             variance_of_sharpes=variance_of_sharpes,
             threshold=dsr_threshold,
         )

@@ -18,52 +18,59 @@ _N, _T = 420, 310
 
 
 def test_the_campaign_shape_cannot_resolve_a_world_class_edge():
-    """THE FINDING. A world-class systematic book runs a true annualised Sharpe of 2-3. At the
-    campaign's own shape the gate demands ~5 just to reach dsr>=0.95, so a genuine SR-2 strategy
-    clears it well under 1% of the time.
+    """THE FINDING, re-read under the fixed bar (principal 2026-10-13: "make sure the bars never
+    raise never ever penalty never inflation due to trials"). The hurdle at the campaign's shape
+    is the SAME whether the campaign tested 5, 421 or 10,000 candidates -- the bar's N is
+    trial_count_guard.BAR_N -- and the candidate count is still REPORTED beside it.
 
-    The consequence is the whole point: 0-of-420 is EXACTLY what an underpowered campaign returns
-    whether or not the 420 contained real edges, so the null result carries no information about
-    the price space and must not be read as 'crypto is picked clean'."""
+    What remains true is that the WINDOW decides: at T=310 a genuine SR-2 strategy clears the
+    fixed bar well under half the time, so a 0-of-N record on that window still says little
+    about the price space."""
+    from libs.research.trial_count_guard import BAR_N
     d = design_power(_N + 1, _T)
-    assert d["hurdle_annual_sharpe"] > 4.5
-    assert d["power_by_true_annual_sharpe"]["2"] < 0.05
-    assert d["power_by_true_annual_sharpe"]["3"] < 0.10
-    assert d["underpowered_below_annual_sharpe"] >= 4.0
+    assert d["n_trials"] == _N + 1                       # the count is reported...
+    assert d["bar_n"] == BAR_N                           # ...and the bar charges the fixed N
+    for n in (5, 30, _N + 1, 10_000):
+        assert design_power(n, _T)["hurdle_annual_sharpe"] == d["hurdle_annual_sharpe"]
+    # below BAR_N the charge is the count itself (min form): never above the fixed bar
+    for n in (1, 2, 4):
+        assert design_power(n, _T)["hurdle_annual_sharpe"] <= d["hurdle_annual_sharpe"]
+    assert d["power_by_true_annual_sharpe"]["2"] < 0.5
+    assert d["underpowered_below_annual_sharpe"] >= 2.0
 
 
 def test_shape_moves_the_hurdle_and_nothing_is_relaxed_to_do_it():
-    """The only legitimate response to an unpassable gate. Fewer, mechanism-motivated candidates
-    over longer history buy resolution while every threshold stays where it is -- lowering the
-    0.95 tolerance instead would manufacture survivors."""
+    """The only legitimate response to an unpassable gate is a longer window; every threshold
+    stays where it is. Narrowing the campaign no longer moves the hurdle at all, because a wider
+    one never raised it (fixed bar N, principal 2026-10-13)."""
     wide_short = dsr_hurdle_annual(_N, _T)
     narrow_long = dsr_hurdle_annual(30, 1250)
     assert narrow_long < wide_short / 2.0
-    # both knobs pull independently, so neither alone is the answer
-    assert dsr_hurdle_annual(30, _T) < wide_short          # narrowing alone helps
+    assert dsr_hurdle_annual(30, _T) == wide_short         # the count buys and costs nothing
     assert dsr_hurdle_annual(_N, 1250) < wide_short        # lengthening alone helps
+    assert dsr_hurdle_annual(_N, 1250) == narrow_long
 
 
 def test_the_design_table_does_not_inherit_the_certifiers_trial_floor():
-    """REGRESSION PIN, on a defect this file's first draft shipped. The table applied
-    certify_gauntlet's own _FAMILY_TRIAL_BUDGET=120 to every cell, collapsing N=100/30/10/5 to a
-    single identical number -- which reads as 'narrowing a campaign below 120 buys nothing' and
-    would have argued the desk out of its only working lever. Production callers pass the real
-    candidate count with no floor (run_discovery n_trials=len(lib), run_crypto_portfolio
-    matrix.shape[1]), so the design question must use N directly."""
-    t = design_power(_N + 1, _T)["alternative_shapes"]["T=310"]
-    assert t["N=5"] < t["N=10"] < t["N=30"] < t["N=100"] < t["N=420"]
+    """REGRESSION PIN. The table passes each N directly (no _FAMILY_TRIAL_BUDGET floor) and,
+    under the fixed bar, every N in a row prices the IDENTICAL hurdle: a trial count neither
+    raises nor lowers the bar. A row that stops being flat means a count got back into the bar."""
+    table = design_power(_N + 1, _T)["alternative_shapes"]
+    for row in table.values():
+        vals = list(row.values())
+        assert len(vals) == 5 and all(v == vals[0] for v in vals), row
+    t310, t1250 = table["T=310"]["N=420"], table["T=1250"]["N=420"]
+    assert t1250 < t310                                   # the window still moves it
 
 
 def test_the_hurdle_tracks_the_gate_rather_than_restating_it():
-    """If the hurdle were a hardcoded 5.04 it would drift away from the gate the first time
-    anything upstream changed, and the table would confidently describe a gate that no longer
-    exists. It is derived from expected_max_sharpe and _DSR_THRESHOLD, so it moves with them."""
+    """If the hurdle were a hardcoded literal it would drift away from the gate the first time
+    anything upstream changed. It is derived from expected_max_sharpe at the fixed bar N and
+    _DSR_THRESHOLD, so it moves with T and with them -- and never with the trial count."""
     from libs.autodiscovery.validation import _DSR_THRESHOLD
     assert design_power(_N + 1, _T)["dsr_threshold"] == _DSR_THRESHOLD
-    # monotone in both arguments, which a constant could not be
     assert dsr_hurdle_annual(_N, _T) > dsr_hurdle_annual(_N, _T * 2)
-    assert dsr_hurdle_annual(_N, _T) > dsr_hurdle_annual(_N // 4, _T)
+    assert dsr_hurdle_annual(_N, _T) == dsr_hurdle_annual(_N // 4, _T)
 
 
 # ---- gap #71's premise, corrected ---------------------------------------------------------------
@@ -81,16 +88,25 @@ def test_fdr_buys_no_power_for_the_best_candidate():
     So switching the screen to FDR would not have lowered the detection floor -- which is why the
     real constraint is the campaign's shape, measured above, and not the multiplicity method."""
     m, q = 420, 0.05
+    # TRIAL-COUNT GUARD (2026-10-14): BH/BY charge m at min(m, BAR_N), so the rank-1 boundary is
+    # q/min(m, 5) -- still Bonferroni EXACTLY, at the pinned N. The point of this test stands: at
+    # rank 1 FDR is no looser than the FWER bar; the count (420) no longer sets either.
+    from libs.research.trial_count_guard import BAR_N
+    m_bar = min(m, BAR_N)
     hm = float(sum(1.0 / i for i in range(1, m + 1)))
-    # a lone candidate just inside the Bonferroni boundary, the rest pure noise
-    p = np.concatenate([[q / m * 0.99], np.linspace(0.2, 1.0, m - 1)])
+    # a lone candidate just inside the pinned Bonferroni boundary, the rest pure noise
+    p = np.concatenate([[q / m_bar * 0.99], np.linspace(0.2, 1.0, m - 1)])
     assert benjamini_hochberg(p, alpha=q).rejected[0] is True
     # ...and just outside it, BH rejects nothing -- identical to Bonferroni, not looser
-    p_out = np.concatenate([[q / m * 1.01], np.linspace(0.2, 1.0, m - 1)])
+    p_out = np.concatenate([[q / m_bar * 1.01], np.linspace(0.2, 1.0, m - 1)])
     assert benjamini_hochberg(p_out, alpha=q).n_rejected == 0
-    # BY, which is what screen_select is actually wired with (method="by"), is STRICTER
-    assert benjamini_yekutieli(p, alpha=q).n_rejected == 0
-    assert q / (m * hm) < q / m
+    # BY (what screen_select is wired with, method="by"): each rank is charged min(its own
+    # charge m*H_m/i, BAR_N) (re-audit of 6de7b1a99), so at rank 1 BY is Bonferroni at BAR_N
+    # exactly too -- never looser, and the harmonic factor (H_m ~ 6.6 at m=420) no longer
+    # stacks a count-driven penalty on top of the fixed bar.
+    assert q / (m * hm) < q / m_bar
+    assert benjamini_yekutieli(p, alpha=q).rejected[0] is True
+    assert benjamini_yekutieli(p_out, alpha=q).n_rejected == 0
 
 
 def test_the_screen_selection_is_computed_but_does_not_gate():

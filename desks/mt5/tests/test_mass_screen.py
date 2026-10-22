@@ -96,15 +96,21 @@ def test_swap_nights_match_the_engine() -> None:
 
 
 def test_bh_matches_the_repo_procedure_with_the_untestable_padded() -> None:
-    from libs.validation.fdr import benjamini_hochberg
+    # TRIAL-COUNT GUARD (2026-10-14): libs.validation.fdr now charges m at min(m, BAR_N). The
+    # mass screen is HELD on the counted m (pinning it forwards pure noise -- see
+    # test_pure_noise_forwards_nothing) pending a principal call, so the reference here is the
+    # step-up over the COUNTED, padded family, written out rather than borrowed from fdr.
     rng = np.random.default_rng(3)
     p = np.r_[rng.uniform(0, 1e-4, 30), rng.uniform(0, 1, 5000)]
     m = 20_000
     listed = p[p <= 0.05]
     cut = MS.bh_threshold(listed, m, 0.05)
-    ref = benjamini_hochberg(np.r_[p, np.ones(m - p.size)], alpha=0.05)
-    assert cut == pytest.approx(ref.threshold)
-    assert int((listed <= cut).sum()) == ref.n_rejected
+    full = np.sort(np.r_[p, np.ones(m - p.size)])
+    below = full <= np.arange(1, m + 1) / m * 0.05
+    k = int(np.max(np.flatnonzero(below))) + 1 if below.any() else 0
+    ref_threshold = float(full[k - 1]) if k else 0.0
+    assert cut == pytest.approx(ref_threshold)
+    assert int((listed <= cut).sum()) == k
 
 
 def test_training_window_never_reaches_the_walk_forward_or_lockbox_region() -> None:
@@ -279,3 +285,54 @@ def test_each_symbol_is_screened_once_per_day(sandbox, monkeypatch) -> None:
     again = MS.run(budget_s=600, workers=1, out_dir=tmp / "o4", dry_run=True)
     assert again["status"] == "NOTHING_DUE" and again["run"]["cells"] == 0
     assert again["per_day"]["cells_screened"] == first["run"]["cells"]
+
+
+# ---- the named exception: BH stays on the counted m, and says so (re-audit 2026-10-20) ---------
+def test_counted_m_is_kept_and_the_bar_n_form_is_only_reported() -> None:
+    """50,000 pure-noise cells at q=0.001: the counted m (LIVE, unchanged) passes ~0; the
+    N=5-consistent form the line REPORTS would pass ~10 (Bonferroni at 5); a family pinned to
+    min(m, 5) passed ~52. The screen's cut is the counted one; the alternative decides nothing."""
+    from libs.research.trial_count_guard import BAR_N
+    p = np.random.default_rng(0).uniform(size=50_000)
+    q, m = 0.001, p.size
+    listed = p[p <= q]
+    cut = MS.bh_threshold(listed, m, q)
+    counted = int((p <= cut).sum()) if cut > 0 else 0
+    o = np.sort(p)
+    pinned = o <= q * np.minimum(np.arange(1, m + 1), BAR_N) / BAR_N
+    n_pinned = int(np.nonzero(pinned)[0][-1]) + 1 if pinned.any() else 0
+    line = MS.counted_m_missed_growth(listed, m, q, counted)
+    assert counted <= 1
+    assert line["rejected_at_bar_n_form"] <= int((p <= q / BAR_N).sum()) <= 15
+    assert 40 <= n_pinned <= 65 and line["rejected_at_bar_n_form"] < n_pinned
+    assert line["name"] == "mass_screen_counted_m" == MS.COUNTED_M_EXCEPTION
+    assert line["status"] == "NAMED_EXCEPTION_PRINCIPAL_CALL"
+    assert line["held_back"] == line["rejected_at_bar_n_form"] - counted
+    assert line["verdict"] == ("UNMEASURED" if line["held_back"] else "NOT_BINDING")
+    assert line["value"] is None                     # never-forwarded cells are not priced at 0
+
+
+def test_every_run_publishes_the_exception_line(sandbox) -> None:
+    tmp, frames = sandbox
+    frames["NOISE"] = bars(400, seed=5)
+    doc = MS.run(budget_s=600, workers=1, symbols=["NOISE"], out_dir=tmp / "o3")
+    assert doc["fdr"]["named_exception"] == "mass_screen_counted_m"
+    (line,) = doc["missed_growth"]
+    assert line["name"] == "mass_screen_counted_m" and line["m_counted"] == doc["fdr"]["m"]
+
+
+def test_missed_growth_carries_the_exception(tmp_path, monkeypatch) -> None:
+    from datetime import UTC, datetime
+
+    import missed_growth as mg
+    path = tmp_path / "MASS_SCREEN.json"
+    monkeypatch.setattr(mg, "MASS_SCREEN", path)
+    assert mg.mass_screen_counted_m_lines()["verdict"] == mg.UNMEASURED   # absent: never a zero
+    line = MS.counted_m_missed_growth(np.array([1e-6, 2e-6, 3e-6]), 1000, 0.001, 0)
+    path.write_text(json.dumps({"generated_utc": datetime.now(tz=UTC).isoformat(),
+                                "missed_growth": [line]}), "utf-8")
+    got = mg.mass_screen_counted_m_lines()
+    assert got["held_back"] == 3 and got["verdict"] == mg.UNMEASURED
+    assert got["status"] == "NAMED_EXCEPTION_PRINCIPAL_CALL"
+    doc = mg.run(write=False)
+    assert "mass_screen_counted_m" in doc["published_gate_lines"]

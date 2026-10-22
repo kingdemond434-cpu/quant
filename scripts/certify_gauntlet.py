@@ -52,6 +52,7 @@ from libs.autodiscovery.validation import (  # noqa: E402
     campaign_gate_stats,
     validate,
 )
+from libs.research.trial_count_guard import bar_n  # noqa: E402
 from libs.validation.dsr import expected_max_sharpe, sharpe_ratio  # noqa: E402
 from libs.validation.economic_prior import MechanismType  # noqa: E402
 from libs.validation.positive_control import PPY, exact_sharpe_series, null_cohort  # noqa: E402
@@ -181,12 +182,16 @@ def dsr_hurdle_annual(n_trials: int, n_obs: int, *, var_sharpes: float | None = 
     tolerance. Inlining either as a literal would let the table drift silently away from the gate
     it claims to describe, which is the whole failure mode this script exists to catch.
 
-    ``var_sharpes`` defaults to the NULL dispersion 1/T -- the variance of sample Sharpes across
-    zero-edge candidates. That makes the result a FLOOR: a real cohort disperses more than noise,
+    ``var_sharpes`` defaults to the Tier S NULL dispersion 1/(T-1) -- the variance of sample
+    Sharpes across zero-edge candidates. That makes the result a FLOOR: a real cohort disperses more than noise,
     ``expected_max_sharpe`` scales linearly in that dispersion, so the live hurdle is higher than
     this, never lower. Reporting the floor keeps the verdict conservative in the safe direction.
     """
-    sr0 = expected_max_sharpe(n_trials, (1.0 / n_obs) if var_sharpes is None else var_sharpes)
+    # THE BAR'S N IS FIXED (principal 2026-10-13; owner's T8 ruling): `n_trials` is the count the
+    # caller measured and is REPORTED by design_power; it never raises the hurdle.
+    sr0 = expected_max_sharpe(min(n_trials, bar_n(n_trials)),
+                              # Tier S null variance 1/(T-1), the certifier's own (was 1/T)
+                              (1.0 / max(1, n_obs - 1)) if var_sharpes is None else var_sharpes)
     # dsr >= threshold  <=>  z >= Phi^-1(threshold), and z = (sr - sr0)*sqrt(T-1)/sqrt(denom)
     # with denom -> 1 for near-normal returns. Solve for sr, then annualise.
     z = float(_norm.ppf(_DSR_THRESHOLD))
@@ -198,8 +203,10 @@ def design_power(n_trials: int, n_obs: int) -> dict[str, Any]:
 
     The certification above answers "can a true edge pass"; the honest follow-up is "how big must
     it be", and that is arithmetic on the campaign's SHAPE, not on its thresholds. Two knobs set
-    it: N widens the multiplicity deflator (E[max of N nulls]) and T shrinks the standard error
-    (SE = sqrt(PPY/T)). Their product IS the hurdle.
+    it once: N widened the multiplicity deflator (E[max of N nulls]) and T shrinks the standard
+    error (SE = sqrt(PPY/T)). Since 2026-10-13 the bar's N is FIXED at trial_count_guard.BAR_N
+    (principal: "make sure the bars never raise ... never inflation due to trials"), so T is the
+    only knob that moves the hurdle; the candidate count is still REPORTED beside it.
 
     This matters because the two available responses to "nothing survived" are not equally
     legitimate. Lowering a threshold manufactures survivors and is forbidden. Re-shaping the
@@ -215,7 +222,8 @@ def design_power(n_trials: int, n_obs: int) -> dict[str, Any]:
     blind_to = [s for s in _TRUE_SR_GRID if power[f"{s:g}"] < 0.5]
     return {
         "dsr_threshold": _DSR_THRESHOLD,
-        "n_trials": n_trials,
+        "n_trials": n_trials,              # REPORTED; the bar charges bar_n, never this
+        "bar_n": min(n_trials, bar_n(n_trials)),
         "n_obs": n_obs,
         "se_annual_sharpe": se,
         "hurdle_annual_sharpe": hurdle,
@@ -223,21 +231,18 @@ def design_power(n_trials: int, n_obs: int) -> dict[str, Any]:
                              "hurdle is >= this, never below it",
         "power_by_true_annual_sharpe": power,
         "underpowered_below_annual_sharpe": (max(blind_to) if blind_to else None),
-        # N enters DIRECTLY here, with no floor, because that is what a redesigned campaign would
-        # actually face: production callers pass the real candidate count (run_discovery
-        # n_trials=len(lib), run_crypto_portfolio matrix.shape[1], orchestrator per-family counts).
-        # The first draft of this table applied THIS SCRIPT's _FAMILY_TRIAL_BUDGET floor of 120 to
-        # every cell, which collapsed N=100/30/10/5 to one number and said -- falsely -- that
-        # narrowing a campaign below 120 buys nothing. The floor is the certifier's scoring
-        # assumption, not the gate's; conflating the two would have argued the desk out of the one
-        # lever that works.
+        # N is passed DIRECTLY here, with no certifier floor, and the table shows it buys nothing:
+        # every N in a row prices the same hurdle because the bar's N is fixed at BAR_N
+        # (principal, 2026-10-13). The row is kept so a regression that lets a trial count back
+        # into the bar shows up as a row that is no longer flat.
         "alternative_shapes": {
             f"T={t}": {f"N={n}": dsr_hurdle_annual(n, t) for n in _DESIGN_N} for t in _DESIGN_T
         },
         "certifier_trial_floor": _FAMILY_TRIAL_BUDGET,
-        "reading": ("Hurdle is set by campaign SHAPE, not by the 0.95 tolerance. Cutting N and "
-                    "raising T lowers it without relaxing a single gate; lowering the tolerance "
-                    "would manufacture survivors and is not on the table."),
+        "reading": ("Hurdle is set by the window T and the fixed bar N, not by the candidate "
+                    "count: a wider campaign never raises it. Raising T lowers it without "
+                    "relaxing a single gate; lowering the tolerance would manufacture survivors "
+                    "and is not on the table."),
     }
 
 

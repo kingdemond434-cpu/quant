@@ -48,7 +48,15 @@ def test_the_per_candidate_path_does_not_deflate_and_the_legacy_path_does():
     legacy = validate(m[:, col], pbo=gates.legacy_pbo, rc=gates.legacy_rc, **common)
     # the undeflated PSR is strictly larger than the deflated DSR on the same returns
     assert per.metrics.dsr > legacy.metrics.dsr
-    assert per.gates["dsr"] is True and legacy.gates["dsr"] is False
+    # TRANSFORMED 2026-10-13 (principal: "make sure the bars never raise never ever penalty never
+    # inflation due to trials"): the legacy path still deflates, but at the FIXED bar N
+    # (trial_count_guard.BAR_N), so a genuine alpha clears it -- and its DSR is IDENTICAL whatever
+    # campaign size is passed in. The count stays an input the caller reports.
+    assert per.gates["dsr"] is True and legacy.gates["dsr"] is True
+    for n in (5, 10 * m.shape[1], 100_000):
+        other = validate(m[:, col], pbo=gates.legacy_pbo, rc=gates.legacy_rc,
+                         **{**common, "n_trials": n})
+        assert other.metrics.dsr == legacy.metrics.dsr
 
 
 def test_removing_the_duplicate_correction_recovers_power():

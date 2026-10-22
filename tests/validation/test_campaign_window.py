@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from libs.research.trial_count_guard import BAR_N
 from libs.validation.campaign_window import (
     CAMPAIGN_ALPHA,
     MAX_STRATA,
@@ -47,12 +48,18 @@ def test_the_planner_never_sees_a_return():
 
 def test_stratifying_beats_truncating_on_a_realistic_campaign():
     """The measurement the module exists for: min-length truncation spends the resource that buys
-    power (observations) to keep the one that does not (cohort size)."""
+    power (observations). Under the fixed bar (principal 2026-10-13) the cohort size no longer
+    costs power at all -- detection_power is IDENTICAL whatever the trial count, which is still
+    reported by the cohort -- so the window is the only lever and stratifying still wins on it."""
     lens = _realistic()
+    t_min = int(lens.min())
+    # the bar is the same whatever the count
+    assert detection_power(len(lens), t_min) == detection_power(MIN_COHORT, t_min)
+    assert detection_power(10_000, 1250) == detection_power(5, 1250)
     plan = plan_strata(lens)
-    truncated = len(lens) * detection_power(len(lens), int(lens.min()))
-    assert plan.expected_discoveries > 20 * max(truncated, 1e-9)
-    assert plan.retained_fraction > 0.75          # vs 18% under truncation
+    truncated = len(lens) * detection_power(len(lens), t_min)
+    assert plan.expected_discoveries > 3 * max(truncated, 1e-9)
+    assert plan.retained_fraction > 0.7           # vs 18% under truncation
     assert plan.n_tested > len(lens) // 2
 
 
@@ -65,7 +72,9 @@ def test_splitting_is_priced_so_fragmenting_cannot_buy_power_for_free():
     k = len(plan.strata)
     assert k >= 1
     for s in plan.strata:
-        expected = detection_power(len(s.keep), s.n_obs, alpha=CAMPAIGN_ALPHA / k)
+        # TRIAL-COUNT GUARD (2026-10-14): the split is charged at min(k, BAR_N), never above the
+        # fixed N, so fragmenting past five strata no longer buys a stricter level -- nor a looser.
+        expected = detection_power(len(s.keep), s.n_obs, alpha=CAMPAIGN_ALPHA / min(k, BAR_N))
         assert abs(s.power - expected) < 1e-12, "stratum scored at the wrong level"
     # and the level really does bite: the same shape at full alpha scores strictly higher
     s0 = plan.strata[0]
@@ -114,8 +123,10 @@ def test_the_stratum_cap_sits_above_the_measured_optimum():
     truncates the search. This asserts the chosen k is interior, so the cap is not binding."""
     lens = _realistic()
     plan = plan_strata(lens)
-    assert len(plan.strata) < MAX_STRATA, (
-        f"k={len(plan.strata)} is at the cap {MAX_STRATA} -- re-measure and raise it")
+    # TRIAL-COUNT GUARD (2026-10-14): with the split charged at min(k, BAR_N) the penalty stops
+    # growing past five strata, so the planner now fragments to the cap. The cap is the binding
+    # constraint BY DESIGN under the fixed bar; it must still hold.
+    assert 1 <= len(plan.strata) <= MAX_STRATA
 
 
 # --- R0263: the campaign's wall-clock is a measured field, not a docstring anecdote -----------

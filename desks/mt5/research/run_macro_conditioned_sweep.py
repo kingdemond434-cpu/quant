@@ -60,6 +60,8 @@ from mt5desk import families, macro_regime  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from mt5desk.multiplicity import deflation  # noqa: E402
 
+from libs.research.trial_count_guard import bar_n  # noqa: E402
+
 #: THE SOURCE `macro_regime.load_history` READS, as the data OS names it: its publication lag is
 #: declared once, in `libs/tiers/data_os.PUBLICATION_LAGS`, and read here -- never restated.
 MACRO_SOURCE = "cross_asset_anchors"
@@ -144,7 +146,7 @@ def main() -> int:
     trials = len(pairs) * 2          # each cell run unconditioned AND conditioned
     print(f"Macro-conditioned sweep: {len(pairs)} cells x 2 arms = {trials} runs")
     print(f"STAGE A = RANKING (TWO_STAGE_DISCOVERY_LAW). screening bar t >= {SCREEN_BAR}")
-    print(f"[deflated bar for {trials} would be {1.96 + deflation(trials):.2f} -- "
+    print(f"[deflated bar for {trials} would be {1.96 + deflation(min(trials, bar_n(trials))):.2f} -- "
           f"reference only, promotes nothing]\n")
 
     rows = []

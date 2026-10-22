@@ -261,6 +261,7 @@ def screen(d: pd.DataFrame, signals: Sequence[Any], cost: float,
 
 def deflate(rows: list[dict]) -> list[dict]:
     """Charge every row for the whole sweep and mark the ones that clear it."""
+    from libs.research.trial_count_guard import bar_n  # the bar's N is fixed; counts are reported only
     from research.multiplicity import deflate_t
 
     n = len(rows)
@@ -274,11 +275,11 @@ def deflate(rows: list[dict]) -> list[dict]:
             return 0
     for r in rows:
         r["n_tests_sweep"] = n
-        r["t_deflated_sweep"] = round(deflate_t(float(r["t_gross"]), n), 3)
+        r["t_deflated_sweep"] = round(deflate_t(float(r["t_gross"]), min(n, bar_n(n))), 3)
         fam = str(r.get("cell", "")).split(".")[1] if "." in str(r.get("cell", "")) else ""
         life = family_trials(fam) if fam else 0
         r["n_tests_lifetime"] = int(n + life)
-        r["t_deflated_lifetime"] = round(deflate_t(float(r["t_gross"]), n + life), 3)
+        r["t_deflated_lifetime"] = round(deflate_t(float(r["t_gross"]), min(n + life, bar_n(n + life))), 3)
         r["proposed"] = bool(r.get("clears_cost") and r["t_deflated_sweep"] > PROPOSE_T
                              and int(r.get("n_independent", 0)) >= MIN_TRADES)
     return rows

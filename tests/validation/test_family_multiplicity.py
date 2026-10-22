@@ -120,7 +120,8 @@ def test_BH_IS_LOOSER_THAN_HOLM_AND_ONLY_BELOW_THE_TOP_RANK() -> None:
     """FDR buys breadth by judging the k-th discovery against how many are being made. At rank 1
     the two agree exactly -- BH is not a blanket discount, and a caller cannot get a cheaper bar
     for its single best candidate by switching."""
-    assert abs(bh_alpha(20, 1) - 0.05 / 20) < 1e-12, "rank 1 is alpha/m under both"
+    # TRIAL-COUNT GUARD (2026-10-14): m is charged at min(m, BAR_N), under BH as under Holm
+    assert abs(bh_alpha(20, 1) - 0.05 / 5) < 1e-12, "rank 1 is alpha/min(m, 5) under both"
     assert bh_bar(20, 1) == holm_bar(20, 1)
     assert bh_bar(20, 10) < bh_bar(20, 1), "later discoveries face a looser bar under FDR"
 

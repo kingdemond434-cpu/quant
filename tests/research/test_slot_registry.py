@@ -90,10 +90,12 @@ def test_concurrent_m_never_returns_zero(fake_root):
 
 
 def test_bar_tightens_as_the_cohort_grows(fake_root):
-    """The regression this module exists to stop: m=4 gave 2.24 while 12 clocks accrued (2.64)."""
+    """TRANSFORMED 2026-10-14 (principal: no bar rises with a trial count). Holm runs over
+    min(m, BAR_N): m=4 keeps its 2.24, and 12 accruing clocks face the fixed bar's 2.33 -- the same
+    as 5 -- never the 2.64 a growing cohort used to charge."""
     assert holm_bar(4, rank=1) == pytest.approx(2.24)
-    assert holm_bar(12, rank=1) == pytest.approx(2.64)
-    assert holm_bar(12, rank=1) > holm_bar(4, rank=1)
+    assert holm_bar(12, rank=1) == pytest.approx(2.33)
+    assert holm_bar(12, rank=1) == holm_bar(5, rank=1) >= holm_bar(4, rank=1)
 
 
 def test_over_cap_and_idle_are_both_reported(fake_root):

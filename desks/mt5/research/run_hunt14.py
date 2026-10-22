@@ -10,10 +10,13 @@ WHAT IS DELIBERATELY IDENTICAL TO HUNT 12
 
 The universe, the four windows, the four prior-NY states, the cost model, and
 every clause of the battery: n > 60, deflated t > 2, PF > 1.05, maxDD > -30R,
-three-fold walk-forward all positive, and survival at 2x spread. The
-multiplicity correction is sized to the whole grid BEFORE any cell is swept,
-exactly as hunt12 does it, because counting only the cells that passed is how a
-correction gets quietly disarmed.
+three-fold walk-forward all positive, and survival at 2x spread. The grid is
+still counted BEFORE any cell is swept and that count is printed, but the
+deflation E[max t] is taken at the owner's FIXED bar N
+(`trial_count_guard.bar_n`, principal 2026-10-13: "make sure the bars never
+raise never ever penalty never inflation due to trials"), so a larger grid
+never raises the bar. The grid (symbols x 4 x 4) is always far above BAR_N, so
+the pin only ever lowers the E_MAX hunt12 sized to it.
 
 THE ONE CHANGE, AND WHY IT IS NOT FREE
 
@@ -73,11 +76,13 @@ def with_exit(sigs):
 
 def main() -> int:
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
-    h12.E_MAX = deflation(sweep_size(len(meta), len(h12.WINDOWS),
-                                     len(h12.STATES)))
+    from libs.research.trial_count_guard import bar_n  # fixed N; the grid is reported
+    grid = sweep_size(len(meta), len(h12.WINDOWS), len(h12.STATES))
+    h12.E_MAX = deflation(min(grid, bar_n(grid)))
     print(f"HUNT 14 — hunt12's grid, stall-tightening exit")
     print(f"{len(meta)} symbols x {len(h12.WINDOWS)} windows x "
-          f"{len(h12.STATES)} states, E[max t] = {h12.E_MAX:.2f}, "
+          f"{len(h12.STATES)} states = {grid} cells (reported); "
+          f"E[max t] = {h12.E_MAX:.2f} at the fixed bar N={min(grid, bar_n(grid))}, "
           f"gate needs deflated t > 2\n")
 
     old = {}
@@ -131,7 +136,7 @@ def main() -> int:
         print(f"    LOST {r['sym']}.{r['win']}.{r['state']}  "
               f"t {r['t']:.2f} (hunt12 {r['hunt12_t']})")
     OUT.write_text(json.dumps(
-        {"exit": EXIT, "e_max": h12.E_MAX, "survivors": surv, "all": results,
+        {"exit": EXIT, "e_max": h12.E_MAX, "grid_cells": grid, "survivors": surv, "all": results,
          "swept_at": datetime.now(timezone.utc).isoformat()},
         indent=2, default=str), "utf-8")
     print(f"\nwritten: {OUT}")

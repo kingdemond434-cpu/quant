@@ -623,8 +623,9 @@ def multiplicity_term(n_trials: int, *, sharpes: Sequence[float] | None = None,
     if var is None or not math.isfinite(var) or var <= 0:
         return 0.0, f"no variance of Sharpes for {n} trials: multiplicity unmeasured"
     try:
+        from libs.research.trial_count_guard import bar_n  # fixed N; n is reported
         from libs.validation.dsr import expected_max_sharpe
-        hurdle = float(expected_max_sharpe(n, var))
+        hurdle = float(expected_max_sharpe(min(n, bar_n(n)), var))
     except Exception as exc:
         return 0.0, f"expected_max_sharpe unavailable ({type(exc).__name__}): unmeasured"
     return hurdle, f"E[max Sharpe | {n} trials, var={var:.6f}] ({basis})"

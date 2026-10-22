@@ -43,6 +43,7 @@ for _p in (str(REPO), str(BASE / "research")):
 
 OUT = BASE / "reports" / "DRAWDOWN_ALPHA_MINER.json"
 from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+from libs.research.trial_count_guard import bar_n  # the bar's N is fixed; counts are reported only
 LIVE = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 LEDGER_DIRS = (BASE / "reports" / "shadow", REPO / "backups" / "moat" / "shadow_ledgers")
 MIN_DEPTH_R = 1.0
@@ -219,7 +220,7 @@ def mine(live: list[tuple[str, float]], forward: list[tuple[str, str, float]]) -
                 n_tests += 1
                 rows.append({"basis": basis, "window": f"{w['start']}..{w['end']}",
                              "depth_r": w["depth_r"], "sleeve": s, **st})
-    emz = expected_max_z(n_tests)
+    emz = expected_max_z(min(n_tests, bar_n(n_tests)))  # fixed N: n_tests is reported, never charged
     for row in rows:
         if row.get("status") == "MEASURED":
             row["t_deflated"] = round(float(row["t"]) - emz, 3)
