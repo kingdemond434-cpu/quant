@@ -401,10 +401,8 @@ def _write_state(doc: dict[str, Any]) -> None:
     doc = {**doc, "heartbeat_utc": datetime.now(UTC).isoformat(timespec="seconds")}
     if doc.get("status") == "SWEEPING":
         doc["sweep_phase"] = _sweep_phase()
-    try:
+    with contextlib.suppress(OSError):  # the heartbeat is a report; judging never stops for it
         _durable_write(RESIDENT_STATE, json.dumps(doc, indent=1, default=str))
-    except OSError:
-        pass  # the heartbeat is a report; judging never stops for it
     _remember(doc)
 
 
@@ -425,10 +423,8 @@ def _remember(doc: dict[str, Any]) -> None:
     if {k: old.get(k) for k in _MEMORY_KEYS} == mem:
         return
     mem["at"] = datetime.now(UTC).isoformat(timespec="seconds")
-    try:
+    with contextlib.suppress(OSError):  # a report; judging never stops for it
         _durable_write(RESIDENT_MEMORY, json.dumps(mem, indent=1, default=str))
-    except OSError:
-        pass  # a report; judging never stops for it
 
 
 def _recall() -> dict[str, Any]:
