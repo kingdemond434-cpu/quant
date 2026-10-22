@@ -1,6 +1,6 @@
 {
  "schema": "backup_state/1",
- "at": "2026-10-22T21:16:40+00:00",
+ "at": "2026-10-22T21:31:48+00:00",
  "host": "vmi3571445",
  "last_backup_at": null,
  "last_restore_drill_at": null,
@@ -38,10 +38,10 @@
   }
  },
  "key_backup": {
-  "state": "NOT_APPLICABLE",
-  "present": null,
-  "size_bytes": null,
-  "matches": null,
+  "state": "OK",
+  "present": true,
+  "size_bytes": 64,
+  "matches": true,
   "box_local": true
  },
  "status": "UNMEASURED",
