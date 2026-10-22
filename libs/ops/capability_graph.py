@@ -719,8 +719,11 @@ NODES: tuple[Node, ...] = (
     Node("bar_clock_probe", "desks/mt5/research/bar_clock_probe.py",
          writes=("desks/mt5/reports/BAR_CLOCK.json", "desks/mt5/data/bar_clock_probes.jsonl",
                  "desks/mt5/data/bar_clock_probes.summary.json"),
+         # reads its OWN ledger and summary back (the summary is rebuilt from the ledger).
          reads=("desks/mt5/reports/FUTURES_LEAD_LAG.json",
-                "desks/mt5/data/intelligence/ff_calendar_vintage", "desks/mt5/data/universe/")),
+                "desks/mt5/data/intelligence/ff_calendar_vintage", "desks/mt5/data/universe/",
+                "desks/mt5/data/bar_clock_probes.jsonl",
+                "desks/mt5/data/bar_clock_probes.summary.json")),
     Node("time_joins", "scripts/check_time_joins.py",
          writes=("desks/mt5/reports/TIME_JOINS.json",)),
     Node("fusion_cost", "libs/portfolio/fusion_cost.py",
