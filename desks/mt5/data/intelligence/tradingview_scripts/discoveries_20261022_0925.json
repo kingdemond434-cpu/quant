@@ -1,0 +1,242 @@
+[
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "DNSE VN301!, 3 SMA Cross Strategy",
+  "url": "https://www.tradingview.com/script/lGzLYXqa/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "lGzLYXqa"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "CNPS25-FVG + BOS CHOCH RETEST",
+  "url": "https://www.tradingview.com/script/c6AI4Jei-CNPS25-FVG-BOS-CHOCH-RETEST/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "c6AI4Jei"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "CNPS24_BASIS MEAN REVERSION",
+  "url": "https://www.tradingview.com/script/RH6yWT9q-CNPS24-BASIS-MEAN-REVERSION/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "RH6yWT9q"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "CNPS23-VOLUME_ORDER BLOCK",
+  "url": "https://www.tradingview.com/script/Lv51jbrS-CNPS23-VOLUME-ORDER-BLOCK/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "Lv51jbrS"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "CNPS22-BASTION",
+  "url": "https://www.tradingview.com/script/8xHbblHu-CNPS22-BASTION/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "8xHbblHu"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "CNPS21-AUTOMATE_ST",
+  "url": "https://www.tradingview.com/script/OTVcmpa7-CNPS21-AUTOMATE-ST/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "OTVcmpa7"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "AMD Strategy [Ahmad Albara]",
+  "url": "https://www.tradingview.com/script/VcIUZB9S-AMD-Strategy-Ahmad-Albara/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "VcIUZB9S"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Gold Trail [XAUUSD] | Regime-Gated Adaptive ATR Strategy",
+  "url": "https://www.tradingview.com/script/be5yqBM1-Gold-Trail-XAUUSD-Regime-Gated-Adaptive-ATR-Strategy/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "be5yqBM1"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Trendline Angle Pro V6 (Degree + Strategy)",
+  "url": "https://www.tradingview.com/script/DUCODGjC-Trendline-Angle-Pro-V6-Degree-Strategy/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "DUCODGjC"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Trend Safety Switch",
+  "url": "https://www.tradingview.com/script/522xf0n5-Trend-Safety-Switch/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "522xf0n5"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Focused STRAT + Volume Strategy v3",
+  "url": "https://www.tradingview.com/script/vl8738JO-Focused-STRAT-Volume-Strategy-v3/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "vl8738JO"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Sadashi Market Reversion Strategy",
+  "url": "https://www.tradingview.com/script/xYflA6O7-Sadashi-Market-Reversion-Strategy/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "xYflA6O7"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "PaBuy/PaSell + EMA 11 + RSI + H1/H4 Filter",
+  "url": "https://www.tradingview.com/script/TgXEkOq4-PaBuy-PaSell-EMA-11-RSI-H1-H4-Filter/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "TgXEkOq4"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "MACD Confluence Strategy | Trend, Pullback &amp; Reversal Entries",
+  "url": "https://www.tradingview.com/script/PtmuSsWV-MACD-Confluence-Strategy-Trend-Pullback-Reversal-Entries/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "PtmuSsWV"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "ICT Silver Bullet Backtest",
+  "url": "https://www.tradingview.com/script/SuBXi3p8-ICT-Silver-Bullet-Backtest/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "SuBXi3p8"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Range Filter Verdict Lab: Chop Test [forexobroker]",
+  "url": "https://www.tradingview.com/script/VEPWBEmF-Range-Filter-Verdict-Lab-Chop-Test-forexobroker/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "VEPWBEmF"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "CNPS20-ALPHA_TRIX",
+  "url": "https://www.tradingview.com/script/cFKnV8nq-CNPS20-ALPHA-TRIX/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "cFKnV8nq"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "CNPS19-TREND_PULLBACK",
+  "url": "https://www.tradingview.com/script/71O8xp7n-CNPS19-TREND-PULLBACK/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "71O8xp7n"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "CNPS18-VWAP_RETEST",
+  "url": "https://www.tradingview.com/script/1WwC9ePg-CNPS18-VWAP-RETEST/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "1WwC9ePg"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "CNPS17-RSI_SIGNALS",
+  "url": "https://www.tradingview.com/script/4TuXiDuK-CNPS17-RSI-SIGNALS/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "4TuXiDuK"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "CNPS16-RANGE_BREAKOUT",
+  "url": "https://www.tradingview.com/script/HJrCpPvU-CNPS16-RANGE-BREAKOUT/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "HJrCpPvU"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Heikin Ashi Reality Check: Real Fills Test [forexobroker]",
+  "url": "https://www.tradingview.com/script/YoeCbJDb-Heikin-Ashi-Reality-Check-Real-Fills-Test-forexobroker/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "YoeCbJDb"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Z-Regime Switch | Adaptive Z-Score Reversion and Trend Strategy",
+  "url": "https://www.tradingview.com/script/IWsVZZLF-Z-Regime-Switch-Adaptive-Z-Score-Reversion-and-Trend-Strategy/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "IWsVZZLF"
+ },
+ {
+  "source": "tradingview_scripts",
+  "kind": "strategy_source",
+  "title": "Smart Momentum Scanner STRAT",
+  "url": "https://www.tradingview.com/script/4wtDEKsl-Smart-Momentum-Scanner-STRAT/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-10-22T09:32:00+00:00",
+  "script_id": "4wtDEKsl"
+ }
+]
