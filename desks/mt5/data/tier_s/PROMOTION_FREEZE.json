@@ -1,7 +1,7 @@
 {
  "verdict": "OK",
  "why": null,
- "at": "2026-10-22T05:10:51.696784+00:00",
+ "at": "2026-10-22T05:41:53.094166+00:00",
  "judge": "production:f56bc72fc5532a67",
  "consumer": "research/promoter.py tier_s_block (libs/tiers/promotion_authority.py): a production-judged DROP withholds new live rows",
  "immune_score": 1.0,
