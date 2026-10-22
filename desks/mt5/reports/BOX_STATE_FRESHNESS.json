@@ -1,15 +1,15 @@
 {
   "schema": "box_state_freshness/1",
-  "measured_at": "2026-10-22T16:53:23+00:00",
+  "measured_at": "2026-10-22T17:59:29+00:00",
   "threshold_h": 6.0,
   "box_author": "Contabo",
-  "age_h": 0.1,
-  "box_state_age_hours": 0.1,
+  "age_h": 0.18,
+  "box_state_age_hours": 0.18,
   "box_state_flow": {
     "verdict": "FLOWING",
     "why": "origin carries box state 0.0h old",
-    "measured_at": "2026-10-22T07:14:38+00:00",
-    "published_age_h": 0.03,
+    "measured_at": "2026-10-22T17:23:49+00:00",
+    "published_age_h": 0.0,
     "alerts_armed": 1,
     "alerts_line": null
   },
@@ -23,14 +23,14 @@
   "box_state_flow_local": {
     "verdict": "FLOWING",
     "why": "origin carries box state 0.0h old",
-    "measured_at": "2026-10-22T07:14:38+00:00",
-    "published_age_h": 0.03,
+    "measured_at": "2026-10-22T17:23:49+00:00",
+    "published_age_h": 0.0,
     "alerts_armed": 1,
     "alerts_line": null
   },
   "stall_watch_alerts": {
     "status": "MEASURED",
-    "checked_at": "2026-10-22T16:51:01.3085809Z",
+    "checked_at": "2026-10-22T17:20:57.4031972Z",
     "state_flow": "FLOWING",
     "state_flow_watch": "METER_SILENT",
     "alerts_armed": 1,
@@ -39,15 +39,15 @@
   "ref": "refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3",
   "published_paths": 66,
   "newest_box_commit": {
-    "sha": "95748eb5d1",
+    "sha": "3e798085d3",
     "author": "Codex",
-    "at": "2026-10-22T16:50:21+00:00"
+    "at": "2026-10-22T17:50:21+00:00"
   },
   "stamps_inside_state": {
     "desks/mt5/reports/shadow/shadow_health.json": "2026-10-22T12:12:15+00:00",
-    "desks/mt5/reports/GATE_VERDICT_DIGEST.json": "2026-10-22T07:11:59+00:00",
-    "desks/mt5/reports/BOX_STATE_FLOW.json": "2026-10-22T07:14:38+00:00",
-    "desks/mt5/reports/BOX_STATE_FRESHNESS.json": "2026-10-22T15:48:26+00:00",
+    "desks/mt5/reports/GATE_VERDICT_DIGEST.json": "2026-10-22T17:23:22+00:00",
+    "desks/mt5/reports/BOX_STATE_FLOW.json": "2026-10-22T17:23:49+00:00",
+    "desks/mt5/reports/BOX_STATE_FRESHNESS.json": "2026-10-22T16:53:23+00:00",
     "desks/mt5/reports/DESK_HEALTH.json": "2026-10-20T06:14:24+00:00",
     "desks/mt5/reports/shadow/scalp_shadow_state.json": "2026-10-22T12:12:06+00:00",
     "desks/mt5/reports/shadow/qquant_shadow_state.json": "2026-10-22T12:25:06+00:00",
@@ -58,8 +58,8 @@
     "desks/mt5/data/tier_s/box_evidence.json": "2026-10-22T11:52:41+00:00",
     "desks/mt5/data/tier_s/live_door.json": "2026-10-22T11:37:36+00:00",
     "desks/mt5/reports/NULL_LAB.json": "2026-10-22T15:53:53+00:00",
-    "desks/mt5/reports/KNOWN_BY_DATE.json": "2026-10-22T15:55:00+00:00",
-    "desks/mt5/reports/PIT_LAG_CENSUS.json": "2026-10-22T15:55:00+00:00",
+    "desks/mt5/reports/KNOWN_BY_DATE.json": "2026-10-22T16:58:53+00:00",
+    "desks/mt5/reports/PIT_LAG_CENSUS.json": "2026-10-22T16:58:53+00:00",
     "desks/mt5/reports/DSR_INPUTS.json": "2026-10-17T01:02:55+00:00",
     "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json": "2026-10-16T19:13:43+00:00",
     "desks/mt5/data/tier_s/door_verdicts.json": "2026-10-22T11:37:36+00:00",
@@ -70,16 +70,16 @@
     "desks/mt5/reports/EFFECTIVE_BREADTH.json": "2026-10-20T13:59:26+00:00",
     "desks/mt5/reports/BREADTH_MANDATE.json": "2026-10-19T09:09:24+00:00",
     "desks/mt5/reports/TIER1_SCORECARD.json": "2026-10-20T12:52:06+00:00",
-    "desks/mt5/reports/ALT_DATA_YIELD.json": "2026-10-22T16:31:23+00:00",
-    "desks/mt5/reports/PRODUCER_YIELD.json": "2026-10-22T16:47:31+00:00",
+    "desks/mt5/reports/ALT_DATA_YIELD.json": "2026-10-22T17:48:57+00:00",
+    "desks/mt5/reports/PRODUCER_YIELD.json": "2026-10-22T16:51:06+00:00",
     "desks/mt5/reports/RESEARCH_PRODUCTIVITY.json": "2026-10-22T13:42:29+00:00"
   },
   "stamps_ignored_not_box_written": {
     "desks/mt5/data/cost_truth_quotes.json": "Claude"
   },
-  "newest_stamp_inside_state": "2026-10-22T16:47:31+00:00",
+  "newest_stamp_inside_state": "2026-10-22T17:48:57+00:00",
   "basis": "stamp_inside_state",
   "verdict": "FRESH",
-  "why": "box state on refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3 is 0.1h old",
+  "why": "box state on refs/remotes/origin/claude/llm-auto-upgrade-verify-gcjac3 is 0.2h old",
   "alerts_line": null
 }
