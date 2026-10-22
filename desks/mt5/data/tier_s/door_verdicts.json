@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-22T09:39:11.395333+00:00",
+ "generated_utc": "2026-10-22T10:40:03.179571+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -4666,9 +4666,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 5,
-    "confidence": 0.2963,
-    "sd": 0.1199,
+    "n_oos": 6,
+    "confidence": 0.2667,
+    "sd": 0.1106,
     "status": "UNMEASURED"
    }
   },
@@ -4677,9 +4677,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 5,
-    "confidence": 0.2963,
-    "sd": 0.1199,
+    "n_oos": 6,
+    "confidence": 0.2667,
+    "sd": 0.1106,
     "status": "UNMEASURED"
    }
   },
@@ -5661,9 +5661,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 5,
-    "confidence": 0.2963,
-    "sd": 0.1199,
+    "n_oos": 6,
+    "confidence": 0.2667,
+    "sd": 0.1106,
     "status": "UNMEASURED"
    }
   },
@@ -5672,9 +5672,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 5,
-    "confidence": 0.2963,
-    "sd": 0.1199,
+    "n_oos": 6,
+    "confidence": 0.2667,
+    "sd": 0.1106,
     "status": "UNMEASURED"
    }
   },
@@ -5683,9 +5683,9 @@
    "review_failed": [],
    "family": "range_reversion",
    "theory": {
-    "n_oos": 5,
-    "confidence": 0.2963,
-    "sd": 0.1199,
+    "n_oos": 6,
+    "confidence": 0.2667,
+    "sd": 0.1106,
     "status": "UNMEASURED"
    }
   },
