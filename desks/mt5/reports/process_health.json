@@ -39,12 +39,31 @@
   }
  ],
  "scheduler_retry": {
-  "state": "SPAWNED",
+  "state": "NO_BETTER",
+  "at": "2026-10-22T21:47:14+00:00",
   "bounds_s": [
    180,
    300
   ],
-  "priority": "below_normal"
+  "priority": "cpu below_normal, io low",
+  "for_report_at": "2026-10-22T21:46:21+00:00",
+  "scheduler_status": "UNMEASURED: schtasks /query /fo csv TimeoutExpired: timed out at its 180 s bound on vmi3571445 (37,841 MB free of 98,298 MB physical, commit 131,023 MB)",
+  "timeouts": [
+   {
+    "read": "schtasks /query /fo csv",
+    "bound_s": 180,
+    "memory": {
+     "host": "vmi3571445",
+     "source": "psutil",
+     "at": "2026-10-22T21:50:15+00:00",
+     "total_phys_mb": 98298,
+     "free_phys_mb": 37841,
+     "commit_charge_mb": 131023,
+     "commit_limit_mb": 200698,
+     "commit_source": "exact: commit limit minus available (GlobalMemoryStatusEx via psutil)"
+    }
+   }
+  ]
  },
  "processes": [
   {
