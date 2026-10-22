@@ -2610,6 +2610,17 @@ GOLD_SEND_GRACE_MIN = 5.0
 #: ledger cross-check is UNMEASURED here; README r7 gives the one-line box measurement.
 E8_GOLD_SEND_GRACE_MIN = 10.0
 
+#: E8 GOLD'S CODE CEILING (r7.1, principal pin). Every E8 gold window is sized at
+#: min(cert book, E8_CERT_CEILING), whatever the book says: zuck's max-pass sizing (2026-10-20)
+#: and Max-growth's two-leg result put E8 gold_asia at 0.006 while both legs of the bracket can
+#: trade (0.007 only with the cross-account OCO). A stale enabled book (the 0.0095 / 0.01 rows
+#: the audits probed) therefore places at 0.006, and the cut is billed `e8_cert_ceiling` in
+#: missed_growth (growth governance: every cap carries its ledger line). It is also the LAST
+#: CERTIFIED e8 value, which void, absent and zero windows are billed at. RAISED ONLY BY A
+#: PRINCIPAL EDIT of this line: the planned 0.007 under the OCO needs that edit.
+#: Derived from that solver's two-leg max-pass result (computed 2026-10-20), not chosen here.
+E8_CERT_CEILING = 0.006
+
 
 def gold_send_late(window: str | None, hour: float,
                    grace_min: float | None = None) -> str | None:

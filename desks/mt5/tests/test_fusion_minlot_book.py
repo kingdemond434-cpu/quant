@@ -783,7 +783,7 @@ def test_exposure_reads_both_venues_and_raises_on_an_unreadable_row() -> None:
 
 def test_the_fence_blocks_only_the_opposite_side_and_fails_closed_on_any_unknown() -> None:
     xa.publish("e8", {"XAUUSD": {"long": False, "short": True}}, source="test",
-               key=xa.account_key(7000201, "tl"))
+               key=xa.account_key(31337, "E8-Test"))
     book, _why = xa.read_book("e8")
     assert book is not None
     assert xa.opposite_block(book, "XAUUSD", "buy_stop", account="e8")
@@ -800,7 +800,7 @@ def test_an_absent_stale_or_foreign_book_is_no_book(tmp_path) -> None:
     xa.book_path("e8").unlink()
     assert xa.read_book("e8")[0] is None
     xa.publish("e8", {}, source="t", now=datetime.now(tz=UTC) - timedelta(seconds=1000),
-               key=xa.account_key(7000201, "tl"))
+               key=xa.account_key(31337, "E8-Test"))
     book, why = xa.read_book("e8")
     assert book is None and "old" in why
     xa.book_path("e8").write_text(json.dumps({"account": "fusion", "covers": "all",
@@ -914,7 +914,7 @@ def test_a_family_order_opposite_an_e8_position_is_refused_and_billed(
     sleeve = _fx_sleeve(USDNOK)                         # LONG
     dc.stamp_minlot_override([sleeve], frozenset(FOUR), EQUITY)
     xa.publish("e8", {"USDNOK": {"long": False, "short": True}}, source="test",
-               key=xa.account_key(7000201, "tl"))
+               key=xa.account_key(31337, "E8-Test"))
     adapter._run_family(ns, {"armed": True}, [sleeve], EQUITY)
     assert venue.sent == []
     (row,) = [json.loads(ln) for ln in (tmp_path / "rails.jsonl").read_text().splitlines()]
@@ -940,7 +940,7 @@ def test_a_same_side_e8_position_does_not_block_and_the_fusion_book_is_published
     sleeve = _fx_sleeve(USDNOK)
     dc.stamp_minlot_override([sleeve], frozenset(FOUR), EQUITY)
     xa.publish("e8", {"USDNOK": {"long": True, "short": False}}, source="test",
-               key=xa.account_key(7000201, "tl"))
+               key=xa.account_key(31337, "E8-Test"))
     adapter._run_family(ns, {"armed": True}, [sleeve], EQUITY)
     assert len(venue.sent) == 1
     book, _ = xa.read_book("fusion")
@@ -1146,9 +1146,17 @@ def test_the_e8_gold_retry_goes_through_the_fence_and_the_lock() -> None:
     m = SimpleNamespace(account_info=lambda: SimpleNamespace(login=LOGIN, server=SERVER),
                         positions_get=lambda: (SimpleNamespace(symbol="XAUUSD", type=1),),
                         orders_get=lambda: ())
-    v = SimpleNamespace(_by_key={"XAUUSD": 6102}, _raw_api=SimpleNamespace(acc_id=7, _credentials={"server": "E8-Test"}),
+    v = SimpleNamespace(_by_key={"XAUUSD": 6102}, _raw_api=SimpleNamespace(acc_id=31337, _credentials={"server": "E8-Test"}),
                         positions=lambda: [], orders=lambda: [])
-    doc: dict = {}
+    # The pass's gold OCO context (`oco_sync` sets it in `run`): no direction yet, full OCO.
+    from mt5desk import gold_oco
+    # E8 is the conftest's DECLARED identity (31337 on E8-Test; r7.1 declares E8_ACCOUNT.json
+    # from the venue key), so the OCO's key join holds (v2s).
+    doc: dict = {"gold_oco": {"date": "2026-10-15",
+                              "key": gold_oco.oco_account_key(31337, "E8-Test")}}
+    # The Fusion lane's gold state under the DECLARED account's key (the gate joins keys).
+    gold_oco.publish_lane("fusion", gold_oco.oco_account_key(LOGIN, SERVER), positions=[],
+                          orders=[], date="2026-10-15")
     res, why = g.fenced_send(m, v, doc, holder="t", side="buy_stop",
                              send=lambda: sent.append(1) or 99)
     assert res is None and why and "short" in why and sent == []
@@ -1321,10 +1329,15 @@ def test_a_hung_e8_send_releases_the_lock_and_is_a_failed_send(monkeypatch) -> N
                            account_info=lambda: SimpleNamespace(login=LOGIN, server=SERVER))
     venue = SimpleNamespace(_by_key={"XAUUSD": 6102}, positions=lambda: [], orders=lambda: [],
                             _raw_api=SimpleNamespace(acc_id=31337, _credentials={"server": "E8-Test"}))
+    from mt5desk import gold_oco
+    _oco_key = gold_oco.oco_account_key(31337, "E8-Test")
+    gold_oco.publish_lane("fusion", gold_oco.oco_account_key(LOGIN, SERVER), positions=[],
+                          orders=[], date="2026-10-15")
     lock = xa.XACCT_DIR / "placement.lock"
     t0 = time.monotonic()
     with pytest.raises(xa.LockedCallTimeout):
-        g.fenced_send(flat, venue, {}, holder="e8_gold:test", side="buy_stop",
+        g.fenced_send(flat, venue, {"gold_oco": {"date": "2026-10-15", "key": _oco_key}},
+                      holder="e8_gold:test", side="buy_stop",
                       send=lambda: time.sleep(3.0))
     assert time.monotonic() - t0 < 2.5
     assert not lock.exists()                                   # released on time
