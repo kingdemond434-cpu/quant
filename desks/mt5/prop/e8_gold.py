@@ -25,8 +25,11 @@ SIZED FOR THIS ACCOUNT, NOT COPIED FROM THE OTHER. E8 risks RISK_FRAC of equity 
 `lot_for_risk`, which reads the venue's own contract size.
 
 SHADOW UNLESS data/E8_GOLD_ARMED EXISTS. Unarmed passes log the exact orders they would send.
-The daily guard `e8_guard_state.json` (written by the E8 executor) stands new placements down
-when it says so; management of what is already open never stands down.
+The daily guard (`e8_guard.assess`, the one guard, shared with the E8 executor) stands new
+placements down on any verdict but OK; management of what is already open never stands down.
+ONE GOLD TRADE AT RISK AT A TIME: a window waits while an earlier XAU position still has its stop
+short of break-even or an earlier bracket still rests (`one_at_risk_blocker`), and as a fail-safe
+the gold risk committed plus its own must fit the guard's room to today's floor (SLIP_BUFFER).
 
     python prop/e8_gold.py            one pass, shadow unless armed
     python prop/e8_gold.py --armed    one pass, armed for this pass only
@@ -59,6 +62,7 @@ from mt5desk.decision_core import (  # noqa: E402
     atr_last,
     book_direction,
     bracket_from_bars,
+    gold_send_late,
     h1_frame,
     window_end_hour,
     window_session_ended,
@@ -106,6 +110,26 @@ XAU_OZ_PER_LOT = 100.0  # fallback for a leg journalled before risk_usd was kept
 UNMEASURED_SKEW_MS = 24 * 3600 * 1000
 #: The growth-governance rail the unowned-position block is billed under (libs/portfolio/rails).
 UNOWNED_BLOCK_RAIL = "e8_unowned_position_block"
+# CONCURRENT OPEN RISK (2026-10-20). The three windows place independently and the AGREEING leg is
+# placed while an earlier window is still open, so three windows at 0.75% each can be live in
+# the same direction at once: 2.25% of the account to the stops, and more once a stop fills
+# through its level. E8's daily floor is 2.5%. Before any window is placed, the risk already
+# committed (open positions to their current stops, this lane's resting legs) plus the new
+# window's must fit inside the guard's `room_to_daily_floor`, after both of these:
+#: Stops on this venue fill at market, not at the level: 2026-09-24 a buy stop filled 24 points
+#: through. Every committed dollar is grossed up by this before it is compared with the room, so
+#: 2.25% of stop risk reads as ~2.8% and cannot be placed against a 2.5% floor.
+SLIP_BUFFER = 1.25
+#: Kept clear of the floor on top of the buffer: spread and commission on the closes, and the
+#: equity read being seconds old. 0.10% of the starting balance.
+ROOM_MARGIN_USD = 100.0
+# A STOP MOVE THE VENUE KEEPS REFUSING IS BOUNDED (2026-10-20). On 2026-09-25 an asia short's
+# break-even ratchet was refused by TradeLocker pass after pass; each refusal was logged and the
+# same modify re-sent five minutes later, forever, while the trade gave back ~680 USD. After this
+# many consecutive venue refusals for one position the lane stops re-sending: a position in profit
+# beyond the break-even trigger is closed at market (the protection the stop could not give),
+# otherwise its existing stop is held and the refusal raised as an alert.
+MAX_STOP_REFUSALS = 3
 # Terminal reconnection (2026-09-30: ~70 min of "No IPC connection" in one day). Each attempt
 # drops the dead IPC handle and re-attaches; the waits are seconds inside a 5-minute pass.
 MT5_RETRY_WAITS_S = (0.0, 2.0, 5.0, 15.0, 30.0)
@@ -140,6 +164,89 @@ def window_risk(name: str, kelly: dict[str, float] | None) -> tuple[float, str]:
     return RISK_FRAC, "policy RISK_FRAC"
 
 
+def window_sources(solve: dict[str, float] | None, cert: dict[str, float] | None,
+                   absent: dict[str, str] | None, pinned: dict[str, float] | None,
+                   void: dict[str, str] | None = None) -> dict[str, str]:
+    """{window: where its risk fraction came from}. Pure. Precedence matches the merge in `run`:
+    `pinned_zero` (decision_core.PRINCIPAL_ZERO["e8"]) > `cert_book_void` (no readable book: 0.0)
+    > `cert_book_absent` (an enabled book that does not name the window: 0.0) > `cert_book` >
+    `kelly_survival` (a fresh solve) > `RISK_FRAC`.
+    """
+    out: dict[str, str] = {}
+    for name, _h, _r in GOLD_WINDOWS:
+        if name in (pinned or {}):
+            out[name] = "pinned_zero"
+        elif name in (void or {}):
+            out[name] = "cert_book_void"
+        elif name in (absent or {}):
+            out[name] = "cert_book_absent"
+        elif name in (cert or {}):
+            out[name] = "cert_book"
+        elif name in (solve or {}):
+            out[name] = "kelly_survival"
+        else:
+            out[name] = "RISK_FRAC"
+    return out
+
+
+def e8_account_check(venue: Any) -> tuple[bool, str]:
+    """(may new E8 gold risk go out, why). The E8 declaration (`cross_account.expected_key("e8")`,
+    read from E8_ACCOUNT.json) must be a valid key -- not absent, not the `invalid:` sentinel an
+    empty, torn, garbage or unreadable file reads as -- and EQUAL the venue's own key
+    (`tradelocker_account_key`). Every refusal pages (`cross_account.page_key`, which sends).
+    NEVER RAISES: a PermissionError on the declaration is a refusal, never an aborted pass."""
+    from mt5desk import cross_account as xa
+    try:
+        want = xa.expected_key("e8")
+    except Exception as exc:                       # OSError incl. PermissionError, anything
+        want = f"invalid:E8 declaration unreadable ({type(exc).__name__})"
+    if want is None:
+        xa.page_key("e8", "UNDECLARED", source="e8_gold")
+        return False, f"{xa.E8_ACCOUNT_FILE.name} is absent: the E8 account is undeclared"
+    if str(want).startswith("invalid:") or not xa.valid_key(want):
+        xa.page_key("e8", xa.KEY_DECLARATION_INVALID, source="e8_gold")
+        detail = str(want).removeprefix("invalid:") if str(want).startswith("invalid:") \
+            else "no valid key"
+        return False, f"{xa.E8_ACCOUNT_FILE.name} is not a valid declaration ({detail})"
+    try:
+        have = xa.tradelocker_account_key(venue)
+    except Exception:
+        have = None
+    if have is None:
+        # PAGED HERE, BY THIS CHECK (r7.3): not left to `tradelocker_key_status`'s own page, which
+        # a raising venue read or a later refactor of that function would silently drop. The
+        # e8_gold check's own alert id, so its recovery below closes exactly this one.
+        xa.page_key("e8", xa.TL_KEY_UNAVAILABLE, source="e8_gold")
+        return False, "the venue's own E8 account key is unresolvable (paged)"
+    if have != want:
+        xa.page_key("e8", xa.KEY_MISMATCH, source="e8_gold")
+        return False, f"{xa.E8_ACCOUNT_FILE.name} declares another account than this venue's"
+    xa.clear_key_alert("e8", source="e8_gold")
+    return True, "the E8 declaration joins this venue's key"
+
+
+def e8_grace() -> float:
+    """`decision_core.E8_GOLD_SEND_GRACE_MIN`, read at call time (E8-Gold's own cadence)."""
+    from mt5desk import decision_core as _dc
+    return float(_dc.E8_GOLD_SEND_GRACE_MIN)
+
+
+def late_windows(hour: float, state: dict) -> list[tuple[str, str]]:
+    """(window, why) for each gold window `plan` holds back ONLY for being late: not placed
+    today, past its signal hour, before the cancel hour and its session's end, but past
+    signal hour + GOLD_SEND_GRACE_MIN. Pure."""
+    out: list[tuple[str, str]] = []
+    windows = state.get("windows") or {}
+    for name, sig_hour, _rng in GOLD_WINDOWS:
+        if name in windows or hour < float(sig_hour) or hour >= CANCEL_HOUR \
+                or window_session_ended(name, hour):
+            continue
+        why = gold_send_late(name, hour, e8_grace())
+        if why:
+            out.append((name, why))
+    return out
+
+
 def plan(df: Any, hour: float, state: dict, *, tick_size: float = 0.01,
          stops_level: int = 0) -> list[dict]:
     """Windows due NOW: not yet placed today, at or past their signal hour, before the cancel
@@ -157,6 +264,10 @@ def plan(df: Any, hour: float, state: dict, *, tick_size: float = 0.01,
             # session already left: 2026-09-21 all three windows went out at 20:29 server in one
             # pass, and 2026-09-24 a 3h-late london_am sat on the afternoon's level and both
             # stopped in the same second (-950 USD). See decision_core.window_session_ended.
+            continue
+        if gold_send_late(name, hour, e8_grace()):
+            # PAST SIGNAL HOUR + GOLD_SEND_GRACE_MIN (Judge 2026-10-21, r6): not the certified
+            # bracket. `late_windows` names it so `run` writes its SKIPPED row.
             continue
         built = bracket_from_bars(df, rng, sig_hour, tick_size, stops_level)
         if built is None:
@@ -202,6 +313,10 @@ def retry_decisions(state: dict, hour: float, bid: float, ask: float, filled: di
                 out.append({**base, "act": "abandon", "why": "the other leg filled"})
             elif hour >= CANCEL_HOUR or window_session_ended(name, hour):
                 out.append({**base, "act": "abandon", "why": "the window's session is over"})
+            elif gold_send_late(name, hour, e8_grace()):
+                # A retry is a send too: past signal hour + E8_GOLD_SEND_GRACE_MIN it is late.
+                out.append({**base, "act": "abandon", "late": True,
+                            "why": str(gold_send_late(name, hour, e8_grace()))})
             elif int(leg.get("attempts") or 0) >= MAX_LEG_RETRIES:
                 out.append({**base, "act": "abandon",
                             "why": f"{MAX_LEG_RETRIES} sends failed"})
@@ -512,6 +627,140 @@ def trail_decision(position: dict, window: dict, bars: Any, current_stop: float,
                        cost_per_unit=float(cost_per_unit), spread=max(0.0, float(spread)))
 
 
+def stop_refusal_response(position: dict, window: dict, *, bid: float, ask: float,
+                          cost_per_unit: float = 0.0) -> tuple[str, str]:
+    """What to do with a position whose stop moves the venue has refused MAX_STOP_REFUSALS times.
+
+    ("close", why) when it stands in profit at least BREAKEVEN_TRIGGER_R beyond its entry, net of
+    the round-trip cost, at the price it would close on (bid for a long, ask for a short): the
+    ratchet exists to protect exactly that profit and the venue will not let it. Otherwise
+    ("hold", why): the stop already resting is kept and nothing more is sent. Pure.
+    """
+    side = 1 if str(position.get("side") or "").lower() == "buy" else -1
+    leg = (window.get("orders") or {}).get("buy_stop" if side == 1 else "sell_stop") or {}
+    entry = float(position.get("avgPrice") or leg.get("price") or 0.0)
+    dist = abs(entry - float(leg.get("sl") or 0.0))
+    if not (entry > 0 and dist > 0):
+        return "hold", "entry or original stop unreadable; the resting stop is held"
+    mark = float(bid) if side == 1 else float(ask)
+    r_now = (side * (mark - entry) - float(cost_per_unit)) / dist
+    trigger = _pm.BREAKEVEN_TRIGGER_R
+    if r_now >= trigger:
+        return "close", (f"+{r_now:.2f}R at {mark:.2f}, beyond the {trigger}R break-even trigger, "
+                         f"and the venue refuses to move the stop: closed at market")
+    return "hold", (f"{r_now:+.2f}R at {mark:.2f}, short of the {trigger}R trigger: the resting "
+                    f"stop is held and no further stop move is sent")
+
+
+def position_risk_usd(position: dict, stop: float, *, bid: float, ask: float,
+                      contract_size: float) -> float:
+    """Dollars this open position loses if its stop fills AT the level, measured from whichever
+    is further from the stop: the entry, or the current mark (bid for a long, ask for a short).
+
+    From the entry, a stop at or beyond it -- ratcheted to break-even or better -- risks nothing.
+    From the mark, a winner still has its floating profit to give back, and the guard's room is
+    measured on EQUITY, which already includes that profit; leaving it out would let a winning
+    break-even leg fund new risk with money the floor can still take back.
+    """
+    side = str(position.get("side") or "").strip().lower()
+    entry = float(position.get("avgPrice") or 0.0)
+    qty = float(position.get("qty") or 0.0)
+    if side not in ("buy", "sell") or not (entry > 0) or not (qty > 0) or not (stop > 0):
+        raise ValueError(f"position {position.get('id')} has no readable side/entry/qty/stop")
+    sign = 1.0 if side == "buy" else -1.0
+    mark = float(bid) if side == "buy" else float(ask)
+    per_unit = max(0.0, sign * (entry - stop), sign * (mark - stop))
+    return per_unit * qty * float(contract_size)
+
+
+def stop_is_at_risk(position: dict, stop: float) -> bool:
+    """Is this position's stop still on the losing side of its entry (not yet at break-even)?"""
+    side = str(position.get("side") or "").strip().lower()
+    entry = float(position.get("avgPrice") or 0.0)
+    return (entry - float(stop)) > 0 if side == "buy" else (float(stop) - entry) > 0
+
+
+def one_at_risk_blocker(detail: dict[str, Any]) -> str | None:
+    """ONE GOLD TRADE AT RISK AT A TIME ON E8 -- the reason a window must wait, or None.
+
+    Gold is force-closed only at CLOSE_HOUR, so all three windows can be open together, and the
+    agreeing-leg rule lets them stack in one direction. The max-growth simulation (2026-10-20,
+    sizing/e8_three_gold_2026-10-20.md) put that at an 8-31% daily-breach rate at 0.75% per
+    window, and at 0% breach with a 65-89% pass rate when a window waits while an earlier one is
+    still at risk. "At risk" is a position whose stop is not yet at break-even or better, or a
+    resting bracket of this lane that has not filled or been cancelled; a position ratcheted to
+    break-even risks nothing and does not block.
+    """
+    risky = [str(r["position_id"]) for r in detail.get("positions") or [] if r.get("at_risk")]
+    pending = sorted((detail.get("pending_brackets") or {}).keys())
+    if risky:
+        return (f"one gold trade at risk at a time: position(s) {', '.join(risky)} still have "
+                f"their stop short of break-even")
+    if pending:
+        return (f"one gold trade at risk at a time: bracket(s) {', '.join(pending)} still rest "
+                f"at the venue")
+    return None
+
+
+def committed_risk(positions: list[dict], open_orders: list[dict], journal: list[dict],
+                   state: dict, *, bid: float, ask: float, contract_size: float
+                   ) -> tuple[float, dict[str, Any]]:
+    """Risk already on the account in gold, before a new window is placed.
+
+    * every OPEN XAU position, to its current stop (`position_risk_usd`);
+    * every RESTING entry leg this lane placed (its journalled `risk_usd`), with a bracket
+      counted ONCE at its larger leg -- one fill cancels the other, so only one can become risk.
+
+    Raises ValueError when a position's stop cannot be read: a position with no readable stop is
+    unbounded risk, and new risk is not added on top of an unknown.
+    """
+    by_id = {int(o["id"]): o for o in open_orders if o.get("id") is not None}
+    pos_rows: list[dict[str, Any]] = []
+    for p in positions:
+        stop_order = by_id.get(int(p.get("stopLossId") or 0)) or {}
+        stop = float(stop_order.get("stopPrice") or p.get("stopLoss") or 0.0)
+        usd = position_risk_usd(p, stop, bid=bid, ask=ask, contract_size=contract_size)
+        pos_rows.append({"position_id": p.get("id"), "stop": stop, "risk_usd": round(usd, 2),
+                         "at_risk": stop_is_at_risk(p, stop)})
+    # THE JOURNAL IS THE LANE'S MARK ON THE VENUE; the state's legs cover a lost journal row.
+    legs: dict[int, tuple[str, float]] = {}
+    for row in journal:
+        if row.get("status") != "SENT" or row.get("order_id") is None:
+            continue
+        risk = row.get("risk_usd")
+        if risk is None:
+            risk = (abs(float(row.get("price") or 0) - float(row.get("sl") or 0))
+                    * float(row.get("lot") or 0) * float(contract_size))
+        legs[int(row["order_id"])] = (f"{str(row.get('at') or '')[:10]}/{row.get('window')}",
+                                      float(risk))
+    today = str(state.get("date") or "")
+    for bucket in ("carried", "windows"):
+        for name, w in (state.get(bucket) or {}).items():
+            for leg in (w.get("orders") or {}).values():
+                if leg.get("id") is None or int(leg["id"]) in legs:
+                    continue
+                risk = (abs(float(leg.get("price") or 0) - float(leg.get("sl") or 0))
+                        * float(leg.get("lot") or 0) * float(contract_size))
+                legs[int(leg["id"])] = (f"{today}/{name}", risk)
+    brackets: dict[str, float] = {}
+    for oid, (group, risk) in legs.items():
+        if oid in by_id:                                  # still resting at the venue
+            brackets[group] = max(brackets.get(group, 0.0), risk)
+    total = sum(r["risk_usd"] for r in pos_rows) + sum(brackets.values())
+    return total, {"positions": pos_rows,
+                   "pending_brackets": {k: round(v, 2) for k, v in brackets.items()}}
+
+
+def risk_budget_allows(committed: float, new_risk: float, room: float) -> tuple[bool, str]:
+    """May a window risking `new_risk` be added to `committed`, against `room` to today's floor?"""
+    need = (float(committed) + float(new_risk)) * SLIP_BUFFER
+    allowed = float(room) - ROOM_MARGIN_USD
+    why = (f"committed {committed:,.0f} + this window {new_risk:,.0f} USD, x{SLIP_BUFFER} slippage "
+           f"= {need:,.0f}, against {room:,.0f} to today's floor less a {ROOM_MARGIN_USD:,.0f} "
+           f"margin = {allowed:,.0f}")
+    return need <= allowed, why
+
+
 # ------------------------------------------------------------------ the pass
 
 def _read_json(p: Path, default: Any) -> Any:
@@ -568,6 +817,244 @@ def _record(row: dict[str, Any]) -> bool:
         return False
 
 
+def publish_books(venue: Any, mt5: Any, doc: dict[str, Any],
+                  positions: list[dict[str, Any]] | None = None) -> None:
+    """Publish BOTH accounts' books for the cross-account fence (mt5desk.cross_account).
+
+    E8's from TradeLocker (every position and resting entry on the account), Fusion's from the
+    MT5 terminal this lane is attached to -- so the Fusion book stays fresh for the E8 executor
+    even while the gateway task is disabled. Each is published UNDER the placement lock from a
+    reading taken under it (audit round 2: a pass-start snapshot published later could erase a
+    send another lane made in between); `positions` is accepted for the caller's shape and not
+    used. A book that cannot be read, or a lock not taken, publishes nothing (the readers then
+    fail closed on a stale book); never raises, and waits at most `PUBLISH_WAIT_S` each."""
+    del positions
+    from mt5desk import cross_account as _xa
+    why = _xa.publish_under_lock(lambda: _xa.publish_tradelocker(venue, source="e8_gold"),
+                                 holder="e8_gold:publish")
+    if why:
+        doc.setdefault("xacct_unpublished", []).append(f"e8: {why}"[:160])
+    why = _xa.publish_under_lock(
+        lambda: _xa.publish_mt5(mt5, source="e8_gold via the Fusion terminal"),
+        holder="e8_gold:publish")
+    if why:
+        doc.setdefault("xacct_unpublished", []).append(f"fusion: {why}"[:160])
+
+
+def oco_sync(venue: Any, mt5: Any, doc: dict[str, Any], *, today: str) -> dict[str, Any]:
+    """THE CROSS-ACCOUNT GOLD DIRECTION LOCK (mt5desk.gold_oco), once per pass: name this account
+    by its KEYED account key, publish E8's gold state (from TradeLocker) and Fusion's (from the
+    terminal this lane is attached to), and claim the day's direction from either account's fills.
+
+    Returns the context the placement gate reads: {"date", "key"} (key None -> every gold leg is
+    refused, with the reason in "why"). Never raises; recorded on the pass report as `gold_oco`."""
+    from mt5desk import gold_oco as _oco
+    ctx: dict[str, Any] = {"date": today, "key": None}
+    try:
+        ctx["key"] = _oco.tradelocker_oco_key(venue)
+    except _oco.IdentityUnavailable as exc:
+        ctx["why"] = f"gold OCO identity: {exc}"
+    if ctx["key"]:
+        def e8_rows() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+            return _oco.tradelocker_gold_rows(venue.positions(), venue.orders(),
+                                              venue.instrument_id(SYMBOL))
+        ctx["e8"] = _oco.sync_lane("e8", ctx["key"], e8_rows, date=today, holder="e8_gold")
+    try:
+        fkey = _oco.mt5_oco_key(mt5)
+        ctx["fusion"] = _oco.sync_lane("fusion", fkey, lambda: _oco.mt5_gold_rows(mt5),
+                                       date=today, holder="e8_gold")
+    except _oco.IdentityUnavailable as exc:
+        ctx["fusion_why"] = str(exc)
+    for lane in ("e8", "fusion"):
+        for c in (ctx.get(lane) or {}).get("claims") or []:
+            if c.get("won"):
+                log(f"gold OCO: a {lane} fill set {today}'s direction {c.get('direction')}")
+            elif c.get("conflict"):
+                log(f"ALERT gold OCO: {lane} holds a fill AGAINST {today}'s direction "
+                    f"{c.get('direction')} (set by {c.get('first_fill_lane')})")
+                doc.setdefault("alerts", []).append(
+                    f"gold OCO: {lane} fill against {today}'s direction")
+    page = _oco.page_identity("e8", None if ctx["key"] else str(ctx.get("why") or "no key"))
+    if page.get("sent") or page.get("error"):
+        ctx["page"] = page
+    if not ctx["key"]:
+        doc.setdefault("alerts", []).append(str(ctx.get("why") or "gold OCO: no keyed identity"))
+    doc["gold_oco"] = {k: v for k, v in ctx.items()}
+    return ctx
+
+
+def oco_block(doc: dict[str, Any], side: str) -> str | None:
+    """Why the gold direction lock refuses an E8 gold leg of `side` now, or None. Fails closed:
+    no pass context, no keyed identity, or any unreadable/stale/torn state refuses."""
+    from mt5desk import gold_oco as _oco
+    ctx = doc.get("gold_oco") or {}
+    if not ctx.get("key") or not ctx.get("date"):
+        return f"{ctx.get('why') or 'gold OCO: no keyed identity this pass'}; fail closed"
+    v = _oco.gate("e8", side, key=ctx["key"], date=str(ctx["date"]))
+    return None if v.allowed else v.why
+
+
+def _oco_blocked(doc: dict, state: dict, *, name: str, side: str, why: str, risk_usd: float,
+                 now: datetime, today: str, armed: bool, retry: bool = False) -> None:
+    """A leg the gold direction lock refused: logged, on the report, and billed ONCE per window,
+    leg and day as a RAIL_BLOCKED row (rail gold_oco_direction_lock) with its missed growth."""
+    from mt5desk import gold_oco as _oco
+    doc.setdefault("skipped", []).append({"window": name, "side": side, "why": why,
+                                          "rail": _oco.RAIL})
+    log(f"[{name}] {side} {'retry ' if retry else ''}refused by the gold OCO: {why}")
+    seen = state.setdefault("xacct_logged", {})
+    tag = f"{_oco.RAIL}/{name}/{side}" + ("/retry" if retry else "")
+    if seen.get(tag) != today:
+        seen[tag] = today
+        _record({"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
+                 "status": "RAIL_BLOCKED", "rail": _oco.RAIL, "why": why,
+                 "missed_growth_risk_usd": round(float(risk_usd), 2), "armed": bool(armed)})
+
+
+def oco_cancel_opposite(venue: Any, state: dict, doc: dict, open_ids: set[int], *,
+                        armed: bool) -> set[int]:
+    """Cancel E8's resting gold legs against the day's direction, whichever account's fill set
+    it -- E8's own twin included (gold_oco v2 growth upgrade: the twin no longer waits on
+    `manage_actions`, which sees a fill only through the order history; the direction is claimed
+    from the venue's open positions). A BLIND lock (direction state unreadable) cancels every
+    resting leg of today's windows (v2 must-fix 7). Returns the ids cancelled."""
+    from mt5desk import gold_oco as _oco
+    ctx = doc.get("gold_oco") or {}
+    today = str(ctx.get("date") or state.get("date") or "")
+    entry, why = _oco.day_entry(today)
+    if why is not None:
+        doc.setdefault("gold_oco_unreadable", why)
+    legs = [{"id": int(leg["id"]), "side": side, "window": name}
+            for name, w in (state.get("windows") or {}).items() if not name.startswith("carried:")
+            for side, leg in (w.get("orders") or {}).items()
+            if leg.get("id") is not None and int(leg["id"]) in open_ids]
+    plan, reason = _oco.cancel_plan("e8", entry, why, legs)
+    if why is not None and plan:
+        doc.setdefault("alerts", []).append(f"gold OCO blind: {why}; every resting leg cancelled")
+    gone: set[int] = set()
+    for leg in plan:
+        w = state["windows"].get(leg["window"]) or {}
+        act = {"act": "oco_direction_cancel", "window": leg["window"], "side": leg["side"],
+               "order_id": leg["id"], "ok": False, "why": reason}
+        try:
+            if armed or not w.get("shadow", False):
+                act["ok"] = bool(venue.cancel(int(leg["id"])))
+            else:
+                act.update({"ok": True, "shadow": True})
+        except Exception as exc:
+            act["why"] += f"; cancel FAILED: {type(exc).__name__}: {exc}"[:160]
+        if act["ok"]:
+            gone.add(int(leg["id"]))
+            if not act.get("shadow") and ctx.get("key") and entry is not None:
+                _oco.note_cancelled(today, "e8", ctx["key"], leg["id"], leg["side"],
+                                    holder="e8_gold")
+        log(f"[{leg['window']}] gold OCO cancel {leg['side']} order {leg['id']}: "
+            f"{'ok' if act['ok'] else 'NOT acknowledged'}; {act['why']}")
+        doc["actions"].append(act)
+    return gone
+
+
+def oco_flatten_opposite(venue: Any, state: dict, doc: dict, xau_positions: list[dict],
+                         filled: dict[int, int], *, armed: bool) -> set[int]:
+    """CLOSE AT ONCE an E8 gold position opened today against the day's direction (gold_oco v2,
+    must-fix 6): a twin that filled before its cancel, or a fill that lost the claim race. Only
+    this lane's own positions (a window's position, or one a window leg's order opened) are
+    closed; any other wrong-side gold position is ALERTED. Returns the position ids closed."""
+    from mt5desk import gold_oco as _oco
+    ctx = doc.get("gold_oco") or {}
+    today = str(ctx.get("date") or state.get("date") or "")
+    entry, why = _oco.day_entry(today)
+    if why is not None or entry is None:
+        return set()
+    own: set[int] = set()
+    for w in (state.get("windows") or {}).values():
+        if w.get("position_id") is not None:
+            own.add(int(w["position_id"]))
+        for leg in (w.get("orders") or {}).values():
+            if leg.get("id") is not None and int(leg["id"]) in filled:
+                own.add(int(filled[int(leg["id"])]))
+    rows = [{"id": int(p["id"]), "side": p.get("side"),
+             "opened_date": _oco.ms_trading_date(p.get("openDate"))}
+            for p in xau_positions if p.get("id") is not None]
+    closed: set[int] = set()
+    for row in _oco.positions_to_flatten(entry, rows, date=today):
+        what = (f"gold {_oco.side_of(row['side'])} position {row['id']} against {today}'s "
+                f"direction {entry.get('direction')} (first fill on "
+                f"{entry.get('first_fill_lane')})")
+        doc.setdefault("alerts", []).append(f"gold OCO: {what}")
+        if row["id"] not in own:
+            log(f"ALERT gold OCO: {what}; not this lane's position, not closed")
+            continue
+        act = {"act": "oco_direction_flatten", "position_id": row["id"], "ok": False,
+               "why": what}
+        try:
+            if armed:
+                act["ok"] = bool(venue.close(int(row["id"])))
+            else:
+                act.update({"ok": True, "shadow": True})
+        except Exception as exc:
+            act["why"] += f"; close FAILED: {type(exc).__name__}: {exc}"[:160]
+        if act["ok"] and not act.get("shadow"):
+            closed.add(row["id"])
+        log(f"{'' if act['ok'] else 'ALERT '}gold OCO FLATTEN {what}: "
+            f"{'ok' if act['ok'] else 'NOT acknowledged'}")
+        doc["actions"].append(act)
+    return closed
+
+
+def leg_missed_usd(leg: dict) -> float:
+    """The dollars a refused retry leg would have put at risk: its recorded risk_usd, else its
+    lot x stop distance x XAU_OZ_PER_LOT (the UNOWNED_BLOCK_RAIL idiom), else 0.0 -- a bill is
+    never None (gold_oco v2, audit must-fix 5)."""
+    risk = leg.get("risk_usd")
+    if isinstance(risk, (int, float)) and not isinstance(risk, bool):
+        return float(risk)
+    try:
+        return float(leg["lot"]) * abs(float(leg["price"]) - float(leg["sl"])) * XAU_OZ_PER_LOT
+    except (KeyError, TypeError, ValueError):
+        return 0.0
+
+
+#: How long one E8-Gold placement waits for the cross-account lock. After one miss in a pass the
+#: rest of the pass waits 0 (`xacct_lock_wait`), so a stuck lock delays stop management by at
+#: most this, never by a wait per window.
+E8_LOCK_WAIT_S = 5.0
+
+
+def xacct_lock_wait(doc: dict[str, Any]) -> float:
+    return 0.0 if doc.get("xacct_lock_missed") else E8_LOCK_WAIT_S
+
+
+def fenced_send(mt5: Any, venue: Any, doc: dict[str, Any], *, holder: str, side: str,
+                send: Any) -> tuple[Any, str | None]:
+    """Run `send()` under the cross-account fence: (its result, None), or (None, why) when the
+    Fusion account holds or rests the opposite side of XAUUSD, its book cannot be read live, or
+    the lock is not taken. This account's book is republished under the same lock.
+
+    The send is BOUNDED (`cross_account.bounded`, audit round 4): past LOCKED_SEND_TIMEOUT_S it
+    raises `LockedCallTimeout` and the lock is released. The caller's `except` records it as a
+    failed send; it may still land, and the next pass's retry adopts it if it did."""
+    from mt5desk import cross_account as _xa
+    with _xa.placement_lock(holder, wait_s=xacct_lock_wait(doc)) as locked:
+        if not locked:
+            doc["xacct_lock_missed"] = True
+            return None, ("cross-account fence: the placement lock is held by the other "
+                          "account's lane; fail closed")
+        book, why = _xa.mt5_book_checked(mt5)
+        xwhy = _xa.opposite_block(book, SYMBOL, side, account="fusion", why_absent=why)
+        if xwhy:
+            return None, xwhy
+        owhy = oco_block(doc, side)
+        if owhy:
+            return None, owhy
+        try:
+            return _xa.bounded(send, what=f"{holder} send", account="e8", symbol=SYMBOL), None
+        finally:
+            with contextlib.suppress(Exception):
+                _xa.bounded(lambda: _xa.publish_tradelocker(venue, source="e8_gold"),
+                            timeout_s=_xa.LOCKED_PUBLISH_TIMEOUT_S, what=f"{holder} publish")
+
+
 def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     """One pass. `venue` is a connected TradeLockerVenue; `mt5` the MetaTrader5 module (bars
     and the server clock, read exactly as the gateway reads them)."""
@@ -598,20 +1085,94 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     equity = float(acct.get("equity") or acct.get("balance") or 0.0)
     risk_usd = equity * RISK_FRAC
     kelly = load_kelly_survival(KELLY_FILE, "e8")
+    _solve = dict(kelly or {})
     # THE PRINCIPAL'S CERTIFIED BOOK OVERRIDES THE SOLVE PER WINDOW (data/CERT_BOOK_LIVE.json,
     # 2026-10-07). Its gold keys are the gateway's (`gold_asia`); this lane names windows bare.
-    cert = cert_gold_windows(load_cert_book(CERT_BOOK_FILE, "e8"))
+    _cert_raw = load_cert_book(CERT_BOOK_FILE, "e8")
+    cert = cert_gold_windows(_cert_raw)
     if cert:
         kelly = {**(kelly or {}), **cert}
+    # AN ENABLED BOOK IS A WHITELIST FOR THE GOLD WINDOWS (audit hourly pass 15): a window the
+    # loaded book does not name stands aside at 0.0, never RISK_FRAC -- a book writer that drops a
+    # key must not reopen a window. This holds for gold_asia too: asia must be named to trade.
+    # A VOID BOOK SIZES EVERY WINDOW AT 0 (audit r6 MUST-FIX 1, ruling): absent, torn, disabled
+    # or one value out of range names no window -- Fix B's own rule -- so no KELLY_SURVIVAL solve
+    # (its grid reaches 0.015) and no RISK_FRAC (not a certified number) may size E8 instead.
+    # Each window is billed `cert_book_void` with its missed-growth line.
+    absent: dict[str, str] = {}
+    void: dict[str, str] = {}
+    if _cert_raw is None:
+        for _w, _h, _r in GOLD_WINDOWS:
+            void[_w] = ("the cert book is void (CERT_BOOK_LIVE.json absent, unreadable, disabled, "
+                        "e8 block missing or a value out of range); stands aside at 0 -- no "
+                        "Kelly or RISK_FRAC fallback on E8")
+        kelly = {**(kelly or {}), **dict.fromkeys(void, 0.0)}
+    else:
+        for _w, _h, _r in GOLD_WINDOWS:
+            if _w not in cert:
+                absent[_w] = (f"absent from the enabled cert book (CERT_BOOK_LIVE.json e8 has no "
+                              f"gold_{_w}); stands aside")
+        kelly = {**(kelly or {}), **dict.fromkeys(absent, 0.0)}
+    # THE PRINCIPAL'S ZEROS NEED NO FILE (decision_core.PRINCIPAL_ZERO["e8"], audit r5 must-fix
+    # 1; zuck 2026-10-20 21:52Z, gold asia only): a void cert book used to send london_am and
+    # afternoon back to RISK_FRAC or the KELLY_SURVIVAL value.
+    from mt5desk.decision_core import PRINCIPAL_ZERO
+    pinned = cert_gold_windows(dict.fromkeys(PRINCIPAL_ZERO["e8"], 0.0))
+    kelly = {**(kelly or {}), **pinned}
+    # THE CODE CEILING (r7.1, decision_core.E8_CERT_CEILING, principal pin): every window is
+    # min(book, 0.006) whatever the book says -- a stale enabled book at 0.01 places at 0.006,
+    # and the cut is billed `e8_cert_ceiling` at placement. Raised only by a principal edit.
+    from mt5desk.decision_core import E8_CERT_CEILING
+    ceilinged: dict[str, float] = {}
+    for _w, _h, _r in GOLD_WINDOWS:
+        _v = (kelly or {}).get(_w)
+        if _v is not None and float(_v) > E8_CERT_CEILING:
+            ceilinged[_w] = float(_v)
+    kelly = {**(kelly or {}), **dict.fromkeys(ceilinged, E8_CERT_CEILING)}
+    # NO JOINED E8 ACCOUNT, NO NEW E8 GOLD RISK (r7.2, audit r7.1 MUST-FIX 1): r7.1 checked only
+    # that E8_ACCOUNT.json EXISTS, so a garbage, torn, empty or another account's declaration
+    # placed both legs. Now the declaration must be a valid key, never the `invalid:` sentinel,
+    # and EQUAL the venue's own key; the check never raises (PermissionError included), so it
+    # can never abort the pass or open-position management. Refusals are billed per window.
+    from mt5desk import cross_account as _xa_decl
+    e8_declared, e8_account_why = (e8_account_check(venue) if armed
+                                   else (True, "disarmed: no new risk to refuse"))
+    doc["e8_account"] = {"ok": e8_declared, "why": e8_account_why}
+    # WHERE EACH WINDOW'S NUMBER CAME FROM (r6): one label per window, never one for the lane --
+    # "kelly_survival" was printed when the solve was absent and the cert book had sized asia.
+    # A VOID cert book is `cert_book_void` for every unpinned window (r7; see above).
+    sources = window_sources(_solve, cert, absent, pinned, void)
     doc.update({"equity": equity, "risk_usd": round(risk_usd, 2),
                 "cert_book_windows": cert or None,
-                "sizing_source": "kelly_survival" if kelly is not None else "policy RISK_FRAC",
-                "kelly_risk": kelly})
-    guard = _read_json(GUARD, {})
-    stood_down = bool(guard.get("stood_down"))
-    if stood_down:
-        doc["guard"] = "stood down: no new placements this pass"
-        log("guard stood down; managing open exposure only")
+                "sizing_source": sources,
+                "kelly_risk": kelly,
+                "e8_cert_ceiling": {"ceiling": E8_CERT_CEILING, "cut": ceilinged}})
+    # THE ONE GUARD DECIDES (2026-10-20). This read the raw `stood_down` flag out of the guard's
+    # state file, which only the executor's `assess` call ever rolled to a new server day: on
+    # 2026-10-15 a flag latched on 10-14 stood the gold book down from 00:01Z to 23:56Z with no
+    # placement, and the flag-only read never saw CAPPED, BREACHED or PASSED at all. `assess` is
+    # the verdict; it re-anchors a stale day itself. An equity that cannot be read is not
+    # anchored on (a zero would be persisted as the day's start), and a guard that raises refuses.
+    from prop import e8_guard
+    guard_decision: Any = None
+    if not equity > 0:
+        stood_down = True
+        doc["guard"] = "equity unreadable: no new placements this pass"
+        log("guard not consulted: the venue reported no equity; managing open exposure only")
+    else:
+        try:
+            guard_decision = e8_guard.assess(equity, now=now, state_path=GUARD)
+            doc["guard_decision"] = guard_decision.as_dict()
+            stood_down = not guard_decision.may_open
+            if stood_down:
+                doc["guard"] = (f"{guard_decision.verdict.value}: no new placements this pass "
+                                f"({guard_decision.why})")
+                log(f"guard {guard_decision.verdict.value}: {guard_decision.why}; managing open "
+                    f"exposure only")
+        except Exception as exc:
+            stood_down = True
+            doc["guard"] = f"guard unreadable ({type(exc).__name__}: {exc}"[:200] + ")"
+            log(f"guard raised {type(exc).__name__}: {exc}; no new placements this pass")
 
     bid, ask = venue.quote(SYMBOL)
     try:
@@ -626,8 +1187,23 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         stood_down = True
         doc["positions_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
         log("position book unreadable; no new E8 gold placement this pass")
+    publish_books(venue, mt5, doc,
+                  positions=None if "positions_unreadable" in doc else venue_positions)
+    oco_sync(venue, mt5, doc, today=today)
     # -------------------------------------------------------------- placements
     due_now = [] if stood_down else plan(df, hour, state)
+    # A LATE GOLD SEND IS REFUSED (Judge 2026-10-21, r6; decision_core.GOLD_SEND_GRACE_MIN): a
+    # SKIPPED row with reason late_send and its missed-growth line, once per window per day.
+    for _lname, _lwhy in ([] if stood_down else late_windows(hour, state)):
+        doc["skipped"].append({"window": _lname, "why": _lwhy})
+        _lfrac = window_risk(_lname, kelly)[0]
+        _lseen = state.setdefault("pin_logged", {})
+        if _lfrac > 0 and _lseen.get(f"late/{_lname}") != today:
+            _lseen[f"late/{_lname}"] = today
+            _record({"at": now.isoformat(timespec="seconds"), "window": _lname,
+                     "status": "SKIPPED", "reason": "late_send", "rail": "gold_late_send",
+                     "why": _lwhy, "risk_frac": _lfrac,
+                     "missed_growth_risk_usd": round(equity * _lfrac, 2), "armed": bool(armed)})
     # THE SELF-HEDGE RULE IS PER LEG, NOT PER BRACKET (principal, 2026-09-24).
     #
     # TradeLocker can hold opposite XAU positions, so a second two-sided bracket placed while one
@@ -661,73 +1237,237 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             doc["skipped"].append({"window": due["window"], "why": why})
             log(f"[{due['window']}] DEFERRED: {why}")
         due_now = []
+    committed: float | None = None
+    if due_now:
+        # CONCURRENT OPEN RISK, measured once, before any window is placed (see SLIP_BUFFER).
+        # Anything unreadable -- the order book, the journal, a position's stop -- refuses every
+        # window this pass and marks none placed, so the next pass decides again.
+        try:
+            budget_orders = venue.orders(SYMBOL)
+            journal = [] if not INTENTS.exists() else _journal_read()
+            if journal is None:
+                raise ValueError("the intents journal is unreadable, so this lane's resting "
+                                 "legs cannot be counted")
+            try:
+                contract = float(venue.details(SYMBOL).get("contractSize") or XAU_OZ_PER_LOT)
+            except Exception:
+                contract = XAU_OZ_PER_LOT
+            committed, doc["committed_risk"] = committed_risk(
+                xau_positions, budget_orders, journal, state, bid=float(bid), ask=float(ask),
+                contract_size=contract)
+            doc["committed_risk"]["total_usd"] = round(committed, 2)
+        except Exception as exc:
+            why = (f"concurrent open risk unmeasurable ({type(exc).__name__}: {exc}"[:200]
+                   + "); no window placed this pass")
+            for due in due_now:
+                doc["skipped"].append({"window": due["window"], "why": why})
+                log(f"[{due['window']}] DEFERRED: {why}")
+            due_now = []
+    room = float(guard_decision.room_to_daily_floor) if guard_decision is not None else 0.0
+    placed_this_pass: list[str] = []
     for due in due_now:
         name, spec = due["window"], due["spec"]
-        frac, frac_src = window_risk(name, kelly)
+        frac, _ = window_risk(name, kelly)
+        frac_src = sources.get(name, "RISK_FRAC")
+        if name in pinned or name in absent or name in void:
+            why = ("principal zero (zuck 2026-10-20 21:52Z: gold asia only; "
+                   "decision_core.GOLD_ASIA_ONLY_ZERO); no order" if name in pinned
+                   else void[name] if name in void else absent[name])
+            doc["skipped"].append({"window": name, "why": why})
+            # One missed-growth line per window per day (research/missed_growth reads it).
+            _seen = state.setdefault("pin_logged", {})
+            if _seen.get(name) != today:
+                _seen[name] = today
+                _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                         "status": "RAIL_BLOCKED",
+                         "rail": ("principal_zero_pin" if name in pinned
+                                  else "cert_book_void" if name in void
+                                  else "cert_book_absent_window"), "why": why,
+                         # Void and absent windows are billed at the LAST CERTIFIED e8 value
+                         # (E8_CERT_CEILING, r7.1), the pin at the policy RISK_FRAC.
+                         "missed_growth_risk_usd": round(equity * (
+                             RISK_FRAC if name in pinned else E8_CERT_CEILING), 2),
+                         "armed": bool(armed)})
+            continue
+        _billed = state.setdefault("rail_logged", {})
         if not frac > 0:
+            if frac_src == "cert_book":
+                # A CERT-BOOK ZERO IS A CAP TOO (r7.1): gold_asia 0.0 in the book writes its
+                # missed-growth line, billed at the last certified value.
+                why = (f"the cert book (CERT_BOOK_LIVE.json e8) sets gold_{name} to 0.0; "
+                       f"stands aside")
+                doc["skipped"].append({"window": name, "why": why})
+                if _billed.get(f"cert_book_zero/{name}") != today:
+                    _billed[f"cert_book_zero/{name}"] = today
+                    _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                             "status": "RAIL_BLOCKED", "rail": "cert_book_zero", "why": why,
+                             "missed_growth_risk_usd": round(equity * E8_CERT_CEILING, 2),
+                             "armed": bool(armed)})
+                continue
             doc["skipped"].append({"window": name, "why": (
                 "stands aside: the survival-constrained growth solve "
                 "(reports/KELLY_SURVIVAL.json) funds this window at 0 risk")})
             continue
+        if armed and not e8_declared:
+            why = (f"{e8_account_why}; no new E8 gold risk until {_xa_decl.E8_ACCOUNT_FILE.name} "
+                   f"declares this venue's own key (README landing step 6)")
+            doc["skipped"].append({"window": name, "why": why})
+            log(f"[{name}] REFUSED: {why}")
+            if _billed.get(f"e8_account_undeclared/{name}") != today:
+                _billed[f"e8_account_undeclared/{name}"] = today
+                _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                         "status": "RAIL_BLOCKED", "rail": "e8_account_undeclared", "why": why,
+                         "missed_growth_risk_usd": round(equity * frac, 2), "armed": True})
+            continue
+        if name in ceilinged and _billed.get(f"e8_cert_ceiling/{name}") != today:
+            _billed[f"e8_cert_ceiling/{name}"] = today
+            _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                     "status": "CAPPED", "rail": "e8_cert_ceiling",
+                     "why": (f"the book sizes {name} at {ceilinged[name]:g}; the code ceiling "
+                             f"E8_CERT_CEILING sends {E8_CERT_CEILING:g}"),
+                     "book_risk_frac": ceilinged[name], "risk_frac": E8_CERT_CEILING,
+                     "missed_growth_risk_usd": round(
+                         equity * (ceilinged[name] - E8_CERT_CEILING), 2),
+                     "armed": bool(armed)})
         risk_usd = equity * frac
+        # FIRST: one gold trade at risk at a time (`one_at_risk_blocker`). SECOND, a fail-safe
+        # under it: everything committed plus this window, grossed up for slippage, must fit the
+        # guard's room to today's floor. Either refusal defers the window without marking it
+        # placed, so a later pass inside its session places it once the earlier risk is gone.
+        blocker = one_at_risk_blocker(doc.get("committed_risk") or {})
+        if blocker is None and placed_this_pass:
+            blocker = (f"one gold trade at risk at a time: {', '.join(placed_this_pass)} was "
+                       f"placed earlier in this pass")
+        if blocker is None:
+            fits, budget_why = risk_budget_allows(committed or 0.0, risk_usd, room)
+            if not fits:
+                blocker = f"concurrent risk would reach today's floor: {budget_why}"
+        if blocker is not None:
+            doc["skipped"].append({"window": name, "why": blocker})
+            log(f"[{name}] DEFERRED: {blocker}")
+            continue
+        committed = (committed or 0.0) + risk_usd
         legs: dict[str, dict] = {}
         failed: dict[str, dict] = {}
-        for side in ("buy_stop", "sell_stop"):
-            if side == blocked:
-                why = (f"open XAU position(s) {', '.join(str(p.get('id')) for p in xau_positions)}"
-                       f" already lean {'long' if direction == 1 else 'short'}; this leg would "
-                       f"trade against them, so it is skipped and the agreeing leg is placed")
-                doc["skipped"].append({"window": name, "side": side, "why": why})
-                log(f"[{name}] {side} skipped: {why}")
-                continue
-            s = spec[side]
-            dist = abs(float(s["price"]) - float(s["sl"]))
-            legal, why = leg_is_legal(side, float(s["price"]), float(bid), float(ask))
-            if not legal:
-                doc["skipped"].append({"window": name, "side": side, "why": why})
-                log(f"[{name}] {side} not available: {why}")
-                continue
-            lot, basis = lot_for_risk(venue, SYMBOL, dist, risk_usd)
-            lot = _quantise(lot, venue, SYMBOL)
-            row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
-                   "price": float(s["price"]), "sl": float(s["sl"]), "tp": float(s["tp"]),
-                   "lot": lot, "stop_dist": round(dist, 2), "risk_usd": round(risk_usd, 2),
-                   "sizing": basis, "risk_frac": frac, "risk_source": frac_src,
-                   "armed": bool(armed)}
-            if not (lot > 0):
-                row["status"] = "UNSIZEABLE"
-                doc["skipped"].append(row)
-                _record(row)
-                continue
-            if not armed:
-                row["status"] = "WOULD_PLACE"
-                log(f"[{name}] SHADOW would place {side} {lot} {SYMBOL} @ {s['price']:.2f} "
-                    f"sl {s['sl']:.2f} tp {s['tp']:.2f} (risk {risk_usd:.0f} USD)")
-                _record(row)
-                legs[side] = {"id": None, **{k: row[k] for k in ("price", "sl", "tp", "lot")}}
-                continue
-            try:
-                oid = venue.place_stop(SYMBOL, "buy" if side == "buy_stop" else "sell", lot,
-                                       price=float(s["price"]), stop=float(s["sl"]),
-                                       take_profit=float(s["tp"]))
-                row.update({"status": "SENT", "order_id": oid})
-                legs[side] = {"id": oid, **{k: row[k] for k in ("price", "sl", "tp", "lot")}}
-                log(f"[{name}] PLACED {side} {lot} {SYMBOL} @ {s['price']:.2f} sl {s['sl']:.2f} "
-                    f"tp {s['tp']:.2f} -> order {oid}")
-            except Exception as exc:
-                row.update({"status": "REJECTED", "why": f"{type(exc).__name__}: {exc}"[:200]})
-                log(f"[{name}] REJECTED {side}: {row['why']} (will retry while the window holds)")
-                failed[side] = {**{k: row[k] for k in ("price", "sl", "tp", "lot", "risk_usd")},
-                                "attempts": 1, "why": row["why"],
-                                "first_at": row["at"]}
-            if not _record(row):
-                doc.setdefault("journal_write_failed", []).append(
-                    {"window": name, "side": side, "order_id": row.get("order_id")})
+        fenced: dict[str, str] = {}
+        # THE CROSS-ACCOUNT OPPOSITE-SIDE FENCE (mt5desk.cross_account; audit HOLD 2026-10-20):
+        # a leg opposite an open or resting FUSION position on XAUUSD is not sent. The Fusion
+        # book is read LIVE from the terminal this lane is attached to, under the one placement
+        # lock the gateway also takes, and this account's book is published before the lock is
+        # released. Unreadable book or lock not taken -> every leg is fenced (fail closed).
+        from mt5desk import cross_account as _xa
+        _xctx = (_xa.placement_lock(f"e8_gold:{name}", wait_s=xacct_lock_wait(doc)) if armed
+                 else contextlib.nullcontext(True))
+        with _xctx as _xlocked:
+            fusion_book: Any = None
+            fusion_why = ""
+            if armed and not _xlocked:
+                doc["xacct_lock_missed"] = True
+            if armed and _xlocked:
+                fusion_book, fusion_why = _xa.mt5_book_checked(mt5)
+            for side in ("buy_stop", "sell_stop"):
+                if side == blocked:
+                    _ids = ", ".join(str(p.get("id")) for p in xau_positions)
+                    why = (f"open XAU position(s) {_ids}"
+                           f" already lean {'long' if direction == 1 else 'short'}; this leg would "
+                           f"trade against them, so it is skipped and the agreeing leg is placed")
+                    doc["skipped"].append({"window": name, "side": side, "why": why})
+                    log(f"[{name}] {side} skipped: {why}")
+                    continue
+                if armed:
+                    xwhy = (_xa.opposite_block(fusion_book, SYMBOL, side, account="fusion",
+                                               why_absent=fusion_why) if _xlocked
+                            else ("cross-account fence: the placement lock is held by the other "
+                                  "account's lane; fail closed"))
+                    if xwhy:
+                        fenced[side] = xwhy
+                        doc["skipped"].append({"window": name, "side": side, "why": xwhy})
+                        log(f"[{name}] {side} fenced: {xwhy}")
+                        # One missed-growth line per window and leg per day (the rail is
+                        # re-checked every five minutes; the bill is one forgone leg).
+                        _seen = state.setdefault("xacct_logged", {})
+                        if _seen.get(f"{name}/{side}") != today:
+                            _seen[f"{name}/{side}"] = today
+                            _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                                     "side": side, "status": "RAIL_BLOCKED",
+                                     "rail": "cross_account_opposite", "why": xwhy,
+                                     "missed_growth_risk_usd": round(risk_usd, 2),
+                                     "armed": bool(armed)})
+                        continue
+                if armed and _xlocked:
+                    # THE GOLD DIRECTION LOCK (mt5desk.gold_oco), under the same lock, after
+                    # the two-account fence (whose refusal, when both bind, is the one billed).
+                    owhy = oco_block(doc, side)
+                    if owhy:
+                        fenced[side] = owhy
+                        _oco_blocked(doc, state, name=name, side=side, why=owhy,
+                                     risk_usd=risk_usd, now=now, today=today, armed=armed)
+                        continue
+                s = spec[side]
+                dist = abs(float(s["price"]) - float(s["sl"]))
+                legal, why = leg_is_legal(side, float(s["price"]), float(bid), float(ask))
+                if not legal:
+                    doc["skipped"].append({"window": name, "side": side, "why": why})
+                    log(f"[{name}] {side} not available: {why}")
+                    continue
+                lot, basis = lot_for_risk(venue, SYMBOL, dist, risk_usd)
+                lot = _quantise(lot, venue, SYMBOL)
+                row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
+                       "price": float(s["price"]), "sl": float(s["sl"]), "tp": float(s["tp"]),
+                       "lot": lot, "stop_dist": round(dist, 2), "risk_usd": round(risk_usd, 2),
+                       "sizing": basis, "risk_frac": frac, "risk_source": frac_src,
+                       "armed": bool(armed)}
+                if not (lot > 0):
+                    row["status"] = "UNSIZEABLE"
+                    doc["skipped"].append(row)
+                    _record(row)
+                    continue
+                if not armed:
+                    row["status"] = "WOULD_PLACE"
+                    log(f"[{name}] SHADOW would place {side} {lot} {SYMBOL} @ {s['price']:.2f} "
+                        f"sl {s['sl']:.2f} tp {s['tp']:.2f} (risk {risk_usd:.0f} USD)")
+                    _record(row)
+                    legs[side] = {"id": None, **{k: row[k] for k in ("price", "sl", "tp", "lot")}}
+                    continue
+                try:
+                    # BOUNDED UNDER THE LOCK (audit round 4): a hung call raises
+                    # LockedCallTimeout -> REJECTED below -> the retry adopts it if it landed.
+                    _send = (lambda side=side, lot=lot, s=s: venue.place_stop(
+                        SYMBOL, "buy" if side == "buy_stop" else "sell", lot,
+                        price=float(s["price"]), stop=float(s["sl"]),
+                        take_profit=float(s["tp"])))
+                    oid = _xa.bounded(_send, what=f"e8_gold:{name}:{side} send",
+                                      account="e8", symbol=SYMBOL)
+                    row.update({"status": "SENT", "order_id": oid})
+                    legs[side] = {"id": oid, **{k: row[k] for k in ("price", "sl", "tp", "lot")}}
+                    log(f"[{name}] PLACED {side} {lot} {SYMBOL} @ {s['price']:.2f} "
+                        f"sl {s['sl']:.2f} tp {s['tp']:.2f} -> order {oid}")
+                except Exception as exc:
+                    row.update({"status": "REJECTED", "why": f"{type(exc).__name__}: {exc}"[:200]})
+                    log(f"[{name}] REJECTED {side}: {row['why']} "
+                        f"(will retry while the window holds)")
+                    failed[side] = {**{k: row[k] for k in ("price", "sl", "tp", "lot", "risk_usd")},
+                                    "attempts": 1, "why": row["why"],
+                                    "first_at": row["at"]}
+                if not _record(row):
+                    doc.setdefault("journal_write_failed", []).append(
+                        {"window": name, "side": side, "order_id": row.get("order_id")})
+            if armed and _xlocked:
+                with contextlib.suppress(Exception):
+                    _xa.bounded(lambda: _xa.publish_tradelocker(venue, source="e8_gold"),
+                                timeout_s=_xa.LOCKED_PUBLISH_TIMEOUT_S,
+                                what=f"e8_gold:{name} publish")
+        if fenced and not legs and not failed:
+            # Every leg fenced: the window waits, NOT marked placed, and its risk is not committed.
+            committed = (committed or 0.0) - risk_usd
+            continue
         state["windows"][name] = {"placed_at": now.isoformat(timespec="seconds"),
                                   "placed_hour": hour, "hi": due["hi"], "lo": due["lo"],
                                   "orders": legs, "position_id": None, "shadow": not armed}
         if failed:
             state["windows"][name]["failed"] = failed
+        if legs or failed:
+            placed_this_pass.append(name)
         doc["placed"].append({"window": name, "legs": legs})
 
     # -------------------------------------------------------------- management
@@ -765,7 +1505,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                            orders_ok="orders_unreadable" not in doc, filled=filled,
                            xau_positions=xau_positions, positions_ok=positions_ok,
                            stood_down=stood_down, armed=armed, hist_rows=hist_rows,
-                           history_ok="history_unreadable" not in doc, instrument_id=iid)
+                           history_ok="history_unreadable" not in doc, instrument_id=iid,
+                           mt5=mt5, account_ok=(e8_declared, e8_account_why))
         open_ids = {int(o.get("id")) for o in open_orders if o.get("id") is not None}
 
     # OUR OWN ORDERS AND POSITIONS, RE-DERIVED FROM THE VENUE EVERY PASS -- so a rollover (or a
@@ -806,6 +1547,36 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         if mapped is None or not (current_stop > 0):
             continue
         name, w = mapped
+        refused = w.get("stop_refusals") or {}
+        if int(refused.get("count") or 0) >= MAX_STOP_REFUSALS:
+            # BOUNDED: no more stop moves for this position (see MAX_STOP_REFUSALS).
+            verdict, why = stop_refusal_response(
+                p, w, bid=float(bid), ask=float(ask),
+                cost_per_unit=E8_ROUND_TRIP_PER_PRICE_UNIT)
+            if verdict == "close":
+                act = {"act": "stop_refused_close", "window": name, "position_id": int(p["id"]),
+                       "why": why, "ok": False}
+                try:
+                    if armed or not w.get("shadow", False):
+                        act["ok"] = bool(venue.close(int(p["id"])))
+                    else:
+                        act.update({"ok": True, "shadow": True})
+                    if act["ok"]:
+                        w["closed"] = True
+                    else:
+                        act["why"] += "; the venue did not acknowledge the close"
+                except Exception as exc:
+                    act["why"] += f"; close FAILED: {type(exc).__name__}: {exc}"[:160]
+                log(f"[{name}] ALERT position {p['id']}: {act['why']}")
+                doc.setdefault("alerts", []).append(act["why"])
+                doc["actions"].append(act)
+            elif not refused.get("held"):
+                refused["held"] = True
+                log(f"[{name}] ALERT position {p['id']}: {why}")
+                doc.setdefault("alerts", []).append(f"position {p['id']}: {why}")
+                doc["actions"].append({"act": "stop_refused_hold", "window": name,
+                                       "position_id": int(p["id"]), "why": why, "ok": True})
+            continue
         decision = trail_decision(
             p, w, df, current_stop,
             cost_per_unit=E8_ROUND_TRIP_PER_PRICE_UNIT,
@@ -848,6 +1619,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 action["ok"] = True
                 action["shadow"] = True
             if action["ok"]:
+                w.pop("stop_refusals", None)
                 log(f"[{name}] {'SHADOW would ratchet' if action.get('shadow') else 'RATCHET'} "
                     f"position {p['id']} stop {current_stop:.2f} -> "
                     f"{float(decision.new_stop):.2f}; {decision.reason}")
@@ -857,7 +1629,27 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         except Exception as exc:
             action["why"] = f"{type(exc).__name__}: {exc}"[:160]
             log(f"[{name}] stop ratchet FAILED: {action['why']}")
+        if not action["ok"]:
+            count = int((w.get("stop_refusals") or {}).get("count") or 0) + 1
+            w["stop_refusals"] = {"count": count, "last_at": now.isoformat(timespec="seconds"),
+                                  "last_why": action.get("why")}
+            action["refusals"] = count
+            if count >= MAX_STOP_REFUSALS:
+                log(f"[{name}] ALERT position {p['id']}: the venue refused {count} stop moves in "
+                    f"a row; no further moves are sent (close if beyond the break-even trigger, "
+                    f"else hold the resting stop)")
+                doc.setdefault("alerts", []).append(
+                    f"position {p['id']}: {count} consecutive stop moves refused by the venue")
         doc["actions"].append(action)
+    # THE GOLD DIRECTION LOCK'S CANCEL LEG: another account's first fill cancels E8's opposite
+    # resting leg (mt5desk.gold_oco). Only with a readable order book.
+    if "orders_unreadable" not in doc:
+        open_ids -= oco_cancel_opposite(venue, state, doc, open_ids, armed=armed)
+    if positions_ok:
+        _flat = oco_flatten_opposite(venue, state, doc, xau_positions, filled, armed=armed)
+        # A flattened twin is no window's position: management records the day's own leg.
+        position_ids -= _flat
+        filled = {o: p for o, p in filled.items() if p not in _flat}
     # Positions carried from a previous day are closed at the close hour like today's.
     for name, w in list((state.get("carried") or {}).items()):
         state["windows"].setdefault(f"carried:{name}",
@@ -905,11 +1697,27 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     return doc
 
 
+def _xa_retry_blocked(doc: dict, state: dict, row: dict, act: dict, name: str, side: str,
+                      leg: dict, xwhy: str, now: datetime) -> None:
+    """A dropped leg the cross-account fence refused on retry: logged, billed once per window,
+    leg and day (`RAIL_BLOCKED` / cross_account_opposite), and left dropped for a later pass."""
+    log(f"[{name}] {side} retry fenced: {xwhy}")
+    act.update({"ok": False, "why": xwhy, "rail": "cross_account_opposite"})
+    doc["actions"].append(act)
+    seen = state.setdefault("xacct_logged", {})
+    day = now.date().isoformat()
+    if seen.get(f"{name}/{side}/retry") != day:
+        seen[f"{name}/{side}/retry"] = day
+        _record({**row, "status": "RAIL_BLOCKED", "rail": "cross_account_opposite",
+                 "why": xwhy, "missed_growth_risk_usd": round(leg_missed_usd(leg), 2)})
+
+
 def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: datetime,
                        open_orders: list[dict], orders_ok: bool, filled: dict[int, int],
                        xau_positions: list[dict], positions_ok: bool, stood_down: bool,
                        armed: bool, hist_rows: list[dict], history_ok: bool,
-                       instrument_id: int) -> None:
+                       instrument_id: int, mt5: Any = None,
+                       account_ok: tuple[bool, str] = (True, "")) -> None:
     """Re-send the legs `retry_decisions` says still belong to a live window. Mutates `state`,
     appends to `doc["actions"]` and to `open_orders` (so the rest of the pass sees the new leg).
 
@@ -925,7 +1733,10 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                                   ("the order book is unreadable", not orders_ok),
                                   ("the position book is unreadable", not positions_ok),
                                   ("the order history is unreadable", not history_ok),
-                                  ("the gold instrument id is unknown", not instrument_id))
+                                  ("the gold instrument id is unknown", not instrument_id),
+                                  # r7.2 (audit r7.1 SF-1): a retry is new E8 gold risk too.
+                                  (f"the E8 account does not join ({account_ok[1]})",
+                                   armed and not account_ok[0]))
              if bad]
     journal = _journal_read()
     if journal is None:
@@ -936,6 +1747,21 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                    for side in (w.get("failed") or {})]
         doc["retry_skipped"] = {"why": blind, "legs": waiting}
         log(f"dropped legs {waiting} not re-sent this pass: {'; '.join(blind)}")
+        if armed and not account_ok[0]:
+            # Billed once per held leg per day, under the same rail as a refused placement.
+            _billed = state.setdefault("rail_logged", {})
+            today = now.date().isoformat()
+            for n, w in (state.get("windows") or {}).items():
+                for side, leg in (w.get("failed") or {}).items():
+                    if _billed.get(f"e8_account_undeclared/{n}/{side}") == today:
+                        continue
+                    _billed[f"e8_account_undeclared/{n}/{side}"] = today
+                    _record({"at": now.isoformat(timespec="seconds"), "window": n,
+                             "side": side, "status": "RAIL_BLOCKED",
+                             "rail": "e8_account_undeclared",
+                             "why": f"retry held: the E8 account does not join ({account_ok[1]})",
+                             "missed_growth_risk_usd": (leg or {}).get("risk_usd"),
+                             "armed": True})
         return
     try:
         bid, ask = venue.quote(SYMBOL)
@@ -946,6 +1772,16 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
     if direction is None:
         return
     blocked = OPPOSING_LEG.get(direction)
+    if "gold_oco" not in doc:
+        # A retry outside a full pass names its own gold OCO context (fail closed: no keyed
+        # identity -> every re-send is refused by `fenced_send`).
+        from mt5desk import gold_oco as _oco
+        _ctx: dict[str, Any] = {"date": str(state.get("date") or now.date()), "key": None}
+        try:
+            _ctx["key"] = _oco.tradelocker_oco_key(venue)
+        except _oco.IdentityUnavailable as exc:
+            _ctx["why"] = f"gold OCO identity: {exc}"
+        doc["gold_oco"] = _ctx
     known = {int(leg["id"]) for bucket in ("windows", "carried")
              for w in (state.get(bucket) or {}).values()
              for leg in (w.get("orders") or {}).values() if leg.get("id") is not None}
@@ -974,6 +1810,16 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             act["why"] = dec["why"]
             log(f"[{name}] {side} dropped leg abandoned: {dec['why']}")
             doc["actions"].append(act)
+            if dec["why"] != "the other leg filled":
+                # EACH ABANDONED RETRY IS BILLED (audit r6 MUST-FIX 2): the leg's own risk is
+                # the growth forgone. The OCO cancelling a filled bracket's twin forgoes nothing.
+                _record({"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
+                         "status": "SKIPPED",
+                         "reason": "late_send" if dec.get("late") else "retry_abandoned",
+                         "rail": "gold_late_send" if dec.get("late") else "gold_retry_abandoned",
+                         "why": dec["why"], "lot": leg.get("lot"),
+                         "missed_growth_risk_usd": leg.get("risk_usd"), "armed": True,
+                         "retry_of": leg.get("first_at")})
             continue
         levels = {k: leg[k] for k in ("price", "sl", "tp", "lot")}
         done = [o for o in hist_rows if str(o.get("status") or "").lower() == "filled"]
@@ -1026,9 +1872,25 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             log(f"[{name}] {side} the failed send had landed: adopted order {oid}")
         else:
             try:
-                oid = venue.place_stop(SYMBOL, "buy" if side == "buy_stop" else "sell",
-                                       float(leg["lot"]), price=float(leg["price"]),
-                                       stop=float(leg["sl"]), take_profit=float(leg["tp"]))
+                # THE RETRY IS FENCED TOO (audit round 2, must-fix 1): the same cross-account
+                # check and placement lock as a first send. A fenced leg stays dropped, is not
+                # counted as an attempt, and is retried on a later pass while its window holds.
+                oid, xwhy = fenced_send(mt5, venue, doc, holder=f"e8_gold:{name}:retry",
+                                        side=side, send=lambda: venue.place_stop(
+                                            SYMBOL, "buy" if side == "buy_stop" else "sell",
+                                            float(leg["lot"]), price=float(leg["price"]),
+                                            stop=float(leg["sl"]), take_profit=float(leg["tp"])))
+                if xwhy and xwhy.startswith("gold OCO"):
+                    act.update({"ok": False, "why": xwhy, "rail": "gold_oco_direction_lock"})
+                    doc["actions"].append(act)
+                    _oco_blocked(doc, state, name=name, side=side, why=xwhy,
+                                 risk_usd=leg_missed_usd(leg),
+                                 now=now, today=str(state.get("date") or now.date()),
+                                 armed=armed, retry=True)
+                    continue
+                if xwhy:
+                    _xa_retry_blocked(doc, state, row, act, name, side, leg, xwhy, now)
+                    continue
                 row.update({"status": "SENT", "order_id": oid})
                 log(f"[{name}] RE-PLACED {side} {leg['lot']} {SYMBOL} @ {leg['price']:.2f} "
                     f"-> order {oid} (attempt {int(leg.get('attempts') or 0) + 1})")

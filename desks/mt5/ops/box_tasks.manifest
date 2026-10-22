@@ -75,6 +75,10 @@ TASK name="MT5-FusionDeadman"      trigger="UNDECLARED"           runs="scripts/
 # (no `--live`), so its failure costs a measurement, which is why the lane is ops. Arming is the
 # principal's decision.
 TASK name="MT5-FusionDeadmanDryRun" trigger="every 5 minutes"     runs="desks/mt5/proposals/fusion_deadman.py"  installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="ops"
+# THE SAME RAIL, ARMED (audit r5 must-fix 4, 2026-10-20). Runs with --live but ACTS only while the
+# principal's gitignored marker data/FUSION_DEADMAN_ARMED.json exists ({"armed_by": "zuck"}); the
+# gateway opens no new Fusion risk unless its stamp reads LIVE and is fresh, so this is money.
+TASK name="MT5-FusionDeadmanLive"  trigger="every 5 minutes"     runs="desks/mt5/proposals/fusion_deadman.py"  installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="money"
 TASK name="MT5-TerminalBoot"       trigger="at startup"           runs="terminal64.exe"                        installer="NONE" lane="money"
 
 # ---------------------------------------------------------------------------- the research lane

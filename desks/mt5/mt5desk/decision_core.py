@@ -29,6 +29,7 @@ import math
 import re
 import sys
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -616,8 +617,85 @@ def gold_lot(equity: float, dist_usd: float | None = None,
     return float(max(auto_lot(equity, dist_usd, GOLD_SYMBOL, info), gold_min_lot()))
 
 
+def book_name(name: object) -> str:
+    """The name a sleeve has TO THE BOOK: its own name with a trailing `_v<digits>` removed.
+
+    `gold_london_am_v3` is the same sleeve on the same window as `gold_london_am` (the rule
+    gateway._book_key has used since 2026-09-23 to join versioned rows to the allocator's book).
+    ONE RULE, BOTH PLACES (audit r5 must-fix 2): the cert-book zero matched the exact name, so
+    `gold_london_am_v2..v4` and `gold_afternoon_v2..v4` -- STANDBY rows the promoter can lift --
+    joined the allocator's fraction through the suffix and missed the principal's 0.0."""
+    return re.sub(r"_v\d+$", "", str(name or "").strip())
+
+
+#: THE PRINCIPAL'S ZEROS, IN CODE (audit r5 must-fix 1). The cert book carries these at 0.0, but
+#: a torn file, `enabled: false` or ONE out-of-range value voids the whole block
+#: (`kelly_sizing.load_cert_book`), and a void block used to unpin every one of them: E8 went back
+#: to RISK_FRAC 0.005 (or the KELLY_SURVIVAL value) on london_am and afternoon, and Fusion's revert
+#: path to 0.01. A name here sends NOTHING on its venue whatever any file says. Removing one is a
+#: principal act. Each is a missed-growth line (rail "principal_zero_pin"; journal D-20261020-001).
+#:
+#: zuck 2026-10-20 21:52Z: "trade only gold asia for fusion and mt5" -- both books.
+GOLD_ASIA_ONLY_ZERO: frozenset[str] = frozenset({"gold_london_am", "gold_afternoon"})
+#: The scalp lane's stand-down (zuck 2026-09-29; the XAU scalp sleeves retired 2026-09-30). The
+#: allocator's pf.book still funded xau_m5_anti_breakout_overlap at 0.042909 on 2026-10-20 23:15Z
+#: (coordinator, read-only on the box); only its RETIRED status kept it off Fusion.
+SCALP_LANE_ZERO: frozenset[str] = frozenset({
+    "xau_m5_anti_breakout_overlap", "xau_m15_anti_breakout", "xau_m5_anti_momentum_ny"})
+#: BOOKS_PATCH v5 (zuck, approved 2026-10-13): the three overnight_gap_decay rows send nothing.
+GAP_DECAY_ZERO: frozenset[str] = frozenset({
+    "EURZAR_overnight_gap_decay_asia", "USDZAR_overnight_gap_decay_asia",
+    "AUDCHF_overnight_gap_decay_asia"})
+PRINCIPAL_ZERO: dict[str, frozenset[str]] = {
+    "fusion": GOLD_ASIA_ONLY_ZERO | SCALP_LANE_ZERO | GAP_DECAY_ZERO,
+    "e8": GOLD_ASIA_ONLY_ZERO,
+}
+
+
+def principal_zero(name: object, venue: str = "fusion") -> bool:
+    """True when `name` (any `_v<n>` version, any case) is one of `PRINCIPAL_ZERO[venue]`.
+    Reads no file, so it cannot fail open."""
+    base = book_name(name).lower()
+    return bool(base) and base in {k.lower() for k in PRINCIPAL_ZERO.get(venue, frozenset())}
+
+
+def cert_book_zero(name: object, venue: str = "fusion") -> bool:
+    """True when `name` must send NOTHING on `venue`: a principal zero in code
+    (`principal_zero`, which fails closed), or the certified book (data/CERT_BOOK_LIVE.json,
+    `venue` block) naming it -- or its unversioned `book_name` -- at exactly 0.0.
+
+    The file half is False on a void or absent book, which is why every zero the principal has
+    ordered is ALSO in `PRINCIPAL_ZERO`. Read at call time, so the path a test or the box points
+    `kelly_sizing.CERT_BOOK_FILE` at is the one honoured.
+    """
+    if not name:
+        return False
+    if principal_zero(name, venue):
+        return True
+    try:
+        from mt5desk import kelly_sizing as _ks
+        cert = _ks.load_cert_book(_ks.CERT_BOOK_FILE, venue)
+    except Exception:
+        return False
+    if not cert:
+        return False
+    folded = {str(k).lower(): v for k, v in cert.items()}
+    for key in (str(name), book_name(name)):
+        v = cert.get(key, folded.get(key.lower()))
+        if v is not None:
+            return v == 0.0
+    return False
+
+
+def cert_zero_row(s: dict[str, Any], venue: str = "fusion") -> bool:
+    """`cert_book_zero` for a roster row: by its name, or by the allocator book key the gateway
+    joined it to (`book_key`, e.g. `EURZAR_overnight_gap_decay_asia`)."""
+    return cert_book_zero(s.get("name"), venue) or cert_book_zero(s.get("book_key"), venue)
+
+
 def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
-                  h_i: object, decay_faded: object = None) -> tuple[float, str]:
+                  h_i: object, decay_faded: object = None, *,
+                  name: str | None = None) -> tuple[float, str]:
     """The gold book's lot when the ALLOCATOR has a fraction for it: `max(h_i lot, gold_lot)`.
 
     THE SEMANTIC BREAK THIS CLOSES (Tier-1 P1, external audit 2026-09-09). The gold windows are
@@ -643,6 +721,13 @@ def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
     whether the allocator or the floor set the size -- a lot with no stated basis is the thing
     this desk keeps having to re-measure.
     """
+    if cert_book_zero(name):
+        # A CERT-BOOK ZERO IS THE PRINCIPAL'S, NOT THE ALLOCATOR'S (audit round 4 on c07dd71d).
+        # The revert path below lifts an ALLOCATOR zero to the policy lot on purpose; a window the
+        # principal pinned at 0.0 in CERT_BOOK_LIVE.json sends nothing on either path, so turning
+        # sovereignty off (ALLOCATOR_SOVEREIGN.json {"enabled": false}) can never re-open it.
+        return 0.0, (f"cert book pins {name} at 0.0 (zuck 2026-10-20 21:52Z: gold_asia only); "
+                     f"no order")
     floor_lot = gold_lot(equity, dist_usd, info)
     try:
         frac = float(h_i)  # type: ignore[arg-type]
@@ -678,6 +763,536 @@ def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
                        f"{book:.2f} (h_i={frac:.4f})")
 
 
+#: THE PRINCIPAL'S FUSION BOOK (zuck, "BOOKS_PATCH v5", approved 2026-10-13; WIDENED 2026-10-20
+#: 16:58Z to all three gold windows; SIZING CHANGED 2026-10-20 after the audit HOLD on 50ef074f9:
+#: "each Fusion book sleeve targets 0.0075 risk with a 0.01-lot floor, lot = max(0.01, lot at
+#: 0.0075 risk), so it scales up as equity grows"). At ~EUR 485 every one of these sizes BELOW the
+#: venue minimum at 0.75%, so under ALLOCATOR SOVEREIGNTY (`implementable_lot`) none would ever
+#: send an order; the floor is the principal's order, and above it the book grows with equity.
+#: The disclosed one-year ruin (54.5% measured / 42.2% pooled / 3.5% certificate, equity < EUR
+#: 300) was simulated for FOUR of these at 0.01; the six-sleeve figure is UNMEASURED.
+#:
+#:     gold_asia                               gateway window gold_asia, clock XAUUSD.asia
+#:     gold_london_am                          gateway window gold_london_am
+#:     gold_afternoon                          gateway window gold_afternoon
+#:     usdnok_carry_asia_p_ff35bb7c8427d66f    external.USDNOK@M5.carry.p=ff35bb7c8427d66f
+#:     eurils_formula_asia_p_673857a649d3c271  external.EURILS.formula.p=673857a649d3c271
+#:     eurzar_carry_asia_p_8339edce23032d21    external.EURZAR@M15.carry.p=8339edce23032d21
+#:
+#: SCOPE IS THE CODE CONSTANT AND NOTHING ELSE. `MINLOT_OVERRIDE.json` can only NARROW it (a name
+#: not here is ignored). It is OFF -- and every sleeve, these six included, is sized exactly as
+#: sovereignty sizes it -- when the file is absent or unreadable, `enabled` is not literal true,
+#: `lot` (the floor) is not 0.01, `target_risk` (if given) is not 0.0075, or `account` is missing
+#: or is not both the terminal's login and `FUSION_LIVE_LOGIN`. It also steps aside (returns None
+#: from `minlot_override_size`) when `ALLOCATOR_SOVEREIGN.json` turns sovereignty off, so the
+#: revert path's own floors size these sleeves; and an allocator book that pins a sleeve at 0 sends
+#: nothing. The twins (`usdnok_carry_asia_p_d5391837ec28998b`,
+#: `eurzar_carry_asia_p_55e2dabcb8c43d1f`) are NOT here.
+MINLOT_OVERRIDE_SLEEVES: frozenset[str] = frozenset({
+    "gold_asia",
+    "gold_london_am",
+    "gold_afternoon",
+    "usdnok_carry_asia_p_ff35bb7c8427d66f",
+    "eurils_formula_asia_p_673857a649d3c271",
+    "eurzar_carry_asia_p_8339edce23032d21",
+})
+#: Each pinned row's certificate cell. A sleeves.json row of that name carrying any other cell is
+#: not the sleeve the principal funded and gets no override. The gold rows are the gateway's own
+#: windows (decision_core.GOLD_WINDOWS), never a sleeves.json row.
+MINLOT_OVERRIDE_PINS: dict[str, str | None] = {
+    "gold_asia": None,
+    "gold_london_am": None,
+    "gold_afternoon": None,
+    "usdnok_carry_asia_p_ff35bb7c8427d66f": "external.USDNOK@M5.carry.p=ff35bb7c8427d66f",
+    "eurils_formula_asia_p_673857a649d3c271": "external.EURILS.formula.p=673857a649d3c271",
+    "eurzar_carry_asia_p_8339edce23032d21": "external.EURZAR@M15.carry.p=8339edce23032d21",
+}
+#: The FLOOR lot: no book sleeve sends less (a venue minimum above it sends nothing). The file's
+#: `lot` must equal it; the file cannot move it. DERIVATION: 0.01 is the Fusion venue minimum
+#: (`volume_min` 0.01, step 0.01, on XAUUSD, USDNOK, EURILS and EURZAR in data/universe/
+#: universe.json), the smallest order the
+#: venue accepts -- a hard external limit, not a chosen size. Measured risk per 0.01 lot on EUR
+#: 484.83 (coordinator 2026-10-20): USDNOK EUR 2.02 (0.42%), EURILS EUR 6.65 (1.37%), EURZAR
+#: EUR 2.66 (0.55%), gold 3.2-19.7% at the measured 18-111 USD stops.
+MINLOT_OVERRIDE_LOT = 0.01
+#: The risk fraction each book sleeve TARGETS at its own stop. Above the floor the lot is this
+#: fraction of equity, snapped down to the venue step, so the book scales up with equity.
+#: DERIVATION: 0.0075 is the per-trade size of zuck's 2026-10-20 16:55Z E8 max-pass solve
+#: (kelly_survival, re-confirmed 17:16Z), applied per Fusion sleeve by the coordinator after the
+#: audit HOLD on 50ef074f9 ("0.0075 risk with a 0.01-lot floor").
+MINLOT_OVERRIDE_TARGET_FRAC = 0.0075
+#: The one account the book may trade: Fusion Markets LIVE (a real-money account on this server).
+#: THE LOGIN IS NEVER COMMITTED (tests/ops/test_live_infrastructure_is_not_published.py: a live
+#: brokerage login in a tracked file is a defect). It lives in the box-only, gitignored
+#: `FUSION_ACCOUNT_FILE`, written once on the box by the operator; the committed switch carries
+#: the server and the account kind, never the number.
+FUSION_LIVE_SERVER = "FusionMarkets-Live"
+FUSION_ACCOUNT_FILE = _DESK / "data" / "FUSION_LIVE_ACCOUNT.json"
+#: The box's switch (a state path; written by a person on the box, read by the gateway alone).
+MINLOT_OVERRIDE_FILE = _DESK / "data" / "MINLOT_OVERRIDE.json"
+
+
+def fusion_live_login(path: Path | None = None) -> tuple[int | None, str]:
+    """(the Fusion live login this box declares, why). None when absent, unreadable or not an int
+    login on `FUSION_LIVE_SERVER` -- and then the book is OFF (fail closed)."""
+    p = path or FUSION_ACCOUNT_FILE
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError) as exc:
+        return None, (f"{p.name} absent or unreadable ({type(exc).__name__}); the box has not "
+                      f"declared its Fusion live login")
+    login = doc.get("login") if isinstance(doc, dict) else None
+    if isinstance(login, bool) or not isinstance(login, int) or login <= 0:
+        return None, f"{p.name} carries no integer \"login\""
+    if doc.get("server") != FUSION_LIVE_SERVER:
+        return None, (f"{p.name} names server {doc.get('server')!r}, not {FUSION_LIVE_SERVER}")
+    return login, f"declared in {p.name}"
+
+
+def minlot_override_active(account: object = None, path: Path | None = None, *,
+                           server: object = None, kind: object = None,
+                           account_path: Path | None = None) -> tuple[frozenset[str], str]:
+    """(the names the override applies to this pass, why). FAILS CLOSED to the empty set.
+
+    `account`, `server` and `kind` are the terminal's (`provenance.current_account`). The book is
+    ON only on the Fusion live account: the terminal's login equals the login the box declares in
+    `FUSION_ACCOUNT_FILE` (gitignored), its server is `FUSION_LIVE_SERVER` and its kind is
+    "live". The committed switch must name `"server": FUSION_LIVE_SERVER` and must NOT carry an
+    `account` (a login in a tracked file is refused, not trusted). The file may only narrow
+    `MINLOT_OVERRIDE_SLEEVES`.
+    """
+    p = path or MINLOT_OVERRIDE_FILE
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError) as exc:
+        return frozenset(), (f"MINLOT_OVERRIDE off: {p.name} absent or unreadable "
+                             f"({type(exc).__name__})")
+    if not isinstance(doc, dict) or doc.get("enabled") is not True:
+        return frozenset(), (f"MINLOT_OVERRIDE off: {p.name} is not enabled "
+                             f"(needs \"enabled\": true)")
+    lot = doc.get("lot", MINLOT_OVERRIDE_LOT)
+    if isinstance(lot, bool) or not isinstance(lot, (int, float)) \
+            or abs(float(lot) - MINLOT_OVERRIDE_LOT) > 1e-12:
+        return frozenset(), (f"MINLOT_OVERRIDE off: lot {lot!r} is not the {MINLOT_OVERRIDE_LOT} "
+                             f"floor; the file cannot change the principal's floor")
+    if "target_risk" in doc:
+        tr = doc.get("target_risk")
+        if isinstance(tr, bool) or not isinstance(tr, (int, float)) \
+                or abs(float(tr) - MINLOT_OVERRIDE_TARGET_FRAC) > 1e-12:
+            return frozenset(), (f"MINLOT_OVERRIDE off: target_risk {tr!r} is not "
+                                 f"{MINLOT_OVERRIDE_TARGET_FRAC}; the file cannot change it")
+    if "account" in doc:
+        return frozenset(), (f"MINLOT_OVERRIDE off: {p.name} carries an \"account\"; a live "
+                             f"login is never committed -- declare it in "
+                             f"{FUSION_ACCOUNT_FILE.name} on the box instead")
+    if doc.get("server") != FUSION_LIVE_SERVER:
+        return frozenset(), (f"MINLOT_OVERRIDE off: {p.name} must be bound to server "
+                             f"{FUSION_LIVE_SERVER} (file {doc.get('server')!r})")
+    want, want_why = fusion_live_login(account_path)
+    if want is None:
+        return frozenset(), f"MINLOT_OVERRIDE_ACCOUNT_UNBOUND: {want_why}"
+    if isinstance(account, bool) or not isinstance(account, int) or account != want \
+            or server != FUSION_LIVE_SERVER or kind != "live":
+        return frozenset(), ("MINLOT_OVERRIDE_ACCOUNT_MISMATCH: this terminal is not on the "
+                             f"declared Fusion live account (server {server!r}, kind {kind!r}, "
+                             f"login {'the declared one' if account == want else 'another'})")
+    names = doc.get("sleeves")
+    if not isinstance(names, list):
+        return frozenset(), "MINLOT_OVERRIDE off: \"sleeves\" is not a list"
+    keep = frozenset(n for n in names if isinstance(n, str) and n in MINLOT_OVERRIDE_SLEEVES)
+    ignored = sorted(str(n) for n in names
+                     if not (isinstance(n, str) and n in MINLOT_OVERRIDE_SLEEVES))
+    why = (f"MINLOT_OVERRIDE on for {sorted(keep)}: {MINLOT_OVERRIDE_TARGET_FRAC:.2%} risk, "
+           f"floor {MINLOT_OVERRIDE_LOT} lot, on the declared {FUSION_LIVE_SERVER} account")
+    if ignored:
+        why += f"; ignored (not in the code's set): {ignored}"
+    return keep, why
+
+
+def stamp_minlot_override(sleeves: list[dict[str, Any]], active: frozenset[str],
+                          equity: float) -> list[str]:
+    """Mark, in place, the roster entries the override sizes this pass; clear every other mark.
+
+    The mark is set HERE and nowhere else: a `minlot_override` field arriving on a sleeves.json
+    row is popped, so no writer can opt a row in. Below `PROMOTED_MIN_EQUITY` (the ruin line the
+    principal's waiver was priced at) nothing is marked and sizing reverts to sovereignty.
+    """
+    notes: list[str] = []
+    ok_equity = isinstance(equity, (int, float)) and math.isfinite(float(equity)) \
+        and float(equity) >= PROMOTED_MIN_EQUITY
+    for s in sleeves:
+        s.pop("minlot_override", None)
+        name = str(s.get("name") or "")
+        if name in active and name in MINLOT_OVERRIDE_SLEEVES:
+            if ok_equity:
+                s["minlot_override"] = True
+            else:
+                notes.append(f"MINLOT_OVERRIDE {name}: equity {equity} below "
+                             f"{PROMOTED_MIN_EQUITY:.0f}; sized by sovereignty this pass")
+    return notes
+
+
+def minlot_override_size(s: dict[str, Any], symbol: str, info: object | None,
+                         equity: object, dist: object) -> tuple[float, float, str] | None:
+    """The book's lot for roster entry `s` at stop distance `dist`: (lot, target, basis), or None.
+
+    `target` is the lot the 0.75% target alone asks for (snapped down), so a caller can tell a
+    floor-set order (lot > target) from a target-set one and bill the lift.
+
+    None: the sleeve is unmarked, not in the code set, or sovereignty is OFF (the revert path's
+    own floors size it) -- size exactly as before. Otherwise:
+
+        lot = max(MINLOT_OVERRIDE_LOT, floor_step(TARGET_FRAC x equity / (dist x EUR per unit)))
+
+    then capped by the per-order MAX_RISK_FRAC envelope (and the venue maximum). (0.0, 0.0, why)
+    -- no order -- when the allocator book pins the sleeve at 0, the stop or equity cannot be
+    priced, the venue minimum is above the floor, the floor is not on the venue's step grid, or
+    the floor itself exceeds the MAX_RISK_FRAC envelope. Never lifted above the floor here.
+    """
+    if s.get("minlot_override") is not True or str(s.get("name") or "") \
+            not in MINLOT_OVERRIDE_SLEEVES:
+        return None
+    if not allocator_sovereign():
+        return None
+    if cert_zero_row(s):
+        # The principal's 0.0 in CERT_BOOK_LIVE.json binds even a marked row whose allocator
+        # fraction did not come through the overlay (zuck 2026-10-20 21:52Z: gold_asia only).
+        return 0.0, 0.0, (f"fusion book: the cert book pins {s.get('name')} at 0.0; no order")
+    if s.get("sized_by") == "allocator_book":
+        h = _num_or_nan(s.get("risk_frac"))
+        if not h > 0.0:
+            return 0.0, 0.0, ("fusion book: the allocator book pins this sleeve at 0 "
+                              f"(h_i={s.get('risk_frac')!r}); no order")
+    try:
+        eq = float(equity)  # type: ignore[arg-type]
+        d = float(dist)  # type: ignore[arg-type]
+        unit = float(_eur_per_price_unit(symbol, info))
+    except Exception as exc:          # RiskUnitUnmeasured included: unpriceable sends nothing
+        return 0.0, 0.0, (f"fusion book: risk unpriceable ({type(exc).__name__}: {exc}); "
+                          f"no order")
+    if not all(math.isfinite(v) and v > 0.0 for v in (eq, d, unit)):
+        return 0.0, 0.0, "fusion book: equity, stop or price unit not positive; no order"
+    step = float(getattr(info, "volume_step", 0.01) or 0.01) if info is not None else 0.01
+    vmax = float(getattr(info, "volume_max", 5.0) or 5.0) if info is not None else 5.0
+    vmin = venue_min_lot(symbol, info)
+    # THE TERMINAL'S OWN volume_min IS HONOURED EVEN WHEN ITS tick_value IS NOT (audit round 2):
+    # `venue_min_lot` reads the risk unit, which raises on an unreadable tick value and falls
+    # back to the snapshot/desk floor -- 0.01 against a live minimum of 0.1 or 1.0.
+    _live_min = _num_or_nan(getattr(info, "volume_min", None)) if info is not None else math.nan
+    if math.isfinite(_live_min) and _live_min > vmin:
+        vmin = _live_min
+    n_floor = MINLOT_OVERRIDE_LOT / step
+    if not (step > 0.0 and abs(n_floor - round(n_floor)) < 1e-6):
+        return 0.0, 0.0, (f"fusion book: the venue step {step:g} cannot express the 0.01 "
+                          f"floor; no order")
+    if vmin > MINLOT_OVERRIDE_LOT + 1e-9:
+        return 0.0, 0.0, (f"fusion book: venue minimum {vmin:g} is above the "
+                          f"{MINLOT_OVERRIDE_LOT} floor; never lifted, no order")
+    per_lot = d * unit                                 # account currency lost per lot at the stop
+    target = math.floor(MINLOT_OVERRIDE_TARGET_FRAC * eq / per_lot / step + 1e-9) * step
+    lot = max(MINLOT_OVERRIDE_LOT, target)
+    env = min(float(MAX_RISK_FRAC), FUSION_MAX_TRADE_RISK_FRAC)
+    cap = math.floor(min(env * eq / per_lot, vmax, 5.0) / step + 1e-9) * step
+    if lot > cap + 1e-9:
+        if cap + 1e-9 < MINLOT_OVERRIDE_LOT:
+            return 0.0, 0.0, (f"{FUSION_TRADE_RISK_REFUSAL}: the {MINLOT_OVERRIDE_LOT} floor "
+                              f"risks {MINLOT_OVERRIDE_LOT * per_lot / eq:.2%} at its {d:.5g} "
+                              f"stop, above the {env:.0%} per-trade limit; no order")
+        lot = cap
+    lot = round(lot, 8)
+    q = lot * per_lot / eq
+    src = ("the 0.01 floor" if target < MINLOT_OVERRIDE_LOT - 1e-9
+           else f"{MINLOT_OVERRIDE_TARGET_FRAC:.2%} risk")
+    basis = (f"fusion book: {lot:.2f} lot from {src} (target {target:.2f} at "
+             f"{MINLOT_OVERRIDE_TARGET_FRAC:.2%}; this order runs {q:.2%} at its {d:.5g} stop)")
+    return lot, round(target, 8), basis
+
+
+def minlot_floor_risk_frac(symbol: str, info: object | None, equity: object,
+                           dist: object) -> float | None:
+    """The fraction of equity the 0.01-lot floor risks at stop `dist`:
+    `MINLOT_OVERRIDE_LOT x dist x EUR per price unit / equity`, or None when any term cannot be
+    priced. Carried on every `fusion_trade_risk_cap` line so the bill states the risk it refused,
+    not only that it refused (audit round 4 on c07dd71d)."""
+    try:
+        eq = float(equity)  # type: ignore[arg-type]
+        d = float(dist)  # type: ignore[arg-type]
+        unit = float(_eur_per_price_unit(symbol, info))
+    except Exception:
+        return None
+    if not all(math.isfinite(v) and v > 0.0 for v in (eq, d, unit)):
+        return None
+    return round(MINLOT_OVERRIDE_LOT * d * unit / eq, 6)
+
+
+def _num_or_nan(v: object) -> float:
+    if isinstance(v, bool):
+        return float("nan")
+    try:
+        return float(v)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return float("nan")
+
+
+def minlot_override_rows(path: Path, active: frozenset[str],
+                         admitted: set[str] | None = None,
+                         pol: Any = None) -> tuple[list[dict[str, Any]], list[str]]:
+    """The pinned FX rows the gateway's LIVE-only roster does not carry, read BY EXACT NAME.
+
+    The three FX rows sit RETIRED in sleeves.json, retired by `live_policy` itself on 2026-09-25
+    when their symbols were outside the live universe -- an admission verdict, not an evidence
+    one. No promoter path re-promotes an existing name, so the override reads them here:
+      * exactly one row of that exact name (never a sibling or a prefix), whose certificate cell
+        equals the pin;
+      * status STANDBY, or RETIRED by `live_policy` (any other retirement, KILL or QUARANTINE is
+        a verdict on the edge and is never traded);
+      * no `standby_reason` (an ordered hold, e.g. the principal's stop, always binds);
+      * exec `family_market`, and `live_policy.refuse` admits it under TODAY's policy.
+    LIVE rows are skipped: `load_sleeves_verbose` already admitted (or refused) them. Returns the
+    rows as LIVE copies for `roster`, plus one note per refusal for the gateway's log.
+    """
+    rows: list[dict[str, Any]] = []
+    notes: list[str] = []
+    wanted = sorted(n for n in active
+                    if n in MINLOT_OVERRIDE_SLEEVES and MINLOT_OVERRIDE_PINS.get(n))
+    if not wanted:
+        return rows, notes
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        all_rows = [r for r in data.get("sleeves", []) if isinstance(r, dict)]
+    except Exception as exc:
+        return [], [f"OVERRIDE_ROW_MISSING: sleeves file unreadable ({type(exc).__name__})"]
+    try:
+        from mt5desk.live_policy import policy, refuse
+    except ImportError:                                    # pragma: no cover - box path only
+        return [], ["OVERRIDE_POLICY_REFUSED: live policy unimportable"]
+    p = pol if pol is not None else policy()
+    for name in wanted:
+        if admitted and name in admitted:
+            continue
+        hits = [r for r in all_rows if r.get("name") == name]
+        if len(hits) != 1:
+            notes.append(f"OVERRIDE_ROW_MISSING {name}: {len(hits)} rows of that exact name")
+            continue
+        row = hits[0]
+        status = str(row.get("status") or "").upper()
+        if status == "LIVE":
+            continue
+        cert = row.get("certificate")
+        cell = cert.get("cell") if isinstance(cert, dict) else cert
+        if cell != MINLOT_OVERRIDE_PINS[name]:
+            notes.append(f"OVERRIDE_PIN_MISMATCH {name}: certificate {cell!r}")
+            continue
+        if not (status == "STANDBY" or (status == "RETIRED"
+                                        and row.get("retired_by") == "live_policy")):
+            notes.append(f"OVERRIDE_STATUS_REFUSED {name}: {status} "
+                         f"(retired_by {row.get('retired_by')!r}) is a verdict, not an admission")
+            continue
+        if str(row.get("standby_reason") or "").strip():
+            notes.append(f"OVERRIDE_HOLD {name}: standby_reason {row.get('standby_reason')!r}")
+            continue
+        if row.get("exec") != "family_market":
+            notes.append(f"OVERRIDE_EXEC_REFUSED {name}: exec {row.get('exec')!r}")
+            continue
+        why = refuse(row, p)
+        if why:
+            notes.append(f"OVERRIDE_POLICY_REFUSED {name}: {why}")
+            continue
+        live = {k: v for k, v in row.items()
+                if k not in ("retired_at", "retire_reason", "retired_by", "demoted_at",
+                             "demote_reason", "minlot_override")}
+        live.update(status="LIVE", risk_frac=0.0, risk_frac_source="minlot_override")
+        rows.append(live)
+    return rows, notes
+
+
+def gold_at_risk_block(positions: object, orders: object, *, own_tag: str = "",
+                       symbol: str = GOLD_SYMBOL, placed_this_pass: Iterable[str] = (),
+                       lane_tickets: Iterable[int] | None = ()) -> str | None:
+    """Why a gold window may NOT be placed now (one gold trade at risk at a time), or None.
+
+    Max-growth ruling for the Fusion book (2026-10-20): three gold windows at the 0.01 floor put
+    about EUR 84 a day (~17% of a EUR 485 account) at risk at once, and ruin at a zero edge was
+    67-71%. As strict as E8's `one_at_risk_blocker` + `committed_risk` (audit HOLD on 50ef074f9).
+    A window is skipped while
+      * another gold window was placed EARLIER IN THIS PASS (`placed_this_pass`), or
+      * any XAUUSD position on the account is still AT RISK -- its stop is absent, or below the
+        entry on a buy / above it on a sell (a break-even-ratcheted position does not block), or
+      * any XAUUSD pending order other than this window's own (`own_tag`) is resting, or
+      * an order this lane journalled today for ANOTHER gold window (`lane_tickets`, from the
+        intents journal) is still resting at the venue, whatever its comment now reads.
+    FAILS CLOSED: `positions`, `orders` or `lane_tickets` of None (the terminal or the journal
+    could not answer) blocks, and so does any position or order whose symbol, side or prices
+    cannot be read. Pure over the readings.
+    """
+    placed = sorted(str(n) for n in placed_this_pass)
+    if placed:
+        return f"{', '.join(placed)} was placed earlier in this pass"
+    if positions is None or orders is None:
+        return "positions or orders unreadable; one-gold-at-risk cannot be proven"
+    if lane_tickets is None:
+        return "the intents journal is unreadable; this lane's resting gold legs cannot be counted"
+    try:
+        pos_list = list(positions)  # type: ignore[call-overload]
+        ord_list = list(orders)  # type: ignore[call-overload]
+        tickets = {int(t) for t in lane_tickets}
+    except (TypeError, ValueError):
+        return "positions, orders or journal unreadable; one-gold-at-risk cannot be proven"
+    for p in pos_list:
+        sym = getattr(p, "symbol", None)
+        ticket = getattr(p, "ticket", "?")
+        if not isinstance(sym, str) or not sym:
+            return f"position {ticket} has no readable symbol; treated as gold at risk"
+        if sym != symbol:
+            continue
+        try:
+            kind = int(p.type)
+            entry = float(p.price_open)
+            sl = float(getattr(p, "sl", 0.0) or 0.0)
+        except (AttributeError, TypeError, ValueError):
+            return f"{symbol} position {ticket} unreadable; treated as at risk"
+        if kind == 0:
+            protected = sl > 0.0 and sl >= entry
+        elif kind == 1:
+            protected = sl > 0.0 and sl <= entry
+        else:
+            return f"{symbol} position {ticket} has an unknown side {kind}; treated as at risk"
+        if not protected:
+            return (f"{symbol} position {ticket} ({'buy' if kind == 0 else 'sell'} @ {entry:g}, "
+                    f"sl {sl:g}) is still at risk (stop not at break-even or better)")
+    for o in ord_list:
+        sym = getattr(o, "symbol", None)
+        oticket = getattr(o, "ticket", "?")
+        if not isinstance(sym, str) or not sym:
+            return f"pending order {oticket} has no readable symbol; treated as a gold leg"
+        if sym != symbol:
+            continue
+        if oticket in tickets:
+            return (f"{symbol} pending order {oticket}, journalled today for another gold window, "
+                    f"is still resting")
+        comment = str(getattr(o, "comment", "") or "")
+        if own_tag and comment == own_tag:
+            continue
+        return (f"{symbol} pending order {oticket} ({comment or 'no comment'}) "
+                f"from an earlier window is still open")
+    return None
+
+
+#: FUSION DAILY-LOSS RAIL (audit HOLD on 50ef074f9, 2026-10-20). No rail on the Fusion account
+#: stood the book down on a bad day (`venue_heat_cap` reads none: the fusion-live profile declares
+#: no daily loss limit). When equity falls to (1 - this) x the day's starting equity, the gateway
+#: takes NO NEW RISK for the rest of the server day and cancels its resting gold brackets; open
+#: positions keep their stops and their management. COORDINATOR'S RE-DECISION (audit round 2,
+#: 2026-10-20): 5%. The round-2 premise ("one 0.01 gold stop ~3.4%") was wrong: measured gold
+#: stops run 18-111 USD (3.2-19.7% of ~EUR 484 at 0.01), and one-gold-at-risk limits CONCURRENT
+#: gold, not gold per day, so windows can stop out one after another. The latch fires on the
+#: first loss that reaches -5%; what can still land after it is the risk already open, and no
+#: single entry may risk more than `FUSION_MAX_TRADE_RISK_FRAC`. Every stand-down is written to
+#: the rails ledger (data/fusion_book_rails.jsonl, rail "fusion_daily_loss").
+FUSION_DAILY_LOSS_FRAC = 0.05
+#: THE PER-TRADE REFUSAL (coordinator, audit round 2): no Fusion book entry whose stop risk
+#: exceeds this fraction of equity -- the 0.01 floor at a wide gold stop is REFUSED, never sent,
+#: and every refusal is a missed-growth line (rail "fusion_trade_risk_cap"). DERIVATION: aligned
+#: with sizing.MAX_RISK_FRAC = 0.10, the desk's per-order hard limit (law: raising it is a
+#: principal act), so its cost against r3 is 0 (audit round 4). Measured against no cap at
+#: EUR 484.83: it refuses asia 11/42, london_am 2/26 and afternoon 6/15 gold legs.
+FUSION_MAX_TRADE_RISK_FRAC = 0.10
+#: The basis prefix of that refusal, so the gateway can bill it without re-deriving it.
+FUSION_TRADE_RISK_REFUSAL = "fusion book: per-trade risk cap"
+
+
+#: THE ARMED DEADMAN IS A PRECONDITION OF NEW FUSION RISK (audit r5 must-fix 4). The ruin rail
+#: (proposals/fusion_deadman.py) writes this stamp every pass; the gateway opens nothing new unless
+#: it reads mode "LIVE" (the principal armed it: data/FUSION_DEADMAN_ARMED.json) and is fresh.
+FUSION_DEADMAN_STAMP = _DESK / "data" / "fusion_deadman_state.json"
+#: Freshness of that stamp. DERIVATION: the rail's task cadence is 5 minutes (box_tasks.manifest
+#: MT5-FusionDeadmanLive "every 5 minutes"), so 900 s is 3 consecutive missed passes -- the rail
+#: has STOPPED, not hiccuped (the same rule as CHART_STALE_H in check_sizing_derivation).
+FUSION_DEADMAN_MAX_AGE_S = 900.0
+
+
+def fusion_deadman_armed(path: Path | None = None, *,
+                         now: datetime | None = None) -> tuple[bool, str]:
+    """(may the gateway open NEW Fusion risk, why). FAILS CLOSED: the stamp must exist, parse,
+    read `mode == "LIVE"` and carry a `checked_at` within `FUSION_DEADMAN_MAX_AGE_S`. Open
+    positions are managed either way; only new entries wait."""
+    p = path or FUSION_DEADMAN_STAMP
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return False, (f"fusion deadman: stamp {p.name} absent or unreadable "
+                       f"({type(exc).__name__}); no new Fusion risk until the rail runs armed")
+    refused = (doc.get("armed") or {}).get("refused") if isinstance(doc, dict) and \
+        isinstance(doc.get("armed"), dict) else None
+    if refused:
+        return False, f"fusion deadman: {refused}; no new Fusion risk"
+    if not isinstance(doc, dict) or doc.get("mode") != "LIVE":
+        mode = doc.get("mode") if isinstance(doc, dict) else None
+        return False, (f"fusion deadman: mode {mode!r}, not LIVE -- the rail is not armed "
+                       f"(principal marker data/FUSION_DEADMAN_ARMED.json); no new Fusion risk")
+    # A CURRENT-DAY DAILY_LOSS HALT (r6): the rail's latch for the broker day it stamped. A LIVE
+    # stamp that carries DAILY_LOSS with no day (or no broker_day) cannot be dated, so it is
+    # treated as today's (audit r6 should-fix 2, r7 must-fix 5).
+    if "DAILY_LOSS" in (doc.get("halt_codes") or []):
+        if not doc.get("daily_loss_day") or not doc.get("broker_day"):
+            return False, ("fusion deadman: LIVE stamp carries DAILY_LOSS with no day field; "
+                           "cannot be dated, so no new Fusion risk")
+        if doc.get("daily_loss_day") == doc.get("broker_day"):
+            return False, (f"fusion deadman: DAILY_LOSS halt set for broker day "
+                           f"{doc.get('broker_day')}; no new Fusion risk until it clears")
+    # THE LEDGER WAS MEASURED (r7 must-fix 3): a stamp whose pass could not read the declared
+    # account's live ledger judged no realised loss at all.
+    ledger = doc.get("ledger")
+    if not (isinstance(ledger, dict) and ledger.get("ok") is True):
+        why = ledger.get("why") if isinstance(ledger, dict) else "the stamp carries no ledger check"
+        return False, f"fusion deadman: live ledger UNMEASURED ({why}); no new Fusion risk"
+    try:
+        at = datetime.fromisoformat(str(doc.get("checked_at")))
+        if at.tzinfo is None:
+            raise ValueError("naive")
+    except ValueError:
+        return False, "fusion deadman: checked_at unreadable; no new Fusion risk"
+    age = ((now or datetime.now(tz=UTC)) - at).total_seconds()
+    if not (-60.0 <= age <= FUSION_DEADMAN_MAX_AGE_S):
+        return False, (f"fusion deadman: LIVE stamp is {age:.0f}s old (limit "
+                       f"{FUSION_DEADMAN_MAX_AGE_S:.0f}s); the rail has stopped; "
+                       f"no new Fusion risk")
+    return True, f"fusion deadman LIVE, {age:.0f}s old"
+
+
+def fusion_daily_loss(st: dict[str, Any], equity: object, day_key: str) -> tuple[bool, str]:
+    """(stand down for the rest of the day, why). Updates `st` in place.
+
+    The day's starting equity is the first readable equity seen on `day_key` (anchored once and
+    kept); a latch, once set for `day_key`, holds until the day changes. An unreadable equity
+    stands the pass down (fail closed) without anchoring on it.
+    """
+    try:
+        eq = float(equity)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        eq = float("nan")
+    if not (math.isfinite(eq) and eq > 0.0):
+        return True, "fusion daily-loss rail: equity unreadable; no new risk this pass"
+    anchor = st.get("day_start_equity")
+    if not (isinstance(anchor, dict) and anchor.get("date") == day_key
+            and isinstance(anchor.get("equity"), (int, float))
+            and not isinstance(anchor.get("equity"), bool) and float(anchor["equity"]) > 0.0):
+        anchor = {"date": day_key, "equity": round(eq, 2)}
+        st["day_start_equity"] = anchor
+    start = float(anchor["equity"])
+    floor = start * (1.0 - FUSION_DAILY_LOSS_FRAC)
+    if st.get("daily_loss_stood_down") == day_key:
+        return True, (f"fusion daily-loss rail: stood down for {day_key} (start {start:.2f}, "
+                      f"floor {floor:.2f}, equity {eq:.2f})")
+    if eq <= floor:
+        st["daily_loss_stood_down"] = day_key
+        return True, (f"fusion daily-loss rail: equity {eq:.2f} reached {floor:.2f} "
+                      f"(-{FUSION_DAILY_LOSS_FRAC:.0%} of the day's start {start:.2f}); no new "
+                      f"risk for the rest of {day_key}")
+    return False, (f"fusion daily-loss rail: equity {eq:.2f} above the {floor:.2f} floor "
+                   f"(start {start:.2f})")
+
+
 def ramped_fraction(risk_frac: object, live_n: int, decay_faded: object = None) -> float:
     """The effective risk fraction of a NON-BOOK promoted sleeve: base clamp x authority x fade.
 
@@ -695,8 +1310,13 @@ def ramped_fraction(risk_frac: object, live_n: int, decay_faded: object = None) 
 def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
                  symbol: str = GOLD_SYMBOL, info: object | None = None,
                  risk_frac: float | None = None,
-                 decay_faded: object = None, from_book: bool = False) -> float:
+                 decay_faded: object = None, from_book: bool = False, *,
+                 cert_zero: bool = False) -> float:
     """Dynamic lot for promoted sleeves: risk-fraction sizing x authority ramp.
+
+    `cert_zero` (the caller's `cert_zero_row(s)`): the principal pinned this sleeve at 0 -- no
+    order, on the sovereign AND the revert path, whatever the allocator's book says. Without it
+    the revert path lifts an allocator zero to the venue minimum (the 2026-09-12 order).
 
     RISK BASE (principal order 2026-08-25): promoted sleeves target
     `clamp_risk_frac(risk_frac)` of equity per trade -- 3% base, dynamic-up to 10% only when
@@ -717,6 +1337,8 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
     field to "auto_ramp", so the literal 0.01 the promoter writes never reaches the venue and
     this path is always taken.
     """
+    if cert_zero:
+        return 0.0
     # L1.59 FADE, OUTSIDE the clamp (gap-fixer 2026-08-29). `clamp_risk_frac` floors at 3%, so
     # the halved fraction `decay_monitor` wrote into data/sleeves.json was read straight back up
     # and a FADED sleeve sized identically to a healthy one -- measured, 3.0 lots vs 3.0 lots.
@@ -1965,6 +2587,60 @@ def window_session_ended(window: str | None, hour: float) -> bool:
     """
     end = window_end_hour(window)
     return end is not None and float(hour) >= end
+
+
+#: THE GOLD SEND GRACE, in minutes after a window's signal hour (Judge 2026-10-21, r6 must-fix).
+#: Fusion gold_asia was sent at 08:56, 16:50 and 15:28 server against its 07:00 placement, and
+#: +27 / +57 min late inside the hour. DERIVED, not chosen: the box's order_intents.jsonl (as
+#: published in a34ecef3, 296 rows) holds 44 first sends of a gold window on a day. Measured
+#: minutes after the signal hour, on the server clock (UTC + prop/e8_guard.server_offset_hours):
+#: a healthy cluster of 21 sends at 0.0..4.45 min (p95 4.2), then a gap to 7.2, then outage
+#: tails to 590. The gateway runs every minute, so the healthy cluster IS the on-time
+#: distribution; its p95 (4.2) rounded up to a whole pass is 5 minutes. Anything later is a pass
+#: that restarted or stalled, not the certified bracket placed at its signal hour.
+GOLD_SEND_GRACE_MIN = 5.0
+
+#: E8'S OWN GRACE (audit r6 MUST-FIX 2). The Fusion number above is derived for a gateway that runs
+#: every minute; E8-Gold runs every 5 minutes at :01, :06, ... (install_e8_tasks.ps1:88,
+#: `AddMinutes(1)`, `RepetitionInterval 5 min`, `LimitMinutes 4`). Under 5.0 the window got ONE
+#: pass a day (07:01) and every failed-leg retry was abandoned. DERIVED FROM THE CADENCE: the
+#: first pass sends at +1, its retry pass starts at +6 and may run to its 4-minute limit, so the
+#: last healthy send is at 1 + 5 + 4 = 10 minutes. E8's intents ledger (data/e8_gold_intents.jsonl)
+#: is box-local and in no commit (searched a34ecef3, c68c360e, f082bef8 and all history), so the
+#: ledger cross-check is UNMEASURED here; README r7 gives the one-line box measurement.
+E8_GOLD_SEND_GRACE_MIN = 10.0
+
+#: E8 GOLD'S CODE CEILING (r7.1, principal pin). Every E8 gold window is sized at
+#: min(cert book, E8_CERT_CEILING), whatever the book says: zuck's max-pass sizing (2026-10-20)
+#: and Max-growth's two-leg result put E8 gold_asia at 0.006 while both legs of the bracket can
+#: trade (0.007 only with the cross-account OCO). A stale enabled book (the 0.0095 / 0.01 rows
+#: the audits probed) therefore places at 0.006, and the cut is billed `e8_cert_ceiling` in
+#: missed_growth (growth governance: every cap carries its ledger line). It is also the LAST
+#: CERTIFIED e8 value, which void, absent and zero windows are billed at. RAISED ONLY BY A
+#: PRINCIPAL EDIT of this line: the planned 0.007 under the OCO needs that edit.
+#: Derived from that solver's two-leg max-pass result (computed 2026-10-20), not chosen here.
+E8_CERT_CEILING = 0.006
+
+
+def gold_send_late(window: str | None, hour: float,
+                   grace_min: float | None = None) -> str | None:
+    """Why a gold window's bracket may NOT be sent at server `hour` because it is past its
+    signal hour + `GOLD_SEND_GRACE_MIN`, or None (on time, or not a gold window). Pure."""
+    win = book_name(window)
+    win = win[len("gold_"):] if win.startswith("gold_") else win
+    sig = next((float(w[1]) for w in GOLD_WINDOWS if w[0] == win), None)
+    if sig is None:
+        return None
+    grace = float(GOLD_SEND_GRACE_MIN if grace_min is None else grace_min)
+    # Rounded to the microminute: a fractional hour (7 + 10/60) is 10.000000000000036 min
+    # in binary, and a pass exactly at the edge of its grace must not read as late.
+    late_min = round((float(hour) - sig) * 60.0, 6)
+    if late_min <= grace:
+        return None
+    src = "GOLD_SEND_GRACE_MIN" if grace_min is None else "the caller's grace"
+    return (f"late_send: {win} opens {int(sig):02d}:00 server, now {float(hour):.2f} is "
+            f"{late_min:.0f} min after it (grace {grace:g} min, {src}); the certified "
+            f"bracket is the one placed at its signal hour")
 
 
 def bracket_deadline(sleeve: str, window: str | None = None,
