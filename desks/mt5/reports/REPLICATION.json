@@ -1,5 +1,5 @@
 {
- "at": "2026-10-22T00:45:33+00:00",
+ "at": "2026-10-22T01:37:57+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -17,17 +17,17 @@
  },
  "n": 16,
  "counts": {
-  "REPLICATED": 3,
+  "REPLICATED": 2,
   "MISMATCH": 0,
-  "UNMEASURED": 13
+  "UNMEASURED": 14
  },
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "GBPMXN.clock_transition.p=e80a04d19803a4c6",
-   "certificate": "external.GBPMXN.clock_transition.p=e80a04d19803a4c6",
-   "fp": "a436026375618b2f",
-   "symbol": "GBPMXN",
+   "key": "XAUUSD.clock_transition.p=f0f0f12b20b62f60",
+   "certificate": "external.XAUUSD.clock_transition.p=f0f0f12b20b62f60",
+   "fp": "d7156d1760287f12",
+   "symbol": "XAUUSD",
    "family": "clock_transition",
    "verdict": "UNMEASURED",
    "why": [
@@ -38,231 +38,181 @@
   },
   {
    "lane": "certificate",
-   "key": "GBPMXN.clock_transition.p=0ca25a2a97630244",
-   "certificate": "external.GBPMXN.clock_transition.p=0ca25a2a97630244",
-   "fp": "72feb538cd3f7b41",
-   "symbol": "GBPMXN",
-   "family": "clock_transition",
+   "key": "AUDCAD@M15.formula.p=49bac000a84302db",
+   "certificate": "external.AUDCAD@M15.formula.p=49bac000a84302db",
+   "fp": "33bd735f0f161868",
+   "symbol": "AUDCAD",
+   "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'clock_transition'"
+    "no written specification in the spec book for family 'formula'"
    ],
    "ours": {},
    "theirs": {}
   },
   {
    "lane": "certificate",
-   "key": "GBPMXN.clock_transition.p=2133289359eb72ef",
-   "certificate": "external.GBPMXN.clock_transition.p=2133289359eb72ef",
-   "fp": "7d210c33d28fb484",
-   "symbol": "GBPMXN",
-   "family": "clock_transition",
+   "key": "AUDCAD@M15.formula.p=eb5b5a6d057c4422",
+   "certificate": "external.AUDCAD@M15.formula.p=eb5b5a6d057c4422",
+   "fp": "24fd422af6a2e34d",
+   "symbol": "AUDCAD",
+   "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'clock_transition'"
+    "no written specification in the spec book for family 'formula'"
    ],
    "ours": {},
    "theirs": {}
   },
   {
    "lane": "certificate",
-   "key": "GBPMXN.clock_transition.p=9af535ec0bbe3451",
-   "certificate": "external.GBPMXN.clock_transition.p=9af535ec0bbe3451",
-   "fp": "485e963fd7c6c8cf",
-   "symbol": "GBPMXN",
-   "family": "clock_transition",
+   "key": "AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "certificate": "external.AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "fp": "a9431eb03933ef15",
+   "symbol": "AUDCHF",
+   "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'clock_transition'"
+    "no written specification in the spec book for family 'formula'"
    ],
    "ours": {},
    "theirs": {}
   },
   {
    "lane": "certificate",
-   "key": "SGDJPY.clock_transition.p=7f79288b204e4928",
-   "certificate": "external.SGDJPY.clock_transition.p=7f79288b204e4928",
-   "fp": "a90bca414de6f755",
+   "key": "AUDJPY@M15.formula.p=975aafb115c5ba34",
+   "certificate": "external.AUDJPY@M15.formula.p=975aafb115c5ba34",
+   "fp": "3d7bf1db716f4895",
+   "symbol": "AUDJPY",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "AUDJPY@M15.formula.p=eb5b5a6d057c4422",
+   "certificate": "external.AUDJPY@M15.formula.p=eb5b5a6d057c4422",
+   "fp": "f633ebb526f24f3b",
+   "symbol": "AUDJPY",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPCAD@M15.formula.p=e4a7392772a2fba4",
+   "certificate": "external.GBPCAD@M15.formula.p=e4a7392772a2fba4",
+   "fp": "a528f233a0a4f1b1",
+   "symbol": "GBPCAD",
+   "family": "formula",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'formula'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "SGDJPY@M15.formula.p=c300ffc5e51f3287",
+   "certificate": "external.SGDJPY@M15.formula.p=c300ffc5e51f3287",
+   "fp": "7f7593d080480d60",
    "symbol": "SGDJPY",
-   "family": "clock_transition",
+   "family": "formula",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "XAUUSD.clock_transition.p=777a92da6bf78078",
-   "certificate": "external.XAUUSD.clock_transition.p=777a92da6bf78078",
-   "fp": "43a9756dcf386f96",
-   "symbol": "XAUUSD",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "XAUUSD.clock_transition.p=39249b788f391241",
-   "certificate": "external.XAUUSD.clock_transition.p=39249b788f391241",
-   "fp": "4a325d62ed5f2a47",
-   "symbol": "XAUUSD",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "XAUUSD.clock_transition.p=7785fe2f84d075de",
-   "certificate": "external.XAUUSD.clock_transition.p=7785fe2f84d075de",
-   "fp": "93a4377a639fca34",
-   "symbol": "XAUUSD",
-   "family": "clock_transition",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'clock_transition'"
+    "no written specification in the spec book for family 'formula'"
    ],
    "ours": {},
    "theirs": {}
   },
   {
    "lane": "forward",
-   "key": "CADJPY.london_am.NORMAL_DAY",
-   "symbol": "CADJPY",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "EURJPY.asia.FAILED_BREAK",
-   "symbol": "EURJPY",
-   "family": "session_range_breakout",
-   "verdict": "REPLICATED",
-   "why": [
-    "19/26 trades matched, P&L +3.31R vs +2.81R, position state and costs agree"
-   ],
-   "ours": {
-    "n_fills": 38,
-    "pnl_R": 3.306,
-    "cost": {
-     "spread_per_lot": 500.0,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 184.573,
-     "basis": "universe_registry"
-    },
-    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
-   },
-   "theirs": {
-    "n_trades": 26,
-    "cost_fields": null,
-    "forward_start": "2026-08-25T23:26:08.836906+00:00"
-   },
-   "divergence": {
-    "n_ledger": 26,
-    "n_rebuilt": 38,
-    "matched": 19,
-    "match_share": 0.731,
-    "fill_ratio": 1.462,
-    "median_abs_dR": 0.0323,
-    "pnl_ledger_R": 2.807,
-    "pnl_rebuilt_R": 3.306,
-    "open_ledger": false,
-    "open_rebuilt": false
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "EURJPY.asia.NORMAL_DAY",
-   "symbol": "EURJPY",
-   "family": "session_range_breakout",
-   "verdict": "REPLICATED",
-   "why": [
-    "19/26 trades matched, P&L +3.31R vs +2.81R, position state and costs agree"
-   ],
-   "ours": {
-    "n_fills": 38,
-    "pnl_R": 3.306,
-    "cost": {
-     "spread_per_lot": 500.0,
-     "commission_per_lot": 2.0,
-     "quote_per_account": 184.573,
-     "basis": "universe_registry"
-    },
-    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
-   },
-   "theirs": {
-    "n_trades": 26,
-    "cost_fields": null,
-    "forward_start": "2026-08-25T23:26:08.836910+00:00"
-   },
-   "divergence": {
-    "n_ledger": 26,
-    "n_rebuilt": 38,
-    "matched": 19,
-    "match_share": 0.731,
-    "fill_ratio": 1.462,
-    "median_abs_dR": 0.0323,
-    "pnl_ledger_R": 2.807,
-    "pnl_rebuilt_R": 3.306,
-    "open_ledger": false,
-    "open_rebuilt": false
-   }
-  },
-  {
-   "lane": "forward",
-   "key": "EURJPY.london_am",
-   "symbol": "EURJPY",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPAUD.session_range_breakout",
-   "symbol": "GBPAUD",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPJPY.asia",
+   "key": "GBPJPY.london_am",
    "symbol": "GBPJPY",
    "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "GBPUSD.session_range_breakout",
+   "symbol": "GBPUSD",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NZDJPY.dow_effect",
+   "symbol": "NZDJPY",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NZDJPY.fair_value_gap",
+   "symbol": "NZDJPY",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NZDJPY.session_range_breakout",
+   "symbol": "NZDJPY",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "USDJPY.asia.FAILED_BREAK",
+   "symbol": "USDJPY",
+   "family": "session_range_breakout",
    "verdict": "REPLICATED",
    "why": [
-    "20/27 trades matched, P&L +6.40R vs +5.10R, position state and costs agree"
+    "39/46 trades matched, P&L +11.95R vs +12.61R, position state and costs agree"
    ],
    "ours": {
     "n_fills": 39,
-    "pnl_R": 6.398,
+    "pnl_R": 11.946,
     "cost": {
-     "spread_per_lot": 400.0,
+     "spread_per_lot": 100.0,
      "commission_per_lot": 2.0,
      "quote_per_account": 184.573,
      "basis": "universe_registry"
@@ -270,40 +220,65 @@
     "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
    },
    "theirs": {
-    "n_trades": 27,
+    "n_trades": 46,
     "cost_fields": null,
-    "forward_start": "2026-08-25T23:25:02.264930+00:00"
+    "forward_start": "2026-08-25T23:26:08.836901+00:00"
    },
    "divergence": {
-    "n_ledger": 27,
+    "n_ledger": 46,
     "n_rebuilt": 39,
-    "matched": 20,
-    "match_share": 0.741,
-    "fill_ratio": 1.444,
-    "median_abs_dR": 0.0263,
-    "pnl_ledger_R": 5.105,
-    "pnl_rebuilt_R": 6.398,
+    "matched": 39,
+    "match_share": 0.848,
+    "fill_ratio": 0.848,
+    "median_abs_dR": 0.0301,
+    "pnl_ledger_R": 12.608,
+    "pnl_rebuilt_R": 11.946,
     "open_ledger": false,
     "open_rebuilt": false
    }
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.fair_value_gap",
-   "symbol": "GBPJPY",
+   "key": "USDJPY.asia.MACRO_FAV",
+   "symbol": "USDJPY",
    "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
+   "verdict": "REPLICATED",
    "why": [
-    "no forward ledger on this box for this row"
+    "39/46 trades matched, P&L +11.95R vs +12.61R, position state and costs agree"
    ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
+   "ours": {
+    "n_fills": 39,
+    "pnl_R": 11.946,
+    "cost": {
+     "spread_per_lot": 100.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 184.573,
+     "basis": "universe_registry"
+    },
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
+   },
+   "theirs": {
+    "n_trades": 46,
+    "cost_fields": null,
+    "forward_start": "2026-08-25T23:26:08.836943+00:00"
+   },
+   "divergence": {
+    "n_ledger": 46,
+    "n_rebuilt": 39,
+    "matched": 39,
+    "match_share": 0.848,
+    "fill_ratio": 0.848,
+    "median_abs_dR": 0.0301,
+    "pnl_ledger_R": 12.608,
+    "pnl_rebuilt_R": 11.946,
+    "open_ledger": false,
+    "open_rebuilt": false
+   }
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.level_breakout",
-   "symbol": "GBPJPY",
+   "key": "USDJPY.london_am",
+   "symbol": "USDJPY",
    "family": "session_range_breakout",
    "verdict": "UNMEASURED",
    "why": [
@@ -317,67 +292,71 @@
  "quarantined": [],
  "unmeasured": [
   {
-   "what": "GBPMXN.clock_transition.p=e80a04d19803a4c6",
+   "what": "XAUUSD.clock_transition.p=f0f0f12b20b62f60",
    "why": "no written specification in the spec book for family 'clock_transition'"
   },
   {
-   "what": "GBPMXN.clock_transition.p=0ca25a2a97630244",
-   "why": "no written specification in the spec book for family 'clock_transition'"
+   "what": "AUDCAD@M15.formula.p=49bac000a84302db",
+   "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPMXN.clock_transition.p=2133289359eb72ef",
-   "why": "no written specification in the spec book for family 'clock_transition'"
+   "what": "AUDCAD@M15.formula.p=eb5b5a6d057c4422",
+   "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "GBPMXN.clock_transition.p=9af535ec0bbe3451",
-   "why": "no written specification in the spec book for family 'clock_transition'"
+   "what": "AUDCHF@M15.formula.p=b14e229bfe2443d4",
+   "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "SGDJPY.clock_transition.p=7f79288b204e4928",
-   "why": "no written specification in the spec book for family 'clock_transition'"
+   "what": "AUDJPY@M15.formula.p=975aafb115c5ba34",
+   "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "XAUUSD.clock_transition.p=777a92da6bf78078",
-   "why": "no written specification in the spec book for family 'clock_transition'"
+   "what": "AUDJPY@M15.formula.p=eb5b5a6d057c4422",
+   "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "XAUUSD.clock_transition.p=39249b788f391241",
-   "why": "no written specification in the spec book for family 'clock_transition'"
+   "what": "GBPCAD@M15.formula.p=e4a7392772a2fba4",
+   "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "XAUUSD.clock_transition.p=7785fe2f84d075de",
-   "why": "no written specification in the spec book for family 'clock_transition'"
+   "what": "SGDJPY@M15.formula.p=c300ffc5e51f3287",
+   "why": "no written specification in the spec book for family 'formula'"
   },
   {
-   "what": "CADJPY.london_am.NORMAL_DAY",
+   "what": "GBPJPY.london_am",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "EURJPY.london_am",
+   "what": "GBPUSD.session_range_breakout",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "GBPAUD.session_range_breakout",
+   "what": "NZDJPY.dow_effect",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "GBPJPY.fair_value_gap",
+   "what": "NZDJPY.fair_value_gap",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "GBPJPY.level_breakout",
+   "what": "NZDJPY.session_range_breakout",
+   "why": "no forward ledger on this box for this row"
+  },
+  {
+   "what": "USDJPY.london_am",
    "why": "no forward ledger on this box for this row"
   }
  ],
  "recorded": {
   "quarantined": 0,
-  "memory": 3,
+  "memory": 2,
   "candidates": 0
  },
  "cursor": {
-  "forward": 586,
-  "at": "2026-10-21T23:43:04+00:00",
-  "certificates": 963
+  "forward": 594,
+  "at": "2026-10-22T00:45:33+00:00",
+  "certificates": 971
  },
  "notes": [],
  "independence": {
@@ -394,24 +373,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\SGDJPY_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CADJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPAUD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCAD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCAD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDJPY_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDJPY_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCAD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\SGDJPY_M15.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDJPY_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 63.59
+ "seconds": 4.6
 }
