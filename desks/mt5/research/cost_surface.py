@@ -77,6 +77,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -115,7 +116,79 @@ MIN_SESSION_BARS = 2
 #: EITHER direction: undercharging manufactures survivors, overcharging kills real edges silently.
 MATERIAL_RATIO = 2.0
 
+#: The schema NAME stays "cost-surface-1": the tick tape's producer (`tape_features`) writes the
+#: same name and the desk's ~25 readers key on it. Revision 2 (2026-10-13) only ADDS fields
+#: (sessions, symbol_level, dow_hours, recent, thin_*), so every revision-1 reader is unchanged.
 SCHEMA = "cost-surface-1"
+SCHEMA_REVISION = 2
+
+#: THE BROKER'S FIXED-SPREAD ERA ENDS HERE, AND NOTHING BEFORE IT IS A SPREAD (2026-10-13).
+#:
+#: `fusion_spread_tape`'s header measured it on all 248 H1 parquets: Fusion's server did not
+#: record a per-bar spread before December 2020 and serves that era at ONE constant per symbol
+#: (AUDUSD/EURUSD/GBPUSD 50, AUDCHF/CADCHF 160, AUDJPY/CADJPY 120), cut over on 2020-12-11 01:00
+#: for FX and 2020-12-31 for the CFDs. This surface dropped zero bars and kept the rest, so on
+#: every symbol whose modern era quotes mostly zero the placeholder became the MAJORITY of what
+#: survived: the committed surface priced AUDCHF at exactly 160.0 for hours 3-22 against a modern
+#: nonzero p50 of 1-2 on its own bars. The cut is the CFD date, the later of the two, so no
+#: placeholder bar from either class reaches a percentile; it costs the FX book three weeks of
+#: 2020 out of six years.
+ERA_START = pd.Timestamp("2021-01-01", tz="UTC")
+
+#: The registry's stored spread and the surface's own pooled value (median of the measured
+#: hourly p50s) may differ by this factor either way before the symbol is named as a mismatch.
+#: 2.0 is MATERIAL_RATIO: the threshold this module already uses for a cell that matters.
+POOLED_TOLERANCE = 2.0
+
+#: THE RECENT WINDOW EACH HOUR ALSO CARRIES (priced bars, full-session days): the last
+#: RECENT_PRICED_DAYS of the symbol's own tape. The entry-hour reader PREFERS it when it holds
+#: at least MIN_RECENT_OBS priced bars -- recency-preferred lookup, chosen over a decay weight
+#: because it is auditable per cell and cannot cheapen a regime by averaging it with a dead
+#: one. Measured 2026-10-13 (Max-growth): NZDJPY broker hour 0 p50/p90 42/100 over 8 years,
+#: 87/119 over the last 12 months, every other hour ~15 in both.
+RECENT_PRICED_DAYS = 365
+MIN_RECENT_OBS = 100
+
+#: A cell with fewer priced bars than MIN_OBS is UNMEASURED and carries no `p50` (consumers must
+#: refuse it), but from this many it carries `thin_p50`/`thin_p90` and its `n_nonzero`, so the
+#: entry-hour cost (`entry_hour_cost`) can SHRINK it toward its parent with n_eff stated rather
+#: than throw a partial measurement away.
+MIN_THIN_OBS = 5
+
+#: Day-of-week x hour cells carry a number from this many priced bars. Lower than MIN_OBS because
+#: a weekday cell holds ~1/5 of an hour cell's bars by construction, and the consumer shrinks it
+#: toward its own hour cell, never toward zero.
+MIN_DOW_OBS = 40
+
+#: The broker-hour sessions a thin hour borrows from: symbol-hour -> symbol-session -> symbol.
+#: Hour 00 is its own session: it is the rollover (NY 17:00 = broker 00:00 on the NY+7 clock) and
+#: is the widest hour on every FX cross measured, so pooling it with Asia would cheapen it.
+SESSIONS: tuple[tuple[str, tuple[int, ...]], ...] = (
+    ("rollover", (0,)),
+    ("asia", tuple(range(1, 7))),
+    ("london", tuple(range(7, 12))),
+    ("ny", tuple(range(12, 17))),
+    ("late", tuple(range(17, 24))),
+)
+
+#: The recent window published beside the long-run surface, zero bars INCLUDED, so a change of
+#: account regime (the 2026-08 move to a commission account quoting 0 outside the rollover) is
+#: visible against the long-run number rather than averaged into it.
+RECENT_DAYS = 30
+
+
+def session_of(hour: int) -> str:
+    """The broker-hour session `hour` belongs to (see SESSIONS)."""
+    h = int(hour) % 24
+    for name, hours in SESSIONS:
+        if h in hours:
+            return name
+    return "late"
+
+
+def _pct_block(nz: pd.Series) -> dict[str, float]:
+    return {"p50": round(float(nz.median()), 2), "p75": round(float(nz.quantile(0.75)), 2),
+            "p90": round(float(nz.quantile(0.90)), 2)}
 
 
 def session_bars(idx: pd.DatetimeIndex) -> int:
@@ -143,6 +216,15 @@ def profile_symbol(df: pd.DataFrame) -> dict | None:
     """
     if "spread" not in df.columns or df.empty:
         return None
+    # The fixed-spread era is not a measurement (see ERA_START). A frame that is ALL era yields
+    # None below, the same refusal as no spread column, never a confident placeholder.
+    idx0 = pd.DatetimeIndex(df.index)
+    era = ERA_START if idx0.tz is not None else ERA_START.tz_localize(None)
+    era_dropped = int((idx0 < era).sum())
+    if era_dropped:
+        df = df.loc[idx0 >= era]
+        if df.empty:
+            return None
     idx = pd.DatetimeIndex(df.index)
     # Exclusion 1: keep only days carrying a full session BY THIS SYMBOL'S OWN STANDARD.
     sess = session_bars(idx)
@@ -156,6 +238,9 @@ def profile_symbol(df: pd.DataFrame) -> dict | None:
         return None
     hours: dict[str, dict] = {}
     hh = pd.DatetimeIndex(d.index).hour
+    d_idx = pd.DatetimeIndex(d.index)
+    recent_mask = np.asarray(d_idx >= d_idx.max() - pd.Timedelta(days=RECENT_PRICED_DAYS)) \
+        if len(d_idx) else np.zeros(0, dtype=bool)
     for h in range(24):
         cell = d.loc[hh == h, "spread"]
         n_bars = int(cell.size)
@@ -169,19 +254,88 @@ def profile_symbol(df: pd.DataFrame) -> dict | None:
             "zero_frac": round(float(1.0 - n_nz / n_bars), 4),
         }
         if n_nz < MIN_OBS:
-            # Exclusion 2 + L1.28a: too few priced bars to state a cost. No number is emitted,
-            # so no consumer can accidentally read one.
+            # Exclusion 2 + L1.28a: too few priced bars to state a cost. No `p50` is emitted,
+            # so no consumer of `spread_pts` can accidentally read one; a partial measurement
+            # rides as `thin_*` for the shrinkage consumer, which names its n_eff.
             row["status"] = "UNMEASURED"
+            if n_nz >= MIN_THIN_OBS:
+                row["thin_p50"] = round(float(nz.median()), 2)
+                row["thin_p90"] = round(float(nz.quantile(0.90)), 2)
         else:
             row["status"] = "MEASURED"
-            row["p50"] = round(float(nz.median()), 2)
-            row["p75"] = round(float(nz.quantile(0.75)), 2)
-            row["p90"] = round(float(nz.quantile(0.90)), 2)
+            row.update(_pct_block(nz))
+        rc = d.loc[(hh == h) & recent_mask, "spread"]
+        rnz = rc[rc > 0].astype(float)
+        row["r365_n"] = int(rnz.size)
+        if rnz.size >= MIN_THIN_OBS:
+            row["r365_p50"] = round(float(rnz.median()), 2)
+            row["r365_p90"] = round(float(rnz.quantile(0.90)), 2)
         hours[str(h)] = row
     if not hours:
         return None
     measured = {h: r for h, r in hours.items() if r["status"] == "MEASURED"}
+    # THE PARENTS A THIN HOUR SHRINKS TOWARD: symbol-session, then symbol. Built from the same
+    # priced (non-zero, full-session, post-era) bars, so a parent is never zero by construction.
+    priced = d.loc[np.asarray(d["spread"] > 0), "spread"].astype(float)
+    ph = pd.DatetimeIndex(priced.index).hour
+    sessions: dict[str, dict[str, object]] = {}
+    for name, hrs in SESSIONS:
+        cell = priced[np.isin(ph, hrs)]
+        srow: dict[str, object] = {"hours": list(hrs), "n_nonzero": int(cell.size)}
+        if cell.size >= MIN_OBS:
+            srow["status"] = "MEASURED"
+            srow.update(_pct_block(cell))
+        else:
+            srow["status"] = "UNMEASURED"
+        sessions[name] = srow
+    symbol_level: dict[str, object] = {"n_nonzero": int(priced.size)}
+    if priced.size >= MIN_OBS:
+        symbol_level["status"] = "MEASURED"
+        symbol_level.update(_pct_block(priced))
+        symbol_level["p99"] = round(float(priced.quantile(0.99)), 2)
+    else:
+        symbol_level["status"] = "UNMEASURED"
+    # DAY OF WEEK x HOUR. Monday's 00:00 is the weekend reopen, not an ordinary rollover, and a
+    # sleeve that fills there pays it. [p50, p90, n] per cell, only where n >= MIN_DOW_OBS.
+    dows = pd.DatetimeIndex(priced.index).dayofweek
+    dow_hours: dict[str, dict[str, list[float]]] = {}
+    for dw in range(7):
+        for h in range(24):
+            cell = priced[(dows == dw) & (ph == h)]
+            if cell.size >= MIN_DOW_OBS:
+                dow_hours.setdefault(str(dw), {})[str(h)] = [
+                    round(float(cell.median()), 2), round(float(cell.quantile(0.90)), 2),
+                    int(cell.size)]
+    # HOLIDAYS AND EARLY CLOSES: post-era, a short day is no longer the D1/H1 splice, so the
+    # spread on the days dropped for a short session IS the holiday book. Published as a ratio
+    # to full days; the engine has no calendar, so it is evidence here, not a charge.
+    short_ratio = None
+    if len(d) < len(df):
+        sh = df.loc[~full, "spread"].astype(float)
+        sh = sh[sh > 0]
+        if sh.size >= MIN_THIN_OBS and priced.size and float(priced.median()) > 0:
+            short_ratio = round(float(sh.median()) / float(priced.median()), 3)
+    # THE RECENT REGIME, zeros kept: what the account quotes now, beside the long-run number.
+    recent: dict[str, dict[str, float]] = {}
+    if len(idx):
+        cut = idx.max() - pd.Timedelta(days=RECENT_DAYS)
+        rec = df.loc[idx >= cut, "spread"].astype(float)
+        rh = pd.DatetimeIndex(rec.index).hour
+        for h in range(24):
+            cell = rec[rh == h]
+            if cell.size:
+                recent[str(h)] = {"n_bars": int(cell.size),
+                                  "zero_frac": round(float((cell <= 0).mean()), 4),
+                                  "p50_incl_zero": round(float(cell.median()), 2),
+                                  "mean_incl_zero": round(float(cell.mean()), 2)}
     out: dict[str, object] = {
+        "era_start": str(ERA_START.date()),
+        "era_bars_dropped": era_dropped,
+        "sessions": sessions,
+        "symbol_level": symbol_level,
+        "dow_hours": dow_hours,
+        "short_day_over_full_p50": short_ratio,
+        "recent": recent,
         "session_bars": int(sess),
         "session_threshold": int(thr),
         "bars_used": len(d),
@@ -219,6 +373,10 @@ def profile_symbol(df: pd.DataFrame) -> dict | None:
         p90s = {int(h): float(r["p90"]) for h, r in measured.items()}  # type: ignore[arg-type]
         ratios = [p90s[h] / p50s[h] for h in p50s if p50s[h] > 0]
         out["stress_p90_over_p50"] = round(float(np.median(ratios)), 2) if ratios else None
+        # THE ROLLOVER, named: broker hour 00 against the symbol's whole priced day.
+        sym_p50 = symbol_level.get("p50")
+        if 0 in p50s and isinstance(sym_p50, float) and sym_p50 > 0:
+            out["rollover_over_day_p50"] = round(p50s[0] / sym_p50, 2)
     return out
 
 
@@ -229,6 +387,7 @@ def build(universe_dir: Path | None = None) -> dict:
     registry = json.loads(reg_path.read_text("utf-8")) if reg_path.exists() else {}
     surface: dict[str, dict] = {}
     skipped: list[str] = []
+    mismatch: list[dict[str, object]] = []
     for f in sorted(u.glob("*_H1.parquet")):
         sym = f.name[: -len("_H1.parquet")]
         try:
@@ -251,18 +410,50 @@ def build(universe_dir: Path | None = None) -> dict:
             skipped.append(f"{sym}: {why}")
             continue
         meta = registry.get(sym) or {}
-        pooled = meta.get("median_spread_pts")
-        prof["pooled_median_spread_pts"] = float(pooled) if pooled is not None else None
+        # THE POOLED VALUE IS THIS SURFACE'S OWN, NEVER A COPY OF THE REGISTRY (2026-10-13).
+        # This line copied `universe.json:median_spread_pts` and never checked it against the
+        # 24 hourly p50s it had just computed, so a registry row in flux was frozen into the
+        # surface: NZDJPY read 147 at build (2026-09-23 04:25) against hourly p50s of 15-42, the
+        # registry was repaired to 15 twenty minutes later, and the surface kept 147 -- so
+        # every consumer that divides by the pooled scalar read NZDJPY's rollover at 0.29x when
+        # it is 2.8x. 47 of 299 symbols disagreed. The pooled value is now the median of the
+        # MEASURED hourly p50s; the registry's number rides beside it, and a disagreement beyond
+        # POOLED_TOLERANCE is published by name rather than absorbed.
+        reg_pooled = meta.get("median_spread_pts")
+        hp50 = sorted(float(c["p50"]) for c in prof["hours"].values()
+                      if c.get("status") == "MEASURED")
+        own = float(np.median(hp50)) if hp50 else None
+        prof["pooled_median_spread_pts"] = round(own, 3) if own is not None else None
+        prof["pooled_basis"] = ("median of measured hourly p50s" if own is not None
+                                else "UNMEASURED: no measured hour")
+        prof["registry_median_spread_pts"] = (float(reg_pooled) if reg_pooled is not None
+                                              else None)
+        if own is not None:
+            rp = prof["registry_median_spread_pts"]
+            ratio = (rp / own) if (rp is not None and own > 0) else None
+            prof["registry_over_pooled"] = round(ratio, 3) if ratio is not None else None
+            if ratio is None or not (1 / POOLED_TOLERANCE <= ratio <= POOLED_TOLERANCE):
+                mismatch.append({"symbol": sym, "registry_pts": rp, "pooled_pts": round(own, 3),
+                                 "ratio": prof["registry_over_pooled"]})
         prof["tick_size"] = float(meta.get("tick_size", 0.0) or 0.0)
         prof["contract_size"] = float(meta.get("contract_size", 0.0) or 0.0)
         surface[sym] = prof
     return {
         "schema": SCHEMA,
+        "schema_revision": SCHEMA_REVISION,
+        "era_start": str(ERA_START.date()),
         "built_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "min_obs": MIN_OBS,
         "session_share": SESSION_SHARE,
         "source": str(u.relative_to(_DESK.parent.parent)) if u == _UNIVERSE else str(u),
         "n_symbols": len(surface),
+        # THE FENCE ON THE REGISTRY: every symbol whose stored median_spread_pts disagrees with
+        # the median of its own measured hourly p50s by more than POOLED_TOLERANCE either way
+        # (or is zero/absent). A consumer charging the registry scalar on one of these is
+        # charging a number the bars contradict.
+        "pooled_tolerance": POOLED_TOLERANCE,
+        "n_registry_pooled_mismatch": len(mismatch),
+        "registry_pooled_mismatch": mismatch,
         "n_skipped": len(skipped),
         "skipped": skipped[:50],
         "symbols": surface,
@@ -751,7 +942,12 @@ def main(argv: list[str] | None = None) -> int:
               f"(looked in {args.universe or _UNIVERSE}). Unmeasured is not OK (L1.28a).")
         return 2
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n", "utf-8")
+    # ATOMIC: every forward clock and the gauntlet read this file; a reader catching it half
+    # written would parse nothing and price the whole pass UNMEASURED (or worse, a truncated
+    # symbol set). Write beside it, then replace in one step.
+    tmp = args.out.with_name(args.out.name + ".tmp")
+    tmp.write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n", "utf-8")
+    os.replace(tmp, args.out)
 
     syms = rep["symbols"]
     admin = sum(1 for v in syms.values() if v.get("administered"))

@@ -250,10 +250,21 @@ def code_hash(fn: Any) -> str:
 def cost_hash(costs: Any) -> str:
     """Hash of the cost model actually applied. Widening costs mid-window changes the strategy."""
     try:
-        fields = {k: round(float(v), 6) for k, v in vars(costs).items()
-                  if isinstance(v, (int, float)) and not isinstance(v, bool)}
+        fields: dict[str, Any] = {k: round(float(v), 6) for k, v in vars(costs).items()
+                                  if isinstance(v, (int, float)) and not isinstance(v, bool)}
     except TypeError:
         return "nocost"
+    # THE HOUR TABLE IS PART OF THE COST MODEL (audit 2026-10-13). `spread_per_lot_by_hour` is a
+    # tuple, so the numeric filter above skipped it and a clock re-priced on a new surface kept
+    # its hash. When a table is attached its rounded digest joins the fields; a flat model (no
+    # table) hashes byte-identically to before, so no flat clock is re-based by this.
+    tab = getattr(costs, "spread_per_lot_by_hour", None)
+    if tab:
+        try:
+            blob = json.dumps([round(float(v), 6) for v in tab]).encode()
+        except (TypeError, ValueError):
+            blob = repr(tab).encode()
+        fields["spread_per_lot_by_hour"] = hashlib.sha256(blob).hexdigest()[:16]
     return hashlib.sha256(json.dumps(fields, sort_keys=True).encode()).hexdigest()[:16]
 
 

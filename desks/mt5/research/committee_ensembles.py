@@ -1187,6 +1187,8 @@ def markout(sp: ce.Specialist, m: Mapping[str, Any], key: str) -> ce.Result:
     if not m.get("usable"):
         return _r(sp, UNMEASURED, 0.0, "record intents and join them to deals", why=m.get("why"))
     slip, share = _f(m.get("mean_slip_r")), _f(m.get("edge_share"))
+    if slip is None:
+        return _r(sp, UNMEASURED, 0.0, "record stops on intents", why="slip in R unmeasured")
     if (share is not None and share > 0.5) or (slip is not None and slip > 0.15):
         return _r(sp, FAIL, 0.8, "latency", mean_slip_r=slip, edge_share=share)
     return _r(sp, PASS, 0.6, mean_slip_r=slip, edge_share=share)
