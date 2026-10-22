@@ -1,0 +1,9 @@
+[
+  {
+    "source": "tradingview",
+    "kind": "stub",
+    "needs_selector_work": true,
+    "host": "www.tradingview.com/scripts/",
+    "why": "fetched OK, content is client-side rendered"
+  }
+]
