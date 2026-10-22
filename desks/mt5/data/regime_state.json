@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-21T23:46:20.197595+00:00",
+  "swept_at": "2026-10-22T00:01:17.380196+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -2979,7 +2979,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1751,
+      "shadow_exp_r": -0.1759,
       "woke_on_shadow": false
     },
     "NZDCAD|macro_conditional_continuous": {
@@ -3045,7 +3045,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5898,
+      "shadow_exp_r": -0.5684,
       "woke_on_shadow": false
     },
     "NZDHUF|carry_continuous": {
@@ -3122,7 +3122,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.184,
+      "shadow_exp_r": 0.1908,
       "woke_on_shadow": false
     },
     "NZDJPY|vol_transition_continuous": {
@@ -4320,8 +4320,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.1764,
+      "shadow_n": 63,
+      "shadow_exp_r": -0.0811,
       "woke_on_shadow": false
     },
     "XAGEUR|range_reversion_continuous": {
