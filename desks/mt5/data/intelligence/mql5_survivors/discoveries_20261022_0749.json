@@ -1,0 +1,55 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2271402",
+  "symbols": [
+   "AUDCAD",
+   "AUDNZD",
+   "EURGBP",
+   "NZDCAD",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-10-22T07:49:43+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 150.383,
+  "growth_pct": 6434.9,
+  "weeks": 284.0,
+  "pf": 1.88,
+  "max_dd_pct": null,
+  "trades": 1898.0,
+  "win_pct": 1403.0,
+  "algo_pct": 99.0,
+  "subscribers": 2.0,
+  "author": "/en/users/victor_can69",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "11": 4,
+   "09": 3,
+   "22": 2,
+   "14": 5,
+   "12": 2,
+   "08": 2,
+   "21": 3,
+   "15": 4,
+   "10": 6,
+   "04": 1,
+   "07": 2,
+   "06": 1,
+   "01": 1,
+   "16": 2,
+   "13": 2,
+   "17": 2
+  }
+ }
+]
