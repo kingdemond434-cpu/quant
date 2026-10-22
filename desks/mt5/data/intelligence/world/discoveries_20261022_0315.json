@@ -1,0 +1,2100 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "3M Company stocks CFD (MMM) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/MMM/",
+  "published": "2026-10-22T03:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "25c896a1110d119f33b0",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Adobe Systems Incorporated stocks CFD (ADBE) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/ADBE/",
+  "published": "2026-10-22T03:13:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5321f89eb822fbd5da96",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "General Electric Company stocks CFD (GE) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GE/",
+  "published": "2026-10-22T03:13:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "35418e961f1a716ce650",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Tesla, Inc. stocks CFD (TSLA) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/TSLA/",
+  "published": "2026-10-22T03:13:40+00:00",
+  "symbols": [
+   "Tesla"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c7df063400c5d930461f",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "01 The time of trading session 16:31-22:59 Term currency USD 3-days swap Friday Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "swap",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "session",
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "Tesla"
+     ],
+     "mentioned": [
+      "tesla"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "02da1e95eba4"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "NIKE, Inc. stocks CFD (NKE) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/NKE/",
+  "published": "2026-10-22T03:13:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "bc4cb83d2e684a6f05ea",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Comcast Corporation stocks CFD (CMCSA) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/CMCSA/",
+  "published": "2026-10-22T03:13:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fbd82e0f5eaaa4c95fb6",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "General Motors Company stocks CFD (GM) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/GM/",
+  "published": "2026-10-22T03:13:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "67e86d3253cc4aa771e5",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "McDonald&#039;s Corporation stocks CFD (MCD) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/MCD/",
+  "published": "2026-10-22T03:13:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "132b7fba397d7d4fe2bb",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Prudential Financial, Inc. stocks CFD (PRU) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/PRU/",
+  "published": "2026-10-22T03:13:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "94a11ebf6f4d0f8d2ea3",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Starbucks Corporation stocks CFD (SBUX) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/SBUX/",
+  "published": "2026-10-22T03:13:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "305a680466780becb237",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "PayPal Holdings, Inc. stocks CFD (PYPL) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/PYPL/",
+  "published": "2026-10-22T03:13:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c9c83036c65145b54d26",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Goldman Sachs Group, Inc. stocks CFD (GS) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/GS/",
+  "published": "2026-10-22T03:13:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "40db5fde6d761c9d044e",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Walmart Inc. stocks CFD (WMT) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/WMT/",
+  "published": "2026-10-22T03:13:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b7276b62ba8e72a007dc",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Visa Inc. stocks CFD (V) | Pro | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan/V/",
+  "published": "2026-10-22T03:13:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "04b90c542343f962025c",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategia",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.fi.html",
+  "published": "2026-10-22T03:13:59+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "fi",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fi.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "75b4566da8a4cab400bd",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "La strat\u00e9gie",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.fr.html",
+  "published": "2026-10-22T03:14:01+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4f0b1646a88e29f4525f",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "On peut citer notamment les coussins de fonds propres pour les \u00e9tablissements d\u2019importance syst\u00e9mique mondiale et autres \u00e9tablissements d\u2019importance syst\u00e9mique, le ratio de liquidit\u00e9 \u00e0 court terme (LCR) et le ratio structurel de liquidit\u00e9 \u00e0 long terme (NSFR).",
+    "lang": "fr",
+    "quantities": [
+     "liquidit\u00e9"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "court terme",
+     "long terme"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "378f2a2da0c3"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Macroprudential policy strategy",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.ga.html",
+  "published": "2026-10-22T03:14:03+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "ga",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ga.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "7d4241a341e3f7d0ad44",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategija",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.hr.html",
+  "published": "2026-10-22T03:14:05+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "hr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "955d5c3ebf5c248d649a",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strat\u00e9gia",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.hu.html",
+  "published": "2026-10-22T03:14:07+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "hu",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hu.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8fe6f24e4443420c0008",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategia",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.it.html",
+  "published": "2026-10-22T03:14:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "it",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.it.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0b45be29febc326a37de",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strategija",
+  "url": "https://www.ecb.europa.eu/ecb/orga/tasks/stability/strategy/html/index.lt.html",
+  "published": "2026-10-22T03:14:11+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "lt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.lt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e13a506a08750fed9f5a",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Determinando as BDRs Mais L\u00edquidas do Ibovespa Utilizando Python | QuantBrasil",
+  "url": "https://quantbrasil.com.br/blog/determinando-as-bdrs-mais-liquidas-do-ibovespa-utilizando-python/",
+  "published": "2026-10-22T03:14:13+00:00",
+  "symbols": [
+   "ORACLE",
+   "US500",
+   "Tesla"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "pt-BR",
+  "endpoints": [
+   "https://pandas.pydata.org/docs/reference/api/pandas.read_html.html",
+   "https://pandas.pydata.org/docs/reference/api/pandas.Series.str.endswith.html",
+   "https://pandas.pydata.org/docs/reference/api/pandas.read_sql.html",
+   "https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.drop.html",
+   "https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.isnull.html",
+   "https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.any.html",
+   "https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.sum.html",
+   "https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.interpolate.html",
+   "https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.sort_values.html",
+   "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "b56144c17cd5f043f38c",
+  "host": "quantbrasil.com.br",
+  "claims": [
+   {
+    "claim": "Essa discrep\u00e2ncia nos leva a crer que ainda h\u00e1 espa\u00e7o para que esse tipo de a\u00e7\u00e3o cres\u00e7a e aumente a liquidez no longo prazo.",
+    "lang": "pt",
+    "quantities": [
+     "a\u00e7\u00e3o",
+     "liquidez"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "longo prazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "Tesla"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "ibovespa",
+      "tesla"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f006364342e7"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Criando uma Base de Dados de Pre\u00e7os de Ativos Utilizando Python e SQL | QuantBrasil",
+  "url": "https://quantbrasil.com.br/blog/criando-uma-base-de-dados-de-precos-de-ativos-utilizando-python-e-sql/",
+  "published": "2026-10-22T03:14:14+00:00",
+  "symbols": [],
+  "timeframes": [
+   "D1",
+   "DAILY",
+   "H1",
+   "H4",
+   "M15",
+   "M30",
+   "M5",
+   "MN"
+  ],
+  "patterns": [
+   "auction",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "391b0851a7e11d128cca",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Definindo a Janela de Tempo no Long &amp; Short por Cointegra\u00e7\u00e3o | QuantBrasil",
+  "url": "https://quantbrasil.com.br/blog/definindo-a-janela-de-tempo-no-long-short-por-cointegracao/",
+  "published": "2026-10-22T03:14:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "arbitrage",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "582af98bc9f46823f24b",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Aprenda a Estrat\u00e9gia de Long &amp; Short por Cointegra\u00e7\u00e3o | QuantBrasil",
+  "url": "https://quantbrasil.com.br/blog/aprenda-a-estrategia-de-long-short-por-cointegracao/",
+  "published": "2026-10-22T03:14:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "correlation",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [
+   "https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.corr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "01920cf9d94d0382ad07",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Backtest da Estrat\u00e9gia do Estoc\u00e1stico Lento em Python | QuantBrasil",
+  "url": "https://quantbrasil.com.br/blog/backtest-da-estrategia-do-estocastico-lento-em-python/",
+  "published": "2026-10-22T03:14:20+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pt-BR",
+  "endpoints": [
+   "https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html",
+   "https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.columns.html",
+   "https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.drop.html",
+   "https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.dropna.html",
+   "https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.ewm.html",
+   "https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.diff.html",
+   "https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.from_dict.html"
+  ],
+  "n_endpoints": 7,
+  "vault_sha": "5de4102ad487fac8f64f",
+  "host": "quantbrasil.com.br",
+  "claims": [
+   {
+    "claim": "Definindo as condi\u00e7\u00f5es de compra Considerando que todas as condi\u00e7\u00f5es acima s\u00e3o respeitadas, o ponto de entrada ser\u00e1 a abertura do terceiro candle, caso abra acima da m\u00e1xima do candle sinal, ou 1 tick acima da m\u00e1xima caso isso n\u00e3o aconte\u00e7a.",
+    "lang": "pt",
+    "quantities": [
+     "abertura",
+     "candle",
+     "m\u00e1xima"
+    ],
+    "direction": [
+     "compra",
+     "entrada"
+    ],
+    "horizon": [
+     "abertura",
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "ibov"
+     ],
+     "transfer_only": [
+      "ibov->indices (B3)"
+     ],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8c572f603815"
+   },
+   {
+    "claim": "# Buy at market open if above previous high, otherwise",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "ibov"
+     ],
+     "transfer_only": [
+      "ibov->indices (B3)"
+     ],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3e25fb3db15a"
+   },
+   {
+    "claim": "Uma vez efetuada a compra, podemos estabelecer as regras de venda ( exit ): Venda na abertura : venderemos na abertura se encontrarmos um candle que abra acima do alvo ou abaixo do stop;",
+    "lang": "pt",
+    "quantities": [
+     "abertura",
+     "candle"
+    ],
+    "direction": [
+     "compra",
+     "venda"
+    ],
+    "horizon": [
+     "abertura"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "ibov"
+     ],
+     "transfer_only": [
+      "ibov->indices (B3)"
+     ],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8e4882679593"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Entenda o que \u00e9 o Beta e Aprenda a Calcul\u00e1-lo Utilizando Python | QuantBrasil",
+  "url": "https://quantbrasil.com.br/blog/entenda-o-que-e-o-beta-e-aprenda-a-calcula-lo-utilizando-python/",
+  "published": "2026-10-22T03:14:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "correlation",
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "424e2084784b9a80243a",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Como Calcular o Estoc\u00e1stico Lento Utilizando Python | QuantBrasil",
+  "url": "https://quantbrasil.com.br/blog/como-calcular-o-estocastico-lento-utilizando-python/",
+  "published": "2026-10-22T03:14:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "pt-BR",
+  "endpoints": [
+   "https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.rolling.html",
+   "https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.max.html#pandas.DataFrame.max",
+   "https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.min.html",
+   "https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.mean.html",
+   "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html",
+   "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.axhline.html"
+  ],
+  "n_endpoints": 6,
+  "vault_sha": "888d81939c34d3024d79",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u4f8b\u306b\u95a2\u3059\u308b\u30a2\u30eb\u30b4\u30ea\u30ba\u30e0\u53d6\u5f15\u306e\u8a18\u4e8b | MetaTrader",
+  "url": "https://www.metatrader.com/ja/algotrading/examples",
+  "published": "2026-10-22T03:14:26+00:00",
+  "symbols": [
+   "US30"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "momentum",
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://www.metatrader.com/llms.txt",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/ja/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 18,
+  "vault_sha": "090e17e3d94727145701",
+  "host": "www.metatrader.com",
+  "claims": [
+   {
+    "claim": "\u30b9\u30a4\u30f3\u30b0\u691c\u51fa\u3001ATR\u307e\u305f\u306f\u56fa\u5b9a\u95be\u5024\u306b\u3088\u308b\u30b5\u30a4\u30ba\u306e\u5224\u5b9a\u3001\u4e0a\u6607\u30fb\u4e0b\u964d\u69cb\u9020\u306e\u691c\u8a3c\u3068\u3044\u3063\u305f\u30d7\u30ed\u30bb\u30b9\u3092\u9806\u306b\u89e3\u8aac\u3057\u3001\u305d\u308c\u3089\u306e\u30eb\u30fc\u30eb\u3092MQL5\u3067\u5b9f\u88c5\u3057\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "atr"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u30b9\u30a4\u30f3\u30b0"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30"
+     ],
+     "mentioned": [
+      "\u30c0\u30a6"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6ab2e059beb3"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u30a4\u30f3\u30b8\u30b1\u30fc\u30bf\u306b\u95a2\u3059\u308b\u30a2\u30eb\u30b4\u30ea\u30ba\u30e0\u53d6\u5f15\u306e\u8a18\u4e8b | MetaTrader",
+  "url": "https://www.metatrader.com/ja/algotrading/examples_indicators",
+  "published": "2026-10-22T03:14:27+00:00",
+  "symbols": [
+   "US30"
+  ],
+  "timeframes": [
+   "\u65e5\u8db3",
+   "\u9031\u8db3"
+  ],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "momentum",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "ja",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://www.metatrader.com/llms.txt",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/ja/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 18,
+  "vault_sha": "2f3b6ba905c8a863585b",
+  "host": "www.metatrader.com",
+  "claims": [
+   {
+    "claim": "MQL5\u306b\u304a\u3051\u308b\u30bf\u30a4\u30e0\u30ae\u30e3\u30c3\u30d7\u5206\u6790\uff08\u7b2c1\u56de\uff09\uff1a\u57fa\u672c\u30a4\u30f3\u30b8\u30b1\u30fc\u30bf\u306e\u69cb\u7bc9 \u30bf\u30a4\u30e0\u30ae\u30e3\u30c3\u30d7\u5206\u6790\u306f\u3001\u5e02\u5834\u306e\u53cd\u8ee2\u304c\u8d77\u3053\u308b\u53ef\u80fd\u6027\u306e\u3042\u308b\u30dd\u30a4\u30f3\u30c8\u3092\u7279\u5b9a\u3059\u308b\u305f\u3081\u306e\u624b\u6cd5\u3067\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30ae\u30e3\u30c3\u30d7"
+    ],
+    "direction": [
+     "\u53cd\u8ee2"
+    ],
+    "horizon": [
+     "\u5206"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30"
+     ],
+     "mentioned": [
+      "\u30c0\u30a6"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "01f652331b23"
+   },
+   {
+    "claim": "\u30d7\u30e9\u30a4\u30b9\u30a2\u30af\u30b7\u30e7\u30f3\u5206\u6790\u30c4\u30fc\u30eb\u30ad\u30c3\u30c8\u306e\u958b\u767a\uff08\u7b2c55\u56de\uff09\uff1aCPI\u30df\u30cb\u30ed\u30fc\u30bd\u30af\u8db3\u30aa\u30fc\u30d0\u30fc\u30ec\u30a4\u306b\u3088\u308b\u30d0\u30fc\u5185\u5727\u529b\u306e\u53ef\u8996\u5316 \u4fa1\u683c\u30c1\u30e3\u30fc\u30c8\u4e0a\u306b\u30d0\u30fc\u5185\u306e\u8cb7\u3044\u5727\u529b\u3068\u58f2\u308a\u5727\u529b\u3092\u53ef\u8996\u5316\u3059\u308bCLV\u30d9\u30fc\u30b9\u306e\u30aa\u30fc\u30d0\u30fc\u30ec\u30a4\u3067\u3042\u308bCandle Pressure Index\uff08CPI\u3001\u30ed\u30fc\u30bd\u30af\u8db3\u5727\u529b\u6307\u6570\uff09\u306e\u8a2d\u8a08\u3068MetaTrader 5\u3078\u306e\u5b9f\u88c5\u306b\u3064\u3044\u3066\u89e3\u8aac\u3057\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "cpi",
+     "atr"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u5206",
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30"
+     ],
+     "mentioned": [
+      "\u30c0\u30a6"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "15bef0610110"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u30a8\u30ad\u30b9\u30d1\u30fc\u30c8\u306b\u95a2\u3059\u308b\u30a2\u30eb\u30b4\u30ea\u30ba\u30e0\u53d6\u5f15\u306e\u8a18\u4e8b | MetaTrader",
+  "url": "https://www.metatrader.com/ja/algotrading/examples_experts",
+  "published": "2026-10-22T03:14:29+00:00",
+  "symbols": [
+   "US30"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://www.metatrader.com/llms.txt",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/ja/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 18,
+  "vault_sha": "e0b8957443d89a22ae87",
+  "host": "www.metatrader.com",
+  "claims": [
+   {
+    "claim": "\u9650\u5b9a\u3055\u308c\u305f\u6709\u52b9\u671f\u9593\u5185\u3067\u30bb\u30c3\u30c8\u30a2\u30c3\u30d7\u3092\u691c\u8a3c\u3057\u3001Supertrend\u3092\u7528\u3044\u305f\u66dc\u65e5\u30d5\u30a3\u30eb\u30bf\u3092\u5099\u3048\u3001\u30a8\u30f3\u30c8\u30ea\u30fc\u306f\u30ec\u30d9\u30eb\u7a81\u7834\u6642\u307e\u305f\u306f\u30d0\u30fc\u78ba\u5b9a\u6642\u306e\u3044\u305a\u308c\u306b\u3082\u5bfe\u5fdc\u3059\u308b\u30a8\u30ad\u30b9\u30d1\u30fc\u30c8\u30a2\u30c9\u30d0\u30a4\u30b6\u30fc(EA)\u3092\u5b9f\u88c5\u3057\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u7a81\u7834"
+    ],
+    "direction": [
+     "\u30a8\u30f3\u30c8\u30ea\u30fc"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30"
+     ],
+     "mentioned": [
+      "\u30c0\u30a6"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a4eeea7e8600"
+   },
+   {
+    "claim": "\u30a8\u30f3\u30c8\u30ea\u30fc\u65b9\u5f0f\u3068\u3057\u3066\u306f\u3001\u30ec\u30d9\u30eb\u7a81\u7834\u6642\u306e\u5373\u6642\u30a8\u30f3\u30c8\u30ea\u30fc\u3001\u307e\u305f\u306f\u30ed\u30fc\u30bd\u30af\u8db3\u78ba\u5b9a\u5f8c\u306e\u30a8\u30f3\u30c8\u30ea\u30fc\u306b\u5bfe\u5fdc\u3057\u3066\u3044\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u7a81\u7834"
+    ],
+    "direction": [
+     "\u30a8\u30f3\u30c8\u30ea\u30fc"
+    ],
+    "horizon": [
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30"
+     ],
+     "mentioned": [
+      "\u30c0\u30a6"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cbda0cfe235b"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u30c6\u30b9\u30bf\u30fc\u306b\u95a2\u3059\u308b\u30a2\u30eb\u30b4\u30ea\u30ba\u30e0\u53d6\u5f15\u306e\u8a18\u4e8b | MetaTrader",
+  "url": "https://www.metatrader.com/ja/algotrading/strategy_tester",
+  "published": "2026-10-22T03:14:31+00:00",
+  "symbols": [
+   "US30",
+   "EURUSD",
+   "AUDUSD",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "correlation",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://www.metatrader.com/llms.txt",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/ja/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 18,
+  "vault_sha": "706d2401c68401c767ed",
+  "host": "www.metatrader.com",
+  "claims": [
+   {
+    "claim": "\u30e6\u30fc\u30b6\u30fc\u306fExcel\u3092\u7528\u3044\u3066\u7279\u5b9a\u9298\u67c4\u306e\u30d5\u30a1\u30f3\u30c0\u30e1\u30f3\u30bf\u30eb\u5206\u6790\u3092\u304a\u3053\u306a\u3044\u3001\u305d\u306e\u7d50\u679c\u3092\u3082\u3068\u306b\u3001Excel\u3060\u3051\u3092\u4f7f\u3063\u3066MetaTrader 5\u4e0a\u3067\u7a3c\u50cd\u3057\u3066\u3044\u308b\u30a8\u30ad\u30b9\u30d1\u30fc\u30c8\u30a2\u30c9\u30d0\u30a4\u30b6\u30fc(EA)\u306b\u5bfe\u3057\u3001\u7279\u5b9a\u30dd\u30b8\u30b7\u30e7\u30f3\u306e\u65b0\u898f\u5efa\u3066\u307e\u305f\u306f\u6c7a\u6e08\u3092\u6307\u793a\u3067\u304d\u308b\u3088\u3046\u306b\u3057\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "atr"
+    ],
+    "direction": [
+     "\u6c7a\u6e08"
+    ],
+    "horizon": [
+     "\u5206"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30",
+      "EURUSD",
+      "AUDUSD",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30c0\u30a6",
+      "eurusd",
+      "audusd",
+      "nvidia"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "398b14128d64"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u53d6\u5f15\u306b\u95a2\u3059\u308b\u30a2\u30eb\u30b4\u30ea\u30ba\u30e0\u53d6\u5f15\u306e\u8a18\u4e8b | MetaTrader",
+  "url": "https://www.metatrader.com/ja/algotrading/trading",
+  "published": "2026-10-22T03:14:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "orderflow",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://www.metatrader.com/llms.txt",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/ja/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 18,
+  "vault_sha": "1b8f6fa14b443f65b6b2",
+  "host": "www.metatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u53d6\u5f15\u30b7\u30b9\u30c6\u30e0\u306b\u95a2\u3059\u308b\u30a2\u30eb\u30b4\u30ea\u30ba\u30e0\u53d6\u5f15\u306e\u8a18\u4e8b | MetaTrader",
+  "url": "https://www.metatrader.com/ja/algotrading/trading_systems",
+  "published": "2026-10-22T03:14:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "\u6642\u9593\u8db3"
+  ],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "correlation",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "ja",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://www.metatrader.com/llms.txt",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/ja/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 18,
+  "vault_sha": "a3de2df5331b3db3c258",
+  "host": "www.metatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u7d71\u5408\u306b\u95a2\u3059\u308b\u30a2\u30eb\u30b4\u30ea\u30ba\u30e0\u53d6\u5f15\u306e\u8a18\u4e8b | MetaTrader",
+  "url": "https://www.metatrader.com/ja/algotrading/integration",
+  "published": "2026-10-22T03:14:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "ja",
+  "endpoints": [
+   "https://www.metatrader.com/manifest.json",
+   "https://www.metatrader.com/llms.txt",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip?utm_source=www.metatrader.com&amp;utm_campaign=download.mt5.macos",
+   "https://www.metatrader.com/ja/download",
+   "https://download.terminal.free/cdn/web/metaquotes.ltd/mt5/mt5setup.exe?utm_source=www.metatrader.com&amp;utm_campaign=download",
+   "https://download.terminal.free/cdn/mobile/mt5/ios?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mt5/android/app-gallery?hl=ja&amp;utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mt5/metatrader5.apk?utm_source=www.metatrader.com&amp;utm_campaign=install.metaquotes",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/ios",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android",
+   "https://download.terminal.free/cdn/mobile/mql5.channels/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/mql5channels/mql5channels.apk",
+   "https://www.tradays.com/en/download",
+   "https://download.terminal.free/cdn/mobile/tradays/ios",
+   "https://download.terminal.free/cdn/mobile/tradays/android",
+   "https://download.terminal.free/cdn/mobile/tradays/android/app-gallery",
+   "https://download.terminal.free/cdn/web/metaquotes.software.corp/tradays/tradays.apk"
+  ],
+  "n_endpoints": 18,
+  "vault_sha": "149dee5712ff2de2205a",
+  "host": "www.metatrader.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations?Status=Vacated&dir=ASC&col=AssociatedDocuments",
+  "published": "2026-10-22T03:14:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "MN",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f31c16c525177b40158c",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/67",
+  "published": "2026-10-22T03:14:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4076a8f8dd133914deaf",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/83",
+  "published": "2026-10-22T03:14:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "675436bcbe113e89d79a",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/34531",
+  "published": "2026-10-22T03:14:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2cbc142ff44995c61afd",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/34524",
+  "published": "2026-10-22T03:14:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "68ae5bb36e26b04368f3",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/71",
+  "published": "2026-10-22T03:14:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ba2ad4df5b952ed97f8d",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/53",
+  "published": "2026-10-22T03:14:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5c47d80c1ec036f683d8",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trade timing - AlgoCloud",
+  "url": "https://algocloud.com/learning-academy/trade-timing/",
+  "published": "2026-10-22T03:14:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3f2bc27b6a3b44c81aab",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Commission settings - AlgoCloud",
+  "url": "https://algocloud.com/learning-academy/commission-settings/",
+  "published": "2026-10-22T03:14:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4ba6977f38cae730d3eb",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Money Management - AlgoCloud",
+  "url": "https://algocloud.com/learning-academy/money-management/",
+  "published": "2026-10-22T03:14:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "299d6a0cc7b7defbd7a6",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "How StockPicking strategies work - AlgoCloud",
+  "url": "https://algocloud.com/learning-academy/how-stockpicking-strategies-work/",
+  "published": "2026-10-22T03:14:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "dec625c06dd9256fa891",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Position score - AlgoCloud",
+  "url": "https://algocloud.com/learning-academy/position-score/",
+  "published": "2026-10-22T03:15:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3fca5789845c56435aa0",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "SP Money Management - AlgoCloud",
+  "url": "https://algocloud.com/learning-academy/sp-money-management/",
+  "published": "2026-10-22T03:15:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ed922b11f4360e87f0bf",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Entry conditions - AlgoCloud",
+  "url": "https://algocloud.com/learning-academy/entry-conditions/",
+  "published": "2026-10-22T03:15:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "carry"
+  ],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d8c6dd7c5adc3bf3628b",
+  "host": "algocloud.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "News for traders &amp; partners | FTO Blog",
+  "url": "https://forextester.com/blog/tag/news/",
+  "published": "2026-10-22T03:15:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "21a99248eb210574838c",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Strategies Articles | FTO Blog",
+  "url": "https://forextester.com/blog/tag/trading-strategies/",
+  "published": "2026-10-22T03:15:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "mean_reversion"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "44f48da6caa71bda8bea",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Technical Analysis Articles | FTO Blog",
+  "url": "https://forextester.com/blog/tag/technical-analysis/",
+  "published": "2026-10-22T03:15:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fb93fff27c82f2333fac",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Tools Articles | FTO Blog",
+  "url": "https://forextester.com/blog/tag/tools/",
+  "published": "2026-10-22T03:15:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "mean_reversion",
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0ff75024faec1a044753",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Psychology Articles | FTO Blog",
+  "url": "https://forextester.com/blog/tag/trading-psychology/",
+  "published": "2026-10-22T03:15:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3be5c670d6180afa6743",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How the Big Trades Indicator Works And What Settings are Meaningful",
+  "url": "https://forextester.com/blog/how-the-big-trades-indicator-actually-works/",
+  "published": "2026-10-22T03:15:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "carry",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "80afe89d41a09546b856",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "7 Volume Analysis Strategies That Actually Work",
+  "url": "https://forextester.com/blog/volume-analysis-trading/",
+  "published": "2026-10-22T03:15:21+00:00",
+  "symbols": [
+   "XAUUSD",
+   "EURUSD",
+   "GBPUSD",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "correlation",
+   "gap",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadEN&amp;gc=Blog_FooterDownloadEN"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "894c2a917aea4ab21f17",
+  "host": "forextester.com",
+  "claims": [
+   {
+    "claim": "Term Explanation Volume Total number of contracts/shares/lots traded in a defined period Tick Volume Number of price changes (ticks) per bar \u2014 used in Forex as a volume proxy Average Volume Mean volume over a lookback period (typically 20 periods) used as a baseline How Volume Differs in Forex, Stocks, and Futures In stocks , volume is real and centralized.",
+    "lang": "en",
+    "quantities": [
+     "volume",
+     "stocks",
+     "futures"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "tick",
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "xau",
+      "eur/usd",
+      "gbp/usd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cc234e84d86d"
+   },
+   {
+    "claim": "In futures , volume is also real and exchange-reported, with an additional layer of precision: open interest (the number of open contracts) tells you whether new money is entering a trend or old positions are being closed.",
+    "lang": "en",
+    "quantities": [
+     "futures",
+     "volume",
+     "open interest",
+     "open"
+    ],
+    "direction": [
+     "contracts"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "xau",
+      "eur/usd",
+      "gbp/usd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f82e26c2ade"
+   },
+   {
+    "claim": "Price above VWAP signals a bullish institutional bias for the session;",
+    "lang": "en",
+    "quantities": [
+     "vwap",
+     "session"
+    ],
+    "direction": [
+     "bullish"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "xau",
+      "eur/usd",
+      "gbp/usd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "33e3588b19cc"
+   },
+   {
+    "claim": "VSA examines three elements simultaneously on every bar: Bar spread (range from high to low) Close position within the bar (upper, middle, lower) Volume (relative to recent average) Specific combinations signal accumulation, distribution, markup, or markdown phases.",
+    "lang": "en",
+    "quantities": [
+     "spread",
+     "range",
+     "close",
+     "volume"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "bar",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "xau",
+      "eur/usd",
+      "gbp/usd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "bcfb20c7b6ca"
+   },
+   {
+    "claim": "Narrow spread up-bar, close in the middle, above-average volume = potential distribution (supply absorbing demand).",
+    "lang": "en",
+    "quantities": [
+     "spread",
+     "close",
+     "volume"
+    ],
+    "direction": [
+     "narrow"
+    ],
+    "horizon": [
+     "bar",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "xau",
+      "eur/usd",
+      "gbp/usd",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ac79ca584705"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u4ea4\u6613\u7ed3\u7b97\u8d44\u91d1(\u94f6\u8bc1\u8f6c\u8d26) _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://data.eastmoney.com/cjsj/bankTransfer.html",
+  "published": "2026-10-22T03:15:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ac382b7fc007e1c23f97",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7b56\u7565\u62a5\u544a",
+  "url": "http://data.eastmoney.com/report/strategyreport.jshtml",
+  "published": "2026-10-22T03:15:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4e28e4b8f99361ec82a6",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5168\u56fd\u80a1\u7968\u4ea4\u6613\u7edf\u8ba1\u8868 _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://data.eastmoney.com/cjsj/gpjytj.html",
+  "published": "2026-10-22T03:15:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c96b13a8125046a7d377",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u5916\u6c47\u548c\u9ec4\u91d1\u50a8\u5907 _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://data.eastmoney.com/cjsj/hjwh.html",
+  "published": "2026-10-22T03:15:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "8f13f9a6486d9e09348c",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
