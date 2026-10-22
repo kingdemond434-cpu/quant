@@ -266,7 +266,7 @@ def record_own_peak(path: str) -> None:
 RESIDENT_STATE = DESK / "reports" / "JUDGE_RESIDENT.json"
 #: WHAT A CRASH MUST NOT ERASE (2026-10-22). The resident rewrites RESIDENT_STATE every 30 s, so
 #: an unclean restart is most likely to catch THAT file with its data still in the write cache:
-#: on the box the 12:35Z publish carried JUDGE_RESIDENT.json as 784 NUL bytes. The resident that
+#: on the box the 12:35Z publish carried JUDGE_RESIDENT.json as 839 NUL bytes. The resident that
 #: came back at 20:36Z read nothing, so `longest_sweep_s` (64,711 s, an 18 h sweep) fell to null,
 #: its hang ceiling fell from the 48 h cap to the 4.8 h floor (2 x GAUNTLET_FRESH_BUDGET_SEC), and
 #: the next sweep -- whose plan phase alone measured 2 h 49 m -- was set to be killed as hung in

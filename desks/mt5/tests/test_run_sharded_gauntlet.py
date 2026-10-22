@@ -452,7 +452,7 @@ def test_a_zeroed_resident_record_does_not_reset_the_hang_ceiling() -> None:
 
     runner.resident(sweep=sweep, sleep=slept.append, clock=clock, limit_s=None, max_sweeps=1)
     assert json.loads(runner.RESIDENT_MEMORY.read_text("utf-8"))["longest_sweep_s"] == 64711.4
-    runner.RESIDENT_STATE.write_bytes(b"\0" * 784)  # what the crash left behind
+    runner.RESIDENT_STATE.write_bytes(b"\0" * 839)  # what the crash left behind
     seen: dict = {}
 
     def probe() -> int:
