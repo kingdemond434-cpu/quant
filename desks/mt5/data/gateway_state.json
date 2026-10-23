@@ -24,12 +24,12 @@
   },
   "position": null,
   "last_bracket_date": "2026-10-23",
-  "last_reconcile": "2026-10-23T14:02:26+00:00",
+  "last_reconcile": "2026-10-23T14:19:02+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {},
   "lot": 0.06,
-  "equity": 485.96,
+  "equity": 482.39,
   "placement_health": {
     "consecutive_total_rejections": 0,
     "last_ok": "2026-10-13T04:00:13+00:00",
@@ -53,7 +53,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-23T17:04:26+00:00",
+  "placement_pass": "2026-10-23T17:16:57+00:00",
   "netting_booked": {},
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
@@ -282,15 +282,15 @@
     "xauusd_cross_asset_residual_asia_p_6f7e685b11cb2ccf": {},
     "xauusd_cross_asset_residual_asia_p_994638ee9bb08b37": {},
     "eurils_formula_asia_p_673857a649d3c271": {
-      "last_signal_bar": "2026-10-23 15:00:00+00:00"
+      "last_signal_bar": "2026-10-23 16:00:00+00:00"
     },
     "eurzar_carry_asia_p_8339edce23032d21": {
-      "last_signal_bar": "2026-10-23 16:00:00+00:00",
+      "last_signal_bar": "2026-10-23 17:00:00+00:00",
       "open_ttl_until": "2026-10-24T22:15:00+00:00",
       "trail_k": 0.0
     },
     "usdnok_carry_asia_p_ff35bb7c8427d66f": {
-      "last_signal_bar": "2026-10-23 16:50:00+00:00",
+      "last_signal_bar": "2026-10-23 17:10:00+00:00",
       "open_ttl_until": "2026-10-24T00:55:00+00:00",
       "trail_k": 0.0
     }
@@ -475,20 +475,12 @@
     "240098477": 0.019959999999997535
   },
   "restart_reconcile": {
-    "at": "2026-10-23T14:04:27+00:00",
+    "at": "2026-10-23T14:16:59+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
     "armed": true,
-    "positions": [
-      {
-        "ticket": 240098477,
-        "symbol": "EURZAR",
-        "comment": "DWeurzar_carry_asia_p_8339edc",
-        "volume": 0.03,
-        "sl": 18.59471
-      }
-    ],
+    "positions": [],
     "orders": [],
     "in_doubt": [],
     "stopless": [],
@@ -502,6 +494,7 @@
     "gold_oco_direction_lock/gold_asia/buy_stop": "2026-10-23",
     "gold_oco_direction_lock/gold_asia/sell_stop": "2026-10-23",
     "gold_late_send/gold_asia": "2026-10-23",
-    "gold_late_send/gold_london_am": "2026-10-23"
+    "gold_late_send/gold_london_am": "2026-10-23",
+    "gold_late_send/gold_afternoon": "2026-10-23"
   }
 }
