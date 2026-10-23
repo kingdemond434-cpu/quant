@@ -1,0 +1,362 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2360005",
+  "symbols": [
+   "CHFJPY",
+   "EURUSD",
+   "LMAXMU",
+   "XAUEUR",
+   "XAUUSD"
+  ],
+  "found_at": "2026-10-23T02:38:52+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 1.685,
+  "growth_pct": 202.5,
+  "weeks": 36.0,
+  "pf": 1.43,
+  "max_dd_pct": null,
+  "trades": 411.0,
+  "win_pct": 228.0,
+  "algo_pct": 99.0,
+  "subscribers": 0.0,
+  "author": "/en/users/snowpea",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "13": 2,
+   "06": 2,
+   "00": 4,
+   "19": 2,
+   "01": 2,
+   "14": 2,
+   "02": 1,
+   "12": 1,
+   "11": 1,
+   "16": 1,
+   "20": 1,
+   "15": 1,
+   "21": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2379723",
+  "symbols": [
+   "BTCUSD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-10-23T02:38:52+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "gold"
+  ],
+  "ev_score": 1.52,
+  "growth_pct": 196.9,
+  "weeks": 31.0,
+  "pf": 1.43,
+  "max_dd_pct": null,
+  "trades": 195.0,
+  "win_pct": 117.0,
+  "algo_pct": 44.0,
+  "subscribers": 0.0,
+  "author": "/en/users/dereklin0919",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "10": 1,
+   "13": 1,
+   "08": 2,
+   "11": 2,
+   "22": 1,
+   "14": 2,
+   "15": 8,
+   "18": 1,
+   "12": 2,
+   "07": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2386131",
+  "symbols": [
+   "AUDCAD",
+   "EURCHF"
+  ],
+  "found_at": "2026-10-23T02:38:52+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "algo_survivor"
+  ],
+  "ev_score": 12.619,
+  "growth_pct": 1495.98,
+  "weeks": 37.0,
+  "pf": 2.78,
+  "max_dd_pct": null,
+  "trades": 177.0,
+  "win_pct": 147.0,
+  "algo_pct": 100.0,
+  "subscribers": 4.0,
+  "author": "/en/users/gemmaster",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "11": 3,
+   "13": 1,
+   "08": 3,
+   "16": 3,
+   "07": 1,
+   "20": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2195619",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-10-23T02:38:52+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "long_lived",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 3.74,
+  "growth_pct": 226.34,
+  "weeks": 142.0,
+  "pf": 1.61,
+  "max_dd_pct": null,
+  "trades": 1359.0,
+  "win_pct": 977.0,
+  "algo_pct": 99.0,
+  "subscribers": 0.0,
+  "author": "/en/users/strueli",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "20": 2,
+   "16": 1,
+   "09": 1,
+   "06": 1,
+   "12": 1,
+   "14": 3,
+   "04": 3,
+   "19": 2,
+   "13": 2,
+   "05": 2,
+   "10": 1,
+   "17": 1,
+   "02": 2,
+   "03": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2375487",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-10-23T02:38:52+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "long_lived",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 2.711,
+  "growth_pct": 185.52,
+  "weeks": 111.0,
+  "pf": 1.55,
+  "max_dd_pct": null,
+  "trades": 261.0,
+  "win_pct": 184.0,
+  "algo_pct": 98.0,
+  "subscribers": 0.0,
+  "author": "/en/users/abeiks",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "08": 2,
+   "18": 1,
+   "05": 1,
+   "04": 1,
+   "07": 1,
+   "22": 1,
+   "19": 1,
+   "11": 2,
+   "16": 1,
+   "12": 1,
+   "09": 3
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2389070",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-10-23T02:38:52+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "new_fast_growth",
+   "gold"
+  ],
+  "ev_score": 2.423,
+  "growth_pct": 484.7,
+  "weeks": 13.0,
+  "pf": 2.14,
+  "max_dd_pct": null,
+  "trades": 163.0,
+  "win_pct": 93.0,
+  "algo_pct": 19.0,
+  "subscribers": 1.0,
+  "author": "/en/users/chiragchittasya",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "12": 5,
+   "07": 4,
+   "06": 5,
+   "10": 2,
+   "09": 1,
+   "03": 2,
+   "05": 1,
+   "04": 1,
+   "11": 1,
+   "19": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2383310",
+  "symbols": [
+   "GBPUSD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-10-23T02:38:52+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 1.77,
+  "growth_pct": 215.72,
+  "weeks": 35.0,
+  "pf": 1.54,
+  "max_dd_pct": null,
+  "trades": 1693.0,
+  "win_pct": 1349.0,
+  "algo_pct": 100.0,
+  "subscribers": 4.0,
+  "author": "/en/users/smsafghan",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "17": 2,
+   "13": 3,
+   "09": 2,
+   "05": 1,
+   "07": 5,
+   "12": 1,
+   "06": 4,
+   "10": 1,
+   "08": 1,
+   "14": 2,
+   "11": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2340546",
+  "symbols": [
+   "EURUSD",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-10-23T02:38:52+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "long_lived",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 3.46,
+  "growth_pct": 236.82,
+  "weeks": 111.0,
+  "pf": 1.08,
+  "max_dd_pct": null,
+  "trades": 5053.0,
+  "win_pct": 2410.0,
+  "algo_pct": 99.0,
+  "subscribers": 0.0,
+  "author": "/en/users/jimmy282",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "17": 1,
+   "04": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2251746",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-10-23T02:38:52+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "long_lived",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 2.279,
+  "growth_pct": 154.59,
+  "weeks": 113.0,
+  "pf": 1.22,
+  "max_dd_pct": null,
+  "trades": 277.0,
+  "win_pct": 139.0,
+  "algo_pct": 97.0,
+  "subscribers": 0.0,
+  "author": "/en/users/ekajayanthi",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "13": 3,
+   "07": 1,
+   "06": 1,
+   "03": 1,
+   "00": 1,
+   "08": 2,
+   "10": 3,
+   "16": 1,
+   "20": 1,
+   "05": 3,
+   "14": 3,
+   "09": 1
+  }
+ }
+]
