@@ -8,6 +8,12 @@
    "returncode": 1,
    "status": "FAILED"
   },
+  "certificate_projection": {
+   "finished_at": "2026-10-23T01:41:34.378405+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
+  },
   "external_queue_projection": {
    "finished_at": "2026-10-22T23:58:08.205502+00:00",
    "passes_completed": 1,
@@ -15,14 +21,35 @@
    "status": "FAILED"
   },
   "external_queue_reconciliation": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/reconcile_external_queue.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-22T23:58:23.097067+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-23T01:07:06.477523+00:00",
+   "passes_completed": 1,
+   "returncode": 124,
+   "status": "FAILED"
+  },
+  "forward_clock_reconciliation": {
+   "finished_at": "2026-10-23T01:43:03.951029+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
+  },
+  "forward_identity_reconciliation": {
+   "finished_at": "2026-10-23T01:42:31.415180+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
+  },
+  "forward_lane_heal": {
+   "finished_at": "2026-10-23T01:43:46.374000+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
+  },
+  "fusion_state_pull": {
+   "finished_at": "2026-10-23T01:42:02.928451+00:00",
+   "passes_completed": 1,
+   "returncode": 0,
+   "status": "DONE"
   }
  },
- "updated_at": "2026-10-22T23:58:23.097067+00:00"
+ "updated_at": "2026-10-23T01:43:46.374000+00:00"
 }

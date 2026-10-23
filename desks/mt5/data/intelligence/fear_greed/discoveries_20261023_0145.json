@@ -1,0 +1,29 @@
+[
+  {
+    "source": "cnn_fear_greed",
+    "type": "extreme_sentiment",
+    "reading": "extreme_fear",
+    "score": 19.8131868131868,
+    "rating": "extreme fear",
+    "symbols": [
+      "US500",
+      "NAS100",
+      "XAUUSD"
+    ],
+    "confidence": 0.207472527472528,
+    "description": "Fear & Greed: 19.8131868131868 (extreme fear) - contrarian buy signal"
+  },
+  {
+    "source": "cnn_fear_greed",
+    "type": "rapid_change",
+    "score": 19.8131868131868,
+    "previous_close": 31.3714285714286,
+    "change": -11.6,
+    "symbols": [
+      "US500",
+      "NAS100"
+    ],
+    "confidence": 0.5779120879120899,
+    "description": "Fear & Greed changed worsening by 12 pts in 1 day"
+  }
+]
