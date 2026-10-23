@@ -3,7 +3,7 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "finished_at": "2026-10-22T23:46:59.617881+00:00",
+   "finished_at": "2026-10-23T03:47:05.216163+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
@@ -15,16 +15,19 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-10-22T23:58:08.205502+00:00",
+   "finished_at": "2026-10-23T03:50:05.537026+00:00",
    "passes_completed": 1,
-   "returncode": 124,
-   "status": "FAILED"
+   "returncode": 0,
+   "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-10-23T01:07:06.477523+00:00",
-   "passes_completed": 1,
-   "returncode": 124,
-   "status": "FAILED"
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "scripts/reconcile_external_queue.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-10-23T03:50:16.653621+00:00",
+   "status": "RUNNING"
   },
   "forward_clock_reconciliation": {
    "finished_at": "2026-10-23T01:43:03.951029+00:00",
@@ -51,5 +54,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-23T01:43:46.374000+00:00"
+ "updated_at": "2026-10-23T03:50:16.653621+00:00"
 }

@@ -1,0 +1,3321 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Comparte tu estrategia de Copy Trading y gana - RoboForex",
+  "url": "https://roboforex.com/es/copy-trading/share-your-strategy/",
+  "published": "2026-10-23T03:13:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRAD\u00cdA"
+  ],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "abea5f36bc4ba200b6c4",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Copy Trading: General | RoboForex Help Center",
+  "url": "https://roboforex.com/es/help/copy-trading-general/",
+  "published": "2026-10-23T03:13:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-ES",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "26e57d6af2504b9f1b8a",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Bono de Bienvenida 30 USD - recibe fondos iniciales para operar - RoboForex",
+  "url": "https://roboforex.com/es/clients/promotions/welcome-program/",
+  "published": "2026-10-23T03:13:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5e9f0d44d2466f573311",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Apalancamiento de hasta 1:2000 con el br\u00f3ker - RoboForex",
+  "url": "https://roboforex.com/es/clients/services/2000-up-leverage/",
+  "published": "2026-10-23T03:13:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d47734c6c436a0bc7853",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Retirada de Fondos Sin Comisi\u00f3n - RoboForex",
+  "url": "https://roboforex.com/es/clients/funds/free-withdrawal/",
+  "published": "2026-10-23T03:13:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a39c2e7def7a8a0f7c93",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Hasta el 10% en fondos extra sobre el balance de la cuenta para operar - RoboForex",
+  "url": "https://roboforex.com/es/clients/services/up-to-10-percents-on-account-balance/",
+  "published": "2026-10-23T03:13:12+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "370430ec76f5a92844b5",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Programa de Cashback y Reembolsos - RoboForex",
+  "url": "https://roboforex.com/es/clients/services/rebate/",
+  "published": "2026-10-23T03:13:15+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "bf3680d5d5749b28273a",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e41\u0e1e\u0e25\u0e15\u0e1f\u0e2d\u0e23\u0e4c\u0e21 MetaTrader 5 (MT5) - \u0e14\u0e32\u0e27\u0e19\u0e4c\u0e42\u0e2b\u0e25\u0e14\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a PC, \u0e40\u0e27\u0e47\u0e1a \u0e41\u0e25\u0e30\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/platforms/metatrader5-mt5/",
+  "published": "2026-10-23T03:13:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d3bdb22421bc34e24470",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e40\u0e27\u0e47\u0e1a\u0e41\u0e1e\u0e25\u0e15\u0e1f\u0e2d\u0e23\u0e4c\u0e21 R StocksTrader: \u0e2b\u0e38\u0e49\u0e19, \u0e14\u0e31\u0e0a\u0e19\u0e35 \u0e41\u0e25\u0e30 ETF \u0e1a\u0e19\u0e1e\u0e31\u0e19\u0e18\u0e1a\u0e31\u0e15\u0e23 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/platforms/stock-market/",
+  "published": "2026-10-23T03:13:18+00:00",
+  "symbols": [
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "42f330d6bf08aa2d7c3b",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "01 \u0e25\u0e47\u0e2d\u0e15) \u0e1b\u0e23\u0e34\u0e21\u0e32\u0e13\u0e04\u0e33\u0e2a\u0e31\u0e48\u0e07\u0e02\u0e31\u0e49\u0e19\u0e2a\u0e39\u0e07 10,000,000 (100 \u0e25\u0e47\u0e2d\u0e15) \u0e14\u0e2d\u0e01\u0e40\u0e1a\u0e35\u0e49\u0e22 (\u0e40\u0e25\u0e40\u0e27\u0e2d\u0e40\u0e23\u0e08\u0e21\u0e32\u0e01\u0e01\u0e27\u0e48\u0e32 1:1) \u0e15\u0e31\u0e27\u0e41\u0e1b\u0e23 \u0e14\u0e2d\u0e01\u0e40\u0e1a\u0e35\u0e49\u0e22 (\u0e40\u0e25\u0e40\u0e27\u0e2d\u0e40\u0e23\u0e08 1:1) - \u0e40\u0e27\u0e25\u0e32\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 (\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23) 00:15 - 23:59 \u0e08\u0e31\u0e19\u0e17\u0e23\u0e4c - \u0e28\u0e38\u0e01\u0e23\u0e4c \u0e40\u0e27\u0e25\u0e32\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 (\u0e02\u0e2d) \u0e15\u0e25\u0e2d\u0e14 24 \u0e0a\u0e31\u0e48\u0e27\u0e42\u0e21\u0e07 Stop Out 20% \u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23\u0e02\u0e2d\u0e07\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17 (\u0e08\u0e33\u0e40\u0e1b\u0e47\u0e19) - \u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23\u0e02\u0e2d\u0e07\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17 (\u0e42\u0e14\u0e22\u0e2a\u0e21\u0e31\u0e04\u0e23\u0e43\u0e08) - \u0e08\u0e33\u0e19\u0e27\u0e19\u0e02\u0e2d\u0e07\u0e15\u0e23\u0e32\u0e2a\u0e32\u0e23\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 32 \u0e2a\u0e27\u0e2d\u0e1b\u0e1f\u0e23\u0e35 (\u0e40\u0e09\u0e1e\u0e32\u0e30\u0e40\u0e25\u0e40\u0e27\u0e2d\u0e40\u0e23\u0e08 1:1) \u0e14\u0e31\u0e0a\u0e19\u0e35 \u0e40\u0e25\u0e40\u0e27\u0e2d\u0e40\u0e23\u0e08 1:100 \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e15\u0e31\u0e49\u0e07\u0e41\u0e15\u0e48 1.",
+    "lang": "th",
+    "quantities": [
+     "\u0e2a\u0e40\u0e1b\u0e23\u0e14",
+     "\u0e14\u0e2d\u0e01\u0e40\u0e1a\u0e35\u0e49\u0e22",
+     "\u0e14\u0e31\u0e0a\u0e19\u0e35"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "\u0e0a\u0e31\u0e48\u0e27\u0e42\u0e21\u0e07"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "18687bc66718"
+   },
+   {
+    "claim": "\u0e27\u0e31\u0e19\u0e08\u0e31\u0e19\u0e17\u0e23\u0e4c - \u0e27\u0e31\u0e19\u0e28\u0e38\u0e01\u0e23\u0e4c \u0e40\u0e27\u0e25\u0e32\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 (\u0e02\u0e2d) 24 Stop Out 20% \u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23\u0e02\u0e2d\u0e07\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17 (\u0e08\u0e33\u0e40\u0e1b\u0e47\u0e19) - \u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23\u0e02\u0e2d\u0e07\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17 (\u0e42\u0e14\u0e22\u0e2a\u0e21\u0e31\u0e04\u0e23\u0e43\u0e08) - \u0e08\u0e33\u0e19\u0e27\u0e19\u0e02\u0e2d\u0e07\u0e15\u0e23\u0e32\u0e2a\u0e32\u0e23\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 2 \u0e2a\u0e27\u0e2d\u0e1b\u0e1f\u0e23\u0e35 (\u0e40\u0e09\u0e1e\u0e32\u0e30\u0e40\u0e25\u0e40\u0e27\u0e2d\u0e40\u0e23\u0e08 1:1) CFDs \u0e1a\u0e19\u0e19\u0e49\u0e33\u0e21\u0e31\u0e19 \u0e40\u0e25\u0e40\u0e27\u0e2d\u0e40\u0e23\u0e08 1:20 \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e15\u0e31\u0e49\u0e07\u0e41\u0e15\u0e48 1.",
+    "lang": "th",
+    "quantities": [
+     "\u0e2a\u0e40\u0e1b\u0e23\u0e14",
+     "\u0e19\u0e49\u0e33\u0e21\u0e31\u0e19"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "\u0e27\u0e31\u0e19"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0f3f0b387601"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e27\u0e34\u0e18\u0e35\u0e01\u0e32\u0e23\u0e1d\u0e32\u0e01\u0e40\u0e07\u0e34\u0e19\u0e41\u0e25\u0e30\u0e16\u0e2d\u0e19\u0e40\u0e07\u0e34\u0e19 - RoboForex",
+  "url": "https://th.roboforex.com/clients/funds/deposit-withdrawal/",
+  "published": "2026-10-23T03:13:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b6d40e57f928dee8959d",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/",
+  "published": "2026-10-23T03:13:23+00:00",
+  "symbols": [
+   "ADAUSD",
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "ETHUSD",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPNZD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fd63a334bf444c723d0f",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e08\u0e31\u0e14\u0e2d\u0e31\u0e19\u0e14\u0e31\u0e1a Copy Trading - \u0e01\u0e25\u0e22\u0e38\u0e17\u0e18\u0e4c\u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01 - RoboForex",
+  "url": "https://th.roboforex.com/copy-trading/rating/",
+  "published": "2026-10-23T03:13:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c928ad15de66815f180c",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e41\u0e1e\u0e25\u0e15\u0e1f\u0e2d\u0e23\u0e4c\u0e21 Copy Trading - RoboForex",
+  "url": "https://th.roboforex.com/copy-trading/copy-top-strategies/",
+  "published": "2026-10-23T03:13:25+00:00",
+  "symbols": [
+   "EURCHF",
+   "EURUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "5M"
+  ],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9ff87a4d2bd171c33449",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e41\u0e0a\u0e23\u0e4c\u0e01\u0e25\u0e22\u0e38\u0e17\u0e18\u0e4c Copy Trading \u0e02\u0e2d\u0e07\u0e04\u0e38\u0e13\u0e41\u0e25\u0e30\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 - RoboForex",
+  "url": "https://th.roboforex.com/copy-trading/share-your-strategy/",
+  "published": "2026-10-23T03:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7b185f3594833060ab4b",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "La estrategia de efectivo del Eurosistema",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.es.html",
+  "published": "2026-10-23T03:13:28+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.es.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "04406f805d36617ccd77",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euros&amp;uuml;steemi sularahastrateegia",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.et.html",
+  "published": "2026-10-23T03:13:31+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "et",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.et.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "01c8a9cbb828a3b5e401",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Euroj\u00e4rjestelm\u00e4n k\u00e4teisstrategia",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.fi.html",
+  "published": "2026-10-23T03:13:32+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "fi",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fi.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0042ef744dcae102e9c0",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "La strat&amp;eacute;gie fiduciaire de l&amp;rsquo;Eurosyst&amp;egrave;me",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.fr.html",
+  "published": "2026-10-23T03:13:35+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "213ef3f56a362c188563",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Strait&amp;eacute;is airgid thirim an Euroch&amp;oacute;rais",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.ga.html",
+  "published": "2026-10-23T03:13:36+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ga",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ga.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "234f1d86b20673450667",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gotovinska strategija Eurosustava",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.hr.html",
+  "published": "2026-10-23T03:13:38+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "hr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "30502b80588fdf07cf4c",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Az eurorendszer k\u00e9szp\u00e9nzstrat\u00e9gi\u00e1ja",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/html/index.hu.html",
+  "published": "2026-10-23T03:13:41+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "hu",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hu.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d88df9521213c171a14e",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MTSA4: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/MTSA4/",
+  "published": "2026-10-23T03:13:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e75fa8867d14f7e40f48",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "MOVI3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/MOVI3/",
+  "published": "2026-10-23T03:13:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "af22786cfda080a1f5f2",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "SLCE3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/SLCE3/",
+  "published": "2026-10-23T03:13:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d03a17ce34ee37fa7099",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EGIE3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/EGIE3/",
+  "published": "2026-10-23T03:13:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0fd4c1a542313d5a3aff",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "LAND3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/LAND3/",
+  "published": "2026-10-23T03:13:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7fece50cbe63fc2ce01b",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CMIG4: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/CMIG4/",
+  "published": "2026-10-23T03:13:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5106950abd6440f599c3",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "SBSP3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/SBSP3/",
+  "published": "2026-10-23T03:13:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "27a3e7ed33b13e3cf833",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Skip Strike (Broken Wing) Butterfly Put - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/broken-wing-butterfly-put",
+  "published": "2026-10-23T03:13:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "106bd07f4fb504c6487f",
+  "host": "www.optionsplaybook.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Inverse Skip Strike Butterfly Call - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/inverse-broken-wing-butterfly-call",
+  "published": "2026-10-23T03:13:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "196dd6b8fb848f8d7ce5",
+  "host": "www.optionsplaybook.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Inverse Skip Strike Butterfly Put - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/inverse-broken-wing-butterfly-put",
+  "published": "2026-10-23T03:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cded26b83031dc6d3faf",
+  "host": "www.optionsplaybook.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Christmas Tree Butterfly Call | Christmas Tree Spread - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/christmas-tree-butterfly-call",
+  "published": "2026-10-23T03:14:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a783f428b1c2fe046e3e",
+  "host": "www.optionsplaybook.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Christmas Tree Butterfly Put | Christmas Tree Spread - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/christmas-tree-butterfly-put",
+  "published": "2026-10-23T03:14:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b14d9be6cc265c11f8e3",
+  "host": "www.optionsplaybook.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Long Call Condor Spread | Condor Spreads - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/long-call-condor-spread",
+  "published": "2026-10-23T03:14:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "42377a212a25c7bff88f",
+  "host": "www.optionsplaybook.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Long Put Condor Spread | Condor Spreads - The Options Playbook",
+  "url": "http://www.optionsplaybook.com/option-strategies/long-put-condor-spread",
+  "published": "2026-10-23T03:14:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "971f91e519e393fa43f1",
+  "host": "www.optionsplaybook.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u300c\u30a2\u30d5\u30bf\u30fcFOMC\u300d\u3067\u7c73\u56fd\u682a\u306e\u76f8\u5834\u30b7\u30ca\u30ea\u30aa\u306f\u3069\u3046\u306a\u308b\uff1f\uff08\u571f\u4fe1\u7530\u96c5\u4e4b\uff09 | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/articles/-/53535",
+  "published": "2026-10-23T03:14:12+00:00",
+  "symbols": [
+   "US30",
+   "XPTUSD",
+   "NAS100",
+   "JPN225",
+   "USDJPY",
+   "Toyota",
+   "NVIDIA"
+  ],
+  "timeframes": [
+   "\u65e5\u8db3"
+  ],
+  "patterns": [
+   "policy",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0b86b160d354dd68ce38",
+  "host": "media.rakuten-sec.net",
+  "claims": [
+   {
+    "claim": "25\uff05\u306e\u5229\u4e0a\u3052\u304c\u6c7a\u5b9a\u3055\u308c\u3001\u3055\u3089\u306bFOMC\u5f8c\u306e\u30a6\u30a9\u30fc\u30b7\u30e5\u7c73\u9023\u90a6\u6e96\u5099\u5236\u5ea6\u7406\u4e8b\u4f1a\uff08FRB\uff09\u8b70\u9577\u306e\u8a18\u8005\u4f1a\u898b\u3067\u306f\u5e74\u5185\u306e\u8ffd\u52a0\u5229\u4e0a\u3052\u5b9f\u65bd\u3092\u611f\u3058\u3055\u305b\u308b\u5185\u5bb9\u3060\u3063\u305f\u3053\u3068\u3067\u3001\u3053\u306e\u65e5\u306e\u7c73\u50b5\u5238\u5e02\u5834\u3067\u306f2\u5e74\u50b5\u308410\u5e74\u56fd\u50b5\u306a\u3069\u306e\u5229\u56de\u308a\u304c\u4e0a\u6607\u3057\u3001\u682a\u5f0f\u5e02\u5834\u3067\u3082\u4e3b\u8981\u682a\u4fa1\u6307\u6570\u304c\u4e0b\u843d\u3059\u308b\u53cd\u5fdc\u3092\u898b\u305b\u307e\u3057\u305f\u3002",
+    "lang": "ja",
+    "quantities": [
+     "fomc",
+     "\u56fd\u50b5",
+     "\u5229\u56de\u308a"
+    ],
+    "direction": [
+     "\u4e0a\u6607",
+     "\u4e0b\u843d"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "f4862df0cf78"
+   },
+   {
+    "claim": "16\u65e5\u306e\u524d\u65e5\u6bd4\u306e\u4e0b\u843d\u7387\u3092\u898b\u308b\u3068\u3001\u30c0\u30a6\u5de5\u696d\u682a30\u7a2e\u5e73\u5747\uff08NY\u30c0\u30a6\uff09\u304c1.",
+    "lang": "ja",
+    "quantities": [
+     "\u30c0\u30a6"
+    ],
+    "direction": [
+     "\u4e0b\u843d"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30"
+     ],
+     "mentioned": [
+      "\u30c0\u30a6"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "cfcee39a098f"
+   },
+   {
+    "claim": "\u307e\u305f\u3001\u4e0b\u843d\u7387\u306e\u5927\u304d\u3044NY\u30c0\u30a6\u306e\u65e5\u8db3\u30c1\u30e3\u30fc\u30c8\u3092\u898b\u3066\u3082\u3001\u58f2\u8cb7\u9ad8\u306f\u3042\u307e\u308a\u5897\u3048\u3066\u304a\u3089\u305a\u300125\u65e5\u9593\u306e\u5e73\u5747\u58f2\u8cb7\u9ad8\u3082\u4e0b\u56de\u3063\u3066\u3044\u308b\u305f\u3081\u3001\u300c\u30a4\u30d9\u30f3\u30c8\uff08FOMC\uff09\u3092\u53d7\u3051\u3066\u76f8\u5834\u306e\u30e0\u30fc\u30c9\u304c\u4e00\u5909\u3057\u3001\u58f2\u8cb7\u304c\u6d3b\u767a\u306b\u306a\u3063\u3066\u682a\u4fa1\u304c\u4e0b\u843d\u3057\u305f\u300d\u3068\u3044\u3046\u308f\u3051\u3067\u306f\u306a\u3055\u305d\u3046\u3067\u3059\uff08\u56f32\uff09\u3002",
+    "lang": "ja",
+    "quantities": [
+     "fomc",
+     "\u30c0\u30a6"
+    ],
+    "direction": [
+     "\u4e0b\u843d"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30"
+     ],
+     "mentioned": [
+      "\u30c0\u30a6"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "f6d1461a4f68"
+   },
+   {
+    "claim": "\uff1c\u56f32\uff1e\u7c73NY\u30c0\u30a6\uff08\u65e5\u8db3\uff09\u3068\u58f2\u8cb7\u9ad8\u306e\u52d5\u304d\uff082026\u5e749\u670816\u65e5\u6642\u70b9\uff09 \u51fa\u6240\uff1aMARKETSPEEDII NY\u30c0\u30a6\u306e\u65e5\u8db3\u30c1\u30e3\u30fc\u30c8\u304b\u3089\u306f\u3001\u300c\u76f8\u5834\u304c\u6d6e\u8db3\u7acb\u3064\u3053\u3068\u306a\u304f\u3001\u610f\u5916\u3068\u51b7\u9759\u306b\u53cd\u5fdc\u3057\u3066\u3044\u305f\u300d\u3068\u8aad\u307f\u53d6\u308c\u308b\u305f\u3081\u3001\u5272\u3068\u8cb7\u3044\u623b\u3057\u304c\u5165\u308a\u3084\u3059\u3044\u72b6\u6cc1\u3068\u8a00\u3048\u305d\u3046\u3067\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u8cb7\u3044\u623b\u3057",
+     "\u30c0\u30a6"
+    ],
+    "direction": [
+     "\u8cb7\u3044"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30"
+     ],
+     "mentioned": [
+      "\u30c0\u30a6"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "051516f8f428"
+   },
+   {
+    "claim": "\u305f\u3060\u30017\u6708\u76f8\u5834\u3067\u610f\u8b58\u3055\u308c\u3066\u3044\u305f5\u4e072,000\u30c9\u30eb\u6c34\u6e96\u3092\u4e0b\u629c\u3051\u3066\u3057\u307e\u3063\u305f\u3053\u3068\u3084\u300150\u65e5\u79fb\u52d5\u5e73\u5747\u7dda\u304c\u4e0a\u5024\u306e\u62b5\u6297\u3068\u3057\u3066\u6a5f\u80fd\u3057\u3066\u3044\u308b\u306a\u3069\u3001\u4e0b\u65b9\u5411\u3078\u306e\u610f\u8b58\u306f\u7dad\u6301\u3055\u308c\u3066\u3044\u307e\u3059\u306e\u3067\u3001\u65e9\u3044\u6bb5\u968e\u30675\u4e072,000\u30c9\u30eb\u3084\u79fb\u52d5\u5e73\u5747\u7dda\u3092\u56de\u5fa9\u3067\u304d\u308b\u304b\u304c\u76ee\u5148\u306e\u6ce8\u76ee\u70b9\u306b\u306a\u308a\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u79fb\u52d5\u5e73\u5747"
+    ],
+    "direction": [
+     "\u4e0b\u629c\u3051"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "NAS100",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30ca\u30b9\u30c0\u30c3\u30af",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "topix",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "\u65e5\u672c\u9280\u884c: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "40b500c30b2a"
+   },
+   {
+    "claim": "\uff1c\u56f33\uff1e\u7c73S\uff06P500\u306e1\u5206\u8db3\u30c1\u30e3\u30fc\u30c8\uff082026\u5e749\u670816\u65e5\uff09 \u51fa\u6240\uff1aMARKETSPEEDII \u56f33\u306f9\u670816\u65e5\uff08\u6c34\uff09\u306e\u7c73S\uff06P500\u7a2e\u6307\u6570\u306e1\u5206\u8db3\u30c1\u30e3\u30fc\u30c8\u3067\u3059\u304c\u3001\u682a\u4fa1\u304c\u4e0b\u843d\u3057\u59cb\u3081\u305f\u306e\u306f\u3001FOMC\u3067\u5229\u4e0a\u3052\u6c7a\u5b9a\u304c\u516c\u8868\u3055\u308c\u305f\u6642\u70b9\u3067\u306f\u306a\u304f\u3001\u305d\u306e\u5f8c\u306e\u30a6\u30a9\u30fc\u30b7\u30e5FRB\u8b70\u9577\u306e\u8a18\u8005\u4f1a\u898b\u304c\u59cb\u307e\u3063\u3066\u304b\u3089\u3060\u3063\u305f\u305f\u3081\u3001\u4eca\u5f8c\u306e\u8996\u70b9\u306f\u300c\u6b21\u306e\u5229\u4e0a\u3052\u300d\u306b\u5411\u304b\u3063\u3066\u3044\u308b\u3053\u3068\u304c\u8aad\u307f\u53d6\u308c\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "fomc"
+    ],
+    "direction": [
+     "\u4e0b\u843d"
+    ],
+    "horizon": [
+     "\u5206",
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "aab49e9ec690"
+   },
+   {
+    "claim": "\u65e5\u672c\u682a\u306f\u62bc\u3057\u76ee\u8cb7\u3044\u597d\u6a5f\uff08\u7aaa\u7530\u771f\u4e4b\uff09 \u7aaa\u7530 \u771f\u4e4b 2026/10/19 3 \u3010\u6295\u8cc7\u30af\u30a4\u30ba\u3011\u30ed\u30fc\u30bd\u30af\u8db3\u306e\u300c\u4e0a\u30d2\u30b2\u30fb\u4e0b\u30d2\u30b2\u300d\u306f\u4f55\u3092\u793a\u3059\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u62bc\u3057\u76ee"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u62bc\u3057\u76ee\u8cb7\u3044"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "NAS100",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30ca\u30b9\u30c0\u30c3\u30af",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "topix",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities",
+      "\u65e5\u672c\u9280\u884c: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fbd9d28d1e77"
+   },
+   {
+    "claim": "\u300c\u5916\u56fd\u682a\u5f0f\u30fb\u5916\u56fdREIT\u300d\u4fdd\u6709\u304c\u5f37\u3044\u5bfe\u7b56\u306b\u306a\u308b\u7406\u7531 \u6a2a\u7530 \u5065\u4e00 2026/10/17 6 \u65e5\u7d4c\u5e73\u5747\u306f\u518d\u3073\u58f2\u308a\u5148\u884c\u304b\u2026\u300c\u4e0b\u5024\u3081\u3069\u300d\u3068\u6ce8\u76ee\u306eAI\u682a\u6c7a\u7b97\u306e\u884c\u65b9\u306f\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u65e5\u7d4c",
+     "\u6c7a\u7b97"
+    ],
+    "direction": [
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u7d4c\u5e73\u5747"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "c44f333a6dd9"
+   }
+  ],
+  "n_claims": 10
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\uff3b\u52d5\u753b\uff3d\u5730\u65b9\u53d6\u5f15\u6240\u306b\u5358\u72ec\u4e0a\u5834\u3059\u308b\u300c\u5272\u5b89\u9298\u67c4\u30c8\u30c3\u30d710\u300d\uff081\u4f4d\uff5e5\u4f4d\uff09 | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/articles/-/53531",
+  "published": "2026-10-23T03:14:16+00:00",
+  "symbols": [
+   "XPTUSD",
+   "XTIUSD",
+   "US30",
+   "JPN225",
+   "USDJPY",
+   "Toyota",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "31c3807c26379d56dea3",
+  "host": "media.rakuten-sec.net",
+  "claims": [
+   {
+    "claim": "\u6c7a\u7b97\u6708\u5206\u6563REIT\u3067\u4f5c\u308b\u300c\u6bce\u6708\u5206\u914d\u91d1\u300d\u30dd\u30fc\u30c8\u30d5\u30a9\u30ea\u30aa \u304b\u3064\u3055\u3093\u3069 2026/10/23 \u3053\u3053\u304b\u3089\u306e\u682a\u4fa1\u4e0a\u6607\u306f\u8cb7\u3044\u304b\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u6c7a\u7b97"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u5206",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "XTIUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u539f\u6cb9",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "topix",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ae9e54a58fe5"
+   },
+   {
+    "claim": "\u65e5\u672c\u682a\u306f\u62bc\u3057\u76ee\u8cb7\u3044\u597d\u6a5f\uff08\u7aaa\u7530\u771f\u4e4b\uff09 \u7aaa\u7530 \u771f\u4e4b 2026/10/19 3 \u3010\u6295\u8cc7\u30af\u30a4\u30ba\u3011\u30ed\u30fc\u30bd\u30af\u8db3\u306e\u300c\u4e0a\u30d2\u30b2\u30fb\u4e0b\u30d2\u30b2\u300d\u306f\u4f55\u3092\u793a\u3059\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u62bc\u3057\u76ee"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u62bc\u3057\u76ee\u8cb7\u3044"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "XTIUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u539f\u6cb9",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "topix",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fbd9d28d1e77"
+   },
+   {
+    "claim": "\u300c\u5916\u56fd\u682a\u5f0f\u30fb\u5916\u56fdREIT\u300d\u4fdd\u6709\u304c\u5f37\u3044\u5bfe\u7b56\u306b\u306a\u308b\u7406\u7531 \u6a2a\u7530 \u5065\u4e00 2026/10/17 6 \u65e5\u7d4c\u5e73\u5747\u306f\u518d\u3073\u58f2\u308a\u5148\u884c\u304b\u2026\u300c\u4e0b\u5024\u3081\u3069\u300d\u3068\u6ce8\u76ee\u306eAI\u682a\u6c7a\u7b97\u306e\u884c\u65b9\u306f\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u65e5\u7d4c",
+     "\u6c7a\u7b97"
+    ],
+    "direction": [
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u7d4c\u5e73\u5747"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "c44f333a6dd9"
+   },
+   {
+    "claim": "\u4eca\u9031\u3082\u5185\u9700\u30fb\u30c7\u30a3\u30d5\u30a7\u30f3\u30b7\u30d6\u682a\u306b\u6ce8\u76ee \u30c8\u30a6\u30b7\u30eb\u7de8\u96c6\u30c1\u30fc\u30e0 2026/10/19 9 \u6025\u843d\u3057\u305f\u65e5\u7d4c\u5e73\u5747\u306f\u5fa9\u6d3b\u3067\u304d\u308b\u304b\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u65e5\u7d4c"
+    ],
+    "direction": [
+     "\u6025\u843d"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u9031"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u7d4c\u5e73\u5747"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "cc45c49b6ccb"
+   },
+   {
+    "claim": "0%\u8d85\u20263\u5e74\u3067\u682a\u4fa180%\u8d85\u4e0a\u6607\u2192\"\u5065\u5168\u306a\u8abf\u6574\"\u304c\u9032\u3080\u6ce8\u76ee\u306e\u3008\u9ad8\u914d\u5f53\u682a\u30095\u9298\u67c4 \u4f50\u85e4 \u52dd\u5df1 2026/10/7 10 \u301011\u6708\u682a\u4e3b\u512a\u5f85\u3011\u914d\u5f53\u5229\u56de\u308a3.",
+    "lang": "ja",
+    "quantities": [
+     "\u914d\u5f53",
+     "\u5229\u56de\u308a"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "XTIUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u539f\u6cb9",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "topix",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b8229bf002b0"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "GX\u3067\u5909\u308f\u308b\u672d\u5e4c\u8a3c\u5238\u53d6\u5f15\u6240\u3001\u5730\u57df\u8ab2\u984c\u306b\u53d6\u308a\u7d44\u3080\u300c\u30ed\u30fc\u30ab\u30eb\u30fb\u30bc\u30d6\u30e9\u300d\u4f01\u696d\u3092\u80b2\u6210\u3010\u672d\u8a3c\u30fb\u9577\u91ce\u5b9f\u7406\u4e8b\u9577\u3011 | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/articles/-/53546",
+  "published": "2026-10-23T03:14:20+00:00",
+  "symbols": [
+   "XPTUSD",
+   "US30",
+   "JPN225",
+   "USDJPY",
+   "Toyota",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy",
+   "positioning",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3d819647edc4ea3cf560",
+  "host": "media.rakuten-sec.net",
+  "claims": [
+   {
+    "claim": "\u5186\u5b89\u3068\u91d1\u5229\u4e0a\u6607\u304c\u5927\u304d\u306a\u6253\u6483\u3068\u306a\u308a\u3001\u65e5\u672c\u7d4c\u6e08\u3084\u4e2d\u5c0f\u4f01\u696d\u306b\u3068\u3063\u3066\u306f\u53b3\u3057\u3044\u72b6\u6cc1\u304c\u7d9a\u3044\u3066\u3044\u308b\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1"
+    ],
+    "direction": [
+     "\u4e0a\u6607",
+     "\u5186\u5b89"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u6771\u8a3c",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "\u6771\u8a3c->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fb1610ce05cc"
+   },
+   {
+    "claim": "\u307e\u305f\u3001\u8db3\u5143\u3067\u306f\u91d1\u5229\u4e0a\u6607\u3067\u8a2d\u5099\u6295\u8cc7\u306b\u614e\u91cd\u306a\u4f01\u696d\u3082\u5897\u3048\u3066\u304a\u308a\u3001\u793e\u50b5\u5e02\u5834\u5168\u4f53\u304c\u304b\u306a\u308a\u4f38\u3073\u60a9\u3093\u3067\u3044\u308b\u9762\u3082\u3042\u308b\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u6771\u8a3c",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "\u6771\u8a3c->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "df6b8d94e5ab"
+   },
+   {
+    "claim": "\u65e5\u672c\u682a\u306f\u62bc\u3057\u76ee\u8cb7\u3044\u597d\u6a5f\uff08\u7aaa\u7530\u771f\u4e4b\uff09 \u7aaa\u7530 \u771f\u4e4b 2026/10/19 3 \u3010\u6295\u8cc7\u30af\u30a4\u30ba\u3011\u30ed\u30fc\u30bd\u30af\u8db3\u306e\u300c\u4e0a\u30d2\u30b2\u30fb\u4e0b\u30d2\u30b2\u300d\u306f\u4f55\u3092\u793a\u3059\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u62bc\u3057\u76ee"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u62bc\u3057\u76ee\u8cb7\u3044"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u6771\u8a3c",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "\u6771\u8a3c->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fbd9d28d1e77"
+   },
+   {
+    "claim": "\u300c\u5916\u56fd\u682a\u5f0f\u30fb\u5916\u56fdREIT\u300d\u4fdd\u6709\u304c\u5f37\u3044\u5bfe\u7b56\u306b\u306a\u308b\u7406\u7531 \u6a2a\u7530 \u5065\u4e00 2026/10/17 6 \u65e5\u7d4c\u5e73\u5747\u306f\u518d\u3073\u58f2\u308a\u5148\u884c\u304b\u2026\u300c\u4e0b\u5024\u3081\u3069\u300d\u3068\u6ce8\u76ee\u306eAI\u682a\u6c7a\u7b97\u306e\u884c\u65b9\u306f\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u65e5\u7d4c",
+     "\u6c7a\u7b97"
+    ],
+    "direction": [
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u7d4c\u5e73\u5747"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "c44f333a6dd9"
+   },
+   {
+    "claim": "\u4eca\u9031\u3082\u5185\u9700\u30fb\u30c7\u30a3\u30d5\u30a7\u30f3\u30b7\u30d6\u682a\u306b\u6ce8\u76ee \u30c8\u30a6\u30b7\u30eb\u7de8\u96c6\u30c1\u30fc\u30e0 2026/10/19 9 \u6025\u843d\u3057\u305f\u65e5\u7d4c\u5e73\u5747\u306f\u5fa9\u6d3b\u3067\u304d\u308b\u304b\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u65e5\u7d4c"
+    ],
+    "direction": [
+     "\u6025\u843d"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u9031"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u7d4c\u5e73\u5747"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "cc45c49b6ccb"
+   },
+   {
+    "claim": "0%\u8d85\u20263\u5e74\u3067\u682a\u4fa180%\u8d85\u4e0a\u6607\u2192\"\u5065\u5168\u306a\u8abf\u6574\"\u304c\u9032\u3080\u6ce8\u76ee\u306e\u3008\u9ad8\u914d\u5f53\u682a\u30095\u9298\u67c4 \u4f50\u85e4 \u52dd\u5df1 2026/10/7 10 \u301011\u6708\u682a\u4e3b\u512a\u5f85\u3011\u914d\u5f53\u5229\u56de\u308a3.",
+    "lang": "ja",
+    "quantities": [
+     "\u914d\u5f53",
+     "\u5229\u56de\u308a"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u6771\u8a3c",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "\u6771\u8a3c->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b8229bf002b0"
+   }
+  ],
+  "n_claims": 6
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "5\u682a\u306e\u3064\u3082\u308a\u304c500\u682a\u3092\u4fe1\u7528\u53d6\u5f15\u3067\u8aa4\u767a\u6ce8\uff01\u75db\u6068\u306e\u30df\u30b9\u3067\u50d5\u304c\u5b66\u3093\u3060\u3053\u3068\uff1a\u5fa1\u767a\u6ce8\u3055\u3093\u30a4\u30f3\u30bf\u30d3\u30e5\u30fc\uff3b\u524d\u7de8\uff3d | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/articles/-/52657",
+  "published": "2026-10-23T03:14:23+00:00",
+  "symbols": [
+   "XPTUSD",
+   "US30",
+   "JPN225",
+   "USDJPY",
+   "SUGAR",
+   "Toyota",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "aae8a4f0e5fe31a6c6e6",
+  "host": "media.rakuten-sec.net",
+  "claims": [
+   {
+    "claim": "\u3053\u306e\u8a18\u4e8b\u306e\u76ee\u6b21 \uff3b \u9589\u3058\u308b \u958b\u304f \uff3d \u300c\u4eba\u751f\u30aa\u30ef\u30bf\u2026\u300d\u4fe1\u7528\u53d6\u5f15\u30674,000\u4e07\u5186\u8d85\u3048\u306e\u8cb7\u3044\u6ce8\u6587\u3092\u300c\u8aa4\u767a\u6ce8\u300d 1\u9031\u9593\u3067\u4f1a\u793e\u52e4\u3081\u304c\u30a4\u30e4\u306b\u306a\u308a\u3001\u300c\u8d85\u7bc0\u7d04\u30e9\u30a4\u30d5\u300d\u3092\u958b\u59cb \u7bc0\u7d04\u306f\u3001\u7121\u7406\u305b\u305a\u7de9\u304f\u3066\u3082\u9577\u304f\u7d9a\u3051\u308b\u3053\u3068\u304c\u5927\u5207 \u203b\u3053\u306e\u8a18\u4e8b\u306f2025\u5e745\u670831\u65e5\u306b\u63b2\u8f09\u3055\u308c\u305f\u3082\u306e\u3067\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u4fe1\u7528"
+    ],
+    "direction": [
+     "\u8cb7\u3044"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u9031"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "SUGAR",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "topix",
+      "\u30c9\u30eb\u5186",
+      "\u7802\u7cd6",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "a1ceb97a3ae6"
+   },
+   {
+    "claim": "\u6c7a\u7b97\u6708\u5206\u6563REIT\u3067\u4f5c\u308b\u300c\u6bce\u6708\u5206\u914d\u91d1\u300d\u30dd\u30fc\u30c8\u30d5\u30a9\u30ea\u30aa \u304b\u3064\u3055\u3093\u3069 2026/10/23 \u3010\u76f4\u6483\u3011\u91d1\u5229\u4e0a\u6607\u3067\u3069\u3046\u5909\u308f\u308b\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1",
+     "\u6c7a\u7b97"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u5206",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "SUGAR",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "topix",
+      "\u30c9\u30eb\u5186",
+      "\u7802\u7cd6",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "79061c4d992e"
+   },
+   {
+    "claim": "\u65e5\u672c\u682a\u306f\u62bc\u3057\u76ee\u8cb7\u3044\u597d\u6a5f\uff08\u7aaa\u7530\u771f\u4e4b\uff09 \u7aaa\u7530 \u771f\u4e4b 2026/10/19 3 \u3010\u6295\u8cc7\u30af\u30a4\u30ba\u3011\u30ed\u30fc\u30bd\u30af\u8db3\u306e\u300c\u4e0a\u30d2\u30b2\u30fb\u4e0b\u30d2\u30b2\u300d\u306f\u4f55\u3092\u793a\u3059\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u62bc\u3057\u76ee"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u62bc\u3057\u76ee\u8cb7\u3044"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "SUGAR",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "topix",
+      "\u30c9\u30eb\u5186",
+      "\u7802\u7cd6",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fbd9d28d1e77"
+   },
+   {
+    "claim": "\u300c\u5916\u56fd\u682a\u5f0f\u30fb\u5916\u56fdREIT\u300d\u4fdd\u6709\u304c\u5f37\u3044\u5bfe\u7b56\u306b\u306a\u308b\u7406\u7531 \u6a2a\u7530 \u5065\u4e00 2026/10/17 6 \u65e5\u7d4c\u5e73\u5747\u306f\u518d\u3073\u58f2\u308a\u5148\u884c\u304b\u2026\u300c\u4e0b\u5024\u3081\u3069\u300d\u3068\u6ce8\u76ee\u306eAI\u682a\u6c7a\u7b97\u306e\u884c\u65b9\u306f\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u65e5\u7d4c",
+     "\u6c7a\u7b97"
+    ],
+    "direction": [
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u7d4c\u5e73\u5747"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "c44f333a6dd9"
+   },
+   {
+    "claim": "\u4eca\u9031\u3082\u5185\u9700\u30fb\u30c7\u30a3\u30d5\u30a7\u30f3\u30b7\u30d6\u682a\u306b\u6ce8\u76ee \u30c8\u30a6\u30b7\u30eb\u7de8\u96c6\u30c1\u30fc\u30e0 2026/10/19 9 \u6025\u843d\u3057\u305f\u65e5\u7d4c\u5e73\u5747\u306f\u5fa9\u6d3b\u3067\u304d\u308b\u304b\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u65e5\u7d4c"
+    ],
+    "direction": [
+     "\u6025\u843d"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u9031"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u7d4c\u5e73\u5747"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "cc45c49b6ccb"
+   },
+   {
+    "claim": "0%\u8d85\u20263\u5e74\u3067\u682a\u4fa180%\u8d85\u4e0a\u6607\u2192\"\u5065\u5168\u306a\u8abf\u6574\"\u304c\u9032\u3080\u6ce8\u76ee\u306e\u3008\u9ad8\u914d\u5f53\u682a\u30095\u9298\u67c4 \u4f50\u85e4 \u52dd\u5df1 2026/10/7 10 \u301011\u6708\u682a\u4e3b\u512a\u5f85\u3011\u914d\u5f53\u5229\u56de\u308a3.",
+    "lang": "ja",
+    "quantities": [
+     "\u914d\u5f53",
+     "\u5229\u56de\u308a"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "SUGAR",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "topix",
+      "\u30c9\u30eb\u5186",
+      "\u7802\u7cd6",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b8229bf002b0"
+   }
+  ],
+  "n_claims": 6
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u3084\u3063\u3066\u306f\u3044\u3051\u306a\u3044\u8cc7\u7523\u904b\u7528\uff01\u6025\u901f\u306a\u5186\u5b89\u6642\u3067\u306e\u70ba\u66ff\u5dee\u76ca\u78ba\u5b9a\u306e\u8981\u6ce8\u610f\u70b9 | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/articles/-/53519",
+  "published": "2026-10-23T03:14:26+00:00",
+  "symbols": [
+   "XPTUSD",
+   "US30",
+   "JPN225",
+   "USDJPY",
+   "Toyota",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "919a5f4f83dda06b63ee",
+  "host": "media.rakuten-sec.net",
+  "claims": [
+   {
+    "claim": "\u682a\u5f0f\u30fb\u50b5\u5238\u30fb\u4fdd\u967a\u5546\u54c1\u304c\u60f3\u5b9a\u4ee5\u4e0a\u306b\u5186\u5b89\u306b\u306a\u308a\u3001\u3069\u3046\u3057\u3088\u3046\u304b\u3068\u8003\u3048\u3066\u3044\u305f\u3068\u3053\u308d\u306b\u3001\u91d1\u878d\u6a5f\u95a2\u306e\u62c5\u5f53\u8005\u304b\u3089\u70ba\u66ff\u5dee\u76ca\u3092\u78ba\u5b9a\u3055\u305b\u308b\u305f\u3081\u306b\u3044\u3063\u305f\u3093\u58f2\u5374\u3057\u3066\u65e5\u672c\u5186\u306b\u623b\u3057\u3066\u306f\u3069\u3046\u304b\u3068\u63d0\u6848\u304c\u3042\u308a\u307e\u3057\u305f\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1"
+    ],
+    "direction": [
+     "\u5186\u5b89"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "topix",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ba3b7747f792"
+   },
+   {
+    "claim": "\uff08\u91d1\u878d\u6a5f\u95a2\u306b\u3088\u3063\u3066\u53d6\u5f15\u65b9\u6cd5\u3084\u6c7a\u6e08\u6642\u9593\u3001\u624b\u6570\u6599\u306f\u9055\u3044\u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1"
+    ],
+    "direction": [
+     "\u6c7a\u6e08"
+    ],
+    "horizon": [
+     "\u6642\u9593"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "topix",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9da2fd18116b"
+   },
+   {
+    "claim": "\u65e5\u672c\u682a\u306f\u62bc\u3057\u76ee\u8cb7\u3044\u597d\u6a5f\uff08\u7aaa\u7530\u771f\u4e4b\uff09 \u7aaa\u7530 \u771f\u4e4b 2026/10/19 3 \u3010\u6295\u8cc7\u30af\u30a4\u30ba\u3011\u30ed\u30fc\u30bd\u30af\u8db3\u306e\u300c\u4e0a\u30d2\u30b2\u30fb\u4e0b\u30d2\u30b2\u300d\u306f\u4f55\u3092\u793a\u3059\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u62bc\u3057\u76ee"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u62bc\u3057\u76ee\u8cb7\u3044"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "topix",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fbd9d28d1e77"
+   },
+   {
+    "claim": "\u300c\u5916\u56fd\u682a\u5f0f\u30fb\u5916\u56fdREIT\u300d\u4fdd\u6709\u304c\u5f37\u3044\u5bfe\u7b56\u306b\u306a\u308b\u7406\u7531 \u6a2a\u7530 \u5065\u4e00 2026/10/17 6 \u65e5\u7d4c\u5e73\u5747\u306f\u518d\u3073\u58f2\u308a\u5148\u884c\u304b\u2026\u300c\u4e0b\u5024\u3081\u3069\u300d\u3068\u6ce8\u76ee\u306eAI\u682a\u6c7a\u7b97\u306e\u884c\u65b9\u306f\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u65e5\u7d4c",
+     "\u6c7a\u7b97"
+    ],
+    "direction": [
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u7d4c\u5e73\u5747"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "c44f333a6dd9"
+   },
+   {
+    "claim": "\u4eca\u9031\u3082\u5185\u9700\u30fb\u30c7\u30a3\u30d5\u30a7\u30f3\u30b7\u30d6\u682a\u306b\u6ce8\u76ee \u30c8\u30a6\u30b7\u30eb\u7de8\u96c6\u30c1\u30fc\u30e0 2026/10/19 9 \u6025\u843d\u3057\u305f\u65e5\u7d4c\u5e73\u5747\u306f\u5fa9\u6d3b\u3067\u304d\u308b\u304b\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u65e5\u7d4c"
+    ],
+    "direction": [
+     "\u6025\u843d"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u9031"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u7d4c\u5e73\u5747"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "cc45c49b6ccb"
+   },
+   {
+    "claim": "0%\u8d85\u20263\u5e74\u3067\u682a\u4fa180%\u8d85\u4e0a\u6607\u2192\"\u5065\u5168\u306a\u8abf\u6574\"\u304c\u9032\u3080\u6ce8\u76ee\u306e\u3008\u9ad8\u914d\u5f53\u682a\u30095\u9298\u67c4 \u4f50\u85e4 \u52dd\u5df1 2026/10/7 10 \u301011\u6708\u682a\u4e3b\u512a\u5f85\u3011\u914d\u5f53\u5229\u56de\u308a3.",
+    "lang": "ja",
+    "quantities": [
+     "\u914d\u5f53",
+     "\u5229\u56de\u308a"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "topix",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b8229bf002b0"
+   }
+  ],
+  "n_claims": 6
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u540d\u53e4\u5c4b\u8a3c\u5238\u53d6\u5f15\u6240\u3001\u500b\u4eba\u6295\u8cc7\u5bb6\u3068\u4f01\u696d\u3064\u306a\u3050\u300cIR\u62e0\u70b9\u300d\u3078\u3010\u540d\u8a3c\u30fb\u7af9\u7530\u6b63\u6a39\u793e\u9577\u3011 | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/articles/-/53555",
+  "published": "2026-10-23T03:14:29+00:00",
+  "symbols": [
+   "XPTUSD",
+   "US30",
+   "JPN225",
+   "USDJPY",
+   "Toyota",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0c1befc316990a4aabe7",
+  "host": "media.rakuten-sec.net",
+  "claims": [
+   {
+    "claim": "\u3053\u308c\u307e\u3067\u306e\u4f4e\u91d1\u5229\u74b0\u5883\u3067\u306f\u4e0a\u5834\u5f8c\u3059\u3050\u306b\u8cc7\u91d1\u8abf\u9054\u3092\u5fc5\u8981\u3068\u3057\u306a\u3044\u30b1\u30fc\u30b9\u304c\u591a\u304b\u3063\u305f\u304c\u3001\u8db3\u5143\u3067\u306f\u91d1\u5229\u4e0a\u6607\u3067\u8cc7\u91d1\u8abf\u9054\u304c\u96e3\u3057\u304f\u306a\u3063\u3066\u304a\u308a\u3001\u4e0a\u5834\u306b\u3088\u308b\u30d5\u30a1\u30a4\u30ca\u30f3\u30b9\u304c\u6539\u3081\u3066\u91cd\u8981\u306a\u624b\u6bb5\u3068\u3057\u3066\u610f\u8b58\u3055\u308c\u3064\u3064\u3042\u308b\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u6771\u8a3c",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "\u6771\u8a3c->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b8bd8feef83d"
+   },
+   {
+    "claim": "\u65e5\u672c\u682a\u306f\u62bc\u3057\u76ee\u8cb7\u3044\u597d\u6a5f\uff08\u7aaa\u7530\u771f\u4e4b\uff09 \u7aaa\u7530 \u771f\u4e4b 2026/10/19 3 \u3010\u6295\u8cc7\u30af\u30a4\u30ba\u3011\u30ed\u30fc\u30bd\u30af\u8db3\u306e\u300c\u4e0a\u30d2\u30b2\u30fb\u4e0b\u30d2\u30b2\u300d\u306f\u4f55\u3092\u793a\u3059\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u62bc\u3057\u76ee"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u62bc\u3057\u76ee\u8cb7\u3044"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u6771\u8a3c",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "\u6771\u8a3c->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fbd9d28d1e77"
+   },
+   {
+    "claim": "\u300c\u5916\u56fd\u682a\u5f0f\u30fb\u5916\u56fdREIT\u300d\u4fdd\u6709\u304c\u5f37\u3044\u5bfe\u7b56\u306b\u306a\u308b\u7406\u7531 \u6a2a\u7530 \u5065\u4e00 2026/10/17 6 \u65e5\u7d4c\u5e73\u5747\u306f\u518d\u3073\u58f2\u308a\u5148\u884c\u304b\u2026\u300c\u4e0b\u5024\u3081\u3069\u300d\u3068\u6ce8\u76ee\u306eAI\u682a\u6c7a\u7b97\u306e\u884c\u65b9\u306f\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u65e5\u7d4c",
+     "\u6c7a\u7b97"
+    ],
+    "direction": [
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u7d4c\u5e73\u5747"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "c44f333a6dd9"
+   },
+   {
+    "claim": "\u4eca\u9031\u3082\u5185\u9700\u30fb\u30c7\u30a3\u30d5\u30a7\u30f3\u30b7\u30d6\u682a\u306b\u6ce8\u76ee \u30c8\u30a6\u30b7\u30eb\u7de8\u96c6\u30c1\u30fc\u30e0 2026/10/19 9 \u6025\u843d\u3057\u305f\u65e5\u7d4c\u5e73\u5747\u306f\u5fa9\u6d3b\u3067\u304d\u308b\u304b\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u65e5\u7d4c"
+    ],
+    "direction": [
+     "\u6025\u843d"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u9031"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u7d4c\u5e73\u5747"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "cc45c49b6ccb"
+   },
+   {
+    "claim": "0%\u8d85\u20263\u5e74\u3067\u682a\u4fa180%\u8d85\u4e0a\u6607\u2192\"\u5065\u5168\u306a\u8abf\u6574\"\u304c\u9032\u3080\u6ce8\u76ee\u306e\u3008\u9ad8\u914d\u5f53\u682a\u30095\u9298\u67c4 \u4f50\u85e4 \u52dd\u5df1 2026/10/7 10 \u301011\u6708\u682a\u4e3b\u512a\u5f85\u3011\u914d\u5f53\u5229\u56de\u308a3.",
+    "lang": "ja",
+    "quantities": [
+     "\u914d\u5f53",
+     "\u5229\u56de\u308a"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "\u6771\u8a3c",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "\u6771\u8a3c->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u9280: policy: BoJ / MoF intervention -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b8229bf002b0"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u512a\u5f85\u6295\u8cc7\uff1a\u30a4\u30aa\u30f3\u3001\u30bd\u30d5\u30c8\u30d0\u30f3\u30af\u2026\u9577\u671f\u3067\u6301\u3061\u305f\u30447\u9298\u67c4\u3068\u56db\u3064\u306e\u6ce8\u610f\u70b9\uff08\u7aaa\u7530\u771f\u4e4b\uff09 | \u30c8\u30a6\u30b7\u30eb \u697d\u5929\u8a3c\u5238\u306e\u6295\u8cc7\u60c5\u5831\u30e1\u30c7\u30a3\u30a2",
+  "url": "https://media.rakuten-sec.net/articles/-/53532",
+  "published": "2026-10-23T03:14:34+00:00",
+  "symbols": [
+   "XPTUSD",
+   "US30",
+   "JPN225",
+   "USDJPY",
+   "Toyota",
+   "NVIDIA"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "ja",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "0133fec024d1bc35b99a",
+  "host": "media.rakuten-sec.net",
+  "claims": [
+   {
+    "claim": "\u4eca\u65e5\u306e\u6295\u8cc7\u6226\u7565 2026\u5e746\u670827\u65e5\uff1a 8\u6708\u512a\u5f85\u4eba\u6c17\u30c8\u30c3\u30d7\u300c\u30a4\u30aa\u30f3\u300d\u682a\u4fa1\u6025\u843d\u3001\u300c\u4ed5\u8fbc\u307f\u6642\u300d\u3068\u5224\u65ad\u3059\u308b\u4e09\u3064\u306e\u6210\u9577\u7406\u7531\uff08\u7aaa\u7530\u771f\u4e4b\uff09 2026\u5e744\u670825\u65e5\uff1a \u682a\u4e3b\u512a\u5f85\u3068\u8cb8\u682a\u91d1\u5229\u306e\u300c\u4e8c\u5200\u6d41\u300d\uff01",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1"
+    ],
+    "direction": [
+     "\u6025\u843d"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "topix",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u672c\u9280\u884c: policy: BoJ / MoF intervention -> JPY",
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "09dcf7a4e4cf"
+   },
+   {
+    "claim": "\u65e5\u672c\u682a\u306f\u62bc\u3057\u76ee\u8cb7\u3044\u597d\u6a5f\uff08\u7aaa\u7530\u771f\u4e4b\uff09 \u7aaa\u7530 \u771f\u4e4b 2026/10/19 3 \u3010\u6295\u8cc7\u30af\u30a4\u30ba\u3011\u30ed\u30fc\u30bd\u30af\u8db3\u306e\u300c\u4e0a\u30d2\u30b2\u30fb\u4e0b\u30d2\u30b2\u300d\u306f\u4f55\u3092\u793a\u3059\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u62bc\u3057\u76ee"
+    ],
+    "direction": [
+     "\u8cb7\u3044",
+     "\u62bc\u3057\u76ee\u8cb7\u3044"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u8db3"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "topix",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u672c\u9280\u884c: policy: BoJ / MoF intervention -> JPY",
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fbd9d28d1e77"
+   },
+   {
+    "claim": "\u300c\u5916\u56fd\u682a\u5f0f\u30fb\u5916\u56fdREIT\u300d\u4fdd\u6709\u304c\u5f37\u3044\u5bfe\u7b56\u306b\u306a\u308b\u7406\u7531 \u6a2a\u7530 \u5065\u4e00 2026/10/17 6 \u65e5\u7d4c\u5e73\u5747\u306f\u518d\u3073\u58f2\u308a\u5148\u884c\u304b\u2026\u300c\u4e0b\u5024\u3081\u3069\u300d\u3068\u6ce8\u76ee\u306eAI\u682a\u6c7a\u7b97\u306e\u884c\u65b9\u306f\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u65e5\u7d4c",
+     "\u6c7a\u7b97"
+    ],
+    "direction": [
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u7d4c\u5e73\u5747"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "c44f333a6dd9"
+   },
+   {
+    "claim": "\u4eca\u9031\u3082\u5185\u9700\u30fb\u30c7\u30a3\u30d5\u30a7\u30f3\u30b7\u30d6\u682a\u306b\u6ce8\u76ee \u30c8\u30a6\u30b7\u30eb\u7de8\u96c6\u30c1\u30fc\u30e0 2026/10/19 9 \u6025\u843d\u3057\u305f\u65e5\u7d4c\u5e73\u5747\u306f\u5fa9\u6d3b\u3067\u304d\u308b\u304b\uff1f",
+    "lang": "ja",
+    "quantities": [
+     "\u65e5\u7d4c"
+    ],
+    "direction": [
+     "\u6025\u843d"
+    ],
+    "horizon": [
+     "\u65e5",
+     "\u9031"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u7d4c\u5e73\u5747"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "cc45c49b6ccb"
+   },
+   {
+    "claim": "0%\u8d85\u20263\u5e74\u3067\u682a\u4fa180%\u8d85\u4e0a\u6607\u2192\"\u5065\u5168\u306a\u8abf\u6574\"\u304c\u9032\u3080\u6ce8\u76ee\u306e\u3008\u9ad8\u914d\u5f53\u682a\u30095\u9298\u67c4 \u4f50\u85e4 \u52dd\u5df1 2026/10/7 10 \u301011\u6708\u682a\u4e3b\u512a\u5f85\u3011\u914d\u5f53\u5229\u56de\u308a3.",
+    "lang": "ja",
+    "quantities": [
+     "\u914d\u5f53",
+     "\u5229\u56de\u308a"
+    ],
+    "direction": [
+     "\u4e0a\u6607"
+    ],
+    "horizon": [
+     "\u6708"
+    ],
+    "instruments": {
+     "analogues": [
+      "XPTUSD",
+      "US30",
+      "JPN225",
+      "USDJPY",
+      "Toyota",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "\u30d7\u30e9\u30c1\u30ca",
+      "\u30c0\u30a6",
+      "\u65e5\u7d4c\u5e73\u5747",
+      "topix",
+      "\u30c9\u30eb\u5186",
+      "\u30c8\u30e8\u30bf",
+      "nvidia"
+     ],
+     "transfer_only": [
+      "topix->indices (TSE)"
+     ],
+     "indirect": [],
+     "channels": [
+      "\u65e5\u672c\u9280\u884c: policy: BoJ / MoF intervention -> JPY",
+      "\u6295\u4fe1: flow: Japanese outbound investment -> JPY"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b8229bf002b0"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "USD to EUR - Convert US Dollar to Euro | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/forexcalc/forex-currency-converter/usd/",
+  "published": "2026-10-23T03:14:35+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "carry",
+   "correlation",
+   "flow",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "8f3801395d9dbfbeae55",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Currency Converter Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "84ed93a31bd0"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Awards :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/about/awards/",
+  "published": "2026-10-23T03:14:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/"
+  ],
+  "n_endpoints": 5,
+  "vault_sha": "10f57803f2b8cfcd767e",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Bonus Programs :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/ecn-account-programs/",
+  "published": "2026-10-23T03:14:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "5d873a77b3a6e0450c44",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Percent Allocation Management Module (PAMM) :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/management/asset/",
+  "published": "2026-10-23T03:14:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "b881f96c9e0df76dbfd5",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Externally Managed Accounts :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/management/externally-managed-accounts/",
+  "published": "2026-10-23T03:14:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "9f65151e473846831444",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Automated Forex Trading | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/jforex/",
+  "published": "2026-10-23T03:14:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en",
+   "https://www.dukascopy.com/swiss/docs/api/index.php"
+  ],
+  "n_endpoints": 11,
+  "vault_sha": "e597a785163fc5082aa1",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FIX API :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+  "published": "2026-10-23T03:14:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/french/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/deutsch/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/russian/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/spanish/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/pl/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/cz/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/pt/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/it/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/sk/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/chinese/forex/api/fix-api/",
+   "https://www.dukascopy.com/swiss/arabic/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix_api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 21,
+  "vault_sha": "19d25c8d4d848ac7140b",
+  "host": "www.dukascopy.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Easy steps how to adjust charts for the smooth backtesting [Video]",
+  "url": "https://desktop.forextester.com/views",
+  "published": "2026-10-23T03:14:49+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [
+   "H1",
+   "M5"
+  ],
+  "patterns": [],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c83b4109d7ef859182ba",
+  "host": "desktop.forextester.com",
+  "claims": [
+   {
+    "claim": "Show bid level \u2014 displays at which price the sell order will be filled if you open a sell market order.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8b8cb8e832f9"
+   },
+   {
+    "claim": "Show ask level \u2014 shows at which price the buy order will be filled if you open a buy market order.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ce58dd922d91"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Top 23 Exclusive Benefits of the Forex Trading Simulator [Screenshots]",
+  "url": "https://desktop.forextester.com/screens?screen=detailedstatistics",
+  "published": "2026-10-23T03:14:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/templates/pic/screens/export-to-excel.png",
+   "https://desktop.forextester.com/templates/pic/screens/download-new-data.png",
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "1d52e0c01ed83c95e8f5",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Confused with Forex historical data? A simple way to manage it [Video]",
+  "url": "https://desktop.forextester.com/DataCenter",
+  "published": "2026-10-23T03:14:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "M30"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2173f87812b4ff106d3a",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to predict market moves easily in Forex Tester",
+  "url": "https://desktop.forextester.com/historical-forex-news",
+  "published": "2026-10-23T03:14:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "207bdc58fa52c2900243",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Value your time? Save projects while using the best trading simulator",
+  "url": "https://desktop.forextester.com/projects",
+  "published": "2026-10-23T03:14:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bd1bd8608bc21358e871",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Searching for the best settings of the Moving Averages? [Check here]",
+  "url": "https://desktop.forextester.com/optimizer",
+  "published": "2026-10-23T03:14:58+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1",
+   "INTRADAY",
+   "M1",
+   "M15",
+   "M30",
+   "M5"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9b2109e636a31f524904",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://desktop.forextester.com/fsu/activation",
+  "url": "https://desktop.forextester.com/fsu/activation",
+  "published": "2026-10-23T03:15:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/templates/doc/PriceAction.zip",
+   "https://desktop.forextester.com/templates/doc/RandomOrder_Strategy7.zip",
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "b6c19319394eb3faa701",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Relative Strength Index (RSI) | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/technical-indicators/relative-strength-index",
+  "published": "2026-10-23T03:15:03+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "adf3a7c332265844c1f3",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Holidays | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/market-operations/market-holidays",
+  "published": "2026-10-23T03:15:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "881d125995bd0f3719a8",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Market Status | Forex REST API - Massive",
+  "url": "https://polygon.io/docs/rest/forex/market-operations/market-status",
+  "published": "2026-10-23T03:15:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "15f8634638e51319ced7",
+  "host": "polygon.io",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Nigerian Stock Exchange Market Pick Alerts - Investment (11030) - Nigeria",
+  "url": "https://www.nairaland.com/1131485/nigerian-stock-exchange-market-pick/11029",
+  "published": "2026-10-23T03:15:08+00:00",
+  "symbols": [
+   "XTIUSD",
+   "UK100"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "flow",
+   "momentum",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "39e711f18917a19d7f45",
+  "host": "www.nairaland.com",
+  "claims": [
+   {
+    "claim": "The maximum price change of a stock in a single trading session is, however, limited to +/-10% per day\u2014meaning a stock that opens a session at N100 cannot fall below N90 or rise above N110 in that same session.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "fall",
+     "rise"
+    ],
+    "horizon": [
+     "session",
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD",
+      "UK100"
+     ],
+     "mentioned": [
+      "petrol",
+      "ftse",
+      "ngx",
+      "naira"
+     ],
+     "transfer_only": [
+      "ngx->indices (African exchanges)",
+      "naira->fx (NGN not quoted)"
+     ],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f43f441ddd59"
+   }
+  ],
+  "n_claims": 1
+ }
+]
