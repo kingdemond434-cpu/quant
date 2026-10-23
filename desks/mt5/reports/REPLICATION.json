@@ -1,5 +1,5 @@
 {
- "at": "2026-10-23T11:42:40+00:00",
+ "at": "2026-10-23T12:47:10+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -18,113 +18,15 @@
  "n": 16,
  "counts": {
   "REPLICATED": 0,
-  "MISMATCH": 0,
-  "UNMEASURED": 16
+  "MISMATCH": 2,
+  "UNMEASURED": 14
  },
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "XAGEUR@M15.cross_asset_residual.p=f70151cf16fd1230",
-   "certificate": "external.XAGEUR@M15.cross_asset_residual.p=f70151cf16fd1230",
-   "fp": "bcae5a0b6ea2ab4f",
-   "symbol": "XAGEUR",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "XAGEUR@M15.cross_asset_residual.p=e95ea804f8e3f059",
-   "certificate": "external.XAGEUR@M15.cross_asset_residual.p=e95ea804f8e3f059",
-   "fp": "cd4c5bf0a62f2b9a",
-   "symbol": "XAGEUR",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "XAGEUR@M15.cross_asset_residual.p=5740a1a3a11c0f48",
-   "certificate": "external.XAGEUR@M15.cross_asset_residual.p=5740a1a3a11c0f48",
-   "fp": "258536f7332d4175",
-   "symbol": "XAGEUR",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "XAGEUR@M15.cross_asset_residual.p=6403309d7977b134",
-   "certificate": "external.XAGEUR@M15.cross_asset_residual.p=6403309d7977b134",
-   "fp": "e9f8ef31e76f61f3",
-   "symbol": "XAGEUR",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "XAGEUR@M15.cross_asset_residual.p=79b3c4425ab84031",
-   "certificate": "external.XAGEUR@M15.cross_asset_residual.p=79b3c4425ab84031",
-   "fp": "12e08eddcaaa27c4",
-   "symbol": "XAGEUR",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "XAGUSD@M15.cross_asset_residual.p=79b3c4425ab84031",
-   "certificate": "external.XAGUSD@M15.cross_asset_residual.p=79b3c4425ab84031",
-   "fp": "aad4a4b5992a3e23",
-   "symbol": "XAGUSD",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "XAGUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
-   "certificate": "external.XAGUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
-   "fp": "cf9b7c816695a691",
-   "symbol": "XAGUSD",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "XAUAUD@M15.cross_asset_residual.p=e95ea804f8e3f059",
-   "certificate": "external.XAUAUD@M15.cross_asset_residual.p=e95ea804f8e3f059",
-   "fp": "51da82f1f9432e57",
+   "key": "XAUAUD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
+   "certificate": "external.XAUAUD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
+   "fp": "1086969f6429da4f",
    "symbol": "XAUAUD",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
@@ -135,8 +37,66 @@
    "theirs": {}
   },
   {
-   "lane": "forward",
-   "key": "XAUUSD.cross_asset_residual.continuous#entry_z=2.5_factor_symbols=['EURUSD', 'US500', 'UST10Y']_lookback=120_rr=1.5_ttl_bars=48",
+   "lane": "certificate",
+   "key": "XAUAUD@M15.cross_asset_residual.p=79b3c4425ab84031",
+   "certificate": "external.XAUAUD@M15.cross_asset_residual.p=79b3c4425ab84031",
+   "fp": "b8db7df3f2966414",
+   "symbol": "XAUAUD",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "XAUEUR@M15.cross_asset_residual.p=e95ea804f8e3f059",
+   "certificate": "external.XAUEUR@M15.cross_asset_residual.p=e95ea804f8e3f059",
+   "fp": "384b91bcfbc17974",
+   "symbol": "XAUEUR",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "XAUEUR@M15.cross_asset_residual.p=cd305328d4d3f7f5",
+   "certificate": "external.XAUEUR@M15.cross_asset_residual.p=cd305328d4d3f7f5",
+   "fp": "37bd3d1994d0ef85",
+   "symbol": "XAUEUR",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "XAUEUR@M15.cross_asset_residual.p=79b3c4425ab84031",
+   "certificate": "external.XAUEUR@M15.cross_asset_residual.p=79b3c4425ab84031",
+   "fp": "d39899214bbf865b",
+   "symbol": "XAUEUR",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "XAUUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
+   "certificate": "external.XAUUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
+   "fp": "d32ec99404f38f9f",
    "symbol": "XAUUSD",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
@@ -144,90 +104,39 @@
     "no written specification in the spec book for family 'cross_asset_residual'"
    ],
    "ours": {},
-   "theirs": {},
-   "divergence": {}
+   "theirs": {}
   },
   {
-   "lane": "forward",
-   "key": "XAUUSD.vol_mean_reversion.continuous#session=asia",
-   "symbol": "XAUUSD",
-   "family": "vol_mean_reversion",
+   "lane": "certificate",
+   "key": "XCUUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
+   "certificate": "external.XCUUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
+   "fp": "391bb5bdd9a52514",
+   "symbol": "XCUUSD",
+   "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'vol_mean_reversion'"
+    "no written specification in the spec book for family 'cross_asset_residual'"
    ],
    "ours": {},
-   "theirs": {},
-   "divergence": {}
+   "theirs": {}
   },
   {
-   "lane": "forward",
-   "key": "AUDCAD.range_reversion.continuous",
-   "symbol": "AUDCAD",
-   "family": "session_range_breakout",
+   "lane": "certificate",
+   "key": "XCUUSD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
+   "certificate": "external.XCUUSD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
+   "fp": "8d1b1c56cf08a904",
+   "symbol": "XCUUSD",
+   "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
    "why": [
-    "no forward ledger on this box for this row"
+    "no written specification in the spec book for family 'cross_asset_residual'"
    ],
    "ours": {},
-   "theirs": {},
-   "divergence": {}
+   "theirs": {}
   },
   {
    "lane": "forward",
-   "key": "AUDCAD.vol_mean_reversion.continuous",
-   "symbol": "AUDCAD",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "AUDHUF.carry.continuous",
-   "symbol": "AUDHUF",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "AUDJPY.carry.continuous",
-   "symbol": "AUDJPY",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "AUDJPY.turn_of_month.continuous",
-   "symbol": "AUDJPY",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "AUDSGD.joint_genome.continuous",
+   "key": "AUDSGD.pullback_entry.continuous",
    "symbol": "AUDSGD",
    "family": "session_range_breakout",
    "verdict": "UNMEASURED",
@@ -237,84 +146,221 @@
    "ours": {},
    "theirs": {},
    "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "AUDSGD.range_reversion.continuous",
+   "symbol": "AUDSGD",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "AUDSGD.turn_of_month.continuous",
+   "symbol": "AUDSGD",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "AUDSGD.vol_transition.continuous",
+   "symbol": "AUDSGD",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "AUDUSD.range_reversion.continuous",
+   "symbol": "AUDUSD",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "CHFNOK.carry.continuous",
+   "symbol": "CHFNOK",
+   "family": "session_range_breakout",
+   "verdict": "MISMATCH",
+   "why": [
+    "FILLS disagree: 19 rebuilt vs 40 in the ledger",
+    "only 0/40 ledger trades have a rebuilt fill on the same bar and side",
+    "summed P&L disagrees in SIGN: ledger +32.70R, rebuilt -1.98R"
+   ],
+   "ours": {
+    "n_fills": 19,
+    "pnl_R": -1.984,
+    "cost": {
+     "spread_per_lot": 253.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 10.45456,
+     "basis": "universe_registry"
+    },
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
+   },
+   "theirs": {
+    "n_trades": 40,
+    "cost_fields": null,
+    "forward_start": "2026-09-21T21:50:42.287621+00:00"
+   },
+   "divergence": {
+    "n_ledger": 40,
+    "n_rebuilt": 19,
+    "matched": 0,
+    "match_share": 0.0,
+    "fill_ratio": 0.475,
+    "pnl_ledger_R": 32.704,
+    "pnl_rebuilt_R": -1.984,
+    "open_ledger": false,
+    "open_rebuilt": false
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "CHFNOK.range_reversion.continuous",
+   "symbol": "CHFNOK",
+   "family": "session_range_breakout",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no forward ledger on this box for this row"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "CHFPLN.carry.continuous",
+   "symbol": "CHFPLN",
+   "family": "session_range_breakout",
+   "verdict": "MISMATCH",
+   "why": [
+    "only 0/27 ledger trades have a rebuilt fill on the same bar and side",
+    "POSITION STATE disagrees: ledger open=False, rebuilt open=True"
+   ],
+   "ours": {
+    "n_fills": 24,
+    "pnl_R": 4.412,
+    "cost": {
+     "spread_per_lot": 254.00000000000003,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 4.39612,
+     "basis": "universe_registry"
+    },
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17."
+   },
+   "theirs": {
+    "n_trades": 27,
+    "cost_fields": null,
+    "forward_start": "2026-09-21T21:50:42.287628+00:00"
+   },
+   "divergence": {
+    "n_ledger": 27,
+    "n_rebuilt": 24,
+    "matched": 0,
+    "match_share": 0.0,
+    "fill_ratio": 0.889,
+    "pnl_ledger_R": 4.339,
+    "pnl_rebuilt_R": 4.412,
+    "open_ledger": false,
+    "open_rebuilt": true
+   }
   }
  ],
- "quarantined": [],
+ "quarantined": [
+  "CHFNOK.carry.continuous",
+  "CHFPLN.carry.continuous"
+ ],
  "unmeasured": [
   {
-   "what": "XAGEUR@M15.cross_asset_residual.p=f70151cf16fd1230",
+   "what": "XAUAUD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "XAGEUR@M15.cross_asset_residual.p=e95ea804f8e3f059",
+   "what": "XAUAUD@M15.cross_asset_residual.p=79b3c4425ab84031",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "XAGEUR@M15.cross_asset_residual.p=5740a1a3a11c0f48",
+   "what": "XAUEUR@M15.cross_asset_residual.p=e95ea804f8e3f059",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "XAGEUR@M15.cross_asset_residual.p=6403309d7977b134",
+   "what": "XAUEUR@M15.cross_asset_residual.p=cd305328d4d3f7f5",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "XAGEUR@M15.cross_asset_residual.p=79b3c4425ab84031",
+   "what": "XAUEUR@M15.cross_asset_residual.p=79b3c4425ab84031",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "XAGUSD@M15.cross_asset_residual.p=79b3c4425ab84031",
+   "what": "XAUUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "XAGUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
+   "what": "XCUUSD@M15.cross_asset_residual.p=e95ea804f8e3f059",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "XAUAUD@M15.cross_asset_residual.p=e95ea804f8e3f059",
+   "what": "XCUUSD@M15.cross_asset_residual.p=cd305328d4d3f7f5",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "XAUUSD.cross_asset_residual.continuous#entry_z=2.5_factor_symbols=['EURUSD', 'US500', 'UST10Y']_lookback=120_rr=1.5_ttl_bars=48",
-   "why": "no written specification in the spec book for family 'cross_asset_residual'"
-  },
-  {
-   "what": "XAUUSD.vol_mean_reversion.continuous#session=asia",
-   "why": "no written specification in the spec book for family 'vol_mean_reversion'"
-  },
-  {
-   "what": "AUDCAD.range_reversion.continuous",
+   "what": "AUDSGD.pullback_entry.continuous",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "AUDCAD.vol_mean_reversion.continuous",
+   "what": "AUDSGD.range_reversion.continuous",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "AUDHUF.carry.continuous",
+   "what": "AUDSGD.turn_of_month.continuous",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "AUDJPY.carry.continuous",
+   "what": "AUDSGD.vol_transition.continuous",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "AUDJPY.turn_of_month.continuous",
+   "what": "AUDUSD.range_reversion.continuous",
    "why": "no forward ledger on this box for this row"
   },
   {
-   "what": "AUDSGD.joint_genome.continuous",
+   "what": "CHFNOK.range_reversion.continuous",
    "why": "no forward ledger on this box for this row"
   }
  ],
  "recorded": {
-  "quarantined": 0,
-  "memory": 0,
-  "candidates": 0
+  "quarantined": 2,
+  "memory": 2,
+  "candidates": 606
  },
  "cursor": {
-  "forward": 762,
-  "at": "2026-10-23T10:42:43+00:00",
-  "certificates": 91
+  "forward": 770,
+  "at": "2026-10-23T11:42:40+00:00",
+  "certificates": 99
  },
  "notes": [],
  "independence": {
@@ -331,24 +377,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGUSD_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGUSD_M15.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCAD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCAD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDHUF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDJPY_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XCUUSD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XCUUSD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFPLN_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 15.21
+ "seconds": 231.6
 }
