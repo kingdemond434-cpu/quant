@@ -52181,6 +52181,42 @@
       "retired_at": "2026-10-23T02:18:48+00:00",
       "retire_reason": "EURZAR admits only ['eurzar_carry_asia_p_8339edce23032d21'] for live capital; \"EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['std', ['decay', 'spread', 3], 3]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0\" is a different parameter set on the same instrument -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
       "retired_by": "live_policy"
+    },
+    {
+      "name": "CHFNOK.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_spike_pct=0.95",
+      "symbol": "CHFNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "",
+        "why": "no fresh dE[log W] measurement: the allocation is 1.9h old and its admission scan 27.9h old (max 26h): it describes a book that no longer exists, so it may not price capital. Nothing is added and nothing is removed -- the row and its clock stand and the next allocator pass decides."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-10-23T03:03:45+00:00",
+      "shadow_exp": 0.6869371275996905,
+      "family": "spread_state",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFNOK.spread_state.asia#hold_bars=4_min_move_atr=0.5_mode=spike_reversion_spike_pct=0.95",
+      "sleeve_id": "be1b9e9ac121a53b44ec",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "hold_bars": 4,
+        "min_move_atr": 0.5,
+        "mode": "spike_reversion",
+        "spike_pct": 0.95
+      },
+      "exec": "family_market",
+      "retired_at": "2026-10-23T03:03:48+00:00",
+      "retire_reason": "CHFNOK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     }
   ]
 }
