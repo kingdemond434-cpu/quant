@@ -24,12 +24,12 @@
   },
   "position": null,
   "last_bracket_date": "2026-10-23",
-  "last_reconcile": "2026-10-23T15:34:38+00:00",
+  "last_reconcile": "2026-10-23T15:49:48+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {},
   "lot": 0.06,
-  "equity": 482.39,
+  "equity": 484.09,
   "placement_health": {
     "consecutive_total_rejections": 0,
     "last_ok": "2026-10-13T04:00:13+00:00",
@@ -53,7 +53,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-23T18:35:06+00:00",
+  "placement_pass": "2026-10-23T18:48:33+00:00",
   "netting_booked": {},
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
@@ -285,13 +285,13 @@
       "last_signal_bar": "2026-10-23 17:00:00+00:00"
     },
     "eurzar_carry_asia_p_8339edce23032d21": {
-      "last_signal_bar": "2026-10-23 18:15:00+00:00",
+      "last_signal_bar": "2026-10-23 18:30:00+00:00",
       "open_ttl_until": "2026-10-24T22:15:00+00:00",
       "trail_k": 0.0
     },
     "usdnok_carry_asia_p_ff35bb7c8427d66f": {
-      "last_signal_bar": "2026-10-23 18:25:00+00:00",
-      "open_ttl_until": "2026-10-24T00:55:00+00:00",
+      "last_signal_bar": "2026-10-23 18:30:00+00:00",
+      "open_ttl_until": "2026-10-24T04:35:00+00:00",
       "trail_k": 0.0
     }
   },
@@ -472,15 +472,24 @@
     "234917497": 39.029999999999745,
     "240035875": 0.006719999999999615,
     "240043547": 0.009529999999999816,
-    "240098477": 0.019959999999997535
+    "240098477": 0.019959999999997535,
+    "240227813": 0.009019999999999584
   },
   "restart_reconcile": {
-    "at": "2026-10-23T15:35:13+00:00",
+    "at": "2026-10-23T15:48:35+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
     "armed": true,
-    "positions": [],
+    "positions": [
+      {
+        "ticket": 240227813,
+        "symbol": "USDNOK",
+        "comment": "DWusdnok_carry_asia_p_ff35bb7",
+        "volume": 0.03,
+        "sl": 9.33647
+      }
+    ],
     "orders": [],
     "in_doubt": [],
     "stopless": [],

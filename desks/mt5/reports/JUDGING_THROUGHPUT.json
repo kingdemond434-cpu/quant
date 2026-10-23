@@ -1,21 +1,21 @@
 {
- "at": "2026-10-23T15:00:25+00:00",
+ "at": "2026-10-23T15:43:49+00:00",
  "status": "MEASURED",
  "box": {
   "cores": 18,
   "market_closed": false,
   "source": "GlobalMemoryStatusEx",
   "total_phys_mb": 98297,
-  "free_phys_mb": 59025,
+  "free_phys_mb": 63513,
   "commit_limit_mb": 200697,
-  "commit_free_mb": 102293,
+  "commit_free_mb": 119995,
   "cpu_source": "psutil",
-  "busy_other_cores": 16.72,
+  "busy_other_cores": 16.91,
   "busy_judge_cores": 0.0,
   "cpu_sample_s": 1.0,
   "terminal_running": true,
-  "gateway_running": false,
-  "n_python": 66,
+  "gateway_running": true,
+  "n_python": 72,
   "terminal_source": "psutil",
   "is_judging_box": true
  },
@@ -38,7 +38,7 @@
   "burndown_outflow_unit": "settled",
   "burndown_source": "JUDGING_BURNDOWN.json",
   "source_at": "2026-10-03T12:38:16.788667+00:00",
-  "source_age_seconds": 1736517.807076,
+  "source_age_seconds": 1739132.009186,
   "why": "backpressure timestamp missing, invalid, future or stale; historical sweep is not current queue capacity"
  },
  "decision": {
@@ -52,7 +52,7 @@
   "shards_why": "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work across the measured worker allocation and computes program-level gates once on the union",
   "limiting_resource": "backlog_growing",
   "stood_down": false,
-  "why": "cores 15 (reserved 3), memory 38, commit 66 at 768MB a worker; the binding one is backlog_growing",
+  "why": "cores 15 (reserved 3), memory 41, commit 78 at 768MB a worker; the binding one is backlog_growing",
   "baseline": {
    "workers": 10,
    "memory_budget_mb": 8192.0,
@@ -106,7 +106,7 @@
  "limiting_resource": "backlog_growing",
  "rule": "throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the plan is floored at the sealed baseline so this organ can never throttle the judge; the live terminal always wins and standing down means returning to that baseline, not below it",
  "rate": {
-  "at": "2026-10-23T15:00:25+00:00",
+  "at": "2026-10-23T15:43:49+00:00",
   "verdicts": {
    "status": "MEASURED",
    "rows_total": 998885,
@@ -138,12 +138,12 @@
   "created": {
    "status": "MEASURED",
    "counts": {
-    "24h": 34497,
-    "7d": 317723
+    "24h": 32623,
+    "7d": 318077
    },
    "per_hour": {
-    "24h": 1437.375,
-    "7d": 1891.208
+    "24h": 1359.292,
+    "7d": 1893.315
    }
   },
   "verdicts_per_hour": 0.0,
@@ -151,18 +151,20 @@
   "verdict_rate_basis": "changed verdict events, not total completed tests",
   "first_judged_per_day": 0.0,
   "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
-  "coverage_backlog_fresh": false,
-  "created_per_day": 34497.0,
-  "backlog": "UNMEASURED",
-  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
+  "coverage_backlog_fresh": true,
+  "created_per_day": 32623.0,
+  "backlog": 1227801,
+  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\JUDGE_COVERAGE.json totals.unjudged_total",
   "eta_to_drain": {
-   "status": "UNMEASURED",
-   "why": "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
+   "status": "GROWING",
+   "hours": null,
+   "net_per_day": -32623.0,
+   "why": "the judge returns fewer verdicts an hour than the desk creates cells; the backlog cannot drain at this rate"
   },
   "workers_planned": 15,
   "workers_last_sweep": "UNMEASURED",
   "cores_basis": "fixed_reservation"
  },
- "measure_seconds": 261.4,
- "seconds": 307.3
+ "measure_seconds": 106.7,
+ "seconds": 152.7
 }
