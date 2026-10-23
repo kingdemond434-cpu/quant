@@ -1,6 +1,6 @@
 {
  "schema": "backup_state/1",
- "at": "2026-10-23T04:31:06+00:00",
+ "at": "2026-10-23T04:47:12+00:00",
  "host": "vmi3571445",
  "last_backup_at": null,
  "last_restore_drill_at": null,
@@ -24,7 +24,7 @@
  },
  "reboot_drill": {
   "state": "PASS",
-  "at": "2026-10-22T04:30:21+00:00",
+  "at": "2026-10-23T04:35:56+00:00",
   "n_failures": 0
  },
  "moat": {
