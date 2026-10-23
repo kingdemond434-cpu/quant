@@ -9,14 +9,20 @@
    "status": "FAILED"
   },
   "external_queue_projection": {
+   "finished_at": "2026-10-22T23:58:08.205502+00:00",
+   "passes_completed": 1,
+   "returncode": 124,
+   "status": "FAILED"
+  },
+  "external_queue_reconciliation": {
    "command": [
     "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/promote_external_to_queue.py"
+    "scripts/reconcile_external_queue.py"
    ],
    "passes_completed": 0,
-   "started_at": "2026-10-22T23:48:01.277917+00:00",
+   "started_at": "2026-10-22T23:58:23.097067+00:00",
    "status": "RUNNING"
   }
  },
- "updated_at": "2026-10-22T23:48:01.277917+00:00"
+ "updated_at": "2026-10-22T23:58:23.097067+00:00"
 }
