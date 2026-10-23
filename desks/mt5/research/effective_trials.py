@@ -108,6 +108,31 @@ def read_docket(path: Path | None = None, *, limit: int = MAX_ROWS) -> list[dict
     return [r for r in rows[:limit] if isinstance(r, dict)]
 
 
+#: The rows `judge_coverage` parked as `build_input_missing`, written beside the docket
+#: (`judge_coverage.PARKED_TRIAL_ROWS`; a test pins the name). They are trials the desk minted
+#: and still owes, so they stay in the census: parking a cell must move no charge.
+PARKED_TRIALS_NAME = "build_input_parked_trials.json"
+
+
+def read_parked_trials(path: Path) -> list[dict[str, Any]]:
+    """The parked rows as written; absent or malformed is none (nothing was parked)."""
+    try:
+        raw = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    return [r for r in raw if isinstance(r, dict)] if isinstance(raw, list) else []
+
+
+def census_rows(docket: Path | None = None, *, limit: int = MAX_ROWS
+                ) -> tuple[list[dict[str, Any]], int]:
+    """(rows the census measures, how many of them are parked rows): the docket, then the rows
+    parked out of it, up to `limit` in all."""
+    rows = read_docket(docket, limit=limit)
+    parked = read_parked_trials((docket or DOCKET).parent / PARKED_TRIALS_NAME)
+    extra = parked[:max(0, limit - len(rows))]
+    return rows + extra, len(extra)
+
+
 def spec_fixed_trial_count(path: Path | None = None) -> int | None:
     """The standing campaign charge as the sealed judge will read it, from the spec itself."""
     try:
@@ -308,7 +333,7 @@ def build(*, docket: Path | None = None, spec: Path | None = None,
     the hour it is measured.
     """
     t0 = time.time()
-    rows = read_docket(docket)
+    rows, n_parked = census_rows(docket)
     census = measure(rows)
     variance, variance_basis = measured_variance_of_sharpes(dsr_inputs_path)
     standing = spec_fixed_trial_count(spec)
@@ -330,7 +355,8 @@ def build(*, docket: Path | None = None, spec: Path | None = None,
                  "participation ratio of (grid cell, content) identity sizes within each "
                  "mechanism -- never in docket rows; no gate is lowered, no cell removed, no "
                  "producer capped, and every failure path returns the unchanged nominal charge"),
-        "docket_rows": len(rows),
+        "docket_rows": len(rows) - n_parked,
+        "parked_rows_counted": n_parked,
         "nominal": census.get("n_nominal"),
         "effective": census.get("n_effective"),
         "ratio_nominal_per_effective": census.get("ratio"),

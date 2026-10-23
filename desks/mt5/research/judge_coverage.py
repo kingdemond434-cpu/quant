@@ -1769,8 +1769,97 @@ def _build_inputs_present(row: dict[str, Any]) -> bool:
         return True
 
 
+#: CELLS THE READMIT_MAX_DAYS BACKSTOP RELEASED, and when (audit of 9bf6542be, M1). The probe
+#: does not name a cell held here inside its RELEASE_GRACE_DAYS, so a released cell reaches the
+#: judge once and the judge's own word on it stands. Written under the bank's lock, in the same
+#: transaction as the bank; entries past the grace are pruned on the next write.
+BUILD_INPUT_RELEASED = HYP / "build_input_released.json"
+
+
+#: THE TRIALS A PARKED CELL STILL STANDS FOR (audit of 9bf6542be, S4). `effective_trials`
+#: measures the campaign charge from the shipped docket, floored at its count of distinct
+#: mechanisms; parking a cell takes its row out of that docket, and measured on the box's docket
+#: (2026-10-22, 57,538 rows) removing 15% of rows from the probed families moved the measured
+#: charge 62 -> 61 on one seed of three, and removing them all 62 -> 52 -- the floor falls when a
+#: mechanism's last row leaves. Parking must not move a trial charge either way, so the rows
+#: parked here are written beside the docket, trimmed to the fields `trial_from_record` reads,
+#: and `effective_trials` counts them with the docket. Bounded at the rows that organ reads.
+PARKED_TRIAL_ROWS = HYP / "build_input_parked_trials.json"
+PARKED_TRIAL_ROWS_MAX = 60_000
+#: Exactly the fields `libs.research.trial_ledger.trial_from_record` reads (a test pins it).
+TRIAL_KEYS: frozenset[str] = frozenset({
+    "params", "params_json", "genome", "family", "trial_family", "declared_width",
+    "search_width", "claim_selection_trials", "claim_family", "lineage", "family_id",
+    "trial_id", "id", "candidate_id", "hypothesis_id", "cell",
+    "mechanism", "data", "representation", "geography", "state", "horizon", "execution",
+    "failure", "symbol", "sym", "chart", "timeframe", "session", "regime", "information",
+    "asset_class", "model_family", "dataset", "feature", "signal", "method"})
+
+
+def parked_trial_rows(blocked: list[dict[str, Any]],
+                      bank: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    """The docket rows this pass held back as `build_input_missing`, trimmed to TRIAL_KEYS."""
+    out: list[dict[str, Any]] = []
+    for r in blocked:
+        b = bank.get(str(r.get("_cell") or ""))
+        if isinstance(b, dict) and b.get("reason") == BUILD_INPUT_MISSING:
+            out.append({k: v for k, v in r.items() if k in TRIAL_KEYS})
+            if len(out) >= PARKED_TRIAL_ROWS_MAX:
+                break
+    return out
+
+
+def build_input_released(path: Path | None = None) -> dict[str, str]:
+    """cell -> released_at for every cell the backstop released (empty when none or unreadable:
+    an unreadable file names nothing as in grace, so the probe parks as it would have)."""
+    # Beside the bank it belongs to (where `update_unrunnable_bank` writes it), so a test's
+    # bank never reads the desk's file.
+    doc = _read_memo(path or UNRUNNABLE_BANK.parent / BUILD_INPUT_RELEASED.name)
+    if not isinstance(doc, dict):
+        return {}
+    cells = doc.get("cells")
+    return ({str(k): str(v) for k, v in cells.items() if isinstance(v, str)}
+            if isinstance(cells, dict) else {})
+
+
+def _record_build_input_released(released_now: dict[str, str], *, at: str, path: Path,
+                                 txn: Any, lock_path: Path | None = None) -> str:
+    """Add this pass's releases, prune the expired, write only when the mapping changed."""
+    probe = _build_input_probe()
+    grace = float(getattr(probe, "RELEASE_GRACE_DAYS", BUILD_FAILED_RETRY_DAYS))
+    old = build_input_released(path)
+    now_t = _ts(at)
+    keep: dict[str, str] = {}
+    for cell, when in old.items():
+        t = _ts(when)
+        if (t is not None and now_t is not None
+                and (now_t.timestamp() - t.timestamp()) / 86400.0 < grace):
+            keep[cell] = when
+    keep.update(released_now)
+    if keep == old:
+        return "UNCHANGED"
+    text = json.dumps({"schema": 1, "at": at, "grace_days": grace,
+                       "rule": ("a build_input_missing cell released by READMIT_MAX_DAYS is not "
+                                "named again by the probe inside grace_days: the judge's turn"),
+                       "cells": dict(sorted(keep.items()))}, separators=(",", ":"))
+    try:
+        if txn is None:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            _atomic_write_text(path, text)
+        else:
+            txn.put_text(path, text)
+            if lock_path is not None:
+                txn.guard(lock_path, path)      # lands only while the bank's lock holds
+            if _PASS is not None:
+                _PASS[("staged_json", str(path))] = json.loads(text)
+    except OSError:
+        return "WRITE_FAILED"
+    return "WRITTEN"
+
+
 def probe_build_inputs(rows: list[dict[str, Any]], judged: Any,
-                       bank: dict[str, dict[str, Any]], banned: Any
+                       bank: dict[str, dict[str, Any]], banned: Any,
+                       now: datetime | None = None
                        ) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
     """`build_input_probe.name` over the docket, or nothing named with the reason why."""
     probe = _build_input_probe()
@@ -1778,16 +1867,48 @@ def probe_build_inputs(rows: list[dict[str, Any]], judged: Any,
         return {}, {"status": "UNMEASURED", "why": "build_input_probe could not be imported"}
     try:
         ctx = _pass_value("build_input_probe_ctx", probe._Pass)
-        return probe.name(rows, judged=judged, bank=bank, banned=banned, ctx=ctx)
+        return probe.name(rows, judged=judged, bank=bank, banned=banned, ctx=ctx, now=now,
+                          released=build_input_released())
     except Exception as exc:                                   # never costs the pass
         return {}, {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {str(exc)[:200]}"}
+
+
+#: WHY A PARKED CELL CAME BACK (audit of 9bf6542be, S2): every readmission is booked under one
+#: of these, by reason, so an input that appeared is never reported as bar growth.
+READMIT_CAUSES = ("input_appeared", "bars_appeared", "retry_days", "bar_growth", "max_age")
 
 
 def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
                 bar_sizes: dict[tuple[str, str], int] | None = None) -> bool:
     """True when a parked cell's history has grown enough, or it has waited long enough."""
+    return readmit_cause(row, now=now, bar_sizes=bar_sizes) is not None
+
+
+def readmit_cause(row: dict[str, Any], *, now: datetime | None = None,
+                  bar_sizes: dict[tuple[str, str], int] | None = None) -> str | None:
+    """WHY a parked cell is due back (one of READMIT_CAUSES), or None while it stays parked."""
     parked_bytes = int(row.get("bar_bytes") or 0)
     key = (str(row.get("sym") or ""), str(row.get("tf") or "H1"))
+    _tn = now or datetime.now(tz=UTC)
+    _pa = _ts(row.get("parked_at"))
+    aged = (_pa is not None
+            and (_tn.timestamp() - _pa.timestamp()) / 86400.0 >= READMIT_MAX_DAYS)
+    if row.get("reason") == "needs_data":
+        # THE INPUT IS THE BINDING CAUSE: the family returns [] on any bars without it, so bar
+        # growth cannot change the outcome. Back the moment the probe stops answering NEEDS_DATA
+        # (the input appeared, or the probe can no longer say: fail open toward judging), and
+        # after READMIT_MAX_DAYS regardless, like every parked cell.
+        if _fire_probe(str(row.get("sym") or ""), str(row.get("family") or "")).get(
+                "status") != "NEEDS_DATA":
+            return "input_appeared"
+        return "max_age" if aged else None
+    if row.get("reason") == BUILD_INPUT_MISSING:
+        # THE NAMED INPUT IS THE BINDING CAUSE, not the cell's own history: back the pass every
+        # input the probe named is present again (an unreadable probe reads present: fail open
+        # toward judging), and after READMIT_MAX_DAYS regardless, like every parked cell.
+        if _build_inputs_present(row):
+            return "input_appeared"
+        return "max_age" if aged else None
     # A pass measures each chart once. Never retain this snapshot across passes: new
     # bars must re-admit every eligible sibling on the next reading.
     if bar_sizes is None:
@@ -1796,46 +1917,19 @@ def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
         if key not in bar_sizes:
             bar_sizes[key] = _bar_bytes(*key)
         bars = bar_sizes[key]
-    if row.get("reason") == "needs_data":
-        # THE INPUT IS THE BINDING CAUSE: the family returns [] on any bars without it, so bar
-        # growth cannot change the outcome. Back the moment the probe stops answering NEEDS_DATA
-        # (the input appeared, or the probe can no longer say: fail open toward judging), and
-        # after READMIT_MAX_DAYS regardless, like every parked cell.
-        if _fire_probe(str(row.get("sym") or ""), str(row.get("family") or "")).get(
-                "status") != "NEEDS_DATA":
-            return True
-        _pa = _ts(row.get("parked_at"))
-        _tn = now or datetime.now(tz=UTC)
-        return (_pa is not None
-                and (_tn.timestamp() - _pa.timestamp()) / 86400.0 >= READMIT_MAX_DAYS)
-    if row.get("reason") == BUILD_INPUT_MISSING:
-        # THE NAMED INPUT IS THE BINDING CAUSE, not the cell's own history: back the pass every
-        # input the probe named is present again (an unreadable probe reads present: fail open
-        # toward judging), and after READMIT_MAX_DAYS regardless, like every parked cell.
-        if _build_inputs_present(row):
-            return True
-        _pa = _ts(row.get("parked_at"))
-        _tn = now or datetime.now(tz=UTC)
-        return (_pa is not None
-                and (_tn.timestamp() - _pa.timestamp()) / 86400.0 >= READMIT_MAX_DAYS)
     if parked_bytes <= 0:
-        return bars > 0
-    if row.get("reason") in ("build_failed", "series_exception", "no_series", "unnamed",
-                             "observations_under_60_days", "no_terminal_gate_recorded"):
-        _at = _ts(row.get("parked_at"))
-        _t = now or datetime.now(tz=UTC)
-        if _at is not None and (_t.timestamp() - _at.timestamp()) / 86400.0 \
-                >= BUILD_FAILED_RETRY_DAYS:
-            return True
+        return "bars_appeared" if bars > 0 else None
+    if (row.get("reason") in ("build_failed", "series_exception", "no_series", "unnamed",
+                              "observations_under_60_days", "no_terminal_gate_recorded")
+            and _pa is not None
+            and (_tn.timestamp() - _pa.timestamp()) / 86400.0 >= BUILD_FAILED_RETRY_DAYS):
+        return "retry_days"
     days = int(row.get("days") or 0)
     need = READMIT_GROWTH if days <= 0 else min(
         READMIT_GROWTH_CAP, max(READMIT_GROWTH, CPCV_MIN_DAYS / float(days)))
     if bars >= parked_bytes * need:
-        return True
-    parked_at = _ts(row.get("parked_at"))
-    t = now or datetime.now(tz=UTC)
-    return (parked_at is not None
-            and (t.timestamp() - parked_at.timestamp()) / 86400.0 >= READMIT_MAX_DAYS)
+        return "bar_growth"
+    return "max_age" if aged else None
 
 
 #: WHEN NOT-TESTABLE CELLS RETURN TO THE BACKLOG, one line per pass that re-admitted any: the
@@ -2143,6 +2237,11 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     parkable = {c for c, r in named.items() if r.get("reason") != "missing_bars"}
     readmitted_nt: dict[str, int] = {}
     readmitted_nt_reason: dict[str, int] = {}
+    by_reason_all: dict[str, int] = {}
+    by_cause: dict[str, int] = {}
+    by_reason_cause: dict[str, dict[str, int]] = {}
+    released_now: dict[str, str] = {}
+    released_state = "NOTHING_RELEASED"
 
     def _count_readmit(old_row: dict[str, Any]) -> None:
         fam = str(old_row.get("family") or "")
@@ -2161,9 +2260,15 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     # land (audit of a5847f82a, R9).
     with _bank_lock(out_path, at, txn) as locked:
         bank = unrunnable_bank(target)
-        readmitted = ([cell for cell, row in bank.items() if cell not in parkable
-                       and readmit_due(row, now=now_ts, bar_sizes=bar_sizes)]
-                      if locked else [])
+        causes: dict[str, str] = {}
+        if locked:
+            for cell, row in bank.items():
+                if cell in parkable:
+                    continue
+                cause = readmit_cause(row, now=now_ts, bar_sizes=bar_sizes)
+                if cause is not None:
+                    causes[cell] = cause
+        readmitted = list(causes)
         if locked:
             outstanding, out_state = read_needs_data_outstanding(out_path)
         else:
@@ -2301,9 +2406,20 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                         _PASS[("json", *_wk)] = bank
         if bank_write == "WRITTEN":
             # COUNTED ONLY ONCE THE BANK LANDED: a readmission the disk never saw is not one.
-            for old in popped.values():
+            for cell, old in popped.items():
                 if isinstance(old, dict) and old.get("reason") in NOT_TESTABLE_REASONS:
                     _count_readmit(old)
+                _rsn = str(old.get("reason") or "") if isinstance(old, dict) else ""
+                _cause = causes.get(cell, "max_age")
+                by_reason_all[_rsn] = by_reason_all.get(_rsn, 0) + 1
+                by_cause[_cause] = by_cause.get(_cause, 0) + 1
+                by_reason_cause.setdefault(_rsn, {})
+                by_reason_cause[_rsn][_cause] = by_reason_cause[_rsn].get(_cause, 0) + 1
+                if _rsn == BUILD_INPUT_MISSING and _cause == "max_age":
+                    released_now[cell] = at
+            released_state = _record_build_input_released(
+                released_now, at=at, path=target.parent / BUILD_INPUT_RELEASED.name, txn=txn,
+                lock_path=out_path)
         else:
             # Not ours to write, or the write failed: nothing this pass changed is on disk, and
             # nothing counts.
@@ -2326,6 +2442,9 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         locked_line = {"at": at, "state": "LOCKED"}
         line = (locked_line if bank_write == "SKIPPED_LOCKED" else
                 {"at": at, "readmitted": n_re, "by_reason": readmitted_nt_reason,
+                 # EVERY readmission, not-testable or not, by reason and by cause (audit S2).
+                 "readmitted_all": sum(by_reason_all.values()),
+                 "all_by_reason": by_reason_all, "all_by_cause": by_cause,
                  **({"state": bank_write} if bank_write != "WRITTEN" else {})})
         if txn is not None:
             # The whole log is staged (old bytes + this line) and renamed at commit: a rename is
@@ -2339,7 +2458,17 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                 fh.write(json.dumps(line) + "\n")
     except OSError:
         pass
-    return {"parked_this_pass": added, "readmitted_on_bar_growth": len(popped),
+    return {"parked_this_pass": added,
+            # Bar growth ONLY (audit S2): an input that appeared or an aged-out row is booked
+            # under its own cause below, never here.
+            "readmitted_on_bar_growth": sum(by_cause.get(c, 0)
+                                            for c in ("bar_growth", "bars_appeared")),
+            "readmitted_total": sum(by_reason_all.values()),
+            "readmitted_by_reason": by_reason_all,
+            "readmitted_by_cause": by_cause,
+            "readmitted_by_reason_cause": by_reason_cause,
+            "build_input_released": len(released_now),
+            "build_input_released_state": released_state,
             "needs_data_readmit_held_back": len(held_back),
             "readmitted_not_testable": n_re,
             "readmitted_not_testable_by_family": readmitted_nt,
@@ -3049,9 +3178,9 @@ def _missing_input(cls: str, row: dict[str, Any]) -> dict[str, Any] | None:
         return {"kind": "series", "symbol": sym, "timeframe": tf, "clock": BAR_CLOCK,
                 "why": str(row.get("why") or "")[:200]}
     if cls == "input_missing":
-        return {"kind": "inputs", "inputs": row.get("missing"), "symbol": sym,
-                "family": row.get("family"), "timeframe": tf,
-                "why": str(row.get("why") or "")[:200]}
+        # Compact rows (audit S3): the labels are the record, and the cell's symbol, family and
+        # chart already ride on the handoff row beside this; no prose is stored per row.
+        return {"kind": "inputs", "inputs": row.get("missing")}
     if cls == "needs_data":
         return {"kind": "input", "input": row.get("missing_input"), "symbol": sym,
                 "family": row.get("family"), "timeframe": tf,
@@ -3083,7 +3212,8 @@ def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
         rows.append({"cell": cell, "family": fam, "trial_family": fam,
                      "symbol": row.get("sym"), "timeframe": row.get("tf") or "H1",
                      "reason": row.get("reason"), "class": cls, "axes": route.get("axes"),
-                     "missing_input": _missing_input(cls, row), "why": row.get("why"),
+                     "missing_input": _missing_input(cls, row),
+                     **({} if cls == "input_missing" else {"why": row.get("why")}),
                      "first_parked_utc": row.get("parked_at"),
                      **({"readmitted_at": row.get("readmitted_at"),
                          "still_missing_after_readmit": True}
@@ -3260,7 +3390,8 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     not_run = name_not_run()
     # CELLS WHOSE BUILD MUST FAIL, NAMED BEFORE THE DOCKET SHIPS (`research/build_input_probe`).
     # The judge's own words win: a cell it named this pass keeps the judge's reason.
-    built_probe, probe_census = probe_build_inputs(rows, judged_cells, bank_rows, banned)
+    built_probe, probe_census = probe_build_inputs(rows, judged_cells, bank_rows, banned,
+                                                   now=at)
     _check_budget("build_input_probe")
     unrunnable = update_unrunnable_bank({**built_probe, **named_unknowns, **not_run},
                                         at=at.isoformat(timespec="seconds"))
@@ -3276,6 +3407,27 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         if _r.get("reason") == "data_missing":
             _k = f"{_r.get('sym')}_{_r.get('tf')}"
             bars_wanted[_k] = bars_wanted.get(_k, 0) + 1
+    # THE BARS A PARKED BUILD IS WAITING ON (audit of 9bf6542be, S1). A `build_input_missing` row
+    # names the peer / factor / leg / driver chart its build loads by name; nothing fetched them,
+    # so the cell came back only if the bars arrived by another path. They join the demand the
+    # hourly chart repair reads (`hourly_cycle.bars_wanted_symbols` -> `fetch_universe`), one
+    # count per parked cell, exactly as an own chart is counted above.
+    _probe_mod = _build_input_probe()
+    _wanted_probe = 0
+    if _probe_mod is not None:
+        for _r in _bank_now.values():
+            if _r.get("reason") == BUILD_INPUT_MISSING:
+                for _k in _probe_mod.bar_charts(_r.get("missing")):
+                    bars_wanted[_k] = bars_wanted.get(_k, 0) + 1
+                    _wanted_probe += 1
+    if isinstance(probe_census, dict):
+        probe_census["bars_wanted_added"] = _wanted_probe
+        _rc = (unrunnable.get("readmitted_by_reason_cause") or {}).get(BUILD_INPUT_MISSING) or {}
+        probe_census["readmitted"] = {"total": int(sum(_rc.values())), "by_cause": _rc,
+                                      "released_max_age": unrunnable.get(
+                                          "build_input_released")}
+        probe_census["parked_stock"] = sum(1 for _r in _bank_now.values()
+                                           if _r.get("reason") == BUILD_INPUT_MISSING)
     # MARGINAL k_eff, STAMPED BEFORE THE RANKING READS IT (research/docket_keff.py). Reorders
     # only: the family factor lifts a family's share of the remainder, the per-cell stamp orders
     # rows inside each family stream. Nothing is removed and the floor is untouched.
@@ -3695,6 +3847,23 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         bank = unrunnable_bank()
         blocked = [r for r in rows if str(r.get("_cell") or "") in bank]
         rows = [r for r in rows if str(r.get("_cell") or "") not in bank]
+        _ptrials = parked_trial_rows(blocked, bank)
+        _ptxn = doc.get("_txn")
+        _ptext = json.dumps(_ptrials, separators=(",", ":"), default=str)
+        # Every pass, EMPTY included: a stale list would count trials no longer parked. Staged
+        # with the bank when the pass is transactional; written now when the bank was too.
+        # Beside the bank (in production: beside the docket, where `effective_trials` reads it).
+        _ppath = UNRUNNABLE_BANK.parent / PARKED_TRIAL_ROWS.name
+        if isinstance(_ptxn, _Txn):
+            _ptxn.put_text(_ppath, _ptext)
+        else:
+            with contextlib.suppress(OSError):
+                _ppath.parent.mkdir(parents=True, exist_ok=True)
+                _atomic_write_text(_ppath, _ptext)
+        doc["build_input_parked_trials"] = {
+            "rows": len(_ptrials), "path": str(_ppath),
+            "rule": ("rows parked as build_input_missing stay in the trial census "
+                     "(effective_trials reads them beside the docket): parking moves no charge")}
         judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
         study = [r for r in rows if str(r.get("family") or "") in banned]
         # CHARGE VARIANTS AGAINST THEIR PARENT. The split marks the rows; the two orders below

@@ -10,7 +10,10 @@ These tests pin:
   2. anything the probe cannot prove is UNMEASURED and never named (fail open toward judging);
   3. judge_coverage parks such a cell out of the docket, keeps it in the backlog and in the
      bank with its inputs, and re-admits it the pass the input appears -- never on bar growth
-     or the blind seven-day build retry alone.
+     or the blind seven-day build retry alone;
+  4. v1.1 (audit of 9bf6542be): the READMIT_MAX_DAYS backstop fires through `order_docket` and
+     the released cell reaches the judge once; readmissions are booked by reason and cause; the
+     missing charts join `bars_wanted`; rows are compact; and parking moves no trial charge.
 """
 from __future__ import annotations
 
@@ -75,6 +78,8 @@ def uni(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(jc, "REPORT", tmp_path / "JUDGE_COVERAGE.json")
     monkeypatch.setattr(jc, "CONVERSION_HANDOFF", tmp_path / "conversion_handoff.json")
     monkeypatch.setattr(research_priors, "STATE_DIR", tmp_path / "research_priors")
+    monkeypatch.setattr(jc, "BUILD_INPUT_RELEASED", tmp_path / "build_input_released.json")
+    monkeypatch.setattr(jc, "PARKED_TRIAL_ROWS", tmp_path / "build_input_parked_trials.json")
     return root
 
 
@@ -196,11 +201,9 @@ def test_name_skips_judged_rows_and_the_judges_own_reasons(uni) -> None:
             "d": {"reason": "build_failed", "why": "no H1 bars for peer AUDNZD"}}
     named, census = P.name(rows, judged={"a"}, bank=bank)
     assert set(named) == {"b", "d"}
-    assert named["d"]["judge_why"] == "no H1 bars for peer AUDNZD"
     row = named["b"]
     assert row["reason"] == P.REASON == jc.BUILD_INPUT_MISSING
-    assert row["missing"] == [{"kind": "bars", "symbol": "AUDNZD", "timeframe": "H1",
-                               "file": "AUDNZD_H1.parquet"}]
+    assert row["missing"] == ["bars:AUDNZD_H1.parquet"]
     assert census["named"] == 2 and census["by_family"] == {"relative_value": 2}
     assert census["top_missing_inputs"] == {"bars:AUDNZD_H1.parquet": 2}
 
@@ -211,15 +214,14 @@ def test_the_reason_is_a_routed_defect_that_stays_in_the_backlog() -> None:
     cls = jc.failure_class(P.REASON)
     assert cls == "input_missing" and jc.FAILURE_ROUTES[cls]["owner"] == "converter"
     got = jc._missing_input(cls, {"sym": "EURGBP", "tf": "H1", "family": "lead_lag",
-                                  "missing": [{"kind": "bars", "file": "AUDNZD_H1.parquet"}]})
-    assert got["inputs"] == [{"kind": "bars", "file": "AUDNZD_H1.parquet"}]
+                                  "missing": ["bars:AUDNZD_H1.parquet"]})
+    assert got == {"kind": "inputs", "inputs": ["bars:AUDNZD_H1.parquet"]}
 
 
 def test_readmission_follows_the_input_not_bar_growth_or_the_build_retry(uni) -> None:
     row = {"reason": P.REASON, "sym": "EURGBP", "family": "lead_lag", "tf": "H1", "days": 0,
            "bar_bytes": 1, "parked_at": (NOW - timedelta(days=30)).isoformat(),
-           "missing": [{"kind": "bars", "symbol": "AUDNZD", "timeframe": "H1",
-                        "file": "AUDNZD_H1.parquet"}]}
+           "missing": ["bars:AUDNZD_H1.parquet"]}
     # bars grew enormously and 30 days passed: neither is the cause, so it stays parked
     assert jc.readmit_due(row, now=NOW) is False
     old = {**row, "parked_at": (NOW - timedelta(days=jc.READMIT_MAX_DAYS)).isoformat()}
@@ -238,7 +240,7 @@ def test_order_docket_parks_the_cell_keeps_it_owed_and_readmits_it(uni) -> None:
     assert len(out) == 2
     bank = jc.unrunnable_bank()
     parked = [r for r in bank.values() if r.get("reason") == P.REASON]
-    assert len(parked) == 1 and parked[0]["missing_input"] == "bars:AUDNZD_H1.parquet"
+    assert len(parked) == 1 and parked[0]["missing"] == ["bars:AUDNZD_H1.parquet"]
     assert doc["build_input_probe"]["named"] == 1
     assert doc["unrunnable_filtered_from_docket"] == 1
     assert doc["totals"]["unjudged_total"] == 3, "parked, still owed: the backlog does not move"
@@ -248,7 +250,9 @@ def test_order_docket_parks_the_cell_keeps_it_owed_and_readmits_it(uni) -> None:
     out2, doc2 = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
     assert len(out2) == 3
     assert not [r for r in jc.unrunnable_bank().values() if r.get("reason") == P.REASON]
-    assert doc2["unrunnable"]["readmitted_on_bar_growth"] == 1
+    assert doc2["unrunnable"]["readmitted_by_cause"] == {"input_appeared": 1}
+    assert doc2["unrunnable"]["readmitted_on_bar_growth"] == 0, "an input is not bar growth"
+    assert doc2["build_input_probe"]["readmitted"]["by_cause"] == {"input_appeared": 1}
 
 
 def test_a_probe_that_cannot_load_names_nothing_and_says_so(uni, monkeypatch) -> None:
@@ -269,3 +273,173 @@ def test_the_census_reads_the_docket_and_writes_nothing(uni, tmp_path) -> None:
     assert out["named"] == 1 and out["docket_rows"] == 2
     assert out["by_missing_kind"] == {"bars": 1}
     assert sorted(p.name for p in tmp_path.rglob("*")) == before, "the census is read-only"
+
+
+# ------------------------------------------------- 4. v1.1: the audit of 9bf6542be, pinned
+
+def _three_rows() -> list[dict]:
+    return [_row("EURGBP", "lead_lag", {"driver_symbol": "AUDNZD"}),
+            _row("EURGBP", "lead_lag", {"driver_symbol": "EURUSD"}),
+            _row("EURUSD", "carry", {})]
+
+
+def _age_parked(days: float) -> None:
+    bank = json.loads(jc.UNRUNNABLE_BANK.read_text("utf-8"))
+    for r in bank.values():
+        if r.get("reason") == P.REASON:
+            r["parked_at"] = (NOW - timedelta(days=days)).isoformat()
+    jc.UNRUNNABLE_BANK.write_text(json.dumps(bank), "utf-8")
+
+
+def test_the_max_age_backstop_fires_through_order_docket_and_the_judge_gets_one_turn(
+        uni, tmp_path) -> None:
+    rows = _three_rows()
+    out, _ = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    assert len(out) == 2
+    _age_parked(100)                                  # parked 100 days ago, input still absent
+    out2, doc2 = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    u = doc2["unrunnable"]
+    assert u["readmitted_by_reason"].get(P.REASON) == 1, "readmitted 1"
+    assert u["readmitted_by_reason_cause"][P.REASON] == {"max_age": 1}
+    assert len(out2) == 3, "the released cell goes back to the judge"
+    assert doc2["build_input_probe"]["released_max_age"] == 1
+    assert doc2["build_input_probe"]["readmitted"] == {
+        "total": 1, "by_cause": {"max_age": 1}, "released_max_age": 1}
+    assert len(jc.build_input_released()) == 1
+    line = json.loads((tmp_path / jc.READMISSION_LOG.name).read_text("utf-8")
+                      .splitlines()[-1])
+    assert line["all_by_reason"] == {P.REASON: 1} and line["all_by_cause"] == {"max_age": 1}
+    assert line["readmitted"] == 0, "not-testable inflow is unchanged: it is a DEFECT class"
+    # inside the grace the probe does not re-name it: the judge's turn, and its word stands
+    out3, doc3 = jc.order_docket([dict(r) for r in rows], publish=False,
+                                 now=NOW + timedelta(hours=1))
+    assert len(out3) == 3 and doc3["build_input_probe"]["in_release_grace"] == 1
+    # past the grace, the input still absent and no verdict: parked again on a fresh clock
+    later = NOW + timedelta(days=P.RELEASE_GRACE_DAYS + 1)
+    out4, doc4 = jc.order_docket([dict(r) for r in rows], publish=False, now=later)
+    assert len(out4) == 2
+    parked = [r for r in jc.unrunnable_bank().values() if r.get("reason") == P.REASON]
+    assert len(parked) == 1 and parked[0]["parked_at"] == later.isoformat(timespec="seconds")
+    assert jc.build_input_released() == {}, "an expired release is pruned"
+
+
+def test_a_row_younger_than_the_backstop_is_restated_and_keeps_its_clock(uni) -> None:
+    rows = _three_rows()
+    jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    _age_parked(jc.READMIT_MAX_DAYS - 1)
+    out, doc = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    assert len(out) == 2 and doc["unrunnable"]["readmitted_total"] == 0
+    parked = [r for r in jc.unrunnable_bank().values() if r.get("reason") == P.REASON]
+    assert parked[0]["parked_at"] == (NOW - timedelta(days=jc.READMIT_MAX_DAYS - 1)).isoformat()
+
+
+def test_readmit_cause_names_each_cause(uni) -> None:
+    base = {"sym": "EURGBP", "tf": "H1", "family": "carry", "days": 0}
+    size = jc._bar_bytes("EURGBP", "H1")
+    assert size > 0
+    assert jc.readmit_cause({**base, "reason": "build_failed", "bar_bytes": size,
+                             "parked_at": (NOW - timedelta(days=8)).isoformat()},
+                            now=NOW) == "retry_days"
+    assert jc.readmit_cause({**base, "reason": "never_fires", "bar_bytes": size // 2,
+                             "parked_at": NOW.isoformat()}, now=NOW) == "bar_growth"
+    assert jc.readmit_cause({**base, "reason": "never_fires", "bar_bytes": size,
+                             "parked_at": (NOW - timedelta(days=91)).isoformat()},
+                            now=NOW) == "max_age"
+    assert jc.readmit_cause({**base, "reason": "never_fires", "bar_bytes": size,
+                             "parked_at": NOW.isoformat()}, now=NOW) is None
+
+
+def test_the_missing_charts_join_bars_wanted_and_the_chart_repair_reads_them(
+        uni, tmp_path) -> None:
+    _out, doc = jc.order_docket([dict(r) for r in _three_rows()], publish=False, now=NOW)
+    assert doc["bars_wanted"].get("AUDNZD_H1") == 1
+    assert doc["build_input_probe"]["bars_wanted_added"] == 1
+    report = tmp_path / "jc_report.json"
+    report.write_text(json.dumps({"bars_wanted": doc["bars_wanted"]}), "utf-8")
+    from research import hourly_cycle
+    assert "AUDNZD" in hourly_cycle.bars_wanted_symbols(report)
+    assert P.bar_charts(["bars:AUDNZD_M15.parquet", "surface:X", {"kind": "bars",
+                                                                 "file": "USDX_H1.parquet"}]) \
+        == ["AUDNZD_M15", "USDX_H1"]
+
+
+def test_a_parked_row_is_compact(uni) -> None:
+    named, _ = P.name([{**_row("EURGBP", "pca_residual",
+                               {"factor_symbols": ["USDX", "EURUSD", "UST10Y"]}),
+                        "_cell": "x"}], judged=set(), bank={})
+    row = named["x"]
+    assert set(row) == {"reason", "sym", "family", "tf", "bar_bytes", "missing"}
+    assert row["missing"] == ["bars:USDX_H1.parquet", "bars:UST10Y_H1.parquet"]
+    assert len(json.dumps(row)) < 180
+    # a label and the dict it stands for read the same, and an unknown label fails open
+    assert P.present("bars:USDX_H1.parquet") is False
+    assert P.present("weird:thing") is True and P.parse_label("nocolon") is None
+
+
+def test_the_constants_the_two_sides_share_agree() -> None:
+    from research import effective_trials as et
+    assert P.READMIT_MAX_DAYS == jc.READMIT_MAX_DAYS
+    assert P.RELEASE_GRACE_DAYS == jc.BUILD_FAILED_RETRY_DAYS
+    assert et.PARKED_TRIALS_NAME == jc.PARKED_TRIAL_ROWS.name
+    assert jc.PARKED_TRIAL_ROWS_MAX == et.MAX_ROWS
+    assert jc.PARKED_TRIAL_ROWS.parent == jc.UNRUNNABLE_BANK.parent == et.DOCKET.parent
+    assert set(jc.READMIT_CAUSES) >= {"input_appeared", "max_age", "bar_growth"}
+
+
+def test_trial_keys_are_every_field_the_trial_census_reads() -> None:
+    from libs.research.trial_ledger import content_key, grid_key, trial_from_record
+
+    class Seen(dict):
+        def __init__(self, *a) -> None:
+            super().__init__(*a)
+            self.seen: set[str] = set()
+
+        def get(self, k, d=None):
+            self.seen.add(k)
+            return super().get(k, d)
+
+    rich = {"family": "lead_lag", "symbol": "EURGBP", "timeframe": "M15", "regime": "risk_on",
+            "params": {"driver_symbol": "EURUSD", "lag": 3}, "lineage": "L1",
+            "claim_selection_trials": 4, "first_seen": "x", "orthogonality": 0.3,
+            "source_url": "https://example.invalid", "notes": "long prose " * 20}
+    rec = Seen(rich)
+    trial_from_record(rec)
+    assert rec.seen <= jc.TRIAL_KEYS, rec.seen - jc.TRIAL_KEYS
+    trimmed = {k: v for k, v in rich.items() if k in jc.TRIAL_KEYS}
+    a, b = trial_from_record(rich), trial_from_record(trimmed)
+    assert (grid_key(a), content_key(a), a.group, a.selection_trials) == \
+        (grid_key(b), content_key(b), b.group, b.selection_trials)
+
+
+def test_parking_moves_no_trial_charge(uni, tmp_path, monkeypatch) -> None:
+    from research import effective_trials as et
+    rows = ([_row("EURUSD", "carry", {"lookback": 20 + i}) for i in range(40)]
+            + [_row("EURGBP", "lead_lag", {"driver_symbol": "EURUSD"}),
+               _row("EURGBP", "triangle", {"leg_b_symbol": "EURUSD", "leg_c_symbol": "AUDNZD"})])
+    probe = jc._build_input_probe
+    # A: the docket as it shipped before this probe existed (the probe cannot load)
+    monkeypatch.setattr(jc, "_build_input_probe", lambda: None)
+    out_a, _ = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    monkeypatch.setattr(jc, "_build_input_probe", probe)
+    # B: the probe parks the triangle out of the docket
+    out_b, doc_b = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    assert len(out_a) == 42 and len(out_b) == 41
+    assert doc_b["build_input_parked_trials"]["rows"] == 1
+    (tmp_path / "a").mkdir()
+    docket_a = tmp_path / "a" / "external_survivors.json"
+    docket_b = tmp_path / "external_survivors.json"          # beside the bank and its sidecar
+    docket_a.write_text(json.dumps(out_a), "utf-8")
+    docket_b.write_text(json.dumps(out_b), "utf-8")
+    rows_a, n_a = et.census_rows(docket_a)
+    rows_b, n_b = et.census_rows(docket_b)
+    assert (n_a, n_b) == (0, 1)
+
+    def trimmed(rs: list[dict]) -> list[str]:
+        return sorted(json.dumps({k: v for k, v in r.items() if k in jc.TRIAL_KEYS},
+                                 sort_keys=True, default=str) for r in rs)
+
+    assert trimmed(rows_a) == trimmed(rows_b), "the census reads the same trials"
+    charge_a = et.charge(et.measure(rows_a))
+    assert et.charge(et.measure(rows_b)) == charge_a, "parking moves no charge"
+    # and without the parked rows it WOULD have moved: the test can tell
+    assert et.charge(et.measure(et.read_docket(docket_b)))[0] != charge_a[0]

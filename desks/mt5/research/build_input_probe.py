@@ -30,7 +30,17 @@ must refuse because an input it loads by name is ABSENT on this host, and nothin
 
 `judge_coverage` parks each named cell in the unrunnable bank as `build_input_missing`, with the
 inputs it lacks, and re-admits it the pass every named input is present again (or after
-READMIT_MAX_DAYS, like every parked cell). The bank keeps every row; the coverage table and
+READMIT_MAX_DAYS, like every parked cell). THE BACKSTOP REALLY FIRES (audit of 9bf6542be, M1):
+a row parked READMIT_MAX_DAYS ago is no longer restated, so the bank's age clock releases it,
+and a released cell is not re-named for RELEASE_GRACE_DAYS -- it goes to the judge once, and the
+judge's own word on it (a verdict, or its own build failure) stands. That is the only guard
+against this probe drifting from the sealed builder, so it must be reachable in the real flow.
+
+COMPACT ROWS (audit S3). A parked row carries only what re-admission and the converter read:
+the reason, the cell's symbol/family/chart, its own chart's size, and the missing inputs as
+short labels (`bars:EURUSD_H1.parquet`, `surface:XAUUSD`, `cot_mapping:SYM`, `cot_file:F`).
+
+The bank keeps every row; the coverage table and
 `judging_failures.parked` count them by reason, and they stay in the unjudged backlog (a DEFECT
 class: the desk still owes the input), so no backlog number moves by parking.
 
@@ -54,6 +64,7 @@ import sys
 import time
 from collections import Counter
 from collections.abc import Iterable
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -78,6 +89,11 @@ PROBED: frozenset[str] = frozenset({*PEER_FAMILIES, *FACTOR_FAMILIES, "triangle"
 #: Bank reasons the probe may restate with the exact input: the judge's own generic build failure
 #: and its own earlier naming. Every other reason in the bank is the judge's word and stands.
 RESTATABLE = frozenset({"build_failed", REASON})
+#: A cell released by the READMIT_MAX_DAYS backstop is not named again for this long, so the
+#: judge gets its turn at it: the judge's own retry cadence (`judge_coverage.BUILD_FAILED_RETRY_
+#: DAYS`, pinned equal by a test). Mirrors `judge_coverage.READMIT_MAX_DAYS` for the age test.
+RELEASE_GRACE_DAYS = 7.0
+READMIT_MAX_DAYS = 90.0
 #: Top-N kept in the census tables; the counts are exact, the tables are for a reader.
 TOP = 25
 
@@ -147,6 +163,32 @@ def label(item: dict[str, Any]) -> str:
     if kind == "cot_file":
         return f"cot_file:{item.get('file')}"
     return kind or "unknown"
+
+
+def parse_label(text: str) -> dict[str, Any] | None:
+    """The input a compact label names, as `present` reads it; None for an unknown spelling."""
+    kind, _, rest = str(text).partition(":")
+    if not rest:
+        return None
+    if kind == "bars":
+        return {"kind": "bars", "file": rest}
+    if kind in ("surface", "cot_mapping"):
+        return {"kind": kind, "symbol": rest}
+    if kind == "cot_file":
+        return {"kind": "cot_file", "file": rest}
+    return None
+
+
+def bar_charts(items: Any) -> list[str]:
+    """`SYM_TF` for every missing bar file a parked row names (the `bars_wanted` key)."""
+    out: list[str] = []
+    for i in items if isinstance(items, list) else ():
+        item = parse_label(i) if isinstance(i, str) else i
+        if isinstance(item, dict) and item.get("kind") == "bars":
+            f = str(item.get("file") or "")
+            if f.endswith(".parquet") and "_" in f:
+                out.append(f[: -len(".parquet")])
+    return out
 
 
 def missing_inputs(ctx: _Pass, sym: str, family: str, params: dict[str, Any],
@@ -258,8 +300,13 @@ def probe_row(ctx: _Pass, row: dict[str, Any]) -> dict[str, Any]:
             "bar_bytes": own_bytes}
 
 
-def present(item: dict[str, Any], ctx: _Pass | None = None) -> bool:
+def present(item: dict[str, Any] | str, ctx: _Pass | None = None) -> bool:
     """Is one recorded missing input present now? An unknown kind reads present (fail open)."""
+    if isinstance(item, str):
+        parsed = parse_label(item)
+        if parsed is None:
+            return True
+        item = parsed
     ctx = ctx or _Pass()
     kind = str(item.get("kind") or "")
     if kind == "bars":
@@ -280,17 +327,33 @@ def all_present(items: Any, ctx: _Pass | None = None) -> bool:
     if not isinstance(items, list) or not items:
         return True
     ctx = ctx or _Pass()
-    return all(present(i, ctx) for i in items if isinstance(i, dict))
+    return all(present(i, ctx) for i in items if isinstance(i, (dict, str)))
+
+
+def _age_days(stamp: Any, now: datetime) -> float | None:
+    try:
+        t = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=UTC)
+    return (now.timestamp() - t.timestamp()) / 86400.0
 
 
 def name(rows: Iterable[dict[str, Any]], *, judged: set[str] | frozenset[str],
          bank: dict[str, dict[str, Any]], banned: Iterable[str] = (),
-         ctx: _Pass | None = None) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+         ctx: _Pass | None = None, now: datetime | None = None,
+         released: dict[str, str] | None = None
+         ) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
     """(bank rows to park, census) for every never-judged docket row whose build must fail.
 
     Rows carry `_cell` (the judge's key, stamped by `judge_coverage._build`). A row already in
-    the bank under a reason the probe may not restate is left to that reason.
+    the bank under a reason the probe may not restate is left to that reason. A row this probe
+    parked READMIT_MAX_DAYS ago is NOT restated (the bank's age clock releases it), and a cell in
+    `released` (cell -> when the backstop released it) is not named inside RELEASE_GRACE_DAYS.
     """
+    now = now or datetime.now(tz=UTC)
+    released = released or {}
     t0 = time.monotonic()
     named: dict[str, dict[str, Any]] = {}
     census: dict[str, Any] = {"schema": SCHEMA, "status": "MEASURED"}
@@ -317,6 +380,17 @@ def name(rows: Iterable[dict[str, Any]], *, judged: set[str] | frozenset[str],
         prev = bank.get(str(cid))
         if isinstance(prev, dict) and prev.get("reason") not in RESTATABLE:
             continue
+        if isinstance(prev, dict) and prev.get("reason") == REASON:
+            age = _age_days(prev.get("parked_at"), now)
+            if age is not None and age >= READMIT_MAX_DAYS:
+                counts["released_max_age"] += 1      # the backstop: back to the judge once
+                continue
+        rel = released.get(str(cid))
+        if rel is not None:
+            age = _age_days(rel, now)
+            if age is None or age < RELEASE_GRACE_DAYS:
+                counts["in_release_grace"] += 1      # the judge's turn; its word stands
+                continue
         counts["rows_probed"] += 1
         try:
             got = probe_row(ctx, row)
@@ -331,17 +405,10 @@ def name(rows: Iterable[dict[str, Any]], *, judged: set[str] | frozenset[str],
             unmeasured_why[str(got.get("why") or "")] += 1
             continue
         labels = [label(i) for i in got["missing"]]
-        entry: dict[str, Any] = {
-            "reason": REASON, "sym": got["sym"], "family": family, "tf": got["tf"],
-            "days": 0, "bar_bytes": got["bar_bytes"], "missing": got["missing"],
-            "missing_input": ", ".join(labels),
-            "why": f"build_cell refuses: {', '.join(labels)} absent on this host"[:200],
-            "route": ("an input the judge's build loads by name is absent here: re-admitted the "
-                      "pass every named input is present again, or after READMIT_MAX_DAYS"),
-            "probe": SCHEMA}
-        if isinstance(prev, dict) and prev.get("reason") == "build_failed" and prev.get("why"):
-            entry["judge_why"] = str(prev.get("why"))[:200]
-        named[str(cid)] = entry
+        # COMPACT (audit S3): the labels are the whole record of what is missing; `why` and the
+        # route are rendered from them where a reader needs prose (`judge_coverage`).
+        named[str(cid)] = {"reason": REASON, "sym": got["sym"], "family": family,
+                           "tf": got["tf"], "bar_bytes": got["bar_bytes"], "missing": labels}
         by_family[family] += 1
         by_symbol[got["sym"]] += 1
         for i, lab in zip(got["missing"], labels, strict=True):
@@ -349,7 +416,8 @@ def name(rows: Iterable[dict[str, Any]], *, judged: set[str] | frozenset[str],
             by_input[lab] += 1
     census.update({
         **{k: counts.get(k, 0) for k in ("rows_in_scope", "rows_probed", "present",
-                                         "unmeasured")},
+                                         "unmeasured", "released_max_age",
+                                         "in_release_grace")},
         "named": len(named),
         "by_family": dict(by_family.most_common()),
         "by_missing_kind": dict(by_kind.most_common()),
@@ -382,7 +450,7 @@ def census(docket: Path | None = None, *, echo: bool = True) -> dict[str, Any]:
             r["_cell"] = None
     judged, _, _ = jc.judged_index()
     _named, out = name(rows, judged=judged, bank=jc.unrunnable_bank(),
-                       banned=jc.banned_from_capital())
+                       banned=jc.banned_from_capital(), released=jc.build_input_released())
     out["docket_rows"] = len(rows)
     out["docket"] = str(path)
     if echo:
