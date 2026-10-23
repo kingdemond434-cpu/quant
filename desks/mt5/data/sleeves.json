@@ -50363,7 +50363,7 @@
       "exec": "family_market",
       "lot": "auto_ramp",
       "risk_frac": 0.0,
-      "status": "STANDBY",
+      "status": "RETIRED",
       "risk_frac_source": "none",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
@@ -50423,7 +50423,10 @@
       "standby_reason": "stop_the_bleed_2026-10-13: zuck removed AUDCHF/ZAR from Fusion live; forward-only",
       "standby_at": "2026-10-13T21:30:32.440131Z",
       "demoted_at": "2026-10-20T17:04:54+00:00",
-      "demote_reason": "principal book disabled or row absent"
+      "demote_reason": "principal book disabled or row absent",
+      "retired_at": "2026-10-23T00:23:41+00:00",
+      "retire_reason": "AUDCHF is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     },
     {
       "name": "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
@@ -50434,7 +50437,7 @@
       "exec": "family_market",
       "lot": "auto_ramp",
       "risk_frac": 0.0,
-      "status": "STANDBY",
+      "status": "RETIRED",
       "risk_frac_source": "none",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
@@ -50494,7 +50497,10 @@
       "standby_reason": "stop_the_bleed_2026-10-13: zuck removed AUDCHF/ZAR from Fusion live; forward-only",
       "standby_at": "2026-10-13T21:30:32.440178Z",
       "demoted_at": "2026-10-20T17:04:54+00:00",
-      "demote_reason": "principal book disabled or row absent"
+      "demote_reason": "principal book disabled or row absent",
+      "retired_at": "2026-10-23T00:23:41+00:00",
+      "retire_reason": "EURZAR admits only ['eurzar_carry_asia_p_8339edce23032d21'] for live capital; 'eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007' is a different parameter set on the same instrument -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     },
     {
       "name": "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
@@ -50505,7 +50511,7 @@
       "exec": "family_market",
       "lot": "auto_ramp",
       "risk_frac": 0.0,
-      "status": "STANDBY",
+      "status": "RETIRED",
       "risk_frac_source": "none",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
@@ -50565,7 +50571,10 @@
       "standby_reason": "stop_the_bleed_2026-10-13: zuck removed AUDCHF/ZAR from Fusion live; forward-only",
       "standby_at": "2026-10-13T21:30:32.440190Z",
       "demoted_at": "2026-10-20T17:04:54+00:00",
-      "demote_reason": "principal book disabled or row absent"
+      "demote_reason": "principal book disabled or row absent",
+      "retired_at": "2026-10-23T00:23:41+00:00",
+      "retire_reason": "USDZAR is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     },
     {
       "name": "AUDSGD.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=1_ttl_bars=96",
@@ -51501,7 +51510,7 @@
         "joined": "joined on 'eurzar|carry|asia'",
         "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe -1.52 at correlation -0.22 to the held book"
       },
-      "status": "STANDBY",
+      "status": "RETIRED",
       "promoted_at": "2026-10-21T15:28:23+00:00",
       "shadow_exp": 0.07881497024787358,
       "family": "carry",
@@ -51534,7 +51543,10 @@
       "canonical_identity": "eurzar|carry|asia",
       "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join",
       "demoted_at": "2026-10-21T21:53:44+00:00",
-      "demote_reason": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world"
+      "demote_reason": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world",
+      "retired_at": "2026-10-23T00:23:41+00:00",
+      "retire_reason": "EURZAR admits only ['eurzar_carry_asia_p_8339edce23032d21'] for live capital; 'EURZAR.carry.asia@M5#input_symbol=EURZAR_require_quiet=False_session=ny' is a different parameter set on the same instrument -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     },
     {
       "name": "USDZAR.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=96",
@@ -51551,7 +51563,7 @@
         "joined": "no allocator row answers to any of ['usdzar.macro_conditional.asia@m5#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=96', 'usdzar|macro_conditional|asia', 'usdzar|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
         "why": "no allocator row answers to any of ['usdzar.macro_conditional.asia@m5#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=96', 'usdzar|macro_conditional|asia', 'usdzar|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
-      "status": "STANDBY",
+      "status": "RETIRED",
       "promoted_at": "2026-10-21T20:55:34+00:00",
       "shadow_exp": 0.18680758197165478,
       "family": "macro_conditional",
@@ -51580,7 +51592,10 @@
       "demoted_at": "2026-10-21T21:53:44+00:00",
       "demote_reason": "standby on the current reading -- the book WITH this candidate is wiped out in a sampled world",
       "canonical_identity": "usdzar|macro_conditional|asia",
-      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+      "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join",
+      "retired_at": "2026-10-23T00:23:41+00:00",
+      "retire_reason": "USDZAR is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     },
     {
       "name": "AUDNZD.clock_transition.asia@M30#label=tokyo_open_side=1_stamp_hour=0",
@@ -51764,7 +51779,42 @@
       "retired_by": "live_policy",
       "canonical_identity": "chfnok|carry|asia",
       "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join"
+    },
+    {
+      "name": "GBPMXN.clock_transition.asia@M30#label=tokyo_open_side=1_stamp_hour=0",
+      "symbol": "GBPMXN",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['gbpmxn.clock_transition.asia@m30#label=tokyo_open_side=1_stamp_hour=0', 'gbpmxn|clock_transition|asia', 'gbpmxn|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['gbpmxn.clock_transition.asia@m30#label=tokyo_open_side=1_stamp_hour=0', 'gbpmxn|clock_transition|asia', 'gbpmxn|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-10-23T00:23:40+00:00",
+      "shadow_exp": 0.5235065755477342,
+      "family": "clock_transition",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "GBPMXN.clock_transition.asia@M30#label=tokyo_open_side=1_stamp_hour=0",
+      "sleeve_id": "6a2af41745f70e87ecfb",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "label": "tokyo_open",
+        "side": 1,
+        "stamp_hour": 0,
+        "timeframe": "M30"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-10-23T00:23:41+00:00",
+      "retire_reason": "GBPMXN is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     }
-  ],
-  "identity_stamped_at": "2026-10-22T05:15:18+00:00"
+  ]
 }
