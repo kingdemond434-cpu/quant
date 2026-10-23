@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-23T02:15:28.595553+00:00",
+  "swept_at": "2026-10-23T02:30:51.282630+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -3815,7 +3815,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 62,
-      "shadow_exp_r": 0.1731,
+      "shadow_exp_r": 0.1788,
       "woke_on_shadow": false
     },
     "USDNOK|cross_asset_residual_continuous": {
@@ -3836,8 +3836,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 40,
-      "shadow_exp_r": 0.2738,
+      "shadow_n": 41,
+      "shadow_exp_r": 0.2725,
       "woke_on_shadow": false
     },
     "USDNOK|overnight_gap_decay_continuous": {
@@ -3880,8 +3880,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 48,
-      "shadow_exp_r": 0.2786,
+      "shadow_n": 49,
+      "shadow_exp_r": 0.2726,
       "woke_on_shadow": false
     },
     "USDPLN|macro_conditional_asia": {
@@ -3892,7 +3892,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.309,
+      "shadow_exp_r": -0.3112,
       "woke_on_shadow": false
     },
     "USDRUB|carry_continuous": {
@@ -4078,8 +4078,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 79,
-      "shadow_exp_r": -0.0339,
+      "shadow_n": 42,
+      "shadow_exp_r": -0.7521,
       "woke_on_shadow": false
     },
     "USDTHB|macro_conditional_asia": {
@@ -4111,8 +4111,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 38,
-      "shadow_exp_r": -0.1553,
+      "shadow_n": 90,
+      "shadow_exp_r": -0.1527,
       "woke_on_shadow": false
     },
     "USDZAR|carry_asia": {
