@@ -1,5 +1,5 @@
 {
- "at": "2026-10-23T18:43:12+00:00",
+ "at": "2026-10-23T19:45:16+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -24,10 +24,10 @@
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "USDZAR@M5.macro_conditional.p=1d7d88be4b8940fa",
-   "certificate": "external.USDZAR@M5.macro_conditional.p=1d7d88be4b8940fa",
-   "fp": "d7941a6024774346",
-   "symbol": "USDZAR",
+   "key": "EURSEK@M5.macro_conditional.p=f83412948ea922b5",
+   "certificate": "external.EURSEK@M5.macro_conditional.p=f83412948ea922b5",
+   "fp": "411a031418b5be8e",
+   "symbol": "EURSEK",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -38,10 +38,10 @@
   },
   {
    "lane": "certificate",
-   "key": "USDZAR@M5.macro_conditional.p=f83412948ea922b5",
-   "certificate": "external.USDZAR@M5.macro_conditional.p=f83412948ea922b5",
-   "fp": "ace567d5209876ef",
-   "symbol": "USDZAR",
+   "key": "GBPAUD@M5.macro_conditional.p=f83412948ea922b5",
+   "certificate": "external.GBPAUD@M5.macro_conditional.p=f83412948ea922b5",
+   "fp": "fdc06da657259f96",
+   "symbol": "GBPAUD",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -52,10 +52,10 @@
   },
   {
    "lane": "certificate",
-   "key": "AUDNZD@M5.macro_conditional.p=f83412948ea922b5",
-   "certificate": "external.AUDNZD@M5.macro_conditional.p=f83412948ea922b5",
-   "fp": "e06a550f3115dc9b",
-   "symbol": "AUDNZD",
+   "key": "GBPCAD@M5.macro_conditional.p=f83412948ea922b5",
+   "certificate": "external.GBPCAD@M5.macro_conditional.p=f83412948ea922b5",
+   "fp": "9d20b5871d6103c0",
+   "symbol": "GBPCAD",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -66,10 +66,10 @@
   },
   {
    "lane": "certificate",
-   "key": "AUDSGD@M5.macro_conditional.p=f83412948ea922b5",
-   "certificate": "external.AUDSGD@M5.macro_conditional.p=f83412948ea922b5",
-   "fp": "bfd384843bf193ec",
-   "symbol": "AUDSGD",
+   "key": "GBPDKK@M5.macro_conditional.p=f83412948ea922b5",
+   "certificate": "external.GBPDKK@M5.macro_conditional.p=f83412948ea922b5",
+   "fp": "51eb436dae1b4e0e",
+   "symbol": "GBPDKK",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -80,10 +80,10 @@
   },
   {
    "lane": "certificate",
-   "key": "CHFNOK@M5.macro_conditional.p=f83412948ea922b5",
-   "certificate": "external.CHFNOK@M5.macro_conditional.p=f83412948ea922b5",
-   "fp": "3bb985705ce65601",
-   "symbol": "CHFNOK",
+   "key": "GBPJPY@M5.macro_conditional.p=f83412948ea922b5",
+   "certificate": "external.GBPJPY@M5.macro_conditional.p=f83412948ea922b5",
+   "fp": "18f8e783784fdca7",
+   "symbol": "GBPJPY",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -94,10 +94,10 @@
   },
   {
    "lane": "certificate",
-   "key": "EURCAD@M5.macro_conditional.p=f83412948ea922b5",
-   "certificate": "external.EURCAD@M5.macro_conditional.p=f83412948ea922b5",
-   "fp": "297ff42d4255734f",
-   "symbol": "EURCAD",
+   "key": "GBPNOK@M5.macro_conditional.p=f83412948ea922b5",
+   "certificate": "external.GBPNOK@M5.macro_conditional.p=f83412948ea922b5",
+   "fp": "d2520e0e2353fb92",
+   "symbol": "GBPNOK",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -108,10 +108,10 @@
   },
   {
    "lane": "certificate",
-   "key": "EURMXN@M5.macro_conditional.p=f83412948ea922b5",
-   "certificate": "external.EURMXN@M5.macro_conditional.p=f83412948ea922b5",
-   "fp": "a1c94700b41a52e8",
-   "symbol": "EURMXN",
+   "key": "GBPSEK@M5.macro_conditional.p=f83412948ea922b5",
+   "certificate": "external.GBPSEK@M5.macro_conditional.p=f83412948ea922b5",
+   "fp": "7e976745f9c72076",
+   "symbol": "GBPSEK",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -122,10 +122,10 @@
   },
   {
    "lane": "certificate",
-   "key": "EURNOK@M5.macro_conditional.p=f83412948ea922b5",
-   "certificate": "external.EURNOK@M5.macro_conditional.p=f83412948ea922b5",
-   "fp": "1e5f427785e669c0",
-   "symbol": "EURNOK",
+   "key": "GBPSGD@M5.macro_conditional.p=f83412948ea922b5",
+   "certificate": "external.GBPSGD@M5.macro_conditional.p=f83412948ea922b5",
+   "fp": "feb6453463f37b4f",
+   "symbol": "GBPSGD",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -136,98 +136,7 @@
   },
   {
    "lane": "forward",
-   "key": "XTIUSD.carry.continuous",
-   "symbol": "XTIUSD",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XTIUSD.pullback_entry.continuous",
-   "symbol": "XTIUSD",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XTIUSD.range_reversion.continuous",
-   "symbol": "XTIUSD",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XTIUSD.trend_ma_cross.continuous",
-   "symbol": "XTIUSD",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XTIUSD.turn_of_month.continuous",
-   "symbol": "XTIUSD",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XTIUSD.vol_mean_reversion.continuous",
-   "symbol": "XTIUSD",
-   "family": "session_range_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no forward ledger on this box for this row"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "BTCUSD.trend_ma_cross.continuous@M15#session=london",
-   "symbol": "BTCUSD",
-   "family": "trend_ma_cross",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'trend_ma_cross'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "BTCUSD.range_reversion.continuous@M5#session=asia",
+   "key": "BTCUSD.range_reversion.continuous@M5#session=london",
    "symbol": "BTCUSD",
    "family": "range_reversion",
    "verdict": "UNMEASURED",
@@ -237,73 +146,164 @@
    "ours": {},
    "theirs": {},
    "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "BTCUSD.range_reversion.continuous@M5#session=ny",
+   "symbol": "BTCUSD",
+   "family": "range_reversion",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'range_reversion'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "BTCUSD.range_reversion.continuous@M5",
+   "symbol": "BTCUSD",
+   "family": "range_reversion",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'range_reversion'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "GER40.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_session=ny_side_in_high=-1_ttl_bars=96",
+   "symbol": "GER40",
+   "family": "macro_conditional",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'macro_conditional'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "GER40.range_reversion.continuous@M15#session=london",
+   "symbol": "GER40",
+   "family": "range_reversion",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'range_reversion'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "GER40.range_reversion.continuous@M15",
+   "symbol": "GER40",
+   "family": "range_reversion",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'range_reversion'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "GER40.turn_of_month.continuous@M15#session=ny",
+   "symbol": "GER40",
+   "family": "turn_of_month",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'turn_of_month'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NAS100.turn_of_month.continuous@M15#session=ny",
+   "symbol": "NAS100",
+   "family": "turn_of_month",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'turn_of_month'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
   }
  ],
  "quarantined": [],
  "unmeasured": [
   {
-   "what": "USDZAR@M5.macro_conditional.p=1d7d88be4b8940fa",
+   "what": "EURSEK@M5.macro_conditional.p=f83412948ea922b5",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "USDZAR@M5.macro_conditional.p=f83412948ea922b5",
+   "what": "GBPAUD@M5.macro_conditional.p=f83412948ea922b5",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "AUDNZD@M5.macro_conditional.p=f83412948ea922b5",
+   "what": "GBPCAD@M5.macro_conditional.p=f83412948ea922b5",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "AUDSGD@M5.macro_conditional.p=f83412948ea922b5",
+   "what": "GBPDKK@M5.macro_conditional.p=f83412948ea922b5",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "CHFNOK@M5.macro_conditional.p=f83412948ea922b5",
+   "what": "GBPJPY@M5.macro_conditional.p=f83412948ea922b5",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "EURCAD@M5.macro_conditional.p=f83412948ea922b5",
+   "what": "GBPNOK@M5.macro_conditional.p=f83412948ea922b5",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "EURMXN@M5.macro_conditional.p=f83412948ea922b5",
+   "what": "GBPSEK@M5.macro_conditional.p=f83412948ea922b5",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "EURNOK@M5.macro_conditional.p=f83412948ea922b5",
+   "what": "GBPSGD@M5.macro_conditional.p=f83412948ea922b5",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "XTIUSD.carry.continuous",
-   "why": "no forward ledger on this box for this row"
-  },
-  {
-   "what": "XTIUSD.pullback_entry.continuous",
-   "why": "no forward ledger on this box for this row"
-  },
-  {
-   "what": "XTIUSD.range_reversion.continuous",
-   "why": "no forward ledger on this box for this row"
-  },
-  {
-   "what": "XTIUSD.trend_ma_cross.continuous",
-   "why": "no forward ledger on this box for this row"
-  },
-  {
-   "what": "XTIUSD.turn_of_month.continuous",
-   "why": "no forward ledger on this box for this row"
-  },
-  {
-   "what": "XTIUSD.vol_mean_reversion.continuous",
-   "why": "no forward ledger on this box for this row"
-  },
-  {
-   "what": "BTCUSD.trend_ma_cross.continuous@M15#session=london",
-   "why": "no written specification in the spec book for family 'trend_ma_cross'"
-  },
-  {
-   "what": "BTCUSD.range_reversion.continuous@M5#session=asia",
+   "what": "BTCUSD.range_reversion.continuous@M5#session=london",
    "why": "no written specification in the spec book for family 'range_reversion'"
+  },
+  {
+   "what": "BTCUSD.range_reversion.continuous@M5#session=ny",
+   "why": "no written specification in the spec book for family 'range_reversion'"
+  },
+  {
+   "what": "BTCUSD.range_reversion.continuous@M5",
+   "why": "no written specification in the spec book for family 'range_reversion'"
+  },
+  {
+   "what": "GER40.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_session=ny_side_in_high=-1_ttl_bars=96",
+   "why": "no written specification in the spec book for family 'macro_conditional'"
+  },
+  {
+   "what": "GER40.range_reversion.continuous@M15#session=london",
+   "why": "no written specification in the spec book for family 'range_reversion'"
+  },
+  {
+   "what": "GER40.range_reversion.continuous@M15",
+   "why": "no written specification in the spec book for family 'range_reversion'"
+  },
+  {
+   "what": "GER40.turn_of_month.continuous@M15#session=ny",
+   "why": "no written specification in the spec book for family 'turn_of_month'"
+  },
+  {
+   "what": "NAS100.turn_of_month.continuous@M15#session=ny",
+   "why": "no written specification in the spec book for family 'turn_of_month'"
   }
  ],
  "recorded": {
@@ -312,9 +312,9 @@
   "candidates": 0
  },
  "cursor": {
-  "forward": 818,
-  "at": "2026-10-23T17:43:19+00:00",
-  "certificates": 147
+  "forward": 826,
+  "at": "2026-10-23T18:43:12+00:00",
+  "certificates": 155
  },
  "notes": [],
  "independence": {
@@ -331,24 +331,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDZAR_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDZAR_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDNZD_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURCAD_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURMXN_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURNOK_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_M5.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURSEK_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPAUD_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCAD_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPDKK_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\BTCUSD_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GER40_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GER40_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GER40_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GER40_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M15.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 26.7
+ "seconds": 46.1
 }
