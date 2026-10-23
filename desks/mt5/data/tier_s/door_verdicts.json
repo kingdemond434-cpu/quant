@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-23T16:48:26.494687+00:00",
+ "generated_utc": "2026-10-23T17:44:53.896575+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -1347,7 +1347,7 @@
    }
   },
   "external.GBPSEK@M5.macro_conditional.p=ff35bb7c8427d66f": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -1358,7 +1358,7 @@
    }
   },
   "external.NZDCAD@M5.macro_conditional.p=ff35bb7c8427d66f": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -1369,7 +1369,7 @@
    }
   },
   "external.NZDJPY@M5.macro_conditional.p=ff35bb7c8427d66f": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -1380,7 +1380,7 @@
    }
   },
   "external.NZDSGD@M5.macro_conditional.p=ff35bb7c8427d66f": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -1391,7 +1391,7 @@
    }
   },
   "external.USDSGD@M5.macro_conditional.p=2bbd8688b514a45b": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -1402,7 +1402,7 @@
    }
   },
   "external.USDTHB@M5.macro_conditional.p=ff35bb7c8427d66f": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -1413,7 +1413,7 @@
    }
   },
   "external.XAUAUD@M5.macro_conditional.p=b5c19268694ada21": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -1424,7 +1424,7 @@
    }
   },
   "external.XAUEUR@M5.macro_conditional.p=b80628b50742ad6e": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -1435,7 +1435,7 @@
    }
   },
   "external.XAUEUR@M5.macro_conditional.p=b5c19268694ada21": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -1446,7 +1446,7 @@
    }
   },
   "external.CHFNOK@M30.macro_conditional.p=9463a1f0b0c83ca4": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -1457,7 +1457,7 @@
    }
   },
   "external.CHFNOK@M30.macro_conditional.p=fd7e46354c14b3f6": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -1468,7 +1468,7 @@
    }
   },
   "external.CHFNOK@M30.macro_conditional.p=fc3f6193651eb19e": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -1479,7 +1479,7 @@
    }
   },
   "external.CHFNOK@M30.macro_conditional.p=1c239674d3cfa388": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -1490,7 +1490,7 @@
    }
   },
   "external.USDPLN@M5.macro_conditional.p=f83412948ea922b5": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -1501,7 +1501,7 @@
    }
   },
   "external.USDSEK@M5.macro_conditional.p=f83412948ea922b5": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
@@ -1512,7 +1512,7 @@
    }
   },
   "external.USDZAR@M5.macro_conditional.p=15cd1e1d3ea4ca2e": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "macro_conditional",
    "theory": {
