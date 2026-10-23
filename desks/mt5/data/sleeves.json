@@ -51971,6 +51971,84 @@
       "retired_at": "2026-10-23T01:05:46+00:00",
       "retire_reason": "CHFJPY is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
       "retired_by": "live_policy"
+    },
+    {
+      "name": "CHFDKK.clock_transition.asia@M30#hold_bars=2_label=broker_rollover_lead_bars=2_mode=out_of_side=1_stamp_hour=0",
+      "symbol": "CHFDKK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "",
+        "why": "no fresh dE[log W] measurement: the allocation is 0.9h old and its admission scan 26.8h old (max 26h): it describes a book that no longer exists, so it may not price capital. Nothing is added and nothing is removed -- the row and its clock stand and the next allocator pass decides."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-10-23T02:01:06+00:00",
+      "shadow_exp": 0.2258199012888004,
+      "family": "clock_transition",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFDKK.clock_transition.asia@M30#hold_bars=2_label=broker_rollover_lead_bars=2_mode=out_of_side=1_stamp_hour=0",
+      "sleeve_id": "d277ba3b72acd44735e9",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "hold_bars": 2,
+        "label": "broker_rollover",
+        "lead_bars": 2,
+        "mode": "out_of",
+        "side": 1,
+        "stamp_hour": 0,
+        "timeframe": "M30"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-10-23T02:01:15+00:00",
+      "retire_reason": "CHFDKK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "CHFDKK.clock_transition.asia@M30#hold_bars=2_label=tokyo_open_lead_bars=2_mode=out_of_side=1_stamp_hour=0",
+      "symbol": "CHFDKK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "",
+        "why": "no fresh dE[log W] measurement: the allocation is 0.9h old and its admission scan 26.8h old (max 26h): it describes a book that no longer exists, so it may not price capital. Nothing is added and nothing is removed -- the row and its clock stand and the next allocator pass decides."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-10-23T02:01:12+00:00",
+      "shadow_exp": 0.2258199012888004,
+      "family": "clock_transition",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "CHFDKK.clock_transition.asia@M30#hold_bars=2_label=tokyo_open_lead_bars=2_mode=out_of_side=1_stamp_hour=0",
+      "sleeve_id": "fbf2d91986480dd5a3ac",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "hold_bars": 2,
+        "label": "tokyo_open",
+        "lead_bars": 2,
+        "mode": "out_of",
+        "side": 1,
+        "stamp_hour": 0,
+        "timeframe": "M30"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-10-23T02:01:15+00:00",
+      "retire_reason": "CHFDKK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     }
   ]
 }
