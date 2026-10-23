@@ -1,6 +1,6 @@
 {
- "pid": 10328,
- "started_utc": "2026-10-23T02:46:19+00:00",
+ "pid": 25040,
+ "started_utc": "2026-10-23T03:01:41+00:00",
  "task_limit_s": 0.0,
  "sweeps": 0,
  "failures": 0,
@@ -11,6 +11,6 @@
  "longest_sweep_s": null,
  "consecutive_hangs": 1,
  "why": "RESIDENT_STOP present",
- "uptime_s": 0.4,
- "heartbeat_utc": "2026-10-23T02:46:19+00:00"
+ "uptime_s": 0.8,
+ "heartbeat_utc": "2026-10-23T03:01:42+00:00"
 }
