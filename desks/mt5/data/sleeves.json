@@ -52049,6 +52049,138 @@
       "retired_at": "2026-10-23T02:01:15+00:00",
       "retire_reason": "CHFDKK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
       "retired_by": "live_policy"
+    },
+    {
+      "name": "NZDSGD.clock_transition.asia@M30#label=tokyo_open_side=1_stamp_hour=0",
+      "symbol": "NZDSGD",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "",
+        "why": "no fresh dE[log W] measurement: the allocation is 1.2h old and its admission scan 27.2h old (max 26h): it describes a book that no longer exists, so it may not price capital. Nothing is added and nothing is removed -- the row and its clock stand and the next allocator pass decides."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-10-23T02:18:37+00:00",
+      "shadow_exp": 0.6191143684079693,
+      "family": "clock_transition",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "NZDSGD.clock_transition.asia@M30#label=tokyo_open_side=1_stamp_hour=0",
+      "sleeve_id": "1a0c5cd0dcffcabdddd7",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "label": "tokyo_open",
+        "side": 1,
+        "stamp_hour": 0,
+        "timeframe": "M30"
+      },
+      "exec": "family_market",
+      "retired_at": "2026-10-23T02:18:48+00:00",
+      "retire_reason": "NZDSGD is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['delta', ['decay', 'spread', 3], 3]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0",
+      "symbol": "EURZAR",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "",
+        "why": "no fresh dE[log W] measurement: the allocation is 1.2h old and its admission scan 27.2h old (max 26h): it describes a book that no longer exists, so it may not price capital. Nothing is added and nothing is removed -- the row and its clock stand and the next allocator pass decides."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-10-23T02:18:40+00:00",
+      "shadow_exp": 0.5857133110234888,
+      "family": "formula",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['delta', ['decay', 'spread', 3], 3]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0",
+      "sleeve_id": "1880a6b4fbe13cbffb2e",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "atr_n": 20,
+        "entry_z": 1.5,
+        "expr": [
+          "delta",
+          [
+            "decay",
+            "spread",
+            3
+          ],
+          3
+        ],
+        "hold_bars": 8,
+        "norm": 240,
+        "rr": 1.5,
+        "side_mode": "follow",
+        "stop_atr": 2.0
+      },
+      "exec": "family_market",
+      "retired_at": "2026-10-23T02:18:48+00:00",
+      "retire_reason": "EURZAR admits only ['eurzar_carry_asia_p_8339edce23032d21'] for live capital; \"EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['delta', ['decay', 'spread', 3], 3]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0\" is a different parameter set on the same instrument -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['std', ['decay', 'spread', 3], 3]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0",
+      "symbol": "EURZAR",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "",
+        "why": "no fresh dE[log W] measurement: the allocation is 1.2h old and its admission scan 27.2h old (max 26h): it describes a book that no longer exists, so it may not price capital. Nothing is added and nothing is removed -- the row and its clock stand and the next allocator pass decides."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-10-23T02:18:43+00:00",
+      "shadow_exp": 0.5857133110234888,
+      "family": "formula",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['std', ['decay', 'spread', 3], 3]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0",
+      "sleeve_id": "d6ae27ff41e6471fc5c9",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "atr_n": 20,
+        "entry_z": 1.5,
+        "expr": [
+          "std",
+          [
+            "decay",
+            "spread",
+            3
+          ],
+          3
+        ],
+        "hold_bars": 8,
+        "norm": 240,
+        "rr": 1.5,
+        "side_mode": "follow",
+        "stop_atr": 2.0
+      },
+      "exec": "family_market",
+      "retired_at": "2026-10-23T02:18:48+00:00",
+      "retire_reason": "EURZAR admits only ['eurzar_carry_asia_p_8339edce23032d21'] for live capital; \"EURZAR.formula.asia#atr_n=20_entry_z=1.5_expr=['std', ['decay', 'spread', 3], 3]_hold_bars=8_norm=240_rr=1.5_side_mode=follow_stop_atr=2.0\" is a different parameter set on the same instrument -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     }
   ]
 }
