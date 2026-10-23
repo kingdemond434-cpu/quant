@@ -241,12 +241,19 @@ def build(base: Path) -> dict[str, FamilyRecord]:
 
     cand = base / "desks" / "mt5" / "data" / "hypotheses" / "external_survivors.json"
     if cand.exists():
+        # STREAMED, NEVER LOADED WHOLE (2026-10-20). The docket passed 1.5M rows on the box, and
+        # `json.loads(read_text())` held the text and every row at once only to count families --
+        # gigabytes of peak in every caller, the deepening worker's scorer among them. The count
+        # is the same; a docket that is not a JSON array still counts nothing.
         try:
-            rows = json.loads(cand.read_text("utf-8"))
-            for fam, n in Counter(h.get("family") for h in rows).items():
-                if fam:
-                    rec(str(fam)).counts["candidates"] = n
-        except (OSError, json.JSONDecodeError, TypeError):
+            from libs.research.family_firing import iter_json_array
+
+            fam_n: Counter[str] = Counter(
+                str(h.get("family")) for h in iter_json_array(cand)
+                if isinstance(h, dict) and h.get("family"))
+            for fam_name, n in fam_n.items():
+                rec(fam_name).counts["candidates"] = n
+        except (OSError, ValueError, TypeError, AttributeError):
             pass
 
     certs = base / "desks" / "mt5" / "reports" / "UNIVERSAL_SURVIVORS.json"
