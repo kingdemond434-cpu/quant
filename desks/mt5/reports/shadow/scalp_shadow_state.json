@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-23T20:21:57+00:00",
+  "updated_at": "2026-10-23T21:39:59+00:00",
   "certificate_lookup_error": null,
   "shadow_start": "2026-08-22T18:00:00+00:00",
   "source": {
@@ -53,13 +53,12 @@
       },
       "forward_t": 1.9031641539740258,
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
-      "last_source_bar": "2026-10-23T21:25:00+00:00",
+      "last_source_bar": "2026-10-23T23:50:00+00:00",
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
-      "promotion_authority": false,
-      "note": "Fusion-native forward shadow.",
-      "gate_reason": "no canonical ten-gate certificate; promotion authority REVOKED until certified. The sleeve keeps accruing forward evidence -- that costs nothing and is never wasted -- but it cannot promote. Certifying it needs a gauntlet on its own timeframe (register #134)."
+      "promotion_authority": true,
+      "note": "Fusion-native forward shadow."
     },
     "xau_m5_anti_momentum_ny": {
       "forward_start": "2026-08-22T18:00:00+00:00",
@@ -95,7 +94,7 @@
       },
       "forward_t": 0.6010643203382947,
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
-      "last_source_bar": "2026-10-23T21:25:00+00:00",
+      "last_source_bar": "2026-10-23T23:50:00+00:00",
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
@@ -136,7 +135,7 @@
       },
       "forward_t": 1.7236704514528096,
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
-      "last_source_bar": "2026-10-23T21:15:00+00:00",
+      "last_source_bar": "2026-10-23T23:30:00+00:00",
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
@@ -177,7 +176,7 @@
       },
       "forward_t": 0.10546127316079212,
       "certificate": "forward_clock (no ten-gate certificate for this cell yet; scripts/scalp_gauntlet.py judges it daily -> reports/SCALP_GAUNTLET.json)",
-      "last_source_bar": "2026-10-23T21:15:00+00:00",
+      "last_source_bar": "2026-10-23T23:30:00+00:00",
       "matured": true,
       "source_trading_lag_hours": 0.0,
       "source_stale": false,
