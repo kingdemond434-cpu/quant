@@ -1,5 +1,5 @@
 {
- "at": "2026-10-23T17:19:19+00:00",
+ "at": "2026-10-23T17:33:19+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,7 +9,7 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-10-23T17:18:36+00:00",
+   "at": "2026-10-23T17:32:24+00:00",
    "bandit_at": "2026-10-23T01:17:47.397802+00:00",
    "hour": "2026-10-23T17",
    "arm": "treated",
@@ -21,14 +21,14 @@
    "surplus_s": 1461.5,
    "surplus_why": "department 'discovery' measured spare 1462s/hour",
    "contract": {
-    "n_treated": 31,
+    "n_treated": 30,
     "n_control": 10,
-    "mean_treated": 0.677419,
+    "mean_treated": 0.666667,
     "mean_control": 0.1,
-    "delta": 0.577419,
-    "t": 4.392,
+    "delta": 0.566667,
+    "t": 4.264,
     "verdict": "ADMITTED",
-    "why": "Welch t=4.392 over 31 treated vs 10 held-out leg-runs in the last 14 days",
+    "why": "Welch t=4.264 over 30 treated vs 10 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "trial": true,
@@ -112,7 +112,7 @@
   }
  },
  "authoritative": true,
- "authority_why": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=4.392)",
+ "authority_why": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=4.264)",
  "contract": {
   "gain": "INFO_PER_COMPUTE",
   "metric": "control_arm.admitted",
@@ -124,14 +124,14 @@
   "admitted": 1.0,
   "legs": {
    "alpha_evolution": {
-    "n_treated": 31,
+    "n_treated": 30,
     "n_control": 10,
-    "mean_treated": 0.677419,
+    "mean_treated": 0.666667,
     "mean_control": 0.1,
-    "delta": 0.577419,
-    "t": 4.392,
+    "delta": 0.566667,
+    "t": 4.264,
     "verdict": "ADMITTED",
-    "why": "Welch t=4.392 over 31 treated vs 10 held-out leg-runs in the last 14 days",
+    "why": "Welch t=4.264 over 30 treated vs 10 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "deepen": {
