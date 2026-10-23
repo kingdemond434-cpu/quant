@@ -1560,11 +1560,16 @@ def _durable_write(path: Path, text: str) -> None:
     rename, so a crash leaves either the old file or the new one -- never a file of NULs."""
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
-    with open(tmp, "w", encoding="utf-8") as fh:
-        fh.write(text)
-        fh.flush()
-        os.fsync(fh.fileno())
-    os.replace(tmp, path)
+    try:
+        with open(tmp, "w", encoding="utf-8") as fh:
+            fh.write(text)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
+    finally:
+        # a failed replace (NTFS: the destination held open by a reader) leaves no tmp behind
+        with contextlib.suppress(OSError):
+            tmp.unlink(missing_ok=True)
 
 
 def _write_state(doc: dict[str, Any]) -> None:
