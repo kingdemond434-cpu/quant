@@ -452,7 +452,10 @@ def _clean_seconds(v: Any) -> float | None:
     """A finite, positive duration from a file field, or None."""
     if isinstance(v, bool) or not isinstance(v, (int, float)):
         return None
-    f = float(v)
+    try:
+        f = float(v)
+    except OverflowError:           # an int past float range is not a duration
+        return None
     return f if math.isfinite(f) and f > 0 else None
 
 
