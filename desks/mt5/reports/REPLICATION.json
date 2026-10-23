@@ -1,5 +1,5 @@
 {
- "at": "2026-10-23T01:48:04+00:00",
+ "at": "2026-10-23T02:46:17+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -17,103 +17,126 @@
  },
  "n": 16,
  "counts": {
-  "REPLICATED": 2,
-  "MISMATCH": 5,
-  "UNMEASURED": 9
+  "REPLICATED": 7,
+  "MISMATCH": 1,
+  "UNMEASURED": 8
  },
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "CHFNOK.carry.p=98d776f3e210d3e2",
-   "certificate": "external.CHFNOK.carry.p=98d776f3e210d3e2",
-   "fp": "4a3224eded4d9635",
-   "symbol": "CHFNOK",
-   "family": "carry",
-   "verdict": "UNMEASURED",
+   "key": "USDJPY.session_range_breakout.rr=1.5_wb=12",
+   "certificate": "external.USDJPY.session_range_breakout.rr=1.5_wb=12",
+   "fp": "eafaef384ccaa594",
+   "symbol": "USDJPY",
+   "family": "session_range_breakout",
+   "verdict": "REPLICATED",
    "why": [
-    "no written specification in the spec book for family 'carry'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "EURNOK.overnight_gap_decay.p=44136fa355b3678a",
-   "certificate": "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a",
-   "fp": "5209e1a25df6ee97",
-   "symbol": "EURNOK",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
-   "why": [
-    "Sharpe MAGNITUDE disagrees: rebuilt/recorded = 0.33 outside [0.5, 2]"
+    "in-sample Sharpe comes back: rebuilt +0.177 vs recorded +0.159 on 1702 fill(s)"
    ],
    "ours": {
-    "sharpe": 0.1679,
-    "n_fills": 755,
-    "n_days": 755,
-    "cost_price_units": 0.0109590348,
+    "sharpe": 0.1769,
+    "n_fills": 1702,
+    "n_days": 1702,
+    "cost_price_units": 0.01138292,
     "cost_basis": "universe_registry",
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17.",
     "params": {
-     "gap_atr": 0.75,
+     "range_start": 7,
+     "range_end": null,
+     "signal_at": null,
+     "wait_bars": 12,
      "atr_n": 20,
-     "stop_atr": 1.5,
-     "rr": 1.0,
-     "ttl_bars": 8
+     "ttl_bars": 12,
+     "rr": 1.5
     }
    },
    "theirs": {
-    "sharpe": 0.5065,
-    "days": 689
+    "sharpe": 0.1588,
+    "days": 2107
    }
   },
   {
    "lane": "certificate",
-   "key": "EURZAR.overnight_gap_decay.p=44136fa355b3678a",
-   "certificate": "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a",
-   "fp": "20c632f1ec4ca704",
-   "symbol": "EURZAR",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
+   "key": "USDJPY.session_range_breakout.rr=2.0_wb=12",
+   "certificate": "external.USDJPY.session_range_breakout.rr=2.0_wb=12",
+   "fp": "0aceabfe77374a47",
+   "symbol": "USDJPY",
+   "family": "session_range_breakout",
+   "verdict": "REPLICATED",
    "why": [
-    "Sharpe MAGNITUDE disagrees: rebuilt/recorded = 0.31 outside [0.5, 2]"
+    "in-sample Sharpe comes back: rebuilt +0.184 vs recorded +0.163 on 1702 fill(s)"
    ],
    "ours": {
-    "sharpe": 0.1319,
-    "n_fills": 635,
-    "n_days": 635,
-    "cost_price_units": 0.017940392,
+    "sharpe": 0.1842,
+    "n_fills": 1702,
+    "n_days": 1702,
+    "cost_price_units": 0.01138292,
     "cost_basis": "universe_registry",
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17.",
     "params": {
-     "gap_atr": 0.75,
+     "range_start": 7,
+     "range_end": null,
+     "signal_at": null,
+     "wait_bars": 12,
      "atr_n": 20,
-     "stop_atr": 1.5,
-     "rr": 1.0,
-     "ttl_bars": 8
+     "ttl_bars": 12,
+     "rr": 2.0
     }
    },
    "theirs": {
-    "sharpe": 0.4208,
-    "days": 615
+    "sharpe": 0.1632,
+    "days": 2107
    }
   },
   {
    "lane": "certificate",
-   "key": "GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
-   "certificate": "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
-   "fp": "e5b486d79d05d5c8",
-   "symbol": "GBPCHF",
+   "key": "USDJPY.session_range_breakout.rr=2.5_wb=12",
+   "certificate": "external.USDJPY.session_range_breakout.rr=2.5_wb=12",
+   "fp": "ec6f082fd72336e6",
+   "symbol": "USDJPY",
+   "family": "session_range_breakout",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.183 vs recorded +0.161 on 1702 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.1834,
+    "n_fills": 1702,
+    "n_days": 1702,
+    "cost_price_units": 0.01138292,
+    "cost_basis": "universe_registry",
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17.",
+    "params": {
+     "range_start": 7,
+     "range_end": null,
+     "signal_at": null,
+     "wait_bars": 12,
+     "atr_n": 20,
+     "ttl_bars": 12,
+     "rr": 2.5
+    }
+   },
+   "theirs": {
+    "sharpe": 0.1605,
+    "days": 2107
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "USDMXN.overnight_gap_decay.p=44136fa355b3678a",
+   "certificate": "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a",
+   "fp": "3696b289bf85208f",
+   "symbol": "USDMXN",
    "family": "overnight_gap_decay",
    "verdict": "REPLICATED",
    "why": [
-    "in-sample Sharpe comes back: rebuilt +0.579 vs recorded +0.589 on 487 fill(s)"
+    "in-sample Sharpe comes back: rebuilt +0.402 vs recorded +0.457 on 510 fill(s)"
    ],
    "ours": {
-    "sharpe": 0.5787,
-    "n_fills": 487,
-    "n_days": 487,
-    "cost_price_units": 5.68152e-05,
+    "sharpe": 0.4016,
+    "n_fills": 510,
+    "n_days": 510,
+    "cost_price_units": 0.006089932,
     "cost_basis": "universe_registry",
     "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
     "params": {
@@ -125,88 +148,26 @@
     }
    },
    "theirs": {
-    "sharpe": 0.5893,
-    "days": 472
+    "sharpe": 0.4567,
+    "days": 497
    }
   },
   {
    "lane": "certificate",
-   "key": "GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
-   "certificate": "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
-   "fp": "b00fe4c0824bbc11",
-   "symbol": "GBPMXN",
-   "family": "overnight_gap_decay",
-   "verdict": "REPLICATED",
-   "why": [
-    "in-sample Sharpe comes back: rebuilt +0.390 vs recorded +0.498 on 751 fill(s)"
-   ],
-   "ours": {
-    "sharpe": 0.3904,
-    "n_fills": 751,
-    "n_days": 751,
-    "cost_price_units": 0.013959932000000003,
-    "cost_basis": "universe_registry",
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
-    "params": {
-     "gap_atr": 0.75,
-     "atr_n": 20,
-     "stop_atr": 1.5,
-     "rr": 1.0,
-     "ttl_bars": 8
-    }
-   },
-   "theirs": {
-    "sharpe": 0.4985,
-    "days": 738
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
-   "certificate": "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
-   "fp": "efd084c89544fa83",
-   "symbol": "GBPNOK",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
-   "why": [
-    "Sharpe MAGNITUDE disagrees: rebuilt/recorded = 0.15 outside [0.5, 2]"
-   ],
-   "ours": {
-    "sharpe": 0.0782,
-    "n_fills": 857,
-    "n_days": 857,
-    "cost_price_units": 0.0169990348,
-    "cost_basis": "universe_registry",
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
-    "params": {
-     "gap_atr": 0.75,
-     "atr_n": 20,
-     "stop_atr": 1.5,
-     "rr": 1.0,
-     "ttl_bars": 8
-    }
-   },
-   "theirs": {
-    "sharpe": 0.5194,
-    "days": 766
-   }
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
-   "certificate": "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
-   "fp": "7552c1bcecc4848d",
-   "symbol": "GBPSEK",
+   "key": "USDZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "certificate": "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "fp": "b98898e74273b22f",
+   "symbol": "USDZAR",
    "family": "overnight_gap_decay",
    "verdict": "MISMATCH",
    "why": [
     "Sharpe MAGNITUDE disagrees: rebuilt/recorded = 0.47 outside [0.5, 2]"
    ],
    "ours": {
-    "sharpe": 0.2743,
-    "n_fills": 760,
-    "n_days": 760,
-    "cost_price_units": 0.0093948264,
+    "sharpe": 0.3217,
+    "n_fills": 563,
+    "n_days": 563,
+    "cost_price_units": 0.016640392,
     "cost_basis": "universe_registry",
     "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
     "params": {
@@ -218,49 +179,117 @@
     }
    },
    "theirs": {
-    "sharpe": 0.582,
-    "days": 704
+    "sharpe": 0.6904,
+    "days": 489
    }
   },
   {
    "lane": "certificate",
-   "key": "GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
-   "certificate": "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
-   "fp": "d60d8a80ba806ebf",
-   "symbol": "GBPZAR",
-   "family": "overnight_gap_decay",
-   "verdict": "MISMATCH",
+   "key": "XAUUSD.session_range_breakout.rr=1.5_wb=12",
+   "certificate": "external.XAUUSD.session_range_breakout.rr=1.5_wb=12",
+   "fp": "aa5ed7d224abefc7",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "verdict": "REPLICATED",
    "why": [
-    "Sharpe MAGNITUDE disagrees: rebuilt/recorded = 0.42 outside [0.5, 2]"
+    "in-sample Sharpe comes back: rebuilt +0.178 vs recorded +0.180 on 1763 fill(s)"
    ],
    "ours": {
-    "sharpe": 0.126,
-    "n_fills": 636,
-    "n_days": 636,
-    "cost_price_units": 0.03447039200000001,
+    "sharpe": 0.1781,
+    "n_fills": 1763,
+    "n_days": 1763,
+    "cost_price_units": 0.10633759999999999,
     "cost_basis": "universe_registry",
-    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17.",
     "params": {
-     "gap_atr": 0.75,
+     "range_start": 7,
+     "range_end": null,
+     "signal_at": null,
+     "wait_bars": 12,
      "atr_n": 20,
-     "stop_atr": 1.5,
-     "rr": 1.0,
-     "ttl_bars": 8
+     "ttl_bars": 12,
+     "rr": 1.5
     }
    },
    "theirs": {
-    "sharpe": 0.301,
-    "days": 97
+    "sharpe": 0.1797,
+    "days": 2101
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "XAUUSD.session_range_breakout.rr=1.5_wb=8",
+   "certificate": "external.XAUUSD.session_range_breakout.rr=1.5_wb=8",
+   "fp": "052520bc593ef160",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.144 vs recorded +0.142 on 1711 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.144,
+    "n_fills": 1711,
+    "n_days": 1711,
+    "cost_price_units": 0.10633759999999999,
+    "cost_basis": "universe_registry",
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17.",
+    "params": {
+     "range_start": 7,
+     "range_end": null,
+     "signal_at": null,
+     "wait_bars": 8,
+     "atr_n": 20,
+     "ttl_bars": 12,
+     "rr": 1.5
+    }
+   },
+   "theirs": {
+    "sharpe": 0.1422,
+    "days": 2046
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "XAUUSD.session_range_breakout.rr=2.0_wb=12",
+   "certificate": "external.XAUUSD.session_range_breakout.rr=2.0_wb=12",
+   "fp": "291cbbd9e0fea832",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.180 vs recorded +0.184 on 1763 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.1797,
+    "n_fills": 1763,
+    "n_days": 1763,
+    "cost_price_units": 0.10633759999999999,
+    "cost_basis": "universe_registry",
+    "spec": "At the signal hour, take the day's range over the session window (hours before range_start, or [range_start, range_end)); dist = max(1.2 x ATR(atr_n), range span). A resting buy stop at the range high (stop high - dist, target high + dist x rr) and a resting sell stop at the range low (stop low + dist, target low - dist x rr), each alive wait_bars bars from the next bar; time exit after ttl_bars. The selector names the window: asia = hours before 7; london_am = [10,13) signalled at 13; ny_open = [13,14) at 14; afternoon = [14,17) at 17.",
+    "params": {
+     "range_start": 7,
+     "range_end": null,
+     "signal_at": null,
+     "wait_bars": 12,
+     "atr_n": 20,
+     "ttl_bars": 12,
+     "rr": 2.0
+    }
+   },
+   "theirs": {
+    "sharpe": 0.1845,
+    "days": 2101
    }
   },
   {
    "lane": "forward",
-   "key": "XAGEUR.turn_of_month.continuous",
-   "symbol": "XAGEUR",
-   "family": "turn_of_month",
+   "key": "XAUAUD.trend_ma_cross.continuous",
+   "symbol": "XAUAUD",
+   "family": "trend_ma_cross",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'turn_of_month'"
+    "no written specification in the spec book for family 'trend_ma_cross'"
    ],
    "ours": {},
    "theirs": {},
@@ -268,8 +297,8 @@
   },
   {
    "lane": "forward",
-   "key": "XAGEUR.vol_mean_reversion.continuous",
-   "symbol": "XAGEUR",
+   "key": "XAUAUD.vol_mean_reversion.continuous",
+   "symbol": "XAUAUD",
    "family": "vol_mean_reversion",
    "verdict": "UNMEASURED",
    "why": [
@@ -281,8 +310,21 @@
   },
   {
    "lane": "forward",
-   "key": "XAGEUR.volume_spike.continuous",
-   "symbol": "XAGEUR",
+   "key": "XAUAUD.volatility_squeeze.continuous",
+   "symbol": "XAUAUD",
+   "family": "volatility_squeeze",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'volatility_squeeze'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAUAUD.volume_spike.continuous",
+   "symbol": "XAUAUD",
    "family": "volume_spike",
    "verdict": "UNMEASURED",
    "why": [
@@ -294,8 +336,8 @@
   },
   {
    "lane": "forward",
-   "key": "XAUAUD.carry.continuous",
-   "symbol": "XAUAUD",
+   "key": "XAUEUR.carry.continuous",
+   "symbol": "XAUEUR",
    "family": "carry",
    "verdict": "UNMEASURED",
    "why": [
@@ -307,8 +349,8 @@
   },
   {
    "lane": "forward",
-   "key": "XAUAUD.joint_genome.continuous",
-   "symbol": "XAUAUD",
+   "key": "XAUEUR.joint_genome.continuous",
+   "symbol": "XAUEUR",
    "family": "joint_genome",
    "verdict": "UNMEASURED",
    "why": [
@@ -320,12 +362,12 @@
   },
   {
    "lane": "forward",
-   "key": "XAUAUD.momentum_volgate.continuous",
-   "symbol": "XAUAUD",
-   "family": "momentum_volgate",
+   "key": "XAUEUR.multi_speed_trend.continuous",
+   "symbol": "XAUEUR",
+   "family": "multi_speed_trend",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'momentum_volgate'"
+    "no written specification in the spec book for family 'multi_speed_trend'"
    ],
    "ours": {},
    "theirs": {},
@@ -333,8 +375,8 @@
   },
   {
    "lane": "forward",
-   "key": "XAUAUD.pullback_entry.continuous",
-   "symbol": "XAUAUD",
+   "key": "XAUEUR.pullback_entry.continuous",
+   "symbol": "XAUEUR",
    "family": "pullback_entry",
    "verdict": "UNMEASURED",
    "why": [
@@ -343,75 +385,54 @@
    "ours": {},
    "theirs": {},
    "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAUAUD.range_reversion.continuous",
-   "symbol": "XAUAUD",
-   "family": "range_reversion",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'range_reversion'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
   }
  ],
  "quarantined": [
-  "EURNOK.overnight_gap_decay.p=44136fa355b3678a",
-  "EURZAR.overnight_gap_decay.p=44136fa355b3678a",
-  "GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
-  "GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
-  "GBPZAR.overnight_gap_decay.p=44136fa355b3678a"
+  "USDZAR.overnight_gap_decay.p=44136fa355b3678a"
  ],
  "unmeasured": [
   {
-   "what": "CHFNOK.carry.p=98d776f3e210d3e2",
-   "why": "no written specification in the spec book for family 'carry'"
+   "what": "XAUAUD.trend_ma_cross.continuous",
+   "why": "no written specification in the spec book for family 'trend_ma_cross'"
   },
   {
-   "what": "XAGEUR.turn_of_month.continuous",
-   "why": "no written specification in the spec book for family 'turn_of_month'"
-  },
-  {
-   "what": "XAGEUR.vol_mean_reversion.continuous",
+   "what": "XAUAUD.vol_mean_reversion.continuous",
    "why": "no written specification in the spec book for family 'vol_mean_reversion'"
   },
   {
-   "what": "XAGEUR.volume_spike.continuous",
+   "what": "XAUAUD.volatility_squeeze.continuous",
+   "why": "no written specification in the spec book for family 'volatility_squeeze'"
+  },
+  {
+   "what": "XAUAUD.volume_spike.continuous",
    "why": "no written specification in the spec book for family 'volume_spike'"
   },
   {
-   "what": "XAUAUD.carry.continuous",
+   "what": "XAUEUR.carry.continuous",
    "why": "no written specification in the spec book for family 'carry'"
   },
   {
-   "what": "XAUAUD.joint_genome.continuous",
+   "what": "XAUEUR.joint_genome.continuous",
    "why": "no written specification in the spec book for family 'joint_genome'"
   },
   {
-   "what": "XAUAUD.momentum_volgate.continuous",
-   "why": "no written specification in the spec book for family 'momentum_volgate'"
+   "what": "XAUEUR.multi_speed_trend.continuous",
+   "why": "no written specification in the spec book for family 'multi_speed_trend'"
   },
   {
-   "what": "XAUAUD.pullback_entry.continuous",
+   "what": "XAUEUR.pullback_entry.continuous",
    "why": "no written specification in the spec book for family 'pullback_entry'"
-  },
-  {
-   "what": "XAUAUD.range_reversion.continuous",
-   "why": "no written specification in the spec book for family 'range_reversion'"
   }
  ],
  "recorded": {
-  "quarantined": 5,
-  "memory": 7,
-  "candidates": 904
+  "quarantined": 1,
+  "memory": 8,
+  "candidates": 168
  },
  "cursor": {
-  "forward": 682,
-  "at": "2026-10-22T21:42:11+00:00",
-  "certificates": 11
+  "forward": 690,
+  "at": "2026-10-23T01:48:04+00:00",
+  "certificates": 19
  },
  "notes": [],
  "independence": {
@@ -428,24 +449,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURNOK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURZAR_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPZAR_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDJPY_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDMXN_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDZAR_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUUSD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 325.58
+ "seconds": 145.69
 }
