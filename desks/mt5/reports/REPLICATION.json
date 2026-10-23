@@ -1,5 +1,5 @@
 {
- "at": "2026-10-22T21:42:11+00:00",
+ "at": "2026-10-23T01:48:04+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -17,97 +17,41 @@
  },
  "n": 16,
  "counts": {
-  "REPLICATED": 3,
-  "MISMATCH": 0,
-  "UNMEASURED": 13
+  "REPLICATED": 2,
+  "MISMATCH": 5,
+  "UNMEASURED": 9
  },
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "AUDSGD@M30.formula.p=f5b10d68b589d95a",
-   "certificate": "external.AUDSGD@M30.formula.p=f5b10d68b589d95a",
-   "fp": "3173e6ab7db37241",
-   "symbol": "AUDSGD",
-   "family": "formula",
+   "key": "CHFNOK.carry.p=98d776f3e210d3e2",
+   "certificate": "external.CHFNOK.carry.p=98d776f3e210d3e2",
+   "fp": "4a3224eded4d9635",
+   "symbol": "CHFNOK",
+   "family": "carry",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'formula'"
+    "no written specification in the spec book for family 'carry'"
    ],
    "ours": {},
    "theirs": {}
   },
   {
    "lane": "certificate",
-   "key": "AUDSGD@M30.formula.p=4a644e325f3d8989",
-   "certificate": "external.AUDSGD@M30.formula.p=4a644e325f3d8989",
-   "fp": "6316cd368d904746",
-   "symbol": "AUDSGD",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "AUDSGD@M30.formula.p=8ad3501eafa9c668",
-   "certificate": "external.AUDSGD@M30.formula.p=8ad3501eafa9c668",
-   "fp": "eb9cd0e3c4f58f59",
-   "symbol": "AUDSGD",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "AUDSGD@M30.formula.p=fc5b75cc7c0d41c0",
-   "certificate": "external.AUDSGD@M30.formula.p=fc5b75cc7c0d41c0",
-   "fp": "0df425ea4afb2e5a",
-   "symbol": "AUDSGD",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "AUDSGD@M30.formula.p=f6802d189e2d37f9",
-   "certificate": "external.AUDSGD@M30.formula.p=f6802d189e2d37f9",
-   "fp": "b6fbe1cdf2c7ad7f",
-   "symbol": "AUDSGD",
-   "family": "formula",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'formula'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
-   "certificate": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
-   "fp": "8d5bd619dafd3cf0",
-   "symbol": "AUDCHF",
+   "key": "EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+   "certificate": "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+   "fp": "5209e1a25df6ee97",
+   "symbol": "EURNOK",
    "family": "overnight_gap_decay",
-   "verdict": "REPLICATED",
+   "verdict": "MISMATCH",
    "why": [
-    "in-sample Sharpe comes back: rebuilt +0.440 vs recorded +0.433 on 711 fill(s)"
+    "Sharpe MAGNITUDE disagrees: rebuilt/recorded = 0.33 outside [0.5, 2]"
    ],
    "ours": {
-    "sharpe": 0.4402,
-    "n_fills": 711,
-    "n_days": 711,
-    "cost_price_units": 5.782719999999999e-05,
+    "sharpe": 0.1679,
+    "n_fills": 755,
+    "n_days": 755,
+    "cost_price_units": 0.0109590348,
     "cost_basis": "universe_registry",
     "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
     "params": {
@@ -119,26 +63,26 @@
     }
    },
    "theirs": {
-    "sharpe": 0.4331,
-    "days": 702
+    "sharpe": 0.5065,
+    "days": 689
    }
   },
   {
    "lane": "certificate",
-   "key": "CADCHF.overnight_gap_decay.p=44136fa355b3678a",
-   "certificate": "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a",
-   "fp": "9d3356358d3e6d99",
-   "symbol": "CADCHF",
+   "key": "EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "certificate": "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "fp": "20c632f1ec4ca704",
+   "symbol": "EURZAR",
    "family": "overnight_gap_decay",
-   "verdict": "REPLICATED",
+   "verdict": "MISMATCH",
    "why": [
-    "in-sample Sharpe comes back: rebuilt +0.596 vs recorded +0.592 on 607 fill(s)"
+    "Sharpe MAGNITUDE disagrees: rebuilt/recorded = 0.31 outside [0.5, 2]"
    ],
    "ours": {
-    "sharpe": 0.5964,
-    "n_fills": 607,
-    "n_days": 607,
-    "cost_price_units": 4.782719999999999e-05,
+    "sharpe": 0.1319,
+    "n_fills": 635,
+    "n_days": 635,
+    "cost_price_units": 0.017940392,
     "cost_basis": "universe_registry",
     "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
     "params": {
@@ -150,26 +94,26 @@
     }
    },
    "theirs": {
-    "sharpe": 0.5922,
-    "days": 587
+    "sharpe": 0.4208,
+    "days": 615
    }
   },
   {
    "lane": "certificate",
-   "key": "CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
-   "certificate": "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
-   "fp": "c1fcad594d6d69b8",
-   "symbol": "CHFDKK",
+   "key": "GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
+   "certificate": "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
+   "fp": "e5b486d79d05d5c8",
+   "symbol": "GBPCHF",
    "family": "overnight_gap_decay",
    "verdict": "REPLICATED",
    "why": [
-    "in-sample Sharpe comes back: rebuilt +0.410 vs recorded +0.503 on 902 fill(s)"
+    "in-sample Sharpe comes back: rebuilt +0.579 vs recorded +0.589 on 487 fill(s)"
    ],
    "ours": {
-    "sharpe": 0.4095,
-    "n_fills": 902,
-    "n_days": 901,
-    "cost_price_units": 0.0011790192,
+    "sharpe": 0.5787,
+    "n_fills": 487,
+    "n_days": 487,
+    "cost_price_units": 5.68152e-05,
     "cost_basis": "universe_registry",
     "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
     "params": {
@@ -181,18 +125,142 @@
     }
    },
    "theirs": {
-    "sharpe": 0.5031,
-    "days": 834
+    "sharpe": 0.5893,
+    "days": 472
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+   "certificate": "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+   "fp": "b00fe4c0824bbc11",
+   "symbol": "GBPMXN",
+   "family": "overnight_gap_decay",
+   "verdict": "REPLICATED",
+   "why": [
+    "in-sample Sharpe comes back: rebuilt +0.390 vs recorded +0.498 on 751 fill(s)"
+   ],
+   "ours": {
+    "sharpe": 0.3904,
+    "n_fills": 751,
+    "n_days": 751,
+    "cost_price_units": 0.013959932000000003,
+    "cost_basis": "universe_registry",
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
+    "params": {
+     "gap_atr": 0.75,
+     "atr_n": 20,
+     "stop_atr": 1.5,
+     "rr": 1.0,
+     "ttl_bars": 8
+    }
+   },
+   "theirs": {
+    "sharpe": 0.4985,
+    "days": 738
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+   "certificate": "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+   "fp": "efd084c89544fa83",
+   "symbol": "GBPNOK",
+   "family": "overnight_gap_decay",
+   "verdict": "MISMATCH",
+   "why": [
+    "Sharpe MAGNITUDE disagrees: rebuilt/recorded = 0.15 outside [0.5, 2]"
+   ],
+   "ours": {
+    "sharpe": 0.0782,
+    "n_fills": 857,
+    "n_days": 857,
+    "cost_price_units": 0.0169990348,
+    "cost_basis": "universe_registry",
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
+    "params": {
+     "gap_atr": 0.75,
+     "atr_n": 20,
+     "stop_atr": 1.5,
+     "rr": 1.0,
+     "ttl_bars": 8
+    }
+   },
+   "theirs": {
+    "sharpe": 0.5194,
+    "days": 766
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+   "certificate": "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+   "fp": "7552c1bcecc4848d",
+   "symbol": "GBPSEK",
+   "family": "overnight_gap_decay",
+   "verdict": "MISMATCH",
+   "why": [
+    "Sharpe MAGNITUDE disagrees: rebuilt/recorded = 0.47 outside [0.5, 2]"
+   ],
+   "ours": {
+    "sharpe": 0.2743,
+    "n_fills": 760,
+    "n_days": 760,
+    "cost_price_units": 0.0093948264,
+    "cost_basis": "universe_registry",
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
+    "params": {
+     "gap_atr": 0.75,
+     "atr_n": 20,
+     "stop_atr": 1.5,
+     "rr": 1.0,
+     "ttl_bars": 8
+    }
+   },
+   "theirs": {
+    "sharpe": 0.582,
+    "days": 704
+   }
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "certificate": "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "fp": "d60d8a80ba806ebf",
+   "symbol": "GBPZAR",
+   "family": "overnight_gap_decay",
+   "verdict": "MISMATCH",
+   "why": [
+    "Sharpe MAGNITUDE disagrees: rebuilt/recorded = 0.42 outside [0.5, 2]"
+   ],
+   "ours": {
+    "sharpe": 0.126,
+    "n_fills": 636,
+    "n_days": 636,
+    "cost_price_units": 0.03447039200000001,
+    "cost_basis": "universe_registry",
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars.",
+    "params": {
+     "gap_atr": 0.75,
+     "atr_n": 20,
+     "stop_atr": 1.5,
+     "rr": 1.0,
+     "ttl_bars": 8
+    }
+   },
+   "theirs": {
+    "sharpe": 0.301,
+    "days": 97
    }
   },
   {
    "lane": "forward",
-   "key": "XAGEUR.fx_fixing_reversal.continuous",
+   "key": "XAGEUR.turn_of_month.continuous",
    "symbol": "XAGEUR",
-   "family": "fx_fixing_reversal",
+   "family": "turn_of_month",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'fx_fixing_reversal'"
+    "no written specification in the spec book for family 'turn_of_month'"
    ],
    "ours": {},
    "theirs": {},
@@ -200,8 +268,47 @@
   },
   {
    "lane": "forward",
-   "key": "XAGEUR.joint_genome.continuous",
+   "key": "XAGEUR.vol_mean_reversion.continuous",
    "symbol": "XAGEUR",
+   "family": "vol_mean_reversion",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'vol_mean_reversion'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAGEUR.volume_spike.continuous",
+   "symbol": "XAGEUR",
+   "family": "volume_spike",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'volume_spike'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAUAUD.carry.continuous",
+   "symbol": "XAUAUD",
+   "family": "carry",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'carry'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "XAUAUD.joint_genome.continuous",
+   "symbol": "XAUAUD",
    "family": "joint_genome",
    "verdict": "UNMEASURED",
    "why": [
@@ -213,34 +320,8 @@
   },
   {
    "lane": "forward",
-   "key": "XAGEUR.level_breakout.continuous",
-   "symbol": "XAGEUR",
-   "family": "level_breakout",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'level_breakout'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAGEUR.mean_reversion_bollinger.continuous",
-   "symbol": "XAGEUR",
-   "family": "mean_reversion_bollinger",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'mean_reversion_bollinger'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAGEUR.momentum_volgate.continuous",
-   "symbol": "XAGEUR",
+   "key": "XAUAUD.momentum_volgate.continuous",
+   "symbol": "XAUAUD",
    "family": "momentum_volgate",
    "verdict": "UNMEASURED",
    "why": [
@@ -252,12 +333,12 @@
   },
   {
    "lane": "forward",
-   "key": "XAGEUR.multi_speed_trend.continuous",
-   "symbol": "XAGEUR",
-   "family": "multi_speed_trend",
+   "key": "XAUAUD.pullback_entry.continuous",
+   "symbol": "XAUAUD",
+   "family": "pullback_entry",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'multi_speed_trend'"
+    "no written specification in the spec book for family 'pullback_entry'"
    ],
    "ours": {},
    "theirs": {},
@@ -265,8 +346,8 @@
   },
   {
    "lane": "forward",
-   "key": "XAGEUR.range_reversion.continuous",
-   "symbol": "XAGEUR",
+   "key": "XAUAUD.range_reversion.continuous",
+   "symbol": "XAUAUD",
    "family": "range_reversion",
    "verdict": "UNMEASURED",
    "why": [
@@ -275,85 +356,62 @@
    "ours": {},
    "theirs": {},
    "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XAGEUR.trend_ma_cross.continuous",
-   "symbol": "XAGEUR",
-   "family": "trend_ma_cross",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'trend_ma_cross'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
   }
  ],
- "quarantined": [],
+ "quarantined": [
+  "EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+  "EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+  "GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+  "GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+  "GBPZAR.overnight_gap_decay.p=44136fa355b3678a"
+ ],
  "unmeasured": [
   {
-   "what": "AUDSGD@M30.formula.p=f5b10d68b589d95a",
-   "why": "no written specification in the spec book for family 'formula'"
+   "what": "CHFNOK.carry.p=98d776f3e210d3e2",
+   "why": "no written specification in the spec book for family 'carry'"
   },
   {
-   "what": "AUDSGD@M30.formula.p=4a644e325f3d8989",
-   "why": "no written specification in the spec book for family 'formula'"
+   "what": "XAGEUR.turn_of_month.continuous",
+   "why": "no written specification in the spec book for family 'turn_of_month'"
   },
   {
-   "what": "AUDSGD@M30.formula.p=8ad3501eafa9c668",
-   "why": "no written specification in the spec book for family 'formula'"
+   "what": "XAGEUR.vol_mean_reversion.continuous",
+   "why": "no written specification in the spec book for family 'vol_mean_reversion'"
   },
   {
-   "what": "AUDSGD@M30.formula.p=fc5b75cc7c0d41c0",
-   "why": "no written specification in the spec book for family 'formula'"
+   "what": "XAGEUR.volume_spike.continuous",
+   "why": "no written specification in the spec book for family 'volume_spike'"
   },
   {
-   "what": "AUDSGD@M30.formula.p=f6802d189e2d37f9",
-   "why": "no written specification in the spec book for family 'formula'"
+   "what": "XAUAUD.carry.continuous",
+   "why": "no written specification in the spec book for family 'carry'"
   },
   {
-   "what": "XAGEUR.fx_fixing_reversal.continuous",
-   "why": "no written specification in the spec book for family 'fx_fixing_reversal'"
-  },
-  {
-   "what": "XAGEUR.joint_genome.continuous",
+   "what": "XAUAUD.joint_genome.continuous",
    "why": "no written specification in the spec book for family 'joint_genome'"
   },
   {
-   "what": "XAGEUR.level_breakout.continuous",
-   "why": "no written specification in the spec book for family 'level_breakout'"
-  },
-  {
-   "what": "XAGEUR.mean_reversion_bollinger.continuous",
-   "why": "no written specification in the spec book for family 'mean_reversion_bollinger'"
-  },
-  {
-   "what": "XAGEUR.momentum_volgate.continuous",
+   "what": "XAUAUD.momentum_volgate.continuous",
    "why": "no written specification in the spec book for family 'momentum_volgate'"
   },
   {
-   "what": "XAGEUR.multi_speed_trend.continuous",
-   "why": "no written specification in the spec book for family 'multi_speed_trend'"
+   "what": "XAUAUD.pullback_entry.continuous",
+   "why": "no written specification in the spec book for family 'pullback_entry'"
   },
   {
-   "what": "XAGEUR.range_reversion.continuous",
+   "what": "XAUAUD.range_reversion.continuous",
    "why": "no written specification in the spec book for family 'range_reversion'"
-  },
-  {
-   "what": "XAGEUR.trend_ma_cross.continuous",
-   "why": "no written specification in the spec book for family 'trend_ma_cross'"
   }
  ],
  "recorded": {
-  "quarantined": 0,
-  "memory": 3,
-  "candidates": 0
+  "quarantined": 5,
+  "memory": 7,
+  "candidates": 904
  },
  "cursor": {
-  "forward": 674,
-  "at": "2026-10-22T20:38:33+00:00",
-  "certificates": 3
+  "forward": 682,
+  "at": "2026-10-22T21:42:11+00:00",
+  "certificates": 11
  },
  "notes": [],
  "independence": {
@@ -370,24 +428,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CADCHF_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFDKK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFNOK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURNOK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURZAR_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPCHF_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPMXN_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPZAR_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_H1.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_H1.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_H1.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 35.72
+ "seconds": 325.58
 }

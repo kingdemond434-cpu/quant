@@ -1,35 +1,16 @@
 {
- "pid": 16248,
- "started_utc": "2026-10-22T20:36:04+00:00",
+ "pid": 17740,
+ "started_utc": "2026-10-23T01:46:42+00:00",
  "task_limit_s": 0.0,
- "sweeps": 12,
- "failures": 1,
- "lane_held": 11,
+ "sweeps": 0,
+ "failures": 0,
+ "lane_held": 0,
  "hung_kills": 1,
- "busy_seconds": 17673.7,
+ "busy_seconds": 0.0,
  "status": "STOPPED",
  "longest_sweep_s": null,
  "consecutive_hangs": 1,
- "sweep_started_utc": "2026-10-22T20:45:12+00:00",
- "hang_limit_s": 17280.0,
- "last_rc": 124,
- "last_sweep_s": 17292.0,
- "uptime_s": 17855.3,
- "last_sweep_ended_utc": "2026-10-23T01:33:24+00:00",
- "backoff_s": 15,
- "last_hung_utc": "2026-10-23T01:33:24+00:00",
- "killed_in_phase": {
-  "pid": 19872,
-  "sweep_started_utc": "2026-10-22T20:45:14+00:00",
-  "phases": {
-   "plan": 10239.6,
-   "build_shards": 3626.1,
-   "collect_and_cut": 3016.5,
-   "rule_shards": 255.0
-  },
-  "phase": "merge_and_publish",
-  "phase_started_utc": "2026-10-23T01:30:51+00:00"
- },
  "why": "RESIDENT_STOP present",
- "heartbeat_utc": "2026-10-23T01:33:40+00:00"
+ "uptime_s": 0.2,
+ "heartbeat_utc": "2026-10-23T01:46:43+00:00"
 }
