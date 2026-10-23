@@ -16,11 +16,22 @@ v1.1 (audit of 9a08e48ac, four should-fixes):
     it frees, and does not repeat a step another chain stamped meanwhile;
   * the stamp is re-read at every write and `last_run` never moves backwards;
   * a lock FILE that cannot be opened or locked is a logged fault, never "held": the chain runs;
-  * a bounded stand-down exits EXIT_STOOD_DOWN, and the hourly leg records STOOD_DOWN, not OK.
+  * a bounded stand-down exits EXIT_STOOD_DOWN, never recorded as OK.
+v1.2 (audit of 8e373a6f2, one must-fix, four should-fixes, one nit):
+  * MUST-FIX: a stamp dated after the current UTC date is a clock error -- overwritten, recorded
+    in `clock_corrections`, never a block: after the clock is corrected the chain resumes;
+  * an unlocked chain waits BETWEEN steps while a healthy holder has the lock (--force past the
+    wait, a holder that dies, a chain crossing midnight);
+  * the stamp is written atomically and never over an unparseable file;
+  * the hourly leg's stand-down is VERDICT_EXITS["daily"] with a noop_reason, so neither
+    write_or_explain (LEG_FAILED) nor completion (FAILING) reads it as a failure;
+  * a faulty lock file is recorded in the stamp, not only the log;
+  * a step raising SystemExit(75) is a failed step, never a stand-down.
 """
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -196,18 +207,23 @@ def test_should_fix_1_an_unlocked_chain_does_not_repeat_a_step_another_chain_sta
 
 def test_should_fix_2_last_run_never_moves_backwards(cyc, monkeypatch):
     """A chain that began on day D and is still running after 00:00 UTC must not rewrite a
-    day-D+1 stamp back to D -- that reset the new day to step one on every step it finished."""
+    day-D+1 stamp back to D -- that reset the new day to step one on every step it finished.
+    (v1.2: the later day is a REAL later day on the clock; a date beyond the clock is a clock
+    error and is overwritten -- see the must-fix tests.)"""
     monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    clock = _fake_clock(monkeypatch, datetime(2030, 6, 10, 23, 50, tzinfo=UTC))
+    d1 = "2030-06-11"
 
     def a():
         cyc.calls.append("a")
-        cyc.stamp.write_text(json.dumps({"last_run": "2999-01-01",
-                                         "steps": {"a": {"ok": True}}}), encoding="utf-8")
+        clock.set(datetime(2030, 6, 11, 0, 10, tzinfo=UTC))
+        cyc.stamp.write_text(json.dumps({"last_run": d1, "steps": {"a": {"ok": True}}}),
+                             encoding="utf-8")
 
     monkeypatch.setattr(daily_cycle, "STEPS", (("a", a), ("b", lambda: cyc.calls.append("b"))))
     assert daily_cycle.main([]) == 0
     stamp = json.loads(cyc.stamp.read_text(encoding="utf-8"))
-    assert stamp["last_run"] == "2999-01-01"
+    assert stamp["last_run"] == d1
     assert set(stamp["steps"]) == {"a"}, "the later day's progress must stand untouched"
     assert "never moves backwards" in daily_cycle.LOG.read_text(encoding="utf-8")
 
@@ -237,6 +253,11 @@ def test_should_fix_3_an_unopenable_lock_file_is_logged_and_the_chain_still_runs
     assert daily_cycle.main([]) == 0
     assert cyc.calls == ["a", "b", "c"]
     assert "chain lock UNAVAILABLE" in daily_cycle.LOG.read_text(encoding="utf-8")
+    # v1.2 should-fix 4: the fault is in the STAMP, not only the log.
+    rec = json.loads(cyc.stamp.read_text(encoding="utf-8"))["chain_lock"]
+    assert rec["state"] == "unavailable"
+    assert "cannot" in rec["error"]
+    assert rec["unlocked_steps"] == ["a", "b", "c"]
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="exercises the POSIX flock branch")
@@ -258,7 +279,7 @@ def test_should_fix_3_only_contention_errnos_read_as_held(tmp_path, monkeypatch)
     assert daily_cycle._try_lock(tmp_path / "y.lock") is None
 
 
-def test_should_fix_4_the_hourly_leg_records_a_stand_down_as_stood_down_not_ok(monkeypatch):
+def test_should_fix_4_the_hourly_leg_never_records_a_stand_down_as_ok(monkeypatch):
     import hourly_cycle
 
     assert hourly_cycle.DAILY_CYCLE_STOOD_DOWN == daily_cycle.EXIT_STOOD_DOWN
@@ -267,6 +288,377 @@ def test_should_fix_4_the_hourly_leg_records_a_stand_down_as_stood_down_not_ok(m
     def fake(rc):
         return lambda *_a, **_k: type("R", (), {"returncode": rc, "stdout": "", "stderr": ""})()
 
-    for rc, want in ((0, "OK"), (daily_cycle.EXIT_STOOD_DOWN, "STOOD_DOWN"), (1, "FAILED")):
+    for rc, want in ((0, "OK"), (1, "FAILED")):
         monkeypatch.setattr(hourly_cycle, "_run_tree", fake(rc))
         assert hourly_cycle.daily()["status"] == want
+    monkeypatch.setattr(hourly_cycle, "_run_tree", fake(daily_cycle.EXIT_STOOD_DOWN))
+    assert hourly_cycle.daily().get("status") != "OK"
+
+
+# ----------------------------------------------------------------------------- v1.2 helpers
+
+
+class _Clock:
+    def __init__(self, now: datetime) -> None:
+        self.now = now
+
+    def set(self, now: datetime) -> None:
+        self.now = now
+
+
+def _fake_clock(monkeypatch, start: datetime) -> _Clock:
+    """Replace the module's `datetime` so `datetime.now(...)` reads a settable clock."""
+    clock = _Clock(start)
+
+    class _DT(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return clock.now if tz is not None else clock.now.replace(tzinfo=None)
+
+    monkeypatch.setattr(daily_cycle, "datetime", _DT)
+    return clock
+
+
+def _claim_alive():
+    """Hold the lock AND publish this process as its healthy owner, as a real holder does."""
+    lk = daily_cycle.ChainLock()
+    assert lk.try_acquire(), "the test could not take the chain lock itself"
+    assert daily_cycle._holder_health() == "alive"
+    return lk
+
+
+class _Killed(BaseException):
+    """A kill mid-step: not an Exception, so `run_step` does not catch it."""
+
+
+# ----------------------------------------------------------------------------- v1.2 must-fix
+
+
+def test_must_fix_a_future_stamp_is_a_clock_error_and_the_corrected_clock_resumes(cyc,
+                                                                                 monkeypatch):
+    """A pass on a clock set a year ahead stamps that future day. v1.1 then refused every write
+    on the corrected clock ("never moves backwards"), so a killed pass could never resume: each
+    hour re-ran the chain from step one and stamped nothing. Now the future stamp is overwritten,
+    the correction is recorded, and the next pass runs only what is left."""
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    clock = _fake_clock(monkeypatch, datetime(2031, 6, 10, 12, 0, tzinfo=UTC))
+    assert daily_cycle.main([]) == 0                      # the misset clock stamps 2031-06-10
+    assert json.loads(cyc.stamp.read_text(encoding="utf-8"))["last_run"] == "2031-06-10"
+    cyc.calls.clear()
+
+    clock.set(datetime(2030, 6, 10, 12, 0, tzinfo=UTC))   # the clock is corrected
+    today = "2030-06-10"
+    kill = {"on": True}
+
+    def b():
+        cyc.calls.append("b")
+        if kill["on"]:
+            raise _Killed
+
+    monkeypatch.setattr(daily_cycle, "STEPS", (("a", lambda: cyc.calls.append("a")), ("b", b),
+                                               ("c", lambda: cyc.calls.append("c"))))
+    with pytest.raises(_Killed):
+        daily_cycle.main([])                              # killed during b
+    stamp = json.loads(cyc.stamp.read_text(encoding="utf-8"))
+    assert stamp["last_run"] == today, "the future stamp must not block the corrected clock"
+    assert set(stamp["steps"]) == {"a"}, "the 2031 day's steps must not be read as today's"
+    assert stamp["clock_corrections"][-1]["from"] == "2031-06-10"
+    assert stamp["clock_corrections"][-1]["to"] == today
+    assert "clock error" in daily_cycle.LOG.read_text(encoding="utf-8")
+
+    cyc.calls.clear()
+    kill["on"] = False
+    assert daily_cycle.main([]) == 0
+    assert cyc.calls == ["b", "c"], "the next pass resumes where the killed one stopped"
+    stamp = json.loads(cyc.stamp.read_text(encoding="utf-8"))
+    assert stamp["last_run"] == today
+    assert set(stamp["steps"]) == {"a", "b", "c"}
+    assert len(stamp["clock_corrections"]) == 1, "the correction is recorded once, and kept"
+
+
+def test_must_fix_write_stamp_overwrites_only_a_date_beyond_the_clock(cyc, monkeypatch):
+    clock = _fake_clock(monkeypatch, datetime(2030, 6, 11, 0, 5, tzinfo=UTC))
+    later = {"last_run": "2030-06-11", "steps": {"a": {"ok": True}}}
+    cyc.stamp.write_text(json.dumps(later), encoding="utf-8")
+    # real clock D+1: a D+1 stamp is a genuine later day, and a D chain may not rewrite it
+    assert daily_cycle._write_stamp("2030-06-10", {"z": {"ok": True}}) is False
+    assert json.loads(cyc.stamp.read_text(encoding="utf-8")) == later
+    # real clock D: the same D+1 stamp is beyond the clock -- a clock error, overwritten
+    clock.set(datetime(2030, 6, 10, 23, 0, tzinfo=UTC))
+    assert daily_cycle._write_stamp("2030-06-10", {"z": {"ok": True}}) is True
+    doc = json.loads(cyc.stamp.read_text(encoding="utf-8"))
+    assert doc["last_run"] == "2030-06-10"
+    assert doc["steps"] == {"z": {"ok": True}}
+    assert doc["clock_corrections"][0]["from"] == "2030-06-11"
+
+
+# ----------------------------------------------------------------------------- v1.2 should-fix 1
+
+
+def test_should_fix_1_force_past_the_wait_still_waits_for_a_healthy_holder(cyc, monkeypatch):
+    """MT5-Daily with --force, past UNBOUNDED_WAIT_S, while the holder is measured ALIVE: it
+    keeps waiting and runs no step until the holder lets go -- then holds the lock itself."""
+    monkeypatch.delenv("HOURLY_PLAN", raising=False)
+    monkeypatch.setattr(daily_cycle, "UNBOUNDED_WAIT_S", 30.0)
+    polls_to_release = 10                                 # 150 s: five times the fallback wait
+    held = {"lk": _claim_alive(), "polls": 0}
+    events: list[str] = []
+
+    def sleep(_s):
+        held["polls"] += 1
+        events.append("poll")
+        if held["polls"] == polls_to_release:
+            held["lk"].close()
+            held["lk"] = None
+            events.append("released")
+
+    monkeypatch.setattr(daily_cycle.time, "sleep", sleep)
+
+    def step(n):
+        def fn():
+            events.append(n)
+            cyc.calls.append(n)
+        return fn
+
+    monkeypatch.setattr(daily_cycle, "STEPS", tuple((n, step(n)) for n in ("a", "b", "c")))
+    try:
+        assert daily_cycle.main(["--force"]) == 0
+    finally:
+        if held["lk"] is not None:
+            held["lk"].close()
+    assert events.index("released") < events.index("a"), "no step may run beside a live holder"
+    assert held["polls"] == polls_to_release
+    assert cyc.calls == ["a", "b", "c"]
+    rec = json.loads(cyc.stamp.read_text(encoding="utf-8"))["chain_lock"]
+    assert rec["state"] == "held" and "unlocked_steps" not in rec
+
+
+def test_should_fix_1_a_hung_live_holder_blocks_only_up_to_the_ceiling(cyc, monkeypatch):
+    monkeypatch.delenv("HOURLY_PLAN", raising=False)
+    monkeypatch.setattr(daily_cycle, "UNBOUNDED_WAIT_S", 30.0)
+    monkeypatch.setattr(daily_cycle, "HOLDER_MAX_WAIT_S", 90.0)
+    monkeypatch.setattr(daily_cycle.time, "sleep", lambda _s: None)
+    lk = _claim_alive()
+    try:
+        assert daily_cycle.main([]) == 0
+    finally:
+        lk.close()
+    assert cyc.calls == ["a", "b", "c"], "past the ceiling the day still runs"
+    rec = json.loads(cyc.stamp.read_text(encoding="utf-8"))["chain_lock"]
+    assert rec["state"] == "contended" and rec["unlocked_steps"] == ["a", "b", "c"]
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="kills a POSIX child holding flock")
+def test_should_fix_1_a_holder_that_dies_frees_the_waiter_at_once(cyc, monkeypatch):
+    monkeypatch.delenv("HOURLY_PLAN", raising=False)
+    script = (
+        "import sys, time\n"
+        "from pathlib import Path\n"
+        "sys.path[:0] = [sys.argv[1], sys.argv[2]]\n"
+        "import daily_cycle\n"
+        "daily_cycle.STAMP = Path(sys.argv[3])\n"
+        "lk = daily_cycle.ChainLock()\n"
+        "assert lk.try_acquire()\n"
+        "print('ready', flush=True)\n"
+        "time.sleep(300)\n")
+    proc = subprocess.Popen([sys.executable, "-c", script, str(_DESK), str(_DESK / "research"),
+                             str(cyc.stamp)], stdout=subprocess.PIPE, text=True)
+    try:
+        assert proc.stdout is not None and proc.stdout.readline().strip() == "ready"
+        assert daily_cycle._holder_health() == "alive"
+        sleeps: list[str] = []
+
+        def sleep(_s):
+            sleeps.append(daily_cycle._holder_health())
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait(timeout=30)
+
+        monkeypatch.setattr(daily_cycle.time, "sleep", sleep)
+        assert daily_cycle.main([]) == 0
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait(timeout=30)
+        if proc.stdout is not None:
+            proc.stdout.close()
+    # `time.sleep` is the process-wide function, so other code's sleeps land in the stub too;
+    # the chain's own wait is read from its log: one poll, because the kernel freed the lock.
+    assert sleeps[0] == "alive"
+    assert "chain lock acquired after 15s" in daily_cycle.LOG.read_text(encoding="utf-8")
+    assert cyc.calls == ["a", "b", "c"]
+    assert json.loads(cyc.stamp.read_text(encoding="utf-8"))["chain_lock"]["state"] == "held"
+    assert not daily_cycle._owner_path().exists(), "the owner sidecar is removed at release"
+
+
+def test_should_fix_1_a_chain_crossing_midnight_is_waited_for_then_the_new_day_runs_once(
+        cyc, monkeypatch):
+    """The D chain is still running at 00:05 on D+1 when MT5-Daily starts the D+1 chain. The
+    D+1 chain waits for it, then runs D+1's steps once -- no step twice, and the D chain's last
+    writes cannot reset D+1."""
+    monkeypatch.delenv("HOURLY_PLAN", raising=False)
+    monkeypatch.setattr(daily_cycle, "UNBOUNDED_WAIT_S", 30.0)
+    _fake_clock(monkeypatch, datetime(2030, 6, 11, 0, 5, tzinfo=UTC))
+    cyc.stamp.write_text(json.dumps({"last_run": "2030-06-10", "steps": {"a": {"ok": True}}}),
+                         encoding="utf-8")
+    held = {"lk": _claim_alive(), "polls": 0}
+    events: list[str] = []
+
+    def sleep(_s):
+        held["polls"] += 1
+        if held["polls"] == 4:                            # the D chain finishes its day
+            assert daily_cycle._write_stamp("2030-06-10", {"b": {"ok": True},
+                                                           "c": {"ok": True}})
+            held["lk"].close()
+            held["lk"] = None
+            events.append("released")
+
+    monkeypatch.setattr(daily_cycle.time, "sleep", sleep)
+
+    def step(n):
+        def fn():
+            events.append(n)
+            cyc.calls.append(n)
+        return fn
+
+    monkeypatch.setattr(daily_cycle, "STEPS", tuple((n, step(n)) for n in ("a", "b", "c")))
+    try:
+        assert daily_cycle.main([]) == 0
+    finally:
+        if held["lk"] is not None:
+            held["lk"].close()
+    assert events[0] == "released"
+    assert cyc.calls == ["a", "b", "c"]
+    stamp = json.loads(cyc.stamp.read_text(encoding="utf-8"))
+    assert stamp["last_run"] == "2030-06-11" and set(stamp["steps"]) == {"a", "b", "c"}
+    assert "clock_corrections" not in stamp
+
+
+def test_should_fix_1_an_unlocked_chain_waits_between_steps_for_a_holder_that_turns_healthy(
+        cyc, monkeypatch):
+    """The fallback starts unlocked behind an UNMEASURED holder. When the holder is later
+    measured alive, the chain waits before its next step instead of running it beside it."""
+    monkeypatch.delenv("HOURLY_PLAN", raising=False)
+    monkeypatch.setattr(daily_cycle, "UNBOUNDED_WAIT_S", 30.0)
+    held = {"h": _hold()}                                 # no sidecar: health unmeasured
+    events: list[str] = []
+    seen: dict[str, object] = {}
+
+    def sleep(_s):
+        events.append("poll")
+        if daily_cycle._holder_health() == "alive":
+            daily_cycle._owner_path().unlink()
+            held["h"].close()
+            held["h"] = None
+            events.append("released")
+
+    monkeypatch.setattr(daily_cycle.time, "sleep", sleep)
+
+    def a():
+        events.append("a")
+        daily_cycle._atomic_write(daily_cycle._owner_path(), json.dumps({
+            "pid": os.getpid(), "create_time": daily_cycle._process_start(os.getpid())}))
+
+    def c():
+        events.append("c")
+        seen["probe"] = daily_cycle._try_lock(daily_cycle._lock_path())
+
+    monkeypatch.setattr(daily_cycle, "STEPS", (("a", a), ("b", lambda: events.append("b")),
+                                               ("c", c)))
+    try:
+        assert daily_cycle.main([]) == 0
+    finally:
+        if held["h"] is not None:
+            held["h"].close()
+    assert events.index("a") < events.index("released") < events.index("b")
+    assert events[events.index("a") + 1] == "poll", "b waited for the healthy holder"
+    assert seen["probe"] is None, "and holds the lock from then on"
+    assert json.loads(cyc.stamp.read_text(encoding="utf-8"))["chain_lock"][
+        "unlocked_steps"] == ["a"]
+
+
+# ----------------------------------------------------------------------------- v1.2 should-fix 2
+
+
+def test_should_fix_2_the_stamp_is_written_atomically_with_a_retry(cyc, monkeypatch):
+    real = os.replace
+    fails = {"n": 2}
+
+    def flaky(src, dst):
+        if fails["n"]:
+            fails["n"] -= 1
+            raise PermissionError(13, "in use by a reader (Windows)")
+        return real(src, dst)
+
+    monkeypatch.setattr(daily_cycle.os, "replace", flaky)
+    monkeypatch.setattr(daily_cycle.time, "sleep", lambda _s: None)
+    assert daily_cycle._write_stamp("2030-06-10", {"a": {"ok": True}}) is True
+    assert fails["n"] == 0
+    assert json.loads(cyc.stamp.read_text(encoding="utf-8"))["last_run"] == "2030-06-10"
+    assert [p.name for p in cyc.stamp.parent.iterdir() if p.name.endswith(".tmp")] == []
+
+
+def test_should_fix_2_an_unparseable_stamp_is_never_overwritten(cyc, monkeypatch):
+    monkeypatch.setattr(daily_cycle.time, "sleep", lambda _s: None)
+    cyc.stamp.write_text('{"last_run": "2030-06-10", "steps": {"a"', encoding="utf-8")
+    before = cyc.stamp.read_bytes()
+    assert daily_cycle._write_stamp(datetime.now(UTC).date().isoformat(), {"b": {}}) is False
+    assert cyc.stamp.read_bytes() == before
+    assert "cannot be parsed" in daily_cycle.LOG.read_text(encoding="utf-8")
+
+
+def test_should_fix_2_an_unparseable_stamp_under_the_held_lock_is_kept_aside(cyc, monkeypatch):
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    cyc.stamp.write_text("{torn", encoding="utf-8")
+    assert daily_cycle.main([]) == 0
+    aside = [p for p in cyc.stamp.parent.iterdir() if ".corrupt-" in p.name]
+    assert len(aside) == 1 and aside[0].read_text(encoding="utf-8") == "{torn"
+    assert set(json.loads(cyc.stamp.read_text(encoding="utf-8"))["steps"]) == {"a", "b", "c"}
+
+
+# ----------------------------------------------------------------------------- v1.2 should-fix 3
+
+
+def test_should_fix_3_a_stand_down_is_a_declared_verdict_not_a_failure(monkeypatch):
+    import hourly_cycle
+
+    from libs.ops import completion, write_or_explain
+
+    assert hourly_cycle.VERDICT_EXITS["daily"] == (daily_cycle.EXIT_STOOD_DOWN,)
+    assert hourly_cycle._exit_outcome("daily", 75) == "verdict_exit=75"
+    assert hourly_cycle._exit_outcome("daily", 1) == "exit_code=1"
+    monkeypatch.setattr(hourly_cycle, "_run_tree", lambda *_a, **_k: type(
+        "R", (), {"returncode": 75, "stdout": "", "stderr": ""})())
+    out = hourly_cycle.daily()
+    assert "status" not in out, "a status would become the ledger outcome and read as FAILING"
+    assert out["exit_code"] == 75 and out["verdict_exit"] and out["noop_reason"]
+
+    snap = {"/x/artifact.json": {"exists": True, "mtime": 1.0, "size": 1}}
+    rec = write_or_explain.judge("daily", snap, snap, out,
+                                 verdict_exits=hourly_cycle.VERDICT_EXITS["daily"])
+    assert rec["verdict"] == write_or_explain.DECLARED_NO_OP
+    undeclared = write_or_explain.judge("daily", snap, snap, out, verdict_exits=())
+    assert undeclared["verdict"] == write_or_explain.LEG_FAILED, "the declaration is what saves it"
+
+    assert completion._failed(out) is None
+    assert completion._failed({"exit_code": 75}) is not None, "an undeclared 75 still fails"
+    assert completion._streak([{"outcome": "exit_code=1"}, {"outcome": "verdict_exit=75"}]) == 0
+    assert completion._streak([{"outcome": "verdict_exit=75"}, {"outcome": "exit_code=1"}]) == 1
+
+
+# ----------------------------------------------------------------------------- v1.2 nit
+
+
+def test_nit_a_step_raising_systemexit_75_is_a_failed_step_not_a_stand_down(cyc, monkeypatch):
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+
+    def b():
+        cyc.calls.append("b")
+        raise SystemExit(daily_cycle.EXIT_STOOD_DOWN)
+
+    monkeypatch.setattr(daily_cycle, "STEPS", (("a", lambda: cyc.calls.append("a")), ("b", b),
+                                               ("c", lambda: cyc.calls.append("c"))))
+    assert daily_cycle.main([]) == 1
+    assert cyc.calls == ["a", "b", "c"], "the chain goes on past the step that exited"
+    steps = json.loads(cyc.stamp.read_text(encoding="utf-8"))["steps"]
+    assert steps["b"]["ok"] is False and "SystemExit" in steps["b"]["error"]

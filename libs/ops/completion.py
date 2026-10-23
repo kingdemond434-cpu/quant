@@ -256,12 +256,23 @@ def _failed(result: Any) -> str | None:
     if status in ("MISSING", "FAILED", "ERROR"):
         return f"status {status}: {result.get('why') or result.get('note') or ''}".strip()
     code = result.get("exit_code")
+    if result.get("verdict_exit") and isinstance(code, int):
+        # The leg exited on a code it DECLARES as a verdict (hourly_cycle.VERDICT_EXITS), and
+        # said so in its result. `write_or_explain` already judges that on whether it wrote.
+        return None
     if code is None and result.get("timeout_s"):
         return f"stopped at its {result['timeout_s']}s budget before finishing"
     if isinstance(code, int) and code != 0:
         tail = str(result.get("tail") or "").strip().replace("\n", " ")[-160:]
         return f"exit {code}{': ' + tail if tail else ''}"
     return None
+
+
+def _ok_outcome(outcome: str) -> bool:
+    """A recorded outcome that is not a failure: "ok", or `verdict_exit=N` -- an exit code the leg
+    declares as a verdict (hourly_cycle.VERDICT_EXITS). `hourly_cycle._advance_watermark` already
+    counts both as a completed leg; reading the second as FAILING contradicted it."""
+    return outcome == "ok" or outcome.startswith("verdict_exit=")
 
 
 def _streak(runs: list[dict[str, Any]]) -> int:
@@ -272,7 +283,7 @@ def _streak(runs: list[dict[str, Any]]) -> int:
     """
     n = 0
     for row in reversed(runs):
-        if str(row.get("outcome") or "ok") == "ok":
+        if _ok_outcome(str(row.get("outcome") or "ok")):
             break
         n += 1
     return n
@@ -323,7 +334,7 @@ def judge(root: Path | None = None, now: datetime | None = None,
             continue
 
         why = _failed(mk.get(name))
-        if why is None and leg.last_outcome and leg.last_outcome != "ok":
+        if why is None and leg.last_outcome and not _ok_outcome(leg.last_outcome):
             why = f"last recorded outcome {leg.last_outcome!r}"
         if why is not None:
             leg.verdict, leg.why = FAILING, why
