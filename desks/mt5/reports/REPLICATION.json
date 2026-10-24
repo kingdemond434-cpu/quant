@@ -1,5 +1,5 @@
 {
- "at": "2026-10-24T02:43:28+00:00",
+ "at": "2026-10-24T03:44:27+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -18,100 +18,16 @@
  "n": 16,
  "counts": {
   "REPLICATED": 0,
-  "MISMATCH": 0,
-  "UNMEASURED": 16
+  "MISMATCH": 1,
+  "UNMEASURED": 15
  },
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "EURZAR@M15.carry.p=55e2dabcb8c43d1f",
-   "certificate": "external.EURZAR@M15.carry.p=55e2dabcb8c43d1f",
-   "fp": "f890df81001269f9",
-   "symbol": "EURZAR",
-   "family": "carry",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'carry'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPNOK@M15.carry.p=3411bcff02687f5a",
-   "certificate": "external.GBPNOK@M15.carry.p=3411bcff02687f5a",
-   "fp": "83aac9e2e9cf4ef6",
-   "symbol": "GBPNOK",
-   "family": "carry",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'carry'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPNOK@M15.carry.p=24d47079827c2dfe",
-   "certificate": "external.GBPNOK@M15.carry.p=24d47079827c2dfe",
-   "fp": "98efc0c955e3f200",
-   "symbol": "GBPNOK",
-   "family": "carry",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'carry'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPZAR@M15.carry.p=9d376193e24c48ff",
-   "certificate": "external.GBPZAR@M15.carry.p=9d376193e24c48ff",
-   "fp": "37b0372675ccd314",
-   "symbol": "GBPZAR",
-   "family": "carry",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'carry'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "NZDHUF@M15.carry.p=3411bcff02687f5a",
-   "certificate": "external.NZDHUF@M15.carry.p=3411bcff02687f5a",
-   "fp": "6b9454b7361a8119",
-   "symbol": "NZDHUF",
-   "family": "carry",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'carry'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "NZDHUF@M15.carry.p=226eb21153a3ed0e",
-   "certificate": "external.NZDHUF@M15.carry.p=226eb21153a3ed0e",
-   "fp": "2ab24fa6d9d23c2c",
-   "symbol": "NZDHUF",
-   "family": "carry",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'carry'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "NZDSGD@M30.pca_residual.p=766464baa8739f39",
-   "certificate": "external.NZDSGD@M30.pca_residual.p=766464baa8739f39",
-   "fp": "d43518f31d933ff5",
-   "symbol": "NZDSGD",
+   "key": "USDTHB@M5.pca_residual.p=dbc509e25a3337d9",
+   "certificate": "external.USDTHB@M5.pca_residual.p=dbc509e25a3337d9",
+   "fp": "805edd6493162aee",
+   "symbol": "USDTHB",
    "family": "pca_residual",
    "verdict": "UNMEASURED",
    "why": [
@@ -122,9 +38,23 @@
   },
   {
    "lane": "certificate",
-   "key": "CHFSGD@M5.pca_residual.p=e184347a0bbd1cc2",
-   "certificate": "external.CHFSGD@M5.pca_residual.p=e184347a0bbd1cc2",
-   "fp": "1d0519c76929bbee",
+   "key": "XAGEUR@M5.pca_residual.p=dbc509e25a3337d9",
+   "certificate": "external.XAGEUR@M5.pca_residual.p=dbc509e25a3337d9",
+   "fp": "31be431534910516",
+   "symbol": "XAGEUR",
+   "family": "pca_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'pca_residual'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "CHFSGD@M15.pca_residual.p=9f03548a72decb59",
+   "certificate": "external.CHFSGD@M15.pca_residual.p=9f03548a72decb59",
+   "fp": "72a827107baf9d36",
    "symbol": "CHFSGD",
    "family": "pca_residual",
    "verdict": "UNMEASURED",
@@ -135,34 +65,78 @@
    "theirs": {}
   },
   {
-   "lane": "forward",
-   "key": "USDMXN.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_session=ny_side_in_high=1_ttl_bars=96",
-   "symbol": "USDMXN",
-   "family": "macro_conditional",
+   "lane": "certificate",
+   "key": "NAS100@M15.pca_residual.p=9f03548a72decb59",
+   "certificate": "external.NAS100@M15.pca_residual.p=9f03548a72decb59",
+   "fp": "a1f7b06745b4574f",
+   "symbol": "NAS100",
+   "family": "pca_residual",
    "verdict": "UNMEASURED",
    "why": [
-    "no written specification in the spec book for family 'macro_conditional'"
+    "no written specification in the spec book for family 'pca_residual'"
    ],
    "ours": {},
-   "theirs": {},
-   "divergence": {}
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "GBPDKK@M15.pca_residual.p=e79b566a9f4a58f5",
+   "certificate": "external.GBPDKK@M15.pca_residual.p=e79b566a9f4a58f5",
+   "fp": "051fea75323496f7",
+   "symbol": "GBPDKK",
+   "family": "pca_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'pca_residual'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "AUDSGD@M15.pca_residual.p=1d4eb3af830df777",
+   "certificate": "external.AUDSGD@M15.pca_residual.p=1d4eb3af830df777",
+   "fp": "f2597d450ef69095",
+   "symbol": "AUDSGD",
+   "family": "pca_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'pca_residual'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "CHFSGD@M15.pca_residual.p=1d4eb3af830df777",
+   "certificate": "external.CHFSGD@M15.pca_residual.p=1d4eb3af830df777",
+   "fp": "592b2f9b59b0304f",
+   "symbol": "CHFSGD",
+   "family": "pca_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'pca_residual'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "AUDCAD@M30.clock_transition.p=caebb3dcbda3756e",
+   "certificate": "external.AUDCAD@M30.clock_transition.p=caebb3dcbda3756e",
+   "fp": "e0d3a1ebc25c1419",
+   "symbol": "AUDCAD",
+   "family": "clock_transition",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'clock_transition'"
+   ],
+   "ours": {},
+   "theirs": {}
   },
   {
    "lane": "forward",
-   "key": "USDMXN.macro_conditional.continuous@M30#atr_n=20_regime_high=0.7_rr=2.0_session=ny_side_in_high=1_ttl_bars=96",
-   "symbol": "USDMXN",
-   "family": "macro_conditional",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'macro_conditional'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "XTIUSD.cross_asset_residual.continuous#entry_z=2.5_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=240_rr=1.5_ttl_bars=48",
+   "key": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.0_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=120_rr=1.5_session=ny_ttl_bars=48",
    "symbol": "XTIUSD",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
@@ -175,7 +149,7 @@
   },
   {
    "lane": "forward",
-   "key": "XTIUSD.cross_asset_residual.continuous@M15#entry_z=2.0_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=120_rr=1.5_session=london_ttl_bars=48",
+   "key": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.0_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=240_rr=1.5_session=london_ttl_bars=48",
    "symbol": "XTIUSD",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
@@ -188,7 +162,7 @@
   },
   {
    "lane": "forward",
-   "key": "XTIUSD.cross_asset_residual.continuous@M15#entry_z=2.0_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=240_rr=1.5_session=ny_ttl_bars=48",
+   "key": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.0_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=240_rr=1.5_session=ny_ttl_bars=48",
    "symbol": "XTIUSD",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
@@ -201,7 +175,7 @@
   },
   {
    "lane": "forward",
-   "key": "XTIUSD.cross_asset_residual.continuous@M15#entry_z=2.5_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=120_rr=1.5_session=ny_ttl_bars=48",
+   "key": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.5_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=120_rr=1.5_session=ny_ttl_bars=48",
    "symbol": "XTIUSD",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
@@ -214,7 +188,7 @@
   },
   {
    "lane": "forward",
-   "key": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.0_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=120_rr=1.5_session=asia_ttl_bars=48",
+   "key": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.5_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=240_rr=1.5_session=ny_ttl_bars=48",
    "symbol": "XTIUSD",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
@@ -227,8 +201,72 @@
   },
   {
    "lane": "forward",
-   "key": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.0_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=120_rr=1.5_session=london_ttl_bars=48",
-   "symbol": "XTIUSD",
+   "key": "AUDCHF.overnight_gap_decay.asia#session=asia",
+   "symbol": "AUDCHF",
+   "family": "overnight_gap_decay",
+   "verdict": "MISMATCH",
+   "why": [
+    "FILLS disagree: 6 rebuilt vs 27 in the ledger",
+    "only 6/27 ledger trades have a rebuilt fill on the same bar and side",
+    "per-trade R disagrees: median |dR| = 0.581 > 0.25",
+    "summed P&L disagrees in SIGN: ledger -17.95R, rebuilt +1.37R",
+    "COST term spread_per_lot disagrees: rebuilt 1 vs frozen 6"
+   ],
+   "ours": {
+    "n_fills": 6,
+    "pnl_R": 1.372,
+    "cost": {
+     "spread_per_lot": 1.0,
+     "commission_per_lot": 2.0,
+     "quote_per_account": 0.92089,
+     "basis": "universe_registry"
+    },
+    "spec": "On the first bar of each day, if |open - previous close| >= gap_atr x ATR(atr_n), fade the gap: side against it, entry at the NEXT bar's open, stop stop_atr x ATR from the signal bar's open, target the signal bar's open plus |gap| x rr in the trade's favour, time exit after ttl_bars."
+   },
+   "theirs": {
+    "n_trades": 27,
+    "cost_fields": {
+     "spread_per_lot": 6.0,
+     "commission_per_lot": 2.0,
+     "contract_oz": 100000.0,
+     "quote_per_account": 0.94126,
+     "swap_per_lot_per_night": 0.0
+    },
+    "forward_start": "2026-10-07T12:21:14+00:00"
+   },
+   "divergence": {
+    "n_ledger": 27,
+    "n_rebuilt": 6,
+    "matched": 6,
+    "match_share": 0.222,
+    "fill_ratio": 0.222,
+    "median_abs_dR": 0.5806,
+    "pnl_ledger_R": -17.946,
+    "pnl_rebuilt_R": 1.372,
+    "open_ledger": false,
+    "open_rebuilt": false,
+    "cost_ratio_spread_per_lot": 0.167,
+    "cost_ratio_commission_per_lot": 1.0,
+    "cost_ratio_quote_per_account": 0.978
+   }
+  },
+  {
+   "lane": "forward",
+   "key": "AUDNZD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_side_mode=revert_ttl_bars=8",
+   "symbol": "AUDNZD",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "AUDNZD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
+   "symbol": "AUDNZD",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
    "why": [
@@ -239,82 +277,80 @@
    "divergence": {}
   }
  ],
- "quarantined": [],
+ "quarantined": [
+  "AUDCHF.overnight_gap_decay.asia#session=asia"
+ ],
  "unmeasured": [
   {
-   "what": "EURZAR@M15.carry.p=55e2dabcb8c43d1f",
-   "why": "no written specification in the spec book for family 'carry'"
-  },
-  {
-   "what": "GBPNOK@M15.carry.p=3411bcff02687f5a",
-   "why": "no written specification in the spec book for family 'carry'"
-  },
-  {
-   "what": "GBPNOK@M15.carry.p=24d47079827c2dfe",
-   "why": "no written specification in the spec book for family 'carry'"
-  },
-  {
-   "what": "GBPZAR@M15.carry.p=9d376193e24c48ff",
-   "why": "no written specification in the spec book for family 'carry'"
-  },
-  {
-   "what": "NZDHUF@M15.carry.p=3411bcff02687f5a",
-   "why": "no written specification in the spec book for family 'carry'"
-  },
-  {
-   "what": "NZDHUF@M15.carry.p=226eb21153a3ed0e",
-   "why": "no written specification in the spec book for family 'carry'"
-  },
-  {
-   "what": "NZDSGD@M30.pca_residual.p=766464baa8739f39",
+   "what": "USDTHB@M5.pca_residual.p=dbc509e25a3337d9",
    "why": "no written specification in the spec book for family 'pca_residual'"
   },
   {
-   "what": "CHFSGD@M5.pca_residual.p=e184347a0bbd1cc2",
+   "what": "XAGEUR@M5.pca_residual.p=dbc509e25a3337d9",
    "why": "no written specification in the spec book for family 'pca_residual'"
   },
   {
-   "what": "USDMXN.macro_conditional.continuous@M15#atr_n=20_regime_high=0.7_rr=2.0_session=ny_side_in_high=1_ttl_bars=96",
-   "why": "no written specification in the spec book for family 'macro_conditional'"
+   "what": "CHFSGD@M15.pca_residual.p=9f03548a72decb59",
+   "why": "no written specification in the spec book for family 'pca_residual'"
   },
   {
-   "what": "USDMXN.macro_conditional.continuous@M30#atr_n=20_regime_high=0.7_rr=2.0_session=ny_side_in_high=1_ttl_bars=96",
-   "why": "no written specification in the spec book for family 'macro_conditional'"
+   "what": "NAS100@M15.pca_residual.p=9f03548a72decb59",
+   "why": "no written specification in the spec book for family 'pca_residual'"
   },
   {
-   "what": "XTIUSD.cross_asset_residual.continuous#entry_z=2.5_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=240_rr=1.5_ttl_bars=48",
+   "what": "GBPDKK@M15.pca_residual.p=e79b566a9f4a58f5",
+   "why": "no written specification in the spec book for family 'pca_residual'"
+  },
+  {
+   "what": "AUDSGD@M15.pca_residual.p=1d4eb3af830df777",
+   "why": "no written specification in the spec book for family 'pca_residual'"
+  },
+  {
+   "what": "CHFSGD@M15.pca_residual.p=1d4eb3af830df777",
+   "why": "no written specification in the spec book for family 'pca_residual'"
+  },
+  {
+   "what": "AUDCAD@M30.clock_transition.p=caebb3dcbda3756e",
+   "why": "no written specification in the spec book for family 'clock_transition'"
+  },
+  {
+   "what": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.0_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=120_rr=1.5_session=ny_ttl_bars=48",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "XTIUSD.cross_asset_residual.continuous@M15#entry_z=2.0_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=120_rr=1.5_session=london_ttl_bars=48",
+   "what": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.0_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=240_rr=1.5_session=london_ttl_bars=48",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "XTIUSD.cross_asset_residual.continuous@M15#entry_z=2.0_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=240_rr=1.5_session=ny_ttl_bars=48",
+   "what": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.0_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=240_rr=1.5_session=ny_ttl_bars=48",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "XTIUSD.cross_asset_residual.continuous@M15#entry_z=2.5_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=120_rr=1.5_session=ny_ttl_bars=48",
+   "what": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.5_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=120_rr=1.5_session=ny_ttl_bars=48",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.0_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=120_rr=1.5_session=asia_ttl_bars=48",
+   "what": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.5_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=240_rr=1.5_session=ny_ttl_bars=48",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "XTIUSD.cross_asset_residual.continuous@M30#entry_z=2.0_factor_symbols=['USDCAD', 'US500', 'XAUUSD']_lookback=120_rr=1.5_session=london_ttl_bars=48",
+   "what": "AUDNZD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_side_mode=revert_ttl_bars=8",
+   "why": "no written specification in the spec book for family 'cross_asset_residual'"
+  },
+  {
+   "what": "AUDNZD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=asia_side_mode=revert_ttl_bars=8",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   }
  ],
  "recorded": {
-  "quarantined": 0,
-  "memory": 0,
-  "candidates": 0
+  "quarantined": 1,
+  "memory": 1,
+  "candidates": 209
  },
  "cursor": {
-  "forward": 882,
-  "at": "2026-10-24T01:41:46+00:00",
-  "certificates": 211
+  "forward": 890,
+  "at": "2026-10-24T02:43:28+00:00",
+  "certificates": 219
  },
  "notes": [],
  "independence": {
@@ -331,24 +367,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\EURZAR_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPZAR_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDHUF_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDHUF_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDSGD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFSGD_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDMXN_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDMXN_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_H1.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDTHB_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAGEUR_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFSGD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPDKK_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\CHFSGD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCAD_M30.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_M30.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDCHF_H1.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDNZD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDNZD_M5.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 18.91
+ "seconds": 110.83
 }
