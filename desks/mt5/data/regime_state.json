@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-24T14:45:36.486935+00:00",
+  "swept_at": "2026-10-24T15:00:21.796455+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -338,8 +338,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.1072,
+      "shadow_n": 65,
+      "shadow_exp_r": -0.1388,
       "woke_on_shadow": false
     },
     "BTCUSD|cross_asset_residual_continuous": {
@@ -1515,8 +1515,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 61,
-      "shadow_exp_r": 0.7588,
+      "shadow_n": 90,
+      "shadow_exp_r": 0.2185,
       "woke_on_shadow": false
     },
     "EURNOK|carry_continuous": {
