@@ -2298,7 +2298,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.003364,
         "joined": "joined on 'xauusd_session_range_breakout_asia_0_wb_12' (funded book)",
-        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.34% heat"
+        "why": "same admission scan (2026-10-24T03:05:47.296124+00:00) as the last reading -- a second reading needs a new scan. admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.34% heat"
       },
       "admit_streak": 1,
       "admit_scan": "2026-10-24T03:05:47.296124+00:00",
