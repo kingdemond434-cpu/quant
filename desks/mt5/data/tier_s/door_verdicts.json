@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-24T21:44:50.797841+00:00",
+ "generated_utc": "2026-10-24T22:47:46.093936+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -3793,7 +3793,7 @@
    }
   },
   "external.NZDJPY@M5.cross_asset_residual.p=1fa92b6be25bdab5": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -3804,7 +3804,7 @@
    }
   },
   "external.NZDJPY@M5.cross_asset_residual.p=d05f9c02d4f27093": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -3815,7 +3815,7 @@
    }
   },
   "external.US30@M5.cross_asset_residual.p=474bd5a40ccde0c6": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -3826,7 +3826,7 @@
    }
   },
   "external.USCOCOA@M5.cross_asset_residual.p=474bd5a40ccde0c6": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -3837,7 +3837,7 @@
    }
   },
   "external.XAGEUR@M5.cross_asset_residual.p=bbf366d8b7df745d": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -3848,7 +3848,7 @@
    }
   },
   "external.XAGEUR@M5.cross_asset_residual.p=d05f9c02d4f27093": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -3859,7 +3859,7 @@
    }
   },
   "external.XAUAUD@M5.cross_asset_residual.p=1fa92b6be25bdab5": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -3870,7 +3870,7 @@
    }
   },
   "external.XAUAUD@M5.cross_asset_residual.p=474bd5a40ccde0c6": {
-   "verdict": "FAILED",
+   "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -3881,7 +3881,7 @@
    }
   },
   "external.XAUAUD@M5.cross_asset_residual.p=29786a0ba00587d4": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -3892,7 +3892,7 @@
    }
   },
   "external.XAUEUR@M5.cross_asset_residual.p=1fa92b6be25bdab5": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -3903,7 +3903,7 @@
    }
   },
   "external.XAUEUR@M5.cross_asset_residual.p=474bd5a40ccde0c6": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -3914,7 +3914,7 @@
    }
   },
   "external.XAUEUR@M5.cross_asset_residual.p=29786a0ba00587d4": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -3925,7 +3925,7 @@
    }
   },
   "external.XCUUSD@M5.cross_asset_residual.p=29786a0ba00587d4": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -3936,7 +3936,7 @@
    }
   },
   "external.XTIUSD@M5.cross_asset_residual.p=1fa92b6be25bdab5": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -3947,7 +3947,7 @@
    }
   },
   "external.XTIUSD@M5.cross_asset_residual.p=474bd5a40ccde0c6": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
@@ -3958,7 +3958,7 @@
    }
   },
   "external.GBPSGD@M15.cross_asset_residual.p=76a842aadaf3bd86": {
-   "verdict": "CHALLENGED",
+   "verdict": "FAILED",
    "review_failed": [],
    "family": "cross_asset_residual",
    "theory": {
