@@ -1,5 +1,5 @@
 {
- "at": "2026-10-24T12:45:06+00:00",
+ "at": "2026-10-24T13:41:11+00:00",
  "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
  "dry_run": false,
  "sharpe_metric_version": "daily-r-per-period-v2",
@@ -24,9 +24,93 @@
  "verdicts": [
   {
    "lane": "certificate",
-   "key": "XTIUSD@M30.cross_asset_residual.p=8de5a3b89f6be0db",
-   "certificate": "external.XTIUSD@M30.cross_asset_residual.p=8de5a3b89f6be0db",
-   "fp": "2a69e7be08bcc656",
+   "key": "USDTHB@M30.cross_asset_residual.p=6f7e685b11cb2ccf",
+   "certificate": "external.USDTHB@M30.cross_asset_residual.p=6f7e685b11cb2ccf",
+   "fp": "7959b15d8b7fecab",
+   "symbol": "USDTHB",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "USDZAR@M30.cross_asset_residual.p=6f7e685b11cb2ccf",
+   "certificate": "external.USDZAR@M30.cross_asset_residual.p=6f7e685b11cb2ccf",
+   "fp": "8831902c9faf5814",
+   "symbol": "USDZAR",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "XAUAUD@M30.cross_asset_residual.p=994638ee9bb08b37",
+   "certificate": "external.XAUAUD@M30.cross_asset_residual.p=994638ee9bb08b37",
+   "fp": "ea1b4b811a95ecaf",
+   "symbol": "XAUAUD",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "XAUEUR@M30.cross_asset_residual.p=994638ee9bb08b37",
+   "certificate": "external.XAUEUR@M30.cross_asset_residual.p=994638ee9bb08b37",
+   "fp": "301da337038e0557",
+   "symbol": "XAUEUR",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "XAUEUR@M30.cross_asset_residual.p=6f7e685b11cb2ccf",
+   "certificate": "external.XAUEUR@M30.cross_asset_residual.p=6f7e685b11cb2ccf",
+   "fp": "a801f7a346973fcc",
+   "symbol": "XAUEUR",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "XBRUSD@M30.cross_asset_residual.p=994638ee9bb08b37",
+   "certificate": "external.XBRUSD@M30.cross_asset_residual.p=994638ee9bb08b37",
+   "fp": "614ab3bb03c8d0d0",
+   "symbol": "XBRUSD",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {}
+  },
+  {
+   "lane": "certificate",
+   "key": "XTIUSD@M30.cross_asset_residual.p=994638ee9bb08b37",
+   "certificate": "external.XTIUSD@M30.cross_asset_residual.p=994638ee9bb08b37",
+   "fp": "e53ae56ec9b9a4c8",
    "symbol": "XTIUSD",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
@@ -38,94 +122,10 @@
   },
   {
    "lane": "certificate",
-   "key": "AUDSGD@M30.cross_asset_residual.p=fae8c7e83e650066",
-   "certificate": "external.AUDSGD@M30.cross_asset_residual.p=fae8c7e83e650066",
-   "fp": "120879d80ace4e85",
-   "symbol": "AUDSGD",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "AUDSGD@M30.cross_asset_residual.p=b83a0e55465f3005",
-   "certificate": "external.AUDSGD@M30.cross_asset_residual.p=b83a0e55465f3005",
-   "fp": "db94bb83234f65bf",
-   "symbol": "AUDSGD",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPDKK@M30.cross_asset_residual.p=994638ee9bb08b37",
-   "certificate": "external.GBPDKK@M30.cross_asset_residual.p=994638ee9bb08b37",
-   "fp": "599cd94351a685c7",
-   "symbol": "GBPDKK",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPDKK@M30.cross_asset_residual.p=6f7e685b11cb2ccf",
-   "certificate": "external.GBPDKK@M30.cross_asset_residual.p=6f7e685b11cb2ccf",
-   "fp": "3219f051f6c8e2b8",
-   "symbol": "GBPDKK",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPJPY@M30.cross_asset_residual.p=ea558f78fe623acd",
-   "certificate": "external.GBPJPY@M30.cross_asset_residual.p=ea558f78fe623acd",
-   "fp": "1ac302a701e9078d",
-   "symbol": "GBPJPY",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPJPY@M30.cross_asset_residual.p=994638ee9bb08b37",
-   "certificate": "external.GBPJPY@M30.cross_asset_residual.p=994638ee9bb08b37",
-   "fp": "1c71c393c11b7fd0",
-   "symbol": "GBPJPY",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {}
-  },
-  {
-   "lane": "certificate",
-   "key": "GBPSEK@M30.cross_asset_residual.p=9beff26fe1585971",
-   "certificate": "external.GBPSEK@M30.cross_asset_residual.p=9beff26fe1585971",
-   "fp": "b4ffc9eff5ca78e0",
-   "symbol": "GBPSEK",
+   "key": "XTIUSD@M30.cross_asset_residual.p=6f7e685b11cb2ccf",
+   "certificate": "external.XTIUSD@M30.cross_asset_residual.p=6f7e685b11cb2ccf",
+   "fp": "a67dc40e4a80222b",
+   "symbol": "XTIUSD",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
    "why": [
@@ -136,8 +136,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
-   "symbol": "GBPJPY",
+   "key": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8",
+   "symbol": "NAS100",
    "family": "cross_asset_residual",
    "verdict": "UNMEASURED",
    "why": [
@@ -149,8 +149,73 @@
   },
   {
    "lane": "forward",
-   "key": "GBPJPY.macro_conditional.asia@M5",
-   "symbol": "GBPJPY",
+   "key": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "NAS100",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "NAS100",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_side_mode=revert_ttl_bars=8",
+   "symbol": "NAS100",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=3.0_factor_symbols=['USDCHF', 'USDDKK']_lookback=240_side_mode=revert_ttl_bars=8",
+   "symbol": "NAS100",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NZDCAD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=72",
+   "symbol": "NZDCAD",
+   "family": "cross_asset_residual",
+   "verdict": "UNMEASURED",
+   "why": [
+    "no written specification in the spec book for family 'cross_asset_residual'"
+   ],
+   "ours": {},
+   "theirs": {},
+   "divergence": {}
+  },
+  {
+   "lane": "forward",
+   "key": "NZDCAD.macro_conditional.asia@M5#session=ny",
+   "symbol": "NZDCAD",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -162,73 +227,8 @@
   },
   {
    "lane": "forward",
-   "key": "GBPNOK.macro_conditional.asia@M5",
-   "symbol": "GBPNOK",
-   "family": "macro_conditional",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'macro_conditional'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPSEK.cross_asset_residual.asia@M15#factor_symbols=['GER40']_ttl_bars=6",
-   "symbol": "GBPSEK",
-   "family": "cross_asset_residual",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'cross_asset_residual'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPSEK.macro_conditional.asia@M5#session=ny",
-   "symbol": "GBPSEK",
-   "family": "macro_conditional",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'macro_conditional'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPSEK.macro_conditional.asia@M5",
-   "symbol": "GBPSEK",
-   "family": "macro_conditional",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'macro_conditional'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPSGD.macro_conditional.asia@M5",
-   "symbol": "GBPSGD",
-   "family": "macro_conditional",
-   "verdict": "UNMEASURED",
-   "why": [
-    "no written specification in the spec book for family 'macro_conditional'"
-   ],
-   "ours": {},
-   "theirs": {},
-   "divergence": {}
-  },
-  {
-   "lane": "forward",
-   "key": "GBPZAR.macro_conditional.asia@M5",
-   "symbol": "GBPZAR",
+   "key": "NZDCAD.macro_conditional.asia@M5",
+   "symbol": "NZDCAD",
    "family": "macro_conditional",
    "verdict": "UNMEASURED",
    "why": [
@@ -242,67 +242,67 @@
  "quarantined": [],
  "unmeasured": [
   {
-   "what": "XTIUSD@M30.cross_asset_residual.p=8de5a3b89f6be0db",
+   "what": "USDTHB@M30.cross_asset_residual.p=6f7e685b11cb2ccf",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "AUDSGD@M30.cross_asset_residual.p=fae8c7e83e650066",
+   "what": "USDZAR@M30.cross_asset_residual.p=6f7e685b11cb2ccf",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "AUDSGD@M30.cross_asset_residual.p=b83a0e55465f3005",
+   "what": "XAUAUD@M30.cross_asset_residual.p=994638ee9bb08b37",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "GBPDKK@M30.cross_asset_residual.p=994638ee9bb08b37",
+   "what": "XAUEUR@M30.cross_asset_residual.p=994638ee9bb08b37",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "GBPDKK@M30.cross_asset_residual.p=6f7e685b11cb2ccf",
+   "what": "XAUEUR@M30.cross_asset_residual.p=6f7e685b11cb2ccf",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "GBPJPY@M30.cross_asset_residual.p=ea558f78fe623acd",
+   "what": "XBRUSD@M30.cross_asset_residual.p=994638ee9bb08b37",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "GBPJPY@M30.cross_asset_residual.p=994638ee9bb08b37",
+   "what": "XTIUSD@M30.cross_asset_residual.p=994638ee9bb08b37",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "GBPSEK@M30.cross_asset_residual.p=9beff26fe1585971",
+   "what": "XTIUSD@M30.cross_asset_residual.p=6f7e685b11cb2ccf",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "GBPJPY.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=ny_side_mode=revert_ttl_bars=8",
+   "what": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8",
    "why": "no written specification in the spec book for family 'cross_asset_residual'"
   },
   {
-   "what": "GBPJPY.macro_conditional.asia@M5",
+   "what": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX', 'UST10Y']_lookback=240_side_mode=revert_ttl_bars=72",
+   "why": "no written specification in the spec book for family 'cross_asset_residual'"
+  },
+  {
+   "what": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=72",
+   "why": "no written specification in the spec book for family 'cross_asset_residual'"
+  },
+  {
+   "what": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.5_factor_symbols=['USDZAR', 'USDJPY']_lookback=240_side_mode=revert_ttl_bars=8",
+   "why": "no written specification in the spec book for family 'cross_asset_residual'"
+  },
+  {
+   "what": "NAS100.cross_asset_residual.asia@M15#beta_win=240_entry_z=3.0_factor_symbols=['USDCHF', 'USDDKK']_lookback=240_side_mode=revert_ttl_bars=8",
+   "why": "no written specification in the spec book for family 'cross_asset_residual'"
+  },
+  {
+   "what": "NZDCAD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['USDX']_lookback=240_side_mode=revert_ttl_bars=72",
+   "why": "no written specification in the spec book for family 'cross_asset_residual'"
+  },
+  {
+   "what": "NZDCAD.macro_conditional.asia@M5#session=ny",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   },
   {
-   "what": "GBPNOK.macro_conditional.asia@M5",
-   "why": "no written specification in the spec book for family 'macro_conditional'"
-  },
-  {
-   "what": "GBPSEK.cross_asset_residual.asia@M15#factor_symbols=['GER40']_ttl_bars=6",
-   "why": "no written specification in the spec book for family 'cross_asset_residual'"
-  },
-  {
-   "what": "GBPSEK.macro_conditional.asia@M5#session=ny",
-   "why": "no written specification in the spec book for family 'macro_conditional'"
-  },
-  {
-   "what": "GBPSEK.macro_conditional.asia@M5",
-   "why": "no written specification in the spec book for family 'macro_conditional'"
-  },
-  {
-   "what": "GBPSGD.macro_conditional.asia@M5",
-   "why": "no written specification in the spec book for family 'macro_conditional'"
-  },
-  {
-   "what": "GBPZAR.macro_conditional.asia@M5",
+   "what": "NZDCAD.macro_conditional.asia@M5",
    "why": "no written specification in the spec book for family 'macro_conditional'"
   }
  ],
@@ -312,9 +312,9 @@
   "candidates": 0
  },
  "cursor": {
-  "forward": 962,
-  "at": "2026-10-24T11:44:11+00:00",
-  "certificates": 291
+  "forward": 970,
+  "at": "2026-10-24T12:45:06+00:00",
+  "certificates": 299
  },
  "notes": [],
  "independence": {
@@ -331,24 +331,24 @@
    "external_shadow"
   ],
   "bars_read_by_this_module": [
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDTHB_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\USDZAR_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUAUD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XAUEUR_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XBRUSD_M30.parquet",
    "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\AUDSGD_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPDKK_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPDKK_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_M30.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPJPY_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPNOK_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_M15.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSEK_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPSGD_M5.parquet",
-   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\GBPZAR_M5.parquet"
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\XTIUSD_M30.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NAS100_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_M15.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_M5.parquet",
+   "C:\\opt\\quant\\desks\\mt5\\data\\universe\\NZDCAD_M5.parquet"
   ],
   "why": "the lane is handed the written rule, the parameters, the data name and the cost terms; signal, fills, exits and costs are rebuilt here and never imported"
  },
- "seconds": 77.28
+ "seconds": 22.71
 }
