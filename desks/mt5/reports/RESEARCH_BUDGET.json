@@ -1,5 +1,5 @@
 {
- "at": "2026-10-24T01:03:24+00:00",
+ "at": "2026-10-24T01:06:29+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,7 +9,7 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-10-24T01:01:51+00:00",
+   "at": "2026-10-24T01:05:45+00:00",
    "bandit_at": "2026-10-23T01:17:47.397802+00:00",
    "hour": "2026-10-24T01",
    "arm": "treated",
@@ -21,14 +21,14 @@
    "surplus_s": 1619.3,
    "surplus_why": "department 'discovery' measured spare 1619s/hour",
    "contract": {
-    "n_treated": 32,
+    "n_treated": 31,
     "n_control": 10,
-    "mean_treated": 0.625,
+    "mean_treated": 0.612903,
     "mean_control": 0.1,
-    "delta": 0.525,
-    "t": 3.962,
+    "delta": 0.512903,
+    "t": 3.833,
     "verdict": "ADMITTED",
-    "why": "Welch t=3.962 over 32 treated vs 10 held-out leg-runs in the last 14 days",
+    "why": "Welch t=3.833 over 31 treated vs 10 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "trial": true,
@@ -112,7 +112,7 @@
   }
  },
  "authoritative": true,
- "authority_why": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=3.962)",
+ "authority_why": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=3.833)",
  "contract": {
   "gain": "INFO_PER_COMPUTE",
   "metric": "control_arm.admitted",
@@ -124,14 +124,14 @@
   "admitted": 1.0,
   "legs": {
    "alpha_evolution": {
-    "n_treated": 32,
+    "n_treated": 31,
     "n_control": 10,
-    "mean_treated": 0.625,
+    "mean_treated": 0.612903,
     "mean_control": 0.1,
-    "delta": 0.525,
-    "t": 3.962,
+    "delta": 0.512903,
+    "t": 3.833,
     "verdict": "ADMITTED",
-    "why": "Welch t=3.962 over 32 treated vs 10 held-out leg-runs in the last 14 days",
+    "why": "Welch t=3.833 over 31 treated vs 10 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "deepen": {
