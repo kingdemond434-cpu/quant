@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-23T01:17:47.397802+00:00",
+ "generated_utc": "2026-10-24T06:17:36.808751+00:00",
  "controller_variant": "A",
  "shares": {
   "new_mechanism": 0.0818,
@@ -15,9 +15,9 @@
   "external_screen": 0.0182
  },
  "authoritative": true,
- "authority_evidence": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=4.106); cycle_pricing: every leg ran on its base budget (no price moved a leg's seconds)",
+ "authority_evidence": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=4.105); cycle_pricing: no leg has asked cycle_pricing for its budget",
  "research_budget_authoritative": true,
- "research_budget_why": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=4.106)",
+ "research_budget_why": "the hourly cycle spent by the budget, and the held-out arm measured the gain: alpha_evolution=480s (floor 240s, contract ADMITTED t=4.105)",
  "research_budget_contract": {
   "gain": "INFO_PER_COMPUTE",
   "metric": "control_arm.admitted",
