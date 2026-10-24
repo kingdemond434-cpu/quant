@@ -1,5 +1,5 @@
 {
- "at": "2026-10-24T16:58:28+00:00",
+ "at": "2026-10-24T17:54:58+00:00",
  "verdicts": {
   "status": "MEASURED",
   "rows_total": 998885,
@@ -31,11 +31,11 @@
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 17100,
+   "24h": 17085,
    "7d": 321347
   },
   "per_hour": {
-   "24h": 712.5,
+   "24h": 711.875,
    "7d": 1912.78
   }
  },
@@ -45,13 +45,13 @@
  "first_judged_per_day": 0.0,
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": true,
- "created_per_day": 17100.0,
+ "created_per_day": 17085.0,
  "backlog": 1231968,
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\JUDGE_COVERAGE.json totals.unjudged_total",
  "eta_to_drain": {
   "status": "GROWING",
   "hours": null,
-  "net_per_day": -17100.0,
+  "net_per_day": -17085.0,
   "why": "the judge returns fewer verdicts an hour than the desk creates cells; the backlog cannot drain at this rate"
  },
  "workers_planned": 18,
