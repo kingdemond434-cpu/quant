@@ -1,9 +1,9 @@
 {
- "generated_utc": "2026-10-23T17:05:21.710556+00:00",
+ "generated_utc": "2026-10-24T02:11:22.385914+00:00",
  "stages": {
   "intake": {
-   "files": 51881,
-   "files_7d": 6523,
+   "files": 51948,
+   "files_7d": 6194,
    "rows_recent_files": 3078
   },
   "proposers": {
@@ -32,8 +32,8 @@
    "candidates": 30560
   },
   "deepening": {
-   "queued": 873,
-   "decided_total": 54010,
+   "queued": 879,
+   "decided_total": 54067,
    "backlog": 0
   },
   "judged": {
@@ -55,11 +55,11 @@
    "clock_rows": 876,
    "clocks_ticked_24h": 857,
    "clocks_ticked_7d": 870,
-   "last_tick": "2026-10-23T17:04:38+00:00",
+   "last_tick": "2026-10-24T02:11:02+00:00",
    "engine_silent_hours": 0.0,
    "n_certificates": 1048,
    "n_enrolled": 872,
-   "n_accruing": 567,
+   "n_accruing": 563,
    "n_blocked": 17,
    "n_missing": 0,
    "n_overdue": 0,
@@ -68,18 +68,18 @@
     "IDENTITY_BROKEN": 13,
     "BLOCKED_NO_BARS": 4
    },
-   "census_at": "2026-10-23T14:55:08+00:00"
+   "census_at": "2026-10-23T23:04:37+00:00"
   },
   "recommendations": {
    "total": 784,
    "open": 216,
-   "open_median_age_days": 57.0
+   "open_median_age_days": 58.0
   }
  },
  "conversion": {
   "intake_to_compiled": 9.9285,
   "judged_to_certified": 0.0011,
-  "certified_to_forward": 0.541,
+  "certified_to_forward": 0.5372,
   "certified_to_clock": 0.8321
  },
  "bottleneck": "none obvious"
