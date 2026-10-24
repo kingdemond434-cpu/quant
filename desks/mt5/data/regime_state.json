@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-24T06:45:46.196550+00:00",
+  "swept_at": "2026-10-24T07:00:27.397579+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -625,7 +625,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 50,
-      "shadow_exp_r": 0.2043,
+      "shadow_exp_r": 0.2204,
       "woke_on_shadow": false
     },
     "CHFDKK|formula_continuous": {
