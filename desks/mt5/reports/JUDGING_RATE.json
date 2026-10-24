@@ -1,5 +1,5 @@
 {
- "at": "2026-10-24T07:01:13+00:00",
+ "at": "2026-10-24T07:44:20+00:00",
  "verdicts": {
   "status": "MEASURED",
   "rows_total": 998885,
@@ -8,35 +8,35 @@
   "counts": {
    "1h": 0,
    "24h": 0,
-   "7d": 123669
+   "7d": 111539
   },
   "count_basis": "changed verdict events; unchanged retests do not append",
   "first_terminal_counts": {
    "1h": 0,
    "24h": 0,
-   "7d": 83941
+   "7d": 77588
   },
   "first_terminal_cells": 381161,
   "first_terminal_per_hour": {
    "1h": 0.0,
    "24h": 0.0,
-   "7d": 499.649
+   "7d": 461.833
   },
   "per_hour": {
    "1h": 0.0,
    "24h": 0.0,
-   "7d": 736.125
+   "7d": 663.923
   }
  },
  "created": {
   "status": "MEASURED",
   "counts": {
    "24h": 13394,
-   "7d": 318930
+   "7d": 316940
   },
   "per_hour": {
    "24h": 558.083,
-   "7d": 1898.393
+   "7d": 1886.548
   }
  },
  "verdicts_per_hour": 0.0,
