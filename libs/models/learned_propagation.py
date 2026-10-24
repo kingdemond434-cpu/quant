@@ -51,6 +51,17 @@ import pandas as pd
 MIN_TRAIN = 500
 REFIT_EVERY = 21
 TRAIN_WINDOW = 1000
+#: REGIME-TRIGGERED REFITS (GAP_MAP row 29; the CN shops refit when the regime moves, not on a
+#: calendar). The state is the panel's volatility level against its own trailing year: the
+#: cross-sectional median of log sigma[t] (each instrument's causal EWMA vol, known at t) minus
+#: its mean over the previous REGIME_LONG rows. Outside +-log(REGIME_BAND) the panel is in a
+#: high/low-vol regime; a change of state at row t is a BREAK, and the model is refitted at
+#: t+1 on rows from the break onward (at least POST_BREAK_MIN of them) as well as on the
+#: clock. Declared before any result, never searched; one more grid entry per model, charged.
+REGIME_LONG = 250
+REGIME_BAND = 1.5
+POST_BREAK_MIN = 250
+REFIT_MODES = ("clock", "regime")
 #: Ridge penalty as a multiple of the row count on standardised columns: the fitted slope is
 #: shrunk by ~1/(1 + alpha). Daily returns are mostly noise, so the shrinkage is heavy on purpose.
 RIDGE_ALPHA = 0.5
@@ -72,12 +83,14 @@ GNN_GRID: tuple[dict[str, Any], ...] = (
     {"adjacency": "lead_lag", "layers": 2},
     {"adjacency": "corr", "layers": 1},
     {"adjacency": "corr", "layers": 2},
+    {"adjacency": "lead_lag", "layers": 1, "refit": "regime"},
 )
 ATTENTION_GRID: tuple[dict[str, Any], ...] = (
     {"heads": 1, "lookback": 20},
     {"heads": 2, "lookback": 20},
     {"heads": 1, "lookback": 10},
     {"heads": 2, "lookback": 10},
+    {"heads": 1, "lookback": 20, "refit": "regime"},
 )
 ADJACENCIES = ("lead_lag", "corr")
 #: Random dilated convolution features (ROCKET, Dempster et al. 2020) over each node's recent
@@ -88,6 +101,7 @@ ROCKET_GRID: tuple[dict[str, Any], ...] = (
     {"kernels": 128, "lookback": 32},
     {"kernels": 64, "lookback": 16},
     {"kernels": 128, "lookback": 16},
+    {"kernels": 64, "lookback": 32, "refit": "regime"},
 )
 ROCKET_KLEN = 9
 ROCKET_SEED = 13
@@ -100,6 +114,7 @@ SIG_GRID: tuple[dict[str, Any], ...] = (
     {"depth": 3, "lookback": 10},
     {"depth": 2, "lookback": 20},
     {"depth": 3, "lookback": 20},
+    {"depth": 2, "lookback": 10, "refit": "regime"},
 )
 #: Deep autoencoder over the whole panel's own features on a date: tanh encoder -> linear latent
 #: code -> linear decoder, trained on the walk-forward training window only.
@@ -108,6 +123,7 @@ AE_GRID: tuple[dict[str, Any], ...] = (
     {"latent": 6, "hidden": 16},
     {"latent": 3, "hidden": 32},
     {"latent": 6, "hidden": 32},
+    {"latent": 3, "hidden": 16, "refit": "regime"},
 )
 AE_LR = 0.005
 AE_EPOCHS_FIRST = 60
@@ -289,25 +305,66 @@ def fit_ridge(x: np.ndarray, y: np.ndarray, alpha: float = RIDGE_ALPHA) -> Ridge
 
 # ========================================================================= walk-forward
 def refit_points(t_n: int, min_train: int = MIN_TRAIN,
-                 refit_every: int = REFIT_EVERY) -> list[int]:
-    """Refit indices, anchored at the START of the grid so the future cannot move them."""
-    return list(range(min_train, t_n, refit_every))
+                 refit_every: int = REFIT_EVERY,
+                 breaks: Sequence[int] | None = None) -> list[int]:
+    """Refit indices, anchored at the START of the grid so the future cannot move them, plus
+    the row after every regime break (a break at t is known at t, so the refit at t+1 sees it)."""
+    pts = set(range(min_train, t_n, refit_every))
+    pts.update(int(b) + 1 for b in (breaks or ()) if min_train <= int(b) + 1 < t_n)
+    return sorted(pts)
+
+
+def regime_breaks(d: Design, *, long: int = REGIME_LONG, band: float = REGIME_BAND,
+                  cooldown: int = REFIT_EVERY) -> tuple[int, ...]:
+    """Rows where the panel's vol regime changes state, from rows <= t only (see REGIME_LONG).
+
+    Breaks closer than `cooldown` rows to the previous one are ignored, so a level hovering on
+    the band edge cannot turn the schedule into a refit every day."""
+    with np.errstate(invalid="ignore", divide="ignore"):
+        lv = np.log(np.where(d.sigma > 0, d.sigma, np.nan))
+    t_n = lv.shape[0]
+    v = np.full(t_n, np.nan)
+    ok = np.isfinite(lv).sum(axis=1) > 0
+    if ok.any():
+        v[ok] = np.nanmedian(lv[ok], axis=1)
+    base = pd.Series(v).shift(1).rolling(int(long), min_periods=int(long) // 2).mean()
+    dev = v - base.to_numpy(dtype=float)
+    edge = math.log(float(band))
+    state = np.where(dev > edge, 1, np.where(dev < -edge, -1, 0))
+    state[~np.isfinite(dev)] = 0
+    out: list[int] = []
+    last = -10 ** 9
+    for t in range(1, t_n):
+        if state[t] != state[t - 1] and np.isfinite(dev[t]) and t - last >= int(cooldown):
+            out.append(t)
+            last = t
+    return tuple(out)
 
 
 def walk_forward(t_n: int, n: int, fit: Callable[[int, int, Any], Any],
                  predict: Callable[[Any, int, int], np.ndarray], *,
                  min_train: int = MIN_TRAIN, refit_every: int = REFIT_EVERY,
-                 window: int = TRAIN_WINDOW) -> np.ndarray:
+                 window: int = TRAIN_WINDOW,
+                 breaks: Sequence[int] | None = None) -> np.ndarray:
     """preds[t, i] for every row t >= min_train. `fit(lo, k, prev_model)` sees rows [lo, k-1]
-    only (targets <= row k); `predict(model, a, b)` returns rows [a, b)."""
+    only (targets <= row k); `predict(model, a, b)` returns rows [a, b).
+
+    With `breaks` (regime_breaks), the model is also refitted the row after each break, and
+    every fit after a break trains from the break onward (never on fewer than POST_BREAK_MIN
+    rows): the new regime is learned on its own rows once it has enough of them."""
     preds = np.full((t_n, n), np.nan)
     model: Any = None
-    for k in refit_points(t_n, min_train, refit_every):
+    pts = refit_points(t_n, min_train, refit_every, breaks)
+    brk = sorted(int(b) for b in (breaks or ()))
+    for j, k in enumerate(pts):
         lo = max(0, k - window)
+        prior = [b for b in brk if b < k]
+        if prior:
+            lo = max(lo, min(prior[-1], k - POST_BREAK_MIN))
         model = fit(lo, k, model)
         if model is None:
             continue
-        hi = min(k + refit_every, t_n)
+        hi = min(pts[j + 1] if j + 1 < len(pts) else t_n, k + refit_every, t_n)
         preds[k:hi] = predict(model, k, hi)
     return preds
 
@@ -320,7 +377,7 @@ def _train_rows(xd: np.ndarray, y: np.ndarray, lo: int, k: int) -> tuple[np.ndar
 
 
 def ridge_predictions(d: Design, features: np.ndarray | None = None,
-                      alpha: float = RIDGE_ALPHA, **wf: int) -> np.ndarray:
+                      alpha: float = RIDGE_ALPHA, **wf: Any) -> np.ndarray:
     """The baseline: one pooled ridge on each node's OWN lagged features, same folds."""
     xd = d.x if features is None else features
     t_n, n = d.y.shape
@@ -397,7 +454,7 @@ class GraphModel:
 
 
 def gnn_predictions(d: Design, *, adjacency_kind: str = "lead_lag", layers: int = 1,
-                    alpha: float = RIDGE_ALPHA, top_k: int = TOP_K, **wf: int) -> np.ndarray:
+                    alpha: float = RIDGE_ALPHA, top_k: int = TOP_K, **wf: Any) -> np.ndarray:
     t_n, n = d.y.shape
 
     def fit(lo: int, k: int, _prev: Any) -> GraphModel | None:
@@ -510,7 +567,7 @@ def train_attention(seq: np.ndarray, y: np.ndarray, *, heads: int, epochs: int,
 
 
 def attention_predictions(d: Design, *, heads: int = 1, lookback: int = 20,
-                          **wf: int) -> np.ndarray:
+                          **wf: Any) -> np.ndarray:
     t_n, n = d.y.shape
     seq = _sequences(tokens(d), int(lookback))
     f = seq.shape[-1]
@@ -571,7 +628,7 @@ def rocket_features(d: Design, *, kernels: int = 64, lookback: int = 32,
 
 
 def rocket_predictions(d: Design, *, kernels: int = 64, lookback: int = 32,
-                       **wf: int) -> np.ndarray:
+                       **wf: Any) -> np.ndarray:
     feats = rocket_features(d, kernels=int(kernels), lookback=int(lookback))
     return ridge_predictions(d, np.concatenate([feats, d.x], axis=-1), **wf)
 
@@ -608,7 +665,7 @@ def signature_features(d: Design, *, depth: int = 2, lookback: int = 20) -> np.n
 
 
 def signature_predictions(d: Design, *, depth: int = 2, lookback: int = 20,
-                          **wf: int) -> np.ndarray:
+                          **wf: Any) -> np.ndarray:
     feats = signature_features(d, depth=int(depth), lookback=int(lookback))
     return ridge_predictions(d, np.concatenate([feats, d.x], axis=-1), **wf)
 
@@ -691,7 +748,7 @@ def _ae_readout_features(codes: np.ndarray, x: np.ndarray) -> np.ndarray:
 
 
 def autoencoder_predictions(d: Design, *, latent: int = 3, hidden: int = 16,
-                            **wf: int) -> np.ndarray:
+                            **wf: Any) -> np.ndarray:
     """Latent cross-asset factors from a deep autoencoder over the date's whole panel, read out
     per node by a pooled ridge. The encoder is refitted inside every walk-forward fold on that
     fold's training rows only, so no code is computed with a scaling or weight from the future."""
@@ -721,7 +778,7 @@ def autoencoder_predictions(d: Design, *, latent: int = 3, hidden: int = 16,
     return walk_forward(t_n, n, fit, predict, **wf)
 
 
-def pca_predictions(d: Design, *, latent: int = 3, **wf: int) -> np.ndarray:
+def pca_predictions(d: Design, *, latent: int = 3, **wf: Any) -> np.ndarray:
     """The autoencoder's declared falsifier: a LINEAR code of the same size (PCA of the date's
     standardised panel features, fitted on the fold's training rows only) with the identical
     per-node readout. If this does as well, the non-linearity bought nothing. Never a trial."""
@@ -765,8 +822,14 @@ def pca_predictions(d: Design, *, latent: int = 3, **wf: int) -> np.ndarray:
 
 
 # ========================================================================== dispatcher
-def predictions(d: Design, model: str, config: Mapping[str, Any], **wf: int) -> np.ndarray:
-    """One walk-forward prediction panel for (model, config). Every call is one trial."""
+def predictions(d: Design, model: str, config: Mapping[str, Any], **wf: Any) -> np.ndarray:
+    """One walk-forward prediction panel for (model, config). Every call is one trial.
+    `config["refit"] == "regime"` adds the regime-break refits (regime_breaks) to the clock."""
+    refit = str(config.get("refit", "clock"))
+    if refit not in REFIT_MODES:
+        raise ValueError(f"unknown refit mode {refit!r}")
+    if refit == "regime" and "breaks" not in wf:
+        wf = {**wf, "breaks": regime_breaks(d)}
     if model == "gnn":
         return gnn_predictions(d, adjacency_kind=str(config.get("adjacency", "lead_lag")),
                                layers=int(config.get("layers", 1)), **wf)
