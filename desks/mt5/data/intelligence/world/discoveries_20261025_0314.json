@@ -1,0 +1,2029 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Federal Open Market Committee reaffirms its &quot;Statement on Longer-Run Goals and Monetary Policy Strategy&quot;",
+  "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260128b.htm",
+  "published": "2026-10-25T03:12:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4f863a96ec0bc6f5964e",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Federal Open Market Committee announces approval of updates to its Statement on Longer-Run Goals and Monetary Policy Strategy",
+  "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250822a.htm",
+  "published": "2026-10-25T03:12:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "09ea0b98368d20fb1f10",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Federal Open Market Committee reaffirms its &quot;Statement on Longer-Run Goals and Monetary Policy Strategy&quot;",
+  "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20240131b.htm",
+  "published": "2026-10-25T03:12:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "549978dfb89d91221682",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Federal Open Market Committee reaffirms its &quot;Statement on Longer-Run Goals and Monetary Policy Strategy&quot;",
+  "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20230201b.htm",
+  "published": "2026-10-25T03:12:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9c702f638b542b9f8dd7",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Profile - historical_data - Trading Q&amp;A by Zerodha - All your queries on trading and markets answered",
+  "url": "https://tradingqna.com/u/historical_data",
+  "published": "2026-10-25T03:12:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d1ef828382db09b4e529",
+  "host": "tradingqna.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Copy Trading: Pangkalahatan | RoboForex Help Center",
+  "url": "https://roboforex.com/ph/help/copy-trading-general/",
+  "published": "2026-10-25T03:12:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph-PH",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cecb9a3021e21e5af6f9",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Welcome Bonus 30 USD - tumanggap ng panimulang pondo para sa trading - RoboForex",
+  "url": "https://roboforex.com/ph/clients/promotions/welcome-program/",
+  "published": "2026-10-25T03:12:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f7c93567df44524ba266",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Leverage hanggang 1:2000 kasama ang broker - RoboForex",
+  "url": "https://roboforex.com/ph/clients/services/2000-up-leverage/",
+  "published": "2026-10-25T03:12:49+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f227f0409080b183f69d",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Withdrawal Nang Walang Komisyon - RoboForex",
+  "url": "https://roboforex.com/ph/clients/funds/free-withdrawal/",
+  "published": "2026-10-25T03:12:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9da9a34378df9ef1a07e",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Hanggang 10% ng dagdag na pondo sa balanse ng account para sa pangangalakal - RoboForex",
+  "url": "https://roboforex.com/ph/clients/services/up-to-10-percents-on-account-balance/",
+  "published": "2026-10-25T03:12:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1c7c93e36fb473310181",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cashback, Rebates Program - RoboForex",
+  "url": "https://roboforex.com/ph/clients/services/rebate/",
+  "published": "2026-10-25T03:12:55+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6385fc64113d646df537",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Full Swap-free - RoboForex",
+  "url": "https://roboforex.com/ph/promo/full-swap-free/",
+  "published": "2026-10-25T03:12:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "438f914bdbba7908d632",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23 - RoboForex",
+  "url": "https://th.roboforex.com/about/company/documents/",
+  "published": "2026-10-25T03:12:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ff7827c01f412a67b5ef",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e40\u0e1b\u0e34\u0e14\u0e1a\u0e31\u0e0d\u0e0a\u0e35 Cent (\u0e44\u0e21\u0e42\u0e04\u0e23) - \u0e44\u0e21\u0e42\u0e04\u0e23\u0e25\u0e47\u0e2d\u0e15\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e17\u0e14\u0e2a\u0e2d\u0e1a\u0e41\u0e25\u0e30 EA - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/cent-account/",
+  "published": "2026-10-25T03:13:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3317b6323f59ee0d90b3",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e41\u0e1e\u0e25\u0e15\u0e1f\u0e2d\u0e23\u0e4c\u0e21\u0e01\u0e32\u0e23\u0e40\u0e17\u0e23\u0e14 RoboForex - \u0e14\u0e32\u0e27\u0e19\u0e4c\u0e42\u0e2b\u0e25\u0e14\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a PC, \u0e40\u0e27\u0e47\u0e1a \u0e41\u0e25\u0e30\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/terminals/download/",
+  "published": "2026-10-25T03:13:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ru-uz/forex-trading/terminals/download/",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 11,
+  "vault_sha": "0fc1319cc9e3e508ac45",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e25\u0e07\u0e17\u0e38\u0e19\u0e43\u0e19 \u0e42\u0e25\u0e2b\u0e30: \u0e17\u0e2d\u0e07 \u0e41\u0e25\u0e30\u0e40\u0e07\u0e34\u0e19, \u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e49\u0e19\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/assets/metals/",
+  "published": "2026-10-25T03:13:04+00:00",
+  "symbols": [
+   "XAGUSD",
+   "XAUUSD",
+   "XCUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.95,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4b76af3aae349e908c82",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "\u0e04\u0e37\u0e19\u0e40\u0e07\u0e34\u0e19\u0e2a\u0e14 (\u0e40\u0e07\u0e34\u0e19\u0e04\u0e37\u0e19) \u0e23\u0e31\u0e1a\u0e04\u0e37\u0e19\u0e40\u0e07\u0e34\u0e19\u0e2a\u0e14\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e02\u0e19\u0e32\u0e14\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22\u0e40\u0e1e\u0e35\u0e22\u0e07\u0e41\u0e04\u0e48 10 \u0e25\u0e47\u0e2d\u0e15 \u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e17\u0e35\u0e48\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e15\u0e31\u0e27\u0e15\u0e19\u0e41\u0e25\u0e49\u0e27\u0e17\u0e38\u0e01\u0e04\u0e19 \u0e23\u0e31\u0e1a\u0e40\u0e07\u0e34\u0e19\u0e08\u0e23\u0e34\u0e07\u0e40\u0e1b\u0e47\u0e19\u0e40\u0e07\u0e34\u0e19\u0e2a\u0e14\u0e04\u0e37\u0e19\u0e41\u0e25\u0e30\u0e16\u0e2d\u0e19\u0e44\u0e14\u0e49\u0e17\u0e31\u0e19\u0e17\u0e35 \u0e2d\u0e48\u0e32\u0e19\u0e40\u0e1e\u0e34\u0e48\u0e21 \u0e22\u0e2d\u0e14\u0e19\u0e34\u0e22\u0e21 \u0e40\u0e23\u0e32\u0e08\u0e48\u0e32\u0e22\u0e43\u0e2b\u0e49\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14 10% \u0e1a\u0e19\u0e22\u0e2d\u0e14\u0e04\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d\u0e02\u0e2d\u0e07\u0e1a\u0e31\u0e0d\u0e0a\u0e35 \u0e01\u0e32\u0e23\u0e0a\u0e33\u0e23\u0e30\u0e40\u0e07\u0e34\u0e19\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e1b\u0e23\u0e34\u0e21\u0e32\u0e13\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22\u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e31\u0e49\u0e07\u0e41\u0e15\u0e48 1 \u0e25\u0e47\u0e2d\u0e15 \u0e44\u0e21\u0e48\u0e21\u0e35\u0e02\u0e49\u0e2d\u0e08\u0e33\u0e01\u0e31\u0e14: \u0e16\u0e2d\u0e19\u0e40\u0e07\u0e34\u0e19\u0e44\u0e14\u0e49\u0e17\u0e31\u0e19\u0e17\u0e35 \u0e23\u0e31\u0e1a % \u0e15\u0e32\u0e21\u0e22\u0e2d\u0e14\u0e04\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d\u0e02\u0e2d\u0e07\u0e1a\u0e31\u0e0d\u0e0a\u0e35\u0e17\u0e38\u0e01\u0e40\u0e14\u0e37\u0e2d\u0e19 \u0e2d\u0e48\u0e32\u0e19\u0e40\u0e1e\u0e34\u0e48\u0e21 FAQ \u0e2d\u0e30\u0e44\u0e23\u0e04\u0e37\u0e2d\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22\u0e42\u0e25\u0e2b\u0e30?",
+    "lang": "th",
+    "quantities": [
+     "\u0e1b\u0e23\u0e34\u0e21\u0e32\u0e13\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "\u0e40\u0e14\u0e37\u0e2d\u0e19"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD"
+     ],
+     "mentioned": [
+      "\u0e17\u0e2d\u0e07",
+      "silver",
+      "\u0e17\u0e2d\u0e07\u0e41\u0e14\u0e07"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b198feb81af2"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e25\u0e07\u0e17\u0e38\u0e19\u0e43\u0e19\u0e04\u0e39\u0e48\u0e2a\u0e01\u0e38\u0e25\u0e40\u0e07\u0e34\u0e19, \u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22\u0e04\u0e39\u0e48\u0e2a\u0e01\u0e38\u0e25\u0e40\u0e07\u0e34\u0e19\u0e1a\u0e19\u0e15\u0e25\u0e32\u0e14\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19\u0e23\u0e30\u0e14\u0e31\u0e1a\u0e42\u0e25\u0e01 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/assets/forex/",
+  "published": "2026-10-25T03:13:06+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPJPY",
+   "GBPUSD",
+   "NZDUSD",
+   "USDCHF",
+   "USDJPY",
+   "USDMXN",
+   "USDRUB"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d83ca2198a2723de5ab7",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e40\u0e17\u0e23\u0e14 Crypto \u0e04\u0e23\u0e34\u0e1b\u0e42\u0e15: Bitcoin, Ethereum \u0e41\u0e25\u0e30\u0e2d\u0e37\u0e48\u0e19\u0e46 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/assets/crypto/",
+  "published": "2026-10-25T03:13:08+00:00",
+  "symbols": [
+   "ADAUSD",
+   "BTCUSD",
+   "ETHUSD",
+   "SOLUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7cff667db1d4032d55fe",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e01\u0e32\u0e23\u0e25\u0e07\u0e17\u0e38\u0e19\u0e02\u0e2d\u0e07\u0e2b\u0e38\u0e49\u0e19, CFD \u0e02\u0e2d\u0e07\u0e2b\u0e38\u0e49\u0e19, \u0e0b\u0e37\u0e49\u0e2d\u0e2b\u0e38\u0e49\u0e19, \u0e40\u0e23\u0e34\u0e48\u0e21\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/assets/stocks/",
+  "published": "2026-10-25T03:13:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "06bfbd569fff9d66c5b9",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "A k\u00e9szp\u00e9nz szerepe",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.hu.html",
+  "published": "2026-10-25T03:13:11+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "hu",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hu.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "32e1ff1716e8bc939e31",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Il ruolo del contante",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.it.html",
+  "published": "2026-10-25T03:13:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "it",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.it.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "09a6a400212488744bc5",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The role of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.lt.html",
+  "published": "2026-10-25T03:13:16+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "lt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.lt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "efc8545808e469834063",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The role of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.lv.html",
+  "published": "2026-10-25T03:13:18+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "lv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.lv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "278d73009d1e81170fd5",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Ir-rwol tal-flus kontanti",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.mt.html",
+  "published": "2026-10-25T03:13:20+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "mt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.mt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a4e70d430854685cba68",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "De rol van contant geld",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.nl.html",
+  "published": "2026-10-25T03:13:22+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "nl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.nl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "450594e96ee25dbfac35",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The role of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.pl.html",
+  "published": "2026-10-25T03:13:23+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1fc4723336f7697c61d7",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "POSI3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/POSI3/",
+  "published": "2026-10-25T03:13:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9bd89d664b01b897a611",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ITUB3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/ITUB3/",
+  "published": "2026-10-25T03:13:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ade570ebb63e83b8f95c",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "LOGN3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/LOGN3/",
+  "published": "2026-10-25T03:13:29+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9a165aae1fa3b5574d89",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BPAC11: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/BPAC11/",
+  "published": "2026-10-25T03:13:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "da9b49ed0ad25ce12ed5",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BSLI3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/BSLI3/",
+  "published": "2026-10-25T03:13:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ff7ae8d5ed5f7212bce5",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "PFRM3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/PFRM3/",
+  "published": "2026-10-25T03:13:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "57dbd3551582542aa3fe",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "PRIO3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/PRIO3/",
+  "published": "2026-10-25T03:13:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "19ad4b8e72b14d9daca4",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Trade Diversified Trend Following Trading Systems with a Small Account",
+  "url": "http://www.thetatrend.com/building-diversified-trend-following-trading-system/",
+  "published": "2026-10-25T03:13:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.1.3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "711bcb5d0e9cc92ea9d9",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Waiting for a &quot;Real&quot; Donchian Channel Breakout",
+  "url": "http://www.thetatrend.com/waiting-for-a-real-donchian-channel-breakout/",
+  "published": "2026-10-25T03:13:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "carry",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.1.3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d6267c319567b8442a19",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Z-Score - An Indicator To Define Overbought and Oversold (Thinkscript) - Theta Trend",
+  "url": "http://www.thetatrend.com/z-score-an-indicator-to-define-overbought-and-oversold-thinkscript/",
+  "published": "2026-10-25T03:13:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.1.3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c4db9d9a908af207f9a6",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CIB Trading Course - Theta Trend",
+  "url": "http://www.thetatrend.com/cib-trading-course/",
+  "published": "2026-10-25T03:13:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.1.3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "81fb64dd159c56d53579",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Understanding Position Sizing For Options Income Trading - Theta Trend",
+  "url": "https://www.thetatrend.com/understanding-position-sizing-options-income-trading/",
+  "published": "2026-10-25T03:13:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "gap",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.1.3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "20e0217857b7f5a3ec8c",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "A Plan For Trading In The Bathroom With A Day Job - Theta Trend",
+  "url": "https://www.thetatrend.com/plan-for-trading-in-the-bathroom-with-a-day-job/",
+  "published": "2026-10-25T03:13:48+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.1.3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "37d68a534c8ea9e999cd",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Directional Trading Archives - Page 3 of 14 - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/page/3/",
+  "published": "2026-10-25T03:13:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.1.3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1274433b4b0e3602a669",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe Order Types and Routing",
+  "url": "https://www.cboe.com/us/equities/trading/offerings/order_types_and_routing/",
+  "published": "2026-10-25T03:13:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "507bdc12d9512903e67c",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Cboe U.S. Equities Exchanges Risk Management",
+  "url": "https://www.cboe.com/us/equities/trading/offerings/risk_management/",
+  "published": "2026-10-25T03:13:54+00:00",
+  "symbols": [
+   "US500",
+   "US30",
+   "US2000",
+   "UK100",
+   "BTCUSD",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e31c730485494a345369",
+  "host": "www.cboe.com",
+  "claims": [
+   {
+    "claim": "Restrictions include the following: Intermarket Sweep Orders Directed Intermarket Sweep Orders Short Sales Pre-Market Trading Post-Market Trading New Orders Market Orders Market Order Collars With the exception of the Market On Open and Market On Close orders, any portion of",
+    "lang": "en",
+    "quantities": [
+     "sweep",
+     "open",
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "open",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "US30",
+      "US2000",
+      "UK100",
+      "BTCUSD",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "s&p 500",
+      "dow jones",
+      "russell 2000",
+      "ftse",
+      "bitcoin",
+      "treasuries"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7415f05c05ca"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe U.S. Equities Exchanges Non-Displayed Swap",
+  "url": "https://www.cboe.com/us/equities/trading/offerings/non_displayed_swap/",
+  "published": "2026-10-25T03:13:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "52c08b8d695942d914a8",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe U.S. Equities Exchanges Midpoint Discretionary Order",
+  "url": "https://www.cboe.com/us/equities/trading/offerings/midpoint_discretionary_order/",
+  "published": "2026-10-25T03:13:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1ad82a66473824dfd02a",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe U.S. Equities Exchanges Retail Priority",
+  "url": "https://www.cboe.com/us/equities/trading/offerings/retail_priority/",
+  "published": "2026-10-25T03:14:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "db65bdccfabd7e4b87de",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "U.S. Equities: Retail Price Improvement | Cboe",
+  "url": "https://www.cboe.com/markets/us/equities/trading/retail-price-improvement",
+  "published": "2026-10-25T03:14:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ddf848d6053b43c13162",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "U.S. Equities Retail Membership Program | Cboe",
+  "url": "https://www.cboe.com/us/equities/trading/offerings/retail_membership_program/",
+  "published": "2026-10-25T03:14:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "33eb01ec2f5f28669dd2",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Bank of England announces new office space in Leeds | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/news/2026/september/bank-of-england-announces-new-office-space-in-leeds",
+  "published": "2026-10-25T03:14:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6fc95bb133f10b0f9a5f",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Foreign Currency Reserves 2026 \u2013 Market Notice 21 September 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/markets/market-notices/2026/september/foreign-currency-reserves-2026-market-notice-21-september-2026",
+  "published": "2026-10-25T03:14:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f818920f830202bfc5b4",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Minutes of the Transaction and Post-trade Reporting Harmonisation Taskforce - July 2026 | Bank of England \u2013 the UK&#39;s central bank",
+  "url": "https://www.bankofengland.co.uk/minutes/2026/july/minutes-of-the-transaction-and-post-trade-reporting-harmonisation-taskforce-july-2026",
+  "published": "2026-10-25T03:14:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "989d4bbaf91b0c78db85",
+  "host": "www.bankofengland.co.uk",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Saudi Arabia Wholesale Prices Change",
+  "url": "https://tradingeconomics.com/saudi-arabia/producer-prices-change",
+  "published": "2026-10-25T03:14:10+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "CA60",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/saudi-arabia/exports",
+   "https://tradingeconomics.com/saudi-arabia/exports-by-category",
+   "https://tradingeconomics.com/saudi-arabia/exports-by-country",
+   "https://tradingeconomics.com/saudi-arabia/exports-yoy",
+   "https://tradingeconomics.com/saudi-arabia/non-oil-exports",
+   "https://tradingeconomics.com/saudi-arabia/oil-exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 13,
+  "vault_sha": "f8a54e5819b59fe8229f",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "On a monthly basis, wholesale prices fell 0.",
+    "lang": "en",
+    "quantities": [
+     "basis"
+    ],
+    "direction": [
+     "fell"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "tsx",
+      "ibovespa",
+      "10-year yield"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "USDCAD",
+      "USDMXN"
+     ],
+     "channels": [
+      "boc: policy: BoC -> CAD",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "6d78ceb6863d"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "United Kingdom Unemployment Rate",
+  "url": "https://tradingeconomics.com/united-kingdom/unemployment-rate",
+  "published": "2026-10-25T03:14:13+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "UK100",
+   "CA60",
+   "GBPUSD",
+   "UST10Y",
+   "UKGILT"
+  ],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "night_session",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/united-kingdom/auto-exports",
+   "https://tradingeconomics.com/united-kingdom/exports",
+   "https://tradingeconomics.com/united-kingdom/exports-by-category",
+   "https://tradingeconomics.com/united-kingdom/exports-by-country",
+   "https://tradingeconomics.com/united-kingdom/goods-exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "009c0571ddb53d575cc8",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "40 1971 - 2026 percent Monthly Compare: Unemployment Rate by Country News Stream UK Unemployment Rate Surprisingly Falls The UK unemployment rate fell to 4.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "falls",
+     "fell"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "UK100",
+      "CA60",
+      "GBPUSD",
+      "UST10Y",
+      "UKGILT"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "ftse 100",
+      "tsx",
+      "ibovespa",
+      "pound",
+      "10-year yield",
+      "gilt"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "USDCAD"
+     ],
+     "channels": [
+      "boe: policy: BoE -> GBP",
+      "boc: policy: BoC -> CAD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ac71a25d6973"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "United Kingdom Average Weekly Earnings Growth",
+  "url": "https://tradingeconomics.com/united-kingdom/wage-growth",
+  "published": "2026-10-25T03:14:14+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "UK100",
+   "CA60",
+   "GBPUSD",
+   "UST10Y",
+   "UKGILT"
+  ],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/united-kingdom/auto-exports",
+   "https://tradingeconomics.com/united-kingdom/exports",
+   "https://tradingeconomics.com/united-kingdom/exports-by-category",
+   "https://tradingeconomics.com/united-kingdom/exports-by-country",
+   "https://tradingeconomics.com/united-kingdom/goods-exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "4859b57e64adf541d884",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "In the long-term, the United Kingdom Average Weekly Earnings Growth is projected to trend around 2.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "UK100",
+      "CA60",
+      "GBPUSD",
+      "UST10Y",
+      "UKGILT"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "ftse 100",
+      "tsx",
+      "ibovespa",
+      "pound",
+      "10-year yield",
+      "gilt"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "USDCAD"
+     ],
+     "channels": [
+      "boe: policy: BoE -> GBP",
+      "boc: policy: BoC -> CAD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "20449e36c726"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "United Kingdom Employment Change",
+  "url": "https://tradingeconomics.com/united-kingdom/employment-change",
+  "published": "2026-10-25T03:14:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/united-kingdom/auto-exports",
+   "https://tradingeconomics.com/united-kingdom/exports",
+   "https://tradingeconomics.com/united-kingdom/exports-by-category",
+   "https://tradingeconomics.com/united-kingdom/exports-by-country",
+   "https://tradingeconomics.com/united-kingdom/goods-exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "47e044ce46e7f1511d82",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "United Kingdom Average Earnings Excluding Bonuses YoY",
+  "url": "https://tradingeconomics.com/united-kingdom/average-earnings-excluding-bonus",
+  "published": "2026-10-25T03:14:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/united-kingdom/auto-exports",
+   "https://tradingeconomics.com/united-kingdom/exports",
+   "https://tradingeconomics.com/united-kingdom/exports-by-category",
+   "https://tradingeconomics.com/united-kingdom/exports-by-country",
+   "https://tradingeconomics.com/united-kingdom/goods-exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "a226bdf3c1eee8edc8e8",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "United Kingdom Claimant Count Change",
+  "url": "https://tradingeconomics.com/united-kingdom/claimant-count-change",
+  "published": "2026-10-25T03:14:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/united-kingdom/auto-exports",
+   "https://tradingeconomics.com/united-kingdom/exports",
+   "https://tradingeconomics.com/united-kingdom/exports-by-category",
+   "https://tradingeconomics.com/united-kingdom/exports-by-country",
+   "https://tradingeconomics.com/united-kingdom/goods-exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "0a18c4250455b0855e16",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "United Kingdom HMRC Payrolls Change",
+  "url": "https://tradingeconomics.com/united-kingdom/non-farm-payrolls",
+  "published": "2026-10-25T03:14:22+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "night_session",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/united-kingdom/auto-exports",
+   "https://tradingeconomics.com/united-kingdom/exports",
+   "https://tradingeconomics.com/united-kingdom/exports-by-category",
+   "https://tradingeconomics.com/united-kingdom/exports-by-country",
+   "https://tradingeconomics.com/united-kingdom/goods-exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "bcf1dcb3a73fa53ddbd4",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u00bfHasta d\u00f3nde puede llegar el sol? Escenarios del tipo de cambio en el corto plazo | OPINION | GESTI\u00d3N",
+  "url": "https://gestion.pe/opinion/hasta-donde-puede-llegar-el-sol-escenarios-del-tipo-de-cambio-en-el-corto-plazo-noticia/",
+  "published": "2026-10-25T03:14:24+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XCUUSD",
+   "WHEAT"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5a218874e4ef1c4316b8",
+  "host": "gestion.pe",
+  "claims": [
+   {
+    "claim": "Escenarios del tipo de cambio en el corto plazo Suscr\u00edbete Exclusivo para suscriptores PLUS G gesti\u00f3n > opinion A\u00f1adir Gesti\u00f3n como fuente preferida en Opini\u00f3n \u00bfHasta d\u00f3nde puede llegar el sol?",
+    "lang": "es",
+    "quantities": [
+     "cambio"
+    ],
+    "direction": [
+     "corto"
+    ],
+    "horizon": [
+     "corto plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "WHEAT"
+     ],
+     "mentioned": [
+      "oro",
+      "plata",
+      "cobre",
+      "sol peruano",
+      "trigo"
+     ],
+     "transfer_only": [
+      "sol peruano->fx (LatAm not quoted)"
+     ],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "USDBRL"
+     ],
+     "channels": [
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "37f0ee9ffc2f"
+   },
+   {
+    "claim": "Escenarios del tipo de cambio en el corto plazo BCR, metales y Fed: tres factores que marcar\u00e1n si el tipo de cambio sigue bajando en octubre.",
+    "lang": "es",
+    "quantities": [
+     "cambio"
+    ],
+    "direction": [
+     "corto",
+     "baja"
+    ],
+    "horizon": [
+     "corto plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "WHEAT"
+     ],
+     "mentioned": [
+      "oro",
+      "plata",
+      "cobre",
+      "sol peruano",
+      "trigo"
+     ],
+     "transfer_only": [
+      "sol peruano->fx (LatAm not quoted)"
+     ],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "USDBRL"
+     ],
+     "channels": [
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "465c9aba1db1"
+   },
+   {
+    "claim": "No obstante, es necesario proceder con precauci\u00f3n si se desea proyectar el mantenimiento de esta tendencia, pues las condiciones actuales que favorecen la estabilidad cambiaria podr\u00edan no mantenerse en el corto plazo, y el ambiente externo est\u00e1 experimentando tensiones crecientes.",
+    "lang": "es",
+    "quantities": [
+     "tendencia"
+    ],
+    "direction": [
+     "corto"
+    ],
+    "horizon": [
+     "corto plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "WHEAT"
+     ],
+     "mentioned": [
+      "oro",
+      "plata",
+      "cobre",
+      "sol peruano",
+      "trigo"
+     ],
+     "transfer_only": [
+      "sol peruano->fx (LatAm not quoted)"
+     ],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "USDBRL"
+     ],
+     "channels": [
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c072736c1063"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Cinco factores que convierten al sol en la moneda m\u00e1s estable de la regi\u00f3n: \u00bfC\u00f3mo aprovecharla? | TU-DINERO | GESTI\u00d3N",
+  "url": "https://gestion.pe/tu-dinero/cinco-factores-que-convierten-al-sol-en-la-moneda-mas-estable-de-la-region-como-aprovecharla-noticia/",
+  "published": "2026-10-25T03:14:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c62db93a499c9dd075dd",
+  "host": "gestion.pe",
+  "claims": [
+   {
+    "claim": "Escenarios del tipo de cambio en el corto plazo El sol peruano es la moneda m\u00e1s estable de Latinoam\u00e9rica: \u00bfA qu\u00e9 se debe y como aprovecharlo?",
+    "lang": "es",
+    "quantities": [
+     "cambio"
+    ],
+    "direction": [
+     "corto"
+    ],
+    "horizon": [
+     "corto plazo"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "sol peruano"
+     ],
+     "transfer_only": [
+      "sol peruano->fx (LatAm not quoted)"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "036799109c03"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Noticias sobre Banco Central de Reserva del Per\u00fa | GESTI\u00d3N",
+  "url": "https://gestion.pe/noticias/banco-central-de-reserva-del-peru/",
+  "published": "2026-10-25T03:14:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://gestion.pe/economia/exportaciones-tradicionales-peruanas-crecieron-268-en-septiembre-del-2025-noticia/",
+   "https://gestion.pe/economia/exportaciones-no-tradicionales-pesqueras-del-peru-crecieron-un-1235-en-mayo-de-2025-noticia/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4436ade3c7ff45343c53",
+  "host": "gestion.pe",
+  "claims": [
+   {
+    "claim": "Econom\u00eda Redacci\u00f3n Gesti\u00f3n Econom\u00eda 25/08/2024 _ 13:46 Remesas desde el extranjero a Per\u00fa aumentan, este es el principal pa\u00eds El informe del BCRP se\u00f1ala que, aunque las remesas han mostrado cierta variabilidad en los \u00faltimos trimestres, la tendencia general es al alza.",
+    "lang": "es",
+    "quantities": [
+     "tendencia"
+    ],
+    "direction": [
+     "alza"
+    ],
+    "horizon": [
+     "trimestre"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDMXN"
+     ],
+     "channels": [
+      "remesas: policy/flow: Banxico, remittances -> MXN"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "9cca1ff2a922"
+   }
+  ],
+  "n_claims": 1
+ }
+]

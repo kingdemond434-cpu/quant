@@ -1,29 +1,29 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-23T01:44:41.538163+00:00",
+  "generated_at": "2026-10-25T02:50:43.347469+00:00",
   "scope": "MT5_FUSION_ONLY",
   "execution_authority": false,
   "universe": {
-    "metadata_entities": 251,
+    "metadata_entities": 0,
     "h1_bar_files": 304,
-    "metadata_mtime": "2026-10-23T01:43:35.854136+00:00",
+    "metadata_mtime": "2026-10-25T02:50:04.181117+00:00",
     "newest_h1_mtime": "2026-09-10T22:28:41.305028+00:00"
   },
   "conversion": {
     "research_queue": {
-      "BLOCKED_CANONICAL_DOCKET_MISSING": 54776,
+      "BLOCKED_CANONICAL_DOCKET_MISSING": 54956,
       "DONE": 10,
       "GAUNTLET_REJECTED": 25131
     },
     "universal_survivors": 58,
     "shadow_sleeves": 648,
     "shadow_observations": 1017,
-    "shadow_last_run": "2026-10-22"
+    "shadow_last_run": "2026-10-25"
   },
   "freshness": {
     "research_loop": "2026-09-04T03:31:09.889825+00:00",
-    "research_pipeline": "2026-10-23T01:43:42.101165+00:00",
-    "external_gauntlet": "2026-10-23T01:43:42.101165+00:00",
+    "research_pipeline": "2026-10-21T04:55:25.712561+00:00",
+    "external_gauntlet": "2026-09-16T15:07:10+00:00",
     "universal_gate": "2026-10-21T04:55:25.712561+00:00",
     "allocation": "2026-09-04T03:30:52.359489+00:00",
     "markout": "2026-08-30T08:35:16+00:00",
@@ -32,7 +32,7 @@
   },
   "capability_reuse": {
     "artifact": "data/intelligence/mt5_capability_reuse.json",
-    "generated_at": "2026-10-23T01:44:41.036005+00:00",
+    "generated_at": "2026-10-25T02:50:43.012876+00:00",
     "counts": {
       "DISPOSED_BLOCKED": 5,
       "DISPOSED_SUPERSEDED": 9,
@@ -43,6 +43,8 @@
     "proof_level": "STATIC_REACHABILITY_ONLY"
   },
   "defects": [
+    "universe metadata missing or unreadable",
+    "canonical research pipeline stale or unmeasured",
     "execution markout stale; current costs remain unmeasured",
     "MT5 universe bars stale"
   ]

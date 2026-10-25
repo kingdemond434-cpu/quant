@@ -1,0 +1,44 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Federal Open Market Committee reaffirms its &quot;Statement on Longer-Run Goals and Monetary Policy Strategy&quot;",
+  "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260128b.htm",
+  "published": "2026-10-25T03:42:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5fab50d6690475d0308d",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Federal Open Market Committee announces approval of updates to its Statement on Longer-Run Goals and Monetary Policy Strategy",
+  "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250822a.htm",
+  "published": "2026-10-25T03:42:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bcef7a24fa2b159df1b6",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ }
+]
