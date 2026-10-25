@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-25T14:00:19.886414+00:00",
+  "swept_at": "2026-10-25T14:15:27.912703+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -239,8 +239,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 77,
-      "shadow_exp_r": -0.1984,
+      "shadow_n": 90,
+      "shadow_exp_r": -0.5474,
       "woke_on_shadow": false
     },
     "AUDSGD|cross_asset_residual_continuous": {
@@ -272,8 +272,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 56,
-      "shadow_exp_r": -0.2663,
+      "shadow_n": 43,
+      "shadow_exp_r": 0.2238,
       "woke_on_shadow": false
     },
     "AUDUSD|discovered_asia": {
@@ -1516,7 +1516,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.2185,
+      "shadow_exp_r": 0.1288,
       "woke_on_shadow": false
     },
     "EURNOK|carry_continuous": {
@@ -1537,8 +1537,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.5666,
+      "shadow_n": 85,
+      "shadow_exp_r": 0.698,
       "woke_on_shadow": false
     },
     "EURNOK|overnight_gap_decay_asia": {
