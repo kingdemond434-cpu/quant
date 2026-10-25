@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-25T21:15:12.988020+00:00",
+  "swept_at": "2026-10-25T21:30:04.405158+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -778,8 +778,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 90,
-      "shadow_exp_r": -0.3428,
+      "shadow_n": 81,
+      "shadow_exp_r": 0.5931,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -1637,7 +1637,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4318,
+      "shadow_exp_r": -0.4872,
       "woke_on_shadow": false
     },
     "EURSEK|spread_state_continuous": {
