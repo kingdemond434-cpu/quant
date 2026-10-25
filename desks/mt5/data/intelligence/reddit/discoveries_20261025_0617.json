@@ -1,0 +1,176 @@
+[
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "forgot to close position before weekend ftmo challenge (gold)",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "I sold",
+    "url": "",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Why did this Support & Resistance long fail? Looking for constructive feedback.",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "support",
+      "resistance",
+      "liquidity",
+      "trend"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "gbpusd",
+    "url": "",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "patterns": [
+      "EMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "A strategy can finish near breakeven and still put your account through a 16.7% drawdown",
+    "url": "",
+    "symbols": [
+      "XAGUSD",
+      "XAUUSD",
+      "DXY",
+      "USOIL"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Patience played big role in my trading journey as always",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "45% win rate and 1:3 RR",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Title: Feedback on my GBPUSD PDH/PDL + SMT reversal strategy (1-minute entries)",
+    "url": "",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "patterns": [
+      "reversal",
+      "liquidity"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Daytrading",
+    "title": "I don't know why I'm profitable",
+    "url": "",
+    "symbols": [
+      "BTCUSD",
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Daytrading",
+    "title": "MSNR Malaysian SNR Day Trading",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Daytrading",
+    "title": "How quickly things can change as a full time trader",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Daytrading",
+    "title": "Order Flow and Analysis trading platforms",
+    "url": "",
+    "symbols": [
+      "US500"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Daytrading",
+    "title": "Reality of Large Tail Risk Strategy (Fading VWAP v",
+    "url": "",
+    "symbols": [
+      "US500"
+    ],
+    "patterns": [
+      "RSI",
+      "scalp",
+      "mean reversion"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Daytrading",
+    "title": "Profitable traders, how long did it take you to become consistently profitable?",
+    "url": "",
+    "symbols": [
+      "USOIL"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  }
+]
