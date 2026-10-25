@@ -3,13 +3,13 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "finished_at": "2026-10-25T06:30:03.339049+00:00",
+   "finished_at": "2026-10-25T08:30:06.486242+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-10-25T06:35:14.892289+00:00",
+   "finished_at": "2026-10-25T08:32:05.900879+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -21,13 +21,13 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-10-25T06:30:49.397438+00:00",
+   "finished_at": "2026-10-25T08:30:46.877436+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-10-25T06:32:23.277005+00:00",
+   "finished_at": "2026-10-25T08:31:46.532426+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -39,31 +39,36 @@
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "finished_at": "2026-10-25T04:33:18.710836+00:00",
+   "finished_at": "2026-10-25T07:55:15.616559+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "desks/mt5/research/forward_reconcile.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-25T07:28:03.380253+00:00",
-   "status": "RUNNING"
-  },
-  "forward_lane_heal": {
-   "finished_at": "2026-10-25T04:33:31.538549+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "FAILED"
-  },
-  "fusion_state_pull": {
-   "finished_at": "2026-10-25T07:26:54.182799+00:00",
+   "finished_at": "2026-10-25T07:53:49.374785+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
+  },
+  "forward_lane_heal": {
+   "command": [
+    "/home/quant/quant-platform/.venv/bin/python",
+    "scripts/heal_forward_lane.py"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-10-25T07:55:29.451183+00:00",
+   "status": "RUNNING"
+  },
+  "fusion_state_pull": {
+   "command": [
+    "systemctl",
+    "--user",
+    "start",
+    "quant-desk-pull.service"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-10-25T08:32:39.711928+00:00",
+   "status": "RUNNING"
   },
   "mechanism_independence": {
    "finished_at": "2026-10-25T04:34:18.763062+00:00",
@@ -84,5 +89,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-25T07:28:03.380253+00:00"
+ "updated_at": "2026-10-25T08:32:39.711928+00:00"
 }

@@ -1,0 +1,227 @@
+[
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Intraday Forecasting Ability and Liquidity Provision of Institutional Traders",
+  "url": "http://arxiv.org/abs/2610.31141v1",
+  "text": "This study uses a high-frequency dataset from a stock exchange to examine how forecasting ability and liquidity provision relate to institutional traders' proprietary intraday profitability. We discover persistent forecasting abilities among traders. Specifically, we demonstrate that hypothetical flow-following strategies based on the execution flows of these skillful traders yield annualized Sharpe ratios ranging from 16 to 63 across various trading frequencies. We match buy and sell executions into positions, linking realized profit and loss (P&amp;L) to horizon-matched forecasting proxies and the liquidity roles of both executions. Our findings indicate a direct correlation between improved forecasting ability and profitability, where a one-standard-deviation increase in the forecasting",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Directionally Correct Views in Portfolio Optimization",
+  "url": "http://arxiv.org/abs/2610.31074v1",
+  "text": "Portfolio optimization techniques often use historical data to estimate parameters for Markowitz-type or ML models. Effective allocation requires a way to align the available data with conditions expected over the investment horizon. Inspired by the Black-Litterman framework, we ask whether incorporating expert views leads to better portfolio allocations. In a simple Markowitz setting, we show that even a small amount of directionally correct information can materially improve investment decisions. We also discuss how expert views can be incorporated in end-to-end portfolio models using entropy-based ideas. Somewhat surprisingly, our empirical results indicate that simpler Markowitz-type model perform as well as an end-to-end model, once directionally correct experts are incorporated.",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Equilibria and Learning in Competitive Market Making",
+  "url": "http://arxiv.org/abs/2610.30891v1",
+  "text": "We propose a market-making game played among $N \\ge 2$ strategic market makers and a single non-strategic representative trader. In a continuous quote space, standard finite-game arguments do not apply, while non-convex and discontinuous payoffs rule out classical continuous existence results and complicate learning. Nonetheless, we characterize pure-strategy Nash equilibria (PSNEs) and show that at least one PSNE always exists under minimal assumptions on the underlying asset value distribution, and that the equilibrium bid-ask spread widens strictly with asset value volatility. To obtain a tractable learning framework, we discretize prices and, under an additional regularity condition, show that the time-averaged play of no-internal-regret learners approaches the continuous Nash price en",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "When News Gets Old: Portfolio Allocation with Reinforcement Learning and Large Language Models",
+  "url": "http://arxiv.org/abs/2610.30564v1",
+  "text": "Financial news can influence investment decisions long after publication. Timely news may reach an investor before prices fully adjust, whereas older news may already be reflected in prices. We examine two ways to handle aging signals: retain them and give a portfolio policy timing information, or filter them out before portfolio selection. A fixed large language model (LLM) extracts signals from public SEC disclosures. We compare these treatments in reinforcement learning (RL) policies and LLMs that choose portfolios directly. We evaluate returns after trading costs in historical tests over 2023-2025. RL choices respond to timing information in a controlled test, but historical returns show no consistent benefit from adding it. For the LLM, filtering old news produced the highest average",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Governed Self-Evolution for Autonomous Investing: A Multi-Agent LLM System with an Invariant Core",
+  "url": "http://arxiv.org/abs/2610.30557v1",
+  "text": "LLM agents that act on live Web data must combine heterogeneous evidence, remember what they have done and improve from outcomes without weakening their own safeguards. We study this problem in autonomous investing, where every action is irreversible and based on untrusted Web content. We present Steward, a multi-agent LLM system that draws the boundary of self-evolution in its type system. First, nine role-specialised agents decide jointly: four analysts read news feeds, SEC filings, macroeconomic series and market data and emit typed reports, from which a Portfolio Manager sets target positions that a protected Risk Manager audits. Second, a seven-layer shared memory, assembled by code from the system's own record, gives each decision its position context, the market narrative, calibrati",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Dynamics of the Liquidity Profile in Concentrated Liquidity Provision: An SPIDE Approach",
+  "url": "http://arxiv.org/abs/2610.30539v1",
+  "text": "We model the dynamics of the liquidity profile in Uniswap~V3 and other concentrated-liquidity automated market makers with a stochastic partial integro-differential equation (SPIDE). The profile, the aggregate of all provider positions across tick space, evolves under a degenerate Sturm--Liouville operator, which encodes mean-reverting concentration around the market price, coupled with a Hilbert--Schmidt integral operator, which captures nonlocal redistribution driven by provider repositioning. We establish existence and uniqueness of the mild solution in a weighted $L^2$ space built on the Gegenbauer eigensystem, and reduce the SPIDE to a coupled system of linear stochastic differential equations whose low-order modes describe the level, slope, and curvature of the profile. Pairing the S",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "What Prediction-Market Contracts Reveal at Launch: Trading Volume and Dispute Risk",
+  "url": "http://arxiv.org/abs/2610.29578v1",
+  "text": "Using a near-census of 802,863 resolved markets listed on Polymarket between January 2023 and May 2026, and only information available at listing (the market's title and description, named resolution source, and contract metadata), we predict lifetime trading volume and whether settlement is later disputed. Contract information predicts trading volume well (out-of-sample $R^2 = 0.747$ for log volume), and most of the signal is interpretable: market topic provides the largest gain ($+0.289$ $R^2$ over a $0.220$ contract-feature baseline), wording and resolution-rule design add smaller but measurable improvements ($+0.027$ combined), and neural text models add little beyond the interpretable features. This performance does not survive a period of platform change coinciding with a shift in li",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Understanding the Inner Workings of a State-Space Foundation Model for Limit Order Books",
+  "url": "http://arxiv.org/abs/2610.28753v1",
+  "text": "Autoregressive foundation models offer state-of-the-art capabilities to simulate the market by generating the message flow of limit order books (LOBs). Yet, without understanding their inner workings, research directions are hard to narrow and practical use in real-world trading environments remains uncertain. This study therefore asks what these models actually learn about market microstructure. We find that, similarly to games where sequence models build an internal representation of the board, an 8.2M-parameter Mamba-3 state-space model trained autoregressively on the tokenized message stream of eight large-cap US equities learns an internal representation of the market and its dynamics. In particular, order-flow imbalance, a central driver of short-horizon price moves, is decodable at",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Speculative Imbalance Positions by Non-Physical Traders: Impacts on Electricity System Balancing in Great Britain",
+  "url": "http://arxiv.org/abs/2610.28075v1",
+  "text": "The electricity system in Great Britain (GB) allows participants to deliberately produce or consume a different volume to their traded position and has incentivised this practice with a single imbalance price since 2015. In particular, non-physical traders (NPTs) often take an open position to imbalance without any intention to produce or consume power. However, new government proposals could restrict this practice due to concerns over supply-demand balancing feasibility and costs. This article presents the first empirical analysis of speculative imbalance positioning (SIP) by NPTs in the GB electricity system through its effects on imbalance volumes, balancing costs, the imbalance price, and associated settlement costs over the period 2021-2024. Our research uses party-level imbalance dat",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Arithmetic Models for Commodity Futures, Vanilla, and Calendar Spread Options",
+  "url": "http://arxiv.org/abs/2610.28071v1",
+  "text": "We develop an arithmetic multi-factor stochastic volatility model for commodity futures and options. The arithmetic specification yields a low-dimensional Markovian representation of the futures curve and semi-closed-form pricing formulas for vanilla and basket options, including calendar spread options. These properties make the model suitable for large-scale empirical estimation.\n  We estimate the model using an unscented Kalman filter on a panel of WTI crude oil futures, vanilla options, and calendar spread options spanning 2013-2024. We find that three stochastic volatility factors are needed to capture both the level and slope of the volatility term structure, and that hedges based on these factors remove almost all of the daily risk of a portfolio of vanilla options. Calendar spread",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Market Regime-Based Multi-Asset Portfolio Optimization Using Nested Clustered Optimization for Tactical Asset Allocation",
+  "url": "http://arxiv.org/abs/2610.27751v1",
+  "text": "We propose a regime-aware tactical asset allocation (TAA) framework integrating market regime detection with Nested Clustered Optimization (NCO) for multi-asset portfolio construction. The central hypothesis is that incorporating market regime information into the NCO pipeline, specifically at the stages of covariance estimation, hierarchical clustering, and weight optimization, yields portfolios with improved risk-adjusted performance and reduced downside risk relative to regime-agnostic baselines. Market regimes (Bullish, Sideways/Neutral, Bearish) are detected using a Gaussian Hidden Markov Model (HMM) fitted exclusively on information available up to each decision point, thereby preventing look-ahead bias. Regime-conditional covariance matrices and clustering structures parameterize NC",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "LOB-Impact Benchmark: Emergent Market Impact in Generative Limit Order Book Models",
+  "url": "http://arxiv.org/abs/2610.27100v1",
+  "text": "Realistic market impact is essential for generative limit order book (LOB) models to serve as world models for trading agents. If a simulator misprices this mechanism, agents learn policies that are optimal in the simulator but wrong in the real market. Existing metrics assess generated streams purely through distributional comparison with historical data, leaving counterfactual response to an agent's own orders largely unexplored. Here, we show that market impact emerges naturally in neural LOB generators trained solely for next-token prediction. We inject execution-style metaorders into the generated message flow of five autoregressive models across five NASDAQ stocks and measure the response using estimators from the empirical impact literature, validated on baselines whose physics is k",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Cooperative Multi-Agent Reinforcement Learning for Market Making on Prediction-Market Order Books",
+  "url": "http://arxiv.org/abs/2610.26789v1",
+  "text": "A market maker provides liquidity by quoting prices to buy and sell an asset, earning the spread while managing inventory risk. We study market makers trained with multi-agent reinforcement learning on prediction markets, specifically Polymarket, whose thin order books pose distinct challenges. Three challenges underpin this research: adverse selection may cause a policy trained on real data to stop quoting; the consequences of a quote can arrive many steps after the action; and prediction-market L2 data does not identify individual orders needed for simulation. We address these challenges by reconstructing order-level LOBSTER-format data from Polymarket and training agents in JaxMARL-HFT on 417 real markets. We enrich the baseline market maker's observation space with the book and recent",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Probability-Weighting Functions for Normal Tempered-Stable Laws: Orthogonal Channels and Information-Theoretic Indices",
+  "url": "http://arxiv.org/abs/2610.26746v1",
+  "text": "A probability-weighting function (PWF) maps objective probabilities into decision weights. We construct PWFs from changes in the distribution of returns rather than from a parametric family: with prior and posterior return distributions $F_{prior}$ and $F_{post}$, the PWF is $w(p) = F_{post}(F_{prior}^{-1}(p))$. Both distributions are normal tempered-stable (NTS), and the posterior differs from the prior along one of three channels, each isolated with the variance held fixed: scale, skewness and tail thickness. Around a symmetric benchmark with excess kurtosis 3, a 40% change in scale moves cumulative probabilities by up to 7 to 8 percentage points, a skewness of $\\pm 0.5$ by 2 percentage points, and a change of $\\pm 0.3$ in the tail index by about 2 percentage points. The three channels l",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Regime-Aware Interpretable Ranking for Sector Rotation",
+  "url": "http://arxiv.org/abs/2610.26456v1",
+  "text": "Sector rotation is a common decision in benchmark-relative portfolio management, where portfolio managers rank sectors for overweight and underweight positions. We formulate this task as ranking sector actions by expected future risk-adjusted active performance, measured with forward sector-benchmark Sharpe ratios. Such rankings should preserve temporal information, express model outputs through economically familiar signal characteristics, account for changes in signal relevance across macroeconomic environments, and capture dependencies among sectors. We propose RegimeRank, an interpretable sector-ranking model that represents fundamental and technical signals through expert-defined temporal characteristics, conditions them on learned macro factors via cross-attention, and models cross-s",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "The Control Layer Behind Rule-Following Agents Trading Across Market Conditions",
+  "url": "http://arxiv.org/abs/2610.26324v1",
+  "text": "Trading discipline often fails people. Our study tested whether four AI trading agents followed their strategies and risk rules. Offering traders the evidence and an agent evaluation toolkit to separate luck from following the rules, before giving agents meaningful autonomy or capital. Our study analysed 2,627 closed positions from 12 February to 27 August 2026 across the same asset universe and execution conditions. Most positions were simulated against live prices with a 0.09% round-trip fee; 18% involved real Hyperliquid orders. Each position declared a strategy, stop and target, with a limit of five open positions per agent. The fleet finished net positive after fees. Rule adherence was high across all four agents, including the unprofitable one. Profitability tracked how often agents",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Conflicting History in Foundation Model Return Forecasts",
+  "url": "http://arxiv.org/abs/2610.25822v1",
+  "text": "Older observations can help a forecaster learn a predictive relationship while becoming misleading when that relationship changes. We study this tension using paired return histories that differ in older observations but share recent returns and the conditional distribution of the next return. Across five foundation-model forecasting procedures and three simulated processes, each evaluated on 1,024 independent replications, conflicting history reduces the probability of improving on zero in all 30 higher-signal comparisons. This loss of usefulness occurs despite successful signal recovery under stable conditions. A separate exploratory comparison on 56 assets finds that shortening inputs from 256 to 64 returns increases mean absolute error for every model by 1.77-4.58 basis points; neither",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Amortized Neural Filtering for Calibrated Posteriors in Statistical Arbitrage",
+  "url": "http://arxiv.org/abs/2610.25802v2",
+  "text": "Statistical arbitrage trades on an estimate of the state of a residual spread, and conventional practice discards the uncertainty of that estimate. We keep the uncertainty and use it in the trading decision. A Neural Filter Estimator (NFE) is trained on simulated paths of a mean-reverting process whose innovation law is selected by testing candidates against real residuals; once trained, it returns the posterior over the latent state of every spread in a cross-section in one forward pass. Three results follow. On simulated paths with known truth, every practical estimator, ours included, falls in one narrow band of accuracy well below an estimator given full information, so the posterior gains no accuracy over a point estimate; its contribution is a correct account of its own uncertainty.",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Topological Compression of Prediction Market Belief States for Event Forecasting",
+  "url": "http://arxiv.org/abs/2610.25756v1",
+  "text": "Topological Data Analysis (TDA) and Persistent Homology (PH) have been utilized in numerous fields$-$from protein modeling to financial analysis$-$to understand the underlying structure of data. In this paper, we incorporate TDA and PH into forecasting models over a prediction market universe to determine whether the belief state of such markets forms an underlying structure whose shape can provide predictive insight. We conclude that single-parameter PH is able to improve predictive ability and calibrated accuracy of linear forecasting models, while two-parameter multipersistence produces similar benefits for nonlinear models.",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Probabilistic Limit Order Book Forecasting with Conditional Diffusion Models",
+  "url": "http://arxiv.org/abs/2610.25495v1",
+  "text": "Modeling limit order book (LOB) dynamics is central to market forecasting and execution-strategy evaluation. While diffusion models achieve strong empirical performance, existing LOB snapshot models typically lack a learned recurrent encoder and formal statistical guarantees. We introduce LOBGrad, a conditional DDPM framework for probabilistic LOB forecasting that combines an autoregressive RNN encoder with a diffusion-based generator. In particular, we establish an excess-risk oracle inequality for the one-step DDPM noise-prediction objective under exponential mixing and regularity assumptions. We further show that, under contractive dynamics, the dependence on the conditioning-window length can be reduced to a dependence on the latent-state dimension. Experiments on BTC/USDT, GOOGL, and",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "More Mentions, Less Information? Diagnosing Identity and Alignment in Reddit Embeddings for Volatility Forecasting",
+  "url": "http://arxiv.org/abs/2610.25468v1",
+  "text": "Since the 2021 GameStop short squeeze, r/WallStreetBets (WSB) has been associated with episodes of extreme volatility, and its text is increasingly used to forecast volatility. A model using only large language model (LLM) embeddings of WSB posts attains an out-of-sample $R^2$ of 0.13 for log realized variance. That number shows predictive power, but it does not reveal where the information comes from or how much the text adds beyond a firm's own volatility history. We answer these questions with a diagnostic protocol that nests embeddings on a heterogeneous autoregressive (HAR) benchmark, compares them with text-free firm-identity controls, shuffles the day-to-text pairing within firm-years to test day-specific alignment, and checks whether gains persist across periods and coverage groups",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Optimal Trading Filters and the Value of Predictive Signals",
+  "url": "http://arxiv.org/abs/2610.24558v1",
+  "text": "The value of a forecast depends on its accuracy, but also on its actionability. In trading, an investor must translate return forecasts into positions while accounting for trading costs and the lingering impact of earlier trades. We solve the stationary quadratic trading problem with transient price impact using tools from prediction theory: Wiener-Hopf factorization gives the optimal policy as the composition of a conditional forecast and an explicit causal linear filter. We recover the G\u00e2rleanu-Pedersen aim-portfolio under exponential resilience and derive fractional trading filters under power-law impact decay, requiring memory beyond finite-dimensional LQR control. At fixed positive risk penalty, signals of equal instantaneous predictive strength have equal frictionless Markowitz value",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Rachev-Ratio Portfolio Optimization with TimeGAN Scenarios: Replacement versus Supplementation",
+  "url": "http://arxiv.org/abs/2610.24544v1",
+  "text": "This study evaluates the reliability and investment consequences of scenarios from a specified time-series generative adversarial network (TimeGAN) in Rachev-ratio portfolio allocation. Using 12 exchange-traded funds, we compare historical, replacement and hybrid policies across five training seeds with delayed execution and transaction costs. Synthetic probability mass varies independently of draw count under a fixed training protocol; optimal generator fidelity is not assumed. Generated scenarios understate volatility and tail losses and distort dependence. Limited longer-training diagnostics improve reconstruction loss without improving cross-asset correlation accuracy. Higher-mass hybrids earn larger average net returns in some configurations, but all conditional generated-versus-histo",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Dynamic portfolio selection under range value-at-risk with logarithmic returns",
+  "url": "http://arxiv.org/abs/2610.26919v1",
+  "text": "This paper studies continuous-time portfolio selection under Range Value-at-Risk (RVaR), with both portfolio performance and risk evaluated in terms of logarithmic returns. We formulate a mean--RVaR problem in a continuous-time financial market and reduce the dynamic optimization to a static quantile problem. Using quantile representation, Lagrangian optimization, and convexification, we characterize the optimal terminal wealth through the convex envelope of an RVaR-specific transformed weighting function.\n  The RVaR-specific convex envelope exhibits two distinct geometric configurations. Under Scenario~1, the terminal wealth has a VaR-type structure: the minimum-RVaR payoff is digital-option-like, whereas for $0&lt;\u03bb&lt;1$ it consists of two growth-optimal regions separated by a constant-",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "From Alpha to Execution: Trading Horizons, Regimes, and Schedules under Concave Impact and Hurst Scaling",
+  "url": "http://arxiv.org/abs/2610.23749v1",
+  "text": "Classical execution models assume linear impact, diffusive prices, and an exogenous horizon. We study execution under concave power-law impact and Hurst-scaled price fluctuations, and make two contributions.\n  First, we choose the execution horizon by maximizing the Sharpe ratio of the trade's realized P&amp;L. Price moves during the execution window are part of that P&amp;L, so executing more slowly reduces its variance, and because impact is concave it can also lower cost per share. Urgency comes only from alpha realized while the order is being worked. The problem is governed by the signs of two quantities: (i) the duration elasticity of impact $a$, which under a structural prior equals the impact-persistence gap $\u03b2- H$ and can take either sign; and (ii) the net urgency $\u03bd$, the rate of",
+  "symbols": [],
+  "found_at": "2026-10-25T08:31:35+00:00"
+ }
+]
