@@ -1,8 +1,8 @@
 {
- "generated_utc": "2026-10-25T07:59:21+00:00",
+ "generated_utc": "2026-10-25T11:59:30+00:00",
  "law": "EVERY PRODUCER PRODUCES, OR IT IS REPLACED BY A NAMED ALTERNATIVE. Zero output is DEAD and carries a replacement; low output is STARVED and carries a budget question; no artifact is UNMEASURED and carries neither.",
  "window_days": 3.0,
- "median_rows": 336,
+ "median_rows": 312,
  "n_producers": 137,
  "census": {
   "PRODUCING": 76,
@@ -671,7 +671,7 @@
   },
   {
    "producer": "card_explosion",
-   "rows_in_window": 9763700,
+   "rows_in_window": 8352364,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -682,38 +682,38 @@
    "verdict": "PRODUCING"
   },
   {
+   "producer": "anomalies",
+   "rows_in_window": 931280,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
    "producer": "world",
-   "rows_in_window": 942456,
+   "rows_in_window": 923615,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "free_stack_proposer",
-   "rows_in_window": 898096,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "anomalies",
-   "rows_in_window": 839310,
+   "rows_in_window": 898104,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "mql5_signals",
-   "rows_in_window": 695917,
+   "rows_in_window": 694520,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "alpha_recombination",
-   "rows_in_window": 362442,
+   "rows_in_window": 359916,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "video_anchor_exit",
-   "rows_in_window": 234129,
+   "rows_in_window": 201705,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -731,13 +731,13 @@
   },
   {
    "producer": "tier_s",
-   "rows_in_window": 177618,
+   "rows_in_window": 169800,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "session_structure",
-   "rows_in_window": 131314,
+   "rows_in_window": 104960,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -749,55 +749,55 @@
   },
   {
    "producer": "broker_swaps",
-   "rows_in_window": 100792,
+   "rows_in_window": 91474,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "fund_playbook",
-   "rows_in_window": 35858,
+   "rows_in_window": 41893,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "research_tree",
-   "rows_in_window": 31590,
+   "rows_in_window": 31383,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "ff_calendar_vintage",
-   "rows_in_window": 30648,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "forextsd_cdx",
-   "rows_in_window": 18444,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "darwinex",
-   "rows_in_window": 18138,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "mql5_survivors",
-   "rows_in_window": 14464,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "event_graph",
-   "rows_in_window": 12408,
+   "rows_in_window": 29590,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "index_discovery",
-   "rows_in_window": 11449,
+   "rows_in_window": 17856,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
+   "producer": "forextsd_cdx",
+   "rows_in_window": 17362,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
+   "producer": "darwinex",
+   "rows_in_window": 16924,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
+   "producer": "mql5_survivors",
+   "rows_in_window": 15070,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
+   "producer": "event_graph",
+   "rows_in_window": 11280,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -808,32 +808,26 @@
    "verdict": "PRODUCING"
   },
   {
-   "producer": "github_topics",
-   "rows_in_window": 9038,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "fxblue",
-   "rows_in_window": 8688,
+   "producer": "lab_probability",
+   "rows_in_window": 8920,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "quant_se",
-   "rows_in_window": 8670,
+   "rows_in_window": 8661,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
-   "producer": "data_acquisition_scientist",
-   "rows_in_window": 8532,
+   "producer": "github_topics",
+   "rows_in_window": 8463,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "bis_speeches",
-   "rows_in_window": 8410,
+   "rows_in_window": 8398,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -844,14 +838,20 @@
    "verdict": "PRODUCING"
   },
   {
-   "producer": "lab_probability",
-   "rows_in_window": 7760,
+   "producer": "data_acquisition_scientist",
+   "rows_in_window": 8093,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
-   "producer": "trend_core",
-   "rows_in_window": 7008,
+   "producer": "fxblue",
+   "rows_in_window": 7964,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
+   "producer": "lab_timeseries",
+   "rows_in_window": 7602,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -862,44 +862,26 @@
    "verdict": "PRODUCING"
   },
   {
-   "producer": "lab_timeseries",
-   "rows_in_window": 6516,
+   "producer": "trend_core",
+   "rows_in_window": 6132,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "macro_state_engine",
-   "rows_in_window": 5852,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "lab_crossasset",
-   "rows_in_window": 5760,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "seasonality",
-   "rows_in_window": 5616,
+   "rows_in_window": 5344,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "tradingview_scripts",
-   "rows_in_window": 5578,
+   "rows_in_window": 5094,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
-   "producer": "youtube",
-   "rows_in_window": 5145,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "event_surprise",
-   "rows_in_window": 5060,
+   "producer": "lab_crossasset",
+   "rows_in_window": 4771,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -910,56 +892,68 @@
    "verdict": "PRODUCING"
   },
   {
+   "producer": "event_surprise",
+   "rows_in_window": 4596,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
+   "producer": "youtube",
+   "rows_in_window": 4453,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
    "producer": "propfirm_boards",
    "rows_in_window": 4388,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
+   "producer": "seasonality",
+   "rows_in_window": 4212,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
    "producer": "arxiv_qfin",
-   "rows_in_window": 3896,
+   "rows_in_window": 3669,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "quantconnect",
-   "rows_in_window": 3721,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "github",
-   "rows_in_window": 2547,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "reddit",
-   "rows_in_window": 1884,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "representation_forge",
-   "rows_in_window": 1851,
+   "rows_in_window": 3399,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "asia_endpoints",
-   "rows_in_window": 1830,
+   "rows_in_window": 2175,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
+   "producer": "github",
+   "rows_in_window": 2115,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "dislocation_lab",
-   "rows_in_window": 1724,
+   "rows_in_window": 2075,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
-   "producer": "cot",
-   "rows_in_window": 1485,
+   "producer": "representation_forge",
+   "rows_in_window": 2003,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
+   "producer": "reddit",
+   "rows_in_window": 1349,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -970,8 +964,14 @@
    "verdict": "PRODUCING"
   },
   {
-   "producer": "sec_edgar",
-   "rows_in_window": 1098,
+   "producer": "cot",
+   "rows_in_window": 1155,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
+   "producer": "alpha_evolution",
+   "rows_in_window": 1045,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -982,20 +982,20 @@
    "verdict": "PRODUCING"
   },
   {
-   "producer": "alpha_evolution",
-   "rows_in_window": 1002,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
    "producer": "forexfactory",
    "rows_in_window": 904,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
+   "producer": "sec_edgar",
+   "rows_in_window": 854,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
    "producer": "feed_clock_lab",
-   "rows_in_window": 744,
+   "rows_in_window": 825,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -1006,20 +1006,20 @@
    "verdict": "PRODUCING"
   },
   {
-   "producer": "mql5",
-   "rows_in_window": 619,
+   "producer": "survivor_distiller",
+   "rows_in_window": 522,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "central_banks",
-   "rows_in_window": 495,
+   "rows_in_window": 473,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
-   "producer": "academic",
-   "rows_in_window": 459,
+   "producer": "mql5",
+   "rows_in_window": 473,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -1031,37 +1031,13 @@
   },
   {
    "producer": "global_frontier",
-   "rows_in_window": 370,
+   "rows_in_window": 358,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
-   "producer": "survivor_distiller",
-   "rows_in_window": 348,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "forexpeacearmy",
-   "rows_in_window": 336,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "myfxbook_outlook",
-   "rows_in_window": 336,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "regional_survivors",
-   "rows_in_window": 336,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "collective2",
-   "rows_in_window": 333,
+   "producer": "academic",
+   "rows_in_window": 351,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -1072,20 +1048,32 @@
    "verdict": "PRODUCING"
   },
   {
+   "producer": "regional_survivors",
+   "rows_in_window": 312,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
+   "producer": "forexpeacearmy",
+   "rows_in_window": 308,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
+   "producer": "myfxbook_outlook",
+   "rows_in_window": 308,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
+   "producer": "collective2",
+   "rows_in_window": 305,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
    "producer": "microstructure",
-   "rows_in_window": 203,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "weather",
-   "rows_in_window": 181,
-   "window_days": 3.0,
-   "verdict": "PRODUCING"
-  },
-  {
-   "producer": "fear_greed",
-   "rows_in_window": 178,
+   "rows_in_window": 276,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
@@ -1096,62 +1084,74 @@
    "verdict": "PRODUCING"
   },
   {
+   "producer": "fear_greed",
+   "rows_in_window": 148,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
+   "producer": "weather",
+   "rows_in_window": 133,
+   "window_days": 3.0,
+   "verdict": "PRODUCING"
+  },
+  {
    "producer": "shipping",
-   "rows_in_window": 144,
+   "rows_in_window": 112,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "korea",
-   "rows_in_window": 126,
+   "rows_in_window": 104,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "earnings",
-   "rows_in_window": 90,
+   "rows_in_window": 72,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "tradingview",
-   "rows_in_window": 74,
+   "rows_in_window": 56,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "aaii",
-   "rows_in_window": 49,
+   "rows_in_window": 35,
    "window_days": 3.0,
    "verdict": "PRODUCING"
   },
   {
    "producer": "china",
-   "rows_in_window": 11,
+   "rows_in_window": 9,
    "window_days": 3.0,
    "verdict": "STARVED",
-   "why": "11 row(s) against a median of 336. A budget or input problem, NOT a reason to replace the producer."
+   "why": "9 row(s) against a median of 312. A budget or input problem, NOT a reason to replace the producer."
   },
   {
    "producer": "google_trends",
-   "rows_in_window": 9,
+   "rows_in_window": 7,
    "window_days": 3.0,
    "verdict": "STARVED",
-   "why": "9 row(s) against a median of 336. A budget or input problem, NOT a reason to replace the producer."
+   "why": "7 row(s) against a median of 312. A budget or input problem, NOT a reason to replace the producer."
   },
   {
    "producer": "investing",
-   "rows_in_window": 9,
+   "rows_in_window": 7,
    "window_days": 3.0,
    "verdict": "STARVED",
-   "why": "9 row(s) against a median of 336. A budget or input problem, NOT a reason to replace the producer."
+   "why": "7 row(s) against a median of 312. A budget or input problem, NOT a reason to replace the producer."
   },
   {
    "producer": "correlations",
-   "rows_in_window": 8,
+   "rows_in_window": 6,
    "window_days": 3.0,
    "verdict": "STARVED",
-   "why": "8 row(s) against a median of 336. A budget or input problem, NOT a reason to replace the producer."
+   "why": "6 row(s) against a median of 312. A budget or input problem, NOT a reason to replace the producer."
   },
   {
    "producer": "anomaly_factory",
@@ -1240,13 +1240,13 @@
   },
   "census_at": "2026-10-22T17:06:15+00:00",
   "breadth": {
-   "total": 4.088,
-   "columns": 1787,
+   "total": 3.4011,
+   "columns": 1597,
    "basis": "participation ratio of the singular-value spectrum of the system x (family|symbol|horizon) indicator matrix; marginal = the drop when the system's row is removed (libs.risk.fx_exposure.effective_rank)",
    "available": true
   },
   "n_producers": 3434,
-  "n_owing": 67,
+  "n_owing": 66,
   "n_declared": 22,
   "compute_unattributed": 1220,
   "compute_unattributed_why": "producers with a declared self-turning clock and no ledger hour and no registry second: `cost_by_run` keys on the LEG name, and a leg that runs many producers prices none of them individually",
@@ -1272,13 +1272,13 @@
    "build_allocator",
    "build_audit_shards"
   ],
-  "cells_to_judge_per_hour": 393.9583,
-  "orthogonal_cells_to_judge_per_hour": 53.6834,
-  "orthogonality_weight": 0.1363,
+  "cells_to_judge_per_hour": 390.0417,
+  "orthogonal_cells_to_judge_per_hour": 63.17,
+  "orthogonality_weight": 0.162,
   "set_aside": {
    "available": true,
    "path": "desks\\mt5\\reports\\SET_ASIDE_LEDGER.json",
-   "at": "2026-10-25T08:00:02+00:00",
+   "at": "2026-10-25T11:56:55+00:00",
    "organs": [
     "alpha_lineage_search",
     "alpha_rl_run",
@@ -1287,13 +1287,13 @@
     "sares"
    ],
    "stages": 11,
-   "set_aside_total": 420994,
+   "set_aside_total": 432766,
    "worst": [
     {
      "stage": "alpha_lineage_search/shared_ancestors",
-     "set_aside": 189900,
-     "kept": 12000,
-     "considered": 201900,
+     "set_aside": 201294,
+     "kept": 12720,
+     "considered": 214014,
      "ordering": "-len(families), -n_descendants"
     },
     {
@@ -1312,9 +1312,9 @@
     },
     {
      "stage": "alpha_lineage_search/untried_mutations",
-     "set_aside": 6300,
-     "kept": 12000,
-     "considered": 18300,
+     "set_aside": 6678,
+     "kept": 12720,
+     "considered": 19398,
      "ordering": "-len(untried), -n_nodes"
     },
     {
@@ -1327,29 +1327,29 @@
     {
      "stage": "alpha_lineage_search/abandoned_branches",
      "set_aside": 0,
-     "kept": 3600,
-     "considered": 3600,
+     "kept": 3816,
+     "considered": 3816,
      "ordering": "-posterior_upper, -age_days"
     },
     {
      "stage": "alpha_lineage_search/unexplored_neighbourhoods",
      "set_aside": 0,
-     "kept": 7500,
-     "considered": 7500,
+     "kept": 7950,
+     "considered": 7950,
      "ordering": "-sum(len(gap.untried))"
     },
     {
      "stage": "alpha_lineage_search/single_axis:symbol",
      "set_aside": 0,
-     "kept": 600,
-     "considered": 600,
+     "kept": 636,
+     "considered": 636,
      "ordering": "-n_nodes"
     },
     {
      "stage": "alpha_lineage_search/single_axis:session",
      "set_aside": 0,
-     "kept": 900,
-     "considered": 900,
+     "kept": 954,
+     "considered": 954,
      "ordering": "-n_nodes"
     },
     {
@@ -1369,9 +1369,9 @@
   },
   "failures": [
    "1 producer(s) have convertible source rows that emitted no valid AlphaCell; declarations and prose volume do not excuse row loss. Owing: scheduled_chatgpt=3",
-   "67 producer(s) owe cells against a ratchet of 0: the count of producers burning compute with no unique cell, no declared exemption and no named blocker may only FALL. Make them produce, declare what they make instead and who reads it in docs\\research\\productivity_blockers.json, or retire them with a reason -- never throttle a producing one. Owing: alpha_evolution, alpha_recombination, analyst_pipeline, breadth_sweep, conversion_maximiser, battery:desks/mt5/research/counterexample_agent.py, battery:desks/mt5/research/counterfactual_attribution.py, coverage_tensor, data_acquisition_scientist, data_scout, deep_forest, descendants",
-   "cells reaching the judge fell to 393.958/h against a best of 2052.88/h (floor 0.5x) with no stated reason: set `regression_reason` in docs\\research\\producer_yield_ratchet.json or find the lane that stopped",
-   "ORTHOGONAL cells reaching the judge fell to 53.6834/h against a best of 505.481/h with no stated reason: the desk is still emitting volume but the producers have collapsed onto each other's cells, which is the failure this column exists to catch"
+   "66 producer(s) owe cells against a ratchet of 0: the count of producers burning compute with no unique cell, no declared exemption and no named blocker may only FALL. Make them produce, declare what they make instead and who reads it in docs\\research\\productivity_blockers.json, or retire them with a reason -- never throttle a producing one. Owing: alpha_evolution, alpha_recombination, analyst_pipeline, breadth_sweep, conversion_maximiser, battery:desks/mt5/research/counterexample_agent.py, battery:desks/mt5/research/counterfactual_attribution.py, coverage_tensor, data_acquisition_scientist, data_scout, deep_forest, descendants",
+   "cells reaching the judge fell to 390.042/h against a best of 2052.88/h (floor 0.5x) with no stated reason: set `regression_reason` in docs\\research\\producer_yield_ratchet.json or find the lane that stopped",
+   "ORTHOGONAL cells reaching the judge fell to 63.17/h against a best of 505.481/h with no stated reason: the desk is still emitting volume but the producers have collapsed onto each other's cells, which is the failure this column exists to catch"
   ],
   "owing": [
    {
@@ -1591,16 +1591,6 @@
     "key": "forward_exploitation",
     "clock": null,
     "compute_hours_window7d": 249.6844,
-    "cells_emitted_per_hour": 0.0,
-    "unique_cells_per_hour": 0.0,
-    "cells_to_judge_per_hour": 0.0,
-    "orthogonality_added": 0.0
-   },
-   {
-    "producer": "free_stack_proposer",
-    "key": "free_stack_proposer",
-    "clock": "hourly_cycle:free_stack_proposer",
-    "compute_hours_window7d": 0.3274,
     "cells_emitted_per_hour": 0.0,
     "unique_cells_per_hour": 0.0,
     "cells_to_judge_per_hour": 0.0,
@@ -2402,7 +2392,7 @@
     "cells_emitted_per_hour": 278.5833,
     "unique_cells_per_hour": 0.4167,
     "cells_to_judge_per_hour": 278.5833,
-    "orthogonality_added": 0.647
+    "orthogonality_added": 0.6105
    },
    {
     "producer": "video_anchor_exit",
@@ -2412,17 +2402,17 @@
     "cells_emitted_per_hour": 60.0,
     "unique_cells_per_hour": 24.0417,
     "cells_to_judge_per_hour": 60.0,
-    "orthogonality_added": 0.7722
+    "orthogonality_added": 0.8718
    },
    {
     "producer": "mass_screen",
     "key": "mass_screen",
     "clock": null,
     "compute_hours_window7d": 4.019,
-    "cells_emitted_per_hour": 24.4167,
-    "unique_cells_per_hour": 24.4167,
-    "cells_to_judge_per_hour": 24.4167,
-    "orthogonality_added": 0.8353
+    "cells_emitted_per_hour": 24.375,
+    "unique_cells_per_hour": 24.375,
+    "cells_to_judge_per_hour": 24.375,
+    "orthogonality_added": 0.9165
    },
    {
     "producer": "moat_factory",
@@ -2432,17 +2422,7 @@
     "cells_emitted_per_hour": 9.75,
     "unique_cells_per_hour": 9.7083,
     "cells_to_judge_per_hour": 9.75,
-    "orthogonality_added": 0.6781
-   },
-   {
-    "producer": "card_explosion",
-    "key": "card_explosion",
-    "clock": "MT5-HourlyCore",
-    "compute_hours_window7d": 165.4848,
-    "cells_emitted_per_hour": 11.7083,
-    "unique_cells_per_hour": 10.625,
-    "cells_to_judge_per_hour": 7.375,
-    "orthogonality_added": 0.6247
+    "orthogonality_added": 0.6407
    },
    {
     "producer": "miner:paradigm_router",
@@ -2452,7 +2432,17 @@
     "cells_emitted_per_hour": 6.0833,
     "unique_cells_per_hour": 0.2083,
     "cells_to_judge_per_hour": 6.0833,
-    "orthogonality_added": 0.0694
+    "orthogonality_added": 0.0648
+   },
+   {
+    "producer": "free_stack_proposer",
+    "key": "free_stack_proposer",
+    "clock": "hourly_cycle:free_stack_proposer",
+    "compute_hours_window7d": 0.3274,
+    "cells_emitted_per_hour": 76.6667,
+    "unique_cells_per_hour": 24.1667,
+    "cells_to_judge_per_hour": 4.6667,
+    "orthogonality_added": 0.025
    },
    {
     "producer": "lab_probability",
@@ -2462,7 +2452,7 @@
     "cells_emitted_per_hour": 1.375,
     "unique_cells_per_hour": 0.25,
     "cells_to_judge_per_hour": 1.375,
-    "orthogonality_added": 0.0134
+    "orthogonality_added": 0.0125
    },
    {
     "producer": "lab_timeseries",
@@ -2472,7 +2462,7 @@
     "cells_emitted_per_hour": 1.125,
     "unique_cells_per_hour": 0.2083,
     "cells_to_judge_per_hour": 1.125,
-    "orthogonality_added": 0.0134
+    "orthogonality_added": 0.0125
    },
    {
     "producer": "miner:analyst_pipeline:other",
@@ -2482,7 +2472,7 @@
     "cells_emitted_per_hour": 0.7917,
     "unique_cells_per_hour": 0.125,
     "cells_to_judge_per_hour": 0.7917,
-    "orthogonality_added": 0.0179
+    "orthogonality_added": 0.0167
    },
    {
     "producer": "miner:descendants:instrument",
@@ -2492,7 +2482,7 @@
     "cells_emitted_per_hour": 0.7917,
     "unique_cells_per_hour": 0.0833,
     "cells_to_judge_per_hour": 0.7917,
-    "orthogonality_added": 0.009
+    "orthogonality_added": 0.0084
    },
    {
     "producer": "miner:residual_queue",
@@ -2502,17 +2492,7 @@
     "cells_emitted_per_hour": 0.75,
     "unique_cells_per_hour": 0.125,
     "cells_to_judge_per_hour": 0.75,
-    "orthogonality_added": 0.0135
-   },
-   {
-    "producer": "lab_crossasset",
-    "key": "lab_crossasset",
-    "clock": null,
-    "compute_hours_window7d": 0.0,
-    "cells_emitted_per_hour": 0.6667,
-    "unique_cells_per_hour": 0.1667,
-    "cells_to_judge_per_hour": 0.6667,
-    "orthogonality_added": 0.009
+    "orthogonality_added": 0.0125
    },
    {
     "producer": "sandbox:pymoo",
@@ -2522,7 +2502,7 @@
     "cells_emitted_per_hour": 0.4167,
     "unique_cells_per_hour": 0.4167,
     "cells_to_judge_per_hour": 0.4167,
-    "orthogonality_added": 0.0135
+    "orthogonality_added": 0.0126
    },
    {
     "producer": "sandbox:nevergrad",
@@ -2532,37 +2512,27 @@
     "cells_emitted_per_hour": 0.375,
     "unique_cells_per_hour": 0.375,
     "cells_to_judge_per_hour": 0.375,
-    "orthogonality_added": 0.0135
+    "orthogonality_added": 0.0126
    },
    {
-    "producer": "sandbox_runner",
-    "key": "sandbox_runner",
+    "producer": "lab_crossasset",
+    "key": "lab_crossasset",
     "clock": null,
-    "compute_hours_window7d": 4.2892,
-    "cells_emitted_per_hour": 0.4583,
-    "unique_cells_per_hour": 0.4583,
-    "cells_to_judge_per_hour": 0.25,
-    "orthogonality_added": 0.0269
+    "compute_hours_window7d": 0.0,
+    "cells_emitted_per_hour": 0.3333,
+    "unique_cells_per_hour": 0.1667,
+    "cells_to_judge_per_hour": 0.3333,
+    "orthogonality_added": 0.0042
    },
    {
     "producer": "model_search",
     "key": "model_search",
     "clock": null,
     "compute_hours_window7d": 2.8965,
-    "cells_emitted_per_hour": 0.2083,
-    "unique_cells_per_hour": 0.2083,
+    "cells_emitted_per_hour": 0.25,
+    "unique_cells_per_hour": 0.25,
     "cells_to_judge_per_hour": 0.2083,
-    "orthogonality_added": 0.0045
-   },
-   {
-    "producer": "forge:crowding_x_options_x_news",
-    "key": "forge:crowding_x_options_x_news",
-    "clock": null,
-    "compute_hours_window7d": 0.0,
-    "cells_emitted_per_hour": 0.1667,
-    "unique_cells_per_hour": 0.1667,
-    "cells_to_judge_per_hour": 0.1667,
-    "orthogonality_added": 0.018
+    "orthogonality_added": 0.0042
    },
    {
     "producer": "factor_model_coevolution",
@@ -2572,7 +2542,7 @@
     "cells_emitted_per_hour": 0.125,
     "unique_cells_per_hour": 0.125,
     "cells_to_judge_per_hour": 0.125,
-    "orthogonality_added": 0.0135
+    "orthogonality_added": 0.0126
    },
    {
     "producer": "sandbox:cell:chan_structure_lab",
@@ -2582,47 +2552,7 @@
     "cells_emitted_per_hour": 0.125,
     "unique_cells_per_hour": 0.125,
     "cells_to_judge_per_hour": 0.125,
-    "orthogonality_added": 0.0135
-   },
-   {
-    "producer": "unused_information",
-    "key": "unused_information",
-    "clock": null,
-    "compute_hours_window7d": 51.0738,
-    "cells_emitted_per_hour": 0.2917,
-    "unique_cells_per_hour": 0.2917,
-    "cells_to_judge_per_hour": 0.125,
-    "orthogonality_added": 0.0135
-   },
-   {
-    "producer": "seat:discovery_compiler",
-    "key": "seat:discovery_compiler",
-    "clock": null,
-    "compute_hours_window7d": 0.0,
-    "cells_emitted_per_hour": 0.0833,
-    "unique_cells_per_hour": 0.0833,
-    "cells_to_judge_per_hour": 0.0833,
-    "orthogonality_added": 0.009
-   },
-   {
-    "producer": "forest_runner:latam:mechanism_extractors",
-    "key": "forest_runner:latam:mechanism_extractors",
-    "clock": null,
-    "compute_hours_window7d": 0.0,
-    "cells_emitted_per_hour": 0.0833,
-    "unique_cells_per_hour": 0.0833,
-    "cells_to_judge_per_hour": 0.0417,
-    "orthogonality_added": 0.0045
-   },
-   {
-    "producer": "forest_runner:north_america:mechanism_extractors",
-    "key": "forest_runner:north_america:mechanism_extractors",
-    "clock": null,
-    "compute_hours_window7d": 0.0,
-    "cells_emitted_per_hour": 0.0417,
-    "unique_cells_per_hour": 0.0417,
-    "cells_to_judge_per_hour": 0.0417,
-    "orthogonality_added": 0.0045
+    "orthogonality_added": 0.0126
    },
    {
     "producer": "sandbox:cell:gold_public_mechanisms",
@@ -2632,7 +2562,7 @@
     "cells_emitted_per_hour": 0.0417,
     "unique_cells_per_hour": 0.0417,
     "cells_to_judge_per_hour": 0.0417,
-    "orthogonality_added": 0.0045
+    "orthogonality_added": 0.0042
    },
    {
     "producer": "sandbox:cell:path_signature_lab",
@@ -2642,7 +2572,7 @@
     "cells_emitted_per_hour": 0.0417,
     "unique_cells_per_hour": 0.0417,
     "cells_to_judge_per_hour": 0.0417,
-    "orthogonality_added": 0.0045
+    "orthogonality_added": 0.0042
    },
    {
     "producer": "sandbox:numerai_method",
@@ -2652,7 +2582,7 @@
     "cells_emitted_per_hour": 0.0417,
     "unique_cells_per_hour": 0.0417,
     "cells_to_judge_per_hour": 0.0417,
-    "orthogonality_added": 0.0045
+    "orthogonality_added": 0.0042
    },
    {
     "producer": "search_paradigm_census",
@@ -2662,37 +2592,7 @@
     "cells_emitted_per_hour": 0.0417,
     "unique_cells_per_hour": 0.0417,
     "cells_to_judge_per_hour": 0.0417,
-    "orthogonality_added": 0.0045
-   },
-   {
-    "producer": "seat:asia",
-    "key": "seat:asia",
-    "clock": null,
-    "compute_hours_window7d": 0.0,
-    "cells_emitted_per_hour": 0.0833,
-    "unique_cells_per_hour": 0.0833,
-    "cells_to_judge_per_hour": 0.0417,
-    "orthogonality_added": 0.0045
-   },
-   {
-    "producer": "seat:paradigm_router",
-    "key": "seat:paradigm_router",
-    "clock": null,
-    "compute_hours_window7d": 0.0,
-    "cells_emitted_per_hour": 0.0417,
-    "unique_cells_per_hour": 0.0417,
-    "cells_to_judge_per_hour": 0.0417,
-    "orthogonality_added": 0.0045
-   },
-   {
-    "producer": "seat:qd_frontier",
-    "key": "seat:qd_frontier",
-    "clock": null,
-    "compute_hours_window7d": 0.0,
-    "cells_emitted_per_hour": 0.0417,
-    "unique_cells_per_hour": 0.0417,
-    "cells_to_judge_per_hour": 0.0417,
-    "orthogonality_added": 0.0045
+    "orthogonality_added": 0.0042
    },
    {
     "producer": "<sym>",
@@ -4895,6 +4795,16 @@
     "compute_hours_window7d": 0.0,
     "cells_emitted_per_hour": 0.0,
     "unique_cells_per_hour": 0.0,
+    "cells_to_judge_per_hour": 0.0,
+    "orthogonality_added": 0.0
+   },
+   {
+    "producer": "card_explosion",
+    "key": "card_explosion",
+    "clock": "MT5-HourlyCore",
+    "compute_hours_window7d": 165.4848,
+    "cells_emitted_per_hour": 4.4167,
+    "unique_cells_per_hour": 4.375,
     "cells_to_judge_per_hour": 0.0,
     "orthogonality_added": 0.0
    },
@@ -12573,7 +12483,7 @@
     "key": "forest_runner:africa:mechanism_extractors",
     "clock": null,
     "compute_hours_window7d": 0.0,
-    "cells_emitted_per_hour": 0.0417,
+    "cells_emitted_per_hour": 0.0833,
     "unique_cells_per_hour": 0.0417,
     "cells_to_judge_per_hour": 0.0,
     "orthogonality_added": 0.0
@@ -13039,6 +12949,16 @@
     "orthogonality_added": 0.0
    },
    {
+    "producer": "forest_runner:latam:mechanism_extractors",
+    "key": "forest_runner:latam:mechanism_extractors",
+    "clock": null,
+    "compute_hours_window7d": 0.0,
+    "cells_emitted_per_hour": 0.0417,
+    "unique_cells_per_hour": 0.0417,
+    "cells_to_judge_per_hour": 0.0,
+    "orthogonality_added": 0.0
+   },
+   {
     "producer": "forest_runner:latam:official_data",
     "key": "forest_runner:latam:official_data",
     "clock": null,
@@ -13171,6 +13091,16 @@
    {
     "producer": "forest_runner:north_america:failure_miners",
     "key": "forest_runner:north_america:failure_miners",
+    "clock": null,
+    "compute_hours_window7d": 0.0,
+    "cells_emitted_per_hour": 0.0,
+    "unique_cells_per_hour": 0.0,
+    "cells_to_judge_per_hour": 0.0,
+    "orthogonality_added": 0.0
+   },
+   {
+    "producer": "forest_runner:north_america:mechanism_extractors",
+    "key": "forest_runner:north_america:mechanism_extractors",
     "clock": null,
     "compute_hours_window7d": 0.0,
     "cells_emitted_per_hour": 0.0,
@@ -13323,8 +13253,8 @@
     "key": "forest_runner:russia_cis:mechanism_extractors",
     "clock": null,
     "compute_hours_window7d": 0.0,
-    "cells_emitted_per_hour": 0.0417,
-    "unique_cells_per_hour": 0.0417,
+    "cells_emitted_per_hour": 0.0833,
+    "unique_cells_per_hour": 0.0833,
     "cells_to_judge_per_hour": 0.0,
     "orthogonality_added": 0.0
    },
@@ -13469,6 +13399,16 @@
     "orthogonality_added": 0.0
    },
    {
+    "producer": "forge:crowding_x_options_x_news",
+    "key": "forge:crowding_x_options_x_news",
+    "clock": null,
+    "compute_hours_window7d": 0.0,
+    "cells_emitted_per_hour": 0.0,
+    "unique_cells_per_hour": 0.0,
+    "cells_to_judge_per_hour": 0.0,
+    "orthogonality_added": 0.0
+   },
+   {
     "producer": "forge:forced_flow_x_session_x_world_state",
     "key": "forge:forced_flow_x_session_x_world_state",
     "clock": null,
@@ -13563,16 +13503,6 @@
     "key": "forward_exploitation",
     "clock": null,
     "compute_hours_window7d": 249.6844,
-    "cells_emitted_per_hour": 0.0,
-    "unique_cells_per_hour": 0.0,
-    "cells_to_judge_per_hour": 0.0,
-    "orthogonality_added": 0.0
-   },
-   {
-    "producer": "free_stack_proposer",
-    "key": "free_stack_proposer",
-    "clock": "hourly_cycle:free_stack_proposer",
-    "compute_hours_window7d": 0.3274,
     "cells_emitted_per_hour": 0.0,
     "unique_cells_per_hour": 0.0,
     "cells_to_judge_per_hour": 0.0,
@@ -14053,8 +13983,8 @@
     "key": "graveyard_resurrection:conditional",
     "clock": null,
     "compute_hours_window7d": 0.0,
-    "cells_emitted_per_hour": 0.0,
-    "unique_cells_per_hour": 0.0,
+    "cells_emitted_per_hour": 0.0417,
+    "unique_cells_per_hour": 0.0417,
     "cells_to_judge_per_hour": 0.0,
     "orthogonality_added": 0.0
    },
@@ -32839,6 +32769,16 @@
     "orthogonality_added": 0.0
    },
    {
+    "producer": "sandbox_runner",
+    "key": "sandbox_runner",
+    "clock": null,
+    "compute_hours_window7d": 4.2892,
+    "cells_emitted_per_hour": 0.3333,
+    "unique_cells_per_hour": 0.25,
+    "cells_to_judge_per_hour": 0.0,
+    "orthogonality_added": 0.0
+   },
+   {
     "producer": "scheduled_chatgpt",
     "key": "scheduled_chatgpt",
     "clock": "hourly_cycle:scout_roster",
@@ -33027,6 +32967,16 @@
     "orthogonality_added": 0.0
    },
    {
+    "producer": "seat:asia",
+    "key": "seat:asia",
+    "clock": null,
+    "compute_hours_window7d": 0.0,
+    "cells_emitted_per_hour": 0.0417,
+    "unique_cells_per_hour": 0.0417,
+    "cells_to_judge_per_hour": 0.0,
+    "orthogonality_added": 0.0
+   },
+   {
     "producer": "seat:asia_endpoints",
     "key": "seat:asia_endpoints",
     "clock": null,
@@ -33093,6 +33043,16 @@
     "compute_hours_window7d": 0.0,
     "cells_emitted_per_hour": 0.0,
     "unique_cells_per_hour": 0.0,
+    "cells_to_judge_per_hour": 0.0,
+    "orthogonality_added": 0.0
+   },
+   {
+    "producer": "seat:discovery_compiler",
+    "key": "seat:discovery_compiler",
+    "clock": null,
+    "compute_hours_window7d": 0.0,
+    "cells_emitted_per_hour": 0.0417,
+    "unique_cells_per_hour": 0.0417,
     "cells_to_judge_per_hour": 0.0,
     "orthogonality_added": 0.0
    },
@@ -33287,8 +33247,28 @@
     "orthogonality_added": 0.0
    },
    {
+    "producer": "seat:paradigm_router",
+    "key": "seat:paradigm_router",
+    "clock": null,
+    "compute_hours_window7d": 0.0,
+    "cells_emitted_per_hour": 0.0,
+    "unique_cells_per_hour": 0.0,
+    "cells_to_judge_per_hour": 0.0,
+    "orthogonality_added": 0.0
+   },
+   {
     "producer": "seat:propfirm_boards",
     "key": "seat:propfirm_boards",
+    "clock": null,
+    "compute_hours_window7d": 0.0,
+    "cells_emitted_per_hour": 0.0,
+    "unique_cells_per_hour": 0.0,
+    "cells_to_judge_per_hour": 0.0,
+    "orthogonality_added": 0.0
+   },
+   {
+    "producer": "seat:qd_frontier",
+    "key": "seat:qd_frontier",
     "clock": null,
     "compute_hours_window7d": 0.0,
     "cells_emitted_per_hour": 0.0,
@@ -36541,6 +36521,16 @@
     "compute_hours_window7d": 1.0095,
     "cells_emitted_per_hour": 0.0,
     "unique_cells_per_hour": 0.0,
+    "cells_to_judge_per_hour": 0.0,
+    "orthogonality_added": 0.0
+   },
+   {
+    "producer": "unused_information",
+    "key": "unused_information",
+    "clock": null,
+    "compute_hours_window7d": 51.0738,
+    "cells_emitted_per_hour": 0.1667,
+    "unique_cells_per_hour": 0.1667,
     "cells_to_judge_per_hour": 0.0,
     "orthogonality_added": 0.0
    },
