@@ -1,0 +1,2158 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u201c\uace8\ub4dc\uc120\ubb3c 2025-11-14 \uae08\uc694\uc77c/15 \ud1a0\uc694\uc77c \ubbf8\uad6d\uc7a5 \ub9e4\ub9e4\uc804\ub7b5 : \uc77c\ubaa9\uade0\ud615\ud45c\u00b7N\ud30c\ub3d9\uc73c\ub85c \ubcf8 \ud575\uc2ec \uc9c0\uc9c0\u00b7\uc800\ud56d\uacfc \ucf5c\u00b7\ud48b \uc635\uc158 \ub300\uc751\ubc95\u201d : \ub124\uc774\ubc84 \ube14\ub85c\uadf8",
+  "url": "https://m.blog.naver.com/tlsfkdmlwjstjf/224075793968",
+  "published": "2026-10-25T07:12:46+00:00",
+  "symbols": [
+   "XAUUSD",
+   "NAS100",
+   "USDX"
+  ],
+  "timeframes": [
+   "\uc77c\ubd09"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2e5a8d81144d9f796612",
+  "host": "m.blog.naver.com",
+  "claims": [
+   {
+    "claim": "\uc77c\ubd09 \uc73c\ub85c \ubcf8 \uace8\ub4dc \uc120\ubb3c\uc758 \ud070 \uadf8\ub9bc \u200b 1) \uc77c\ubd09 \uad6c\uc870 \uc694\uc57d \uac00\uaca9\ub300(\ub300\ub7b5): \ucd5c\uadfc \uace0\uc810 : 4,390 \uc804\ud6c4 \ud604\uc7ac : 4,180 \ubd80\uadfc (\uace0\uc810 \ub300\ube44 4~5% \uc870\uc815) \uc8fc\uc694 \ud2b9\uc9d5 3,200 ~ 3,400 \uad6c\uac04\uc5d0\uc11c \uae34 \uae30\uac04 \ubc15\uc2a4 \u2192 \uc774\ud6c4 \uac00\ud30c\ub978 \uc0c1\uc2b9 N\ud30c \ub85c 4,300\ub300\uae4c\uc9c0 \uc9c1\uc120 \uc0c1\uc2b9.",
+    "lang": "ko",
+    "quantities": [
+     "\uace8\ub4dc",
+     "\uace0\uc810",
+     "\uc120\ubb3c"
+    ],
+    "direction": [
+     "\uc0c1\uc2b9"
+    ],
+    "horizon": [
+     "\uc77c",
+     "\uc8fc"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "05705076424e"
+   },
+   {
+    "claim": "\ub2e8\uae30\u00b7\uc911\uae30 \uc774\ub3d9\ud3c9\uade0\uc120(5\u00b79\u00b713\u00b726\uc77c\uc120)\uc774 \ubaa8\ub450 \uc6b0\uc0c1\ud5a5 , \uc7a5\uae30 52\u00b765\u00b776\uc77c\uc120\uc740 \uac00\uaca9 \uc544\ub798\uc5d0\uc11c \uc644\ub9cc\ud55c \uc0c1\uc2b9 \u2192 **\u201c\uc0c1\uc2b9\ucd94\uc138 \uc18d \ub2e8\uae30 \uc870\uc815\u201d**\uc73c\ub85c \ubcf4\ub294 \uac8c \ud569\ub9ac\uc801.",
+    "lang": "ko",
+    "quantities": [
+     "\ucd94\uc138",
+     "\uc774\ub3d9\ud3c9\uade0",
+     "\uc740"
+    ],
+    "direction": [
+     "\uc0c1\uc2b9"
+    ],
+    "horizon": [
+     "\uc77c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "USDX"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc",
+      "\ub098\uc2a4\ub2e5",
+      "\ub2ec\ub7ec\uc778\ub371\uc2a4"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b7ad4559d5fb"
+   },
+   {
+    "claim": "N\ud30c\ub3d9\u00b7\uc77c\ubaa9 \uae30\ubcf8\uc218\uce58\ub85c \ubcf4\ub294 \ubc29\ud5a5\uc131 \u200b \ud83d\udd38 \uc0c1\uc2b9\u00b7\ud558\ub77d N\uc790 \ub300\uc0c1\uc2b9 1\ud30c : 3,400 \u2192 3,800 \uc870\uc815 A\ud30c : 3,800 \u2192 3,600 \ub300\uc0c1\uc2b9 3\ud30c : 3,600 \u2192 4,390 (\ud604\uc7ac \uc704\uce58) \uc9c0\uae08\uc740 4,390 \uace0\uc810\uc5d0\uc11c 4,180\uae4c\uc9c0 \ub20c\ub9b0 A\ud30c \uc870\uc815 \uc73c\ub85c \ubcf4\uc774\uace0, 4,080~4,100\uc744 \uc9c0\ud0a4\uba74 **\uc0c8\ub85c\uc6b4 \uc0c1\uc2b9 N\ud30c(3-3\ud30c)**\ub3c4 \uae30\ub300 \uac00\ub2a5\ud55c \uc790\ub9ac.",
+    "lang": "ko",
+    "quantities": [
+     "\uae08",
+     "\uace0\uc810",
+     "\uc740"
+    ],
+    "direction": [
+     "\uc0c1\uc2b9",
+     "\ud558\ub77d"
+    ],
+    "horizon": [
+     "\uc77c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "USDX"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc",
+      "\ub098\uc2a4\ub2e5",
+      "\ub2ec\ub7ec\uc778\ub371\uc2a4"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e06166d83e38"
+   },
+   {
+    "claim": "\uc624\ub298 \ubc24~\ub0b4\uc77c \uc0c8\ubcbd \uc2dc\uac04\ub300\ubcc4 \uace8\ub4dc \uc120\ubb3c \uc804\ub7b5 \u200b \u200b \u25a3 23:30~01:00 (\uc2dc\uac00 & \ubc29\ud5a5 \ud0d0\uc0c9 \uad6c\uac04) \u200b 1) \uccb4\ud06c \ud3ec\uc778\ud2b8 \uc2dc\uac00\uac00 4,180 \uc704\uc5d0\uc11c \uac2d\uc0c1 : \uc804\uc77c \uc0c1\uc2b9 \ubaa8\uba58\ud140 \uc5f0\uc7a5 \uac00\ub2a5\uc131.",
+    "lang": "ko",
+    "quantities": [
+     "\ubaa8\uba58\ud140",
+     "\uac2d",
+     "\uace8\ub4dc",
+     "\uc804\uc77c"
+    ],
+    "direction": [
+     "\uc0c1\uc2b9"
+    ],
+    "horizon": [
+     "\uc2dc\uac04",
+     "\uc77c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "922c7cc6666b"
+   },
+   {
+    "claim": "\u200b 2) \ub9e4\uc218/\ub9e4\ub3c4 \uc2dc\ub098\ub9ac\uc624 (\uc608\uc2dc) \u200b [\ub871(\uc120\ubb3c\u00b7\ucf5c) \uad00\uc810] \uc870\uac74 \uc2dc\uac00 \uc774\ud6c4 4,150~4,170 \uad6c\uac04\uc5d0\uc11c \uc544\ub798\uaf2c\ub9ac \uae34 \uc591\ubd09 + \uac70\ub798\ub7c9 \uc99d\uac00 5\ubd84\ubd09 \uae30\uc900 \uace0\uc810\u00b7\uc800\uc810\uc774 \uacc4\ub2e8\uc2dd \uc0c1\ud5a5 .",
+    "lang": "ko",
+    "quantities": [
+     "\uac70\ub798\ub7c9",
+     "\uace0\uc810",
+     "\uc800\uc810",
+     "\uc120\ubb3c"
+    ],
+    "direction": [
+     "\ub9e4\uc218",
+     "\ub9e4\ub3c4"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\ubd09"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "USDX"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc",
+      "\ub098\uc2a4\ub2e5",
+      "\ub2ec\ub7ec\uc778\ub371\uc2a4"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2aae4ccc4fb7"
+   },
+   {
+    "claim": "\u200b \u200b [\uc20f(\uc120\ubb3c\u00b7\ud48b) \uad00\uc810] \uc870\uac74 4,150 \uc9c0\uc9c0 \uc2e4\ud328, 4,130 \uc544\ub798 5\ubd84\ubd09 2\uac1c \uc774\uc0c1 \ub9c8\uac10.",
+    "lang": "ko",
+    "quantities": [
+     "\uc9c0\uc9c0",
+     "\uc120\ubb3c"
+    ],
+    "direction": [
+     "\uc20f"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\ubd09"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "USDX"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc",
+      "\ub098\uc2a4\ub2e5",
+      "\ub2ec\ub7ec\uc778\ub371\uc2a4"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6e2682b9183"
+   },
+   {
+    "claim": "\uac15\uc138 \ub274\uc2a4/\ub2ec\ub7ec \uc57d\uc138 \uc2dc \uace8\ub4dc\uac00 4,230 \uc774\uc0c1\uc73c\ub85c \u201c\uc218\uc9c1 \uc0c1\uc2b9\u201d \ubaa8\uc591\uc774\uba74 \ucd94\uaca9 \ub9e4\uc218\ub294 \uc790\uc81c , 4,220 \ubd80\uadfc \ub20c\ub9bc\uc774 \ub098\uc62c \ub54c\ub9cc 5\ubd84\ubd09 \uc804\ud658 \uc591\ubd09 \ud655\uc778 \ud6c4 \uc18c\uc561 \uc9c4\uc785.",
+    "lang": "ko",
+    "quantities": [
+     "\uace8\ub4dc",
+     "\ub2ec\ub7ec"
+    ],
+    "direction": [
+     "\ub9e4\uc218",
+     "\uc0c1\uc2b9"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\ubd09"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "eb0dab4883be"
+   },
+   {
+    "claim": "\uc911\uae30 \uc0c1\ubc29 \ubdf0 4,100~4,120 \ub20c\ub9bc\uc5d0\uc11c \ub9cc\uae30 \uc5ec\uc720 \uc788\ub294 4,000~4,100 ITM \ucf5c\ub85c \ub808\ubc84\ub9ac\uc9c0 \ud604\ubb3c\ucc98\ub7fc \ubd84\ud560 \ub9e4\uc218.",
+    "lang": "ko",
+    "quantities": [
+     "\ub9cc\uae30"
+    ],
+    "direction": [
+     "\ub9e4\uc218"
+    ],
+    "horizon": [
+     "\ubd84"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "USDX"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc",
+      "\ub098\uc2a4\ub2e5",
+      "\ub2ec\ub7ec\uc778\ub371\uc2a4"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "77f5e32541e2"
+   }
+  ],
+  "n_claims": 10
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "[\ud574\uc678\uc120\ubb3c \uace8\ub4dc, \ud574\uc678\uc120\ubb3c \ud06c\ub8e8\ub4dc\uc624\uc77c] \uace8\ub4dc \uae09\uc900\uc120\ucc28\ud2b8 \ub9e4\ub9e4\uae30\ubc95, \uc720\ub85cFX, \uc9c0\ud45c \ubc1c\ud45c\uc2dc \ub300\uc751\ubc95, \ud574\uc678\uc120\ubb3c \ub9e4\ub9e4\uae30\ubc95, \ud574\uc678\uc120\ubb3c \ubc30\uc6b0\uae30, \ud574\uc678\uc120\ubb3c \uc218\uc218\ub8cc, \ud574\uc678\uc120\ubb3c \uc2e4\uc804\ub9e4\ub9e4 : \ub124\uc774\ubc84 \ube14\ub85c\uadf8",
+  "url": "https://m.blog.naver.com/godfutures/220789976484",
+  "published": "2026-10-25T07:12:47+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ecfed9b0454ad37076d2",
+  "host": "m.blog.naver.com",
+  "claims": [
+   {
+    "claim": "\ubc29\ubc95\uc740 1\ubd84\ucc28\ud2b8\uc5d0 \uae30\uc900\uc120(100\uc77c\uc120)\uacfc \ucd94\uc138\uc120(30\uc77c\uc120) \uc744 \ub123\uace0 \uc911\uc694\uc9c0\ud45c \ubc1c\ud45c \uc774\ud6c4 \uae09\ub77d\uc774 \ube60\uc9c0\uba74 \ubc14\ub85c \ub530\ub77c \ub4e4\uc5b4\uac00\uc9c0 \ub9d0\uace0 \ub9e4\ub3c4\uc77c \uacbd\uc6b0 \ucd94\uc138\uc120\uc5d0 \uc2e0\ud638\uac00 \ub098\uc624\ub294 \uac83\uc744 \ubcf4\uace0 \uc9c4\uc785\ud558\uba74 \ub429\ub2c8\ub2e4.",
+    "lang": "ko",
+    "quantities": [
+     "\ucd94\uc138",
+     "\ud638\uac00",
+     "\uc740"
+    ],
+    "direction": [
+     "\ub9e4\ub3c4",
+     "\uae09\ub77d"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\uc77c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "237a2c9f8da3"
+   },
+   {
+    "claim": "(\uae09\uc900\uc120\ucc28\ud2b8\ub97c \ubc30\uc6b0\uc2e0 \ubd84\ub4e4\uc740 1\ubd84\ucc28\ud2b8\uc5d0\ub3c4 \ud2f1\ucc28\ud2b8\ucc98\ub7fc \uc9c4\uc785\uc2e0\ud638\ub97c \ub123\uc5b4\uc11c \ubcf4\uba74 \ub429\ub2c8\ub2e4.",
+    "lang": "ko",
+    "quantities": [
+     "\uc740"
+    ],
+    "direction": [
+     "\uc9c4\uc785"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\ud2f1"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f69d6898229c"
+   },
+   {
+    "claim": "\ub9e4\uc218\uc778 \uacbd\uc6b0\uc5d0\ub3c4 1\ubd84\ucc28\ud2b8 30\uc77c\uc120 \uc9c0\uc9c0 \ubc1b\uace0 \uc62c\ub77c\uac00\ub294 \uacbd\uc6b0\ub3c4 \uc788\uc9c0\ub9cc \ub9e4\ub3c4\uc778 \uacbd\uc6b0\uac00 \ub354 \ud655\uc2e4\ud788 \ube60\uc838\uc8fc\ub294 \uacbd\ud5a5\uc774 \uc788\uc2b5\ub2c8\ub2e4.",
+    "lang": "ko",
+    "quantities": [
+     "\uc9c0\uc9c0"
+    ],
+    "direction": [
+     "\ub9e4\uc218",
+     "\ub9e4\ub3c4"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\uc77c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5d0d2a35c2f0"
+   },
+   {
+    "claim": "[\ub9e4\uc218\uc778 \uacbd\uc6b0\uc5d0\ub3c4 \uc801\uc6a9\uc740 \ub418\ub098 \ub9e4\ub3c4\uc77c\ub54c\uac00 \ub354 \ud655\ub960\uc774 \ub192\uc2b5\ub2c8\ub2e4.",
+    "lang": "ko",
+    "quantities": [
+     "\uc740"
+    ],
+    "direction": [
+     "\ub9e4\uc218",
+     "\ub9e4\ub3c4"
+    ],
+    "horizon": [
+     "\uc77c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "04edf9a0b5d9"
+   },
+   {
+    "claim": "[\uc544\ub798 \ucc28\ud2b8 \ub610\ud55c \uc9c0\ud45c \uc774\ud6c4 1\ubd84\ucc28\ud2b8 \ub9e4\ub3c4 \uc9c4\uc785\uc2e0\ud638 \ubc1c\uc0dd] \u200b [\uc804\ud615\uc801\uc778 \uae09\ub77d \ud328\ud134\uc5d0 \ub9e4\ub3c4 \uc9c4\uc785\ud0c0\uc774\ubc0d] \u200b \uc704 \ucc28\ud2b8\ub294 \uc804\ud615\uc801\uc778 \ubc00\uc5b4\ubc84\ub9ac\uc2dd \ub9e4\ub3c4 \ucd94\uc138\uc785\ub2c8\ub2e4.",
+    "lang": "ko",
+    "quantities": [
+     "\ucd94\uc138"
+    ],
+    "direction": [
+     "\ub9e4\ub3c4",
+     "\uae09\ub77d"
+    ],
+    "horizon": [
+     "\ubd84"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d6b9cff0b183"
+   },
+   {
+    "claim": "[\uc9c0\ub09c \uc8fc \uae08\uc694\uc77c \uae09\ub77d\uc774\ud6c4 \ucd94\uc138\uc120 \ud130\uce58\ud558\uace0 \ub2e4\uc2dc \ube60\uc9c0\ub294 \uadf8\ub9bc] \u200b \uc800 \uc790\ub9ac\ub294 \uc81c\uac00 \uc0c8\ubcbd\uc5d0 \ubcf4\uace0 \uc788\uc5c8\ub294\ub370\uc694.",
+    "lang": "ko",
+    "quantities": [
+     "\ucd94\uc138",
+     "\uae08"
+    ],
+    "direction": [
+     "\uae09\ub77d"
+    ],
+    "horizon": [
+     "\uc77c",
+     "\uc8fc"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3f3b3d52b9d4"
+   },
+   {
+    "claim": "\u200b [\uace8\ub4dc \uae09\uc900\uc120 1\ubd84\ucc28\ud2b8 \ucd94\uc138\uc120 \uc9c4\uc785\uc2e0\ud638 \uc0bd\uc785] \ub2ec\ub7ec\uc120\ubb3c \uc2e4\uc2dc\uac04\uc73c\ub85c \ubcf4\ub294 \ubc95\uc744 \uc5bc\ub9c8\uc804 \uc54c\ub824 \ub4dc\ub838\uc2b5\ub2c8\ub2e4.",
+    "lang": "ko",
+    "quantities": [
+     "\ucd94\uc138",
+     "\uace8\ub4dc",
+     "\ub2ec\ub7ec",
+     "\uc120\ubb3c"
+    ],
+    "direction": [
+     "\uc9c4\uc785"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\uc2dc\uac04"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "af07637ab393"
+   }
+  ],
+  "n_claims": 7
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Profile - historical_data - Trading Q&amp;A by Zerodha - All your queries on trading and markets answered",
+  "url": "https://tradingqna.com/u/historical_data",
+  "published": "2026-10-25T07:12:47+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "43ac7cfd524e43ee9cee",
+  "host": "tradingqna.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Magbukas ng Cent (micro) account - micro lots para sa testing at EAs - RoboForex",
+  "url": "https://roboforex.com/ph/forex-trading/trading/cent-account/",
+  "published": "2026-10-25T07:12:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "173c1488319d1e8da243",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mga Trading Platform ng RoboForex - i-download para sa PC, web at mobile - RoboForex",
+  "url": "https://roboforex.com/ph/forex-trading/terminals/download/",
+  "published": "2026-10-25T07:12:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://roboforex.com/ph/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/ru-kk/forex-trading/terminals/download/",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://roboforex.com/es/forex-trading/terminals/download/",
+   "https://th.roboforex.com/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/vn/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/uz/forex-trading/terminals/download/",
+   "https://roboinvesting.pro/kk/forex-trading/terminals/download/",
+   "https://start.roboforex.pro/ru-uz/forex-trading/terminals/download/",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 11,
+  "vault_sha": "f389d1bc8daf1dc2d43c",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mag invest sa mga bakal: Ginto, Pilak | Magsimulang mangalakal - RoboForex",
+  "url": "https://roboforex.com/ph/forex-trading/assets/metals/",
+  "published": "2026-10-25T07:12:52+00:00",
+  "symbols": [
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b2926482c035b9918ec7",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mag-invest sa mga Pera | Magkalakal ng mga pera sa pandaigdigang merkadong pinansyal. - RoboForex",
+  "url": "https://roboforex.com/ph/forex-trading/assets/forex/",
+  "published": "2026-10-25T07:12:54+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPJPY",
+   "GBPUSD",
+   "NZDUSD",
+   "USDCHF",
+   "USDJPY",
+   "USDMXN",
+   "USDRUB"
+  ],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "night_session",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1cb60bffcdd1563cb6ec",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mag-trade ng Crypto CFDs: Bitcoin, Ethereum &amp; Marami Pa - RoboForex - RoboForex",
+  "url": "https://roboforex.com/ph/forex-trading/assets/crypto/",
+  "published": "2026-10-25T07:12:56+00:00",
+  "symbols": [
+   "ADAUSD",
+   "BTCUSD",
+   "ETHUSD",
+   "SOLUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "271f5b7fd3564d3442c2",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mag Invest sa Stocks | CFD's sa stocks | Bumili ng Shares | Magsimulang mangalakal - RoboForex",
+  "url": "https://roboforex.com/ph/forex-trading/assets/stocks/",
+  "published": "2026-10-25T07:12:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cdd635c6b4a3a1564a50",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mag-invest sa mga stock indices o mag-trade sa mga indeks. - RoboForex",
+  "url": "https://roboforex.com/ph/forex-trading/assets/indices/",
+  "published": "2026-10-25T07:13:00+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fbcaf498cf3d3a508541",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "MetaTrader 4 \u0e41\u0e25\u0e30 5 \u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a Android - \u0e14\u0e32\u0e27\u0e19\u0e4c\u0e42\u0e2b\u0e25\u0e14\u0e41\u0e25\u0e30\u0e15\u0e34\u0e14\u0e15\u0e31\u0e49\u0e07 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/terminals/androidtrader/",
+  "published": "2026-10-25T07:13:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f312726259aaad3471c3",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Expert Advisors - \u0e42\u0e23\u0e1a\u0e2d\u0e17\u0e40\u0e17\u0e23\u0e14\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a MT4 \u0e41\u0e25\u0e30 MT5 - RoboForex",
+  "url": "https://th.roboforex.com/beginners/info/expert-advisors/",
+  "published": "2026-10-25T07:13:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "99521461aa6c1cc13111",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "R StocksTrader \u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e21\u0e37\u0e2d\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e01\u0e25\u0e22\u0e38\u0e17\u0e18\u0e4c\u0e01\u0e32\u0e23\u0e40\u0e17\u0e23\u0e14 - EA \u0e42\u0e23\u0e1a\u0e2d\u0e17\u0e41\u0e25\u0e30\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e21\u0e37\u0e2d - RoboForex",
+  "url": "https://th.roboforex.com/beginners/trading-tools/strategy-builder/",
+  "published": "2026-10-25T07:13:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e93bc7f639fa7f0ab030",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e40\u0e1b\u0e34\u0e14\u0e1a\u0e31\u0e0d\u0e0a\u0e35\u0e40\u0e17\u0e23\u0e14\u0e40\u0e14\u0e42\u0e21\u0e1f\u0e23\u0e35 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/demo/",
+  "published": "2026-10-25T07:13:07+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "US500",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "727ad401510b5ba6b8e0",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e1d\u0e32\u0e01\u0e40\u0e07\u0e34\u0e19\u0e42\u0e14\u0e22\u0e44\u0e21\u0e48\u0e21\u0e35\u0e04\u0e48\u0e32\u0e04\u0e2d\u0e21\u0e21\u0e34\u0e0a\u0e0a\u0e31\u0e48\u0e19 - RoboForex",
+  "url": "https://th.roboforex.com/clients/funds/commission-free/",
+  "published": "2026-10-25T07:13:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "96477856b4b45775dfda",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Canadian Dollar (AUDCAD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDCAD/",
+  "published": "2026-10-25T07:13:11+00:00",
+  "symbols": [
+   "AUDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5f17fd17a2bb04dcf176",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Swiss Franc (AUDCHF) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDCHF/",
+  "published": "2026-10-25T07:13:13+00:00",
+  "symbols": [
+   "AUDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f1f96b2d50897bd809e5",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Udstedelse og cirkulation",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.da.html",
+  "published": "2026-10-25T07:13:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "da",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.da.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "adc01a8b6decd07e89c5",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Ausgabe und Umlauf",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.de.html",
+  "published": "2026-10-25T07:13:16+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "breakout",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.de.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "27b2aed22df32215e383",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0388\u03ba\u03b4\u03bf\u03c3\u03b7 \u03ba\u03b1\u03b9 \u03ba\u03c5\u03ba\u03bb\u03bf\u03c6\u03bf\u03c1\u03af\u03b1",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.el.html",
+  "published": "2026-10-25T07:13:18+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "el",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.el.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a2137a40a04f27b887ef",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Emisi\u00f3n y circulaci\u00f3n",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.es.html",
+  "published": "2026-10-25T07:13:20+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.es.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "398c2f3c2a821d770778",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Emiteerimine ja ringlus",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.et.html",
+  "published": "2026-10-25T07:13:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "et",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.et.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8fe33a2fbdbfbcf42539",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Liikkeeseenlasku ja kierto",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.fi.html",
+  "published": "2026-10-25T07:13:24+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "fi",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fi.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5c8b17da80e81d17c96d",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "L\u2019\u00e9mission et la circulation",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.fr.html",
+  "published": "2026-10-25T07:13:26+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d2eabd3edae31d225e63",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "U.S. Options Crossing Orders | Cboe",
+  "url": "https://www.cboe.com/us/options/trading/crossing_orders/",
+  "published": "2026-10-25T07:13:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "99c13be0dc87a896a400",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "U.S. Options Order &amp; Routing Strategies | Cboe",
+  "url": "https://www.cboe.com/us/options/trading/order_routing/",
+  "published": "2026-10-25T07:13:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "edfaf72679dd01f17c67",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "U.S. Options Risk Management Tools | Cboe",
+  "url": "https://www.cboe.com/us/options/trading/risk_management/",
+  "published": "2026-10-25T07:13:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "794ee93f0a92010d2384",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "U.S. Options Codes | Cboe",
+  "url": "https://www.cboe.com/us/options/trading/codes/",
+  "published": "2026-10-25T07:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c3c60d6c0c33ffc8aeb5",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "U.S. Options Liquidity Providers | Cboe",
+  "url": "https://www.cboe.com/us/options/trading/liquidity_providers/",
+  "published": "2026-10-25T07:13:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "66c2a9f908cefb029fcf",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe Obvious Error Form",
+  "url": "https://www.cboe.com/us/options/trading/cee_form/?mkt=cone",
+  "published": "2026-10-25T07:13:38+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json",
+   "https://cdn.cboe.com/resources/options/Universal-Obvious-Error-Submission-Template.xlsx"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0a4d5a512d6b28a15483",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe Obvious Error Form",
+  "url": "https://www.cboe.com/us/options/trading/cee_form/?mkt=opt",
+  "published": "2026-10-25T07:13:40+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json",
+   "https://cdn.cboe.com/resources/options/Universal-Obvious-Error-Submission-Template.xlsx"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5e506017e152c0cad049",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "PTBL3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/PTBL3/",
+  "published": "2026-10-25T07:13:42+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f70a0de92d77416a937f",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "RSUL4: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/RSUL4/",
+  "published": "2026-10-25T07:13:43+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "45500aee95baba68bca2",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "KLBN3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/KLBN3/",
+  "published": "2026-10-25T07:13:45+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7f24793ca638b64d0aa1",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "VITT3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/VITT3/",
+  "published": "2026-10-25T07:13:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2b8f0b304d4ad4bbda19",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BRKM5: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/BRKM5/",
+  "published": "2026-10-25T07:13:50+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4efcdb994b5739569894",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "SANB4: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/SANB4/",
+  "published": "2026-10-25T07:13:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "33a1fbefbd12432f98de",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BBDC3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/BBDC3/",
+  "published": "2026-10-25T07:13:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b1c8a2d8a070b6381f86",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Spain Inflation Rate MoM",
+  "url": "https://tradingeconomics.com/spain/inflation-rate-mom",
+  "published": "2026-10-25T07:13:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "gap",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/spain/export-prices",
+   "https://tradingeconomics.com/spain/exports",
+   "https://tradingeconomics.com/spain/exports-by-category",
+   "https://tradingeconomics.com/spain/exports-by-country",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 11,
+  "vault_sha": "b2ae772397e245a92170",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Spain Inflation Rate",
+  "url": "https://tradingeconomics.com/spain/inflation-cpi",
+  "published": "2026-10-25T07:13:57+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "XNGUSD",
+   "E35",
+   "CA60",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "gap",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/spain/export-prices",
+   "https://tradingeconomics.com/spain/exports",
+   "https://tradingeconomics.com/spain/exports-by-category",
+   "https://tradingeconomics.com/spain/exports-by-country",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 11,
+  "vault_sha": "ae3631adc1dd8a1c53cc",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "Compared to the previous month, the CPI rose by 0.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "rose"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "E35",
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "natural gas",
+      "ibex 35",
+      "tsx",
+      "ibovespa",
+      "10-year yield"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "EURUSD",
+      "USDCAD",
+      "USDMXN"
+     ],
+     "channels": [
+      "european central bank: policy: ECB -> EUR",
+      "boc: policy: BoC -> CAD",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5c4601f33b7c"
+   },
+   {
+    "claim": "On a monthly basis, the CPI rose by 0.",
+    "lang": "en",
+    "quantities": [
+     "basis",
+     "cpi"
+    ],
+    "direction": [
+     "rose"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "E35",
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "natural gas",
+      "ibex 35",
+      "tsx",
+      "ibovespa",
+      "10-year yield"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "EURUSD",
+      "USDCAD",
+      "USDMXN"
+     ],
+     "channels": [
+      "european central bank: policy: ECB -> EUR",
+      "boc: policy: BoC -> CAD",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "17785dd6689d"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Italy Balance of Trade",
+  "url": "https://tradingeconomics.com/italy/balance-of-trade",
+  "published": "2026-10-25T07:13:59+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/italy/exports",
+   "https://tradingeconomics.com/italy/export-prices",
+   "https://tradingeconomics.com/italy/exports-by-category",
+   "https://tradingeconomics.com/italy/exports-by-country",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 11,
+  "vault_sha": "62d1a77785f9c12556ef",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Turkey Central Government Budget Balance",
+  "url": "https://tradingeconomics.com/turkey/government-budget-value",
+  "published": "2026-10-25T07:14:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/turkey/export-prices",
+   "https://tradingeconomics.com/turkey/exports",
+   "https://tradingeconomics.com/turkey/exports-by-category",
+   "https://tradingeconomics.com/turkey/exports-by-country",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 11,
+  "vault_sha": "9ad9ff1e6a8063fc8494",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Euro Area Balance of Trade",
+  "url": "https://tradingeconomics.com/euro-area/balance-of-trade",
+  "published": "2026-10-25T07:14:02+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "CA60",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "gap",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/euro-area/exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 8,
+  "vault_sha": "e169c247f7c8fd329094",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "This was the largest monthly trade surplus since October 2025, as goods exports surged by 9% to an over 16-month high of \u20ac276 billion while imports rose at a slower 7.",
+    "lang": "en",
+    "quantities": [
+     "exports",
+     "imports"
+    ],
+    "direction": [
+     "rose"
+    ],
+    "horizon": [
+     "monthly",
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "tsx",
+      "ibovespa",
+      "10-year yield"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "EURUSD",
+      "USDCAD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR",
+      "boc: policy: BoC -> CAD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1627a60dac7c"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Euro Area ZEW Economic Sentiment Index",
+  "url": "https://tradingeconomics.com/euro-area/zew-economic-sentiment-index",
+  "published": "2026-10-25T07:14:05+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/euro-area/exports",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 8,
+  "vault_sha": "55d4495cc17a060679ba",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Germany ZEW Economic Sentiment Index",
+  "url": "https://tradingeconomics.com/germany/zew-economic-sentiment-index",
+  "published": "2026-10-25T07:14:07+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/germany/export-prices",
+   "https://tradingeconomics.com/germany/auto-exports",
+   "https://tradingeconomics.com/germany/exports",
+   "https://tradingeconomics.com/germany/exports-by-category",
+   "https://tradingeconomics.com/germany/exports-by-country",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 12,
+  "vault_sha": "74001a4fc22e0bedd007",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Historical expired options data - Algos, strategies, code - Trading Q&amp;A by Zerodha - All your queries on trading and markets answered",
+  "url": "https://tradingqna.com/t/historical-expired-options-data/188274",
+  "published": "2026-10-25T07:14:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "b29d0ed1d872b73c3192",
+  "host": "tradingqna.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Forex Tester 5: \u30d0\u30c3\u30af\u30c6\u30b9\u30c8\u306e\u65b0\u6a5f\u80fd\u3092\u8ffd\u52a0",
+  "url": "https://forextester.jp/ft5",
+  "published": "2026-10-25T07:14:11+00:00",
+  "symbols": [
+   "US30"
+  ],
+  "timeframes": [
+   "D1",
+   "H1",
+   "M1",
+   "W1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "ja-JP",
+  "endpoints": [
+   "https://forextester.jp/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "93c160b9abdd82bcc2fa",
+  "host": "forextester.jp",
+  "claims": [
+   {
+    "claim": "\u8a73\u7d30\u306f\u3053\u3061\u3089 FT5\u306b\u30a2\u30c3\u30d7\u30b0\u30ec\u30fc\u30c9\u3059\u308b FX\u70ba\u66ff\u5e02\u5834\u3067\u3042\u306a\u305f\u304c\u6700\u7d42\u7684\u306b\u5f97\u3089\u308c\u308b\u5229\u78ba\u91d1\u984d\u306f\u3001\u79d2\u5358\u4f4d\u3067\u306e\u4fa1\u683c\u5909\u52d5\u306b\u5de6\u53f3\u3055\u308c \u307e\u3059\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u91d1"
+    ],
+    "direction": [
+     "\u5229\u78ba"
+    ],
+    "horizon": [
+     "\u79d2"
+    ],
+    "instruments": {
+     "analogues": [
+      "US30"
+     ],
+     "mentioned": [
+      "\u30c0\u30a6"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fa2ef7b9671e"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "[\u516c\u5f0f] Forex Tester\u8cfc\u5165\u30da\u30fc\u30b8",
+  "url": "https://forextester.jp/order",
+  "published": "2026-10-25T07:14:17+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "US500",
+   "US30",
+   "EURUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ja-JP",
+  "endpoints": [
+   "https://forextester.jp/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "516b8588c90f921d13b7",
+  "host": "forextester.jp",
+  "claims": [
+   {
+    "claim": "\u58f2\u308a\u30c1\u30e3\u30fc\u30c8\u3092\u307f\u3066\u3044\u308b\u3060\u3051\u3067\u306f\u30b9\u30d7\u30ec\u30c3\u30c9\u306e\u5927\u304d\u3055\u306f\u5206\u304b\u3089\u305a\u3001\u30ea\u30a2\u30eb\u30de\u30fc\u30b1\u30c3\u30c8\u306b\u53c2\u52a0\u3057\u305f\u3068\u304d\u306b\u3001\u82e6\u52b4\u3059\u308b\u3067\u3057\u3087\u3046\u3002",
+    "lang": "ja",
+    "quantities": [
+     "\u30b9\u30d7\u30ec\u30c3\u30c9"
+    ],
+    "direction": [
+     "\u58f2\u308a"
+    ],
+    "horizon": [
+     "\u5206"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "US30",
+      "EURUSD",
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "\u30b4\u30fc\u30eb\u30c9",
+      "\u30b7\u30eb\u30d0\u30fc",
+      "s&p",
+      "\u30c0\u30a6",
+      "eurusd",
+      "gbpusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ecdf59d274aa"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "[\u516c\u5f0f] Forex Tester\u904e\u53bb\u30c7\u30fc\u30bf\u30b5\u30fc\u30d3\u30b9",
+  "url": "https://forextester.jp/HistoryServiceDescription",
+  "published": "2026-10-25T07:14:21+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDHUF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDSGD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFDKK",
+   "CHFHUF",
+   "CHFJPY",
+   "CHFNOK",
+   "CHFPLN",
+   "CHFSEK",
+   "CHFSGD",
+   "COTTON",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURCZK",
+   "EURDKK",
+   "EURGBP",
+   "EURHKD"
+  ],
+  "timeframes": [
+   "D1",
+   "H1",
+   "M1",
+   "W1"
+  ],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "ja-JP",
+  "endpoints": [
+   "https://forextester.jp/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e1b80765a16e6fbc734d",
+  "host": "forextester.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "[\u30cf\u30a6\u30c4\u30fc] \u30d5\u30a9\u30ec\u30c3\u30af\u30b9\u30c6\u30b9\u30bf\u30fc\u306b\u30c7\u30fc\u30bf\u3092\u30a4\u30f3\u30dd\u30fc\u30c8 | Forex Tester",
+  "url": "https://forextester.jp/import",
+  "published": "2026-10-25T07:14:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ja-JP",
+  "endpoints": [
+   "https://forextester.jp/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "11a68b0864aaa92ca702",
+  "host": "forextester.jp",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "World Development Indicators | DataBank",
+  "url": "http://databank.worldbank.org/data/source/world-development-indicators",
+  "published": "2026-10-25T07:14:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6ddf9c5341b05b0f5509",
+  "host": "databank.worldbank.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Categor\u00eda:Algoritmos - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/w/index.php?title=Categor%C3%ADa:Algoritmos&oldid=5102158",
+  "published": "2026-10-25T07:14:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "10fa1238c496ef18e533",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Informaci\u00f3n sobre \u00abCategor\u00eda:Algoritmos\u00bb - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/w/index.php?title=Categor%C3%ADa:Algoritmos&action=info",
+  "published": "2026-10-25T07:14:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d420d4d8d5ac84f30ce2",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Este usuario est\u00e1 bloqueado - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/w/index.php?title=Especial:UrlShortener&url=https%3A%2F%2Fgl.wikipedia.org%2Fwiki%2FCategor%25C3%25ADa%3AAlgoritmos",
+  "published": "2026-10-25T07:14:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ede1a0afd9050cb7e347",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Categor\u00eda:Algoritmos - Wikipedia, a enciclopedia libre",
+  "url": "https://gl.wikipedia.org/w/index.php?title=Categor%C3%ADa:Algoritmos&useparsoid=0",
+  "published": "2026-10-25T07:14:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.35,
+  "lang": "gl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1487a09977ce55785a46",
+  "host": "gl.wikipedia.org",
+  "claims": [],
+  "n_claims": 0
+ }
+]

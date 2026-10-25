@@ -1,0 +1,1663 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "\u201c\uace8\ub4dc\uc120\ubb3c 2025-11-14 \uae08\uc694\uc77c/15 \ud1a0\uc694\uc77c \ubbf8\uad6d\uc7a5 \ub9e4\ub9e4\uc804\ub7b5 : \uc77c\ubaa9\uade0\ud615\ud45c\u00b7N\ud30c\ub3d9\uc73c\ub85c \ubcf8 \ud575\uc2ec \uc9c0\uc9c0\u00b7\uc800\ud56d\uacfc \ucf5c\u00b7\ud48b \uc635\uc158 \ub300\uc751\ubc95\u201d : \ub124\uc774\ubc84 \ube14\ub85c\uadf8",
+  "url": "https://m.blog.naver.com/tlsfkdmlwjstjf/224075793968",
+  "published": "2026-10-25T07:22:48+00:00",
+  "symbols": [
+   "XAUUSD",
+   "NAS100",
+   "USDX"
+  ],
+  "timeframes": [
+   "\uc77c\ubd09"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d06503d164414a709168",
+  "host": "m.blog.naver.com",
+  "claims": [
+   {
+    "claim": "\uc77c\ubd09 \uc73c\ub85c \ubcf8 \uace8\ub4dc \uc120\ubb3c\uc758 \ud070 \uadf8\ub9bc \u200b 1) \uc77c\ubd09 \uad6c\uc870 \uc694\uc57d \uac00\uaca9\ub300(\ub300\ub7b5): \ucd5c\uadfc \uace0\uc810 : 4,390 \uc804\ud6c4 \ud604\uc7ac : 4,180 \ubd80\uadfc (\uace0\uc810 \ub300\ube44 4~5% \uc870\uc815) \uc8fc\uc694 \ud2b9\uc9d5 3,200 ~ 3,400 \uad6c\uac04\uc5d0\uc11c \uae34 \uae30\uac04 \ubc15\uc2a4 \u2192 \uc774\ud6c4 \uac00\ud30c\ub978 \uc0c1\uc2b9 N\ud30c \ub85c 4,300\ub300\uae4c\uc9c0 \uc9c1\uc120 \uc0c1\uc2b9.",
+    "lang": "ko",
+    "quantities": [
+     "\uace8\ub4dc",
+     "\uace0\uc810",
+     "\uc120\ubb3c"
+    ],
+    "direction": [
+     "\uc0c1\uc2b9"
+    ],
+    "horizon": [
+     "\uc77c",
+     "\uc8fc"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "05705076424e"
+   },
+   {
+    "claim": "\ub2e8\uae30\u00b7\uc911\uae30 \uc774\ub3d9\ud3c9\uade0\uc120(5\u00b79\u00b713\u00b726\uc77c\uc120)\uc774 \ubaa8\ub450 \uc6b0\uc0c1\ud5a5 , \uc7a5\uae30 52\u00b765\u00b776\uc77c\uc120\uc740 \uac00\uaca9 \uc544\ub798\uc5d0\uc11c \uc644\ub9cc\ud55c \uc0c1\uc2b9 \u2192 **\u201c\uc0c1\uc2b9\ucd94\uc138 \uc18d \ub2e8\uae30 \uc870\uc815\u201d**\uc73c\ub85c \ubcf4\ub294 \uac8c \ud569\ub9ac\uc801.",
+    "lang": "ko",
+    "quantities": [
+     "\ucd94\uc138",
+     "\uc774\ub3d9\ud3c9\uade0",
+     "\uc740"
+    ],
+    "direction": [
+     "\uc0c1\uc2b9"
+    ],
+    "horizon": [
+     "\uc77c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "USDX"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc",
+      "\ub098\uc2a4\ub2e5",
+      "\ub2ec\ub7ec\uc778\ub371\uc2a4"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b7ad4559d5fb"
+   },
+   {
+    "claim": "N\ud30c\ub3d9\u00b7\uc77c\ubaa9 \uae30\ubcf8\uc218\uce58\ub85c \ubcf4\ub294 \ubc29\ud5a5\uc131 \u200b \ud83d\udd38 \uc0c1\uc2b9\u00b7\ud558\ub77d N\uc790 \ub300\uc0c1\uc2b9 1\ud30c : 3,400 \u2192 3,800 \uc870\uc815 A\ud30c : 3,800 \u2192 3,600 \ub300\uc0c1\uc2b9 3\ud30c : 3,600 \u2192 4,390 (\ud604\uc7ac \uc704\uce58) \uc9c0\uae08\uc740 4,390 \uace0\uc810\uc5d0\uc11c 4,180\uae4c\uc9c0 \ub20c\ub9b0 A\ud30c \uc870\uc815 \uc73c\ub85c \ubcf4\uc774\uace0, 4,080~4,100\uc744 \uc9c0\ud0a4\uba74 **\uc0c8\ub85c\uc6b4 \uc0c1\uc2b9 N\ud30c(3-3\ud30c)**\ub3c4 \uae30\ub300 \uac00\ub2a5\ud55c \uc790\ub9ac.",
+    "lang": "ko",
+    "quantities": [
+     "\uae08",
+     "\uace0\uc810",
+     "\uc740"
+    ],
+    "direction": [
+     "\uc0c1\uc2b9",
+     "\ud558\ub77d"
+    ],
+    "horizon": [
+     "\uc77c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "USDX"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc",
+      "\ub098\uc2a4\ub2e5",
+      "\ub2ec\ub7ec\uc778\ub371\uc2a4"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e06166d83e38"
+   },
+   {
+    "claim": "\uc624\ub298 \ubc24~\ub0b4\uc77c \uc0c8\ubcbd \uc2dc\uac04\ub300\ubcc4 \uace8\ub4dc \uc120\ubb3c \uc804\ub7b5 \u200b \u200b \u25a3 23:30~01:00 (\uc2dc\uac00 & \ubc29\ud5a5 \ud0d0\uc0c9 \uad6c\uac04) \u200b 1) \uccb4\ud06c \ud3ec\uc778\ud2b8 \uc2dc\uac00\uac00 4,180 \uc704\uc5d0\uc11c \uac2d\uc0c1 : \uc804\uc77c \uc0c1\uc2b9 \ubaa8\uba58\ud140 \uc5f0\uc7a5 \uac00\ub2a5\uc131.",
+    "lang": "ko",
+    "quantities": [
+     "\ubaa8\uba58\ud140",
+     "\uac2d",
+     "\uace8\ub4dc",
+     "\uc804\uc77c"
+    ],
+    "direction": [
+     "\uc0c1\uc2b9"
+    ],
+    "horizon": [
+     "\uc2dc\uac04",
+     "\uc77c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "922c7cc6666b"
+   },
+   {
+    "claim": "\u200b 2) \ub9e4\uc218/\ub9e4\ub3c4 \uc2dc\ub098\ub9ac\uc624 (\uc608\uc2dc) \u200b [\ub871(\uc120\ubb3c\u00b7\ucf5c) \uad00\uc810] \uc870\uac74 \uc2dc\uac00 \uc774\ud6c4 4,150~4,170 \uad6c\uac04\uc5d0\uc11c \uc544\ub798\uaf2c\ub9ac \uae34 \uc591\ubd09 + \uac70\ub798\ub7c9 \uc99d\uac00 5\ubd84\ubd09 \uae30\uc900 \uace0\uc810\u00b7\uc800\uc810\uc774 \uacc4\ub2e8\uc2dd \uc0c1\ud5a5 .",
+    "lang": "ko",
+    "quantities": [
+     "\uac70\ub798\ub7c9",
+     "\uace0\uc810",
+     "\uc800\uc810",
+     "\uc120\ubb3c"
+    ],
+    "direction": [
+     "\ub9e4\uc218",
+     "\ub9e4\ub3c4"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\ubd09"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "USDX"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc",
+      "\ub098\uc2a4\ub2e5",
+      "\ub2ec\ub7ec\uc778\ub371\uc2a4"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2aae4ccc4fb7"
+   },
+   {
+    "claim": "\u200b \u200b [\uc20f(\uc120\ubb3c\u00b7\ud48b) \uad00\uc810] \uc870\uac74 4,150 \uc9c0\uc9c0 \uc2e4\ud328, 4,130 \uc544\ub798 5\ubd84\ubd09 2\uac1c \uc774\uc0c1 \ub9c8\uac10.",
+    "lang": "ko",
+    "quantities": [
+     "\uc9c0\uc9c0",
+     "\uc120\ubb3c"
+    ],
+    "direction": [
+     "\uc20f"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\ubd09"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "USDX"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc",
+      "\ub098\uc2a4\ub2e5",
+      "\ub2ec\ub7ec\uc778\ub371\uc2a4"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6e2682b9183"
+   },
+   {
+    "claim": "\uac15\uc138 \ub274\uc2a4/\ub2ec\ub7ec \uc57d\uc138 \uc2dc \uace8\ub4dc\uac00 4,230 \uc774\uc0c1\uc73c\ub85c \u201c\uc218\uc9c1 \uc0c1\uc2b9\u201d \ubaa8\uc591\uc774\uba74 \ucd94\uaca9 \ub9e4\uc218\ub294 \uc790\uc81c , 4,220 \ubd80\uadfc \ub20c\ub9bc\uc774 \ub098\uc62c \ub54c\ub9cc 5\ubd84\ubd09 \uc804\ud658 \uc591\ubd09 \ud655\uc778 \ud6c4 \uc18c\uc561 \uc9c4\uc785.",
+    "lang": "ko",
+    "quantities": [
+     "\uace8\ub4dc",
+     "\ub2ec\ub7ec"
+    ],
+    "direction": [
+     "\ub9e4\uc218",
+     "\uc0c1\uc2b9"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\ubd09"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "eb0dab4883be"
+   },
+   {
+    "claim": "\uc911\uae30 \uc0c1\ubc29 \ubdf0 4,100~4,120 \ub20c\ub9bc\uc5d0\uc11c \ub9cc\uae30 \uc5ec\uc720 \uc788\ub294 4,000~4,100 ITM \ucf5c\ub85c \ub808\ubc84\ub9ac\uc9c0 \ud604\ubb3c\ucc98\ub7fc \ubd84\ud560 \ub9e4\uc218.",
+    "lang": "ko",
+    "quantities": [
+     "\ub9cc\uae30"
+    ],
+    "direction": [
+     "\ub9e4\uc218"
+    ],
+    "horizon": [
+     "\ubd84"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "NAS100",
+      "USDX"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc",
+      "\ub098\uc2a4\ub2e5",
+      "\ub2ec\ub7ec\uc778\ub371\uc2a4"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "77f5e32541e2"
+   }
+  ],
+  "n_claims": 10
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "[\ud574\uc678\uc120\ubb3c \uace8\ub4dc, \ud574\uc678\uc120\ubb3c \ud06c\ub8e8\ub4dc\uc624\uc77c] \uace8\ub4dc \uae09\uc900\uc120\ucc28\ud2b8 \ub9e4\ub9e4\uae30\ubc95, \uc720\ub85cFX, \uc9c0\ud45c \ubc1c\ud45c\uc2dc \ub300\uc751\ubc95, \ud574\uc678\uc120\ubb3c \ub9e4\ub9e4\uae30\ubc95, \ud574\uc678\uc120\ubb3c \ubc30\uc6b0\uae30, \ud574\uc678\uc120\ubb3c \uc218\uc218\ub8cc, \ud574\uc678\uc120\ubb3c \uc2e4\uc804\ub9e4\ub9e4 : \ub124\uc774\ubc84 \ube14\ub85c\uadf8",
+  "url": "https://m.blog.naver.com/godfutures/220789976484",
+  "published": "2026-10-25T07:22:49+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ko",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "02acc0c25425aec26656",
+  "host": "m.blog.naver.com",
+  "claims": [
+   {
+    "claim": "\ubc29\ubc95\uc740 1\ubd84\ucc28\ud2b8\uc5d0 \uae30\uc900\uc120(100\uc77c\uc120)\uacfc \ucd94\uc138\uc120(30\uc77c\uc120) \uc744 \ub123\uace0 \uc911\uc694\uc9c0\ud45c \ubc1c\ud45c \uc774\ud6c4 \uae09\ub77d\uc774 \ube60\uc9c0\uba74 \ubc14\ub85c \ub530\ub77c \ub4e4\uc5b4\uac00\uc9c0 \ub9d0\uace0 \ub9e4\ub3c4\uc77c \uacbd\uc6b0 \ucd94\uc138\uc120\uc5d0 \uc2e0\ud638\uac00 \ub098\uc624\ub294 \uac83\uc744 \ubcf4\uace0 \uc9c4\uc785\ud558\uba74 \ub429\ub2c8\ub2e4.",
+    "lang": "ko",
+    "quantities": [
+     "\ucd94\uc138",
+     "\ud638\uac00",
+     "\uc740"
+    ],
+    "direction": [
+     "\ub9e4\ub3c4",
+     "\uae09\ub77d"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\uc77c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "237a2c9f8da3"
+   },
+   {
+    "claim": "(\uae09\uc900\uc120\ucc28\ud2b8\ub97c \ubc30\uc6b0\uc2e0 \ubd84\ub4e4\uc740 1\ubd84\ucc28\ud2b8\uc5d0\ub3c4 \ud2f1\ucc28\ud2b8\ucc98\ub7fc \uc9c4\uc785\uc2e0\ud638\ub97c \ub123\uc5b4\uc11c \ubcf4\uba74 \ub429\ub2c8\ub2e4.",
+    "lang": "ko",
+    "quantities": [
+     "\uc740"
+    ],
+    "direction": [
+     "\uc9c4\uc785"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\ud2f1"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f69d6898229c"
+   },
+   {
+    "claim": "\ub9e4\uc218\uc778 \uacbd\uc6b0\uc5d0\ub3c4 1\ubd84\ucc28\ud2b8 30\uc77c\uc120 \uc9c0\uc9c0 \ubc1b\uace0 \uc62c\ub77c\uac00\ub294 \uacbd\uc6b0\ub3c4 \uc788\uc9c0\ub9cc \ub9e4\ub3c4\uc778 \uacbd\uc6b0\uac00 \ub354 \ud655\uc2e4\ud788 \ube60\uc838\uc8fc\ub294 \uacbd\ud5a5\uc774 \uc788\uc2b5\ub2c8\ub2e4.",
+    "lang": "ko",
+    "quantities": [
+     "\uc9c0\uc9c0"
+    ],
+    "direction": [
+     "\ub9e4\uc218",
+     "\ub9e4\ub3c4"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\uc77c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "5d0d2a35c2f0"
+   },
+   {
+    "claim": "[\ub9e4\uc218\uc778 \uacbd\uc6b0\uc5d0\ub3c4 \uc801\uc6a9\uc740 \ub418\ub098 \ub9e4\ub3c4\uc77c\ub54c\uac00 \ub354 \ud655\ub960\uc774 \ub192\uc2b5\ub2c8\ub2e4.",
+    "lang": "ko",
+    "quantities": [
+     "\uc740"
+    ],
+    "direction": [
+     "\ub9e4\uc218",
+     "\ub9e4\ub3c4"
+    ],
+    "horizon": [
+     "\uc77c"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "04edf9a0b5d9"
+   },
+   {
+    "claim": "[\uc544\ub798 \ucc28\ud2b8 \ub610\ud55c \uc9c0\ud45c \uc774\ud6c4 1\ubd84\ucc28\ud2b8 \ub9e4\ub3c4 \uc9c4\uc785\uc2e0\ud638 \ubc1c\uc0dd] \u200b [\uc804\ud615\uc801\uc778 \uae09\ub77d \ud328\ud134\uc5d0 \ub9e4\ub3c4 \uc9c4\uc785\ud0c0\uc774\ubc0d] \u200b \uc704 \ucc28\ud2b8\ub294 \uc804\ud615\uc801\uc778 \ubc00\uc5b4\ubc84\ub9ac\uc2dd \ub9e4\ub3c4 \ucd94\uc138\uc785\ub2c8\ub2e4.",
+    "lang": "ko",
+    "quantities": [
+     "\ucd94\uc138"
+    ],
+    "direction": [
+     "\ub9e4\ub3c4",
+     "\uae09\ub77d"
+    ],
+    "horizon": [
+     "\ubd84"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d6b9cff0b183"
+   },
+   {
+    "claim": "[\uc9c0\ub09c \uc8fc \uae08\uc694\uc77c \uae09\ub77d\uc774\ud6c4 \ucd94\uc138\uc120 \ud130\uce58\ud558\uace0 \ub2e4\uc2dc \ube60\uc9c0\ub294 \uadf8\ub9bc] \u200b \uc800 \uc790\ub9ac\ub294 \uc81c\uac00 \uc0c8\ubcbd\uc5d0 \ubcf4\uace0 \uc788\uc5c8\ub294\ub370\uc694.",
+    "lang": "ko",
+    "quantities": [
+     "\ucd94\uc138",
+     "\uae08"
+    ],
+    "direction": [
+     "\uae09\ub77d"
+    ],
+    "horizon": [
+     "\uc77c",
+     "\uc8fc"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "3f3b3d52b9d4"
+   },
+   {
+    "claim": "\u200b [\uace8\ub4dc \uae09\uc900\uc120 1\ubd84\ucc28\ud2b8 \ucd94\uc138\uc120 \uc9c4\uc785\uc2e0\ud638 \uc0bd\uc785] \ub2ec\ub7ec\uc120\ubb3c \uc2e4\uc2dc\uac04\uc73c\ub85c \ubcf4\ub294 \ubc95\uc744 \uc5bc\ub9c8\uc804 \uc54c\ub824 \ub4dc\ub838\uc2b5\ub2c8\ub2e4.",
+    "lang": "ko",
+    "quantities": [
+     "\ucd94\uc138",
+     "\uace8\ub4dc",
+     "\ub2ec\ub7ec",
+     "\uc120\ubb3c"
+    ],
+    "direction": [
+     "\uc9c4\uc785"
+    ],
+    "horizon": [
+     "\ubd84",
+     "\uc2dc\uac04"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "\uace8\ub4dc"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "af07637ab393"
+   }
+  ],
+  "n_claims": 7
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Profile - historical_data - Trading Q&amp;A by Zerodha - All your queries on trading and markets answered",
+  "url": "https://tradingqna.com/u/historical_data",
+  "published": "2026-10-25T07:22:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fbd788c13daf28f76822",
+  "host": "tradingqna.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "ETF Trading | Mag invest sa stocks o iba pang pwedeng instrumento | Bumili ng ETF - RoboForex",
+  "url": "https://roboforex.com/ph/forex-trading/assets/etf/",
+  "published": "2026-10-25T07:22:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a3e7c1cd91dfe61fd0bc",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mag-invest sa mga &quot;soft commodities&quot; tulad ng cocoa, coffee, at corn. Magsimula sa kalakalan. - RoboForex",
+  "url": "https://roboforex.com/ph/forex-trading/assets/soft-commodities/",
+  "published": "2026-10-25T07:22:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b6df6965b89a310518c8",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Mag-invest sa ETF at CFD sa mga kalakal ng enerhiya: langis, likas na gas - RoboForex",
+  "url": "https://roboforex.com/ph/forex-trading/assets/energies/",
+  "published": "2026-10-25T07:22:55+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4e682d38a519de624e25",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Negative Balance ProtectionNegative Balance Protection - RoboForex",
+  "url": "https://roboforex.com/ph/clients/services/negative-balance-protection/",
+  "published": "2026-10-25T07:22:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1a18bb3ed681aae0a85c",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "<![CDATA[Pagsusuri sa market]]>",
+  "url": "https://roboforex.com/ph/beginners/analytics/forex-forecast/rss/",
+  "published": "2026-10-25T07:22:58+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "215e85d25e4a67f144c1",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "[CDATA[Gold (XAUUSD) weekly forecast for 26\u201330 October 2026: the market seeks upward momentum]]> https://roboforex.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "weekly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "0141bdcdef28"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US Tech price forecast and analysis for today, 11 September 2026 - RoboForex",
+  "url": "https://roboforex.com/ph/beginners/analytics/forex-forecast/indices/ustech-forecast-2026-09-11/",
+  "published": "2026-10-25T07:23:03+00:00",
+  "symbols": [
+   "EURUSD",
+   "XAUUSD",
+   "XTIUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "H4"
+  ],
+  "patterns": [
+   "breakout",
+   "flow",
+   "gap",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b841a7bad16739bc6d9d",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "The primary driver of the previous session\u2019s sell-off was an acceleration in the annual growth rate of the US Producer Price Index ( PPI ) to 5.",
+    "lang": "en",
+    "quantities": [
+     "session",
+     "rate"
+    ],
+    "direction": [
+     "sell-off"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "EURUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "brent",
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "XBRUSD",
+      "USDCAD",
+      "USDNOK"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "strait of hormuz: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8220d55e136c"
+   },
+   {
+    "claim": "Open Account Editors\u2019 picks EURUSD forecast 2026\u20132027: technical analysis, price levels & predictions EURUSD has recovered from the July lows and is trading near 1.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4e07cff013ea"
+   },
+   {
+    "claim": "The pair has reclaimed EMA65 on the daily, formed a bullish EMA crossover on H4, and the US-eurozone GDP gap has narrowed sharply (US 1.",
+    "lang": "en",
+    "quantities": [
+     "gap"
+    ],
+    "direction": [
+     "bullish"
+    ],
+    "horizon": [
+     "daily",
+     "h4"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "EURUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "brent",
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "XBRUSD",
+      "USDCAD",
+      "USDNOK"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "strait of hormuz: energy flow: OPEC / inventories / chokepoints -> oil, CAD, NOK"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fd7220b3c5cd"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Dogecoin (DOGEUSD) price forecast and analysis for today, 11 September 2026 - RoboForex",
+  "url": "https://roboforex.com/ph/beginners/analytics/forex-forecast/cryptocurrency/doge-usd-dogecoin-forecast-2026-09-11/",
+  "published": "2026-10-25T07:23:05+00:00",
+  "symbols": [
+   "EURUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "H4",
+   "INTRADAY",
+   "M30"
+  ],
+  "patterns": [
+   "breakout",
+   "flow",
+   "gap",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fe0706f6379801ed7499",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "The main negative factor for the market was Bitwise Investment Advisers\u2019 announcement that it would close and liquidate the Bitwise Dogecoin ETF (BWOW).",
+    "lang": "en",
+    "quantities": [
+     "factor",
+     "close"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "12d575fc14b7"
+   },
+   {
+    "claim": "Open Account Editors\u2019 picks EURUSD forecast 2026\u20132027: technical analysis, price levels & predictions EURUSD has recovered from the July lows and is trading near 1.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4e07cff013ea"
+   },
+   {
+    "claim": "The pair has reclaimed EMA65 on the daily, formed a bullish EMA crossover on H4, and the US-eurozone GDP gap has narrowed sharply (US 1.",
+    "lang": "en",
+    "quantities": [
+     "gap"
+    ],
+    "direction": [
+     "bullish"
+    ],
+    "horizon": [
+     "daily",
+     "h4"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "fomc: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fd7220b3c5cd"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold (XAUUSD) price forecast and analysis for today, 11 September 2026 - RoboForex",
+  "url": "https://roboforex.com/ph/beginners/analytics/forex-forecast/commodities/xau-usd-gold-forecast-2026-09-11/",
+  "published": "2026-10-25T07:23:07+00:00",
+  "symbols": [
+   "EURUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "D1",
+   "DAILY",
+   "H4",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "basis",
+   "breakout",
+   "flow",
+   "gap",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e8159640d2d7e91a6d8e",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "XAUUSD overview Asset: XAUUSD Timeframe: H4 (Intraday) Trend: bearish Key resistance levels: 4,640 Key support levels: 4,321 XAUUSD trading scenario for today Trading scenario (Sell Stop) A breakout below the support level, with XAUUSD prices consolidating below 4,321 USD, would indicate increased bearish pressure and downward momentum.",
+    "lang": "en",
+    "quantities": [
+     "trend",
+     "breakout",
+     "momentum"
+    ],
+    "direction": [
+     "bearish",
+     "sell"
+    ],
+    "horizon": [
+     "h4",
+     "intraday"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "xauusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "90835bda6fda"
+   },
+   {
+    "claim": "Open Account Editors\u2019 picks EURUSD forecast 2026\u20132027: technical analysis, price levels & predictions EURUSD has recovered from the July lows and is trading near 1.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "forecast"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "4e07cff013ea"
+   },
+   {
+    "claim": "The pair has reclaimed EMA65 on the daily, formed a bullish EMA crossover on H4, and the US-eurozone GDP gap has narrowed sharply (US 1.",
+    "lang": "en",
+    "quantities": [
+     "gap"
+    ],
+    "direction": [
+     "bullish"
+    ],
+    "horizon": [
+     "daily",
+     "h4"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "EURUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "eurusd"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fd7220b3c5cd"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex: mga nalalapit na pagbabago sa iskedyul ng pag-trade (Summer Bank Holiday sa UK at Araw ng mga Manggagawa sa US) - RoboForex",
+  "url": "https://roboforex.com/ph/about/company/news/show/8083-schedule-trade-changes-31082026/",
+  "published": "2026-10-25T07:23:09+00:00",
+  "symbols": [
+   "NAS100",
+   "UK100",
+   "US30",
+   "US500",
+   "XAGUSD",
+   "XAUEUR",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ee743e23dd43d9227585",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Buong-scale na Trading sa Telegram gamit ang MobileTrader Mini App - RoboForex",
+  "url": "https://roboforex.com/ph/about/company/news/show/mobiletrader-for-telegram/",
+  "published": "2026-10-25T07:23:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ea9abf5ec8032335605d",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex: Mga nalalapit na pagbabago sa iskedyul ng pag-trade (Araw ng Kalayaan sa US) - RoboForex",
+  "url": "https://roboforex.com/ph/about/company/news/show/8082-schedule-trade-changes-03072026/",
+  "published": "2026-10-25T07:23:13+00:00",
+  "symbols": [
+   "NAS100",
+   "US30",
+   "US500",
+   "XAGUSD",
+   "XAUEUR",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "deba566f4283e4231bb8",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Patakaran sa seguridad | Patakaran sa privacy - RoboForex",
+  "url": "https://roboforex.com/ph/about/client/security-policy/",
+  "published": "2026-10-25T07:23:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "889910e6966c5a2441dc",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Risk Warning - RoboForex",
+  "url": "https://roboforex.com/ph/about/client/risk-warning/",
+  "published": "2026-10-25T07:23:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ffd35ee7a87ff24d3079",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to open a trading account - guide for beginners - RoboForex",
+  "url": "https://roboforex.com/beginners/start/beginner/",
+  "published": "2026-10-25T07:23:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://roboforex.com/forex-trading/terminals/download/",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 3,
+  "vault_sha": "b47327beddc1d568502c",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Members Area - account management and settings - RoboForex",
+  "url": "https://roboforex.com/beginners/start/account-management/",
+  "published": "2026-10-25T07:23:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c9b53f1246ad122c38b4",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to start trading - guide to financial markets - RoboForex",
+  "url": "https://roboforex.com/beginners/start/how-to-trade-forex/",
+  "published": "2026-10-25T07:23:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "ff80304a1e4cd801ba20",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Financial trading charts - free live prices across markets - RoboForex",
+  "url": "https://roboforex.com/beginners/info/charts/",
+  "published": "2026-10-25T07:23:25+00:00",
+  "symbols": [
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1a5936493ef10f6aeef3",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "MetaTrader 4 and 5 for iOS - download and setup - RoboForex",
+  "url": "https://roboforex.com/forex-trading/terminals/iphonetrader/",
+  "published": "2026-10-25T07:23:27+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2ecb3059899a2e4adfdf",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Japanese Yen (AUDJPY) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDJPY/",
+  "published": "2026-10-25T07:23:28+00:00",
+  "symbols": [
+   "AUDJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "9d3bcf7a97562edf1a56",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 9.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "AUDJPY"
+     ],
+     "mentioned": [
+      "yen",
+      "audjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "fb3bd21d7eea"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs New Zealand Dollar (AUDNZD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDNZD/",
+  "published": "2026-10-25T07:23:30+00:00",
+  "symbols": [
+   "AUDNZD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a91d4b9b12a37b7ec679",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs US Dollar (AUDUSD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDUSD/",
+  "published": "2026-10-25T07:23:33+00:00",
+  "symbols": [
+   "AUDUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3f20aa0795e44bc5dffd",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency USD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 12.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "audusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2a2e47313267"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Canadian Dollar vs Swiss Franc (CADCHF) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/CADCHF/",
+  "published": "2026-10-25T07:23:35+00:00",
+  "symbols": [
+   "CADCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b61735a18d989a090a0d",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Canadian Dollar vs Japanese Yen (CADJPY) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/CADJPY/",
+  "published": "2026-10-25T07:23:36+00:00",
+  "symbols": [
+   "CADJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "573bfd47d0bd04c82be9",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 17.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8b57badf1110"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Swiss Franc vs Japanese Yen (CHFJPY) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/CHFJPY/",
+  "published": "2026-10-25T07:23:38+00:00",
+  "symbols": [
+   "CHFJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "013bb5f49b5e323774f0",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency JPY 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 12.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d7892a45c056"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Great Britain Pound vs Australian Dollar (GBPAUD) | ProCent | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-cent/GBPAUD/",
+  "published": "2026-10-25T07:23:40+00:00",
+  "symbols": [
+   "GBPAUD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0442fcd595c7c9c742f9",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "00001 \u0e40\u0e27\u0e25\u0e32\u0e02\u0e2d\u0e07\u0e0a\u0e48\u0e27\u0e07\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 00:05 - 23:55 Term currency AUD 3-days swap Wednesday \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22 11.",
+    "lang": "th",
+    "quantities": [
+     "swap"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "pound"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "79854908231e"
+   }
+  ],
+  "n_claims": 1
+ }
+]
