@@ -187,7 +187,7 @@
       "name": "gold_asia_v2",
       "symbol": "XAUUSD",
       "window": "asia",
-      "risk_frac": 0.007345,
+      "risk_frac": 0.006149,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "principal_override": {
@@ -197,14 +197,14 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.007345,
+        "risk_frac": 0.006149,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.007345,
+        "heat_earned": 0.006149,
         "joined": "joined on 'xauusd|asia' (funded book)",
-        "allocator_heat": 0.007345,
+        "allocator_heat": 0.006149,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.73% heat; the allocator's current solve gives this sleeve 0.73% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|asia' (funded book))"
+        "why": "already funded by the allocator at 0.61% heat; the allocator's current solve gives this sleeve 0.61% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|asia' (funded book))"
       },
       "admit_streak": 2,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
@@ -228,7 +228,7 @@
       "name": "gold_asia_v3",
       "symbol": "XAUUSD",
       "window": "asia",
-      "risk_frac": 0.007345,
+      "risk_frac": 0.006149,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "principal_override": {
@@ -237,14 +237,14 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.007345,
+        "risk_frac": 0.006149,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.007345,
+        "heat_earned": 0.006149,
         "joined": "joined on 'xauusd|asia' (funded book)",
-        "allocator_heat": 0.007345,
+        "allocator_heat": 0.006149,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.73% heat; the allocator's current solve gives this sleeve 0.73% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|asia' (funded book))"
+        "why": "already funded by the allocator at 0.61% heat; the allocator's current solve gives this sleeve 0.61% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|asia' (funded book))"
       },
       "admit_streak": 2,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
@@ -268,7 +268,7 @@
       "name": "gold_asia_v4",
       "symbol": "XAUUSD",
       "window": "asia",
-      "risk_frac": 0.007345,
+      "risk_frac": 0.006149,
       "status": "LIVE",
       "risk_frac_source": "allocator_marginal",
       "principal_override": {
@@ -277,14 +277,14 @@
       },
       "admission": {
         "status": "LIVE",
-        "risk_frac": 0.007345,
+        "risk_frac": 0.006149,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.007345,
+        "heat_earned": 0.006149,
         "joined": "joined on 'xauusd|asia' (funded book)",
-        "allocator_heat": 0.007345,
+        "allocator_heat": 0.006149,
         "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.73% heat; the allocator's current solve gives this sleeve 0.73% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|asia' (funded book))"
+        "why": "already funded by the allocator at 0.61% heat; the allocator's current solve gives this sleeve 0.61% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|asia' (funded book))"
       },
       "admit_streak": 2,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
@@ -2172,7 +2172,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.0,
         "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'macro_conditional', not 'session_range_breakout'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'cross_asset_residual', not 'session_range_breakout'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
@@ -2294,13 +2294,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd_session_range_breakout_asia_0_wb_12' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "heat_earned": 0.003875,
+        "joined": "joined on 'xauusd_session_range_breakout_asia_0_wb_12' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.39% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-25T10:45:03+00:00",
@@ -12728,13 +12728,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd_cross_asset_residual_asia_p_e95ea804f8e3f059' (zeroed by this solve)",
-        "why": "standby on the current reading -- its forward clock reached KILL (XAUUSD.cross_asset_residual.asia@M15#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_side_mode=revert_ttl_bars=8): the forward evidence refuses this certificate, so the allocator records zero"
+        "heat_earned": 0.006149,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.61% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
       "restored_from": "STANDBY",
       "restored_at": "2026-10-21T21:53:44+00:00",
@@ -25947,13 +25947,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd_cross_asset_residual_asia_p_5a29a76a02065a5a' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "heat_earned": 0.006149,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.61% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
       "artifact": {
         "version_hash": "0ecf162bf6563324",
@@ -26014,13 +26014,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd_cross_asset_residual_asia_p_8de5a3b89f6be0db' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "heat_earned": 0.006149,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.61% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
       "artifact": {
         "version_hash": "ed02d01ef593e9db",
@@ -26081,13 +26081,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'macro_conditional', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "heat_earned": 0.006149,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.61% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
       "artifact": {
         "version_hash": "8e755b67f96dddf6",
@@ -26148,13 +26148,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'macro_conditional', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "heat_earned": 0.006149,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.61% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
       "artifact": {
         "version_hash": "59777c1a846eb2ee",
@@ -31573,13 +31573,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd_cross_asset_residual_asia_p_49eee8b22060afb7' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "heat_earned": 0.006149,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.61% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
       "artifact": {
         "version_hash": "672878475e97e3b7",
@@ -31640,13 +31640,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd_cross_asset_residual_asia_p_76a842aadaf3bd86' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "heat_earned": 0.006149,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.61% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
       "restored_at": "2026-10-15T20:43:36+00:00",
       "restore_reason": "already funded by the allocator at 0.21% heat; the allocator's current solve gives this sleeve 0.21% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|cross_asset_residual|asia' (funded book))",
@@ -31707,13 +31707,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd_cross_asset_residual_asia_p_6f7e685b11cb2ccf' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "heat_earned": 0.006149,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.61% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
       "restored_at": "2026-10-15T20:43:36+00:00",
       "restore_reason": "already funded by the allocator at 0.21% heat; the allocator's current solve gives this sleeve 0.21% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|cross_asset_residual|asia' (funded book))",
@@ -31774,13 +31774,13 @@
       "admission": {
         "status": "STANDBY",
         "risk_frac": 0.0,
-        "streak": 0,
+        "streak": 1,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd_cross_asset_residual_asia_p_994638ee9bb08b37' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "heat_earned": 0.006149,
+        "joined": "joined on 'xauusd|cross_asset_residual|asia' (funded book)",
+        "why": "admitted on this reading (1/2 consecutive) -- risk was removed from this sleeve once, and restoring it takes consecutive readings where removing it took one. already funded by the allocator at 0.61% heat"
       },
-      "admit_streak": 0,
+      "admit_streak": 1,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
       "restored_at": "2026-10-15T20:43:36+00:00",
       "restore_reason": "already funded by the allocator at 0.21% heat; the allocator's current solve gives this sleeve 0.21% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|cross_asset_residual|asia' (funded book))",
@@ -31810,9 +31810,9 @@
         "timeframe": "M5"
       },
       "lot": "auto_ramp",
-      "risk_frac": 0.007345,
-      "status": "LIVE",
-      "risk_frac_source": "allocator_marginal",
+      "risk_frac": 0.0,
+      "status": "STANDBY",
+      "risk_frac_source": "none",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.XAUUSD@M5.macro_conditional.p=5fa26e224170b851",
@@ -31839,17 +31839,15 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "LIVE",
-        "risk_frac": 0.007345,
-        "streak": 2,
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.007345,
-        "joined": "joined on 'xauusd|macro_conditional|asia' (funded book)",
-        "allocator_heat": 0.007345,
-        "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.73% heat; the allocator's current solve gives this sleeve 0.73% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|macro_conditional|asia' (funded book))"
+        "heat_earned": 0.0,
+        "joined": "joined on 'xauusd|macro_conditional|asia' (zeroed by this solve)",
+        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
       },
-      "admit_streak": 2,
+      "admit_streak": 0,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
       "artifact": {
         "version_hash": "73ce8910712839f7",
@@ -31864,7 +31862,9 @@
       "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join",
       "restore_reason": "already funded by the allocator at 0.73% heat; the allocator's current solve gives this sleeve 0.73% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|macro_conditional|asia' (funded book))",
       "cost_hash": "30b1270a199b6dd1",
-      "cost_basis_source": "row"
+      "cost_basis_source": "row",
+      "demoted_at": "2026-10-25T18:48:58+00:00",
+      "demote_reason": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
     },
     {
       "name": "xauusd_macro_conditional_asia_p_c4d0f0303a0c9cb4",
@@ -31877,9 +31877,9 @@
         "timeframe": "M5"
       },
       "lot": "auto_ramp",
-      "risk_frac": 0.007345,
-      "status": "LIVE",
-      "risk_frac_source": "allocator_marginal",
+      "risk_frac": 0.0,
+      "status": "STANDBY",
+      "risk_frac_source": "none",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.XAUUSD@M5.macro_conditional.p=c4d0f0303a0c9cb4",
@@ -31906,17 +31906,15 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "LIVE",
-        "risk_frac": 0.007345,
-        "streak": 2,
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.007345,
-        "joined": "joined on 'xauusd|macro_conditional|asia' (funded book)",
-        "allocator_heat": 0.007345,
-        "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.73% heat; the allocator's current solve gives this sleeve 0.73% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|macro_conditional|asia' (funded book))"
+        "heat_earned": 0.0,
+        "joined": "joined on 'xauusd|macro_conditional|asia' (zeroed by this solve)",
+        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
       },
-      "admit_streak": 2,
+      "admit_streak": 0,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
       "artifact": {
         "version_hash": "5afa2c20b82eca04",
@@ -31931,7 +31929,9 @@
       "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join",
       "restore_reason": "already funded by the allocator at 0.73% heat; the allocator's current solve gives this sleeve 0.73% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|macro_conditional|asia' (funded book))",
       "cost_hash": "30b1270a199b6dd1",
-      "cost_basis_source": "row"
+      "cost_basis_source": "row",
+      "demoted_at": "2026-10-25T18:48:58+00:00",
+      "demote_reason": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
     },
     {
       "name": "xauusd_macro_conditional_asia_p_fe355d4759ed4898",
@@ -31944,9 +31944,9 @@
         "timeframe": "M5"
       },
       "lot": "auto_ramp",
-      "risk_frac": 0.007345,
-      "status": "LIVE",
-      "risk_frac_source": "allocator_marginal",
+      "risk_frac": 0.0,
+      "status": "STANDBY",
+      "risk_frac_source": "none",
       "certificate": {
         "source": "UNIVERSAL_SURVIVORS",
         "cell": "external.XAUUSD@M5.macro_conditional.p=fe355d4759ed4898",
@@ -31973,17 +31973,15 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "LIVE",
-        "risk_frac": 0.007345,
-        "streak": 2,
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.007345,
-        "joined": "joined on 'xauusd|macro_conditional|asia' (funded book)",
-        "allocator_heat": 0.007345,
-        "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.73% heat; the allocator's current solve gives this sleeve 0.73% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|macro_conditional|asia' (funded book))"
+        "heat_earned": 0.0,
+        "joined": "joined on 'xauusd|macro_conditional|asia' (zeroed by this solve)",
+        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
       },
-      "admit_streak": 2,
+      "admit_streak": 0,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
       "artifact": {
         "version_hash": "edd2a2e1f5d0df1b",
@@ -31998,7 +31996,9 @@
       "canonical_identity_rule": "symbol|family|selector lowercased, from the shadow_spec the sealed gauntlet stamps and the promoter matches (desks/mt5/scripts/external_gauntlet.py -> desks/mt5/research/promoter.py); a key is local, this is the join",
       "restore_reason": "already funded by the allocator at 0.73% heat; the allocator's current solve gives this sleeve 0.73% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd|macro_conditional|asia' (funded book))",
       "cost_hash": "30b1270a199b6dd1",
-      "cost_basis_source": "row"
+      "cost_basis_source": "row",
+      "demoted_at": "2026-10-25T18:48:58+00:00",
+      "demote_reason": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
     },
     {
       "name": "xauusd_range_reversion_asia_p_ff35bb7c8427d66f",
@@ -32046,7 +32046,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.0,
         "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'macro_conditional', not 'range_reversion'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'cross_asset_residual', not 'range_reversion'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
@@ -34219,7 +34219,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.0,
         "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'macro_conditional', not 'range_reversion'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'cross_asset_residual', not 'range_reversion'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-25T16:32:26.584874+00:00",
