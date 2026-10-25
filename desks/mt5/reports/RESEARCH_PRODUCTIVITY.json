@@ -1,10 +1,10 @@
 {
- "generated_utc": "2026-10-25T02:05:13.199362+00:00",
+ "generated_utc": "2026-10-25T11:05:57.491411+00:00",
  "stages": {
   "intake": {
-   "files": 52228,
-   "files_7d": 5701,
-   "rows_recent_files": 3078
+   "files": 52502,
+   "files_7d": 5482,
+   "rows_recent_files": 3100
   },
   "proposers": {
    "factor_residual": {
@@ -13,9 +13,9 @@
     "last": "2026-10-03T09:13:19.892529+00:00"
    },
    "plumbing": {
-    "files": 26,
-    "rows_latest": 9,
-    "last": "2026-10-23T02:26:27.592046+00:00"
+    "files": 27,
+    "rows_latest": 11,
+    "last": "2026-10-25T07:06:49.195726+00:00"
    },
    "transition_alpha": {
     "files": 0,
@@ -32,8 +32,8 @@
    "candidates": 30560
   },
   "deepening": {
-   "queued": 869,
-   "decided_total": 54250,
+   "queued": 899,
+   "decided_total": 54328,
    "backlog": 0
   },
   "judged": {
@@ -55,7 +55,7 @@
    "clock_rows": 876,
    "clocks_ticked_24h": 857,
    "clocks_ticked_7d": 870,
-   "last_tick": "2026-10-25T02:04:16+00:00",
+   "last_tick": "2026-10-25T11:05:44+00:00",
    "engine_silent_hours": 0.0,
    "n_certificates": 1048,
    "n_enrolled": 872,
@@ -68,7 +68,7 @@
     "IDENTITY_BROKEN": 13,
     "BLOCKED_NO_BARS": 4
    },
-   "census_at": "2026-10-25T00:28:01+00:00"
+   "census_at": "2026-10-25T09:30:49+00:00"
   },
   "recommendations": {
    "total": 784,
@@ -77,7 +77,7 @@
   }
  },
  "conversion": {
-  "intake_to_compiled": 9.9285,
+  "intake_to_compiled": 9.8581,
   "judged_to_certified": 0.0011,
   "certified_to_forward": 0.5372,
   "certified_to_clock": 0.8321
