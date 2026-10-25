@@ -1,0 +1,2670 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Federal Open Market Committee reaffirms its &quot;Statement on Longer-Run Goals and Monetary Policy Strategy&quot;",
+  "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20240131b.htm",
+  "published": "2026-10-25T04:24:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5c5be67eaa0f1931660c",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Federal Open Market Committee reaffirms its &quot;Statement on Longer-Run Goals and Monetary Policy Strategy&quot;",
+  "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20230201b.htm",
+  "published": "2026-10-25T04:24:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4779f0e30489352fb21a",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Federal Open Market Committee reaffirms its &quot;Statement on Longer-Run Goals and Monetary Policy Strategy&quot;",
+  "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260128b.htm",
+  "published": "2026-10-25T04:24:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "bcfcdf241e1856e564b1",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Federal Open Market Committee announces approval of updates to its Statement on Longer-Run Goals and Monetary Policy Strategy",
+  "url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20250822a.htm",
+  "published": "2026-10-25T04:24:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2cb9478ce9c8da415e30",
+  "host": "www.federalreserve.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Profile - historical_data - Trading Q&amp;A by Zerodha - All your queries on trading and markets answered",
+  "url": "https://tradingqna.com/u/historical_data",
+  "published": "2026-10-25T04:24:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "17e1698d7bba02fb1111",
+  "host": "tradingqna.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Libreng VPS-Server para sa pangangalakal - RoboForex",
+  "url": "https://roboforex.com/ph/clients/services/forex-vps/",
+  "published": "2026-10-25T04:24:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f82d5dbc9faba0649f37",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "VIP Client - mga level at benepisyo ng programa - RoboForex",
+  "url": "https://roboforex.com/ph/clients/services/vip-client/",
+  "published": "2026-10-25T04:24:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "1a8eefff5cd357e2d157",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Libreng Forex Signals at Market Analytics para sa MT4 at MT5 - Acuity - RoboForex",
+  "url": "https://roboforex.com/ph/beginners/analytics/acuity/",
+  "published": "2026-10-25T04:24:47+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3c92c295fbd9f971c553",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading - Profit and Loss Calculator - RoboForex",
+  "url": "https://roboforex.com/ph/beginners/start/profit-and-loss-calculator/",
+  "published": "2026-10-25T04:24:50+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPNZD",
+   "GBPUSD",
+   "NZDCAD",
+   "NZDCHF",
+   "NZDJPY"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "carry",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "091fb789261b43a7d7cf",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "Laging piliin ang tamang symbol para magamit sa calculation ang applicable contract size, tick value, at commission rate.",
+    "lang": "en",
+    "quantities": [
+     "rate"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "tick"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDMXN",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd",
+      "wti",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "eurjpy",
+      "gbpjpy",
+      "audjpy",
+      "eurgbp",
+      "usdmxn",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2ddac0f9f0de"
+   },
+   {
+    "claim": "Kung mino-model mo ang position na hahawakan lampas sa daily rollover, tingnan ang swap rate ng instrument sa Contract Specifications page.",
+    "lang": "en",
+    "quantities": [
+     "rollover",
+     "swap",
+     "rate"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDMXN",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd",
+      "wti",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "eurjpy",
+      "gbpjpy",
+      "audjpy",
+      "eurgbp",
+      "usdmxn",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "09c21a9005b9"
+   },
+   {
+    "claim": "Ang required amount ay: Margin = (Lots \u00d7 Contract Size \u00d7 Entry Price) \u00f7 Leverage Kung bumaba ang equity sa required margin level, maaaring ma-subject sa margin call o automatic close-out ang open positions.",
+    "lang": "en",
+    "quantities": [
+     "close",
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "close",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDMXN",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "xauusd",
+      "xagusd",
+      "wti",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "eurjpy",
+      "gbpjpy",
+      "audjpy",
+      "eurgbp",
+      "usdmxn",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDSGD"
+     ],
+     "channels": [
+      "mas : policy: MAS band -> SGD"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "be223b53bb19"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Calculator: spread, pips, margin, leverage, profit - RoboForex",
+  "url": "https://roboforex.com/ph/beginners/start/forex-calculator/",
+  "published": "2026-10-25T04:24:51+00:00",
+  "symbols": [
+   "ADAUSD",
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "ETHUSD",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPNZD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "46b7d9cf0293284bf765",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Araw araw na Financial Market Analysis at Forecast 2026: dollar, euro, gold - RoboForex",
+  "url": "https://roboforex.com/ph/beginners/analytics/forex-forecast/",
+  "published": "2026-10-25T04:24:53+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "55b3c9d12c2c28f992cf",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "Gold (XAUUSD) weekly forecast for 26\u201330 October 2026: the market seeks upward momentum Gold (XAUUSD) is ending the week near 4,012 USD, with a bullish outlook for 26\u201330 October 2026.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "forecast",
+     "bullish"
+    ],
+    "horizon": [
+     "weekly",
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD"
+     ],
+     "mentioned": [
+      "gold"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "d245a02e882c"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Financial Market Holidays 2026 - holiday schedule at mga bank holidays - RoboForex",
+  "url": "https://roboforex.com/ph/affiliate-info/national-holidays/",
+  "published": "2026-10-25T04:24:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "ph",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/ph/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7526d80e979ddf88bff8",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e25\u0e07\u0e17\u0e38\u0e19\u0e43\u0e19 \u0e14\u0e31\u0e0a\u0e19\u0e35, \u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22\u0e14\u0e31\u0e0a\u0e19\u0e35 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/assets/indices/",
+  "published": "2026-10-25T04:24:56+00:00",
+  "symbols": [
+   "GER40"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.95,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3dad5edc1a45c71218ea",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "1 \u0e27\u0e34\u0e19\u0e32\u0e17\u0e35 \u0e1b\u0e23\u0e34\u0e21\u0e32\u0e13\u0e04\u0e33\u0e2a\u0e31\u0e48\u0e07\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33 (\u0e25\u0e47\u0e2d\u0e15)\u0e41\u0e25\u0e30\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e08\u0e33\u0e19\u0e27\u0e19\u0e25\u0e47\u0e2d\u0e15 \u0e1b\u0e23\u0e34\u0e21\u0e32\u0e13\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e14\u0e31\u0e0a\u0e19\u0e35\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14 - 0.",
+    "lang": "th",
+    "quantities": [
+     "\u0e1b\u0e23\u0e34\u0e21\u0e32\u0e13\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22",
+     "\u0e14\u0e31\u0e0a\u0e19\u0e35"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "\u0e19\u0e32\u0e17\u0e35"
+    ],
+    "instruments": {
+     "analogues": [
+      "GER40"
+     ],
+     "mentioned": [
+      "de40"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "11dac902d926"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e25\u0e07\u0e17\u0e38\u0e19\u0e43\u0e19 ETF, \u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 ETF, \u0e25\u0e07\u0e17\u0e38\u0e19\u0e43\u0e19\u0e2b\u0e38\u0e49\u0e19\u0e2b\u0e23\u0e37\u0e2d\u0e2a\u0e34\u0e19\u0e17\u0e23\u0e31\u0e1e\u0e22\u0e4c\u0e2d\u0e37\u0e48\u0e19\u0e46 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/assets/etf/",
+  "published": "2026-10-25T04:24:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "946469f55208a1d62661",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e25\u0e07\u0e17\u0e38\u0e19 ETF \u0e1a\u0e19\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32\u0e42\u0e20\u0e04\u0e20\u0e31\u0e13\u0e11\u0e4c: \u0e42\u0e01\u0e42\u0e01\u0e49, \u0e01\u0e32\u0e41\u0e1f, \u0e02\u0e49\u0e32\u0e27\u0e42\u0e1e\u0e14, \u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e49\u0e19\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/assets/soft-commodities/",
+  "published": "2026-10-25T04:25:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a4578b5a5599e94605bf",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e25\u0e07\u0e17\u0e38\u0e19 ETF \u0e41\u0e25\u0e30 CFD \u0e43\u0e19\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32\u0e42\u0e20\u0e04\u0e20\u0e31\u0e13\u0e11\u0e4c\u0e1e\u0e25\u0e31\u0e07\u0e07\u0e32\u0e19 : \u0e19\u0e49\u0e33\u0e21\u0e31\u0e19 \u0e01\u0e4a\u0e32\u0e0b\u0e18\u0e23\u0e23\u0e21\u0e0a\u0e32\u0e15\u0e34 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/assets/energies/",
+  "published": "2026-10-25T04:25:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3c7a3c860dc57ce06e29",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e01\u0e32\u0e23\u0e1b\u0e49\u0e2d\u0e07\u0e01\u0e31\u0e19\u0e22\u0e2d\u0e14\u0e04\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d\u0e15\u0e34\u0e14\u0e25\u0e1a - RoboForex",
+  "url": "https://th.roboforex.com/clients/services/negative-balance-protection/",
+  "published": "2026-10-25T04:25:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7f29340785c2592c5560",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex: \u0e01\u0e32\u0e23\u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19\u0e41\u0e1b\u0e25\u0e07\u0e17\u0e35\u0e48\u0e01\u0e33\u0e25\u0e31\u0e07\u0e08\u0e30\u0e40\u0e01\u0e34\u0e14\u0e02\u0e36\u0e49\u0e19\u0e01\u0e31\u0e1a\u0e15\u0e32\u0e23\u0e32\u0e07\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 (\u0e27\u0e31\u0e19\u0e2b\u0e22\u0e38\u0e14\u0e18\u0e19\u0e32\u0e04\u0e32\u0e23\u0e24\u0e14\u0e39\u0e23\u0e49\u0e2d\u0e19\u0e43\u0e19\u0e2a\u0e2b\u0e23\u0e32\u0e0a\u0e2d\u0e32\u0e13\u0e32\u0e08\u0e31\u0e01\u0e23\u0e41\u0e25\u0e30\u0e27\u0e31\u0e19\u0e41\u0e23\u0e07\u0e07\u0e32\u0e19\u0e43\u0e19\u0e2a\u0e2b\u0e23\u0e31\u0e10\u0e2f) - RoboForex",
+  "url": "https://th.roboforex.com/about/company/news/show/8083-schedule-trade-changes-31082026/",
+  "published": "2026-10-25T04:25:06+00:00",
+  "symbols": [
+   "NAS100",
+   "UK100",
+   "US30",
+   "US500",
+   "XAGUSD",
+   "XAUEUR",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0c342b5768b9cca9b72d",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e01\u0e32\u0e23\u0e40\u0e17\u0e23\u0e14\u0e40\u0e15\u0e47\u0e21\u0e23\u0e39\u0e1b\u0e41\u0e1a\u0e1a\u0e1a\u0e19 Telegram \u0e14\u0e49\u0e27\u0e22 Mini App \u0e02\u0e2d\u0e07 MobileTrader - RoboForex",
+  "url": "https://th.roboforex.com/about/company/news/show/mobiletrader-for-telegram/",
+  "published": "2026-10-25T04:25:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1791449053",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "f482f409fddb9e537419",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "O papel do numer\u00e1rio",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.pt.html",
+  "published": "2026-10-25T04:25:10+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "momentum",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "pt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.pt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "945614bd7728e928ff9e",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Rolul numerarului",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.ro.html",
+  "published": "2026-10-25T04:25:12+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ro",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ro.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "05c1af71681d3282c693",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u00daloha hotovosti",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.sk.html",
+  "published": "2026-10-25T04:25:14+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sk",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sk.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "38c0d1def8402a5e9beb",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Vloga gotovine",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.sl.html",
+  "published": "2026-10-25T04:25:16+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "sl",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sl.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3f8d80c324f393cb0a3b",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Kontanters roll",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.sv.html",
+  "published": "2026-10-25T04:25:18+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "sv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.sv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "35ce75a6a8b646e5c02d",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0415\u043c\u0438\u0442\u0438\u0440\u0430\u043d\u0435 \u0438 \u043e\u0431\u0440\u0430\u0449\u0435\u043d\u0438\u0435",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.bg.html",
+  "published": "2026-10-25T04:25:20+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "bg",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.bg.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4765c4fb5c5a6e0e41ad",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Emise a ob\u011bh",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/issuance/html/index.cs.html",
+  "published": "2026-10-25T04:25:22+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "cs",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.cs.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "61a57ad9eb666a124b99",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TIMS3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/TIMS3/",
+  "published": "2026-10-25T04:25:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3dee76a3bac244cceb8f",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "TUPY3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/TUPY3/",
+  "published": "2026-10-25T04:25:26+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ad8c57875f0a2b7d3ce9",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BAZA3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/BAZA3/",
+  "published": "2026-10-25T04:25:28+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "58fa9b337ba0fc57ed83",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "CEBR3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/CEBR3/",
+  "published": "2026-10-25T04:25:30+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fdeb6bfd717d9495c972",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ITSA4: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/ITSA4/",
+  "published": "2026-10-25T04:25:32+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6a44c530eb1edcaea4b7",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ECOR3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/ECOR3/",
+  "published": "2026-10-25T04:25:34+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "70d36b628b0428ec8342",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "EZTC3: pre\u00e7o, indicadores e fundamentos | QuantBrasil",
+  "url": "https://quantbrasil.com.br/ativos/EZTC3/",
+  "published": "2026-10-25T04:25:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-BR",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cbf0f9173f281c52e662",
+  "host": "quantbrasil.com.br",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Theta Breakout: Selling Options on a Donchian Channel Breakout",
+  "url": "http://www.thetatrend.com/theta-breakout-selling-options-on-donchian-channel-breakout/",
+  "published": "2026-10-25T04:25:39+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.1.3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e4b161f9fd492f8a50d5",
+  "host": "www.thetatrend.com",
+  "claims": [
+   {
+    "claim": "Trading Across Multiple Expiration Cycles: When trades last longer than 30 days and price has moved in the direction of the breakout, the premium remaining on the short options is fairly minimal.",
+    "lang": "en",
+    "quantities": [
+     "breakout",
+     "premium",
+     "options"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1196838b1851"
+   },
+   {
+    "claim": "As a result, the system will look to resell the next expiration cycle when those options move into the preferred time to sell (60-100 days).",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f17b21677673"
+   },
+   {
+    "claim": "For example, if the system sells May options with 70 days to expiration and the trend direction is still long when June options have 65-70 days to expiration, the system will close May and sell June.",
+    "lang": "en",
+    "quantities": [
+     "options",
+     "trend",
+     "close"
+    ],
+    "direction": [
+     "long",
+     "sell"
+    ],
+    "horizon": [
+     "days",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "022f8efac3ff"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Options Trend Following Portfolio With a New Theta Breakout Trade",
+  "url": "https://www.thetatrend.com/options-trend-following-portfolio-new-theta-breakout-trade/",
+  "published": "2026-10-25T04:25:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.1.3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cf78ee909f68af1411b1",
+  "host": "www.thetatrend.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Gamma Insights and Some Initial Theta Breakout Backtest Results",
+  "url": "https://www.thetatrend.com/gamma-insights-initial-theta-breakout-backtest-results/",
+  "published": "2026-10-25T04:25:43+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.1.3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fbe1bb3cd0f6013e58ef",
+  "host": "www.thetatrend.com",
+  "claims": [
+   {
+    "claim": "Initial Backtest Method: My initial backtest was run on SPY and SPX going back two years and looking at 10 and 20 delta short options at both 60 and 90 days to expiration.",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "399e1862e097"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Theta Breakout: Selling Options on a Donchian Channel Breakout",
+  "url": "https://www.thetatrend.com/theta-breakout-selling-options-on-donchian-channel-breakout/",
+  "published": "2026-10-25T04:25:45+00:00",
+  "symbols": [
+   "US500"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.1.3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e4b161f9fd492f8a50d5",
+  "host": "www.thetatrend.com",
+  "claims": [
+   {
+    "claim": "Trading Across Multiple Expiration Cycles: When trades last longer than 30 days and price has moved in the direction of the breakout, the premium remaining on the short options is fairly minimal.",
+    "lang": "en",
+    "quantities": [
+     "breakout",
+     "premium",
+     "options"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "1196838b1851"
+   },
+   {
+    "claim": "As a result, the system will look to resell the next expiration cycle when those options move into the preferred time to sell (60-100 days).",
+    "lang": "en",
+    "quantities": [
+     "options"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "days"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f17b21677673"
+   },
+   {
+    "claim": "For example, if the system sells May options with 70 days to expiration and the trend direction is still long when June options have 65-70 days to expiration, the system will close May and sell June.",
+    "lang": "en",
+    "quantities": [
+     "options",
+     "trend",
+     "close"
+    ],
+    "direction": [
+     "long",
+     "sell"
+    ],
+    "horizon": [
+     "days",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "022f8efac3ff"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Analysis of Options Trend Following and Donchian Breakout Trades",
+  "url": "https://www.thetatrend.com/analysis-options-trend-following-donchian-breakout-trades-video/",
+  "published": "2026-10-25T04:25:47+00:00",
+  "symbols": [
+   "US500",
+   "USDJPY"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.1.3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9d38ca30181294f31456",
+  "host": "www.thetatrend.com",
+  "claims": [
+   {
+    "claim": "QQQ Short Vertical: The QQQ 80/75 put vertical in the December Quarterly options will be closed out before the holiday, but at this point it\u2019s still open.",
+    "lang": "en",
+    "quantities": [
+     "options",
+     "open"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "quarterly",
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDJPY"
+     ],
+     "mentioned": [
+      "spy",
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "37df43c5cc09"
+   },
+   {
+    "claim": "IWM Short Put (naked): The IWM short put is also sitting with an open profit.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500",
+      "USDJPY"
+     ],
+     "mentioned": [
+      "spy",
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c74d81812514"
+   },
+   {
+    "claim": "SPY Short Strangle (naked): The short SPY strangle is still open and has an open profit.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "US500"
+     ],
+     "mentioned": [
+      "spy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "82905d2ba9da"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Donchian Channel Breakout Strategy Thinkscript - Theta Trend",
+  "url": "https://www.thetatrend.com/donchian-channel-breakout-strategy-thinkscript/",
+  "published": "2026-10-25T04:25:49+00:00",
+  "symbols": [
+   "USDJPY",
+   "USDKRW"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.1.3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6d40d3dd934633210d0b",
+  "host": "www.thetatrend.com",
+  "claims": [
+   {
+    "claim": "SELL_TO_CLOSE, peaceout, chickendinner, tickcolor = GetColor(7), arrowcolor = GetColor(7));",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "yen",
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "28d198841a12"
+   },
+   {
+    "claim": "BUY_TO_CLOSE, peaceout, chickendinner, tickColor = GetColor(7), arrowColor = GetColor(7));",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "buy"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "yen",
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "bc67b09f1fee"
+   },
+   {
+    "claim": "What I meant with my question is: in ThinkOrSwim (TOS) how can you do a SCAN, so the search results show the stocks that had a Donchian Channel Long or Short Entry the day before or the same day.",
+    "lang": "en",
+    "quantities": [
+     "stocks"
+    ],
+    "direction": [
+     "long",
+     "short"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "USDKRW"
+     ],
+     "mentioned": [
+      "yen",
+      "won"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "60853e5fdb86"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Donchian Channel System Archives - Page 3 of 3 - Theta Trend",
+  "url": "https://www.thetatrend.com/category/directional-trading/donchian-channel-system/page/3/",
+  "published": "2026-10-25T04:25:51+00:00",
+  "symbols": [
+   "USDJPY"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.thetatrend.com/wp-content/plugins/download-monitor/assets/css/frontend.css?ver=7.1.3"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "69e9bc75274ca66f08cb",
+  "host": "www.thetatrend.com",
+  "claims": [
+   {
+    "claim": "Last week I had two Donchian breakout trades get [\u2026] Donchian Channel Breakout Trend Following Trading System October 23, 2013 March 30, 2015 Dan Directional Trading , Donchian Channel System One of the main tenets of trend following is that you should use numerous, uncorrelated underlyings for diversification and to increase the returns in your system.",
+    "lang": "en",
+    "quantities": [
+     "breakout",
+     "trend"
+    ],
+    "direction": [
+     "increase"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY"
+     ],
+     "mentioned": [
+      "yen"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "0504c6947420"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe U.S. Equities Exchanges Periodic Auctions",
+  "url": "https://www.cboe.com/us/equities/trading/offerings/periodic_auctions/",
+  "published": "2026-10-25T04:25:53+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json",
+   "https://ir.cboe.com/files/doc_news/2021/03/downloadpdf1691634869691.pdf"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5bb7a2f2039b953c7184",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Cboe U.S. Equities Exchanges Cboe Market Close",
+  "url": "https://www.cboe.com/us/equities/trading/offerings/cboe_market_close/",
+  "published": "2026-10-25T04:25:54+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "151cc57b72f28d0db292",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "U.S. Equities: Clearly Erroneous Form | Cboe",
+  "url": "https://www.cboe.com/markets/us/equities/trading/cee-form/",
+  "published": "2026-10-25T04:25:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "faa7849c1feab395aaab",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "U.S. Equities Halts Notices | Cboe",
+  "url": "https://www.cboe.com/markets/us/equities/notices/halts",
+  "published": "2026-10-25T04:25:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://www-api.cboe.com/us/equities/market_statistics/halts/downloads/BatsHalts2026.csv"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0f0eb1c018b67815ee9e",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Current Trade Suspension",
+  "url": "https://www.cboe.com/us/equities/market_statistics/halts/",
+  "published": "2026-10-25T04:26:01+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "basis",
+   "correlation",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en-us",
+  "endpoints": [
+   "https://www.cboe.com/manifest.json",
+   "https://www.cboe.com/us/equities/market_statistics/halts/downloads/market_data_halts.csv"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "41723213acfac81d4680",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "U.S. Options Trading | Cboe",
+  "url": "https://www.cboe.com/us/options/trading/",
+  "published": "2026-10-25T04:26:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a78784e4e042539fbb5c",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "U.S. Options Complex Orders | Cboe",
+  "url": "https://www.cboe.com/us/options/trading/complex_orders/",
+  "published": "2026-10-25T04:26:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "volatility"
+  ],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1a848c7f0aefeb255411",
+  "host": "www.cboe.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "France Harmonised Inflation Rate MoM",
+  "url": "https://tradingeconomics.com/france/harmonised-inflation-rate-mom",
+  "published": "2026-10-25T04:26:05+00:00",
+  "symbols": [
+   "CA60",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/france/exports",
+   "https://tradingeconomics.com/france/exports-by-category",
+   "https://tradingeconomics.com/france/exports-by-country",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "a61f3010753cd63a0fef",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "1% France Current Account Deficit Smallest in 4 Months Latest France Avoids Moody\u2019s Downgrade Mexican Peso Hits Near One-Year High Canada\u2019s 10-Year Yield Edges Higher on BoC Rate Hike Bets Paraguay Producer Prices Fall for Eighth Consecutive Month Ibovespa Closes Higher Ahead of Presidential Runoff TSX Closes Lower as Oil Rally Fuels Inflation Concerns Paraguay Central Bank Holds Policy Rate at 5.",
+    "lang": "en",
+    "quantities": [
+     "yield",
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "higher",
+     "fall"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "tsx",
+      "ibovespa",
+      "10-year yield"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "USDCAD"
+     ],
+     "channels": [
+      "boc: policy: BoC -> CAD"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8a44b0384ec7"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "France Harmonised Inflation Rate YoY",
+  "url": "https://tradingeconomics.com/france/harmonised-inflation-rate-yoy",
+  "published": "2026-10-25T04:26:07+00:00",
+  "symbols": [
+   "CA60",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/france/exports",
+   "https://tradingeconomics.com/france/exports-by-category",
+   "https://tradingeconomics.com/france/exports-by-country",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "b10da4ef26d4fef01778",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "1% France Current Account Deficit Smallest in 4 Months Latest France Avoids Moody\u2019s Downgrade Mexican Peso Hits Near One-Year High Canada\u2019s 10-Year Yield Edges Higher on BoC Rate Hike Bets Paraguay Producer Prices Fall for Eighth Consecutive Month Ibovespa Closes Higher Ahead of Presidential Runoff TSX Closes Lower as Oil Rally Fuels Inflation Concerns Paraguay Central Bank Holds Policy Rate at 5.",
+    "lang": "en",
+    "quantities": [
+     "yield",
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "higher",
+     "fall"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "tsx",
+      "ibovespa",
+      "10-year yield"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "USDCAD"
+     ],
+     "channels": [
+      "boc: policy: BoC -> CAD"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8a44b0384ec7"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "France Inflation Rate MoM",
+  "url": "https://tradingeconomics.com/france/inflation-rate-mom",
+  "published": "2026-10-25T04:26:09+00:00",
+  "symbols": [
+   "CA60",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "flow",
+   "inventory",
+   "policy",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/france/exports",
+   "https://tradingeconomics.com/france/exports-by-category",
+   "https://tradingeconomics.com/france/exports-by-country",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "cb2a6b942e0883a03abb",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "1% France Current Account Deficit Smallest in 4 Months Latest France Avoids Moody\u2019s Downgrade Mexican Peso Hits Near One-Year High Canada\u2019s 10-Year Yield Edges Higher on BoC Rate Hike Bets Paraguay Producer Prices Fall for Eighth Consecutive Month Ibovespa Closes Higher Ahead of Presidential Runoff TSX Closes Lower as Oil Rally Fuels Inflation Concerns Paraguay Central Bank Holds Policy Rate at 5.",
+    "lang": "en",
+    "quantities": [
+     "yield",
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "higher",
+     "fall"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "tsx",
+      "ibovespa",
+      "10-year yield"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "USDCAD"
+     ],
+     "channels": [
+      "boc: policy: BoC -> CAD"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8a44b0384ec7"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "France Inflation Rate",
+  "url": "https://tradingeconomics.com/france/inflation-cpi",
+  "published": "2026-10-25T04:26:11+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XTIUSD",
+   "XNGUSD",
+   "FRA40",
+   "CA60",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "M1",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "inventory",
+   "policy",
+   "positioning",
+   "seasonality"
+  ],
+  "confidence": 0.95,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/france/exports",
+   "https://tradingeconomics.com/france/exports-by-category",
+   "https://tradingeconomics.com/france/exports-by-country",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 10,
+  "vault_sha": "4baa9b724f2984e2989c",
+  "host": "tradingeconomics.com",
+  "claims": [
+   {
+    "claim": "On a monthly basis, consumer prices fell 0.",
+    "lang": "en",
+    "quantities": [
+     "basis"
+    ],
+    "direction": [
+     "fell"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "FRA40",
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "natural gas",
+      "cac 40",
+      "tsx",
+      "ibovespa",
+      "10-year yield"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "USDCAD",
+      "USDMXN"
+     ],
+     "channels": [
+      "boc: policy: BoC -> CAD",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "9201792d149e"
+   },
+   {
+    "claim": "On the month, the EU-harmonised CPI fell 0.",
+    "lang": "en",
+    "quantities": [
+     "cpi"
+    ],
+    "direction": [
+     "fell"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "FRA40",
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "natural gas",
+      "cac 40",
+      "tsx",
+      "ibovespa",
+      "10-year yield"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "USDCAD",
+      "USDMXN"
+     ],
+     "channels": [
+      "boc: policy: BoC -> CAD",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "cb75d6ea9724"
+   },
+   {
+    "claim": "On a monthly basis, consumer prices rose 0.",
+    "lang": "en",
+    "quantities": [
+     "basis"
+    ],
+    "direction": [
+     "rose"
+    ],
+    "horizon": [
+     "monthly"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XTIUSD",
+      "XNGUSD",
+      "FRA40",
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "crude",
+      "natural gas",
+      "cac 40",
+      "tsx",
+      "ibovespa",
+      "10-year yield"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "USDCAD",
+      "USDMXN"
+     ],
+     "channels": [
+      "boc: policy: BoC -> CAD",
+      "remittances: policy/flow: Banxico, remittances -> MXN"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "c1240aa91c2a"
+   },
+   {
+    "claim": "1% France Current Account Deficit Smallest in 4 Months Latest France Avoids Moody\u2019s Downgrade Mexican Peso Hits Near One-Year High Canada\u2019s 10-Year Yield Edges Higher on BoC Rate Hike Bets Paraguay Producer Prices Fall for Eighth Consecutive Month Ibovespa Closes Higher Ahead of Presidential Runoff TSX Closes Lower as Oil Rally Fuels Inflation Concerns Paraguay Central Bank Holds Policy Rate at 5.",
+    "lang": "en",
+    "quantities": [
+     "yield",
+     "rate",
+     "hike"
+    ],
+    "direction": [
+     "higher",
+     "fall"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "CA60",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "tsx",
+      "ibovespa",
+      "10-year yield"
+     ],
+     "transfer_only": [
+      "ibovespa->indices (B3)"
+     ],
+     "indirect": [
+      "USDCAD"
+     ],
+     "channels": [
+      "boc: policy: BoC -> CAD"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "8a44b0384ec7"
+   }
+  ],
+  "n_claims": 4
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Spain Core Inflation Rate",
+  "url": "https://tradingeconomics.com/spain/core-inflation-rate",
+  "published": "2026-10-25T04:26:13+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "gap",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/spain/export-prices",
+   "https://tradingeconomics.com/spain/exports",
+   "https://tradingeconomics.com/spain/exports-by-category",
+   "https://tradingeconomics.com/spain/exports-by-country",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 11,
+  "vault_sha": "09bf791d100ac303d4b9",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Spain Harmonised Inflation Rate MoM",
+  "url": "https://tradingeconomics.com/spain/harmonised-inflation-rate-mom",
+  "published": "2026-10-25T04:26:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "gap",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/spain/export-prices",
+   "https://tradingeconomics.com/spain/exports",
+   "https://tradingeconomics.com/spain/exports-by-category",
+   "https://tradingeconomics.com/spain/exports-by-country",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 11,
+  "vault_sha": "887818d7728e19b6be0d",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Spain Harmonised Inflation Rate YoY",
+  "url": "https://tradingeconomics.com/spain/harmonised-inflation-rate-yoy",
+  "published": "2026-10-25T04:26:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [
+   "flow",
+   "gap",
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "endpoints": [
+   "https://tradingeconomics.com/api/",
+   "https://tradingeconomics.com/api/?source=menu",
+   "https://tradingeconomics.com/api/customers.aspx",
+   "https://tradingeconomics.com/spain/export-prices",
+   "https://tradingeconomics.com/spain/exports",
+   "https://tradingeconomics.com/spain/exports-by-category",
+   "https://tradingeconomics.com/spain/exports-by-country",
+   "https://tradingeconomics.com/api/?source=footer",
+   "https://tradingeconomics.com/api/contact.aspx",
+   "https://tradingeconomics.com/api/?source=calendar",
+   "https://tradingeconomics.com/api/contact.aspx?subject=api+calendar"
+  ],
+  "n_endpoints": 11,
+  "vault_sha": "fe26c8dc45bfdfe1f07f",
+  "host": "tradingeconomics.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "BVL, dinero, inversionistas retail: Cuando invertir se volvi\u00f3 para todos en peru | G-DE-GESTION | GESTI\u00d3N",
+  "url": "https://gestion.pe/g-de-gestion/columnistas/bvl-dinero-inversionistas-retail-cuando-invertir-se-volvio-para-todos-en-peru-noticia/",
+  "published": "2026-10-25T04:26:18+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ab7f1472d3bf1c13076a",
+  "host": "gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "Exalmar, Auna y R\u00edo2: gerentes financieros revelan estrategia para 2026 | ECONOMIA | GESTI\u00d3N",
+  "url": "https://gestion.pe/economia/empresas/exalmar-auna-y-rio2-gerentes-financieros-revelan-estrategia-para-2026-noticia/",
+  "published": "2026-10-25T04:26:21+00:00",
+  "symbols": [
+   "XCUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "momentum",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://gestion.pe/economia/empresas/las-tres-companias-que-dominan-la-pesca-peruana-y-concentran-el-33-del-valor-exportado-noticia/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "41f3738e1967267359a8",
+  "host": "gestion.pe",
+  "claims": [
+   {
+    "claim": "\u201cLa de corto plazo tiene una parte que incluye warrants, deuda autoliquidable pues est\u00e1 atada a unas exportaciones con cartas de cr\u00e9dito que se cobran y se cancelan.",
+    "lang": "es",
+    "quantities": [
+     "exportaciones"
+    ],
+    "direction": [
+     "corto"
+    ],
+    "horizon": [
+     "corto plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "XCUUSD"
+     ],
+     "mentioned": [
+      "copper"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "322c32e2c402"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Noticias sobre BVL | GESTI\u00d3N",
+  "url": "https://gestion.pe/noticias/bvl/",
+  "published": "2026-10-25T04:26:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.35,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9507ffa9b330f841cef7",
+  "host": "gestion.pe",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "story",
+  "title": "inversiones en Per\u00fa ahora son m\u00e1s rentables que del extranjero: \u00bfqui\u00e9nes pierden plata? bolsa de valores de lima | TU-DINERO | GESTI\u00d3N",
+  "url": "https://gestion.pe/tu-dinero/bolsa-de-valores-de-lima-inversiones-en-peru-ahora-son-mas-rentables-que-del-extranjero-quienes-pierden-plata-noticia/",
+  "published": "2026-10-25T04:26:27+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XCUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "mean_reversion",
+   "momentum",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fa07c353cacffd713ac6",
+  "host": "gestion.pe",
+  "claims": [
+   {
+    "claim": "\u201cRendimientos muy altos tienden a ser an\u00f3malos porque al final el desempe\u00f1o de largo plazo de una acci\u00f3n est\u00e1 vinculada al crecimiento de las utilidades\u201d , afirm\u00f3.",
+    "lang": "es",
+    "quantities": [
+     "rendimiento",
+     "acci\u00f3n"
+    ],
+    "direction": [
+     "largo"
+    ],
+    "horizon": [
+     "largo plazo"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD"
+     ],
+     "mentioned": [
+      "oro",
+      "plata",
+      "cobre"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "SOYBEAN",
+      "CORN",
+      "WHEAT",
+      "USDBRL"
+     ],
+     "channels": [
+      "el ni\u00f1o: weather/agri report -> grains and BRL"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d8caa3e81066"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Documents by zerodha to retain in mail and which to delete? - Taxation - Trading Q&amp;A by Zerodha - All your queries on trading and markets answered",
+  "url": "https://tradingqna.com/t/documents-by-zerodha-to-retain-in-mail-and-which-to-delete/198102",
+  "published": "2026-10-25T04:26:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://console.zerodha.com/reports/downloads"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "3ec2b7e5ab60be0a926e",
+  "host": "tradingqna.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Historical expired options data - Algos, strategies, code - Trading Q&amp;A by Zerodha - All your queries on trading and markets answered",
+  "url": "https://tradingqna.com/t/historical-expired-options-data/188274",
+  "published": "2026-10-25T04:26:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ea1db4e21b750b3e1f22",
+  "host": "tradingqna.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]
