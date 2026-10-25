@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-25T08:33:28+00:00",
+ "generated_utc": "2026-10-25T08:38:57+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 4,
@@ -2885,13 +2885,13 @@
    },
    "KRX 정보데이터시스템": {
     "outcome": "EMPTY",
-    "attempts": 392,
-    "successes": 142,
+    "attempts": 393,
+    "successes": 143,
     "rows": 0,
     "findings_total": 0,
-    "datasets": 142,
+    "datasets": 143,
     "last_error": "",
-    "last_attempt": "2026-10-25T07:36:41.688201+00:00",
+    "last_attempt": "2026-10-25T08:35:48.491605+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -3485,25 +3485,25 @@
    },
    "Naver blog (KR)": {
     "outcome": "BLOCKED",
-    "attempts": 373,
+    "attempts": 374,
     "successes": 2,
     "rows": 23,
     "findings_total": 23,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (94667 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14251 bytes)",
-    "last_attempt": "2026-10-25T07:36:36.985883+00:00",
+    "last_error": "bing: bing returned no parseable results (95224 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
+    "last_attempt": "2026-10-25T08:38:49.284432+00:00",
     "language": "ko",
     "region": "kr"
    },
    "Naver 카페": {
     "outcome": "BLOCKED",
-    "attempts": 380,
+    "attempts": 381,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (93451 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14237 bytes)",
-    "last_attempt": "2026-10-25T07:36:39.483242+00:00",
+    "last_error": "bing: bing returned no parseable results (94794 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
+    "last_attempt": "2026-10-25T08:37:32.099378+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -5069,13 +5069,13 @@
    },
    "Velog quant": {
     "outcome": "BLOCKED",
-    "attempts": 402,
+    "attempts": 403,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismat; URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mism",
-    "last_attempt": "2026-10-25T07:36:41.287878+00:00",
+    "last_attempt": "2026-10-25T08:35:08.193960+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -5405,13 +5405,13 @@
    },
    "YouTube KR 매매기법": {
     "outcome": "BLOCKED",
-    "attempts": 383,
+    "attempts": 384,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (94664 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14231 bytes)",
-    "last_attempt": "2026-10-25T07:36:57.409760+00:00",
+    "last_error": "bing: bing returned no parseable results (94457 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
+    "last_attempt": "2026-10-25T08:37:30.888220+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6617,13 +6617,13 @@
    },
    "관세청 수출입 통계": {
     "outcome": "EMPTY",
-    "attempts": 394,
-    "successes": 144,
+    "attempts": 395,
+    "successes": 145,
     "rows": 0,
     "findings_total": 1,
-    "datasets": 144,
+    "datasets": 145,
     "last_error": "",
-    "last_attempt": "2026-10-25T07:36:43.891265+00:00",
+    "last_attempt": "2026-10-25T08:35:48.404274+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6641,13 +6641,13 @@
    },
    "매일경제 / 연합인포맥스 시장": {
     "outcome": "BLOCKED",
-    "attempts": 386,
+    "attempts": 387,
     "successes": 2,
     "rows": 26,
     "findings_total": 64,
     "datasets": 4,
-    "last_error": "bing: bing returned no parseable results (95221 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14245 bytes)",
-    "last_attempt": "2026-10-25T07:36:29.602509+00:00",
+    "last_error": "bing: bing returned no parseable results (95102 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
+    "last_attempt": "2026-10-25T08:36:39.789228+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6677,13 +6677,13 @@
    },
    "한국경제 퀀트 칼럼": {
     "outcome": "BLOCKED",
-    "attempts": 382,
+    "attempts": 383,
     "successes": 2,
     "rows": 13,
     "findings_total": 13,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (93774 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14217 bytes)",
-    "last_attempt": "2026-10-25T07:36:52.388034+00:00",
+    "last_error": "bing: bing returned no parseable results (96566 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
+    "last_attempt": "2026-10-25T08:37:34.599219+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6862,16 +6862,16 @@
    "wall_s_24h": "UNMEASURED"
   },
   "forest_korea": {
-   "runs": 28,
-   "fetches": 1922,
-   "ok": 1478,
+   "runs": 29,
+   "fetches": 1972,
+   "ok": 1496,
    "http_errors": 38,
-   "transport_errors": 406,
-   "seconds": 6625.8,
-   "rows": 235,
-   "last_run": "2026-10-25T01:43:03+00:00",
-   "fetches_per_s": 0.2901,
-   "success_rate": 0.769,
+   "transport_errors": 438,
+   "seconds": 6891.9,
+   "rows": 237,
+   "last_run": "2026-10-25T08:38:57+00:00",
+   "fetches_per_s": 0.2861,
+   "success_rate": 0.7586,
    "wall_s_24h": 1461.4,
    "cpu_s_24h": 462.8
   },
@@ -6956,8 +6956,8 @@
    "last_run": "2026-10-25T08:33:28+00:00",
    "fetches_per_s": 0.7088,
    "success_rate": 0.8693,
-   "wall_s_24h": 3557.9,
-   "cpu_s_24h": 701.0
+   "wall_s_24h": 4173.2,
+   "cpu_s_24h": 914.4
   }
  },
  "sources": {
