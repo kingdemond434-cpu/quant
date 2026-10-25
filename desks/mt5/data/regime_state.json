@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-25T23:00:35.385109+00:00",
+  "swept_at": "2026-10-25T23:15:16.502989+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -3265,7 +3265,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2643,
+      "shadow_exp_r": -0.2526,
       "woke_on_shadow": false
     },
     "SGDJPY|overnight_gap_decay_continuous": {
