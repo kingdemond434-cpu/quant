@@ -1,13 +1,13 @@
 {
- "generated_utc": "2026-10-25T00:55:36+00:00",
+ "generated_utc": "2026-10-25T18:24:42+00:00",
  "status": "MEASURED",
  "budget_s": 600.0,
- "elapsed_s": 573.58,
- "draws_this_pass": 273,
- "run_this_pass": 199,
- "ledger_draws": 5488,
+ "elapsed_s": 576.81,
+ "draws_this_pass": 113,
+ "run_this_pass": 74,
+ "ledger_draws": 5601,
  "families_hunted": 102,
- "families_measured": 63,
+ "families_measured": 64,
  "unmeasured_families": [
   "alt_conditioned",
   "alt_series_momentum",
@@ -16,7 +16,6 @@
   "calendar_month",
   "carry_rollover",
   "conditioning_model",
-  "cot_change_fade",
   "cot_net_fade",
   "crisis_only_class_defensive",
   "cross_sectional",
@@ -63,8 +62,8 @@
  },
  "families": {
   "adx_channel_hybrid": {
-   "draws": 54,
-   "run": 53,
+   "draws": 57,
+   "run": 56,
    "not_run": 1,
    "not_run_why": [
     "build_cell: NOT_RUN_MODIFIER: residual='equity': this family does not residualise its input, and building it un-residual"
@@ -72,24 +71,24 @@
    "gates": {
     "deflated_sharpe_1trial": {
      "nominal": 0.050000000000000044,
-     "n": 50,
+     "n": 52,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.07135
+      0.068795
      ],
-     "posterior_rate": 0.014286,
+     "posterior_rate": 0.013889,
      "exceeds_nominal": false,
-     "unmeasured_draws": 3,
+     "unmeasured_draws": 4,
      "per_arm": {
       "block_shuffle": {
-       "n": 17,
+       "n": 18,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 16,
+       "n": 17,
        "passed": 0,
        "rate": 0.0
       },
@@ -102,32 +101,32 @@
      "null_distribution": {
       "q05": 0.0,
       "q25": 0.0,
-      "q50": 2e-06,
-      "q75": 0.000378,
-      "q95": 0.322728,
-      "q99": 0.70349
+      "q50": 3e-06,
+      "q75": 0.000565,
+      "q95": 0.322562,
+      "q99": 0.694819
      }
     },
     "screen_t": {
      "nominal": 0.025,
-     "n": 51,
+     "n": 53,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.070049
+      0.067584
      ],
-     "posterior_rate": 0.007042,
+     "posterior_rate": 0.006849,
      "exceeds_nominal": false,
-     "unmeasured_draws": 2,
+     "unmeasured_draws": 3,
      "per_arm": {
       "block_shuffle": {
-       "n": 17,
+       "n": 18,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 17,
+       "n": 18,
        "passed": 0,
        "rate": 0.0
       },
@@ -138,34 +137,34 @@
       }
      },
      "null_distribution": {
-      "q05": -10.825327,
-      "q25": -6.441969,
-      "q50": -4.837699,
-      "q75": -2.819431,
-      "q95": -0.47661,
-      "q99": 0.58513
+      "q05": -10.799547,
+      "q25": -6.36182,
+      "q50": -4.822721,
+      "q75": -2.935352,
+      "q95": -0.480969,
+      "q99": 0.559943
      }
     },
     "in_sample_screen": {
      "nominal": 0.5,
-     "n": 50,
+     "n": 52,
      "passed": 1,
-     "rate": 0.02,
+     "rate": 0.019231,
      "wilson": [
-      0.003539,
-      0.104957
+      0.003403,
+      0.101207
      ],
-     "posterior_rate": 0.157143,
+     "posterior_rate": 0.152778,
      "exceeds_nominal": false,
-     "unmeasured_draws": 3,
+     "unmeasured_draws": 4,
      "per_arm": {
       "block_shuffle": {
-       "n": 17,
+       "n": 18,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 16,
+       "n": 17,
        "passed": 0,
        "rate": 0.0
       },
@@ -176,12 +175,12 @@
       }
      },
      "null_distribution": {
-      "q05": -0.580817,
-      "q25": -0.325146,
+      "q05": -0.579321,
+      "q25": -0.322526,
       "q50": -0.191465,
-      "q75": -0.115555,
-      "q95": -0.019212,
-      "q99": 0.035825
+      "q75": -0.114876,
+      "q95": -0.019708,
+      "q99": 0.034311
      }
     }
    },
@@ -189,8 +188,8 @@
    "fpr_charge": 1.0
   },
   "alt_conditioned": {
-   "draws": 54,
-   "run": 54,
+   "draws": 57,
+   "run": 57,
    "not_run": 0,
    "not_run_why": [],
    "gates": {
@@ -202,7 +201,7 @@
      "wilson": null,
      "posterior_rate": 0.05,
      "exceeds_nominal": false,
-     "unmeasured_draws": 54,
+     "unmeasured_draws": 57,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -230,7 +229,7 @@
      "wilson": null,
      "posterior_rate": 0.025,
      "exceeds_nominal": false,
-     "unmeasured_draws": 54,
+     "unmeasured_draws": 57,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -258,7 +257,7 @@
      "wilson": null,
      "posterior_rate": 0.5,
      "exceeds_nominal": false,
-     "unmeasured_draws": 54,
+     "unmeasured_draws": 57,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -283,8 +282,8 @@
    "fpr_charge": null
   },
   "alt_series_momentum": {
-   "draws": 54,
-   "run": 54,
+   "draws": 57,
+   "run": 57,
    "not_run": 0,
    "not_run_why": [],
    "gates": {
@@ -296,7 +295,7 @@
      "wilson": null,
      "posterior_rate": 0.05,
      "exceeds_nominal": false,
-     "unmeasured_draws": 54,
+     "unmeasured_draws": 57,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -324,7 +323,7 @@
      "wilson": null,
      "posterior_rate": 0.025,
      "exceeds_nominal": false,
-     "unmeasured_draws": 54,
+     "unmeasured_draws": 57,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -352,7 +351,7 @@
      "wilson": null,
      "posterior_rate": 0.5,
      "exceeds_nominal": false,
-     "unmeasured_draws": 54,
+     "unmeasured_draws": 57,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -377,9 +376,9 @@
    "fpr_charge": null
   },
   "anti_donchian_breakout": {
-   "draws": 54,
+   "draws": 57,
    "run": 0,
-   "not_run": 54,
+   "not_run": 57,
    "not_run_why": [
     "build_cell: no implementation of family 'anti_donchian_breakout' in families or families_orthogonal"
    ],
@@ -473,9 +472,9 @@
    "fpr_charge": null
   },
   "anti_three_bar_momentum": {
-   "draws": 54,
+   "draws": 57,
    "run": 0,
-   "not_run": 54,
+   "not_run": 57,
    "not_run_why": [
     "build_cell: no implementation of family 'anti_three_bar_momentum' in families or families_orthogonal"
    ],
@@ -569,8 +568,8 @@
    "fpr_charge": null
   },
   "asia_momentum": {
-   "draws": 54,
-   "run": 52,
+   "draws": 57,
+   "run": 55,
    "not_run": 2,
    "not_run_why": [
     "build_cell: NOT_RUN_MODIFIER: regime='risk_on' has no desk definition (volatility and month/quarter-end are defined; a r"
@@ -578,24 +577,24 @@
    "gates": {
     "deflated_sharpe_1trial": {
      "nominal": 0.050000000000000044,
-     "n": 23,
+     "n": 25,
      "passed": 1,
-     "rate": 0.043478,
+     "rate": 0.04,
      "wilson": [
-      0.007716,
-      0.209916
+      0.007096,
+      0.195445
      ],
-     "posterior_rate": 0.046512,
+     "posterior_rate": 0.044444,
      "exceeds_nominal": false,
-     "unmeasured_draws": 29,
+     "unmeasured_draws": 30,
      "per_arm": {
       "block_shuffle": {
-       "n": 6,
+       "n": 7,
        "passed": 1,
-       "rate": 0.166667
+       "rate": 0.142857
       },
       "random_walk": {
-       "n": 9,
+       "n": 10,
        "passed": 0,
        "rate": 0.0
       },
@@ -609,31 +608,31 @@
       "q05": 0.0,
       "q25": 0.0,
       "q50": 0.0,
-      "q75": 1.5e-05,
-      "q95": 0.194759,
-      "q99": 0.819914
+      "q75": 2.1e-05,
+      "q95": 0.173136,
+      "q99": 0.804439
      }
     },
     "screen_t": {
      "nominal": 0.025,
-     "n": 23,
+     "n": 25,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.143121
+      0.133196
      ],
-     "posterior_rate": 0.011628,
+     "posterior_rate": 0.011111,
      "exceeds_nominal": false,
-     "unmeasured_draws": 29,
+     "unmeasured_draws": 30,
      "per_arm": {
       "block_shuffle": {
-       "n": 6,
+       "n": 7,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 9,
+       "n": 10,
        "passed": 0,
        "rate": 0.0
       },
@@ -644,34 +643,34 @@
       }
      },
      "null_distribution": {
-      "q05": -10.128077,
-      "q25": -7.917509,
-      "q50": -4.948946,
-      "q75": -2.648667,
-      "q95": -0.912253,
-      "q99": 1.197715
+      "q05": -10.122524,
+      "q25": -7.798372,
+      "q50": -4.515829,
+      "q75": -2.624192,
+      "q95": -0.999037,
+      "q99": 1.145839
      }
     },
     "in_sample_screen": {
      "nominal": 0.5,
-     "n": 23,
+     "n": 25,
      "passed": 1,
-     "rate": 0.043478,
+     "rate": 0.04,
      "wilson": [
-      0.007716,
-      0.209916
+      0.007096,
+      0.195445
      ],
-     "posterior_rate": 0.255814,
+     "posterior_rate": 0.244444,
      "exceeds_nominal": false,
-     "unmeasured_draws": 29,
+     "unmeasured_draws": 30,
      "per_arm": {
       "block_shuffle": {
-       "n": 6,
+       "n": 7,
        "passed": 1,
-       "rate": 0.166667
+       "rate": 0.142857
       },
       "random_walk": {
-       "n": 9,
+       "n": 10,
        "passed": 0,
        "rate": 0.0
       },
@@ -682,12 +681,12 @@
       }
      },
      "null_distribution": {
-      "q05": -0.580431,
-      "q25": -0.249596,
-      "q50": -0.195957,
-      "q75": -0.11104,
-      "q95": -0.024804,
-      "q99": 0.031492
+      "q05": -0.567795,
+      "q25": -0.225402,
+      "q50": -0.154607,
+      "q75": -0.077056,
+      "q95": -0.028049,
+      "q99": 0.030132
      }
     }
    },
@@ -695,9 +694,9 @@
    "fpr_charge": 1.0
   },
   "calendar_month": {
-   "draws": 54,
-   "run": 52,
-   "not_run": 2,
+   "draws": 57,
+   "run": 54,
+   "not_run": 3,
    "not_run_why": [
     "build_cell: calendar_month raised TypeError: family_calendar_month() missing 2 required keyword-only arguments: 'active_"
    ],
@@ -710,7 +709,7 @@
      "wilson": null,
      "posterior_rate": 0.05,
      "exceeds_nominal": false,
-     "unmeasured_draws": 52,
+     "unmeasured_draws": 54,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -738,7 +737,7 @@
      "wilson": null,
      "posterior_rate": 0.025,
      "exceeds_nominal": false,
-     "unmeasured_draws": 52,
+     "unmeasured_draws": 54,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -766,7 +765,7 @@
      "wilson": null,
      "posterior_rate": 0.5,
      "exceeds_nominal": false,
-     "unmeasured_draws": 52,
+     "unmeasured_draws": 54,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -791,36 +790,36 @@
    "fpr_charge": null
   },
   "carry": {
-   "draws": 54,
-   "run": 54,
+   "draws": 57,
+   "run": 57,
    "not_run": 0,
    "not_run_why": [],
    "gates": {
     "deflated_sharpe_1trial": {
      "nominal": 0.050000000000000044,
-     "n": 46,
+     "n": 49,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.077076
+      0.0727
      ],
-     "posterior_rate": 0.015152,
+     "posterior_rate": 0.014493,
      "exceeds_nominal": false,
      "unmeasured_draws": 8,
      "per_arm": {
       "block_shuffle": {
-       "n": 15,
+       "n": 16,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 15,
+       "n": 16,
        "passed": 0,
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 16,
+       "n": 17,
        "passed": 0,
        "rate": 0.0
       }
@@ -829,85 +828,85 @@
       "q05": 0.0,
       "q25": 0.0,
       "q50": 0.0,
-      "q75": 2.9e-05,
-      "q95": 0.270455,
-      "q99": 0.478495
+      "q75": 0.000586,
+      "q95": 0.260346,
+      "q99": 0.472162
      }
     },
     "screen_t": {
      "nominal": 0.025,
-     "n": 46,
+     "n": 49,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.077076
+      0.0727
      ],
-     "posterior_rate": 0.007576,
+     "posterior_rate": 0.007246,
      "exceeds_nominal": false,
      "unmeasured_draws": 8,
      "per_arm": {
       "block_shuffle": {
-       "n": 15,
+       "n": 16,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 15,
+       "n": 16,
        "passed": 0,
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 16,
+       "n": 17,
        "passed": 0,
        "rate": 0.0
       }
      },
      "null_distribution": {
-      "q05": -62.363919,
-      "q25": -16.158366,
-      "q50": -7.656339,
-      "q75": -4.190732,
-      "q95": -0.61055,
-      "q99": -0.057178
+      "q05": -57.704463,
+      "q25": -16.304027,
+      "q50": -7.634723,
+      "q75": -3.180595,
+      "q95": -0.646281,
+      "q99": -0.073487
      }
     },
     "in_sample_screen": {
      "nominal": 0.5,
-     "n": 46,
+     "n": 49,
      "passed": 1,
-     "rate": 0.021739,
+     "rate": 0.020408,
      "wilson": [
-      0.003848,
-      0.113356
+      0.003612,
+      0.106938
      ],
-     "posterior_rate": 0.166667,
+     "posterior_rate": 0.15942,
      "exceeds_nominal": false,
      "unmeasured_draws": 8,
      "per_arm": {
       "block_shuffle": {
-       "n": 15,
+       "n": 16,
        "passed": 1,
-       "rate": 0.066667
+       "rate": 0.0625
       },
       "random_walk": {
-       "n": 15,
+       "n": 16,
        "passed": 0,
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 16,
+       "n": 17,
        "passed": 0,
        "rate": 0.0
       }
      },
      "null_distribution": {
-      "q05": -1.504748,
-      "q25": -0.474821,
-      "q50": -0.272748,
-      "q75": -0.124741,
-      "q95": -0.028964,
-      "q99": 0.007296
+      "q05": -1.38052,
+      "q25": -0.463422,
+      "q50": -0.271296,
+      "q75": -0.10058,
+      "q95": -0.02898,
+      "q99": 0.00633
      }
     }
    },
@@ -915,9 +914,9 @@
    "fpr_charge": 1.0
   },
   "carry_rollover": {
-   "draws": 54,
+   "draws": 57,
    "run": 0,
-   "not_run": 54,
+   "not_run": 57,
    "not_run_why": [
     "build_cell: no implementation of family 'carry_rollover' in families or families_orthogonal"
    ],
@@ -1011,8 +1010,8 @@
    "fpr_charge": null
   },
   "clock_transition": {
-   "draws": 54,
-   "run": 46,
+   "draws": 57,
+   "run": 49,
    "not_run": 8,
    "not_run_why": [
     "build_cell: BLOCKED_RULES: clock_transition requires an integer stamp_hour in 0..23",
@@ -1033,7 +1032,7 @@
      ],
      "posterior_rate": 0.022222,
      "exceeds_nominal": false,
-     "unmeasured_draws": 21,
+     "unmeasured_draws": 24,
      "per_arm": {
       "block_shuffle": {
        "n": 11,
@@ -1071,7 +1070,7 @@
      ],
      "posterior_rate": 0.011111,
      "exceeds_nominal": false,
-     "unmeasured_draws": 21,
+     "unmeasured_draws": 24,
      "per_arm": {
       "block_shuffle": {
        "n": 11,
@@ -1109,7 +1108,7 @@
      ],
      "posterior_rate": 0.222222,
      "exceeds_nominal": false,
-     "unmeasured_draws": 21,
+     "unmeasured_draws": 24,
      "per_arm": {
       "block_shuffle": {
        "n": 11,
@@ -1141,8 +1140,8 @@
    "fpr_charge": 1.0
   },
   "comex_settlement": {
-   "draws": 54,
-   "run": 53,
+   "draws": 57,
+   "run": 56,
    "not_run": 1,
    "not_run_why": [
     "build_cell: comex_settlement raised TypeError: family_comex_settlement() got an unexpected keyword argument 'chart'"
@@ -1150,29 +1149,29 @@
    "gates": {
     "deflated_sharpe_1trial": {
      "nominal": 0.050000000000000044,
-     "n": 33,
+     "n": 36,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.104273
+      0.096422
      ],
-     "posterior_rate": 0.018868,
+     "posterior_rate": 0.017857,
      "exceeds_nominal": false,
      "unmeasured_draws": 20,
      "per_arm": {
       "block_shuffle": {
-       "n": 11,
+       "n": 12,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 9,
+       "n": 10,
        "passed": 0,
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 13,
+       "n": 14,
        "passed": 0,
        "rate": 0.0
       }
@@ -1181,85 +1180,85 @@
       "q05": 0.0,
       "q25": 0.0,
       "q50": 0.0,
-      "q75": 0.002046,
-      "q95": 0.238021,
-      "q99": 0.415063
+      "q75": 0.003962,
+      "q95": 0.200456,
+      "q99": 0.413881
      }
     },
     "screen_t": {
      "nominal": 0.025,
-     "n": 33,
+     "n": 36,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.104273
+      0.096422
      ],
-     "posterior_rate": 0.009434,
+     "posterior_rate": 0.008929,
      "exceeds_nominal": false,
      "unmeasured_draws": 20,
      "per_arm": {
       "block_shuffle": {
-       "n": 11,
+       "n": 12,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 9,
+       "n": 10,
        "passed": 0,
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 13,
+       "n": 14,
        "passed": 0,
        "rate": 0.0
       }
      },
      "null_distribution": {
-      "q05": -10.511897,
-      "q25": -6.623781,
-      "q50": -4.394752,
-      "q75": -2.248596,
-      "q95": -0.736691,
-      "q99": -0.21736
+      "q05": -10.343889,
+      "q25": -6.816164,
+      "q50": -4.715353,
+      "q75": -2.203623,
+      "q95": -0.849345,
+      "q99": -0.220392
      }
     },
     "in_sample_screen": {
      "nominal": 0.5,
-     "n": 33,
+     "n": 36,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.104273
+      0.096422
      ],
-     "posterior_rate": 0.188679,
+     "posterior_rate": 0.178571,
      "exceeds_nominal": false,
      "unmeasured_draws": 20,
      "per_arm": {
       "block_shuffle": {
-       "n": 11,
+       "n": 12,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 9,
+       "n": 10,
        "passed": 0,
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 13,
+       "n": 14,
        "passed": 0,
        "rate": 0.0
       }
      },
      "null_distribution": {
-      "q05": -0.770349,
-      "q25": -0.323496,
-      "q50": -0.236639,
-      "q75": -0.120084,
-      "q95": -0.037525,
-      "q99": -0.010174
+      "q05": -0.684404,
+      "q25": -0.319844,
+      "q50": -0.238913,
+      "q75": -0.115871,
+      "q95": -0.043628,
+      "q99": -0.010303
      }
     }
    },
@@ -1267,9 +1266,9 @@
    "fpr_charge": 1.0
   },
   "conditioning_model": {
-   "draws": 54,
+   "draws": 57,
    "run": 0,
-   "not_run": 54,
+   "not_run": 57,
    "not_run_why": [
     "build_cell: no implementation of family 'conditioning_model' in families or families_orthogonal"
    ],
@@ -1363,8 +1362,8 @@
    "fpr_charge": null
   },
   "correlation_regime": {
-   "draws": 54,
-   "run": 40,
+   "draws": 57,
+   "run": 43,
    "not_run": 14,
    "not_run_why": [
     "build_cell: BLOCKED_RULES: no peer_symbol on the candidate",
@@ -1373,29 +1372,29 @@
    "gates": {
     "deflated_sharpe_1trial": {
      "nominal": 0.050000000000000044,
-     "n": 39,
+     "n": 42,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.08967
+      0.083802
      ],
-     "posterior_rate": 0.016949,
+     "posterior_rate": 0.016129,
      "exceeds_nominal": false,
      "unmeasured_draws": 1,
      "per_arm": {
       "block_shuffle": {
-       "n": 14,
+       "n": 15,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 13,
+       "n": 14,
        "passed": 0,
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 12,
+       "n": 13,
        "passed": 0,
        "rate": 0.0
       }
@@ -1403,86 +1402,86 @@
      "null_distribution": {
       "q05": 0.0,
       "q25": 0.0,
-      "q50": 0.017934,
-      "q75": 0.212288,
-      "q95": 0.873825,
-      "q99": 0.913951
+      "q50": 0.016832,
+      "q75": 0.194648,
+      "q95": 0.85151,
+      "q99": 0.913377
      }
     },
     "screen_t": {
      "nominal": 0.025,
-     "n": 40,
+     "n": 43,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.087625
+      0.082013
      ],
-     "posterior_rate": 0.008333,
+     "posterior_rate": 0.007937,
      "exceeds_nominal": false,
      "unmeasured_draws": 0,
      "per_arm": {
       "block_shuffle": {
-       "n": 14,
+       "n": 15,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 14,
+       "n": 15,
        "passed": 0,
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 12,
+       "n": 13,
        "passed": 0,
        "rate": 0.0
       }
      },
      "null_distribution": {
-      "q05": -21.796386,
-      "q25": -9.271667,
-      "q50": -2.254628,
-      "q75": -0.852129,
-      "q95": 1.132688,
-      "q99": 1.377037
+      "q05": -21.086754,
+      "q25": -8.166381,
+      "q50": -2.279382,
+      "q75": -0.878203,
+      "q95": 1.111469,
+      "q99": 1.372449
      }
     },
     "in_sample_screen": {
      "nominal": 0.5,
-     "n": 39,
+     "n": 42,
      "passed": 3,
-     "rate": 0.076923,
+     "rate": 0.071429,
      "wilson": [
-      0.026507,
-      0.203214
+      0.02459,
+      0.190097
      ],
-     "posterior_rate": 0.220339,
+     "posterior_rate": 0.209677,
      "exceeds_nominal": false,
      "unmeasured_draws": 1,
      "per_arm": {
       "block_shuffle": {
-       "n": 14,
+       "n": 15,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 13,
+       "n": 14,
        "passed": 3,
-       "rate": 0.230769
+       "rate": 0.214286
       },
       "sign_permute": {
-       "n": 12,
+       "n": 13,
        "passed": 0,
        "rate": 0.0
       }
      },
      "null_distribution": {
-      "q05": -0.992486,
-      "q25": -0.551487,
-      "q50": -0.150636,
-      "q75": -0.066092,
-      "q95": 0.06161,
-      "q99": 0.082196
+      "q05": -0.988365,
+      "q25": -0.49636,
+      "q50": -0.165068,
+      "q75": -0.069251,
+      "q95": 0.057275,
+      "q99": 0.081724
      }
     }
    },
@@ -1490,245 +1489,15 @@
    "fpr_charge": 1.0
   },
   "cot_change_fade": {
-   "draws": 54,
-   "run": 1,
-   "not_run": 53,
+   "draws": 57,
+   "run": 2,
+   "not_run": 55,
    "not_run_why": [
     "build_cell: BLOCKED_DATA: raw COT for CA60: KeyError: 'no COT mapping for CA60'",
     "build_cell: BLOCKED_DATA: raw COT for CHFHUF: KeyError: 'no COT mapping for CHFHUF'",
     "build_cell: BLOCKED_DATA: raw COT for DOTUSD: KeyError: 'no COT mapping for DOTUSD'",
     "build_cell: BLOCKED_DATA: raw COT for EURAUD: KeyError: 'no COT mapping for EURAUD'",
     "build_cell: BLOCKED_DATA: raw COT for EURGBP: FileNotFoundError: [Errno 2] No such file or directory: 'C:\\\\opt\\\\quant\\\\d"
-   ],
-   "gates": {
-    "deflated_sharpe_1trial": {
-     "nominal": 0.050000000000000044,
-     "n": 0,
-     "passed": 0,
-     "rate": null,
-     "wilson": null,
-     "posterior_rate": 0.05,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 1,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 0,
-       "passed": 0,
-       "rate": null
-      },
-      "random_walk": {
-       "n": 0,
-       "passed": 0,
-       "rate": null
-      },
-      "sign_permute": {
-       "n": 0,
-       "passed": 0,
-       "rate": null
-      }
-     },
-     "null_distribution": null
-    },
-    "screen_t": {
-     "nominal": 0.025,
-     "n": 0,
-     "passed": 0,
-     "rate": null,
-     "wilson": null,
-     "posterior_rate": 0.025,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 1,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 0,
-       "passed": 0,
-       "rate": null
-      },
-      "random_walk": {
-       "n": 0,
-       "passed": 0,
-       "rate": null
-      },
-      "sign_permute": {
-       "n": 0,
-       "passed": 0,
-       "rate": null
-      }
-     },
-     "null_distribution": null
-    },
-    "in_sample_screen": {
-     "nominal": 0.5,
-     "n": 0,
-     "passed": 0,
-     "rate": null,
-     "wilson": null,
-     "posterior_rate": 0.5,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 1,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 0,
-       "passed": 0,
-       "rate": null
-      },
-      "random_walk": {
-       "n": 0,
-       "passed": 0,
-       "rate": null
-      },
-      "sign_permute": {
-       "n": 0,
-       "passed": 0,
-       "rate": null
-      }
-     },
-     "null_distribution": null
-    }
-   },
-   "status": "UNMEASURED",
-   "fpr_charge": null
-  },
-  "cot_change_momentum": {
-   "draws": 54,
-   "run": 2,
-   "not_run": 52,
-   "not_run_why": [
-    "build_cell: BLOCKED_DATA: raw COT for AUDHUF: KeyError: 'no COT mapping for AUDHUF'",
-    "build_cell: BLOCKED_DATA: raw COT for AUDNZD: KeyError: 'no COT mapping for AUDNZD'",
-    "build_cell: BLOCKED_DATA: raw COT for AUS200: KeyError: 'no COT mapping for AUS200'",
-    "build_cell: BLOCKED_DATA: raw COT for BNBUSD: KeyError: 'no COT mapping for BNBUSD'",
-    "build_cell: BLOCKED_DATA: raw COT for CA60: KeyError: 'no COT mapping for CA60'"
-   ],
-   "gates": {
-    "deflated_sharpe_1trial": {
-     "nominal": 0.050000000000000044,
-     "n": 2,
-     "passed": 0,
-     "rate": 0.0,
-     "wilson": [
-      0.0,
-      0.657628
-     ],
-     "posterior_rate": 0.045455,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 0,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 0,
-       "passed": 0,
-       "rate": null
-      },
-      "random_walk": {
-       "n": 1,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "sign_permute": {
-       "n": 1,
-       "passed": 0,
-       "rate": 0.0
-      }
-     },
-     "null_distribution": {
-      "q05": 0.005261,
-      "q25": 0.011689,
-      "q50": 0.019723,
-      "q75": 0.027757,
-      "q95": 0.034185,
-      "q99": 0.03547
-     }
-    },
-    "screen_t": {
-     "nominal": 0.025,
-     "n": 2,
-     "passed": 0,
-     "rate": 0.0,
-     "wilson": [
-      0.0,
-      0.657628
-     ],
-     "posterior_rate": 0.022727,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 0,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 0,
-       "passed": 0,
-       "rate": null
-      },
-      "random_walk": {
-       "n": 1,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "sign_permute": {
-       "n": 1,
-       "passed": 0,
-       "rate": 0.0
-      }
-     },
-     "null_distribution": {
-      "q05": -4.097984,
-      "q25": -3.619976,
-      "q50": -3.022466,
-      "q75": -2.424956,
-      "q95": -1.946948,
-      "q99": -1.851346
-     }
-    },
-    "in_sample_screen": {
-     "nominal": 0.5,
-     "n": 2,
-     "passed": 0,
-     "rate": 0.0,
-     "wilson": [
-      0.0,
-      0.657628
-     ],
-     "posterior_rate": 0.454545,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 0,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 0,
-       "passed": 0,
-       "rate": null
-      },
-      "random_walk": {
-       "n": 1,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "sign_permute": {
-       "n": 1,
-       "passed": 0,
-       "rate": 0.0
-      }
-     },
-     "null_distribution": {
-      "q05": -0.284981,
-      "q25": -0.237939,
-      "q50": -0.179137,
-      "q75": -0.120335,
-      "q95": -0.073294,
-      "q99": -0.063885
-     }
-    }
-   },
-   "status": "MEASURED",
-   "fpr_charge": 1.0
-  },
-  "cot_comm_follow": {
-   "draws": 54,
-   "run": 2,
-   "not_run": 52,
-   "not_run_why": [
-    "build_cell: BLOCKED_DATA: raw COT for ADAUSD: KeyError: 'no COT mapping for ADAUSD'",
-    "build_cell: BLOCKED_DATA: raw COT for CA60: KeyError: 'no COT mapping for CA60'",
-    "build_cell: BLOCKED_DATA: raw COT for CHFDKK: KeyError: 'no COT mapping for CHFDKK'",
-    "build_cell: BLOCKED_DATA: raw COT for COTTON: KeyError: 'no COT mapping for COTTON'",
-    "build_cell: BLOCKED_DATA: raw COT for EURHUF: KeyError: 'no COT mapping for EURHUF'"
    ],
    "gates": {
     "deflated_sharpe_1trial": {
@@ -1761,12 +1530,12 @@
       }
      },
      "null_distribution": {
-      "q05": 1.5e-05,
-      "q25": 1.5e-05,
-      "q50": 1.5e-05,
-      "q75": 1.5e-05,
-      "q95": 1.5e-05,
-      "q99": 1.5e-05
+      "q05": 0.196302,
+      "q25": 0.196302,
+      "q50": 0.196302,
+      "q75": 0.196302,
+      "q95": 0.196302,
+      "q99": 0.196302
      }
     },
     "screen_t": {
@@ -1799,12 +1568,12 @@
       }
      },
      "null_distribution": {
-      "q05": -4.29041,
-      "q25": -4.29041,
-      "q50": -4.29041,
-      "q75": -4.29041,
-      "q95": -4.29041,
-      "q99": -4.29041
+      "q05": -0.866585,
+      "q25": -0.866585,
+      "q50": -0.866585,
+      "q75": -0.866585,
+      "q95": -0.866585,
+      "q99": -0.866585
      }
     },
     "in_sample_screen": {
@@ -1837,12 +1606,272 @@
       }
      },
      "null_distribution": {
-      "q05": -0.125324,
-      "q25": -0.125324,
-      "q50": -0.125324,
-      "q75": -0.125324,
-      "q95": -0.125324,
-      "q99": -0.125324
+      "q05": -0.074862,
+      "q25": -0.074862,
+      "q50": -0.074862,
+      "q75": -0.074862,
+      "q95": -0.074862,
+      "q99": -0.074862
+     }
+    }
+   },
+   "status": "MEASURED",
+   "fpr_charge": 1.0
+  },
+  "cot_change_momentum": {
+   "draws": 57,
+   "run": 3,
+   "not_run": 54,
+   "not_run_why": [
+    "build_cell: BLOCKED_DATA: raw COT for AUDHUF: KeyError: 'no COT mapping for AUDHUF'",
+    "build_cell: BLOCKED_DATA: raw COT for AUDNZD: KeyError: 'no COT mapping for AUDNZD'",
+    "build_cell: BLOCKED_DATA: raw COT for AUS200: KeyError: 'no COT mapping for AUS200'",
+    "build_cell: BLOCKED_DATA: raw COT for BNBUSD: KeyError: 'no COT mapping for BNBUSD'",
+    "build_cell: BLOCKED_DATA: raw COT for CA60: KeyError: 'no COT mapping for CA60'"
+   ],
+   "gates": {
+    "deflated_sharpe_1trial": {
+     "nominal": 0.050000000000000044,
+     "n": 3,
+     "passed": 0,
+     "rate": 0.0,
+     "wilson": [
+      0.0,
+      0.561506
+     ],
+     "posterior_rate": 0.043478,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 0,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 1,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "random_walk": {
+       "n": 1,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "sign_permute": {
+       "n": 1,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": 0.000365,
+      "q25": 0.001827,
+      "q50": 0.003655,
+      "q75": 0.019723,
+      "q95": 0.032578,
+      "q99": 0.035149
+     }
+    },
+    "screen_t": {
+     "nominal": 0.025,
+     "n": 3,
+     "passed": 0,
+     "rate": 0.0,
+     "wilson": [
+      0.0,
+      0.561506
+     ],
+     "posterior_rate": 0.021739,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 0,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 1,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "random_walk": {
+       "n": 1,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "sign_permute": {
+       "n": 1,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": -8.523974,
+      "q25": -6.609979,
+      "q50": -4.217486,
+      "q75": -3.022466,
+      "q95": -2.06645,
+      "q99": -1.875246
+     }
+    },
+    "in_sample_screen": {
+     "nominal": 0.5,
+     "n": 3,
+     "passed": 0,
+     "rate": 0.0,
+     "wilson": [
+      0.0,
+      0.561506
+     ],
+     "posterior_rate": 0.434783,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 0,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 1,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "random_walk": {
+       "n": 1,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "sign_permute": {
+       "n": 1,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": -0.595558,
+      "q25": -0.462751,
+      "q50": -0.296741,
+      "q75": -0.179137,
+      "q95": -0.085054,
+      "q99": -0.066237
+     }
+    }
+   },
+   "status": "MEASURED",
+   "fpr_charge": 1.0
+  },
+  "cot_comm_follow": {
+   "draws": 57,
+   "run": 3,
+   "not_run": 54,
+   "not_run_why": [
+    "build_cell: BLOCKED_DATA: raw COT for ADAUSD: KeyError: 'no COT mapping for ADAUSD'",
+    "build_cell: BLOCKED_DATA: raw COT for CA60: KeyError: 'no COT mapping for CA60'",
+    "build_cell: BLOCKED_DATA: raw COT for CHFDKK: KeyError: 'no COT mapping for CHFDKK'",
+    "build_cell: BLOCKED_DATA: raw COT for COTTON: KeyError: 'no COT mapping for COTTON'",
+    "build_cell: BLOCKED_DATA: raw COT for EURHUF: KeyError: 'no COT mapping for EURHUF'"
+   ],
+   "gates": {
+    "deflated_sharpe_1trial": {
+     "nominal": 0.050000000000000044,
+     "n": 2,
+     "passed": 0,
+     "rate": 0.0,
+     "wilson": [
+      0.0,
+      0.657628
+     ],
+     "posterior_rate": 0.045455,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 1,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 0,
+       "passed": 0,
+       "rate": null
+      },
+      "random_walk": {
+       "n": 1,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "sign_permute": {
+       "n": 1,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": 7e-06,
+      "q25": 9e-06,
+      "q50": 1.1e-05,
+      "q75": 1.3e-05,
+      "q95": 1.5e-05,
+      "q99": 1.5e-05
+     }
+    },
+    "screen_t": {
+     "nominal": 0.025,
+     "n": 2,
+     "passed": 0,
+     "rate": 0.0,
+     "wilson": [
+      0.0,
+      0.657628
+     ],
+     "posterior_rate": 0.022727,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 1,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 0,
+       "passed": 0,
+       "rate": null
+      },
+      "random_walk": {
+       "n": 1,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "sign_permute": {
+       "n": 1,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": -4.689919,
+      "q25": -4.605812,
+      "q50": -4.500678,
+      "q75": -4.395544,
+      "q95": -4.311437,
+      "q99": -4.294615
+     }
+    },
+    "in_sample_screen": {
+     "nominal": 0.5,
+     "n": 2,
+     "passed": 0,
+     "rate": 0.0,
+     "wilson": [
+      0.0,
+      0.657628
+     ],
+     "posterior_rate": 0.454545,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 1,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 0,
+       "passed": 0,
+       "rate": null
+      },
+      "random_walk": {
+       "n": 1,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "sign_permute": {
+       "n": 1,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": -0.243462,
+      "q25": -0.218591,
+      "q50": -0.187502,
+      "q75": -0.156413,
+      "q95": -0.131542,
+      "q99": -0.126568
      }
     }
    },
@@ -1850,9 +1879,9 @@
    "fpr_charge": 1.0
   },
   "cot_net_fade": {
-   "draws": 54,
+   "draws": 57,
    "run": 0,
-   "not_run": 54,
+   "not_run": 57,
    "not_run_why": [
     "build_cell: BLOCKED_DATA: raw COT for AUDCAD: KeyError: 'no COT mapping for AUDCAD'",
     "build_cell: BLOCKED_DATA: raw COT for AUDHUF: KeyError: 'no COT mapping for AUDHUF'",
@@ -1950,8 +1979,8 @@
    "fpr_charge": null
   },
   "cot_positioning": {
-   "draws": 54,
-   "run": 52,
+   "draws": 57,
+   "run": 55,
    "not_run": 2,
    "not_run_why": [
     "build_cell: cot_positioning raised TypeError: family_cot_positioning() got an unexpected keyword argument 'conditioners'"
@@ -1959,44 +1988,6 @@
    "gates": {
     "deflated_sharpe_1trial": {
      "nominal": 0.050000000000000044,
-     "n": 11,
-     "passed": 0,
-     "rate": 0.0,
-     "wilson": [
-      0.0,
-      0.25884
-     ],
-     "posterior_rate": 0.032258,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 41,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 3,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "random_walk": {
-       "n": 6,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "sign_permute": {
-       "n": 2,
-       "passed": 0,
-       "rate": 0.0
-      }
-     },
-     "null_distribution": {
-      "q05": 2e-06,
-      "q25": 0.000786,
-      "q50": 0.026054,
-      "q75": 0.290378,
-      "q95": 0.666777,
-      "q99": 0.746889
-     }
-    },
-    "screen_t": {
-     "nominal": 0.025,
      "n": 13,
      "passed": 0,
      "rate": 0.0,
@@ -2004,9 +1995,9 @@
       0.0,
       0.228102
      ],
-     "posterior_rate": 0.015152,
+     "posterior_rate": 0.030303,
      "exceeds_nominal": false,
-     "unmeasured_draws": 39,
+     "unmeasured_draws": 42,
      "per_arm": {
       "block_shuffle": {
        "n": 3,
@@ -2025,26 +2016,64 @@
       }
      },
      "null_distribution": {
-      "q05": -5.260723,
-      "q25": -2.886652,
+      "q05": 2e-06,
+      "q25": 0.001488,
+      "q50": 0.06357,
+      "q75": 0.350882,
+      "q95": 0.7781,
+      "q99": 0.791521
+     }
+    },
+    "screen_t": {
+     "nominal": 0.025,
+     "n": 15,
+     "passed": 0,
+     "rate": 0.0,
+     "wilson": [
+      0.0,
+      0.203889
+     ],
+     "posterior_rate": 0.014286,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 40,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 3,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "random_walk": {
+       "n": 8,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "sign_permute": {
+       "n": 4,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": -5.135976,
+      "q25": -2.582559,
       "q50": -1.512384,
-      "q75": -0.386451,
-      "q95": 0.38909,
-      "q99": 0.654771
+      "q75": -0.275095,
+      "q95": 0.748804,
+      "q99": 0.800349
      }
     },
     "in_sample_screen": {
      "nominal": 0.5,
-     "n": 11,
-     "passed": 2,
-     "rate": 0.181818,
+     "n": 13,
+     "passed": 3,
+     "rate": 0.230769,
      "wilson": [
-      0.051367,
-      0.476986
+      0.081794,
+      0.502569
      ],
-     "posterior_rate": 0.387097,
+     "posterior_rate": 0.393939,
      "exceeds_nominal": false,
-     "unmeasured_draws": 41,
+     "unmeasured_draws": 42,
      "per_arm": {
       "block_shuffle": {
        "n": 3,
@@ -2052,23 +2081,23 @@
        "rate": 0.333333
       },
       "random_walk": {
-       "n": 6,
-       "passed": 0,
-       "rate": 0.0
+       "n": 7,
+       "passed": 1,
+       "rate": 0.142857
       },
       "sign_permute": {
-       "n": 2,
+       "n": 3,
        "passed": 1,
-       "rate": 0.5
+       "rate": 0.333333
       }
      },
      "null_distribution": {
-      "q05": -0.503123,
-      "q25": -0.37883,
-      "q50": -0.203362,
-      "q75": -0.048205,
-      "q95": 0.040229,
-      "q99": 0.061385
+      "q05": -0.494035,
+      "q25": -0.307718,
+      "q50": -0.155128,
+      "q75": -0.034428,
+      "q95": 0.072372,
+      "q99": 0.07921
      }
     }
    },
@@ -2076,9 +2105,9 @@
    "fpr_charge": 1.0
   },
   "crisis_only_class_defensive": {
-   "draws": 54,
+   "draws": 57,
    "run": 36,
-   "not_run": 18,
+   "not_run": 21,
    "not_run_why": [
     "build_cell: crisis_only_class_defensive raised TypeError: family_crisis_only_class_defensive() got an unexpected keyword"
    ],
@@ -2172,8 +2201,8 @@
    "fpr_charge": null
   },
   "cross_asset_residual": {
-   "draws": 54,
-   "run": 43,
+   "draws": 57,
+   "run": 46,
    "not_run": 11,
    "not_run_why": [
     "build_cell: BLOCKED_RULES: no complete named factor basket on the candidate",
@@ -2185,62 +2214,24 @@
    "gates": {
     "deflated_sharpe_1trial": {
      "nominal": 0.050000000000000044,
-     "n": 36,
+     "n": 39,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.096422
+      0.08967
      ],
-     "posterior_rate": 0.017857,
+     "posterior_rate": 0.016949,
      "exceeds_nominal": false,
      "unmeasured_draws": 7,
      "per_arm": {
       "block_shuffle": {
-       "n": 11,
+       "n": 12,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 10,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "sign_permute": {
-       "n": 15,
-       "passed": 0,
-       "rate": 0.0
-      }
-     },
-     "null_distribution": {
-      "q05": 0.0,
-      "q25": 0.0,
-      "q50": 6.9e-05,
-      "q75": 0.095131,
-      "q95": 0.755771,
-      "q99": 0.804902
-     }
-    },
-    "screen_t": {
-     "nominal": 0.025,
-     "n": 37,
-     "passed": 0,
-     "rate": 0.0,
-     "wilson": [
-      0.0,
-      0.094061
-     ],
-     "posterior_rate": 0.008772,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 6,
-     "per_arm": {
-      "block_shuffle": {
        "n": 11,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "random_walk": {
-       "n": 10,
        "passed": 0,
        "rate": 0.0
       },
@@ -2251,50 +2242,88 @@
       }
      },
      "null_distribution": {
-      "q05": -8.746408,
-      "q25": -5.153638,
-      "q50": -2.141358,
-      "q75": -1.173966,
-      "q95": 0.636831,
-      "q99": 0.82786
+      "q05": 0.0,
+      "q25": 0.0,
+      "q50": 2e-06,
+      "q75": 0.063231,
+      "q95": 0.748784,
+      "q99": 0.804247
+     }
+    },
+    "screen_t": {
+     "nominal": 0.025,
+     "n": 40,
+     "passed": 0,
+     "rate": 0.0,
+     "wilson": [
+      0.0,
+      0.087625
+     ],
+     "posterior_rate": 0.008333,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 6,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 12,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "random_walk": {
+       "n": 11,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "sign_permute": {
+       "n": 17,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": -9.28416,
+      "q25": -5.474771,
+      "q50": -2.780457,
+      "q75": -1.264049,
+      "q95": 0.607516,
+      "q99": 0.826234
      }
     },
     "in_sample_screen": {
      "nominal": 0.5,
-     "n": 36,
+     "n": 39,
      "passed": 5,
-     "rate": 0.138889,
+     "rate": 0.128205,
      "wilson": [
-      0.060817,
-      0.286599
+      0.056027,
+      0.26706
      ],
-     "posterior_rate": 0.267857,
+     "posterior_rate": 0.254237,
      "exceeds_nominal": false,
      "unmeasured_draws": 7,
      "per_arm": {
       "block_shuffle": {
-       "n": 11,
+       "n": 12,
        "passed": 3,
-       "rate": 0.272727
+       "rate": 0.25
       },
       "random_walk": {
-       "n": 10,
+       "n": 11,
        "passed": 1,
-       "rate": 0.1
+       "rate": 0.090909
       },
       "sign_permute": {
-       "n": 15,
+       "n": 16,
        "passed": 1,
-       "rate": 0.066667
+       "rate": 0.0625
       }
      },
      "null_distribution": {
-      "q05": -0.417097,
-      "q25": -0.264836,
-      "q50": -0.143388,
-      "q75": -0.101672,
-      "q95": 0.03793,
-      "q99": 0.064385
+      "q05": -0.472971,
+      "q25": -0.279399,
+      "q50": -0.202559,
+      "q75": -0.109066,
+      "q95": 0.037911,
+      "q99": 0.063168
      }
     }
    },
@@ -2302,8 +2331,8 @@
    "fpr_charge": 1.0
   },
   "cross_sectional": {
-   "draws": 54,
-   "run": 54,
+   "draws": 57,
+   "run": 57,
    "not_run": 0,
    "not_run_why": [],
    "gates": {
@@ -2315,7 +2344,7 @@
      "wilson": null,
      "posterior_rate": 0.05,
      "exceeds_nominal": false,
-     "unmeasured_draws": 54,
+     "unmeasured_draws": 57,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -2343,7 +2372,7 @@
      "wilson": null,
      "posterior_rate": 0.025,
      "exceeds_nominal": false,
-     "unmeasured_draws": 54,
+     "unmeasured_draws": 57,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -2371,7 +2400,7 @@
      "wilson": null,
      "posterior_rate": 0.5,
      "exceeds_nominal": false,
-     "unmeasured_draws": 54,
+     "unmeasured_draws": 57,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -2396,9 +2425,9 @@
    "fpr_charge": null
   },
   "cross_sectional_class_low_vol": {
-   "draws": 54,
-   "run": 47,
-   "not_run": 7,
+   "draws": 57,
+   "run": 49,
+   "not_run": 8,
    "not_run_why": [
     "build_cell: NOT_RUN_MODIFIER: conditioner='event': no conditioning series is wired for a second information axis, so the",
     "build_cell: NOT_RUN_MODIFIER: conditioner='macro': no conditioning series is wired for a second information axis, so the",
@@ -2415,7 +2444,7 @@
      "wilson": null,
      "posterior_rate": 0.05,
      "exceeds_nominal": false,
-     "unmeasured_draws": 47,
+     "unmeasured_draws": 49,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -2443,7 +2472,7 @@
      "wilson": null,
      "posterior_rate": 0.025,
      "exceeds_nominal": false,
-     "unmeasured_draws": 47,
+     "unmeasured_draws": 49,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -2471,7 +2500,7 @@
      "wilson": null,
      "posterior_rate": 0.5,
      "exceeds_nominal": false,
-     "unmeasured_draws": 47,
+     "unmeasured_draws": 49,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -2496,9 +2525,9 @@
    "fpr_charge": null
   },
   "cross_sectional_class_momentum": {
-   "draws": 54,
+   "draws": 57,
    "run": 33,
-   "not_run": 21,
+   "not_run": 24,
    "not_run_why": [
     "build_cell: NOT_RUN_MODIFIER: conditioner='macro': no conditioning series is wired for a second information axis, so the",
     "build_cell: NOT_RUN_MODIFIER: conditioner='microstructure': no conditioning series is wired for a second information axi",
@@ -2594,11 +2623,12 @@
    "fpr_charge": null
   },
   "cross_sectional_class_reversal": {
-   "draws": 54,
-   "run": 49,
-   "not_run": 5,
+   "draws": 57,
+   "run": 51,
+   "not_run": 6,
    "not_run_why": [
     "build_cell: NOT_RUN_MODIFIER: conditioner='microstructure': no conditioning series is wired for a second information axi",
+    "build_cell: NOT_RUN_MODIFIER: conditioner='positioning': no conditioning series is wired for a second information axis, ",
     "build_cell: NOT_RUN_MODIFIER: execution_style='limit': the replay fills at the next open; a limit fill needs a queue/fil",
     "build_cell: NOT_RUN_MODIFIER: regime='risk_on' has no desk definition (volatility and month/quarter-end are defined; a r"
    ],
@@ -2611,7 +2641,7 @@
      "wilson": null,
      "posterior_rate": 0.05,
      "exceeds_nominal": false,
-     "unmeasured_draws": 49,
+     "unmeasured_draws": 51,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -2639,7 +2669,7 @@
      "wilson": null,
      "posterior_rate": 0.025,
      "exceeds_nominal": false,
-     "unmeasured_draws": 49,
+     "unmeasured_draws": 51,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -2667,7 +2697,7 @@
      "wilson": null,
      "posterior_rate": 0.5,
      "exceeds_nominal": false,
-     "unmeasured_draws": 49,
+     "unmeasured_draws": 51,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -2692,15 +2722,15 @@
    "fpr_charge": null
   },
   "cross_sectional_class_value": {
-   "draws": 54,
-   "run": 36,
-   "not_run": 18,
+   "draws": 57,
+   "run": 37,
+   "not_run": 20,
    "not_run_why": [
     "build_cell: NOT_RUN_MODIFIER: conditioner='carry': no conditioning series is wired for a second information axis, so the",
     "build_cell: NOT_RUN_MODIFIER: conditioner='positioning': no conditioning series is wired for a second information axis, ",
+    "build_cell: NOT_RUN_MODIFIER: conditioner='seasonality': no conditioning series is wired for a second information axis, ",
     "build_cell: NOT_RUN_MODIFIER: execution_style='limit': the replay fills at the next open; a limit fill needs a queue/fil",
-    "build_cell: NOT_RUN_MODIFIER: regime='risk_off' has no desk definition (volatility and month/quarter-end are defined; a ",
-    "build_cell: NOT_RUN_MODIFIER: regime='risk_on' has no desk definition (volatility and month/quarter-end are defined; a r"
+    "build_cell: NOT_RUN_MODIFIER: regime='risk_off' has no desk definition (volatility and month/quarter-end are defined; a "
    ],
    "gates": {
     "deflated_sharpe_1trial": {
@@ -2711,7 +2741,7 @@
      "wilson": null,
      "posterior_rate": 0.05,
      "exceeds_nominal": false,
-     "unmeasured_draws": 36,
+     "unmeasured_draws": 37,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -2739,7 +2769,7 @@
      "wilson": null,
      "posterior_rate": 0.025,
      "exceeds_nominal": false,
-     "unmeasured_draws": 36,
+     "unmeasured_draws": 37,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -2767,7 +2797,7 @@
      "wilson": null,
      "posterior_rate": 0.5,
      "exceeds_nominal": false,
-     "unmeasured_draws": 36,
+     "unmeasured_draws": 37,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -2792,6 +2822,130 @@
    "fpr_charge": null
   },
   "dav_abc_structure": {
+   "draws": 57,
+   "run": 57,
+   "not_run": 0,
+   "not_run_why": [],
+   "gates": {
+    "deflated_sharpe_1trial": {
+     "nominal": 0.050000000000000044,
+     "n": 57,
+     "passed": 0,
+     "rate": 0.0,
+     "wilson": [
+      0.0,
+      0.063141
+     ],
+     "posterior_rate": 0.012987,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 0,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "random_walk": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "sign_permute": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": 2.7e-05,
+      "q25": 0.002675,
+      "q50": 0.050353,
+      "q75": 0.20074,
+      "q95": 0.611822,
+      "q99": 0.676337
+     }
+    },
+    "screen_t": {
+     "nominal": 0.025,
+     "n": 57,
+     "passed": 0,
+     "rate": 0.0,
+     "wilson": [
+      0.0,
+      0.063141
+     ],
+     "posterior_rate": 0.006494,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 0,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "random_walk": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "sign_permute": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": -4.410222,
+      "q25": -2.946012,
+      "q50": -1.674843,
+      "q75": -0.865888,
+      "q95": 0.278983,
+      "q99": 0.448021
+     }
+    },
+    "in_sample_screen": {
+     "nominal": 0.5,
+     "n": 57,
+     "passed": 5,
+     "rate": 0.087719,
+     "wilson": [
+      0.038051,
+      0.189451
+     ],
+     "posterior_rate": 0.194805,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 0,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 19,
+       "passed": 1,
+       "rate": 0.052632
+      },
+      "random_walk": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "sign_permute": {
+       "n": 19,
+       "passed": 4,
+       "rate": 0.210526
+      }
+     },
+     "null_distribution": {
+      "q05": -0.139223,
+      "q25": -0.087809,
+      "q50": -0.051834,
+      "q75": -0.025891,
+      "q95": 0.008547,
+      "q99": 0.013778
+     }
+    }
+   },
+   "status": "MEASURED",
+   "fpr_charge": 1.0
+  },
+  "dav_ema_trend_pullback": {
    "draws": 54,
    "run": 54,
    "not_run": 0,
@@ -2799,40 +2953,40 @@
    "gates": {
     "deflated_sharpe_1trial": {
      "nominal": 0.050000000000000044,
-     "n": 54,
+     "n": 1,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.066416
+      0.793457
      ],
-     "posterior_rate": 0.013514,
+     "posterior_rate": 0.047619,
      "exceeds_nominal": false,
-     "unmeasured_draws": 0,
+     "unmeasured_draws": 53,
      "per_arm": {
       "block_shuffle": {
-       "n": 18,
+       "n": 1,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 18,
+       "n": 0,
        "passed": 0,
-       "rate": 0.0
+       "rate": null
       },
       "sign_permute": {
-       "n": 18,
+       "n": 0,
        "passed": 0,
-       "rate": 0.0
+       "rate": null
       }
      },
      "null_distribution": {
-      "q05": 4.6e-05,
-      "q25": 0.003391,
-      "q50": 0.049553,
-      "q75": 0.205793,
-      "q95": 0.612628,
-      "q99": 0.677181
+      "q05": 0.582902,
+      "q25": 0.582902,
+      "q50": 0.582902,
+      "q75": 0.582902,
+      "q95": 0.582902,
+      "q99": 0.582902
      }
     },
     "screen_t": {
@@ -2865,136 +3019,12 @@
       }
      },
      "null_distribution": {
-      "q05": -4.071326,
-      "q25": -2.868335,
-      "q50": -1.699707,
-      "q75": -0.845646,
-      "q95": 0.281273,
-      "q99": 0.450497
-     }
-    },
-    "in_sample_screen": {
-     "nominal": 0.5,
-     "n": 54,
-     "passed": 5,
-     "rate": 0.092593,
-     "wilson": [
-      0.040201,
-      0.199101
-     ],
-     "posterior_rate": 0.202703,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 0,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 18,
-       "passed": 1,
-       "rate": 0.055556
-      },
-      "random_walk": {
-       "n": 18,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "sign_permute": {
-       "n": 18,
-       "passed": 4,
-       "rate": 0.222222
-      }
-     },
-     "null_distribution": {
-      "q05": -0.12863,
-      "q25": -0.086219,
-      "q50": -0.051954,
-      "q75": -0.025779,
-      "q95": 0.008608,
-      "q99": 0.013855
-     }
-    }
-   },
-   "status": "MEASURED",
-   "fpr_charge": 1.0
-  },
-  "dav_ema_trend_pullback": {
-   "draws": 51,
-   "run": 51,
-   "not_run": 0,
-   "not_run_why": [],
-   "gates": {
-    "deflated_sharpe_1trial": {
-     "nominal": 0.050000000000000044,
-     "n": 1,
-     "passed": 0,
-     "rate": 0.0,
-     "wilson": [
-      0.0,
-      0.793457
-     ],
-     "posterior_rate": 0.047619,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 50,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 1,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "random_walk": {
-       "n": 0,
-       "passed": 0,
-       "rate": null
-      },
-      "sign_permute": {
-       "n": 0,
-       "passed": 0,
-       "rate": null
-      }
-     },
-     "null_distribution": {
-      "q05": 0.582902,
-      "q25": 0.582902,
-      "q50": 0.582902,
-      "q75": 0.582902,
-      "q95": 0.582902,
-      "q99": 0.582902
-     }
-    },
-    "screen_t": {
-     "nominal": 0.025,
-     "n": 51,
-     "passed": 0,
-     "rate": 0.0,
-     "wilson": [
-      0.0,
-      0.070049
-     ],
-     "posterior_rate": 0.007042,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 0,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "random_walk": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "sign_permute": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      }
-     },
-     "null_distribution": {
-      "q05": -1.79018,
-      "q25": -1.002516,
-      "q50": -0.289581,
-      "q75": 0.283289,
-      "q95": 0.998266,
-      "q99": 1.292569
+      "q05": -1.78555,
+      "q25": -1.114728,
+      "q50": -0.337742,
+      "q75": 0.260567,
+      "q95": 0.972066,
+      "q99": 1.280202
      }
     },
     "in_sample_screen": {
@@ -3008,7 +3038,7 @@
      ],
      "posterior_rate": 0.52381,
      "exceeds_nominal": false,
-     "unmeasured_draws": 50,
+     "unmeasured_draws": 53,
      "per_arm": {
       "block_shuffle": {
        "n": 1,
@@ -3136,10 +3166,136 @@
    "fpr_charge": null
   },
   "dav_keltner_break": {
-   "draws": 54,
-   "run": 54,
+   "draws": 57,
+   "run": 57,
    "not_run": 0,
    "not_run_why": [],
+   "gates": {
+    "deflated_sharpe_1trial": {
+     "nominal": 0.050000000000000044,
+     "n": 57,
+     "passed": 0,
+     "rate": 0.0,
+     "wilson": [
+      0.0,
+      0.063141
+     ],
+     "posterior_rate": 0.012987,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 0,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "random_walk": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "sign_permute": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": 0.000243,
+      "q25": 0.008994,
+      "q50": 0.044433,
+      "q75": 0.201125,
+      "q95": 0.40255,
+      "q99": 0.673498
+     }
+    },
+    "screen_t": {
+     "nominal": 0.025,
+     "n": 57,
+     "passed": 0,
+     "rate": 0.0,
+     "wilson": [
+      0.0,
+      0.063141
+     ],
+     "posterior_rate": 0.006494,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 0,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "random_walk": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "sign_permute": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": -3.568123,
+      "q25": -2.381764,
+      "q50": -1.730511,
+      "q75": -0.84766,
+      "q95": -0.246495,
+      "q99": 0.441037
+     }
+    },
+    "in_sample_screen": {
+     "nominal": 0.5,
+     "n": 57,
+     "passed": 3,
+     "rate": 0.052632,
+     "wilson": [
+      0.01806,
+      0.143698
+     ],
+     "posterior_rate": 0.168831,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 0,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 19,
+       "passed": 2,
+       "rate": 0.105263
+      },
+      "random_walk": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "sign_permute": {
+       "n": 19,
+       "passed": 1,
+       "rate": 0.052632
+      }
+     },
+     "null_distribution": {
+      "q05": -0.116175,
+      "q25": -0.07588,
+      "q50": -0.056619,
+      "q75": -0.026714,
+      "q95": -0.0078,
+      "q99": 0.013859
+     }
+    }
+   },
+   "status": "MEASURED",
+   "fpr_charge": 1.0
+  },
+  "dav_macd_qqe": {
+   "draws": 57,
+   "run": 54,
+   "not_run": 3,
+   "not_run_why": [
+    "build_cell: dav_macd_qqe raised TypeError: dav_macd_qqe() got an unexpected keyword argument 'chart'"
+   ],
    "gates": {
     "deflated_sharpe_1trial": {
      "nominal": 0.050000000000000044,
@@ -3155,12 +3311,12 @@
      "unmeasured_draws": 0,
      "per_arm": {
       "block_shuffle": {
-       "n": 18,
+       "n": 17,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 18,
+       "n": 19,
        "passed": 0,
        "rate": 0.0
       },
@@ -3171,12 +3327,12 @@
       }
      },
      "null_distribution": {
-      "q05": 0.000211,
-      "q25": 0.00976,
-      "q50": 0.047934,
-      "q75": 0.192609,
-      "q95": 0.426572,
-      "q99": 0.674506
+      "q05": 0.0,
+      "q25": 0.0,
+      "q50": 0.0,
+      "q75": 0.000309,
+      "q95": 0.509483,
+      "q99": 0.920955
      }
     },
     "screen_t": {
@@ -3193,12 +3349,12 @@
      "unmeasured_draws": 0,
      "per_arm": {
       "block_shuffle": {
-       "n": 18,
+       "n": 17,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 18,
+       "n": 19,
        "passed": 0,
        "rate": 0.0
       },
@@ -3209,12 +3365,12 @@
       }
      },
      "null_distribution": {
-      "q05": -3.639587,
-      "q25": -2.380405,
-      "q50": -1.695035,
-      "q75": -0.881338,
-      "q95": -0.185685,
-      "q99": 0.444038
+      "q05": -43.445268,
+      "q25": -23.009705,
+      "q50": -7.150747,
+      "q75": -4.408637,
+      "q95": 0.060888,
+      "q99": 1.418533
      }
     },
     "in_sample_screen": {
@@ -3231,9 +3387,184 @@
      "unmeasured_draws": 0,
      "per_arm": {
       "block_shuffle": {
+       "n": 17,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "random_walk": {
+       "n": 19,
+       "passed": 3,
+       "rate": 0.157895
+      },
+      "sign_permute": {
+       "n": 18,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": -0.877719,
+      "q25": -0.53543,
+      "q50": -0.192244,
+      "q75": -0.108877,
+      "q95": 0.001012,
+      "q99": 0.032231
+     }
+    }
+   },
+   "status": "MEASURED",
+   "fpr_charge": 1.0
+  },
+  "dav_range_filter_adx": {
+   "draws": 57,
+   "run": 55,
+   "not_run": 2,
+   "not_run_why": [
+    "build_cell: NOT_RUN_MODIFIER: execution_style='limit': the replay fills at the next open; a limit fill needs a queue/fil",
+    "build_cell: NOT_RUN_MODIFIER: residual='equity': this family does not residualise its input, and building it un-residual"
+   ],
+   "gates": {
+    "deflated_sharpe_1trial": {
+     "nominal": 0.050000000000000044,
+     "n": 55,
+     "passed": 1,
+     "rate": 0.018182,
+     "wilson": [
+      0.003217,
+      0.09606
+     ],
+     "posterior_rate": 0.026667,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 0,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 18,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "random_walk": {
+       "n": 18,
+       "passed": 1,
+       "rate": 0.055556
+      },
+      "sign_permute": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": 0.0,
+      "q25": 0.0,
+      "q50": 1e-06,
+      "q75": 0.000542,
+      "q95": 0.456493,
+      "q99": 0.923983
+     }
+    },
+    "screen_t": {
+     "nominal": 0.025,
+     "n": 55,
+     "passed": 0,
+     "rate": 0.0,
+     "wilson": [
+      0.0,
+      0.065287
+     ],
+     "posterior_rate": 0.006667,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 0,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 18,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "random_walk": {
+       "n": 18,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "sign_permute": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": -31.154516,
+      "q25": -12.405381,
+      "q50": -6.881093,
+      "q75": -3.238378,
+      "q95": -0.115051,
+      "q99": 1.506702
+     }
+    },
+    "in_sample_screen": {
+     "nominal": 0.5,
+     "n": 55,
+     "passed": 3,
+     "rate": 0.054545,
+     "wilson": [
+      0.018723,
+      0.148533
+     ],
+     "posterior_rate": 0.173333,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 0,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 18,
+       "passed": 1,
+       "rate": 0.055556
+      },
+      "random_walk": {
        "n": 18,
        "passed": 2,
        "rate": 0.111111
+      },
+      "sign_permute": {
+       "n": 19,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": -0.7798,
+      "q25": -0.389851,
+      "q50": -0.224483,
+      "q75": -0.086757,
+      "q95": -0.004138,
+      "q99": 0.048416
+     }
+    }
+   },
+   "status": "MEASURED",
+   "fpr_charge": 1.0
+  },
+  "dav_rsi_div_rev": {
+   "draws": 54,
+   "run": 54,
+   "not_run": 0,
+   "not_run_why": [],
+   "gates": {
+    "deflated_sharpe_1trial": {
+     "nominal": 0.050000000000000044,
+     "n": 54,
+     "passed": 1,
+     "rate": 0.018519,
+     "wilson": [
+      0.003276,
+      0.097717
+     ],
+     "posterior_rate": 0.027027,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 0,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 18,
+       "passed": 0,
+       "rate": 0.0
       },
       "random_walk": {
        "n": 18,
@@ -3247,24 +3578,100 @@
       }
      },
      "null_distribution": {
-      "q05": -0.119482,
-      "q25": -0.075802,
-      "q50": -0.054627,
-      "q75": -0.027648,
-      "q95": -0.005884,
-      "q99": 0.013944
+      "q05": 0.002129,
+      "q25": 0.105979,
+      "q50": 0.294003,
+      "q75": 0.475836,
+      "q95": 0.827037,
+      "q99": 0.970838
+     }
+    },
+    "screen_t": {
+     "nominal": 0.025,
+     "n": 54,
+     "passed": 1,
+     "rate": 0.018519,
+     "wilson": [
+      0.003276,
+      0.097717
+     ],
+     "posterior_rate": 0.02027,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 0,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 18,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "random_walk": {
+       "n": 18,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "sign_permute": {
+       "n": 18,
+       "passed": 1,
+       "rate": 0.055556
+      }
+     },
+     "null_distribution": {
+      "q05": -2.898367,
+      "q25": -1.222174,
+      "q50": -0.559714,
+      "q75": -0.058586,
+      "q95": 0.922224,
+      "q99": 2.096783
+     }
+    },
+    "in_sample_screen": {
+     "nominal": 0.5,
+     "n": 54,
+     "passed": 10,
+     "rate": 0.185185,
+     "wilson": [
+      0.103826,
+      0.308362
+     ],
+     "posterior_rate": 0.27027,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 0,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 18,
+       "passed": 2,
+       "rate": 0.111111
+      },
+      "random_walk": {
+       "n": 18,
+       "passed": 2,
+       "rate": 0.111111
+      },
+      "sign_permute": {
+       "n": 18,
+       "passed": 6,
+       "rate": 0.333333
+      }
+     },
+     "null_distribution": {
+      "q05": -0.130645,
+      "q25": -0.058979,
+      "q50": -0.030506,
+      "q75": -0.003162,
+      "q95": 0.052553,
+      "q99": 0.119815
      }
     }
    },
    "status": "MEASURED",
    "fpr_charge": 1.0
   },
-  "dav_macd_qqe": {
-   "draws": 54,
-   "run": 51,
+  "dav_supertrend_trail": {
+   "draws": 55,
+   "run": 52,
    "not_run": 3,
    "not_run_why": [
-    "build_cell: dav_macd_qqe raised TypeError: dav_macd_qqe() got an unexpected keyword argument 'chart'"
+    "build_cell: dav_supertrend_trail raised TypeError: dav_supertrend_trail() got an unexpected keyword argument 'chart'"
    ],
    "gates": {
     "deflated_sharpe_1trial": {
@@ -3278,144 +3685,17 @@
      ],
      "posterior_rate": 0.014085,
      "exceeds_nominal": false,
-     "unmeasured_draws": 0,
+     "unmeasured_draws": 1,
      "per_arm": {
       "block_shuffle": {
-       "n": 16,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "random_walk": {
        "n": 18,
        "passed": 0,
        "rate": 0.0
       },
-      "sign_permute": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      }
-     },
-     "null_distribution": {
-      "q05": 0.0,
-      "q25": 0.0,
-      "q50": 0.0,
-      "q75": 0.000108,
-      "q95": 0.546289,
-      "q99": 0.922458
-     }
-    },
-    "screen_t": {
-     "nominal": 0.025,
-     "n": 51,
-     "passed": 0,
-     "rate": 0.0,
-     "wilson": [
-      0.0,
-      0.070049
-     ],
-     "posterior_rate": 0.007042,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 0,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 16,
-       "passed": 0,
-       "rate": 0.0
-      },
       "random_walk": {
-       "n": 18,
+       "n": 15,
        "passed": 0,
        "rate": 0.0
-      },
-      "sign_permute": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      }
-     },
-     "null_distribution": {
-      "q05": -43.593016,
-      "q25": -26.064368,
-      "q50": -7.371505,
-      "q75": -4.718941,
-      "q95": 0.157872,
-      "q99": 1.430337
-     }
-    },
-    "in_sample_screen": {
-     "nominal": 0.5,
-     "n": 51,
-     "passed": 3,
-     "rate": 0.058824,
-     "wilson": [
-      0.020206,
-      0.159249
-     ],
-     "posterior_rate": 0.183099,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 0,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 16,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "random_walk": {
-       "n": 18,
-       "passed": 3,
-       "rate": 0.166667
-      },
-      "sign_permute": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      }
-     },
-     "null_distribution": {
-      "q05": -0.879521,
-      "q25": -0.572989,
-      "q50": -0.194288,
-      "q75": -0.111836,
-      "q95": 0.003219,
-      "q99": 0.032461
-     }
-    }
-   },
-   "status": "MEASURED",
-   "fpr_charge": 1.0
-  },
-  "dav_range_filter_adx": {
-   "draws": 54,
-   "run": 52,
-   "not_run": 2,
-   "not_run_why": [
-    "build_cell: NOT_RUN_MODIFIER: execution_style='limit': the replay fills at the next open; a limit fill needs a queue/fil",
-    "build_cell: NOT_RUN_MODIFIER: residual='equity': this family does not residualise its input, and building it un-residual"
-   ],
-   "gates": {
-    "deflated_sharpe_1trial": {
-     "nominal": 0.050000000000000044,
-     "n": 52,
-     "passed": 1,
-     "rate": 0.019231,
-     "wilson": [
-      0.003403,
-      0.101207
-     ],
-     "posterior_rate": 0.027778,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 0,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "random_walk": {
-       "n": 17,
-       "passed": 1,
-       "rate": 0.058824
       },
       "sign_permute": {
        "n": 18,
@@ -3426,10 +3706,10 @@
      "null_distribution": {
       "q05": 0.0,
       "q25": 0.0,
-      "q50": 0.0,
-      "q75": 0.000313,
-      "q95": 0.292562,
-      "q99": 0.926208
+      "q50": 7e-06,
+      "q75": 0.003298,
+      "q95": 0.324884,
+      "q99": 0.709317
      }
     },
     "screen_t": {
@@ -3446,257 +3726,7 @@
      "unmeasured_draws": 0,
      "per_arm": {
       "block_shuffle": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "random_walk": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "sign_permute": {
        "n": 18,
-       "passed": 0,
-       "rate": 0.0
-      }
-     },
-     "null_distribution": {
-      "q05": -32.619554,
-      "q25": -13.395884,
-      "q50": -7.43587,
-      "q75": -3.371587,
-      "q95": -0.573143,
-      "q99": 1.524388
-     }
-    },
-    "in_sample_screen": {
-     "nominal": 0.5,
-     "n": 52,
-     "passed": 2,
-     "rate": 0.038462,
-     "wilson": [
-      0.010611,
-      0.129814
-     ],
-     "posterior_rate": 0.166667,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 0,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "random_walk": {
-       "n": 17,
-       "passed": 2,
-       "rate": 0.117647
-      },
-      "sign_permute": {
-       "n": 18,
-       "passed": 0,
-       "rate": 0.0
-      }
-     },
-     "null_distribution": {
-      "q05": -0.792706,
-      "q25": -0.412304,
-      "q50": -0.230936,
-      "q75": -0.091403,
-      "q95": -0.018231,
-      "q99": 0.049138
-     }
-    }
-   },
-   "status": "MEASURED",
-   "fpr_charge": 1.0
-  },
-  "dav_rsi_div_rev": {
-   "draws": 51,
-   "run": 51,
-   "not_run": 0,
-   "not_run_why": [],
-   "gates": {
-    "deflated_sharpe_1trial": {
-     "nominal": 0.050000000000000044,
-     "n": 51,
-     "passed": 1,
-     "rate": 0.019608,
-     "wilson": [
-      0.00347,
-      0.103048
-     ],
-     "posterior_rate": 0.028169,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 0,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "random_walk": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "sign_permute": {
-       "n": 17,
-       "passed": 1,
-       "rate": 0.058824
-      }
-     },
-     "null_distribution": {
-      "q05": 0.002368,
-      "q25": 0.111382,
-      "q50": 0.292548,
-      "q75": 0.461651,
-      "q95": 0.827086,
-      "q99": 0.972303
-     }
-    },
-    "screen_t": {
-     "nominal": 0.025,
-     "n": 51,
-     "passed": 1,
-     "rate": 0.019608,
-     "wilson": [
-      0.00347,
-      0.103048
-     ],
-     "posterior_rate": 0.021127,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 0,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "random_walk": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "sign_permute": {
-       "n": 17,
-       "passed": 1,
-       "rate": 0.058824
-      }
-     },
-     "null_distribution": {
-      "q05": -2.900287,
-      "q25": -1.198401,
-      "q50": -0.566134,
-      "q75": -0.096094,
-      "q95": 0.9232,
-      "q99": 2.128758
-     }
-    },
-    "in_sample_screen": {
-     "nominal": 0.5,
-     "n": 51,
-     "passed": 8,
-     "rate": 0.156863,
-     "wilson": [
-      0.081691,
-      0.280107
-     ],
-     "posterior_rate": 0.253521,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 0,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 17,
-       "passed": 1,
-       "rate": 0.058824
-      },
-      "random_walk": {
-       "n": 17,
-       "passed": 2,
-       "rate": 0.117647
-      },
-      "sign_permute": {
-       "n": 17,
-       "passed": 5,
-       "rate": 0.294118
-      }
-     },
-     "null_distribution": {
-      "q05": -0.130617,
-      "q25": -0.058921,
-      "q50": -0.030763,
-      "q75": -0.005576,
-      "q95": 0.052588,
-      "q99": 0.121713
-     }
-    }
-   },
-   "status": "MEASURED",
-   "fpr_charge": 1.0
-  },
-  "dav_supertrend_trail": {
-   "draws": 54,
-   "run": 51,
-   "not_run": 3,
-   "not_run_why": [
-    "build_cell: dav_supertrend_trail raised TypeError: dav_supertrend_trail() got an unexpected keyword argument 'chart'"
-   ],
-   "gates": {
-    "deflated_sharpe_1trial": {
-     "nominal": 0.050000000000000044,
-     "n": 50,
-     "passed": 0,
-     "rate": 0.0,
-     "wilson": [
-      0.0,
-      0.07135
-     ],
-     "posterior_rate": 0.014286,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 1,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "random_walk": {
-       "n": 15,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "sign_permute": {
-       "n": 18,
-       "passed": 0,
-       "rate": 0.0
-      }
-     },
-     "null_distribution": {
-      "q05": 0.0,
-      "q25": 0.0,
-      "q50": 9e-06,
-      "q75": 0.003528,
-      "q95": 0.338242,
-      "q99": 0.714114
-     }
-    },
-    "screen_t": {
-     "nominal": 0.025,
-     "n": 51,
-     "passed": 0,
-     "rate": 0.0,
-     "wilson": [
-      0.0,
-      0.070049
-     ],
-     "posterior_rate": 0.007042,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 0,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 17,
        "passed": 0,
        "rate": 0.0
       },
@@ -3712,29 +3742,29 @@
       }
      },
      "null_distribution": {
-      "q05": -32.868882,
-      "q25": -12.358021,
-      "q50": -5.205462,
-      "q75": -2.795262,
-      "q95": -0.485394,
-      "q99": 0.762953
+      "q05": -32.780842,
+      "q25": -12.493274,
+      "q50": -5.550092,
+      "q75": -2.867677,
+      "q95": -0.523639,
+      "q99": 0.7461
      }
     },
     "in_sample_screen": {
      "nominal": 0.5,
-     "n": 50,
+     "n": 51,
      "passed": 1,
-     "rate": 0.02,
+     "rate": 0.019608,
      "wilson": [
-      0.003539,
-      0.104957
+      0.00347,
+      0.103048
      ],
-     "posterior_rate": 0.157143,
+     "posterior_rate": 0.15493,
      "exceeds_nominal": false,
      "unmeasured_draws": 1,
      "per_arm": {
       "block_shuffle": {
-       "n": 17,
+       "n": 18,
        "passed": 0,
        "rate": 0.0
       },
@@ -3750,12 +3780,12 @@
       }
      },
      "null_distribution": {
-      "q05": -0.902974,
-      "q25": -0.405134,
-      "q50": -0.187153,
-      "q75": -0.109124,
-      "q95": -0.016379,
-      "q99": 0.026715
+      "q05": -0.893107,
+      "q25": -0.403791,
+      "q50": -0.188009,
+      "q75": -0.109486,
+      "q95": -0.017806,
+      "q99": 0.026124
      }
     }
    },
@@ -7304,9 +7334,9 @@
    "fpr_charge": null
   },
   "mass_screen_carry": {
-   "draws": 18,
+   "draws": 21,
    "run": 0,
-   "not_run": 18,
+   "not_run": 21,
    "not_run_why": [
     "build_cell: mass_screen_carry raised TypeError: family_mass_screen_rule() got an unexpected keyword argument 'interactio",
     "build_cell: mass_screen_carry raised TypeError: family_mass_screen_rule() got an unexpected keyword argument 'sensor'",
@@ -11285,8 +11315,8 @@
    "fpr_charge": null
   },
   "vol_mean_reversion": {
-   "draws": 53,
-   "run": 51,
+   "draws": 54,
+   "run": 52,
    "not_run": 2,
    "not_run_why": [
     "build_cell: NOT_RUN_MODIFIER: residual='gold': this family does not residualise its input, and building it un-residualis",
@@ -11295,14 +11325,14 @@
    "gates": {
     "deflated_sharpe_1trial": {
      "nominal": 0.050000000000000044,
-     "n": 48,
+     "n": 49,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.074103
+      0.0727
      ],
-     "posterior_rate": 0.014706,
+     "posterior_rate": 0.014493,
      "exceeds_nominal": false,
      "unmeasured_draws": 3,
      "per_arm": {
@@ -11317,7 +11347,7 @@
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 16,
+       "n": 17,
        "passed": 0,
        "rate": 0.0
       }
@@ -11325,22 +11355,22 @@
      "null_distribution": {
       "q05": 0.0,
       "q25": 0.0,
-      "q50": 7e-06,
-      "q75": 0.018068,
-      "q95": 0.319472,
-      "q99": 0.396431
+      "q50": 5e-06,
+      "q75": 0.017356,
+      "q95": 0.313027,
+      "q99": 0.396041
      }
     },
     "screen_t": {
      "nominal": 0.025,
-     "n": 49,
+     "n": 50,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.0727
+      0.07135
      ],
-     "posterior_rate": 0.007246,
+     "posterior_rate": 0.007143,
      "exceeds_nominal": false,
      "unmeasured_draws": 2,
      "per_arm": {
@@ -11355,30 +11385,30 @@
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 16,
+       "n": 17,
        "passed": 0,
        "rate": 0.0
       }
      },
      "null_distribution": {
-      "q05": -37.74664,
-      "q25": -17.768386,
-      "q50": -4.66462,
-      "q75": -2.006834,
-      "q95": -0.3286,
-      "q99": 0.269466
+      "q05": -37.406194,
+      "q25": -17.108532,
+      "q50": -4.68905,
+      "q75": -2.026146,
+      "q95": -0.329514,
+      "q99": 0.260116
      }
     },
     "in_sample_screen": {
      "nominal": 0.5,
-     "n": 48,
+     "n": 49,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.074103
+      0.0727
      ],
-     "posterior_rate": 0.147059,
+     "posterior_rate": 0.144928,
      "exceeds_nominal": false,
      "unmeasured_draws": 3,
      "per_arm": {
@@ -11393,18 +11423,18 @@
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 16,
+       "n": 17,
        "passed": 0,
        "rate": 0.0
       }
      },
      "null_distribution": {
-      "q05": -1.224343,
-      "q25": -0.648483,
-      "q50": -0.340245,
-      "q75": -0.124953,
-      "q95": -0.040416,
-      "q99": -0.01682
+      "q05": -1.217439,
+      "q25": -0.618576,
+      "q50": -0.357286,
+      "q75": -0.125298,
+      "q95": -0.040924,
+      "q99": -0.016919
      }
     }
    },
@@ -11412,26 +11442,26 @@
    "fpr_charge": 1.0
   },
   "vol_transition": {
-   "draws": 51,
-   "run": 51,
+   "draws": 54,
+   "run": 54,
    "not_run": 0,
    "not_run_why": [],
    "gates": {
     "deflated_sharpe_1trial": {
      "nominal": 0.050000000000000044,
-     "n": 31,
+     "n": 33,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.110259
+      0.104273
      ],
-     "posterior_rate": 0.019608,
+     "posterior_rate": 0.018868,
      "exceeds_nominal": false,
-     "unmeasured_draws": 20,
+     "unmeasured_draws": 21,
      "per_arm": {
       "block_shuffle": {
-       "n": 13,
+       "n": 14,
        "passed": 0,
        "rate": 0.0
       },
@@ -11441,7 +11471,7 @@
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 11,
+       "n": 12,
        "passed": 0,
        "rate": 0.0
       }
@@ -11450,26 +11480,26 @@
       "q05": 0.0,
       "q25": 0.0,
       "q50": 0.0,
-      "q75": 0.005331,
-      "q95": 0.222471,
-      "q99": 0.674885
+      "q75": 0.006307,
+      "q95": 0.199862,
+      "q99": 0.665189
      }
     },
     "screen_t": {
      "nominal": 0.025,
-     "n": 43,
+     "n": 45,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.082013
+      0.078654
      ],
-     "posterior_rate": 0.007937,
+     "posterior_rate": 0.007692,
      "exceeds_nominal": false,
-     "unmeasured_draws": 8,
+     "unmeasured_draws": 9,
      "per_arm": {
       "block_shuffle": {
-       "n": 17,
+       "n": 18,
        "passed": 0,
        "rate": 0.0
       },
@@ -11479,35 +11509,35 @@
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 17,
+       "n": 18,
        "passed": 0,
        "rate": 0.0
       }
      },
      "null_distribution": {
-      "q05": -26.354744,
-      "q25": -8.3345,
+      "q05": -26.188889,
+      "q25": -8.613273,
       "q50": -3.007753,
-      "q75": -1.924071,
-      "q95": 0.238907,
-      "q99": 1.289214
+      "q75": -2.023777,
+      "q95": 0.190168,
+      "q99": 1.275479
      }
     },
     "in_sample_screen": {
      "nominal": 0.5,
-     "n": 31,
+     "n": 33,
      "passed": 1,
-     "rate": 0.032258,
+     "rate": 0.030303,
      "wilson": [
-      0.005717,
-      0.161945
+      0.005369,
+      0.153191
      ],
-     "posterior_rate": 0.215686,
+     "posterior_rate": 0.207547,
      "exceeds_nominal": false,
-     "unmeasured_draws": 20,
+     "unmeasured_draws": 21,
      "per_arm": {
       "block_shuffle": {
-       "n": 13,
+       "n": 14,
        "passed": 0,
        "rate": 0.0
       },
@@ -11517,18 +11547,18 @@
        "rate": 0.0
       },
       "sign_permute": {
-       "n": 11,
+       "n": 12,
        "passed": 1,
-       "rate": 0.090909
+       "rate": 0.083333
       }
      },
      "null_distribution": {
-      "q05": -1.30998,
-      "q25": -0.711109,
+      "q05": -1.398495,
+      "q25": -0.760704,
       "q50": -0.428388,
-      "q75": -0.190208,
-      "q95": -0.064798,
-      "q99": 0.034173
+      "q75": -0.189949,
+      "q95": -0.068781,
+      "q99": 0.031914
      }
     }
    },
@@ -11536,9 +11566,9 @@
    "fpr_charge": 1.0
   },
   "volatility_shock": {
-   "draws": 51,
+   "draws": 54,
    "run": 0,
-   "not_run": 51,
+   "not_run": 54,
    "not_run_why": [
     "build_cell: no implementation of family 'volatility_shock' in families or families_orthogonal"
    ],
@@ -11632,12 +11662,13 @@
    "fpr_charge": null
   },
   "volatility_squeeze": {
-   "draws": 51,
-   "run": 49,
-   "not_run": 2,
+   "draws": 54,
+   "run": 51,
+   "not_run": 3,
    "not_run_why": [
     "build_cell: NOT_RUN_MODIFIER: conditioner='macro': no conditioning series is wired for a second information axis, so the",
-    "build_cell: NOT_RUN_MODIFIER: regime='risk_off' has no desk definition (volatility and month/quarter-end are defined; a "
+    "build_cell: NOT_RUN_MODIFIER: regime='risk_off' has no desk definition (volatility and month/quarter-end are defined; a ",
+    "build_cell: NOT_RUN_MODIFIER: residual='gold': this family does not residualise its input, and building it un-residualis"
    ],
    "gates": {
     "deflated_sharpe_1trial": {
@@ -11651,7 +11682,7 @@
      ],
      "posterior_rate": 0.017544,
      "exceeds_nominal": false,
-     "unmeasured_draws": 12,
+     "unmeasured_draws": 14,
      "per_arm": {
       "block_shuffle": {
        "n": 15,
@@ -11680,16 +11711,16 @@
     },
     "screen_t": {
      "nominal": 0.025,
-     "n": 42,
+     "n": 43,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.083802
+      0.082013
      ],
-     "posterior_rate": 0.008065,
+     "posterior_rate": 0.007937,
      "exceeds_nominal": false,
-     "unmeasured_draws": 7,
+     "unmeasured_draws": 8,
      "per_arm": {
       "block_shuffle": {
        "n": 15,
@@ -11697,7 +11728,7 @@
        "rate": 0.0
       },
       "random_walk": {
-       "n": 12,
+       "n": 13,
        "passed": 0,
        "rate": 0.0
       },
@@ -11708,12 +11739,12 @@
       }
      },
      "null_distribution": {
-      "q05": -7.332726,
-      "q25": -4.065139,
-      "q50": -2.969786,
-      "q75": -1.485528,
-      "q95": -0.330158,
-      "q99": 0.612366
+      "q05": -7.284355,
+      "q25": -4.059606,
+      "q50": -2.89637,
+      "q75": -1.470464,
+      "q95": -0.336544,
+      "q99": 0.608404
      }
     },
     "in_sample_screen": {
@@ -11727,7 +11758,7 @@
      ],
      "posterior_rate": 0.210526,
      "exceeds_nominal": false,
-     "unmeasured_draws": 12,
+     "unmeasured_draws": 14,
      "per_arm": {
       "block_shuffle": {
        "n": 15,
@@ -11759,69 +11790,31 @@
    "fpr_charge": 1.0
   },
   "volume_spike": {
-   "draws": 51,
-   "run": 51,
+   "draws": 54,
+   "run": 54,
    "not_run": 0,
    "not_run_why": [],
    "gates": {
     "deflated_sharpe_1trial": {
      "nominal": 0.050000000000000044,
-     "n": 49,
+     "n": 52,
      "passed": 0,
      "rate": 0.0,
      "wilson": [
       0.0,
-      0.0727
+      0.068795
      ],
-     "posterior_rate": 0.014493,
+     "posterior_rate": 0.013889,
      "exceeds_nominal": false,
      "unmeasured_draws": 2,
      "per_arm": {
       "block_shuffle": {
-       "n": 17,
+       "n": 18,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "sign_permute": {
-       "n": 15,
-       "passed": 0,
-       "rate": 0.0
-      }
-     },
-     "null_distribution": {
-      "q05": 0.0,
-      "q25": 0.0,
-      "q50": 0.0,
-      "q75": 6.4e-05,
-      "q95": 0.136528,
-      "q99": 0.386914
-     }
-    },
-    "screen_t": {
-     "nominal": 0.025,
-     "n": 50,
-     "passed": 0,
-     "rate": 0.0,
-     "wilson": [
-      0.0,
-      0.07135
-     ],
-     "posterior_rate": 0.007143,
-     "exceeds_nominal": false,
-     "unmeasured_draws": 1,
-     "per_arm": {
-      "block_shuffle": {
-       "n": 17,
-       "passed": 0,
-       "rate": 0.0
-      },
-      "random_walk": {
-       "n": 17,
+       "n": 18,
        "passed": 0,
        "rate": 0.0
       },
@@ -11832,50 +11825,88 @@
       }
      },
      "null_distribution": {
-      "q05": -10.447781,
-      "q25": -7.039794,
-      "q50": -4.076643,
-      "q75": -2.335201,
-      "q95": -1.270772,
-      "q99": -0.344705
+      "q05": 0.0,
+      "q25": 0.0,
+      "q50": 0.0,
+      "q75": 7.2e-05,
+      "q95": 0.114983,
+      "q99": 0.37753
      }
     },
-    "in_sample_screen": {
-     "nominal": 0.5,
-     "n": 49,
-     "passed": 1,
-     "rate": 0.020408,
+    "screen_t": {
+     "nominal": 0.025,
+     "n": 53,
+     "passed": 0,
+     "rate": 0.0,
      "wilson": [
-      0.003612,
-      0.106938
+      0.0,
+      0.067584
      ],
-     "posterior_rate": 0.15942,
+     "posterior_rate": 0.006849,
      "exceeds_nominal": false,
-     "unmeasured_draws": 2,
+     "unmeasured_draws": 1,
      "per_arm": {
       "block_shuffle": {
-       "n": 17,
+       "n": 18,
        "passed": 0,
        "rate": 0.0
       },
       "random_walk": {
-       "n": 17,
-       "passed": 1,
-       "rate": 0.058824
+       "n": 18,
+       "passed": 0,
+       "rate": 0.0
       },
       "sign_permute": {
-       "n": 15,
+       "n": 17,
        "passed": 0,
        "rate": 0.0
       }
      },
      "null_distribution": {
-      "q05": -0.386059,
-      "q25": -0.247452,
-      "q50": -0.165352,
-      "q75": -0.095451,
-      "q95": -0.045148,
-      "q99": -0.014372
+      "q05": -10.836452,
+      "q25": -7.041182,
+      "q50": -4.20568,
+      "q75": -2.334331,
+      "q95": -1.272469,
+      "q99": -0.371496
+     }
+    },
+    "in_sample_screen": {
+     "nominal": 0.5,
+     "n": 52,
+     "passed": 1,
+     "rate": 0.019231,
+     "wilson": [
+      0.003403,
+      0.101207
+     ],
+     "posterior_rate": 0.152778,
+     "exceeds_nominal": false,
+     "unmeasured_draws": 2,
+     "per_arm": {
+      "block_shuffle": {
+       "n": 18,
+       "passed": 0,
+       "rate": 0.0
+      },
+      "random_walk": {
+       "n": 18,
+       "passed": 1,
+       "rate": 0.055556
+      },
+      "sign_permute": {
+       "n": 16,
+       "passed": 0,
+       "rate": 0.0
+      }
+     },
+     "null_distribution": {
+      "q05": -0.422045,
+      "q25": -0.250581,
+      "q50": -0.160729,
+      "q75": -0.094832,
+      "q95": -0.045583,
+      "q99": -0.015996
      }
     }
    },
@@ -11883,8 +11914,8 @@
    "fpr_charge": 1.0
   },
   "world_macro_state": {
-   "draws": 51,
-   "run": 51,
+   "draws": 54,
+   "run": 54,
    "not_run": 0,
    "not_run_why": [],
    "gates": {
@@ -11896,7 +11927,7 @@
      "wilson": null,
      "posterior_rate": 0.05,
      "exceeds_nominal": false,
-     "unmeasured_draws": 51,
+     "unmeasured_draws": 54,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -11924,7 +11955,7 @@
      "wilson": null,
      "posterior_rate": 0.025,
      "exceeds_nominal": false,
-     "unmeasured_draws": 51,
+     "unmeasured_draws": 54,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
@@ -11952,7 +11983,7 @@
      "wilson": null,
      "posterior_rate": 0.5,
      "exceeds_nominal": false,
-     "unmeasured_draws": 51,
+     "unmeasured_draws": 54,
      "per_arm": {
       "block_shuffle": {
        "n": 0,
