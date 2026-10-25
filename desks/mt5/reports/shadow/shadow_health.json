@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-25T12:52:19+00:00",
+  "updated_at": "2026-10-25T13:23:19+00:00",
   "configured_sleeves": 629,
   "represented_sleeves": 629,
   "certified_sleeves_total": 1048,
@@ -18,7 +18,7 @@
       "IDENTITY_BROKEN": 9
     },
     "age_measured": 48,
-    "median_age_days": 19.682,
+    "median_age_days": 19.704,
     "mature_14d_without_trade": 40,
     "fresh_attempts": 39,
     "naturally_inactive": 38,
@@ -42,23 +42,13 @@
     "177 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 5336.298,
+  "seconds": 1673.311,
   "gateway_armed": true,
   "promoted_live_sleeves": [
-    "xauusd_macro_conditional_asia_p_5fa26e224170b851",
-    "xauusd_macro_conditional_asia_p_c4d0f0303a0c9cb4",
-    "xauusd_macro_conditional_asia_p_fe355d4759ed4898",
-    "xauusd_range_reversion_asia_p_f83412948ea922b5",
-    "xauusd_range_reversion_asia_p_ff35bb7c8427d66f",
     "xauusd_session_range_breakout_asia_0_wb_12"
   ],
   "promoted_live_certificate_rows": [
-    "xauusd_session_range_breakout_asia_0_wb_12",
-    "xauusd_macro_conditional_asia_p_5fa26e224170b851",
-    "xauusd_macro_conditional_asia_p_c4d0f0303a0c9cb4",
-    "xauusd_macro_conditional_asia_p_fe355d4759ed4898",
-    "xauusd_range_reversion_asia_p_ff35bb7c8427d66f",
-    "xauusd_range_reversion_asia_p_f83412948ea922b5"
+    "xauusd_session_range_breakout_asia_0_wb_12"
   ],
   "live_exposure_aliases": {},
   "status": "ENROLMENT_GAP"
