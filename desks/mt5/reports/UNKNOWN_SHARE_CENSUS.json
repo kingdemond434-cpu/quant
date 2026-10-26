@@ -6,12 +6,12 @@
   "sample": 6000,
   "overlay": [],
   "complete": false,
-  "stage": "siblings_minted",
+  "stage": "building",
   "utc_day": "2026-10-26",
   "started_at": "2026-10-26T21:18:37+00:00",
-  "written_at": "2026-10-26T21:21:22+00:00",
+  "written_at": "2026-10-26T21:47:58+00:00",
   "cells_planned": 6164,
-  "cells_visited": 0,
+  "cells_visited": 443,
   "judge": {
     "named_unknowns": true,
     "cell_lockbox_cut": true,
@@ -22,12 +22,12 @@
   "memory": {
     "available_mb": 48312,
     "rss_cap_mb": 12078,
-    "peak_rss_mb": 501
+    "peak_rss_mb": 782
   },
-  "lockbox_cut": null,
-  "lockbox_frac": null,
-  "cells_carved_at_own_tail": null,
-  "elapsed_s": 156.6,
+  "lockbox_cut": "2024-06-16",
+  "lockbox_frac": 0.2,
+  "cells_carved_at_own_tail": 33,
+  "elapsed_s": 1752.9,
   "siblings": {
     "status": "MEASURED",
     "peerless_rows": 277,
@@ -42,38 +42,128 @@
     }
   },
   "sampled_cells": {
-    "cells": 0,
+    "cells": 443,
     "gate0_rejected": {},
-    "preflight_refused": 0,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
+    "preflight_refused": 189,
+    "build_failed": 4,
+    "build_failed_by_reason": {
+      "no_driver_symbol_named": 2,
+      "no_leg_symbol_named": 1,
+      "BLOCKED_DATA: raw COT for EURILS: KeyError: 'no COT mapping ": 1
+    },
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 250,
+    "unknown": 93,
+    "unknown_share_of_judged": 0.372,
+    "wilson95": [
+      0.3144,
+      0.4334
+    ],
+    "unknown_by_reason": {
+      "no_signals": 72,
+      "too_rare": 13,
+      "short_history_after_cut": 5,
+      "lockbox_consumed_history": 2,
+      "signals_no_trades": 1
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 17,
+      "orderflow_imbalance": 10,
+      "overnight_drift": 9,
+      "joint_genome": 6,
+      "session_range_breakout": 6,
+      "liquidity_regime": 6,
+      "ensemble": 5,
+      "lvc_asia_london": 3,
+      "liquidity_gamma_reversal": 2,
+      "htf_anchor_trend": 2,
+      "event_reaction": 2,
+      "monday_gap": 2,
+      "calendar_month": 2,
+      "forced_flow": 2,
+      "regime_transition": 2
+    },
+    "unknown_by_chart": {
+      "M30": 26,
+      "H1": 25,
+      "M15": 17,
+      "M5": 15,
+      "D1": 4,
+      "M1": 3,
+      "H4": 3
+    },
+    "judged_by_chart": {
+      "H1": 86,
+      "M30": 66,
+      "M15": 44,
+      "M5": 40,
+      "H4": 7,
+      "D1": 4,
+      "M1": 3
+    }
   },
   "sampled_plus_siblings": {
-    "cells": 0,
+    "cells": 443,
     "gate0_rejected": {},
-    "preflight_refused": 0,
-    "build_failed": 0,
-    "build_failed_by_reason": {},
+    "preflight_refused": 189,
+    "build_failed": 4,
+    "build_failed_by_reason": {
+      "no_driver_symbol_named": 2,
+      "no_leg_symbol_named": 1,
+      "BLOCKED_DATA: raw COT for EURILS: KeyError: 'no COT mapping ": 1
+    },
     "deferred": 0,
-    "judged_built": 0,
-    "unknown": 0,
-    "unknown_share_of_judged": null,
-    "wilson95": null,
-    "unknown_by_reason": {},
+    "judged_built": 250,
+    "unknown": 93,
+    "unknown_share_of_judged": 0.372,
+    "wilson95": [
+      0.3144,
+      0.4334
+    ],
+    "unknown_by_reason": {
+      "no_signals": 72,
+      "too_rare": 13,
+      "short_history_after_cut": 5,
+      "lockbox_consumed_history": 2,
+      "signals_no_trades": 1
+    },
     "unknown_by_cause": {},
-    "unknown_by_family": {},
-    "unknown_by_chart": {},
-    "judged_by_chart": {}
+    "unknown_by_family": {
+      "formula": 17,
+      "orderflow_imbalance": 10,
+      "overnight_drift": 9,
+      "joint_genome": 6,
+      "session_range_breakout": 6,
+      "liquidity_regime": 6,
+      "ensemble": 5,
+      "lvc_asia_london": 3,
+      "liquidity_gamma_reversal": 2,
+      "htf_anchor_trend": 2,
+      "event_reaction": 2,
+      "monday_gap": 2,
+      "calendar_month": 2,
+      "forced_flow": 2,
+      "regime_transition": 2
+    },
+    "unknown_by_chart": {
+      "M30": 26,
+      "H1": 25,
+      "M15": 17,
+      "M5": 15,
+      "D1": 4,
+      "M1": 3,
+      "H4": 3
+    },
+    "judged_by_chart": {
+      "H1": 86,
+      "M30": 66,
+      "M15": 44,
+      "M5": 40,
+      "H4": 7,
+      "D1": 4,
+      "M1": 3
+    }
   },
   "siblings_only": {
     "cells": 0,
