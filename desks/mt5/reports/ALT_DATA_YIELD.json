@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-26T16:43:55+00:00",
+ "generated_utc": "2026-10-26T17:27:51+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 4,
@@ -1721,13 +1721,13 @@
    },
    "DC inside 주식/해외선물 갤러리": {
     "outcome": "BLOCKED",
-    "attempts": 388,
+    "attempts": 389,
     "successes": 1,
     "rows": 13,
     "findings_total": 13,
     "datasets": 3,
-    "last_error": "bing: bing returned no parseable results (95375 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-26T12:30:05.381757+00:00",
+    "last_error": "bing: bing returned no parseable results (92149 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14259 bytes)",
+    "last_attempt": "2026-10-26T17:26:29.711901+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -2873,13 +2873,13 @@
    },
    "KRX / 자본시장연구원 연구": {
     "outcome": "BLOCKED",
-    "attempts": 388,
+    "attempts": 389,
     "successes": 3,
     "rows": 14,
     "findings_total": 14,
     "datasets": 5,
-    "last_error": "bing: bing returned no parseable results (95472 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-26T12:29:52.801599+00:00",
+    "last_error": "bing: bing returned no parseable results (97829 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14247 bytes)",
+    "last_attempt": "2026-10-26T17:26:12.489018+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -5069,13 +5069,13 @@
    },
    "Velog quant": {
     "outcome": "BLOCKED",
-    "attempts": 406,
+    "attempts": 407,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismat; URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mism",
-    "last_attempt": "2026-10-26T12:28:56.608347+00:00",
+    "last_attempt": "2026-10-26T17:25:54.008443+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -5405,13 +5405,13 @@
    },
    "YouTube KR 매매기법": {
     "outcome": "BLOCKED",
-    "attempts": 387,
+    "attempts": 388,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (95815 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-26T12:30:19.402067+00:00",
+    "last_error": "bing: bing returned no parseable results (94432 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14249 bytes)",
+    "last_attempt": "2026-10-26T17:26:33.684030+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -5753,13 +5753,13 @@
    },
    "tistory 퀀트 블로그": {
     "outcome": "BLOCKED",
-    "attempts": 381,
+    "attempts": 382,
     "successes": 2,
     "rows": 11,
     "findings_total": 11,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (97025 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-26T12:30:23.100087+00:00",
+    "last_error": "bing: bing returned no parseable results (94394 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14250 bytes)",
+    "last_attempt": "2026-10-26T17:26:35.184910+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6641,25 +6641,25 @@
    },
    "매일경제 / 연합인포맥스 시장": {
     "outcome": "BLOCKED",
-    "attempts": 390,
+    "attempts": 391,
     "successes": 2,
     "rows": 26,
     "findings_total": 64,
     "datasets": 4,
-    "last_error": "bing: bing returned no parseable results (95690 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-26T12:30:02.800900+00:00",
+    "last_error": "bing: bing returned no parseable results (94384 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14239 bytes)",
+    "last_attempt": "2026-10-26T17:26:14.885090+00:00",
     "language": "ko",
     "region": "kr"
    },
    "팍스넷 검색": {
     "outcome": "BLOCKED",
-    "attempts": 389,
+    "attempts": 390,
     "successes": 1,
     "rows": 3,
     "findings_total": 27,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (93930 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: OSError: URLError:TimeoutError: <urlopen error timed out>",
-    "last_attempt": "2026-10-26T12:29:58.285229+00:00",
+    "last_error": "bing: bing returned no parseable results (94970 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14221 bytes)",
+    "last_attempt": "2026-10-26T17:26:24.689764+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6689,13 +6689,13 @@
    },
    "한국은행 경제통계시스템 ECOS": {
     "outcome": "BLOCKED",
-    "attempts": 400,
+    "attempts": 401,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-10-26T12:29:00.482782+00:00",
+    "last_attempt": "2026-10-26T17:26:23.297007+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6722,16 +6722,16 @@
    "wall_s_24h": "UNMEASURED"
   },
   "deep_forest_miner": {
-   "runs": 85,
-   "fetches": 15260,
-   "ok": 10829,
-   "http_errors": 2460,
-   "transport_errors": 1971,
-   "seconds": 15496.3,
-   "rows": 3824,
+   "runs": 84,
+   "fetches": 13974,
+   "ok": 9923,
+   "http_errors": 2292,
+   "transport_errors": 1759,
+   "seconds": 14549.1,
+   "rows": 3463,
    "last_run": "2026-10-26T12:32:57+00:00",
-   "fetches_per_s": 0.9848,
-   "success_rate": 0.7096,
+   "fetches_per_s": 0.9605,
+   "success_rate": 0.7101,
    "wall_s_24h": 1036.3,
    "cpu_s_24h": 340.2
   },
@@ -6746,8 +6746,8 @@
    "last_run": "2026-10-26T10:47:21+00:00",
    "fetches_per_s": 0.3212,
    "success_rate": 0.7517,
-   "wall_s_24h": 4862.3,
-   "cpu_s_24h": 564.4
+   "wall_s_24h": 3774.2,
+   "cpu_s_24h": 410.6
   },
   "forest_asean": {
    "runs": 25,
@@ -6861,16 +6861,16 @@
    "wall_s_24h": "UNMEASURED"
   },
   "forest_korea": {
-   "runs": 25,
-   "fetches": 1665,
-   "ok": 1274,
+   "runs": 26,
+   "fetches": 1698,
+   "ok": 1307,
    "http_errors": 7,
    "transport_errors": 384,
-   "seconds": 6501.3,
+   "seconds": 6641.4,
    "rows": 192,
-   "last_run": "2026-10-26T09:38:30+00:00",
-   "fetches_per_s": 0.2561,
-   "success_rate": 0.7652,
+   "last_run": "2026-10-26T17:27:51+00:00",
+   "fetches_per_s": 0.2557,
+   "success_rate": 0.7697,
    "wall_s_24h": 4697.6,
    "cpu_s_24h": 366.4
   },
@@ -6889,16 +6889,16 @@
    "cpu_s_24h": 486.2
   },
   "forest_mena": {
-   "runs": 27,
-   "fetches": 3053,
-   "ok": 1937,
-   "http_errors": 288,
-   "transport_errors": 828,
-   "seconds": 7935.3,
-   "rows": 85,
+   "runs": 26,
+   "fetches": 2944,
+   "ok": 1844,
+   "http_errors": 285,
+   "transport_errors": 815,
+   "seconds": 7769.6,
+   "rows": 82,
    "last_run": "2026-10-26T13:01:14+00:00",
-   "fetches_per_s": 0.3847,
-   "success_rate": 0.6345,
+   "fetches_per_s": 0.3789,
+   "success_rate": 0.6264,
    "wall_s_24h": 1697.3,
    "cpu_s_24h": 636.9
   },
@@ -6955,8 +6955,8 @@
    "last_run": "2026-10-26T16:43:55+00:00",
    "fetches_per_s": 0.7686,
    "success_rate": 0.8765,
-   "wall_s_24h": 2531.0,
-   "cpu_s_24h": 441.5
+   "wall_s_24h": 4343.1,
+   "cpu_s_24h": 630.0
   }
  },
  "sources": {
