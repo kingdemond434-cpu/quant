@@ -24,7 +24,7 @@
   },
   "position": null,
   "last_bracket_date": "2026-10-26",
-  "last_reconcile": "2026-10-25T23:49:51+00:00",
+  "last_reconcile": "2026-10-26T00:18:27+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {},
@@ -53,7 +53,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-26T02:49:16+00:00",
+  "placement_pass": "2026-10-26T03:19:34+00:00",
   "netting_booked": {},
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
@@ -196,7 +196,7 @@
       "last_signal_bar": "2026-09-30 09:00:00+00:00"
     },
     "xauusd_session_range_breakout_asia_0_wb_12": {
-      "last_signal_bar": "2026-10-26 01:00:00+00:00"
+      "last_signal_bar": "2026-10-26 02:00:00+00:00"
     },
     "cadjpy_session_range_breakout_asia_session_range_breakout": {
       "last_signal_bar": "2026-09-15 20:00:00+00:00"
@@ -282,14 +282,14 @@
     "xauusd_cross_asset_residual_asia_p_6f7e685b11cb2ccf": {},
     "xauusd_cross_asset_residual_asia_p_994638ee9bb08b37": {},
     "eurils_formula_asia_p_673857a649d3c271": {
-      "last_signal_bar": "2026-10-26 01:00:00+00:00"
+      "last_signal_bar": "2026-10-26 02:00:00+00:00"
     },
     "eurzar_carry_asia_p_8339edce23032d21": {
-      "last_signal_bar": "2026-10-26 02:30:00+00:00",
+      "last_signal_bar": "2026-10-26 03:00:00+00:00",
       "trail_k": 0.0
     },
     "usdnok_carry_asia_p_ff35bb7c8427d66f": {
-      "last_signal_bar": "2026-10-26 02:40:00+00:00",
+      "last_signal_bar": "2026-10-26 03:10:00+00:00",
       "trail_k": 0.0
     }
   },
@@ -474,7 +474,7 @@
     "240227813": 0.009019999999999584
   },
   "restart_reconcile": {
-    "at": "2026-10-25T23:49:17+00:00",
+    "at": "2026-10-26T00:19:41+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
