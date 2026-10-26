@@ -2166,13 +2166,13 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
+        "status": "UNMEASURED",
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'macro_conditional', not 'session_range_breakout'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['xauusd_session_range_breakout_asia_5_wb_12', 'xauusd|session_range_breakout|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['xauusd_session_range_breakout_asia_5_wb_12', 'xauusd|session_range_breakout|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-26T18:07:28.898516+00:00",
@@ -26079,13 +26079,13 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
+        "status": "UNMEASURED",
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'macro_conditional', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['xauusd_cross_asset_residual_asia_p_2479d0d883199a4b', 'xauusd|cross_asset_residual|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['xauusd_cross_asset_residual_asia_p_2479d0d883199a4b', 'xauusd|cross_asset_residual|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-26T18:07:28.898516+00:00",
@@ -26146,13 +26146,13 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
+        "status": "UNMEASURED",
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'macro_conditional', not 'cross_asset_residual'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['xauusd_cross_asset_residual_asia_p_cec9a82bd34685dc', 'xauusd|cross_asset_residual|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['xauusd_cross_asset_residual_asia_p_cec9a82bd34685dc', 'xauusd|cross_asset_residual|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-26T18:07:28.898516+00:00",
@@ -31844,8 +31844,8 @@
         "streak": 0,
         "delta_elogw_per_day": null,
         "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|macro_conditional|asia' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "joined": "joined on 'xauusd_macro_conditional_asia_p_5fa26e224170b851' (zeroed by this solve)",
+        "why": "standby on the current reading -- its forward clock reached KILL (XAUUSD.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=-1_ttl_bars=96): the forward evidence refuses this certificate, so the allocator records zero"
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-26T18:07:28.898516+00:00",
@@ -31911,8 +31911,8 @@
         "streak": 0,
         "delta_elogw_per_day": null,
         "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|macro_conditional|asia' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "joined": "joined on 'xauusd_macro_conditional_asia_p_c4d0f0303a0c9cb4' (zeroed by this solve)",
+        "why": "standby on the current reading -- its forward clock reached KILL (XAUUSD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=-1_ttl_bars=96): the forward evidence refuses this certificate, so the allocator records zero"
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-26T18:07:28.898516+00:00",
@@ -31978,8 +31978,8 @@
         "streak": 0,
         "delta_elogw_per_day": null,
         "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|macro_conditional|asia' (zeroed by this solve)",
-        "why": "standby on the current reading -- the current solve gives this sleeve no heat: its posterior edge, uncertainty, conditional state and covariance with the rest of the book make zero the log-optimal allocation right now. NOT retired -- its row, clock and certificate stand, and the next solve that wants it funds it."
+        "joined": "joined on 'xauusd_macro_conditional_asia_p_fe355d4759ed4898' (zeroed by this solve)",
+        "why": "standby on the current reading -- its forward clock reached KILL (XAUUSD.macro_conditional.asia@M5#side_in_high=-1): the forward evidence refuses this certificate, so the allocator records zero"
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-26T18:07:28.898516+00:00",
@@ -32040,13 +32040,13 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
+        "status": "UNMEASURED",
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'macro_conditional', not 'range_reversion'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['xauusd_range_reversion_asia_p_ff35bb7c8427d66f', 'xauusd|range_reversion|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['xauusd_range_reversion_asia_p_ff35bb7c8427d66f', 'xauusd|range_reversion|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-26T18:07:28.898516+00:00",
@@ -34213,13 +34213,13 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "STANDBY",
+        "status": "UNMEASURED",
         "risk_frac": 0.0,
         "streak": 0,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.0,
-        "joined": "joined on 'xauusd|asia' (different mechanism: not a reading for this sleeve)",
-        "why": "standby on the current reading -- the only allocator row on 'xauusd|asia' prices 'macro_conditional', not 'range_reversion'; the allocator has not priced this mechanism, so none of that row's heat is this sleeve's"
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['xauusd_range_reversion_asia_p_f83412948ea922b5', 'xauusd|range_reversion|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['xauusd_range_reversion_asia_p_f83412948ea922b5', 'xauusd|range_reversion|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-26T18:07:28.898516+00:00",
