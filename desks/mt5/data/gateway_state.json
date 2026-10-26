@@ -24,12 +24,12 @@
   },
   "position": null,
   "last_bracket_date": "2026-10-26",
-  "last_reconcile": "2026-10-26T15:48:11+00:00",
+  "last_reconcile": "2026-10-26T16:03:26+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {},
   "lot": 0.06,
-  "equity": 460.46,
+  "equity": 460.35,
   "placement_health": {
     "consecutive_total_rejections": 0,
     "last_ok": "2026-10-13T04:00:13+00:00",
@@ -53,7 +53,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-26T18:44:37+00:00",
+  "placement_pass": "2026-10-26T19:04:47+00:00",
   "netting_booked": {},
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
@@ -282,10 +282,10 @@
     "xauusd_cross_asset_residual_asia_p_6f7e685b11cb2ccf": {},
     "xauusd_cross_asset_residual_asia_p_994638ee9bb08b37": {},
     "eurils_formula_asia_p_673857a649d3c271": {
-      "last_signal_bar": "2026-10-26 17:00:00+00:00"
+      "last_signal_bar": "2026-10-26 18:00:00+00:00"
     },
     "eurzar_carry_asia_p_8339edce23032d21": {
-      "last_signal_bar": "2026-10-26 18:30:00+00:00",
+      "last_signal_bar": "2026-10-26 18:45:00+00:00",
       "trail_k": 0.0
     },
     "usdnok_carry_asia_p_ff35bb7c8427d66f": {
@@ -472,15 +472,24 @@
     "240035875": 0.006719999999999615,
     "240043547": 0.009529999999999816,
     "240098477": 0.019959999999997535,
-    "240227813": 0.009019999999999584
+    "240227813": 0.009019999999999584,
+    "241036050": 0.009389999999999787
   },
   "restart_reconcile": {
-    "at": "2026-10-26T15:44:41+00:00",
+    "at": "2026-10-26T16:04:50+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
     "armed": true,
-    "positions": [],
+    "positions": [
+      {
+        "ticket": 241036050,
+        "symbol": "USDNOK",
+        "comment": "DWusdnok_carry_asia_p_ff35bb7",
+        "volume": 0.03,
+        "sl": 9.32736
+      }
+    ],
     "orders": [],
     "in_doubt": [],
     "stopless": [],
