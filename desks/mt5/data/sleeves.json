@@ -2292,15 +2292,13 @@
         "direction": "family returns list[Signal]; each signal carries its own side, so no direction is assumed by this row"
       },
       "admission": {
-        "status": "LIVE",
-        "risk_frac": 0.006422,
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
         "streak": 2,
         "delta_elogw_per_day": null,
-        "heat_earned": 0.006422,
-        "joined": "joined on 'xauusd_session_range_breakout_asia_0_wb_12' (funded book)",
-        "allocator_heat": 0.006422,
-        "written_at_promoter_ceiling": false,
-        "why": "already funded by the allocator at 0.64% heat; the allocator's current solve gives this sleeve 0.64% heat; estimation shrink UNMEASURED (the row carries no annualised Sharpe), so the allocator's number stands (joined on 'xauusd_session_range_breakout_asia_0_wb_12' (funded book))"
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of ['xauusd_session_range_breakout_asia_0_wb_12', 'xauusd|session_range_breakout|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of ['xauusd_session_range_breakout_asia_0_wb_12', 'xauusd|session_range_breakout|asia', 'xauusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
       },
       "admit_streak": 2,
       "admit_scan": "2026-10-26T00:17:31.198339+00:00",
