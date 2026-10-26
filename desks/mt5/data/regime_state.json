@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-26T09:00:44.493281+00:00",
+  "swept_at": "2026-10-26T09:15:51.508404+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -53,7 +53,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 51,
-      "shadow_exp_r": 0.449,
+      "shadow_exp_r": 0.4526,
       "woke_on_shadow": false
     },
     "AUDCHF|overnight_gap_decay_asia": {
@@ -1691,8 +1691,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 48,
-      "shadow_exp_r": 0.6167,
+      "shadow_n": 50,
+      "shadow_exp_r": 0.576,
       "woke_on_shadow": false
     },
     "EURZAR|formula_continuous": {
@@ -4782,8 +4782,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 74,
-      "shadow_exp_r": -0.0294,
+      "shadow_n": 90,
+      "shadow_exp_r": -0.0203,
       "woke_on_shadow": false
     },
     "XAUEUR|cross_asset_residual_continuous": {
@@ -4849,7 +4849,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.2255,
+      "shadow_exp_r": 0.2258,
       "woke_on_shadow": false
     },
     "XAUEUR|macro_conditional_continuous": {
@@ -4980,8 +4980,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 48,
-      "shadow_exp_r": 0.0786,
+      "shadow_n": 49,
+      "shadow_exp_r": 0.0715,
       "woke_on_shadow": false
     },
     "XAUUSD|cross_asset_residual_asia": {
