@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-26T01:31:20.393416+00:00",
+  "swept_at": "2026-10-26T01:45:21.099158+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -4320,8 +4320,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 66,
-      "shadow_exp_r": -0.0446,
+      "shadow_n": 90,
+      "shadow_exp_r": -0.1902,
       "woke_on_shadow": false
     },
     "XAGEUR|range_reversion_continuous": {
@@ -4849,7 +4849,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.216,
+      "shadow_exp_r": 0.2155,
       "woke_on_shadow": false
     },
     "XAUEUR|macro_conditional_continuous": {
@@ -5233,8 +5233,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 0,
-      "shadow_exp_r": 0.0,
+      "shadow_n": 47,
+      "shadow_exp_r": -0.3466,
       "woke_on_shadow": false
     },
     "XCUUSD|cross_asset_residual_continuous": {
