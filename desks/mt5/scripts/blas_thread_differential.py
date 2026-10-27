@@ -20,12 +20,16 @@ WHAT IT DOES
      500), and loads each sampled cell's series pair from the judge's own content-addressed cache
      through the judge's own build loop with the fresh-build budget already spent, so NOTHING is
      built and nothing is written. The frozen cells go to a scratch pickle.
-  2. JUDGE, TWICE (fresh subprocesses, because BLAS reads its thread count once, at load): arm
-     `default` with the three variables UNSET, arm `single` with all three = 1, and optionally a
-     second `control` default arm that measures the judge's own run-to-run noise. Each arm runs
-     the SEALED `external_gauntlet.run_gauntlet` on the identical frozen cells, and rebuilds a
-     few cells through the pre-warm worker's own function (`_warm_one`, cache I/O diverted) so
-     the build path is covered too.
+  2. JUDGE, THREE TIMES (fresh subprocesses, because BLAS reads its thread count once, at load):
+     arm `default` with the three variables UNSET, arm `single` with all three = 1, and a second
+     `control` default arm (on by default; `--no-control` skips it, and a proof without it never
+     licenses the switch) that measures the judge's own run-to-run noise. Each arm runs the
+     SEALED `external_gauntlet.run_gauntlet` on the identical frozen cells, and rebuilds a
+     family-STRATIFIED sample of the recorded plan -- builds that reach `causal_residual`
+     (lstsq/solve), the other orthogonal families (eigh/lstsq), then the rest -- through the
+     pre-warm worker's own function (`_warm_one`, cache I/O diverted), so the build path the
+     pre-warm pool and MT5-CacheWarm share is covered too. A build that produced no series is
+     LOST coverage, counted per stratum, never silently skipped.
   3. COMPARE, BYTE FOR BYTE: every verdict row (canonical JSON), the whole sweep result except
      its timestamp, `trial_census`, the `dsr_inputs` rho, the rounded-up per-family DSR trial
      charge (`dsr_inputs.effective_trials`), the campaign charge `n_trials`, the DSR bar (the
@@ -35,15 +39,27 @@ WHAT IT DOES
      finite path uses, both participation ratios -- and records their digests and float.hex, so
      a difference can be pinned to the step that produced it.
   5. REPORT: `reports/BLAS_DIFFERENTIAL.json`, verdict IDENTICAL / DIFFERS (every difference
-     listed) / UNMEASURED (with the reason), wall and CPU time per cell for each arm, and the
-     identity (release, cores, numpy, Python) the proof is bound to.
+     listed) / UNMEASURED (with the reason), wall and CPU time per cell for each arm, the
+     evidence floor and whether it clears, and the identity (release, cores, numpy, Python, BLAS
+     build, CPU model) the proof is bound to. An eigvalsh spectrum that moves with the thread
+     count is a difference, not mere localisation. The report carries a run id; one row of
+     `data/blas_differential_runs.jsonl` binds it, and where the box holds the release-signing
+     key the digest is HMAC'd under it (`research/blas_threads.py` explains why).
+
+CLOCK: hourly leg `blas_differential` (`--if-lapsed`): it measures only when the proof is absent,
+from another release/identity, within a day of lapsing, no longer the latest run, or UNMEASURED
+for six hours -- so its cost is one JSON read on most hours and a bounded run after an adoption.
+CONSUMER: `research/judging_throughput.py` (through `research/blas_threads.py`), which applies the
+switch to the judge's environment and publishes its state in JUDGING_THROUGHPUT.json every hour,
+and `scripts/warm_gauntlet_cache.py`, which takes the same decision for MT5-CacheWarm.
 
 WHAT IT NEVER DOES
 
-  * It writes nothing but the report and its own scratch directory (a fresh temp directory,
-    deleted afterwards). Every child installs a write guard (a `sys.addaudithook`) that REFUSES
-    any write, rename, delete or mkdir under the repository outside the scratch directory, and
-    the refused attempts are listed in the report. `cache_save` is diverted; no ledger, verdict
+  * It writes nothing but the report, one run-log row and its own scratch directory (a fresh
+    temp directory, deleted afterwards). Every child installs a write guard (a
+    `sys.addaudithook`) that REFUSES any write, rename, delete, mkdir, utime or writable sqlite
+    open under the repository outside the scratch directory, and any subprocess at all, and the
+    refused attempts are listed in the report. `cache_save` is diverted; no ledger, verdict
     file, cursor or cache entry is touched.
   * It changes no trial count, gate, bar or CPU priority, and edits no sealed file. The judge is
     imported and called, never modified.
@@ -77,6 +93,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -241,9 +258,19 @@ def install_write_guard(protected: Iterable[Path], allowed: Iterable[Path]) -> N
         elif event in ("os.rename", "os.replace", "os.link", "os.symlink") and len(args) > 1:
             target = refused(args[1]) or refused(args[0])
         elif event in ("os.remove", "os.unlink", "os.rmdir", "os.mkdir", "os.truncate",
-                       "os.chmod", "shutil.rmtree", "shutil.move", "shutil.copyfile") and args:
+                       "os.chmod", "os.utime", "shutil.rmtree", "shutil.move",
+                       "shutil.copyfile") and args:
             target = refused(args[0]) or (refused(args[1]) if event in (
                 "shutil.move", "shutil.copyfile") and len(args) > 1 else None)
+        elif event == "sqlite3.connect" and args:
+            # A database opened read-only (`file:...?mode=ro`) cannot write; anything else can.
+            db = os.fsdecode(args[0]) if isinstance(args[0], bytes) else str(args[0])
+            if "mode=ro" not in db:
+                target = refused(db[5:].split("?", 1)[0] if db.startswith("file:") else db)
+        elif event == "subprocess.Popen":
+            # NO CHILD OF A CHILD. A subprocess runs outside this hook, so it could write what
+            # the guard refuses; the harness's children need none, and any attempt is listed.
+            target = f"<subprocess {os.fsdecode(args[0]) if args and args[0] else '?'}>"
         if target is not None:
             if len(_GUARD["blocked"]) < 200:
                 _GUARD["blocked"].append({"event": event, "path": target})
@@ -313,9 +340,10 @@ def _prepare(job: dict[str, Any]) -> dict[str, Any]:
     loaded = load_input(Path(job["input"]), Path(job["meta"]) if job.get("meta") else None)
     n, n_rebuild = int(job["sample"]), int(job["rebuild"])
     meta = loaded["meta"]
+    strata = family_strata()
     if loaded["kind"] == "cells":
         cells = list(sample_order(loaded["cells"]))[:n]
-        rebuild = list(loaded["rebuild_specs"])[:n_rebuild]
+        rebuild, plan = stratified_rebuild(list(loaded["rebuild_specs"]), n_rebuild, strata)
         scanned, not_cached, blocked_n = len(cells), 0, 0
     else:
         from scripts import external_gauntlet as eg
@@ -334,9 +362,11 @@ def _prepare(job: dict[str, Any]) -> dict[str, Any]:
                                   cell_objs=cells, deferred=deferred)
             cells, deferred = acc["cell_objs"], acc["deferred"]
         not_cached, blocked_n = len(deferred), len(blocked)
-        rebuild = [{"sym": c.get("sym"), "family": c.get("family"), "params": c.get("params"),
-                    "mechanism_status": c.get("mechanism_status"),
-                    "mechanism_note": c.get("mechanism_note")} for c in cells[:n_rebuild]]
+        # THE REBUILD IS DRAWN FROM THE WHOLE RECORDED PLAN, stratified by family module -- the
+        # families whose builds call lstsq/solve (causal_residual), the orthogonal families
+        # (eigh/lstsq), then the rest -- because a build's BLAS dependence is a property of its
+        # family, and the first N cells of a hash order can all be one family.
+        rebuild, plan = stratified_rebuild(loaded["specs"], n_rebuild, strata)
     out = scratch / "cells.pkl"
     with open(out, "wb") as fh:
         pickle.dump({"kind": CELLS_KIND, "meta": meta, "cells": cells,
@@ -344,8 +374,70 @@ def _prepare(job: dict[str, Any]) -> dict[str, Any]:
     return {"provenance": loaded["provenance"], "input_kind": loaded["kind"],
             "sampled_cells": len(cells), "scanned_specs": scanned,
             "skipped_not_cached": not_cached, "skipped_blocked": blocked_n,
-            "rebuild_cells": len(rebuild), "cells_pickle": str(out),
+            "rebuild_cells": len(rebuild), "rebuild_plan": plan, "cells_pickle": str(out),
             "cell_ids": [cell_key(c) for c in cells]}
+
+
+#: The family strata the rebuild covers, in the order they are drawn from.
+STRATA = ("causal_residual", "families_orthogonal", "families")
+
+
+def family_strata() -> dict[str, str]:
+    """family -> stratum: `causal_residual` for an orthogonal family whose build reaches
+    `mt5desk.causal_residual` (directly or through a helper in the same module),
+    `families_orthogonal` for the other orthogonal families; everything else is `families`."""
+    try:
+        import inspect
+
+        from mt5desk import families_orthogonal as fo
+    except Exception:
+        return {}
+    src: dict[str, str] = {}
+    for name, obj in vars(fo).items():
+        if inspect.isfunction(obj) and getattr(obj, "__module__", "") == fo.__name__:
+            with contextlib.suppress(OSError, TypeError):
+                src[name] = inspect.getsource(obj)
+    reach = {n for n, t in src.items() if "causal_residual(" in t}
+    for _ in range(6):                     # helpers of helpers, bounded
+        grown = {n for n, t in src.items() if n not in reach and any(
+            f"{h}(" in t for h in reach)}
+        if not grown:
+            break
+        reach |= grown
+    out: dict[str, str] = {}
+    for fam, fn in getattr(fo, "ORTHOGONAL_FAMILIES", {}).items():
+        out[str(fam)] = ("causal_residual" if getattr(fn, "__name__", "") in reach
+                         else "families_orthogonal")
+    return out
+
+
+def stratified_rebuild(specs: Iterable[Mapping[str, Any]], n: int,
+                       strata: Mapping[str, str]) -> tuple[list[dict], list[dict]]:
+    """Up to `n` specs, round-robin over STRATA and, inside each, over families (hash order).
+
+    Returns (specs, plan): the plan names each pick's family and stratum, plus one row per
+    stratum present in the input, so the report can say which strata were asked for at all."""
+    by: dict[str, dict[str, list[Mapping[str, Any]]]] = {s: {} for s in STRATA}
+    for sp in sample_order(specs):
+        fam = str(sp.get("family"))
+        by[strata.get(fam, "families")].setdefault(fam, []).append(sp)
+    picks: list[dict] = []
+    plan: list[dict] = []
+    queues = {s: [list(v) for _, v in sorted(by[s].items())] for s in STRATA}
+    while len(picks) < max(0, int(n)) and any(any(q) for q in queues.values()):
+        for s in STRATA:
+            fams = queues[s]
+            while fams and not fams[0]:
+                fams.pop(0)
+            if not fams or len(picks) >= n:
+                continue
+            sp = fams[0].pop(0)
+            fams.append(fams.pop(0))           # next family of this stratum next time
+            picks.append({k: sp.get(k) for k in ("sym", "family", "params", "mechanism_status",
+                                                 "mechanism_note")})
+            plan.append({"key": cell_key(sp), "family": str(sp.get("family")), "stratum": s})
+    present = {s: sum(len(v) for v in by[s].values()) for s in STRATA}
+    return picks, [*plan, *({"stratum_in_input": s, "specs": c} for s, c in present.items())]
 
 
 def _refuse_cache_save(*_a: Any, **_k: Any) -> None:
@@ -359,9 +451,10 @@ def thread_info() -> dict[str, Any]:
     out: dict[str, Any] = {"env": {k: os.environ.get(k) for k in THREAD_VARS}}
     try:
         from threadpoolctl import threadpool_info
-        out["threadpoolctl"] = [{k: d.get(k) for k in ("user_api", "internal_api",
-                                                       "num_threads", "version", "prefix")}
-                                for d in threadpool_info()]
+        out["threadpoolctl"] = [{**{k: d.get(k) for k in (
+            "user_api", "internal_api", "num_threads", "version", "prefix", "architecture",
+            "threading_layer")}, "lib": os.path.basename(str(d.get("filepath") or ""))}
+            for d in threadpool_info()]
     except Exception as exc:
         out["threadpoolctl"] = None
         out["threadpoolctl_why"] = f"{type(exc).__name__}: {exc}"[:200]
@@ -765,6 +858,20 @@ def decide_verdict(arms: Mapping[str, Mapping[str, Any] | None],
                                "single_vs_default": localise(default, single),
                                "control_vs_default": (None if control is None
                                                       else localise(default, control))}}
+    # AN EIGVALSH SPECTRUM THAT MOVES WITH THE THREAD COUNT BLOCKS IDENTICAL (audit of
+    # 5d4d0279f). It is the branch canonical.py:229 takes on a non-finite matrix; a sample that
+    # happened to be finite cannot speak for the sweep that is not, so a moved bit there is
+    # listed as a difference, not merely localised.
+    noise_loc = {r["path"] for r in (out["localisation"]["control_vs_default"] or [])}
+    for r in out["localisation"]["single_vs_default"]:
+        if "eigvalsh" in r["path"]:
+            diffs.append({"section": "localisation_eigvalsh", "path": r["path"],
+                          "default": r["a"], "single": r["b"],
+                          "also_in_control": None if control is None
+                          else r["path"] in noise_loc})
+    out["n_differences"] = len(diffs)
+    runtime = blas_runtime(arms)
+    out["blas_runtime"] = runtime
     judged = min(int(single.get("n_judged") or 0), int(default.get("n_judged") or 0))
     if diffs:
         sections = sorted({r["section"] for r in diffs})
@@ -772,6 +879,8 @@ def decide_verdict(arms: Mapping[str, Mapping[str, Any] | None],
                                          f"default and single-threaded arms in {sections}"))
     elif not ev["differed"]:
         out.update(verdict=UNMEASURED, why=f"no thread contrast: {ev['why']}")
+    elif not runtime["consistent"]:
+        out.update(verdict=UNMEASURED, why=f"BLAS runtime not bound: {runtime['why']}")
     elif judged < 2 or not default.get("census_calls"):
         out.update(verdict=UNMEASURED, why=(f"{judged} judged cell(s); the census needs two "
                                             "columns, so the comparison never reached it"))
@@ -783,6 +892,65 @@ def decide_verdict(arms: Mapping[str, Mapping[str, Any] | None],
             f"are byte-identical; {ev['why']}; {n_loc} bit-level difference(s) in unpublished "
             "census intermediates (see localisation)"))
     return out
+
+
+def blas_runtime(arms: Mapping[str, Mapping[str, Any] | None]) -> dict[str, Any]:
+    """The BLAS each arm actually loaded (threadpoolctl): one library, one version, one kernel
+    architecture across every arm, and that library one numpy's RECORD ships (the identity)."""
+    seen: dict[str, Any] = {}
+    for name, a in arms.items():
+        tp = ((a or {}).get("threads") or {}).get("threadpoolctl")
+        if not isinstance(tp, list):
+            continue
+        seen[name] = sorted({(str(d.get("internal_api")), str(d.get("version")),
+                              str(d.get("architecture")), str(d.get("lib")))
+                             for d in tp if d.get("user_api") == "blas"})
+    if not seen:
+        return {"consistent": False, "arms": {}, "why": "threadpoolctl unreadable in every arm"}
+    distinct = {json.dumps(v) for v in seen.values()}
+    if len(distinct) != 1 or not next(iter(seen.values())):
+        return {"consistent": False, "arms": seen,
+                "why": "the arms loaded different (or no) BLAS libraries"}
+    build = blas_threads.blas_build()
+    shipped = {str(r.get("name")) for r in build["libs"]}
+    libs = {row[3] for row in next(iter(seen.values()))}
+    if shipped and not libs <= shipped:
+        return {"consistent": False, "arms": seen, "shipped": sorted(shipped),
+                "why": f"loaded {sorted(libs)} is not a library numpy's RECORD ships"}
+    return {"consistent": True, "arms": seen, "build_digest": build["digest"],
+            "why": f"every arm loaded {sorted(libs)}"}
+
+
+def rebuild_coverage(arms: Mapping[str, Mapping[str, Any] | None],
+                     plan: list[Mapping[str, Any]]) -> dict[str, Any]:
+    """What the pre-warm rebuild actually covered. A requested cell that built no series in
+    every arm is LOST coverage, counted and named, never silently skipped."""
+    picks = [r for r in plan if "key" in r]
+    present = {str(r["stratum_in_input"]): int(r.get("specs") or 0) for r in plan
+               if "stratum_in_input" in r}
+    by: dict[str, dict[str, Any]] = {}
+    lost: list[dict[str, Any]] = []
+    rebuilt = 0
+    for r in picks:
+        row = by.setdefault(str(r["stratum"]), {"requested": 0, "rebuilt": 0, "lost": 0,
+                                                "families": set()})
+        row["requested"] += 1
+        got = [((a or {}).get("rebuilt") or {}).get(r["key"]) or {} for a in arms.values()
+               if a is not None]
+        if got and all(g.get("ds1_sha256") for g in got):
+            row["rebuilt"] += 1
+            row["families"].add(r["family"])
+            rebuilt += 1
+        else:
+            row["lost"] += 1
+            lost.append({"family": r["family"], "stratum": r["stratum"],
+                         "status": sorted({str(g.get("status")) for g in got})})
+    for row in by.values():
+        row["families"] = sorted(row["families"])
+    return {"requested": len(picks), "rebuilt": rebuilt, "lost": len(lost),
+            "lost_cells": lost[:100], "by_stratum": by, "strata_in_input": present,
+            "strata_unrebuilt": sorted(s for s, row in by.items() if row["rebuilt"] == 0),
+            "strata_absent_from_input": sorted(s for s in STRATA if not present.get(s))}
 
 
 # ===================================================================================== driver
@@ -840,23 +1008,83 @@ def _ratio(a: Any, b: Any) -> float | None:
         return None
 
 
-def write_report(doc: dict[str, Any], out: Path) -> Path:
-    """Publish the report. Refuses (raises) rather than replace a read-only destination."""
+def write_report(doc: dict[str, Any], out: Path, run_log: Path | None = None) -> Path:
+    """Publish the report, then bind it to this run. Refuses (raises) rather than replace a
+    read-only destination.
+
+    THE BINDING (audit of 5d4d0279f: an unkeyed digest is tamper-evidence only, and a hand-built
+    five-field report licensed the switch). The report carries this run's `run_id`; the run log
+    gets one row naming that id and the report's digest, written only by this function after
+    the report itself; and on a box that holds the release-signing key the digest is HMAC'd
+    under it (`proof_hmac`). `blas_threads.proof_status` honours a report only when it is the
+    latest row of the log and, where a key exists, its MAC verifies.
+    """
     doc = _strict(doc)
     doc["content_sha256"] = blas_threads.content_sha256(doc)
+    mac = blas_threads.proof_hmac(doc["content_sha256"])
+    if mac:
+        doc["proof_hmac"] = mac
     out.parent.mkdir(parents=True, exist_ok=True)
     if out.exists() and not (os.stat(out).st_mode & stat.S_IWRITE and os.access(out, os.W_OK)):
         raise PermissionError(f"{out} is read-only; refusing to replace it")
     tmp = out.with_name(f"{out.name}.{os.getpid()}.tmp")
     tmp.write_text(json.dumps(doc, indent=1, sort_keys=False, allow_nan=False), "utf-8")
     os.replace(tmp, out)
+    log = Path(run_log or blas_threads.RUN_LOG)
+    log.parent.mkdir(parents=True, exist_ok=True)
+    with open(log, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"run_id": doc.get("run_id"), "content_sha256": doc["content_sha256"],
+                             "verdict": doc.get("verdict"), "at": doc.get("generated_utc"),
+                             "release_id": (doc.get("identity") or {}).get("release_id"),
+                             "harness_version": doc.get("harness_version"),
+                             "report": str(out), "keyed": bool(mac)}, sort_keys=True) + "\n")
     return out
 
 
+#: An UNMEASURED proof (an arm timed out, too few cached cells) is retried after this long, not
+#: every hour: the leg's cost stays bounded when the cause is structural.
+RETRY_UNMEASURED_S = 6 * 3600
+
+
+def lapsed(report: Path | None = None, *, now: datetime | None = None) -> tuple[bool, str]:
+    """Must the hourly leg measure again? (lapsed, why).
+
+    A report that is CURRENT for this process -- this schema and harness, this release, cores,
+    numpy, Python, BLAS build and CPU, younger than the proof's age limit, still the latest run
+    -- is a measurement, whatever it says: a DIFFERS on this release is not re-run every hour.
+    An UNMEASURED is retried after RETRY_UNMEASURED_S.
+    """
+    path = Path(report or REPORT)
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return True, f"{path.name} absent or unreadable"
+    if not isinstance(doc, dict):
+        return True, f"{path.name} is not a mapping"
+    if doc.get("schema") != SCHEMA or doc.get("harness_version") != blas_threads.HARNESS_VERSION:
+        return True, (f"{path.name} is {doc.get('schema')}/{doc.get('harness_version')}, this "
+                      f"harness writes {SCHEMA}/{blas_threads.HARNESS_VERSION}")
+    proved, here = doc.get("identity") or {}, blas_threads.identity()
+    moved = [k for k in blas_threads.IDENTITY_KEYS if proved.get(k) != here.get(k)]
+    if moved:
+        return True, f"identity moved since the last run: {moved}"
+    run = blas_threads._last_run()
+    if not run or run.get("run_id") != doc.get("run_id"):
+        return True, "the report is not the latest harness run"
+    at = blas_threads._parse(doc.get("generated_utc"))
+    age = ((now or datetime.now(UTC)) - at).total_seconds() if at else float("inf")
+    if age > blas_threads.MAX_PROOF_AGE_S - 86400:
+        return True, f"{age / 86400:.1f} days old; re-measured a day before the proof lapses"
+    if doc.get("verdict") == UNMEASURED and age > RETRY_UNMEASURED_S:
+        return True, f"UNMEASURED {age / 3600:.1f} h ago; retried every {RETRY_UNMEASURED_S}s"
+    return False, f"current: {doc.get('verdict')} on release {here['release_id']}, {age:.0f}s old"
+
+
 def run(*, input_path: Path | None, out: Path, sample: int = DEFAULT_SAMPLE,
-        rebuild: int = DEFAULT_REBUILD, control: bool = False, meta: Path | None = None,
+        rebuild: int = DEFAULT_REBUILD, control: bool = True, meta: Path | None = None,
         scratch: Path | None = None, keep_scratch: bool = False,
-        arm_timeout_s: float = DEFAULT_ARM_TIMEOUT_S) -> dict[str, Any]:
+        arm_timeout_s: float = DEFAULT_ARM_TIMEOUT_S,
+        run_log: Path | None = None) -> dict[str, Any]:
     """Prepare, judge in each arm, compare, publish. Returns the published report."""
     started = _now_iso()
     own_scratch = scratch is None
@@ -867,7 +1095,13 @@ def run(*, input_path: Path | None, out: Path, sample: int = DEFAULT_SAMPLE,
             raise ValueError(f"scratch {scratch} is inside {forbidden}; use a temp directory")
     scratch.mkdir(parents=True, exist_ok=True)
     doc: dict[str, Any] = {
-        "schema": SCHEMA, "generated_utc": started, "identity": blas_threads.identity(),
+        "schema": SCHEMA, "harness_version": blas_threads.HARNESS_VERSION,
+        "run_id": uuid.uuid4().hex, "generated_utc": started,
+        "identity": blas_threads.identity(),
+        "blas_build": blas_threads.blas_build(),
+        "evidence_floor": {"min_sample": blas_threads.MIN_SAMPLE,
+                           "min_rebuilt": blas_threads.MIN_REBUILT,
+                           "required_arms": list(blas_threads.REQUIRED_ARMS)},
         "release": _release_summary(), "host": platform.node(),
         "platform": platform.platform(), "executable": sys.executable,
         "thread_vars": list(THREAD_VARS),
@@ -875,15 +1109,16 @@ def run(*, input_path: Path | None, out: Path, sample: int = DEFAULT_SAMPLE,
                    "arm_timeout_s": arm_timeout_s},
         "frozen_calls": [f"{m}.{a}" for m, a in FROZEN_CALLS],
         "scratch": str(scratch) if keep_scratch else "removed after the run",
-        "writes": ("this report only; scratch in a temp directory, removed afterwards; every "
-                   "child refuses writes under the repository (audit-hook guard)"),
+        "writes": ("this report and one row of the run log; scratch in a temp directory, "
+                   "removed afterwards; every child refuses writes, sqlite opens, utime and "
+                   "subprocesses under the repository (audit-hook guard)"),
     }
     try:
         if input_path is None or not Path(input_path).exists():
             doc.update(verdict=UNMEASURED, why=(f"no recorded sweep input on disk "
                                                 f"({input_path or DEFAULT_PLAN})"),
                        differences=[], n_differences=0)
-            return _finish(doc, out)
+            return _finish(doc, out, run_log)
         base = {"scratch": str(scratch), "input": str(input_path), "sample": int(sample),
                 "rebuild": int(rebuild), "meta": str(meta) if meta else None}
         prep, fail, prep_wall = _run_child("prepare", {**base, "role": "prepare"}, scratch,
@@ -891,7 +1126,7 @@ def run(*, input_path: Path | None, out: Path, sample: int = DEFAULT_SAMPLE,
         if prep is None:
             doc.update(verdict=UNMEASURED, why=f"prepare failed: {fail}", differences=[],
                        n_differences=0)
-            return _finish(doc, out)
+            return _finish(doc, out, run_log)
         doc["input"] = {k: v for k, v in prep.items() if k not in ("cell_ids", "cells_pickle")}
         doc["input"]["prepare_wall_s"] = round(prep_wall, 3)
         doc["input"]["cell_ids_sha256"] = hashlib.sha256(
@@ -900,7 +1135,7 @@ def run(*, input_path: Path | None, out: Path, sample: int = DEFAULT_SAMPLE,
             doc.update(verdict=UNMEASURED, why=(f"only {prep.get('sampled_cells')} cached cell(s)"
                                                 " found in the recorded sweep; the census needs "
                                                 "two"), differences=[], n_differences=0)
-            return _finish(doc, out)
+            return _finish(doc, out, run_log)
         plan = [("default", False, True), ("single", True, False)]
         if control:
             plan.append(("control", False, False))
@@ -919,6 +1154,10 @@ def run(*, input_path: Path | None, out: Path, sample: int = DEFAULT_SAMPLE,
             timing[name] = {**got["timing"], "process_wall_s": round(wall, 3)}
         decided = decide_verdict(arms, failures)
         doc.update(decided)
+        doc["rebuild_coverage"] = rebuild_coverage(arms, list(prep.get("rebuild_plan") or []))
+        short = blas_threads.evidence_floor(doc)
+        doc["evidence_floor"]["shortfalls"] = short
+        doc["evidence_floor"]["clears"] = not short
         doc["timing"] = timing
         if "default" in timing and "single" in timing:
             doc["timing"]["single_over_default"] = {
@@ -937,7 +1176,7 @@ def run(*, input_path: Path | None, out: Path, sample: int = DEFAULT_SAMPLE,
         if prep.get("write_guard_blocked"):
             blocked["prepare"] = prep["write_guard_blocked"]
         doc["write_guard_blocked"] = blocked
-        return _finish(doc, out)
+        return _finish(doc, out, run_log)
     finally:
         if own_scratch and not keep_scratch:
             shutil.rmtree(scratch, ignore_errors=True)
@@ -981,9 +1220,9 @@ def _release_summary() -> dict[str, Any]:
         return {"release_id": "unreleased"}
 
 
-def _finish(doc: dict[str, Any], out: Path) -> dict[str, Any]:
+def _finish(doc: dict[str, Any], out: Path, run_log: Path | None = None) -> dict[str, Any]:
     doc["finished_utc"] = _now_iso()
-    write_report(doc, out)
+    write_report(doc, out, run_log)
     return json.loads(out.read_text("utf-8"))
 
 
@@ -997,8 +1236,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--sample", type=int, default=DEFAULT_SAMPLE)
     ap.add_argument("--rebuild", type=int, default=DEFAULT_REBUILD,
                     help="cells also rebuilt through the pre-warm worker (0 disables)")
-    ap.add_argument("--control", action="store_true",
-                    help="add a second default-thread arm to measure run-to-run noise")
+    ap.add_argument("--no-control", dest="control", action="store_false",
+                    help="skip the second default-thread (noise) arm; a proof without it never "
+                         "licenses the switch")
+    ap.add_argument("--if-lapsed", action="store_true",
+                    help="the hourly leg: measure only when the proof is missing or lapsed")
     ap.add_argument("--out", type=Path, default=REPORT)
     ap.add_argument("--scratch", type=Path, default=None)
     ap.add_argument("--keep-scratch", action="store_true")
@@ -1007,6 +1249,12 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     if a._child:
         return _child_main(a._child)
+    if a.if_lapsed:
+        need, why = lapsed(a.out)
+        if not need:
+            print(f"BLAS_DIFFERENTIAL: not re-measured -- {why}")
+            return 0
+        print(f"BLAS_DIFFERENTIAL: re-measuring -- {why}")
     try:
         rep = run(input_path=a.input or default_input(), out=a.out, sample=a.sample,
                   rebuild=a.rebuild, control=a.control, meta=a.meta, scratch=a.scratch,

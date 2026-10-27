@@ -954,7 +954,7 @@ def main() -> int:
         pass
     _write_json(REPORT, {
         "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "budget_sec": BUDGET_SEC, "rounds": rounds,
+        "budget_sec": BUDGET_SEC, "rounds": rounds, "blas_single_thread": dict(_BLAS),
         "note": ("Warmth is what decides which cells a bounded sweep can reach: an uncached cell "
                  "costs the sweep ~22s of its build budget and a cached one costs it nothing. "
                  "This job holds no authority over any verdict."),
@@ -966,7 +966,36 @@ def main() -> int:
     return 0
 
 
+#: The BLAS thread decision this process took before numpy loaded (see `_apply_blas_switch`).
+_BLAS: dict = {}
+
+
+def _apply_blas_switch() -> dict:
+    """THE SAME BUILD ENVIRONMENT AS THE JUDGE'S PRE-WARM POOL (research/blas_threads.py).
+
+    This job fills the series cache the judge reads, with the judge's own `_warm_one`, and
+    `_cache_key` does not carry a BLAS thread count -- so a cell built here at one thread count
+    and a cell built by the sweep's pre-warm pool at another would share a key. The switch is
+    therefore decided by the ONE function the judge's launcher uses (`blas_threads.apply`, via
+    `judging_throughput.apply_env`), here, before `external_gauntlet` imports numpy, and the
+    workers this job spawns inherit it. Off, or a proof that does not hold, adds nothing.
+    """
+    try:
+        from research import blas_threads
+        applied = blas_threads.apply(os.environ)
+        st = blas_threads.status()
+        return {"applied": applied, "active": st.get("active"), "why": st.get("why"),
+                "in_force": st.get("in_force")}
+    except Exception as exc:
+        return {"applied": {}, "active": False,
+                "why": f"UNMEASURED: switch unreadable ({type(exc).__name__}: {exc})"[:300]}
+
+
 def _cli_main() -> int:
+    # BEFORE ANY IMPORT THAT LOADS NUMPY: BLAS reads its thread count once, at load.
+    _BLAS.update(_apply_blas_switch())
+    print(f"  blas threads: {'single (proof holds)' if _BLAS.get('active') else 'default'} -- "
+          f"{str(_BLAS.get('why'))[:160]}")
     try:
         from research.job_lock import exclusive_job
     except ModuleNotFoundError:

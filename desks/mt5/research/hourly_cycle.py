@@ -1162,7 +1162,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_diversity_archive", "execution_science",
                      "evaluator_lab", "lead_replication", "science_controller",
                      "replication_civilization", "certificate_truth", "model_search",
-                     "loop_liveness", "counterexample_agent", "judging_throughput",
+                     "loop_liveness", "counterexample_agent", "blas_differential",
+                     "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
                      "lockbox_recert",
@@ -1870,6 +1871,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
     # the gauntlet leg it sizes, which is the other reason it is cheap by design.
     "judging_throughput": 400,
+    # THE BLAS THREAD DIFFERENTIAL runs only when its proof is missing or lapsed (one JSON read on
+    # every other hour). When it runs: a prepare child and three judge arms, each capped at
+    # --arm-timeout-s 330 by the harness itself, so 4 x 330 = 1,320 s sits inside this cap.
+    "blas_differential": 1_500,
     # THE MASS SCREEN stops starting symbols at its own --budget-s (MASS_SCREEN_BUDGET_S) and
     # always writes its artifact; the cap sits above it for the reason `enrol_clocks` was raised.
     "mass_screen": 1_080,
@@ -5044,6 +5049,14 @@ def main() -> None:
     # the environment `_producer` hands the gauntlet subprocess. The plan is floored at what the
     # sealed file would pick unaided, so this can never throttle the judge, and the live terminal
     # always wins (it stands down to that floor, never below it).
+    # THE BLAS PROOF, BEFORE THE PUBLISHER THAT CONSUMES IT. `research/blas_threads.py` lets the
+    # judge's workers (and MT5-CacheWarm) run single-threaded BLAS only while
+    # reports/BLAS_DIFFERENTIAL.json proves byte-identical judge output for THIS release; every
+    # adoption voids it, so this re-measures after an adoption and is otherwise one JSON read
+    # (`--if-lapsed`). Read-only against the recorded sweep; it writes the report and a run row.
+    bld = _costed("blas_differential", lambda: _producer(
+        "blas_differential", "scripts/blas_thread_differential.py", "--if-lapsed",
+        "--sample", "300", "--rebuild", "14", "--arm-timeout-s", "330"))
     jth = _costed("judging_throughput", lambda: _producer(
         "judging_throughput", "research/judging_throughput.py", "--once", "--budget-s", "300"))
     try:
@@ -6023,6 +6036,7 @@ def main() -> None:
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
+                    "blas_differential": bld,
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
                     "certificate_clock_law": ccl,
                     "external_gauntlet": gt, "fast_admission": fa,

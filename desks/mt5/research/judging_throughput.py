@@ -1238,6 +1238,16 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
                  "baseline, not below it"),
     }
     payload["rate"] = rate
+    # THE BLAS SWITCH, MADE VISIBLE (research/blas_threads.py). This organ is the consumer of
+    # reports/BLAS_DIFFERENTIAL.json: `apply_env` adds the single-thread variables only while that
+    # proof holds, and this records the decision, its reason and what is in force, every hour, so
+    # a lapsed proof falling back to default threads is a published fact and never silent.
+    try:
+        from research import blas_threads
+        payload["blas_single_thread"] = blas_threads.status()
+    except Exception as exc:
+        payload["blas_single_thread"] = {"active": False, "why": (
+            f"{UNMEASURED}: switch unreadable ({type(exc).__name__}: {exc})"[:300])}
     if write:
         write_env(decision, box=box)
         applied["env_file"] = str(ENV_FILE)
