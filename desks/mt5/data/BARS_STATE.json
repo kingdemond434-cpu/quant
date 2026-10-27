@@ -1,11 +1,11 @@
 {
  "schema": "bars_state/2",
- "generated_at": "2026-10-27T21:18:58+00:00",
+ "generated_at": "2026-10-27T23:24:09+00:00",
  "host": "vmi<redacted-numeric>",
  "time_clock": "broker",
  "utc_conversion": "prop.e8_guard: server = America/New_York + 7h (UTC+2 winter / UTC+3 summer)",
  "budget_s": 20.0,
- "elapsed_s": 27.217,
+ "elapsed_s": 24.976,
  "budget_exhausted": true,
  "summary": {
   "bar_files": 1666,
@@ -14,8 +14,8 @@
   "bars_verdict": "PARTIAL",
   "newest_bar_time": "2026-10-26T00:00:00",
   "newest_bar_time_utc": "2026-10-25T21:00:00+00:00",
-  "newest_bar_age_h": 48.32,
-  "newest_bar_file_mtime_age_h": 1.69,
+  "newest_bar_age_h": 50.4,
+  "newest_bar_file_mtime_age_h": 1.83,
   "tape_symbols": 249,
   "tape_symbols_measured": 0,
   "tape_measured_share": 0.0,
@@ -35,13 +35,13 @@
    "file": "3M_D1.parquet",
    "time_clock": "broker",
    "row_count": 1431,
-   "file_mtime": "2026-10-27T19:37:30+00:00",
-   "mtime_age_h": 1.69,
+   "file_mtime": "2026-10-27T21:34:33+00:00",
+   "mtime_age_h": 1.83,
    "status": "MEASURED",
    "last_bar_time": "2026-10-26T00:00:00",
    "source": "footer_statistics",
    "last_bar_time_utc": "2026-10-25T21:00:00+00:00",
-   "age_h": 48.32
+   "age_h": 50.4
   },
   {
    "symbol": "3M",
@@ -12953,6 +12953,6 @@
   "ages": "every age is from a true UTC source: the server anchor, the file mtime, or tape_state.last_run; never a broker stamp read as UTC"
  },
  "resources": {
-  "peak_rss_mb": 95.7
+  "peak_rss_mb": 95.2
  }
 }
