@@ -16,7 +16,7 @@ import sys
 import threading
 import time
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -102,6 +102,142 @@ def _parallelism(n: int, phase: str | None = None) -> int:
         except (TypeError, ValueError):
             configured = 1
     return max(1, min(n, configured))
+
+
+#: THE WAVE WIDENS ON ITS OWN MEASUREMENTS, NEVER BELOW TODAY'S WIDTH (2026-10-27).
+#: `_parallelism` sizes a wave ONCE, at its start, from the LARGEST peak in the last
+#: SHARD_PEAK_HISTORY receipts -- two waves -- so one heavy wave (CORE_WASTE 2026-10-21 names
+#: 6-20 GB peaks against 38-46 GB available, i.e. 1-3 shards) pins the next two waves narrow
+#: even when their own shards measure a fraction of it. MEASURED from JUDGE_RESIDENT.json:
+#: build_shards took 3,545-42,782 s across the 13 sweeps that reached it (median ~7,400 s) and
+#: it is about a quarter of every sweep's wall; at 1-3 wide that is up to 15/1 rounds of the
+#: same work. Admission now re-reads the box while the wave runs: once THIS wave has shard peak
+#: receipts, the per-shard estimate is the largest of them (and of any running shard's resident
+#: set) times SHARD_ADMIT_MARGIN, and one more shard starts only when
+#:     (available now + the wave's own resident set) - sum over running shards of
+#:     max(estimate, its rss) - estimate  >=  SHARD_HEADROOM_SHARE x available at wave start
+#: i.e. the same "half of what was free stays free" rule `_parallelism` applies, re-measured
+#: live and charged at what this wave's shards actually hold. Before any receipt the estimate
+#: is the historic peak, so the condition is exactly `_parallelism`'s and the wave starts at
+#: today's width; it never drops below that width. An operator cap (GAUNTLET_SHARD_CONCURRENCY),
+#: an unmeasured peak, psutil absent, or GAUNTLET_SHARD_ADMISSION=0 keeps the fixed wave exactly
+#: as before. The shards, their partition, their order of results and the merge are unchanged:
+#: only how many run at once moves, so no verdict, trial or gate input can.
+SHARD_ADMIT_MARGIN = 1.25
+SHARD_ADMIT_POLL_S = 5.0
+
+
+def _admission_enabled() -> bool:
+    if os.environ.get("GAUNTLET_SHARD_CONCURRENCY") is not None:
+        return False                       # an operator cap is never overridden
+    return os.environ.get("GAUNTLET_SHARD_ADMISSION", "1").strip() not in ("0", "false", "no")
+
+
+def _wave_children_rss_mb(phase: str) -> list[float]:
+    """Resident set (MB) of each running shard child of THIS process for `phase`; [] if unread."""
+    try:
+        import psutil
+        kids = psutil.Process().children(recursive=True)
+    except Exception:
+        return []
+    out: list[float] = []
+    for kid in kids:
+        try:
+            cmd = kid.cmdline()
+            if not any("shard_worker" in part for part in cmd) or (cmd and cmd[-1] != phase):
+                continue
+            out.append(float(kid.memory_info().rss) / (1024.0 * 1024.0))
+        except Exception:
+            continue
+    return out
+
+
+def _wave_peaks_mb(logs: Path, invocation: str, phase: str) -> list[float]:
+    peaks: list[float] = []
+    for f in logs.glob(f"{invocation}-{phase}-*.peak.json"):
+        try:
+            v = float(json.loads(f.read_text("utf-8"))["peak_mb"])
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        if v > 0 and math.isfinite(v):
+            peaks.append(v)
+    return peaks
+
+
+class _Admission:
+    """Decides whether one more shard of a running wave may start. See SHARD_ADMIT_MARGIN."""
+
+    def __init__(self, n: int, phase: str, floor: int, logs: Path, invocation: str,
+                 historic_peak_mb: float, avail_start_mb: float, *,
+                 avail: Callable[[], float | None] = lambda: _available_mb(),
+                 rss: Callable[[str], list[float]] = _wave_children_rss_mb) -> None:
+        self.n, self.phase, self.floor = n, phase, floor
+        self.logs, self.invocation = logs, invocation
+        self.historic_peak_mb, self.avail_start_mb = historic_peak_mb, avail_start_mb
+        self.reserve_mb = SHARD_HEADROOM_SHARE * avail_start_mb
+        self._avail, self._rss = avail, rss
+        self.width_max = floor
+        self.last: dict[str, Any] = {}
+
+    def estimate_mb(self, running_rss: list[float]) -> tuple[float, str]:
+        own = _wave_peaks_mb(self.logs, self.invocation, self.phase)
+        if not own:
+            return self.historic_peak_mb, "historic_peak"
+        return max([*own, *running_rss]) * SHARD_ADMIT_MARGIN, "this_wave_peak_x_margin"
+
+    def admits(self, running: int) -> bool:
+        if running < self.floor:
+            return True
+        if running >= self.n:
+            return False
+        avail = self._avail()
+        if avail is None or not math.isfinite(avail):
+            return False                   # unmeasured: never wider than the floor
+        rss = self._rss(self.phase)
+        est, basis = self.estimate_mb(rss)
+        held = sum(rss)
+        # Every running shard is charged at least the estimate; one whose resident set already
+        # exceeds it is charged what it holds. Shards whose process was not read are charged
+        # the estimate in full (a conservative double count of what they already hold).
+        charged = sum(max(est, r) for r in rss) + est * max(0, running - len(rss))
+        room = avail + held - charged - est
+        ok = room >= self.reserve_mb
+        self.last = {"running": running, "available_mb": round(avail, 1),
+                     "wave_rss_mb": round(held, 1), "estimate_mb": round(est, 1),
+                     "estimate_basis": basis, "room_mb": round(room, 1),
+                     "reserve_mb": round(self.reserve_mb, 1), "admitted": ok}
+        if ok:
+            self.width_max = max(self.width_max, running + 1)
+        return ok
+
+
+def _admission_for(n: int, phase: str, floor: int, logs: Path,
+                   invocation: str) -> _Admission | None:
+    """The live gate for this wave, or None to run the fixed wave exactly as before."""
+    if floor >= n or not _admission_enabled():
+        return None
+    peak, avail = _shard_peak_mb(phase), _available_mb()
+    if not peak or not avail:
+        return None
+    return _Admission(n, phase, floor, logs, invocation, peak, avail)
+
+
+def _admitted_wave(n: int, attempted: Callable[[int], tuple[int, Exception | None]],
+                   gate: _Admission, *, aborted: Callable[[], bool],
+                   poll_s: float = SHARD_ADMIT_POLL_S) -> list[tuple[int, Exception | None]]:
+    """Run `attempted(k)` for k in 0..n-1, starting each when `gate` admits it; results by k."""
+    futures: dict[int, Future[tuple[int, Exception | None]]] = {}
+    with ThreadPoolExecutor(max_workers=n, thread_name_prefix=f"judge-{gate.phase}") as pool:
+        nxt = 0
+        while nxt < n:
+            live = [f for f in futures.values() if not f.done()]
+            # An aborted wave starts the rest at once: each refuses in `one` without a child.
+            if aborted() or gate.admits(len(live)):
+                futures[nxt] = pool.submit(attempted, nxt)
+                nxt += 1
+                continue
+            wait(live, timeout=poll_s, return_when=FIRST_COMPLETED)
+        return [futures[k].result() for k in range(n)]
 
 
 def _record_peaks(logs: Path, invocation: str, phase: str) -> None:
@@ -1227,11 +1363,20 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
 
     width = _parallelism(n, phase)
     _shard_progress("begin", phase, total=n)
+    gate = _admission_for(n, phase, width, logs, invocation)
     print(f"SHARD WAVE: {phase} x{n} at concurrency {width} (recorded peak "
-          f"{_shard_peak_mb(phase)} MB, available {_available_mb()} MB)", flush=True)
-    with ThreadPoolExecutor(max_workers=width, thread_name_prefix=f"judge-{phase}") as pool:
-        # Consume every result even when one child fails, so successful shard artifacts survive.
-        first = list(pool.map(attempted, range(n)))
+          f"{_shard_peak_mb(phase)} MB, available {_available_mb()} MB"
+          + (", widened live by measured memory" if gate is not None else "") + ")", flush=True)
+    if gate is None:
+        with ThreadPoolExecutor(max_workers=width, thread_name_prefix=f"judge-{phase}") as pool:
+            # Consume every result even when one child fails, so successful artifacts survive.
+            first = list(pool.map(attempted, range(n)))
+    else:
+        first = _admitted_wave(n, attempted, gate,
+                               aborted=lambda: _ABORT.is_set() or abort_wave.is_set())
+        print(f"SHARD WAVE: {phase} widest {gate.width_max} of {n} (floor {width}); "
+              f"last admission reading {gate.last}", flush=True)
+        _progress_set(admission={"floor": width, "widest": gate.width_max, "last": gate.last})
     _record_peaks(logs, invocation, phase)
     if walls:
         _record_phase_times(shard_walls={phase: walls})
@@ -1303,7 +1448,8 @@ def record_own_peak(path: str) -> None:
 #: one interval if it ever dies.
 #:
 #: It stops for exactly three things, each recorded in `JUDGE_RESIDENT.json`:
-#:   * `RESIDENT_STOP` exists (an operator stop; delete it to resume);
+#:   * `RESIDENT_STOP` is in force (an operator stop; delete it to resume, and it lapses on
+#:     its own after RESIDENT_STOP_TTL_S unless worded `hold`);
 #:   * the task's own ExecutionTimeLimit would kill the next sweep -- it does not start one it
 #:     cannot finish, and exits so the trigger starts a fresh resident (PT0S = no limit);
 #:   * it is not the canonical certifier (the lane is held) -- it waits and retries.
@@ -1322,6 +1468,24 @@ RESIDENT_STATE = DESK / "reports" / "JUDGE_RESIDENT.json"
 RESIDENT_MEMORY = DESK / "reports" / "JUDGE_RESIDENT_MEMORY.json"
 _MEMORY_KEYS = ("longest_sweep_s", "consecutive_hangs", "hung_kills")
 RESIDENT_STOP = DESK / "data" / "RESIDENT_STOP"
+#: AN OPERATOR STOP THAT NOBODY LIFTS COSTS EVERY VERDICT UNTIL SOMEBODY NOTICES (2026-10-27).
+#: MEASURED from the published JUDGE_RESIDENT.json history: the resident read `STOPPED`,
+#: "RESIDENT_STOP present", on every relaunch from 2026-10-23 03:31Z to 2026-10-27 15:46Z --
+#: 108 hours, 37 consecutive three-hourly relaunches, ZERO verdicts -- because the recovery
+#: procedure of 10-22 (LANE_HELD_STALL) created the file and its last step, deleting it, never
+#: ran. At the judge's demonstrated rate on the sweeps that published (about 1,265 ledger rows an
+#: hour of sweep wall, 10-15..10-21) that one forgotten file cost on the order of 100k verdicts.
+#: So a stop now says how long it means:
+#:   * `hold` (or `indefinite`) as the file's first word: stopped until the file is deleted,
+#:     exactly as before;
+#:   * `until=<ISO-8601 time>`: stopped until then, then resumed;
+#:   * anything else, an empty file included (what every procedure so far has written): stopped
+#:     for RESIDENT_STOP_TTL_S after the file's mtime, then resumed. Touching the file renews it.
+#: A stop that lapses is RENAMED to `RESIDENT_STOP.expired.<utc>` (the evidence is kept) and the
+#: resident records `stop_expired`. GAUNTLET_RESIDENT_STOP_TTL_S <= 0 restores the old
+#: never-expires reading for an unworded file. Nothing here changes what a sweep judges.
+RESIDENT_STOP_TTL_S = 12 * 3600.0
+RESIDENT_STOP_HOLD_WORDS = ("hold", "indefinite")
 RESIDENT_BACKOFF_S = (15, 30, 60, 120, 300)
 #: Seconds kept clear of the task's time limit, and the shortest sweep assumed before one is
 #: measured, when deciding whether another sweep fits inside it.
@@ -2233,6 +2397,77 @@ def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
     return last_rc
 
 
+def _stop_ttl_s() -> float:
+    raw = os.environ.get("GAUNTLET_RESIDENT_STOP_TTL_S")
+    if raw is None:
+        return RESIDENT_STOP_TTL_S
+    try:
+        ttl = float(raw)
+    except (TypeError, ValueError):
+        return RESIDENT_STOP_TTL_S
+    return ttl if math.isfinite(ttl) else RESIDENT_STOP_TTL_S
+
+
+def resident_stop(now: float | None = None, path: Path | None = None) -> dict[str, Any]:
+    """Is the operator stop in force? `{"stopped": bool, "why": str, ...}`; never raises.
+
+    See RESIDENT_STOP_TTL_S. An unreadable file STOPS (an operator meant something by it); only a
+    stop whose own words or age say it has lapsed resumes, and the lapsed file is renamed aside.
+    """
+    p = RESIDENT_STOP if path is None else path
+    t = time.time() if now is None else float(now)
+    try:
+        st = p.stat()
+    except FileNotFoundError:
+        return {"stopped": False}
+    except OSError as exc:
+        return {"stopped": True, "why": f"{p.name} present (unreadable: {type(exc).__name__})"}
+    age = max(0.0, t - st.st_mtime)
+    try:
+        words = p.read_text("utf-8", errors="replace").strip()
+    except OSError as exc:
+        return {"stopped": True, "age_s": round(age, 1),
+                "why": f"{p.name} present (unreadable: {type(exc).__name__})"}
+    token = words.split()[0] if words else ""
+    first = token.lower()
+    doc: dict[str, Any] = {"age_s": round(age, 1),
+                           "set_utc": datetime.fromtimestamp(st.st_mtime, UTC).isoformat(
+                               timespec="seconds")}
+    if first in RESIDENT_STOP_HOLD_WORDS:
+        return {**doc, "stopped": True, "basis": "hold",
+                "why": f"{p.name} present (hold: until deleted; {age / 3600.0:.1f}h old)"}
+    until: float | None = None
+    if first.startswith("until="):
+        try:
+            raw = token.split("=", 1)[1]
+            at = datetime.fromisoformat(raw[:-1] + "+00:00" if raw[-1:] in "zZ" and raw
+                                        else raw)
+            until = (at if at.tzinfo else at.replace(tzinfo=UTC)).timestamp()
+            doc["basis"] = "until"
+        except ValueError:
+            until = None
+    if until is None:
+        ttl = _stop_ttl_s()
+        if ttl <= 0:
+            return {**doc, "stopped": True, "basis": "no_ttl",
+                    "why": f"{p.name} present ({age / 3600.0:.1f}h old; no TTL configured)"}
+        until, doc["basis"] = st.st_mtime + ttl, "ttl"
+        doc["ttl_s"] = ttl
+    doc["until_utc"] = datetime.fromtimestamp(until, UTC).isoformat(timespec="seconds")
+    if t < until:
+        return {**doc, "stopped": True,
+                "why": (f"{p.name} present ({age / 3600.0:.1f}h old; lapses at "
+                        f"{doc['until_utc']} unless renewed or worded `hold`)")}
+    aside = p.with_name(f"{p.name}.expired.{datetime.fromtimestamp(t, UTC):%Y%m%dT%H%M%SZ}")
+    try:
+        os.replace(p, aside)
+        doc["renamed_to"] = aside.name
+    except OSError as exc:
+        doc["rename_failed"] = f"{type(exc).__name__}: {exc}"[:200]
+    return {**doc, "stopped": False, "expired": True,
+            "why": f"{p.name} lapsed at {doc['until_utc']} after {age / 3600.0:.1f}h: resumed"}
+
+
 def _read_state() -> dict[str, Any]:
     try:
         doc = json.loads(RESIDENT_STATE.read_text("utf-8"))
@@ -2247,8 +2482,12 @@ def _resident_loop(state: dict[str, Any], sweep: Callable[[], int],
     failures, n, last_rc = 0, 0, 0
     last_sweep_s: float | None = None
     while True:
-        if RESIDENT_STOP.exists():
-            state["status"], state["why"] = "STOPPED", f"{RESIDENT_STOP.name} present"
+        stop = resident_stop()
+        if stop.get("expired"):
+            state["stop_expired"] = stop
+        if stop.get("stopped"):
+            state["status"], state["why"] = "STOPPED", str(stop.get("why"))
+            state["stop"] = stop
             break
         if not _fits(clock() - started, limit_s, last_sweep_s):
             state["status"] = "RESPAWN"
