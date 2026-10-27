@@ -205,6 +205,21 @@
     "threshold": 0,
     "after": "48h on the trading box: no fresh capture instant, so the probe never reached the terminal and the clock is still unmeasured"
    }
+  },
+  "input_ablation": {
+   "hypothesis": "Replaying the allocator with and without each input on history it had not seen tells which inputs add realized growth, so an input moves money only once it beats the plain solve out of sample.",
+   "metric": {
+    "gain": "FALSIFICATION",
+    "metric": "n_windows",
+    "better": "up",
+    "organ": "report:INPUT_ABLATION.json"
+   },
+   "falsifier": {
+    "metric": "n_windows",
+    "op": "==",
+    "threshold": 0,
+    "after": "72h window: no window was ever scored, so the replay is not reaching the desk's evidence"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
