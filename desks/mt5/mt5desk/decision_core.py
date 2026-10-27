@@ -2576,6 +2576,25 @@ def follow_limit_is_legal(price: float, side: str, bid: float, ask: float,
     return True, ""
 
 
+def follow_leg_played_out(side: str, bid: float, ask: float, sl: float, tp: float) -> str | None:
+    """Why a FOLLOWING gold leg is not sent because the trade it follows has already played out,
+    or None. Pure. A long leg is done once the bid is at or past its target, or at or under its
+    stop; a short leg the same on the ask (audit #419 r1: a buy limit rested 17 points under the
+    market with the ask 5 above its target, and a fresh buy stop placed after E8 was stopped
+    out)."""
+    if side == "buy_stop":
+        if bid >= tp:
+            return f"follow refused: bid {bid:.2f} is at or past the target {tp:.2f}; played out"
+        if bid <= sl:
+            return f"follow refused: bid {bid:.2f} is at or under the stop {sl:.2f}; played out"
+        return None
+    if ask <= tp:
+        return f"follow refused: ask {ask:.2f} is at or past the target {tp:.2f}; played out"
+    if ask >= sl:
+        return f"follow refused: ask {ask:.2f} is at or over the stop {sl:.2f}; played out"
+    return None
+
+
 def window_end_hour(window: str | None) -> float | None:
     """The SERVER hour at which a gold window's session ends, or None for a window this table
     does not know (a promoted family sleeve keeps its own rules).

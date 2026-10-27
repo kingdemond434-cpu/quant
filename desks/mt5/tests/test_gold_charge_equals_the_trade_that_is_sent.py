@@ -321,7 +321,7 @@ def test_the_bracket_is_resolved_before_the_heat_cap_runs() -> None:
 def test_the_charge_site_bills_at_the_resolved_stop_and_the_live_symbol_info() -> None:
     block = _GW_SRC.split("from_book = _key is not None", 1)[1] \
                    .split("sleeves, heat_note = cap_by_heat(sleeves", 1)[0]
-    assert 'resolve_pending_bracket(_s, hour, datetime.now(tz=UTC).date())' in block, (
+    assert 'resolve_pending_bracket(_s, hour, datetime.now(tz=UTC).date()' in block, (
         "the charge must ask about the same day the placement loop will, or the two sites can "
         "disagree across midnight and the charge site silently becomes the trading rule")
     assert '_s, equity, _pend["dist"], _pend["sym"]' in block, (
