@@ -29,8 +29,11 @@ def test_shallow_clone_is_unmeasured_not_a_breach(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setattr(
         fence.sign_train, "_committed_clears", _raise(ValueError("shallow clone: cannot prove"))
     )
+    monkeypatch.delenv("CI", raising=False)
     assert fence.judge()["verdict"] == "UNMEASURED"
     assert fence.main([]) == 0
+    monkeypatch.setenv("CI", "true")
+    assert fence.main([]) == 1
 
 
 def test_a_rewritten_record_is_a_breach(monkeypatch: pytest.MonkeyPatch) -> None:

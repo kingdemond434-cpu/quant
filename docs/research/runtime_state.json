@@ -26081,31 +26081,6 @@
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
    "measured_at": "2026-10-27T15:47:12+00:00"
-  },
-  {
-   "organ": "fence:check_seal_clears",
-   "kind": "task",
-   "code": [
-    "scripts/check_seal_clears.py",
-    "scripts/sign_train.py"
-   ],
-   "clock": "run_law_gate.py",
-   "cadence_s": 3600,
-   "max_silence_s": 7200,
-   "state": "UNMEASURED",
-   "why": "new 2026-10-27 (D-20261027-003): fence on every push and law-gate hour; runs scripts/sign_train.py's own CLEAR-record checks; sign_train itself runs on demand when a sealed change is CLEAR",
-   "last_run_at": "UNMEASURED",
-   "last_run_outcome": "UNMEASURED",
-   "last_run_source": "UNMEASURED",
-   "artifact": "data/law_gate.json",
-   "artifact_declared": "data/law_gate.json",
-   "artifact_resolved_by": "declared",
-   "artifact_declared_n": 1,
-   "summary": {
-    "ok": true
-   },
-   "progress_metric": "gate_runs",
-   "consumer": "desks/mt5/research/plumbing_watchdog.py"
   }
  ],
  "ratchet": {

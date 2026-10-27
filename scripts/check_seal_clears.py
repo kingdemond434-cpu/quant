@@ -12,7 +12,8 @@ judgement, two clocks.
 
 VERDICTS. PASS (the record parses and every committed version is kept at HEAD), BREACH (exit 1),
 UNMEASURED in a shallow clone, which cannot see the history: a real answer about the host, and
-exit 0, as for the other portable fences (L1.28a, L1.43).
+exit 0, as for the other portable fences (L1.28a, L1.43) -- EXCEPT under CI (CI=true), whose
+checkout is full by design: there UNMEASURED means the gating run lost its history, and fails.
 """
 
 from __future__ import annotations
@@ -20,6 +21,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -57,6 +59,8 @@ def main(argv: list[str] | None = None) -> int:
         else f"seal clears: {doc['verdict']} -- "
         f"{doc.get('why') or str(doc.get('rows')) + ' row(s)'}"
     )
+    if doc["verdict"] == "UNMEASURED" and os.environ.get("CI") == "true":
+        return 1
     return 1 if doc["verdict"] == "BREACH" else 0
 
 
