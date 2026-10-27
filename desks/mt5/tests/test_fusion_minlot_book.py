@@ -136,8 +136,8 @@ def test_the_code_names_exactly_the_six_and_pins_each_certificate() -> None:
 
 
 def test_the_committed_switch_turns_on_exactly_gold_asia_on_the_declared_live_account() -> None:
-    """gold_asia alone since 2026-10-25 (the three FX names are out), COMMITTED (audit round 4 on c07dd71d): a box-only edit
-    would be reverted by Adopt-Release or a restore to HEAD, re-opening the two gold windows."""
+    """gold_asia alone since 2026-10-25 (the three FX names are out), COMMITTED (audit round 4
+    on c07dd71d): a box-only edit would be reverted by Adopt-Release or a restore to HEAD, re-opening the two gold windows."""
     active, why = _on()
     assert active == LIVE, why
     doc = json.loads(dc.MINLOT_OVERRIDE_FILE.read_text(encoding="utf-8"))
@@ -1374,7 +1374,8 @@ def test_the_fusion_trade_risk_cap_line_carries_its_risk_frac_at_both_sites() ->
 
 
 
-@pytest.mark.parametrize("name,symbol", [(USDNOK, "USDNOK"), (EURILS, "EURILS"), (EURZAR, "EURZAR")])
+@pytest.mark.parametrize("name,symbol",
+                         [(USDNOK, "USDNOK"), (EURILS, "EURILS"), (EURZAR, "EURZAR")])
 def test_the_principal_pin_sends_nothing_for_each_fx_name(monkeypatch, name, symbol) -> None:
     """zuck 2026-10-25 09:42Z: USDNOK and the other two Fusion FX sleeves out, gold_asia stays."""
     monkeypatch.setitem(dc.PRINCIPAL_ZERO, "fusion",
