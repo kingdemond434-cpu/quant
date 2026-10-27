@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import math
 import os
 import subprocess
 import sys
@@ -1308,6 +1309,18 @@ def record_own_peak(path: str) -> None:
 #:   * it is not the canonical certifier (the lane is held) -- it waits and retries.
 #: A failed sweep is retried after a short, growing pause (`RESIDENT_BACKOFF_S`), never abandoned.
 RESIDENT_STATE = DESK / "reports" / "JUDGE_RESIDENT.json"
+#: WHAT A CRASH MUST NOT ERASE (2026-10-22). The resident rewrites RESIDENT_STATE every 30 s, so
+#: an unclean restart is most likely to catch THAT file with its data still in the write cache:
+#: on the box the 12:35Z publish carried JUDGE_RESIDENT.json as 839 NUL bytes. The resident that
+#: came back at 20:36Z read nothing, so `longest_sweep_s` (64,711 s, an 18 h sweep) fell to null,
+#: its hang ceiling fell from the 48 h cap to the 4.8 h floor (2 x GAUNTLET_FRESH_BUDGET_SEC), and
+#: the next sweep -- whose plan phase alone measured 2 h 49 m -- was set to be killed as hung in
+#: its build phase, then again at 9.6 h, before the doubling reached a ceiling it could finish
+#: in. The few fields a restart must not forget are therefore also kept here, written only when
+#: they change (once per sweep, not per heartbeat) and fsync'd before the rename, and read back
+#: when the main record is unreadable or has lost them.
+RESIDENT_MEMORY = DESK / "reports" / "JUDGE_RESIDENT_MEMORY.json"
+_MEMORY_KEYS = ("longest_sweep_s", "consecutive_hangs", "hung_kills")
 RESIDENT_STOP = DESK / "data" / "RESIDENT_STOP"
 RESIDENT_BACKOFF_S = (15, 30, 60, 120, 300)
 #: Seconds kept clear of the task's time limit, and the shortest sweep assumed before one is
@@ -1543,11 +1556,93 @@ def _sweep_phase() -> dict[str, Any] | None:
     return doc
 
 
+def _durable_write(path: Path, text: str) -> None:
+    """Write `text` to `path` atomically AND durably: the data is flushed to disk before the
+    rename, so a crash leaves either the old file or the new one -- never a file of NULs."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    try:
+        with open(tmp, "w", encoding="utf-8") as fh:
+            fh.write(text)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
+    finally:
+        # a failed replace (NTFS: the destination held open by a reader) leaves no tmp behind
+        with contextlib.suppress(OSError):
+            tmp.unlink(missing_ok=True)
+
+
 def _write_state(doc: dict[str, Any]) -> None:
     doc = {**doc, "heartbeat_utc": datetime.now(UTC).isoformat(timespec="seconds")}
     if doc.get("status") == "SWEEPING":
         doc["sweep_phase"] = _sweep_phase()
-    _write_atomic(RESIDENT_STATE, doc)  # the heartbeat is a report; judging never stops for it
+    with contextlib.suppress(OSError):  # the heartbeat is a report; judging never stops for it
+        _durable_write(RESIDENT_STATE, json.dumps(doc, indent=1, default=str))
+    _remember(doc)
+
+
+def _read_memory() -> dict[str, Any]:
+    try:
+        doc = json.loads(RESIDENT_MEMORY.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def _remember(doc: dict[str, Any]) -> None:
+    """Keep the restart-critical fields in RESIDENT_MEMORY, rewritten only when they change."""
+    mem = {k: doc.get(k) for k in _MEMORY_KEYS}
+    if all(v is None for v in mem.values()):
+        return
+    old = _read_memory()
+    if {k: old.get(k) for k in _MEMORY_KEYS} == mem:
+        return
+    mem["at"] = datetime.now(UTC).isoformat(timespec="seconds")
+    with contextlib.suppress(OSError):  # a report; judging never stops for it
+        _durable_write(RESIDENT_MEMORY, json.dumps(mem, indent=1, default=str))
+
+
+#: More consecutive hangs than this is no more information (the ceiling hit its cap long before)
+#: and an uncapped count read back from a file would overflow `2.0 ** n` in `_hang_limit_s`.
+RESIDENT_HANG_COUNT_CAP = 64
+
+
+def _clean_count(v: Any, cap: int | None = None) -> int | None:
+    """A finite, non-negative int from a file field, or None. Strings, NaN, lists never pass."""
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        return None
+    if isinstance(v, float) and not math.isfinite(v):
+        return None
+    n = max(0, int(v))
+    return min(n, cap) if cap is not None else n
+
+
+def _clean_seconds(v: Any) -> float | None:
+    """A finite, positive duration from a file field, or None."""
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        return None
+    try:
+        f = float(v)
+    except OverflowError:           # an int past float range is not a duration
+        return None
+    return f if math.isfinite(f) and f > 0 else None
+
+
+def _recall() -> dict[str, Any]:
+    """The restart-critical fields: from the last record, falling back field by field to
+    RESIDENT_MEMORY when the record is unreadable, lost them, or holds a value that is not a
+    finite non-negative number. The longest sweep is the larger of the two, because a smaller
+    one only ever shortens the hang ceiling. Never raises: a bad file must not stop the judge."""
+    prev, mem = _read_state(), _read_memory()
+    out: dict[str, Any] = {}
+    for k, cap in (("consecutive_hangs", RESIDENT_HANG_COUNT_CAP), ("hung_kills", None)):
+        a, b = _clean_count(prev.get(k), cap), _clean_count(mem.get(k), cap)
+        out[k] = a if a is not None else b
+    longest = [v for v in (_clean_seconds(prev.get("longest_sweep_s")),
+                           _clean_seconds(mem.get("longest_sweep_s"))) if v is not None]
+    out["longest_sweep_s"] = max(longest) if longest else None
+    return out
 
 
 def _published_env() -> dict[str, str]:
@@ -1643,7 +1738,8 @@ def _hang_limit_s(longest_sweep_s: float | None, consecutive_hangs: int = 0,
         budget = SEALED_FRESH_BUDGET_S
     base = max(RESIDENT_HANG_FLOOR_S, RESIDENT_HANG_BUDGET_MULT * max(budget, 0.0),
                RESIDENT_HANG_SWEEP_MULT * float(longest_sweep_s or 0.0))
-    return min(RESIDENT_HANG_CAP_S, base * (2.0 ** max(0, int(consecutive_hangs))))
+    hangs = min(RESIDENT_HANG_COUNT_CAP, max(0, int(consecutive_hangs)))
+    return min(RESIDENT_HANG_CAP_S, base * (2.0 ** hangs))
 
 
 def _kill_report(res: object) -> dict[str, Any]:
@@ -2110,7 +2206,7 @@ def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
         "lane_held": 0, "hung_kills": 0, "busy_seconds": 0.0, "status": "RUNNING"}
     # WHAT A RESTART MUST NOT FORGET (audit of #350): the longest measured sweep and the run of
     # consecutive hung kills, read back from the last record, so the ceiling keeps widening.
-    prev = _read_state()
+    prev = _recall()
     state["longest_sweep_s"] = prev.get("longest_sweep_s")
     state["consecutive_hangs"] = int(prev.get("consecutive_hangs") or 0)
     state["hung_kills"] = int(prev.get("hung_kills") or 0)
