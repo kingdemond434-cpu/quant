@@ -1,0 +1,315 @@
+--- a/desks/mt5/scripts/external_gauntlet.py
++++ b/desks/mt5/scripts/external_gauntlet.py
+@@ -554,6 +554,47 @@
+     return day
+ 
+ 
++def _chart_present(sym: str, timeframe: str = "H1") -> bool:
++    """`_bars_for(sym, timeframe) is not None`, answered from the parquet's index when it exists.
++
++    GATE 0 ASKED THIS WITH A WHOLE FRAME (2026-10-20, judge plan phase). Every non-H1 spec read
++    its chart through `_bars_for` to learn only whether it exists, and the frame cache holds one
++    M1 or two M5 charts, so a docket that is not symbol-contiguous re-read a parquet for nearly
++    every intraday spec -- serial, before `_build_t0`, in the part of "plan" no budget bounds.
++    A parquet on disk is answered by `_cell_last_day` (its index column, once per chart, the
++    same None-or-day `_bars_for` gives); no parquet still goes through `_bars_for` exactly as
++    before, so the terminal fallback is asked per spec as it always was."""
++    if (UNI / f"{sym}_{str(timeframe).upper()}.parquet").exists():
++        return _cell_last_day(sym, timeframe) is not None
++    return _bars_for(sym, timeframe) is not None
++
++
++#: WHERE THE PLAN IS, FOR WHOEVER IS WATCHING (2026-10-20). Phase "plan" covered the docket read,
++#: gate 0, the preflight, the cache prune, the order, novelty, the yield allocation and the whole
++#: pre-warm pool, and said nothing until the pool's closing line -- so a plan two hours in could
++#: not be told from a hung one. The launcher sets this to a callable; each long plan loop reports
++#: its step and counts through `_plan_progress`. REPORT-ONLY: it reads no outcome, a failing hook
++#: is swallowed, and with no hook (every caller but the launcher) it costs one `is None` test.
++PLAN_PROGRESS_HOOK: Any = None
++#: Seconds between progress reports from inside a loop; a step change always reports.
++PLAN_PROGRESS_EVERY_S = 15.0
++_PLAN_PROGRESS_LAST: list[float] = [0.0]
++
++
++def _plan_progress(step: str, *, force: bool = False, **counts: Any) -> None:
++    hook = PLAN_PROGRESS_HOOK
++    if hook is None:
++        return
++    now = time.time()
++    if not force and now - _PLAN_PROGRESS_LAST[0] < PLAN_PROGRESS_EVERY_S:
++        return
++    _PLAN_PROGRESS_LAST[0] = now
++    try:
++        hook(step, **counts)
++    except Exception:
++        pass  # a progress report is a report; planning never stops for it
++
++
+ def _built_day(obj: dict, keyed):
+     """The day a FRESH build's own frame ends on, else `keyed`.
+ 
+@@ -1038,7 +1079,10 @@
+     """
+     eligible: list[dict] = []
+     rejected: list[dict] = []
+-    for spec in specs:
++    _plan_progress("gate0", force=True, done=0, total=len(specs))
++    for _i, spec in enumerate(specs):
++        _plan_progress("gate0", done=_i, total=len(specs), eligible=len(eligible),
++                       rejected=len(rejected))
+         if meta is not None:
+             # NORMALISE BEFORE JUDGING, and keep the canonical spelling on the spec: everything
+             # downstream (_h1_for, the cache key, the certificate, the forward clock) keys on
+@@ -1054,7 +1098,7 @@
+                 # spends the other nine gates and then fails to build with "parquet missing" --
+                 # a message about the wrong file, at the wrong stage, after the compute is spent.
+                 _tf = timeframe_of(spec.get("params"), str(spec.get("family") or ""))
+-                if _tf != "H1" and _bars_for(canon, _tf) is None:
++                if _tf != "H1" and not _chart_present(canon, _tf):
+                     ok, why = False, (f"symbol {canon!r} has no {canon}_{_tf}.parquet; the chart "
+                                       f"this cell was hunted on is not on this box")
+             if not ok:
+@@ -2658,6 +2702,37 @@
+     return keep
+ 
+ 
++#: CONSECUTIVE CELLS ON ONE CHART GO TO ONE WORKER (2026-10-21, desk health on the box at 23:47Z:
++#: 15 pool workers at 0.5-0.6 core each under 21k-33k page faults a second EACH, 1.8-2.1 GB
++#: private each). The pool handed out one cell at a time, so a run of cells on one chart --
++#: which the docket order makes common (symbol and chart are sort keys, and the allocation keeps
++#: each family's order) -- was dealt across all fifteen workers, and every one of them read and
++#: normalised that chart's whole parquet into its own frame cache (1.3m rows: one M1 or two M5
++#: charts) and then evicted it for the next run. The work was the same; the reads were fifteen.
++#: A task is now up to this many consecutive specs on the same (symbol, chart), run in order in
++#: one worker against the same deadline, so the chart is read once per run. Same specs, same
++#: order of starts, same per-cell function (`_warm_one`), same outcome rows.
++PREWARM_CHUNK = max(1, int(os.environ.get("GAUNTLET_PREWARM_CHUNK", "8") or 8))
++
++
++def _chart_of(spec: dict) -> tuple[str, str]:
++    return (str(spec.get("sym") or ""),
++            timeframe_of(spec.get("params"), str(spec.get("family") or "")))
++
++
++def _warm_run(specs: list, meta: dict, deadline: float) -> list[dict]:
++    """`_warm_one` over consecutive same-chart specs, in order, in ONE worker. A spec whose turn
++    comes after `deadline` is not started and comes back UNREACHED -- exactly what the parent's
++    cancel makes of a spec it had not yet handed out."""
++    out: list[dict] = []
++    for sp in specs:
++        if time.time() > deadline:
++            out.append({"sym": str(sp.get("sym") or ""), "status": "UNREACHED"})
++            continue
++        out.append(_warm_one(sp, meta))
++    return out
++
++
+ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
+     """Warm the cell cache for `specs` in parallel, in their given order, until `deadline`.
+ 
+@@ -2693,68 +2768,114 @@
+     #: future -> spec, kept past the `pending.pop` so the completion handler can still name the
+     #: symbol it just built. `pending` is popped before the result is read.
+     pending_spec: dict = {}
++    #: future -> when it was handed out: the oldest one still out is what a stuck worker looks
++    #: like (the pool waits on it past the deadline), so the plan reports it while it waits.
++    _sent_at: dict = {}
++    print(f"PRE-WARM START: {len(specs)} cell(s) in docket order, {WORKERS} worker(s), "
++          f"build budget ends in {deadline - t0:.0f}s", flush=True)
++
++    def _progress(force: bool = False) -> None:
++        _now = time.time()
++        _plan_progress("prewarm", force=force, total=len(specs), submitted=summary["submitted"],
++                       warmed=summary["warmed"], hit=summary["hit"], failed=summary["failed"],
++                       unreached=summary["unreached"], in_flight=len(pending),
++                       oldest_in_flight_s=round(max((_now - _sent_at.get(f, _now)
++                                                     for f in pending), default=0.0), 1),
++                       deadline_in_s=round(deadline - _now, 1), elapsed_s=round(_now - t0, 1))
++
++    #: The next spec, read from `it` but not yet handed out (it opened a new chart's run).
++    _held: list = []
++    summary["chunk"] = PREWARM_CHUNK
++
+     with ProcessPoolExecutor(max_workers=WORKERS) as pool:
+         def _submit_next() -> bool:
+-            sp = next(it, None)
+-            if sp is None:
++            run = _held[:1] or [sp for sp in (next(it, None),) if sp is not None]
++            _held.clear()
++            if not run:
+                 return False
+-            _fut = pool.submit(_warm_one, sp, meta)
+-            pending[_fut] = sp
+-            pending_spec[_fut] = sp
+-            summary["submitted"] += 1
++            chart = _chart_of(run[0])
++            while len(run) < PREWARM_CHUNK:
++                sp = next(it, None)
++                if sp is None:
++                    break
++                if _chart_of(sp) != chart:
++                    _held.append(sp)
++                    break
++                run.append(sp)
++            _fut = pool.submit(_warm_run, run, meta, deadline)
++            pending[_fut] = run
++            pending_spec[_fut] = run
++            _sent_at[_fut] = time.time()
++            summary["submitted"] += len(run)
+             return True
+ 
++        def _count_one(_sp: dict, r: dict) -> None:
++            st = str(r.get("status") or "ERROR")
++            if st == "UNREACHED":
++                summary["unreached"] += 1
++                return
++            if r.get("last_day") is not None:
++                summary["last_days"].setdefault((str(r.get("sym") or ""),
++                                                 str(r.get("tf") or "H1").upper()),
++                                                r["last_day"])
++            if st == "WARMED":
++                summary["warmed"] += 1
++                # WARMED only, never HIT: the cursor records when a symbol's cells were last
++                # BUILT, and a cache hit spends no build budget. Stamping hits would push
++                # cheap symbols to the back and starve the expensive ones that need the slot.
++                _sp = _sp or {}
++                _s = str(_sp.get("sym") or "")
++                if _s:
++                    summary["built_symbols"].add(_s)
++            elif st == "HIT":
++                summary["hit"] += 1
++            else:
++                summary["failed"] += 1
++                summary["failures"][st] = summary["failures"].get(st, 0) + 1
++                reason = str(r.get("why") or f"UNMEASURED: {st}")[:300]
++                reasons = summary["failure_reasons"]
++                reasons[reason] = reasons.get(reason, 0) + 1
++                # PER CELL, so the loop can give the cell its own outcome. Without it a
++                # pool failure reached the report as BUDGET_DEFERRED (the pool had spent
++                # the budget), was never parked, and came back first every sweep: measured
++                # 2026-10-13, 55.6% of pre-warm builds failed while the rows named none.
++                _fsp = _sp or {}
++                summary["failed_cells"][_spec_key(_fsp)] = {"status": st, "why": reason}
++
+         for _ in range(2 * WORKERS):
+             if not _submit_next():
+                 break
+         while pending:
+             if time.time() > deadline:
+-                # Stop handing out work. Cells already running finish (one cell each); cells
++                # Stop handing out work. A run already in a worker starts no cell after the
++                # deadline (`_warm_run`: the rest come back UNREACHED); runs
+                 # not yet started are cancelled and counted as unreached -- the main loop then
+                 # records them DEFERRED with the budget as the reason, as it always has.
+                 for f in list(pending):
+                     if f.cancel():
+-                        summary["unreached"] += 1
++                        summary["unreached"] += len(pending[f])
+                         pending.pop(f)
++                        _sent_at.pop(f, None)
+             done, _ = wait(list(pending), timeout=5, return_when=FIRST_COMPLETED)
++            _progress()
+             for f in done:
+                 pending.pop(f, None)
++                _sent_at.pop(f, None)
++                _run = pending_spec.get(f) or []
+                 try:
+-                    r = f.result()
++                    _rows = list(f.result())
+                 except Exception as exc:
+-                    r = {"status": "ERROR", "why": f"{type(exc).__name__}: {exc}"}
+-                st = str(r.get("status") or "ERROR")
+-                if r.get("last_day") is not None:
+-                    summary["last_days"].setdefault((str(r.get("sym") or ""),
+-                                                     str(r.get("tf") or "H1").upper()),
+-                                                    r["last_day"])
+-                if st == "WARMED":
+-                    summary["warmed"] += 1
+-                    # WARMED only, never HIT: the cursor records when a symbol's cells were last
+-                    # BUILT, and a cache hit spends no build budget. Stamping hits would push
+-                    # cheap symbols to the back and starve the expensive ones that need the slot.
+-                    _sp = pending_spec.get(f) or {}
+-                    _s = str(_sp.get("sym") or "")
+-                    if _s:
+-                        summary["built_symbols"].add(_s)
+-                elif st == "HIT":
+-                    summary["hit"] += 1
+-                else:
+-                    summary["failed"] += 1
+-                    summary["failures"][st] = summary["failures"].get(st, 0) + 1
+-                    reason = str(r.get("why") or f"UNMEASURED: {st}")[:300]
+-                    reasons = summary["failure_reasons"]
+-                    reasons[reason] = reasons.get(reason, 0) + 1
+-                    # PER CELL, so the loop can give the cell its own outcome. Without it a
+-                    # pool failure reached the report as BUDGET_DEFERRED (the pool had spent
+-                    # the budget), was never parked, and came back first every sweep: measured
+-                    # 2026-10-13, 55.6% of pre-warm builds failed while the rows named none.
+-                    _fsp = pending_spec.get(f) or {}
+-                    summary["failed_cells"][_spec_key(_fsp)] = {"status": st, "why": reason}
++                    _rows = [{"status": "ERROR", "why": f"{type(exc).__name__}: {exc}"}
++                             for _ in _run]
++                for _sp, r in zip(_run, _rows, strict=True):
++                    _count_one(_sp, r)
+                 if time.time() <= deadline:
+                     _submit_next()
++    if _held:
++        summary["unreached"] += len(_held)
+     summary["unreached"] += sum(1 for _ in it)
+     summary["seconds"] = round(time.time() - t0, 1)
++    _progress(force=True)
+     print(f"PRE-WARM: {summary['workers']} worker(s) warmed {summary['warmed']} cell(s) in "
+           f"{summary['seconds']:.0f}s ({summary['hit']} already cached, {summary['failed']} "
+           f"failed, {summary['unreached']} not reached before the build budget)"
+@@ -4597,8 +4718,10 @@
+     _cells_stamped: dict[str, dict[str, Any]] = {}
+     _raise_all: list[BaseException] = []
+     _raise_stamped: list[BaseException] = []
++    _plan_progress("docket", force=True, rows=0)
+     for h in iter_json_array(surv_file):
+         total += 1
++        _plan_progress("docket", rows=total, cells=len(_cells_all))
+         _st = False
+         if isinstance(h, dict) and is_stamped(h):
+             stamped_n += 1
+@@ -4755,13 +4878,27 @@
+     _build_t0 = time.time()
+     _LAST_DAY.clear()       # one sweep's data-days, never a previous sweep's
+     # Yesterday's keys die with yesterday's data-day; prune so the cache never grows unbounded.
++    # ONE DIRECTORY READ, NOT ONE STAT PER FILE (2026-10-20): `os.scandir` hands back each entry's
++    # mtime from the listing itself on Windows, where `Path.stat` opened every one of the cache's
++    # files again. Same names (`fnmatch` normalises case exactly as the glob did), same age rule,
++    # same stop on the first OSError -- and the plan now says how long it took.
++    _pr_t0, _pr_seen, _pr_gone = time.time(), 0, 0
+     try:
++        import fnmatch as _fn
+         import time as _t
+-        for _f in CACHE_DIR.glob("*.npz"):
+-            if _t.time() - _f.stat().st_mtime > 3 * 86400:
+-                _f.unlink(missing_ok=True)
++        with os.scandir(CACHE_DIR) as _it:
++            for _e in _it:
++                if not _fn.fnmatch(_e.name, "*.npz"):
++                    continue
++                _pr_seen += 1
++                _plan_progress("cache_prune", scanned=_pr_seen, removed=_pr_gone)
++                if _t.time() - _e.stat().st_mtime > 3 * 86400:
++                    Path(_e.path).unlink(missing_ok=True)
++                    _pr_gone += 1
+     except OSError:
+         pass
++    print(f"CACHE PRUNE: {_pr_seen} cached cell(s) scanned, {_pr_gone} older than 3 days removed "
++          f"in {time.time() - _pr_t0:.0f}s", flush=True)
+     # SYMBOL ORDER IS A PERFORMANCE CONTRACT, NOT A PREFERENCE. build_cell -> resolve_inputs
+     # rebuilds residuals and rolling correlations against EVERY other registry instrument, and it
+     # is memoised only two entries deep because the full universe for one symbol is hundreds of
+@@ -5615,7 +5752,9 @@
+     These descriptions cannot execute as claimed; every refusal is conserved with its reason."""
+     _modifier_blocked: list[dict] = []
+     _modifier_ready: list[dict] = []
+-    for _spec in specs:
++    _plan_progress("preflight", force=True, done=0, total=len(specs))
++    for _i, _spec in enumerate(specs):
++        _plan_progress("preflight", done=_i, total=len(specs), blocked=len(_modifier_blocked))
+         _why = modifier_preflight(_spec)
+         if _why:
+             _modifier_blocked.append({**_spec,

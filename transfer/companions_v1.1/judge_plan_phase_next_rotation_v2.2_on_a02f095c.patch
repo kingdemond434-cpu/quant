@@ -1,0 +1,110 @@
+--- a/desks/mt5/scripts/external_gauntlet.py
++++ b/desks/mt5/scripts/external_gauntlet.py
+@@ -592,7 +592,68 @@
+     try:
+         hook(step, **counts)
+     except Exception:
+-        pass  # a progress report is a report; planning never stops for it
++        return  # a progress report is a report; planning never stops for it
++
++
++def _unreadable_chart(exc: BaseException) -> bool:
++    """True when `exc` is an input that could not be READ -- an I/O error or pyarrow refusing a
++    file's bytes -- rather than a defect in the code that builds a cell, or a resource fault.
++
++    WHY (audit of the plan phase, 2026-10-21). `_chart_present` and `_cell_last_day` answer from
++    the parquet's index column alone, so a file whose index is intact and whose body is corrupt
++    reads PRESENT, and the first full read is `build_cell` -> `_bars_for` -> `pd.read_parquet`,
++    inside the build loop. That raised uncaught and took the whole shard (every spec on it) down
++    with one bad file. A read failure is a fact about the cell's DATA, so it is named on that
++    cell; anything else still raises exactly as before, so a code defect is never filed as data.
++
++    NEVER A RESOURCE FAULT (audit of 602887dc). Out of memory (`MemoryError`, which pyarrow's
++    `ArrowMemoryError` is) and a file another process holds (`PermissionError`, a locked file on
++    Windows) say nothing about the data: parking the cell would file a passing fault as a
++    verdict, so both raise as they always did.
++
++    NEVER A TRANSIENT FAULT EITHER (v2.2, audit of 25d1fd22). `TimeoutError` and
++    `ConnectionError` are OSErrors, so the rule above filed a share timing out or a dropped
++    network mount as the chart's data. They are a passing fault: they raise, and the pool's
++    worker files them as ERROR, which is not terminal."""
++    try:
++        import pyarrow as _pa
++    except ImportError:                                    # pragma: no cover - the box has it
++        _pa = None
++    if isinstance(exc, (MemoryError, PermissionError, TimeoutError, ConnectionError)):
++        return False
++    if _pa is not None and isinstance(exc, getattr(_pa, "ArrowMemoryError", ())):
++        return False
++    if isinstance(exc, OSError):
++        return True
++    return _pa is not None and isinstance(exc, _pa.ArrowException)
++
++
++def _unreadable_why(sym: str, tf: str, exc: BaseException) -> str:
++    """The label for a read failure, naming WHICH input failed, never guessing it.
++
++      * a missing file (`FileNotFoundError`, e.g. a COT or events input): INPUT_MISSING, with
++        the file it named;
++      * the cell's own chart ABSENT when re-checked (v2.2: `pq.exists()` first, so a file gone
++        since the plan read it is never re-read into an UNREADABLE_CHART): INPUT_MISSING,
++        naming the chart;
++      * the cell's own chart, re-read whole here, refusing its bytes: UNREADABLE_CHART;
++      * otherwise the chart reads and the failure was another input (a peer chart read for
++        residuals, a side file): UNREADABLE_INPUT -- never labelled as this chart's body."""
++    detail = f"{type(exc).__name__}: {str(exc)[:200]}"
++    if isinstance(exc, FileNotFoundError):
++        return f"INPUT_MISSING: {getattr(exc, 'filename', None) or 'an input file'} ({detail})"
++    pq = UNI / f"{sym}_{str(tf).upper()}.parquet"
++    if not pq.exists():
++        return f"INPUT_MISSING: the {tf} chart {pq.name} is absent ({detail})"
++    try:
++        pd.read_parquet(pq)
++    except Exception as own:
++        if _unreadable_chart(own):
++            return (f"UNREADABLE_CHART: the {tf} parquet {pq.name}'s index reads but its body "
++                    f"does not ({type(own).__name__}: {str(own)[:200]})")
++        raise
++    return (f"UNREADABLE_INPUT: the {tf} chart reads whole, so the failure was another input "
++            f"this cell needs ({detail})")
+ 
+ 
+ def _built_day(obj: dict, keyed):
+@@ -2642,7 +2703,16 @@
+         if cache_load(ckey) is not None:
+             out["status"] = "HIT"
+             return out
+-        obj = build_cell(sym, family, params, meta)
++        try:
++            obj = build_cell(sym, family, params, meta)
++        except Exception as exc_read:
++            if not _unreadable_chart(exc_read):
++                raise
++            # The verdict the build loop now gives the same spec (`_build_specs`), so the pool
++            # stands in for it exactly as it does for any BUILD_FAILED.
++            out["status"], out["why"] = ("NOT_RUN_BUILD_FAILED",
++                                         _unreadable_why(sym, tf, exc_read))
++            return out
+         if not obj:
+             out["status"] = "NOT_RUN_BUILD_FAILED"
+             out["why"] = LAST_BUILD_FAILURE or "UNMEASURED: build_cell returned no cell"
+@@ -6895,7 +6965,18 @@
+             deferred.append(spec)
+             continue
+         _built_syms.add(str(spec["sym"]))
+-        obj = build_cell(spec["sym"], spec["family"], spec["params"], meta)
++        try:
++            obj = build_cell(spec["sym"], spec["family"], spec["params"], meta)
++        except Exception as exc_read:
++            if not _unreadable_chart(exc_read):
++                raise
++            # ONE BAD FILE BLOCKS ITS OWN CELLS, NEVER THE SHARD: named, blocked, not judged, so
++            # no trial is charged; the coverage organ re-admits the cell when the chart changes.
++            _why = _unreadable_why(str(spec["sym"]), spec_tf, exc_read)
++            print(f"  SKIP {key}: {_why}")
++            blocked_build.append({**spec, "downstream_status": "NOT_RUN_BUILD_FAILED",
++                                  "why": _why})
++            continue
+         if obj:
+             _day = _built_day(obj, last_day)
+             if _day != last_day:

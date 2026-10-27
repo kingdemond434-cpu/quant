@@ -1,0 +1,1505 @@
+diff --git a/desks/mt5/policy/gate_spec.yaml b/desks/mt5/policy/gate_spec.yaml
+index 037810cb5..ec32bef27 100644
+--- a/desks/mt5/policy/gate_spec.yaml
++++ b/desks/mt5/policy/gate_spec.yaml
+@@ -42,7 +42,7 @@ gates:
+ 
+   - name: deflated_sharpe
+     classification: power
+-    description: "Deflated Sharpe Ratio accounting for multiple testing (DSR >= 0.95)"
++    description: "Probabilistic Sharpe against a FIXED per-cell bar (DSR >= 0.95): sr0 = sqrt(1/(T-1)) x E[max of N=5 standard normals], a per-cell t of about 2.8; no trial charge from any ledger, docket or census"
+     threshold: "dsr >= 0.95"
+     metric: "deflated_sharpe_ratio"
+     params:
+@@ -56,7 +56,20 @@ gates:
+       # against a standing campaign size rather than an accident of scheduling. 597 is not a
+       # number invented to let anything through: it is the charge this desk actually operated
+       # under, and the value in force when its 23 standing certificates were issued.
++      # THE BAR THE CERTIFIER APPLIES (principal, 2026-10-07: "we never charge trials like that
++      # everything is always fixed n no extra penalty trials inflated charges anything ever all is
++      # always set as original"). sr0 = sqrt(1/(T-1)) x expected max of N standard normals, at
++      # THIS constant N and the cell's own T: the per-cell null variance of a Sharpe at SR=0, i.e.
++      # after PSR >= 0.95 a per-cell t of about 2.8. N is a constant here and is never derived
++      # from a docket, census or ledger; EXPERIMENT_LEDGER.json is not read by the verdict.
++      # Measured 2026-10-07 on the sealed 2,100-case suite through the real run_gauntlet:
++      # 52/600 planted edges, 0/1,500 traps (even seeds 20/0, odd 32/0) -- identical to the
++      # lifetime-union charge (234,977) at variance 0.0002 that it replaces, whose sr0 0.0647 is
++      # this bar's 0.0669 at T=319 (dsr/T8_NO_INFLATION_2026-10-07.md).
++      fixed_dsr_trials: 5
+       trials_multiplier: 7.0
++      # The campaign count below is REPORTED (and read by non-certifying screens); it does not
++      # enter the certifier's deflated-Sharpe hurdle.
+       fixed_trial_count: 109
+       # AND the dispersion input, because pinning the trial count alone did NOT fix the bar.
+       # The deflated Sharpe hurdle is expected_max_sharpe(n_trials, variance_of_sharpes), and the
+@@ -71,8 +84,10 @@ gates:
+       # Tier S suite together with the lockbox reads below -- about 5,000 combinations, so some
+       # selection bias remains (docs/research/LOCKBOX_BAR.md). Re-judged on the real patched judge
+       # (448 cases): 15/130 planted real edges certify, 0/318 traps; 0.014863 certified 0/130.
++      # SINCE 2026-10-07 NOT THE CERTIFIER'S INPUT: external_gauntlet uses the per-cell null
++      # 1/(T-1) at fixed_dsr_trials above; this value is reported beside it and read by screens.
+       fixed_variance_of_sharpes: 0.0002
+-      trial_count_basis: "effective_campaign_trials(109) + fixed_variance_of_sharpes(0.0002): the campaign charge is measured in EFFECTIVE independent tests -- the participation ratio of (grid cell, content) identities within each mechanism -- not in docket rows; both inputs remain constants, so the bar is identical for every cell regardless of how many others share its sweep"
++      trial_count_basis: "fixed_per_cell_bar(N=5) + null_variance(1/(T-1)): sr0 = sqrt(1/(T-1)) x E[max of 5 standard normals] with T the cell's own length and PSR >= 0.95, a per-cell t of about 2.8; no trial charge from any ledger, docket or census, so the bar is identical for every cell regardless of how many others share its sweep or how many the desk has ever tested"
+       fail_closed_to: "fixed_campaign_trials(597): the charge when the census cannot be computed is the standing wall, never the measured relief -- an unmeasurable hour earns nothing"
+     fail_closed: true
+     cure_by_forward: true
+diff --git a/desks/mt5/research/fragility.py b/desks/mt5/research/fragility.py
+index 842899a12..cf45b432b 100644
+--- a/desks/mt5/research/fragility.py
++++ b/desks/mt5/research/fragility.py
+@@ -31,6 +31,7 @@ REPORTS = BASE / "reports"
+ sys.path.insert(0, str(BASE))
+ sys.path.insert(0, str(BASE / "research"))
+ 
++from gate_policy import DSR_FIXED_TRIALS, dsr_hurdle_inputs, fixed_bar_deflation  # noqa: E402
+ from mt5desk import families  # noqa: E402
+ from mt5desk.engine import Costs, run_backtest  # noqa: E402
+ 
+@@ -72,25 +73,24 @@ def phi(x: float) -> float:
+     return float(0.5 * (1.0 + erf(x / np.sqrt(2.0))))
+ 
+ 
++def fixed_sr0(n_obs: int) -> float:
++    """THE T8 BAR (principal, 2026-10-13): sr0 at the FIXED N=5 and the cell's own null variance
++    1/(T-1), from `gate_policy.dsr_hurdle_inputs` -- the hurdle the sealed judge applies. It never
++    reads the hunt's cell count or its sweep variance, so it cannot rise with the size of a sweep.
++    The E[max] factor is gate_policy's ONE deflation (`fixed_bar_deflation`), not a local copy.
++    """
++    _n_trials, var, _ = dsr_hurdle_inputs(n_obs)
++    return float(np.sqrt(var) * fixed_bar_deflation())
++
++
+ def dsr_for_hunt(hunt: str) -> dict:
++    """REPORT ONLY: the hunt's cell count is published, never charged (see `fixed_sr0`)."""
+     data = json.loads((REPORTS / hunt).read_text("utf-8"))
+     cells = data.get("all", [])
+-    srs = []
+-    n_cells = 0
+-    for c in cells:
+-        n = c.get("n", 0)
+-        t = c.get("t", 0.0)
+-        if n and t == t:
+-            srs.append(t / np.sqrt(n))
+-            n_cells += 1
+-    if len(srs) < 30:
+-        return {"n_trials": n_cells, "sr0": None}
+-    v = float(np.var(srs))
+-    if v <= 0:
+-        return {"n_trials": n_cells, "sr0": 0.0}
+-    sr0 = np.sqrt(v) * ((1 - GAMMA) * phi_inv(1 - 1.0 / n_cells)
+-                        + GAMMA * phi_inv(1 - 1.0 / (n_cells * EULER_E)))
+-    return {"n_trials": n_cells, "sr0": float(sr0)}
++    n_cells = sum(1 for c in cells if c.get("n", 0) and c.get("t", 0.0) == c.get("t", 0.0))
++    return {"n_trials": DSR_FIXED_TRIALS, "null_variance": "1/(T-1)",
++            "n_cells_reported": n_cells,
++            "basis": f"fixed_per_cell_bar(N={DSR_FIXED_TRIALS}, null_variance=1/(T-1))"}
+ 
+ 
+ def main() -> int:
+@@ -164,10 +164,9 @@ def main() -> int:
+     print(f"auditing {len(rows)} survivors (DSR + fragility + correlation)...", flush=True)
+     for r in rows:
+         hunt = r["hunt"]
+-        d = dsr12 if hunt == "hunt12.json" else dsr16
+         n = r["n"]
+         sr = r["t"] / np.sqrt(n) if n else 0.0
+-        dsr = phi((sr - d["sr0"]) * np.sqrt(n - 1)) if d.get("sr0") is not None and n > 1 else None
++        dsr = phi((sr - fixed_sr0(n)) * np.sqrt(n - 1)) if n > 1 else None
+         s = daily_r(r["sym"], hunt, r)
+         mk = market_daily(r["sym"])
+         joint = pd.concat([s.rename("s"), mk.rename("m")], axis=1, join="inner").dropna()
+diff --git a/desks/mt5/research/gate_policy.py b/desks/mt5/research/gate_policy.py
+index c47c370b3..0a0aae269 100644
+--- a/desks/mt5/research/gate_policy.py
++++ b/desks/mt5/research/gate_policy.py
+@@ -10,6 +10,7 @@ from __future__ import annotations
+ 
+ import math
+ from pathlib import Path
++from statistics import NormalDist
+ from typing import Any
+ 
+ import yaml
+@@ -36,6 +37,17 @@ _SPEC_FIXED_TRIALS = next(
+ FIXED_VARIANCE_OF_SHARPES = next(
+     (g.get("params", {}).get("fixed_variance_of_sharpes")
+      for g in _SPEC.get("gates", []) if g.get("name") == "deflated_sharpe"), None)
++#: THE DEFLATED-SHARPE BAR IS A FIXED PER-CELL BAR (principal, 2026-10-07: "we never charge
++#: trials like that everything is always fixed n no extra penalty trials inflated charges
++#: anything ever all is always set as original"). sr0 = sqrt(1/(T-1)) x E[max of N standard
++#: normals] at this CONSTANT N, T the cell's own length: the per-cell null variance of a Sharpe
++#: (Mertens at SR=0) and, after PSR >= 0.95, a per-cell t of about 2.8. N is policy, read from the
++#: spec and never derived from a docket, census or ledger. Measured 2026-10-07 on the sealed
++#: 2,100-case suite: 52/600 planted edges, 0/1,500 traps -- the same verdicts the lifetime-union
++#: charge at variance 0.0002 gave on the box (dsr/T8_NO_INFLATION_2026-10-07.md).
++DSR_FIXED_TRIALS = int(next(
++    g.get("params", {})["fixed_dsr_trials"]
++    for g in _SPEC.get("gates", []) if g.get("name") == "deflated_sharpe"))
+ DONE_MARKER = "DONE_qquant_gates_original10_v2"
+ GATES = tuple(g["name"] for g in _SPEC["gates"])
+ 
+@@ -111,8 +123,11 @@ ATTESTATION = {
+     "lockbox_oos_sharpe_min": 0.0,
+     "lockbox_basis": ("reserved_final_calendar_fraction_carved_before_program_matrix; held, recent-tail "
+                       "and half-split reads all clear the cell's deflated hurdle sr0 (v4)"),
+-    "lifetime_trial_floor": ("max(campaign charge, lifetime UNION trials, per-family lifetime "
+-                             "trials) from EXPERIMENT_LEDGER; unmeasured fails DSR closed"),
++    "lifetime_trial_floor": ("none: the deflated-Sharpe hurdle is the fixed per-cell bar "
++                             f"(null variance 1/(T-1) at fixed N={DSR_FIXED_TRIALS}); no trial "
++                             "count from any "
++                             "ledger, docket or census enters it, and a missing ledger fails "
++                             "nothing"),
+     "expected_value_min_exclusive": 0.0,
+ }
+ 
+@@ -301,6 +316,50 @@ def charged_trial_count(raw_cells: int, effective_cells: Any,
+             "raw_cells_x_campaign_multiplier_fail_closed")
+ 
+ 
++def dsr_hurdle_inputs(n_obs: int) -> tuple[int, float, str]:
++    """(n_trials, variance_of_sharpes, basis) for one cell's deflated-Sharpe hurdle.
++
++    THE FIXED PER-CELL BAR: `DSR_FIXED_TRIALS` (a spec constant) and the cell's own null variance
++    1/(T-1). Nothing else is an input -- not the docket, not the census, not EXPERIMENT_LEDGER --
++    so the bar cannot move with how many cells share a sweep or how many the desk has ever run,
++    and no host fails it for lacking a ledger.
++    """
++    t = max(int(n_obs), 2)
++    return (DSR_FIXED_TRIALS, 1.0 / (t - 1),
++            f"fixed_per_cell_bar(N={DSR_FIXED_TRIALS}, null_variance=1/(T-1), T={int(n_obs)})")
++
++
++def fixed_bar_deflation() -> float:
++    """THE ONE DEFLATION (T8, principal 2026-10-13), in t units: E[max of `DSR_FIXED_TRIALS`
++    standard normals] by the Bailey & Lopez de Prado approximation the judge applies --
++    `libs.validation.dsr.expected_max_sharpe(N, v)` is exactly sqrt(v) x this, so the judge's sr0
++    under `dsr_hurdle_inputs` is sqrt(1/(T-1)) x this. 1.193 at N=5.
++
++    Every screen that deflates a t (run_hunt12's battery, research/multiplicity.annotate_report,
++    fragility's sr0) takes it from HERE, so there is one number, not three (it was 1.163 exact,
++    1.193 Bailey and 0.956 asymptotic). It takes no argument on purpose: no caller can hand it a
++    sweep, family or ledger count.
++    """
++    n = DSR_FIXED_TRIALS
++    if n < 2:
++        return 0.0
++    nd = NormalDist()
++    gamma = 0.5772156649015329  # Euler-Mascheroni, as in libs.validation.dsr
++    return float((1.0 - gamma) * nd.inv_cdf(1.0 - 1.0 / n)
++                 + gamma * nd.inv_cdf(1.0 - 1.0 / (n * math.e)))
++
++
++def fixed_bar_margin() -> float:
++    """z at `DSR_THRESHOLD` (1.645 at 0.95): how far past the deflation a t must clear."""
++    return float(NormalDist().inv_cdf(DSR_THRESHOLD))
++
++
++def fixed_bar_t() -> float:
++    """THE TIER-S BAR in t units: `fixed_bar_deflation() + fixed_bar_margin()` = 2.837 at N=5,
++    DSR 0.95 (normal returns; the judge's PSR also adjusts for skew and kurtosis)."""
++    return fixed_bar_deflation() + fixed_bar_margin()
++
++
+ def fail_closed_trial_count(raw_cells: int) -> int:
+     """The charge to use when the CENSUS could not be computed. Policy's number, not the batch's.
+ 
+diff --git a/desks/mt5/research/judge_coverage.py b/desks/mt5/research/judge_coverage.py
+index e7c2755f5..fbd745ea2 100644
+--- a/desks/mt5/research/judge_coverage.py
++++ b/desks/mt5/research/judge_coverage.py
+@@ -1776,7 +1776,10 @@ def sealed_replay_identity(root: Path | None = None) -> str | None:
+     base = root or BASE.parent.parent
+     desk = base / "desks" / "mt5"
+     paths = [desk / "scripts" / "external_gauntlet.py",
+-             desk / "research" / "orthogonal_sweep.py"]
++             desk / "research" / "orthogonal_sweep.py",
++             # The signed image (hour-of-entry, stack step 05) adds the cost a cached series was
++             # charged to the judge's identity; restated with it (rides with the re-sign).
++             desk / "research" / "entry_hour_cost.py", desk / "data" / "cost_surface.json"]
+     paths.extend(desk / "mt5desk" / name for name in
+                  ("engine.py", "cell_modifiers.py", "data.py", "legacy_family_inputs.py"))
+     paths.extend((desk / "mt5desk").glob("famil*.py"))
+diff --git a/desks/mt5/research/multiplicity.py b/desks/mt5/research/multiplicity.py
+index 5f918665c..7a30e2352 100644
+--- a/desks/mt5/research/multiplicity.py
++++ b/desks/mt5/research/multiplicity.py
+@@ -10,6 +10,11 @@ independent standard normals, computed per family group.
+ E[max_N Z] ~ sqrt(2 ln N) - (ln(ln N) + ln(4 pi)) / (2 sqrt(2 ln N))
+ 
+ A survivor needs t_deflated > 2 to keep gate status under multiplicity.
++
++SINCE THE T8 RULING (principal, 2026-10-13) `annotate_report` does not use the two functions
++below: it deflates by `gate_policy.fixed_bar_deflation()` (fixed N=5, the judge's Bailey form,
++1.193) and requires the judge's margin z(0.95) = 1.645, so gate_ds means t > 2.837, the Tier-S
++bar. `expected_max_z` / `deflate_t` stay for their other importers (non-sealed miners).
+ """
+ 
+ from __future__ import annotations
+@@ -37,8 +42,21 @@ def deflate_t(t_obs: float, n_tests: int) -> float:
+ 
+ 
+ def annotate_report(path: str) -> dict:
+-    """Annotate a hunt report JSON: per-family test counts + deflated t for
+-    every result; survivors flagged gate_ds (t_deflated > 2 and original gate)."""
++    """Annotate a hunt report JSON: per-family test counts + deflated t for every result;
++    survivors flagged gate_ds (original gate AND t clears the Tier-S bar, t > 2.837)."""
++    # THE T8 BAR (principal, 2026-10-13): the deflation is gate_policy's ONE fixed-bar deflation
++    # (E[max Z] at the fixed N=`DSR_FIXED_TRIALS`, the judge's Bailey form) and the margin is the
++    # judge's z at DSR 0.95 -- never the family or total test count, which are still REPORTED
++    # (n_tests_family / n_tests_total). Imported here, not at module top, so the many importers
++    # of `deflate_t` alone do not load the gate spec.
++    from research.gate_policy import (
++        DSR_FIXED_TRIALS,
++        fixed_bar_deflation,
++        fixed_bar_margin,
++        fixed_bar_t,
++    )
++    e_bar = fixed_bar_deflation()
++    margin = fixed_bar_margin()
+     report = json.loads((BASE / path).read_text(encoding="utf-8"))
+     all_tests = report.get("all", [])
+     family_counts: dict[str, int] = {}
+@@ -50,17 +68,20 @@ def annotate_report(path: str) -> dict:
+         fam = r.get("family", "unknown")
+         r["n_tests_family"] = family_counts[fam]
+         r["n_tests_total"] = total
+-        r["t_deflated_family"] = deflate_t(r.get("t_stat", 0.0), family_counts[fam])
+-        r["t_deflated_total"] = deflate_t(r.get("t_stat", 0.0), total)
+-        r["gate_ds"] = bool(r.get("gate", False) and r["t_deflated_family"] > 2.0
+-                            and r["t_deflated_total"] > 2.0)
++        r["t_deflated_family"] = float(r.get("t_stat", 0.0) - e_bar)
++        r["t_deflated_total"] = float(r.get("t_stat", 0.0) - e_bar)
++        r["gate_ds"] = bool(r.get("gate", False) and r["t_deflated_family"] > margin
++                            and r["t_deflated_total"] > margin)
+     report["survivors"] = [r for r in all_tests if r.get("gate_ds", False)]
+     report["multiplicity"] = {
+-        "expected_max_z_family_max": max(
+-            (expected_max_z(c) for c in family_counts.values()), default=0.0),
+-        "expected_max_z_total": expected_max_z(total),
++        "expected_max_z_family_max": e_bar if family_counts else 0.0,
++        "expected_max_z_total": e_bar,
+         "total_tests": total,
+-        "method": "deflated t = t - E[max_N Z]; gate_ds = gate AND deflated>2",
++        "trials_charged": DSR_FIXED_TRIALS,
++        "bar_t": fixed_bar_t(),
++        "method": (f"deflated t = t - E[max_N Z] at fixed N={DSR_FIXED_TRIALS} "
++                   f"(gate_policy.fixed_bar_deflation); gate_ds = gate AND deflated > "
++                   f"{margin:.3f} (t > {fixed_bar_t():.3f}, the Tier-S bar)"),
+     }
+     (BASE / path).write_text(
+         json.dumps(report, indent=2, default=str), encoding="utf-8")
+diff --git a/desks/mt5/research/qquant_gates.py b/desks/mt5/research/qquant_gates.py
+index 658da83ee..4de62fbd2 100644
+--- a/desks/mt5/research/qquant_gates.py
++++ b/desks/mt5/research/qquant_gates.py
+@@ -59,6 +59,7 @@ from gate_policy import (
+     WF_MIN_STABILITY,
+     WF_SPLITS,
+     charged_trial_count,
++    dsr_hurdle_inputs,
+ )
+ from mt5desk import families  # noqa: E402
+ from mt5desk.canonical import calibrated_census_report  # noqa: E402
+@@ -210,12 +211,19 @@ def worker_eval(row: dict, pbo_val: float, spa_p: float, n_trials: int,
+     stages["economic_prior"] = {"passed": True,
+                                 "message": "mechanism documented at hunt registration"}
+     stages["in_sample_screen"] = {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)}
+-    from libs.research.trial_count_guard import bar_n  # fixed N; n_trials is reported
+-    dsr = deflated_sharpe_ratio(arr, n_trials=min(n_trials, bar_n(n_trials)),
+-                                variance_of_sharpes=float(sharpes.var(ddof=1)),
++    # THE T8 BAR (principal, 2026-10-13): the same fixed per-cell hurdle as the sealed judge and
++    # universal_gate -- N=5 and the cell's own null variance 1/(T-1). `n_trials` (the campaign
++    # charge) and the batch's sweep variance are REPORTED and never enter the verdict.
++    _n_cell, _cell_var, _n_basis = dsr_hurdle_inputs(len(arr))
++    dsr = deflated_sharpe_ratio(arr, n_trials=_n_cell,
++                                variance_of_sharpes=_cell_var,
+                                 threshold=DSR_THRESHOLD)
+     stages["deflated_sharpe"] = {"passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),
+-                                 "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials}
++                                 "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": _n_cell,
++                                 "trial_basis": _n_basis,
++                                 "campaign_trials_reported": n_trials,
++                                 "sweep_variance_reported": round(float(sharpes.var(ddof=1)), 6)
++                                 if len(sharpes) > 1 else None}
+     stages["pbo"] = {"passed": bool(pbo_val <= PBO_THRESHOLD), "pbo": round(float(pbo_val), 4)}
+     stages["reality_check_spa"] = {"passed": bool(spa_p < SPA_ALPHA),
+                                    "p_value": round(float(spa_p), 4)}
+diff --git a/desks/mt5/research/run_hunt12.py b/desks/mt5/research/run_hunt12.py
+index 7a63d34f1..e8d9dc05a 100644
+--- a/desks/mt5/research/run_hunt12.py
++++ b/desks/mt5/research/run_hunt12.py
+@@ -8,7 +8,8 @@ state across every symbol x session window in the universe.
+ For each symbol: classify each trading day by its prior NY session (13-22
+ UTC; for the JPY/Asia complex NY is the global stress window anyway) and
+ evaluate each session-window breakout family conditioned on the state.
+-Battery: n>60, deflated t>2 (family E[max]~1.5), PF>1.05, maxDD>-30R,
++Battery: n>60, t > the Tier-S bar 2.837 (deflated t > 1.645 after gate_policy's fixed N=5
++deflation 1.193; was deflated t>2 at family E[max]~1.5), PF>1.05, maxDD>-30R,
+ 3-fold WF all>0, 2x stress.
+ 
+ THIS SWEEP IS AN INPUT TO THE MONEY PATH, WHICH IS NOT OBVIOUS FROM HERE. Its artifact
+@@ -68,9 +69,10 @@ from mt5desk.engine import Costs, run_backtest  # noqa: E402
+ # the script has been dead at line 174 -- a NameError two statements into main(),
+ # AFTER the module imports cleanly. A collection gate cannot see that and neither
+ # can a smoke import; only running it does.
+-from mt5desk.multiplicity import deflation, sweep_size  # noqa: E402
++from mt5desk.multiplicity import sweep_size  # noqa: E402
+ 
+ from research import universe_policy  # noqa: E402
++from research.gate_policy import fixed_bar_deflation, fixed_bar_margin, fixed_bar_t  # noqa: E402
+ 
+ BASE = Path(__file__).resolve().parent.parent
+ UNI = BASE / "data" / "universe"
+@@ -82,7 +84,12 @@ UNI = BASE / "data" / "universe"
+ #
+ # Left as a module-level default ONLY so importers that call battery() directly keep working;
+ # main() overrides it with the real grid size before sweeping. See mt5desk.multiplicity.
+-E_MAX = 1.5
++# SINCE THE T8 RULING (principal, 2026-10-13) BOTH ARE THE FIXED BAR: E[max t] at N=5 (gate_policy
++# `DSR_FIXED_TRIALS`), the per-cell null in t units -- it never rises with the grid size. It is
++# gate_policy's ONE deflation (the judge's Bailey form, 1.193), and the battery's margin is the
++# judge's z at DSR 0.95 (1.645), so the screen is t > 2.837 -- the Tier-S bar, not t > E_MAX + 2.
++E_MAX = fixed_bar_deflation()
++BAR_MARGIN = fixed_bar_margin()
+ WINDOWS = {
+     "asia": dict(range_start=7, wait_bars=12, rr=2.0, ttl_bars=12),
+     "london_am": dict(range_start=10, range_end=13, signal_at=13, wait_bars=8, rr=2.0, ttl_bars=12),
+@@ -284,7 +291,7 @@ def battery(h1: pd.DataFrame, sigs: list, costs: Costs) -> dict:
+     r2 = run_backtest(h1, sigs, costs.stressed(2.0)).stats()
+     wf = wf_oos(h1, sigs, costs)
+     defl = r["t_stat"] - E_MAX
+-    gate = (r["n"] > 60 and defl > 2 and r["profit_factor"] > 1.05
++    gate = (r["n"] > 60 and defl > BAR_MARGIN and r["profit_factor"] > 1.05
+             and r["max_dd_r"] > -30
+             and len(wf) == 3 and all(w == w and w > 0 for w in wf)
+             and r2["expectancy_r"] > 0 and r2["t_stat"] > 1.5)
+@@ -336,7 +343,9 @@ def _run(argv: list[str] | None = None) -> int:
+     # what passed is how a multiplicity correction gets quietly disarmed. It is the ROUTED
+     # universe because the event-lane symbols are not looked at: charging FX and metals for
+     # columns nobody tests is the same error in the other direction.
+-    E_MAX = deflation(sweep_size(len(routed), len(WINDOWS), len(STATES)))
++    # T8 (2026-10-13): the bar is FIXED at N=5; the grid size is reported (`sweep_cells`), never
++    # charged.
++    E_MAX = fixed_bar_deflation()
+ 
+     partial = BASE / Path(*PARTIAL_REL.split("/"))
+     partial.parent.mkdir(parents=True, exist_ok=True)
+@@ -358,7 +367,7 @@ def _run(argv: list[str] | None = None) -> int:
+             "routed": routed, "n_routed": len(routed),
+             "set_aside": {k: v for k, v in split.items()
+                           if k != universe_policy.HYPOTHESIS},
+-            "e_max": float(E_MAX),
++            "e_max": float(E_MAX), "bar_t": float(fixed_bar_t()),
+             "sweep_cells": int(sweep_size(len(routed), len(WINDOWS), len(STATES))),
+             "policy": "desks/mt5/research/universe_policy.py",
+             "started_at": started_at, "at": datetime.now(UTC).isoformat(),
+diff --git a/desks/mt5/research/universal_gate.py b/desks/mt5/research/universal_gate.py
+index 316eac567..b13e06fdd 100644
+--- a/desks/mt5/research/universal_gate.py
++++ b/desks/mt5/research/universal_gate.py
+@@ -69,6 +69,7 @@ from gate_policy import (
+     WF_SPLITS,
+     all_ten_pass,
+     charged_trial_count,
++    dsr_hurdle_inputs,
+     is_exact_policy,
+ )
+ from gate_policy import (
+@@ -237,10 +238,17 @@ def _ug_verdict(args) -> dict:
+         "economic_prior": {"passed": True, "message": "mechanism documented at hunt registration"},
+         "in_sample_screen": {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)},
+     }
+-    dsr = deflated_sharpe_ratio(arr, n_trials=n_trials,
+-                                variance_of_sharpes=float(sh_var), threshold=DSR_THRESHOLD)
++    # THE T8 BAR (principal, 2026-10-13): the fixed per-cell hurdle the sealed judge applies --
++    # N=5 and the cell's own null variance 1/(T-1). `n_trials` and `sh_var` (the campaign charge
++    # and this batch's sweep variance) are REPORTED beside it and never enter the verdict.
++    _n_cell, _cell_var, _n_basis = dsr_hurdle_inputs(len(arr))
++    dsr = deflated_sharpe_ratio(arr, n_trials=_n_cell,
++                                variance_of_sharpes=_cell_var, threshold=DSR_THRESHOLD)
+     stages["deflated_sharpe"] = {"passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),
+-                                 "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials}
++                                 "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": _n_cell,
++                                 "trial_basis": _n_basis,
++                                 "campaign_trials_reported": n_trials,
++                                 "sweep_variance_reported": round(float(sh_var), 6)}
+     stages["pbo"] = {"passed": pbo_ok, "pbo": round(float(pbo_val), 4)}
+     stages["reality_check_spa"] = {"passed": spa_ok, "p_value": round(float(spa_p), 4)}
+     cpcv = CPCV(n_groups=6, n_test_groups=2)
+diff --git a/desks/mt5/side_channels/gate_calibration.py b/desks/mt5/side_channels/gate_calibration.py
+index 9c4c52eb6..f946c17d9 100644
+--- a/desks/mt5/side_channels/gate_calibration.py
++++ b/desks/mt5/side_channels/gate_calibration.py
+@@ -23,7 +23,7 @@ import numpy as np
+ import pandas as pd
+ from scipy import stats
+ 
+-from desks.mt5.research.gate_policy import GATES, ATTESTATION, charged_trial_count, all_ten_pass
++from desks.mt5.research.gate_policy import GATES, ATTESTATION, dsr_hurdle_inputs, all_ten_pass
+ from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
+ from libs.validation.pbo import probability_backtest_overfitting
+ from libs.validation.reality_check import hansen_spa
+@@ -122,12 +122,9 @@ def run_gate_evaluation(returns: np.ndarray, config: CalibrationConfig) -> dict:
+     in_sample = {"passed": sr > 0, "sharpe": sr}
+     
+     # 3. deflated_sharpe
+-    # Use production trial count logic
+-    raw_cells = 1  # Single strategy being tested
+-    n_trials, method = charged_trial_count(raw_cells, raw_cells, "fail_closed")
+-    
+-    # Variance of sharpes under null (single strategy)
+-    var_sharpes = 0.0
++    # THE T8 BAR, the production bar (principal, 2026-10-13): N=5 and the null variance 1/(T-1)
++    # from gate_policy.dsr_hurdle_inputs, as universal_gate and external_gauntlet apply it.
++    n_trials, var_sharpes, method = dsr_hurdle_inputs(n)
+     dsr_result = deflated_sharpe_ratio(returns, n_trials=n_trials,
+                                         variance_of_sharpes=var_sharpes,
+                                         threshold=ATTESTATION["dsr_threshold"])
+diff --git a/desks/mt5/side_channels/ug_remote.py b/desks/mt5/side_channels/ug_remote.py
+index ff5352e9f..2e69c1d2e 100644
+--- a/desks/mt5/side_channels/ug_remote.py
++++ b/desks/mt5/side_channels/ug_remote.py
+@@ -56,6 +56,7 @@ from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  #
+ 
+ from mt5desk import families  # noqa: E402
+ from mt5desk.engine import Costs, run_backtest  # noqa: E402
++from gate_policy import dsr_hurdle_inputs  # noqa: E402
+ 
+ #: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
+ #: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 3.50 this replaced was a
+@@ -161,10 +162,16 @@ def _ug_verdict(args) -> dict:
+         "economic_prior": {"passed": True, "message": "mechanism documented at hunt registration"},
+         "in_sample_screen": {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)},
+     }
+-    dsr = deflated_sharpe_ratio(arr, n_trials=n_trials,
+-                                variance_of_sharpes=float(sh_var), threshold=DSR_THRESHOLD)
++    # THE T8 BAR, the same as universal_gate._ug_verdict (principal, 2026-10-13): N=5 and the
++    # cell's own null variance 1/(T-1). `n_trials`/`sh_var` are REPORTED, never charged.
++    _n_cell, _cell_var, _n_basis = dsr_hurdle_inputs(len(arr))
++    dsr = deflated_sharpe_ratio(arr, n_trials=_n_cell,
++                                variance_of_sharpes=_cell_var, threshold=DSR_THRESHOLD)
+     stages["deflated_sharpe"] = {"passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),
+-                                 "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials}
++                                 "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": _n_cell,
++                                 "trial_basis": _n_basis,
++                                 "campaign_trials_reported": n_trials,
++                                 "sweep_variance_reported": round(float(sh_var), 6)}
+     stages["pbo"] = {"passed": pbo_ok, "pbo": round(float(pbo_val), 4)}
+     stages["reality_check_spa"] = {"passed": spa_ok, "p_value": round(float(spa_p), 4)}
+     cpcv = CPCV(n_groups=6, n_test_groups=2)
+diff --git a/desks/mt5/tests/test_canonical_reserved_lockbox.py b/desks/mt5/tests/test_canonical_reserved_lockbox.py
+index 6b04f670e..e0372f5ee 100644
+--- a/desks/mt5/tests/test_canonical_reserved_lockbox.py
++++ b/desks/mt5/tests/test_canonical_reserved_lockbox.py
+@@ -149,25 +149,26 @@ def test_no_lane_restates_walk_forward_as_the_lockbox(path: str) -> None:
+     assert 'stages["lockbox"] = {"passed": bool(wf_oos' not in src
+ 
+ 
+-# ------------------------------------------------------------------ 6. lifetime multiplicity
++# ------------------------------------------------------------------ 6. no trial inflation
++# Until 2026-10-07 these pinned max(campaign, family lifetime, lifetime UNION) from
++# EXPERIMENT_LEDGER, failing closed without it. The principal ruled that out ("no extra penalty
++# trials inflated charges anything ever"), so they now pin the fixed per-cell bar.
+ 
+-def test_the_lifetime_union_sets_the_charge_and_never_lowers_it(eg) -> None:
+-    led = {"status": "MEASURED", "lifetime_trials": 50_000,
+-           "family_trials": {"carry": 40_000, "tiny": 3}}
+-    n, why = eg.charged_lifetime_trials(109, "carry", led, 10)
+-    assert n == 50_000 and "union" in why, "a family is charged the whole union, not its slice"
+-    assert eg.charged_lifetime_trials(109, "tiny", led, 10)[0] == 50_000
+-    assert eg.charged_lifetime_trials(109, "new", led, 10)[0] == 50_000
+-    small = {"status": "MEASURED", "lifetime_trials": 20, "family_trials": {}}
+-    assert eg.charged_lifetime_trials(109, "new", small, 10)[0] == 109, "never below campaign"
++def test_no_lifetime_union_or_family_count_sets_the_charge(eg) -> None:
++    assert not hasattr(eg, "charged_lifetime_trials"), "the lifetime charge is gone"
++    n, var, why = gp.dsr_hurdle_inputs(319)
++    assert n == gp.DSR_FIXED_TRIALS == 5 and var == pytest.approx(1 / 318)
++    assert "fixed_per_cell_bar" in why and "union" not in why and "lifetime" not in why
+ 
+ 
+-def test_an_unreadable_ledger_fails_the_charge_closed(eg) -> None:
+-    n, why = eg.charged_lifetime_trials(109, "carry", {"status": "UNMEASURED"}, 1000)
+-    assert n is None and "UNMEASURED" in why
+-    n, _ = eg.charged_lifetime_trials(109, "carry", {"status": "MEASURED", "family_trials": {}}, 3)
+-    assert n is None, "a ledger without a union count is not a measurement"
++def test_an_unreadable_ledger_fails_nothing(eg, monkeypatch, tmp_path) -> None:
++    from libs.research import experiment_ledger as el
++    monkeypatch.setattr(el, "OUT", tmp_path / "absent.json")
++    assert eg.lifetime_trial_report(["carry"])["status"] == "UNMEASURED"
++    assert gp.dsr_hurdle_inputs(1000)[0] == gp.DSR_FIXED_TRIALS, "the charge does not move"
+ 
+ 
+-def test_the_attestation_names_the_lifetime_floor() -> None:
+-    assert "lifetime" in gp.ATTESTATION["lifetime_trial_floor"]
++def test_the_attestation_says_no_trial_charge() -> None:
++    floor = gp.ATTESTATION["lifetime_trial_floor"]
++    assert floor.startswith("none:") and "fixed per-cell bar" in floor
++    assert "no trial count from any ledger, docket or census" in floor
+diff --git a/desks/mt5/tests/test_dsr_fixed_per_cell_bar.py b/desks/mt5/tests/test_dsr_fixed_per_cell_bar.py
+new file mode 100644
+index 000000000..f8c22dbd1
+--- /dev/null
++++ b/desks/mt5/tests/test_dsr_fixed_per_cell_bar.py
+@@ -0,0 +1,103 @@
++"""THE DEFLATED-SHARPE BAR IS FIXED AND NEVER INFLATED BY A TRIAL COUNT (principal, 2026-10-07).
++
++    "we never charge trials like that everything is always fixed n no extra penalty trials
++     inflated charges anything ever all is always set as original"
++
++Until that ruling the judge charged max(campaign, family lifetime, lifetime UNION) read from
++EXPERIMENT_LEDGER.json, and on any host without that file every cell failed closed. The hurdle is
++now sr0 = sqrt(1/(T-1)) x E[max of N standard normals] at the spec's constant N and the cell's own
++T. These tests pin: the charge is the constant whatever the docket size; the verdict path never
++reads the ledger; a missing ledger fails nothing; and the bar at T=319 is the one live applied.
++"""
++from __future__ import annotations
++
++import sys
++from pathlib import Path
++
++import numpy as np
++import pandas as pd
++import pytest
++
++DESK = Path(__file__).resolve().parent.parent
++for _p in (DESK, DESK.parent.parent):
++    if str(_p) not in sys.path:
++        sys.path.insert(0, str(_p))
++
++from libs.validation.dsr import deflated_sharpe_ratio, expected_max_sharpe  # noqa: E402
++from research import gate_policy as gp  # noqa: E402
++from scripts import external_gauntlet as eg  # noqa: E402
++
++
++def _cell(family: str) -> dict:
++    return {"sym": "XAUUSD", "family": family, "params": {}, "mechanism_status": "NAMED",
++            "df": None, "sigs": [], "costs": None}
++
++
++def _strong(monkeypatch, n: int = 400) -> None:
++    rng = np.random.default_rng(11)
++    daily = pd.Series(rng.normal(0.3, 1.0, n), index=pd.date_range("2024-01-01", periods=n))
++    monkeypatch.setattr(eg, "daily_series", lambda *_a, **_kw: daily)
++
++
++def test_the_trial_input_is_the_spec_constant_and_ignores_docket_size(monkeypatch) -> None:
++    assert gp.DSR_FIXED_TRIALS == 5
++    assert gp._PARAMS["deflated_sharpe"]["fixed_dsr_trials"] == gp.DSR_FIXED_TRIALS
++    _strong(monkeypatch)
++    one = eg.run_gauntlet([_cell("carry")], "one", {})
++    many = eg.run_gauntlet([_cell(f"fam{i}") for i in range(6)], "six", {})
++    for res in (one, many):
++        for v in res["verdicts"]:
++            ds = v["stages"]["deflated_sharpe"]
++            assert ds["n_trials"] == gp.DSR_FIXED_TRIALS, ds
++            assert ds["trial_basis"].startswith(f"fixed_per_cell_bar(N={gp.DSR_FIXED_TRIALS}")
++    assert (one["verdicts"][0]["stages"]["deflated_sharpe"]["sr0"]
++            == many["verdicts"][0]["stages"]["deflated_sharpe"]["sr0"])
++    for raw in (1, 10, 10_000, 1_000_000):
++        assert gp.dsr_hurdle_inputs(319)[0] == gp.DSR_FIXED_TRIALS, raw
++
++
++def test_the_verdict_path_never_reads_the_experiment_ledger(monkeypatch) -> None:
++    calls: list[object] = []
++
++    def _refuse(*a, **k):
++        calls.append(a)
++        raise AssertionError("EXPERIMENT_LEDGER read")
++
++    from libs.research import experiment_ledger as el
++    monkeypatch.setattr(eg, "lifetime_trial_report", _refuse)
++    monkeypatch.setattr(el, "lifetime", _refuse)
++    monkeypatch.setattr(el, "family_trials", _refuse, raising=False)
++    _strong(monkeypatch)
++    res = eg.run_gauntlet([_cell("carry")], "no-ledger-read", {})
++    ds = res["verdicts"][0]["stages"]["deflated_sharpe"]
++    assert ds["passed"] is True and ds["n_trials"] == gp.DSR_FIXED_TRIALS
++    # The only caller is the REPORT annotation, which records its own failure and nothing else.
++    assert len(calls) <= 1 and res["trial_ledger"]["status"] == "UNMEASURED"
++    src = Path(eg.__file__).read_text("utf-8")
++    assert "charged_lifetime_trials" not in src
++    assert "_lifetime = lifetime_trial_report" not in src
++
++
++def test_a_missing_ledger_does_not_fail_the_deflated_sharpe(monkeypatch, tmp_path) -> None:
++    from libs.research import experiment_ledger as el
++    absent = tmp_path / "EXPERIMENT_LEDGER.json"
++    monkeypatch.setattr(el, "OUT", absent)
++    _strong(monkeypatch)
++    res = eg.run_gauntlet([_cell("carry")], "absent-ledger", {})
++    ds = res["verdicts"][0]["stages"]["deflated_sharpe"]
++    assert ds["passed"] is True and np.isfinite(ds["sr0"]), ds
++    assert res["trial_ledger"]["status"] == "UNMEASURED"
++    assert res["verdicts"][0]["stages"]["lockbox"].get("hurdle_sr0") == ds["sr0"]
++    assert not absent.exists(), "the judge must never write another organ's ledger"
++
++
++def test_sr0_at_t319_is_the_bar_live_applied() -> None:
++    n, var, _ = gp.dsr_hurdle_inputs(319)
++    arr = np.random.default_rng(0).normal(0.0, 1.0, 319)
++    sr0 = deflated_sharpe_ratio(arr, n_trials=n, variance_of_sharpes=var).sr0_threshold
++    live = expected_max_sharpe(234_977, 0.0002)          # lifetime union x variance 0.0002
++    assert round(live, 4) == 0.0647
++    assert sr0 == pytest.approx(0.0669, abs=5e-5)
++    assert abs(sr0 - live) < 0.0025, (sr0, live)
++    # As a t-stat: PSR >= 0.95 adds ~1.645 standard errors over sr0's ~1.19.
++    assert 2.7 < sr0 * np.sqrt(318) + 1.645 < 2.9
+diff --git a/desks/mt5/tests/test_gauntlet_annotations.py b/desks/mt5/tests/test_gauntlet_annotations.py
+index 35066b938..e4c16953e 100644
+--- a/desks/mt5/tests/test_gauntlet_annotations.py
++++ b/desks/mt5/tests/test_gauntlet_annotations.py
+@@ -93,14 +93,14 @@ def test_run_gauntlet_result_carries_independence_and_the_trial_ledger(monkeypat
+     tl = result["trial_ledger"]
+     assert tl["status"] in ("MEASURED", "UNMEASURED")
+     assert "cot_positioning" in tl["family_trials"]
+-    assert "UNION sets" in tl["note"]
+-    # The lifetime union is the charge: never below the campaign charge, and an unmeasured
+-    # ledger leaves the charge unknown, which fails the deflated-Sharpe gate closed.
++    assert "REPORTED ONLY" in tl["note"]
++    # The ledger is a report (2026-10-07): whatever it holds, measured or not, the deflated-Sharpe
++    # gate charges the fixed per-cell bar and never fails for want of a ledger.
++    from research.gate_policy import DSR_FIXED_TRIALS
+     ds = result["verdicts"][0]["stages"]["deflated_sharpe"]
+-    if tl["status"] == "MEASURED" and tl.get("lifetime_trials"):
+-        assert ds["n_trials"] >= result["n_trials"]
+-    else:
+-        assert ds["n_trials"] is None and ds["passed"] is False
++    assert ds["n_trials"] == DSR_FIXED_TRIALS
++    assert ds["variance_basis"] == "per_cell_null_1/(T-1)"
++    assert "lifetime_basis" not in ds
+ 
+ 
+ def test_run_gauntlet_lockbox_fails_closed_when_the_calendar_cannot_reserve_it(
+diff --git a/desks/mt5/tests/test_gauntlet_cell_last_day.py b/desks/mt5/tests/test_gauntlet_cell_last_day.py
+new file mode 100644
+index 000000000..2b1fc8d5e
+--- /dev/null
++++ b/desks/mt5/tests/test_gauntlet_cell_last_day.py
+@@ -0,0 +1,157 @@
++"""The build loop keys a cell to its chart's data-day without re-reading the chart per spec.
++
++Box sweep 23324 (2026-10-20): 14 build shards spent 4,383-4,579 s each re-reading parquet only to
++learn `frame.index[-1]` for ~22k cache keys, after the pool had already spent the budget. These
++pin that the day is the same day `_bars_for` gives, read once, and that the pool's day is the
++day the shards look the cell up under.
++"""
++from __future__ import annotations
++
++import pandas as pd
++import pytest
++from desks.mt5.scripts import external_gauntlet as G
++
++
++@pytest.fixture(autouse=True)
++def _fresh_memo():
++    G._LAST_DAY.clear()
++    G._FRAME_CACHE.clear()
++    yield
++    G._LAST_DAY.clear()
++    G._FRAME_CACHE.clear()
++
++
++def _charts():
++    return sorted(G.UNI.glob("*_*.parquet"))[:40]
++
++
++@pytest.mark.parametrize("pq", _charts(), ids=lambda p: p.stem)
++def test_index_read_is_the_bars_for_day(pq) -> None:
++    sym, tf = pq.stem.rsplit("_", 1)
++    want = G._bars_for(sym, tf)
++    want_day = None if want is None or len(want) == 0 else want.index[-1].normalize()
++    got = G._index_last_day(pq)
++    # None means "not provably the same read": the caller then asks `_bars_for` itself.
++    assert got is None or got == want_day
++    G._FRAME_CACHE.clear()
++    assert G._cell_last_day(sym, tf) == want_day
++
++
++def test_unsorted_or_naive_index_falls_back_or_matches(tmp_path, monkeypatch) -> None:
++    monkeypatch.setattr(G, "UNI", tmp_path)
++    idx = pd.date_range("2026-10-01", periods=48, freq="h")
++    df = pd.DataFrame({"open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0}, index=idx)
++    df.iloc[::-1].to_parquet(tmp_path / "XXX_H1.parquet")
++    assert G._index_last_day(tmp_path / "XXX_H1.parquet") is None
++    assert G._cell_last_day("XXX", "H1") == G._bars_for("XXX", "H1").index[-1].normalize()
++    df.to_parquet(tmp_path / "YYY_H1.parquet")
++    assert G._index_last_day(tmp_path / "YYY_H1.parquet") == pd.Timestamp("2026-10-02", tz="UTC")
++
++
++def test_one_read_per_chart_per_process(monkeypatch) -> None:
++    pq = _charts()[0]
++    sym, tf = pq.stem.rsplit("_", 1)
++    first = G._cell_last_day(sym, tf)
++
++    def boom(*a, **k):
++        raise AssertionError("a memoised chart must not be read again")
++
++    monkeypatch.setattr(G, "_index_last_day", boom)
++    monkeypatch.setattr(G, "_bars_for", boom)
++    assert G._cell_last_day(sym, tf) == first
++
++
++def test_deferral_after_the_budget_reads_no_bars(monkeypatch) -> None:
++    day = pd.Timestamp("2026-10-20", tz="UTC")
++    G._LAST_DAY[("AAA", "H1")] = day
++    monkeypatch.setattr(G, "_bars_for", lambda *a, **k: (_ for _ in ()).throw(
++        AssertionError("deferral must not load bars")))
++    monkeypatch.setattr(G, "cache_load", lambda key: None)
++    specs = [{"sym": "AAA", "family": "carry", "params": {"n": i}} for i in range(50)]
++    out = G._build_specs(specs, {}, 0.0, G.stage0_new_summary(), {}, set(), [])
++    assert len(out["deferred"]) == 50 and out["built_fresh"] == 0
++
++
++def test_the_shard_looks_up_the_pools_key(monkeypatch) -> None:
++    """The pool's day for a chart is the day the loop keys the same cell to."""
++    day = pd.Timestamp("2026-10-20", tz="UTC")
++    spec = {"sym": "AAA", "family": "carry", "params": {}}
++    want = G._cache_key("AAA", "carry", {}, str(day.date()), "H1")
++    G._LAST_DAY[("AAA", "H1")] = day
++    seen = []
++    monkeypatch.setattr(G, "cache_load", lambda key: seen.append(key) or (
++        pd.Series([0.0]), pd.Series([0.0])))
++    monkeypatch.setattr(G, "stage0_record", lambda *a, **k: None)
++    out = G._build_specs([spec], {}, 0.0, G.stage0_new_summary(), {}, set(), [])
++    assert seen == [want] and out["cache_hits"] == 1
++
++
++# ------------------------------------------- audit MUST-FIX: a fresh build is keyed by its frame
++MEMO_DAY = pd.Timestamp("2026-10-09", tz="UTC")
++FRESH_DAY = pd.Timestamp("2026-10-17", tz="UTC")
++
++
++def _moved_frame():
++    idx = pd.date_range("2026-09-01", "2026-10-17 15:00", freq="h", tz="UTC")
++    return pd.DataFrame({"open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0}, index=idx)
++
++
++def _daily(df, *a, **k):
++    days = pd.date_range("2026-09-01", "2026-10-17", freq="D", tz="UTC")
++    return pd.Series(0.001, index=days)
++
++
++def test_warm_one_rekeys_and_retrims_when_the_parquet_moved(monkeypatch) -> None:
++    """Memo (or the pool's plan) says 10-09; the chart build_cell re-reads now ends 10-17."""
++    G._LAST_DAY[("AAA", "H1")] = MEMO_DAY
++    df = _moved_frame()
++    monkeypatch.setattr(G, "build_cell", lambda *a, **k: {"df": df, "sigs": [], "costs": None})
++    monkeypatch.setattr(G, "daily_series", _daily)
++    monkeypatch.setattr(G, "_stress_costs", lambda *a, **k: None, raising=False)
++    monkeypatch.setattr(G, "costs_for", lambda *a, **k: None, raising=False)
++    saved = {}
++    monkeypatch.setattr(G, "cache_save", lambda key, d1, d3: saved.update(key=key, d1=d1, d3=d3))
++    monkeypatch.setattr(G, "cache_load", lambda key: (1, 1) if key == saved.get("key") else None)
++    r = G._warm_one({"sym": "AAA", "family": "carry", "params": {}}, {})
++    want = G._cache_key("AAA", "carry", {}, "2026-10-17", "H1")
++    assert r["status"] == "WARMED" and r["ckey"] == want and saved["key"] == want
++    # Trimmed at the frame's own (partial) day, exactly as the base judge trimmed it.
++    assert saved["d1"].index.max() < FRESH_DAY and saved["d1"].index.max() > MEMO_DAY
++    assert G._cache_key("AAA", "carry", {}, "2026-10-09", "H1") != saved["key"]
++
++
++def test_the_loop_rekeys_a_fresh_build_to_its_frame(monkeypatch) -> None:
++    import time
++    G._LAST_DAY[("AAA", "H1")] = MEMO_DAY
++    df = _moved_frame()
++    monkeypatch.setattr(G, "build_cell", lambda *a, **k: {"df": df, "sigs": [], "costs": None})
++    monkeypatch.setattr(G, "cache_load", lambda key: None)
++    monkeypatch.setattr(G, "_rss_mb", lambda: 0.0)
++    out = G._build_specs([{"sym": "AAA", "family": "carry", "params": {}}], {}, time.time(),
++                         G.stage0_new_summary(), {}, set(), [])
++    obj = out["cell_objs"][0]
++    assert out["built_fresh"] == 1
++    assert obj["_last_day"] == FRESH_DAY
++    assert obj["_ckey"] == G._cache_key("AAA", "carry", {}, "2026-10-17", "H1")
++
++
++def test_an_unmoved_build_keeps_the_keyed_day(monkeypatch) -> None:
++    import time
++    G._LAST_DAY[("AAA", "H1")] = FRESH_DAY
++    monkeypatch.setattr(G, "build_cell", lambda *a, **k: {"df": _moved_frame(), "sigs": [],
++                                                          "costs": None})
++    monkeypatch.setattr(G, "cache_load", lambda key: None)
++    monkeypatch.setattr(G, "_rss_mb", lambda: 0.0)
++    out = G._build_specs([{"sym": "AAA", "family": "carry", "params": {}}], {}, time.time(),
++                         G.stage0_new_summary(), {}, set(), [])
++    assert out["cell_objs"][0]["_ckey"] == G._cache_key("AAA", "carry", {}, "2026-10-17", "H1")
++
++
++# ------------------------------------- audit should-fix: only a TIMESTAMP index column is read
++@pytest.mark.parametrize("index", [pd.RangeIndex(48), pd.Index(list(range(0, 96, 2))),
++                                   pd.Index([str(i) for i in range(48)])])
++def test_index_read_refuses_int_and_string_index(tmp_path, index) -> None:
++    df = pd.DataFrame({"close": 1.0}, index=index)
++    df.index.name = "time"
++    df.to_parquet(tmp_path / "ZZZ_H1.parquet")
++    assert G._index_last_day(tmp_path / "ZZZ_H1.parquet") is None
+diff --git a/desks/mt5/tests/test_gauntlet_lookahead_guard.py b/desks/mt5/tests/test_gauntlet_lookahead_guard.py
+new file mode 100644
+index 000000000..9806248a4
+--- /dev/null
++++ b/desks/mt5/tests/test_gauntlet_lookahead_guard.py
+@@ -0,0 +1,171 @@
++"""THE LOOK-AHEAD GUARD BINDS AT THE GAUNTLET: an LLM-born cell is judged on post-guard days only.
++
++  * a cell in the lab's evidence-start map loses every day before its start, in BOTH cost arms,
++    whether its series came fresh or from the cache, and the cache keeps the FULL series;
++  * a match survives the compiler filling in default params;
++  * a cell's own `lookahead_guard` stamp binds even when the map lost it, and the later date wins;
++  * it FAILS CLOSED: an LLM-born cell with an unparseable start, or any LLM-born cell while the
++    map is unreadable, is HELD (empty series, UNMEASURED with the reason);
++  * only a cell with no LLM provenance and no map entry is untouched.
++"""
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++import numpy as np
++import pandas as pd
++import pytest
++
++_DESK = Path(__file__).resolve().parents[1]
++_ROOT = _DESK.parent.parent
++for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
++    if _p not in sys.path:
++        sys.path.insert(0, _p)
++
++from desks.mt5.scripts import external_gauntlet as G  # noqa: E402
++
++
++def _ds() -> pd.Series:
++    idx = pd.date_range("2026-01-01", periods=300, freq="D")
++    return pd.Series(np.linspace(-1, 1, 300), index=idx)
++
++
++@pytest.fixture()
++def guard_map(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
++    p = tmp_path / "evidence_start.json"
++    monkeypatch.setattr(G, "EVIDENCE_START", p)
++    G._EVIDENCE_CACHE.update({"mtime": None, "map": {}, "by_cell": {}, "error": ""})
++    return p
++
++
++def _write(p: Path, cell: dict, start: str, params: dict | None = None) -> None:
++    cid = G.cell_id({"sym": cell["sym"], "family": cell["family"], "params": cell["params"]})
++    p.write_text(json.dumps({cid: {"from": start, "sym": cell["sym"], "family": cell["family"],
++                                   "params": params if params is not None else cell["params"]}}))
++
++
++def test_days_before_the_evidence_start_are_dropped(guard_map: Path) -> None:
++    cell = {"sym": "EURUSD", "family": "formula", "params": {"expr": "rank(ret)"}}
++    _write(guard_map, cell, "2026-06-01")
++    kept = G.evidence_trim(cell, _ds())
++    assert kept.index.min() == pd.Timestamp("2026-06-01") and len(kept) == 300 - 151
++    assert cell["_evidence_from"] == "2026-06-01" and cell["_evidence_dropped_days"] == 151
++    tz = _ds().tz_localize("UTC")
++    assert G.evidence_trim(dict(cell), tz).index.min() == pd.Timestamp("2026-06-01", tz="UTC")
++
++
++def test_a_match_survives_compiler_filled_params(guard_map: Path) -> None:
++    donated = {"sym": "USDJPY", "family": "exogenous_conditioner",
++               "params": {"source": "cb_tone_boj", "signal": "tone_llm_clean"}}
++    _write(guard_map, donated, "2026-09-01")
++    judged = {**donated, "params": {**donated["params"], "transform": "level_z", "lag_hours": 24}}
++    assert G.evidence_from(judged) == "2026-09-01"
++    assert G.evidence_from({**judged, "sym": "EURJPY"}) is None
++
++
++def test_human_cells_are_untouched_by_an_absent_or_unreadable_map(guard_map: Path) -> None:
++    cell = {"sym": "EURUSD", "family": "carry", "params": {}}
++    ds = _ds()
++    assert G.evidence_trim(cell, ds) is ds, "absent map"
++    guard_map.write_text("{not json")
++    assert G.evidence_trim(dict(cell), ds) is ds, "no LLM provenance: nothing to guard"
++
++
++def test_the_cells_own_stamp_binds_and_the_later_date_wins(guard_map: Path) -> None:
++    cell = {"sym": "EURUSD", "family": "formula", "params": {"expr": "rank(ret)"},
++            "lookahead_guard": {"evidence_from": "2026-07-01"}}
++    assert G.evidence_from(dict(cell)) == "2026-07-01", "no map entry: the stamp alone binds"
++    _write(guard_map, cell, "2026-06-01")
++    assert G.evidence_from(dict(cell)) == "2026-07-01"
++    _write(guard_map, cell, "2026-08-01")
++    assert G.evidence_from(dict(cell)) == "2026-08-01"
++
++
++@pytest.mark.parametrize("cell", [
++    {"sym": "EURUSD", "family": "formula", "params": {}, "lookahead_guard": {}},
++    {"sym": "EURUSD", "family": "formula", "params": {},
++     "lookahead_guard": {"evidence_from": "UNMEASURED"}},
++    {"sym": "EURUSD", "family": "formula", "params": {}, "producer": "llm_lab"},
++])
++def test_an_llm_born_cell_without_a_readable_start_is_held(guard_map: Path, cell: dict) -> None:
++    """Audit must-fix 3: the guard fails CLOSED."""
++    held = G.evidence_trim(cell, _ds())
++    assert len(held) == 0 and cell["_evidence_from"] == "UNMEASURED"
++    assert "look-ahead guard" in cell["_series_error"]
++
++
++def test_an_unreadable_map_holds_every_llm_born_cell(guard_map: Path) -> None:
++    guard_map.write_text("{not json")
++    cell = {"sym": "EURUSD", "family": "formula", "params": {},
++            "lookahead_guard": {"evidence_from": "2026-06-01"}}
++    assert len(G.evidence_trim(cell, _ds())) == 0
++
++
++def test_a_bad_date_in_the_map_holds_the_cell(guard_map: Path) -> None:
++    cell = {"sym": "EURUSD", "family": "formula", "params": {"expr": "x"}}
++    _write(guard_map, cell, "soon")
++    assert G.evidence_from(cell) == G.EVIDENCE_HOLD
++
++
++def test_provenance_rides_from_the_row_through_the_docket_onto_the_cell() -> None:
++    """Audit HOLD on e7547165: the docket dict dropped the three keys, so the guard failed open.
++    Every rebuild now carries CARRIED_SPEC_KEYS, and the docket folds each row in."""
++    src = Path(G.__file__).read_text(encoding="utf-8")
++    assert set(G.CARRIED_SPEC_KEYS) >= {"screen_read_until", "lookahead_guard", "producer",
++                                         "source"}
++    assert src.count("for _k in CARRIED_SPEC_KEYS") == 1
++    assert src.count("for k in CARRIED_SPEC_KEYS if spec.get(k)") == 1
++    assert src.count("merge_llm_provenance(cells[key], h)") == 2
++    spec: dict = {"sym": "EURUSD", "family": "formula", "params": {}}
++    G.merge_llm_provenance(spec, {"producer": "llm_lab.style",
++                                  "lookahead_guard": {"evidence_from": "2026-03-01"}})
++    assert G.llm_born(spec) and spec["lookahead_guard"]["evidence_from"] == "2026-03-01"
++
++
++def test_duplicate_rows_fold_closed(guard_map: Path) -> None:
++    spec: dict = {"sym": "EURUSD", "family": "formula", "params": {}}
++    G.merge_llm_provenance(spec, {"lookahead_guard": {"evidence_from": "2026-03-01"}})
++    G.merge_llm_provenance(spec, {"lookahead_guard": {"evidence_from": "2026-05-01"}})
++    G.merge_llm_provenance(spec, {"lookahead_guard": {"evidence_from": "2026-02-01"}})
++    assert spec["lookahead_guard"]["evidence_from"] == "2026-05-01", "the latest start wins"
++    G.merge_llm_provenance(spec, {"lookahead_guard": {"evidence_from": "soon"}})
++    assert G.evidence_from(spec) == G.EVIDENCE_HOLD, "an unreadable start holds the cell"
++    human: dict = {"sym": "EURUSD", "family": "formula", "params": {}, "producer": "miner"}
++    G.merge_llm_provenance(human, {"producer": "llm_lab.style"})
++    assert G.llm_born(human), "an llm_lab producer on any duplicate row marks the cell"
++    G.merge_llm_provenance(human, {"producer": "miner"})
++    assert G.llm_born(human), "and a later human row never clears it"
++
++
++def test_a_too_late_evidence_start_fails_closed(guard_map: Path) -> None:
++    """A start after the last day leaves no post-guard day: held with the reason."""
++    cell = {"sym": "EURUSD", "family": "formula", "params": {},
++            "lookahead_guard": {"evidence_from": "2027-06-01"}}
++    out = G.evidence_trim(cell, _ds())
++    assert len(out) == 0 and cell["_evidence_dropped_days"] == 300
++    assert "after the last day" in cell["_series_error"]
++    assert G.classify_unknown(out, None, None, errored=True) != "", "recorded UNMEASURED"
++
++
++def test_both_cost_arms_are_trimmed_and_the_cache_keeps_the_full_series(
++        guard_map: Path, monkeypatch: pytest.MonkeyPatch) -> None:
++    cell = {"sym": "EURUSD", "family": "formula", "params": {"expr": "rank(ret)"},
++            "_cached_ds": _ds(), "_cached_ds3": _ds(), "sigs": [], "df": None, "costs": None}
++    _write(guard_map, cell, "2026-06-01")
++    daily, hits = G._cell_series([cell], meta={})
++    x3 = G._cell_series_x3([cell])
++    assert hits == 1 and daily[0].index.min() == x3[0].index.min() == pd.Timestamp("2026-06-01")
++    fresh = {"sym": "EURUSD", "family": "formula", "params": {"expr": "rank(ret)"},
++             "sigs": [1], "df": "frame", "costs": "c", "_last_day": None, "_ckey": "k"}
++    monkeypatch.setattr(G, "daily_series", lambda df, sigs, costs: _ds())
++    monkeypatch.setattr(G, "costs_for", lambda sym, meta, mult=1.0: "c3")
++    # the hour-of-entry stack prices the stress arm through _stress_costs when present
++    monkeypatch.setattr(G, "_stress_costs", lambda *a, **k: "c3", raising=False)
++    saved: dict = {}
++    monkeypatch.setattr(G, "cache_save", lambda key, a, b: saved.update(key=key, a=a, b=b))
++    daily, _ = G._cell_series([fresh], meta={})
++    x3 = G._cell_series_x3([fresh])
++    assert daily[0].index.min() == x3[0].index.min() == pd.Timestamp("2026-06-01")
++    assert len(saved["a"]) == len(saved["b"]) == 300, "the cache stores the untrimmed series"
+diff --git a/desks/mt5/tests/test_gauntlet_parallel_prewarm.py b/desks/mt5/tests/test_gauntlet_parallel_prewarm.py
+index 700b1ebf6..9ba23622c 100644
+--- a/desks/mt5/tests/test_gauntlet_parallel_prewarm.py
++++ b/desks/mt5/tests/test_gauntlet_parallel_prewarm.py
+@@ -112,12 +112,29 @@ def test_the_main_guard_exists_so_spawned_workers_do_not_re_run_the_sweep() -> N
+ 
+ def test_the_worker_is_the_fresh_path_extracted_and_nothing_else() -> None:
+     w = _fn_source("_warm_one")
+-    for step in ("_bars_for(sym, tf)", "_cache_key(sym, family, params, str(last_day.date()), tf)",
++    # The day comes from the SAME reader the build loop keys a cell with (`_cell_last_day`), so
++    # the pool's key and the loop's key cannot be derived two ways (2026-10-20, sweep 23324).
++    for step in ("_cell_last_day(sym, tf)",
++                 "_cache_key(sym, family, params, str(last_day.date()), tf)",
+                  "build_cell(sym, family, params, meta)",
+                  "daily_series(obj[\"df\"], obj[\"sigs\"], obj[\"costs\"])",
+-                 "costs_for(sym, meta, mult=COST_SCENARIO)", "cache_save(ckey, ds1, ds3)"):
++                 "_stress_costs(obj[\"costs\"], sym, meta.get(sym, {}), COST_SCENARIO)",
++                 "cache_save(ckey, ds1, ds3)"):
+         assert step in w, step
+     assert "run_gauntlet(" not in w               # no verdict logic crosses into the worker
++    assert "_cell_last_day(spec[\"sym\"], spec_tf)" in _fn_source("_build_specs")
++
++
++def test_the_worker_prices_the_3x_arm_with_the_fresh_path_s_own_function() -> None:
++    """A cached series and a fresh one must be judged on the SAME costs. Since hour-of-entry
++    costs both 3x arms read the entry-hour table through `_stress_costs`; a worker left on the
++    pooled `costs_for(..., mult=COST_SCENARIO)` would cache a 3x arm the fresh path never
++    charges."""
++    w, fresh = _fn_source("_warm_one"), _fn_source("_cell_series")
++    assert "_stress_costs(obj[\"costs\"], sym, meta.get(sym, {}), COST_SCENARIO)" in w
++    assert "_stress_costs(c[\"costs\"], c[\"sym\"], meta.get(c[\"sym\"], {})," in fresh
++    for src in (w, fresh):
++        assert "mult=COST_SCENARIO" not in src
+ 
+ 
+ def test_a_cell_whose_3x_arm_fails_is_not_half_cached() -> None:
+diff --git a/desks/mt5/tests/test_gauntlet_restore_no_restamp.py b/desks/mt5/tests/test_gauntlet_restore_no_restamp.py
+new file mode 100644
+index 000000000..5feddc8d3
+--- /dev/null
++++ b/desks/mt5/tests/test_gauntlet_restore_no_restamp.py
+@@ -0,0 +1,39 @@
++"""The judge's restore loop never re-stamps a pre-v4 row (sealed patch, 2026-10-20).
++
++A retired row whose retirement reason stops holding is restored under the CURRENT attestation;
++when its gate 9 was never carved under the attestation's lockbox basis that is a re-stamp, so it
++goes to pending_rejudge instead. And when moving rows out empties the retired set, the stale
++`retired_certificates` block is cleared rather than kept.
++"""
++from __future__ import annotations
++
++import inspect
++
++from desks.mt5.research.gate_policy import ATTESTATION
++from desks.mt5.scripts import external_gauntlet as gauntlet
++
++V4 = {"gates": {"lockbox": {"passed": True, "lockbox_sharpe": 0.3, "cut": "2024-12-19",
++                            "basis": ATTESTATION["lockbox_basis"]}}}
++
++
++def test_a_pre_v4_row_would_be_restamped_a_v4_row_would_not() -> None:
++    assert gauntlet.restore_would_restamp({"gates": {"lockbox": {"passed": True,
++                                                                 "lockbox_sharpe": 0.3}}},
++                                          ATTESTATION)
++    assert gauntlet.restore_would_restamp({"gates": {"lockbox": {
++        "passed": True, "cut": "2024-12-19", "basis": "another basis"}}}, ATTESTATION)
++    assert gauntlet.restore_would_restamp({}, ATTESTATION)
++    assert not gauntlet.restore_would_restamp(V4, ATTESTATION)
++    # an attestation that reserves no lockbox restores exactly as before
++    assert not gauntlet.restore_would_restamp({}, {"version": "old"})
++
++
++def test_the_restore_loop_uses_it_and_an_emptied_retired_set_is_cleared() -> None:
++    # `main` IS SPLIT INTO ITS PHASES by the plan-resume patch (B2), its bodies moved verbatim:
++    # the steps are read across main, then the plan phase, then the judge phase, in that order.
++    src = "\n".join(inspect.getsource(getattr(gauntlet, f)) for f in
++                        ("main", "_plan_phase", "_judge_phase") if hasattr(gauntlet, f))
++    assert "if restore_would_restamp(row, ATTESTATION):" in src
++    assert '_remint["pending"][key] = back' in src
++    assert 'elif "retired_certificates" in old_doc:' in src
++    assert 'doc["retired_certificates"] = {}' in src
+diff --git a/desks/mt5/tests/test_hunt12_clock.py b/desks/mt5/tests/test_hunt12_clock.py
+index 55394ef85..01f9d5030 100644
+--- a/desks/mt5/tests/test_hunt12_clock.py
++++ b/desks/mt5/tests/test_hunt12_clock.py
+@@ -99,9 +99,11 @@ def test_e_max_is_sized_to_the_routed_grid_and_the_move_is_small():
+ 
+ 
+ def test_the_gate_itself_is_untouched():
+-    """Cheaper multiplicity is not a lower bar. `defl > 2` and every other threshold stand."""
++    """Cheaper multiplicity is not a lower bar. Every other threshold stands; the t screen is the
++    Tier-S bar (T8, principal 2026-10-13): `defl > BAR_MARGIN` after the fixed N=5 deflation is
++    t > 2.837, the judge's own bar -- it replaced `defl > 2`, which was t > 3.163."""
+     src = (_DESK / "research" / "run_hunt12.py").read_text("utf-8")
+-    assert "defl > 2" in src
++    assert "defl > BAR_MARGIN" in src and "defl > 2 " not in src
+     assert 'r["profit_factor"] > 1.05' in src
+     assert 'r["max_dd_r"] > -30' in src
+     assert 'r2["t_stat"] > 1.5' in src
+diff --git a/desks/mt5/tests/test_judge_docket_order.py b/desks/mt5/tests/test_judge_docket_order.py
+index a8f72bd9e..61917b629 100644
+--- a/desks/mt5/tests/test_judge_docket_order.py
++++ b/desks/mt5/tests/test_judge_docket_order.py
+@@ -36,7 +36,10 @@ def test_the_sealed_sort_key_is_still_the_text_this_module_restates() -> None:
+ 
+ 
+ def test_the_sealed_steps_still_run_in_the_order_restated() -> None:
+-    main_src = inspect.getsource(G.main)
++    # `main` IS SPLIT INTO ITS PHASES by the plan-resume patch (B2), its bodies moved verbatim:
++    # the steps are read across main, then the plan phase, then the judge phase, in that order.
++    main_src = "\n".join(inspect.getsource(getattr(G, f)) for f in
++                        ("main", "_plan_phase", "_judge_phase") if hasattr(G, f))
+     marks = ["partition_at_economic_prior(list(cells.values()), meta)",
+              "modifier_preflight(_spec)",
+              "family_banned(sp.get(\"family\"))",
+@@ -44,6 +47,11 @@ def test_the_sealed_steps_still_run_in_the_order_restated() -> None:
+              "_ng.screen(_cands)",
+              "allocate_by_yield(eligible_specs)",
+              "_prewarm_cache(eligible_specs, meta"]
++    # The build preflight moved into `_preflight_split` (B2: the plan and a re-planned cell share
++    # one rule); its call site is the step, and the helper must still be the same preflight.
++    if hasattr(G, "_preflight_split") and "modifier_preflight(_spec)" not in main_src:
++        assert "_why = modifier_preflight(_spec)" in inspect.getsource(G._preflight_split)
++        marks[1] = "_preflight_split("
+     at = [main_src.find(m) for m in marks]
+     assert all(a >= 0 for a in at), dict(zip(marks, at, strict=True))
+     assert at == sorted(at), "the sealed docket steps were reordered"
+diff --git a/desks/mt5/tests/test_lockbox_bar_and_daily_series.py b/desks/mt5/tests/test_lockbox_bar_and_daily_series.py
+index 5f0f1fd3b..bea705974 100644
+--- a/desks/mt5/tests/test_lockbox_bar_and_daily_series.py
++++ b/desks/mt5/tests/test_lockbox_bar_and_daily_series.py
+@@ -68,10 +68,13 @@ def test_too_few_held_out_rows_still_fail_closed() -> None:
+     assert out["passed"] is False and out["lockbox_sharpe"] is None
+ 
+ 
+-def test_the_attested_basis_names_the_spec_variance() -> None:
++def test_the_attested_basis_names_the_fixed_per_cell_bar() -> None:
++    # Since 2026-10-07 the certifier's hurdle is the per-cell null 1/(T-1) at fixed N, and the
++    # attestation says so; the spec variance is still declared (reported, read by screens).
+     v = gp.FIXED_VARIANCE_OF_SHARPES
+     assert isinstance(v, float) and 0 < v < 0.014863
+-    assert f"fixed_variance_of_sharpes({v:g})" in gp.TRIAL_COUNT_BASIS
++    assert f"fixed_per_cell_bar(N={gp.DSR_FIXED_TRIALS})" in gp.TRIAL_COUNT_BASIS
++    assert "1/(T-1)" in gp.TRIAL_COUNT_BASIS and "no trial charge" in gp.TRIAL_COUNT_BASIS
+     assert "(v4)" in gp.ATTESTATION["lockbox_basis"]
+ 
+ 
+diff --git a/desks/mt5/tests/test_remint_unmeasured_stays_pending.py b/desks/mt5/tests/test_remint_unmeasured_stays_pending.py
+new file mode 100644
+index 000000000..f09c45f68
+--- /dev/null
++++ b/desks/mt5/tests/test_remint_unmeasured_stays_pending.py
+@@ -0,0 +1,116 @@
++"""A re-judge that could not measure a certificate never retires it (audit 2026-10-13).
++
++`remint_partition` lifts every row judged under an older attestation out of the survivor set and
++re-judges it. A verdict whose gates RULED against the cell retires it; one that measured nothing
++(UNMEASURED observations, an UNKNOWN terminal gate, a lockbox with no held-out evidence) is no
++evidence against the edge and must wait in `pending_rejudge`, judged first again.
++"""
++from __future__ import annotations
++
++import sys
++from pathlib import Path
++
++DESK = Path(__file__).resolve().parents[1]
++for _p in (str(DESK.parents[1]), str(DESK), str(DESK / "scripts"), str(DESK / "research")):
++    if _p not in sys.path:
++        sys.path.insert(0, _p)
++
++import external_gauntlet as eg  # noqa: E402
++
++NOW = "2026-10-13T17:00:00+00:00"
++OLD = {"survivors": {"external.A.carry.p=1": {"cell": "A.carry.p=1", "gates": {"x": {}}}},
++       "gate_policy": {"version": "old"}}
++
++
++def _part(verdict):
++    survivors = {"external.A.carry.p=1": dict(OLD["survivors"]["external.A.carry.p=1"])}
++    return eg.remint_partition(OLD, survivors, [verdict], set(), set(),
++                               lambda gp: False, "new", NOW), survivors
++
++
++def _v(**kw):
++    return {"cell": "A.carry.p=1", "passed": False, **kw}
++
++
++def test_an_unmeasured_rejudge_keeps_the_certificate_pending() -> None:
++    out, survivors = _part(_v(unmeasured=True, terminal_gate="observations",
++                              unknown_reason="observations_under_60_days",
++                              stages={"observations": {"passed": False, "days": 12}}))
++    assert not out["retired"]
++    assert "external.A.carry.p=1" in out["pending"]
++    assert "could not rule" in out["pending"]["external.A.carry.p=1"]["pending_reason"]
++    assert out["record"]["rejudged_unmeasured_kept_pending"] == 1
++    assert "external.A.carry.p=1" not in survivors      # still outside the survivor set
++
++
++def test_an_unknown_terminal_gate_keeps_the_certificate_pending() -> None:
++    out, _ = _part(_v(terminal_gate="UNKNOWN",
++                      stages={"lockbox": {"passed": False, "unmeasured": True,
++                                          "lockbox_sharpe": None}}))
++    assert not out["retired"] and out["pending"]
++
++
++def test_a_lockbox_with_no_held_out_evidence_is_not_a_failure() -> None:
++    """Live `lockbox_stage` under its day floor: passed False, lockbox_sharpe None, no flag."""
++    out, _ = _part(_v(terminal_gate="lockbox",
++                      stages={"deflated_sharpe": {"passed": True},
++                              "lockbox": {"passed": False, "lockbox_sharpe": None,
++                                          "n_days": 20}}))
++    assert not out["retired"] and out["pending"]
++
++
++def test_a_measured_failure_still_retires() -> None:
++    out, _ = _part(_v(terminal_gate="deflated_sharpe",
++                      stages={"deflated_sharpe": {"passed": False, "dsr": 0.4},
++                              "lockbox": {"passed": False, "lockbox_sharpe": None}}))
++    assert "external.A.carry.p=1" in out["retired"]
++    assert not out["pending"]
++    assert "deflated_sharpe" in out["retired"]["external.A.carry.p=1"]["retired_reason"]
++
++
++def test_a_measured_lockbox_failure_still_retires() -> None:
++    out, _ = _part(_v(terminal_gate="lockbox",
++                      stages={"lockbox": {"passed": False, "lockbox_sharpe": -0.2}}))
++    assert out["retired"] and not out["pending"]
++
++
++def test_an_unpriced_cost_is_not_a_ruling() -> None:
++    """Audit 2026-10-13 MF1: `swap_cost` writes passed False with measured False."""
++    out, _ = _part(_v(terminal_gate="swap_cost",
++                      stages={"deflated_sharpe": {"passed": True},
++                              "swap_cost": {"passed": False, "measured": False,
++                                            "why": "UNMEASURED cost fails closed"}}))
++    assert not out["retired"] and out["pending"]
++
++
++def test_a_measured_cost_refusal_still_retires() -> None:
++    out, _ = _part(_v(terminal_gate="swap_cost",
++                      stages={"swap_cost": {"passed": False, "measured": True,
++                                            "why": "cost exceeds the edge"}}))
++    assert out["retired"] and not out["pending"]
++
++
++def test_the_canon_fronts_its_own_pending_rows() -> None:
++    """Audit 2026-10-13 MF2: no organ writes priority_remint.json; the canon is the source."""
++    doc = {"gate_policy": {"version": "new"},
++           "pending_rejudge": {"external.A.carry.p=1": {"cell": "A.carry.p=1"}},
++           "survivors": {"external.B.carry.p=2": {"cell": "B.carry.p=2"}}}
++    cells, keys = eg.canon_remint_cells(doc, lambda gp: True)
++    assert cells == {"A.carry.p=1"} and keys == {"external.A.carry.p=1"}
++
++
++def test_in_the_reseal_window_every_old_header_survivor_is_fronted() -> None:
++    doc = {"gate_policy": {"version": "old"},
++           "survivors": {"external.B.carry.p=2": {"cell": "B.carry.p=2"}}}
++    cells, keys = eg.canon_remint_cells(doc, lambda gp: False)
++    assert cells == {"B.carry.p=2"} and keys == {"external.B.carry.p=2"}
++
++
++def test_remint_cells_reads_the_canon_without_a_priority_file(tmp_path) -> None:
++    import json
++    canon = tmp_path / "UNIVERSAL_SURVIVORS.json"
++    canon.write_text(json.dumps({"gate_policy": {"version": "x"}, "survivors": {},
++                                 "pending_rejudge": {"external.A.carry.p=1":
++                                                     {"cell": "A.carry.p=1"}}}), "utf-8")
++    cells, keys = eg.remint_cells(tmp_path / "absent.json", canon)
++    assert "A.carry.p=1" in cells and "external.A.carry.p=1" in keys
+diff --git a/desks/mt5/tests/test_scalp_gauntlet.py b/desks/mt5/tests/test_scalp_gauntlet.py
+index ab505c65b..e7c20ec55 100644
+--- a/desks/mt5/tests/test_scalp_gauntlet.py
++++ b/desks/mt5/tests/test_scalp_gauntlet.py
+@@ -42,7 +42,13 @@ import shadow_admission as sa  # noqa: E402
+ from desks.mt5.research import scalp_family_expansion as fam  # noqa: E402
+ from desks.mt5.research import scalp_reverse_engineering as core  # noqa: E402
+ from desks.mt5.research import scalp_shadow  # noqa: E402
+-from gate_policy import ATTESTATION, GATES, all_ten_pass, charged_trial_count  # noqa: E402
++from gate_policy import (  # noqa: E402
++    ATTESTATION,
++    DSR_FIXED_TRIALS,
++    GATES,
++    all_ten_pass,
++    charged_trial_count,
++)
+ from mt5desk import scalp_exec as sx  # noqa: E402
+ from mt5desk import scalp_families as sf  # noqa: E402
+ from mt5desk.engine import Costs, Signal, run_backtest  # noqa: E402
+@@ -276,11 +282,11 @@ def test_the_real_ten_gates_judge_scalp_cells(desk, monkeypatch) -> None:
+         assert all(gate in v["stages"] for gate in GATES) and v["days"] >= 60
+         assert set(v["stages"]) - set(GATES) == {"swap_cost"}
+         assert v["stages"]["economic_prior"]["passed"] is True
+-        # The cell is charged the lifetime UNION, never below the campaign count; with no
+-        # readable experiment ledger the charge is unknown and the gate fails closed.
++        # The cell is charged the FIXED per-cell bar (2026-10-07): the spec constant N at its
++        # own null variance 1/(T-1), never a lifetime or union count, and no ledger is needed.
+         ds = v["stages"]["deflated_sharpe"]
+-        assert (ds["n_trials"] is None and ds["passed"] is False) or (
+-            ds["n_trials"] >= report["gauntlet"]["n_trials"])
++        assert ds["n_trials"] == DSR_FIXED_TRIALS
++        assert ds["variance_basis"] == "per_cell_null_1/(T-1)"
+     expected, basis = charged_trial_count(2, None, None)
+     assert report["multiplicity"]["charged_n_trials"] == expected
+     assert report["multiplicity"]["charged_basis"] == basis
+diff --git a/desks/mt5/tests/test_shadow_admission_policy.py b/desks/mt5/tests/test_shadow_admission_policy.py
+index 14414b08b..82787bba4 100644
+--- a/desks/mt5/tests/test_shadow_admission_policy.py
++++ b/desks/mt5/tests/test_shadow_admission_policy.py
+@@ -52,7 +52,10 @@ def test_original_thresholds_are_one_fixed_policy() -> None:
+     # harsher. The attestation must say so, because it is the field that pins what a certificate
+     # was judged under.
+     assert isinstance(_CHARGE, int) and 2 <= _CHARGE <= _LEGACY_CHARGE
+-    assert f"campaign_trials({_CHARGE})" in ATTESTATION["trial_count_basis"]
++    # Since 2026-10-07 the attested DSR basis is the fixed per-cell bar, not the campaign count
++    # (which stays fixed at _CHARGE and is reported).
++    assert "fixed_per_cell_bar(N=5)" in ATTESTATION["trial_count_basis"]
++    assert "no trial charge from any ledger, docket or census" in ATTESTATION["trial_count_basis"]
+ 
+ 
+ def test_charge_is_fixed_and_never_scales_with_sweep_size() -> None:
+diff --git a/desks/mt5/tests/test_t8_bar_universal_gate_fragility_hunt12.py b/desks/mt5/tests/test_t8_bar_universal_gate_fragility_hunt12.py
+new file mode 100644
+index 000000000..17d7fb556
+--- /dev/null
++++ b/desks/mt5/tests/test_t8_bar_universal_gate_fragility_hunt12.py
+@@ -0,0 +1,166 @@
++"""THE T8 BAR REACHES EVERY DEFLATED-SHARPE SITE, NOT ONLY THE SEALED JUDGE (principal, 2026-10-13).
++
++    "make sure the bars never raise never ever penalty never inflation due to trials"
++
++The T8 patch fixed external_gauntlet at sr0 = sqrt(1/(T-1)) x E[max of N=5 normals]. Three more
++sites still charged a moving N: universal_gate (the campaign charge AND the sweep variance),
++fragility (N = the hunt's cell count) and run_hunt12 (E_MAX = E[max t] over the grid size); and
++research/multiplicity (family and total test counts), plus universal_gate's remote worker
++(side_channels/ug_remote) and calibration twin (side_channels/gate_calibration). These tests pin
++N=5 in each, and that no sweep size or sweep variance moves the bar.
++"""
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++import numpy as np
++import pytest
++
++DESK = Path(__file__).resolve().parent.parent
++for _p in (DESK, DESK / "research", DESK.parent.parent):
++    if str(_p) not in sys.path:
++        sys.path.insert(0, str(_p))
++
++import fragility  # noqa: E402
++import gate_policy as gp  # noqa: E402
++import universal_gate as ug  # noqa: E402
++from libs.validation.dsr import expected_max_sharpe  # noqa: E402
++from research import multiplicity as rm  # noqa: E402
++from research import run_hunt12 as h12  # noqa: E402
++
++
++def _verdict(n_trials: int, sh_var: float, n: int = 319) -> dict:
++    arr = np.random.default_rng(7).normal(0.2, 1.0, n)
++    return ug._ug_verdict(("c0", "XAUUSD", arr, arr, np.array([]), True, 0.1, True, 0.01,
++                           n_trials, sh_var))
++
++
++def test_universal_gate_charges_n5_and_the_cell_null_whatever_the_sweep() -> None:
++    assert gp.DSR_FIXED_TRIALS == 5
++    a = _verdict(109, 0.0002)["stages"]["deflated_sharpe"]
++    b = _verdict(1_000_000, 0.5)["stages"]["deflated_sharpe"]
++    assert a["n_trials"] == b["n_trials"] == 5
++    assert a["sr0"] == b["sr0"] == round(expected_max_sharpe(5, 1 / 318), 4)
++    assert a["trial_basis"].startswith("fixed_per_cell_bar(N=5")
++    assert b["campaign_trials_reported"] == 1_000_000, "the campaign count is reported, not charged"
++
++
++def test_universal_gate_source_no_longer_feeds_the_sweep_into_the_verdict() -> None:
++    src = Path(ug.__file__).read_text("utf-8")
++    assert "deflated_sharpe_ratio(arr, n_trials=n_trials" not in src
++    assert "dsr_hurdle_inputs(len(arr))" in src
++
++
++def test_fragility_sr0_is_the_t8_bar_and_ignores_the_cell_count(tmp_path, monkeypatch) -> None:
++    assert fragility.fixed_sr0(319) == pytest.approx(expected_max_sharpe(5, 1 / 318), rel=1e-6)
++    assert fragility.fixed_sr0(319) == pytest.approx(0.0669, abs=5e-5)
++    for n_cells in (40, 4_000):
++        doc = {"all": [{"n": 300, "t": float(t)} for t in np.linspace(-3, 3, n_cells)]}
++        (tmp_path / "h.json").write_text(json.dumps(doc), "utf-8")
++        monkeypatch.setattr(fragility, "REPORTS", tmp_path)
++        rep = fragility.dsr_for_hunt("h.json")
++        assert rep["n_trials"] == 5 and rep["n_cells_reported"] == n_cells
++        assert "sr0" not in rep, "no hunt-level sr0 sized to the cell count"
++    src = Path(fragility.__file__).read_text("utf-8")
++    assert "phi_inv(1 - 1.0 / n_cells)" not in src
++
++
++def test_hunt12_e_max_is_n5_and_never_the_grid_size() -> None:
++    assert h12.E_MAX == pytest.approx(gp.fixed_bar_deflation())
++    assert h12.E_MAX == pytest.approx(expected_max_sharpe(5, 1.0))
++    src = Path(h12.__file__).read_text("utf-8")
++    assert "E_MAX = deflation(sweep_size(" not in src
++    assert src.count("E_MAX = fixed_bar_deflation()") == 2
++
++
++def test_hunt12_battery_screen_is_the_tier_s_bar_not_e_max_plus_two() -> None:
++    """`defl > 2` was t > 3.163; the battery now clears exactly t > 2.837, the Tier-S bar."""
++    assert h12.BAR_MARGIN == pytest.approx(1.6448536, abs=1e-6)
++    assert h12.E_MAX + h12.BAR_MARGIN == pytest.approx(gp.fixed_bar_t())
++    src = Path(h12.__file__).read_text("utf-8")
++    assert "defl > 2 " not in src and "defl > BAR_MARGIN" in src
++
++
++def test_one_deflation_is_the_judges_bailey_form_and_the_bar_is_2_837() -> None:
++    """ONE number, not three (1.163 exact, 1.193 Bailey, 0.956 asymptotic): the judge's sr0 is
++    sqrt(1/(T-1)) x gate_policy.fixed_bar_deflation(), and the bar in t units is 2.837."""
++    assert gp.fixed_bar_deflation() == pytest.approx(expected_max_sharpe(5, 1.0), rel=1e-12)
++    assert gp.fixed_bar_deflation() == pytest.approx(1.1926, abs=5e-5)
++    assert gp.fixed_bar_t() == pytest.approx(2.8374, abs=5e-5)
++    for n_obs in (61, 319, 5_000):
++        _, var, _ = gp.dsr_hurdle_inputs(n_obs)
++        assert np.sqrt(var) * gp.fixed_bar_deflation() == pytest.approx(
++            expected_max_sharpe(5, var), rel=1e-12)
++        assert fragility.fixed_sr0(n_obs) == pytest.approx(expected_max_sharpe(5, var), rel=1e-12)
++
++
++def test_multiplicity_deflates_at_n5_whatever_the_family_or_total_count(tmp_path, monkeypatch):
++    rows = [{"family": "big" if i % 50 else "small", "t_stat": 4.0, "gate": True}
++            for i in range(5_000)]
++    (tmp_path / "rep.json").write_text(json.dumps({"all": rows}), "utf-8")
++    monkeypatch.setattr(rm, "BASE", tmp_path)
++    rep = rm.annotate_report("rep.json")
++    e5 = gp.fixed_bar_deflation()
++    for r in rep["all"]:
++        assert r["t_deflated_family"] == r["t_deflated_total"] == pytest.approx(4.0 - e5)
++    assert rep["all"][0]["n_tests_total"] == 5_000, "the count is reported, not charged"
++    assert rep["multiplicity"]["expected_max_z_total"] == pytest.approx(e5)
++    assert rep["multiplicity"]["expected_max_z_family_max"] == pytest.approx(e5)
++    assert rep["multiplicity"]["trials_charged"] == gp.DSR_FIXED_TRIALS == 5
++
++
++@pytest.mark.parametrize(("t", "admitted"), [(2.80, False), (2.85, True)])
++def test_multiplicity_gate_ds_is_the_tier_s_bar(tmp_path, monkeypatch, t, admitted) -> None:
++    """gate_ds was deflated > 2 at the asymptotic 0.956 (t > 2.956); it is now t > 2.837."""
++    (tmp_path / "rep.json").write_text(
++        json.dumps({"all": [{"family": "f", "t_stat": t, "gate": True}] * 3_000}), "utf-8")
++    monkeypatch.setattr(rm, "BASE", tmp_path)
++    rep = rm.annotate_report("rep.json")
++    assert all(r["gate_ds"] is admitted for r in rep["all"])
++    assert rep["multiplicity"]["bar_t"] == pytest.approx(gp.fixed_bar_t())
++
++
++def test_qquant_gates_worker_uses_the_fixed_per_cell_bar(monkeypatch) -> None:
++    """qquant_gates is not in IMMUTABLE_MANIFEST; it charged the campaign n_trials (109) plus the
++    sweep variance, dormant only under HOLD_qquant_gates. It now uses dsr_hurdle_inputs."""
++    import pandas as pd
++    import qquant_gates as qg
++
++    idx = pd.date_range("2020-01-01", periods=319, freq="D")
++    arr = np.random.default_rng(7).normal(0.2, 1.0, 319)
++    key = ("XAUUSD", "f", "LONG", "asia", "s")
++    monkeypatch.setitem(qg._worker_ctx, "cell_map",
++                        {key: {str(d.date()): float(x) for d, x in zip(idx, arr, strict=True)}})
++    row = {"sym": "XAUUSD", "fam": "f", "side": "LONG", "win": "asia", "state": "s"}
++    a = qg.worker_eval(row, 0.1, 0.01, 109, np.array([0.01, 0.02, 0.03]))
++    b = qg.worker_eval(row, 0.1, 0.01, 1_000_000, np.array([0.0, 1.0, 2.0]))
++    da, db = a["stages"]["deflated_sharpe"], b["stages"]["deflated_sharpe"]
++    assert da["n_trials"] == db["n_trials"] == 5
++    assert da["sr0"] == db["sr0"] == round(expected_max_sharpe(5, 1 / 318), 4)
++    assert db["campaign_trials_reported"] == 1_000_000, "reported, not charged"
++    src = Path(qg.__file__).read_text("utf-8")
++    assert "deflated_sharpe_ratio(arr, n_trials=n_trials" not in src
++    assert "dsr_hurdle_inputs(len(arr))" in src
++
++
++def test_ug_remote_is_the_same_t8_bar_as_universal_gate() -> None:
++    sys.path.insert(0, str(DESK / "side_channels"))
++    import ug_remote
++
++    arr = np.random.default_rng(7).normal(0.2, 1.0, 319)
++    remote = ug_remote._ug_verdict(("c0", "XAUUSD", arr, arr, True, 0.1, True, 0.01,
++                                    1_000_000, 0.5))["stages"]["deflated_sharpe"]
++    local = _verdict(109, 0.0002)["stages"]["deflated_sharpe"]
++    assert remote["n_trials"] == local["n_trials"] == 5
++    assert remote["sr0"] == local["sr0"] == round(expected_max_sharpe(5, 1 / 318), 4)
++
++
++def test_gate_calibration_uses_the_production_t8_bar() -> None:
++    from desks.mt5.side_channels import gate_calibration as gc
++
++    rets = np.random.default_rng(3).normal(0.05, 1.0, 400)
++    ds = gc.run_gate_evaluation(rets, gc.CalibrationConfig(true_sharpe=0.05))["deflated_sharpe"]
++    assert ds["n_trials"] == 5
++    assert ds["sr0"] == pytest.approx(expected_max_sharpe(5, 1 / 399))

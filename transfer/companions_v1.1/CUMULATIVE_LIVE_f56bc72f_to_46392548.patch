@@ -1,0 +1,3184 @@
+--- a/desks/mt5/scripts/external_gauntlet.py
++++ b/desks/mt5/scripts/external_gauntlet.py
+@@ -14,12 +14,14 @@
+ import math
+ import os
+ import sys
++import threading
+ import time
+ from collections import OrderedDict
++from collections.abc import Callable
+ from datetime import UTC, datetime
+ from functools import lru_cache
+ from pathlib import Path
+-from typing import Any
++from typing import Any, TypeVar, cast
+ 
+ import numpy as np
+ import pandas as pd
+@@ -54,6 +56,7 @@
+ )
+ from libs.validation.cpcv import CPCV  # noqa: E402
+ from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
++from libs.validation.errors import ValidationError  # noqa: E402
+ from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
+ from libs.validation.reality_check import hansen_spa  # noqa: E402
+ from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
+@@ -377,6 +380,12 @@
+     return Costs.from_symbol(meta.get(sym, {}), mult=mult)
+ 
+ 
++def _stress_costs(base: Costs, sym: str, row: dict, mult: float) -> Costs:
++    """The stress arm on the SAME surface as the base arm (table x mult, floored at hour p90)."""
++    from research.entry_hour_cost import stress_costs
++    return stress_costs(base, sym, row, mult)
++
++
+ def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:
+     res = run_backtest(df, sigs, costs)
+     # ONE ROW PER TRADE, THEN SUMMED PER DAY. This was a dict keyed by entry date, so a second
+@@ -490,6 +499,79 @@
+     return frame
+ 
+ 
++#: (sym, chart) -> the data-day a cell on that chart is keyed to, read ONCE per process.
++#:
++#: WHY (2026-10-20, box sweep 23324). Every build-loop pass reads the cell's bars only to learn
++#: `frame.index[-1]` for the cache key, and the frame cache holds 1.3m rows -- one M1 chart, two
++#: M5 ones. The docket order is not symbol-contiguous (bucket and cursor keys come first), so a
++#: shard re-read a parquet for nearly every spec: 14 shards spent 4,383-4,579 s each re-loading
++#: ~450 cached cells and deferring ~21.5k cells the budget had already ruled out, 4,964 s of
++#: wall clock a sweep, every sweep. The key needs a DAY, not a frame. Read once, the same day.
++_LAST_DAY: dict[tuple[str, str], object] = {}
++
++
++def _index_last_day(pq: Path):
++    """The last bar's day from the parquet's INDEX COLUMN ALONE, or None whenever that read is not
++    exactly `families._h1(pd.read_parquet(pq)).index[-1].normalize()`: a single datetime index
++    column, non-empty, already in order (so `_h1`'s sort and de-duplication keep the last stamp
++    last, and its resample keeps it inside the same day), converted to UTC as `_h1` converts it."""
++    try:
++        import pyarrow as _pa
++        import pyarrow.parquet as _pq
++        pf = _pq.ParquetFile(pq)
++        cols = (pf.schema_arrow.pandas_metadata or {}).get("index_columns") or []
++        if len(cols) != 1 or not isinstance(cols[0], str):
++            return None
++        # A TIMESTAMP column only: `_bars_for` refuses an int or string index (it is not a
++        # DatetimeIndex), and `pd.DatetimeIndex` would happily parse one into a day.
++        if not _pa.types.is_timestamp(pf.schema_arrow.field(cols[0]).type):
++            return None
++        idx = pd.DatetimeIndex(pf.read(columns=[cols[0]]).column(0).to_pandas())
++    except Exception:
++        return None
++    if len(idx) == 0 or idx.hasnans or not idx.is_monotonic_increasing:
++        return None
++    idx = idx.tz_localize("UTC") if idx.tz is None else idx.tz_convert("UTC")
++    return idx.as_unit("ns")[-1].normalize()
++
++
++def _cell_last_day(sym: str, timeframe: str = "H1"):
++    """`_bars_for(sym, timeframe).index[-1].normalize()`, or None where `_bars_for` finds no bars --
++    once per (sym, chart) per process. A frame already in the frame cache is read from there, as
++    `_bars_for` would; otherwise the parquet's index column alone; anything else (no parquet, the
++    terminal fallback, an unsorted or non-datetime index) goes through `_bars_for` itself."""
++    key = (str(sym), str(timeframe).upper())
++    if key in _LAST_DAY:
++        return _LAST_DAY[key]
++    day = None
++    pq = UNI / f"{key[0]}_{key[1]}.parquet"
++    if key not in _FRAME_CACHE and pq.exists():
++        day = _index_last_day(pq)
++    if day is None:
++        frame = _bars_for(key[0], key[1])
++        day = None if frame is None or len(frame) == 0 else frame.index[-1].normalize()
++    _LAST_DAY[key] = day
++    return day
++
++
++def _built_day(obj: dict, keyed):
++    """The day a FRESH build's own frame ends on, else `keyed`.
++
++    `_cell_last_day` answers once per process (and from the pool's plan in a shard), but
++    `build_cell` re-reads the chart. If the parquet advanced in between, the cell was built
++    through D+k while keyed and trimmed as D -- day-D exits leaking into a series keyed as D.
++    The base judge took both from one frame; so does this: a fresh build is keyed and trimmed
++    by the frame it was built from. A cache HIT never comes here: its series is the build that
++    was stored under its own key."""
++    try:
++        df = obj.get("df")
++        if isinstance(getattr(df, "index", None), pd.DatetimeIndex) and len(df):
++            return df.index[-1].normalize()
++    except Exception:
++        pass
++    return keyed
++
++
+ def _h1_for(sym: str):
+     """The symbol's HOURLY bars. Kept by name: callers outside this module ask for H1 by name."""
+     return _bars_for(sym, "H1")
+@@ -761,40 +843,15 @@
+     # 3x "stress" on the pooled number is still cheaper than the real fill.
+     # The surface is OPTIONAL: without it the pooled median still applies and the basis is
+     # recorded, so an undercharge stays visible instead of becoming the silent default.
+-    hour = _modal_fill_hour(sigs, timeframe)
+-    surf = _surface()
+-    spread_at_hour = None
+-    cost_basis = "pooled_median_spread"
+-    if surf is not None and hour is not None:
+-        try:
+-            from research.cost_surface import spread_pts as _sp
++    # THE HOUR OF ENTRY AND OF EXIT (2026-10-13), from the ONE cost surface: the cost model
++    # carries a per-(weekday, hour) spread table and the engine charges a long its entry slot
++    # and a short its exit slot. The modal-hour scalar this replaced charged a cell's other
++    # hours at its most common one, and its 3x arm at the pooled median again. The helper is
++    # not sealed so the rule can be tested and read by every other consumer; see
++    # desks/mt5/research/entry_hour_cost.py for the fallback ladder (never zero, never cheaper).
++    from research.entry_hour_cost import gauntlet_costs
+ 
+-            spread_at_hour = _sp(surf, sym, hour)
+-        except Exception:
+-            spread_at_hour = None
+-        if spread_at_hour is not None:
+-            cost_basis = f"fill_hour_{hour:02d}_spread"
+-    # `meta.get(sym, {})`, NOT `meta`. THE WHOLE UNIVERSE DICT WAS BEING PASSED HERE and
+-    # `from_symbol` reads `contract_size`, `tick_size`, `tick_value` and `median_spread_pts` off
+-    # the mapping it is given -- a 251-symbol registry has none of those at the top level, so
+-    # every one fell back to its default. Measured 2026-09-02: with the surface present (it is),
+-    # EVERY cell priced through this branch got tick_size 0 -> spread max(0, 0.05) = 0.05,
+-    # contract_size 1e5 and quote_per_account 1.0 -- gold's default contract on a NOK cross, no
+-    # currency conversion, and essentially no spread, for every symbol.
+-    #
+-    # The direction is the worst one. This branch exists to charge the HIGHER fill-hour spread
+-    # (`from_symbol`'s own docstring: EURZAR 310 pooled against 1,918 on its fill bars, and
+-    # "both sleeves -- certified, and on live forward clocks -- go from +0.25R to NEGATIVE").
+-    # The bug made it charge almost NOTHING instead, so the surface that was wired to make these
+-    # sleeves honest was making them free. `overnight_gap_decay` on the exotic crosses replays at
+-    # +0.55R per trading DAY under it, which is what sent the allocator's free optimum to 69,783%
+-    # a year and tripped its plausibility fence.
+-    #
+-    # This is the same shape as the three defects `costs_for` lists above -- a value handed to a
+-    # constructor in the wrong shape, defaulting quietly, in the survivor-manufacturing
+-    # direction, on the one call site that decides who gets a certificate.
+-    costs = (Costs.from_symbol(meta.get(sym, {}), spread_pts=spread_at_hour)
+-             if spread_at_hour is not None else costs_for(sym, meta))
++    costs, cost_basis, hour = gauntlet_costs(sym, meta, sigs, timeframe)
+     # `timeframe` ON THE CELL, not only inside params. `cell_id` reads it from either, and a
+     # caller that builds a cell without params (the recertification audit rebuilds from
+     # `authorized_runs`) would otherwise lose the chart between here and its own verdict lookup.
+@@ -854,6 +911,19 @@
+     required_inputs = input_preflight(family, spec.get("params"))
+     if required_inputs:
+         return required_inputs
++    # A MISSING SURFACE IS KNOWN WITHOUT BARS (2026-10-20). `build_cell` loads the cell's chart
++    # and only then reads MICROSTRUCTURE_SURFACES.json; sweep 23324 spent 2,441 pre-warm builds
++    # learning "no microstructure surface for NOKJPY ..." that one JSON lookup answers. Same
++    # reader, same reason text (the converter's NEEDS_MICROSTRUCTURE_SURFACE route matches it),
++    # re-read every sweep, so the cell is built the sweep its surface appears.
++    if family == "execution_state":
++        try:
++            from research import orthogonal_sweep as _inputs
++            if not _inputs._surface_for(str(spec.get("sym") or "")):
++                return (f"BLOCKED_DATA: execution_state: no microstructure surface for "
++                        f"{spec.get('sym')} in {_inputs.MICROSTRUCTURE_SURFACES.name}")
++        except ImportError:
++            pass
+     fn = getattr(families, f"family_{family}", None)
+     if fn is None:
+         try:
+@@ -1109,10 +1179,20 @@
+     discarding.
+     """
+     base = root or REPORTS.parent
+-    try:
+-        g = json.loads((base / "reports" / "universal_gates_external.json").read_text("utf-8"))
+-    except (OSError, ValueError):
+-        return {}
++    _facts = _report_facts(base)
++    if _facts is not None:
++        ruled, power_def = dict(_facts["ruled"]), dict(_facts["power_def"])
++    else:
++        try:
++            g = json.loads((base / "reports" / "universal_gates_external.json").read_text("utf-8"))
++        except (OSError, ValueError):
++            return {}
++        ruled, power_def = _yield_counts(g.get("verdicts") or [])
++    return _yield_from_counts(base, root, ruled, power_def)
++
++
++def _yield_counts(rows: Any) -> tuple[dict[str, int], dict[str, int]]:
++    """(ruled cells, power-deficient cells) per family from the report's verdict rows."""
+     ruled: dict[str, int] = {}
+     # POWER-DEFICIENT CELLS ARE OUTPUT, NOT WASTE -- AS OF THE HOUR weak_signals GOT A CLOCK.
+     #
+@@ -1133,7 +1213,7 @@
+     # rise and the total docket built is unchanged. More independent positive-Elog bets inside the
+     # same budget is the whole point.
+     power_def: dict[str, int] = {}
+-    for v in g.get("verdicts") or []:
++    for v in rows:
+         if not isinstance(v, dict) or v.get("unmeasured"):
+             continue
+         fam = str(v.get("family") or "")
+@@ -1147,6 +1227,12 @@
+                   if isinstance(gg, dict) and gg.get("passed") is False}
+         if failed and failed <= POWER_ONLY_GATES:
+             power_def[fam] = power_def.get(fam, 0) + 1
++    return ruled, power_def
++
++
++def _yield_from_counts(base: Path, root: Path | None, ruled: dict[str, int],
++                       power_def: dict[str, int]) -> dict[str, float]:
++    """The rest of `_family_yield`, unchanged: survivors, combination credit, shrinkage."""
+     try:
+         s = json.loads((base / "reports" / "UNIVERSAL_SURVIVORS.json").read_text("utf-8"))
+     except (OSError, ValueError):
+@@ -1299,12 +1385,20 @@
+     Fails OPEN (empty set) on any read problem: an unreadable report must not silently re-promote
+     the whole docket to the front and starve the genuinely-new cells instead.
+     """
++    _facts = _report_facts(REPORTS.parent)
++    if _facts is not None:
++        return set(_facts["unjudged"])
+     try:
+         doc = json.loads((REPORTS / "universal_gates_external.json").read_text("utf-8"))
+     except (OSError, ValueError):
+         return set()
++    return _unjudged_cells(doc.get("verdicts") or [])
++
++
++def _unjudged_cells(rows: Any) -> set[str]:
++    """`_stamped_but_unjudged`'s rule over the report's verdict rows."""
+     out: set[str] = set()
+-    for v in doc.get("verdicts") or []:
++    for v in rows:
+         if not isinstance(v, dict) or v.get("stages"):
+             continue
+         try:
+@@ -1318,6 +1412,83 @@
+     return out
+ 
+ 
++# ---------------------------------------------------------- the report's digest (2026-10-14)
++#: THE GATES REPORT IS READ FOR TWO SMALL FACTS AND IT IS 625 MB. `_stamped_but_unjudged` and
++#: `_family_yield` (reached twice a sweep through `_house_yield` and `allocate_by_yield`) each
++#: `json.loads` the whole of `universal_gates_external.json` -- the previous sweep's report --
++#: for a set of cell ids and two per-family counts. The sweep that WRITES the report now derives
++#: those facts from the very rows it wrote (each row round-tripped through JSON, so they are what
++#: a reader would parse) and records them beside it with the report's SHA-256, size and the
++#: identity of the code that derived them. A reader uses the digest only when the report on disk
++#: hashes to that SHA-256 and the code is the same; anything else -- no digest, an edited or
++#: rewritten report, a release -- falls back to reading the report exactly as before.
++REPORT_DIGEST_NAME = "universal_gates_external.digest.json"
++
++
++def _report_digest_code() -> str:
++    """The code the facts are a function of: this file and `cell_id`'s module."""
++    h = hashlib.sha256()
++    for f in (Path(__file__), BASE / "desks" / "mt5" / "research" / "frontier_identity.py"):
++        try:
++            h.update(f.read_bytes().replace(b"\r\n", b"\n"))
++        except OSError:
++            h.update(b"<unreadable>")
++    return h.hexdigest()
++
++
++def _file_sha256(path: Path) -> str:
++    with open(path, "rb") as fh:
++        return hashlib.file_digest(fh, "sha256").hexdigest()
++
++
++def _report_facts(base: Path) -> dict[str, Any] | None:
++    """The digest's facts when it provably describes the report now on disk, else None."""
++    report = base / "reports" / "universal_gates_external.json"
++    try:
++        dg = json.loads((base / "reports" / "gauntlet_cache" / REPORT_DIGEST_NAME)
++                        .read_text("utf-8"))
++        if (not isinstance(dg, dict) or dg.get("code") != _report_digest_code()
++                or dg.get("report_bytes") != report.stat().st_size
++                or dg.get("report_sha256") != _file_sha256(report)):
++            return None
++        facts = dg["facts"]
++        if (isinstance(facts.get("unjudged"), list) and isinstance(facts.get("ruled"), dict)
++                and isinstance(facts.get("power_def"), dict)):
++            return cast(dict[str, Any], facts)
++    except (OSError, ValueError, KeyError, TypeError, AttributeError):
++        pass
++    return None
++
++
++def _write_report_digest(report: Path, result: dict[str, Any]) -> None:
++    """Derive the facts from the rows just written and record them beside the report."""
++    try:
++        # Row by row (audit on b879ac50): one round-tripped row at a time, never a second copy
++        # of the report. Both rules are single passes; counts merge in first-seen order, which
++        # is the order one pass over every row gives.
++        unjudged: set[str] = set()
++        ruled: dict[str, int] = {}
++        power_def: dict[str, int] = {}
++        for v in result.get("verdicts") or []:
++            r = (json.loads(json.dumps(v, default=str)),)
++            unjudged |= _unjudged_cells(r)
++            r_ruled, r_power = _yield_counts(r)
++            for k, n in r_ruled.items():
++                ruled[k] = ruled.get(k, 0) + n
++            for k, n in r_power.items():
++                power_def[k] = power_def.get(k, 0) + n
++        facts = {"unjudged": sorted(unjudged), "ruled": ruled, "power_def": power_def}
++        doc = {"report_sha256": _file_sha256(report), "report_bytes": report.stat().st_size,
++               "code": _report_digest_code(), "facts": facts}
++        dest = report.parent / "gauntlet_cache" / REPORT_DIGEST_NAME
++        dest.parent.mkdir(parents=True, exist_ok=True)
++        tmp = dest.with_name(f"{dest.name}.{os.getpid()}.tmp")
++        tmp.write_text(json.dumps(doc), encoding="utf-8")
++        os.replace(tmp, dest)
++    except Exception as exc:              # a missing digest only costs the next sweep a read
++        print(f"  report digest not written ({type(exc).__name__}: {exc})")
++
++
+ # ------------------------------------------------------------------ attestation re-mint (v4)
+ #: THE RE-MINT QUEUE, written hourly by `research/attestation_remint.py` (unsealed). When
+ #: gate_policy.ATTESTATION changes, every certificate judged under the old attestation is refused
+@@ -1338,18 +1509,69 @@
+ PRIORITY_REMINT = HYP / "priority_remint.json"
+ 
+ 
+-def remint_cells(path: Path | None = None) -> tuple[set[str], set[str]]:
+-    """(cell ids to judge first, certificate keys judged before the attestation in force)."""
++def canon_remint_cells(doc: object, is_exact) -> tuple[set[str], set[str]]:
++    """(cells, certificate keys) the CANON ITSELF says await re-judgement (audit 2026-10-13).
++
++    Every row in `pending_rejudge`, and -- in the re-seal window, before the first sweep under a
++    new attestation has run -- every survivor under a header that is no longer exact. Read from
++    the survivor file the gauntlet writes, so the front of the queue needs no second organ to
++    author `priority_remint.json` (none does)."""
++    if not isinstance(doc, dict):
++        return set(), set()
++    rows: dict = {}
++    pending = doc.get("pending_rejudge")
++    if isinstance(pending, dict):
++        rows.update(pending)
++    survivors = doc.get("survivors")
++    if isinstance(survivors, dict) and survivors and not is_exact(doc.get("gate_policy")):
++        rows.update(survivors)
++    cells: set[str] = set()
++    for row in rows.values():
++        if isinstance(row, dict):
++            cells |= _row_cells(row)
++    return cells, {str(k) for k in rows}
++
++
++def remint_cells(path: Path | None = None,
++                 canon_path: Path | None = None) -> tuple[set[str], set[str]]:
++    """(cell ids to judge first, certificate keys judged before the attestation in force).
++
++    The union of `priority_remint.json` (when present and current) and the canon's own
++    re-judge set (`canon_remint_cells`)."""
+     try:
+         from research.gate_policy import ATTESTATION as _att
+-        doc = json.loads((path or PRIORITY_REMINT).read_text("utf-8"))
+-    except (ImportError, OSError, ValueError):
+-        return set(), set()
+-    if not isinstance(doc, dict) or doc.get("attestation") != _att:
++        from research.gate_policy import is_exact_policy as _exact
++    except ImportError:
+         return set(), set()
+-    cells = {str(c) for c in (doc.get("cells") or []) if c}
+-    stale = {str(k) for k in (doc.get("stale_certificate_keys") or []) if k}
+-    return cells, stale
++    cells: set[str] = set()
++    stale: set[str] = set()
++    try:
++        doc = json.loads((path or PRIORITY_REMINT).read_text("utf-8"))
++    except (OSError, ValueError):
++        doc = None
++    if isinstance(doc, dict) and doc.get("attestation") == _att:
++        cells |= {str(c) for c in (doc.get("cells") or []) if c}
++        stale |= {str(k) for k in (doc.get("stale_certificate_keys") or []) if k}
++    try:
++        canon = json.loads((canon_path or REPORTS / "UNIVERSAL_SURVIVORS.json")
++                           .read_text("utf-8"))
++    except (OSError, ValueError):
++        canon = None
++    c_cells, c_keys = canon_remint_cells(canon, _exact)
++    return cells | c_cells, stale | c_keys
++
++
++def restore_would_restamp(row: dict, attestation: dict) -> bool:
++    """True when restoring a retired row would stamp `attestation` over gates never judged
++    under it: the attestation reserves a lockbox and the row's gate 9 carries no carve, or a
++    carve under another basis. Such a row goes to `pending_rejudge`, never back to survivors."""
++    basis = attestation.get("lockbox_basis") if isinstance(attestation, dict) else None
++    if not basis:
++        return False
++    gates = row.get("gates") if isinstance(row, dict) else None
++    lb = (gates or {}).get("lockbox") if isinstance(gates, dict) else None
++    lb = lb if isinstance(lb, dict) else {}
++    return not lb.get("cut") or lb.get("basis") != basis
+ 
+ 
+ def remint_front(specs: list[dict], is_remint) -> list[dict]:
+@@ -1372,6 +1594,45 @@
+     return out
+ 
+ 
++#: Stage statuses that say the gate could not rule, never that it ruled against the cell.
++_UNRULED_STATUSES = ("UNMEASURED", "UNKNOWN")
++
++
++def _stage_unruled(name: str, st: object) -> bool:
++    """Whether a stage that did not pass was a gate that COULD NOT RULE, not a failure.
++
++    A stage with no recorded result, an explicit `unmeasured` flag or an UNMEASURED/UNKNOWN
++    status is no evidence, nor is a stage stamped `measured: False` (an UNMEASURED cost fails
++    closed for CERTIFICATION, but it is not a ruling against a certificate already held); so is a
++    lockbox with no held-out Sharpe at all ("no lockbox evidence
++    exists", `gate_policy.lockbox_stage` under its day floor), with or without the frequency-
++    aware `unmeasured` flag."""
++    if not isinstance(st, dict):
++        return True
++    if st.get("passed") is None or st.get("unmeasured") or st.get("measured") is False:
++        return True     # `swap_cost` writes measured False when the cost could not be priced
++    if str(st.get("status") or "").upper() in _UNRULED_STATUSES:
++        return True
++    return name == "lockbox" and st.get("lockbox_sharpe") is None
++
++
++def remint_unruled(v: dict) -> bool:
++    """A re-judge that measured nothing: it may not retire a certificate (audit 2026-10-13).
++
++    An UNMEASURED verdict (too few observations, no series, a lockbox the history cannot supply)
++    or one whose terminal gate is UNKNOWN is a fact about what the sweep could see, not evidence
++    against the edge -- the gauntlet's own observations text says so. Retiring on it revoked
++    certificates on absence, the one thing L1.28a forbids. A re-judge retires only when at least
++    one gate RULED against the cell."""
++    if v.get("unmeasured") or v.get("passed") is None:
++        return True
++    if str(v.get("terminal_gate") or "").upper() in _UNRULED_STATUSES:
++        return True
++    failing = [(g, st) for g, st in (v.get("stages") or {}).items()
++               if not (isinstance(st, dict) and st.get("passed") is True)]
++    return bool(failing) and all(_stage_unruled(str(g), st) for g, st in failing)
++
++
+ def remint_partition(old_doc: dict, survivors_all: dict, verdicts: list, fresh_keys: set,
+                      stale_hint: set, is_exact, version: str, now_iso: str) -> dict:
+     """Take every row judged under another attestation OUT of `survivors_all` (in place).
+@@ -1402,6 +1663,7 @@
+     retired: dict[str, dict] = {}
+     superseded: dict[str, str] = {}
+     accounted = 0
++    unruled = 0
+     for key in sorted(stale):
+         if key in fresh_keys:
+             old_pending.pop(key, None)
+@@ -1420,6 +1682,16 @@
+             back["pending_reason"] = (f"gates predate attestation {version}; not reached by "
+                                       f"this sweep -- judged first on the next")
+             pending[key] = back
++        elif not v.get("passed") and remint_unruled(v):
++            back = dict(row)
++            back.setdefault("pending_since", now_iso)
++            back["pending_reason"] = (
++                f"re-judged under attestation {version} but the gates could not rule "
++                f"({v.get('unknown_reason') or v.get('terminal_gate') or 'UNMEASURED'}): no "
++                f"evidence against the certificate, so it waits and is judged first again")
++            back["last_rejudge_unmeasured"] = now_iso
++            pending[key] = back
++            unruled += 1
+         elif v.get("passed"):
+             new_key = f"external.{v['cell']}"
+             if new_key in survivors_all:
+@@ -1447,12 +1719,15 @@
+               "stale_rows": len(stale), "rejudged_passed": len(stale) - len(pending)
+               - len(retired) - len(superseded),
+               "rejudged_failed_retired": len(retired), "superseded": superseded,
++              "rejudged_unmeasured_kept_pending": unruled,
+               "pending_rejudge": len(pending), "left_survivor_set": accounted}
+     return {"pending": pending, "retired": retired, "superseded": superseded,
+             "accounted": accounted, "record": record}
+ 
+ 
+-def _orthogonality_floor(specs: list[dict], keep: list[dict]) -> tuple[list[dict], dict]:
++def _orthogonality_floor(specs: list[dict], keep: list[dict], *,
++                         saturated: set[str] | frozenset[str] = frozenset()
++                         ) -> tuple[list[dict], dict]:
+     """Guarantee the rho-reducing families a sample, because their yield is 0 and always will be.
+ 
+     WHAT THE MEASUREMENT ACTUALLY SAID, 2026-09-15, after two wrong readings of it. The docket
+@@ -1482,7 +1757,11 @@
+     that the desk already owns, sitting unjudged in its own docket.
+     """
+     kept_ids = {id(s) for s in keep}
+-    rows = [s for s in specs if str(s.get("family") or "") in ORTHOGONAL_FAMILIES]
++    # A family the breadth steer measures SATURATED (its mechanism holds a certified or live
++    # sleeve: cross_asset_residual 346 certificates on 2026-10-13) is no longer "never judged,
++    # yield 0" -- forcing it is the opposite of breadth. Empty set (no steer): legacy behaviour.
++    rows = [s for s in specs if str(s.get("family") or "") in ORTHOGONAL_FAMILIES
++            and str(s.get("family") or "") not in saturated]
+     have = sum(1 for r in rows if id(r) in kept_ids)
+     short = ORTHOGONALITY_MIN_CELLS - have
+     if not rows or short <= 0:
+@@ -1498,6 +1777,162 @@
+     }
+ 
+ 
++#: THE BREADTH STEER (desks/mt5/research/breadth_enforcer.py, principal 2026-10-13). Resolved at
++#: CALL time from `REPORTS` (or GAUNTLET_BREADTH_STEER), never bound at import: a test that points
++#: `REPORTS` at a tmp tree must not read the host's live steer.
++BREADTH_STEER_MAX_AGE_H = 6.0
++
++
++def _breadth_steer_path() -> Path:
++    env = os.environ.get("GAUNTLET_BREADTH_STEER", "").strip()
++    return Path(env) if env else REPORTS / "BREADTH_ENFORCER.json"
++
++
++def _breadth_steer() -> dict | None:
++    """The enforcer's MEASURED steer <= BREADTH_STEER_MAX_AGE_H old, or None (legacy behaviour).
++    Read through the enforcer's own `load_steer`, so the staleness rule has one definition."""
++    try:
++        from research.breadth_enforcer import load_steer
++        return load_steer(_breadth_steer_path(), max_age_h=BREADTH_STEER_MAX_AGE_H)
++    except Exception:
++        return None
++
++
++#: THE FAMILY FLOOR REACHES THE BUILD (2026-10-14). The build budget walks `keep` front to back,
++#: so whatever order `keep` has IS the allocation the budget actually reaches. These bound the
++#: interleave that sets that order: a unit is at most this many consecutive same-symbol cells of
++#: one family (the frame cache's contiguity holds inside it; no family's run can hold the head
++#: for thousands of cells), and a published quota is clamped to [lo, hi] x the median weight, so
++#: one malformed or extreme number in JUDGE_COVERAGE.json can neither freeze a family out of the
++#: head nor hand it the whole of it.
++FLOOR_INTERLEAVE_MAX_RUN = 32
++FLOOR_WEIGHT_CLAMP = (0.01, 100.0)
++#: What the last interleave used, published in RESEARCH_ALLOCATION.json (never a silent weight).
++_FLOOR_INTERLEAVE_NOTE: dict[str, Any] = {}
++
++
++def _coverage_quota() -> dict[str, int]:
++    """The per-family quota `research/judge_coverage.py` published for this hour, or {}.
++
++    Read, never recomputed: one allocation, written by intake, consumed here. An entry that is not
++    a positive integer is skipped on its own (one bad row never discards the rest); an unreadable
++    file returns {} and the interleave falls back to each family's own take size as its weight,
++    which is still family-fair -- never the block order this replaced."""
++    try:
++        doc = json.loads((REPORTS / "JUDGE_COVERAGE.json").read_text("utf-8"))
++    except (OSError, ValueError):
++        return {}
++    raw = doc.get("quota") if isinstance(doc, dict) else None
++    out: dict[str, int] = {}
++    for k, v in (raw.items() if isinstance(raw, dict) else ()):
++        try:
++            n = int(v)
++        except (TypeError, ValueError, OverflowError):
++            continue
++        if n > 0:
++            out[str(k)] = n
++    return out
++
++
++def _floor_weights(takes: dict[str, list[dict[str, Any]]]) -> dict[str, float]:
++    """Each family's interleave weight: its published quota (at least 1), or its own take size
++    when no quota is readable; clamped to FLOOR_WEIGHT_CLAMP x the median weight. The source and
++    every clamped family are recorded in `_FLOOR_INTERLEAVE_NOTE` and printed once."""
++    quota = _coverage_quota()
++    fams = [f for f, rows in takes.items() if rows]
++    raw = {f: float(max(quota.get(f, 0), 1)) if quota else float(max(len(takes[f]), 1))
++           for f in fams}
++    if not raw:
++        return {}
++    vals = sorted(raw.values())
++    med = vals[len(vals) // 2] if len(vals) % 2 else 0.5 * (vals[len(vals) // 2 - 1]
++                                                            + vals[len(vals) // 2])
++    lo, hi = FLOOR_WEIGHT_CLAMP[0] * med, FLOOR_WEIGHT_CLAMP[1] * med
++    w = {f: min(max(v, lo), hi) for f, v in raw.items()}
++    clamped = {f: {"published": raw[f], "used": round(w[f], 4)} for f in fams if w[f] != raw[f]}
++    _FLOOR_INTERLEAVE_NOTE.clear()
++    _FLOOR_INTERLEAVE_NOTE.update({
++        "weight_source": "JUDGE_COVERAGE.quota" if quota else "take_size (quota unreadable)",
++        "median_weight": med, "clamp_relative": list(FLOOR_WEIGHT_CLAMP),
++        "max_run_cells": FLOOR_INTERLEAVE_MAX_RUN, "families": len(fams), "clamped": clamped})
++    if clamped:
++        print(f"[floor-interleave] {len(clamped)} family weight(s) clamped to "
++              f"[{lo:g}, {hi:g}] (median {med:g}): "
++              + ", ".join(f"{f} {c['published']:g}->{c['used']:g}"
++                          for f, c in sorted(clamped.items())[:12]), flush=True)
++    return w
++
++
++def _floor_interleave(takes: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
++    """Start-time weighted fair interleave of the family takes; every row kept once, each
++    family's own order kept.
++
++    A family's stream is cut into UNITS: runs of consecutive same-symbol cells, each at most
++    FLOOR_INTERLEAVE_MAX_RUN long (so the frame cache's symbol contiguity holds inside every unit).
++    Each family advances a virtual clock by len(unit)/weight; the unit with the EARLIEST START goes
++    next, ties to the family that appeared first. Ordering by start (not finish) time puts every
++    family's first unit inside the first sum-of-one-unit-each cells, whatever its weight -- a
++    finish-time order let a light family with one long run wait behind thousands of a heavy
++    family's cells, which is the starvation this exists to end."""
++    import heapq
++    weight = _floor_weights(takes)
++    units: dict[str, list[list[dict[str, Any]]]] = {}
++    heap: list[tuple[float, int, str, int]] = []
++    for order, (fam, rows) in enumerate(takes.items()):
++        if not rows:
++            continue
++        us: list[list[dict[str, Any]]] = []
++        for sp in rows:
++            if (us and len(us[-1]) < FLOOR_INTERLEAVE_MAX_RUN
++                    and us[-1][0].get("sym") == sp.get("sym")):
++                us[-1].append(sp)
++            else:
++                us.append([sp])
++        units[fam] = us
++        heapq.heappush(heap, (0.0, order, fam, 0))
++    out: list[dict[str, Any]] = []
++    while heap:
++        start, order, fam, i = heapq.heappop(heap)
++        unit = units[fam][i]
++        out.extend(unit)
++        if i + 1 < len(units[fam]):
++            heapq.heappush(heap, (start + len(unit) / weight[fam], order, fam, i + 1))
++    return out
++
++
++def _floor_interleave_steered(head: list[dict[str, Any]], steer: dict[str, Any]) -> list[dict[str, Any]]:
++    """The floor interleave INSIDE the breadth steer's head, without moving the steer's tiers.
++
++    `steered_yield_order` fixes WHICH cells are in the head and its tier order (UNKNOWN ground,
++    the rest of the frontier, explored; the saturated set spread through it by its own WFQ). Each
++    non-saturated tier keeps exactly its slots; only the cells inside a tier's slots are re-dealt
++    by `_floor_interleave` across that tier's families, so an H1-only frontier family is no longer
++    held behind every intraday frontier cell. Saturated slots are untouched. Same multiset, same
++    per-family head counts, same tiers: only the order inside a tier changes."""
++    try:
++        from research.breadth_enforcer import SATURATED, class_of
++    except Exception:
++        return head
++    out = list(head)
++    slots: dict[str, list[int]] = {}
++    for i, sp in enumerate(head):
++        tier = class_of(str(sp.get("family") or "?"), steer)
++        if tier != SATURATED:
++            slots.setdefault(str(tier), []).append(i)
++    tiers: dict[str, Any] = {}
++    for tier, idx in slots.items():
++        takes: dict[str, list[dict[str, Any]]] = {}
++        for i in idx:
++            takes.setdefault(str(head[i].get("family") or "?"), []).append(head[i])
++        for i, sp in zip(idx, _floor_interleave(takes), strict=True):
++            out[i] = sp
++        tiers[tier] = {"slots": len(idx), **_FLOOR_INTERLEAVE_NOTE}
++    _FLOOR_INTERLEAVE_NOTE.clear()
++    _FLOOR_INTERLEAVE_NOTE.update({"steered": True, "saturated_slots_untouched": True,
++                                   "tiers": tiers})
++    return out
++
++
+ def allocate_by_yield(specs: list[dict]) -> tuple[list[dict], dict[str, dict]]:
+     """Trim the docket so the build budget lands on the families that produce survivors.
+ 
+@@ -1548,7 +1983,9 @@
+     tot = sum(raw.values()) or 1.0
+     n_fam = len(by_fam)
+     keep: list[dict] = []
++    takes: dict[str, list[dict[str, Any]]] = {}
+     report: dict[str, dict] = {}
++    wants: dict[str, int] = {}
+     for fam, rows in by_fam.items():
+         share = (YIELD_ALLOCATION_STRENGTH * (raw[fam] / tot)
+                  + (1.0 - YIELD_ALLOCATION_STRENGTH) / n_fam)
+@@ -1556,26 +1993,76 @@
+         # keeps all of them and the surplus flows to the others through the floor below.
+         share = min(share, YIELD_MAX_SHARE)
+         want = max(int(round(share * len(specs))), int(YIELD_MIN_SHARE * len(rows)), 1)
++        wants[fam] = want
+         take = rows[:want]
+-        keep.extend(take)
++        takes[fam] = take
+         report[fam] = {"docket": len(rows), "built_this_sweep": len(take),
+                        "yield_per_1k_ruled": round(raw[fam] * 1000, 2),
+                        "share_of_budget": round(share, 4),
+                        "capped_by_ceiling": bool(share >= YIELD_MAX_SHARE),
+                        "held_by_floor": bool(len(take) <= int(YIELD_MIN_SHARE * len(rows)))}
++    # THE FAMILY FLOOR REACHES THE BUILD (2026-10-14). `keep` was the family takes CONCATENATED,
++    # in the order each family first appeared in the sorted docket, and the build budget walks it
++    # front to back -- so the first two or three families' takes (tens of thousands of cells
++    # each) spent the whole budget and every later family was NOT_RUN_BUILD_BUDGET_DEFERRED,
++    # every sweep. Measured on the box's 2026-10-12 05:31 sweep: 9 of 60 listed families
++    # received every named verdict; 51 received none. The takes are now INTERLEAVED by start-time
++    # weighted fair queueing on the per-family quota `research/judge_coverage.py` publishes, in
++    # same-symbol units of at most FLOOR_INTERLEAVE_MAX_RUN cells. Same cells, same counts, same
++    # trim: only the order the budget walks changes.
++    keep = _floor_interleave(takes)
+     # THE EXPLORATION FLOOR, APPLIED AFTER THE TRIM AND TAKING FROM NOBODY. The family split above
+     # is exploitation: it sends budget where survivors have come from. That is correct and it is
+     # why every certificate this desk holds is H1/asia -- the axes it has never sampled score zero
+     # and are never sampled again. This appends cells on UNMEASURED (chart, anchor) axes so the
+     # desk can distinguish "no edge there" from "never asked".
+-    explored, axes = _explore_unmeasured_axes(specs, keep)
+-    keep.extend(explored)
+-    # THE ORTHOGONALITY FLOOR, on the same footing and for a sharper reason. The exploration floor
+-    # above buys AXES the desk has never sampled; this buys the only families that attack rho,
+-    # which is the single term n_eff is capped by (1/rho = 6.1 on this book). Also takes from
+-    # nobody: it appends.
+-    orthogonal, ortho_record = _orthogonality_floor(specs, keep)
+-    keep.extend(orthogonal)
++    # THE BREADTH STEER. With a fresh MEASURED steer the yield takes above set the BUDGET (their
++    # sum: what the split would build) and the ORDER comes from the enforcer's one shared
++    # definition, `steered_yield_order`: frontier first, explored next, the saturated set
++    # INTERLEAVED through the head at the exploration floor and spread across its families by
++    # their yield takes -- so the highest-yield saturated families are built from the first slice
++    # -- and every cell past the budget waits at the tail instead of being trimmed (work-
++    # conserving; the sweep's total never falls). No steer: the legacy trim, byte for byte.
++    steer = _breadth_steer()
++    steered: dict | None = None
++    # WHY THE STEER IS NOT IN FORCE, published instead of a silent null (III.16): a desk that
++    # adopts this before the enforcer's `steered_yield_order` lands must not look steered.
++    steer_off: dict = {"in_force": False, "path": str(_breadth_steer_path()),
++                       "why": (f"no MEASURED steer <= {BREADTH_STEER_MAX_AGE_H}h old at the "
++                               f"path (absent, unmeasured, stale or the enforcer is not "
++                               f"importable): legacy trim")}
++    if steer:
++        try:
++            from research.breadth_enforcer import SATURATED, class_of, steered_yield_order
++            order, budget, steered = steered_yield_order(specs, wants, steer)
++        except Exception as exc:
++            steer, steered = None, None
++            steer_off["why"] = (f"a MEASURED steer is present but unusable "
++                                f"({type(exc).__name__}: {exc}): legacy trim")
++    if steer and steered is not None:
++        head, tail = order[:budget], order[budget:]
++        # The steer orders by tier and ignores `keep`, so the floor interleave runs here too:
++        # inside each non-saturated tier's slots, never across tiers (`_floor_interleave_steered`).
++        head = _floor_interleave_steered(head, steer)
++        sat_set = {f for f in by_fam if class_of(f, steer) == SATURATED}
++        built = steered.get("built_in_budget") or {}
++        for fam in report:
++            report[fam]["built_this_sweep"] = int(built.get(fam, 0))
++            report[fam]["queued_to_tail"] = int((steered.get("queued_to_tail") or {}).get(fam, 0))
++            report[fam]["breadth_class"] = class_of(fam, steer)
++        explored, axes = _explore_unmeasured_axes(specs, head)
++        orthogonal, ortho_record = _orthogonality_floor(specs, head + explored, saturated=sat_set)
++        _added = {id(s) for s in head + explored + orthogonal}
++        keep = head + explored + orthogonal + [s for s in tail if id(s) not in _added]
++    else:
++        explored, axes = _explore_unmeasured_axes(specs, keep)
++        keep.extend(explored)
++        # THE ORTHOGONALITY FLOOR, on the same footing and for a sharper reason. The exploration
++        # floor above buys AXES the desk has never sampled; this buys the only families that
++        # attack rho, which is the single term n_eff is capped by (1/rho = 6.1 on this book).
++        # Also takes from nobody: it appends.
++        orthogonal, ortho_record = _orthogonality_floor(specs, keep)
++        keep.extend(orthogonal)
+     # PUBLISHED, because an allocation nobody can read is not an allocation anyone can argue with
+     # -- the capital side has pf_allocation.json for exactly this and the research side had
+     # nothing. Best effort: a research sweep must never die because a report file is unwritable.
+@@ -1592,6 +2079,10 @@
+             "prior_strength_cells": YIELD_PRIOR_STRENGTH,
+             "docket_total": len(specs), "built_this_sweep": len(keep),
+             "by_family": report,
++            "floor_interleave": dict(_FLOOR_INTERLEAVE_NOTE),
++            "breadth_steer": ({"in_force": True, **{k: v for k, v in steered.items()
++                                                     if k != "built_in_budget"}}
++                              if steer and steered is not None else steer_off),
+             # THE MISSED-GROWTH LINE, INVERTED: what exploitation alone would NOT have built.
+             "exploration": {
+                 "rule": ("an axis (chart, session anchor) that has never produced a survivor has "
+@@ -1671,8 +2162,9 @@
+ #: The UNKNOWN causes the judge can see for itself. `run_gauntlet` sets one on every unmeasured
+ #: verdict; `unknown_row_reason` falls back to the last two for a row written without one.
+ UNKNOWN_REASONS = ("series_exception", "no_series", "lockbox_consumed_history",
+-                   "short_history_after_cut", "no_signals", "signals_no_trades", "no_trades",
+-                   "too_rare", "observations_under_60_days", "no_terminal_gate_recorded")
++                   "screened_past_cut", "short_history_after_cut", "no_signals",
++                   "signals_no_trades", "no_trades", "too_rare", "observations_under_60_days",
++                   "no_terminal_gate_recorded")
+ 
+ 
+ def cell_lockbox_cut(series, need: int = 60, frac: float | None = None):
+@@ -1740,6 +2232,89 @@
+     return out
+ 
+ 
++#: THE TERMINAL STAMP: WHICH GATE STOPPED A CELL, AND WHY, ON EVERY ROW (2026-10-20).
++#:
++#: GATE_VERDICT_DIGEST 10-20 19:40Z: 587,075 of 963,604 ledger rejections (61%) and 885,556 of
++#: the newest sweep's 900,500 verdicts read terminal gate UNKNOWN. `terminal_gate` is set only on
++#: a verdict whose gates RULED, so every row the judge could not rule on -- too few observations,
++#: no series, a build the budget never reached -- carried no gate at all, and every reader folded
++#: the absence into one bucket. The mutation arms read that bucket and could not tell "never
++#: fired" from "the lockbox took its history" from "the backtest raised".
++#:
++#: `terminal_gate` KEEPS ITS MEANING. Readers across the desk (clock certificates, the prereg
++#: join, the re-mint partition, the converter) read UNKNOWN or an absent gate as UNMEASURED and
++#: never as a rejection; renaming those rows' gate would retire certificates on absence (L1.28a).
++#: So the stamp rides BESIDE it, on every row, and is never empty:
++#:
++#:   terminal_kind     PASSED | RULED | UNMEASURED | NOT_RUN | DEFECT
++#:   terminal_gate_id  the gate that stopped the row: a ruled gate's name, `observations` for
++#:                     the unmeasured branch, the NOT_RUN_* status for a row never built, PASSED
++#:   terminal_reason   that gate's own words (its stage's why/message, or its measured fields)
++#:
++#: A row no rule can name is DEFECT with gate id `no_terminal_gate_recorded`: counted, sampled and
++#: printed by the sweep, never folded into a silent UNKNOWN.
++TERMINAL_KINDS = ("PASSED", "RULED", "UNMEASURED", "NOT_RUN", "DEFECT")
++TERMINAL_DEFECT = "no_terminal_gate_recorded"
++TERMINAL_REASON_CHARS = 200
++
++
++def _stage_reason(name: str, st: object) -> str:
++    """A gate's own words: its why/reason/message, else its measured scalar fields, in order."""
++    if not isinstance(st, dict):
++        return f"{name}: no stage record"
++    for key in ("why", "reason", "message", "detail"):
++        if st.get(key):
++            return str(st.get(key))[:TERMINAL_REASON_CHARS]
++    parts = [f"{k}={st[k]}" for k in st
++             if k != "passed" and isinstance(st[k], (bool, int, float, str))][:4]
++    return (f"{name}: " + ", ".join(parts) if parts
++            else f"{name}: failed")[:TERMINAL_REASON_CHARS]
++
++
++def terminal_stamp(v: dict[str, Any]) -> dict[str, str]:
++    """(`terminal_kind`, `terminal_gate_id`, `terminal_reason`) for ONE verdict row; never empty.
++
++    Reads only the row. Deterministic, so a row stamped in a shard and the same row stamped by
++    the merge carry the same three values."""
++    passed = v.get("passed")
++    _raw = v.get("stages")
++    stages: dict[str, Any] = _raw if isinstance(_raw, dict) else {}
++    gate = str(v.get("terminal_gate") or "")
++
++    def _out(kind: str, gid: str, why: str) -> dict[str, str]:
++        return {"terminal_kind": kind, "terminal_gate_id": gid or TERMINAL_DEFECT,
++                "terminal_reason": (why or gid or TERMINAL_DEFECT)[:TERMINAL_REASON_CHARS]}
++
++    if passed is True:
++        return _out("PASSED", "PASSED", "passed every gate")
++    status = str(v.get("downstream_status") or "")
++    if passed is None and status.startswith("NOT_RUN"):
++        return _out("NOT_RUN", status, str(v.get("why") or status))
++    if v.get("unmeasured"):
++        return _out("UNMEASURED", "observations", unknown_row_reason(v)["unknown_reason"])
++    if gate and gate.upper() not in ("UNKNOWN", "PASSED"):
++        st = stages.get(gate)
++        return _out("RULED", gate,
++                    _stage_reason(gate, st) if st is not None else str(v.get("why") or gate))
++    failed = [k for k, s in stages.items() if isinstance(s, dict) and s.get("passed") is False]
++    if passed is False and failed:
++        return _out("RULED", str(failed[0]), _stage_reason(str(failed[0]), stages[failed[0]]))
++    return _out("DEFECT", TERMINAL_DEFECT,
++                f"{TERMINAL_DEFECT}: passed={passed!r}, terminal_gate={gate or None!r}, "
++                f"downstream_status={status or None!r}, stages={len(stages)}")
++
++
++def stamp_terminal(rows: list[Any]) -> dict[str, Any]:
++    """Stamp every dict row in place; return the defect count and a bounded sample of cells."""
++    defects: list[str] = []
++    for v in rows:
++        if isinstance(v, dict):
++            v.update(terminal_stamp(v))
++            if v["terminal_kind"] == "DEFECT":
++                defects.append(str(v.get("cell") or ""))
++    return {"n": len(defects), "sample": defects[:20]}
++
++
+ def _append_gate_ledger(verdicts: list, specs: list | None = None) -> dict:
+     """Record each cell's terminal gate, once per change. Never raises -- this is bookkeeping."""
+     try:
+@@ -1751,6 +2326,7 @@
+     graph_ids = _graph_ids_for(specs)
+     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+     rows = []
++    defects = 0
+     for v in verdicts:
+         if not isinstance(v, dict):
+             continue
+@@ -1772,6 +2348,12 @@
+                "family": v.get("family"),
+                "passed": bool(v.get("passed")), "terminal_gate": gate,
+                "downstream_status": v.get("downstream_status")}
++        # THE STAMP, from the verdict when the sweep set it and derived from the row otherwise.
++        _ts = (v if v.get("terminal_kind") in TERMINAL_KINDS and v.get("terminal_gate_id")
++               else terminal_stamp(v))
++        row.update({k: _ts[k] for k in ("terminal_kind", "terminal_gate_id", "terminal_reason")})
++        if row["terminal_kind"] == "DEFECT":
++            defects += 1
+         if gate == "UNKNOWN":
+             # NO UNKNOWN ROW WITHOUT ITS REASON (2026-09-30). 53,460 of a week's 124,342 rows read
+             # UNKNOWN and not one said why, so the week could not be split into "never fired",
+@@ -1787,7 +2369,7 @@
+             row["prereg_status"] = v.get("prereg_status")
+         rows.append(row)
+     if not rows:
+-        return {"appended": 0, "known": len(idx)}
++        return {"appended": 0, "known": len(idx), "terminal_defects": 0}
+     try:
+         GATE_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+         with GATE_LEDGER.open("a", encoding="utf-8") as fh:
+@@ -1795,8 +2377,9 @@
+                 fh.write(json.dumps(r, default=str) + chr(10))
+         GATE_INDEX.write_text(json.dumps(idx, indent=0, sort_keys=True), encoding="utf-8")
+     except OSError as exc:
+-        return {"appended": 0, "known": len(idx), "error": str(exc)[:120]}
+-    return {"appended": len(rows), "known": len(idx)}
++        return {"appended": 0, "known": len(idx), "error": str(exc)[:120],
++                "terminal_defects": defects}
++    return {"appended": len(rows), "known": len(idx), "terminal_defects": defects}
+ 
+ 
+ def _seen_cells() -> dict[str, str]:
+@@ -1858,7 +2441,9 @@
+     digest = hashlib.sha256()
+     desk = BASE / "desks" / "mt5"
+     paths = [desk / "scripts" / "external_gauntlet.py",
+-             desk / "research" / "orthogonal_sweep.py"]
++             desk / "research" / "orthogonal_sweep.py",
++             # The cost a cached series was charged is part of what it IS.
++             desk / "research" / "entry_hour_cost.py", desk / "data" / "cost_surface.json"]
+     paths.extend(desk / "mt5desk" / name for name in
+                  ("engine.py", "cell_modifiers.py", "data.py", "legacy_family_inputs.py"))
+     paths.extend((desk / "mt5desk").glob("famil*.py"))
+@@ -2001,11 +2586,13 @@
+     tf = timeframe_of(params, family)
+     out: dict = {"sym": sym, "family": family, "tf": tf, "status": "", "why": ""}
+     try:
+-        frame = _bars_for(sym, tf)
+-        if frame is None or len(frame) == 0:
++        last_day = _cell_last_day(sym, tf)
++        if last_day is None:
+             out["status"] = "NOT_RUN_DATA_MISSING"
+             return out
+-        last_day = frame.index[-1].normalize()
++        # The day this cell was keyed to goes back with it, so the shards key the same cell to the
++        # same day and find what the pool built (`_run_shards` carries it in the plan).
++        out["last_day"] = last_day
+         ckey = _cache_key(sym, family, params, str(last_day.date()), tf)
+         out["ckey"] = ckey
+         if cache_load(ckey) is not None:
+@@ -2016,10 +2603,19 @@
+             out["status"] = "NOT_RUN_BUILD_FAILED"
+             out["why"] = LAST_BUILD_FAILURE or "UNMEASURED: build_cell returned no cell"
+             return out
++        _day = _built_day(obj, last_day)
++        if _day != last_day:
++            # Re-keyed to the frame it was built from (`_built_day`). `out["last_day"]` keeps the
++            # chart's first day for the plan, so a shard may miss this one cell: it is then built
++            # or deferred again, never served under the wrong day.
++            last_day = _day
++            ckey = _cache_key(sym, family, params, str(last_day.date()), tf)
++            out["ckey"] = ckey
+         ds1 = _series_trim_partial(daily_series(obj["df"], obj["sigs"], obj["costs"]), last_day)
+         try:
+             ds3 = _series_trim_partial(
+-                daily_series(obj["df"], obj["sigs"], costs_for(sym, meta, mult=COST_SCENARIO)),
++                daily_series(obj["df"], obj["sigs"],
++                             _stress_costs(obj["costs"], sym, meta.get(sym, {}), COST_SCENARIO)),
+                 last_day)
+         except Exception as exc3:
+             out["status"], out["why"] = "FAIL_3X", f"{type(exc3).__name__}: {exc3}"
+@@ -2032,6 +2628,36 @@
+         return out
+ 
+ 
++def _spec_key(spec: dict) -> str:
++    """The build loop's own spec key (`_build_specs`), shared so the pool's outcome finds it."""
++    params = json.dumps(spec.get("params"), sort_keys=True)
++    return f"{spec.get('sym')}.{spec.get('family')}.{params}"
++
++
++def _apply_prewarm_failures(specs: list, failed: dict, blocked_build: list) -> list:
++    """Give each cell the pool failed the outcome the serial loop would have given it.
++
++    A pool BUILD_FAILED ran `build_cell` on the same spec, bars and meta the loop would, so the
++    loop's verdict is known: it is BLOCKED with the same status and reason, and leaves the specs
++    (the coverage organ then parks it and re-admits it on bar growth or after its retry days).
++    DATA_MISSING stays: the loop names it before any budget check. Every other kind (FAIL_3X,
++    ERROR, SAVE_FAILED) is not a verdict the pool can stand in for, so the spec stays and, if
++    deferred, carries `prewarm_status`/`prewarm_why` on its record -- never a silent deferral."""
++    keep = []
++    for sp in specs:
++        fr = failed.get(_spec_key(sp))
++        if fr and fr.get("status") == "NOT_RUN_BUILD_FAILED":
++            why = str(fr.get("why") or "signal construction returned no executable cell")
++            blocked_build.append({**sp, "downstream_status": (
++                "NOT_RUN_MODIFIER" if why.startswith("NOT_RUN_MODIFIER") else
++                "NOT_RUN_BUILD_FAILED"), "why": why})
++            continue
++        if fr and fr.get("status") not in (None, "NOT_RUN_DATA_MISSING"):
++            sp = {**sp, "prewarm_status": fr.get("status"), "prewarm_why": fr.get("why")}
++        keep.append(sp)
++    return keep
++
++
+ def _prewarm_cache(specs: list, meta: dict, deadline: float) -> dict:
+     """Warm the cell cache for `specs` in parallel, in their given order, until `deadline`.
+ 
+@@ -2060,7 +2686,7 @@
+     # problem: the pool built in the right order and nothing recorded that it had.
+     summary = {"workers": WORKERS, "submitted": 0, "warmed": 0, "hit": 0, "failed": 0,
+                "unreached": 0, "seconds": 0.0, "failures": {}, "failure_reasons": {},
+-               "built_symbols": set()}
++               "built_symbols": set(), "failed_cells": {}, "last_days": {}}
+     t0 = time.time()
+     it = iter(specs)
+     pending: dict = {}
+@@ -2098,6 +2724,10 @@
+                 except Exception as exc:
+                     r = {"status": "ERROR", "why": f"{type(exc).__name__}: {exc}"}
+                 st = str(r.get("status") or "ERROR")
++                if r.get("last_day") is not None:
++                    summary["last_days"].setdefault((str(r.get("sym") or ""),
++                                                     str(r.get("tf") or "H1").upper()),
++                                                    r["last_day"])
+                 if st == "WARMED":
+                     summary["warmed"] += 1
+                     # WARMED only, never HIT: the cursor records when a symbol's cells were last
+@@ -2115,6 +2745,12 @@
+                     reason = str(r.get("why") or f"UNMEASURED: {st}")[:300]
+                     reasons = summary["failure_reasons"]
+                     reasons[reason] = reasons.get(reason, 0) + 1
++                    # PER CELL, so the loop can give the cell its own outcome. Without it a
++                    # pool failure reached the report as BUDGET_DEFERRED (the pool had spent
++                    # the budget), was never parked, and came back first every sweep: measured
++                    # 2026-10-13, 55.6% of pre-warm builds failed while the rows named none.
++                    _fsp = pending_spec.get(f) or {}
++                    summary["failed_cells"][_spec_key(_fsp)] = {"status": st, "why": reason}
+                 if time.time() <= deadline:
+                     _submit_next()
+     summary["unreached"] += sum(1 for _ in it)
+@@ -2232,8 +2868,12 @@
+ 
+ 
+ def lifetime_trial_report(families) -> dict:
+-    """`lifetime_trials` and per-family trials from the experiment ledger (V21), REPORTED beside
+-    the sealed charge and never substituted for it.
++    """`lifetime_trials` and per-family trials from the experiment ledger (V21), A REPORT ONLY.
++
++    NO TRIAL COUNT FROM THIS LEDGER EVER REACHES A VERDICT (principal, 2026-10-07: "we never
++    charge trials like that ... no extra penalty trials inflated charges anything ever"). The
++    deflated-Sharpe hurdle is the fixed per-cell bar `gate_policy.dsr_hurdle_inputs`; this count
++    is published beside the verdicts so the desk's search volume stays visible, nothing more.
+ 
+     Read from the ledger file `pf_allocator` writes hourly, through the module's own path, and
+     never recomputed here: `experiment_ledger.family_trials` falls back to `lifetime(write=True)`
+@@ -2242,8 +2882,8 @@
+     `None`, not 0.
+     """
+     fams = sorted({str(f) for f in families if f})
+-    note = ("the lifetime UNION sets each cell's DSR trial charge (never below the campaign "
+-            "charge `n_trials`); the per-family counts are reported beside it")
++    note = ("REPORTED ONLY: no lifetime, union or per-family count enters any verdict; the "
++            "deflated-Sharpe hurdle is the fixed per-cell bar (gate_policy.dsr_hurdle_inputs)")
+     try:
+         from libs.research import experiment_ledger as _el
+         doc = json.loads(_el.OUT.read_text("utf-8"))
+@@ -2270,6 +2910,13 @@
+ def _daily_index(ds: pd.Series) -> pd.DatetimeIndex:
+     """A series' dates as a tz-naive, day-normalised DatetimeIndex, whatever the cache or a
+     family handed back (python dates, naive or aware Timestamps)."""
++    if (isinstance(ds.index, pd.DatetimeIndex) and ds.index.tz is None
++            and ds.index.dtype == np.dtype("datetime64[ns]")):
++        # Already tz-naive NANOSECOND datetimes (every cached series): the same values in the
++        # same unit, with no Python object per date. `to_datetime(list(...))` of such an index
++        # returns ns on every pandas. Any other unit takes the original path below, which is
++        # ns on pandas 2 and the index's own unit on pandas 3 (audit on b879ac50).
++        return pd.DatetimeIndex(ds.index.to_numpy()).normalize()
+     idx = pd.DatetimeIndex(pd.to_datetime(list(ds.index)))
+     if idx.tz is not None:
+         idx = idx.tz_convert("UTC").tz_localize(None)
+@@ -2756,31 +3403,155 @@
+     return {"measured": True, "why": "spread, commission conversion and swap from the registry"}
+ 
+ 
+-def charged_lifetime_trials(campaign: int, family: str, lifetime: dict,
+-                            raw_cells: int) -> tuple[int | None, str]:
+-    """The trial charge for one cell: max(campaign charge, family lifetime, LIFETIME UNION).
+-
+-    ADAPTIVE MULTIPLICITY (principal, 2026-09-29: "every trial ever attempted contributes to
+-    selection-bias accounting"), CHARGED ONCE OVER THE FULL UNION (audit 2026-09-30). This took
+-    max(campaign, family) only, so a family that borrowed its winners from a desk-wide search was
+-    charged its own slice of it: measured on #143, exit_operated under-charged 3.1x,
+-    htf_anchor_trend 11.5x, turn_of_month ~208x. The union total now sets the floor and the
+-    family figure stays REPORTED beside it. A tightening only: never below the campaign charge.
+-
+-    FAILS CLOSED. An unreadable ledger used to charge the raw burden of this sweep, which drops
+-    every trial searched before it. With no union count the charge is unknown, and the caller
+-    reads that (n_trials None) as a failed deflated-Sharpe gate, never as a smaller bar.
+-    """
+-    if not isinstance(lifetime, dict) or lifetime.get("status") != "MEASURED":
+-        return None, "lifetime ledger UNMEASURED: the union trial charge is unknown, DSR fails closed"
+-    union = lifetime.get("lifetime_trials")
+-    if not isinstance(union, int) or union <= 0:
+-        return None, "lifetime ledger carries no union trial count: DSR fails closed"
+-    fam_n = (lifetime.get("family_trials") or {}).get(family)
+-    fam_n = fam_n if isinstance(fam_n, int) and fam_n > 0 else None
+-    n = max(int(campaign), union, fam_n or 0)
+-    return n, (f"lifetime union trials {union} (family {family or '?'}: "
+-               f"{fam_n if fam_n is not None else 'absent'}; campaign {int(campaign)})")
++#: THE LOOK-AHEAD GUARD BINDS HERE (2026-10-13). A cell an LLM proposed or labelled was proposed
++#: by a model that has READ the history it is about to be judged on, so the days before that
++#: model's evidence start are contaminated: they may be built, never counted. Two sources name
++#: the start: the cell's own `lookahead_guard.evidence_from` (carried from the docket spec), and
++#: the unsealed lab's map (`research/llm_lab_roles.record_evidence_start`): cell id -> {"from",
++#: "sym", "family", "params"}, which still binds after a dedup or an alias drops the stamp. The
++#: LATEST start wins and every earlier day is dropped from BOTH cost arms before any gate reads
++#: the series, so in-sample screen, CPCV, walk-forward, DSR, PBO, SPA and the lockbox all see
++#: only post-guard data. A cell with too few days left is judged on what it has.
++#:
++#: IT FAILS CLOSED (audit must-fix 3). A cell that carries LLM provenance (a `lookahead_guard`
++#: stamp, or an llm_lab producer) but no readable start -- an unparseable date, or an unreadable
++#: map -- is HELD: its series is emptied, so the observations gate records it UNMEASURED with the
++#: reason, and nothing it built counts. Only a cell with no LLM provenance at all and no map
++#: entry is untouched.
++EVIDENCE_START = DATA / "llm_lab" / "evidence_start.json"
++_EVIDENCE_CACHE: dict[str, Any] = {"mtime": None, "map": {}, "by_cell": {}, "error": ""}
++EVIDENCE_HOLD = "HOLD"
++#: Spec keys every cell-dict rebuild in `_build_specs` carries onto the cell (cached and fresh).
++CARRIED_SPEC_KEYS = ("screen_read_until", "lookahead_guard", "producer", "source")
++
++
++def merge_llm_provenance(spec: dict[str, Any], row: dict[str, Any]) -> None:
++    """Fold one docket row's LLM provenance into its cell's spec, failing CLOSED across
++    duplicate rows: the LATEST guard start wins, an unreadable one wins over any readable one
++    (so the cell is held), and an llm_lab producer or source is never overwritten by a row
++    without one."""
++    guard = row.get("lookahead_guard")
++    if isinstance(guard, dict):
++        have = spec.get("lookahead_guard")
++        if not isinstance(have, dict):
++            spec["lookahead_guard"] = dict(guard)
++        else:
++            old, new = _day(have.get("evidence_from")), _day(guard.get("evidence_from"))
++            if old is not None and (new is None or new > old):
++                spec["lookahead_guard"] = dict(guard)
++    for k in ("producer", "source"):
++        v = row.get(k)
++        if v is None:
++            continue
++        if spec.get(k) is None or ("llm_lab" in str(v) and "llm_lab" not in str(spec[k])):
++            spec[k] = v
++
++
++def _evidence_starts() -> tuple[dict[str, Any], dict[tuple[str, str], list[Any]], str]:
++    """(map, rows by (sym, family), error). An ABSENT map is no error; an unreadable one is."""
++    try:
++        mtime = EVIDENCE_START.stat().st_mtime
++    except OSError:
++        return {}, {}, ""
++    if _EVIDENCE_CACHE["mtime"] != mtime:
++        err = ""
++        try:
++            raw = json.loads(EVIDENCE_START.read_text(encoding="utf-8"))
++        except (OSError, ValueError) as exc:
++            err = f"evidence-start map unreadable ({type(exc).__name__})"
++            print(f"  {err}: every LLM-born cell is HELD")
++            raw = {}
++        if not isinstance(raw, dict):
++            err = err or "evidence-start map is not an object"
++            raw = {}
++        by_cell: dict[tuple[str, str], list[Any]] = {}
++        for row in raw.values():
++            if isinstance(row, dict) and row.get("sym") and row.get("family"):
++                by_cell.setdefault((str(row["sym"]), str(row["family"])), []).append(row)
++        _EVIDENCE_CACHE.update({"mtime": mtime, "map": raw, "by_cell": by_cell, "error": err})
++    return _EVIDENCE_CACHE["map"], _EVIDENCE_CACHE["by_cell"], _EVIDENCE_CACHE["error"]
++
++
++def llm_born(c: dict[str, Any]) -> bool:
++    """The cell carries LLM provenance: a look-ahead stamp, or an llm_lab producer."""
++    if isinstance(c.get("lookahead_guard"), dict):
++        return True
++    return any("llm_lab" in str(c.get(k) or "") for k in ("producer", "source", "origin"))
++
++
++def _day(raw: Any) -> str | None:
++    s = str(raw or "")[:10]
++    try:
++        pd.Timestamp(s)
++    except (ValueError, TypeError):
++        return None
++    return s if len(s) == 10 else None
++
++
++def evidence_from(c: dict[str, Any]) -> str | None:
++    """The cell's evidence start, EVIDENCE_HOLD, or None (no LLM provenance, no map entry).
++
++    Matches by the cell's own stamp, by exact id, and by (symbol, family) with the donated params
++    a subset of the cell's own (the compiler may have filled in defaults); the LATEST date wins.
++    """
++    starts, by_cell, err = _evidence_starts()
++    params = dict(c.get("params") or {})
++    hits: list[str | None] = []
++    guard = c.get("lookahead_guard")
++    if isinstance(guard, dict):
++        hits.append(_day(guard.get("evidence_from")))
++    try:
++        row = starts.get(cell_id({"sym": c["sym"], "family": c["family"], "params": params}))
++    except Exception:
++        row = None
++    if row is not None:
++        hits.append(_day(row.get("from") if isinstance(row, dict) else row))
++    for cand in by_cell.get((str(c.get("sym")), str(c.get("family"))), []):
++        donated = cand.get("params") or {}
++        if donated and all(params.get(k) == v for k, v in donated.items()):
++            hits.append(_day(cand.get("from")))
++    if any(h is None for h in hits) or (err and llm_born(c)):
++        return EVIDENCE_HOLD
++    if not hits:
++        return EVIDENCE_HOLD if llm_born(c) else None
++    return max(h for h in hits if h)
++
++
++def evidence_trim(c: dict[str, Any], ds: Any) -> Any:
++    """`ds` without the days before the cell's evidence start; empty when the cell is HELD;
++    unchanged when it has no LLM provenance and no map entry."""
++    if ds is None or len(ds) == 0:
++        return ds
++    ev = evidence_from(c)
++    if not ev:
++        return ds
++    if ev == EVIDENCE_HOLD:
++        c["_evidence_from"] = "UNMEASURED"
++        c["_series_error"] = ("look-ahead guard: LLM-born cell with no readable evidence start "
++                              "(stamp unparseable or map unreadable); held, not judged")
++        c["_evidence_dropped_days"] = len(ds)
++        return ds.iloc[0:0]
++    try:
++        idx = pd.DatetimeIndex(ds.index)
++        cut = pd.Timestamp(ev)
++        if idx.tz is not None:
++            cut = cut.tz_localize(idx.tz)
++        kept = ds[idx >= cut]
++    except Exception as exc:
++        # A start that cannot be applied is a start that is not honoured: hold, never pass.
++        print(f"  evidence trim failed for {c.get('sym')}.{c.get('family')}: {exc}: HELD")
++        c["_evidence_from"] = "UNMEASURED"
++        c["_series_error"] = f"look-ahead guard: trim failed ({type(exc).__name__}); held"
++        return ds.iloc[0:0]
++    c["_evidence_from"] = ev
++    c["_evidence_dropped_days"] = int(len(ds) - len(kept))
++    if len(kept) == 0:
++        # A start at or after the last day leaves nothing the model had not read: held with
++        # the reason, never judged on an empty series that reads as a quiet pass.
++        c["_series_error"] = (f"look-ahead guard: evidence start {ev} is after the last day; "
++                              f"no post-guard days; held, not judged")
++    return kept
++
+ 
+ def _cell_series(cells: list, meta: dict) -> tuple[list, int]:
+     """Each cell's FULL 1x daily series, and its 3x arm stashed on the cell, in ONE pass per cell.
+@@ -2805,13 +3576,13 @@
+             # error ride its pickle into the merge exactly as the unsharded sweep records them.
+             c["_n_signals"] = None if c.get("sigs") is None else len(c.get("sigs") or [])
+             if c.get("_cached_ds") is not None:
+-                daily.append(c["_cached_ds"])
++                daily.append(evidence_trim(c, c["_cached_ds"]))
+                 hits += 1
+                 continue
+             last_day = c.get("_last_day")
+             ds = _series_trim_partial(daily_series(c["df"], c["sigs"], c["costs"]), last_day)
+-            c["_fresh_ds"] = ds
+-            daily.append(ds)
++            c["_fresh_ds"] = ds          # cached FULL; the guard is applied on every read
++            daily.append(evidence_trim(c, ds))
+             # BOTH COST ARMS IN ONE PASS, so a cell's signals can be released the moment it is
+             # done with. The 3x arm used to run as a SECOND loop over every cell, which meant
+             # every built cell had to keep its `sigs` alive from the first loop to the second.
+@@ -2822,7 +3593,8 @@
+             # verdict changes; only the peak does.
+             if c.get("_cached_ds3") is None:
+                 try:
+-                    costs3 = costs_for(c["sym"], meta, mult=COST_SCENARIO)
++                    costs3 = _stress_costs(c["costs"], c["sym"], meta.get(c["sym"], {}),
++                                           COST_SCENARIO)
+                     c["_fresh_ds3"] = _series_trim_partial(
+                         daily_series(c["df"], c["sigs"], costs3), last_day)
+                 except Exception as exc3:
+@@ -2853,10 +3625,10 @@
+                 daily_x3.append(c["_shard_ds3"])
+                 continue
+             if c.get("_cached_ds3") is not None:
+-                daily_x3.append(c["_cached_ds3"])
++                daily_x3.append(evidence_trim(c, c["_cached_ds3"]))
+                 continue
+             ds3 = c.get("_fresh_ds3")
+-            daily_x3.append(ds3)
++            daily_x3.append(evidence_trim(c, ds3))
+             if c.get("_fresh_ds") is not None and ds3 is not None and c.get("_ckey"):
+                 cache_save(c["_ckey"], c["_fresh_ds"], ds3)
+         except Exception:
+@@ -2864,6 +3636,252 @@
+     return daily_x3
+ 
+ 
++#: ------------------------------------------------------------------ JUDGE SPEED (2026-10-14)
++#: VERDICT-PRESERVING ONLY. Everything in this block computes exactly what the line it replaced
++#: computed -- the same arrays, the same summation order, the same calendar key -- and is proven
++#: on a >=300-cell batch by `judging/gauntlet_speed/gauntlet_speed_harness.py`, which asserts the
++#: full result JSON of the old and new judge equal. No threshold, trial charge or gate moves.
++
++
++def _cpcv_test_sets(n: int) -> list[np.ndarray]:
++    """`[np.asarray(sp.test) for sp in CPCV(n_groups=6, n_test_groups=2).split(n)]`, test side only.
++
++    A split's TEST set is a function of `n` alone -- purge and embargo only ever remove TRAIN
++    rows -- yet `CPCV.split` also rebuilds every split's train set as a Python set of n ints and
++    walks it, for every cell: 3.5 ms a cell, the largest single cost of judging one (cProfile,
++    2026-10-14). These are `CPCV.split`'s own test lines, verbatim (same groups, same order of
++    combinations, same concatenate + sort), with the train side dropped; the splitter's guard
++    is kept so a short series raises exactly what it raised."""
++    from itertools import combinations
++    splitter = CPCV(n_groups=6, n_test_groups=2)
++    if n < splitter.n_groups:
++        raise ValidationError("n_samples must be >= n_groups")
++    groups = np.array_split(np.arange(n), splitter.n_groups)
++    return [np.sort(np.concatenate([groups[i] for i in test_ids]))
++            for test_ids in combinations(range(splitter.n_groups), splitter.n_test_groups)]
++
++
++def _fast_dates(s: Any) -> bool:
++    """True when `s.index` is a tz-naive DatetimeIndex with no NaT, sorted ascending: the one
++    shape for which a positional slice at `searchsorted(cut)` IS the boolean mask `< cut`."""
++    idx = getattr(s, "index", None)
++    return (isinstance(idx, pd.DatetimeIndex) and idx.tz is None and not idx.hasnans
++            and idx.is_monotonic_increasing)
++
++
++#: Datetime units, coarsest first: a cut converts losslessly into an index unit at or above it.
++_UNIT_RANK = {"s": 0, "ms": 1, "us": 2, "ns": 3}
++
++
++def _split_at(s: pd.Series, cut: Any) -> tuple[pd.Series, pd.Series]:
++    """`(s[s.index < cut], s[s.index >= cut])`, by one binary search when the index allows it.
++
++    Any other index (python dates from a fresh build, tz-aware, unsorted, NaT), a cut that is
++    not a tz-naive Timestamp, or a cut FINER than the index's unit takes the boolean masks
++    exactly as before, including any error they raise. pandas 3 `searchsorted` refuses a cut it
++    cannot convert losslessly ("Cannot losslessly convert units") where the masks compare it
++    fine (audit HOLD on b879ac50), so that case never reaches the search, and any error the
++    search raises falls back to the masks."""
++    if (isinstance(cut, pd.Timestamp) and cut.tz is None and cut is not pd.NaT
++            and _fast_dates(s)
++            and _UNIT_RANK.get(str(getattr(cut, "unit", "")), 99)
++            <= _UNIT_RANK.get(str(getattr(s.index, "unit", "")), -1)):
++        try:
++            k = int(s.index.searchsorted(cut, side="left"))
++        except (ValueError, TypeError, OverflowError):
++            pass
++        else:
++            return s.iloc[:k], s.iloc[k:]
++    return s[s.index < cut], s[s.index >= cut]
++
++
++class _UnionDates:
++    """The union of every series' dates as ONE index, for `gate_policy.lockbox_cut`.
++
++    `lockbox_cut` takes `sorted({d for s in series for d in s.index})`, iterating every date of
++    every cell as a Python object (1.4 ms a cell). It reads nothing but `.index`, so handing it
++    one object whose index is already that sorted, de-duplicated union yields the same list and
++    the same key -- the pattern `_run_shards` already uses for the sharded sweep's cut. Built
++    only when every index is a tz-naive DatetimeIndex of ONE dtype with no NaT (equal values are
++    then equal Timestamps); otherwise `of` returns None and the caller passes the series."""
++
++    def __init__(self, index: pd.DatetimeIndex) -> None:
++        self.index = index
++
++    @classmethod
++    def of(cls, series: list[Any]) -> _UnionDates | None:
++        idxs = [s.index for s in series if s is not None]
++        if not idxs or not all(isinstance(i, pd.DatetimeIndex) for i in idxs):
++            return None
++        dtype = idxs[0].dtype
++        if any(i.dtype != dtype or i.tz is not None or i.hasnans for i in idxs):
++            return None
++        return cls(pd.DatetimeIndex(np.unique(np.concatenate([i.to_numpy() for i in idxs]))))
++
++
++#: THE PURE PER-CELL READS, MEMOISED BY CONTENT. Each entry is a function of the exact bytes of
++#: a cell's development (and held-out) series and of constants -- never of a cell's identity, the
++#: sweep, a file or the live terminal -- so a repeat of the same bytes in this process (a clone
++#: cell, or a later batch in one process) is answered without recomputing it. The key is the
++#: series' shape plus a 128-bit BLAKE2b of its float64 bytes, so a hit is an identical input and
++#: the answer is the one already computed. Bounded LRU; values are immutable tuples and every
++#: caller receives fresh dicts. `economic_prior` and `swap_cost` read the cell, the registry and
++#: the live cost fence and are NEVER memoised.
++_PURE_MEMO: OrderedDict[tuple[Any, ...], Any] = OrderedDict()
++_T = TypeVar("_T")
++#: `_local_pure`'s reads: (sr, cpcv mean, folds, wf passed, wf oos, wf stability, ev).
++_LocalReads = tuple[float, float, int, bool, float, float, float]
++_PURE_MEMO_MAX = 50_000
++
++
++def _fp(a: Any) -> tuple[Any, ...] | None:
++    """(shape, BLAKE2b-128 of the float64 bytes) of an array or Series; None for None."""
++    if a is None:
++        return None
++    v = np.ascontiguousarray(np.asarray(a, dtype=float))
++    return (v.shape, hashlib.blake2b(v.tobytes(), digest_size=16).digest())
++
++
++def _memo(key: tuple[Any, ...], compute: Callable[[], _T]) -> _T:
++    """`compute()`, or the value it returned for this exact key earlier in this process."""
++    try:
++        hit = _PURE_MEMO[key]
++    except KeyError:
++        pass
++    else:
++        _PURE_MEMO.move_to_end(key)
++        return cast(_T, hit)
++    val = compute()
++    _PURE_MEMO[key] = val
++    if len(_PURE_MEMO) > _PURE_MEMO_MAX:
++        _PURE_MEMO.popitem(last=False)
++    return val
++
++
++def _local_pure(arr: np.ndarray) -> _LocalReads:
++    """(in-sample Sharpe, CPCV mean OOS Sharpe, CPCV folds, walk-forward passed, its OOS Sharpe,
++    its stability, EV): `_cell_local_stages`'s arithmetic on the development series, unchanged."""
++    def compute() -> _LocalReads:
++        sr = sharpe_ratio(arr)
++        oos = []
++        for te in _cpcv_test_sets(len(arr)):
++            if len(te) >= 30:
++                oos.append(sharpe_ratio(arr[te]))
++        cpcv_mean = float(np.mean(oos)) if oos else 0.0
++        try:
++            wf = WalkForwardEngine().evaluate(arr, n_splits=WF_SPLITS,
++                                              test_size=max(20, len(arr) // 6),
++                                              min_oos_sharpe=0.0,
++                                              min_stability=WF_MIN_STABILITY)
++            wf_status = wf.status
++            wf_oos = float(wf.oos_sharpe)
++            wf_stab = float(wf.stability)
++        except Exception:
++            wf_status, wf_oos, wf_stab = "TOO_SHORT", float("-inf"), 0.0
++        return (float(sr), cpcv_mean, len(oos), bool(wf_status is WalkForwardStatus.PASSED),
++                wf_oos, wf_stab, float(arr.mean()))
++    return _memo(("local", _fp(arr)), compute)
++
++
++def _dsr_read(arr: np.ndarray, dsr_bar: float) -> tuple[bool, float, float]:
++    """(passed, dsr, sr0) of `deflated_sharpe_ratio` at the fixed per-cell bar -- the call
++    `run_gauntlet` makes, on `dsr_hurdle_inputs(len(arr))` and the law's `dsr_bar`."""
++    from research.gate_policy import dsr_hurdle_inputs
++
++    def compute() -> tuple[bool, float, float]:
++        n_cell, cell_var, _basis = dsr_hurdle_inputs(len(arr))
++        d = deflated_sharpe_ratio(arr, n_trials=n_cell, variance_of_sharpes=cell_var,
++                                  threshold=dsr_bar)
++        return (bool(d.passed), float(d.dsr), float(d.sr0_threshold))
++    return _memo(("dsr", _fp(arr), float(dsr_bar)), compute)
++
++
++def _lockbox_read(held: Any, arr: np.ndarray, sr0: float) -> dict[str, Any]:
++    """`lockbox_stage(held, sharpe_ratio, dev=arr, sr0=sr0)`, as a fresh dict every call."""
++    from research.gate_policy import lockbox_stage
++    key = ("lockbox", _fp(held), _fp(arr), float(sr0))
++    return dict(_memo(key, lambda: tuple(
++        lockbox_stage(held, sharpe_ratio, dev=arr, sr0=sr0).items())))
++
++
++def _program_reads(arr: np.ndarray, held: Any, pre: dict[str, Any] | None, *, threshold: float
++                   ) -> tuple[tuple[bool, float, float], dict[str, Any]]:
++    """The deflated-Sharpe read and the lockbox stage of ONE cell, both pure functions of its
++    development series, its held-out tail and the law's DSR bar (T8: no sweep quantity enters
++    either). `pre` is what the cell's shard computed with these same functions; it is used only
++    when it was computed at this bar on a series of this length and tail, and otherwise the
++    merge computes both itself -- a mismatch costs time, never a verdict. `threshold` is the
++    law's DSR bar."""
++    dsr_bar = threshold
++    n_held = 0 if held is None else len(held)
++    if (isinstance(pre, dict) and pre.get("dsr_bar") == float(dsr_bar)
++            and pre.get("n") == len(arr) and pre.get("n_held") == n_held
++            and isinstance(pre.get("dsr"), tuple) and isinstance(pre.get("lockbox"), dict)):
++        return pre["dsr"], dict(pre["lockbox"])
++    dsr = _dsr_read(arr, dsr_bar)
++    return dsr, _lockbox_read(held, arr, dsr[2])
++
++
++def _screen_read_clean(ru: Any, cut: Any) -> bool:
++    """Whether a proposer's screen stamp `ru` lies strictly before the cell's cut (never on error).
++
++    The ONE rule, read by `run_gauntlet` and by a shard's publication (`_shard_verdict`)."""
++    try:
++        _seen = pd.Timestamp(str(ru))
++        if cut is not None and getattr(cut, "tzinfo", None) is not None:
++            _seen = _seen.tz_localize(cut.tzinfo) if _seen.tzinfo is None else _seen
++        return bool(cut is not None and _seen < cut)
++    except (TypeError, ValueError):
++        return False
++
++
++def _dsr_stage(n_obs: int, dsr: tuple[Any, Any, Any]) -> dict[str, Any]:
++    """The `deflated_sharpe` stage's cell-local fields, in the verdict's key order: a pure
++    function of the cell's own length and its read at the fixed per-cell bar (T8). The reported
++    sweep-level fields are appended by `run_gauntlet` after these, never read by a verdict."""
++    from research.gate_policy import dsr_hurdle_inputs
++    _n_cell, _cell_var, _n_basis = dsr_hurdle_inputs(n_obs)
++    _dsr_passed, _dsr_val, _dsr_sr0 = dsr
++    return {"passed": bool(_dsr_passed), "dsr": round(float(_dsr_val), 4),
++            "sr0": round(float(_dsr_sr0), 4), "n_trials": _n_cell,
++            "trial_basis": _n_basis,
++            "variance_of_sharpes": round(_cell_var, 6),
++            "variance_basis": "per_cell_null_1/(T-1)"}
++
++
++def _unmeasured_verdict(_c: dict[str, Any], _d: Any, _pre: int | None, *,
++                        screened: bool) -> dict[str, Any]:
++    """The UNMEASURED verdict of one cell the gates could not rule on (under 60 development
++    days, no series, or refused by the screen). The ONE builder, read by `run_gauntlet` and by a
++    shard's publication, so the row a shard publishes is the row the merge writes."""
++    _n = 0 if _d is None else len(_d)
++    _nsig = _c.get("_n_signals")
++    # THE CAUSE, NAMED BY THE ONE ORGAN THAT CAN SEE IT (2026-09-30). Every UNKNOWN carries
++    # it, and `failed_gates` is never empty: the observations gate is the gate that stopped it.
++    _err = _c.get("_series_error")
++    _why_unknown = ("screened_past_cut" if screened
++                    else classify_unknown(_d, _pre, _nsig, errored=bool(_err)))
++    return {
++        "cell": cell_id({"sym": _c["sym"], "family": _c["family"],
++                         "params": _c.get("params") or {}}),
++        "sym": _c["sym"], "family": _c["family"], "days": _n,
++        "params": _c.get("params") or {}, "timeframe": _c.get("timeframe"),
++        "days_before_lockbox": _pre, "n_signals": _nsig,
++        "unknown_reason": _why_unknown,
++        "failed_gates": ["observations"], "n_failed_gates": 1,
++        **({"series_error": _err} if _err else {}),
++        "passed": False, "unmeasured": True,
++        "stages": {"observations": {
++            "passed": False, "days": _n, "required": 60,
++            "why": ("no daily series could be built from this cell's signals"
++                    if _d is None else
++                    f"only {_n} daily observations; CPCV with purge+embargo and the "
++                    f"walk-forward folds require 60. This is UNMEASURED, not a failure: "
++                    f"the cell fires too rarely to be judged, which is a fact about the "
++                    f"SEARCH that proposed it, not evidence against the edge")}},
++    }
++
++
+ #: THE PER-CELL GATES, IN THE ORDER THEY SIT IN A VERDICT'S `stages`. `stages` is
+ #: insertion-ordered and `terminal_gate` is its FIRST failure, so this order is part of the
+ #: verdict: `run_gauntlet` rebuilds `stages` as HEAD, deflated_sharpe, pbo, reality_check_spa,
+@@ -2884,37 +3902,20 @@
+     development series, meta) alone, which is what lets a shard compute it and the merge use it
+     unchanged.
+     """
+-    # In-sample
+-    sr = sharpe_ratio(arr)
++    # In-sample, CPCV, walk-forward and EV: the pure reads of the development series.
++    sr, cpcv_mean, n_folds, wf_passed, wf_oos, wf_stab, ev = _local_pure(arr)
+     stages = {
+         "economic_prior": economic_prior(c),
+         "in_sample_screen": {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)},
+     }
+ 
+     # CPCV
+-    cpcv = CPCV(n_groups=6, n_test_groups=2)
+-    oos = []
+-    for split in cpcv.split(len(arr)):
+-        te = np.asarray(split.test)
+-        if len(te) >= 30:
+-            oos.append(sharpe_ratio(arr[te]))
+-    cpcv_mean = float(np.mean(oos)) if oos else 0.0
+     stages["cpcv"] = {"passed": bool(cpcv_mean > 0.0),
+-                      "mean_oos_sharpe": round(cpcv_mean, 4), "folds": len(oos)}
++                      "mean_oos_sharpe": round(cpcv_mean, 4), "folds": n_folds}
+ 
+     # Walk Forward
+-    try:
+-        wf = WalkForwardEngine().evaluate(arr, n_splits=WF_SPLITS,
+-                                          test_size=max(20, len(arr) // 6),
+-                                          min_oos_sharpe=0.0,
+-                                          min_stability=WF_MIN_STABILITY)
+-        wf_status = wf.status
+-        wf_oos = float(wf.oos_sharpe)
+-        wf_stab = float(wf.stability)
+-    except Exception:
+-        wf_status, wf_oos, wf_stab = "TOO_SHORT", float("-inf"), 0.0
+     stages["walk_forward"] = {
+-        "passed": bool(wf_status is WalkForwardStatus.PASSED),
++        "passed": wf_passed,
+         "oos_sharpe": round(wf_oos, 4), "stability": round(wf_stab, 4)
+     }
+ 
+@@ -2924,7 +3925,6 @@
+     stages["stress_costs"] = {"passed": bool(exp3 > 0.0), "exp_x3": round(exp3, 4)}
+ 
+     # Expected Value
+-    ev = float(arr.mean())
+     stages["expected_value"] = {"passed": bool(ev > 0.0), "ev": round(ev, 4)}
+ 
+     # SWAP, WHICH THE ENGINE DOES NOT MODEL AT ALL (added 2026-09-14).
+@@ -2982,9 +3982,18 @@
+     return stages
+ 
+ 
++def _eff_result(thread: threading.Thread, box: dict[str, Any]) -> dict[str, Any]:
++    """The census thread's `_safe` result; it is joined, so this is never a partial value."""
++    thread.join()
++    return box.get("v") or _unmeasured("effective_trials: census thread returned nothing")
++
++
+ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
+     """Run full 10-gate gauntlet on a list of cells."""
+     print(f"\n=== GAUNTLET: {hunt_name} ({len(cells)} cells) ===")
++    # The content memo is keyed on the series' bytes, not on the module's constants (WF_*,
++    # LOCKBOX_*, ...): it lives for one judging call, so nothing set between calls goes stale.
++    _PURE_MEMO.clear()
+ 
+     # Build daily series
+     daily, hits = _cell_series(cells, meta)
+@@ -3000,7 +4009,7 @@
+     # development window only, and the held-out tail is read by the lockbox gate alone. One
+     # calendar cut for the whole sweep (gate_policy.lockbox_cut), so every column holds out the
+     # same period. The FULL series stays in the cache: the carve is re-derived every sweep.
+-    from research.gate_policy import LOCKBOX_FRAC, carve_lockbox, lockbox_cut, lockbox_stage
++    from research.gate_policy import LOCKBOX_FRAC, carve_lockbox, lockbox_cut
+     # THE LAW THIS SWEEP IS JUDGED UNDER, resolved once and published with the verdicts (S01):
+     # the DSR bar, the gate count and the held-out share, each never looser than the constant
+     # above unless the principal ratified the rule set that loosens it.
+@@ -3010,12 +4019,21 @@
+     lockbox_frac = float(law["lockbox_min_fraction"])
+     print(f"  constitution {law.get('status')}: dsr>={dsr_bar} gates>={gates_required} "
+           f"lockbox>={lockbox_frac:.0%}")
+-    _lock_cut = lockbox_cut(daily, frac=lockbox_frac)
++    # One pre-built union index in place of every series (`_UnionDates`): the same key.
++    _union = _UnionDates.of(daily)
++    _lock_cut = (lockbox_cut(daily, frac=lockbox_frac) if _union is None
++                 else lockbox_cut([_union], frac=lockbox_frac))
+     # The history each cell HAD before the carve, so an UNKNOWN can say whether the cell fired
+     # too rarely or fired plenty and lost its development window to the campaign-wide cut.
+     _pre_carve_days = [None if d is None else len(d) for d in daily]
+     _full_daily = list(daily)
+-    daily, lock_daily = carve_lockbox(daily, _lock_cut)
++    if _lock_cut is None:
++        daily, lock_daily = carve_lockbox(daily, _lock_cut)
++    else:
++        # `carve_lockbox`'s two masks per series, by one binary search where exact (`_split_at`).
++        _carved = [(None, None) if _s is None else _split_at(_s, _lock_cut) for _s in daily]
++        daily, lock_daily = [_d for _d, _ in _carved], [_h for _, _h in _carved]
++        del _carved
+     # A CHART WHOSE HISTORY BEGINS AFTER THE CUT HAS NO DEVELOPMENT WINDOW (2026-09-30). The cut is
+     # taken from the union of every cell's days, which the long H1 histories dominate (2018 on),
+     # so it lands ~20% from the end: 2024-12-19 on this tree. A cell on a chart whose parquet
+@@ -3031,8 +4049,24 @@
+     _cell_cut = [cell_dev_cut(_s, _lock_cut, frac=lockbox_frac) for _s in _full_daily]
+     for _k, _s in enumerate(_full_daily):
+         if _s is not None and _cell_cut[_k] != _lock_cut:
+-            daily[_k], lock_daily[_k] = (_s[_s.index < _cell_cut[_k]],
+-                                         _s[_s.index >= _cell_cut[_k]])
++            daily[_k], lock_daily[_k] = _split_at(_s, _cell_cut[_k])
++    # A CELL WHOSE PROPOSER'S SCREEN READ PAST THIS CUT IS NOT JUDGED (2026-10-14, audit on
++    # #392). The LLM lab's style screen reads a cell's signals before a lockbox it can only
++    # estimate from bar days, and stamps the last day it read (`screen_read_until`). This sweep
++    # knows the real cut; a cell whose development window does not END AFTER that day has had its
++    # held-out data seen by the screen, so it fails closed exactly as a cell with no series does.
++    _peeked = 0
++    for _k, _c in enumerate(cells):
++        _ru = _c.get("screen_read_until") if isinstance(_c, dict) else None
++        if not _ru or daily[_k] is None:
++            continue
++        _clean = _screen_read_clean(_ru, _cell_cut[_k])
++        if not _clean:
++            daily[_k] = lock_daily[_k] = None
++            _c["_screened_past_cut"] = True
++            _peeked += 1
++    if _peeked:
++        print(f"  lockbox: {_peeked} cell(s) refused -- the style screen read past their cut")
+     _own_cut_n = sum(1 for _c in _cell_cut if _c is not None and _c != _lock_cut)
+     print(f"  lockbox: reserved from {_lock_cut} onward"
+           + (f"; {_own_cut_n} short-history cell(s) carved at their own tail" if _own_cut_n
+@@ -3069,6 +4103,21 @@
+     min_len = min(len(a) for a in cols)
+     matrix = np.column_stack([a[-min_len:] for a in cols])
+ 
++    # THE EFFECTIVE-TRIAL CENSUS, STARTED NOW AND READ AT THE END. It is a REPORT (it never sets
++    # a bar) and a pure function of the cells' identities -- family, symbol, chart, params --
++    # which nothing below writes. Its cost is one LAPACK `eigvalsh` per family (up to 2,500
++    # members), 17 s of a 77 s 6,000-cell sweep (cProfile, 2026-10-14), and LAPACK releases the
++    # GIL, so it runs beside the per-cell loop instead of after it. Same call, same `_safe`
++    # wrapper, same result; only when it runs moves.
++    _eff_box: dict[str, Any] = {}
++
++    def _eff_census() -> None:
++        _eff_box["v"] = _safe(lambda: structural_trial_census(cells), "effective_trials")
++
++    _eff_thread = threading.Thread(target=_eff_census, name="gauntlet-effective-trials",
++                                   daemon=True)
++    _eff_thread.start()
++
+     # Program-level tests
+     # THE CANONICAL TRIAL BASIS, AND NOTHING ELSE (principal 2026-08-26: "we don't count trials
+     # of deflation, we don't use any harsh gates -- it's direct discovery, backtest, 10 gates,
+@@ -3124,6 +4173,14 @@
+           f"var_of_sharpes={sh_var} ({_var_basis}; measured this sweep {sh_var_measured:.6f})")
+     t0 = time.time()
+ 
++    # PBO AND SPA RUN BESIDE THE PER-CELL LOOP (2026-10-14). Both read only `matrix`, which nothing
++    # below writes, and each draws its own fixed-seed RNG, so a thread computes exactly the number
++    # the inline call did; most of their time is numpy on the whole matrix, which releases the
++    # GIL. Their values enter each verdict only in the assembly pass after the loop, so every
++    # verdict, its stage order and its terminal gate are as before. An exception in either is
++    # re-raised at the join, PBO's first, as the inline order raised it.
++    _prog_box: dict[str, object] = {}
++    _prog_threads: list[threading.Thread] = []
+     if matrix.shape[1] < 2:
+         # PBO and SPA are program-level relative-performance tests. One surviving series is not
+         # evidence that it passes them, but it is also not an exception that should abort the
+@@ -3134,29 +4191,37 @@
+         print("  PBO: 1.0000 (FAIL: requires >=2 strategies)")
+         print("  SPA: p=1.0000 (FAIL: requires >=2 strategies)")
+     else:
+-        pbo = probability_backtest_overfitting(matrix)
+-        pbo_val = float(pbo.pbo)
+-        pbo_ok = pbo_val <= PBO_THRESHOLD
+-        print(f"  PBO: {pbo_val:.4f} ({'PASS' if pbo_ok else 'FAIL'})")
+-
+-        spa = hansen_spa(matrix)
+-        spa_p = float(spa.p_value)
+-        spa_ok = spa_p < SPA_ALPHA
+-        print(f"  SPA: p={spa_p:.4f} ({'PASS' if spa_ok else 'FAIL'})")
++        def _program_test(name: str, fn: Callable[[Any], Any]) -> None:
++            try:
++                _prog_box[name] = fn(matrix)
++            except BaseException as exc:          # re-raised in the merging thread at the join
++                _prog_box[name + "_exc"] = exc
++
++        for _name, _fn in (("pbo", probability_backtest_overfitting), ("spa", hansen_spa)):
++            _t = threading.Thread(target=_program_test, args=(_name, _fn), daemon=True,
++                                  name=f"gauntlet-{_name}")
++            _t.start()
++            _prog_threads.append(_t)
+ 
+     # 3x cost series
+     daily_x3 = _cell_series_x3(cells)
+ 
+     # The stress arm is judged on the same development window as the baseline, never the tail.
+     if _lock_cut is not None:
+-        daily_x3 = [None if x is None or _cell_cut[_k] is None else x[x.index < _cell_cut[_k]]
++        daily_x3 = [None if x is None or _cell_cut[_k] is None else _split_at(x, _cell_cut[_k])[0]
+                     for _k, x in enumerate(daily_x3)]
+ 
+-    # THE LIFETIME LEDGER, read once per sweep (V21 made authoritative by policy v3).
+-    _lifetime = lifetime_trial_report(c.get("family") for c in cells)
+-
+-    # Per-cell verdicts
+-    verdicts = []
++    # THE DEFLATED-SHARPE HURDLE IS A FIXED PER-CELL BAR (principal, 2026-10-07: "everything is
++    # always fixed n no extra penalty trials inflated charges anything ever"). No lifetime, union,
++    # per-family, docket or census count enters it and EXPERIMENT_LEDGER.json is not read on this
++    # path: until 2026-10-07 the charge was max(campaign, family lifetime, lifetime union) from
++    # that ledger, and on any host without the ledger every cell failed closed.
++    from research.gate_policy import TRIAL_COUNT_BASIS as _DSR_BASIS
++    from research.gate_policy import dsr_hurdle_inputs
++
++    # Per-cell stages (pass 1). The two program-level stage dicts are placed in their slot now
++    # and filled in pass 2, once PBO and SPA have joined.
++    _staged: list[tuple[dict[str, Any], str, int, dict[str, Any]]] = []
+     for _idx, (orig_i, ds) in enumerate(valid):
+         c = cells[orig_i]
+         arr = ds.to_numpy(float)
+@@ -3170,40 +4235,38 @@
+             raise ShardMergeError(f"{cid}: shard ruled at cut {c.get('_local_cut')!r}, "
+                                   f"this cell's cut is {_cell_cut[orig_i]!r} "
+                                   f"(the union's is {_lock_cut!r})")
++        # The shard's deflated-Sharpe and lockbox reads ride with its verified local stages.
++        _pre = c.get("_local_program") if _local is not None else None
+         if _local is None:
+             _local = _cell_local_stages(c, arr, daily_x3[orig_i], meta)
+ 
+         # In-sample
+         stages = {k: _local[k] for k in CELL_LOCAL_HEAD}
+ 
+-        # Deflated Sharpe, charged the LARGEST of the campaign charge, the family's lifetime
+-        # trials and the desk's lifetime UNION: every trial the desk ever ran raises the bar.
+-        # An unknown union charge fails the gate (and the lockbox, whose hurdle is the same sr0).
+-        _n_cell, _n_basis = charged_lifetime_trials(n_trials, str(c.get("family") or ""),
+-                                                    _lifetime, matrix.shape[1])
+-        dsr = deflated_sharpe_ratio(arr, n_trials=_n_cell if _n_cell is not None else n_trials,
+-                                    variance_of_sharpes=sh_var, threshold=dsr_bar)
+-        _dsr_sr0 = float(dsr.sr0_threshold) if _n_cell is not None else float("inf")
++        # Deflated Sharpe at the FIXED per-cell bar: the cell's own null variance 1/(T-1) at a
++        # constant N (gate_spec `fixed_dsr_trials`), PSR >= 0.95 -- a per-cell t of about 2.8.
++        # The lockbox reads use the same sr0.
++        _n_cell, _cell_var, _n_basis = dsr_hurdle_inputs(len(arr))
++        (_dsr_passed, _dsr_val, _dsr_sr0), _lock_st = _program_reads(
++            arr, lock_daily[orig_i], _pre, threshold=dsr_bar)
+         stages["deflated_sharpe"] = {
+-            "passed": bool(dsr.passed) and _n_cell is not None, "dsr": round(float(dsr.dsr), 4),
+-            "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": _n_cell,
+-            "campaign_trials": n_trials, "lifetime_basis": _n_basis,
+-            "variance_of_sharpes": round(sh_var, 6),
+-            "variance_basis": _var_basis,
++            **_dsr_stage(len(arr), (_dsr_passed, _dsr_val, _dsr_sr0)),
++            # REPORTED ONLY, never an input to this verdict.
++            "campaign_trials_reported": n_trials,
++            "spec_variance_reported": round(sh_var, 6),
+             "variance_measured_this_sweep": round(sh_var_measured, 6),
+         }
+ 
+-        # PBO + SPA (program-level)
+-        stages["pbo"] = {"passed": pbo_ok, "pbo": round(pbo_val, 4)}
+-        stages["reality_check_spa"] = {"passed": spa_ok, "p_value": round(spa_p, 4)}
++        # PBO + SPA (program-level): their slots, filled in pass 2.
++        stages["pbo"] = {}
++        stages["reality_check_spa"] = {}
+ 
+         # CPCV, walk-forward, stress costs (cell-local)
+         for _k in CELL_LOCAL_MID:
+             stages[_k] = _local[_k]
+ 
+         # Lockbox: the reserved tail, which no gate above has read (policy v3).
+-        stages["lockbox"] = lockbox_stage(lock_daily[orig_i], sharpe_ratio, dev=arr,
+-                                          sr0=_dsr_sr0)
++        stages["lockbox"] = _lock_st
+         stages["lockbox"]["cut"] = str(_cell_cut[orig_i])
+         stages["lockbox"]["cut_basis"] = ("campaign" if _cell_cut[orig_i] == _lock_cut
+                                           else "cell_own_tail (history begins after the "
+@@ -3212,6 +4275,29 @@
+         # Expected value, swap (cell-local)
+         for _k in CELL_LOCAL_TAIL:
+             stages[_k] = _local[_k]
++        _staged.append((c, cid, len(arr), stages))
++
++    for _t in _prog_threads:
++        _t.join()
++    if _prog_threads:
++        for _name in ("pbo", "spa"):
++            if _name + "_exc" in _prog_box:
++                raise _prog_box[_name + "_exc"]  # type: ignore[misc]
++        pbo = _prog_box["pbo"]
++        pbo_val = float(pbo.pbo)  # type: ignore[attr-defined]
++        pbo_ok = pbo_val <= PBO_THRESHOLD
++        print(f"  PBO: {pbo_val:.4f} ({'PASS' if pbo_ok else 'FAIL'})")
++
++        spa = _prog_box["spa"]
++        spa_p = float(spa.p_value)  # type: ignore[attr-defined]
++        spa_ok = spa_p < SPA_ALPHA
++        print(f"  SPA: p={spa_p:.4f} ({'PASS' if spa_ok else 'FAIL'})")
++
++    # Per-cell verdicts (pass 2), in the order of the cells.
++    verdicts = []
++    for c, cid, _days, stages in _staged:
++        stages["pbo"].update({"passed": pbo_ok, "pbo": round(pbo_val, 4)})
++        stages["reality_check_spa"].update({"passed": spa_ok, "p_value": round(spa_p, 4)})
+ 
+         passed = all(s["passed"] for s in stages.values())
+         # AND AT LEAST AS MANY GATES AS THE LAW IN FORCE REQUIRES (S01): a gate count the
+@@ -3240,7 +4326,7 @@
+         _failed = [k for k, v in stages.items() if not v.get("passed")]
+         verdicts.append({
+             "cell": cid, "sym": c["sym"], "family": c["family"],
+-            "days": len(arr), "passed": passed, "stages": stages,
++            "days": _days, "passed": passed, "stages": stages,
+             "terminal_gate": ("PASSED" if passed
+                               else _failed[0] if _failed else "constitution.gates_required"),
+             "failed_gates": _failed,
+@@ -3266,33 +4352,12 @@
+         if _i in _judged:
+             continue
+         _d = daily[_i] if _i < len(daily) else None
+-        _n = 0 if _d is None else len(_d)
+         _pre = _pre_carve_days[_i] if _i < len(_pre_carve_days) else None
+-        _nsig = _c.get("_n_signals")
+-        # THE CAUSE, NAMED BY THE ONE ORGAN THAT CAN SEE IT (2026-09-30). Every UNKNOWN carries
+-        # it, and `failed_gates` is never empty: the observations gate is the gate that stopped it.
+-        _err = _c.get("_series_error")
+-        _why_unknown = classify_unknown(_d, _pre, _nsig, errored=bool(_err))
+-        verdicts.append({
+-            "cell": cell_id({"sym": _c["sym"], "family": _c["family"],
+-                             "params": _c.get("params") or {}}),
+-            "sym": _c["sym"], "family": _c["family"], "days": _n,
+-            "params": _c.get("params") or {}, "timeframe": _c.get("timeframe"),
+-            "days_before_lockbox": _pre, "n_signals": _nsig,
+-            "unknown_reason": _why_unknown,
+-            "failed_gates": ["observations"], "n_failed_gates": 1,
+-            **({"series_error": _err} if _err else {}),
+-            "passed": False, "unmeasured": True,
+-            "stages": {"observations": {
+-                "passed": False, "days": _n, "required": 60,
+-                "why": ("no daily series could be built from this cell's signals"
+-                        if _d is None else
+-                        f"only {_n} daily observations; CPCV with purge+embargo and the "
+-                        f"walk-forward folds require 60. This is UNMEASURED, not a failure: "
+-                        f"the cell fires too rarely to be judged, which is a fact about the "
+-                        f"SEARCH that proposed it, not evidence against the edge")}},
+-        })
++        verdicts.append(_unmeasured_verdict(_c, _d, _pre,
++                                            screened=bool(_c.get("_screened_past_cut"))))
+ 
++    # EVERY VERDICT NAMES THE GATE THAT STOPPED IT (`terminal_stamp`), ruled or unmeasured.
++    _terminal_defects = stamp_terminal(verdicts)
+     elapsed = time.time() - t0
+     n_pass = sum(1 for v in verdicts if v.get("passed"))
+     n_unmeasured = sum(1 for v in verdicts if v.get("unmeasured"))
+@@ -3329,16 +4394,19 @@
+         "n_trials": n_trials,
+         "trial_count_basis": _trial_basis,
+         "trial_census": _census,
+-        # THE LIFETIME COUNT, BESIDE THE SEALED CHARGE (V21). `n_trials` above is the policy's
+-        # fixed campaign charge and stays exactly that; this records what the experiment ledger
+-        # holds for every family in the sweep so the two counters can be read side by side.
++        # WHAT THE DEFLATED-SHARPE GATE ACTUALLY APPLIED: the fixed per-cell bar. `n_trials` and
++        # `trial_count_basis` above are the campaign count, REPORTED; neither enters a verdict.
++        "dsr_bar": {"fixed_trials": dsr_hurdle_inputs(2)[0], "null_variance": "1/(T-1)",
++                    "basis": _DSR_BASIS},
++        # THE LIFETIME COUNT, A REPORT ONLY (V21). It never enters a verdict: the hurdle is the
++        # fixed per-cell bar above. A missing ledger leaves this UNMEASURED and fails nothing.
+         "trial_ledger": _safe(lambda: lifetime_trial_report(c.get("family") for c in cells),
+                               "trial_ledger"),
+         # N_EFFECTIVE BESIDE THE SEALED CHARGE (LAWS 5k; libs/research/trial_ledger.py): this
+         # sweep's cells priced by their descriptors and parameters, so clones of one family
+         # collapse and distinct mechanisms count in full. Reported so the reader can see what
+         # the charge would be if it followed the family; it never sets the bar.
+-        "effective_trials": _safe(lambda: structural_trial_census(cells), "effective_trials"),
++        "effective_trials": _eff_result(_eff_thread, _eff_box),
+         # GATE INDEPENDENCE, COUNTED (V1): how many verdicts' lockbox restates walk-forward,
+         # and that PBO/SPA are one matrix-level number on every verdict. Measurement only.
+         "gate_independence": _safe(lambda: gate_independence(verdicts), "gate_independence"),
+@@ -3351,6 +4419,7 @@
+                             "failures. A high count is a fact about the SEARCH (candidates that "
+                             "fire too rarely to test), not evidence against the edges."),
+         "gate_fails": gate_fails,
++        "terminal_defects_judged": _terminal_defects,
+         "verdicts": verdicts,
+         "swept_at": datetime.now(UTC).isoformat(),
+     }
+@@ -3440,6 +4509,64 @@
+     return _judge_refusal(verb, rel)
+ 
+ 
++def _docket_key(h: dict[str, Any]) -> tuple[str, Any, Any, dict[str, Any]] | None:
++    """One docket row's (cell key, sym, family, params), or None when it names no symbol or
++    family -- `main`'s grouping body, verbatim, raising whatever it raised."""
++    sym = h.get("symbol")
++    fam = h.get("family")
++    params = dict(h.get("params") or {})
++    if not sym or not fam:
++        return None
++    row_tf = str(h.get("timeframe") or "").upper()
++    if row_tf and row_tf != "H1" and "timeframe" not in params:
++        params["timeframe"] = row_tf
++    key = f"{sym}.{fam}.{json.dumps(params, sort_keys=True)}"
++    return key, sym, fam, params
++
++
++def _docket_spec(h: dict[str, Any], sym: Any, fam: Any, params: dict[str, Any]) -> dict[str, Any]:
++    """The spec `main` records for a key's FIRST row (built only then, as before)."""
++    return {
++        "sym": sym,
++        "family": fam,
++        "params": params,
++        "timeframe": timeframe_of(params, str(fam)),
++        "mechanism_status": h.get("mechanism_status"),
++        "mechanism_note": h.get("mechanism_note"),
++        # Tier S pre-judge screen (libs/tiers/prejudge_screen.py): a cell a Red Queen
++        # defender rule or a ratified invented test flagged is judged after the clean
++        # cells of its bucket. Order only: nothing is dropped.
++        "prejudge_flagged": bool(((h.get("prejudge") or {}).get("flags"))),
++        # The last day the LLM lab's style screen read (`lab_style`), refused below when
++        # the cell's lockbox cut is not after it. Absent on every other row.
++        **({"screen_read_until": str(h["screen_read_until"])}
++           if h.get("screen_read_until") else {}),
++    }
++
++
++def _docket_fold(cells: dict[str, dict[str, Any]], key: str, h: dict[str, Any],
++                 kc: tuple[Any, ...], first: dict[str, Any] | None = None
++                 ) -> dict[str, Any] | None:
++    """`main`'s grouping body for one row already keyed, verbatim, on one grouping. `first` is
++    a spec this same row already built for the other grouping (copied, never shared: each
++    grouping folds its own rows' provenance). Returns the spec it built for a new key."""
++    built = None
++    if key in cells and h.get("screen_read_until"):
++        # The LATEST day any proposer's screen read is the one the cut must clear.
++        _was = str(cells[key].get("screen_read_until") or "")
++        cells[key]["screen_read_until"] = max(_was, str(h["screen_read_until"]))
++    if key in cells:
++        merge_llm_provenance(cells[key], h)
++    if key not in cells:
++        built = _docket_spec(h, *kc[1:]) if first is None else dict(first)
++        cells[key] = dict(built) if first is None else built
++        # LLM provenance (`lookahead_guard`, `producer`, `source`) rides from the row onto
++        # the docket spec, or the look-ahead guard below never sees it and fails OPEN
++        # (audit HOLD on e7547165).
++        merge_llm_provenance(cells[key], h)
++    return built
++
++
+ def main():
+     # THE FIREWALL BEFORE THE FIRST READ: every input the sweep judges from and the authority
+     # file it writes. A refusal halts the sweep with the certificates untouched -- the gate
+@@ -3461,14 +4588,50 @@
+         return
+     total = stamped_n = unstamped_n = 0
+     unstamped_sample: list[str] = []
++    # ONE PASS OVER THE DOCKET, NOT TWO (2026-10-14). The census below decides `stamped_only`,
++    # which the grouping pass used to need first, so the docket (1.5m+ rows) was decoded twice
++    # a sweep. Both groupings are now built in the one pass -- every row, and stamped rows only --
++    # each in first-seen order, and the census picks one: exactly the dict the second pass built.
++    # A row that would have raised in the second pass raises at the same point of the sweep.
++    _cells_all: dict[str, dict[str, Any]] = {}
++    _cells_stamped: dict[str, dict[str, Any]] = {}
++    _raise_all: list[BaseException] = []
++    _raise_stamped: list[BaseException] = []
+     for h in iter_json_array(surv_file):
+         total += 1
++        _st = False
+         if isinstance(h, dict) and is_stamped(h):
+             stamped_n += 1
++            _st = True
+         elif isinstance(h, dict):
+             unstamped_n += 1
+             if len(unstamped_sample) < 5:
+                 unstamped_sample.append(str(h.get("family") or h.get("title"))[:40])
++        if not isinstance(h, dict) or (_raise_all and (_raise_stamped or not _st)):
++            continue
++        _need_all = not _raise_all
++        _need_st = _st and not _raise_stamped
++        try:
++            _kc = _docket_key(h)
++        except Exception as _exc:
++            if _need_all:
++                _raise_all.append(_exc)
++            if _need_st:
++                _raise_stamped.append(_exc)
++            continue
++        if _kc is None:
++            continue
++        _built = None
++        if _need_all:
++            try:
++                _built = _docket_fold(_cells_all, _kc[0], h, _kc)
++            except Exception as _exc:
++                _raise_all.append(_exc)
++        if _need_st:
++            try:
++                _docket_fold(_cells_stamped, _kc[0], h, _kc, _built)
++            except Exception as _exc:
++                _raise_stamped.append(_exc)
+     print(f"Loaded {total} external survivors by streaming census")
+     _ack_docket(surv_file)
+     # EMPTY INPUT IS A HALT, NOT A SWEEP (2026-08-26, measured). The hourly merge briefly wrote
+@@ -3512,32 +4675,11 @@
+     # the ROW rather than in params (the orthogonal sweep writes both) must not have it dropped
+     # here: two rows differing only by chart are two cells, and folding them would hand one
+     # verdict to both.
+-    cells = {}
+-    for h in iter_json_array(surv_file):
+-        if not isinstance(h, dict) or (stamped_only and not is_stamped(h)):
+-            continue
+-        sym = h.get("symbol")
+-        fam = h.get("family")
+-        params = dict(h.get("params") or {})
+-        if not sym or not fam:
+-            continue
+-        row_tf = str(h.get("timeframe") or "").upper()
+-        if row_tf and row_tf != "H1" and "timeframe" not in params:
+-            params["timeframe"] = row_tf
+-        key = f"{sym}.{fam}.{json.dumps(params, sort_keys=True)}"
+-        if key not in cells:
+-            cells[key] = {
+-                "sym": sym,
+-                "family": fam,
+-                "params": params,
+-                "timeframe": timeframe_of(params, str(fam)),
+-                "mechanism_status": h.get("mechanism_status"),
+-                "mechanism_note": h.get("mechanism_note"),
+-                # Tier S pre-judge screen (libs/tiers/prejudge_screen.py): a cell a Red Queen
+-                # defender rule or a ratified invented test flagged is judged after the clean
+-                # cells of its bucket. Order only: nothing is dropped.
+-                "prejudge_flagged": bool(((h.get("prejudge") or {}).get("flags"))),
+-            }
++    _raised = _raise_stamped if stamped_only else _raise_all
++    if _raised:
++        raise _raised[0]
++    cells = _cells_stamped if stamped_only else _cells_all
++    del _cells_all, _cells_stamped
+ 
+     # REPRODUCTION RESTRICTS THE DOCKET, NOTHING ELSE. Every gate below runs exactly as it does
+     # on the full sweep -- same code, same costs, same data -- on one named cell. That identity is
+@@ -3559,6 +4701,23 @@
+         families_submitted[fam] = families_submitted.get(fam, 0) + 1
+     print(f"Submitted families: {families_submitted}")
+ 
++    # THE PLAN, RESUMED OR MADE (2026-10-20, IDEA_QUEUE 159). The 10-20 sweep spent 9,729 s
++    # planning before its first shard ran; a sweep killed after that re-planned from nothing. A
++    # sharded sweep now persists the plan it made (`_persist_plan`) and a restart RESUMES it
++    # when the code, the law and the universe are unchanged -- re-planning only the docket cells
++    # whose spec changed (`_replan_changed`) -- instead of re-planning the whole docket.
++    _sweep = _resume_plan(cells, meta, surv_file)
++    if _sweep is None:
++        _t_plan = time.time()
++        _sweep = _plan_phase(cells, meta)
++        _persist_plan(_sweep, surv_file, plan_s=time.time() - _t_plan)
++    return _judge_phase(_sweep)
++
++
++def _plan_phase(cells: dict[str, Any], meta: dict[str, Any]) -> dict[str, Any]:
++    """THE PLAN, MOVED VERBATIM OUT OF `main` (2026-10-20): gate 0, the build preflight, the
++    order, novelty, the yield allocation and the pre-warm pool. Returns every name the judging
++    half reads, so `_judge_phase` runs on a made plan and on a resumed one alike."""
+     # GATES ARE SEQUENTIAL. A statistical pattern with no falsifiable economic mechanism fails
+     # the first canonical gate. Before this partition, 2,760 such rows consumed days of signal
+     # construction, CPCV and walk-forward work despite having zero path to a certificate. Record
+@@ -3576,19 +4735,7 @@
+     # These descriptions cannot execute as claimed. Conserve every refusal, but discover it
+     # before novelty, allocation and parallel pre-warm so scarce build/gate compute is reserved
+     # for cells that can actually reach the ten gates.
+-    _modifier_blocked: list[dict] = []
+-    _modifier_ready: list[dict] = []
+-    for _spec in eligible_specs:
+-        _why = modifier_preflight(_spec)
+-        if _why:
+-            _modifier_blocked.append({**_spec,
+-                                      "downstream_status": ("NOT_RUN_BUILD_FAILED"
+-                                          if _why.startswith("BLOCKED_") else "NOT_RUN_MODIFIER"),
+-                                      "why": (f"NOT_RUN_BUILD_FAILED: {_why}"
+-                                          if _why.startswith("BLOCKED_")
+-                                          else f"NOT_RUN_MODIFIER: {_why}")})
+-        else:
+-            _modifier_ready.append(_spec)
++    _modifier_ready, _modifier_blocked = _preflight_split(eligible_specs)
+     eligible_specs = _modifier_ready
+     if _modifier_blocked:
+         print(f"Build preflight: {len(_modifier_blocked)} incomplete input/variant(s) conserved "
+@@ -3599,13 +4746,14 @@
+     # was already computed loads its 1x and 3x daily series and skips signal generation AND both
+     # backtests entirely; only genuinely new candidates, or a new trading day, pay for compute.
+     # This is what makes an hourly sweep of a 3,000+ docket take minutes instead of the hour.
+-    cell_objs = []
++    cell_objs: list[dict[str, Any]] = []
+     cache_hits = 0
+     built_fresh = 0
+     deferred: list[dict] = []
+     _mem_deferred = 0
+     blocked_build: list[dict] = list(_modifier_blocked)
+     _build_t0 = time.time()
++    _LAST_DAY.clear()       # one sweep's data-days, never a previous sweep's
+     # Yesterday's keys die with yesterday's data-day; prune so the cache never grows unbounded.
+     try:
+         import time as _t
+@@ -3771,7 +4919,7 @@
+     if _remint_ids:
+         print(f"  re-mint: {sum(1 for sp in eligible_specs if _remint_is(sp))} of "
+               f"{len(_remint_ids)} certificate cell(s) under re-judgement first "
+-              f"(priority_remint.json)")
++              f"(priority_remint.json + the canon's pending_rejudge)")
+     # ALLOCATE THE HOUR BY MEASURED YIELD, AFTER the never-judged cells are already at the front.
+     # Order decides what gets reached; the quota decides how much of each family the hour spends
+     # itself on. Applied here rather than before the sort so a never-judged cell keeps its
+@@ -3838,6 +4986,30 @@
+         # THE POOL'S BUILDS COUNT AS BUILDS. Without this the cursor never advances and the
+         # docket never rotates -- see `_prewarm_cache.summary["built_symbols"]`.
+         _built_syms |= set(_prewarm.get("built_symbols") or ())
++        # THE POOL'S DATA-DAYS SEED THIS PROCESS AND THE SHARDS' (`_run_shards`): a cell is looked
++        # up under the day the pool keyed it to. Popped: it is a working map, not a report field.
++        _LAST_DAY.update(_prewarm.pop("last_days", None) or {})
++        eligible_specs = _apply_prewarm_failures(eligible_specs,
++                                                 _prewarm.pop("failed_cells", None) or {},
++                                                 blocked_build)
++    return {"cells": cells, "meta": meta, "n_cells": len(cells),
++            "eligible_specs": eligible_specs, "prior_rejections": prior_rejections,
++            "blocked_build": blocked_build, "cell_objs": cell_objs, "deferred": deferred,
++            "cache_hits": cache_hits, "built_fresh": built_fresh, "_mem_deferred": _mem_deferred,
++            "_build_t0": _build_t0, "_built_syms": _built_syms, "_cursor": _cursor,
++            "_seen": _seen, "_prewarm": _prewarm, "_remint_stale": _remint_stale}
++
++
++def _judge_phase(st: dict[str, Any]) -> None:
++    """THE JUDGING HALF OF `main`, MOVED VERBATIM: build (or shards), the ten gates, every
++    record and every authority file -- on the plan `_plan_phase` made or `_resume_plan` kept."""
++    cells, meta, _n_cells = st["cells"], st["meta"], int(st["n_cells"])
++    eligible_specs, prior_rejections = st["eligible_specs"], st["prior_rejections"]
++    blocked_build, cell_objs, deferred = st["blocked_build"], st["cell_objs"], st["deferred"]
++    cache_hits, built_fresh, _mem_deferred = (st["cache_hits"], st["built_fresh"],
++                                              st["_mem_deferred"])
++    _build_t0, _built_syms, _cursor = st["_build_t0"], st["_built_syms"], st["_cursor"]
++    _seen, _prewarm, _remint_stale = st["_seen"], st["_prewarm"], st["_remint_stale"]
+     # STAGE 0, REPORT-ONLY (V8). `stage0_prefilter` says why it cannot be more than that here:
+     # a spec carries no return stream, and the cells that do (cached series) have already paid
+     # their build. It judges every cached series on the loop's cached branch below, counts what
+@@ -3854,7 +5026,9 @@
+         # the development window. This process verifies every planned cell came back from
+         # exactly one shard and restores the plan's order. No shard computes a program-level
+         # number: `run_gauntlet` below does, once, on the union.
+-        _sh = _run_shards(eligible_specs, meta, _build_t0)
++        _sh = _run_shards(eligible_specs, meta, _build_t0,
++                          pre_rows=[*prior_rejections,
++                                    *(_blocked_verdict(s) for s in blocked_build)])
+         cell_objs, deferred = _sh["cell_objs"], _sh["deferred"]
+         blocked_build.extend(_sh["blocked"])
+         cache_hits, built_fresh = _sh["cache_hits"], _sh["built_fresh"]
+@@ -3872,8 +5046,15 @@
+         print(f"Cell cache: {cache_hits}/{len(eligible_specs)} loaded (same data-day), "
+               f"{len(eligible_specs) - cache_hits} to compute")
+     if deferred:
+-        print(f"BUILD BUDGET reached after {built_fresh} fresh cell(s) in "
+-              f"{time.time() - _build_t0:.0f}s: {len(deferred)} cell(s) DEFERRED to the next "
++        # THE POOL'S BUILDS ARE FRESH CELLS TOO (2026-10-20). With the pre-warm on, the loop finds
++        # the budget spent and `built_fresh` is 0 by construction; sweep 23324 printed "after 0
++        # fresh cell(s) in 14782s" while the pool had warmed 11,394. The seconds are the time
++        # since the budget clock started, which includes the shard dispatch, not the build alone.
++        _warmed = int((_prewarm or {}).get("warmed") or 0)
++        print(f"BUILD BUDGET reached after {built_fresh} fresh cell(s) built in the loop and "
++              f"{_warmed} warmed by the pre-warm pool, {time.time() - _build_t0:.0f}s after "
++              f"the build clock started (budget {FRESH_BUILD_BUDGET_SEC:.0f}s): "
++              f"{len(deferred)} cell(s) DEFERRED to the next "
+               f"sweep and recorded UNMEASURED. They are not failures -- the cache is cumulative, "
+               f"so the next run resumes from here and the docket converges.")
+ 
+@@ -3893,7 +5074,9 @@
+             "verdicts": [],
+             "swept_at": datetime.now(UTC).isoformat(),
+         }
+-    result["n_cells_discovered"] = len(cells)
++    result["n_cells_discovered"] = _n_cells
++    if st.get("plan_resume"):
++        result["plan_resume"] = st["plan_resume"]
+     result["n_cells_advanced_beyond_economic_prior"] = len(cell_objs)
+     result["n_cells_rejected_at_economic_prior"] = len(prior_rejections)
+     # DEFERRED CELLS ARE IN THE RECORD, NOT MISSING FROM IT. A cell the build budget did not
+@@ -3901,22 +5084,10 @@
+     # would make the report describe a smaller docket than the desk actually holds, which is the
+     # silent-shrinkage failure this desk has been burned by before. It carries its own reason so
+     # nobody has to guess why a cell has no verdict (L1.28a).
+-    deferred_verdicts = [{
+-        "cell": cell_id({"sym": s["sym"], "family": s["family"], "params": s.get("params") or {}}),
+-        "sym": s["sym"], "family": s["family"], "days": 0, "passed": None,
+-        "stages": {},
+-        "downstream_status": "NOT_RUN_BUILD_BUDGET_DEFERRED",
+-        "why": ("the sweep's fresh-build budget was exhausted before this cell was computed. "
+-                "The per-cell cache is cumulative and content-addressed, so the next sweep "
+-                "resumes here rather than restarting; this is work not yet done, never a "
+-                "verdict."),
+-    } for s in deferred]
+-    blocked_verdicts = [{
+-        "cell": cell_id({"sym": s["sym"], "family": s["family"],
+-                         "params": s.get("params") or {}}),
+-        "sym": s["sym"], "family": s["family"], "days": 0, "passed": None,
+-        "stages": {}, "downstream_status": s["downstream_status"], "why": s["why"],
+-    } for s in blocked_build]
++    deferred_verdicts = [_deferred_verdict(s) for s in deferred]
++    blocked_verdicts = [_blocked_verdict(s) for s in blocked_build]
++    # The rows the ten gates never reached are stamped too: gate 0 by its gate, the rest NOT_RUN.
++    stamp_terminal([*prior_rejections, *deferred_verdicts, *blocked_verdicts])
+     result["n_cells_deferred_build_budget"] = len(deferred)
+     # WHICH budget deferred them, because "deferred" with no reason is how a cap becomes
+     # invisible and a docket quietly stops converging.
+@@ -3998,6 +5169,19 @@
+         _v = result.get("verdicts") or []
+         result["terminal_gates"] = dict(_c.Counter(
+             str(v.get("terminal_gate")) for v in _v if isinstance(v, dict)).most_common())
++        # THE SAME FUNNEL, NAMED: by kind and by the gate that stopped each row. A DEFECT is a
++        # row no rule could name; it is counted and sampled here and printed, never silent.
++        result["terminal_kinds"] = dict(_c.Counter(
++            str(v.get("terminal_kind")) for v in _v if isinstance(v, dict)).most_common())
++        result["terminal_gate_ids"] = dict(_c.Counter(
++            str(v.get("terminal_gate_id")) for v in _v
++            if isinstance(v, dict) and v.get("terminal_kind") != "PASSED").most_common())
++        _defect_cells = [str(v.get("cell") or "") for v in _v if isinstance(v, dict)
++                         and v.get("terminal_kind") not in TERMINAL_KINDS[:4]]
++        result["terminal_defects"] = {"n": len(_defect_cells), "sample": _defect_cells[:20]}
++        if _defect_cells:
++            print(f"TERMINAL GATE DEFECT: {len(_defect_cells)} verdict row(s) name no gate that "
++                  f"stopped them ({TERMINAL_DEFECT}); first: {_defect_cells[:5]}")
+         result["n_curable_by_forward"] = sum(
+             1 for v in _v if isinstance(v, dict) and v.get("curable_by_forward"))
+         # Written above, BEFORE the seen-cells stamp -- see the note there. Reported here so the
+@@ -4010,7 +5194,17 @@
+     if not _repro_active():
+         out = REPORTS / "universal_gates_external.json"
+         out.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
++        _write_report_digest(out, result)
+         print(f"\nSaved to {out}")
++        # THE SHARDS' EARLY COPY, CHECKED AGAINST THE RECORD JUST WRITTEN (never the reverse).
++        if _sharding is not None:
++            _sharding_pub = _safe(lambda: _seal_shard_publication(result["verdicts"]),
++                                  "shard_publication")
++            print(f"  shard publication: {_sharding_pub.get('final_rows_agree')} final row(s) "
++                  f"agree, {_sharding_pub.get('final_rows_disagree')} disagree, "
++                  f"{_sharding_pub.get('absent_from_merge')} absent")
++            # THE VERDICTS ARE DURABLE: nothing is left to resume.
++            _safe(_sweep_cleanup, "sweep_cleanup")
+ 
+     # Update UNIVERSAL_SURVIVORS.json -- FULL AUTHORITY OR NOTHING. An earlier revision of this
+     # block wrote certificates without the top-level `gate_policy` attestation and without a
+@@ -4333,6 +5527,17 @@
+             ok_now, _why_now = symbol_is_tradeable(sym, meta)
+             if not ok_now:
+                 continue
++            # NO RESTORE UNDER A HEADER THE ROW WAS NEVER JUDGED UNDER (2026-10-20). A row retired
++            # before the reserved lockbox carries gate 9 == gate 7 (no `cut`); restoring it into
++            # the survivor set re-stamps it with ATTESTATION. It waits for a re-judge instead.
++            if restore_would_restamp(row, ATTESTATION):
++                back = dict(row)
++                back.setdefault("pending_since", stamp)
++                back["pending_reason"] = ("retirement reason no longer holds, but its gates "
++                                          "predate the reserved lockbox: re-judge, never restore")
++                _remint["pending"][key] = back
++                del retired[key]
++                continue
+             back = dict(row)
+             back["restored_at"] = stamp
+             back["restored_from"] = {"retired_at": back.pop("retired_at", None),
+@@ -4348,6 +5553,10 @@
+     if retired:
+         doc["retired_certificates"] = retired
+         doc["revoked_at"] = datetime.now(UTC).isoformat()
++    elif "retired_certificates" in old_doc:
++        # every retired row moved out (restored, or sent to pending_rejudge): the stale block
++        # must not survive, or `lockbox_recert.locate` reads those keys as RETIRED
++        doc["retired_certificates"] = {}
+     doc.pop("pending_rejudge", None)
+     if _remint["pending"]:
+         doc["pending_rejudge"] = _remint["pending"]
+@@ -4396,7 +5605,54 @@
+     ledger_path.write_text(json.dumps({"n": len(claims), "claims": claims},
+                                       indent=2, default=str), encoding="utf-8")
+     print(f"SURVIVORS_LEDGER.json: {len(claims)} claim(s)")
+-    _progress_watermark(len(cells), len(claims))
++    _progress_watermark(_n_cells, len(claims))
++
++
++def _preflight_split(specs: list[dict[str, Any]]
++                     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
++    """(ready, blocked): the build preflight, one rule for the plan and for a re-planned cell.
++
++    These descriptions cannot execute as claimed; every refusal is conserved with its reason."""
++    _modifier_blocked: list[dict] = []
++    _modifier_ready: list[dict] = []
++    for _spec in specs:
++        _why = modifier_preflight(_spec)
++        if _why:
++            _modifier_blocked.append({**_spec,
++                                      "downstream_status": ("NOT_RUN_BUILD_FAILED"
++                                          if _why.startswith("BLOCKED_") else "NOT_RUN_MODIFIER"),
++                                      "why": (f"NOT_RUN_BUILD_FAILED: {_why}"
++                                          if _why.startswith("BLOCKED_")
++                                          else f"NOT_RUN_MODIFIER: {_why}")})
++        else:
++            _modifier_ready.append(_spec)
++    return _modifier_ready, _modifier_blocked
++
++
++def _deferred_verdict(s: dict[str, Any]) -> dict[str, Any]:
++    """The row of a cell the build budget did not reach: work not yet done, never a verdict."""
++    return {
++        "cell": cell_id({"sym": s["sym"], "family": s["family"], "params": s.get("params") or {}}),
++        "sym": s["sym"], "family": s["family"], "days": 0, "passed": None,
++        "stages": {},
++        "downstream_status": "NOT_RUN_BUILD_BUDGET_DEFERRED",
++        "why": ("the sweep's fresh-build budget was exhausted before this cell was computed. "
++                "The per-cell cache is cumulative and content-addressed, so the next sweep "
++                "resumes here rather than restarting; this is work not yet done, never a "
++                "verdict."),
++        **({"prewarm_status": s["prewarm_status"], "prewarm_why": s.get("prewarm_why")}
++           if s.get("prewarm_status") else {}),
++    }
++
++
++def _blocked_verdict(s: dict[str, Any]) -> dict[str, Any]:
++    """The row of a cell whose data or build blocked it before any gate ran."""
++    return {
++        "cell": cell_id({"sym": s["sym"], "family": s["family"],
++                         "params": s.get("params") or {}}),
++        "sym": s["sym"], "family": s["family"], "days": 0, "passed": None,
++        "stages": {}, "downstream_status": s["downstream_status"], "why": s["why"],
++    }
+ 
+ 
+ def _ack_docket(path) -> None:
+@@ -4601,7 +5857,14 @@
+     if phase != "build":
+         raise ValueError(f"unknown shard phase {phase!r}")
+     build_t0 = float(plan["build_t0"])
++    _LAST_DAY.clear()
++    _LAST_DAY.update(plan.get("last_days") or {})
+     mine = [(i, sp) for i, sp in enumerate(plan["specs"]) if shard_of(sp, n) == k]
++    basis = _shard_basis(plan, mine)
++    if plan.get("resume"):
++        _resumed = _resume_shard_build(shard_dir, plan, k, mine, basis)
++        if _resumed is not None:
++            return _resumed
+     # NO POOL HERE. The merging process ran the pre-warm pool over the WHOLE plan before any shard
+     # started, in the plan's order and against the same deadline, exactly as the unsharded sweep
+     # does -- so a shard finds the pool's cells cached and defers what the pool did not reach, for
+@@ -4644,7 +5907,7 @@
+             dates.update(d.index)
+     out = {"protocol": SHARD_PROTOCOL, "token": plan["token"], "k": k, "n": n, "pid": os.getpid(),
+            "phase": "build", "rows": rows, "built_syms": sorted(built_syms),
+-           "dates": list(dates), "build_seconds": round(time.time() - t0, 3)}
++           "dates": list(dates), "build_seconds": round(time.time() - t0, 3), "basis": basis}
+     _pickle_atomic(shard_dir / f"shard_{k}.pkl", out)
+     print(f"SHARD {k}/{n} build: {len(rows)} planned cell(s), {len(cells)} built in "
+           f"{out['build_seconds']:.1f}s")
+@@ -4654,14 +5917,32 @@
+ def _shard_rule(shard_dir: Path, plan: dict, k: int, meta: dict, t0: float) -> dict:
+     """Phase `rule`: the cell-local gates on each cell's DEVELOPMENT window, cut at the union's
+     lockbox key exactly as `run_gauntlet` cuts it."""
++    _PURE_MEMO.clear()                 # one judging call's memo, as in `run_gauntlet`
+     got = _unpickle(shard_dir / "cut.pkl")
+     if got.get("token") != plan["token"]:
+         raise ShardMergeError("cut.pkl belongs to another plan")
+     cut = got["cut"]
++    # THE LAW'S DSR BAR, resolved here as `run_gauntlet` resolves it, so this shard can take the
++    # deflated-Sharpe and lockbox reads off the merge: since T8 both are pure functions of the
++    # cell's own series and that bar. The merge uses them only at an equal bar (`_program_reads`).
++    try:
++        from research.gate_policy import LOCKBOX_FRAC
++        _dsr_bar: float | None = float(constitution_thresholds(LOCKBOX_FRAC)["dsr_threshold"])
++    except Exception:
++        _dsr_bar = None
+     out = _unpickle(shard_dir / f"shard_{k}.pkl")
++    if out.get("token") == plan["token"] and out.get("phase") == "rule":
++        # RESUMED: ruled already, for this plan. Only at the same cut; its publication is
++        # written again (idempotent), because a kill may have come between the two.
++        if out.get("cut") != cut:
++            raise ShardMergeError(f"shard {k} was ruled at another lockbox cut; rebuild it")
++        _publish_shard(plan, k, [dict(r) for r in out.get("published_rows") or []])
++        print(f"SHARD {k}/{plan['n']} rule: RESUMED ({out.get('cells_ruled')} cell(s))")
++        return {"k": k, "phase": "rule", "cells_ruled": out.get("cells_ruled"), "resumed": True}
+     if out.get("token") != plan["token"] or out.get("phase") != "build":
+         raise ShardMergeError(f"shard {k} has no build output for this plan")
+     n_local = 0
++    pub_rows: list[dict[str, Any]] = []
+     for row in out["rows"]:
+         if row["kind"] != "cell":
+             continue
+@@ -4670,26 +5951,531 @@
+         # The union's cut, or the cell's own tail when the union leaves it no development window:
+         # `cell_dev_cut`, the same rule `run_gauntlet` applies, so the merge's check holds.
+         cell_cut = cell_dev_cut(full, cut, frac=plan.get("lockbox_frac"))
+-        dev = full if (full is None or cell_cut is None) else full[full.index < cell_cut]
++        dev, held = (full, None) if (full is None or cell_cut is None) else _split_at(full,
++                                                                                      cell_cut)
+         if x3 is not None and cell_cut is not None:
+             x3 = x3[x3.index < cell_cut]
+         # `valid` in run_gauntlet is exactly this predicate on the carved series, so the merge
+         # finds local stages on every cell it judges and on no other.
+         if dev is not None and len(dev) >= 60:
+-            c["_local_stages"] = _cell_local_stages(c, dev.to_numpy(float), x3, meta)
++            _arr = dev.to_numpy(float)
++            c["_local_stages"] = _cell_local_stages(c, _arr, x3, meta)
+             c["_local_cut"] = cell_cut
++            if _dsr_bar is not None:
++                _dsr = _dsr_read(_arr, _dsr_bar)
++                c["_local_program"] = {"dsr_bar": _dsr_bar, "n": len(_arr),
++                                       "n_held": 0 if held is None else len(held), "dsr": _dsr,
++                                       "lockbox": _lockbox_read(held, _arr, _dsr[2])}
+             n_local += 1
+         # The 3x arm is read only by the cell-local stress gate, which is now computed; the cache
+         # holds the pair. Dropped so the file carries one series a cell into the merge.
+         c["_shard_ds3"] = None
++        # WHAT THIS SHARD ALREADY KNOWS, published below the moment the shard is done.
++        pub_rows.append(_shard_verdict(c, full, dev, cell_cut))
++    pub_rows.extend(_deferred_verdict(r["obj"]) if r["kind"] == "deferred"
++                    else _blocked_verdict(r["obj"])
++                    for r in out["rows"] if r["kind"] in ("deferred", "blocked"))
+     out.update(phase="rule", cut=cut, cells_ruled=n_local,
+                seconds=round(out.get("build_seconds", 0.0) + time.time() - t0, 3),
+-               peak_rss_mb=round(_rss_mb(), 1))
++               peak_rss_mb=round(_rss_mb(), 1),
++               published_rows=[_final_published(dict(r)) if "verdict_status" not in r
++                               else r for r in pub_rows])
+     _pickle_atomic(shard_dir / f"shard_{k}.pkl", out)
+     print(f"SHARD {k}/{plan['n']} rule: {n_local} cell(s) ruled cell-locally")
++    # AFTER the merge's own input is durable: a publication can never stand in for it.
++    _publish_shard(plan, k, [dict(r) for r in out["published_rows"]])
+     return {"k": k, "phase": "rule", "cells_ruled": n_local}
+ 
+ 
++#: ------------------------------------------------------------ PER-SHARD PUBLICATION (2026-10-20)
++#: VERDICTS LANDED ONLY AT THE END OF A SWEEP (IDEA_QUEUE 159). The 10-20 sweep spent 9,729 s in
++#: the plan and 4,964 s building before its first cut, and the merge that publishes ran 51,198 s
++#: on the box, so a cell ruled by its shard in the first hours was invisible for most of a day.
++#:
++#: Each shard now PUBLISHES what it already knows when its `rule` phase ends, to
++#: `SHARD_PUBLISH_DIR/<plan token>/shard_<k>.json` (write-then-rename, one file per shard, so a
++#: shard published twice -- a retry, a resumed sweep -- REPLACES its file and is never counted
++#: twice). The merge is untouched: it reads the shards' pickles exactly as before and writes every
++#: authority file exactly as before; the publication is a second, read-only copy of what is final.
++#:
++#: WHAT IS FINAL IN A SHARD, AND WHAT IS NOT. `pbo` and `reality_check_spa` are program-level:
++#: computed once, by the merge, on the union matrix. Everything else a verdict holds is a function
++#: of the cell alone (`_cell_local_stages`, the fixed per-cell DSR bar of T8, the lockbox read at
++#: the cell's own sr0, the union's cut that every shard already holds). So a published row is:
++#:   FINAL                      unmeasured (the observations gate), or stopped by a gate that sits
++#:                              BEFORE the program-level gates in `stages` order (economic_prior,
++#:                              in_sample_screen, deflated_sharpe), or never built (NOT_RUN): its
++#:                              `passed` and terminal gate are the merge's, and the merge checks so
++#:   REJECTED_TERMINAL_PENDING  failed a cell-local gate that sits AFTER pbo/spa: `passed: false`
++#:                              is final, but pbo or spa may yet be its terminal gate
++#:   PROVISIONAL                every cell-local gate passed: `passed: null` until the merge has
++#:                              PBO and SPA. A provisional row NEVER carries `passed: true`, is
++#:                              never a certificate, and nothing that promotes reads this directory
++#: No trial is charged here and no program-level number is computed: the DSR bar is the fixed
++#: per-cell bar the shard already applied, and the census, PBO, SPA and every sweep-level count
++#: stay in the merge, over the whole sweep.
++SHARD_PUBLISH_DIR = HYP / "shard_verdicts"
++SHARD_PUBLISH_SCHEMA = "shard_verdicts/1"
++#: Plans kept on disk; older plan directories are removed by the merge that seals a newer one.
++SHARD_PUBLISH_KEEP = 4
++PROGRAM_LEVEL_GATES = ("pbo", "reality_check_spa")
++#: The stages a verdict holds BEFORE the program-level gates (its `stages` order).
++PRE_PROGRAM_GATES = (*CELL_LOCAL_HEAD, "deflated_sharpe")
++VERDICT_FINAL = "FINAL"
++VERDICT_REJECTED_PENDING = "REJECTED_TERMINAL_PENDING"
++VERDICT_PROVISIONAL = "PROVISIONAL"
++#: The fields a FINAL published row shares with the merge's verdict, which the merge checks.
++PUBLISHED_FINAL_FIELDS = ("passed", "terminal_gate", "terminal_kind", "terminal_gate_id",
++                          "terminal_reason", "unknown_reason", "downstream_status", "days")
++
++
++def _shard_verdict(c: dict[str, Any], full: Any, dev: Any, cell_cut: Any) -> dict[str, Any]:
++    """The row a shard publishes for one built cell, from what the shard holds and nothing else.
++
++    `dev` is the development window the shard carved at `cell_cut`; the screen refusal and the
++    60-day floor are applied here exactly as `run_gauntlet` applies them, by the same helpers."""
++    _ru = c.get("screen_read_until")
++    screened = bool(_ru) and dev is not None and not _screen_read_clean(_ru, cell_cut)
++    if screened:
++        dev = None
++    if dev is None or len(dev) < 60:
++        v = _unmeasured_verdict(c, dev, None if full is None else len(full), screened=screened)
++        v.update(terminal_stamp(v))
++        return {**{k: v.get(k) for k in ("cell", "sym", "family", *PUBLISHED_FINAL_FIELDS)},
++                "verdict_status": VERDICT_FINAL, "unmeasured": True}
++    local = c.get("_local_stages") or {}
++    prog = c.get("_local_program")
++    stages: dict[str, Any] = {g: local[g] for g in CELL_LOCAL_HEAD if g in local}
++    if isinstance(prog, dict) and isinstance(prog.get("dsr"), tuple):
++        stages["deflated_sharpe"] = _dsr_stage(len(dev), prog["dsr"])
++    for g in CELL_LOCAL_MID:
++        if g in local:
++            stages[g] = local[g]
++    if isinstance(prog, dict) and isinstance(prog.get("lockbox"), dict):
++        stages["lockbox"] = prog["lockbox"]
++    for g in CELL_LOCAL_TAIL:
++        if g in local:
++            stages[g] = local[g]
++    failed = [g for g, s in stages.items() if not s.get("passed")]
++    row: dict[str, Any] = {"cell": cell_id(c), "sym": c["sym"], "family": c["family"],
++                           "days": len(dev), "local_failed_gates": failed,
++                           "pending_gates": list(PROGRAM_LEVEL_GATES)}
++    # A FINAL terminal gate needs every gate before the program-level ones to have been read
++    # here; without the shard's DSR read (an unreadable law) only the HEAD can decide it.
++    first = failed[0] if failed else None
++    if first is not None and first in PRE_PROGRAM_GATES and all(
++            g in stages for g in PRE_PROGRAM_GATES[:PRE_PROGRAM_GATES.index(first) + 1]):
++        v = {"passed": False, "terminal_gate": first, "stages": {first: stages[first]}}
++        row.update({"passed": False, "terminal_gate": first, **terminal_stamp(v),
++                    "verdict_status": VERDICT_FINAL})
++    elif first is not None:
++        row.update({"passed": False, "terminal_gate": None,
++                    "terminal_kind": "PENDING", "terminal_gate_id": "PENDING_PROGRAM_GATES",
++                    "terminal_reason": (f"rejected by {first}; pbo or reality_check_spa may "
++                                        f"still be its terminal gate"),
++                    "verdict_status": VERDICT_REJECTED_PENDING})
++    else:
++        row.update({"passed": None, "terminal_gate": None,
++                    "terminal_kind": "PENDING", "terminal_gate_id": "PENDING_PROGRAM_GATES",
++                    "terminal_reason": "every cell-local gate passed; PBO and SPA are computed "
++                                       "by the merge over the whole sweep",
++                    "verdict_status": VERDICT_PROVISIONAL})
++    return row
++
++
++def _final_published(v: dict[str, Any]) -> dict[str, Any]:
++    """A row the plan or a shard's build settled for good (gate 0, NOT_RUN): stamped, FINAL."""
++    v.update(terminal_stamp(v))
++    return {**{k: v.get(k) for k in ("cell", "sym", "family", *PUBLISHED_FINAL_FIELDS)},
++            "verdict_status": VERDICT_FINAL}
++
++
++def _publish_shard(plan: dict[str, Any], k: int | str, rows: list[dict[str, Any]]) -> Path | None:
++    """Write one shard's publication, atomically. Bookkeeping: it never fails the shard.
++
++    `k` is the shard index, or "plan" for the rows the plan itself settled (gate 0 and the
++    build preflight). A row that would claim `passed: true` is refused here, not published."""
++    pub = plan.get("publication") if isinstance(plan, dict) else None
++    if not isinstance(pub, dict) or not pub.get("dir"):
++        return None
++    try:
++        out_rows = []
++        for r in rows:
++            if "verdict_status" not in r:
++                r = _final_published(r)
++            if r.get("passed") is True:
++                raise ShardMergeError(f"{r.get('cell')}: a shard publication may never pass a "
++                                      f"cell; PBO and SPA are the merge's")
++            out_rows.append(r)
++        d = Path(pub["dir"]) / str(plan["token"])
++        d.mkdir(parents=True, exist_ok=True)
++        f = d / f"shard_{k}.json"
++        tmp = f.with_name(f"{f.name}.{os.getpid()}.tmp")
++        tmp.write_text(json.dumps({
++            "schema": SHARD_PUBLISH_SCHEMA, "token": plan["token"], "k": k, "n": plan.get("n"),
++            "published_at": datetime.now(UTC).isoformat(timespec="seconds"),
++            "status_note": "FINAL rows are the merge's verdict; PROVISIONAL and "
++                           "REJECTED_TERMINAL_PENDING wait for PBO and SPA; nothing here passes",
++            "rows": out_rows}, default=str), encoding="utf-8")
++        os.replace(tmp, f)
++        print(f"SHARD {k} published {len(out_rows)} row(s) -> {f}")
++        return f
++    except ShardMergeError:
++        raise
++    except Exception as exc:  # the merge is the record; this copy may fail
++        print(f"SHARD {k} publication not written ({type(exc).__name__}: {exc})")
++        return None
++
++
++def _seal_shard_publication(verdicts: list[Any]) -> dict[str, Any]:
++    """After the merge wrote its records: check every FINAL published row against the merge's
++    verdict, write `MERGED.json` beside the shard files and prune old plans. Report only."""
++    pub = (_SHARD or {}).get("publication")
++    if not isinstance(pub, dict) or not pub.get("token"):
++        return _unmeasured("no sharded publication this sweep")
++    d = Path(str(pub["dir"])) / str(pub["token"])
++    final = {str(v.get("cell")): v for v in verdicts if isinstance(v, dict) and v.get("cell")}
++    agree = disagree = absent = provisional = pending = rows = 0
++    sample: list[dict[str, Any]] = []
++    seen: set[str] = set()
++    for f in sorted(d.glob("shard_*.json")):
++        try:
++            doc = json.loads(f.read_text("utf-8"))
++        except (OSError, ValueError) as exc:
++            sample.append({"file": f.name, "unreadable": type(exc).__name__})
++            continue
++        for r in doc.get("rows") or []:
++            cid = str(r.get("cell"))
++            if cid in seen:
++                continue                 # one row per cell per plan: never counted twice
++            seen.add(cid)
++            rows += 1
++            st = r.get("verdict_status")
++            v = final.get(cid)
++            if v is None:
++                absent += 1
++                if len(sample) < 20:
++                    sample.append({"cell": cid, "absent_from_merge": True})
++                continue
++            if st == VERDICT_PROVISIONAL:
++                provisional += 1
++                continue
++            if st == VERDICT_REJECTED_PENDING:
++                pending += 1
++                ok = v.get("passed") is False
++            else:
++                ok = all(r.get(k) == v.get(k) for k in PUBLISHED_FINAL_FIELDS)
++            agree += ok
++            disagree += not ok
++            if not ok and len(sample) < 20:
++                sample.append({"cell": cid, "status": st, **{
++                    k: [r.get(k), v.get(k)] for k in PUBLISHED_FINAL_FIELDS
++                    if r.get(k) != v.get(k)}})
++    doc = {"schema": SHARD_PUBLISH_SCHEMA, "token": pub["token"],
++           "merged_at": datetime.now(UTC).isoformat(timespec="seconds"),
++           "published_rows": rows, "final_rows_agree": agree, "final_rows_disagree": disagree,
++           "rejected_pending_rows": pending, "provisional_rows": provisional,
++           "absent_from_merge": absent, "sample": sample,
++           "rule": "the merge's verdicts are the record; these files were a provisional copy"}
++    try:
++        d.mkdir(parents=True, exist_ok=True)
++        tmp = d / f"MERGED.json.{os.getpid()}.tmp"
++        tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
++        os.replace(tmp, d / "MERGED.json")
++        import shutil
++        plans = sorted((p for p in Path(str(pub["dir"])).iterdir() if p.is_dir()),
++                       key=lambda p: p.stat().st_mtime, reverse=True)
++        for old in plans[SHARD_PUBLISH_KEEP:]:
++            if old.name != str(pub["token"]):
++                shutil.rmtree(old, ignore_errors=True)
++    except OSError as exc:
++        doc["write_error"] = str(exc)[:160]
++    if disagree or absent:
++        print(f"SHARD PUBLICATION DISAGREES WITH THE MERGE: {disagree} final row(s) differ, "
++              f"{absent} absent from the merge; first: {sample[:3]}")
++    return doc
++
++
++#: ------------------------------------------------------------ THE PERSISTED PLAN (2026-10-20)
++#: A RESTART RESUMES; IT DOES NOT RE-PLAN (IDEA_QUEUE 159). Two levels, both fail-safe -- any doubt
++#: re-plans or rebuilds, exactly as every sweep did before:
++#:   * THE SWEEP PLAN (`sweep_plan.pkl` in the shard directory): what `_plan_phase` made, with the
++#:     code identity (the replay code, the gate policy, the gate spec), the universe and the
++#:     docket it was made from. A restart reuses it while code, law and universe are unchanged and
++#:     it is younger than `PLAN_RESUME_MAX_AGE_S`. A changed docket does not discard it: only the
++#:     cells whose SPEC changed are re-planned (gate 0 and the preflight, in place), removed cells
++#:     leave, and cells new to the docket wait for the next full plan. A changed DATA-day is the
++#:     build's business: a cell's series cache key carries it, and a shard whose cells' keys moved
++#:     is rebuilt (below). Deleted once the merge's verdicts are durable.
++#:   * EACH SHARD'S OUTPUT: kept until the merge is durable, and reused by a later plan for the
++#:     same shard when its basis -- code, law, universe and its own specs in order -- is equal and
++#:     every cell's series key is still the one it was built under. A shard already ruled at the
++#:     same lockbox cut is not ruled again; one ruled at another cut is rebuilt.
++#: Reuse never changes a verdict: the same cells, built from the same data by the same code, go
++#: through the same merge; the equality harness (judge_funnel_shards) compares a killed-and-
++#: resumed sweep's records with an uninterrupted one's.
++SWEEP_PLAN_NAME = "sweep_plan.pkl"
++SWEEP_PLAN_PROTOCOL = 1
++PLAN_RESUME_MAX_AGE_S = float(os.environ.get("GAUNTLET_PLAN_RESUME_MAX_AGE_S", str(24 * 3600)))
++#: A plan whose lockbox cut keeps moving after this many shard rebuilds is rebuilt whole.
++CUT_SETTLE_ROUNDS = 3
++
++
++def _digest(obj: Any) -> str:
++    return hashlib.sha256(json.dumps(obj, sort_keys=True, default=str).encode("utf-8")
++                          ).hexdigest()
++
++
++def _plan_code_identity() -> str:
++    """The replay code identity plus the law: the gate policy and the gate spec."""
++    h = hashlib.sha256(_replay_code_identity().encode("utf-8"))
++    desk = BASE / "desks" / "mt5"
++    for p in (desk / "research" / "gate_policy.py", desk / "policy" / "gate_spec.yaml"):
++        try:
++            h.update(p.read_bytes().replace(b"\r\n", b"\n"))
++        except OSError:
++            h.update(b"<absent>")
++    return h.hexdigest()
++
++
++def _docket_signature(path: Path) -> dict[str, Any]:
++    st = path.stat()
++    h = hashlib.sha256()
++    with open(path, "rb") as fh:
++        for chunk in iter(lambda: fh.read(1 << 20), b""):
++            h.update(chunk)
++    return {"size": st.st_size, "sha256": h.hexdigest()}
++
++
++def _sweep_plan_path() -> Path | None:
++    if _SHARD is None or not _SHARD.get("resume") or _repro_active():
++        return None
++    return Path(str(_SHARD.get("dir") or SHARD_DIR)) / SWEEP_PLAN_NAME
++
++
++def _cid(spec: dict[str, Any]) -> str:
++    try:
++        return str(cell_id({"sym": spec.get("sym"), "family": spec.get("family"),
++                            "params": spec.get("params") or {}}))
++    except Exception:
++        return ""
++
++
++def _persist_plan(st: dict[str, Any], surv_file: Path, plan_s: float | None = None) -> None:
++    """Write the plan a restart may resume. Bookkeeping: a failure only costs the resume.
++    `plan_s` is the plan's measured wall: what a resume of it does not spend again."""
++    path = _sweep_plan_path()
++    if path is None:
++        return
++    try:
++        ids = {_cid(s) for s in [*st["eligible_specs"], *st["blocked_build"]]}
++        ids |= {str(r.get("cell") or "") for r in st["prior_rejections"]}
++        # Only the docket cells this plan gives a row: the record's spec lookup needs no other.
++        keep = {k: s for k, s in st["cells"].items() if _cid(s) in ids}
++        doc = {"protocol": SWEEP_PLAN_PROTOCOL, "created_at": time.time(),
++               "plan_seconds": None if plan_s is None else round(float(plan_s), 1),
++               "code": _plan_code_identity(), "meta": _digest(st["meta"]),
++               "docket": _docket_signature(surv_file),
++               "spec_digests": {k: _digest(s) for k, s in keep.items()},
++               "state": {**st, "cells": keep}}
++        _pickle_atomic(path, doc)
++        print(f"PLAN PERSISTED: {len(st['eligible_specs'])} planned cell(s) -> {path}")
++    except Exception as exc:
++        print(f"PLAN not persisted ({type(exc).__name__}: {exc}); a restart re-plans")
++
++
++def _resume_plan(cells: dict[str, Any], meta: dict[str, Any],
++                 surv_file: Path) -> dict[str, Any] | None:
++    """The persisted plan, if a restart may resume it; None means: plan from scratch."""
++    _PLAN_RESUME_DOC.clear()
++    path = _sweep_plan_path()
++    if path is None or not path.exists():
++        return None
++    try:
++        doc = _unpickle(path)
++        why = None
++        if not isinstance(doc, dict) or doc.get("protocol") != SWEEP_PLAN_PROTOCOL:
++            why = "another plan protocol"
++        elif doc.get("code") != _plan_code_identity():
++            why = "the judge's code or law changed"
++        elif doc.get("meta") != _digest(meta):
++            why = "the universe changed"
++        elif time.time() - float(doc.get("created_at") or 0.0) > PLAN_RESUME_MAX_AGE_S:
++            why = f"older than {PLAN_RESUME_MAX_AGE_S:.0f}s"
++        if why is not None:
++            print(f"PLAN RE-MADE: the persisted plan is not resumable ({why})")
++            path.unlink(missing_ok=True)
++            return None
++        st = dict(doc["state"])
++        same = _docket_signature(surv_file) == doc.get("docket")
++        report: dict[str, Any] = {"resumed": True,
++                                  "plan_age_s": round(time.time() - float(doc["created_at"]), 1),
++                                  "docket_unchanged": same}
++        if not same:
++            st, diff = _replan_changed(st, doc.get("spec_digests") or {}, cells, meta)
++            report.update(diff)
++        # A FRESH BUILD BUDGET for whatever the interrupted sweep did not reach.
++        st["_build_t0"] = time.time()
++        # THE SEEN-CELLS MAP AND THE BUILD CURSOR ARE READ FROM DISK, never the pickled copies
++        # (audit of b94babf39). A kill between the ledger append and the cleanup had already
++        # stamped them; the pickle's older maps made the resumed sweep move `first_judged` later
++        # and re-stamp cells the killed one recorded. The plan's ORDER is unchanged: it was set
++        # from the maps the plan was made with, and only the stamps read these.
++        st["_seen"], st["_cursor"] = _seen_cells(), _build_cursor()
++        st["plan_resume"] = report
++        _note_plan_resume(**report, planned_at=datetime.fromtimestamp(
++            float(doc["created_at"]), UTC).isoformat(timespec="seconds"),
++            max_age_s=PLAN_RESUME_MAX_AGE_S, plan_seconds_saved=doc.get("plan_seconds"))
++        print(f"PLAN RESUMED: {len(st['eligible_specs'])} planned cell(s), {report}")
++        return st
++    except Exception as exc:
++        print(f"PLAN RE-MADE: the persisted plan is unreadable ({type(exc).__name__}: {exc})")
++        return None
++
++
++#: WHAT THIS SWEEP'S RESUME DID, for the launcher's two-sided missed-growth line (audit HOLD of
++#: b94babf39): the cells it set aside against the plan and build wall it did not spend again.
++#: Stamped with this process's pid and the time, so the launcher never bills an older record.
++PLAN_RESUME_NAME = "plan_resume.json"
++_PLAN_RESUME_DOC: dict[str, Any] = {}
++
++
++def _note_plan_resume(**fields: Any) -> None:
++    """Merge `fields` into this sweep's resume record and write it beside the plan.
++    Bookkeeping: a failure costs only the missed-growth line, which then reads absent."""
++    if _SHARD is None:
++        return
++    _PLAN_RESUME_DOC.update(fields, pid=os.getpid(),
++                            at=datetime.now(UTC).isoformat(timespec="seconds"))
++    try:
++        dest = Path(str(_SHARD.get("dir") or SHARD_DIR)) / PLAN_RESUME_NAME
++        dest.parent.mkdir(parents=True, exist_ok=True)
++        tmp = dest.with_name(f"{dest.name}.{os.getpid()}.tmp")
++        tmp.write_text(json.dumps(_PLAN_RESUME_DOC, default=str), encoding="utf-8")
++        os.replace(tmp, dest)
++    except Exception as exc:
++        print(f"  plan-resume record not written ({type(exc).__name__}: {exc})")
++
++
++def _replan_changed(st: dict[str, Any], digests: dict[str, str], cells: dict[str, Any],
++                    meta: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
++    """Re-plan ONLY the cells whose spec changed; drop removed ones; leave new ones to the next
++    full plan. A changed cell keeps its slot when it still advances, and joins the tail when it
++    advances for the first time."""
++    old = st["cells"]
++    changed = [k for k in old if k in cells and _digest(cells[k]) != digests.get(k)]
++    removed = [k for k in old if k not in cells]
++    gone = {_cid(old[k]) for k in [*changed, *removed]}
++    new_specs = [cells[k] for k in changed]
++    elig, rej = partition_at_economic_prior(new_specs, meta)
++    ready, blocked = _preflight_split(elig)
++    ready_by_id = {_cid(s): s for s in ready}
++    # A changed spec may carry a new cell id (its params moved): its slot is found by docket key.
++    new_of_old = {_cid(old[k]): _cid(cells[k]) for k in changed}
++    out = dict(st)
++    planned: list[dict[str, Any]] = []
++    for sp in st["eligible_specs"]:
++        cid = _cid(sp)
++        if cid not in gone:
++            planned.append(sp)
++        elif new_of_old.get(cid) in ready_by_id:
++            planned.append(ready_by_id.pop(new_of_old[cid]))  # re-planned in place
++    planned.extend(ready_by_id.values())                    # newly advancing: the tail
++    out["eligible_specs"] = planned
++    out["n_cells"] = len(cells)                             # the docket in hand, as main counts it
++    out["prior_rejections"] = [r for r in st["prior_rejections"]
++                               if str(r.get("cell") or "") not in gone] + rej
++    out["blocked_build"] = [b for b in st["blocked_build"] if _cid(b) not in gone] + blocked
++    out["cells"] = {k: (cells[k] if k in changed else s) for k, s in old.items()
++                    if k not in removed}
++    waiting = sum(1 for k in cells if k not in old)
++    return out, {"cells_changed_replanned": len(changed), "cells_removed": len(removed),
++                 "cells_not_in_this_plan": waiting,
++                 "note": "cells not in this plan (new, or set aside by the plan's own order and "
++                         "allocation) are judged by the next full plan"}
++
++
++def _sweep_cleanup() -> dict[str, Any]:
++    """The merge's verdicts are durable: drop the plan and the shard outputs kept for a resume."""
++    if _SHARD is None or not _SHARD.get("resume"):
++        return {"cleaned": 0}
++    d = Path(str(_SHARD.get("dir") or SHARD_DIR))
++    gone = 0
++    for f in [*d.glob("shard_*.pkl"), d / "cut.pkl", d / SWEEP_PLAN_NAME]:
++        if f.exists():
++            f.unlink(missing_ok=True)
++            gone += 1
++    return {"cleaned": gone}
++
++
++def _shard_basis(plan: dict[str, Any], mine: list[Any]) -> dict[str, Any]:
++    """What a shard's output was made from: reusable only when every part is equal."""
++    return {"code": plan.get("code"), "lockbox_frac": plan.get("lockbox_frac"),
++            "meta": plan.get("meta_digest"), "n": plan.get("n"),
++            "specs": _digest([sp for _, sp in mine])}
++
++
++def _rows_current(rows: list[dict[str, Any]], mine: list[Any]) -> bool:
++    """Every built cell's series key is still the one it was built under; no cell blocked for
++    missing bars now has them. Reads only the frames (the build's own first step).
++
++    THE DAY IS READ FRESH, ONCE PER CHART (stack resolution, 2026-10-20). Never from `_LAST_DAY`:
++    that memo is seeded from the plan's pool days, and this check exists to see the data MOVE.
++    And not one `_bars_for` per row: that is the per-spec parquet re-read that cost each build
++    shard ~4,400 s on box sweep 23324. `_index_last_day`, else `_bars_for`, the same answer."""
++    days: dict[tuple[str, str], object] = {}
++
++    def _day(sym: str, tf: str):
++        key = (str(sym), str(tf).upper())
++        if key not in days:
++            pq = UNI / f"{key[0]}_{key[1]}.parquet"
++            d = _index_last_day(pq) if pq.exists() else None
++            if d is None:
++                frame = _bars_for(key[0], key[1])
++                d = None if frame is None or len(frame) == 0 else frame.index[-1].normalize()
++            days[key] = d
++        return days[key]
++
++    for row, (_i, sp) in zip(rows, mine, strict=True):
++        tf = timeframe_of(sp.get("params"), str(sp.get("family") or ""))
++        if row["kind"] == "cell":
++            day = _day(sp["sym"], tf)
++            if day is None:
++                return False
++            key = _cache_key(sp["sym"], sp["family"], sp["params"] or {},
++                             str(day.date()), tf)
++            if key != row["obj"].get("_ckey"):
++                return False
++        elif row["kind"] == "blocked" and \
++                row["obj"].get("downstream_status") == "NOT_RUN_DATA_MISSING":
++            if _day(sp["sym"], tf) is not None:
++                return False
++    return True
++
++
++def _resume_shard_build(shard_dir: Path, plan: dict[str, Any], k: int, mine: list[Any],
++                        basis: dict[str, Any]) -> dict[str, Any] | None:
++    """Reuse shard `k`'s previous output for this plan, re-stamped, or None to build it."""
++    f = shard_dir / f"shard_{k}.pkl"
++    if not f.exists():
++        return None
++    try:
++        out = _unpickle(f)
++    except Exception:
++        return None
++    if (not isinstance(out, dict) or out.get("protocol") != SHARD_PROTOCOL
++            or out.get("basis") != basis or out.get("phase") not in ("build", "rule")
++            or len(out.get("rows") or []) != len(mine) or not _rows_current(out["rows"], mine)):
++        return None
++    for (i, _sp), row in zip(mine, out["rows"], strict=True):
++        row["idx"] = i
++    out.update(token=plan["token"], k=k, n=plan["n"], resumed=True)
++    _pickle_atomic(f, out)
++    print(f"SHARD {k}/{plan['n']} build: RESUMED ({out['phase']} output for the same "
++          f"{len(mine)} cell(s), code, law and data)")
++    return {"k": k, "n": plan["n"], "phase": "build", "seconds": 0.0, "resumed": True}
++
++
+ def _stage0_fold(summary: dict, verdicts: dict, parts: list) -> None:
+     """Replay per-spec Stage 0 records into one summary in plan order -- the same counts, key
+     order and bounded samples `stage0_record` produces when it runs over the docket in sequence."""
+@@ -4714,8 +6500,11 @@
+     n, specs = int(plan["n"]), list(plan["specs"])
+     rows_by_idx: dict[int, dict] = {}
+     reports: list[dict] = []
++    phases: dict[int, tuple[Any, Any]] = {}
+     built_syms: set[str] = set()
+     dates: set = set()
++    resumed_s: dict[int, float] = {}
++    kept_deferred: dict[int, int] = {}
+     for k in range(n):
+         f = shard_dir / f"shard_{k}.pkl"
+         if not f.exists():
+@@ -4723,7 +6512,8 @@
+         out = _unpickle(f)
+         if (out.get("protocol") != SHARD_PROTOCOL or out.get("token") != plan["token"]
+                 or int(out.get("k", -1)) != k or int(out.get("n", -1)) != n
+-                or out.get("phase") != phase):
++                or not (out.get("phase") == phase
++                        or (phase == "build" and out.get("phase") == "rule"))):
+             raise ShardMergeError(f"shard {k}/{n} output is stale, unfinished ({out.get('phase')}"
+                                   f" != {phase}) or belongs to another plan")
+         if phase == "rule" and out.get("cut") != plan.get("cut"):
+@@ -4743,6 +6533,14 @@
+         dates.update(out.get("dates") or ())
+         reports.append({"k": k, "planned": len(out["rows"]), "ruled": out.get("cells_ruled"),
+                         "seconds": out.get("seconds"), "peak_rss_mb": out.get("peak_rss_mb")})
++        phases[k] = (out.get("phase"), out.get("cut"))
++        if out.get("resumed"):
++            resumed_s[k] = float(out.get("build_seconds") or 0.0)
++            # A REUSED SHARD KEEPS ITS DEFERRALS (audit of b94babf39): the killed sweep's budget
++            # deferred them, and rebuilding every shard that holds one would end reuse outright
++            # (measured: no shard reused in any harness resume). Counted, so the resume's
++            # missed-growth line bills them against the build wall the reuse saved.
++            kept_deferred[k] = sum(1 for r in out["rows"] if r.get("kind") == "deferred")
+     missing = len(specs) - len(rows_by_idx)
+     if missing:
+         raise ShardMergeError(f"{missing} planned cell(s) came back from no shard")
+@@ -4762,20 +6560,31 @@
+     return {"cell_objs": cell_objs, "deferred": deferred, "blocked": blocked,
+             "stage0_parts": parts, "cache_hits": hits, "built_fresh": fresh,
+             "mem_deferred": mem, "built_syms": built_syms, "dates": dates,
++            "shard_phases": phases, "resumed_build_s": resumed_s,
++            "resumed_kept_deferred": kept_deferred,
+             "report": {"protocol": SHARD_PROTOCOL, "n_shards": n, "planned_cells": len(specs),
+                        "each_cell_ruled_once": True,
+                        "program_level": "computed once on the union matrix by the merge",
+                        "shards": reports}}
+ 
+ 
+-def _run_shards(eligible_specs: list, meta: dict, build_t0: float) -> dict:
+-    """Write the plan, hand it to the launcher's dispatcher, and collect. Called from `main`."""
++def _run_shards(eligible_specs: list, meta: dict, build_t0: float,
++                pre_rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
++    """Write the plan, hand it to the launcher's dispatcher, and collect. Called from `main`.
++
++    `pre_rows` are the verdict rows the plan itself settled before any shard ran (gate 0, the
++    build preflight); they are published with the plan, under the same token as the shards."""
+     cfg = _SHARD or {}
+     n = int(cfg["n"])
+     shard_dir = Path(cfg.get("dir") or SHARD_DIR)
+     shard_dir.mkdir(parents=True, exist_ok=True)
+-    for f in (list(shard_dir.glob("shard_*.pkl")) + list(shard_dir.glob("*.tmp"))
+-              + [shard_dir / "cut.pkl"]):
++    _resume = bool(cfg.get("resume"))
++    # A RESUMING SWEEP KEEPS EACH SHARD'S OUTPUT: `shard_worker` reuses the one whose basis and
++    # data are unchanged and rebuilds the rest. Otherwise every stale file goes, as before.
++    for f in (list(shard_dir.glob("*.tmp")) + [shard_dir / "cut.pkl"]
++              + [f for f in shard_dir.glob("shard_*.pkl")
++                 if not _resume or not f.stem.removeprefix("shard_").isdigit()
++                 or int(f.stem.removeprefix("shard_")) >= n]):
+         f.unlink(missing_ok=True)
+     token = hashlib.sha256(f"{os.getpid()}:{time.time_ns()}:{len(eligible_specs)}".encode()
+                            ).hexdigest()[:16]
+@@ -4784,10 +6593,17 @@
+     # merge -- a law that changed in between moves its cut, and the merge refuses the sweep.
+     from research.gate_policy import LOCKBOX_FRAC
+     _lock_frac = float(constitution_thresholds(LOCKBOX_FRAC)["lockbox_min_fraction"])
++    _pub_dir = cfg.get("publish_dir")
+     plan = {"protocol": SHARD_PROTOCOL, "n": n, "token": token, "build_t0": float(build_t0),
+             "owner_pid": os.getpid(), "meta": meta, "specs": list(eligible_specs),
+-            "lockbox_frac": _lock_frac}
++            "lockbox_frac": _lock_frac, "last_days": dict(_LAST_DAY),
++            "publication": {"dir": str(_pub_dir)} if _pub_dir else None,
++            "resume": _resume, "code": _plan_code_identity(), "meta_digest": _digest(meta)}
+     _pickle_atomic(shard_dir / "plan.pkl", plan)
++    if _SHARD is not None and _pub_dir:
++        _SHARD["publication"] = {"dir": str(_pub_dir), "token": token}
++    if pre_rows:
++        _publish_shard(plan, "plan", [dict(r) for r in pre_rows])
+     print(f"SHARDED SWEEP: {len(eligible_specs)} planned cell(s) across {n} shard(s)")
+     t0 = time.time()
+     dispatch = cfg["dispatch"]
+@@ -4803,18 +6619,40 @@
+             self.index = index
+ 
+     plan["cut"] = lockbox_cut([_Dates(list(built["dates"]))], frac=_lock_frac)
++    # A RESUMED SHARD RULED AT ANOTHER CUT cannot be re-ruled (its 3x arm is gone): rebuild it,
++    # then take the cut again, until no ruled output disagrees -- or rebuild the plan whole.
++    for _round in range(CUT_SETTLE_ROUNDS + 1):
++        stale = [k for k, (ph, ct) in built.get("shard_phases", {}).items()
++                 if ph == "rule" and ct != plan["cut"]]
++        if not stale:
++            break
++        if _round == CUT_SETTLE_ROUNDS:
++            stale = list(range(n))
++        print(f"SHARDED SWEEP: {len(stale)} resumed shard(s) ruled at another cut: rebuilt")
++        for k in stale:
++            (shard_dir / f"shard_{k}.pkl").unlink(missing_ok=True)
++        dispatch(shard_dir, n, "build")  # type: ignore[operator]
++        built = _shard_collect(shard_dir, plan, phase="build")
++        plan["cut"] = lockbox_cut([_Dates(list(built["dates"]))], frac=_lock_frac)
+     _pickle_atomic(shard_dir / "cut.pkl", {"token": token, "cut": plan["cut"]})
++    if _PLAN_RESUME_DOC:
++        _saved = built.get("resumed_build_s") or {}
++        _note_plan_resume(shards_reused=sorted(_saved),
++                          build_seconds_saved=round(sum(_saved.values()), 1),
++                          cells_kept_deferred=sum(
++                              (built.get("resumed_kept_deferred") or {}).values()))
+     dispatch(shard_dir, n, "rule")  # type: ignore[operator]
+     got = _shard_collect(shard_dir, plan, phase="rule")
+     got["report"].update(dispatch_seconds=round(time.time() - t0, 3),
+                          build_phase_seconds=round(t_build, 3), lockbox_cut=str(plan["cut"]))
+-    for f in [*shard_dir.glob("shard_*.pkl"), shard_dir / "cut.pkl"]:
+-        f.unlink(missing_ok=True)
++    if not _resume:                  # a resuming sweep keeps them until its merge is durable
++        for f in [*shard_dir.glob("shard_*.pkl"), shard_dir / "cut.pkl"]:
++            f.unlink(missing_ok=True)
+     return got
+ 
+ 
+ def run_sharded(n_shards: int, dispatch, shard_dir: Path | str | None = None,
+-                need_mb: int | None = None) -> int:
++                need_mb: int | None = None, resume: bool | None = None) -> int:
+     """The certifying sweep, sharded N ways, under the SAME two locks `_cli_main` takes.
+ 
+     `dispatch(shard_dir, n, phase)` must run `shard_worker(shard_dir, k, phase)` for every k in
+@@ -4839,7 +6677,13 @@
+             if not acquired:
+                 return 75
+             _SHARD = {"n": int(n_shards), "dispatch": dispatch,
+-                      "dir": Path(shard_dir) if shard_dir else SHARD_DIR}
++                      "dir": Path(shard_dir) if shard_dir else SHARD_DIR,
++                      # Every production sweep publishes per shard; a caller that drives
++                      # `_run_shards` itself (a harness, a test) opts in with its own dir.
++                      "publish_dir": SHARD_PUBLISH_DIR,
++                      # THE PERSISTED PLAN: on unless GAUNTLET_PLAN_RESUME=0 or the caller says.
++                      "resume": (os.environ.get("GAUNTLET_PLAN_RESUME", "1") != "0"
++                                 if resume is None else bool(resume))}
+             try:
+                 main()
+             finally:
+@@ -4868,13 +6712,12 @@
+         # and the boundary `_series_trim_partial` drops the partial day at; taking it from H1 for
+         # an M5 cell would key the cell to a day its own tape may not have reached and trim its
+         # series at a boundary from a different feed.
+-        frame = _bars_for(spec["sym"], spec_tf)
+-        if frame is None or len(frame) == 0:
++        last_day = _cell_last_day(spec["sym"], spec_tf)
++        if last_day is None:
+             print(f"  SKIP {key}: {spec_tf} parquet missing")
+             blocked_build.append({**spec, "downstream_status": "NOT_RUN_DATA_MISSING",
+                                   "why": f"point-in-time {spec_tf} parquet is missing or empty"})
+             continue
+-        last_day = frame.index[-1].normalize()
+         ckey = _cache_key(spec["sym"], spec["family"], spec["params"] or {}, str(last_day.date()),
+                           spec_tf)
+         cached = cache_load(ckey)
+@@ -4888,6 +6731,9 @@
+                 "_cached_ds": ds1, "_cached_ds3": ds3, "_ckey": ckey, "_last_day": last_day,
+                 "mechanism_status": spec.get("mechanism_status"),
+                 "mechanism_note": spec.get("mechanism_note"),
++                # Provenance rides onto the cell: the screen's read-until stamp and the LLM
++                # look-ahead guard's inputs, so neither gate can be bypassed by the cache.
++                **{k: spec[k] for k in CARRIED_SPEC_KEYS if spec.get(k) is not None},
+             })
+             cache_hits += 1
+             continue
+@@ -4912,8 +6758,16 @@
+         _built_syms.add(str(spec["sym"]))
+         obj = build_cell(spec["sym"], spec["family"], spec["params"], meta)
+         if obj:
++            _day = _built_day(obj, last_day)
++            if _day != last_day:
++                last_day = _day           # keyed and trimmed by the frame it was built from
++                ckey = _cache_key(spec["sym"], spec["family"], spec["params"] or {},
++                                  str(last_day.date()), spec_tf)
+             obj["mechanism_status"] = spec.get("mechanism_status")
+             obj["mechanism_note"] = spec.get("mechanism_note")
++            for _k in CARRIED_SPEC_KEYS:
++                if spec.get(_k) is not None:
++                    obj[_k] = spec[_k]
+             obj["_ckey"], obj["_last_day"] = ckey, last_day
+             cell_objs.append(obj)
+             built_fresh += 1
