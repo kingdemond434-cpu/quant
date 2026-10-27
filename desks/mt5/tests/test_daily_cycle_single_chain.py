@@ -27,6 +27,12 @@ v1.2 (audit of 8e373a6f2, one must-fix, four should-fixes, one nit):
     write_or_explain (LEG_FAILED) nor completion (FAILING) reads it as a failure;
   * a faulty lock file is recorded in the stamp, not only the log;
   * a step raising SystemExit(75) is a failed step, never a stand-down.
+v1.3 (audit of d841e58a9, one must-fix, three should-fixes):
+  * MUST-FIX: completion reads `verdict_exit=N` as ok ONLY for the explicit no-op set (daily 75);
+    deep_forest 1, model_skill 2 and maintain_miners 2 still read FAILING and keep their streaks;
+  * a sidecar with no create_time is "unmeasured", never "alive";
+  * a stand-down behind a holder older than HOLDER_MAX_WAIT_S is a named FAILURE (exit 76);
+  * quarantined `.corrupt-<ts>` stamps are bounded to the newest CORRUPT_KEEP.
 """
 from __future__ import annotations
 
@@ -34,7 +40,7 @@ import json
 import os
 import subprocess
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -642,8 +648,12 @@ def test_should_fix_3_a_stand_down_is_a_declared_verdict_not_a_failure(monkeypat
 
     assert completion._failed(out) is None
     assert completion._failed({"exit_code": 75}) is not None, "an undeclared 75 still fails"
-    assert completion._streak([{"outcome": "exit_code=1"}, {"outcome": "verdict_exit=75"}]) == 0
-    assert completion._streak([{"outcome": "verdict_exit=75"}, {"outcome": "exit_code=1"}]) == 1
+    assert completion._streak([{"outcome": "exit_code=1"}, {"outcome": "verdict_exit=75"}],
+                              "daily") == 0
+    assert completion._streak([{"outcome": "verdict_exit=75"}, {"outcome": "exit_code=1"}],
+                              "daily") == 1
+    assert completion._streak([{"outcome": "verdict_exit=75"}], "model_skill") == 1, \
+        "the no-op set is per leg: 75 is a no-op for daily only"
 
 
 # ----------------------------------------------------------------------------- v1.2 nit
@@ -662,3 +672,120 @@ def test_nit_a_step_raising_systemexit_75_is_a_failed_step_not_a_stand_down(cyc,
     assert cyc.calls == ["a", "b", "c"], "the chain goes on past the step that exited"
     steps = json.loads(cyc.stamp.read_text(encoding="utf-8"))["steps"]
     assert steps["b"]["ok"] is False and "SystemExit" in steps["b"]["error"]
+
+
+# ----------------------------------------------------------------------------- v1.3 must-fix
+
+
+@pytest.mark.parametrize(("leg", "code"), [("deep_forest", 1), ("model_skill", 2),
+                                           ("maintain_miners", 2)])
+def test_v13_must_fix_other_verdict_exits_still_read_failing(leg, code):
+    """Those codes include uncaught exceptions (deep_forest), a data outage (model_skill) and a
+    fence TIMEOUT/ERROR (maintain_miners); completion must keep reading them as failures and keep
+    their outage streak -- only `daily` 75 is a declared no-op."""
+    from libs.ops import completion
+
+    assert completion.NOOP_EXITS == {"daily": (75,)}
+    outcome = f"verdict_exit={code}"
+    assert completion._ok_outcome(outcome, leg) is False
+    assert completion._ok_outcome(outcome) is False
+    assert completion._streak([{"outcome": outcome}] * 5, leg) == 5
+    assert completion._ok_outcome("verdict_exit=75", "daily") is True
+    assert completion._ok_outcome("verdict_exit=1", "daily") is False
+
+
+def test_v13_must_fix_a_crashing_deep_forest_reads_failing_with_its_streak(tmp_path):
+    """The auditor's probe: five `verdict_exit=1` rows and a marker that rotated the leg out read
+    FAILING with streak 5 (v1.1), not UNKNOWN_HERE with streak 0 (v1.2)."""
+    from libs.ops import completion
+
+    root = _DESK.parents[1]
+    if "deep_forest" not in completion.legs(root):
+        pytest.skip("deep_forest is not a leg of the cycles in this tree")
+    ledger = tmp_path / "ledger.jsonl"
+    ledger.write_text("".join(json.dumps({"run": "deep_forest", "outcome": "verdict_exit=1",
+                                          "at": f"2030-06-10T0{i}:00:00+00:00"}) + "\n"
+                              for i in range(5)), encoding="utf-8")
+    marker = tmp_path / "marker.json"
+    marker.write_text(json.dumps({"deep_forest": {"status": "ROTATED_OUT"}}), encoding="utf-8")
+    leg = next(x for x in completion.judge(root, marker_path=marker, ledger_path=ledger)
+               if x.name == "deep_forest")
+    assert leg.node is not None, "deep_forest has a capability-graph node, so it is judged"
+    assert leg.verdict == completion.FAILING, leg.why
+    assert leg.streak == 5
+
+
+# ----------------------------------------------------------------------------- v1.3 should-fixes
+
+
+def test_v13_should_fix_1_a_sidecar_without_create_time_is_unmeasured(cyc):
+    side = daily_cycle._owner_path()
+    side.parent.mkdir(parents=True, exist_ok=True)
+    for doc in ({"pid": os.getpid(), "create_time": None}, {"pid": os.getpid()}):
+        side.write_text(json.dumps(doc), encoding="utf-8")
+        assert daily_cycle._holder_health() == "unmeasured", doc
+    side.write_text(json.dumps({"pid": os.getpid(),
+                                "create_time": daily_cycle._process_start(os.getpid())}),
+                    encoding="utf-8")
+    assert daily_cycle._holder_health() == "alive"
+
+
+def _sidecar_at(at: datetime) -> None:
+    side = daily_cycle._owner_path()
+    doc = json.loads(side.read_text(encoding="utf-8"))
+    doc["at"] = at.isoformat(timespec="seconds")
+    side.write_text(json.dumps(doc), encoding="utf-8")
+
+
+def test_v13_should_fix_2_a_stand_down_behind_a_hung_holder_is_a_failure(cyc, monkeypatch,
+                                                                        capsys):
+    import hourly_cycle
+
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    lk = _claim_alive()
+    try:
+        _sidecar_at(datetime.now(UTC))
+        assert daily_cycle.main([]) == daily_cycle.EXIT_STOOD_DOWN, "a fresh holder: a verdict"
+        assert "WRITE_OR_EXPLAIN: NO_OP" in capsys.readouterr().out
+        _sidecar_at(datetime.now(UTC)
+                    - timedelta(seconds=daily_cycle.HOLDER_MAX_WAIT_S + 60))
+        assert daily_cycle.main([]) == daily_cycle.EXIT_HOLDER_HUNG
+        assert "WRITE_OR_EXPLAIN: NO_OP" not in capsys.readouterr().out
+    finally:
+        lk.close()
+    assert cyc.calls == []
+    assert "HOLDER HUNG" in daily_cycle.LOG.read_text(encoding="utf-8")
+
+    assert hourly_cycle.DAILY_CYCLE_HOLDER_HUNG == daily_cycle.EXIT_HOLDER_HUNG
+    assert daily_cycle.EXIT_HOLDER_HUNG not in hourly_cycle.VERDICT_EXITS["daily"]
+    assert hourly_cycle._exit_outcome("daily", 76) == "exit_code=76:HOLDER_HUNG"
+    monkeypatch.setattr(hourly_cycle, "_run_tree", lambda *_a, **_k: type(
+        "R", (), {"returncode": 76, "stdout": "", "stderr": ""})())
+    out = hourly_cycle.daily()
+    assert "status" not in out and not out.get("verdict_exit") and "noop_reason" not in out
+
+    from libs.ops import completion, write_or_explain
+
+    snap = {"/x/artifact.json": {"exists": True, "mtime": 1.0, "size": 1}}
+    rec = write_or_explain.judge("daily", snap, snap, out,
+                                 verdict_exits=hourly_cycle.VERDICT_EXITS["daily"])
+    assert rec["verdict"] == write_or_explain.LEG_FAILED
+    assert completion._failed(out) is not None
+    assert completion._ok_outcome("exit_code=76:HOLDER_HUNG", "daily") is False
+
+
+def test_v13_should_fix_3_quarantined_stamps_are_bounded(cyc, monkeypatch):
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    for i in range(7):
+        (cyc.stamp.parent / f"{cyc.stamp.name}.corrupt-20300101T00000{i}Z").write_text(
+            "old", encoding="utf-8")
+    cyc.stamp.write_text("{torn", encoding="utf-8")
+    assert daily_cycle.main([]) == 0
+    kept = sorted(p for p in cyc.stamp.parent.iterdir() if ".corrupt-" in p.name)
+    assert len(kept) == daily_cycle.CORRUPT_KEEP == 5
+    texts = [p.read_text(encoding="utf-8") for p in kept]
+    assert texts.count("{torn") == 1, "the new quarantine is always kept"
+    # the seeded names are dated 2030, AFTER this run's own name: a clock-skewed name must not
+    # make the evidence just taken sort oldest and be pruned
+    olds = [p.name for p in kept if p.read_text(encoding="utf-8") == "old"]
+    assert [n[-8:] for n in olds] == ["T000003Z", "T000004Z", "T000005Z", "T000006Z"]

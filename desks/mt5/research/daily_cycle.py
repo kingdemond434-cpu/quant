@@ -812,6 +812,15 @@ def main(argv: list[str] | None = None) -> int:
     # another chain ends sees every step that chain stamped. See `_chain_lock`.
     lock = _chain_lock()
     if lock is None:
+        # A HUNG HOLDER IS A FAILURE, NOT A NO-OP (v1.3, audit should-fix 2). Past
+        # HOLDER_MAX_WAIT_S -- above a full ~9.4 h chain -- a holder that still has the lock is
+        # hung, and standing down behind it as a verdict would mute this leg for as long as it
+        # hangs. So the leg exits EXIT_HOLDER_HUNG, which `hourly_cycle` names as a failure.
+        age = _holder_age_s()
+        if age is not None and age > HOLDER_MAX_WAIT_S:
+            dlog(f"HOLDER HUNG: the chain lock has been held for {age / 3600:.1f}h, past the "
+                 f"{HOLDER_MAX_WAIT_S / 3600:g}h ceiling; standing down as a FAILURE")
+            return EXIT_HOLDER_HUNG
         # A DISTINCT EXIT, NOT 0 (v1.1). `hourly_cycle` declares it a VERDICT exit of the `daily`
         # leg (VERDICT_EXITS) with a named no-op reason, so a pass that ran nothing is neither
         # recorded as a pass that ran the chain nor as a failure.
@@ -828,6 +837,9 @@ def main(argv: list[str] | None = None) -> int:
 #: SystemExit(75) is caught by `run_step` and recorded as that step's failure (v1.2), so it can
 #: never be mistaken for a stand-down.
 EXIT_STOOD_DOWN = 75
+#: The exit of a bounded caller that stood down behind a holder older than HOLDER_MAX_WAIT_S
+#: (v1.3): a named FAILURE of the `daily` leg (hourly_cycle.NAMED_FAILURE_EXITS), never a verdict.
+EXIT_HOLDER_HUNG = 76
 STOOD_DOWN_REASON = ("another daily chain holds the lock; this bounded caller ran nothing -- the "
                      "holder runs the same steps and the next pass re-reads the stamp")
 
@@ -928,7 +940,9 @@ def _holder_health() -> str:
     alive       the named pid exists AND started when the sidecar says it did (pid reuse cannot
                 pass for the holder);
     dead        the sidecar is readable and its process is gone or is another process;
-    unmeasured  no readable sidecar, or psutil cannot answer. Unmeasured is never read as alive.
+    unmeasured  no readable sidecar, no usable `create_time` in it (v1.3: a null start time
+                cannot rule out pid reuse, so a live pid alone is never "alive"), or psutil
+                cannot answer. Unmeasured is never read as alive.
     """
     try:
         doc = json.loads(_owner_path().read_text(encoding="utf-8"))
@@ -943,13 +957,27 @@ def _holder_health() -> str:
         proc = psutil.Process(pid)
         if not proc.is_running():
             return "dead"
-        if started is not None and abs(float(proc.create_time()) - float(started)) > 1.0:
+        if started is None:
+            return "unmeasured"
+        if abs(float(proc.create_time()) - float(started)) > 1.0:
             return "dead"
         return "alive"
     except Exception as exc:
         if type(exc).__name__ in ("NoSuchProcess", "ZombieProcess"):
             return "dead"
         return "unmeasured"
+
+
+def _holder_age_s() -> float | None:
+    """Seconds since the holder took the lock, from the owner sidecar's `at`; None if unread."""
+    try:
+        doc = json.loads(_owner_path().read_text(encoding="utf-8"))
+        at = datetime.fromisoformat(str(doc["at"]))
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=UTC)
+    return (datetime.now(UTC) - at).total_seconds()
 
 
 #: How long a caller with no deadline waits for a holder whose health it cannot measure (no
@@ -1151,6 +1179,21 @@ def _write_stamp(today: str, steps: dict[str, dict], lock: ChainLock | None = No
     return True
 
 
+#: How many quarantined `.corrupt-<ts>` stamps are kept (v1.3): enough evidence to diagnose a
+#: recurring corruption, bounded so a corruption loop cannot fill the disk.
+CORRUPT_KEEP = 5
+
+
+def _prune_corrupt(just_kept: Path) -> None:
+    """Keep CORRUPT_KEEP quarantined stamps: `just_kept` always (a misset clock must not make the
+    newest evidence sort oldest and be pruned), plus the latest others by the UTC stamp in their
+    names."""
+    others = sorted(p for p in STAMP.parent.glob(f"{STAMP.name}.corrupt-*") if p != just_kept)
+    for old in others[:max(0, len(others) - (CORRUPT_KEEP - 1))]:
+        with contextlib.suppress(OSError):
+            old.unlink()
+
+
 def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
     today = _utc_today()
     stamp, state = _read_stamp()
@@ -1162,6 +1205,7 @@ def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
         with contextlib.suppress(OSError):
             os.replace(STAMP, aside)
             dlog(f"{STAMP.name} could not be parsed; kept as {aside.name}, starting a new stamp")
+        _prune_corrupt(aside)
     if str(stamp.get("last_run") or "") > today:
         dlog(f"stamp records {stamp.get('last_run')}, AFTER today's UTC date {today}: a clock "
              f"error; its steps are not trusted and the next write overwrites it")

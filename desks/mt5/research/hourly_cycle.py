@@ -282,6 +282,8 @@ def frontier_report(health: dict) -> None:
 #: `daily_cycle.EXIT_STOOD_DOWN`, restated so this cycle never imports the chain to read one int;
 #: `test_daily_cycle_single_chain` pins the two equal.
 DAILY_CYCLE_STOOD_DOWN = 75
+#: `daily_cycle.EXIT_HOLDER_HUNG`: stood down behind a holder past its ceiling -- a failure (v1.3).
+DAILY_CYCLE_HOLDER_HUNG = 76
 DAILY_CYCLE_STOOD_DOWN_REASON = ("daily chain stood down: another chain healthily holds the lock "
                                  "and runs the same steps; the next pass re-reads the stamp")
 
@@ -321,6 +323,12 @@ def daily() -> dict:
         if r.returncode == DAILY_CYCLE_STOOD_DOWN:
             return {"exit_code": DAILY_CYCLE_STOOD_DOWN, "verdict_exit": True,
                     "stood_down": True, "noop_reason": DAILY_CYCLE_STOOD_DOWN_REASON,
+                    "tail": tail, "at": at}
+        if r.returncode == DAILY_CYCLE_HOLDER_HUNG:
+            # NOT a verdict (v1.3): no status and no noop_reason, so the ledger names it
+            # `exit_code=76:HOLDER_HUNG` (NAMED_FAILURE_EXITS), write_or_explain reads LEG_FAILED
+            # and completion reads FAILING -- a hung MT5-Daily is surfaced, not muted.
+            return {"exit_code": DAILY_CYCLE_HOLDER_HUNG, "holder_hung": True,
                     "tail": tail, "at": at}
         return {"exit_code": int(r.returncode),
                 "status": "OK" if r.returncode == 0 else "FAILED",
@@ -956,8 +964,11 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #:   judge_coverage 4 -- --reuse-fresh found no fresh same-cycle table (JUDGE_COVERAGE_REUSE.json)
 #:   judge_coverage 5 -- a committed transaction manifest could not be rolled forward safely; it
 #:                       is kept and every pass refuses until it is resolved by hand
+#:   daily 76          -- stood down behind a chain-lock holder older than its 16 h ceiling: a
+#:                       hung MT5-Daily (daily_cycle.EXIT_HOLDER_HUNG)
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
     "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
+    "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG"},
 }
 
 
