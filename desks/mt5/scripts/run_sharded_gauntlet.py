@@ -7,6 +7,7 @@ and merged by the judge before any authority artifact is written.
 """
 from __future__ import annotations
 
+import codecs
 import contextlib
 import json
 import math
@@ -111,15 +112,17 @@ def _parallelism(n: int, phase: str | None = None) -> int:
 #: even when their own shards measure a fraction of it. MEASURED from JUDGE_RESIDENT.json:
 #: build_shards took 3,545-42,782 s across the 13 sweeps that reached it (median ~7,400 s) and
 #: it is about a quarter of every sweep's wall; at 1-3 wide that is up to 15/1 rounds of the
-#: same work. Admission now re-reads the box while the wave runs: once THIS wave has shard peak
-#: receipts, the per-shard estimate is the largest of them (and of any running shard's resident
+#: same work. Admission now re-reads the box while the wave runs: once THIS wave holds at least
+#: `floor` shard peak receipts (v1.1, audit MF5: never on the first, lightest one), the
+#: per-shard estimate is the largest of them (and of any running shard's resident
 #: set) times SHARD_ADMIT_MARGIN, and one more shard starts only when
 #:     (available now + the wave's own resident set) - sum over running shards of
 #:     max(estimate, its rss) - estimate  >=  SHARD_HEADROOM_SHARE x available at wave start
 #: i.e. the same "half of what was free stays free" rule `_parallelism` applies, re-measured
-#: live and charged at what this wave's shards actually hold. Before any receipt the estimate
-#: is the historic peak, so the condition is exactly `_parallelism`'s and the wave starts at
-#: today's width; it never drops below that width. An operator cap (GAUNTLET_SHARD_CONCURRENCY),
+#: live and charged at what this wave's shards actually hold, and at most ONE shard above the
+#: floor is admitted per SHARD_ADMIT_POLL_S. Until then the estimate is the historic peak, so the
+#: condition is exactly `_parallelism`'s and the wave runs at today's width; it never drops
+#: below that width. An operator cap (GAUNTLET_SHARD_CONCURRENCY),
 #: an unmeasured peak, psutil absent, or GAUNTLET_SHARD_ADMISSION=0 keeps the fixed wave exactly
 #: as before. The shards, their partition, their order of results and the merge are unchanged:
 #: only how many run at once moves, so no verdict, trial or gate input can.
@@ -181,7 +184,10 @@ class _Admission:
 
     def estimate_mb(self, running_rss: list[float]) -> tuple[float, str]:
         own = _wave_peaks_mb(self.logs, self.invocation, self.phase)
-        if not own:
+        # NOT ON THE FIRST RECEIPT (audit HOLD of a6cc198d7, MF5): the first shard to finish is
+        # the lightest, so one 1 GB receipt against a 6 GB historic peak admitted all fifteen at
+        # once. The historic peak stands until this wave holds at least `floor` receipts.
+        if len(own) < max(1, self.floor):
             return self.historic_peak_mb, "historic_peak"
         return max([*own, *running_rss]) * SHARD_ADMIT_MARGIN, "this_wave_peak_x_margin"
 
@@ -227,14 +233,30 @@ def _admitted_wave(n: int, attempted: Callable[[int], tuple[int, Exception | Non
                    poll_s: float = SHARD_ADMIT_POLL_S) -> list[tuple[int, Exception | None]]:
     """Run `attempted(k)` for k in 0..n-1, starting each when `gate` admits it; results by k."""
     futures: dict[int, Future[tuple[int, Exception | None]]] = {}
+    floor = int(getattr(gate, "floor", 0) or 0)
+    last_extra: float | None = None
     with ThreadPoolExecutor(max_workers=n, thread_name_prefix=f"judge-{gate.phase}") as pool:
         nxt = 0
         while nxt < n:
             live = [f for f in futures.values() if not f.done()]
             # An aborted wave starts the rest at once: each refuses in `one` without a child.
-            if aborted() or gate.admits(len(live)):
+            if aborted():
                 futures[nxt] = pool.submit(attempted, nxt)
                 nxt += 1
+                continue
+            extra = len(live) >= floor
+            # AT MOST ONE SHARD ABOVE THE FLOOR PER POLL (audit MF5): each extra shard is
+            # admitted on a reading that already shows the one before it starting to allocate.
+            if extra and last_extra is not None:
+                left = poll_s - (time.monotonic() - last_extra)
+                if left > 0:
+                    wait(live, timeout=left, return_when=FIRST_COMPLETED)
+                    continue
+            if gate.admits(len(live)):
+                futures[nxt] = pool.submit(attempted, nxt)
+                nxt += 1
+                if extra:
+                    last_extra = time.monotonic()
                 continue
             wait(live, timeout=poll_s, return_when=FIRST_COMPLETED)
         return [futures[k].result() for k in range(n)]
@@ -1373,7 +1395,8 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
             first = list(pool.map(attempted, range(n)))
     else:
         first = _admitted_wave(n, attempted, gate,
-                               aborted=lambda: _ABORT.is_set() or abort_wave.is_set())
+                               aborted=lambda: _ABORT.is_set() or abort_wave.is_set(),
+                               poll_s=SHARD_ADMIT_POLL_S)
         print(f"SHARD WAVE: {phase} widest {gate.width_max} of {n} (floor {width}); "
               f"last admission reading {gate.last}", flush=True)
         _progress_set(admission={"floor": width, "widest": gate.width_max, "last": gate.last})
@@ -1448,8 +1471,8 @@ def record_own_peak(path: str) -> None:
 #: one interval if it ever dies.
 #:
 #: It stops for exactly three things, each recorded in `JUDGE_RESIDENT.json`:
-#:   * `RESIDENT_STOP` is in force (an operator stop; delete it to resume, and it lapses on
-#:     its own after RESIDENT_STOP_TTL_S unless worded `hold`);
+#:   * `RESIDENT_STOP` exists (an operator hold; delete it to resume, or write `until=<ISO>`
+#:     for a timed stop -- see the note at RESIDENT_STOP below);
 #:   * the task's own ExecutionTimeLimit would kill the next sweep -- it does not start one it
 #:     cannot finish, and exits so the trigger starts a fresh resident (PT0S = no limit);
 #:   * it is not the canonical certifier (the lane is held) -- it waits and retries.
@@ -1468,24 +1491,23 @@ RESIDENT_STATE = DESK / "reports" / "JUDGE_RESIDENT.json"
 RESIDENT_MEMORY = DESK / "reports" / "JUDGE_RESIDENT_MEMORY.json"
 _MEMORY_KEYS = ("longest_sweep_s", "consecutive_hangs", "hung_kills")
 RESIDENT_STOP = DESK / "data" / "RESIDENT_STOP"
-#: AN OPERATOR STOP THAT NOBODY LIFTS COSTS EVERY VERDICT UNTIL SOMEBODY NOTICES (2026-10-27).
-#: MEASURED from the published JUDGE_RESIDENT.json history: the resident read `STOPPED`,
-#: "RESIDENT_STOP present", on every relaunch from 2026-10-23 03:31Z to 2026-10-27 15:46Z --
-#: 108 hours, 37 consecutive three-hourly relaunches, ZERO verdicts -- because the recovery
-#: procedure of 10-22 (LANE_HELD_STALL) created the file and its last step, deleting it, never
-#: ran. At the judge's demonstrated rate on the sweeps that published (about 1,265 ledger rows an
-#: hour of sweep wall, 10-15..10-21) that one forgotten file cost on the order of 100k verdicts.
-#: So a stop now says how long it means:
-#:   * `hold` (or `indefinite`) as the file's first word: stopped until the file is deleted,
-#:     exactly as before;
-#:   * `until=<ISO-8601 time>`: stopped until then, then resumed;
-#:   * anything else, an empty file included (what every procedure so far has written): stopped
-#:     for RESIDENT_STOP_TTL_S after the file's mtime, then resumed. Touching the file renews it.
-#: A stop that lapses is RENAMED to `RESIDENT_STOP.expired.<utc>` (the evidence is kept) and the
-#: resident records `stop_expired`. GAUNTLET_RESIDENT_STOP_TTL_S <= 0 restores the old
-#: never-expires reading for an unworded file. Nothing here changes what a sweep judges.
-RESIDENT_STOP_TTL_S = 12 * 3600.0
-RESIDENT_STOP_HOLD_WORDS = ("hold", "indefinite")
+#: AN OPERATOR STOP IS A HOLD, AND A HOLD NOBODY LIFTS MUST BE LOUD (2026-10-27, v1.1 after the
+#: audit HOLD of a6cc198d7). MEASURED from the published JUDGE_RESIDENT.json history: the
+#: resident read `STOPPED`, "RESIDENT_STOP present", on every relaunch from 2026-10-23 03:31Z to
+#: 2026-10-27 15:46Z -- 108 hours, 37 relaunches, ZERO verdicts -- because the 10-22 recovery
+#: runbook created the file and its last step, deleting it, never ran. v1 let an unworded stop
+#: lapse on its own; the audit showed why a lapse cannot be guessed from the text or the mtime
+#: (`STOP`, `HOLD.`, a UTF-16 `hold` and a stop armed mid-sweep all lapsed). So:
+#:   * ANY RESIDENT_STOP holds -- empty, unparseable, any wording, any encoding. The judge never
+#:     resumes on its own.
+#:   * The ONE explicit exception is a timed stop, `until=<ISO-8601>` as the first word (decoded
+#:     from UTF-8, UTF-8 with BOM or UTF-16): past that time the file is renamed aside to
+#:     `RESIDENT_STOP.expired.<utc>`, a JUDGE_STOP_LAPSED event and a log line are written, and
+#:     the resident resumes -- ONLY if the rename succeeded; a failed rename keeps holding.
+#:   * The hold's age counts from when a resident FIRST HONOURED it (kept in the sidecar
+#:     `RESIDENT_STOP.honoured.json`, reset when the file goes or is replaced), never the mtime.
+#:     A JUDGE_STOP_HONOURED event is written then; `stop_age_s` is in JUDGE_RESIDENT.json on
+#:     every write; `check_judge_coverage` WARNs at 12 h and FAILs at 24 h of honoured hold.
 RESIDENT_BACKOFF_S = (15, 30, 60, 120, 300)
 #: Seconds kept clear of the task's time limit, and the shortest sweep assumed before one is
 #: measured, when deciding whether another sweep fits inside it.
@@ -1758,10 +1780,14 @@ class WallSampler:
     def publish(self) -> None:
         snap = self.snapshot()
         with _PHASE_LOCK:
-            if _PHASE_DOC.get("phase"):
-                _PHASE_DOC["wall_profile"] = snap
-                with contextlib.suppress(Exception):
-                    _flush_phase_doc()
+            if not _PHASE_DOC.get("phase"):
+                return
+            _PHASE_DOC["wall_profile"] = snap
+            out = {k: v for k, v in _PHASE_DOC.items() if not str(k).startswith("_")}
+        # THE WRITE IS OUTSIDE THE LOCK (audit should-fix): a slow disk never holds up a shard
+        # thread's progress stamp. The next locked writer republishes the whole document.
+        with contextlib.suppress(Exception):
+            _write_atomic(SWEEP_PHASE, out)
 
     def _loop(self) -> None:
         last = self._clock()
@@ -1878,6 +1904,12 @@ def _durable_write(path: Path, text: str) -> None:
 
 def _write_state(doc: dict[str, Any]) -> None:
     doc = {**doc, "heartbeat_utc": datetime.now(UTC).isoformat(timespec="seconds")}
+    stop = doc.get("stop")
+    if doc.get("status") == "STOPPED" and isinstance(stop, dict):
+        # THE HOLD'S AGE ON EVERY WRITE, from when it was first honoured (never the mtime).
+        with contextlib.suppress(TypeError, ValueError):
+            doc["stop_age_s"] = round(max(0.0, time.time()
+                                          - float(stop["first_honoured_epoch"])), 1)
     if doc.get("status") == "SWEEPING":
         doc["sweep_phase"] = _sweep_phase()
     with contextlib.suppress(OSError):  # the heartbeat is a report; judging never stops for it
@@ -2536,75 +2568,131 @@ def resident(*, sweep=None, sleep=time.sleep, clock=time.monotonic,
     return last_rc
 
 
-def _stop_ttl_s() -> float:
-    raw = os.environ.get("GAUNTLET_RESIDENT_STOP_TTL_S")
-    if raw is None:
-        return RESIDENT_STOP_TTL_S
+def _decode_stop(raw: bytes) -> str:
+    """The stop file's text: UTF-8 (with or without BOM) or UTF-16 (with or without BOM)."""
+    if raw.startswith(codecs.BOM_UTF8):
+        return raw[len(codecs.BOM_UTF8):].decode("utf-8", "replace")
+    if raw.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+        return raw.decode("utf-16", "replace")
+    if b"\x00" in raw[:64]:
+        # PowerShell 5.1 without a BOM: the NUL bytes say which half carries the text.
+        return raw.decode("utf-16-le" if raw[1:2] == b"\x00" else "utf-16-be", "replace")
+    return raw.decode("utf-8", "replace")
+
+
+def _stop_until(text: str) -> float | None:
+    """Epoch of an explicit `until=<ISO-8601>` first word, else None (which means HOLD)."""
+    words = text.replace("\x00", " ").strip().split()
+    if not words or not words[0].lower().startswith("until="):
+        return None
+    raw = words[0].split("=", 1)[1]
+    if raw[-1:] in ("z", "Z"):
+        raw = raw[:-1] + "+00:00"
     try:
-        ttl = float(raw)
-    except (TypeError, ValueError):
-        return RESIDENT_STOP_TTL_S
-    return ttl if math.isfinite(ttl) else RESIDENT_STOP_TTL_S
+        at = datetime.fromisoformat(raw)
+    except ValueError:
+        return None
+    return (at if at.tzinfo else at.replace(tzinfo=UTC)).timestamp()
+
+
+def _stop_event(kind: str, path: Path, **fields: Any) -> None:
+    """One event-log row beside the stop file (in production `data/events.jsonl`, events.PATH)."""
+    with contextlib.suppress(Exception):
+        from libs.ops import events
+        events.emit(kind, path.parent / "events.jsonl", producer="run_sharded_gauntlet",
+                    **fields)
+
+
+def _first_honoured(p: Path, st: os.stat_result | None, now: float) -> tuple[float, bool]:
+    """(epoch the current stop was first honoured, whether that is now). Never raises.
+
+    Kept in a sidecar so it survives the resident's relaunch; reset when the stop file's
+    identity changes (deleted and re-created). Unwritable sidecar: the last published record's
+    stamp, else now."""
+    side = p.with_name(f"{p.name}.honoured.json")
+    ident = int(getattr(st, "st_ino", 0) or 0) if st is not None else 0
+    with contextlib.suppress(OSError, ValueError, TypeError, AttributeError):
+        doc = json.loads(side.read_text("utf-8"))
+        first = float(doc["first_honoured_epoch"])
+        if math.isfinite(first) and (not ident or not doc.get("ino") or int(doc["ino"]) == ident):
+            return first, False
+    try:
+        side.write_text(json.dumps({"first_honoured_epoch": now, "ino": ident,
+                                    "first_honoured_utc": datetime.fromtimestamp(now, UTC)
+                                    .isoformat(timespec="seconds")}), encoding="utf-8")
+        return now, True
+    except OSError:
+        prev = (_read_state().get("stop") or {}) if p == RESIDENT_STOP else {}
+        with contextlib.suppress(TypeError, ValueError):
+            first = float(prev.get("first_honoured_epoch"))  # type: ignore[union-attr,arg-type]
+            if math.isfinite(first):
+                return first, False
+        return now, True
 
 
 def resident_stop(now: float | None = None, path: Path | None = None) -> dict[str, Any]:
     """Is the operator stop in force? `{"stopped": bool, "why": str, ...}`; never raises.
 
-    See RESIDENT_STOP_TTL_S. An unreadable file STOPS (an operator meant something by it); only a
-    stop whose own words or age say it has lapsed resumes, and the lapsed file is renamed aside.
-    """
+    ANY file holds; only an explicit `until=<ISO>` that has passed AND whose file was renamed
+    aside resumes. See the note at RESIDENT_STOP."""
     p = RESIDENT_STOP if path is None else path
     t = time.time() if now is None else float(now)
+    side = p.with_name(f"{p.name}.honoured.json")
     try:
-        st = p.stat()
+        st: os.stat_result | None = p.stat()
     except FileNotFoundError:
+        with contextlib.suppress(OSError):
+            side.unlink(missing_ok=True)
         return {"stopped": False}
-    except OSError as exc:
-        return {"stopped": True, "why": f"{p.name} present (unreadable: {type(exc).__name__})"}
-    age = max(0.0, t - st.st_mtime)
+    except OSError:
+        st = None
     try:
-        words = p.read_text("utf-8", errors="replace").strip()
+        text = _decode_stop(p.read_bytes())
     except OSError as exc:
-        return {"stopped": True, "age_s": round(age, 1),
-                "why": f"{p.name} present (unreadable: {type(exc).__name__})"}
-    token = words.split()[0] if words else ""
-    first = token.lower()
-    doc: dict[str, Any] = {"age_s": round(age, 1),
-                           "set_utc": datetime.fromtimestamp(st.st_mtime, UTC).isoformat(
-                               timespec="seconds")}
-    if first in RESIDENT_STOP_HOLD_WORDS:
-        return {**doc, "stopped": True, "basis": "hold",
-                "why": f"{p.name} present (hold: until deleted; {age / 3600.0:.1f}h old)"}
-    until: float | None = None
-    if first.startswith("until="):
-        try:
-            raw = token.split("=", 1)[1]
-            at = datetime.fromisoformat(raw[:-1] + "+00:00" if raw[-1:] in "zZ" and raw
-                                        else raw)
-            until = (at if at.tzinfo else at.replace(tzinfo=UTC)).timestamp()
-            doc["basis"] = "until"
-        except ValueError:
-            until = None
-    if until is None:
-        ttl = _stop_ttl_s()
-        if ttl <= 0:
-            return {**doc, "stopped": True, "basis": "no_ttl",
-                    "why": f"{p.name} present ({age / 3600.0:.1f}h old; no TTL configured)"}
-        until, doc["basis"] = st.st_mtime + ttl, "ttl"
-        doc["ttl_s"] = ttl
-    doc["until_utc"] = datetime.fromtimestamp(until, UTC).isoformat(timespec="seconds")
-    if t < until:
-        return {**doc, "stopped": True,
-                "why": (f"{p.name} present ({age / 3600.0:.1f}h old; lapses at "
-                        f"{doc['until_utc']} unless renewed or worded `hold`)")}
+        text = ""
+        unreadable = f"{type(exc).__name__}"
+    else:
+        unreadable = ""
+    until = _stop_until(text)
+    first, fresh = _first_honoured(p, st, t)
+    age = max(0.0, t - first)
+    doc: dict[str, Any] = {
+        "stopped": True, "basis": "until" if until is not None else "hold",
+        "first_honoured_epoch": round(first, 3),
+        "first_honoured_utc": datetime.fromtimestamp(first, UTC).isoformat(timespec="seconds"),
+        "stop_age_s": round(age, 1), "text": text.strip()[:80]}
+    if unreadable:
+        doc["unreadable"] = unreadable
+    if until is not None:
+        doc["until_utc"] = datetime.fromtimestamp(until, UTC).isoformat(timespec="seconds")
+    if until is None or t < until:
+        doc["why"] = (f"{p.name} present: "
+                      + (f"timed stop until {doc['until_utc']}" if until is not None
+                         else "HOLD until the file is deleted")
+                      + f" (honoured for {age / 3600.0:.1f}h)")
+        if fresh:
+            _stop_event("JUDGE_STOP_HONOURED", p, basis=doc["basis"],
+                        until_utc=doc.get("until_utc"), text=doc["text"])
+            print(f"{datetime.now(UTC).isoformat()} judge resident: {doc['why']}", flush=True)
+        return doc
     aside = p.with_name(f"{p.name}.expired.{datetime.fromtimestamp(t, UTC):%Y%m%dT%H%M%SZ}")
     try:
         os.replace(p, aside)
-        doc["renamed_to"] = aside.name
     except OSError as exc:
         doc["rename_failed"] = f"{type(exc).__name__}: {exc}"[:200]
-    return {**doc, "stopped": False, "expired": True,
-            "why": f"{p.name} lapsed at {doc['until_utc']} after {age / 3600.0:.1f}h: resumed"}
+        doc["why"] = (f"{p.name} timed stop lapsed at {doc['until_utc']} but could not be "
+                      f"renamed aside ({doc['rename_failed']}): HOLDING")
+        print(f"{datetime.now(UTC).isoformat()} judge resident: {doc['why']}", flush=True)
+        return doc
+    with contextlib.suppress(OSError):
+        side.unlink(missing_ok=True)
+    doc.update(stopped=False, expired=True, renamed_to=aside.name,
+               why=(f"{p.name} timed stop lapsed at {doc['until_utc']} after "
+                    f"{age / 3600.0:.1f}h honoured; renamed to {aside.name}: resumed"))
+    _stop_event("JUDGE_STOP_LAPSED", p, until_utc=doc["until_utc"], renamed_to=aside.name,
+                stop_age_s=doc["stop_age_s"])
+    print(f"{datetime.now(UTC).isoformat()} judge resident: {doc['why']}", flush=True)
+    return doc
 
 
 def _read_state() -> dict[str, Any]:
@@ -2626,7 +2714,7 @@ def _resident_loop(state: dict[str, Any], sweep: Callable[[], int],
             state["stop_expired"] = stop
         if stop.get("stopped"):
             state["status"], state["why"] = "STOPPED", str(stop.get("why"))
-            state["stop"] = stop
+            state["stop"], state["stop_age_s"] = stop, stop.get("stop_age_s")
             break
         if not _fits(clock() - started, limit_s, last_sweep_s):
             state["status"] = "RESPAWN"
