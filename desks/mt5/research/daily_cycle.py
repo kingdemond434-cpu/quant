@@ -29,6 +29,7 @@ import contextlib
 import errno
 import json
 import os
+import re
 import sys
 import time
 import traceback
@@ -821,12 +822,17 @@ def main(argv: list[str] | None = None) -> int:
         # sidecar whose process is measured ALIVE speaks for the holder -- a stale sidecar left
         # by a dead or reused pid (a failed sidecar write, or the gap before the first one) is
         # not evidence about the process that holds the lock now.
-        age = _holder_age_s()
-        if (age is not None and age > HOLDER_MAX_WAIT_S
-                and _holder_health() == "alive"):
-            dlog(f"HOLDER HUNG: the chain-lock holder has made no progress for {age / 3600:.1f}h, "
-                 f"past the {HOLDER_MAX_WAIT_S / 3600:g}h ceiling; standing down as a FAILURE")
-            return EXIT_HOLDER_HUNG
+        # v1.5: "alive" also means the OS lists that pid as the lock's holder where it can say
+        # (Linux /proc/locks), and a progress time from a fast clock is no age: then the age is
+        # how long waiters have SEEN this holder hold the lock, by wall clock.
+        if _holder_health() == "alive":
+            age, basis = _holder_age_s(), "made no progress"
+            if age is None:
+                age, basis = _observed_hold_s(), "been seen holding the lock (times unusable)"
+            if age is not None and age > HOLDER_MAX_WAIT_S:
+                dlog(f"HOLDER HUNG: the chain-lock holder has {basis} for {age / 3600:.1f}h, past "
+                     f"the {HOLDER_MAX_WAIT_S / 3600:g}h ceiling; standing down as a FAILURE")
+                return EXIT_HOLDER_HUNG
         # A DISTINCT EXIT, NOT 0 (v1.1). `hourly_cycle` declares it a VERDICT exit of the `daily`
         # leg (VERDICT_EXITS) with a named no-op reason, so a pass that ran nothing is neither
         # recorded as a pass that ran the chain nor as a failure.
@@ -947,8 +953,10 @@ def _holder_health() -> str:
                 pass for the holder);
     dead        the sidecar is readable and its process is gone or is another process;
     unmeasured  no readable sidecar, no usable `create_time` in it (v1.3: a null start time
-                cannot rule out pid reuse, so a live pid alone is never "alive"), or psutil
-                cannot answer. Unmeasured is never read as alive.
+                cannot rule out pid reuse, so a live pid alone is never "alive"), psutil
+                cannot answer, or -- where the OS says who holds the lock (v1.5) -- the named
+                live process is NOT the lock's holder: a stale sidecar naming some other live
+                process says nothing about the holder. Unmeasured is never read as alive.
     """
     try:
         doc = json.loads(_owner_path().read_text(encoding="utf-8"))
@@ -967,11 +975,39 @@ def _holder_health() -> str:
             return "unmeasured"
         if abs(float(proc.create_time()) - float(started)) > 1.0:
             return "dead"
+        holders = _lock_holder_pids()
+        if holders is not None and pid not in holders:
+            return "unmeasured"
         return "alive"
     except Exception as exc:
         if type(exc).__name__ in ("NoSuchProcess", "ZombieProcess"):
             return "dead"
         return "unmeasured"
+
+
+def _lock_holder_pids() -> set[int] | None:
+    """The pids the OS reports as holding the chain lock, or None where it cannot say.
+
+    Linux only, from /proc/locks (FLOCK rows on the lock file's device and inode; blocked
+    waiters, "->" rows, are skipped). Elsewhere -- the Windows box, where msvcrt byte locks are
+    not listed -- None, and the sidecar's pid plus create_time is the whole identity check."""
+    if not sys.platform.startswith("linux"):
+        return None
+    try:
+        st = os.stat(_lock_path())
+        want = f"{os.major(st.st_dev):02x}:{os.minor(st.st_dev):02x}:{st.st_ino}"
+        rows = Path("/proc/locks").read_text(encoding="ascii", errors="replace").splitlines()
+    except OSError:
+        return None
+    pids: set[int] = set()
+    for row in rows:
+        f = row.split()
+        if len(f) < 6 or f[1] == "->" or f[1] != "FLOCK":
+            continue
+        if f[5] == want:
+            with contextlib.suppress(ValueError):
+                pids.add(int(f[4]))
+    return pids
 
 
 def _parse_at(value: object) -> datetime | None:
@@ -982,21 +1018,62 @@ def _parse_at(value: object) -> datetime | None:
     return at.replace(tzinfo=UTC) if at.tzinfo is None else at
 
 
+#: How far ahead of this machine's clock a sidecar time may be before it is a clock error.
+CLOCK_SKEW_S = 300.0
+
+
 def _holder_age_s() -> float | None:
     """Seconds since the holder last made PROGRESS, from the owner sidecar: its `last_progress`
     heartbeat (refreshed by `_write_stamp` after every step, v1.4), else `at` (when it took the
-    lock), whichever is later. None when neither can be read."""
+    lock), whichever is later. None when neither can be read.
+
+    A time more than CLOCK_SKEW_S AHEAD of now was written on a fast clock and is not an age
+    (v1.5): read as one it would be "fresh" forever and mute a later hang. It is dropped, and
+    with nothing left the age is None -- unmeasured -- so `_observed_hold_s` takes over."""
     try:
         doc = json.loads(_owner_path().read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
     if not isinstance(doc, dict):
         return None
+    now = datetime.now(UTC)
     stamps = [t for t in (_parse_at(doc.get("at")), _parse_at(doc.get("last_progress")))
-              if t is not None]
+              if t is not None and (t - now).total_seconds() <= CLOCK_SKEW_S]
     if not stamps:
         return None
-    return (datetime.now(UTC) - max(stamps)).total_seconds()
+    return (now - max(stamps)).total_seconds()
+
+
+def _seen_path() -> Path:
+    return _lock_path().with_name("daily_cycle.seen.json")
+
+
+def _observed_hold_s() -> float | None:
+    """How long the CURRENT holder has been seen holding the lock by the callers that stood down
+    behind it, by wall clock (v1.5). The first caller to see a holder (pid + create_time from the
+    sidecar) records `first_seen`; later callers age from it. A new holder, or a `first_seen`
+    beyond the clock, restarts it. None when the holder cannot be identified or nothing can be
+    written. This is the fallback when the holder's own times are unusable (in the future), so a
+    hang after a clock jump still surfaces once the lock has been held past the ceiling."""
+    try:
+        side = json.loads(_owner_path().read_text(encoding="utf-8"))
+        ident = [int(side["pid"]), side.get("create_time")]
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    now = datetime.now(UTC)
+    try:
+        seen = json.loads(_seen_path().read_text(encoding="utf-8"))
+        first = _parse_at(seen.get("first_seen")) if seen.get("holder") == ident else None
+    except (OSError, ValueError, AttributeError):
+        first = None
+    if first is None or (first - now).total_seconds() > CLOCK_SKEW_S:
+        try:
+            _atomic_write(_seen_path(), json.dumps({
+                "holder": ident, "first_seen": now.isoformat(timespec="seconds")}))
+        except OSError:
+            return None
+        return 0.0
+    return (now - first).total_seconds()
 
 
 #: How long a caller with no deadline waits for a holder whose health it cannot measure (no
@@ -1148,19 +1225,46 @@ def _chain_lock() -> ChainLock | None:
 
 
 def _read_stamp() -> tuple[dict, str]:
-    """(doc, state): state is "ok", "absent" or "unparseable" -- unlike `_load_stamp`, which
-    reads an unparseable file as {}, a writer must be able to tell the two apart."""
+    """(doc, state). state is one of:
+
+    ok          parsed to a dict;
+    absent      no file;
+    unreadable  the READ failed (any OSError but FileNotFoundError: a permission error, a Windows
+                sharing violation from a scanner or a reader). The bytes on disk may be a valid,
+                finished stamp -- it is "don't know", and is never moved aside or replaced
+                (v1.5, audit of f18726a56: v1.4 read this as unparseable and quarantined a VALID
+                stamp, pruning a real quarantine copy and restarting the day from step one);
+    torn        read, but not JSON or not a dict (ValueError / non-dict) -- the only state that
+                can be corruption.
+    Unlike `_load_stamp`, which reads all of these as {}, a writer must tell them apart."""
     try:
         text = STAMP.read_text(encoding="utf-8")
     except FileNotFoundError:
         return {}, "absent"
     except OSError:
-        return {}, "unparseable"
+        return {}, "unreadable"
     try:
         doc = json.loads(text)
     except ValueError:
-        return {}, "unparseable"
-    return (doc, "ok") if isinstance(doc, dict) else ({}, "unparseable")
+        return {}, "torn"
+    return (doc, "ok") if isinstance(doc, dict) else ({}, "torn")
+
+
+#: Re-reads of a stamp that read UNREADABLE or TORN before anything acts on it: one pass of
+#: these is what `_write_stamp` and the quarantine both require (v1.5).
+STAMP_REREADS = 2
+STAMP_REREAD_S = 0.1
+
+
+def _read_stamp_settled() -> tuple[dict, str]:
+    """`_read_stamp`, re-read up to STAMP_REREADS times while it is unreadable or torn."""
+    doc, state = _read_stamp()
+    for _ in range(STAMP_REREADS):
+        if state not in ("unreadable", "torn"):
+            break
+        time.sleep(STAMP_REREAD_S)
+        doc, state = _read_stamp()
+    return doc, state
 
 
 def _utc_today() -> str:
@@ -1178,22 +1282,21 @@ def _write_stamp(today: str, steps: dict[str, dict], lock: ChainLock | None = No
       * a stamp for a LATER day that is not in the future (this chain began before 00:00 UTC
         and is still running) wins: this write is refused, so last_run never moves backwards;
       * a stamp for the SAME day is merged step by step; an older or absent one is replaced.
-    NEVER OVER AN UNPARSEABLE FILE (v1.2 should-fix 2). Writes are atomic, so a torn read cannot
-    come from this module; an unparseable stamp is re-read twice, then left alone and logged,
-    because reading it as {} and replacing it is how a finished chain's steps were erased.
+    NEVER OVER A FILE IT CANNOT READ OR PARSE (v1.2 should-fix 2, v1.5). Writes are atomic, so a
+    torn read cannot come from this module; an unreadable or torn stamp is re-read
+    (`_read_stamp_settled`), then left alone and logged, because reading it as {} and replacing
+    it is how a finished chain's steps were erased.
     """
     now_iso = datetime.now(UTC).isoformat(timespec="seconds")
     if lock is not None:
         # THE HEARTBEAT (v1.4, audit SF-A), before any refusal below: a held chain records that
         # it is progressing even when this particular stamp write is refused.
         lock.heartbeat()
-    doc, state = _read_stamp()
-    for _ in range(2):
-        if state != "unparseable":
-            break
-        time.sleep(0.1)
-        doc, state = _read_stamp()
-    if state == "unparseable":
+    doc, state = _read_stamp_settled()
+    if state == "unreadable":
+        dlog(f"stamp NOT written: {STAMP.name} exists but cannot be READ; it is left as it is")
+        return False
+    if state == "torn":
         dlog(f"stamp NOT written: {STAMP.name} exists but cannot be parsed; it is left as it is")
         return False
     on_disk = str(doc.get("last_run") or "")
@@ -1224,19 +1327,48 @@ def _write_stamp(today: str, steps: dict[str, dict], lock: ChainLock | None = No
 CORRUPT_KEEP = 5
 
 
+_CORRUPT_SEQ = re.compile(r"\.corrupt-(\d{6})-")
+
+
+def _corrupt_copies() -> list[Path]:
+    return list(STAMP.parent.glob(f"{STAMP.name}.corrupt-*"))
+
+
+def _corrupt_seq(p: Path) -> int | None:
+    m = _CORRUPT_SEQ.search(p.name)
+    return int(m.group(1)) if m else None
+
+
+def _next_corrupt_name() -> Path:
+    """`<stamp>.corrupt-<seq>-<UTC ts>`. The SEQUENCE, not the clock, orders the copies (v1.5):
+    under the held chain lock there is one writer, so seq is the true quarantine order whatever
+    the clock said -- a clock set back or forward cannot reorder them."""
+    seqs = [q for q in (_corrupt_seq(p) for p in _corrupt_copies()) if q is not None]
+    return STAMP.with_name(f"{STAMP.name}.corrupt-{(max(seqs) + 1) if seqs else 1:06d}-"
+                           f"{datetime.now(UTC):%Y%m%dT%H%M%SZ}")
+
+
 def _prune_corrupt(just_kept: Path) -> None:
-    """Keep CORRUPT_KEEP quarantined stamps: `just_kept` always (a misset clock must not make the
-    newest evidence sort oldest and be pruned), plus the latest others by the UTC stamp in their
-    names. A name stamped AFTER `just_kept`'s was written on a misset clock: it sorts OLDEST, so it
-    is the first to go and cannot hold a slot forever (v1.4 nit). Removes only these quarantine
+    """Keep CORRUPT_KEEP quarantined stamps: `just_kept` always, plus the newest others.
+
+    NEWEST BY SEQUENCE, NEVER BY THE CLOCK (v1.5, audit of f18726a56). v1.4 ordered by the UTC
+    stamp in the name and sorted a name after `just_kept`'s as "future"; on a clock set BACK that
+    pruned every correctly dated newer copy first and kept the old ones. Copies written since v1.5
+    carry a sequence number and are ordered by it; legacy copies (no sequence) are older than any
+    of them and are ordered among themselves by file mtime, then name. So a copy written on a
+    fast clock is pruned in its turn and holds no slot forever.
+
+    Called ONLY after `os.replace` moved a torn stamp aside (v1.5). Removes only these quarantine
     copies of the stamp -- declared in libs/ops/reference_freshness.DESTRUCTIVE_PATHS."""
-    mine = just_kept.name
+    def age_key(p: Path) -> tuple[int, int, float, str]:
+        seq = _corrupt_seq(p)
+        try:
+            mtime = p.stat().st_mtime
+        except OSError:
+            mtime = 0.0
+        return (0 if seq is None else 1, seq or 0, mtime, p.name)
 
-    def age_key(p: Path) -> tuple[bool, str]:
-        return (p.name <= mine, p.name)            # future-named (False) sort before the rest
-
-    others = sorted((p for p in STAMP.parent.glob(f"{STAMP.name}.corrupt-*") if p != just_kept),
-                    key=age_key)
+    others = sorted((p for p in _corrupt_copies() if p != just_kept), key=age_key)
     for old in others[:max(0, len(others) - (CORRUPT_KEEP - 1))]:
         with contextlib.suppress(OSError):
             old.unlink()
@@ -1244,16 +1376,29 @@ def _prune_corrupt(just_kept: Path) -> None:
 
 def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
     today = _utc_today()
-    stamp, state = _read_stamp()
-    if state == "unparseable" and lock is not None and lock.held:
-        # Under the lock nobody else writes the stamp, so a file that still does not parse is
-        # corruption, not a torn read. It is moved aside as evidence -- never deleted -- or no
-        # pass could ever stamp again and the chain would re-run from step one every hour.
-        aside = STAMP.with_name(f"{STAMP.name}.corrupt-{datetime.now(UTC):%Y%m%dT%H%M%SZ}")
-        with contextlib.suppress(OSError):
+    stamp, state = _read_stamp_settled()
+    if state == "unreadable":
+        # DON'T KNOW (v1.5). The file may be a valid stamp that names steps already run today; a
+        # scanner or reader holding it open is the usual cause on Windows. It is never moved, and
+        # no step runs on a guess -- running all of them would repeat finished hours of work. The
+        # pass fails loudly (rc 1, the hourly leg's FAILED) and the next pass reads it again.
+        dlog(f"{STAMP.name} cannot be READ (after {STAMP_REREADS} re-reads); it is left as it is "
+             f"and no step runs this pass")
+        return 1
+    if state == "torn" and lock is not None and lock.held:
+        # Under the lock nobody else writes the stamp, so a file that still does not parse after
+        # the re-reads is corruption, not a torn read. It is moved aside as evidence -- never
+        # deleted -- or no pass could ever stamp again and the chain would re-run from step one
+        # every hour. The prune runs only once the move succeeded (v1.5).
+        aside = _next_corrupt_name()
+        try:
             os.replace(STAMP, aside)
+        except OSError as exc:
+            dlog(f"{STAMP.name} could not be parsed and could not be moved aside "
+                 f"({type(exc).__name__}: {exc}); nothing was pruned")
+        else:
             dlog(f"{STAMP.name} could not be parsed; kept as {aside.name}, starting a new stamp")
-        _prune_corrupt(aside)
+            _prune_corrupt(aside)
     if str(stamp.get("last_run") or "") > today:
         dlog(f"stamp records {stamp.get('last_run')}, AFTER today's UTC date {today}: a clock "
              f"error; its steps are not trusted and the next write overwrites it")

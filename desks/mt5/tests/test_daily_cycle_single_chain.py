@@ -38,6 +38,13 @@ v1.4 (audit of fd141ebb9, one must-fix, two should-fixes, two nits):
   * the holder is aged from its LAST PROGRESS, refreshed by `_write_stamp` after every step;
   * exit 76 only when the sidecar's process is measured alive;
   * a future-named quarantine copy sorts oldest and cannot hold a slot forever.
+v1.5 (audit of f18726a56, one must-fix, three should-fixes):
+  * MUST-FIX: an UNREADABLE stamp (OSError) is never quarantined and nothing is pruned; only a
+    stamp still TORN (ValueError / non-dict) after the re-reads is moved aside, and the prune
+    runs only after that move succeeded (probes P1a, P1b);
+  * quarantine copies are ordered by a sequence number, never the clock (P2b: clock set back);
+  * "alive" requires the OS to list the sidecar's pid as the lock holder where it can (Linux);
+  * a future-dated progress time is no age: waiters' wall-clock observation of the holder is.
 """
 from __future__ import annotations
 
@@ -782,9 +789,11 @@ def test_v13_should_fix_2_a_stand_down_behind_a_hung_holder_is_a_failure(cyc, mo
 def test_v13_should_fix_3_quarantined_stamps_are_bounded(cyc, monkeypatch):
     monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
     for i in range(7):
-        (cyc.stamp.parent / f"{cyc.stamp.name}.corrupt-20300101T00000{i}Z").write_text(
-            "old", encoding="utf-8")
+        legacy = cyc.stamp.parent / f"{cyc.stamp.name}.corrupt-20300101T00000{i}Z"
+        legacy.write_text("old", encoding="utf-8")
+        os.utime(legacy, (1_700_000_000 + i, 1_700_000_000 + i))   # written in name order
     cyc.stamp.write_text("{torn", encoding="utf-8")
+    monkeypatch.setattr(daily_cycle.time, "sleep", lambda _s: None)
     assert daily_cycle.main([]) == 0
     kept = sorted(p for p in cyc.stamp.parent.iterdir() if ".corrupt-" in p.name)
     assert len(kept) == daily_cycle.CORRUPT_KEEP == 5
@@ -871,16 +880,218 @@ def test_v14_sf_b_a_stale_sidecar_of_another_process_never_gives_76(cyc, monkeyp
 
 
 def test_v14_nit_a_future_named_quarantine_copy_cannot_hold_a_slot(cyc, monkeypatch):
+    """A copy written on a fast clock (name AND mtime in 2099) is pruned in its turn: by v1.5 the
+    quarantine SEQUENCE orders copies, and an unsequenced legacy copy is older than all of them,
+    so it goes once CORRUPT_KEEP sequenced copies exist -- it holds no slot forever."""
     monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
-    _fake_clock(monkeypatch, datetime(2030, 6, 10, 12, 0, tzinfo=UTC))
+    monkeypatch.setattr(daily_cycle.time, "sleep", lambda _s: None)
+    clock = _fake_clock(monkeypatch, datetime(2030, 6, 10, 12, 0, tzinfo=UTC))
     d = cyc.stamp.parent
     future = d / f"{cyc.stamp.name}.corrupt-20990101T000000Z"
     future.write_text("future", encoding="utf-8")
-    for i in range(4):
-        (d / f"{cyc.stamp.name}.corrupt-2030060{i + 1}T000000Z").write_text("old", "utf-8")
+    t2099 = datetime(2099, 1, 1, tzinfo=UTC).timestamp()
+    os.utime(future, (t2099, t2099))
+    for n in range(1, daily_cycle.CORRUPT_KEEP + 1):
+        cyc.stamp.write_text("{torn", encoding="utf-8")
+        clock.set(clock.now + timedelta(days=1))
+        assert daily_cycle.main([]) == 0
+        present = future.exists()
+        assert present == (n < daily_cycle.CORRUPT_KEEP), (n, present)
+    kept = sorted(p.name for p in d.iterdir() if ".corrupt-" in p.name)
+    assert [daily_cycle._corrupt_seq(d / k) for k in kept] == [1, 2, 3, 4, 5]
+
+
+# ----------------------------------------------------------------------------- v1.5
+
+
+def _deny_reads(monkeypatch, path: Path, times: int | None = None):
+    """Make `path.read_text` raise PermissionError (`times` reads, or always)."""
+    real = Path.read_text
+    left = {"n": times}
+
+    def read_text(self, *a, **k):
+        if self == path and (left["n"] is None or left["n"] > 0):
+            if left["n"] is not None:
+                left["n"] -= 1
+            raise PermissionError(13, "sharing violation (scanner holds the file)")
+        return real(self, *a, **k)
+
+    monkeypatch.setattr(Path, "read_text", read_text)
+
+
+def _seed_copies(d: Path, stamp: Path, n: int = 5) -> list[Path]:
+    out = []
+    for i in range(1, n + 1):
+        p = d / f"{stamp.name}.corrupt-{i:06d}-2030060{i}T000000Z"
+        p.write_text(f"copy{i}", encoding="utf-8")
+        out.append(p)
+    return out
+
+
+def test_v15_mf_p1a_a_valid_stamp_that_cannot_be_read_is_never_moved(cyc, monkeypatch):
+    """Probe P1a: a VALID stamp (today, steps done) raising PermissionError on read. v1.4 moved
+    it aside, pruned a real copy and restarted the day; now it is "don't know": nothing moves,
+    nothing is pruned, no step runs, and the pass fails loudly for the next one to retry."""
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    monkeypatch.setattr(daily_cycle.time, "sleep", lambda _s: None)
+    today = datetime.now(UTC).date().isoformat()
+    cyc.stamp.write_text(json.dumps({"last_run": today, "steps": {"a": {"ok": True}}}),
+                         encoding="utf-8")
+    before = cyc.stamp.read_bytes()
+    copies = _seed_copies(cyc.stamp.parent, cyc.stamp)
+    _deny_reads(monkeypatch, cyc.stamp)
+    assert daily_cycle.main([]) == 1
+    assert cyc.calls == []
+    assert cyc.stamp.read_bytes() == before, "the live stamp is never moved or rewritten"
+    assert sorted(p for p in cyc.stamp.parent.iterdir() if ".corrupt-" in p.name) == copies
+    assert "cannot be READ" in daily_cycle.LOG.read_text(encoding="utf-8")
+
+
+def test_v15_mf_a_transient_read_denial_is_retried_and_the_day_resumes(cyc, monkeypatch):
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    monkeypatch.setattr(daily_cycle.time, "sleep", lambda _s: None)
+    today = datetime.now(UTC).date().isoformat()
+    cyc.stamp.write_text(json.dumps({"last_run": today, "steps": {"a": {"ok": True}}}),
+                         encoding="utf-8")
+    _deny_reads(monkeypatch, cyc.stamp, times=daily_cycle.STAMP_REREADS)
+    assert daily_cycle.main([]) == 0
+    assert cyc.calls == ["b", "c"], "the re-read found the valid stamp: a and only a skipped"
+    assert not [p for p in cyc.stamp.parent.iterdir() if ".corrupt-" in p.name]
+
+
+def test_v15_mf_p1b_a_denied_read_and_a_failed_replace_prune_nothing(cyc, monkeypatch):
+    """Probe P1b: the read is denied AND os.replace fails (a locked file on Windows). v1.4 still
+    pruned a copy although no quarantine was taken. Now: nothing moves, nothing is pruned."""
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    monkeypatch.setattr(daily_cycle.time, "sleep", lambda _s: None)
+    cyc.stamp.write_text("{torn", encoding="utf-8")
+    copies = _seed_copies(cyc.stamp.parent, cyc.stamp)
+    real = os.replace
+    replaced: list[str] = []
+
+    def replace(src, dst):
+        if Path(src) == cyc.stamp:
+            replaced.append(str(dst))
+            raise PermissionError(13, "in use")
+        return real(src, dst)
+
+    monkeypatch.setattr(daily_cycle.os, "replace", replace)
+    _deny_reads(monkeypatch, cyc.stamp)
+    assert daily_cycle.main([]) == 1
+    assert replaced == [], "an unreadable stamp is not even attempted"
+    assert sorted(p for p in cyc.stamp.parent.iterdir() if ".corrupt-" in p.name) == copies
+
+
+def test_v15_mf_a_torn_stamp_whose_move_fails_prunes_nothing(cyc, monkeypatch):
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    monkeypatch.setattr(daily_cycle.time, "sleep", lambda _s: None)
+    cyc.stamp.write_text("{torn", encoding="utf-8")
+    copies = _seed_copies(cyc.stamp.parent, cyc.stamp)
+    real = os.replace
+
+    def replace(src, dst):
+        if Path(src) == cyc.stamp:
+            raise PermissionError(13, "in use")
+        return real(src, dst)
+
+    monkeypatch.setattr(daily_cycle.os, "replace", replace)
+    daily_cycle.main([])
+    assert cyc.stamp.read_text(encoding="utf-8") == "{torn"
+    assert sorted(p for p in cyc.stamp.parent.iterdir() if ".corrupt-" in p.name) == copies
+    assert "nothing was pruned" in daily_cycle.LOG.read_text(encoding="utf-8")
+
+
+def test_v15_mf_a_stamp_torn_once_then_valid_is_not_quarantined(cyc, monkeypatch):
+    """The quarantine requires the same re-reads `_write_stamp` does: a read caught mid-write
+    that parses on the re-read is not corruption."""
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    monkeypatch.setattr(daily_cycle.time, "sleep", lambda _s: None)
+    today = datetime.now(UTC).date().isoformat()
+    cyc.stamp.write_text(json.dumps({"last_run": today, "steps": {"a": {"ok": True}}}),
+                         encoding="utf-8")
+    real = Path.read_text
+    first = {"torn": True}
+
+    def read_text(self, *a, **k):
+        if self == cyc.stamp and first["torn"]:
+            first["torn"] = False
+            return '{"last_run": "'
+        return real(self, *a, **k)
+
+    monkeypatch.setattr(Path, "read_text", read_text)
+    assert daily_cycle.main([]) == 0
+    assert cyc.calls == ["b", "c"]
+    assert not [p for p in cyc.stamp.parent.iterdir() if ".corrupt-" in p.name]
+
+
+def test_v15_sf_a_clock_set_back_keeps_the_correctly_dated_newer_copy(cyc, monkeypatch):
+    """Probe P2b: clock at 2026-01-01, legacy copies dated 2025-01 and 2026-10. v1.4 pruned the
+    genuine 2026-10 copy as "future"; legacy copies are now ordered by mtime, and every new copy
+    by sequence, so the 2026-10 copy is kept and the oldest 2025 copy goes."""
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    monkeypatch.setattr(daily_cycle.time, "sleep", lambda _s: None)
+    _fake_clock(monkeypatch, datetime(2026, 1, 1, 12, 0, tzinfo=UTC))
+    d = cyc.stamp.parent
+    names = {f"2025010{i}T000000Z": datetime(2025, 1, i, tzinfo=UTC) for i in range(1, 5)}
+    names["20261020T000000Z"] = datetime(2026, 10, 20, tzinfo=UTC)
+    for name, when in names.items():
+        p = d / f"{cyc.stamp.name}.corrupt-{name}"
+        p.write_text(name, encoding="utf-8")
+        os.utime(p, (when.timestamp(), when.timestamp()))
     cyc.stamp.write_text("{torn", encoding="utf-8")
     assert daily_cycle.main([]) == 0
-    kept = sorted(p.name for p in d.iterdir() if ".corrupt-" in p.name)
+    kept = {p.name for p in d.iterdir() if ".corrupt-" in p.name}
+    assert f"{cyc.stamp.name}.corrupt-20261020T000000Z" in kept
+    assert f"{cyc.stamp.name}.corrupt-20250101T000000Z" not in kept
     assert len(kept) == daily_cycle.CORRUPT_KEEP
-    assert future.name not in kept, "the future-named copy is the first to go"
-    assert any(n.endswith("20300610T120000Z") for n in kept), "the one just taken stays"
+
+
+@pytest.mark.skipif(not sys.platform.startswith("linux"), reason="reads /proc/locks")
+def test_v15_sf_b_a_stale_sidecar_naming_another_live_process_is_not_the_holder(cyc,
+                                                                               monkeypatch):
+    """A stale sidecar names a LIVE process with its true create_time and a 17 h old progress
+    time, while THIS process holds the lock. v1.4 read that as alive and gave 76; the OS says
+    who holds the lock, so it is not the holder and the stand-down stays a verdict (75)."""
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    other = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(120)"])
+    held = _hold()
+    try:
+        assert os.getpid() in (daily_cycle._lock_holder_pids() or set())
+        old = datetime.now(UTC) - timedelta(seconds=daily_cycle.HOLDER_MAX_WAIT_S + 3600)
+        daily_cycle._owner_path().write_text(json.dumps({
+            "pid": other.pid, "create_time": daily_cycle._process_start(other.pid),
+            "at": old.isoformat(timespec="seconds"),
+            "last_progress": old.isoformat(timespec="seconds")}), encoding="utf-8")
+        assert daily_cycle._holder_health() == "unmeasured"
+        assert daily_cycle.main([]) == daily_cycle.EXIT_STOOD_DOWN
+    finally:
+        held.close()
+        other.kill()
+        other.wait(timeout=30)
+
+
+def test_v15_sf_c_a_future_progress_time_does_not_mute_a_hang(cyc, monkeypatch):
+    """A fast clock wrote `at` and `last_progress` a day ahead. They are not an age (v1.4 read
+    them as fresh for good). The first waiter records when it SAW this holder; once that is past
+    the ceiling by wall clock, the stand-down is a failure (76)."""
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    lk = _claim_alive()
+    try:
+        ahead = (datetime.now(UTC) + timedelta(days=1)).isoformat(timespec="seconds")
+        side = json.loads(daily_cycle._owner_path().read_text(encoding="utf-8"))
+        side.update({"at": ahead, "last_progress": ahead})
+        daily_cycle._owner_path().write_text(json.dumps(side), encoding="utf-8")
+        assert daily_cycle._holder_age_s() is None, "a future time is unmeasured, not fresh"
+        assert daily_cycle.main([]) == daily_cycle.EXIT_STOOD_DOWN
+        seen = json.loads(daily_cycle._seen_path().read_text(encoding="utf-8"))
+        assert seen["holder"] == [os.getpid(), side["create_time"]]
+        long_ago = datetime.now(UTC) - timedelta(seconds=daily_cycle.HOLDER_MAX_WAIT_S + 60)
+        seen["first_seen"] = long_ago.isoformat(timespec="seconds")
+        daily_cycle._seen_path().write_text(json.dumps(seen), encoding="utf-8")
+        assert daily_cycle.main([]) == daily_cycle.EXIT_HOLDER_HUNG
+        # a NEW holder identity restarts the observation
+        seen["holder"] = [os.getpid() + 1, 0.0]
+        daily_cycle._seen_path().write_text(json.dumps(seen), encoding="utf-8")
+        assert daily_cycle.main([]) == daily_cycle.EXIT_STOOD_DOWN
+    finally:
+        lk.close()
