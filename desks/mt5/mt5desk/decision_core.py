@@ -648,9 +648,9 @@ GAP_DECAY_ZERO: frozenset[str] = frozenset({
     "EURZAR_overnight_gap_decay_asia", "USDZAR_overnight_gap_decay_asia",
     "AUDCHF_overnight_gap_decay_asia"})
 #: zuck 2026-10-25 09:42Z (project chat): "Usdnok is bad", "Remove them" (he named USDNOK; EURILS
-#: and EURZAR go with it, scope open with him); gold_asia stays. The box's CERT_BOOK_LIVE.json
-#: fusion block pins them at 0.0 (2026-10-27); a void book
-#: would unpin them, so they are here too. Their open positions are left to their own exits.
+#: and EURZAR go with it, exact names only: D-20261027-003); gold_asia stays. The box's
+#: CERT_BOOK_LIVE.json fusion block pins them at 0.0 (2026-10-27); a void book would unpin
+#: them, so they are here too. Their open positions are left to their own exits.
 #: Missed-growth line: journal D-20261027-002 (supersedes -001). Each traded at the 0.01-lot
 #: floor, so the forgone risk per signal is the measured risk per 0.01 lot at EUR 484.83
 #: (MINLOT_OVERRIDE_LOT below): USDNOK 0.42%, EURILS 1.37%, EURZAR 0.55%; 0.75% is only the
