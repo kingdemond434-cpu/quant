@@ -852,6 +852,13 @@ EXIT_STOOD_DOWN = 75
 #: The exit of a bounded caller that stood down behind a holder older than HOLDER_MAX_WAIT_S
 #: (v1.3): a named FAILURE of the `daily` leg (hourly_cycle.NAMED_FAILURE_EXITS), never a verdict.
 EXIT_HOLDER_HUNG = 76
+#: The exit of a pass that ran nothing because the stamp could not be READ (v1.6): a named
+#: failure, `exit_code=77:STAMP_UNREADABLE`, distinct from a failed step's 1.
+EXIT_STAMP_UNREADABLE = 77
+#: The same, once it has persisted past STAMP_UNREADABLE_MAX_PASSES consecutive passes: the
+#: escalation, `exit_code=78:STAMP_UNREADABLE_PERSISTENT` (mirrors fail-to-build v1.5's ratchet).
+EXIT_STAMP_UNREADABLE_PERSISTENT = 78
+STAMP_UNREADABLE_MAX_PASSES = 3
 STOOD_DOWN_REASON = ("another daily chain holds the lock; this bounded caller ran nothing -- the "
                      "holder runs the same steps and the next pass re-reads the stamp")
 
@@ -1062,9 +1069,17 @@ def _observed_hold_s() -> float | None:
         return None
     now = datetime.now(UTC)
     try:
-        seen = json.loads(_seen_path().read_text(encoding="utf-8"))
+        text = _seen_path().read_text(encoding="utf-8")
+    except FileNotFoundError:
+        text = ""
+    except OSError:
+        # UNREADABLE IS NOT ABSENT (v1.6 nit): replacing it would reset `first_seen` on every
+        # pass and the fallback could never reach the ceiling. Keep it; unmeasured this pass.
+        return None
+    try:
+        seen = json.loads(text) if text else {}
         first = _parse_at(seen.get("first_seen")) if seen.get("holder") == ident else None
-    except (OSError, ValueError, AttributeError):
+    except (ValueError, AttributeError):
         first = None
     if first is None or (first - now).total_seconds() > CLOCK_SKEW_S:
         try:
@@ -1374,18 +1389,61 @@ def _prune_corrupt(just_kept: Path) -> None:
             old.unlink()
 
 
+def _unreadable_path() -> Path:
+    return _lock_path().with_name("daily_cycle.unreadable.json")
+
+
+def _unreadable_pass() -> int:
+    """Count one more consecutive pass on which the stamp could not be read; the new count.
+
+    A count file that exists but cannot be read or parsed is read as AT THE LIMIT, so the next
+    unreadable pass escalates rather than restarting at 1 (fail-to-build v1.5, S1)."""
+    try:
+        prev = int(json.loads(_unreadable_path().read_text(encoding="utf-8"))["passes"])
+    except FileNotFoundError:
+        prev = 0
+    except (OSError, ValueError, KeyError, TypeError):
+        prev = STAMP_UNREADABLE_MAX_PASSES
+    n = prev + 1
+    with contextlib.suppress(OSError):
+        _atomic_write(_unreadable_path(), json.dumps({
+            "passes": n, "at": datetime.now(UTC).isoformat(timespec="seconds")}))
+    return n
+
+
+def _stamp_readable_again() -> None:
+    with contextlib.suppress(FileNotFoundError, OSError):
+        _unreadable_path().unlink()
+
+
 def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
     today = _utc_today()
     stamp, state = _read_stamp_settled()
     if state == "unreadable":
         # DON'T KNOW (v1.5). The file may be a valid stamp that names steps already run today; a
         # scanner or reader holding it open is the usual cause on Windows. It is never moved, and
-        # no step runs on a guess -- running all of them would repeat finished hours of work. The
-        # pass fails loudly (rc 1, the hourly leg's FAILED) and the next pass reads it again.
+        # no step runs on a guess -- running all of them would repeat finished hours of work, and
+        # `_write_stamp` could record none of it. The pass fails by NAME (v1.6): 77, and 78 once
+        # it has lasted past STAMP_UNREADABLE_MAX_PASSES passes in a row.
+        n = _unreadable_pass()
         dlog(f"{STAMP.name} cannot be READ (after {STAMP_REREADS} re-reads); it is left as it is "
-             f"and no step runs this pass")
+             f"and no step runs this pass ({n} consecutive)")
+        if n > STAMP_UNREADABLE_MAX_PASSES:
+            dlog(f"ESCALATED: {STAMP.name} has been unreadable for {n} consecutive passes, past "
+                 f"{STAMP_UNREADABLE_MAX_PASSES}; the daily chain has not run since")
+            print(f"STAMP_UNREADABLE_PERSISTENT: {n} consecutive passes", flush=True)
+            return EXIT_STAMP_UNREADABLE_PERSISTENT
+        print(f"STAMP_UNREADABLE: {n} consecutive pass(es)", flush=True)
+        return EXIT_STAMP_UNREADABLE
+    _stamp_readable_again()
+    if state == "torn" and not (lock is not None and lock.held):
+        # TORN AND NOT OURS TO MOVE (v1.6): without the lock another chain may be mid-write, and
+        # running against {} would repeat every finished step while `_write_stamp` refuses to
+        # record any of them -- each pass the whole chain again. Fail closed, like unreadable.
+        dlog(f"{STAMP.name} could not be parsed and this chain does not hold the lock to move it "
+             f"aside; no step runs this pass")
         return 1
-    if state == "torn" and lock is not None and lock.held:
+    if state == "torn":
         # Under the lock nobody else writes the stamp, so a file that still does not parse after
         # the re-reads is corruption, not a torn read. It is moved aside as evidence -- never
         # deleted -- or no pass could ever stamp again and the chain would re-run from step one
@@ -1394,8 +1452,11 @@ def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
         try:
             os.replace(STAMP, aside)
         except OSError as exc:
+            # FAIL CLOSED (v1.6, audit SF2, probe P1d): running every step against {} while the
+            # torn file blocks every stamp write is the double-run loop, every pass.
             dlog(f"{STAMP.name} could not be parsed and could not be moved aside "
-                 f"({type(exc).__name__}: {exc}); nothing was pruned")
+                 f"({type(exc).__name__}: {exc}); nothing was pruned and no step runs this pass")
+            return 1
         else:
             dlog(f"{STAMP.name} could not be parsed; kept as {aside.name}, starting a new stamp")
             _prune_corrupt(aside)

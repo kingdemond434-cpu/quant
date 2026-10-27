@@ -284,6 +284,10 @@ def frontier_report(health: dict) -> None:
 DAILY_CYCLE_STOOD_DOWN = 75
 #: `daily_cycle.EXIT_HOLDER_HUNG`: stood down behind a holder past its ceiling -- a failure (v1.3).
 DAILY_CYCLE_HOLDER_HUNG = 76
+#: `daily_cycle.EXIT_STAMP_UNREADABLE` / `_PERSISTENT` (v1.6): the stamp could not be read, so
+#: nothing ran; the second is the escalation after three consecutive passes.
+DAILY_CYCLE_STAMP_UNREADABLE = 77
+DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT = 78
 DAILY_CYCLE_STOOD_DOWN_REASON = ("daily chain stood down: another chain healthily holds the lock "
                                  "and runs the same steps; the next pass re-reads the stamp")
 
@@ -331,6 +335,12 @@ def daily() -> dict:
             # muted. (completion.judge itself rates `daily` UNDECLARED: it has no capability-graph
             # node, which predates this change.)
             return {"exit_code": DAILY_CYCLE_HOLDER_HUNG, "holder_hung": True,
+                    "tail": tail, "at": at}
+        if r.returncode in (DAILY_CYCLE_STAMP_UNREADABLE,
+                            DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT):
+            # Named failures, like 76 (v1.6): no status, so the ledger writes
+            # `exit_code=77:STAMP_UNREADABLE` / `exit_code=78:STAMP_UNREADABLE_PERSISTENT`.
+            return {"exit_code": int(r.returncode), "stamp_unreadable": True,
                     "tail": tail, "at": at}
         return {"exit_code": int(r.returncode),
                 "status": "OK" if r.returncode == 0 else "FAILED",
@@ -968,9 +978,13 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #:                       is kept and every pass refuses until it is resolved by hand
 #:   daily 76          -- stood down behind a chain-lock holder older than its 16 h ceiling: a
 #:                       hung MT5-Daily (daily_cycle.EXIT_HOLDER_HUNG)
+#:   daily 77 / 78     -- the day's stamp could not be READ, so no step ran; 78 once that has
+#:                       lasted past 3 consecutive passes (daily_cycle.EXIT_STAMP_UNREADABLE*)
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
     "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
-    "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG"},
+    "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG",
+              DAILY_CYCLE_STAMP_UNREADABLE: "STAMP_UNREADABLE",
+              DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT: "STAMP_UNREADABLE_PERSISTENT"},
 }
 
 
