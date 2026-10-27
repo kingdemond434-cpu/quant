@@ -53,14 +53,26 @@ from pathlib import Path
 from typing import Any
 
 #: 2: naive stamps read as UTC (merge resolution 2026-10-22); an index persisted at 1 rebuilds.
-SCHEMA = 2
+#: 3: `max_ts` never passes the wall clock plus FUTURE_SKEW_S, and pruning is bounded by the wall
+#:    clock too (audit of 2f28cf7de, MF1); an index persisted at 2 may hold a future-poisoned
+#:    max_ts and pruned buckets, so it rebuilds from the ledger.
+SCHEMA = 3
 #: Bytes folded between two deadline checks. One chunk of ~8 MiB is ~40k ledger rows.
 CHUNK_BYTES = 8 << 20
 #: Bytes digested at the head of the file and just under the watermark to detect a rewrite.
 FP_BYTES = 4096
-#: Buckets older than this (relative to the newest stamp seen) are dropped. Every window the
-#: readers use is at most 168 h, so this keeps them exact with four weeks of margin.
+#: Buckets older than this before the PRUNE REFERENCE are dropped: the newest stamp seen, but never
+#: later than the wall clock plus FUTURE_SKEW_S. Every window the readers use is at most 168 h and
+#: is measured back from the wall clock, so this keeps them exact with four weeks of margin.
 KEEP_BUCKET_S = 35 * 86400.0
+#: A stamp further than this past the wall clock is a clock fault or a forged row, not the newest
+#: verdict. It is still counted in its own bucket (every window reader sees exactly the rows it
+#: saw before), but it never becomes `max_ts` and never moves the prune line. Without this bound a
+#: single row stamped 35+ days ahead pruned every real bucket for good (audit of 2f28cf7de: 31
+#: verdicts in 24 h read 1). The same tolerance as the desk's other future-stamp refusals.
+FUTURE_SKEW_S = 300.0
+#: Wall clock, a module hook so a test can move it.
+_wall = time.time
 NOT_JUDGED_PREFIX = "NOT_RUN"
 
 
@@ -105,6 +117,8 @@ class LedgerIndex:
         self.buckets: dict[float, list[Any]] = {}
         self.fired: set[tuple[str, str]] = set()
         self.max_ts = 0.0
+        # The newest stamp `max_ts` may take; refreshed from the wall clock per folded chunk.
+        self._horizon = _wall() + FUTURE_SKEW_S
         self.complete = True
         self.behind_bytes = 0
         self.last_catch_up: dict[str, Any] = {}
@@ -204,7 +218,7 @@ class LedgerIndex:
             b = got
             b[0] += 1
             b[1] += int(unk)
-            if at > self.max_ts:
+            if self.max_ts < at <= self._horizon:
                 self.max_ts = at
         if unk:
             return
@@ -222,6 +236,7 @@ class LedgerIndex:
             self.passed_total[fam] = self.passed_total.get(fam, 0) + 1
 
     def _fold_bytes(self, data: bytes) -> None:
+        self._horizon = _wall() + FUTURE_SKEW_S
         text = data.decode("utf-8", "replace").replace("\r\n", "\n").replace("\r", "\n")
         for line in text.split("\n"):
             self._fold_line(line)
@@ -229,7 +244,9 @@ class LedgerIndex:
     def _prune(self) -> None:
         if not self.max_ts:
             return
-        cut = self.max_ts - KEEP_BUCKET_S
+        # Bounded by the wall clock as well as by max_ts: an index persisted before the bound
+        # existed rebuilds (SCHEMA 3), and this keeps the prune line honest even so.
+        cut = min(self.max_ts, _wall() + FUTURE_SKEW_S) - KEEP_BUCKET_S
         stale = [ts for ts in self.buckets if ts < cut]
         for ts in stale:
             del self.buckets[ts]
@@ -364,4 +381,4 @@ class LedgerIndex:
         return a, u, j
 
 
-__all__ = ["CHUNK_BYTES", "KEEP_BUCKET_S", "SCHEMA", "LedgerIndex"]
+__all__ = ["CHUNK_BYTES", "FUTURE_SKEW_S", "KEEP_BUCKET_S", "SCHEMA", "LedgerIndex"]

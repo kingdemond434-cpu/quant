@@ -687,15 +687,24 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
         function="_prune",
         removes="in-memory per-timestamp count buckets of the gate-ledger index (a derived cache "
                 "of the append-only ledger, persisted under reports/ as a cache) older than "
-                "KEEP_BUCKET_S before the newest stamp the index has folded",
-        reference="the newest `at` the index itself folded from the ledger (max_ts), read in the "
-                  "same pass",
+                "KEEP_BUCKET_S (35 days) before the prune reference",
+        reference="min(max_ts, wall clock + FUTURE_SKEW_S): max_ts is the newest `at` the index "
+                  "folded that is not beyond the wall clock plus FUTURE_SKEW_S (300 s), and the "
+                  "prune line is bounded by the wall clock as well (SCHEMA 3)",
         status="positive",
         note="Arrived with judge-rate (656093a84); declared when the image companions were "
              "merged onto the speed train (2026-10-22), where the tree scan read 7/6 without it. "
-             "It acts only on a stamp that EXISTS (no max_ts: nothing is pruned), removes only "
-             "aggregates the ledger still holds row by row, and keeps four weeks of margin past "
-             "the widest reader window (168 h). No ledger row, verdict or record is touched.",
+             "Corrected in v1.1 (audit of 2f28cf7de, MF1): the v1 reference was the raw "
+             "newest stamp, so ONE row stamped 35+ days ahead moved it and pruned every real "
+             "bucket (31 verdicts in 24 h read 1); the 'four weeks of margin' was false. Now a "
+             "stamp past the wall clock plus 300 s never becomes max_ts and cannot move the "
+             "line, so every bucket inside the widest reader window (168 h, measured back from "
+             "the wall clock) is kept with four weeks of margin; the future row itself stays in "
+             "its own bucket. SCHEMA 3 rebuilds any v2 index that may already be poisoned. It "
+             "acts only on a stamp that EXISTS (no max_ts: nothing is pruned) and removes only "
+             "aggregates the ledger still holds row by row. No ledger row, verdict or record is "
+             "touched. Pinned by test_judge_rate::"
+             "test_one_future_stamped_row_cannot_prune_the_real_buckets.",
     ),
     DestructivePath(
         path_id="forward_cure_route.accumulate",
