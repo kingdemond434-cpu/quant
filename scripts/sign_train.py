@@ -17,6 +17,12 @@ not the named target.
     python scripts/sign_train.py --target <commit> --principal --expect <path>=<sha256> ...
     (add --push to push the signed commit as a branch)
 
+THE CLEAR RECORD only ever grows. Every committed version must be a byte prefix of the version at
+the target, across every branch: append CLEAR rows by rebasing, never by merging two branches that
+both appended (that is refused). A malformed line, once committed, refuses every later auditor
+sign; recover with `--principal`, or by rotating to a new record file in a principal-signed change.
+The check needs full history: run `git fetch --unshallow` once in a shallow clone.
+
 `--principal` keeps the human path: it refuses without a terminal and the principal types back
 the first 12 hex of each new hash. It signs with the existing `check_immutable_evaluator.py
 --sign-files --by <signer>`, so the manifest format has one writer.
@@ -156,7 +162,7 @@ def parse_clears(text: str) -> dict[str, set[str]]:
             raise ValueError(f"{SEAL_CLEARS}:{n} sha256 is not 64 lower-case hex")
         if verdict not in ("CLEAR", "HOLD"):
             raise ValueError(f"{SEAL_CLEARS}:{n} verdict must be CLEAR or HOLD")
-        if not isinstance(report, str) or not REPORT.fullmatch(report):
+        if not isinstance(report, str) or not REPORT.fullmatch(report) or ".." in report:
             raise ValueError(f"{SEAL_CLEARS}:{n} report must be a reports/audit/...md path")
         if report_sha is not None and (
             not isinstance(report_sha, str) or not HEX64.fullmatch(report_sha)
@@ -168,21 +174,35 @@ def parse_clears(text: str) -> dict[str, set[str]]:
 
 
 def append_only_problems(versions: list[bytes]) -> list[str]:
-    """Each committed version of the CLEAR record, oldest first, must be a prefix of the next."""
+    """Every committed version of the CLEAR record must be a byte prefix of the target's version.
+
+    Compared with the TARGET, not just the next version walked: a merge that takes one branch's
+    record would otherwise drop the other branch's HOLD row without any single step rewriting.
+    """
+    if not versions:
+        return []
+    target = versions[-1]
     return [
-        f"version {i + 1} of {SEAL_CLEARS} rewrites an earlier row"
-        for i in range(1, len(versions))
-        if not versions[i].startswith(versions[i - 1])
+        f"an earlier committed {SEAL_CLEARS} (version {i + 1}) is not kept at the target"
+        for i, v in enumerate(versions[:-1])
+        if not target.startswith(v)
     ]
 
 
 def _committed_clears(head: str) -> str:
     """The CLEAR record at the target, after proving its history only ever appended."""
     if _git("rev-parse", "--is-shallow-repository") == "true":
-        raise ValueError("shallow clone: the CLEAR record's history cannot be proven append-only")
-    shas = _git("log", "--format=%H", "--reverse", head, "--", SEAL_CLEARS).splitlines()
+        raise ValueError(
+            "shallow clone: the CLEAR record's history cannot be proven append-only; "
+            "run `git fetch --unshallow` once in this clone"
+        )
+    # --full-history: default simplification follows one side of a merge and never reads a
+    # version (and its HOLD rows) that only the other side carried.
+    shas = _git(
+        "log", "--full-history", "--format=%H", "--reverse", head, "--", SEAL_CLEARS
+    ).splitlines()
     versions = []
-    for sha in shas:
+    for sha in [*shas, head]:
         r = subprocess.run(
             ("git", "show", f"{sha}:{SEAL_CLEARS}"), cwd=ROOT, capture_output=True, check=False
         )

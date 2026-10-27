@@ -145,6 +145,7 @@ def test_any_hold_outranks_any_clear(order: str) -> None:
         _row(verdict="MAYBE"),
         _row(report="x"),
         _row(report="reports/audit/../../etc.txt"),
+        _row(report="reports/audit/../../x.md"),
         json.dumps({"path": "x.py", "sha256": A, "verdict": "CLEAR"}),
     ],
 )
@@ -167,6 +168,15 @@ def test_the_record_may_only_grow() -> None:
     assert st.append_only_problems([v1, v2]) == []
     assert st.append_only_problems([v2, v1]) != []
     assert st.append_only_problems([v1, b"rowX\nrow2\n"]) != []
+
+
+def test_a_merge_cannot_drop_another_branchs_hold() -> None:
+    base = b"row1\n"
+    main_hold = base + b"HOLD\n"
+    side_clear = base + b"CLEAR\n"
+    # Walk order is base, main's HOLD, then the target that took the side branch's record.
+    assert st.append_only_problems([base, main_hold, side_clear]) != []
+    assert st.append_only_problems([base, side_clear, side_clear + b"more\n"]) == []
 
 
 def test_the_audit_signs_only_cleared_bytes() -> None:
