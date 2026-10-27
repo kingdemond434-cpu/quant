@@ -650,6 +650,8 @@ GAP_DECAY_ZERO: frozenset[str] = frozenset({
 #: zuck 2026-10-25 09:42Z (project chat): USDNOK and the other two Fusion FX sleeves out, gold_asia
 #: stays. The box's CERT_BOOK_LIVE.json fusion block pins them at 0.0 (2026-10-27); a void book
 #: would unpin them, so they are here too. Their open positions are left to their own exits.
+#: Missed-growth line: journal D-20261027-001 (0.75% risk per sleeve per signal forgone; the
+#: forgone E[log W] is UNMEASURED; reason: the spread/cost model on these sleeves).
 FUSION_FX_OUT_ZERO: frozenset[str] = frozenset({
     "usdnok_carry_asia_p_ff35bb7c8427d66f", "eurils_formula_asia_p_673857a649d3c271",
     "eurzar_carry_asia_p_8339edce23032d21"})
