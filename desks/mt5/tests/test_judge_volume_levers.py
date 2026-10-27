@@ -251,3 +251,49 @@ def test_dispatch_widens_live_and_still_runs_every_shard_once(monkeypatch, tmp_p
     assert peak_live[0] > 1, "this wave's 1 GB receipts must widen it past the 30 GB floor"
     assert runner._PROGRESS["admission"]["floor"] == 1
     assert runner._PROGRESS["admission"]["widest"] >= peak_live[0]
+
+
+# ------------------------------------------------------------------- the serial-wall sampler
+def test_the_sampler_counts_the_main_threads_stack_per_phase() -> None:
+    phase = ["merge_and_publish"]
+    ticks = iter([{"cpu_s": 10.0, "page_faults": 100.0, "rss_mb": 500.0},
+                  {"cpu_s": 11.0, "page_faults": 160.0, "rss_mb": 900.0},
+                  {"cpu_s": 11.5, "page_faults": 170.0, "rss_mb": 700.0},
+                  {"cpu_s": 20.0, "page_faults": 170.0, "rss_mb": 700.0}])
+    s = runner.WallSampler(every_s=10.0, thread_id=threading.get_ident(),
+                           phase=lambda: phase[0], counters=lambda: next(ticks))
+    s.sample()
+    s.sample()
+    s.sample()
+    phase[0] = "done"
+    s.sample()                              # a new phase never charges the old one's delta
+    snap = s.snapshot()
+    merge = snap["phases"]["merge_and_publish"]
+    assert merge["samples"] == 3 and snap["authority"] == "report_only"
+    assert "test_the_sampler_counts_the_main_threads_stack_per_phase" in merge["top"][0]["stack"]
+    assert merge["process"]["cpu_s"] == 1.5 and merge["process"]["page_faults"] == 70.0
+    assert merge["process"]["sampled_s"] == 20.0 and merge["process"]["cpu_share_of_wall"] == 0.075
+    assert merge["process"]["rss_mb_max"] == 900.0
+    assert snap["phases"]["done"]["samples"] == 1 and "cpu_s" not in snap["phases"]["done"][
+        "process"]
+
+
+def test_the_sampler_publishes_into_the_phase_document_only_while_a_sweep_runs() -> None:
+    s = runner.WallSampler(thread_id=threading.get_ident(), phase=lambda: "plan",
+                           counters=lambda: None)
+    s.sample()
+    s.publish()                             # no sweep phase open: nothing is written
+    assert not runner.SWEEP_PHASE.exists()
+    runner._phase("plan")
+    s.publish()
+    doc = json.loads(runner.SWEEP_PHASE.read_text())
+    assert doc["phase"] == "plan" and doc["wall_profile"]["phases"]["plan"]["samples"] == 1
+
+
+def test_a_sampler_that_cannot_read_anything_records_nothing_and_never_raises() -> None:
+    s = runner.WallSampler(thread_id=None, phase=lambda: None, counters=lambda: None)
+    s.sample()
+    assert s.snapshot()["phases"] == {}
+    s2 = runner.WallSampler(thread_id=-1, phase=lambda: "plan", counters=lambda: None)
+    s2.sample()
+    assert s2.snapshot()["phases"]["plan"]["top"][0]["stack"] == "<main thread not running>"

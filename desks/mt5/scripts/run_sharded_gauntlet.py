@@ -1647,6 +1647,144 @@ def _phase(name: str) -> None:
         _flush_phase_doc()
 
 
+#: WHERE THE SERIAL WALL GOES, MEASURED FROM INSIDE THE SWEEP (2026-10-27). JUDGING_THROUGHPUT's
+#: 1 s CPU samples, matched to each sweep's phase (10-14..10-27, 218 readings), read the judge's
+#: tree at a MEDIAN of 0.08 busy cores across 51 readings in `merge_and_publish` (max 0.99) with a
+#: median 46 GB free -- so the merge, 4,341-6,119 s on a normal sweep and 13,176 s / 51,204 s /
+#: >=35,000 s on the bad ones, is NOT compute-bound, and a patch that makes its arithmetic faster
+#: cannot be expected to shorten it in proportion. What it waits on (a lock, a file, the page
+#: file, a scheduler starving one thread) is named by no artifact. This sampler names it: every
+#: WALL_SAMPLE_S it reads the sweep's MAIN thread's Python stack (`sys._current_frames`, the
+#: thread that runs the sealed judge in-process) and counts the innermost WALL_STACK_DEPTH frames
+#: per launcher phase, beside the process's own CPU seconds, page faults and I/O bytes over the
+#: same samples. Published as `wall_profile` in JUDGE_SWEEP_PHASE.json (and so in
+#: JUDGE_RESIDENT.json's sweep_phase): the top WALL_TOP stacks per phase with their share of the
+#: phase's samples. REPORT-ONLY: nothing reads it to act, it never touches the judge's state,
+#: and a failure inside it costs only its own record.
+WALL_SAMPLE_S = 10.0
+WALL_PUBLISH_S = 120.0
+WALL_STACK_DEPTH = 6
+WALL_TOP = 5
+
+
+def _stack_signature(frame: Any, depth: int = WALL_STACK_DEPTH) -> str:
+    """The innermost `depth` frames as 'file:function:line', innermost first."""
+    parts: list[str] = []
+    while frame is not None and len(parts) < depth:
+        code = frame.f_code
+        parts.append(f"{Path(code.co_filename).name}:{code.co_name}:{frame.f_lineno}")
+        frame = frame.f_back
+    return " < ".join(parts)
+
+
+def _proc_counters() -> dict[str, float] | None:
+    try:
+        import psutil
+        p = psutil.Process()
+        ct = p.cpu_times()
+        out = {"cpu_s": float(ct.user + ct.system)}
+        mi = p.memory_info()
+        faults = getattr(mi, "num_page_faults", None)
+        if faults is not None:
+            out["page_faults"] = float(faults)
+        try:
+            io = p.io_counters()
+            out["read_bytes"] = float(io.read_bytes)
+            out["write_bytes"] = float(io.write_bytes)
+        except (AttributeError, OSError, psutil.Error):
+            pass
+        out["rss_mb"] = float(mi.rss) / (1024.0 * 1024.0)
+        return out
+    except Exception:
+        return None
+
+
+class WallSampler:
+    """Samples the main thread's stack per sweep phase. See WALL_SAMPLE_S."""
+
+    def __init__(self, *, every_s: float = WALL_SAMPLE_S, publish_s: float = WALL_PUBLISH_S,
+                 thread_id: int | None = None,
+                 phase: Callable[[], str | None] | None = None,
+                 counters: Callable[[], dict[str, float] | None] = _proc_counters,
+                 clock: Callable[[], float] = time.monotonic) -> None:
+        self.every_s, self.publish_s = every_s, publish_s
+        self.thread_id = threading.main_thread().ident if thread_id is None else thread_id
+        self._phase = phase or (lambda: _PHASE_DOC.get("phase"))
+        self._counters, self._clock = counters, clock
+        self.stacks: dict[str, dict[str, int]] = {}
+        self.samples: dict[str, int] = {}
+        self.totals: dict[str, dict[str, float]] = {}
+        self._prev: tuple[str | None, dict[str, float] | None] = (None, None)
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def sample(self) -> None:
+        name = self._phase()
+        if not name:
+            return
+        frame = sys._current_frames().get(self.thread_id) if self.thread_id else None
+        sig = _stack_signature(frame) if frame is not None else "<main thread not running>"
+        row = self.stacks.setdefault(name, {})
+        row[sig] = row.get(sig, 0) + 1
+        self.samples[name] = self.samples.get(name, 0) + 1
+        now = self._counters()
+        prev_phase, prev = self._prev
+        if now is not None and prev is not None and prev_phase == name:
+            tot = self.totals.setdefault(name, {})
+            for k, v in now.items():
+                if k != "rss_mb":
+                    tot[k] = tot.get(k, 0.0) + max(0.0, v - prev.get(k, v))
+            tot["sampled_s"] = tot.get("sampled_s", 0.0) + self.every_s
+            tot["rss_mb_max"] = max(tot.get("rss_mb_max", 0.0), now.get("rss_mb", 0.0))
+        self._prev = (name, now)
+
+    def snapshot(self) -> dict[str, Any]:
+        out: dict[str, Any] = {"every_s": self.every_s, "depth": WALL_STACK_DEPTH,
+                               "authority": "report_only", "phases": {}}
+        for name, row in self.stacks.items():
+            n = max(1, self.samples.get(name, 0))
+            top = sorted(row.items(), key=lambda kv: (-kv[1], kv[0]))[:WALL_TOP]
+            tot = dict(self.totals.get(name) or {})
+            if tot.get("sampled_s"):
+                tot["cpu_share_of_wall"] = round(tot.get("cpu_s", 0.0) / tot["sampled_s"], 3)
+            out["phases"][name] = {
+                "samples": self.samples.get(name, 0),
+                "top": [{"stack": sig[:300], "n": c, "share": round(c / n, 3)}
+                        for sig, c in top],
+                "process": {k: round(v, 1) for k, v in tot.items()}}
+        return out
+
+    def publish(self) -> None:
+        snap = self.snapshot()
+        with _PHASE_LOCK:
+            if _PHASE_DOC.get("phase"):
+                _PHASE_DOC["wall_profile"] = snap
+                with contextlib.suppress(Exception):
+                    _flush_phase_doc()
+
+    def _loop(self) -> None:
+        last = self._clock()
+        while not self._stop.wait(self.every_s):
+            try:
+                self.sample()
+                if self._clock() - last >= self.publish_s:
+                    last = self._clock()
+                    self.publish()
+            except Exception:
+                continue                   # a report: never a reason for anything else to stop
+
+    def start(self) -> WallSampler:
+        self._thread = threading.Thread(target=self._loop, name="judge-wall-sampler",
+                                        daemon=True)
+        self._thread.start()
+        return self
+
+    def stop(self) -> None:
+        self._stop.set()
+        with contextlib.suppress(Exception):
+            self.publish()
+
+
 def _shard_live(shards: dict[str, Any], now: float) -> dict[str, Any]:
     """Refresh the time-derived fields of a shard-progress block against `now`.
 
@@ -3045,6 +3183,9 @@ def _sweep_once() -> int:
     # process that can end a run the sealed judge never returns from.
     dog = SweepWatchdog().start()
     rc = 1
+    walls: WallSampler | None = None
+    with contextlib.suppress(Exception):   # a report: never a reason not to judge
+        walls = WallSampler().start()
     try:
         from research.judging_throughput import apply_env
 
@@ -3059,6 +3200,9 @@ def _sweep_once() -> int:
         # ONE finally, BOTH behaviours: the watchdog records the outcome first, then the
         # backpressure core is republished (detached, single-instance, never raises). Neither can
         # stop the other: the republish runs even if `finish` raised.
+        if walls is not None:
+            with contextlib.suppress(Exception):
+                walls.stop()
         try:
             dog.finish(rc)
         finally:
