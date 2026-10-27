@@ -90,7 +90,7 @@ def test_the_principal_zeros_are_named_in_code_with_their_venues() -> None:
     assert set(SCALP) == dc.SCALP_LANE_ZERO
     assert set(GOLD_PINNED) == dc.GOLD_ASIA_ONLY_ZERO
     assert dc.PRINCIPAL_ZERO["fusion"] == dc.GOLD_ASIA_ONLY_ZERO | dc.SCALP_LANE_ZERO \
-        | dc.GAP_DECAY_ZERO
+        | dc.GAP_DECAY_ZERO | dc.FUSION_FX_OUT_ZERO
     assert dc.PRINCIPAL_ZERO["e8"] == dc.GOLD_ASIA_ONLY_ZERO
     assert "gold_asia" not in dc.PRINCIPAL_ZERO["fusion"] | dc.PRINCIPAL_ZERO["e8"]
 
@@ -104,7 +104,8 @@ def test_a_void_cert_book_still_zeroes_every_pinned_name_in_any_version_or_case(
             assert dc.principal_zero(name) and dc.cert_book_zero(name), name
     for name in GOLD_PINNED:
         assert dc.cert_book_zero(name, "e8") and dc.cert_book_zero(f"{name}_v3", "e8")
-    for name in ("gold_asia", "gold_asia_v2", "usdnok_carry_asia_p_ff35bb7c8427d66f", "", None):
+    # zuck 2026-10-25: the three Fusion FX sleeves are out too (FUSION_FX_OUT_ZERO).
+    for name in ("gold_asia", "gold_asia_v2", "", None):
         assert not dc.cert_book_zero(name), name
     # A scalp pin is a Fusion pin: the E8 lanes never read the allocator book.
     assert not dc.cert_book_zero(SCALP[0], "e8")
@@ -1719,3 +1720,14 @@ def test_gold_is_unaffected_by_the_post_multiplier_ceiling(monkeypatch, tmp_path
     assert _placed(doc, intents)["asia"] == {(0.006, "cert_book")}
     gsrc = (_DESK / "prop" / "e8_gold.py").read_text("utf-8")
     assert "size_certified_entry" not in gsrc and "ceiling_usd" not in gsrc
+
+
+def test_the_fusion_fx_sleeves_send_nothing_even_on_a_void_cert_book(tmp_path, monkeypatch) -> None:
+    """zuck 2026-10-25: USDNOK and the other two Fusion FX sleeves out, gold_asia stays."""
+    _cert(tmp_path, VOID_BOOKS[0], monkeypatch)
+    for name in ("usdnok_carry_asia_p_ff35bb7c8427d66f", "eurils_formula_asia_p_673857a649d3c271",
+                 "eurzar_carry_asia_p_8339edce23032d21"):
+        for v in (name, f"{name}_v2", name.upper()):
+            assert dc.principal_zero(v) and dc.cert_book_zero(v), v
+        assert not dc.cert_book_zero(name, "e8")
+    assert not dc.cert_book_zero("gold_asia")

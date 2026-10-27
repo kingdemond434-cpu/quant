@@ -647,8 +647,20 @@ SCALP_LANE_ZERO: frozenset[str] = frozenset({
 GAP_DECAY_ZERO: frozenset[str] = frozenset({
     "EURZAR_overnight_gap_decay_asia", "USDZAR_overnight_gap_decay_asia",
     "AUDCHF_overnight_gap_decay_asia"})
+#: zuck 2026-10-25 09:42Z (project chat): "Usdnok is bad", "Remove them" (he named USDNOK;
+#: EURILS and EURZAR go with it, exact sleeve names only, coordinator default under his
+#: 2026-10-27 autonomy instruction); gold_asia stays. The box's CERT_BOOK_LIVE.json fusion block
+#: pins them at 0.0 (2026-10-27); a void book would unpin them, so they are here too. Their open
+#: positions are left to their own exits. Missed-growth line: journal D-20261027-001. Each sat
+#: at the 0.01-lot floor, so the forgone risk per signal is the measured risk per 0.01 lot at
+#: EUR 484.83 (MINLOT_OVERRIDE_LOT below): USDNOK 0.42%, EURILS 1.37%, EURZAR 0.55%. The 0.75%
+#: target sized none of them there (below it for USDNOK and EURZAR, above it for EURILS).
+#: Forgone E[log W] UNMEASURED; reason: the spread/cost model.
+FUSION_FX_OUT_ZERO: frozenset[str] = frozenset({
+    "usdnok_carry_asia_p_ff35bb7c8427d66f", "eurils_formula_asia_p_673857a649d3c271",
+    "eurzar_carry_asia_p_8339edce23032d21"})
 PRINCIPAL_ZERO: dict[str, frozenset[str]] = {
-    "fusion": GOLD_ASIA_ONLY_ZERO | SCALP_LANE_ZERO | GAP_DECAY_ZERO,
+    "fusion": GOLD_ASIA_ONLY_ZERO | SCALP_LANE_ZERO | GAP_DECAY_ZERO | FUSION_FX_OUT_ZERO,
     "e8": GOLD_ASIA_ONLY_ZERO,
 }
 
