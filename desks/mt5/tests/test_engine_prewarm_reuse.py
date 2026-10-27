@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import random
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -71,6 +72,12 @@ def _costs() -> list[tuple[Costs, Costs]]:
     for sym in ("EURUSD", "GBPMXN", "XAUUSD", "USDJPY", "US500", "EURZAR"):
         if sym in meta:
             pairs.append((Costs.from_symbol(meta[sym]), Costs.from_symbol(meta[sym], mult=3.0)))
+    # The hour-of-entry spread table (judge image companions): its spread is read off the leg's
+    # own fill/exit bar, so it must price identically from a memoised leg.
+    if "spread_per_lot_by_hour" in getattr(Costs, "__dataclass_fields__", {}):
+        tab = tuple(10.0 + (h * 7) % 23 for h in range(168))
+        hourly = replace(Costs.from_symbol(meta.get("EURZAR", {})), spread_per_lot_by_hour=tab)
+        pairs.append((hourly, hourly.stressed(3.0)))
     return pairs
 
 
