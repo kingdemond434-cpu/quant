@@ -666,33 +666,116 @@ def test_unmeasured_docket_membership_never_drops_a_hold(uni, monkeypatch) -> No
     assert jc.build_input_released() == {}
 
 
-def test_a_torn_release_file_is_set_aside_and_read_unmeasured(uni, tmp_path) -> None:
+# ------------------------------------------------- 6. v1.4: the audit of v1.3, pinned
+
+def _due(rows: list[dict]) -> None:
+    """One cell parked by the probe, its clock set past the backstop: due for release."""
+    jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    _age_parked(100)
+
+
+def test_one_permission_error_on_a_good_file_leaves_it_unmoved_and_releases_next_pass(
+        uni, tmp_path, monkeypatch) -> None:
+    rows = _three_rows()
+    _due(rows)
+    f = tmp_path / jc.BUILD_INPUT_RELEASED.name
+    f.write_text(json.dumps({"schema": 2, "cells": {"other": NOW.isoformat()}}), "utf-8")
+    good = f.read_bytes()
+    real = Path.read_text
+
+    def held(self, *a, **k):
+        if self == f:
+            raise PermissionError("held open by a reader")
+        return real(self, *a, **k)
+
+    monkeypatch.setattr(Path, "read_text", held)
+    out, doc = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    monkeypatch.setattr(Path, "read_text", real)
+    assert doc["build_input_probe"]["release_file"]["state"] == "UNREADABLE"
+    assert doc["unrunnable"]["build_input_released_state"] == "UNREADABLE"
+    assert len(out) == 2, "kept parked on its old clock this pass"
+    assert f.read_bytes() == good and not list(tmp_path.glob(f.name + ".torn-*")), "unmoved"
+    out2, doc2 = jc.order_docket([dict(r) for r in rows], publish=False,
+                                 now=NOW + timedelta(hours=1))
+    assert len(out2) == 3 and doc2["unrunnable"]["readmitted_by_cause"] == {"max_age": 1}
+    rel = jc.build_input_released() or {}
+    assert "other" in rel and len(rel) == 2, "the good file's hold kept, the new one added"
+
+
+def test_a_truly_torn_file_self_heals_within_one_pass_and_the_due_cell_ships(uni,
+                                                                          tmp_path) -> None:
+    rows = _three_rows()
+    _due(rows)
+    f = tmp_path / jc.BUILD_INPUT_RELEASED.name
+    f.write_text('{"cells": {"tor', "utf-8")
+    out, doc = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    rf = doc["build_input_probe"]["release_file"]
+    assert rf["state"] == "TORN" and rf["write"] == "HEALED_FROM_TORN"
+    assert len(out) == 3, "the due cell ships on the pass that finds the tear"
+    healed = jc.build_input_released()
+    assert healed is not None and len(healed) == 1, "rebuilt from this pass's releases"
+    aside = list(tmp_path.glob(f.name + ".torn-*"))
+    assert len(aside) == 1 and aside[0].read_text("utf-8") == '{"cells": {"tor', "evidence"
+    assert rf["set_aside"] == [aside[0].name]
+    out2, _ = jc.order_docket([dict(r) for r in rows], publish=False,
+                              now=NOW + timedelta(hours=1))
+    assert len(out2) == 3, "held again from the healed file"
+
+
+def test_a_deleted_release_file_reads_vanished_and_heals(uni, tmp_path) -> None:
     rows = _three_rows()
     _release_one(rows)
     f = tmp_path / jc.BUILD_INPUT_RELEASED.name
-    f.write_text('{"cells": {"tor', "utf-8")
-    assert jc.build_input_released() is None
+    assert (tmp_path / (f.name + ".born")).exists(), "born with its first write"
+    f.unlink()
+    assert jc.read_build_input_released() == (None, "VANISHED"), "never read as no holds"
     out, doc = jc.order_docket([dict(r) for r in rows], publish=False,
                                now=NOW + timedelta(days=1))
-    assert len(out) == 3, "the held cell is not re-parked on a fresh clock"
-    # both never-parked lead_lag rows: which of them is held is unknown, so neither is named
-    assert doc["build_input_probe"]["release_file_unmeasured"] == 2
-    aside = list(tmp_path.glob(jc.BUILD_INPUT_RELEASED.name + ".torn-*"))
-    assert len(aside) == 1 and aside[0].read_text("utf-8") == '{"cells": {"tor', "kept whole"
-    assert not f.exists(), "never overwritten"
-    # it stays UNMEASURED until resolved by hand, and a release meanwhile stays parked
-    assert jc.build_input_released() is None
-    jc.order_docket([dict(r) for r in rows], publish=False, now=NOW + timedelta(days=2))
-    assert jc.build_input_released() is None and not f.exists()
+    rf = doc["build_input_probe"]["release_file"]
+    assert rf["state"] == "VANISHED" and rf["write"] == "HEALED_FROM_VANISHED"
+    assert len(out) == 3, "not re-parked silently on the pass that finds it gone"
+    assert list(tmp_path.glob(f.name + ".vanished-*")) and f.exists()
 
 
-def test_a_release_is_kept_parked_while_the_release_file_is_unmeasured(uni, tmp_path) -> None:
+def test_the_coverage_fence_warns_then_fails_on_unresolved_evidence(uni, tmp_path,
+                                                                   monkeypatch) -> None:
+    import importlib.util
+    monkeypatch.delenv("QUANT_LAWGATE_SOURCE_VIEW", raising=False)
+    spec = importlib.util.spec_from_file_location(
+        "cjc_v14", ROOT / "scripts" / "check_judge_coverage.py")
+    assert spec and spec.loader
+    fence = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fence)
+    monkeypatch.setattr(jc, "_docket_keff", lambda: None)
     rows = _three_rows()
-    jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    jc.order_docket([dict(r) for r in rows], publish=True, now=NOW)
     _age_parked(100)
     (tmp_path / jc.BUILD_INPUT_RELEASED.name).write_text("{torn", "utf-8")
-    out, doc = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
-    u = doc["unrunnable"]
-    assert u["build_input_released_state"] == "UNMEASURED"
-    assert u["build_input_release_write_failed"] == 1 and u["readmitted_total"] == 0
-    assert len(out) == 2, "parked on its old clock until the file is resolved"
+
+    def row_at(t):
+        jc.order_docket([dict(r) for r in rows], publish=True, now=t)
+        got = fence.judge(jc.REPORT, now=t)
+        (r,) = [c for c in got["checks"] if c["metric"] == "build_input_release_file"]
+        return r["state"], got["verdict"]
+
+    states = [row_at(NOW + timedelta(hours=h)) for h in range(5)]
+    assert [s for s, _ in states] == ["WARN", "WARN", "WARN", "FAIL", "FAIL"], states
+    assert states[-1][1] == "FAIL"
+    for p in tmp_path.glob(jc.BUILD_INPUT_RELEASED.name + ".torn-*"):
+        p.unlink()                                                # resolved by hand
+    assert row_at(NOW + timedelta(hours=6))[0] == "OK"
+
+
+def test_manifest_names_matches_parsed_ops_not_text(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(jc, "RATCHET", tmp_path / "judge_backlog_ratchet.json")
+    final = tmp_path / "build_input_parked_trials.json"
+    m = tmp_path / f"{jc.TXN_MANIFEST_PREFIX}1.json"
+    m.write_text(json.dumps({"id": "1", "ops": [
+        ["replace", str(tmp_path / "x" / ".." / final.name), str(final) + ".jc-txn-1"]]}),
+        "utf-8")
+    assert jc._manifest_names(final) is True, "a different spelling of the same file"
+    m.write_text(json.dumps({"id": "1", "ops": [
+        ["replace", str(tmp_path / "other.json"), str(final) + ".jc-txn-1"]]}), "utf-8")
+    assert jc._manifest_names(final) is False, "a staged-path substring is not a target"
+    m.write_text("{torn", "utf-8")
+    assert jc._manifest_names(final) is True, "unreadable counts as naming it"

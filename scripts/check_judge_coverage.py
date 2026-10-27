@@ -62,6 +62,8 @@ ROOT = Path(__file__).resolve().parents[1]
 PREWARM_TOLERANCE = 0.02
 DESK = ROOT / "desks" / "mt5"
 REPORT = DESK / "reports" / "JUDGE_COVERAGE.json"
+#: Consecutive passes a torn/vanished release file's evidence may sit set aside before FAIL.
+RELEASE_ASIDE_MAX_PASSES = 3
 RATCHET = DESK / "data" / "judge_backlog_ratchet.json"
 AUDIT = DESK / "reports" / "judge_coverage_fence.json"
 #: The hourly `judge_alive` leg's own verdict (`--liveness`), so it never overwrites the
@@ -553,6 +555,31 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
         out["checks"].append({"metric": "prewarm_fail_ratchet", "state": "OK",
                               "why": f"pre-warm failures {float(pw_was):.1%} -> "
                                      f"{float(pw_now):.1%}"})
+
+    # THE RELEASE FILE OF THE BUILD-INPUT BACKSTOP (judge_coverage v1.4, audit of v1.3). It holds
+    # the cells the 90-day backstop released until the judge rules on them. Read UNREADABLE,
+    # TORN or VANISHED, the probe parks nothing new and the pass self-heals: WARN. Evidence of a
+    # tear set aside for more than RELEASE_ASIDE_MAX_PASSES consecutive passes was never looked
+    # at by anyone: FAIL, so it is.
+    rf = ((doc.get("build_input_probe") or {}).get("release_file")
+          if isinstance(doc.get("build_input_probe"), dict) else None)
+    if isinstance(rf, dict):
+        n_aside = int(rf.get("set_aside_passes") or 0)
+        rstate = str(rf.get("state") or "")
+        if n_aside > RELEASE_ASIDE_MAX_PASSES:
+            failures.append("build_input_release_file")
+            out["checks"].append({
+                "metric": "build_input_release_file", "state": "FAIL",
+                "why": (f"{', '.join(rf.get('set_aside') or [])} set aside for {n_aside} passes "
+                        f"(> {RELEASE_ASIDE_MAX_PASSES}): inspect the evidence, then remove it")})
+        elif rstate in ("UNREADABLE", "TORN", "VANISHED", "UNMEASURED") or rf.get("set_aside"):
+            out["checks"].append({
+                "metric": "build_input_release_file", "state": "WARN",
+                "why": (f"release file read {rstate or '?'} (write {rf.get('write')}); "
+                        f"set aside: {rf.get('set_aside') or []} for {n_aside} pass(es)")})
+        else:
+            out["checks"].append({"metric": "build_input_release_file", "state": "OK",
+                                  "why": f"release file {rstate or 'ABSENT'}"})
 
     totals = doc.get("totals") or {}
     out["totals"] = {k: totals.get(k) for k in (

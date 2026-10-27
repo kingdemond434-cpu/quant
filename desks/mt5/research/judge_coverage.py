@@ -1811,18 +1811,27 @@ def parked_trial_rows(blocked: list[dict[str, Any]],
 
 def _manifest_names(final: Path, ratchet: Path | None = None) -> bool:
     """Does a committed manifest still on disk (kept, or awaiting roll-forward) name `final`?
-    Unreadable manifests count as naming it: never write over what recovery may apply."""
+
+    Matched on the manifest's PARSED ops, each target and `final` compared as
+    `normcase(abspath(...))` (audit of v1.3), never as a substring of its text. A manifest that
+    cannot be read or parsed counts as naming it: never write over what recovery may apply.
+    """
+    want = os.path.normcase(os.path.abspath(str(final)))
     try:
         manifests = list((ratchet or RATCHET).parent.glob(f"{TXN_MANIFEST_PREFIX}*"))
     except OSError:
         return True
     for m in manifests:
         try:
-            # As the manifest spells it: JSON-escaped (a Windows path's backslashes double).
-            if json.dumps(str(final))[1:-1] in m.read_text("utf-8"):
-                return True
-        except OSError:
+            ops = json.loads(m.read_text("utf-8")).get("ops")
+        except (OSError, ValueError, AttributeError):
             return True
+        if not isinstance(ops, list):
+            return True
+        for op in ops:
+            if (isinstance(op, list) and len(op) > 1
+                    and os.path.normcase(os.path.abspath(str(op[1]))) == want):
+                return True
     return False
 
 
@@ -1843,25 +1852,55 @@ def _write_parked_trials(rows: list[dict[str, Any]], txn: Any) -> Path:
     return path
 
 
-def build_input_released(path: Path | None = None) -> dict[str, str] | None:
-    """cell -> released_at for every cell the backstop released; {} when there is no file.
+#: The release file's reading (audit of v1.3). UNREADABLE (an OSError: a reader holds it, a
+#: permission) is retried next pass and the file is never moved; TORN (it parses to no mapping)
+#: and VANISHED (absent, though its `.born` marker says it was written) SELF-HEAL on the pass
+#: that finds them: the torn bytes are kept aside as evidence, due releases go, and the file is
+#: rebuilt from this pass's releases. While any of the three holds, the probe names nothing new.
+RELEASED_MEASURED, RELEASED_ABSENT = "MEASURED", "ABSENT"
+RELEASED_UNREADABLE, RELEASED_TORN, RELEASED_VANISHED = "UNREADABLE", "TORN", "VANISHED"
 
-    None is UNMEASURED (audit of v1.2): a torn file, or one set aside as torn and not yet
-    resolved by hand. The holds it carried are unknown, so no reader may treat it as "no holds":
-    the probe names nothing new while it is None, and no release is written over it.
-    """
+
+def _released_path() -> Path:
     # Beside the bank it belongs to (where `update_unrunnable_bank` writes it), so a test's
     # bank never reads the desk's file.
-    target = path or UNRUNNABLE_BANK.parent / BUILD_INPUT_RELEASED.name
-    if any(n.startswith(target.name + ".torn-") for n in _set_aside(target)):
-        return None
-    doc = _read_memo(target)
-    if doc is None:
-        return None if target.exists() else {}
+    return UNRUNNABLE_BANK.parent / BUILD_INPUT_RELEASED.name
+
+
+def read_build_input_released(path: Path | None = None
+                              ) -> tuple[dict[str, str] | None, str]:
+    """(cell -> released_at, state). The cells are None unless MEASURED or ABSENT ({}).
+
+    Read directly, never through the pass memo: an OSError there is cached as None for the
+    whole pass and read as torn, which set a byte-identical good file aside (audit of v1.3).
+    """
+    target = path or _released_path()
+    staged = _PASS.get(("staged_json", str(target))) if _PASS is not None else None
+    if isinstance(staged, dict) and isinstance(staged.get("cells"), dict):
+        return {str(k): str(v) for k, v in staged["cells"].items()}, RELEASED_MEASURED
+    try:
+        text = target.read_text("utf-8")
+    except FileNotFoundError:
+        if _born_marker(target).exists():
+            return None, RELEASED_VANISHED
+        return {}, RELEASED_ABSENT
+    except OSError:
+        return None, RELEASED_UNREADABLE
+    try:
+        doc = json.loads(text)
+    except ValueError:
+        return None, RELEASED_TORN
     cells = doc.get("cells") if isinstance(doc, dict) else None
     if not isinstance(cells, dict):
-        return None
-    return {str(k): str(v) for k, v in cells.items() if isinstance(v, str)}
+        return None, RELEASED_TORN
+    return ({str(k): str(v) for k, v in cells.items() if isinstance(v, str)},
+            RELEASED_MEASURED)
+
+
+def build_input_released(path: Path | None = None) -> dict[str, str] | None:
+    """cell -> released_at; {} when there never was a file; None when UNMEASURED (unreadable,
+    torn or vanished) -- the holds are unknown, so no reader may treat it as "no holds"."""
+    return read_build_input_released(path)[0]
 
 
 def release_ruled(cell: str, released_at: str, *, bank: dict[str, dict[str, Any]],
@@ -1890,16 +1929,28 @@ def _record_build_input_released(released_now: dict[str, str], *, at: str, path:
     (`release_ruled`), or -- the file's bound -- when it is READMIT_MAX_DAYS old and its cell is
     no longer in the docket at all (a producer dropped it; nothing is left to hold back).
     """
-    old = build_input_released(path)
-    if old is None:
-        # TORN OR SET ASIDE: never overwrite it and never drop a hold it may carry. A torn file
-        # is moved aside under its own name (kept for a reader); every pass stays UNMEASURED
-        # until it is resolved by hand, and the caller keeps this pass's releases parked.
-        if path.exists() and not any(n.startswith(path.name + ".torn-")
-                                     for n in _set_aside(path)):
-            with contextlib.suppress(OSError):
-                path.rename(_aside_name(path, "torn", at))
-        return "UNMEASURED"
+    old, state = read_build_input_released(path)
+    if state == RELEASED_UNREADABLE:
+        # NEVER MOVE A FILE THAT COULD NOT BE READ: it may be whole. The caller keeps this pass's
+        # releases parked on their old clocks and the next pass reads it again.
+        return "UNREADABLE"
+    healed = ""
+    if state == RELEASED_TORN:
+        # SELF-HEAL (audit of v1.3): the torn bytes go aside as evidence (the coverage fence
+        # warns, and fails once they have sat more than three passes), and the file is rebuilt
+        # below from this pass's releases. The probe already names nothing new this pass.
+        try:
+            path.rename(_aside_name(path, "torn", at))
+        except OSError:
+            return "UNREADABLE"            # cannot move it: leave it exactly as found, retry
+        old, healed = {}, "HEALED_FROM_TORN"
+    elif state == RELEASED_VANISHED:
+        with contextlib.suppress(OSError), _aside_name(path, "vanished", at).open(
+                "x", encoding="utf-8") as fh:
+            fh.write(json.dumps({"at": at, "why": "the release file was born here and is now "
+                                 "absent; the holds it carried are not recoverable"}))
+        old, healed = {}, "HEALED_FROM_VANISHED"
+    old = old if old is not None else {}
     now_t = _ts(at)
     bank = bank or {}
     keep: dict[str, str] = {}
@@ -1913,25 +1964,35 @@ def _record_build_input_released(released_now: dict[str, str], *, at: str, path:
             continue
         keep[cell] = when
     keep.update(released_now)
-    if keep == old:
+    if keep == old and not healed:
         return "UNCHANGED"
     text = json.dumps({"schema": 2, "at": at,
                        "rule": ("a build_input_missing cell released by READMIT_MAX_DAYS is not "
                                 "named again by the probe until the judge has ruled on it: it is "
                                 "judged, or the judge wrote a bank row for it after the release"),
                        "cells": dict(sorted(keep.items()))}, separators=(",", ":"))
+    born = _born_marker(path)
     try:
         if txn is None:
             path.parent.mkdir(parents=True, exist_ok=True)
             _atomic_write_text(path, text)
+            if not born.exists():
+                born.write_text(json.dumps({"born_at": at}), "utf-8")
         else:
             txn.put_text(path, text)
+            if not born.exists():
+                # BORN WITH ITS FIRST WRITE (audit of v1.3): a deleted file then reads VANISHED,
+                # never "no holds", so its held cells are not re-parked silently.
+                txn.put_text(born, json.dumps({"born_at": at}))
             if lock_path is not None:
                 txn.guard(lock_path, path)      # lands only while the bank's lock holds
+                txn.guard(lock_path, born)
             if _PASS is not None:
                 _PASS[("staged_json", str(path))] = json.loads(text)
     except OSError:
         return "WRITE_FAILED"
+    if healed:
+        return healed
     return "WRITTEN"
 
 
@@ -1945,9 +2006,12 @@ def probe_build_inputs(rows: list[dict[str, Any]], judged: Any,
         return {}, {"status": "UNMEASURED", "why": "build_input_probe could not be imported"}
     try:
         ctx = _pass_value("build_input_probe_ctx", probe._Pass)
-        released = build_input_released()
-        return probe.name(rows, judged=judged, bank=bank, banned=banned, ctx=ctx, now=now,
-                          released=released or {}, released_unmeasured=released is None)
+        released, rstate = read_build_input_released()
+        named, census = probe.name(rows, judged=judged, bank=bank, banned=banned, ctx=ctx,
+                                   now=now, released=released or {},
+                                   released_unmeasured=released is None)
+        census["release_file_state"] = rstate
+        return named, census
     except Exception as exc:                                   # never costs the pass
         return {}, {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {str(exc)[:200]}"}
 
@@ -2467,7 +2531,7 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
             released_state = _record_build_input_released(
                 released_now, at=at, path=target.parent / BUILD_INPUT_RELEASED.name, txn=txn,
                 lock_path=out_path, bank=bank, judged=judged, docket_cells=docket_cells)
-            if released_state in ("WRITE_FAILED", "UNMEASURED"):
+            if released_state in ("WRITE_FAILED", "UNREADABLE"):
                 for c in released_now:
                     bank[c] = popped.pop(c)
                 release_write_failed = len(released_now)
@@ -3528,6 +3592,18 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
                                           "build_input_released")}
         probe_census["parked_stock"] = sum(1 for _r in _bank_now.values()
                                            if _r.get("reason") == BUILD_INPUT_MISSING)
+        # THE RELEASE FILE'S HEALTH, for `check_judge_coverage` (audit of v1.3): the state it was
+        # read in, what this pass's write did, the evidence set aside, and for how many
+        # consecutive passes evidence has sat there (carried in the ratchet).
+        _aside = [n for n in _set_aside(_released_path())
+                  if n.startswith(_released_path().name + ".")]
+        _prior_n = int((prior or {}).get("release_aside_passes") or 0) if isinstance(
+            prior, dict) else 0
+        probe_census["release_file"] = {
+            "state": probe_census.get("release_file_state"),
+            "write": unrunnable.get("build_input_released_state"),
+            "set_aside": _aside,
+            "set_aside_passes": (_prior_n + 1) if _aside else 0}
     # MARGINAL k_eff, STAMPED BEFORE THE RANKING READS IT (research/docket_keff.py). Reorders
     # only: the family factor lifts a family's share of the remainder, the per-cell stamp orders
     # rows inside each family stream. Nothing is removed and the floor is untouched.
@@ -4100,6 +4176,8 @@ def _write_staged(doc: dict[str, Any], txn: _Txn, *, report: Path | None,
         "unknown_share": (doc.get("totals") or {}).get("unknown_share"),
         "unknown_share_basis": (doc.get("totals") or {}).get("unknown_share_basis"),
         "prewarm_fail_share": (doc.get("totals") or {}).get("prewarm_fail_share"),
+        "release_aside_passes": int(((doc.get("build_input_probe") or {}).get("release_file")
+                                     or {}).get("set_aside_passes") or 0),
         "drain_status": (doc.get("totals") or {}).get("drain_status"),
         "priors_cursor": (doc.get("priors_learned") or {}).get("cursor") or "",
         "why": ("the baseline the carried-cohort ratchet is measured against: rows already in "
