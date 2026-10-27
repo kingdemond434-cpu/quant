@@ -76,7 +76,13 @@ def holm_alpha(m: int, rank: int = 1, *, alpha: float = 0.05) -> float:
     that let `run_axis_shadows` count m four different ways before slot_registry existed.
     """
     m, rank = max(1, int(m)), max(1, int(rank))
-    return alpha / max(1, m - min(rank, m) + 1)
+    # EACH RANK IS CHARGED min(ITS OWN CHARGE, BAR_N) (principal 2026-10-13: "make sure the bars
+    # never raise ... never inflation due to trials", and never deflated below N=5): Holm charges
+    # rank r a divisor of m - r + 1, so the level is alpha / min(m - r + 1, BAR_N). Never stricter
+    # than Holm over m; never looser than Bonferroni at the fixed N until the last BAR_N - 1 ranks,
+    # where Holm itself is looser. (Pinning m to min(m, BAR_N) sent ranks past the fifth to alpha.)
+    from libs.research.trial_count_guard import bar_n
+    return alpha / min(max(1, m - min(rank, m) + 1), bar_n(m))
 
 
 def holm_bar(m: int, rank: int = 1, *, alpha: float = 0.05) -> float:

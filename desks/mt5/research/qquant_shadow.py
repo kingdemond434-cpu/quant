@@ -5,6 +5,7 @@ import json
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -14,7 +15,7 @@ for value in (BASE, BASE / "research"):
         sys.path.insert(0, str(value))
 
 from gate_policy import all_ten_pass, is_exact_policy  # noqa: E402
-from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from mt5desk.engine import run_backtest  # noqa: E402
 from run_hunt12 import day_states  # noqa: E402
 from run_hunt16 import FAMILIES, WINDOWS  # noqa: E402
 
@@ -44,6 +45,20 @@ def _max_drawdown(values: list[float]) -> float:
         peak = max(peak, running)
         worst = min(worst, running - peak)
     return worst
+
+
+def _postdates(stamp: dict, entry_time: Any) -> bool | None:
+    """True when the cost surface this row was priced on was built after the trade's entry."""
+    try:
+        built = pd.Timestamp(stamp.get("cost_surface_built_at"))
+        ent = pd.Timestamp(entry_time)
+        if built.tzinfo is None:
+            built = built.tz_localize("UTC")
+        if ent.tzinfo is None:
+            ent = ent.tz_localize("UTC")
+        return bool(built > ent)
+    except (TypeError, ValueError):
+        return None
 
 
 def main() -> int:
@@ -146,7 +161,22 @@ def main() -> int:
             ]
         forward_signals = [s for s in signals if pd.Timestamp(s.time) > frozen_at]
         meta = _read(BASE / "data" / "universe" / "universe.json")
-        costs = Costs.from_symbol(meta.get(str(spec["symbol"]), {}), mult=2.0)
+        # The hour of entry and of exit, from the one cost surface (`research/entry_hour_cost`):
+        # the flat registry spread undercharges every rollover fill on the exotics and prices a
+        # zero-spread registry row at nothing. `mult=2.0` keeps this clock's own convention.
+        from research.entry_hour_cost import costs_at_entry_hour, surface_stamp
+        costs, spread_basis = costs_at_entry_hour(
+            str(spec["symbol"]), meta.get(str(spec["symbol"]), {}), mult=2.0)
+        cost_stamp = {"spread_basis": spread_basis, **surface_stamp()}
+        row.update(cost_stamp)
+        if costs is None:
+            # NO PRICE, NO REPLAY: an UNMEASURED spread is not priced at the engine floor. The
+            # clock replays its whole window from `frozen_at` every pass, so a skipped pass loses
+            # no evidence; it resumes on the first pass the symbol is priced.
+            row["status"] = "COST_UNMEASURED"
+            row["why"] = f"spread unpriced this pass: {spread_basis}"
+            state[key] = row
+            continue
         result = run_backtest(h1, signals, costs)
         trades = [trade for trade in result.trades
                   if pd.Timestamp(trade.entry_time).tz_convert("UTC") > frozen_at]
@@ -157,7 +187,10 @@ def main() -> int:
         ledger.write_text(json.dumps([
             {"entry_time": str(t.entry_time), "exit_time": str(t.exit_time),
              "side": t.side, "entry": t.entry, "exit": t.exit,
-             "r_multiple": t.r_multiple, "reason": t.reason, **stamp}
+             "r_multiple": t.r_multiple, "reason": t.reason, **stamp, **cost_stamp,
+             # Every pass reprices the whole window on TODAY's surface: a trade that predates
+             # the surface's build was charged a cost measured after it (disclosed, per row).
+             "surface_postdates_entry": _postdates(cost_stamp, t.entry_time)}
             for t in trades
         ], indent=2), encoding="utf-8")
         days = max(0, (now - frozen_at.to_pydatetime()).days)

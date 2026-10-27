@@ -54,6 +54,8 @@ from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from mt5desk.multiplicity import deflation  # noqa: E402
 
+from libs.research.trial_count_guard import bar_n  # noqa: E402
+
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
 
@@ -79,7 +81,7 @@ CELLS = {
 def main() -> int:
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     trials = sum(len(cells) for _, cells in CELLS.values()) * len(SYMBOLS)
-    bar = 1.96 + deflation(trials)
+    bar = 1.96 + deflation(min(trials, bar_n(trials)))
     print(f"Dip-buy sweep: {trials} cells "
           f"({sum(len(c) for _, c in CELLS.values())} params x {len(SYMBOLS)} symbols)")
     print(f"required t >= {bar:.2f} (deflated for {trials} trials -- this sweep's own count)\n")

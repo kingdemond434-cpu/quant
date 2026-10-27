@@ -375,8 +375,10 @@ def run_search(
 
     # The hurdle is fixed BEFORE any cell is judged, from the grid size alone.
     try:
+        from libs.research.trial_count_guard import bar_n  # fixed N; the grid is reported
         from libs.validation.dsr import expected_max_sharpe
-        res.dsr_hurdle_sharpe = float(expected_max_sharpe(plan.effective_n_trials, 1.0))
+        n_bar = min(plan.effective_n_trials, bar_n(plan.effective_n_trials))
+        res.dsr_hurdle_sharpe = float(expected_max_sharpe(n_bar, 1.0))
     except Exception:
         res.dsr_hurdle_sharpe = None
 

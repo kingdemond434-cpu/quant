@@ -107,10 +107,13 @@ def test_every_ledger_reader_agrees_inside_and_outside_a_pass(tmp_path: Path) ->
     ledger = tmp_path / "gate.jsonl"
     _awkward_ledger(ledger)
     plain = _readers(ledger, tmp_path / "priors_plain")
-    with jc._pass_memo() as memo:
+    with jc._pass_memo():
         fast = _readers(ledger, tmp_path / "priors_fast")
-        scans = [k for k in memo if k[0] == "ledger"]
-    assert scans and len(scans) == 1, "one pass parses the ledger exactly once"
+    # MERGE RESOLUTION (image companions onto speed train r2, 2026-10-22): the readers now answer
+    # from judge-rate's incremental ledger index, held once per path across the pass (and across
+    # passes, from its byte watermark), instead of one `_LedgerScan` per pass in the memo.
+    idx = jc._LEDGER_INDEXES.get(str(ledger))
+    assert idx is not None and idx.complete, "one index holds the ledger, caught up to EOF"
     assert fast == plain
 
     def _taught(d: Path) -> object:

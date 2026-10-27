@@ -147,8 +147,9 @@ def sr0(n_trials: int, variance_of_sharpes: float | None) -> float:
     if variance_of_sharpes is None:
         return float("nan")
     try:
+        from libs.research.trial_count_guard import bar_n  # fixed N; the charge is reported
         from libs.validation.dsr import expected_max_sharpe
-        return float(expected_max_sharpe(int(n_trials), float(variance_of_sharpes)))
+        return float(expected_max_sharpe(min(int(n_trials), bar_n(int(n_trials))), float(variance_of_sharpes)))
     except Exception:
         return float("nan")
 

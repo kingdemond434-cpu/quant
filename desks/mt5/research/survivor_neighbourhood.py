@@ -70,6 +70,7 @@ for p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, p)
 
 from libs.research.alpha_clusters import classify_sleeve  # noqa: E402
+from libs.research.trial_count_guard import bar_n  # noqa: E402  (the bar's N is fixed; counts are reported only)
 
 OUT = BASE / "reports" / "SURVIVOR_NEIGHBOURHOOD.json"
 DRAWDOWN = BASE / "reports" / "DRAWDOWN_ALPHA.json"
@@ -353,7 +354,7 @@ def _verdicts(rows: list[dict[str, Any]]) -> int:
         r["n_tests"] = n_tests
         if r.get("verdict") == UNMEASURED:
             continue
-        r["t_deflated"] = round(deflate_t(float(r.get("t_raw") or 0.0), n_tests), 3)
+        r["t_deflated"] = round(deflate_t(float(r.get("t_raw") or 0.0), min(n_tests, bar_n(n_tests))), 3)
         # THE CONTRAST CARRIES THE SAME BURDEN. It is one more test per slice, drawn from the same
         # sample, so deflating it against anything smaller than the whole set would be the
         # split-the-burden trick under another name.
@@ -369,7 +370,7 @@ def _verdicts(rows: list[dict[str, Any]]) -> int:
         if t_c is None:
             r["t_vs_rest_deflated"] = None
         else:
-            mag = max(abs(float(t_c)) - (abs(float(t_c)) - deflate_t(abs(float(t_c)), n_tests)),
+            mag = max(abs(float(t_c)) - (abs(float(t_c)) - deflate_t(abs(float(t_c)), min(n_tests, bar_n(n_tests)))),
                       0.0)
             r["t_vs_rest_deflated"] = round(math.copysign(mag, float(t_c)), 3)
         shrunk = float(r.get("mean_r_shrunk") or 0.0)

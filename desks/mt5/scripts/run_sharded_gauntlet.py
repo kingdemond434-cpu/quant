@@ -2292,9 +2292,15 @@ def _resident_loop(state: dict[str, Any], sweep: Callable[[], int],
                 state["last_hung_utc"] = datetime.now(UTC).isoformat(timespec="seconds")
                 state["killed_in_phase"] = _sweep_phase()
             pause = RESIDENT_BACKOFF_S[min(failures, len(RESIDENT_BACKOFF_S)) - 1]
-        state.update(status="BACKOFF", backoff_s=pause)
+        # THE BACKOFF SPACES SWEEP STARTS; IT IS NOT AN IDLE GAP AFTER A LONG SWEEP (2026-10-14).
+        # It exists so an instantly-crashing sweep cannot spin; a sweep that already ran for
+        # longer than the pause has paid it, and queued work starts now. Only the remainder of
+        # the pause (if the sweep died faster than it) is slept.
+        wait = max(0.0, float(pause) - dt)
+        state.update(status="BACKOFF", backoff_s=round(wait, 1))
         _write_state(state)
-        sleep(pause)
+        if wait > 0:
+            sleep(wait)
     return last_rc
 
 

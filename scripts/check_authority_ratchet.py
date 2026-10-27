@@ -35,6 +35,7 @@ if str(_R) not in sys.path:  # run by path: scripts/ is on sys.path, the root is
 
 from libs.ops.canon_lease import hold  # noqa: E402
 from libs.ops.repair_invoke import request_repair  # noqa: E402
+from libs.ops.revocation_log import merge_revocations  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"
@@ -173,18 +174,60 @@ def heal_canon() -> str | None:
     auth, canon = read(AUTHORITY_FILE), read(CANON_FILE)
     if not isinstance(auth, dict) or not isinstance(canon, dict):
         return None
-    a_rows = auth.get("survivors") or {}
+    # THE CANON'S OWN HOLDS ARE ACCOUNTED (2026-10-20). `canon_publication` moves a row the
+    # judge has not re-judged under the attestation in force into the canon's `pending_rejudge`
+    # (or it stands in `retired_certificates`). Counting only `survivors` read that holdback as
+    # the canon falling behind, and a whole-file copy of the report over it deleted both blocks
+    # -- so the two writers undid each other every hour. A key the canon holds is accounted, and
+    # it is never re-admitted from the authority file here.
+    held = set(_block(canon, "pending_rejudge")) | set(_block(canon, "retired_certificates"))
+    a_rows = {k: v for k, v in (auth.get("survivors") or {}).items() if k not in held}
     c_rows = canon.get("survivors") or {}
     a_par = sum(1 for v in a_rows.values() if (v.get("shadow_spec") or {}).get("params"))
     c_par = sum(1 for v in c_rows.values() if (v.get("shadow_spec") or {}).get("params"))
     if len(a_rows) > len(c_rows) or (len(a_rows) == len(c_rows) and a_par > c_par):
+        healed = merge_heal(auth, canon)
         artifact = "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json"
         with hold(artifact, "authority-ratchet"):
-            _atomic_copy(AUTHORITY_FILE, CANON_FILE)
+            _atomic_json(CANON_FILE, healed)
         return (f"canon healed from the authority file: {len(c_rows)} certs/{c_par} with params "
-                f"-> {len(a_rows)}/{a_par}. Canon is the known-good COPY of authority; it being "
-                f"behind is a contradiction, not a state to preserve.")
+                f"-> {len(a_rows)}/{a_par} ({len(held)} canon-held key(s) kept out). Canon is "
+                f"the known-good COPY of authority; it being behind is a contradiction, not a "
+                f"state to preserve.")
     return None
+
+
+def _block(doc: dict, key: str) -> dict:
+    v = doc.get(key)
+    return v if isinstance(v, dict) else {}
+
+
+#: Blocks only the canon writes. A heal never replaces them with the authority file's.
+CANON_HELD_BLOCKS = ("pending_rejudge", "retired_certificates")
+
+
+def merge_heal(auth: dict, canon: dict) -> dict:
+    """The authority file's survivors laid onto the canon, never dropping what the canon holds.
+
+    Every top-level block the canon carries and the authority file does not is kept; the canon's
+    `pending_rejudge` and `retired_certificates` are unioned with the authority file's (the
+    canon's row wins on a shared key); a key either block holds is never a survivor; the
+    `revocation` history is unioned, never shrunk.
+    """
+    out = {**canon, **auth}
+    for key in CANON_HELD_BLOCKS:
+        merged = {**_block(auth, key), **_block(canon, key)}
+        if merged:
+            out[key] = merged
+        else:
+            out.pop(key, None)
+    held = set(_block(out, "pending_rejudge")) | set(_block(out, "retired_certificates"))
+    out["survivors"] = {k: v for k, v in (auth.get("survivors") or {}).items() if k not in held}
+    out["n"] = len(out["survivors"])
+    rev = merge_revocations(canon.get("revocation"), auth.get("revocation"))
+    if rev:
+        out["revocation"] = rev
+    return out
 
 
 def restore_cohorts_from_git(minimum: int) -> str | None:

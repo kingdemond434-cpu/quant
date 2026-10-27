@@ -125,7 +125,8 @@ def screen_select(stepdown: StepdownResult, *, q: float = _DEFAULT_Q,
     # is discrimination among candidates tied at the floor, which is what these fields report.
     m = int(p.size)
     min_p = 1.0 / float(stepdown.n_boot) if stepdown.n_boot else 1.0
-    need = q / m if m else q
+    from libs.research.trial_count_guard import bar_n
+    need = q / min(m, bar_n(m)) if m else q        # BH's rank-1 level at the fixed bar N
     resolvable = min_p <= need
     ties = int(np.count_nonzero(p <= p.min() + 1e-12))
     required = int(np.ceil(1.0 / need)) if need > 0 else 0

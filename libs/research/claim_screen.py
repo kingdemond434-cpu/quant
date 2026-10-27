@@ -180,7 +180,9 @@ def undeflated_sharpe(sharpe: float, years: float, *, assumed_configs: int = 10)
         return None
     se = math.sqrt((1.0 + sharpe * sharpe / 2.0) / years)
     t = sharpe / se
-    bar = math.sqrt(2.0 * math.log(assumed_configs)) if assumed_configs > 1 else 1.96
+    from libs.research.trial_count_guard import bar_n  # fixed N; the count is reported only
+    n_bar = min(assumed_configs, bar_n(assumed_configs))   # never above the count or BAR_N
+    bar = math.sqrt(2.0 * math.log(n_bar)) if assumed_configs > 1 else 1.96
     if t < bar:
         return Finding(
             "undeflated-sharpe", "FATAL",

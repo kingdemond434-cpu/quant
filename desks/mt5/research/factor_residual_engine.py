@@ -69,6 +69,7 @@ from mt5desk.economic_drivers import DriverSet, universe_driver_sets  # noqa: E4
 from mt5desk.engine import Costs  # noqa: E402
 
 from research.multiplicity import deflate_t, expected_max_z  # noqa: E402
+from libs.research.trial_count_guard import bar_n  # noqa: E402  (the bar's N is fixed; counts are reported only)
 
 UNI = _DESK / "data" / "universe"
 INTEL = _DESK / "data" / "intelligence" / "factor_residual"
@@ -517,7 +518,7 @@ def run(targets: list[str] | None = None, shuffle: bool = False,
     _basis = _cost_basis()
     for row in rows:
         row["n_tests_sweep"] = n_tests
-        row["t_deflated_sweep"] = round(deflate_t(row["t_gross"], n_tests), 3)
+        row["t_deflated_sweep"] = round(deflate_t(row["t_gross"], min(n_tests, bar_n(n_tests))), 3)
         row["proposed"] = bool(row["clears_cost"] and row["t_deflated_sweep"] > PROPOSE_T
                                and row["n_independent"] >= MIN_INDEPENDENT)
         # THE COST THIS ROW CLEARED MAY BE A NUMBER THE DESK ALREADY KNOWS IS WRONG.
@@ -570,7 +571,7 @@ def run(targets: list[str] | None = None, shuffle: bool = False,
         "hypotheses_stated": len(sets),
         "hypotheses_measured": len({r["cell"] for r in rows}),
         "tests_run": n_tests,
-        "expected_max_z": round(expected_max_z(n_tests), 3),
+        "expected_max_z": round(expected_max_z(min(n_tests, bar_n(n_tests))), 3),
         "propose_threshold_t_deflated": PROPOSE_T,
         # THE MISSED-GROWTH LINE THE GOVERNANCE REQUIRES of any refusal (GROWTH_GOVERNANCE Rule 1).
         # What this engine would have donated had the cost basis held, named, so the refusal is

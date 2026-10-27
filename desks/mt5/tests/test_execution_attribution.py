@@ -28,8 +28,11 @@ from research import allocator_attribution as attr  # noqa: E402
 UNMEASURED = attr.UNMEASURED
 
 
-def _intent(ticket: int, intended: float, side: str = "buy_stop") -> dict:
-    return {"ticket": ticket, "intended": intended, "side": side, "sleeve": "S", "symbol": "XAUUSD"}
+def _intent(ticket: int, intended: float, side: str = "buy_stop", stop: float = 10.0) -> dict:
+    # R is the intent's own stop distance (markout, 2026-10-14), so the stop is on the intent.
+    sl = intended - stop if "buy" in side else intended + stop
+    return {"ticket": ticket, "intended": intended, "side": side, "sleeve": "S", "symbol": "XAUUSD",
+            "sl": sl}
 
 
 def _deal(ticket: int, fill: float, risk: float = 10.0, login: int = 1,

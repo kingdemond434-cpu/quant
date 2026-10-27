@@ -40,6 +40,10 @@ GAUNTLET = (_DESK / "scripts" / "external_gauntlet.py").read_text("utf-8")
 
 def _stages(passed: bool = True, extra: dict[str, Any] | None = None) -> dict[str, Any]:
     out: dict[str, Any] = {name: {"passed": True} for name in GATES}
+    # a held-out v4 lockbox: a passing row without one is held back by the re-stamp guard
+    out["lockbox"] = {"passed": True, "lockbox_sharpe": 0.31, "cut": "2024-12-19",
+                      "basis": ATTESTATION["lockbox_basis"]}
+    out["walk_forward"] = {"passed": True, "oos_sharpe": 0.52}
     if not passed:
         out["lockbox"] = {"passed": False}
     out.update(extra or {})
@@ -109,8 +113,15 @@ def test_the_docket_normalisation_is_the_sealed_judge_s_normalisation() -> None:
     `params_unrecoverable`, which is a wrong answer wearing a measurement's clothes."""
     # The judge now STREAMS the docket (`iter_json_array(surv_file)`) instead of loading it
     # whole into `survivors`; the per-row normalisation below is what this test pins.
-    blk = GAUNTLET[GAUNTLET.index("    cells = {}\n    for h in iter_json_array(surv_file):"):]
-    blk = blk[:blk.index("    # REPRODUCTION RESTRICTS THE DOCKET")]
+    if "def _docket_key(" in GAUNTLET:
+        # external_gauntlet_speed.patch: the one-pass docket read normalises each row through
+        # `_docket_key` / `_docket_spec`, the former loop body verbatim.
+        blk = GAUNTLET[GAUNTLET.index("def _docket_key("):GAUNTLET.index("\ndef main(")]
+        assert "_docket_key(h)" in GAUNTLET and ("_docket_spec(h, *_kc[1:])" in GAUNTLET
+                                                 or "_docket_spec(h, *kc[1:])" in GAUNTLET)
+    else:
+        blk = GAUNTLET[GAUNTLET.index("    cells = {}\n    for h in iter_json_array(surv_file):"):]
+        blk = blk[:blk.index("    # REPRODUCTION RESTRICTS THE DOCKET")]
     for line in ('sym = h.get("symbol")', 'fam = h.get("family")',
                  'params = dict(h.get("params") or {})',
                  'row_tf = str(h.get("timeframe") or "").upper()',

@@ -362,8 +362,10 @@ def measure(*, ledger_path: Path | None = None, report_path: Path | None = None,
     pooled_ok = pooled_var is not None and pooled_var > 0 and len(pooled_xs) >= MIN_POOLED_N
     eff = effective_trials(rows)
     try:
+        from libs.research.trial_count_guard import bar_n  # fixed N; `eff` is reported
         from libs.validation.dsr import expected_max_sharpe
-        sr0_eff = (round(float(expected_max_sharpe(max(2, int(eff["effective"])), pooled_var)), 6)
+        n_bar = min(eff["effective"], bar_n(eff["effective"]))   # never above the count or BAR_N
+        sr0_eff = (round(float(expected_max_sharpe(n_bar, pooled_var)), 6)
                    if pooled_ok and pooled_var is not None else None)
     except Exception:
         sr0_eff = None

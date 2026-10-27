@@ -210,7 +210,8 @@ def worker_eval(row: dict, pbo_val: float, spa_p: float, n_trials: int,
     stages["economic_prior"] = {"passed": True,
                                 "message": "mechanism documented at hunt registration"}
     stages["in_sample_screen"] = {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)}
-    dsr = deflated_sharpe_ratio(arr, n_trials=n_trials,
+    from libs.research.trial_count_guard import bar_n  # fixed N; n_trials is reported
+    dsr = deflated_sharpe_ratio(arr, n_trials=min(n_trials, bar_n(n_trials)),
                                 variance_of_sharpes=float(sharpes.var(ddof=1)),
                                 threshold=DSR_THRESHOLD)
     stages["deflated_sharpe"] = {"passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),

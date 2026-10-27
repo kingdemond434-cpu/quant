@@ -2,6 +2,21 @@
  "doc": "Experiment contracts: every registered hourly leg declares hypothesis, metric, falsifier, budget and owner (libs/tiers/experiment_contract.py). budget and owner are DERIVED from hourly_cycle.LEG_BUDGET_SEC / LEG_DEPARTMENT when absent; the metric half is DERIVED from tier_s_program.json leg_contracts when that programme wrote one. Fence: scripts/check_experiment_contracts.py (law gate). Hourly reading: leg experiment_contracts -> desks/mt5/reports/EXPERIMENT_CONTRACTS.json.",
  "schema": "experiment-contracts-registry/1",
  "legs": {
+  "cost_surface_accuracy": {
+   "hypothesis": "Comparing the entry-hour spread the cost surface charges with the quote the account's own fills met, per symbol, exposes every symbol the gauntlet and forward clocks under-charge, so the under-charged count falls as the surface is rebuilt and corrected.",
+   "metric": {
+    "gain": "EXECUTION_CAPTURE",
+    "metric": "n_symbols_measured",
+    "better": "up",
+    "organ": "report:COST_SURFACE_ACCURACY.json"
+   },
+   "falsifier": {
+    "metric": "n_symbols_measured",
+    "op": "<",
+    "threshold": 1,
+    "after": "7 days with live deals on the ledger and no symbol measured: the M1 quote join is not reaching the fills"
+   }
+  },
   "build_failure_bank": {
    "hypothesis": "Ranking every cell that failed to BUILD by cause class turns silently dropped cells into named fix work, so the failed-to-build count falls as the top causes are fixed.",
    "metric": {

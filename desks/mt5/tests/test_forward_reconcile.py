@@ -213,9 +213,12 @@ def test_family_budget_is_published_per_enrolled_clock_beside_the_flat_cohort(
         d = fb["cap_detail"][fam]
         # the identity the artifact's own basis names, exact in integers
         assert n == max(0, d["seats_at_this_charge"] - d["charged_m"])
-        assert d["seats_at_this_charge"] == MAX_FORWARD_SLOTS
+        # TRANSFORMED 2026-10-14: the per-seat charge is Holm at min(MAX_FORWARD_SLOTS, BAR_N)
+        # (principal: no bar rises with a trial count), so the evidence reads BAR_N seats
+        from libs.research.trial_count_guard import BAR_N
+        assert d["seats_at_this_charge"] == min(MAX_FORWARD_SLOTS, BAR_N)
         # one clock of the cap's worth of alpha spent: the rest are still affordable
-        assert n == MAX_FORWARD_SLOTS - 1 and d["n_enrolled"] == 1
+        assert n == min(MAX_FORWARD_SLOTS, BAR_N) - 1 and d["n_enrolled"] == 1
     assert doc["missed_growth_lines"] == [], "no family is capped, so nothing is forgone"
 
 
@@ -240,7 +243,9 @@ def test_an_over_enrolled_family_is_capped_and_carries_a_missed_growth_line(
     gap_fam = fb["clocks"]["SYM0.overnight_gap_decay.asia"]["family"]
     lone_fam = fb["clocks"]["LONE.carry.asia"]["family"]
     assert fb["caps"][gap_fam] == 0, "15 clocks have spent more than the family's own alpha"
-    assert fb["caps"][lone_fam] == MAX_FORWARD_SLOTS - 1, "a family under budget still has seats"
+    from libs.research.trial_count_guard import BAR_N  # Holm charge at the fixed bar N
+    assert fb["caps"][lone_fam] == min(MAX_FORWARD_SLOTS, BAR_N) - 1, \
+        "a family under budget still has seats"
     lines = {ln["family"]: ln for ln in doc["missed_growth_lines"]}
     assert set(lines) == {gap_fam}
     line = lines[gap_fam]
@@ -315,7 +320,9 @@ def test_an_undeclared_mechanism_buys_no_more_seats_than_a_declared_one() -> Non
     declared = fb["clocks"]["SYM0.overnight_gap_decay.asia"]["family"]
     assert fb["cap_detail"][fm.UNCLASSIFIED]["n_enrolled"] == 1
     assert fb["cap_detail"][fm.UNCLASSIFIED]["charged_m"] == 4
-    assert fb["caps"][fm.UNCLASSIFIED] == fb["caps"][declared] == 8
+    # TRANSFORMED 2026-10-14: seats at the fixed-bar Holm charge are BAR_N, so 5 - 4 = 1 each
+    from libs.research.trial_count_guard import BAR_N
+    assert fb["caps"][fm.UNCLASSIFIED] == fb["caps"][declared] == BAR_N - 4
 
 
 def test_an_undeclared_mechanism_pays_the_largest_declared_family_bar() -> None:

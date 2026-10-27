@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 from collections.abc import Callable, Mapping
@@ -104,7 +105,14 @@ STALE_H = 6.0
 #: "this hour ran a little short".
 WINDOW_SLACK = 2.0
 
-RULE = ("no family holding unjudged cells is absent from the hour's queue; each family's carried "
+#: A family with mined cells, not ONE real verdict ever (judged_total 0), and an oldest unjudged
+#: cell older than this FAILS on the box (2026-10-14). Mirrors
+#: `research/judge_coverage.NEVER_JUDGED_MAX_AGE_H`; a test pins the two together.
+NEVER_JUDGED_MAX_AGE_H = 48.0
+
+RULE = ("the judge rules on at least 150,000 cells a day; "
+        "no family with mined cells goes unjudged past 48h; "
+        "no family holding unjudged cells is absent from the hour's queue; each family's carried "
         "backlog falls; no family's oldest unjudged cell sits past twice its own drain window "
         "without moving; and the remainder after every floor follows the published "
         "expected-value-per-judge-second ranking")
@@ -233,6 +241,203 @@ def liveness_fence(*, require_state: bool = False, now: datetime | None = None,
             "why": row["why"], "checks": [row]}
 
 
+def _armed(require_state: bool) -> bool:
+    """Whether a state-derived verdict may FAIL here, by the law gate's host semantics.
+
+    `--require-state` (the box's state battery) always arms it. Otherwise it is armed only on the
+    trading host and never in a source view (`QUANT_LAWGATE_SOURCE_VIEW=1`, every laws-only run):
+    the box publishes JUDGE_COVERAGE.json to origin every 15 minutes, so a clean CI or cloud
+    checkout holds a COPY, and judging a copy as local runtime is the confusion 778815d6c removed
+    from check_self_repair and check_birth_obligations. There the finding is published as WARN."""
+    if require_state:
+        return True
+    if os.environ.get("QUANT_LAWGATE_SOURCE_VIEW") == "1":
+        return False
+    try:
+        root = str(ROOT)
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.ops import host_identity
+        return bool(host_identity.identify().may_be_trading)
+    except Exception:
+        return False
+
+
+def never_judged(fams: Mapping[str, Mapping[str, Any]], doc: Mapping[str, Any],
+                 *, armed: bool) -> dict[str, Any]:
+    """The never-judged check: mined > 0, judged_total == 0, oldest unjudged past 48 h.
+
+    AN UNKNOWN AGE IS NOT A YOUNG ONE (L1.28a, audit of 4f28cd04). `judge_coverage` publishes
+    `oldest_unjudged_age_h: None` when a family's backlog rows carry no `first_seen`; this check
+    used to SKIP such a family, so mined > 0 with judged_total == 0 read OK -- "every family holds
+    a real verdict" -- on exactly the rows the desk could not date. Such a family is now
+    UNMEASURED and named; armed (the box's --require-state run, or the trading host) it FAILS with
+    the aged ones, because a family that has never been judged and cannot even say for how long is
+    not a family the fence may call fine."""
+    published = doc.get("never_judged") if isinstance(doc.get("never_judged"), Mapping) else {}
+    hits: list[tuple[str, float]] = []
+    undated: list[str] = []
+    for f, r in fams.items():
+        if str(r.get("judging_status") or "") == "STUDY_ONLY":
+            continue
+        if int(r.get("mined") or 0) <= 0 or int(r.get("judged_total") or 0) != 0:
+            continue
+        age = r.get("oldest_unjudged_age_h")
+        if age is None:
+            # Nothing waiting (every cell parked or set aside) is not an undated wait.
+            if int(r.get("unjudged", 1) or 0) > 0:
+                undated.append(f)
+            continue
+        if float(age) <= NEVER_JUDGED_MAX_AGE_H:
+            continue
+        hits.append((f, float(age)))
+    hits.sort(key=lambda fa: -fa[1])
+    undated.sort(key=lambda f: -int(fams[f].get("mined") or 0))
+    if not hits and not undated:
+        return {"metric": "never_judged", "state": "OK", "families": [],
+                "why": (f"every family with mined cells holds a real verdict, or its oldest cell "
+                        f"is under {NEVER_JUDGED_MAX_AGE_H:.0f}h")}
+
+    def _reason(f: str) -> str:
+        row = published.get(f) if isinstance(published.get(f), Mapping) else None
+        txt = (row or {}).get("reason") or fams[f].get("never_judged_reason")
+        return str(txt) if txt else "no reason published"
+
+    named = [{"family": f, "mined": int(fams[f].get("mined") or 0),
+              "oldest_unjudged_age_h": a, "reason": _reason(f)} for f, a in hits]
+    named += [{"family": f, "mined": int(fams[f].get("mined") or 0),
+               "oldest_unjudged_age_h": None, "age": "UNMEASURED", "reason": _reason(f)}
+              for f in undated]
+    tail = ("" if armed else
+            " -- published, not failed: this is a source view or a host that does not run the "
+            "judge; the box's --require-state run fails it")
+    parts: list[str] = []
+    if hits:
+        head = "; ".join(f"{n['family']} (mined {n['mined']}, oldest "
+                         f"{n['oldest_unjudged_age_h']:.0f}h: {n['reason'][:160]})"
+                         for n in named[:4] if n["oldest_unjudged_age_h"] is not None)
+        parts.append(f"{len(hits)} family(ies) have mined cells and NEVER a real verdict, oldest "
+                     f"past {NEVER_JUDGED_MAX_AGE_H:.0f}h: {head}")
+    if undated:
+        parts.append(f"{len(undated)} family(ies) have mined cells, NEVER a real verdict and NO "
+                     f"datable backlog row (oldest_unjudged_age_h is None: rows lack first_seen), "
+                     f"so their wait is UNMEASURED, not short: "
+                     + ", ".join(f"{f} (mined {int(fams[f].get('mined') or 0)})"
+                                 for f in undated[:6]))
+    state = "FAIL" if armed else ("WARN" if hits else "UNMEASURED")
+    return {"metric": "never_judged", "state": state, "families": named,
+            "undated": undated, "why": "; ".join(parts) + tail}
+
+
+#: The judging rate the principal set (2026-10-14: "100-200k cells a day"). Mirrors
+#: `research/judge_coverage.JUDGING_RATE_TARGET_PER_DAY`; a test pins the two together.
+JUDGING_RATE_TARGET_PER_DAY = 150_000
+
+
+def judging_rate(doc: Mapping[str, Any], *, require_state: bool, armed: bool) -> dict[str, Any]:
+    """Verdicts per day against the floor, from the report's `judging_rate` block.
+
+    Below target: FAIL when armed (the box's --require-state run or the trading host), WARN in a
+    source view -- the never-judged check's host semantics. An absent block, an UNMEASURED one,
+    or a PARTIAL one whose lower bound is still short is UNMEASURED: FAIL under --require-state
+    (a rate the box cannot state is the defect L1.49 names), UNMEASURED otherwise.
+    """
+    raw = doc.get("judging_rate")
+    jr: Mapping[str, Any] | None = raw if isinstance(raw, Mapping) else None
+    try:
+        target = int((jr or {}).get("target_per_day") or JUDGING_RATE_TARGET_PER_DAY)
+    except (TypeError, ValueError, OverflowError):        # Infinity / NaN -> the floor
+        target = JUDGING_RATE_TARGET_PER_DAY
+    target = max(target, JUDGING_RATE_TARGET_PER_DAY)       # the floor only ratchets up (L1.50)
+    got_raw = (jr or {}).get("verdicts_24h")
+    status = str((jr or {}).get("status") or "")
+    # A NON-FINITE RATE IS UNMEASURED, never a crash (audit of 0bf4ce83e: Infinity raised
+    # OverflowError here) and never a pass: only a finite count is a reading.
+    got: int | None = (int(got_raw) if isinstance(got_raw, (int, float))
+                       and not isinstance(got_raw, bool) and math.isfinite(got_raw) else None)
+    measured = got is not None and status in ("MEASURED", "PARTIAL")
+    if got is not None and measured and got >= target:
+        return {"metric": "judging_rate", "state": "OK", "verdicts_24h": got, "target": target,
+                "why": f"{got} verdicts in 24h, at or above the {target}/day floor"}
+    if got is None or not measured or status == "PARTIAL":
+        why = ("JUDGE_COVERAGE carries no judging_rate block" if jr is None else
+               f"judging rate {status or 'UNMEASURED'}: "
+               f"{(jr or {}).get('why') or 'no verdict count'}")
+        return {"metric": "judging_rate", "state": "FAIL" if require_state else "UNMEASURED",
+                "verdicts_24h": got, "target": target,
+                "why": why + (" -- --require-state says this box owes the rate (L1.49)"
+                              if require_state else "")}
+    short = target - got
+    return {"metric": "judging_rate", "state": "FAIL" if armed else "WARN",
+            "verdicts_24h": got, "target": target, "shortfall_per_day": short,
+            "why": (f"{got} verdicts in 24h against the {target}/day floor "
+                    f"({got / target:.1%}; short {short}/day): add judge capacity -- "
+                    "never throttle a miner, never move a gate"
+                    + ("" if armed else
+                       " -- published, not failed: this is a source view or a host that does "
+                       "not run the judge; the box's --require-state run fails it"))}
+
+
+#: Mirrors research/judge_coverage.TAPE_CERT_MIN_JUDGED (the test pins them equal): tape families
+#: judged past this many cells with the tape deep enough and 0 certificates fail. At a 1% per-cell
+#: pass rate P(0 of 500) = 0.66%.
+TAPE_CERT_MIN_JUDGED = 500
+
+
+def tape_produces(doc: Mapping[str, Any], *, armed: bool,
+                  require_state: bool) -> dict[str, Any]:
+    """THE TICK TAPE MUST PRODUCE CERTIFICATES (principal 2026-10-14 07:25Z). Once the tape holds
+    the need (60 development days + lockbox on at least one symbol), it FAILS armed / WARNs in a
+    source view when (a) a tape family has mined > 0 and NO named verdict in 24 h, or (b) tape
+    families together judged > TAPE_CERT_MIN_JUDGED cells and hold 0 certificates. Absent tape
+    state is UNMEASURED, never a zero; a report with no tape block at all fails --require-state
+    (the box owes it, L1.49)."""
+    tape = doc.get("tape")
+    if not isinstance(tape, Mapping):
+        return {"metric": "tape_produces", "state": "FAIL" if require_state else "UNMEASURED",
+                "why": "JUDGE_COVERAGE carries no tape block"
+                       + (" -- --require-state says this box owes it (L1.49)" if require_state
+                          else "")}
+    depth = tape.get("depth") if isinstance(tape.get("depth"), Mapping) else {}
+    fams = tape.get("families") if isinstance(tape.get("families"), Mapping) else {}
+    if tape.get("status") != "MEASURED" or depth.get("status") != "MEASURED":
+        return {"metric": "tape_produces", "state": "UNMEASURED",
+                "why": f"tape state UNMEASURED: {tape.get('why') or depth.get('why')}"}
+    need = depth.get("days_needed")
+    if not depth.get("meets_need", int(depth.get("symbols_at_need") or 0) > 0):
+        return {"metric": "tape_produces", "state": "OK",
+                "why": (f"the tape does not yet hold the need ({depth.get('max_days')} trading "
+                        f"days on the deepest symbol vs {need}; ETA "
+                        f"{depth.get('eta_days_to_judgeable')}d -- {depth.get('eta_rule')}): "
+                        "nothing judgeable is owed yet")}
+    silent = sorted(f for f, r in fams.items() if isinstance(r, Mapping)
+                    and int(r.get("mined") or 0) > 0
+                    and int(r.get("named_verdicts_24h") or 0) == 0)
+    judged = sum(int(r.get("judged_total") or 0) for r in fams.values()
+                 if isinstance(r, Mapping))
+    certs = tape.get("certificates_total")
+    barren = certs is not None and int(certs) == 0 and judged > TAPE_CERT_MIN_JUDGED
+    if not silent and not barren:
+        return {"metric": "tape_produces", "state": "OK",
+                "why": (f"tape at need ({depth.get('symbols_at_need')} symbol(s) >= {need} "
+                        f"trading days); every mined tape family has a named verdict in 24h; "
+                        f"certificates {certs} on {judged} judged")}
+    parts = []
+    if silent:
+        parts.append("tape family(ies) with mined cells and NO named verdict in 24h while the "
+                     "tape meets the need: " + ", ".join(
+                         f"{f} (mined {int(fams[f].get('mined') or 0)}, shippable "
+                         f"{int(fams[f].get('shippable') or 0)}, judged_total "
+                         f"{int(fams[f].get('judged_total') or 0)})" for f in silent))
+    if barren:
+        parts.append(f"tape families judged {judged} cells (> {TAPE_CERT_MIN_JUDGED}) with the "
+                     f"tape at need and hold 0 certificates")
+    return {"metric": "tape_produces", "state": "FAIL" if armed else "WARN",
+            "families": silent, "judged": judged, "certificates": certs,
+            "why": "; ".join(parts) + ("" if armed else
+                                       " -- published, not failed: source view / non-judge host")}
+
+
 def judge(report: Path | None = None, *, require_state: bool = False,
           now: datetime | None = None, liveness: bool | None = None,
           heartbeat: Path | None = None, stall: Path | None = None) -> dict[str, Any]:
@@ -325,9 +530,24 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
                             if isinstance(r, dict)}
     judged_any = sum(int(r.get("judged_window") or 0) for r in fams.values())
 
+    # 0. NEVER JUDGED (2026-10-14). A floor quota on a family the judge never rules on is a quota
+    #    nobody consumed: orderflow_imbalance and liquidity_regime sat at judged_total 0 for 782h
+    #    and 499h while every check below read OK. Age alone is the trigger here, deliberately --
+    #    a family with NO verdict has no movement to ratchet, and two days without one is not a
+    #    short hour. Armed by the same host semantics as the law gate's other state checks.
+    nj = never_judged(fams, doc, armed=_armed(require_state))
+    out["checks"].append(nj)
+    if nj["state"] == "FAIL":
+        failures.extend(n["family"] for n in nj["families"][:10])
+    # 0b. THE TICK TAPE PRODUCES CERTIFICATES (principal 2026-10-14), see `tape_produces`.
+    tp = tape_produces(doc, armed=_armed(require_state), require_state=require_state)
+    out["checks"].append(tp)
+    if tp["state"] == "FAIL":
+        failures.extend([f"tape:{f}" for f in tp.get("families") or []] or ["tape_produces"])
+
     # 1. STARVATION: unjudged cells and no place in the queue.
     starved = sorted((f for f, r in fams.items()
-                      if int(r.get("unjudged") or 0) > 0
+                      if int(r.get("shippable", r.get("unjudged")) or 0) > 0
                       and int(r.get("queued") or 0) == 0
                       and str(r.get("judging_status") or "") != "STUDY_ONLY"),
                      key=lambda f: -int(fams[f].get("unjudged") or 0))
@@ -441,7 +661,9 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
             if int(row.get("remainder") or 0) <= 0:
                 continue
             for higher in ranking[:i]:
-                room = int(higher.get("unjudged") or 0) - int(higher.get("quota") or 0)
+                # Room on what SHIPS: cells the bank holds out of the docket take no remainder.
+                room = (int(higher.get("shippable", higher.get("unjudged")) or 0)
+                        - int(higher.get("quota") or 0))
                 if int(higher.get("remainder") or 0) == 0 and room > 0:
                     starved_higher.append(f"{row.get('family')} over {higher.get('family')}")
                     break
@@ -554,6 +776,13 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
                               "why": f"pre-warm failures {float(pw_was):.1%} -> "
                                      f"{float(pw_now):.1%}"})
 
+    # 8. THE JUDGING RATE (principal 2026-10-14: "judges even 100-200k cells a day"). Verdicts in
+    #    the last 24 h from the judge's own ledger against the 150,000/day floor.
+    jr = judging_rate(doc, require_state=require_state, armed=_armed(require_state))
+    out["checks"].append(jr)
+    if jr["state"] == "FAIL":
+        failures.append("judging_rate")
+
     totals = doc.get("totals") or {}
     out["totals"] = {k: totals.get(k) for k in (
         "families_mined", "families_with_backlog", "families_queued", "families_starved",
@@ -562,7 +791,8 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
         "hours_to_drain", "capacity_short", "unknown_total", "unknown_share",
         "unknown_unnamed", "never_fires_cells", "unrunnable_parked", "unrunnable_bank",
         "drain_status", "backlog_growth_per_hour", "capacity_sustained_per_hour",
-        "prewarm_fail_share", "not_run_named")}
+        "prewarm_fail_share", "not_run_named", "shippable_total", "parked_unrunnable_total",
+        "families_never_judged", "verdicts_24h", "judging_rate_target_per_day")}
     out["unknown_reasons"] = (doc.get("unknown_reasons") or {}).get("by_reason") or {}
     out["top_value"] = [{k: r.get(k) for k in ("rank", "family", "ev_per_judge_second",
                                                "p_optimistic", "prior_status", "quota",
@@ -828,9 +1058,11 @@ def main(argv: list[str] | None = None) -> int:
 
 
 __all__ = ["BOX_STATE_ELSEWHERE", "FUTURE_SKEW_S", "GAUNTLET_HEARTBEAT", "GAUNTLET_STALL",
-           "INCIDENTS", "PAGE_STATE_REL", "RATCHET", "REPAGE_H", "REPORT", "RULE",
-           "SOURCE_VIEW_ENV", "STALE_H", "WINDOW_SLACK", "incidents", "judge", "judge_liveness",
-           "liveness_fence", "main", "page_coverage", "render"]
+           "INCIDENTS", "JUDGING_RATE_TARGET_PER_DAY", "NEVER_JUDGED_MAX_AGE_H", "PAGE_STATE_REL",
+           "RATCHET", "REPAGE_H", "REPORT", "RULE", "SOURCE_VIEW_ENV", "STALE_H",
+           "TAPE_CERT_MIN_JUDGED", "WINDOW_SLACK", "incidents", "judge", "judge_liveness",
+           "judging_rate", "liveness_fence", "main", "never_judged", "page_coverage", "render",
+           "tape_produces"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover

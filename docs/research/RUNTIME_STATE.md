@@ -6,7 +6,7 @@
 
 - Measured at **2026-09-30T19:42:05+00:00** (cadence 60 min; stale past 120 min)
 - Tree: `e01cbdb1f3f9` on `live-control-room`; release seal ok=`False` running=`b794c18abb61` sealed=`1eba97937191`
-- Organs attested **1004** of 1357 registry components (427 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
+- Organs attested **1008** of 1357 registry components (427 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
 - Pass cost 1.39s; 0 hash(es) skipped over budget; 0 summary/-ies trimmed for size
 
 | state | organs | meaning |
@@ -14,7 +14,7 @@
 | **LIVE** | 90 | artifact present and newer than the organ's derived max silence |
 | **STALE** | 46 | artifact present but older than the organ's derived max silence |
 | **MISSING** | 47 | artifact absent while this host recorded the organ running |
-| **NEVER** | 782 | no artifact and no run record on this host |
+| **NEVER** | 786 | no artifact and no run record on this host |
 | **UNMEASURED** | 41 | artifact present, cadence undeclared -- nothing here may call it late |
 
 The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hourly and this repository deliberately does not carry it; the SHA-256 below lets a reader ask for any one artifact by name and check that what arrives is what this host published at the time stamped here.
@@ -217,7 +217,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:timeframe_coverage` | `hourly_cycle:timeframe_coverage` | 2026-09-12T10:58:00+00:00 exit_code=1 | `desks/mt5/reports/TIMEFRAME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
 | `leg:world_crawler` | `hourly_cycle:world_crawler` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
 
-## NEVER (782)
+## NEVER (786)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -1003,6 +1003,10 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:bar_clock_probe` | `hourly_cycle:bar_clock_probe` | UNMEASURED UNMEASURED | `desks/mt5/reports/BAR_CLOCK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/scripts/judge_priority.py` | `import:desks/mt5/scripts/run_sharded_gauntlet.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/JUDGE_PRIORITY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:libs/ops/provenance.py` | `import:ops/backup_state.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/BOX_HEARTBEAT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:cost_surface_accuracy` | `hourly_cycle:cost_surface_accuracy` | UNMEASURED UNMEASURED | `desks/mt5/reports/COST_SURFACE_ACCURACY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/fragility.py` | `invoked:desks/mt5/research/research_supervisor.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `fence:check_trial_inflation` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:trial_inflation` | `hourly_cycle:trial_inflation` | UNMEASURED UNMEASURED | `desks/mt5/reports/TRIAL_INFLATION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (41)
 

@@ -190,7 +190,9 @@ def detection_power(n_trials: int, n_obs: int,
     """
     if n_obs <= 1 or n_trials < 1 or not 0.0 < alpha < 1.0:
         return 0.0
-    sr0 = expected_max_sharpe(n_trials, 1.0 / n_obs)
+    from libs.research.trial_count_guard import bar_n  # fixed N; the count is reported only
+    # Tier S null variance 1/(T-1), the certifier's own (was 1/T)
+    sr0 = expected_max_sharpe(min(n_trials, bar_n(n_trials)), 1.0 / (n_obs - 1))
     hurdle = (sr0 + float(norm.ppf(1.0 - alpha)) / np.sqrt(n_obs - 1)) * np.sqrt(PPY)
     se = float(np.sqrt(PPY / n_obs))
     return float(1.0 - norm.cdf((hurdle - true_ann_sharpe) / se))
@@ -217,10 +219,16 @@ def _power_grid(m: np.ndarray, t_obs: np.ndarray, true_ann_sharpe: float,
     ok = (m >= 2) & (t > 1)
     if not np.any(ok):
         return out
-    mm, tt = m[ok], t[ok]
+    # THE BAR'S N IS FIXED (principal 2026-10-13, owner's T8 ruling), exactly as in
+    # detection_power: the cohort size m still weights a stratum's expected discoveries in the
+    # planner, but it never raises the hurdle -- min(m, BAR_N), so a cohort below BAR_N keeps
+    # exactly the hurdle it had and none rises above the fixed bar.
+    from libs.research.trial_count_guard import BAR_N
+    tt = t[ok]
+    mm = np.minimum(m[ok], float(BAR_N))
     a = norm.ppf(1.0 - 1.0 / mm)
     b = norm.ppf(1.0 - 1.0 / (mm * np.e))
-    sr0 = np.sqrt(1.0 / tt) * ((1.0 - _EULER) * a + _EULER * b)
+    sr0 = np.sqrt(1.0 / (tt - 1.0)) * ((1.0 - _EULER) * a + _EULER * b)   # Tier S 1/(T-1)
     hurdle = (sr0 + norm.ppf(1.0 - alpha) / np.sqrt(tt - 1.0)) * np.sqrt(PPY)
     se = np.sqrt(PPY / tt)
     out[ok] = 1.0 - norm.cdf((hurdle - true_ann_sharpe) / se)
@@ -248,6 +256,7 @@ def plan_strata(lengths: Sequence[int], *, min_cohort: int = MIN_COHORT, min_obs
     optimiser cannot buy power by fragmenting, and total family-wise error stays at
     CAMPAIGN_ALPHA no matter how the campaign is cut.
     """
+    from libs.research.trial_count_guard import bar_n
     lens = [int(x) for x in lengths]
     n = len(lens)
     available = sum(lens)
@@ -262,7 +271,9 @@ def plan_strata(lengths: Sequence[int], *, min_cohort: int = MIN_COHORT, min_obs
     lens_arr = np.asarray(sorted_len, dtype="float64")
     best_score, best_cuts, best_k = 0.0, [], 1
     for k in range(1, max_k + 1):
-        alpha_k = CAMPAIGN_ALPHA / k
+        # Bonferroni across strata at the FIXED bar N (principal 2026-10-13): never above k,
+        # never above BAR_N -- a split into more than BAR_N strata costs no more than BAR_N.
+        alpha_k = CAMPAIGN_ALPHA / min(k, bar_n(k))
         # value[i, e] = expected discoveries from the stratum order[i:e]. Built VECTORISED --
         # the scalar form of this DP is O(n^2 k^2) Python iterations with a scipy call inside and
         # did not finish at n=420. Same arithmetic, same answer, seconds instead of minutes.
@@ -291,7 +302,7 @@ def plan_strata(lengths: Sequence[int], *, min_cohort: int = MIN_COHORT, min_obs
                     i, jj = int(nxt[i, jj]), jj - 1
                 best_score, best_cuts, best_k = float(dp[0, j]), cuts, j
 
-    alpha_final = CAMPAIGN_ALPHA / max(1, best_k)
+    alpha_final = CAMPAIGN_ALPHA / min(max(1, best_k), bar_n(best_k))
     strata: list[Stratum] = []
     i = 0
     for j in best_cuts:

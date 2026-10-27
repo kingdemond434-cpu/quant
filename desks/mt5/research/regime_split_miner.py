@@ -58,6 +58,7 @@ from mt5desk import families as fam  # noqa: E402
 from mt5desk import families_orthogonal as fo  # noqa: E402
 
 from research import proposer_common as pc  # noqa: E402
+from libs.research.trial_count_guard import bar_n  # noqa: E402  (the bar's N is fixed; counts are reported only)
 
 SOURCE = "regime_split_miner"
 REPORT = _DESK / "reports" / "regime_split_miner.json"
@@ -207,7 +208,7 @@ def run(symbols: list[str] | None = None, budget_s: float = 1800.0) -> dict[str,
         # Each cell pays for the WHOLE union ever tried, never only this pass's width.
         n = max(int(r.get("n_tests_sweep") or 0), union_n)
         r["n_tests_sweep"] = n
-        r["t_deflated_sweep"] = round(deflate_t(float(r["t_gross"]), n), 3)
+        r["t_deflated_sweep"] = round(deflate_t(float(r["t_gross"]), min(n, bar_n(n))), 3)
         r["proposed"] = bool(r.get("clears_cost") and r["t_deflated_sweep"] > pc.PROPOSE_T
                              and int(r.get("n_independent", 0)) >= pc.MIN_TRADES)
     for r in rows:

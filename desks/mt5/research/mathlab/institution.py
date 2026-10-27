@@ -464,8 +464,7 @@ def multiplicity_ledger(cards: list[MathHypothesisCard], evaluated_by_method: di
         card.multiplicity_charge = {"n_raw": n_raw, "n_effective": round(n_eff, 3),
                                     "declared_width": int(evaluated_by_method.get(
                                         card.tradition, 1)),
-                                    "charge_sigma": round(math.sqrt(2.0 * math.log(
-                                        max(2.0, n_eff))), 4),
+                                    "charge_sigma": round(B.trials_penalty(n_eff), 4),
                                     "ledger": "libs/research/trial_ledger.py"}
     return {"status": "MEASURED", **census.to_dict(), "cards": len(cards)}
 

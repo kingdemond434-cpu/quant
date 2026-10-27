@@ -105,7 +105,9 @@ def test_the_three_terms_are_exactly_the_specification(real):
     expected = (verdict.evidence_t - B.complexity_penalty(obj) - B.trials_penalty(300)
                 + verdict.prior_shift)
     assert verdict.value == pytest.approx(expected)
-    assert B.trials_penalty(2) < B.trials_penalty(20) < B.trials_penalty(2000)
+    # TRANSFORMED 2026-10-14 (principal: bars never rise with trials): the penalty is the count's
+    # own below BAR_N and the fixed bar's above it -- 20 and 2000 trials pay the same
+    assert B.trials_penalty(2) < B.trials_penalty(20) == B.trials_penalty(2000)
     assert B.effective_trials(10, 5) == 15 and B.effective_trials(0) == 1
 
 

@@ -290,20 +290,20 @@ def block_bootstrap_ci(values: np.ndarray, rng: np.random.Generator, n: int = N_
 
 
 def bh_fdr(pvalues: Sequence[float], q: float = ALPHA) -> list[bool]:
-    """Benjamini-Hochberg, through `causal_lab`'s implementation when it imports."""
+    """Benjamini-Hochberg at the FIXED bar N (principal 2026-10-13).
+
+    Each rank is charged min(its own BH charge m/i, BAR_N): rank i's threshold is
+    q * max(i/m, 1/BAR_N), never below BH's q * i / m (so no number of hypotheses tested raises
+    the bar) and never above Bonferroni at the fixed N (so none deflates it below N=5 either).
+    It equals `causal_lab.bh_fdr`'s rejections; it is written out so this module needs no
+    sibling import."""
+    from libs.research.trial_count_guard import bar_n
     p = np.asarray([1.0 if v is None or not math.isfinite(v) else float(v) for v in pvalues])
     if p.size == 0:
         return []
-    lab = _mod("causal_lab")
-    if lab is not None and hasattr(lab, "bh_fdr"):
-        try:
-            keep, _ = lab.bh_fdr(p, q)
-            return [bool(k) for k in np.asarray(keep).ravel()]
-        except (TypeError, ValueError):
-            pass
     order = np.argsort(p)
     ranked = p[order]
-    thresh = q * (np.arange(1, p.size + 1) / p.size)
+    thresh = q * np.maximum(np.arange(1, p.size + 1) / p.size, 1.0 / bar_n(p.size))
     passed = ranked <= thresh
     cut = int(np.max(np.nonzero(passed)[0]) + 1) if passed.any() else 0
     keep = np.zeros(p.size, dtype=bool)

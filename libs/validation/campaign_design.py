@@ -111,13 +111,17 @@ def dsr_hurdle_annual(n_trials: int, n_obs: int, *, var_sharpes: float | None = 
     number moves if the gate moves. Inlining the deflator as a literal would let this drift
     silently away from the gate it claims to describe.
 
-    `var_sharpes` defaults to the NULL dispersion 1/T -- the variance of sample Sharpes across
-    zero-edge candidates -- which makes the result a FLOOR. A real cohort disperses more than
-    noise and `expected_max_sharpe` scales linearly in that dispersion, so the live hurdle is
-    >= this, never below it. Reporting the floor keeps every verdict conservative in the safe
-    direction: this module can understate how underpowered a campaign is, never overstate it.
+    `var_sharpes` defaults to the Tier S NULL dispersion 1/(T-1) -- the variance of sample
+    Sharpes across zero-edge candidates -- which makes the result a FLOOR. A real cohort
+    disperses more than noise and `expected_max_sharpe` scales linearly in that dispersion, so
+    the live hurdle is >= this, never below it. Reporting the floor keeps every verdict
+    conservative in the safe direction: this module can understate how underpowered a campaign
+    is, never overstate it.
     """
-    sr0 = expected_max_sharpe(n_trials, (1.0 / n_obs) if var_sharpes is None else var_sharpes)
+    from libs.research.trial_count_guard import bar_n  # fixed N; the count is reported only
+    sr0 = expected_max_sharpe(min(n_trials, bar_n(n_trials)),
+                              # Tier S null variance 1/(T-1), the certifier's own (was 1/T)
+                              (1.0 / max(1, n_obs - 1)) if var_sharpes is None else var_sharpes)
     # dsr >= threshold  <=>  z >= Phi^-1(threshold), with z = (sr - sr0)*sqrt(T-1)/sqrt(denom)
     # and denom -> 1 for near-normal returns. Solve for sr, then annualise.
     z = float(_norm.ppf(DSR_THRESHOLD))

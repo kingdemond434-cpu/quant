@@ -1062,6 +1062,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_reconcile", "clock_liveness", "certificate_clock_law",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    # NO BAR EVER RISES WITH A TRIAL COUNT (principal 2026-10-13): a 3 s tree scan, every hour.
+    "trial_inflation",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
@@ -1337,12 +1339,16 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # region, stamped at the registry doors. The machine measuring its
                      # own lineage: meta.
                      "attribution_census",
+                     # THE ENTRY-HOUR COST MODEL CHECKED AGAINST THE ACCOUNT'S OWN FILLS.
+                     "cost_surface_accuracy",
                      # WHY CELLS NEVER BUILT, WHAT EACH LEG CLAIMS, AND ONE HEALTH VERDICT: the
                      # machine measuring its own build path, experiments and organs: meta.
                      "build_failure_bank", "experiment_contracts", "health_board",
                      "runtime_attestation", "self_repair", "desk_self_heal",
                      "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
                      "research_live_identity",
+                     # THE BAR'S N, WATCHED: the machine measuring its own multiplicity: meta.
+                     "trial_inflation",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
                      "unknown_census"), "meta"),
@@ -2139,6 +2145,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The graph owns a 900 s bounded sweep. The calibration and acceptance organs are artifact
     # readers; their caps are only protection against a damaged file or a wedged task query.
     "cross_asset_graph": 1_000,
+    # Two JSONL reads and one M1 parquet per traded symbol (~15 on the box): seconds, capped low.
+    "cost_surface_accuracy": 240,
     "transmission_engine": 1_000,
     "forward_calibration": 180,
     "desk_self_heal": 240,
@@ -4820,6 +4828,11 @@ def main() -> None:
     # pass null clocks. It reports only and never tightens a gate or grants authority.
     fcal = _costed("forward_calibration", lambda: _producer(
         "forward_calibration", "research/forward_calibration.py", "--apply"))
+    # THE COST SURFACE AGAINST REAL FILLS (2026-10-13): every gate and forward clock now charges
+    # the spread of the slot a trade crosses the ask in (`research/entry_hour_cost.py`); this
+    # publishes the modelled charge beside the quote the account's fills actually met, per symbol.
+    csa = _costed("cost_surface_accuracy", lambda: _producer(
+        "cost_surface_accuracy", "research/cost_surface_accuracy.py"))
     # SAFE SELF-HEAL: re-run only the existing producer tasks named by the evidence audit.
     # Promotion, capital, gates, deadman state and orders are structurally outside its actuator.
     dsh = _costed("desk_self_heal", lambda: _producer(
@@ -5779,6 +5792,11 @@ def main() -> None:
         "meta_rnd", "research/meta_rnd.py", "--once", "--budget-s", "180"))
     ac = _costed("acceptance", lambda: _producer(
         "acceptance", "scripts/check_acceptance_properties.py"))
+    # NO BAR EVER RISES WITH A TRIAL COUNT (principal 2026-10-13: "permanently monitored ... so
+    # it never inflates"). Publishes TRIAL_INFLATION.json: unpinned bar calls, sealed sites owed
+    # to the T8 re-sign, and the ledger's re-run share; the same check gates every push.
+    tif = _costed("trial_inflation", lambda: _producer(
+        "trial_inflation", "scripts/check_trial_inflation.py", "--report"))
     # THE REBUILT 25-SEP LANES (2026-09-30), after every leg whose output they read:
     #   build_failure_bank    compile_candidates, run_external_backtest and the sealed gauntlet's
     #                         report -> why cells never BUILT, ranked into fix work
@@ -6026,6 +6044,7 @@ def main() -> None:
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,
                     "coevolution": cev, "model_search": mds, "cross_asset_graph": cag,
+                    "cost_surface_accuracy": csa,
                     "transmission_engine": txg,
                     "external_federation": xfd, "archaeology": arch, "sares": srs,
                     "certificate_truth": ctt, "forward_calibration": fcal,
@@ -6100,7 +6119,8 @@ def main() -> None:
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
-                    "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
+                    "opportunity_cost": oc, "acceptance": ac, "trial_inflation": tif,
+                    "opportunity_forecast": ofc,
                     "build_failure_bank": bfb, "trade_pathology": tpa,
                     "experiment_contracts": exc_, "health_board": hbd,
                     "preregistration": prg, "organ_census": ogc,

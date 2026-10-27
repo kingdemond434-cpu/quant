@@ -21,7 +21,10 @@ def test_input_and_builder_repairs_invalidate_replay_cache(tmp_path, monkeypatch
     for rel in ("mt5desk/engine.py", "mt5desk/cell_modifiers.py", "mt5desk/data.py",
                 "mt5desk/legacy_family_inputs.py", "mt5desk/family_inputs.py",
                 "mt5desk/family_clock_transition.py", "scripts/external_gauntlet.py",
-                "research/orthogonal_sweep.py"):
+                "research/orthogonal_sweep.py",
+                # The signed image (hour-of-entry, stack step 05) adds the cost a cached series
+                # was charged to the identity: both must exist for it to be computed at all.
+                "research/entry_hour_cost.py", "data/cost_surface.json"):
         path = desk / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("version = 1\n", encoding="utf-8")

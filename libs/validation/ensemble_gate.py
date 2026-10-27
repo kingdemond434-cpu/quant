@@ -559,7 +559,9 @@ def score_ensemble(
     if est.size < 2:
         raise ValidationError("need >= 2 sharpe estimates to price the deflation's search space")
 
-    dsr = deflated_sharpe_ratio(combined, n_trials=max(n_trials, 2), sharpe_estimates=est,
+    from libs.research.trial_count_guard import bar_n  # fixed N; the count is reported only
+    dsr = deflated_sharpe_ratio(combined, n_trials=min(n_trials, bar_n(n_trials)),
+                                sharpe_estimates=est,
                                 threshold=_DSR_THRESHOLD)
     pbo = per_candidate_pbo(competitors, threshold=_PBO_THRESHOLD)
     stepdown = romano_wolf(competitors, n_boot=n_boot, alpha=ALPHA, seed=seed)

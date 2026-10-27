@@ -570,6 +570,10 @@ def stratified_campaign_gates(
     plan = plan_strata([len(r) for r in series])
     per_candidate: list[tuple[CampaignGates, int] | None] = [None] * len(series)
     k = max(1, len(plan.strata))
+    # Bonferroni across strata at the FIXED bar N (principal 2026-10-13): min(k, BAR_N), the
+    # same level plan_strata scored each stratum at; never above k, never above the fixed bar.
+    from libs.research.trial_count_guard import bar_n
+    k_bar = min(k, bar_n(k))
     # R0263 TIMED, PER STRATUM. Romano-Wolf's bootstrap is linear in retained observations, so
     # stratifying buys 180.8x the expected discoveries at roughly 5x the compute -- and that "5x"
     # was a prose comment carrying one hand-measured fixture number (campaign_window.py's COST
@@ -584,7 +588,7 @@ def stratified_campaign_gates(
     t0 = time.perf_counter()
     for s in plan.strata:
         t_s = time.perf_counter()
-        gates = campaign_gate_stats(stratum_matrix(series, s), alpha=CAMPAIGN_ALPHA / k)
+        gates = campaign_gate_stats(stratum_matrix(series, s), alpha=CAMPAIGN_ALPHA / k_bar)
         stratum_seconds.append(round(time.perf_counter() - t_s, 3))
         if gates is None:                      # cohort of <2 cannot carry multiplicity statistics
             continue
@@ -708,7 +712,8 @@ def validate(
     # The LEGACY path keeps the full deflation: nothing else corrects for multiplicity there.
     # `pc_p` is FWER-adjusted by construction (libs/validation/per_candidate), so the R0224 rule
     # applies to that seam identically: the multiplicity penalty is paid once, in Romano-Wolf.
-    dsr_trials = 1 if (per_candidate or pc_supplied) else n_trials
+    from libs.research.trial_count_guard import bar_n  # fixed N; the count is reported only
+    dsr_trials = 1 if (per_candidate or pc_supplied) else min(n_trials, bar_n(n_trials))
     dsr = deflated_sharpe_ratio(arr, n_trials=dsr_trials, sharpe_estimates=sharpe_estimates,
                                 threshold=_DSR_THRESHOLD)
     if per_candidate:

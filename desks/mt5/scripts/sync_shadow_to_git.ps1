@@ -790,6 +790,8 @@ $reportPaths = @(
     # tasks, consecutive tripped passes, and its missed-growth line) -- audit of 2832cebd1
     "desks/mt5/reports/judge_alive_fence.json",
     "desks/mt5/reports/DEEPENING_MEMORY_GUARD.json",
+    # the trial-inflation fence (2026-10-13): unpinned bar calls, sealed sites owed, re-run share
+    "desks/mt5/reports/TRIAL_INFLATION.json",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json",
     "desks/mt5/reports/BREADTH_MANDATE.json",
     "desks/mt5/reports/TIER1_SCORECARD.json",

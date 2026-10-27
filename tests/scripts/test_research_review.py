@@ -63,14 +63,22 @@ def test_NO_KILLS_YIELDS_NO_CAVEAT() -> None:
 
 def test_KILLED_CELLS_BECOME_NEAR_SURVIVORS_CARRYING_THE_ANCESTRY() -> None:
     """A descendant is a test on the SAME data chosen BECAUSE the desk saw this result, so it
-    inherits the whole search that produced it -- otherwise the bank becomes the most efficient
-    survivor-manufacturing device on the desk."""
+    inherits the ancestry's trial count -- REPORTED in its note. Since 2026-10-13 (principal:
+    "make sure the bars never raise never ever penalty never inflation due to trials") that count
+    never raises the descendant's hurdle: the bar is sqrt(2 ln BAR_N) whatever the ancestry."""
+    import math
+
+    from libs.research.trial_count_guard import BAR_N
     bank = RR.bank_near_survivors(_BOX)
     assert len(bank) == 1
     row = bank[0]
     assert row["failure_mode"] == "sample"
-    assert row["descendant_hurdle"] == pytest.approx(5.236, abs=1e-3)
-    assert "898560" in row["note"]
+    assert row["descendant_hurdle"] == pytest.approx(math.sqrt(2.0 * math.log(BAR_N)), abs=1e-3)
+    assert "898560" in row["note"]                    # the ancestry count is still reported
+    for universe in (5, 50, 10_000_000):
+        other = RR.bank_near_survivors({**_BOX, "declared_universe": universe})[0]
+        assert other["descendant_hurdle"] == row["descendant_hurdle"]
+        assert str(universe) in other["note"]
 
 
 def test_A_SAMPLE_FAILURE_LICENSES_NO_DESCENDANTS() -> None:

@@ -199,15 +199,16 @@ def deflate(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     Mirrors `proposer_common.deflate`'s fields so the compiler and the allocator read this
     proposer's rows like any other's; the only difference is that the charge is LARGER.
     """
+    from libs.research.trial_count_guard import bar_n  # the bar's N is fixed; counts are reported only
     n = len(rows)
     life = _family_trials()
     for r in rows:
         charged = n + int(r.get("selection_trials") or 0)
         t = float(r.get("t_gross") or 0.0)
         r["n_tests_sweep"] = charged
-        r["t_deflated_sweep"] = round(deflate_t(t, charged), 3)
+        r["t_deflated_sweep"] = round(deflate_t(t, min(charged, bar_n(charged))), 3)
         r["n_tests_lifetime"] = charged + life
-        r["t_deflated_lifetime"] = round(deflate_t(t, charged + life), 3)
+        r["t_deflated_lifetime"] = round(deflate_t(t, min(charged + life, bar_n(charged + life))), 3)
         r["proposed"] = bool(r.get("clears_cost") and r["t_deflated_sweep"] > pc.PROPOSE_T
                              and int(r.get("n_independent", 0)) >= pc.MIN_TRADES)
     return rows
