@@ -2553,6 +2553,49 @@ def entry_is_legal(price: float, side: str, bid: float, ask: float,
     return True, ""
 
 
+def follow_limit_is_legal(price: float, side: str, bid: float, ask: float,
+                          point: float, stops_level: int) -> tuple[bool, str]:
+    """May a FOLLOWING gold leg whose stop is already through the market rest as a LIMIT at the
+    same level? (True, "") or (False, why). Pure.
+
+    A lane that copies E8's filled direction (the gold OCO's fallback mode) is asked to send AFTER
+    E8's stop filled, so the price is past the range edge by construction and `entry_is_legal`
+    refuses the stop leg. The entry stays the certified level -- a buy limit below the ask, a sell
+    limit above the bid, the same rule `ftmo_follower.entry_order_kind` applies -- never a chase;
+    inside the broker's band it is NOT AVAILABLE, exactly as the stop would be."""
+    band = max(stops_level, 0) * max(point, 1e-9)
+    if side == "buy_stop":
+        gap = ask - price
+        if gap < band:
+            return False, (f"buy limit {price:.2f} is {gap:.2f} below ask {ask:.2f}; broker "
+                           f"needs {band:.2f}. NOT AVAILABLE today.")
+        return True, ""
+    gap = price - bid
+    if gap < band:
+        return False, (f"sell limit {price:.2f} is {gap:.2f} above bid {bid:.2f}; broker needs "
+                       f"{band:.2f}. NOT AVAILABLE today.")
+    return True, ""
+
+
+def follow_leg_played_out(side: str, bid: float, ask: float, sl: float, tp: float) -> str | None:
+    """Why a FOLLOWING gold leg is not sent because the trade it follows has already played out,
+    or None. Pure. A long leg is done once the bid is at or past its target, or at or under its
+    stop; a short leg the same on the ask (audit #419 r1: a buy limit rested 17 points under the
+    market with the ask 5 above its target, and a fresh buy stop placed after E8 was stopped
+    out)."""
+    if side == "buy_stop":
+        if bid >= tp:
+            return f"follow refused: bid {bid:.2f} is at or past the target {tp:.2f}; played out"
+        if bid <= sl:
+            return f"follow refused: bid {bid:.2f} is at or under the stop {sl:.2f}; played out"
+        return None
+    if ask <= tp:
+        return f"follow refused: ask {ask:.2f} is at or past the target {tp:.2f}; played out"
+    if ask >= sl:
+        return f"follow refused: ask {ask:.2f} is at or over the stop {sl:.2f}; played out"
+    return None
+
+
 def window_end_hour(window: str | None) -> float | None:
     """The SERVER hour at which a gold window's session ends, or None for a window this table
     does not know (a promoted family sleeve keeps its own rules).

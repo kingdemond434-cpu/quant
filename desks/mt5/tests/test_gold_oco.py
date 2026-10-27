@@ -1116,3 +1116,104 @@ def test_default_scalp_xau_waits_for_e8_then_follows_it(tmp_path) -> None:
     mt5c, nsc, _ = _scalp_xau(tmp_path / "c")
     sp._run_scalp(nsc, {"armed": True}, [sp._sleeve()], 10_000.0)
     assert len(mt5c.sent) == 1
+
+
+# ============================================ a fallback follower's late rule runs from E8's fill
+#
+# The lock made Fusion wait for E8's first fill and the late rule refused every gold bracket five
+# minutes after 07:00 server; E8's stops almost never fill that fast, so Fusion's gold_asia sent
+# nothing on any day after both landed. These run `main` WITH the late rule on (the harness lifts
+# it) at 09:30 on the harness clock, and stamp E8's claim on that same clock.
+
+class _LimitTerminal(_GwTerminal):
+    ORDER_TYPE_BUY_LIMIT, ORDER_TYPE_SELL_LIMIT = 2, 3
+
+
+def _late_main(tmp_path, monkeypatch, mt5) -> dict:
+    ns = ga._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    monkeypatch.setattr(ga.dc, "GOLD_SEND_GRACE_MIN", 5.0)      # the rule, back on
+    ns["main"]()
+    return ns
+
+
+def _e8_claimed(side: str, minutes_before: float) -> None:
+    _e8_fills(ga._DAY, side)
+    days, _ = oco.read_directions()
+    days[ga._DAY]["claimed_at"] = (ga._WHEN - timedelta(minutes=minutes_before)).isoformat()
+    oco._save_days(days, ga._DAY)
+
+
+def test_a_waiting_follower_keeps_the_late_rule_and_sends_once_e8_fills(
+        monkeypatch, tmp_path) -> None:
+    _default_world(ga._DAY)
+    oco.publish_lane("fusion", fu_key(), positions=[], orders=[], date=ga._DAY)
+    rows = ga._gold_rows()
+    mt5 = _LimitTerminal(rows, *ga._quote(rows))
+    ns = _late_main(tmp_path, monkeypatch, mt5)
+    # Nothing can be sent while waiting, so nothing is resolved or charged: the late rule stands.
+    assert mt5.sent == [] and any(r.get("reason") == "late_send" for r in ns["_intents"])
+    _e8_claimed("long", 2)
+    (tmp_path / "b").mkdir()
+    mt5b = _LimitTerminal(rows, *ga._quote(rows))
+    _late_main(tmp_path / "b", monkeypatch, mt5b)
+    assert [r["type"] for r in mt5b.sent] == [mt5b.ORDER_TYPE_BUY_STOP]
+
+
+def test_a_follower_restarted_long_after_e8s_fill_is_late(monkeypatch, tmp_path) -> None:
+    _default_world(ga._DAY)
+    _e8_claimed("long", 145)                     # E8 filled 07:05; Fusion comes back at 09:30
+    rows = ga._gold_rows()
+    mt5 = _LimitTerminal(rows, *ga._quote(rows))
+    ns = _late_main(tmp_path, monkeypatch, mt5)
+    assert mt5.sent == [] and any(r.get("reason") == "late_send" for r in ns["_intents"])
+
+
+def test_the_follow_grace_is_e8s_pass_plus_the_gateways_own() -> None:
+    assert ga.dc.E8_GOLD_SEND_GRACE_MIN + ga.dc.GOLD_SEND_GRACE_MIN == 15.0
+
+
+@pytest.mark.parametrize("e8_side,placed", [("long", "ORDER_TYPE_BUY_LIMIT"),
+                                             ("short", "ORDER_TYPE_SELL_LIMIT")])
+def test_a_follower_through_its_level_rests_a_limit_at_the_same_level(
+        monkeypatch, tmp_path, e8_side, placed) -> None:
+    _default_world(ga._DAY)
+    _e8_claimed(e8_side, 3)
+    rows = ga._gold_rows()
+    hi, lo, spec = ga.dc.bracket_from_bars(ga.dc.h1_frame(rows), None, 7, 0.01, 20)
+    # E8's stop filled, so the price has run a dollar past the edge it broke.
+    bid, ask = (hi + 1.0, hi + 1.1) if e8_side == "long" else (lo - 1.1, lo - 1.0)
+    mt5 = _LimitTerminal(rows, bid, ask)
+    _late_main(tmp_path, monkeypatch, mt5)
+    (req,) = mt5.sent
+    leg = spec["buy_stop" if e8_side == "long" else "sell_stop"]
+    assert req["type"] == getattr(mt5, placed)
+    assert (req["price"], req["sl"], req["tp"]) == (leg["price"], leg["sl"], leg["tp"])
+
+
+@pytest.mark.parametrize("where", ["past_target", "under_stop"])
+def test_a_follow_after_the_trade_played_out_sends_nothing(monkeypatch, tmp_path, where) -> None:
+    _default_world(ga._DAY)
+    _e8_claimed("long", 3)
+    rows = ga._gold_rows()
+    _, _, spec = ga.dc.bracket_from_bars(ga.dc.h1_frame(rows), None, 7, 0.01, 20)
+    leg = spec["buy_stop"]
+    px = leg["tp"] + 5.0 if where == "past_target" else leg["sl"] - 1.0
+    mt5 = _LimitTerminal(rows, px, px + 0.1)
+    _late_main(tmp_path, monkeypatch, mt5)
+    assert mt5.sent == []
+
+
+def test_a_follower_limit_inside_the_band_is_not_available() -> None:
+    assert ga.dc.follow_limit_is_legal(2000.0, "buy_stop", 2000.0, 2000.1, 0.01, 20)[0] is False
+    assert ga.dc.follow_limit_is_legal(2000.0, "buy_stop", 2000.9, 2001.0, 0.01, 20)[0] is True
+    assert ga.dc.follow_limit_is_legal(2000.0, "sell_stop", 1999.9, 2000.0, 0.01, 20)[0] is False
+    assert ga.dc.follow_limit_is_legal(2000.0, "sell_stop", 1999.0, 1999.1, 0.01, 20)[0] is True
+
+
+def test_an_oco_lane_keeps_the_late_rule(monkeypatch, tmp_path) -> None:
+    _world("oco")
+    rows = ga._gold_rows()
+    mt5 = _LimitTerminal(rows, *ga._quote(rows))
+    ns = _late_main(tmp_path, monkeypatch, mt5)
+    assert mt5.sent == []
+    assert any(r.get("reason") == "late_send" for r in ns["_intents"])

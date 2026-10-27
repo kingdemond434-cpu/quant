@@ -70,6 +70,8 @@ from mt5desk.decision_core import (
     closed_trade_r,
     diagnose,
     entry_is_legal,
+    follow_leg_played_out,
+    follow_limit_is_legal,
     exec_context,
     family_bar_due,
     family_bracket,
@@ -1299,12 +1301,17 @@ def _recent_intents(limit: int = 5000) -> list[dict]:
 
 def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
                   sleeve_row: dict | None = None, blocked_side: str | None = None,
-                  blocked_why: str | None = None) -> dict:
+                  blocked_why: str | None = None, follow_limit: bool = False) -> dict:
     """Send the bracket legs that agree with the current book.
 
     ``blocked_side`` is the shared gold self-hedge rule: once XAU is directional, the leg that
     would reverse it is recorded but not sent.  With no open direction it is ``None`` and this
     remains the ordinary two-sided bracket.
+
+    ``follow_limit`` is set only for a gold leg that FOLLOWS E8's filled direction
+    (`gold_follow_state` "following"): its stop is through the market by construction, so it
+    rests as a limit at the same certified level (`follow_limit_is_legal`) instead of being
+    refused as not available.
     """
     if _DESK_STALE is not None:
         log(f"[{sleeve}] refused: desk stale ({_DESK_STALE['verdict']}), no new risk")
@@ -1374,9 +1381,26 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
                              price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
                              taken=False, reason="no_quote_at_decision", detail=why_noquote)
             continue
+        _limit, _out = False, None
         if _t is not None:
             legal, why_illegal = entry_is_legal(
                 float(s["price"]), side, float(_t.bid), float(_t.ask), _point, _lvl)
+            if follow_limit:
+                # A FOLLOW AFTER E8'S TRADE HAS PLAYED OUT IS NOT A FOLLOW (audit #419 r1): the
+                # market already at or past the leg's stop or target refuses it, stop or limit.
+                _out = follow_leg_played_out(side, float(_t.bid), float(_t.ask),
+                                             float(s["sl"]), float(s["tp"]))
+                if _out:
+                    legal, why_illegal = False, _out
+            if not legal and follow_limit and not _out:
+                _limit, _lwhy = follow_limit_is_legal(
+                    float(s["price"]), side, float(_t.bid), float(_t.ask), _point, _lvl)
+                if _limit:
+                    legal = True
+                    log(f"[{sleeve}] {side} follows E8 through its level: rests as a limit at "
+                        f"{float(s['price']):.2f} ({why_illegal})")
+                else:
+                    why_illegal = f"{why_illegal}; as a follow limit: {_lwhy}"
             if not legal:
                 log(f"NOT AVAILABLE [{sleeve}] {side}: {why_illegal}")
                 # Recorded as UNAVAILABLE, which is a different fact from a
@@ -1395,7 +1419,9 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
             "action": mt5.TRADE_ACTION_PENDING,
             "symbol": symbol,
             "volume": lot,
-            "type": mt5.ORDER_TYPE_BUY_STOP if side == "buy_stop" else mt5.ORDER_TYPE_SELL_STOP,
+            "type": ((mt5.ORDER_TYPE_BUY_LIMIT if side == "buy_stop" else mt5.ORDER_TYPE_SELL_LIMIT)
+                     if _limit else
+                     (mt5.ORDER_TYPE_BUY_STOP if side == "buy_stop" else mt5.ORDER_TYPE_SELL_STOP)),
             "price": s["price"],
             "sl": s["sl"],
             "tp": s["tp"],
@@ -1448,7 +1474,8 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
             decision_bid=(float(_t.bid) if _t is not None else None),
             decision_ask=(float(_t.ask) if _t is not None else None),
             spread_at_decision=(float(_t.ask) - float(_t.bid) if _t is not None else None),
-            point=_point, stops_level=_lvl, order_type="pending_stop", latency_ms=_lat_ms,
+            point=_point, stops_level=_lvl,
+            order_type=("limit" if _limit else "pending_stop"), latency_ms=_lat_ms,
             **_sleeve_identity(sleeve_row))
         sent.append({"side": side, "retcode": code,
                      "comment": res.comment if res else None,
@@ -1714,6 +1741,71 @@ def _order_risk_usd(sym: object, lot: object, entry: object, stop: object) -> fl
     except (TypeError, ValueError, ZeroDivisionError):
         return None
     return round(risk, 2) if tv > 0 and ts > 0 and risk == risk and risk > 0 else None
+
+
+#: HOW LONG A FOLLOWER MAY SEND AFTER E8'S FILL (audit #419 r1 MUST-FIX). E8 claims the day on
+#: the pass after its fill and cancels its twin there, so the follow cannot be sent before that
+#: pass ends: E8_GOLD_SEND_GRACE_MIN (one E8 pass plus its run limit, derived from E8's cadence)
+#: covers it. The gateway then gets its own GOLD_SEND_GRACE_MIN, the grace it has on its own
+#: signal hour. Past the sum the follow is a stale send exactly like the late send it replaces.
+def gold_follow_grace_min() -> float:
+    return float(_core.E8_GOLD_SEND_GRACE_MIN) + float(_core.GOLD_SEND_GRACE_MIN)
+
+
+def _iso_utc(at: object) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(at))
+    except (TypeError, ValueError):
+        return None
+    return t.replace(tzinfo=UTC) if t.tzinfo is None else t.astimezone(UTC)
+
+
+def gold_follow_state(day_key: str) -> tuple[str | None, str]:
+    """Is this gateway's gold lane FOLLOWING E8's fill right now? ("waiting" | "following" | None,
+    why). Only "following" lifts the late rule.
+
+    THE FALLBACK LANE COULD NEVER BE ON TIME (measured 2026-10-27). In the gold OCO's default
+    fallback mode (`gold_oco.gate`) this lane places nothing until E8's first gold fill sets the
+    day's direction, while `gold_send_late` refused every gold bracket more than
+    GOLD_SEND_GRACE_MIN (5 min) after its signal hour. E8 rests a stop bracket, which almost
+    never fills inside five minutes, so the lock refused both legs at 07:00-07:05 server and the
+    late rule refused the window for the day from 07:06: Fusion's gold_asia sent nothing on any
+    day after the two rules landed together (last placement 2026-10-13; `gold_oco_direction_lock`
+    and `gold_late_send` both billed on 2026-10-26 and 2026-10-27).
+
+    THE LATE RULE IS RE-TIMED, NOT LIFTED (audit #419 r1). A follower's send belongs to E8's
+    fill, so its deadline is the claim of that fill (`claimed_at`, this box's clock; else
+    `first_fill_at`) plus `gold_follow_grace_min()`; a restart hours after it is late as before.
+    "waiting" (no direction yet) keeps the late rule: nothing can be sent then, so nothing is
+    resolved and nothing is charged to the heat cap. None (the late rule stands): not a fallback
+    lane, an unreadable direction state or fill time (fail closed), another lane set the day, or
+    the follow deadline has passed. Dated by the server-tick `day_key`, as the gate is."""
+    from mt5desk import gold_oco as _oco
+    lane = _oco.gateway_lane()
+    if lane is None or _oco.configured_mode(lane) != "fallback":
+        return None, "not a fallback gold lane"
+    entry, why = _oco.day_entry(day_key)
+    if why is not None:
+        return None, f"gold direction state unreadable ({why})"
+    if entry is None:
+        return "waiting", f"gold OCO fallback: waiting for E8's first fill on {day_key}"
+    if entry.get("first_fill_lane") != _oco.LEADER:
+        return None, f"{day_key}'s direction was set by {entry.get('first_fill_lane')}, not E8"
+    # `claimed_at` is ALWAYS this box's wall clock (gold_oco.claim_fill writes it); a supplied
+    # `first_fill_at` may come from a venue clock, so it is only the fallback.
+    at = _iso_utc(entry.get("claimed_at")) or _iso_utc(entry.get("first_fill_at"))
+    if at is None:
+        return None, f"E8's {day_key} fill carries no readable time; the late rule stands"
+    grace = gold_follow_grace_min()
+    late_min = (datetime.now(tz=UTC) - at).total_seconds() / 60.0
+    if late_min < -1.0:
+        return None, (f"E8's {day_key} claim is stamped {-late_min:.0f} min in the future; "
+                      f"the clock is unreadable and the late rule stands")
+    if late_min > grace:
+        return None, (f"E8 filled {late_min:.0f} min ago, past the {grace:g}-min follow grace; "
+                      f"the follow is stale")
+    return "following", (f"gold OCO fallback: following E8's {entry.get('direction')} fill on "
+                         f"{day_key}, {late_min:.0f} min after it (grace {grace:g} min)")
 
 
 def gold_oco_send_refusal(symbol: str, side: int, tick: object) -> str | None:
@@ -4530,7 +4622,7 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                                            float(plan["target_atr"]))
 
 
-def resolve_pending_bracket(s: dict, hour: float, today) -> dict:
+def resolve_pending_bracket(s: dict, hour: float, today, day_key: str | None = None) -> dict:
     """The bracket this sleeve would place THIS pass -- resolved once, read-only, no side effects.
 
     WHY THIS EXISTS AS A FUNCTION (external audit, 2026-09-09). The heat cap runs before the
@@ -4584,6 +4676,11 @@ def resolve_pending_bracket(s: dict, hour: float, today) -> dict:
     # the bracket is not the certified one. Refused HERE, before the heat cap, so no budget is
     # reserved for it; the placement loop writes its SKIPPED row and missed-growth line.
     _late = gold_send_late(_win, hour)
+    if _late and s.get("symbol") == GOLD_SYMBOL:
+        # A FOLLOWER'S LATE RULE RUNS FROM E8'S FILL (`gold_follow_state`), not from the signal
+        # hour. The session-end guard above and the gate's direction still bind it.
+        if gold_follow_state(day_key or str(today))[0] == "following":
+            _late = None
     if _late:
         return {"ok": False, "stage": "late_send", "why": _late}
     sym = mt5.symbol_info(s["symbol"])
@@ -5048,7 +5145,8 @@ def main() -> None:
                     # the broker tick's day here instead would let the two sites disagree across
                     # midnight -- and since the cached resolution is what gets SENT, the charge
                     # site's answer would quietly become the trading rule.
-                    _pend = resolve_pending_bracket(_s, hour, datetime.now(tz=UTC).date())
+                    _pend = resolve_pending_bracket(_s, hour, datetime.now(tz=UTC).date(),
+                                                    day_key=day_key)
                 except Exception as _exc:
                     _pend = {"ok": False, "stage": "resolve_failed",
                              "why": f"{type(_exc).__name__}: {_exc}"}
@@ -5500,10 +5598,13 @@ def main() -> None:
                     save_state(st)
                     continue
                 _blocked_leg = next(iter(_all_blocked)) if _all_blocked else None
+                _follow = (s["symbol"] == GOLD_SYMBOL and st.get("armed")
+                           and gold_follow_state(day_key)[0] == "following")
                 res = place_bracket(st, spec, s["name"], s["symbol"], lot, sleeve_row=s,
                                     blocked_side=_blocked_leg,
                                     blocked_why=(_xblocked.get(_blocked_leg or "")
-                                                 or _oblocked.get(_blocked_leg or "")))
+                                                 or _oblocked.get(_blocked_leg or "")),
+                                    follow_limit=bool(_follow))
                 if s["symbol"] == GOLD_SYMBOL and any(
                         not o.get("blocked") and o.get("retcode") in (10008, 10009)
                         for o in (res.get("orders") or [])):
