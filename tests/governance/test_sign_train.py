@@ -10,6 +10,7 @@ from __future__ import annotations
 import ast
 import importlib.util
 import io
+import json
 from pathlib import Path
 
 import pytest
@@ -106,3 +107,31 @@ def test_typed_hash_must_match(monkeypatch: pytest.MonkeyPatch) -> None:
     assert st._confirm({"x.py": "a" * 64}) is True
     monkeypatch.setattr("builtins.input", lambda _: "b" * 12)
     assert st._confirm({"x.py": "a" * 64}) is False
+
+
+def test_repin_writes_the_signer() -> None:
+    name = "GAUNTLET_SEAL_ROTATION"
+    after = _constant(st.repin(SRC, name, "c" * 64, st.AUDITOR), name)
+    assert after["signed_by"] == "auditor-clear" and after["to"] == "c" * 64
+
+
+def test_only_committed_clear_rows_with_a_report_count() -> None:
+    a, b = "a" * 64, "b" * 64
+    text = "\n".join(
+        [
+            json.dumps({"path": "x.py", "sha256": a, "verdict": "CLEAR", "report": "R1"}),
+            json.dumps({"path": "x.py", "sha256": b, "verdict": "HOLD", "report": "R2"}),
+            json.dumps({"path": "y.py", "sha256": b, "verdict": "CLEAR"}),
+            "not json",
+        ]
+    )
+    assert st.parse_clears(text) == {"x.py": {a}}
+
+
+def test_the_audit_signs_only_cleared_bytes() -> None:
+    a, b = "a" * 64, "b" * 64
+    clears = {"x.py": {a}}
+    expect = st.cleared_expect({"x.py": a, "y.py": b}, clears)
+    assert expect == {"x.py": a}
+    assert st.binding_problems({"x.py": a, "y.py": b}, expect) != []
+    assert st.binding_problems({"x.py": a}, expect) == []

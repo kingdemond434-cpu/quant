@@ -1,21 +1,25 @@
-"""THE WEEKLY SIGN TRAIN -- one principal command signs an audited head and re-pins QB-002 with it.
+"""THE SIGN TRAIN -- re-sign an audited head and re-pin QB-002 with it, in one commit.
 
-WHY. A sealed-file change needs two edits that must land together: the principal's file-only
-re-sign of IMMUTABLE_MANIFEST.json, and the QB-002 seal rotation in research/quantbench.py
-("to" = the new full sha256, signed_by "principal", "from" untouched). Done by hand they came
-apart (#329 cleared without the re-pin, test_quantbench read REGRESSED after the merge), and each
-re-sign cost the principal a laptop sitting of copied hashes. This script is that sitting.
+WHY. A sealed-file change needs two edits that must land together: the file-only re-sign of
+IMMUTABLE_MANIFEST.json and the QB-002 seal rotation in research/quantbench.py ("to" = the new
+full sha256, "from" untouched). Done by hand they came apart (#329 cleared without the re-pin,
+test_quantbench read REGRESSED after the merge).
 
-WHAT IT IS NOT. It does not decide anything and cannot run unattended. It refuses unless HEAD is
-the exact commit the principal names and every moved file's bytes are the ones the principal names. It signs with the existing `check_immutable_evaluator.py
---sign-files --by principal`, so the manifest format has one writer.
+WHO SIGNS (D-20261027-001). zuck, the owner, ordered the principal sign removed on 2026-10-27:
+"no remove judge sign it should auto sign" / "remove sign" / "i am trlling u to do it". So the
+default signer is the AUDIT, not a person: a moved sealed file is signed only when a CLEAR row for
+its exact sha256 is already COMMITTED in data/SEAL_CLEARS.jsonl at the target. No CLEAR row, no
+sign. Everything else holds: the manifest still pins every judge file's bytes, QB-002 still reads
+REGRESSED on any unsigned byte, 1aa4b33f is never signed, and the train refuses any HEAD that is
+not the named target.
 
-    python scripts/sign_train.py --target <audited commit> --expect <path>=<audited sha256> ...
+    python scripts/sign_train.py --target <audited commit>                 # auditor-clear sign
+    python scripts/sign_train.py --target <commit> --principal --expect <path>=<sha256> ...
     (add --push to push the signed commit as a branch)
 
-It refuses without a terminal, and the principal types back the first 12 hex of each new hash:
-the sign stays a real human act. Every moved sealed file must be named by --expect with the exact
-audited sha256, so only the bytes the audit cleared can be signed.
+`--principal` keeps the human path: it refuses without a terminal and the principal types back
+the first 12 hex of each new hash. It signs with the existing `check_immutable_evaluator.py
+--sign-files --by <signer>`, so the manifest format has one writer.
 
 On any failed check both files are restored to HEAD and the exit code is non-zero.
 """
@@ -34,6 +38,9 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = "desks/mt5/data/IMMUTABLE_MANIFEST.json"
 QUANTBENCH = "desks/mt5/research/quantbench.py"
+# Append-only CLEAR record: {"path", "sha256", "verdict": "CLEAR", "report", "cleared_utc"}.
+SEAL_CLEARS = "desks/mt5/data/SEAL_CLEARS.jsonl"
+AUDITOR = "auditor-clear"
 
 # QB-002 rotation constant for each sealed file that has one (research/quantbench.py SEALED).
 ROTATIONS = {
@@ -80,7 +87,7 @@ def binding_problems(moved: dict[str, str], expect: dict[str, str]) -> list[str]
     problems = []
     for rel in sorted(set(moved) | set(expect)):
         if rel not in expect:
-            problems.append(f"{rel} moved to {moved[rel]} but no --expect names it")
+            problems.append(f"{rel} moved to {moved[rel]} but no --expect or CLEAR row names it")
         elif rel not in moved:
             problems.append(f"{rel} is named in --expect but did not move")
         elif moved[rel] != expect[rel]:
@@ -91,8 +98,8 @@ def binding_problems(moved: dict[str, str], expect: dict[str, str]) -> list[str]
     return problems
 
 
-def repin(src: str, name: str, new_to: str) -> str:
-    """Rewrite one *_SEAL_ROTATION block: new "to", signed_by "principal", "from" kept."""
+def repin(src: str, name: str, new_to: str, signer: str = "principal") -> str:
+    """Rewrite one *_SEAL_ROTATION block: new "to", signed_by = signer, "from" kept."""
     block = re.compile(rf"^{name} = \{{\n(.*?)^\}}\n", re.DOTALL | re.MULTILINE)
     m = block.search(src)
     if not m:
@@ -104,7 +111,7 @@ def repin(src: str, name: str, new_to: str) -> str:
         raise ValueError(f"{name} has no path/from to keep")
     new = (
         f'{name} = {{\n    "path": "{path.group(1)}",\n    "from": "{frm.group(1)}",\n'
-        f'    "to": "{new_to}",\n    "signed_by": "principal",\n}}\n'
+        f'    "to": "{new_to}",\n    "signed_by": "{signer}",\n}}\n'
     )
     return src[: m.start()] + new + src[m.end() :]
 
@@ -117,6 +124,27 @@ def _git(*args: str) -> str:
     return subprocess.run(
         ("git", *args), cwd=ROOT, capture_output=True, text=True, check=True
     ).stdout.strip()
+
+
+def parse_clears(text: str) -> dict[str, set[str]]:
+    """{path: {sha256 the audit cleared}} from SEAL_CLEARS.jsonl text; malformed rows are skipped."""
+    out: dict[str, set[str]] = {}
+    for line in text.splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(row, dict) or row.get("verdict") != "CLEAR":
+            continue
+        path, sha = row.get("path"), str(row.get("sha256", "")).lower()
+        if isinstance(path, str) and re.fullmatch(r"[0-9a-f]{64}", sha) and row.get("report"):
+            out.setdefault(path, set()).add(sha)
+    return out
+
+
+def cleared_expect(moved: dict[str, str], clears: dict[str, set[str]]) -> dict[str, str]:
+    """The --expect the audit implies: every moved file whose exact bytes carry a CLEAR row."""
+    return {rel: sha for rel, sha in moved.items() if sha in clears.get(rel, set())}
 
 
 def _restore() -> None:
@@ -154,13 +182,18 @@ def _commit_holds(head: str, moved: dict[str, str], commit: str = "HEAD") -> boo
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--target", required=True, help="the audited sha the principal is signing")
+    ap.add_argument("--target", required=True, help="the audited commit being signed")
     ap.add_argument(
         "--expect",
         action="append",
         default=[],
         metavar="PATH=SHA256",
         help="the audited full sha256 of each moved sealed file (repeat per file)",
+    )
+    ap.add_argument(
+        "--principal",
+        action="store_true",
+        help="sign as the principal at a terminal (--expect + type-back) instead of the audit",
     )
     ap.add_argument("--push", action="store_true", help="push the signed commit as a branch")
     a = ap.parse_args(argv)
@@ -193,11 +226,24 @@ def main(argv: list[str] | None = None) -> int:
             "audited quantbench.py change first"
         )
         return 2
+    if a.principal:
+        signer = "principal"
+    else:
+        # The audit signs: only bytes with a CLEAR row committed at the target, never --expect.
+        signer = AUDITOR
+        if expect:
+            print("REFUSED: --expect is for --principal; the audit signs from SEAL_CLEARS.jsonl")
+            return 2
+        try:
+            clears = parse_clears(_git("show", f"{head}:{SEAL_CLEARS}"))
+        except subprocess.CalledProcessError:
+            clears = {}
+        expect = cleared_expect(moved, clears)
     problems = binding_problems(moved, expect)
     if problems:
         print("REFUSED:\n  " + "\n  ".join(problems))
         return 2
-    if not _confirm(moved):
+    if a.principal and not _confirm(moved):
         return 2
 
     names = ", ".join(sorted(moved))
@@ -206,7 +252,7 @@ def main(argv: list[str] | None = None) -> int:
         src = (ROOT / QUANTBENCH).read_text("utf-8")
         for rel, sha in moved.items():
             if rel in ROTATIONS:
-                src = repin(src, ROTATIONS[rel], sha)
+                src = repin(src, ROTATIONS[rel], sha, signer)
         (ROOT / QUANTBENCH).write_text(src, "utf-8")
 
         py = sys.executable
@@ -216,7 +262,7 @@ def main(argv: list[str] | None = None) -> int:
                 "scripts/check_immutable_evaluator.py",
                 "--sign-files",
                 "--by",
-                "principal",
+                signer,
             )
             != 0
         ):
@@ -241,7 +287,7 @@ def main(argv: list[str] | None = None) -> int:
                 "git",
                 "commit",
                 "-m",
-                f"Principal sign train at {head[:12]}: {names}\n\n"
+                f"Sign train at {head[:12]} by {signer}: {names}\n\n"
                 "File-only re-sign of IMMUTABLE_MANIFEST plus QB-002 re-pin, same commit.",
                 "--",
                 MANIFEST,
@@ -271,7 +317,7 @@ def main(argv: list[str] | None = None) -> int:
             is_ours = (
                 bool(train)
                 and _git("rev-parse", f"{train}~1") == head
-                and subject.startswith(f"Principal sign train at {head[:12]}")
+                and subject.startswith(f"Sign train at {head[:12]} by {signer}")
             )
             if is_ours and not _commit_holds(head, moved, train):
                 print(f"HALF-SIGN at {train}: it does not carry both files and every re-pin.")
