@@ -143,12 +143,12 @@ def _confirm(moved: dict[str, str]) -> bool:
     return True
 
 
-def _commit_holds(head: str, moved: dict[str, str]) -> bool:
+def _commit_holds(head: str, moved: dict[str, str], commit: str = "HEAD") -> bool:
     """The new commit carries both files and every new QB-002 "to" (a hook may unstage one)."""
-    files = set(_git("show", "--name-only", "--format=", "HEAD").splitlines())
-    if _git("rev-parse", "HEAD~1") != head or not {MANIFEST, QUANTBENCH} <= files:
+    files = set(_git("show", "--name-only", "--format=", commit).splitlines())
+    if _git("rev-parse", f"{commit}~1") != head or not {MANIFEST, QUANTBENCH} <= files:
         return False
-    bench = _git("show", f"HEAD:{QUANTBENCH}")
+    bench = _git("show", f"{commit}:{QUANTBENCH}")
     return all(sha in bench for rel, sha in moved.items() if rel in ROTATIONS)
 
 
@@ -263,6 +263,14 @@ def main(argv: list[str] | None = None) -> int:
                 f"FAILED: HEAD {mine} does not sit directly on the target {head}; "
                 "nothing undone, sort it out by hand"
             )
+            ours = _git("rev-list", "--reverse", "--ancestry-path", f"{head}..{mine}")
+            train = ours.splitlines()[0] if ours else ""
+            if train and not _commit_holds(head, moved, train):
+                print(f"HALF-SIGN at {train}: it does not carry both files and every re-pin.")
+                print(f"  undo it with: git revert --no-edit {train}")
+                left = _git("status", "--porcelain", "--", MANIFEST, QUANTBENCH)
+                if left:
+                    print(f"  left staged or modified, not committed: {left}")
             return 1
         if not _commit_holds(head, moved):
             # HEAD is the train's own commit, alone above the target: safe to take back.
