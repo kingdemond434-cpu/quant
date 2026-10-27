@@ -92,6 +92,12 @@ def _bits(res) -> list[tuple]:
             rows]
 
 
+def _walked(df) -> tuple:
+    idx_ns = np.asarray(pd.DatetimeIndex(df.index).as_unit("ns").asi8, dtype="int64")
+    return (str(getattr(df.index, "tz", None)), df["open"].to_numpy(), df["high"].to_numpy(),
+            df["low"].to_numpy(), idx_ns)
+
+
 def _fresh(df, sigs, costs, monkeypatch) -> list:
     monkeypatch.setenv("MT5_ENGINE_LEG_MEMO", "0")
     try:
@@ -141,15 +147,51 @@ def test_a_mutated_signal_or_another_list_or_frame_walks_again(monkeypatch):
     engine._LEGS.slot = None
     run_backtest(df, sigs, c)
     sigs[5].stop = sigs[5].stop * 0.99                  # mutated in place: same list object
-    assert engine._LEGS.lookup(df, sigs, None) is None
+    assert engine._LEGS.lookup(df, sigs, None, _walked(df)) is None
     assert _bits(run_backtest(df, sigs, c)) == _fresh(df, sigs, c, monkeypatch)
     twin = list(sigs)                                   # equal content, another list
-    assert engine._LEGS.lookup(df, twin, None) is None
+    assert engine._LEGS.lookup(df, twin, None, _walked(df)) is None
     df2 = df.copy()
-    assert engine._LEGS.lookup(df2, sigs, None) is None
-    assert engine._LEGS.lookup(df, sigs, 10) is None    # another max_hold_bars
+    assert engine._LEGS.lookup(df2, sigs, None, _walked(df2)) is None
+    assert engine._LEGS.lookup(df, sigs, 10, _walked(df)) is None    # another max_hold_bars
     sigs.append(sigs[-1])                               # grown in place
-    assert engine._LEGS.lookup(df, sigs, None) is None
+    assert engine._LEGS.lookup(df, sigs, None, _walked(df)) is None
+
+
+@pytest.mark.parametrize("edit", ["loc_ohlc", "replace_column", "new_index", "new_zone"])
+def test_the_same_frame_edited_in_place_walks_again(edit, monkeypatch):
+    # Audit SF1 (2cf8a3f43): the slot used to trust the frame's identity, so an in-place edit
+    # returned the previous path's trades. It now compares copies of the walked arrays.
+    df = _frame(2_000, 11, "UTC")
+    sigs = _signals(df, 11, 200)
+    c = Costs()
+    engine._LEGS.slot = None
+    run_backtest(df, sigs, c)
+    if edit == "loc_ohlc":
+        df.loc[df.index[100:1_900], "high"] *= 1.05
+        df.loc[df.index[100:1_900], "low"] *= 0.95
+    elif edit == "replace_column":
+        df["open"] = df["open"].to_numpy() * 1.01
+    elif edit == "new_index":
+        df.index = df.index + pd.Timedelta(hours=3)
+    else:
+        df.index = df.index.tz_convert("Asia/Tokyo")
+    assert engine._LEGS.lookup(df, sigs, None, _walked(df)) is None
+    assert _bits(run_backtest(df, sigs, c)) == _fresh(df, sigs, c, monkeypatch)
+
+
+def test_a_signal_restamped_in_another_zone_walks_again(monkeypatch):
+    # Audit SF2: `==` on the timestamp treated the same instant in another zone as unchanged,
+    # so the refusals kept the old signal_time strings.
+    df = _frame(2_000, 12, "UTC")
+    sigs = _signals(df, 12, 200)
+    c = Costs()
+    engine._LEGS.slot = None
+    run_backtest(df, sigs, c)
+    for s in sigs:
+        s.time = s.time.tz_convert("America/New_York")
+    assert engine._LEGS.lookup(df, sigs, None, _walked(df)) is None
+    assert _bits(run_backtest(df, sigs, c)) == _fresh(df, sigs, c, monkeypatch)
 
 
 def test_off_switch_never_stores(monkeypatch):

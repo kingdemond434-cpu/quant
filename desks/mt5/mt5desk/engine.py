@@ -607,10 +607,15 @@ class _LegMemo:
     is ~20% of a warmed cell's CPU, half of it the repeated walk.
 
     ONE SLOT, IDENTITY-KEYED AND CONTENT-CHECKED. A hit needs the SAME frame object, the SAME
-    list object, the same `max_hold_bars`, the same length, and every signal's fields equal to
-    what they were when the path was walked -- so a list mutated in place, or a different frame
-    that happens to share an id, re-walks. Strong references are held, so an id cannot be reused
-    while the slot lives. The slot is one cell's legs: bounded, never a function of the sweep.
+    list object, the same `max_hold_bars`, the same length, every signal's fields equal to what
+    they were when the path was walked (timestamps compared by their text too, so the same instant
+    re-stamped in another zone re-walks and the refusals keep the caller's strings), and the
+    walked arrays -- open, high, low and the epoch-ns index, plus the index's zone -- equal to
+    COPIES taken at store time. The copies are what make an in-place frame edit safe: a `.loc`
+    write, a replaced column or a new `df.index` changes the live arrays, never the copies
+    (audit SF1/SF2 on 2cf8a3f43). So a list mutated in place, a frame mutated in place, or a
+    different frame that happens to share an id, re-walks. Strong references are held, so an id
+    cannot be reused while the slot lives. The slot is one cell's legs: bounded, never a function of the sweep.
     Pricing is the SAME code on the same floats in the same order for both arms, so every
     `Trade` -- and every daily series, cache file and verdict built from it -- is byte-identical
     (`tests/test_engine_prewarm_reuse.py`, and the harness in patches/judge_prewarm).
@@ -625,11 +630,19 @@ class _LegMemo:
     @staticmethod
     def fingerprint(signals: Any) -> tuple[Any, ...] | None:
         try:
-            return tuple(tuple(vars(s).values()) for s in signals)
-        except TypeError:
+            return tuple((str(s.time), *vars(s).values()) for s in signals)
+        except (TypeError, AttributeError):
             return None
 
-    def lookup(self, df: Any, signals: Any, max_hold_bars: Any) -> tuple[Any, ...] | None:
+    @staticmethod
+    def same_bars(kept: tuple[Any, ...], arrays: tuple[Any, ...]) -> bool:
+        if kept[0] != arrays[0]:
+            return False
+        return all(np.array_equal(a, b, equal_nan=a.dtype.kind == "f")
+                   for a, b in zip(kept[1:], arrays[1:], strict=True))
+
+    def lookup(self, df: Any, signals: Any, max_hold_bars: Any,
+               arrays: tuple[Any, ...]) -> tuple[Any, ...] | None:
         slot = self.slot
         if slot is None or slot[0] is not df or slot[1] is not signals:
             return None
@@ -638,16 +651,20 @@ class _LegMemo:
         fp = self.fingerprint(signals)
         if fp is None or fp != slot[5]:
             return None
+        if not self.same_bars(slot[8], arrays):
+            return None
         return slot
 
     def store(self, df: Any, signals: Any, max_hold_bars: Any, legs: list[tuple[Any, ...]],
-              rejections: list[dict[str, Any]]) -> None:
+              rejections: list[dict[str, Any]], arrays: tuple[Any, ...]) -> None:
         fp = self.fingerprint(signals)
+        kept = (arrays[0], *(np.array(a, copy=True) for a in arrays[1:]))
         # Slot layout: 0 df, 1 signals, 2 max_hold_bars, 3 len(df), 4 len(signals),
-        # 5 fingerprint, 6 legs, 7 geometry refusals, 8 reserved, 9 financing nights per leg.
+        # 5 fingerprint, 6 legs, 7 geometry refusals, 8 copies of the walked bars (zone, open,
+        # high, low, epoch-ns index), 9 financing nights per leg.
         self.slot = (None if fp is None else
                      (df, signals, max_hold_bars, len(df), len(signals), fp, legs,
-                      rejections, None, [None] * len(legs)))
+                      rejections, kept, [None] * len(legs)))
 
 
 _LEGS = _LegMemo()
@@ -670,7 +687,6 @@ def run_backtest(
     force exits. Position closed at next bar open if no stop/target hit.
     """
     memo_on = _leg_memo_on()
-    memo_hit = _LEGS.lookup(df, signals, max_hold_bars) if memo_on else None
     o = df["open"].to_numpy()
     h = df["high"].to_numpy()
     lows = df["low"].to_numpy()
@@ -695,6 +711,8 @@ def run_backtest(
     # survived: the gauntlet dropped 118 of 122 cells as untestable and nothing said why.
     # `as_unit("ns")` pins the comparison to one resolution regardless of what wrote the file.
     idx_ns = np.asarray(pd.DatetimeIndex(idx).as_unit("ns").asi8, dtype="int64")
+    walked = (str(getattr(idx, "tz", None)), o, h, lows, idx_ns)
+    memo_hit = _LEGS.lookup(df, signals, max_hold_bars, walked) if memo_on else None
     # A HIT WALKS NOTHING: the legs below were walked on this exact frame and signal list by the
     # previous call (`_LegMemo`), so the loop is given no signals and only the pricing runs.
     walk = signals if memo_hit is None else ()
@@ -910,7 +928,7 @@ def run_backtest(
         nights_memo = [None] * len(legs)
         if memo_on:
             _LEGS.store(df, signals, max_hold_bars, legs,
-                        [dict(g) for g in geometry_rejections])
+                        [dict(g) for g in geometry_rejections], walked)
             slot = _LEGS.slot
             if slot is not None:
                 nights_memo = slot[9]
