@@ -176,7 +176,7 @@ def _ts_pairs(n: int, seed: int):
                  (r - pd.Timedelta(days=9), r + pd.Timedelta(days=9)),
                  (pd.Timestamp("2026-03-29 00:30", tz="Europe/Athens"),
                   pd.Timestamp("2026-03-30 23:30", tz="Europe/Athens")),
-                 (pd.Timestamp("2026-10-25 02:30", tz="Europe/Athens", ambiguous=True),
+                 (pd.Timestamp("2026-10-25 02:30").tz_localize("Europe/Athens", ambiguous=True),
                   pd.Timestamp("2026-11-02 05:00", tz="Europe/Athens")),
                  (pd.Timestamp("1969-12-31 20:59"), pd.Timestamp("1970-01-08 21:00"))]:
         yield a, b
