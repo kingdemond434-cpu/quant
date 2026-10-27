@@ -234,6 +234,25 @@ def test_status_publishes_the_raw_probe_movement_without_it_binding(paths) -> No
     assert got["binding"] is False and got["run_id"] == "run-1"
 
 
+def test_the_legacy_switch_takes_effect_only_under_the_proof(paths, monkeypatch) -> None:
+    tmp, release, _flag = paths
+    legacy = tmp / "JUDGE_BLAS_SINGLE_THREAD.json"
+    monkeypatch.setattr(bt, "LEGACY_FLAG", legacy)
+    d = bt.legacy({})
+    assert d["armed"] is False and d["applied"] is False and d["env"] == {}
+    legacy.write_text('{"enabled": true}', "utf-8")
+    d = bt.legacy({})
+    assert d["armed"] is True and d["applied"] is False and "proof does not hold" in d["why"]
+    _publish(tmp, _full_doc(release))
+    d = bt.legacy({})
+    assert d["applied"] is True and d["env"] == dict.fromkeys(bt.THREAD_VARS, "1")
+    d = bt.legacy({"MKL_NUM_THREADS": "3"})
+    assert d["applied"] is False and d["env"] == {} and d["in_force"] == {"MKL_NUM_THREADS": "3"}
+    st = bt.status(env={})
+    assert st["legacy_switch"]["armed"] is True and st["legacy_switch"]["applied"] is True
+    assert "env" not in st["legacy_switch"]
+
+
 def test_blas_build_is_read_without_loading_numpy() -> None:
     code = (f"import sys; sys.path[:0]=[{str(ROOT)!r},{str(DESK)!r}];"
             "from research import blas_threads as bt; b = bt.blas_build(); bt.identity();"

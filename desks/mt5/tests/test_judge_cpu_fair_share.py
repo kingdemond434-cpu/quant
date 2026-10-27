@@ -648,7 +648,10 @@ def test_cadence_failure_writes_the_fallback_and_never_hangs(cadence, monkeypatc
 
 
 # ------------------------------------------------------------- 4. one BLAS thread per judge proc
-def test_blas_single_thread_is_off_unless_the_switch_file_says_exactly_enabled(tmp_path) -> None:
+def test_blas_single_thread_is_off_unless_the_switch_file_says_exactly_enabled(
+        tmp_path, monkeypatch) -> None:
+    from research import blas_threads as bt
+    monkeypatch.setattr(bt, "proof_status", lambda *a, **k: (True, "test proof"))
     sw = tmp_path / "JUDGE_BLAS_SINGLE_THREAD.json"
     base = {"PATH": "x", "GAUNTLET_SHARDS": "14"}
     # DEFAULT: absent file -> the env is byte-identical to today
@@ -668,13 +671,38 @@ def test_blas_single_thread_is_off_unless_the_switch_file_says_exactly_enabled(t
     ):
         sw.write_text(body, "utf-8")
         assert rsg._blas_env(dict(base), sw) == base, body
+        assert rsg._blas_single_thread_armed(sw) is False, body
     sw.write_text('{"enabled": true}', "utf-8")
+    assert rsg._blas_single_thread_armed(sw) is True, "the file still reads as armed"
     on = rsg._blas_env(dict(base), sw)
     assert on == {**base, **dict.fromkeys(rsg.BLAS_THREAD_VARS, "1")}
-    # an operator's own thread count always wins
-    assert rsg._blas_env({"OPENBLAS_NUM_THREADS": "6"}, sw)["OPENBLAS_NUM_THREADS"] == "6"
+    assert rsg._BLAS_LEGACY["applied"] is True
+    # an operator's own thread count always wins, and nothing else is added beside it
+    assert rsg._blas_env({"OPENBLAS_NUM_THREADS": "6"}, sw) == {"OPENBLAS_NUM_THREADS": "6"}
+    assert "all three or none" in rsg._BLAS_LEGACY["why"]
     # the switch file is not shipped: the live default stays off
     assert not rsg.BLAS_SWITCH.exists()
+
+
+def test_the_old_blas_switch_needs_the_proof(tmp_path, monkeypatch, capsys) -> None:
+    """Armed is not enough since v1.1: without a valid BLAS_DIFFERENTIAL proof the sweep keeps
+    its defaults, and the reason is published."""
+    from research import blas_threads as bt
+    monkeypatch.setattr(bt, "proof_status",
+                        lambda *a, **k: (False, "BLAS_DIFFERENTIAL.json absent"))
+    sw = tmp_path / "JUDGE_BLAS_SINGLE_THREAD.json"
+    sw.write_text('{"enabled": true}', "utf-8")
+    base = {"PATH": "x"}
+    assert rsg._blas_env(dict(base), sw) == base
+    st = dict(rsg._BLAS_LEGACY)
+    assert st["armed"] is True and st["applied"] is False and st["proof_valid"] is False
+    assert "proof does not hold" in st["why"] and "absent" in st["why"]
+    assert "BLAS legacy switch" in capsys.readouterr().err
+
+    def boom(*a, **k):
+        raise RuntimeError("reader broke")
+    monkeypatch.setattr(bt, "proof_status", boom)
+    assert rsg._blas_env(dict(base), sw) == base, "a broken proof reader is defaults"
 
 
 # ------------------------------------------------- 3c. a malformed cadence state never sticks

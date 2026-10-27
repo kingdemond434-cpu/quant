@@ -1577,38 +1577,46 @@ _LAUNCH: dict[str, dict[str, str]] = {}
 #: sealed DSR effective-trial charge. So the thread count is not provably verdict-neutral and can
 #: change trial charging. The gauntlet-speed harness batches came back byte-identical at 1, 4 and
 #: 18 threads, but that is not a proof for every docket.
-#: It is armed ONLY by the switch file holding exactly {"enabled": true}. Before anyone arms it:
-#: a byte-compare of verdicts on a recorded sweep at 1 thread against default threads, and
-#: zuck's sign. With the file absent, unreadable or holding anything else the env is untouched,
-#: byte-identical to today. A thread count the operator exported by hand always wins.
+#: CLOSED BEHIND THE PROOF (v1.1 of the BLAS differential, 2026-10-27). The switch file holding
+#: exactly {"enabled": true} is still READ -- nobody's file breaks -- but it takes effect only when
+#: `research.blas_threads.proof_status()` holds: the run-bound, floor-clearing IDENTICAL proof
+#: `scripts/blas_thread_differential.py` writes, the same one BLAS_SINGLE_THREAD.json needs. Then
+#: it sets all three variables, or none when any is already set (an operator's export, or the
+#: newer switch having applied them). Otherwise the env keeps its defaults and the reason is
+#: published: on stderr when it changes, in `_BLAS_LEGACY`, and in JUDGING_THROUGHPUT.json under
+#: `blas_single_thread.legacy_switch`. Arming still needs zuck's sign.
 BLAS_SWITCH = DESK / "data" / "JUDGE_BLAS_SINGLE_THREAD.json"
 BLAS_THREAD_VARS = ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS")
 
-
-def _no_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    keys = [k for k, _ in pairs]
-    if len(keys) != len(set(keys)):
-        raise ValueError("duplicate key in the BLAS switch file")
-    return dict(pairs)
+#: The old switch's last decision (armed, applied, why), for the resident's own reporting.
+_BLAS_LEGACY: dict[str, Any] = {}
 
 
 def _blas_single_thread_armed(path: Path | None = None) -> bool:
-    """Armed ONLY by exactly {"enabled": true}: one key, the JSON literal true (`is True`, so 1,
-    1.0 and "true" do not arm it), and no duplicate keys (so a later `true` cannot hide behind an
-    earlier `false`). Anything else, or no file, is OFF."""
+    """The file's strict reading (exactly {"enabled": true}), kept for anyone who calls it.
+    Armed is NOT in effect: `_blas_env` also needs the proof."""
     try:
-        doc = json.loads(Path(path or BLAS_SWITCH).read_text("utf-8"),
-                         object_pairs_hook=_no_duplicate_keys)
-    except (OSError, ValueError):
+        from research import blas_threads
+    except Exception:
         return False
-    return isinstance(doc, dict) and set(doc) == {"enabled"} and doc["enabled"] is True
+    return blas_threads.legacy_armed(Path(path or BLAS_SWITCH))
 
 
-def _blas_env(env: dict[str, str], path: Path | None = None) -> dict[str, str]:
-    """Pin the sweep child's (the merge's) and its shards' BLAS pools to 1, only when armed."""
-    if _blas_single_thread_armed(path):
-        for k in BLAS_THREAD_VARS:
-            env.setdefault(k, "1")
+def _blas_env(env: dict[str, str], path: Path | None = None, **proof_kw: Any) -> dict[str, str]:
+    """Pin the sweep child's (the merge's) and its shards' BLAS pools to 1 -- all three
+    variables or none -- only when the switch is armed AND the BLAS proof holds."""
+    try:
+        from research import blas_threads
+        d = blas_threads.legacy(env, Path(path or BLAS_SWITCH), **proof_kw)
+    except Exception as exc:                 # a broken reader is defaults, never a crash
+        d = {"armed": None, "applied": False, "env": {},
+             "why": f"blas_threads unreadable ({type(exc).__name__}): defaults"}
+    if d["why"] != _BLAS_LEGACY.get("why") and (d.get("armed") or _BLAS_LEGACY):
+        print(f"[resident] BLAS legacy switch: {d['why']}", file=sys.stderr, flush=True)
+    _BLAS_LEGACY.clear()
+    _BLAS_LEGACY.update({k: v for k, v in d.items() if k != "env"})
+    for k, v in (d.get("env") or {}).items():
+        env[k] = v
     return env
 
 

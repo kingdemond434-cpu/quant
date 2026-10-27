@@ -61,6 +61,10 @@ ROOT = DESK.parent.parent
 FLAG = DESK / "data" / "BLAS_SINGLE_THREAD.json"
 PROOF = DESK / "reports" / "BLAS_DIFFERENTIAL.json"
 RELEASE = DESK / "data" / "RELEASE.json"
+#: The OLDER switch run_sharded_gauntlet shipped on 2026-10-20 (2bca88f00), armed by exactly
+#: {"enabled": true}. Still read, so nobody's file breaks, but since v1.1 it takes effect only
+#: under the same proof as FLAG and sets all three variables or none (`legacy`).
+LEGACY_FLAG = DESK / "data" / "JUDGE_BLAS_SINGLE_THREAD.json"
 #: One row per harness run that published a report: the binding a hand-built report lacks.
 RUN_LOG = DESK / "data" / "blas_differential_runs.jsonl"
 
@@ -336,6 +340,57 @@ def apply(env: MutableMapping[str, str], **kw: Any) -> dict[str, str]:
     return dict(d["env"])
 
 
+def _no_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    keys = [k for k, _ in pairs]
+    if len(keys) != len(set(keys)):
+        raise ValueError("duplicate key in the BLAS switch file")
+    return dict(pairs)
+
+
+def legacy_armed(path: Path | None = None) -> bool:
+    """The old switch file's own strict reading, unchanged: exactly {"enabled": true} (one key,
+    the JSON literal true, no duplicate keys). Anything else, or no file, is not armed."""
+    try:
+        doc = json.loads(Path(path or LEGACY_FLAG).read_text("utf-8"),
+                         object_pairs_hook=_no_duplicate_keys)
+    except (OSError, ValueError):
+        return False
+    return isinstance(doc, dict) and set(doc) == {"enabled"} and doc["enabled"] is True
+
+
+def legacy(env: Mapping[str, str], path: Path | None = None, **kw: Any) -> dict[str, Any]:
+    """What JUDGE_BLAS_SINGLE_THREAD.json may do to a sweep env. Never raises, never mutates.
+
+    Armed is no longer enough (audit of 5d4d0279f): it takes effect only when `proof_status()`
+    holds -- the same run-bound, floor-clearing IDENTICAL proof BLAS_SINGLE_THREAD.json needs --
+    and then sets all three variables, or none when any is already in `env` (an operator's
+    export, or BLAS_SINGLE_THREAD.json having applied them first). Otherwise the env keeps its
+    defaults and `why` says which condition failed."""
+    where = _rel(Path(path or LEGACY_FLAG))
+    armed = legacy_armed(path)
+    out: dict[str, Any] = {"flag": where, "armed": armed, "applied": False, "env": {}}
+    if not armed:
+        out["why"] = f"{where} absent or not exactly {{\"enabled\": true}}: defaults"
+        return out
+    present = {k: env[k] for k in THREAD_VARS if k in env}
+    if present:
+        out["why"] = (f"{where} armed, but {sorted(present)} already set: all three or none, "
+                      "so nothing added")
+        out["in_force"] = present
+        return out
+    try:
+        ok, why = proof_status(**kw)
+    except Exception as exc:
+        ok, why = False, f"proof unreadable ({type(exc).__name__})"
+    out["proof_valid"] = ok
+    if not ok:
+        out["why"] = f"{where} armed, but the proof does not hold: {why}; defaults"
+        return out
+    out.update(applied=True, env=dict.fromkeys(THREAD_VARS, "1"),
+               why=f"{where} armed and the proof holds: {why}")
+    return out
+
+
 def _rel(p: Path) -> str:
     try:
         return Path(p).resolve().relative_to(ROOT.resolve()).as_posix()
@@ -354,6 +409,7 @@ def status(env: Mapping[str, str] | None = None) -> dict[str, Any]:
             "in_force": present,
             "mixed_operator_set": 0 < len(present) < len(THREAD_VARS),
             "probe_raw_diff": probe_raw_diff(),
+            "legacy_switch": {k: v for k, v in legacy(src).items() if k != "env"},
             "identity": identity()}
 
 
