@@ -60,17 +60,93 @@ class VenueError(RuntimeError):
     """A venue refusal, with the secret-bearing detail already stripped by the raiser."""
 
 
-def _bounded_request(method: Any, *args: Any, **kwargs: Any) -> Any:
-    """Keep a failed venue read inside one scheduler interval, with one transient retry."""
-    from requests.exceptions import RequestException
+#: BACK OFF ON 429 INSIDE THE PASS (measured 2026-10-26 and 10-27). TradeLocker answered "Too Many
+#: Requests" to E8-Gold's 04:01Z and 04:06Z passes. The one retry below fired at once, into the
+#: same limit, so both passes deferred the asia window and the 04:11Z pass found it 11 min past
+#: its 10-min grace: no E8 gold, and nothing for the FTMO and Fusion followers to copy, two days
+#: running. A 429 now waits these seconds (or the venue's Retry-After, capped at
+#: RATE_LIMIT_MAX_WAIT_S) before each retry: 7 s at worst with no header, 20 s with one, inside
+#: E8-Gold's 4-minute run limit and the executor's own pass.
+RATE_LIMIT_WAITS_S = (2.0, 5.0)
+RATE_LIMIT_MAX_WAIT_S = 10.0
+#: READS ONLY, AND A BUDGET PER PROCESS (audit of #421, 2026-10-27). A write (order create,
+#: modify, cancel) that drew a 429 is raised at once, never re-sent: the venue may have taken it,
+#: and a backed-off re-send could outlive cross_account's 30 s send lock and land a second order.
+#: Reads share RATE_LIMIT_BUDGET_S of sleep across the whole process (each E8-Gold and
+#: E8-Executor run is its own process), so a pass stays far inside its 4-minute run limit.
+RATE_LIMIT_BUDGET_S = 30.0
+_READ_METHODS = frozenset({"get", "head", "options"})
+_backoff_spent = [0.0]
 
-    for attempt in range(2):
+
+def reset_rate_limit_budget() -> None:
+    _backoff_spent[0] = 0.0
+
+
+def _is_read(method: Any) -> bool:
+    """True only for a call the SDK names as a GET-family request; unknown counts as a write."""
+    return str(getattr(method, "__name__", "")).lower() in _READ_METHODS
+
+
+def _status(obj: Any) -> int | None:
+    code = getattr(obj, "status_code", None)
+    return code if isinstance(code, int) else None
+
+
+def _rate_limit_wait(response: Any, default: float) -> float:
+    """The venue's Retry-After in seconds when it sends one, capped; else `default`."""
+    headers = getattr(response, "headers", None) or {}
+    try:
+        after = float(headers.get("Retry-After"))
+    except (TypeError, ValueError):
+        return default
+    if after != after or after <= 0.0:
+        return default
+    return min(after, RATE_LIMIT_MAX_WAIT_S)
+
+
+def _bounded_request(method: Any, *args: Any, sleep: Any = None, **kwargs: Any) -> Any:
+    """Keep a failed venue read inside one scheduler interval: one transient retry, and on a 429
+    (raised or returned) a backed-off retry per RATE_LIMIT_WAITS_S entry -- for reads only, and
+    only while the process's RATE_LIMIT_BUDGET_S lasts."""
+    import time
+
+    from requests.exceptions import HTTPError, RequestException
+
+    nap = time.sleep if sleep is None else sleep
+    waits = list(RATE_LIMIT_WAITS_S) if _is_read(method) else []
+    transient_left = 1
+
+    def backoff(resp: Any) -> bool:
+        if not waits:
+            return False
+        wait = _rate_limit_wait(resp, waits.pop(0))
+        if _backoff_spent[0] + wait > RATE_LIMIT_BUDGET_S:
+            return False
+        _backoff_spent[0] += wait
+        nap(wait)
+        return True
+    while True:
         try:
-            return method(*args, **kwargs)
-        except RequestException:
-            if attempt:
+            res = method(*args, **kwargs)
+        except HTTPError as exc:
+            resp = getattr(exc, "response", None)
+            if _status(resp) == 429:
+                if backoff(resp):
+                    continue
                 raise
-    raise AssertionError("unreachable")
+            if transient_left:
+                transient_left -= 1
+                continue
+            raise
+        except RequestException:
+            if transient_left:
+                transient_left -= 1
+                continue
+            raise
+        if _status(res) == 429 and backoff(res):
+            continue
+        return res
 
 
 @dataclass(frozen=True)

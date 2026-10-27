@@ -1,16 +1,28 @@
 {
- "pid": 13792,
- "started_utc": "2026-10-27T15:01:30+00:00",
+ "pid": 21384,
+ "started_utc": "2026-10-27T16:41:15+00:00",
  "task_limit_s": 0.0,
- "sweeps": 0,
+ "sweeps": 13,
  "failures": 0,
- "lane_held": 0,
+ "lane_held": 13,
  "hung_kills": 1,
- "busy_seconds": 0.0,
- "status": "STOPPED",
- "longest_sweep_s": null,
+ "busy_seconds": 1043.5,
+ "status": "SWEEPING",
+ "longest_sweep_s": 64711.4,
  "consecutive_hangs": 1,
- "why": "RESIDENT_STOP present",
- "uptime_s": 0.5,
- "heartbeat_utc": "2026-10-27T15:01:30+00:00"
+ "sweep_started_utc": "2026-10-27T17:02:00+00:00",
+ "hang_limit_s": 172800.0,
+ "last_rc": 75,
+ "last_sweep_s": 97.8,
+ "uptime_s": 1229.3,
+ "last_sweep_ended_utc": "2026-10-27T17:01:45+00:00",
+ "backoff_s": 15,
+ "heartbeat_utc": "2026-10-27T19:35:07+00:00",
+ "sweep_phase": {
+  "pid": 18812,
+  "sweep_started_utc": "2026-10-27T17:02:15+00:00",
+  "phases": {},
+  "phase": "plan",
+  "phase_started_utc": "2026-10-27T17:02:15+00:00"
+ }
 }
