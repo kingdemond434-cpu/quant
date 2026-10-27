@@ -359,6 +359,19 @@ def _state_admission() -> None:
          + (f" ({', '.join(doc['graveyard'])})" if doc["graveyard"] else ""))
 
 
+def _input_ablation() -> None:
+    """Re-judge each allocator input (regime mix, macro tilt) against the plain solve on the
+    windows that have closed since yesterday (`research.input_ablation`). A measurement only:
+    `reports/INPUT_ABLATION.json` moves no money until the allocator's read of it is audited."""
+    import input_ablation
+
+    doc = input_ablation.run()
+    dlog("input ablation: " + ", ".join(
+        f"{a} {v['verdict']} (n={v['n_periods']}, t={v.get('t')})"
+        for a, v in doc["verdicts"].items())
+         + f"; {doc['pending_windows']} window(s) left for tomorrow")
+
+
 def _proposers() -> None:
     """The proposer sweeps that hand the gauntlet cells it would never otherwise see.
 
@@ -769,7 +782,7 @@ STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("factor_residual", _factor_residual), ("research_bandit", _research_bandit),
          ("world_miners", _world_miners), ("proposers", _proposers),
          ("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
-         ("state_admission", _state_admission),
+         ("state_admission", _state_admission), ("input_ablation", _input_ablation),
          ("reconcile", _reconcile), ("scalp_gauntlet", _scalp_gauntlet),
          ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
          ("execution", _execution), ("recertify", _recertify),
