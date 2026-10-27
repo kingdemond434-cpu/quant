@@ -37,14 +37,39 @@ def test_venue_request_retries_once_then_returns_or_raises() -> None:
         if len(calls) == 1:
             raise Timeout("transient")
         return "ok"
-    assert _bounded_request(transient) == "ok" and len(calls) == 2
+    assert _bounded_request(_named(transient, "get")) == "ok" and len(calls) == 2
     calls.clear()
     def unavailable():
         calls.append(1)
         raise Timeout("unavailable")
     with pytest.raises(Timeout):
-        _bounded_request(unavailable)
+        _bounded_request(_named(unavailable, "get"))
     assert len(calls) == 2
+
+
+def test_a_write_is_re_sent_only_when_it_never_reached_the_venue() -> None:
+    """A read timeout after the venue took an order would land a second, unjournalled order."""
+    from requests.exceptions import ConnectionError as ReqConnectionError
+    from requests.exceptions import ConnectTimeout, HTTPError, ReadTimeout
+    resp = type("R", (), {"status_code": 500, "headers": {}})()
+    for exc in (ReadTimeout("read"), ReqConnectionError("reset"),
+                HTTPError("500", response=resp)):
+        sent: list[int] = []
+
+        def post(exc=exc, sent=sent):
+            sent.append(1)
+            raise exc
+        with pytest.raises(type(exc)):
+            _bounded_request(_named(post, "post"))
+        assert sent == [1], type(exc).__name__
+    sent = []
+
+    def post_connect():
+        sent.append(1)
+        if len(sent) == 1:
+            raise ConnectTimeout("never connected")
+        return "ok"
+    assert _bounded_request(_named(post_connect, "post")) == "ok" and len(sent) == 2
 
 
 def _named(fn, name):
