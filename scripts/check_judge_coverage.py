@@ -882,8 +882,9 @@ def main(argv: list[str] | None = None) -> int:
 
 __all__ = ["BOX_STATE_ELSEWHERE", "FUTURE_SKEW_S", "GAUNTLET_HEARTBEAT", "GAUNTLET_STALL",
            "INCIDENTS", "PAGE_STATE_REL", "RATCHET", "REPAGE_H", "REPORT", "RULE",
-           "SOURCE_VIEW_ENV", "STALE_H", "STOP_FAIL_H", "STOP_WARN_H", "WINDOW_SLACK",
-           "incidents", "judge", "judge_liveness", "judge_stop", "liveness_fence", "main", "page_coverage", "render"]
+           "SOURCE_VIEW_ENV", "STALE_H", "WINDOW_SLACK", "incidents", "judge", "judge_liveness",
+           "liveness_fence", "main", "page_coverage", "render"]
+__all__ += ["STOP_FAIL_H", "STOP_WARN_H", "judge_stop"]
 
 
 if __name__ == "__main__":                                              # pragma: no cover
