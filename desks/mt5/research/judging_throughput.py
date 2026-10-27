@@ -861,14 +861,35 @@ def write_env(decision: dict[str, Any], path: Path | None = None,
     return payload
 
 
-def apply_env(path: Path | None = None, env: dict[str, str] | None = None) -> dict[str, str]:
+def apply_env(path: Path | None = None, env: dict[str, str] | None = None, *,
+              judge_process: bool = False) -> dict[str, str]:
     """Load the published env into `os.environ` so a CHILD process inherits it.
 
     THE HOURLY CYCLE'S HOOK. `hourly_cycle._producer` runs each leg as a subprocess with the
     cycle's own environment, so setting these here -- before the `external_gauntlet` leg -- is
     what makes the measured worker count reach the sealed sweep in-cycle. Existing variables are
     NOT overwritten: an operator who exported `GAUNTLET_WORKERS` by hand outranks this organ.
+
+    SINGLE-THREADED BLAS GOES ONLY INTO A JUDGE'S SPAWN ENV (`research/blas_threads.py`; audit
+    re-review of fb7626205). `OPENBLAS_NUM_THREADS`/`MKL_NUM_THREADS`/`OMP_NUM_THREADS` = 1 are
+    added when `data/BLAS_SINGLE_THREAD.json` is enabled AND `reports/BLAS_DIFFERENTIAL.json`
+    proves IDENTICAL judge output for this release, and ONLY on the production call (no `path`)
+    into either an explicit spawn env (`env=`, as the resident's `_sweep_env` and the hourly
+    cycle's `external_gauntlet` leg build theirs) or the judge's own process
+    (`judge_process=True`, the sweep child, whose pre-warm pool and shards inherit it). Never
+    into a non-judge process's own `os.environ`: the hourly cycle calls this in-process, and
+    every later leg -- miners, pf_allocator, the promoter -- would inherit a confined BLAS.
+    It is applied BEFORE the foreign-fingerprint refusal below, which governs the worker-count
+    file only.
     """
+    target = os.environ if env is None else env
+    blas_applied: dict[str, str] = {}
+    if path is None and (env is not None or judge_process):
+        try:
+            from research import blas_threads
+            blas_applied = blas_threads.apply(target)
+        except Exception:
+            blas_applied = {}    # an unreadable switch means default threads, never a crash
     doc = _read_json(Path(path or ENV_FILE), {}) or {}
     vals = dict((doc.get("env") or {}) if isinstance(doc, dict) else {})
     # AN ENV MEASURED ON ANOTHER MACHINE IS REFUSED. `desks/mt5/data/` travels with the release,
@@ -880,9 +901,8 @@ def apply_env(path: Path | None = None, env: dict[str, str] | None = None) -> di
         here = measure_memory()
         if (stamp.get("cores") != (os.cpu_count() or 1)
                 or stamp.get("total_phys_mb") != here.get("total_phys_mb")):
-            return {}
-    target = os.environ if env is None else env
-    applied: dict[str, str] = {}
+            return dict(blas_applied)
+    applied: dict[str, str] = dict(blas_applied)
     for k in ENV_KEYS:
         v = vals.get(k)
         if v is None or k in target:
@@ -1223,6 +1243,16 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
                  "baseline, not below it"),
     }
     payload["rate"] = rate
+    # THE BLAS SWITCH, MADE VISIBLE (research/blas_threads.py). This organ is the consumer of
+    # reports/BLAS_DIFFERENTIAL.json: `apply_env` adds the single-thread variables only while that
+    # proof holds, and this records the decision, its reason and what is in force, every hour, so
+    # a lapsed proof falling back to default threads is a published fact and never silent.
+    try:
+        from research import blas_threads
+        payload["blas_single_thread"] = blas_threads.status()
+    except Exception as exc:
+        payload["blas_single_thread"] = {"active": False, "why": (
+            f"{UNMEASURED}: switch unreadable ({type(exc).__name__}: {exc})"[:300])}
     if write:
         write_env(decision, box=box)
         applied["env_file"] = str(ENV_FILE)
