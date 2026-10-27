@@ -615,7 +615,8 @@ class _LegMemo:
     write, a replaced column or a new `df.index` changes the live arrays, never the copies
     (audit SF1/SF2 on 2cf8a3f43). So a list mutated in place, a frame mutated in place, or a
     different frame that happens to share an id, re-walks. Strong references are held, so an id
-    cannot be reused while the slot lives. The slot is one cell's legs: bounded, never a function of the sweep.
+    cannot be reused while the slot lives. The slot is one cell's legs: bounded, never a
+    function of the sweep.
     Pricing is the SAME code on the same floats in the same order for both arms, so every
     `Trade` -- and every daily series, cache file and verdict built from it -- is byte-identical
     (`tests/test_engine_prewarm_reuse.py`, and the harness in patches/judge_prewarm).
