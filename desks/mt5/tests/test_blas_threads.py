@@ -60,6 +60,7 @@ def paths(tmp_path, monkeypatch):
     monkeypatch.setattr(bt, "PROOF", tmp_path / "BLAS_DIFFERENTIAL.json")
     monkeypatch.setattr(bt, "RUN_LOG", tmp_path / "runs.jsonl")
     monkeypatch.setattr(bt, "_signing_key", lambda: KEY)
+    monkeypatch.setattr(bt, "_key_file_present", lambda: False)
     for k in bt.THREAD_VARS:
         monkeypatch.delenv(k, raising=False)
     return tmp_path, release, flag
@@ -125,6 +126,28 @@ def test_an_unkeyed_box_accepts_a_run_bound_report(paths, monkeypatch) -> None:
     _publish(tmp, _full_doc(release), key=None)
     d = bt.decide()
     assert d["active"] is True and "run-bound" in d["why"], d["why"]
+
+
+@pytest.mark.parametrize("why", ["keyed_row", "signed_release", "key_file"])
+def test_an_unreadable_key_refuses_where_a_mac_is_required(paths, monkeypatch, why) -> None:
+    """Audit re-review of fb7626205: no key here never downgrades to unkeyed acceptance when
+    the run said keyed, the release is signed, or a key file exists but cannot be read."""
+    tmp, release, flag = paths
+    monkeypatch.setattr(bt, "_signing_key", lambda: None)
+    _enable(flag)
+    _publish(tmp, _full_doc(release), key=None, log=why != "keyed_row")
+    if why == "keyed_row":
+        doc = json.loads((tmp / "BLAS_DIFFERENTIAL.json").read_text("utf-8"))
+        (tmp / "runs.jsonl").write_text(json.dumps({
+            "run_id": doc["run_id"], "content_sha256": doc["content_sha256"],
+            "keyed": True}) + "\n", "utf-8")
+    elif why == "signed_release":
+        release.write_text(json.dumps({"release_id": "abc123def456",
+                                       "signature": "deadbeef"}), "utf-8")
+    else:
+        monkeypatch.setattr(bt, "_key_file_present", lambda: True)
+    d = bt.decide()
+    assert d["active"] is False and "unavailable or unreadable" in d["why"], d["why"]
 
 
 def _drop_arm(doc: dict, arm: str) -> dict:
@@ -321,3 +344,71 @@ def test_cachewarm_takes_the_switch_before_the_judge_loads() -> None:
     body = src.split("def _cli_main()", 1)[1]
     assert body.index("_apply_blas_switch()") < body.index("exclusive_job")
     assert "blas_threads.apply(os.environ)" in src
+
+
+# ------------------------------------------- the switch reaches the judge's spawn envs alone
+def test_single_thread_blas_never_leaks_into_later_hourly_legs(paths, monkeypatch) -> None:
+    """Audit re-review of fb7626205. With a valid proof and the flag on, the hourly cycle's own
+    environ gains none of the three variables, a later non-judge leg's subprocess env carries
+    none, and the judge (the external_gauntlet leg, the resident's sweep child) carries all
+    three."""
+    import os
+
+    from research import hourly_cycle as hc
+    from scripts import run_sharded_gauntlet as rsg
+    tmp, release, flag = paths
+    _enable(flag)
+    _publish(tmp, _full_doc(release))
+    monkeypatch.setattr(jt, "ENV_FILE", tmp / "no_env_file.json")
+    assert bt.decide()["active"] is True
+    # the cycle's in-process call (hourly_cycle main, before the gauntlet leg)
+    jt.apply_env()
+    assert not [k for k in bt.THREAD_VARS if k in os.environ], "leaked into the cycle"
+    monkeypatch.setattr(hc, "_LEG_ENV", {})
+    assert hc._arm_judge_leg_env() == dict.fromkeys(bt.THREAD_VARS, "1")
+    assert not [k for k in bt.THREAD_VARS if k in os.environ]
+    seen: dict[str, dict] = {}
+
+    class _Done:
+        returncode, stdout, stderr = 0, "", ""
+
+    def fake_tree(argv, **kw):
+        seen[Path(argv[-1]).stem] = dict(kw["env"])
+        return _Done()
+
+    monkeypatch.setattr(hc, "_run_tree", fake_tree)
+    monkeypatch.setattr(hc, "_priced_budget", lambda name, base: (base, {}))
+    hc._producer_impl("external_gauntlet", "scripts/external_gauntlet.py")
+    hc._producer_impl("pf_allocator", "research/pf_allocator.py")
+    hc._producer_impl("deep_forest_miner", "research/deep_forest_miner.py")
+    for leg in ("pf_allocator", "deep_forest_miner"):
+        assert not [k for k in bt.THREAD_VARS if k in seen[leg]], leg
+    assert {k: seen["external_gauntlet"].get(k) for k in bt.THREAD_VARS} == dict.fromkeys(
+        bt.THREAD_VARS, "1")
+    # the resident's sweep child
+    monkeypatch.setattr(rsg, "_LAUNCH", {})
+    monkeypatch.setattr(rsg, "BLAS_SWITCH", tmp / "no_legacy_switch.json")
+    child = rsg._sweep_env()
+    assert {k: child.get(k) for k in bt.THREAD_VARS} == dict.fromkeys(bt.THREAD_VARS, "1")
+    assert not [k for k in bt.THREAD_VARS if k in os.environ]
+    # the sweep child itself (judge_process=True) may set its own environ, for its pool/shards
+    try:
+        jt.apply_env(judge_process=True)
+        assert {k: os.environ.get(k) for k in bt.THREAD_VARS} == dict.fromkeys(
+            bt.THREAD_VARS, "1")
+    finally:
+        for k in bt.THREAD_VARS:
+            os.environ.pop(k, None)
+    # a lapsed proof disarms the judge leg on the next cycle
+    (tmp / "BLAS_DIFFERENTIAL.json").unlink()
+    assert hc._arm_judge_leg_env() == {} and "external_gauntlet" not in hc._LEG_ENV
+
+
+def test_the_cycle_arms_the_judge_leg_before_it_runs() -> None:
+    src = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
+    body = src.split("\ndef main(", 1)[1]
+    assert body.index("\n    _arm_judge_leg_env()\n") < body.index('"external_gauntlet", '
+                                                           '"scripts/external_gauntlet.py"')
+    sweep_once = (DESK / "scripts" / "run_sharded_gauntlet.py").read_text("utf-8").split(
+        "def _sweep_once()", 1)[1]
+    assert "apply_env(judge_process=True)" in sweep_once.split("_sweep_logged()", 1)[0]

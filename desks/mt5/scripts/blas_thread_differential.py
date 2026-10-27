@@ -383,6 +383,10 @@ def _prepare(job: dict[str, Any]) -> dict[str, Any]:
 
 #: The family strata the rebuild covers, in the order they are drawn from.
 STRATA = ("causal_residual", "families_orthogonal", "families")
+#: Families rebuilt on EVERY run when the input holds one (audit re-review of fb7626205):
+#: `families_orthogonal.py`'s `evals > mp_max` in pca_residual is the only eigen cutoff in the
+#: judge's reach, and it is a BUILD, so only the rebuild arm can bind it.
+ALWAYS_REBUILD = ("pca_residual",)
 
 
 def family_strata() -> dict[str, str]:
@@ -426,6 +430,20 @@ def stratified_rebuild(specs: Iterable[Mapping[str, Any]], n: int,
         by[strata.get(fam, "families")].setdefault(fam, []).append(sp)
     picks: list[dict] = []
     plan: list[dict] = []
+
+    def take(sp: Mapping[str, Any], s: str, always: bool = False) -> None:
+        picks.append({k: sp.get(k) for k in ("sym", "family", "params", "mechanism_status",
+                                             "mechanism_note")})
+        plan.append({"key": cell_key(sp), "family": str(sp.get("family")), "stratum": s,
+                     **({"always": True} if always else {})})
+
+    for fam in ALWAYS_REBUILD:               # first, so a small n can never squeeze it out
+        s_of = strata.get(fam, "families")
+        got = by[s_of].get(fam)
+        if got and len(picks) < max(0, int(n)):
+            take(got.pop(0), s_of, always=True)
+            if not got:
+                by[s_of].pop(fam)
     queues = {s: [list(v) for _, v in sorted(by[s].items())] for s in STRATA}
     while len(picks) < max(0, int(n)) and any(any(q) for q in queues.values()):
         for s in STRATA:
@@ -436,10 +454,11 @@ def stratified_rebuild(specs: Iterable[Mapping[str, Any]], n: int,
                 continue
             sp = fams[0].pop(0)
             fams.append(fams.pop(0))           # next family of this stratum next time
-            picks.append({k: sp.get(k) for k in ("sym", "family", "params", "mechanism_status",
-                                                 "mechanism_note")})
-            plan.append({"key": cell_key(sp), "family": str(sp.get("family")), "stratum": s})
+            take(sp, s)
     present = {s: sum(len(v) for v in by[s].values()) for s in STRATA}
+    for r in plan:                            # the always-picks were popped before counting
+        if r.get("always"):
+            present[r["stratum"]] += 1
     return picks, [*plan, *({"stratum_in_input": s, "specs": c} for s, c in present.items())]
 
 
@@ -468,6 +487,11 @@ def thread_info() -> dict[str, Any]:
         out["os_threads"] = int(psutil.Process().num_threads())
     except Exception:
         out["os_threads"] = None
+    try:
+        import psutil
+        out["priority"] = int(psutil.Process().nice())   # the class the child actually ran at
+    except Exception:
+        out["priority"] = None
     return out
 
 
@@ -1012,7 +1036,14 @@ def rebuild_coverage(arms: Mapping[str, Mapping[str, Any] | None],
                          "status": sorted({str(g.get("status")) for g in got})})
     for row in by.values():
         row["families"] = sorted(row["families"])
-    return {"requested": len(picks), "rebuilt": rebuilt, "lost": len(lost),
+    always = {str(r["family"]): r for r in picks if r.get("always")}
+    always_unrebuilt = sorted(f for f in always
+                              if any(x["family"] == f and x["stratum"] == always[f]["stratum"]
+                                     for x in lost))
+    return {"always_rebuild": list(ALWAYS_REBUILD),
+            "always_requested": sorted(always), "always_unrebuilt": always_unrebuilt,
+            "always_absent_from_input": sorted(set(ALWAYS_REBUILD) - set(always)),
+            "requested": len(picks), "rebuilt": rebuilt, "lost": len(lost),
             "lost_cells": lost[:100], "by_stratum": by, "strata_in_input": present,
             "strata_unrebuilt": sorted(s for s, row in by.items() if row["rebuilt"] == 0),
             "strata_absent_from_input": sorted(s for s in STRATA if not present.get(s))}
@@ -1028,6 +1059,32 @@ def _child_env(single: bool) -> dict[str, str]:
     return env
 
 
+#: POSIX niceness that psutil maps BELOW_NORMAL to; the Windows class is the constant below.
+POSIX_BELOW_NORMAL_NICE = 10
+
+
+def _posix_below_normal() -> None:          # runs in the child between fork and exec
+    cur = os.nice(0)
+    if cur < POSIX_BELOW_NORMAL_NICE:
+        os.nice(POSIX_BELOW_NORMAL_NICE - cur)  # a lowering only: os.nice can never raise
+
+
+def _below_normal_spawn() -> dict[str, Any]:
+    """Spawn kwargs that pin a harness child at BELOW_NORMAL, explicitly (audit re-review of
+    fb7626205), rather than trusting what the task passed down -- and never ABOVE the parent: a
+    parent already at IDLE keeps its children at IDLE."""
+    if sys.platform == "win32":
+        flag = int(getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0x4000))
+        try:
+            import psutil
+            if psutil.Process().nice() == getattr(psutil, "IDLE_PRIORITY_CLASS", None):
+                flag = int(getattr(subprocess, "IDLE_PRIORITY_CLASS", 0x40))
+        except Exception:
+            pass
+        return {"creationflags": flag}
+    return {"preexec_fn": _posix_below_normal}
+
+
 def _run_child(role: str, job: dict[str, Any], scratch: Path, *, single: bool,
                timeout_s: float) -> tuple[dict[str, Any] | None, str | None, float]:
     """Run one child (`prepare` or an arm) and return (output, failure, wall seconds)."""
@@ -1040,7 +1097,7 @@ def _run_child(role: str, job: dict[str, Any], scratch: Path, *, single: bool,
         cp = subprocess.run([sys.executable, "-u", str(Path(__file__).resolve()),
                              "--_child", str(job_path)], cwd=str(DESK),
                             env=_child_env(single), capture_output=True, timeout=timeout_s,
-                            check=False)
+                            check=False, **_below_normal_spawn())
     except subprocess.TimeoutExpired:
         return None, f"timed out after {timeout_s:.0f}s", time.perf_counter() - t0
     wall = time.perf_counter() - t0
@@ -1220,9 +1277,6 @@ def run(*, input_path: Path | None, out: Path, sample: int = DEFAULT_SAMPLE,
         decided = decide_verdict(arms, failures)
         doc.update(decided)
         doc["rebuild_coverage"] = rebuild_coverage(arms, list(prep.get("rebuild_plan") or []))
-        short = blas_threads.evidence_floor(doc)
-        doc["evidence_floor"]["shortfalls"] = short
-        doc["evidence_floor"]["clears"] = not short
         doc["timing"] = timing
         if "default" in timing and "single" in timing:
             doc["timing"]["single_over_default"] = {
@@ -1231,6 +1285,11 @@ def run(*, input_path: Path | None, out: Path, sample: int = DEFAULT_SAMPLE,
                 "judge_cpu": _ratio(timing["single"]["judge_cpu_s"],
                                     timing["default"]["judge_cpu_s"])}
         doc["arms"] = {name: _arm_summary(a) for name, a in arms.items() if a is not None}
+        # THE FLOOR IS READ AFTER `arms` IS ATTACHED (audit re-review of fb7626205): computed
+        # before, every arm read as absent and the published `clears` was always False.
+        short = blas_threads.evidence_floor(doc)
+        doc["evidence_floor"]["shortfalls"] = short
+        doc["evidence_floor"]["clears"] = not short
         doc["probe"] = {name: a.get("probe") for name, a in arms.items() if a is not None}
         spectrum = _eig_diff(scratch, arms)
         doc["eigvals_diff"] = spectrum

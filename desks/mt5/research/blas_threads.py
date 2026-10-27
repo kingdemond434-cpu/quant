@@ -72,7 +72,7 @@ RUN_LOG = DESK / "data" / "blas_differential_runs.jsonl"
 THREAD_VARS = ("OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "OMP_NUM_THREADS")
 SCHEMA = "blas_differential/v2"
 #: Bumped whenever the harness's evidence changes meaning; an older report licenses nothing.
-HARNESS_VERSION = "1.1"
+HARNESS_VERSION = "1.2"
 IDENTICAL, DIFFERS, UNMEASURED = "IDENTICAL", "DIFFERS", "UNMEASURED"
 #: THE EVIDENCE FLOOR. Below this many sampled and judged cells the census matrix is too small
 #: for BLAS to thread at all, so an IDENTICAL there says nothing about the production sweep.
@@ -178,6 +178,38 @@ def _signing_key() -> bytes | None:
         return None
 
 
+def _key_file_present() -> bool:
+    """Whether the signing key FILE exists, readable or not (its bytes are never read here)."""
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.ops.release_signing import key_path
+        return Path(key_path(ROOT)).exists()
+    except Exception:
+        return False
+
+
+def _release_signed(release_path: Path | None = None) -> bool:
+    doc = _read(Path(release_path or RELEASE))
+    return isinstance(doc, dict) and bool(doc.get("signature"))
+
+
+def hmac_required(run: Mapping[str, Any] | None, release_path: Path | None = None) -> list[str]:
+    """Why this proof MUST carry a verifying HMAC (empty: unkeyed acceptance is allowed).
+
+    Audit re-review of fb7626205: an unreadable key used to downgrade silently to unkeyed
+    acceptance. The MAC is required whenever the run that wrote the proof says it was keyed,
+    the release this box runs is signed (so the box holds a key), or the key file exists."""
+    why = []
+    if isinstance(run, Mapping) and run.get("keyed") is True:
+        why.append("the run log row says keyed")
+    if _release_signed(release_path):
+        why.append("RELEASE.json is signed")
+    if _key_file_present():
+        why.append("the signing key file exists")
+    return why
+
+
 def proof_hmac(content_sha: str, key: bytes | None = None) -> str | None:
     """HMAC-SHA256 of a proof's digest under the signing key; None when this box holds none."""
     key = _signing_key() if key is None else key
@@ -247,6 +279,9 @@ def evidence_floor(doc: Mapping[str, Any]) -> list[str]:
                      "coverage)")
     if rb.get("strata_unrebuilt"):
         short.append(f"family strata never rebuilt: {rb.get('strata_unrebuilt')}")
+    if rb.get("always_unrebuilt"):
+        short.append(f"always-rebuilt families lost: {rb.get('always_unrebuilt')} (the "
+                     "pca_residual eigen cutoff binds only through the rebuild arm)")
     return short
 
 
@@ -273,6 +308,11 @@ def proof_status(proof_path: Path | None = None, *, release_path: Path | None = 
         return False, (f"{path.name} is not the latest harness run in {RUN_LOG.name} (run "
                        f"{doc.get('run_id')!r}); a report no run wrote licenses nothing")
     key = _signing_key()
+    need = hmac_required(run, release_path)
+    if key is None and need:
+        return False, (f"{path.name} needs a verifying proof_hmac ({'; '.join(need)}) but the "
+                       "signing key is unavailable or unreadable here: refused, never accepted "
+                       "unkeyed")
     if key is not None:
         want = proof_hmac(sha, key)
         if not hmac.compare_digest(str(doc.get("proof_hmac") or ""), str(want)):

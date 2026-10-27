@@ -2721,7 +2721,9 @@ def _sweep_once() -> int:
     try:
         from research.judging_throughput import apply_env
 
-        apply_env()
+        # THIS process is the judge (the sweep child): BLAS may enter its own environ, so the
+        # pre-warm pool and every shard inherit it. Nobody else's environ is touched.
+        apply_env(judge_process=True)
         # EQUAL TO THE MINERS, NEVER ABOVE (judge_cpu_fair_share): before any shard starts, so
         # every shard inherits the class. Never raises.
         _publish_priority("child", _equalise_self())

@@ -364,6 +364,11 @@ def test_end_to_end_on_the_real_judge(tmp_path) -> None:
     assert ok is False and ("evidence floor" in why or "proof_hmac" in why), why
     assert rep["evidence_floor"]["clears"] is False
     assert any("sampled_cells" in x for x in rep["evidence_floor"]["shortfalls"])
+    assert not [x for x in rep["evidence_floor"]["shortfalls"] if "absent" in x], \
+        "the floor must be read after the arms are attached"
+    if sys.platform != "win32":
+        for arm in ("default", "single", "control"):
+            assert rep["arms"][arm]["threads"]["priority"] >= bd.POSIX_BELOW_NORMAL_NICE
     assert set(rep["identity"]) == set(bt.IDENTITY_KEYS)
     assert rep["input"]["sampled_cells"] == 36
     for arm in ("default", "single", "control"):
@@ -392,6 +397,35 @@ def test_end_to_end_on_the_real_judge(tmp_path) -> None:
 
 
 # ------------------------------------------------------------------------------ rebuild strata
+def test_pca_residual_is_always_rebuilt_even_when_n_is_small() -> None:
+    strata = {"pca_residual": "families_orthogonal"}
+    specs = ([{"sym": f"S{i}", "family": f"fam{i}", "params": {}} for i in range(30)]
+             + [{"sym": "XAUUSD", "family": "pca_residual", "params": {}}])
+    picks, plan = bd.stratified_rebuild(specs, 2, strata)
+    assert picks[0]["family"] == "pca_residual" and len(picks) == 2
+    assert next(r for r in plan if r.get("key"))["always"] is True
+    present = {r["stratum_in_input"]: r["specs"] for r in plan if "stratum_in_input" in r}
+    assert present["families_orthogonal"] == 1
+    arm = {"rebuilt": {}}
+    cov = bd.rebuild_coverage({"default": arm, "single": arm}, plan)
+    assert cov["always_requested"] == ["pca_residual"]
+    assert cov["always_unrebuilt"] == ["pca_residual"]
+    assert any("always-rebuilt" in x for x in bt.evidence_floor({"rebuild_coverage": cov}))
+    _, plan2 = bd.stratified_rebuild(specs[:5], 3, strata)
+    cov2 = bd.rebuild_coverage({"default": arm}, plan2)
+    assert cov2["always_absent_from_input"] == ["pca_residual"] and not cov2["always_unrebuilt"]
+
+
+def test_harness_children_are_pinned_below_normal() -> None:
+    kw = bd._below_normal_spawn()
+    if sys.platform == "win32":
+        assert kw["creationflags"] in (0x4000, 0x40)
+    else:
+        assert kw["preexec_fn"] is bd._posix_below_normal
+    src = Path(bd.__file__).read_text("utf-8")
+    assert "**_below_normal_spawn())" in src.split("def _run_child", 1)[1].split("def ", 1)[0]
+
+
 def test_the_rebuild_is_stratified_by_family_module() -> None:
     strata = {"cross_asset_residual": "causal_residual", "pca_residual": "families_orthogonal"}
     specs = ([{"sym": f"S{i}", "family": "session_range_breakout", "params": {}} for i in range(9)]

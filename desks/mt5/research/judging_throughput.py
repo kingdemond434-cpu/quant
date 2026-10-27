@@ -861,7 +861,8 @@ def write_env(decision: dict[str, Any], path: Path | None = None,
     return payload
 
 
-def apply_env(path: Path | None = None, env: dict[str, str] | None = None) -> dict[str, str]:
+def apply_env(path: Path | None = None, env: dict[str, str] | None = None, *,
+              judge_process: bool = False) -> dict[str, str]:
     """Load the published env into `os.environ` so a CHILD process inherits it.
 
     THE HOURLY CYCLE'S HOOK. `hourly_cycle._producer` runs each leg as a subprocess with the
@@ -869,17 +870,21 @@ def apply_env(path: Path | None = None, env: dict[str, str] | None = None) -> di
     what makes the measured worker count reach the sealed sweep in-cycle. Existing variables are
     NOT overwritten: an operator who exported `GAUNTLET_WORKERS` by hand outranks this organ.
 
-    SINGLE-THREADED BLAS RIDES THE SAME DOOR (`research/blas_threads.py`), and only on the
-    production call (no `path`): `OPENBLAS_NUM_THREADS`/`MKL_NUM_THREADS`/`OMP_NUM_THREADS` = 1
-    are added when `data/BLAS_SINGLE_THREAD.json` is enabled AND `reports/BLAS_DIFFERENTIAL.json`
-    proves IDENTICAL judge output for this release. Every worker the sweep starts (the pre-warm
-    pool, the build and rule shards) and the resident's sweep child inherit them before numpy
-    loads. Otherwise nothing is added and BLAS keeps its default. It is applied BEFORE the
-    foreign-fingerprint refusal below, which governs the worker-count file only.
+    SINGLE-THREADED BLAS GOES ONLY INTO A JUDGE'S SPAWN ENV (`research/blas_threads.py`; audit
+    re-review of fb7626205). `OPENBLAS_NUM_THREADS`/`MKL_NUM_THREADS`/`OMP_NUM_THREADS` = 1 are
+    added when `data/BLAS_SINGLE_THREAD.json` is enabled AND `reports/BLAS_DIFFERENTIAL.json`
+    proves IDENTICAL judge output for this release, and ONLY on the production call (no `path`)
+    into either an explicit spawn env (`env=`, as the resident's `_sweep_env` and the hourly
+    cycle's `external_gauntlet` leg build theirs) or the judge's own process
+    (`judge_process=True`, the sweep child, whose pre-warm pool and shards inherit it). Never
+    into a non-judge process's own `os.environ`: the hourly cycle calls this in-process, and
+    every later leg -- miners, pf_allocator, the promoter -- would inherit a confined BLAS.
+    It is applied BEFORE the foreign-fingerprint refusal below, which governs the worker-count
+    file only.
     """
     target = os.environ if env is None else env
     blas_applied: dict[str, str] = {}
-    if path is None:
+    if path is None and (env is not None or judge_process):
         try:
             from research import blas_threads
             blas_applied = blas_threads.apply(target)

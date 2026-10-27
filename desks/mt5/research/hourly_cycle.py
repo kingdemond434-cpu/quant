@@ -2218,6 +2218,36 @@ def _self_stop_floor_s(args: tuple[str, ...]) -> int:
     return int(own + max(WRITE_MARGIN_MIN_S, WRITE_MARGIN_FRAC * own))
 
 
+#: Extra variables for ONE leg's subprocess env, never the cycle's own `os.environ`. Today only
+#: the judge leg: single-threaded BLAS under a valid proof (`_arm_judge_leg_env`).
+_LEG_ENV: dict[str, dict[str, str]] = {}
+
+#: The legs that ARE the judge, and so may run single-threaded BLAS under the proof.
+JUDGE_LEGS = ("external_gauntlet",)
+
+
+def _arm_judge_leg_env() -> dict[str, str]:
+    """Single-threaded BLAS for the judge leg's spawn env alone, when the proof licenses it.
+
+    WHY NOT `os.environ` (audit re-review of fb7626205): this process runs every leg, so a
+    variable set here reaches all of them -- deep_forest, world_crawler, kimi_hunt, hunt12,
+    pf_allocator -- and confines the miners' BLAS against the no-miner-confinement rule. The
+    decision is taken into a fresh dict and handed to the judge leg only."""
+    blas: dict[str, str] = {}
+    try:
+        from research.judging_throughput import apply_env
+        blas = {k: v for k, v in apply_env(env={}).items()
+                if k in ("OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "OMP_NUM_THREADS")}
+    except Exception as exc:
+        print(f"judge BLAS env not armed: {type(exc).__name__}: {exc}", flush=True)
+    for leg in JUDGE_LEGS:
+        if blas:
+            _LEG_ENV[leg] = dict(blas)
+        else:
+            _LEG_ENV.pop(leg, None)
+    return blas
+
+
 def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
     """The body: resolve the script against both roots and run it under the cycle budget.
 
@@ -2265,7 +2295,8 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
         # THE CAP IS TOLD TO THE CHILD. An organ that stops itself at its own budget can only stop
         # INSIDE the cap if it knows the cap; the pricer moves it hourly. Read by
         # deep_forest_miner (and anything else that wants to self-stop before the kill).
-        _env = {**os.environ, "QUANT_LEG_BUDGET_S": str(int(budget))}
+        _env = {**os.environ, "QUANT_LEG_BUDGET_S": str(int(budget)),
+                **_LEG_ENV.get(name, {})}
         r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target), *args],
                            capture_output=True, text=True, cwd=str(root),
                            timeout=budget, check=False, env=_env)
@@ -5064,6 +5095,9 @@ def main() -> None:
         _apply_judging_env()
     except Exception as _exc:
         print(f"judging_throughput env not applied: {type(_exc).__name__}: {_exc}", flush=True)
+    # SINGLE-THREADED BLAS, IF THE PROOF HOLDS, GOES TO THE JUDGE LEG ALONE: `_apply_judging_env`
+    # above never puts it in this process's environ (it would leak into every later leg).
+    _arm_judge_leg_env()
     # DUTY CYCLE, and it runs BEFORE the sweep for the same reason `judging_throughput` does: the
     # thing it repairs is the judge's own clock. Measured 2026-09-23/24, `MT5-Gauntlet`'s five-
     # minute trigger had run out its repetition window -- Enabled, a real Last Run Time, and no
