@@ -1347,7 +1347,7 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
                   "_sleeve_identity", "resolve_pending_bracket", "bracket_lane_lot",
                   "_book_key", "order_comment", "_sleeve_positions", "close_sleeve_positions", "family_position_tags", "scalp_position_tags", "_send_error",
                   "gold_one_at_risk", "cancel_gold_against_direction",
-                  "flatten_gold_against_direction", "_missed_usd"), ns)
+                  "flatten_gold_against_direction", "_missed_usd", "gold_follow_state"), ns)
 
 
 def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(
