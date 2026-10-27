@@ -4,16 +4,20 @@
 (#329). These cases drive its two pure pieces: `repin` on the shipped quantbench.py source, and
 `moved_files` on a scratch tree.
 """
+
 from __future__ import annotations
 
 import ast
 import importlib.util
+import io
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-SPEC = importlib.util.spec_from_file_location("sign_train", ROOT / "scripts" / "sign_train.py")
+SPEC = importlib.util.spec_from_file_location(
+    "sign_train", ROOT / "scripts" / "sign_train.py"
+)
 assert SPEC and SPEC.loader
 st = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(st)
@@ -23,8 +27,12 @@ SRC = (ROOT / "desks" / "mt5" / "research" / "quantbench.py").read_text("utf-8")
 
 def _constant(src: str, name: str) -> dict[str, str]:
     for node in ast.parse(src).body:
-        if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", None) == name:
-            return ast.literal_eval(node.value)
+        if (
+            isinstance(node, ast.Assign)
+            and getattr(node.targets[0], "id", None) == name
+        ):
+            value: dict[str, str] = ast.literal_eval(node.value)
+            return value
     raise AssertionError(name)
 
 
@@ -33,8 +41,12 @@ def test_repin_moves_to_and_signer_and_keeps_from(name: str) -> None:
     before = _constant(SRC, name)
     after_src = st.repin(SRC, name, "a" * 64)
     after = _constant(after_src, name)
-    assert after == {"path": before["path"], "from": before["from"], "to": "a" * 64,
-                     "signed_by": "principal"}
+    assert after == {
+        "path": before["path"],
+        "from": before["from"],
+        "to": "a" * 64,
+        "signed_by": "principal",
+    }
     for other in set(st.ROTATIONS.values()) - {name}:
         assert _constant(after_src, other) == _constant(SRC, other)
 
@@ -52,6 +64,50 @@ def test_repin_refuses_an_unknown_constant() -> None:
 def test_moved_files_reads_crlf_as_unchanged(tmp_path: Path) -> None:
     (tmp_path / "a.py").write_bytes(b"x = 1\r\n")
     (tmp_path / "b.py").write_bytes(b"y = 2\n")
-    signed = {"files": {"a.py": st.full_sha("a.py", tmp_path)[:16],
-                        "b.py": "0" * 16, "gone.py": "1" * 16}}
-    assert list(st.moved_files(signed, tmp_path)) == ["b.py"]
+    signed = {
+        "files": {
+            "a.py": st.full_sha("a.py", tmp_path)[:16],
+            "b.py": "0" * 16,
+            "gone.py": "1" * 16,
+        }
+    }
+    moved = st.moved_files(signed, tmp_path)
+    assert moved == {"b.py": st.full_sha("b.py", tmp_path), "gone.py": "<absent>"}
+
+
+def test_binding_names_every_moved_file_with_its_audited_bytes() -> None:
+    a, b = "a" * 64, "b" * 64
+    assert st.binding_problems({"x.py": a}, {"x.py": a}) == []
+    assert st.binding_problems({"x.py": a}, {}) != []
+    assert st.binding_problems({"x.py": a}, {"x.py": b}) != []
+    assert st.binding_problems({}, {"x.py": a}) != []
+    assert st.binding_problems({"x.py": a, "y.py": b}, {"x.py": a}) != []
+
+
+def test_denied_bytes_are_refused_even_when_named() -> None:
+    bad = "1aa4b33f" + "0" * 56
+    assert st.binding_problems({"x.py": bad}, {"x.py": bad}) != []
+
+
+def test_expect_wants_a_full_sha256() -> None:
+    assert st.parse_expect(["x.py=" + "A" * 64]) == {"x.py": "a" * 64}
+    for item in ("x.py=abc", "x.py", "x.py=" + "g" * 64):
+        with pytest.raises(ValueError):
+            st.parse_expect([item])
+
+
+def test_no_terminal_no_sign(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("sys.stdin", io.StringIO("whatever\n"))
+    assert st._confirm({"x.py": "a" * 64}) is False
+
+
+def test_typed_hash_must_match(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Tty(io.StringIO):
+        def isatty(self) -> bool:
+            return True
+
+    monkeypatch.setattr("sys.stdin", Tty())
+    monkeypatch.setattr("builtins.input", lambda _: "a" * 12)
+    assert st._confirm({"x.py": "a" * 64}) is True
+    monkeypatch.setattr("builtins.input", lambda _: "b" * 12)
+    assert st._confirm({"x.py": "a" * 64}) is False
