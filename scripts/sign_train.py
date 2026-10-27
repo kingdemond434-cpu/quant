@@ -124,18 +124,13 @@ def _restore() -> None:
 
 
 def _qb002_green() -> bool:
-    return (
-        _run(sys.executable, "-m", "pytest", "desks/mt5/tests/test_quantbench.py", "-q")
-        == 0
-    )
+    return _run(sys.executable, "-m", "pytest", "desks/mt5/tests/test_quantbench.py", "-q") == 0
 
 
 def _confirm(moved: dict[str, str]) -> bool:
     """The real human act: a person at a terminal reads each new hash and types it back."""
     if not sys.stdin.isatty():
-        print(
-            "REFUSED: no terminal. The principal signs by typing, never a task or a pipe."
-        )
+        print("REFUSED: no terminal. The principal signs by typing, never a task or a pipe.")
         return False
     print("You are signing these bytes as principal:")
     for rel, sha in sorted(moved.items()):
@@ -159,9 +154,7 @@ def _commit_holds(head: str, moved: dict[str, str]) -> bool:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument(
-        "--target", required=True, help="the audited sha the principal is signing"
-    )
+    ap.add_argument("--target", required=True, help="the audited sha the principal is signing")
     ap.add_argument(
         "--expect",
         action="append",
@@ -169,9 +162,7 @@ def main(argv: list[str] | None = None) -> int:
         metavar="PATH=SHA256",
         help="the audited full sha256 of each moved sealed file (repeat per file)",
     )
-    ap.add_argument(
-        "--push", action="store_true", help="push the signed commit as a branch"
-    )
+    ap.add_argument("--push", action="store_true", help="push the signed commit as a branch")
     a = ap.parse_args(argv)
 
     head = _git("rev-parse", "HEAD")
@@ -238,9 +229,7 @@ def main(argv: list[str] | None = None) -> int:
             if (before.get("files") or {}).get(p) != d
         }
         if resigned != set(moved):
-            print(
-                f"FAILED: the sign touched {sorted(resigned)}, not the bound {sorted(moved)}"
-            )
+            print(f"FAILED: the sign touched {sorted(resigned)}, not the bound {sorted(moved)}")
             return 1
         if _run(py, "scripts/check_immutable_evaluator.py") != 0 or not _qb002_green():
             print("FAILED: evaluator or QB-002 red after the sign")
@@ -262,12 +251,23 @@ def main(argv: list[str] | None = None) -> int:
         ):
             print("FAILED: commit refused")
             return 1
-        if not _commit_holds(head, moved):
-            if _git("rev-parse", "HEAD") != head:
-                _git("reset", "-q", "--soft", head)
+        mine = _git("rev-parse", "HEAD")
+        if mine == head:
+            print("FAILED: no commit was made")
+            return 1
+        if _git("rev-parse", "HEAD~1") != head:
+            # Something stacked a commit after ours (a hook, another session). Undoing it would
+            # drop work that is not the train's, so touch nothing and hand it to a human.
+            done = True
             print(
-                "FAILED: the commit did not carry both files and every re-pin; undone"
+                f"FAILED: HEAD {mine} does not sit directly on the target {head}; "
+                "nothing undone, sort it out by hand"
             )
+            return 1
+        if not _commit_holds(head, moved):
+            # HEAD is the train's own commit, alone above the target: safe to take back.
+            _git("reset", "-q", "--soft", head)
+            print("FAILED: the commit did not carry both files and every re-pin; undone")
             return 1
         done = True
     finally:

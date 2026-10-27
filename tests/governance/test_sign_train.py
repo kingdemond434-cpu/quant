@@ -15,9 +15,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-SPEC = importlib.util.spec_from_file_location(
-    "sign_train", ROOT / "scripts" / "sign_train.py"
-)
+SPEC = importlib.util.spec_from_file_location("sign_train", ROOT / "scripts" / "sign_train.py")
 assert SPEC and SPEC.loader
 st = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(st)
@@ -27,10 +25,7 @@ SRC = (ROOT / "desks" / "mt5" / "research" / "quantbench.py").read_text("utf-8")
 
 def _constant(src: str, name: str) -> dict[str, str]:
     for node in ast.parse(src).body:
-        if (
-            isinstance(node, ast.Assign)
-            and getattr(node.targets[0], "id", None) == name
-        ):
+        if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", None) == name:
             value: dict[str, str] = ast.literal_eval(node.value)
             return value
     raise AssertionError(name)
