@@ -1744,14 +1744,15 @@ class WallSampler:
         for name, row in self.stacks.items():
             n = max(1, self.samples.get(name, 0))
             top = sorted(row.items(), key=lambda kv: (-kv[1], kv[0]))[:WALL_TOP]
-            tot = dict(self.totals.get(name) or {})
-            if tot.get("sampled_s"):
-                tot["cpu_share_of_wall"] = round(tot.get("cpu_s", 0.0) / tot["sampled_s"], 3)
+            raw = self.totals.get(name) or {}
+            proc = {k: round(v, 1) for k, v in raw.items()}
+            if raw.get("sampled_s"):
+                proc["cpu_share_of_wall"] = round(raw.get("cpu_s", 0.0) / raw["sampled_s"], 3)
             out["phases"][name] = {
                 "samples": self.samples.get(name, 0),
                 "top": [{"stack": sig[:300], "n": c, "share": round(c / n, 3)}
                         for sig, c in top],
-                "process": {k: round(v, 1) for k, v in tot.items()}}
+                "process": proc}
         return out
 
     def publish(self) -> None:
