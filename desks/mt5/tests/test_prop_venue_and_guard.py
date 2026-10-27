@@ -70,6 +70,16 @@ def test_a_write_is_re_sent_only_when_it_never_reached_the_venue() -> None:
             raise ConnectTimeout("never connected")
         return "ok"
     assert _bounded_request(_named(post_connect, "post")) == "ok" and len(sent) == 2
+    sent = []
+
+    def login(url):
+        sent.append(1)
+        if len(sent) == 1:
+            raise ReadTimeout("slow login")
+        return "token"
+    assert _bounded_request(_named(login, "post"),
+                            url="https://live.tradelocker.com/backend-api/auth/jwt/token") == "token"
+    assert len(sent) == 2                       # a login is idempotent, so it keeps its retry
 
 
 def _named(fn, name):

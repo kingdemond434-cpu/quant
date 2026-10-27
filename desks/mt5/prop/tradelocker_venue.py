@@ -83,9 +83,12 @@ def reset_rate_limit_budget() -> None:
     _backoff_spent[0] = 0.0
 
 
-def _is_read(method: Any) -> bool:
-    """True only for a call the SDK names as a GET-family request; unknown counts as a write."""
-    return str(getattr(method, "__name__", "")).lower() in _READ_METHODS
+def _is_read(method: Any, url: Any = None) -> bool:
+    """True for a call the SDK names as a GET-family request, or a POST to the venue's JWT login
+    and refresh routes (idempotent: a second one only mints another token); unknown is a write."""
+    if str(getattr(method, "__name__", "")).lower() in _READ_METHODS:
+        return True
+    return "/auth/jwt/" in str(url or "")
 
 
 def _status(obj: Any) -> int | None:
@@ -115,7 +118,7 @@ def _bounded_request(method: Any, *args: Any, sleep: Any = None, **kwargs: Any) 
     from requests.exceptions import ConnectTimeout, HTTPError, RequestException
 
     nap = time.sleep if sleep is None else sleep
-    read = _is_read(method)
+    read = _is_read(method, kwargs.get("url"))
     waits = list(RATE_LIMIT_WAITS_S) if read else []
     transient_left = 1
 
