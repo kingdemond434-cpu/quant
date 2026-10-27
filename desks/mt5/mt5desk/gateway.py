@@ -4581,7 +4581,7 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                                            float(plan["target_atr"]))
 
 
-def resolve_pending_bracket(s: dict, hour: float, today, day_key: str | None = None) -> dict:
+def resolve_pending_bracket(s: dict, hour: float, today) -> dict:
     """The bracket this sleeve would place THIS pass -- resolved once, read-only, no side effects.
 
     WHY THIS EXISTS AS A FUNCTION (external audit, 2026-09-09). The heat cap runs before the
@@ -4638,7 +4638,9 @@ def resolve_pending_bracket(s: dict, hour: float, today, day_key: str | None = N
     if _late and s.get("symbol") == GOLD_SYMBOL:
         # A FOLLOWER IS LATE BY DESIGN (`gold_follow_state`): it waits on E8's fill, not on a
         # restart. The session-end guard above and the gate's direction still bind it.
-        _fstate, _fwhy = gold_follow_state(day_key or str(today))
+        # Dated by `today` (the wall-clock UTC date, as `state_allows` is): every gold window
+        # opens and closes inside one UTC date, so it names the same trading day as the tick.
+        _fstate, _fwhy = gold_follow_state(str(today))
         if _fstate is not None:
             _late = None
     if _late:
@@ -5105,8 +5107,7 @@ def main() -> None:
                     # the broker tick's day here instead would let the two sites disagree across
                     # midnight -- and since the cached resolution is what gets SENT, the charge
                     # site's answer would quietly become the trading rule.
-                    _pend = resolve_pending_bracket(_s, hour, datetime.now(tz=UTC).date(),
-                                                    day_key=day_key)
+                    _pend = resolve_pending_bracket(_s, hour, datetime.now(tz=UTC).date())
                 except Exception as _exc:
                     _pend = {"ok": False, "stage": "resolve_failed",
                              "why": f"{type(_exc).__name__}: {_exc}"}
