@@ -328,10 +328,12 @@ def retry_decisions(state: dict, hour: float, bid: float, ask: float, filled: di
                 out.append({**base, "act": "abandon", "why": "the other leg filled"})
             elif hour >= CANCEL_HOUR or window_session_ended(name, hour):
                 out.append({**base, "act": "abandon", "why": "the window's session is over"})
-            elif gold_send_late(name, hour, e8_grace()):
-                # A retry is a send too: past signal hour + E8_GOLD_SEND_GRACE_MIN it is late.
+            elif gold_send_late(name, hour, window_grace(name, state)):
+                # A retry is a send too: past signal hour + this window's grace it is late. The
+                # grace is `window_grace`, the same one placement used, so a deferred window's
+                # legs are not orphaned by a narrower retry rule.
                 out.append({**base, "act": "abandon", "late": True,
-                            "why": str(gold_send_late(name, hour, e8_grace()))})
+                            "why": str(gold_send_late(name, hour, window_grace(name, state)))})
             elif int(leg.get("attempts") or 0) >= MAX_LEG_RETRIES:
                 out.append({**base, "act": "abandon",
                             "why": f"{MAX_LEG_RETRIES} sends failed"})
@@ -1257,8 +1259,10 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         # CONCURRENT OPEN RISK, measured once, before any window is placed (see SLIP_BUFFER).
         # Anything unreadable -- the order book, the journal, a position's stop -- refuses every
         # window this pass and marks none placed, so the next pass decides again.
+        venue_read = True                   # only a VENUE fault earns the deferred extra pass
         try:
             budget_orders = venue.orders(SYMBOL)
+            venue_read = False
             journal = [] if not INTENTS.exists() else _journal_read()
             if journal is None:
                 raise ValueError("the intents journal is unreadable, so this lane's resting "
@@ -1278,7 +1282,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             for due in due_now:
                 doc["skipped"].append({"window": due["window"], "why": why})
                 log(f"[{due['window']}] DEFERRED: {why}")
-                if due["window"] not in _deferred:
+                if venue_read and due["window"] not in _deferred:
                     _deferred.append(due["window"])         # one more pass: `window_grace`
             due_now = []
     room = float(guard_decision.room_to_daily_floor) if guard_decision is not None else 0.0

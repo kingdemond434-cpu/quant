@@ -1765,3 +1765,34 @@ def test_the_deferral_does_not_outlive_its_server_day() -> None:
                                                "windows": {}}, "2026-10-27")
     assert g.window_grace("asia", {"deferred": ["asia"]}) == g.e8_grace() + 5.0
     assert g.window_grace("london_am", {"deferred": ["asia"]}) == g.e8_grace()
+
+
+def test_a_deferred_windows_retry_uses_the_same_grace_as_its_placement() -> None:
+    """A leg placed on the extra pass must not be orphaned by a narrower retry rule."""
+    from prop import e8_gold as g
+    st = {"deferred": ["asia"],
+          "windows": {"asia": {"orders": {}, "position_id": None,
+                               "failed": {"buy_stop": {"price": 4340.0, "attempts": 1}}}}}
+    (dec,) = g.retry_decisions(st, 7 + 14 / 60, 4300.0, 4300.4, {})
+    assert dec["act"] == "retry"
+    (dec,) = g.retry_decisions(st, 7 + 16 / 60, 4300.0, 4300.4, {})
+    assert dec["act"] == "abandon" and dec["late"]
+
+
+def test_an_unreadable_journal_refuses_but_earns_no_extra_pass(monkeypatch, tmp_path) -> None:
+    """Only a venue fault defers; a local fault would otherwise buy lateness with no cause."""
+    from prop import e8_gold as g
+    reads = iter([None])          # unreadable for the risk count, readable afterwards
+    monkeypatch.setattr(g, "_journal_read", lambda *a, **k: next(reads, []))
+    import test_e8_gold_guard_and_open_risk as h
+    orig = h._sandbox
+
+    def sandbox(mp, tp):
+        orig(mp, tp)
+        g.INTENTS.parent.mkdir(parents=True, exist_ok=True)
+        g.INTENTS.write_text("{}\n", encoding="utf-8")
+    monkeypatch.setattr(h, "_sandbox", sandbox)
+    doc, _ = _e8(monkeypatch, tmp_path, hour=ASIA_H, kelly=None, cert=VALID)
+    assert "asia" not in _placed(doc)
+    assert any("unmeasurable" in str(x.get("why")) for x in doc["skipped"])
+    assert not json.loads((tmp_path / "state.json").read_text("utf-8")).get("deferred")

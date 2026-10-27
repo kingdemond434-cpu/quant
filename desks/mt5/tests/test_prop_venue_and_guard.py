@@ -47,8 +47,16 @@ def test_venue_request_retries_once_then_returns_or_raises() -> None:
     assert len(calls) == 2
 
 
+def _named(fn, name):
+    fn.__name__ = name
+    return fn
+
+
 def test_a_429_backs_off_and_retries_raised_or_returned() -> None:
     from requests.exceptions import HTTPError
+
+    from prop import tradelocker_venue as tv
+    tv.reset_rate_limit_budget()
     naps: list[float] = []
     calls: list[int] = []
 
@@ -60,7 +68,7 @@ def test_a_429_backs_off_and_retries_raised_or_returned() -> None:
         if len(calls) <= 2:
             raise HTTPError("429", response=resp(429))
         return "ok"
-    assert _bounded_request(raised_twice, sleep=naps.append) == "ok"
+    assert _bounded_request(_named(raised_twice, "get"), sleep=naps.append) == "ok"
     assert naps == [2.0, 5.0] and len(calls) == 3
     naps.clear()
     calls.clear()
@@ -68,15 +76,64 @@ def test_a_429_backs_off_and_retries_raised_or_returned() -> None:
     def returned_once():
         calls.append(1)
         return resp(429, {"Retry-After": "30"}) if len(calls) == 1 else resp(200)
-    assert _bounded_request(returned_once, sleep=naps.append).status_code == 200
+    assert _bounded_request(_named(returned_once, "get"), sleep=naps.append).status_code == 200
     assert naps == [10.0]                                  # the venue's header, capped
+    naps.clear()
+    calls.clear()
+
+    def zero_after():
+        calls.append(1)
+        return resp(429, {"Retry-After": "0"}) if len(calls) == 1 else resp(200)
+    assert _bounded_request(_named(zero_after, "get"), sleep=naps.append).status_code == 200
+    assert naps == [2.0]                                   # a 0 header takes the default wait
     naps.clear()
 
     def always():
         raise HTTPError("429", response=resp(429))
     with pytest.raises(HTTPError):
-        _bounded_request(always, sleep=naps.append)
-    assert naps == [2.0, 5.0]                              # bounded: 7 s, then one plain retry
+        _bounded_request(_named(always, "get"), sleep=naps.append)
+    assert naps == [2.0, 5.0]                              # bounded: 7 s, then it raises
+
+
+def test_a_write_that_draws_a_429_is_never_re_sent() -> None:
+    """The venue may have taken it; a re-send could land a second live order."""
+    from requests.exceptions import HTTPError
+
+    from prop import tradelocker_venue as tv
+    tv.reset_rate_limit_budget()
+    naps: list[float] = []
+    sent: list[int] = []
+    resp = type("R", (), {"status_code": 429, "headers": {}})()
+
+    def post():
+        sent.append(1)
+        raise HTTPError("429", response=resp)
+    for name in ("post", "delete", "patch", "put", "mystery"):
+        sent.clear()
+        with pytest.raises(HTTPError):
+            _bounded_request(_named(post, name), sleep=naps.append)
+        assert sent == [1], name
+    returned = _named(lambda: resp, "post")
+    assert _bounded_request(returned, sleep=naps.append) is resp   # handed back, not re-sent
+    assert naps == []
+
+
+def test_the_backoff_shares_one_budget_per_process() -> None:
+    from requests.exceptions import HTTPError
+
+    from prop import tradelocker_venue as tv
+    tv.reset_rate_limit_budget()
+    naps: list[float] = []
+    resp = type("R", (), {"status_code": 429, "headers": {"Retry-After": "10"}})()
+
+    def get():
+        raise HTTPError("429", response=resp)
+    for _ in range(5):
+        with pytest.raises(HTTPError):
+            _bounded_request(_named(get, "get"), sleep=naps.append)
+    assert sum(naps) <= tv.RATE_LIMIT_BUDGET_S
+    assert naps == [10.0, 10.0, 10.0]
+    tv.reset_rate_limit_budget()
 
 
 # ------------------------------------------------------------------------------ the fake venue
