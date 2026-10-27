@@ -793,3 +793,58 @@ def test_the_larger_remembered_longest_sweep_wins_and_hangs_survive() -> None:
                                       "utf-8")
     got = runner._recall()
     assert got == {"longest_sweep_s": 64711.4, "consecutive_hangs": 1, "hung_kills": 3}
+
+
+#: Each is a JSON token as it would sit in a damaged file; the tests write it verbatim.
+_BAD_TOKENS = ['"12"', "NaN", "Infinity", "-Infinity", "[3]", '{"n": 1}', "-5", "true", "null",
+               "1" + "0" * 400]
+
+
+@pytest.mark.parametrize("token", _BAD_TOKENS)
+def test_a_bad_remembered_value_never_crashes_the_resident(token) -> None:
+    """Audit of e80a73a87: a string, NaN or list in either file must not stop resident()."""
+    import json
+
+    raw = "{" + ", ".join(f'"{k}": {token}' for k in
+                          ("longest_sweep_s", "consecutive_hangs", "hung_kills")) + "}"
+    runner.RESIDENT_STATE.write_text(raw, "utf-8")
+    runner.RESIDENT_MEMORY.write_text(raw, "utf-8")
+    got = runner._recall()
+    for k in ("consecutive_hangs", "hung_kills"):
+        assert got[k] is None or (isinstance(got[k], int) and got[k] >= 0)
+    assert got["consecutive_hangs"] is None or got["consecutive_hangs"] <= 64
+    assert got["longest_sweep_s"] is None or got["longest_sweep_s"] > 0
+    clock, slept = _Clock(), []
+    runner.resident(sweep=lambda: 0, sleep=slept.append, clock=clock, limit_s=None,
+                    max_sweeps=1)
+    doc = json.loads(runner.RESIDENT_STATE.read_text("utf-8"))
+    hangs = doc["consecutive_hangs"]
+    assert isinstance(hangs, int) and 0 <= hangs <= 64
+    env = {"GAUNTLET_FRESH_BUDGET_SEC": "8640"}
+    assert runner._hang_limit_s(doc.get("longest_sweep_s"), hangs, env) > 0
+
+
+def test_a_bad_record_value_falls_back_to_the_mirror() -> None:
+    import json
+
+    runner.RESIDENT_STATE.write_text(json.dumps({"longest_sweep_s": "x", "consecutive_hangs":
+                                                 "y", "hung_kills": [1]}), "utf-8")
+    runner.RESIDENT_MEMORY.write_text(json.dumps({"longest_sweep_s": 64711.4,
+                                                  "consecutive_hangs": 10**6,
+                                                  "hung_kills": 3.0}), "utf-8")
+    assert runner._recall() == {"longest_sweep_s": 64711.4, "consecutive_hangs": 64,
+                                "hung_kills": 3}
+    assert runner._hang_limit_s(None, 10**6, {}) == runner.RESIDENT_HANG_CAP_S
+
+
+def test_a_failed_replace_leaves_no_tmp_behind(monkeypatch, tmp_path) -> None:
+    import os
+
+    def _refuse(src, dst):
+        raise PermissionError(13, "denied")
+
+    monkeypatch.setattr(os, "replace", _refuse)
+    target = tmp_path / "out.json"
+    with pytest.raises(OSError):
+        runner._durable_write(target, "{}")
+    assert not target.exists() and not list(tmp_path.glob("out.json.*.tmp"))

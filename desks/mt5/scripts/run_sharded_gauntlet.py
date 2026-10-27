@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import math
 import os
 import subprocess
 import sys
@@ -1602,14 +1603,44 @@ def _remember(doc: dict[str, Any]) -> None:
         _durable_write(RESIDENT_MEMORY, json.dumps(mem, indent=1, default=str))
 
 
+#: More consecutive hangs than this is no more information (the ceiling hit its cap long before)
+#: and an uncapped count read back from a file would overflow `2.0 ** n` in `_hang_limit_s`.
+RESIDENT_HANG_COUNT_CAP = 64
+
+
+def _clean_count(v: Any, cap: int | None = None) -> int | None:
+    """A finite, non-negative int from a file field, or None. Strings, NaN, lists never pass."""
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        return None
+    if isinstance(v, float) and not math.isfinite(v):
+        return None
+    n = max(0, int(v))
+    return min(n, cap) if cap is not None else n
+
+
+def _clean_seconds(v: Any) -> float | None:
+    """A finite, positive duration from a file field, or None."""
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        return None
+    try:
+        f = float(v)
+    except OverflowError:           # an int past float range is not a duration
+        return None
+    return f if math.isfinite(f) and f > 0 else None
+
+
 def _recall() -> dict[str, Any]:
     """The restart-critical fields: from the last record, falling back field by field to
-    RESIDENT_MEMORY when the record is unreadable or lost them. The longest sweep is the larger
-    of the two, because a smaller one only ever shortens the hang ceiling."""
+    RESIDENT_MEMORY when the record is unreadable, lost them, or holds a value that is not a
+    finite non-negative number. The longest sweep is the larger of the two, because a smaller
+    one only ever shortens the hang ceiling. Never raises: a bad file must not stop the judge."""
     prev, mem = _read_state(), _read_memory()
-    out = {k: prev.get(k) if prev.get(k) is not None else mem.get(k) for k in _MEMORY_KEYS}
-    longest = [v for v in (prev.get("longest_sweep_s"), mem.get("longest_sweep_s"))
-               if isinstance(v, (int, float)) and not isinstance(v, bool)]
+    out: dict[str, Any] = {}
+    for k, cap in (("consecutive_hangs", RESIDENT_HANG_COUNT_CAP), ("hung_kills", None)):
+        a, b = _clean_count(prev.get(k), cap), _clean_count(mem.get(k), cap)
+        out[k] = a if a is not None else b
+    longest = [v for v in (_clean_seconds(prev.get("longest_sweep_s")),
+                           _clean_seconds(mem.get("longest_sweep_s"))) if v is not None]
     out["longest_sweep_s"] = max(longest) if longest else None
     return out
 
@@ -1707,7 +1738,8 @@ def _hang_limit_s(longest_sweep_s: float | None, consecutive_hangs: int = 0,
         budget = SEALED_FRESH_BUDGET_S
     base = max(RESIDENT_HANG_FLOOR_S, RESIDENT_HANG_BUDGET_MULT * max(budget, 0.0),
                RESIDENT_HANG_SWEEP_MULT * float(longest_sweep_s or 0.0))
-    return min(RESIDENT_HANG_CAP_S, base * (2.0 ** max(0, int(consecutive_hangs))))
+    hangs = min(RESIDENT_HANG_COUNT_CAP, max(0, int(consecutive_hangs)))
+    return min(RESIDENT_HANG_CAP_S, base * (2.0 ** hangs))
 
 
 def _kill_report(res: object) -> dict[str, Any]:
