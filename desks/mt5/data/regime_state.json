@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-27T16:15:08.299577+00:00",
+  "swept_at": "2026-10-27T16:30:10.097628+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1131,7 +1131,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4454,
+      "shadow_exp_r": -0.4363,
       "woke_on_shadow": false
     },
     "EURCHF|discovered_asia": {
@@ -3265,7 +3265,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1962,
+      "shadow_exp_r": -0.2383,
       "woke_on_shadow": false
     },
     "SGDJPY|overnight_gap_decay_continuous": {
@@ -3353,7 +3353,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0067,
+      "shadow_exp_r": 0.0085,
       "woke_on_shadow": false
     },
     "US30|cross_asset_residual_continuous": {
@@ -3485,7 +3485,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5813,
+      "shadow_exp_r": -0.5776,
       "woke_on_shadow": false
     },
     "USCOCOA|pca_residual_continuous": {
@@ -3661,7 +3661,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.7491,
+      "shadow_exp_r": -0.7591,
       "woke_on_shadow": false
     },
     "USDJPY|asia": {
@@ -3672,7 +3672,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 50,
-      "shadow_exp_r": 0.2721,
+      "shadow_exp_r": 0.2796,
       "woke_on_shadow": false
     },
     "USDJPY|macro_conditional_continuous": {
@@ -4078,8 +4078,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 42,
-      "shadow_exp_r": -0.7521,
+      "shadow_n": 43,
+      "shadow_exp_r": -0.7529,
       "woke_on_shadow": false
     },
     "USDTHB|macro_conditional_asia": {
@@ -4090,7 +4090,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4634,
+      "shadow_exp_r": -0.4483,
       "woke_on_shadow": false
     },
     "USDTHB|overnight_gap_decay_continuous": {
