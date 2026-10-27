@@ -1826,7 +1826,36 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                "attempts": int(leg.get("attempts") or 0)}
         if dec["act"] == "hold":
             continue
+        sent_at = _iso_ms(leg.get("first_at"))
+        since = (sent_at + skew if skew is not None
+                 # the matcher allows LEG_MATCH_WINDOW_MS of slack below `since`; none of it
+                 # may reach back past the rollover
+                 else max(sent_at - UNMEASURED_SKEW_MS,
+                          last_rollover_ms(sent_at) + LEG_MATCH_WINDOW_MS))
         if dec["act"] == "abandon":
+            # AN ABANDONED LEG MAY HAVE LANDED (audit of #423, 2026-10-27). The failed send can
+            # be resting at the venue as a GTC stop with no SENT row, so neither the OCO nor the
+            # stale sweep would ever own it. Look for it first; if it is there, own it in the
+            # journal and cancel it, since the leg is abandoned (a failed cancel is picked up by
+            # `stale_entry_orders` on a later pass, because the SENT row now names it).
+            landed = matching_resting_order(open_orders, side, float(leg["price"]), known,
+                                            lot=max(float(leg["lot"]), venue_min),
+                                            instrument_id=int(instrument_id), since_ms=since)
+            if landed is not None:
+                _record({"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
+                         **{k: leg[k] for k in ("price", "sl", "tp", "lot")}, "status": "SENT",
+                         "order_id": int(landed), "adopted": True, "abandoned": True,
+                         "retry_of": leg.get("first_at")})
+                known.add(int(landed))
+                cancel = {"act": "abandoned_landed_cancel", "window": name, "side": side,
+                          "order_id": int(landed)}
+                try:
+                    cancel["ok"] = bool(venue.cancel(int(landed)))
+                except Exception as exc:
+                    cancel.update({"ok": False, "why": f"{type(exc).__name__}: {exc}"[:160]})
+                log(f"[{name}] {side} the abandoned send had landed as order {landed}: "
+                    f"cancel {'ok' if cancel['ok'] else 'FAILED, the stale sweep retries'}")
+                doc["actions"].append(cancel)
             w["failed"].pop(side, None)
             w.setdefault("abandoned", {})[side] = {**leg, "why": dec["why"]}
             act["why"] = dec["why"]
@@ -1845,15 +1874,9 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             continue
         levels = {k: leg[k] for k in ("price", "sl", "tp", "lot")}
         done = [o for o in hist_rows if str(o.get("status") or "").lower() == "filled"]
-        # The send time on the VENUE's clock, and the size the venue actually sends (the adapter
-        # floors every lot at the venue minimum), so neither a skewed box nor a small lot can
-        # hide a send that landed.
-        sent_at = _iso_ms(leg.get("first_at"))
-        since = (sent_at + skew if skew is not None
-                 # the matcher allows LEG_MATCH_WINDOW_MS of slack below `since`; none of it
-                 # may reach back past the rollover
-                 else max(sent_at - UNMEASURED_SKEW_MS,
-                          last_rollover_ms(sent_at) + LEG_MATCH_WINDOW_MS))
+        # `since` above is the send time on the VENUE's clock, and the matcher takes the size the
+        # venue actually sends (the adapter floors every lot at the venue minimum), so neither a
+        # skewed box nor a small lot can hide a send that landed.
         oid = None
         for book in (open_orders, done):
             oid = oid or matching_resting_order(book, side, float(leg["price"]), known,

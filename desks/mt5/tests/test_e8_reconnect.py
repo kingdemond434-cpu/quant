@@ -276,6 +276,29 @@ def test_an_abandoned_leg_leaves_the_retry_queue_with_its_reason() -> None:
     assert w["abandoned"]["buy_stop"]["why"] == "the window's session is over"
 
 
+def test_an_abandoned_leg_that_landed_is_owned_and_cancelled() -> None:
+    """A GTC stop that landed with no SENT row would otherwise rest unmanaged past its window."""
+    import json
+    cancelled: list[int] = []
+    v, st = _Venue(book=[_order(42, "buy", 4340.0)]), _state()
+    v.cancel = lambda oid: cancelled.append(oid) or True          # type: ignore[attr-defined]
+    doc = _retry(v, st, hour=13.5)
+    assert v.sent == [] and cancelled == [42]
+    rows = [json.loads(x) for x in g.INTENTS.read_text().splitlines() if x.strip()]
+    assert any(r.get("status") == "SENT" and r.get("order_id") == 42 and r.get("abandoned")
+               for r in rows)
+    assert 42 in g.own_entry_orders(rows, {})                      # the stale sweep sees it
+    assert any(a["act"] == "abandoned_landed_cancel" and a["ok"] for a in doc["actions"])
+
+
+def test_an_abandoned_leg_that_did_not_land_cancels_nothing() -> None:
+    cancelled: list[int] = []
+    v, st = _Venue(book=[_order(42, "buy", 4399.0)]), _state()     # another level: not ours
+    v.cancel = lambda oid: cancelled.append(oid) or True          # type: ignore[attr-defined]
+    _retry(v, st, hour=13.5)
+    assert cancelled == []
+
+
 def test_a_send_that_landed_and_filled_is_adopted_from_history_not_doubled() -> None:
     v, st = _Venue(), _state()
     hist = [_order(55, "buy", 4340.0, status="Filled", positionId=9)]
