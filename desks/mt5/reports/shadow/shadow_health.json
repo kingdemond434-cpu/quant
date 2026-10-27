@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-26T22:24:23+00:00",
+  "updated_at": "2026-10-27T00:36:27+00:00",
   "configured_sleeves": 628,
   "represented_sleeves": 628,
   "certified_sleeves_total": 1048,
@@ -18,7 +18,7 @@
       "IDENTITY_BROKEN": 9
     },
     "age_measured": 48,
-    "median_age_days": 21.079,
+    "median_age_days": 21.171,
     "mature_14d_without_trade": 40,
     "fresh_attempts": 39,
     "naturally_inactive": 38,
@@ -42,7 +42,7 @@
     "177 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 1743.715,
+  "seconds": 6076.403,
   "gateway_armed": true,
   "promoted_live_sleeves": [],
   "promoted_live_certificate_rows": [],
