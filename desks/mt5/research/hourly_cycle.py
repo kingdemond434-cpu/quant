@@ -1257,7 +1257,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_diversity_archive", "execution_science",
                      "evaluator_lab", "lead_replication", "science_controller",
                      "replication_civilization", "certificate_truth", "model_search",
-                     "loop_liveness", "counterexample_agent", "judging_throughput",
+                     "loop_liveness", "counterexample_agent", "blas_differential",
+                     "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
                      "lockbox_recert",
@@ -1965,6 +1966,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
     # the gauntlet leg it sizes, which is the other reason it is cheap by design.
     "judging_throughput": 400,
+    # THE BLAS THREAD DIFFERENTIAL runs only when its proof is missing or lapsed (one JSON read on
+    # every other hour). When it runs: a prepare child and three judge arms, each capped at
+    # --arm-timeout-s 330 by the harness itself, so 4 x 330 = 1,320 s sits inside this cap.
+    "blas_differential": 1_500,
     # THE MASS SCREEN stops starting symbols at its own --budget-s (MASS_SCREEN_BUDGET_S) and
     # always writes its artifact; the cap sits above it for the reason `enrol_clocks` was raised.
     "mass_screen": 1_080,
@@ -2308,6 +2313,36 @@ def _self_stop_floor_s(args: tuple[str, ...]) -> int:
     return int(own + max(WRITE_MARGIN_MIN_S, WRITE_MARGIN_FRAC * own))
 
 
+#: Extra variables for ONE leg's subprocess env, never the cycle's own `os.environ`. Today only
+#: the judge leg: single-threaded BLAS under a valid proof (`_arm_judge_leg_env`).
+_LEG_ENV: dict[str, dict[str, str]] = {}
+
+#: The legs that ARE the judge, and so may run single-threaded BLAS under the proof.
+JUDGE_LEGS = ("external_gauntlet",)
+
+
+def _arm_judge_leg_env() -> dict[str, str]:
+    """Single-threaded BLAS for the judge leg's spawn env alone, when the proof licenses it.
+
+    WHY NOT `os.environ` (audit re-review of fb7626205): this process runs every leg, so a
+    variable set here reaches all of them -- deep_forest, world_crawler, kimi_hunt, hunt12,
+    pf_allocator -- and confines the miners' BLAS against the no-miner-confinement rule. The
+    decision is taken into a fresh dict and handed to the judge leg only."""
+    blas: dict[str, str] = {}
+    try:
+        from research.judging_throughput import apply_env
+        blas = {k: v for k, v in apply_env(env={}).items()
+                if k in ("OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "OMP_NUM_THREADS")}
+    except Exception as exc:
+        print(f"judge BLAS env not armed: {type(exc).__name__}: {exc}", flush=True)
+    for leg in JUDGE_LEGS:
+        if blas:
+            _LEG_ENV[leg] = dict(blas)
+        else:
+            _LEG_ENV.pop(leg, None)
+    return blas
+
+
 def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
     """The body: resolve the script against both roots and run it under the cycle budget.
 
@@ -2355,7 +2390,8 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
         # THE CAP IS TOLD TO THE CHILD. An organ that stops itself at its own budget can only stop
         # INSIDE the cap if it knows the cap; the pricer moves it hourly. Read by
         # deep_forest_miner (and anything else that wants to self-stop before the kill).
-        _env = {**os.environ, "QUANT_LEG_BUDGET_S": str(int(budget))}
+        _env = {**os.environ, "QUANT_LEG_BUDGET_S": str(int(budget)),
+                **_LEG_ENV.get(name, {})}
         r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target), *args],
                            capture_output=True, text=True, cwd=str(root),
                            timeout=budget, check=False, env=_env)
@@ -5139,6 +5175,14 @@ def main() -> None:
     # the environment `_producer` hands the gauntlet subprocess. The plan is floored at what the
     # sealed file would pick unaided, so this can never throttle the judge, and the live terminal
     # always wins (it stands down to that floor, never below it).
+    # THE BLAS PROOF, BEFORE THE PUBLISHER THAT CONSUMES IT. `research/blas_threads.py` lets the
+    # judge's workers (and MT5-CacheWarm) run single-threaded BLAS only while
+    # reports/BLAS_DIFFERENTIAL.json proves byte-identical judge output for THIS release; every
+    # adoption voids it, so this re-measures after an adoption and is otherwise one JSON read
+    # (`--if-lapsed`). Read-only against the recorded sweep; it writes the report and a run row.
+    bld = _costed("blas_differential", lambda: _producer(
+        "blas_differential", "scripts/blas_thread_differential.py", "--if-lapsed",
+        "--sample", "300", "--rebuild", "14", "--arm-timeout-s", "330"))
     jth = _costed("judging_throughput", lambda: _producer(
         "judging_throughput", "research/judging_throughput.py", "--once", "--budget-s", "300"))
     try:
@@ -5146,6 +5190,9 @@ def main() -> None:
         _apply_judging_env()
     except Exception as _exc:
         print(f"judging_throughput env not applied: {type(_exc).__name__}: {_exc}", flush=True)
+    # SINGLE-THREADED BLAS, IF THE PROOF HOLDS, GOES TO THE JUDGE LEG ALONE: `_apply_judging_env`
+    # above never puts it in this process's environ (it would leak into every later leg).
+    _arm_judge_leg_env()
     # DUTY CYCLE, and it runs BEFORE the sweep for the same reason `judging_throughput` does: the
     # thing it repairs is the judge's own clock. Measured 2026-09-23/24, `MT5-Gauntlet`'s five-
     # minute trigger had run out its repetition window -- Enabled, a real Last Run Time, and no
@@ -6131,6 +6178,7 @@ def main() -> None:
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
+                    "blas_differential": bld,
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
                     "certificate_clock_law": ccl,
                     "external_gauntlet": gt, "fast_admission": fa,
