@@ -1116,3 +1116,72 @@ def test_default_scalp_xau_waits_for_e8_then_follows_it(tmp_path) -> None:
     mt5c, nsc, _ = _scalp_xau(tmp_path / "c")
     sp._run_scalp(nsc, {"armed": True}, [sp._sleeve()], 10_000.0)
     assert len(mt5c.sent) == 1
+
+
+# ================================================== a fallback follower is late by design (10-27)
+#
+# The lock made Fusion wait for E8's first fill and the late rule refused every gold bracket five
+# minutes after 07:00 server; E8's stops almost never fill that fast, so Fusion's gold_asia sent
+# nothing on any day after both landed. These run `main` WITH the late rule on (the harness lifts
+# it) at 09:30 server, two and a half hours after the window opened.
+
+class _LimitTerminal(_GwTerminal):
+    ORDER_TYPE_BUY_LIMIT, ORDER_TYPE_SELL_LIMIT = 2, 3
+
+
+def _late_main(tmp_path, monkeypatch, mt5) -> dict:
+    ns = ga._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    monkeypatch.setattr(ga.dc, "GOLD_SEND_GRACE_MIN", 5.0)      # the rule, back on
+    ns["main"]()
+    return ns
+
+
+def test_a_waiting_follower_is_not_refused_as_late_and_sends_once_e8_fills(
+        monkeypatch, tmp_path) -> None:
+    _default_world(ga._DAY)
+    oco.publish_lane("fusion", fu_key(), positions=[], orders=[], date=ga._DAY)
+    rows = ga._gold_rows()
+    mt5 = _LimitTerminal(rows, *ga._quote(rows))
+    ns = _late_main(tmp_path, monkeypatch, mt5)
+    assert mt5.sent == []
+    assert not any(r.get("reason") == "late_send" for r in ns["_intents"])
+    assert all("no E8 fill yet" in r["why"] for r in _oco_rail_rows())
+    _e8_fills(ga._DAY, "long")
+    (tmp_path / "b").mkdir()
+    mt5b = _LimitTerminal(rows, *ga._quote(rows))
+    _late_main(tmp_path / "b", monkeypatch, mt5b)
+    assert [r["type"] for r in mt5b.sent] == [mt5b.ORDER_TYPE_BUY_STOP]
+
+
+@pytest.mark.parametrize("e8_side,placed", [("long", "ORDER_TYPE_BUY_LIMIT"),
+                                             ("short", "ORDER_TYPE_SELL_LIMIT")])
+def test_a_follower_through_its_level_rests_a_limit_at_the_same_level(
+        monkeypatch, tmp_path, e8_side, placed) -> None:
+    _default_world(ga._DAY)
+    _e8_fills(ga._DAY, e8_side)
+    rows = ga._gold_rows()
+    hi, lo, spec = ga.dc.bracket_from_bars(ga.dc.h1_frame(rows), None, 7, 0.01, 20)
+    # E8's stop filled, so the price has run a dollar past the edge it broke.
+    bid, ask = (hi + 1.0, hi + 1.1) if e8_side == "long" else (lo - 1.1, lo - 1.0)
+    mt5 = _LimitTerminal(rows, bid, ask)
+    _late_main(tmp_path, monkeypatch, mt5)
+    (req,) = mt5.sent
+    leg = spec["buy_stop" if e8_side == "long" else "sell_stop"]
+    assert req["type"] == getattr(mt5, placed)
+    assert (req["price"], req["sl"], req["tp"]) == (leg["price"], leg["sl"], leg["tp"])
+
+
+def test_a_follower_limit_inside_the_band_is_not_available() -> None:
+    assert ga.dc.follow_limit_is_legal(2000.0, "buy_stop", 2000.0, 2000.1, 0.01, 20)[0] is False
+    assert ga.dc.follow_limit_is_legal(2000.0, "buy_stop", 2000.9, 2001.0, 0.01, 20)[0] is True
+    assert ga.dc.follow_limit_is_legal(2000.0, "sell_stop", 1999.9, 2000.0, 0.01, 20)[0] is False
+    assert ga.dc.follow_limit_is_legal(2000.0, "sell_stop", 1999.0, 1999.1, 0.01, 20)[0] is True
+
+
+def test_an_oco_lane_and_an_unfollowed_day_keep_the_late_rule(monkeypatch, tmp_path) -> None:
+    _world("oco")
+    rows = ga._gold_rows()
+    mt5 = _LimitTerminal(rows, *ga._quote(rows))
+    ns = _late_main(tmp_path, monkeypatch, mt5)
+    assert mt5.sent == []
+    assert any(r.get("reason") == "late_send" for r in ns["_intents"])
