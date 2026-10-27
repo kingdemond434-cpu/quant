@@ -32,8 +32,9 @@ must refuse because an input it loads by name is ABSENT on this host, and nothin
 inputs it lacks, and re-admits it the pass every named input is present again (or after
 READMIT_MAX_DAYS, like every parked cell). THE BACKSTOP REALLY FIRES (audit of 9bf6542be, M1):
 a row parked READMIT_MAX_DAYS ago is no longer restated, so the bank's age clock releases it,
-and a released cell is not re-named for RELEASE_GRACE_DAYS -- it goes to the judge once, and the
-judge's own word on it (a verdict, or its own build failure) stands. That is the only guard
+and a released cell is not re-named until the judge has RULED on it (v1.2: it is judged, or the
+judge wrote a bank row for it after the release) -- it goes to the judge, however long the judge
+takes, and the judge's own word on it (a verdict, or its own build failure) stands. That is the only guard
 against this probe drifting from the sealed builder, so it must be reachable in the real flow.
 
 COMPACT ROWS (audit S3). A parked row carries only what re-admission and the converter read:
@@ -89,10 +90,8 @@ PROBED: frozenset[str] = frozenset({*PEER_FAMILIES, *FACTOR_FAMILIES, "triangle"
 #: Bank reasons the probe may restate with the exact input: the judge's own generic build failure
 #: and its own earlier naming. Every other reason in the bank is the judge's word and stands.
 RESTATABLE = frozenset({"build_failed", REASON})
-#: A cell released by the READMIT_MAX_DAYS backstop is not named again for this long, so the
-#: judge gets its turn at it: the judge's own retry cadence (`judge_coverage.BUILD_FAILED_RETRY_
-#: DAYS`, pinned equal by a test). Mirrors `judge_coverage.READMIT_MAX_DAYS` for the age test.
-RELEASE_GRACE_DAYS = 7.0
+#: Mirrors `judge_coverage.READMIT_MAX_DAYS` (pinned equal by a test): a row this probe parked
+#: that long ago is released, and a released cell is not named again until the judge rules.
 READMIT_MAX_DAYS = 90.0
 #: Top-N kept in the census tables; the counts are exact, the tables are for a reader.
 TOP = 25
@@ -330,14 +329,19 @@ def all_present(items: Any, ctx: _Pass | None = None) -> bool:
     return all(present(i, ctx) for i in items if isinstance(i, (dict, str)))
 
 
-def _age_days(stamp: Any, now: datetime) -> float | None:
+def _parse(stamp: Any) -> datetime | None:
+    if not stamp:
+        return None
     try:
         t = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
     except (TypeError, ValueError):
         return None
-    if t.tzinfo is None:
-        t = t.replace(tzinfo=UTC)
-    return (now.timestamp() - t.timestamp()) / 86400.0
+    return t if t.tzinfo is not None else t.replace(tzinfo=UTC)
+
+
+def _age_days(stamp: Any, now: datetime) -> float | None:
+    t = _parse(stamp)
+    return None if t is None else (now.timestamp() - t.timestamp()) / 86400.0
 
 
 def name(rows: Iterable[dict[str, Any]], *, judged: set[str] | frozenset[str],
@@ -350,7 +354,7 @@ def name(rows: Iterable[dict[str, Any]], *, judged: set[str] | frozenset[str],
     Rows carry `_cell` (the judge's key, stamped by `judge_coverage._build`). A row already in
     the bank under a reason the probe may not restate is left to that reason. A row this probe
     parked READMIT_MAX_DAYS ago is NOT restated (the bank's age clock releases it), and a cell in
-    `released` (cell -> when the backstop released it) is not named inside RELEASE_GRACE_DAYS.
+    `released` (cell -> when the backstop released it) is not named until the judge rules.
     """
     now = now or datetime.now(tz=UTC)
     released = released or {}
@@ -387,10 +391,16 @@ def name(rows: Iterable[dict[str, Any]], *, judged: set[str] | frozenset[str],
                 continue
         rel = released.get(str(cid))
         if rel is not None:
-            age = _age_days(rel, now)
-            if age is None or age < RELEASE_GRACE_DAYS:
+            # HELD UNTIL THE JUDGE RULES (audit of v1.1, MF1), never on a calendar. A judged cell
+            # left above; here the ruling is a bank row the judge wrote AFTER the release (its
+            # build failure, say), which ends the hold and lets the probe restate it by name.
+            t_row = _parse(prev.get("parked_at")) if isinstance(prev, dict) else None
+            t_rel = _parse(rel)
+            ruled = t_row is not None and t_rel is not None and t_row > t_rel
+            if not ruled:
                 counts["in_release_grace"] += 1      # the judge's turn; its word stands
                 continue
+            counts["release_ended_by_ruling"] += 1
         counts["rows_probed"] += 1
         try:
             got = probe_row(ctx, row)
@@ -417,7 +427,7 @@ def name(rows: Iterable[dict[str, Any]], *, judged: set[str] | frozenset[str],
     census.update({
         **{k: counts.get(k, 0) for k in ("rows_in_scope", "rows_probed", "present",
                                          "unmeasured", "released_max_age",
-                                         "in_release_grace")},
+                                         "in_release_grace", "release_ended_by_ruling")},
         "named": len(named),
         "by_family": dict(by_family.most_common()),
         "by_missing_kind": dict(by_kind.most_common()),

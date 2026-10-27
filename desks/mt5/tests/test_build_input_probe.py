@@ -310,17 +310,86 @@ def test_the_max_age_backstop_fires_through_order_docket_and_the_judge_gets_one_
                       .splitlines()[-1])
     assert line["all_by_reason"] == {P.REASON: 1} and line["all_by_cause"] == {"max_age": 1}
     assert line["readmitted"] == 0, "not-testable inflow is unchanged: it is a DEFECT class"
-    # inside the grace the probe does not re-name it: the judge's turn, and its word stands
-    out3, doc3 = jc.order_docket([dict(r) for r in rows], publish=False,
-                                 now=NOW + timedelta(hours=1))
-    assert len(out3) == 3 and doc3["build_input_probe"]["in_release_grace"] == 1
-    # past the grace, the input still absent and no verdict: parked again on a fresh clock
-    later = NOW + timedelta(days=P.RELEASE_GRACE_DAYS + 1)
-    out4, doc4 = jc.order_docket([dict(r) for r in rows], publish=False, now=later)
-    assert len(out4) == 2
+    # held until the judge rules: an hour later, and a year later with no ruling, it still ships
+    for later in (NOW + timedelta(hours=1), NOW + timedelta(days=400)):
+        out3, doc3 = jc.order_docket([dict(r) for r in rows], publish=False, now=later)
+        assert len(out3) == 3 and doc3["build_input_probe"]["in_release_grace"] == 1
+    assert len(jc.build_input_released()) == 1
+
+
+def _released_cell() -> str:
+    (cell,) = jc.build_input_released()
+    return cell
+
+
+def test_a_stalled_judge_400_day_simulation_keeps_the_released_cell_shipped(uni) -> None:
+    """The auditor's simulation (audit of v1.1, MF1): passes every 5 days for 400 days, the input
+    never appears, the judge never rules. v1.1 shipped the cell on 28 of 400 days."""
+    rows = _three_rows()
+    shipped: list[int] = []
+    for day in range(0, 401, 5):
+        out, _ = jc.order_docket([dict(r) for r in rows], publish=False,
+                                 now=NOW + timedelta(days=day))
+        if len(out) == 3:
+            shipped.append(day)
+    assert shipped and shipped[0] == 90, shipped
+    assert shipped == list(range(90, 401, 5)), "released once, then shipped until a ruling"
+    assert len(jc.build_input_released()) == 1
+
+
+def test_a_ruling_inside_the_hold_ends_it(uni) -> None:
+    rows = _three_rows()
+    jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    _age_parked(100)
+    jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    cell = _released_cell()
+    # the judge rules: its own build failure, banked a day after the release
+    bank = json.loads(jc.UNRUNNABLE_BANK.read_text("utf-8"))
+    ruled_at = (NOW + timedelta(days=1)).isoformat(timespec="seconds")
+    bank[cell] = {"reason": "build_failed", "sym": "EURGBP", "family": "lead_lag", "tf": "H1",
+                  "bar_bytes": 1, "why": "lead_lag driver missing", "parked_at": ruled_at}
+    jc.UNRUNNABLE_BANK.write_text(json.dumps(bank), "utf-8")
+    out, doc = jc.order_docket([dict(r) for r in rows], publish=False,
+                               now=NOW + timedelta(days=2))
+    assert doc["build_input_probe"]["release_ended_by_ruling"] == 1
+    assert doc["build_input_probe"]["in_release_grace"] == 0
+    row = jc.unrunnable_bank()[cell]
+    assert row["reason"] == P.REASON and row["parked_at"] == ruled_at, "restated by name"
+    assert len(out) == 2 and jc.build_input_released() == {}, "the ruled release is cleared"
+
+
+def test_a_verdict_inside_the_hold_ends_it(uni, monkeypatch) -> None:
+    rows = _three_rows()
+    jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    _age_parked(100)
+    jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    cell = _released_cell()
+    real = jc.judged_index
+
+    def judged(*a, **k):
+        got = real(*a, **k)
+        return ({*got[0], cell}, *got[1:])
+
+    monkeypatch.setattr(jc, "judged_index", judged)
+    _out, doc = jc.order_docket([dict(r) for r in rows], publish=False,
+                                now=NOW + timedelta(days=1))
+    assert doc["build_input_probe"]["in_release_grace"] == 0
+    assert jc.build_input_released() == {}, "a judged cell's release is cleared"
+    assert cell not in jc.unrunnable_bank()
+
+
+def test_a_failed_release_write_keeps_the_row_parked_on_its_clock(uni, monkeypatch) -> None:
+    rows = _three_rows()
+    jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    _age_parked(100)
+    monkeypatch.setattr(jc, "_record_build_input_released", lambda *a, **k: "WRITE_FAILED")
+    out, doc = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    u = doc["unrunnable"]
+    assert u["build_input_release_write_failed"] == 1 and u["readmitted_total"] == 0
+    assert u["build_input_released"] == 0
     parked = [r for r in jc.unrunnable_bank().values() if r.get("reason") == P.REASON]
-    assert len(parked) == 1 and parked[0]["parked_at"] == later.isoformat(timespec="seconds")
-    assert jc.build_input_released() == {}, "an expired release is pruned"
+    assert len(out) == 2 and len(parked) == 1
+    assert parked[0]["parked_at"] == (NOW - timedelta(days=100)).isoformat(), "old clock kept"
 
 
 def test_a_row_younger_than_the_backstop_is_restated_and_keeps_its_clock(uni) -> None:
@@ -379,7 +448,7 @@ def test_a_parked_row_is_compact(uni) -> None:
 def test_the_constants_the_two_sides_share_agree() -> None:
     from research import effective_trials as et
     assert P.READMIT_MAX_DAYS == jc.READMIT_MAX_DAYS
-    assert P.RELEASE_GRACE_DAYS == jc.BUILD_FAILED_RETRY_DAYS
+    assert et.TRIAL_KEYS == jc.TRIAL_KEYS
     assert et.PARKED_TRIALS_NAME == jc.PARKED_TRIAL_ROWS.name
     assert jc.PARKED_TRIAL_ROWS_MAX == et.MAX_ROWS
     assert jc.PARKED_TRIAL_ROWS.parent == jc.UNRUNNABLE_BANK.parent == et.DOCKET.parent
@@ -443,3 +512,51 @@ def test_parking_moves_no_trial_charge(uni, tmp_path, monkeypatch) -> None:
     assert et.charge(et.measure(rows_b)) == charge_a, "parking moves no charge"
     # and without the parked rows it WOULD have moved: the test can tell
     assert et.charge(et.measure(et.read_docket(docket_b)))[0] != charge_a[0]
+
+
+def _parking_pass(uni) -> list[dict]:
+    rows = ([_row("EURUSD", "carry", {"lookback": 20 + i}) for i in range(40)]
+            + [_row("EURGBP", "lead_lag", {"driver_symbol": "EURUSD"}),
+               _row("EURGBP", "triangle", {"leg_b_symbol": "EURUSD", "leg_c_symbol": "AUDNZD"})])
+    out, doc = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    assert len(out) == 41 and doc["build_input_parked_trials"]["rows"] == 1
+    return rows
+
+
+@pytest.mark.parametrize("path", ["early_return", "exception"])
+def test_the_charge_is_unchanged_across_a_pass_that_ships_unfiltered(uni, tmp_path, monkeypatch,
+                                                                     path) -> None:
+    """Audit of v1.1, MF2: the early return and the exception path ship the rows unfiltered; a
+    parked list left from the pass before counted the parked rows twice (charge 56 -> 49)."""
+    from research import effective_trials as et
+    rows = _parking_pass(uni)
+    sidecar = tmp_path / jc.PARKED_TRIAL_ROWS.name
+    assert json.loads(sidecar.read_text("utf-8")), "the parking pass wrote its list"
+    if path == "early_return":
+        monkeypatch.setattr(jc, "build", lambda *a, **k: {"families": {}})
+    else:
+        def boom(*a, **k):
+            raise RuntimeError("simulated")
+        monkeypatch.setattr(jc, "build", boom)
+    out, _ = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    assert len(out) == 42, "shipped unfiltered"
+    assert json.loads(sidecar.read_text("utf-8")) == [], "rewritten empty on this path"
+    docket = tmp_path / "external_survivors.json"
+    docket.write_text(json.dumps(out), "utf-8")
+    census, n = et.census_rows(docket)
+    assert n == 0 and len(census) == 42
+    assert et.charge(et.measure(census)) == et.charge(et.measure(rows))
+
+
+def test_the_census_counts_a_stale_parked_row_once(uni, tmp_path) -> None:
+    """Even a list left behind (a crash before the rewrite) never double counts: a parked row the
+    docket already holds is matched one-for-one and skipped."""
+    from research import effective_trials as et
+    rows = _parking_pass(uni)
+    sidecar = tmp_path / jc.PARKED_TRIAL_ROWS.name
+    stale = json.loads(sidecar.read_text("utf-8"))
+    docket = tmp_path / "external_survivors.json"
+    docket.write_text(json.dumps(rows), "utf-8")          # the parked row shipped again
+    census, n = et.census_rows(docket)
+    assert stale and n == 0 and len(census) == len(rows)
+    assert et.charge(et.measure(census)) == et.charge(et.measure(rows))

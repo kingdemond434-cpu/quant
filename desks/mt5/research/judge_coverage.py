@@ -1770,9 +1770,9 @@ def _build_inputs_present(row: dict[str, Any]) -> bool:
 
 
 #: CELLS THE READMIT_MAX_DAYS BACKSTOP RELEASED, and when (audit of 9bf6542be, M1). The probe
-#: does not name a cell held here inside its RELEASE_GRACE_DAYS, so a released cell reaches the
-#: judge once and the judge's own word on it stands. Written under the bank's lock, in the same
-#: transaction as the bank; entries past the grace are pruned on the next write.
+#: does not name a cell held here until the judge has ruled on it (`release_ruled`), so a
+#: released cell reaches the judge however long it takes and the judge's own word stands. Written
+#: under the bank's lock, in the same transaction as the bank, as one unit with the bank's pop.
 BUILD_INPUT_RELEASED = HYP / "build_input_released.json"
 
 
@@ -1809,6 +1809,23 @@ def parked_trial_rows(blocked: list[dict[str, Any]],
     return out
 
 
+def _write_parked_trials(rows: list[dict[str, Any]], txn: Any) -> Path:
+    """The parked list, every pass and EMPTY included: a stale list counts trials twice once the
+    rows it names ship again. Staged with the bank inside a pass; written now outside one.
+    Beside the bank (in production: beside the docket, where `effective_trials` reads it)."""
+    path = UNRUNNABLE_BANK.parent / PARKED_TRIAL_ROWS.name
+    text = json.dumps(rows, separators=(",", ":"), default=str)
+    try:
+        if isinstance(txn, _Txn):
+            txn.put_text(path, text)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            _atomic_write_text(path, text)
+    except OSError:
+        pass
+    return path
+
+
 def build_input_released(path: Path | None = None) -> dict[str, str]:
     """cell -> released_at for every cell the backstop released (empty when none or unreadable:
     an unreadable file names nothing as in grace, so the probe parks as it would have)."""
@@ -1822,25 +1839,52 @@ def build_input_released(path: Path | None = None) -> dict[str, str]:
             if isinstance(cells, dict) else {})
 
 
+def release_ruled(cell: str, released_at: str, *, bank: dict[str, dict[str, Any]],
+                  judged: Any = None) -> bool:
+    """Has the judge ruled on a released cell? It is judged, or the bank holds a row for it
+    stamped AFTER the release (the judge's own word: a build failure, an UNKNOWN reason)."""
+    if judged is not None and cell in judged:
+        return True
+    row = bank.get(cell)
+    if not isinstance(row, dict):
+        return False
+    t_row, t_rel = _ts(row.get("parked_at")), _ts(released_at)
+    return t_row is not None and t_rel is not None and t_row > t_rel
+
+
 def _record_build_input_released(released_now: dict[str, str], *, at: str, path: Path,
-                                 txn: Any, lock_path: Path | None = None) -> str:
-    """Add this pass's releases, prune the expired, write only when the mapping changed."""
-    probe = _build_input_probe()
-    grace = float(getattr(probe, "RELEASE_GRACE_DAYS", BUILD_FAILED_RETRY_DAYS))
+                                 txn: Any, lock_path: Path | None = None,
+                                 bank: dict[str, dict[str, Any]] | None = None,
+                                 judged: Any = None,
+                                 docket_cells: Any = None) -> str:
+    """Add this pass's releases, drop the ruled, write only when the mapping changed.
+
+    A RELEASE HOLDS UNTIL THE JUDGE RULES (audit of v1.1, MF1), never on a calendar: on a stalled
+    judge (0 verdicts/day on 2026-10-27) a calendar grace re-parked the cell before any ruling,
+    so "the judge gets one turn" was never delivered. An entry leaves when the judge has ruled
+    (`release_ruled`), or -- the file's bound -- when it is READMIT_MAX_DAYS old and its cell is
+    no longer in the docket at all (a producer dropped it; nothing is left to hold back).
+    """
     old = build_input_released(path)
     now_t = _ts(at)
+    bank = bank or {}
     keep: dict[str, str] = {}
     for cell, when in old.items():
+        if release_ruled(cell, when, bank=bank, judged=judged):
+            continue
         t = _ts(when)
-        if (t is not None and now_t is not None
-                and (now_t.timestamp() - t.timestamp()) / 86400.0 < grace):
-            keep[cell] = when
+        aged = (t is not None and now_t is not None
+                and (now_t.timestamp() - t.timestamp()) / 86400.0 >= READMIT_MAX_DAYS)
+        if aged and docket_cells is not None and cell not in docket_cells:
+            continue
+        keep[cell] = when
     keep.update(released_now)
     if keep == old:
         return "UNCHANGED"
-    text = json.dumps({"schema": 1, "at": at, "grace_days": grace,
+    text = json.dumps({"schema": 2, "at": at,
                        "rule": ("a build_input_missing cell released by READMIT_MAX_DAYS is not "
-                                "named again by the probe inside grace_days: the judge's turn"),
+                                "named again by the probe until the judge has ruled on it: it is "
+                                "judged, or the judge wrote a bank row for it after the release"),
                        "cells": dict(sorted(keep.items()))}, separators=(",", ":"))
     try:
         if txn is None:
@@ -2222,7 +2266,8 @@ def _still_needs_data(row: dict[str, Any]) -> bool:
 
 def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                            path: Path | None = None,
-                           log: Path | None = None) -> dict[str, Any]:
+                           log: Path | None = None, judged: Any = None,
+                           docket_cells: Any = None) -> dict[str, Any]:
     """Park every newly-named unrunnable cell, and RE-ADMIT any whose bars have since grown.
 
     A cell the latest report names AGAIN is updated in place and never re-admitted on the same
@@ -2242,6 +2287,7 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     by_reason_cause: dict[str, dict[str, int]] = {}
     released_now: dict[str, str] = {}
     released_state = "NOTHING_RELEASED"
+    release_write_failed = 0
 
     def _count_readmit(old_row: dict[str, Any]) -> None:
         fam = str(old_row.get("family") or "")
@@ -2376,6 +2422,22 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         if out_writable and not out_written:
             out_state = OUTSTANDING_WRITE_FAILED
         if locked and not locked_lost and locked.owned():
+            # THE POP AND THE RELEASE ARE ONE UNIT (audit of v1.1): a backstop release leaves the
+            # bank only once its release record is written (staged with the bank inside a pass).
+            # A release write that failed keeps the row parked -- re-asked next pass on its old
+            # clock, never re-parked on a fresh one -- and the failure is counted.
+            released_now = {c: at for c, old in popped.items()
+                            if isinstance(old, dict) and old.get("reason") == BUILD_INPUT_MISSING
+                            and causes.get(c) == "max_age"}
+            released_state = _record_build_input_released(
+                released_now, at=at, path=target.parent / BUILD_INPUT_RELEASED.name, txn=txn,
+                lock_path=out_path, bank=bank, judged=judged, docket_cells=docket_cells)
+            if released_state == "WRITE_FAILED":
+                for c in released_now:
+                    bank[c] = popped.pop(c)
+                release_write_failed = len(released_now)
+                released_now = {}
+        if locked and not locked_lost and locked.owned():
             # Inside a judge_coverage pass (v2.3 `_Txn`) the bank is STAGED here and renamed at
             # the pass's commit point, so a pass killed or timed out before it leaves the bank as
             # it was; outside one it is written now, tmp + replace, under this lock.
@@ -2415,16 +2477,12 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                 by_cause[_cause] = by_cause.get(_cause, 0) + 1
                 by_reason_cause.setdefault(_rsn, {})
                 by_reason_cause[_rsn][_cause] = by_reason_cause[_rsn].get(_cause, 0) + 1
-                if _rsn == BUILD_INPUT_MISSING and _cause == "max_age":
-                    released_now[cell] = at
-            released_state = _record_build_input_released(
-                released_now, at=at, path=target.parent / BUILD_INPUT_RELEASED.name, txn=txn,
-                lock_path=out_path)
         else:
             # Not ours to write, or the write failed: nothing this pass changed is on disk, and
             # nothing counts.
             bank = unrunnable_bank(target)
             added, popped = 0, {}
+            released_now = {}
             readmitted_nt.clear()
             readmitted_nt_reason.clear()
     out_measured = (out_written and out_state in (OUTSTANDING_MEASURED, OUTSTANDING_FIRST)
@@ -2469,6 +2527,7 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
             "readmitted_by_reason_cause": by_reason_cause,
             "build_input_released": len(released_now),
             "build_input_released_state": released_state,
+            "build_input_release_write_failed": release_write_failed,
             "needs_data_readmit_held_back": len(held_back),
             "readmitted_not_testable": n_re,
             "readmitted_not_testable_by_family": readmitted_nt,
@@ -3394,7 +3453,10 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
                                                    now=at)
     _check_budget("build_input_probe")
     unrunnable = update_unrunnable_bank({**built_probe, **named_unknowns, **not_run},
-                                        at=at.isoformat(timespec="seconds"))
+                                        at=at.isoformat(timespec="seconds"),
+                                        judged=judged_cells,
+                                        docket_cells={str(r["_cell"]) for r in rows
+                                                      if r.get("_cell")})
     _bank_now = unrunnable_bank()
     failures = judging_failures(bank=_bank_now)
     _outstanding, _out_state = read_needs_data_outstanding()
@@ -3828,6 +3890,10 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         doc = build(rows, now=now, defer=publish)
         if not doc.get("families"):
             _txn = doc.pop("_txn", None)
+            # THE ROWS SHIP UNFILTERED HERE, so nothing is parked out of this docket: the parked
+            # list is rewritten EMPTY with it, or the census counts last pass's rows twice
+            # (audit of v1.1, MF2: rows 35 -> 40, charge 56 -> 49).
+            _write_parked_trials([], _txn)
             if _txn is not None:
                 _txn.commit()
             return rows, doc
@@ -3848,18 +3914,7 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         blocked = [r for r in rows if str(r.get("_cell") or "") in bank]
         rows = [r for r in rows if str(r.get("_cell") or "") not in bank]
         _ptrials = parked_trial_rows(blocked, bank)
-        _ptxn = doc.get("_txn")
-        _ptext = json.dumps(_ptrials, separators=(",", ":"), default=str)
-        # Every pass, EMPTY included: a stale list would count trials no longer parked. Staged
-        # with the bank when the pass is transactional; written now when the bank was too.
-        # Beside the bank (in production: beside the docket, where `effective_trials` reads it).
-        _ppath = UNRUNNABLE_BANK.parent / PARKED_TRIAL_ROWS.name
-        if isinstance(_ptxn, _Txn):
-            _ptxn.put_text(_ppath, _ptext)
-        else:
-            with contextlib.suppress(OSError):
-                _ppath.parent.mkdir(parents=True, exist_ok=True)
-                _atomic_write_text(_ppath, _ptext)
+        _ppath = _write_parked_trials(_ptrials, doc.get("_txn"))
         doc["build_input_parked_trials"] = {
             "rows": len(_ptrials), "path": str(_ppath),
             "rule": ("rows parked as build_input_missing stay in the trial census "
@@ -3931,6 +3986,8 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         _left = doc.pop("_txn", None) if isinstance(doc, dict) else None
         if isinstance(_left, _Txn):
             _left.discard()
+        # The rows ship untouched: none is parked out of them, so the parked list is empty (MF2).
+        _write_parked_trials([], None)
         return rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
 

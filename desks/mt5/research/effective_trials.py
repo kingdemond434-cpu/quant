@@ -114,6 +114,22 @@ def read_docket(path: Path | None = None, *, limit: int = MAX_ROWS) -> list[dict
 PARKED_TRIALS_NAME = "build_input_parked_trials.json"
 
 
+#: The fields `libs.research.trial_ledger.trial_from_record` reads; equal to
+#: `judge_coverage.TRIAL_KEYS` (a test pins both against the census itself).
+TRIAL_KEYS: frozenset[str] = frozenset({
+    "params", "params_json", "genome", "family", "trial_family", "declared_width",
+    "search_width", "claim_selection_trials", "claim_family", "lineage", "family_id",
+    "trial_id", "id", "candidate_id", "hypothesis_id", "cell",
+    "mechanism", "data", "representation", "geography", "state", "horizon", "execution",
+    "failure", "symbol", "sym", "chart", "timeframe", "session", "regime", "information",
+    "asset_class", "model_family", "dataset", "feature", "signal", "method"})
+
+
+def _trial_identity(row: dict[str, Any]) -> str:
+    return json.dumps({k: v for k, v in row.items() if k in TRIAL_KEYS}, sort_keys=True,
+                      default=str)
+
+
 def read_parked_trials(path: Path) -> list[dict[str, Any]]:
     """The parked rows as written; absent or malformed is none (nothing was parked)."""
     try:
@@ -129,7 +145,23 @@ def census_rows(docket: Path | None = None, *, limit: int = MAX_ROWS
     parked out of it, up to `limit` in all."""
     rows = read_docket(docket, limit=limit)
     parked = read_parked_trials((docket or DOCKET).parent / PARKED_TRIALS_NAME)
-    extra = parked[:max(0, limit - len(rows))]
+    # A PARKED ROW THE DOCKET ALREADY HOLDS IS COUNTED ONCE (audit of v1.1, MF2): a list left
+    # by an earlier pass names rows that shipped again. Matched one-for-one on the fields the
+    # census reads, so a row is never dropped for a twin it was not paired with.
+    held: dict[str, int] = {}
+    for r in rows:
+        k = _trial_identity(r)
+        held[k] = held.get(k, 0) + 1
+    extra: list[dict[str, Any]] = []
+    room = max(0, limit - len(rows))
+    for r in parked:
+        if len(extra) >= room:
+            break
+        k = _trial_identity(r)
+        if held.get(k, 0) > 0:
+            held[k] -= 1
+            continue
+        extra.append(r)
     return rows + extra, len(extra)
 
 
