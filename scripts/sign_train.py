@@ -263,14 +263,26 @@ def main(argv: list[str] | None = None) -> int:
                 f"FAILED: HEAD {mine} does not sit directly on the target {head}; "
                 "nothing undone, sort it out by hand"
             )
-            ours = _git("rev-list", "--reverse", "--ancestry-path", f"{head}..{mine}")
-            train = ours.splitlines()[0] if ours else ""
-            if train and not _commit_holds(head, moved, train):
+            # First-parent walk: the train's commit is the oldest first-parent commit above the
+            # target. Name it only when its parent and subject prove it is the train's own.
+            chain = _git("rev-list", "--first-parent", f"{head}..{mine}").splitlines()
+            train = chain[-1] if chain else ""
+            subject = _git("log", "-1", "--format=%s", train) if train else ""
+            is_ours = (
+                bool(train)
+                and _git("rev-parse", f"{train}~1") == head
+                and subject.startswith(f"Principal sign train at {head[:12]}")
+            )
+            if is_ours and not _commit_holds(head, moved, train):
                 print(f"HALF-SIGN at {train}: it does not carry both files and every re-pin.")
-                print(f"  undo it with: git revert --no-edit {train}")
                 left = _git("status", "--porcelain", "--", MANIFEST, QUANTBENCH)
                 if left:
                     print(f"  left staged or modified, not committed: {left}")
+                print("  undo it with:")
+                print(f"    git checkout HEAD -- {MANIFEST} {QUANTBENCH}")
+                print(f"    git revert --no-edit {train}")
+            elif not is_ours:
+                print("  could not identify the train's own commit; no undo command offered")
             return 1
         if not _commit_holds(head, moved):
             # HEAD is the train's own commit, alone above the target: safe to take back.
