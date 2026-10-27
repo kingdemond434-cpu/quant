@@ -124,6 +124,10 @@ def test_the_second_cost_arm_is_byte_identical_to_a_fresh_walk(tz, seed, monkeyp
         assert got1b == want1
 
 
+# Registry-shaped metadata, so the stress arm is built the way the judge builds it (16 pts x 0.01 x
+# 100 = $16/lot, x3 = $48) rather than from a literal spread (test_no_literal_spread_per_lot).
+_GOLD_META = {"contract_size": 100.0, "tick_size": 0.01, "median_spread_pts": 16.0}
+
 def test_the_memo_actually_skips_the_walk(monkeypatch):
     df = _frame(2_000, 9, "UTC")
     sigs = _signals(df, 9, 200)
@@ -136,7 +140,7 @@ def test_the_memo_actually_skips_the_walk(monkeypatch):
         calls.append(len(v) if hasattr(v, "__len__") else 1)
         return real(a, v, *k, **kw)
     monkeypatch.setattr(engine.np, "searchsorted", spy)
-    run_backtest(df, sigs, Costs(spread_per_lot=48.0))
+    run_backtest(df, sigs, Costs.from_symbol(_GOLD_META, mult=3.0))
     assert calls and calls[0] == 0          # no signal located: the loop never ran
 
 
@@ -206,7 +210,7 @@ def test_no_signals_and_no_trades_are_fine():
     df = _frame(300, 6, "UTC")
     engine._LEGS.slot = None
     assert run_backtest(df, [], Costs()).trades == []
-    assert run_backtest(df, [], Costs(spread_per_lot=1.0)).trades == []
+    assert run_backtest(df, [], Costs.from_symbol(_GOLD_META)).trades == []
 
 
 def _ts_pairs(n: int, seed: int):
