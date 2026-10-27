@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-27T04:45:10.386353+00:00",
+  "swept_at": "2026-10-27T05:00:29.505432+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -262,7 +262,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0174,
+      "shadow_exp_r": 0.0527,
       "woke_on_shadow": false
     },
     "AUDSGD|pca_residual_asia": {
@@ -779,7 +779,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4268,
+      "shadow_exp_r": -0.4164,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -812,7 +812,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 51,
-      "shadow_exp_r": 0.5573,
+      "shadow_exp_r": 0.5592,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_asia": {
@@ -823,7 +823,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4877,
+      "shadow_exp_r": -0.4875,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
@@ -867,7 +867,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 51,
-      "shadow_exp_r": 0.6228,
+      "shadow_exp_r": 0.6246,
       "woke_on_shadow": false
     },
     "CHFPLN|carry_continuous": {
@@ -2110,7 +2110,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5345,
+      "shadow_exp_r": -0.5305,
       "woke_on_shadow": false
     },
     "GBPMXN|carry_continuous": {
@@ -4123,7 +4123,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3373,
+      "shadow_exp_r": -0.3269,
       "woke_on_shadow": false
     },
     "USDZAR|cross_asset_residual_asia": {
@@ -4133,8 +4133,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 36,
-      "shadow_exp_r": -0.3322,
+      "shadow_n": 48,
+      "shadow_exp_r": -0.8298,
       "woke_on_shadow": false
     },
     "USDZAR|formula_asia": {
@@ -4618,7 +4618,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3365,
+      "shadow_exp_r": -0.3273,
       "woke_on_shadow": false
     },
     "XAUAUD|momentum_volgate_continuous": {
