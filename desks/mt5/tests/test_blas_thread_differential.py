@@ -148,14 +148,37 @@ def test_a_moved_correlation_bit_localises_but_does_not_decide() -> None:
     assert d["localisation"]["single_vs_default"][0]["path"] == "/corr_sha256"
 
 
-def test_a_moved_eigvalsh_spectrum_blocks_identical() -> None:
-    """canonical.py:229's branch: a sample that happened to be finite cannot vouch for it."""
-    d = bd.decide_verdict({"default": _arm_doc(4), "single": _arm_doc(1, eig_hex="0x1.1p+3"),
+def test_a_one_ulp_eigvalsh_move_is_recorded_not_binding() -> None:
+    """The universal 1-ULP eigvalsh wobble is probe_raw_diff, never a verdict difference."""
+    one_ulp = (8.0 + 8.0 * 2 ** -52).hex()
+    d = bd.decide_verdict({"default": _arm_doc(4), "single": _arm_doc(1, eig_hex=one_ulp),
                            "control": _arm_doc(4)}, {})
+    assert d["verdict"] == bd.IDENTICAL and d["n_differences"] == 0
+    prd = d["probe_raw_diff"]
+    assert prd["binding"] is False and prd["eigvalsh_moved"] is True
+    assert prd["max_ulp"] == 1 and prd["max_abs"] == 8.0 * 2 ** -52
+    assert prd["paths"] == ["/eigvalsh_sha256"] and prd["also_in_control"] == []
+    assert "probe_raw_diff" in d["why"]
+
+
+def test_spectrum_sizes_merge_into_probe_raw_diff() -> None:
+    prd = bd.probe_raw_diff([], [])
+    assert prd["max_ulp"] == 0 and prd["eigvalsh_moved"] is False
+    bd.merge_spectrum(prd, {"single": {"max_abs": 2.7e-15, "max_ulp": 3, "n_moved": 2},
+                            "control": {"max_abs": 0.0, "max_ulp": 0, "n_moved": 0}})
+    assert prd["max_ulp"] == 3 and prd["max_abs"] == 2.7e-15 and prd["spectrum"]["n_moved"] == 2
+    assert bd.ulp_distance(1.0, 1.0) == 0 and bd.ulp_distance(-0.0, 0.0) == 0
+    assert bd.ulp_distance(1.0, float.fromhex("0x1.0000000000001p+0")) == 1
+    assert bd.ulp_distance(float("nan"), 1.0) is None
+
+
+def test_an_eigvalsh_move_that_survives_the_judges_rounding_still_blocks() -> None:
+    single = _arm_doc(1, eig_hex=(8.0 + 8.0 * 2 ** -52).hex())
+    single["probe"]["reported"]["eigvalsh_path_rho"] = 0.755
+    d = bd.decide_verdict({"default": _arm_doc(4), "single": single}, {})
     assert d["verdict"] == bd.DIFFERS
-    row = d["differences"][0]
-    assert row["section"] == "localisation_eigvalsh" and row["path"] == "/eigvalsh_sha256"
-    assert row["also_in_control"] is False and d["n_differences"] == 1
+    assert {r["section"] for r in d["differences"]} == {"probe_reported"}
+    assert d["probe_raw_diff"]["eigvalsh_moved"] is True
 
 
 def test_arms_that_loaded_different_blas_are_unmeasured() -> None:

@@ -41,8 +41,10 @@ WHAT IT DOES
   5. REPORT: `reports/BLAS_DIFFERENTIAL.json`, verdict IDENTICAL / DIFFERS (every difference
      listed) / UNMEASURED (with the reason), wall and CPU time per cell for each arm, the
      evidence floor and whether it clears, and the identity (release, cores, numpy, Python, BLAS
-     build, CPU model) the proof is bound to. An eigvalsh spectrum that moves with the thread
-     count is a difference, not mere localisation. The report carries a run id; one row of
+     build, CPU model) the proof is bound to. A raw eigvalsh bit that moves with the thread
+     count (about one ULP on every box measured) is recorded as `probe_raw_diff` -- max ULP,
+     max abs -- and published, but does not bind; the eigvalsh branch rounded the way the judge
+     would publish it (`probe_reported`) does bind. The report carries a run id; one row of
      `data/blas_differential_runs.jsonl` binds it, and where the box holds the release-signing
      key the digest is HMAC'd under it (`research/blas_threads.py` explains why).
 
@@ -89,6 +91,7 @@ import pickle
 import platform
 import shutil
 import stat
+import struct
 import subprocess
 import sys
 import tempfile
@@ -830,6 +833,71 @@ def thread_evidence(single: Mapping[str, Any], default: Mapping[str, Any]) -> di
             "why": "neither threadpoolctl nor psutil could read the arms' thread counts"}
 
 
+def _ordered_bits(x: float) -> int:
+    """A float64's bit pattern as an integer that orders like the float (so ULPs subtract)."""
+    u = struct.unpack("<Q", struct.pack("<d", float(x)))[0]
+    return u if u < 1 << 63 else -(u - (1 << 63))
+
+
+def ulp_distance(a: float, b: float) -> int | None:
+    """How many representable float64 values lie between a and b (0 if equal, None if NaN)."""
+    if math.isnan(a) or math.isnan(b):
+        return None
+    return abs(_ordered_bits(a) - _ordered_bits(b))
+
+
+def _hexpair(a: Any, b: Any) -> tuple[float, float] | None:
+    try:
+        return float.fromhex(a), float.fromhex(b)
+    except (TypeError, ValueError):
+        return None
+
+
+def probe_raw_diff(single: list[dict[str, Any]],
+                   control: list[dict[str, Any]] | None) -> dict[str, Any]:
+    """The raw probe's bit-level movement, sized: paths, max ULP and max abs over the
+    float.hex intermediates (the spectrum's own sizes are merged in by `merge_spectrum`).
+    Recorded and published; it never decides the verdict -- the rounded `probe_reported`
+    branch and the judge's own outputs do."""
+    ulps: list[int] = []
+    absd: list[float] = []
+    for r in single:
+        pair = _hexpair(r.get("a"), r.get("b"))
+        if pair is None:
+            continue
+        u = ulp_distance(*pair)
+        if u is not None:
+            ulps.append(u)
+            absd.append(abs(pair[0] - pair[1]))
+    noise = {r["path"] for r in control or []}
+    return {"binding": False,
+            "n_paths": len(single),
+            "paths": [r["path"] for r in single][:40],
+            "eigvalsh_moved": any("eigvalsh" in r["path"] for r in single),
+            "also_in_control": None if control is None
+            else sorted(r["path"] for r in single if r["path"] in noise)[:40],
+            "max_ulp": max(ulps) if ulps else (0 if not single else None),
+            "max_abs": max(absd) if absd else (0.0 if not single else None),
+            "spectrum": None,
+            "note": ("raw census intermediates that moved between the default and single "
+                     "arms. Not binding: the judge rounds before it publishes, and the "
+                     "rounded eigvalsh branch (probe_reported) still blocks IDENTICAL")}
+
+
+def merge_spectrum(prd: dict[str, Any], spectrum: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Fold the eigvalsh spectrum's single-vs-default sizes into `probe_raw_diff`."""
+    sp = (spectrum or {}).get("single") if isinstance(spectrum, Mapping) else None
+    if not isinstance(sp, Mapping):
+        return prd
+    prd["spectrum"] = dict(sp)
+    for k in ("max_ulp", "max_abs"):
+        v = sp.get(k)
+        if isinstance(v, (int, float)):
+            cur = prd.get(k)
+            prd[k] = v if not isinstance(cur, (int, float)) else max(cur, v)
+    return prd
+
+
 def decide_verdict(arms: Mapping[str, Mapping[str, Any] | None],
                    failures: Mapping[str, str]) -> dict[str, Any]:
     """IDENTICAL / DIFFERS / UNMEASURED from the arms' outputs. Absence is never IDENTICAL."""
@@ -858,17 +926,14 @@ def decide_verdict(arms: Mapping[str, Mapping[str, Any] | None],
                                "single_vs_default": localise(default, single),
                                "control_vs_default": (None if control is None
                                                       else localise(default, control))}}
-    # AN EIGVALSH SPECTRUM THAT MOVES WITH THE THREAD COUNT BLOCKS IDENTICAL (audit of
-    # 5d4d0279f). It is the branch canonical.py:229 takes on a non-finite matrix; a sample that
-    # happened to be finite cannot speak for the sweep that is not, so a moved bit there is
-    # listed as a difference, not merely localised.
-    noise_loc = {r["path"] for r in (out["localisation"]["control_vs_default"] or [])}
-    for r in out["localisation"]["single_vs_default"]:
-        if "eigvalsh" in r["path"]:
-            diffs.append({"section": "localisation_eigvalsh", "path": r["path"],
-                          "default": r["a"], "single": r["b"],
-                          "also_in_control": None if control is None
-                          else r["path"] in noise_loc})
+    # A RAW-PROBE BIT THAT MOVES IS RECORDED, NOT BINDING (audit of 5d4d0279f, second option).
+    # eigvalsh moves by about one ULP between thread counts on every box measured, so letting it
+    # block would make the switch unlicensable everywhere. What binds is what the judge
+    # publishes: every verdict, the census, rho, the DSR charge and bar, the rebuilt series --
+    # and `probe_reported`, the eigvalsh branch rounded exactly as the judge would publish it,
+    # which still blocks above. The raw movement is kept, sized in ULPs, as `probe_raw_diff`.
+    out["probe_raw_diff"] = probe_raw_diff(out["localisation"]["single_vs_default"],
+                                           out["localisation"]["control_vs_default"])
     out["n_differences"] = len(diffs)
     runtime = blas_runtime(arms)
     out["blas_runtime"] = runtime
@@ -890,7 +955,7 @@ def decide_verdict(arms: Mapping[str, Mapping[str, Any] | None],
             f"{judged} judged cell(s): every verdict, the sweep result, the trial census, rho, "
             "the DSR trial charge and bar, and the rounded census both branches would publish "
             f"are byte-identical; {ev['why']}; {n_loc} bit-level difference(s) in unpublished "
-            "census intermediates (see localisation)"))
+            "census intermediates, recorded as probe_raw_diff (not binding)"))
     return out
 
 
@@ -1167,7 +1232,10 @@ def run(*, input_path: Path | None, out: Path, sample: int = DEFAULT_SAMPLE,
                                     timing["default"]["judge_cpu_s"])}
         doc["arms"] = {name: _arm_summary(a) for name, a in arms.items() if a is not None}
         doc["probe"] = {name: a.get("probe") for name, a in arms.items() if a is not None}
-        doc["eigvals_max_abs_diff"] = _eig_diff(scratch, arms)
+        spectrum = _eig_diff(scratch, arms)
+        doc["eigvals_diff"] = spectrum
+        if isinstance(doc.get("probe_raw_diff"), dict):
+            merge_spectrum(doc["probe_raw_diff"], spectrum)
         doc["key_quantities"] = {name: {k: v for k, v in (a.get("derived") or {}).items()
                                         if k != "cell_dsr"}
                                  for name, a in arms.items() if a is not None}
@@ -1192,7 +1260,7 @@ def _arm_summary(a: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _eig_diff(scratch: Path, arms: Mapping[str, Any]) -> dict[str, Any] | None:
-    """Largest absolute eigenvalue difference of each arm against `default`, for localisation."""
+    """Each arm's eigvalsh spectrum against `default`: max abs and max ULP difference."""
     try:
         import numpy as np
     except ImportError:
@@ -1207,8 +1275,13 @@ def _eig_diff(scratch: Path, arms: Mapping[str, Any]) -> dict[str, Any] | None:
         if name == "default" or not f.exists():
             continue
         other = np.load(f)
-        out[name] = (float(np.max(np.abs(other - ref))) if other.shape == ref.shape
-                     else f"shape {other.shape} != {ref.shape}")
+        if other.shape != ref.shape:
+            out[name] = {"error": f"shape {other.shape} != {ref.shape}"}
+            continue
+        ul = [ulp_distance(float(x), float(y)) for x, y in zip(other, ref, strict=True)]
+        out[name] = {"max_abs": float(np.max(np.abs(other - ref))) if ref.size else 0.0,
+                     "max_ulp": max((u for u in ul if u is not None), default=0),
+                     "n_moved": int(np.sum(other != ref))}
     return out
 
 

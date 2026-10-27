@@ -217,6 +217,21 @@ def test_status_names_the_decision_and_a_mixed_operator_set(paths) -> None:
     assert st["active"] is False and st["proof_valid"] is True and "not enabled" in st["why"]
     assert st["mixed_operator_set"] is True and st["in_force"] == {"OMP_NUM_THREADS": "4"}
     assert set(st["identity"]) == set(bt.IDENTITY_KEYS)
+    assert st["probe_raw_diff"]["state"] == "UNMEASURED", "the proof recorded none"
+
+
+def test_status_publishes_the_raw_probe_movement_without_it_binding(paths) -> None:
+    """A recorded 1-ULP eigvalsh move is shown to the reader and never voids the proof."""
+    tmp, release, flag = paths
+    _enable(flag)
+    prd = {"binding": False, "n_paths": 2, "eigvalsh_moved": True, "max_ulp": 1,
+           "max_abs": 1.7763568394002505e-15, "also_in_control": []}
+    _publish(tmp, _full_doc(release, probe_raw_diff=prd))
+    st = bt.status()
+    assert st["active"] is True and st["proof_valid"] is True, st["why"]
+    got = st["probe_raw_diff"]
+    assert got["state"] == "MEASURED" and got["max_ulp"] == 1 and got["eigvalsh_moved"] is True
+    assert got["binding"] is False and got["run_id"] == "run-1"
 
 
 def test_blas_build_is_read_without_loading_numpy() -> None:

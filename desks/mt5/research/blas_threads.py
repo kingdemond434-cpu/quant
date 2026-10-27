@@ -353,4 +353,23 @@ def status(env: Mapping[str, str] | None = None) -> dict[str, Any]:
             "flag": _rel(FLAG), "proof": _rel(PROOF), "run_log": _rel(RUN_LOG),
             "in_force": present,
             "mixed_operator_set": 0 < len(present) < len(THREAD_VARS),
+            "probe_raw_diff": probe_raw_diff(),
             "identity": identity()}
+
+
+def probe_raw_diff(proof_path: Path | None = None) -> dict[str, Any]:
+    """The proof's recorded raw-probe movement (max ULP / max abs), for the publisher.
+
+    Not binding -- the harness lets only judge outputs and the rounded eigvalsh branch decide
+    the verdict -- but published so a reader sees how far the unrounded census moved."""
+    path = PROOF if proof_path is None else proof_path
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {"state": "UNMEASURED", "why": f"{_rel(path)} absent or unreadable"}
+    prd = doc.get("probe_raw_diff") if isinstance(doc, dict) else None
+    if not isinstance(prd, dict):
+        return {"state": "UNMEASURED", "why": "the proof records no probe_raw_diff"}
+    return {"state": "MEASURED", "verdict": doc.get("verdict"), "run_id": doc.get("run_id"),
+            **{k: prd.get(k) for k in ("binding", "n_paths", "eigvalsh_moved", "max_ulp",
+                                       "max_abs", "also_in_control")}}
