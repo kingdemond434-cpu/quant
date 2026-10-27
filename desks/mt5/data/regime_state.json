@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-27T10:01:02.183226+00:00",
+  "swept_at": "2026-10-27T10:15:32.185465+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -537,7 +537,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 52,
-      "shadow_exp_r": 0.4046,
+      "shadow_exp_r": 0.4053,
       "woke_on_shadow": false
     },
     "CADCHF|overnight_gap_decay_asia": {
@@ -647,7 +647,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0323,
+      "shadow_exp_r": -0.255,
       "woke_on_shadow": false
     },
     "CHFDKK|macro_conditional_continuous": {
@@ -1153,7 +1153,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 52,
-      "shadow_exp_r": 0.2969,
+      "shadow_exp_r": 0.2983,
       "woke_on_shadow": false
     },
     "EURCHF|formula_continuous": {
@@ -2484,7 +2484,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0773,
+      "shadow_exp_r": -0.0787,
       "woke_on_shadow": false
     },
     "GBPSGD|overnight_gap_decay_continuous": {
@@ -2792,7 +2792,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3718,
+      "shadow_exp_r": -0.3449,
       "woke_on_shadow": false
     },
     "NAS100|cross_asset_residual_continuous": {
@@ -2979,7 +2979,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2696,
+      "shadow_exp_r": -0.2661,
       "woke_on_shadow": false
     },
     "NZDCAD|macro_conditional_continuous": {
@@ -3045,7 +3045,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.6393,
+      "shadow_exp_r": -0.6528,
       "woke_on_shadow": false
     },
     "NZDHUF|carry_continuous": {
@@ -3122,7 +3122,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.108,
+      "shadow_exp_r": -0.0921,
       "woke_on_shadow": false
     },
     "NZDJPY|vol_transition_continuous": {
@@ -4221,8 +4221,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 32,
-      "shadow_exp_r": -0.2759,
+      "shadow_n": 58,
+      "shadow_exp_r": -1.1826,
       "woke_on_shadow": false
     },
     "XAGEUR|fx_fixing_reversal_continuous": {

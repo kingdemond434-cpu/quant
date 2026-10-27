@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-27T08:48:32+00:00",
+ "generated_utc": "2026-10-27T10:15:31+00:00",
  "summary": {
   "platforms": 14,
   "platforms_yielding": 4,
@@ -7,8 +7,8 @@
   "vectors_attempted_this_week": 535,
   "vectors_never_attempted": 2,
   "vectors_by_outcome": {
-   "BLOCKED": 258,
-   "EMPTY": 258,
+   "BLOCKED": 257,
+   "EMPTY": 259,
    "NAMED_ONLY": 2,
    "YIELDED": 19
   }
@@ -258,8 +258,8 @@
  "vectors": {
   "named": 537,
   "by_outcome": {
-   "BLOCKED": 258,
-   "EMPTY": 258,
+   "BLOCKED": 257,
+   "EMPTY": 259,
    "NAMED_ONLY": 2,
    "YIELDED": 19
   },
@@ -2885,13 +2885,13 @@
    },
    "KRX 정보데이터시스템": {
     "outcome": "EMPTY",
-    "attempts": 398,
-    "successes": 148,
+    "attempts": 399,
+    "successes": 149,
     "rows": 0,
     "findings_total": 0,
-    "datasets": 148,
+    "datasets": 149,
     "last_error": "",
-    "last_attempt": "2026-10-27T08:01:02.992344+00:00",
+    "last_attempt": "2026-10-27T10:14:41.102870+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -3496,14 +3496,14 @@
     "region": "kr"
    },
    "Naver 카페": {
-    "outcome": "BLOCKED",
-    "attempts": 386,
+    "outcome": "EMPTY",
+    "attempts": 387,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
-    "last_error": "bing: bing returned no parseable results (94251 bytes -- an anti-bot shell or a layout change, not an empty forest); duckduckgo: duckduckgo returned no parseable results (14230 bytes)",
-    "last_attempt": "2026-10-27T08:01:15.513483+00:00",
+    "last_error": "bing: bing returned no parseable results (93253 bytes -- an anti-bot shell or a layout change, not an empty forest); bing: bing returned no parseable results (95502 bytes -- an anti-bot shell or a lay",
+    "last_attempt": "2026-10-27T10:15:08.685949+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -4793,13 +4793,13 @@
    },
    "Telegram KR 시장": {
     "outcome": "EMPTY",
-    "attempts": 390,
+    "attempts": 391,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "",
-    "last_attempt": "2026-10-27T08:01:14.494497+00:00",
+    "last_attempt": "2026-10-27T10:14:50.186342+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -5069,13 +5069,13 @@
    },
    "Velog quant": {
     "outcome": "BLOCKED",
-    "attempts": 409,
+    "attempts": 410,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismat; URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mism",
-    "last_attempt": "2026-10-27T08:01:07.303435+00:00",
+    "last_attempt": "2026-10-27T10:13:01.489753+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6617,13 +6617,13 @@
    },
    "관세청 수출입 통계": {
     "outcome": "EMPTY",
-    "attempts": 400,
-    "successes": 150,
+    "attempts": 401,
+    "successes": 151,
     "rows": 0,
     "findings_total": 1,
-    "datasets": 150,
+    "datasets": 151,
     "last_error": "",
-    "last_attempt": "2026-10-27T08:01:02.408436+00:00",
+    "last_attempt": "2026-10-27T10:14:41.087033+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6689,13 +6689,13 @@
    },
    "한국은행 경제통계시스템 ECOS": {
     "outcome": "BLOCKED",
-    "attempts": 403,
+    "attempts": 404,
     "successes": 0,
     "rows": 0,
     "findings_total": 0,
     "datasets": 0,
     "last_error": "BLOCKED",
-    "last_attempt": "2026-10-27T08:01:25.488566+00:00",
+    "last_attempt": "2026-10-27T10:14:08.703063+00:00",
     "language": "ko",
     "region": "kr"
    },
@@ -6774,8 +6774,8 @@
    "last_run": "2026-10-27T03:06:46+00:00",
    "fetches_per_s": 0.5162,
    "success_rate": 0.7506,
-   "wall_s_24h": 3190.0,
-   "cpu_s_24h": 836.0
+   "wall_s_24h": 1409.7,
+   "cpu_s_24h": 537.3
   },
   "forest_europe": {
    "runs": 23,
@@ -6788,8 +6788,8 @@
    "last_run": "2026-10-27T02:47:38+00:00",
    "fetches_per_s": 0.472,
    "success_rate": 0.8303,
-   "wall_s_24h": 5042.3,
-   "cpu_s_24h": 1111.1
+   "wall_s_24h": 2895.3,
+   "cpu_s_24h": 716.5
   },
   "forest_global_academic_code": {
    "runs": 19,
@@ -6802,8 +6802,8 @@
    "last_run": "2026-10-26T19:12:57+00:00",
    "fetches_per_s": 0.614,
    "success_rate": 0.9286,
-   "wall_s_24h": 2900.0,
-   "cpu_s_24h": 399.6
+   "wall_s_24h": 1574.9,
+   "cpu_s_24h": 193.8
   },
   "forest_global_macro": {
    "runs": "UNMEASURED",
@@ -6849,8 +6849,8 @@
    "last_run": "2026-10-27T05:42:25+00:00",
    "fetches_per_s": 0.5521,
    "success_rate": 0.9409,
-   "wall_s_24h": 4986.2,
-   "cpu_s_24h": 394.7
+   "wall_s_24h": 3992.1,
+   "cpu_s_24h": 263.4
   },
   "forest_japan": {
    "runs": "UNMEASURED",
@@ -6860,18 +6860,18 @@
    "wall_s_24h": "UNMEASURED"
   },
   "forest_korea": {
-   "runs": 24,
-   "fetches": 1501,
-   "ok": 1209,
+   "runs": 25,
+   "fetches": 1520,
+   "ok": 1228,
    "http_errors": 19,
    "transport_errors": 273,
-   "seconds": 5985.9,
-   "rows": 176,
-   "last_run": "2026-10-27T02:13:21+00:00",
-   "fetches_per_s": 0.2508,
-   "success_rate": 0.8055,
-   "wall_s_24h": 4780.7,
-   "cpu_s_24h": 514.0
+   "seconds": 6157.8,
+   "rows": 178,
+   "last_run": "2026-10-27T10:15:31+00:00",
+   "fetches_per_s": 0.2468,
+   "success_rate": 0.8079,
+   "wall_s_24h": 3935.8,
+   "cpu_s_24h": 325.0
   },
   "forest_latam": {
    "runs": 24,
@@ -6888,16 +6888,16 @@
    "cpu_s_24h": 522.7
   },
   "forest_mena": {
-   "runs": 26,
-   "fetches": 2828,
-   "ok": 1765,
-   "http_errors": 253,
-   "transport_errors": 810,
-   "seconds": 7771.1,
-   "rows": 79,
+   "runs": 25,
+   "fetches": 2690,
+   "ok": 1719,
+   "http_errors": 250,
+   "transport_errors": 721,
+   "seconds": 7353.0,
+   "rows": 76,
    "last_run": "2026-10-27T05:38:46+00:00",
-   "fetches_per_s": 0.3639,
-   "success_rate": 0.6241,
+   "fetches_per_s": 0.3658,
+   "success_rate": 0.639,
    "wall_s_24h": 4479.9,
    "cpu_s_24h": 492.7
   },
@@ -6912,8 +6912,8 @@
    "last_run": "2026-10-27T08:48:32+00:00",
    "fetches_per_s": 0.6819,
    "success_rate": 0.7401,
-   "wall_s_24h": 5347.9,
-   "cpu_s_24h": 562.7
+   "wall_s_24h": 5881.7,
+   "cpu_s_24h": 818.7
   },
   "forest_oceania": {
    "runs": 24,
@@ -6940,8 +6940,8 @@
    "last_run": "2026-10-27T02:59:42+00:00",
    "fetches_per_s": 0.3395,
    "success_rate": 0.7426,
-   "wall_s_24h": 2947.9,
-   "cpu_s_24h": 509.5
+   "wall_s_24h": 1275.9,
+   "cpu_s_24h": 296.7
   },
   "forest_south_asia": {
    "runs": 24,
