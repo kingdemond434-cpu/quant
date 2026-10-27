@@ -24,7 +24,7 @@
   },
   "position": null,
   "last_bracket_date": "2026-10-27",
-  "last_reconcile": "2026-10-27T14:04:08+00:00",
+  "last_reconcile": "2026-10-27T14:19:10+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {},
@@ -53,7 +53,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-27T17:05:08+00:00",
+  "placement_pass": "2026-10-27T17:20:06+00:00",
   "netting_booked": {},
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
@@ -285,11 +285,11 @@
       "last_signal_bar": "2026-10-27 16:00:00+00:00"
     },
     "eurzar_carry_asia_p_8339edce23032d21": {
-      "last_signal_bar": "2026-10-27 16:45:00+00:00",
+      "last_signal_bar": "2026-10-27 17:00:00+00:00",
       "trail_k": 0.0
     },
     "usdnok_carry_asia_p_ff35bb7c8427d66f": {
-      "last_signal_bar": "2026-10-27 16:55:00+00:00",
+      "last_signal_bar": "2026-10-27 17:10:00+00:00",
       "trail_k": 0.0
     }
   },
@@ -477,7 +477,7 @@
     "241054340": 0.008680000000000021
   },
   "restart_reconcile": {
-    "at": "2026-10-27T14:05:08+00:00",
+    "at": "2026-10-27T14:20:11+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
@@ -497,7 +497,7 @@
     "gold_oco_direction_lock/gold_asia/sell_stop": "2026-10-27",
     "gold_late_send/gold_asia": "2026-10-27",
     "gold_late_send/gold_london_am": "2026-10-27",
-    "gold_late_send/gold_afternoon": "2026-10-26"
+    "gold_late_send/gold_afternoon": "2026-10-27"
   },
   "daily_loss_stood_down": "2026-10-23"
 }
