@@ -343,6 +343,60 @@ def test_catch_up_honours_its_deadline_and_leaves_the_rest_queued(tmp_path: Path
     assert idx.complete and len(idx.judged_cells) == 200 and idx.behind_bytes == 0
 
 
+def _probe_rows(now: datetime, n: int = 31) -> list[dict[str, Any]]:
+    return [{"at": (now - timedelta(hours=1 + i % 20)).isoformat(), "cell": f"r{i}",
+             "family": "f", "terminal_gate": "cpcv", "passed": False} for i in range(n)]
+
+
+@pytest.mark.parametrize("days_ahead", [36, 40, 400])
+@pytest.mark.parametrize("incremental", [False, True])
+def test_one_future_stamped_row_cannot_prune_the_real_buckets(tmp_path: Path, days_ahead: int,
+                                                              incremental: bool) -> None:
+    """The audit's probe (2f28cf7de, MF1): one row stamped 35+ days ahead moved max_ts and pruned
+    every real bucket for good -- 31 verdicts in 24 h read 1 while judging_rate stayed MEASURED.
+    """
+    now = datetime.now(tz=UTC).replace(microsecond=0)
+    path, state = tmp_path / "gate_verdict_ledger.jsonl", tmp_path / "idx.pkl"
+    future = {"at": (now + timedelta(days=days_ahead)).isoformat(), "cell": "future",
+              "family": "f", "terminal_gate": "cpcv", "passed": False}
+    rows = _probe_rows(now)
+    if incremental:          # the real rows indexed and persisted first, the forged row later
+        _ledger(tmp_path, rows)
+        first = LedgerIndex.load(path, state)
+        first.catch_up()
+        first.save(state)
+        with path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(future) + "\n")
+    else:
+        _ledger(tmp_path, [*rows, future])
+    idx = LedgerIndex.load(path, state if incremental else None)
+    idx.catch_up()
+    assert idx.max_ts <= time.time() + 300.0
+    assert idx.window_rows(now.timestamp() - 86400.0, now.timestamp())[2] == 31
+    jc._LEDGER_INDEXES.pop(str(path), None)
+    jr = jc.judging_rate(path, now=now)
+    jc._LEDGER_INDEXES.pop(str(path), None)
+    assert jr["status"] == "MEASURED" and jr["verdicts_24h"] == 31
+    assert jr["last_verdict_at"] is not None and jr["last_verdict_at"] <= now.isoformat()
+
+
+def test_an_index_persisted_before_the_future_bound_rebuilds(tmp_path: Path) -> None:
+    """SCHEMA 3: a v2 pickle may carry a future-poisoned max_ts and already-pruned buckets."""
+    import pickle
+
+    import research.gate_ledger_index as gli
+    now = datetime.now(tz=UTC).replace(microsecond=0)
+    path, state = _ledger(tmp_path, _probe_rows(now)), tmp_path / "idx.pkl"
+    good = LedgerIndex(path)
+    good.catch_up()
+    doc = dict(good._state(), schema=2, buckets={}, max_ts=now.timestamp() + 40 * 86400.0)
+    state.write_bytes(pickle.dumps(doc))
+    assert gli.SCHEMA == 3
+    again = LedgerIndex.load(path, state)
+    assert again.offset == 0 and again.catch_up()["consumed_bytes"] == path.stat().st_size
+    assert again.window_rows(now.timestamp() - 86400.0, now.timestamp())[2] == 31
+
+
 @pytest.mark.parametrize("body", ["a\nb\nc\n", "a\r\nb\r\nc", "\n\nx\n\n", "only", "",
                                   "é\n" * 5000 + "tail"])
 @pytest.mark.parametrize("limit", [1, 2, 3, 7, 20_000])
@@ -480,10 +534,34 @@ def test_main_enforces_budget_s(tmp_path: Path, monkeypatch) -> None:
                 "totals": {}, "quota": {}}
 
     monkeypatch.setattr(jc, "build", fake_build)
+    monkeypatch.delenv("QUANT_LEG_BUDGET_S", raising=False)
     t = time.monotonic()
     assert jc.main(["--once", "--budget-s", "100", "--no-write", "--json"]) == 0
-    assert t + 99 <= seen["deadline"] <= time.monotonic() + 100
+    # By hand the stop is the budget (100 s); the deferral fires a commit margin before it.
+    m = jc.COMMIT_MARGIN_S
+    assert t + 100 - m - 1 <= seen["deadline"] <= time.monotonic() + 100 - m
+    assert seen["deadline"] <= seen["stop"][1] - m
     assert seen["ledger_deadline"] < seen["deadline"]
+
+
+def test_the_deferral_always_fires_before_the_hard_stop_with_room_to_write(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit of 2f28cf7de, SF1: with no QUANT_LEG_BUDGET_S the stop equalled the budget, so the
+    deferral deadline coincided with the hard stop and a hand run TIMED OUT instead of deferring."""
+    m = jc.COMMIT_MARGIN_S
+    for cap in (None, "300", "100", "135"):
+        if cap is None:
+            monkeypatch.delenv("QUANT_LEG_BUDGET_S", raising=False)
+        else:
+            monkeypatch.setenv("QUANT_LEG_BUDGET_S", cap)
+        for budget in (20.0, 120.0, 300.0):
+            stop_s, _ = jc.stop_after_s(budget)
+            d = jc.defer_deadline_s(budget, stop_s)
+            assert d is not None and 0 < d <= budget
+            assert d <= max(stop_s - m, 0.5 * stop_s) < stop_s
+    assert jc.defer_deadline_s(None, 120.0) is None and jc.defer_deadline_s(0, 120.0) is None
+    monkeypatch.delenv("QUANT_LEG_BUDGET_S", raising=False)
+    assert jc.defer_deadline_s(300.0, jc.stop_after_s(300.0)[0]) == 300.0 - m
 
 
 # --------------------------------------------------------------------- the build-failure memo

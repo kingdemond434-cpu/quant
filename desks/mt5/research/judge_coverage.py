@@ -4701,6 +4701,21 @@ def stop_after_s(budget_s: float) -> tuple[float, float | None]:
     return max(float(budget_s), cap - COMMIT_MARGIN_S), cap
 
 
+def defer_deadline_s(budget_s: float | None, stop_s: float) -> float | None:
+    """Seconds after start at which the pass DEFERS its deferrable stages (judge-rate's budget).
+
+    It must fall before the hard stop with room to write, or the deferral never fires and the
+    pass meets the stop as a TIMEOUT instead of publishing a deferred report (audit of
+    2f28cf7de, SF1: run by hand with no QUANT_LEG_BUDGET_S, `stop_after_s` returns stop ==
+    budget, so the two coincided). So it is the declared budget, but never later than the stop
+    less COMMIT_MARGIN_S -- and never earlier than half the stop, so a tiny hand budget still
+    leaves the pass time to work. No budget declared: no deferral (None), as before.
+    """
+    if not budget_s or budget_s <= 0:
+        return None
+    return min(float(budget_s), max(float(stop_s) - COMMIT_MARGIN_S, 0.5 * float(stop_s)))
+
+
 def write_timeout(exc: JudgeCoverageTimeout, *, budget_s: float, stop_s: float,
                   cap_s: float | None, started: datetime,
                   path: Path | None = None) -> Path:
@@ -4925,7 +4940,8 @@ def main(argv: list[str] | None = None) -> int:
     stop_s, cap_s = stop_after_s(args.budget_s)
     m0 = time.monotonic()
     stop = (m0, m0 + stop_s)
-    budget_s = float(args.budget_s) if args.budget_s and args.budget_s > 0 else None
+    # The deferral deadline sits inside the stop with the commit margin in hand (SF1).
+    budget_s = defer_deadline_s(args.budget_s, stop_s)
     try:
         # Always deferred: --no-write then DISCARDS the pass's staging, so it saves nothing of
         # its own (audit of v2.1: it used to commit priors, bank and handoff without the
@@ -4937,6 +4953,7 @@ def main(argv: list[str] | None = None) -> int:
         doc["elapsed_s"] = round(time.time() - t0, 2)
         doc["budget_s"] = args.budget_s
         doc["budget_enforced"] = budget_s is not None
+        doc["defer_deadline_s"] = round(budget_s, 3) if budget_s else None
         if not args.no_write:
             write(doc, deadline=stop)
         else:
