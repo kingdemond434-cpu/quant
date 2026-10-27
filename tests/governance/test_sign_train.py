@@ -115,17 +115,58 @@ def test_repin_writes_the_signer() -> None:
     assert after["signed_by"] == "auditor-clear" and after["to"] == "c" * 64
 
 
-def test_only_committed_clear_rows_with_a_report_count() -> None:
-    a, b = "a" * 64, "b" * 64
-    text = "\n".join(
-        [
-            json.dumps({"path": "x.py", "sha256": a, "verdict": "CLEAR", "report": "R1"}),
-            json.dumps({"path": "x.py", "sha256": b, "verdict": "HOLD", "report": "R2"}),
-            json.dumps({"path": "y.py", "sha256": b, "verdict": "CLEAR"}),
-            "not json",
-        ]
-    )
-    assert st.parse_clears(text) == {"x.py": {a}}
+A, B = "a" * 64, "b" * 64
+R = "reports/audit/2026-10-14/SIGN_TRAIN_patch.md"
+
+
+def _row(path: str = "x.py", sha: str = A, verdict: str = "CLEAR", report: str = R) -> str:
+    return json.dumps({"path": path, "sha256": sha, "verdict": verdict, "report": report})
+
+
+def test_clear_rows_count_per_exact_bytes() -> None:
+    text = "\n".join([_row(), _row("y.py", B, "HOLD"), ""])
+    assert st.parse_clears(text) == {"x.py": {A}}
+
+
+@pytest.mark.parametrize("order", ["clear_then_hold", "hold_then_clear"])
+def test_any_hold_outranks_any_clear(order: str) -> None:
+    rows = [_row(), _row(verdict="HOLD")]
+    if order == "hold_then_clear":
+        rows.reverse()
+    assert st.parse_clears("\n".join(rows)) == {}
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "not json",
+        "[1, 2]",
+        _row(sha="A" * 64),
+        _row(verdict="MAYBE"),
+        _row(report="x"),
+        _row(report="reports/audit/../../etc.txt"),
+        json.dumps({"path": "x.py", "sha256": A, "verdict": "CLEAR"}),
+    ],
+)
+def test_one_bad_line_refuses_the_whole_record(bad: str) -> None:
+    with pytest.raises(ValueError):
+        st.parse_clears("\n".join([_row(), bad]))
+
+
+def test_report_sha256_must_be_hex_when_given() -> None:
+    row = json.loads(_row())
+    row["report_sha256"] = "nope"
+    with pytest.raises(ValueError):
+        st.parse_clears(json.dumps(row))
+    row["report_sha256"] = B
+    assert st.parse_clears(json.dumps(row)) == {"x.py": {A}}
+
+
+def test_the_record_may_only_grow() -> None:
+    v1, v2 = b"row1\n", b"row1\nrow2\n"
+    assert st.append_only_problems([v1, v2]) == []
+    assert st.append_only_problems([v2, v1]) != []
+    assert st.append_only_problems([v1, b"rowX\nrow2\n"]) != []
 
 
 def test_the_audit_signs_only_cleared_bytes() -> None:

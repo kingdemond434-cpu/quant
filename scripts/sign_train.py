@@ -5,7 +5,7 @@ IMMUTABLE_MANIFEST.json and the QB-002 seal rotation in research/quantbench.py (
 full sha256, "from" untouched). Done by hand they came apart (#329 cleared without the re-pin,
 test_quantbench read REGRESSED after the merge).
 
-WHO SIGNS (D-20261027-001). zuck, the owner, ordered the principal sign removed on 2026-10-27:
+WHO SIGNS (D-20261027-003). zuck, the owner, ordered the principal sign removed on 2026-10-27:
 "no remove judge sign it should auto sign" / "remove sign" / "i am trlling u to do it". So the
 default signer is the AUDIT, not a person: a moved sealed file is signed only when a CLEAR row for
 its exact sha256 is already COMMITTED in data/SEAL_CLEARS.jsonl at the target. No CLEAR row, no
@@ -126,20 +126,71 @@ def _git(*args: str) -> str:
     ).stdout.strip()
 
 
+REPORT = re.compile(r"(/mnt/project-files/)?reports/audit/\S+\.md")
+HEX64 = re.compile(r"[0-9a-f]{64}")
+
+
 def parse_clears(text: str) -> dict[str, set[str]]:
-    """{path: {sha256 the audit cleared}} from SEAL_CLEARS.jsonl text; malformed rows are skipped."""
-    out: dict[str, set[str]] = {}
-    for line in text.splitlines():
+    """{path: {sha256 the audit cleared}} from SEAL_CLEARS.jsonl text, failing closed.
+
+    Every non-blank line must be a well-formed row, or the whole record is refused (ValueError):
+    a garbled line is not a quiet "no". Any HOLD for a path's sha256 outranks every CLEAR for it,
+    whichever came first.
+    """
+    cleared: dict[str, set[str]] = {}
+    held: dict[str, set[str]] = {}
+    for n, line in enumerate(text.splitlines(), 1):
+        if not line.strip():
+            continue
         try:
             row = json.loads(line)
-        except ValueError:
-            continue
-        if not isinstance(row, dict) or row.get("verdict") != "CLEAR":
-            continue
-        path, sha = row.get("path"), str(row.get("sha256", "")).lower()
-        if isinstance(path, str) and re.fullmatch(r"[0-9a-f]{64}", sha) and row.get("report"):
-            out.setdefault(path, set()).add(sha)
-    return out
+        except ValueError as exc:
+            raise ValueError(f"{SEAL_CLEARS}:{n} is not JSON") from exc
+        if not isinstance(row, dict):
+            raise ValueError(f"{SEAL_CLEARS}:{n} is not an object")
+        path, sha, verdict = row.get("path"), row.get("sha256"), row.get("verdict")
+        report, report_sha = row.get("report"), row.get("report_sha256")
+        if not isinstance(path, str) or not path:
+            raise ValueError(f"{SEAL_CLEARS}:{n} has no path")
+        if not isinstance(sha, str) or not HEX64.fullmatch(sha):
+            raise ValueError(f"{SEAL_CLEARS}:{n} sha256 is not 64 lower-case hex")
+        if verdict not in ("CLEAR", "HOLD"):
+            raise ValueError(f"{SEAL_CLEARS}:{n} verdict must be CLEAR or HOLD")
+        if not isinstance(report, str) or not REPORT.fullmatch(report):
+            raise ValueError(f"{SEAL_CLEARS}:{n} report must be a reports/audit/...md path")
+        if report_sha is not None and (
+            not isinstance(report_sha, str) or not HEX64.fullmatch(report_sha)
+        ):
+            raise ValueError(f"{SEAL_CLEARS}:{n} report_sha256 is not 64 lower-case hex")
+        (cleared if verdict == "CLEAR" else held).setdefault(path, set()).add(sha)
+    out = {p: shas - held.get(p, set()) for p, shas in cleared.items()}
+    return {p: shas for p, shas in out.items() if shas}
+
+
+def append_only_problems(versions: list[bytes]) -> list[str]:
+    """Each committed version of the CLEAR record, oldest first, must be a prefix of the next."""
+    return [
+        f"version {i + 1} of {SEAL_CLEARS} rewrites an earlier row"
+        for i in range(1, len(versions))
+        if not versions[i].startswith(versions[i - 1])
+    ]
+
+
+def _committed_clears(head: str) -> str:
+    """The CLEAR record at the target, after proving its history only ever appended."""
+    if _git("rev-parse", "--is-shallow-repository") == "true":
+        raise ValueError("shallow clone: the CLEAR record's history cannot be proven append-only")
+    shas = _git("log", "--format=%H", "--reverse", head, "--", SEAL_CLEARS).splitlines()
+    versions = []
+    for sha in shas:
+        r = subprocess.run(
+            ("git", "show", f"{sha}:{SEAL_CLEARS}"), cwd=ROOT, capture_output=True, check=False
+        )
+        versions.append(r.stdout if r.returncode == 0 else b"")
+    problems = append_only_problems(versions)
+    if problems:
+        raise ValueError("; ".join(problems))
+    return versions[-1].decode("utf-8") if versions else ""
 
 
 def cleared_expect(moved: dict[str, str], clears: dict[str, set[str]]) -> dict[str, str]:
@@ -212,6 +263,11 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     before = json.loads((ROOT / MANIFEST).read_text("utf-8"))
+    sealed = list(before.get("files") or {})
+    dirty = _git("status", "--porcelain", "--", *sealed) if sealed else ""
+    if dirty:
+        print(f"REFUSED: sealed files differ from the committed target:\n{dirty}")
+        return 2
     moved = moved_files(before)
     if not moved:
         if not _qb002_green():
@@ -235,9 +291,10 @@ def main(argv: list[str] | None = None) -> int:
             print("REFUSED: --expect is for --principal; the audit signs from SEAL_CLEARS.jsonl")
             return 2
         try:
-            clears = parse_clears(_git("show", f"{head}:{SEAL_CLEARS}"))
-        except subprocess.CalledProcessError:
-            clears = {}
+            clears = parse_clears(_committed_clears(head))
+        except ValueError as exc:
+            print(f"REFUSED: {exc}")
+            return 2
         expect = cleared_expect(moved, clears)
     problems = binding_problems(moved, expect)
     if problems:
