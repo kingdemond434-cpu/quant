@@ -381,6 +381,9 @@ def test_end_to_end_on_the_real_judge(tmp_path) -> None:
     assert probe["reported"]["matrix_sha256"] == rep["probe"]["default"]["reported"][
         "matrix_sha256"]
     assert rep["write_guard_blocked"] == {}
+    prd = rep["probe_raw_diff"]
+    assert prd["binding"] is False and isinstance(prd["max_ulp"], int) and prd["max_ulp"] >= 0
+    assert isinstance(rep["eigvals_diff"]["single"]["max_ulp"], int)
     if rebuild:
         assert rep["timing"]["single"]["rebuild_cells"] == 1
         cov = rep["rebuild_coverage"]
