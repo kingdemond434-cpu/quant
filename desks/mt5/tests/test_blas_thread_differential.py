@@ -434,7 +434,8 @@ def test_the_rebuild_is_stratified_by_family_module() -> None:
                 {"sym": "GBPUSD", "family": "mean_reversion_rsi", "params": {}}])
     picks, plan = bd.stratified_rebuild(specs, 4, strata)
     fams = [p["family"] for p in picks]
-    assert fams[:3] == ["cross_asset_residual", "pca_residual", fams[2]]
+    # pca_residual first (always rebuilt), then the round-robin over the strata
+    assert fams[:3] == ["pca_residual", "cross_asset_residual", fams[2]]
     assert {"session_range_breakout", "mean_reversion_rsi"} == {fams[2], fams[3]}
     present = {r["stratum_in_input"]: r["specs"] for r in plan if "stratum_in_input" in r}
     assert present == {"causal_residual": 1, "families_orthogonal": 1, "families": 10}
