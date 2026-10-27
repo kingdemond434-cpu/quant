@@ -144,13 +144,13 @@ def test_the_t8_hurdle_count_is_a_pin_and_nothing_else_unpacked_is(tmp_path: Pat
 
 
 def test_the_t8_hurdle_count_is_the_bar() -> None:
-    """The rule above is sound only while the sealed constant sits at or below BAR_N."""
+    """The rule above is sound only while the sealed constant IS BAR_N (audit SF2: equality)."""
     sys.path.insert(0, str(ROOT / "desks" / "mt5"))
     from research import gate_policy
 
     if not hasattr(gate_policy, "dsr_hurdle_inputs"):
         pytest.skip("the T8 sealed set is not applied: no site can call dsr_hurdle_inputs")
-    assert gate_policy.DSR_FIXED_TRIALS <= tcg.BAR_N
+    assert gate_policy.DSR_FIXED_TRIALS == tcg.BAR_N
     assert {gate_policy.dsr_hurdle_inputs(t)[0] for t in (2, 60, 10_000)} == {
         gate_policy.DSR_FIXED_TRIALS}
 
