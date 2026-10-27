@@ -85,10 +85,11 @@ def reset_rate_limit_budget() -> None:
 
 def _is_read(method: Any, url: Any = None) -> bool:
     """True for a call the SDK names as a GET-family request, or a POST to the venue's JWT login
-    and refresh routes (idempotent: a second one only mints another token); unknown is a write."""
+    and refresh routes (exact path suffixes) (idempotent: a second one only mints another token); unknown is a write."""
     if str(getattr(method, "__name__", "")).lower() in _READ_METHODS:
         return True
-    return "/auth/jwt/" in str(url or "")
+    path = str(url or "").split("?", 1)[0].rstrip("/")
+    return path.endswith(("/auth/jwt/token", "/auth/jwt/refresh"))
 
 
 def _status(obj: Any) -> int | None:

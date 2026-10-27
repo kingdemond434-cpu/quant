@@ -80,6 +80,9 @@ def test_a_write_is_re_sent_only_when_it_never_reached_the_venue() -> None:
     assert _bounded_request(_named(login, "post"),
                             url="https://live.tradelocker.com/backend-api/auth/jwt/token") == "token"
     assert len(sent) == 2                       # a login is idempotent, so it keeps its retry
+    from prop import tradelocker_venue as tv
+    assert not tv._is_read(_named(login, "post"), "https://x/backend-api/trade/auth/jwt/orders")
+    assert tv._is_read(_named(login, "post"), "https://x/backend-api/auth/jwt/refresh/")
 
 
 def _named(fn, name):
