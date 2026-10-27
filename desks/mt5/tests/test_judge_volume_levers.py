@@ -1,4 +1,4 @@
-"""judge_volume v1.1 (2026-10-27): the operator stop holds and is fenced; a shard wave widens on
+"""judge_volume v1.2 (2026-10-27): the operator stop holds and is fenced; a shard wave widens on
 live memory.
 
 Neither lever touches the sealed judge: the stop decides only WHETHER the resident starts a
@@ -123,6 +123,101 @@ def test_first_honoured_survives_a_relaunch_and_resets_with_a_new_file() -> None
     _stop("")
     c = runner.resident_stop(now=t0 + 5 * 3600.0)
     assert c["stop_age_s"] == 0.0
+
+
+SIDE = "RESIDENT_STOP.honoured.json"
+
+
+@pytest.mark.parametrize("torn", [b"", b'{"first_honoured_ep', b"\x00\x00", b'{"x": 1}'])
+def test_a_torn_sidecar_never_restarts_the_clock(torn: bytes) -> None:
+    """Re-audit must-fix: a 30 h hold with a torn sidecar read 0 h. It now reads ~30 h from the
+    stop file's mtime (no published record here), and the sidecar is repaired with it."""
+    _stop("", age_s=30 * 3600.0)
+    runner.RESIDENT_STOP.with_name(SIDE).write_bytes(torn)
+    got = runner.resident_stop()
+    assert got["stopped"] is True and 29.9 * 3600 < got["stop_age_s"] < 30.1 * 3600
+    again = runner.resident_stop()
+    assert again["first_honoured_epoch"] == got["first_honoured_epoch"]
+
+
+def test_a_torn_sidecar_prefers_the_published_stamp_of_the_same_file(tmp_path) -> None:
+    p = _stop("", age_s=60.0)  # armed a minute ago, honoured 30 h ago per the resident record
+    st = p.stat()
+    ino, born = runner._stop_ident(st)
+    first = time.time() - 30 * 3600.0
+    runner.RESIDENT_STATE.write_text(
+        json.dumps({"stop": {"first_honoured_epoch": first, "ino": ino, "born": born}})
+    )
+    p.with_name(SIDE).write_text("{")
+    got = runner.resident_stop()
+    assert abs(got["first_honoured_epoch"] - first) < 0.01 and got["stop_age_s"] > 29.9 * 3600
+    assert _events(tmp_path) == []  # a recovery, not a fresh honour
+
+
+def test_the_sidecar_is_written_through_a_tmp_and_replace(monkeypatch) -> None:
+    _stop("")
+    seen: list[tuple[str, str]] = []
+    real = os.replace
+    monkeypatch.setattr(
+        runner.os, "replace", lambda a, b: seen.append((Path(a).name, Path(b).name)) or real(a, b)
+    )
+    runner.resident_stop()
+    assert seen and seen[0][1] == SIDE and seen[0][0].endswith(".tmp")
+    assert sorted(x.name for x in runner.RESIDENT_STOP.parent.glob(f"{SIDE}*")) == [SIDE]
+
+
+def test_a_failed_sidecar_replace_never_truncates_it_and_still_reads_the_age(monkeypatch) -> None:
+    _stop("", age_s=30 * 3600.0)
+    side = runner.RESIDENT_STOP.with_name(SIDE)
+    side.write_text("{")  # torn: the repair write is attempted, and fails
+
+    def boom(a: object, b: object) -> None:
+        raise PermissionError("held open")
+
+    monkeypatch.setattr(runner.os, "replace", boom)
+    got = runner.resident_stop()
+    assert got["stopped"] is True and got["stop_age_s"] > 29.9 * 3600
+    assert side.read_text() == "{"  # never written in place
+    assert sorted(x.name for x in side.parent.glob(f"{SIDE}*")) == [SIDE]
+
+
+def test_a_reused_inode_with_another_creation_time_is_a_new_stop() -> None:
+    """Re-audit should-fix: identity is inode + creation time, so an inode reused by a new stop
+    file does not inherit the old file's 40 h age."""
+    p = _stop("")
+    ino, born = runner._stop_ident(p.stat())
+    old = time.time() - 40 * 3600.0
+    p.with_name(SIDE).write_text(
+        json.dumps({"first_honoured_epoch": old, "ino": ino, "born": born - 3600.0})
+    )
+    assert runner.resident_stop()["stop_age_s"] < 60.0
+    p.with_name(SIDE).write_text(  # the same file: kept
+        json.dumps({"first_honoured_epoch": old, "ino": ino, "born": born})
+    )
+    assert runner.resident_stop()["stop_age_s"] > 39.9 * 3600
+
+
+def test_a_v11_sidecar_without_a_creation_time_is_still_honoured() -> None:
+    p = _stop("")
+    ino, _ = runner._stop_ident(p.stat())
+    old = time.time() - 5 * 3600.0
+    p.with_name(SIDE).write_text(json.dumps({"first_honoured_epoch": old, "ino": ino}))
+    assert runner.resident_stop()["stop_age_s"] > 4.9 * 3600
+
+
+def test_the_creation_time_is_birthtime_else_windows_ctime_else_mtime(monkeypatch) -> None:
+    class St:
+        st_ino, st_ctime, st_mtime = 7, 100.0, 200.0
+
+    class Born(St):
+        st_birthtime = 50.0
+
+    assert runner._stop_ident(Born()) == (7, 50.0)  # type: ignore[arg-type]
+    monkeypatch.setattr(runner.os, "name", "nt")
+    assert runner._stop_ident(St()) == (7, 100.0)  # type: ignore[arg-type]
+    monkeypatch.setattr(runner.os, "name", "posix")
+    assert runner._stop_ident(St()) == (7, 200.0)  # type: ignore[arg-type]
+    assert runner._stop_ident(None) == (0, 0.0)
 
 
 @pytest.mark.parametrize(
@@ -460,6 +555,28 @@ def test_the_sampler_publishes_into_the_phase_document_only_while_a_sweep_runs()
     s.publish()
     doc = json.loads(runner.SWEEP_PHASE.read_text())
     assert doc["phase"] == "plan" and doc["wall_profile"]["phases"]["plan"]["samples"] == 1
+
+
+def test_a_stale_sampler_snapshot_never_overwrites_a_newer_phase_document(monkeypatch) -> None:
+    """Re-audit should-fix: a newer document that lands while the sampler writes its tmp wins."""
+    s = runner.WallSampler(
+        thread_id=threading.get_ident(), phase=lambda: "plan", counters=lambda: None
+    )
+    runner._phase("plan")
+    s.sample()
+    real, calls = runner._file_sig, []
+
+    def sig(path: Path) -> object:
+        calls.append(1)
+        if len(calls) == 2:  # between the snapshot and the replace: a newer phase is published
+            runner._phase("rule_shards")
+        return real(path)
+
+    monkeypatch.setattr(runner, "_file_sig", sig)
+    s.publish()
+    doc = json.loads(runner.SWEEP_PHASE.read_text())
+    assert doc["phase"] == "rule_shards" and "plan" in doc["wall_profile"]["phases"]
+    assert not list(runner.SWEEP_PHASE.parent.glob("*.wall.tmp"))
 
 
 def test_a_sampler_that_cannot_read_anything_records_nothing_and_never_raises() -> None:

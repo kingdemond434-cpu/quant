@@ -1505,7 +1505,9 @@ RESIDENT_STOP = DESK / "data" / "RESIDENT_STOP"
 #:     `RESIDENT_STOP.expired.<utc>`, a JUDGE_STOP_LAPSED event and a log line are written, and
 #:     the resident resumes -- ONLY if the rename succeeded; a failed rename keeps holding.
 #:   * The hold's age counts from when a resident FIRST HONOURED it (kept in the sidecar
-#:     `RESIDENT_STOP.honoured.json`, reset when the file goes or is replaced), never the mtime.
+#:     `RESIDENT_STOP.honoured.json`, written atomically, reset when the file goes or is
+#:     replaced -- identity is inode + creation time), never the mtime. A torn sidecar falls back
+#:     to the published stamp, else the mtime, never to now (re-audit v1.2).
 #:     A JUDGE_STOP_HONOURED event is written then; `stop_age_s` is in JUDGE_RESIDENT.json on
 #:     every write; `check_judge_coverage` WARNs at 12 h and FAILs at 24 h of honoured hold.
 RESIDENT_BACKOFF_S = (15, 30, 60, 120, 300)
@@ -1637,6 +1639,15 @@ def _write_atomic(path: Path, doc: dict[str, Any]) -> None:
     finally:
         with contextlib.suppress(OSError):
             tmp.unlink(missing_ok=True)
+
+
+def _file_sig(path: Path) -> tuple[int, int, int] | None:
+    """(file id, mtime_ns, size) of `path`, None when absent or unreadable."""
+    try:
+        st = path.stat()
+    except OSError:
+        return None
+    return int(st.st_ino or 0), int(st.st_mtime_ns), int(st.st_size)
 
 
 def _flush_phase_doc() -> None:
@@ -1784,10 +1795,25 @@ class WallSampler:
                 return
             _PHASE_DOC["wall_profile"] = snap
             out = {k: v for k, v in _PHASE_DOC.items() if not str(k).startswith("_")}
-        # THE WRITE IS OUTSIDE THE LOCK (audit should-fix): a slow disk never holds up a shard
-        # thread's progress stamp. The next locked writer republishes the whole document.
-        with contextlib.suppress(Exception):
-            _write_atomic(SWEEP_PHASE, out)
+            sig = _file_sig(SWEEP_PHASE)
+        # THE SLOW WRITE IS OUTSIDE THE LOCK (audit should-fix): a slow disk never holds up a
+        # shard thread's progress stamp. THE REPLACE IS UNDER IT, and only if the file is still
+        # the one this snapshot was taken against (re-audit should-fix): every newer document
+        # was built from `_PHASE_DOC`, which already carries this wall_profile, so a stale
+        # snapshot never overwrites a newer phase (`killed_in_phase` reads it). The identity
+        # (file id, mtime_ns, size) changes on every os.replace, so it also covers
+        # PlanTracker's flush, which writes the same file without this lock.
+        tmp = SWEEP_PHASE.with_name(f"{SWEEP_PHASE.name}.{os.getpid()}.wall.tmp")
+        try:
+            tmp.write_text(json.dumps(out, indent=1, default=str), encoding="utf-8")
+            with _PHASE_LOCK:
+                if _file_sig(SWEEP_PHASE) == sig:
+                    os.replace(tmp, SWEEP_PHASE)
+        except Exception:
+            pass  # a report; judging never stops for it
+        finally:
+            with contextlib.suppress(OSError):
+                tmp.unlink(missing_ok=True)
 
     def _loop(self) -> None:
         last = self._clock()
@@ -2603,31 +2629,97 @@ def _stop_event(kind: str, path: Path, **fields: Any) -> None:
                     **fields)
 
 
+def _stop_ident(st: os.stat_result | None) -> tuple[int, float]:
+    """(inode / NTFS file id, creation time) of the stop file; (0, 0.0) when unread.
+
+    Creation time is `st_birthtime` where it exists (Windows on py3.12+, macOS, BSD), else
+    `st_ctime` on Windows (its creation time there), else the mtime: on Linux `st_ctime` is the
+    inode CHANGE time and moves on a chmod, so it is no identity. An inode reused by a new file
+    (ext4, tmpfs) therefore no longer inherits a stale age (re-audit should-fix)."""
+    if st is None:
+        return 0, 0.0
+    born = getattr(st, "st_birthtime", None)
+    if born is None:
+        born = st.st_ctime if os.name == "nt" else st.st_mtime
+    return int(getattr(st, "st_ino", 0) or 0), float(born or 0.0)
+
+
+def _same_stop(doc: dict[str, Any], ino: int, born: float) -> bool:
+    """A recorded stamp belongs to this stop file. A field either side lacks is not a mismatch
+    (a v1.1 sidecar carries no `born`)."""
+    with contextlib.suppress(TypeError, ValueError):
+        if ino and doc.get("ino") and int(doc["ino"]) != ino:
+            return False
+        if born and doc.get("born") is not None and abs(float(doc["born"]) - born) > 1e-3:
+            return False
+    return True
+
+
+def _write_sidecar(side: Path, doc: dict[str, Any]) -> bool:
+    """Write the sidecar through a tmp + os.replace, so a reader never sees it torn."""
+    tmp = side.with_name(f"{side.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    try:
+        tmp.write_text(json.dumps(doc), encoding="utf-8")
+        os.replace(tmp, side)
+        return True
+    except OSError:
+        return False
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink(missing_ok=True)
+
+
 def _first_honoured(p: Path, st: os.stat_result | None, now: float) -> tuple[float, bool]:
     """(epoch the current stop was first honoured, whether that is now). Never raises.
 
-    Kept in a sidecar so it survives the resident's relaunch; reset when the stop file's
-    identity changes (deleted and re-created). Unwritable sidecar: the last published record's
-    stamp, else now."""
+    Kept in a sidecar, written atomically, so it survives the resident's relaunch; reset when
+    the stop file's identity (inode + creation time) changes. A sidecar that EXISTS but cannot
+    be parsed (torn, hand-edited) never restarts the clock (re-audit must-fix: a 30 h hold read
+    0 h): it falls back to the last published `stop.first_honoured_epoch` of this same file,
+    else the stop file's mtime -- the louder direction -- and is rewritten with that. Only an
+    absent sidecar, or one naming another file, is a fresh honour at `now`."""
     side = p.with_name(f"{p.name}.honoured.json")
-    ident = int(getattr(st, "st_ino", 0) or 0) if st is not None else 0
-    with contextlib.suppress(OSError, ValueError, TypeError, AttributeError):
+    ino, born = _stop_ident(st)
+    torn = False
+    try:
         doc = json.loads(side.read_text("utf-8"))
         first = float(doc["first_honoured_epoch"])
-        if math.isfinite(first) and (not ident or not doc.get("ino") or int(doc["ino"]) == ident):
+        if not math.isfinite(first):
+            raise ValueError(first)
+    except FileNotFoundError:
+        pass
+    except (OSError, ValueError, TypeError, KeyError, AttributeError):
+        torn = True
+    else:
+        if _same_stop(doc, ino, born):
             return first, False
-    try:
-        side.write_text(json.dumps({"first_honoured_epoch": now, "ino": ident,
-                                    "first_honoured_utc": datetime.fromtimestamp(now, UTC)
-                                    .isoformat(timespec="seconds")}), encoding="utf-8")
-        return now, True
-    except OSError:
-        prev = (_read_state().get("stop") or {}) if p == RESIDENT_STOP else {}
-        with contextlib.suppress(TypeError, ValueError):
-            first = float(prev.get("first_honoured_epoch"))  # type: ignore[union-attr,arg-type]
-            if math.isfinite(first):
-                return first, False
-        return now, True
+    first, fresh = now, True
+    if torn:
+        recovered = _published_first(p, ino, born)
+        if recovered is None and st is not None and math.isfinite(st.st_mtime):
+            recovered = min(float(st.st_mtime), now)
+        if recovered is not None:
+            first, fresh = recovered, False
+    ok = _write_sidecar(side, {"first_honoured_epoch": first, "ino": ino, "born": born,
+                               "first_honoured_utc": datetime.fromtimestamp(first, UTC)
+                               .isoformat(timespec="seconds")})
+    if not ok and fresh:  # unwritable sidecar: the last published stamp of this file, if any
+        recovered = _published_first(p, ino, born)
+        if recovered is not None:
+            return recovered, False
+    return first, fresh
+
+
+def _published_first(p: Path, ino: int, born: float) -> float | None:
+    """The last published `stop.first_honoured_epoch` in JUDGE_RESIDENT.json, when it names
+    this same stop file; None otherwise. Only the production stop file has a published record."""
+    prev = (_read_state().get("stop") or {}) if p == RESIDENT_STOP else {}
+    if not isinstance(prev, dict) or not _same_stop(prev, ino, born):
+        return None
+    with contextlib.suppress(TypeError, ValueError):
+        v = float(prev.get("first_honoured_epoch"))  # type: ignore[arg-type]
+        return v if math.isfinite(v) else None
+    return None
 
 
 def resident_stop(now: float | None = None, path: Path | None = None) -> dict[str, Any]:
@@ -2656,9 +2748,10 @@ def resident_stop(now: float | None = None, path: Path | None = None) -> dict[st
     until = _stop_until(text)
     first, fresh = _first_honoured(p, st, t)
     age = max(0.0, t - first)
+    ino, born = _stop_ident(st)
     doc: dict[str, Any] = {
         "stopped": True, "basis": "until" if until is not None else "hold",
-        "first_honoured_epoch": round(first, 3),
+        "first_honoured_epoch": round(first, 3), "ino": ino, "born": born,
         "first_honoured_utc": datetime.fromtimestamp(first, UTC).isoformat(timespec="seconds"),
         "stop_age_s": round(age, 1), "text": text.strip()[:80]}
     if unreadable:
