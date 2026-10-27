@@ -93,14 +93,14 @@ def test_run_gauntlet_result_carries_independence_and_the_trial_ledger(monkeypat
     tl = result["trial_ledger"]
     assert tl["status"] in ("MEASURED", "UNMEASURED")
     assert "cot_positioning" in tl["family_trials"]
-    assert "UNION sets" in tl["note"]
-    # The lifetime union is the charge: never below the campaign charge, and an unmeasured
-    # ledger leaves the charge unknown, which fails the deflated-Sharpe gate closed.
+    assert "REPORTED ONLY" in tl["note"]
+    # The ledger is a report (2026-10-07): whatever it holds, measured or not, the deflated-Sharpe
+    # gate charges the fixed per-cell bar and never fails for want of a ledger.
+    from research.gate_policy import DSR_FIXED_TRIALS
     ds = result["verdicts"][0]["stages"]["deflated_sharpe"]
-    if tl["status"] == "MEASURED" and tl.get("lifetime_trials"):
-        assert ds["n_trials"] >= result["n_trials"]
-    else:
-        assert ds["n_trials"] is None and ds["passed"] is False
+    assert ds["n_trials"] == DSR_FIXED_TRIALS
+    assert ds["variance_basis"] == "per_cell_null_1/(T-1)"
+    assert "lifetime_basis" not in ds
 
 
 def test_run_gauntlet_lockbox_fails_closed_when_the_calendar_cannot_reserve_it(

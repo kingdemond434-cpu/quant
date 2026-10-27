@@ -59,6 +59,7 @@ from gate_policy import (
     WF_MIN_STABILITY,
     WF_SPLITS,
     charged_trial_count,
+    dsr_hurdle_inputs,
 )
 from mt5desk import families  # noqa: E402
 from mt5desk.canonical import calibrated_census_report  # noqa: E402
@@ -210,12 +211,19 @@ def worker_eval(row: dict, pbo_val: float, spa_p: float, n_trials: int,
     stages["economic_prior"] = {"passed": True,
                                 "message": "mechanism documented at hunt registration"}
     stages["in_sample_screen"] = {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)}
-    from libs.research.trial_count_guard import bar_n  # fixed N; n_trials is reported
-    dsr = deflated_sharpe_ratio(arr, n_trials=min(n_trials, bar_n(n_trials)),
-                                variance_of_sharpes=float(sharpes.var(ddof=1)),
+    # THE T8 BAR (principal, 2026-10-13): the same fixed per-cell hurdle as the sealed judge and
+    # universal_gate -- N=5 and the cell's own null variance 1/(T-1). `n_trials` (the campaign
+    # charge) and the batch's sweep variance are REPORTED and never enter the verdict.
+    _n_cell, _cell_var, _n_basis = dsr_hurdle_inputs(len(arr))
+    dsr = deflated_sharpe_ratio(arr, n_trials=_n_cell,
+                                variance_of_sharpes=_cell_var,
                                 threshold=DSR_THRESHOLD)
     stages["deflated_sharpe"] = {"passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),
-                                 "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials}
+                                 "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": _n_cell,
+                                 "trial_basis": _n_basis,
+                                 "campaign_trials_reported": n_trials,
+                                 "sweep_variance_reported": round(float(sharpes.var(ddof=1)), 6)
+                                 if len(sharpes) > 1 else None}
     stages["pbo"] = {"passed": bool(pbo_val <= PBO_THRESHOLD), "pbo": round(float(pbo_val), 4)}
     stages["reality_check_spa"] = {"passed": bool(spa_p < SPA_ALPHA),
                                    "p_value": round(float(spa_p), 4)}

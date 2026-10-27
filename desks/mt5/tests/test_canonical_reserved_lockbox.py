@@ -149,25 +149,26 @@ def test_no_lane_restates_walk_forward_as_the_lockbox(path: str) -> None:
     assert 'stages["lockbox"] = {"passed": bool(wf_oos' not in src
 
 
-# ------------------------------------------------------------------ 6. lifetime multiplicity
+# ------------------------------------------------------------------ 6. no trial inflation
+# Until 2026-10-07 these pinned max(campaign, family lifetime, lifetime UNION) from
+# EXPERIMENT_LEDGER, failing closed without it. The principal ruled that out ("no extra penalty
+# trials inflated charges anything ever"), so they now pin the fixed per-cell bar.
 
-def test_the_lifetime_union_sets_the_charge_and_never_lowers_it(eg) -> None:
-    led = {"status": "MEASURED", "lifetime_trials": 50_000,
-           "family_trials": {"carry": 40_000, "tiny": 3}}
-    n, why = eg.charged_lifetime_trials(109, "carry", led, 10)
-    assert n == 50_000 and "union" in why, "a family is charged the whole union, not its slice"
-    assert eg.charged_lifetime_trials(109, "tiny", led, 10)[0] == 50_000
-    assert eg.charged_lifetime_trials(109, "new", led, 10)[0] == 50_000
-    small = {"status": "MEASURED", "lifetime_trials": 20, "family_trials": {}}
-    assert eg.charged_lifetime_trials(109, "new", small, 10)[0] == 109, "never below campaign"
-
-
-def test_an_unreadable_ledger_fails_the_charge_closed(eg) -> None:
-    n, why = eg.charged_lifetime_trials(109, "carry", {"status": "UNMEASURED"}, 1000)
-    assert n is None and "UNMEASURED" in why
-    n, _ = eg.charged_lifetime_trials(109, "carry", {"status": "MEASURED", "family_trials": {}}, 3)
-    assert n is None, "a ledger without a union count is not a measurement"
+def test_no_lifetime_union_or_family_count_sets_the_charge(eg) -> None:
+    assert not hasattr(eg, "charged_lifetime_trials"), "the lifetime charge is gone"
+    n, var, why = gp.dsr_hurdle_inputs(319)
+    assert n == gp.DSR_FIXED_TRIALS == 5 and var == pytest.approx(1 / 318)
+    assert "fixed_per_cell_bar" in why and "union" not in why and "lifetime" not in why
 
 
-def test_the_attestation_names_the_lifetime_floor() -> None:
-    assert "lifetime" in gp.ATTESTATION["lifetime_trial_floor"]
+def test_an_unreadable_ledger_fails_nothing(eg, monkeypatch, tmp_path) -> None:
+    from libs.research import experiment_ledger as el
+    monkeypatch.setattr(el, "OUT", tmp_path / "absent.json")
+    assert eg.lifetime_trial_report(["carry"])["status"] == "UNMEASURED"
+    assert gp.dsr_hurdle_inputs(1000)[0] == gp.DSR_FIXED_TRIALS, "the charge does not move"
+
+
+def test_the_attestation_says_no_trial_charge() -> None:
+    floor = gp.ATTESTATION["lifetime_trial_floor"]
+    assert floor.startswith("none:") and "fixed per-cell bar" in floor
+    assert "no trial count from any ledger, docket or census" in floor

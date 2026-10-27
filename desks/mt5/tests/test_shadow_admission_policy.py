@@ -52,7 +52,10 @@ def test_original_thresholds_are_one_fixed_policy() -> None:
     # harsher. The attestation must say so, because it is the field that pins what a certificate
     # was judged under.
     assert isinstance(_CHARGE, int) and 2 <= _CHARGE <= _LEGACY_CHARGE
-    assert f"campaign_trials({_CHARGE})" in ATTESTATION["trial_count_basis"]
+    # Since 2026-10-07 the attested DSR basis is the fixed per-cell bar, not the campaign count
+    # (which stays fixed at _CHARGE and is reported).
+    assert "fixed_per_cell_bar(N=5)" in ATTESTATION["trial_count_basis"]
+    assert "no trial charge from any ledger, docket or census" in ATTESTATION["trial_count_basis"]
 
 
 def test_charge_is_fixed_and_never_scales_with_sweep_size() -> None:

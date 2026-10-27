@@ -77,9 +77,8 @@ ALLOCATOR_PROOF_SEAL_ROTATION = {
 GAUNTLET_SEAL_ROTATION = {
     "path": "desks/mt5/scripts/external_gauntlet.py",
     "from": "d0919bfc921dac2c1bab40b821429d34e7fab056af4a66f02840da4877d1bc01",
-    "to": "f56bc72fc5532a67924ac0a26eaff0e392702549c1b2c5a4d4ef75e72aec96de",
-    "signed_by": ("Codex under principal instruction: maximise and repair build bottleneck "
-                  "canonically; policy and record seals preserved"),
+    "to": "242c04afbc0357a5d7a96d7b6a88864df33c0627835697e05880ae444d6d2366",
+    "signed_by": "zuck (principal), 2026-10-27: judge image companions v1.1, target 242c04af",
 }
 
 

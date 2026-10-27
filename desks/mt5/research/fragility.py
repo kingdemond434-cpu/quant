@@ -31,6 +31,7 @@ REPORTS = BASE / "reports"
 sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "research"))
 
+from gate_policy import DSR_FIXED_TRIALS, dsr_hurdle_inputs, fixed_bar_deflation  # noqa: E402
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 
@@ -72,25 +73,24 @@ def phi(x: float) -> float:
     return float(0.5 * (1.0 + erf(x / np.sqrt(2.0))))
 
 
+def fixed_sr0(n_obs: int) -> float:
+    """THE T8 BAR (principal, 2026-10-13): sr0 at the FIXED N=5 and the cell's own null variance
+    1/(T-1), from `gate_policy.dsr_hurdle_inputs` -- the hurdle the sealed judge applies. It never
+    reads the hunt's cell count or its sweep variance, so it cannot rise with the size of a sweep.
+    The E[max] factor is gate_policy's ONE deflation (`fixed_bar_deflation`), not a local copy.
+    """
+    _n_trials, var, _ = dsr_hurdle_inputs(n_obs)
+    return float(np.sqrt(var) * fixed_bar_deflation())
+
+
 def dsr_for_hunt(hunt: str) -> dict:
+    """REPORT ONLY: the hunt's cell count is published, never charged (see `fixed_sr0`)."""
     data = json.loads((REPORTS / hunt).read_text("utf-8"))
     cells = data.get("all", [])
-    srs = []
-    n_cells = 0
-    for c in cells:
-        n = c.get("n", 0)
-        t = c.get("t", 0.0)
-        if n and t == t:
-            srs.append(t / np.sqrt(n))
-            n_cells += 1
-    if len(srs) < 30:
-        return {"n_trials": n_cells, "sr0": None}
-    v = float(np.var(srs))
-    if v <= 0:
-        return {"n_trials": n_cells, "sr0": 0.0}
-    sr0 = np.sqrt(v) * ((1 - GAMMA) * phi_inv(1 - 1.0 / n_cells)
-                        + GAMMA * phi_inv(1 - 1.0 / (n_cells * EULER_E)))
-    return {"n_trials": n_cells, "sr0": float(sr0)}
+    n_cells = sum(1 for c in cells if c.get("n", 0) and c.get("t", 0.0) == c.get("t", 0.0))
+    return {"n_trials": DSR_FIXED_TRIALS, "null_variance": "1/(T-1)",
+            "n_cells_reported": n_cells,
+            "basis": f"fixed_per_cell_bar(N={DSR_FIXED_TRIALS}, null_variance=1/(T-1))"}
 
 
 def main() -> int:
@@ -164,10 +164,9 @@ def main() -> int:
     print(f"auditing {len(rows)} survivors (DSR + fragility + correlation)...", flush=True)
     for r in rows:
         hunt = r["hunt"]
-        d = dsr12 if hunt == "hunt12.json" else dsr16
         n = r["n"]
         sr = r["t"] / np.sqrt(n) if n else 0.0
-        dsr = phi((sr - d["sr0"]) * np.sqrt(n - 1)) if d.get("sr0") is not None and n > 1 else None
+        dsr = phi((sr - fixed_sr0(n)) * np.sqrt(n - 1)) if n > 1 else None
         s = daily_r(r["sym"], hunt, r)
         mk = market_daily(r["sym"])
         joint = pd.concat([s.rename("s"), mk.rename("m")], axis=1, join="inner").dropna()

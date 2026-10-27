@@ -112,12 +112,29 @@ def test_the_main_guard_exists_so_spawned_workers_do_not_re_run_the_sweep() -> N
 
 def test_the_worker_is_the_fresh_path_extracted_and_nothing_else() -> None:
     w = _fn_source("_warm_one")
-    for step in ("_bars_for(sym, tf)", "_cache_key(sym, family, params, str(last_day.date()), tf)",
+    # The day comes from the SAME reader the build loop keys a cell with (`_cell_last_day`), so
+    # the pool's key and the loop's key cannot be derived two ways (2026-10-20, sweep 23324).
+    for step in ("_cell_last_day(sym, tf)",
+                 "_cache_key(sym, family, params, str(last_day.date()), tf)",
                  "build_cell(sym, family, params, meta)",
                  "daily_series(obj[\"df\"], obj[\"sigs\"], obj[\"costs\"])",
-                 "costs_for(sym, meta, mult=COST_SCENARIO)", "cache_save(ckey, ds1, ds3)"):
+                 "_stress_costs(obj[\"costs\"], sym, meta.get(sym, {}), COST_SCENARIO)",
+                 "cache_save(ckey, ds1, ds3)"):
         assert step in w, step
     assert "run_gauntlet(" not in w               # no verdict logic crosses into the worker
+    assert "_cell_last_day(spec[\"sym\"], spec_tf)" in _fn_source("_build_specs")
+
+
+def test_the_worker_prices_the_3x_arm_with_the_fresh_path_s_own_function() -> None:
+    """A cached series and a fresh one must be judged on the SAME costs. Since hour-of-entry
+    costs both 3x arms read the entry-hour table through `_stress_costs`; a worker left on the
+    pooled `costs_for(..., mult=COST_SCENARIO)` would cache a 3x arm the fresh path never
+    charges."""
+    w, fresh = _fn_source("_warm_one"), _fn_source("_cell_series")
+    assert "_stress_costs(obj[\"costs\"], sym, meta.get(sym, {}), COST_SCENARIO)" in w
+    assert "_stress_costs(c[\"costs\"], c[\"sym\"], meta.get(c[\"sym\"], {})," in fresh
+    for src in (w, fresh):
+        assert "mult=COST_SCENARIO" not in src
 
 
 def test_a_cell_whose_3x_arm_fails_is_not_half_cached() -> None:

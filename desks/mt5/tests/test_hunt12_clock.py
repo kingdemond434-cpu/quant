@@ -99,9 +99,11 @@ def test_e_max_is_sized_to_the_routed_grid_and_the_move_is_small():
 
 
 def test_the_gate_itself_is_untouched():
-    """Cheaper multiplicity is not a lower bar. `defl > 2` and every other threshold stand."""
+    """Cheaper multiplicity is not a lower bar. Every other threshold stands; the t screen is the
+    Tier-S bar (T8, principal 2026-10-13): `defl > BAR_MARGIN` after the fixed N=5 deflation is
+    t > 2.837, the judge's own bar -- it replaced `defl > 2`, which was t > 3.163."""
     src = (_DESK / "research" / "run_hunt12.py").read_text("utf-8")
-    assert "defl > 2" in src
+    assert "defl > BAR_MARGIN" in src and "defl > 2 " not in src
     assert 'r["profit_factor"] > 1.05' in src
     assert 'r["max_dd_r"] > -30' in src
     assert 'r2["t_stat"] > 1.5' in src

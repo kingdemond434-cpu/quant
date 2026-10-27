@@ -68,10 +68,13 @@ def test_too_few_held_out_rows_still_fail_closed() -> None:
     assert out["passed"] is False and out["lockbox_sharpe"] is None
 
 
-def test_the_attested_basis_names_the_spec_variance() -> None:
+def test_the_attested_basis_names_the_fixed_per_cell_bar() -> None:
+    # Since 2026-10-07 the certifier's hurdle is the per-cell null 1/(T-1) at fixed N, and the
+    # attestation says so; the spec variance is still declared (reported, read by screens).
     v = gp.FIXED_VARIANCE_OF_SHARPES
     assert isinstance(v, float) and 0 < v < 0.014863
-    assert f"fixed_variance_of_sharpes({v:g})" in gp.TRIAL_COUNT_BASIS
+    assert f"fixed_per_cell_bar(N={gp.DSR_FIXED_TRIALS})" in gp.TRIAL_COUNT_BASIS
+    assert "1/(T-1)" in gp.TRIAL_COUNT_BASIS and "no trial charge" in gp.TRIAL_COUNT_BASIS
     assert "(v4)" in gp.ATTESTATION["lockbox_basis"]
 
 

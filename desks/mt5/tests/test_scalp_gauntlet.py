@@ -42,7 +42,13 @@ import shadow_admission as sa  # noqa: E402
 from desks.mt5.research import scalp_family_expansion as fam  # noqa: E402
 from desks.mt5.research import scalp_reverse_engineering as core  # noqa: E402
 from desks.mt5.research import scalp_shadow  # noqa: E402
-from gate_policy import ATTESTATION, GATES, all_ten_pass, charged_trial_count  # noqa: E402
+from gate_policy import (  # noqa: E402
+    ATTESTATION,
+    DSR_FIXED_TRIALS,
+    GATES,
+    all_ten_pass,
+    charged_trial_count,
+)
 from mt5desk import scalp_exec as sx  # noqa: E402
 from mt5desk import scalp_families as sf  # noqa: E402
 from mt5desk.engine import Costs, Signal, run_backtest  # noqa: E402
@@ -276,11 +282,11 @@ def test_the_real_ten_gates_judge_scalp_cells(desk, monkeypatch) -> None:
         assert all(gate in v["stages"] for gate in GATES) and v["days"] >= 60
         assert set(v["stages"]) - set(GATES) == {"swap_cost"}
         assert v["stages"]["economic_prior"]["passed"] is True
-        # The cell is charged the lifetime UNION, never below the campaign count; with no
-        # readable experiment ledger the charge is unknown and the gate fails closed.
+        # The cell is charged the FIXED per-cell bar (2026-10-07): the spec constant N at its
+        # own null variance 1/(T-1), never a lifetime or union count, and no ledger is needed.
         ds = v["stages"]["deflated_sharpe"]
-        assert (ds["n_trials"] is None and ds["passed"] is False) or (
-            ds["n_trials"] >= report["gauntlet"]["n_trials"])
+        assert ds["n_trials"] == DSR_FIXED_TRIALS
+        assert ds["variance_basis"] == "per_cell_null_1/(T-1)"
     expected, basis = charged_trial_count(2, None, None)
     assert report["multiplicity"]["charged_n_trials"] == expected
     assert report["multiplicity"]["charged_basis"] == basis

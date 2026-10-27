@@ -56,6 +56,7 @@ from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  #
 
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from gate_policy import dsr_hurdle_inputs  # noqa: E402
 
 #: Fusion Zero's published contract, USD per lot PER SIDE ($4.50 round turn). Mirrors
 #: `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 3.50 this replaced was a
@@ -161,10 +162,16 @@ def _ug_verdict(args) -> dict:
         "economic_prior": {"passed": True, "message": "mechanism documented at hunt registration"},
         "in_sample_screen": {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)},
     }
-    dsr = deflated_sharpe_ratio(arr, n_trials=n_trials,
-                                variance_of_sharpes=float(sh_var), threshold=DSR_THRESHOLD)
+    # THE T8 BAR, the same as universal_gate._ug_verdict (principal, 2026-10-13): N=5 and the
+    # cell's own null variance 1/(T-1). `n_trials`/`sh_var` are REPORTED, never charged.
+    _n_cell, _cell_var, _n_basis = dsr_hurdle_inputs(len(arr))
+    dsr = deflated_sharpe_ratio(arr, n_trials=_n_cell,
+                                variance_of_sharpes=_cell_var, threshold=DSR_THRESHOLD)
     stages["deflated_sharpe"] = {"passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),
-                                 "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials}
+                                 "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": _n_cell,
+                                 "trial_basis": _n_basis,
+                                 "campaign_trials_reported": n_trials,
+                                 "sweep_variance_reported": round(float(sh_var), 6)}
     stages["pbo"] = {"passed": pbo_ok, "pbo": round(float(pbo_val), 4)}
     stages["reality_check_spa"] = {"passed": spa_ok, "p_value": round(float(spa_p), 4)}
     cpcv = CPCV(n_groups=6, n_test_groups=2)

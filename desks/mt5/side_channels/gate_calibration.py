@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from desks.mt5.research.gate_policy import GATES, ATTESTATION, charged_trial_count, all_ten_pass
+from desks.mt5.research.gate_policy import GATES, ATTESTATION, dsr_hurdle_inputs, all_ten_pass
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
 from libs.validation.pbo import probability_backtest_overfitting
 from libs.validation.reality_check import hansen_spa
@@ -122,12 +122,9 @@ def run_gate_evaluation(returns: np.ndarray, config: CalibrationConfig) -> dict:
     in_sample = {"passed": sr > 0, "sharpe": sr}
     
     # 3. deflated_sharpe
-    # Use production trial count logic
-    raw_cells = 1  # Single strategy being tested
-    n_trials, method = charged_trial_count(raw_cells, raw_cells, "fail_closed")
-    
-    # Variance of sharpes under null (single strategy)
-    var_sharpes = 0.0
+    # THE T8 BAR, the production bar (principal, 2026-10-13): N=5 and the null variance 1/(T-1)
+    # from gate_policy.dsr_hurdle_inputs, as universal_gate and external_gauntlet apply it.
+    n_trials, var_sharpes, method = dsr_hurdle_inputs(n)
     dsr_result = deflated_sharpe_ratio(returns, n_trials=n_trials,
                                         variance_of_sharpes=var_sharpes,
                                         threshold=ATTESTATION["dsr_threshold"])

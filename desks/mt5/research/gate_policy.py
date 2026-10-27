@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
+from statistics import NormalDist
 from typing import Any
 
 import yaml
@@ -36,6 +37,17 @@ _SPEC_FIXED_TRIALS = next(
 FIXED_VARIANCE_OF_SHARPES = next(
     (g.get("params", {}).get("fixed_variance_of_sharpes")
      for g in _SPEC.get("gates", []) if g.get("name") == "deflated_sharpe"), None)
+#: THE DEFLATED-SHARPE BAR IS A FIXED PER-CELL BAR (principal, 2026-10-07: "we never charge
+#: trials like that everything is always fixed n no extra penalty trials inflated charges
+#: anything ever all is always set as original"). sr0 = sqrt(1/(T-1)) x E[max of N standard
+#: normals] at this CONSTANT N, T the cell's own length: the per-cell null variance of a Sharpe
+#: (Mertens at SR=0) and, after PSR >= 0.95, a per-cell t of about 2.8. N is policy, read from the
+#: spec and never derived from a docket, census or ledger. Measured 2026-10-07 on the sealed
+#: 2,100-case suite: 52/600 planted edges, 0/1,500 traps -- the same verdicts the lifetime-union
+#: charge at variance 0.0002 gave on the box (dsr/T8_NO_INFLATION_2026-10-07.md).
+DSR_FIXED_TRIALS = int(next(
+    g.get("params", {})["fixed_dsr_trials"]
+    for g in _SPEC.get("gates", []) if g.get("name") == "deflated_sharpe"))
 DONE_MARKER = "DONE_qquant_gates_original10_v2"
 GATES = tuple(g["name"] for g in _SPEC["gates"])
 
@@ -111,8 +123,11 @@ ATTESTATION = {
     "lockbox_oos_sharpe_min": 0.0,
     "lockbox_basis": ("reserved_final_calendar_fraction_carved_before_program_matrix; held, recent-tail "
                       "and half-split reads all clear the cell's deflated hurdle sr0 (v4)"),
-    "lifetime_trial_floor": ("max(campaign charge, lifetime UNION trials, per-family lifetime "
-                             "trials) from EXPERIMENT_LEDGER; unmeasured fails DSR closed"),
+    "lifetime_trial_floor": ("none: the deflated-Sharpe hurdle is the fixed per-cell bar "
+                             f"(null variance 1/(T-1) at fixed N={DSR_FIXED_TRIALS}); no trial "
+                             "count from any "
+                             "ledger, docket or census enters it, and a missing ledger fails "
+                             "nothing"),
     "expected_value_min_exclusive": 0.0,
 }
 
@@ -299,6 +314,50 @@ def charged_trial_count(raw_cells: int, effective_cells: Any,
     # No fixed count in the spec: fail closed to the old raw burden rather than guess.
     return (max(2, math.ceil(max(0, raw_cells) * TRIALS_MULTIPLIER)),
             "raw_cells_x_campaign_multiplier_fail_closed")
+
+
+def dsr_hurdle_inputs(n_obs: int) -> tuple[int, float, str]:
+    """(n_trials, variance_of_sharpes, basis) for one cell's deflated-Sharpe hurdle.
+
+    THE FIXED PER-CELL BAR: `DSR_FIXED_TRIALS` (a spec constant) and the cell's own null variance
+    1/(T-1). Nothing else is an input -- not the docket, not the census, not EXPERIMENT_LEDGER --
+    so the bar cannot move with how many cells share a sweep or how many the desk has ever run,
+    and no host fails it for lacking a ledger.
+    """
+    t = max(int(n_obs), 2)
+    return (DSR_FIXED_TRIALS, 1.0 / (t - 1),
+            f"fixed_per_cell_bar(N={DSR_FIXED_TRIALS}, null_variance=1/(T-1), T={int(n_obs)})")
+
+
+def fixed_bar_deflation() -> float:
+    """THE ONE DEFLATION (T8, principal 2026-10-13), in t units: E[max of `DSR_FIXED_TRIALS`
+    standard normals] by the Bailey & Lopez de Prado approximation the judge applies --
+    `libs.validation.dsr.expected_max_sharpe(N, v)` is exactly sqrt(v) x this, so the judge's sr0
+    under `dsr_hurdle_inputs` is sqrt(1/(T-1)) x this. 1.193 at N=5.
+
+    Every screen that deflates a t (run_hunt12's battery, research/multiplicity.annotate_report,
+    fragility's sr0) takes it from HERE, so there is one number, not three (it was 1.163 exact,
+    1.193 Bailey and 0.956 asymptotic). It takes no argument on purpose: no caller can hand it a
+    sweep, family or ledger count.
+    """
+    n = DSR_FIXED_TRIALS
+    if n < 2:
+        return 0.0
+    nd = NormalDist()
+    gamma = 0.5772156649015329  # Euler-Mascheroni, as in libs.validation.dsr
+    return float((1.0 - gamma) * nd.inv_cdf(1.0 - 1.0 / n)
+                 + gamma * nd.inv_cdf(1.0 - 1.0 / (n * math.e)))
+
+
+def fixed_bar_margin() -> float:
+    """z at `DSR_THRESHOLD` (1.645 at 0.95): how far past the deflation a t must clear."""
+    return float(NormalDist().inv_cdf(DSR_THRESHOLD))
+
+
+def fixed_bar_t() -> float:
+    """THE TIER-S BAR in t units: `fixed_bar_deflation() + fixed_bar_margin()` = 2.837 at N=5,
+    DSR 0.95 (normal returns; the judge's PSR also adjusts for skew and kurtosis)."""
+    return fixed_bar_deflation() + fixed_bar_margin()
 
 
 def fail_closed_trial_count(raw_cells: int) -> int:

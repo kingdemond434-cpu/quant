@@ -1776,7 +1776,10 @@ def sealed_replay_identity(root: Path | None = None) -> str | None:
     base = root or BASE.parent.parent
     desk = base / "desks" / "mt5"
     paths = [desk / "scripts" / "external_gauntlet.py",
-             desk / "research" / "orthogonal_sweep.py"]
+             desk / "research" / "orthogonal_sweep.py",
+             # The signed image (hour-of-entry, stack step 05) adds the cost a cached series was
+             # charged to the judge's identity; restated with it (rides with the re-sign).
+             desk / "research" / "entry_hour_cost.py", desk / "data" / "cost_surface.json"]
     paths.extend(desk / "mt5desk" / name for name in
                  ("engine.py", "cell_modifiers.py", "data.py", "legacy_family_inputs.py"))
     paths.extend((desk / "mt5desk").glob("famil*.py"))

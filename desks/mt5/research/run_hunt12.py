@@ -8,7 +8,8 @@ state across every symbol x session window in the universe.
 For each symbol: classify each trading day by its prior NY session (13-22
 UTC; for the JPY/Asia complex NY is the global stress window anyway) and
 evaluate each session-window breakout family conditioned on the state.
-Battery: n>60, deflated t>2 (family E[max]~1.5), PF>1.05, maxDD>-30R,
+Battery: n>60, t > the Tier-S bar 2.837 (deflated t > 1.645 after gate_policy's fixed N=5
+deflation 1.193; was deflated t>2 at family E[max]~1.5), PF>1.05, maxDD>-30R,
 3-fold WF all>0, 2x stress.
 
 THIS SWEEP IS AN INPUT TO THE MONEY PATH, WHICH IS NOT OBVIOUS FROM HERE. Its artifact
@@ -68,9 +69,10 @@ from mt5desk.engine import Costs, run_backtest  # noqa: E402
 # the script has been dead at line 174 -- a NameError two statements into main(),
 # AFTER the module imports cleanly. A collection gate cannot see that and neither
 # can a smoke import; only running it does.
-from mt5desk.multiplicity import deflation, sweep_size  # noqa: E402
+from mt5desk.multiplicity import sweep_size  # noqa: E402
 
 from research import universe_policy  # noqa: E402
+from research.gate_policy import fixed_bar_deflation, fixed_bar_margin, fixed_bar_t  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
@@ -82,7 +84,12 @@ UNI = BASE / "data" / "universe"
 #
 # Left as a module-level default ONLY so importers that call battery() directly keep working;
 # main() overrides it with the real grid size before sweeping. See mt5desk.multiplicity.
-E_MAX = 1.5
+# SINCE THE T8 RULING (principal, 2026-10-13) BOTH ARE THE FIXED BAR: E[max t] at N=5 (gate_policy
+# `DSR_FIXED_TRIALS`), the per-cell null in t units -- it never rises with the grid size. It is
+# gate_policy's ONE deflation (the judge's Bailey form, 1.193), and the battery's margin is the
+# judge's z at DSR 0.95 (1.645), so the screen is t > 2.837 -- the Tier-S bar, not t > E_MAX + 2.
+E_MAX = fixed_bar_deflation()
+BAR_MARGIN = fixed_bar_margin()
 WINDOWS = {
     "asia": dict(range_start=7, wait_bars=12, rr=2.0, ttl_bars=12),
     "london_am": dict(range_start=10, range_end=13, signal_at=13, wait_bars=8, rr=2.0, ttl_bars=12),
@@ -284,7 +291,7 @@ def battery(h1: pd.DataFrame, sigs: list, costs: Costs) -> dict:
     r2 = run_backtest(h1, sigs, costs.stressed(2.0)).stats()
     wf = wf_oos(h1, sigs, costs)
     defl = r["t_stat"] - E_MAX
-    gate = (r["n"] > 60 and defl > 2 and r["profit_factor"] > 1.05
+    gate = (r["n"] > 60 and defl > BAR_MARGIN and r["profit_factor"] > 1.05
             and r["max_dd_r"] > -30
             and len(wf) == 3 and all(w == w and w > 0 for w in wf)
             and r2["expectancy_r"] > 0 and r2["t_stat"] > 1.5)
@@ -336,7 +343,9 @@ def _run(argv: list[str] | None = None) -> int:
     # what passed is how a multiplicity correction gets quietly disarmed. It is the ROUTED
     # universe because the event-lane symbols are not looked at: charging FX and metals for
     # columns nobody tests is the same error in the other direction.
-    E_MAX = deflation(sweep_size(len(routed), len(WINDOWS), len(STATES)))
+    # T8 (2026-10-13): the bar is FIXED at N=5; the grid size is reported (`sweep_cells`), never
+    # charged.
+    E_MAX = fixed_bar_deflation()
 
     partial = BASE / Path(*PARTIAL_REL.split("/"))
     partial.parent.mkdir(parents=True, exist_ok=True)
@@ -358,7 +367,7 @@ def _run(argv: list[str] | None = None) -> int:
             "routed": routed, "n_routed": len(routed),
             "set_aside": {k: v for k, v in split.items()
                           if k != universe_policy.HYPOTHESIS},
-            "e_max": float(E_MAX),
+            "e_max": float(E_MAX), "bar_t": float(fixed_bar_t()),
             "sweep_cells": int(sweep_size(len(routed), len(WINDOWS), len(STATES))),
             "policy": "desks/mt5/research/universe_policy.py",
             "started_at": started_at, "at": datetime.now(UTC).isoformat(),

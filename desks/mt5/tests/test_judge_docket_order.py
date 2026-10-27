@@ -36,7 +36,10 @@ def test_the_sealed_sort_key_is_still_the_text_this_module_restates() -> None:
 
 
 def test_the_sealed_steps_still_run_in_the_order_restated() -> None:
-    main_src = inspect.getsource(G.main)
+    # `main` IS SPLIT INTO ITS PHASES by the plan-resume patch (B2), its bodies moved verbatim:
+    # the steps are read across main, then the plan phase, then the judge phase, in that order.
+    main_src = "\n".join(inspect.getsource(getattr(G, f)) for f in
+                        ("main", "_plan_phase", "_judge_phase") if hasattr(G, f))
     marks = ["partition_at_economic_prior(list(cells.values()), meta)",
              "modifier_preflight(_spec)",
              "family_banned(sp.get(\"family\"))",
@@ -44,6 +47,11 @@ def test_the_sealed_steps_still_run_in_the_order_restated() -> None:
              "_ng.screen(_cands)",
              "allocate_by_yield(eligible_specs)",
              "_prewarm_cache(eligible_specs, meta"]
+    # The build preflight moved into `_preflight_split` (B2: the plan and a re-planned cell share
+    # one rule); its call site is the step, and the helper must still be the same preflight.
+    if hasattr(G, "_preflight_split") and "modifier_preflight(_spec)" not in main_src:
+        assert "_why = modifier_preflight(_spec)" in inspect.getsource(G._preflight_split)
+        marks[1] = "_preflight_split("
     at = [main_src.find(m) for m in marks]
     assert all(a >= 0 for a in at), dict(zip(marks, at, strict=True))
     assert at == sorted(at), "the sealed docket steps were reordered"

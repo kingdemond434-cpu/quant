@@ -1,12 +1,12 @@
 {
- "signed_utc": "2026-10-13T16:50:25.269944+00:00",
- "signed_by": "principal",
+ "signed_utc": "2026-10-27T18:18:28.397684+00:00",
+ "signed_by": "zuck (principal), 2026-10-27: judge image companions v1.1, target 242c04af",
  "files": {
-  "desks/mt5/scripts/external_gauntlet.py": "f56bc72fc5532a67",
-  "desks/mt5/research/universal_gate.py": "2923194e016d27ee",
-  "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
-  "desks/mt5/research/gate_policy.py": "a01bf170b1b214ec",
-  "desks/mt5/policy/gate_spec.yaml": "cd7e57ea9c3d9182",
+  "desks/mt5/scripts/external_gauntlet.py": "242c04afbc0357a5",
+  "desks/mt5/research/universal_gate.py": "0e03b4c73e609721",
+  "desks/mt5/research/multiplicity.py": "fa7f963aa8dc58e3",
+  "desks/mt5/research/gate_policy.py": "845a7f23155d10b0",
+  "desks/mt5/policy/gate_spec.yaml": "a11ca0cbf0501296",
   "desks/mt5/research/heat_policy.py": "b31c396980f9971e",
   "desks/mt5/research/promoter.py": "bb9c0e744bad615f",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "0ce1dd51f98b6c23",
@@ -2473,10 +2473,6 @@
  "records_sealed_by": "tier1 W19 builder",
  "record_rule": "the ledgers, the live fills, the cost surface and the lineage chain are RECORDS: the sealed prefix may never change, only grow, and a measured cost surface may be rebuilt, never back-dated",
  "rotation_signers": {
-  "desks/mt5/research/universal_gate.py": "Codex, principal-authorized repair",
-  "desks/mt5/research/multiplicity.py": "Codex, principal-authorized repair",
-  "desks/mt5/research/gate_policy.py": "Codex, principal-authorized repair",
-  "desks/mt5/policy/gate_spec.yaml": "Codex, principal-authorized repair",
   "desks/mt5/research/heat_policy.py": "Codex, principal-authorized repair",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "Codex, principal-authorized repair",
   "libs/portfolio/rails.py": "Codex, principal-authorized repair",
@@ -2493,6 +2489,6 @@
   "libs/ops/live_ledger_migration.py": "Codex, principal-authorized audited ledger adoption handoff",
   "scripts/migrate_live_ledger_view.py": "Codex, principal-authorized audited ledger adoption handoff",
   "scripts/check_immutable_evaluator.py": "Codex, principal-authorized audited verification fixture declaration",
-  "desks/mt5/scripts/external_gauntlet.py": "Codex under principal instruction: maximise and repair build bottleneck canonically; policy and record seals preserved"
+  "libs/portfolio/allocator_proof.py": "principal"
  }
 }
