@@ -770,12 +770,26 @@ $reportPaths = @(
     # themselves stay off this wire (see Publish-StateOnto's 408 history); this is their meter.
     "desks/mt5/data/BARS_STATE.json",
     "desks/mt5/reports/JUDGING_RATE.json",
+    # the judging_throughput pass that wrote it, or the phase the last pass died in (2026-10-21):
+    # without it a killed pass leaves an old JUDGING_RATE that reads as current
+    "desks/mt5/reports/JUDGING_RATE.attempt.json",
     "desks/mt5/reports/JUDGING_THROUGHPUT.json",
     "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json",
     "desks/mt5/reports/JUDGE_COVERAGE.json",
     # the resident judge's heartbeat (2026-10-13): sweeps, last exit code, backoff, uptime --
     # the only off-box evidence of whether the judge is running between its verdicts
     "desks/mt5/reports/JUDGE_RESIDENT.json",
+    # the judge stall pager's last reading (2026-10-21): open incidents, page outcome, and by its
+    # age whether the pager itself is still running on MT5-BoxHeartbeat
+    "desks/mt5/reports/JUDGE_STALL.json",
+    # the --once sweep's own watchdog (2026-10-20): its heartbeat (phase, shard counts, deadlines,
+    # tree CPU/RSS) and the named stall it acted on -- a hung sweep reads STALLED off the box
+    "desks/mt5/reports/GAUNTLET_HEARTBEAT.json",
+    "desks/mt5/reports/GAUNTLET_STALL.json",
+    # the hourly judge_alive leg's verdict, and the deepening worker's memory guard (deferred
+    # tasks, consecutive tripped passes, and its missed-growth line) -- audit of 2832cebd1
+    "desks/mt5/reports/judge_alive_fence.json",
+    "desks/mt5/reports/DEEPENING_MEMORY_GUARD.json",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json",
     "desks/mt5/reports/BREADTH_MANDATE.json",
     "desks/mt5/reports/TIER1_SCORECARD.json",

@@ -260,6 +260,10 @@ desks/mt5/data/xacct/
 # brokerage login is never tracked (tests/ops/test_live_infrastructure_is_not_published.py); the
 # operator writes this once on the box.
 desks/mt5/data/FUSION_LIVE_ACCOUNT.json
+# judge_cpu_fair_share: per-box caches. The cadence state records what THIS box's scheduler
+# accepted; the core pid file names a process that exists only on the machine that wrote it.
+desks/mt5/data/gauntlet_cadence_state.json
+desks/mt5/data/gauntlet_backpressure_core.json
 
 # CREDENTIALS. Never tracked. secrets/ was NOT ignored until 2026-08-17 -- a FRED API key
 # landed there and `git check-ignore` returned no match, meaning one `git add -A` would have
@@ -473,10 +477,18 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/RESEARCH_BUDGET.json
 !desks/mt5/data/research_budget.json
 !desks/mt5/reports/JUDGING_RATE.json
+!desks/mt5/reports/JUDGING_RATE.attempt.json
 !desks/mt5/reports/JUDGING_THROUGHPUT.json
 !desks/mt5/reports/GAUNTLET_BACKPRESSURE.json
 !desks/mt5/reports/JUDGE_COVERAGE.json
 !desks/mt5/reports/JUDGE_RESIDENT.json
+# the judge stall pager's reading and page outcome (2026-10-21): its age on origin is the
+# off-box evidence that the pager itself is running
+!desks/mt5/reports/JUDGE_STALL.json
+!desks/mt5/reports/GAUNTLET_HEARTBEAT.json
+!desks/mt5/reports/GAUNTLET_STALL.json
+!desks/mt5/reports/judge_alive_fence.json
+!desks/mt5/reports/DEEPENING_MEMORY_GUARD.json
 !desks/mt5/reports/EFFECTIVE_BREADTH.json
 !desks/mt5/reports/BREADTH_MANDATE.json
 !desks/mt5/reports/TIER1_SCORECARD.json
@@ -491,7 +503,23 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/LOGIN_FENCE.json
 # Judge-owned box state, read on the box only (audit of PR #290): never published by a git add sweep.
 desks/mt5/data/hypotheses/unrunnable_specs.json
+desks/mt5/data/hypotheses/unrunnable_specs.json.tmp
 desks/mt5/data/hypotheses/conversion_handoff.json
+# judge_coverage's one-pass transaction (desks/mt5/research/judge_coverage.py, `_Txn`): staged
+# copies of judge-owned state (bank, handoff, priors, report, ratchet), the commit manifests,
+# a set-aside unreadable manifest, and the atomic-write siblings. Transient box state, written
+# beside its target; never published by a `git add -A` sweep (audit of v2.1, MF2).
+*.jc-txn-*
+**/research_priors/.jc-txn-*/
+judge_coverage_txn-*
+desks/mt5/reports/JUDGE_COVERAGE_TIMEOUT.json.tmp
+desks/mt5/data/hypotheses/unrunnable_specs.json.tmp-*
+desks/mt5/data/hypotheses/conversion_handoff.json.tmp-*
+# per-shard verdict publications (sealed judge, IDEA_QUEUE 159): a provisional copy, never state
+desks/mt5/data/hypotheses/shard_verdicts/
+# The sidecar AND its markers (.born, .torn-*, .vanished-*, .tmp, .lock): box-local state; a
+# committed marker reads VANISHED in every other checkout (audit of fcef73b92).
+desks/mt5/data/hypotheses/needs_data_outstanding.json*
 # THE OPEN BOOK, PER POSITION (ops/publish_account_state.py, 2026-10-07). The repository is
 # public: tickets, sizes and stops never reach a tracked file. Last line on purpose, after every
 # negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.
@@ -518,3 +546,6 @@ desks/mt5/data/GOLD_OCO_MODE.json*
 # principal's own box-local files, never committed.
 desks/mt5/data/FTMO_LIVE_ACCOUNT.json*
 desks/mt5/data/FTMO_FOLLOWER_ARMED
+# bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
+desks/mt5/data/bar_clock_probes.jsonl.tmp
+desks/mt5/data/bar_clock_probes.summary.json.tmp
