@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-27T21:30:48.303719+00:00",
+  "swept_at": "2026-10-27T21:46:08.004235+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -339,7 +339,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0207,
+      "shadow_exp_r": -0.0401,
       "woke_on_shadow": false
     },
     "BTCUSD|cross_asset_residual_continuous": {
@@ -1967,7 +1967,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1003,
+      "shadow_exp_r": -0.0932,
       "woke_on_shadow": false
     },
     "GBPDKK|overnight_gap_decay_continuous": {
@@ -2209,7 +2209,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0958,
+      "shadow_exp_r": -0.116,
       "woke_on_shadow": false
     },
     "GBPNOK|carry_continuous": {
@@ -2264,7 +2264,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.7606,
+      "shadow_exp_r": -0.7552,
       "woke_on_shadow": false
     },
     "GBPNOK|overnight_gap_decay_asia": {
@@ -2385,7 +2385,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 35,
-      "shadow_exp_r": -0.2686,
+      "shadow_exp_r": -0.2573,
       "woke_on_shadow": false
     },
     "GBPSEK|formula_asia": {
@@ -4035,7 +4035,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1509,
+      "shadow_exp_r": -0.1399,
       "woke_on_shadow": false
     },
     "USDSGD|overnight_drift_continuous": {
@@ -4057,7 +4057,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 27,
-      "shadow_exp_r": 0.4834,
+      "shadow_exp_r": 0.5213,
       "woke_on_shadow": false
     },
     "USDSGD|overnight_gap_decay_continuous": {
