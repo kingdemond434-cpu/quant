@@ -647,8 +647,14 @@ SCALP_LANE_ZERO: frozenset[str] = frozenset({
 GAP_DECAY_ZERO: frozenset[str] = frozenset({
     "EURZAR_overnight_gap_decay_asia", "USDZAR_overnight_gap_decay_asia",
     "AUDCHF_overnight_gap_decay_asia"})
+#: zuck 2026-10-25 09:42Z (project chat): USDNOK and the other two Fusion FX sleeves out, gold_asia
+#: stays. The box's CERT_BOOK_LIVE.json fusion block pins them at 0.0 (2026-10-27); a void book
+#: would unpin them, so they are here too. Their open positions are left to their own exits.
+FUSION_FX_OUT_ZERO: frozenset[str] = frozenset({
+    "usdnok_carry_asia_p_ff35bb7c8427d66f", "eurils_formula_asia_p_673857a649d3c271",
+    "eurzar_carry_asia_p_8339edce23032d21"})
 PRINCIPAL_ZERO: dict[str, frozenset[str]] = {
-    "fusion": GOLD_ASIA_ONLY_ZERO | SCALP_LANE_ZERO | GAP_DECAY_ZERO,
+    "fusion": GOLD_ASIA_ONLY_ZERO | SCALP_LANE_ZERO | GAP_DECAY_ZERO | FUSION_FX_OUT_ZERO,
     "e8": GOLD_ASIA_ONLY_ZERO,
 }
 
