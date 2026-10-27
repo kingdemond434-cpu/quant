@@ -1487,13 +1487,12 @@ def main(argv: list[str] | None = None) -> int:
     rep["quotes"] = quotes_freshness(snapshot, measured_now,
                                      universe=universe if isinstance(universe, dict) else None)
     if rep["quotes"]["verdict"] != "FRESH":
-        try:
-            from libs.ops.events import emit
-            emit("COST_TRUTH_QUOTES_STALE", leg=SEAT, verdict=rep["quotes"]["verdict"],
-                 quotes_at=rep["quotes"].get("at"), age_s=rep["quotes"].get("age_s"),
-                 terminal_why=snapshot.get("why"))
-        except Exception:
-            pass
+        # Not wrapped (audit of 2f28cf7de, SF3): `emit` already reports its own OSError, and a
+        # stale-quotes event swallowed blind would be the one signal the cost surface is stale.
+        from libs.ops.events import emit
+        emit("COST_TRUTH_QUOTES_STALE", leg=SEAT, verdict=rep["quotes"]["verdict"],
+             quotes_at=rep["quotes"].get("at"), age_s=rep["quotes"].get("age_s"),
+             terminal_why=snapshot.get("why"))
     rep["bars_cap"] = cap
     rep["bars_cap_why"] = cap_why
     rep["elapsed_s"] = round(time.monotonic() - started, 2)
