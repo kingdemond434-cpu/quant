@@ -47,6 +47,38 @@ def test_venue_request_retries_once_then_returns_or_raises() -> None:
     assert len(calls) == 2
 
 
+def test_a_429_backs_off_and_retries_raised_or_returned() -> None:
+    from requests.exceptions import HTTPError
+    naps: list[float] = []
+    calls: list[int] = []
+
+    def resp(code, headers=None):
+        return type("R", (), {"status_code": code, "headers": headers or {}})()
+
+    def raised_twice():
+        calls.append(1)
+        if len(calls) <= 2:
+            raise HTTPError("429", response=resp(429))
+        return "ok"
+    assert _bounded_request(raised_twice, sleep=naps.append) == "ok"
+    assert naps == [2.0, 5.0] and len(calls) == 3
+    naps.clear()
+    calls.clear()
+
+    def returned_once():
+        calls.append(1)
+        return resp(429, {"Retry-After": "30"}) if len(calls) == 1 else resp(200)
+    assert _bounded_request(returned_once, sleep=naps.append).status_code == 200
+    assert naps == [10.0]                                  # the venue's header, capped
+    naps.clear()
+
+    def always():
+        raise HTTPError("429", response=resp(429))
+    with pytest.raises(HTTPError):
+        _bounded_request(always, sleep=naps.append)
+    assert naps == [2.0, 5.0]                              # bounded: 7 s, then one plain retry
+
+
 # ------------------------------------------------------------------------------ the fake venue
 class FakeAPI:
     def __init__(self, instruments=None, quotes=None, state=None, details=None, reject=False):

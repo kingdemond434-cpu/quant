@@ -238,9 +238,13 @@ def test_every_promoted_lot_call_site_passes_the_cert_zero() -> None:
 # ----------------------------------------------------------------------------- E8 gold windows
 
 def _e8(monkeypatch, tmp_path, *, hour: float, kelly: dict | None, cert: object,
-        principal: bool = True):
+        principal: bool = True, venue: object = None, deferred: tuple[str, ...] = ()):
     import test_e8_gold_guard_and_open_risk as h
     h._sandbox(monkeypatch, tmp_path)
+    if deferred:
+        _st = json.loads((tmp_path / "state.json").read_text("utf-8"))
+        (tmp_path / "state.json").write_text(json.dumps({**_st, "deferred": list(deferred)}),
+                                             encoding="utf-8")
     if principal:      # the sandbox lifts the pin for its mechanics tests; these test the pin
         monkeypatch.setitem(dc.PRINCIPAL_ZERO, "e8", dc.GOLD_ASIA_ONLY_ZERO)
     monkeypatch.setattr(dc, "GOLD_SEND_GRACE_MIN", 5.0)      # the sandbox lifts it too
@@ -269,7 +273,7 @@ def _e8(monkeypatch, tmp_path, *, hour: float, kelly: dict | None, cert: object,
                      "low": 4290.0 if t.date() == day.date() else 4280.0, "close": 4300.0}
                     for t in idx]
 
-    doc = h.g.run(h._Venue(), _At(), armed=False)
+    doc = h.g.run(venue if venue is not None else h._Venue(), _At(), armed=False)
     intents = [json.loads(ln) for ln in (tmp_path / "intents.json").read_text().splitlines()
                if ln.strip()] if (tmp_path / "intents.json").exists() else []
     return doc, intents
@@ -1719,3 +1723,45 @@ def test_gold_is_unaffected_by_the_post_multiplier_ceiling(monkeypatch, tmp_path
     assert _placed(doc, intents)["asia"] == {(0.006, "cert_book")}
     gsrc = (_DESK / "prop" / "e8_gold.py").read_text("utf-8")
     assert "size_certified_entry" not in gsrc and "ceiling_usd" not in gsrc
+
+
+# ============================== a 429 at the signal hour costs one pass, never the window (10-27)
+
+def _rate_limited_venue():
+    import test_e8_gold_guard_and_open_risk as h
+    from requests.exceptions import HTTPError
+
+    class _429(h._Venue):
+        def orders(self, symbol=None):
+            raise HTTPError("status 429, error 'Too Many Requests'")
+    return _429()
+
+
+def test_a_venue_error_at_the_signal_hour_is_recorded_as_a_deferral(monkeypatch, tmp_path):
+    doc, _ = _e8(monkeypatch, tmp_path, hour=ASIA_H, kelly=None, cert=VALID,
+                 venue=_rate_limited_venue())
+    assert "asia" not in _placed(doc)
+    assert any("DEFERRED" in str(x) or "unmeasurable" in str(x.get("why"))
+               for x in doc["skipped"] if x.get("window") == "asia")
+    assert json.loads((tmp_path / "state.json").read_text("utf-8"))["deferred"] == ["asia"]
+
+
+@pytest.mark.parametrize("hour,deferred,placed", [
+    (7 + 11 / 60, ("asia",), True),     # the 10-27 case: deferred at :01/:06, decided at :11
+    (7 + 15 / 60, ("asia",), True),     # grace + one E8 pass
+    (7 + 16 / 60, ("asia",), False),    # never more than one extra pass
+    (7 + 11 / 60, (), False)])          # not deferred: the late rule as before
+def test_a_deferred_window_gets_one_more_pass_and_no_more(monkeypatch, tmp_path, hour, deferred,
+                                                          placed) -> None:
+    doc, intents = _e8(monkeypatch, tmp_path, hour=hour, kelly=None, cert=VALID,
+                       deferred=deferred)
+    assert ("asia" in _placed(doc)) is placed
+    assert any(r.get("reason") == "late_send" for r in intents) is (not placed)
+
+
+def test_the_deferral_does_not_outlive_its_server_day() -> None:
+    from prop import e8_gold as g
+    assert "deferred" not in g.rollover_state({"date": "2026-10-26", "deferred": ["asia"],
+                                               "windows": {}}, "2026-10-27")
+    assert g.window_grace("asia", {"deferred": ["asia"]}) == g.e8_grace() + 5.0
+    assert g.window_grace("london_am", {"deferred": ["asia"]}) == g.e8_grace()

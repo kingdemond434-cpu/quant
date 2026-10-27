@@ -231,6 +231,21 @@ def e8_grace() -> float:
     return float(_dc.E8_GOLD_SEND_GRACE_MIN)
 
 
+#: ONE MORE E8 PASS FOR A WINDOW A VENUE ERROR DEFERRED INSIDE ITS GRACE (2026-10-27). A pass that
+#: reached the window on time and was refused only because the venue could not be read (the
+#: 429s of 10-26 and 10-27) made the signal-hour attempt; the window is the same certified
+#: bracket one pass later, and `leg_is_legal` still refuses a level the price already went
+#: through. One pass (5 min, install_e8_tasks.ps1's RepetitionInterval), never more.
+E8_DEFER_EXTRA_MIN = 5.0
+
+
+def window_grace(name: str, state: dict) -> float:
+    """This window's late-send grace today: `e8_grace()`, plus E8_DEFER_EXTRA_MIN when a venue
+    error deferred it inside the grace this server day (`state["deferred"]`, emptied by
+    `rollover_state`)."""
+    return e8_grace() + (E8_DEFER_EXTRA_MIN if name in (state.get("deferred") or ()) else 0.0)
+
+
 def late_windows(hour: float, state: dict) -> list[tuple[str, str]]:
     """(window, why) for each gold window `plan` holds back ONLY for being late: not placed
     today, past its signal hour, before the cancel hour and its session's end, but past
@@ -241,7 +256,7 @@ def late_windows(hour: float, state: dict) -> list[tuple[str, str]]:
         if name in windows or hour < float(sig_hour) or hour >= CANCEL_HOUR \
                 or window_session_ended(name, hour):
             continue
-        why = gold_send_late(name, hour, e8_grace())
+        why = gold_send_late(name, hour, window_grace(name, state))
         if why:
             out.append((name, why))
     return out
@@ -265,7 +280,7 @@ def plan(df: Any, hour: float, state: dict, *, tick_size: float = 0.01,
             # pass, and 2026-09-24 a 3h-late london_am sat on the afternoon's level and both
             # stopped in the same second (-950 USD). See decision_core.window_session_ended.
             continue
-        if gold_send_late(name, hour, e8_grace()):
+        if gold_send_late(name, hour, window_grace(name, state)):
             # PAST SIGNAL HOUR + GOLD_SEND_GRACE_MIN (Judge 2026-10-21, r6): not the certified
             # bracket. `late_windows` names it so `run` writes its SKIPPED row.
             continue
@@ -1259,9 +1274,12 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         except Exception as exc:
             why = (f"concurrent open risk unmeasurable ({type(exc).__name__}: {exc}"[:200]
                    + "); no window placed this pass")
+            _deferred = state.setdefault("deferred", [])
             for due in due_now:
                 doc["skipped"].append({"window": due["window"], "why": why})
                 log(f"[{due['window']}] DEFERRED: {why}")
+                if due["window"] not in _deferred:
+                    _deferred.append(due["window"])         # one more pass: `window_grace`
             due_now = []
     room = float(guard_decision.room_to_daily_floor) if guard_decision is not None else 0.0
     placed_this_pass: list[str] = []

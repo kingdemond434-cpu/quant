@@ -60,17 +60,63 @@ class VenueError(RuntimeError):
     """A venue refusal, with the secret-bearing detail already stripped by the raiser."""
 
 
-def _bounded_request(method: Any, *args: Any, **kwargs: Any) -> Any:
-    """Keep a failed venue read inside one scheduler interval, with one transient retry."""
-    from requests.exceptions import RequestException
+#: BACK OFF ON 429 INSIDE THE PASS (measured 2026-10-26 and 10-27). TradeLocker answered "Too Many
+#: Requests" to E8-Gold's 04:01Z and 04:06Z passes. The one retry below fired at once, into the
+#: same limit, so both passes deferred the asia window and the 04:11Z pass found it 11 min past
+#: its 10-min grace: no E8 gold, and nothing for the FTMO and Fusion followers to copy, two days
+#: running. A 429 now waits these seconds (or the venue's Retry-After, capped at
+#: RATE_LIMIT_MAX_WAIT_S) before each retry: 7 s at worst with no header, 20 s with one, inside
+#: E8-Gold's 4-minute run limit and the executor's own pass.
+RATE_LIMIT_WAITS_S = (2.0, 5.0)
+RATE_LIMIT_MAX_WAIT_S = 10.0
 
-    for attempt in range(2):
+
+def _status(obj: Any) -> int | None:
+    code = getattr(obj, "status_code", None)
+    return code if isinstance(code, int) else None
+
+
+def _rate_limit_wait(response: Any, default: float) -> float:
+    """The venue's Retry-After in seconds when it sends one, capped; else `default`."""
+    headers = getattr(response, "headers", None) or {}
+    try:
+        after = float(headers.get("Retry-After"))
+    except (TypeError, ValueError):
+        return default
+    return min(max(after, 0.0), RATE_LIMIT_MAX_WAIT_S) if after == after else default
+
+
+def _bounded_request(method: Any, *args: Any, sleep: Any = None, **kwargs: Any) -> Any:
+    """Keep a failed venue read inside one scheduler interval: one transient retry, and on a 429
+    (raised or returned) a backed-off retry per RATE_LIMIT_WAITS_S entry."""
+    import time
+
+    from requests.exceptions import HTTPError, RequestException
+
+    nap = time.sleep if sleep is None else sleep
+    waits = list(RATE_LIMIT_WAITS_S)
+    transient_left = 1
+    while True:
         try:
-            return method(*args, **kwargs)
+            res = method(*args, **kwargs)
+        except HTTPError as exc:
+            resp = getattr(exc, "response", None)
+            if _status(resp) == 429 and waits:
+                nap(_rate_limit_wait(resp, waits.pop(0)))
+                continue
+            if transient_left:
+                transient_left -= 1
+                continue
+            raise
         except RequestException:
-            if attempt:
-                raise
-    raise AssertionError("unreachable")
+            if transient_left:
+                transient_left -= 1
+                continue
+            raise
+        if _status(res) == 429 and waits:
+            nap(_rate_limit_wait(res, waits.pop(0)))
+            continue
+        return res
 
 
 @dataclass(frozen=True)
