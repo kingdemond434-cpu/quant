@@ -1809,6 +1809,23 @@ def parked_trial_rows(blocked: list[dict[str, Any]],
     return out
 
 
+def _manifest_names(final: Path, ratchet: Path | None = None) -> bool:
+    """Does a committed manifest still on disk (kept, or awaiting roll-forward) name `final`?
+    Unreadable manifests count as naming it: never write over what recovery may apply."""
+    try:
+        manifests = list((ratchet or RATCHET).parent.glob(f"{TXN_MANIFEST_PREFIX}*"))
+    except OSError:
+        return True
+    for m in manifests:
+        try:
+            # As the manifest spells it: JSON-escaped (a Windows path's backslashes double).
+            if json.dumps(str(final))[1:-1] in m.read_text("utf-8"):
+                return True
+        except OSError:
+            return True
+    return False
+
+
 def _write_parked_trials(rows: list[dict[str, Any]], txn: Any) -> Path:
     """The parked list, every pass and EMPTY included: a stale list counts trials twice once the
     rows it names ship again. Staged with the bank inside a pass; written now outside one.
@@ -1826,17 +1843,25 @@ def _write_parked_trials(rows: list[dict[str, Any]], txn: Any) -> Path:
     return path
 
 
-def build_input_released(path: Path | None = None) -> dict[str, str]:
-    """cell -> released_at for every cell the backstop released (empty when none or unreadable:
-    an unreadable file names nothing as in grace, so the probe parks as it would have)."""
+def build_input_released(path: Path | None = None) -> dict[str, str] | None:
+    """cell -> released_at for every cell the backstop released; {} when there is no file.
+
+    None is UNMEASURED (audit of v1.2): a torn file, or one set aside as torn and not yet
+    resolved by hand. The holds it carried are unknown, so no reader may treat it as "no holds":
+    the probe names nothing new while it is None, and no release is written over it.
+    """
     # Beside the bank it belongs to (where `update_unrunnable_bank` writes it), so a test's
     # bank never reads the desk's file.
-    doc = _read_memo(path or UNRUNNABLE_BANK.parent / BUILD_INPUT_RELEASED.name)
-    if not isinstance(doc, dict):
-        return {}
-    cells = doc.get("cells")
-    return ({str(k): str(v) for k, v in cells.items() if isinstance(v, str)}
-            if isinstance(cells, dict) else {})
+    target = path or UNRUNNABLE_BANK.parent / BUILD_INPUT_RELEASED.name
+    if any(n.startswith(target.name + ".torn-") for n in _set_aside(target)):
+        return None
+    doc = _read_memo(target)
+    if doc is None:
+        return None if target.exists() else {}
+    cells = doc.get("cells") if isinstance(doc, dict) else None
+    if not isinstance(cells, dict):
+        return None
+    return {str(k): str(v) for k, v in cells.items() if isinstance(v, str)}
 
 
 def release_ruled(cell: str, released_at: str, *, bank: dict[str, dict[str, Any]],
@@ -1866,6 +1891,15 @@ def _record_build_input_released(released_now: dict[str, str], *, at: str, path:
     no longer in the docket at all (a producer dropped it; nothing is left to hold back).
     """
     old = build_input_released(path)
+    if old is None:
+        # TORN OR SET ASIDE: never overwrite it and never drop a hold it may carry. A torn file
+        # is moved aside under its own name (kept for a reader); every pass stays UNMEASURED
+        # until it is resolved by hand, and the caller keeps this pass's releases parked.
+        if path.exists() and not any(n.startswith(path.name + ".torn-")
+                                     for n in _set_aside(path)):
+            with contextlib.suppress(OSError):
+                path.rename(_aside_name(path, "torn", at))
+        return "UNMEASURED"
     now_t = _ts(at)
     bank = bank or {}
     keep: dict[str, str] = {}
@@ -1911,8 +1945,9 @@ def probe_build_inputs(rows: list[dict[str, Any]], judged: Any,
         return {}, {"status": "UNMEASURED", "why": "build_input_probe could not be imported"}
     try:
         ctx = _pass_value("build_input_probe_ctx", probe._Pass)
+        released = build_input_released()
         return probe.name(rows, judged=judged, bank=bank, banned=banned, ctx=ctx, now=now,
-                          released=build_input_released())
+                          released=released or {}, released_unmeasured=released is None)
     except Exception as exc:                                   # never costs the pass
         return {}, {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {str(exc)[:200]}"}
 
@@ -2432,7 +2467,7 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
             released_state = _record_build_input_released(
                 released_now, at=at, path=target.parent / BUILD_INPUT_RELEASED.name, txn=txn,
                 lock_path=out_path, bank=bank, judged=judged, docket_cells=docket_cells)
-            if released_state == "WRITE_FAILED":
+            if released_state in ("WRITE_FAILED", "UNMEASURED"):
                 for c in released_now:
                     bank[c] = popped.pop(c)
                 release_write_failed = len(released_now)
@@ -3455,8 +3490,11 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     unrunnable = update_unrunnable_bank({**built_probe, **named_unknowns, **not_run},
                                         at=at.isoformat(timespec="seconds"),
                                         judged=judged_cells,
-                                        docket_cells={str(r["_cell"]) for r in rows
-                                                      if r.get("_cell")})
+                                        # UNMEASURED membership (a row with no id) is
+                                        # never read as "left the docket" (audit of v1.2).
+                                        docket_cells=(None if any(not r.get("_cell")
+                                                                  for r in rows)
+                                                      else {str(r["_cell"]) for r in rows}))
     _bank_now = unrunnable_bank()
     failures = judging_failures(bank=_bank_now)
     _outstanding, _out_state = read_needs_data_outstanding()
@@ -3886,6 +3924,11 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
 def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | None
                   ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     doc: dict[str, Any] | None = None
+    # THE ROWS AS THEY ARRIVED (audit of v1.2, MF2): any failure returns these, unfiltered, so a
+    # parked row is never shipped nowhere and counted nowhere. And once the commit point is
+    # reached nothing here is written directly again (MF1): a kept manifest rolls forward.
+    entry_rows = list(rows)
+    commit_reached = False
     try:
         doc = build(rows, now=now, defer=publish)
         if not doc.get("families"):
@@ -3895,6 +3938,7 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
             # (audit of v1.1, MF2: rows 35 -> 40, charge 56 -> 49).
             _write_parked_trials([], _txn)
             if _txn is not None:
+                commit_reached = True
                 _txn.commit()
             return rows, doc
         quota = {str(k): int(v) for k, v in (doc.get("quota") or {}).items()}
@@ -3979,6 +4023,7 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
             for _k in ("_cell", "_variant", "_keff", "_occ", "_orth"):
                 row.pop(_k, None)
         if publish:
+            commit_reached = True
             write(doc)
         return ordered, doc
     except Exception as exc:                                             # pragma: no cover
@@ -3986,9 +4031,17 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         _left = doc.pop("_txn", None) if isinstance(doc, dict) else None
         if isinstance(_left, _Txn):
             _left.discard()
-        # The rows ship untouched: none is parked out of them, so the parked list is empty (MF2).
-        _write_parked_trials([], None)
-        return rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+        # The rows ship as they arrived: none is parked out of them, so the parked list is empty
+        # -- written directly only while no commit point was reached and no committed manifest
+        # still names it (a roll-forward lands its own list; `census_rows` never counts a parked
+        # row the docket holds).
+        if not commit_reached and not _manifest_names(UNRUNNABLE_BANK.parent
+                                                      / PARKED_TRIAL_ROWS.name):
+            _write_parked_trials([], None)
+        for _r in entry_rows:
+            for _k in ("_cell", "_variant", "_keff", "_occ", "_orth"):
+                _r.pop(_k, None)
+        return entry_rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
 
 def write(doc: dict[str, Any], *, report: Path | None = None,

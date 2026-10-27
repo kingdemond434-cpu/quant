@@ -34,16 +34,19 @@ READMIT_MAX_DAYS, like every parked cell). THE BACKSTOP REALLY FIRES (audit of 9
 a row parked READMIT_MAX_DAYS ago is no longer restated, so the bank's age clock releases it,
 and a released cell is not re-named until the judge has RULED on it (v1.2: it is judged, or the
 judge wrote a bank row for it after the release) -- it goes to the judge, however long the judge
-takes, and the judge's own word on it (a verdict, or its own build failure) stands. That is the only guard
-against this probe drifting from the sealed builder, so it must be reachable in the real flow.
+takes, and the judge's own word on it (a verdict, or its own build failure) stands. That is the
+only guard against this probe drifting from the sealed builder, so it must be reachable in the
+real flow. A torn release file is set aside and read UNMEASURED: no hold is dropped, nothing new
+is parked, and nothing is written over it until it is resolved by hand. BY DESIGN, a cell that
+leaves the docket after day 90 loses its hold and may be parked again if it comes back.
 
 COMPACT ROWS (audit S3). A parked row carries only what re-admission and the converter read:
 the reason, the cell's symbol/family/chart, its own chart's size, and the missing inputs as
 short labels (`bars:EURUSD_H1.parquet`, `surface:XAUUSD`, `cot_mapping:SYM`, `cot_file:F`).
 
-The bank keeps every row; the coverage table and
-`judging_failures.parked` count them by reason, and they stay in the unjudged backlog (a DEFECT
-class: the desk still owes the input), so no backlog number moves by parking.
+The bank keeps every row; the coverage table and `judging_failures.parked` count them by
+reason, and they stay in the unjudged backlog (a DEFECT class: the desk still owes the input),
+so no backlog number moves by parking.
 
 EXACT, OR SILENT. A cell is named only when the probe can prove the refusal:
   * its own chart and H1 file are present, its symbol is in the registry and tradeable, and its
@@ -347,7 +350,7 @@ def _age_days(stamp: Any, now: datetime) -> float | None:
 def name(rows: Iterable[dict[str, Any]], *, judged: set[str] | frozenset[str],
          bank: dict[str, dict[str, Any]], banned: Iterable[str] = (),
          ctx: _Pass | None = None, now: datetime | None = None,
-         released: dict[str, str] | None = None
+         released: dict[str, str] | None = None, released_unmeasured: bool = False
          ) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
     """(bank rows to park, census) for every never-judged docket row whose build must fail.
 
@@ -355,6 +358,13 @@ def name(rows: Iterable[dict[str, Any]], *, judged: set[str] | frozenset[str],
     the bank under a reason the probe may not restate is left to that reason. A row this probe
     parked READMIT_MAX_DAYS ago is NOT restated (the bank's age clock releases it), and a cell in
     `released` (cell -> when the backstop released it) is not named until the judge rules.
+    `released_unmeasured` (the release file is torn or set aside): which cells are held is
+    unknown, so only rows this probe already parks are restated -- nothing new is named.
+
+    BY DESIGN: a hold lives in the release file only while its cell is in the docket or younger
+    than READMIT_MAX_DAYS (`judge_coverage._record_build_input_released` bounds the file so). A
+    cell that leaves the docket after day 90 and later comes back is therefore a new cell to
+    this probe and may be parked again on a fresh clock.
     """
     now = now or datetime.now(tz=UTC)
     released = released or {}
@@ -389,6 +399,10 @@ def name(rows: Iterable[dict[str, Any]], *, judged: set[str] | frozenset[str],
             if age is not None and age >= READMIT_MAX_DAYS:
                 counts["released_max_age"] += 1      # the backstop: back to the judge once
                 continue
+        if released_unmeasured and not (isinstance(prev, dict)
+                                        and prev.get("reason") == REASON):
+            counts["release_file_unmeasured"] += 1   # a hold may exist: never park new here
+            continue
         rel = released.get(str(cid))
         if rel is not None:
             # HELD UNTIL THE JUDGE RULES (audit of v1.1, MF1), never on a calendar. A judged cell
@@ -427,7 +441,8 @@ def name(rows: Iterable[dict[str, Any]], *, judged: set[str] | frozenset[str],
     census.update({
         **{k: counts.get(k, 0) for k in ("rows_in_scope", "rows_probed", "present",
                                          "unmeasured", "released_max_age",
-                                         "in_release_grace", "release_ended_by_ruling")},
+                                         "in_release_grace", "release_ended_by_ruling",
+                                         "release_file_unmeasured")},
         "named": len(named),
         "by_family": dict(by_family.most_common()),
         "by_missing_kind": dict(by_kind.most_common()),
@@ -460,7 +475,8 @@ def census(docket: Path | None = None, *, echo: bool = True) -> dict[str, Any]:
             r["_cell"] = None
     judged, _, _ = jc.judged_index()
     _named, out = name(rows, judged=judged, bank=jc.unrunnable_bank(),
-                       banned=jc.banned_from_capital(), released=jc.build_input_released())
+                       banned=jc.banned_from_capital(), released=jc.build_input_released() or {},
+                       released_unmeasured=jc.build_input_released() is None)
     out["docket_rows"] = len(rows)
     out["docket"] = str(path)
     if echo:

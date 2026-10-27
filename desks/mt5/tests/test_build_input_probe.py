@@ -560,3 +560,139 @@ def test_the_census_counts_a_stale_parked_row_once(uni, tmp_path) -> None:
     census, n = et.census_rows(docket)
     assert stale and n == 0 and len(census) == len(rows)
     assert et.charge(et.measure(census)) == et.charge(et.measure(rows))
+
+
+# ------------------------------------------------- 5. v1.3: the audit of v1.2, pinned
+
+def _release_one(rows: list[dict], *, publish: bool = False) -> str:
+    jc.order_docket([dict(r) for r in rows], publish=publish, now=NOW)
+    _age_parked(100)
+    jc.order_docket([dict(r) for r in rows], publish=publish, now=NOW)
+    return _released_cell()
+
+
+@pytest.mark.parametrize("victim", ["bank", "released"])
+def test_a_rename_refused_at_commit_recovers_on_the_next_pass(uni, tmp_path, monkeypatch,
+                                                              victim) -> None:
+    """Audit of v1.2, MF1: the except path wrote the parked list directly over a target named in
+    the kept manifest, so every later recovery refused ("changed since the commit point")."""
+    monkeypatch.setattr(jc, "_docket_keff", lambda: None)        # keeps every write under tmp
+    rows = _three_rows()
+    jc.order_docket([dict(r) for r in rows], publish=True, now=NOW)
+    if victim == "released":
+        _age_parked(100)                                          # this pass writes a release
+    target = (jc.UNRUNNABLE_BANK if victim == "bank"
+              else tmp_path / jc.BUILD_INPUT_RELEASED.name)
+    real = jc._replace_retry
+
+    def refuse(src, dst):
+        if Path(dst) == target:
+            raise PermissionError("held open by a reader")
+        return real(src, dst)
+
+    monkeypatch.setattr(jc, "_replace_retry", refuse)
+    out, doc = jc.order_docket([dict(r) for r in rows], publish=True, now=NOW)
+    assert doc["verdict"] == "UNMEASURED" and len(out) == 3, "failed pass ships what arrived"
+    assert list(tmp_path.glob(f"{jc.TXN_MANIFEST_PREFIX}*")), "the commit point was reached"
+    monkeypatch.setattr(jc, "_replace_retry", real)
+    _out2, doc2 = jc.order_docket([dict(r) for r in rows], publish=True,
+                                  now=NOW + timedelta(hours=1))
+    assert doc2.get("verdict") == "COVERED", doc2.get("why")
+    assert not list(tmp_path.glob(f"{jc.TXN_MANIFEST_PREFIX}*")), "rolled forward"
+
+
+@pytest.mark.parametrize("publish", [False, True])
+def test_a_fault_after_the_filter_ships_the_rows_as_they_arrived(uni, tmp_path, monkeypatch,
+                                                                 publish) -> None:
+    """Audit of v1.2, MF2: a fault after the filter returned the FILTERED rows and emptied the
+    parked list, so the parked trials were counted nowhere (charge 56 -> 37)."""
+    from research import effective_trials as et
+    monkeypatch.setattr(jc, "_docket_keff", lambda: None)
+    rows = ([_row("EURUSD", "carry", {"lookback": 20 + i}) for i in range(40)]
+            + [_row("EURGBP", "lead_lag", {"driver_symbol": "EURUSD"}),
+               _row("EURGBP", "triangle", {"leg_b_symbol": "EURUSD", "leg_c_symbol": "AUDNZD"})])
+    out0, _ = jc.order_docket([dict(r) for r in rows], publish=publish, now=NOW)
+    assert len(out0) == 41
+
+    def boom(*a, **k):
+        raise RuntimeError("fireability fault")
+
+    monkeypatch.setattr(jc, "fireability_order", boom)
+    out, doc = jc.order_docket([dict(r) for r in rows], publish=publish, now=NOW)
+    assert doc["verdict"] == "UNMEASURED" and len(out) == 42, "unfiltered, as they arrived"
+    assert not any(k.startswith("_") for r in out for k in r), "no private keys ship"
+    docket = tmp_path / "external_survivors.json"
+    docket.write_text(json.dumps(out), "utf-8")
+    census, n = et.census_rows(docket)
+    assert n == 0 and len(census) == 42
+    assert et.charge(et.measure(census)) == et.charge(et.measure(rows))
+
+
+def test_unmeasured_docket_membership_never_drops_a_hold(uni, monkeypatch) -> None:
+    """Audit of v1.2: a row with no id made membership UNMEASURED, read as "left the docket"."""
+    rows = _three_rows()
+    cell = _release_one(rows)
+    f = jc.UNRUNNABLE_BANK.parent / jc.BUILD_INPUT_RELEASED.name
+    old = (NOW - timedelta(days=95)).isoformat(timespec="seconds")
+    f.write_text(json.dumps({"schema": 2, "cells": {cell: old}}), "utf-8")
+    seen: list = []
+    real_update = jc.update_unrunnable_bank
+
+    def spy(*a, **k):
+        seen.append(k.get("docket_cells"))
+        return real_update(*a, **k)
+
+    real_fn = jc._cell_id_fn
+
+    def fn_raising_on_carry():
+        inner = real_fn()
+
+        def fn(row):
+            if row.get("family") == "carry":
+                raise ValueError("no identity")
+            return inner(row)
+        return fn
+
+    monkeypatch.setattr(jc, "update_unrunnable_bank", spy)
+    monkeypatch.setattr(jc, "_cell_id_fn", fn_raising_on_carry)
+    out, _ = jc.order_docket([dict(r) for r in rows if r["family"] != "lead_lag"
+                              or r["params"]["driver_symbol"] != "AUDNZD"],
+                             publish=False, now=NOW + timedelta(days=1))
+    assert seen == [None], "membership UNMEASURED is passed as None"
+    assert jc.build_input_released() == {cell: old}, "the hold stands"
+    # measured membership without the cell does drop a 95-day-old release (the file's bound)
+    assert jc._record_build_input_released({}, at=NOW.isoformat(), path=f, txn=None,
+                                           bank={}, docket_cells=set()) == "WRITTEN"
+    assert jc.build_input_released() == {}
+
+
+def test_a_torn_release_file_is_set_aside_and_read_unmeasured(uni, tmp_path) -> None:
+    rows = _three_rows()
+    _release_one(rows)
+    f = tmp_path / jc.BUILD_INPUT_RELEASED.name
+    f.write_text('{"cells": {"tor', "utf-8")
+    assert jc.build_input_released() is None
+    out, doc = jc.order_docket([dict(r) for r in rows], publish=False,
+                               now=NOW + timedelta(days=1))
+    assert len(out) == 3, "the held cell is not re-parked on a fresh clock"
+    # both never-parked lead_lag rows: which of them is held is unknown, so neither is named
+    assert doc["build_input_probe"]["release_file_unmeasured"] == 2
+    aside = list(tmp_path.glob(jc.BUILD_INPUT_RELEASED.name + ".torn-*"))
+    assert len(aside) == 1 and aside[0].read_text("utf-8") == '{"cells": {"tor', "kept whole"
+    assert not f.exists(), "never overwritten"
+    # it stays UNMEASURED until resolved by hand, and a release meanwhile stays parked
+    assert jc.build_input_released() is None
+    jc.order_docket([dict(r) for r in rows], publish=False, now=NOW + timedelta(days=2))
+    assert jc.build_input_released() is None and not f.exists()
+
+
+def test_a_release_is_kept_parked_while_the_release_file_is_unmeasured(uni, tmp_path) -> None:
+    rows = _three_rows()
+    jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    _age_parked(100)
+    (tmp_path / jc.BUILD_INPUT_RELEASED.name).write_text("{torn", "utf-8")
+    out, doc = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    u = doc["unrunnable"]
+    assert u["build_input_released_state"] == "UNMEASURED"
+    assert u["build_input_release_write_failed"] == 1 and u["readmitted_total"] == 0
+    assert len(out) == 2, "parked on its old clock until the file is resolved"
