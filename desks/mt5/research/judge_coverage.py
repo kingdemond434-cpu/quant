@@ -1829,8 +1829,9 @@ def _manifest_names(final: Path, ratchet: Path | None = None) -> bool:
         if not isinstance(ops, list):
             return True
         for op in ops:
-            if (isinstance(op, list) and len(op) > 1
-                    and os.path.normcase(os.path.abspath(str(op[1]))) == want):
+            if not isinstance(op, list) or len(op) < 2:
+                return True                 # a malformed op: fail closed, never write over it
+            if os.path.normcase(os.path.abspath(str(op[1]))) == want:
                 return True
     return False
 
@@ -1895,6 +1896,30 @@ def read_build_input_released(path: Path | None = None
         return None, RELEASED_TORN
     return ({str(k): str(v) for k, v in cells.items() if isinstance(v, str)},
             RELEASED_MEASURED)
+
+
+#: Consecutive NOT-OK release-file passes before `check_judge_coverage` FAILs (its
+#: RELEASE_ASIDE_MAX_PASSES; a test pins them equal).
+RELEASE_NOT_OK_MAX_PASSES = 3
+
+
+def _release_prior_not_ok(ratchet: Path | None = None) -> int:
+    """The previous pass's consecutive NOT-OK count, from the ratchet. A ratchet that exists but
+    cannot be read or parsed is NOT a zero (audit of v1.4): the count is unknown, so it reads as
+    already at the limit -- one more NOT-OK pass FAILs, never restarts at 1."""
+    path = ratchet or RATCHET
+    try:
+        if not path.exists():
+            return 0
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return RELEASE_NOT_OK_MAX_PASSES
+    if not isinstance(doc, dict):
+        return RELEASE_NOT_OK_MAX_PASSES
+    try:
+        return max(0, int(doc.get("release_not_ok_passes") or 0))
+    except (TypeError, ValueError):
+        return RELEASE_NOT_OK_MAX_PASSES
 
 
 def build_input_released(path: Path | None = None) -> dict[str, str] | None:
@@ -3592,18 +3617,21 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
                                           "build_input_released")}
         probe_census["parked_stock"] = sum(1 for _r in _bank_now.values()
                                            if _r.get("reason") == BUILD_INPUT_MISSING)
-        # THE RELEASE FILE'S HEALTH, for `check_judge_coverage` (audit of v1.3): the state it was
-        # read in, what this pass's write did, the evidence set aside, and for how many
-        # consecutive passes evidence has sat there (carried in the ratchet).
+        # THE RELEASE FILE'S HEALTH, for `check_judge_coverage` (audit of v1.3, v1.4): the state
+        # it was read in, what this pass's write did, the evidence set aside, and for how many
+        # CONSECUTIVE passes it has been NOT OK in any way -- unreadable, torn (healed or with
+        # its rename refused), vanished, a refused write, or evidence still aside -- carried in
+        # the ratchet. A persistent UNREADABLE holds due cells, so it must end in a FAIL too.
         _aside = [n for n in _set_aside(_released_path())
                   if n.startswith(_released_path().name + ".")]
-        _prior_n = int((prior or {}).get("release_aside_passes") or 0) if isinstance(
-            prior, dict) else 0
+        _rstate = probe_census.get("release_file_state")
+        _rwrite = unrunnable.get("build_input_released_state")
+        _not_ok = bool(_aside) or _rstate in (RELEASED_UNREADABLE, RELEASED_TORN,
+                                              RELEASED_VANISHED) or _rwrite in (
+            "UNREADABLE", "WRITE_FAILED")
         probe_census["release_file"] = {
-            "state": probe_census.get("release_file_state"),
-            "write": unrunnable.get("build_input_released_state"),
-            "set_aside": _aside,
-            "set_aside_passes": (_prior_n + 1) if _aside else 0}
+            "state": _rstate, "write": _rwrite, "set_aside": _aside,
+            "not_ok_passes": (_release_prior_not_ok(ratchet) + 1) if _not_ok else 0}
     # MARGINAL k_eff, STAMPED BEFORE THE RANKING READS IT (research/docket_keff.py). Reorders
     # only: the family factor lifts a family's share of the remainder, the per-cell stamp orders
     # rows inside each family stream. Nothing is removed and the floor is untouched.
@@ -4176,8 +4204,8 @@ def _write_staged(doc: dict[str, Any], txn: _Txn, *, report: Path | None,
         "unknown_share": (doc.get("totals") or {}).get("unknown_share"),
         "unknown_share_basis": (doc.get("totals") or {}).get("unknown_share_basis"),
         "prewarm_fail_share": (doc.get("totals") or {}).get("prewarm_fail_share"),
-        "release_aside_passes": int(((doc.get("build_input_probe") or {}).get("release_file")
-                                     or {}).get("set_aside_passes") or 0),
+        "release_not_ok_passes": int(((doc.get("build_input_probe") or {}).get("release_file")
+                                      or {}).get("not_ok_passes") or 0),
         "drain_status": (doc.get("totals") or {}).get("drain_status"),
         "priors_cursor": (doc.get("priors_learned") or {}).get("cursor") or "",
         "why": ("the baseline the carried-cohort ratchet is measured against: rows already in "

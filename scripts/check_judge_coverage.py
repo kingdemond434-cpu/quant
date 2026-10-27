@@ -62,7 +62,8 @@ ROOT = Path(__file__).resolve().parents[1]
 PREWARM_TOLERANCE = 0.02
 DESK = ROOT / "desks" / "mt5"
 REPORT = DESK / "reports" / "JUDGE_COVERAGE.json"
-#: Consecutive passes a torn/vanished release file's evidence may sit set aside before FAIL.
+#: Consecutive NOT-OK release-file passes (unreadable, torn, vanished, refused write, evidence
+#: aside) before FAIL; equal to `judge_coverage.RELEASE_NOT_OK_MAX_PASSES`.
 RELEASE_ASIDE_MAX_PASSES = 3
 RATCHET = DESK / "data" / "judge_backlog_ratchet.json"
 AUDIT = DESK / "reports" / "judge_coverage_fence.json"
@@ -564,15 +565,20 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
     rf = ((doc.get("build_input_probe") or {}).get("release_file")
           if isinstance(doc.get("build_input_probe"), dict) else None)
     if isinstance(rf, dict):
-        n_aside = int(rf.get("set_aside_passes") or 0)
+        # Consecutive NOT-OK passes of any kind (v1.5): unreadable, torn, vanished, a refused
+        # write, or evidence aside. `set_aside_passes` is v1.4's narrower count, still honoured.
+        n_aside = max(int(rf.get("not_ok_passes") or 0), int(rf.get("set_aside_passes") or 0))
         rstate = str(rf.get("state") or "")
         if n_aside > RELEASE_ASIDE_MAX_PASSES:
             failures.append("build_input_release_file")
             out["checks"].append({
                 "metric": "build_input_release_file", "state": "FAIL",
-                "why": (f"{', '.join(rf.get('set_aside') or [])} set aside for {n_aside} passes "
-                        f"(> {RELEASE_ASIDE_MAX_PASSES}): inspect the evidence, then remove it")})
-        elif rstate in ("UNREADABLE", "TORN", "VANISHED", "UNMEASURED") or rf.get("set_aside"):
+                "why": (f"release file NOT OK for {n_aside} consecutive passes "
+                        f"(> {RELEASE_ASIDE_MAX_PASSES}): read {rstate or '?'}, write "
+                        f"{rf.get('write')}, set aside {rf.get('set_aside') or []}; a held due "
+                        f"cell waits on it -- inspect, then resolve by hand")})
+        elif (rstate in ("UNREADABLE", "TORN", "VANISHED", "UNMEASURED")
+              or rf.get("set_aside") or rf.get("write") in ("UNREADABLE", "WRITE_FAILED")):
             out["checks"].append({
                 "metric": "build_input_release_file", "state": "WARN",
                 "why": (f"release file read {rstate or '?'} (write {rf.get('write')}); "

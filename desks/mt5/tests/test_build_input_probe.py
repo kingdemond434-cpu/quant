@@ -779,3 +779,97 @@ def test_manifest_names_matches_parsed_ops_not_text(tmp_path, monkeypatch) -> No
     assert jc._manifest_names(final) is False, "a staged-path substring is not a target"
     m.write_text("{torn", "utf-8")
     assert jc._manifest_names(final) is True, "unreadable counts as naming it"
+
+
+# ------------------------------------------------- 7. v1.5: the audit of v1.4, pinned
+
+def _fence(monkeypatch):
+    import importlib.util
+    monkeypatch.delenv("QUANT_LAWGATE_SOURCE_VIEW", raising=False)
+    spec = importlib.util.spec_from_file_location(
+        "cjc_v15", ROOT / "scripts" / "check_judge_coverage.py")
+    assert spec and spec.loader
+    fence = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fence)
+    return fence
+
+
+def _fence_states(fence, rows: list[dict], hours) -> list[str]:
+    out = []
+    for h in hours:
+        t = NOW + timedelta(hours=h)
+        jc.order_docket([dict(r) for r in rows], publish=True, now=t)
+        got = fence.judge(jc.REPORT, now=t)
+        (r,) = [c for c in got["checks"] if c["metric"] == "build_input_release_file"]
+        out.append(r["state"])
+    return out
+
+
+def test_a_persistent_permission_error_warns_three_passes_then_fails(uni, tmp_path,
+                                                                   monkeypatch) -> None:
+    """Audit of v1.4, MF: UNREADABLE moves nothing, so the v1.4 count stayed 0 and the fence
+    read WARN/PASS for ever while the due cell stayed parked."""
+    fence = _fence(monkeypatch)
+    assert fence.RELEASE_ASIDE_MAX_PASSES == jc.RELEASE_NOT_OK_MAX_PASSES == 3
+    monkeypatch.setattr(jc, "_docket_keff", lambda: None)
+    rows = _three_rows()
+    jc.order_docket([dict(r) for r in rows], publish=True, now=NOW)
+    _age_parked(100)
+    f = tmp_path / jc.BUILD_INPUT_RELEASED.name
+    f.write_text(json.dumps({"schema": 2, "cells": {"other": NOW.isoformat()}}), "utf-8")
+    real = Path.read_text
+
+    def held(self, *a, **k):
+        if self == f:
+            raise PermissionError("held open by a reader")
+        return real(self, *a, **k)
+
+    monkeypatch.setattr(Path, "read_text", held)
+    states = _fence_states(fence, rows, range(1, 9))
+    assert states == ["WARN"] * 3 + ["FAIL"] * 5, states
+    assert not list(tmp_path.glob(f.name + ".torn-*")), "still never moved"
+    monkeypatch.setattr(Path, "read_text", real)
+    assert _fence_states(fence, rows, [9]) == ["OK"], "readable again: the count resets"
+
+
+def test_a_torn_file_whose_rename_is_refused_warns_three_passes_then_fails(
+        uni, tmp_path, monkeypatch) -> None:
+    fence = _fence(monkeypatch)
+    monkeypatch.setattr(jc, "_docket_keff", lambda: None)
+    rows = _three_rows()
+    jc.order_docket([dict(r) for r in rows], publish=True, now=NOW)
+    _age_parked(100)
+    f = tmp_path / jc.BUILD_INPUT_RELEASED.name
+    f.write_text("{torn", "utf-8")
+    real = Path.rename
+
+    def refuse(self, target):
+        if self == f:
+            raise PermissionError("held open by a reader")
+        return real(self, target)
+
+    monkeypatch.setattr(Path, "rename", refuse)
+    states = _fence_states(fence, rows, range(1, 9))
+    assert states == ["WARN"] * 3 + ["FAIL"] * 5, states
+    assert f.read_text("utf-8") == "{torn", "left exactly as found"
+
+
+def test_a_torn_ratchet_never_restarts_the_count(uni, tmp_path, monkeypatch) -> None:
+    """Audit of v1.4: an unreadable prior reset the count to 1 (WARN/PASS after 7 passes)."""
+    fence = _fence(monkeypatch)
+    monkeypatch.setattr(jc, "_docket_keff", lambda: None)
+    rows = _three_rows()
+    jc.order_docket([dict(r) for r in rows], publish=True, now=NOW)
+    (tmp_path / jc.BUILD_INPUT_RELEASED.name).write_text("{torn", "utf-8")
+    assert _fence_states(fence, rows, [1]) == ["WARN"]
+    jc.RATCHET.write_text("{torn ratchet", "utf-8")
+    assert jc._release_prior_not_ok() == jc.RELEASE_NOT_OK_MAX_PASSES
+    assert _fence_states(fence, rows, [2]) == ["FAIL"], "unknown is not zero: fail closed"
+
+
+def test_a_malformed_manifest_op_counts_as_naming_the_file(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(jc, "RATCHET", tmp_path / "judge_backlog_ratchet.json")
+    final = tmp_path / "build_input_parked_trials.json"
+    (tmp_path / f"{jc.TXN_MANIFEST_PREFIX}1.json").write_text(
+        json.dumps({"id": "1", "ops": [["replace"]]}), "utf-8")
+    assert jc._manifest_names(final) is True
