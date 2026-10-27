@@ -568,14 +568,18 @@ def test_a_stale_sampler_snapshot_never_overwrites_a_newer_phase_document(monkey
 
     def sig(path: Path) -> object:
         calls.append(1)
-        if len(calls) == 2:  # between the snapshot and the replace: a newer phase is published
-            runner._phase("rule_shards")
+        if len(calls) == 2:  # between the snapshot and the replace, another writer publishes a
+            # newer phase (as PlanTracker does, without the lock; this call holds it)
+            tmp = path.with_name("newer.tmp")
+            tmp.write_text(json.dumps({"phase": "rule_shards"}))
+            os.replace(tmp, path)
         return real(path)
 
     monkeypatch.setattr(runner, "_file_sig", sig)
     s.publish()
     doc = json.loads(runner.SWEEP_PHASE.read_text())
-    assert doc["phase"] == "rule_shards" and "plan" in doc["wall_profile"]["phases"]
+    assert doc == {"phase": "rule_shards"}  # the stale snapshot was dropped
+    assert "plan" in runner._PHASE_DOC["wall_profile"]["phases"]  # the next writer carries it
     assert not list(runner.SWEEP_PHASE.parent.glob("*.wall.tmp"))
 
 
