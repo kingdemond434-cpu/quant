@@ -33,6 +33,11 @@ v1.3 (audit of d841e58a9, one must-fix, three should-fixes):
   * a sidecar with no create_time is "unmeasured", never "alive";
   * a stand-down behind a holder older than HOLDER_MAX_WAIT_S is a named FAILURE (exit 76);
   * quarantined `.corrupt-<ts>` stamps are bounded to the newest CORRUPT_KEEP.
+v1.4 (audit of fd141ebb9, one must-fix, two should-fixes, two nits):
+  * MUST-FIX: `_prune_corrupt` is a declared DestructivePath (check_no_retirement_on_absence);
+  * the holder is aged from its LAST PROGRESS, refreshed by `_write_stamp` after every step;
+  * exit 76 only when the sidecar's process is measured alive;
+  * a future-named quarantine copy sorts oldest and cannot hold a slot forever.
 """
 from __future__ import annotations
 
@@ -789,3 +794,93 @@ def test_v13_should_fix_3_quarantined_stamps_are_bounded(cyc, monkeypatch):
     # make the evidence just taken sort oldest and be pruned
     olds = [p.name for p in kept if p.read_text(encoding="utf-8") == "old"]
     assert [n[-8:] for n in olds] == ["T000003Z", "T000004Z", "T000005Z", "T000006Z"]
+
+
+# ----------------------------------------------------------------------------- v1.4
+
+
+def test_v14_must_fix_prune_corrupt_is_a_declared_destructive_path():
+    from libs.ops import reference_freshness as rf
+
+    rows = [r for r in rf.DESTRUCTIVE_PATHS if r.function == "_prune_corrupt"]
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.module == "desks/mt5/research/daily_cycle.py"
+    assert row.status == "positive"
+    assert "CORRUPT_KEEP" in row.removes and ".corrupt-" in row.removes
+
+
+def test_v14_sf_a_every_stamp_write_is_a_heartbeat_the_waiter_ages_from(cyc, monkeypatch):
+    """A long chain that is still stepping must never read as hung: `_write_stamp` refreshes
+    the sidecar's `last_progress` after every step, and the age is measured from it."""
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    clock = _fake_clock(monkeypatch, datetime(2030, 6, 10, 0, 0, tzinfo=UTC))
+    ages: list[float] = []
+
+    def step(n, hours):
+        def fn():
+            cyc.calls.append(n)
+            clock.set(clock.now + timedelta(hours=hours))
+            ages.append(daily_cycle._holder_age_s() or 0.0)   # at the END of the step
+        return fn
+
+    # three steps of 10 h: 30 h in all, far past the 16 h ceiling
+    monkeypatch.setattr(daily_cycle, "STEPS", tuple((n, step(n, 10)) for n in ("a", "b", "c")))
+    assert daily_cycle.main([]) == 0
+    assert cyc.calls == ["a", "b", "c"]
+    # from the lock these would read 10 h, 20 h, 30 h -- the last two past the ceiling
+    assert ages == [10 * 3600.0] * 3, "aged from the last step, not from the lock"
+    stamp = json.loads(cyc.stamp.read_text(encoding="utf-8"))
+    assert stamp["last_progress"]["pid"] == os.getpid()
+    assert stamp["last_progress"]["at"].startswith("2030-06-11T06:00")
+
+
+def test_v14_sf_a_a_progressing_holder_past_the_ceiling_is_still_a_verdict(cyc, monkeypatch):
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    lk = _claim_alive()
+    try:
+        _sidecar_at(datetime.now(UTC) - timedelta(seconds=daily_cycle.HOLDER_MAX_WAIT_S + 3600))
+        lk.heartbeat()                                    # took the lock 17 h ago, stepped now
+        assert daily_cycle.main([]) == daily_cycle.EXIT_STOOD_DOWN
+    finally:
+        lk.close()
+
+
+@pytest.mark.parametrize("pid_kind", ["dead", "reused"])
+def test_v14_sf_b_a_stale_sidecar_of_another_process_never_gives_76(cyc, monkeypatch, pid_kind):
+    """The auditor's probe: a fresh holder has the lock but its sidecar write failed, and the
+    sidecar on disk is 17 h old and names a dead or reused pid. That is no evidence about the
+    holder, so the stand-down stays a verdict (75)."""
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    held = _hold()                                        # holds the lock, writes no sidecar
+    try:
+        if pid_kind == "dead":
+            p = subprocess.Popen([sys.executable, "-c", "pass"])
+            p.wait(timeout=30)
+            pid, started = p.pid, 1.0
+        else:
+            pid, started = os.getpid(), (daily_cycle._process_start(os.getpid()) or 0.0) - 5.0
+        old = datetime.now(UTC) - timedelta(seconds=daily_cycle.HOLDER_MAX_WAIT_S + 3600)
+        daily_cycle._owner_path().write_text(json.dumps({
+            "pid": pid, "create_time": started, "at": old.isoformat(timespec="seconds")}),
+            encoding="utf-8")
+        assert daily_cycle._holder_health() == "dead"
+        assert daily_cycle.main([]) == daily_cycle.EXIT_STOOD_DOWN
+    finally:
+        held.close()
+
+
+def test_v14_nit_a_future_named_quarantine_copy_cannot_hold_a_slot(cyc, monkeypatch):
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    _fake_clock(monkeypatch, datetime(2030, 6, 10, 12, 0, tzinfo=UTC))
+    d = cyc.stamp.parent
+    future = d / f"{cyc.stamp.name}.corrupt-20990101T000000Z"
+    future.write_text("future", encoding="utf-8")
+    for i in range(4):
+        (d / f"{cyc.stamp.name}.corrupt-2030060{i + 1}T000000Z").write_text("old", "utf-8")
+    cyc.stamp.write_text("{torn", encoding="utf-8")
+    assert daily_cycle.main([]) == 0
+    kept = sorted(p.name for p in d.iterdir() if ".corrupt-" in p.name)
+    assert len(kept) == daily_cycle.CORRUPT_KEEP
+    assert future.name not in kept, "the future-named copy is the first to go"
+    assert any(n.endswith("20300610T120000Z") for n in kept), "the one just taken stays"

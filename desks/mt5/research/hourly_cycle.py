@@ -327,7 +327,9 @@ def daily() -> dict:
         if r.returncode == DAILY_CYCLE_HOLDER_HUNG:
             # NOT a verdict (v1.3): no status and no noop_reason, so the ledger names it
             # `exit_code=76:HOLDER_HUNG` (NAMED_FAILURE_EXITS), write_or_explain reads LEG_FAILED
-            # and completion reads FAILING -- a hung MT5-Daily is surfaced, not muted.
+            # and the leg's completion streak counts it -- a hung MT5-Daily is surfaced, not
+            # muted. (completion.judge itself rates `daily` UNDECLARED: it has no capability-graph
+            # node, which predates this change.)
             return {"exit_code": DAILY_CYCLE_HOLDER_HUNG, "holder_hung": True,
                     "tail": tail, "at": at}
         return {"exit_code": int(r.returncode),

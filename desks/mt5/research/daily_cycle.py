@@ -816,10 +816,16 @@ def main(argv: list[str] | None = None) -> int:
         # HOLDER_MAX_WAIT_S -- above a full ~9.4 h chain -- a holder that still has the lock is
         # hung, and standing down behind it as a verdict would mute this leg for as long as it
         # hangs. So the leg exits EXIT_HOLDER_HUNG, which `hourly_cycle` names as a failure.
+        # v1.4: the age is the holder's LAST PROGRESS (refreshed after every step), not when it
+        # took the lock, so a long chain that is still stepping is never called hung; and only a
+        # sidecar whose process is measured ALIVE speaks for the holder -- a stale sidecar left
+        # by a dead or reused pid (a failed sidecar write, or the gap before the first one) is
+        # not evidence about the process that holds the lock now.
         age = _holder_age_s()
-        if age is not None and age > HOLDER_MAX_WAIT_S:
-            dlog(f"HOLDER HUNG: the chain lock has been held for {age / 3600:.1f}h, past the "
-                 f"{HOLDER_MAX_WAIT_S / 3600:g}h ceiling; standing down as a FAILURE")
+        if (age is not None and age > HOLDER_MAX_WAIT_S
+                and _holder_health() == "alive"):
+            dlog(f"HOLDER HUNG: the chain-lock holder has made no progress for {age / 3600:.1f}h, "
+                 f"past the {HOLDER_MAX_WAIT_S / 3600:g}h ceiling; standing down as a FAILURE")
             return EXIT_HOLDER_HUNG
         # A DISTINCT EXIT, NOT 0 (v1.1). `hourly_cycle` declares it a VERDICT exit of the `daily`
         # leg (VERDICT_EXITS) with a named no-op reason, so a pass that ran nothing is neither
@@ -968,16 +974,29 @@ def _holder_health() -> str:
         return "unmeasured"
 
 
+def _parse_at(value: object) -> datetime | None:
+    try:
+        at = datetime.fromisoformat(str(value))
+    except (ValueError, TypeError):
+        return None
+    return at.replace(tzinfo=UTC) if at.tzinfo is None else at
+
+
 def _holder_age_s() -> float | None:
-    """Seconds since the holder took the lock, from the owner sidecar's `at`; None if unread."""
+    """Seconds since the holder last made PROGRESS, from the owner sidecar: its `last_progress`
+    heartbeat (refreshed by `_write_stamp` after every step, v1.4), else `at` (when it took the
+    lock), whichever is later. None when neither can be read."""
     try:
         doc = json.loads(_owner_path().read_text(encoding="utf-8"))
-        at = datetime.fromisoformat(str(doc["at"]))
-    except (OSError, ValueError, KeyError, TypeError):
+    except (OSError, ValueError):
         return None
-    if at.tzinfo is None:
-        at = at.replace(tzinfo=UTC)
-    return (datetime.now(UTC) - at).total_seconds()
+    if not isinstance(doc, dict):
+        return None
+    stamps = [t for t in (_parse_at(doc.get("at")), _parse_at(doc.get("last_progress")))
+              if t is not None]
+    if not stamps:
+        return None
+    return (datetime.now(UTC) - max(stamps)).total_seconds()
 
 
 #: How long a caller with no deadline waits for a holder whose health it cannot measure (no
@@ -1004,6 +1023,8 @@ class ChainLock:
         self.error = ""
         self.waited_s = 0.0
         self.unlocked_steps: list[str] = []
+        self._started: float | None = None
+        self._at = ""
 
     @property
     def held(self) -> bool:
@@ -1025,11 +1046,24 @@ class ChainLock:
                 self.state = "contended"
             return False
         self.handle, self.state, self.error = fh, "held", ""
-        with contextlib.suppress(OSError):
-            _atomic_write(_owner_path(), json.dumps({
-                "pid": os.getpid(), "create_time": _process_start(os.getpid()),
-                "at": datetime.now(UTC).isoformat(timespec="seconds")}))
+        self._started = _process_start(os.getpid())
+        self._at = datetime.now(UTC).isoformat(timespec="seconds")
+        self._write_owner()
         return True
+
+    def _write_owner(self, last_progress: str | None = None) -> None:
+        doc: dict[str, object] = {"pid": os.getpid(), "create_time": self._started,
+                                  "at": self._at}
+        if last_progress:
+            doc["last_progress"] = last_progress
+        with contextlib.suppress(OSError):
+            _atomic_write(_owner_path(), json.dumps(doc))
+
+    def heartbeat(self) -> None:
+        """Record progress in the owner sidecar (v1.4): a waiter ages the holder from here, so a
+        chain that is still finishing steps is never read as hung however long it runs."""
+        if self.handle is not None:
+            self._write_owner(datetime.now(UTC).isoformat(timespec="seconds"))
 
     def wait(self, *, ceiling_s: float) -> bool:
         """Wait while the lock is held by a HEALTHY holder; True once it is ours.
@@ -1148,6 +1182,11 @@ def _write_stamp(today: str, steps: dict[str, dict], lock: ChainLock | None = No
     come from this module; an unparseable stamp is re-read twice, then left alone and logged,
     because reading it as {} and replacing it is how a finished chain's steps were erased.
     """
+    now_iso = datetime.now(UTC).isoformat(timespec="seconds")
+    if lock is not None:
+        # THE HEARTBEAT (v1.4, audit SF-A), before any refusal below: a held chain records that
+        # it is progressing even when this particular stamp write is refused.
+        lock.heartbeat()
     doc, state = _read_stamp()
     for _ in range(2):
         if state != "unparseable":
@@ -1173,6 +1212,7 @@ def _write_stamp(today: str, steps: dict[str, dict], lock: ChainLock | None = No
     new = {**doc, "last_run": today, "steps": merged}
     if corrections:
         new["clock_corrections"] = corrections
+    new["last_progress"] = {"at": now_iso, "pid": os.getpid()}
     if lock is not None:
         new["chain_lock"] = lock.record()
     _atomic_write(STAMP, json.dumps(new, indent=2))
@@ -1187,8 +1227,16 @@ CORRUPT_KEEP = 5
 def _prune_corrupt(just_kept: Path) -> None:
     """Keep CORRUPT_KEEP quarantined stamps: `just_kept` always (a misset clock must not make the
     newest evidence sort oldest and be pruned), plus the latest others by the UTC stamp in their
-    names."""
-    others = sorted(p for p in STAMP.parent.glob(f"{STAMP.name}.corrupt-*") if p != just_kept)
+    names. A name stamped AFTER `just_kept`'s was written on a misset clock: it sorts OLDEST, so it
+    is the first to go and cannot hold a slot forever (v1.4 nit). Removes only these quarantine
+    copies of the stamp -- declared in libs/ops/reference_freshness.DESTRUCTIVE_PATHS."""
+    mine = just_kept.name
+
+    def age_key(p: Path) -> tuple[bool, str]:
+        return (p.name <= mine, p.name)            # future-named (False) sort before the rest
+
+    others = sorted((p for p in STAMP.parent.glob(f"{STAMP.name}.corrupt-*") if p != just_kept),
+                    key=age_key)
     for old in others[:max(0, len(others) - (CORRUPT_KEEP - 1))]:
         with contextlib.suppress(OSError):
             old.unlink()
