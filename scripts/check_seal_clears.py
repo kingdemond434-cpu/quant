@@ -26,6 +26,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from libs.ops.fence_exit import fence_exit  # noqa: E402
+
 SPEC = importlib.util.spec_from_file_location("sign_train", ROOT / "scripts" / "sign_train.py")
 assert SPEC and SPEC.loader
 sign_train = importlib.util.module_from_spec(SPEC)
@@ -59,9 +63,9 @@ def main(argv: list[str] | None = None) -> int:
         else f"seal clears: {doc['verdict']} -- "
         f"{doc.get('why') or str(doc.get('rows')) + ' row(s)'}"
     )
-    if doc["verdict"] == "UNMEASURED" and os.environ.get("CI") == "true":
-        return 1
-    return 1 if doc["verdict"] == "BREACH" else 0
+    # Name the passing set (R0237); UNMEASURED passes only off CI, whose checkout is full.
+    passing = {"PASS"} if os.environ.get("CI") == "true" else {"PASS", "UNMEASURED"}
+    return fence_exit(doc["verdict"], passing, fail=1)
 
 
 if __name__ == "__main__":
