@@ -974,6 +974,15 @@ def apply(rows: list[dict[str, Any]], *, fresh: set[str], reproposed: set[str],
             syms, path=(hyp_dir / CLUSTERS.name) if hyp_dir is not None else None)
         children, rep = reaim(rows, fresh, reproposed, identity_fn=identity_fn,
                               clusters=clusters, now=now)
+        # THE REVERT PATH, not a throttle: QUANT_FAMILY_REAIM=0 keeps the check, the stamps and
+        # the census and mints no descendant (the duplicates were never removed either way).
+        if os.environ.get("QUANT_FAMILY_REAIM", "1") == "0":
+            rep["reaim_enabled"] = False
+            rep["reaimed_would_have_been"] = len(children)
+            rep["reaimed"] = 0
+            children = []
+        else:
+            rep["reaim_enabled"] = True
         append_reaim_ledger(children,
                             (hyp_dir / REAIM_LEDGER.name) if hyp_dir is not None else None)
         out = rows + children
