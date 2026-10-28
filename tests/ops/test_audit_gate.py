@@ -1,16 +1,25 @@
-"""The audit gate (scripts/audit_gate.py, .github/workflows/audit-gate.yml): a PR into LIVE merges
-by itself only when the auditor's latest verdict CLEARs its exact change and CI is green."""
+"""The audit gate (.github/scripts/audit_gate.py, .github/workflows/audit-gate.yml): a PR into
+LIVE merges by itself only when the auditor's latest verdict CLEARs its exact change and CI is
+green."""
 
 from __future__ import annotations
 
+import importlib.util
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
 import pytest
-from scripts import audit_gate as ag
 
 ROOT = Path(__file__).resolve().parents[2]
+# A GitHub Actions helper, not a desk organ: it lives under .github/scripts (outside the desk's
+# executable areas), so it is loaded by path.
+_spec = importlib.util.spec_from_file_location("audit_gate", ROOT / ".github/scripts/audit_gate.py")
+assert _spec is not None and _spec.loader is not None
+ag = importlib.util.module_from_spec(_spec)
+sys.modules["audit_gate"] = ag
+_spec.loader.exec_module(ag)
 A, B, C = "a" * 40, "b" * 40, "c" * 40
 
 
@@ -365,7 +374,7 @@ def test_the_gate_runs_from_the_base_branch_and_never_runs_pr_code() -> None:
     assert "github.event.pull_request.head.repo.full_name == github.repository" in wf
     assert "github.event.label.name == 'audit-clear'" in wf
     assert 'branches: ["claude/llm-auto-upgrade-verify-gcjac3"]' in wf
-    assert "python scripts/audit_gate.py" in wf
+    assert "python .github/scripts/audit_gate.py" in wf
 
 
 def test_a_dispatched_ci_run_on_live_seals_and_promotes_like_a_push() -> None:
