@@ -84,6 +84,28 @@ WHAT CHANGED, AND WHY EACH CHANGE IS A CORRECTION RATHER THAN A PREFERENCE
     cached cells the judge's last sweep says it can rule inside its task limit: a sweep killed at
     its limit publishes nothing.
 
+6.  (2026-10-28) THE WARMER STALLED AT ~0 CELLS AND NEVER FINISHED A RUN. Box read: rounds of
+    12, 11, 2 and 2 cells in 5,465 s, 8,379 s, 53,364 s and 90,255 s, each ending "STOPPED: run
+    budget spent", the log silent after a docket header, the 07:00 trigger writing nothing. The
+    causes, each fixed here (reports/judge/CACHEWARM_STALL_2026-10-28.md):
+    a. The PARENT dropped itself to IDLE, so its single-threaded docket pass ran only on Windows'
+       anti-starvation boost on a box the BELOW_NORMAL miners hold at ~100%. It now runs at
+       EQUAL (BELOW_NORMAL, the miners' and the judge's class, never above); workers stay IDLE
+       unless `WARM_EQUAL_WORKERS` opts some into EQUAL.
+    b. The deadline bound only the build loop, so a docket pass longer than the budget still
+       opened a pool, sent a first wave, and then waited on it without limit. The budget now
+       binds every phase, a drain is capped at `DRAIN_SEC` (workers terminated after), and a
+       watchdog hard-stops the process `BUDGET_SEC + GRACE_SEC` after it STARTED.
+    c. Nothing guaranteed an exit inside the hourly trigger, so a run outlived the scheduler's
+       limit and the next triggers were refused or wrote nothing. Every run now ends with a
+       `CacheWarm END` line and a WARM_GAUNTLET.json carrying its status (DONE, HARD_STOP,
+       NOT_ADMITTED, CRASHED), and while it runs the report carries its live phase and age.
+    d. Each round re-decided all 1.65M rows through the sealed partition. A docket memo, stamped
+       with the partition's inputs and a TTL, now re-decides only new cells -- same list, order
+       and census.
+    e. Memory: workers were sized on an unmeasured 900MB. Each worker now reports its high-water
+       RSS; the pool is sized on the p75 of those, 4,500MB until the first is measured.
+
 WHAT IT DELIBERATELY DOES NOT DO
 
 No gates, no verdicts, no report, no trial charge, and it never touches UNIVERSAL_SURVIVORS.json.
@@ -149,9 +171,79 @@ REPORT = DESK / "reports" / "WARM_GAUNTLET.json"
 #: stop it dead. Without this floor the derivation below is a single point of failure.
 HISTORIC_FLOOR = 2
 
-#: THIS JOB'S OWN declared memory need, per worker -- the same 900MB it is admitted on at the
-#: foot of this file. One cell plus the bounded frame cache, released on return.
-NEED_MB = float(os.environ.get("WARM_NEED_MB", "900"))
+#: PER-WORKER MEMORY NEED, DERIVED FROM MEASUREMENT (2026-10-28). This was a flat 900MB, the
+#: same figure the parent declared to admission at the foot of this file, and neither was ever
+#: measured: `job_lock` records only the PARENT's high-water RSS, whose p75 on the trading box
+#: reads 4,442MB (peak 4,454MB) -- the million-row docket, not a cell. The judge's own pre-warm
+#: pool, running this same sealed builder, measured 1.8-2.1GB private per worker (box diag
+#: 2026-10-20). So each worker now returns its own high-water RSS with every batch, the p75 of
+#: the last `WORKER_PEAK_HISTORY` is kept in `WORKER_PEAKS`, and the pool is sized on it. Until a
+#: worker has been measured, the default is the conservative 4,500MB (near the one measured
+#: figure this job has), never 900. `WARM_NEED_MB` still overrides.
+DEFAULT_WORKER_NEED_MB = 4500.0
+#: Box-local and gitignored (`**/reports/*`). NOT under `data/.job_locks/`: the miner maintenance
+#: sweep treats every non-`.peaks.json` file there as a lock and deletes one with no live pid.
+WARM_STATE = DESK / "reports" / "warm_cache_state"
+WORKER_PEAKS = WARM_STATE / "worker_peaks.json"
+WORKER_PEAK_HISTORY = 64
+#: The parent's own declared need when it has no measured run: the box's measured p75.
+DEFAULT_PARENT_NEED_MB = 4500
+
+
+def _p75(vals: list[float]) -> float:
+    ordered = sorted(vals)
+    return float(ordered[min(len(ordered) - 1, int(0.75 * len(ordered)))])
+
+
+def worker_need_mb() -> tuple[float, str]:
+    """(MB one warm worker is sized on, why). Override, else measured p75, else the default."""
+    env = os.environ.get("WARM_NEED_MB")
+    if env:
+        with contextlib.suppress(ValueError):
+            v = float(env)
+            if v > 0:
+                return v, "WARM_NEED_MB override"
+    doc = _read_json(WORKER_PEAKS, {})
+    raw = doc.get("peaks") if isinstance(doc, dict) else None
+    peaks = [float(v) for v in (raw if isinstance(raw, list) else [])
+             if isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0]
+    if peaks:
+        return _p75(peaks), f"p75 of {len(peaks)} measured worker peak(s) ({WORKER_PEAKS.name})"
+    return DEFAULT_WORKER_NEED_MB, ("no worker measured yet: conservative default near the "
+                                    "parent's measured 4,442MB p75, never the unmeasured 900MB")
+
+
+def record_worker_peaks(new_peaks: list[int]) -> None:
+    """Append this round's measured worker high-water marks to the receipt. Best effort."""
+    vals = [int(v) for v in new_peaks if isinstance(v, int) and v > 0]
+    if not vals:
+        return
+    doc = _read_json(WORKER_PEAKS, {})
+    raw = doc.get("peaks") if isinstance(doc, dict) else None
+    old = [int(v) for v in (raw if isinstance(raw, list) else [])
+           if isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0]
+    rows = (old + vals)[-WORKER_PEAK_HISTORY:]
+    _write_json(WORKER_PEAKS, {"peaks": rows, "p75_mb": _p75([float(v) for v in rows]),
+                               "max_mb": max(rows), "n": len(rows),
+                               "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                               "what": "high-water RSS of warm_gauntlet_cache WORKER processes"})
+
+
+def parent_need_mb() -> int:
+    """What the parent declares to admission: its measured p75 when it has runs, else the default.
+
+    `job_lock.measured_need_mb` already corrects a declaration UP to the measured p75; declaring
+    the measured figure here keeps the log and the admission saying the same number.
+    """
+    try:
+        from research.job_lock import observed_peaks
+    except ModuleNotFoundError:
+        from job_lock import observed_peaks  # type: ignore[no-redef]
+    try:
+        peaks = observed_peaks("warm_gauntlet_cache")
+    except Exception:
+        peaks = []
+    return int(_p75([float(v) for v in peaks])) if peaks else DEFAULT_PARENT_NEED_MB
 
 
 #: The share of MEASURED free memory the warmer's pool may be sized into. Half, the same share the
@@ -221,7 +313,8 @@ def measure_capacity(sample_s: float = 1.0) -> dict:
             free = float(psutil.virtual_memory().available) / 1048576.0
         except Exception:
             free = None
-    by_mem = int((MEM_SHARE * float(free)) // NEED_MB) if free else HISTORIC_FLOOR
+    need, need_why = worker_need_mb()
+    by_mem = int((MEM_SHARE * float(free)) // need) if free else HISTORIC_FLOOR
     pool = max(HISTORIC_FLOOR, min(max(1, cores - 1), by_mem))
     idle = _cpu_idle_cores(sample_s)
     inflight = (pool if idle is None
@@ -238,7 +331,8 @@ def measure_capacity(sample_s: float = 1.0) -> dict:
             pool, inflight = min(pool, cap), min(inflight, cap)
     return {"cores": cores, "free_mb": None if free is None else round(float(free)),
             "idle_cores": None if idle is None else round(idle, 2),
-            "by_mem": by_mem, "pool": int(pool), "inflight": int(min(inflight, pool)),
+            "by_mem": by_mem, "need_mb_per_worker": round(need), "need_basis": need_why,
+            "pool": int(pool), "inflight": int(min(inflight, pool)),
             "basis": "psutil" if idle is not None else "UNMEASURED cpu: pool size, memory-bound"}
 
 
@@ -263,34 +357,87 @@ def retarget(running: int, pool: int, idle: float | None) -> int:
 _META: dict | None = None
 
 
-def _lower_priority() -> str:
-    """Run this process at IDLE priority: it may only take CPU nothing else wants.
+#: The two priority classes this job uses, and the only two it may ever use.
+#:   IDLE   Windows IDLE_PRIORITY_CLASS / POSIX nice 19: runs only on cycles nothing else wants.
+#:   EQUAL  Windows BELOW_NORMAL_PRIORITY_CLASS / POSIX nice 10: the class the miners, the judge's
+#:          sweep and every scheduled desk task (Task Scheduler Priority 7) run at -- EQUAL to the
+#:          miners, never above them (principal, 2026-10-20: "the judge gets NO CPU priority above
+#:          the miners; EQUAL is fine"; scripts/judge_priority.py measures and enforces it for the
+#:          judge). Nothing here ever sets NORMAL or higher.
+IDLE = "idle"
+EQUAL = "equal"
 
-    THE RULE THIS ENFORCES: never reduce a miner's throughput. Windows `IDLE_PRIORITY_CLASS`
-    (POSIX nice 19) means every normal-priority process -- miners, the live terminal, the gateway,
-    the sealed judge and its pool -- preempts a warm worker outright. Best effort; the outcome is
-    returned so a box where it failed says so.
+#: THE PARENT RUNS AT EQUAL (2026-10-28), and this is the change that un-stalls the job. The
+#: parent's serial phases -- streaming a 1.65M-row docket twice, the sealed partition, the sealed
+#: order, keying, a directory scan -- are single-threaded orchestration the judge's own sweep
+#: parent performs at BELOW_NORMAL every sweep. At IDLE on a box the BELOW_NORMAL miners hold at
+#: ~100%, Windows runs an IDLE thread only on its anti-starvation boost, so those phases took
+#: hours, the run budget was spent before a single cell was submitted, and every round ended
+#: "STOPPED: run budget spent" with 2-12 cells. `WARM_PARENT_PRIORITY=idle` restores the old class.
+PARENT_PRIORITY = (os.environ.get("WARM_PARENT_PRIORITY") or EQUAL).strip().lower()
+
+#: Workers that build at EQUAL priority, the rest at IDLE. DEFAULT 0: every worker stays IDLE, so
+#: the BUILD lane spends only cycles no miner wants -- the standing rule that mining is never cut or
+#: slowed. Raising it is the principal's call, not a session's: on an oversubscribed box each EQUAL
+#: worker takes about one runnable thread's share (18 cores / ~60 runnable threads ~= 0.3 core)
+#: from the miners, which buys roughly 0.3 / 4.0 core-s per warmed cell ~= 6,500 warmed cells a
+#: day per worker (PREWARM_CEILING_2026-10-27 §2, INFERRED). It is a guaranteed floor, filled
+#: before the IDLE lane, and capped by the measured memory pool like every other worker.
+EQUAL_WORKERS = max(0, int(float(os.environ.get("WARM_EQUAL_WORKERS", "0") or 0)))
+
+
+def _set_priority(mode: str) -> str:
+    """Put THIS process at IDLE or EQUAL. Never above EQUAL. Returns what it did, for the log.
+
+    On Windows `nice()` sets the class outright, so EQUAL both lowers a process started at NORMAL
+    (a manual run from a shell) and lifts one that inherited IDLE. On POSIX an unprivileged process
+    can only raise its nice value, so EQUAL there never lowers a niceness it cannot restore.
     """
+    want_idle = str(mode).lower() == IDLE
     try:
         import psutil
         p = psutil.Process()
         if sys.platform == "win32":
-            p.nice(psutil.IDLE_PRIORITY_CLASS)
-        else:
-            p.nice(19)
-        return "idle"
+            p.nice(psutil.IDLE_PRIORITY_CLASS if want_idle
+                   else psutil.BELOW_NORMAL_PRIORITY_CLASS)
+            return "IDLE" if want_idle else "BELOW_NORMAL (equal to the miners, never above)"
+        want = 19 if want_idle else 10
+        cur = int(p.nice())
+        if cur < want:
+            p.nice(want)
+            cur = want
+        note = "" if cur == want else f" (wanted {want}; cannot raise unprivileged)"
+        return f"nice {cur}{note}"
     except Exception as exc:
         try:
-            os.nice(19)  # type: ignore[attr-defined,unused-ignore]
-            return "nice19"
+            os.nice(19 if want_idle else 10)  # type: ignore[attr-defined,unused-ignore]
+            return "nice19" if want_idle else "nice10"
         except Exception:
             return f"UNCHANGED ({type(exc).__name__})"
+
+
+def _lower_priority() -> str:
+    """Run this process at IDLE priority: it may only take CPU nothing else wants.
+
+    Kept by name: the IDLE lane's workers call it. Every normal- and below-normal-priority process
+    -- miners, the live terminal, the gateway, the sealed judge and its pool -- preempts an IDLE
+    worker outright.
+    """
+    out = _set_priority(IDLE)
+    return "idle" if out == "IDLE" or out.startswith("nice 19") else out
 
 
 def _init(meta: dict) -> None:
     global _META
     _META = meta
     _lower_priority()
+
+
+def _init_equal(meta: dict) -> None:
+    """Initializer for the EQUAL lane's workers (only when `WARM_EQUAL_WORKERS` > 0)."""
+    global _META
+    _META = meta
+    _set_priority(EQUAL)
 
 
 def _warm_one(spec: dict) -> tuple[str, str]:
@@ -340,9 +487,32 @@ def _warm_one(spec: dict) -> tuple[str, str]:
             obj["df"] = None
 
 
-def _warm_batch(specs: list[dict]) -> list[tuple[str, str]]:
-    """Warm one (symbol, chart) batch in order on this worker; one outcome per cell."""
-    return [_warm_one(sp) for sp in specs]
+def _warm_batch(specs: list[dict]) -> dict:
+    """Warm one (symbol, chart) batch in order on this worker; one outcome per cell.
+
+    Returns {"res": [(key, outcome), ...], "pid": worker pid, "peak_mb": its high-water RSS}, so the
+    parent sizes the next pool on what a worker MEASURED, not on a declaration.
+    """
+    res = [_warm_one(sp) for sp in specs]
+    peak = None
+    with contextlib.suppress(Exception):
+        try:
+            from research.job_lock import peak_rss_mb
+        except ModuleNotFoundError:
+            from job_lock import peak_rss_mb  # type: ignore[no-redef]
+        peak = peak_rss_mb()
+    return {"res": res, "pid": os.getpid(), "peak_mb": peak}
+
+
+def _batch_outcomes(result) -> tuple[list[tuple[str, str]], int | None, int | None]:
+    """(outcomes, worker pid, worker peak MB) from either result shape (old list, or dict)."""
+    if isinstance(result, dict):
+        res = result.get("res") or []
+        pid = result.get("pid")
+        peak = result.get("peak_mb")
+        return (list(res), pid if isinstance(pid, int) else None,
+                peak if isinstance(peak, int) and peak > 0 else None)
+    return list(result or []), None, None
 
 
 def batches(specs: list[dict], size: int = BATCH_CELLS,
@@ -375,11 +545,84 @@ def _read_json(path: Path, default):
 def _write_json(path: Path, doc) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_suffix(path.suffix + f".{os.getpid()}.tmp")
+        import threading
+        tmp = path.with_suffix(path.suffix + f".{os.getpid()}.{threading.get_ident()}.tmp")
         tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
         os.replace(tmp, path)
     except Exception as exc:
         print(f"  {path.name} NOT written ({type(exc).__name__}: {exc})")
+
+
+#: THE DOCKET MEMO (2026-10-28). The sealed partition and modifier preflight decide each cell's
+#: eligibility from the cell alone plus a handful of inputs (the universe registry, which charts
+#: have parquets, the family and gate code). Re-deciding 1.65M cells every round -- loading an
+#: intraday frame for each non-H1 one -- was the serial pass that ran for hours at IDLE. The memo
+#: keeps each cell's outcome under a STAMP of those inputs and for at most `DOCKET_MEMO_TTL_SEC`,
+#: so a round re-decides only the cells minted since the last one. It lives in `WARM_STATE`
+#: (gitignored, box-local). A stale memo can change which cells are WARMED, never a verdict: the
+#: judge reads none of it and builds and gates every cell itself.
+DOCKET_MEMO = WARM_STATE / "docket_memo.json"
+DOCKET_MEMO_TTL_SEC = float(os.environ.get("WARM_DOCKET_MEMO_TTL_SEC", str(6 * 3600)))
+
+
+def docket_memo_stamp(G) -> str:
+    """A digest of every input the sealed partition and preflight read besides the cell itself."""
+    import hashlib
+
+    parts: list[str] = []
+    uni = getattr(G, "UNI", None)
+    files = [Path(uni) / "universe.json"] if uni is not None else []
+    g_file = getattr(G, "__file__", None)
+    if g_file:
+        files.append(Path(g_file))
+    files += [DESK / "mt5desk" / n for n in ("legacy_family_inputs.py", "family_inputs.py",
+                                             "families.py", "families_orthogonal.py")]
+    files.append(DESK / "research" / "judge_docket_order.py")
+    for f in files:
+        try:
+            st = f.stat()
+            parts.append(f"{f.name}:{st.st_mtime_ns}:{st.st_size}")
+        except OSError:
+            parts.append(f"{f.name}:absent")
+    if uni is not None:
+        try:
+            names = sorted(e.name for e in os.scandir(uni) if e.name.endswith(".parquet"))
+        except OSError:
+            names = []
+        parts.append("parquets:" + hashlib.sha1("\n".join(names).encode()).hexdigest())
+    return hashlib.sha1("|".join(parts).encode()).hexdigest()
+
+
+def load_docket_memo(G, now: float | None = None) -> tuple[dict, dict]:
+    """(memo rows to reuse, its census). Empty when the stamp moved, it aged out or unreadable."""
+    now = time.time() if now is None else now
+    stamp = docket_memo_stamp(G)
+    doc = _read_json(DOCKET_MEMO, {})
+    rows = doc.get("rows") if isinstance(doc, dict) else None
+    born = float(doc.get("born") or 0.0) if isinstance(doc, dict) else 0.0
+    if not isinstance(rows, dict) or not rows:
+        return {}, {"stamp": stamp, "born": now, "reused": 0, "why": "no memo yet"}
+    if doc.get("stamp") != stamp:
+        return {}, {"stamp": stamp, "born": now, "reused": 0,
+                    "why": "inputs changed (registry, parquets or code): every cell re-decided"}
+    if now - born >= DOCKET_MEMO_TTL_SEC:
+        return {}, {"stamp": stamp, "born": now, "reused": 0,
+                    "why": f"memo older than {DOCKET_MEMO_TTL_SEC / 3600:.0f}h: re-decided"}
+    return dict(rows), {"stamp": stamp, "born": born, "reused": len(rows), "why": "reused"}
+
+
+def save_docket_memo(memo: dict, info: dict) -> None:
+    """Write the memo compactly (no indent: it holds one short entry per docket cell)."""
+    doc = {"stamp": info.get("stamp"), "born": info.get("born"),
+           "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "n": len(memo),
+           "rows": memo}
+    try:
+        DOCKET_MEMO.parent.mkdir(parents=True, exist_ok=True)
+        tmp = DOCKET_MEMO.with_suffix(f".{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(doc, separators=(",", ":")), encoding="utf-8")
+        os.replace(tmp, DOCKET_MEMO)
+    except Exception as exc:
+        print(f"  {DOCKET_MEMO.name} NOT written ({type(exc).__name__}: {exc})")
 
 
 def docket_specs(G, meta: dict) -> list[dict]:
@@ -388,15 +631,20 @@ def docket_specs(G, meta: dict) -> list[dict]:
     Streaming read, the point-in-time ratchet, de-duplication, the row-level `timeframe` fold, the
     economic-prior partition WITH `meta` and the modifier preflight all mirror
     `external_gauntlet.main`; without `meta` the tradeability limb never runs and this job warms
-    cells the sweep sets aside at gate 0. Each spec carries `tf`, its own chart.
+    cells the sweep sets aside at gate 0. Each spec carries `tf`, its own chart. Cells whose
+    outcome the docket memo already holds skip the partition and preflight (same list, same order).
     """
     import judge_docket_order as O
 
-    eligible, census = O.sealed_docket(G, meta)
+    memo, info = load_docket_memo(G)
+    eligible, census = O.sealed_docket(G, meta, memo=memo)
+    if census.get("memo_new") or info.get("reused") != len(memo):
+        save_docket_memo(memo, info)
     print(f"docket {census['rows']} rows -> {census['cells']} cells -> {census['eligible']} "
           f"eligible ({census['rejected_at_prior']} rejected at the economic prior, "
           f"{census['modifier_refused']} conserved by the sealed modifier preflight, as the "
-          f"sweep would)")
+          f"sweep would); memo: {census.get('memo_hits', 0)} reused, "
+          f"{census.get('memo_new', 0)} decided now ({info.get('why')})", flush=True)
     return eligible
 
 
@@ -731,6 +979,75 @@ def gate_room(anatomy: dict | None = None) -> dict:
     return {**base, "status": "MEASURED", "cells": room, "post_build_s_per_cell": per_cell}
 
 
+#: Once the budget is spent, how long in-flight batches may finish before their workers are
+#: TERMINATED. The old code waited on them without bound: a batch of eight cells on a starved
+#: IDLE worker took the 14.8h and 25h "rounds" the box logged. A terminated worker loses only its
+#: unfinished cells -- `cache_save` writes a temp file and renames it, so nothing torn is left --
+#: and the next run resumes from the cache.
+DRAIN_SEC = float(os.environ.get("WARM_DRAIN_SEC", "90"))
+
+#: The HARD STOP: `BUDGET_SEC + GRACE_SEC` after the process STARTED (admission wait included),
+#: a watchdog thread writes WARM_GAUNTLET.json and the completion line, terminates this job's own
+#: workers and exits -- whatever the main thread is doing (a serial phase, a hung frame read, a
+#: drain). 3300 + 240 = 3540s keeps every run inside its hourly trigger, so `IgnoreNew` never has
+#: to refuse the next one and no run ever outlives the scheduler's ExecutionTimeLimit to become an
+#: orphan holding the log open.
+GRACE_SEC = float(os.environ.get("WARM_GRACE_SEC", "240"))
+
+#: How often the watchdog republishes the in-progress report (phase, its age, rounds so far), so a
+#: run sitting in a long phase is VISIBLE as that phase rather than as a stale file.
+HEARTBEAT_SEC = float(os.environ.get("WARM_HEARTBEAT_SEC", "60"))
+
+#: Live run state, read by the watchdog. Only the main thread writes it.
+_STATE: dict = {"phase": "init", "phase_since": time.time(), "rounds": [], "start": None,
+                "deadline": None, "hard_stop": None, "status": "RUNNING"}
+
+
+def _close_pool(pool, kill: bool) -> None:
+    """Shut a warm pool down; with `kill`, cancel what is queued and TERMINATE its workers."""
+    shut = getattr(pool, "shutdown", None)
+    if shut is None:
+        return
+    if not kill:
+        shut(wait=True)
+        return
+    with contextlib.suppress(Exception):
+        shut(wait=False, cancel_futures=True)
+    term = getattr(pool, "terminate_workers", None)    # Python 3.14+
+    if term is not None:
+        with contextlib.suppress(Exception):
+            term()
+            return
+    for proc in list((getattr(pool, "_processes", None) or {}).values()):
+        with contextlib.suppress(Exception):
+            proc.terminate()
+
+
+def _phase(name: str, **info) -> None:
+    """Enter a phase: stamp it in the live state and print it, so the log shows where time goes."""
+    now = time.time()
+    prev, since = _STATE.get("phase"), float(_STATE.get("phase_since") or now)
+    _STATE.update({"phase": name, "phase_since": now, "phase_info": info})
+    extra = " ".join(f"{k}={v}" for k, v in info.items())
+    print(f"  [{time.strftime('%H:%M:%S')}] phase {name} (after {prev} {now - since:.0f}s)"
+          + (f" {extra}" if extra else ""), flush=True)
+
+
+def _report_doc(status: str, **extra) -> dict:
+    now = time.time()
+    return {"at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
+            "status": status, "in_progress": status == "RUNNING", "pid": os.getpid(),
+            "budget_sec": BUDGET_SEC, "grace_sec": GRACE_SEC,
+            "started_at": _STATE.get("start"), "deadline": _STATE.get("deadline"),
+            "hard_stop": _STATE.get("hard_stop"),
+            "phase": _STATE.get("phase"),
+            "phase_age_s": round(now - float(_STATE.get("phase_since") or now), 1),
+            "phase_info": _STATE.get("phase_info"),
+            "parent_priority": _STATE.get("parent_priority"),
+            "equal_workers": EQUAL_WORKERS,
+            "rounds": list(_STATE.get("rounds") or []), **extra}
+
+
 def run_round(G, meta: dict, priors, deadline: float) -> dict:
     """One pass over the JUDGE'S OWN next docket, backlog first. Returns the round's census."""
     from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
@@ -739,12 +1056,23 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
     from research.job_lock import free_mb
 
     t0 = time.time()
+    phase_s: dict[str, float] = {}
+
+    def _mark(name: str, **info) -> None:
+        cur = str(_STATE.get("phase") or "")
+        if cur:
+            phase_s[cur] = round(phase_s.get(cur, 0.0)
+                                 + time.time() - float(_STATE.get("phase_since") or time.time()), 1)
+        _phase(name, **info)
+
+    _mark("docket_load")
     specs = docket_specs(G, meta)
     if not specs:
         return {"eligible": 0, "note": "no docket to warm"}
     # THE SAME DOCKET, IN THE SAME ORDER, THE SEALED SWEEP WILL READ. Cells the family trim leaves
     # out of this sweep are not warmed now: the next sweep would not look at them, and their key
     # may roll over with the data day before one does. They stay in the docket.
+    _mark("sealed_order", eligible=len(specs))
     keep, order_census = O.sealed_keep(G, specs)
     n_never = int(order_census["keep_never_judged"])
     keep = backlog_first(keep)
@@ -753,7 +1081,9 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
           f"the next sweep's docket, {n_never} of them never judged; "
           f"{order_census['outside_keep']} left to a later sweep by the family trim")
 
+    _mark("keying", keep=len(keep))
     keyed, stamps, no_bars = resolve_keys(G, keep)
+    _mark("cache_scan")
     warm = on_disk_keys(G)
     cold = [sp for sp in keyed if sp["ckey"] not in warm]
     n_warm_already = len(keyed) - len(cold)
@@ -763,6 +1093,7 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
           f"chart); {n_warm_already} already warm ({share:.1%}), {len(cold)} cold "
           f"({never_cold} of them never judged)")
 
+    _mark("plan", cold=len(cold))
     now = time.time()
     order_, held, rows = split_deferred(cold, stamps, now)
     order_ = backlog_first(order_)
@@ -794,47 +1125,85 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
     fanned = served_now
     never_warmed = 0
     stopped = ""
+    abandoned = 0
+    worker_peaks: dict[int, int] = {}
+    by_lane = {EQUAL: 0, IDLE: 0}
     cap = measure_capacity()
     pool_n, target = int(cap["pool"]), int(cap["inflight"])
     samples = [target]
-    print(f"  capacity: {cap['cores']} cores, {cap['idle_cores']} idle, {cap['free_mb']}MB free "
-          f"-> pool {pool_n}, {target} in flight at IDLE priority, {len(order_)} cold cell(s)")
-    if order_:
+    n_eq = min(EQUAL_WORKERS, pool_n)
+    n_idle = pool_n - n_eq
+    print(f"  capacity: {cap['cores']} cores, {cap['idle_cores']} idle, {cap['free_mb']}MB free, "
+          f"{cap.get('need_mb_per_worker')}MB per worker ({cap.get('need_basis')}) "
+          f"-> pool {pool_n} ({n_eq} at EQUAL, {n_idle} at IDLE), {target} in flight, "
+          f"{len(order_)} cold cell(s)", flush=True)
+    # THE BUDGET BINDS THE SERIAL PHASES TOO. The old round checked its deadline only inside the
+    # build loop, so when the docket pass alone outlasted the budget it still opened a pool, sent
+    # a first wave, found the deadline gone at the first wake and then waited on that wave.
+    if order_ and time.time() > deadline:
+        stopped = (f"run budget spent before the build phase -- the serial phases took "
+                   f"{time.time() - t0:.0f}s; nothing was submitted")
+    if order_ and not stopped:
+        _mark("build", cells=len(order_), pool=pool_n, inflight=target)
         todo = batches(order_)
         by_key = {str(sp.get("ckey") or ""): sp for sp in order_}
         done_n = 0
         next_cap = time.time() + CAPACITY_EVERY_SEC
-        with ProcessPoolExecutor(max_workers=max(1, pool_n), initializer=_init,
-                                 initargs=(meta,)) as pool:
-            pending: set = set()
-            it = iter(todo)
+        pools: dict[str, object] = {}
+        if n_eq:
+            pools[EQUAL] = ProcessPoolExecutor(max_workers=n_eq, initializer=_init_equal,
+                                               initargs=(meta,))
+        if n_idle > 0:
+            pools[IDLE] = ProcessPoolExecutor(max_workers=max(1, n_idle), initializer=_init,
+                                              initargs=(meta,))
+        pending: dict = {}           # future -> (lane, cells in the batch)
+        it = iter(todo)
+        drain_until: float | None = None
+        kill = False
 
-            def _submit() -> bool:
-                while True:
-                    b = next(it, None)
-                    if b is None:
-                        return False
-                    # The judge's own pool may have built these since the scan; a stat is free.
-                    live = [sp for sp in b if not (G.CACHE_DIR / f"{sp['ckey']}.npz").exists()]
-                    counts["hit"] += len(b) - len(live)
-                    if live:
-                        pending.add(pool.submit(_warm_batch, live))
-                        return True
+        def _lane_load(lane: str) -> int:
+            return sum(1 for v in pending.values() if v[0] == lane)
 
-            while len(pending) < target and _submit():
+        def _submit() -> bool:
+            # EQUAL lane first (its workers are the guaranteed floor), then IDLE up to target.
+            if EQUAL in pools and _lane_load(EQUAL) < n_eq:
+                lane = EQUAL
+            elif IDLE in pools and _lane_load(IDLE) < max(0, target - (n_eq if EQUAL in pools
+                                                                       else 0)):
+                lane = IDLE
+            else:
+                return False
+            while True:
+                b = next(it, None)
+                if b is None:
+                    return False
+                # The judge's own pool may have built these since the scan; a stat is free.
+                live = [sp for sp in b if not (G.CACHE_DIR / f"{sp['ckey']}.npz").exists()]
+                counts["hit"] += len(b) - len(live)
+                if live:
+                    fut = pools[lane].submit(_warm_batch, live)  # type: ignore[attr-defined]
+                    pending[fut] = (lane, len(live))
+                    return True
+
+        try:
+            while _submit():
                 pass
             while pending:
-                fin, _ = wait(pending, timeout=5, return_when=FIRST_COMPLETED)
+                fin, _ = wait(set(pending), timeout=5, return_when=FIRST_COMPLETED)
                 for f in fin:
-                    pending.discard(f)
+                    lane, _n = pending.pop(f)
                     try:
-                        res = f.result()
+                        res, wpid, wpeak = _batch_outcomes(f.result())
                     except Exception:
-                        res = []
+                        res, wpid, wpeak = [], None, None
+                    if wpid is not None and wpeak:
+                        worker_peaks[wpid] = max(worker_peaks.get(wpid, 0), wpeak)
                     for ck, outcome in res:
                         state, _, reason = outcome.partition("|")
                         done_n += 1
                         counts[state] = counts.get(state, 0) + 1
+                        if state == "warmed":
+                            by_lane[lane] = by_lane.get(lane, 0) + 1
                         sp = by_key.get(ck) or {}
                         if state in ("warmed", "hit"):
                             rows.pop(ck, None)
@@ -868,18 +1237,34 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
                         stopped = (f"{avail}MB free, floor {FLOOR_MB}MB -- warming is optional "
                                    f"work and yields the box; progress is cached and resumable")
                 if stopped:
+                    if drain_until is None:
+                        drain_until = time.time() + DRAIN_SEC
+                        _mark("drain", in_flight=len(pending), drain_s=DRAIN_SEC)
                     for f in list(pending):
                         if f.cancel():
-                            pending.discard(f)
+                            pending.pop(f, None)
+                    if pending and time.time() >= drain_until:
+                        abandoned = sum(n for _lane, n in pending.values())
+                        kill = True
+                        break
                     continue
                 if time.time() >= next_cap:
                     target = retarget(len(pending), pool_n, _cpu_idle_cores(1.0))
                     samples.append(target)
                     next_cap = time.time() + CAPACITY_EVERY_SEC
-                while len(pending) < target and _submit():
+                while _submit():
                     pass
+        finally:
+            for ex in pools.values():
+                _close_pool(ex, kill=kill or bool(pending))
     if stopped:
-        print(f"  STOPPED: {stopped}")
+        print(f"  STOPPED: {stopped}" + (f" ({abandoned} in-flight cell(s) abandoned after a "
+                                          f"{DRAIN_SEC:.0f}s drain; their workers were "
+                                          f"terminated)" if abandoned else ""), flush=True)
+    if worker_peaks:
+        with contextlib.suppress(Exception):
+            record_worker_peaks(list(worker_peaks.values()))
+    _mark("publish")
 
     census = publish_deferrals(rows, held, time.time(), {"held_sample": [
         {"sym": sp.get("sym"), "family": sp.get("family"), "tf": sp.get("tf")}
@@ -902,22 +1287,108 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
         "order_census": order_census,
         "gate_room": room, "held_for_gate_room": n_room_held,
         "seconds": round(secs, 1),
+        "phase_seconds": phase_s,
+        "warmed_by_lane": by_lane, "abandoned_in_flight": abandoned,
+        "worker_peak_mb": sorted(worker_peaks.values()),
         # BUILD ATTEMPTS per minute -- a `hit` is a stat, not a build, and is not counted.
         "cells_per_min": round(built / secs * 60.0, 1),
         "workers": pool_n, "inflight_samples": {"min": min(samples), "max": max(samples),
                                                 "last": samples[-1], "n": len(samples)},
-        "capacity": cap, "priority": "IDLE (workers)", "batch_cells": BATCH_CELLS,
+        "capacity": cap,
+        "priority": {"parent": _STATE.get("parent_priority"), "equal_workers": n_eq,
+                     "idle_workers": n_idle},
+        "batch_cells": BATCH_CELLS,
         "ordered_by": ordered_by, "stopped": stopped,
         "deferral_census": {k: v for k, v in census.items() if k != "held_sample"},
     }
 
 
+_NOTE = ("Warmth is what decides which cells a bounded sweep can reach: an uncached cell costs "
+         "the sweep ~22s of its build budget and a cached one costs it nothing. This job holds no "
+         "authority over any verdict.")
+
+
+def _kill_own_workers() -> int:
+    """Terminate every descendant of THIS process (its warm workers). Returns how many."""
+    n = 0
+    try:
+        import psutil
+        for child in psutil.Process().children(recursive=True):
+            with contextlib.suppress(Exception):
+                child.kill()
+                n += 1
+    except Exception:
+        pass
+    return n
+
+
+def _hard_stop() -> None:
+    """The watchdog's exit: publish, print the completion line, kill our workers, leave."""
+    phase = _STATE.get("phase")
+    age = time.time() - float(_STATE.get("phase_since") or time.time())
+    _STATE["status"] = "HARD_STOP"
+    killed = _kill_own_workers()
+    # Only an ADMITTED run owns the report; one still waiting on admission (or refused as a
+    # duplicate) must never overwrite the live instance's.
+    with contextlib.suppress(Exception):
+        if _STATE.get("admitted"):
+            _write_json(REPORT, _report_doc(
+                "HARD_STOP", killed_workers=killed, blas_single_thread=dict(_BLAS), note=_NOTE,
+                why=(f"still in phase {phase!r} ({age:.0f}s) at the hard stop, "
+                     f"{BUDGET_SEC:.0f}s budget + {GRACE_SEC:.0f}s grace after start")))
+    with contextlib.suppress(Exception):
+        try:
+            from research.job_lock import peak_rss_mb, record_peak
+        except ModuleNotFoundError:
+            from job_lock import peak_rss_mb, record_peak  # type: ignore[no-redef]
+        hwm = peak_rss_mb()
+        if hwm:
+            record_peak("warm_gauntlet_cache", hwm)
+    print(f"CacheWarm END status=HARD_STOP phase={phase} phase_age={age:.0f}s "
+          f"elapsed={time.time() - float(_STATE.get('start') or time.time()):.0f}s "
+          f"killed_workers={killed} -- the next trigger resumes from the cache", flush=True)
+    with contextlib.suppress(Exception):
+        sys.stdout.flush()
+    os._exit(0)
+
+
+def _watchdog() -> None:
+    """Heartbeat the in-progress report and enforce the hard stop. Daemon thread."""
+    while True:
+        hard = float(_STATE.get("hard_stop") or 0.0)
+        now = time.time()
+        if hard and now >= hard:
+            _hard_stop()
+            return
+        time.sleep(max(1.0, min(HEARTBEAT_SEC, (hard - now) if hard else HEARTBEAT_SEC)))
+        if (_STATE.get("status") == "RUNNING" and _STATE.get("admitted")
+                and not (hard and time.time() >= hard)):
+            with contextlib.suppress(Exception):
+                _write_json(REPORT, _report_doc("RUNNING"))
+
+
+def start_watchdog(start: float) -> None:
+    """Arm the deadline and the hard stop from the process START (admission wait included)."""
+    import threading
+
+    _STATE.update({"start": start, "deadline": start + BUDGET_SEC, "phase": "admission",
+                   "phase_since": start, "hard_stop": start + BUDGET_SEC + GRACE_SEC,
+                   "status": "RUNNING", "admitted": False})
+    threading.Thread(target=_watchdog, name="warm-watchdog", daemon=True).start()
+
+
 def main() -> int:
-    # The parent too: reading and ordering a million-row docket is CPU a miner must never lose.
-    print(f"  priority: {_lower_priority()}")
+    _STATE["admitted"] = True
+    # THE PARENT RUNS AT EQUAL, NEVER ABOVE (see PARENT_PRIORITY). It was IDLE, and on a box the
+    # miners hold at ~100% its single-threaded docket pass then took longer than the whole budget.
+    _STATE["parent_priority"] = _set_priority(PARENT_PRIORITY)
+    print(f"  priority: parent {_STATE['parent_priority']}; workers: {EQUAL_WORKERS} at EQUAL, "
+          f"the rest at IDLE", flush=True)
+    _phase("import")
     import external_gauntlet as G
 
     meta = json.loads((G.UNI / "universe.json").read_text("utf-8"))
+    _phase("priors")
     try:
         import cell_priority as CP
         priors = CP.measure_priors(BASE)
@@ -927,15 +1398,14 @@ def main() -> int:
         print(f"  priors UNMEASURED ({type(exc).__name__}: {exc})")
         priors = None
 
-    deadline = time.time() + BUDGET_SEC
-    rounds: list[dict] = []
+    deadline = float(_STATE.get("deadline") or (time.time() + BUDGET_SEC))
+    rounds: list[dict] = _STATE["rounds"]
     while time.time() < deadline:
         r = run_round(G, meta, priors, deadline)
         rounds.append(r)
         # PUBLISHED EVERY ROUND, not once at exit: `judging_burndown` reads the last round as the
         # warm side of the drain, and a report written only after an hour is an hour stale.
-        _write_json(REPORT, {"at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                             "budget_sec": BUDGET_SEC, "rounds": rounds, "in_progress": True})
+        _write_json(REPORT, _report_doc("RUNNING"))
         if not r.get("eligible"):
             break
         # A round that warmed nothing and held nothing new has converged: the docket is warm to
@@ -952,13 +1422,9 @@ def main() -> int:
                                                     "last_round": last})
     except Exception:
         pass
-    _write_json(REPORT, {
-        "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "budget_sec": BUDGET_SEC, "rounds": rounds, "blas_single_thread": dict(_BLAS),
-        "note": ("Warmth is what decides which cells a bounded sweep can reach: an uncached cell "
-                 "costs the sweep ~22s of its build budget and a cached one costs it nothing. "
-                 "This job holds no authority over any verdict."),
-    })
+    _STATE["status"] = "DONE"
+    _phase("done")
+    _write_json(REPORT, _report_doc("DONE", blas_single_thread=dict(_BLAS), note=_NOTE))
     if last:
         print(f"warmed {last.get('warmed')} cell(s) in {last.get('seconds')}s at "
               f"{last.get('cells_per_min')} cells/min with {last.get('workers')} worker(s); "
@@ -1001,10 +1467,46 @@ def _cli_main() -> int:
     except ModuleNotFoundError:
         from job_lock import exclusive_job
 
-    # Modest: cells are released as they are warmed, so the working set is one cell plus the
-    # bounded frame cache -- not the whole docket.
-    with exclusive_job("warm_gauntlet_cache", need_mb=900) as acquired:
-        return main() if acquired else 75
+    # THE CLOCK STARTS NOW, before admission may wait up to 12 minutes, so budget + grace bound
+    # the whole process and a run can never outlive its hourly trigger.
+    start = time.time()
+    start_watchdog(start)
+    stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(start))
+    print(f"CacheWarm START pid={os.getpid()} at {stamp} budget={BUDGET_SEC:.0f}s "
+          f"hard_stop=+{BUDGET_SEC + GRACE_SEC:.0f}s", flush=True)
+    rc, status = 1, "CRASHED"
+    try:
+        # The parent's need is what it MEASURED (p75 of its own runs: the docket, ~4.4GB on the
+        # trading box), never the unmeasured 900MB it used to declare.
+        with exclusive_job("warm_gauntlet_cache", need_mb=parent_need_mb()) as acquired:
+            if acquired:
+                rc = main()
+                status = "DONE" if rc == 0 else f"rc={rc}"
+            else:
+                rc, status = 75, not_admitted_status()
+        return rc
+    finally:
+        if status == "CRASHED":
+            _STATE["status"] = "CRASHED"
+            if _STATE.get("admitted"):
+                with contextlib.suppress(Exception):
+                    _write_json(REPORT, _report_doc("CRASHED", note=_NOTE))
+        print(f"CacheWarm END status={status} rc={rc} "
+              f"elapsed={time.time() - start:.0f}s phase={_STATE.get('phase')}", flush=True)
+
+
+def not_admitted_status() -> str:
+    """Why admission said no, and the report it leaves -- never clobbering a live instance's."""
+    lock = DESK / "data" / ".job_locks" / "warm_gauntlet_cache.json"
+    holder = _read_json(lock, {})
+    if isinstance(holder, dict) and holder.get("pid"):
+        # Another instance holds the lock and owns WARM_GAUNTLET.json; say so in the log only.
+        return f"REFUSED_DUPLICATE (lock held by pid {holder.get('pid')})"
+    _STATE["status"] = "NOT_ADMITTED"
+    with contextlib.suppress(Exception):
+        _write_json(REPORT, _report_doc("NOT_ADMITTED", note=_NOTE,
+                                        why="memory admission stood down (see the log line above)"))
+    return "NOT_ADMITTED"
 
 
 if __name__ == "__main__":
