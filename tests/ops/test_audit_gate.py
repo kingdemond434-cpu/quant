@@ -243,6 +243,7 @@ class _Hub:
         fork: bool = False,
         labels: tuple[str, ...] = ("audit-clear",),
         files: tuple[str, ...] = ("scripts/x.py",),
+        approvals: list[dict[str, Any]] | None = None,
     ) -> None:
         self.pr = {
             "state": "open",
@@ -252,6 +253,8 @@ class _Hub:
             "labels": [{"name": n} for n in labels],
         }
         self.files = [{"filename": f} for f in files]
+        # zuck's daily approval, by default given after every CLEAR these tests post
+        self.approvals = approvals if approvals is not None else [_ok()]
         self.comments = comments or []
         self.runs = runs if runs is not None else _green()
         self.writes: list[tuple[str, ...]] = []
@@ -267,6 +270,8 @@ class _Hub:
                 )
             )
             return None
+        if f"/issues/{ag.APPROVALS_ISSUE}/comments" in path:
+            return [self.approvals]
         if path.endswith("/comments?per_page=100"):
             return [self.comments]
         if "/check-runs" in path:
@@ -276,6 +281,19 @@ class _Hub:
         if "/pulls?" in path:
             return [[{"number": 7}]]
         return self.pr
+
+
+def _ok(at: str = "2026-10-28T23:00:00Z", app: str | None = None, **kw: Any) -> dict[str, Any]:
+    """zuck's approval comment on the tracking issue."""
+    c = {
+        "body": kw.get("body", ag.APPROVE),
+        "created_at": at,
+        "updated_at": kw.get("updated_at", at),
+        "author_association": kw.get("assoc", "OWNER"),
+        "user": {"login": "kingdemond434-cpu"},
+        "performed_via_github_app": {"slug": app} if app else None,
+    }
+    return c
 
 
 @pytest.fixture
@@ -461,3 +479,51 @@ def test_a_dispatched_ci_run_on_live_seals_and_promotes_like_a_push() -> None:
         start = ci.index(f"\n  {job}:\n")
         assert both in ci[start : start + 400], job
     assert f"{both} && github.sha || 'pr'" in ci
+
+
+# ------------------------------------------------------------- zuck's daily approval (#453)
+
+
+@pytest.mark.parametrize(
+    "approvals",
+    [
+        [],  # none yet
+        [_ok("2026-10-28T09:00:00Z")],  # before the CLEAR: the CLEAR waits for the next one
+        [_ok(app="claude")],  # posted through the Claude app: never an approval
+        [_ok(assoc="COLLABORATOR")],  # not the owner
+        [_ok(updated_at="2026-10-28T23:05:00Z")],  # edited
+        [_ok(body="APPROVE MERGES please")],  # not exactly the line
+    ],
+)
+def test_a_clear_without_zucks_later_approval_merges_nothing(
+    hub: Any, approvals: list[dict[str, Any]]
+) -> None:
+    for box in (False, True):
+        h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], approvals=approvals)
+        assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=box) == 0
+        assert _merges(h) == []
+
+
+def test_one_approval_covers_every_clear_given_before_it_and_the_newest_counts(hub: Any) -> None:
+    h = hub(
+        comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")],
+        approvals=[
+            _ok("2026-10-28T09:00:00Z"),
+            _ok("2026-10-28T11:00:00Z", app="claude"),
+            _ok("2026-10-28T12:00:00Z"),
+        ],
+    )
+    assert ag.main(["--repo", "o/r", "--sweep", "--box"]) == 0
+    (merge,) = _merges(h)
+    assert f"sha={A}" in merge
+
+
+def test_a_hold_after_the_approval_still_wins(hub: Any) -> None:
+    h = hub(
+        comments=[
+            _c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z"),
+            _c(f"AUDIT HOLD {A}", "2026-10-28T13:00:00Z"),
+        ],
+        approvals=[_ok("2026-10-28T12:00:00Z")],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []

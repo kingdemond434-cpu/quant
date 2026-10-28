@@ -20,6 +20,7 @@ THE RULE. "Audit HOLD beats green CI" stands. A PR into LIVE merges only when AL
   3. Every CI check run on the head has finished, none failed, and the gating jobs
      (quality, mt5-money-path, coverage-floor) each succeeded.
   4. The PR is from this repository (never a fork) and targets LIVE.
+  5. zuck's own `APPROVE MERGES` comment on #453 is newer than that CLEAR (see below).
 
 Then the gate marks a draft ready, merges through the REST API PINNED TO THE HEAD SHA (GitHub
 refuses the merge if the head moved), and dispatches ci.yml on LIVE: a merge made with the
@@ -52,6 +53,14 @@ PR's own ci.yml, which can rename or neuter quality / mt5-money-path / coverage-
 read green. The CLEAR of the exact bytes is the only real gate there, so the auditor reads every
 change to a CI job in such a PR as its critical part.
 
+ZUCK'S DAILY APPROVAL (2026-10-28, zuck: "Fine do one tap a day"). The cloud refuses a Claude
+session's own merge trigger, so a CLEAR alone merges nothing. A merge also needs zuck's own
+comment, exactly `APPROVE MERGES`, on the tracking issue (#453), POSTED AFTER the CLEAR it
+covers: one comment approves every CLEAR already given, and a CLEAR that comes later waits for
+the next one. Only zuck's own typing counts -- author_association OWNER, not posted through any
+GitHub App (a Claude session's comment carries `performed_via_github_app`), never edited. Claude
+never posts it or any substitute.
+
 Exit 0 when merged or when there is honestly nothing to do yet (no CLEAR); exit 1 when the gate
 refused or gave up, with the reason in the job summary and on the `audit/clear` commit status.
 """
@@ -75,6 +84,9 @@ GATING_JOBS = ("quality", "mt5-money-path", "coverage-floor")
 #: Who may post a verdict (GitHub's author_association).
 TRUSTED = ("OWNER", "MEMBER", "COLLABORATOR")
 STATUS_CONTEXT = "audit/clear"
+#: The issue zuck approves merges on, and his approval line (the whole comment, nothing else).
+APPROVALS_ISSUE = 453
+APPROVE = "APPROVE MERGES"
 #: The label that starts a gate run (the CLEAR comment itself starts none).
 LABEL = "audit-clear"
 VERDICT = re.compile(r"^AUDIT (CLEAR|HOLD) ([0-9a-f]{40})(?: (merge|squash))?[ \t]*$", re.M)
@@ -124,6 +136,36 @@ def verdicts(comments: Iterable[Mapping[str, Any]]) -> list[dict[str, str]]:
             }
         )
     return sorted(out, key=lambda v: v["at"])
+
+
+def approval_at(comments: Iterable[Mapping[str, Any]]) -> str | None:
+    """When zuck last approved merges: the newest comment that is exactly APPROVE, by the OWNER,
+    typed by him (no GitHub App posted it) and never edited. None when there is none."""
+    best: str | None = None
+    for c in comments:
+        if str(c.get("body") or "").strip() != APPROVE:
+            continue
+        if str(c.get("author_association") or "") != "OWNER":
+            continue
+        if c.get("performed_via_github_app"):
+            continue  # a Claude session (or any app) posted it: never an approval
+        created = str(c.get("created_at") or "")
+        if not created or c.get("updated_at") not in (None, created):
+            continue  # an edit could turn an old comment into an approval
+        best = max(best or "", created)
+    return best
+
+
+def approved(clear: Mapping[str, str], at: str | None) -> tuple[bool, str]:
+    """Does zuck's latest approval cover this CLEAR? Only a CLEAR given BEFORE it does."""
+    if at is None:
+        return False, f"no `{APPROVE}` from zuck on #{APPROVALS_ISSUE} yet"
+    if clear["at"] >= at:
+        return False, (
+            f"the CLEAR ({clear['at']}) came after zuck's latest approval ({at}): "
+            "it waits for the next one"
+        )
+    return True, f"approved by zuck at {at}"
 
 
 def cleared(
@@ -283,6 +325,7 @@ def run(
     wait_min: float,
     poll_s: float = 60.0,
     box: bool = False,
+    approvals_issue: int = APPROVALS_ISSUE,
 ) -> int:
     """Merge #pr when the rule holds. `box`: the box's run with a user token -- it needs no label,
     merges workflow-file PRs too (the Actions run, box=False, leaves those to it), posts no
@@ -322,7 +365,14 @@ def run(
 
     def verdict_now() -> tuple[dict[str, str] | None, str]:
         pages = _gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate", "--slurp")
-        return cleared(verdicts(_flat(pages)), head, same_change)
+        clear, why = cleared(verdicts(_flat(pages)), head, same_change)
+        if clear is None:
+            return None, why
+        ap = _gh(
+            f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100", "--paginate", "--slurp"
+        )
+        ok, awhy = approved(clear, approval_at(_flat(ap)))
+        return (clear if ok else None), f"{why}; {awhy}"
 
     clear, why = verdict_now()
     if clear is None:
@@ -388,7 +438,7 @@ def run(
     return 0
 
 
-def sweep(repo: str, base: str) -> int:
+def sweep(repo: str, base: str, approvals_issue: int = APPROVALS_ISSUE) -> int:
     """The box's pass: every open PR into `base` gets one box-mode run (forks are refused inside).
     One PR's failure never stops the others; the worst exit code is returned."""
     pages = _gh(f"repos/{repo}/pulls?state=open&base={base}&per_page=100", "--paginate", "--slurp")
@@ -396,7 +446,7 @@ def sweep(repo: str, base: str) -> int:
     for p in _flat(pages):
         n = int(p["number"])
         try:
-            rc = max(rc, run(repo, n, base, 0.0, box=True))
+            rc = max(rc, run(repo, n, base, 0.0, box=True, approvals_issue=approvals_issue))
         except (RuntimeError, subprocess.CalledProcessError) as exc:
             _summary(f"#{n}: the box gate failed: {exc}")
             rc = 1
@@ -411,15 +461,23 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--wait-min", type=float, default=300.0)
     ap.add_argument("--box", action="store_true", help="the box's run: no label, workflow PRs too")
     ap.add_argument("--sweep", action="store_true", help="every open PR into --base (with --box)")
+    ap.add_argument("--approvals-issue", type=int, default=APPROVALS_ISSUE)
     a = ap.parse_args(argv)
     if a.sweep:
         if not a.box:
             ap.error("--sweep is the box's pass: give --box too")
-        return sweep(a.repo, a.base)
+        return sweep(a.repo, a.base, a.approvals_issue)
     if a.pr is None:
         ap.error("--pr or --sweep is required")
     try:
-        return run(a.repo, a.pr, a.base, 0.0 if a.box else a.wait_min, box=a.box)
+        return run(
+            a.repo,
+            a.pr,
+            a.base,
+            0.0 if a.box else a.wait_min,
+            box=a.box,
+            approvals_issue=a.approvals_issue,
+        )
     except (RuntimeError, subprocess.CalledProcessError) as exc:
         _summary(f"#{a.pr}: the gate failed: {exc}")
         return 1
