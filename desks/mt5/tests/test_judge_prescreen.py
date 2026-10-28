@@ -957,3 +957,20 @@ def test_no_sealed_file_imports_or_names_the_screen() -> None:
         p = ROOT / rel
         if p.exists():
             assert "judge_prescreen" not in p.read_text("utf-8", errors="replace"), rel
+
+
+def test_conftest_keeps_both_prescreen_reports_out_of_the_checkout() -> None:
+    """v1.7: the desk conftest's autouse `_prescreen_reports_in_tmp` redirects INTAKE_REPORT and
+    REPORT under both spellings, so a publishing `order_docket` test never writes desks/mt5/reports."""
+    import importlib
+
+    desk_reports = (DESK / "reports").resolve()
+    for name in ("research.judge_prescreen", "judge_prescreen"):
+        try:
+            mod = importlib.import_module(name)
+        except ImportError:
+            continue
+        for attr in ("INTAKE_REPORT", "REPORT"):
+            p = Path(getattr(mod, attr)).resolve()
+            assert desk_reports not in p.parents, (name, attr, p)
+            assert p.name.startswith("JUDGE_PRESCREEN")
