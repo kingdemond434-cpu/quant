@@ -161,7 +161,7 @@ PROTECTED = (
     "*ftmo_copy_principal*", "*gold_oco_mode*", "*gateway_paused*", "*cashcarry_kill*",
     "*deadman_fired*", "data/freeze", "*/data/freeze",
     # governing prose
-    "docs/research.md", "docs/cro/*", "ops/memory/*",
+    "docs/research.md", "docs/cro/*", "ops/memory/*", ".mcp.json", "*/.mcp.json",
 )  # fmt: skip
 #: Prose files: one whose name matches FORCED_LIVE is a governing document, so PROTECTED.
 DOC_EXTS = (".md", ".txt", ".rst")
@@ -459,42 +459,82 @@ def _git(*args: str) -> str:
     return subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout.strip()
 
 
-def provenance(repo: str, head: str) -> Callable[[Mapping[str, Any]], bool]:
-    """A `genuine` for checks(): the run is GitHub Actions', and its check suite belongs to a
-    workflow run of the job's own workflow file on this very head. Each suite is looked up once;
-    a lookup that fails is a no."""
-    suites: dict[int, list[tuple[str, str]]] = {}
+def provenance(repo: str, pr: int, head: str) -> Callable[[Mapping[str, Any]], bool]:
+    """A `genuine` for checks(): the check run IS a job of a workflow run of the job's own
+    workflow file, on this very head, for this PR (or a push of it). The job id must equal the
+    check run id: a check run POSTed through the API by some other workflow (#456 audit MF1:
+    any same-repo PR can add one with `checks: write`) lands in a suite but is no job of any run.
+    Every lookup is cached; one that fails is a no."""
+    suites: dict[int, list[Mapping[str, Any]]] = {}
+    jobs: dict[int, set[int]] = {}
+
+    def runs_of(sid: int) -> list[Mapping[str, Any]]:
+        if sid not in suites:
+            try:
+                got = _gh(f"repos/{repo}/actions/runs?check_suite_id={sid}&per_page=10")
+                suites[sid] = list((got or {}).get("workflow_runs") or [])
+            except RuntimeError:
+                suites[sid] = []
+        return suites[sid]
+
+    def jobs_of(run_id: int) -> set[int]:
+        if run_id not in jobs:
+            try:
+                pages = _gh(
+                    f"repos/{repo}/actions/runs/{run_id}/jobs?per_page=100", "--paginate", "--slurp"
+                )
+                jobs[run_id] = {
+                    int(j["id"]) for page in _flat_pages(pages) for j in (page.get("jobs") or [])
+                }
+            except (RuntimeError, KeyError, TypeError, ValueError):
+                jobs[run_id] = set()
+        return jobs[run_id]
 
     def genuine(r: Mapping[str, Any]) -> bool:
         want = WORKFLOW_OF.get(str(r.get("name") or ""))
         sid = (r.get("check_suite") or {}).get("id")
-        if not want or not _from_ci_app(r) or not isinstance(sid, int):
+        rid = r.get("id")
+        if not want or not _from_ci_app(r) or not isinstance(sid, int) or not isinstance(rid, int):
             return False
-        if sid not in suites:
-            try:
-                got = _gh(f"repos/{repo}/actions/runs?check_suite_id={sid}&per_page=10")
-                wr = (got or {}).get("workflow_runs") or []
-                suites[sid] = [(str(w.get("path") or ""), str(w.get("head_sha") or "")) for w in wr]
-            except RuntimeError:
-                suites[sid] = []
-        return (want, head) in suites[sid]
+        for w in runs_of(sid):
+            if str(w.get("path") or "") != want or str(w.get("head_sha") or "") != head:
+                continue
+            event = str(w.get("event") or "")
+            prs = {int(x.get("number") or 0) for x in (w.get("pull_requests") or [])}
+            if not (event == "push" or (event == "pull_request" and pr in prs)):
+                continue
+            if isinstance(w.get("id"), int) and rid in jobs_of(int(w["id"])):
+                return True
+        return False
 
     return genuine
 
 
-def same_checks(base_ref: str, head: str) -> bool:
-    """Does the head carry exactly the base's .github tree? A stale branch would otherwise run an
-    older, weaker ci.yml under the same job names (#455 audit MF1). An error is a no."""
+def up_to_date(base_ref: str, head: str) -> tuple[bool, str]:
+    """May a no-comment path test-and-merge this head? Only when the head already contains the
+    base's tip (#456 audit MF3: otherwise the tree that merges, base + PR, was never tested) and
+    carries exactly the base's .github (#455 audit MF1: a stale branch runs older checks under
+    the same job names). Any git error is a no."""
     try:
+        _git("fetch", "-q", "--no-tags", "origin", base_ref)
         _git("fetch", "-q", "--no-tags", "origin", head)
-        p = subprocess.run(
-            ["git", "diff", "--quiet", f"origin/{base_ref}", head, "--", ".github"],
-            capture_output=True,
-            check=False,
-        )
     except subprocess.CalledProcessError:
-        return False
-    return p.returncode == 0
+        return False, "the head or the base could not be fetched"
+    behind = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", f"origin/{base_ref}", head],
+        capture_output=True,
+        check=False,
+    )
+    if behind.returncode != 0:
+        return False, f"it is behind {base_ref} (merge {base_ref} in first)"
+    same = subprocess.run(
+        ["git", "diff", "--quiet", f"origin/{base_ref}", head, "--", ".github"],
+        capture_output=True,
+        check=False,
+    )
+    if same.returncode != 0:
+        return False, f"its .github differs from {base_ref}"
+    return True, "up to date"
 
 
 def patch_id(base_ref: str, sha: str) -> str | None:
@@ -629,13 +669,12 @@ def run(
             twhy = f"{twhy}, but {owhy}: it takes the CLEAR + APPROVE path"
         elif pr_verdicts():
             twhy = f"{twhy}, but it carries an AUDIT verdict: it takes the CLEAR + APPROVE path"
-        elif not same_checks(base, head):
-            twhy = (
-                f"{twhy}, but its .github differs from {base} (merge {base} in first): it takes "
-                "the CLEAR + APPROVE path"
-            )
         else:
-            mode = level.lower()
+            fresh, fwhy = up_to_date(base, head)
+            if fresh:
+                mode = level.lower()
+            else:
+                twhy = f"{twhy}, but {fwhy}: it takes the CLEAR + APPROVE path"
     low = mode != "manual"  # no verdict or approval needed on this path
     required = GATING_JOBS + (AUTO_JOBS if mode == "auto" else ())
     _summary(f"#{pr} @ {head[:9]}: {twhy}")
@@ -703,7 +742,7 @@ def run(
             return 0
         pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate", "--slurp")
         runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
-        state, cwhy = checks(runs, required, provenance(repo, head) if low else _from_ci_app)
+        state, cwhy = checks(runs, required, provenance(repo, pr, head) if low else _from_ci_app)
         if state == "pass":
             break
         if state == "fail":
