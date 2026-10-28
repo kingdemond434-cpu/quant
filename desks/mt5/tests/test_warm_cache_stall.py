@@ -33,6 +33,7 @@ for path in (DESK, DESK / "scripts", DESK / "research"):
 import judge_docket_order as O  # noqa: E402
 import judging_burndown as JB  # noqa: E402
 import warm_gauntlet_cache as W  # noqa: E402
+
 from research import job_lock  # noqa: E402
 
 
