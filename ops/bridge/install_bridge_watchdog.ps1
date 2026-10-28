@@ -53,6 +53,24 @@ $RunLevel = "Highest"
 $ErrorActionPreference = 'Stop'
 
 $TaskName = 'Claude-Bridge-Watchdog'
+# THE CHECKOUT ARGUMENT IS CHECKED BEFORE ANYTHING IS LOCKED OR RE-OWNED (audit v1.4/v1.5): its
+# parent folder is reset recursively, so a mistaken -Checkout pointing at the live desk would reset
+# the ACLs of everything under the opt folder. Refused: a parent that is a drive root or the opt
+# folder itself, a parent that holds the live desk, and a parent holding any other repository.
+$Checkout = [IO.Path]::GetFullPath($Checkout).TrimEnd('\')
+$parent = Split-Path -Parent $Checkout
+$optDir = Join-Path $env:SystemDrive "opt"
+$liveDesk = Join-Path $optDir "quant"
+if (-not $parent -or -not (Split-Path -Parent $parent)) { throw "-Checkout $Checkout sits directly under a drive root; not installing" }
+if ($parent -ieq $optDir -or $Checkout -ieq $optDir) { throw "-Checkout $Checkout would lock the whole $optDir; not installing" }
+if ($Checkout -ieq $liveDesk -or ("$liveDesk\").StartsWith("$parent\", [StringComparison]::OrdinalIgnoreCase)) {
+    throw "-Checkout $($Checkout): its parent $parent holds the live desk $liveDesk; not installing"
+}
+foreach ($sib in @(Get-ChildItem -LiteralPath $parent -Directory -Force -ErrorAction SilentlyContinue)) {
+    if ($sib.FullName -ine $Checkout -and (Test-Path -LiteralPath (Join-Path $sib.FullName ".git"))) {
+        throw "$parent also holds the repository $($sib.FullName); locking it is not this installer's call"
+    }
+}
 $src = Join-Path $PSScriptRoot 'bridge_watchdog.ps1'
 if (-not (Test-Path $src)) { throw "bridge_watchdog.ps1 missing at $src" }
 # THE FOLDERS THE ELEVATED TASK RUNS FROM AND WRITES TO ARE ADMIN-ONLY. A new folder under C:\
@@ -98,10 +116,23 @@ function Lock-Folder([string] $dir, [switch] $UsersRead, [switch] $KeepOwner) {
 # handle opens, so a pre-creator holding an add-file or WRITE_DAC handle keeps it through any
 # change of owner or ACL. An administrator deletes such a root (after reading what is in it) and
 # re-runs this installer.
-if (Test-Path -LiteralPath $Root) {
-    $rootOwner = (New-Object System.Security.Principal.NTAccount((Get-Acl -LiteralPath $Root).Owner)).Translate([System.Security.Principal.SecurityIdentifier]).Value
-    if ($rootOwner -notin @('S-1-5-32-544', 'S-1-5-18')) {
-        throw "$Root already exists and is owned by $rootOwner, not Administrators/SYSTEM; delete it as an administrator and re-run"
+# A NEW ROOT IS CREATED WITH ITS LOCKED ACL IN ONE CALL (audit v1.4): created first and locked after,
+# a user could create bin or logs inside it in between and keep that handle.
+if (-not (Test-Path -LiteralPath $Root)) {
+    $sec = New-Object System.Security.AccessControl.DirectorySecurity
+    $sec.SetAccessRuleProtection($true, $false)
+    $sec.SetOwner((New-Object System.Security.Principal.SecurityIdentifier 'S-1-5-32-544'))
+    foreach ($ace in @(@('S-1-5-32-544', 'FullControl'), @('S-1-5-18', 'FullControl'), @('S-1-5-32-545', 'ReadAndExecute'))) {
+        $sec.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
+            (New-Object System.Security.Principal.SecurityIdentifier $ace[0]), $ace[1], 'ContainerInherit, ObjectInherit', 'None', 'Allow')))
+    }
+    $null = [System.IO.Directory]::CreateDirectory($Root, $sec)
+}
+foreach ($d in @($Root, $BinDir, $LogDir)) {
+    if (-not (Test-Path -LiteralPath $d)) { continue }
+    $dOwner = (New-Object System.Security.Principal.NTAccount((Get-Acl -LiteralPath $d).Owner)).Translate([System.Security.Principal.SecurityIdentifier]).Value
+    if ($dOwner -notin @('S-1-5-32-544', 'S-1-5-18')) {
+        throw "$d already exists and is owned by $dOwner, not Administrators/SYSTEM; delete $Root as an administrator and re-run"
     }
 }
 Lock-Folder $Root -UsersRead
@@ -117,6 +148,11 @@ foreach ($d in @($Checkout, (Join-Path $Checkout ".git"))) {
     if (-not (Test-Path -LiteralPath $d)) { continue }
     & icacls.exe $d /setowner "*$me" /C | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "icacls could not make $me the owner of $d (exit $LASTEXITCODE)" }
+    # OWNER RIGHTS, read only, on the folder itself (audit v1.5): the owner's implicit WRITE_DAC
+    # and READ_CONTROL give way to this entry, so owning the folder grants nothing extra; git
+    # checks only who the owner is.
+    & icacls.exe $d /grant:r "*S-1-3-4:(RX)" /C | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "icacls could not limit OWNER RIGHTS on $d (exit $LASTEXITCODE)" }
 }
 $dst = Join-Path $BinDir 'bridge_watchdog.ps1'
 $pinFile = Join-Path $BinDir 'watchdog.sha256'

@@ -28,6 +28,9 @@
 #               run in (or its .claude / git hooks) or rename a folder above it; exit 2 -- the
 #               bridge works, but automation must not read it as healthy -- and the line says
 #               what to lock
+#   LIVE_BINARY_AT_RISK   LIVE, but the folder claude or git runs from (or one above it) can be
+#               written, renamed or re-permissioned by someone other than administrators, SYSTEM
+#               and the bridge user; exit 2, like the checkout
 #   ABSENT      no heartbeat at all: the watchdog is not installed or never ran
 param([string] $LogDir = "C:\ProgramData\ClaudeBridge\logs", [string] $BinDir = "C:\ProgramData\ClaudeBridge\bin",
       [string] $TaskName = "Claude-Bridge-Watchdog")
@@ -100,5 +103,6 @@ if ([int]$b.debug_quiet_s -gt 1800) { "QUIET: $detail"; exit 1 }
 if ($b.git_refusal) { "GIT_REFUSED: $($b.git_refusal); $detail"; exit 1 }
 if ($b.session_errors_10m -and [int]$b.session_errors_10m -ge 3) { "DEGRADED: $detail last=$($b.last_session_error)"; exit 1 }
 if ($b.checkout_risk) { "LIVE_CHECKOUT_AT_RISK: $($b.checkout_risk); $detail"; exit 2 }
+if ($b.binary_risk) { "LIVE_BINARY_AT_RISK: $($b.binary_risk); $detail"; exit 2 }
 "LIVE: $detail"
 exit 0

@@ -196,6 +196,8 @@ def test_rc_args_are_the_bridge_and_nothing_more() -> None:
         "--debug-file",
         "$debug",
     ]
+    same_dir = WATCHDOG[m.end() : m.end() + 200]
+    assert 'if ($SpawnMode -eq "same-dir") { $rcArgs += @("--capacity", "1") }' in same_dir
 
 
 def test_installer_locks_the_folder_it_runs_from_and_pins_the_copy() -> None:
@@ -238,6 +240,13 @@ def test_the_heartbeat_has_a_reader_and_the_task_is_in_the_manifest() -> None:
 def test_the_call_operator_only_runs_what_it_names() -> None:
     """A command name held in a variable is any command: only these targets may follow `&`."""
     allowed = {"watchdog": {"$c", "$g"}, "installer": {"icacls.exe"}, "status": set()}
+    # and a variable target runs only inside its own job, on what the job was handed (audit v1.5)
+    code = SCRIPTS["watchdog"]
+    assert sorted(m.group(0) for m in re.finditer(r"&\s*\$[cg]\b[^\n]*", code)) == [
+        '& $c auth status 2>&1 | Out-String; "$LASTEXITCODE|$o" }',
+        "& $g -C $d rev-parse --git-dir 2>&1 | Out-String }",
+    ]
+    assert not re.search(r"\$[cg]\s*=(?!=)", code)
     for script, code in SCRIPTS.items():
         targets = set(re.findall(r"(?<![\w&>-])&\s*(\S+)", code))
         assert targets <= allowed[script], (script, targets - allowed[script])
@@ -245,7 +254,14 @@ def test_the_call_operator_only_runs_what_it_names() -> None:
 
 def test_the_installer_grants_only_admins_system_and_users_read() -> None:
     code = SCRIPTS["installer"]
-    assert set(re.findall(r"\*(S-1-[\d-]+):", code)) <= {"S-1-5-32-544", "S-1-5-18", "S-1-5-32-545"}
+    # OWNER RIGHTS (S-1-3-4) only ever read-only, and only on the checkout and its .git
+    assert set(re.findall(r"\*(S-1-[\d-]+):", code)) <= {
+        "S-1-5-32-544",
+        "S-1-5-18",
+        "S-1-5-32-545",
+        "S-1-3-4",
+    }
+    assert re.findall(r"\*S-1-3-4:\(([^)]*)\)", code) == ["RX"]
     assert "*S-1-5-32-545:(OI)(CI)RX" in code
     for bad in ("Everyone", "Authenticated Users", "S-1-1-0", "S-1-5-11", "/grant ", "(M)", ":M"):
         assert bad not in code, bad
@@ -321,7 +337,7 @@ def test_owners_and_generic_all_are_checked_on_every_folder() -> None:
 
 def test_a_root_someone_else_created_is_refused() -> None:
     inst = SCRIPTS["installer"]
-    at = inst.index("if (Test-Path -LiteralPath $Root)")
+    at = inst.index("foreach ($d in @($Root, $BinDir, $LogDir))")
     assert at < inst.index("Lock-Folder $Root -UsersRead")
     assert "throw" in inst[at : inst.index("Lock-Folder $Root -UsersRead")]
 
@@ -332,11 +348,14 @@ def test_a_new_debug_file_is_read_from_its_first_byte() -> None:
     assert "$(if ($ours) { 0 } else { $len })" in code
 
 
-# ------------------------------------------------------------------------- v1.5 (git refused the checkout)
+# --------------------------------------------------------------- v1.5 (git refused the checkout)
 def test_spawn_mode_defaults_to_same_dir_and_is_a_closed_set() -> None:
     for script in ("watchdog", "installer"):
-        assert '[ValidateSet("same-dir", "worktree")] [string] $SpawnMode = "same-dir"' in SCRIPTS[script]
-    assert '-SpawnMode {3}\' -f $dst, $Checkout, $LogDir, $SpawnMode' in SCRIPTS["installer"]
+        assert (
+            '[ValidateSet("same-dir", "worktree")] [string] $SpawnMode = "same-dir"'
+            in SCRIPTS[script]
+        )
+    assert "-SpawnMode {3}' -f $dst, $Checkout, $LogDir, $SpawnMode" in SCRIPTS["installer"]
 
 
 def test_git_refusing_the_checkout_is_measured_and_reported() -> None:
@@ -363,3 +382,55 @@ def test_the_worktree_park_counts_toward_degraded() -> None:
     ):
         assert re.search(pat, line), line
     assert not re.search(pat, "updateSessionTitle ok") or "updateSessionTitle" in WATCHDOG
+
+
+# ------------------------------------------------------------------- v1.6 (audit v1.4 + v1.5 HOLD)
+def test_the_installer_refuses_a_checkout_beside_the_live_desk() -> None:
+    inst = SCRIPTS["installer"]
+    guard = inst.index("$Checkout = [IO.Path]::GetFullPath($Checkout)")
+    assert guard < inst.index("Lock-Folder $Root") and guard < inst.index("/setowner")
+    for needle in (
+        "if ($parent -ieq $optDir -or $Checkout -ieq $optDir) { throw",
+        '("$liveDesk\\").StartsWith("$parent\\", [StringComparison]::OrdinalIgnoreCase)',
+        "if (-not $parent -or -not (Split-Path -Parent $parent)) { throw",
+        '(Test-Path -LiteralPath (Join-Path $sib.FullName ".git"))',
+    ):
+        assert needle in inst, needle
+
+
+def test_a_root_or_folder_someone_else_owns_is_refused_exactly() -> None:
+    inst = SCRIPTS["installer"]
+    loop = inst[inst.index("foreach ($d in @($Root, $BinDir, $LogDir))") :]
+    loop = loop[: loop.index("Lock-Folder $Root")]
+    assert "if ($dOwner -notin @('S-1-5-32-544', 'S-1-5-18')) {" in loop and "throw" in loop
+    # created with its ACL in one call, never created open and locked after
+    create = inst[inst.index("if (-not (Test-Path -LiteralPath $Root))") : inst.index(loop[:20])]
+    assert "SetAccessRuleProtection($true, $false)" in create
+    assert "[System.IO.Directory]::CreateDirectory($Root, $sec)" in create
+    assert "New-Item" not in create
+
+
+def test_the_owner_change_is_not_recursive_and_owner_rights_are_read_only() -> None:
+    inst = SCRIPTS["installer"]
+    line = next(x for x in inst.splitlines() if '/setowner "*$me"' in x)
+    assert "/T" not in line
+    assert '& icacls.exe $d /grant:r "*S-1-3-4:(RX)" /C' in inst
+
+
+def test_binaries_come_from_known_paths_first_and_their_folders_are_measured() -> None:
+    code, status = SCRIPTS["watchdog"], SCRIPTS["status"]
+    assert code.index("$env:ProgramFiles\\Git\\cmd\\git.exe") < code.index("Get-Command git")
+    assert code.index(".local\\bin\\claude.exe") < code.index("Get-Command claude")
+    assert "binary_risk = (Get-BinaryRisk)" in code
+    assert '"LIVE_BINARY_AT_RISK: $($b.binary_risk); $detail"; exit 2' in status
+
+
+def test_benign_failures_do_not_count_toward_degraded() -> None:
+    m = re.search(r"\$SessionError = '([^']+)'", WATCHDOG)
+    assert m is not None
+    for line in (
+        "MCP server github failed to start: spawn ENOENT",
+        "Failed to start file watcher",
+        "getaddrinfo: host api.example could not be resolved",
+    ):
+        assert not re.search(m.group(1), line), line

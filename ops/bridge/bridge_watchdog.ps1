@@ -20,7 +20,9 @@
         box (CIM) runs in a job with a timeout, so a hung query costs one pass, never the bridge
         starts `claude remote-control --spawn <SpawnMode> --no-create-session-in-dir --name <Name>`
         in the checkout, in its own console, with a --debug-file of its own per run. SpawnMode is
-        same-dir by default (zuck's choice, 2026-10-28 06:13Z); worktree stays selectable
+        same-dir by default (zuck's choice, 2026-10-28 06:13Z), and then with --capacity 1: rule
+        R0423 forbids two live sessions sharing one worktree, and the CLI's default is 32.
+        worktree stays selectable (no capacity flag) once a trial on the box shows it works
         asks git every 5 min whether it accepts the checkout; when git calls it "dubious ownership"
         (it did on 2026-10-28: owned by BUILTIN\Administrators, so every worktree session parked)
         the heartbeat carries git_refusal and the reader says GIT_REFUSED
@@ -158,12 +160,14 @@ if (-not $mySha -or $mySha -ne $pinned) {
     exit 3
 }
 
-$claude = (Get-Command claude -ErrorAction SilentlyContinue).Source
-if (-not $claude) {
-    foreach ($c in @("$env:USERPROFILE\.local\bin\claude.exe", "$env:LOCALAPPDATA\Programs\claude\claude.exe")) {
-        if (Test-Path $c) { $claude = $c; break }
-    }
+# KNOWN INSTALL PATHS FIRST, PATH LAST (audit v1.5): the first claude or git on an elevated PATH
+# wins, so a writable folder early on PATH would be code run elevated. Where each one lives is
+# measured every pass (binary_risk) like the checkout.
+$claude = $null
+foreach ($cand in @("$env:USERPROFILE\.local\bin\claude.exe", "$env:LOCALAPPDATA\Programs\claude\claude.exe")) {
+    if (Test-Path -LiteralPath $cand) { $claude = $cand; break }
 }
+if (-not $claude) { $claude = (Get-Command claude -ErrorAction SilentlyContinue).Source }
 if (-not $claude) { Log "claude not found on PATH or in the default install paths"; Beat @{ state = "NO_CLAUDE"; beat_every_s = 300 }; exit 2 }
 if (-not (Test-Path (Join-Path $Checkout ".git"))) { Log "no checkout at $Checkout"; Beat @{ state = "NO_CHECKOUT"; beat_every_s = 300 }; exit 2 }
 
@@ -187,7 +191,30 @@ function Get-CheckoutRisk {
 # "dubious ownership" and every session parked with "Failed to create worktree ... git metadata that
 # could not be resolved", while the server stayed up. The installer makes this user the owner; this
 # asks git itself, in a job with a timeout, at most every 5 minutes. Reported, never fatal.
-$script:Git = (Get-Command git -ErrorAction SilentlyContinue).Source
+$script:Git = $null
+foreach ($cand in @("$env:ProgramFiles\Git\cmd\git.exe", "$env:ProgramFiles\Git\bin\git.exe")) {
+    if (Test-Path -LiteralPath $cand) { $script:Git = $cand; break }
+}
+if (-not $script:Git) { $script:Git = (Get-Command git -ErrorAction SilentlyContinue).Source }
+# Where the two programs this elevated script runs live: no one but administrators, SYSTEM and
+# this user may write the folder or rename, re-own or re-permission a folder above it.
+function Get-BinaryRisk {
+    foreach ($exe in @($claude, $script:Git)) {
+        if (-not $exe) { continue }
+        try {
+            $item = Get-Item -LiteralPath (Split-Path -Parent $exe) -Force -ErrorAction Stop
+            $why = Get-AclProblem $item.FullName $WriteMask ($AdminSids + $script:MySid)
+            $walk = $item
+            while (-not $why -and $walk) {
+                if ($walk.Attributes -band [IO.FileAttributes]::ReparsePoint) { $why = "$($walk.FullName) is a reparse point" }
+                elseif ($walk -ne $item) { $why = Get-AclProblem $walk.FullName $ParentMask ($AdminSids + $script:MySid) }
+                $walk = $walk.Parent
+            }
+            if ($why) { return "$($exe): $why" }
+        } catch { return "$exe cannot be examined: $($_.Exception.Message)" }
+    }
+    return $null
+}
 $script:GitChecked = [datetime]::MinValue
 $script:GitRefusal = $null
 function Get-GitRefusal {
@@ -285,7 +312,9 @@ function Find-NamedServer {
 # seen is not counted. A reader reports it; the watchdog never restarts a server over it. Both
 # patterns are first guesses, to calibrate on the box ($SessionNoise: lines seen on a healthy server).
 # The 2026-10-28 parks read "Failed to create worktree ...": the failure word comes first.
-$SessionError = '(?i)(session|spawn|worktree|child).{0,80}(fail|error|exited|crash|refus|denied)|fail\w*\s+to\s+(create|spawn|start)|dubious ownership|could not be resolved'
+# Narrowed after audit v1.5: "MCP server ... failed to start" and a DNS name that "could not be
+# resolved" are not parked sessions.
+$SessionError = '(?i)(session|spawn|worktree|child).{0,80}(fail|error|exited|crash|refus|denied)|fail\w*\s+to\s+(create|spawn|start)\s+(a\s+)?(worktree|session|child)|dubious ownership|git metadata that could not be resolved'
 $SessionNoise = '(?i)updateSessionTitle'
 $script:DebugPos = @{}
 $script:ErrTimes = @()
@@ -333,6 +362,7 @@ function Wait-Server([System.Diagnostics.Process] $p, [string] $debug, [string] 
         Beat @{ state = "RUNNING"; server_pid = $p.Id; server_started_by = $by; debug_file = $debug
                 debug_quiet_s = $quiet; session_errors_10m = $se.n; last_session_error = $se.last
                 checkout_risk = (Get-CheckoutRisk); git_refusal = (Get-GitRefusal); spawn_mode = $SpawnMode
+                binary_risk = (Get-BinaryRisk)
                 next_at = $null; next_in_s = $null; needs = $null }
     }
 }
@@ -383,6 +413,7 @@ while ($true) {
     # restart would only pile up idle sessions in the list after every network drop.
     $rcArgs = @("remote-control", "--spawn", $SpawnMode, "--no-create-session-in-dir", "--name", $Name,
                 "--debug-file", $debug)
+    if ($SpawnMode -eq "same-dir") { $rcArgs += @("--capacity", "1") }
     $t0 = Get-Date
     try {
         $proc = Start-Process -FilePath $claude -ArgumentList $rcArgs -WorkingDirectory $Checkout `
