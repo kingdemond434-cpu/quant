@@ -118,6 +118,9 @@ def test_a_clear_for_another_head_needs_the_same_change() -> None:
 # ------------------------------------------------------------------------------- CI checks
 
 
+_RUN_IDS = [1000]
+
+
 def _r(
     name: str,
     status: str = "completed",
@@ -130,7 +133,9 @@ def _r(
     2 = release-gates.yml, in the fake hub)."""
     if suite is None:
         suite = 2 if name in ag.AUTO_JOBS else 1
+    _RUN_IDS[0] += 1
     return {
+        "id": _RUN_IDS[0],
         "name": name,
         "status": status,
         "conclusion": conclusion,
@@ -296,9 +301,17 @@ class _Hub:
         if "/actions/runs?check_suite_id=" in path:
             sid = int(path.split("check_suite_id=")[1].split("&")[0])
             wf = self.suites.get(sid)
-            return {
-                "workflow_runs": [{"path": wf, "head_sha": self.pr["head"]["sha"]}] if wf else []
+            run = {
+                "id": sid,
+                "path": wf,
+                "head_sha": self.pr["head"]["sha"],
+                "event": "pull_request",
+                "pull_requests": [{"number": 7}],
             }
+            return {"workflow_runs": [run] if wf else []}
+        if "/actions/runs/" in path and "/jobs" in path:
+            # every run the test built is a real job of its suite's run, unless marked forged
+            return [{"jobs": [{"id": r["id"]} for r in self.runs if not r.get("forged")]}]
         if "/files?" in path:
             return [self.files]
         if "/pulls?" in path:
@@ -325,7 +338,7 @@ def hub(monkeypatch: pytest.MonkeyPatch) -> Any:
         h = _Hub(**kw)
         monkeypatch.setattr(ag, "_gh", h)
         monkeypatch.setattr(ag, "patch_id", lambda base, sha: {A: "p1", B: "p1"}.get(sha, sha))
-        monkeypatch.setattr(ag, "same_checks", lambda base, head: True)
+        monkeypatch.setattr(ag, "up_to_date", lambda base, head: (True, "up to date"))
         return h
 
     return make
@@ -896,6 +909,8 @@ def test_a_deactivate_between_the_reads_stops_the_low_merge(
         _r("risk-invariants", app="claude"),  # another App
         _r("risk-invariants", suite=9),  # Actions, but no workflow run of the job's own file
         _r("risk-invariants", suite=3),  # Actions, from a different workflow file
+        # #456 audit MF1: Actions, in the right suite, but POSTed by another workflow: no job
+        {**_r("risk-invariants"), "forged": True},
     ],
 )
 def test_a_forged_same_name_run_counts_for_nothing(auto_hub: Any, forged: dict[str, Any]) -> None:
@@ -918,7 +933,7 @@ def test_a_stale_github_tree_takes_the_manual_path(
 ) -> None:
     monkeypatch.setitem(ag.WORKFLOW_OF, "replay-shadow", ".github/workflows/release-gates.yml")
     h = auto_hub(runs=_auto_green())
-    monkeypatch.setattr(ag, "same_checks", lambda base, head: False)
+    monkeypatch.setattr(ag, "up_to_date", lambda base, head: (False, "it is behind"))
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
 
 
@@ -954,3 +969,34 @@ def test_a_stale_github_tree_takes_the_manual_path(
 )
 def test_what_only_zuck_may_change_is_protected(name: str) -> None:
     assert ag.tier([_f(name)], 1, lambda n: False)[0] == "PROTECTED"
+
+
+def test_up_to_date_needs_the_base_tip_and_the_same_github_tree(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#456 audit MF3: the no-comment paths test and merge only a head that contains the base."""
+    origin, work = tmp_path / "origin", tmp_path / "work"
+    _git(tmp_path, "init", "-q", "-b", ag.LIVE, str(origin))
+    for k, v in (("user.name", "t"), ("user.email", "t@t")):
+        _git(origin, "config", k, v)
+    (origin / ".github").mkdir()
+    (origin / ".github" / "ci.yml").write_text("v1\n")
+    _git(origin, "add", ".")
+    _git(origin, "commit", "-qm", "base")
+    _git(origin, "checkout", "-qb", "pr")
+    (origin / "x.py").write_text("x = 1\n")
+    _git(origin, "add", ".")
+    _git(origin, "commit", "-qm", "pr")
+    fresh = _git(origin, "rev-parse", "HEAD")
+    _git(origin, "checkout", "-q", ag.LIVE)
+    (origin / ".github" / "ci.yml").write_text("v2\n")
+    _git(origin, "commit", "-qam", "live moves")
+    _git(tmp_path, "clone", "-q", str(origin), str(work))
+    monkeypatch.chdir(work)
+    ok, why = ag.up_to_date(ag.LIVE, fresh)
+    assert not ok and "behind" in why
+    _git(origin, "checkout", "-q", "pr")
+    _git(origin, "merge", "-q", "--no-edit", ag.LIVE)
+    merged = _git(origin, "rev-parse", "HEAD")
+    assert ag.up_to_date(ag.LIVE, merged) == (True, "up to date")
+    assert ag.up_to_date(ag.LIVE, "d" * 40)[0] is False
