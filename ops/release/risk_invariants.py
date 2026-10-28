@@ -122,6 +122,38 @@ def check_superset(ceilings: dict[str, Any], read_head: Any, read_base: Any) -> 
     return bad
 
 
+def shadowing(added: list[str], taken: set[str], existing: set[str] = frozenset()) -> list[str]:
+    """Added paths that would shadow an importable module: pyproject puts the repo root on the
+    path, so a head-added `numpy.py` or `hypothesis/` at the root would replace what the base's
+    tests import (#456 audit, question 1). A top-level name the base already has is the repo's
+    own (a sloppy distribution may claim `tests`), never a new shadow."""
+    bad = []
+    for path in added:
+        top = path.split("/", 1)[0]
+        if top in existing:
+            continue
+        stem = top[: -len(".py")] if "/" not in path and top.endswith(".py") else top
+        if path.endswith(".py") and stem in taken:
+            bad.append(f"{path}: shadows the importable module `{stem}`")
+    return bad
+
+
+def importable_names() -> set[str]:
+    from importlib.metadata import packages_distributions
+
+    return set(sys.stdlib_module_names) | set(packages_distributions())
+
+
+def git_added(base: str, head: str) -> list[str]:
+    p = subprocess.run(
+        ["git", "diff", "--name-only", "--diff-filter=ACR", f"{base}...{head}"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return [ln for ln in p.stdout.splitlines() if ln]
+
+
 def git_reader(rev: str) -> Any:
     def read(path: str) -> str | None:
         p = subprocess.run(
@@ -141,6 +173,13 @@ def main(argv: list[str] | None = None) -> int:
     ceilings = json.loads(Path(a.ceilings).read_text(encoding="utf-8"))
     bad = check(ceilings, git_reader(a.head))
     bad += check_superset(ceilings, git_reader(a.head), git_reader(a.base))
+    try:
+        tops = subprocess.run(
+            ["git", "ls-tree", "--name-only", a.base], capture_output=True, text=True, check=True
+        ).stdout.split()
+        bad += shadowing(git_added(a.base, a.head), importable_names(), set(tops))
+    except subprocess.CalledProcessError as exc:
+        bad.append(f"the added files could not be listed: {exc}")
     for line in bad:
         print(f"BREACH {line}")
     print("risk invariants:", "FAIL" if bad else "PASS")

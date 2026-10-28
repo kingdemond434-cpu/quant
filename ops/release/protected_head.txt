@@ -64,6 +64,27 @@ desks/mt5/ops/box_tasks.manifest
 data/FREEZE
 ops/quant-deadman.service
 
+# the bars, switches and governing prose only zuck changes (the controller's floor lists them
+# too; repeated here so this file reads whole)
+.mcp.json
+*/.mcp.json
+ops/gates.sh
+ops/brain_env.sh
+scripts/moneypath_precommit_guard.py
+scripts/check_constitution_core.py
+desks/mt5/research/tier_s.py
+libs/ops/canonical_policy.py
+*allocator_sovereign*
+*margin_clause_disabled*
+*recorders_off*
+*ftmo_copy_principal*
+*gold_oco_mode*
+docs/research.md
+docs/growth_governance.md
+docs/cro/*
+context/delegation_protocol.md
+ops/memory/*
+
 # secrets
 data/secrets/*
 */data/secrets/*

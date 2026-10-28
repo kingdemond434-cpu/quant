@@ -57,6 +57,9 @@ jobs:
 
   independent-review:
     if: github.event.pull_request.head.repo.full_name == github.repository
+    # LIMIT: a same-repo PR can add a workflow that reads REVIEWER_API_KEY (pull_request gets
+    # repository secrets), so the key must carry a spend cap. An Environment restricted to LIVE
+    # would hide it from such a workflow but also from this job, which runs on the PR's ref.
     concurrency:
       group: independent-review-${{ github.event.pull_request.number }}
       cancel-in-progress: true
@@ -86,3 +89,4 @@ jobs:
           --repo "${{ github.repository }}"
           --pr "${{ github.event.pull_request.number }}"
           --head "${{ github.event.pull_request.head.sha }}"
+          --base-sha "${{ github.event.pull_request.base.sha }}"
