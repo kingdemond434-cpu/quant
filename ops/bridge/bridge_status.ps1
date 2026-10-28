@@ -31,6 +31,8 @@
 #   LIVE_BINARY_AT_RISK   LIVE, but the folder claude or git runs from (or one above it) can be
 #               written, renamed or re-permissioned by someone other than administrators, SYSTEM
 #               and the bridge user; exit 2, like the checkout
+#   LIVE_SERVER_AT_RISK   LIVE, but the server was started by hand without --capacity 1 in a
+#               shared-checkout mode (R0423); exit 2 until it is stopped and the watchdog's own runs
 #   ABSENT      no heartbeat at all: the watchdog is not installed or never ran
 param([string] $LogDir = "C:\ProgramData\ClaudeBridge\logs", [string] $BinDir = "C:\ProgramData\ClaudeBridge\bin",
       [string] $TaskName = "Claude-Bridge-Watchdog")
@@ -104,5 +106,6 @@ if ($b.git_refusal) { "GIT_REFUSED: $($b.git_refusal); $detail"; exit 1 }
 if ($b.session_errors_10m -and [int]$b.session_errors_10m -ge 3) { "DEGRADED: $detail last=$($b.last_session_error)"; exit 1 }
 if ($b.checkout_risk) { "LIVE_CHECKOUT_AT_RISK: $($b.checkout_risk); $detail"; exit 2 }
 if ($b.binary_risk) { "LIVE_BINARY_AT_RISK: $($b.binary_risk); $detail"; exit 2 }
+if ($b.server_risk) { "LIVE_SERVER_AT_RISK: $($b.server_risk); $detail"; exit 2 }
 "LIVE: $detail"
 exit 0

@@ -289,7 +289,9 @@ function Find-NamedServer {
             ForEach-Object {
                 $d = ""
                 if ($_.CommandLine -match '--debug-file\s+"?([^"\s]+)') { $d = $Matches[1] }
-                "{0}|{1}" -f $_.ProcessId, $d
+                # same-dir (any spawn but worktree) without --capacity 1 breaks R0423
+                $open = ($_.CommandLine -notmatch '--spawn\s+"?worktree') -and ($_.CommandLine -notmatch '--capacity\s+"?1"?(\s|$)')
+                "{0}|{1}|{2}" -f $_.ProcessId, $d, $open
             }
     }
     $rows = @()
@@ -297,9 +299,9 @@ function Find-NamedServer {
     else { Log "process query timed out after 20 s; not adopting this pass" }
     Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
     foreach ($row in $rows) {
-        $id, $d = "$row".Split("|", 2)
+        $id, $d, $open = "$row".Split("|", 3)
         $p = Get-Process -Id ([int]$id) -ErrorAction SilentlyContinue
-        if ($p) { return @{ Proc = $p; Debug = (Get-OwnDebug $d) } }
+        if ($p) { return @{ Proc = $p; Debug = (Get-OwnDebug $d); Uncapped = ($open -eq "True") } }
     }
     return $null
 }
@@ -362,7 +364,7 @@ function Wait-Server([System.Diagnostics.Process] $p, [string] $debug, [string] 
         Beat @{ state = "RUNNING"; server_pid = $p.Id; server_started_by = $by; debug_file = $debug
                 debug_quiet_s = $quiet; session_errors_10m = $se.n; last_session_error = $se.last
                 checkout_risk = (Get-CheckoutRisk); git_refusal = (Get-GitRefusal); spawn_mode = $SpawnMode
-                binary_risk = (Get-BinaryRisk)
+                binary_risk = (Get-BinaryRisk); server_risk = $script:ServerRisk
                 next_at = $null; next_in_s = $null; needs = $null }
     }
 }
@@ -398,7 +400,15 @@ Beat @{ state = "STARTING" }
 while ($true) {
     Assert-SafeFolders
     $existing = Get-TrackedServer
-    if (-not $existing) { $existing = Find-NamedServer }
+    # A SERVER STARTED BY HAND runs with whatever flags it was given (audit v1.6): adopted, never
+    # stopped, but one sharing its checkout among many sessions is reported until it is replaced.
+    $script:ServerRisk = $null
+    if (-not $existing) {
+        $existing = Find-NamedServer
+        if ($existing -and $existing.Uncapped) {
+            $script:ServerRisk = "adopted server pid $($existing.Proc.Id) shares its checkout without --capacity 1 (R0423); stop it once and this watchdog starts a capped one"
+        }
+    }
     if ($existing) {
         Log "waiting on running server pid $($existing.Proc.Id) (debug $($existing.Debug))"
         Wait-Server $existing.Proc $existing.Debug "earlier"

@@ -53,19 +53,17 @@ $RunLevel = "Highest"
 $ErrorActionPreference = 'Stop'
 
 $TaskName = 'Claude-Bridge-Watchdog'
-# THE CHECKOUT ARGUMENT IS CHECKED BEFORE ANYTHING IS LOCKED OR RE-OWNED (audit v1.4/v1.5): its
-# parent folder is reset recursively, so a mistaken -Checkout pointing at the live desk would reset
-# the ACLs of everything under the opt folder. Refused: a parent that is a drive root or the opt
-# folder itself, a parent that holds the live desk, and a parent holding any other repository.
-$Checkout = [IO.Path]::GetFullPath($Checkout).TrimEnd('\')
+# THE CHECKOUT ARGUMENT IS CHECKED BEFORE ANYTHING IS LOCKED OR RE-OWNED (audit v1.4-v1.6): its
+# parent folder is reset recursively, so a mistaken -Checkout would re-ACL whatever holds it (the
+# live desk, C:\Users ...). An allow-list, not a deny-list: the checkout must be an existing git
+# checkout, resolved by the file system (no \\?\ or UNC spelling survives Get-Item's FullName),
+# directly inside <system drive>\opt\bridge, and nothing else in that folder may be a repository.
+$bridgeDir = Join-Path $env:SystemDrive "opt\bridge"
+try { $Checkout = (Get-Item -LiteralPath $Checkout -Force -ErrorAction Stop).FullName.TrimEnd('\') }
+catch { throw "-Checkout $Checkout does not exist; not installing" }
+if (-not (Test-Path -LiteralPath (Join-Path $Checkout ".git"))) { throw "-Checkout $Checkout is not a git checkout; not installing" }
 $parent = Split-Path -Parent $Checkout
-$optDir = Join-Path $env:SystemDrive "opt"
-$liveDesk = Join-Path $optDir "quant"
-if (-not $parent -or -not (Split-Path -Parent $parent)) { throw "-Checkout $Checkout sits directly under a drive root; not installing" }
-if ($parent -ieq $optDir -or $Checkout -ieq $optDir) { throw "-Checkout $Checkout would lock the whole $optDir; not installing" }
-if ($Checkout -ieq $liveDesk -or ("$liveDesk\").StartsWith("$parent\", [StringComparison]::OrdinalIgnoreCase)) {
-    throw "-Checkout $($Checkout): its parent $parent holds the live desk $liveDesk; not installing"
-}
+if ($parent -ine $bridgeDir) { throw "-Checkout $Checkout is not directly inside $bridgeDir; not installing" }
 foreach ($sib in @(Get-ChildItem -LiteralPath $parent -Directory -Force -ErrorAction SilentlyContinue)) {
     if ($sib.FullName -ine $Checkout -and (Test-Path -LiteralPath (Join-Path $sib.FullName ".git"))) {
         throw "$parent also holds the repository $($sib.FullName); locking it is not this installer's call"

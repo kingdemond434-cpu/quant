@@ -387,15 +387,23 @@ def test_the_worktree_park_counts_toward_degraded() -> None:
 # ------------------------------------------------------------------- v1.6 (audit v1.4 + v1.5 HOLD)
 def test_the_installer_refuses_a_checkout_beside_the_live_desk() -> None:
     inst = SCRIPTS["installer"]
-    guard = inst.index("$Checkout = [IO.Path]::GetFullPath($Checkout)")
+    guard = inst.index("(Get-Item -LiteralPath $Checkout -Force -ErrorAction Stop).FullName")
     assert guard < inst.index("Lock-Folder $Root") and guard < inst.index("/setowner")
+    assert "GetFullPath($Checkout)" not in inst  # text, not the file system, decided before
     for needle in (
-        "if ($parent -ieq $optDir -or $Checkout -ieq $optDir) { throw",
-        '("$liveDesk\\").StartsWith("$parent\\", [StringComparison]::OrdinalIgnoreCase)',
-        "if (-not $parent -or -not (Split-Path -Parent $parent)) { throw",
+        '$bridgeDir = Join-Path $env:SystemDrive "opt\\bridge"',
+        "if ($parent -ine $bridgeDir) { throw",
+        'if (-not (Test-Path -LiteralPath (Join-Path $Checkout ".git"))) { throw',
         '(Test-Path -LiteralPath (Join-Path $sib.FullName ".git"))',
     ):
         assert needle in inst, needle
+
+
+def test_a_hand_started_uncapped_server_is_reported() -> None:
+    code, status = SCRIPTS["watchdog"], SCRIPTS["status"]
+    assert '--capacity\\s+"?1"?(\\s|$)' in code and 'Uncapped = ($open -eq "True")' in code
+    assert "server_risk = $script:ServerRisk" in code
+    assert '"LIVE_SERVER_AT_RISK: $($b.server_risk); $detail"; exit 2' in status
 
 
 def test_a_root_or_folder_someone_else_owns_is_refused_exactly() -> None:
@@ -420,6 +428,8 @@ def test_the_owner_change_is_not_recursive_and_owner_rights_are_read_only() -> N
 def test_binaries_come_from_known_paths_first_and_their_folders_are_measured() -> None:
     code, status = SCRIPTS["watchdog"], SCRIPTS["status"]
     assert code.index("$env:ProgramFiles\\Git\\cmd\\git.exe") < code.index("Get-Command git")
+    lookup = code[code.index("$script:Git = $null") : code.index("function Get-BinaryRisk")]
+    assert lookup.index("foreach ($cand in") < lookup.index("if (-not $script:Git)")
     assert code.index(".local\\bin\\claude.exe") < code.index("Get-Command claude")
     assert "binary_risk = (Get-BinaryRisk)" in code
     assert '"LIVE_BINARY_AT_RISK: $($b.binary_risk); $detail"; exit 2' in status
