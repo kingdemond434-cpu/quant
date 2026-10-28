@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -172,3 +173,35 @@ def test_detail_budget_is_derived_and_floored() -> None:
     assert hf.detail_budget(10) == 10
     assert hf.detail_budget(0) == 0
     assert hf.detail_budget(10**9) >= 2000
+
+
+def test_the_docket_writer_runs_the_census_and_reaims_every_hour(monkeypatch, tmp_path) -> None:
+    from research import merge_hypotheses as mh
+    hyp = tmp_path / "hypotheses"
+    hyp.mkdir()
+    target = hyp / "external_survivors.json"
+    banked = [_row("EURUSD", fam="session_range_breakout", session="asia"),
+              _row("XAUUSD", fam="session_range_breakout", session="london")]
+    target.write_text(json.dumps(banked), "utf-8")
+    fresh = {"hypotheses": [_row("EURUSD", fam="session_range_breakout", session="asia",
+                                 range_hours=5)]}
+    (hyp / "miner_candidates.json").write_text(json.dumps(fresh), "utf-8")
+    monkeypatch.setattr(mh, "HYP", hyp)
+    monkeypatch.setattr(mh, "TARGET", target)
+    monkeypatch.setattr(mh, "tradeable_universe", lambda: {})
+    monkeypatch.setattr(mh, "_pipeline_started_at", lambda: None)
+    monkeypatch.setattr(hf, "_daily", lambda s, u: None)
+    monkeypatch.setattr(hf, "_lawful", lambda: (lambda s, f: True))
+    assert mh.main() == 0
+    rows = json.loads(target.read_text("utf-8"))
+    report = json.loads((hyp / "merge_report.json").read_text("utf-8"))
+    fam = report["hypothesis_families"]
+    assert fam["intake"]["by_status"]["NEAR"] == 1, fam
+    assert fam["intake"]["reaimed"] == 1
+    assert len(rows) == 4                    # 2 banked + 1 fresh duplicate KEPT + 1 re-aimed
+    kid = next(r for r in rows if r.get("reaimed_from"))
+    assert kid["symbol"] == "XAUUSD" and kid["params"]["range_hours"] == 5
+    assert (hyp / "HYPOTHESIS_FAMILIES.json").exists()
+    assert (hyp / "reaim_ledger.jsonl").read_text("utf-8").count("\n") == 1
+    cycle = (_DESK / "research" / "hourly_cycle.py").read_text("utf-8")
+    assert '"merge_hypotheses", "research/merge_hypotheses.py"' in cycle

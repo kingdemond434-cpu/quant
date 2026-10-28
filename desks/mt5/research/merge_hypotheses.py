@@ -1008,7 +1008,10 @@ def main() -> int:
                 _sys.path.insert(0, _p)
         from research import hypothesis_families as _hf
         rows_out, families = _hf.apply(rows_out, fresh=produced_now - reproposed,
-                                       reproposed=reproposed, identity_fn=_identity, now=now)
+                                       reproposed=reproposed, identity_fn=_identity, now=now,
+                                       hyp_dir=HYP,
+                                       report_path=(None if HYP == BASE / "data" / "hypotheses"
+                                                    else HYP / _hf.REPORT.name))
         _in = families.get("intake") or {}
         print(f"   families: {families.get('raw_cells')} cells -> {families.get('l1_rules')} "
               f"rules -> {families.get('l2_families')} families, k_eff {families.get('k_eff')}; "

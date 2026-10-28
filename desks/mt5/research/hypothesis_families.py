@@ -910,11 +910,13 @@ def append_reaim_ledger(children: list[dict[str, Any]], path: Path | None = None
 def apply(rows: list[dict[str, Any]], *, fresh: set[str], reproposed: set[str],
           identity_fn: Callable[[dict[str, Any]], str] = identity,
           now: datetime | None = None, publish_report: bool = True,
-          report_path: Path | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+          report_path: Path | None = None,
+          hyp_dir: Path | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """`merge_hypotheses`' one call: re-aim fresh duplicates, census the docket, publish.
 
     Returns (rows plus re-aimed children, compact block for merge_report). Never raises: a fault
-    costs the census and the re-aim, never a row."""
+    costs the census and the re-aim, never a row. `hyp_dir` is the caller's hypotheses directory
+    (the cluster cache and the re-aim ledger live beside the docket the caller writes)."""
     global _RULE_CACHE
     avail = _mem_available_mb()
     # ~400 B per cached key; cache only when it costs under a quarter of what is free right now.
@@ -922,10 +924,12 @@ def apply(rows: list[dict[str, Any]], *, fresh: set[str], reproposed: set[str],
         _RULE_CACHE = {}
     try:
         syms = {_sym(r).upper() for r in rows} - {""}
-        clusters, cmeta = load_clusters(syms)
+        clusters, cmeta = load_clusters(
+            syms, path=(hyp_dir / CLUSTERS.name) if hyp_dir is not None else None)
         children, rep = reaim(rows, fresh, reproposed, identity_fn=identity_fn,
                               clusters=clusters, now=now)
-        append_reaim_ledger(children)
+        append_reaim_ledger(children,
+                            (hyp_dir / REAIM_LEDGER.name) if hyp_dir is not None else None)
         out = rows + children
         doc = build(out, clusters=clusters, cluster_meta=cmeta, reaim_report=rep)
         if publish_report:
