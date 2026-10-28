@@ -90,16 +90,19 @@ function Lock-Folder([string] $dir, [switch] $UsersRead, [switch] $KeepOwner) {
     if ((Test-Path -LiteralPath $dir) -and ((Get-Item -LiteralPath $dir -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
         throw "$dir is a junction or symlink; not installing"
     }
+    # every junction below is refused BEFORE any ACL or owner is set (audit v1.8 ordering note)
+    if (Test-Path -LiteralPath $dir) {
+        foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -Recurse)) {
+            if (-not ($c.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }
+            throw "$($c.FullName) is a junction or symlink; not installing"
+        }
+    }
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
     $grants = @("*S-1-5-32-544:(OI)(CI)F", "*S-1-5-18:(OI)(CI)F")
     if ($UsersRead) { $grants += "*S-1-5-32-545:(OI)(CI)RX" }
     & icacls.exe $dir /inheritance:r /grant:r @grants | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "icacls could not restrict $dir (exit $LASTEXITCODE)" }
     if (-not $KeepOwner) { & icacls.exe $dir /setowner "*S-1-5-32-544" /T /C | Out-Null }
-    foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -Recurse)) {
-        if (-not ($c.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }
-        throw "$($c.FullName) is a junction or symlink; not installing"
-    }
     if (@(Get-ChildItem -LiteralPath $dir -Force).Count -gt 0) {
         & icacls.exe (Join-Path $dir "*") /reset /T /C | Out-Null
     }

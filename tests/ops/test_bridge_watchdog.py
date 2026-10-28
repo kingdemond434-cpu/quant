@@ -446,12 +446,53 @@ def test_benign_failures_do_not_count_toward_degraded() -> None:
         assert not re.search(m.group(1), line), line
 
 
+def _block(src: str, first: str, lines: int) -> list[str]:
+    rows = src.splitlines()
+    i = next(n for n, x in enumerate(rows) if x.strip() == first)
+    return [x.strip() for x in rows[i : i + lines]]
+
+
 def test_a_junction_anywhere_on_the_checkout_path_refuses_the_install() -> None:
-    """Audit v1.7: the parent is reset recursively, so a junction must never be followed."""
+    """Audit v1.7/v1.8 (K2, K4): the parent is reset recursively, so a junction must never be
+    followed. The refusals are pinned whole, and ahead of every ACL, owner or reset call."""
     inst = SCRIPTS["installer"]
-    guard = inst.index("foreach ($p in @((Split-Path -Parent $bridgeDir), $bridgeDir, $Checkout))")
-    assert guard < inst.index("function Lock-Folder")
-    assert "Write-Warning" not in inst.split("function Lock-Folder", 1)[1].split("\n}\n", 1)[0]
+    assert _block(
+        inst, "foreach ($p in @((Split-Path -Parent $bridgeDir), $bridgeDir, $Checkout)) {", 5
+    ) == [
+        "foreach ($p in @((Split-Path -Parent $bridgeDir), $bridgeDir, $Checkout)) {",
+        "if ((Get-Item -LiteralPath $p -Force).Attributes -band "
+        "[IO.FileAttributes]::ReparsePoint) {",
+        'throw "$p is a junction or symlink; not installing"',
+        "}",
+        "}",
+    ]
+    assert inst.index("$Checkout)) {") < inst.index("function Lock-Folder")
+    body = inst.split("function Lock-Folder", 1)[1].split("\n}\n", 1)[0]
+    assert _block(body, "if (Test-Path -LiteralPath $dir) {", 6) == [
+        "if (Test-Path -LiteralPath $dir) {",
+        "foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -Recurse)) {",
+        "if (-not ($c.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }",
+        'throw "$($c.FullName) is a junction or symlink; not installing"',
+        "}",
+        "}",
+    ]
+    scan = body.index("if (Test-Path -LiteralPath $dir) {")
+    assert scan < min(body.index(k) for k in ("New-Item", "icacls.exe", "/setowner", "/reset"))
+    assert (
+        "Write-Warning" not in body and body.count("$KeepOwner") == 2
+    )  # its declaration and /setowner
+
+
+def test_an_uncapped_adopted_server_sets_the_risk() -> None:
+    """Mutation J1: the flag must be acted on, by the loop that adopts a hand-started server."""
+    assert _block(SCRIPTS["watchdog"], "$existing = Find-NamedServer", 3) == [
+        "$existing = Find-NamedServer",
+        "if ($existing -and $existing.Uncapped) {",
+        '$script:ServerRisk = "adopted server pid $($existing.Proc.Id) shares its checkout '
+        'without --capacity 1 (R0423); stop it once and this watchdog starts a capped one"',
+    ]
+    loop = SCRIPTS["watchdog"].split("while ($true) {", 1)[1]
+    assert loop.index("$script:ServerRisk = $null") < loop.index("$existing.Uncapped")
 
 
 @pytest.mark.parametrize(
