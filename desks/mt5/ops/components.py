@@ -820,6 +820,23 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule="invoked:desks/mt5/scripts/Adopt-And-Seal.ps1", artifact_class="hourly",
             notes="Verified production handoff via existing task; no broker call or order"),
         ComponentSpec(
+            component_id="executable:scripts/adopt_guard.py",
+            kind="executable", host="box",
+            code_paths=("scripts/adopt_guard.py", "libs/ops/adopt_guard.py"),
+            inputs=("desks/mt5/data/ADOPT_CLEARS.jsonl", "desks/mt5/data/ADOPT_POLICY.json",
+                    "desks/mt5/data/RELEASE.json", "desks/mt5/data/gateway_state.json",
+                    "desks/mt5/reports/ADOPT_ROLLBACKS.jsonl"),
+            outputs=("desks/mt5/reports/ADOPT_GUARD.json",
+                     "desks/mt5/reports/ADOPT_ROLLBACKS.jsonl"),
+            consumers=("desks/mt5/scripts/Adopt-And-Seal.ps1",),
+            cadence_s=3600, timeout_s=900, progress_metric="decisions",
+            expected_artifact_schema="adopt_guard/1",
+            owner="lane:ops", restart_action="restart:task:MT5-AdoptRelease",
+            criticality="required", resource_budget={"budget_s": 900},
+            schedule="invoked:desks/mt5/scripts/Adopt-And-Seal.ps1", artifact_class="hourly",
+            notes="Audit/blackout/smoke/health guard and automatic rollback for the unattended "
+                  "adopter; places no order"),
+        ComponentSpec(
             component_id="component:control_plane",
             kind="task", host="box",
             # THE TASK'S ENTRYPOINT COMES FIRST. This is MT5-ClockFixer's one organ id

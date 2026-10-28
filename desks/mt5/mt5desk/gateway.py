@@ -1561,6 +1561,61 @@ def expire_stale_brackets(st: dict) -> int:
     return killed
 
 
+def cancel_requested(st: dict) -> int:
+    """Withdraw this desk's resting orders that data/CANCEL_PENDING.json asks for (lane fusion;
+    mt5desk.cancel_pending). Only MAGIC orders are candidates; each removal is confirmed against
+    orders_get, as `cancel_pending` does. Opens nothing, closes nothing. Returns how many went.
+    Each one cancelled is billed (Rule 1): a RAIL_BLOCKED `cancel_requested` line at the order's
+    own risk."""
+    from mt5desk import cancel_pending as _cancel_req
+    from mt5desk import fusion_rails as _rails
+    try:
+        orders = [o for o in (mt5.orders_get() or ()) if int(getattr(o, "magic", 0) or 0) == MAGIC]
+    except Exception as exc:
+        log(f"cancel requests skipped: orders_get failed ({type(exc).__name__})")
+        return 0
+    todo, notes = _cancel_req.due(
+        "fusion", {int(o.ticket): _cancel_req.server_time_utc(getattr(o, "time_setup", None))
+                   for o in orders})
+    for n in notes:
+        log(f"cancel requests: {n}")
+    by_ticket = {int(o.ticket): o for o in orders}
+    gone_n = 0
+    for c in todo:
+        o = by_ticket[c["ticket"]]
+        if not st["armed"]:
+            log(f"SHADOW would cancel requested order {c['ticket']}: {c['why']}")
+            continue
+        try:
+            res = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": c["ticket"]})
+        except Exception as exc:
+            log(f"requested cancel of {c['ticket']} FAILED: {type(exc).__name__}: {exc}")
+            _cancel_req.record("fusion", c["request"], c["ticket"], False)
+            continue
+        gone = not any(getattr(x, "ticket", None) == c["ticket"]
+                       for x in (mt5.orders_get(symbol=o.symbol) or ()))
+        # GONE IS NOT CANCELLED (v7 audit): an order that filled in between vanishes too. Only
+        # the broker's own "done" counts; a vanished order without it is not acked, and the
+        # next pass reports it as no longer resting.
+        ok = gone and getattr(res, "retcode", None) in (10008, 10009)
+        _cancel_req.record("fusion", c["request"], c["ticket"], ok)
+        gone_n += int(ok)
+        if ok:
+            try:
+                usd = _order_risk_usd(mt5.symbol_info(o.symbol), getattr(o, "volume_current", None),
+                                      getattr(o, "price_open", None), getattr(o, "sl", None))
+            except Exception:
+                usd = None
+            _rails.line_once(_cancel_req.RAIL, f"{c['request']}/{c['ticket']}",
+                             status="RAIL_BLOCKED", symbol=o.symbol, order=c["ticket"],
+                             lot=getattr(o, "volume_current", None), why=c["why"],
+                             missed_growth_risk_usd=usd)
+        state = "cancelled" if ok else "vanished, no done retcode" if gone else "STILL PRESENT"
+        log(f"requested cancel of {o.symbol} order {c['ticket']}: {state} "
+            f"(retcode {getattr(res, 'retcode', None)}); {c['why']}")
+    return gone_n
+
+
 def cancel_pending(st: dict, symbol: str) -> None:
     """Remove unfilled pending orders, and PROVE each one is gone.
 
@@ -4906,6 +4961,17 @@ def main() -> None:
     if not _dm_ok:
         NEW_RISK_OK = False
         log(f"{_dm_why} -- managing open positions only")
+    # THE ADOPTER'S HOLD (libs/ops/new_risk_hold): while a release is being adopted or rolled
+    # back, and until it passes its health check, no lane takes new risk; management above has
+    # run. A veto, so one missed-growth line per hold per day on the rails ledger.
+    from libs.ops import new_risk_hold as _nrh
+    _hold = _nrh.reason()
+    if _hold is not None:
+        NEW_RISK_OK = False
+        log(f"{_hold} -- managing open positions only")
+        from mt5desk import fusion_rails as _hold_rails
+        _hold_rails.line_once("adopt_new_risk_hold",
+                              f"{datetime.now(UTC).date().isoformat()}/{_hold[:120]}", why=_hold)
     # THE FUSION DAILY-LOSS RAIL (decision_core.fusion_daily_loss, FUSION_DAILY_LOSS_FRAC): at
     # -10% of the server day's starting equity the account takes no new risk for the rest of the
     # day, through the same NEW_RISK_OK gate every lane already obeys (so no bar is burned), and
@@ -5666,6 +5732,7 @@ def main() -> None:
     # housekeeping: expire stale brackets FIRST (every pass, not just at CANCEL_HOUR), then the
     # end-of-day backstop and the force-close.
     expire_stale_brackets(st)
+    cancel_requested(st)
     if hour >= CANCEL_HOUR:
         for s in sleeves:
             cancel_pending(st, s["symbol"])

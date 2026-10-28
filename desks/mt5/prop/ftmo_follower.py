@@ -80,6 +80,7 @@ for _p in (str(DESK), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mt5desk import cancel_pending as _cancel_req  # noqa: E402
 from mt5desk import cross_account as _xa  # noqa: E402
 from mt5desk import gold_oco as _oco  # noqa: E402
 from mt5desk import position_manager as _pm  # noqa: E402
@@ -809,6 +810,44 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
             _bill_cancel(mt5, doc, st, o, reason=("cancel_" + action if action != "follow"
                                                   else "cancel_against_direction"),
                          why=why_cancel, today=today, now=now)
+    # THE DESK'S OWN LEVER (mt5desk.cancel_pending, 2026-10-28): a resting order of this lane
+    # that data/CANCEL_PENDING.json asks to withdraw is removed here, never by a person in the
+    # terminal. Only this lane's MAGIC orders are candidates; nothing is opened or closed.
+    gone = {a["order"] for a in doc["actions"] if a.get("act") == "cancel" and a.get("ok")}
+    # each order's own setup time bounds an `all` request (v7 audit MF6)
+    todo, notes = _cancel_req.due(
+        LANE, {int(o.ticket): _cancel_req.server_time_utc(getattr(o, "time_setup", None))
+               for o in own_ord if int(o.ticket) not in gone}, now=now)
+    by_ticket = {int(o.ticket): o for o in own_ord}
+    if notes:
+        doc["cancel_request_notes"] = notes
+    for c in todo:
+        act = {"act": "cancel_requested", "order": c["ticket"], "why": c["why"], "ok": False}
+        if armed:
+            try:
+                res = _send(mt5, st, {"action": mt5.TRADE_ACTION_REMOVE, "order": c["ticket"],
+                                      "magic": MAGIC, "comment": COMMENT}, cet=cet,
+                            essential=True)
+                act["ok"] = getattr(res, "retcode", None) in (10008, 10009)
+            except Exception as exc:
+                act["why"] += f"; FAILED {type(exc).__name__}: {exc}"[:160]
+            _cancel_req.record(LANE, c["request"], c["ticket"], act["ok"], now=now)
+            if act["ok"]:  # a withdrawn entry is a refusal too (Rule 1), billed per order
+                try:
+                    usd = order_risk_usd(mt5, by_ticket[c["ticket"]])
+                except Exception:
+                    usd = None
+                if usd is None:
+                    usd = doc.get("planned_usd")
+                _record({"at": now.isoformat(timespec="seconds"), "window": WINDOW,
+                         "lane": LANE, "status": "RAIL_BLOCKED", "rail": RAIL,
+                         "reason": _cancel_req.RAIL, "why": c["why"], "order_id": c["ticket"],
+                         "missed_growth_risk_usd": None if usd is None else round(float(usd), 2)})
+        else:
+            act["shadow"] = True
+        log(f"[{WINDOW}] requested cancel of resting order {c['ticket']}: {act['why']} -> "
+            f"{act.get('ok')}")
+        doc["actions"].append(act)
     # A FILL AGAINST THE DAY'S DIRECTION IS CLOSED AT ONCE (gold_oco v2, must-fix 6).
     _rows = [{"p": p, "id": int(p.ticket),
               "side": "long" if int(getattr(p, "type", -1)) == 0 else "short",
@@ -905,6 +944,12 @@ def _place(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[str, Any
            tick: Any,
            e8_doc: Any) -> None:
     side = sig["side"]
+    # THE ADOPTER'S HOLD (libs/ops/new_risk_hold): no new follow while a failed release is rolled
+    # back and not yet proved healthy. Management of an open follow ran before this call.
+    from libs.ops import new_risk_hold as _nrh
+    if (_hold := _nrh.reason()) is not None:
+        _skip(doc, st, "adopt_hold", _hold, today=today, now=now, alert=True)
+        return
     if not book_ok:
         _skip(doc, st, "book_unreadable", "the FTMO terminal did not answer positions/orders",
               today=today, now=now)

@@ -208,6 +208,19 @@ def test_an_ftmo_position_against_e8_refuses_and_alerts(world) -> None:
     assert any(r.get("reason") == "opposite_exposure" for r in _rows())
 
 
+def test_the_adopters_new_risk_hold_places_nothing_and_alerts(world, monkeypatch) -> None:
+    """libs/ops/new_risk_hold: while a failed release is rolled back, the follow is not sent."""
+    from libs.ops import new_risk_hold
+    monkeypatch.setattr(new_risk_hold, "reason", lambda root=None: "ADOPT HOLD by adopt_guard: x")
+    mt5 = _MT5()
+    doc = _pass(mt5)
+    assert _entries(mt5) == [] and doc["alerts"]
+    assert any(r.get("reason") == "adopt_hold" for r in _rows())
+    monkeypatch.setattr(new_risk_hold, "reason", lambda root=None: None)
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert len(_entries(mt5)) == 1                               # lifted: the follow goes
+
+
 def test_a_resting_ftmo_order_against_e8_refuses_too(world) -> None:
     mt5 = _MT5()
     mt5.orders = [SimpleNamespace(ticket=43, symbol="XAUUSD", type=5, magic=0,
