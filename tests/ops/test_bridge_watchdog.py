@@ -22,6 +22,9 @@ def _code(src: str) -> str:
 
 
 SCRIPTS = {"watchdog": _code(WATCHDOG), "installer": _code(INSTALL), "status": _code(STATUS)}
+#: The bytes as shipped, comments and here-strings included: a banned call hidden between a
+#: here-string holding "<#" and one holding "#>" is stripped by `_code` but not from these.
+RAW = {"watchdog": WATCHDOG, "installer": INSTALL, "status": STATUS}
 
 #: What none of the three may do. Each pattern is a way to widen the sessions' permissions, store
 #: or set a secret, change machine state outside the bridge's own folders, or kill a process.
@@ -37,14 +40,19 @@ BANNED = {
     "process kill": r"Stop-Process|taskkill|\.Kill\(",
     "sign-in": r"auth\s+login|setup-token|ANTHROPIC_API_KEY|credentials",
     "live tree": r"C:\\opt\\quant(?!\w)",
+    # including a command name built at run time: the call operator on an expression, & ("i"+"ex")
+    "dynamic code": (
+        r"Invoke-Expression|\biex\b|\[scriptblock\]::Create|\.AddScript\(|-EncodedCommand|&\s*\("
+    ),
 }
 
 
 @pytest.mark.parametrize("script", sorted(SCRIPTS))
 @pytest.mark.parametrize("what", sorted(BANNED))
 def test_no_script_does_what_the_bridge_must_not(script: str, what: str) -> None:
-    m = re.search(BANNED[what], SCRIPTS[script], flags=re.I)
-    assert m is None, f"{script}: {what}: {m.group(0) if m else ''}"
+    for text in (SCRIPTS[script], RAW[script]):
+        m = re.search(BANNED[what], text, flags=re.I)
+        assert m is None, f"{script}: {what}: {m.group(0) if m else ''}"
 
 
 def test_the_banned_patterns_catch_what_they_name() -> None:
@@ -58,6 +66,7 @@ def test_the_banned_patterns_catch_what_they_name() -> None:
         "process kill": "Stop-Process -Id 1",
         "sign-in": "claude auth login",
         "live tree": "cd C:\\opt\\quant",
+        "dynamic code": "& ('i' + 'ex') $x",
     }
     for what, probe in probes.items():
         assert re.search(BANNED[what], probe, flags=re.I), what
@@ -87,7 +96,78 @@ def test_it_restarts_on_exit_with_backoff_and_a_live_heartbeat() -> None:
     assert "while ($true)" in code and "WaitForExit(60000)" in code
     assert "$null = $p.Handle" in code and "$null = $proc.Handle" in code
     assert "[Math]::Min(" in code and "900" in code
-    assert "Start-Sleep -Seconds 1800" in code  # sign-in failures back off, never spin
+    assert "Wait-Beating 1800" in code  # sign-in failures back off, never spin
+
+
+def test_every_wait_keeps_the_heartbeat_fresh() -> None:
+    code = SCRIPTS["watchdog"]
+    # the only sleep is Wait-Beating's, at most 60 s, with a beat before each chunk
+    assert re.findall(r"Start-Sleep[^\n]*", code) == [
+        "Start-Sleep -Seconds ([Math]::Min(60, $left))"
+    ]
+    wb = code[code.index("function Wait-Beating") : code.index("function Get-OwnDebug")]
+    assert wb.index("Beat $f") < wb.index("Start-Sleep")
+    assert '"next_at"' in wb and '"next_in_s"' in wb
+
+
+def test_the_backoff_has_a_floor_and_a_ceiling() -> None:
+    code = SCRIPTS["watchdog"]
+    assert "$backoff = 30\n" in code
+    waits = re.findall(r"Wait-Beating (\S+)", code)
+    assert waits and all(w in ("$backoff", "10", "1800") for w in waits), waits
+    assert code.count("[Math]::Max($backoff, 30) * 2, 900)") == 2
+    assert "$backoff = 10" in code  # only after a run of 5 min or more
+    assert "[Math]::Max($seconds, 1)" in code
+
+
+def test_the_watchdog_refuses_unsafe_folders_before_it_writes() -> None:
+    code = SCRIPTS["watchdog"]
+    first_write = min(code.index("function Log"), code.index("function Beat"))
+    assert code.index("Assert-SafeFolders\n") < first_write
+    assert "New-Item" not in code  # it never creates the folders the installer locks
+    unsafe = code[
+        code.index("function Get-UnsafeReason") : code.index("function Assert-SafeFolders")
+    ]
+    assert "ReparsePoint" in unsafe and ".Parent" in unsafe and "Get-ChildItem" in unsafe
+    assert "S-1-5-32-544" in code and "S-1-5-18" in code and "0x50000000" in code
+    loop = code[code.index("while ($true) {\n    Assert-SafeFolders") :]
+    assert loop  # re-checked every pass
+    assert "Assert-SafeFolders" in code[code.index("function Wait-Server") :]
+
+
+def test_a_server_found_again_is_still_measured() -> None:
+    code = SCRIPTS["watchdog"]
+    assert "debug = $debug }" in code  # the pid file carries the debug path
+    assert "--debug-file" in code[code.index("function Find-NamedServer") :]
+    assert "ToUniversalTime().Ticks" in code  # start time compared under 5.1 and 7 alike
+    own = code[code.index("function Get-OwnDebug") : code.index("function Get-TrackedServer")]
+    assert "rc_debug_" in own and "GetFullPath($LogDir)" in own
+
+
+def test_sign_in_is_decided_by_logged_in_not_by_an_exit_code() -> None:
+    code = SCRIPTS["watchdog"]
+    si = code[code.index("function Test-SignedIn") : code.index("function Remove-OldDebugFiles")]
+    assert "$j.loggedIn" in si and '$rc.Trim() -ne "0"' not in si
+
+
+def test_the_reader_trusts_nothing_the_heartbeat_says_about_itself() -> None:
+    code = SCRIPTS["status"]
+    assert "Get-FileHash -LiteralPath $copy" in code
+    assert code.index('"UNSAFE:') < code.index('"TAMPERED:') < code.index('"STALE:')
+    assert "3 * $every" in code and "beat_every_s" in code
+    assert code.index('"STALE:') < code.index('"$($b.state):')
+    assert '"UNMEASURED:' in code and '"DEGRADED:' in code
+
+
+def test_the_installer_locks_both_folders_and_writes_fresh_files() -> None:
+    code = SCRIPTS["installer"]
+    assert "Lock-Folder $BinDir\n" in code and "Lock-Folder $LogDir -UsersRead" in code
+    lock = code[code.index("function Lock-Folder") : code.index("Lock-Folder $BinDir\n")]
+    assert "/reset /T /C" in lock and "ReparsePoint" in lock and "-Recurse" in lock
+    assert code.index("Remove-Item -LiteralPath $dst, $pinFile") < code.index(
+        "Copy-Item -Path $src"
+    )
+    assert '-LogDir "{2}"' in code
 
 
 def test_sign_in_is_judged_from_this_run_only() -> None:
@@ -132,7 +212,17 @@ def test_installer_rearms_and_registers_one_interactive_task() -> None:
 
 def test_the_heartbeat_has_a_reader_and_the_task_is_in_the_manifest() -> None:
     assert "bridge_watchdog.json" in STATUS and "exit 0" in STATUS
-    for verdict in ("LIVE", "STALE", "TAMPERED", "ABSENT", "QUIET", "DEAD_SERVER"):
+    for verdict in (
+        "LIVE",
+        "STALE",
+        "TAMPERED",
+        "ABSENT",
+        "QUIET",
+        "DEAD_SERVER",
+        "UNSAFE",
+        "UNMEASURED",
+        "DEGRADED",
+    ):
         assert f'"{verdict}:' in STATUS, verdict
     manifest = (ROOT / "desks/mt5/ops/box_tasks.manifest").read_text(encoding="utf-8")
     assert 'name="Claude-Bridge-Watchdog"' in manifest

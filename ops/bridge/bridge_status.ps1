@@ -1,31 +1,74 @@
 # READ THE BOX BRIDGE WATCHDOG'S HEARTBEAT AND SAY WHETHER THE BRIDGE IS ALIVE (2026-10-28). Read-only.
 #
-# The reader Desk health and the hourly pass run over the box bridge (`powershell -File
-# ops\bridge\bridge_status.ps1`). One line, then exit 0 when LIVE and 1 otherwise:
+# Run by hand or by Desk health on the box (`powershell -File ops\bridge\bridge_status.ps1`, from an
+# elevated shell so the admin-only pin can be read). No scheduled caller is wired yet: a bridge that
+# is down cannot carry its own status to a thread, so the reader that matters is a person or a Desk
+# health session reaching the box another way. One line, then exit 0 when LIVE and 1 otherwise:
 #
-#   LIVE        heartbeat younger than 180 s (the watchdog refreshes it every 60 s), state RUNNING,
-#               the server pid alive, and the watchdog's own sha256 equal to the installer's pin
-#   STALE       heartbeat older than 180 s: the watchdog itself is hung or dead (the 5-minute
-#               re-arm should replace a dead one; a hung one holds its mutex and needs a person)
-#   QUIET       RUNNING, but the server's debug file silent for over 30 min: likely parked at a
-#               prompt or wedged; the watchdog does not kill it, a person or Desk health decides
-#   <state>     anything else the watchdog wrote: NEEDS_LOGIN, TAMPERED, NO_CLAUDE, RESTARTING, ...
+#   UNSAFE      the bin or log folder grants write to anyone but Administrators/SYSTEM, or holds a
+#               junction or symlink: nothing in it can be trusted, and the watchdog refuses to run
+#   TAMPERED    the copy in bin no longer hashes to the installer's pin (hashed HERE, never taken
+#               from the heartbeat's own word)
+#   STALE       no heartbeat within three of the watchdog's own promised intervals (`beat_every_s`:
+#               60 s while it lives, 300 s for a state written just before exit) -- hung or dead
+#   <state>     anything else the watchdog wrote: NEEDS_LOGIN, RESTARTING, START_FAILED, NO_CLAUDE,
+#               ... with next_in_s when it is waiting on purpose
+#   DEAD_SERVER RUNNING, but the server pid is gone
+#   UNMEASURED  RUNNING, but no debug file of the watchdog's to measure the server by
+#   QUIET       RUNNING, but the server's debug file silent for over 30 min: parked or wedged
+#   DEGRADED    RUNNING, but the debug file names failed or exited sessions (a server that accepts
+#               a session and loses it at once is alive to a process check and useless to a thread)
 #   ABSENT      no heartbeat at all: the watchdog is not installed or never ran
 param([string] $LogDir = "C:\opt\bridge\logs", [string] $BinDir = "C:\opt\bridge\bin")
+
+$AdminSids = @("S-1-5-32-544", "S-1-5-18")
+$WriteMask = [int64][System.Security.AccessControl.FileSystemRights]"Write, Delete, DeleteSubdirectoriesAndFiles, ChangePermissions, TakeOwnership" -bor 0x50000000
+function Get-UnsafeReason([string] $dir) {
+    try {
+        $walk = Get-Item -LiteralPath $dir -Force -ErrorAction Stop
+        while ($walk) {
+            if ($walk.Attributes -band [IO.FileAttributes]::ReparsePoint) { return "$($walk.FullName) is a reparse point" }
+            $walk = $walk.Parent
+        }
+        foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -ErrorAction Stop)) {
+            if ($c.Attributes -band [IO.FileAttributes]::ReparsePoint) { return "$($c.FullName) is a reparse point" }
+        }
+        foreach ($a in (Get-Acl -LiteralPath $dir -ErrorAction Stop).Access) {
+            if ($a.AccessControlType -ne "Allow") { continue }
+            $sid = try { $a.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value } catch { [string]$a.IdentityReference }
+            if ($sid -in $AdminSids) { continue }
+            if (([int64]$a.FileSystemRights -band $WriteMask) -ne 0) { return "$dir grants write to $($a.IdentityReference)" }
+        }
+    } catch { return "$dir cannot be examined: $($_.Exception.Message)" }
+    return $null
+}
+
+foreach ($d in @($BinDir, $LogDir)) {
+    $why = Get-UnsafeReason $d
+    if ($why) { "UNSAFE: $why"; exit 1 }
+}
+$pin = ""
+try { $pin = (Get-Content (Join-Path $BinDir "watchdog.sha256") -Raw -ErrorAction Stop).Trim().ToLower() } catch { }
+$copy = Join-Path $BinDir "bridge_watchdog.ps1"
+$sha = ""
+try { $sha = (Get-FileHash -LiteralPath $copy -Algorithm SHA256 -ErrorAction Stop).Hash.ToLower() } catch { }
+if (-not $pin -or -not $sha) { "TAMPERED: pin or copy unreadable (run elevated): pin='$pin' copy='$sha'"; exit 1 }
+if ($sha -ne $pin) { "TAMPERED: $copy hashes to $sha, pin is $pin"; exit 1 }
 
 $beat = Join-Path $LogDir "bridge_watchdog.json"
 if (-not (Test-Path $beat)) { "ABSENT: no $beat"; exit 1 }
 try { $b = Get-Content $beat -Raw | ConvertFrom-Json } catch { "ABSENT: $beat unreadable"; exit 1 }
 $age = [int]((Get-Date).ToUniversalTime() - ([datetime]$b.at).ToUniversalTime()).TotalSeconds
-$pin = ""
-try { $pin = (Get-Content (Join-Path $BinDir "watchdog.sha256") -Raw -ErrorAction Stop).Trim().ToLower() } catch { }
+$every = 60
+if ($b.beat_every_s) { $every = [Math]::Max(60, [int]$b.beat_every_s) }
 $alive = $false
 if ($b.server_pid) { $alive = [bool](Get-Process -Id ([int]$b.server_pid) -ErrorAction SilentlyContinue) }
-$detail = "state=$($b.state) age_s=$age server_pid=$($b.server_pid) alive=$alive restarts=$($b.restarts) debug_quiet_s=$($b.debug_quiet_s) last_exit=$($b.last_exit_code)"
-if ($age -gt 180) { "STALE: $detail"; exit 1 }
-if ($pin -and $b.watchdog_sha256 -ne $pin) { "TAMPERED: running sha $($b.watchdog_sha256) vs pin $pin; $detail"; exit 1 }
-if ($b.state -ne "RUNNING") { "$($b.state): $detail"; exit 1 }
+$detail = "state=$($b.state) age_s=$age every_s=$every server_pid=$($b.server_pid) alive=$alive restarts=$($b.restarts) debug_quiet_s=$($b.debug_quiet_s) session_errors=$($b.session_error_lines) last_exit=$($b.last_exit_code) next_in_s=$($b.next_in_s)"
+if ($age -gt 3 * $every) { "STALE: $detail"; exit 1 }
+if ($b.state -ne "RUNNING") { "$($b.state): $detail needs=$($b.needs)"; exit 1 }
 if (-not $alive) { "DEAD_SERVER: $detail"; exit 1 }
-if ($b.debug_quiet_s -and [int]$b.debug_quiet_s -gt 1800) { "QUIET: $detail"; exit 1 }
+if ($null -eq $b.debug_quiet_s) { "UNMEASURED: $detail"; exit 1 }
+if ([int]$b.debug_quiet_s -gt 1800) { "QUIET: $detail"; exit 1 }
+if ($b.session_error_lines -and [int]$b.session_error_lines -gt 0) { "DEGRADED: $detail last=$($b.last_session_error)"; exit 1 }
 "LIVE: $detail"
 exit 0

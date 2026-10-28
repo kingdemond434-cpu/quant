@@ -25,7 +25,8 @@
 [CmdletBinding()]
 param(
     [string] $Checkout = "C:\opt\bridge\quant",
-    [string] $BinDir = "C:\opt\bridge\bin"
+    [string] $BinDir = "C:\opt\bridge\bin",
+    [string] $LogDir = "C:\opt\bridge\logs"
 )
 # Highest, not a choice: the bin folder below is Administrators + SYSTEM only, so a limited token
 # could not even read the script it runs.
@@ -35,27 +36,55 @@ $ErrorActionPreference = 'Stop'
 $TaskName = 'Claude-Bridge-Watchdog'
 $src = Join-Path $PSScriptRoot 'bridge_watchdog.ps1'
 if (-not (Test-Path $src)) { throw "bridge_watchdog.ps1 missing at $src" }
-# THE FOLDER THE ELEVATED TASK RUNS FROM IS ADMIN-ONLY. A new folder under C:\ inherits a DACL that
-# normally lets Authenticated Users modify it, which would make this a writable script run
-# elevated. Inheritance is cut and only Administrators and SYSTEM keep any right; the watchdog
-# also refuses to run when its own sha256 differs from the pin written next to it here.
-New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
-& icacls.exe $BinDir /inheritance:r /grant:r "*S-1-5-32-544:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F" | Out-Null
-if ($LASTEXITCODE -ne 0) { throw "icacls could not restrict $BinDir (exit $LASTEXITCODE)" }
-& icacls.exe $BinDir /setowner "*S-1-5-32-544" /T | Out-Null
-$acl = (Get-Acl $BinDir).Access | Where-Object { $_.AccessControlType -eq 'Allow' } |
-    ForEach-Object { $_.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value }
-$extra = @($acl | Where-Object { $_ -notin @('S-1-5-32-544', 'S-1-5-18') })
-if ($extra.Count -gt 0) { throw "$BinDir still grants $($extra -join ', '); not installing" }
+# THE FOLDERS THE ELEVATED TASK RUNS FROM AND WRITES TO ARE ADMIN-ONLY. A new folder under C:\
+# inherits a DACL that normally lets Authenticated Users modify it, which would make bin a writable
+# script run elevated and logs a forgeable heartbeat and, through a junction, an elevated write or
+# delete anywhere. Inheritance is cut; only Administrators and SYSTEM keep any right (logs: Users
+# may read). Files already inside lose any explicit entry (icacls /reset on the children), and the
+# copy and its pin are deleted and written fresh, never written over a file someone pre-created.
+# The pin protects against non-admins only: an administrator can rewrite the pin and the copy.
+function Lock-Folder([string] $dir, [switch] $UsersRead) {
+    if ((Test-Path -LiteralPath $dir) -and ((Get-Item -LiteralPath $dir -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        throw "$dir is a junction or symlink; not installing"
+    }
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    $grants = @("*S-1-5-32-544:(OI)(CI)F", "*S-1-5-18:(OI)(CI)F")
+    if ($UsersRead) { $grants += "*S-1-5-32-545:(OI)(CI)RX" }
+    & icacls.exe $dir /inheritance:r /grant:r @grants | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "icacls could not restrict $dir (exit $LASTEXITCODE)" }
+    & icacls.exe $dir /setowner "*S-1-5-32-544" /T /C | Out-Null
+    foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -Recurse)) {
+        if ($c.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "$($c.FullName) is a junction or symlink; not installing" }
+    }
+    if (@(Get-ChildItem -LiteralPath $dir -Force).Count -gt 0) {
+        & icacls.exe (Join-Path $dir "*") /reset /T /C | Out-Null
+    }
+    $allowed = @('S-1-5-32-544', 'S-1-5-18')
+    if ($UsersRead) { $allowed += 'S-1-5-32-545' }
+    $writeMask = [int64][System.Security.AccessControl.FileSystemRights]"Write, Delete, DeleteSubdirectoriesAndFiles, ChangePermissions, TakeOwnership" -bor 0x50000000
+    foreach ($path in @($dir) + @(Get-ChildItem -LiteralPath $dir -Force -Recurse | ForEach-Object { $_.FullName })) {
+        foreach ($a in (Get-Acl -LiteralPath $path).Access | Where-Object { $_.AccessControlType -eq 'Allow' }) {
+            $sid = $a.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value
+            if ($sid -notin $allowed) { throw "$path still grants $($a.IdentityReference); not installing" }
+            if ($sid -eq 'S-1-5-32-545' -and ([int64]$a.FileSystemRights -band $writeMask) -ne 0) {
+                throw "$path grants Users write; not installing"
+            }
+        }
+    }
+}
+Lock-Folder $BinDir
+Lock-Folder $LogDir -UsersRead
 $dst = Join-Path $BinDir 'bridge_watchdog.ps1'
-Copy-Item -Path $src -Destination $dst -Force
+$pinFile = Join-Path $BinDir 'watchdog.sha256'
+Remove-Item -LiteralPath $dst, $pinFile -Force -ErrorAction SilentlyContinue
+Copy-Item -Path $src -Destination $dst
 $sha = (Get-FileHash $dst -Algorithm SHA256).Hash.ToLower()
-Set-Content -Path (Join-Path $BinDir 'watchdog.sha256') -Value $sha -Encoding ascii
-"copied {0} -> {1} (sha256 {2}); {3} is Administrators + SYSTEM only" -f $src, $dst, $sha.Substring(0, 12), $BinDir
+Set-Content -Path $pinFile -Value $sha -Encoding ascii
+"copied {0} -> {1} (sha256 {2}); {3} and {4} are Administrators + SYSTEM only ({4}: Users read)" -f $src, $dst, $sha.Substring(0, 12), $BinDir, $LogDir
 
 $user = "{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument `
-    ('-NoProfile -NonInteractive -WindowStyle Minimized -ExecutionPolicy Bypass -File "{0}" -Checkout "{1}"' -f $dst, $Checkout)
+    ('-NoProfile -NonInteractive -WindowStyle Minimized -ExecutionPolicy Bypass -File "{0}" -Checkout "{1}" -LogDir "{2}"' -f $dst, $Checkout, $LogDir)
 
 # AT LOGON, AND A DAILY TRIGGER REPEATING EVERY FIVE MINUTES FOR ONE DAY -- never a -Once trigger with
 # a long duration: the desk measured one fold into P9D and expire (install_adopt_release_task.ps1).
@@ -83,5 +112,5 @@ Start-ScheduledTask -TaskName $TaskName
 Start-Sleep -Seconds 8
 $i = Get-ScheduledTaskInfo -TaskName $TaskName
 "installed {0}: state={1} last_run={2} last_result={3}" -f $TaskName, (Get-ScheduledTask -TaskName $TaskName).State, $i.LastRunTime, $i.LastTaskResult
-$beat = 'C:\opt\bridge\logs\bridge_watchdog.json'
+$beat = Join-Path $LogDir 'bridge_watchdog.json'
 if (Test-Path $beat) { "heartbeat: " + ((Get-Content $beat -Raw | ConvertFrom-Json) | ConvertTo-Json -Compress) }
