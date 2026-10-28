@@ -1,15 +1,15 @@
 {
-  "updated_at": "2026-10-28T17:54:27+00:00",
-  "configured_sleeves": 621,
-  "represented_sleeves": 621,
+  "updated_at": "2026-10-28T20:13:17+00:00",
+  "configured_sleeves": 620,
+  "represented_sleeves": 620,
   "certified_sleeves_total": 1048,
-  "forward_clocks_total": 621,
+  "forward_clocks_total": 620,
   "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
   "n_distinct_param_hashes": 208,
   "n_mechanisms": 11,
-  "retired_shadow_sleeves": 250,
+  "retired_shadow_sleeves": 251,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 581,
+  "sleeves_with_forward_trades": 580,
   "zero_trade_clocks": {
     "count": 40,
     "by_status": {
@@ -18,7 +18,7 @@
       "IDENTITY_BROKEN": 9
     },
     "age_measured": 40,
-    "median_age_days": 22.913,
+    "median_age_days": 23.009,
     "mature_14d_without_trade": 40,
     "fresh_attempts": 31,
     "naturally_inactive": 30,
@@ -42,10 +42,22 @@
     "177 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 3844.981,
+  "seconds": 8190.803,
   "gateway_armed": true,
-  "promoted_live_sleeves": [],
-  "promoted_live_certificate_rows": [],
-  "live_exposure_aliases": {},
+  "promoted_live_sleeves": [
+    "gold_asia"
+  ],
+  "promoted_live_certificate_rows": [
+    "gold_asia_v2",
+    "gold_asia_v3",
+    "gold_asia_v4"
+  ],
+  "live_exposure_aliases": {
+    "gold_asia": [
+      "gold_asia_v2",
+      "gold_asia_v3",
+      "gold_asia_v4"
+    ]
+  },
   "status": "ENROLMENT_GAP"
 }
