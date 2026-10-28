@@ -53913,6 +53913,84 @@
       "retired_at": "2026-10-27T16:17:14+00:00",
       "retire_reason": "XAUEUR is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
       "retired_by": "live_policy"
+    },
+    {
+      "name": "EURNOK.macro_conditional.asia@M15#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=96",
+      "symbol": "EURNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": -1.841e-07,
+        "heat_earned": 0.0,
+        "joined": "joined on 'eurnok|macro_conditional|asia'",
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe -1.95 at correlation -0.35 to the held book"
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-10-28T02:14:40+00:00",
+      "shadow_exp": 0.6709606628575586,
+      "family": "macro_conditional",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "EURNOK.macro_conditional.asia@M15#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=96",
+      "sleeve_id": "e82413c1d257302984c2",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "atr_n": 20,
+        "regime_high": 0.7,
+        "rr": 2.0,
+        "session": "ny",
+        "side_in_high": 1,
+        "timeframe": "M15",
+        "ttl_bars": 96
+      },
+      "exec": "family_market",
+      "retired_at": "2026-10-28T02:14:41+00:00",
+      "retire_reason": "EURNOK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
+    },
+    {
+      "name": "EURNOK.macro_conditional.asia@M15#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=192",
+      "symbol": "EURNOK",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "STANDBY",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": -1.841e-07,
+        "heat_earned": 0.0,
+        "joined": "joined on 'eurnok|macro_conditional|asia'",
+        "why": "standby on the current reading -- refused: the optimiser gives it 0.0000% heat at equal total heat, so the book does not want it at any size -- standalone Sharpe -1.95 at correlation -0.35 to the held book"
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-10-28T02:14:41+00:00",
+      "shadow_exp": 0.6709606628575586,
+      "family": "macro_conditional",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "EURNOK.macro_conditional.asia@M15#atr_n=20_regime_high=0.7_session=ny_side_in_high=1_ttl_bars=192",
+      "sleeve_id": "0ce38bc61ecace89e80a",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "atr_n": 20,
+        "regime_high": 0.7,
+        "rr": 2.0,
+        "session": "ny",
+        "side_in_high": 1,
+        "timeframe": "M15",
+        "ttl_bars": 192
+      },
+      "exec": "family_market",
+      "retired_at": "2026-10-28T02:14:41+00:00",
+      "retire_reason": "EURNOK is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     }
   ]
 }
