@@ -62,6 +62,9 @@ ROOT = Path(__file__).resolve().parents[1]
 PREWARM_TOLERANCE = 0.02
 DESK = ROOT / "desks" / "mt5"
 REPORT = DESK / "reports" / "JUDGE_COVERAGE.json"
+#: Consecutive NOT-OK release-file passes (unreadable, torn, vanished, refused write, evidence
+#: aside) before FAIL; equal to `judge_coverage.RELEASE_NOT_OK_MAX_PASSES`.
+RELEASE_ASIDE_MAX_PASSES = 3
 RATCHET = DESK / "data" / "judge_backlog_ratchet.json"
 AUDIT = DESK / "reports" / "judge_coverage_fence.json"
 #: The hourly `judge_alive` leg's own verdict (`--liveness`), so it never overwrites the
@@ -90,6 +93,13 @@ def sync_alarm(doc: Mapping[str, Any], path: Path | None = None) -> None:
 #: progress and deadlines; the stall artifact names a breach the watchdog acted on.
 GAUNTLET_HEARTBEAT = DESK / "reports" / "GAUNTLET_HEARTBEAT.json"
 GAUNTLET_STALL = DESK / "reports" / "GAUNTLET_STALL.json"
+#: THE OPERATOR HOLD, FENCED (2026-10-27). Any RESIDENT_STOP holds the judge until a human deletes
+#: it (run_sharded_gauntlet.resident_stop); a forgotten one held it 108 h on 10-23..27 with no
+#: alarm anywhere. The resident publishes `stop.first_honoured_utc` in JUDGE_RESIDENT.json; past
+#: STOP_WARN_H of honoured hold this WARNs, past STOP_FAIL_H it FAILs (on the box).
+JUDGE_RESIDENT = DESK / "reports" / "JUDGE_RESIDENT.json"
+STOP_WARN_H = 12.0
+STOP_FAIL_H = 24.0
 #: Mirrors `run_sharded_gauntlet.HEARTBEAT_STALE_S`: a RUNNING heartbeat older than this means
 #: the sweep's watchdog itself is wedged (it beats at least once a minute).
 HEARTBEAT_STALE_S = 600.0
@@ -217,20 +227,63 @@ def judge_liveness(now: datetime | None = None, *, heartbeat: Path | None = None
                     f"beat {hb.get('beat_utc')}); stall record {st.get('status') or 'absent'}")}
 
 
+def judge_stop(now: datetime | None = None, *, resident: Path | None = None) -> dict[str, Any]:
+    """How long has the operator hold held the judge? PASS / WARN / FAIL / UNMEASURED.
+
+    The age is re-derived from `stop.first_honoured_utc` against `now` (a stale record still
+    ages), falling back to the published `stop_age_s`. Not STOPPED is PASS."""
+    at = now or datetime.now(tz=UTC)
+    doc = _read(resident or JUDGE_RESIDENT)
+    if not isinstance(doc, dict):
+        return {"metric": "judge_stop", "state": "UNMEASURED",
+                "why": "no readable JUDGE_RESIDENT.json"}
+    if str(doc.get("status") or "") != "STOPPED":
+        return {"metric": "judge_stop", "state": "PASS",
+                "why": f"resident {doc.get('status') or 'absent'}: no operator hold"}
+    stop = doc.get("stop") if isinstance(doc.get("stop"), dict) else {}
+    age_h = _age_h(stop.get("first_honoured_utc"), at)
+    if age_h is None:
+        try:
+            age_h = float(doc.get("stop_age_s")) / 3600.0  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            return {"metric": "judge_stop", "state": "UNMEASURED",
+                    "why": f"resident STOPPED ({doc.get('why')}) with no honoured-since stamp"}
+    state = "FAIL" if age_h >= STOP_FAIL_H else "WARN" if age_h >= STOP_WARN_H else "PASS"
+    return {"metric": "judge_stop", "state": state, "stop_age_h": round(age_h, 2),
+            "why": (f"RESIDENT_STOP has held the judge for {age_h:.1f}h since "
+                    f"{stop.get('first_honoured_utc')} (WARN {STOP_WARN_H:g}h, FAIL "
+                    f"{STOP_FAIL_H:g}h): {doc.get('why')}. Delete the file to resume.")}
+
+
+_RANK = {"FAIL": 3, "WARN": 2, "UNMEASURED": 1, "PASS": 0}
+
+
 def liveness_fence(*, require_state: bool = False, now: datetime | None = None,
-                   heartbeat: Path | None = None, stall: Path | None = None) -> dict[str, Any]:
-    """The hourly `judge_alive` leg's verdict: the liveness row alone, as a fence document.
+                   heartbeat: Path | None = None, stall: Path | None = None,
+                   resident: Path | None = None) -> dict[str, Any]:
+    """The hourly `judge_alive` leg's verdict: the liveness row (and the operator-hold row when
+    the desk's real state is read), as a fence document.
 
     Off the box (no `--require-state`) a FAIL is a WARN, as in `judge`: a commit is never blamed
     for a box incident. UNMEASURED stays UNMEASURED (L1.28a)."""
     row = judge_liveness(now, heartbeat=heartbeat, stall=stall)
-    if row["state"] == "FAIL" and not require_state:
-        row = {**row, "state": "WARN"}
+    rows = [row]
+    if resident is not None or (heartbeat is None and stall is None):
+        rows.append(judge_stop(now, resident=resident))
+    rows = [{**r, "state": "WARN"} if r["state"] == "FAIL" and not require_state else r
+            for r in rows]
+    # The liveness row decides, unless another row is WARN or FAIL and worse than it: an
+    # unreadable resident record never turns a passing liveness reading UNMEASURED.
+    row = rows[0]
+    for other in rows[1:]:
+        if other["state"] in ("WARN", "FAIL") and _RANK[other["state"]] > _RANK.get(
+                row["state"], 1):
+            row = other
     # WARN (SLOW, amber) exits 0 and says so in `state`: a slow sweep is never a failed leg.
     verdict = {"PASS": "PASS", "WARN": "PASS", "FAIL": "FAIL"}.get(row["state"], "UNMEASURED")
     return {"generated_utc": (now or datetime.now(tz=UTC)).isoformat(timespec="seconds"),
             "fence": "judge_alive", "verdict": verdict, "state": row["state"],
-            "why": row["why"], "checks": [row]}
+            "why": row["why"], "checks": rows}
 
 
 def judge(report: Path | None = None, *, require_state: bool = False,
@@ -252,13 +305,16 @@ def judge(report: Path | None = None, *, require_state: bool = False,
         liveness = report is None and not _source_view(require_state)
     if not liveness:
         return out
-    row = judge_liveness(now, heartbeat=heartbeat, stall=stall)
-    if row["state"] == "FAIL" and not require_state:
-        row = {**row, "state": "WARN"}
-    out.setdefault("checks", []).append(row)
-    if row["state"] == "FAIL":
-        out["verdict"] = "FAIL"
-        out["why"] = f"judge_alive: {row['why']}; " + str(out.get("why") or "")
+    rows = [judge_liveness(now, heartbeat=heartbeat, stall=stall)]
+    if heartbeat is None and stall is None:
+        rows.append(judge_stop(now))
+    for row in rows:
+        if row["state"] == "FAIL" and not require_state:
+            row = {**row, "state": "WARN"}
+        out.setdefault("checks", []).append(row)
+        if row["state"] == "FAIL":
+            out["verdict"] = "FAIL"
+            out["why"] = f"{row['metric']}: {row['why']}; " + str(out.get("why") or "")
     return out
 
 
@@ -553,6 +609,36 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
         out["checks"].append({"metric": "prewarm_fail_ratchet", "state": "OK",
                               "why": f"pre-warm failures {float(pw_was):.1%} -> "
                                      f"{float(pw_now):.1%}"})
+
+    # THE RELEASE FILE OF THE BUILD-INPUT BACKSTOP (judge_coverage v1.4, audit of v1.3). It holds
+    # the cells the 90-day backstop released until the judge rules on them. Read UNREADABLE,
+    # TORN or VANISHED, the probe parks nothing new and the pass self-heals: WARN. Evidence of a
+    # tear set aside for more than RELEASE_ASIDE_MAX_PASSES consecutive passes was never looked
+    # at by anyone: FAIL, so it is.
+    rf = ((doc.get("build_input_probe") or {}).get("release_file")
+          if isinstance(doc.get("build_input_probe"), dict) else None)
+    if isinstance(rf, dict):
+        # Consecutive NOT-OK passes of any kind (v1.5): unreadable, torn, vanished, a refused
+        # write, or evidence aside. `set_aside_passes` is v1.4's narrower count, still honoured.
+        n_aside = max(int(rf.get("not_ok_passes") or 0), int(rf.get("set_aside_passes") or 0))
+        rstate = str(rf.get("state") or "")
+        if n_aside > RELEASE_ASIDE_MAX_PASSES:
+            failures.append("build_input_release_file")
+            out["checks"].append({
+                "metric": "build_input_release_file", "state": "FAIL",
+                "why": (f"release file NOT OK for {n_aside} consecutive passes "
+                        f"(> {RELEASE_ASIDE_MAX_PASSES}): read {rstate or '?'}, write "
+                        f"{rf.get('write')}, set aside {rf.get('set_aside') or []}; a held due "
+                        f"cell waits on it -- inspect, then resolve by hand")})
+        elif (rstate in ("UNREADABLE", "TORN", "VANISHED", "UNMEASURED")
+              or rf.get("set_aside") or rf.get("write") in ("UNREADABLE", "WRITE_FAILED")):
+            out["checks"].append({
+                "metric": "build_input_release_file", "state": "WARN",
+                "why": (f"release file read {rstate or '?'} (write {rf.get('write')}); "
+                        f"set aside: {rf.get('set_aside') or []} for {n_aside} pass(es)")})
+        else:
+            out["checks"].append({"metric": "build_input_release_file", "state": "OK",
+                                  "why": f"release file {rstate or 'ABSENT'}"})
 
     totals = doc.get("totals") or {}
     out["totals"] = {k: totals.get(k) for k in (
