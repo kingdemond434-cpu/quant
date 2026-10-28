@@ -1364,9 +1364,24 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             fits, budget_why = risk_budget_allows(committed or 0.0, risk_usd, room)
             if not fits:
                 blocker = f"concurrent risk would reach today's floor: {budget_why}"
+        adopt_hold = None
+        if blocker is None:
+            # THE ADOPTER'S HOLD (libs/ops/new_risk_hold): while a release is being adopted or
+            # rolled back and not yet proved healthy, nothing new opens; resting legs and
+            # positions stay. A veto, so billed once per window per day (missed_growth).
+            from libs.ops import new_risk_hold as _nrh
+            blocker = adopt_hold = _nrh.reason()
         if blocker is not None:
             doc["skipped"].append({"window": name, "why": blocker})
             log(f"[{name}] DEFERRED: {blocker}")
+            if adopt_hold is not None:
+                _billed = state.setdefault("rail_logged", {})
+                if _billed.get(f"adopt_new_risk_hold/{name}") != today:
+                    _billed[f"adopt_new_risk_hold/{name}"] = today
+                    _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                             "status": "RAIL_BLOCKED", "rail": "adopt_new_risk_hold",
+                             "why": adopt_hold, "missed_growth_risk_usd": round(risk_usd, 2),
+                             "armed": armed})
             continue
         committed = (committed or 0.0) + risk_usd
         legs: dict[str, dict] = {}
@@ -1552,6 +1567,75 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             act["ok"] = False
             act["why"] = f"{type(exc).__name__}: {exc}"[:160]
             log(f"[{act['window']}] stale_cancel FAILED: {act['why']}")
+        doc["actions"].append(act)
+
+    # THE DESK'S OWN LEVER (mt5desk.cancel_pending, 2026-10-28): a resting order of this lane --
+    # a journalled entry or a window leg, still open at the venue -- that data/CANCEL_PENDING.json
+    # asks to withdraw. Nothing else on the account is a candidate; nothing is opened or closed.
+    from mt5desk import cancel_pending as _cancel_req
+    legs = {int(leg["id"]) for w in (state.get("windows") or {}).values()
+            for leg in (w.get("orders") or {}).values() if leg.get("id") is not None}
+    mine = sorted((set(own) | legs) & open_ids)
+    by_id = {int(o["id"]): o for o in open_orders if o.get("id") is not None}
+
+    def _leg_of(tid: int) -> dict[str, Any]:
+        return own.get(tid) or next(
+            (lg for w in (state.get("windows") or {}).values()
+             for lg in (w.get("orders") or {}).values()
+             if lg.get("id") is not None and int(lg["id"]) == tid), {})
+
+    # A PAUSED LANE WITHDRAWS ITS RESTING ENTRIES (2026-10-28, FTMO ticket 111616773 filled
+    # after its lane was removed). E8 is the leader, so it is never removed from GOLD_OCO_MODE;
+    # unarmed (no data/E8_GOLD_ARMED) it places nothing, and an entry it placed while armed is
+    # withdrawn here rather than left to fill. Sent although unarmed: a cancel opens nothing.
+    withdraw = _cancel_req.withdraw_reason("e8", armed)
+    if withdraw is not None and mine:
+        doc["withdrawn"] = withdraw
+        for tid in list(mine):
+            act = {"act": "lane_withdrawn", "order_id": tid, "why": withdraw, "ok": False}
+            try:
+                act["ok"] = bool(venue.cancel(int(tid)))
+            except Exception as exc:
+                act["why"] += f"; FAILED {type(exc).__name__}: {exc}"[:160]
+            if act["ok"]:
+                mine.remove(tid)
+                open_ids.discard(tid)
+                leg = _leg_of(tid)
+                _record({"at": now.isoformat(timespec="seconds"), "status": "RAIL_BLOCKED",
+                         "rail": _cancel_req.RAIL, "reason": _cancel_req.WITHDRAWN,
+                         "order_id": tid, "why": withdraw, "window": leg.get("window"),
+                         "missed_growth_risk_usd": round(leg_missed_usd(leg), 2),
+                         "armed": armed})
+            log(f"withdrew resting order {tid}: {act['why']} -> {act['ok']}")
+            doc["actions"].append(act)
+    # each order's own setup time, so an `all` request never reaches an order placed after it
+    # (v7 audit MF6). The stamp is read AS IF it were UTC: if the venue stamps on the broker
+    # clock (LEG_MATCH_WINDOW_MS above) that reads 2-3 h late, which only ever leaves an order
+    # out; reading it as broker time would read 2-3 h early if the venue stamps real UTC
+    # (unverified live), and could take in an order placed after the request (v10 audit).
+    setup = {t: (datetime.fromtimestamp(ms / 1000, UTC)
+                 if (ms := _order_ms(by_id.get(t) or {})) is not None else None) for t in mine}
+    todo, notes = _cancel_req.due("e8", setup, now=now)
+    if notes:
+        doc["cancel_request_notes"] = notes
+    for c in todo:
+        act = {"act": "cancel_requested", "order_id": c["ticket"], "why": c["why"], "ok": False}
+        if armed:
+            try:
+                act["ok"] = bool(venue.cancel(int(c["ticket"])))
+            except Exception as exc:
+                act["why"] += f"; FAILED {type(exc).__name__}: {exc}"[:160]
+            _cancel_req.record("e8", c["request"], c["ticket"], act["ok"], now=now)
+            if act["ok"]:  # a withdrawn order is a refusal too (Rule 1): billed at its own risk
+                leg = _leg_of(c["ticket"])
+                _record({"at": now.isoformat(timespec="seconds"), "status": "RAIL_BLOCKED",
+                         "rail": _cancel_req.RAIL, "order_id": c["ticket"], "why": c["why"],
+                         "window": leg.get("window"),
+                         "missed_growth_risk_usd": round(leg_missed_usd(leg), 2),
+                         "armed": armed})
+        else:
+            act["shadow"] = True
+        log(f"requested cancel of resting order {c['ticket']}: {act['why']} -> {act['ok']}")
         doc["actions"].append(act)
 
     # The Fusion gold book and this E8 port are the same bracket strategy.  Both therefore use
@@ -1760,6 +1844,12 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                                   (f"the E8 account does not join ({account_ok[1]})",
                                    armed and not account_ok[0]))
              if bad]
+    # THE ADOPTER'S HOLD (libs/ops/new_risk_hold): a re-sent leg is a fresh entry, so it waits
+    # like a first send does; billed once per held leg per day.
+    from libs.ops import new_risk_hold as _nrh
+    adopt_hold = _nrh.reason()
+    if adopt_hold is not None:
+        blind.append(adopt_hold)
     journal = _journal_read()
     if journal is None:
         blind.append("the intents journal is missing or unreadable, so this lane's own order "
@@ -1769,21 +1859,24 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                    for side in (w.get("failed") or {})]
         doc["retry_skipped"] = {"why": blind, "legs": waiting}
         log(f"dropped legs {waiting} not re-sent this pass: {'; '.join(blind)}")
-        if armed and not account_ok[0]:
-            # Billed once per held leg per day, under the same rail as a refused placement.
-            _billed = state.setdefault("rail_logged", {})
-            today = now.date().isoformat()
+        held = [(rail, why) for rail, why, on in (
+            ("e8_account_undeclared",
+             f"retry held: the E8 account does not join ({account_ok[1]})",
+             armed and not account_ok[0]),
+            ("adopt_new_risk_hold", f"retry held: {adopt_hold}", adopt_hold is not None)) if on]
+        # Billed once per held leg per day, under the same rail as a refused placement.
+        _billed = state.setdefault("rail_logged", {})
+        today = now.date().isoformat()
+        for rail, why in held:
             for n, w in (state.get("windows") or {}).items():
                 for side, leg in (w.get("failed") or {}).items():
-                    if _billed.get(f"e8_account_undeclared/{n}/{side}") == today:
+                    if _billed.get(f"{rail}/{n}/{side}") == today:
                         continue
-                    _billed[f"e8_account_undeclared/{n}/{side}"] = today
+                    _billed[f"{rail}/{n}/{side}"] = today
                     _record({"at": now.isoformat(timespec="seconds"), "window": n,
-                             "side": side, "status": "RAIL_BLOCKED",
-                             "rail": "e8_account_undeclared",
-                             "why": f"retry held: the E8 account does not join ({account_ok[1]})",
+                             "side": side, "status": "RAIL_BLOCKED", "rail": rail, "why": why,
                              "missed_growth_risk_usd": (leg or {}).get("risk_usd"),
-                             "armed": True})
+                             "armed": armed})
         return
     try:
         bid, ask = venue.quote(SYMBOL)

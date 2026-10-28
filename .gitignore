@@ -260,6 +260,13 @@ desks/mt5/data/xacct/
 # brokerage login is never tracked (tests/ops/test_live_infrastructure_is_not_published.py); the
 # operator writes this once on the box.
 desks/mt5/data/FUSION_LIVE_ACCOUNT.json
+# The unattended adopter's markers (libs/ops/adopt_guard, libs/ops/new_risk_hold): the new-risk
+# hold and the resident gateway's load stamp describe THIS box's processes. Carried by a sync to
+# origin and adopted elsewhere, a hold would stop another box's lanes; a stamp would vouch for a
+# gateway that never ran there.
+desks/mt5/data/ADOPT_NEW_RISK_HOLD.json
+desks/mt5/data/new_risk_holds/
+desks/mt5/data/GATEWAY_LOADED.json
 # judge_cpu_fair_share: per-box caches. The cadence state records what THIS box's scheduler
 # accepted; the core pid file names a process that exists only on the machine that wrote it.
 desks/mt5/data/gauntlet_cadence_state.json
@@ -542,6 +549,11 @@ desks/mt5/data/E8_ACCOUNT.json*
 desks/mt5/data/FUSION_DEADMAN_ARMED.json*
 # The gold direction lock's mode switch (mt5desk.gold_oco.MODE_FILE): box-local, like the books.
 desks/mt5/data/GOLD_OCO_MODE.json*
+desks/mt5/data/box_state_backups/
+desks/mt5/data/CANCEL_PENDING.json
+desks/mt5/data/cancel_pending_acks/
+desks/mt5/data/ADOPT_UNTRACKED_BASELINE.json
+desks/mt5/data/ADOPT_UNTRACKED_BASELINE.tmp
 # The FTMO follower's account declaration and its arming marker (prop/ftmo_follower.py): the
 # principal's own box-local files, never committed.
 desks/mt5/data/FTMO_LIVE_ACCOUNT.json*
