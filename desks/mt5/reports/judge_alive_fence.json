@@ -1,0 +1,19 @@
+{
+ "generated_utc": "2026-10-28T16:46:30+00:00",
+ "fence": "judge_alive",
+ "verdict": "UNMEASURED",
+ "state": "UNMEASURED",
+ "why": "no GAUNTLET_HEARTBEAT.json or GAUNTLET_STALL.json: the sweep watchdog has not reported on this tree",
+ "checks": [
+  {
+   "metric": "judge_alive",
+   "state": "UNMEASURED",
+   "why": "no GAUNTLET_HEARTBEAT.json or GAUNTLET_STALL.json: the sweep watchdog has not reported on this tree"
+  },
+  {
+   "metric": "judge_stop",
+   "state": "PASS",
+   "why": "resident SWEEPING: no operator hold"
+  }
+ ]
+}
