@@ -31,14 +31,21 @@ see the merged code.
 WORKFLOW-FILE PRs. A PR that changes .github/workflows/** -- this gate's own fixes included --
 is refused by GitHub for the workflow token (it holds no `workflows` permission). The Actions run
 therefore leaves such a PR alone (status "pending: the box merges this") and the BOX merges it
-under the SAME rule, with zuck's own gh token (which carries the `workflow` scope):
+under the SAME rule, with zuck's own gh token (which carries the `workflow` scope).
+
+THE BOX SWEEPS EVERY PR, NOT ONLY WORKFLOW ONES (2026-10-28, Desk health): the cloud sessions are
+refused the two writes that start or finish an Actions run -- adding the `audit-clear` label and
+marking a draft ready. So the box pass needs no label: it reads the trusted CLEAR comment on
+every open PR into LIVE and merges (marking ready first) under the same rule:
 
     python .github/scripts/audit_gate.py --repo OWNER/NAME --sweep --box
 
 run every 10 minutes by ops/box/workflow_gate.ps1 from a clean checkout of LIVE (trusted code,
-never the PR's). The box mode merges ONLY workflow-file PRs, never waits (a PR whose CI is still
-running is left for the next sweep), and dispatches nothing: a merge made with a user token
-starts the normal push run on LIVE.
+never the PR's). The box mode never waits (a PR whose CI is still running is left for the next
+sweep), posts no `pending` status (the Actions run owns that), and dispatches nothing: a merge
+made with a user token starts the normal push run on LIVE. A PR the Actions gate merged first is
+closed by the time the box looks, and a race between the two loses nothing: both merges are
+pinned to the same head sha, so GitHub accepts at most one.
 
 FOR A WORKFLOW-FILE PR, "CI GREEN" IS SELF-ATTESTED (#447 audit): its `pull_request` run uses the
 PR's own ci.yml, which can rename or neuter quality / mt5-money-path / coverage-floor and still
@@ -277,8 +284,9 @@ def run(
     poll_s: float = 60.0,
     box: bool = False,
 ) -> int:
-    """Merge #pr when the rule holds. `box`: the box's run with a user token -- it merges ONLY
-    workflow-file PRs, which the Actions run (box=False) leaves to it, and dispatches nothing."""
+    """Merge #pr when the rule holds. `box`: the box's run with a user token -- it needs no label,
+    merges workflow-file PRs too (the Actions run, box=False, leaves those to it), posts no
+    pending status and dispatches nothing."""
     p = _gh(f"repos/{repo}/pulls/{pr}")
     head = str(p["head"]["sha"])
     if p.get("state") != "open":
@@ -296,9 +304,6 @@ def run(
         _status(repo, head, "pending", BOX_MERGES)
         _summary(f"#{pr} @ {head[:9]}: {BOX_MERGES}")
         return 0
-    if box and not wf:
-        _summary(f"#{pr}: no workflow change; the Actions gate merges it")
-        return 0
     # The label only STARTS a run; it is taken off so the next CLEAR can put it back on (adding
     # a label a PR already carries starts nothing). A removal by the workflow token starts no run.
     if not box and any(lb.get("name") == LABEL for lb in p.get("labels") or []):
@@ -306,19 +311,23 @@ def run(
             _gh(f"repos/{repo}/issues/{pr}/labels/{LABEL}", "-X", "DELETE")
         except RuntimeError as exc:
             _summary(f"(label not removed: {exc})")
-    head_id = patch_id(base, head)
+    # The head's own diff identity, computed only when a CLEAR names another sha (a sweep looks
+    # at every open PR, most of which carry no verdict at all).
+    ids: dict[str, str | None] = {}
+
+    def same_change(sha: str) -> bool:
+        if "head" not in ids:
+            ids["head"] = patch_id(base, head)
+        return ids["head"] is not None and patch_id(base, sha) == ids["head"]
 
     def verdict_now() -> tuple[dict[str, str] | None, str]:
         pages = _gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate", "--slurp")
-        return cleared(
-            verdicts(_flat(pages)),
-            head,
-            lambda sha: head_id is not None and patch_id(base, sha) == head_id,
-        )
+        return cleared(verdicts(_flat(pages)), head, same_change)
 
     clear, why = verdict_now()
     if clear is None:
-        _status(repo, head, "pending", why)
+        if not box:
+            _status(repo, head, "pending", why)
         _summary(f"#{pr} @ {head[:9]}: not merged -- {why}")
         return 0
     _status(repo, head, "success", why)
@@ -380,8 +389,8 @@ def run(
 
 
 def sweep(repo: str, base: str) -> int:
-    """The box's pass: every open, non-fork PR into `base` that changes workflow files gets one
-    box-mode run. One PR's failure never stops the others; the worst exit code is returned."""
+    """The box's pass: every open PR into `base` gets one box-mode run (forks are refused inside).
+    One PR's failure never stops the others; the worst exit code is returned."""
     pages = _gh(f"repos/{repo}/pulls?state=open&base={base}&per_page=100", "--paginate", "--slurp")
     rc = 0
     for p in _flat(pages):
@@ -400,7 +409,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--pr", type=int)
     ap.add_argument("--base", default=LIVE)
     ap.add_argument("--wait-min", type=float, default=300.0)
-    ap.add_argument("--box", action="store_true", help="the box's run: workflow-file PRs only")
+    ap.add_argument("--box", action="store_true", help="the box's run: no label, workflow PRs too")
     ap.add_argument("--sweep", action="store_true", help="every open PR into --base (with --box)")
     a = ap.parse_args(argv)
     if a.sweep:

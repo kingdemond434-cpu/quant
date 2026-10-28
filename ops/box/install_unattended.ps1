@@ -19,7 +19,7 @@
 #   value, an AutoLogonCount (which turns auto-logon off after N logons) or a logon banner (which
 #   halts auto-logon at the banner) are reported as problems.
 #
-#   THE `workflow` SCOPE on zuck's gh login, which the workflow gate needs. If missing, zuck runs
+#   THE `workflow` SCOPE on zuck's gh login, which merging workflow-file PRs needs. If missing, zuck runs
 #   once:  gh auth refresh -h github.com -s workflow
 #
 # Idempotent; touches only these three tasks and C:\ProgramData\QuantBox.
@@ -101,7 +101,7 @@ Add-QuantTask 'Quant-BootSession' 'unattended_boot.ps1' '-Mode Logon' @($atLogon
 Add-QuantTask 'Quant-BootRecord' 'unattended_boot.ps1' '-Mode Record' @(Every10) 5 `
     'Record which MT5 terminals run in this desktop session, for Quant-BootSession after a reboot.'
 Add-QuantTask 'Quant-WorkflowGate' 'workflow_gate.ps1' '' @($atLogon, (Every10)) 30 `
-    'Merge audit-CLEARed, CI-green PRs that change .github/workflows (the Actions gate cannot), with zuck''s gh login, from a clean checkout of LIVE.'
+    'Merge audit-CLEARed, CI-green PRs into LIVE (no label needed; workflow-file PRs too), with zuck''s gh login, from a clean checkout of LIVE.'
 Start-ScheduledTask -TaskName 'Quant-BootRecord'
 
 if ($StageAutologon) {

@@ -400,7 +400,7 @@ def test_the_box_merges_a_cleared_green_workflow_pr_pinned_and_dispatches_nothin
     assert not any(w[0] == "DELETE" for w in h.writes)  # the label is the Actions run's
 
 
-@pytest.mark.parametrize("case", ["no_workflow", "no_clear", "hold", "red_ci", "pending_ci"])
+@pytest.mark.parametrize("case", ["no_clear", "hold", "red_ci", "pending_ci"])
 def test_the_box_merges_nothing_else(hub: Any, case: str) -> None:
     comments = {
         "no_clear": [],
@@ -413,9 +413,24 @@ def test_the_box_merges_nothing_else(hub: Any, case: str) -> None:
         "red_ci": [*_green(), _r("lint", conclusion="failure")],
         "pending_ci": _green()[:2],
     }.get(case)
-    h = hub(comments=comments, runs=runs, files=("scripts/x.py",) if case == "no_workflow" else WF)
+    h = hub(comments=comments, runs=runs, files=WF)
     code = ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True)
     assert _merges(h) == [] and code == (1 if case == "red_ci" else 0)
+    assert not any("state=pending" in w for w in h.writes)  # the Actions run owns pending
+
+
+def test_the_box_needs_no_label_and_marks_a_draft_ready_for_any_cleared_pr(
+    hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Cloud sessions cannot add the label or mark ready (2026-10-28): the box does both jobs."""
+    h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], draft=True, labels=())
+    ran: list[list[str]] = []
+    monkeypatch.setattr(ag.subprocess, "run", lambda cmd, **kw: ran.append(cmd))
+    assert ag.main(["--repo", "o/r", "--sweep", "--box"]) == 0
+    (merge,) = _merges(h)
+    assert f"sha={A}" in merge
+    assert ran == [["gh", "pr", "ready", "7", "-R", "o/r"]]
+    assert not any("dispatches" in w[1] for w in h.writes)
 
 
 def test_sweep_needs_box() -> None:

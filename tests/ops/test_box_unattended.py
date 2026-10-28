@@ -101,7 +101,7 @@ def test_the_workflow_gate_runs_the_trusted_gate_in_box_mode_with_zucks_login_on
     for v in ("GITHUB_TOKEN", "GH_TOKEN"):
         assert f"'{v}'" in wg
     assert 'Remove-Item -LiteralPath "env:$v"' in wg
-    assert "'workflow'" in wg and "exit 3" in wg  # no scope, no merge
+    assert "'workflow'" in wg and "NO workflow scope" in wg  # reported, never silent
     assert 'checkout -q -f --detach "origin/$Live"' in wg  # LIVE, never a PR branch
     assert "--sweep --box" in wg and '".github\\scripts\\audit_gate.py"' in wg
     assert "GIT_CONFIG_KEY_0 = 'safe.directory'" in wg
