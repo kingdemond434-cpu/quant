@@ -11,8 +11,9 @@
 #
 # This script is what the Quant-BootSession task runs. Two modes:
 #
-#   -Mode Record   (every 10 minutes) writes which MT5 terminals run in this desktop session, so a
-#                  reboot brings back exactly what was running -- nothing more. Fusion is left out:
+#   -Mode Record   (every 10 minutes) writes which MT5 terminals run under THIS USER, in any of
+#                  its sessions (the auto-logon console and an RDP session can both be this user's;
+#                  #447 audit should-fix 2), so a reboot brings back exactly what was running. Fusion is left out:
 #                  ops\ensure_terminal.ps1 (MT5-TerminalBoot) owns it, and two starters would race
 #                  into two terminals on one data directory. Nothing is recorded in the first 15
 #                  minutes after boot, so a half-started desk never overwrites the list.
@@ -41,6 +42,12 @@ function Say([string] $line) {
     Add-Content -LiteralPath $log -Value ("{0} [{1} s{2}] {3}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ssK'), $Mode, $session, $line)
 }
 if ($session -eq 0) { Say "in Session 0: no desktop here, nothing to do"; exit 2 }
+# Windows PowerShell 5.1 runs on .NET Framework, which has no Environment.TickCount64.
+Add-Type -Namespace QuantBox -Name Win -MemberDefinition @'
+[DllImport("kernel32.dll")] public static extern ulong GetTickCount64();
+[DllImport("kernel32.dll")] public static extern uint WTSGetActiveConsoleSessionId();
+[DllImport("user32.dll")] public static extern bool LockWorkStation();
+'@
 
 # Get-Process, never CIM (CIM has hung on this box). A process whose Path cannot be read is not
 # counted as ours.
@@ -49,14 +56,52 @@ function Get-Terminals {
 }
 
 if ($Mode -eq "Record") {
-    if ([Environment]::TickCount64 -lt 15 * 60 * 1000) { exit 0 }
-    $paths = @(Get-Terminals | Where-Object { $_.SessionId -eq $session -and $_.Path -ine $Fusion } |
+    if ([QuantBox.Win]::GetTickCount64() -lt 15 * 60 * 1000) { exit 0 }
+    $me = "{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME
+    $paths = @(Get-Process -Name 'terminal64' -IncludeUserName -ErrorAction SilentlyContinue |
+        Where-Object { $_.Path -and $_.UserName -ieq $me -and $_.Path -ine $Fusion } |
         ForEach-Object { $_.Path } | Sort-Object -Unique)
     $doc = [ordered]@{ at = (Get-Date).ToUniversalTime().ToString('o'); session = $session; terminals = $paths }
     $tmp = "$list.tmp"
     $doc | ConvertTo-Json -Compress | Set-Content -LiteralPath $tmp -Encoding UTF8
     Move-Item -LiteralPath $tmp -Destination $list -Force
     exit 0
+}
+
+# AN ELEVATED START ONLY OF A BINARY NO NON-ADMIN COULD HAVE PLACED (#447 audit should-fix 1). This
+# task runs elevated, so a recorded path under a folder a user can write would be a privilege
+# escalation: the exe must grant non-admins no write, its folder no create/delete (a planted DLL
+# loads from there), and no folder above it may let a non-admin delete, rename or re-permission
+# what is below. An owner outside the admin set refuses too (owners hold WRITE_DAC). Inherit-only
+# entries apply to children, not to the object, and are skipped.
+$TrustedSids = @('S-1-5-32-544', 'S-1-5-18',
+    'S-1-5-80-956008885-3425251180-1031296420-4209216906-1734659418')  # Administrators, SYSTEM, TrustedInstaller
+function Test-AdminOnlyPath([string] $exe) {
+        $fileBad = [int64][System.Security.AccessControl.FileSystemRights]"Write, Delete, ChangePermissions, TakeOwnership"
+    $dirBad = [int64][System.Security.AccessControl.FileSystemRights]"CreateFiles, AppendData, Delete, DeleteSubdirectoriesAndFiles, ChangePermissions, TakeOwnership"
+    $aboveBad = [int64][System.Security.AccessControl.FileSystemRights]"Delete, DeleteSubdirectoriesAndFiles, ChangePermissions, TakeOwnership"
+    $generic = 0x50000000  # GENERIC_ALL | GENERIC_WRITE
+    $chain = @(, @($exe, $fileBad))
+    $d = Split-Path -Parent $exe
+    $chain += , @($d, $dirBad)
+    while ($d -and (Split-Path -Parent $d)) { $d = Split-Path -Parent $d; $chain += , @($d, $aboveBad) }
+    foreach ($c in $chain) {
+        $item = Get-Item -LiteralPath $c[0] -Force -ErrorAction Stop
+        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { return "$($c[0]) is a junction or symlink" }
+        $acl = Get-Acl -LiteralPath $c[0]
+        $owner = (New-Object System.Security.Principal.NTAccount($acl.Owner)).Translate([System.Security.Principal.SecurityIdentifier]).Value
+        if ($owner -notin $TrustedSids) { return "$($c[0]) is owned by $($acl.Owner)" }
+        foreach ($a in $acl.Access) {
+            if ($a.AccessControlType -ne 'Allow') { continue }
+            if ($a.PropagationFlags -band [System.Security.AccessControl.PropagationFlags]::InheritOnly) { continue }
+            $sid = $a.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value
+            if ($sid -in $TrustedSids) { continue }
+            if (([int64]$a.FileSystemRights -band ($c[1] -bor $generic)) -ne 0) {
+                return "$($c[0]) grants $($a.IdentityReference) $($a.FileSystemRights)"
+            }
+        }
+    }
+    return $null
 }
 
 # -Mode Logon. The network and the AtLogOn tasks come up together; give the terminals' servers a
@@ -76,6 +121,8 @@ foreach ($exe in $want) {
         continue
     }
     if (-not (Test-Path -LiteralPath $exe)) { Say "$exe missing; not started"; $rc = 2; continue }
+    $unsafe = $(try { Test-AdminOnlyPath $exe } catch { "ACL unreadable: $($_.Exception.Message)" })
+    if ($unsafe) { Say "$exe NOT started: $unsafe"; $rc = 2; continue }
     Start-Process -FilePath $exe
     Start-Sleep -Seconds 8
     $n = @(Get-Terminals | Where-Object { $_.Path -ieq $exe -and $_.SessionId -eq $session }).Count
@@ -83,10 +130,6 @@ foreach ($exe in $want) {
 }
 
 if (-not $NoLock) {
-    Add-Type -Namespace QuantBox -Name Win -MemberDefinition @'
-[DllImport("kernel32.dll")] public static extern uint WTSGetActiveConsoleSessionId();
-[DllImport("user32.dll")] public static extern bool LockWorkStation();
-'@
     if ([QuantBox.Win]::WTSGetActiveConsoleSessionId() -eq [uint32]$session) {
         if ([QuantBox.Win]::LockWorkStation()) { Say "console session locked" } else { Say "console lock FAILED"; $rc = 2 }
     } else { Say "not the console session (an RDP logon): not locked" }

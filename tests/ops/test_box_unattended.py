@@ -67,9 +67,33 @@ def test_the_boot_session_starts_only_missing_recorded_terminals_and_never_fusio
     assert "$session -eq 0" in boot  # no desktop in Session 0
     assert "-ine $Fusion" in boot and "-ieq $Fusion) { continue }" in boot
     assert "already runs in session(s)" in boot  # never a second copy, any session
-    assert "TickCount64 -lt 15 * 60 * 1000" in boot  # no half-started desk recorded
+    assert "GetTickCount64() -lt 15 * 60 * 1000" in boot  # no half-started desk recorded
     assert "WTSGetActiveConsoleSessionId() -eq [uint32]$session" in boot  # lock the console only
     assert "Get-CimInstance" not in boot and "Get-WmiObject" not in boot
+
+
+def test_record_is_this_users_terminals_in_every_session() -> None:
+    boot = CODE["unattended_boot"]
+    rec = boot[boot.index('if ($Mode -eq "Record")') : boot.index("function Test-AdminOnlyPath")]
+    assert "-IncludeUserName" in rec and "$_.UserName -ieq $me" in rec
+    assert "SessionId -eq $session" not in rec
+
+
+def test_an_elevated_start_needs_an_admin_only_path() -> None:
+    boot = CODE["unattended_boot"]
+    i_check = boot.index("$unsafe = $(try { Test-AdminOnlyPath $exe }")
+    assert i_check < boot.index("Start-Process -FilePath $exe")
+    assert "if ($unsafe) {" in boot and "NOT started" in boot
+    fn = boot[boot.index("function Test-AdminOnlyPath") :]
+    for must in (
+        "ReparsePoint",
+        "InheritOnly",
+        "$owner -notin $TrustedSids",
+        "CreateFiles",
+        "DeleteSubdirectoriesAndFiles",
+        "0x50000000",
+    ):
+        assert must in fn, must
 
 
 def test_the_workflow_gate_runs_the_trusted_gate_in_box_mode_with_zucks_login_only() -> None:

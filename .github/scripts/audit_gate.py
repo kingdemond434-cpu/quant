@@ -40,6 +40,11 @@ never the PR's). The box mode merges ONLY workflow-file PRs, never waits (a PR w
 running is left for the next sweep), and dispatches nothing: a merge made with a user token
 starts the normal push run on LIVE.
 
+FOR A WORKFLOW-FILE PR, "CI GREEN" IS SELF-ATTESTED (#447 audit): its `pull_request` run uses the
+PR's own ci.yml, which can rename or neuter quality / mt5-money-path / coverage-floor and still
+read green. The CLEAR of the exact bytes is the only real gate there, so the auditor reads every
+change to a CI job in such a PR as its critical part.
+
 Exit 0 when merged or when there is honestly nothing to do yet (no CLEAR); exit 1 when the gate
 refused or gave up, with the reason in the job summary and on the `audit/clear` commit status.
 """
