@@ -26,7 +26,7 @@ refuses the merge if the head moved), and dispatches ci.yml on LIVE: a merge mad
 workflow token starts no push run, so without the dispatch the seal and promote jobs would never
 see the merged code.
 
-    python scripts/audit_gate.py --repo OWNER/NAME --pr N [--base LIVE] [--wait-min 300]
+    python .github/scripts/audit_gate.py --repo OWNER/NAME --pr N [--base LIVE] [--wait-min 300]
 
 WORKFLOW-FILE PRs. A PR that changes .github/workflows/** -- this gate's own fixes included --
 is refused by GitHub for the workflow token (it holds no `workflows` permission). The Actions run

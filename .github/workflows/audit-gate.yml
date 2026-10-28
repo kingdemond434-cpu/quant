@@ -1,7 +1,7 @@
 name: audit-gate
 
 # A PR into LIVE merges by itself once the auditor CLEARs its head and CI is green
-# (scripts/audit_gate.py says exactly when). `pull_request_target` runs THIS file and the gate
+# (.github/scripts/audit_gate.py says exactly when). `pull_request_target` runs THIS file and the gate
 # script from the BASE branch, never from the PR, so a PR cannot rewrite its own gate. The PR's
 # commits are fetched only to compare their diff (git patch-id); no PR code is ever run.
 #
@@ -52,7 +52,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: >-
-          python scripts/audit_gate.py
+          python .github/scripts/audit_gate.py
           --repo "${{ github.repository }}"
           --pr "${{ github.event.pull_request.number }}"
           --base "${{ github.event.pull_request.base.ref }}"
