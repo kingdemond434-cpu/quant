@@ -63,6 +63,17 @@ def test_the_latest_verdict_rules_and_a_later_hold_blocks() -> None:
     assert ag.cleared(again, B, _never)[0] is not None
 
 
+def test_an_edited_comment_is_no_verdict() -> None:
+    """#445 audit: editing an old HOLD into a CLEAR must not revive it."""
+    edited = {
+        **_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z"),
+        "updated_at": "2026-10-28T11:00:00Z",
+    }
+    assert ag.verdicts([edited]) == []
+    same = {**_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z"), "updated_at": "2026-10-28T10:00:00Z"}
+    assert len(ag.verdicts([same])) == 1
+
+
 def test_a_clear_for_another_head_needs_the_same_change() -> None:
     found = ag.verdicts([_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")])
     assert ag.cleared(found, B, _never)[0] is None
@@ -156,6 +167,30 @@ def test_a_clean_merge_in_keeps_the_patch_id_and_a_new_change_does_not(
     assert pid is not None and ag.patch_id("live", merged_in) == pid
     assert ag.patch_id("live", edited) not in (None, pid)
     assert ag.patch_id("live", "d" * 40) is None  # unfetchable
+
+
+def test_an_indentation_only_change_does_not_carry_the_clear(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#445 audit MF1: `git patch-id --stable` ignores whitespace, so moving a `return` into an
+    `if` kept the id. The change identity is the diff's exact bytes."""
+    origin, work = tmp_path / "origin", tmp_path / "work"
+    _git(tmp_path, "init", "-q", "-b", "live", str(origin))
+    for k, v in (("user.name", "t"), ("user.email", "t@t")):
+        _git(origin, "config", k, v)
+    (origin / "m.py").write_text("def f(x):\n    return 0\n")
+    _git(origin, "add", ".")
+    _git(origin, "commit", "-qm", "base")
+    _git(origin, "checkout", "-qb", "pr")
+    (origin / "m.py").write_text("def f(x):\n    if x:\n        launch()\n    return 1\n")
+    _git(origin, "commit", "-qam", "cleared")
+    cleared = _git(origin, "rev-parse", "HEAD")
+    (origin / "m.py").write_text("def f(x):\n    if x:\n        launch()\n        return 1\n")
+    _git(origin, "commit", "-qam", "indent only")
+    moved = _git(origin, "rev-parse", "HEAD")
+    _git(tmp_path, "clone", "-q", str(origin), str(work))
+    monkeypatch.chdir(work)
+    assert ag.patch_id("live", cleared) != ag.patch_id("live", moved)
 
 
 # ------------------------------------------------------------------------------- the run
@@ -253,6 +288,41 @@ def test_a_clean_merge_in_carries_the_clear_to_the_new_head(hub: Any) -> None:
     assert f"sha={B}" in merge and "merge_method=squash" in merge
 
 
+def test_a_hold_posted_while_ci_runs_stops_the_merge(hub: Any) -> None:
+    """#445 audit MF2: the verdict is re-read on every poll and right before the merge."""
+    clear = _c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")
+    h = hub(comments=[clear], runs=_green()[:2])
+    polls = {"n": 0}
+    real = h.__call__
+
+    def gh(*args: str, data: Any = None) -> Any:
+        if "/check-runs" in args[0]:
+            polls["n"] += 1
+            if polls["n"] == 1:  # between poll 1 and poll 2: the HOLD lands, CI goes green
+                h.comments = [clear, _c(f"AUDIT HOLD {A}", "2026-10-28T10:05:00Z")]
+                h.runs = _green()
+        return real(*args, data=data)
+
+    ag._gh = gh  # the fixture's monkeypatch restores it
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=5, poll_s=0) == 0
+    assert _merges(h) == [] and polls["n"] == 1
+
+
+def test_a_hold_after_green_ci_but_before_the_merge_stops_it(hub: Any) -> None:
+    clear = _c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")
+    h = hub(comments=[clear])
+    real = h.__call__
+
+    def gh(*args: str, data: Any = None) -> Any:
+        out = real(*args, data=data)
+        if "/check-runs" in args[0]:
+            h.comments = [clear, _c(f"AUDIT HOLD {A}", "2026-10-28T10:05:00Z")]
+        return out
+
+    ag._gh = gh
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=5, poll_s=0) == 0 and _merges(h) == []
+
+
 def test_pending_ci_past_the_wait_gives_up_without_merging(hub: Any) -> None:
     h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], runs=_green()[:2])
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 1 and _merges(h) == []
@@ -266,6 +336,7 @@ def test_the_gate_runs_from_the_base_branch_and_never_runs_pr_code() -> None:
     assert "pull_request_target:" in wf and "\n  pull_request:" not in wf
     assert "ref: ${{ github.event.pull_request.base.ref }}" in wf
     assert "head.sha" not in wf and "head.ref" not in wf  # never checks the PR out
+    assert "persist-credentials: false" in wf
     assert "github.event.pull_request.head.repo.full_name == github.repository" in wf
     assert "github.event.label.name == 'audit-clear'" in wf
     assert 'branches: ["claude/llm-auto-upgrade-verify-gcjac3"]' in wf

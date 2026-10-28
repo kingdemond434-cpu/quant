@@ -28,6 +28,10 @@ see the merged code.
 
     python scripts/audit_gate.py --repo OWNER/NAME --pr N [--base LIVE] [--wait-min 300]
 
+WHAT IT CANNOT MERGE. A PR that changes .github/workflows/** -- this gate's own fixes included --
+is refused by GitHub for the workflow token (it holds no `workflows` permission). That fails
+closed: such a PR still needs a merge from the box.
+
 Exit 0 when merged or when there is honestly nothing to do yet (no CLEAR); exit 1 when the gate
 refused or gave up, with the reason in the job summary and on the `audit/clear` commit status.
 """
@@ -35,6 +39,7 @@ refused or gave up, with the reason in the job summary and on the `audit/clear` 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -65,6 +70,10 @@ def verdicts(comments: Iterable[Mapping[str, Any]]) -> list[dict[str, str]]:
     out: list[dict[str, str]] = []
     for c in comments:
         if str(c.get("author_association") or "") not in TRUSTED:
+            continue
+        # An edited comment is no verdict (#445 audit): editing an old HOLD into a CLEAR must
+        # not revive it. A verdict is a new comment.
+        if c.get("updated_at") not in (None, c.get("created_at")):
             continue
         m = VERDICT.search(str(c.get("body") or ""))
         if m is None:
@@ -159,20 +168,47 @@ def _git(*args: str) -> str:
 
 
 def patch_id(base_ref: str, sha: str) -> str | None:
-    """The stable patch-id of the PR's own change at `sha`: its diff from the merge-base with
-    the base branch. None when the commit cannot be fetched or diffed."""
+    """The identity of the PR's own change at `sha`: sha256 of the exact bytes of its diff from
+    the merge-base with the base branch. None when the commit cannot be fetched or diffed.
+
+    BYTES, NOT `git patch-id` (#445 audit MF1): `--stable` hashes with all whitespace removed,
+    so moving a Python `return` into an `if` kept the id and would have carried a CLEAR to a
+    different program. Exact bytes are conservative: a merge-in of LIVE that shifts the
+    context or the pre-image of a file the PR touches also changes them, and needs a new CLEAR.
+    No external diff or textconv driver is run."""
     try:
         _git("fetch", "-q", "--no-tags", "origin", sha)
         mb = _git("merge-base", f"origin/{base_ref}", sha)
         diff = subprocess.run(
-            ["git", "diff", "--binary", mb, sha], capture_output=True, check=True
+            [
+                "git",
+                "diff",
+                "--binary",
+                "--full-index",
+                "--no-ext-diff",
+                "--no-textconv",
+                "--no-renames",
+                mb,
+                sha,
+            ],
+            capture_output=True,
+            check=True,
         ).stdout
-        out = subprocess.run(
-            ["git", "patch-id", "--stable"], input=diff, capture_output=True, check=True
-        ).stdout.decode()
-        return out.split()[0] if out.strip() else "empty"
-    except (subprocess.CalledProcessError, IndexError):
+        return hashlib.sha256(diff).hexdigest()
+    except subprocess.CalledProcessError:
         return None
+
+
+def _flat_pages(pages: Any) -> list[Any]:
+    """`gh api --paginate --slurp` gives a list of pages; a single page is a list of one."""
+    if isinstance(pages, list):
+        return pages
+    return [pages] if pages else []
+
+
+def _flat(pages: Any) -> list[Any]:
+    """The items of every page of a paginated list endpoint."""
+    return [c for page in _flat_pages(pages) for c in (page if isinstance(page, list) else [])]
 
 
 def _summary(line: str) -> None:
@@ -214,16 +250,17 @@ def run(repo: str, pr: int, base: str, wait_min: float, poll_s: float = 60.0) ->
             _gh(f"repos/{repo}/issues/{pr}/labels/{LABEL}", "-X", "DELETE")
         except RuntimeError as exc:
             _summary(f"(label not removed: {exc})")
-    comments = _gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate", "--slurp")
-    flat = (
-        [c for page in comments for c in page]
-        if comments and isinstance(comments[0], list)
-        else (comments or [])
-    )
     head_id = patch_id(base, head)
-    clear, why = cleared(
-        verdicts(flat), head, lambda sha: head_id is not None and patch_id(base, sha) == head_id
-    )
+
+    def verdict_now() -> tuple[dict[str, str] | None, str]:
+        pages = _gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate", "--slurp")
+        return cleared(
+            verdicts(_flat(pages)),
+            head,
+            lambda sha: head_id is not None and patch_id(base, sha) == head_id,
+        )
+
+    clear, why = verdict_now()
     if clear is None:
         _status(repo, head, "pending", why)
         _summary(f"#{pr} @ {head[:9]}: not merged -- {why}")
@@ -236,7 +273,15 @@ def run(repo: str, pr: int, base: str, wait_min: float, poll_s: float = 60.0) ->
         if now_head != head:
             _summary(f"#{pr}: head moved to {now_head[:9]}; its own run decides")
             return 0
-        runs = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")["check_runs"]
+        # A HOLD posted while CI runs stops the merge (#445 audit MF2): the verdict is re-read on
+        # every poll, and once more right before the merge below.
+        clear, why = verdict_now()
+        if clear is None:
+            _status(repo, head, "pending", why)
+            _summary(f"#{pr} @ {head[:9]}: not merged -- the verdict changed: {why}")
+            return 0
+        pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate", "--slurp")
+        runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
         state, cwhy = checks(runs)
         if state == "pass":
             break
@@ -248,6 +293,11 @@ def run(repo: str, pr: int, base: str, wait_min: float, poll_s: float = 60.0) ->
             return 1
         time.sleep(poll_s)
     _summary(f"#{pr} @ {head[:9]}: CI {cwhy}")
+    clear, why = verdict_now()
+    if clear is None:
+        _status(repo, head, "pending", why)
+        _summary(f"#{pr} @ {head[:9]}: not merged -- the verdict changed: {why}")
+        return 0
     if p.get("draft"):
         subprocess.run(["gh", "pr", "ready", str(pr), "-R", repo], check=True)
     _gh(

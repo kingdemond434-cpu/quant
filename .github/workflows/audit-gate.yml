@@ -41,7 +41,8 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.base.ref }}
           fetch-depth: 0
-          persist-credentials: true
+          # the repo is public: fetching the PR's commits needs no token, and gh reads GH_TOKEN
+          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:
