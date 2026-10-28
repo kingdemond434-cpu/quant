@@ -1136,6 +1136,22 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "mid-pass: write nothing', applied at the commit point. Declared 2026-10-21 "
              "(judge speed train fix1, audit R9).",
     ),
+    DestructivePath(
+        path_id="daily_cycle.prune_corrupt",
+        module="desks/mt5/research/daily_cycle.py",
+        function="_prune_corrupt",
+        removes="only the daily stamp's own quarantine copies (<stamp>.corrupt-<seq>-<ts>, and "
+                "legacy <stamp>.corrupt-<ts>, beside the "
+                "stamp) beyond the newest CORRUPT_KEEP (5); never the live stamp or other state",
+        reference="the quarantine just taken (always kept) and the newer copies' sequence "
+                  "numbers (legacy unsequenced copies: file mtime)",
+        status="positive",
+        note="Runs only after os.replace moved aside a stamp that still fails to PARSE "
+             "(ValueError or non-dict) after re-reads, under the held chain lock; an unreadable "
+             "stamp (OSError) is never moved and nothing is pruned (v1.5). A copy leaves only "
+             "when CORRUPT_KEEP newer ones exist, ordered by quarantine sequence, never the clock. "
+             "Declared 2026-10-27 (daily-chain lock v1.4, audit of fd141ebb9).",
+    ),
 )
 
 

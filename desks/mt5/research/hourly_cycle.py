@@ -279,6 +279,19 @@ def frontier_report(health: dict) -> None:
     print(f"frontier report written ({rep['swept_at']})", flush=True)
 
 
+#: `daily_cycle.EXIT_STOOD_DOWN`, restated so this cycle never imports the chain to read one int;
+#: `test_daily_cycle_single_chain` pins the two equal.
+DAILY_CYCLE_STOOD_DOWN = 75
+#: `daily_cycle.EXIT_HOLDER_HUNG`: stood down behind a holder past its ceiling -- a failure (v1.3).
+DAILY_CYCLE_HOLDER_HUNG = 76
+#: `daily_cycle.EXIT_STAMP_UNREADABLE` / `_PERSISTENT` (v1.6): the stamp could not be read, so
+#: nothing ran; the second is the escalation after three consecutive passes.
+DAILY_CYCLE_STAMP_UNREADABLE = 77
+DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT = 78
+DAILY_CYCLE_STOOD_DOWN_REASON = ("daily chain stood down: another chain healthily holds the lock "
+                                 "and runs the same steps; the next pass re-reads the stamp")
+
+
 def daily() -> dict:
     """The operating chain -- shadow -> promoter -> markout -- run once per UTC day.
 
@@ -301,10 +314,37 @@ def daily() -> dict:
         r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target)],
                       capture_output=True, text=True, cwd=str(BASE),
                       timeout=timeout_s, check=False)
+        tail = (r.stdout or r.stderr or "")[-500:]
+        at = datetime.now(UTC).isoformat(timespec="seconds")
+        # A STAND-DOWN IS A VERDICT, NOT OK AND NOT A FAILURE (v1.1, re-done v1.2). `daily_cycle`
+        # exits EXIT_STOOD_DOWN (75) when another chain healthily holds its lock and this bounded
+        # caller ran nothing. Recording it as OK credits this leg with a chain it never ran; the
+        # v1.1 status "STOOD_DOWN" was worse in the other direction -- `_costed` wrote it as the
+        # outcome, `completion` read every non-"ok" outcome as FAILING and `write_or_explain`
+        # read the undeclared exit 75 as LEG_FAILED. So: no "status" key (the ledger writes
+        # `verdict_exit=75` from VERDICT_EXITS["daily"]), and a `noop_reason`, which is how a leg
+        # tells `write_or_explain` it wrote nothing ON PURPOSE.
+        if r.returncode == DAILY_CYCLE_STOOD_DOWN:
+            return {"exit_code": DAILY_CYCLE_STOOD_DOWN, "verdict_exit": True,
+                    "stood_down": True, "noop_reason": DAILY_CYCLE_STOOD_DOWN_REASON,
+                    "tail": tail, "at": at}
+        if r.returncode == DAILY_CYCLE_HOLDER_HUNG:
+            # NOT a verdict (v1.3): no status and no noop_reason, so the ledger names it
+            # `exit_code=76:HOLDER_HUNG` (NAMED_FAILURE_EXITS), write_or_explain reads LEG_FAILED
+            # and the leg's completion streak counts it -- a hung MT5-Daily is surfaced, not
+            # muted. (completion.judge itself rates `daily` UNDECLARED: it has no capability-graph
+            # node, which predates this change.)
+            return {"exit_code": DAILY_CYCLE_HOLDER_HUNG, "holder_hung": True,
+                    "tail": tail, "at": at}
+        if r.returncode in (DAILY_CYCLE_STAMP_UNREADABLE,
+                            DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT):
+            # Named failures, like 76 (v1.6): no status, so the ledger writes
+            # `exit_code=77:STAMP_UNREADABLE` / `exit_code=78:STAMP_UNREADABLE_PERSISTENT`.
+            return {"exit_code": int(r.returncode), "stamp_unreadable": True,
+                    "tail": tail, "at": at}
         return {"exit_code": int(r.returncode),
                 "status": "OK" if r.returncode == 0 else "FAILED",
-                "tail": (r.stdout or r.stderr or "")[-500:],
-                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+                "tail": tail, "at": at}
     except subprocess.TimeoutExpired as exc:
         return {"exit_code": None, "status": "TIMEOUT", "timeout_s": exc.timeout,
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
@@ -1019,6 +1059,9 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
     "model_skill": (2,),
     "deep_forest": (1,),
     "maintain_miners": (2,),
+    # `daily_cycle` exits 75 (EXIT_STOOD_DOWN) when another chain healthily holds its lock and
+    # this bounded caller ran nothing: the holder is running the same steps (v1.2).
+    "daily": (DAILY_CYCLE_STOOD_DOWN,),
 }
 
 #: The other side of the same rule: exit codes a leg uses to NAME a failure. They stay failures
@@ -1028,8 +1071,15 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #:   judge_coverage 4 -- --reuse-fresh found no fresh same-cycle table (JUDGE_COVERAGE_REUSE.json)
 #:   judge_coverage 5 -- a committed transaction manifest could not be rolled forward safely; it
 #:                       is kept and every pass refuses until it is resolved by hand
+#:   daily 76          -- stood down behind a chain-lock holder older than its 16 h ceiling: a
+#:                       hung MT5-Daily (daily_cycle.EXIT_HOLDER_HUNG)
+#:   daily 77 / 78     -- the day's stamp could not be READ, so no step ran; 78 once that has
+#:                       lasted past 3 consecutive passes (daily_cycle.EXIT_STAMP_UNREADABLE*)
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
     "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
+    "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG",
+              DAILY_CYCLE_STAMP_UNREADABLE: "STAMP_UNREADABLE",
+              DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT: "STAMP_UNREADABLE_PERSISTENT"},
 }
 
 

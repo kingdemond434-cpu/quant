@@ -776,6 +776,12 @@ $reportPaths = @(
     "desks/mt5/reports/JUDGING_THROUGHPUT.json",
     "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json",
     "desks/mt5/reports/JUDGE_COVERAGE.json",
+    # breadth in independent hypothesis families, the daily new-independent metric and the
+    # merge census that carries it (2026-10-28, research/hypothesis_families.py); and the
+    # gauntlet novelty set-aside, measured before any trial-count decision (audit 8628268b6)
+    "desks/mt5/reports/HYPOTHESIS_FAMILIES.json",
+    "desks/mt5/reports/NOVELTY_SET_ASIDE.json",
+    "desks/mt5/data/hypotheses/merge_report.json",
     # the resident judge's heartbeat (2026-10-13): sweeps, last exit code, backoff, uptime --
     # the only off-box evidence of whether the judge is running between its verdicts
     "desks/mt5/reports/JUDGE_RESIDENT.json",
