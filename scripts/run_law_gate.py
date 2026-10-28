@@ -286,7 +286,9 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # may rise ONLY in a pass that registered new lawful ground -- seeding what the registry had
     # never heard of is the organ's first duty and a fence that punished it would teach the next
     # session to stop. Portable: without the report it reads UNMEASURED and passes, and the
-    # box half rides in _STATE_FENCES with --require-state.
+    # box half rides in _STATE_FENCES with --require-state. Under the source-view flag it reads
+    # no report at all (2026-10-20, the judge-coverage defect's twin): on a clean box tree this
+    # battery runs in place, where the box's own COVERAGE_DRAIN.json sits beside the code.
     ("check_coverage_drain.py", ()),
     # THE JUDGE TESTS 100% OF WHAT THE DESK MINES (principal 2026-09-23). `research/
     # judge_coverage.py` allocates the hour by UNJUDGED BACKLOG per family and interleaves the
@@ -296,7 +298,12 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # twice its own drain window FAILS. The ratchet is on the CARRIED cohort, never on raw
     # backlog -- raw backlog rises when the miners outrun the judge, which is mining working,
     # and a fence that punished it would be switched off inside a week. Portable: without the
-    # report it reads UNMEASURED and passes; the box half rides in _STATE_FENCES.
+    # report it reads UNMEASURED and passes; the box half rides in _STATE_FENCES. AND WITH IT
+    # (2026-10-20): the box publishes JUDGE_COVERAGE.json to origin, so every checkout holds a
+    # copy, and this half used to judge that copy whenever it was under STALE_H old -- a box
+    # coverage red wedged every laptop push, the push that heals it included. Under the
+    # source-view flag this battery sets, the fence reads no report and says UNMEASURED with
+    # the reason; the verdict on the box's state belongs to the --require-state entry below.
     ("check_judge_coverage.py", ()),
     # THE WRITE-OR-EXPLAIN CONTRACT IS STILL WIRED (2026-09-23). Eight failures in one day shared
     # one shape: an organ that produced nothing was indistinguishable from an organ with nothing

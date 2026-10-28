@@ -23,13 +23,13 @@
     }
   },
   "position": null,
-  "last_bracket_date": "2026-10-16",
-  "last_reconcile": "2026-10-18T17:05:33+00:00",
+  "last_bracket_date": "2026-10-28",
+  "last_reconcile": "2026-10-28T11:35:29+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {},
   "lot": 0.06,
-  "equity": 484.83,
+  "equity": 458.79,
   "placement_health": {
     "consecutive_total_rejections": 0,
     "last_ok": "2026-10-13T04:00:13+00:00",
@@ -53,7 +53,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-16T23:58:59+00:00",
+  "placement_pass": "2026-10-28T14:35:16+00:00",
   "netting_booked": {},
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
@@ -196,7 +196,7 @@
       "last_signal_bar": "2026-09-30 09:00:00+00:00"
     },
     "xauusd_session_range_breakout_asia_0_wb_12": {
-      "last_signal_bar": "2026-09-30 09:00:00+00:00"
+      "last_signal_bar": "2026-10-26 07:00:00+00:00"
     },
     "cadjpy_session_range_breakout_asia_session_range_breakout": {
       "last_signal_bar": "2026-09-15 20:00:00+00:00"
@@ -247,14 +247,14 @@
       "last_signal_bar": "2026-09-30 09:00:00+00:00"
     },
     "xauusd_macro_conditional_asia_p_5fa26e224170b851": {
-      "last_signal_bar": "2026-09-30 09:50:00+00:00",
+      "last_signal_bar": "2026-10-26 23:05:00+00:00",
       "trail_k": 0.0
     },
     "xauusd_macro_conditional_asia_p_c4d0f0303a0c9cb4": {
-      "last_signal_bar": "2026-09-30 09:50:00+00:00"
+      "last_signal_bar": "2026-10-26 23:05:00+00:00"
     },
     "xauusd_macro_conditional_asia_p_fe355d4759ed4898": {
-      "last_signal_bar": "2026-09-30 09:50:00+00:00"
+      "last_signal_bar": "2026-10-26 23:05:00+00:00"
     },
     "xauusd_range_reversion_asia_p_ff35bb7c8427d66f": {
       "last_signal_bar": "2026-09-30 10:00:00+00:00"
@@ -280,7 +280,18 @@
     "xauusd_cross_asset_residual_asia_p_49eee8b22060afb7": {},
     "xauusd_cross_asset_residual_asia_p_76a842aadaf3bd86": {},
     "xauusd_cross_asset_residual_asia_p_6f7e685b11cb2ccf": {},
-    "xauusd_cross_asset_residual_asia_p_994638ee9bb08b37": {}
+    "xauusd_cross_asset_residual_asia_p_994638ee9bb08b37": {},
+    "eurils_formula_asia_p_673857a649d3c271": {
+      "last_signal_bar": "2026-10-27 18:00:00+00:00"
+    },
+    "eurzar_carry_asia_p_8339edce23032d21": {
+      "last_signal_bar": "2026-10-27 19:30:00+00:00",
+      "trail_k": 0.0
+    },
+    "usdnok_carry_asia_p_ff35bb7c8427d66f": {
+      "last_signal_bar": "2026-10-27 19:40:00+00:00",
+      "trail_k": 0.0
+    }
   },
   "orig_stop_dist": {
     "222235480": 34.849999999999454,
@@ -456,10 +467,17 @@
     "233700226": 0.0016500000000000403,
     "233796519": 49.340000000000146,
     "234810421": 0.0008599999999999719,
-    "234917497": 39.029999999999745
+    "234917497": 39.029999999999745,
+    "240035875": 0.006719999999999615,
+    "240043547": 0.009529999999999816,
+    "240098477": 0.019959999999997535,
+    "240227813": 0.009019999999999584,
+    "241036050": 0.009389999999999787,
+    "241053223": 0.008160000000000167,
+    "241054340": 0.008680000000000021
   },
   "restart_reconcile": {
-    "at": "2026-10-17T00:28:03+00:00",
+    "at": "2026-10-28T11:35:17+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
@@ -469,5 +487,19 @@
     "in_doubt": [],
     "stopless": [],
     "verdict": "OK"
-  }
+  },
+  "day_start_equity": {
+    "date": "2026-10-28",
+    "equity": 458.79
+  },
+  "rails_logged": {
+    "gold_oco_direction_lock/gold_asia/buy_stop": "2026-10-28",
+    "gold_oco_direction_lock/gold_asia/sell_stop": "2026-10-28",
+    "gold_late_send/gold_asia": "2026-10-28",
+    "gold_late_send/gold_london_am": "2026-10-28",
+    "gold_late_send/gold_afternoon": "2026-10-27",
+    "cross_account_opposite/gold_asia/buy_stop": "2026-10-28",
+    "cross_account_opposite/gold_asia/sell_stop": "2026-10-28"
+  },
+  "daily_loss_stood_down": "2026-10-23"
 }
