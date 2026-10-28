@@ -127,11 +127,14 @@ FTMO_EXECUTABLE = frozenset({"gold_asia"})
 #: THE COPY IS THE PRINCIPAL'S SWITCH, NEVER THIS SOLVE'S. FTMO's rules ban copied/coordinated
 #: trades across firms; the principal overrode that with informed consent on 2026-10-28 14:31Z
 #: ("Copy anyway", cmsg G7EkJ9KTaSMy5a42YV4Hxg). So the gold_asia copy is a column ONLY while the
-#: principal holds it on -- "ftmo" in gold_oco's lanes AND a non-zero ftmo.gold_asia already in
-#: CERT_BOOK_LIVE -- and this solve may then only resize it inside (0, that value]: it never
-#: re-opens a pause held as a zero and never sizes the override above what the principal set.
+#: principal holds it on -- "ftmo" in gold_oco's lanes AND a non-zero ceiling in the PRINCIPAL'S OWN
+#: file (`COPY_PRINCIPAL`, which this module never writes) -- and this solve may then only size it
+#: inside [0, that ceiling]. The traded key in CERT_BOOK_LIVE is the solve's; the ceiling is never
+#: read back from it, so an allocator write (a zero included) can neither ratchet the ceiling down
+#: nor pause the copy. A zero or an absent file IS the principal's pause.
 #: Every other column must be the FTMO account's own Tier S sleeve, off every E8 symbol.
 COPY_COLUMNS = {"gold_asia": "principal override 2026-10-28 14:31Z: FTMO copies E8 gold_asia"}
+COPY_PRINCIPAL = BASE / "data" / "FTMO_COPY_PRINCIPAL.json"
 #: Fusion's measured commission per lot per side (cost_truth.py: 2.00 EUR on every symbol),
 #: taken as 2.00 in the account currency so the FTMO excess over it is never under-stated.
 FUSION_COMMISSION_PER_SIDE = 2.0
@@ -463,9 +466,20 @@ def ftmo_commissions() -> dict[str, float]:
     return {k: float(np.median(v)) for k, v in out.items()}
 
 
+def principal_ceiling(path: Path | None = None) -> dict[str, float]:
+    """{copy column: the principal's ceiling} from COPY_PRINCIPAL; absent or unreadable = {}."""
+    doc = _read_json(path or COPY_PRINCIPAL)
+    out: dict[str, float] = {}
+    for col in COPY_COLUMNS:
+        raw = doc.get(col) if isinstance(doc, dict) else None
+        if isinstance(raw, (int, float)) and not isinstance(raw, bool) and raw > 0:
+            out[col] = float(raw)
+    return out
+
+
 def copy_switch(path: Path | None = None) -> dict[str, tuple[bool, float, str]]:
-    """{copy column: (on, the principal's current value, why)}. Fail-closed: unreadable = off."""
-    book = _read_json(path or CERT_BOOK) or {}
+    """{copy column: (on, the principal's ceiling, why)}. Fail-closed: unreadable = off."""
+    ceiling = principal_ceiling(path)
     try:
         from mt5desk.gold_oco import declared_lanes
         lanes = declared_lanes()
@@ -475,10 +489,9 @@ def copy_switch(path: Path | None = None) -> dict[str, tuple[bool, float, str]]:
         lane_why = f"gold_oco lanes {list(lanes)}"
     out: dict[str, tuple[bool, float, str]] = {}
     for col in COPY_COLUMNS:
-        raw = (book.get("ftmo") or {}).get(col) if book.get("enabled") is True else None
-        cur = float(raw) if isinstance(raw, (int, float)) and not isinstance(raw, bool) else 0.0
+        cur = ceiling.get(col, 0.0)
         on = "ftmo" in lanes and cur > 0
-        out[col] = (on, cur, f"{lane_why}; CERT_BOOK_LIVE ftmo.{col} = {cur}")
+        out[col] = (on, cur, f"{lane_why}; {COPY_PRINCIPAL.name} {col} = {cur}")
     return out
 
 
@@ -787,7 +800,7 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     doc["book"] = dict(now_block["risk_frac"])
     # THE EXECUTOR SIZES ON EQUITY (prop/ftmo_follower: fraction x equity); the solve sizes on the
     # initial balance. The written fraction carries the same dollars at today's equity.
-    doc["executable"] = {c: round(v / st.equity, 5) for c, v in doc["book"].items()
+    doc["executable"] = {c: math.floor(v / st.equity * 1e5) / 1e5 for c, v in doc["book"].items()
                          if c in FTMO_EXECUTABLE}
     doc["sized_no_executor"] = {c: v for c, v in doc["book"].items() if c not in FTMO_EXECUTABLE}
     # Missed growth (Rule 1): what the missing executors cost, and every column a rail kept out.
@@ -870,7 +883,8 @@ def write_gap_requests(uni: dict[str, Any], now: datetime,
 
 # ===================================================================== deployment
 
-def apply_book(doc: dict[str, Any], path: Path = CERT_BOOK, armed: Path = ARMED) -> dict[str, Any]:
+def apply_book(doc: dict[str, Any], path: Path = CERT_BOOK, armed: Path = ARMED,
+               principal: Path | None = None) -> dict[str, Any]:
     """Lay the executable keys into CERT_BOOK_LIVE's `ftmo` block, only when armed and sound."""
     if not armed.exists():
         return {"applied": False, "why": f"standby: {armed.name} absent"}
@@ -885,13 +899,13 @@ def apply_book(doc: dict[str, Any], path: Path = CERT_BOOK, armed: Path = ARMED)
     new = {k: float(doc["executable"].get(k, 0.0)) for k in FTMO_EXECUTABLE}
     if any(not 0.0 <= v <= MAX_RISK_FRAC for v in new.values()):
         return {"applied": False, "why": "a value lies outside [0, MAX_RISK_FRAC]"}
+    ceiling = principal_ceiling(principal)
     for k, v in new.items():
-        held = block.get(k)
-        held = float(held) if isinstance(held, (int, float)) and not isinstance(held, bool) else 0.0
-        if k in COPY_COLUMNS and v > held + 1e-12:
-            # A zero is the principal's pause and a value is the principal's ceiling: the solve
+        if k in COPY_COLUMNS and v > ceiling.get(k, 0.0) + 1e-12:
+            # The principal's file is the ceiling and its zero (or absence) the pause: the solve
             # never re-opens the copy and never sizes it above what the principal set.
-            return {"applied": False, "why": f"{k} {v} would exceed the principal's {held}"}
+            return {"applied": False,
+                    "why": f"{k} {v} would exceed the principal's {ceiling.get(k, 0.0)}"}
     if all(abs(block.get(k, -1) - v) < 1e-9 for k, v in new.items()):
         return {"applied": False, "why": "unchanged"}
     block.update(new)

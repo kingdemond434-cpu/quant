@@ -556,9 +556,11 @@ desks/mt5/data/GOLD_OCO_MODE.json*
 # principal's own box-local files, never committed.
 desks/mt5/data/FTMO_LIVE_ACCOUNT.json*
 desks/mt5/data/FTMO_FOLLOWER_ARMED
-# The FTMO allocator's arming marker (research/prop_challenge_allocator.py) and the FTMO terminal's
+# The FTMO allocator's arming marker and the principal's copy ceiling (research/
+# prop_challenge_allocator.py: box-local, written only by the principal's step), and the FTMO terminal's
 # H1 bars the venue reader pulls for FTMO's own cost surface (prop/ftmo_venue_reader.py): box-local.
 desks/mt5/data/FTMO_ALLOCATOR_ARMED
+desks/mt5/data/FTMO_COPY_PRINCIPAL.json
 desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp

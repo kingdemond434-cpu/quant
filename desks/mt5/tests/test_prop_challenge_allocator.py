@@ -256,10 +256,11 @@ def test_the_book_moves_only_when_armed_and_deployable(tmp_path: Path) -> None:
     book, armed = _book(tmp_path), tmp_path / "ARMED"
     doc = {"deployable": True, "executable": {"gold_asia": 0.004},
            "generated_at": "t", "account": {"phase": "phase1", "status": "MEASURED"}}
-    assert pca.apply_book(doc, book, armed)["applied"] is False          # not armed
+    ceiling = _principal(tmp_path, 0.009)
+    assert pca.apply_book(doc, book, armed, ceiling)["applied"] is False   # not armed
     armed.touch()
-    assert pca.apply_book({**doc, "deployable": False}, book, armed)["applied"] is False
-    assert pca.apply_book(doc, book, armed)["applied"] is True
+    assert pca.apply_book({**doc, "deployable": False}, book, armed, ceiling)["applied"] is False
+    assert pca.apply_book(doc, book, armed, ceiling)["applied"] is True
     assert json.loads(book.read_text())["ftmo"]["gold_asia"] == 0.004
 
 
@@ -269,7 +270,7 @@ def test_only_executable_keys_are_ever_written(tmp_path: Path) -> None:
     doc = {"deployable": True, "executable": {"gold_asia": 0.003},
            "sized_no_executor": {"AUDNZD_overnight_gap_decay_asia": 0.01},
            "generated_at": "t", "account": {"phase": "phase1", "status": "MEASURED"}}
-    pca.apply_book(doc, book, armed)
+    pca.apply_book(doc, book, armed, _principal(tmp_path, 0.009))
     assert set(json.loads(book.read_text())["ftmo"]) == {"gold_asia"}
 
 
@@ -280,30 +281,53 @@ def test_e8_symbols_keep_own_sleeves_out(tmp_path: Path, monkeypatch) -> None:
     assert pca.e8_symbols() == {"XAUUSD"}
 
 
+def _principal(tmp_path: Path, v: float) -> Path:
+    p = tmp_path / "FTMO_COPY_PRINCIPAL.json"
+    p.write_text(json.dumps({"gold_asia": v, "by": "test"}))
+    return p
+
+
 def test_the_copy_is_never_reopened_or_raised_by_the_solve(tmp_path: Path) -> None:
     armed = tmp_path / "ARMED"
     armed.touch()
+    book = _book(tmp_path)
     doc = {"deployable": True, "executable": {"gold_asia": 0.004},
            "generated_at": "t", "account": {"phase": "phase1", "status": "MEASURED"}}
-    paused = tmp_path / "p.json"
-    paused.write_text(json.dumps({"enabled": True, "ftmo": {"gold_asia": 0.0}}))
-    assert pca.apply_book(doc, paused, armed)["applied"] is False         # a pause stays a pause
-    assert json.loads(paused.read_text())["ftmo"]["gold_asia"] == 0.0
-    low = tmp_path / "l.json"
-    low.write_text(json.dumps({"enabled": True, "ftmo": {"gold_asia": 0.003}}))
-    assert pca.apply_book(doc, low, armed)["applied"] is False            # never above the cap
+    paused = _principal(tmp_path, 0.0)
+    assert pca.apply_book(doc, book, armed, paused)["applied"] is False   # a pause stays a pause
+    assert pca.apply_book(doc, book, armed, tmp_path / "absent.json")["applied"] is False
+    low = _principal(tmp_path, 0.003)
+    assert pca.apply_book(doc, book, armed, low)["applied"] is False      # never above the cap
+
+
+def test_the_ceiling_never_ratchets_on_the_allocators_own_writes(tmp_path: Path,
+                                                                 monkeypatch) -> None:
+    import mt5desk.gold_oco as oco
+    monkeypatch.setattr(oco, "declared_lanes", lambda doc=None: ("e8", "fusion", "ftmo"))
+    armed, book = tmp_path / "ARMED", _book(tmp_path)
+    armed.touch()
+    ceiling = _principal(tmp_path, 0.009)
+
+    def doc(v: float) -> dict:
+        return {"deployable": True, "executable": {"gold_asia": v}, "generated_at": "t",
+                "account": {"phase": "phase1", "status": "MEASURED"}}
+
+    assert pca.apply_book(doc(0.0025), book, armed, ceiling)["applied"] is True
+    assert pca.apply_book(doc(0.0), book, armed, ceiling)["applied"] is True     # an allocator 0
+    assert pca.copy_switch(ceiling)["gold_asia"][:2] == (True, 0.009)            # ... no pause
+    assert pca.apply_book(doc(0.009), book, armed, ceiling)["applied"] is True   # back up to it
+    assert json.loads(book.read_text())["ftmo"]["gold_asia"] == 0.009
 
 
 def test_the_copy_column_needs_the_principals_switch(tmp_path: Path, monkeypatch) -> None:
     import mt5desk.gold_oco as oco
-    p = tmp_path / "b.json"
-    p.write_text(json.dumps({"enabled": True, "ftmo": {"gold_asia": 0.009}}))
+    p = _principal(tmp_path, 0.009)
     monkeypatch.setattr(oco, "declared_lanes", lambda doc=None: ("e8", "fusion"))
     assert pca.copy_switch(p)["gold_asia"][0] is False                    # lane off
     monkeypatch.setattr(oco, "declared_lanes", lambda doc=None: ("e8", "fusion", "ftmo"))
     assert pca.copy_switch(p)["gold_asia"][:2] == (True, 0.009)
-    p.write_text(json.dumps({"enabled": True, "ftmo": {"gold_asia": 0.0}}))
-    assert pca.copy_switch(p)["gold_asia"][0] is False                    # paused at zero
+    assert pca.copy_switch(_principal(tmp_path, 0.0))["gold_asia"][0] is False   # paused
+    assert pca.copy_switch(tmp_path / "absent.json")["gold_asia"][0] is False
 
 
 def test_gap_requests_name_one_symbol_per_row(tmp_path: Path) -> None:
