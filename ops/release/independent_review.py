@@ -128,6 +128,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"FAIL: the diff is {len(diff)} characters, too large to review whole")
         return 1
     files = changed_files(diff)
+    want = int(pr.get("changed_files") or 0)
+    named = {line for line in diff.splitlines() if line.startswith("diff --git a/")}
+    if len(named) != want:  # a truncated diff is never reviewed as if it were whole
+        print(f"FAIL: the diff names {len(named)} files, the PR changes {want}")
+        return 1
     import anthropic
 
     client = anthropic.Anthropic()

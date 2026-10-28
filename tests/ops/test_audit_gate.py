@@ -1242,8 +1242,11 @@ def test_every_sample_must_pass(monkeypatch: pytest.MonkeyPatch) -> None:
     bad = {**ok, "verdict": "FAIL"}
     answers = iter([ok, bad])
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
-    pr = {"head": {"sha": A}}
-    monkeypatch.setattr(ir, "_gh", lambda *a: _json.dumps(pr) if a[0].endswith("/pulls/7") else "d")
+    pr = {"head": {"sha": A}, "changed_files": 1}
+    diff = "diff --git a/x.py b/x.py\n+x = 1\n"
+    monkeypatch.setattr(
+        ir, "_gh", lambda *a: _json.dumps(pr) if a[0].endswith("/pulls/7") else diff
+    )
     monkeypatch.setattr(ir, "review", lambda *a: next(answers))
     monkeypatch.setitem(sys.modules, "anthropic", types.SimpleNamespace(Anthropic=lambda: None))
     assert ir.main(["--repo", "o/r", "--pr", "7", "--head", A, "--base-sha", B]) == 1
@@ -1287,3 +1290,25 @@ def test_live_moving_before_the_merge_stops_a_no_comment_merge(
     monkeypatch.setattr(ag, "up_to_date", fresh)
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
     assert _merges(h) == [] and calls["n"] >= 3
+
+
+def test_a_truncated_diff_is_never_reviewed(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """#456 delta audit S1: the diff must name every file the PR changes."""
+    import json as _json
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    pr = {"head": {"sha": A}, "changed_files": 3}
+    diff = "diff --git a/x.py b/x.py\n+x = 1\n"
+    monkeypatch.setattr(
+        ir, "_gh", lambda *a: _json.dumps(pr) if a[0].endswith("/pulls/7") else diff
+    )
+    monkeypatch.setattr(ir, "review", lambda *a: pytest.fail("a partial diff was sent for review"))
+    assert ir.main(["--repo", "o/r", "--pr", "7", "--head", A, "--base-sha", B]) == 1
+    assert "names 1 files, the PR changes 3" in capsys.readouterr().out
+
+
+def test_the_desk_directory_is_checked_for_shadows_too() -> None:
+    """#456 delta audit S2: desk tests put desks/mt5 on sys.path."""
+    assert "desks/mt5" in ri.SYS_PATH_ROOTS

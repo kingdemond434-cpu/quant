@@ -20,6 +20,9 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 NOT_LITERAL = object()
+#: The directories the suites put on sys.path: the root (pyproject `pythonpath`) and the desk
+#: (several desk tests insert it).
+SYS_PATH_ROOTS = ("", "desks/mt5")
 
 
 def module_literals(source: str) -> dict[str, Any]:
@@ -174,10 +177,19 @@ def main(argv: list[str] | None = None) -> int:
     bad = check(ceilings, git_reader(a.head))
     bad += check_superset(ceilings, git_reader(a.head), git_reader(a.base))
     try:
-        tops = subprocess.run(
-            ["git", "ls-tree", "--name-only", a.base], capture_output=True, text=True, check=True
-        ).stdout.split()
-        bad += shadowing(git_added(a.base, a.head), importable_names(), set(tops))
+        added = git_added(a.base, a.head)
+        taken = importable_names()
+        for root in SYS_PATH_ROOTS:  # every directory the tests put on sys.path
+            pre = f"{root}/" if root else ""
+            tops = subprocess.run(
+                ["git", "ls-tree", "--name-only", a.base, *([pre] if pre else [])],
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.split()
+            under = [p[len(pre) :] for p in added if p.startswith(pre)]
+            existing = {t[len(pre) :] for t in tops}
+            bad += [f"{pre}{b}" for b in shadowing(under, taken, existing)]
     except subprocess.CalledProcessError as exc:
         bad.append(f"the added files could not be listed: {exc}")
     for line in bad:
