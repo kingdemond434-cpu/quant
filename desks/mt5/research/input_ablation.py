@@ -111,6 +111,12 @@ BUDGET_S = 600.0
 #: Bump when the arm definitions or the score change; cached windows from another version are
 #: re-solved, never reused.
 VERSION = 2
+#: A cached window survives this many passes after the last one that read it, then is pruned.
+#: DERIVATION: one pass would drop every window keyed on the other side of a single flip of an
+#: input (a trial count written 109, then 0 mid-sweep, then 109 again re-solved the whole backlog
+#: twice, audit of #431); two keep both sides of one flip, and the file stays bounded at about
+#: two passes' worth of windows (2 x MAX_WINDOWS) instead of growing every time an input moves.
+KEEP_PASSES = 2
 
 
 @dataclasses.dataclass(frozen=True)
@@ -233,6 +239,7 @@ def ablate(daily: pd.DataFrame,
     if max_windows is not None:
         ends = ends[-max_windows:]
     rows: list[dict[str, Any]] = []
+    keys: list[str] = []
     hits = 0
     pending = 0
     for k in ends:
@@ -241,6 +248,7 @@ def ablate(daily: pd.DataFrame,
         key = _digest(asof, list(arms), [str(c) for c in hist.columns],
                       hist.to_numpy(dtype=float), seed, horizon,
                       window_key(asof) if window_key else "")
+        keys.append(key)
         books = cache.get(key)
         if isinstance(books, dict) and all(a in books for a in arms):
             hits += 1
@@ -292,7 +300,8 @@ def ablate(daily: pd.DataFrame,
                           "vintage), so later revisions may be what it won on"))
         verdicts[a] = v
     return {"windows": rows, "verdicts": verdicts, "cache_hits": hits, "pending_windows": pending,
-            "n_windows": len(rows), "horizon_days": horizon, "step_days": step}
+            "n_windows": len(rows), "horizon_days": horizon, "step_days": step,
+            "cache_keys": keys}
 
 
 # ------------------------------------------------------------------ the desk's own arms
@@ -380,10 +389,13 @@ def _desk_solver() -> Callable[[list[SleeveEvidence], WorldConfig], Mapping[str,
 def trials_read(trials: Mapping[str, int]) -> tuple[int, int, int]:
     """The only trial counts `pf_allocator.sleeve_evidence` reads: max(hunt12, hunt16) for a
     session bracket, and `external` (else the largest count of all) for every other family. The
-    cache keys on these, not on every ledger count, so a count no sleeve reads cannot miss it."""
+    cache keys on these, not on every ledger count, so a count no sleeve reads cannot miss it.
+    Each is floored at 1 exactly as `robust_elog` floors `n_trials`, so a count of 0 and of 1 --
+    the same solve -- are the same key."""
     tr = dict(trials or {})
     other = tr.get("external", max(tr.values()) if tr else 1)
-    return int(tr.get("hunt12", 1)), int(tr.get("hunt16", 1)), int(other)
+    return (max(int(tr.get("hunt12", 1)), 1), max(int(tr.get("hunt16", 1)), 1),
+            max(int(other), 1))
 
 
 def _desk_window_key(trials: Mapping[str, int]) -> Callable[[str], str]:
@@ -425,11 +437,34 @@ def _desk_window_key(trials: Mapping[str, int]) -> Callable[[str], str]:
 
 
 def _read_cache(path: Path) -> dict[str, Any]:
+    return _read_cache_doc(path)[0]
+
+
+def _read_cache_doc(path: Path) -> tuple[dict[str, Any], int, dict[str, int]]:
+    """(windows, pass number, {key: last pass that read it}). A key with no recorded pass (a
+    cache written before passes were counted) counts as read on the stored pass."""
     try:
         doc = json.loads(path.read_text("utf-8"))
-        return dict(doc.get("windows") or {}) if doc.get("version") == VERSION else {}
-    except (OSError, ValueError, AttributeError):
-        return {}
+        if doc.get("version") != VERSION:
+            return {}, 0, {}
+        windows = dict(doc.get("windows") or {})
+        n = int(doc.get("pass") or 0)
+        seen = {str(k): int(v) for k, v in dict(doc.get("read_pass") or {}).items()}
+        return windows, n, {k: seen.get(k, n) for k in windows}
+    except (OSError, ValueError, AttributeError, TypeError):
+        return {}, 0, {}
+
+
+def prune(windows: dict[str, Any], read_pass: dict[str, int], n: int,
+          keep: int = KEEP_PASSES) -> list[str]:
+    """Drop every window no pass in the last `keep` (this one, `n`, included) read; returns the
+    dropped keys. Called after `ablate` has keyed every window, the ones past the deadline
+    included, so a window this pass merely had no time to solve is never counted unread."""
+    gone = [k for k in windows if read_pass.get(k, n) <= n - keep]
+    for k in gone:
+        windows.pop(k, None)
+        read_pass.pop(k, None)
+    return gone
 
 
 def _write_json(path: Path, doc: Any) -> None:
@@ -451,14 +486,22 @@ def run(max_windows: int | None = MAX_WINDOWS, budget_s: float | None = BUDGET_S
     daily, _forward = pa.build_evidence(force=False)
     daily = daily.sort_index()
     trials = pa.search_trials()
-    cache = _read_cache(CACHE)
+    cache, last_pass, read_pass = _read_cache_doc(CACHE)
+    this_pass = last_pass + 1
 
     def persist() -> None:
-        _write_json(CACHE, {"version": VERSION, "windows": cache})
+        for k in cache:
+            read_pass.setdefault(k, this_pass)
+        _write_json(CACHE, {"version": VERSION, "pass": this_pass, "windows": cache,
+                            "read_pass": read_pass})
 
     res = ablate(daily, _evidence_asof(trials), _desk_arm_inputs, solve=_desk_solver(),
                  max_windows=max_windows, cache=cache, window_key=_desk_window_key(trials),
                  deadline=(t0 + budget_s) if budget_s else None, on_window=persist)
+    for k in res.pop("cache_keys"):
+        if k in cache:
+            read_pass[k] = this_pass
+    res["cache_pruned"] = len(prune(cache, read_pass, this_pass))
     persist()
     status = ("UNMEASURED" if not res["n_windows"]
               else "PARTIAL" if res["pending_windows"] else "MEASURED")

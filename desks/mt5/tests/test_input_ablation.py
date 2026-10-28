@@ -322,3 +322,31 @@ def test_the_cache_keys_only_the_trial_counts_the_evidence_reads() -> None:
     b = {**a, "lifetime_total": 99999, "family:x": 7}
     assert ia.trials_read(a) == ia.trials_read(b) == (2023, 3001, 500)
     assert ia.trials_read({"hunt12": 5, "lifetime_total": 9}) == (5, 1, 9)
+
+
+def test_a_zero_trial_count_keys_like_one_because_the_solver_floors_it() -> None:
+    # robust_elog floors n_trials at 1, so a sweep that writes 0 mid-run solves exactly as 1 does.
+    assert ia.trials_read({"hunt12": 0, "hunt16": 0, "external": 0}) == (1, 1, 1)
+    assert ia.trials_read({"external": 0}) == ia.trials_read({"external": 1})
+
+
+def test_a_window_no_pass_reads_for_keep_passes_is_pruned(tmp_path: Path) -> None:
+    windows = {"old": {}, "flip": {}, "now": {}}
+    seen = {"old": 1, "flip": 2, "now": 3}
+    assert ia.prune(windows, seen, 3) == ["old"]
+    assert set(windows) == set(seen) == {"flip", "now"}
+    # A cache written before passes were counted keeps everything on its first counted pass.
+    p = tmp_path / "c.json"
+    p.write_text(json.dumps({"version": ia.VERSION, "windows": {"a": {}, "b": {}}}), "utf-8")
+    w, n, rp = ia._read_cache_doc(p)
+    assert (n, rp) == (0, {"a": 0, "b": 0})
+    assert ia.prune(w, rp, n + 1) == []
+
+
+def test_a_finished_pass_keys_every_window_it_visits_even_past_the_deadline() -> None:
+    df = _matrix()
+    arm_inputs, solve = _fake(df, [])
+    res = ia.ablate(df, _evidence(), arm_inputs, solve=solve, warmup=250, cache={},
+                    deadline=0.0)
+    assert res["n_windows"] == 0 and res["pending_windows"] > 0
+    assert len(res["cache_keys"]) == res["pending_windows"]
