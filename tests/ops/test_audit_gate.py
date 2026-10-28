@@ -1271,3 +1271,19 @@ def test_the_protected_list_is_case_blind(name: str) -> None:
 def test_a_head_cannot_shadow_what_the_base_tests_import(added: list[str], hit: bool) -> None:
     assert bool(ri.shadowing(added, {"numpy", "hypothesis", "json", "tests"}, {"tests"})) is hit
     assert ri.shadowing(["tests/test_x.py"], {"tests"}, {"tests"}) == []  # the repo's own dir
+
+
+def test_live_moving_before_the_merge_stops_a_no_comment_merge(
+    low_hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#455 delta audit: the merged tree must be the tested one up to the PUT."""
+    h = low_hub(comments=[])
+    calls = {"n": 0}
+
+    def fresh(base: str, head: str) -> tuple[bool, str]:
+        calls["n"] += 1
+        return (calls["n"] < 3, "up to date" if calls["n"] < 3 else "it is behind")
+
+    monkeypatch.setattr(ag, "up_to_date", fresh)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert _merges(h) == [] and calls["n"] >= 3

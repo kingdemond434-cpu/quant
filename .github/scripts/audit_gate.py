@@ -707,6 +707,9 @@ def run(
             on, owhy = switches()  # a DEACTIVATE since the first read is honoured
             if not on:
                 return None, f"{twhy}, but {owhy}"
+            fresh, fwhy = up_to_date(base, head)  # LIVE may have moved: the merged tree
+            if not fresh:  # must still be the tested one
+                return None, f"{twhy}, but {fwhy}"
             return {"verdict": mode.upper(), "sha": head, "method": "merge", "at": "", "by": ""}, (
                 twhy
             )
