@@ -83,9 +83,13 @@ def reset_rate_limit_budget() -> None:
     _backoff_spent[0] = 0.0
 
 
-def _is_read(method: Any) -> bool:
-    """True only for a call the SDK names as a GET-family request; unknown counts as a write."""
-    return str(getattr(method, "__name__", "")).lower() in _READ_METHODS
+def _is_read(method: Any, url: Any = None) -> bool:
+    """True for a call the SDK names as a GET-family request, or a POST to the venue's JWT login
+    and refresh routes (exact path suffixes) (idempotent: a second one only mints another token); unknown is a write."""
+    if str(getattr(method, "__name__", "")).lower() in _READ_METHODS:
+        return True
+    path = str(url or "").split("?", 1)[0].rstrip("/")
+    return path.endswith(("/auth/jwt/token", "/auth/jwt/refresh"))
 
 
 def _status(obj: Any) -> int | None:
@@ -106,15 +110,17 @@ def _rate_limit_wait(response: Any, default: float) -> float:
 
 
 def _bounded_request(method: Any, *args: Any, sleep: Any = None, **kwargs: Any) -> Any:
-    """Keep a failed venue read inside one scheduler interval: one transient retry, and on a 429
+    """Keep a failed venue read inside one scheduler interval: one transient retry (a write only on
+    a connect timeout, when it never left), and on a 429
     (raised or returned) a backed-off retry per RATE_LIMIT_WAITS_S entry -- for reads only, and
     only while the process's RATE_LIMIT_BUDGET_S lasts."""
     import time
 
-    from requests.exceptions import HTTPError, RequestException
+    from requests.exceptions import ConnectTimeout, HTTPError, RequestException
 
     nap = time.sleep if sleep is None else sleep
-    waits = list(RATE_LIMIT_WAITS_S) if _is_read(method) else []
+    read = _is_read(method, kwargs.get("url"))
+    waits = list(RATE_LIMIT_WAITS_S) if read else []
     transient_left = 1
 
     def backoff(resp: Any) -> bool:
@@ -135,12 +141,15 @@ def _bounded_request(method: Any, *args: Any, sleep: Any = None, **kwargs: Any) 
                 if backoff(resp):
                     continue
                 raise
-            if transient_left:
+            if transient_left and read:
                 transient_left -= 1
                 continue
             raise
-        except RequestException:
-            if transient_left:
+        except RequestException as exc:
+            # A WRITE IS RE-SENT ONLY WHEN IT NEVER LEFT (audit of #421, 2026-10-27). A read
+            # timeout or reset after the venue accepted an order would otherwise send a second,
+            # unjournalled live order; a connect timeout means no byte reached the venue.
+            if transient_left and (read or isinstance(exc, ConnectTimeout)):
                 transient_left -= 1
                 continue
             raise
