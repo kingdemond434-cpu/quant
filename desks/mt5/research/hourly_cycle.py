@@ -1212,7 +1212,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
-                     "judge_coverage", "orthogonality_yield", "effective_trials",
+                     "judge_coverage", "judge_prescreen", "orthogonality_yield",
+                     "effective_trials",
                      "occupancy_map", "dsr_inputs"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
@@ -2110,6 +2111,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # in QUANT_LEG_BUDGET_S) minus its commit margin -- so it never stops earlier than the kill
     # it replaces, and a stopped pass changes no file. The cap is unchanged.
     "judge_coverage": 300,
+    # The pre-build screen streams the gate ledger once (time-ordered replay, dict updates only),
+    # stats each bar file's time column only when its size or mtime moved, and probes two
+    # families' input guards per symbol. Measured ~1 s on a 3,557-row ledger in the cloud
+    # container; the box's ~1M-row ledger is UNMEASURED, so the cap is generous.
+    "judge_prescreen": 600,
     # Orthogonality yield is one indexed scan of the candidate registry, one pass over the gate
     # ledger and 79 leave-one-out SVDs of a 79 x ~1000 indicator matrix. Measured 2026-09-23 on
     # the trading box against 323,313 registry rows and 146,359 ledger rows: under a minute. The
@@ -4568,6 +4574,17 @@ def main() -> None:
     # QUANT_PIPELINE_STARTED_AT, ratchet in step, merge report of this cycle written after it),
     # and otherwise exits 4 with reports/JUDGE_COVERAGE_REUSE.json naming why. It never writes
     # the table, so a stale table stays stale under its own `at`. The cap is unchanged.
+    # THE JUDGE'S PRE-BUILD SCREEN (principal 2026-10-28; research/judge_prescreen). Replays the
+    # gate ledger in time order to measure, per K, what `sibling_dead` would have killed and how
+    # many true survivors it would have taken (the canon gate is ZERO in both halves), refreshes
+    # the chart calendars `chart_short` proves from, audits the provable rules on every known
+    # certificate, and writes the tables `judge_coverage.order_docket` screens the docket with
+    # at intake. SHADOW by default -- nothing leaves the docket until the principal's switch
+    # (data/JUDGE_PRESCREEN_CANON.json) is on AND this report names the rule canon-ready. Runs
+    # at below-normal priority: the judge never outranks the miners. Data department,
+    # information layer.
+    jps = _costed("judge_prescreen", lambda: _producer("judge_prescreen",
+                                                       "research/judge_prescreen.py", "--once"))
     jcv = _costed("judge_coverage", lambda: _producer("judge_coverage",
                                                       "research/judge_coverage.py",
                                                       "--once", "--reuse-fresh",
@@ -6046,6 +6063,7 @@ def main() -> None:
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
                     "coverage_tensor": cov, "coverage_drain": cdr, "judge_coverage": jcv,
+                    "judge_prescreen": jps,
                     "regional_parity": rpp,
                     "orthogonality_yield": oyz, "effective_trials": eft,
                     "dsr_inputs": dsi,
