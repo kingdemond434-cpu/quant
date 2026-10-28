@@ -23,6 +23,7 @@ import dataclasses
 import itertools
 import json
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 import numpy as np
@@ -41,6 +42,17 @@ from mt5desk.family_multi_speed_trend import family_multi_speed_trend  # noqa: E
 
 UNIVERSE = DESK / "data" / "universe"
 CHARTS = ("EURUSD_H1", "XAUUSD_H1", "USDJPY_H1", "BTCUSD_H1", "AUDCAD_M15", "XAUUSD_M5")
+
+
+@pytest.fixture(autouse=True)
+def _no_box_marker(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[Path]:
+    """Every test here reads a marker path of its own, never the checkout's real one: a box that
+    has measured a MISMATCH must not turn these identity tests into old-against-old."""
+    marker = tmp_path / "VECTOR_FAMILIES_MISMATCH.json"
+    monkeypatch.setattr(families_vector, "MARKER", marker)
+    families_vector._forget_marker()
+    yield marker
+    families_vector._forget_marker()
 
 
 def _frame(chart: str) -> pd.DataFrame:
@@ -353,48 +365,198 @@ def _daily_cycle():
     return daily_cycle
 
 
-@pytest.mark.parametrize("outcome", ["mismatch", "unmeasured", "crash"])
-def test_daily_drift_monitor_never_fails_the_cycle(monkeypatch: pytest.MonkeyPatch,
-                                                   tmp_path: Path, outcome: str) -> None:
-    """The daily leg is a shadow: MISMATCH, UNMEASURED or a crash is a loud event, never a raise."""
-    dc = _daily_cycle()
-    chk = _box_check()
-    report = tmp_path / "VECTOR_FAMILIES_CHECK.json"
+def _fake_child(monkeypatch: pytest.MonkeyPatch, dc, chk, report: Path, outcome: str) -> list:
+    """Stand in for the check's child process: write the report a real run would, or fail the way
+    a real run can. Returns the drift events emitted."""
+    from datetime import UTC, datetime, timedelta
+
     monkeypatch.setattr(chk, "REPORT", report)
     monkeypatch.setattr(dc, "dlog", lambda msg: None)
 
-    def fake_main(argv: list[str]) -> int:
+    def child(script: Path, out: Path) -> int:
+        assert out == report and script.name == "check_vector_families.py"
         if outcome == "crash":
             raise RuntimeError("probe")
-        verdict, rc = ("MISMATCH", 1) if outcome == "mismatch" else ("UNMEASURED", 2)
-        report.write_text(json.dumps({"verdict": verdict, "mismatches": [{}] if rc == 1 else [],
-                                      "unmeasured_because": ["probe"]}), encoding="utf-8")
+        if outcome == "timeout":
+            import subprocess
+            raise subprocess.TimeoutExpired(["check"], dc.VECTOR_CHECK_TIMEOUT_S)
+        when = datetime.now(UTC)
+        if outcome == "stale_mismatch":                 # last week's MISMATCH, nothing written now
+            when -= timedelta(days=7)
+        verdict, rc = {"mismatch": ("MISMATCH", 1), "stale_mismatch": ("MISMATCH", 1),
+                       "identical": ("IDENTICAL", 0), "unmeasured": ("UNMEASURED", 2),
+                       "raised_rc1": ("UNMEASURED", 1)}[outcome]
+        if outcome == "raised_rc1":                     # an uncaught raise in the child: rc 1,
+            return 1                                    # and no fresh report
+        report.write_text(json.dumps({
+            "generated_at": when.isoformat(), "verdict": verdict, "host": "probe",
+            "mismatches": [{"family": "ict_fvg", "why": "probe"}] if rc == 1 else [],
+            "unmeasured_because": ["probe"] if rc == 2 else []}), encoding="utf-8")
         return rc
-    monkeypatch.setattr(chk, "main", fake_main)
+    monkeypatch.setattr(dc, "_run_vector_check", child)
     seen: list[dict] = []
     from libs.ops import events
     monkeypatch.setattr(events, "emit", lambda kind, path=None, **f: seen.append({"kind": kind,
                                                                                   **f}))
+    return seen
+
+
+def _tiny_frame() -> pd.DataFrame:
+    idx = pd.date_range("2026-01-05", periods=24 * 20, freq="h", tz="UTC")
+    rng = np.random.default_rng(7)
+    close = 1.1 + np.cumsum(rng.normal(0, 1e-3, len(idx)))
+    return pd.DataFrame({"open": close, "high": close + 2e-3, "low": close - 2e-3,
+                         "close": close, "spread": 1.0}, index=idx)
+
+
+def _ict_fast_calls(monkeypatch: pytest.MonkeyPatch) -> list[int]:
+    """Spy on the ict_fvg fast path: how often the family asked it."""
+    calls: list[int] = []
+    real = families_vector.ict_fvg_emit
+
+    def spy(**kw: object) -> object:
+        calls.append(1)
+        return real(**kw)
+    monkeypatch.setattr(families_vector, "ict_fvg_emit", spy)
+    return calls
+
+
+@pytest.mark.parametrize("outcome", ["mismatch", "unmeasured", "crash", "timeout",
+                                     "stale_mismatch", "raised_rc1"])
+def test_daily_drift_monitor_never_fails_the_cycle(monkeypatch: pytest.MonkeyPatch,
+                                                   tmp_path: Path, outcome: str) -> None:
+    """The daily leg is a shadow: anything but IDENTICAL is a loud event, never a raise."""
+    dc, chk = _daily_cycle(), _box_check()
+    seen = _fake_child(monkeypatch, dc, chk, tmp_path / "VECTOR_FAMILIES_CHECK.json", outcome)
     dc._vector_families_check()                         # must not raise
     assert len(seen) == 1 and seen[0]["kind"] == "vector_families_drift"
     assert seen[0]["verdict"] == ("MISMATCH" if outcome == "mismatch" else "UNMEASURED")
 
 
-def test_daily_drift_monitor_is_silent_when_identical(monkeypatch: pytest.MonkeyPatch,
-                                                      tmp_path: Path) -> None:
-    dc = _daily_cycle()
-    chk = _box_check()
-    report = tmp_path / "VECTOR_FAMILIES_CHECK.json"
-    monkeypatch.setattr(chk, "REPORT", report)
-    monkeypatch.setattr(dc, "dlog", lambda msg: None)
-
-    def fake_main(argv: list[str]) -> int:
-        assert "--quiet" in argv and str(report) in argv
-        report.write_text(json.dumps({"verdict": "IDENTICAL"}), encoding="utf-8")
-        return 0
-    monkeypatch.setattr(chk, "main", fake_main)
-    seen: list[str] = []
-    from libs.ops import events
-    monkeypatch.setattr(events, "emit", lambda kind, path=None, **f: seen.append(kind))
+def test_mismatch_fails_closed_to_the_original_loops(monkeypatch: pytest.MonkeyPatch,
+                                                     tmp_path: Path,
+                                                     _no_box_marker: Path) -> None:
+    """MISMATCH writes the marker with the evidence; with the switch ON, every family then takes
+    its original loop until the marker goes."""
+    dc, chk = _daily_cycle(), _box_check()
+    seen = _fake_child(monkeypatch, dc, chk, tmp_path / "r.json", "mismatch")
+    monkeypatch.setenv(families_vector.ENV, "1")
+    calls = _ict_fast_calls(monkeypatch)
+    df = _tiny_frame()
+    families.family_ict_fvg(df)
+    assert calls and families_vector.enabled()
     dc._vector_families_check()
-    assert seen == []
+    assert _no_box_marker.exists() and seen[0]["marker"] == "written"
+    evidence = json.loads(_no_box_marker.read_text(encoding="utf-8"))
+    assert evidence["verdict"] == "MISMATCH" and evidence["mismatches"][0]["family"] == "ict_fvg"
+    calls.clear()
+    families.family_ict_fvg(df)
+    assert calls == [] and not families_vector.enabled()
+    mode = families_vector.mode()
+    assert mode["env_enabled"] and mode["mismatch_marker"] and not mode["enabled"]
+
+
+def test_marker_is_read_through_a_short_cache(monkeypatch: pytest.MonkeyPatch,
+                                              _no_box_marker: Path) -> None:
+    """`enabled()` runs per family call, so it stats the marker at most once per TTL; a marker
+    written by ANOTHER process is seen once the TTL lapses."""
+    monkeypatch.setenv(families_vector.ENV, "1")
+    clock = [1000.0]
+    monkeypatch.setattr(families_vector.time, "monotonic", lambda: clock[0])
+    assert families_vector.enabled()
+    _no_box_marker.write_text("{}", encoding="utf-8")       # another process, behind our back
+    assert families_vector.enabled()                        # within the TTL: last look stands
+    clock[0] += families_vector.MARKER_TTL_S
+    assert not families_vector.enabled()
+    _no_box_marker.unlink()
+    clock[0] += families_vector.MARKER_TTL_S
+    assert families_vector.enabled()
+
+
+def test_identical_clears_the_marker(monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+                                     _no_box_marker: Path) -> None:
+    dc, chk = _daily_cycle(), _box_check()
+    families_vector.write_mismatch_marker({"verdict": "MISMATCH"})
+    monkeypatch.setenv(families_vector.ENV, "1")
+    assert not families_vector.enabled()
+    seen = _fake_child(monkeypatch, dc, chk, tmp_path / "r.json", "identical")
+    dc._vector_families_check()
+    assert seen == [] and not _no_box_marker.exists() and families_vector.enabled()
+    calls = _ict_fast_calls(monkeypatch)
+    families.family_ict_fvg(_tiny_frame())
+    assert calls
+
+
+@pytest.mark.parametrize("outcome", ["unmeasured", "crash", "timeout", "stale_mismatch",
+                                     "raised_rc1"])
+@pytest.mark.parametrize("marked", [True, False])
+def test_unmeasured_leaves_the_marker_unchanged(monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+                                                _no_box_marker: Path, outcome: str,
+                                                marked: bool) -> None:
+    """No measurement, no change: a standing marker stays (with its evidence), an absent one is
+    not invented -- a stale MISMATCH report and a bare rc 1 included."""
+    dc, chk = _daily_cycle(), _box_check()
+    if marked:
+        families_vector.write_mismatch_marker({"verdict": "MISMATCH", "tag": "standing"})
+    before = _no_box_marker.read_bytes() if marked else None
+    seen = _fake_child(monkeypatch, dc, chk, tmp_path / "r.json", outcome)
+    dc._vector_families_check()
+    assert seen[0]["verdict"] == "UNMEASURED" and seen[0]["marker"] == "unchanged"
+    assert _no_box_marker.exists() is marked
+    if marked:
+        assert _no_box_marker.read_bytes() == before
+
+
+def test_daily_leg_runs_the_check_in_a_child_with_a_timeout(monkeypatch: pytest.MonkeyPatch,
+                                                            tmp_path: Path) -> None:
+    import subprocess
+
+    dc = _daily_cycle()
+    monkeypatch.setattr(dc, "dlog", lambda msg: None)
+    got: dict = {}
+
+    def fake_run(cmd: list[str], **kw: object) -> subprocess.CompletedProcess:
+        got.update(cmd=cmd, **kw)
+        return subprocess.CompletedProcess(cmd, 2, stdout="check_vector_families: UNMEASURED\n",
+                                           stderr="")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    script = DESK / "scripts" / "check_vector_families.py"
+    assert dc._run_vector_check(script, tmp_path / "r.json") == 2
+    assert got["cmd"][:2] == [sys.executable, str(script)]
+    assert got["cmd"][2:] == ["--out", str(tmp_path / "r.json"), "--quiet"]
+    assert got["timeout"] == dc.VECTOR_CHECK_TIMEOUT_S and got["check"] is False
+
+
+def test_box_check_restores_everything_when_it_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Whatever raises mid-check, the module attributes, the switch and the proving flag are
+    back as they were (the v1.3 should-fix: restore() in a finally)."""
+    _frame("EURUSD_H1")
+    chk = _box_check()
+    before = {a: getattr(families_vector, a) for a in dir(families_vector)
+              if a.endswith("_emit") or a == "true_range"}
+    monkeypatch.setenv(families_vector.ENV, "yes")
+
+    def boom(*_: object, **__: object) -> None:
+        assert families_vector._PROVING
+        raise RuntimeError("probe")
+    monkeypatch.setattr(chk, "_call", boom)
+    with pytest.raises(RuntimeError, match="probe"):
+        chk.run()
+    after = {a: getattr(families_vector, a) for a in before}
+    assert after == before and families_vector._PROVING is False
+    import os
+    assert os.environ[families_vector.ENV] == "yes"
+
+
+def test_box_check_proves_the_fast_path_while_a_marker_stands(
+        monkeypatch: pytest.MonkeyPatch, _no_box_marker: Path) -> None:
+    """A marker must not make the check compare the original with itself, or it could never be
+    cleared: the check still reaches every fast path, and reports the box's real mode."""
+    _frame("EURUSD_H1")
+    chk = _box_check()
+    families_vector.write_mismatch_marker({"verdict": "MISMATCH"})
+    monkeypatch.delenv(families_vector.ENV, raising=False)
+    report = chk.run()
+    assert report["verdict"] == "IDENTICAL", report["unmeasured_because"]
+    assert report["mode_as_found"]["mismatch_marker"] and not report["mode_as_found"]["enabled"]
+    assert families_vector._PROVING is False and not families_vector.enabled()

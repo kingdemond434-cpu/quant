@@ -13,7 +13,14 @@ it on real parquets, old against new, field by field and type by type.
 THE OLD LOOPS ARE KEPT, VERBATIM, IN THE FAMILY FUNCTIONS, behind `enabled()`:
 
     MT5_VECTOR_FAMILIES=0     every family runs its original per-row loop (the revert switch)
-    anything else / unset     the fast path below
+    anything else / unset     the fast path below -- unless the box has measured a mismatch
+
+FAIL CLOSED (v1.4, audit should-fix of 2026-10-28). The daily drift monitor
+(`daily_cycle:vector_families_check`) re-proves identity on the box's own pandas/numpy. On a
+MISMATCH it writes `data/VECTOR_FAMILIES_MISMATCH.json` with the evidence, and while that marker
+exists `enabled()` is False in every process that reads it (the judge's workers and the live
+gateway alike, within `MARKER_TTL_S`), so the original loops answer without anyone setting the
+switch. A later IDENTICAL check removes it; an UNMEASURED one leaves it exactly as it was.
 
 A fast function that meets ANY input it was not written for (a parameter of an unexpected type,
 an index that is not the tz-aware UTC nanosecond clock `_h1` promises, a missing column) returns
@@ -30,8 +37,11 @@ Measured cost per built cell, family code only, before -> after: see
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
+import time
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -63,10 +73,67 @@ def is_off(value: str | None) -> bool:
         return False
 
 
-def enabled() -> bool:
-    """True unless `MT5_VECTOR_FAMILIES` is set to an off spelling (`is_off`). Read per call, so
-    a test or an operator can flip it without restarting the process."""
+def env_enabled() -> bool:
+    """The operator's switch alone: True unless `MT5_VECTOR_FAMILIES` is an off spelling."""
     return not is_off(os.environ.get(ENV))
+
+
+#: The box's own MISMATCH verdict, written by the daily drift monitor and read here. Box state:
+#: under `desks/mt5/data/` (a `libs.ops.release.STATE_PREFIXES` path, so adoption keeps the box's
+#: copy) and gitignored, so no sync publishes it and no checkout carries one box's verdict to
+#: another machine.
+MARKER = Path(__file__).resolve().parents[1] / "data" / "VECTOR_FAMILIES_MISMATCH.json"
+#: How long one process trusts its last look at the marker. `enabled()` runs once per family
+#: call, so it must not stat the disk every time; ten seconds is nothing against a daily check.
+MARKER_TTL_S = 10.0
+_MARKER_SEEN: list[float | bool] = [float("-inf"), False]   # [checked_at (monotonic), present]
+
+#: Set only inside `scripts/check_vector_families.py`, which must reach the fast path to prove
+#: it -- otherwise a marker could never be cleared, because the check would compare the original
+#: loop with itself. No other caller sets it, and it is never read from the environment.
+_PROVING = False
+
+
+def mismatch_marked() -> bool:
+    """True while the marker exists, as seen within the last `MARKER_TTL_S` seconds."""
+    now = time.monotonic()
+    if now - float(_MARKER_SEEN[0]) >= MARKER_TTL_S:
+        _MARKER_SEEN[0], _MARKER_SEEN[1] = now, MARKER.exists()
+    return bool(_MARKER_SEEN[1])
+
+
+def _forget_marker() -> None:
+    _MARKER_SEEN[0], _MARKER_SEEN[1] = float("-inf"), False
+
+
+def write_mismatch_marker(evidence: dict[str, Any]) -> Path:
+    """Fail closed: record a measured MISMATCH so every process takes the original loops."""
+    MARKER.parent.mkdir(parents=True, exist_ok=True)
+    tmp = MARKER.with_suffix(MARKER.suffix + ".tmp")
+    tmp.write_text(json.dumps(evidence, indent=1, default=str) + "\n", encoding="utf-8")
+    os.replace(tmp, MARKER)
+    _forget_marker()
+    return MARKER
+
+
+def clear_mismatch_marker() -> bool:
+    """A measured IDENTICAL lifts the fail-closed state. True when a marker was removed."""
+    try:
+        MARKER.unlink()
+        removed = True
+    except FileNotFoundError:
+        removed = False
+    _forget_marker()
+    return removed
+
+
+def enabled() -> bool:
+    """True unless the switch is off (`is_off`) or this box has measured a MISMATCH (`MARKER`).
+    The switch is read per call, so a test or an operator can flip it without restarting the
+    process; the marker within `MARKER_TTL_S`."""
+    if not env_enabled():
+        return False
+    return _PROVING or not mismatch_marked()
 
 
 def _num(*values: Any) -> bool:
@@ -139,7 +206,8 @@ def mode() -> dict[str, Any]:
     (`external_gauntlet._replay_code_identity`) and does not carry this; whoever attests a run
     records it from here."""
     return {"env": ENV, "raw": os.environ.get(ENV), "enabled": enabled(),
-            "fallbacks": fallback_counts()}
+            "env_enabled": env_enabled(), "mismatch_marker": MARKER.exists(),
+            "marker_path": str(MARKER), "fallbacks": fallback_counts()}
 
 
 def _hours(index: pd.DatetimeIndex) -> np.ndarray:

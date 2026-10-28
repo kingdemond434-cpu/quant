@@ -17,6 +17,10 @@ vectorised family on a handful of parameter sets, `_atr`, and the hostile inputs
 audit named (NaT stamps, nullable/object dtypes, duplicated columns), each run with the switch
 OFF then ON in this process. Well under two minutes on either box.
 
+The daily drift monitor runs this as a SUBPROCESS (`daily_cycle:vector_families_check`), so
+nothing patched here can reach the cycle's own process; within this process too, every patch
+(the engagement wrappers, the switch, `families_vector._PROVING`) is undone in a `finally`.
+
 Exit 0: every case identical, signals were compared (> 0) and every family's fast path actually
 answered at least once. Exit 1: a mismatch -- set `MT5_VECTOR_FAMILIES=0` for the judge and the
 gateway and report the JSON. Exit 2: UNMEASURED (no parquets, an unreadable parquet, no signals
@@ -137,12 +141,16 @@ class _Engagement:
     def __init__(self) -> None:
         self.counts: dict[str, int] = {}
         self._saved: dict[str, Any] = {}
-        for attr in dir(families_vector):
-            if attr.endswith("_emit") or attr == "true_range":
-                family = "_atr" if attr == "true_range" else attr[:-len("_emit")]
-                fn = getattr(families_vector, attr)
-                self._saved[attr] = fn
-                setattr(families_vector, attr, self._wrap(family, fn))
+        try:
+            for attr in dir(families_vector):
+                if attr.endswith("_emit") or attr == "true_range":
+                    family = "_atr" if attr == "true_range" else attr[:-len("_emit")]
+                    fn = getattr(families_vector, attr)
+                    self._saved[attr] = fn
+                    setattr(families_vector, attr, self._wrap(family, fn))
+        except BaseException:
+            self.restore()                  # a half-wrapped module never outlives the check
+            raise
 
     def _wrap(self, family: str, fn: Any) -> Any:
         def counted(*args: Any, **kwargs: Any) -> Any:
@@ -185,10 +193,17 @@ def run() -> dict[str, Any]:
         "charts": [], "cases": 0, "signals": 0, "mismatches": [], "verdict": "UNMEASURED",
         "unreadable": [], "fast_path_engaged": {}, "not_engaged": [], "unmeasured_because": [],
     }
-    engaged = _count_engagement()
     charts = [c for c in CHARTS if (UNIVERSE / f"{c}.parquet").exists()][:MAX_CHARTS]
     report["charts"] = charts
+    engaged: _Engagement | None = None
+    proving = families_vector._PROVING
     try:
+        # Every patch this check makes to the process is undone in the `finally` below, the
+        # engagement wrappers included, whatever raises and wherever (audit v1.3 should-fix 2).
+        # `_PROVING` lets the switch-ON calls reach the fast path while a MISMATCH marker
+        # stands; without it a marker could never be cleared.
+        families_vector._PROVING = True
+        engaged = _count_engagement()
         first = True
         for chart in charts:
             try:
@@ -220,15 +235,18 @@ def run() -> dict[str, Any]:
                                                  "params": {q: str(v) for q, v in kw.items()},
                                                  "why": why})
     finally:
-        engaged.restore()
+        if engaged is not None:
+            engaged.restore()
+        families_vector._PROVING = proving
         if prior is None:
             os.environ.pop(families_vector.ENV, None)
         else:
             os.environ[families_vector.ENV] = prior
     report["fast_path_exceptions"] = families_vector.fallback_counts()
-    report["fast_path_engaged"] = dict(engaged.counts)
+    counts = dict(engaged.counts) if engaged is not None else {}
+    report["fast_path_engaged"] = counts
     report["not_engaged"] = sorted({name for name, _ in CASES}
-                                   - {f for f, n in engaged.counts.items() if n > 0})
+                                   - {f for f, n in counts.items() if n > 0})
     why = report["unmeasured_because"]
     if not charts:
         why.append("no universe parquets in this checkout")
