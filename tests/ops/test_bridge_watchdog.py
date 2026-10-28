@@ -444,3 +444,30 @@ def test_benign_failures_do_not_count_toward_degraded() -> None:
         "getaddrinfo: host api.example could not be resolved",
     ):
         assert not re.search(m.group(1), line), line
+
+
+def test_a_junction_anywhere_on_the_checkout_path_refuses_the_install() -> None:
+    """Audit v1.7: the parent is reset recursively, so a junction must never be followed."""
+    inst = SCRIPTS["installer"]
+    guard = inst.index("foreach ($p in @((Split-Path -Parent $bridgeDir), $bridgeDir, $Checkout))")
+    assert guard < inst.index("function Lock-Folder")
+    assert "Write-Warning" not in inst.split("function Lock-Folder", 1)[1].split("\n}\n", 1)[0]
+
+
+@pytest.mark.parametrize(
+    ("cmd", "uncapped"),
+    [
+        ("claude remote-control --spawn same-dir --capacity 1", False),
+        ('claude remote-control --spawn same-dir --capacity "1"', False),
+        ("claude remote-control --spawn worktree", False),
+        ("claude remote-control --spawn same-dir", True),
+        ("claude remote-control --spawn same-dir --capacity 12", True),
+        ("claude remote-control", True),
+    ],
+)
+def test_the_uncapped_flag_means_what_it_says(cmd: str, uncapped: bool) -> None:
+    """Mutation J1: the flag the risk verdict reads is pinned by behaviour, not by spelling."""
+    line = next(x for x in SCRIPTS["watchdog"].splitlines() if "$open = (" in x)
+    pats = re.findall(r"-notmatch '([^']+)'", line)
+    assert len(pats) == 2 and line.count("-notmatch") == 2 and " -and " in line
+    assert (not any(re.search(p, cmd) for p in pats)) is uncapped

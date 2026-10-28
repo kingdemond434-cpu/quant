@@ -64,6 +64,14 @@ catch { throw "-Checkout $Checkout does not exist; not installing" }
 if (-not (Test-Path -LiteralPath (Join-Path $Checkout ".git"))) { throw "-Checkout $Checkout is not a git checkout; not installing" }
 $parent = Split-Path -Parent $Checkout
 if ($parent -ine $bridgeDir) { throw "-Checkout $Checkout is not directly inside $bridgeDir; not installing" }
+# NO JUNCTION ON THE WAY TO THE CHECKOUT OR INSIDE IT (audit v1.7): the parent is locked and reset
+# recursively, so a junction there would carry an elevated re-ACL to wherever it points (the live
+# desk). The repository tracks no symlinks, so any reparse point here was planted.
+foreach ($p in @((Split-Path -Parent $bridgeDir), $bridgeDir, $Checkout)) {
+    if ((Get-Item -LiteralPath $p -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {
+        throw "$p is a junction or symlink; not installing"
+    }
+}
 foreach ($sib in @(Get-ChildItem -LiteralPath $parent -Directory -Force -ErrorAction SilentlyContinue)) {
     if ($sib.FullName -ine $Checkout -and (Test-Path -LiteralPath (Join-Path $sib.FullName ".git"))) {
         throw "$parent also holds the repository $($sib.FullName); locking it is not this installer's call"
@@ -90,8 +98,6 @@ function Lock-Folder([string] $dir, [switch] $UsersRead, [switch] $KeepOwner) {
     if (-not $KeepOwner) { & icacls.exe $dir /setowner "*S-1-5-32-544" /T /C | Out-Null }
     foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -Recurse)) {
         if (-not ($c.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }
-        # a symlink the repository itself tracks is the checkout's business, not a planted junction
-        if ($KeepOwner) { Write-Warning "$($c.FullName) is a junction or symlink inside the checkout"; continue }
         throw "$($c.FullName) is a junction or symlink; not installing"
     }
     if (@(Get-ChildItem -LiteralPath $dir -Force).Count -gt 0) {
