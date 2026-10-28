@@ -21,6 +21,7 @@ import glob
 import hashlib
 import json
 import os
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -213,6 +214,28 @@ def _mass_screen_counts(path: Path | None = None) -> tuple[int, dict[str, int]]:
     return total, by_fam
 
 
+def _prescreen_counts() -> tuple[int, dict[str, int]]:
+    """CELLS THE JUDGE'S PRE-BUILD SCREEN KILLED ARE TRIALS, ONE EACH (research/judge_prescreen,
+    2026-10-28). A canon kill takes a cell away from the sealed judge before its build; the judge
+    would have recorded exactly one fate for it, whatever the outcome, so each standing kill is
+    charged here exactly once and joins the JUDGED count. A READMITTED cell stops counting here
+    because the judge's own fate then counts it. In SHADOW nothing is killed and this is 0."""
+    try:
+        if str(DESK) not in sys.path:
+            sys.path.insert(0, str(DESK))
+        import importlib
+        judge_prescreen = importlib.import_module("research.judge_prescreen")
+    except Exception:
+        # NO KILL CAN EXIST WITHOUT THE MODULE THAT WRITES THEM -- unless its ledger is on disk,
+        # in which case a silent 0 would DEFLATE the count: refuse instead (the writer keeps the
+        # last good ledger and the judge's DSR fails closed on a stale one).
+        if (DESK / "data" / "hypotheses" / "prescreen_verdicts.jsonl").exists():
+            raise
+        return 0, {}
+    n, fam = judge_prescreen.lifetime_kills()
+    return int(n), {str(k): int(v) for k, v in fam.items()}
+
+
 def _claim_selection_counts() -> tuple[int, dict[str, int]]:
     """A SOURCE'S OWN SEARCH IS A TRIAL TOO (libs.research.claim_selection, 2026-09-30). A claim
     reported as the best of N searched variations spent N trials before the desk saw it; the
@@ -236,6 +259,10 @@ def _prereg_counts() -> int:
 
 def lifetime(write: bool = True) -> dict[str, Any]:
     g_total, g_fam = _graph_counts()
+    k_total, k_fam = _prescreen_counts()
+    for fam, k in k_fam.items():
+        g_fam[fam] = g_fam.get(fam, 0) + k
+    g_total += k_total
     p_total, p_fam = _proposer_counts()
     m_total, m_fam = _mass_screen_counts()
     for fam, k in m_fam.items():
@@ -249,10 +276,12 @@ def lifetime(write: bool = True) -> dict[str, Any]:
            "lifetime_trials": int(g_total + p_total + s_total),
            "judged_cells": g_total, "screened_cells": p_total,
            "source_selection_trials": s_total, "preregistered_cards": prereg,
-           "mass_screen_cells": m_total,
+           "mass_screen_cells": m_total, "prescreen_killed_cells": k_total,
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
-           "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
-                    "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl) + "
+           "rule": ("lifetime = judged (hypothesis graph, plus each standing pre-build "
+                    "prescreen kill as the one fate the judge would have recorded) + "
+                    "screened (every proposer's tests_run, plus every mass-screen cell in "
+                    "MASS_SCREEN_TRIALS.jsonl) + "
                     "each claim family's stated source selection, once; "
                     "consumers may only deflate MORE with it, never less")}
     if write:

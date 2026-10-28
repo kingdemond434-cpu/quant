@@ -3585,6 +3585,21 @@ def fireability_order(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
                  "skipped, every row still judged and counted by the sealed judge in its turn")}
 
 
+def _prescreen(rows: list[dict[str, Any]], *, publish: bool
+               ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """`judge_prescreen.intake` on the docket, or the rows untouched when it cannot run."""
+    try:
+        try:
+            import judge_prescreen as _jp
+        except ImportError:                                    # pragma: no cover - import context
+            from research import judge_prescreen as _jp  # type: ignore[no-redef]
+        return _jp.intake(rows, cell_of=lambda r: r.get("_cell") or _cell_id(r),
+                          probe=_fire_probe, publish=publish)
+    except Exception as exc:                                   # never costs the docket
+        return rows, {"mode": "UNMEASURED", "removed_from_docket": 0,
+                      "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+
+
 def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
                  now: datetime | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """THE INTAKE CALL. Return the docket re-ordered for coverage, and the table it implies.
@@ -3626,6 +3641,13 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         bank = unrunnable_bank()
         blocked = [r for r in rows if str(r.get("_cell") or "") in bank]
         rows = [r for r in rows if str(r.get("_cell") or "") not in bank]
+        # THE PRE-BUILD SCREEN (research/judge_prescreen, principal 2026-10-28), AFTER the bank
+        # filter so it never re-decides a parked cell. SHADOW by default: the rows come back
+        # untouched and JUDGE_PRESCREEN_INTAKE.json records what each rule WOULD remove. Only
+        # with data/JUDGE_PRESCREEN_CANON.json {"enabled": true} AND a rule the hourly replay
+        # names canon-ready does a row leave here -- as a recorded terminal verdict that is
+        # charged as one lifetime trial, never silently. Fails open: any error ships the rows.
+        rows, doc["prescreen"] = _prescreen(rows, publish=publish)
         judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
         study = [r for r in rows if str(r.get("family") or "") in banned]
         # CHARGE VARIANTS AGAINST THEIR PARENT. The split marks the rows; the two orders below
