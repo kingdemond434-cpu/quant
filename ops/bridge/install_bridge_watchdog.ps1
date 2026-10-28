@@ -18,25 +18,40 @@
 # FTMO terminal needs anyway). Coming back with nobody logged on would need Windows auto-logon,
 # which stores this account's password on the box; that is not done here.
 #
-# Idempotent; touches no other task.
+# Idempotent; touches no other task. Read the result with ops\bridge\bridge_status.ps1.
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File ops\bridge\install_bridge_watchdog.ps1
 
 [CmdletBinding()]
 param(
     [string] $Checkout = "C:\opt\bridge\quant",
-    [string] $BinDir = "C:\opt\bridge\bin",
-    [ValidateSet("Highest", "Limited")] [string] $RunLevel = "Highest"
+    [string] $BinDir = "C:\opt\bridge\bin"
 )
+# Highest, not a choice: the bin folder below is Administrators + SYSTEM only, so a limited token
+# could not even read the script it runs.
+$RunLevel = "Highest"
 $ErrorActionPreference = 'Stop'
 
 $TaskName = 'Claude-Bridge-Watchdog'
 $src = Join-Path $PSScriptRoot 'bridge_watchdog.ps1'
 if (-not (Test-Path $src)) { throw "bridge_watchdog.ps1 missing at $src" }
+# THE FOLDER THE ELEVATED TASK RUNS FROM IS ADMIN-ONLY. A new folder under C:\ inherits a DACL that
+# normally lets Authenticated Users modify it, which would make this a writable script run
+# elevated. Inheritance is cut and only Administrators and SYSTEM keep any right; the watchdog
+# also refuses to run when its own sha256 differs from the pin written next to it here.
 New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
+& icacls.exe $BinDir /inheritance:r /grant:r "*S-1-5-32-544:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F" | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "icacls could not restrict $BinDir (exit $LASTEXITCODE)" }
+& icacls.exe $BinDir /setowner "*S-1-5-32-544" /T | Out-Null
+$acl = (Get-Acl $BinDir).Access | Where-Object { $_.AccessControlType -eq 'Allow' } |
+    ForEach-Object { $_.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value }
+$extra = @($acl | Where-Object { $_ -notin @('S-1-5-32-544', 'S-1-5-18') })
+if ($extra.Count -gt 0) { throw "$BinDir still grants $($extra -join ', '); not installing" }
 $dst = Join-Path $BinDir 'bridge_watchdog.ps1'
 Copy-Item -Path $src -Destination $dst -Force
-"copied {0} -> {1} (sha256 {2})" -f $src, $dst, (Get-FileHash $dst -Algorithm SHA256).Hash.Substring(0, 12)
+$sha = (Get-FileHash $dst -Algorithm SHA256).Hash.ToLower()
+Set-Content -Path (Join-Path $BinDir 'watchdog.sha256') -Value $sha -Encoding ascii
+"copied {0} -> {1} (sha256 {2}); {3} is Administrators + SYSTEM only" -f $src, $dst, $sha.Substring(0, 12), $BinDir
 
 $user = "{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument `

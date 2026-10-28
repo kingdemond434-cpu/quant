@@ -300,3 +300,7 @@ TASK name="MT5-Dept-Rest" trigger="at startup + every 10 minutes (keep-alive of 
 TASK name="MT5-LawGate" trigger="hourly at :40" runs="scripts/run_law_gate.py --rotate --budget-s 1800" installer="desks/mt5/scripts/install_law_gate_task.ps1" lane="ops"
 
 # Ledger adoption child: scripts/migrate_live_ledger_view.py runs only from MT5-AdoptRelease; emits reports/LEDGER_VIEW_ADOPTION.json, consumed by the adopter and runtime attestation. No independent scheduler.
+
+# THE BOX BRIDGE (2026-10-28). Keeps `claude remote-control` in C:\opt\bridge\quant alive so box steps
+# never wait on an RDP session; runs as the bridge user, interactive, from the admin-only C:\opt\bridge\bin.
+TASK name="Claude-Bridge-Watchdog" trigger="at logon + every 5 minutes" runs="ops/bridge/bridge_watchdog.ps1" installer="ops/bridge/install_bridge_watchdog.ps1" lane="ops"
