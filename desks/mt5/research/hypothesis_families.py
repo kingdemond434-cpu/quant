@@ -932,7 +932,10 @@ def reaim(rows: list[dict[str, Any]], fresh: set[str], reproposed: set[str], *,
 
     `fresh` = identities this pass's producers emitted that the bank did not hold; `reproposed`
     = identities they emitted that the bank DID hold (EXACT duplicates the merge collapsed).
-    `done` = parents already re-aimed (from `reaimed_parents`, the ledger). `lawful` and
+    `done` = parents already re-aimed: the UNION of the ledger (`reaimed_parents`) and every
+    `reaimed_from.parent_identity` already in `rows`. The ledger covers a child the judge later
+    filtered out of the docket; the docket covers a child that was written but whose ledger line
+    never was (crash after the docket write, or a failed report write). `lawful` and
     `blocked` default to the lane law and the unrunnable bank; if either cannot be resolved the
     check still runs and NOTHING is minted (fail closed), with the reason in the report.
     Returns (children, report). Inputs are never removed: a duplicate stays in the docket."""
@@ -946,8 +949,9 @@ def reaim(rows: list[dict[str, Any]], fresh: set[str], reproposed: set[str], *,
     prior_i = [i for i, ident in enumerate(idents) if ident not in fresh]
     index = MinedIndex((rows[i] for i in prior_i), cl, (idents[i] for i in prior_i))
     present = set(idents)
-    # ONCE PER PARENT, EVER -- remembered by the ledger, never by the docket.
+    # ONCE PER PARENT, EVER -- the ledger OR a child already in the docket, whichever survived.
     done = set(done) if done is not None else reaimed_parents()
+    done |= _parents_in(rows)
     counts: Counter[str] = Counter()
     by_producer: dict[str, Counter[str]] = {}
     children: list[dict[str, Any]] = []
@@ -973,11 +977,21 @@ def reaim(rows: list[dict[str, Any]], fresh: set[str], reproposed: set[str], *,
             continue
         fam, params = _fam(row), dict(row.get("params") or {})
 
-        def accept(sym: str, fam: str = fam, params: dict[str, Any] = params) -> bool:
+        def make(sym: str, row: dict[str, Any] = row, fam: str = fam,
+                 params: dict[str, Any] = params) -> dict[str, Any]:
+            c = {k: row[k] for k in _SAFE if k in row}
+            c.update({"symbol": sym, "family": fam, "params": dict(params),
+                      "contributing_sources": [], "n_independent_sources": 0})
+            return c
+
+        def accept(sym: str, fam: str = fam, make: Callable[[str], dict[str, Any]] = make
+                   ) -> bool:
             assert law is not None and block is not None
             if not law(sym, fam):
                 return False
-            if block({"symbol": sym, "sym": sym, "family": fam, "params": params}):
+            # the bank is keyed by the docket's own cell id, so it is asked about the CHILD ROW
+            # itself (row-level timeframe/chart included), exactly as order_docket will see it
+            if block(make(sym)):
                 counts["target_unrunnable"] += 1
                 return False
             return True
@@ -985,9 +999,7 @@ def reaim(rows: list[dict[str, Any]], fresh: set[str], reproposed: set[str], *,
         if target is None:
             no_target += 1
             continue
-        child = {k: row[k] for k in _SAFE if k in row}
-        child.update({"symbol": target, "family": fam, "params": params,
-                      "contributing_sources": [], "n_independent_sources": 0})
+        child = make(target)
         key = identity_fn(child)
         if key in present:
             counts["reaim_already_present"] += 1
@@ -1026,7 +1038,7 @@ def reaim(rows: list[dict[str, Any]], fresh: set[str], reproposed: set[str], *,
                                     "removed": 0},
               "rule": ("a duplicate is KEPT and a re-aimed descendant is minted beside it; "
                        "nothing is deleted, so the mint rate can only rise. Once per parent, "
-                       "ever, remembered by reaim_ledger.jsonl")}
+                       "ever: reaim_ledger.jsonl OR a child already in the docket")}
     return children, report
 
 
@@ -1036,21 +1048,26 @@ class Pending:
     THE ORDER IS THE GUARANTEE (audit of 8628268b6). Children first (the caller's docket write),
     then the report, then the ledger -- so the ledger can never claim a child that does not exist.
     A crash before the docket write leaves no child and no ledger line (the next pass re-mints
-    what never existed); a crash after it leaves children without ledger lines, and the next pass
-    finds each child already present and mints nothing. Either way: at most once."""
+    what never existed). A crash after it -- or a failed report write -- leaves children in the
+    docket without ledger lines; the next pass reads each child's `reaimed_from.parent_identity`
+    out of the docket into its done-set and re-aims none of those parents again. Either way: at
+    most once. Durable children are matched to the written rows by IDENTITY KEY, never by object
+    id, so a copied row list still counts."""
 
     def __init__(self, children: list[dict[str, Any]], doc: Mapping[str, Any] | None,
-                 report_path: Path | None, ledger_path: Path | None) -> None:
+                 report_path: Path | None, ledger_path: Path | None,
+                 identity_fn: Callable[[dict[str, Any]], str] = identity) -> None:
         self.children = children
         self.doc = doc
         self.report_path = report_path
         self.ledger_path = ledger_path
+        self.identity_fn = identity_fn
 
     def commit(self, written: Iterable[dict[str, Any]], *, publish_report: bool = True
                ) -> dict[str, Any]:
         """`written` is the row list the caller just wrote. Returns what was recorded."""
-        ids = {id(r) for r in written}
-        durable = [c for c in self.children if id(c) in ids]
+        keys = {self.identity_fn(r) for r in written if r.get("reaimed_from")}
+        durable = [c for c in self.children if self.identity_fn(c) in keys]
         report_ok = True
         if publish_report and self.doc is not None:
             report_ok = write(self.doc, self.report_path)
@@ -1060,6 +1077,16 @@ class Pending:
         return {"children": len(self.children), "durable": len(durable),
                 "report_written": report_ok, "ledger_lines": lines,
                 "why": None if report_ok else "report write failed: ledger NOT written"}
+
+
+def _parents_in(rows: Iterable[Mapping[str, Any]]) -> set[str]:
+    """Parents whose re-aimed child is already in the docket rows (the ledger's twin)."""
+    out: set[str] = set()
+    for r in rows:
+        rf = r.get("reaimed_from")
+        if isinstance(rf, Mapping) and rf.get("parent_identity"):
+            out.add(str(rf["parent_identity"]))
+    return out
 
 
 def append_reaim_ledger(children: list[dict[str, Any]], path: Path | None = None) -> int:
@@ -1122,7 +1149,7 @@ def apply(rows: list[dict[str, Any]], *, fresh: set[str], reproposed: set[str],
             rep["reaim_enabled"] = True
         out = rows + children
         doc = build(out, clusters=clusters, cluster_meta=cmeta, reaim_report=rep)
-        return out, summary(doc), Pending(children, doc, report_path, ledger)
+        return out, summary(doc), Pending(children, doc, report_path, ledger, identity_fn)
     except Exception as exc:
         return rows, {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}, None
     finally:

@@ -244,7 +244,7 @@ def test_crash_after_the_docket_write_before_the_ledger_mints_nothing_twice(
     # the child reached the docket, then the process died before commit: no ledger line.
     n1, n2 = _two_passes(tmp_path, monkeypatch, written_first=True, blocked=False,
                          commit_first=False)
-    assert (n1, n2) == (1, 0)      # pass 2 finds the child already present
+    assert (n1, n2) == (1, 0)      # pass 2 reads the child's parent out of the docket
 
 
 def test_crash_before_the_docket_write_leaves_no_ledger_claim(tmp_path: Path,
@@ -382,3 +382,91 @@ def test_the_docket_writer_runs_the_census_and_reaims_every_hour(monkeypatch, tm
     assert report["hypothesis_families"]["commit"]["ledger_lines"] == 1
     cycle = (_DESK / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '"merge_hypotheses", "research/merge_hypotheses.py"' in cycle
+
+
+# ---- v1.2 (audit of 7753bbf95): the docket is the ledger's twin; several targets per pass ----
+TARGETS = ("AUDUSD", "NZDUSD", "USDCAD", "USDCHF", "XAGUSD", "XAUUSD")
+
+
+def _wide(monkeypatch, blocked=NOBLOCK) -> tuple[list[dict], list[dict]]:
+    monkeypatch.setattr(hf, "_daily", lambda s, u: None)
+    monkeypatch.setattr(hf, "_lawful", lambda: (lambda s, f: True))
+    monkeypatch.setattr(hf, "_unrunnable", lambda: blocked)
+    bank = [_row("EURUSD"), *(_row(t, session="asia") for t in TARGETS)]
+    dups = [_row("EURUSD", lookback=n) for n in (3, 5, 7)]
+    return bank, dups
+
+
+def _pass(rows: list[dict], fresh: set, reproposed: set, tmp_path: Path):
+    return hf.apply([dict(r) for r in rows], fresh=fresh, reproposed=reproposed,
+                    report_path=tmp_path / "HF.json", hyp_dir=tmp_path)
+
+
+def _kids(rows: list[dict]) -> list[dict]:
+    return [r for r in rows if r.get("reaimed_from")]
+
+
+def test_crash_after_the_docket_write_with_many_targets_gives_no_parent_a_second_child(
+        tmp_path: Path, monkeypatch) -> None:
+    bank, dups = _wide(monkeypatch)
+    ids = {hf.identity(d) for d in dups}
+    out1, _, p1 = _pass([*bank, *dups], ids, set(), tmp_path)
+    assert len(_kids(out1)) == 3 and p1 is not None
+    # docket written, then the process died: NO commit, no ledger line
+    assert not (tmp_path / "reaim_ledger.jsonl").exists()
+    out2, _, _ = _pass(out1, set(), ids, tmp_path)
+    assert len(_kids(out2)) == 3                       # the same three, nothing new
+    per_parent = [k["reaimed_from"]["parent_identity"] for k in _kids(out2)]
+    assert sorted(per_parent) == sorted(ids)
+    out3, _, _ = _pass(out2, set(), ids, tmp_path)     # and a third pass: still nothing
+    assert len(_kids(out3)) == 3
+
+
+def test_a_failed_report_write_with_many_targets_gives_no_parent_a_second_child(
+        tmp_path: Path, monkeypatch) -> None:
+    bank, dups = _wide(monkeypatch)
+    ids = {hf.identity(d) for d in dups}
+    out1, _, p1 = _pass([*bank, *dups], ids, set(), tmp_path)
+    monkeypatch.setattr(hf, "write", lambda doc, path=None: False)
+    assert p1 is not None and p1.commit(out1)["ledger_lines"] == 0
+    for _ in range(2):
+        out1, _, p = _pass(out1, set(), ids, tmp_path)
+        assert p is not None and p.commit(out1)["ledger_lines"] == 0
+    assert len(_kids(out1)) == 3
+
+
+def test_commit_matches_durable_children_by_identity_not_object(tmp_path: Path,
+                                                               monkeypatch) -> None:
+    # probe P2d: the docket writer wrote COPIES of the rows; the children are still durable
+    bank, dups = _wide(monkeypatch)
+    ids = {hf.identity(d) for d in dups}
+    out1, _, p1 = _pass([*bank, *dups], ids, set(), tmp_path)
+    copied = json.loads(json.dumps(out1, default=str))
+    assert p1 is not None
+    got = p1.commit(copied)
+    assert got["durable"] == 3 and got["ledger_lines"] == 3
+    # and a child the writer dropped is not claimed
+    _, _, p2 = _pass([*bank, *dups], ids, set(), tmp_path / "b")
+    assert p2 is not None
+    assert p2.commit([r for r in copied if not r.get("reaimed_from")])["ledger_lines"] == 0
+
+
+def test_the_unrunnable_bank_is_asked_about_the_child_row_with_its_row_level_timeframe(
+        tmp_path: Path, monkeypatch) -> None:
+    seen: list[dict] = []
+
+    def block(spec: dict) -> bool:
+        seen.append(spec)
+        # the bank holds the M15 cell on AUDUSD, identifiable only by the ROW-level timeframe
+        return spec["symbol"] == "AUDUSD" and spec.get("timeframe") == "M15"
+    bank, dups = _wide(monkeypatch, blocked=block)
+    dup = dict(dups[0], timeframe="M15")
+    out, _, _ = _pass([*bank, dup], {hf.identity(dup)}, set(), tmp_path)
+    kids = _kids(out)
+    assert len(kids) == 1 and kids[0]["symbol"] != "AUDUSD"
+    assert kids[0]["timeframe"] == "M15"
+    assert seen and all(s.get("timeframe") == "M15" for s in seen)
+    from research import frontier_identity as fi
+    # the spec the bank saw for the chosen target keys exactly as the child row will
+    asked = next(s for s in seen if s["symbol"] == kids[0]["symbol"])
+    assert fi.docket_cell_id(asked) == fi.docket_cell_id(kids[0])
