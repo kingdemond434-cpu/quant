@@ -78,6 +78,16 @@ Unsure is LIVE: a file count that does not add up, an unreadable tree, a grep th
 The allowlist lives here, in .github/scripts, which is itself LIVE tier: only a LIVE-tier merge
 (auditor CLEAR + zuck's comment) can widen it.
 
+THREE TIERS (step B). LIVE splits in two. PROTECTED -- this controller and every workflow, the
+ceilings and the release suite (ops/release/), the release and adopter machinery, the signed
+judge manifest, the box and bridge installers, secrets, agent instructions; and any PR the
+controller cannot classify for certain -- only ever takes the CLEAR + APPROVE MERGES path.
+AUTO -- everything else, execution, sizing, risk, allocation and the judge included -- merges with
+no comment once zuck has ALSO typed `ACTIVATE LIVE AUTO-MERGE` on #453 (after the box canary is
+ready), no HOLD stands, and the gating jobs AND the AUTO jobs (risk-invariants, replay-shadow,
+independent-review) all succeeded. A PR whose CI fails on the LOW or AUTO path is QUARANTINED:
+labelled `quarantined`, left open, never merged until a new head passes.
+
 Exit 0 when merged or when there is honestly nothing to do yet (no CLEAR); exit 1 when the gate
 refused or gave up, with the reason in the job summary and on the `audit/clear` commit status.
 """
@@ -85,6 +95,7 @@ refused or gave up, with the reason in the job summary and on the `audit/clear` 
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import hashlib
 import json
 import os
@@ -118,6 +129,20 @@ CODE_SPECS = (
     "*.py", "*.ps1", "*.sh", "*.cmd", "*.txt", "*.yml", "*.yaml", "*.toml", "*.manifest",
     "*.service", "ops/githooks/*",
 )  # fmt: skip
+#: PROTECTED: never merged without zuck. fnmatch patterns ("*" crosses "/").
+PROTECTED = (
+    ".github/*", "CODEOWNERS", "*/CODEOWNERS", "ops/release/*", "ops/box/*", "ops/bridge/*",
+    "ops/githooks/*", "IMMUTABLE_MANIFEST*", "*/IMMUTABLE_MANIFEST*", "data/secrets/*",
+    "*/data/secrets/*", "scripts/check_immutable_evaluator.py", "libs/ops/release.py",
+    "libs/ops/release_promotion.py", "desks/mt5/scripts/Adopt*", "desks/mt5/scripts/Seal-*",
+    "desks/mt5/scripts/smoke_release.py", "desks/mt5/mt5desk/release_identity.py",
+    "CLAUDE.md", "*/CLAUDE.md", "AGENTS.md", "*/AGENTS.md", ".claude/*", "*/.claude/*",
+)  # fmt: skip
+#: The jobs an AUTO-tier PR needs on top of the gating jobs (step C builds them; until then no
+#: AUTO-tier PR can merge, because a missing job is never a pass).
+AUTO_JOBS = ("risk-invariants", "replay-shadow", "independent-review")
+ACTIVATE_AUTO = "ACTIVATE LIVE AUTO-MERGE"
+QUARANTINE = "quarantined"
 #: The GitHub files API lists at most 3000 files; past that the PR is never LOW.
 MAX_FILES = 3000
 #: The label that starts a gate run (the CLEAR comment itself starts none).
@@ -194,29 +219,37 @@ def referenced_by_code(base_ref: str, path: str) -> bool:
     return p.returncode != 1  # 0 = found, 1 = not found, anything else = could not look
 
 
+def is_protected(name: str) -> bool:
+    return any(fnmatch.fnmatchcase(name, pat) for pat in PROTECTED)
+
+
 def tier(
     files: list[Mapping[str, Any]], changed: int, referenced: Callable[[str], bool]
-) -> tuple[bool, str]:
-    """(is LOW tier, why). LIVE unless every file is provably prose no program reads."""
+) -> tuple[str, str]:
+    """("LOW" | "AUTO" | "PROTECTED", why). The strictest file decides; unsure is PROTECTED."""
     if not files or len(files) != changed or len(files) >= MAX_FILES:
-        return False, f"LIVE tier: {len(files)} of {changed} changed files listed"
-    for f in files:
-        names = [str(n) for n in (f.get("filename"), f.get("previous_filename")) if n]
-        for name in names:
-            if (
-                name in APPEND_ONLY
-                and f.get("status") == "modified"
-                and f.get("deletions") == 0
-                and not f.get("previous_filename")
-            ):
-                continue
-            if not (name.startswith(LOW_DIRS) and name.lower().endswith(LOW_EXTS)):
-                return False, f"LIVE tier: {name}"
-            if FORCED_LIVE.search(name.lower()):
-                return False, f"LIVE tier: {name} (a governing document)"
-            if referenced(name):
-                return False, f"LIVE tier: {name} is read by code"
-    return True, f"LOW tier: {len(files)} prose file(s) no program reads"
+        return "PROTECTED", f"PROTECTED: {len(files)} of {changed} changed files listed"
+    names = [
+        (str(n), f) for f in files for n in (f.get("filename"), f.get("previous_filename")) if n
+    ]
+    for name, _ in names:
+        if is_protected(name):
+            return "PROTECTED", f"PROTECTED: {name}"
+    for name, f in names:
+        if (
+            name in APPEND_ONLY
+            and f.get("status") == "modified"
+            and f.get("deletions") == 0
+            and not f.get("previous_filename")
+        ):
+            continue
+        if not (name.startswith(LOW_DIRS) and name.lower().endswith(LOW_EXTS)):
+            return "AUTO", f"AUTO tier: {name}"
+        if FORCED_LIVE.search(name.lower()):
+            return "AUTO", f"AUTO tier: {name} (a governing document)"
+        if referenced(name):
+            return "AUTO", f"AUTO tier: {name} is read by code"
+    return "LOW", f"LOW tier: {len(files)} prose file(s) no program reads"
 
 
 def _zuck_typed(c: Mapping[str, Any]) -> bool:
@@ -240,14 +273,14 @@ def approval_at(comments: Iterable[Mapping[str, Any]]) -> str | None:
     return best
 
 
-def activated(comments: Iterable[Mapping[str, Any]]) -> tuple[bool, str]:
-    """Is the tier controller on? The newest of zuck's own ACTIVATE and any trusted DEACTIVATE
-    decides; none at all is off."""
+def activated(comments: Iterable[Mapping[str, Any]], phrase: str = ACTIVATE) -> tuple[bool, str]:
+    """Is this switch on? The newest of zuck's own `phrase` and any trusted DEACTIVATE decides;
+    none at all is off. One DEACTIVATE switches off every switch."""
     last: tuple[str, bool] | None = None
     for c in comments:
         body = str(c.get("body") or "").strip()
         at = str(c.get("created_at") or "")
-        if body == ACTIVATE and _zuck_typed(c):
+        if body == phrase and _zuck_typed(c):
             on = True
         elif body == DEACTIVATE and str(c.get("author_association") or "") in TRUSTED:
             on = False
@@ -256,8 +289,8 @@ def activated(comments: Iterable[Mapping[str, Any]]) -> tuple[bool, str]:
         if last is None or at >= last[0]:
             last = (at, on)
     if last is None:
-        return False, f"the release controller is not activated (zuck: `{ACTIVATE}` on #453)"
-    return last[1], f"the release controller is {'ON' if last[1] else 'OFF'} since {last[0]}"
+        return False, f"`{phrase}` has not been given (zuck, on #453)"
+    return last[1], f"`{phrase}` is {'ON' if last[1] else 'OFF'} since {last[0]}"
 
 
 def approved(clear: Mapping[str, str], at: str | None) -> tuple[bool, str]:
@@ -450,21 +483,28 @@ def run(
     if str(p2["head"]["sha"]) != head:
         _summary(f"#{pr}: head moved while its files were read; the next run decides")
         return 0
-    low, twhy = tier(
+    level, twhy = tier(
         files, int(p2.get("changed_files") or 0), lambda n: referenced_by_code(base, n)
     )
-    if low:
-        on, owhy = activated(
-            _flat(
-                _gh(
-                    f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100",
-                    "--paginate",
-                    "--slurp",
-                )
+    # The path a PR takes: "low" / "auto" (no comment needed) or "manual" (CLEAR + APPROVE).
+    mode = "manual"
+    if level in ("LOW", "AUTO"):
+        board = _flat(
+            _gh(
+                f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100",
+                "--paginate",
+                "--slurp",
             )
         )
-        if not on:
-            low, twhy = False, f"{twhy}, but {owhy}: it takes the LIVE-tier path"
+        on, owhy = activated(board)
+        if on and level == "AUTO":
+            on, owhy = activated(board, ACTIVATE_AUTO)
+        if on:
+            mode = level.lower()
+        else:
+            twhy = f"{twhy}, but {owhy}: it takes the CLEAR + APPROVE path"
+    low = mode != "manual"  # no verdict or approval needed on this path
+    required = GATING_JOBS + (AUTO_JOBS if mode == "auto" else ())
     _summary(f"#{pr} @ {head[:9]}: {twhy}")
     wf = touches_workflows(files)
     if wf and not box:
@@ -526,11 +566,18 @@ def run(
             return 0
         pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate", "--slurp")
         runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
-        state, cwhy = checks(runs)
+        state, cwhy = checks(runs, required)
         if state == "pass":
             break
         if state == "fail":
             _summary(f"#{pr} @ {head[:9]}: not merged -- CI {cwhy}")
+            if low:  # the no-comment paths quarantine a failure; the manual path reports it
+                _status(repo, head, "failure", f"{QUARANTINE}: CI {cwhy}")
+                try:
+                    _gh(f"repos/{repo}/issues/{pr}/labels", "-X", "POST",
+                        data={"labels": [QUARANTINE]})  # fmt: skip
+                except RuntimeError as exc:
+                    _summary(f"(quarantine label not added: {exc})")
             return 1
         if box or low:  # a LOW-tier PR never holds a runner: the box sweep looks again
             _summary(f"#{pr} @ {head[:9]}: CI {cwhy}; the next sweep looks again")
@@ -555,7 +602,7 @@ def run(
             "sha": head,
             "merge_method": clear["method"],
             "commit_title": (
-                f"Merge #{pr} (LOW tier: prose only)"
+                f"Merge #{pr} ({mode.upper()} tier, no comment: {twhy})"[:250]
                 if low
                 else f"Merge #{pr} ({clear['method']}): audit CLEAR {clear['sha'][:9]}"
             ),

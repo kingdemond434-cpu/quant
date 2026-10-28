@@ -532,9 +532,10 @@ def test_a_hold_after_the_approval_still_wins(hub: Any) -> None:
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
 
 
-# ------------------------------------------------------------------------------ the two tiers
+# ---------------------------------------------------------------------------- the three tiers
 
 DOC = "docs/research/notes_on_carry.md"
+CODE = "desks/mt5/research/x.py"
 
 
 def _f(name: str, **kw: Any) -> dict[str, Any]:
@@ -542,29 +543,47 @@ def _f(name: str, **kw: Any) -> dict[str, Any]:
 
 
 @pytest.mark.parametrize(
-    ("files", "changed", "read", "low"),
+    ("files", "changed", "read", "level"),
     [
-        ([_f(DOC)], 1, set(), True),
-        ([_f("context/decision_journal.jsonl")], 1, {"context/decision_journal.jsonl"}, True),
-        ([_f("context/decision_journal.jsonl", deletions=1)], 1, set(), False),  # not an append
-        ([_f(DOC)], 2, set(), False),  # the count does not add up
-        ([], 0, set(), False),
-        ([_f(DOC)], 1, {DOC}, False),  # a program reads it
-        ([_f("docs/LAWS.md")], 1, set(), False),  # a governing document
-        ([_f("docs/x/CLAUDE.md")], 1, set(), False),
-        ([_f("docs/ops/prompt_notes.md")], 1, set(), False),
-        ([_f("desks/mt5/research/x.py")], 1, set(), False),  # code
-        ([_f("docs/research/x.json")], 1, set(), False),  # data
-        ([_f("tests/test_x.py")], 1, set(), False),
-        ([_f(".github/scripts/audit_gate.py")], 1, set(), False),
-        ([_f(DOC, previous_filename="ops/x.py", status="renamed")], 1, set(), False),
-        ([_f(DOC), _f("libs/risk/x.py")], 2, set(), False),
+        ([_f(DOC)], 1, set(), "LOW"),
+        ([_f("context/decision_journal.jsonl")], 1, {"context/decision_journal.jsonl"}, "LOW"),
+        ([_f("context/decision_journal.jsonl", deletions=1)], 1, set(), "AUTO"),  # not an append
+        ([_f(DOC)], 2, set(), "PROTECTED"),  # the count does not add up
+        ([], 0, set(), "PROTECTED"),
+        ([_f(DOC)], 1, {DOC}, "AUTO"),  # a program reads it
+        ([_f("docs/LAWS.md")], 1, set(), "AUTO"),  # a governing document
+        ([_f("docs/ops/prompt_notes.md")], 1, set(), "AUTO"),
+        ([_f(CODE)], 1, set(), "AUTO"),  # code
+        ([_f("docs/research/x.json")], 1, set(), "AUTO"),  # data
+        ([_f("tests/test_x.py")], 1, set(), "AUTO"),
+        ([_f("libs/risk/sizing.py")], 1, set(), "AUTO"),  # risk and sizing are AUTO, not LOW
+        ([_f(DOC), _f("libs/risk/x.py")], 2, set(), "AUTO"),
+        # PROTECTED: the controller, workflows, ceilings, release machinery, agent instructions
+        ([_f(".github/scripts/audit_gate.py")], 1, set(), "PROTECTED"),
+        ([_f(".github/workflows/ci.yml")], 1, set(), "PROTECTED"),
+        ([_f("ops/release/ceilings.json")], 1, set(), "PROTECTED"),
+        ([_f("ops/box/workflow_gate.ps1")], 1, set(), "PROTECTED"),
+        ([_f("CODEOWNERS")], 1, set(), "PROTECTED"),
+        ([_f("docs/x/CLAUDE.md")], 1, set(), "PROTECTED"),
+        ([_f("desks/mt5/scripts/smoke_release.py")], 1, set(), "PROTECTED"),
+        ([_f("desks/mt5/mt5desk/release_identity.py")], 1, set(), "PROTECTED"),
+        ([_f("libs/ops/release_promotion.py")], 1, set(), "PROTECTED"),
+        ([_f("desks/mt5/data/secrets/k.txt")], 1, set(), "PROTECTED"),
+        ([_f(DOC), _f(CODE), _f(".github/CODEOWNERS")], 3, set(), "PROTECTED"),  # strictest wins
+        # a rename out of a protected path is protected
+        (
+            [_f(DOC, previous_filename="ops/release/x.json", status="renamed")],
+            1,
+            set(),
+            "PROTECTED",
+        ),
+        ([_f(DOC, previous_filename="ops/x.py", status="renamed")], 1, set(), "AUTO"),
     ],
 )
-def test_only_prose_no_program_reads_is_low_tier(
-    files: list[dict[str, Any]], changed: int, read: set[str], low: bool
+def test_the_strictest_file_decides_the_tier(
+    files: list[dict[str, Any]], changed: int, read: set[str], level: str
 ) -> None:
-    assert ag.tier(files, changed, lambda n: n in read)[0] is low
+    assert ag.tier(files, changed, lambda n: n in read)[0] == level
 
 
 @pytest.fixture
@@ -638,3 +657,106 @@ def test_zuck_can_switch_it_back_on_after_a_deactivate(low_hub: Any) -> None:
     )
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
     assert len(_merges(h)) == 1
+
+
+# ------------------------------------------------------------------------------ the AUTO tier
+
+BOTH = [
+    _ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE),
+    _ok("2026-10-28T20:05:00Z", body=ag.ACTIVATE_AUTO),
+]
+
+
+def _auto_green() -> list[dict[str, Any]]:
+    return [*_green(), *(_r(j) for j in ag.AUTO_JOBS)]
+
+
+@pytest.fixture
+def auto_hub(hub: Any, monkeypatch: pytest.MonkeyPatch) -> Any:
+    def make(**kw: Any) -> Any:
+        kw.setdefault("files", (CODE,))
+        kw.setdefault("approvals", list(BOTH))
+        kw.setdefault("comments", [])
+        h = hub(**kw)
+        monkeypatch.setattr(ag, "referenced_by_code", lambda base, n: False)
+        return h
+
+    return make
+
+
+def test_an_auto_tier_pr_merges_with_no_comment_once_both_switches_and_all_jobs_pass(
+    auto_hub: Any,
+) -> None:
+    h = auto_hub(runs=_auto_green())
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    (merge,) = _merges(h)
+    assert f"sha={A}" in merge and "AUTO tier" in " ".join(merge)
+
+
+def test_an_auto_tier_pr_waits_while_any_auto_job_is_missing(auto_hub: Any) -> None:
+    """Step C has not built the AUTO jobs yet: a missing job is pending, never a pass."""
+    for drop in ag.AUTO_JOBS:
+        runs = [r for r in _auto_green() if r["name"] != drop]
+        h = auto_hub(runs=runs)
+        assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+        assert _merges(h) == [] and not any("labels" in w[1] for w in h.writes)
+
+
+@pytest.mark.parametrize(
+    "approvals",
+    [
+        [],
+        [_ok(body=ag.ACTIVATE)],  # the LOW switch alone does not open AUTO
+        [_ok(body=ag.ACTIVATE_AUTO)],  # nor the AUTO switch alone
+        [*BOTH, _ok("2026-10-28T21:00:00Z", body=ag.DEACTIVATE, app="claude")],  # switched off
+        [_ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE), _ok(body=ag.ACTIVATE_AUTO, app="claude")],
+        [_ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE), _ok(body=ag.ACTIVATE_AUTO, assoc="MEMBER")],
+        [
+            _ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE),
+            _ok(body=ag.ACTIVATE_AUTO, updated_at="2026-10-28T23:30:00Z"),  # edited
+        ],
+    ],
+)
+def test_the_auto_tier_is_off_until_zuck_types_both_switches(
+    auto_hub: Any, approvals: list[dict[str, Any]]
+) -> None:
+    h = auto_hub(runs=_auto_green(), approvals=approvals)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
+def test_an_auto_tier_pr_with_a_hold_never_merges(auto_hub: Any) -> None:
+    h = auto_hub(runs=_auto_green(), comments=[_c(f"AUDIT HOLD {A}", "2026-10-28T10:00:00Z")])
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
+def test_a_protected_pr_never_takes_a_no_comment_path(auto_hub: Any) -> None:
+    for name in (".github/workflows/ci.yml", "ops/release/ceilings.json", "CLAUDE.md"):
+        h = auto_hub(files=(name,), runs=_auto_green())
+        assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+        assert _merges(h) == []
+
+
+@pytest.mark.parametrize("which", ["auto", "low"])
+def test_a_failing_no_comment_pr_is_quarantined(auto_hub: Any, low_hub: Any, which: str) -> None:
+    if which == "auto":
+        h = auto_hub(
+            runs=[
+                *_auto_green(),
+                _r("replay-shadow", conclusion="failure", at="2026-10-28T11:00:00Z"),
+            ]
+        )
+    else:
+        h = low_hub(comments=[], runs=[*_green(), _r("lint", conclusion="failure")])
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1
+    assert _merges(h) == []
+    assert any(w[1].endswith("/issues/7/labels") and "quarantined" in " ".join(w) for w in h.writes)
+    assert any("/statuses/" in w[1] and "state=failure" in w for w in h.writes)
+
+
+def test_a_failing_manual_path_pr_is_reported_not_quarantined(hub: Any) -> None:
+    h = hub(
+        comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")],
+        runs=[*_green(), _r("lint", conclusion="failure")],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1
+    assert _merges(h) == [] and not any(w[1].endswith("/labels") for w in h.writes)
