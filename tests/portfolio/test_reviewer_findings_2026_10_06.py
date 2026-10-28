@@ -21,7 +21,6 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from libs.portfolio import robust_elog as re_
 from libs.portfolio.models import PortfolioConstraints
 from libs.portfolio.multiperiod import MultiPeriodOptimizer
 from libs.portfolio.robust_elog import (
@@ -66,34 +65,6 @@ def _twin_book() -> tuple[list[SleeveEvidence], WorldConfig, Worlds]:
     return ev, cfg, worlds
 
 
-def test_reproduction_twin_sleeves_converge_at_a_beaten_point() -> None:
-    """REPRODUCED at 2d61e69a1: cold start returns 0.10/0.10 with converged=True, objective
-    -0.002724057723898416; the feasible 0.15/0.05 (same total 0.20, same 0.15 per-sleeve cap)
-    scores -0.001974057731828799 -- higher is better, so the "converged" book is beaten by 0.00075,
-    which is exactly redundancy_lambda (0.15) x 2 x (0.10*0.10 - 0.15*0.05).
-
-    The reviewer's own figures (-0.002250804 vs -0.001500804) came from an unstated stream; the
-    gap is the same 0.00075 because the gap is the redundancy term alone.
-    """
-    ev, cfg, worlds = _twin_book()
-    res = optimise(ev, hard_cap=0.20, target=0.20, max_per_sleeve=0.15, cfg=cfg, worlds=worlds)
-    assert res.heat == pytest.approx({"a": 0.10, "b": 0.10}, abs=1e-9)
-    assert res.converged is True
-    assert res.robust_score == pytest.approx(-0.002724057723898416, abs=1e-9)
-    better = score_book(ev, {"a": 0.15, "b": 0.05}, cfg=cfg, worlds=worlds)["robust_score"]
-    assert better == pytest.approx(-0.001974057731828799, abs=1e-9)
-    assert better - res.robust_score == pytest.approx(0.00075, abs=1e-9)
-    # The non-PSD charge itself, on the module's own |C|.
-    c = re_._corr_abs(ev)
-    eig = np.linalg.eigvalsh(c - np.eye(2))
-    assert eig.min() == pytest.approx(-1.0) and eig.max() == pytest.approx(1.0)
-
-
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06: robust_elog objective is not concave -- redundancy "
-    "h'(|C|-I)h is indefinite (libs/portfolio/robust_elog.py:846-855, claim at :1099-1101); "
-    "optimise returns converged=True at 0.10/0.10 while feasible 0.15/0.05 scores higher. "
-    + OWNER))
 def test_acceptance_solver_never_certifies_a_beaten_point() -> None:
     """Either restore concavity (e.g. a PSD redundancy charge) or certify the solution under
     non-convexity (multi-start, vertex check, or converged=False). What is not acceptable is
@@ -120,21 +91,6 @@ def _plan(cost: float) -> object:
         current={"a": 0.5, "b": 0.5}, target={"a": 0.1, "b": 0.9}, n_steps=5)
 
 
-def test_reproduction_multiperiod_cost_changes_only_the_report() -> None:
-    """REPRODUCED at 2d61e69a1: cost_per_turnover 0.0 / 0.0005 / 0.5 / 5.0 give the IDENTICAL
-    path (a: 0.5 -> 0.3 -> 0.1, turnover 0.2 then 0.2); only total_cost moves (0 .. 2.0)."""
-    plans = {c: _plan(c) for c in (0.0, 0.0005, 0.5, 5.0)}
-    paths = {c: p.path for c, p in plans.items()}  # type: ignore[attr-defined]
-    first = paths[0.0]
-    assert all(p == first for p in paths.values())
-    assert [round(s["a"], 12) for s in first] == [0.3, 0.1]
-    costs = [plans[c].total_cost for c in (0.0, 0.0005, 0.5, 5.0)]  # type: ignore[attr-defined]
-    assert costs == pytest.approx([0.0, 0.0002, 0.2, 2.0])
-
-
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06: multiperiod path is cost-blind -- cost is summed after the "
-    "glide (libs/portfolio/multiperiod.py:63-77, cost at :73). " + OWNER))
 def test_acceptance_multiperiod_cost_changes_the_chosen_path() -> None:
     """A genuine multi-period optimiser trades tracking error against turnover cost: at a
     prohibitive cost it must trade LESS (end farther from the target) than at zero cost."""
@@ -154,21 +110,6 @@ def test_acceptance_multiperiod_cost_changes_the_chosen_path() -> None:
 # (perishability.py:73), so a two-sided channel is owed TOGETHER with a calibration artifact.
 
 
-def test_reproduction_decay_hazard_cannot_exceed_the_blanket() -> None:
-    """REPRODUCED at 2d61e69a1: decay_prob_i=0.90 -> 0.30; 0.05 -> 0.05 (relief only)."""
-    cfg = WorldConfig()
-    assert cfg.decay_prob == 0.30
-    assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=0.90), cfg) == 0.30
-    assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=0.05), cfg) == 0.05
-    assert perishability.HAZARD_SCALE_DAYS == 120.0
-    src = Path(perishability.__file__).read_text(encoding="utf-8")
-    assert "The scale is DECLARED, not fitted" in src
-
-
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06: decay_prob_of returns min(v, 0.30) so a deteriorating "
-    "sleeve's hazard is never charged (libs/portfolio/robust_elog.py:614-631); the pin at "
-    "tests/portfolio/test_robust_elog_per_sleeve.py:59 must be retired with the fix. " + OWNER))
 def test_acceptance_decay_channel_is_two_sided() -> None:
     """A measured, calibrated hazard above the blanket must raise the charged decay."""
     cfg = WorldConfig()
