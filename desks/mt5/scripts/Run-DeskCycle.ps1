@@ -280,6 +280,15 @@ if ($agentName -eq "claude") {
         Write-Cycle ("FATAL: lane clone {0} missing; run provision_midnight_lane_clone.ps1 elevated" -f $LaneClone)
         exit 3
     }
+    # The clone must still be SEALED: the sandbox may write inside it, never replace what this
+    # account trusts there (.git, its config and hooks, the folder itself). Same check as provisioning.
+    . (Join-Path $PSScriptRoot "lane_clone_guard.ps1")
+    $me = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+    $unsealed = @(Get-LaneCloneProblems $LaneClone @("S-1-5-32-544", "S-1-5-18", $me))
+    if ($unsealed.Count) {
+        Write-Cycle ("FATAL: lane clone not sealed, refusing to run Codex: {0}" -f ($unsealed -join " | "))
+        exit 3
+    }
     $agentArgs = @("exec", "--full-auto", "--cd", $LaneClone, "-")
 }
 $streamJson = ($agentName -eq "claude")
@@ -472,8 +481,11 @@ try {
 # was given; the live tree was never given, and this proves it rather than assuming it. A leak
 # fails the pass, so the task history shows it.
 if ($agentName -eq "codex") {
+    # icacls prints the bare SID when a name does not resolve, so match the group's SID too.
+    $sbx = Get-LocalGroup -Name "CodexSandboxUsers" -ErrorAction SilentlyContinue
+    $leakPattern = "CodexSandbox" + $(if ($sbx) { "|" + [regex]::Escape($sbx.SID.Value) } else { "" })
     $aclLeak = @(& icacls $RepoRoot 2>$null) + @(& icacls (Join-Path $RepoRoot ".git") 2>$null) |
-        Select-String -Pattern "CodexSandbox"
+        Select-String -Pattern $leakPattern
     if ($aclLeak) {
         Write-Cycle ("DEFECT: live tree ACL lists a Codex sandbox principal after the pass: {0}" -f (($aclLeak | ForEach-Object { "$_".Trim() }) -join " | "))
         if ($code -eq 0) { $code = 7 }
