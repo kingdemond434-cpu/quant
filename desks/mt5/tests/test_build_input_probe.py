@@ -504,6 +504,8 @@ def test_parking_moves_no_trial_charge(uni, tmp_path, monkeypatch) -> None:
     out_b, doc_b = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
     assert len(out_a) == 42 and len(out_b) == 41
     assert doc_b["build_input_parked_trials"]["rows"] == 1
+    # the pre-build screen runs AFTER the bank filter: the parked row never reaches it
+    assert doc_b["prescreen"]["rows"] == 41
     (tmp_path / "a").mkdir()
     docket_a = tmp_path / "a" / "external_survivors.json"
     docket_b = tmp_path / "external_survivors.json"          # beside the bank and its sidecar

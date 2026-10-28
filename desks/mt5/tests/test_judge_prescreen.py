@@ -354,6 +354,40 @@ def test_readmit_then_judged_hands_the_one_trial_to_the_judge(paths) -> None:
     assert jp.lifetime_kills() == (0, {}) and jp.fold_ledger()[EV]["judged"] is True
 
 
+def test_a_killed_cell_parked_as_fail_to_build_stays_charged_exactly_once(paths) -> None:
+    """v1.6 (rebase onto #424). A fail-to-build cell is parked by `judge_coverage`'s unrunnable
+    filter BEFORE the screen runs, so the screen never sees it: a killed cell that is later
+    parked is simply absent from the docket the screen reads -- no READMIT (it is not `present`),
+    the KILL charge stands. Its NOT_RUN_BUILD_FAILED gate row is not a ruling (`_LedgerScan`
+    skips every NOT_RUN row and `record_gauntlet_verdicts` writes no graph fate for it), so the
+    charge is neither handed over nor joined away: one trial, never zero, never two. When the
+    bank releases it and the judge rules it, the graph's fate carries that one trial instead."""
+    from research import judge_coverage as jc
+
+    t, r = _files(paths, _tables(), _report())
+    _run(t, r, canon=True)                                     # KILL: one trial
+    assert jp.lifetime_kills() == (1, {"event_reaction": 1})
+    parked_out = [x for x in _docket() if x["_cell"] != EV]    # the bank filtered it upstream
+    gate = paths / "gate_verdict_ledger.jsonl"
+    gate.write_text(json.dumps(_row(EV, "", ds="NOT_RUN_BUILD_FAILED")) + "\n")
+    scan = jc._LedgerScan(gate)
+    assert EV not in scan.cell_ruled                           # a NOT_RUN row is no ruling
+    out, doc = _run(t, r, canon=True, docket=parked_out, ruled=scan.cell_ruled)
+    assert doc["ledger"]["readmitted"] == 0 and doc["ledger"]["handed_to_judge"] == 0
+    assert jp.fold_ledger()[EV]["killed"] is True
+    assert jp.lifetime_kills() == (1, {"event_reaction": 1})   # not zero
+    # released by the bank and the input now present: READMIT, still one
+    _run(t, r, canon=True, probe=lambda s, f: {"status": "PRESENT"}, ruled=scan.cell_ruled)
+    assert jp.lifetime_kills() == (1, {"event_reaction": 1})   # not two
+    # the judge rules it: the graph's fate carries the single trial
+    with gate.open("a") as fh:
+        fh.write(json.dumps(_row(EV, "in_sample_screen")) + "\n")
+    assert EV in jc._LedgerScan(gate).cell_ruled
+    _run(t, r, canon=True, ruled=jc._LedgerScan(gate).cell_ruled)
+    _graph(paths, {"id": jp.fold_ledger()[EV]["graph_id"], "fate": "FAILED"})
+    assert jp.lifetime_kills() == (0, {})
+
+
 # ------------------------------------------------------------------ M2: one source of truth
 def test_a_lost_ledger_never_leaves_a_cell_out_uncharged(paths) -> None:
     t, r = _files(paths, _tables(), _report())
