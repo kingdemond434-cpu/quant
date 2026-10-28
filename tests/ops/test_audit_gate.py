@@ -1166,10 +1166,10 @@ def test_the_review_passes_only_a_clean_pass(answer: dict[str, Any], ok: bool) -
     assert ir.decide(answer)[0] is ok
 
 
-def test_the_review_queues_without_a_free_key(
+def test_the_review_queues_when_no_model_is_served(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """Zero API cost: no key is not a FAIL and never a pass -- the PR is queued (exit 75)."""
+    """Zero keys: no served model is not a FAIL and never a pass -- the PR is queued (exit 75)."""
     import json as _json
 
     for k in ir.KEY_ENVS:
@@ -1179,10 +1179,99 @@ def test_the_review_queues_without_a_free_key(
     monkeypatch.setattr(
         ir, "_gh", lambda *a: _json.dumps(pr) if a[0].endswith("/pulls/7") else diff
     )
+
+    def down(url: str, body: Any, h: Any) -> Any:
+        raise ir.Unavailable("URLError")
+
+    monkeypatch.setattr(ir, "_http", down)
     assert ir.main(["--repo", "o/r", "--pr", "7", "--head", A, "--base-sha", B]) == ir.UNAVAILABLE
     out = capsys.readouterr().out
-    assert "not configured" in out
+    assert "model server is not answering" in out
     assert "\n::error title=REVIEW_UNAVAILABLE::" in "\n" + out
+
+
+def test_the_runner_models_are_asked_only_at_their_pinned_digest(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
+    cfg = {
+        "url": "http://127.0.0.1:11434",
+        "num_ctx": 24576,
+        "models": [
+            {"family": "qwen", "name": "q:7b", "digest": "aa"},
+            {"family": "meta-llama", "name": "l:8b", "digest": "bb"},
+            {"family": "mistralai", "name": "m:7b", "digest": None},  # never pinned
+            {"family": "anthropic", "name": "c:1b", "digest": "dd"},  # the author's family
+            {"family": "deepseek", "name": "d:7b", "digest": "ee"},  # not pulled
+        ],
+    }
+    import json as _json
+
+    (tmp_path / "m.json").write_text(_json.dumps(cfg))
+    monkeypatch.setattr(ir, "LOCAL", tmp_path / "m.json")
+    tags = {"models": [{"name": "q:7b", "digest": "aa"}, {"name": "l:8b", "digest": "XX"}]}
+    tags["models"] += [{"name": "m:7b", "digest": "cc"}, {"name": "c:1b", "digest": "dd"}]
+    asked: list[Any] = []
+
+    def http(url: str, body: Any, h: Any) -> Any:
+        if url.endswith("/api/tags"):
+            return tags
+        asked.append(body)
+        return {"message": {"content": _PASS}}
+
+    monkeypatch.setattr(ir, "_http", http)
+    ladder, notes = ir.local_rungs(10_000)
+    assert [(f, m) for f, m, _ in ladder] == [("qwen", "q:7b")]
+    assert any("l:8b: pulled digest XX does not match" in n for n in notes)
+    assert ladder[0][2]("rubric", "user") == _PASS
+    assert asked[0]["options"]["temperature"] == 0 and asked[0]["options"]["num_ctx"] == 24576
+    assert ir.local_rungs(30_000)[0] == []  # a part larger than the context is never cut short
+
+
+@pytest.mark.parametrize("size", [40, 100, 10_000])
+def test_every_line_of_the_diff_is_in_exactly_one_part(size: int) -> None:
+    diff = "".join(
+        f"diff --git a/f{i}.py b/f{i}.py\n" + "".join(f"+line {i}.{j}\n" for j in range(i * 3))
+        for i in range(8)
+    )
+    parts = ir.split_diff(diff, size)
+    assert "".join(parts) == diff
+    assert all(len(p) <= size for p in parts) or size < 40
+    if size == 10_000:
+        assert parts == [diff]
+
+
+def test_a_part_is_told_what_it_is_and_fails_what_it_cannot_judge() -> None:
+    a = ir.prompt("+x\n", ["x.py", "y.py"], "aaaa", (2, 3))
+    assert "part 2 of 3" in a and "FAIL anything whose safety you cannot judge" in a
+    assert "y.py" in a  # every changed file is named in every part
+
+
+def test_one_failing_part_fails_the_pr(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import json as _json
+
+    diff = "".join(f"diff --git a/f{i}.py b/f{i}.py\n+{'x' * 50}\n" for i in range(3))
+    pr = {"head": {"sha": A}, "changed_files": 3}
+    monkeypatch.setattr(
+        ir, "_gh", lambda *a: _json.dumps(pr) if a[0].endswith("/pulls/7") else diff
+    )
+    monkeypatch.setattr(ir, "PART_CHARS", 80)
+    monkeypatch.setattr(ir.split_diff, "__defaults__", (80,))
+    seen: list[str] = []
+
+    def ask(r: str, u: str) -> str:
+        seen.append(u)
+        return (
+            _FAIL if "f1.py b/f1.py" in u.split("Files changed")[1].split("\n\n", 1)[1] else _PASS
+        )
+
+    ladder = [("qwen", "q", ask), ("meta-llama", "l", ask)]
+    monkeypatch.setattr(ir, "rungs", lambda n: (ladder, []))
+    assert ir.main(["--repo", "o/r", "--pr", "7", "--head", A, "--base-sha", B]) == 1
+    out = capsys.readouterr().out
+    assert "part 1/3: q: PASS" in out and "part 2/3: q: FAIL" in out
+    assert not any("f2.py b/f2.py\n+" in u for u in seen)  # stops at the first FAIL
 
 
 _PASS = (

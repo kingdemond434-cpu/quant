@@ -6,7 +6,7 @@ name: release-gates
 # failure here never blocks a change zuck approves himself.
 #
 # ZERO API COST (zuck 2026-10-28 19:47Z): Actions is free on standard runners for this public
-# repo, and the only model calls are to free models through $0-capped keys.
+# repo, and the reviewer is open-weight models on the runner itself: no key, no paid call.
 #
 # An AUTO-tier PR cannot change this file or ops/release/ (both PROTECTED), so on such a PR the
 # copies that run are the base's. The tests and ceilings are taken from the base again anyway.
@@ -156,18 +156,18 @@ jobs:
 
   independent-review:
     if: github.event.pull_request.head.repo.full_name == github.repository
-    # Free models only (ops/release/independent_review.py). A same-repo PR can add a workflow
-    # that reads these keys (pull_request gets repository secrets), so neither key can spend:
-    # the OpenRouter key must carry a $0 cap (the script checks it and refuses one that does
-    # not), and the Gemini key comes from a project with no billing. No key, or no free model
-    # answering, ends UNAVAILABLE (exit 75): the controller queues the PR and re-runs this job.
+    # Free and keyless (ops/release/independent_review.py): open-weight models run on this runner
+    # under Ollama, each asked only at the digest pinned in ops/release/local_models.json. No key,
+    # no account, no paid call. The two optional key rungs are used only if such a secret ever
+    # exists; none is asked for. No pinned model served, or none answering in time, ends
+    # UNAVAILABLE (exit 75): the controller queues the PR and re-runs this job.
     concurrency:
       group: independent-review-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 200
     steps:
-      # the base only: the PR's code never runs in the job that holds the reviewer's key
+      # the base only: the PR's code never runs in the reviewer's job
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.sha }}
@@ -177,6 +177,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      # A failure here is not a verdict: the review below finds no pinned model and queues.
+      - name: Serve the pinned open-weight reviewers on this runner
+        continue-on-error: true
+        timeout-minutes: 30
+        env:
+          OLLAMA_MAX_LOADED_MODELS: "1"
+          OLLAMA_NUM_PARALLEL: "1"
+        run: |
+          cfg=ops/release/local_models.json
+          version=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["ollama"])' "$cfg")
+          curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION="$version" sh
+          curl -sf http://127.0.0.1:11434/api/version || (nohup ollama serve >/tmp/ollama.log 2>&1 &)
+          for _ in $(seq 60); do curl -sf http://127.0.0.1:11434/api/version && break; sleep 2; done
+          for m in $(python -I -c 'import json,sys; print(" ".join(m["name"] for m in json.load(open(sys.argv[1]))["models"]))' "$cfg"); do
+            ollama pull "$m"
+          done
+          # the digests to pin, for the owner's PROTECTED edit of local_models.json
+          curl -sf http://127.0.0.1:11434/api/tags \
+            | python -I -c 'import json,sys; [print("pulled", m["name"], "digest", m["digest"]) for m in json.load(sys.stdin)["models"]]'
 
       - name: Review the whole diff
         env:

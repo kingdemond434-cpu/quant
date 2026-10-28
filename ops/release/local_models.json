@@ -1,0 +1,10 @@
+{
+  "_doc": "The independent reviewer's open-weight models, run on the Actions runner itself (zero API cost, no key). PROTECTED: a model is used only when its digest matches the pin here; an unpinned or changed model is never asked and the review queues (REVIEW_UNAVAILABLE). Pin each digest from the 'pulled ... digest' line a review run prints.",
+  "ollama": "0.12.3",
+  "url": "http://127.0.0.1:11434",
+  "num_ctx": 24576,
+  "models": [
+    {"family": "qwen", "name": "qwen2.5-coder:7b", "digest": null},
+    {"family": "meta-llama", "name": "llama3.1:8b", "digest": null}
+  ]
+}
