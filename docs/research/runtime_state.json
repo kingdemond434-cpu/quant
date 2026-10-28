@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 783,
+  "NEVER": 787,
   "UNMEASURED": 41
  },
  "scope": {
-  "attested": 1005,
+  "attested": 1009,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -389,6 +389,19 @@
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "leg:blas_differential"
+    ]
+   },
+   {
+    "at": "2026-10-28T12:06:17+00:00",
+    "host": "vmi3571445",
+    "machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "daily:proposers:trader_genome",
+     "executable:scripts/context.py",
+     "library:libs/ops/six_event_trace.py",
+     "task:MT5-FTMO-Follower"
     ]
    }
   ]
@@ -26081,6 +26094,118 @@
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
    "measured_at": "2026-10-27T15:47:12+00:00"
+  },
+  {
+   "organ": "daily:proposers:trader_genome",
+   "kind": "daily_step",
+   "code": [
+    "desks/mt5/research/daily_cycle.py"
+   ],
+   "clock": "daily_cycle:proposers",
+   "cadence_s": 86400,
+   "max_silence_s": 172800,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vmi3571445 (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/TRADER_GENOME.json",
+   "artifact_declared": "desks/mt5/reports/TRADER_GENOME.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 2,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "desks/mt5/research/failure_prior.py",
+   "measured_on": "vmi3571445",
+   "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+   "measured_at": "2026-10-28T12:06:17+00:00"
+  },
+  {
+   "organ": "executable:scripts/context.py",
+   "kind": "executable",
+   "code": [
+    "scripts/context.py"
+   ],
+   "clock": "invoked:scripts/research_cycle.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vmi3571445 (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/TRADER_GENOME.json",
+   "artifact_declared": "desks/mt5/reports/TRADER_GENOME.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 2,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vmi3571445",
+   "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+   "measured_at": "2026-10-28T12:06:17+00:00"
+  },
+  {
+   "organ": "library:libs/ops/six_event_trace.py",
+   "kind": "library",
+   "code": [
+    "libs/ops/six_event_trace.py"
+   ],
+   "clock": "daily_cycle:six_event_trace",
+   "cadence_s": 86400,
+   "max_silence_s": 172800,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vmi3571445 (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/TRADER_GENOME.json",
+   "artifact_declared": "desks/mt5/reports/TRADER_GENOME.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 2,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vmi3571445",
+   "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+   "measured_at": "2026-10-28T12:06:17+00:00"
+  },
+  {
+   "organ": "task:MT5-FTMO-Follower",
+   "kind": "task",
+   "code": [
+    "desks/mt5/prop/ftmo_follower.py"
+   ],
+   "clock": "MT5-FTMO-Follower",
+   "cadence_s": 60,
+   "max_silence_s": 300,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vmi3571445 (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/FTMO_FOLLOWER.json",
+   "artifact_declared": "desks/mt5/reports/FTMO_FOLLOWER.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "task_runs",
+   "consumer": "UNMEASURED",
+   "measured_on": "vmi3571445",
+   "measured_on_machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
+   "measured_at": "2026-10-28T12:06:17+00:00"
   }
  ],
  "ratchet": {
