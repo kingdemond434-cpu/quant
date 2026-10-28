@@ -236,15 +236,29 @@ def is_money(path: str, closure: set[str]) -> bool:
 
 
 def knobs(src: str) -> dict[str, list[str]]:
-    """{NAME: [ast of every module-level value it is given]} for UPPER_CASE names."""
+    """{name: [ast of every value it is given]} for the knobs a file sets: module-level and
+    class-level UPPER_CASE names (`Class.NAME`), and every function's parameter defaults
+    (`f(arg=)`, `Class.f(arg=)`), since a rail can move through any of them (#457 audit)."""
     out: dict[str, list[str]] = {}
-    for n in ast.parse(src).body:
-        if not isinstance(n, (ast.Assign, ast.AnnAssign)) or n.value is None:
-            continue
-        targets = n.targets if isinstance(n, ast.Assign) else [n.target]
-        for t in targets:
-            if isinstance(t, ast.Name) and KNOB.match(t.id):
-                out.setdefault(t.id, []).append(ast.dump(n.value))
+
+    def walk(body: list[ast.stmt], prefix: str) -> None:
+        for n in body:
+            if isinstance(n, ast.ClassDef):
+                walk(n.body, f"{prefix}{n.name}.")
+            elif isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                a = n.args
+                pos = [*a.posonlyargs, *a.args]
+                pairs = list(zip(pos[len(pos) - len(a.defaults) :], a.defaults, strict=True))
+                pairs += [(k, d) for k, d in zip(a.kwonlyargs, a.kw_defaults, strict=True) if d]
+                for arg, default in pairs:
+                    out.setdefault(f"{prefix}{n.name}({arg.arg}=)", []).append(ast.dump(default))
+            elif isinstance(n, (ast.Assign, ast.AnnAssign)) and n.value is not None:
+                targets = n.targets if isinstance(n, ast.Assign) else [n.target]
+                for t in targets:
+                    if isinstance(t, ast.Name) and KNOB.match(t.id):
+                        out.setdefault(f"{prefix}{t.id}", []).append(ast.dump(n.value))
+
+    walk(ast.parse(src).body, "")
     return out
 
 

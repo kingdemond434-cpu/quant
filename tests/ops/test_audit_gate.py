@@ -1565,3 +1565,13 @@ def test_the_grid_runs_the_venue_failure_rails() -> None:
     assert kinds["venue_refuses"]["venue_ok"] is False and kinds["venue_refuses"]["own"]
     assert kinds["no_stop"]["positions"][0]["stopLossId"] is None
     assert kinds["stale_tick"]["tick_lag_s"] > 0
+
+
+def test_knobs_include_class_attributes_and_parameter_defaults() -> None:
+    """#457 audit should-fix: a rail moved through a default or a class attribute is a knob."""
+    src = (
+        "A = 1\nclass C:\n    LIMIT = 3\n    def f(self, n=2, *, k=4): pass\n"
+        "def g(x, max_refusals=3): pass\nlower = 5\n"
+    )
+    assert set(rs.knobs(src)) == {"A", "C.LIMIT", "C.f(n=)", "C.f(k=)", "g(max_refusals=)"}
+    assert rs.knobs(src) != rs.knobs(src.replace("max_refusals=3", "max_refusals=30"))
