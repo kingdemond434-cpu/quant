@@ -1,20 +1,35 @@
 {
  "schema": 1,
- "started_at": "2026-10-28T08:59:52+00:00",
- "pid": 25172,
- "phase": "measure_box",
- "phase_at": "2026-10-28T08:59:52+00:00",
+ "started_at": "2026-10-28T10:12:36+00:00",
+ "pid": 25272,
+ "phase": "rate",
+ "phase_at": "2026-10-28T10:16:11+00:00",
  "done": false,
  "phases": [
   {
    "phase": "started",
-   "at": "2026-10-28T08:59:52+00:00",
+   "at": "2026-10-28T10:12:36+00:00",
    "elapsed_s": 0.0
   },
   {
    "phase": "measure_box",
-   "at": "2026-10-28T08:59:52+00:00",
+   "at": "2026-10-28T10:12:36+00:00",
    "elapsed_s": 0.0
+  },
+  {
+   "phase": "queue",
+   "at": "2026-10-28T10:16:11+00:00",
+   "elapsed_s": 215.1
+  },
+  {
+   "phase": "plan",
+   "at": "2026-10-28T10:16:11+00:00",
+   "elapsed_s": 215.5
+  },
+  {
+   "phase": "rate",
+   "at": "2026-10-28T10:16:11+00:00",
+   "elapsed_s": 215.5
   }
  ],
  "rule": "the phase named here is the one this pass ENTERED last; a marker newer than JUDGING_RATE.json's `at` past the leg budget is a pass that died there, and JUDGING_RATE.json reads STALE with that reason"
