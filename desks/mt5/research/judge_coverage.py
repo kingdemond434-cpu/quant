@@ -1816,6 +1816,20 @@ def parked_trial_rows(blocked: list[dict[str, Any]],
     return out
 
 
+def prescreen_trial_rows(before: list[dict[str, Any]], after: list[dict[str, Any]], *,
+                         room: int = PARKED_TRIAL_ROWS_MAX) -> list[dict[str, Any]]:
+    """The rows `_prescreen` took out of the docket (in `before`, not in `after`, by object
+    identity -- the screen returns the rows it keeps, never copies), trimmed to TRIAL_KEYS."""
+    kept = {id(r) for r in after}
+    out: list[dict[str, Any]] = []
+    for r in before:
+        if len(out) >= room:
+            break
+        if id(r) not in kept and isinstance(r, dict):
+            out.append({k: v for k, v in r.items() if k in TRIAL_KEYS})
+    return out
+
+
 def _manifest_names(final: Path, ratchet: Path | None = None) -> bool:
     """Does a committed manifest still on disk (kept, or awaiting roll-forward) name `final`?
 
@@ -4127,11 +4141,6 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         blocked = [r for r in rows if str(r.get("_cell") or "") in bank]
         rows = [r for r in rows if str(r.get("_cell") or "") not in bank]
         _ptrials = parked_trial_rows(blocked, bank)
-        _ppath = _write_parked_trials(_ptrials, doc.get("_txn"))
-        doc["build_input_parked_trials"] = {
-            "rows": len(_ptrials), "path": str(_ppath),
-            "rule": ("rows parked as build_input_missing stay in the trial census "
-                     "(effective_trials reads them beside the docket): parking moves no charge")}
         # THE PRE-BUILD SCREEN (research/judge_prescreen, principal 2026-10-28), AFTER the bank
         # filter so it never re-decides a parked cell. SHADOW by default: the rows come back
         # untouched and JUDGE_PRESCREEN_INTAKE.json records what each rule WOULD remove. Only
@@ -4139,9 +4148,23 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         # canon-eligible rule remove a row -- after its KILL is durable in the kill ledger, as
         # a recorded terminal verdict charged exactly once. Fails open: any error ships the rows.
         _cap = int((doc.get("totals") or {}).get("capacity_measured") or 0)
+        _screened = rows
         rows, doc["prescreen"] = _prescreen(
             rows, publish=publish,
             seconds_per_cell=judge_seconds_per_cell(_cap) if _cap else None)
+        # A SCREENED-OUT ROW STAYS IN THE TRIAL CENSUS, exactly as a parked one does (the same
+        # audit S4 reasoning: removing a row from the docket must move no `effective_trials`
+        # charge). Empty in SHADOW, where the screen removes nothing; under CANON the rows the
+        # kill ledger durably removed are written beside the docket with the parked rows, and
+        # `effective_trials.census_rows` counts each trial identity once.
+        _ptrials = _ptrials + prescreen_trial_rows(
+            _screened, rows, room=PARKED_TRIAL_ROWS_MAX - len(_ptrials))
+        _ppath = _write_parked_trials(_ptrials, doc.get("_txn"))
+        doc["build_input_parked_trials"] = {
+            "rows": len(_ptrials), "path": str(_ppath),
+            "rule": ("rows parked as build_input_missing, and rows the pre-build screen removed "
+                     "under CANON, stay in the trial census (effective_trials reads them beside "
+                     "the docket): neither parking nor screening moves a charge")}
         judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
         study = [r for r in rows if str(r.get("family") or "") in banned]
         # CHARGE VARIANTS AGAINST THEIR PARENT. The split marks the rows; the two orders below

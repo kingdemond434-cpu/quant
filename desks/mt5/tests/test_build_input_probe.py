@@ -873,3 +873,56 @@ def test_a_malformed_manifest_op_counts_as_naming_the_file(tmp_path, monkeypatch
     (tmp_path / f"{jc.TXN_MANIFEST_PREFIX}1.json").write_text(
         json.dumps({"id": "1", "ops": [["replace"]]}), "utf-8")
     assert jc._manifest_names(final) is True
+
+
+def test_a_canon_prescreen_removal_moves_no_trial_charge(uni, tmp_path, monkeypatch) -> None:
+    """Prescreen v1.6: a row the pre-build screen removes under CANON leaves the docket exactly as
+    a parked row does, so it joins the parked rows beside the docket and the census still reads
+    the same trials. In SHADOW the screen removes nothing and the list holds the parked rows only.
+    """
+    from research import effective_trials as et
+    rows = ([_row("EURUSD", "carry", {"lookback": 20 + i}) for i in range(40)]
+            + [_row("EURGBP", "lead_lag", {"driver_symbol": "EURUSD"}),
+               _row("EURGBP", "triangle", {"leg_b_symbol": "EURUSD", "leg_c_symbol": "AUDNZD"})])
+    out_a, doc_a = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    assert doc_a["prescreen"].get("removed_from_docket", 0) == 0     # SHADOW: nothing removed
+    assert doc_a["build_input_parked_trials"]["rows"] == 1           # the parked triangle only
+    (tmp_path / "a").mkdir()
+    docket_a = tmp_path / "a" / "external_survivors.json"
+    docket_a.write_text(json.dumps(out_a), "utf-8")
+    (tmp_path / "a" / jc.PARKED_TRIAL_ROWS.name).write_text(
+        (tmp_path / jc.PARKED_TRIAL_ROWS.name).read_text("utf-8"), "utf-8")
+
+    # CANON, simulated at the hook: the screen keeps every row but the lead_lag one (the same
+    # objects back, as `judge_prescreen.intake` returns them)
+    def canon(rs, **_k):
+        kept = [r for r in rs if r.get("family") != "lead_lag"]
+        return kept, {"mode": "CANON", "removed_from_docket": len(rs) - len(kept)}
+    monkeypatch.setattr(jc, "_prescreen", canon)
+    out_b, doc_b = jc.order_docket([dict(r) for r in rows], publish=False, now=NOW)
+    assert len(out_b) == len(out_a) - 1
+    assert doc_b["build_input_parked_trials"]["rows"] == 2           # parked + screened
+    docket_b = tmp_path / "external_survivors.json"
+    docket_b.write_text(json.dumps(out_b), "utf-8")
+    rows_a, _ = et.census_rows(docket_a)
+    rows_b, n_b = et.census_rows(docket_b)
+    assert n_b == 2
+
+    def trimmed(rs: list[dict]) -> list[str]:
+        return sorted(json.dumps({k: v for k, v in r.items() if k in jc.TRIAL_KEYS},
+                                 sort_keys=True, default=str) for r in rs)
+
+    assert trimmed(rows_a) == trimmed(rows_b), "the census reads the same trials"
+    assert et.charge(et.measure(rows_b)) == et.charge(et.measure(rows_a)), "screening moves none"
+
+
+def test_prescreen_trial_rows_is_identity_based_and_bounded() -> None:
+    a, b, c = {"family": "x", "cell": "A", "notes": "n"}, {"family": "x", "cell": "B"}, \
+        {"family": "y", "cell": "C"}
+    assert jc.prescreen_trial_rows([a, b, c], [a, b, c]) == []
+    assert jc.prescreen_trial_rows([a, b, c], [b]) == [{"family": "x", "cell": "A"},
+                                                       {"family": "y", "cell": "C"}]
+    # an EQUAL copy is not the kept row: identity, because the screen returns its own objects
+    assert jc.prescreen_trial_rows([a], [dict(a)]) == [{"family": "x", "cell": "A"}]
+    assert jc.prescreen_trial_rows([a, b, c], [], room=1) == [{"family": "x", "cell": "A"}]
+    assert jc.prescreen_trial_rows([a, b, c], [], room=0) == []
