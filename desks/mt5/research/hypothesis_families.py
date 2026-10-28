@@ -63,12 +63,14 @@ MECHANISM. Every family record carries a one-line economic mechanism, the most c
 sentence of its members' own `mechanism_note`/`why`/`hypothesis` prose. A family with none is
 FLAGGED and counted (`mechanism.missing_families`); it is never discarded.
 
-    python research/hypothesis_families.py            # census of the live docket -> report
-    python research/hypothesis_families.py --dry-run  # print, write nothing
+A LIBRARY, NOT AN EXECUTABLE: its clock is the merge (`merge_docket` leg). For a hand census:
+
+    python -c "from research import hypothesis_families as h; h.main(['--dry-run'])"
 """
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import os
@@ -107,8 +109,16 @@ MIN_COMMON_DAYS = 250
 MIN_OVERLAP = 20
 #: The symbol-cluster cache is re-derived when older than this or when the symbol set grows.
 CLUSTER_MAX_AGE_S = 24 * 3600
-#: Wall-clock bound on deriving clusters in one pass; symbols not reached stay singletons.
-CLUSTER_BUDGET_S = 240.0
+#: DETERMINISTIC work budget for deriving clusters (never wall-clock: under CPU contention a time
+#: limit made the clustering depend on load). Symbols are visited in name order; past either bound
+#: a symbol is UNMEASURED. Sized for the full Fusion universe (~1,000 symbols, a few hundred
+#: leaders): the comparison bound is far above leaders x symbols at that size.
+CLUSTER_MAX_LOADS = 5000
+CLUSTER_MAX_COMPARISONS = 2_000_000
+#: Prefix of the cluster id of an instrument whose co-movement is UNMEASURED (no bars, or past the
+#: work budget). It is its own family for the breadth COUNT (absence never convicts), but in the
+#: judge ORDER it is not allowed to outrank a measured representative (absence never acquits).
+UNMEASURED_PREFIX = "?"
 #: Top duplicate clusters published in full.
 TOP_CLUSTERS = 50
 
@@ -136,6 +146,30 @@ def _read(path: Path) -> Any:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
+
+
+def _atomic_write(path: Path, text: str) -> bool:
+    """Write-then-replace; True only when the file now holds `text`.
+
+    Windows refuses `os.replace` onto a READ-ONLY destination (WinError 5) where POSIX allows it
+    -- the CLAUDE.md port warning. The read-only bit is cleared and the replace retried once; any
+    remaining failure returns False and removes the temp file, never raises."""
+    import stat
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp.write_text(text, "utf-8")
+        try:
+            os.replace(tmp, path)
+        except PermissionError:
+            if path.exists():
+                os.chmod(path, stat.S_IWRITE | stat.S_IREAD)
+            os.replace(tmp, path)
+        return True
+    except OSError:
+        with contextlib.suppress(OSError):
+            tmp.unlink(missing_ok=True)
+        return False
 
 
 def _rows_of(payload: Any) -> list[dict[str, Any]]:
@@ -263,6 +297,12 @@ def _mem_available_mb() -> float | None:
         return None
 
 
+#: Family records published in full. FIXED, not memory-derived: at ~354 B a record, a budget set
+#: by free memory published ~140 MB/h at 400k families (audit of 8628268b6). The top clusters
+#: carry the duplicates; the rest is summarised by size band and mechanism flag.
+DETAIL_FAMILIES = 2000
+
+
 def detail_budget(rows: int) -> int:
     """How many family records to keep in full, DERIVED from free memory (never a box figure).
 
@@ -290,14 +330,15 @@ def _daily(sym: str, universe: Path) -> Any:
 
 def derive_clusters(symbols: Iterable[str], loader: Callable[[str], Any] | None = None, *,
                     rho: float = SYMBOL_RHO, min_days: int = MIN_COMMON_DAYS,
-                    budget_s: float = CLUSTER_BUDGET_S,
+                    max_loads: int = CLUSTER_MAX_LOADS,
+                    max_comparisons: int = CLUSTER_MAX_COMPARISONS,
                     universe: Path | None = None) -> dict[str, Any]:
     """Leader clustering of instruments on |corr(daily log returns)| >= rho.
 
     Deterministic: symbols are visited in name order and each joins the FIRST leader it clears,
     else becomes a leader. Leader (not single-linkage) so EURUSD-GBPUSD-GBPJPY-... cannot chain
     one cluster across instruments that do not themselves co-move. A symbol without a series, or
-    not reached inside the budget, is its own cluster and is listed as UNMEASURED."""
+    past the deterministic work budget, is its own cluster `?SYMBOL` and is listed UNMEASURED."""
     import numpy as np
     uni = universe or UNIVERSE
     load = loader or (lambda s: _daily(s, uni))
@@ -305,18 +346,21 @@ def derive_clusters(symbols: Iterable[str], loader: Callable[[str], Any] | None 
     leaders: list[tuple[str, Any]] = []
     cluster: dict[str, str] = {}
     unmeasured: list[str] = []
+    loads = comparisons = 0
     for sym in sorted({str(s).upper() for s in symbols if s}):
-        if time.monotonic() - t0 > budget_s:
-            cluster[sym] = sym
+        if loads >= max_loads or comparisons + len(leaders) > max_comparisons:
+            cluster[sym] = UNMEASURED_PREFIX + sym
             unmeasured.append(sym)
             continue
+        loads += 1
         r = load(sym)
         if r is None or len(r) < min_days:
-            cluster[sym] = sym
+            cluster[sym] = UNMEASURED_PREFIX + sym
             unmeasured.append(sym)
             continue
         home = None
         for lead, lr in leaders:
+            comparisons += 1
             j = lr.index.intersection(r.index)
             if len(j) < min_days:
                 continue
@@ -332,13 +376,15 @@ def derive_clusters(symbols: Iterable[str], loader: Callable[[str], Any] | None 
             home = sym
         cluster[sym] = home
     sizes = Counter(cluster.values())
-    return {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"), "rho": rho,
+    return {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"), "version": 2, "rho": rho,
             "min_common_days": min_days, "symbols": len(cluster),
             "measured": len(cluster) - len(unmeasured), "unmeasured": sorted(unmeasured),
             "clusters": len(sizes),
             "multi_member": {k: sorted(s for s, c in cluster.items() if c == k)
                              for k, n in sizes.most_common() if n > 1},
             "cluster_of": dict(sorted(cluster.items())),
+            "work": {"loads": loads, "comparisons": comparisons, "max_loads": max_loads,
+                     "max_comparisons": max_comparisons},
             "elapsed_s": round(time.monotonic() - t0, 2)}
 
 
@@ -357,16 +403,11 @@ def load_clusters(symbols: Iterable[str] | None = None, *, path: Path | None = N
             age = time.time() - datetime.fromisoformat(str(doc.get("at"))).timestamp()
         except ValueError:
             age = float("inf")
-        fresh = age < CLUSTER_MAX_AGE_S and want <= set(doc["cluster_of"])
+        fresh = (age < CLUSTER_MAX_AGE_S and want <= set(doc["cluster_of"])
+                 and doc.get("version") == 2)
     if (not fresh) and refresh and want:
         doc = derive_clusters(want, loader)
-        try:
-            p.parent.mkdir(parents=True, exist_ok=True)
-            tmp = p.with_suffix(".json.tmp")
-            tmp.write_text(json.dumps(doc, indent=1), "utf-8")
-            os.replace(tmp, p)
-        except OSError:
-            pass
+        _atomic_write(p, json.dumps(doc, indent=1))
     if not isinstance(doc, dict) or not isinstance(doc.get("cluster_of"), dict):
         return {}, {"status": "UNMEASURED", "why": "no symbol-cluster cache and none derived"}
     meta = {k: v for k, v in doc.items() if k not in ("cluster_of", "multi_member", "unmeasured")}
@@ -380,6 +421,19 @@ def load_clusters(symbols: Iterable[str] | None = None, *, path: Path | None = N
 
 
 # ------------------------------------------------------------------------------- the census
+def _bands(sizes: Iterable[int]) -> dict[str, dict[str, int]]:
+    """Families and cells per size band: the summary of every family not published in full."""
+    edges = ((1, "1"), (2, "2"), (5, "3-5"), (20, "6-20"), (100, "21-100"), (10 ** 18, ">100"))
+    out = {lab: {"families": 0, "cells": 0} for _, lab in edges}
+    for n in sizes:
+        for hi, lab in edges:
+            if n <= hi:
+                out[lab]["families"] += 1
+                out[lab]["cells"] += int(n)
+                break
+    return out
+
+
 def _inverse_simpson(counts: Iterable[int]) -> float | None:
     c = [int(x) for x in counts if x]
     tot = sum(c)
@@ -462,7 +516,7 @@ def census(rows: list[dict[str, Any]], clusters: Mapping[str, str] | None = None
     n_l3 = len(l3_cells)
     missing = [fk for fk in fam_cells if not fam_mech.get(fk)]
     missing_cells = sum(fam_cells[fk] for fk in missing)
-    keep = detail if detail is not None else detail_budget(n_l2)
+    keep = detail if detail is not None else min(detail_budget(n_l2), DETAIL_FAMILIES)
     top = fam_cells.most_common(max(int(keep), 0))
     records = []
     for fk, n in top:
@@ -504,6 +558,8 @@ def census(rows: list[dict[str, Any]], clusters: Mapping[str, str] | None = None
         "l2_families": n_l2,
         "l3_families": n_l3,
         "l3_status": "MEASURED" if groups else "UNMEASURED",
+        "families_on_unmeasured_instruments": sum(1 for fk in fam_cells
+                                                  if f"|@{UNMEASURED_PREFIX}" in fk),
         "duplicate_share_l1": round(1 - n_l1 / raw, 4) if raw else None,
         "duplicate_share_l2": round(1 - n_l2 / raw, 4) if raw else None,
         "cells_per_family": round(raw / n_l2, 3) if n_l2 else None,
@@ -529,6 +585,8 @@ def census(rows: list[dict[str, Any]], clusters: Mapping[str, str] | None = None
         "top_duplicate_families": records[:TOP_CLUSTERS],
         "families": records,
         "families_published": len(records),
+        "families_summarised": max(0, n_l2 - len(records)),
+        "family_size_bands": _bands(fam_cells.values()),
         "steering": steer,
     }
 
@@ -664,6 +722,13 @@ def family_split(rows: list[dict[str, Any]], unjudged_ids: set[str] | None = Non
                  clusters: Mapping[str, str] | None = None) -> dict[str, Any]:
     """Stamp `_famdup` = 0 on the first claim of each L2 family, 1 on every later member.
 
+    AN INSTRUMENT WITH NO MEASURED CO-MOVEMENT DOES NOT JUMP THE QUEUE. Where the cluster map
+    exists but a row's instrument is UNMEASURED (no bars, `?` prefix, or absent from the map), the
+    row is a representative only if no earlier row claimed the same rule SHAPE on any instrument;
+    otherwise it ranks as a member. Without this, every no-bars singleton read as a fresh family
+    and outranked co-moving instruments whose correlation had been measured (audit of 8628268b6).
+    The breadth COUNT is unchanged by this: an unmeasured instrument is still its own family there.
+
     Same claim order as `judge_coverage.variant_split` (never-judged first, then oldest
     first_seen, then docket position), so the representative is the row that would have gone
     first anyway. Removes nothing; `coverage_order` reads it as a tie-break after `_variant`."""
@@ -672,23 +737,32 @@ def family_split(rows: list[dict[str, Any]], unjudged_ids: set[str] | None = Non
     n = len(rows)
     first = [""] * n
     keys = [0] * n
+    shapes = [0] * n
+    unknown = [False] * n
     fresh_idx: list[int] = []
     stale_idx: list[int] = []
     for i, row in enumerate(rows):
         first[i] = str(row.get("first_seen") or "9999")
-        keys[i] = hash(family_key(row, cl))
+        r = rule_key(row)
+        keys[i] = hash(family_key(row, cl, r))
+        shapes[i] = hash(rule_shape(r))
+        if cl:
+            c = cl.get(_sym(row).upper())
+            unknown[i] = c is None or c.startswith(UNMEASURED_PREFIX)
         (fresh_idx if (not ids or str(row.get("_cell") or "") in ids) else stale_idx).append(i)
     order = sorted(fresh_idx, key=first.__getitem__) + sorted(stale_idx, key=first.__getitem__)
     seen: set[int] = set()
+    seen_shape: set[int] = set()
     marks = [0] * n
     for i in order:
-        if keys[i] in seen:
+        if keys[i] in seen or (unknown[i] and shapes[i] in seen_shape):
             marks[i] = 1
-        else:
-            seen.add(keys[i])
+        seen.add(keys[i])
+        seen_shape.add(shapes[i])
     for i, row in enumerate(rows):
         row["_famdup"] = marks[i]
-    return {"rows": n, "family_representatives": len(seen), "family_members": sum(marks),
+    return {"rows": n, "family_representatives": n - sum(marks), "family_members": sum(marks),
+            "rows_on_unmeasured_instruments": sum(unknown),
             "clusters_status": "MEASURED" if cl else "UNMEASURED"}
 
 
@@ -713,46 +787,6 @@ def inheritable(rep_verdict: Mapping[str, Any], rep: Mapping[str, Any],
     if gate in INSTRUMENT_INVARIANT_GATES:
         return _sym(rep).upper() == _sym(member).upper()
     return False
-
-
-def inherit_plan(specs: list[dict[str, Any]], verdict_index: Mapping[str, str],
-                 cell_id_fn: Callable[[dict[str, Any]], str],
-                 clusters: Mapping[str, str] | None = None) -> list[dict[str, Any]]:
-    """Which UNJUDGED specs may inherit a judged family member's verdict under INHERITANCE_RULE.
-
-    `verdict_index` is the sealed judge's own `gate_verdict_index.json` ({cell: "gate|passed"}).
-    A representative is a judged spec whose recorded verdict is a REJECT at an invariant gate; an
-    inheritor is a spec in the same L2 family with no recorded verdict. Returns one synthetic
-    verdict per inheritor, carrying `inherited_from` -- the caller records it on the graph and
-    the gate ledger exactly as a judged verdict, so the trial count is unchanged."""
-    cl = clusters or {}
-    reps: dict[int, tuple[dict[str, Any], str, str]] = {}
-    pending: list[tuple[dict[str, Any], str]] = []
-    for sp in specs:
-        try:
-            cell = cell_id_fn(sp)
-        except Exception:
-            continue
-        key = verdict_index.get(cell)
-        if key is None:
-            pending.append((sp, cell))
-            continue
-        gate, _, passed = str(key).partition("|")
-        if passed == "0" and gate in FAMILY_INVARIANT_GATES | INSTRUMENT_INVARIANT_GATES:
-            reps.setdefault(hash(family_key(sp, cl)), (sp, cell, gate))
-    out: list[dict[str, Any]] = []
-    for sp, cell in pending:
-        got = reps.get(hash(family_key(sp, cl)))
-        if got is None:
-            continue
-        rep, rep_cell, gate = got
-        if not inheritable({"passed": False, "terminal_gate": gate}, rep, sp, cl):
-            continue
-        out.append({"cell": cell, "sym": _sym(sp), "family": _fam(sp),
-                    "params": dict(sp.get("params") or {}), "passed": False,
-                    "terminal_gate": gate, "inherited_from": rep_cell,
-                    "inheritance_rule": "family_invariant_reject"})
-    return out
 
 
 # ------------------------------------------------------------------ upstream: check + re-aim
@@ -802,31 +836,33 @@ class MinedIndex:
                 "family_cells": int(self.families.get(hash(fk), 0))}
 
     def reaim_target(self, row: dict[str, Any],
-                     lawful: Callable[[str, str], bool] | None = None) -> str | None:
+                     accept: Callable[[str], bool] | None = None) -> str | None:
         """The instrument to move a duplicate onto, or None.
 
         Candidates: instruments the SAME family already runs on (so the rule is buildable there
-        and the lane router already admitted that family on it), the two-lane order permitting.
-        Excluded: any instrument whose correlation cluster already holds this rule shape. Chosen:
-        the one where the family is thinnest, ties by name -- the emptiest lawful ground."""
+        and the lane router already admitted that family on it). Excluded: any instrument whose
+        correlation cluster already holds this rule shape, and any `accept` refuses (the lane
+        law, the judge's unrunnable bank). Chosen: measured instruments before UNMEASURED ones
+        (an unmeasured one may co-move with ground already held), then the thinnest family
+        coverage, ties by name -- the emptiest lawful ground."""
         fam = _fam(row)
         held = self.shape_clusters.get(hash(rule_shape(rule_key(row))), set())
-        best: tuple[int, str] | None = None
-        for sym, n in (self.family_symbols.get(fam) or {}).items():
-            if self._cluster(sym) in held:
-                continue
-            if lawful is not None and not lawful(sym, fam):
-                continue
-            if best is None or (n, sym) < best:
-                best = (n, sym)
-        return best[1] if best else None
+        ranked = sorted((self._cluster(sym).startswith(UNMEASURED_PREFIX), n, sym)
+                        for sym, n in (self.family_symbols.get(fam) or {}).items()
+                        if self._cluster(sym) not in held)
+        for _unknown, _n, sym in ranked:
+            if accept is None or accept(sym):
+                return sym
+        return None
 
 
-def _lawful() -> Callable[[str, str], bool]:
+def _lawful() -> Callable[[str, str], bool] | None:
+    """`universe_policy.may_hypothesise`, or None when it cannot be imported -- and None means
+    MINT NOTHING (fail closed): a re-aim the two-lane order cannot vouch for is never minted."""
     try:
         from research.universe_policy import may_hypothesise
     except Exception:
-        return lambda s, f: True
+        return None
 
     def ok(sym: str, fam: str) -> bool:
         try:
@@ -836,41 +872,86 @@ def _lawful() -> Callable[[str, str], bool]:
     return ok
 
 
+def _unrunnable() -> Callable[[dict[str, Any]], bool] | None:
+    """True for a spec the judge's unrunnable bank holds (judge_coverage.unrunnable_bank, keyed
+    by frontier_identity.docket_cell_id). `order_docket` filters those out of the written docket,
+    so a child aimed there would vanish and be re-minted every hour (audit probe P2). None when
+    the bank or the identity cannot be read -- the caller then mints nothing (fail closed)."""
+    try:
+        from research.frontier_identity import docket_cell_id
+        from research.judge_coverage import unrunnable_bank
+        bank = set(unrunnable_bank())
+    except Exception:
+        return None
+
+    def blocked(spec: dict[str, Any]) -> bool:
+        try:
+            return str(docket_cell_id(spec)) in bank
+        except Exception:
+            return True
+    return blocked
+
+
 REAIM_VERSION = "family-reaim-v1"
+#: Provenance a child may carry. NOT `contributing_sources` / `n_independent_sources`: no source
+#: named the new instrument, so copying them would overstate agreement (deepening_worker scores on
+#: them). The child records 0 sources of its own and names its parent instead.
 _SAFE = ("source", "producer", "origin", "title", "url", "source_title", "source_url",
-         "mechanism", "mechanism_status", "mechanism_note", "timeframe", "chart",
-         "contributing_sources", "n_independent_sources")
+         "mechanism", "mechanism_status", "mechanism_note", "timeframe", "chart")
+
+
+def reaimed_parents(path: Path | None = None) -> set[str]:
+    """Every parent identity the LEDGER says was re-aimed -- the only memory of "once, ever".
+
+    Never the child rows in the docket: `order_docket` can filter a child out of the written file,
+    and a memory that lives in the docket forgets it (audit probe P2). A malformed (torn) line is
+    skipped; an absent ledger is an empty set."""
+    out: set[str] = set()
+    try:
+        with (path or REAIM_LEDGER).open(encoding="utf-8") as fh:
+            for ln in fh:
+                try:
+                    row = json.loads(ln)
+                except ValueError:
+                    continue
+                if isinstance(row, dict) and row.get("parent"):
+                    out.add(str(row["parent"]))
+    except OSError:
+        pass
+    return out
 
 
 def reaim(rows: list[dict[str, Any]], fresh: set[str], reproposed: set[str], *,
           identity_fn: Callable[[dict[str, Any]], str] = identity,
           clusters: Mapping[str, str] | None = None,
           lawful: Callable[[str, str], bool] | None = None,
+          blocked: Callable[[dict[str, Any]], bool] | None = None,
+          done: set[str] | None = None,
           now: datetime | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Check every fresh row against what was mined before it; re-aim each duplicate.
 
     `fresh` = identities this pass's producers emitted that the bank did not hold; `reproposed`
     = identities they emitted that the bank DID hold (EXACT duplicates the merge collapsed).
-    Returns (children, report). Inputs are never mutated beyond a `dup_status` stamp and never
-    removed: a duplicate stays in the docket and its re-aimed child is added beside it."""
+    `done` = parents already re-aimed (from `reaimed_parents`, the ledger). `lawful` and
+    `blocked` default to the lane law and the unrunnable bank; if either cannot be resolved the
+    check still runs and NOTHING is minted (fail closed), with the reason in the report.
+    Returns (children, report). Inputs are never removed: a duplicate stays in the docket."""
     at = (now or datetime.now(UTC)).astimezone(UTC).isoformat(timespec="seconds")
     cl = clusters or {}
-    law = lawful or _lawful()
+    law = lawful if lawful is not None else _lawful()
+    block = blocked if blocked is not None else _unrunnable()
+    closed = [why for why, f in (("lane law (universe_policy) unavailable", law),
+                                 ("unrunnable bank unreadable", block)) if f is None]
     idents = [identity_fn(r) for r in rows]
     prior_i = [i for i, ident in enumerate(idents) if ident not in fresh]
     index = MinedIndex((rows[i] for i in prior_i), cl, (idents[i] for i in prior_i))
     present = set(idents)
-    # ONCE PER PARENT, EVER. A compiler that re-emits its whole corpus every hour re-proposes the
-    # same 50k cells each pass; re-aiming each of them every hour would turn a re-emission into a
-    # generator. The bank remembers which parents already have a re-aimed child.
-    done = {str((r.get("reaimed_from") or {}).get("parent_identity") or "")
-            for r in rows if isinstance(r.get("reaimed_from"), dict)}
+    # ONCE PER PARENT, EVER -- remembered by the ledger, never by the docket.
+    done = set(done) if done is not None else reaimed_parents()
     counts: Counter[str] = Counter()
     by_producer: dict[str, Counter[str]] = {}
     children: list[dict[str, Any]] = []
     no_target = 0
-    # Fresh rows are checked in docket order and ADDED to the index as they are seen, so two
-    # fresh twins of each other are caught too (the second is NEAR the first).
     for row, ident in zip(rows, idents, strict=True):
         if ident in fresh:
             chk = index.check(row, ident)
@@ -885,24 +966,35 @@ def reaim(rows: list[dict[str, Any]], fresh: set[str], reproposed: set[str], *,
         row["dup_status"] = status
         if ident in fresh:
             index.add(row, ident)
-        if status == "NOVEL":
+        if status == "NOVEL" or closed:
             continue
         if ident in done:
             counts["already_reaimed"] += 1
             continue
-        target = index.reaim_target(row, law)
+        fam, params = _fam(row), dict(row.get("params") or {})
+
+        def accept(sym: str, fam: str = fam, params: dict[str, Any] = params) -> bool:
+            assert law is not None and block is not None
+            if not law(sym, fam):
+                return False
+            if block({"symbol": sym, "sym": sym, "family": fam, "params": params}):
+                counts["target_unrunnable"] += 1
+                return False
+            return True
+        target = index.reaim_target(row, accept)
         if target is None:
             no_target += 1
             continue
         child = {k: row[k] for k in _SAFE if k in row}
-        child.update({"symbol": target, "family": _fam(row),
-                      "params": dict(row.get("params") or {})})
+        child.update({"symbol": target, "family": fam, "params": params,
+                      "contributing_sources": [], "n_independent_sources": 0})
         key = identity_fn(child)
         if key in present:
             counts["reaim_already_present"] += 1
             continue
         child["reaimed_from"] = {"version": REAIM_VERSION, "parent_identity": ident,
                                  "parent_status": status, "at": at,
+                                 "parent_n_independent_sources": row.get("n_independent_sources"),
                                  "why": ("the parent duplicated ground already mined; the same "
                                          "rule is moved to the thinnest lawful instrument whose "
                                          "correlation cluster holds no member of it")}
@@ -910,7 +1002,7 @@ def reaim(rows: list[dict[str, Any]], fresh: set[str], reproposed: set[str], *,
         child["ingested_time"] = at
         child["source_version"] = REAIM_VERSION
         child["payload_hash"] = hashlib.sha256(json.dumps(
-            {"symbol": target, "family": _fam(row), "params": child["params"],
+            {"symbol": target, "family": fam, "params": params,
              "parent_identity": ident, "version": REAIM_VERSION},
             sort_keys=True, default=str).encode("utf-8")).hexdigest()
         child["first_seen"] = at
@@ -925,30 +1017,69 @@ def reaim(rows: list[dict[str, Any]], fresh: set[str], reproposed: set[str], *,
               "by_status": {k: counts.get(k, 0) for k in ("EXACT", "NEAR", "FAMILY", "NOVEL")},
               "duplicate_share": round(dups / checked, 4) if checked else None,
               "reaimed": len(children), "no_lawful_empty_target": no_target,
+              "fail_closed": closed or None,
+              "target_unrunnable_skips": counts.get("target_unrunnable", 0),
               "reaim_already_present": counts.get("reaim_already_present", 0),
               "already_reaimed_parents": counts.get("already_reaimed", 0),
               "by_producer": {p: dict(c) for p, c in sorted(by_producer.items())},
               "mint_conservation": {"fresh_in": checked, "rows_out": checked + len(children),
                                     "removed": 0},
               "rule": ("a duplicate is KEPT and a re-aimed descendant is minted beside it; "
-                       "nothing is deleted, so the mint rate can only rise")}
+                       "nothing is deleted, so the mint rate can only rise. Once per parent, "
+                       "ever, remembered by reaim_ledger.jsonl")}
     return children, report
 
 
+class Pending:
+    """The re-aim's last step, held until the caller has DURABLY written the docket.
+
+    THE ORDER IS THE GUARANTEE (audit of 8628268b6). Children first (the caller's docket write),
+    then the report, then the ledger -- so the ledger can never claim a child that does not exist.
+    A crash before the docket write leaves no child and no ledger line (the next pass re-mints
+    what never existed); a crash after it leaves children without ledger lines, and the next pass
+    finds each child already present and mints nothing. Either way: at most once."""
+
+    def __init__(self, children: list[dict[str, Any]], doc: Mapping[str, Any] | None,
+                 report_path: Path | None, ledger_path: Path | None) -> None:
+        self.children = children
+        self.doc = doc
+        self.report_path = report_path
+        self.ledger_path = ledger_path
+
+    def commit(self, written: Iterable[dict[str, Any]], *, publish_report: bool = True
+               ) -> dict[str, Any]:
+        """`written` is the row list the caller just wrote. Returns what was recorded."""
+        ids = {id(r) for r in written}
+        durable = [c for c in self.children if id(c) in ids]
+        report_ok = True
+        if publish_report and self.doc is not None:
+            report_ok = write(self.doc, self.report_path)
+        lines = 0
+        if report_ok and durable:
+            lines = append_reaim_ledger(durable, self.ledger_path)
+        return {"children": len(self.children), "durable": len(durable),
+                "report_written": report_ok, "ledger_lines": lines,
+                "why": None if report_ok else "report write failed: ledger NOT written"}
+
+
 def append_reaim_ledger(children: list[dict[str, Any]], path: Path | None = None) -> int:
-    """One line per re-aimed child: its parent and target, the audit trail of every re-aim."""
+    """One line per DURABLE re-aimed child: parent and child identity. Called only by
+    `Pending.commit`, after the docket and the report are written. Never raises."""
     if not children:
         return 0
     p = path or REAIM_LEDGER
     try:
         p.parent.mkdir(parents=True, exist_ok=True)
+        text = "".join(json.dumps({"at": c["reaimed_from"]["at"], "symbol": c["symbol"],
+                                   "family": c["family"],
+                                   "parent": c["reaimed_from"]["parent_identity"],
+                                   "parent_status": c["reaimed_from"]["parent_status"],
+                                   "child": identity(c)}, default=str) + "\n"
+                       for c in children)
         with p.open("a", encoding="utf-8") as fh:
-            for c in children:
-                fh.write(json.dumps({"at": c["reaimed_from"]["at"], "symbol": c["symbol"],
-                                     "family": c["family"],
-                                     "parent": c["reaimed_from"]["parent_identity"],
-                                     "parent_status": c["reaimed_from"]["parent_status"]},
-                                    default=str) + "\n")
+            fh.write(text)
+            fh.flush()
+            os.fsync(fh.fileno())
     except OSError:
         return 0
     return len(children)
@@ -957,25 +1088,29 @@ def append_reaim_ledger(children: list[dict[str, Any]], path: Path | None = None
 # --------------------------------------------------------------------------- the merge hook
 def apply(rows: list[dict[str, Any]], *, fresh: set[str], reproposed: set[str],
           identity_fn: Callable[[dict[str, Any]], str] = identity,
-          now: datetime | None = None, publish_report: bool = True,
+          now: datetime | None = None,
           report_path: Path | None = None,
-          hyp_dir: Path | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """`merge_hypotheses`' one call: re-aim fresh duplicates, census the docket, publish.
+          hyp_dir: Path | None = None
+          ) -> tuple[list[dict[str, Any]], dict[str, Any], Pending | None]:
+    """`merge_hypotheses`' one call: re-aim fresh duplicates and census the docket.
 
-    Returns (rows plus re-aimed children, compact block for merge_report). Never raises: a fault
-    costs the census and the re-aim, never a row. `hyp_dir` is the caller's hypotheses directory
-    (the cluster cache and the re-aim ledger live beside the docket the caller writes)."""
+    Returns (rows plus re-aimed children, compact block for merge_report, Pending). Writes
+    NOTHING but the cluster cache: the caller writes the docket and then calls
+    `Pending.commit(rows_written)`, which writes the report and, last, the ledger. Never raises:
+    a fault costs the census and the re-aim (Pending None), never a row. `hyp_dir` is the caller's
+    hypotheses directory (the cluster cache and the ledger live beside the docket it writes)."""
     global _RULE_CACHE
     avail = _mem_available_mb()
     # ~400 B per cached key; cache only when it costs under a quarter of what is free right now.
     if avail is None or avail * 1024 ** 2 * 0.25 > len(rows) * 400:
         _RULE_CACHE = {}
+    ledger = (hyp_dir / REAIM_LEDGER.name) if hyp_dir is not None else REAIM_LEDGER
     try:
         syms = {_sym(r).upper() for r in rows} - {""}
         clusters, cmeta = load_clusters(
             syms, path=(hyp_dir / CLUSTERS.name) if hyp_dir is not None else None)
         children, rep = reaim(rows, fresh, reproposed, identity_fn=identity_fn,
-                              clusters=clusters, now=now)
+                              clusters=clusters, done=reaimed_parents(ledger), now=now)
         # THE REVERT PATH, not a throttle: QUANT_FAMILY_REAIM=0 keeps the check, the stamps and
         # the census and mints no descendant (the duplicates were never removed either way).
         if os.environ.get("QUANT_FAMILY_REAIM", "1") == "0":
@@ -985,15 +1120,11 @@ def apply(rows: list[dict[str, Any]], *, fresh: set[str], reproposed: set[str],
             children = []
         else:
             rep["reaim_enabled"] = True
-        append_reaim_ledger(children,
-                            (hyp_dir / REAIM_LEDGER.name) if hyp_dir is not None else None)
         out = rows + children
         doc = build(out, clusters=clusters, cluster_meta=cmeta, reaim_report=rep)
-        if publish_report:
-            write(doc, report_path)
-        return out, summary(doc)
+        return out, summary(doc), Pending(children, doc, report_path, ledger)
     except Exception as exc:
-        return rows, {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
+        return rows, {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}, None
     finally:
         _RULE_CACHE = None
 
@@ -1057,13 +1188,9 @@ def summary(doc: Mapping[str, Any]) -> dict[str, Any]:
     return out
 
 
-def write(doc: Mapping[str, Any], path: Path | None = None) -> Path:
-    p = path or REPORT
-    p.parent.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
-    os.replace(tmp, p)
-    return p
+def write(doc: Mapping[str, Any], path: Path | None = None) -> bool:
+    """Publish the report atomically; False (never an exception) when it could not be written."""
+    return _atomic_write(path or REPORT, json.dumps(doc, indent=1, default=str))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1084,7 +1211,7 @@ def main(argv: list[str] | None = None) -> int:
             f"mechanism missing {(doc.get('mechanism') or {}).get('missing_families')}")
     print(line)
     if not a.dry_run:
-        print(f"  -> {write(doc, a.out)}")
+        print(f"  -> written={write(doc, a.out)}")
     return 0
 
 
@@ -1094,6 +1221,7 @@ __all__ = [
     "RETURNS_RHO",
     "SYMBOL_RHO",
     "MinedIndex",
+    "Pending",
     "apply",
     "build",
     "census",
@@ -1102,17 +1230,14 @@ __all__ = [
     "family_key",
     "family_split",
     "identity",
-    "inherit_plan",
     "inheritable",
     "load_clusters",
     "mechanism_line",
     "reaim",
+    "reaimed_parents",
     "returns_merge",
     "rule_key",
     "rule_shape",
     "summary",
     "write",
 ]
-
-if __name__ == "__main__":
-    raise SystemExit(main())

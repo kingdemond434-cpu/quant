@@ -30,6 +30,10 @@ def _row(sym: str, fam: str = "range_reversion", tf: str = "H1", day: str = "202
 CL = {"EURUSD": "EURUSD", "GBPUSD": "EURUSD", "USDJPY": "USDJPY", "XAUUSD": "XAUUSD"}
 
 
+def NOBLOCK(spec: dict) -> bool:
+    return False
+
+
 def test_threshold_variants_collapse_to_one_rule_and_comoving_symbols_to_one_family() -> None:
     rows = [_row("EURUSD", lookback=20), _row("EURUSD", lookback=40),
             _row("GBPUSD", lookback=20), _row("USDJPY", lookback=20)]
@@ -80,7 +84,8 @@ def test_reaim_keeps_every_duplicate_and_adds_a_child_on_empty_lawful_ground() -
     dup = _row("EURUSD", lookback=55)          # NEAR the banked EURUSD rule
     rows = [*bank, dup]
     fresh = {hf.identity(dup)}
-    children, rep = hf.reaim(rows, fresh, set(), clusters=CL, lawful=lambda s, f: True)
+    children, rep = hf.reaim(rows, fresh, set(), clusters=CL, lawful=lambda s, f: True,
+                             blocked=NOBLOCK, done=set())
     assert rep["by_status"]["NEAR"] == 1
     assert rep["mint_conservation"]["removed"] == 0
     assert dup in rows and dup["dup_status"] == "NEAR"
@@ -89,7 +94,8 @@ def test_reaim_keeps_every_duplicate_and_adds_a_child_on_empty_lawful_ground() -
     bank2 = [*bank, _row("AUDNZD", lookback=1)]
     bank2[-1]["params"]["session"] = "asia"      # a different rule on AUDNZD
     rows2 = [*bank2, dup]
-    children, rep = hf.reaim(rows2, fresh, set(), clusters=CL, lawful=lambda s, f: True)
+    children, rep = hf.reaim(rows2, fresh, set(), clusters=CL, lawful=lambda s, f: True,
+                             blocked=NOBLOCK, done=set())
     assert [c["symbol"] for c in children] == ["AUDNZD"]
     assert children[0]["params"] == dup["params"]
     assert children[0]["reaimed_from"]["parent_identity"] == hf.identity(dup)
@@ -101,12 +107,17 @@ def test_reaim_respects_the_lane_order_and_happens_once_per_parent() -> None:
     dup = _row("EURUSD", lookback=7)
     rows = [*bank, dup]
     fresh = {hf.identity(dup)}
-    none, rep = hf.reaim(rows, fresh, set(), clusters=CL, lawful=lambda s, f: s != "AUDNZD")
+    none, rep = hf.reaim(rows, fresh, set(), clusters=CL, lawful=lambda s, f: s != "AUDNZD",
+                         blocked=NOBLOCK, done=set())
     assert none == [] and rep["no_lawful_empty_target"] == 1
-    kids, _ = hf.reaim(rows, fresh, set(), clusters=CL, lawful=lambda s, f: True)
+    kids, _ = hf.reaim(rows, fresh, set(), clusters=CL, lawful=lambda s, f: True,
+                       blocked=NOBLOCK, done=set())
     assert len(kids) == 1
-    again, rep2 = hf.reaim(rows + kids, set(), {hf.identity(dup)}, clusters=CL,
-                           lawful=lambda s, f: True)
+    # the ledger, not the docket, remembers: even with the child GONE from the rows (filtered
+    # by order_docket), a parent the ledger names is never re-aimed again
+    again, rep2 = hf.reaim(list(rows), set(), {hf.identity(dup)}, clusters=CL,
+                           lawful=lambda s, f: True, blocked=NOBLOCK,
+                           done={hf.identity(dup)})
     assert again == [] and rep2["already_reaimed_parents"] == 1
     assert rep2["by_status"]["EXACT"] == 1
 
@@ -142,8 +153,12 @@ def test_symbol_clusters_are_leader_clusters_on_daily_correlation() -> None:
     series = {"AAA": base, "BBB": base * 0.9 + pd.Series(rng.normal(size=400), index=idx) * 0.1,
               "CCC": pd.Series(rng.normal(size=400), index=idx)}
     doc = hf.derive_clusters(["CCC", "AAA", "BBB", "ZZZ"], series.get)
-    assert doc["cluster_of"] == {"AAA": "AAA", "BBB": "AAA", "CCC": "CCC", "ZZZ": "ZZZ"}
+    assert doc["cluster_of"] == {"AAA": "AAA", "BBB": "AAA", "CCC": "CCC", "ZZZ": "?ZZZ"}
     assert doc["unmeasured"] == ["ZZZ"]
+    # the budget is WORK, not wall-clock: identical on any machine, any load
+    capped = hf.derive_clusters(["CCC", "AAA", "BBB"], series.get, max_loads=2)
+    assert capped["cluster_of"] == {"AAA": "AAA", "BBB": "AAA", "CCC": "?CCC"}
+    assert capped["work"]["loads"] == 2
 
 
 def test_returns_merge_groups_correlated_families_only() -> None:
@@ -155,24 +170,174 @@ def test_returns_merge_groups_correlated_families_only() -> None:
     assert g["fb"] == "fa" and g["fc"] == "fc"
 
 
-def test_apply_never_removes_a_row_and_publishes(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(hf, "CLUSTERS", tmp_path / "clusters.json")
-    monkeypatch.setattr(hf, "REAIM_LEDGER", tmp_path / "reaim.jsonl")
+def test_apply_writes_nothing_until_commit_then_report_then_ledger(tmp_path: Path,
+                                                                   monkeypatch) -> None:
     monkeypatch.setattr(hf, "_daily", lambda s, u: None)
-    rows = [_row("EURUSD"), _row("EURUSD", lookback=3)]
-    out, block = hf.apply(rows, fresh={hf.identity(rows[1])}, reproposed=set(),
-                          report_path=tmp_path / "HF.json")
-    assert len(out) >= len(rows) and all(r in out for r in rows)
-    assert block["raw_cells"] == len(out)
-    assert block["intake"]["by_status"]["NEAR"] == 1
+    monkeypatch.setattr(hf, "_lawful", lambda: (lambda s, f: True))
+    monkeypatch.setattr(hf, "_unrunnable", lambda: NOBLOCK)
+    rows = [_row("EURUSD"), _row("XAUUSD", session="asia"), _row("EURUSD", lookback=3)]
+    out, block, pending = hf.apply(rows, fresh={hf.identity(rows[2])}, reproposed=set(),
+                                   report_path=tmp_path / "HF.json", hyp_dir=tmp_path)
+    assert pending is not None and all(r in out for r in rows)
+    assert block["raw_cells"] == len(out) == 4 and block["intake"]["reaimed"] == 1
+    assert not (tmp_path / "HF.json").exists() and not (tmp_path / "reaim_ledger.jsonl").exists()
+    got = pending.commit(out)
+    assert got == {"children": 1, "durable": 1, "report_written": True, "ledger_lines": 1,
+                   "why": None}
     assert (tmp_path / "HF.json").exists()
+    assert hf.reaimed_parents(tmp_path / "reaim_ledger.jsonl") == {hf.identity(rows[2])}
     assert hf._RULE_CACHE is None
+
+
+def _two_passes(tmp_path: Path, monkeypatch, *, written_first: bool, blocked: bool,
+                commit_first: bool) -> tuple[int, int]:
+    """Pass 1 then pass 2 of the merge's re-aim; returns (children pass 1, children pass 2)."""
+    monkeypatch.setattr(hf, "_daily", lambda s, u: None)
+    monkeypatch.setattr(hf, "_lawful", lambda: (lambda s, f: True))
+    bank = [_row("EURUSD"), _row("XAUUSD", session="asia")]
+    dup = _row("EURUSD", lookback=3)
+    monkeypatch.setattr(hf, "_unrunnable", lambda: NOBLOCK)
+    out1, _, p1 = hf.apply([*bank, dup], fresh={hf.identity(dup)}, reproposed=set(),
+                           report_path=tmp_path / "HF.json", hyp_dir=tmp_path)
+    kids1 = [r for r in out1 if r.get("reaimed_from")]
+    # what the docket writer actually wrote: order_docket may have filtered the child out
+    written = out1 if written_first else [r for r in out1 if not r.get("reaimed_from")]
+    if commit_first:
+        assert p1 is not None
+        p1.commit(written)
+    # pass 2: the producer re-emits the same duplicate (EXACT); the bank is what was written
+    bank2 = [dict(r) for r in written]
+    if blocked:
+        # the child's target is now in the judge's unrunnable bank
+        monkeypatch.setattr(hf, "_unrunnable", lambda: (lambda sp: sp["symbol"] == "XAUUSD"))
+    out2, _, _ = hf.apply(bank2, fresh=set(), reproposed={hf.identity(dup)},
+                          report_path=tmp_path / "HF.json", hyp_dir=tmp_path)
+    return len(kids1), sum(1 for r in out2 if r.get("reaimed_from")) - sum(
+        1 for r in bank2 if r.get("reaimed_from"))
+
+
+def test_probe_p2_a_second_pass_remints_nothing_after_the_child_was_filtered(
+        tmp_path: Path, monkeypatch) -> None:
+    # child minted, durable and ledgered, then filtered out of the docket by a later pass
+    n1, n2 = _two_passes(tmp_path, monkeypatch, written_first=True, blocked=False,
+                         commit_first=True)
+    assert (n1, n2) == (1, 0)
+    bank = json.loads(json.dumps([_row("EURUSD"), _row("XAUUSD", session="asia")]))
+    dup = _row("EURUSD", lookback=3)
+    out3, block3, _ = hf.apply([*bank, dup], fresh=set(), reproposed={hf.identity(dup)},
+                               report_path=tmp_path / "HF.json", hyp_dir=tmp_path)
+    assert not any(r.get("reaimed_from") for r in out3)        # child NOT in rows, ledger wins
+    assert block3["intake"]["reaimed"] == 0
+
+
+def test_probe_p2_an_unrunnable_target_is_never_minted(tmp_path: Path, monkeypatch) -> None:
+    # pass 1's child was filtered (unrunnable) before it was written: no ledger line; pass 2
+    # sees the bank and skips the target instead of re-minting it every hour
+    n1, n2 = _two_passes(tmp_path, monkeypatch, written_first=False, blocked=True,
+                         commit_first=True)
+    assert (n1, n2) == (1, 0)
+    assert not (tmp_path / "reaim_ledger.jsonl").exists()
+
+
+def test_crash_after_the_docket_write_before_the_ledger_mints_nothing_twice(
+        tmp_path: Path, monkeypatch) -> None:
+    # the child reached the docket, then the process died before commit: no ledger line.
+    n1, n2 = _two_passes(tmp_path, monkeypatch, written_first=True, blocked=False,
+                         commit_first=False)
+    assert (n1, n2) == (1, 0)      # pass 2 finds the child already present
+
+
+def test_crash_before_the_docket_write_leaves_no_ledger_claim(tmp_path: Path,
+                                                             monkeypatch) -> None:
+    n1, n2 = _two_passes(tmp_path, monkeypatch, written_first=False, blocked=False,
+                         commit_first=False)
+    assert (n1, n2) == (1, 1)      # the child never existed; minting it once now is correct
+    assert not (tmp_path / "reaim_ledger.jsonl").exists()
+
+
+def test_a_failed_report_write_never_leaves_the_ledger_claiming_children(
+        tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(hf, "_daily", lambda s, u: None)
+    monkeypatch.setattr(hf, "_lawful", lambda: (lambda s, f: True))
+    monkeypatch.setattr(hf, "_unrunnable", lambda: NOBLOCK)
+    rows = [_row("EURUSD"), _row("XAUUSD", session="asia"), _row("EURUSD", lookback=3)]
+    out, _, pending = hf.apply(rows, fresh={hf.identity(rows[2])}, reproposed=set(),
+                               report_path=tmp_path / "HF.json", hyp_dir=tmp_path)
+    monkeypatch.setattr(hf, "write", lambda doc, path=None: False)
+    assert pending is not None
+    got = pending.commit(out)
+    assert got["report_written"] is False and got["ledger_lines"] == 0
+    assert not (tmp_path / "reaim_ledger.jsonl").exists()
+
+
+def test_atomic_write_replaces_a_read_only_destination(tmp_path: Path) -> None:
+    import os
+    import stat
+    p = tmp_path / "R.json"
+    p.write_text("old", "utf-8")
+    os.chmod(p, stat.S_IREAD)
+    assert hf._atomic_write(p, "new") is True
+    assert p.read_text("utf-8") == "new"
+    assert not list(tmp_path.glob(".R.json.*.tmp"))
+
+
+def test_the_lane_law_fails_closed(monkeypatch) -> None:
+    monkeypatch.setattr(hf, "_lawful", lambda: None)
+    bank = [_row("EURUSD"), _row("XAUUSD", session="asia")]
+    dup = _row("EURUSD", lookback=3)
+    kids, rep = hf.reaim([*bank, dup], {hf.identity(dup)}, set(), clusters=CL,
+                         blocked=NOBLOCK, done=set())
+    assert kids == [] and rep["fail_closed"] == ["lane law (universe_policy) unavailable"]
+    assert rep["by_status"]["NEAR"] == 1                    # the check still ran and counted
+
+
+def test_a_child_claims_no_source_agreement_it_does_not_have() -> None:
+    bank = [_row("EURUSD"), _row("XAUUSD", session="asia")]
+    dup = {**_row("EURUSD", lookback=3), "n_independent_sources": 4,
+           "contributing_sources": ["a", "b", "c", "d"], "contested": True}
+    kids, _ = hf.reaim([*bank, dup], {hf.identity(dup)}, set(), clusters=CL,
+                       lawful=lambda s, f: True,
+                             blocked=NOBLOCK, done=set())
+    assert kids[0]["n_independent_sources"] == 0 and kids[0]["contributing_sources"] == []
+    assert "contested" not in kids[0]
+    assert kids[0]["reaimed_from"]["parent_n_independent_sources"] == 4
+
+
+def test_an_unmeasured_instrument_does_not_outrank_a_measured_family() -> None:
+    cl = {"EURUSD": "EURUSD", "GBPUSD": "EURUSD", "AUDNZD": "?AUDNZD"}
+    first = _row("EURUSD", day="2026-09-01")
+    nobars = _row("AUDNZD", day="2026-10-01")                 # same rule shape, no bars
+    nobars_new_rule = _row("AUDNZD", day="2026-10-02", session="asia")
+    rows = [nobars, nobars_new_rule, first]
+    out = hf.family_split(rows, None, cl)
+    assert (first["_famdup"], nobars["_famdup"], nobars_new_rule["_famdup"]) == (0, 1, 0)
+    assert out["rows_on_unmeasured_instruments"] == 2
+    # the breadth COUNT still gives the unmeasured instrument its own family
+    assert hf.census([first, nobars], cl, detail=10)["l2_families"] == 2
+
+
+def test_the_report_is_capped_and_summarises_the_rest() -> None:
+    rows = [_row("EURUSD", fam=f"fam{i}") for i in range(2100)]
+    doc = hf.census(rows, CL)
+    assert doc["families_published"] == hf.DETAIL_FAMILIES == 2000
+    assert doc["families_summarised"] == 100
+    assert sum(b["families"] for b in doc["family_size_bands"].values()) == 2100
 
 
 def test_detail_budget_is_derived_and_floored() -> None:
     assert hf.detail_budget(10) == 10
     assert hf.detail_budget(0) == 0
     assert hf.detail_budget(10**9) >= 2000
+
+
+def _tree_state() -> dict[str, float]:
+    """mtime of every file under the desk's data/ and reports/ (the dirs a merge can touch)."""
+    out: dict[str, float] = {}
+    for d in (_DESK / "data", _DESK / "reports"):
+        for p in d.rglob("*"):
+            if p.is_file():
+                out[str(p)] = p.stat().st_mtime
+    return out
 
 
 def test_the_docket_writer_runs_the_census_and_reaims_every_hour(monkeypatch, tmp_path) -> None:
@@ -190,9 +355,20 @@ def test_the_docket_writer_runs_the_census_and_reaims_every_hour(monkeypatch, tm
     monkeypatch.setattr(mh, "TARGET", target)
     monkeypatch.setattr(mh, "tradeable_universe", lambda: {})
     monkeypatch.setattr(mh, "_pipeline_started_at", lambda: None)
+    # EVERY PATH IN tmp_path (audit of 8628268b6): no desk file may be written by this test.
+    monkeypatch.setattr(mh, "_ack", lambda path: None)
+    monkeypatch.setattr(mh, "_lease", lambda path: None)
+    from libs.research import claim_selection as cs
+    monkeypatch.setattr(cs, "LEDGER", hyp / "claim_families.json")
+    # order_docket owns JUDGE_COVERAGE.json, the ratchet and the bank; stand it in, and FILTER
+    # nothing here (the filtered case is the P2 tests above)
+    monkeypatch.setattr(jc, "order_docket", lambda rows, **k: (rows, {}))
     monkeypatch.setattr(hf, "_daily", lambda s, u: None)
     monkeypatch.setattr(hf, "_lawful", lambda: (lambda s, f: True))
+    monkeypatch.setattr(hf, "_unrunnable", lambda: NOBLOCK)
+    before = _tree_state()
     assert mh.main() == 0
+    assert _tree_state() == before, "the end-to-end merge test wrote a desk file"
     rows = json.loads(target.read_text("utf-8"))
     report = json.loads((hyp / "merge_report.json").read_text("utf-8"))
     fam = report["hypothesis_families"]
@@ -203,19 +379,6 @@ def test_the_docket_writer_runs_the_census_and_reaims_every_hour(monkeypatch, tm
     assert kid["symbol"] == "XAUUSD" and kid["params"]["range_hours"] == 5
     assert (hyp / "HYPOTHESIS_FAMILIES.json").exists()
     assert (hyp / "reaim_ledger.jsonl").read_text("utf-8").count("\n") == 1
+    assert report["hypothesis_families"]["commit"]["ledger_lines"] == 1
     cycle = (_DESK / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '"merge_hypotheses", "research/merge_hypotheses.py"' in cycle
-
-
-def test_inherit_plan_only_hands_down_invariant_rejects_to_unjudged_members() -> None:
-    def cid(sp: dict) -> str:
-        return f"{sp['symbol']}.{sp['family']}.{sorted(sp['params'].items())}"
-    rep = _row("EURUSD", lookback=20)
-    sib = _row("GBPUSD", lookback=30)               # same L2 family, unjudged
-    other = _row("USDJPY", lookback=30)             # different family
-    dsr = _row("XAUUSD", lookback=20)
-    dsr_sib = _row("XAUUSD", lookback=21)
-    idx = {cid(rep): "economic_prior|0", cid(dsr): "deflated_sharpe|0"}
-    plan = hf.inherit_plan([rep, sib, other, dsr, dsr_sib], idx, cid, CL)
-    assert [p["cell"] for p in plan] == [cid(sib)]
-    assert plan[0]["inherited_from"] == cid(rep) and plan[0]["passed"] is False

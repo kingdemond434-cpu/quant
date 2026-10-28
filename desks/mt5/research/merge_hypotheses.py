@@ -1001,17 +1001,18 @@ def main() -> int:
     # Runs AFTER the lane router, so a re-aim target is an instrument the same family already
     # runs on in the judging lane. A fault costs the census and the re-aim, never a row.
     families: dict[str, Any] = {"status": "UNAVAILABLE"}
+    families_pending: Any = None
     try:
         import sys as _sys
         for _p in (str(BASE), str(BASE.parents[1])):
             if _p not in _sys.path:
                 _sys.path.insert(0, _p)
         from research import hypothesis_families as _hf
-        rows_out, families = _hf.apply(rows_out, fresh=produced_now - reproposed,
-                                       reproposed=reproposed, identity_fn=_identity, now=now,
-                                       hyp_dir=HYP,
-                                       report_path=(None if HYP == BASE / "data" / "hypotheses"
-                                                    else HYP / _hf.REPORT.name))
+        rows_out, families, families_pending = _hf.apply(
+            rows_out, fresh=produced_now - reproposed, reproposed=reproposed,
+            identity_fn=_identity, now=now, hyp_dir=HYP,
+            report_path=(None if HYP == BASE / "data" / "hypotheses"
+                         else HYP / _hf.REPORT.name))
         _in = families.get("intake") or {}
         print(f"   families: {families.get('raw_cells')} cells -> {families.get('l1_rules')} "
               f"rules -> {families.get('l2_families')} families, k_eff {families.get('k_eff')}; "
@@ -1158,6 +1159,15 @@ def main() -> int:
         print(f"   preregistration unavailable ({type(exc).__name__}: {exc}); docket unstamped")
     _write_docket_atomically(TARGET, rows_out)
     _lease(TARGET)
+    # THE FAMILIES REPORT, THEN THE RE-AIM LEDGER -- ONLY NOW, after the docket is durable, and
+    # only for children that survived into the rows just written (order_docket can filter some).
+    # The ledger is the one memory of "re-aimed once, ever"; it must never claim a child that the
+    # written docket does not hold.
+    if families_pending is not None:
+        try:
+            families["commit"] = families_pending.commit(rows_out)
+        except Exception as exc:
+            families["commit"] = {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
     (HYP / "merge_report.json").write_text(json.dumps({
         "merged_at": now.isoformat(timespec="seconds"),
         "pipeline_started_at": started_at.isoformat(timespec="seconds") if started_at else None,
