@@ -231,9 +231,10 @@ def replay(rows: Iterable[dict[str, Any]], *, k_grid: tuple[int, ...] = K_GRID,
     """
     protected = protected or set()
     survivor_cells = survivor_cells or set()
-    buckets: dict[str, list[int]] = {}           # bucket -> [named cells, cleared cells]
+    buckets: dict[str, list[int]] = {}           # bucket -> [named, cleared, judged] cells
     best: dict[str, int] = {}
-    first_state: dict[str, tuple[int, int, int]] = {}   # cell -> (order, named, cleared)
+    first_state: dict[str, tuple[int, int, int, int]] = {}  # cell -> (order, named, cleared,
+    #                                                         judged) BEFORE its first verdict
     bucket_cell: dict[str, str] = {}
     n_rows = n_judgements = 0
     for row in rows:
@@ -246,11 +247,13 @@ def replay(rows: Iterable[dict[str, Any]], *, k_grid: tuple[int, ...] = K_GRID,
         if b is None:
             continue
         n_judgements += 1
-        st = buckets.setdefault(b, [0, 0])
+        st = buckets.setdefault(b, [0, 0, 0])
         if cell not in first_state:
-            first_state[cell] = (len(first_state), st[0], st[1])
+            first_state[cell] = (len(first_state), st[0], st[1], st[2])
             bucket_cell[cell] = b
         old = best.get(cell, -1)
+        if old < 0:
+            st[2] += 1
         if t > old:
             if old < IS_FAIL_T <= t:
                 st[0] += 1
@@ -266,12 +269,23 @@ def replay(rows: Iterable[dict[str, Any]], *, k_grid: tuple[int, ...] = K_GRID,
     by_k: dict[str, Any] = {}
     canon_k = None
     n_true = pop["true_survivor"]
+    any_basis: dict[str, Any] = {}
     for k in sorted(k_grid):
+        # BASIS B, REPORT-ONLY: the same rule counting UNKNOWN siblings as evidence too (a bucket
+        # of >= K judged cells, none of which cleared in_sample). It measures how much of the
+        # UNKNOWN mass a sibling rule could reach; nothing acts on it.
+        kb = dict.fromkeys(TIER_NAMES.values(), 0)
+        for c, (_o, _n, cleared, judged) in first_state.items():
+            if bucket_cell[c] not in protected and cleared == 0 and judged >= k:
+                kb[TIER_NAMES[tiers[c]]] += 1
+        any_basis[str(k)] = {"killed": sum(kb.values()),
+                             "kill_rate": round(sum(kb.values()) / n, 6) if n else None,
+                             "killed_by_tier": kb}
         killed = dict.fromkeys(TIER_NAMES.values(), 0)
         halves = [dict.fromkeys(TIER_NAMES.values(), 0) for _ in (0, 1)]
         n_killed = 0
         sample_false: list[str] = []
-        for c, (order, named, cleared) in first_state.items():
+        for c, (order, named, cleared, _j) in first_state.items():
             if bucket_cell[c] in protected or cleared > 0 or named < k:
                 continue
             n_killed += 1
@@ -298,6 +312,7 @@ def replay(rows: Iterable[dict[str, Any]], *, k_grid: tuple[int, ...] = K_GRID,
             if st[1] == 0 and st[0] >= min(k_grid) and b not in protected}
     return {"ledger_rows": n_rows, "series_judgements": n_judgements, "cells_replayed": n,
             "population_by_tier": pop, "by_k": by_k, "canon_k": canon_k,
+            "by_k_any_judged_basis_report_only": any_basis,
             "canon_ready": canon_k is not None,
             "canon_rule": (f"smallest K in {list(k_grid)} with ZERO true-survivor kills overall "
                            f"and in each half of the record, and >= {MIN_TRUE_SURVIVORS} true "
