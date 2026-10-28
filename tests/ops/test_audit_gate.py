@@ -280,6 +280,8 @@ class _Hub:
         self.runs = runs if runs is not None else _green()
         self.writes: list[tuple[str, ...]] = []
         self.suites = {1: ".github/workflows/ci.yml", 2: ".github/workflows/release-gates.yml"}
+        self.annotations: dict[int, list[dict[str, Any]]] = {}
+        self.attempt = 1
 
     def __call__(self, *args: str, data: Any = None) -> Any:
         path = args[0]
@@ -296,8 +298,12 @@ class _Hub:
             return [self.approvals]
         if path.endswith("/comments?per_page=100"):
             return [self.comments]
+        if path.endswith("/annotations?per_page=100"):
+            return self.annotations.get(int(path.split("/check-runs/")[1].split("/")[0]), [])
         if "/check-runs" in path:
             return {"check_runs": self.runs}
+        if "/actions/jobs/" in path:
+            return {"run_attempt": self.attempt}
         if "/actions/runs?check_suite_id=" in path:
             sid = int(path.split("check_suite_id=")[1].split("&")[0])
             wf = self.suites.get(sid)
@@ -721,8 +727,6 @@ def auto_hub(hub: Any, monkeypatch: pytest.MonkeyPatch) -> Any:
 def test_an_auto_tier_pr_merges_with_no_comment_once_both_switches_and_all_jobs_pass(
     auto_hub: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # replay-shadow has no source until step D; give it one to exercise the merge
-    monkeypatch.setitem(ag.WORKFLOW_OF, "replay-shadow", ".github/workflows/release-gates.yml")
     h = auto_hub(runs=_auto_green(), labels=("quarantined",))
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
     (merge,) = _merges(h)
@@ -731,8 +735,11 @@ def test_an_auto_tier_pr_merges_with_no_comment_once_both_switches_and_all_jobs_
     assert any(w[0] == "DELETE" and w[1].endswith("/labels/quarantined") for w in h.writes)
 
 
-def test_until_step_d_no_auto_pr_can_merge(auto_hub: Any) -> None:
-    h = auto_hub(runs=_auto_green())  # even a replay-shadow "success" has no genuine source
+def test_a_replay_shadow_from_anywhere_but_release_gates_never_counts(auto_hub: Any) -> None:
+    """Step D: replay-shadow runs in Actions like the other AUTO jobs, never as a box status."""
+    runs = [r for r in _auto_green() if r["name"] != "replay-shadow"]
+    h = auto_hub(runs=[*runs, _r("replay-shadow", suite=3)])
+    h.suites[3] = ".github/workflows/other.yml"
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
 
 
@@ -931,7 +938,6 @@ def test_a_forged_same_name_run_counts_for_nothing(auto_hub: Any, forged: dict[s
 def test_a_stale_github_tree_takes_the_manual_path(
     auto_hub: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setitem(ag.WORKFLOW_OF, "replay-shadow", ".github/workflows/release-gates.yml")
     h = auto_hub(runs=_auto_green())
     monkeypatch.setattr(ag, "up_to_date", lambda base, head: (False, "it is behind"))
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
@@ -1160,64 +1166,118 @@ def test_the_review_passes_only_a_clean_pass(answer: dict[str, Any], ok: bool) -
     assert ir.decide(answer)[0] is ok
 
 
-def test_the_review_fails_closed_without_a_key(
+def test_the_review_queues_without_a_free_key(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    assert ir.main(["--repo", "o/r", "--pr", "7", "--head", A, "--base-sha", B]) == 1
-    assert "not configured" in capsys.readouterr().out
+    """Zero API cost: no key is not a FAIL and never a pass -- the PR is queued (exit 75)."""
+    import json as _json
+
+    for k in ir.KEY_ENVS:
+        monkeypatch.delenv(k, raising=False)
+    pr = {"head": {"sha": A}, "changed_files": 1}
+    diff = "diff --git a/x.py b/x.py\n+x = 1\n"
+    monkeypatch.setattr(
+        ir, "_gh", lambda *a: _json.dumps(pr) if a[0].endswith("/pulls/7") else diff
+    )
+    assert ir.main(["--repo", "o/r", "--pr", "7", "--head", A, "--base-sha", B]) == ir.UNAVAILABLE
+    out = capsys.readouterr().out
+    assert "not configured" in out
+    assert "\n::error title=REVIEW_UNAVAILABLE::" in "\n" + out
 
 
-class _Msg:
-    def __init__(self, stop: str, text: str = "") -> None:
-        self.stop_reason = stop
-        self.content = [type("B", (), {"type": "text", "text": text})()]
+_PASS = (
+    '{"verdict": "PASS", "risk_increasing": false, "touches_control": false, '
+    '"findings": [], "summary": "ok"}'
+)
+_FAIL = _PASS.replace('"PASS"', '"FAIL"')
 
 
-class _Client:
-    def __init__(self, msg: _Msg) -> None:
-        self.sent: dict[str, Any] = {}
-        outer = self
+def _model(*answers: str) -> Any:
+    """A free model answering in turn; an exception instance is raised instead."""
+    it = iter(answers)
 
-        class _S:
-            def __enter__(self) -> Any:
-                return self
+    def ask(rubric: str, user: str) -> str:
+        nxt = next(it)
+        if isinstance(nxt, Exception):
+            raise nxt
+        assert "independent reviewer" in rubric and "DIFF-BODY" in user
+        return nxt
 
-            def __exit__(self, *a: Any) -> None:
-                return None
-
-            def get_final_message(self) -> _Msg:
-                return msg
-
-        class _M:
-            def stream(self, **kw: Any) -> _S:
-                outer.sent = kw
-                return _S()
-
-        self.messages = _M()
+    return ask
 
 
-def test_the_reviewer_reads_the_whole_diff_under_the_rubric() -> None:
-    import json
-
-    ans = {
-        "verdict": "PASS",
-        "risk_increasing": False,
-        "touches_control": False,
-        "findings": [],
-        "summary": "ok",
-    }
-    c = _Client(_Msg("end_turn", json.dumps(ans)))
-    assert ir.review("DIFF-BODY", ["a.py"], c) == ans
-    assert c.sent["model"] == "claude-opus-5-5" and "independent reviewer" in c.sent["system"]
-    assert "DIFF-BODY" in c.sent["messages"][0]["content"]
-    assert c.sent["output_config"]["format"]["schema"] == ir.SCHEMA
+def _vote(ladder: list[Any]) -> tuple[str, list[str]]:
+    return ir.vote(
+        "DIFF-BODY",
+        ["a.py"],
+        ladder,
+        budget_s=1000,
+        sleep=lambda s: None,
+        clock=iter(range(0, 10_000, 10)).__next__,
+    )
 
 
-def test_a_refusal_or_a_cut_off_review_is_never_a_pass() -> None:
-    assert ir.decide(ir.review("d", [], _Client(_Msg("refusal"))))[0] is False
+def test_a_pass_needs_two_model_families() -> None:
+    v, _ = _vote(
+        [
+            ("qwen", "q1", _model(_PASS)),
+            ("qwen", "q2", _model(_PASS)),
+            ("deepseek", "d1", _model("noise " + _PASS + " trailing")),
+        ]
+    )
+    assert v == "PASS"
+    v, _ = _vote([("qwen", "q1", _model(_PASS)), ("qwen", "q2", _model(_PASS))])
+    assert v == "UNAVAILABLE"  # one family twice is one vote
+
+
+def test_one_fail_is_final_and_never_outvoted() -> None:
+    v, _ = _vote(
+        [
+            ("qwen", "q1", _model(_PASS)),
+            ("deepseek", "d1", _model(_FAIL)),
+            ("google", "g1", _model(_PASS)),
+        ]
+    )
+    assert v == "FAIL"
+    flagged = _PASS.replace('"risk_increasing": false', '"risk_increasing": true')
+    assert _vote([("qwen", "q1", _model(flagged))])[0] == "FAIL"
+
+
+def test_a_busy_model_is_asked_again_and_garbage_is_no_vote() -> None:
+    v, _ = _vote(
+        [
+            ("qwen", "q1", _model(ir.Unavailable("HTTP 429"), _PASS)),
+            ("deepseek", "d1", _model("I think it is fine")),
+            ("google", "g1", _model(_PASS)),
+        ]
+    )
+    assert v == "PASS"
+    v, log = _vote([("qwen", "q1", _model(*[ir.Unavailable("HTTP 429")] * 500))])
+    assert v == "UNAVAILABLE" and "0 of 2" in log[-1]
+
+
+def test_only_free_models_of_known_families_are_asked() -> None:
+    listing = [
+        {"id": "qwen/qwen3-coder:free", "context_length": 262_000},
+        {"id": "qwen/qwen3-coder", "context_length": 262_000},  # paid
+        {"id": "anthropic/claude-x:free", "context_length": 200_000},  # the author's family
+        {"id": "deepseek/deepseek-r1:free", "context_length": 8_000},  # too small
+        {"id": "meta-llama/llama-4:free", "context_length": 128_000},
+    ]
+    assert ir.free_models(listing, 50_000) == [
+        ("qwen", "qwen/qwen3-coder:free"),
+        ("meta-llama", "meta-llama/llama-4:free"),
+    ]
     with pytest.raises(RuntimeError):
-        ir.review("d", [], _Client(_Msg("max_tokens", "{")))
+        ir.ask_openrouter("k", "qwen/qwen3-coder", "r", "u")
+
+
+@pytest.mark.parametrize(("limit", "ok"), [(0, True), (0.0, True), (None, False), (5, False)])
+def test_the_openrouter_key_must_be_unable_to_spend(
+    monkeypatch: pytest.MonkeyPatch, limit: Any, ok: bool
+) -> None:
+    monkeypatch.setattr(ir, "_http", lambda url, body, h: {"data": {"limit": limit}})
+    assert ir.free_key_capped("k")[0] is ok
 
 
 def test_a_diff_cannot_close_its_own_data_block() -> None:
@@ -1232,24 +1292,6 @@ def test_a_diff_cannot_close_its_own_data_block() -> None:
 def test_the_reviewer_sees_both_sides_of_every_file() -> None:
     diff = "diff --git a/old.py b/new.py\nsimilarity index 90%\ndiff --git a/x.py b/x.py\n"
     assert ir.changed_files(diff) == ["new.py", "old.py", "x.py"]
-
-
-def test_every_sample_must_pass(monkeypatch: pytest.MonkeyPatch) -> None:
-    import json as _json
-    import types
-
-    ok = {"verdict": "PASS", "risk_increasing": False, "touches_control": False}
-    bad = {**ok, "verdict": "FAIL"}
-    answers = iter([ok, bad])
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
-    pr = {"head": {"sha": A}, "changed_files": 1}
-    diff = "diff --git a/x.py b/x.py\n+x = 1\n"
-    monkeypatch.setattr(
-        ir, "_gh", lambda *a: _json.dumps(pr) if a[0].endswith("/pulls/7") else diff
-    )
-    monkeypatch.setattr(ir, "review", lambda *a: next(answers))
-    monkeypatch.setitem(sys.modules, "anthropic", types.SimpleNamespace(Anthropic=lambda: None))
-    assert ir.main(["--repo", "o/r", "--pr", "7", "--head", A, "--base-sha", B]) == 1
 
 
 @pytest.mark.parametrize(
@@ -1298,13 +1340,12 @@ def test_a_truncated_diff_is_never_reviewed(
     """#456 delta audit S1: the diff must name every file the PR changes."""
     import json as _json
 
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     pr = {"head": {"sha": A}, "changed_files": 3}
     diff = "diff --git a/x.py b/x.py\n+x = 1\n"
     monkeypatch.setattr(
         ir, "_gh", lambda *a: _json.dumps(pr) if a[0].endswith("/pulls/7") else diff
     )
-    monkeypatch.setattr(ir, "review", lambda *a: pytest.fail("a partial diff was sent for review"))
+    monkeypatch.setattr(ir, "rungs", lambda *a: pytest.fail("a partial diff was sent for review"))
     assert ir.main(["--repo", "o/r", "--pr", "7", "--head", A, "--base-sha", B]) == 1
     assert "names 1 files, the PR changes 3" in capsys.readouterr().out
 
@@ -1312,3 +1353,154 @@ def test_a_truncated_diff_is_never_reviewed(
 def test_the_desk_directory_is_checked_for_shadows_too() -> None:
     """#456 delta audit S2: desk tests put desks/mt5 on sys.path."""
     assert "desks/mt5" in ri.SYS_PATH_ROOTS
+
+
+# ------------------------------------------------------- step D: a queued review is never a pass
+
+
+def _unavailable_review(h: Any) -> dict[str, Any]:
+    """The head's independent-review failed with the free reviewer's UNAVAILABLE mark."""
+    (rev,) = [r for r in h.runs if r["name"] == ag.REVIEWER]
+    rev["conclusion"] = "failure"
+    h.annotations[rev["id"]] = [{"title": ag.UNAVAILABLE_MARK, "message": "queued"}]
+    return rev
+
+
+def _reruns(h: Any) -> list[tuple[str, ...]]:
+    return [w for w in h.writes if w[0] == "POST" and w[1].endswith("/rerun")]
+
+
+def test_an_unavailable_review_queues_the_pr_and_asks_for_a_rerun(auto_hub: Any) -> None:
+    h = auto_hub(runs=_auto_green())
+    rev = _unavailable_review(h)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert _merges(h) == [] and not any("/labels" in w[1] for w in h.writes)  # no quarantine
+    assert _reruns(h) == [("POST", f"repos/o/r/actions/jobs/{rev['id']}/rerun")]
+    assert any("queued" in " ".join(w) for w in h.writes if "/statuses/" in w[1])
+
+
+def test_a_real_review_fail_is_quarantined_not_queued(auto_hub: Any) -> None:
+    h = auto_hub(runs=_auto_green())
+    rev = _unavailable_review(h)
+    h.annotations[rev["id"]] = [{"title": "something else"}]
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1
+    assert _reruns(h) == [] and any(w[1].endswith("/labels") for w in h.writes)
+
+
+def test_a_queued_review_never_masks_another_failure(auto_hub: Any) -> None:
+    h = auto_hub(runs=_auto_green())
+    _unavailable_review(h)
+    next(r for r in h.runs if r["name"] == "replay-shadow")["conclusion"] = "failure"
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1
+    assert _merges(h) == [] and _reruns(h) == []
+
+
+def test_a_forged_unavailable_mark_is_ignored(auto_hub: Any) -> None:
+    h = auto_hub(runs=_auto_green())
+    rev = _unavailable_review(h)
+    rev["forged"] = True  # not a job of release-gates.yml: it does not count at all
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert _merges(h) == [] and _reruns(h) == []
+
+
+def test_the_retry_waits_and_stops_at_the_attempt_limit(auto_hub: Any) -> None:
+    import time as _time
+    from datetime import UTC, datetime
+
+    h = auto_hub(runs=_auto_green())
+    rev = _unavailable_review(h)
+    rev["completed_at"] = datetime.now(UTC).isoformat()
+    assert "due in" in ag.requeue("o/r", rev) and _reruns(h) == []
+    rev["completed_at"] = datetime.fromtimestamp(_time.time() - 3600, UTC).isoformat()
+    h.attempt = ag.MAX_ATTEMPTS
+    assert "never bypassed" in ag.requeue("o/r", rev) and _reruns(h) == []
+    h.attempt = 3
+    assert "attempt 4" in ag.requeue("o/r", rev) and len(_reruns(h)) == 1
+
+
+def test_the_manual_path_never_reruns_or_waits_on_the_review(hub: Any) -> None:
+    h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], runs=_green())
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert len(_merges(h)) == 1 and _reruns(h) == []
+
+
+# ----------------------------------------------------------------- step D: the replay shadow
+
+_rs_spec = importlib.util.spec_from_file_location(
+    "replay_shadow", ROOT / "ops/release/replay_shadow.py"
+)
+assert _rs_spec is not None and _rs_spec.loader is not None
+rs = importlib.util.module_from_spec(_rs_spec)
+_rs_spec.loader.exec_module(rs)
+
+_BOOK = """
+import json
+OUT = INTENTS = LOG = STATE = GUARD = ARMED_MARKER = None
+LOT = 0.1
+WORDS = "a long sentence of prose that explains the decision to whoever reads the log"
+
+
+def run(venue, mt5, armed=False):
+    t = mt5.symbol_info_tick("XAUUSD").time
+    bars = mt5.copy_rates_from_pos("XAUUSD", 1, 0, 50)
+    doc = {"status": "OK", "placed": [], "actions": [], "skipped": [{"window": "x", "why": WORDS}],
+           "risk_usd": venue.account()["equity"] * 0.006, "at": t, "last": bars[-1]["close"]}
+    with open(INTENTS, "a") as f:
+        f.write(json.dumps({"at": t, "side": "buy_stop", "lot": LOT, "status": "WOULD_PLACE",
+                            "sizing": WORDS}) + "\\n")
+    return doc
+"""
+_GUARD = "def server_day(now=None):\n    return '2026-10-28'\n"
+
+
+def _tree(root: Path, book: str = _BOOK) -> Path:
+    (root / "desks/mt5/prop").mkdir(parents=True)
+    (root / "desks/mt5/prop/__init__.py").write_text("", "utf-8")
+    (root / "desks/mt5/prop/e8_gold.py").write_text(book, "utf-8")
+    (root / "desks/mt5/prop/e8_guard.py").write_text(_GUARD, "utf-8")
+    return root
+
+
+def _grid() -> list[dict[str, Any]]:
+    return [{**sc, "hours": [7.03, 13.03]} for sc in rs.scenarios()[:2]]
+
+
+def test_identical_books_pass_and_prose_is_not_a_decision(tmp_path: Path) -> None:
+    base = _tree(tmp_path / "base")
+    head = _tree(tmp_path / "head", _BOOK.replace("explains", "describes"))
+    rep = rs.compare(base, head, [], _grid())
+    assert rep["verdict"] == "PASS", rep["problems"]
+    assert rep["intents_compared"] == 4
+
+
+def test_a_changed_decision_fails(tmp_path: Path) -> None:
+    base = _tree(tmp_path / "base")
+    head = _tree(tmp_path / "head", _BOOK.replace("LOT = 0.1", "LOT = 0.2"))
+    rep = rs.compare(base, head, [], _grid())
+    assert rep["verdict"] == "FAIL" and "decides differently on intents" in rep["problems"][0]
+
+
+def test_a_head_that_raises_fails_and_a_base_that_cannot_run_is_unmeasured(
+    tmp_path: Path,
+) -> None:
+    base = _tree(tmp_path / "base")
+    head = _tree(tmp_path / "head", _BOOK.replace("t = mt5", "raise ValueError('x')\n    t = mt5"))
+    assert rs.compare(base, head, [], _grid())["verdict"] == "FAIL"
+    broken = _tree(tmp_path / "broken", "raise ImportError('no')\n")
+    rep = rs.compare(broken, base, [], _grid())
+    assert rep["verdict"] == "FAIL" and all("UNMEASURED" in p for p in rep["problems"])
+
+
+def test_a_money_path_file_the_replay_never_imported_is_unmeasured(tmp_path: Path) -> None:
+    base, head = _tree(tmp_path / "base"), _tree(tmp_path / "head")
+    rep = rs.compare(base, head, ["desks/mt5/prop/e8_gold.py", "docs/x.md"], _grid())
+    assert rep["verdict"] == "PASS", rep["problems"]  # imported, and nothing else is money path
+    rep = rs.compare(base, head, ["desks/mt5/mt5desk/gateway.py"], _grid())
+    assert rep["verdict"] == "FAIL" and "gateway.py" in rep["problems"][-1]
+
+
+def test_canon_keeps_numbers_and_drops_prose_and_clock() -> None:
+    assert rs.canon({"lot": 0.1000000001, "why": "x", "placed_at": "t", "k": [{"at": 1}]}) == {
+        "lot": 0.1,
+        "k": [{}],
+    }

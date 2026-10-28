@@ -1,9 +1,12 @@
 name: release-gates
 
 # The AUTO-tier jobs of the release controller (.github/scripts/audit_gate.py). An AUTO-tier PR
-# merges with no comment only when these succeed on its head, beside the ci.yml gating jobs and
-# the box's replay-shadow verdict. Every other PR ignores them: the CLEAR + APPROVE MERGES path
-# never reads these jobs, so a failure here never blocks a change zuck approves himself.
+# merges with no comment only when these succeed on its head, beside the ci.yml gating jobs.
+# Every other PR ignores them: the CLEAR + APPROVE MERGES path never reads these jobs, so a
+# failure here never blocks a change zuck approves himself.
+#
+# ZERO API COST (zuck 2026-10-28 19:47Z): Actions is free on standard runners for this public
+# repo, and the only model calls are to free models through $0-capped keys.
 #
 # An AUTO-tier PR cannot change this file or ops/release/ (both PROTECTED), so on such a PR the
 # copies that run are the base's. The tests and ceilings are taken from the base again anyway.
@@ -55,16 +58,95 @@ jobs:
       - name: Risk suites (base tests, PR code)
         run: xargs -a "$RUNNER_TEMP/suites" pytest -q -p no:randomly -p no:cacheprovider --timeout=600
 
+  replay-shadow:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      # The harness is the base's, in a directory the PR's tree never touches.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: harness
+          sparse-checkout: ops/release
+          persist-credentials: false
+
+      # Each tree holds only what the live book imports and reads (code, books, state files).
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /libs/
+            /desks/mt5/mt5desk/
+            /desks/mt5/prop/
+            /desks/mt5/*.py
+            /desks/mt5/data/*.json
+            /desks/mt5/reports/*.json
+            /data/*.json
+            /pyproject.toml
+          persist-credentials: false
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: head
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /libs/
+            /desks/mt5/mt5desk/
+            /desks/mt5/prop/
+            /desks/mt5/*.py
+            /desks/mt5/data/*.json
+            /desks/mt5/reports/*.json
+            /data/*.json
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # The base's declared dependencies only, never the project itself: an installed copy of
+      # either tree would answer imports the other tree is missing.
+      - name: Install the base's dependencies
+        working-directory: base
+        run: |
+          python -m pip install --upgrade pip
+          python - > "$RUNNER_TEMP/deps.txt" <<'PY'
+          import tomllib
+          print("\n".join(tomllib.load(open("pyproject.toml", "rb"))["project"]["dependencies"]))
+          PY
+          pip install -r "$RUNNER_TEMP/deps.txt"
+
+      - name: The PR's changed paths
+        working-directory: base
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh api "repos/${{ github.repository }}/compare/${{ github.event.pull_request.base.sha
+          }}...${{ github.event.pull_request.head.sha }}" --paginate
+          --jq '.files[] | .filename, (.previous_filename // empty)' | sort -u
+          > "$RUNNER_TEMP/changed.txt"
+
+      - name: Replay the live E8 book, base against PR
+        run: >-
+          python -I harness/ops/release/replay_shadow.py --base base --head head
+          --changed "$RUNNER_TEMP/changed.txt" --report "$RUNNER_TEMP/replay_shadow.json"
+
   independent-review:
     if: github.event.pull_request.head.repo.full_name == github.repository
-    # LIMIT: a same-repo PR can add a workflow that reads REVIEWER_API_KEY (pull_request gets
-    # repository secrets), so the key must carry a spend cap. An Environment restricted to LIVE
-    # would hide it from such a workflow but also from this job, which runs on the PR's ref.
+    # Free models only (ops/release/independent_review.py). A same-repo PR can add a workflow
+    # that reads these keys (pull_request gets repository secrets), so neither key can spend:
+    # the OpenRouter key must carry a $0 cap (the script checks it and refuses one that does
+    # not), and the Gemini key comes from a project with no billing. No key, or no free model
+    # answering, ends UNAVAILABLE (exit 75): the controller queues the PR and re-runs this job.
     concurrency:
       group: independent-review-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       # the base only: the PR's code never runs in the job that holds the reviewer's key
       - uses: actions/checkout@v4
@@ -77,12 +159,10 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install the reviewer client
-        run: python -m pip install "anthropic==2.3.0"
-
       - name: Review the whole diff
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.REVIEWER_API_KEY }}
+          OPENROUTER_FREE_KEY: ${{ secrets.OPENROUTER_FREE_KEY }}
+          GEMINI_FREE_KEY: ${{ secrets.GEMINI_FREE_KEY }}
           GH_TOKEN: ${{ github.token }}
         run: >-
           python -I ops/release/independent_review.py

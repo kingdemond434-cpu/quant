@@ -90,9 +90,15 @@ labelled `quarantined`, left open, never merged until a new head passes.
 
 STEP C. The PROTECTED floor above is widened by ops/release/protected_paths.txt (every LAWS 5m
 rail, test configuration, signing, kill switches); an unreadable list makes every PR PROTECTED.
-The AUTO jobs come from .github/workflows/release-gates.yml (risk-invariants, independent-review)
-and the box (replay-shadow, step D). A gating job counts only from GitHub Actions, and the manual
-path neither waits on nor fails by the AUTO jobs.
+The AUTO jobs come from .github/workflows/release-gates.yml. A gating job counts only from GitHub
+Actions, and the manual path neither waits on nor fails by the AUTO jobs.
+
+STEP D, ZERO API COST (zuck 2026-10-28 19:47Z). replay-shadow replays the live E8 gold book on
+the base and on the PR over a fixed scenario grid and fails on any changed decision or any
+money-path file it never imported. independent-review asks free models only, through $0-capped
+keys. When no free model answers, the review ends UNAVAILABLE: the PR is QUEUED (pending status,
+no quarantine) and the review is re-run later by whichever gate run looks next (the box sweep or
+a new event), never merged without it.
 
 Exit 0 when merged or when there is honestly nothing to do yet (no CLEAR); exit 1 when the gate
 refused or gave up, with the reason in the job summary and on the `audit/clear` commit status.
@@ -110,6 +116,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable, Iterable, Mapping
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -173,13 +180,21 @@ ACTIVATE_AUTO = "ACTIVATE LIVE AUTO-MERGE"
 #: The app every required check run must come from.
 CI_APP = "github-actions"
 #: The workflow file each required job must come from (#455 audit MF1: any workflow on any
-#: branch, or any App, can post a check run with any name on any sha). replay-shadow is the box's
-#: (step D) and has no source yet, so it can never pass.
+#: branch, or any App, can post a check run with any name on any sha).
 WORKFLOW_OF = {
     **dict.fromkeys(("quality", "mt5-money-path", "coverage-floor"), ".github/workflows/ci.yml"),
-    "risk-invariants": ".github/workflows/release-gates.yml",
-    "independent-review": ".github/workflows/release-gates.yml",
+    **dict.fromkeys(
+        ("risk-invariants", "replay-shadow", "independent-review"),
+        ".github/workflows/release-gates.yml",
+    ),
 }
+#: The free reviewer's "no model answered" mark (ops/release/independent_review.py): a review
+#: that ended this way is QUEUED -- re-run later, never a pass and never a quarantine.
+REVIEWER = "independent-review"
+UNAVAILABLE_MARK = "REVIEW_UNAVAILABLE"
+#: A queued review is re-run once its last attempt is this old, up to GitHub's attempt limit.
+RETRY_AFTER_S = 20 * 60
+MAX_ATTEMPTS = 48
 QUARANTINE = "quarantined"
 #: The GitHub files API lists at most 3000 files; past that the PR is never LOW.
 MAX_FILES = 3000
@@ -537,6 +552,53 @@ def up_to_date(base_ref: str, head: str) -> tuple[bool, str]:
     return True, "up to date"
 
 
+def queued_review(
+    repo: str,
+    runs: Iterable[Mapping[str, Any]],
+    genuine: Callable[[Mapping[str, Any]], bool],
+) -> Mapping[str, Any] | None:
+    """The head's newest genuine independent-review run when it ended UNAVAILABLE (no free
+    model answered), else None. Only the job's own annotation says so: its steps run the base's
+    script, so a PR cannot write it, and a real FAIL never carries it."""
+    newest: Mapping[str, Any] | None = None
+    for r in runs:
+        later = newest is None or str(r.get("started_at") or "") >= str(
+            newest.get("started_at") or ""
+        )
+        if str(r.get("name") or "") == REVIEWER and later and genuine(r):
+            newest = r
+    if newest is None or newest.get("status") != "completed":
+        return None
+    if newest.get("conclusion") != "failure":
+        return None
+    try:
+        notes = _gh(f"repos/{repo}/check-runs/{newest['id']}/annotations?per_page=100")
+    except RuntimeError:
+        return None
+    marked = any(str(a.get("title") or "") == UNAVAILABLE_MARK for a in notes or [])
+    return newest if marked else None
+
+
+def requeue(repo: str, review: Mapping[str, Any], now: float | None = None) -> str:
+    """Ask GitHub to re-run a queued review once its last attempt is RETRY_AFTER_S old."""
+    done = str(review.get("completed_at") or "")
+    try:
+        age = (now or time.time()) - datetime.fromisoformat(done.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        age = RETRY_AFTER_S
+    if age < RETRY_AFTER_S:
+        return f"re-run due in {int((RETRY_AFTER_S - age) // 60) + 1} min"
+    try:
+        job = _gh(f"repos/{repo}/actions/jobs/{review['id']}")
+        attempt = int((job or {}).get("run_attempt") or 0)
+        if attempt >= MAX_ATTEMPTS:
+            return f"{attempt} attempts and no free reviewer: still queued, never bypassed"
+        _gh(f"repos/{repo}/actions/jobs/{review['id']}/rerun", "-X", "POST")
+    except (RuntimeError, TypeError, ValueError) as exc:
+        return f"re-run not requested ({exc})"
+    return f"re-run requested (attempt {attempt + 1})"
+
+
 def patch_id(base_ref: str, sha: str) -> str | None:
     """The identity of the PR's own change at `sha`: sha256 of the exact bytes of its diff from
     the merge-base with the base branch. None when the commit cannot be fetched or diffed.
@@ -745,9 +807,19 @@ def run(
             return 0
         pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate", "--slurp")
         runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
-        state, cwhy = checks(runs, required, provenance(repo, pr, head) if low else _from_ci_app)
+        genuine = provenance(repo, pr, head) if low else _from_ci_app
+        state, cwhy = checks(runs, required, genuine)
         if state == "pass":
             break
+        if state == "fail" and REVIEWER in required:
+            review = queued_review(repo, runs, genuine)
+            rest = [r for r in runs if r is not review]
+            if review is not None and checks(rest, required, genuine)[0] != "fail":
+                # no free reviewer answered: QUEUED, never a pass and never a quarantine
+                qwhy = f"{REVIEWER} queued: no free reviewer answered; {requeue(repo, review)}"
+                _status(repo, head, "pending", qwhy)
+                _summary(f"#{pr} @ {head[:9]}: not merged -- {qwhy}")
+                return 0
         if state == "fail":
             _summary(f"#{pr} @ {head[:9]}: not merged -- CI {cwhy}")
             if low:  # the no-comment paths quarantine a failure; the manual path reports it
