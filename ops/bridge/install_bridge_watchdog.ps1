@@ -7,9 +7,23 @@
 # The watchdog keeps the server running and restarts it whenever it exits.
 #
 # WHY A COPY OUTSIDE THE CHECKOUT. Sessions on the bridge check out branches in C:\opt\bridge\quant.
-# The task runs C:\opt\bridge\bin\bridge_watchdog.ps1, copied here, so a branch switch in the
-# checkout never changes or removes the script that keeps the bridge alive. Re-run this installer to
-# update it.
+# The task runs C:\ProgramData\ClaudeBridge\bin\bridge_watchdog.ps1, copied there, so a branch
+# switch in the checkout never changes or removes the script that keeps the bridge alive. Re-run
+# this installer to update it.
+#
+# WHY C:\ProgramData (audit v1.2). A folder an administrator creates under C:\ inherits Modify for
+# Authenticated Users, so anyone could RENAME C:\opt\bridge and plant a bin of their own that the
+# elevated task would then run -- the pin check lives in the very script they replaced. Under
+# C:\ProgramData nobody but administrators may rename or re-permission what an administrator
+# created, and the watchdog refuses to run when any folder above bin or logs says otherwise.
+#
+# THE CHECKOUT (C:\opt\bridge\quant) is locked too unless -SkipCheckoutLock: the elevated sessions
+# run in it and load its hooks. Its DACL becomes Administrators + SYSTEM full, Users read; its owner
+# is kept (git refuses a repository owned by someone else). What sits above it (C:\opt) is not
+# touched here -- it also holds the live desk -- so a C:\opt that Authenticated Users may modify
+# still lets a non-admin rename the checkout away; bridge_status.ps1 reports that as
+# LIVE_CHECKOUT_AT_RISK. Measure first: `icacls C:\opt` and `Get-LocalUser` / `net localgroup
+# Administrators` -- on a box whose only accounts are administrators there is nobody to escalate.
 #
 # WHY INTERACTIVE, AND WHAT A REBOOT STILL NEEDS. The server uses this user's Claude sign-in and the
 # FTMO terminal already needs this user's desktop session, so the task runs as this user,
@@ -25,9 +39,11 @@
 [CmdletBinding()]
 param(
     [string] $Checkout = "C:\opt\bridge\quant",
-    [string] $BinDir = "C:\opt\bridge\bin",
-    [string] $LogDir = "C:\opt\bridge\logs"
+    [string] $Root = "C:\ProgramData\ClaudeBridge",
+    [switch] $SkipCheckoutLock
 )
+$BinDir = Join-Path $Root "bin"
+$LogDir = Join-Path $Root "logs"
 # Highest, not a choice: the bin folder below is Administrators + SYSTEM only, so a limited token
 # could not even read the script it runs.
 $RunLevel = "Highest"
@@ -43,7 +59,7 @@ if (-not (Test-Path $src)) { throw "bridge_watchdog.ps1 missing at $src" }
 # may read). Files already inside lose any explicit entry (icacls /reset on the children), and the
 # copy and its pin are deleted and written fresh, never written over a file someone pre-created.
 # The pin protects against non-admins only: an administrator can rewrite the pin and the copy.
-function Lock-Folder([string] $dir, [switch] $UsersRead) {
+function Lock-Folder([string] $dir, [switch] $UsersRead, [switch] $KeepOwner) {
     if ((Test-Path -LiteralPath $dir) -and ((Get-Item -LiteralPath $dir -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
         throw "$dir is a junction or symlink; not installing"
     }
@@ -52,9 +68,12 @@ function Lock-Folder([string] $dir, [switch] $UsersRead) {
     if ($UsersRead) { $grants += "*S-1-5-32-545:(OI)(CI)RX" }
     & icacls.exe $dir /inheritance:r /grant:r @grants | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "icacls could not restrict $dir (exit $LASTEXITCODE)" }
-    & icacls.exe $dir /setowner "*S-1-5-32-544" /T /C | Out-Null
+    if (-not $KeepOwner) { & icacls.exe $dir /setowner "*S-1-5-32-544" /T /C | Out-Null }
     foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -Recurse)) {
-        if ($c.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "$($c.FullName) is a junction or symlink; not installing" }
+        if (-not ($c.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }
+        # a symlink the repository itself tracks is the checkout's business, not a planted junction
+        if ($KeepOwner) { Write-Warning "$($c.FullName) is a junction or symlink inside the checkout"; continue }
+        throw "$($c.FullName) is a junction or symlink; not installing"
     }
     if (@(Get-ChildItem -LiteralPath $dir -Force).Count -gt 0) {
         & icacls.exe (Join-Path $dir "*") /reset /T /C | Out-Null
@@ -72,8 +91,10 @@ function Lock-Folder([string] $dir, [switch] $UsersRead) {
         }
     }
 }
+Lock-Folder $Root -UsersRead
 Lock-Folder $BinDir
 Lock-Folder $LogDir -UsersRead
+if (-not $SkipCheckoutLock) { Lock-Folder $Checkout -UsersRead -KeepOwner }
 $dst = Join-Path $BinDir 'bridge_watchdog.ps1'
 $pinFile = Join-Path $BinDir 'watchdog.sha256'
 Remove-Item -LiteralPath $dst, $pinFile -Force -ErrorAction SilentlyContinue

@@ -20,14 +20,18 @@
         box (CIM) runs in a job with a timeout, so a hung query costs one pass, never the bridge
         starts `claude remote-control --spawn worktree --no-create-session-in-dir --name <Name>`
         in the checkout, in its own console, with a --debug-file of its own per run
-        refreshes C:\opt\bridge\logs\bridge_watchdog.json at least every 60 s -- while the server
+        refreshes C:\ProgramData\ClaudeBridge\logs\bridge_watchdog.json at least every 60 s -- while the server
         runs AND through every back-off or sign-in wait (`at`, `beat_every_s`, server pid, how long
         the server's debug file has been silent, session errors the debug file names), so a reader
         can tell a live watchdog from a hung one and a connected server from one parked at a prompt
-        refuses to run unless the bin and log folders are Administrators + SYSTEM only (the log
-        folder readable by Users) and nothing in them, or on the way to them, is a junction or
-        symlink: the watchdog runs elevated, and a folder anyone can write is a forged heartbeat
-        and, through a junction, an elevated write or delete anywhere
+        refuses to run unless the bin and log folders (under C:\ProgramData\ClaudeBridge) are
+        Administrators + SYSTEM only (the log folder readable by Users), nothing in them or on the
+        way to them is a junction or symlink, and no folder on the way can be renamed, re-owned or
+        re-permissioned by anyone else: the watchdog runs elevated, so a folder anyone can write --
+        or a parent anyone can rename and replace -- is a planted script run elevated, a forged
+        heartbeat and, through a junction, an elevated write or delete anywhere
+        reports (never refuses over) a bridge checkout that a non-admin could write or replace: the
+        sessions run elevated in it and load its hooks, so the reader flags it until it is locked
         restarts it when it exits:
             ran >= 5 min                -> after 10 s (a network drop or a normal stop)
             ran <  5 min, signed in     -> back off 30 s, 60 s, ... up to 15 min (a crash loop)
@@ -44,41 +48,56 @@
 [CmdletBinding()]
 param(
     [string] $Checkout = "C:\opt\bridge\quant",
-    [string] $LogDir = "C:\opt\bridge\logs",
+    [string] $LogDir = "C:\ProgramData\ClaudeBridge\logs",
     [string] $Name = ("{0}-bridge" -f $env:COMPUTERNAME.ToLower())
 )
 
 $ErrorActionPreference = "Continue"
 $BinDir = Split-Path -Parent $PSCommandPath
 
-# ONLY ADMINISTRATORS AND SYSTEM MAY WRITE WHERE THIS ELEVATED SCRIPT WRITES (audit v1.1 MF2). The
-# installer creates and locks both folders; this script never creates them, and refuses -- before
-# it writes a byte -- when either grants write to anyone else, is owned by anyone else, or when any
-# folder on the way or any file inside is a reparse point (junction, symlink, mount point).
-$AdminSids = @("S-1-5-32-544", "S-1-5-18")
-$WriteMask = [int64][System.Security.AccessControl.FileSystemRights]"Write, Delete, DeleteSubdirectoriesAndFiles, ChangePermissions, TakeOwnership" -bor 0x50000000
-function Get-UnsafeReason([string] $dir) {
+# ONLY ADMINISTRATORS AND SYSTEM MAY WRITE WHERE THIS ELEVATED SCRIPT WRITES, OR REPLACE IT (audit
+# v1.1 MF2, v1.2 MF1). The installer creates and locks both folders under C:\ProgramData, whose own
+# ACL lets nobody but administrators rename or re-permission what an administrator created there;
+# this script never creates them, and refuses -- before it writes a byte -- when either grants
+# write to anyone else or is owned by anyone else, when any file inside or any folder on the way
+# is a reparse point (junction, symlink, mount point), or when anyone else may delete, rename,
+# re-own or re-permission any folder on the way (a renamed parent is a replaced bin).
+$AdminSids = @("S-1-5-32-544", "S-1-5-18", "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464")
+# Write rights on a folder this script writes to; and on a folder above it, the rights that let
+# someone delete, rename, re-own or re-permission it (creating a sibling is harmless).
+$WriteMask = [int64]([System.Security.AccessControl.FileSystemRights]"Write, Delete, DeleteSubdirectoriesAndFiles, ChangePermissions, TakeOwnership") -bor 0x50000000
+$ParentMask = [int64]([System.Security.AccessControl.FileSystemRights]"Delete, DeleteSubdirectoriesAndFiles, ChangePermissions, TakeOwnership") -bor 0x10000000
+function Get-AclProblem([string] $path, [int64] $mask, [string[]] $owners = $AdminSids) {
+    $acl = Get-Acl -LiteralPath $path -ErrorAction Stop
+    $owner = (New-Object System.Security.Principal.NTAccount($acl.Owner)).Translate([System.Security.Principal.SecurityIdentifier]).Value
+    if ($owner -notin $owners) { return "$path is owned by $($acl.Owner)" }
+    foreach ($a in $acl.Access) {
+        if ($a.AccessControlType -ne "Allow") { continue }
+        if ($a.PropagationFlags -band [System.Security.AccessControl.PropagationFlags]::InheritOnly) { continue }
+        $sid = try { $a.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value } catch { [string]$a.IdentityReference }
+        if ($sid -in $AdminSids) { continue }
+        if (([int64]$a.FileSystemRights -band $mask) -ne 0) { return "$path grants $($a.FileSystemRights) to $($a.IdentityReference)" }
+    }
+    return $null
+}
+function Get-UnsafeReason([string] $dir, [switch] $Shallow, [string[]] $owners = $AdminSids) {
     try {
         $item = Get-Item -LiteralPath $dir -Force -ErrorAction Stop
-        $walk = $item
+        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { return "$($item.FullName) is a reparse point" }
+        $walk = $item.Parent
         while ($walk) {
             if ($walk.Attributes -band [IO.FileAttributes]::ReparsePoint) { return "$($walk.FullName) is a reparse point" }
+            $why = Get-AclProblem $walk.FullName $ParentMask
+            if ($why) { return $why }
             $walk = $walk.Parent
         }
-        foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -ErrorAction Stop)) {
-            if ($c.Attributes -band [IO.FileAttributes]::ReparsePoint) { return "$($c.FullName) is a reparse point" }
+        if (-not $Shallow) {
+            foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -ErrorAction Stop)) {
+                if ($c.Attributes -band [IO.FileAttributes]::ReparsePoint) { return "$($c.FullName) is a reparse point" }
+            }
         }
-        $acl = Get-Acl -LiteralPath $dir -ErrorAction Stop
-        $owner = (New-Object System.Security.Principal.NTAccount($acl.Owner)).Translate([System.Security.Principal.SecurityIdentifier]).Value
-        if ($owner -notin $AdminSids) { return "$dir is owned by $($acl.Owner)" }
-        foreach ($a in $acl.Access) {
-            if ($a.AccessControlType -ne "Allow") { continue }
-            $sid = try { $a.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value } catch { [string]$a.IdentityReference }
-            if ($sid -in $AdminSids) { continue }
-            if (([int64]$a.FileSystemRights -band $WriteMask) -ne 0) { return "$dir grants write to $($a.IdentityReference)" }
-        }
+        return (Get-AclProblem $dir $WriteMask $owners)
     } catch { return "$dir cannot be examined: $($_.Exception.Message)" }
-    return $null
 }
 function Assert-SafeFolders {
     foreach ($d in @($BinDir, $LogDir)) {
@@ -143,6 +162,21 @@ if (-not $claude) {
 if (-not $claude) { Log "claude not found on PATH or in the default install paths"; Beat @{ state = "NO_CLAUDE"; beat_every_s = 300 }; exit 2 }
 if (-not (Test-Path (Join-Path $Checkout ".git"))) { Log "no checkout at $Checkout"; Beat @{ state = "NO_CHECKOUT"; beat_every_s = 300 }; exit 2 }
 
+# THE CHECKOUT THE ELEVATED SESSIONS RUN IN. Whoever can write it, its .claude or its git hooks, or
+# rename a folder above it, runs code in those sessions. Not a reason to leave the bridge down --
+# it is how the bridge ran by hand -- so it is measured every pass and carried in the heartbeat.
+$script:MySid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+function Get-CheckoutRisk {
+    foreach ($d in @($Checkout, (Join-Path $Checkout ".claude"), (Join-Path $Checkout ".git"),
+                     (Join-Path $Checkout ".git\hooks"))) {
+        if (-not (Test-Path -LiteralPath $d)) { continue }
+        # the checkout stays owned by this (administrator) user: git refuses one owned by another
+        $why = Get-UnsafeReason $d -Shallow -owners ($AdminSids + $script:MySid)
+        if ($why) { return $why }
+    }
+    return $null
+}
+
 # SLEEP, BUT KEEP SAYING SO (audit v1.1 MF1). A 30-minute sign-in wait or a 15-minute back-off with
 # no heartbeat read as "watchdog hung" for most of the wait. Sleep in chunks of at most 60 s and
 # beat each one, carrying when the wait ends.
@@ -150,6 +184,7 @@ function Wait-Beating([int] $seconds, [hashtable] $f) {
     $until = (Get-Date).AddSeconds([Math]::Max($seconds, 1))
     $f["next_at"] = $until.ToUniversalTime().ToString("o")
     while ($true) {
+        Assert-SafeFolders
         $left = [int][Math]::Ceiling(($until - (Get-Date)).TotalSeconds)
         $f["next_in_s"] = [Math]::Max($left, 0)
         Beat $f
@@ -215,17 +250,41 @@ function Find-NamedServer {
 
 # SESSIONS THAT DIE, NOT ONLY A SERVER THAT DIES (2026-10-28, the E8 thread: three sessions on this
 # bridge parked within a second of starting while the server process stayed up). A process-alive
-# check cannot see that, so each beat also counts the lines in the last 200 of this server's debug
-# file that name a failed or exited session or spawn, and keeps the newest. A reader reports it; the
-# watchdog does not restart a server over it (the pattern is a first guess, to calibrate on the box).
+# check cannot see that, so each beat reads only the lines the server's debug file gained since the
+# last beat and counts those naming a failed or exited session or spawn; the heartbeat carries the
+# count over the last 10 minutes and the newest line. History already in a file when it is first
+# seen is not counted. A reader reports it; the watchdog never restarts a server over it. Both
+# patterns are first guesses, to calibrate on the box ($SessionNoise: lines seen on a healthy server).
 $SessionError = '(?i)(session|spawn|worktree|child).{0,80}(fail|error|exited|crash|refus|denied)'
-function Get-SessionErrors([string] $debug) {
+$SessionNoise = '(?i)updateSessionTitle'
+$script:DebugPos = @{}
+$script:ErrTimes = @()
+$script:LastErr = $null
+function Update-SessionErrors([string] $debug) {
     if (-not $debug -or -not (Test-Path -LiteralPath $debug)) { return @{ n = $null; last = $null } }
+    $now = Get-Date
     try {
-        $hits = @(Get-Content -LiteralPath $debug -Tail 200 -ErrorAction Stop | Where-Object { $_ -match $SessionError })
-        $last = if ($hits.Count) { "$($hits[-1])".Substring(0, [Math]::Min(300, "$($hits[-1])".Length)) } else { $null }
-        return @{ n = $hits.Count; last = $last }
-    } catch { return @{ n = $null; last = $null } }
+        $fs = [IO.File]::Open($debug, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]"ReadWrite, Delete")
+        try {
+            $len = $fs.Length
+            if (-not $script:DebugPos.ContainsKey($debug)) { $script:DebugPos[$debug] = $len }
+            $pos = [int64]$script:DebugPos[$debug]
+            if ($pos -gt $len) { $pos = 0 }
+            $pos = [Math]::Max($pos, $len - 4MB)
+            $null = $fs.Seek($pos, [IO.SeekOrigin]::Begin)
+            $new = (New-Object IO.StreamReader($fs)).ReadToEnd()
+            $script:DebugPos[$debug] = $len
+        } finally { $fs.Dispose() }
+        foreach ($l in ($new -split "`n")) {
+            if ($l -match $SessionError -and $l -notmatch $SessionNoise) {
+                $script:ErrTimes += $now
+                $script:LastErr = $l.Trim().Substring(0, [Math]::Min(300, $l.Trim().Length))
+            }
+        }
+    } catch { return @{ n = $null; last = $script:LastErr } }
+    $cut = $now.AddMinutes(-10)
+    $script:ErrTimes = @($script:ErrTimes | Where-Object { $_ -ge $cut })
+    return @{ n = $script:ErrTimes.Count; last = $script:LastErr }
 }
 
 function Wait-Server([System.Diagnostics.Process] $p, [string] $debug, [string] $by) {
@@ -237,9 +296,10 @@ function Wait-Server([System.Diagnostics.Process] $p, [string] $debug, [string] 
         if ($debug -and (Test-Path -LiteralPath $debug)) {
             $quiet = [int]((Get-Date) - (Get-Item -LiteralPath $debug).LastWriteTime).TotalSeconds
         }
-        $se = Get-SessionErrors $debug
+        $se = Update-SessionErrors $debug
         Beat @{ state = "RUNNING"; server_pid = $p.Id; server_started_by = $by; debug_file = $debug
-                debug_quiet_s = $quiet; session_error_lines = $se.n; last_session_error = $se.last
+                debug_quiet_s = $quiet; session_errors_10m = $se.n; last_session_error = $se.last
+                checkout_risk = (Get-CheckoutRisk)
                 next_at = $null; next_in_s = $null; needs = $null }
     }
 }

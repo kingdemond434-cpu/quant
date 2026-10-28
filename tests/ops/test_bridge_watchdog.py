@@ -44,13 +44,17 @@ BANNED = {
     "dynamic code": (
         r"Invoke-Expression|\biex\b|\[scriptblock\]::Create|\.AddScript\(|-EncodedCommand|&\s*\("
     ),
+    # a name hidden from every pattern above: a backtick inside a word (Ki`ll), or a member named
+    # by a string or a variable (."Kill"(), .$m())
+    "obfuscation": r"`[^nrt\r\n\s]|\.\s*[\"'][\w`]+[\"']\s*\(|\.\s*\$\w+\s*\(",
 }
 
 
 @pytest.mark.parametrize("script", sorted(SCRIPTS))
 @pytest.mark.parametrize("what", sorted(BANNED))
 def test_no_script_does_what_the_bridge_must_not(script: str, what: str) -> None:
-    for text in (SCRIPTS[script], RAW[script]):
+    # comments may quote code in backticks, so obfuscation is judged on the code alone
+    for text in (SCRIPTS[script], RAW[script]) if what != "obfuscation" else (SCRIPTS[script],):
         m = re.search(BANNED[what], text, flags=re.I)
         assert m is None, f"{script}: {what}: {m.group(0) if m else ''}"
 
@@ -67,6 +71,7 @@ def test_the_banned_patterns_catch_what_they_name() -> None:
         "sign-in": "claude auth login",
         "live tree": "cd C:\\opt\\quant",
         "dynamic code": "& ('i' + 'ex') $x",
+        "obfuscation": '$p."Ki`ll"()',
     }
     for what, probe in probes.items():
         assert re.search(BANNED[what], probe, flags=re.I), what
@@ -227,3 +232,75 @@ def test_the_heartbeat_has_a_reader_and_the_task_is_in_the_manifest() -> None:
     manifest = (ROOT / "desks/mt5/ops/box_tasks.manifest").read_text(encoding="utf-8")
     assert 'name="Claude-Bridge-Watchdog"' in manifest
     assert 'installer="ops/bridge/install_bridge_watchdog.ps1"' in manifest
+
+
+# ------------------------------------------------------------------------------- v1.3 (audit v1.2)
+def test_the_call_operator_only_runs_what_it_names() -> None:
+    """A command name held in a variable is any command: only these targets may follow `&`."""
+    allowed = {"watchdog": {"$c"}, "installer": {"icacls.exe"}, "status": set()}
+    for script, code in SCRIPTS.items():
+        targets = set(re.findall(r"(?<![\w&>-])&\s*(\S+)", code))
+        assert targets <= allowed[script], (script, targets - allowed[script])
+
+
+def test_the_installer_grants_only_admins_system_and_users_read() -> None:
+    code = SCRIPTS["installer"]
+    assert set(re.findall(r"\*(S-1-[\d-]+):", code)) <= {"S-1-5-32-544", "S-1-5-18", "S-1-5-32-545"}
+    assert "*S-1-5-32-545:(OI)(CI)RX" in code
+    for bad in ("Everyone", "Authenticated Users", "S-1-1-0", "S-1-5-11", "/grant ", "(M)", ":M"):
+        assert bad not in code, bad
+    assert code.count("& icacls.exe $dir /inheritance:r /grant:r @grants") == 1
+
+
+def test_every_wait_rechecks_the_folders() -> None:
+    code = SCRIPTS["watchdog"]
+    for fn, nxt in (
+        ("function Wait-Server", "$Refused = "),
+        ("function Wait-Beating", "function Get-OwnDebug"),
+    ):
+        body = code[code.index(fn) : code.index(nxt)]
+        assert "Assert-SafeFolders" in body, fn
+
+
+def test_only_a_state_written_before_exit_promises_the_re_arm_interval() -> None:
+    code = SCRIPTS["watchdog"]
+    hits = [m.start() for m in re.finditer(r"beat_every_s = 300", code)]
+    assert len(hits) == 3
+    for at in hits:
+        assert re.search(r"\bexit [23]\b", code[at : at + 40]), code[at - 80 : at + 40]
+    assert '$script:State["beat_every_s"] = 60' in code
+
+
+def test_bin_and_logs_live_under_an_admin_only_root_and_every_parent_is_checked() -> None:
+    code, inst = SCRIPTS["watchdog"], SCRIPTS["installer"]
+    assert '$LogDir = "C:\\ProgramData\\ClaudeBridge\\logs"' in code
+    assert '$Root = "C:\\ProgramData\\ClaudeBridge"' in inst
+    assert inst.index("Lock-Folder $Root -UsersRead") < inst.index("Lock-Folder $BinDir\n")
+    walk = code[code.index("function Get-UnsafeReason") : code.index("function Assert-SafeFolders")]
+    assert "Get-AclProblem $walk.FullName $ParentMask" in walk
+    acl = code[code.index("function Get-AclProblem") : code.index("function Get-UnsafeReason")]
+    assert "InheritOnly" in acl and "$owners" in acl
+    assert "TakeOwnership" in code[code.index("$ParentMask") :]
+    assert "C:\\opt\\bridge\\bin" not in code + inst + SCRIPTS["status"]
+
+
+def test_the_checkout_is_locked_and_its_risk_reported_never_fatal() -> None:
+    code, inst, status = SCRIPTS["watchdog"], SCRIPTS["installer"], SCRIPTS["status"]
+    assert "Lock-Folder $Checkout -UsersRead -KeepOwner" in inst
+    risk = code[code.index("function Get-CheckoutRisk") : code.index("function Wait-Beating")]
+    assert ".git\\hooks" in risk and ".claude" in risk and "exit" not in risk
+    assert "checkout_risk = (Get-CheckoutRisk)" in code
+    assert '"LIVE_CHECKOUT_AT_RISK:' in status
+
+
+def test_degraded_is_a_count_over_ten_minutes_of_new_lines() -> None:
+    code, status = SCRIPTS["watchdog"], SCRIPTS["status"]
+    up = code[code.index("function Update-SessionErrors") : code.index("function Wait-Server")]
+    assert "$fs.Seek($pos" in up and "AddMinutes(-10)" in up
+    assert "$script:DebugPos[$debug] = $len" in up  # history in a new file is not counted
+    assert "$SessionNoise" in up and "updateSessionTitle" in code
+    assert "[int]$b.session_errors_10m -ge 3" in status
+
+
+def test_the_reader_names_the_tasks_last_result() -> None:
+    assert "Get-ScheduledTaskInfo -TaskName $TaskName" in SCRIPTS["status"]
