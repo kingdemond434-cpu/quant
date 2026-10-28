@@ -241,10 +241,16 @@ _AXIS_PARAMS = frozenset({"timeframe", "session", "selector", "regime", "conditi
 #: only to `del` it; `mechanism_genome`/`crossed_slot` are alpha_genome's narrative of how a cell
 #: was bred. Keying on them would split ONE executable rule into two L1 rules by where it came
 #: from -- the reverse of the bug `categorical_suffix` fixes, and a flattered breadth census.
+#: NEVER a family kwarg: `label` (family_clock_transition's clock) and `source`
+#: (family_alt_series's series) look like provenance and are executable, so they stay structure.
+#: test_hypothesis_families pins this set disjoint from every family callable's kwargs, except
+#: `population`, which family_formula accepts only to delete.
 _PROVENANCE_PARAMS = frozenset({
-    "population", "mechanism_genome", "crossed_slot", "label", "title", "note", "notes",
-    "mechanism_note", "why", "reason", "claim", "claim_id", "source", "source_url", "url",
+    "population", "mechanism_genome", "crossed_slot", "title", "note", "notes",
+    "mechanism_note", "why", "reason", "claim", "claim_id", "source_url", "url",
     "producer", "provenance", "origin", "author", "payload_hash", "id"})
+#: kwargs a family accepts and discards, so excluding them from the key collapses nothing real
+_DISCARDED_KWARGS = frozenset({"population"})
 _PROVENANCE_SUFFIXES = ("_id", "_url", "_hash", "_note")
 
 #: A numeric literal that is not part of an identifier (`ma20`, `range_v2` keep their digits).
@@ -252,7 +258,7 @@ _NUM_LITERAL = re.compile(r"(?<![A-Za-z0-9_.])[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+
 
 #: Bumped whenever the L1 key changes. `daily` is recomputed from the whole bank on every pass, so
 #: a change RESTATES the series rather than stepping it; the version says which key a file used.
-L1_KEY_VERSION = "structural+categorical-v1.1 (2026-10-28)"
+L1_KEY_VERSION = "structural+categorical-v1.2 (2026-10-28)"
 
 
 def _categorical(v: Any) -> Any:

@@ -89,6 +89,52 @@ def test_provenance_params_are_not_structure_and_expr_literals_collapse() -> Non
     assert hf.categorical_suffix(_row("EURUSD", "x", input_source="cot")) != ""
 
 
+def _family_kwargs() -> set[str]:
+    import importlib
+    import inspect
+    import pkgutil
+
+    import mt5desk
+    from mt5desk import families
+
+    fns: list[object] = [e["func"] for e in families.FAMILY_REGISTRY.values()]
+    for m in pkgutil.iter_modules(mt5desk.__path__):
+        try:
+            mod = importlib.import_module(f"mt5desk.{m.name}")
+        except Exception:
+            continue        # a box-only module (gateway: MetaTrader5) defines no family
+        fns += [v for k, v in vars(mod).items() if k.startswith("family") and callable(v)
+                and getattr(v, "__module__", "") == mod.__name__]
+    try:
+        from mt5desk.executables import hunt16_families
+        fns += list(hunt16_families().values())
+    except Exception:
+        pass
+    out: set[str] = set()
+    for fn in fns:
+        try:
+            sig = inspect.signature(fn)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            continue
+        out |= {p.name for p in sig.parameters.values()
+                if p.kind in (p.KEYWORD_ONLY, p.POSITIONAL_OR_KEYWORD)}
+    return out
+
+
+def test_no_family_kwarg_is_ever_treated_as_provenance() -> None:
+    """A later family that grows a `title` or `reason` kwarg fails here instead of silently
+    collapsing its distinct rules into one L1 cell (audit 2026-10-28: `label`, `source`)."""
+    kwargs = _family_kwargs()
+    assert len(kwargs) > 100                       # the families were actually reached
+    dropped = {k for k in kwargs if not hf._structural_param(k) and k not in hf._AXIS_PARAMS}
+    assert dropped <= hf._DISCARDED_KWARGS, sorted(dropped)
+    src = (Path(hf.__file__).resolve().parents[1] / "mt5desk" / "family_formula.py").read_text(
+        encoding="utf-8")
+    assert "del population" in src                 # the one exception is still discarded
+    assert hf.categorical_suffix(_row("EURUSD", "clock_transition", label="tokyo_open")) != \
+        hf.categorical_suffix(_row("EURUSD", "clock_transition", label="comex_settle"))
+
+
 def test_an_unmeasured_symbol_is_its_own_cluster() -> None:
     rows = [_row("EURUSD"), _row("AUDNZD")]
     assert hf.census(rows, {}, detail=10)["l2_families"] == 2
