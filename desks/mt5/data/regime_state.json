@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-28T04:15:11.503267+00:00",
+  "swept_at": "2026-10-28T04:30:16.605577+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -537,7 +537,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 53,
-      "shadow_exp_r": 0.4038,
+      "shadow_exp_r": 0.406,
       "woke_on_shadow": false
     },
     "CADCHF|overnight_gap_decay_asia": {
@@ -647,7 +647,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0789,
+      "shadow_exp_r": -0.3508,
       "woke_on_shadow": false
     },
     "CHFDKK|macro_conditional_continuous": {
@@ -1153,7 +1153,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 53,
-      "shadow_exp_r": 0.2998,
+      "shadow_exp_r": 0.3042,
       "woke_on_shadow": false
     },
     "EURCHF|formula_continuous": {
@@ -1197,7 +1197,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 33,
-      "shadow_exp_r": 0.3927,
+      "shadow_exp_r": 0.3997,
       "woke_on_shadow": false
     },
     "EURCHF|spread_state_continuous": {
@@ -2484,7 +2484,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.137,
+      "shadow_exp_r": -0.1401,
       "woke_on_shadow": false
     },
     "GBPSGD|overnight_gap_decay_continuous": {
@@ -2979,7 +2979,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1879,
+      "shadow_exp_r": -0.2734,
       "woke_on_shadow": false
     },
     "NZDCAD|macro_conditional_continuous": {
@@ -3045,7 +3045,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.6364,
+      "shadow_exp_r": -0.5946,
       "woke_on_shadow": false
     },
     "NZDHUF|carry_continuous": {
@@ -3122,7 +3122,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1922,
+      "shadow_exp_r": -0.2432,
       "woke_on_shadow": false
     },
     "NZDJPY|vol_transition_continuous": {
@@ -4321,7 +4321,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2141,
+      "shadow_exp_r": -0.2159,
       "woke_on_shadow": false
     },
     "XAGEUR|range_reversion_continuous": {
@@ -4419,8 +4419,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 47,
-      "shadow_exp_r": -0.0388,
+      "shadow_n": 25,
+      "shadow_exp_r": -0.4188,
       "woke_on_shadow": false
     },
     "XAGUSD|cross_asset_residual_continuous": {
