@@ -22,8 +22,10 @@ WHAT ALREADY EXISTED, AND WHAT IT DID NOT DO. This module extends four organs an
 THE FAMILY HIERARCHY (each level a coarsening of the one above; a cell sits in one key per level):
 
     L0  exact      merge_hypotheses._identity -- the same executable spec.
-    L1  rule       judge_coverage.structural_cell -- the same rule on the same instrument; params
-                   that are thresholds (lookbacks, z, rr, hours inside a session) collapse here.
+    L1  rule       judge_coverage.structural_cell plus the row's CATEGORICAL params (bools,
+                   words, the categorical leaves of dicts/lists) -- the same rule on the same
+                   instrument; params that are thresholds (lookbacks, z, rr, hours inside a
+                   session) collapse here.
     L2  family     L1 with the instrument replaced by its CORRELATION CLUSTER: instruments whose
                    daily log returns on the desk's own H1 bars correlate |rho| >= SYMBOL_RHO are
                    one exposure, so the same rule on both is one bet. An instrument with no
@@ -219,7 +221,7 @@ _RULE_CACHE: dict[int, str] | None = None
 
 
 def rule_key(row: dict[str, Any]) -> str:
-    """L1: judge_coverage's structural cell, so the two organs can never disagree on a rule."""
+    """L1: judge_coverage's structural cell plus the categorical params (`categorical_suffix`)."""
     if _RULE_CACHE is not None:
         got = _RULE_CACHE.get(id(row))
         if got is not None:
@@ -230,16 +232,67 @@ def rule_key(row: dict[str, Any]) -> str:
     return _rule_key(row)
 
 
+#: params judge_coverage's structural cell already reads as an axis (or the grid already holds).
+_AXIS_PARAMS = frozenset({"timeframe", "session", "selector", "regime", "condition", "direction",
+                          "side", "representation", "feature", "horizon"})
+
+
+def _categorical(v: Any) -> Any:
+    """The structural part of a param value: numbers (thresholds) drop out, words stay.
+
+    A bool, or a string that is not a number, names WHICH rule runs (`exit_on_anchor_flip`,
+    `base_family`, `conditioner`); dicts and lists keep their categorical leaves only, so a
+    nested lookback still collapses. None means "nothing structural here"."""
+    if isinstance(v, bool):
+        return v
+    if v is None or isinstance(v, (int, float)):
+        return None
+    if isinstance(v, str):
+        txt = v.strip()
+        try:
+            float(txt)
+            return None
+        except ValueError:
+            return txt.lower() or None
+    if isinstance(v, Mapping):
+        out = {str(k): c for k, c in ((k, _categorical(x)) for k, x in v.items()) if c is not None}
+        return out or None
+    if isinstance(v, (list, tuple, set, frozenset)):
+        items = [c for c in (_categorical(x) for x in v) if c is not None]
+        if isinstance(v, (set, frozenset)):
+            items.sort(key=lambda c: json.dumps(c, sort_keys=True, default=str))
+        return items or None
+    return str(v).lower()
+
+
+def categorical_suffix(row: Mapping[str, Any]) -> str:
+    """`{...}` of the row's categorical params, or "" when it has none (the key is unchanged).
+
+    judge_coverage's structural cell keys only the named axes, so two rules that differ by a
+    categorical param -- an exit_operated cell on base_family=breakout versus base_family=carry
+    -- collapsed into one L1 rule and the later one was stamped a duplicate (76.7% L1 duplicate
+    share measured 2026-10-28; 33.5% once categoricals count). Thresholds still collapse."""
+    params = row.get("params") or {}
+    if not isinstance(params, Mapping):
+        return ""
+    cat = {str(k): c for k, c in ((k, _categorical(params[k])) for k in sorted(params, key=str)
+                                  if str(k) not in _AXIS_PARAMS) if c is not None}
+    return json.dumps(cat, sort_keys=True, separators=(",", ":"), default=str) if cat else ""
+
+
 def _rule_key(row: dict[str, Any]) -> str:
     if _STRUCT is not None:
-        return _STRUCT(row)[1]
-    params = row.get("params") or {}
-    return "|".join(str(x or "?").lower() for x in (
-        _fam(row), _sym(row), row.get("horizon") or params.get("horizon"),
-        params.get("timeframe") or row.get("timeframe") or "H1",
-        row.get("session") or params.get("session") or params.get("selector"),
-        params.get("regime"), params.get("direction") or params.get("side"),
-        params.get("representation") or params.get("feature")))
+        base = _STRUCT(row)[1]
+    else:
+        params = row.get("params") or {}
+        base = "|".join(str(x or "?").lower() for x in (
+            _fam(row), _sym(row), row.get("horizon") or params.get("horizon"),
+            params.get("timeframe") or row.get("timeframe") or "H1",
+            row.get("session") or params.get("session") or params.get("selector"),
+            params.get("regime"), params.get("direction") or params.get("side"),
+            params.get("representation") or params.get("feature")))
+    suffix = categorical_suffix(row)
+    return f"{base}|{suffix}" if suffix else base
 
 
 def _swap_symbol(rule: str, token: str) -> str:

@@ -46,6 +46,34 @@ def test_threshold_variants_collapse_to_one_rule_and_comoving_symbols_to_one_fam
     assert doc["k_eff"] == round(16 / (9 + 1), 3)   # inverse Simpson of cells 3 and 1
 
 
+def test_categorical_params_are_structure_and_thresholds_still_collapse() -> None:
+    """exit_operated on base_family=breakout and base_family=carry are two rules, not a duplicate;
+    a nested numeric threshold (base_params.lookback) still collapses; a re-aim keeps the
+    categorical part, so the L2 family key moves only the instrument."""
+    a = _row("EURUSD", "exit_operated", base_family="breakout", exit_on_anchor_flip=True,
+             base_params={"lookback": 20, "mode": "close"}, rr="1.5")
+    b = _row("EURUSD", "exit_operated", base_family="carry", exit_on_anchor_flip=True,
+             base_params={"lookback": 20, "mode": "close"}, rr="1.5")
+    c = _row("EURUSD", "exit_operated", base_family="breakout", exit_on_anchor_flip=False,
+             base_params={"lookback": 20, "mode": "close"}, rr="1.5")
+    a2 = _row("EURUSD", "exit_operated", base_family="breakout", exit_on_anchor_flip=True,
+              base_params={"lookback": 60, "mode": "close"}, rr="2.5")
+    assert len({hf.rule_key(r) for r in (a, b, c)}) == 3
+    assert hf.rule_key(a) == hf.rule_key(a2)
+    # the structural cell itself is untouched (judge_coverage ordering reads it as before)
+    assert jc.structural_cell(a) == jc.structural_cell(b)
+    assert hf.rule_key(a).startswith(jc.structural_cell(a) + "|")
+    # a row with no categorical params keeps judge_coverage's key exactly
+    plain = _row("EURUSD", lookback=20)
+    assert hf.rule_key(plain) == jc.structural_cell(plain)
+    assert hf.categorical_suffix(plain) == ""
+    g = _row("GBPUSD", "exit_operated", base_family="breakout", exit_on_anchor_flip=True,
+             base_params={"lookback": 20, "mode": "close"}, rr="1.5")
+    assert hf.family_key(a, CL) == hf.family_key(g, CL) != hf.family_key(b, CL)
+    doc = hf.census([a, b, c, a2], CL, detail=100)
+    assert doc["l1_rules"] == 3
+
+
 def test_an_unmeasured_symbol_is_its_own_cluster() -> None:
     rows = [_row("EURUSD"), _row("AUDNZD")]
     assert hf.census(rows, {}, detail=10)["l2_families"] == 2
