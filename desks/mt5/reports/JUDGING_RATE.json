@@ -1,20 +1,20 @@
 {
- "at": "2026-10-28T16:46:46+00:00",
+ "at": "2026-10-28T19:59:54+00:00",
  "status": "UNMEASURED",
- "why": "verdicts: gate_verdict_ledger.jsonl stream overran its 150 s deadline after 827,392 rows (150 s): verdicts/hour is UNMEASURED this pass, never a partial count",
+ "why": "verdicts: gate_verdict_ledger.jsonl stream overran its 150 s deadline after 712,704 rows (151 s): verdicts/hour is UNMEASURED this pass, never a partial count",
  "verdicts": {
   "status": "UNMEASURED",
-  "rows_read": 827392,
-  "why": "gate_verdict_ledger.jsonl stream overran its 150 s deadline after 827,392 rows (150 s): verdicts/hour is UNMEASURED this pass, never a partial count"
+  "rows_read": 712704,
+  "why": "gate_verdict_ledger.jsonl stream overran its 150 s deadline after 712,704 rows (151 s): verdicts/hour is UNMEASURED this pass, never a partial count"
  },
  "created": {
   "status": "MEASURED",
   "counts": {
-   "24h": 362,
+   "24h": 357,
    "7d": 85300
   },
   "per_hour": {
-   "24h": 15.083,
+   "24h": 14.875,
    "7d": 507.738
   }
  },
@@ -24,7 +24,7 @@
  "first_judged_per_day": "UNMEASURED",
  "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
  "coverage_backlog_fresh": false,
- "created_per_day": 362.0,
+ "created_per_day": 357.0,
  "backlog": "UNMEASURED",
  "backlog_source": "C:\\opt\\quant\\desks\\mt5\\reports\\GAUNTLET_BACKPRESSURE.json",
  "eta_to_drain": {
@@ -36,7 +36,7 @@
  "cores_basis": "fixed_reservation",
  "attempt": {
   "marker": "desks/mt5/reports/JUDGING_RATE.attempt.json",
-  "started_at": "2026-10-28T16:46:30+00:00",
-  "pid": 30436
+  "started_at": "2026-10-28T19:58:53+00:00",
+  "pid": 28260
  }
 }
