@@ -164,3 +164,24 @@ def test_required_identity_refusals_are_build_failures_and_complete_specs_pass()
     assert input_preflight("calendar_month", {"active_month": 12, "side_bias": -1}) is None
     # Present but out of range is the family's call, exactly as before.
     assert input_preflight("calendar_month", {"active_month": 13, "side_bias": 1}) is None
+
+
+def test_a_triangle_missing_a_leg_is_refused_before_a_worker_loads_bars(monkeypatch):
+    # 2026-10-22 box census (UNKNOWN_SHARE_CENSUS.json): `no_leg_symbol_named` was 7 of the 31
+    # build failures in 6,000 random docket cells. build_cell refused them only after loading the
+    # cell's own bars, in a pre-warm worker; the preflight now refuses them first, by the same test.
+    import external_gauntlet as gauntlet
+    for params, leg in (({}, "leg_b_symbol"), ({"leg_b_symbol": "EURUSD"}, "leg_c_symbol"),
+                        ({"leg_b_symbol": "", "leg_c_symbol": "GBPUSD"}, "leg_b_symbol")):
+        why = input_preflight("triangle", params)
+        assert why == f"BLOCKED_RULES: triangle: no {leg} on the candidate", params
+        # `main` files a BLOCKED_ preflight as NOT_RUN_BUILD_FAILED before the pre-warm pool
+        pre = gauntlet.modifier_preflight({"sym": "EURGBP", "family": "triangle",
+                                           "params": params})
+        assert pre is not None and pre.startswith("BLOCKED_RULES"), params
+    monkeypatch.setattr(gauntlet, '_frame_for', no_bars)
+    assert gauntlet.build_cell('EURGBP', 'triangle', {'leg_b_symbol': 'EURUSD'}, {}) is None
+    assert gauntlet.LAST_BUILD_FAILURE == ("BLOCKED_RULES: triangle: no leg_c_symbol on the "
+                                           "candidate")
+    complete = {"leg_b_symbol": "EURUSD", "leg_c_symbol": "GBPUSD"}
+    assert input_preflight("triangle", complete) is None
