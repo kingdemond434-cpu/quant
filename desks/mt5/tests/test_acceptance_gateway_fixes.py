@@ -120,6 +120,22 @@ def test_the_carrier_is_the_best_evidenced_row_with_a_stable_tie_break() -> None
     assert 'reason="book_key_non_carrier"' in _GW
 
 
+def test_a_fusion_book_override_row_carries_its_shared_key_over_a_better_evidenced_twin() -> None:
+    """#303 merge audit, should-fix a: a min-lot override row is sized from its key's h, so a
+    twin with more record must not take the carrier and leave it reading h=0 ("pins at 0")."""
+    joins = [("usdnok_carry_v2", "usdnok_carry"), ("usdnok_carry_v3", "usdnok_carry")]
+    inf = (float("inf"),) * 3
+    ev = {"usdnok_carry_v2": inf, "usdnok_carry_v3": (40, 40, 40)}
+    assert dc.book_carriers(joins, ev)["usdnok_carry_v3"] == "usdnok_carry_v2"
+    # an exact owner still owns its key
+    own = [("usdnok_carry_v2", "usdnok_carry"), ("usdnok_carry", "usdnok_carry")]
+    assert dc.book_carrier_order(own, {"usdnok_carry_v2": inf})["usdnok_carry"][0] \
+        == "usdnok_carry"
+    i = _GW.index("_override_names = globals().get(\"MINLOT_OVERRIDE_SLEEVES\")")
+    block = _GW[i:_GW.index("_carriers = book_carriers(_joins, _evidence)", i)]
+    assert '_r.get("minlot_override") is True' in block and "_evidence[_n]" in block
+
+
 def _heat(op: float, growth: float = 0.5, surv: float = 0.5) -> dict:
     return {"envelope": {"operative_ceiling": op, "growth_ceiling": growth,
                          "survival_ceiling": surv, "survival": {"status": "MEASURED"}}}
