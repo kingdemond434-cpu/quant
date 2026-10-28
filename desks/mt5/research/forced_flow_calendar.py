@@ -223,13 +223,6 @@ def _memo_active() -> bool:
             pass
     return not (Path(__file__).resolve().parents[1] / "data"
                 / "VECTOR_FAMILIES_MISMATCH.json").exists()
-    v = raw.strip().lower()
-    if v in ("0", "false", "off", "no", "disabled"):
-        return False
-    try:
-        return float(v) != 0.0
-    except ValueError:
-        return True
 
 
 def _plain(arg: Any) -> bool:

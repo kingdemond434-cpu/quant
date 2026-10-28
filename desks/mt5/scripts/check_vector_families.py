@@ -122,6 +122,10 @@ HOSTILE: list[tuple[str, dict[str, Any]]] = [
     ("vol_mean_reversion", {}),
     ("spread_state", {}),
     ("htf_anchor_trend", {}),
+    # the wave-2 audit's should-fix: the two families whose fast path sits behind a shared
+    # memo (regime_transition's hazard path, forced_flow's per-call calendar memo)
+    ("regime_transition", {"window": 250, "refit_days": 250, "entry_p_leave": 0.1}),
+    ("forced_flow", {"event_kind": "fixing", "mode": "post_flow_fade"}),
 ]
 
 

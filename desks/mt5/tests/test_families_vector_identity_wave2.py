@@ -275,3 +275,13 @@ def test_calendar_memo_fails_closed_with_the_families(monkeypatch: pytest.Monkey
     assert cal._memo_active() is (not real.exists())
     monkeypatch.setenv(families_vector.ENV, "off")
     assert not cal._memo_active()
+
+
+def test_box_check_hostile_list_covers_every_family() -> None:
+    """Every family the box check proves on real charts is also proved on the hostile frames
+    (wave-2 audit should-fix: regime_transition and forced_flow were missing)."""
+    scripts = DESK / "scripts"
+    if str(scripts) not in sys.path:
+        sys.path.insert(0, str(scripts))
+    import check_vector_families as chk
+    assert {name for name, _ in chk.HOSTILE} == {name for name, _ in chk.CASES}
