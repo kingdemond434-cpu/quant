@@ -369,7 +369,9 @@ def load_clusters(symbols: Iterable[str] | None = None, *, path: Path | None = N
             pass
     if not isinstance(doc, dict) or not isinstance(doc.get("cluster_of"), dict):
         return {}, {"status": "UNMEASURED", "why": "no symbol-cluster cache and none derived"}
-    meta = {k: v for k, v in doc.items() if k not in ("cluster_of", "multi_member")}
+    meta = {k: v for k, v in doc.items() if k not in ("cluster_of", "multi_member", "unmeasured")}
+    meta["unmeasured_count"] = len(doc.get("unmeasured") or [])
+    meta["unmeasured_sample"] = list(doc.get("unmeasured") or [])[:30]
     meta["status"] = "MEASURED" if doc.get("measured") else "UNMEASURED"
     meta["multi_member_clusters"] = len(doc.get("multi_member") or {})
     meta["largest"] = sorted(((k, len(v)) for k, v in (doc.get("multi_member") or {}).items()),
