@@ -56,15 +56,16 @@ def test_a_population_without_per_sleeve_fields_is_byte_identical_to_the_scalar_
 def test_decay_prob_i_is_two_sided_around_the_blanket() -> None:
     """2026-10-06: this test pinned `decay_prob_i=0.90 -> 0.30` (the blanket was the ceiling). The
     spec of that date made it two-sided: 0.90 is now charged 0.90, so a breaking mechanism costs
-    more than an unwatched one, and the malformed cases still fall back to the blanket."""
+    more than an unwatched one. A malformed value (negative, non-finite) is a broken measurement,
+    not an absent one, and is charged the worst case 1.0 (decision_replay finding, 2026-10-07)."""
     cfg = WorldConfig(decay_prob=0.30)
     assert decay_prob_of(SleeveEvidence("x", np.zeros(3)), cfg) == pytest.approx(0.30)
     assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=0.05), cfg) == 0.05
     assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=0.90), cfg) == 0.90
     assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=0.0), cfg) == 0.0
     assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=1.7), cfg) == 1.0
-    assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=-1.0), cfg) == 0.30
-    assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=float("nan")), cfg) == 0.30
+    assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=-1.0), cfg) == 1.0
+    assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=float("nan")), cfg) == 1.0
     # A decay-free reference population stays decay-free whatever the sleeves carry.
     assert decay_prob_of(SleeveEvidence("x", np.zeros(3), decay_prob_i=0.9),
                          WorldConfig(decay_prob=0.0)) == 0.0

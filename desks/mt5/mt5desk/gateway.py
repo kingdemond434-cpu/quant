@@ -5992,6 +5992,17 @@ def main() -> None:
     _evidence = {n: _ev_fn(n, next((r for r in sleeves
                                     if str(r.get("name") or "") == n), {}))
                  for n in _shared_rows} if _ev_fn else {}
+    # THE PRINCIPAL'S FUSION BOOK CARRIES ITS OWN KEY (#303 merge audit, should-fix a). A row the
+    # min-lot override sizes is sized from its book key's h; were a better-evidenced twin to take
+    # the carrier, the override row would read h=0 and send nothing under a "pins at 0" reason
+    # the book never gave. So such a row ranks ahead of every evidenced twin on a shared key (an
+    # exact owner still owns its key), and the walk still falls back if its window does not fire.
+    # Looked up, not named, for the harness reason above.
+    _override_names = globals().get("MINLOT_OVERRIDE_SLEEVES") or frozenset()
+    for _r in sleeves:
+        _n = str(_r.get("name") or "")
+        if _n in _shared_rows and _r.get("minlot_override") is True and _n in _override_names:
+            _evidence[_n] = (float("inf"),) * 3
     _carriers = book_carriers(_joins, _evidence)
     _carry_order = book_carrier_order(_joins, _evidence)
     if _walk_fn:
@@ -6561,9 +6572,8 @@ def main() -> None:
                                                  or _oblocked.get(_blocked_leg or "")),
                                     follow_limit=bool(_follow))
                 if isinstance(res, dict) and res.get("stage") == "session_closed":
-                    # NOTHING WENT TO THE VENUE, SO NOTHING IS RECORDED AS ON THE BOOK: recording
-                    # it would make the next pass charge heat for a bracket that does not exist
-                    # and never retry it. The window's own `session_ended` rule retires a stale one.
+                    # NOTHING WENT TO THE VENUE, SO NOTHING IS ON THE BOOK: recording it would
+                    # charge next pass heat for a bracket that does not exist and never retry it.
                     continue
                 if s["symbol"] == GOLD_SYMBOL and any(
                         not o.get("blocked") and o.get("retcode") in (10008, 10009)

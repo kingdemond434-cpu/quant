@@ -961,7 +961,16 @@ def test_the_bracket_loop_fences_each_leg_under_the_lock_and_waits_when_both_are
     assert '_xa.read_book("e8")' in block and "opposite_block" in block
     assert '{"buy_stop", "sell_stop"} <= _all_blocked' in block and "continue" in block
     assert '_rails.line("cross_account_opposite"' in block
-    assert '_xa.publish_mt5(mt5, source="gateway")' in main[j:j + 900]
+    assert '_xa.publish_mt5(mt5, source="gateway")' in main[j:j + 1200]
+    # A bracket the session refused skips the rest of the loop body from INSIDE the lock: nothing
+    # is recorded as on the book, and the lock is released by the `with` on the way out.
+    k = main.index('res.get("stage") == "session_closed"', j)
+    assert k < main.index('_xa.publish_mt5(mt5, source="gateway")', j)
+    def indent(at: int) -> int:
+        line = main[main.rindex("\n", 0, at) + 1:at]
+        return len(line) - len(line.lstrip())
+    assert indent(k) > indent(main.rindex("with ", 0, i))
+    assert "continue" in main[k:main.index('_xa.publish_mt5(mt5, source="gateway")', j)]
 
 
 def test_e8_executor_fences_its_send_against_the_fusion_book() -> None:
