@@ -49,6 +49,9 @@ from mt5desk import families, families_vector  # noqa: E402
 from mt5desk import families_orthogonal as fo  # noqa: E402
 
 UNIVERSE = DESK / "data" / "universe"
+#: Where the daily drift monitor (`daily_cycle:vector_families_check`) writes this check's report.
+#: Written only when `--out` is given; a bare run stays read-only.
+REPORT = DESK / "reports" / "VECTOR_FAMILIES_CHECK.json"
 CHARTS = ("EURUSD_H1", "XAUUSD_H1", "AUDCAD_M15", "XAUUSD_M15", "USDJPY_H1")
 MAX_CHARTS = 3
 
@@ -248,10 +251,16 @@ def run() -> dict[str, Any]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0] if __doc__ else None)
     parser.add_argument("--out", help="also write the JSON report here (default: write nothing)")
+    parser.add_argument("--quiet", action="store_true",
+                        help="print only the verdict line, not the JSON (the daily leg)")
     args = parser.parse_args(argv)
     report = run()
     text = json.dumps(report, indent=1, default=str)
-    print(text)
+    if args.quiet:
+        print(f"check_vector_families: {report['verdict']} cases={report['cases']} "
+              f"signals={report['signals']} seconds={report.get('seconds')}")
+    else:
+        print(text)
     if args.out:
         out = Path(args.out)
         out.parent.mkdir(parents=True, exist_ok=True)

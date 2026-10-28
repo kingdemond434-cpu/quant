@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import dataclasses
 import itertools
+import json
 import sys
 from pathlib import Path
 
@@ -342,3 +343,58 @@ def test_box_check_vacuous_pass_is_unmeasured(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(families_vector, "ict_fvg_emit", real)
     report = chk.run()
     assert report["verdict"] == "IDENTICAL" and report["fast_path_engaged"].get("ict_fvg", 0) > 0
+
+
+def _daily_cycle():
+    research = DESK / "research"
+    if str(research) not in sys.path:
+        sys.path.insert(0, str(research))
+    import daily_cycle
+    return daily_cycle
+
+
+@pytest.mark.parametrize("outcome", ["mismatch", "unmeasured", "crash"])
+def test_daily_drift_monitor_never_fails_the_cycle(monkeypatch: pytest.MonkeyPatch,
+                                                   tmp_path: Path, outcome: str) -> None:
+    """The daily leg is a shadow: MISMATCH, UNMEASURED or a crash is a loud event, never a raise."""
+    dc = _daily_cycle()
+    chk = _box_check()
+    report = tmp_path / "VECTOR_FAMILIES_CHECK.json"
+    monkeypatch.setattr(chk, "REPORT", report)
+    monkeypatch.setattr(dc, "dlog", lambda msg: None)
+
+    def fake_main(argv: list[str]) -> int:
+        if outcome == "crash":
+            raise RuntimeError("probe")
+        verdict, rc = ("MISMATCH", 1) if outcome == "mismatch" else ("UNMEASURED", 2)
+        report.write_text(json.dumps({"verdict": verdict, "mismatches": [{}] if rc == 1 else [],
+                                      "unmeasured_because": ["probe"]}), encoding="utf-8")
+        return rc
+    monkeypatch.setattr(chk, "main", fake_main)
+    seen: list[dict] = []
+    from libs.ops import events
+    monkeypatch.setattr(events, "emit", lambda kind, path=None, **f: seen.append({"kind": kind,
+                                                                                  **f}))
+    dc._vector_families_check()                         # must not raise
+    assert len(seen) == 1 and seen[0]["kind"] == "vector_families_drift"
+    assert seen[0]["verdict"] == ("MISMATCH" if outcome == "mismatch" else "UNMEASURED")
+
+
+def test_daily_drift_monitor_is_silent_when_identical(monkeypatch: pytest.MonkeyPatch,
+                                                      tmp_path: Path) -> None:
+    dc = _daily_cycle()
+    chk = _box_check()
+    report = tmp_path / "VECTOR_FAMILIES_CHECK.json"
+    monkeypatch.setattr(chk, "REPORT", report)
+    monkeypatch.setattr(dc, "dlog", lambda msg: None)
+
+    def fake_main(argv: list[str]) -> int:
+        assert "--quiet" in argv and str(report) in argv
+        report.write_text(json.dumps({"verdict": "IDENTICAL"}), encoding="utf-8")
+        return 0
+    monkeypatch.setattr(chk, "main", fake_main)
+    seen: list[str] = []
+    from libs.ops import events
+    monkeypatch.setattr(events, "emit", lambda kind, path=None, **f: seen.append(kind))
+    dc._vector_families_check()
+    assert seen == []

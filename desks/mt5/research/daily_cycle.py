@@ -692,6 +692,51 @@ def _six_event_trace() -> None:
         raise RuntimeError(f"six_event_trace returned {rc}")
 
 
+def _vector_families_check() -> None:
+    """DRIFT MONITOR for the judge's speed switch (2026-10-28): `MT5_VECTOR_FAMILIES`.
+
+    `mt5desk.families_vector` makes the costliest families fast and must return the original
+    loops' Signal lists exactly -- on the live gateway's signal path too -- under whatever pandas
+    and numpy this box has today. `scripts/check_vector_families.py` re-proves that here, daily,
+    on real parquets, READ-ONLY apart from its report, and writes
+    reports/VECTOR_FAMILIES_CHECK.json (versions, the switch's mode, per-family engagement).
+
+    A SHADOW LEG: it never fails the cycle. IDENTICAL is silent; MISMATCH (rc 1) or UNMEASURED
+    (rc 2) -- or the check itself crashing -- is a LOUD event (`vector_families_drift` on the
+    event bus) and a loud log line, nothing more. The remedy for a MISMATCH is the operator's:
+    `MT5_VECTOR_FAMILIES=0` for the judge and the gateway.
+    """
+    out = BASE / "reports" / "VECTOR_FAMILIES_CHECK.json"
+    verdict, rc, detail = "UNMEASURED", 2, ""
+    try:
+        sys.path.insert(0, str(BASE / "scripts"))
+        import check_vector_families
+        out = check_vector_families.REPORT
+        rc = int(check_vector_families.main(["--out", str(out), "--quiet"]))
+        try:
+            doc = json.loads(out.read_text(encoding="utf-8"))
+            verdict = str(doc.get("verdict") or verdict)
+            detail = "; ".join(str(x) for x in (doc.get("unmeasured_because") or []))
+            if doc.get("mismatches"):
+                detail = f"{len(doc['mismatches'])} mismatch(es); " + detail
+        except (OSError, ValueError) as exc:
+            detail = f"report unreadable: {type(exc).__name__}"
+    except Exception as exc:  # a crash in the monitor is itself a loud event, never a cycle failure
+        verdict, rc, detail = "UNMEASURED", 2, f"check crashed: {type(exc).__name__}: {exc}"
+    if rc == 0 and verdict == "IDENTICAL":
+        dlog("vector_families_check: IDENTICAL")
+        return
+    dlog(f"vector_families_check: !!! {verdict} (rc={rc}) -- {detail} -- the fast families are "
+         f"NOT proven identical on this box; set MT5_VECTOR_FAMILIES=0 for the judge and the "
+         f"gateway if this is a MISMATCH")
+    try:
+        from libs.ops import events
+        events.emit("vector_families_drift", verdict=verdict, rc=rc, detail=detail[:500],
+                    report=str(out))
+    except Exception as exc:  # the event bus being down must not fail the cycle either
+        dlog(f"vector_families_check: event emit failed: {type(exc).__name__}: {exc}")
+
+
 #: ORDER IS LOAD-BEARING. The promoter reads the state shadow has just written, so running it
 #: first would decide today on yesterday's evidence. Markout runs last-but-one and
 #: unconditionally: it reads the live ledger, so it reports on the armed book whether or not
@@ -782,6 +827,7 @@ STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("module_rent_research", _module_rent_research), ("build_allocator", _build_allocator),
          ("simplifier", _simplifier), ("capacity_watch", _capacity_watch),
          ("six_event_trace", _six_event_trace),
+         ("vector_families_check", _vector_families_check),
          ("export_aurum", _export_aurum), ("daily_research_os", _daily_research_os))
 
 def main(argv: list[str] | None = None) -> int:
