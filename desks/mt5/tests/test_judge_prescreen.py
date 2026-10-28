@@ -54,7 +54,9 @@ def test_replay_screens_each_cell_on_the_evidence_before_its_first_verdict() -> 
     late = [_row("EURUSD.carry.p=late", "UNKNOWN", None), _row("EURUSD.carry.p=late", "", True)]
     rp = jp.replay([*dead, *late], k_grid=(5, 10))
     k5 = rp["by_k"]["5"]
-    assert k5["killed"] == 1 and k5["killed_by_tier"]["true_survivor"] == 1
+    # the sixth failure (5 named before it) and the late survivor are both killed at K=5
+    assert k5["killed"] == 2 and k5["killed_by_tier"]["true_survivor"] == 1
+    assert k5["killed_by_tier"]["in_sample_fail"] == 1
     assert rp["by_k"]["10"]["killed"] == 0
     # one true survivor is below MIN_TRUE_SURVIVORS: no K can be called safe
     assert rp["canon_k"] is None and rp["canon_ready"] is False
@@ -148,6 +150,9 @@ def test_shadow_returns_every_row_and_counts_what_it_would_kill(paths) -> None:
     assert out is rows and len(out) == 4
     assert doc["mode"] == "SHADOW" and doc["removed_from_docket"] == 0
     assert doc["would_kill"] == {"needs_data": 1, "chart_short": 1, "sibling_dead": 1}
+    # with no canon K yet, shadow counts at the most aggressive K and reports every K
+    assert doc["sibling_k"] == min(jp.K_GRID)
+    assert doc["sibling_would_kill_by_k"] == {"5": 1, "10": 1, "20": 1, "40": 1, "80": 0}
     assert not jp.VERDICTS.exists()                         # shadow writes no trial
     assert jp.lifetime_kills() == (0, {})
 

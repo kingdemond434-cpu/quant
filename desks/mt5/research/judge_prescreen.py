@@ -398,7 +398,9 @@ class Screen:
         rep = report if isinstance(report, dict) else {}
         sib = rep.get("sibling_dead") or {}
         self.sibling_k: int | None = sib.get("canon_k") if isinstance(sib, dict) else None
-        self.shadow_k: int = int(self.sibling_k or max(K_GRID))
+        # SHADOW counts at the canon K once the replay has named one, and until then at the MOST
+        # aggressive K -- the upper bound of what the rule could ever remove. Only canon_k acts.
+        self.shadow_k: int = int(self.sibling_k or min(K_GRID))
         fresh = _report_fresh(rep)
         self.canon = bool(canon)
         self.ready = {
@@ -426,7 +428,7 @@ class Screen:
         b = bucket_of(cell)
         if b is not None and b not in self.protected:
             named = self.dead.get(b)
-            if named is not None and named >= self.shadow_k:
+            if named is not None and named >= min(K_GRID):
                 return "sibling_dead", {"bucket": b, "named_cells": named, "cleared_cells": 0,
                                         "k": self.shadow_k}
         return None
@@ -456,6 +458,7 @@ def intake(rows: list[dict[str, Any]], *, cell_of: Callable[[dict[str, Any]], st
         samples: dict[str, list[dict[str, Any]]] = {r: [] for r in RULES}
         kept: list[dict[str, Any]] = []
         kill_now: dict[str, dict[str, Any]] = {}
+        by_k: dict[str, int] = {str(k): 0 for k in K_GRID}
         for row in rows:
             cell = cell_of(row)
             got = scr.decide(row, cell) if cell else None
@@ -463,6 +466,13 @@ def intake(rows: list[dict[str, Any]], *, cell_of: Callable[[dict[str, Any]], st
                 kept.append(row)
                 continue
             rule, ev = got
+            if rule == "sibling_dead":
+                for k in K_GRID:
+                    if int(ev["named_cells"]) >= k:
+                        by_k[str(k)] += 1
+                if int(ev["named_cells"]) < scr.shadow_k:
+                    kept.append(row)
+                    continue
             would[rule] += 1
             if len(samples[rule]) < 25:
                 samples[rule].append({"cell": cell, **ev})
@@ -480,6 +490,7 @@ def intake(rows: list[dict[str, Any]], *, cell_of: Callable[[dict[str, Any]], st
             "removed_from_docket": len(kill_now),
             "rule_acts": {r: scr.acts(r) for r in RULES},
             "sibling_k": scr.shadow_k, "sibling_canon_k": scr.sibling_k,
+            "sibling_would_kill_by_k": by_k,
             "ms_per_row": round(1000.0 * elapsed / len(rows), 5) if rows else None,
             "seconds": round(elapsed, 3), "samples": samples,
             "note": ("SHADOW records what each rule WOULD remove and removes nothing; every row "
