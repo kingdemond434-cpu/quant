@@ -1190,88 +1190,104 @@ def test_the_review_queues_when_no_model_is_served(
     assert "\n::error title=REVIEW_UNAVAILABLE::" in "\n" + out
 
 
-def test_the_runner_models_are_asked_only_at_their_pinned_digest(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
-) -> None:
-    cfg = {
-        "url": "http://127.0.0.1:11434",
-        "num_ctx": 24576,
-        "models": [
-            {"family": "qwen", "name": "q:7b", "digest": "aa"},
-            {"family": "meta-llama", "name": "l:8b", "digest": "bb"},
-            {"family": "mistralai", "name": "m:7b", "digest": None},  # never pinned
-            {"family": "anthropic", "name": "c:1b", "digest": "dd"},  # the author's family
-            {"family": "deepseek", "name": "d:7b", "digest": "ee"},  # not pulled
-        ],
-    }
+def _local(monkeypatch: pytest.MonkeyPatch, tmp_path: Any, models: list[dict[str, Any]]) -> None:
     import json as _json
 
+    cfg = {"url": "http://127.0.0.1:11434", "num_ctx": 32768, "models": models}
     (tmp_path / "m.json").write_text(_json.dumps(cfg))
     monkeypatch.setattr(ir, "LOCAL", tmp_path / "m.json")
-    tags = {"models": [{"name": "q:7b", "digest": "aa"}, {"name": "l:8b", "digest": "XX"}]}
-    tags["models"] += [{"name": "m:7b", "digest": "cc"}, {"name": "c:1b", "digest": "dd"}]
+    monkeypatch.setenv("OLLAMA_MODELS", str(tmp_path / "models"))
+
+
+def _pull(tmp_path: Any, name: str, body: bytes) -> str:
+    import hashlib
+
+    repo, tag = name.split(":")
+    path = tmp_path / "models/manifests/registry.ollama.ai/library" / repo / tag
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(body)
+    return hashlib.sha256(body).hexdigest()
+
+
+def test_the_runner_models_are_asked_only_at_their_pinned_manifest(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
+    """#457 audit MF1: the manifest is hashed on disk here, never taken from the server."""
+    q = _pull(tmp_path, "q:7b", b"qwen manifest")
+    _pull(tmp_path, "l:8b", b"swapped manifest")
+    m = _pull(tmp_path, "m:7b", b"mistral")
+    c = _pull(tmp_path, "c:1b", b"claude")
+    _local(
+        monkeypatch,
+        tmp_path,
+        [
+            {"family": "qwen", "name": "q:7b", "digest": q},
+            {"family": "meta-llama", "name": "l:8b", "digest": "0" * 64},  # changed since pinned
+            {"family": "mistralai", "name": "m:7b", "digest": None},  # never pinned
+            {"family": "anthropic", "name": "c:1b", "digest": c},  # the author's family
+            {"family": "deepseek", "name": "d:7b", "digest": "e" * 64},  # not pulled
+        ],
+    )
     asked: list[Any] = []
 
     def http(url: str, body: Any, h: Any) -> Any:
-        if url.endswith("/api/tags"):
-            return tags
+        if url.endswith("/api/version"):
+            return {"version": "x"}
         asked.append(body)
-        return {"message": {"content": _PASS}}
+        return {"message": {"content": _PASS}, "prompt_eval_count": 900}
 
     monkeypatch.setattr(ir, "_http", http)
-    ladder, notes = ir.local_rungs(10_000)
-    assert [(f, m) for f, m, _ in ladder] == [("qwen", "q:7b")]
-    assert any("l:8b: pulled digest XX does not match" in n for n in notes)
+    ladder, notes, ctx = ir.local_rungs()
+    assert [(f, mid) for f, mid, _ in ladder] == [("qwen", "q:7b")] and ctx == 32768
+    assert any("l:8b: manifest sha256" in n and "does not match" in n for n in notes)
+    assert any(m in n and "None" in n for n in notes)
     assert ladder[0][2]("rubric", "user") == _PASS
-    assert asked[0]["options"]["temperature"] == 0 and asked[0]["options"]["num_ctx"] == 24576
-    assert ir.local_rungs(30_000)[0] == []  # a part larger than the context is never cut short
+    assert asked[0]["options"] == {"temperature": 0, "seed": 0, "num_ctx": 32768}
 
 
-@pytest.mark.parametrize("size", [40, 100, 10_000])
-def test_every_line_of_the_diff_is_in_exactly_one_part(size: int) -> None:
-    diff = "".join(
-        f"diff --git a/f{i}.py b/f{i}.py\n" + "".join(f"+line {i}.{j}\n" for j in range(i * 3))
-        for i in range(8)
-    )
-    parts = ir.split_diff(diff, size)
-    assert "".join(parts) == diff
-    assert all(len(p) <= size for p in parts) or size < 40
-    if size == 10_000:
-        assert parts == [diff]
-
-
-def test_a_part_is_told_what_it_is_and_fails_what_it_cannot_judge() -> None:
-    a = ir.prompt("+x\n", ["x.py", "y.py"], "aaaa", (2, 3))
-    assert "part 2 of 3" in a and "FAIL anything whose safety you cannot judge" in a
-    assert "y.py" in a  # every changed file is named in every part
-
-
-def test_one_failing_part_fails_the_pr(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+@pytest.mark.parametrize(
+    ("count", "readable"), [(5_000, True), (30_769, False), (32_768, False), (100, False)]
+)
+def test_a_truncated_local_prompt_is_never_a_vote(
+    monkeypatch: pytest.MonkeyPatch, count: int, readable: bool
 ) -> None:
-    import json as _json
-
-    diff = "".join(f"diff --git a/f{i}.py b/f{i}.py\n+{'x' * 50}\n" for i in range(3))
-    pr = {"head": {"sha": A}, "changed_files": 3}
+    """#457 audit MF4: the server's own token count shows whether it read the whole prompt."""
     monkeypatch.setattr(
-        ir, "_gh", lambda *a: _json.dumps(pr) if a[0].endswith("/pulls/7") else diff
+        ir, "_http", lambda u, b, h: {"message": {"content": _PASS}, "prompt_eval_count": count}
     )
-    monkeypatch.setattr(ir, "PART_CHARS", 80)
-    monkeypatch.setattr(ir.split_diff, "__defaults__", (80,))
-    seen: list[str] = []
+    got = ir.ask_local("http://x", "q:7b", 32768, "r" * 2000, "u" * 20_000)
+    assert (got == _PASS) is readable
 
-    def ask(r: str, u: str) -> str:
-        seen.append(u)
-        return (
-            _FAIL if "f1.py b/f1.py" in u.split("Files changed")[1].split("\n\n", 1)[1] else _PASS
-        )
 
-    ladder = [("qwen", "q", ask), ("meta-llama", "l", ask)]
-    monkeypatch.setattr(ir, "rungs", lambda n: (ladder, []))
-    assert ir.main(["--repo", "o/r", "--pr", "7", "--head", A, "--base-sha", B]) == 1
-    out = capsys.readouterr().out
-    assert "part 1/3: q: PASS" in out and "part 2/3: q: FAIL" in out
-    assert not any("f2.py b/f2.py\n+" in u for u in seen)  # stops at the first FAIL
+def test_a_diff_too_large_to_read_whole_takes_the_manual_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """#457 audit MF2/MF3: never reviewed in parts, and never queued for ever: FAIL."""
+    monkeypatch.setattr(ir, "_http", lambda *a: pytest.fail("a prompt that cannot fit was sent"))
+    big = "+x\n" * 40_000
+
+    def local(name: str) -> Any:
+        return lambda r, u: ir.ask_local("http://x", name, 32768, r, u)
+
+    v, log = ir.vote(
+        big,
+        ["a.py"],
+        [("qwen", "q:7b", local("q:7b")), ("meta-llama", "l:8b", local("l:8b"))],
+        sleep=lambda s: None,
+    )
+    assert v == "FAIL" and "too large" in log[-1]
+    # a larger free rung still reads it whole when one exists
+    v, _ = ir.vote(
+        big,
+        ["a.py"],
+        [
+            ("qwen", "q:7b", local("q:7b")),
+            ("meta-llama", "l:8b", lambda r, u: _PASS),
+            ("google", "g", lambda r, u: _PASS),
+        ],
+        sleep=lambda s: None,
+    )
+    assert v == "PASS"
 
 
 _PASS = (
