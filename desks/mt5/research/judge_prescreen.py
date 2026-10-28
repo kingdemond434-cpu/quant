@@ -100,7 +100,7 @@ VERDICTS = HYP / "prescreen_verdicts.jsonl"
 KILLED = HYP / "prescreen_killed.json"
 LOCK = HYP / "prescreen_verdicts.lock"
 
-SCHEMA = "judge_prescreen/1.1"
+SCHEMA = "judge_prescreen/1.2"
 
 #: THE CANON SWITCH IS CODE (audit 3570928159 M5). A reviewed commit flips it; no state file,
 #: no session and no box can. False = SHADOW: every row reaches the judge.
@@ -173,7 +173,10 @@ TIER_NAMES = {
 }
 
 _CELL_RE = re.compile(r"^(?P<sym>[^@]+?)(?:@(?P<tf>[A-Za-z0-9]+))?\.(?P<fam>[a-z0-9_]+)\.p=")
-_EVENTS = frozenset({"KILL", "READMIT", "JUDGED"})
+_EVENTS = frozenset({"KILL", "READMIT", "JUDGED", "UNATTRIBUTED", "QUARANTINED"})
+#: Git conflict-marker lines: never an event, dropped (both sides' events are kept) on repair.
+_MARKER = re.compile(r"^(<{7}|={7}|>{7}|\|{7})( |$)")
+_CELL_HINT = re.compile(r'"cell"\s*:\s*"((?:[^"\\]|\\.)*)"')
 
 
 class KillLedgerCorrupt(ValueError):
@@ -303,12 +306,14 @@ def replay(
       first verdict (`protected`: bucket -> earliest date; an undated entry protects nothing
       here, the conservative direction: more measured false kills, never fewer).
     * A cell's outcome is its BEST tier over the whole record (a cell that later passed is a true
-      survivor). A true survivor is AT RISK when, at its first verdict, its bucket had no cell
-      that cleared in_sample and no dated protection -- the only survivors the rule could kill.
-    * SELECT on the earlier half, CONFIRM on the later: the at-risk survivors are split at their
-      time-ordered median; `canon_k` is the smallest K with zero at-risk survivor kills in the
-      first half, kept only if it also kills none in the second, and only when each half holds
-      >= MIN_AT_RISK_PER_HALF at-risk survivors. Otherwise None: not measured, not ready.
+      survivor). A true survivor is REACHED by K when, at its first verdict, its bucket already
+      held >= K named siblings and no dated protection (audit M4-bis): only there does the rule
+      decide on its own evidence, so only there can a zero mean anything. Reached and uncleared
+      is a kill by identity; reached and cleared is the rule correctly sparing it.
+    * SELECT on the earlier half, CONFIRM on the later, PER K: that K's reached survivors are
+      split at their time-ordered median; `canon_k` is the smallest K whose halves each hold
+      >= MIN_AT_RISK_PER_HALF reached survivors, with zero survivor kills in the first half,
+      kept only if it also kills none in the second. Otherwise None: not measured, not ready.
     """
     protected = protected or {}
     buckets: dict[str, list[int]] = {}  # bucket -> [named, cleared, judged] cells
@@ -347,23 +352,27 @@ def replay(
     pop = dict.fromkeys(TIER_NAMES.values(), 0)
     for c in first_state:
         pop[TIER_NAMES[best[c]]] += 1
-    at_risk = sorted(
-        first_state[c][0]
-        for c in first_state
-        if best[c] == PASSED_T and first_state[c][2] == 0 and not first_state[c][4]
-    )
-    split = at_risk[len(at_risk) // 2] if at_risk else n
-    n_risk_h = (sum(1 for o in at_risk if o < split), sum(1 for o in at_risk if o >= split))
-
-    def _half(order: int) -> int:
-        return 0 if order < split else 1
+    survivors = [
+        (o, named, cleared)
+        for c, (o, named, cleared, _judged, prot) in first_state.items()
+        if best[c] == PASSED_T and not prot
+    ]
 
     by_k: dict[str, Any] = {}
     any_basis: dict[str, Any] = {}
+    reach_by_k: dict[str, Any] = {}
     selected_k: int | None = None
     canon_k: int | None = None
-    floor_met = min(n_risk_h) >= MIN_AT_RISK_PER_HALF
     for k in sorted(k_grid):
+        # M4-bis: the survivors this K REACHED -- at their first verdict the bucket already held
+        # >= K named siblings, and no dated protection. Only on these does the rule decide on its
+        # own evidence (cleared sibling or not), so only these can show it is safe. A survivor in
+        # a fresh bucket (named < K) is out of every K's reach and proves nothing.
+        reached = sorted(o for o, named, _cl in survivors if named >= k)
+        exposed = sum(1 for _o, named, cl in survivors if named >= k and cl == 0)
+        split = reached[len(reached) // 2] if reached else n
+        r_half = (sum(1 for o in reached if o < split), sum(1 for o in reached if o >= split))
+        floor_met = min(r_half) >= MIN_AT_RISK_PER_HALF
         killed = dict.fromkeys(TIER_NAMES.values(), 0)
         halves = [dict.fromkeys(TIER_NAMES.values(), 0) for _ in (0, 1)]
         kb = dict.fromkeys(TIER_NAMES.values(), 0)
@@ -379,9 +388,15 @@ def replay(
                 continue
             n_killed += 1
             killed[name] += 1
-            halves[_half(order)][name] += 1
+            halves[0 if order < split else 1][name] += 1
             if best[c] >= CLEARED_IS_T and len(sample_false) < 20:
                 sample_false.append(c)
+        reach_by_k[str(k)] = {
+            "reached": len(reached),
+            "reached_by_half": {"select": r_half[0], "confirm": r_half[1]},
+            "exposed_uncleared": exposed,
+            "floor_met": floor_met,
+        }
         by_k[str(k)] = {
             "k": k,
             "killed": n_killed,
@@ -391,6 +406,7 @@ def replay(
                 nm: (round(killed[nm] / pop[nm], 6) if pop[nm] else None)
                 for nm in TIER_NAMES.values()
             },
+            "true_survivors_reached": reach_by_k[str(k)],
             "killed_by_tier_select_half": halves[0],
             "killed_by_tier_confirm_half": halves[1],
             "sample_false_kills_cleared_or_better": sample_false,
@@ -414,8 +430,8 @@ def replay(
         "series_judgements": n_judgements,
         "cells_replayed": n,
         "population_by_tier": pop,
-        "at_risk_true_survivors": len(at_risk),
-        "at_risk_true_survivors_by_half": {"select": n_risk_h[0], "confirm": n_risk_h[1]},
+        "true_survivors_unprotected": len(survivors),
+        "true_survivors_reached_by_k": reach_by_k,
         "at_risk_floor_per_half": MIN_AT_RISK_PER_HALF,
         "by_k": by_k,
         "by_k_any_judged_basis_report_only": any_basis,
@@ -424,11 +440,13 @@ def replay(
         "canon_ready": canon_k is not None,
         "canon_eligible_in_code": RULES["sibling_dead"]["canon_eligible"],
         "canon_rule": (
-            "pick the smallest K with zero AT-RISK true-survivor kills on the earlier half "
-            "(split at the at-risk survivors' time-ordered median), confirm zero on the later "
-            f"half, each half holding >= {MIN_AT_RISK_PER_HALF} at-risk survivors; protection "
-            "only from certificates dated before each verdict. Even when ready, the rule acts "
-            "only if RULES['sibling_dead']['canon_eligible'] is set True by a reviewed commit."
+            "per K, only the true survivors that K REACHED count (>= K named siblings at their "
+            "first verdict, no protection dated before it); split them at their time-ordered "
+            f"median, require >= {MIN_AT_RISK_PER_HALF} in each half, pick the smallest K with "
+            "zero survivor kills on the earlier half and confirm zero on the later. A survivor "
+            "no K could reach proves nothing, so a world of fresh-bucket survivors reads None. "
+            "Even when ready, the rule acts only if RULES['sibling_dead']['canon_eligible'] is "
+            "set True by a reviewed commit."
         ),
         "holdout": (
             f"1 in {HOLDOUT_MOD} would-kills (sha256 of the cell id) still reach the judge in "
@@ -518,6 +536,8 @@ def fold_ledger(path: Path | None = None) -> dict[str, dict[str, Any]]:
             r = json.loads(ln)
         except ValueError as exc:
             raise KillLedgerCorrupt(f"{p.name}:{i}: not JSON ({ln[:60]!r})") from exc
+        if isinstance(r, dict) and r.get("event") == "QUARANTINED":
+            continue  # the repair's own marker: no cell, no charge
         if not isinstance(r, dict) or r.get("event") not in _EVENTS or not r.get("cell"):
             raise KillLedgerCorrupt(f"{p.name}:{i}: not a kill-ledger event ({ln[:60]!r})")
         cell = str(r["cell"])
@@ -532,6 +552,12 @@ def fold_ledger(path: Path | None = None) -> dict[str, dict[str, Any]]:
                 s["charged"] = True
             s["family"] = str(r.get("family") or s["family"] or "prescreen")
             s["rule"] = r.get("rule") or s["rule"]
+        elif ev == "UNATTRIBUTED":
+            # A line the repair could not read: charged as one trial (the most it could have
+            # been), never a removal -- the cell, if named, stays in the docket.
+            if not s["judged"]:
+                s["charged"] = True
+            s["family"] = str(r.get("family") or s["family"] or "prescreen_unattributed")
         elif ev == "READMIT":
             s["killed"] = False  # still charged: the judge has not yet given it a fate
         else:  # JUDGED: the judge's fate carries the trial from here on
@@ -541,15 +567,174 @@ def fold_ledger(path: Path | None = None) -> dict[str, dict[str, Any]]:
     return state
 
 
-def lifetime_kills(path: Path | None = None) -> tuple[int, dict[str, int]]:
+def judge_ruled(cells: Iterable[str], path: Path | None = None) -> set[str]:
+    """The subset of `cells` the judge has given a fate in its gate ledger (any verdict but a
+    NOT_RUN deferral -- the same rule as `judge_coverage._LedgerScan.cell_ruled`).
+
+    A cheap regex prefilter on the cell id; only matching lines are parsed. Any failure to read
+    returns what was found so far (possibly nothing): a missed join leaves a cell CHARGED here,
+    the inflation direction, never the deflation one."""
+    want = {c for c in cells if not c.startswith("unattributed:")}
+    if not want:
+        return set()
+    out: set[str] = set()
+    try:
+        with (path or LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
+            for raw in fh:
+                m = _CELL_HINT.search(raw)
+                if not m:
+                    continue
+                c = m.group(1)
+                if "\\" in c:
+                    try:
+                        c = json.loads(f'"{c}"')
+                    except ValueError:
+                        continue
+                if c not in want or c in out:
+                    continue
+                try:
+                    row = json.loads(raw)
+                except ValueError:
+                    continue
+                if not isinstance(row, dict) or str(row.get("cell") or "") != c:
+                    continue
+                if str(row.get("downstream_status") or "").startswith("NOT_RUN"):
+                    continue
+                out.add(c)
+    except OSError:
+        pass
+    return out
+
+
+def lifetime_kills(
+    path: Path | None = None,
+    *,
+    ruled: set[str] | None = None,
+    gate_ledger: Path | None = None,
+) -> tuple[int, dict[str, int]]:
     """(cells, per family) charged to the screen: each is the one trial the judge would have
-    recorded. Raises KillLedgerCorrupt / OSError rather than return a smaller count."""
+    recorded.
+
+    * READ-TIME JOIN (audit v1.1, M3 transient): a charged cell the judge has since ruled is the
+      judge's trial already (its graph fate counts it), so it is not counted here -- whether or
+      not an intake has written JUDGED yet. `ruled` defaults to a scan of the gate ledger for
+      the charged cells only (no scan at all when nothing is charged, i.e. always in SHADOW).
+    * A CORRUPT LEDGER is re-read under the writer's lock (a reader can catch a writer
+      mid-append) and, if still corrupt, QUARANTINED: moved aside byte-for-byte, rebuilt with
+      every unreadable line charged as one trial, and a PLUMBING_DEFECT event raised. The count
+      is then an upper bound, never smaller and never a silent zero. If the lock or the repair
+      fails, this RAISES and the caller keeps its last good count.
+    """
+    p = path or VERDICTS
+    try:
+        state = fold_ledger(p)
+    except KillLedgerCorrupt:
+        with _ledger_lock():
+            state = _fold_or_quarantine_locked(p)
+    charged = {c: s for c, s in state.items() if s["charged"]}
+    if ruled is None:
+        ruled = judge_ruled(charged, gate_ledger) if charged else set()
     by_fam: dict[str, int] = {}
-    for s in fold_ledger(path).values():
-        if s["charged"]:
-            f = str(s["family"] or "prescreen")
-            by_fam[f] = by_fam.get(f, 0) + 1
+    for c, s in charged.items():
+        if c in ruled:
+            continue
+        f = str(s["family"] or "prescreen")
+        by_fam[f] = by_fam.get(f, 0) + 1
     return sum(by_fam.values()), by_fam
+
+
+def _fold_or_quarantine_locked(p: Path) -> dict[str, dict[str, Any]]:
+    """Caller holds the lock. Fold; on corruption quarantine and rebuild, then fold the rebuild."""
+    try:
+        return fold_ledger(p)
+    except KillLedgerCorrupt as exc:
+        quarantine(p, why=str(exc))
+        return fold_ledger(p)
+
+
+def quarantine(p: Path, *, why: str = "") -> dict[str, Any]:
+    """Move a corrupt kill ledger aside and rebuild it, CHARGING CONSERVATIVELY. Caller holds
+    the lock.
+
+    Kept: every complete event line. Dropped: git conflict-marker lines (both sides' events are
+    kept, which can only add charges). Every other unreadable line becomes one UNATTRIBUTED
+    charge -- for the cell it names if one can be read from it, else for a synthetic id -- so the
+    rebuilt ledger never charges fewer trials than the original could have recorded. The
+    original is kept as `<stem>.corrupt-<UTC>.jsonl` and a PLUMBING_DEFECT event is raised."""
+    raw = p.read_bytes()
+    text = raw.decode("utf-8", errors="replace")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    dest = p.with_name(f"{p.stem}.corrupt-{stamp}{p.suffix}")
+    kept: list[str] = []
+    n_markers = n_garbled = 0
+    for i, ln in enumerate(text.split("\n"), 1):
+        line = ln.rstrip("\r")
+        if not line.strip():
+            continue
+        try:
+            r = json.loads(line)
+        except ValueError:
+            r = None
+        if (
+            isinstance(r, dict)
+            and r.get("event") in _EVENTS
+            and (r.get("cell") or r.get("event") == "QUARANTINED")
+        ):
+            kept.append(json.dumps(r, separators=(",", ":"), default=str))
+            continue
+        if _MARKER.match(line):
+            n_markers += 1
+            continue
+        n_garbled += 1
+        m = _CELL_HINT.search(line)
+        sha = hashlib.sha256(f"{i}:{line}".encode()).hexdigest()[:16]
+        kept.append(
+            json.dumps(
+                {
+                    "at": _now(),
+                    "event": "UNATTRIBUTED",
+                    "cell": m.group(1) if m else f"unattributed:{sha}",
+                    "line": i,
+                    "line_sha": sha,
+                    "quarantined_to": dest.name,
+                },
+                separators=(",", ":"),
+            )
+        )
+    marker = {
+        "at": _now(),
+        "event": "QUARANTINED",
+        "quarantined_to": dest.name,
+        "original_sha256": hashlib.sha256(raw).hexdigest(),
+        "conflict_marker_lines": n_markers,
+        "unreadable_lines_charged": n_garbled,
+        "why": why[:300],
+    }
+    os.replace(p, dest)
+    tmp = p.with_name(p.name + ".tmp")
+    with tmp.open("w", encoding="utf-8") as fh:
+        fh.write("\n".join([*kept, json.dumps(marker, separators=(",", ":"))]) + "\n")
+        fh.flush()
+        os.fsync(fh.fileno())
+    os.replace(tmp, p)
+    try:
+        from libs.ops.events import emit
+
+        emit(
+            "PLUMBING_DEFECT",
+            producer="judge_prescreen",
+            organ="judge_prescreen.kill_ledger",
+            evidence=marker,
+        )
+    except Exception as exc:  # the alert is best-effort; the quarantine already happened
+        print(f"judge_prescreen: PLUMBING_DEFECT not emitted ({type(exc).__name__})", flush=True)
+    print(
+        f"judge_prescreen: KILL LEDGER QUARANTINED -> {dest.name} "
+        f"({n_garbled} unreadable line(s) charged, {n_markers} conflict marker(s) dropped)",
+        file=sys.stderr,
+        flush=True,
+    )
+    return marker
 
 
 @contextlib.contextmanager
@@ -583,7 +768,7 @@ def reconcile_and_kill(
     """
     at = _now()
     with _ledger_lock():
-        state = fold_ledger()
+        state = _fold_or_quarantine_locked(VERDICTS)
         out_rows: list[dict[str, Any]] = []
         # JUDGED first: a charged cell the judge has since ruled hands its trial to the judge.
         handed = [c for c, s in state.items() if not s["judged"] and c in ruled]

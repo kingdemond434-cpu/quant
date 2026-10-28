@@ -4579,8 +4579,9 @@ def main() -> None:
     # many true survivors it would have taken (the canon gate is ZERO in both halves), refreshes
     # the chart calendars `chart_short` proves from, audits the provable rules on every known
     # certificate, and writes the tables `judge_coverage.order_docket` screens the docket with
-    # at intake. SHADOW by default -- nothing leaves the docket until the principal's switch
-    # (data/JUDGE_PRESCREEN_CANON.json) is on AND this report names the rule canon-ready. Runs
+    # at intake. SHADOW by default -- nothing leaves the docket until the code constant
+    # judge_prescreen.CANON is flipped by a reviewed commit (no state file can), and then only
+    # for a canon-eligible rule (needs_data; sibling_dead is not eligible in code). Runs
     # at below-normal priority: the judge never outranks the miners. Data department,
     # information layer.
     jps = _costed("judge_prescreen", lambda: _producer("judge_prescreen",

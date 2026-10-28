@@ -492,6 +492,10 @@ desks/mt5/data/import_stems_cache.json
 # the judge pre-build prescreen's replay/canon evidence and last intake (2026-10-28)
 !desks/mt5/reports/JUDGE_PRESCREEN.json
 !desks/mt5/reports/JUDGE_PRESCREEN_INTAKE.json
+# the kill ledger's writer-lock sidecar and any quarantined (corrupt) ledger copy: host-local
+desks/mt5/data/hypotheses/prescreen_verdicts.lock
+desks/mt5/data/hypotheses/prescreen_verdicts.corrupt-*.jsonl
+desks/mt5/data/hypotheses/prescreen_verdicts.jsonl.tmp
 !desks/mt5/reports/EFFECTIVE_BREADTH.json
 !desks/mt5/reports/BREADTH_MANDATE.json
 !desks/mt5/reports/TIER1_SCORECARD.json
