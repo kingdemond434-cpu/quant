@@ -24,7 +24,7 @@
   },
   "position": null,
   "last_bracket_date": "2026-10-28",
-  "last_reconcile": "2026-10-28T21:49:27+00:00",
+  "last_reconcile": "2026-10-28T22:04:29+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {},
@@ -477,7 +477,7 @@
     "241054340": 0.008680000000000021
   },
   "restart_reconcile": {
-    "at": "2026-10-28T21:48:37+00:00",
+    "at": "2026-10-28T21:59:49+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
