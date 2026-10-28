@@ -58,8 +58,8 @@ SEALED_SORT_KEY_SOURCE = (
 INTRADAY = ("M1", "M5", "M15", "M30")
 
 
-def sealed_docket(G: Any, meta: dict, memo: dict | None = None
-                  ) -> tuple[list[dict], dict[str, int]]:
+def sealed_docket(G: Any, meta: dict, memo: dict | None = None, *,
+                  live_ttl_s: float = 3600.0) -> tuple[list[dict], dict[str, int]]:
     """The sweep's eligible cells, derived exactly as `external_gauntlet.main` derives them.
 
     Streaming read, the point-in-time ratchet (`stamped_only` once any row is stamped), the
@@ -122,7 +122,7 @@ def sealed_docket(G: Any, meta: dict, memo: dict | None = None
                           "prejudge_flagged": bool(((h.get("prejudge") or {}).get("flags")))}
     census["cells"] = len(cells)
     if memo is not None:
-        return _partition_memoised(G, meta, cells, memo, census)
+        return _partition_memoised(G, meta, cells, memo, census, live_ttl_s=live_ttl_s)
     eligible, rejected = G.partition_at_economic_prior(list(cells.values()), meta)
     census["rejected_at_prior"] = len(rejected)
     pre = getattr(G, "modifier_preflight", None)
@@ -144,10 +144,20 @@ def sealed_docket(G: Any, meta: dict, memo: dict | None = None
     return list(eligible), census
 
 
-def memo_key(cell_key: str) -> str:
-    """The memo key of one de-duplicated cell: 20 hex chars of its sha1 (1.65M cells ~ 40MB)."""
+def memo_key(cell_key: str, spec: dict | None = None) -> str:
+    """The memo key of one de-duplicated cell: 20 hex chars of a sha1 (1.65M cells ~ 40MB).
+
+    It hashes the cell key AND every field of the spec the sealed partition reads besides
+    symbol, family and params: `mechanism_status` and `mechanism_note` (both read by
+    `frontier_identity.economic_prior`). So a row whose mechanism changes is re-decided, never
+    served the old outcome (v1.1, audit of 6ea07bdf2).
+    """
     import hashlib
-    return hashlib.sha1(cell_key.encode("utf-8")).hexdigest()[:20]
+    extra = ""
+    if spec is not None:
+        extra = "\x1f" + json.dumps([spec.get("mechanism_status"), spec.get("mechanism_note")],
+                                    sort_keys=True, default=str)
+    return hashlib.sha1((cell_key + extra).encode("utf-8")).hexdigest()[:20]
 
 
 #: Memo outcomes. An eligible cell also records its CANONICAL symbol and chart, because the sealed
@@ -156,11 +166,48 @@ MEMO_REJECTED = "R"
 MEMO_MODIFIER = "M"
 MEMO_ELIGIBLE = "E"
 
+#: Outcomes that depended on the LIVE TERMINAL (the cell's H1 or own-chart parquet is absent, so
+#: the sealed partition asked `_live_frame`) carry the hour they were decided, `@L<hour>`, and are
+#: re-decided after `live_ttl_s` -- terminal availability is not a file the memo stamp can see.
+LIVE_MARK = "@L"
+
+
+def _live_dependent(G: Any, sp: dict, tf: str) -> bool:
+    uni = getattr(G, "UNI", None)
+    if uni is None:
+        return False
+    sym = str(sp.get("sym") or "")
+    try:
+        if not (Path(uni) / f"{sym}_H1.parquet").exists():
+            return True
+        return tf != "H1" and not (Path(uni) / f"{sym}_{tf}.parquet").exists()
+    except OSError:
+        return True
+
+
+def _memo_fresh(out: str, now_h: int, live_ttl_h: float) -> bool:
+    if LIVE_MARK not in out:
+        return True
+    try:
+        born = int(out.rsplit(LIVE_MARK, 1)[1])
+    except ValueError:
+        return False
+    return (now_h - born) < live_ttl_h
+
 
 def _partition_memoised(G: Any, meta: dict, cells: dict[str, dict], memo: dict,
-                        census: dict[str, int]) -> tuple[list[dict], dict[str, int]]:
+                        census: dict[str, int], *, now: float | None = None,
+                        live_ttl_s: float = 3600.0) -> tuple[list[dict], dict[str, int]]:
     """`sealed_docket`'s partition + preflight, with outcomes already known read from `memo`."""
-    hashed = [(memo_key(k), sp) for k, sp in cells.items()]
+    import time as _time
+
+    now_h = int((now if now is not None else _time.time()) // 3600)
+    live_ttl_h = max(0.0, live_ttl_s / 3600.0)
+    hashed = [(memo_key(k, sp), sp) for k, sp in cells.items()]
+    for h, _sp in hashed:
+        out = memo.get(h)
+        if out is not None and not _memo_fresh(str(out), now_h, live_ttl_h):
+            del memo[h]
     todo = [sp for h, sp in hashed if h not in memo]
     census["memo_hits"] = len(hashed) - len(todo)
     census["memo_new"] = len(todo)
@@ -171,8 +218,10 @@ def _partition_memoised(G: Any, meta: dict, cells: dict[str, dict], memo: dict,
         for h, sp in hashed:
             if h in memo:
                 continue
+            tf = G.timeframe_of(sp.get("params"), str(sp.get("family") or ""))
+            mark = f"{LIVE_MARK}{now_h}" if _live_dependent(G, sp, tf) else ""
             if id(sp) not in ok:
-                memo[h] = MEMO_REJECTED
+                memo[h] = MEMO_REJECTED + mark
                 continue
             why = None
             if pre is not None:
@@ -181,13 +230,12 @@ def _partition_memoised(G: Any, meta: dict, cells: dict[str, dict], memo: dict,
                 except Exception:
                     why = None
             if why:
-                memo[h] = MEMO_MODIFIER
+                memo[h] = MEMO_MODIFIER + mark
             else:
-                tf = G.timeframe_of(sp.get("params"), str(sp.get("family") or ""))
-                memo[h] = f"{MEMO_ELIGIBLE}|{sp['sym']}|{tf}"
+                memo[h] = f"{MEMO_ELIGIBLE}|{sp['sym']}|{tf}{mark}"
     eligible: list[dict] = []
     for h, sp in hashed:
-        out = str(memo.get(h) or MEMO_REJECTED)
+        out = str(memo.get(h) or MEMO_REJECTED).split(LIVE_MARK, 1)[0]
         if out == MEMO_REJECTED:
             census["rejected_at_prior"] += 1
         elif out == MEMO_MODIFIER:

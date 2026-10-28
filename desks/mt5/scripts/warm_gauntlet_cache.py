@@ -124,6 +124,7 @@ import contextlib
 import json
 import os
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -383,7 +384,22 @@ PARENT_PRIORITY = (os.environ.get("WARM_PARENT_PRIORITY") or EQUAL).strip().lowe
 #: from the miners, which buys roughly 0.3 / 4.0 core-s per warmed cell ~= 6,500 warmed cells a
 #: day per worker (PREWARM_CEILING_2026-10-27 §2, INFERRED). It is a guaranteed floor, filled
 #: before the IDLE lane, and capped by the measured memory pool like every other worker.
-EQUAL_WORKERS = max(0, int(float(os.environ.get("WARM_EQUAL_WORKERS", "0") or 0)))
+def _env_count(name: str, default: int = 0) -> int:
+    """A non-negative integer from the environment; anything unparsable reads as `default`.
+
+    Read at import, i.e. before `CacheWarm START`: a typo in the task action must never crash
+    the job before it can say so (audit of 6ea07bdf2)."""
+    raw = os.environ.get(name)
+    try:
+        v = float(str(raw).strip()) if raw not in (None, "") else float(default)
+        if v != v or v in (float("inf"), float("-inf")):
+            return default
+        return max(0, int(v))
+    except (TypeError, ValueError):
+        return default
+
+
+EQUAL_WORKERS = _env_count("WARM_EQUAL_WORKERS", 0)
 
 
 def _set_priority(mode: str) -> str:
@@ -545,7 +561,6 @@ def _read_json(path: Path, default):
 def _write_json(path: Path, doc) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        import threading
         tmp = path.with_suffix(path.suffix + f".{os.getpid()}.{threading.get_ident()}.tmp")
         tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
         os.replace(tmp, path)
@@ -562,7 +577,11 @@ def _write_json(path: Path, doc) -> None:
 #: (gitignored, box-local). A stale memo can change which cells are WARMED, never a verdict: the
 #: judge reads none of it and builds and gates every cell itself.
 DOCKET_MEMO = WARM_STATE / "docket_memo.json"
+#: Where a run that was not admitted records why (it never writes REPORT).
+NOT_ADMITTED = WARM_STATE / "last_not_admitted.json"
 DOCKET_MEMO_TTL_SEC = float(os.environ.get("WARM_DOCKET_MEMO_TTL_SEC", str(6 * 3600)))
+#: Outcomes that asked the live terminal (a chart with no parquet) are re-decided after this.
+DOCKET_MEMO_LIVE_TTL_SEC = float(os.environ.get("WARM_DOCKET_MEMO_LIVE_TTL_SEC", "3600"))
 
 
 def docket_memo_stamp(G) -> str:
@@ -576,8 +595,14 @@ def docket_memo_stamp(G) -> str:
     if g_file:
         files.append(Path(g_file))
     files += [DESK / "mt5desk" / n for n in ("legacy_family_inputs.py", "family_inputs.py",
-                                             "families.py", "families_orthogonal.py")]
-    files.append(DESK / "research" / "judge_docket_order.py")
+                                             "families.py", "families_orthogonal.py",
+                                             "cell_modifiers.py")]
+    # economic_prior and cell_id; the live-terminal chart route (`_live_frame` -> h1_source ->
+    # mt5_session); and this module. Terminal AVAILABILITY is not a file: outcomes that depended
+    # on it carry their own short TTL inside the memo (judge_docket_order.LIVE_MARK).
+    files += [DESK / "research" / n for n in ("frontier_identity.py", "h1_source.py",
+                                              "mt5_session.py", "judge_docket_order.py")]
+    parts.append(f"platform:{os.name}")
     for f in files:
         try:
             st = f.stat()
@@ -637,7 +662,7 @@ def docket_specs(G, meta: dict) -> list[dict]:
     import judge_docket_order as O
 
     memo, info = load_docket_memo(G)
-    eligible, census = O.sealed_docket(G, meta, memo=memo)
+    eligible, census = O.sealed_docket(G, meta, memo=memo, live_ttl_s=DOCKET_MEMO_LIVE_TTL_SEC)
     if census.get("memo_new") or info.get("reused") != len(memo):
         save_docket_memo(memo, info)
     print(f"docket {census['rows']} rows -> {census['cells']} cells -> {census['eligible']} "
@@ -1003,24 +1028,43 @@ _STATE: dict = {"phase": "init", "phase_since": time.time(), "rounds": [], "star
                 "deadline": None, "hard_stop": None, "status": "RUNNING"}
 
 
-def _close_pool(pool, kill: bool) -> None:
-    """Shut a warm pool down; with `kill`, cancel what is queued and TERMINATE its workers."""
+def _close_pool(pool, kill: bool, join_s: float = 10.0) -> int:
+    """Shut a warm pool down; with `kill`, TERMINATE its workers first. Returns how many died.
+
+    v1.1 (audit of 6ea07bdf2): the worker processes are SNAPSHOTTED BEFORE any shutdown call.
+    `shutdown(wait=False)` drops the executor's `_processes` reference, so the old order --
+    shutdown, then terminate whatever `_processes` held -- terminated nothing: two of two hung
+    workers survived on 3.11 and 3.14, the parent lingered until their batch ended, and the
+    watchdog then overwrote DONE with HARD_STOP. Now: snapshot, terminate, join, kill what is
+    left, and only then shut down.
+    """
     shut = getattr(pool, "shutdown", None)
     if shut is None:
-        return
+        return 0
     if not kill:
         shut(wait=True)
-        return
+        return 0
+    procs = [pr for pr in list((getattr(pool, "_processes", None) or {}).values())
+             if pr is not None]
+    for pr in procs:
+        with contextlib.suppress(Exception):
+            pr.terminate()
+    end = time.time() + max(0.0, join_s)
+    for pr in procs:
+        with contextlib.suppress(Exception):
+            pr.join(max(0.0, end - time.time()))
+    for pr in procs:
+        with contextlib.suppress(Exception):
+            if pr.is_alive():
+                pr.kill()
+                pr.join(2.0)
     with contextlib.suppress(Exception):
         shut(wait=False, cancel_futures=True)
-    term = getattr(pool, "terminate_workers", None)    # Python 3.14+
-    if term is not None:
+    dead = 0
+    for pr in procs:
         with contextlib.suppress(Exception):
-            term()
-            return
-    for proc in list((getattr(pool, "_processes", None) or {}).values()):
-        with contextlib.suppress(Exception):
-            proc.terminate()
+            dead += int(not pr.is_alive())
+    return dead
 
 
 def _phase(name: str, **info) -> None:
@@ -1045,7 +1089,54 @@ def _report_doc(status: str, **extra) -> dict:
             "phase_info": _STATE.get("phase_info"),
             "parent_priority": _STATE.get("parent_priority"),
             "equal_workers": EQUAL_WORKERS,
-            "rounds": list(_STATE.get("rounds") or []), **extra}
+            "orphan_tmp_sweep": _STATE.get("orphan_tmp_sweep"),
+            **_rounds_view(), **extra}
+
+
+#: How many of the PREVIOUS run's rounds the report carries until this run's first round lands.
+CARRY_ROUNDS = 3
+
+
+def _rounds_view() -> dict:
+    """`rounds` for the report: this run's, or -- until its first round lands -- the previous
+    run's last rounds, labelled. v1.1: the heartbeat published `rounds: []` within 60 s of every
+    start, so `judging_burndown.warm_side()` read UNMEASURED for most of each run."""
+    cur = list(_STATE.get("rounds") or [])
+    if cur:
+        return {"rounds": cur, "rounds_source": "this run"}
+    prev = list(_STATE.get("prev_rounds") or [])
+    return {"rounds": prev, "rounds_source": ("previous run (carried until this run's first round "
+                                              "lands)" if prev else "none yet")}
+
+
+def _load_prev_rounds() -> None:
+    doc = _read_json(REPORT, {})
+    rounds = doc.get("rounds") if isinstance(doc, dict) else None
+    _STATE["prev_rounds"] = ([r for r in rounds if isinstance(r, dict)][-CARRY_ROUNDS:]
+                             if isinstance(rounds, list) else [])
+
+
+#: Serialises every write of REPORT and every status transition, so a heartbeat that read
+#: RUNNING can never land after DONE (v1.1: 5 of 30 widened-window runs ended RUNNING).
+_REPORT_LOCK = threading.Lock()
+FINAL = ("DONE", "HARD_STOP", "CRASHED")
+
+
+def _publish(status: str, **extra) -> bool:
+    """Write REPORT under the lock. RUNNING is written only while the run is RUNNING and
+    admitted; a final status is written once, and nothing is written after it."""
+    with _REPORT_LOCK:
+        if not _STATE.get("admitted"):
+            return False
+        cur = _STATE.get("status")
+        if cur in FINAL:
+            return False
+        if status == "RUNNING" and cur != "RUNNING":
+            return False
+        if status != "RUNNING":
+            _STATE["status"] = status
+        _write_json(REPORT, _report_doc(status, **extra))
+        return True
 
 
 def run_round(G, meta: dict, priors, deadline: float) -> dict:
@@ -1231,14 +1322,18 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
                 # THE DEADLINE AND THE MEMORY FLOOR ARE CHECKED EVERY WAKE, never every N cells.
                 if not stopped and time.time() > deadline:
                     stopped = "run budget spent; the next invocation resumes from the cache"
+                mem_stop = False
                 if not stopped:
                     avail = free_mb()
                     if avail is not None and avail < FLOOR_MB:
+                        mem_stop = True
                         stopped = (f"{avail}MB free, floor {FLOOR_MB}MB -- warming is optional "
                                    f"work and yields the box; progress is cached and resumable")
                 if stopped:
                     if drain_until is None:
-                        drain_until = time.time() + DRAIN_SEC
+                        # A MEMORY stop frees the workers NOW: the box is short of exactly what
+                        # they hold. A budget stop lets in-flight batches finish for DRAIN_SEC.
+                        drain_until = time.time() + (0.0 if mem_stop else DRAIN_SEC)
                         _mark("drain", in_flight=len(pending), drain_s=DRAIN_SEC)
                     for f in list(pending):
                         if f.cancel():
@@ -1303,6 +1398,61 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
     }
 
 
+#: An orphan temp file is swept only once it is at least this old. A live `cache_save` writes and
+#: renames its temp in milliseconds, so an hour-old one belongs to a writer that died.
+ORPHAN_TMP_MIN_AGE_SEC = float(os.environ.get("WARM_ORPHAN_TMP_MIN_AGE_SEC", "3600"))
+
+
+def _pid_alive(pid: int) -> bool:
+    try:
+        import psutil
+        return bool(psutil.pid_exists(pid))
+    except Exception:
+        return True          # unknowable reads as alive: never delete a file a writer may hold
+
+
+def sweep_orphan_tmps(dirs: list[Path], now: float | None = None,
+                      min_age_s: float | None = None) -> dict:
+    """Delete `*.tmp` files left by killed writers, from the warmer side (the gauntlet is sealed).
+
+    A file is removed only when it is older than `min_age_s` AND no pid named in its name is
+    alive (`{key}.{pid}.tmp`, `{key}.{pid}.fan.tmp`, `<report>.{pid}.{tid}.tmp`,
+    `docket_memo.{pid}.tmp`). The audit's 300 SIGKILLs during `cache_save` left 296 of them.
+    Only `*.tmp` is ever touched -- never an `.npz` or `.json`.
+    """
+    now = time.time() if now is None else now
+    min_age = ORPHAN_TMP_MIN_AGE_SEC if min_age_s is None else min_age_s
+    out = {"scanned": 0, "removed": 0, "young": 0, "live_writer": 0, "errors": 0}
+    me = os.getpid()
+    for d in dirs:
+        try:
+            it = os.scandir(d)
+        except OSError:
+            continue
+        with it:
+            for e in it:
+                if not e.name.endswith(".tmp"):
+                    continue
+                out["scanned"] += 1
+                try:
+                    if now - e.stat().st_mtime < min_age:
+                        out["young"] += 1
+                        continue
+                except OSError:
+                    out["errors"] += 1
+                    continue
+                pids = [int(x) for x in e.name.split(".")[1:-1] if x.isdigit()]
+                if any(pid == me or _pid_alive(pid) for pid in pids if 0 < pid < 1 << 22):
+                    out["live_writer"] += 1
+                    continue
+                try:
+                    os.unlink(e.path)
+                    out["removed"] += 1
+                except OSError:
+                    out["errors"] += 1
+    return out
+
+
 _NOTE = ("Warmth is what decides which cells a bounded sweep can reach: an uncached cell costs "
          "the sweep ~22s of its build budget and a cached one costs it nothing. This job holds no "
          "authority over any verdict.")
@@ -1322,20 +1472,29 @@ def _kill_own_workers() -> int:
     return n
 
 
+#: Exit code of a hard stop (a run still working at start + budget + grace): non-zero, so the
+#: scheduler's last result and process_health see it.
+HARD_STOP_RC = 3
+
+
 def _hard_stop() -> None:
     """The watchdog's exit: publish, print the completion line, kill our workers, leave."""
     phase = _STATE.get("phase")
     age = time.time() - float(_STATE.get("phase_since") or time.time())
-    _STATE["status"] = "HARD_STOP"
     killed = _kill_own_workers()
-    # Only an ADMITTED run owns the report; one still waiting on admission (or refused as a
-    # duplicate) must never overwrite the live instance's.
+    # A run that already published a FINAL status (DONE) and merely lingers keeps it: the hard
+    # stop then only reaps and exits with the run's own rc. Otherwise the report (when this run
+    # owns it -- admitted, never a duplicate or one still waiting) says HARD_STOP and the exit
+    # code is non-zero, so the scheduler's last result shows it too.
+    already = _STATE.get("status") in FINAL
+    wrote = False
     with contextlib.suppress(Exception):
-        if _STATE.get("admitted"):
-            _write_json(REPORT, _report_doc(
-                "HARD_STOP", killed_workers=killed, blas_single_thread=dict(_BLAS), note=_NOTE,
-                why=(f"still in phase {phase!r} ({age:.0f}s) at the hard stop, "
-                     f"{BUDGET_SEC:.0f}s budget + {GRACE_SEC:.0f}s grace after start")))
+        wrote = _publish(
+            "HARD_STOP", killed_workers=killed, blas_single_thread=dict(_BLAS), note=_NOTE,
+            why=(f"still in phase {phase!r} ({age:.0f}s) at the hard stop, "
+                 f"{BUDGET_SEC:.0f}s budget + {GRACE_SEC:.0f}s grace after start"))
+    rc = int(_STATE.get("rc") or 0) if already else HARD_STOP_RC
+    status = str(_STATE.get("status")) if already else "HARD_STOP"
     with contextlib.suppress(Exception):
         try:
             from research.job_lock import peak_rss_mb, record_peak
@@ -1344,12 +1503,13 @@ def _hard_stop() -> None:
         hwm = peak_rss_mb()
         if hwm:
             record_peak("warm_gauntlet_cache", hwm)
-    print(f"CacheWarm END status=HARD_STOP phase={phase} phase_age={age:.0f}s "
+    print(f"CacheWarm END status={status} rc={rc} phase={phase} phase_age={age:.0f}s "
           f"elapsed={time.time() - float(_STATE.get('start') or time.time()):.0f}s "
-          f"killed_workers={killed} -- the next trigger resumes from the cache", flush=True)
+          f"killed_workers={killed} report={'written' if wrote else 'kept'} -- the next "
+          f"trigger resumes from the cache", flush=True)
     with contextlib.suppress(Exception):
         sys.stdout.flush()
-    os._exit(0)
+    os._exit(rc)
 
 
 def _watchdog() -> None:
@@ -1361,16 +1521,13 @@ def _watchdog() -> None:
             _hard_stop()
             return
         time.sleep(max(1.0, min(HEARTBEAT_SEC, (hard - now) if hard else HEARTBEAT_SEC)))
-        if (_STATE.get("status") == "RUNNING" and _STATE.get("admitted")
-                and not (hard and time.time() >= hard)):
+        if not (hard and time.time() >= hard):
             with contextlib.suppress(Exception):
-                _write_json(REPORT, _report_doc("RUNNING"))
+                _publish("RUNNING")
 
 
 def start_watchdog(start: float) -> None:
     """Arm the deadline and the hard stop from the process START (admission wait included)."""
-    import threading
-
     _STATE.update({"start": start, "deadline": start + BUDGET_SEC, "phase": "admission",
                    "phase_since": start, "hard_stop": start + BUDGET_SEC + GRACE_SEC,
                    "status": "RUNNING", "admitted": False})
@@ -1378,6 +1535,7 @@ def start_watchdog(start: float) -> None:
 
 
 def main() -> int:
+    _load_prev_rounds()
     _STATE["admitted"] = True
     # THE PARENT RUNS AT EQUAL, NEVER ABOVE (see PARENT_PRIORITY). It was IDLE, and on a box the
     # miners hold at ~100% its single-threaded docket pass then took longer than the whole budget.
@@ -1388,6 +1546,10 @@ def main() -> int:
     import external_gauntlet as G
 
     meta = json.loads((G.UNI / "universe.json").read_text("utf-8"))
+    _phase("sweep_tmp")
+    swept = sweep_orphan_tmps([Path(G.CACHE_DIR), WARM_STATE, REPORT.parent])
+    _STATE["orphan_tmp_sweep"] = swept
+    print(f"  orphan temp files: {swept}", flush=True)
     _phase("priors")
     try:
         import cell_priority as CP
@@ -1405,7 +1567,7 @@ def main() -> int:
         rounds.append(r)
         # PUBLISHED EVERY ROUND, not once at exit: `judging_burndown` reads the last round as the
         # warm side of the drain, and a report written only after an hour is an hour stale.
-        _write_json(REPORT, _report_doc("RUNNING"))
+        _publish("RUNNING")
         if not r.get("eligible"):
             break
         # A round that warmed nothing and held nothing new has converged: the docket is warm to
@@ -1422,9 +1584,9 @@ def main() -> int:
                                                     "last_round": last})
     except Exception:
         pass
-    _STATE["status"] = "DONE"
+    _STATE["rc"] = 0
     _phase("done")
-    _write_json(REPORT, _report_doc("DONE", blas_single_thread=dict(_BLAS), note=_NOTE))
+    _publish("DONE", blas_single_thread=dict(_BLAS), note=_NOTE)
     if last:
         print(f"warmed {last.get('warmed')} cell(s) in {last.get('seconds')}s at "
               f"{last.get('cells_per_min')} cells/min with {last.get('workers')} worker(s); "
@@ -1486,27 +1648,28 @@ def _cli_main() -> int:
                 rc, status = 75, not_admitted_status()
         return rc
     finally:
+        _STATE["rc"] = rc
         if status == "CRASHED":
-            _STATE["status"] = "CRASHED"
-            if _STATE.get("admitted"):
-                with contextlib.suppress(Exception):
-                    _write_json(REPORT, _report_doc("CRASHED", note=_NOTE))
+            with contextlib.suppress(Exception):
+                _publish("CRASHED", note=_NOTE)
         print(f"CacheWarm END status={status} rc={rc} "
               f"elapsed={time.time() - start:.0f}s phase={_STATE.get('phase')}", flush=True)
 
 
 def not_admitted_status() -> str:
     """Why admission said no, and the report it leaves -- never clobbering a live instance's."""
+    # v1.1: a run that was not admitted NEVER writes WARM_GAUNTLET.json. Checking the lock and
+    # then writing was a race (another instance can take the lock in between); the report belongs
+    # to the instance that holds it. The refusal is recorded beside it instead.
     lock = DESK / "data" / ".job_locks" / "warm_gauntlet_cache.json"
     holder = _read_json(lock, {})
-    if isinstance(holder, dict) and holder.get("pid"):
-        # Another instance holds the lock and owns WARM_GAUNTLET.json; say so in the log only.
-        return f"REFUSED_DUPLICATE (lock held by pid {holder.get('pid')})"
-    _STATE["status"] = "NOT_ADMITTED"
+    status = (f"REFUSED_DUPLICATE (lock held by pid {holder.get('pid')})"
+              if isinstance(holder, dict) and holder.get("pid") else "NOT_ADMITTED")
     with contextlib.suppress(Exception):
-        _write_json(REPORT, _report_doc("NOT_ADMITTED", note=_NOTE,
-                                        why="memory admission stood down (see the log line above)"))
-    return "NOT_ADMITTED"
+        _write_json(NOT_ADMITTED, {"at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                                   "pid": os.getpid(), "status": status,
+                                   "why": "see the admission line in MT5-CacheWarm.log"})
+    return status
 
 
 if __name__ == "__main__":

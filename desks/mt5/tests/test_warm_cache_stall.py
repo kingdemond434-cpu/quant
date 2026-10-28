@@ -271,9 +271,9 @@ def test_a_run_stuck_in_any_phase_ends_with_a_report_and_a_completion_line(
     proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
                           env=env, timeout=50, check=False)
     assert time.time() - t0 < 45
-    assert proc.returncode == 0, proc.stderr
+    assert proc.returncode == W.HARD_STOP_RC == 3, proc.stderr
     assert "NOT REACHED" not in proc.stdout
-    assert "CacheWarm END status=HARD_STOP phase=docket_load" in proc.stdout
+    assert "CacheWarm END status=HARD_STOP rc=3 phase=docket_load" in proc.stdout
     doc = json.loads((tmp_path / "r.json").read_text("utf-8"))
     assert doc["status"] == "HARD_STOP" and doc["phase"] == "docket_load"
     assert doc["in_progress"] is False
@@ -281,16 +281,19 @@ def test_a_run_stuck_in_any_phase_ends_with_a_report_and_a_completion_line(
 
 def test_a_duplicate_never_clobbers_the_live_report(tmp_path: Path,
                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    """v1.1: a run that was not admitted never writes REPORT at all (lock-then-write raced)."""
     monkeypatch.setattr(W, "REPORT", tmp_path / "r.json")
+    monkeypatch.setattr(W, "NOT_ADMITTED", tmp_path / "na.json")
     monkeypatch.setattr(W, "DESK", tmp_path)
+    (tmp_path / "r.json").write_text(json.dumps({"status": "RUNNING", "rounds": [{"a": 1}]}))
     locks = tmp_path / "data" / ".job_locks"
     locks.mkdir(parents=True)
     (locks / "warm_gauntlet_cache.json").write_text(json.dumps({"pid": 4242}))
     assert W.not_admitted_status().startswith("REFUSED_DUPLICATE")
-    assert not (tmp_path / "r.json").exists()
     (locks / "warm_gauntlet_cache.json").unlink()
     assert W.not_admitted_status() == "NOT_ADMITTED"
-    assert json.loads((tmp_path / "r.json").read_text("utf-8"))["status"] == "NOT_ADMITTED"
+    assert json.loads((tmp_path / "r.json").read_text("utf-8"))["status"] == "RUNNING"
+    assert json.loads((tmp_path / "na.json").read_text("utf-8"))["status"] == "NOT_ADMITTED"
 
 
 # --------------------------------------------------------------------------- never above miners
@@ -328,3 +331,179 @@ def test_defaults_parent_equal_workers_idle() -> None:
     assert W.PARENT_PRIORITY == W.EQUAL or os.environ.get("WARM_PARENT_PRIORITY")
     assert W.EQUAL_WORKERS == 0 or os.environ.get("WARM_EQUAL_WORKERS"), (
         "EQUAL-priority workers take CPU share from the miners: opt-in only")
+
+
+# --------------------------------------------------------------------------- v1.1 (audit 6ea07bdf2)
+def test_close_pool_kills_real_hung_workers() -> None:
+    """MUST-FIX 1: a REAL ProcessPoolExecutor with hung workers ends with 0 alive."""
+    from concurrent.futures import ProcessPoolExecutor
+
+    pool = ProcessPoolExecutor(max_workers=2)
+    futs = [pool.submit(time.sleep, 120) for _ in range(2)]
+    t_end = time.time() + 30
+    while time.time() < t_end and not (all(f.running() for f in futs)
+                                       and len(pool._processes or {}) == 2):
+        time.sleep(0.1)
+    procs = list((pool._processes or {}).values())
+    assert len(procs) == 2
+    t0 = time.time()
+    dead = W._close_pool(pool, kill=True)
+    assert time.time() - t0 < 20
+    assert dead == 2
+    assert not any(pr.is_alive() for pr in procs), "every hung worker is dead"
+
+
+def test_a_memory_floor_stop_frees_workers_without_a_drain(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    closed: list[bool] = []
+
+    class HungPool:
+        def __init__(self, **kwargs):
+            pass
+
+        def submit(self, builder, batch):
+            f: Future = Future()
+            f.set_running_or_notify_cancel()
+            return f
+
+        def shutdown(self, wait=True, cancel_futures=False):
+            closed.append(bool(wait))
+
+    _round_fixture(tmp_path, monkeypatch, HungPool)
+    monkeypatch.setattr(job_lock, "free_mb", lambda: 100)
+    monkeypatch.setattr(W, "DRAIN_SEC", 600.0)
+    t0 = time.time()
+    r = W.run_round(SimpleNamespace(CACHE_DIR=tmp_path), {}, None, time.time() + 3600)
+    assert time.time() - t0 < 30, "a memory stop does not wait out the drain"
+    assert "floor" in r["stopped"] and r["abandoned_in_flight"] > 0
+    assert closed == [False], "the pool is killed, never waited on"
+
+
+def _fresh_state(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(W, "REPORT", tmp_path / "r.json")
+    monkeypatch.setattr(W, "_STATE", {"phase": "x", "phase_since": time.time(), "rounds": [],
+                                      "status": "RUNNING", "admitted": False})
+
+
+def test_the_heartbeat_carries_the_previous_rounds(tmp_path: Path,
+                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    """MUST-FIX 2: until this run's first round lands, the report keeps the last run's rounds."""
+    _fresh_state(monkeypatch, tmp_path)
+    (tmp_path / "r.json").write_text(json.dumps({"status": "DONE", "rounds": [
+        {"warmed": 1}, {"warmed": 2}, {"warmed": 3}, {"warmed": 4}]}))
+    W._load_prev_rounds()
+    W._STATE["admitted"] = True
+    assert W._publish("RUNNING")
+    doc = json.loads((tmp_path / "r.json").read_text("utf-8"))
+    assert [r["warmed"] for r in doc["rounds"]] == [2, 3, 4]
+    assert doc["rounds_source"].startswith("previous run")
+    import judging_burndown as JB2
+    monkeypatch.setattr(JB2, "WARM", tmp_path / "r.json")
+    assert JB2.warm_side()["status"] == "MEASURED"
+    W._STATE["rounds"].append({"warmed": 9})
+    assert W._publish("RUNNING")
+    doc = json.loads((tmp_path / "r.json").read_text("utf-8"))
+    assert doc["rounds"] == [{"warmed": 9}] and doc["rounds_source"] == "this run"
+
+
+def test_running_never_lands_after_a_final_status(tmp_path: Path,
+                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    _fresh_state(monkeypatch, tmp_path)
+    assert not W._publish("RUNNING"), "an unadmitted run owns no report"
+    W._STATE["admitted"] = True
+    assert W._publish("RUNNING")
+    assert W._publish("DONE")
+    assert not W._publish("RUNNING")
+    assert not W._publish("HARD_STOP")
+    assert json.loads((tmp_path / "r.json").read_text("utf-8"))["status"] == "DONE"
+    import threading as th
+    _fresh_state(monkeypatch, tmp_path)
+    W._STATE["admitted"] = True
+    stop = th.Event()
+
+    def beat() -> None:
+        while not stop.is_set():
+            W._publish("RUNNING")
+
+    ts = [th.Thread(target=beat) for _ in range(4)]
+    for t in ts:
+        t.start()
+    time.sleep(0.05)
+    W._publish("DONE")
+    time.sleep(0.05)
+    stop.set()
+    for t in ts:
+        t.join()
+    assert json.loads((tmp_path / "r.json").read_text("utf-8"))["status"] == "DONE"
+
+
+def test_a_bad_equal_workers_value_never_crashes(monkeypatch: pytest.MonkeyPatch) -> None:
+    for raw, want in (("two", 0), ("", 0), ("nan", 0), ("-3", 0), ("2", 2), ("2.9", 2),
+                      ("inf", 0)):
+        monkeypatch.setenv("WARM_EQUAL_WORKERS", raw)
+        assert W._env_count("WARM_EQUAL_WORKERS", 0) == want, raw
+    paths = [str(DESK), str(DESK / "scripts"), str(DESK / "research")]
+    code = ("import sys\n"
+            f"sys.path[:0] = {paths!r}\n"
+            "import warm_gauntlet_cache as W\nprint('EQ', W.EQUAL_WORKERS)\n")
+    proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
+                          env={**os.environ, "WARM_EQUAL_WORKERS": "lots"}, timeout=60,
+                          check=False)
+    assert proc.returncode == 0 and "EQ 0" in proc.stdout, proc.stderr
+
+
+def test_the_memo_key_moves_with_the_mechanism(tmp_path: Path) -> None:
+    rows = [{"symbol": "EURUSD", "family": "carry", "params": {"k": 1},
+             "mechanism_status": "NAMED", "mechanism_note": "a"}]
+    memo: dict = {}
+    O.sealed_docket(_fake_g(tmp_path, rows), {}, memo=memo)
+    rows[0]["mechanism_status"] = "STATISTICAL_ONLY"
+    g = _fake_g(tmp_path, rows)
+    _out, c = O.sealed_docket(g, {}, memo=memo)
+    assert c["memo_new"] == 1 and g.calls == 1, "an edited mechanism is re-decided"
+    assert O.memo_key("k", {"mechanism_note": "a"}) != O.memo_key("k", {"mechanism_note": "b"})
+
+
+def test_live_terminal_outcomes_expire_on_their_own_clock(tmp_path: Path) -> None:
+    uni = tmp_path / "uni"
+    uni.mkdir()
+    (uni / "EURUSD_H1.parquet").write_bytes(b"x")       # H1 present, M15 absent
+    rows = [{"symbol": "EURUSD", "family": "carry", "params": {"timeframe": "M15"}},
+            {"symbol": "EURUSD", "family": "carry", "params": {}}]
+    g = _fake_g(tmp_path, rows)
+    g.UNI = uni
+    cells = {"a": {"sym": "EURUSD", "family": "carry", "params": {"timeframe": "M15"}},
+             "b": {"sym": "EURUSD", "family": "carry", "params": {}}}
+    memo: dict = {}
+    census = {"rejected_at_prior": 0, "modifier_refused": 0}
+    O._partition_memoised(g, {}, cells, memo, dict(census), now=10 * 3600.0)
+    marks = sorted(v for v in memo.values())
+    assert any(O.LIVE_MARK in v for v in marks) and any(O.LIVE_MARK not in v for v in marks)
+    g.calls = 0
+    O._partition_memoised(g, {}, cells, memo, dict(census), now=10 * 3600.0 + 60)
+    assert g.calls == 0
+    O._partition_memoised(g, {}, cells, memo, dict(census), now=12 * 3600.0)
+    assert g.calls == 1, "only the live-dependent outcome is re-decided after its TTL"
+
+
+def test_orphan_tmps_are_swept_only_when_old_and_unowned(tmp_path: Path) -> None:
+    now = time.time()
+    dead_pid = 4_000_000          # above any real pid range check -> treated as no pid
+    files = {"k1.999999.tmp": now - 7200, "k2.999999.fan.tmp": now - 7200,
+             f"k3.{os.getpid()}.tmp": now - 7200, "k4.999999.tmp": now - 10,
+             "k5.npz": now - 7200, "r.json.999999.140234567890123.tmp": now - 7200,
+             f"k6.{dead_pid}.tmp": now - 7200}
+    for name, mt in files.items():
+        f = tmp_path / name
+        f.write_bytes(b"x")
+        os.utime(f, (mt, mt))
+    import psutil
+    if psutil.pid_exists(999999):
+        pytest.skip("pid 999999 happens to be alive here")
+    out = W.sweep_orphan_tmps([tmp_path], now=now, min_age_s=3600)
+    left = sorted(p.name for p in tmp_path.iterdir())
+    assert "k5.npz" in left, "never anything but *.tmp"
+    assert f"k3.{os.getpid()}.tmp" in left, "never a file a live writer names"
+    assert "k4.999999.tmp" in left, "never a young file"
+    assert "k1.999999.tmp" not in left and "k2.999999.fan.tmp" not in left
+    assert out["removed"] == 4 and out["young"] == 1 and out["live_writer"] == 1
