@@ -43,6 +43,11 @@ def _graph_stamp(path: Path) -> dict[str, Any]:
             "tail_sha256": hashlib.sha256(tail).hexdigest()}
 
 
+#: The graph fates charged as judged trials. `research/judge_prescreen` joins its kill charges
+#: against exactly these (a test pins the two equal), so a cell is charged once, by one of them.
+GRAPH_COUNTED_FATES = frozenset({"FAILED", "BURIED", "CERTIFIED", "JUDGED"})
+
+
 def _graph_counts() -> tuple[int, dict[str, int]]:
     """Count latest fates with compact state, caching only an exact graph version.
 
@@ -73,7 +78,7 @@ def _graph_counts() -> tuple[int, dict[str, int]]:
                                                 str(row.get("family") or "?"))
     by_fam: dict[str, int] = {}
     for fate, f in current.values():
-        if fate in ("FAILED", "BURIED", "CERTIFIED", "JUDGED"):
+        if fate in GRAPH_COUNTED_FATES:
             by_fam[f] = by_fam.get(f, 0) + 1
     total = sum(by_fam.values())
     # If a concurrent judge appended while we scanned, this answer is a dated snapshot. Leave

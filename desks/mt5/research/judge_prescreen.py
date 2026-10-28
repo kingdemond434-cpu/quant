@@ -99,8 +99,13 @@ TABLES = HYP / "prescreen_tables.json"
 VERDICTS = HYP / "prescreen_verdicts.jsonl"
 KILLED = HYP / "prescreen_killed.json"
 LOCK = HYP / "prescreen_verdicts.lock"
+#: The hypothesis graph: the ONE source `experiment_ledger.lifetime` counts judged cells from.
+GRAPH = DATA / "hypothesis_graph.jsonl"
+#: The graph fates `experiment_ledger._graph_counts` charges as judged trials (pinned by a test
+#: against that module's own constant, so the two can never drift).
+GRAPH_COUNTED_FATES = frozenset({"FAILED", "BURIED", "CERTIFIED", "JUDGED"})
 
-SCHEMA = "judge_prescreen/1.2"
+SCHEMA = "judge_prescreen/1.3"
 
 #: THE CANON SWITCH IS CODE (audit 3570928159 M5). A reviewed commit flips it; no state file,
 #: no session and no box can. False = SHADOW: every row reaches the judge.
@@ -177,6 +182,11 @@ _EVENTS = frozenset({"KILL", "READMIT", "JUDGED", "UNATTRIBUTED", "QUARANTINED"}
 #: Git conflict-marker lines: never an event, dropped (both sides' events are kept) on repair.
 _MARKER = re.compile(r"^(<{7}|={7}|>{7}|\|{7})( |$)")
 _CELL_HINT = re.compile(r'"cell"\s*:\s*"((?:[^"\\]|\\.)*)"')
+
+
+class KillLedgerLost(OSError):
+    """The kill ledger is absent while a quarantined copy of it exists: a rebuild that never
+    landed. Counting it as empty would be a silent zero, so the count is refused."""
 
 
 class KillLedgerCorrupt(ValueError):
@@ -543,10 +553,21 @@ def fold_ledger(path: Path | None = None) -> dict[str, dict[str, Any]]:
         cell = str(r["cell"])
         s = state.setdefault(
             cell,
-            {"killed": False, "charged": False, "judged": False, "family": None, "rule": None},
+            {
+                "killed": False,
+                "charged": False,
+                "ever_charged": False,
+                "judged": False,
+                "family": None,
+                "rule": None,
+                "graph_id": None,
+            },
         )
+        if r.get("graph_id"):
+            s["graph_id"] = str(r["graph_id"])
         ev = r["event"]
         if ev == "KILL":
+            s["ever_charged"] = True
             if not s["judged"]:
                 s["killed"] = True
                 s["charged"] = True
@@ -555,6 +576,7 @@ def fold_ledger(path: Path | None = None) -> dict[str, dict[str, Any]]:
         elif ev == "UNATTRIBUTED":
             # A line the repair could not read: charged as one trial (the most it could have
             # been), never a removal -- the cell, if named, stays in the docket.
+            s["ever_charged"] = True
             if not s["judged"]:
                 s["charged"] = True
             s["family"] = str(r.get("family") or s["family"] or "prescreen_unattributed")
@@ -567,17 +589,19 @@ def fold_ledger(path: Path | None = None) -> dict[str, dict[str, Any]]:
     return state
 
 
-def judge_ruled(cells: Iterable[str], path: Path | None = None) -> set[str]:
-    """The subset of `cells` the judge has given a fate in its gate ledger (any verdict but a
-    NOT_RUN deferral -- the same rule as `judge_coverage._LedgerScan.cell_ruled`).
+def gate_index(
+    cells: Iterable[str] | None = None, path: Path | None = None
+) -> dict[str, dict[str, Any]]:
+    """cell -> {"ruled": the gate ledger holds a verdict for it (anything but a NOT_RUN deferral,
+    the rule of `judge_coverage._LedgerScan.cell_ruled`), "graph_ids": every `graph_id` its rows
+    carry, NOT_RUN rows included}. `cells` None reads every cell.
 
-    A cheap regex prefilter on the cell id; only matching lines are parsed. Any failure to read
-    returns what was found so far (possibly nothing): a missed join leaves a cell CHARGED here,
-    the inflation direction, never the deflation one."""
-    want = {c for c in cells if not c.startswith("unattributed:")}
-    if not want:
-        return set()
-    out: set[str] = set()
+    A cheap regex prefilter on the cell id; only matching lines are parsed. A read failure
+    returns what was found so far: a missed join leaves a cell CHARGED, never uncharged."""
+    want = None if cells is None else {c for c in cells if not c.startswith("unattributed:")}
+    out: dict[str, dict[str, Any]] = {}
+    if want is not None and not want:
+        return out
     try:
         with (path or LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
             for raw in fh:
@@ -590,7 +614,7 @@ def judge_ruled(cells: Iterable[str], path: Path | None = None) -> set[str]:
                         c = json.loads(f'"{c}"')
                     except ValueError:
                         continue
-                if c not in want or c in out:
+                if want is not None and c not in want:
                     continue
                 try:
                     row = json.loads(raw)
@@ -598,45 +622,173 @@ def judge_ruled(cells: Iterable[str], path: Path | None = None) -> set[str]:
                     continue
                 if not isinstance(row, dict) or str(row.get("cell") or "") != c:
                     continue
-                if str(row.get("downstream_status") or "").startswith("NOT_RUN"):
-                    continue
-                out.add(c)
+                st = out.setdefault(c, {"ruled": False, "graph_ids": set()})
+                if row.get("graph_id"):
+                    st["graph_ids"].add(str(row["graph_id"]))
+                if not str(row.get("downstream_status") or "").startswith("NOT_RUN"):
+                    st["ruled"] = True
     except OSError:
         pass
     return out
 
 
+def judge_ruled(cells: Iterable[str], path: Path | None = None) -> set[str]:
+    """The subset of `cells` the gate ledger holds a verdict for (see `gate_index`)."""
+    return {c for c, st in gate_index(cells, path).items() if st["ruled"]}
+
+
+_FATE = re.compile(r'"fate": "([A-Za-z_]*)"')
+
+
+def graph_fates(ids: Iterable[str] | None = None, path: Path | None = None) -> dict[str, str]:
+    """Latest fate per hypothesis-graph node id -- the same "last row wins" reading
+    `experiment_ledger._graph_counts` takes. `ids` None reads every node.
+
+    Rows written by `Node.to_row` start `{"id": "<id>"` and carry `"fate"` after `"source"`, so
+    the id and fate are sliced out without parsing the row (~3 s per 670 MB measured); any other
+    row shape is parsed whole. A row with no fate reads "" (counted by nobody), as there."""
+    want = None if ids is None else set(ids)
+    out: dict[str, str] = {}
+    if want is not None and not want:
+        return out
+    with (path or GRAPH).open("r", encoding="utf-8", errors="replace") as fh:
+        for ln in fh:
+            if ln.startswith('{"id": "'):
+                j = ln.find('"', 8)
+                nid = ln[8:j]
+                if want is not None and nid not in want:
+                    continue
+                k = ln.find('"source": ', j)
+                m = _FATE.search(ln, k if k > 0 else j)
+                if m:
+                    out[nid] = m.group(1)
+                    continue
+            if not ln.strip():
+                continue
+            try:
+                row = json.loads(ln)
+            except ValueError:
+                continue
+            if not isinstance(row, dict):
+                continue
+            nid = str(row.get("id"))
+            if want is None or nid in want:
+                out[nid] = str(row.get("fate") or "")
+    return out
+
+
+def _quarantined_copies(p: Path) -> list[Path]:
+    return sorted(p.parent.glob(f"{p.stem}.corrupt-*{p.suffix}"))
+
+
+def _refuse_if_lost(p: Path) -> None:
+    """Absent ledger + a quarantined copy = a rebuild that never landed: refuse, and alert."""
+    if p.exists():
+        return
+    copies = _quarantined_copies(p)
+    if not copies:
+        return
+    _alert(
+        {
+            "at": _now(),
+            "defect": "kill ledger absent while a quarantined copy exists",
+            "ledger": p.name,
+            "quarantined": [c.name for c in copies[-5:]],
+        }
+    )
+    raise KillLedgerLost(
+        f"{p.name} is absent but {len(copies)} quarantined copy(ies) exist "
+        f"({copies[-1].name}); restore or rebuild it -- refusing to count it as empty"
+    )
+
+
+def _alert(evidence: dict[str, Any]) -> None:
+    try:
+        from libs.ops.events import emit
+
+        emit(
+            "PLUMBING_DEFECT",
+            producer="judge_prescreen",
+            organ="judge_prescreen.kill_ledger",
+            evidence=evidence,
+        )
+    except Exception as exc:  # the alert is best-effort; the caller still raises or reports
+        print(f"judge_prescreen: PLUMBING_DEFECT not emitted ({type(exc).__name__})", flush=True)
+
+
+def graph_counted_cells(
+    state: dict[str, dict[str, Any]],
+    *,
+    gate_ledger: Path | None = None,
+    graph: Path | None = None,
+) -> tuple[set[str], dict[str, Any]]:
+    """Which of the kill ledger's charged cells the hypothesis graph ALREADY counts as a judged
+    trial -- joined on the graph's own id (the KILL row's `graph_id`, else every `graph_id` the
+    gate ledger carries for the cell). This is the exact source `experiment_ledger.lifetime`
+    counts, so a cell is charged here iff the graph does not count it:
+
+    * a verdict with no joinable spec gets no graph node (`hypothesis_graph.record_verdicts`
+      `no_spec`) -> NOT counted there -> stays charged here (no deflation);
+    * a NOT_RUN gate-1 reject the graph records as FAILED -> counted there -> not charged here
+      (no inflation).
+    A cell with no graph id at all, or an unreadable graph, stays charged (inflation only)."""
+    cand = {c: s for c, s in state.items() if s.get("ever_charged")}
+    info: dict[str, Any] = {"candidates": len(cand), "no_graph_id": 0, "graph": "UNREAD"}
+    if not cand:
+        return set(), info
+    gids: dict[str, set[str]] = {
+        c: ({s["graph_id"]} if s.get("graph_id") else set()) for c, s in cand.items()
+    }
+    need = [c for c, g in gids.items() if not g]
+    for c, st in gate_index(need, gate_ledger).items():
+        gids[c] |= st["graph_ids"]
+    info["no_graph_id"] = sum(1 for g in gids.values() if not g)
+    try:
+        fates = graph_fates({g for gs in gids.values() for g in gs}, graph)
+        info["graph"] = "READ"
+    except OSError as exc:
+        info["graph"] = f"UNREADABLE ({type(exc).__name__}): every candidate stays charged"
+        return set(), info
+    counted = {c for c, gs in gids.items() if any(fates.get(g) in GRAPH_COUNTED_FATES for g in gs)}
+    info["graph_counted"] = len(counted)
+    return counted, info
+
+
 def lifetime_kills(
     path: Path | None = None,
     *,
-    ruled: set[str] | None = None,
+    counted: set[str] | None = None,
     gate_ledger: Path | None = None,
+    graph: Path | None = None,
 ) -> tuple[int, dict[str, int]]:
     """(cells, per family) charged to the screen: each is the one trial the judge would have
-    recorded.
+    recorded, and never a trial the judge's graph already records.
 
-    * READ-TIME JOIN (audit v1.1, M3 transient): a charged cell the judge has since ruled is the
-      judge's trial already (its graph fate counts it), so it is not counted here -- whether or
-      not an intake has written JUDGED yet. `ruled` defaults to a scan of the gate ledger for
-      the charged cells only (no scan at all when nothing is charged, i.e. always in SHADOW).
+    * EXACTLY ONCE AGAINST THE GRAPH (audit v1.2): a cell the screen ever charged (KILL or an
+      unreadable line) is charged here UNLESS the hypothesis graph -- the source
+      `experiment_ledger` counts judged cells from -- already holds a counted fate for it
+      (`graph_counted_cells`). Joined at read time, so a readmitted-then-judged cell reads 1 at
+      once; a JUDGED handoff with no graph node keeps its charge. `counted` overrides the join.
+      No scan at all when nothing was ever charged (always, in SHADOW).
     * A CORRUPT LEDGER is re-read under the writer's lock (a reader can catch a writer
-      mid-append) and, if still corrupt, QUARANTINED: moved aside byte-for-byte, rebuilt with
-      every unreadable line charged as one trial, and a PLUMBING_DEFECT event raised. The count
-      is then an upper bound, never smaller and never a silent zero. If the lock or the repair
-      fails, this RAISES and the caller keeps its last good count.
+      mid-append) and, if still corrupt, QUARANTINED (`quarantine`). The count is then an upper
+      bound, never smaller and never a silent zero.
+    * AN ABSENT LEDGER beside a quarantined copy RAISES `KillLedgerLost` (and alerts): a rebuild
+      that never landed is not an empty ledger. A failed lock or repair also raises, and the
+      caller keeps its last good count.
     """
     p = path or VERDICTS
+    _refuse_if_lost(p)
     try:
         state = fold_ledger(p)
     except KillLedgerCorrupt:
         with _ledger_lock():
             state = _fold_or_quarantine_locked(p)
-    charged = {c: s for c, s in state.items() if s["charged"]}
-    if ruled is None:
-        ruled = judge_ruled(charged, gate_ledger) if charged else set()
+    if counted is None:
+        counted, _ = graph_counted_cells(state, gate_ledger=gate_ledger, graph=graph)
     by_fam: dict[str, int] = {}
-    for c, s in charged.items():
-        if c in ruled:
+    for c, s in state.items():
+        if not s.get("ever_charged") or c in counted:
             continue
         f = str(s["family"] or "prescreen")
         by_fam[f] = by_fam.get(f, 0) + 1
@@ -710,24 +862,21 @@ def quarantine(p: Path, *, why: str = "") -> dict[str, Any]:
         "unreadable_lines_charged": n_garbled,
         "why": why[:300],
     }
-    os.replace(p, dest)
+    # ORDER IS THE SAFETY (audit v1.2): the rebuild is written and fsynced FIRST, the original
+    # is COPIED aside (never moved), and only then does the rebuild replace it. A failure at any
+    # step leaves the original ledger in place -- still corrupt, so the next read refuses or
+    # retries -- and never an absent ledger that would read as empty.
     tmp = p.with_name(p.name + ".tmp")
     with tmp.open("w", encoding="utf-8") as fh:
         fh.write("\n".join([*kept, json.dumps(marker, separators=(",", ":"))]) + "\n")
         fh.flush()
         os.fsync(fh.fileno())
+    with dest.open("xb") as fh:
+        fh.write(raw)
+        fh.flush()
+        os.fsync(fh.fileno())
     os.replace(tmp, p)
-    try:
-        from libs.ops.events import emit
-
-        emit(
-            "PLUMBING_DEFECT",
-            producer="judge_prescreen",
-            organ="judge_prescreen.kill_ledger",
-            evidence=marker,
-        )
-    except Exception as exc:  # the alert is best-effort; the quarantine already happened
-        print(f"judge_prescreen: PLUMBING_DEFECT not emitted ({type(exc).__name__})", flush=True)
+    _alert(marker)
     print(
         f"judge_prescreen: KILL LEDGER QUARANTINED -> {dest.name} "
         f"({n_garbled} unreadable line(s) charged, {n_markers} conflict marker(s) dropped)",
@@ -768,6 +917,7 @@ def reconcile_and_kill(
     """
     at = _now()
     with _ledger_lock():
+        _refuse_if_lost(VERDICTS)
         state = _fold_or_quarantine_locked(VERDICTS)
         out_rows: list[dict[str, Any]] = []
         # JUDGED first: a charged cell the judge has since ruled hands its trial to the judge.
@@ -794,6 +944,7 @@ def reconcile_and_kill(
                     "at": at,
                     "event": "KILL",
                     "cell": cell,
+                    "graph_id": _graph_id_of(row),
                     "sym": row.get("sym") or row.get("symbol"),
                     "family": row.get("family"),
                     "rule": k["rule"],
@@ -839,6 +990,19 @@ def reconcile_and_kill(
         "killed_standing": len(killed),
         "charged_standing": sum(1 for s in final.values() if s["charged"]),
     }
+
+
+def _graph_id_of(row: dict[str, Any]) -> str:
+    """The hypothesis graph's id for a docket row (`node_id_for_spec`), "" when it cannot be
+    named -- the same rule the judge's gate ledger writes its `graph_id` by."""
+    if not isinstance(row.get("params"), dict):
+        return ""
+    try:
+        from libs.research.hypothesis_graph import node_id_for_spec
+
+        return str(node_id_for_spec(row))
+    except Exception:  # an unnameable row joins through the gate ledger later, or stays charged
+        return ""
 
 
 # ------------------------------------------------------------------ the per-row screen
@@ -1213,6 +1377,60 @@ def _epoch(raw: Any) -> float | None:
         return None
 
 
+def trial_source_comparison(
+    ledger: Path | None = None, graph: Path | None = None, sample: int = 10
+) -> dict[str, Any]:
+    """MEASURED, every pass: how far "ruled in the gate ledger" and "counted in the hypothesis
+    graph" disagree, over every cell the gate ledger names (audit v1.2). The charge joins on the
+    graph; this says, on the box, how much the older gate-ledger join would have mis-charged:
+
+    * `gate_ruled_not_graph_counted` -- a verdict with no graph fate (`no_spec`, or no graph id):
+      a gate-ledger join would DROP its charge while the graph never counted it (deflation);
+    * `graph_counted_not_gate_ruled` -- only NOT_RUN rows in the gate ledger, yet a counted
+      graph fate (a gate-1 reject recorded FAILED): a gate-ledger join would KEEP the charge
+      while the graph also counts it (inflation)."""
+    t0 = time.perf_counter()
+    try:
+        gi = gate_index(None, ledger)
+        ids = {g for st in gi.values() for g in st["graph_ids"]}
+        fates = graph_fates(ids, graph)
+    except OSError as exc:
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:200]}
+    both = gate_only = graph_only = neither = no_gid = 0
+    s_gate: list[str] = []
+    s_graph: list[str] = []
+    for c, st in gi.items():
+        g_ok = any(fates.get(g) in GRAPH_COUNTED_FATES for g in st["graph_ids"])
+        no_gid += not st["graph_ids"]
+        if st["ruled"] and g_ok:
+            both += 1
+        elif st["ruled"]:
+            gate_only += 1
+            if len(s_gate) < sample:
+                s_gate.append(c)
+        elif g_ok:
+            graph_only += 1
+            if len(s_graph) < sample:
+                s_graph.append(c)
+        else:
+            neither += 1
+    return {
+        "status": "MEASURED",
+        "cells": len(gi),
+        "both": both,
+        "gate_ruled_not_graph_counted": gate_only,
+        "graph_counted_not_gate_ruled": graph_only,
+        "neither": neither,
+        "cells_without_graph_id": no_gid,
+        "graph_ids_found": sum(1 for g in ids if g in fates),
+        "graph_ids_wanted": len(ids),
+        "sample_gate_only": s_gate,
+        "sample_graph_only": s_graph,
+        "charge_joins_on": "the hypothesis graph (the source experiment_ledger counts)",
+        "seconds": round(time.perf_counter() - t0, 3),
+    }
+
+
 def run_once(
     ledger: Path = LEDGER,
     out_dir: Path | None = None,
@@ -1260,9 +1478,11 @@ def run_once(
     except (OSError, ValueError) as exc:
         trials = {"charged_to_screen": None, "error": f"{type(exc).__name__}: {exc}"[:200]}
     trials["rule"] = (
-        "each killed cell is charged exactly once (KILL), stays charged through READMIT, and "
-        "hands its charge to the judge's fate on JUDGED; shadow writes nothing"
+        "each cell the screen killed is charged exactly once, unless the hypothesis graph (the "
+        "source experiment_ledger counts) already holds a counted fate for it, joined on the "
+        "graph's own id at read time; shadow writes nothing"
     )
+    trials["sources"] = trial_source_comparison(ledger)
     last_intake = _read(INTAKE_REPORT) if out_dir is None else None
     sib_k = sib.get("canon_k") or min(K_GRID)
     sib_cost = ((sib.get("by_k") or {}).get(str(sib_k)) or {}).get("killed_by_tier")
