@@ -125,6 +125,14 @@ def test_a_missing_agent_cli_exits_non_zero() -> None:
         or "already DONE" in src          # the only legitimate early exit-0 is a finished lane
 
 
+def test_the_codex_desktop_cli_is_found_under_its_hash_folder() -> None:
+    """The Codex app keeps its CLI under bin\\<content hash>, renamed on every update; the dry run
+    of 2026-10-01 named a folder that no longer existed by 10-28. The newest one present is taken."""
+    src = LAUNCHER.read_text("utf-8")
+    assert 'OpenAI\\Codex\\bin' in src
+    assert "Sort-Object LastWriteTime | Select-Object -Last 1" in src
+
+
 def test_a_missing_prompt_is_fatal() -> None:
     """Running an agent against this repository with no brief is worse than not running one."""
     src = LAUNCHER.read_text("utf-8")

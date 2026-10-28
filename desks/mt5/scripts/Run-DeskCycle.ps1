@@ -203,6 +203,15 @@ if (-not $resolved) {
         "C:\Users\Administrator\.local\bin\$AgentCommand.exe",
         "C:\Users\Administrator\AppData\Roaming\npm\$AgentCommand.cmd"
     )
+    # The Codex desktop app ships its CLI under a content-hash folder that changes on every
+    # update (bin\de8a38d2100ae498 -> bin\896a0166b774037a, measured 2026-10-28), so a pinned
+    # path goes stale silently; the newest one present is taken.
+    foreach ($root in @($env:LOCALAPPDATA, "C:\Users\Administrator\AppData\Local")) {
+        if (-not $root) { continue }
+        $hashed = Get-ChildItem -Path (Join-Path $root "OpenAI\Codex\bin") -Filter "$AgentCommand.exe" `
+            -Recurse -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
+        if ($hashed) { $candidates += $hashed.FullName }
+    }
     foreach ($c in $candidates) {
         if ($c -and (Test-Path -LiteralPath $c)) { $resolved = Get-Command $c; break }
     }
