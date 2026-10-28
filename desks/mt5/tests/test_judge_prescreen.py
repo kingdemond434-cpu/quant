@@ -29,6 +29,7 @@ def paths(tmp_path, monkeypatch):
     monkeypatch.setattr(jp, "KILLED", tmp_path / "prescreen_killed.json")
     monkeypatch.setattr(jp, "LOCK", tmp_path / "prescreen_verdicts.lock")
     monkeypatch.setattr(jp, "LEDGER", tmp_path / "gate_verdict_ledger.jsonl")
+    monkeypatch.setattr(jp, "GRAPH", tmp_path / "hypothesis_graph.jsonl")
     from libs.ops import events
 
     monkeypatch.setattr(events, "PATH", tmp_path / "events.jsonl")
@@ -239,6 +240,13 @@ def _probe(sym, fam):
     return {"status": "UNMEASURED"}
 
 
+def _graph(tmp: Path, *rows: dict) -> None:
+    with (tmp / "hypothesis_graph.jsonl").open("a") as fh:
+        for r in rows:
+            fh.write(json.dumps({"id": r["id"], "region": "x", "params": {}, "source": "t", **r}))
+            fh.write("\n")
+
+
 def _files(tmp: Path, tables: dict, report: dict) -> tuple[Path, Path]:
     t, r = tmp / "tables.json", tmp / "report.json"
     t.write_text(json.dumps(tables))
@@ -333,8 +341,13 @@ def test_readmit_then_judged_hands_the_one_trial_to_the_judge(paths) -> None:
     _run(t, r, canon=True, probe=lambda s, f: {"status": "PRESENT"})
     out, doc = _run(t, r, canon=True, ruled={EV})  # the judge has now ruled it
     assert doc["ledger"]["handed_to_judge"] == 1
-    assert jp.lifetime_kills() == (0, {})  # the judge's fate carries the single trial
     assert EV in {x["_cell"] for x in out}
+    # the JUDGED handoff alone moves no charge: the graph holds no fate for it yet (no_spec)
+    assert jp.lifetime_kills() == (1, {"event_reaction": 1})
+    gid = jp.fold_ledger()[EV]["graph_id"]
+    assert gid  # the KILL row carries the graph's own id
+    _graph(paths, {"id": gid, "fate": "FAILED"})
+    assert jp.lifetime_kills() == (0, {})  # the graph's fate carries the single trial
     _run(t, r, canon=True, ruled=set())  # even if the ruled set later misses it: never re-killed
     assert jp.lifetime_kills() == (0, {}) and jp.fold_ledger()[EV]["judged"] is True
 
@@ -472,7 +485,7 @@ def test_a_failed_quarantine_raises_never_counts_zero(paths, monkeypatch) -> Non
         jp.lifetime_kills()
 
 
-def test_read_time_join_closes_the_readmit_then_judged_window(paths) -> None:
+def test_read_time_join_is_against_the_graph_experiment_ledger_counts(paths) -> None:
     jp.VERDICTS.write_text(
         "\n".join(
             json.dumps(x)
@@ -480,21 +493,101 @@ def test_read_time_join_closes_the_readmit_then_judged_window(paths) -> None:
                 {"event": "KILL", "cell": "a", "family": "jump"},
                 {"event": "READMIT", "cell": "a", "family": "jump"},
                 {"event": "KILL", "cell": "z", "family": "jump"},
+                {"event": "KILL", "cell": "n", "family": "jump"},
+                {"event": "READMIT", "cell": "n", "family": "jump"},
             )
         )
         + "\n"
     )
-    assert jp.lifetime_kills() == (2, {"jump": 2})
-    # the judge rules `a` (and logs a deferral for `z`, which is not a fate); no intake has
-    # run, so the kill ledger holds no JUDGED yet -- the count must already read 1 for `a`
+    assert jp.lifetime_kills() == (3, {"jump": 3})
     jp.LEDGER.write_text(
-        json.dumps({"cell": "a", "terminal_gate": "in_sample_screen", "passed": False})
-        + "\n"
-        + json.dumps({"cell": "z", "passed": None, "downstream_status": "NOT_RUN_BUDGET"})
+        "\n".join(
+            json.dumps(x)
+            for x in (
+                # `a` judged and in the graph; `n` judged with no joinable spec (no graph id);
+                # `z` only a NOT_RUN gate-1 reject -- which the graph recorded as FAILED
+                {"cell": "a", "graph_id": "ga", "terminal_gate": "in_sample_screen"},
+                {"cell": "n", "graph_id": "", "terminal_gate": "in_sample_screen"},
+                {"cell": "z", "graph_id": "gz", "passed": None, "downstream_status": "NOT_RUN_G1"},
+            )
+        )
         + "\n"
     )
+    _graph(paths, {"id": "ga", "fate": "BORN"}, {"id": "ga", "fate": "FAILED"})
+    _graph(paths, {"id": "gz", "fate": "FAILED"})
+    # a: graph counts it -> 0 here, at once, before any intake writes JUDGED
+    # n: ruled in the gate ledger but no graph fate -> STILL charged (a gate join would deflate)
+    # z: NOT_RUN-only yet the graph counts it -> NOT charged (a gate join would inflate)
     assert jp.lifetime_kills() == (1, {"jump": 1})
-    assert jp.judge_ruled({"a", "z", "q"}) == {"a"}
+    assert jp.judge_ruled({"a", "z", "n", "q"}) == {"a", "n"}
+    _graph(paths, {"id": "ga", "fate": ""})  # the latest row wins, as in experiment_ledger
+    assert jp.lifetime_kills() == (2, {"jump": 2})
+
+
+def test_an_unreadable_graph_leaves_every_charge_standing(paths) -> None:
+    jp.VERDICTS.write_text(json.dumps({"event": "KILL", "cell": "a", "graph_id": "ga"}) + "\n")
+    jp.GRAPH.mkdir()  # reading a directory raises
+    assert jp.lifetime_kills()[0] == 1
+
+
+def test_the_counted_fates_are_experiment_ledgers_own() -> None:
+    from libs.research import experiment_ledger as el
+
+    assert jp.GRAPH_COUNTED_FATES == el.GRAPH_COUNTED_FATES
+
+
+def test_graph_fates_slices_rows_and_parses_others(paths) -> None:
+    _graph(paths, {"id": "a1", "fate": "FAILED", "params": {"fate": "decoy"}})
+    with jp.GRAPH.open("a") as fh:
+        fh.write(json.dumps({"fate": "CERTIFIED", "id": "b2"}) + "\n")
+    assert jp.graph_fates() == {"a1": "FAILED", "b2": "CERTIFIED"}
+    assert jp.graph_fates({"b2"}) == {"b2": "CERTIFIED"}
+
+
+def test_the_report_measures_how_far_the_two_sources_disagree(paths) -> None:
+    jp.LEDGER.write_text(
+        "\n".join(
+            json.dumps(x)
+            for x in (
+                {"cell": "a", "graph_id": "ga", "terminal_gate": "in_sample_screen"},
+                {"cell": "n", "graph_id": "", "terminal_gate": "in_sample_screen"},
+                {"cell": "z", "graph_id": "gz", "passed": None, "downstream_status": "NOT_RUN_G1"},
+                {"cell": "w", "graph_id": "gw", "passed": None, "downstream_status": "NOT_RUN_X"},
+            )
+        )
+        + "\n"
+    )
+    _graph(paths, {"id": "ga", "fate": "FAILED"}, {"id": "gz", "fate": "FAILED"})
+    cmp = jp.trial_source_comparison()
+    assert cmp["status"] == "MEASURED" and cmp["cells"] == 4
+    assert cmp["both"] == 1 and cmp["gate_ruled_not_graph_counted"] == 1
+    assert cmp["graph_counted_not_gate_ruled"] == 1 and cmp["neither"] == 1
+    assert cmp["sample_gate_only"] == ["n"] and cmp["sample_graph_only"] == ["z"]
+    assert cmp["cells_without_graph_id"] == 1
+
+
+# ------------------------------------------------------------------ v1.2 should-fix: no silent 0
+def test_a_failed_rebuild_leaves_the_original_ledger_in_place(paths) -> None:
+    original = '{"event": "KILL", "cell": "b", "fam'
+    jp.VERDICTS.write_text(original)
+    (paths / "prescreen_verdicts.jsonl.tmp").mkdir()  # the rebuild cannot be written
+    with pytest.raises(OSError):
+        jp.lifetime_kills()
+    assert jp.VERDICTS.read_text() == original and not _quarantined(paths)
+    with pytest.raises(OSError):  # the next read refuses again -- never (0, {})
+        jp.lifetime_kills()
+    (paths / "prescreen_verdicts.jsonl.tmp").rmdir()
+    assert jp.lifetime_kills()[0] == 1 and len(_quarantined(paths)) == 1
+
+
+def test_an_absent_ledger_beside_a_quarantined_copy_refuses_and_alerts(paths) -> None:
+    (paths / "prescreen_verdicts.corrupt-20261028T000000Z.jsonl").write_text("garbage\n")
+    with pytest.raises(jp.KillLedgerLost):
+        jp.lifetime_kills()
+    assert _defects(paths)[-1]["evidence"]["defect"].startswith("kill ledger absent")
+    kill = {EV: {"rule": "needs_data", "row": _docket()[1], "evidence": {}}}
+    with pytest.raises(jp.KillLedgerLost):  # the writer refuses too: intake then fails open
+        jp.reconcile_and_kill(kill, {EV}, set())
 
 
 def test_experiment_ledger_charges_once_and_never_deflates(paths) -> None:
@@ -507,12 +600,14 @@ def test_experiment_ledger_charges_once_and_never_deflates(paths) -> None:
                 {"event": "KILL", "cell": "a", "family": "jump"},
                 {"event": "KILL", "cell": "b", "family": "jump"},
                 {"event": "READMIT", "cell": "b", "family": "jump"},
-                {"event": "KILL", "cell": "c", "family": "jump"},
+                {"event": "KILL", "cell": "c", "family": "jump", "graph_id": "gc"},
                 {"event": "JUDGED", "cell": "c", "family": "jump"},
             )
         )
         + "\n"
     )
+    assert el._prescreen_counts() == (3, {"jump": 3})  # c judged, but no graph fate yet
+    _graph(paths, {"id": "gc", "fate": "JUDGED"})
     assert el._prescreen_counts() == (2, {"jump": 2})
     with jp.VERDICTS.open("a") as fh:
         fh.write("<<<<<<< HEAD\n")
