@@ -33,7 +33,7 @@ is refused by GitHub for the workflow token (it holds no `workflows` permission)
 therefore leaves such a PR alone (status "pending: the box merges this") and the BOX merges it
 under the SAME rule, with zuck's own gh token (which carries the `workflow` scope):
 
-    python scripts/audit_gate.py --repo OWNER/NAME --sweep --box
+    python .github/scripts/audit_gate.py --repo OWNER/NAME --sweep --box
 
 run every 10 minutes by ops/box/workflow_gate.ps1 from a clean checkout of LIVE (trusted code,
 never the PR's). The box mode merges ONLY workflow-file PRs, never waits (a PR whose CI is still

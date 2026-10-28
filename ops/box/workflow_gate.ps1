@@ -1,6 +1,6 @@
 # MERGE AUDIT-CLEARED WORKFLOW-FILE PRs FROM THE BOX (2026-10-28).
 #
-# The Actions audit gate (scripts/audit_gate.py, #445) merges every PR into LIVE once the auditor
+# The Actions audit gate (.github/scripts/audit_gate.py, #445) merges every PR into LIVE once the auditor
 # CLEARs its head and CI is green -- except a PR that changes .github/workflows/**, which GitHub
 # refuses to let the workflow token merge. Those used to wait for zuck to paste a merge. This runs
 # the SAME gate, same rule, in its box mode with zuck's own gh login (which holds the `workflow`
@@ -78,9 +78,10 @@ try {
     if (-not (Test-Path -LiteralPath (Join-Path $Clone ".git"))) {
         & git clone -q --filter=blob:none --no-checkout "https://github.com/$Repo.git" $Clone 2>&1 | ForEach-Object { Say "clone: $_" }
         if ($LASTEXITCODE -ne 0) { throw "git clone failed ($LASTEXITCODE)" }
-        & git -C $Clone sparse-checkout set --no-cone /scripts/audit_gate.py
-        if ($LASTEXITCODE -ne 0) { throw "sparse-checkout failed ($LASTEXITCODE)" }
     }
+    # every run, so a moved gate script is followed (only this one file is ever checked out)
+    & git -C $Clone sparse-checkout set --no-cone /.github/scripts/audit_gate.py
+    if ($LASTEXITCODE -ne 0) { throw "sparse-checkout failed ($LASTEXITCODE)" }
     & git -C $Clone fetch -q --no-tags origin "+refs/heads/${Live}:refs/remotes/origin/${Live}" 2>&1 | ForEach-Object { Say "fetch: $_" }
     if ($LASTEXITCODE -ne 0) { throw "git fetch failed ($LASTEXITCODE)" }
     & git -C $Clone checkout -q -f --detach "origin/$Live" 2>&1 | ForEach-Object { Say "checkout: $_" }
@@ -89,7 +90,7 @@ try {
 
     Push-Location -LiteralPath $Clone
     try {
-        $out = (& $Python -I -u (Join-Path $Clone "scripts\audit_gate.py") --repo $Repo --base $Live --sweep --box 2>&1 | Out-String)
+        $out = (& $Python -I -u (Join-Path $Clone ".github\scripts\audit_gate.py") --repo $Repo --base $Live --sweep --box 2>&1 | Out-String)
         $rc = $LASTEXITCODE
     } finally { Pop-Location }
     foreach ($l in ($out -split "`r?`n" | Where-Object { $_ })) { Say "gate@$at $l" }

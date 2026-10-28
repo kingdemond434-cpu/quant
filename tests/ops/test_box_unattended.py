@@ -79,11 +79,11 @@ def test_the_workflow_gate_runs_the_trusted_gate_in_box_mode_with_zucks_login_on
     assert 'Remove-Item -LiteralPath "env:$v"' in wg
     assert "'workflow'" in wg and "exit 3" in wg  # no scope, no merge
     assert 'checkout -q -f --detach "origin/$Live"' in wg  # LIVE, never a PR branch
-    assert "--sweep --box" in wg
+    assert "--sweep --box" in wg and '".github\\scripts\\audit_gate.py"' in wg
     assert "GIT_CONFIG_KEY_0 = 'safe.directory'" in wg
     assert "Global\\QuantBox-WorkflowGate" in wg
 
 
 def test_the_gate_script_the_box_runs_has_the_box_mode() -> None:
-    gate = (ROOT / "scripts" / "audit_gate.py").read_text(encoding="utf-8")
+    gate = (ROOT / ".github" / "scripts" / "audit_gate.py").read_text(encoding="utf-8")
     assert '"--sweep"' in gate and '"--box"' in gate
