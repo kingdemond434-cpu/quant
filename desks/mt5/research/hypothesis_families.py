@@ -236,6 +236,24 @@ def rule_key(row: dict[str, Any]) -> str:
 _AXIS_PARAMS = frozenset({"timeframe", "session", "selector", "regime", "condition", "direction",
                           "side", "representation", "feature", "horizon"})
 
+#: PROVENANCE, NOT STRUCTURE: params no family or engine path reads (audit 2026-10-28, grepped
+#: across mt5desk, external_gauntlet and orthogonal_sweep). `family_formula` takes `population`
+#: only to `del` it; `mechanism_genome`/`crossed_slot` are alpha_genome's narrative of how a cell
+#: was bred. Keying on them would split ONE executable rule into two L1 rules by where it came
+#: from -- the reverse of the bug `categorical_suffix` fixes, and a flattered breadth census.
+_PROVENANCE_PARAMS = frozenset({
+    "population", "mechanism_genome", "crossed_slot", "label", "title", "note", "notes",
+    "mechanism_note", "why", "reason", "claim", "claim_id", "source", "source_url", "url",
+    "producer", "provenance", "origin", "author", "payload_hash", "id"})
+_PROVENANCE_SUFFIXES = ("_id", "_url", "_hash", "_note")
+
+#: A numeric literal that is not part of an identifier (`ma20`, `range_v2` keep their digits).
+_NUM_LITERAL = re.compile(r"(?<![A-Za-z0-9_.])[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?(?![A-Za-z0-9_])")
+
+#: Bumped whenever the L1 key changes. `daily` is recomputed from the whole bank on every pass, so
+#: a change RESTATES the series rather than stepping it; the version says which key a file used.
+L1_KEY_VERSION = "structural+categorical-v1.1 (2026-10-28)"
+
 
 def _categorical(v: Any) -> Any:
     """The structural part of a param value: numbers (thresholds) drop out, words stay.
@@ -253,7 +271,8 @@ def _categorical(v: Any) -> Any:
             float(txt)
             return None
         except ValueError:
-            return txt.lower() or None
+            # thresholds INSIDE a word collapse too: decay(sum(x,240),8) and (x,120),5) are one rule
+            return _NUM_LITERAL.sub("#", txt).lower() or None
     if isinstance(v, Mapping):
         out = {str(k): c for k, c in ((k, _categorical(x)) for k, x in v.items()) if c is not None}
         return out or None
@@ -263,6 +282,12 @@ def _categorical(v: Any) -> Any:
             items.sort(key=lambda c: json.dumps(c, sort_keys=True, default=str))
         return items or None
     return str(v).lower()
+
+
+def _structural_param(key: str) -> bool:
+    k = key.lower()
+    return (k not in _AXIS_PARAMS and k not in _PROVENANCE_PARAMS
+            and not k.endswith(_PROVENANCE_SUFFIXES))
 
 
 def categorical_suffix(row: Mapping[str, Any]) -> str:
@@ -276,7 +301,7 @@ def categorical_suffix(row: Mapping[str, Any]) -> str:
     if not isinstance(params, Mapping):
         return ""
     cat = {str(k): c for k, c in ((k, _categorical(params[k])) for k in sorted(params, key=str)
-                                  if str(k) not in _AXIS_PARAMS) if c is not None}
+                                  if _structural_param(str(k))) if c is not None}
     return json.dumps(cat, sort_keys=True, separators=(",", ":"), default=str) if cat else ""
 
 
@@ -1231,6 +1256,7 @@ def build(rows: list[dict[str, Any]], *, clusters: Mapping[str, str] | None = No
         "generated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "producer": "desks/mt5/research/hypothesis_families.py (hourly, merge_docket leg)",
         "status": "MEASURED" if rows else "UNMEASURED",
+        "l1_key": L1_KEY_VERSION,
         **body,
         "symbol_clusters": dict(cluster_meta or {}),
         "intake": dict(reaim_report or {"status": "UNMEASURED",
@@ -1255,7 +1281,8 @@ def build(rows: list[dict[str, Any]], *, clusters: Mapping[str, str] | None = No
 
 def summary(doc: Mapping[str, Any]) -> dict[str, Any]:
     keep = ("generated_at", "status", "raw_cells", "l1_rules", "l2_families", "l3_families",
-            "l3_status", "duplicate_share_l1", "duplicate_share_l2", "k_eff", "k_eff_readings")
+            "l3_status", "duplicate_share_l1", "duplicate_share_l2", "k_eff", "k_eff_readings",
+            "l1_key")
     out = {k: doc.get(k) for k in keep}
     out["mechanism_missing_families"] = (doc.get("mechanism") or {}).get("missing_families")
     days = (doc.get("daily") or {}).get("days") or []

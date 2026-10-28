@@ -74,6 +74,21 @@ def test_categorical_params_are_structure_and_thresholds_still_collapse() -> Non
     assert doc["l1_rules"] == 3
 
 
+def test_provenance_params_are_not_structure_and_expr_literals_collapse() -> None:
+    """The audit's must-fix: one executable rule from two populations (or two genome narratives)
+    is ONE L1 rule; a formula whose expression differs only by numeric literals is one too."""
+    a = _row("EURUSD", "formula", expr="decay(sum(div(open,open),240),8)", population="zoo")
+    b = _row("EURUSD", "formula", expr="decay(sum(div(open,open),120),5)", population="bayesian",
+             mechanism_genome={"driver": "flow"}, crossed_slot="driver", claim_id="c-17")
+    c = _row("EURUSD", "formula", expr="decay(sum(div(close,open),240),8)", population="zoo")
+    assert hf.rule_key(a) == hf.rule_key(b)
+    assert hf.rule_key(a) != hf.rule_key(c)
+    # an identifier's digits are not a threshold, and input_source is read by the engine
+    assert hf.categorical_suffix(_row("EURUSD", "x", base_family="ma20")) != hf.categorical_suffix(
+        _row("EURUSD", "x", base_family="ma50"))
+    assert hf.categorical_suffix(_row("EURUSD", "x", input_source="cot")) != ""
+
+
 def test_an_unmeasured_symbol_is_its_own_cluster() -> None:
     rows = [_row("EURUSD"), _row("AUDNZD")]
     assert hf.census(rows, {}, detail=10)["l2_families"] == 2
