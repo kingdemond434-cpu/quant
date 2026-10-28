@@ -47,6 +47,16 @@ def input_preflight(family, params):
     # the family, which answers it as it always has.
     if family == "lead_lag" and not params.get("driver_symbol"):
         return "BLOCKED_RULES: lead_lag: no driver_symbol on the cell"
+    # A TRIANGLE NAMES BOTH LEGS OR IT IS NOT A TRIANGLE (2026-10-22). `build_cell` refuses
+    # `if not leg_b_symbol` / `if not leg_c_symbol`, but only AFTER a pool worker has loaded the
+    # cell's own bars, so the refusal held a worker and, as a pre-warm failure, came back
+    # BUDGET_DEFERRED at the head of every sweep. The box's 2026-10-22 census
+    # (UNKNOWN_SHARE_CENSUS.json, 6,000 random docket cells) measured `no_leg_symbol_named` at
+    # 7 of 31 build failures. Same test as the builder's, same spelling as the driver refusal.
+    if family == "triangle":
+        for leg in ("leg_b_symbol", "leg_c_symbol"):
+            if not params.get(leg):
+                return f"BLOCKED_RULES: triangle: no {leg} on the candidate"
     if family == "calendar_month":
         missing = [k for k in ("active_month", "side_bias") if k not in params]
         if missing:
