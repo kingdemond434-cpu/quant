@@ -6,6 +6,7 @@ python -m pytest desks/mt5/tests/test_judge_prescreen.py -q
 from __future__ import annotations
 
 import json
+import os
 import sys
 import threading
 from datetime import UTC, datetime, timedelta
@@ -694,8 +695,7 @@ def test_a_newer_delta_fate_beats_the_backfill(paths) -> None:
     # gq's old row goes into the already-read prefix; the checkpoint is faked to match below
     jp.GRAPH.write_text("\n".join([head, json.dumps({"id": "gq", "fate": "FAILED"}), *rest]) + "\n")
     st = json.loads(jp.SOURCES_STATE.read_text())
-    st["graph"]["offset"] = jp.GRAPH.stat().st_size  # as if all of it had been read
-    st["graph"]["head_len"], st["graph"]["head"] = 0, jp._file_sig(jp.GRAPH, 0)[1]
+    st["graph"] = jp._part_stamp(jp.GRAPH, jp.GRAPH.stat().st_size)  # as if all of it was read
     jp.SOURCES_STATE.write_text(json.dumps(st))
     started = jp.trial_source_comparison(max_lines=1)  # reads q, opens the backfill, no more
     assert started["status"] == "PARTIAL" and started["pending_graph_read"] == 1
@@ -705,6 +705,104 @@ def test_a_newer_delta_fate_beats_the_backfill(paths) -> None:
     assert r["status"] == "MEASURED"
     st = json.loads(jp.SOURCES_STATE.read_text())
     assert st["fates"]["gq"] == "BORN"  # the backfill's older FAILED never overwrote it
+
+
+def _big_gate(n: int = 300) -> list[str]:
+    """A gate ledger well past the 4 KiB head, so a change beyond it is not a head change."""
+    return [
+        json.dumps({"cell": f"c{i:04d}", "graph_id": f"g{i:04d}", "terminal_gate": "UNKNOWN"})
+        for i in range(n)
+    ]
+
+
+def test_a_same_size_rewrite_beyond_the_head_rereads_from_zero(paths) -> None:
+    lines = _big_gate()
+    jp.LEDGER.write_text("\n".join(lines) + "\n")
+    _graph(paths, {"id": "g0250", "fate": "FAILED"})
+    first = jp.trial_source_comparison()
+    assert first["status"] == "MEASURED" and first["both"] == 1
+    before = jp.LEDGER.stat()
+    # rewrite row 250 IN PLACE, same length: its graph id now names no graph node
+    lines[250] = lines[250].replace('"g0250"', '"h0250"')
+    jp.LEDGER.write_text("\n".join(lines) + "\n")
+    os.utime(jp.LEDGER, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000))
+    assert jp.LEDGER.stat().st_size == before.st_size
+    again = jp.trial_source_comparison()
+    assert "gate" in again["coverage"]["reset_this_pass"]
+    assert again["status"] == "MEASURED" and again["both"] == 0  # the stale fate is gone
+
+
+def test_a_truncate_then_grow_past_the_old_offset_rereads_from_zero(paths) -> None:
+    lines = _big_gate()
+    jp.LEDGER.write_text("\n".join(lines) + "\n")
+    _graph(paths, {"id": "g0250", "fate": "FAILED"}, {"id": "g9999", "fate": "FAILED"})
+    assert jp.trial_source_comparison()["both"] == 1
+    # truncate to 200 rows (the head is unchanged), then grow PAST the old offset with others
+    new = lines[:200] + [
+        json.dumps({"cell": f"x{i:04d}", "graph_id": "g9999", "terminal_gate": "UNKNOWN"})
+        for i in range(150)
+    ]
+    jp.LEDGER.write_text("\n".join(new) + "\n")
+    again = jp.trial_source_comparison()
+    assert "gate" in again["coverage"]["reset_this_pass"]
+    assert again["cells"] == 350 and again["both"] == 150  # c0250 is gone; the x rows count
+
+
+def test_an_append_alone_is_never_a_reset(paths) -> None:
+    jp.LEDGER.write_text("\n".join(_big_gate()) + "\n")
+    _graph(paths, {"id": "g0001", "fate": "FAILED"})
+    jp.trial_source_comparison()
+    with jp.LEDGER.open("a") as fh:
+        fh.write(
+            json.dumps({"cell": "new", "graph_id": "g0001", "terminal_gate": "UNKNOWN"}) + "\n"
+        )
+    _graph(paths, {"id": "g0002", "fate": "FAILED"})
+    r = jp.trial_source_comparison()
+    assert r["coverage"]["reset_this_pass"] == [] and r["both"] == 3
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"cells": []},
+        {"gate_offset": "x"},
+        {"fates": {"a": 1}},
+        {"pending": "x"},
+        {"backfill": {"ids": ["a"], "cursor": "x", "end": 0, "found": {}, "newer": []}},
+        {"cell_entry": ["bad"]},
+        "not a dict",
+    ],
+)
+def test_a_checkpoint_with_bad_types_is_discarded_never_raised(paths, bad) -> None:
+    _sources_world(paths)
+    jp.trial_source_comparison()
+    st = json.loads(jp.SOURCES_STATE.read_text())
+    if bad == "not a dict":
+        st = [1, 2]
+    elif "gate_offset" in bad:
+        st["gate"]["offset"] = "x"
+    elif "cell_entry" in bad:
+        st["cells"]["a"] = bad["cell_entry"]
+    else:
+        st.update(bad)
+    jp.SOURCES_STATE.write_text(json.dumps(st))
+    r = jp.trial_source_comparison()
+    assert r["coverage"]["reset_this_pass"][0] == "invalid_checkpoint"
+    assert r["status"] == "MEASURED" and r["both"] == 1
+
+
+def test_run_once_never_fails_the_leg_on_the_sources_measurement(paths, tmp_path, monkeypatch):
+    led = tmp_path / "ledger.jsonl"
+    led.write_text(json.dumps(_row("E.carry.p=1", "in_sample_screen")) + "\n")
+    monkeypatch.setattr(jp, "_probe_fn", lambda: None)
+
+    def boom(*_a, **_k):
+        raise TypeError("list indices must be integers")
+
+    monkeypatch.setattr(jp, "trial_source_comparison", boom)
+    doc = jp.run_once(led, tmp_path / "out", tmp_path / "no_universe")
+    src = doc["trials"]["sources"]
+    assert src["status"] == "UNMEASURED" and "TypeError" in src["why"]
 
 
 def test_an_unreadable_source_is_unmeasured_not_zero(paths) -> None:

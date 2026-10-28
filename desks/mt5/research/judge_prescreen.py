@@ -1383,11 +1383,13 @@ def _epoch(raw: Any) -> float | None:
 SOURCES_BUDGET_S = 90.0
 SOURCES_STATE = HYP / "prescreen_sources_state.json"
 _SIG_BYTES = 4096
+#: The window of already-read bytes hashed just before a checkpoint's offset (the same 64 KiB
+#: `experiment_ledger._graph_stamp` hashes at the end of the graph).
+_WIN_BYTES = 65536
 
 
 def _file_sig(path: Path, n: int = _SIG_BYTES) -> tuple[int, str] | None:
-    """(size, sha of the first `n` bytes). The checkpoint stores the hash of the head it had
-    ALREADY READ, so an append never looks like a rewrite, and a rewrite of read bytes does."""
+    """(size, sha of the first `n` bytes), or None when unreadable."""
     try:
         size = path.stat().st_size
         with path.open("rb") as fh:
@@ -1395,6 +1397,109 @@ def _file_sig(path: Path, n: int = _SIG_BYTES) -> tuple[int, str] | None:
     except OSError:
         return None
     return size, hashlib.sha256(head).hexdigest()[:16]
+
+
+def _part_stamp(path: Path, offset: int) -> dict[str, Any] | None:
+    """What a checkpoint at `offset` remembers of a file: size and st_mtime_ns at save time (as
+    `experiment_ledger._graph_stamp`), the sha of the first min(4 KiB, offset) bytes, and the sha
+    of the window of up to 64 KiB ENDING at the offset -- the bytes it read last."""
+    try:
+        stt = path.stat()
+        with path.open("rb") as fh:
+            head_len = min(_SIG_BYTES, offset)
+            head = fh.read(head_len)
+            win_start = max(0, offset - _WIN_BYTES)
+            fh.seek(win_start)
+            win = fh.read(offset - win_start)
+    except OSError:
+        return None
+    return {
+        "offset": offset,
+        "size": stt.st_size,
+        "mtime_ns": stt.st_mtime_ns,
+        "head_len": head_len,
+        "head": hashlib.sha256(head).hexdigest()[:16],
+        "win_start": win_start,
+        "win": hashlib.sha256(win).hexdigest()[:16],
+    }
+
+
+def _part_fresh(part: dict[str, Any], path: Path) -> bool:
+    """May this checkpoint resume reading `path` at its offset? Only if the file is the same
+    append-only file it read: not smaller than it was (no truncate), not rewritten in place at
+    the same size (st_mtime_ns moved with no growth), and with the bytes it read -- the head
+    and the window ending at its offset -- unchanged (catches a truncate-then-grow past the old
+    offset). Anything else re-reads from 0."""
+    now = _part_stamp(path, int(part["offset"]))
+    if now is None:
+        return False
+    if now["size"] < part["size"] or now["size"] < part["offset"]:
+        return False
+    if now["size"] == part["size"] and now["mtime_ns"] != part["mtime_ns"]:
+        return False
+    return now["head"] == part["head"] and now["win"] == part["win"]
+
+
+_PART_KEYS = {
+    "offset": int,
+    "size": int,
+    "mtime_ns": int,
+    "head_len": int,
+    "head": str,
+    "win_start": int,
+    "win": str,
+}
+
+
+def _valid_checkpoint(st: Any) -> bool:
+    """Every field of a sources checkpoint has the type the reader assumes; anything else (a
+    hand edit, a half-written file from another version) is discarded and re-read from 0."""
+
+    def _ints(*xs: Any) -> bool:
+        return all(isinstance(x, int) and not isinstance(x, bool) and x >= 0 for x in xs)
+
+    def _strs(xs: Any) -> bool:
+        return isinstance(xs, list) and all(isinstance(x, str) for x in xs)
+
+    if not isinstance(st, dict) or st.get("schema") != SCHEMA:
+        return False
+    for key in ("gate", "graph"):
+        part = st.get(key)
+        if not isinstance(part, dict) or set(_PART_KEYS) - set(part):
+            return False
+        for k, typ in _PART_KEYS.items():
+            v = part[k]
+            if typ is int and not _ints(v):
+                return False
+            if typ is str and not isinstance(v, str):
+                return False
+    cells, fates = st.get("cells"), st.get("fates")
+    if not isinstance(cells, dict) or not isinstance(fates, dict):
+        return False
+    for c, ent in cells.items():
+        if not (
+            isinstance(c, str)
+            and isinstance(ent, list)
+            and len(ent) == 2
+            and ent[0] in (0, 1)
+            and _strs(ent[1])
+        ):
+            return False
+    if not all(isinstance(k, str) and isinstance(v, str) for k, v in fates.items()):
+        return False
+    if not _strs(st.get("pending")):
+        return False
+    bf = st.get("backfill")
+    if bf is None:
+        return True
+    return (
+        isinstance(bf, dict)
+        and _strs(bf.get("ids"))
+        and _strs(bf.get("newer"))
+        and _ints(bf.get("cursor"), bf.get("end"))
+        and isinstance(bf.get("found"), dict)
+        and all(isinstance(k, str) and isinstance(v, str) for k, v in bf["found"].items())
+    )
 
 
 def _read_lines_from(path: Path, offset: int, deadline: float, max_lines: int | None):
@@ -1448,38 +1553,24 @@ def trial_source_comparison(
     deadline = t0 + (SOURCES_BUDGET_S if budget_s is None else budget_s)
     led, gph = ledger or LEDGER, graph or GRAPH
     sp = state_path or SOURCES_STATE
-    st = _read(sp)
-    if not isinstance(st, dict) or st.get("schema") != SCHEMA:
-        st = {}
-
-    def _head_len(part: Any) -> int:
-        return int(part.get("head_len") or 0) if isinstance(part, dict) else 0
-
-    gsig, fsig = (
-        _file_sig(led, _head_len(st.get("gate"))),
-        _file_sig(gph, _head_len(st.get("graph"))),
-    )
+    raw_st = _read(sp)
+    reset = []
+    if raw_st is not None and not _valid_checkpoint(raw_st):
+        reset.append("invalid_checkpoint")
+    st: dict[str, Any] = raw_st if _valid_checkpoint(raw_st) else {}
+    gsig, fsig = _file_sig(led, 0), _file_sig(gph, 0)
     if gsig is None or fsig is None:
         return {
             "status": "UNMEASURED",
             "why": f"unreadable: {'gate ledger' if gsig is None else 'graph'}",
             "seconds": round(time.perf_counter() - t0, 3),
         }
-
-    def _fresh(part: Any, sig: tuple[int, str]) -> bool:
-        return (
-            isinstance(part, dict)
-            and part.get("head") == sig[1]
-            and int(part.get("offset") or 0) <= sig[0]
-        )
-
-    reset = []
-    if not _fresh(st.get("gate"), gsig):
-        st["gate"] = {"offset": 0, "head": gsig[1], "head_len": 0}
+    if not st or not _part_fresh(st["gate"], led):
+        st["gate"] = {"offset": 0}
         st["cells"] = {}
         reset.append("gate")
-    if not _fresh(st.get("graph"), fsig):
-        st["graph"] = {"offset": 0, "head": fsig[1], "head_len": 0}
+    if "graph" not in st or not _part_fresh(st["graph"], gph):
+        st["graph"] = {"offset": 0}
         st["fates"] = {}
         st["backfill"] = None
         st["pending"] = []
@@ -1592,9 +1683,9 @@ def trial_source_comparison(
             neither += 1
     complete = g_off >= gsig[0] and f_off >= fsig[0] and not waiting
     for key, path, off in (("gate", led, g_off), ("graph", gph, f_off)):
-        n_head = min(_SIG_BYTES, off)
-        sig = _file_sig(path, n_head)
-        st[key]["head_len"], st[key]["head"] = (n_head, sig[1]) if sig else (0, "")
+        stamp = _part_stamp(path, off)
+        # an unstampable file saves an offset-0 checkpoint: the next pass re-reads it whole
+        st[key] = stamp or {**dict.fromkeys(_PART_KEYS, 0), "head": "", "win": ""}
     try:  # compact: on the box this holds every gate-ledger cell
         sp.parent.mkdir(parents=True, exist_ok=True)
         tmp = sp.with_name(f"{sp.name}.{os.getpid()}.tmp")
@@ -1687,9 +1778,15 @@ def run_once(
         "source experiment_ledger counts) already holds a counted fate for it, joined on the "
         "graph's own id at read time; shadow writes nothing"
     )
-    trials["sources"] = trial_source_comparison(
-        ledger, state_path=(out_dir / SOURCES_STATE.name) if out_dir else None
-    )
+    try:  # a report-only measurement: it may come back UNMEASURED, it may never fail the leg
+        trials["sources"] = trial_source_comparison(
+            ledger, state_path=(out_dir / SOURCES_STATE.name) if out_dir else None
+        )
+    except Exception as exc:
+        trials["sources"] = {
+            "status": "UNMEASURED",
+            "why": f"{type(exc).__name__}: {exc}"[:300],
+        }
     last_intake = _read(INTAKE_REPORT) if out_dir is None else None
     sib_k = sib.get("canon_k") or min(K_GRID)
     sib_cost = ((sib.get("by_k") or {}).get(str(sib_k)) or {}).get("killed_by_tier")
