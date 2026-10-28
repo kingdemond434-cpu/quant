@@ -31845,7 +31845,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.0,
         "joined": "joined on 'xauusd_macro_conditional_asia_p_5fa26e224170b851' (zeroed by this solve)",
-        "why": "same admission scan (2026-10-28T17:43:32.204207+00:00) as the last reading -- a second reading needs a new scan. standby on the current reading -- its forward clock reached KILL (XAUUSD.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=-1_ttl_bars=96): the forward evidence refuses this certificate, so the allocator records zero"
+        "why": "standby on the current reading -- its forward clock reached KILL (XAUUSD.macro_conditional.asia@M5#atr_n=20_regime_high=0.5_side_in_high=-1_ttl_bars=96): the forward evidence refuses this certificate, so the allocator records zero"
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-28T17:43:32.204207+00:00",
@@ -31912,7 +31912,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.0,
         "joined": "joined on 'xauusd_macro_conditional_asia_p_c4d0f0303a0c9cb4' (zeroed by this solve)",
-        "why": "same admission scan (2026-10-28T17:43:32.204207+00:00) as the last reading -- a second reading needs a new scan. standby on the current reading -- its forward clock reached KILL (XAUUSD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=-1_ttl_bars=96): the forward evidence refuses this certificate, so the allocator records zero"
+        "why": "standby on the current reading -- its forward clock reached KILL (XAUUSD.macro_conditional.asia@M5#atr_n=20_regime_high=0.7_side_in_high=-1_ttl_bars=96): the forward evidence refuses this certificate, so the allocator records zero"
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-28T17:43:32.204207+00:00",
@@ -31979,7 +31979,7 @@
         "delta_elogw_per_day": null,
         "heat_earned": 0.0,
         "joined": "joined on 'xauusd_macro_conditional_asia_p_fe355d4759ed4898' (zeroed by this solve)",
-        "why": "same admission scan (2026-10-28T17:43:32.204207+00:00) as the last reading -- a second reading needs a new scan. standby on the current reading -- its forward clock reached KILL (XAUUSD.macro_conditional.asia@M5#side_in_high=-1): the forward evidence refuses this certificate, so the allocator records zero"
+        "why": "standby on the current reading -- its forward clock reached KILL (XAUUSD.macro_conditional.asia@M5#side_in_high=-1): the forward evidence refuses this certificate, so the allocator records zero"
       },
       "admit_streak": 0,
       "admit_scan": "2026-10-28T17:43:32.204207+00:00",
