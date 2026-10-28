@@ -310,8 +310,9 @@ class _FakeProc:
 def test_priorities_are_idle_or_equal_never_above(monkeypatch: pytest.MonkeyPatch,
                                                   platform: str) -> None:
     sink: list = []
+    proc = _FakeProc(sink, 0)
     fake = SimpleNamespace(IDLE_PRIORITY_CLASS=64, BELOW_NORMAL_PRIORITY_CLASS=16384,
-                           NORMAL_PRIORITY_CLASS=32, Process=lambda: _FakeProc(sink, 0))
+                           NORMAL_PRIORITY_CLASS=32, Process=lambda: proc)
     monkeypatch.setitem(sys.modules, "psutil", fake)
     monkeypatch.setattr(sys, "platform", platform)
     W._set_priority(W.EQUAL)
