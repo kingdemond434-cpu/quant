@@ -1000,3 +1000,19 @@ def test_up_to_date_needs_the_base_tip_and_the_same_github_tree(
     merged = _git(origin, "rev-parse", "HEAD")
     assert ag.up_to_date(ag.LIVE, merged) == (True, "up to date")
     assert ag.up_to_date(ag.LIVE, "d" * 40)[0] is False
+
+
+def test_live_moving_before_the_merge_stops_a_no_comment_merge(
+    low_hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#455 delta audit: the merged tree must be the tested one up to the PUT."""
+    h = low_hub(comments=[])
+    calls = {"n": 0}
+
+    def fresh(base: str, head: str) -> tuple[bool, str]:
+        calls["n"] += 1
+        return (calls["n"] < 3, "up to date" if calls["n"] < 3 else "it is behind")
+
+    monkeypatch.setattr(ag, "up_to_date", fresh)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert _merges(h) == [] and calls["n"] >= 3
