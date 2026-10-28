@@ -18,8 +18,12 @@
         a server started earlier only when it is this user's AND carries `--name <Name>` -- never
         any user's `remote-control` in any directory. The one process query that can hang on this
         box (CIM) runs in a job with a timeout, so a hung query costs one pass, never the bridge
-        starts `claude remote-control --spawn worktree --no-create-session-in-dir --name <Name>`
-        in the checkout, in its own console, with a --debug-file of its own per run
+        starts `claude remote-control --spawn <SpawnMode> --no-create-session-in-dir --name <Name>`
+        in the checkout, in its own console, with a --debug-file of its own per run. SpawnMode is
+        same-dir by default (zuck's choice, 2026-10-28 06:13Z); worktree stays selectable
+        asks git every 5 min whether it accepts the checkout; when git calls it "dubious ownership"
+        (it did on 2026-10-28: owned by BUILTIN\Administrators, so every worktree session parked)
+        the heartbeat carries git_refusal and the reader says GIT_REFUSED
         refreshes C:\ProgramData\ClaudeBridge\logs\bridge_watchdog.json at least every 60 s -- while the server
         runs AND through every back-off or sign-in wait (`at`, `beat_every_s`, server pid, how long
         the server's debug file has been silent, session errors the debug file names), so a reader
@@ -49,7 +53,8 @@
 param(
     [string] $Checkout = "C:\opt\bridge\quant",
     [string] $LogDir = "C:\ProgramData\ClaudeBridge\logs",
-    [string] $Name = ("{0}-bridge" -f $env:COMPUTERNAME.ToLower())
+    [string] $Name = ("{0}-bridge" -f $env:COMPUTERNAME.ToLower()),
+    [ValidateSet("same-dir", "worktree")] [string] $SpawnMode = "same-dir"
 )
 
 $ErrorActionPreference = "Continue"
@@ -177,6 +182,30 @@ function Get-CheckoutRisk {
     return $null
 }
 
+# GIT MUST ACCEPT THE CHECKOUT (2026-10-28, Desk health). With the checkout owned by
+# BUILTIN\Administrators and the bridge running as its own user, git refused the repository as
+# "dubious ownership" and every session parked with "Failed to create worktree ... git metadata that
+# could not be resolved", while the server stayed up. The installer makes this user the owner; this
+# asks git itself, in a job with a timeout, at most every 5 minutes. Reported, never fatal.
+$script:Git = (Get-Command git -ErrorAction SilentlyContinue).Source
+$script:GitChecked = [datetime]::MinValue
+$script:GitRefusal = $null
+function Get-GitRefusal {
+    if (-not $script:Git) { return "git not found on PATH" }
+    if (((Get-Date) - $script:GitChecked).TotalSeconds -lt 300) { return $script:GitRefusal }
+    $script:GitChecked = Get-Date
+    $job = Start-Job -ArgumentList $script:Git, $Checkout -ScriptBlock { param($g, $d) & $g -C $d rev-parse --git-dir 2>&1 | Out-String }
+    $out = $null
+    if (Wait-Job -Job $job -Timeout 60) { $out = (Receive-Job -Job $job -ErrorAction SilentlyContinue | Out-String) }
+    Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
+    $script:GitRefusal = $null
+    if ($null -eq $out) { $script:GitRefusal = "git rev-parse did not answer within 60 s" }
+    elseif ($out -match '(?i)dubious ownership|not a git repository|unsafe repository') {
+        $script:GitRefusal = $out.Trim().Substring(0, [Math]::Min(300, $out.Trim().Length))
+    }
+    return $script:GitRefusal
+}
+
 # SLEEP, BUT KEEP SAYING SO (audit v1.1 MF1). A 30-minute sign-in wait or a 15-minute back-off with
 # no heartbeat read as "watchdog hung" for most of the wait. Sleep in chunks of at most 60 s and
 # beat each one, carrying when the wait ends.
@@ -255,7 +284,8 @@ function Find-NamedServer {
 # count over the last 10 minutes and the newest line. History already in a file when it is first
 # seen is not counted. A reader reports it; the watchdog never restarts a server over it. Both
 # patterns are first guesses, to calibrate on the box ($SessionNoise: lines seen on a healthy server).
-$SessionError = '(?i)(session|spawn|worktree|child).{0,80}(fail|error|exited|crash|refus|denied)'
+# The 2026-10-28 parks read "Failed to create worktree ...": the failure word comes first.
+$SessionError = '(?i)(session|spawn|worktree|child).{0,80}(fail|error|exited|crash|refus|denied)|fail\w*\s+to\s+(create|spawn|start)|dubious ownership|could not be resolved'
 $SessionNoise = '(?i)updateSessionTitle'
 $script:DebugPos = @{}
 $script:ErrTimes = @()
@@ -302,7 +332,7 @@ function Wait-Server([System.Diagnostics.Process] $p, [string] $debug, [string] 
         $se = Update-SessionErrors $debug ($by -eq "watchdog")
         Beat @{ state = "RUNNING"; server_pid = $p.Id; server_started_by = $by; debug_file = $debug
                 debug_quiet_s = $quiet; session_errors_10m = $se.n; last_session_error = $se.last
-                checkout_risk = (Get-CheckoutRisk)
+                checkout_risk = (Get-CheckoutRisk); git_refusal = (Get-GitRefusal); spawn_mode = $SpawnMode
                 next_at = $null; next_in_s = $null; needs = $null }
     }
 }
@@ -333,7 +363,7 @@ function Remove-OldDebugFiles {
 
 $Refused = 'Workspace not trusted|disabled by your organization|Couldn''t verify your organization|requires a claude\.ai subscription|full-scope login'
 $backoff = 30
-Log "watchdog up (pid $PID, claude $claude, checkout $Checkout, name $Name, sha $($mySha.Substring(0,12)))"
+Log "watchdog up (pid $PID, claude $claude, checkout $Checkout, name $Name, spawn $SpawnMode, sha $($mySha.Substring(0,12)))"
 Beat @{ state = "STARTING" }
 while ($true) {
     Assert-SafeFolders
@@ -351,7 +381,7 @@ while ($true) {
     $debug = Join-Path $LogDir ("rc_debug_{0}.log" -f (Get-Date).ToUniversalTime().ToString("yyyyMMdd_HHmmss"))
     # --no-create-session-in-dir: thread sessions are spawned on demand, so a pre-created session per
     # restart would only pile up idle sessions in the list after every network drop.
-    $rcArgs = @("remote-control", "--spawn", "worktree", "--no-create-session-in-dir", "--name", $Name,
+    $rcArgs = @("remote-control", "--spawn", $SpawnMode, "--no-create-session-in-dir", "--name", $Name,
                 "--debug-file", $debug)
     $t0 = Get-Date
     try {

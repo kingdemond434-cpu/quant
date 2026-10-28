@@ -189,7 +189,7 @@ def test_rc_args_are_the_bridge_and_nothing_more() -> None:
     assert flat == [
         "remote-control",
         "--spawn",
-        "worktree",
+        "$SpawnMode",
         "--no-create-session-in-dir",
         "--name",
         "$Name",
@@ -237,7 +237,7 @@ def test_the_heartbeat_has_a_reader_and_the_task_is_in_the_manifest() -> None:
 # ------------------------------------------------------------------------------- v1.3 (audit v1.2)
 def test_the_call_operator_only_runs_what_it_names() -> None:
     """A command name held in a variable is any command: only these targets may follow `&`."""
-    allowed = {"watchdog": {"$c"}, "installer": {"icacls.exe"}, "status": set()}
+    allowed = {"watchdog": {"$c", "$g"}, "installer": {"icacls.exe"}, "status": set()}
     for script, code in SCRIPTS.items():
         targets = set(re.findall(r"(?<![\w&>-])&\s*(\S+)", code))
         assert targets <= allowed[script], (script, targets - allowed[script])
@@ -330,3 +330,36 @@ def test_a_new_debug_file_is_read_from_its_first_byte() -> None:
     code = SCRIPTS["watchdog"]
     assert 'Update-SessionErrors $debug ($by -eq "watchdog")' in code
     assert "$(if ($ours) { 0 } else { $len })" in code
+
+
+# ------------------------------------------------------------------------- v1.5 (git refused the checkout)
+def test_spawn_mode_defaults_to_same_dir_and_is_a_closed_set() -> None:
+    for script in ("watchdog", "installer"):
+        assert '[ValidateSet("same-dir", "worktree")] [string] $SpawnMode = "same-dir"' in SCRIPTS[script]
+    assert '-SpawnMode {3}\' -f $dst, $Checkout, $LogDir, $SpawnMode' in SCRIPTS["installer"]
+
+
+def test_git_refusing_the_checkout_is_measured_and_reported() -> None:
+    code, status, inst = SCRIPTS["watchdog"], SCRIPTS["status"], SCRIPTS["installer"]
+    fn = code[code.index("function Get-GitRefusal") : code.index("function Wait-Beating")]
+    assert "rev-parse --git-dir" in fn and "Wait-Job -Job $job -Timeout 60" in fn
+    assert "dubious ownership" in fn and "-lt 300" in fn and "exit" not in fn
+    assert "git_refusal = (Get-GitRefusal)" in code
+    assert '"GIT_REFUSED: $($b.git_refusal); $detail"; exit 1' in status
+    assert status.index("GIT_REFUSED:") < status.index("DEGRADED:")
+    # the installer fixes it by ownership, never by git config
+    assert '/setowner "*$me"' in inst and "safe.directory" not in inst and "git config" not in inst
+
+
+def test_the_worktree_park_counts_toward_degraded() -> None:
+    m = re.search(r"\$SessionError = '([^']+)'", WATCHDOG)
+    assert m is not None
+    pat = m.group(1)
+    for line in (
+        "Failed to create worktree for session abc: the protected checkout C:\\opt\\bridge\\quant "
+        "has git metadata that could not be resolved",
+        "fatal: detected dubious ownership in repository at 'C:/opt/bridge/quant'",
+        "[child] session 12 exited with code 1",
+    ):
+        assert re.search(pat, line), line
+    assert not re.search(pat, "updateSessionTitle ok") or "updateSessionTitle" in WATCHDOG

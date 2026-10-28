@@ -18,8 +18,10 @@
 # created, and the watchdog refuses to run when any folder above bin or logs says otherwise.
 #
 # THE CHECKOUT (C:\opt\bridge\quant) is locked too unless -SkipCheckoutLock: the elevated sessions
-# run in it and load its hooks. Its DACL becomes Administrators + SYSTEM full, Users read; its owner
-# is kept (git refuses a repository owned by someone else). What sits above it (C:\opt) is not
+# run in it and load its hooks. Its DACL becomes Administrators + SYSTEM full, Users read. Its owner
+# (the folder and its .git, not every file) becomes the user installing this, who is the user the
+# bridge runs as: git refuses a repository owned by anyone else, BUILTIN\Administrators included
+# (2026-10-28: every worktree session parked on "dubious ownership"). No git config is written. What sits above it (C:\opt) is not
 # touched here -- it also holds the live desk -- so a C:\opt that Authenticated Users may modify
 # still lets a non-admin rename the checkout away; bridge_status.ps1 reports that as
 # LIVE_CHECKOUT_AT_RISK. Measure first: `icacls C:\opt` and `Get-LocalUser` / `net localgroup
@@ -40,7 +42,8 @@
 param(
     [string] $Checkout = "C:\opt\bridge\quant",
     [string] $Root = "C:\ProgramData\ClaudeBridge",
-    [switch] $SkipCheckoutLock
+    [switch] $SkipCheckoutLock,
+    [ValidateSet("same-dir", "worktree")] [string] $SpawnMode = "same-dir"
 )
 $BinDir = Join-Path $Root "bin"
 $LogDir = Join-Path $Root "logs"
@@ -107,6 +110,14 @@ Lock-Folder $LogDir -UsersRead
 # The folder that holds the checkout is locked with it, so the checkout cannot be renamed away
 # from under the sessions (C:\opt above it holds the live desk and is left alone).
 if (-not $SkipCheckoutLock) { Lock-Folder (Split-Path -Parent $Checkout) -UsersRead -KeepOwner }
+# GIT ACCEPTS ONLY A CHECKOUT ITS USER OWNS. This user is an administrator, so owning the folder
+# gives nobody a right they lacked; the watchdog's checkout check already allows this owner.
+$me = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+foreach ($d in @($Checkout, (Join-Path $Checkout ".git"))) {
+    if (-not (Test-Path -LiteralPath $d)) { continue }
+    & icacls.exe $d /setowner "*$me" /C | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "icacls could not make $me the owner of $d (exit $LASTEXITCODE)" }
+}
 $dst = Join-Path $BinDir 'bridge_watchdog.ps1'
 $pinFile = Join-Path $BinDir 'watchdog.sha256'
 Remove-Item -LiteralPath $dst, $pinFile -Force -ErrorAction SilentlyContinue
@@ -117,7 +128,7 @@ Set-Content -Path $pinFile -Value $sha -Encoding ascii
 
 $user = "{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument `
-    ('-NoProfile -NonInteractive -WindowStyle Minimized -ExecutionPolicy Bypass -File "{0}" -Checkout "{1}" -LogDir "{2}"' -f $dst, $Checkout, $LogDir)
+    ('-NoProfile -NonInteractive -WindowStyle Minimized -ExecutionPolicy Bypass -File "{0}" -Checkout "{1}" -LogDir "{2}" -SpawnMode {3}' -f $dst, $Checkout, $LogDir, $SpawnMode)
 
 # AT LOGON, AND A DAILY TRIGGER REPEATING EVERY FIVE MINUTES FOR ONE DAY -- never a -Once trigger with
 # a long duration: the desk measured one fold into P9D and expire (install_adopt_release_task.ps1).

@@ -18,6 +18,9 @@
 #   DEAD_SERVER RUNNING, but the server pid is gone
 #   UNMEASURED  RUNNING, but no debug file of the watchdog's to measure the server by
 #   QUIET       RUNNING, but the server's debug file silent for over 30 min: parked or wedged
+#   GIT_REFUSED RUNNING, but git refuses the checkout ("dubious ownership": the checkout's owner is
+#               not the bridge user; re-run the installer, which makes it so) -- every session that
+#               needs the repository fails while the server looks alive
 #   DEGRADED    RUNNING, but 3 or more debug-file lines in the last 10 min name failed or exited
 #               sessions (a server that accepts a session and loses it at once is alive to a process
 #               check and useless to a thread)
@@ -88,12 +91,13 @@ $every = 60
 if ($b.beat_every_s) { $every = [Math]::Max(60, [int]$b.beat_every_s) }
 $alive = $false
 if ($b.server_pid) { $alive = [bool](Get-Process -Id ([int]$b.server_pid) -ErrorAction SilentlyContinue) }
-$detail = "state=$($b.state) age_s=$age every_s=$every server_pid=$($b.server_pid) alive=$alive restarts=$($b.restarts) debug_quiet_s=$($b.debug_quiet_s) session_errors_10m=$($b.session_errors_10m) task_result=$taskResult last_exit=$($b.last_exit_code) next_in_s=$($b.next_in_s)"
+$detail = "state=$($b.state) age_s=$age every_s=$every server_pid=$($b.server_pid) alive=$alive restarts=$($b.restarts) debug_quiet_s=$($b.debug_quiet_s) session_errors_10m=$($b.session_errors_10m) spawn=$($b.spawn_mode) task_result=$taskResult last_exit=$($b.last_exit_code) next_in_s=$($b.next_in_s)"
 if ($age -gt 3 * $every) { "STALE: $detail"; exit 1 }
 if ($b.state -ne "RUNNING") { "$($b.state): $detail needs=$($b.needs)"; exit 1 }
 if (-not $alive) { "DEAD_SERVER: $detail"; exit 1 }
 if ($null -eq $b.debug_quiet_s) { "UNMEASURED: $detail"; exit 1 }
 if ([int]$b.debug_quiet_s -gt 1800) { "QUIET: $detail"; exit 1 }
+if ($b.git_refusal) { "GIT_REFUSED: $($b.git_refusal); $detail"; exit 1 }
 if ($b.session_errors_10m -and [int]$b.session_errors_10m -ge 3) { "DEGRADED: $detail last=$($b.last_session_error)"; exit 1 }
 if ($b.checkout_risk) { "LIVE_CHECKOUT_AT_RISK: $($b.checkout_risk); $detail"; exit 2 }
 "LIVE: $detail"
