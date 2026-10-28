@@ -1,0 +1,92 @@
+{
+ "at": "2026-10-28T11:31:06+00:00",
+ "incidents": {
+  "no_verdict": {
+   "open": true,
+   "hours": 159.57,
+   "why": "no new verdict for 159.6h (last 2026-10-21T19:56:37+00:00, gate_verdict_ledger.jsonl); limit 36h"
+  },
+  "resident_dead": {
+   "open": false,
+   "heartbeat_age_min": 0.1,
+   "pid_alive": true,
+   "why": "resident SWEEPING pid 21384: heartbeat 0.1 min old (limit 10), pid alive"
+  },
+  "sweep_overdue": {
+   "open": false,
+   "hours": 18.49,
+   "limit_h": 25.59,
+   "why": "18.5h since the last sweep ended (2026-10-27T17:01:45+00:00), status SWEEPING; limit 25.59h"
+  },
+  "zero_judged_sweep": {
+   "open": false,
+   "why": "last sweep rc 75: not a completed sweep"
+  },
+  "sweep_dead": {
+   "open": false,
+   "pid": 18812,
+   "why": "sweep child pid 18812 alive"
+  },
+  "phase_overrun": {
+   "open": true,
+   "phase": "collect_and_cut",
+   "hours": 10.48,
+   "known_phase": true,
+   "why": "sweep phase collect_and_cut has run 10.5h since 2026-10-28T01:02:26+00:00 (limit 1h)"
+  },
+  "host_unreadable": {
+   "open": false,
+   "why": "host identity read"
+  },
+  "inputs_unmeasured": {
+   "open": false,
+   "why": "no incident has stayed UNMEASURED past its bound"
+  }
+ },
+ "thresholds": {
+  "no_verdict_h": 36.0,
+  "heartbeat_stale_min": 10.0,
+  "phase_limit_h": {
+   "plan": 4.5,
+   "build_shards": 18.0,
+   "collect_and_cut": 1.0,
+   "rule_shards": 1.0,
+   "merge_and_publish": 3.0,
+   "prewarm": 4.06,
+   "plan_handoff": 1.0,
+   "done": 1.0
+  },
+  "prewarm_budget_s": 8640.0,
+  "prewarm_budget_source": "JUDGING_THROUGHPUT.json decision.fresh_budget_s",
+  "unknown_phase_limit_h": 18.0,
+  "sweep_overdue_h": 25.59,
+  "idle_overdue_h": 1.0,
+  "unmeasured_page_min": 30.0,
+  "unmeasured_share": 0.5,
+  "unmeasured_bound_min": {
+   "zero_judged_sweep": 120.0
+  }
+ },
+ "last_verdict": {
+  "at": "2026-10-21T19:56:37+00:00",
+  "source": "gate_verdict_ledger.jsonl"
+ },
+ "resident": {
+  "status": "SWEEPING",
+  "pid": 21384,
+  "heartbeat_utc": "2026-10-28T11:30:58+00:00",
+  "last_sweep_ended_utc": "2026-10-27T17:01:45+00:00",
+  "last_rc": 75
+ },
+ "host": "trading box",
+ "page": {
+  "sent": false,
+  "open": [
+   "no_verdict",
+   "phase_overrun"
+  ],
+  "opened": [],
+  "reminded": [],
+  "resolved": []
+ }
+}
