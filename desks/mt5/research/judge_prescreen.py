@@ -637,43 +637,44 @@ def judge_ruled(cells: Iterable[str], path: Path | None = None) -> set[str]:
     return {c for c, st in gate_index(cells, path).items() if st["ruled"]}
 
 
-_FATE = re.compile(r'"fate": "([A-Za-z_]*)"')
+def _graph_line(ln: str, want: set[str] | None) -> tuple[str, str] | None:
+    """(node id, TOP-LEVEL fate) of one graph row when its id is wanted, else None.
+
+    The `{"id": "<id>"` prefix `Node.to_row` writes is only a PREFILTER to skip unwanted rows
+    unparsed; a wanted row is always parsed whole and only its top-level `fate` is read (audit
+    v1.3: a regex slice matched a `"fate"` nested in params or gates and could uncharge a cell
+    the graph does not count). A row with no or a null fate reads "", as in experiment_ledger."""
+    if ln.startswith('{"id": "') and want is not None:
+        j = ln.find('"', 8)
+        if j > 8 and ln[8:j] not in want:
+            return None
+    if not ln.strip():
+        return None
+    try:
+        row = json.loads(ln)
+    except ValueError:
+        return None
+    if not isinstance(row, dict):
+        return None
+    nid = str(row.get("id"))
+    if want is not None and nid not in want:
+        return None
+    return nid, str(row.get("fate") or "")
 
 
 def graph_fates(ids: Iterable[str] | None = None, path: Path | None = None) -> dict[str, str]:
-    """Latest fate per hypothesis-graph node id -- the same "last row wins" reading
-    `experiment_ledger._graph_counts` takes. `ids` None reads every node.
-
-    Rows written by `Node.to_row` start `{"id": "<id>"` and carry `"fate"` after `"source"`, so
-    the id and fate are sliced out without parsing the row (~3 s per 670 MB measured); any other
-    row shape is parsed whole. A row with no fate reads "" (counted by nobody), as there."""
+    """Latest TOP-LEVEL fate per hypothesis-graph node id -- the same "last row wins" reading
+    `experiment_ledger._graph_counts` takes (it parses every row). `ids` None reads every node.
+    Unwanted rows are skipped on their id prefix; every wanted row is parsed (`_graph_line`)."""
     want = None if ids is None else set(ids)
     out: dict[str, str] = {}
     if want is not None and not want:
         return out
     with (path or GRAPH).open("r", encoding="utf-8", errors="replace") as fh:
         for ln in fh:
-            if ln.startswith('{"id": "'):
-                j = ln.find('"', 8)
-                nid = ln[8:j]
-                if want is not None and nid not in want:
-                    continue
-                k = ln.find('"source": ', j)
-                m = _FATE.search(ln, k if k > 0 else j)
-                if m:
-                    out[nid] = m.group(1)
-                    continue
-            if not ln.strip():
-                continue
-            try:
-                row = json.loads(ln)
-            except ValueError:
-                continue
-            if not isinstance(row, dict):
-                continue
-            nid = str(row.get("id"))
-            if want is None or nid in want:
-                out[nid] = str(row.get("fate") or "")
+            hit = _graph_line(ln, want)
+            if hit is not None:
+                out[hit[0]] = hit[1]
     return out
 
 
@@ -1377,34 +1378,209 @@ def _epoch(raw: Any) -> float | None:
         return None
 
 
+#: trials.sources' own per-pass budget: well inside the leg's 600 s cap (LEG_BUDGET_SEC), so the
+#: comparison can never push the leg over it. Work left over is carried by byte offset.
+SOURCES_BUDGET_S = 90.0
+SOURCES_STATE = HYP / "prescreen_sources_state.json"
+_SIG_BYTES = 4096
+
+
+def _file_sig(path: Path, n: int = _SIG_BYTES) -> tuple[int, str] | None:
+    """(size, sha of the first `n` bytes). The checkpoint stores the hash of the head it had
+    ALREADY READ, so an append never looks like a rewrite, and a rewrite of read bytes does."""
+    try:
+        size = path.stat().st_size
+        with path.open("rb") as fh:
+            head = fh.read(n)
+    except OSError:
+        return None
+    return size, hashlib.sha256(head).hexdigest()[:16]
+
+
+def _read_lines_from(path: Path, offset: int, deadline: float, max_lines: int | None):
+    """Yield (line, end_offset) for COMPLETE lines from `offset` until EOF, the deadline or
+    `max_lines`. A trailing partial line (a writer mid-append) is left for the next pass."""
+    n = 0
+    with path.open("rb") as fh:
+        fh.seek(offset)
+        pos = offset
+        for raw in fh:
+            if not raw.endswith(b"\n"):
+                return
+            pos += len(raw)
+            yield raw.decode("utf-8", errors="replace"), pos
+            n += 1
+            if (max_lines is not None and n >= max_lines) or (
+                n % 2000 == 0 and time.perf_counter() > deadline
+            ):
+                return
+
+
 def trial_source_comparison(
-    ledger: Path | None = None, graph: Path | None = None, sample: int = 10
+    ledger: Path | None = None,
+    graph: Path | None = None,
+    *,
+    state_path: Path | None = None,
+    budget_s: float | None = None,
+    max_lines: int | None = None,
+    sample: int = 10,
 ) -> dict[str, Any]:
-    """MEASURED, every pass: how far "ruled in the gate ledger" and "counted in the hypothesis
-    graph" disagree, over every cell the gate ledger names (audit v1.2). The charge joins on the
-    graph; this says, on the box, how much the older gate-ledger join would have mis-charged:
+    """MEASURED, INCREMENTALLY: how far "ruled in the gate ledger" and "counted in the hypothesis
+    graph" disagree, over every cell the gate ledger names (audit v1.2/v1.3). The charge joins
+    on the graph; this says, on the box, how much a gate-ledger join would have mis-charged:
 
     * `gate_ruled_not_graph_counted` -- a verdict with no graph fate (`no_spec`, or no graph id):
       a gate-ledger join would DROP its charge while the graph never counted it (deflation);
     * `graph_counted_not_gate_ruled` -- only NOT_RUN rows in the gate ledger, yet a counted
       graph fate (a gate-1 reject recorded FAILED): a gate-ledger join would KEEP the charge
-      while the graph also counts it (inflation)."""
+      while the graph also counts it (inflation).
+
+    BOUNDED (audit v1.3 watch item): both files are append-only, so each pass reads only what
+    was appended since its byte-offset checkpoint (`SOURCES_STATE`), inside `budget_s`. A graph
+    id first seen in a gate-ledger delta whose graph rows lie BEFORE the graph checkpoint is
+    BACKFILLED by a resumable pass over that prefix; a fate read in a later delta is newer and
+    always wins over the backfill. A file whose head changed or that shrank is re-read from 0.
+    Until both files are read to EOF and no backfill is pending the status is PARTIAL and the
+    counts are `provisional`: they cover only the cells settled so far, every cell whose graph
+    id has no row read yet is `pending_graph_read` (never a gap or a zero), and `coverage` says
+    how far the read got."""
     t0 = time.perf_counter()
-    try:
-        gi = gate_index(None, ledger)
-        ids = {g for st in gi.values() for g in st["graph_ids"]}
-        fates = graph_fates(ids, graph)
-    except OSError as exc:
-        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:200]}
-    both = gate_only = graph_only = neither = no_gid = 0
+    deadline = t0 + (SOURCES_BUDGET_S if budget_s is None else budget_s)
+    led, gph = ledger or LEDGER, graph or GRAPH
+    sp = state_path or SOURCES_STATE
+    st = _read(sp)
+    if not isinstance(st, dict) or st.get("schema") != SCHEMA:
+        st = {}
+
+    def _head_len(part: Any) -> int:
+        return int(part.get("head_len") or 0) if isinstance(part, dict) else 0
+
+    gsig, fsig = (
+        _file_sig(led, _head_len(st.get("gate"))),
+        _file_sig(gph, _head_len(st.get("graph"))),
+    )
+    if gsig is None or fsig is None:
+        return {
+            "status": "UNMEASURED",
+            "why": f"unreadable: {'gate ledger' if gsig is None else 'graph'}",
+            "seconds": round(time.perf_counter() - t0, 3),
+        }
+
+    def _fresh(part: Any, sig: tuple[int, str]) -> bool:
+        return (
+            isinstance(part, dict)
+            and part.get("head") == sig[1]
+            and int(part.get("offset") or 0) <= sig[0]
+        )
+
+    reset = []
+    if not _fresh(st.get("gate"), gsig):
+        st["gate"] = {"offset": 0, "head": gsig[1], "head_len": 0}
+        st["cells"] = {}
+        reset.append("gate")
+    if not _fresh(st.get("graph"), fsig):
+        st["graph"] = {"offset": 0, "head": fsig[1], "head_len": 0}
+        st["fates"] = {}
+        st["backfill"] = None
+        st["pending"] = []
+        reset.append("graph")
+    st["schema"] = SCHEMA
+    cells: dict[str, list[Any]] = st.setdefault("cells", {})
+    fates: dict[str, str] = st.setdefault("fates", {})
+    pending: set[str] = set(st.get("pending") or [])
+    known: set[str] = {g for _r, gs in cells.values() for g in gs}
+    lines_left = max_lines
+
+    def _spent(n: int) -> None:
+        nonlocal lines_left
+        if lines_left is not None:
+            lines_left = max(0, lines_left - n)
+
+    # 1. gate-ledger delta
+    n = 0
+    g_off = int(st["gate"]["offset"])
+    for ln, end in _read_lines_from(led, g_off, deadline, lines_left):
+        n += 1
+        g_off = end
+        m = _CELL_HINT.search(ln)
+        if not m:
+            continue
+        try:
+            row = json.loads(ln)
+        except ValueError:
+            continue
+        if not isinstance(row, dict) or not row.get("cell"):
+            continue
+        ent = cells.setdefault(str(row["cell"]), [0, []])
+        if not str(row.get("downstream_status") or "").startswith("NOT_RUN"):
+            ent[0] = 1
+        gid = str(row.get("graph_id") or "")
+        if gid and gid not in ent[1]:
+            ent[1].append(gid)
+            if gid not in known:
+                known.add(gid)
+                if int(st["graph"]["offset"]) > 0 and gid not in fates:
+                    pending.add(gid)  # its graph rows may lie before the checkpoint
+    st["gate"]["offset"] = g_off
+    _spent(n)
+    # 2. graph delta: newer than anything a backfill can find
+    n = 0
+    f_off = int(st["graph"]["offset"])
+    if lines_left != 0:
+        for ln, end in _read_lines_from(gph, f_off, deadline, lines_left):
+            n += 1
+            f_off = end
+            hit = _graph_line(ln, known)
+            if hit is not None:
+                fates[hit[0]] = hit[1]
+                pending.discard(hit[0])
+                bf = st.get("backfill")
+                if isinstance(bf, dict) and hit[0] in bf["ids"]:
+                    bf["newer"].append(hit[0])
+    st["graph"]["offset"] = f_off
+    _spent(n)
+    # 3. backfill the graph prefix for ids first seen after their rows were passed
+    bf = st.get("backfill")
+    if not isinstance(bf, dict) and pending:
+        bf = {"ids": sorted(pending), "cursor": 0, "end": f_off, "found": {}, "newer": []}
+        pending = set()
+    if isinstance(bf, dict) and lines_left != 0 and time.perf_counter() < deadline:
+        want = set(bf["ids"])
+        cur = int(bf["cursor"])
+        for ln, end in _read_lines_from(gph, cur, deadline, lines_left):
+            if cur >= int(bf["end"]):
+                break
+            cur = end
+            hit = _graph_line(ln, want)
+            if hit is not None:
+                bf["found"][hit[0]] = hit[1]
+        bf["cursor"] = cur
+        if cur >= int(bf["end"]):
+            newer = set(bf["newer"])
+            for gid in bf["ids"]:
+                if gid not in newer and gid in bf["found"]:
+                    fates[gid] = bf["found"][gid]
+            bf = None
+    st["backfill"] = bf
+    st["pending"] = sorted(pending)
+    waiting = set(pending) | (set(bf["ids"]) - set(bf["newer"]) if isinstance(bf, dict) else set())
+    # 4. the comparison over what has been read
+    both = gate_only = graph_only = neither = no_gid = n_pending = 0
     s_gate: list[str] = []
     s_graph: list[str] = []
-    for c, st in gi.items():
-        g_ok = any(fates.get(g) in GRAPH_COUNTED_FATES for g in st["graph_ids"])
-        no_gid += not st["graph_ids"]
-        if st["ruled"] and g_ok:
+    graph_at_eof = f_off >= fsig[0]
+    for c, (ruled, gs) in cells.items():
+        no_gid += not gs
+        # NOT YET KNOWABLE: while the graph is not read to EOF, any graph id (its latest row may
+        # lie in the unread tail -- measured: a half-read graph showed thousands of BORN rows
+        # whose FAILED came later), or an id awaiting backfill. Pending, never a gap or a zero.
+        if gs and (not graph_at_eof or any(g in waiting for g in gs)):
+            n_pending += 1
+            continue
+        g_ok = any(fates.get(g) in GRAPH_COUNTED_FATES for g in gs)
+        if ruled and g_ok:
             both += 1
-        elif st["ruled"]:
+        elif ruled:
             gate_only += 1
             if len(s_gate) < sample:
                 s_gate.append(c)
@@ -1414,16 +1590,45 @@ def trial_source_comparison(
                 s_graph.append(c)
         else:
             neither += 1
+    complete = g_off >= gsig[0] and f_off >= fsig[0] and not waiting
+    for key, path, off in (("gate", led, g_off), ("graph", gph, f_off)):
+        n_head = min(_SIG_BYTES, off)
+        sig = _file_sig(path, n_head)
+        st[key]["head_len"], st[key]["head"] = (n_head, sig[1]) if sig else (0, "")
+    try:  # compact: on the box this holds every gate-ledger cell
+        sp.parent.mkdir(parents=True, exist_ok=True)
+        tmp = sp.with_name(f"{sp.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(st, separators=(",", ":")), encoding="utf-8")
+        os.replace(tmp, sp)
+        saved = True
+    except OSError:
+        saved = False  # the next pass re-reads from the last saved checkpoint, or from 0
     return {
-        "status": "MEASURED",
-        "cells": len(gi),
+        "status": "MEASURED" if complete else "PARTIAL",
+        # PARTIAL: counts cover only the cells already settled (`pending_graph_read` are not);
+        # until MEASURED that is the cells with no graph id, plus fully read ones.
+        "provisional": not complete,
+        "cells": len(cells),
         "both": both,
         "gate_ruled_not_graph_counted": gate_only,
         "graph_counted_not_gate_ruled": graph_only,
         "neither": neither,
+        "pending_graph_read": n_pending,
         "cells_without_graph_id": no_gid,
-        "graph_ids_found": sum(1 for g in ids if g in fates),
-        "graph_ids_wanted": len(ids),
+        "graph_ids_found": sum(1 for g in known if g in fates),
+        "graph_ids_wanted": len(known),
+        "coverage": {
+            "gate_bytes_read": g_off,
+            "gate_bytes": gsig[0],
+            "graph_bytes_read": f_off,
+            "graph_bytes": fsig[0],
+            "backfill_ids_waiting": len(waiting),
+            "backfill_cursor": (bf or {}).get("cursor") if isinstance(bf, dict) else None,
+            "backfill_end": (bf or {}).get("end") if isinstance(bf, dict) else None,
+            "reset_this_pass": reset,
+            "checkpoint_saved": saved,
+        },
+        "budget_s": SOURCES_BUDGET_S if budget_s is None else budget_s,
         "sample_gate_only": s_gate,
         "sample_graph_only": s_graph,
         "charge_joins_on": "the hypothesis graph (the source experiment_ledger counts)",
@@ -1482,7 +1687,9 @@ def run_once(
         "source experiment_ledger counts) already holds a counted fate for it, joined on the "
         "graph's own id at read time; shadow writes nothing"
     )
-    trials["sources"] = trial_source_comparison(ledger)
+    trials["sources"] = trial_source_comparison(
+        ledger, state_path=(out_dir / SOURCES_STATE.name) if out_dir else None
+    )
     last_intake = _read(INTAKE_REPORT) if out_dir is None else None
     sib_k = sib.get("canon_k") or min(K_GRID)
     sib_cost = ((sib.get("by_k") or {}).get(str(sib_k)) or {}).get("killed_by_tier")
