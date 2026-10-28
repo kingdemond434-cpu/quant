@@ -32,7 +32,10 @@ audited.
 
 LIMITS, SAID ONCE. A macro series with no ALFRED vintage is the current vintage, so its later
 revisions leak into the replay: the macro arm may then never read PROMOTE (`PIT_REQUIRED`), only
-UNPROVEN or DEMOTE. Each sleeve's trial count (deflation) is today's, the same on every arm. The
+UNPROVEN or DEMOTE. Each sleeve's trial count (deflation) is today's, the same on every arm, and
+the factor frame's macro columns (d_vix, d_r10) are the current FRED vintage on every arm: the
+factor set is cut at the as-of day, so no later return enters, but an earlier print may be a
+revised one. Neither differs between arms. The
 matrix is the desk's own evidence (backtest, forward and live rows aligned), not live fills.
 """
 from __future__ import annotations
@@ -294,13 +297,49 @@ def ablate(daily: pd.DataFrame,
 
 # ------------------------------------------------------------------ the desk's own arms
 
-def _evidence_asof(trials: Mapping[str, int]) -> Callable[[pd.DataFrame], list[SleeveEvidence]]:
+def _evidence_asof(trials: Mapping[str, int], frame: Any = None,
+                   ) -> Callable[[pd.DataFrame], list[SleeveEvidence]]:
+    """Sleeve evidence as of the last row of `hist`. `sleeve_evidence` fits factor loadings on a
+    factor set standardised and Cholesky-rooted over the WHOLE factor history (audit re-audit of
+    a84cdd95: up to 4.8e-3 of load and +20% of residual variance moved with returns after the
+    as-of day), so the loadings are refitted here on `factor_set(frame up to the as-of day)`,
+    exactly as `pf_allocator.sleeve_evidence` fits them (symbol = the name's first part, kept
+    only at n >= 3). `frame` is the factor return frame; None reads the desk's own."""
+    from libs.portfolio import leg_factors
     from research import pf_allocator as pa
+
+    if frame is None:
+        try:
+            frame = leg_factors.daily_factor_returns()
+        except Exception:
+            frame = None
 
     def build(hist: pd.DataFrame) -> list[SleeveEvidence]:
         ev = pa.sleeve_evidence(hist, {}, {}, dict(trials))
-        return [dataclasses.replace(e, cost_r=COST_R_FLAT, cost_bias_r=0.0, forward_days=0,
-                                    live_days=0) for e in ev]
+        cut = str(hist.index[-1])[:10]
+        fs = None
+        if frame is not None:
+            try:
+                fs = leg_factors.factor_set(frame[[str(d)[:10] <= cut for d in frame.index]])
+            except Exception:
+                fs = None
+        dates = [str(d)[:10] for d in hist.index]
+        out: list[SleeveEvidence] = []
+        for e in ev:
+            load: tuple[float, ...] = ()
+            resid = 0.0
+            if fs is not None:
+                try:
+                    fl = leg_factors.fit_loadings(hist[e.name].to_numpy(dtype=float), dates, fs,
+                                                  e.name.split("_")[0])
+                    if fl.n >= 3:
+                        load, resid = tuple(float(x) for x in fl.load), float(fl.resid_var)
+                except Exception:
+                    load, resid = (), 0.0
+            out.append(dataclasses.replace(e, cost_r=COST_R_FLAT, cost_bias_r=0.0,
+                                           forward_days=0, live_days=0, factor_load=load,
+                                           factor_resid_var=resid))
+        return out
     return build
 
 
@@ -338,6 +377,15 @@ def _desk_solver() -> Callable[[list[SleeveEvidence], WorldConfig], Mapping[str,
     return solve
 
 
+def trials_read(trials: Mapping[str, int]) -> tuple[int, int, int]:
+    """The only trial counts `pf_allocator.sleeve_evidence` reads: max(hunt12, hunt16) for a
+    session bracket, and `external` (else the largest count of all) for every other family. The
+    cache keys on these, not on every ledger count, so a count no sleeve reads cannot miss it."""
+    tr = dict(trials or {})
+    other = tr.get("external", max(tr.values()) if tr else 1)
+    return int(tr.get("hunt12", 1)), int(tr.get("hunt16", 1)), int(other)
+
+
 def _desk_window_key(trials: Mapping[str, int]) -> Callable[[str], str]:
     """What the arms and the evidence read besides the matrix, AS OF a day: the solver's source,
     the trial counts, the gold daily closes up to the day (the regime arm's input) and the macro
@@ -347,7 +395,7 @@ def _desk_window_key(trials: Mapping[str, int]) -> Callable[[str], str]:
 
     from libs.portfolio import macro_state, robust_elog
     base = [hashlib.sha256(inspect.getsource(robust_elog).encode()).hexdigest(),
-            sorted(trials.items())]
+            trials_read(trials)]
     closes: pd.Series | None = None
     try:
         px = pd.read_parquet(BASE / "data" / "universe" / "XAUUSD_H1.parquet")
@@ -423,6 +471,7 @@ def run(max_windows: int | None = MAX_WINDOWS, budget_s: float | None = BUDGET_S
                     f"else UNPROVEN; {sorted(PIT_REQUIRED)} may PROMOTE only on point-in-time "
                     f"series"),
            "limits": ["trial counts (deflation) are today's, identical on every arm",
+                      "factor frame macro columns are the current vintage, identical on every arm",
                       f"one flat cost of {COST_R_FLAT} R per sleeve in every replay"],
            "n_sleeves": int(daily.shape[1]), "elapsed_s": round(time.time() - t0, 1), **res}
     _write_json(OUT, doc)

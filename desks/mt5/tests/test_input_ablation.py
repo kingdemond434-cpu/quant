@@ -287,3 +287,38 @@ def test_regime_state_as_of_a_past_day_ignores_every_later_bar(tmp_path: Path,
     shocked[later] = shocked[later] * np.exp(rng.normal(0, 0.05, int(later.sum())))
     assert base[1], "the engine should fit on 360 days"
     assert read(shocked) == base
+
+
+def test_factor_loadings_as_of_a_past_day_ignore_every_later_factor_return() -> None:
+    """Audit re-audit of a84cdd95: the factor set was standardised and rooted over the whole
+    history, so returns after the as-of day moved factor_load and resid_var. Shock every factor
+    return after the day: neither may move, and both must be measured."""
+    pytest.importorskip("research.pf_allocator")
+    rng = np.random.default_rng(11)
+    n = 600
+    days = pd.date_range("2023-01-01", periods=n, freq="D").strftime("%Y-%m-%d")
+    frame = pd.DataFrame({"EUR": rng.normal(0, 0.006, n), "USD": rng.normal(0, 0.005, n),
+                          "d_vix": rng.normal(0, 0.05, n), "d_r10": rng.normal(0, 0.03, n)},
+                         index=days)
+    k = 400
+    r = 30.0 * (frame["EUR"] - frame["USD"]).to_numpy()[:k] + rng.normal(0, 0.05, k)
+    hist = pd.DataFrame({"EURUSD_carry_asia": r}, index=days[:k])
+
+    def read(fr: pd.DataFrame):
+        (e,) = ia._evidence_asof({}, frame=fr)(hist)
+        return e.factor_load, e.factor_resid_var
+
+    base_load, base_resid = read(frame)
+    assert base_load and base_resid > 0.0
+    shocked = frame.copy()
+    shocked.iloc[k:] = shocked.iloc[k:] * 25.0 + rng.normal(0, 0.1, shocked.iloc[k:].shape)
+    load, resid = read(shocked)
+    np.testing.assert_allclose(load, base_load)
+    assert resid == pytest.approx(base_resid)
+
+
+def test_the_cache_keys_only_the_trial_counts_the_evidence_reads() -> None:
+    a = {"hunt12": 2023, "hunt16": 3001, "external": 500, "lifetime_total": 10}
+    b = {**a, "lifetime_total": 99999, "family:x": 7}
+    assert ia.trials_read(a) == ia.trials_read(b) == (2023, 3001, 500)
+    assert ia.trials_read({"hunt12": 5, "lifetime_total": 9}) == (5, 1, 9)
