@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-28T09:30:48.794262+00:00",
+  "swept_at": "2026-10-28T09:45:37.102126+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -2110,7 +2110,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.525,
+      "shadow_exp_r": -0.4836,
       "woke_on_shadow": false
     },
     "GBPMXN|carry_continuous": {
@@ -2131,8 +2131,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 52,
-      "shadow_exp_r": 0.6636,
+      "shadow_n": 55,
+      "shadow_exp_r": 0.6925,
       "woke_on_shadow": false
     },
     "GBPMXN|formula_asia": {
@@ -2198,7 +2198,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 47,
-      "shadow_exp_r": 0.7372,
+      "shadow_exp_r": 0.7335,
       "woke_on_shadow": false
     },
     "GBPNOK|carry_asia": {
@@ -3881,7 +3881,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 52,
-      "shadow_exp_r": 0.3063,
+      "shadow_exp_r": 0.3141,
       "woke_on_shadow": false
     },
     "USDPLN|macro_conditional_asia": {
@@ -3892,7 +3892,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0415,
+      "shadow_exp_r": 0.0391,
       "woke_on_shadow": false
     },
     "USDRUB|carry_continuous": {
@@ -4133,8 +4133,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 39,
-      "shadow_exp_r": -0.3301,
+      "shadow_n": 33,
+      "shadow_exp_r": -0.2011,
       "woke_on_shadow": false
     },
     "USDZAR|formula_asia": {
@@ -4145,7 +4145,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 51,
-      "shadow_exp_r": 0.4008,
+      "shadow_exp_r": 0.4007,
       "woke_on_shadow": false
     },
     "USDZAR|macro_conditional_asia": {
@@ -4189,7 +4189,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 40,
-      "shadow_exp_r": 0.004,
+      "shadow_exp_r": 0.0095,
       "woke_on_shadow": false
     },
     "USDZAR|pca_residual_continuous": {
@@ -4618,7 +4618,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2437,
+      "shadow_exp_r": -0.2295,
       "woke_on_shadow": false
     },
     "XAUAUD|momentum_volgate_continuous": {
