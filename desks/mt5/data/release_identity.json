@@ -3,7 +3,7 @@
  "running_sha": "95aadad4add4b7c535dd1ca2d2c123184872ffaf",
  "release_sha": "88b07042d3a9a5c86be384e4920d844cf831599f",
  "reason": "running 95aadad4add4 is the sealed code 88b07042d3a9 plus seal/state commits only (1 path(s))",
- "age_h": 1.537,
+ "age_h": 1.767,
  "stale": false,
  "measured": true,
  "stale_refuses": false,
@@ -14,7 +14,7 @@
  "report": [
   "survivor canon on disk differs from the sealed one (reported only)"
  ],
- "at": "2026-10-28T08:20:17+00:00",
+ "at": "2026-10-28T08:34:05+00:00",
  "tested_sha": "95aadad4add4b7c535dd1ca2d2c123184872ffaf",
  "tested_gates": "fast",
  "allocator_certificate": "bb242a4507eb900c@2026-10-28T07:56:13.691299+00:00 proof=FAILED book=multiperiod",
