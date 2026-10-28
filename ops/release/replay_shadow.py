@@ -252,6 +252,13 @@ def knobs(src: str) -> dict[str, list[str]]:
                 pairs += [(k, d) for k, d in zip(a.kwonlyargs, a.kw_defaults, strict=True) if d]
                 for arg, default in pairs:
                     out.setdefault(f"{prefix}{n.name}({arg.arg}=)", []).append(ast.dump(default))
+                walk(n.body, f"{prefix}{n.name}.")  # nested functions' defaults too
+            elif isinstance(n, (ast.If, ast.Try, ast.With, ast.For, ast.While)):
+                # a constant set inside a guard is still a knob
+                for part in ("body", "orelse", "finalbody"):
+                    walk(getattr(n, part, None) or [], prefix)
+                for h in getattr(n, "handlers", None) or []:
+                    walk(h.body, prefix)
             elif isinstance(n, (ast.Assign, ast.AnnAssign)) and n.value is not None:
                 targets = n.targets if isinstance(n, ast.Assign) else [n.target]
                 for t in targets:

@@ -1575,3 +1575,12 @@ def test_knobs_include_class_attributes_and_parameter_defaults() -> None:
     )
     assert set(rs.knobs(src)) == {"A", "C.LIMIT", "C.f(n=)", "C.f(k=)", "g(max_refusals=)"}
     assert rs.knobs(src) != rs.knobs(src.replace("max_refusals=3", "max_refusals=30"))
+
+
+def test_knobs_inside_guards_and_nested_functions_count() -> None:
+    src = (
+        "if True:\n    Y = 2\ntry:\n    Z = 1\nexcept Exception:\n    Z = 0\n"
+        "def f():\n    def g(d=5): pass\n"
+    )
+    assert {"Y", "Z", "f.g(d=)"} <= set(rs.knobs(src))
+    assert rs.knobs(src)["Z"] == rs.knobs(src.replace("Z = 0", "Z = 0"))["Z"]
