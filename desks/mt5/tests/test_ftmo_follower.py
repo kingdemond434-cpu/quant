@@ -208,6 +208,19 @@ def test_an_ftmo_position_against_e8_refuses_and_alerts(world) -> None:
     assert any(r.get("reason") == "opposite_exposure" for r in _rows())
 
 
+def test_the_adopters_new_risk_hold_places_nothing_and_alerts(world, monkeypatch) -> None:
+    """libs/ops/new_risk_hold: while a failed release is rolled back, the follow is not sent."""
+    from libs.ops import new_risk_hold
+    monkeypatch.setattr(new_risk_hold, "reason", lambda root=None: "ADOPT HOLD by adopt_guard: x")
+    mt5 = _MT5()
+    doc = _pass(mt5)
+    assert _entries(mt5) == [] and doc["alerts"]
+    assert any(r.get("reason") == "adopt_hold" for r in _rows())
+    monkeypatch.setattr(new_risk_hold, "reason", lambda root=None: None)
+    _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert len(_entries(mt5)) == 1                               # lifted: the follow goes
+
+
 def test_a_resting_ftmo_order_against_e8_refuses_too(world) -> None:
     mt5 = _MT5()
     mt5.orders = [SimpleNamespace(ticket=43, symbol="XAUUSD", type=5, magic=0,
@@ -322,6 +335,78 @@ def test_the_resting_ftmo_order_is_cancelled_when_e8_no_longer_shows_a_live_fill
     removes = [r for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_REMOVE]
     assert [r["order"] for r in removes] == [resting.ticket] and mt5.orders == []
     assert len(_entries(mt5)) == 1                               # and never a second order
+
+
+@pytest.mark.parametrize("how", ["lane_removed", "lane_paused", "mode_file_absent"])
+def test_a_removed_or_paused_lane_withdraws_its_resting_order_ticket_111616773(
+        world, how: str) -> None:
+    """THE 2026-10-28 INCIDENT. ftmo was taken out of GOLD_OCO_MODE's lanes at 07:06Z (the
+    cross-firm copy ban); its SELL LIMIT 111616773 was already resting, nothing withdrew it,
+    and it filled before its 10:00Z self-cancel. E8 still shows its live fill here, so no other
+    cancel reason applies: the lane's removal (or pause) alone must withdraw the order, on the
+    very next pass, unarmed or not, billed at the order's own risk -- and place nothing new."""
+    mt5 = _MT5()
+    _pass(mt5)
+    (resting,) = mt5.orders
+    resting.ticket = 111616773
+    armed = True
+    if how == "lane_removed":   # exactly the live file since 07:06Z
+        oco.MODE_FILE.write_text(json.dumps({"lanes": ["e8", "fusion"],
+                                             "modes": {"fusion": "fallback"}}))
+    elif how == "lane_paused":
+        ff.ARMED_MARKER.unlink()
+        armed = ff.ARMED_MARKER.exists()
+    else:                       # absent means the default lanes, which leave ftmo out
+        oco.MODE_FILE.unlink()
+    doc = _pass(mt5, armed=armed, now=NOW + timedelta(minutes=1))
+    removes = [r for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_REMOVE]
+    assert [r["order"] for r in removes] == [111616773] and mt5.orders == []
+    assert len(_entries(mt5)) == 1                               # nothing placed again
+    assert doc["withdrawn"] and doc["actions"][0]["ok"] is True
+    (bill,) = [r for r in _rows() if r.get("reason") == "lane_withdrawn"]
+    assert bill["status"] == "RAIL_BLOCKED" and bill["order_id"] == 111616773
+    assert bill["missed_growth_risk_usd"] and bill["missed_growth_risk_usd"] > 0
+    _pass(mt5, armed=armed, now=NOW + timedelta(minutes=2))      # and nothing more after
+    assert len([r for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_REMOVE]) == 1
+    assert len(_entries(mt5)) == 1
+
+
+@pytest.mark.parametrize("bad", ["{torn", '{"lanes": "e8,fusion,ftmo"}', '{"modes": {}}'])
+def test_an_unreadable_or_malformed_mode_file_keeps_the_resting_order_unmeasured(
+        world, bad: str) -> None:
+    """v14 audit MF1: a half-written file, a sharing violation or a lanes field that is not a
+    list is not a declaration. The follower never re-places a placed window, so withdrawing on
+    such a read would cost the day's trade: the order stays and the pass says UNMEASURED."""
+    mt5 = _MT5()
+    _pass(mt5)
+    oco.MODE_FILE.write_text(bad)
+    doc = _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert len(mt5.orders) == 1 and "withdrawn" not in doc
+    assert "UNMEASURED" in doc["withdraw_unmeasured"]
+    assert not [r for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_REMOVE]
+
+
+def test_a_mode_file_locked_by_another_process_keeps_the_order(world, monkeypatch) -> None:
+    mt5 = _MT5()
+    _pass(mt5)
+    real = Path.read_text
+
+    def locked(self: Path, *a: object, **k: object) -> str:
+        if self == oco.MODE_FILE:
+            raise PermissionError(32, "The process cannot access the file")
+        return real(self, *a, **k)
+
+    monkeypatch.setattr(Path, "read_text", locked)
+    doc = _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert len(mt5.orders) == 1 and "UNMEASURED" in doc["withdraw_unmeasured"]
+
+
+def test_a_declared_armed_lane_keeps_its_resting_order(world) -> None:
+    mt5 = _MT5()
+    _pass(mt5)
+    doc = _pass(mt5, now=NOW + timedelta(minutes=1))
+    assert len(mt5.orders) == 1 and "withdrawn" not in doc
+    assert not [r for r in mt5.sent if r["action"] == mt5.TRADE_ACTION_REMOVE]
 
 
 def _cancel_bills() -> list[dict]:
@@ -824,6 +909,52 @@ def test_a_closed_ftmo_position_lands_in_the_prop_fills_ledger_once(world) -> No
     text = Path(ff.PROP_LEDGER).read_text("utf-8")
     assert str(FT_LOGIN) not in text and FT_SERVER not in text
     assert not any(k in row for k in ff.PROP_BANNED)
+
+
+def test_a_hand_closed_ftmo_position_111616773_lands_with_its_price_and_pl(world) -> None:
+    """2026-10-28: zuck closed FTMO 111616773 (the follower's SELL LIMIT, filled) by hand. MT5
+    stamps a hand close's exit deal with magic 0, and the ledger kept MAGIC deals only, so the
+    position never landed: no price, no P&L. The position is ours by its MAGIC entry deal."""
+    pid = 111616773
+    mt5 = _MT5()
+    mt5.hist_orders.append(SimpleNamespace(ticket=pid, symbol="XAUUSD", magic=ff.MAGIC,
+                                           time_setup=TICK, type=3, price_open=4330.0,
+                                           sl=4345.0, tp=4300.0))
+    mt5.deals = (
+        SimpleNamespace(ticket=11, order=pid, position_id=pid, symbol="XAUUSD", magic=ff.MAGIC,
+                        entry=0, type=1, volume=0.32, price=4330.0, time=TICK + 60, profit=0.0,
+                        commission=-2.5, swap=0.0, fee=0.0, reason=3),
+        SimpleNamespace(ticket=12, order=pid + 5, position_id=pid, symbol="XAUUSD", magic=0,
+                        entry=1, type=0, volume=0.32, price=4322.5, time=TICK + 3600,
+                        profit=240.0, commission=-2.5, swap=0.0, fee=0.0, reason=0),
+        # someone else's hand trade on the account is never written as this lane's
+        SimpleNamespace(ticket=13, order=88, position_id=5151, symbol="XAUUSD", magic=0,
+                        entry=0, type=0, volume=1.0, price=4300.0, time=TICK, profit=0.0),
+        SimpleNamespace(ticket=14, order=89, position_id=5151, symbol="XAUUSD", magic=0,
+                        entry=1, type=1, volume=1.0, price=4310.0, time=TICK + 9, profit=1e3))
+    assert _pass(mt5)["fills_ledger"]["written"] == 1
+    (row,) = _ledger()
+    assert row["position_id"] == pid and row["entry_side"] == 1
+    assert (row["entry_price"], row["fill_price"], row["pl_quote"]) == (4330.0, 4322.5, 240.0)
+    assert row["exit_reason"] == "manual" and row["closed_by"] == "manual"
+    assert row["exit_magic"] == [0] and row["pl_net_quote"] == 235.0
+    assert row["r_multiple"] == pytest.approx(7.5 / 15.0)
+
+
+def test_ftmo_equity_and_the_days_start_are_kept_in_state(world) -> None:
+    mt5 = _MT5(equity=101_250.0, balance=100_900.0)
+    doc = _pass(mt5)
+    st = json.loads(Path(ff.STATE).read_text("utf-8"))
+    acct = st["account"]
+    assert (acct["equity"], acct["balance"], acct["day_start_equity"]) == (
+        101_250.0, 100_900.0, 101_250.0)
+    assert doc["account"]["equity"] == 101_250.0
+    mt5.acc.equity = 100_400.0
+    _pass(mt5, now=NOW + timedelta(minutes=5))
+    acct = json.loads(Path(ff.STATE).read_text("utf-8"))["account"]
+    assert acct["equity"] == 100_400.0 and acct["day_start_equity"] == 101_250.0
+    text = Path(ff.STATE).read_text("utf-8")
+    assert str(FT_LOGIN) not in text and FT_SERVER not in text
 
 
 def test_an_open_position_is_not_written_and_a_ledger_failure_costs_no_order(

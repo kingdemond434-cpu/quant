@@ -776,6 +776,12 @@ $reportPaths = @(
     "desks/mt5/reports/JUDGING_THROUGHPUT.json",
     "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json",
     "desks/mt5/reports/JUDGE_COVERAGE.json",
+    # breadth in independent hypothesis families, the daily new-independent metric and the
+    # merge census that carries it (2026-10-28, research/hypothesis_families.py); and the
+    # gauntlet novelty set-aside, measured before any trial-count decision (audit 8628268b6)
+    "desks/mt5/reports/HYPOTHESIS_FAMILIES.json",
+    "desks/mt5/reports/NOVELTY_SET_ASIDE.json",
+    "desks/mt5/data/hypotheses/merge_report.json",
     # the resident judge's heartbeat (2026-10-13): sweeps, last exit code, backoff, uptime --
     # the only off-box evidence of whether the judge is running between its verdicts
     "desks/mt5/reports/JUDGE_RESIDENT.json",
@@ -790,6 +796,10 @@ $reportPaths = @(
     # tasks, consecutive tripped passes, and its missed-growth line) -- audit of 2832cebd1
     "desks/mt5/reports/judge_alive_fence.json",
     "desks/mt5/reports/DEEPENING_MEMORY_GUARD.json",
+    # the judge pre-build prescreen (2026-10-28): its first-verdict replay, canon evidence,
+    # missed_growth line and last intake -- the off-box evidence any canon flip is judged on
+    "desks/mt5/reports/JUDGE_PRESCREEN.json",
+    "desks/mt5/reports/JUDGE_PRESCREEN_INTAKE.json",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json",
     "desks/mt5/reports/BREADTH_MANDATE.json",
     "desks/mt5/reports/TIER1_SCORECARD.json",

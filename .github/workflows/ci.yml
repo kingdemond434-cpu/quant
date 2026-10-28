@@ -47,6 +47,12 @@ jobs:
       suite: ${{ steps.evidence.outputs.suite }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # FULL HISTORY, BLOBLESS (D-20261027-003): check_seal_clears proves the auto-sign's
+          # CLEAR record only ever grew, which needs every commit that touched it. A depth-1
+          # checkout made it UNMEASURED on every gating run. Blobless keeps it ~19 MB / ~2 s.
+          fetch-depth: 0
+          filter: blob:none
 
       - uses: actions/setup-python@v5
         with:

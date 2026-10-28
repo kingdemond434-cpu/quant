@@ -110,6 +110,9 @@ def test_an_unloadable_cert_book_zeroes_nothing_but_the_principal_zeros_still_bi
 
 def test_an_unpriceable_instrument_sends_no_book_order_and_says_why(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # USDNOK is a principal zero since 2026-10-25; this tests the pricing guard, so lift it.
+    monkeypatch.setitem(dc.PRINCIPAL_ZERO, "fusion",
+                        dc.PRINCIPAL_ZERO["fusion"] - dc.FUSION_FX_OUT_ZERO)
     monkeypatch.setattr(dc, "ALLOCATOR_SOVEREIGN_FILE", tmp_path / "absent.json")
     monkeypatch.setattr(kelly_sizing, "load_cert_book", lambda path, venue: None)
     s = {"name": USDNOK, "minlot_override": True}
@@ -131,6 +134,8 @@ def test_the_floor_risk_bill_is_none_when_the_instrument_cannot_be_priced() -> N
 def test_a_boolean_allocator_fraction_is_not_a_number(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """`True` is 1.0 to `float()`, and reading it so would fund a sleeve at 100% of equity."""
+    monkeypatch.setitem(dc.PRINCIPAL_ZERO, "fusion",        # USDNOK pinned 2026-10-25; lifted
+                        dc.PRINCIPAL_ZERO["fusion"] - dc.FUSION_FX_OUT_ZERO)
     assert math.isnan(dc._num_or_nan(True)) and math.isnan(dc._num_or_nan(False))
     assert math.isnan(dc._num_or_nan("x")) and dc._num_or_nan("0.25") == 0.25
     monkeypatch.setattr(dc, "ALLOCATOR_SOVEREIGN_FILE", tmp_path / "absent.json")
