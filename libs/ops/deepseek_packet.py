@@ -16,6 +16,7 @@ size or certify nothing.
 from __future__ import annotations
 
 import hashlib
+import importlib
 import json
 import os
 import shutil
@@ -255,9 +256,8 @@ def _portfolio(base: Path) -> dict[str, Any]:
     status = Counter(str(r.get("status") or "?") for r in rows)
     acct = _json(base / "desks/mt5/data/account_state.json") or {}
     pf = _json(base / "desks/mt5/reports/pf_allocation.json") or {}
-    book = pf.get("book")
-    if not isinstance(book, dict):
-        book = {}
+    raw_book = pf.get("book")
+    book = raw_book if isinstance(raw_book, dict) else {}
     if not rows and not acct:
         return {"status": "UNMEASURED", "why": "sleeves.json and account_state.json absent"}
     return {
@@ -281,8 +281,8 @@ def _resources(base: Path) -> dict[str, Any]:
         "disk_free_gb": round(disk.free / (1024.0 ** 3), 1),
     }
     try:
-        import psutil  # type: ignore[import-untyped,unused-ignore]
-
+        # Imported by name: psutil ships no type stubs, and its attributes are read as Any here.
+        psutil = importlib.import_module("psutil")
         vm = psutil.virtual_memory()
         out["ram_total_gb"] = round(vm.total / (1024.0 ** 3), 1)
         out["ram_available_gb"] = round(vm.available / (1024.0 ** 3), 1)

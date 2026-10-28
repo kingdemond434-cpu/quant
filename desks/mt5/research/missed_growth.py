@@ -504,6 +504,69 @@ def measure_tier_s_block(r: Any, alloc: dict[str, Any],
             "mean_withheld_r": round(m, 5), "value_logw_per_veto": round(-m * q, 6)}
 
 
+def measure_late_release_excluded(r: Any, _alloc: dict[str, Any],
+                                  _fv: dict[str, Any]) -> dict[str, Any]:
+    """What the release-spike clock's PER-RELEASE EXCLUSION costs and buys (dead families v4.4).
+
+    THE RAIL, PRECISELY. `libs/research/bar_clock_release._instrument` excludes a release whose
+    own range peak sits LATER than the winning offset: converted there it would be entered before
+    its news. The excluded instant is named in the season window and `bar_clock.to_bar_time`
+    never converts it, so event_reaction loses that one observation. It replaces the v4.3 rule
+    that refused the WHOLE instrument for one late release.
+
+    BOTH SIDES ARE COUNTED, because the rail is a refusal AND a release from a stricter one:
+
+      * COST (`n_excluded`): release instants never converted -- each named, with the
+        instruments that read it late and the hour it peaked.
+      * GROWTH (`n_admitted`, `instruments_kept`): releases that convert because an instrument
+        carrying an excluded release still resolved, where v4.3 would have refused it outright.
+
+    PRICED ONLY WHEN IT CAN BE. The log-wealth value is (event_reaction's per-event dE[log W] on
+    the excluded instants) minus (the same on the admitted ones), and needs the per-event
+    outcomes of a judged event_reaction cell tagged with the clock status that placed each event
+    (`EXCLUDED_LATE_RELEASE` vs `CONVERTED_RELEASE_SPIKE`). Until that exists the verdict is
+    UNMEASURED with both counts -- an invented number would make a refusal look free. No release
+    excluded is NOT_BINDING: a real zero.
+    """
+    try:
+        from libs.research import bar_clock_release
+        doc = bar_clock_release.reading(ROOT)
+    except Exception as exc:                                            # fail closed, said
+        return {"verdict": UNMEASURED,
+                "why": f"release-spike reading unavailable: {type(exc).__name__}"}
+    seasons = doc.get("per_season") or {}
+    if not seasons:
+        return {"verdict": UNMEASURED,
+                "why": "no release-spike reading on this host (no calendar or no bars)"}
+    named: list[dict[str, Any]] = []
+    admitted: set[str] = set()
+    kept: list[str] = []
+    for season, block in sorted(seasons.items()):
+        if not isinstance(block, dict):
+            continue
+        for sym, rd in sorted((block.get("readings") or {}).items()):
+            if not isinstance(rd, dict):
+                continue
+            for x in rd.get("late_release_excluded") or []:
+                named.append({"season": season, "instrument": sym, **x})
+            if rd.get("late_release_excluded") and rd.get("offset_h") is not None:
+                kept.append(f"{season}:{sym}")
+                admitted.update(rd.get("releases") or [])
+    instants = sorted({x["release"] for x in named})
+    if not named:
+        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True,
+                "n_excluded": 0, "n_admitted": 0,
+                "why": "no release peaked later than its instrument's winning offset"}
+    return {"verdict": UNMEASURED, "n_excluded": len(instants), "excluded": named,
+            "n_admitted": len(admitted - set(instants)), "instruments_kept": kept,
+            "why": (f"{len(instants)} release instant(s) excluded and never converted; "
+                    f"{len(kept)} instrument(s) still resolved on "
+                    f"{len(admitted - set(instants))} release(s) the v4.3 rule would have "
+                    "refused with them. Pricing needs event_reaction per-event outcomes tagged "
+                    "with the clock status that placed each event, which no judged cell "
+                    "carries yet.")}
+
+
 def _bill_door_error(rows: list[dict[str, Any]], heat_per_sleeve: float) -> dict[str, Any]:
     """THE COST OF FAILING CLOSED, BILLED PER INPUT (gap E, 2026-09-30).
 
@@ -643,6 +706,327 @@ def published_gate_lines() -> dict[str, Any]:
             "adopted": doc.get("adopted")}
 
 
+#: THE FUSION BOOK'S RAILS (audit HOLD on fusion_book_go_live 50ef074f9, 2026-10-20): the
+#: one-gold-at-risk veto, the cross-account opposite-side fence, the Fusion daily-loss rail, and
+#: the book's 0.01 floor lift and lot ceiling. Like the stop-geometry gate they register no rail
+#: (the register is sealed), so their lines are PUBLISHED on their own ledgers and carried here:
+#: the gateway's `data/fusion_book_rails.jsonl` (mt5desk.fusion_rails) and the E8 lanes'
+#: RAIL_BLOCKED rows for `cross_account_opposite` in their intents journals.
+FUSION_RAILS = BASE / "data" / "fusion_book_rails.jsonl"
+E8_EXEC_INTENTS = BASE / "data" / "e8_intents.jsonl"
+FUSION_RAIL_NAMES = ("one_gold_at_risk", "cross_account_opposite", "fusion_daily_loss",
+                     "fusion_book_floor_lift", "fusion_book_ceiling", "fusion_trade_risk_cap",
+                     "principal_zero_pin", "cert_book_absent_window", "gold_late_send",
+                     "cert_book_void", "gold_retry_abandoned", "e8_cert_ceiling",
+                     "cert_book_zero", "e8_account_undeclared",
+                     "gold_oco_direction_lock")
+
+#: The rails the E8 lanes bill in their intents journals (RAIL_BLOCKED rows; a late gold send is
+#: a SKIPPED row with reason late_send).
+_E8_BILLED_RAILS = ("cross_account_opposite", "principal_zero_pin", "cert_book_absent_window",
+                    "gold_late_send", "cert_book_void", "gold_retry_abandoned",
+                    "e8_cert_ceiling", "cert_book_zero", "e8_account_undeclared",
+                    "gold_oco_direction_lock")
+
+
+def _jsonl(p: Path) -> list[dict[str, Any]] | None:
+    """Rows of a JSONL file; [] when absent, None when unreadable."""
+    if not p.exists():
+        return []
+    try:
+        out = []
+        for ln in p.read_text("utf-8").splitlines():
+            if ln.strip():
+                row = json.loads(ln)
+                if isinstance(row, dict):
+                    out.append(row)
+        return out
+    except (OSError, ValueError):
+        return None
+
+
+def published_fusion_book_lines() -> dict[str, Any]:
+    """The Fusion book's rails, one bill per rail, from the ledgers that record them.
+
+    Each veto line names the lot and risk fraction it held back; each lift or ceiling line the
+    lot it added or clipped. None of them is priced in log-wealth here -- whether a held-back
+    order would have won is not in the line -- so every rail with lines is UNMEASURED with its
+    count and its held-back (or added) risk published, and a rail with none is NOT_BINDING. An
+    ABSENT or unreadable ledger is UNMEASURED, never a clean zero (L1.28a; audit round 2): the
+    gateway creates the ledger every pass (`fusion_rails.ensure`), so absent means this machine
+    has not received it, not that no rail fired."""
+    rows = _jsonl(FUSION_RAILS) if FUSION_RAILS.exists() else None
+    e8_rows: list[dict[str, Any]] = []
+    unreadable: list[str] = []
+    if rows is None:
+        unreadable.append(FUSION_RAILS.name)
+        rows = []
+    for jp in (E8_INTENTS, E8_EXEC_INTENTS):
+        got = _jsonl(jp) if jp.exists() else None
+        if got is None:
+            unreadable.append(jp.name)
+            continue
+        e8_rows += [r for r in got if r.get("status") in ("RAIL_BLOCKED", "SKIPPED", "CAPPED")
+                    and r.get("rail") in _E8_BILLED_RAILS]
+    lines: dict[str, Any] = {}
+    for rail in FUSION_RAIL_NAMES:
+        mine = [r for r in rows if r.get("rail") == rail]
+        e8 = [r for r in e8_rows if r.get("rail") == rail]
+        blind = FUSION_RAILS.name in unreadable or (
+            rail in _E8_BILLED_RAILS
+            and any(n != FUSION_RAILS.name for n in unreadable))
+        if not mine and not e8:
+            lines[rail] = {"verdict": UNMEASURED if blind else NOT_BINDING, "n": 0}
+            continue
+        fr = [float(r["risk_frac"]) for r in mine
+              if isinstance(r.get("risk_frac"), (int, float)) and not isinstance(r.get(
+                  "risk_frac"), bool)]
+        lots = [float(r["lot"]) for r in mine
+                if isinstance(r.get("lot"), (int, float)) and not isinstance(r.get("lot"), bool)]
+        usd = [float(r["missed_growth_risk_usd"]) for r in e8
+               if isinstance(r.get("missed_growth_risk_usd"), (int, float))]
+        # The gateway's gold_oco / cross_account_opposite lines carry their dollars too (gold
+        # OCO v2, audit must-fix 5); a line without a number is counted, never read as zero.
+        fusd = [float(r["missed_growth_risk_usd"]) for r in mine
+                if isinstance(r.get("missed_growth_risk_usd"), (int, float))
+                and not isinstance(r.get("missed_growth_risk_usd"), bool)]
+        lines[rail] = {"verdict": UNMEASURED, "n": len(mine) + len(e8),
+                       "n_fusion": len(mine), "n_e8": len(e8),
+                       "risk_frac_total": round(sum(fr), 6), "lots_total": round(sum(lots), 4),
+                       "e8_undeployed_risk_usd": round(sum(usd), 2),
+                       "fusion_undeployed_risk_usd": round(sum(fusd), 2),
+                       "n_unpriced": (len(e8) - len(usd)) + (
+                           sum(1 for r in mine if "missed_growth_risk_usd" in r) - len(fusd)),
+                       "last_at": (mine or e8)[-1].get("at"),
+                       "why": ("the line records what the rail held back, added or clipped, "
+                               "not what the order would have earned; published, not priced")}
+    out: dict[str, Any] = {"source": f"data/{FUSION_RAILS.name} + E8 intents RAIL_BLOCKED",
+                           "rails": lines}
+    if unreadable:
+        out["unreadable"] = unreadable
+    return out
+
+
+#: THE FTMO FOLLOWER'S RAILS (gold OCO v2, audit must-fix 5): prop/ftmo_follower.py journals
+#: every refusal as a RAIL_BLOCKED row (rail ftmo_follower, with its reason) and every lot its
+#: cap clipped (rail ftmo_lot_cap) in its own intents journal; they register no rail (the
+#: register is sealed), so their lines are published here beside the Fusion book's.
+FTMO_INTENTS = BASE / "data" / "ftmo_follower_intents.jsonl"
+FTMO_RAIL_NAMES = ("ftmo_follower", "ftmo_lot_cap")
+
+
+def published_ftmo_follower_lines() -> dict[str, Any]:
+    """The FTMO follower's rails, one bill per rail and per reason. An ABSENT journal is
+    NOT_BINDING only in the sense that nothing was journalled on this machine -- the follower is
+    standby until armed and writes its journal on its first refusal; an UNREADABLE one is
+    UNMEASURED. Rows with a dollar figure sum into `undeployed_risk_usd`; rows without one are
+    counted in `n_unpriced`, never read as zero. Published, not priced in log-wealth."""
+    rows = _jsonl(FTMO_INTENTS) if FTMO_INTENTS.exists() else []
+    if rows is None:
+        return {"source": f"data/{FTMO_INTENTS.name}", "unreadable": [FTMO_INTENTS.name],
+                "rails": {r: {"verdict": UNMEASURED, "n": 0} for r in FTMO_RAIL_NAMES}}
+    lines: dict[str, Any] = {}
+    for rail in FTMO_RAIL_NAMES:
+        mine = [r for r in rows if r.get("rail") == rail and r.get("status") == "RAIL_BLOCKED"]
+        if not mine:
+            lines[rail] = {"verdict": NOT_BINDING, "n": 0}
+            continue
+        usd = [float(r["missed_growth_risk_usd"]) for r in mine
+               if isinstance(r.get("missed_growth_risk_usd"), (int, float))
+               and not isinstance(r.get("missed_growth_risk_usd"), bool)]
+        by: dict[str, int] = {}
+        for r in mine:
+            by[str(r.get("reason") or "")] = by.get(str(r.get("reason") or ""), 0) + 1
+        lines[rail] = {"verdict": UNMEASURED, "n": len(mine), "by_reason": by,
+                       "undeployed_risk_usd": round(sum(usd), 2),
+                       "n_unpriced": len(mine) - len(usd), "last_at": mine[-1].get("at"),
+                       "why": ("the line records the risk the follower held back or clipped, "
+                               "not what the order would have earned; published, not priced")}
+    return {"source": f"data/{FTMO_INTENTS.name} RAIL_BLOCKED", "rails": lines}
+
+
+#: THE JUDGE'S WATCHDOG AND THE DEEPENING MEMORY GUARD (audit of 2832cebd1, 2026-10-20). Neither
+#: registers a rail (the register is sealed), so each publishes its missed-growth lines on its
+#: own artifact: a sweep the watchdog killed (or found dead) discards its whole wall, and a
+#: deepening pass the memory guard stopped defers tasks to the next hour.
+GAUNTLET_STALL = BASE / "reports" / "GAUNTLET_STALL.json"
+#: The judge's priority rule (judge_cpu_fair_share): one line per applied raise to EQUAL.
+JUDGE_PRIORITY_RAISES = BASE / "reports" / "JUDGE_PRIORITY_RAISES.json"
+#: ... and its append-only sidecar: the lines of changes that STAND although the locked write
+#: failed (a kept lowering, an unrevertable raise). Carried beside the artifact's own lines.
+JUDGE_PRIORITY_UNRECORDED = BASE / "reports" / "JUDGE_PRIORITY_RAISES_UNRECORDED.jsonl"
+#: ... and the organ's own records, which keep a line whose sidecar write failed as well.
+JUDGE_PRIORITY_RECORDS = (BASE / "reports" / "JUDGE_PRIORITY_SWEEP.json",
+                          BASE / "reports" / "JUDGE_PRIORITY.json")
+DEEPENING_GUARD = BASE / "reports" / "DEEPENING_MEMORY_GUARD.json"
+
+
+def _spill_lines(spill: Path | None) -> tuple[list[dict[str, Any]], int]:
+    """An organ's append-only sidecar of lines its locked artifact could not take, and how many
+    of its lines could not be read (a torn line is skipped, never fatal -- and COUNTED: a skipped
+    line is a cost the reader cannot see, so it reads UNMEASURED, never NOT_BINDING)."""
+    if spill is None:
+        return [], 0
+    out: list[dict[str, Any]] = []
+    torn = 0
+    try:
+        text = spill.read_text("utf-8")
+    except FileNotFoundError:
+        return [], 0
+    except (OSError, ValueError):
+        return [], 1                          # present but unreadable: every line unseen
+    for ln in text.splitlines():
+        if not ln.strip():
+            continue
+        try:
+            got = json.loads(ln)
+        except ValueError:
+            torn += 1
+            continue
+        if isinstance(got, dict):
+            out.append(got)
+        else:
+            torn += 1
+    return out, torn
+
+
+def _unspilled_lines(records: tuple[Path, ...]) -> list[dict[str, Any]]:
+    """Lines whose sidecar write ALSO failed: the organ keeps them in its own published record
+    (`unspilled` / any block whose `spill` reads FAILED), and they are carried from there."""
+    out: list[dict[str, Any]] = []
+
+    def walk(x: Any) -> None:
+        if isinstance(x, dict):
+            spill = x.get("spill")
+            if isinstance(spill, str) and spill.startswith("FAILED"):
+                out.extend({**ln, "spill_failed": spill} for ln in x.get("missed_growth") or []
+                           if isinstance(ln, dict))
+            for k, v in x.items():
+                if k != "missed_growth":
+                    walk(v)
+        elif isinstance(x, list):
+            for v in x:
+                walk(v)
+    for path in records:
+        walk(_json(path))
+    seen: set[tuple[Any, ...]] = set()
+    uniq = []
+    for ln in out:
+        key = (ln.get("at"), ln.get("pid"), ln.get("create_time"), ln.get("by"))
+        if key not in seen:
+            seen.add(key)
+            uniq.append(ln)
+    return uniq
+
+
+def _unspilled_dropped(records: tuple[Path, ...]) -> int:
+    """How many failed-spill lines the organ's records had to drop past their cap (`n_dropped`
+    under any `unspilled` block): each is a cost nobody can see any more."""
+    total = 0
+
+    def walk(x: Any) -> None:
+        nonlocal total
+        if isinstance(x, dict):
+            u = x.get("unspilled")
+            if isinstance(u, dict) and isinstance(u.get("n_dropped"), (int, float)):
+                total += int(u["n_dropped"])
+            for v in x.values():
+                walk(v)
+        elif isinstance(x, list):
+            for v in x:
+                walk(v)
+    for path in records:
+        walk(_json(path))
+    return total
+
+
+def organ_published_lines(path: Path, *, recent: int = 20, spill: Path | None = None,
+                          unspilled: tuple[Path, ...] = ()) -> dict[str, Any]:
+    """An organ's own published missed-growth lines, read from its artifact (plus its sidecar
+    `spill`, and the lines its own records hold because even the sidecar write failed --
+    `unspilled`). Absent -> UNMEASURED (said, never a clean zero); present with no lines ->
+    NOT_BINDING (the rail never cost); any sidecar line that could not be read -> UNMEASURED."""
+    doc = _json(path)
+    extra, torn = _spill_lines(spill)
+    dropped = _unspilled_dropped(unspilled)
+    extra = [*extra, *_unspilled_lines(unspilled)]
+    if not doc and not extra and not torn and not dropped:
+        return {"verdict": UNMEASURED, "lines": [],
+                "why": f"no {path.parent.name}/{path.name} on this host: the organ has not run"}
+    doc = doc or {}
+    lines = [*(x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)), *extra]
+    if extra:                                 # interleave the sidecar by time
+        lines = sorted(lines, key=lambda x: str(x.get("at") or ""))
+    lines = lines[-recent:]
+    if dropped:
+        return {"verdict": UNMEASURED, "source": f"reports/{path.name}", "lines": lines,
+                "n_lines": len(lines), "unspilled_dropped": dropped, "lost_s": None,
+                **({"torn_spill_lines": torn} if torn else {}),
+                "why": f"{dropped} unspilled line(s) were dropped past the record's cap: "
+                       f"their cost is unseen"}
+    if torn:
+        return {"verdict": UNMEASURED, "source": f"reports/{path.name}", "lines": lines,
+                "n_lines": len(lines), "torn_spill_lines": torn, "lost_s": None,
+                "why": f"{torn} sidecar line(s) could not be read: their cost is unseen"}
+    if not lines:
+        return {"verdict": NOT_BINDING, "lines": [], "source": f"reports/{path.name}",
+                "why": "the organ has published no missed-growth line: it never cost a wall"}
+    lost = [float(x["lost_s"]) for x in lines if isinstance(x.get("lost_s"), (int, float))]
+    return {"verdict": UNMEASURED if any(x.get("verdict") == UNMEASURED for x in lines)
+            else COSTS, "source": f"reports/{path.name}", "lines": lines,
+            "n_lines": len(lines), "lost_s": round(sum(lost), 1) if lost else None,
+            "consecutive": doc.get("consecutive", doc.get("consecutive_tripped")),
+            "why": "measured cost in its own units; the E[log W] price is UNMEASURED"}
+
+
+#: THE HEAVY ADMISSION SCAN EVERY 4TH HOURLY PASS (2026-10-21, principal zuck: Option B), was
+#: every ~2.6 h measured. Like the stop-geometry gate it registers no rail (the register is
+#: sealed), so its line is PUBLISHED here beside the rails. A STANDBY row needs TWO distinct
+#: admitting scans (promoter.reconcile_capital, `admit_scan`): the audit's simulation of
+#: 2026-10-14 put the second scan 6.1 h after a candidate appears against 4.1 h before, so
+#: 2.1 h of each ~6.1 h wait is the cadence's doing.
+ADMISSION_CADENCE_EXTRA_DELAY_H = 2.1
+ADMISSION_CADENCE_WAIT_H = 6.1
+SLEEVES = BASE / "data" / "sleeves.json"
+
+
+def admission_cadence_line(alloc: dict[str, Any]) -> dict[str, Any]:
+    """What the 4-hourly heavy scan costs in forward log-wealth, as a published line.
+
+    Every candidate the last scan ADMITTED that is not yet LIVE is forgoing its measured
+    delta E[log W]/day while it waits; EXTRA_DELAY_H / WAIT_H of that wait is the cadence's.
+    So the line is -sum(delta) x 2.1/6.1 per day while candidates wait, which integrates to
+    sum(delta) x 2.1 h per promotion. The longer reuse of the heavy growth curve on normal/fast
+    passes is not priceable from this artifact and is named, not assumed free. An unreadable
+    roster or an unmeasured scan is UNMEASURED, never a bill or a zero.
+    """
+    adm = alloc.get("admission") if isinstance(alloc.get("admission"), dict) else {}
+    if not adm or adm.get("status") != "MEASURED":
+        return {"verdict": UNMEASURED, "why": "no MEASURED admission scan on this host"}
+    try:
+        rows = json.loads(SLEEVES.read_text("utf-8")).get("sleeves")
+        if not isinstance(rows, list):
+            raise ValueError("sleeves is not a list")
+    except (OSError, ValueError, AttributeError) as exc:
+        return {"verdict": UNMEASURED, "why": f"data/sleeves.json unreadable: {exc}"}
+    live = {str(s.get("name")) for s in rows
+            if isinstance(s, dict) and str(s.get("status") or "").upper() == "LIVE"}
+    cands = adm.get("candidates") if isinstance(adm.get("candidates"), dict) else {}
+    waiting: dict[str, float] = {}
+    for name in adm.get("admitted") or []:
+        d = _num((cands.get(name) or {}).get("delta_elogw_per_day"))
+        if str(name) not in live and d is not None and d > 0:
+            waiting[str(name)] = d
+    share = ADMISSION_CADENCE_EXTRA_DELAY_H / ADMISSION_CADENCE_WAIT_H
+    cost = sum(waiting.values()) * share
+    return {"verdict": COSTS if waiting else NOT_BINDING,
+            "source": "reports/pf_allocation.json admission + data/sleeves.json",
+            "value_logw_per_day": round(-cost, 12), "waiting": sorted(waiting),
+            "extra_delay_h": ADMISSION_CADENCE_EXTRA_DELAY_H,
+            "wait_h": ADMISSION_CADENCE_WAIT_H,
+            "unpriced": "longer reuse of the heavy growth curve on normal/fast passes"}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -760,7 +1144,17 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            "calibration": cal, "calibration_changes": changed, "review_tasks": len(tasks),
            # Gates that register no rail publish their lines on their own artifact; carried
            # here so the bill sits beside the rails' (never appended to the ledger).
-           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines()},
+           "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
+                                    "fusion_book_rails": published_fusion_book_lines(),
+                                    "ftmo_follower_rails": published_ftmo_follower_lines(),
+                                    "gauntlet_watchdog": organ_published_lines(GAUNTLET_STALL),
+                                    "judge_priority_raise": organ_published_lines(
+                                        JUDGE_PRIORITY_RAISES,
+                                        spill=JUDGE_PRIORITY_UNRECORDED,
+                                        unspilled=JUDGE_PRIORITY_RECORDS),
+                                    "deepening_memory_guard": organ_published_lines(
+                                        DEEPENING_GUARD),
+                                    "admission_scan_cadence": admission_cadence_line(alloc)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
