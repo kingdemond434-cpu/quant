@@ -233,6 +233,7 @@ class _Hub:
         draft: bool = False,
         fork: bool = False,
         labels: tuple[str, ...] = ("audit-clear",),
+        files: tuple[str, ...] = ("scripts/x.py",),
     ) -> None:
         self.pr = {
             "state": "open",
@@ -241,6 +242,7 @@ class _Hub:
             "base": {"ref": ag.LIVE},
             "labels": [{"name": n} for n in labels],
         }
+        self.files = [{"filename": f} for f in files]
         self.comments = comments or []
         self.runs = runs if runs is not None else _green()
         self.writes: list[tuple[str, ...]] = []
@@ -260,6 +262,10 @@ class _Hub:
             return [self.comments]
         if "/check-runs" in path:
             return {"check_runs": self.runs}
+        if "/files?" in path:
+            return [self.files]
+        if "/pulls?" in path:
+            return [[{"number": 7}]]
         return self.pr
 
 
@@ -351,6 +357,61 @@ def test_a_hold_after_green_ci_but_before_the_merge_stops_it(hub: Any) -> None:
 def test_pending_ci_past_the_wait_gives_up_without_merging(hub: Any) -> None:
     h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], runs=_green()[:2])
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 1 and _merges(h) == []
+
+
+# --------------------------------------------------------------- workflow-file PRs: the box
+
+
+WF = (".github/workflows/ci.yml", "scripts/x.py")
+
+
+def test_touches_workflows_sees_either_side_of_a_rename() -> None:
+    assert ag.touches_workflows([{"filename": ".github/workflows/a.yml"}])
+    assert ag.touches_workflows(
+        [{"filename": "old/a.yml", "previous_filename": ".github/workflows/a.yml"}]
+    )
+    assert not ag.touches_workflows([{"filename": ".github/CODEOWNERS"}, {"filename": "x.py"}])
+
+
+def test_the_actions_gate_leaves_a_workflow_pr_to_the_box_without_failing(hub: Any) -> None:
+    h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], files=WF)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 0
+    assert _merges(h) == []
+    assert any(w[1].endswith(f"statuses/{A}") and "state=pending" in w for w in h.writes)
+
+
+def test_the_box_merges_a_cleared_green_workflow_pr_pinned_and_dispatches_nothing(
+    hub: Any,
+) -> None:
+    h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], files=WF)
+    assert ag.main(["--repo", "o/r", "--sweep", "--box"]) == 0
+    (merge,) = _merges(h)
+    assert f"sha={A}" in merge
+    assert not any("dispatches" in w[1] for w in h.writes)
+    assert not any(w[0] == "DELETE" for w in h.writes)  # the label is the Actions run's
+
+
+@pytest.mark.parametrize("case", ["no_workflow", "no_clear", "hold", "red_ci", "pending_ci"])
+def test_the_box_merges_nothing_else(hub: Any, case: str) -> None:
+    comments = {
+        "no_clear": [],
+        "hold": [
+            _c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z"),
+            _c(f"AUDIT HOLD {A}", "2026-10-28T10:01:00Z"),
+        ],
+    }.get(case, [_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")])
+    runs = {
+        "red_ci": [*_green(), _r("lint", conclusion="failure")],
+        "pending_ci": _green()[:2],
+    }.get(case)
+    h = hub(comments=comments, runs=runs, files=("scripts/x.py",) if case == "no_workflow" else WF)
+    code = ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True)
+    assert _merges(h) == [] and code == (1 if case == "red_ci" else 0)
+
+
+def test_sweep_needs_box() -> None:
+    with pytest.raises(SystemExit):
+        ag.main(["--repo", "o/r", "--sweep"])
 
 
 # ------------------------------------------------------------------------------ the wiring

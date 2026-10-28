@@ -28,9 +28,17 @@ see the merged code.
 
     python scripts/audit_gate.py --repo OWNER/NAME --pr N [--base LIVE] [--wait-min 300]
 
-WHAT IT CANNOT MERGE. A PR that changes .github/workflows/** -- this gate's own fixes included --
-is refused by GitHub for the workflow token (it holds no `workflows` permission). That fails
-closed: such a PR still needs a merge from the box.
+WORKFLOW-FILE PRs. A PR that changes .github/workflows/** -- this gate's own fixes included --
+is refused by GitHub for the workflow token (it holds no `workflows` permission). The Actions run
+therefore leaves such a PR alone (status "pending: the box merges this") and the BOX merges it
+under the SAME rule, with zuck's own gh token (which carries the `workflow` scope):
+
+    python scripts/audit_gate.py --repo OWNER/NAME --sweep --box
+
+run every 10 minutes by ops/box/workflow_gate.ps1 from a clean checkout of LIVE (trusted code,
+never the PR's). The box mode merges ONLY workflow-file PRs, never waits (a PR whose CI is still
+running is left for the next sweep), and dispatches nothing: a merge made with a user token
+starts the normal push run on LIVE.
 
 Exit 0 when merged or when there is honestly nothing to do yet (no CLEAR); exit 1 when the gate
 refused or gave up, with the reason in the job summary and on the `audit/clear` commit status.
@@ -62,6 +70,9 @@ VERDICT = re.compile(r"^AUDIT (CLEAR|HOLD) ([0-9a-f]{40})(?: (merge|squash))?[ \
 OK_CONCLUSIONS = ("success", "skipped", "neutral")
 #: The gate's own check runs never gate themselves.
 SELF_NAMES = ("audit-gate", "gate")
+#: Files GitHub refuses to let the workflow token merge.
+WORKFLOW_DIR = ".github/workflows/"
+BOX_MERGES = "workflow change: the box merges this"
 
 
 def verdicts(comments: Iterable[Mapping[str, Any]]) -> list[dict[str, str]]:
@@ -244,7 +255,25 @@ def _status(repo: str, sha: str, state: str, why: str) -> None:
         _summary(f"(status not posted: {exc})")
 
 
-def run(repo: str, pr: int, base: str, wait_min: float, poll_s: float = 60.0) -> int:
+def touches_workflows(files: Iterable[Mapping[str, Any]]) -> bool:
+    """True when the PR changes .github/workflows/** (a rename counts from either side)."""
+    for f in files:
+        for name in (f.get("filename"), f.get("previous_filename")):
+            if isinstance(name, str) and name.startswith(WORKFLOW_DIR):
+                return True
+    return False
+
+
+def run(
+    repo: str,
+    pr: int,
+    base: str,
+    wait_min: float,
+    poll_s: float = 60.0,
+    box: bool = False,
+) -> int:
+    """Merge #pr when the rule holds. `box`: the box's run with a user token -- it merges ONLY
+    workflow-file PRs, which the Actions run (box=False) leaves to it, and dispatches nothing."""
     p = _gh(f"repos/{repo}/pulls/{pr}")
     head = str(p["head"]["sha"])
     if p.get("state") != "open":
@@ -256,9 +285,18 @@ def run(repo: str, pr: int, base: str, wait_min: float, poll_s: float = 60.0) ->
     if (p["head"].get("repo") or {}).get("full_name") != repo:
         _summary(f"#{pr} comes from a fork: never merged by the gate")
         return 0
+    files = _flat(_gh(f"repos/{repo}/pulls/{pr}/files?per_page=100", "--paginate", "--slurp"))
+    wf = touches_workflows(files)
+    if wf and not box:
+        _status(repo, head, "pending", BOX_MERGES)
+        _summary(f"#{pr} @ {head[:9]}: {BOX_MERGES}")
+        return 0
+    if box and not wf:
+        _summary(f"#{pr}: no workflow change; the Actions gate merges it")
+        return 0
     # The label only STARTS a run; it is taken off so the next CLEAR can put it back on (adding
     # a label a PR already carries starts nothing). A removal by the workflow token starts no run.
-    if any(lb.get("name") == LABEL for lb in p.get("labels") or []):
+    if not box and any(lb.get("name") == LABEL for lb in p.get("labels") or []):
         try:
             _gh(f"repos/{repo}/issues/{pr}/labels/{LABEL}", "-X", "DELETE")
         except RuntimeError as exc:
@@ -301,6 +339,9 @@ def run(repo: str, pr: int, base: str, wait_min: float, poll_s: float = 60.0) ->
         if state == "fail":
             _summary(f"#{pr} @ {head[:9]}: not merged -- CI {cwhy}")
             return 1
+        if box:
+            _summary(f"#{pr} @ {head[:9]}: CI {cwhy}; the next sweep looks again")
+            return 0
         if time.monotonic() > deadline:
             _summary(f"#{pr} @ {head[:9]}: gave up after {wait_min:.0f} min -- {cwhy}")
             return 1
@@ -323,7 +364,9 @@ def run(repo: str, pr: int, base: str, wait_min: float, poll_s: float = 60.0) ->
             "commit_title": f"Merge #{pr} ({clear['method']}): audit CLEAR {clear['sha'][:9]}",
         },
     )
-    _summary(f"#{pr} @ {head[:9]}: MERGED ({clear['method']})")
+    _summary(f"#{pr} @ {head[:9]}: MERGED ({clear['method']}){' from the box' if box else ''}")
+    if box:
+        return 0  # a user-token merge starts the push run on LIVE by itself
     # A merge made with the workflow token starts no push run: dispatch ci.yml on the base so
     # its seal and promote jobs see the merged code.
     _gh(f"repos/{repo}/actions/workflows/ci.yml/dispatches", "-X", "POST", data={"ref": base})
@@ -331,15 +374,38 @@ def run(repo: str, pr: int, base: str, wait_min: float, poll_s: float = 60.0) ->
     return 0
 
 
+def sweep(repo: str, base: str) -> int:
+    """The box's pass: every open, non-fork PR into `base` that changes workflow files gets one
+    box-mode run. One PR's failure never stops the others; the worst exit code is returned."""
+    pages = _gh(f"repos/{repo}/pulls?state=open&base={base}&per_page=100", "--paginate", "--slurp")
+    rc = 0
+    for p in _flat(pages):
+        n = int(p["number"])
+        try:
+            rc = max(rc, run(repo, n, base, 0.0, box=True))
+        except (RuntimeError, subprocess.CalledProcessError) as exc:
+            _summary(f"#{n}: the box gate failed: {exc}")
+            rc = 1
+    return rc
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", required=True)
-    ap.add_argument("--pr", type=int, required=True)
+    ap.add_argument("--pr", type=int)
     ap.add_argument("--base", default=LIVE)
     ap.add_argument("--wait-min", type=float, default=300.0)
+    ap.add_argument("--box", action="store_true", help="the box's run: workflow-file PRs only")
+    ap.add_argument("--sweep", action="store_true", help="every open PR into --base (with --box)")
     a = ap.parse_args(argv)
+    if a.sweep:
+        if not a.box:
+            ap.error("--sweep is the box's pass: give --box too")
+        return sweep(a.repo, a.base)
+    if a.pr is None:
+        ap.error("--pr or --sweep is required")
     try:
-        return run(a.repo, a.pr, a.base, a.wait_min)
+        return run(a.repo, a.pr, a.base, 0.0 if a.box else a.wait_min, box=a.box)
     except (RuntimeError, subprocess.CalledProcessError) as exc:
         _summary(f"#{a.pr}: the gate failed: {exc}")
         return 1
