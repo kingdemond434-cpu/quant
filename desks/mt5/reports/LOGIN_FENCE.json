@@ -1,5 +1,5 @@
 {
- "at": "2026-10-28T00:21:58+00:00",
+ "at": "2026-10-28T00:36:23+00:00",
  "status": "UNMEASURED",
  "n_checked": 61,
  "n_refused": 0,
@@ -19,9 +19,7 @@
  "rule": "login-shaped key with an account-shaped value, key-less account forms, and declared account numbers; values are never recorded",
  "alert": "OPEN",
  "page": {
-  "sent": true,
-  "reason": "still UNMEASURED after 6h",
-  "armed": 1,
-  "delivered": 1
+  "sent": false,
+  "reason": "deduplicated"
  }
 }
