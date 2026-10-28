@@ -39,6 +39,24 @@ gold and FX book: fusion):
 
 It only ever REMOVES resting orders: it opens nothing and closes no position. A file that cannot
 be read cancels nothing and says so (an unreadable request is not a reason to touch orders).
+
+A LANE THAT IS REMOVED OR PAUSED WITHDRAWS ITS OWN RESTING ENTRIES, with no request (2026-10-28).
+FTMO's resting SELL LIMIT 111616773 FILLED before its 10:00Z self-cancel, three hours after ftmo
+was taken out of GOLD_OCO_MODE.json's lanes (07:06Z): the gate refused new orders, but nothing
+withdrew the one already resting, so FTMO came to hold the same 0.32 gold short as E8 -- the
+cross-firm copy the removal was meant to stop. `withdraw_reason(lane, armed)` is the rule every
+executor applies on every pass, before anything else it does with its own orders:
+
+    * a non-leader lane NOT declared in GOLD_OCO_MODE.json (removed, or the file absent, which
+      means the default lanes) withdraws every own resting gold entry; a file present but
+      unreadable or without a lanes list is UNMEASURED and withdraws nothing (v14 audit MF1);
+    * a lane that is NOT ARMED (its marker or state says paused) withdraws them too, and sends
+      the removal although unarmed: an unarmed lane opens nothing, but a resting entry it placed
+      while armed is new risk waiting to happen, and a pause that leaves it to fill is no pause.
+
+It applies whatever changed the lane -- the adopter's GOLD_OCO_MODE switch, a hand edit on the
+box, a deleted marker -- so it needs no request and no acknowledgement. Each withdrawal is
+billed like a requested cancel (rail `cancel_requested`, reason `lane_withdrawn`).
 """
 
 from __future__ import annotations
@@ -59,6 +77,49 @@ LANES = ("e8", "fusion", "ftmo")
 MAX_LIFE = timedelta(hours=48)
 #: The rail every requested cancel is billed under (fusion_rails, E8 intents, FTMO reason).
 RAIL = "cancel_requested"
+
+
+#: The reason a lane-removed / lane-paused withdrawal is billed under (rail stays RAIL).
+WITHDRAWN = "lane_withdrawn"
+
+
+def withdraw_check(lane: str, armed: bool) -> tuple[str | None, str | None]:
+    """(why `lane` must withdraw every resting entry of its own now, or None; why the lane's
+    declaration could not be MEASURED this pass, or None). Never raises.
+
+    ONLY A POSITIVE READING WITHDRAWS (v14 audit MF1). A mode file that is absent is documented
+    as "the default lanes" (gold_oco), so its default withdraws a lane it leaves out. A file that
+    is PRESENT but cannot be read (half-written, a Windows sharing violation, an AV lock) or that
+    carries no `lanes` list is UNMEASURED: the lane keeps its orders and says so, because the
+    follower never re-places a placed window, and one bad read would cost the day's trade."""
+    unmeasured: str | None = None
+    if lane != "e8":
+        declared: tuple[str, ...] | None = None
+        try:
+            from mt5desk import gold_oco as _oco
+
+            doc, _why = _oco._mode_doc()
+            if doc.get("_unreadable"):
+                unmeasured = f"GOLD_OCO_MODE.json is unreadable ({_why}); orders kept, UNMEASURED"
+            elif _oco.MODE_FILE.exists() and not isinstance(doc.get("lanes"), list):
+                unmeasured = "GOLD_OCO_MODE.json carries no lanes list; orders kept, UNMEASURED"
+            else:
+                declared = _oco.declared_lanes(doc)
+        except Exception as exc:
+            unmeasured = f"GOLD_OCO_MODE.json could not be read ({type(exc).__name__}); UNMEASURED"
+        if declared is not None and lane not in declared:
+            return (
+                f"lane {lane} is not declared in GOLD_OCO_MODE.json (lanes "
+                f"{list(declared)}): its resting entries are withdrawn, never left to fill"
+            ), None
+    if not armed:  # the arm is read on its own: a pause withdraws whatever the mode file says
+        return f"lane {lane} is paused (not armed): its resting entries are withdrawn", unmeasured
+    return None, unmeasured
+
+
+def withdraw_reason(lane: str, armed: bool) -> str | None:
+    """`withdraw_check`'s first half: why `lane` must withdraw its resting entries, or None."""
+    return withdraw_check(lane, armed)[0]
 
 
 class AcksUnreadable(Exception):

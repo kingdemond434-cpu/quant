@@ -166,3 +166,40 @@ def test_the_request_files_are_box_local() -> None:
     assert (
         "desks/mt5/data/CANCEL_PENDING.json" in gi and "desks/mt5/data/cancel_pending_acks/" in gi
     )
+
+
+@pytest.mark.parametrize(
+    ("path", "call"),
+    [
+        ("prop/ftmo_follower.py", "_cancel_req.withdraw_check(LANE, armed)"),
+        ("prop/e8_gold.py", '_cancel_req.withdraw_reason("e8", armed)'),
+        ("mt5desk/gateway.py", "_cancel_req.withdraw_check(lane, armed or defaulted)"),
+    ],
+)
+def test_every_executor_withdraws_when_its_lane_is_removed_or_paused(path: str, call: str) -> None:
+    """2026-10-28, FTMO ticket 111616773: removing a lane left its resting entry to fill. Every
+    executor applies the rule itself, so it holds whatever removed or paused the lane."""
+    src = (DESK / path).read_text(encoding="utf-8")
+    assert call in src and "_cancel_req.WITHDRAWN" in src
+
+
+def test_withdraw_reason_follows_the_mode_file_and_the_arm(monkeypatch, tmp_path: Path) -> None:
+    from mt5desk import gold_oco
+
+    mode = tmp_path / "GOLD_OCO_MODE.json"
+    monkeypatch.setattr(gold_oco, "MODE_FILE", mode)
+    mode.write_text(json.dumps({"lanes": ["e8", "fusion", "ftmo"]}))
+    assert cp.withdraw_reason("ftmo", True) is None
+    assert "paused" in (cp.withdraw_reason("ftmo", False) or "")
+    mode.write_text(json.dumps({"lanes": ["e8", "fusion"], "modes": {"fusion": "fallback"}}))
+    assert "not declared" in (cp.withdraw_reason("ftmo", True) or "")
+    assert cp.withdraw_reason("fusion", True) is None and cp.withdraw_reason("e8", True) is None
+    # present but unreadable or malformed: UNMEASURED, nothing withdrawn (v14 audit MF1)
+    for bad in ("{torn", '{"lanes": "e8,fusion,ftmo"}', '{"modes": {}}', "[1]"):
+        mode.write_text(bad)
+        why, unmeasured = cp.withdraw_check("ftmo", True)
+        assert why is None and "UNMEASURED" in (unmeasured or ""), bad
+        assert cp.withdraw_reason("ftmo", False) is not None  # a pause still withdraws
+    mode.unlink()  # absent: documented as the default lanes, which leave ftmo out
+    assert cp.withdraw_reason("ftmo", True) is not None
+    assert cp.withdraw_reason("fusion", True) is None

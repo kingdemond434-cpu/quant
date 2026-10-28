@@ -1609,6 +1609,37 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             for leg in (w.get("orders") or {}).values() if leg.get("id") is not None}
     mine = sorted((set(own) | legs) & open_ids)
     by_id = {int(o["id"]): o for o in open_orders if o.get("id") is not None}
+
+    def _leg_of(tid: int) -> dict[str, Any]:
+        return own.get(tid) or next(
+            (lg for w in (state.get("windows") or {}).values()
+             for lg in (w.get("orders") or {}).values()
+             if lg.get("id") is not None and int(lg["id"]) == tid), {})
+
+    # A PAUSED LANE WITHDRAWS ITS RESTING ENTRIES (2026-10-28, FTMO ticket 111616773 filled
+    # after its lane was removed). E8 is the leader, so it is never removed from GOLD_OCO_MODE;
+    # unarmed (no data/E8_GOLD_ARMED) it places nothing, and an entry it placed while armed is
+    # withdrawn here rather than left to fill. Sent although unarmed: a cancel opens nothing.
+    withdraw = _cancel_req.withdraw_reason("e8", armed)
+    if withdraw is not None and mine:
+        doc["withdrawn"] = withdraw
+        for tid in list(mine):
+            act = {"act": "lane_withdrawn", "order_id": tid, "why": withdraw, "ok": False}
+            try:
+                act["ok"] = bool(venue.cancel(int(tid)))
+            except Exception as exc:
+                act["why"] += f"; FAILED {type(exc).__name__}: {exc}"[:160]
+            if act["ok"]:
+                mine.remove(tid)
+                open_ids.discard(tid)
+                leg = _leg_of(tid)
+                _record({"at": now.isoformat(timespec="seconds"), "status": "RAIL_BLOCKED",
+                         "rail": _cancel_req.RAIL, "reason": _cancel_req.WITHDRAWN,
+                         "order_id": tid, "why": withdraw, "window": leg.get("window"),
+                         "missed_growth_risk_usd": round(leg_missed_usd(leg), 2),
+                         "armed": armed})
+            log(f"withdrew resting order {tid}: {act['why']} -> {act['ok']}")
+            doc["actions"].append(act)
     # each order's own setup time, so an `all` request never reaches an order placed after it
     # (v7 audit MF6). The stamp is read AS IF it were UTC: if the venue stamps on the broker
     # clock (LEG_MATCH_WINDOW_MS above) that reads 2-3 h late, which only ever leaves an order
@@ -1628,10 +1659,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 act["why"] += f"; FAILED {type(exc).__name__}: {exc}"[:160]
             _cancel_req.record("e8", c["request"], c["ticket"], act["ok"], now=now)
             if act["ok"]:  # a withdrawn order is a refusal too (Rule 1): billed at its own risk
-                leg = own.get(c["ticket"]) or next(
-                    (lg for w in (state.get("windows") or {}).values()
-                     for lg in (w.get("orders") or {}).values()
-                     if lg.get("id") is not None and int(lg["id"]) == c["ticket"]), {})
+                leg = _leg_of(c["ticket"])
                 _record({"at": now.isoformat(timespec="seconds"), "status": "RAIL_BLOCKED",
                          "rail": _cancel_req.RAIL, "order_id": c["ticket"], "why": c["why"],
                          "window": leg.get("window"),
