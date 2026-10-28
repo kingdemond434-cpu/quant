@@ -205,3 +205,17 @@ def test_the_docket_writer_runs_the_census_and_reaims_every_hour(monkeypatch, tm
     assert (hyp / "reaim_ledger.jsonl").read_text("utf-8").count("\n") == 1
     cycle = (_DESK / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '"merge_hypotheses", "research/merge_hypotheses.py"' in cycle
+
+
+def test_inherit_plan_only_hands_down_invariant_rejects_to_unjudged_members() -> None:
+    def cid(sp: dict) -> str:
+        return f"{sp['symbol']}.{sp['family']}.{sorted(sp['params'].items())}"
+    rep = _row("EURUSD", lookback=20)
+    sib = _row("GBPUSD", lookback=30)               # same L2 family, unjudged
+    other = _row("USDJPY", lookback=30)             # different family
+    dsr = _row("XAUUSD", lookback=20)
+    dsr_sib = _row("XAUUSD", lookback=21)
+    idx = {cid(rep): "economic_prior|0", cid(dsr): "deflated_sharpe|0"}
+    plan = hf.inherit_plan([rep, sib, other, dsr, dsr_sib], idx, cid, CL)
+    assert [p["cell"] for p in plan] == [cid(sib)]
+    assert plan[0]["inherited_from"] == cid(rep) and plan[0]["passed"] is False

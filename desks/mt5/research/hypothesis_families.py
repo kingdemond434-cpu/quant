@@ -119,7 +119,8 @@ INSTRUMENT_INVARIANT_GATES = frozenset({"symbol_eligibility"})
 INHERITANCE_RULE = (
     "an EXACT twin (same executable identity) inherits any verdict -- it is the same test. A "
     "non-identical member of an L1 rule or L2 family inherits ONLY a REJECT at a family-invariant "
-    "gate (economic_prior: the family's declared mechanism) or, on the SAME instrument, at an "
+    "gate (economic_prior, only between members with the same mechanism_status, which is all "
+    "that gate reads) or, on the SAME instrument, at an "
     "instrument-invariant gate (symbol_eligibility). A PASS is never inherited, nor any reject at "
     "a parameter-dependent gate (in_sample_screen, deflated_sharpe, cpcv, walk_forward, lockbox, "
     "stress_costs, swap_cost, pbo, spa): those members are judged, after the representative. "
@@ -701,10 +702,55 @@ def inheritable(rep_verdict: Mapping[str, Any], rep: Mapping[str, Any],
     if not same_family:
         return False
     if gate in FAMILY_INVARIANT_GATES:
-        return _fam(rep) == _fam(member)
+        # economic_prior reads the row's own mechanism_status (frontier_identity.economic_prior),
+        # so it is invariant only across members carrying the SAME status.
+        def status(r: Mapping[str, Any]) -> str:
+            st = str(r.get("mechanism_status") or "")
+            return st or ("STATISTICAL_ONLY" if _fam(r) == "discovered" else "NAMED")
+        return _fam(rep) == _fam(member) and status(rep) == status(member)
     if gate in INSTRUMENT_INVARIANT_GATES:
         return _sym(rep).upper() == _sym(member).upper()
     return False
+
+
+def inherit_plan(specs: list[dict[str, Any]], verdict_index: Mapping[str, str],
+                 cell_id_fn: Callable[[dict[str, Any]], str],
+                 clusters: Mapping[str, str] | None = None) -> list[dict[str, Any]]:
+    """Which UNJUDGED specs may inherit a judged family member's verdict under INHERITANCE_RULE.
+
+    `verdict_index` is the sealed judge's own `gate_verdict_index.json` ({cell: "gate|passed"}).
+    A representative is a judged spec whose recorded verdict is a REJECT at an invariant gate; an
+    inheritor is a spec in the same L2 family with no recorded verdict. Returns one synthetic
+    verdict per inheritor, carrying `inherited_from` -- the caller records it on the graph and
+    the gate ledger exactly as a judged verdict, so the trial count is unchanged."""
+    cl = clusters or {}
+    reps: dict[int, tuple[dict[str, Any], str, str]] = {}
+    pending: list[tuple[dict[str, Any], str]] = []
+    for sp in specs:
+        try:
+            cell = cell_id_fn(sp)
+        except Exception:
+            continue
+        key = verdict_index.get(cell)
+        if key is None:
+            pending.append((sp, cell))
+            continue
+        gate, _, passed = str(key).partition("|")
+        if passed == "0" and gate in FAMILY_INVARIANT_GATES | INSTRUMENT_INVARIANT_GATES:
+            reps.setdefault(hash(family_key(sp, cl)), (sp, cell, gate))
+    out: list[dict[str, Any]] = []
+    for sp, cell in pending:
+        got = reps.get(hash(family_key(sp, cl)))
+        if got is None:
+            continue
+        rep, rep_cell, gate = got
+        if not inheritable({"passed": False, "terminal_gate": gate}, rep, sp, cl):
+            continue
+        out.append({"cell": cell, "sym": _sym(sp), "family": _fam(sp),
+                    "params": dict(sp.get("params") or {}), "passed": False,
+                    "terminal_gate": gate, "inherited_from": rep_cell,
+                    "inheritance_rule": "family_invariant_reject"})
+    return out
 
 
 # ------------------------------------------------------------------ upstream: check + re-aim
@@ -1045,6 +1091,7 @@ __all__ = [
     "family_key",
     "family_split",
     "identity",
+    "inherit_plan",
     "inheritable",
     "load_clusters",
     "mechanism_line",
