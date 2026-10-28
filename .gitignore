@@ -520,6 +520,11 @@ desks/mt5/data/hypotheses/shard_verdicts/
 # The sidecar AND its markers (.born, .torn-*, .vanished-*, .tmp, .lock): box-local state; a
 # committed marker reads VANISHED in every other checkout (audit of fcef73b92).
 desks/mt5/data/hypotheses/needs_data_outstanding.json*
+# build_input_probe's box-local state beside the bank (judge_coverage v1.1): the backstop's
+# releases and the parked rows effective_trials still counts. Written by the hourly pass on the
+# host that reads them; never published by a git add sweep.
+desks/mt5/data/hypotheses/build_input_released.json*
+desks/mt5/data/hypotheses/build_input_parked_trials.json*
 # THE OPEN BOOK, PER POSITION (ops/publish_account_state.py, 2026-10-07). The repository is
 # public: tickets, sizes and stops never reach a tracked file. Last line on purpose, after every
 # negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.
