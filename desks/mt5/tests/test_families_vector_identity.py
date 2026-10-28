@@ -95,11 +95,12 @@ def _assert_identical(monkeypatch: pytest.MonkeyPatch, fn, *args, **kw) -> int:
 def test_switch_reads_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(families_vector.ENV, raising=False)
     assert families_vector.enabled()
-    for off in ("0", "false", "OFF", " no "):
+    for off in ("0", "00", "0.0", "-0", "false", "OFF", " no ", "Disabled", "FALSE"):
         monkeypatch.setenv(families_vector.ENV, off)
-        assert not families_vector.enabled()
-    monkeypatch.setenv(families_vector.ENV, "1")
-    assert families_vector.enabled()
+        assert not families_vector.enabled(), off
+    for on in ("1", "true", "yes", "on", "", "2", "0.5"):
+        monkeypatch.setenv(families_vector.ENV, on)
+        assert families_vector.enabled(), on
 
 
 def test_true_range_is_bit_identical_on_every_local_chart(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -302,3 +303,42 @@ def test_fast_path_exceptions_are_counted_and_answered_by_the_original(
     assert families_vector.fallback_counts() == {"ict_fvg": 3}
     assert sum("ict_fvg fast path raised" in r.getMessage() for r in caplog.records) == 1
     assert families_vector.mode()["fallbacks"] == {"ict_fvg": 3}
+
+
+def _box_check():
+    scripts = DESK / "scripts"
+    if str(scripts) not in sys.path:
+        sys.path.insert(0, str(scripts))
+    import check_vector_families
+    return check_vector_families
+
+
+def test_box_check_unreadable_parquet_is_unmeasured(monkeypatch: pytest.MonkeyPatch,
+                                                    tmp_path: Path) -> None:
+    chk = _box_check()
+    (tmp_path / "EURUSD_H1.parquet").write_bytes(b"not a parquet")
+    monkeypatch.setattr(chk, "UNIVERSE", tmp_path)
+    report = chk.run()
+    assert report["verdict"] == "UNMEASURED" and report["unreadable"]
+    monkeypatch.setattr(chk, "run", lambda: report)
+    assert chk.main([]) == 2
+
+
+def test_box_check_vacuous_pass_is_unmeasured(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every case raising (0 signals) or no fast path engaging must not read IDENTICAL."""
+    _frame("EURUSD_H1")
+    chk = _box_check()
+    monkeypatch.setattr(chk, "CHARTS", ("EURUSD_H1",))
+    monkeypatch.setattr(chk, "HOSTILE", [])
+    monkeypatch.setattr(chk, "CASES", [("ict_fvg", {"ema_slow": "34"})])   # raises both ways
+    report = chk.run()
+    assert report["signals"] == 0 and report["verdict"] == "UNMEASURED", report
+    monkeypatch.setattr(chk, "CASES", [("ict_fvg", {})])
+    real = families_vector.ict_fvg_emit
+    monkeypatch.setattr(families_vector, "ict_fvg_emit", lambda **_: None)  # fast path declines
+    report = chk.run()
+    assert report["signals"] > 0 and report["not_engaged"] == ["ict_fvg"]
+    assert report["verdict"] == "UNMEASURED"
+    monkeypatch.setattr(families_vector, "ict_fvg_emit", real)
+    report = chk.run()
+    assert report["verdict"] == "IDENTICAL" and report["fast_path_engaged"].get("ict_fvg", 0) > 0

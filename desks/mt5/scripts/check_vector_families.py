@@ -17,8 +17,10 @@ vectorised family on a handful of parameter sets, `_atr`, and the hostile inputs
 audit named (NaT stamps, nullable/object dtypes, duplicated columns), each run with the switch
 OFF then ON in this process. Well under two minutes on either box.
 
-Exit 0: every case identical. Exit 1: a mismatch -- set `MT5_VECTOR_FAMILIES=0` for the judge
-and the gateway and report the JSON. Exit 2: UNMEASURED (no parquets here), which is not a pass.
+Exit 0: every case identical, signals were compared (> 0) and every family's fast path actually
+answered at least once. Exit 1: a mismatch -- set `MT5_VECTOR_FAMILIES=0` for the judge and the
+gateway and report the JSON. Exit 2: UNMEASURED (no parquets, an unreadable parquet, no signals
+compared, or a fast path that never engaged), which is not a pass.
 The JSON names python / pandas / numpy versions and the switch's mode as read now, so the
 artifact is also the attestation of which path a box was running.
 """
@@ -121,6 +123,41 @@ def _diff(old: Any, new: Any) -> str | None:
     return None
 
 
+class _Engagement:
+    """Counts, per family, the switch-ON calls whose fast path answered (returned not None).
+
+    An IDENTICAL verdict over cases where every fast path declined would compare the original
+    loop with itself: a vacuous pass. The hooks reach each fast function as a module attribute
+    (`_vec.<family>_emit`, `_vec.true_range`), so wrapping the attributes here observes them
+    without touching the families."""
+
+    def __init__(self) -> None:
+        self.counts: dict[str, int] = {}
+        self._saved: dict[str, Any] = {}
+        for attr in dir(families_vector):
+            if attr.endswith("_emit") or attr == "true_range":
+                family = "_atr" if attr == "true_range" else attr[:-len("_emit")]
+                fn = getattr(families_vector, attr)
+                self._saved[attr] = fn
+                setattr(families_vector, attr, self._wrap(family, fn))
+
+    def _wrap(self, family: str, fn: Any) -> Any:
+        def counted(*args: Any, **kwargs: Any) -> Any:
+            out = fn(*args, **kwargs)
+            if out is not None and families_vector.enabled():
+                self.counts[family] = self.counts.get(family, 0) + 1
+            return out
+        return counted
+
+    def restore(self) -> None:
+        for attr, fn in self._saved.items():
+            setattr(families_vector, attr, fn)
+
+
+def _count_engagement() -> _Engagement:
+    return _Engagement()
+
+
 def _hostile(df: pd.DataFrame) -> dict[str, pd.DataFrame]:
     df = df.iloc[:3000]
     stamps = df.index.to_numpy().copy()
@@ -143,12 +180,22 @@ def run() -> dict[str, Any]:
         "numpy": np.__version__,
         "mode_as_found": families_vector.mode(),
         "charts": [], "cases": 0, "signals": 0, "mismatches": [], "verdict": "UNMEASURED",
+        "unreadable": [], "fast_path_engaged": {}, "not_engaged": [], "unmeasured_because": [],
     }
+    engaged = _count_engagement()
     charts = [c for c in CHARTS if (UNIVERSE / f"{c}.parquet").exists()][:MAX_CHARTS]
     report["charts"] = charts
     try:
-        for k, chart in enumerate(charts):
-            df = pd.read_parquet(UNIVERSE / f"{chart}.parquet")
+        first = True
+        for chart in charts:
+            try:
+                df = pd.read_parquet(UNIVERSE / f"{chart}.parquet")
+            except Exception as exc:  # unreadable is UNMEASURED, never a mismatch
+                report["unreadable"].append({"chart": chart, "error": type(exc).__name__,
+                                             "detail": str(exc)[:200]})
+                continue
+            k = 0 if first else 1
+            first = False
             jobs: list[tuple[str, str, Any, pd.DataFrame, dict[str, Any]]] = [
                 (chart, name, _fam(name), df, kw) for name, kw in CASES]
             jobs += [(chart, "_atr", lambda f, n: families._atr(families._h1(f), n), df, {"n": n})
@@ -170,13 +217,30 @@ def run() -> dict[str, Any]:
                                                  "params": {q: str(v) for q, v in kw.items()},
                                                  "why": why})
     finally:
+        engaged.restore()
         if prior is None:
             os.environ.pop(families_vector.ENV, None)
         else:
             os.environ[families_vector.ENV] = prior
     report["fast_path_exceptions"] = families_vector.fallback_counts()
-    if charts:
-        report["verdict"] = "IDENTICAL" if not report["mismatches"] else "MISMATCH"
+    report["fast_path_engaged"] = dict(engaged.counts)
+    report["not_engaged"] = sorted({name for name, _ in CASES}
+                                   - {f for f, n in engaged.counts.items() if n > 0})
+    why = report["unmeasured_because"]
+    if not charts:
+        why.append("no universe parquets in this checkout")
+    if report["unreadable"]:
+        why.append(f"{len(report['unreadable'])} parquet(s) unreadable")
+    if report["signals"] <= 0:
+        why.append("no signals compared (every case raised or was empty)")
+    if report["not_engaged"]:
+        why.append(f"fast path never engaged for: {', '.join(report['not_engaged'])}")
+    if report["mismatches"]:
+        report["verdict"] = "MISMATCH"
+    elif why:
+        report["verdict"] = "UNMEASURED"
+    else:
+        report["verdict"] = "IDENTICAL"
     report["seconds"] = round(time.perf_counter() - started, 1)
     return report
 

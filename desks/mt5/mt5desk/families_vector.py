@@ -45,10 +45,28 @@ ENV = "MT5_VECTOR_FAMILIES"
 _NUM = (int, float, np.integer, np.floating)
 
 
+#: Spellings of OFF, compared case-insensitively after stripping. Any number equal to zero
+#: ("0", "00", "0.0", "-0") is off too, so an operator's "0.0" never silently reads as on.
+OFF_WORDS = frozenset({"0", "false", "off", "no", "disabled"})
+
+
+def is_off(value: str | None) -> bool:
+    """True when `value` is one of OFF_WORDS or a number equal to zero. Unset is ON."""
+    if value is None:
+        return False
+    v = value.strip().lower()
+    if v in OFF_WORDS:
+        return True
+    try:
+        return float(v) == 0.0
+    except ValueError:
+        return False
+
+
 def enabled() -> bool:
-    """True unless `MT5_VECTOR_FAMILIES` is set to an off spelling. Read per call, so a test or
-    an operator can flip it without restarting the process."""
-    return os.environ.get(ENV, "1").strip().lower() not in ("0", "false", "off", "no")
+    """True unless `MT5_VECTOR_FAMILIES` is set to an off spelling (`is_off`). Read per call, so
+    a test or an operator can flip it without restarting the process."""
+    return not is_off(os.environ.get(ENV))
 
 
 def _num(*values: Any) -> bool:
