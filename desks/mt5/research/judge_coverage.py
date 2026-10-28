@@ -287,11 +287,15 @@ class _LedgerScan:
     original OSError branch over the rows read before the error.
     """
 
-    __slots__ = ("cell_seen", "err", "judged_at", "judged_total", "live_at", "passed", "tail")
+    __slots__ = ("cell_ruled", "cell_seen", "err", "judged_at", "judged_total", "live_at",
+                 "passed", "tail")
 
     def __init__(self, path: Path) -> None:
         self.err = False
         self.cell_seen: set[str] = set()
+        #: every cell the judge recorded ANY fate for (gate-0 reject, UNKNOWN or ten-gate; never a
+        #: NOT_RUN deferral) -- what `judge_prescreen` may never kill and must hand a charge to.
+        self.cell_ruled: set[str] = set()
         #: per family, rows that carry a real verdict (judged_index's all-time count; the
         #: realised pass rates' denominator is the same filter).
         self.judged_total: dict[str, int] = {}
@@ -309,6 +313,7 @@ class _LedgerScan:
         judged_append = self.judged_at.append
         live_append = self.live_at.append
         total, passed, seen = self.judged_total, self.passed, self.cell_seen
+        ruled = self.cell_ruled
         try:
             with path.open("r", encoding="utf-8", errors="replace") as fh:
                 for raw in fh:
@@ -325,6 +330,8 @@ class _LedgerScan:
                     if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
                         continue
                     ok = row.get("passed")
+                    if row.get("cell"):
+                        ruled.add(str(row["cell"]))
                     unk = ok is not True and str(row.get("terminal_gate") or "") in ("", "UNKNOWN")
                     raw_at = row.get("at")
                     try:
@@ -3585,7 +3592,8 @@ def fireability_order(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
                  "skipped, every row still judged and counted by the sealed judge in its turn")}
 
 
-def _prescreen(rows: list[dict[str, Any]], *, publish: bool
+def _prescreen(rows: list[dict[str, Any]], *, publish: bool,
+               seconds_per_cell: float | None = None
                ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """`judge_prescreen.intake` on the docket, or the rows untouched when it cannot run."""
     try:
@@ -3593,9 +3601,15 @@ def _prescreen(rows: list[dict[str, Any]], *, publish: bool
             import judge_prescreen as _jp
         except ImportError:                                    # pragma: no cover - import context
             from research import judge_prescreen as _jp  # type: ignore[no-redef]
+        # THE JUDGE'S RULED SET, from this pass's memoised ledger scan: a row the judge already
+        # ruled is never screened, and a charged kill the judge has since ruled hands its trial
+        # over (exactly once). Unreadable -> None, and the screen then kills nothing.
+        scan = _ledger_scan(GATE_LEDGER)
+        ruled = None if scan is None or scan.err else scan.cell_ruled
         return _jp.intake(rows, cell_of=lambda r: r.get("_cell") or _cell_id(r),
-                          probe=_fire_probe, publish=publish)
-    except Exception as exc:                                   # never costs the docket
+                          probe=_fire_probe, publish=publish, ruled=ruled,
+                          seconds_per_cell=seconds_per_cell)
+    except (Exception, SystemExit) as exc:                     # never costs the docket
         return rows, {"mode": "UNMEASURED", "removed_from_docket": 0,
                       "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
 
@@ -3644,10 +3658,13 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         # THE PRE-BUILD SCREEN (research/judge_prescreen, principal 2026-10-28), AFTER the bank
         # filter so it never re-decides a parked cell. SHADOW by default: the rows come back
         # untouched and JUDGE_PRESCREEN_INTAKE.json records what each rule WOULD remove. Only
-        # with data/JUDGE_PRESCREEN_CANON.json {"enabled": true} AND a rule the hourly replay
-        # names canon-ready does a row leave here -- as a recorded terminal verdict that is
-        # charged as one lifetime trial, never silently. Fails open: any error ships the rows.
-        rows, doc["prescreen"] = _prescreen(rows, publish=publish)
+        # when the code constant judge_prescreen.CANON is flipped by a reviewed commit does a
+        # canon-eligible rule remove a row -- after its KILL is durable in the kill ledger, as
+        # a recorded terminal verdict charged exactly once. Fails open: any error ships the rows.
+        _cap = int((doc.get("totals") or {}).get("capacity_measured") or 0)
+        rows, doc["prescreen"] = _prescreen(
+            rows, publish=publish,
+            seconds_per_cell=judge_seconds_per_cell(_cap) if _cap else None)
         judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
         study = [r for r in rows if str(r.get("family") or "") in banned]
         # CHARGE VARIANTS AGAINST THEIR PARENT. The split marks the rows; the two orders below
