@@ -4189,7 +4189,7 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
                                                       / PARKED_TRIAL_ROWS.name):
             _write_parked_trials([], None)
         for _r in entry_rows:
-            for _k in ("_cell", "_variant", "_keff", "_occ", "_orth"):
+            for _k in ("_cell", "_variant", "_keff", "_occ", "_orth", "_famdup"):
                 _r.pop(_k, None)
         return entry_rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
