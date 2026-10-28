@@ -846,12 +846,19 @@ def main() -> int:
     # counted as a fresh discovery; freshness still governs provenance, never capacity.
     banked = _read(TARGET)
     readmitted = 0
+    # WHAT THIS PASS'S PRODUCERS EMITTED, before the bank is unioned in: an identity the bank
+    # already holds is an EXACT re-proposal (collapsed below, and until 2026-10-28 counted by
+    # nothing); the rest is fresh. `hypothesis_families` checks both against what was mined.
+    produced_now = set(merged)
+    reproposed: set[str] = set()
     if isinstance(banked, list):
         for row in banked:
             if not isinstance(row, dict):
                 continue
             ident = _identity(row)
             if ident in merged:
+                if ident in produced_now:
+                    reproposed.add(ident)
                 merged[ident].setdefault("first_seen", row.get("first_seen")
                                          or row.get("merged_at") or now.isoformat())
                 continue
@@ -983,6 +990,36 @@ def main() -> int:
         print(f"   study bank: {len(study)} row(s) of banned families "
               f"{sorted(banned_families)} routed OUT of the judging docket (kept, never "
               f"deleted) -> {STUDY_BANK.name}")
+
+    # BREADTH IN INDEPENDENT FAMILIES, AND DUPLICATES RE-AIMED (principal 2026-10-28: "avoid
+    # duplicates already mined or similar ... millions of independent cells edges instead of
+    # same"). Every fresh row is checked against what was mined before it (EXACT / NEAR rule /
+    # same correlation-cluster FAMILY / NOVEL); a duplicate is KEPT and a re-aimed descendant is
+    # minted beside it on the thinnest lawful instrument whose cluster holds none of its rule, so
+    # the mint rate can only rise. The census (raw cells vs rules vs families vs k_eff, the daily
+    # new-independent metric, mechanism coverage, steering) goes to reports/HYPOTHESIS_FAMILIES.
+    # Runs AFTER the lane router, so a re-aim target is an instrument the same family already
+    # runs on in the judging lane. A fault costs the census and the re-aim, never a row.
+    families: dict[str, Any] = {"status": "UNAVAILABLE"}
+    families_pending: Any = None
+    try:
+        import sys as _sys
+        for _p in (str(BASE), str(BASE.parents[1])):
+            if _p not in _sys.path:
+                _sys.path.insert(0, _p)
+        from research import hypothesis_families as _hf
+        rows_out, families, families_pending = _hf.apply(
+            rows_out, fresh=produced_now - reproposed, reproposed=reproposed,
+            identity_fn=_identity, now=now, hyp_dir=HYP,
+            report_path=(None if HYP == BASE / "data" / "hypotheses"
+                         else HYP / _hf.REPORT.name))
+        _in = families.get("intake") or {}
+        print(f"   families: {families.get('raw_cells')} cells -> {families.get('l1_rules')} "
+              f"rules -> {families.get('l2_families')} families, k_eff {families.get('k_eff')}; "
+              f"intake {_in.get('by_status')} -> {_in.get('reaimed')} re-aimed (0 removed)")
+    except Exception as exc:
+        families = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   families census unavailable ({type(exc).__name__}: {exc}); rows unchanged")
 
     # ORDER IS SELECTION: the gauntlet takes this file in order under a bar budget, so a family
     # at the tail is not "lower priority", it is never judged at all.
@@ -1122,6 +1159,15 @@ def main() -> int:
         print(f"   preregistration unavailable ({type(exc).__name__}: {exc}); docket unstamped")
     _write_docket_atomically(TARGET, rows_out)
     _lease(TARGET)
+    # THE FAMILIES REPORT, THEN THE RE-AIM LEDGER -- ONLY NOW, after the docket is durable, and
+    # only for children that survived into the rows just written (order_docket can filter some).
+    # The ledger is the one memory of "re-aimed once, ever"; it must never claim a child that the
+    # written docket does not hold.
+    if families_pending is not None:
+        try:
+            families["commit"] = families_pending.commit(rows_out)
+        except Exception as exc:
+            families["commit"] = {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
     (HYP / "merge_report.json").write_text(json.dumps({
         "merged_at": now.isoformat(timespec="seconds"),
         "pipeline_started_at": started_at.isoformat(timespec="seconds") if started_at else None,
@@ -1180,6 +1226,7 @@ def main() -> int:
                           ("status", "legless_before", "filled", "unfilled",
                            "unfilled_by_reason", "legless_after")},
         "claim_selection": claim_selection,
+        "hypothesis_families": families,
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
                  "reach live capital reaches the ten-gate gauntlet, which is the only arbiter; "
                  "a live-banned family is routed to the study bank, never judged and never "
