@@ -253,6 +253,9 @@ TASK name="E8-Spreads" trigger="every 1 hour, at :02" runs="desks/mt5/prop/e8_sp
 # MT5-E8WindowGuard is REQUIRED (components.REQUIRED_TASKS): it cancels orders, so a stopped guard
 # must alarm. The lane column stays "prop" because that is the lane it serves.
 TASK name="MT5-FTMOFollow" trigger="every 1 minute" runs="desks/mt5/scripts/watchers/ftmo_follow.py" installer="desks/mt5/scripts/install_box_watchers_canon.ps1" lane="prop"
+# The FTMO follower (prop/ftmo_follower.py), the gold_oco "ftmo" lane; distinct from the MT5-FTMOFollow
+# watcher above. Read off the box 2026-10-28: Ready, every minute, last result 0.
+TASK name="MT5-FTMO-Follower" trigger="every 1 minute" runs="desks/mt5/prop/ftmo_follower.py" installer="desks/mt5/scripts/install_ftmo_follower_task.ps1" lane="prop"
 TASK name="MT5-E8WindowGuard" trigger="every 1 minute" runs="desks/mt5/scripts/watchers/e8_window_guard.py" installer="desks/mt5/scripts/install_box_watchers_canon.ps1" lane="prop"
 TASK name="MT5-Healers" trigger="every 1 hour, at :48" runs="ops/run_healers.cmd" installer="NONE" lane="research"
 # Referenced by ops/run_gold_hour_sweep.cmd; not installed on the box 2026-09-16, cadence unknown.
