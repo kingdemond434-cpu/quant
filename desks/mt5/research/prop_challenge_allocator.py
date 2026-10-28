@@ -860,7 +860,7 @@ def write_gap_requests(uni: dict[str, Any], now: datetime,
         tmp = path.with_suffix(".tmp")
         tmp.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
         os.replace(tmp, path)
-        wrote = str(path.relative_to(BASE))
+        wrote = path.relative_to(BASE).as_posix() if path.is_relative_to(BASE) else str(path)
     except OSError as exc:
         wrote = f"unwritten ({type(exc).__name__})"
     return {"listed": len(listing), "covered_tier_s": sorted(covered), "gap_symbols": len(gaps),

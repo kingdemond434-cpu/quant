@@ -176,7 +176,7 @@ def test_the_phase_advances_only_after_a_pass() -> None:
                             flat=True, rules=R)
     p, why, chain = fvr.infer_phase(chain, "k2", balance=100_000, initial=100_000, declared=None,
                                     first_balance_at="2026-12-01", rules=R)
-    assert p == "phase2" and "PASSED" in why
+    assert p == "phase2" and "seen to PASS" in why and chain["accounts"]["k2"]["established"]
     p, _, chain = fvr.infer_phase(chain, "k3", balance=100_000, initial=100_000, declared=None,
                                   first_balance_at="2027-01-10", rules=R)
     assert p == "phase2"                           # phase 2 never passed: a retry ...
