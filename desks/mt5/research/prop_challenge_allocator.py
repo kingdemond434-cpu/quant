@@ -739,6 +739,7 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
         doc["status"] = uni["status"]
         doc["validation_score"] = 0.0
         doc["deployable"] = False
+        doc["rail_blocks"] = rail_blocks(uni)
         return doc
     cols, r = uni["cols"], uni["r"]
     solve_w, valid_w = make_worlds(r, n_paths, SIM_DAYS, seed)
