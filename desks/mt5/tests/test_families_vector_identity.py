@@ -73,7 +73,7 @@ def _run(monkeypatch: pytest.MonkeyPatch, flag: str, fn, *args, **kw):
     monkeypatch.setenv(families_vector.ENV, flag)
     try:
         return list(fn(*args, **kw) or [])
-    except Exception as exc:  # noqa: BLE001 - the exception IS the answer being compared
+    except Exception as exc:  # the exception IS the answer being compared
         return ("raised", type(exc).__name__, str(exc))
 
 
@@ -191,8 +191,8 @@ def test_multi_speed_trend(monkeypatch: pytest.MonkeyPatch, frames) -> None:
 
 
 FORMULA_EXPRS = ("div(open, bars_since_min(high, 5))", "sub(close, open)",
-                 ["sub", "high", "low"], ["neg", ["delta", "spread", 5]], ["ts_rank", "spread", 240],
-                 "close")
+                 ["sub", "high", "low"], ["neg", ["delta", "spread", 5]],
+                 ["ts_rank", "spread", 240], "close")
 
 
 def test_formula(monkeypatch: pytest.MonkeyPatch, frames) -> None:
@@ -223,3 +223,82 @@ def test_unexpected_inputs_take_the_original_path(monkeypatch: pytest.MonkeyPatc
     ]
     for fn, frame, kw in cases:
         _assert_identical(monkeypatch, fn, frame, **kw)
+
+
+def _hostile_frames(df: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    """The input classes the 2026-10-28 audit found unguarded, plus their neighbours."""
+    df = df.iloc[:3000]
+    out: dict[str, pd.DataFrame] = {}
+    stamps = df.index.to_numpy().copy()
+    stamps[[0, 100, 1500]] = np.datetime64("NaT", "ns")
+    out["nat"] = df.set_axis(pd.DatetimeIndex(stamps, tz=df.index.tz), axis=0)
+    ohlc = ["open", "high", "low", "close"]
+    out["nullable_float"] = df.astype(dict.fromkeys(ohlc, "Float64"))
+    out["nullable_all"] = df.convert_dtypes()
+    out["object_close"] = df.astype({"close": object})
+    if "spread" in df.columns:
+        out["nullable_spread"] = df.astype({"spread": "Float64"})
+    out["dup_high"] = pd.concat([df, df[["high"]]], axis=1)
+    out["dup_close"] = pd.concat([df, df[["close"]] * 1.0001], axis=1)
+    return out
+
+
+HOSTILE_CASES = (
+    (lambda: families.family_session_range_breakout, {"midpoint_filter": "prev_day"}),
+    (lambda: families.family_session_range_breakout,
+     {"range_filter": "large", "spread_gate": True}),
+    (lambda: families.family_failed_breakout, {}),
+    (lambda: families.family_failed_breakout, {"spread_gate": True, "level": "pwh"}),
+    (lambda: families.family_ict_fvg, {}),
+    (lambda: family_multi_speed_trend, {"hold_days": 1, "min_agreement": 0.5}),
+    (lambda: family_formula, {"expr": "sub(close, open)", "entry_z": 0.5}),
+    (lambda: family_formula, {"expr": ["neg", ["delta", "spread", 5]]}),
+)
+
+
+def test_nat_nullable_and_duplicate_columns_take_the_original_path(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """NaT stamps, nullable/extension/object dtypes and duplicated column labels: the original
+    loop answers (same signals, or the same exception) for every wave-1 family and for `_atr`."""
+    hostile = _hostile_frames(_frame("EURUSD_H1"))
+    for label, frame in hostile.items():
+        for get_fn, kw in HOSTILE_CASES:
+            _assert_identical(monkeypatch, get_fn(), frame, **kw)
+        for n in (1, 14):
+            old = _run(monkeypatch, "0", lambda f, k: [families._atr(f, k)], frame, n)
+            new = _run(monkeypatch, "1", lambda f, k: [families._atr(f, k)], frame, n)
+            if isinstance(old, tuple) or isinstance(new, tuple):
+                assert old == new, label
+            else:
+                assert old[0].index.equals(new[0].index), label
+                assert old[0].dtype == new[0].dtype, label
+                assert old[0].to_numpy().tobytes() == new[0].to_numpy().tobytes(), label
+
+
+def test_duplicate_high_raises_the_original_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    df = _frame("EURUSD_H1").iloc[:500]
+    dup = pd.concat([df, df[["high"]]], axis=1)
+    old = _run(monkeypatch, "0", lambda f: [families._atr(f, 14)], dup)
+    new = _run(monkeypatch, "1", lambda f: [families._atr(f, 14)], dup)
+    assert isinstance(old, tuple) == isinstance(new, tuple)
+    if isinstance(old, tuple):
+        assert old == new
+
+
+def test_fast_path_exceptions_are_counted_and_answered_by_the_original(
+        monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+    df = _frame("EURUSD_H1").iloc[:2000]
+    monkeypatch.setenv(families_vector.ENV, "0")
+    want = families.family_ict_fvg(df)
+
+    def boom(**_: object) -> None:
+        raise RuntimeError("probe")
+    monkeypatch.setattr(families_vector, "ict_fvg_emit", boom)
+    monkeypatch.setattr(families_vector, "_FALLBACKS", {})
+    monkeypatch.setenv(families_vector.ENV, "1")
+    with caplog.at_level("WARNING", logger="mt5desk.families_vector"):
+        got = [families.family_ict_fvg(df) for _ in range(3)]
+    assert all(g == want for g in got)
+    assert families_vector.fallback_counts() == {"ict_fvg": 3}
+    assert sum("ict_fvg fast path raised" in r.getMessage() for r in caplog.records) == 1
+    assert families_vector.mode()["fallbacks"] == {"ict_fvg": 3}

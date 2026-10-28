@@ -17,8 +17,8 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from mt5desk.engine import Signal
 from mt5desk import families_vector as _vec
+from mt5desk.engine import Signal
 from mt5desk.universe_registry import TIMEFRAME_MINUTES
 
 try:
@@ -239,7 +239,11 @@ def _atr(df: pd.DataFrame, n: int = 14) -> pd.Series:
     """Average True Range."""
     if _vec.enabled():
         # Speed only: the same true-range values without the concat (families_vector).
-        fast = _vec.true_range(df)
+        try:
+            fast = _vec.true_range(df)
+        except Exception as exc:
+            _vec.fell_back("_atr", exc)
+            fast = None
         if fast is not None:
             return fast.rolling(n, min_periods=1).mean()
     h, l, c = df["high"], df["low"], df["close"].shift(1)
@@ -704,7 +708,8 @@ def family_session_range_breakout(
                 signal_at=signal_at, wait_bars=wait_bars, ttl_bars=ttl_bars, rr=rr,
                 spread_gate=spread_gate, trend_filter=trend_filter, range_filter=range_filter,
                 vol_filter=vol_filter, midpoint_filter=midpoint_filter)
-        except Exception:
+        except Exception as exc:
+            _vec.fell_back("session_range_breakout", exc)
             fast = None
         if fast is not None:
             return fast
@@ -986,7 +991,8 @@ def family_failed_breakout(
             fast = _vec.failed_breakout_emit(
                 h1=h1, atr=atr, signal_hours=signal_hours, spread_gate=spread_gate,
                 min_pierce_atr=min_pierce_atr, ttl_bars=ttl_bars, rr=rr, level=level)
-        except Exception:
+        except Exception as exc:
+            _vec.fell_back("failed_breakout", exc)
             fast = None
         if fast is not None:
             return fast
@@ -1657,7 +1663,8 @@ def family_ict_fvg(
             fast = _vec.ict_fvg_emit(h1=h1, a=a, f=f, s=s, o_arr=o_arr, h_arr=h_arr,
                                      l_arr=l_arr, c_arr=c_arr, ema_slow=ema_slow,
                                      atr_n=atr_n, ttl_bars=ttl_bars, rr=rr)
-        except Exception:
+        except Exception as exc:
+            _vec.fell_back("ict_fvg", exc)
             fast = None
         if fast is not None:
             return fast

@@ -91,7 +91,8 @@ def family_formula(
             fast = _vec.formula_emit(z=z, atr=atr, close=close, idx=idx, norm=norm,
                                      entry_z=entry_z, hold_bars=hold_bars, flip=flip,
                                      side_mode=side_mode, stop_atr=stop_atr, rr=rr)
-        except Exception:
+        except Exception as exc:
+            _vec.fell_back("formula", exc)
             fast = None
         if fast is not None:
             return fast

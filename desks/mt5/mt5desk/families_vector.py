@@ -30,6 +30,7 @@ Measured cost per built cell, family code only, before -> after: see
 """
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any
 
@@ -55,9 +56,72 @@ def _num(*values: Any) -> bool:
 
 
 def _utc_ns(index: Any) -> bool:
-    """The clock `_h1` promises: a tz-aware UTC DatetimeIndex at nanoseconds."""
+    """The clock `_h1` promises: a tz-aware UTC DatetimeIndex at nanoseconds, with no NaT.
+
+    A NaT stamp survives `_h1` and the originals give it meaning of their own (`ts.hour` and
+    `ts.date()` on NaT, a NaN day key in a groupby); the integer day numbers here would make it
+    a fake first day instead (audit 2026-10-28, must-fix 1). Such a frame takes the original.
+    """
     return (isinstance(index, pd.DatetimeIndex) and index.tz is not None
-            and str(index.tz) == "UTC" and str(index.unit) == "ns")
+            and str(index.tz) == "UTC" and str(index.unit) == "ns" and not index.hasnans)
+
+
+def _plain(values: Any) -> bool:
+    """A numpy int or float Series/array: the only dtypes the fast paths are proved on.
+
+    pandas' nullable and extension dtypes (`Float64`, `Int64`, `float64[pyarrow]`), object and
+    bool columns behave differently under the originals' arithmetic and comparisons, and
+    differently again between pandas versions -- the original raised `TypeError` on nullable
+    EURUSD_H1 where a fast path returned 856 signals (audit 2026-10-28, must-fix 2). They all
+    take the original loop, which decides what they mean.
+    """
+    dtype = getattr(values, "dtype", None)
+    return isinstance(dtype, np.dtype) and dtype.kind in "fiu"
+
+
+def _plain_frame(frame: Any, columns: tuple[str, ...], *optional: str) -> bool:
+    """Unique column labels, every named column present as a plain numpy int/float Series, and
+    each optional column (when present) the same. A duplicated label makes `frame[col]` a
+    DataFrame, which the originals handle (or raise on) in their own way."""
+    if not isinstance(frame, pd.DataFrame) or not frame.columns.is_unique:
+        return False
+    for col in columns:
+        if col not in frame.columns or not _plain(frame[col]):
+            return False
+    return all(col not in frame.columns or _plain(frame[col]) for col in optional)
+
+
+_OHLC = ("open", "high", "low", "close")
+
+#: Fast-path exceptions, per family, for the life of the process. A fast path that raises is
+#: never the answer: the caller runs the original loop, so the signals are the original's either
+#: way. But a fast path that raises on real inputs is a path that is not doing its job, so it is
+#: counted here and logged ONCE per family per process (audit 2026-10-28, should-fix 1).
+_FALLBACKS: dict[str, int] = {}
+_LOG = logging.getLogger("mt5desk.families_vector")
+
+
+def fell_back(family: str, exc: BaseException) -> None:
+    """Record that `family`'s fast path raised and the original loop is answering instead."""
+    seen = _FALLBACKS.get(family, 0)
+    _FALLBACKS[family] = seen + 1
+    if seen == 0:
+        _LOG.warning("families_vector: %s fast path raised %s (%s); the original loop answered. "
+                     "Counted per process, logged once per family.", family,
+                     type(exc).__name__, str(exc)[:200])
+
+
+def fallback_counts() -> dict[str, int]:
+    return dict(_FALLBACKS)
+
+
+def mode() -> dict[str, Any]:
+    """What this process is running, for an attestation or report: the switch as read now, its
+    raw value, and the fast-path exceptions counted so far. The replay cache key is sealed
+    (`external_gauntlet._replay_code_identity`) and does not carry this; whoever attests a run
+    records it from here."""
+    return {"env": ENV, "raw": os.environ.get(ENV), "enabled": enabled(),
+            "fallbacks": fallback_counts()}
 
 
 def _hours(index: pd.DatetimeIndex) -> np.ndarray:
@@ -124,9 +188,14 @@ def true_range(df: pd.DataFrame) -> pd.Series | None:
     The differences and absolute values are the same numpy operations pandas performs. Same
     index, same (absent) name, float64. Only float64 columns on a unique index take this path.
     """
+    if not isinstance(df, pd.DataFrame) or not df.columns.is_unique:
+        return None                      # a duplicated label: the original raises its own error
     try:
         h_s, l_s, c_s = df["high"], df["low"], df["close"]
     except KeyError:
+        return None
+    if not (isinstance(h_s.dtype, np.dtype) and isinstance(l_s.dtype, np.dtype)
+            and isinstance(c_s.dtype, np.dtype)):
         return None
     if not (h_s.dtype == np.float64 and l_s.dtype == np.float64 and c_s.dtype == np.float64):
         return None
@@ -158,7 +227,10 @@ def formula_emit(*, z: np.ndarray, atr: np.ndarray, close: np.ndarray, idx: pd.D
     """
     if not _num(norm, entry_z, hold_bars, stop_atr, rr):
         return None
-    if not (isinstance(z, np.ndarray) and isinstance(atr, np.ndarray)):
+    if not (isinstance(z, np.ndarray) and isinstance(atr, np.ndarray)
+            and isinstance(close, np.ndarray)):
+        return None
+    if not (_plain(z) and _plain(atr) and _plain(close)):
         return None
     lo = int(norm)
     hi = len(idx) - 1
@@ -230,9 +302,9 @@ def session_range_breakout_emit(*, h1: pd.DataFrame, atr: pd.Series, range_start
         return None
     if signal_at is not None and (not _num(signal_at) or isinstance(signal_at, bool)):
         return None
+    if not _plain_frame(h1, _OHLC, "spread") or not _plain(atr):
+        return None                      # the original decides what these dtypes mean
     has_spread = "spread" in h1.columns
-    if has_spread and not pd.api.types.is_numeric_dtype(h1["spread"].dtype):
-        return None                      # the original's rolling median decides what this means
     if spread_gate and not has_spread:
         return None                      # the original raises here; let it
     n = len(h1)
@@ -341,9 +413,9 @@ def failed_breakout_emit(*, h1: pd.DataFrame, atr: pd.Series, signal_hours: Any,
     index = h1.index
     if not _utc_ns(index) or not isinstance(signal_hours, (tuple, list)):
         return None
-    has_spread = "spread" in h1.columns
-    if has_spread and not pd.api.types.is_numeric_dtype(h1["spread"].dtype):
+    if not _plain_frame(h1, _OHLC, "spread") or not _plain(atr):
         return None
+    has_spread = "spread" in h1.columns
     a = atr.to_numpy()
     o = h1["open"].to_numpy()
     c = h1["close"].to_numpy()
@@ -421,6 +493,9 @@ def ict_fvg_emit(*, h1: pd.DataFrame, a: np.ndarray, f: np.ndarray, s: np.ndarra
         return None
     if isinstance(ema_slow, bool) or isinstance(atr_n, bool):
         return None
+    if not _plain_frame(h1, _OHLC) or not all(_plain(x) for x in (a, f, s, o_arr, h_arr, l_arr,
+                                                                    c_arr)):
+        return None
     n = len(h1)
     start = max(ema_slow, atr_n) + 1
     stop_i = n - 2
@@ -478,6 +553,8 @@ def multi_speed_trend_emit(*, d: pd.DataFrame, close: pd.Series, daily: pd.Serie
     if not (close.index is index or close.index.equals(index)):
         return None
     if not (atr.index.equals(index)):
+        return None
+    if not (_plain_frame(d, ("close",)) and _plain(close) and _plain(atr) and _plain(daily)):
         return None
     n = len(index)
     ns = index.asi8

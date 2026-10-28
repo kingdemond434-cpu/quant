@@ -82,7 +82,8 @@ def family_multi_speed_trend(
                 atr=_atr(d, atr_n), speeds=speeds, min_agreement=min_agreement,
                 crisis_only=crisis_only, hold_days=hold_days, stop_atr=stop_atr, rr=rr,
                 bpd=bars_per_day(d))
-        except Exception:
+        except Exception as exc:
+            _vec.fell_back("multi_speed_trend", exc)
             fast = None
         if fast is not None:
             return fast
