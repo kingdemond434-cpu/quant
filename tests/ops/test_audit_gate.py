@@ -63,15 +63,40 @@ def test_the_latest_verdict_rules_and_a_later_hold_blocks() -> None:
     assert ag.cleared(again, B, _never)[0] is not None
 
 
-def test_an_edited_comment_is_no_verdict() -> None:
-    """#445 audit: editing an old HOLD into a CLEAR must not revive it."""
-    edited = {
-        **_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z"),
-        "updated_at": "2026-10-28T11:00:00Z",
-    }
-    assert ag.verdicts([edited]) == []
+def _edited(body: str, at: str, edited_at: str) -> dict[str, Any]:
+    return {**_c(body, at), "updated_at": edited_at}
+
+
+@pytest.mark.parametrize(
+    "body",
+    [f"AUDIT CLEAR {A}", f"AUDIT HOLD {A}\nMF1 added later", "(text that replaced a HOLD)"],
+)
+def test_an_edited_comment_is_a_hold_whatever_it_says_now(body: str) -> None:
+    """#445 audit: a HOLD must be sticky. REST shows only the latest body, so an edit can hide
+    a HOLD (edited into a CLEAR, edited away, or just a typo fixed): every edited trusted
+    comment is a HOLD at its edit time, and only a NEW CLEAR comment lifts it."""
+    found = ag.verdicts(
+        [
+            _c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z"),
+            _edited(body, "2026-10-28T10:05:00Z", "2026-10-28T10:20:00Z"),
+        ]
+    )
+    got, why = ag.cleared(found, A, _never)
+    assert got is None and "HOLD" in why
+    lifted = [*found, ag.verdicts([_c(f"AUDIT CLEAR {A}", "2026-10-28T10:30:00Z")])[0]]
+    assert ag.cleared(lifted, A, _never)[0] is not None
     same = {**_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z"), "updated_at": "2026-10-28T10:00:00Z"}
-    assert len(ag.verdicts([same])) == 1
+    assert ag.verdicts([same])[0]["verdict"] == "CLEAR"  # never edited
+
+
+def test_a_clear_then_an_edited_hold_merges_nothing(hub: Any) -> None:
+    h = hub(
+        comments=[
+            _c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z"),
+            _edited(f"AUDIT HOLD {A} (typo fixed)", "2026-10-28T10:05:00Z", "2026-10-28T10:06:00Z"),
+        ]
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 0 and _merges(h) == []
 
 
 def test_a_clear_for_another_head_needs_the_same_change() -> None:

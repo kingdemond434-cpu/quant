@@ -71,11 +71,24 @@ def verdicts(comments: Iterable[Mapping[str, Any]]) -> list[dict[str, str]]:
     for c in comments:
         if str(c.get("author_association") or "") not in TRUSTED:
             continue
-        # An edited comment is no verdict (#445 audit): editing an old HOLD into a CLEAR must
-        # not revive it. A verdict is a new comment.
-        if c.get("updated_at") not in (None, c.get("created_at")):
-            continue
         m = VERDICT.search(str(c.get("body") or ""))
+        by = str((c.get("user") or {}).get("login") or "")
+        # AN EDIT IS A HOLD (#445 audit). REST shows only a comment's latest body, so an edit can
+        # hide what it replaced: a HOLD edited into a CLEAR, or edited away, would revive the
+        # CLEAR before it. So ANY edited trusted comment, whatever it says now, counts as a HOLD
+        # at the time of its edit. It fails closed: a new CLEAR comment lifts it.
+        updated = c.get("updated_at")
+        if updated not in (None, c.get("created_at")):
+            out.append(
+                {
+                    "at": str(updated),
+                    "verdict": "HOLD",
+                    "sha": m.group(2) if m else "0" * 40,
+                    "method": "merge",
+                    "by": by + " (an edited comment)",
+                }
+            )
+            continue
         if m is None:
             continue
         out.append(
@@ -84,7 +97,7 @@ def verdicts(comments: Iterable[Mapping[str, Any]]) -> list[dict[str, str]]:
                 "verdict": m.group(1),
                 "sha": m.group(2),
                 "method": m.group(3) or "merge",
-                "by": str((c.get("user") or {}).get("login") or ""),
+                "by": by,
             }
         )
     return sorted(out, key=lambda v: v["at"])
