@@ -101,6 +101,70 @@ def test_a_reproduction_writes_its_report_and_nothing_else(sandbox, tmp_path) ->
     assert doc["result"]["verdicts"][0]["sym"] == "GBPJPY"
 
 
+def test_a_normal_sweep_still_writes_every_shared_record(sandbox) -> None:
+    """The audit's mutation: a guard flipped to `if True:` would silently stop every sweep
+    charging its trials. The same sandbox with no reproduction must move all four records."""
+    mp = sandbox["monkeypatch"]
+    calls: list[str] = []
+    mp.setattr(eg, "record_gauntlet_verdicts", lambda *a, **k: calls.append("graph") or {})
+    mp.setattr(eg, "_ack_docket", lambda path: calls.append("ack"))
+    mp.setattr(eg, "_progress_watermark", lambda *a, **k: calls.append("watermark"))
+    mp.setattr(eg, "_REPRO", None)
+    before = {k: sandbox[k].read_bytes() for k in ("ledger", "index", "seen", "cursor")}
+    eg.main()
+    assert {k for k in before if sandbox[k].read_bytes() != before[k]} == set(before)
+    assert "graph" in calls and "ack" in calls
+    assert sandbox["judged"] == [["EURUSD.carry"]]
+
+
+def test_the_docket_record_wins_over_a_spec_and_a_spec_only_cell_is_flagged(sandbox,
+                                                                            tmp_path) -> None:
+    """Gate 0 reads mechanism_status from the docket row: a spec must not soften it."""
+    mp = sandbox["monkeypatch"]
+    hyp = sandbox["ledger"].parent
+    (hyp / "external_survivors.json").write_text(json.dumps(
+        [{"symbol": "EURUSD", "family": "carry", "params": {}, "mechanism_status": "UNNAMED"}]),
+        encoding="utf-8")
+    seen_status: dict[str, object] = {}
+
+    def gate0(specs, meta):
+        seen_status.update({sp["sym"]: sp.get("mechanism_status") for sp in specs})
+        return specs, []
+
+    mp.setattr(eg, "partition_at_economic_prior", gate0)
+    mp.setattr(eg, "record_gauntlet_verdicts", lambda *a, **k: {})
+    out = tmp_path / "repro.json"
+    mp.setattr(eg, "_REPRO", {"only": None, "report_to": str(out), "specs": [
+        {"symbol": "EURUSD", "family": "carry", "params": {}, "mechanism_status": "NAMED"},
+        SPEC]})
+    eg.main()
+    assert seen_status == {"EURUSD": "UNNAMED", "GBPJPY": None}
+    doc = json.loads(out.read_text(encoding="utf-8"))
+    assert sorted(doc["cell_source"].values()) == ["docket", "spec_only"]
+    assert doc["program_level"]["pbo"].startswith("NOT_REPRODUCED")
+
+
+def test_report_to_outside_reports_repro_is_refused(sandbox, monkeypatch) -> None:
+    monkeypatch.setattr(eg, "REPRO_DIR", sandbox["base"] / "desks" / "mt5" / "reports" / "repro")
+    target = sandbox["base"] / "desks" / "mt5" / "reports" / "UNIVERSAL_SURVIVORS.json"
+    monkeypatch.setattr(sys, "argv", ["external_gauntlet.py", "--spec", json.dumps(SPEC),
+                                      "--report-to", str(target)])
+    monkeypatch.setattr(eg, "_REPRO", None)
+    assert eg._cli_main() == 2
+    assert eg._REPRO is None and not target.exists()
+
+
+def test_a_guest_on_the_lane_leaves_its_admission_history_alone(tmp_path, monkeypatch) -> None:
+    import job_lock as jl
+    monkeypatch.setattr(jl, "LOCK_ROOT", tmp_path)
+    with jl.exclusive_job("lane_x", need_mb=0) as ok:
+        assert ok
+    history = (tmp_path / "lane_x.peaks.json").read_bytes()
+    with jl.exclusive_job("lane_x", need_mb=300, record=False) as ok:
+        assert ok
+    assert (tmp_path / "lane_x.peaks.json").read_bytes() == history
+
+
 def test_the_writers_refuse_on_their_own_under_reproduction(sandbox) -> None:
     sandbox["monkeypatch"].setattr(eg, "_REPRO", {"only": "x", "specs": [], "report_to": ""})
     before = _tree(sandbox["base"])

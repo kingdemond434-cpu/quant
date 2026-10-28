@@ -3326,6 +3326,11 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
                 if not s["passed"]:
                     print(f"         FAIL {name}: {s}")
 
+    if _repro_active():
+        # A REPRODUCTION'S PROGRAM-LEVEL NUMBERS ARE ITS OWN: the lockbox cut, PBO and SPA are
+        # computed over the named cells only, so the cut is recorded and they are labelled.
+        _REPRO_PROGRAM.update({"lockbox_cut": None if _lock_cut is None else str(_lock_cut),
+                               "n_cells_in_matrix": int(matrix.shape[1])})
     return {
         "hunt": hunt_name,
         "n_cells": len(cells),
@@ -3365,6 +3370,10 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
 #: Set ONLY by `--only`. None means the ordinary whole-docket run, byte-for-byte as before --
 #: every branch below is guarded on this being non-None, so the certifying path is untouched.
 _REPRO: dict[str, object] | None = None
+#: what `run_gauntlet` measured over a reproduction's own matrix (filled only in reproduction)
+_REPRO_PROGRAM: dict[str, object] = {}
+#: a reproduction writes under here and nowhere else: never over a file a live organ reads
+REPRO_DIR = REPORTS / "repro"
 
 
 def _repro_active() -> bool:
@@ -3579,9 +3588,17 @@ def main():
     if _repro_active():
         want = str((_REPRO or {}).get("only") or "")
         named = _repro_cells((_REPRO or {}).get("specs") or [])
-        # An exact spec is judged whether or not the docket still holds it: a RETIRED certificate
-        # leaves the docket, and re-measuring it under the policy in force is what this is for.
-        cells = {**{k: v for k, v in cells.items() if want and want in k}, **named}
+        # THE DOCKET'S OWN RECORD WINS. A spec names the cell; where the docket holds that cell,
+        # its row (mechanism_status above all, which gate 0 reads) is what the sweep would judge,
+        # so it is what a reproduction judges -- a softer verdict is not a reproduction. Only a
+        # cell the docket no longer holds (a RETIRED certificate) is judged from the spec alone,
+        # and the report says so.
+        _source = {k: ("docket" if k in cells else "spec_only") for k in named}
+        cells = {**{k: v for k, v in named.items() if k not in cells},
+                 **{k: v for k, v in cells.items() if k in named or (want and want in k)}}
+        _source.update({k: "docket" for k in cells if k not in _source})
+        if _REPRO is not None:
+            _REPRO["cell_source"] = _source
         if not cells:
             print(f"REPRODUCE: no cell matches {want!r} in this docket -- "
                   f"UNMEASURED, not a refutation (L1.28a)")
@@ -4077,6 +4094,12 @@ def main():
             "reproduced_at": datetime.now(UTC).isoformat(),
             "only": (_REPRO or {}).get("only"),
             "n_cells": int(result.get("cells_evaluated") or 0),
+            "cell_source": (_REPRO or {}).get("cell_source") or {},
+            "program_level": {
+                **_REPRO_PROGRAM,
+                "pbo": "NOT_REPRODUCED: computed over the named cells only, not the sweep's union",
+                "spa": "NOT_REPRODUCED: computed over the named cells only, not the sweep's union",
+                "lockbox": "cut derived from the named cells' dates, not the sweep's union"},
             "result": result,
             "note": ("Independent re-run of the canonical ten gates on a restricted docket. "
                      "Wrote no certificate and touched no authority file."),
@@ -4505,8 +4528,13 @@ def _cli_main() -> int:
 
     if args.only or args.spec:
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
+        report_to = Path(args.report_to or REPRO_DIR / f"reproduction_{stamp}.json").resolve()
+        if REPRO_DIR.resolve() not in report_to.parents:
+            print(f"REFUSED: --report-to must be under {REPRO_DIR}; {report_to} could overwrite a "
+                  f"file a live organ reads. Nothing run.")
+            return 2
         _REPRO = {"only": args.only, "specs": [json.loads(x) for x in args.spec],
-                  "report_to": args.report_to or str(REPORTS / f"reproduction_{stamp}.json")}
+                  "report_to": str(report_to)}
 
     from research.job_lock import exclusive_job
 
@@ -4531,7 +4559,8 @@ def _cli_main() -> int:
     # Normal judging reads local parquets and frozen cost artifacts. It must not monopolize the
     # terminal and prevent those parquets from being refreshed. `_live_frame` takes the Fusion
     # lease narrowly when a missing-parquet fallback is genuinely required.
-    with exclusive_job("certification_lane", need_mb=_need) as lane:
+    with exclusive_job("certification_lane", need_mb=_need,
+                       record=_REPRO is None) as lane:
         if not lane:
             print("external_gauntlet: DEFERRED -- another canonical certifier owns the lane")
             return 0
