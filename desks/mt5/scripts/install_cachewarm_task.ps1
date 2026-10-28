@@ -1,7 +1,12 @@
 # Register MT5-CacheWarm: precompute the judge's series cache on cycles the box can spare.
 #
-# THE VALUES BELOW ARE THE TRUTH, and they match the task the trading box runs (2026-10-28 read:
-# hourly, SYSTEM). Each one is tied to how long a run lasts:
+# THE TRIGGER, LIMIT, INSTANCE AND PRIORITY VALUES BELOW ARE THE TRUTH; each is tied to how long
+# a run lasts. THE PRINCIPAL IS NOT CHANGED HERE: the action runs Administrator's per-user
+# Python314, whose site-packages a SYSTEM principal cannot see, so this installer registers as
+# Administrator, as it always has. The 2026-10-28 box read reported the live task as SYSTEM --
+# CONFIRM the live principal (`schtasks /Query /TN MT5-CacheWarm /V /FO LIST`, "Run As User")
+# before re-running this; the XML route in the README keeps whatever principal the task has and
+# is the preferred way to change only the settings.
 #
 #   * HOURLY TRIGGER. A run ends by itself within 3,540 s of starting: budget 3,300 s plus a
 #     240 s grace (WARM_BUDGET_SEC / WARM_GRACE_SEC in warm_gauntlet_cache.py). A watchdog
@@ -39,7 +44,7 @@ $settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew `
               -Priority 7
 
 Register-ScheduledTask -TaskName 'MT5-CacheWarm' -Action $action -Trigger $trigger `
-  -Settings $settings -User 'SYSTEM' -RunLevel Highest -Force | Out-Null
+  -Settings $settings -User 'Administrator' -RunLevel Highest -Force | Out-Null
 
 $t = Get-ScheduledTask -TaskName 'MT5-CacheWarm'
 Write-Output ("MT5-CacheWarm registered: " + $t.State)

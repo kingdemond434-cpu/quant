@@ -334,8 +334,17 @@ def test_defaults_parent_equal_workers_idle() -> None:
 
 
 # --------------------------------------------------------------------------- v1.1 (audit 6ea07bdf2)
+def _pid_alive(pid: int) -> bool:
+    import psutil
+    try:
+        return psutil.Process(pid).status() != psutil.STATUS_ZOMBIE
+    except psutil.NoSuchProcess:
+        return False
+
+
 def test_close_pool_kills_real_hung_workers() -> None:
-    """MUST-FIX 1: a REAL ProcessPoolExecutor with hung workers ends with 0 alive."""
+    """MUST-FIX 1 (v1.1), asserted BY PID (v1.2): `is_alive()` reads True once the executor's
+    manager thread has reaped the child, which made the count-based assert flake 1 in 7."""
     from concurrent.futures import ProcessPoolExecutor
 
     pool = ProcessPoolExecutor(max_workers=2)
@@ -344,13 +353,15 @@ def test_close_pool_kills_real_hung_workers() -> None:
     while time.time() < t_end and not (all(f.running() for f in futs)
                                        and len(pool._processes or {}) == 2):
         time.sleep(0.1)
-    procs = list((pool._processes or {}).values())
-    assert len(procs) == 2
+    pids = [pr.pid for pr in (pool._processes or {}).values()]
+    assert len(pids) == 2 and all(_pid_alive(pid) for pid in pids)
     t0 = time.time()
-    dead = W._close_pool(pool, kill=True)
+    W._close_pool(pool, kill=True)
     assert time.time() - t0 < 20
-    assert dead == 2
-    assert not any(pr.is_alive() for pr in procs), "every hung worker is dead"
+    t_end = time.time() + 5
+    while time.time() < t_end and any(_pid_alive(pid) for pid in pids):
+        time.sleep(0.05)
+    assert not any(_pid_alive(pid) for pid in pids), "every hung worker is dead, by pid"
 
 
 def test_a_memory_floor_stop_frees_workers_without_a_drain(
@@ -387,23 +398,66 @@ def _fresh_state(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
 
 def test_the_heartbeat_carries_the_previous_rounds(tmp_path: Path,
                                                     monkeypatch: pytest.MonkeyPatch) -> None:
-    """MUST-FIX 2: until this run's first round lands, the report keeps the last run's rounds."""
+    """MUST-FIX 2 (v1.1): until this run's first round lands, the report keeps the last run's
+    own rounds -- and (v1.2) `at` is that round's finish time, not the write time."""
     _fresh_state(monkeypatch, tmp_path)
-    (tmp_path / "r.json").write_text(json.dumps({"status": "DONE", "rounds": [
-        {"warmed": 1}, {"warmed": 2}, {"warmed": 3}, {"warmed": 4}]}))
+    t = time.time() - 600
+    (tmp_path / "r.json").write_text(json.dumps({"status": "DONE", "rounds_source": "this run",
+                                                 "rounds": [{"warmed": i, "finished_ts": t + i}
+                                                            for i in (1, 2, 3, 4)]}))
     W._load_prev_rounds()
     W._STATE["admitted"] = True
     assert W._publish("RUNNING")
     doc = json.loads((tmp_path / "r.json").read_text("utf-8"))
     assert [r["warmed"] for r in doc["rounds"]] == [2, 3, 4]
     assert doc["rounds_source"].startswith("previous run")
+    assert doc["at"] == time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t + 4))
+    assert doc["latest_round_age_s"] >= 590
     import judging_burndown as JB2
     monkeypatch.setattr(JB2, "WARM", tmp_path / "r.json")
     assert JB2.warm_side()["status"] == "MEASURED"
-    W._STATE["rounds"].append({"warmed": 9})
+    W._STATE["rounds"].append({"warmed": 9, "finished_ts": time.time()})
     assert W._publish("RUNNING")
     doc = json.loads((tmp_path / "r.json").read_text("utf-8"))
-    assert doc["rounds"] == [{"warmed": 9}] and doc["rounds_source"] == "this run"
+    assert [r["warmed"] for r in doc["rounds"]] == [9] and doc["rounds_source"] == "this run"
+    assert doc["latest_round_age_s"] < 60
+
+
+def test_five_hard_stops_in_a_row_never_read_fresh(tmp_path: Path,
+                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    """MUST-FIX 1 (v1.2): a carried copy is never carried again, so the stall is visible."""
+    import judging_burndown as JB2
+    monkeypatch.setattr(JB2, "WARM", tmp_path / "r.json")
+    finished = time.time() - 900
+    (tmp_path / "r.json").write_text(json.dumps({
+        "status": "DONE", "rounds_source": "this run",
+        "rounds": [{"warmed": 120, "finished_ts": finished}]}))
+    seen = []
+    for _run in range(5):
+        _fresh_state(monkeypatch, tmp_path)
+        W._load_prev_rounds()
+        W._STATE["admitted"] = True
+        assert W._publish("HARD_STOP")
+        doc = json.loads((tmp_path / "r.json").read_text("utf-8"))
+        side = JB2.warm_side()
+        seen.append((side["status"], doc["at"], doc["latest_round_age_s"]))
+    first_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(finished))
+    assert seen[0][0] == "MEASURED" and seen[0][1] == first_at and seen[0][2] >= 890, (
+        "one carry, with the round's own finish time and age")
+    assert all(st != "MEASURED" and at is None and age is None for st, at, age in seen[1:]), seen
+
+
+def test_an_old_round_is_not_carried_even_once(tmp_path: Path,
+                                               monkeypatch: pytest.MonkeyPatch) -> None:
+    _fresh_state(monkeypatch, tmp_path)
+    (tmp_path / "r.json").write_text(json.dumps({
+        "status": "DONE", "rounds_source": "this run",
+        "rounds": [{"warmed": 5, "finished_ts": time.time() - W.CARRY_MAX_AGE_SEC - 60}]}))
+    W._load_prev_rounds()
+    W._STATE["admitted"] = True
+    assert W._publish("RUNNING")
+    doc = json.loads((tmp_path / "r.json").read_text("utf-8"))
+    assert doc["rounds"] == [] and doc["at"] is None
 
 
 def test_running_never_lands_after_a_final_status(tmp_path: Path,
@@ -486,24 +540,58 @@ def test_live_terminal_outcomes_expire_on_their_own_clock(tmp_path: Path) -> Non
     assert g.calls == 1, "only the live-dependent outcome is re-decided after its TTL"
 
 
-def test_orphan_tmps_are_swept_only_when_old_and_unowned(tmp_path: Path) -> None:
-    now = time.time()
-    dead_pid = 4_000_000          # above any real pid range check -> treated as no pid
-    files = {"k1.999999.tmp": now - 7200, "k2.999999.fan.tmp": now - 7200,
-             f"k3.{os.getpid()}.tmp": now - 7200, "k4.999999.tmp": now - 10,
-             "k5.npz": now - 7200, "r.json.999999.140234567890123.tmp": now - 7200,
-             f"k6.{dead_pid}.tmp": now - 7200}
-    for name, mt in files.items():
-        f = tmp_path / name
-        f.write_bytes(b"x")
-        os.utime(f, (mt, mt))
+def test_orphan_tmps_are_swept_only_when_old_unowned_and_our_own(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """v1.2: only THIS job's exact temp names, in its own directories. `E8_GOLD.tmp` (a live
+    money-path organ's file in the shared reports/) and every other foreign *.tmp survive."""
     import psutil
     if psutil.pid_exists(999999):
         pytest.skip("pid 999999 happens to be alive here")
-    out = W.sweep_orphan_tmps([tmp_path], now=now, min_age_s=3600)
-    left = sorted(p.name for p in tmp_path.iterdir())
-    assert "k5.npz" in left, "never anything but *.tmp"
-    assert f"k3.{os.getpid()}.tmp" in left, "never a file a live writer names"
-    assert "k4.999999.tmp" in left, "never a young file"
-    assert "k1.999999.tmp" not in left and "k2.999999.fan.tmp" not in left
-    assert out["removed"] == 4 and out["young"] == 1 and out["live_writer"] == 1
+    cache, state, reports, hyp = (tmp_path / n for n in ("cache", "state", "reports", "hyp"))
+    for d in (cache, state, reports, hyp):
+        d.mkdir()
+    monkeypatch.setattr(W, "WARM_STATE", state)
+    monkeypatch.setattr(W, "WORKER_PEAKS", state / "worker_peaks.json")
+    monkeypatch.setattr(W, "NOT_ADMITTED", state / "last_not_admitted.json")
+    monkeypatch.setattr(W, "REPORT", reports / "WARM_GAUNTLET.json")
+    monkeypatch.setattr(W, "DEFERRALS", hyp / "warm_deferrals.json")
+    monkeypatch.setattr(W, "LASTDAY", hyp / "warm_last_day.json")
+    now = time.time()
+    key = "a" * 40
+    old, young = now - 7200, now - 10
+    files = {
+        # ours, old, dead writer -> removed
+        cache / f"{key}.999999.tmp": old,
+        cache / f"{key}.999999.fan.tmp": old,
+        state / "docket_memo.999999.tmp": old,
+        state / "worker_peaks.json.999999.140234567890123.tmp": old,
+        reports / "WARM_GAUNTLET.json.999999.140234567890123.tmp": old,
+        hyp / "warm_deferrals.json.999999.tmp": old,
+        # ours but young, or a live writer -> kept
+        cache / f"{'b' * 40}.999999.tmp": young,
+        cache / f"{'c' * 40}.{os.getpid()}.tmp": old,
+        # foreign -> always kept
+        reports / "E8_GOLD.tmp": old,
+        reports / "pf_allocation.json.999999.tmp": old,
+        reports / "something.999999.tmp": old,
+        cache / "notakey.999999.tmp": old,
+        state / "other.999999.tmp": old,
+        hyp / "warm_deferrals.json.npz": old,
+        cache / f"{key}.npz": old,
+    }
+    for f, mt in files.items():
+        f.write_bytes(b"x")
+        os.utime(f, (mt, mt))
+    out = W.sweep_orphan_tmps(W._own_tmp_patterns(cache), now=now, min_age_s=3600)
+    left = {f for f in files if f.exists()}
+    for f in (reports / "E8_GOLD.tmp", reports / "pf_allocation.json.999999.tmp",
+              reports / "something.999999.tmp", cache / "notakey.999999.tmp",
+              state / "other.999999.tmp", hyp / "warm_deferrals.json.npz", cache / f"{key}.npz",
+              cache / f"{'b' * 40}.999999.tmp", cache / f"{'c' * 40}.{os.getpid()}.tmp"):
+        assert f in left, f.name
+    for f in (cache / f"{key}.999999.fan.tmp", state / "docket_memo.999999.tmp",
+              state / "worker_peaks.json.999999.140234567890123.tmp",
+              reports / "WARM_GAUNTLET.json.999999.140234567890123.tmp",
+              hyp / "warm_deferrals.json.999999.tmp"):
+        assert f not in left, f.name
+    assert out["removed"] == 6 and out["young"] == 1 and out["live_writer"] == 1

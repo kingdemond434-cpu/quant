@@ -1028,15 +1028,46 @@ _STATE: dict = {"phase": "init", "phase_since": time.time(), "rounds": [], "star
                 "deadline": None, "hard_stop": None, "status": "RUNNING"}
 
 
+def _ident(pr) -> tuple[int, float | None] | None:
+    """(pid, psutil create_time) of a worker, taken while it is certainly alive."""
+    pid = getattr(pr, "pid", None)
+    if not isinstance(pid, int):
+        return None
+    try:
+        import psutil
+        return pid, float(psutil.Process(pid).create_time())
+    except Exception:
+        return pid, None
+
+
+def _alive(ident: tuple[int, float | None] | None, pr=None) -> bool:
+    """Is THIS worker still alive? By pid and start time, with psutil -- never `is_alive()`,
+    which reads True after the executor's manager thread has reaped the child (waitpid then
+    raises ECHILD; v1.2, the audit's 1-in-7 flake). A reused pid with another start time is a
+    different process and reads as dead, so nothing unrelated is ever killed."""
+    if ident is None:
+        return bool(pr is not None and pr.is_alive())
+    pid, born = ident
+    try:
+        import psutil
+        proc = psutil.Process(pid)
+        if born is not None and abs(float(proc.create_time()) - born) > 1e-3:
+            return False
+        return proc.status() != psutil.STATUS_ZOMBIE
+    except ImportError:
+        return bool(pr is not None and pr.is_alive())
+    except Exception:
+        return False
+
+
 def _close_pool(pool, kill: bool, join_s: float = 10.0) -> int:
     """Shut a warm pool down; with `kill`, TERMINATE its workers first. Returns how many died.
 
     v1.1 (audit of 6ea07bdf2): the worker processes are SNAPSHOTTED BEFORE any shutdown call.
     `shutdown(wait=False)` drops the executor's `_processes` reference, so the old order --
-    shutdown, then terminate whatever `_processes` held -- terminated nothing: two of two hung
-    workers survived on 3.11 and 3.14, the parent lingered until their batch ended, and the
-    watchdog then overwrote DONE with HARD_STOP. Now: snapshot, terminate, join, kill what is
-    left, and only then shut down.
+    shutdown, then terminate whatever `_processes` held -- terminated nothing. Now: snapshot
+    (pid + start time), terminate, wait, kill what is left, and only then shut down. v1.2:
+    liveness is read by pid with psutil (`_alive`), never by `Process.is_alive()`.
     """
     shut = getattr(pool, "shutdown", None)
     if shut is None:
@@ -1046,25 +1077,23 @@ def _close_pool(pool, kill: bool, join_s: float = 10.0) -> int:
         return 0
     procs = [pr for pr in list((getattr(pool, "_processes", None) or {}).values())
              if pr is not None]
+    idents = [_ident(pr) for pr in procs]
     for pr in procs:
         with contextlib.suppress(Exception):
             pr.terminate()
     end = time.time() + max(0.0, join_s)
-    for pr in procs:
-        with contextlib.suppress(Exception):
-            pr.join(max(0.0, end - time.time()))
-    for pr in procs:
-        with contextlib.suppress(Exception):
-            if pr.is_alive():
+    while time.time() < end and any(_alive(i, pr) for i, pr in zip(idents, procs, strict=True)):
+        time.sleep(0.05)
+    for i, pr in zip(idents, procs, strict=True):
+        if _alive(i, pr):
+            with contextlib.suppress(Exception):
                 pr.kill()
-                pr.join(2.0)
+    end = time.time() + 2.0
+    while time.time() < end and any(_alive(i, pr) for i, pr in zip(idents, procs, strict=True)):
+        time.sleep(0.05)
     with contextlib.suppress(Exception):
         shut(wait=False, cancel_futures=True)
-    dead = 0
-    for pr in procs:
-        with contextlib.suppress(Exception):
-            dead += int(not pr.is_alive())
-    return dead
+    return sum(1 for i, pr in zip(idents, procs, strict=True) if not _alive(i, pr))
 
 
 def _phase(name: str, **info) -> None:
@@ -1078,8 +1107,14 @@ def _phase(name: str, **info) -> None:
 
 
 def _report_doc(status: str, **extra) -> dict:
+    """The report. `at` is the FINISH TIME OF ITS LATEST ROUND (v1.2), never the write time:
+    `judging_burndown.warm_side()` reads `at` as when the warm side was measured, and a heartbeat
+    or a hard stop that re-stamped it made an old round look fresh. `written_at` is the write
+    time; `latest_round_age_s` is the age of the newest round, None when there is none."""
     now = time.time()
-    return {"at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
+    view = _rounds_view(now)
+    return {"at": view.pop("latest_round_at"),
+            "written_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
             "status": status, "in_progress": status == "RUNNING", "pid": os.getpid(),
             "budget_sec": BUDGET_SEC, "grace_sec": GRACE_SEC,
             "started_at": _STATE.get("start"), "deadline": _STATE.get("deadline"),
@@ -1090,30 +1125,57 @@ def _report_doc(status: str, **extra) -> dict:
             "parent_priority": _STATE.get("parent_priority"),
             "equal_workers": EQUAL_WORKERS,
             "orphan_tmp_sweep": _STATE.get("orphan_tmp_sweep"),
-            **_rounds_view(), **extra}
+            **view, **extra}
 
 
 #: How many of the PREVIOUS run's rounds the report carries until this run's first round lands.
 CARRY_ROUNDS = 3
+#: A carried round older than this is not carried at all: the report then has NO round and
+#: `warm_side()` reads UNMEASURED, which is the truth about a warmer that has not finished a round
+#: in that long. Two hourly runs: one carry covers a run that has not landed its first round yet.
+CARRY_MAX_AGE_SEC = float(os.environ.get("WARM_CARRY_MAX_AGE_SEC", str(2 * 3600)))
+OWN_RUN = "this run"
 
 
-def _rounds_view() -> dict:
+def _round_ts(r: dict) -> float | None:
+    v = r.get("finished_ts")
+    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+
+def _rounds_view(now: float | None = None) -> dict:
     """`rounds` for the report: this run's, or -- until its first round lands -- the previous
-    run's last rounds, labelled. v1.1: the heartbeat published `rounds: []` within 60 s of every
-    start, so `judging_burndown.warm_side()` read UNMEASURED for most of each run."""
+    run's last rounds, labelled, ONE HOP ONLY and only while young enough.
+
+    v1.1 published `rounds: []` within 60 s of every start (warm_side read UNMEASURED for most of a
+    run), so it carried the previous run's rounds -- and v1.2 stops that carry from compounding:
+    a carried copy is never carried again (see `_load_prev_rounds`), a round older than
+    `CARRY_MAX_AGE_SEC` is not carried, and `at` / `latest_round_age_s` always describe the newest
+    round's own finish, so five hard stops in a row read as five hours without a round."""
+    now = time.time() if now is None else now
     cur = list(_STATE.get("rounds") or [])
     if cur:
-        return {"rounds": cur, "rounds_source": "this run"}
-    prev = list(_STATE.get("prev_rounds") or [])
-    return {"rounds": prev, "rounds_source": ("previous run (carried until this run's first round "
-                                              "lands)" if prev else "none yet")}
+        rounds, source = cur, OWN_RUN
+    else:
+        prev = [r for r in (_STATE.get("prev_rounds") or [])
+                if now - float(_round_ts(r) or float("-inf")) <= CARRY_MAX_AGE_SEC]
+        rounds = prev
+        source = ("previous run (carried once, until this run's first round lands)" if prev
+                  else "none: no round finished in this run or within the carry window")
+    ts = [t for t in (_round_ts(r) for r in rounds) if t is not None]
+    latest = max(ts) if ts else None
+    return {"rounds": rounds, "rounds_source": source,
+            "latest_round_at": (time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(latest))
+                                if latest is not None else None),
+            "latest_round_age_s": round(now - latest, 1) if latest is not None else None}
 
 
 def _load_prev_rounds() -> None:
+    """The previous report's rounds, but only if they were THAT run's own (never a carried copy)."""
     doc = _read_json(REPORT, {})
     rounds = doc.get("rounds") if isinstance(doc, dict) else None
+    own = isinstance(doc, dict) and doc.get("rounds_source") == OWN_RUN
     _STATE["prev_rounds"] = ([r for r in rounds if isinstance(r, dict)][-CARRY_ROUNDS:]
-                             if isinstance(rounds, list) else [])
+                             if own and isinstance(rounds, list) else [])
 
 
 #: Serialises every write of REPORT and every status transition, so a heartbeat that read
@@ -1382,6 +1444,8 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
         "order_census": order_census,
         "gate_room": room, "held_for_gate_room": n_room_held,
         "seconds": round(secs, 1),
+        "finished_ts": round(time.time(), 3),
+        "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "phase_seconds": phase_s,
         "warmed_by_lane": by_lane, "abandoned_in_flight": abandoned,
         "worker_peak_mb": sorted(worker_peaks.values()),
@@ -1411,20 +1475,52 @@ def _pid_alive(pid: int) -> bool:
         return True          # unknowable reads as alive: never delete a file a writer may hold
 
 
-def sweep_orphan_tmps(dirs: list[Path], now: float | None = None,
-                      min_age_s: float | None = None) -> dict:
-    """Delete `*.tmp` files left by killed writers, from the warmer side (the gauntlet is sealed).
+def _own_tmp_patterns(cache_dir: Path) -> list[tuple[Path, object]]:
+    """(directory, compiled name pattern) for EVERY temp file this job's writers create -- and
+    nothing else. v1.2 (audit of v1.1): a `*.tmp` sweep over the shared `reports/` deleted
+    `E8_GOLD.tmp`, a live money-path organ's file. Each pattern below names one writer exactly and
+    requires the writer's pid in the name; a file in any other directory, or of any other shape,
+    is never touched.
 
-    A file is removed only when it is older than `min_age_s` AND no pid named in its name is
-    alive (`{key}.{pid}.tmp`, `{key}.{pid}.fan.tmp`, `<report>.{pid}.{tid}.tmp`,
-    `docket_memo.{pid}.tmp`). The audit's 300 SIGKILLs during `cache_save` left 296 of them.
-    Only `*.tmp` is ever touched -- never an `.npz` or `.json`.
+      cache_dir      `<40 hex key>.<pid>.tmp`         external_gauntlet.cache_save (sealed)
+                     `<40 hex key>.<pid>.fan.tmp`     fan_out (this file)
+      WARM_STATE     `docket_memo.<pid>.tmp`          save_docket_memo
+                     `<name>.json.<pid>.<tid>.tmp`    _write_json of this job's state files
+      reports/       `WARM_GAUNTLET.json.<pid>[.<tid>].tmp`   _write_json(REPORT) only
+      hypotheses/    `warm_deferrals.json.<pid>[.<tid>].tmp`, `warm_last_day.json...`
+    """
+    import re
+
+    pt = r"\.(\d+)(?:\.(\d+))?\.tmp"
+    own_state = "|".join(re.escape(f.name) for f in (WORKER_PEAKS, NOT_ADMITTED))
+    return [
+        (Path(cache_dir), re.compile(r"^[0-9a-f]{40}\.(\d+)(?:\.fan)?\.tmp$")),
+        (WARM_STATE, re.compile(r"^docket_memo\.(\d+)\.tmp$")),
+        (WARM_STATE, re.compile(rf"^(?:{own_state}){pt}$")),
+        (REPORT.parent, re.compile(rf"^{re.escape(REPORT.name)}{pt}$")),
+        (DEFERRALS.parent, re.compile(
+            rf"^(?:{re.escape(DEFERRALS.name)}|{re.escape(LASTDAY.name)}){pt}$")),
+    ]
+
+
+def sweep_orphan_tmps(targets: list[tuple[Path, object]], now: float | None = None,
+                      min_age_s: float | None = None) -> dict:
+    """Delete THIS JOB'S OWN temp files left by killed writers (see `_own_tmp_patterns`).
+
+    A file is removed only when its name matches one of the job's exact patterns in that
+    pattern's directory, it is older than `min_age_s`, and the pid in its name is not alive (an
+    unknowable pid reads as alive; this process's own pid is never swept). The audit's 300
+    SIGKILLs during `cache_save` left 296 such files. Nothing else -- no foreign `*.tmp`, no
+    `.npz`, no `.json` -- is ever touched.
     """
     now = time.time() if now is None else now
     min_age = ORPHAN_TMP_MIN_AGE_SEC if min_age_s is None else min_age_s
     out = {"scanned": 0, "removed": 0, "young": 0, "live_writer": 0, "errors": 0}
     me = os.getpid()
-    for d in dirs:
+    by_dir: dict[Path, list] = {}
+    for d, pat in targets:
+        by_dir.setdefault(Path(d), []).append(pat)
+    for d, pats in by_dir.items():
         try:
             it = os.scandir(d)
         except OSError:
@@ -1432,6 +1528,10 @@ def sweep_orphan_tmps(dirs: list[Path], now: float | None = None,
         with it:
             for e in it:
                 if not e.name.endswith(".tmp"):
+                    continue
+                m = next((mm for mm in (pt.match(e.name) for pt in pats)  # type: ignore[attr-defined]
+                          if mm), None)
+                if m is None:
                     continue
                 out["scanned"] += 1
                 try:
@@ -1441,8 +1541,8 @@ def sweep_orphan_tmps(dirs: list[Path], now: float | None = None,
                 except OSError:
                     out["errors"] += 1
                     continue
-                pids = [int(x) for x in e.name.split(".")[1:-1] if x.isdigit()]
-                if any(pid == me or _pid_alive(pid) for pid in pids if 0 < pid < 1 << 22):
+                pid = int(m.group(1))
+                if pid == me or _pid_alive(pid):
                     out["live_writer"] += 1
                     continue
                 try:
@@ -1547,7 +1647,7 @@ def main() -> int:
 
     meta = json.loads((G.UNI / "universe.json").read_text("utf-8"))
     _phase("sweep_tmp")
-    swept = sweep_orphan_tmps([Path(G.CACHE_DIR), WARM_STATE, REPORT.parent])
+    swept = sweep_orphan_tmps(_own_tmp_patterns(Path(G.CACHE_DIR)))
     _STATE["orphan_tmp_sweep"] = swept
     print(f"  orphan temp files: {swept}", flush=True)
     _phase("priors")
