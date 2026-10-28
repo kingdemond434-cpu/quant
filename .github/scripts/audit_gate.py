@@ -112,6 +112,7 @@ LOW_EXTS = (".md", ".png", ".jpg", ".jpeg", ".svg", ".gif")
 APPEND_ONLY = ("context/decision_journal.jsonl",)
 FORCED_LIVE = re.compile(
     r"law|constitution|protocol|mandate|polic|prompt|doctrine|charter|governance|claude|agents"
+    r"|prereg|register|ruling"
 )
 #: The files that count as "a program reads it" when they name a path or file name.
 CODE_SPECS = (
@@ -172,13 +173,16 @@ def verdicts(comments: Iterable[Mapping[str, Any]]) -> list[dict[str, str]]:
 
 
 def referenced_by_code(base_ref: str, path: str) -> bool:
-    """Does any code file on the base branch name this path or its file name? An error is a yes."""
+    """Does any code file on the base branch name this path or its file name, in any letter case
+    (the box checks out on NTFS, where `gap_register.md` IS `GAP_REGISTER.md`)? An error is a
+    yes."""
     name = path.rsplit("/", 1)[-1]
     p = subprocess.run(
         [
             "git",
             "grep",
             "-q",
+            "-i",
             "-F",
             "-e",
             path,
@@ -242,18 +246,25 @@ def approval_at(comments: Iterable[Mapping[str, Any]]) -> str | None:
 
 def activated(comments: Iterable[Mapping[str, Any]]) -> tuple[bool, str]:
     """Is the tier controller on? The newest of zuck's own ACTIVATE and any trusted DEACTIVATE
-    decides; none at all is off."""
+    decides; none at all is off. Fail safe: any EDITED trusted comment on the issue counts as a
+    DEACTIVATE at its edit time (an edit can hide what a comment said), and OFF wins a tie.
+    Limit: a DEACTIVATE that is DELETED leaves no trace in the API, so deleting one re-enables
+    the controller; deactivate by posting, never by removing an ACTIVATE."""
     last: tuple[str, bool] | None = None
     for c in comments:
         body = str(c.get("body") or "").strip()
         at = str(c.get("created_at") or "")
-        if body == ACTIVATE and _zuck_typed(c):
+        trusted = str(c.get("author_association") or "") in TRUSTED
+        edited = c.get("updated_at") not in (None, c.get("created_at"))
+        if trusted and edited:
+            on, at = False, str(c.get("updated_at"))
+        elif body == ACTIVATE and _zuck_typed(c):
             on = True
-        elif body == DEACTIVATE and str(c.get("author_association") or "") in TRUSTED:
+        elif body == DEACTIVATE and trusted:
             on = False
         else:
             continue
-        if last is None or at >= last[0]:
+        if last is None or at > last[0] or (at == last[0] and not on):
             last = (at, on)
     if last is None:
         return False, f"the release controller is not activated (zuck: `{ACTIVATE}` on #453)"
@@ -453,16 +464,15 @@ def run(
     low, twhy = tier(
         files, int(p2.get("changed_files") or 0), lambda n: referenced_by_code(base, n)
     )
-    if low:
-        on, owhy = activated(
-            _flat(
-                _gh(
-                    f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100",
-                    "--paginate",
-                    "--slurp",
-                )
-            )
+
+    def switch() -> tuple[bool, str]:
+        board = _gh(
+            f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100", "--paginate", "--slurp"
         )
+        return activated(_flat(board))
+
+    if low:
+        on, owhy = switch()
         if not on:
             low, twhy = False, f"{twhy}, but {owhy}: it takes the LIVE-tier path"
     _summary(f"#{pr} @ {head[:9]}: {twhy}")
@@ -490,9 +500,12 @@ def run(
     def verdict_now() -> tuple[dict[str, str] | None, str]:
         pages = _gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate", "--slurp")
         found = verdicts(_flat(pages))
-        if low:
-            if found and found[-1]["verdict"] == "HOLD":
-                return None, f"{twhy}, but the latest verdict is AUDIT HOLD ({found[-1]['at']})"
+        # Once the auditor has spoken on a PR (any CLEAR or HOLD, on any sha), the audit governs
+        # it: it takes the LIVE-tier path below, never the no-comment one.
+        if low and not found:
+            on, owhy = switch()  # a DEACTIVATE since the first read is honoured
+            if not on:
+                return None, f"{twhy}, but {owhy}"
             return {"verdict": "LOW", "sha": head, "method": "merge", "at": "", "by": ""}, twhy
         clear, why = cleared(found, head, same_change)
         if clear is None:
@@ -556,7 +569,7 @@ def run(
             "merge_method": clear["method"],
             "commit_title": (
                 f"Merge #{pr} (LOW tier: prose only)"
-                if low
+                if clear["verdict"] == "LOW"
                 else f"Merge #{pr} ({clear['method']}): audit CLEAR {clear['sha'][:9]}"
             ),
         },

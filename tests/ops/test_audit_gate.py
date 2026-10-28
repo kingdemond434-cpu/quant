@@ -638,3 +638,98 @@ def test_zuck_can_switch_it_back_on_after_a_deactivate(low_hub: Any) -> None:
     )
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
     assert len(_merges(h)) == 1
+
+
+# ------------------------------------------------------------------------ #454 audit fixes
+
+
+def test_a_case_variant_of_a_code_named_path_is_read_by_code(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#454 audit MF1: the box checks out on NTFS, where a new `gap_register.md` overwrites the
+    `GAP_REGISTER.md` a program reads, so the reference check ignores case."""
+    origin, work = tmp_path / "origin", tmp_path / "work"
+    _git(tmp_path, "init", "-q", "-b", ag.LIVE, str(origin))
+    for k, v in (("user.name", "t"), ("user.email", "t@t")):
+        _git(origin, "config", k, v)
+    (origin / "reader.py").write_text('P = "docs/GAP_REGISTER.md"\n')
+    _git(origin, "add", ".")
+    _git(origin, "commit", "-qm", "base")
+    _git(tmp_path, "clone", "-q", str(origin), str(work))
+    monkeypatch.chdir(work)
+    assert ag.referenced_by_code(ag.LIVE, "docs/GAP_REGISTER.md") is True
+    assert ag.referenced_by_code(ag.LIVE, "docs/gap_register.md") is True
+    assert ag.referenced_by_code(ag.LIVE, "docs/research/other.md") is False
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "docs/research/FAILED_BREAKOUT_PREREGISTRATION.md",
+        "docs/research/axis_preregistrations.md",
+        "docs/GAP_REGISTER.md",
+        "docs/research/panel_rulings.md",
+    ],
+)
+def test_preregistrations_registers_and_rulings_are_governing(name: str) -> None:
+    """#454 audit MF2: a study's pre-registered bar never moves on the no-comment path."""
+    assert ag.tier([_f(name)], 1, lambda n: False)[0] is False
+
+
+def test_once_the_auditor_has_spoken_a_low_pr_takes_the_live_path(low_hub: Any) -> None:
+    """#454 audit S1: any AUDIT verdict, on any sha, sends the PR down the full LIVE path."""
+    stale_clear = [
+        _c(f"AUDIT HOLD {A}", "2026-10-28T10:00:00Z"),
+        _c(f"AUDIT CLEAR {C}", "2026-10-28T10:05:00Z"),  # a stale sha, a different change
+    ]
+    h = low_hub(comments=stale_clear)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+    h = low_hub(
+        comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")],
+        approvals=[_ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE), _ok()],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    (merge,) = _merges(h)
+    assert "audit CLEAR" in " ".join(merge)
+
+
+@pytest.mark.parametrize(
+    "board",
+    [
+        # an edited trusted comment, whatever it says now, switches it off at its edit time
+        [
+            _ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE),
+            _ok("2026-10-28T19:00:00Z", body="hi", updated_at="2026-10-28T21:00:00Z"),
+        ],
+        # OFF wins a tie
+        [
+            _ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE),
+            _ok("2026-10-28T20:00:00Z", body=ag.DEACTIVATE),
+        ],
+        [
+            _ok("2026-10-28T20:00:00Z", body=ag.DEACTIVATE),
+            _ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE),
+        ],
+    ],
+)
+def test_the_switch_fails_safe(board: list[dict[str, Any]]) -> None:
+    assert ag.activated(board)[0] is False
+
+
+def test_a_deactivate_between_the_reads_stops_the_low_merge(
+    low_hub: Any,
+) -> None:
+    """#454 audit S3: the switch is read again right before the merge."""
+    h = low_hub(comments=[])
+    reads = {"n": 0}
+    on = [_ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE)]
+    off = [*on, _ok("2026-10-28T21:00:00Z", body=ag.DEACTIVATE, app="claude")]
+
+    class _Board(list):  # type: ignore[type-arg]
+        def __iter__(self):  # type: ignore[no-untyped-def]
+            reads["n"] += 1
+            return iter(on if reads["n"] < 3 else off)
+
+    h.approvals = _Board()
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert _merges(h) == [] and reads["n"] >= 3
