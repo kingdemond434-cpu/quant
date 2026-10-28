@@ -782,6 +782,10 @@ $reportPaths = @(
     "desks/mt5/reports/HYPOTHESIS_FAMILIES.json",
     "desks/mt5/reports/NOVELTY_SET_ASIDE.json",
     "desks/mt5/data/hypotheses/merge_report.json",
+    # the judge pre-build prescreen (2026-10-28): its first-verdict replay, canon evidence,
+    # missed_growth line and last intake -- the off-box evidence any canon flip is judged on
+    "desks/mt5/reports/JUDGE_PRESCREEN.json",
+    "desks/mt5/reports/JUDGE_PRESCREEN_INTAKE.json",
     # the resident judge's heartbeat (2026-10-13): sweeps, last exit code, backoff, uptime --
     # the only off-box evidence of whether the judge is running between its verdicts
     "desks/mt5/reports/JUDGE_RESIDENT.json",
