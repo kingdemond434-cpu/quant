@@ -488,6 +488,11 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/JUDGING_THROUGHPUT.json
 !desks/mt5/reports/GAUNTLET_BACKPRESSURE.json
 !desks/mt5/reports/JUDGE_COVERAGE.json
+# breadth in independent hypothesis families + the daily new-independent metric (2026-10-28,
+# research/hypothesis_families.py via merge_docket; capped summary), and the gauntlet's novelty
+# set-aside census, published so any trial-count decision is made on a measurement
+!desks/mt5/reports/HYPOTHESIS_FAMILIES.json
+!desks/mt5/reports/NOVELTY_SET_ASIDE.json
 !desks/mt5/reports/JUDGE_RESIDENT.json
 # the judge stall pager's reading and page outcome (2026-10-21): its age on origin is the
 # off-box evidence that the pager itself is running

@@ -3111,6 +3111,33 @@ def variant_split(rows: list[dict[str, Any]],
                                            if grid_seen else None)}
 
 
+def family_stamp(rows: list[dict[str, Any]],
+                 unjudged_ids: set[str] | None = None) -> dict[str, Any]:
+    """Stamp `_famdup` (research/hypothesis_families.family_split). Never raises, never removes:
+    a failure leaves rows unstamped, which ranks every one of them exactly as before."""
+    for mod in ("research.hypothesis_families", "hypothesis_families"):
+        try:
+            hf = __import__(mod, fromlist=["family_split"])
+            break
+        except Exception:
+            hf = None
+    if hf is None:
+        return {"status": "UNMEASURED", "why": "research/hypothesis_families.py did not import"}
+    try:
+        out = dict(hf.family_split(rows, unjudged_ids))
+        out["status"] = "MEASURED"
+        return out
+    except Exception as exc:
+        for r in rows:
+            r.pop("_famdup", None)
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+
+
+def _unseen_families_in_prefix(rows: list[dict[str, Any]], n: int) -> int:
+    """How many of the first `n` rows the judge will reach are family representatives."""
+    return sum(1 for r in rows[:max(int(n), 0)] if not int(r.get("_famdup") or 0))
+
+
 def _unseen_in_prefix(rows: list[dict[str, Any]], n: int) -> int:
     """How many of the first `n` rows the judge will reach are unseen mechanisms."""
     return sum(1 for r in rows[:max(int(n), 0)] if not int(r.get("_variant") or 0))
@@ -3121,6 +3148,7 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
                    demote_variants: bool = True,
                    use_keff: bool = True,
                    use_occupancy: bool = True,
+                   use_families: bool = True,
                    limit: int | None = None) -> list[dict[str, Any]]:
     """Weighted interleave of the families, so EVERY PREFIX of the docket is family-balanced.
 
@@ -3145,6 +3173,12 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
     simply added to it; unstamped rows score 0 and keep their place. `use_occupancy=False`
     reproduces the order before these two terms existed.
 
+    FAMILY REPRESENTATIVE FIRST (2026-10-28): after the variant test, the first claim of an L2
+    hypothesis family -- the same rule on instruments that co-move (research/
+    hypothesis_families.py, `_famdup`) -- ranks ahead of later members, so the judge reaches one
+    representative of each independent family before it spends a second cell on a correlated
+    copy. Unstamped rows score 0; `use_families=False` reproduces the order before this term.
+
     No row is dropped. A family with no quota still ships, after the quota'd stream, because the
     docket this returns is the whole docket and the judge's budget -- not this order -- decides
     where the hour stops.
@@ -3157,7 +3191,7 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
         return []
     ids = unjudged_ids or set()
 
-    def rank(row: dict[str, Any]) -> tuple[int, int, float, str]:
+    def rank(row: dict[str, Any]) -> tuple[int, int, int, float, str]:
         cid = str(row.get("_cell") or "")
         fresh = 0 if (not ids or cid in ids) else 1
         # A parameter variant of a rule already claiming this grid cell ranks below an unseen
@@ -3167,7 +3201,8 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
         keff = -float(row.get("_keff") or 0.0) if use_keff else 0.0
         if use_occupancy:
             keff -= float(row.get("_occ") or 0.0) + float(row.get("_orth") or 0.0)
-        return (fresh, variant, keff, str(row.get("first_seen") or "9999"))
+        famdup = int(row.get("_famdup") or 0) if use_families else 0
+        return (fresh, variant, famdup, keff, str(row.get("first_seen") or "9999"))
 
     streams: dict[str, list[dict[str, Any]]] = {}
     for row in rows:
@@ -3647,6 +3682,7 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     # Mark the variants BEFORE the order is taken, so the head this table reports is the head
     # that actually ships (`order_docket` re-derives the same marks and measures what they freed).
     variant_split(judgeable, unjudged_ids)
+    family_stamp(judgeable, unjudged_ids)
     # Only the head is read here (the queued census and the k_eff head census both stop at
     # `capacity`), so the interleave stops there too; `order_docket` takes the whole order.
     ordered = coverage_order(judgeable, quota, unjudged_ids,
@@ -4074,9 +4110,10 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         # inside the judge's measured capacity is exactly what the demotion freed. Nothing is
         # dropped in either order: both hold every row.
         split = variant_split(judgeable, ids)
+        fam_split = family_stamp(judgeable, ids)
         cap = int((doc.get("totals") or {}).get("capacity_measured") or 0)
         before = coverage_order(judgeable, quota, ids, demote_variants=False, use_keff=False,
-                                use_occupancy=False)
+                                use_occupancy=False, use_families=False)
         ordered_j = coverage_order(judgeable, quota, ids)
         # NEVER-FIRING GROUND TO THE TAIL (2026-09-30). Order only; every row stays.
         dead = never_fire_pairs(bank, fired_pairs())
@@ -4118,13 +4155,22 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
                      "and horizon ranks below an unseen mechanism inside its own family stream. "
                      "The queue is uncapped and no row is dropped; only the order changes"),
         }
+        doc["family_demotion"] = {
+            **fam_split, "capacity": cap,
+            "representatives_in_capacity_before": _unseen_families_in_prefix(before, cap),
+            "representatives_in_capacity_after": _unseen_families_in_prefix(ordered_j, cap),
+            "rule": ("the first claim of an L2 hypothesis family (same rule, co-moving "
+                     "instruments) ranks ahead of later members inside its family stream, after "
+                     "the variant test. Nothing dropped, nothing inherited, every cell judged and "
+                     "counted; only the order changes"),
+        }
         doc["unrunnable_filtered_from_docket"] = len(blocked)
         for _b in blocked:
-            for _k in ("_cell", "_keff", "_occ", "_orth"):
+            for _k in ("_cell", "_keff", "_occ", "_orth", "_famdup"):
                 _b.pop(_k, None)
         # `orthogonality` (the published per-row score) is KEPT on the row; the ordering terms go.
         for row in ordered:
-            for _k in ("_cell", "_variant", "_keff", "_occ", "_orth"):
+            for _k in ("_cell", "_variant", "_keff", "_occ", "_orth", "_famdup"):
                 row.pop(_k, None)
         if publish:
             commit_reached = True
@@ -4143,7 +4189,9 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
                                                       / PARKED_TRIAL_ROWS.name):
             _write_parked_trials([], None)
         for _r in entry_rows:
-            for _k in ("_cell", "_variant", "_keff", "_occ", "_orth"):
+            # `_famdup` (judge-families' stamp) too: a fault after `family_stamp` shipped it,
+            # failing #424's test_a_fault_after_the_filter_ships_the_rows_as_they_arrived
+            for _k in ("_cell", "_variant", "_keff", "_occ", "_orth", "_famdup"):
                 _r.pop(_k, None)
         return entry_rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
