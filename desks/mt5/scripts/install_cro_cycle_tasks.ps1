@@ -37,6 +37,13 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
+# THE LANES MUST NOT RUN AS SYSTEM (measured 2026-10-28). MT5-CycleMidnight was found registered as
+# SYSTEM with the old one-shot trigger: Last Run 1999, result 267011 (never run), no next run.
+# Under SYSTEM neither CLI is logged in, so even a repaired trigger would exit 3 every day.
+if ($RunAs -match '^(NT AUTHORITY\\)?(SYSTEM|LOCAL SYSTEM)$' -or $RunAs -match '\\\$?SYSTEM$' -or $RunAs -eq 'S-1-5-18') {
+    throw "RunAs '$RunAs' is SYSTEM: neither claude nor codex is logged in there. Pass -RunAs <the account that ran 'codex login' and 'claude /login'>."
+}
+
 $DeskRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $RepoRoot = (Resolve-Path (Join-Path $DeskRoot '..\..')).Path
 $Launcher = Join-Path $DeskRoot 'scripts\Run-DeskCycle.ps1'
@@ -65,6 +72,11 @@ foreach ($lane in @(
     $i = Get-ScheduledTaskInfo -TaskName $lane.Name
     "installed {0}: state={1} runas={2} logon={3} every={4} next={5}" -f $t.TaskName, $t.State,
         $t.Principal.UserId, $t.Principal.LogonType, $t.Triggers[0].Repetition.Interval, $i.NextRunTime
+    # A registration with no next run is the defect this script exists to end: say so in the exit code.
+    if (-not $i.NextRunTime -or $i.NextRunTime.Year -lt 2000) {
+        Write-Host ("FATAL: {0} registered with no next run time" -f $lane.Name)
+        exit 4
+    }
 }
 
 if (-not $NoStart) {

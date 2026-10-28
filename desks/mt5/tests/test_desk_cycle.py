@@ -310,3 +310,26 @@ def test_the_lane_widening_is_read_only_and_from_the_one_domain_file() -> None:
                       "Remove-Item", "secrets", "Bash(*)", "Bash(powershell", "Bash(cmd"):
         assert forbidden not in allowed, forbidden
     assert '"Read(data/secrets/**)"' in args
+
+
+# ------------------------------------------------------------------ the midnight lane revived (2026-10-28)
+def test_the_installer_refuses_system_and_a_registration_with_no_next_run() -> None:
+    """MT5-CycleMidnight sat as SYSTEM with a one-shot trigger: never run since registration."""
+    src = _cro_installer()
+    assert "is SYSTEM: neither claude nor codex is logged in" in src
+    assert "registered with no next run time" in src and "exit 4" in src
+
+
+def test_the_codex_grant_is_scoped_to_git_and_the_lane_worktree() -> None:
+    """The ACL lock keeps the live tree read-only for non-admins; Codex gets .git and its worktree."""
+    src = (DESK / "scripts" / "grant_codex_lane_acl.ps1").read_text("utf-8")
+    assert "CodexSandboxUsers" in src
+    assert "Join-Path $RepoRoot '.git'" in src
+    assert "'quant-cro-midnight'" in src
+    assert "(OI)(CI)M" in src and "(OI)(CI)F" not in src
+    assert "icacls $RepoRoot /grant" not in src      # never re-opens the live tree
+    assert "/save" in src and "-Undo" in src
+    assert "exit 2" in src                           # absent group grants nothing
+    launcher = LAUNCHER.read_text("utf-8")
+    assert "..\\quant-cro-$Lane" in launcher       # the worktree the grant names
+
