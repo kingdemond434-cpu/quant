@@ -123,6 +123,7 @@ LOW_EXTS = (".md", ".png", ".jpg", ".jpeg", ".svg", ".gif")
 APPEND_ONLY = ("context/decision_journal.jsonl",)
 FORCED_LIVE = re.compile(
     r"law|constitution|protocol|mandate|polic|prompt|doctrine|charter|governance|claude|agents"
+    r"|prereg|register|ruling"
 )
 #: The files that count as "a program reads it" when they name a path or file name.
 CODE_SPECS = (
@@ -197,13 +198,16 @@ def verdicts(comments: Iterable[Mapping[str, Any]]) -> list[dict[str, str]]:
 
 
 def referenced_by_code(base_ref: str, path: str) -> bool:
-    """Does any code file on the base branch name this path or its file name? An error is a yes."""
+    """Does any code file on the base branch name this path or its file name, in any letter case
+    (the box checks out on NTFS, where `gap_register.md` IS `GAP_REGISTER.md`)? An error is a
+    yes."""
     name = path.rsplit("/", 1)[-1]
     p = subprocess.run(
         [
             "git",
             "grep",
             "-q",
+            "-i",
             "-F",
             "-e",
             path,
@@ -275,18 +279,25 @@ def approval_at(comments: Iterable[Mapping[str, Any]]) -> str | None:
 
 def activated(comments: Iterable[Mapping[str, Any]], phrase: str = ACTIVATE) -> tuple[bool, str]:
     """Is this switch on? The newest of zuck's own `phrase` and any trusted DEACTIVATE decides;
-    none at all is off. One DEACTIVATE switches off every switch."""
+    none at all is off. One DEACTIVATE switches off every switch. Fail safe: any EDITED trusted
+    comment on the issue counts as a DEACTIVATE at its edit time (an edit can hide what a comment
+    said), and OFF wins a tie. Limit: a DEACTIVATE that is DELETED leaves no trace in the API, so
+    deleting one re-enables the switches; deactivate by posting, never by removing an ACTIVATE."""
     last: tuple[str, bool] | None = None
     for c in comments:
         body = str(c.get("body") or "").strip()
         at = str(c.get("created_at") or "")
-        if body == phrase and _zuck_typed(c):
+        trusted = str(c.get("author_association") or "") in TRUSTED
+        edited = c.get("updated_at") not in (None, c.get("created_at"))
+        if trusted and edited:
+            on, at = False, str(c.get("updated_at"))
+        elif body == phrase and _zuck_typed(c):
             on = True
-        elif body == DEACTIVATE and str(c.get("author_association") or "") in TRUSTED:
+        elif body == DEACTIVATE and trusted:
             on = False
         else:
             continue
-        if last is None or at >= last[0]:
+        if last is None or at > last[0] or (at == last[0] and not on):
             last = (at, on)
     if last is None:
         return False, f"`{phrase}` has not been given (zuck, on #453)"
@@ -486,9 +497,8 @@ def run(
     level, twhy = tier(
         files, int(p2.get("changed_files") or 0), lambda n: referenced_by_code(base, n)
     )
-    # The path a PR takes: "low" / "auto" (no comment needed) or "manual" (CLEAR + APPROVE).
-    mode = "manual"
-    if level in ("LOW", "AUTO"):
+
+    def switches() -> tuple[bool, str]:
         board = _flat(
             _gh(
                 f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100",
@@ -499,10 +509,24 @@ def run(
         on, owhy = activated(board)
         if on and level == "AUTO":
             on, owhy = activated(board, ACTIVATE_AUTO)
-        if on:
-            mode = level.lower()
-        else:
+        return on, owhy
+
+    def pr_verdicts() -> list[dict[str, str]]:
+        pages = _gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate", "--slurp")
+        return verdicts(_flat(pages))
+
+    # The path a PR takes: "low" / "auto" (no comment needed) or "manual" (CLEAR + APPROVE).
+    # Once the auditor has spoken on a PR (any CLEAR or HOLD, on any sha), the audit governs it:
+    # it takes the manual path.
+    mode = "manual"
+    if level in ("LOW", "AUTO"):
+        on, owhy = switches()
+        if not on:
             twhy = f"{twhy}, but {owhy}: it takes the CLEAR + APPROVE path"
+        elif pr_verdicts():
+            twhy = f"{twhy}, but it carries an AUDIT verdict: it takes the CLEAR + APPROVE path"
+        else:
+            mode = level.lower()
     low = mode != "manual"  # no verdict or approval needed on this path
     required = GATING_JOBS + (AUTO_JOBS if mode == "auto" else ())
     _summary(f"#{pr} @ {head[:9]}: {twhy}")
@@ -528,12 +552,16 @@ def run(
         return ids["head"] is not None and patch_id(base, sha) == ids["head"]
 
     def verdict_now() -> tuple[dict[str, str] | None, str]:
-        pages = _gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate", "--slurp")
-        found = verdicts(_flat(pages))
+        found = pr_verdicts()
         if low:
-            if found and found[-1]["verdict"] == "HOLD":
-                return None, f"{twhy}, but the latest verdict is AUDIT HOLD ({found[-1]['at']})"
-            return {"verdict": "LOW", "sha": head, "method": "merge", "at": "", "by": ""}, twhy
+            if found:  # the auditor spoke mid-run: the next run takes the manual path
+                return None, f"{twhy}, but an AUDIT verdict arrived: the audit governs it now"
+            on, owhy = switches()  # a DEACTIVATE since the first read is honoured
+            if not on:
+                return None, f"{twhy}, but {owhy}"
+            return {"verdict": mode.upper(), "sha": head, "method": "merge", "at": "", "by": ""}, (
+                twhy
+            )
         clear, why = cleared(found, head, same_change)
         if clear is None:
             return None, why
@@ -603,7 +631,7 @@ def run(
             "merge_method": clear["method"],
             "commit_title": (
                 f"Merge #{pr} ({mode.upper()} tier, no comment: {twhy})"[:250]
-                if low
+                if clear["verdict"] == mode.upper()
                 else f"Merge #{pr} ({clear['method']}): audit CLEAR {clear['sha'][:9]}"
             ),
         },
