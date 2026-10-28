@@ -407,9 +407,12 @@ def manifest_rows(path: Path | None = None) -> list[dict[str, str]]:
 #: Lanes whose failure costs MONEY or the desk's ability to know it is broken. These are the only
 #: `required` box tasks: a research task that misses an hour costs an hour of research.
 REQUIRED_LANES: frozenset[str] = frozenset({"money"})
-#: Tasks that are required whatever their lane, because the control plane itself rides on them.
+#: Tasks that are required whatever their lane, because the control plane itself rides on them --
+#: or, for MT5-E8WindowGuard (2026-10-21), because it is the fail-open guard that CANCELS ORDERS
+#: outside the E8 window: its lane is "prop", which alone would census it `optional`, and a
+#: stopped guard must raise the required-component alarm rather than go quiet.
 REQUIRED_TASKS: frozenset[str] = frozenset(
-    {"MT5-ClockFixer", "MT5-GatewayResident", "MT5-AdoptRelease"}
+    {"MT5-ClockFixer", "MT5-GatewayResident", "MT5-AdoptRelease", "MT5-E8WindowGuard"}
 )
 
 
@@ -889,6 +892,26 @@ def explicit_specs() -> list[ComponentSpec]:
             criticality="required", resource_budget={},
             schedule="MT5-GatewayResident", artifact_class="fifteen_minute",
             notes="resident loop; the task is its keep-alive, the pass is run_gateway_loop's"),
+        # THE JUDGE STALL PAGER (2026-10-21) rides the box's five-minute watchdog:
+        # `box_heartbeat.main` invokes it as a 60 s-bounded subprocess after its own ping, so its
+        # clock is MT5-BoxHeartbeat and no second task waits on a human to install it. Its
+        # consumer is the principal, through the page; no organ reads JUDGE_STALL.json.
+        ComponentSpec(
+            component_id="exe:desks/mt5/scripts/judge_stall_pager.py",
+            kind="executable", host="box",
+            code_paths=("desks/mt5/scripts/judge_stall_pager.py",),
+            inputs=("desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl",
+                    "desks/mt5/reports/JUDGE_RESIDENT.json",
+                    "desks/mt5/reports/JUDGING_THROUGHPUT.json",
+                    "desks/mt5/reports/universal_gates_external.json",
+                    "desks/mt5/data/judging_throughput.env.json"),
+            outputs=("desks/mt5/reports/JUDGE_STALL.json",),
+            cadence_s=300, timeout_s=60, progress_metric=UNMEASURED,
+            expected_artifact_schema="desks/mt5/reports/JUDGE_STALL.json",
+            owner="lane:ops", restart_action="restart:task:MT5-BoxHeartbeat",
+            criticality="optional", resource_budget={"budget_s": 60},
+            schedule="invoked:desks/mt5/scripts/box_heartbeat.py", artifact_class="fifteen_minute",
+            notes="invoked by box_heartbeat.main on MT5-BoxHeartbeat (every 5 minutes)"),
     ]
 
 
