@@ -315,3 +315,48 @@ def test_a_map_built_under_another_key_is_never_steered_against(tmp_path):
     back = cs.CoverageMap.load(p)
     assert back.status == "WRONG_KEY"
     assert _steerer(back).closed
+
+
+# ---- v3 (re-audit of e7f1b3f2) ------------------------------------------------------------
+def test_a_chart_move_never_carries_a_session_onto_a_coarse_chart():
+    """A chart move keeps the parent's session: H1 'asia' -> D1 'asia' is a label, never a move."""
+    cmap = cs.CoverageMap.from_rows([_row(base_family="b", m=1.0, session="asia")])
+    st = _steerer(cmap)
+    out = st.steer([_row(base_family="b", m=2.0, session="asia")], "p")[0]
+    if out.get("steered_from"):
+        assert cs._chart(out) in cs.SESSION_CHARTS
+    child = _row(base_family="b", m=2.0, session="asia", timeframe="D1")
+    assert not st._valid(child, {"axis": "chart", "timeframe": "D1"})
+    assert not st._valid(_row(base_family="b", session="london", timeframe="H4"),
+                         {"axis": "chart", "timeframe": "H4"})
+
+
+def test_an_unreadable_reaim_ledger_closes_the_steer(tmp_path, monkeypatch):
+    from research import hypothesis_families as hf
+    led = tmp_path / hf.REAIM_LEDGER.name
+    assert cs._reaimed(tmp_path) == set()            # absent: a real, empty ledger
+    led.write_text("", "utf-8")
+    real_open = Path.open
+
+    def refuse(self, *a, **k):
+        if self == led:
+            raise PermissionError("locked")
+        return real_open(self, *a, **k)
+    monkeypatch.setattr(Path, "open", refuse)
+    assert cs._reaimed(tmp_path) is None             # present but unreadable: UNMEASURED
+
+
+def test_a_parent_reaimed_in_the_docket_without_a_ledger_line_is_skipped():
+    dup = _row(base_family="b", m=2.0)
+    kid = _row("XAUUSD", base_family="b", m=2.0)
+    kid["reaimed_from"] = {"parent_identity": cs.identity(dup)}
+    cmap = cs.CoverageMap.from_rows([_row(base_family="b", m=1.0), kid])
+    st = _steerer(cmap)                               # ledger empty: the docket remembers
+    assert st.steer([dup], "p")[0] is dup
+    assert st.report()["total"]["already_reaimed"] == 1
+
+
+def test_the_key_version_follows_the_judges_own(monkeypatch):
+    from research import hypothesis_families as hf
+    monkeypatch.setattr(hf, "L1_KEY_VERSION", "l1-categorical-v1.2", raising=False)
+    assert cs._key_version() == "judge:l1-categorical-v1.2"

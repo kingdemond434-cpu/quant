@@ -1290,10 +1290,10 @@ def publish_steering(steerer: Any, rows_out: list[dict[str, Any]]) -> dict[str, 
         lines = _cs.append_ledger(_cs.ledger_lines_for(rows_out, ledger, _identity),
                                   HYP / _cs.LEDGER.name)
         try:
-            from research.hypothesis_families import load_clusters
+            from research.hypothesis_families import CLUSTERS, load_clusters
             clusters, _meta = load_clusters({str(r.get("symbol") or r.get("sym") or "").upper()
                                              for r in rows_out} - {""},
-                                            path=HYP / "symbol_clusters.json",
+                                            path=HYP / CLUSTERS.name,
                                             refresh=False)   # read only: never a 2nd writer
         except Exception:
             clusters = {}

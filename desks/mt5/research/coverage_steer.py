@@ -188,8 +188,21 @@ def _judge_has_categorical() -> bool:
 #: steer then uses that key verbatim, so the steer and the judge can never disagree on a rule.
 _JUDGE_CATEGORICAL = _judge_has_categorical()
 #: The key the map was built with; a map built under another key is never steered against.
-KEY_VERSION = ("judge:hypothesis_families.rule_key" if _JUDGE_CATEGORICAL
-               else "local:l1+categorical-v1")
+#: The Judge's own `L1_KEY_VERSION` when it publishes one, so a change of the judge's key (v1 ->
+#: v1.1 -> v1.2) is a change of map key too, never a silent load.
+def _key_version() -> str:
+    try:
+        from research import hypothesis_families as hf
+        judge = getattr(hf, "L1_KEY_VERSION", None)
+    except Exception:
+        judge = None
+    if judge:
+        return f"judge:{judge}"
+    return ("judge:hypothesis_families.rule_key" if _JUDGE_CATEGORICAL
+            else "local:l1+categorical-v1")
+
+
+KEY_VERSION = _key_version()
 
 
 def _l1(row: dict[str, Any]) -> str:
@@ -256,6 +269,9 @@ class CoverageMap:
         self.axes: dict[str, dict[str, Counter[str]]] = {}
         self.clusters: dict[str, str] = {}
         self.steered: dict[str, dict[str, Any]] = {}
+        #: hashes of parents whose `reaimed_from` child is in the docket (hypothesis_families'
+        #: second memory, for a child whose ledger line was never written)
+        self.reaimed: set[str] = set()
         #: per UTC day of `first_seen` (from_rows only): cells, NEW structural rules, steered
         self.daily: dict[str, Counter[str]] = {}
         self.rows = 0
@@ -305,6 +321,9 @@ class CoverageMap:
                 day["cells"] += 1
                 day["novel_structural"] += int(new)
                 day["steered"] += int(isinstance(row.get("steered_from"), Mapping))
+            rf = row.get("reaimed_from") if isinstance(row, dict) else None
+            if isinstance(rf, Mapping) and rf.get("parent_identity"):
+                m.reaimed.add(_h(str(rf["parent_identity"])))
             sf = row.get("steered_from") if isinstance(row, dict) else None
             if isinstance(sf, Mapping) and sf.get("parent"):
                 m.steered.setdefault(str(sf["parent"]), {
@@ -328,6 +347,7 @@ class CoverageMap:
                 "axes": {f: {a: dict(c) for a, c in ax.items()} for f, ax in self.axes.items()},
                 "clusters": self.clusters,
                 "steered": self.steered,
+                "reaimed": sorted(self.reaimed),
                 "thin": self.thin()}
 
     def save(self, path: Path | None = None) -> bool:
@@ -357,6 +377,7 @@ class CoverageMap:
                   for f, ax in (doc.get("axes") or {}).items()}
         m.clusters = dict(doc.get("clusters") or {})
         m.steered = dict(doc.get("steered") or {})
+        m.reaimed = {str(x) for x in (doc.get("reaimed") or [])}
         m.rows = int(doc.get("rows") or 0)
         m.built_at = doc.get("built_at")
         m.status = "LOADED"
@@ -427,9 +448,18 @@ def _reaimed(hyp_dir: Path | None) -> set[str] | None:
     so one parent never holds two descendants. None when the ledger cannot be read at all."""
     try:
         from research.hypothesis_families import REAIM_LEDGER, reaimed_parents
-        return reaimed_parents((hyp_dir / REAIM_LEDGER.name) if hyp_dir else None)
     except Exception:
         return None
+    path = (hyp_dir / REAIM_LEDGER.name) if hyp_dir else REAIM_LEDGER
+    # `reaimed_parents` reads an OSError as an empty set. Absent is a real empty ledger; present
+    # but unreadable is UNMEASURED and closes the steer (audit of e7f1b3f2, MF2).
+    if path.exists():
+        try:
+            with path.open("rb") as fh:
+                fh.read(1)
+        except OSError:
+            return None
+    return reaimed_parents(path)
 
 
 def _gauntlet_checks() -> tuple[Callable[[dict[str, Any]], str | None] | None,
@@ -585,8 +615,10 @@ class Steerer:
         eff = self._eff_chart(child)
         if not self.bars(sym, eff):
             return False                        # every move: the child's own chart on disk
-        if "session" in move and eff not in SESSION_CHARTS:
-            return False                        # a session on D1/W1/H4 is a label or never fires
+        if eff not in SESSION_CHARTS and ("session" in move or _session(child) != "all"):
+            # a session on D1/W1/H4 is a label (asia) or never fires (london/ny) -- whether the
+            # move set it or a chart move carried the parent's session there (audit e7f1b3f2)
+            return False
         if "timeframe" in move:
             assert self.chart_of is not None
             want = str(move["timeframe"]).upper()
@@ -655,10 +687,13 @@ class Steerer:
                 out.append(row)
                 tally["passed_unkeyed"] += 1
                 continue
+            dup_before = tally["duplicate_in"]
             try:
                 out.append(self._one(row, producer, tally))
             except Exception:
                 tally["fault_passed_unchanged"] += 1
+                if tally["duplicate_in"] > dup_before:
+                    tally["fault_duplicate_unchanged"] += 1   # a duplicate the fault left as is
                 out.append(row)
         tally["rows_out"] += len(out)
         return out
@@ -685,7 +720,7 @@ class Steerer:
         if self.closed:
             tally["unsteered_fail_closed"] += 1
             return row
-        if self.reaimed is not None and ident in self.reaimed:
+        if (self.reaimed is not None and ident in self.reaimed) or ih in self.map.reaimed:
             tally["already_reaimed"] += 1       # hypothesis_families gave it a child already
             return row
         rec = self.map.steered.get(ih)
@@ -834,9 +869,7 @@ def fence(report: Mapping[str, Any]) -> dict[str, Any]:
         dup = int(c.get("duplicate_in", 0))
         handled = (int(c.get("steered", 0)) + int(c.get("replayed_prior_child", 0))
                    + int(c.get("unsteerable", 0)) + int(c.get("unsteered_fail_closed", 0))
-                   + int(c.get("already_reaimed", 0)))
-        if dup > handled and int(c.get("fault_passed_unchanged", 0)) >= dup - handled:
-            handled = dup                       # faulted rows went out unchanged, counted
+                   + int(c.get("already_reaimed", 0)) + int(c.get("fault_duplicate_unchanged", 0)))
         if dup != handled:
             breaches.append({"producer": prod, "duplicates": dup, "handled": handled})
     cons = report.get("conservation") or {}
