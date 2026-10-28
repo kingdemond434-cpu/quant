@@ -1580,6 +1580,8 @@ def allocate_by_yield(specs: list[dict]) -> tuple[list[dict], dict[str, dict]]:
     # -- the capital side has pf_allocation.json for exactly this and the research side had
     # nothing. Best effort: a research sweep must never die because a report file is unwritable.
     try:
+        if _repro_active():
+            raise OSError("reproduction writes no shared record")
         out = REPORTS / "RESEARCH_ALLOCATION.json"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps({
@@ -1788,6 +1790,10 @@ def _append_gate_ledger(verdicts: list, specs: list | None = None) -> dict:
         rows.append(row)
     if not rows:
         return {"appended": 0, "known": len(idx)}
+    if _repro_active():
+        # The gate ledger feeds the lifetime trial union: a reproduction appending here would
+        # charge the family-wise error budget for a re-run that tests nothing new.
+        return {"appended": 0, "known": len(idx), "skipped": "reproduction"}
     try:
         GATE_LEDGER.parent.mkdir(parents=True, exist_ok=True)
         with GATE_LEDGER.open("a", encoding="utf-8") as fh:
@@ -1813,7 +1819,7 @@ def _seen_cells() -> dict[str, str]:
 def _save_seen_cells(seen: dict[str, str], judged: set[str]) -> None:
     """Record the cells this sweep actually judged, so they stop counting as new."""
     fresh = {c for c in judged if c and c not in seen}
-    if not fresh:
+    if not fresh or _repro_active():
         return
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     seen.update(dict.fromkeys(fresh, now))
@@ -1841,7 +1847,7 @@ def _build_cursor() -> dict[str, str]:
 
 def _save_build_cursor(cursor: dict[str, str], built: set[str]) -> None:
     """Stamp the symbols this run actually built, so the next run starts past them."""
-    if not built:
+    if not built or _repro_active():
         return
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     cursor.update(dict.fromkeys(built, now))
@@ -3365,6 +3371,32 @@ def _repro_active() -> bool:
     return _REPRO is not None
 
 
+def _repro_cells(specs: list) -> dict[str, dict]:
+    """`--spec` rows -> the docket's own cell dicts, keyed exactly as `main` keys the docket.
+
+    A spec is {"symbol", "family", "params"} with params exactly as the docket row carried them
+    (a certificate's `shadow_spec` symbol/family/params); nothing is folded in or defaulted."""
+    out: dict[str, dict] = {}
+    for sp in specs:
+        if not isinstance(sp, dict):
+            continue
+        sym = sp.get("symbol") or sp.get("sym")
+        fam = sp.get("family")
+        if not sym or not fam:
+            continue
+        params = dict(sp.get("params") or {})
+        row_tf = str(sp.get("timeframe") or "").upper()
+        if row_tf and row_tf != "H1" and "timeframe" not in params:
+            params["timeframe"] = row_tf
+        key = f"{sym}.{fam}.{json.dumps(params, sort_keys=True)}"
+        out[key] = {"sym": sym, "family": fam, "params": params,
+                    "timeframe": timeframe_of(params, str(fam)),
+                    "mechanism_status": sp.get("mechanism_status"),
+                    "mechanism_note": sp.get("mechanism_note"),
+                    "prejudge_flagged": False}
+    return out
+
+
 def iter_json_array(path: Path, chunk_chars: int = 1 << 20):
     """Yield a top-level JSON array without materialising its million-row docket.
 
@@ -3470,7 +3502,8 @@ def main():
             if len(unstamped_sample) < 5:
                 unstamped_sample.append(str(h.get("family") or h.get("title"))[:40])
     print(f"Loaded {total} external survivors by streaming census")
-    _ack_docket(surv_file)
+    if not _repro_active():
+        _ack_docket(surv_file)
     # EMPTY INPUT IS A HALT, NOT A SWEEP (2026-08-26, measured). The hourly merge briefly wrote
     # a 0-row input; this gauntlet then ran "normally" on nothing and rewrote the AUTHORITY file
     # to n=0 -- wiping 21 certificates with exit code 0. Zero candidates means there is nothing
@@ -3545,7 +3578,10 @@ def main():
     # programs agree, which is what "one canonical validator" exists to forbid.
     if _repro_active():
         want = str((_REPRO or {}).get("only") or "")
-        cells = {k: v for k, v in cells.items() if want in k}
+        named = _repro_cells((_REPRO or {}).get("specs") or [])
+        # An exact spec is judged whether or not the docket still holds it: a RETIRED certificate
+        # leaves the docket, and re-measuring it under the policy in force is what this is for.
+        cells = {**{k: v for k, v in cells.items() if want and want in k}, **named}
         if not cells:
             print(f"REPRODUCE: no cell matches {want!r} in this docket -- "
                   f"UNMEASURED, not a refutation (L1.28a)")
@@ -3609,7 +3645,7 @@ def main():
     # Yesterday's keys die with yesterday's data-day; prune so the cache never grows unbounded.
     try:
         import time as _t
-        for _f in CACHE_DIR.glob("*.npz"):
+        for _f in ([] if _repro_active() else CACHE_DIR.glob("*.npz")):
             if _t.time() - _f.stat().st_mtime > 3 * 86400:
                 _f.unlink(missing_ok=True)
     except OSError:
@@ -3747,8 +3783,9 @@ def main():
                       "buckets_judged": {f"{k[0]}/{k[1]}": v for k, v in _judged_in_bucket.items()},
                       "order": "never-judged, intraday first, CEO-proposed families first, "
                                "least-covered chart x session bucket first, symbol rotation"}
-        (BASE / "desks" / "mt5" / "reports" / "GAUNTLET_ORDER.json").write_text(
-            json.dumps(_order_doc, indent=1), encoding="utf-8")
+        if not _repro_active():
+            (BASE / "desks" / "mt5" / "reports" / "GAUNTLET_ORDER.json").write_text(
+                json.dumps(_order_doc, indent=1), encoding="utf-8")
     except Exception as _exc:
         print(f"  gauntlet order record unwritten ({type(_exc).__name__}: {_exc})")
     if _judged_in_bucket:
@@ -3784,6 +3821,9 @@ def main():
     # Novelty in at least one measured dimension admits; an unmeasurable dimension never
     # convicts. The screen is bounded so it costs seconds, not the sweep.
     try:
+        if _repro_active():
+            # Ordering, not a gate: a reproduction judges exactly the cells it was named.
+            raise RuntimeError("reproduction: every named cell is judged")
         _rp = str(BASE / "desks" / "mt5" / "research")
         if _rp not in sys.path:
             sys.path.insert(0, _rp)
@@ -3813,7 +3853,8 @@ def main():
         print(f"  novelty screen unavailable ({type(_exc).__name__}: {_exc}); nothing set aside")
     _before = len(eligible_specs)
     _remint_front = [sp for sp in eligible_specs if _remint_is(sp)]
-    eligible_specs, _alloc = allocate_by_yield(eligible_specs)
+    eligible_specs, _alloc = ((eligible_specs, {}) if _repro_active()
+                              else allocate_by_yield(eligible_specs))
     if _remint_front:
         eligible_specs = _remint_front + [sp for sp in eligible_specs if not _remint_is(sp)]
     _n_new = sum(1 for sp in eligible_specs if _is_new(sp) == 0)
@@ -3929,7 +3970,8 @@ def main():
     if _sharding is not None:
         result["sharding"] = _sharding
     result["peak_rss_mb"] = round(_rss_mb(), 1)
-    _save_build_cursor(_cursor, _built_syms)
+    if not _repro_active():
+        _save_build_cursor(_cursor, _built_syms)
     # A CELL COUNTS AS SEEN ONLY WHEN IT WAS JUDGED, never when it was deferred or blocked.
     # `deferred_verdicts` and `blocked_verdicts` carry `passed: None` and a reason precisely
     # because they are work not yet done; stamping those would drop them out of the new-first
@@ -3957,19 +3999,26 @@ def main():
     # exact spec before the cell was first judged, or `prereg_hash: null` + POST_HOC. The
     # stamps land on the SAME dicts the report and the gate ledger are written from. Inside
     # `_safe` ENTIRELY, naming included: bookkeeping may cost its own record, never the sweep.
-    _prereg_result = _safe(lambda: record_gauntlet_verdicts(
-        [*prior_rejections, *deferred_verdicts, *blocked_verdicts,
-         *(result.get("verdicts") or [])],
-        {cell_id(s): s for s in [*cells.values(), *cell_objs] if isinstance(s, dict)},
-        first_judged=_seen),
-        "prereg_graph")
+    # A REPRODUCTION TOUCHES NONE OF THE FOUR (2026-10-28, Desk health's refusal): the graph's
+    # fates and the gate ledger are what the trial charge is counted from, and SEEN_CELLS and
+    # BUILD_CURSOR steer the sweep's rotation. A re-run that wrote them would charge trials for
+    # a measurement and move cells the hourly sweep has not judged.
+    if _repro_active():
+        _prereg_result = _gate_ledger_result = {"skipped": "reproduction"}
+    else:
+        _prereg_result = _safe(lambda: record_gauntlet_verdicts(
+            [*prior_rejections, *deferred_verdicts, *blocked_verdicts,
+             *(result.get("verdicts") or [])],
+            {cell_id(s): s for s in [*cells.values(), *cell_objs] if isinstance(s, dict)},
+            first_judged=_seen),
+            "prereg_graph")
+        _gate_ledger_result = _safe(lambda: _append_gate_ledger(result.get("verdicts") or [],
+                                                                cell_objs),
+                                    "gate_ledger")
+        _save_seen_cells(_seen, {str(v.get("cell") or "")
+                                 for v in (result.get("verdicts") or [])
+                                 if isinstance(v, dict) and v.get("passed") is not None})
     result["preregistration"] = _prereg_result
-    _gate_ledger_result = _safe(lambda: _append_gate_ledger(result.get("verdicts") or [],
-                                                            cell_objs),
-                                "gate_ledger")
-    _save_seen_cells(_seen, {str(v.get("cell") or "")
-                             for v in (result.get("verdicts") or [])
-                             if isinstance(v, dict) and v.get("passed") is not None})
     result["build_rotation"] = {
         "symbols_built_this_run": len(_built_syms),
         "symbols_in_cursor": len(_cursor),
@@ -3988,8 +4037,8 @@ def main():
     result.setdefault("gate_fails", {})["economic_prior"] = (
         int(result.get("gate_fails", {}).get("economic_prior", 0)) + len(prior_rejections)
     )
-    # THE GATE LEDGER (2026-09-12). Reproduction writes its own file and touches no shared
-    # record, exactly as the report and the cursors already do.
+    # THE GATE LEDGER (2026-09-12). Reproduction neither appends to it (guarded above and in
+    # `_append_gate_ledger`) nor reports on it.
     if not _repro_active():
         # THE FUNNEL'S OWN ANSWER, on the report rather than only in the ledger: where cells
         # died, and how many died at ONE gate only -- which is the population the forward cure
@@ -4445,14 +4494,18 @@ def _cli_main() -> int:
     ap.add_argument("--only", default=None,
                     help="substring of a cell key (SYM.family.params-json) restricting the "
                          "docket. Implies reproduction: no authority file is written.")
+    ap.add_argument("--spec", action="append", default=[],
+                    help="an exact cell as JSON {symbol, family, params}, judged even when the "
+                         "docket no longer holds it (a retired certificate). Repeatable. "
+                         "Implies reproduction.")
     ap.add_argument("--report-to", default=None,
                     help="where reproduction writes findings "
                          "(default reports/reproduction_<stamp>.json)")
     args = ap.parse_args()
 
-    if args.only:
+    if args.only or args.spec:
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
-        _REPRO = {"only": args.only,
+        _REPRO = {"only": args.only, "specs": [json.loads(x) for x in args.spec],
                   "report_to": args.report_to or str(REPORTS / f"reproduction_{stamp}.json")}
 
     from research.job_lock import exclusive_job
