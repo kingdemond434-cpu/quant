@@ -796,6 +796,10 @@ $reportPaths = @(
     # tasks, consecutive tripped passes, and its missed-growth line) -- audit of 2832cebd1
     "desks/mt5/reports/judge_alive_fence.json",
     "desks/mt5/reports/DEEPENING_MEMORY_GUARD.json",
+    # the judge pre-build prescreen (2026-10-28): its first-verdict replay, canon evidence,
+    # missed_growth line and last intake -- the off-box evidence any canon flip is judged on
+    "desks/mt5/reports/JUDGE_PRESCREEN.json",
+    "desks/mt5/reports/JUDGE_PRESCREEN_INTAKE.json",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json",
     "desks/mt5/reports/BREADTH_MANDATE.json",
     "desks/mt5/reports/TIER1_SCORECARD.json",
