@@ -62,6 +62,7 @@ LEG_LAYER: dict[str, str] = {
     # A leg with no layer is an hour of compute that `opportunity_cost` cannot attribute, so
     # "what did the desk NOT test this hour" silently omits it.
     "futures_lead_lag": "information", "tape_features": "information",
+    "bar_clock_probe": "information",
     # prediction: turning information into a claim about returns
     "intake_catchup": "prediction",
     "compile_candidates": "prediction", "merge_docket": "prediction", "search": "prediction",
@@ -208,6 +209,8 @@ LEG_LAYER: dict[str, str] = {
     # Whether the desk has stopped placing without saying so is a measurement of its own
     # execution wiring, not an act on the book: meta.
     "placement_interlock": "meta",
+    # Whether the judge's own sweep is alive and progressing is the machine watching itself: meta.
+    "judge_alive": "meta",
     # THE TIER-1 CLOSED-LOOP B ROWS (2026-09-23).
     # Whether the running code may create new exposure, which scientist earned what, which
     # structures have started surviving again, and one EVIG price over every research resource
@@ -240,6 +243,9 @@ LEG_LAYER: dict[str, str] = {
     "forward_evidence_tracker": "meta",
     # The box-state freshness fence and the desk health report, hourly before publication.
     "box_state_freshness": "meta", "desk_health": "meta",
+    # The box's bar and tick freshness report, hourly before publication: the machine measuring
+    # its own inputs, not any strategy.
+    "bars_state": "meta",
     # THE 2026-09-16 BLUEPRINT ORGANS (Tier-1 phases C/D).
     "axis_registry": "information", "forced_flow_calendar": "information",
     "standing_questions": "information",
@@ -314,7 +320,8 @@ LEG_LAYER: dict[str, str] = {
     # JUDGE (how many cells reach a verdict an hour, from measured cores/memory/commit) and the
     # other guarantees every certificate gets a forward clock the moment it is minted. They are
     # the machine that runs the machine -- throughput and evidence plumbing, not edge.
-    "judging_throughput": "meta", "forward_enrolment": "meta", "judging_burndown": "meta",
+    "judging_throughput": "meta", "blas_differential": "meta", "forward_enrolment": "meta",
+    "judging_burndown": "meta",
     "rejection_throughput": "meta",
     # META for the same reason, and it is the one that measures whether the other two are even
     # being reached: what fraction of the day the desk actually mints and judges, against the best

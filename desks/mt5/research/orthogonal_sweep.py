@@ -625,12 +625,18 @@ def _event_index():
     """Recover point-in-time event timestamps already persisted by the calendar miner."""
     import pandas as pd
 
+    from libs.research.bar_clock_release import _rows
+
+    # THE WHOLE HISTORY ON DISK, NOT THE LAST 60 FILES (2026-10-20). `sorted(...)[-60:]` kept the
+    # 46 newest discovery snapshots plus the 14 `rollup_*.jsonl.gz` files, and `_read` could not
+    # parse a gzip of JSON lines, so the reader saw 57 events, all in 2026-09-07..12, of the 198
+    # the calendar holds from 2026-08-23. A one-week calendar can never give an event family 60
+    # fire days. Every vintage is read now, JSON and JSON lines alike; the index is de-duplicated
+    # by instant, so overlapping snapshots add no event twice.
     root = BASE / "data" / "intelligence" / "ff_calendar_vintage"
     values = []
-    for path in sorted(root.glob("*.json*"))[-60:] if root.exists() else []:
-        doc = _read(path)
-        rows = doc if isinstance(doc, list) else (doc or {}).get("rows", [])
-        for row in rows if isinstance(rows, list) else []:
+    for path in sorted(root.glob("*.json*")) if root.exists() else []:
+        for row in _rows(path):
             if not isinstance(row, dict):
                 continue
             # `event_date` FIRST, because it is the key the calendar miner actually writes and

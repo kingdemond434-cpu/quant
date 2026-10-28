@@ -387,6 +387,41 @@ BREACH_DOCKET = BASE / "reports" / "CLOCK_CERTIFICATE_BREACH.json"
 BACKPRESSURE_MAX_AGE_HOURS = 6
 
 
+def _age_s(value: Any, now: datetime | None = None) -> float | None:
+    """Seconds since an ISO stamp; None when it is missing, naive or unparseable."""
+    try:
+        stamp = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    if stamp.tzinfo is None:
+        return None
+    return (_now(now) - stamp).total_seconds()
+
+
+def backpressure_alarm(file_age_s: float | None, sweep_age_s: float | None) -> dict[str, Any]:
+    """A STALE INPUT ALARMS; IT NEVER PERSISTS QUIETLY (2026-10-20).
+
+    Measured on the box: GAUNTLET_BACKPRESSURE.json stamped 2026-10-03 was still the input on
+    2026-10-20 and the only trace was a `why` string inside an UNMEASURED block nobody reads. The
+    queue reading stays UNMEASURED exactly as before; this adds the named alarm, which `run()`
+    copies to the payload's `alarms` and to the event log as PLUMBING_DEFECT. Two codes, because
+    they have different owners: the FILE not being republished is the producer's defect
+    (`gauntlet_backpressure`), a fresh file over an old sweep is the judge not finishing sweeps.
+    """
+    limit = BACKPRESSURE_MAX_AGE_HOURS * 3600
+    if file_age_s is None or file_age_s < -60 or file_age_s > limit:
+        code, owner = "BACKPRESSURE_STALE", "desks/mt5/research/gauntlet_backpressure.py"
+        why = ("the backpressure file itself has not been republished inside "
+               f"{BACKPRESSURE_MAX_AGE_HOURS}h: its producer is not running or not finishing")
+    else:
+        code, owner = "JUDGE_SWEEP_STALE", "desks/mt5/scripts/run_sharded_gauntlet.py"
+        why = ("the file is fresh but the last sweep it reports is older than "
+               f"{BACKPRESSURE_MAX_AGE_HOURS}h: the judge has not finished a sweep")
+    return {"code": code, "severity": "ALARM", "owner": owner,
+            "file_age_seconds": file_age_s, "sweep_age_seconds": sweep_age_s,
+            "max_age_seconds": limit, "queue_reads": UNMEASURED, "why": why}
+
+
 def measure_queue(now: datetime | None = None) -> dict[str, Any]:
     """How deep the judging queue is and how many gates an hour the judge actually achieves.
 
@@ -412,13 +447,21 @@ def measure_queue(now: datetime | None = None) -> dict[str, Any]:
     except (TypeError, ValueError):
         age = None
     out.update(source_at=source_at, source_age_seconds=age)
+    file_age = _age_s(doc.get("at"), now)
+    out["file_at"], out["file_age_seconds"] = doc.get("at"), file_age
     if age is None or age < -60 or age > BACKPRESSURE_MAX_AGE_HOURS * 3600:
         out["why"] = ("backpressure timestamp missing, invalid, future or stale; "
                       "historical sweep is not current queue capacity")
+        out["alarm"] = backpressure_alarm(file_age, age)
         return out
     disc, judged = meas.get("n_cells_discovered"), meas.get("n_judged")
     win = (doc.get("windows") or {}).get("24h") or {}
-    per_hour = (win.get("testing") or {}).get("per_hour")
+    # THE CORE'S RATE FIRST (judge_cpu_fair_share): `gauntlet_backpressure --core` republishes the
+    # 24h testing rate every sweep under `core.testing_24h` and leaves the full build's windows
+    # as they were (one vintage, stamped `full_at`). UNMEASURED there stays UNMEASURED.
+    core_t = (doc.get("core") or {}).get("testing_24h")
+    per_hour = (core_t.get("per_hour") if isinstance(core_t, dict)
+                else (win.get("testing") or {}).get("per_hour"))
     if isinstance(disc, int) and isinstance(judged, int):
         out.update(status="MEASURED", depth=max(0, disc - judged), discovered=disc,
                    depth_scope="sweep", judged_last_sweep=judged)
@@ -431,7 +474,7 @@ def measure_queue(now: datetime | None = None) -> dict[str, Any]:
         memory_budget_mb_last_sweep=meas.get("memory_budget_mb", UNMEASURED),
         swept_at=meas.get("swept_at", UNMEASURED),
         gates_per_hour=float(per_hour) if isinstance(per_hour, (int, float)) else UNMEASURED,
-        gates_per_hour_window="24h")
+        gates_per_hour_window=("core_24h" if isinstance(core_t, dict) else "24h"))
     out.update(_value_at_risk())
     return out
 
@@ -681,15 +724,16 @@ _APPLY_DEADLINE: list[float] = []
 _MACHINE_ENV_KEY = r"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
 
 
-def _sub_timeout() -> float:
+def _sub_timeout(cap: float | None = None) -> float:
     """Seconds the next subprocess may take: its own cap, never past the apply deadline."""
     import time as _time
+    cap = SUBPROCESS_TIMEOUT_S if cap is None else float(cap)
     if not _APPLY_DEADLINE:
-        return SUBPROCESS_TIMEOUT_S
+        return cap
     left = _APPLY_DEADLINE[0] - _time.monotonic()
     if left <= 1.0:
         raise TimeoutError("apply budget spent; the call was skipped and is recorded as such")
-    return min(SUBPROCESS_TIMEOUT_S, left)
+    return min(cap, left)
 
 
 ENV_KEYS = ("GAUNTLET_WORKERS", "GAUNTLET_SHARDS", "GAUNTLET_MEMORY_BUDGET_MB",
@@ -817,14 +861,35 @@ def write_env(decision: dict[str, Any], path: Path | None = None,
     return payload
 
 
-def apply_env(path: Path | None = None, env: dict[str, str] | None = None) -> dict[str, str]:
+def apply_env(path: Path | None = None, env: dict[str, str] | None = None, *,
+              judge_process: bool = False) -> dict[str, str]:
     """Load the published env into `os.environ` so a CHILD process inherits it.
 
     THE HOURLY CYCLE'S HOOK. `hourly_cycle._producer` runs each leg as a subprocess with the
     cycle's own environment, so setting these here -- before the `external_gauntlet` leg -- is
     what makes the measured worker count reach the sealed sweep in-cycle. Existing variables are
     NOT overwritten: an operator who exported `GAUNTLET_WORKERS` by hand outranks this organ.
+
+    SINGLE-THREADED BLAS GOES ONLY INTO A JUDGE'S SPAWN ENV (`research/blas_threads.py`; audit
+    re-review of fb7626205). `OPENBLAS_NUM_THREADS`/`MKL_NUM_THREADS`/`OMP_NUM_THREADS` = 1 are
+    added when `data/BLAS_SINGLE_THREAD.json` is enabled AND `reports/BLAS_DIFFERENTIAL.json`
+    proves IDENTICAL judge output for this release, and ONLY on the production call (no `path`)
+    into either an explicit spawn env (`env=`, as the resident's `_sweep_env` and the hourly
+    cycle's `external_gauntlet` leg build theirs) or the judge's own process
+    (`judge_process=True`, the sweep child, whose pre-warm pool and shards inherit it). Never
+    into a non-judge process's own `os.environ`: the hourly cycle calls this in-process, and
+    every later leg -- miners, pf_allocator, the promoter -- would inherit a confined BLAS.
+    It is applied BEFORE the foreign-fingerprint refusal below, which governs the worker-count
+    file only.
     """
+    target = os.environ if env is None else env
+    blas_applied: dict[str, str] = {}
+    if path is None and (env is not None or judge_process):
+        try:
+            from research import blas_threads
+            blas_applied = blas_threads.apply(target)
+        except Exception:
+            blas_applied = {}    # an unreadable switch means default threads, never a crash
     doc = _read_json(Path(path or ENV_FILE), {}) or {}
     vals = dict((doc.get("env") or {}) if isinstance(doc, dict) else {})
     # AN ENV MEASURED ON ANOTHER MACHINE IS REFUSED. `desks/mt5/data/` travels with the release,
@@ -836,9 +901,8 @@ def apply_env(path: Path | None = None, env: dict[str, str] | None = None) -> di
         here = measure_memory()
         if (stamp.get("cores") != (os.cpu_count() or 1)
                 or stamp.get("total_phys_mb") != here.get("total_phys_mb")):
-            return {}
-    target = os.environ if env is None else env
-    applied: dict[str, str] = {}
+            return dict(blas_applied)
+    applied: dict[str, str] = dict(blas_applied)
     for k in ENV_KEYS:
         v = vals.get(k)
         if v is None or k in target:
@@ -923,7 +987,105 @@ def _next_run(task: str) -> str:
 CADENCE_DURATION = "9999:59"
 
 
+#: THE CADENCE STATE FILE (2026-10-20). Measured on the box: `schtasks /Change` timed out at 20 s
+#: on every pass (process_health's own `schtasks /query` timed out too: the scheduler service is
+#: slow under 17 busy cores), and the call was re-issued every hour although the interval had
+#: been 1 minute -- both bands -- since 2026-10-10. This file records the last outcome; a pass
+#: that finds the same interval APPLIED inside CADENCE_REAPPLY_S issues NO schtasks call at all.
+#: It is also the fallback: a failed apply still writes the wanted interval here, with the
+#: failure, so `judge_priority.py` (its default, read-only census), stall_watch and the next
+#: pass read what was wanted and why it is not in force -- never a silent hang, never a
+#: stale claim.
+CADENCE_STATE = BASE / "data" / "gauntlet_cadence_state.json"
+CADENCE_REAPPLY_S = 6 * 3600.0
+#: Per-attempt ceilings for `/Change`: a short first try, one longer retry. Every attempt is still
+#: bounded by the apply deadline, so the sum can never exceed APPLY_BUDGET_S.
+CADENCE_ATTEMPT_TIMEOUTS_S = (30.0, 60.0)
+
+
+def _cadence_state(path: Path | None = None) -> dict[str, Any]:
+    doc = _read_json(Path(path or CADENCE_STATE), {}) or {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def _write_cadence_state(doc: dict[str, Any], path: Path | None = None) -> None:
+    with contextlib.suppress(OSError):
+        _write_atomic(Path(path or CADENCE_STATE), doc)
+
+
+def _cadence_fresh(state: dict[str, Any], minutes: int, now: datetime | None = None) -> bool:
+    """True only for a well-formed APPLIED record of this exact interval, recent enough.
+
+    Any malformed field -- a non-int or boolean `minutes` included (`true` must never read as 1)
+    -- is NOT fresh, so the call is re-issued and the record rewritten: a bad state file can
+    never stick (audit of be6a305b7).
+    """
+    got = state.get("minutes")
+    if (state.get("status") != "APPLIED" or not isinstance(got, int) or isinstance(got, bool)
+            or got != int(minutes)):
+        return False
+    if state.get("duration") != CADENCE_DURATION:
+        return False
+    age = _age_s(state.get("applied_at"), now)
+    return age is not None and -60 <= age <= CADENCE_REAPPLY_S
+
+
+def _change_with_retry(minutes: int) -> tuple[bool, list[str]]:
+    """`schtasks /Change` with a retry and a longer second timeout, never past the deadline."""
+    import time as _time
+    errors: list[str] = []
+    for i, cap in enumerate(CADENCE_ATTEMPT_TIMEOUTS_S):
+        try:
+            subprocess.run(["schtasks", "/Change", "/TN", GAUNTLET_TASK, "/RI", str(int(minutes)),
+                            "/DU", CADENCE_DURATION],
+                           check=True, capture_output=True, timeout=_sub_timeout(cap))
+            return True, errors
+        except TimeoutError as exc:      # the apply budget is spent: stop, never hang
+            errors.append(f"attempt {i + 1}: {exc}")
+            break
+        except Exception as exc:
+            errors.append(f"attempt {i + 1}: {type(exc).__name__}: {exc}")
+            if i + 1 < len(CADENCE_ATTEMPT_TIMEOUTS_S):
+                _time.sleep(1.0)
+    return False, errors
+
+
 def apply_cadence(minutes: int, box: dict[str, Any]) -> dict[str, Any]:
+    """Apply the cadence only when it is not already in force; retry; always record the outcome.
+
+    See `apply_cadence_once` for what the scheduler call does. This wrapper is the 2026-10-20
+    robustness layer: skip when CADENCE_STATE says the same interval was APPLIED recently, try
+    `/Change` twice with a longer second timeout, and write CADENCE_STATE whatever happened.
+    """
+    if not box.get("is_judging_box") or sys.platform != "win32":
+        return {"status": "NOT_APPLIED", "minutes": int(minutes),
+                "why": "not the judging box, or not Windows: cadence is published, not applied"}
+    state = _cadence_state()
+    if _cadence_fresh(state, minutes):
+        return {"status": "ALREADY_APPLIED", "minutes": int(minutes), "task": GAUNTLET_TASK,
+                "applied_at": state.get("applied_at"), "state_file": str(CADENCE_STATE),
+                "why": (f"the same interval was applied and verified at {state.get('applied_at')}"
+                        f" (inside {CADENCE_REAPPLY_S / 3600:.0f}h); no scheduler call issued")}
+    res = apply_cadence_once(minutes, box)
+    now_s = _now().isoformat(timespec="seconds")
+    record = {"wanted_minutes": int(minutes), "minutes": int(minutes),
+              "duration": CADENCE_DURATION, "task": GAUNTLET_TASK, "status": res.get("status"),
+              "checked_at": now_s, "result": res}
+    if res.get("status") == "APPLIED":
+        record["applied_at"] = now_s
+    else:
+        record["applied_at"] = state.get("applied_at")
+        record["last_good"] = {k: state.get(k) for k in ("minutes", "applied_at")} \
+            if state.get("applied_at") else None
+        record["fallback"] = ("the scheduler did not confirm the interval; it stays recorded "
+                              "here as WANTED and the next pass retries. The resident judge "
+                              "does not depend on it: the trigger only respawns a dead launcher")
+    _write_cadence_state(record)
+    res["state_file"] = str(CADENCE_STATE)
+    return res
+
+
+def apply_cadence_once(minutes: int, box: dict[str, Any]) -> dict[str, Any]:
     """Raise the gauntlet task's repetition interval on the judging box, and KEEP ITS WINDOW OPEN.
 
     CADENCE IS THROUGHPUT. The gauntlet's cache is content-addressed and cumulative, so halving
@@ -947,13 +1109,11 @@ def apply_cadence(minutes: int, box: dict[str, Any]) -> dict[str, Any]:
         return {"status": "NOT_APPLIED", "minutes": int(minutes),
                 "why": "not the judging box, or not Windows: cadence is published, not applied"}
     before = _next_run(GAUNTLET_TASK)
-    try:
-        subprocess.run(["schtasks", "/Change", "/TN", GAUNTLET_TASK, "/RI", str(int(minutes)),
-                        "/DU", CADENCE_DURATION],
-                       check=True, capture_output=True, timeout=_sub_timeout())
-    except Exception as exc:
+    ok, errors = _change_with_retry(minutes)
+    if not ok:
         return {"status": "FAILED", "minutes": int(minutes), "task": GAUNTLET_TASK,
-                "next_run_before": before, "why": f"{type(exc).__name__}: {exc}"}
+                "next_run_before": before, "attempts": errors,
+                "why": errors[-1] if errors else "schtasks /Change did not run"}
     after = _next_run(GAUNTLET_TASK)
     alive = bool(after) and after.lower() not in ("", "n/a")
     return {"status": "APPLIED" if alive else "APPLIED_BUT_STOPPED",
@@ -964,14 +1124,40 @@ def apply_cadence(minutes: int, box: dict[str, Any]) -> dict[str, Any]:
                     "is not a repetition this organ can re-arm, and the judge is idle")}
 
 
+def _attempt_module() -> Any:
+    """The attempt marker's module, under whichever name this module itself was imported."""
+    try:
+        from research import judging_rate_attempt as mod
+    except ImportError:
+        from desks.mt5.research import judging_rate_attempt as mod  # type: ignore[no-redef]
+    return mod
+
+
 def _write_atomic(path: Path, doc: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + f".{os.getpid()}.tmp")
-    tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
-    os.replace(tmp, path)
+    """tmp then `os.replace`, with the Windows PermissionError retry (judging_rate_attempt)."""
+    _attempt_module().write_atomic(path, doc)
 
 
-def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> dict[str, Any]:
+#: THE ATTEMPT MARKER (2026-10-21). Written first by every `run()` and rewritten at each phase,
+#: so a pass that dies -- or is killed at its budget -- leaves the phase it died in on disk, and
+#: JUDGING_RATE.json reads STALE with that reason instead of a silent old value. Published beside
+#: JUDGING_RATE.json by sync_shadow_to_git.ps1; read by `judging_rate_attempt.read_rate`.
+#: None means "beside RATE_OUT" (reports/JUDGING_RATE.attempt.json), so anything that points the
+#: rate elsewhere -- a test, a dry run on another box -- moves the marker with it.
+ATTEMPT_OUT: Path | None = None
+
+
+def _attempt_path() -> Path:
+    return ATTEMPT_OUT if ATTEMPT_OUT is not None else RATE_OUT.with_name(
+        RATE_OUT.stem + ".attempt.json")
+#: Wall clock the verdict-ledger stream may spend. On overrun the rate is UNMEASURED with the
+#: reason, never a partial count read as a whole one. Inside the leg's 300 s `--budget-s` with
+#: room for everything else the pass does; never used to change the leg's own budget.
+RATE_STREAM_BUDGET_S = 150.0
+
+
+def run(write: bool = True, now: datetime | None = None, apply: bool = True,
+        rate_budget_s: float | None = None) -> dict[str, Any]:
     """Measure the box, size the judge, PUBLISH, and only then apply where it is read.
 
     ORDER IS THE FIX (CRO 2026-09-30). Every artifact -- the env file, JUDGING_RATE.json and
@@ -979,14 +1165,41 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
     apply can no longer cost the hour its measurement (it cost 4.4 h of JUDGING_RATE staleness).
     The apply is best-effort inside `APPLY_BUDGET_S`, each call inside `SUBPROCESS_TIMEOUT_S`,
     and its outcome is written into JUDGING_THROUGHPUT.json by a second, equally atomic write.
+
+    THE MARKER AND THE EARLY RATE (2026-10-21). JUDGING_RATE.json sat at 01:52Z for hours while
+    the box kept publishing: the pass measured the box, the queue, the plan, the schtasks limit
+    and a ~970k-row ledger before writing anything, so a pass killed anywhere in that left the old
+    file and no reason. Now the first write is the attempt marker (ATTEMPT_OUT), rewritten as each
+    phase is entered; the rate is measured right after the (pure) plan and written BEFORE the
+    schtasks query, the env file and the apply; and the ledger stream is bounded by
+    `rate_budget_s`, past which the rate is UNMEASURED with the reason.
     """
     import time as _time
 
     t0 = _time.monotonic()
+    attempt = _attempt_module().Attempt(_now(now), _attempt_path(), enabled=write)
+    attempt.phase("started")
+    attempt.phase("measure_box")
     box = measure_box(now)
     costs = declared_costs()
+    attempt.phase("queue")
     queue = measure_queue()
+    attempt.phase("plan")
     decision = plan(box, queue, costs)
+    # THE RATE NEEDS ONLY THE QUEUE AND THE PLAN'S workers/cores_basis, so it is measured and
+    # PUBLISHED here, before the schtasks query, the env write and the apply can cost it the hour.
+    attempt.phase("rate")
+    _budget = RATE_STREAM_BUDGET_S if rate_budget_s is None else float(rate_budget_s)
+    try:
+        rate = measure_rate(queue, decision, now, deadline_s=_budget)
+    except Exception as exc:     # a broken rate read must never cost the sizing decision
+        rate = {"at": _now(now).isoformat(timespec="seconds"), "status": UNMEASURED,
+                "why": f"{type(exc).__name__}: {exc}"}
+    if write:
+        rate["attempt"] = attempt.pointer()
+        _write_atomic(RATE_OUT, rate)
+        attempt.phase("rate_written")
+    attempt.phase("task_limit")
     # THE BUILD BUDGET, FROM THE TASK'S OWN LIMIT. Measured 2026-09-24: the pre-warm shares the
     # build deadline and spent 2,874 s of a 2,700 s budget on a 250,992-cell docket, leaving
     # 67,910 cells never built. This gives the judge the wall clock its own scheduled task already
@@ -1023,22 +1236,31 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
         "decision": decision,
         "applied": applied,
         "limiting_resource": decision["limiting_resource"],
+        "alarms": [a for a in (queue.get("alarm"),) if isinstance(a, dict)],
         "rule": ("throughput is raised from OUTSIDE the sealed gauntlet, never by editing it; the "
                  "plan is floored at the sealed baseline so this organ can never throttle the "
                  "judge; the live terminal always wins and standing down means returning to that "
                  "baseline, not below it"),
     }
+    payload["rate"] = rate
+    # THE BLAS SWITCH, MADE VISIBLE (research/blas_threads.py). This organ is the consumer of
+    # reports/BLAS_DIFFERENTIAL.json: `apply_env` adds the single-thread variables only while that
+    # proof holds, and this records the decision, its reason and what is in force, every hour, so
+    # a lapsed proof falling back to default threads is a published fact and never silent.
     try:
-        payload["rate"] = measure_rate(queue, decision, now)
-    except Exception as exc:     # a broken rate read must never cost the sizing decision
-        payload["rate"] = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+        from research import blas_threads
+        payload["blas_single_thread"] = blas_threads.status()
+    except Exception as exc:
+        payload["blas_single_thread"] = {"active": False, "why": (
+            f"{UNMEASURED}: switch unreadable ({type(exc).__name__}: {exc})"[:300])}
     if write:
         write_env(decision, box=box)
         applied["env_file"] = str(ENV_FILE)
         applied["process_env"] = apply_env()
-        _write_atomic(RATE_OUT, payload["rate"])
         payload["measure_seconds"] = round(_time.monotonic() - t0, 1)
+        payload["attempt"] = attempt.pointer()
         _write_atomic(OUT, payload)
+        attempt.phase("written")
     if apply:
         _APPLY_DEADLINE[:] = [_time.monotonic() + APPLY_BUDGET_S]
         try:
@@ -1055,8 +1277,19 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
     else:
         applied["machine_env"] = applied["cadence"] = "NOT_ATTEMPTED (dry run)"
     payload["seconds"] = round(_time.monotonic() - t0, 1)
+    alarms = payload["alarms"]
     if write:
         _write_atomic(OUT, payload)
+        for a in alarms:
+            try:
+                from libs.ops.events import emit
+                emit("PLUMBING_DEFECT", organ="judging_throughput", artifact=str(BACKPRESSURE),
+                     code=a.get("code"), owner=a.get("owner"),
+                     file_age_s=a.get("file_age_seconds"), sweep_age_s=a.get("sweep_age_seconds"))
+            except Exception as exc:
+                payload["events"] = f"UNMEASURED: {type(exc).__name__}: {exc}"
+        attempt.phase("applied" if apply else "written", done=True,
+                      seconds=payload["seconds"])
         try:
             from libs.ops.events import leg_events
             leg_events("judging_throughput", "OK", workers=int(decision["workers"]),
@@ -1069,12 +1302,26 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
 _AT = re.compile(r'"at"\s*:\s*"([^"]+)"')
 
 
-def _verdict_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
+#: Rows between deadline checks: one `time.monotonic()` per this many lines is noise.
+_DEADLINE_EVERY = 4096
+
+
+def _verdict_counts(now: datetime, path: Path | None = None,
+                    deadline_s: float | None = None) -> dict[str, Any]:
     """Verdict rows the judge appended in the last 1h / 24h / 7d, from its own ledger.
 
     Streams the file and reads only each row's `at` stamp, so a multi-million-row ledger costs
-    one pass and constant memory. An absent ledger is UNMEASURED -- never zero verdicts."""
-    from research.judging_burndown import classify
+    one pass and constant memory. An absent ledger is UNMEASURED -- never zero verdicts.
+
+    BOUNDED BY `deadline_s` (2026-10-21). On a box paging at ~1.6 GB free the ~970k-row stream is
+    the slowest step of the pass; past the deadline it stops and the counts are UNMEASURED with
+    the rows read and the reason -- a prefix of the ledger is never published as its rate."""
+    import time as _time
+
+    try:
+        from research.judging_burndown import classify
+    except ImportError:
+        from desks.mt5.research.judging_burndown import classify  # type: ignore[no-redef]
 
     p = GATE_LEDGER if path is None else path
     if not p.exists():
@@ -1085,9 +1332,18 @@ def _verdict_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
     first_counts = dict.fromkeys(cuts, 0)
     first_terminal_cells: set[str] = set()
     total, unstamped, last = 0, 0, ""
+    t_start = _time.monotonic()
+    stop_at = None if deadline_s is None else t_start + float(deadline_s)
     try:
         with p.open("r", encoding="utf-8", errors="replace") as fh:
-            for line in fh:
+            for n_line, line in enumerate(fh):
+                if (stop_at is not None and n_line % _DEADLINE_EVERY == 0
+                        and _time.monotonic() > stop_at):
+                    return {"status": UNMEASURED, "rows_read": total,
+                            "why": (f"{p.name} stream overran its {float(deadline_s):.0f} s "
+                                    f"deadline after {total:,} rows "
+                                    f"({_time.monotonic() - t_start:.0f} s): verdicts/hour is "
+                                    "UNMEASURED this pass, never a partial count")}
                 if not line.strip():
                     continue
                 total += 1
@@ -1173,14 +1429,15 @@ def _creation_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
 
 def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
                  now: datetime | None = None, *, ledger: Path | None = None,
-                 registry: Path | None = None) -> dict[str, Any]:
+                 registry: Path | None = None,
+                 deadline_s: float | None = None) -> dict[str, Any]:
     """VERDICTS/HOUR AGAINST THE BACKLOG, and how long the backlog takes to drain.
 
     ETA = backlog / (verdicts/hour - created/hour), both over the same 24 h window. A judge that
     judges slower than the desk creates never drains: that is reported as GROWING with the net
     growth per day, not as a large finite number. Any missing input makes the ETA UNMEASURED."""
     t = _now(now)
-    ver = _verdict_counts(t, ledger)
+    ver = _verdict_counts(t, ledger, deadline_s=deadline_s)
     cre = _creation_counts(t, registry)
     # One sweep can cover only a prefix of the full docket. Its remainder is not
     # the institutional backlog and must never drive a claim of full clearance.
@@ -1224,6 +1481,11 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
         eta["why"] = "verdict or creation rate UNMEASURED"
     return {
         "at": t.isoformat(timespec="seconds"),
+        # The verdict count is this artifact's measurement: when it is UNMEASURED (absent ledger,
+        # overrun deadline) the whole rate says so, so no reader takes the other fields as a pass.
+        "status": "MEASURED" if ver.get("status") == "MEASURED" else UNMEASURED,
+        **({} if ver.get("status") == "MEASURED"
+           else {"why": f"verdicts: {ver.get('why') or 'UNMEASURED'}"}),
         "verdicts": ver, "created": cre,
         "verdicts_per_hour": vph if vph is not None else UNMEASURED,
         "verdicts_per_day": round(vph * 24.0, 1) if vph is not None else UNMEASURED,
@@ -1269,7 +1531,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry-run", action="store_true",
                     help="measure and print; write no artifact and apply nothing")
     args = ap.parse_args(argv)
-    payload = run(write=not args.dry_run, apply=not args.dry_run)
+    payload = run(write=not args.dry_run, apply=not args.dry_run,
+                  rate_budget_s=min(RATE_STREAM_BUDGET_S, max(args.budget_s, 1.0) * 0.5))
     print(render(payload))
     return 0
 
