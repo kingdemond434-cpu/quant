@@ -78,11 +78,12 @@ import json
 import os
 import sys
 import tempfile
+import threading
 from collections import Counter
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
-from functools import lru_cache
+from functools import lru_cache, wraps
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -185,6 +186,70 @@ FX_MAJORS = ("EURUSD", "GBPUSD", "USDJPY", "USDCHF", "USDCAD", "AUDUSD", "NZDUSD
 # The registry: which symbols exist, and which of them this lane may name
 # =============================================================================================
 
+#: ONE `events()` CALL, ONE ANSWER PER SYMBOL SET (2026-10-28, speed only). The bundle helpers
+#: below are pure functions of their arguments, this module's registry (cached for the life of
+#: the process already) and `universe_policy.may_hypothesise` (which re-reads the registry FILE,
+#: a `stat` per symbol). One `events()` call over eight years asked them the same few questions
+#: about 30,000 times -- two million `stat`s and registry lookups, ~95% of a `forced_flow`
+#: cell's build. While an `events()` call is running they are memoised by (helper, arguments) in
+#: a per-thread dict that is dropped when the call returns, so each question is asked once per
+#: call against the registry as it stood at that call. Only str and tuple-of-str arguments
+#: are memoised (compared by value); anything else calls straight through.
+#: `MT5_VECTOR_FAMILIES=0` turns it off (the judge's speed switch, `mt5desk/families_vector.py`).
+_CALL = threading.local()
+
+
+def _memo_active() -> bool:
+    """`mt5desk.families_vector.enabled()`: the switch AND the box's fail-closed marker.
+
+    When the desk package is loaded (always, when `family_forced_flow` calls in: it imports
+    `mt5desk.families`), the answer IS `families_vector.enabled()`, marker, cache and the box
+    check's proving flag included. Otherwise -- this module run on its own -- the same rule is
+    restated so it imports nothing from the desk package: OFF for 0 / false / off / no /
+    disabled (any case) or any number equal to 0, and OFF while
+    `desks/mt5/data/VECTOR_FAMILIES_MISMATCH.json` exists."""
+    vec = sys.modules.get("mt5desk.families_vector")
+    if vec is not None:
+        return bool(vec.enabled())
+    raw = os.environ.get("MT5_VECTOR_FAMILIES")
+    if raw is not None:
+        v = raw.strip().lower()
+        if v in ("0", "false", "off", "no", "disabled"):
+            return False
+        try:
+            if float(v) == 0.0:
+                return False
+        except ValueError:
+            pass
+    return not (Path(__file__).resolve().parents[1] / "data"
+                / "VECTOR_FAMILIES_MISMATCH.json").exists()
+    v = raw.strip().lower()
+    if v in ("0", "false", "off", "no", "disabled"):
+        return False
+    try:
+        return float(v) != 0.0
+    except ValueError:
+        return True
+
+
+def _plain(arg: Any) -> bool:
+    """A str, or a tuple of str: the only arguments compared by value, so the only ones memoised."""
+    return type(arg) is str or (type(arg) is tuple and all(type(x) is str for x in arg))
+
+
+def _per_call(fn: Any) -> Any:
+    @wraps(fn)
+    def wrapper(*args: Any) -> Any:
+        memo = getattr(_CALL, "memo", None)
+        if memo is None or not all(_plain(a) for a in args):
+            return fn(*args)
+        key = (fn.__name__, args)
+        if key not in memo:
+            memo[key] = fn(*args)
+        return memo[key]
+    return wrapper
+
+
 @lru_cache(maxsize=1)
 def _registry() -> dict[str, dict]:
     try:
@@ -215,6 +280,7 @@ def _may_hypothesise() -> Any:
     return may_hypothesise
 
 
+@_per_call
 def _keep(symbols: Any) -> tuple[str, ...]:
     """Registry symbols, hypothesis lane only, de-duplicated and ordered."""
     allowed = _registry()
@@ -224,12 +290,14 @@ def _keep(symbols: Any) -> tuple[str, ...]:
     return tuple(out)
 
 
+@_per_call
 def _by_class(*classes: str) -> tuple[str, ...]:
     wanted = {c.strip().lower() for c in classes}
     return _keep(sorted(k for k, v in _registry().items()
                         if str(v.get("asset_class", "")).strip().lower() in wanted))
 
 
+@_per_call
 def _fx_with(currency: str) -> tuple[str, ...]:
     """Every FX pair (majors, crosses and exotics) carrying `currency` as a leg."""
     cur = currency.upper()
@@ -238,6 +306,7 @@ def _fx_with(currency: str) -> tuple[str, ...]:
                         and cur in k))
 
 
+@_per_call
 def _venue(*names: str) -> tuple[str, ...]:
     out: list[str] = []
     for name in names:
@@ -245,22 +314,27 @@ def _venue(*names: str) -> tuple[str, ...]:
     return _keep(out)
 
 
+@_per_call
 def _gold() -> tuple[str, ...]:
     return _keep(sorted(k for k in _registry() if k.startswith(("XAU", "XAG"))))
 
 
+@_per_call
 def _energy() -> tuple[str, ...]:
     return _by_class("Energy")
 
 
+@_per_call
 def _softs() -> tuple[str, ...]:
     return _by_class("Soft Commodity")
 
 
+@_per_call
 def _fx_all() -> tuple[str, ...]:
     return _by_class("Forex")
 
 
+@_per_call
 def _fx_majors() -> tuple[str, ...]:
     return _keep(FX_MAJORS)
 
@@ -698,6 +772,7 @@ def _central_bank_events(year: int) -> list[Event]:
     return rows
 
 
+@_per_call
 def _instruments_for_bank(bank: str) -> tuple[str, ...]:
     if bank == "FOMC":
         return _keep(_fx_majors() + _fx_with("USD") + _gold() + _venue("sp", "rates"))
@@ -823,6 +898,16 @@ def events(start: date, end: date) -> list[Event]:
     """
     if end < start:
         return []
+    if _memo_active() and getattr(_CALL, "memo", None) is None:
+        _CALL.memo = {}
+        try:
+            return _events(start, end)
+        finally:
+            _CALL.memo = None
+    return _events(start, end)
+
+
+def _events(start: date, end: date) -> list[Event]:
     out: list[Event] = []
     for year in range(start.year, end.year + 1):
         for month in range(1, 13):

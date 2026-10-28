@@ -638,6 +638,17 @@ def family_momentum_volgate(
     m = mom.to_numpy()
     c = h1["close"].to_numpy()
     o = h1["open"].to_numpy()
+    if _vec.enabled():
+        # Speed only: the same signals from the bars that can emit (families_vector).
+        try:
+            fast = _vec.momentum_volgate_emit(
+                h1=h1, a=a, vm=vm, m=m, c=c, o=o, mom_n=mom_n, vol_gate_q=vol_gate_q,
+                mom_thresh=mom_thresh, ttl_bars=ttl_bars, rr=rr)
+        except Exception as exc:
+            _vec.fell_back("momentum_volgate", exc)
+            fast = None
+        if fast is not None:
+            return fast
     signals: list[Signal] = []
     for i in range(mom_n + 1, len(h1) - 2):
         if np.isnan(c[i]):
@@ -904,6 +915,18 @@ def family_level_breakout(
 ) -> list[Signal]:
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
+    if _vec.enabled():
+        # Speed only: the same signals from the bars that can emit (families_vector).
+        try:
+            fast = _vec.level_breakout_emit(
+                h1=h1, atr=atr, level=level, signal_hour=signal_hour, wait_bars=wait_bars,
+                ttl_bars=ttl_bars, rr=rr, vol_filter=vol_filter, vol_gate_q=vol_gate_q,
+                range_filter=range_filter, spread_gate=spread_gate)
+        except Exception as exc:
+            _vec.fell_back("level_breakout", exc)
+            fast = None
+        if fast is not None:
+            return fast
     atr_med = atr.rolling(200, min_periods=60).median()
     h1 = h1.assign(date=h1.index.date)
     if level == "pdh":
@@ -1178,6 +1201,17 @@ def family_mean_reversion_rsi(
     a = atr.to_numpy()
     r = rsi.to_numpy()
     o = h1["open"].to_numpy()
+    if _vec.enabled():
+        # Speed only: the same signals from the bars that can emit (families_vector).
+        try:
+            fast = _vec.mean_reversion_rsi_emit(
+                h1=h1, a=a, r=r, o=o, rsi_n=rsi_n, atr_n=atr_n, oversold=oversold,
+                overbought=overbought, ttl_bars=ttl_bars, rr=rr)
+        except Exception as exc:
+            _vec.fell_back("mean_reversion_rsi", exc)
+            fast = None
+        if fast is not None:
+            return fast
     signals: list[Signal] = []
     _ts_h1 = list(h1.index)
     for i in range(max(rsi_n, atr_n) + 1, len(h1) - 2):
@@ -1224,6 +1258,17 @@ def family_mean_reversion_bollinger(
     o = h1["open"].to_numpy()
     lo_arr = lower.to_numpy()
     hi_arr = upper.to_numpy()
+    if _vec.enabled():
+        # Speed only: the same signals from the bars that can emit (families_vector).
+        try:
+            fast = _vec.mean_reversion_bollinger_emit(
+                h1=h1, a=a, c=c, o=o, lo_arr=lo_arr, hi_arr=hi_arr, bb_n=bb_n, atr_n=atr_n,
+                ttl_bars=ttl_bars, rr=rr)
+        except Exception as exc:
+            _vec.fell_back("mean_reversion_bollinger", exc)
+            fast = None
+        if fast is not None:
+            return fast
     signals: list[Signal] = []
     for i in range(max(bb_n, atr_n) + 1, len(h1) - 2):
         ai = a[i]
@@ -1271,6 +1316,17 @@ def family_trend_ma_cross(
     f = fast.to_numpy()
     s = slow.to_numpy()
     o = h1["open"].to_numpy()
+    if _vec.enabled():
+        # Speed only: the same signals from the bars that can emit (families_vector).
+        try:
+            fast = _vec.trend_ma_cross_emit(
+                h1=h1, a=a, f=f, s=s, o=o, slow_ema=slow_ema, atr_n=atr_n,
+                ttl_bars=ttl_bars, rr=rr)
+        except Exception as exc:
+            _vec.fell_back("trend_ma_cross", exc)
+            fast = None
+        if fast is not None:
+            return fast
     signals: list[Signal] = []
     _ts_h1 = list(h1.index)
     for i in range(max(slow_ema, atr_n) + 1, len(h1) - 2):
@@ -1364,6 +1420,17 @@ def family_range_reversion(
     a = atr.to_numpy()
     c = h1["close"].to_numpy()
     o = h1["open"].to_numpy()
+    if _vec.enabled():
+        # Speed only: the same signals from the bars that can emit (families_vector).
+        try:
+            fast = _vec.range_reversion_emit(
+                h1=h1, a=a, c=c, o=o, range_n=range_n, threshold_pct=threshold_pct,
+                ttl_bars=ttl_bars, rr=rr)
+        except Exception as exc:
+            _vec.fell_back("range_reversion", exc)
+            fast = None
+        if fast is not None:
+            return fast
     signals: list[Signal] = []
     for i in range(range_n + 1, len(h1) - 2):
         ai = a[i]
@@ -1496,6 +1563,18 @@ def family_pullback_entry(
     e = ema.to_numpy()
     c = h1["close"].to_numpy()
     o = h1["open"].to_numpy()
+    if _vec.enabled():
+        # Speed only: the same signals from the bars that can emit (families_vector).
+        try:
+            fast = _vec.pullback_entry_emit(
+                h1=h1, a=a, r=r, e=e, c=c, o=o, trend_ema=trend_ema, rsi_n=rsi_n,
+                atr_n=atr_n, rsi_pullback=rsi_pullback, rsi_bounce=rsi_bounce,
+                ttl_bars=ttl_bars, rr=rr)
+        except Exception as exc:
+            _vec.fell_back("pullback_entry", exc)
+            fast = None
+        if fast is not None:
+            return fast
     signals: list[Signal] = []
     for i in range(max(trend_ema, rsi_n, atr_n) + 1, len(h1) - 2):
         ai = a[i]
@@ -1598,6 +1677,17 @@ def family_engulfing_reversal(
     h_arr = h1["high"].to_numpy()
     l_arr = h1["low"].to_numpy()
     c_arr = h1["close"].to_numpy()
+    if _vec.enabled():
+        # Speed only: the same signals from the bars that can emit (families_vector).
+        try:
+            fast = _vec.engulfing_reversal_emit(
+                h1=h1, a=a, o_arr=o_arr, h_arr=h_arr, l_arr=l_arr, c_arr=c_arr, n=n,
+                ttl_bars=ttl_bars, rr=rr)
+        except Exception as exc:
+            _vec.fell_back("engulfing_reversal", exc)
+            fast = None
+        if fast is not None:
+            return fast
     signals: list[Signal] = []
     _ts_h1 = list(h1.index)
     for i in range(n + 1, len(h1) - 2):
@@ -1849,6 +1939,17 @@ def family_adx_channel_hybrid(
     st = strengthening.to_numpy()
     ok = (~np.isnan(adx.to_numpy())) & (~np.isnan(hi_a)) & (~np.isnan(a))
 
+    if _vec.enabled():
+        # Speed only: the same signals from the bars that can emit (families_vector).
+        try:
+            fast = _vec.adx_channel_hybrid_emit(
+                h1=h1, c=c, a=a, hi_a=hi_a, lo_a=lo_a, st=st, ok=ok, stop_atr=stop_atr,
+                ttl_bars=ttl_bars, rr=rr)
+        except Exception as exc:
+            _vec.fell_back("adx_channel_hybrid", exc)
+            fast = None
+        if fast is not None:
+            return fast
     signals: list[Signal] = []
     last_side = 0
     for i in range(len(h1) - 2):

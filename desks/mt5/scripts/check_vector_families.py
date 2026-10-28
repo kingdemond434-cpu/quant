@@ -80,6 +80,26 @@ CASES: list[tuple[str, dict[str, Any]]] = [
     ("multi_speed_trend", {"crisis_only": True, "hold_days": 1, "min_agreement": 0.5}),
     ("formula", {"expr": "sub(close, open)", "entry_z": 0.5}),
     ("formula", {"expr": ["ts_rank", "spread", 240], "side_mode": "fade", "hold_bars": 8}),
+    # wave 2
+    ("level_breakout", {}),
+    ("level_breakout", {"level": "week", "vol_filter": "high", "range_filter": "small",
+                        "spread_gate": True}),
+    ("engulfing_reversal", {}),
+    ("momentum_volgate", {}),
+    ("adx_channel_hybrid", {}),
+    ("mean_reversion_rsi", {}),
+    ("mean_reversion_bollinger", {"bb_k": 1.0}),
+    ("trend_ma_cross", {}),
+    ("pullback_entry", {}),
+    ("range_reversion", {}),
+    ("vol_transition", {}),
+    ("vol_mean_reversion", {}),
+    ("spread_state", {}),
+    ("spread_state", {"mode": "calm_continuation", "norm_window": 60}),
+    ("htf_anchor_trend", {}),
+    ("htf_anchor_trend", {"expansion_mult": 1.25, "exit_on_anchor_flip": False}),
+    ("regime_transition", {"window": 250, "refit_days": 250, "entry_p_leave": 0.1}),
+    ("forced_flow", {"event_kind": "fixing", "mode": "post_flow_fade"}),
 ]
 
 #: (family, params) run on the hostile variants of the first chart.
@@ -89,6 +109,19 @@ HOSTILE: list[tuple[str, dict[str, Any]]] = [
     ("ict_fvg", {}),
     ("multi_speed_trend", {"hold_days": 1, "min_agreement": 0.5}),
     ("formula", {"expr": "sub(close, open)"}),
+    ("level_breakout", {}),
+    ("engulfing_reversal", {}),
+    ("momentum_volgate", {}),
+    ("adx_channel_hybrid", {}),
+    ("mean_reversion_rsi", {}),
+    ("mean_reversion_bollinger", {}),
+    ("trend_ma_cross", {}),
+    ("pullback_entry", {}),
+    ("range_reversion", {}),
+    ("vol_transition", {}),
+    ("vol_mean_reversion", {}),
+    ("spread_state", {}),
+    ("htf_anchor_trend", {}),
 ]
 
 
@@ -141,6 +174,10 @@ class _Engagement:
     def __init__(self) -> None:
         self.counts: dict[str, int] = {}
         self._saved: dict[str, Any] = {}
+        self._ffl: Any = None
+        self._ffl_path: Any = None
+        self._cal: Any = None
+        self._cal_inner: Any = None
         try:
             for attr in dir(families_vector):
                 if attr.endswith("_emit") or attr == "true_range":
@@ -148,6 +185,23 @@ class _Engagement:
                     fn = getattr(families_vector, attr)
                     self._saved[attr] = fn
                     setattr(families_vector, attr, self._wrap(family, fn))
+            # forced_flow's fast path is the per-call memo inside `forced_flow_calendar.events()`,
+            # reached only when the calendar artifact is absent. For the length of this check the
+            # family is pointed at an absent artifact (in-process, nothing on disk changes) and a
+            # rules pass with the memo live counts as engaged.
+            from mt5desk import family_forced_flow as ffl
+            self._ffl, self._ffl_path = ffl, ffl.CALENDAR_PATH
+            ffl.CALENDAR_PATH = Path(os.devnull + ".absent-forced-flow-calendar.json")
+            cal = ffl._calendar_module()
+            if cal is not None:
+                inner = cal._events
+
+                def events(*args: Any, **kwargs: Any) -> Any:
+                    if getattr(cal._CALL, "memo", None) is not None:
+                        self.counts["forced_flow"] = self.counts.get("forced_flow", 0) + 1
+                    return inner(*args, **kwargs)
+                self._cal, self._cal_inner = cal, inner
+                cal._events = events
         except BaseException:
             self.restore()                  # a half-wrapped module never outlives the check
             raise
@@ -163,6 +217,10 @@ class _Engagement:
     def restore(self) -> None:
         for attr, fn in self._saved.items():
             setattr(families_vector, attr, fn)
+        if self._ffl is not None:
+            self._ffl.CALENDAR_PATH = self._ffl_path
+        if self._cal is not None:
+            self._cal._events = self._cal_inner
 
 
 def _count_engagement() -> _Engagement:

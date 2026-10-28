@@ -7,8 +7,16 @@ loop uses to `continue`, negated the same way (so a NaN takes the same branch), 
 that reaches a `Signal` is computed by the same scalar expression on the same scalar types as the
 original (`np.float64` from the same arrays, Python `float` where the original called `float`).
 So the Signal lists are identical: same signals, same order, every field bit-identical, every
-Timestamp the same object value with the same tz. `tests/test_families_vector_identity.py` pins
-it on real parquets, old against new, field by field and type by type.
+Timestamp the same object value with the same tz. `tests/test_families_vector_identity.py`
+(wave 1) and `tests/test_families_vector_identity_wave2.py` (wave 2) pin it on real parquets, old
+against new, field by field and type by type; `scripts/check_vector_families.py` re-runs it on
+whichever box it is on.
+
+Wave 1: formula, session_range_breakout, failed_breakout, ict_fvg, multi_speed_trend, `_atr`.
+Wave 2: level_breakout, engulfing_reversal, momentum_volgate, adx_channel_hybrid,
+mean_reversion_rsi, mean_reversion_bollinger, trend_ma_cross, pullback_entry, range_reversion,
+vol_transition, vol_mean_reversion, spread_state, htf_anchor_trend, and regime_transition's
+emission after its (already memoised) hazard path.
 
 THE OLD LOOPS ARE KEPT, VERBATIM, IN THE FAMILY FUNCTIONS, behind `enabled()`:
 
@@ -23,7 +31,8 @@ gateway alike, within `MARKER_TTL_S`), so the original loops answer without anyo
 switch. A later IDENTICAL check removes it; an UNMEASURED one leaves it exactly as it was.
 
 A fast function that meets ANY input it was not written for (a parameter of an unexpected type,
-an index that is not the tz-aware UTC nanosecond clock `_h1` promises, a missing column) returns
+an index that is not the tz-aware UTC nanosecond clock `_h1` promises or holds NaT, a missing,
+duplicated, nullable, extension or object column) returns
 `None`, and the caller then runs its original loop. So an input that made the old code raise still
 raises the old exception from the old code, and no input can take a different branch here than it
 would have there. Nothing is fitted, gated, counted or charged in this module.
@@ -681,3 +690,665 @@ def multi_speed_trend_emit(*, d: pd.DataFrame, close: pd.Series, daily: pd.Serie
                               tag=tag, trigger=None, wait_bars=1))
         last_entry_day = i
     return signals
+
+
+# ================================================================================================
+# WAVE 2 (2026-10-28): the per-bar array loops of the breakout / reversion families.
+#
+# THE ARGUMENT IS A SUPERSET, NOT AN EQUIVALENCE, which is what makes it cheap to trust. Each
+# function below builds a vector mask that is a NECESSARY condition for its family to emit at a
+# bar (any bar where the original could emit is in the mask; extra bars are harmless), then runs
+# the original per-bar body -- copied, every test still in it -- on the masked bars only, in
+# order. A bar outside the mask would have hit a `continue` in the original, so skipping it is
+# exact; and every bar inside it takes exactly the original's branches. Loops that carry state
+# (`last`, `last_side`, `last_exit`) update it only on bars that pass the masked tests, so the
+# state seen at each visited bar is the original's too. NaN in a mask comparison is False, the
+# same as in the scalar comparison it mirrors, and where a NaN could make the original pass a
+# test the vector form would not (Python `max` over a window holding NaN), the mask admits the
+# bar outright.
+# ================================================================================================
+
+def _lag(x: np.ndarray, k: int = 1) -> np.ndarray:
+    """x shifted forward by k bars as float64 with NaN in front (x[i - k] at position i)."""
+    out = np.full(x.shape, np.nan, dtype=np.float64)
+    if k < x.size:
+        out[k:] = x[:x.size - k]
+    return out
+
+
+def _span(start: Any, stop: int, lag: int) -> tuple[int, int] | None:
+    """The original's `range(start, stop)` (raising as it would), or None when its first index
+    reaches behind the array (negative indexing is the original's business, not ours)."""
+    r = range(start, stop)
+    if r.start < lag:
+        return None
+    return r.start, r.stop
+
+
+def _visit(mask: np.ndarray, lo: int, hi: int) -> list[int]:
+    if hi <= lo:
+        return []
+    return (np.flatnonzero(mask[lo:hi]) + lo).tolist()
+
+
+def _floats(*arrays: Any) -> bool:
+    return all(isinstance(x, np.ndarray) and x.dtype == np.float64 for x in arrays)
+
+
+def _frame_ok(frame: Any) -> bool:
+    """The wave-2 entry guard, the same classes as wave 1's (audit 2026-10-28): a UTC ns index
+    with no NaT, unique column labels, and plain numpy int/float OHLC (and spread, if present).
+    Anything else takes the original loop."""
+    return (isinstance(frame, pd.DataFrame) and _utc_ns(frame.index)
+            and _plain_frame(frame, _OHLC, "spread"))
+
+
+def momentum_volgate_emit(*, h1: pd.DataFrame, a: np.ndarray, vm: np.ndarray, m: np.ndarray,
+                          c: np.ndarray, o: np.ndarray, mom_n: Any, vol_gate_q: Any,
+                          mom_thresh: Any, ttl_bars: Any, rr: Any) -> list[Signal] | None:
+    if not _frame_ok(h1):
+        return None
+    if not _num(vol_gate_q, mom_thresh) or not _floats(a, vm, m, c, o):
+        return None
+    sp = _span(mom_n + 1, len(h1) - 2, 1)
+    if sp is None:
+        return None
+    with np.errstate(invalid="ignore"):
+        mask = (a > 0) & ~(np.abs(m) < mom_thresh)
+    pending: list[tuple[int, dict]] = []
+    for i in _visit(mask, *sp):
+        if np.isnan(c[i]):
+            continue
+        ai = a[i]
+        v = vm[i]
+        if not (ai > 0) or np.isnan(v) or ai < vol_gate_q * v:
+            continue
+        mi = m[i]
+        if np.isnan(mi) or abs(mi) < mom_thresh:
+            continue
+        if abs(mi) < 0.35 * (ai / c[i]):
+            continue
+        side = 1 if mi > 0 else -1
+        entry = o[i + 1]
+        stop_dist = 1.2 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        pending.append((i + 1, {"side": side, "stop": stop, "target": target,
+                                "ttl_bars": ttl_bars, "tag": "momentum_volgate"}))
+    return _signals(h1.index, pending)
+
+
+def level_breakout_emit(*, h1: pd.DataFrame, atr: pd.Series, level: Any, signal_hour: Any,
+                        wait_bars: Any, ttl_bars: Any, rr: Any, vol_filter: Any,
+                        vol_gate_q: Any, range_filter: Any,
+                        spread_gate: Any) -> list[Signal] | None:
+    """`family_level_breakout` from `h1 = _h1(df)` and `atr` on, over its signal-hour bars.
+
+    `pdh`: the per-day frame by day number (`_day_frame`). Any other level: the original's ISO
+    week key and groupby, unchanged, looked up by position. `atr_med` and the spread median are
+    computed only when the branch that reads them is on.
+    """
+    if not _frame_ok(h1):
+        return None
+    index = h1.index
+    if not _utc_ns(index) or not _num(signal_hour) or isinstance(signal_hour, bool):
+        return None
+    if not _num(vol_gate_q):
+        return None
+    if not _plain(atr):
+        return None
+    has_spread = "spread" in h1.columns
+    n = len(h1)
+    if n < 4:
+        return None
+    if level == "pdh":
+        dayno = _dayno(index)
+        d = _day_frame(h1, None, dayno)
+        keys = dayno
+    else:
+        iso = index.isocalendar()
+        wkey = (iso.year.astype(int) * 100 + iso.week.astype(int)).to_numpy()
+        d = h1[["high", "low"]].groupby(wkey).agg(hi=("high", "max"), lo=("low", "min"))
+        keys = wkey
+    phi_arr = d["hi"].shift(1).to_numpy()
+    plo_arr = d["lo"].shift(1).to_numpy()
+    span_med = (d["hi"] - d["lo"]).rolling(20, min_periods=10).median().to_numpy()
+    dpos = _positions(d.index.to_numpy(), np.asarray(keys))
+    hours = _hours(index)
+    mask = hours == signal_hour
+    if level == "week":
+        mask &= np.asarray(index.dayofweek) == 0
+    a = atr.to_numpy()
+    o = h1["open"].to_numpy()
+    am = sm = sp = None
+    if vol_filter == "high":
+        am = atr.rolling(200, min_periods=60).median().to_numpy()
+    if spread_gate and has_spread:
+        sp = h1["spread"].to_numpy()
+        sm = h1["spread"].rolling(96).median().to_numpy()
+    tag = f"level_breakout.{level}"
+    pending: list[tuple[int, dict]] = []
+    for i in _visit(mask, 1, n - 2):
+        if np.isnan(o[i]):
+            continue
+        ai = a[i]
+        if not (ai > 0):
+            continue
+        if vol_filter == "high":
+            v = am[i]
+            if np.isnan(v) or ai < vol_gate_q * v:
+                continue
+        if spread_gate and (sm is None or np.isnan(sm[i]) or sp[i] > sm[i]):
+            continue
+        p = dpos[i]
+        if p < 0:
+            continue
+        hi, lo = float(phi_arr[p]), float(plo_arr[p])
+        if not (hi > 0) or not (lo > 0) or hi <= lo:
+            continue
+        span = hi - lo
+        if span <= 0:
+            continue
+        if range_filter == "small":
+            sm2 = span_med[p]
+            if np.isnan(sm2) or span >= sm2:
+                continue
+        dist = max(1.2 * ai, span)
+        pending.append((i, {"side": 1, "stop": hi - dist, "target": hi + dist * rr,
+                            "ttl_bars": ttl_bars, "tag": tag, "trigger": hi,
+                            "wait_bars": wait_bars}))
+        pending.append((i, {"side": -1, "stop": lo + dist, "target": lo - dist * rr,
+                            "ttl_bars": ttl_bars, "tag": tag, "trigger": lo,
+                            "wait_bars": wait_bars}))
+    return _signals(index, pending)
+
+
+def mean_reversion_rsi_emit(*, h1: pd.DataFrame, a: np.ndarray, r: np.ndarray, o: np.ndarray,
+                            rsi_n: Any, atr_n: Any, oversold: Any, overbought: Any,
+                            ttl_bars: Any, rr: Any) -> list[Signal] | None:
+    if not _frame_ok(h1):
+        return None
+    if not _num(oversold, overbought) or not _floats(a, r, o):
+        return None
+    sp = _span(max(rsi_n, atr_n) + 1, len(h1) - 2, 1)
+    if sp is None:
+        return None
+    rp = _lag(r)
+    with np.errstate(invalid="ignore"):
+        mask = ((rp < oversold) & (r >= oversold)) | ((rp > overbought) & (r <= overbought))
+    pending: list[tuple[int, dict]] = []
+    for i in _visit(mask, *sp):
+        ai = a[i]
+        if not (ai > 0) or np.isnan(r[i]) or np.isnan(r[i - 1]):
+            continue
+        side = 0
+        if r[i - 1] < oversold and r[i] >= oversold:
+            side = 1
+        elif r[i - 1] > overbought and r[i] <= overbought:
+            side = -1
+        if side == 0:
+            continue
+        entry = o[i]
+        stop_dist = 1.2 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        pending.append((i, {"side": side, "stop": stop, "target": target,
+                            "ttl_bars": ttl_bars, "tag": "mean_reversion_rsi"}))
+    return _signals(h1.index, pending)
+
+
+def mean_reversion_bollinger_emit(*, h1: pd.DataFrame, a: np.ndarray, c: np.ndarray,
+                                  o: np.ndarray, lo_arr: np.ndarray, hi_arr: np.ndarray,
+                                  bb_n: Any, atr_n: Any, ttl_bars: Any,
+                                  rr: Any) -> list[Signal] | None:
+    if not _frame_ok(h1):
+        return None
+    if not _floats(a, c, o, lo_arr, hi_arr):
+        return None
+    sp = _span(max(bb_n, atr_n) + 1, len(h1) - 2, 1)
+    if sp is None:
+        return None
+    cp = _lag(c)
+    with np.errstate(invalid="ignore"):
+        mask = ((cp < lo_arr) & (c >= lo_arr)) | ((cp > hi_arr) & (c <= hi_arr))
+    pending: list[tuple[int, dict]] = []
+    for i in _visit(mask, *sp):
+        ai = a[i]
+        if not (ai > 0) or np.isnan(lo_arr[i]) or np.isnan(hi_arr[i]):
+            continue
+        if np.isnan(c[i - 1]):
+            continue
+        side = 0
+        if c[i - 1] < lo_arr[i] and c[i] >= lo_arr[i]:
+            side = 1
+        elif c[i - 1] > hi_arr[i] and c[i] <= hi_arr[i]:
+            side = -1
+        if side == 0:
+            continue
+        entry = o[i + 1]
+        stop_dist = 1.2 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        pending.append((i + 1, {"side": side, "stop": stop, "target": target,
+                                "ttl_bars": ttl_bars, "tag": "mean_reversion_bollinger"}))
+    return _signals(h1.index, pending)
+
+
+def trend_ma_cross_emit(*, h1: pd.DataFrame, a: np.ndarray, f: np.ndarray, s: np.ndarray,
+                        o: np.ndarray, slow_ema: Any, atr_n: Any, ttl_bars: Any,
+                        rr: Any) -> list[Signal] | None:
+    if not _frame_ok(h1):
+        return None
+    if not _floats(a, f, s, o):
+        return None
+    sp = _span(max(slow_ema, atr_n) + 1, len(h1) - 2, 1)
+    if sp is None:
+        return None
+    fp, spv = _lag(f), _lag(s)
+    with np.errstate(invalid="ignore"):
+        mask = ((fp < spv) & (f >= s)) | ((fp > spv) & (f <= s))
+    pending: list[tuple[int, dict]] = []
+    for i in _visit(mask, *sp):
+        ai = a[i]
+        if not (ai > 0) or np.isnan(f[i]) or np.isnan(s[i]):
+            continue
+        if np.isnan(f[i - 1]) or np.isnan(s[i - 1]):
+            continue
+        side = 0
+        if f[i - 1] < s[i - 1] and f[i] >= s[i]:
+            side = 1
+        elif f[i - 1] > s[i - 1] and f[i] <= s[i]:
+            side = -1
+        if side == 0:
+            continue
+        entry = o[i]
+        stop_dist = 1.2 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        pending.append((i, {"side": side, "stop": stop, "target": target,
+                            "ttl_bars": ttl_bars, "tag": "trend_ma_cross"}))
+    return _signals(h1.index, pending)
+
+
+def pullback_entry_emit(*, h1: pd.DataFrame, a: np.ndarray, r: np.ndarray, e: np.ndarray,
+                        c: np.ndarray, o: np.ndarray, trend_ema: Any, rsi_n: Any, atr_n: Any,
+                        rsi_pullback: Any, rsi_bounce: Any, ttl_bars: Any,
+                        rr: Any) -> list[Signal] | None:
+    if not _frame_ok(h1):
+        return None
+    if not _num(rsi_pullback, rsi_bounce) or not _floats(a, r, e, c, o):
+        return None
+    sp = _span(max(trend_ema, rsi_n, atr_n) + 1, len(h1) - 2, 1)
+    if sp is None:
+        return None
+    rp = _lag(r)
+    with np.errstate(invalid="ignore"):
+        mask = (((c > e) & (rp < rsi_pullback) & (r >= rsi_bounce))
+                | ((c < e) & (rp > (100 - rsi_pullback)) & (r <= (100 - rsi_bounce))))
+    pending: list[tuple[int, dict]] = []
+    for i in _visit(mask, *sp):
+        ai = a[i]
+        if not (ai > 0) or np.isnan(r[i]) or np.isnan(e[i]):
+            continue
+        if np.isnan(r[i - 1]) or np.isnan(c[i - 1]):
+            continue
+        side = 0
+        if c[i] > e[i] and r[i - 1] < rsi_pullback and r[i] >= rsi_bounce:
+            side = 1
+        elif c[i] < e[i] and r[i - 1] > (100 - rsi_pullback) and r[i] <= (100 - rsi_bounce):
+            side = -1
+        if side == 0:
+            continue
+        entry = o[i + 1]
+        stop_dist = 1.2 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        pending.append((i + 1, {"side": side, "stop": stop, "target": target,
+                                "ttl_bars": ttl_bars, "tag": "pullback_entry"}))
+    return _signals(h1.index, pending)
+
+
+def range_reversion_emit(*, h1: pd.DataFrame, a: np.ndarray, c: np.ndarray, o: np.ndarray,
+                         range_n: Any, threshold_pct: Any, ttl_bars: Any,
+                         rr: Any) -> list[Signal] | None:
+    if not _frame_ok(h1):
+        return None
+    if not _num(threshold_pct) or not isinstance(range_n, int) or isinstance(range_n, bool):
+        return None
+    if not _floats(a, c, o) or range_n < 1:
+        return None
+    sp = _span(range_n + 1, len(h1) - 2, 1)
+    if sp is None:
+        return None
+    cl = _lag(c, range_n)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        mask = (a > 0) & ~(np.abs((c - cl) / cl) < threshold_pct)
+    pending: list[tuple[int, dict]] = []
+    for i in _visit(mask, *sp):
+        ai = a[i]
+        if not (ai > 0) or np.isnan(c[i]) or np.isnan(c[i - range_n]):
+            continue
+        move = (c[i] - c[i - range_n]) / c[i - range_n]
+        if abs(move) < threshold_pct:
+            continue
+        entry = o[i + 1]
+        stop_dist = 1.2 * ai
+        side = -1 if move > 0 else 1
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        pending.append((i + 1, {"side": side, "stop": stop, "target": target,
+                                "ttl_bars": ttl_bars, "tag": "range_reversion"}))
+    return _signals(h1.index, pending)
+
+
+def engulfing_reversal_emit(*, h1: pd.DataFrame, a: np.ndarray, o_arr: np.ndarray,
+                            h_arr: np.ndarray, l_arr: np.ndarray, c_arr: np.ndarray, n: Any,
+                            ttl_bars: Any, rr: Any) -> list[Signal] | None:
+    """Original: `prev_h = max(h_arr[i - n:i])` with Python's `max`. On a window holding NaN,
+    Python's `max` is order-dependent, so such windows are admitted outright; on a NaN-free
+    window it equals the numpy max of the same values."""
+    if not _frame_ok(h1):
+        return None
+    if not isinstance(n, int) or isinstance(n, bool) or n < 1:
+        return None
+    if not _floats(a, o_arr, h_arr, l_arr, c_arr):
+        return None
+    N = len(h1)
+    sp = _span(n + 1, N - 2, n)
+    if sp is None:
+        return None
+    from numpy.lib.stride_tricks import sliding_window_view
+    mask = np.zeros(N, dtype=bool)
+    if n < N:
+        hw = sliding_window_view(h_arr, n)[:N - n]      # row j = h[j : j + n] = window of i=j+n
+        lw = sliding_window_view(l_arr, n)[:N - n]
+        bad = np.isnan(hw).any(axis=1) | np.isnan(lw).any(axis=1)
+        with np.errstate(invalid="ignore"):
+            hit = ((h_arr[n:] > np.max(hw, axis=1)) & (l_arr[n:] < np.min(lw, axis=1))
+                   & (c_arr[n:] != o_arr[n:]))
+        mask[n:] = bad | hit
+        mask &= a > 0
+    pending: list[tuple[int, dict]] = []
+    for i in _visit(mask, *sp):
+        ai = a[i]
+        if not (ai > 0):
+            continue
+        if np.isnan(c_arr[i]) or np.isnan(o_arr[i]):
+            continue
+        prev_h = max(h_arr[i - n:i])
+        prev_l = min(l_arr[i - n:i])
+        curr_h = h_arr[i]
+        curr_l = l_arr[i]
+        side = 0
+        if curr_h > prev_h and curr_l < prev_l and c_arr[i] > o_arr[i]:
+            side = 1
+        elif curr_h > prev_h and curr_l < prev_l and c_arr[i] < o_arr[i]:
+            side = -1
+        if side == 0:
+            continue
+        entry = o_arr[i + 1] if i + 1 < N else c_arr[i]
+        stop_dist = 1.2 * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        pending.append((i, {"side": side, "stop": stop, "target": target,
+                            "ttl_bars": ttl_bars, "tag": "engulfing_reversal"}))
+    return _signals(h1.index, pending)
+
+
+def adx_channel_hybrid_emit(*, h1: pd.DataFrame, c: np.ndarray, a: np.ndarray,
+                            hi_a: np.ndarray, lo_a: np.ndarray, st: np.ndarray, ok: np.ndarray,
+                            stop_atr: Any, ttl_bars: Any, rr: Any) -> list[Signal] | None:
+    """Stateful (`last_side`), but the state moves only on bars at exactly one channel extreme
+    with `ok` and ATR > 0, which is the mask; every other bar `continue`s before touching it."""
+    if not _frame_ok(h1):
+        return None
+    if not _floats(c, a, hi_a, lo_a):
+        return None
+    o = h1["open"].to_numpy()
+    N = len(h1)
+    with np.errstate(invalid="ignore"):
+        mask = ok & (a > 0) & ((c >= hi_a) | (c <= lo_a))
+    pending: list[tuple[int, dict]] = []
+    last_side = 0
+    for i in _visit(mask, 0, N - 2):
+        if not ok[i] or not (a[i] > 0):
+            continue
+        at_high = c[i] >= hi_a[i]
+        at_low = c[i] <= lo_a[i]
+        if not (at_high or at_low):
+            continue
+        if at_high and at_low:
+            continue
+        side = 1 if (at_high == bool(st[i])) else -1
+        if side == last_side:
+            continue
+        last_side = side
+        entry = o[i + 1]
+        if not (entry > 0):
+            continue
+        stop_dist = stop_atr * a[i]
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        pending.append((i + 1, {"side": side, "stop": stop, "target": target,
+                                "ttl_bars": ttl_bars, "tag": "adx_channel_hybrid"}))
+    return _signals(h1.index, pending)
+
+
+def vol_transition_emit(*, d: pd.DataFrame, vf: np.ndarray, vs: np.ndarray, at: np.ndarray,
+                        cl: np.ndarray, ret: np.ndarray, slow: Any, ratio_in: Any,
+                        stop_atr: Any, rr: Any, ttl_bars: Any) -> list[Signal] | None:
+    if not _frame_ok(d):
+        return None
+    if not _num(ratio_in) or not _floats(vf, vs, at, cl, ret):
+        return None
+    sp = _span(slow + 1, len(d) - 1, 1)
+    if sp is None:
+        return None
+    with np.errstate(invalid="ignore", divide="ignore"):
+        ratio = vf / vs
+        mask = (_lag(ratio) < ratio_in) & (ratio >= ratio_in)
+    pending: list[tuple[int, dict]] = []
+    for i in _visit(mask, *sp):
+        prev = float(vf[i - 1] / vs[i - 1]) if vs[i - 1] else np.nan
+        now = float(vf[i] / vs[i]) if vs[i] else np.nan
+        if not (np.isfinite(prev) and np.isfinite(now)):
+            continue
+        if not (prev < ratio_in <= now):
+            continue
+        a = float(at[i])
+        if not np.isfinite(a) or a <= 0:
+            continue
+        px = float(cl[i])
+        side = 1 if float(ret[i]) >= 0 else -1
+        pending.append((i, {"side": side, "stop": px - side * stop_atr * a,
+                            "target": px + side * stop_atr * a * rr, "ttl_bars": ttl_bars,
+                            "tag": "vol_transition", "trigger": None, "wait_bars": 1}))
+    return _signals(d.index, pending)
+
+
+def vol_mean_reversion_emit(*, d: pd.DataFrame, z: np.ndarray, at: np.ndarray, cl: np.ndarray,
+                            ret: np.ndarray, lookback: Any, z_in: Any, stop_atr: Any, rr: Any,
+                            ttl_bars: Any) -> list[Signal] | None:
+    if not _frame_ok(d):
+        return None
+    if not _num(z_in) or not _floats(z, at, cl, ret):
+        return None
+    sp = _span(lookback + 1, len(d) - 1, 0)
+    if sp is None:
+        return None
+    with np.errstate(invalid="ignore"):
+        mask = np.isfinite(z) & ~(z > z_in)
+    pending: list[tuple[int, dict]] = []
+    for i in _visit(mask, *sp):
+        zi = float(z[i]) if np.isfinite(z[i]) else np.nan
+        if not np.isfinite(zi) or zi > z_in:
+            continue
+        a = float(at[i])
+        if not np.isfinite(a) or a <= 0:
+            continue
+        px = float(cl[i])
+        side = 1 if float(ret[i]) >= 0 else -1
+        pending.append((i, {"side": side, "stop": px - side * stop_atr * a,
+                            "target": px + side * stop_atr * a * rr, "ttl_bars": ttl_bars,
+                            "tag": "vol_mean_reversion", "trigger": None, "wait_bars": 1}))
+    return _signals(d.index, pending)
+
+
+def spread_state_emit(*, frame: pd.DataFrame, idx: pd.DatetimeIndex, at: np.ndarray,
+                      ret: np.ndarray,
+                      sp_rank: np.ndarray, act_rank: np.ndarray, close: np.ndarray,
+                      has_vol: bool, norm_window: Any, hold_bars: Any, min_move_atr: Any,
+                      mode: str, spike_pct: Any, calm_pct: Any, active_pct: Any,
+                      stop_atr: Any, rr: Any) -> list[Signal] | None:
+    """Stateful (`last`, hold spacing) like `formula`: the mask is the stateless filters, which a
+    bar must pass before it can move `last`, so the hold test sees the original's `last`."""
+    if not _frame_ok(frame):
+        return None
+    if not _num(min_move_atr, spike_pct, calm_pct, active_pct, hold_bars):
+        return None
+    if not _floats(at, ret, sp_rank, close):
+        return None
+    sp = _span(norm_window, len(idx) - 1, 0)
+    if sp is None:
+        return None
+    with np.errstate(invalid="ignore"):
+        mask = (np.isfinite(at) & ~(at <= 0) & np.isfinite(ret)
+                & ~(np.abs(ret) < min_move_atr * at) & np.isfinite(sp_rank))
+        if mode == "spike_reversion":
+            mask &= ~(sp_rank < spike_pct)
+        else:
+            mask &= ~(sp_rank > calm_pct)
+    pending: list[tuple[int, dict]] = []
+    last = -10 ** 9
+    tag = f"spread_state:{mode}"
+    for i in _visit(mask, *sp):
+        if i - last < hold_bars:
+            continue
+        a = float(at[i])
+        if not np.isfinite(a) or a <= 0:
+            continue
+        mv = float(ret[i])
+        if not np.isfinite(mv) or abs(mv) < min_move_atr * a:
+            continue
+        sr = float(sp_rank[i])
+        if not np.isfinite(sr):
+            continue
+        if mode == "spike_reversion":
+            if sr < spike_pct:
+                continue
+            side = -1 if mv > 0 else 1
+        else:
+            ar = float(act_rank[i]) if has_vol else np.nan
+            if sr > calm_pct or (has_vol and (not np.isfinite(ar) or ar < active_pct)):
+                continue
+            side = 1 if mv > 0 else -1
+        px = float(close[i])
+        pending.append((i, {"side": side, "stop": px - side * stop_atr * a,
+                            "target": px + side * stop_atr * a * rr, "ttl_bars": int(hold_bars),
+                            "tag": tag, "trigger": None, "wait_bars": 1}))
+        last = i
+    return _signals(idx, pending)
+
+
+def htf_anchor_trend_emit(*, frame: pd.DataFrame, idx: pd.DatetimeIndex, diff: np.ndarray,
+                          anch: np.ndarray,
+                          atr: np.ndarray, px: np.ndarray, stop_atr: Any, rr: Any,
+                          max_hold_bars: Any, anchor_mult: Any) -> list[Signal] | None:
+    """Stateful (`last_exit`), which moves only on an emitting cross; the mask is the cross."""
+    if not _frame_ok(frame):
+        return None
+    if not _floats(diff, anch, atr, px):
+        return None
+    n = len(idx)
+    dp = _lag(diff)
+    with np.errstate(invalid="ignore"):
+        mask = ((dp <= 0.0) & (diff > 0.0)) | ((dp >= 0.0) & (diff < 0.0))
+    pending: list[tuple[int, dict]] = []
+    last_exit = -1
+    tag = f"htf_anchor_trend:x{anchor_mult}"
+    for i in _visit(mask, 1, n - 1):
+        prev, cur = diff[i - 1], diff[i]
+        if not (np.isfinite(prev) and np.isfinite(cur)):
+            continue
+        if prev <= 0.0 < cur:
+            side = 1
+        elif prev >= 0.0 > cur:
+            side = -1
+        else:
+            continue
+        if anch[i] * side <= 0.0:
+            continue
+        if i <= last_exit:
+            continue
+        a = float(atr[i])
+        if not np.isfinite(a) or a <= 0:
+            continue
+        entry = float(px[i])
+        pending.append((i, {"side": side, "stop": entry - side * stop_atr * a,
+                            "target": entry + side * stop_atr * a * rr,
+                            "ttl_bars": int(max_hold_bars), "tag": tag, "trigger": None,
+                            "wait_bars": 1}))
+        last_exit = i + int(max_hold_bars)
+    return _signals(idx, pending)
+
+
+# ------------------------------------------------------------------------------------------------
+# regime_transition: the emission after the (memoised) hazard path
+# ------------------------------------------------------------------------------------------------
+
+def regime_transition_emit(*, d: pd.DataFrame, p_leave: pd.Series, age: pd.Series,
+                           move: pd.Series, atr: pd.Series, entry_p_leave: Any, min_age: Any,
+                           side_mode: Any, stop_atr: Any, rr: Any, ttl_bars: Any,
+                           ) -> list[Signal] | None:
+    """`family_regime_transition`'s per-day loop over a hazard path it was handed.
+
+    The original builds {date: last bar of that date} by boxing every bar's Timestamp, then per
+    qualifying day scans the whole index for the first bar after that day's last one and
+    `reindex`es ATR and close at it. On a strictly increasing, unique index the first bar after
+    position p is position p + 1 and `reindex([entry])` is the value at that position, so this
+    reads them by position; the per-day tests and every float expression are the original's, in
+    its order. Any other index shape returns None (the original runs).
+    """
+    if not _frame_ok(d):
+        return None
+    if not all(_plain(x) for x in (p_leave, age, move, atr)):
+        return None
+    idx = d.index
+    if not (isinstance(idx, pd.DatetimeIndex) and idx.is_monotonic_increasing and idx.is_unique):
+        return None
+    if not (p_leave.index.equals(age.index) and p_leave.index.equals(move.index)
+            and p_leave.index.is_unique and atr.index.equals(idx)):
+        return None
+    n = len(idx)
+    last = dict(zip(idx.date, range(n), strict=True))
+    a_arr = atr.to_numpy()
+    c_arr = d["close"].to_numpy()
+    pl_v, age_v, mv_v = p_leave.to_numpy(), age.to_numpy(), move.to_numpy()
+    pending: list[tuple[int, dict]] = []
+    for k, day in enumerate(p_leave.index):
+        pl = pl_v[k]
+        if not np.isfinite(pl) or pl < entry_p_leave:
+            continue
+        a_days = age_v[k]
+        if not np.isfinite(a_days) or a_days < min_age:
+            continue
+        mv = mv_v[k]
+        if not np.isfinite(mv) or mv == 0.0:
+            continue
+        pos = last.get(day)
+        if pos is None:
+            continue
+        j = pos + 1
+        if j >= n:
+            continue
+        a = float(a_arr[j])
+        if not np.isfinite(a) or a <= 0:
+            continue
+        trend = 1 if mv > 0 else -1
+        side = -trend if side_mode == "exhaustion" else trend
+        px = float(c_arr[j])
+        pending.append((j, {"side": side, "stop": px - side * stop_atr * a,
+                            "target": px + side * stop_atr * a * rr, "ttl_bars": ttl_bars,
+                            "tag": f"regime_transition:{side_mode}", "trigger": None,
+                            "wait_bars": 1}))
+    return _signals(idx, pending)
