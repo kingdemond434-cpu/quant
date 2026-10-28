@@ -131,9 +131,13 @@ def test_a_fusion_book_override_row_carries_its_shared_key_over_a_better_evidenc
     own = [("usdnok_carry_v2", "usdnok_carry"), ("usdnok_carry", "usdnok_carry")]
     assert dc.book_carrier_order(own, {"usdnok_carry_v2": inf})["usdnok_carry"][0] \
         == "usdnok_carry"
-    i = _GW.index("_override_names = globals().get(\"MINLOT_OVERRIDE_SLEEVES\")")
-    block = _GW[i:_GW.index("_carriers = book_carriers(_joins, _evidence)", i)]
-    assert '_r.get("minlot_override") is True' in block and "_evidence[_n]" in block
+    # main() ranks override rows through the helper BEFORE either carrier answer is taken; the
+    # helper itself is exercised in test_gateway_adapter.py.
+    main = _GW[_GW.index("\ndef main() -> None:"):]
+    i = main.index('_ovr_fn = globals().get("_override_carrier_evidence")')
+    assert "_evidence = _ovr_fn(sleeves, _shared_rows, _evidence)" in main[i:i + 200]
+    assert i < main.index("_carriers = book_carriers(_joins, _evidence)") \
+        < main.index("_carry_order = book_carrier_order(_joins, _evidence)")
 
 
 def _heat(op: float, growth: float = 0.5, surv: float = 0.5) -> dict:

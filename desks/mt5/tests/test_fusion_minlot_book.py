@@ -969,8 +969,12 @@ def test_the_bracket_loop_fences_each_leg_under_the_lock_and_waits_when_both_are
     def indent(at: int) -> int:
         line = main[main.rindex("\n", 0, at) + 1:at]
         return len(line) - len(line.lstrip())
-    assert indent(k) > indent(main.rindex("with ", 0, i))
-    assert "continue" in main[k:main.index('_xa.publish_mt5(mt5, source="gateway")', j)]
+    lock = indent(main.rindex("with ", 0, i))
+    assert indent(k) > lock
+    p = main.index('_xa.publish_mt5(mt5, source="gateway")', j)
+    assert "continue" in main[k:p]
+    # The book is republished under the same lock it was read under (audit round 2, must-fix 2).
+    assert indent(p) > lock
 
 
 def test_e8_executor_fences_its_send_against_the_fusion_book() -> None:

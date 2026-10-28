@@ -3591,6 +3591,24 @@ def _carrier_walk_order(sleeves: list[dict], joins: list[tuple[str, str | None]]
     return out
 
 
+def _override_carrier_evidence(sleeves: list[dict], shared_rows: list[str],
+                               evidence: dict[str, tuple[float, ...]]
+                               ) -> dict[str, tuple[float, ...]]:
+    """`evidence` with every min-lot override row on a shared key ranked first (a new dict).
+
+    An override row is sized from its key's h; a better-evidenced twin taking the carrier
+    would leave it reading h=0 and sending nothing under a "pins at 0" reason the book never
+    gave. Only rows `stamp_minlot_override` marked this pass AND named in
+    MINLOT_OVERRIDE_SLEEVES qualify; an exact owner is not in `shared_rows` and keeps its key."""
+    names = globals().get("MINLOT_OVERRIDE_SLEEVES") or frozenset()
+    out = dict(evidence)
+    for r in sleeves:
+        n = str(r.get("name") or "")
+        if n in shared_rows and r.get("minlot_override") is True and n in names:
+            out[n] = (float("inf"),) * 3
+    return out
+
+
 def _row_fires(s: dict) -> bool:
     """Did this row's resolution produce an order this pass (so it may carry a shared key)?
     A market lane fires when its plan resolved with a positive size; a bracket when its window
@@ -5998,11 +6016,9 @@ def main() -> None:
     # the book never gave. So such a row ranks ahead of every evidenced twin on a shared key (an
     # exact owner still owns its key), and the walk still falls back if its window does not fire.
     # Looked up, not named, for the harness reason above.
-    _override_names = globals().get("MINLOT_OVERRIDE_SLEEVES") or frozenset()
-    for _r in sleeves:
-        _n = str(_r.get("name") or "")
-        if _n in _shared_rows and _r.get("minlot_override") is True and _n in _override_names:
-            _evidence[_n] = (float("inf"),) * 3
+    _ovr_fn = globals().get("_override_carrier_evidence")
+    if _ovr_fn:
+        _evidence = _ovr_fn(sleeves, _shared_rows, _evidence)
     _carriers = book_carriers(_joins, _evidence)
     _carry_order = book_carrier_order(_joins, _evidence)
     if _walk_fn:
