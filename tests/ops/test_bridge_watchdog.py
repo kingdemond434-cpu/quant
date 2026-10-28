@@ -478,6 +478,20 @@ def test_a_junction_anywhere_on_the_checkout_path_refuses_the_install() -> None:
     ]
     scan = body.index("if (Test-Path -LiteralPath $dir) {")
     assert scan < min(body.index(k) for k in ("New-Item", "icacls.exe", "/setowner", "/reset"))
+    # audit v1.9: a second, identical scan after the lock and right before the recursive reset
+    loop = "foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -Recurse)) {"
+    rows = [x.strip() for x in body.splitlines()]
+    at = [n for n, x in enumerate(rows) if x == loop]
+    assert len(at) == 2
+    assert rows[at[1] : at[1] + 4] == [
+        loop,
+        "if (-not ($c.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }",
+        'throw "$($c.FullName) is a junction or symlink; not installing"',
+        "}",
+    ]
+    lock = next(n for n, x in enumerate(rows) if "/inheritance:r" in x)
+    reset = next(n for n, x in enumerate(rows) if "/reset" in x)
+    assert lock < at[1] < reset
     assert (
         "Write-Warning" not in body and body.count("$KeepOwner") == 2
     )  # its declaration and /setowner

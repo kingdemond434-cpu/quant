@@ -103,6 +103,12 @@ function Lock-Folder([string] $dir, [switch] $UsersRead, [switch] $KeepOwner) {
     & icacls.exe $dir /inheritance:r /grant:r @grants | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "icacls could not restrict $dir (exit $LASTEXITCODE)" }
     if (-not $KeepOwner) { & icacls.exe $dir /setowner "*S-1-5-32-544" /T /C | Out-Null }
+    # ...and again once the folder is locked, right before the recursive reset: until the
+    # /inheritance:r above, a non-admin could still plant one (audit v1.9 race)
+    foreach ($c in @(Get-ChildItem -LiteralPath $dir -Force -Recurse)) {
+        if (-not ($c.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }
+        throw "$($c.FullName) is a junction or symlink; not installing"
+    }
     if (@(Get-ChildItem -LiteralPath $dir -Force).Count -gt 0) {
         & icacls.exe (Join-Path $dir "*") /reset /T /C | Out-Null
     }
