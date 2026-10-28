@@ -260,14 +260,17 @@ $SessionNoise = '(?i)updateSessionTitle'
 $script:DebugPos = @{}
 $script:ErrTimes = @()
 $script:LastErr = $null
-function Update-SessionErrors([string] $debug) {
+function Update-SessionErrors([string] $debug, [bool] $ours) {
     if (-not $debug -or -not (Test-Path -LiteralPath $debug)) { return @{ n = $null; last = $null } }
     $now = Get-Date
     try {
         $fs = [IO.File]::Open($debug, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]"ReadWrite, Delete")
         try {
             $len = $fs.Length
-            if (-not $script:DebugPos.ContainsKey($debug)) { $script:DebugPos[$debug] = $len }
+            # A file this watchdog created is read from its first byte: sessions park within a
+            # second of the start, before the first beat. Only history found in a server adopted
+            # from earlier is skipped.
+            if (-not $script:DebugPos.ContainsKey($debug)) { $script:DebugPos[$debug] = $(if ($ours) { 0 } else { $len }) }
             $pos = [int64]$script:DebugPos[$debug]
             if ($pos -gt $len) { $pos = 0 }
             $pos = [Math]::Max($pos, $len - 4MB)
@@ -296,7 +299,7 @@ function Wait-Server([System.Diagnostics.Process] $p, [string] $debug, [string] 
         if ($debug -and (Test-Path -LiteralPath $debug)) {
             $quiet = [int]((Get-Date) - (Get-Item -LiteralPath $debug).LastWriteTime).TotalSeconds
         }
-        $se = Update-SessionErrors $debug
+        $se = Update-SessionErrors $debug ($by -eq "watchdog")
         Beat @{ state = "RUNNING"; server_pid = $p.Id; server_started_by = $by; debug_file = $debug
                 debug_quiet_s = $quiet; session_errors_10m = $se.n; last_session_error = $se.last
                 checkout_risk = (Get-CheckoutRisk)

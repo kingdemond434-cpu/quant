@@ -22,8 +22,9 @@
 #               sessions (a server that accepts a session and loses it at once is alive to a process
 #               check and useless to a thread)
 #   LIVE_CHECKOUT_AT_RISK   LIVE, but a non-admin could write the checkout the elevated sessions
-#               run in (or its .claude / git hooks) or rename a folder above it; exit 0, the bridge
-#               works, and the line says what to lock
+#               run in (or its .claude / git hooks) or rename a folder above it; exit 2 -- the
+#               bridge works, but automation must not read it as healthy -- and the line says
+#               what to lock
 #   ABSENT      no heartbeat at all: the watchdog is not installed or never ran
 param([string] $LogDir = "C:\ProgramData\ClaudeBridge\logs", [string] $BinDir = "C:\ProgramData\ClaudeBridge\bin",
       [string] $TaskName = "Claude-Bridge-Watchdog")
@@ -33,10 +34,10 @@ $AdminSids = @("S-1-5-32-544", "S-1-5-18", "S-1-5-80-956008885-3418522649-183103
 # someone delete, rename, re-own or re-permission it (creating a sibling is harmless).
 $WriteMask = [int64]([System.Security.AccessControl.FileSystemRights]"Write, Delete, DeleteSubdirectoriesAndFiles, ChangePermissions, TakeOwnership") -bor 0x50000000
 $ParentMask = [int64]([System.Security.AccessControl.FileSystemRights]"Delete, DeleteSubdirectoriesAndFiles, ChangePermissions, TakeOwnership") -bor 0x10000000
-function Get-AclProblem([string] $path, [int64] $mask) {
+function Get-AclProblem([string] $path, [int64] $mask, [string[]] $owners = $AdminSids) {
     $acl = Get-Acl -LiteralPath $path -ErrorAction Stop
     $owner = (New-Object System.Security.Principal.NTAccount($acl.Owner)).Translate([System.Security.Principal.SecurityIdentifier]).Value
-    if ($owner -notin $AdminSids) { return "$path is owned by $($acl.Owner)" }
+    if ($owner -notin $owners) { return "$path is owned by $($acl.Owner)" }
     foreach ($a in $acl.Access) {
         if ($a.AccessControlType -ne "Allow") { continue }
         if ($a.PropagationFlags -band [System.Security.AccessControl.PropagationFlags]::InheritOnly) { continue }
@@ -46,7 +47,7 @@ function Get-AclProblem([string] $path, [int64] $mask) {
     }
     return $null
 }
-function Get-UnsafeReason([string] $dir, [switch] $Shallow) {
+function Get-UnsafeReason([string] $dir, [switch] $Shallow, [string[]] $owners = $AdminSids) {
     try {
         $item = Get-Item -LiteralPath $dir -Force -ErrorAction Stop
         if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { return "$($item.FullName) is a reparse point" }
@@ -62,7 +63,7 @@ function Get-UnsafeReason([string] $dir, [switch] $Shallow) {
                 if ($c.Attributes -band [IO.FileAttributes]::ReparsePoint) { return "$($c.FullName) is a reparse point" }
             }
         }
-        return (Get-AclProblem $dir $WriteMask)
+        return (Get-AclProblem $dir $WriteMask $owners)
     } catch { return "$dir cannot be examined: $($_.Exception.Message)" }
 }
 $taskResult = "unread"
@@ -94,6 +95,6 @@ if (-not $alive) { "DEAD_SERVER: $detail"; exit 1 }
 if ($null -eq $b.debug_quiet_s) { "UNMEASURED: $detail"; exit 1 }
 if ([int]$b.debug_quiet_s -gt 1800) { "QUIET: $detail"; exit 1 }
 if ($b.session_errors_10m -and [int]$b.session_errors_10m -ge 3) { "DEGRADED: $detail last=$($b.last_session_error)"; exit 1 }
-if ($b.checkout_risk) { "LIVE_CHECKOUT_AT_RISK: $($b.checkout_risk); $detail"; exit 0 }
+if ($b.checkout_risk) { "LIVE_CHECKOUT_AT_RISK: $($b.checkout_risk); $detail"; exit 2 }
 "LIVE: $detail"
 exit 0

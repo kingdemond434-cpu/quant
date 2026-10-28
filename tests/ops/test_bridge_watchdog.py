@@ -286,11 +286,11 @@ def test_bin_and_logs_live_under_an_admin_only_root_and_every_parent_is_checked(
 
 def test_the_checkout_is_locked_and_its_risk_reported_never_fatal() -> None:
     code, inst, status = SCRIPTS["watchdog"], SCRIPTS["installer"], SCRIPTS["status"]
-    assert "Lock-Folder $Checkout -UsersRead -KeepOwner" in inst
     risk = code[code.index("function Get-CheckoutRisk") : code.index("function Wait-Beating")]
     assert ".git\\hooks" in risk and ".claude" in risk and "exit" not in risk
     assert "checkout_risk = (Get-CheckoutRisk)" in code
-    assert '"LIVE_CHECKOUT_AT_RISK:' in status
+    assert '"LIVE_CHECKOUT_AT_RISK: $($b.checkout_risk); $detail"; exit 2' in status
+    assert "Lock-Folder (Split-Path -Parent $Checkout) -UsersRead -KeepOwner" in inst
 
 
 def test_degraded_is_a_count_over_ten_minutes_of_new_lines() -> None:
@@ -304,3 +304,29 @@ def test_degraded_is_a_count_over_ten_minutes_of_new_lines() -> None:
 
 def test_the_reader_names_the_tasks_last_result() -> None:
     assert "Get-ScheduledTaskInfo -TaskName $TaskName" in SCRIPTS["status"]
+
+
+# ------------------------------------------------------------------------------- v1.4 (audit v1.3)
+def test_owners_and_generic_all_are_checked_on_every_folder() -> None:
+    for script in ("watchdog", "status"):
+        code = SCRIPTS[script]
+        acl = code[code.index("function Get-AclProblem") : code.index("function Get-UnsafeReason")]
+        assert 'if ($owner -notin $owners) { return "$path is owned by' in acl, script
+        parent = code[code.index("$ParentMask = ") :].splitlines()[0]
+        assert parent.endswith("-bor 0x10000000"), script  # GENERIC_ALL
+        assert "TakeOwnership" in parent and "ChangePermissions" in parent and "Delete" in parent
+        write = code[code.index("$WriteMask = ") :].splitlines()[0]
+        assert write.endswith("-bor 0x50000000"), script  # GENERIC_WRITE | GENERIC_ALL
+
+
+def test_a_root_someone_else_created_is_refused() -> None:
+    inst = SCRIPTS["installer"]
+    at = inst.index("if (Test-Path -LiteralPath $Root)")
+    assert at < inst.index("Lock-Folder $Root -UsersRead")
+    assert "throw" in inst[at : inst.index("Lock-Folder $Root -UsersRead")]
+
+
+def test_a_new_debug_file_is_read_from_its_first_byte() -> None:
+    code = SCRIPTS["watchdog"]
+    assert 'Update-SessionErrors $debug ($by -eq "watchdog")' in code
+    assert "$(if ($ours) { 0 } else { $len })" in code

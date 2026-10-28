@@ -91,10 +91,22 @@ function Lock-Folder([string] $dir, [switch] $UsersRead, [switch] $KeepOwner) {
         }
     }
 }
+# A ROOT SOMEONE ELSE CREATED IS REFUSED, NOT TAKEN OVER (audit v1.3): access is checked when a
+# handle opens, so a pre-creator holding an add-file or WRITE_DAC handle keeps it through any
+# change of owner or ACL. An administrator deletes such a root (after reading what is in it) and
+# re-runs this installer.
+if (Test-Path -LiteralPath $Root) {
+    $rootOwner = (New-Object System.Security.Principal.NTAccount((Get-Acl -LiteralPath $Root).Owner)).Translate([System.Security.Principal.SecurityIdentifier]).Value
+    if ($rootOwner -notin @('S-1-5-32-544', 'S-1-5-18')) {
+        throw "$Root already exists and is owned by $rootOwner, not Administrators/SYSTEM; delete it as an administrator and re-run"
+    }
+}
 Lock-Folder $Root -UsersRead
 Lock-Folder $BinDir
 Lock-Folder $LogDir -UsersRead
-if (-not $SkipCheckoutLock) { Lock-Folder $Checkout -UsersRead -KeepOwner }
+# The folder that holds the checkout is locked with it, so the checkout cannot be renamed away
+# from under the sessions (C:\opt above it holds the live desk and is left alone).
+if (-not $SkipCheckoutLock) { Lock-Folder (Split-Path -Parent $Checkout) -UsersRead -KeepOwner }
 $dst = Join-Path $BinDir 'bridge_watchdog.ps1'
 $pinFile = Join-Path $BinDir 'watchdog.sha256'
 Remove-Item -LiteralPath $dst, $pinFile -Force -ErrorAction SilentlyContinue
