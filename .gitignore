@@ -530,6 +530,11 @@ desks/mt5/data/hypotheses/needs_data_outstanding.json*
 # host that reads them; never published by a git add sweep.
 desks/mt5/data/hypotheses/build_input_released.json*
 desks/mt5/data/hypotheses/build_input_parked_trials.json*
+# coverage_steer's shared coverage map and its once-per-parent ledger (research/coverage_steer.py):
+# box-local state rebuilt by every merge; tens of MB on the box, never published by a git add sweep.
+desks/mt5/data/hypotheses/coverage_map.json
+desks/mt5/data/hypotheses/.coverage_map.json.*.tmp
+desks/mt5/data/hypotheses/steer_ledger.jsonl
 # THE OPEN BOOK, PER POSITION (ops/publish_account_state.py, 2026-10-07). The repository is
 # public: tickets, sizes and stops never reach a tracked file. Last line on purpose, after every
 # negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.
