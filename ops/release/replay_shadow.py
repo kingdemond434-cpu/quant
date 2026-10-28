@@ -14,7 +14,13 @@ eligible for a merge with no human, so it FAILS and takes the manual path (CLEAR
 MERGES). It also FAILS when:
 
 - it changes a money-path file the replay never imported (the Fusion gateway, a data or state
-  file, another book): nothing here measured it, and an unmeasured change is never a pass;
+  file, another book): nothing here measured it, and an unmeasured change is never a pass. The
+  money path is DERIVED from the base, not listed by hand: the static import closure (an AST
+  walk, nothing run) of every entry point the box's tasks run to size or place orders, plus the
+  desk's scripts, ops, books and state directories (#457 audit MF2);
+- it changes a module-level UPPER_CASE constant in a money-path file (a knob: a rail count, a
+  margin, a grace) that ops/release/ceilings.json does not already bound. A grid exercises the
+  knobs it reaches; this catches the ones it does not (#457 audit MF1);
 - the base tree cannot run a scenario, or places nothing anywhere on the grid (UNMEASURED);
 - the PR's tree raises where the base did not.
 
@@ -28,7 +34,11 @@ check can. That is the reviewer's job (independent-review); this check catches r
 from __future__ import annotations
 
 import argparse
+import ast
 import json
+import os
+import re
+import secrets
 import subprocess
 import sys
 import tempfile
@@ -37,11 +47,23 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 CHILD = HERE / "replay_child.py"
-#: Changed files under these that the replay never imported are unmeasured money-path changes.
+CEILINGS = HERE / "ceilings.json"
+#: Always money path, whatever imports them.
 MONEY_PATH = (
-    "desks/mt5/mt5desk/", "desks/mt5/prop/", "desks/mt5/data/", "data/", "libs/execution/",
-    "libs/risk/", "libs/portfolio/",
+    "desks/mt5/mt5desk/", "desks/mt5/prop/", "desks/mt5/data/", "desks/mt5/scripts/",
+    "desks/mt5/ops/", "data/", "libs/execution/", "libs/risk/", "libs/portfolio/",
 )  # fmt: skip
+#: What the box's tasks run to size or place orders (Install-QuantWindows.ps1,
+#: install_e8_tasks.ps1, install_ftmo_follower_task.ps1). Their import closure is money path.
+ENTRY_POINTS = (
+    "desks/mt5/research/run_gateway_loop.py", "desks/mt5/research/gateway_resident.py",
+    "desks/mt5/research/pf_allocator.py", "desks/mt5/proposals/fusion_deadman.py",
+    "desks/mt5/prop/e8_executor.py", "desks/mt5/prop/e8_gold.py", "desks/mt5/prop/e8_book.py",
+    "desks/mt5/prop/ftmo_follower.py",
+)  # fmt: skip
+#: Where `import x` resolves on the box: the repository root and the desk.
+IMPORT_ROOTS = ("", "desks/mt5")
+KNOB = re.compile(r"^[A-Z][A-Z0-9_]*$")
 #: Keys that carry prose or a wall-clock time, never a decision.
 PROSE = frozenset(
     {
@@ -91,6 +113,9 @@ def scenarios() -> list[dict[str, Any]]:
                 ("profit_cap", 103_000.0),
                 ("long_open", 100_000.0),
                 ("heavy_open", 100_000.0),
+                ("venue_refuses", 100_000.0),
+                ("no_stop", 100_000.0),
+                ("stale_tick", 100_000.0),
             ):
                 sc: dict[str, Any] = {
                     "id": f"{day}/{shape}/{acct}",
@@ -102,11 +127,158 @@ def scenarios() -> list[dict[str, Any]]:
                 }
                 if acct == "day_loss_edge":  # down 1,690 today: the risk budget's margin binds
                     sc["guard"] = {"day_start": 100_000.0, "peak_equity": 100_000.0}
-                if acct in ("long_open", "heavy_open"):  # heavy: the budget's margin binds
-                    sc["positions"] = [_long(day, 0.15 if acct == "long_open" else 0.335)]
+                if acct in ("long_open", "heavy_open", "venue_refuses"):
+                    # heavy: the budget's margin binds; refuses: every stop move, cancel and
+                    # close is refused, so the refusal rails run (#457 audit MF1)
+                    sc["positions"] = [_long(day, 0.335 if acct == "heavy_open" else 0.15)]
                     sc["orders"] = [{"id": 9002, "stopPrice": 4270.0}]
+                if acct in ("long_open", "venue_refuses", "no_stop"):  # the book owns it
+                    sc["own"] = {
+                        "placed_hour": 7.0, "hi": 4310.0, "lo": 4290.0, "position_id": 9001,
+                        "shadow": False, "orders": {
+                            "buy_stop": {"id": 8001, "price": 4310.0, "sl": 4270.0,
+                                         "tp": 4390.0, "lot": 0.15},
+                            "sell_stop": {"id": 8002, "price": 4290.0, "sl": 4330.0,
+                                          "tp": 4210.0, "lot": 0.15}}}  # fmt: skip
+                if acct == "venue_refuses":
+                    sc["venue_ok"] = False
+                if acct == "no_stop":  # a position the venue holds with no protective stop
+                    sc["positions"] = [{**_long(day), "stopLossId": None}]
+                if acct == "stale_tick":  # the terminal's clock lags the server by 3 hours
+                    sc["tick_lag_s"] = 3 * 3600
                 out.append(sc)
     return out
+
+
+def _is_git(tree: Path) -> bool:
+    return (tree / ".git").exists()
+
+
+def tree_files(tree: Path) -> set[str]:
+    """Every path the tree holds at HEAD (from git when it is a checkout, so a sparse or blobless
+    checkout still answers), else from the disk."""
+    if _is_git(tree):
+        p = subprocess.run(
+            ["git", "-C", str(tree), "ls-tree", "-r", "--name-only", "HEAD"],
+            capture_output=True, text=True, check=True,
+        )  # fmt: skip
+        return set(p.stdout.splitlines())
+    out = set()
+    for d, _, names in os.walk(tree):
+        for n in names:
+            out.add((Path(d) / n).relative_to(tree).as_posix())
+    return out
+
+
+def read(tree: Path, path: str) -> str | None:
+    if _is_git(tree):
+        p = subprocess.run(
+            ["git", "-C", str(tree), "show", f"HEAD:{path}"],
+            capture_output=True, text=True, check=False,
+        )  # fmt: skip
+        return p.stdout if p.returncode == 0 else None
+    f = tree / path
+    return f.read_text("utf-8", errors="replace") if f.is_file() else None
+
+
+def _module_files(dotted: str, files: set[str]) -> list[str]:
+    parts = dotted.split(".")
+    out = []
+    for root in IMPORT_ROOTS:
+        base = "/".join(x for x in (root, *parts) if x)
+        for cand in (f"{base}.py", f"{base}/__init__.py"):
+            if cand in files:
+                out.append(cand)
+        for i in range(1, len(parts)):  # the packages on the way
+            pkg = "/".join(x for x in (root, *parts[:i]) if x) + "/__init__.py"
+            if pkg in files:
+                out.append(pkg)
+    return out
+
+
+def import_closure(tree: Path, entries: tuple[str, ...] = ENTRY_POINTS) -> set[str]:
+    """Every repository file the entry points can import, statically: `import` statements read
+    by ast, never run. Dynamic imports are not seen; the MONEY_PATH directories cover those."""
+    files = tree_files(tree)
+    seen: set[str] = set()
+    todo = [e for e in entries if e in files]
+    while todo:
+        f = todo.pop()
+        if f in seen:
+            continue
+        seen.add(f)
+        try:
+            node = ast.parse(read(tree, f) or "")
+        except (SyntaxError, ValueError):
+            continue
+        pkg = Path(f).parent.as_posix().split("/")
+        for root in IMPORT_ROOTS:  # the module's own dotted package, under its import root
+            if root and f.startswith(root + "/"):
+                pkg = Path(f[len(root) + 1 :]).parent.as_posix().split("/")
+        names: list[str] = []
+        for n in ast.walk(node):
+            if isinstance(n, ast.Import):
+                names += [a.name for a in n.names]
+            elif isinstance(n, ast.ImportFrom):
+                mod = n.module or ""
+                if n.level:
+                    up = pkg[: len(pkg) - (n.level - 1)] if n.level > 1 else pkg
+                    mod = ".".join(x for x in (*up, mod) if x and x != ".")
+                names.append(mod)
+                names += [f"{mod}.{a.name}" for a in n.names if mod]
+        for name in names:
+            todo += [m for m in _module_files(name, files) if m not in seen]
+    return seen
+
+
+def is_money(path: str, closure: set[str]) -> bool:
+    return path.startswith(MONEY_PATH) or path in closure
+
+
+def knobs(src: str) -> dict[str, list[str]]:
+    """{NAME: [ast of every module-level value it is given]} for UPPER_CASE names."""
+    out: dict[str, list[str]] = {}
+    for n in ast.parse(src).body:
+        if not isinstance(n, (ast.Assign, ast.AnnAssign)) or n.value is None:
+            continue
+        targets = n.targets if isinstance(n, ast.Assign) else [n.target]
+        for t in targets:
+            if isinstance(t, ast.Name) and KNOB.match(t.id):
+                out.setdefault(t.id, []).append(ast.dump(n.value))
+    return out
+
+
+def bounded() -> dict[str, set[str]]:
+    """{file: names ops/release/ceilings.json already holds to a ceiling}."""
+    doc = json.loads(CEILINGS.read_text("utf-8"))
+    out: dict[str, set[str]] = {}
+    for kind in ("max", "equal"):
+        for f, names in (doc.get(kind) or {}).items():
+            out.setdefault(f, set()).update(names)
+    for f, name in (doc.get("superset") or {}).items():
+        out.setdefault(f, set()).add(name)
+    return out
+
+
+def knob_changes(base: Path, head: Path, changed: list[str], closure: set[str]) -> list[str]:
+    problems = []
+    held = bounded()
+    for f in changed:
+        if not f.endswith(".py") or not is_money(f, closure):
+            continue
+        try:
+            was = knobs(read(base, f) or "")
+            now = knobs(read(head, f) or "")
+        except SyntaxError as exc:
+            problems.append(f"{f}: cannot be parsed ({exc.msg}); its knobs are unmeasured")
+            continue
+        for name in sorted(set(was) | set(now)):
+            if was.get(name) != now.get(name) and name not in held.get(f, set()):
+                problems.append(
+                    f"{f}: the money-path knob {name} changed; knobs the ceilings do not bound "
+                    "take the manual path"
+                )
+    return problems
 
 
 def canon(value: Any) -> Any:
@@ -152,7 +324,7 @@ def decisions(step: dict[str, Any]) -> dict[str, Any]:
 
 def run_tree(tree: Path, sc: dict[str, Any]) -> dict[str, Any]:
     """One scenario on one tree, in a fresh process and an empty directory."""
-    with tempfile.TemporaryDirectory(prefix="shadow-") as tmp:
+    with tempfile.TemporaryDirectory(prefix=secrets.token_hex(4)) as tmp:
         work = Path(tmp)
         (work / "scenario.json").write_text(json.dumps(sc), "utf-8")
         out = work / "out.json"
@@ -183,6 +355,10 @@ def compare(
     base: Path, head: Path, changed: list[str], grid: list[dict[str, Any]] | None = None
 ) -> dict[str, Any]:
     grid = scenarios() if grid is None else grid
+    # fresh fingerprints each run, the same for both trees: fooling the replay needs code that
+    # hunts for the harness, which the reviewer's rule 5 names (#457 audit should-fix)
+    who = {"account_id": 10_000 + secrets.randbelow(89_999_999), "server": secrets.token_hex(5)}
+    grid = [{**who, **sc} for sc in grid]
     problems: list[str] = []
     imported: set[str] = set()
     placed = 0
@@ -216,10 +392,12 @@ def compare(
                 )
     if not placed:
         problems.append("UNMEASURED: the base tree placed nothing anywhere on the grid")
-    uncovered = sorted(f for f in changed if f.startswith(MONEY_PATH) and f not in imported)
+    closure = import_closure(base)
+    uncovered = sorted(f for f in changed if is_money(f, closure) and f not in imported)
     problems += [
         f"UNMEASURED money-path change (the replay never imported it): {f}" for f in uncovered
     ]
+    problems += knob_changes(base, head, changed, closure)
     return {
         "verdict": "FAIL" if problems else "PASS",
         "scenarios": len(grid),

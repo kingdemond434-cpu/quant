@@ -76,6 +76,13 @@ def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
 
     for name in SANDBOXED:
         setattr(g, name, work / f"{name.lower()}.json")
+    if scenario.get("own"):  # today's asia bracket filled into the scenario's position
+        (work / "state.json").write_text(
+            json.dumps(
+                {"date": scenario["day"], "carried": {}, "windows": {"asia": scenario["own"]}}
+            ),
+            "utf-8",
+        )
     if scenario.get("guard"):  # the guard keys its anchor by the wall clock's server day
         from prop import e8_guard
 
@@ -87,7 +94,7 @@ def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
     class _Tick:
         @property
         def time(self) -> int:
-            return int(clock["now"].timestamp())
+            return int(clock["now"].timestamp()) - int(scenario.get("tick_lag_s", 0))
 
     class _Terminal:
         TIMEFRAME_H1 = 16385
@@ -99,8 +106,8 @@ def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
             return bars(scenario["shape"], scenario["seed"], day, clock["now"])[-count:]
 
     class _Api:
-        account_id = 31337
-        _credentials = {"server": "E8-Replay"}  # noqa: RUF012
+        account_id = int(scenario["account_id"])
+        _credentials = {"server": str(scenario["server"])}  # noqa: RUF012
 
         @staticmethod
         def get_all_orders(history: bool = False, lookback_period: str = "") -> list:
@@ -134,13 +141,13 @@ def main(tree: Path, scenario: dict[str, Any], out_path: Path) -> int:
             return {"contractSize": CONTRACT, "currency": "USD", "lotStep": 0.01}
 
         def cancel(self, order_id: int) -> bool:
-            return True
+            return bool(scenario.get("venue_ok", True))
 
         def modify_stop(self, position_id: int, stop: float) -> bool:
-            return True
+            return bool(scenario.get("venue_ok", True))
 
         def close(self, position_id: int, quantity: float = 0) -> bool:
-            return True
+            return bool(scenario.get("venue_ok", True))
 
     steps = []
     seen = 0

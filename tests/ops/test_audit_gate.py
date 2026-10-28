@@ -1243,17 +1243,30 @@ def test_one_fail_is_final_and_never_outvoted() -> None:
     assert _vote([("qwen", "q1", _model(flagged))])[0] == "FAIL"
 
 
-def test_a_busy_model_is_asked_again_and_garbage_is_no_vote() -> None:
+def test_a_busy_model_is_asked_again() -> None:
     v, _ = _vote(
         [
             ("qwen", "q1", _model(ir.Unavailable("HTTP 429"), _PASS)),
-            ("deepseek", "d1", _model("I think it is fine")),
             ("google", "g1", _model(_PASS)),
         ]
     )
     assert v == "PASS"
     v, log = _vote([("qwen", "q1", _model(*[ir.Unavailable("HTTP 429")] * 500))])
     assert v == "UNAVAILABLE" and "0 of 2" in log[-1]
+
+
+def test_an_unreadable_answer_gets_one_retry_then_fails() -> None:
+    """#457 audit MF3: breaking a strict reviewer's format must not shop for a lenient one."""
+
+    def q() -> Any:
+        return ("qwen", "q1", _model(_PASS))
+
+    def g() -> Any:
+        return ("google", "g1", _model(_PASS))
+
+    assert _vote([("deepseek", "d1", _model("I refuse", _PASS)), q()])[0] == "PASS"
+    assert _vote([("deepseek", "d1", _model("I refuse", "{broken")), q(), g()])[0] == "FAIL"
+    assert _vote([q(), ("deepseek", "d1", _model("", "")), g()])[0] == "FAIL"
 
 
 def test_only_free_models_of_known_families_are_asked() -> None:
@@ -1504,3 +1517,51 @@ def test_canon_keeps_numbers_and_drops_prose_and_clock() -> None:
         "lot": 0.1,
         "k": [{}],
     }
+
+
+def test_a_changed_knob_in_a_money_file_fails_unless_a_ceiling_holds_it(tmp_path: Path) -> None:
+    """#457 audit MF1(i): a rail constant the grid never reaches still takes the manual path."""
+    base, head = tmp_path / "base", tmp_path / "head"
+    for t, n in ((base, 3), (head, 30)):
+        (t / "desks/mt5/prop").mkdir(parents=True)
+        (t / "desks/mt5/prop/e8_gold.py").write_text(f"MAX_STOP_REFUSALS = {n}\nx = {n}\n")
+        (t / "desks/mt5/mt5desk").mkdir(parents=True)
+        (t / "desks/mt5/mt5desk/sizing.py").write_text(f"MAX_RISK_FRAC = 0.0{n % 9}\n")
+        (t / "docs").mkdir()
+        (t / "docs/tool.py").write_text(f"LIMIT = {n}\n")
+    changed = ["desks/mt5/prop/e8_gold.py", "desks/mt5/mt5desk/sizing.py", "docs/tool.py"]
+    problems = rs.knob_changes(base, head, changed, set())
+    assert len(problems) == 1 and "MAX_STOP_REFUSALS" in problems[0]
+
+
+def test_the_money_path_is_the_box_entry_points_import_closure(tmp_path: Path) -> None:
+    """#457 audit MF2: the gateway loop and everything it imports are money path."""
+    t = tmp_path / "t"
+    (t / "desks/mt5/research").mkdir(parents=True)
+    (t / "desks/mt5/research/run_gateway_loop.py").write_text(
+        "import libs.ops.x\nfrom mt5desk import gateway\nfrom . import sibling\n"
+    )
+    (t / "desks/mt5/research/__init__.py").write_text("")
+    (t / "desks/mt5/research/sibling.py").write_text("")
+    (t / "desks/mt5/mt5desk").mkdir(parents=True)
+    (t / "desks/mt5/mt5desk/__init__.py").write_text("")
+    (t / "desks/mt5/mt5desk/gateway.py").write_text("from libs.risk import y\n")
+    (t / "libs/ops").mkdir(parents=True)
+    (t / "libs/risk").mkdir(parents=True)
+    for f in ("libs/__init__.py", "libs/ops/__init__.py", "libs/ops/x.py", "libs/risk/y.py",
+              "libs/ops/unrelated.py"):  # fmt: skip
+        (t / f).write_text("")
+    closure = rs.import_closure(t)
+    assert {"desks/mt5/research/run_gateway_loop.py", "libs/ops/x.py", "libs/risk/y.py",
+            "desks/mt5/mt5desk/gateway.py", "desks/mt5/research/sibling.py"} <= closure  # fmt: skip
+    assert "libs/ops/unrelated.py" not in closure
+    assert rs.is_money("desks/mt5/scripts/anything.ps1", set())
+    assert not rs.is_money("libs/ops/unrelated.py", closure)
+
+
+def test_the_grid_runs_the_venue_failure_rails() -> None:
+    """#457 audit MF1(ii): refused stop moves, an unprotected position and a lagging clock."""
+    kinds = {sc["id"].rsplit("/", 1)[1]: sc for sc in rs.scenarios()}
+    assert kinds["venue_refuses"]["venue_ok"] is False and kinds["venue_refuses"]["own"]
+    assert kinds["no_stop"]["positions"][0]["stopLossId"] is None
+    assert kinds["stale_tick"]["tick_lag_s"] > 0

@@ -11,6 +11,8 @@ ZERO API COST (zuck 2026-10-28 19:47Z: no paid keys, no recurring cost). Two run
 
 PASS needs VOTES passes, each from a different model family (the vendor before the `/`), and no
 FAIL from any model. One FAIL is final: a model that FAILs is never outvoted by asking another.
+An unreadable answer (a refusal, a broken format) gets one retry from the same model and is a
+FAIL after that.
 
 UNAVAILABLE IS NOT A VERDICT. When no key is configured, every model is rate-limited or down, or
 the time budget runs out before the votes are in, the job ends with exit code 75 and a
@@ -250,7 +252,10 @@ def vote(
     clock: Callable[[], float] = time.monotonic,
 ) -> tuple[str, list[str]]:
     """("PASS" | "FAIL" | "UNAVAILABLE", log). Asks family by family until VOTES distinct
-    families PASS or one model FAILs; a model that is busy is asked again after a pause."""
+    families PASS or one model FAILs; a model that is busy is asked again after a pause. An
+    answer that cannot be read (a refusal, a broken format) is asked for once more from the same
+    model, then FAILS: an abstention would let a diff that breaks the strict reviewers' format
+    shop its way to the lenient ones (#457 audit MF3)."""
     rubric = (HERE / "review_rubric.md").read_text(encoding="utf-8")
     log: list[str] = []
     passed: set[str] = set()
@@ -264,6 +269,9 @@ def vote(
                 continue
             try:
                 answer = parse(ask(rubric, prompt(diff, files, secrets.token_hex(8))))
+                if answer is None:  # one format-only retry, at once, before anyone else votes
+                    log.append(f"{mid}: no readable answer; asked once more")
+                    answer = parse(ask(rubric, prompt(diff, files, secrets.token_hex(8))))
             except Unavailable as exc:
                 log.append(f"{mid}: unavailable ({exc})")
                 continue
@@ -272,10 +280,9 @@ def vote(
                 dropped.add(mid)
                 continue
             progress = True
-            if answer is None:
-                log.append(f"{mid}: no readable answer, no vote")
-                dropped.add(mid)
-                continue
+            if answer is None:  # a refusal or a broken format, twice (#457 audit MF3)
+                log.append(f"{mid}: no readable answer twice: FAIL")
+                return "FAIL", log
             ok, why = decide(answer)
             log.append(f"{mid}: {'PASS' if ok else 'FAIL'} ({why}) {json.dumps(answer)[:2000]}")
             if not ok:

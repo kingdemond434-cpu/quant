@@ -71,11 +71,13 @@ jobs:
           sparse-checkout: ops/release
           persist-credentials: false
 
-      # Each tree holds only what the live book imports and reads (code, books, state files).
+      # Each tree holds on disk only what the live book imports and reads (code, books, state).
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           path: base
+          # blobless: the money-path closure and the knob check read any file through git
+          filter: blob:none
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             /libs/
@@ -92,6 +94,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           path: head
+          filter: blob:none
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             /libs/
@@ -120,15 +123,31 @@ jobs:
           PY
           pip install -r "$RUNNER_TEMP/deps.txt"
 
+      # Every changed path, both sides of a rename, from the PR's paginated file list (the
+      # compare API stops at 300 files). The count must match the PR's own, on this very head.
       - name: The PR's changed paths
-        working-directory: base
         env:
           GH_TOKEN: ${{ github.token }}
-        run: >-
-          gh api "repos/${{ github.repository }}/compare/${{ github.event.pull_request.base.sha
-          }}...${{ github.event.pull_request.head.sha }}" --paginate
-          --jq '.files[] | .filename, (.previous_filename // empty)' | sort -u
-          > "$RUNNER_TEMP/changed.txt"
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          api="repos/${{ github.repository }}/pulls/$PR"
+          gh api "$api/files?per_page=100" --paginate --jq '.[].filename' > "$RUNNER_TEMP/files.txt"
+          gh api "$api/files?per_page=100" --paginate \
+            --jq '.[] | .previous_filename // empty' > "$RUNNER_TEMP/previous.txt"
+          now=$(gh api "$api" --jq '.head.sha')
+          want=$(gh api "$api" --jq '.changed_files')
+          got=$(wc -l < "$RUNNER_TEMP/files.txt")
+          if [ "$now" != "$HEAD_SHA" ]; then
+            echo "::error::the head moved while its files were read; the new head gets its own run"
+            exit 1
+          fi
+          if [ "$got" -ne "$want" ]; then
+            echo "::error::the file list names $got files, the PR changes $want"
+            exit 1
+          fi
+          sort -u "$RUNNER_TEMP/files.txt" "$RUNNER_TEMP/previous.txt" > "$RUNNER_TEMP/changed.txt"
 
       - name: Replay the live E8 book, base against PR
         run: >-
