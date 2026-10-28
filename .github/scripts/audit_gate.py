@@ -88,6 +88,12 @@ ready), no HOLD stands, and the gating jobs AND the AUTO jobs (risk-invariants, 
 independent-review) all succeeded. A PR whose CI fails on the LOW or AUTO path is QUARANTINED:
 labelled `quarantined`, left open, never merged until a new head passes.
 
+STEP C. The PROTECTED floor above is widened by ops/release/protected_paths.txt (every LAWS 5m
+rail, test configuration, signing, kill switches); an unreadable list makes every PR PROTECTED.
+The AUTO jobs come from .github/workflows/release-gates.yml (risk-invariants, independent-review)
+and the box (replay-shadow, step D). A gating job counts only from GitHub Actions, and the manual
+path neither waits on nor fails by the AUTO jobs.
+
 Exit 0 when merged or when there is honestly nothing to do yet (no CLEAR); exit 1 when the gate
 refused or gave up, with the reason in the job summary and on the `audit/clear` commit status.
 """
@@ -104,6 +110,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable, Iterable, Mapping
+from pathlib import Path
 from typing import Any
 
 LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
@@ -129,7 +136,8 @@ CODE_SPECS = (
     "*.py", "*.ps1", "*.sh", "*.cmd", "*.txt", "*.yml", "*.yaml", "*.toml", "*.manifest",
     "*.service", "ops/githooks/*",
 )  # fmt: skip
-#: PROTECTED: never merged without zuck. fnmatch patterns ("*" crosses "/").
+#: PROTECTED: never merged without zuck. fnmatch patterns ("*" crosses "/"). This tuple is the
+#: floor; ops/release/protected_paths.txt (itself protected) adds every LAWS 5m rail and more.
 PROTECTED = (
     ".github/*", "CODEOWNERS", "*/CODEOWNERS", "ops/release/*", "ops/box/*", "ops/bridge/*",
     "ops/githooks/*", "IMMUTABLE_MANIFEST*", "*/IMMUTABLE_MANIFEST*", "data/secrets/*",
@@ -141,6 +149,9 @@ PROTECTED = (
 #: The jobs an AUTO-tier PR needs on top of the gating jobs (step C builds them; until then no
 #: AUTO-tier PR can merge, because a missing job is never a pass).
 AUTO_JOBS = ("risk-invariants", "replay-shadow", "independent-review")
+#: The app every gating check run must come from: a run another app or a person posted is no pass.
+CI_APP = "github-actions"
+PROTECTED_FILE = Path(__file__).resolve().parents[2] / "ops" / "release" / "protected_paths.txt"
 ACTIVATE_AUTO = "ACTIVATE LIVE AUTO-MERGE"
 QUARANTINE = "quarantined"
 #: The GitHub files API lists at most 3000 files; past that the PR is never LOW.
@@ -219,8 +230,19 @@ def referenced_by_code(base_ref: str, path: str) -> bool:
     return p.returncode != 1  # 0 = found, 1 = not found, anything else = could not look
 
 
-def is_protected(name: str) -> bool:
-    return any(fnmatch.fnmatchcase(name, pat) for pat in PROTECTED)
+def protected_patterns() -> tuple[str, ...] | None:
+    """The patterns in ops/release/protected_paths.txt; None when it cannot be read."""
+    try:
+        text = PROTECTED_FILE.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    return tuple(
+        ln.strip() for ln in text.splitlines() if ln.strip() and not ln.lstrip().startswith("#")
+    )
+
+
+def is_protected(name: str, extra: Iterable[str] = ()) -> bool:
+    return any(fnmatch.fnmatchcase(name, pat) for pat in (*PROTECTED, *extra))
 
 
 def tier(
@@ -229,11 +251,14 @@ def tier(
     """("LOW" | "AUTO" | "PROTECTED", why). The strictest file decides; unsure is PROTECTED."""
     if not files or len(files) != changed or len(files) >= MAX_FILES:
         return "PROTECTED", f"PROTECTED: {len(files)} of {changed} changed files listed"
+    extra = protected_patterns()
+    if extra is None:
+        return "PROTECTED", "PROTECTED: ops/release/protected_paths.txt is unreadable"
     names = [
         (str(n), f) for f in files for n in (f.get("filename"), f.get("previous_filename")) if n
     ]
     for name, _ in names:
-        if is_protected(name):
+        if is_protected(name, extra):
             return "PROTECTED", f"PROTECTED: {name}"
     for name, f in names:
         if (
@@ -331,11 +356,15 @@ def checks(
     runs: Iterable[Mapping[str, Any]], gating: tuple[str, ...] = GATING_JOBS
 ) -> tuple[str, str]:
     """("pass" | "pending" | "fail", why) over the head's check runs. A job re-run keeps only
-    its newest run."""
+    its newest run. A gating job counts only from GitHub Actions (another app, or a person with
+    the checks API, cannot post its pass); an AUTO job is ignored unless it is gating here, so
+    the manual path never waits on, or fails by, the AUTO tier's jobs."""
     newest: dict[str, Mapping[str, Any]] = {}
     for r in runs:
         name = str(r.get("name") or "")
-        if name in SELF_NAMES:
+        if name in SELF_NAMES or (name in AUTO_JOBS and name not in gating):
+            continue
+        if name in gating and str((r.get("app") or {}).get("slug") or "") != CI_APP:
             continue
         prev = newest.get(name)
         if prev is None or str(r.get("started_at") or "") >= str(prev.get("started_at") or ""):

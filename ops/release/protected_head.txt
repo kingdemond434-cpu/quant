@@ -1,0 +1,69 @@
+# PROTECTED paths: a PR touching any of these never merges without zuck (auditor CLEAR plus his
+# APPROVE MERGES on #453). One fnmatch pattern per line, "*" crosses "/". This whole directory
+# is itself protected, so no AUTO-tier change can shrink the list.
+#
+# Edit protected_head.txt, then run ops/release/gen_protected_paths.py.
+
+# the controller, every workflow, the ceilings and this list
+.github/*
+ops/release/*
+CODEOWNERS
+*/CODEOWNERS
+
+# agent instructions
+CLAUDE.md
+*/CLAUDE.md
+AGENTS.md
+*/AGENTS.md
+.claude/*
+*/.claude/*
+
+# what decides how tests run: a PR could otherwise rewrite the checks from the side
+conftest.py
+*/conftest.py
+pyproject.toml
+setup.cfg
+setup.py
+pytest.ini
+tox.ini
+*sitecustomize.py
+*usercustomize.py
+*.pth
+.pre-commit-config.yaml
+
+# release, seal, adopt, signing
+libs/ops/release.py
+libs/ops/release_promotion.py
+ops/release_authority.py
+ops/run_release_authority.cmd
+ops/signing/*
+desks/mt5/scripts/Adopt*
+desks/mt5/scripts/Seal-*
+desks/mt5/scripts/smoke_release.py
+desks/mt5/mt5desk/release_identity.py
+scripts/rollback_guard.py
+IMMUTABLE_MANIFEST*
+*/IMMUTABLE_MANIFEST*
+
+# the rails' own definition and fences
+libs/research/immutable_rails.py
+scripts/check_immutable_rails.py
+scripts/check_immutable_evaluator.py
+
+# box, bridge, hooks
+ops/box/*
+ops/bridge/*
+ops/githooks/*
+desks/mt5/ops/box_tasks.manifest
+
+# kill switches and freezes: removing one re-arms trading
+*GATEWAY_PAUSED*
+*CASHCARRY_KILL*
+*DEADMAN_FIRED*
+*/data/FREEZE
+data/FREEZE
+ops/quant-deadman.service
+
+# secrets
+data/secrets/*
+*/data/secrets/*

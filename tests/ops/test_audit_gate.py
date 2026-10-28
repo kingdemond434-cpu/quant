@@ -123,8 +123,15 @@ def _r(
     status: str = "completed",
     conclusion: str | None = "success",
     at: str = "2026-10-28T10:00:00Z",
+    app: str = "github-actions",
 ) -> dict[str, Any]:
-    return {"name": name, "status": status, "conclusion": conclusion, "started_at": at}
+    return {
+        "name": name,
+        "status": status,
+        "conclusion": conclusion,
+        "started_at": at,
+        "app": {"slug": app},
+    }
 
 
 def _green() -> list[dict[str, Any]]:
@@ -551,7 +558,7 @@ def _f(name: str, **kw: Any) -> dict[str, Any]:
         ([_f(DOC)], 2, set(), "PROTECTED"),  # the count does not add up
         ([], 0, set(), "PROTECTED"),
         ([_f(DOC)], 1, {DOC}, "AUTO"),  # a program reads it
-        ([_f("docs/LAWS.md")], 1, set(), "AUTO"),  # a governing document
+        ([_f("docs/LAWS.md")], 1, set(), "PROTECTED"),  # a LAWS 5m rail
         ([_f("docs/ops/prompt_notes.md")], 1, set(), "AUTO"),
         ([_f(CODE)], 1, set(), "AUTO"),  # code
         ([_f("docs/research/x.json")], 1, set(), "AUTO"),  # data
@@ -760,3 +767,221 @@ def test_a_failing_manual_path_pr_is_reported_not_quarantined(hub: Any) -> None:
     )
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1
     assert _merges(h) == [] and not any(w[1].endswith("/labels") for w in h.writes)
+
+
+# --------------------------------------------------------------------- step C: whose runs count
+
+
+def test_a_gating_pass_from_anything_but_github_actions_is_ignored() -> None:
+    forged = [_r(n, app="claude", at="2026-10-28T11:00:00Z") for n in ag.AUTO_JOBS]
+    state, why = ag.checks([*_green(), *forged], ag.GATING_JOBS + ag.AUTO_JOBS)
+    assert state == "pending" and "risk-invariants (not started)" in why
+    no_ci = [{**r, "app": {"slug": "claude"}} for r in _green()]
+    assert ag.checks(no_ci)[0] == "pending"
+
+
+def test_the_manual_path_neither_waits_on_nor_fails_by_the_auto_jobs() -> None:
+    runs = [
+        *_green(),
+        _r("independent-review", conclusion="failure"),
+        _r("risk-invariants", "in_progress", None),
+    ]
+    assert ag.checks(runs)[0] == "pass"
+    assert ag.checks(runs, ag.GATING_JOBS + ag.AUTO_JOBS)[0] == "fail"
+
+
+def test_every_rail_is_on_the_protected_list() -> None:
+    """A LAWS 5m rail (risk-limit authority, live promotion, the sealed judge...) never merges
+    without zuck, and the list on disk is what the generator makes."""
+    sys.path.insert(0, str(ROOT))
+    from libs.research import immutable_rails as IR
+
+    extra = ag.protected_patterns()
+    assert extra is not None
+    for r in IR.immutable_rails():
+        name = IR.norm(r.path).rstrip("/") + ("/x.json" if r.path.endswith("/") else "")
+        assert ag.is_protected(name, extra), r.path
+    gen = subprocess.run(
+        [sys.executable, "-I", str(ROOT / "ops/release/gen_protected_paths.py"), "--check"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert gen.returncode == 0, gen.stdout
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "desks/mt5/research/pf_allocator.py",  # risk-limit authority
+        "libs/validation/gauntlet.py",  # live-promotion rules
+        "desks/mt5/data/sleeves.json",
+        "desks/mt5/GATEWAY_PAUSED",  # deleting it re-arms trading
+        "desks/mt5/data/CASHCARRY_KILL",
+        "tests/conftest.py",  # decides how the tests that judge the PR run
+        "pyproject.toml",
+        "ops/release/ceilings.json",
+        "ops/release/review_rubric.md",
+        "ops/signing/key.pub",
+        "libs/research/immutable_rails.py",
+    ],
+)
+def test_control_and_rail_files_are_protected(name: str) -> None:
+    assert ag.tier([_f(name)], 1, lambda n: False)[0] == "PROTECTED"
+
+
+def test_an_unreadable_protected_list_makes_everything_protected(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(ag, "PROTECTED_FILE", tmp_path / "missing.txt")
+    assert ag.tier([_f(DOC)], 1, lambda n: False)[0] == "PROTECTED"
+    assert ag.tier([_f(CODE)], 1, lambda n: False)[0] == "PROTECTED"
+
+
+# ------------------------------------------------------------------ step C: risk invariants
+
+_ri_spec = importlib.util.spec_from_file_location(
+    "risk_invariants", ROOT / "ops/release/risk_invariants.py"
+)
+assert _ri_spec is not None and _ri_spec.loader is not None
+ri = importlib.util.module_from_spec(_ri_spec)
+_ri_spec.loader.exec_module(ri)
+CEIL = {
+    "max": {"s.py": {"MAX_RISK_FRAC": 0.10}},
+    "equal": {"s.py": {"FADE": 0.5}},
+    "superset": {"r.py": "RAILS"},
+}
+SIZING = "MAX_RISK_FRAC = 0.10\nFADE = 0.5\n"
+RAILS = 'RAILS = (("a", "x"), ("b", "y"))\n'
+
+
+def _reader(**files: str | None) -> Any:
+    return lambda path: files.get(path.replace(".py", ""))
+
+
+@pytest.mark.parametrize(
+    ("sizing", "breach"),
+    [
+        (SIZING, None),
+        ("MAX_RISK_FRAC = 0.05\nFADE = 0.5\n", None),  # lowering is fine
+        ("MAX_RISK_FRAC = 0.2\nFADE = 0.5\n", "over its ceiling"),
+        ("MAX_RISK_FRAC: float = 0.11\nFADE = 0.5\n", "over its ceiling"),
+        ("MAX_RISK_FRAC = 0.1\nMAX_RISK_FRAC = 1.0\nFADE = 0.5\n", "over its ceiling"),
+        ("import os\nMAX_RISK_FRAC = float(os.environ['R'])\nFADE = 0.5\n", "plain literal"),
+        ("FADE = 0.5\n", "is gone"),
+        ("MAX_RISK_FRAC = True\nFADE = 0.5\n", "over its ceiling"),
+        ("MAX_RISK_FRAC = 0.1\nFADE = 1.0\n", "pinned"),
+        (None, "missing"),
+        ("def (:\n", "missing or unparseable"),
+    ],
+)
+def test_the_ceilings_hold_the_head(sizing: str | None, breach: str | None) -> None:
+    bad = ri.check(CEIL, _reader(s=sizing, r=RAILS))
+    assert (bad == []) if breach is None else any(breach in b for b in bad), bad
+
+
+@pytest.mark.parametrize(
+    ("head", "lost"),
+    [
+        (RAILS, None),
+        ('RAILS = (("a", "x"), ("b", "y"), ("c", "z"))\n', None),  # a rail added
+        ('RAILS = (("a", "x"),)\n', "lost b"),
+        ("RAILS = make()\n", "gone or no longer"),
+        (None, "gone or no longer"),
+    ],
+)
+def test_a_rail_list_may_grow_but_never_shrink(head: str | None, lost: str | None) -> None:
+    bad = ri.check_superset(CEIL, _reader(r=head), _reader(r=RAILS))
+    assert (bad == []) if lost is None else any(lost in b for b in bad), bad
+
+
+def test_the_live_tree_is_inside_its_ceilings() -> None:
+    import json
+
+    ceilings = json.loads((ROOT / "ops/release/ceilings.json").read_text(encoding="utf-8"))
+    assert ri.check(ceilings, ri.git_reader("HEAD")) == []
+
+
+# ----------------------------------------------------------------- step C: independent review
+
+_ir_spec = importlib.util.spec_from_file_location(
+    "independent_review", ROOT / "ops/release/independent_review.py"
+)
+assert _ir_spec is not None and _ir_spec.loader is not None
+ir = importlib.util.module_from_spec(_ir_spec)
+_ir_spec.loader.exec_module(ir)
+
+
+@pytest.mark.parametrize(
+    ("answer", "ok"),
+    [
+        ({"verdict": "PASS", "risk_increasing": False, "touches_control": False}, True),
+        ({"verdict": "PASS", "risk_increasing": True, "touches_control": False}, False),
+        ({"verdict": "PASS", "risk_increasing": False, "touches_control": True}, False),
+        ({"verdict": "FAIL", "risk_increasing": False, "touches_control": False}, False),
+        ({"verdict": "PASS"}, False),  # a flag missing is not a no
+        ({"verdict": "pass", "risk_increasing": False, "touches_control": False}, False),
+    ],
+)
+def test_the_review_passes_only_a_clean_pass(answer: dict[str, Any], ok: bool) -> None:
+    assert ir.decide(answer)[0] is ok
+
+
+def test_the_review_fails_closed_without_a_key(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    assert ir.main(["--repo", "o/r", "--pr", "7", "--head", A]) == 1
+    assert "not configured" in capsys.readouterr().out
+
+
+class _Msg:
+    def __init__(self, stop: str, text: str = "") -> None:
+        self.stop_reason = stop
+        self.content = [type("B", (), {"type": "text", "text": text})()]
+
+
+class _Client:
+    def __init__(self, msg: _Msg) -> None:
+        self.sent: dict[str, Any] = {}
+        outer = self
+
+        class _S:
+            def __enter__(self) -> Any:
+                return self
+
+            def __exit__(self, *a: Any) -> None:
+                return None
+
+            def get_final_message(self) -> _Msg:
+                return msg
+
+        class _M:
+            def stream(self, **kw: Any) -> _S:
+                outer.sent = kw
+                return _S()
+
+        self.messages = _M()
+
+
+def test_the_reviewer_reads_the_whole_diff_under_the_rubric() -> None:
+    import json
+
+    ans = {
+        "verdict": "PASS",
+        "risk_increasing": False,
+        "touches_control": False,
+        "findings": [],
+        "summary": "ok",
+    }
+    c = _Client(_Msg("end_turn", json.dumps(ans)))
+    assert ir.review("DIFF-BODY", ["a.py"], c) == ans
+    assert c.sent["model"] == "claude-opus-5-5" and "independent reviewer" in c.sent["system"]
+    assert "DIFF-BODY" in c.sent["messages"][0]["content"]
+    assert c.sent["output_config"]["format"]["schema"] == ir.SCHEMA
+
+
+def test_a_refusal_or_a_cut_off_review_is_never_a_pass() -> None:
+    assert ir.decide(ir.review("d", [], _Client(_Msg("refusal"))))[0] is False
+    with pytest.raises(RuntimeError):
+        ir.review("d", [], _Client(_Msg("max_tokens", "{")))
