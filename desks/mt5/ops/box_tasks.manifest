@@ -165,7 +165,7 @@ TASK name="MT5-ContractTerms"      trigger="every 1 hour"          runs="UNKNOWN
 # MT5-CacheWarm warms the JUDGE'S OWN next docket (research/judge_docket_order.py), never-judged first,
 # with IDLE-priority workers sized from psutil-measured idle cores; WARM_GAUNTLET.json is read by
 # research/judging_burndown.py (leg judging_burndown). The installer names this script.
-TASK name="MT5-CacheWarm"          trigger="every 30 minutes"      runs="desks/mt5/scripts/warm_gauntlet_cache.py"   installer="desks/mt5/scripts/install_cachewarm_task.ps1" lane="data"
+TASK name="MT5-CacheWarm"          trigger="every 1 hour"          runs="desks/mt5/scripts/warm_gauntlet_cache.py"   installer="desks/mt5/scripts/install_cachewarm_task.ps1" lane="data"
 
 # -------------------------------------------------------------------------------------- ops
 TASK name="MT5-StallWatch"         trigger="every 10 minutes" runs="desks/mt5/scripts/stall_watch.ps1"        installer="desks/mt5/scripts/install_stall_watch_task.ps1" lane="ops"
@@ -300,3 +300,7 @@ TASK name="MT5-Dept-Rest" trigger="at startup + every 10 minutes (keep-alive of 
 TASK name="MT5-LawGate" trigger="hourly at :40" runs="scripts/run_law_gate.py --rotate --budget-s 1800" installer="desks/mt5/scripts/install_law_gate_task.ps1" lane="ops"
 
 # Ledger adoption child: scripts/migrate_live_ledger_view.py runs only from MT5-AdoptRelease; emits reports/LEDGER_VIEW_ADOPTION.json, consumed by the adopter and runtime attestation. No independent scheduler.
+
+# THE BOX BRIDGE (2026-10-28). Keeps `claude remote-control` in C:\opt\bridge\quant alive so box steps
+# never wait on an RDP session; runs as the bridge user, interactive, from the admin-only C:\ProgramData\ClaudeBridge\bin.
+TASK name="Claude-Bridge-Watchdog" trigger="at logon + every 5 minutes" runs="ops/bridge/bridge_watchdog.ps1" installer="ops/bridge/install_bridge_watchdog.ps1" lane="ops"
