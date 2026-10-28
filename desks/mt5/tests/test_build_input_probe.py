@@ -80,6 +80,9 @@ def uni(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(research_priors, "STATE_DIR", tmp_path / "research_priors")
     monkeypatch.setattr(jc, "BUILD_INPUT_RELEASED", tmp_path / "build_input_released.json")
     monkeypatch.setattr(jc, "PARKED_TRIAL_ROWS", tmp_path / "build_input_parked_trials.json")
+    # the pre-build screen's intake report (written on a publish=True pass) is desk state too
+    from research import judge_prescreen
+    monkeypatch.setattr(judge_prescreen, "INTAKE_REPORT", tmp_path / "JUDGE_PRESCREEN_INTAKE.json")
     return root
 
 

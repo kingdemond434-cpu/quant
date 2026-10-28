@@ -4251,7 +4251,9 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
                                                       / PARKED_TRIAL_ROWS.name):
             _write_parked_trials([], None)
         for _r in entry_rows:
-            for _k in ("_cell", "_variant", "_keff", "_occ", "_orth"):
+            # `_famdup` (judge-families' stamp) too: on efde2f1c4 a fault after `family_stamp`
+            # shipped it, failing #424's test_a_fault_after_the_filter_ships_the_rows_as_they_arrived
+            for _k in ("_cell", "_variant", "_keff", "_occ", "_orth", "_famdup"):
                 _r.pop(_k, None)
         return entry_rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
