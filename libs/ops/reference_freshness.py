@@ -1129,7 +1129,8 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
         path_id="daily_cycle.prune_corrupt",
         module="desks/mt5/research/daily_cycle.py",
         function="_prune_corrupt",
-        removes="only the daily stamp's own quarantine copies (<stamp>.corrupt-<ts>, beside the "
+        removes="only the daily stamp's own quarantine copies (<stamp>.corrupt-<seq>-<ts>, and "
+                "legacy <stamp>.corrupt-<ts>, beside the "
                 "stamp) beyond the newest CORRUPT_KEEP (5); never the live stamp or other state",
         reference="the quarantine just taken (always kept) and the newer copies' sequence "
                   "numbers (legacy unsequenced copies: file mtime)",
