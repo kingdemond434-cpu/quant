@@ -53,10 +53,11 @@ THE UNIVERSE, every gate fail-closed and every refusal NAMED in `screen`:
      R-per-trade bias exactly as `libs.portfolio.execution_cost` does for Fusion (BASE_COST_R x
      (ratio - 1), clipped at MAX_RATIO, never a credit). A sleeve the venue cannot price is OUT;
   5. not quarantined (`live_sleeve_policy.json` empty symbol list) and not a principal zero;
-  6. NEVER OPPOSITE TO E8: a sleeve on a symbol E8's live book trades is out, except the gold copy,
-     which follows E8's own filled direction (prop/ftmo_follower.py refuses the other side at send).
-The gold_asia copy is IN by the principal's override (2026-10-28 14:31Z, "Copy anyway"); it is sized
-by this solve like any other column.
+  6. NEVER OPPOSITE TO E8: a sleeve on a symbol E8's live book trades is out.
+The one exception is the gold_asia COPY, and it is the principal's switch, not this solve's
+(`COPY_COLUMNS`, `copy_switch`): FTMO bans cross-firm copying and the principal overrode that with
+informed consent (2026-10-28 14:31Z). It is a column only while the principal holds it on, and the
+solve may only resize it inside (0, the principal's value]; a zero (a pause) is never re-opened.
 
 WHAT IS EMPTY IS A REQUEST, NOT A SHRUG. Every venue-listed symbol with no Tier S sleeve is written
 as a targeted hypothesis (`data/intelligence/ftmo_allocator/ftmo_gap_hypotheses.jsonl`) on the
@@ -123,9 +124,14 @@ STARTS = 4
 STATE_MAX_AGE_S = 3 * 3600
 #: Keys an FTMO executor can trade today. Everything else is sized and reported, never sent.
 FTMO_EXECUTABLE = frozenset({"gold_asia"})
-#: The principal's FTMO override (2026-10-28 14:31Z, "Copy anyway", cmsg G7EkJ9KTaSMy5a42YV4Hxg):
-#: FTMO copies E8's gold_asia. It is admitted without the Tier S door, and sized by this solve.
-GIVEN_COLUMNS = {"gold_asia": "principal override 2026-10-28 14:31Z: FTMO copies E8 gold_asia"}
+#: THE COPY IS THE PRINCIPAL'S SWITCH, NEVER THIS SOLVE'S. FTMO's rules ban copied/coordinated
+#: trades across firms; the principal overrode that with informed consent on 2026-10-28 14:31Z
+#: ("Copy anyway", cmsg G7EkJ9KTaSMy5a42YV4Hxg). So the gold_asia copy is a column ONLY while the
+#: principal holds it on -- "ftmo" in gold_oco's lanes AND a non-zero ftmo.gold_asia already in
+#: CERT_BOOK_LIVE -- and this solve may then only resize it inside (0, that value]: it never
+#: re-opens a pause held as a zero and never sizes the override above what the principal set.
+#: Every other column must be the FTMO account's own Tier S sleeve, off every E8 symbol.
+COPY_COLUMNS = {"gold_asia": "principal override 2026-10-28 14:31Z: FTMO copies E8 gold_asia"}
 #: Fusion's measured commission per lot per side (cost_truth.py: 2.00 EUR on every symbol),
 #: taken as 2.00 in the account currency so the FTMO excess over it is never under-stated.
 FUSION_COMMISSION_PER_SIDE = 2.0
@@ -197,7 +203,8 @@ def read_account_state(path: Path = ACCOUNT_STATE, *, now: datetime | None = Non
     from). Phase changes are the reader's to detect (new account key or balance reset)."""
     now = now or datetime.now(tz=UTC)
     doc = _read_json(path)
-    if not isinstance(doc, dict) or doc.get("status") != "OK":
+    if not isinstance(doc, dict) or doc.get("status") not in ("OK", "UNMEASURED") \
+            or "balance" not in doc:
         why = "no FTMO account state" if doc is None else f"state status {doc.get('status')!r}"
         return AccountState(why=f"{why}: solved from a fresh phase-1 account; not deployable")
     try:
@@ -205,7 +212,8 @@ def read_account_state(path: Path = ACCOUNT_STATE, *, now: datetime | None = Non
         st = AccountState(phase=str(doc["phase"]), balance=float(doc["balance"]) / initial,
                           equity=float(doc["equity"]) / initial,
                           day_start=float(doc["day_start_balance"]) / initial,
-                          days_traded=int(doc.get("days_traded") or 0), status="MEASURED",
+                          days_traded=int(doc.get("days_traded") or 0),
+                          status="MEASURED" if doc.get("status") == "OK" else "UNESTABLISHED",
                           detail={k: doc.get(k) for k in ("phase", "phase_why", "account_key",
                                                           "generated_at", "open_positions")})
         at = datetime.fromisoformat(str(doc["generated_at"]))
@@ -213,6 +221,9 @@ def read_account_state(path: Path = ACCOUNT_STATE, *, now: datetime | None = Non
         return AccountState(why=f"state unreadable ({type(exc).__name__}: {exc}); not deployable")
     if st.phase not in (*rules.targets, "funded"):
         return AccountState(why=f"unknown phase {st.phase!r}; not deployable")
+    if not st.measured:
+        st.why = f"phase not established ({doc.get('phase_why')}); solved from it, not deployable"
+        return st
     age = (now - at).total_seconds()
     if age > STATE_MAX_AGE_S:
         st.status = "STALE"
@@ -415,6 +426,8 @@ def venue_cost_bias(col: str, selector: str, listing: dict[str, Any],
     ratio_raw = f_px / charged_px
     ratio = min(ratio_raw, MAX_RATIO)
     contract = lrow.get("trade_contract_size") or reg.get("contract_size")
+    if risk_per_lot is not None and not risk_per_lot > 0:
+        return {"status": "UNPRICED", "why": f"{sym}: measured risk per lot {risk_per_lot!r}"}
     if risk_per_lot and isinstance(contract, (int, float)) and contract > 0:
         comm = 2.0 * max(float(ftmo_commission or 0.0) - FUSION_COMMISSION_PER_SIDE, 0.0)
         bias = (2.0 * max(f_px - charged_px, 0.0) * float(contract) + comm) / float(risk_per_lot)
@@ -448,6 +461,25 @@ def ftmo_commissions() -> dict[str, float]:
         if out:
             break
     return {k: float(np.median(v)) for k, v in out.items()}
+
+
+def copy_switch(path: Path | None = None) -> dict[str, tuple[bool, float, str]]:
+    """{copy column: (on, the principal's current value, why)}. Fail-closed: unreadable = off."""
+    book = _read_json(path or CERT_BOOK) or {}
+    try:
+        from mt5desk.gold_oco import declared_lanes
+        lanes = declared_lanes()
+    except Exception as exc:                              # pragma: no cover - box path
+        lanes, lane_why = (), f"gold_oco lanes unreadable ({type(exc).__name__})"
+    else:
+        lane_why = f"gold_oco lanes {list(lanes)}"
+    out: dict[str, tuple[bool, float, str]] = {}
+    for col in COPY_COLUMNS:
+        raw = (book.get("ftmo") or {}).get(col) if book.get("enabled") is True else None
+        cur = float(raw) if isinstance(raw, (int, float)) and not isinstance(raw, bool) else 0.0
+        on = "ftmo" in lanes and cur > 0
+        out[col] = (on, cur, f"{lane_why}; CERT_BOOK_LIVE ftmo.{col} = {cur}")
+    return out
 
 
 def e8_symbols() -> set[str]:
@@ -508,7 +540,8 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
                                ftmo_commission=commission.get(_symbol_of(col)))
         costs[col] = cost
         if cost["status"] != "PRICED":
-            columns[col] = {"admitted": False, "why": f"UNPRICED_AT_FTMO_COST: {cost['why']}"}
+            columns[col] = {"admitted": False, "why": f"UNPRICED_AT_FTMO_COST: {cost['why']}",
+                            "rail": "ftmo_unpriced"}
             return
         x = series - cost["bias_r_per_trade"] * (series != 0)
         cols.append(col)
@@ -516,9 +549,14 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         columns[col] = {"admitted": True, "why": why}
 
     n_w, n_t = r_c.shape[0], r_c.shape[1]
-    for col, why in GIVEN_COLUMNS.items():
-        if col in names:
-            admit(col, r_all[:n_w, :n_t, names.index(col)], why)
+    caps: dict[str, float] = {}
+    for col, (on, cur, swhy) in copy_switch().items():
+        if not on:
+            columns[col] = {"admitted": False, "why": f"COPY_OFF: the principal's switch is off "
+                                                      f"({swhy})", "rail": "ftmo_copy_switch"}
+        elif col in names:
+            admit(col, r_all[:n_w, :n_t, names.index(col)], f"{COPY_COLUMNS[col]} ({swhy})")
+            caps[col] = cur
     for k, col in enumerate(cert_cols):
         sym = _symbol_of(col)
         reason = None
@@ -535,11 +573,13 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         elif sym in e8_syms:
             reason = f"E8 trades {sym}: an own FTMO sleeve could stand opposite E8"
         if reason:
-            columns[col] = {"admitted": False, "why": reason}
+            columns[col] = {"admitted": False, "why": reason,
+                            "rail": ("ftmo_e8_symbol" if sym in e8_syms else "ftmo_universe")}
             continue
         admit(col, r_c[:, :, k], f"Tier S via {tier_s[col]}")
     if not cols:
         return {"status": "NO_ADMISSIBLE_SLEEVE", "columns": columns, "screen": screen,
+                "caps": caps,
                 "costs": costs, "listing_source": listing_src, "unpriced": unpriced,
                 "listing": listing, "tier_s": tier_s}
     r = np.stack(slices, axis=2)
@@ -553,6 +593,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         post[c] = {"prior_r": round(prior, 4), "live_n": len(live_r),
                    "posterior_r": round(mean, 4), "live_weight": round(weight, 3)}
     return {"status": "OK", "cols": cols, "r": r, "columns": columns, "screen": screen,
+            "caps": caps,
             "costs": costs, "posterior": post, "listing_source": listing_src,
             "unpriced": unpriced, "listing": listing, "tier_s": tier_s}
 
@@ -589,7 +630,8 @@ def evaluate(world: World, h: np.ndarray, rules: VenueRules, phase: str, st: Acc
 
 
 def search(world: World, rules: VenueRules, phase: str, st: AccountState,
-           cont: dict[str, np.ndarray] | None, cap: float, rng: np.random.Generator,
+           cont: dict[str, np.ndarray] | None, cap: float | np.ndarray,
+           rng: np.random.Generator,
            margin: float | None) -> tuple[np.ndarray, float]:
     """Multi-start pattern search (coordinate steps + pairwise transfers), the kelly_survival
     book search on this objective. `margin` None = unconstrained (the frontier's reference)."""
@@ -701,7 +743,10 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     cols, r = uni["cols"], uni["r"]
     solve_w, valid_w = make_worlds(r, n_paths, SIM_DAYS, seed)
     rng = np.random.default_rng(seed)
-    cap = MAX_RISK_FRAC
+    # Per-column ceiling: the venue's per-trade cap, and for the principal's copy the value the
+    # principal set (an equity fraction, so in initial-balance units at today's equity).
+    cap = np.array([min(MAX_RISK_FRAC, uni["caps"][c] * st.equity) if c in uni["caps"]
+                    else MAX_RISK_FRAC for c in cols])
     # BACKWARD INDUCTION: the last challenge phase first (from a fresh account), so every earlier
     # phase is valued by what passing it is actually worth.
     chain = [st.phase]
@@ -739,13 +784,40 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     doc["phases"] = phases
     now_block = phases[st.phase]
     doc["book"] = dict(now_block["risk_frac"])
-    doc["executable"] = {c: v for c, v in doc["book"].items() if c in FTMO_EXECUTABLE}
+    # THE EXECUTOR SIZES ON EQUITY (prop/ftmo_follower: fraction x equity); the solve sizes on the
+    # initial balance. The written fraction carries the same dollars at today's equity.
+    doc["executable"] = {c: round(v / st.equity, 5) for c, v in doc["book"].items()
+                         if c in FTMO_EXECUTABLE}
     doc["sized_no_executor"] = {c: v for c, v in doc["book"].items() if c not in FTMO_EXECUTABLE}
+    # Missed growth (Rule 1): what the missing executors cost, and every column a rail kept out.
+    if doc["sized_no_executor"] and now_block["status"] == "OK":
+        here = st
+        h_full = np.array([doc["book"].get(c, 0.0) for c in cols])
+        h_exec = np.array([doc["book"].get(c, 0.0) if c in FTMO_EXECUTABLE else 0.0
+                           for c in cols])
+        j_full = evaluate(valid_w, h_full, rules, st.phase, here, cont)["score"]
+        j_exec = evaluate(valid_w, h_exec, rules, st.phase, here, cont)["score"]
+        doc["missed_growth_no_executor"] = {"J_book": round(j_full, 5),
+                                            "J_executable_only": round(j_exec, 5),
+                                            "J_missed": round(j_full - j_exec, 5)}
+    doc["rail_blocks"] = rail_blocks(uni)
     doc["status"] = now_block["status"]
     doc["validation_score"] = (now_block["validation"]["score"]
                                if now_block["status"] == "OK" else 0.0)
     doc["deployable"] = bool(now_block["status"] == "OK" and st.measured)
     return doc
+
+
+def rail_blocks(uni: dict[str, Any]) -> list[dict[str, Any]]:
+    """Every column a rail kept out, with its prior mean R: the missed-growth ledger's input.
+    Its J is UNMEASURED -- a column the venue cannot list or price cannot be simulated there."""
+    out = []
+    for col, row in (uni.get("columns") or {}).items():
+        if row.get("admitted") or not row.get("rail"):
+            continue
+        out.append({"column": col, "rail": row["rail"], "why": row["why"],
+                    "missed_J": "UNMEASURED"})
+    return out
 
 
 def _round(x: Any) -> Any:
@@ -763,6 +835,9 @@ def write_gap_requests(uni: dict[str, Any], now: datetime,
     listing = uni.get("listing") or {}
     tier_s = uni.get("tier_s") or {}
     covered = {_symbol_of(c) for c in tier_s}
+    # THE FAMILIES ARE EVERY TEN-GATE CERTIFICATE'S, not only Tier S: a family that certified
+    # anywhere is the best-evidenced mechanism to aim at an FTMO symbol, and the gauntlet (not
+    # this file) decides whether the new cell earns anything.
     fams = sorted({c.split("_", 1)[1].rsplit("_", 1)[0] for c in tier_s if "_" in c}
                   | {row.get("family") for row in (uni.get("screen") or [])
                      if row.get("family") and not row.get("excluded")})
@@ -772,12 +847,14 @@ def write_gap_requests(uni: dict[str, Any], now: datetime,
         return (len(sym) == 6 and sym.isalpha() and sym.isupper()) or sym.startswith("XA")
 
     gaps = sorted(s for s in listing if tradable_fx(s) and s not in covered)
-    rows = [{"kind": "hypothesis", "family": f, "symbols": gaps,
+    # ONE ROW PER SYMBOL: the compiler reads at most a handful of declared symbols per row
+    # (miner_candidate_compiler._MAX_TEXT_SYMBOLS), so a row naming all the gaps tests four.
+    rows = [{"kind": "hypothesis", "family": f, "symbols": [g],
              "source": "ftmo_allocator",
-             "title": f"FTMO gap: {f} on FTMO-listed symbols with no Tier S sleeve",
-             "text": (f"The FTMO allocator has no Tier S certified sleeve on {len(gaps)} symbols "
-                      f"the FTMO terminal lists. {f} certifies elsewhere; test it on these."),
-             "at": now.isoformat(timespec="seconds")} for f in fams] if gaps else []
+             "title": f"FTMO gap: {f} on {g}, FTMO-listed with no Tier S sleeve",
+             "text": (f"The FTMO allocator has no Tier S certified sleeve on {g}, which the FTMO "
+                      f"terminal lists. {f} certifies elsewhere; test it on {g}."),
+             "at": now.isoformat(timespec="seconds")} for f in fams for g in gaps]
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_suffix(".tmp")
@@ -807,6 +884,13 @@ def apply_book(doc: dict[str, Any], path: Path = CERT_BOOK, armed: Path = ARMED)
     new = {k: float(doc["executable"].get(k, 0.0)) for k in FTMO_EXECUTABLE}
     if any(not 0.0 <= v <= MAX_RISK_FRAC for v in new.values()):
         return {"applied": False, "why": "a value lies outside [0, MAX_RISK_FRAC]"}
+    for k, v in new.items():
+        held = block.get(k)
+        held = float(held) if isinstance(held, (int, float)) and not isinstance(held, bool) else 0.0
+        if k in COPY_COLUMNS and v > held + 1e-12:
+            # A zero is the principal's pause and a value is the principal's ceiling: the solve
+            # never re-opens the copy and never sizes it above what the principal set.
+            return {"applied": False, "why": f"{k} {v} would exceed the principal's {held}"}
     if all(abs(block.get(k, -1) - v) < 1e-9 for k, v in new.items()):
         return {"applied": False, "why": "unchanged"}
     block.update(new)
@@ -814,9 +898,10 @@ def apply_book(doc: dict[str, Any], path: Path = CERT_BOOK, armed: Path = ARMED)
     book["ftmo_by"] = (f"research/prop_challenge_allocator.py {doc['generated_at']} "
                        f"({doc['account']['phase']}, J-mix solve; armed by "
                        f"{armed.name})")
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(book, indent=1), encoding="utf-8")
-    os.replace(tmp, path)
+    # The follower reads this file every minute: tmp + fsync + os.replace, retried on Windows'
+    # PermissionError -- the follower's own writer.
+    from prop.ftmo_follower import _atomic_write
+    _atomic_write(path, json.dumps(book, indent=1))
     return {"applied": True, "ftmo": new}
 
 
@@ -829,7 +914,10 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     doc = solve(a.venue, n_paths=a.paths, seed=a.seed)
     if a.venue == "ftmo":
-        doc["deploy"] = apply_book(doc)
+        try:
+            doc["deploy"] = apply_book(doc)
+        except Exception as exc:                          # the report is written regardless
+            doc["deploy"] = {"applied": False, "why": f"write failed ({type(exc).__name__}: {exc})"}
     a.out.parent.mkdir(parents=True, exist_ok=True)
     tmp = a.out.with_suffix(".tmp")
     tmp.write_text(json.dumps(doc, indent=1, default=float), encoding="utf-8")

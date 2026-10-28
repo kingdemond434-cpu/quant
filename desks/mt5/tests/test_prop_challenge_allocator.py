@@ -137,6 +137,16 @@ def test_the_ftmo_spread_at_the_fill_hour_is_charged_and_never_credited() -> Non
     assert cheap["bias_r_per_trade"] == 0.0
 
 
+def test_a_non_positive_measured_stop_is_refused_never_a_credit() -> None:
+    listing = {"XAUUSD": {"point": 0.01, "spread": 41, "trade_contract_size": 100.0}}
+    reg = {"XAUUSD": {"median_spread_pts": 14.5, "tick_size": 0.01}}
+    fusion = {"symbols": {"XAUUSD": {"hours": {"7": {"status": "MEASURED", "p50": 16.0}}}}}
+    for rpl in (0.0, -3000.0):
+        out = pca.venue_cost_bias("gold_asia", "asia", listing, None, fusion, reg,
+                                  risk_per_lot=rpl)
+        assert out["status"] == "UNPRICED"
+
+
 def test_a_sleeve_the_venue_cannot_price_is_refused() -> None:
     out = pca.venue_cost_bias("AUDNZD_overnight_gap_decay_asia", "asia", {}, None, None, None)
     assert out["status"] == "UNPRICED"
@@ -159,9 +169,9 @@ def test_a_measured_stop_prices_the_spread_exactly() -> None:
 
 def test_the_phase_advances_only_after_a_pass() -> None:
     chain: dict = {}
-    p, _, chain = fvr.infer_phase(chain, "k1", balance=100_000, initial=100_000, declared=None,
-                                  first_balance_at="2026-10-21", rules=R)
-    assert p == "phase1"
+    p, _, chain = fvr.infer_phase(chain, "k1", balance=100_000, initial=100_000,
+                                  declared="phase1", first_balance_at="2026-10-21", rules=R)
+    assert p == "phase1" and chain["accounts"]["k1"]["established"]
     chain = fvr.mark_passed(chain, "k1", balance=110_500, initial=100_000, days_traded=4,
                             flat=True, rules=R)
     p, why, chain = fvr.infer_phase(chain, "k2", balance=100_000, initial=100_000, declared=None,
@@ -169,7 +179,35 @@ def test_the_phase_advances_only_after_a_pass() -> None:
     assert p == "phase2" and "PASSED" in why
     p, _, chain = fvr.infer_phase(chain, "k3", balance=100_000, initial=100_000, declared=None,
                                   first_balance_at="2027-01-10", rules=R)
-    assert p == "phase2"                           # phase 2 never passed: a retry
+    assert p == "phase2"                           # phase 2 never passed: a retry ...
+    assert not chain["accounts"]["k3"]["established"]   # ... which is not established
+
+
+def test_a_first_seen_account_is_not_an_established_phase() -> None:
+    p, why, chain = fvr.infer_phase({}, "k1", balance=1, initial=1, declared=None,
+                                    first_balance_at=None, rules=R)
+    assert p == "phase1" and not chain["accounts"]["k1"]["established"]
+    assert "NOT established" in why
+
+
+def test_a_missed_pass_is_never_read_as_the_next_phase() -> None:
+    chain = fvr.infer_phase({}, "k1", balance=1, initial=1, declared="phase1",
+                            first_balance_at=None, rules=R)[2]
+    # The reader never saw k1 at its target: k2 is NOT phase2, and NOT established either.
+    p, _, chain = fvr.infer_phase(chain, "k2", balance=1, initial=1, declared=None,
+                                  first_balance_at=None, rules=R)
+    assert p == "phase1" and not chain["accounts"]["k2"]["established"]
+
+
+def test_an_unestablished_state_is_solved_but_never_deployable(tmp_path: Path) -> None:
+    p = tmp_path / "s.json"
+    p.write_text(json.dumps({"status": "UNMEASURED", "phase": "phase1",
+                             "initial_balance": 100_000, "balance": 104_000, "equity": 104_000,
+                             "day_start_balance": 104_000, "days_traded": 3,
+                             "generated_at": datetime.now(tz=UTC).isoformat()}))
+    st = pca.read_account_state(p)
+    assert st.balance == pytest.approx(1.04) and st.status == "UNESTABLISHED"
+    assert not st.measured
 
 
 def test_a_pass_needs_the_minimum_days_and_a_flat_book() -> None:
@@ -240,3 +278,37 @@ def test_e8_symbols_keep_own_sleeves_out(tmp_path: Path, monkeypatch) -> None:
     p.write_text(json.dumps({"enabled": True, "e8": {"gold_asia": 0.006, "AUDCHF_x_asia": 0.0}}))
     monkeypatch.setattr(pca, "CERT_BOOK", p)
     assert pca.e8_symbols() == {"XAUUSD"}
+
+
+def test_the_copy_is_never_reopened_or_raised_by_the_solve(tmp_path: Path) -> None:
+    armed = tmp_path / "ARMED"
+    armed.touch()
+    doc = {"deployable": True, "executable": {"gold_asia": 0.004},
+           "generated_at": "t", "account": {"phase": "phase1", "status": "MEASURED"}}
+    paused = tmp_path / "p.json"
+    paused.write_text(json.dumps({"enabled": True, "ftmo": {"gold_asia": 0.0}}))
+    assert pca.apply_book(doc, paused, armed)["applied"] is False         # a pause stays a pause
+    assert json.loads(paused.read_text())["ftmo"]["gold_asia"] == 0.0
+    low = tmp_path / "l.json"
+    low.write_text(json.dumps({"enabled": True, "ftmo": {"gold_asia": 0.003}}))
+    assert pca.apply_book(doc, low, armed)["applied"] is False            # never above the cap
+
+
+def test_the_copy_column_needs_the_principals_switch(tmp_path: Path, monkeypatch) -> None:
+    import mt5desk.gold_oco as oco
+    p = tmp_path / "b.json"
+    p.write_text(json.dumps({"enabled": True, "ftmo": {"gold_asia": 0.009}}))
+    monkeypatch.setattr(oco, "declared_lanes", lambda doc=None: ("e8", "fusion"))
+    assert pca.copy_switch(p)["gold_asia"][0] is False                    # lane off
+    monkeypatch.setattr(oco, "declared_lanes", lambda doc=None: ("e8", "fusion", "ftmo"))
+    assert pca.copy_switch(p)["gold_asia"][:2] == (True, 0.009)
+    p.write_text(json.dumps({"enabled": True, "ftmo": {"gold_asia": 0.0}}))
+    assert pca.copy_switch(p)["gold_asia"][0] is False                    # paused at zero
+
+
+def test_gap_requests_name_one_symbol_per_row(tmp_path: Path) -> None:
+    uni = {"listing": {"EURUSD": {}, "GBPUSD": {}, "AUDCAD": {}, "Apple": {}},
+           "tier_s": {}, "screen": [{"family": "overnight_gap_decay"}]}
+    out = pca.write_gap_requests(uni, datetime.now(tz=UTC), tmp_path / "g.jsonl")
+    rows = [json.loads(x) for x in (tmp_path / "g.jsonl").read_text().splitlines()]
+    assert out["rows"] == 3 and all(len(r["symbols"]) == 1 for r in rows)

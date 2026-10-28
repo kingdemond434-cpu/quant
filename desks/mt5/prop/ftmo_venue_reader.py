@@ -15,14 +15,18 @@ publishes what the allocator needs and the allocator reads files:
                                     cost_surface.build from the FTMO terminal's own H1 bars
                                     (refreshed once a day; bars land in data/universe_ftmo/)
 
-THE PHASE IS READ OFF THE ACCOUNT, NOT TYPED IN. A 2-Step account runs phase1 -> phase2 -> funded,
-and each step is a NEW account (a new login) that starts at the initial balance. The chain is kept
-in data/ftmo_phase_state.json:
-  * a new account key after a PASSED phase (balance reached its target with the minimum trading
-    days done) is the next phase;
-  * a new key after anything else is a new attempt at the same phase (phase1 if none is known);
-  * the declaration's optional "phase" (data/FTMO_LIVE_ACCOUNT.json) overrides the inference;
-  * a balance deal that lands after the account was first seen is a RESET of the same phase.
+THE PHASE IS READ OFF THE ACCOUNT, AND ONLY A POSITIVELY ESTABLISHED PHASE IS PUBLISHED AS ONE.
+A 2-Step account runs phase1 -> phase2 -> funded, and each step is a NEW account (a new login) that
+starts at the initial balance. The chain is kept in data/ftmo_phase_state.json:
+  * a new account key right after a phase this reader SAW pass (balance at its target, flat, with
+    the minimum trading days done) is the next phase -- ESTABLISHED;
+  * the declaration's "phase" (data/FTMO_LIVE_ACCOUNT.json) establishes it outright;
+  * anything else -- a first-seen account, a new key after a phase that was not seen to pass (a
+    retry, or a pass this reader missed), an unknown next phase -- is published with status
+    UNMEASURED, so the allocator solves it but never deploys from it (fail closed);
+  * a balance deal after the account was first seen is a RESET: same phase, still established.
+The terminal must be on the DECLARED account (login and server, as the follower checks), and the
+initial balance is the declaration's, never a default: otherwise the state is UNMEASURED.
 Every inference is published with its reason (`phase_why`).
 
     python prop/ftmo_venue_reader.py            one pass (interactive session only)
@@ -96,14 +100,19 @@ def infer_phase(chain: dict[str, Any], key: str, *, balance: float, initial: flo
     if cur is None:
         prev_key = chain.get("current")
         prev = accounts.get(prev_key) if prev_key else None
+        established = False
         if prev is None:
-            phase, why = "phase1", "first account seen"
-        elif prev.get("passed"):
-            phase = rules.next_phase.get(prev["phase"], "funded")
-            why = f"new account after {prev['phase']} PASSED"
+            phase, why = "phase1", "first account seen: phase NOT established"
+        elif prev.get("passed") and prev.get("established") \
+                and prev["phase"] in rules.next_phase:
+            phase = rules.next_phase[prev["phase"]]
+            why, established = f"new account after {prev['phase']} was seen to PASS", True
         else:
-            phase, why = prev["phase"], f"new account after {prev['phase']} did not pass: a retry"
-        cur = {"phase": phase, "first_seen_balance_at": first_balance_at, "passed": False}
+            phase = prev["phase"]
+            why = (f"new account after {prev['phase']} was not seen to pass (a retry, or a missed "
+                   f"pass): phase NOT established")
+        cur = {"phase": phase, "first_seen_balance_at": first_balance_at, "passed": False,
+               "established": established}
     else:
         phase, why = cur["phase"], "same account"
         if first_balance_at and cur.get("first_seen_balance_at") \
@@ -112,7 +121,7 @@ def infer_phase(chain: dict[str, Any], key: str, *, balance: float, initial: flo
             cur = {**cur, "first_seen_balance_at": first_balance_at, "passed": False}
     if declared:
         phase, why = declared, f"declared in FTMO_LIVE_ACCOUNT.json (inferred: {why})"
-        cur = {**cur, "phase": declared}
+        cur = {**cur, "phase": declared, "established": True}
     target = rules.targets.get(phase)
     cur["last_balance_x"] = round(balance / initial, 5)
     accounts[key] = cur
@@ -160,7 +169,20 @@ def run(mt5: Any, now: datetime | None = None) -> dict[str, Any]:
         _atomic(STATE_OUT, doc)
         return doc
     key = _oco.oco_account_key(getattr(acc, "login", None), getattr(acc, "server", None))
-    initial = float(decl.get("initial_balance") or 100_000.0)
+    try:
+        initial = float(decl["initial_balance"])
+    except (KeyError, TypeError, ValueError):
+        initial = None
+    declared_ok = (initial is not None and initial > 0
+                   and ff._canon(getattr(acc, "login", None)) == ff._canon(decl.get("login"))
+                   and str(getattr(acc, "server", "")).strip()
+                   == str(decl.get("server") or "").strip())
+    if initial is None or not initial > 0:
+        doc = {"status": "UNMEASURED", "generated_at": now.isoformat(),
+               "why": "FTMO_LIVE_ACCOUNT.json carries no initial_balance: the limits cannot be "
+                      "placed"}
+        _atomic(STATE_OUT, doc)
+        return doc
     deals = list(mt5.history_deals_get(now - timedelta(days=400), now + timedelta(minutes=5))
                  or [])
     bal_deals = sorted(float(d.time) for d in deals
@@ -185,7 +207,11 @@ def run(mt5: Any, now: datetime | None = None) -> dict[str, Any]:
                "generated_at": now.isoformat()}
         _atomic(STATE_OUT, doc)
         return doc
-    doc = {"status": "OK", "generated_at": now.isoformat(timespec="seconds"),
+    established = bool(((chain.get("accounts") or {}).get(key) or {}).get("established"))
+    status = "OK" if established and declared_ok else "UNMEASURED"
+    if not declared_ok:
+        why = f"{why}; the terminal is not on the declared account"
+    doc = {"status": status, "generated_at": now.isoformat(timespec="seconds"),
            "account_key": key, "phase": phase, "phase_why": why,
            "initial_balance": initial, "balance": float(acc.balance),
            "equity": float(acc.equity), "day_start_balance": start, "days_traded": days,
