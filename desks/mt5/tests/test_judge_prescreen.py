@@ -30,6 +30,7 @@ def paths(tmp_path, monkeypatch):
     monkeypatch.setattr(jp, "LOCK", tmp_path / "prescreen_verdicts.lock")
     monkeypatch.setattr(jp, "LEDGER", tmp_path / "gate_verdict_ledger.jsonl")
     monkeypatch.setattr(jp, "GRAPH", tmp_path / "hypothesis_graph.jsonl")
+    monkeypatch.setattr(jp, "SOURCES_STATE", tmp_path / "sources_state.json")
     from libs.ops import events
 
     monkeypatch.setattr(events, "PATH", tmp_path / "events.jsonl")
@@ -559,11 +560,156 @@ def test_the_report_measures_how_far_the_two_sources_disagree(paths) -> None:
     )
     _graph(paths, {"id": "ga", "fate": "FAILED"}, {"id": "gz", "fate": "FAILED"})
     cmp = jp.trial_source_comparison()
-    assert cmp["status"] == "MEASURED" and cmp["cells"] == 4
+    assert cmp["status"] == "MEASURED" and cmp["cells"] == 4 and cmp["pending_graph_read"] == 0
     assert cmp["both"] == 1 and cmp["gate_ruled_not_graph_counted"] == 1
     assert cmp["graph_counted_not_gate_ruled"] == 1 and cmp["neither"] == 1
     assert cmp["sample_gate_only"] == ["n"] and cmp["sample_graph_only"] == ["z"]
     assert cmp["cells_without_graph_id"] == 1
+
+
+# ------------------------------------------------------------------ v1.3 must-fix: nested fates
+def _decoys(paths) -> None:
+    # the auditor's two rows: a params decoy over a real BORN, and a null top-level fate with a
+    # nested FAILED in gates -- experiment_ledger reads BORN and "" for them: neither is counted
+    _graph(
+        paths,
+        {"id": "gp", "params": {"source": "x", "fate": "CERTIFIED"}, "fate": "BORN"},
+        {"id": "gn", "fate": None, "gates": {"g1": {"passed": False, "fate": "FAILED"}}},
+    )
+
+
+def test_graph_fates_read_only_the_top_level_fate(paths) -> None:
+    _decoys(paths)
+    assert jp.graph_fates({"gp", "gn"}) == {"gp": "BORN", "gn": ""}
+    assert jp.graph_fates() == {"gp": "BORN", "gn": ""}
+
+
+def test_nested_fates_never_uncharge_a_cell(paths) -> None:
+    _decoys(paths)
+    jp.VERDICTS.write_text(
+        json.dumps({"event": "KILL", "cell": "p", "family": "jump", "graph_id": "gp"})
+        + "\n"
+        + json.dumps({"event": "KILL", "cell": "n", "family": "jump", "graph_id": "gn"})
+        + "\n"
+    )
+    assert jp.lifetime_kills() == (2, {"jump": 2})  # both stay charged
+
+
+def test_graph_fates_match_experiment_ledgers_reading(paths, monkeypatch) -> None:
+    from libs.research import experiment_ledger as el
+    from libs.research import hypothesis_graph as hg
+
+    _decoys(paths)
+    _graph(paths, {"id": "gf", "fate": "FAILED"}, {"id": "gc", "fate": "CERTIFIED"})
+    monkeypatch.setattr(hg, "LEDGER", jp.GRAPH)
+    monkeypatch.setattr(el, "DESK", paths)  # its count cache lands in tmp
+    total, _ = el._graph_counts()
+    fates = jp.graph_fates()
+    assert total == sum(1 for f in fates.values() if f in jp.GRAPH_COUNTED_FATES) == 2
+
+
+# ------------------------------------------------------------------ v1.3 watch: bounded sources
+def _sources_world(paths) -> None:
+    jp.LEDGER.write_text(
+        "\n".join(
+            json.dumps(x)
+            for x in (
+                {"cell": "a", "graph_id": "ga", "terminal_gate": "in_sample_screen"},
+                {"cell": "n", "graph_id": "", "terminal_gate": "in_sample_screen"},
+                {"cell": "z", "graph_id": "gz", "passed": None, "downstream_status": "NOT_RUN_G1"},
+                {"cell": "w", "graph_id": "gw", "passed": None, "downstream_status": "NOT_RUN_X"},
+            )
+        )
+        + "\n"
+    )
+    _graph(paths, {"id": "ga", "fate": "FAILED"}, {"id": "gz", "fate": "FAILED"})
+
+
+_COUNTS = ("cells", "both", "gate_ruled_not_graph_counted", "graph_counted_not_gate_ruled")
+
+
+def test_sources_converge_under_a_tiny_budget_and_never_read_partial_as_zero(paths) -> None:
+    _sources_world(paths)
+    full = jp.trial_source_comparison(state_path=paths / "full.json")
+    assert full["status"] == "MEASURED" and full["provisional"] is False
+    seen = []
+    for _ in range(12):
+        r = jp.trial_source_comparison(max_lines=1)
+        seen.append(r)
+        if r["status"] == "MEASURED":
+            break
+    assert seen[0]["status"] == "PARTIAL" and seen[0]["provisional"] is True
+    assert seen[0]["coverage"]["gate_bytes_read"] < seen[0]["coverage"]["gate_bytes"]
+    assert seen[-1]["status"] == "MEASURED"
+    assert {k: seen[-1][k] for k in _COUNTS} == {k: full[k] for k in _COUNTS}
+    assert all("seconds" in r and "coverage" in r for r in seen)
+
+
+def test_a_zero_budget_reports_partial_coverage_honestly(paths) -> None:
+    _sources_world(paths)
+    jp.trial_source_comparison(max_lines=4)  # the gate ledger only; no graph line read yet
+    r = jp.trial_source_comparison(budget_s=0.0, max_lines=0)
+    assert r["status"] == "PARTIAL"
+    assert r["coverage"]["graph_bytes_read"] == 0 < r["coverage"]["graph_bytes"]
+    # with no graph row read, every cell holding a graph id is PENDING -- not a gap, not a 0;
+    # only `n` (no graph id at all) is already knowable as a deflation case
+    assert r["pending_graph_read"] == 3 and r["gate_ruled_not_graph_counted"] == 1
+    assert r["both"] == 0 and r["graph_counted_not_gate_ruled"] == 0 and r["provisional"] is True
+    for _ in range(12):  # each partial pass is a subset of the truth, never a contradiction
+        r = jp.trial_source_comparison(max_lines=1)
+        assert r["gate_ruled_not_graph_counted"] <= 1 and r["graph_counted_not_gate_ruled"] <= 1
+
+
+def test_sources_read_only_deltas_and_backfill_ids_seen_late(paths) -> None:
+    _sources_world(paths)
+    first = jp.trial_source_comparison()
+    assert first["status"] == "MEASURED" and first["both"] == 1
+    # a NEW gate row names `gb`, whose graph row was already passed (before the checkpoint),
+    # and `ga` gets a newer non-counted fate in the graph delta
+    with jp.LEDGER.open("a") as fh:
+        fh.write(json.dumps({"cell": "b", "graph_id": "gb", "terminal_gate": "UNKNOWN"}) + "\n")
+    lines = jp.GRAPH.read_text().splitlines()
+    jp.GRAPH.write_text(
+        "\n".join([json.dumps({"id": "gb", "fate": "JUDGED"}), *lines]) + "\n"
+    )  # rewritten head: a full re-read, still correct
+    again = jp.trial_source_comparison()
+    assert "graph" in again["coverage"]["reset_this_pass"] and again["both"] == 2
+    _graph(paths, {"id": "gb2", "fate": "FAILED"})  # appended: read as a delta, head unchanged
+    with jp.LEDGER.open("a") as fh:
+        fh.write(json.dumps({"cell": "c", "graph_id": "gb2", "terminal_gate": "UNKNOWN"}) + "\n")
+    with jp.LEDGER.open("a") as fh:
+        fh.write(json.dumps({"cell": "d", "graph_id": "gz", "terminal_gate": "UNKNOWN"}) + "\n")
+    delta = jp.trial_source_comparison()
+    assert delta["coverage"]["reset_this_pass"] == []
+    assert delta["status"] == "MEASURED" and delta["both"] == 4  # a, b, c (backfilled), d
+
+
+def test_a_newer_delta_fate_beats_the_backfill(paths) -> None:
+    _sources_world(paths)
+    jp.trial_source_comparison()
+    with jp.LEDGER.open("a") as fh:  # `gq` is seen late; its OLD row says FAILED...
+        fh.write(json.dumps({"cell": "q", "graph_id": "gq", "terminal_gate": "UNKNOWN"}) + "\n")
+    lines = jp.GRAPH.read_text().splitlines()
+    head, rest = lines[0], lines[1:]
+    # gq's old row goes into the already-read prefix; the checkpoint is faked to match below
+    jp.GRAPH.write_text("\n".join([head, json.dumps({"id": "gq", "fate": "FAILED"}), *rest]) + "\n")
+    st = json.loads(jp.SOURCES_STATE.read_text())
+    st["graph"]["offset"] = jp.GRAPH.stat().st_size  # as if all of it had been read
+    st["graph"]["head_len"], st["graph"]["head"] = 0, jp._file_sig(jp.GRAPH, 0)[1]
+    jp.SOURCES_STATE.write_text(json.dumps(st))
+    started = jp.trial_source_comparison(max_lines=1)  # reads q, opens the backfill, no more
+    assert started["status"] == "PARTIAL" and started["pending_graph_read"] == 1
+    assert json.loads(jp.SOURCES_STATE.read_text())["backfill"]["ids"] == ["gq"]
+    _graph(paths, {"id": "gq", "fate": "BORN"})  # ...and a NEWER delta row says BORN
+    r = jp.trial_source_comparison()
+    assert r["status"] == "MEASURED"
+    st = json.loads(jp.SOURCES_STATE.read_text())
+    assert st["fates"]["gq"] == "BORN"  # the backfill's older FAILED never overwrote it
+
+
+def test_an_unreadable_source_is_unmeasured_not_zero(paths) -> None:
+    r = jp.trial_source_comparison()
+    assert r["status"] == "UNMEASURED" and "both" not in r
 
 
 # ------------------------------------------------------------------ v1.2 should-fix: no silent 0
