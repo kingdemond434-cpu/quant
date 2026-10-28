@@ -68,6 +68,7 @@ $ErrorActionPreference = "Stop"
 
 $DeskRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $RepoRoot = (Resolve-Path (Join-Path $DeskRoot "..\..")).Path
+$LaneClone = Join-Path (Split-Path $RepoRoot -Parent) "quant-cro-midnight"
 $Prompt   = Join-Path $RepoRoot "docs\cro\CRO_CYCLE.md"
 $Constitution = Join-Path $RepoRoot "docs\cro\QUANT_CONSTITUTION.md"
 $Reference    = Join-Path $RepoRoot "docs\cro\QUANT_REFERENCE.md"
@@ -271,10 +272,22 @@ if ($agentName -eq "claude") {
         "Write(scripts/run_deadman_switch.py)", "Read(data/secrets/**)"
     )
 } elseif ($agentName -eq "codex") {
-    # --full-auto is Codex's sandboxed unattended mode (workspace-write, no approval prompts).
-    $agentArgs = @("exec", "--full-auto", "-")
+    # --full-auto is Codex's sandboxed unattended mode (workspace-write, no approval prompts). Its
+    # writable root is the workspace, and that is NEVER the live tree: the sandbox may add its own
+    # write ACEs to the root, undoing the live-desk ACL lock (auditor HOLD on PR #439). The lane
+    # works in its own clone (provision_midnight_lane_clone.ps1); no extra writable dir is added.
+    if (-not (Test-Path -LiteralPath (Join-Path $LaneClone ".git"))) {
+        Write-Cycle ("FATAL: lane clone {0} missing; run provision_midnight_lane_clone.ps1 elevated" -f $LaneClone)
+        exit 3
+    }
+    $agentArgs = @("exec", "--full-auto", "--cd", $LaneClone, "-")
 }
 $streamJson = ($agentName -eq "claude")
+$isolationWhere = if ($agentName -eq "codex") {
+    "Your workspace is the lane's own clone $LaneClone (the live tree and its .git are read-only to you): git fetch origin, git checkout -B cro/$Lane-$Today origin/<box branch>, make code changes there"
+} else {
+    "Make code changes in a worktree (git worktree add ..\quant-cro-$Lane -B cro/$Lane-$Today origin/<box branch>)"
+}
 $Stream = Join-Path $LogDir ("cycle_{0}_stream.jsonl" -f $Lane)
 $Review = Join-Path $DeskRoot "reports\TIER1_BREADTH_REVIEW.json"
 
@@ -362,8 +375,7 @@ its report. Its checkpoint (work_items[] carries commits, tests and release iden
 The shared history of every pass is $Ledger (one JSON row per start and end).
 
 ISOLATION. Other sessions may be editing the live checkout at $RepoRoot. Never edit code there
-directly and never git stash / commit -a. Make code changes in a worktree
-(git worktree add ..\quant-cro-$Lane -B cro/$Lane-$Today origin/<box branch>), test there, rebase
+directly and never git stash / commit -a. $isolationWhere, test there, rebase
 on origin/<box branch> and push to that branch. MT5-AdoptRelease adopts origin into the live tree
 hourly and records the release in desks/mt5/data/RELEASE.json: that is the canonical release path.
 Remove the worktree when done.
@@ -454,6 +466,20 @@ try {
 } catch {
     Write-Cycle ("FATAL: agent invocation raised: {0}" -f $_.Exception.Message)
     exit 4
+}
+
+# THE LOCK STILL HOLDS AFTER A CODEX PASS. Codex's sandbox may grant itself write on a root it
+# was given; the live tree was never given, and this proves it rather than assuming it. A leak
+# fails the pass, so the task history shows it.
+if ($agentName -eq "codex") {
+    $aclLeak = @(& icacls $RepoRoot 2>$null) + @(& icacls (Join-Path $RepoRoot ".git") 2>$null) |
+        Select-String -Pattern "CodexSandbox"
+    if ($aclLeak) {
+        Write-Cycle ("DEFECT: live tree ACL lists a Codex sandbox principal after the pass: {0}" -f (($aclLeak | ForEach-Object { "$_".Trim() }) -join " | "))
+        if ($code -eq 0) { $code = 7 }
+    } else {
+        Write-Cycle "live tree ACL after pass: no Codex sandbox principal (lock holds)"
+    }
 }
 
 # EVERY REFUSED STEP IS A MISSED STEP, AND IT LEAVES A ROW. The recorder reads the teed stream,

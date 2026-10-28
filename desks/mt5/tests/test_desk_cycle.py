@@ -320,16 +320,22 @@ def test_the_installer_refuses_system_and_a_registration_with_no_next_run() -> N
     assert "registered with no next run time" in src and "exit 4" in src
 
 
-def test_the_codex_grant_is_scoped_to_git_and_the_lane_worktree() -> None:
-    """The ACL lock keeps the live tree read-only; Codex gets .git and its own worktree."""
-    src = (DESK / "scripts" / "grant_codex_lane_acl.ps1").read_text("utf-8")
-    assert "CodexSandboxUsers" in src
-    assert "Join-Path $RepoRoot '.git'" in src
-    assert "'quant-cro-midnight'" in src
-    assert "(OI)(CI)M" in src and "(OI)(CI)F" not in src
-    assert "icacls $RepoRoot /grant" not in src      # never re-opens the live tree
-    assert "/save" in src and "-Undo" in src
-    assert "exit 2" in src                           # absent group grants nothing
-    launcher = LAUNCHER.read_text("utf-8")
-    assert "..\\quant-cro-$Lane" in launcher       # the worktree the grant names
+def test_the_codex_lane_gets_its_own_clone_and_never_the_live_git() -> None:
+    """Write on the live .git is SYSTEM code execution (config, hooks); the lane gets a clone."""
+    src = (DESK / "scripts" / "provision_midnight_lane_clone.ps1").read_text("utf-8")
+    assert "CodexSandboxUsers" in src and "'quant-cro-midnight'" in src
+    assert "git clone --reference" in src
+    assert not re.search(r"icacls \$RepoRoot\b[^\n]*/grant", src)   # live tree: no grant
+    assert "Join-Path $RepoRoot '.git') /grant" not in src         # live .git: no grant
+    assert "(OI)(CI)M" in src and "'.git\\config', '.git\\hooks'" in src
+    assert "safe.directory $SafeDir" in src and "safe.directory *" not in src
+    assert "exit 2" in src and "exit 5" in src and "exit 6" in src  # no group / untrusted / leak
+    assert "GetOwner" in src and "-Undo" in src
 
+
+def test_the_codex_lane_runs_in_its_clone_and_proves_the_lock_held() -> None:
+    launcher = LAUNCHER.read_text("utf-8")
+    assert '"exec", "--full-auto", "--cd", $LaneClone, "-"' in launcher
+    assert '"quant-cro-midnight"' in launcher
+    assert "--add-dir" not in launcher
+    assert 'Select-String -Pattern "CodexSandbox"' in launcher
