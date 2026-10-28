@@ -710,7 +710,7 @@ def main() -> int:
         from research import coverage_steer as _cs
         _cmap = _cs.CoverageMap.load(HYP / _cs.MAP.name)
         steerer = _cs.Steerer(
-            _cmap, now=now,
+            _cmap, now=now, hyp_dir=HYP,
             tradeable=(None if not tradeable
                        else (lambda s, _t=tradeable: s.upper() in _t)))
         if os.environ.get("QUANT_COVERAGE_STEER", "1") == "0":
@@ -1293,7 +1293,8 @@ def publish_steering(steerer: Any, rows_out: list[dict[str, Any]]) -> dict[str, 
             from research.hypothesis_families import load_clusters
             clusters, _meta = load_clusters({str(r.get("symbol") or r.get("sym") or "").upper()
                                              for r in rows_out} - {""},
-                                            path=HYP / "symbol_clusters.json")
+                                            path=HYP / "symbol_clusters.json",
+                                            refresh=False)   # read only: never a 2nd writer
         except Exception:
             clusters = {}
         cmap = _cs.CoverageMap.from_rows(rows_out, clusters, identity_fn=_identity,

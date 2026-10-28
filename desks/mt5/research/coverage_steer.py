@@ -55,9 +55,19 @@ across the universe hour after hour.
 
 NOT A TRIAL, AND BLIND. Steering runs no backtest and reads no verdict: the map holds which cells
 EXIST, never how any scored, so no outcome can leak into what gets proposed. A steered child is a
-fresh candidate, judged and counted in the trial census exactly like any other row; the parent's
-`contributing_sources` are not copied (no source named the new ground). Fail closed: if the lane
-law, the unrunnable bank or the map cannot be read, NOTHING is moved and the report says why.
+fresh candidate, judged and counted in the trial census exactly like any other row; it carries the
+source and mechanism only (never the parent's `genome_id`, `axis`, `failure_prior`, `premortem`,
+nor its `contributing_sources`: no source named the new ground). Fail closed: if the lane law, the
+map, the re-aim ledger or the unrunnable bank cannot be read -- or the bank is EMPTY, which the
+judge's reader cannot tell apart from missing -- NOTHING is moved and the report says why. A
+parent `hypothesis_families.reaim` already gave a child is never steered as well.
+
+THE ONE-TIME STEP IN THE DOCKET, STATED. Producers re-emit already-banked rows, and the bank keeps
+every row it ever held. So the first passes after this lands steer the banked threshold repeats the
+producers re-emit (~15k on the git docket, 53,172 of the compiler's 53,174 rows were banked): the
+parents stay in the bank and each gains ONE child, a new structural cell the judge has never seen.
+That is new breadth and new trials, counted as such (journalled in context/), once per parent;
+after it, the step is zero and only fresh repeats are steered.
 
     python -c "from research import coverage_steer as c; print(c.CoverageMap.load().summary())"
 """
@@ -87,7 +97,7 @@ REPORT = BASE / "reports" / "MINING_NOVELTY.json"
 UNIVERSE = BASE / "data" / "universe"
 
 VERSION = "coverage-steer-v1"
-MAP_VERSION = 1
+MAP_VERSION = 2
 
 #: Params already inside the judge's L1 cell (or naming the chart): never part of the signature.
 _L1_PARAMS = frozenset({"timeframe", "session", "selector", "regime", "condition", "direction",
@@ -177,6 +187,9 @@ def _judge_has_categorical() -> bool:
 #: True once the Judge's own L1 key carries the categorical params (judge_l1_categorical): the
 #: steer then uses that key verbatim, so the steer and the judge can never disagree on a rule.
 _JUDGE_CATEGORICAL = _judge_has_categorical()
+#: The key the map was built with; a map built under another key is never steered against.
+KEY_VERSION = ("judge:hypothesis_families.rule_key" if _JUDGE_CATEGORICAL
+               else "local:l1+categorical-v1")
 
 
 def _l1(row: dict[str, Any]) -> str:
@@ -303,7 +316,8 @@ class CoverageMap:
         return m
 
     def to_doc(self) -> dict[str, Any]:
-        return {"version": MAP_VERSION, "steer_version": VERSION, "built_at": self.built_at,
+        return {"version": MAP_VERSION, "key_version": KEY_VERSION, "steer_version": VERSION,
+                "built_at": self.built_at,
                 "rows": self.rows, "structural_rules": len(self.claims),
                 "rule": ("structural key = judge_coverage L1 cell + categorical params; a cell "
                          "repeating one only in numeric thresholds is a duplicate. Coverage only: "
@@ -330,6 +344,11 @@ class CoverageMap:
             return m
         if not isinstance(doc, dict) or int(doc.get("version") or 0) != MAP_VERSION:
             m.status = "WRONG_VERSION"
+            return m
+        if doc.get("key_version") != KEY_VERSION:
+            # the judge's key changed under the map: the next merge rebuilds it; until then the
+            # claims would be read under the wrong key, so nothing is steered
+            m.status = "WRONG_KEY"
             return m
         m.claims = {str(k): str(v) for k, v in (doc.get("claims") or {}).items()}
         m.shape_clusters = {k: set(v) for k, v in (doc.get("shape_clusters") or {}).items()}
@@ -381,9 +400,34 @@ def _lawful() -> Callable[[str, str], bool] | None:
 
 
 def _unrunnable() -> Callable[[dict[str, Any]], bool] | None:
+    """True for a spec the judge's unrunnable bank holds, or None -- and None closes the steer.
+
+    An EMPTY bank is None too: `judge_coverage.unrunnable_bank()` returns {} for a missing or
+    unreadable file, which is indistinguishable from "nothing is unrunnable" and would let a
+    child be aimed at a cell the judge drops (audit of 17ccb785, MF3). UNMEASURED, not clean."""
     try:
-        from research.hypothesis_families import _unrunnable as hf_unrunnable
-        return hf_unrunnable()
+        from research.frontier_identity import docket_cell_id
+        from research.judge_coverage import unrunnable_bank
+        bank = set(unrunnable_bank())
+    except Exception:
+        return None
+    if not bank:
+        return None
+
+    def blocked(spec: dict[str, Any]) -> bool:
+        try:
+            return str(docket_cell_id(spec)) in bank
+        except Exception:
+            return True
+    return blocked
+
+
+def _reaimed(hyp_dir: Path | None) -> set[str] | None:
+    """Parents `hypothesis_families.reaim` already gave a child (its ledger): never steered too,
+    so one parent never holds two descendants. None when the ledger cannot be read at all."""
+    try:
+        from research.hypothesis_families import REAIM_LEDGER, reaimed_parents
+        return reaimed_parents((hyp_dir / REAIM_LEDGER.name) if hyp_dir else None)
     except Exception:
         return None
 
@@ -415,9 +459,16 @@ def has_bars(sym: str, chart: str, universe: Path | None = None) -> bool:
 
 
 # ------------------------------------------------------------------------------- the steer
-_SAFE = ("source", "producer", "origin", "title", "url", "source_title", "source_url",
-         "mechanism", "mechanism_status", "mechanism_note", "hypothesis", "why", "premortem",
-         "failure_prior", "failure_prior_why", "genome_id", "priority", "axis")
+#: Provenance a child may carry -- the SOURCE and its MECHANISM only. Never a field that
+#: describes the parent's own cell (`genome_id` names a different docket cell and would merge
+#: child and parent in breadth_unit; `axis`, `failure_prior*`, `premortem` were derived for the
+#: parent's chart/session) and never `contributing_sources` (no source named the new ground).
+_SAFE = ("source", "producer", "origin", "title", "url", "source_url",
+         "mechanism", "mechanism_status", "mechanism_note", "hypothesis", "why", "priority")
+#: Charts on which a session window is a real filter: `session_filter` keys on the bar's hour,
+#: so a D1/W1 bar (stamped 00:00) is "asia" whatever it holds and never "london"/"ny", and an H4
+#: bar straddles windows. A session move is offered only on these.
+SESSION_CHARTS = frozenset({"M1", "M5", "M15", "M30", "H1"})
 
 
 class Steerer:
@@ -434,6 +485,8 @@ class Steerer:
                  tradeable: Callable[[str], bool] | None = None,
                  identity_fn: Callable[[dict[str, Any]], str] = identity,
                  resolve: bool = True,
+                 reaimed: set[str] | None = None,
+                 hyp_dir: Path | None = None,
                  now: datetime | None = None) -> None:
         self.map = cmap
         self.lawful = lawful if lawful is not None or not resolve else _lawful()
@@ -445,6 +498,7 @@ class Steerer:
         self.bars = bars or has_bars
         self.tradeable = tradeable
         self.identity_fn = identity_fn
+        self.reaimed = reaimed if reaimed is not None or not resolve else _reaimed(hyp_dir)
         self.at = (now or datetime.now(UTC)).astimezone(UTC).isoformat(timespec="seconds")
         closed = []
         if cmap.status not in ("LOADED", "BUILT"):
@@ -452,7 +506,9 @@ class Steerer:
         if self.lawful is None:
             closed.append("lane law (universe_policy) unavailable")
         if self.blocked is None:
-            closed.append("unrunnable bank unreadable")
+            closed.append("unrunnable bank absent, empty or unreadable (UNMEASURED)")
+        if self.reaimed is None:
+            closed.append("re-aim ledger unreadable")
         self.closed = closed
         self.by_producer: dict[str, Counter[str]] = {}
         self.by_axis: Counter[str] = Counter()
@@ -476,7 +532,8 @@ class Steerer:
                         key=lambda c: ((ax.get("chart") or Counter()).get(c, 0), CHARTS.index(c)))
         for c in charts:
             yield {"axis": "chart", "timeframe": c}
-        if self.sessions is not None and _session(row) == "all":
+        if (self.sessions is not None and _session(row) == "all"
+                and self._eff_chart(row) in SESSION_CHARTS):
             sess = ax.get("session") or Counter()
             for s in sorted(SESSIONS, key=lambda v: (sess.get(v, 0), v)):
                 yield {"axis": "session", "session": s}
@@ -525,6 +582,11 @@ class Steerer:
         if not self.lawful(sym, fam):
             return False
         params = child.get("params") or {}
+        eff = self._eff_chart(child)
+        if not self.bars(sym, eff):
+            return False                        # every move: the child's own chart on disk
+        if "session" in move and eff not in SESSION_CHARTS:
+            return False                        # a session on D1/W1/H4 is a label or never fires
         if "timeframe" in move:
             assert self.chart_of is not None
             want = str(move["timeframe"]).upper()
@@ -533,14 +595,22 @@ class Steerer:
             if parent is not None and str(self.chart_of(
                     dict(parent.get("params") or {}), fam)).upper() == want:
                 return False                    # the parent already ran on that chart
-            if not self.bars(sym, want):
-                return False
         if self.preflight is not None:
             if self.preflight(child) is not None:
                 return False
         elif move["axis"] != "instrument":
             return False
         return not self.blocked(child)
+
+    def _eff_chart(self, row: Mapping[str, Any]) -> str:
+        """The chart the judge will actually load: the family pin, else the params, else H1."""
+        params = dict(row.get("params") or {})
+        if self.chart_of is not None:
+            try:
+                return str(self.chart_of(params, _fam(row))).upper()
+            except Exception:
+                pass
+        return _chart(row)
 
     def _replay(self, row: dict[str, Any], rec: Mapping[str, Any]) -> dict[str, Any] | None:
         delta = rec.get("delta") or {}
@@ -579,6 +649,7 @@ class Steerer:
         sends that row out unchanged."""
         tally = self.by_producer.setdefault(producer, Counter())
         out: list[dict[str, Any]] = []
+        tally["rows_in"] += len(rows)
         for row in rows:
             if not isinstance(row, dict) or not _fam(row) or not _sym(row):
                 out.append(row)
@@ -589,6 +660,7 @@ class Steerer:
             except Exception:
                 tally["fault_passed_unchanged"] += 1
                 out.append(row)
+        tally["rows_out"] += len(out)
         return out
 
     def _one(self, row: dict[str, Any], producer: str, tally: Counter[str]) -> dict[str, Any]:
@@ -613,13 +685,25 @@ class Steerer:
         if self.closed:
             tally["unsteered_fail_closed"] += 1
             return row
+        if self.reaimed is not None and ident in self.reaimed:
+            tally["already_reaimed"] += 1       # hypothesis_families gave it a child already
+            return row
         rec = self.map.steered.get(ih)
         if rec:
             child = self._replay(row, rec)
             if child is not None:
-                tally["replayed_prior_child"] += 1
                 axis = str((rec.get("delta") or {}).get("axis"))
-                return self._stamp(child, ident, status, axis, producer)
+                move: dict[str, Any] = {"axis": axis}
+                if self._eff_chart(child) != self._eff_chart(row):
+                    move["timeframe"] = self._eff_chart(child)
+                if _session(child) != _session(row):
+                    move["session"] = _session(child)
+                # RE-VALIDATED, never trusted: the lane law, the bank or the bars may have moved
+                # since the child was first minted; an invalid replay is searched afresh below
+                if self._valid(child, move, row):
+                    tally["replayed_prior_child"] += 1
+                    return self._stamp(child, ident, status, axis, producer)
+                tally["replay_invalid_researched"] += 1
         tries = 0
         for move in self._moves(row, key):
             tries += 1
@@ -658,11 +742,9 @@ class Steerer:
                            "session_oracle": self.sessions is not None},
                 "total": _shares(tot), "by_producer": per,
                 "steered_by_axis": dict(self.by_axis),
-                "conservation": {"rows_in": tot.get("emitted", 0) + tot.get("passed_unkeyed", 0)
-                                 + tot.get("fault_passed_unchanged", 0),
-                                 "rows_out": tot.get("emitted", 0) + tot.get("passed_unkeyed", 0)
-                                 + tot.get("fault_passed_unchanged", 0),
-                                 "removed": 0}}
+                "conservation": {"rows_in": tot.get("rows_in", 0),
+                                 "rows_out": tot.get("rows_out", 0),
+                                 "removed": tot.get("rows_in", 0) - tot.get("rows_out", 0)}}
 
 
 
@@ -751,7 +833,10 @@ def fence(report: Mapping[str, Any]) -> dict[str, Any]:
     for prod, c in (report.get("by_producer") or {}).items():
         dup = int(c.get("duplicate_in", 0))
         handled = (int(c.get("steered", 0)) + int(c.get("replayed_prior_child", 0))
-                   + int(c.get("unsteerable", 0)) + int(c.get("unsteered_fail_closed", 0)))
+                   + int(c.get("unsteerable", 0)) + int(c.get("unsteered_fail_closed", 0))
+                   + int(c.get("already_reaimed", 0)))
+        if dup > handled and int(c.get("fault_passed_unchanged", 0)) >= dup - handled:
+            handled = dup                       # faulted rows went out unchanged, counted
         if dup != handled:
             breaches.append({"producer": prod, "duplicates": dup, "handled": handled})
     cons = report.get("conservation") or {}
@@ -780,5 +865,8 @@ def write_report(doc: Mapping[str, Any], path: Path | None = None) -> bool:
 
 
 def for_producer(producer: str, path: Path | None = None, **kw: Any) -> Steerer:
-    """The producers' door: load the shared map and return a Steerer for this pass."""
-    return Steerer(CoverageMap.load(path), **kw)
+    """The producers' door: load the shared map and return a Steerer for this pass (the re-aim
+    ledger is read from the map's own directory)."""
+    p = path or MAP
+    kw.setdefault("hyp_dir", p.parent)
+    return Steerer(CoverageMap.load(p), **kw)
