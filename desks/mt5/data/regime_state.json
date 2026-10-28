@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-28T18:01:47.707824+00:00",
+  "swept_at": "2026-10-28T18:31:27.896687+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -262,7 +262,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0805,
+      "shadow_exp_r": 0.1222,
       "woke_on_shadow": false
     },
     "AUDSGD|pca_residual_asia": {
@@ -778,8 +778,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 66,
-      "shadow_exp_r": 0.2523,
+      "shadow_n": 90,
+      "shadow_exp_r": -0.3978,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -823,7 +823,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3597,
+      "shadow_exp_r": -0.5664,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
@@ -3892,7 +3892,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0263,
+      "shadow_exp_r": -0.033,
       "woke_on_shadow": false
     },
     "USDRUB|carry_continuous": {
@@ -4133,8 +4133,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 39,
-      "shadow_exp_r": -0.3301,
+      "shadow_n": 9,
+      "shadow_exp_r": 0.5691,
       "woke_on_shadow": false
     },
     "USDZAR|formula_asia": {
@@ -4618,7 +4618,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2082,
+      "shadow_exp_r": -0.2103,
       "woke_on_shadow": false
     },
     "XAUAUD|momentum_volgate_continuous": {
