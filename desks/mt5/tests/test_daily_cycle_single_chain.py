@@ -45,6 +45,12 @@ v1.5 (audit of f18726a56, one must-fix, three should-fixes):
   * quarantine copies are ordered by a sequence number, never the clock (P2b: clock set back);
   * "alive" requires the OS to list the sidecar's pid as the lock holder where it can (Linux);
   * a future-dated progress time is no age: waiters' wall-clock observation of the holder is.
+v1.6 (audit of ca5c0508e, CLEAR, two should-fixes and two nits):
+  * an unreadable stamp exits 77 (STAMP_UNREADABLE), and 78 (STAMP_UNREADABLE_PERSISTENT) once
+    it has lasted past 3 consecutive passes; both are named failures of the hourly leg;
+  * a torn stamp that cannot be moved aside (replace failed, or the lock is not ours) runs no
+    step and exits 1 (probe P1d);
+  * an unreadable seen.json keeps its first_seen.
 """
 from __future__ import annotations
 
@@ -904,19 +910,23 @@ def test_v14_nit_a_future_named_quarantine_copy_cannot_hold_a_slot(cyc, monkeypa
 # ----------------------------------------------------------------------------- v1.5
 
 
-def _deny_reads(monkeypatch, path: Path, times: int | None = None):
-    """Make `path.read_text` raise PermissionError (`times` reads, or always)."""
+def _deny_reads(monkeypatch, path: Path, times: int | None = None) -> dict:
+    """Make `path.read_text` raise PermissionError (`times` reads, or always) while the returned
+    switch's "on" is True -- flip it rather than `monkeypatch.undo()`, which would also undo the
+    `cyc` fixture's STAMP patch and point the module at the real repository."""
     real = Path.read_text
     left = {"n": times}
+    switch = {"on": True}
 
     def read_text(self, *a, **k):
-        if self == path and (left["n"] is None or left["n"] > 0):
+        if switch["on"] and self == path and (left["n"] is None or left["n"] > 0):
             if left["n"] is not None:
                 left["n"] -= 1
             raise PermissionError(13, "sharing violation (scanner holds the file)")
         return real(self, *a, **k)
 
     monkeypatch.setattr(Path, "read_text", read_text)
+    return switch
 
 
 def _seed_copies(d: Path, stamp: Path, n: int = 5) -> list[Path]:
@@ -940,7 +950,7 @@ def test_v15_mf_p1a_a_valid_stamp_that_cannot_be_read_is_never_moved(cyc, monkey
     before = cyc.stamp.read_bytes()
     copies = _seed_copies(cyc.stamp.parent, cyc.stamp)
     _deny_reads(monkeypatch, cyc.stamp)
-    assert daily_cycle.main([]) == 1
+    assert daily_cycle.main([]) == daily_cycle.EXIT_STAMP_UNREADABLE
     assert cyc.calls == []
     assert cyc.stamp.read_bytes() == before, "the live stamp is never moved or rewritten"
     assert sorted(p for p in cyc.stamp.parent.iterdir() if ".corrupt-" in p.name) == copies
@@ -977,7 +987,7 @@ def test_v15_mf_p1b_a_denied_read_and_a_failed_replace_prune_nothing(cyc, monkey
 
     monkeypatch.setattr(daily_cycle.os, "replace", replace)
     _deny_reads(monkeypatch, cyc.stamp)
-    assert daily_cycle.main([]) == 1
+    assert daily_cycle.main([]) == daily_cycle.EXIT_STAMP_UNREADABLE
     assert replaced == [], "an unreadable stamp is not even attempted"
     assert sorted(p for p in cyc.stamp.parent.iterdir() if ".corrupt-" in p.name) == copies
 
@@ -995,7 +1005,10 @@ def test_v15_mf_a_torn_stamp_whose_move_fails_prunes_nothing(cyc, monkeypatch):
         return real(src, dst)
 
     monkeypatch.setattr(daily_cycle.os, "replace", replace)
-    daily_cycle.main([])
+    # v1.6 (audit SF2, probe P1d): it also runs NO step -- v1.5 ran every step against {} with
+    # the torn file blocking every stamp write, so each pass repeated the whole chain.
+    assert daily_cycle.main([]) == 1
+    assert cyc.calls == []
     assert cyc.stamp.read_text(encoding="utf-8") == "{torn"
     assert sorted(p for p in cyc.stamp.parent.iterdir() if ".corrupt-" in p.name) == copies
     assert "nothing was pruned" in daily_cycle.LOG.read_text(encoding="utf-8")
@@ -1093,5 +1106,96 @@ def test_v15_sf_c_a_future_progress_time_does_not_mute_a_hang(cyc, monkeypatch):
         seen["holder"] = [os.getpid() + 1, 0.0]
         daily_cycle._seen_path().write_text(json.dumps(seen), encoding="utf-8")
         assert daily_cycle.main([]) == daily_cycle.EXIT_STOOD_DOWN
+    finally:
+        lk.close()
+
+
+# ----------------------------------------------------------------------------- v1.6
+
+
+def test_v16_sf1_an_unreadable_stamp_is_named_and_escalates_after_three_passes(cyc,
+                                                                              monkeypatch,
+                                                                              capsys):
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    monkeypatch.setattr(daily_cycle.time, "sleep", lambda _s: None)
+    today = datetime.now(UTC).date().isoformat()
+    cyc.stamp.write_text(json.dumps({"last_run": today, "steps": {"a": {"ok": True}}}),
+                         encoding="utf-8")
+    deny = _deny_reads(monkeypatch, cyc.stamp)
+    got = [daily_cycle.main([]) for _ in range(5)]
+    assert got == [77, 77, 77, 78, 78]
+    assert daily_cycle.EXIT_STAMP_UNREADABLE == 77
+    assert daily_cycle.EXIT_STAMP_UNREADABLE_PERSISTENT == 78
+    assert cyc.calls == []
+    log = daily_cycle.LOG.read_text(encoding="utf-8")
+    assert "ESCALATED" in log and "5 consecutive" in log
+    assert "STAMP_UNREADABLE_PERSISTENT: 5 consecutive passes" in capsys.readouterr().out
+
+    deny["on"] = False                                # readable again: the count resets
+    assert daily_cycle.main([]) == 0
+    assert cyc.calls == ["b", "c"]
+    assert not daily_cycle._unreadable_path().exists()
+    deny["on"] = True
+    assert daily_cycle.main([]) == 77, "a new outage starts the count again"
+
+
+def test_v16_sf1_an_unreadable_count_file_reads_as_at_the_limit(cyc, monkeypatch):
+    monkeypatch.setenv("HOURLY_PLAN", "dept:forward")
+    monkeypatch.setattr(daily_cycle.time, "sleep", lambda _s: None)
+    cyc.stamp.write_text("{}", encoding="utf-8")
+    daily_cycle._unreadable_path().parent.mkdir(parents=True, exist_ok=True)
+    daily_cycle._unreadable_path().write_text("{torn", encoding="utf-8")
+    _deny_reads(monkeypatch, cyc.stamp)
+    assert daily_cycle.main([]) == 78, "a broken count never restarts the outage at 1"
+
+
+@pytest.mark.parametrize(("rc", "label"), [(77, "STAMP_UNREADABLE"),
+                                           (78, "STAMP_UNREADABLE_PERSISTENT")])
+def test_v16_sf1_the_hourly_leg_names_both_codes_as_failures(monkeypatch, rc, label):
+    import hourly_cycle
+
+    from libs.ops import write_or_explain
+
+    assert hourly_cycle._exit_outcome("daily", rc) == f"exit_code={rc}:{label}"
+    assert rc not in hourly_cycle.VERDICT_EXITS["daily"]
+    monkeypatch.setattr(hourly_cycle, "_run_tree", lambda *_a, **_k: type(
+        "R", (), {"returncode": rc, "stdout": "", "stderr": ""})())
+    out = hourly_cycle.daily()
+    assert "status" not in out and out["exit_code"] == rc and "noop_reason" not in out
+    snap = {"/x/artifact.json": {"exists": True, "mtime": 1.0, "size": 1}}
+    rec = write_or_explain.judge("daily", snap, snap, out,
+                                 verdict_exits=hourly_cycle.VERDICT_EXITS["daily"])
+    assert rec["verdict"] == write_or_explain.LEG_FAILED
+
+
+def test_v16_sf2_a_torn_stamp_this_chain_cannot_move_runs_no_step(cyc, monkeypatch):
+    """Torn, and the lock is another chain's (the unbounded caller ran out its wait): not ours
+    to move, and running against {} would repeat every finished step -- fail closed."""
+    monkeypatch.delenv("HOURLY_PLAN", raising=False)
+    monkeypatch.setattr(daily_cycle, "UNBOUNDED_WAIT_S", 30.0)
+    monkeypatch.setattr(daily_cycle.time, "sleep", lambda _s: None)
+    cyc.stamp.write_text("{torn", encoding="utf-8")
+    held = _hold()
+    try:
+        assert daily_cycle.main([]) == 1
+    finally:
+        held.close()
+    assert cyc.calls == []
+    assert cyc.stamp.read_text(encoding="utf-8") == "{torn"
+    assert not [p for p in cyc.stamp.parent.iterdir() if ".corrupt-" in p.name]
+
+
+def test_v16_nit_an_unreadable_seen_file_keeps_first_seen(cyc, monkeypatch):
+    lk = _claim_alive()
+    try:
+        side = json.loads(daily_cycle._owner_path().read_text(encoding="utf-8"))
+        first = "2030-01-01T00:00:00+00:00"
+        doc = json.dumps({"holder": [side["pid"], side["create_time"]], "first_seen": first})
+        daily_cycle._seen_path().write_text(doc, encoding="utf-8")
+        deny = _deny_reads(monkeypatch, daily_cycle._seen_path())
+        assert daily_cycle._observed_hold_s() is None
+        deny["on"] = False
+        assert json.loads(daily_cycle._seen_path().read_text(encoding="utf-8"))["first_seen"] \
+            == first, "an unreadable seen file is never replaced"
     finally:
         lk.close()

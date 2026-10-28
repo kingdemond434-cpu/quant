@@ -284,6 +284,10 @@ def frontier_report(health: dict) -> None:
 DAILY_CYCLE_STOOD_DOWN = 75
 #: `daily_cycle.EXIT_HOLDER_HUNG`: stood down behind a holder past its ceiling -- a failure (v1.3).
 DAILY_CYCLE_HOLDER_HUNG = 76
+#: `daily_cycle.EXIT_STAMP_UNREADABLE` / `_PERSISTENT` (v1.6): the stamp could not be read, so
+#: nothing ran; the second is the escalation after three consecutive passes.
+DAILY_CYCLE_STAMP_UNREADABLE = 77
+DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT = 78
 DAILY_CYCLE_STOOD_DOWN_REASON = ("daily chain stood down: another chain healthily holds the lock "
                                  "and runs the same steps; the next pass re-reads the stamp")
 
@@ -331,6 +335,12 @@ def daily() -> dict:
             # muted. (completion.judge itself rates `daily` UNDECLARED: it has no capability-graph
             # node, which predates this change.)
             return {"exit_code": DAILY_CYCLE_HOLDER_HUNG, "holder_hung": True,
+                    "tail": tail, "at": at}
+        if r.returncode in (DAILY_CYCLE_STAMP_UNREADABLE,
+                            DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT):
+            # Named failures, like 76 (v1.6): no status, so the ledger writes
+            # `exit_code=77:STAMP_UNREADABLE` / `exit_code=78:STAMP_UNREADABLE_PERSISTENT`.
+            return {"exit_code": int(r.returncode), "stamp_unreadable": True,
                     "tail": tail, "at": at}
         return {"exit_code": int(r.returncode),
                 "status": "OK" if r.returncode == 0 else "FAILED",
@@ -1063,9 +1073,13 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #:                       is kept and every pass refuses until it is resolved by hand
 #:   daily 76          -- stood down behind a chain-lock holder older than its 16 h ceiling: a
 #:                       hung MT5-Daily (daily_cycle.EXIT_HOLDER_HUNG)
+#:   daily 77 / 78     -- the day's stamp could not be READ, so no step ran; 78 once that has
+#:                       lasted past 3 consecutive passes (daily_cycle.EXIT_STAMP_UNREADABLE*)
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
     "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
-    "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG"},
+    "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG",
+              DAILY_CYCLE_STAMP_UNREADABLE: "STAMP_UNREADABLE",
+              DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT: "STAMP_UNREADABLE_PERSISTENT"},
 }
 
 
@@ -5589,6 +5603,12 @@ def main() -> None:
     # 2026-09-08 and never re-measured. `--step markout` runs that one step here, unchanged.
     fmk = _costed("fill_markout", lambda: _producer(
         "fill_markout", "research/daily_cycle.py", "--step", "markout"))
+    # EACH ALLOCATOR INPUT AGAINST THE PLAIN SOLVE, OUT OF SAMPLE (zuck 2026-10-27). Its own leg:
+    # the daily chain is killed at 900 s and its proposers alone measured 9,056 s. The organ
+    # stops itself at 600 s inside the 720 s default cap and caches every solved window, so the
+    # backlog shrinks each hour and an hour with no new window costs a few cache reads.
+    iab = _costed("input_ablation", lambda: _producer(
+        "input_ablation", "research/input_ablation.py", "--budget-s", "600"))
     exo = _costed("exogenous_search", exogenous_search)
     srx = _costed("stop_reverse", stop_reverse_census)
     fwr = _costed("forward_reconcile", forward_reconcile_leg)
@@ -6218,7 +6238,7 @@ def main() -> None:
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls,
                     "stop_geometry_derivation": sgd,
-                    "decay_monitor": dmo, "fill_markout": fmk,
+                    "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,

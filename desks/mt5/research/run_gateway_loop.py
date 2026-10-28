@@ -32,7 +32,30 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 # `tests`... imported bare anywhere in mt5desk/ or research/).
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from mt5desk import gateway
+#: WHAT THIS PROCESS LOADED, taken before the gateway's modules are imported (adopter v3, Desk
+#: health 2026-10-28): MT5-GatewayResident has been disabled since 10-14 and the live runner is the
+#: MT5-Gateway task, a fresh process per pass that never reads GATEWAY_RECYCLE -- so the adopter's
+#: health check, which waits for a load stamp, would have rolled back every good release. Run as a
+#: script, this writes the same stamp the resident writes (`_stamp_loaded` there): the release on
+#: disk when the process started, and the time its pass finished.
+_STARTED_AT = __import__("datetime").datetime.now(__import__("datetime").UTC).isoformat()
+_STARTED_EPOCH = __import__("time").time()
+
+
+def _release_on_disk() -> str | None:
+    import json
+    try:
+        rec = json.loads((Path(__file__).resolve().parents[1] / "data" / "RELEASE.json")
+                         .read_text(encoding="utf-8"))
+        return str(rec.get("code_sha") or rec.get("live_sha") or "") or None
+    except Exception:
+        return None
+
+
+_RELEASE_AT_START = _release_on_disk()
+_PASS_DONE = False
+
+from mt5desk import gateway  # noqa: E402
 
 # LATENT ON THIS BRANCH, ALREADY CORRECT ON THE BOX'S -- which is the dangerous shape.
 #
@@ -126,6 +149,7 @@ def _holder_alive(pid: int) -> bool:
 
 
 def main() -> None:
+    global _PASS_DONE
     # THE LOCK IS NOW PID-AWARE, AND THE OLD ONE WAS THE REASON THE BOX RAN OUT OF MEMORY.
     #
     # It stole any lock older than five minutes. That was fine while a pass took seconds -- most
@@ -155,6 +179,12 @@ def main() -> None:
     dog = start_watchdog()
     try:
         gateway.main()
+        # A PASS THAT REACHED THE TERMINAL (adopter v6 audit): main() also returns early when
+        # paused or when connect() fails, and those say nothing about the code working. Every
+        # pass that connected saves the gateway state, so its write after this process started
+        # is the evidence.
+        with contextlib.suppress(OSError):
+            _PASS_DONE = gateway.STATE.stat().st_mtime >= _STARTED_EPOCH
         # Research and promotion run on their own canonical hourly/daily lanes. Holding the
         # gateway lock while doing either blocks every minute-by-minute order check. In
         # particular, the former 22:00 UTC branch ran on *every* gateway pass in that hour,
@@ -166,5 +196,25 @@ def main() -> None:
         LOCK.unlink(missing_ok=True)
 
 
+def _stamp_loaded() -> None:
+    """The whole stamp, atomically; a failure is logged and never takes the pass down."""
+    import json
+    import os
+    from datetime import UTC, datetime
+    f = LOCK.parent / "GATEWAY_LOADED.json"
+    tmp = f.with_suffix(".tmp")
+    doc = {"pid": os.getpid(), "started_at": _STARTED_AT, "release_sha": _RELEASE_AT_START,
+           "runner": "MT5-Gateway",
+           "last_pass_at": datetime.now(UTC).isoformat() if _PASS_DONE else None}
+    try:
+        tmp.write_text(json.dumps(doc, sort_keys=True), encoding="utf-8")
+        os.replace(tmp, f)
+    except OSError as exc:
+        with contextlib.suppress(Exception):
+            gateway.log(f"GATEWAY: load stamp {f.name} NOT written ({type(exc).__name__}: {exc})")
+
+
 if __name__ == "__main__":
     main()
+    if _PASS_DONE:  # a pass that found the lock held, or failed, says nothing about this code
+        _stamp_loaded()
