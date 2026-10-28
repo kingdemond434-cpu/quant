@@ -682,6 +682,19 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "needed. An absent or unparseable output keeps it. It retires no evidence row.",
     ),
     DestructivePath(
+        path_id="input_ablation.prune",
+        module="desks/mt5/research/input_ablation.py",
+        function="prune",
+        removes="cached allocator solves for walk-forward windows no pass in the last "
+                "KEEP_PASSES read (the ablation's own re-solve cache)",
+        reference="the window keys the finished pass itself computed, every window included",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY: a window leaves only when KEEP_PASSES counted passes have "
+             "each keyed every window and none produced its key; an unreadable cache prunes "
+             "nothing. A cache entry, never evidence or a verdict: a pruned window is re-solved "
+             "from the same inputs if its key returns.",
+    ),
+    DestructivePath(
         path_id="forward_cure_route.accumulate",
         module="desks/mt5/research/forward_cure_route.py",
         function="accumulate",
