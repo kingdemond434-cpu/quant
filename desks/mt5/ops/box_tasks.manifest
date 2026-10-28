@@ -253,6 +253,9 @@ TASK name="E8-Spreads" trigger="every 1 hour, at :02" runs="desks/mt5/prop/e8_sp
 # MT5-E8WindowGuard is REQUIRED (components.REQUIRED_TASKS): it cancels orders, so a stopped guard
 # must alarm. The lane column stays "prop" because that is the lane it serves.
 TASK name="MT5-FTMOFollow" trigger="every 1 minute" runs="desks/mt5/scripts/watchers/ftmo_follow.py" installer="desks/mt5/scripts/install_box_watchers_canon.ps1" lane="prop"
+# The FTMO follower (prop/ftmo_follower.py), the gold_oco "ftmo" lane; distinct from the MT5-FTMOFollow
+# watcher above. Read off the box 2026-10-28: Ready, every minute, last result 0.
+TASK name="MT5-FTMO-Follower" trigger="every 1 minute" runs="desks/mt5/prop/ftmo_follower.py" installer="desks/mt5/scripts/install_ftmo_follower_task.ps1" lane="prop"
 TASK name="MT5-E8WindowGuard" trigger="every 1 minute" runs="desks/mt5/scripts/watchers/e8_window_guard.py" installer="desks/mt5/scripts/install_box_watchers_canon.ps1" lane="prop"
 TASK name="MT5-Healers" trigger="every 1 hour, at :48" runs="ops/run_healers.cmd" installer="NONE" lane="research"
 # Referenced by ops/run_gold_hour_sweep.cmd; not installed on the box 2026-09-16, cadence unknown.
@@ -300,3 +303,7 @@ TASK name="MT5-Dept-Rest" trigger="at startup + every 10 minutes (keep-alive of 
 TASK name="MT5-LawGate" trigger="hourly at :40" runs="scripts/run_law_gate.py --rotate --budget-s 1800" installer="desks/mt5/scripts/install_law_gate_task.ps1" lane="ops"
 
 # Ledger adoption child: scripts/migrate_live_ledger_view.py runs only from MT5-AdoptRelease; emits reports/LEDGER_VIEW_ADOPTION.json, consumed by the adopter and runtime attestation. No independent scheduler.
+
+# THE BOX BRIDGE (2026-10-28). Keeps `claude remote-control` in C:\opt\bridge\quant alive so box steps
+# never wait on an RDP session; runs as the bridge user, interactive, from the admin-only C:\ProgramData\ClaudeBridge\bin.
+TASK name="Claude-Bridge-Watchdog" trigger="at logon + every 5 minutes" runs="ops/bridge/bridge_watchdog.ps1" installer="ops/bridge/install_bridge_watchdog.ps1" lane="ops"
