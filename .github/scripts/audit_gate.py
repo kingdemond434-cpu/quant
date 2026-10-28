@@ -138,11 +138,39 @@ PROTECTED = (
     "libs/ops/release_promotion.py", "desks/mt5/scripts/Adopt*", "desks/mt5/scripts/Seal-*",
     "desks/mt5/scripts/smoke_release.py", "desks/mt5/mt5desk/release_identity.py",
     "CLAUDE.md", "*/CLAUDE.md", "AGENTS.md", "*/AGENTS.md", ".claude/*", "*/.claude/*",
+    # what the checks execute (#455 audit MF3)
+    "ops/gates.sh", "pyproject.toml", "conftest.py", "*/conftest.py", "setup.cfg", "setup.py",
+    "pytest.ini", "tox.ini", "*sitecustomize.py", "*usercustomize.py", "*.pth",
+    ".pre-commit-config.yaml", "scripts/moneypath_precommit_guard.py",
+    # Tier-3 and the sealed core: never modified autonomously (LAWS 4)
+    "scripts/run_deadman_switch.py", "ops/principal_doctrine.txt",
+    "scripts/check_constitution_core.py", "ops/brain_env.sh",
+    # bars that never move without zuck
+    "desks/mt5/research/tier_s.py", "libs/ops/canonical_policy.py",
+    "desks/mt5/research/heat_policy.py",
+    # the principal's own switches and ceilings, and the kill files
+    "*allocator_sovereign*", "*margin_clause_disabled*", "*recorders_off*",
+    "*ftmo_copy_principal*", "*gold_oco_mode*", "*gateway_paused*", "*cashcarry_kill*",
+    "*deadman_fired*", "data/freeze", "*/data/freeze",
+    # governing prose
+    "docs/research.md", "docs/cro/*", "ops/memory/*",
 )  # fmt: skip
+#: Prose files: one whose name matches FORCED_LIVE is a governing document, so PROTECTED.
+DOC_EXTS = (".md", ".txt", ".rst")
 #: The jobs an AUTO-tier PR needs on top of the gating jobs (step C builds them; until then no
 #: AUTO-tier PR can merge, because a missing job is never a pass).
 AUTO_JOBS = ("risk-invariants", "replay-shadow", "independent-review")
 ACTIVATE_AUTO = "ACTIVATE LIVE AUTO-MERGE"
+#: The app every required check run must come from.
+CI_APP = "github-actions"
+#: The workflow file each required job must come from (#455 audit MF1: any workflow on any
+#: branch, or any App, can post a check run with any name on any sha). replay-shadow is the box's
+#: (step D) and has no source yet, so it can never pass.
+WORKFLOW_OF = {
+    **dict.fromkeys(("quality", "mt5-money-path", "coverage-floor"), ".github/workflows/ci.yml"),
+    "risk-invariants": ".github/workflows/release-gates.yml",
+    "independent-review": ".github/workflows/release-gates.yml",
+}
 QUARANTINE = "quarantined"
 #: The GitHub files API lists at most 3000 files; past that the PR is never LOW.
 MAX_FILES = 3000
@@ -224,7 +252,11 @@ def referenced_by_code(base_ref: str, path: str) -> bool:
 
 
 def is_protected(name: str) -> bool:
-    return any(fnmatch.fnmatchcase(name, pat) for pat in PROTECTED)
+    """Case-blind (#455 audit MF2): on the box's NTFS checkout `claude.md` IS `CLAUDE.md`."""
+    low = name.lower()
+    if low.endswith(DOC_EXTS) and FORCED_LIVE.search(low):
+        return True  # a governing document
+    return any(fnmatch.fnmatchcase(low, pat.lower()) for pat in PROTECTED)
 
 
 def tier(
@@ -338,15 +370,26 @@ def cleared(
     )
 
 
+def _from_ci_app(r: Mapping[str, Any]) -> bool:
+    return str((r.get("app") or {}).get("slug") or "") == CI_APP
+
+
 def checks(
-    runs: Iterable[Mapping[str, Any]], gating: tuple[str, ...] = GATING_JOBS
+    runs: Iterable[Mapping[str, Any]],
+    gating: tuple[str, ...] = GATING_JOBS,
+    genuine: Callable[[Mapping[str, Any]], bool] = _from_ci_app,
 ) -> tuple[str, str]:
     """("pass" | "pending" | "fail", why) over the head's check runs. A job re-run keeps only
-    its newest run."""
+    its newest run. A required job counts only from a run `genuine` accepts (by default: posted
+    by GitHub Actions; the gate also checks which workflow file made it), so a forged
+    same-name success can neither pass a job nor mask a real failure. An AUTO job that is not
+    required here is ignored, so the manual path never waits on, or fails by, the AUTO jobs."""
     newest: dict[str, Mapping[str, Any]] = {}
     for r in runs:
         name = str(r.get("name") or "")
-        if name in SELF_NAMES:
+        if name in SELF_NAMES or (name in AUTO_JOBS and name not in gating):
+            continue
+        if name in gating and not genuine(r):
             continue
         prev = newest.get(name)
         if prev is None or str(r.get("started_at") or "") >= str(prev.get("started_at") or ""):
@@ -391,6 +434,44 @@ def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
 
 def _git(*args: str) -> str:
     return subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout.strip()
+
+
+def provenance(repo: str, head: str) -> Callable[[Mapping[str, Any]], bool]:
+    """A `genuine` for checks(): the run is GitHub Actions', and its check suite belongs to a
+    workflow run of the job's own workflow file on this very head. Each suite is looked up once;
+    a lookup that fails is a no."""
+    suites: dict[int, list[tuple[str, str]]] = {}
+
+    def genuine(r: Mapping[str, Any]) -> bool:
+        want = WORKFLOW_OF.get(str(r.get("name") or ""))
+        sid = (r.get("check_suite") or {}).get("id")
+        if not want or not _from_ci_app(r) or not isinstance(sid, int):
+            return False
+        if sid not in suites:
+            try:
+                got = _gh(f"repos/{repo}/actions/runs?check_suite_id={sid}&per_page=10")
+                wr = (got or {}).get("workflow_runs") or []
+                suites[sid] = [(str(w.get("path") or ""), str(w.get("head_sha") or "")) for w in wr]
+            except RuntimeError:
+                suites[sid] = []
+        return (want, head) in suites[sid]
+
+    return genuine
+
+
+def same_checks(base_ref: str, head: str) -> bool:
+    """Does the head carry exactly the base's .github tree? A stale branch would otherwise run an
+    older, weaker ci.yml under the same job names (#455 audit MF1). An error is a no."""
+    try:
+        _git("fetch", "-q", "--no-tags", "origin", head)
+        p = subprocess.run(
+            ["git", "diff", "--quiet", f"origin/{base_ref}", head, "--", ".github"],
+            capture_output=True,
+            check=False,
+        )
+    except subprocess.CalledProcessError:
+        return False
+    return p.returncode == 0
 
 
 def patch_id(base_ref: str, sha: str) -> str | None:
@@ -525,6 +606,11 @@ def run(
             twhy = f"{twhy}, but {owhy}: it takes the CLEAR + APPROVE path"
         elif pr_verdicts():
             twhy = f"{twhy}, but it carries an AUDIT verdict: it takes the CLEAR + APPROVE path"
+        elif not same_checks(base, head):
+            twhy = (
+                f"{twhy}, but its .github differs from {base} (merge {base} in first): it takes "
+                "the CLEAR + APPROVE path"
+            )
         else:
             mode = level.lower()
     low = mode != "manual"  # no verdict or approval needed on this path
@@ -594,7 +680,7 @@ def run(
             return 0
         pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate", "--slurp")
         runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
-        state, cwhy = checks(runs, required)
+        state, cwhy = checks(runs, required, provenance(repo, head) if low else _from_ci_app)
         if state == "pass":
             break
         if state == "fail":
@@ -620,6 +706,11 @@ def run(
         _status(repo, head, "pending", why)
         _summary(f"#{pr} @ {head[:9]}: not merged -- the verdict changed: {why}")
         return 0
+    if low and any(lb.get("name") == QUARANTINE for lb in p.get("labels") or []):
+        try:  # a new head passed: the quarantine of an older one is lifted
+            _gh(f"repos/{repo}/issues/{pr}/labels/{QUARANTINE}", "-X", "DELETE")
+        except RuntimeError as exc:
+            _summary(f"(quarantine label not removed: {exc})")
     if p.get("draft"):
         subprocess.run(["gh", "pr", "ready", str(pr), "-R", repo], check=True)
     _gh(

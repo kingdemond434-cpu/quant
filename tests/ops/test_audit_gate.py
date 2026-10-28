@@ -123,8 +123,21 @@ def _r(
     status: str = "completed",
     conclusion: str | None = "success",
     at: str = "2026-10-28T10:00:00Z",
+    app: str = "github-actions",
+    suite: int | None = None,
 ) -> dict[str, Any]:
-    return {"name": name, "status": status, "conclusion": conclusion, "started_at": at}
+    """A check run, by default GitHub Actions' from the job's own workflow (suite 1 = ci.yml,
+    2 = release-gates.yml, in the fake hub)."""
+    if suite is None:
+        suite = 2 if name in ag.AUTO_JOBS else 1
+    return {
+        "name": name,
+        "status": status,
+        "conclusion": conclusion,
+        "started_at": at,
+        "app": {"slug": app},
+        "check_suite": {"id": suite},
+    }
 
 
 def _green() -> list[dict[str, Any]]:
@@ -261,6 +274,7 @@ class _Hub:
         self.comments = comments or []
         self.runs = runs if runs is not None else _green()
         self.writes: list[tuple[str, ...]] = []
+        self.suites = {1: ".github/workflows/ci.yml", 2: ".github/workflows/release-gates.yml"}
 
     def __call__(self, *args: str, data: Any = None) -> Any:
         path = args[0]
@@ -279,6 +293,12 @@ class _Hub:
             return [self.comments]
         if "/check-runs" in path:
             return {"check_runs": self.runs}
+        if "/actions/runs?check_suite_id=" in path:
+            sid = int(path.split("check_suite_id=")[1].split("&")[0])
+            wf = self.suites.get(sid)
+            return {
+                "workflow_runs": [{"path": wf, "head_sha": self.pr["head"]["sha"]}] if wf else []
+            }
         if "/files?" in path:
             return [self.files]
         if "/pulls?" in path:
@@ -305,6 +325,7 @@ def hub(monkeypatch: pytest.MonkeyPatch) -> Any:
         h = _Hub(**kw)
         monkeypatch.setattr(ag, "_gh", h)
         monkeypatch.setattr(ag, "patch_id", lambda base, sha: {A: "p1", B: "p1"}.get(sha, sha))
+        monkeypatch.setattr(ag, "same_checks", lambda base, head: True)
         return h
 
     return make
@@ -551,8 +572,8 @@ def _f(name: str, **kw: Any) -> dict[str, Any]:
         ([_f(DOC)], 2, set(), "PROTECTED"),  # the count does not add up
         ([], 0, set(), "PROTECTED"),
         ([_f(DOC)], 1, {DOC}, "AUTO"),  # a program reads it
-        ([_f("docs/LAWS.md")], 1, set(), "AUTO"),  # a governing document
-        ([_f("docs/ops/prompt_notes.md")], 1, set(), "AUTO"),
+        ([_f("docs/LAWS.md")], 1, set(), "PROTECTED"),  # a governing document
+        ([_f("docs/ops/prompt_notes.md")], 1, set(), "PROTECTED"),
         ([_f(CODE)], 1, set(), "AUTO"),  # code
         ([_f("docs/research/x.json")], 1, set(), "AUTO"),  # data
         ([_f("tests/test_x.py")], 1, set(), "AUTO"),
@@ -685,12 +706,21 @@ def auto_hub(hub: Any, monkeypatch: pytest.MonkeyPatch) -> Any:
 
 
 def test_an_auto_tier_pr_merges_with_no_comment_once_both_switches_and_all_jobs_pass(
-    auto_hub: Any,
+    auto_hub: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    h = auto_hub(runs=_auto_green())
+    # replay-shadow has no source until step D; give it one to exercise the merge
+    monkeypatch.setitem(ag.WORKFLOW_OF, "replay-shadow", ".github/workflows/release-gates.yml")
+    h = auto_hub(runs=_auto_green(), labels=("quarantined",))
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
     (merge,) = _merges(h)
     assert f"sha={A}" in merge and "AUTO tier" in " ".join(merge)
+    # a new head passed: the old quarantine is lifted
+    assert any(w[0] == "DELETE" and w[1].endswith("/labels/quarantined") for w in h.writes)
+
+
+def test_until_step_d_no_auto_pr_can_merge(auto_hub: Any) -> None:
+    h = auto_hub(runs=_auto_green())  # even a replay-shadow "success" has no genuine source
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
 
 
 def test_an_auto_tier_pr_waits_while_any_auto_job_is_missing(auto_hub: Any) -> None:
@@ -742,7 +772,7 @@ def test_a_failing_no_comment_pr_is_quarantined(auto_hub: Any, low_hub: Any, whi
         h = auto_hub(
             runs=[
                 *_auto_green(),
-                _r("replay-shadow", conclusion="failure", at="2026-10-28T11:00:00Z"),
+                _r("risk-invariants", conclusion="failure", at="2026-10-28T11:00:00Z"),
             ]
         )
     else:
@@ -855,3 +885,72 @@ def test_a_deactivate_between_the_reads_stops_the_low_merge(
     h.approvals = _Board()
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
     assert _merges(h) == [] and reads["n"] >= 3
+
+
+# ------------------------------------------------------------------------ #455 audit fixes
+
+
+@pytest.mark.parametrize(
+    "forged",
+    [
+        _r("risk-invariants", app="claude"),  # another App
+        _r("risk-invariants", suite=9),  # Actions, but no workflow run of the job's own file
+        _r("risk-invariants", suite=3),  # Actions, from a different workflow file
+    ],
+)
+def test_a_forged_same_name_run_counts_for_nothing(auto_hub: Any, forged: dict[str, Any]) -> None:
+    """#455 audit MF1: a run with the job's name, but not from the job's workflow on this head,
+    neither passes the job nor masks its real failure."""
+    real_fail = _r("risk-invariants", conclusion="failure", at="2026-10-28T09:00:00Z")
+    late = {**forged, "started_at": "2026-10-28T12:00:00Z"}
+    h = auto_hub(runs=[*_auto_green()[:-3], real_fail, late, *_auto_green()[-2:]])
+    h.suites[3] = ".github/workflows/other.yml"
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1  # the real failure
+    assert _merges(h) == []
+    only_forged = [r for r in _auto_green() if r["name"] != "risk-invariants"]
+    h = auto_hub(runs=[*only_forged, late])
+    h.suites[3] = ".github/workflows/other.yml"
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
+def test_a_stale_github_tree_takes_the_manual_path(
+    auto_hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setitem(ag.WORKFLOW_OF, "replay-shadow", ".github/workflows/release-gates.yml")
+    h = auto_hub(runs=_auto_green())
+    monkeypatch.setattr(ag, "same_checks", lambda base, head: False)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "ops/Box/install_unattended.ps1",  # NTFS: these overwrite their protected twins
+        ".Claude/settings.json",
+        "claude.md",
+        "scripts/run_deadman_switch.py",
+        "ops/principal_doctrine.txt",
+        "scripts/check_constitution_core.py",
+        "ops/brain_env.sh",
+        "scripts/moneypath_precommit_guard.py",
+        "desks/mt5/research/tier_s.py",
+        "libs/ops/canonical_policy.py",
+        "desks/mt5/research/heat_policy.py",
+        "desks/mt5/data/ALLOCATOR_SOVEREIGN.json",
+        "desks/mt5/data/MARGIN_CLAUSE_DISABLED",
+        "desks/mt5/data/RECORDERS_OFF",
+        "desks/mt5/data/FTMO_COPY_PRINCIPAL.json",
+        "desks/mt5/data/GOLD_OCO_MODE.json",
+        "desks/mt5/GATEWAY_PAUSED",
+        "docs/RESEARCH.md",
+        "docs/cro/charter_notes.md",
+        "ops/memory/notes.md",
+        "ops/gates.sh",
+        "pyproject.toml",
+        "tests/conftest.py",
+        "docs/research/FULL_SWEEP_PREREGISTRATION.md",  # governing prose is PROTECTED, not AUTO
+        "desks/mt5/docs/ops_policy.txt",
+    ],
+)
+def test_what_only_zuck_may_change_is_protected(name: str) -> None:
+    assert ag.tier([_f(name)], 1, lambda n: False)[0] == "PROTECTED"
