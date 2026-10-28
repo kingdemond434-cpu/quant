@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-28T03:45:20.282390+00:00",
+  "swept_at": "2026-10-28T04:00:08.185698+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -262,7 +262,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0776,
+      "shadow_exp_r": 0.0993,
       "woke_on_shadow": false
     },
     "AUDSGD|pca_residual_asia": {
@@ -272,8 +272,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 46,
-      "shadow_exp_r": 0.2203,
+      "shadow_n": 47,
+      "shadow_exp_r": 0.2261,
       "woke_on_shadow": false
     },
     "AUDUSD|discovered_asia": {
@@ -779,7 +779,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4014,
+      "shadow_exp_r": -0.4046,
       "woke_on_shadow": false
     },
     "CHFNOK|carry_continuous": {
@@ -823,7 +823,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4883,
+      "shadow_exp_r": -0.4927,
       "woke_on_shadow": false
     },
     "CHFNOK|macro_conditional_continuous": {
@@ -2110,7 +2110,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5184,
+      "shadow_exp_r": -0.4785,
       "woke_on_shadow": false
     },
     "GBPMXN|carry_continuous": {
@@ -2143,7 +2143,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 53,
-      "shadow_exp_r": 0.7234,
+      "shadow_exp_r": 0.7265,
       "woke_on_shadow": false
     },
     "GBPMXN|macro_conditional_continuous": {
@@ -2198,7 +2198,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 47,
-      "shadow_exp_r": 0.7356,
+      "shadow_exp_r": 0.7391,
       "woke_on_shadow": false
     },
     "GBPNOK|carry_asia": {
@@ -4618,7 +4618,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2398,
+      "shadow_exp_r": -0.089,
       "woke_on_shadow": false
     },
     "XAUAUD|momentum_volgate_continuous": {
