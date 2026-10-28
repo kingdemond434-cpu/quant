@@ -60,7 +60,7 @@ EURILS = "eurils_formula_asia_p_673857a649d3c271"
 EURZAR = "eurzar_carry_asia_p_8339edce23032d21"
 GOLDS = {"gold_asia", "gold_london_am", "gold_afternoon"}
 FOUR = GOLDS | {USDNOK, EURILS, EURZAR}             # the code's six (name kept from the v5 four)
-LIVE = frozenset({GOLD, USDNOK, EURILS, EURZAR})    # the committed switch (zuck 2026-10-20 21:52Z)
+LIVE = frozenset({GOLD})    # the committed switch (zuck 2026-10-25 09:42Z: the three FX names out)
 ZEROED = GOLDS - {GOLD}                              # pinned at 0.0 in the cert book's fusion block
 FX = (USDNOK, EURILS, EURZAR)
 TWINS = ("usdnok_carry_asia_p_d5391837ec28998b", "eurzar_carry_asia_p_55e2dabcb8c43d1f")
@@ -111,6 +111,10 @@ def _sovereign(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr(dc, "ALLOCATOR_SOVEREIGN_FILE", tmp_path / "ALLOCATOR_SOVEREIGN.json")
     monkeypatch.setattr(dc, "MIN_LOT_FILE", tmp_path / "MIN_LOT.json")
     monkeypatch.setattr(dc, "FUSION_ACCOUNT_FILE", _account_file(tmp_path))
+    # The three FX names are principal zeros since 2026-10-25 (decision_core.FUSION_FX_OUT_ZERO);
+    # these are mechanics tests of the override, so the pin is lifted here and tested below.
+    monkeypatch.setitem(dc.PRINCIPAL_ZERO, "fusion",
+                        dc.PRINCIPAL_ZERO["fusion"] - dc.FUSION_FX_OUT_ZERO)
 
 
 # ------------------------------------------------------------------ the set and the switch
@@ -131,9 +135,10 @@ def test_the_code_names_exactly_the_six_and_pins_each_certificate() -> None:
         assert name not in dc.MINLOT_OVERRIDE_SLEEVES
 
 
-def test_the_committed_switch_turns_on_exactly_the_four_on_the_declared_live_account() -> None:
-    """gold_asia and the three FX names, COMMITTED (audit round 4 on c07dd71d): a box-only edit
-    would be reverted by Adopt-Release or a restore to HEAD, re-opening the two gold windows."""
+def test_the_committed_switch_turns_on_exactly_gold_asia_on_the_declared_live_account() -> None:
+    """gold_asia alone since 2026-10-25 (the three FX names are out), COMMITTED (audit round 4
+    on c07dd71d): a box-only edit would be reverted by Adopt-Release or a restore to HEAD,
+    re-opening the two gold windows."""
     active, why = _on()
     assert active == LIVE, why
     doc = json.loads(dc.MINLOT_OVERRIDE_FILE.read_text(encoding="utf-8"))
@@ -1368,3 +1373,13 @@ def test_the_fusion_trade_risk_cap_line_carries_its_risk_frac_at_both_sites() ->
     for k in sites:
         assert "risk_frac=minlot_floor_risk_frac(" in src[k:k + 400]
 
+
+
+@pytest.mark.parametrize("name,symbol",
+                         [(USDNOK, "USDNOK"), (EURILS, "EURILS"), (EURZAR, "EURZAR")])
+def test_the_principal_pin_sends_nothing_for_each_fx_name(monkeypatch, name, symbol) -> None:
+    """zuck 2026-10-25 09:42Z: USDNOK and the other two Fusion FX sleeves out, gold_asia stays."""
+    monkeypatch.setitem(dc.PRINCIPAL_ZERO, "fusion",
+                        dc.PRINCIPAL_ZERO["fusion"] | dc.FUSION_FX_OUT_ZERO)
+    lot, _target, why = _size(name, symbol, None, 50_000.0, 0.02)
+    assert lot == 0.0 and "pins" in why, why

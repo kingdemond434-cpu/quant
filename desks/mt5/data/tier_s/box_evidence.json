@@ -1,6 +1,6 @@
 {
- "generated_utc": "2026-10-27T20:51:28+00:00",
- "at": "2026-10-27T20:51:28+00:00",
+ "generated_utc": "2026-10-28T11:06:07+00:00",
+ "at": "2026-10-28T11:06:07+00:00",
  "host": "vmi3571445",
  "trading_host": "vmi3571445",
  "machine_id": "bd8613f9-2e5f-4bfa-863a-de86dba8e6a8",
@@ -17,12 +17,12 @@
  },
  "counts_toward_done": false,
  "counts_toward_done_why": "no trading-box id is recorded in config/trading_host.json -- hostname fallback: vmi3571445 matches vmi3571445, reported, never taken as the identity",
- "n_ok": 18,
+ "n_ok": 22,
  "layers": {
   "S01": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/TRUTH_KERNEL.json",
-   "age_h": 1.78,
+   "age_h": 0.78,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
@@ -47,21 +47,21 @@
   "S05": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/GENOMES.json",
-   "age_h": 4.81,
+   "age_h": 3.0,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
   "S06": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/QD.json",
-   "age_h": 4.81,
+   "age_h": 3.0,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
   "S07": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/GENOMES.json",
-   "age_h": 4.81,
+   "age_h": 3.0,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
@@ -74,28 +74,28 @@
   "S09": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/RED_QUEEN.json",
-   "age_h": 2.9,
+   "age_h": 1.89,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
   "S10": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/IMMUNE.json",
-   "age_h": 1.78,
+   "age_h": 1.89,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
   "S11": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/ONLINE_FDR.json",
-   "age_h": 2.9,
+   "age_h": 3.0,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
   "S12": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/FIREWALL.json",
-   "age_h": 1.78,
+   "age_h": 0.78,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
@@ -108,14 +108,14 @@
   "S14": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/TOPOLOGY.json",
-   "age_h": 2.9,
+   "age_h": 3.0,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
   "S15": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/TOPOLOGY.json",
-   "age_h": 2.9,
+   "age_h": 3.0,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
@@ -126,18 +126,18 @@
    "why": "artifact absent on this host"
   },
   "S17": {
-   "ok": false,
+   "ok": true,
    "artifact": "desks/mt5/reports/tier_s/THEORY.json",
-   "age_h": 6.75,
+   "age_h": 3.0,
    "verdict": "UNMEASURED",
-   "why": "artifact 6.75h old (limit 6.0h)"
+   "why": "fresh artifact, contract not rejected"
   },
   "S18": {
-   "ok": false,
+   "ok": true,
    "artifact": "desks/mt5/reports/tier_s/THEORY.json",
-   "age_h": 6.75,
+   "age_h": 3.0,
    "verdict": "UNMEASURED",
-   "why": "artifact 6.75h old (limit 6.0h)"
+   "why": "fresh artifact, contract not rejected"
   },
   "S19": {
    "ok": false,
@@ -148,28 +148,28 @@
   "S20": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/REVIEW.json",
-   "age_h": 0.18,
+   "age_h": 0.44,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
   "S21": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/TEST_INVENTION.json",
-   "age_h": 2.9,
+   "age_h": 3.0,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
   "S22": {
-   "ok": false,
+   "ok": true,
    "artifact": "desks/mt5/reports/tier_s/GRAMMAR.json",
-   "age_h": 6.75,
+   "age_h": 3.0,
    "verdict": "UNMEASURED",
-   "why": "artifact 6.75h old (limit 6.0h)"
+   "why": "fresh artifact, contract not rejected"
   },
   "S23": {
    "ok": true,
    "artifact": "desks/mt5/reports/EXECUTION_SCIENCE.json",
-   "age_h": 4.07,
+   "age_h": 3.04,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
@@ -224,21 +224,21 @@
   "S32": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/REVIEW.json",
-   "age_h": 0.18,
+   "age_h": 0.44,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
   "S33": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/RED_QUEEN.json",
-   "age_h": 2.9,
+   "age_h": 1.89,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
   "S34": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/IMMUNE.json",
-   "age_h": 1.78,
+   "age_h": 1.89,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
@@ -263,7 +263,7 @@
   "S38": {
    "ok": true,
    "artifact": "desks/mt5/reports/REPLICATION.json",
-   "age_h": 0.19,
+   "age_h": 0.44,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   },
@@ -298,11 +298,11 @@
    "why": "artifact absent on this host"
   },
   "S44": {
-   "ok": false,
+   "ok": true,
    "artifact": "desks/mt5/reports/tier_s/GRAMMAR.json",
-   "age_h": 6.75,
+   "age_h": 3.0,
    "verdict": "UNMEASURED",
-   "why": "artifact 6.75h old (limit 6.0h)"
+   "why": "fresh artifact, contract not rejected"
   },
   "S45": {
    "ok": false,
@@ -313,7 +313,7 @@
   "S46": {
    "ok": true,
    "artifact": "desks/mt5/reports/tier_s/TRUTH_KERNEL.json",
-   "age_h": 1.78,
+   "age_h": 0.78,
    "verdict": "UNMEASURED",
    "why": "fresh artifact, contract not rejected"
   }
@@ -327,20 +327,20 @@
   },
   "ONLINE_FDR_ROWS": {
    "exists": true,
-   "bytes": 502978,
-   "sha256": "8c444484425678eb5255a55c7c80db54876b49022c6c1be6de189e416814ef10",
-   "stamp": "2026-10-27T17:57:28+00:00",
+   "bytes": 502987,
+   "sha256": "eb2ad9e32ff345210938ce741fa76ccbf6fee35057121365ece7ad3119bf237a",
+   "stamp": "2026-10-28T08:05:58+00:00",
    "head": {
-    "generated_utc": "2026-10-27T17:57:28.104460+00:00",
+    "generated_utc": "2026-10-28T08:05:58.800454+00:00",
     "n_over_budget": 236,
     "n_certified": 1048
    }
   },
   "IMMUNE": {
    "exists": true,
-   "bytes": 8188,
-   "sha256": "d0f5fae899f04002860ac0fc5c2c36594ee7bd013ca95b4a6f17340d88ee9d9b",
-   "stamp": "2026-10-27T19:04:50+00:00",
+   "bytes": 8220,
+   "sha256": "b5e1bd7146d84cc34f558a2afe6cf6de34ae8d3370ce4d3c444179bf070e8b47",
+   "stamp": "2026-10-28T09:12:38+00:00",
    "head": {
     "n_score": 6,
     "n_production": 11,
@@ -352,8 +352,8 @@
     "floor": 0.9,
     "n_validator": 20,
     "n_metric": 9,
-    "generated_utc": "2026-10-27T19:04:50.387558+00:00",
-    "seconds": 390.802
+    "generated_utc": "2026-10-28T09:12:38.302800+00:00",
+    "seconds": 313.7
    }
   },
   "allocator_tilts": {
@@ -361,8 +361,8 @@
   },
   "research_budget": {
    "exists": true,
-   "bytes": 1256,
-   "sha256": "1b1d983cd9d6f27130976eb00030acad614d239634340e3e35d0802312251e9d",
+   "bytes": 1229,
+   "sha256": "b739885207ccdd0edbe7b23b38a87962fa2e05c6dde39e0e9792feee44eab0a6",
    "stamp": "2026-10-27T06:58:58+00:00",
    "head": {
     "generated_utc": "2026-10-27T06:58:58.297893+00:00",
@@ -377,11 +377,11 @@
   },
   "door_verdicts": {
    "exists": true,
-   "bytes": 277596,
-   "sha256": "2bc74ad33f5f6f2098250daa2b40190ca1a91fcf448a5532be47c098ea40a4dd",
-   "stamp": "2026-10-27T20:40:49+00:00",
+   "bytes": 277858,
+   "sha256": "1fba94a6b190ffcd9774690387e1df5d715e760ca0f2ca51fd641385afb9c623",
+   "stamp": "2026-10-28T10:40:00+00:00",
    "head": {
-    "generated_utc": "2026-10-27T20:40:49.200477+00:00",
+    "generated_utc": "2026-10-28T10:40:00.317698+00:00",
     "n_rows": 1048,
     "consumer": "libs/tiers/promotion_authority.py block()"
    }
@@ -392,10 +392,10 @@
   "live_door": {
    "exists": true,
    "bytes": 185,
-   "sha256": "23c3f8011fbbeaf6118dbd5822f00f20b09c312e3a309176e214382bcc2576fd",
-   "stamp": "2026-10-27T20:40:49+00:00",
+   "sha256": "218f406886a0681f041cc8186b5a2b06beea5794742cf2e7d83fac72af46ce31",
+   "stamp": "2026-10-28T10:40:00+00:00",
    "head": {
-    "generated_utc": "2026-10-27T20:40:49.200477+00:00",
+    "generated_utc": "2026-10-28T10:40:00.317698+00:00",
     "n_live": 0,
     "n_rows": 0,
     "consumer": "research/promoter.py automatic retirement (desktop batch: promoter.py is sealed)"
@@ -404,12 +404,12 @@
   "PROMOTION_FREEZE": {
    "exists": true,
    "bytes": 389,
-   "sha256": "00a7d9c4a21422950439afd5f1d21a7144fe3c39504ddedd77861a61b569f9e0",
-   "stamp": "2026-10-27T19:22:39+00:00",
+   "sha256": "8d9fcdf949027c9821085bb235cbc1cfc288dc6d6d4be497ad47b05921a1c603",
+   "stamp": "2026-10-28T10:31:00+00:00",
    "head": {
     "verdict": "OK",
     "why": null,
-    "at": "2026-10-27T19:04:50.387558+00:00",
+    "at": "2026-10-28T10:19:33.197055+00:00",
     "judge": "production:f56bc72fc5532a67",
     "consumer": "research/promoter.py tier_s_block (libs/tiers/promotion_authority.py): a production-judged DROP withholds new live rows",
     "immune_score": 1.0,
@@ -421,11 +421,11 @@
   },
   "REPLICATION": {
    "exists": true,
-   "bytes": 11652,
-   "sha256": "e5bcf753b57db536693cb266d90302ca2be73874394d62a2029dfe1d5bcc3530",
-   "stamp": "2026-10-27T20:40:17+00:00",
+   "bytes": 11654,
+   "sha256": "3329ac6add039587efd80eda4a7aed9fe3c32e2f6c0d6d465ac7534e1ae5c590",
+   "stamp": "2026-10-28T10:39:49+00:00",
    "head": {
-    "at": "2026-10-27T20:40:17+00:00",
+    "at": "2026-10-28T10:39:49+00:00",
     "rule": "a second implementation from the written specification and the raw bars only; a material disagreement on fills, P&L, position state or costs is quarantined by name",
     "dry_run": false,
     "sharpe_metric_version": "daily-r-per-period-v2",
@@ -434,12 +434,12 @@
     "n_counts": 3,
     "n_verdicts": 16,
     "n_quarantined": 0,
-    "n_unmeasured": 16,
+    "n_unmeasured": 15,
     "n_recorded": 3,
     "n_cursor": 3,
     "n_notes": 0,
     "n_independence": 3,
-    "seconds": 7.23
+    "seconds": 10.33
    }
   }
  }
