@@ -1200,6 +1200,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
+    # The FTMO book's solve on the same cadence (2026-10-28): it re-solves from the account's live
+    # phase every hour, so a phase change or a new certificate moves the book within the hour.
+    "prop_challenge_allocator",
     # The two stop-geometry constants on the same solve (2026-09-30): a report the sizing fence's
     # citations point at, re-derived hourly so a stale number is visible as stale.
     "stop_geometry_derivation",
@@ -5945,6 +5948,13 @@ def main() -> None:
     # block, principal 2026-10-06); nothing sizes from it until the gateway reads it.
     kls = _costed("kelly_survival", lambda: _producer(
         "kelly_survival", "research/kelly_survival.py", "--book"))
+    # THE FTMO BOOK BY SOLVE (principal 2026-10-28 14:34Z): pass-speed x pass-probability over the
+    # Tier S sleeves FTMO lists, at FTMO's own hour costs, from the account's live phase
+    # (reports/FTMO_ACCOUNT_STATE.json). Writes reports/FTMO_ALLOCATOR.json and the FTMO gap
+    # hypotheses for the miners; the CERT_BOOK_LIVE `ftmo` block moves only when
+    # data/FTMO_ALLOCATOR_ARMED exists. Re-runs every pass, so a certificate change is picked up.
+    fta = _costed("prop_challenge_allocator", lambda: _producer(
+        "prop_challenge_allocator", "research/prop_challenge_allocator.py"))
     # THE STOP GEOMETRY ON THE SAME SOLVE (2026-09-30): MIN_STOP_SPREAD_MULT and
     # ENTRY_DRIFT_TOL_FRAC re-derived from the bars' spreads, the entry drift and the live edge.
     # A report only -- the money path carries the cited values. Each value passes a two-sided
@@ -6211,7 +6221,7 @@ def main() -> None:
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
-                    "kelly_survival": kls,
+                    "kelly_survival": kls, "prop_challenge_allocator": fta,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk,
                     "experimental_budget": xbg, "ops_redundancy": opr,
