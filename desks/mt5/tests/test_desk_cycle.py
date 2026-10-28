@@ -312,7 +312,7 @@ def test_the_lane_widening_is_read_only_and_from_the_one_domain_file() -> None:
     assert '"Read(data/secrets/**)"' in args
 
 
-# ------------------------------------------------------------------ the midnight lane revived (2026-10-28)
+# ------------------------------------------------------- the midnight lane revived (2026-10-28)
 def test_the_installer_refuses_system_and_a_registration_with_no_next_run() -> None:
     """MT5-CycleMidnight sat as SYSTEM with a one-shot trigger: never run since registration."""
     src = _cro_installer()
@@ -321,7 +321,7 @@ def test_the_installer_refuses_system_and_a_registration_with_no_next_run() -> N
 
 
 def test_the_codex_grant_is_scoped_to_git_and_the_lane_worktree() -> None:
-    """The ACL lock keeps the live tree read-only for non-admins; Codex gets .git and its worktree."""
+    """The ACL lock keeps the live tree read-only; Codex gets .git and its own worktree."""
     src = (DESK / "scripts" / "grant_codex_lane_acl.ps1").read_text("utf-8")
     assert "CodexSandboxUsers" in src
     assert "Join-Path $RepoRoot '.git'" in src
