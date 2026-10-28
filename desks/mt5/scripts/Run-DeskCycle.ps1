@@ -454,6 +454,16 @@ try {
         # line) and only non-JSON lines (the CLI's stderr) reach the human log directly; the
         # pass's final result text is written into the log by record_agent_denials.py below.
         if ($streamJson) { Set-Content -LiteralPath $Stream -Value $null -Encoding UTF8 }
+        # PIN GIT TO THE CLONE'S OWN .git FOR THE CODEX PASS. The sandbox can add files to .git
+        # (git needs index.lock there), so a .git\commondir planted mid-pass would redirect config
+        # to a folder it owns, and a nested sub\.git could be discovered from a subfolder. These
+        # override both. Set for the agent only and cleared after: the launcher's own git runs in
+        # $RepoRoot and must never inherit them.
+        if ($agentName -eq "codex") {
+            $env:GIT_DIR = Join-Path $LaneClone ".git"
+            $env:GIT_COMMON_DIR = $env:GIT_DIR
+            $env:GIT_WORK_TREE = $LaneClone
+        }
         $brief | & $resolved.Source @agentArgs 2>&1 | ForEach-Object {
             $text = "$_"
             if ($streamJson) {
@@ -469,6 +479,7 @@ try {
         }
         $code = $LASTEXITCODE
     } finally {
+        Remove-Item Env:GIT_DIR, Env:GIT_COMMON_DIR, Env:GIT_WORK_TREE -ErrorAction SilentlyContinue
         Pop-Location
         $ErrorActionPreference = $prev
     }
@@ -491,6 +502,15 @@ if ($agentName -eq "codex") {
         if ($code -eq 0) { $code = 7 }
     } else {
         Write-Cycle "live tree ACL after pass: no Codex sandbox principal (lock holds)"
+    }
+    # And the clone is still sealed: anything the pass planted (commondir, .codex, a loosened ACL)
+    # is a defect now, before any unsandboxed git or a human runs in the clone.
+    $after = @(Get-LaneCloneProblems $LaneClone @("S-1-5-32-544", "S-1-5-18", $me))
+    if ($after.Count) {
+        Write-Cycle ("DEFECT: lane clone unsealed by the pass: {0}" -f ($after -join " | "))
+        if ($code -eq 0) { $code = 7 }
+    } else {
+        Write-Cycle "lane clone after pass: sealed"
     }
 }
 

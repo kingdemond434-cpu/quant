@@ -344,7 +344,10 @@ def test_the_codex_lane_runs_in_its_clone_and_proves_the_lock_held() -> None:
     assert '"quant-cro-midnight"' in launcher
     assert "--add-dir" not in launcher
     assert "Select-String -Pattern $leakPattern" in launcher and "$sbx.SID.Value" in launcher
-    assert "Get-LaneCloneProblems $LaneClone" in launcher         # sealed before every pass
+    assert launcher.count("Get-LaneCloneProblems $LaneClone") == 2  # sealed before AND after
+    assert "DEFECT: lane clone unsealed by the pass" in launcher
+    for var in ("GIT_DIR", "GIT_COMMON_DIR", "GIT_WORK_TREE"):        # pinned for the agent only
+        assert f"$env:{var} =" in launcher and f"Env:{var}" in launcher
 
 
 def test_the_lane_clone_guard_covers_every_path_an_unsandboxed_process_trusts() -> None:
