@@ -18,6 +18,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from mt5desk.engine import Signal
+from mt5desk import families_vector as _vec
 from mt5desk.universe_registry import TIMEFRAME_MINUTES
 
 try:
@@ -236,6 +237,11 @@ def generate_test_grid(
 
 def _atr(df: pd.DataFrame, n: int = 14) -> pd.Series:
     """Average True Range."""
+    if _vec.enabled():
+        # Speed only: the same true-range values without the concat (families_vector).
+        fast = _vec.true_range(df)
+        if fast is not None:
+            return fast.rolling(n, min_periods=1).mean()
     h, l, c = df["high"], df["low"], df["close"].shift(1)
     tr = pd.concat([(h - l), (h - c).abs(), (l - c).abs()], axis=1).max(axis=1)
     return tr.rolling(n, min_periods=1).mean()
@@ -690,6 +696,18 @@ def family_session_range_breakout(
     """
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
+    if _vec.enabled():
+        # Speed only: the same signals from the signal-hour bars alone (families_vector).
+        try:
+            fast = _vec.session_range_breakout_emit(
+                h1=h1, atr=atr, range_start=range_start, range_end=range_end,
+                signal_at=signal_at, wait_bars=wait_bars, ttl_bars=ttl_bars, rr=rr,
+                spread_gate=spread_gate, trend_filter=trend_filter, range_filter=range_filter,
+                vol_filter=vol_filter, midpoint_filter=midpoint_filter)
+        except Exception:
+            fast = None
+        if fast is not None:
+            return fast
     h1 = h1.assign(date=h1.index.date, hour=h1.index.hour)
     spread_med = (
         h1["spread"].rolling(96).median() if "spread" in h1.columns else None
@@ -962,6 +980,16 @@ def family_failed_breakout(
 ) -> list[Signal]:
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
+    if _vec.enabled():
+        # Speed only: the same signals from the signal-hour bars alone (families_vector).
+        try:
+            fast = _vec.failed_breakout_emit(
+                h1=h1, atr=atr, signal_hours=signal_hours, spread_gate=spread_gate,
+                min_pierce_atr=min_pierce_atr, ttl_bars=ttl_bars, rr=rr, level=level)
+        except Exception:
+            fast = None
+        if fast is not None:
+            return fast
     h1 = h1.assign(date=h1.index.date)
     d = h1.groupby("date").agg(hi=("high", "max"), lo=("low", "min"))
     d["phi"] = d["hi"].shift(1)
@@ -1623,6 +1651,16 @@ def family_ict_fvg(
     h_arr = h1["high"].to_numpy()
     l_arr = h1["low"].to_numpy()
     c_arr = h1["close"].to_numpy()
+    if _vec.enabled():
+        # Speed only: the same signals from a vector pre-selection (families_vector).
+        try:
+            fast = _vec.ict_fvg_emit(h1=h1, a=a, f=f, s=s, o_arr=o_arr, h_arr=h_arr,
+                                     l_arr=l_arr, c_arr=c_arr, ema_slow=ema_slow,
+                                     atr_n=atr_n, ttl_bars=ttl_bars, rr=rr)
+        except Exception:
+            fast = None
+        if fast is not None:
+            return fast
     signals: list[Signal] = []
     _ts_h1 = list(h1.index)
     for i in range(max(ema_slow, atr_n) + 1, len(h1) - 2):

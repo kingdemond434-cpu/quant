@@ -73,6 +73,19 @@ def family_multi_speed_trend(
     agree = votes.mean(axis=1)
     fastest, slowest = votes[:, 0], votes[:, -1]
 
+    from mt5desk import families_vector as _vec
+    if _vec.enabled():
+        # Speed only: the same signals without the per-signal scans of every bar (families_vector).
+        try:
+            fast = _vec.multi_speed_trend_emit(
+                d=d, close=close, daily=daily, agree=agree, fastest=fastest, slowest=slowest,
+                atr=_atr(d, atr_n), speeds=speeds, min_agreement=min_agreement,
+                crisis_only=crisis_only, hold_days=hold_days, stop_atr=stop_atr, rr=rr,
+                bpd=bars_per_day(d))
+        except Exception:
+            fast = None
+        if fast is not None:
+            return fast
     first_bar_of_day: dict[object, pd.Timestamp] = {}
     for ts in d.index:
         first_bar_of_day.setdefault(ts.date(), ts)
