@@ -61,6 +61,23 @@ the next one. Only zuck's own typing counts -- author_association OWNER, not pos
 GitHub App (a Claude session's comment carries `performed_via_github_app`), never edited. Claude
 never posts it or any substitute.
 
+TWO TIERS (2026-10-28, zuck: "eliminate recurring manual merge approvals"). A PR is LOW tier
+only when EVERY file it touches (both sides of a rename) is prose no program reads: a .md or image
+under docs/, context/, desks/mt5/docs/ or reports/, whose path and file name appear in no code
+file of LIVE (.py .ps1 .sh .cmd .txt .yml .yaml .toml .manifest .service, the git hooks), and
+whose name says nothing of laws, constitution, protocol, mandate, policy, prompt, doctrine,
+charter, governance or agent instructions -- plus pure appends to context/decision_journal.jsonl.
+A LOW-tier PR merges on green gating CI alone, with no comment from anyone; a HOLD still stops it
+-- but ONLY ONCE ZUCK HAS ACTIVATED THE CONTROLLER: his own comment, exactly
+`ACTIVATE RELEASE CONTROLLER`, on #453 (same identity rules as his approval). Until then, and after
+any `DEACTIVATE RELEASE CONTROLLER` -- which anyone trusted may post, a Claude session included,
+because stopping is always safe -- a LOW-tier PR takes the LIVE-tier path.
+EVERYTHING ELSE IS LIVE TIER and keeps the CLEAR + zuck's approval above: all code (the box runs
+research and miners with the MT5 terminals attached), data, configs, tests, workflows, this file.
+Unsure is LIVE: a file count that does not add up, an unreadable tree, a grep that errors.
+The allowlist lives here, in .github/scripts, which is itself LIVE tier: only a LIVE-tier merge
+(auditor CLEAR + zuck's comment) can widen it.
+
 Exit 0 when merged or when there is honestly nothing to do yet (no CLEAR); exit 1 when the gate
 refused or gave up, with the reason in the job summary and on the `audit/clear` commit status.
 """
@@ -87,6 +104,22 @@ STATUS_CONTEXT = "audit/clear"
 #: The issue zuck approves merges on, and his approval line (the whole comment, nothing else).
 APPROVALS_ISSUE = 453
 APPROVE = "APPROVE MERGES"
+ACTIVATE = "ACTIVATE RELEASE CONTROLLER"
+DEACTIVATE = "DEACTIVATE RELEASE CONTROLLER"
+#: LOW tier: where, what kind of file, and what it may never be named.
+LOW_DIRS = ("docs/", "context/", "desks/mt5/docs/", "reports/")
+LOW_EXTS = (".md", ".png", ".jpg", ".jpeg", ".svg", ".gif")
+APPEND_ONLY = ("context/decision_journal.jsonl",)
+FORCED_LIVE = re.compile(
+    r"law|constitution|protocol|mandate|polic|prompt|doctrine|charter|governance|claude|agents"
+)
+#: The files that count as "a program reads it" when they name a path or file name.
+CODE_SPECS = (
+    "*.py", "*.ps1", "*.sh", "*.cmd", "*.txt", "*.yml", "*.yaml", "*.toml", "*.manifest",
+    "*.service", "ops/githooks/*",
+)  # fmt: skip
+#: The GitHub files API lists at most 3000 files; past that the PR is never LOW.
+MAX_FILES = 3000
 #: The label that starts a gate run (the CLEAR comment itself starts none).
 LABEL = "audit-clear"
 VERDICT = re.compile(r"^AUDIT (CLEAR|HOLD) ([0-9a-f]{40})(?: (merge|squash))?[ \t]*$", re.M)
@@ -138,22 +171,93 @@ def verdicts(comments: Iterable[Mapping[str, Any]]) -> list[dict[str, str]]:
     return sorted(out, key=lambda v: v["at"])
 
 
+def referenced_by_code(base_ref: str, path: str) -> bool:
+    """Does any code file on the base branch name this path or its file name? An error is a yes."""
+    name = path.rsplit("/", 1)[-1]
+    p = subprocess.run(
+        [
+            "git",
+            "grep",
+            "-q",
+            "-F",
+            "-e",
+            path,
+            "-e",
+            name,
+            f"origin/{base_ref}",
+            "--",
+            *CODE_SPECS,
+        ],
+        capture_output=True,
+        check=False,
+    )
+    return p.returncode != 1  # 0 = found, 1 = not found, anything else = could not look
+
+
+def tier(
+    files: list[Mapping[str, Any]], changed: int, referenced: Callable[[str], bool]
+) -> tuple[bool, str]:
+    """(is LOW tier, why). LIVE unless every file is provably prose no program reads."""
+    if not files or len(files) != changed or len(files) >= MAX_FILES:
+        return False, f"LIVE tier: {len(files)} of {changed} changed files listed"
+    for f in files:
+        names = [str(n) for n in (f.get("filename"), f.get("previous_filename")) if n]
+        for name in names:
+            if (
+                name in APPEND_ONLY
+                and f.get("status") == "modified"
+                and f.get("deletions") == 0
+                and not f.get("previous_filename")
+            ):
+                continue
+            if not (name.startswith(LOW_DIRS) and name.lower().endswith(LOW_EXTS)):
+                return False, f"LIVE tier: {name}"
+            if FORCED_LIVE.search(name.lower()):
+                return False, f"LIVE tier: {name} (a governing document)"
+            if referenced(name):
+                return False, f"LIVE tier: {name} is read by code"
+    return True, f"LOW tier: {len(files)} prose file(s) no program reads"
+
+
+def _zuck_typed(c: Mapping[str, Any]) -> bool:
+    """By the OWNER, typed by him (no GitHub App posted it: a Claude session's comment carries
+    `performed_via_github_app`) and never edited (an edit could turn an old comment into this)."""
+    created = c.get("created_at")
+    return (
+        str(c.get("author_association") or "") == "OWNER"
+        and not c.get("performed_via_github_app")
+        and bool(created)
+        and c.get("updated_at") in (None, created)
+    )
+
+
 def approval_at(comments: Iterable[Mapping[str, Any]]) -> str | None:
-    """When zuck last approved merges: the newest comment that is exactly APPROVE, by the OWNER,
-    typed by him (no GitHub App posted it) and never edited. None when there is none."""
+    """When zuck last approved merges: the newest zuck-typed comment that is exactly APPROVE."""
     best: str | None = None
     for c in comments:
-        if str(c.get("body") or "").strip() != APPROVE:
-            continue
-        if str(c.get("author_association") or "") != "OWNER":
-            continue
-        if c.get("performed_via_github_app"):
-            continue  # a Claude session (or any app) posted it: never an approval
-        created = str(c.get("created_at") or "")
-        if not created or c.get("updated_at") not in (None, created):
-            continue  # an edit could turn an old comment into an approval
-        best = max(best or "", created)
+        if str(c.get("body") or "").strip() == APPROVE and _zuck_typed(c):
+            best = max(best or "", str(c["created_at"]))
     return best
+
+
+def activated(comments: Iterable[Mapping[str, Any]]) -> tuple[bool, str]:
+    """Is the tier controller on? The newest of zuck's own ACTIVATE and any trusted DEACTIVATE
+    decides; none at all is off."""
+    last: tuple[str, bool] | None = None
+    for c in comments:
+        body = str(c.get("body") or "").strip()
+        at = str(c.get("created_at") or "")
+        if body == ACTIVATE and _zuck_typed(c):
+            on = True
+        elif body == DEACTIVATE and str(c.get("author_association") or "") in TRUSTED:
+            on = False
+        else:
+            continue
+        if last is None or at >= last[0]:
+            last = (at, on)
+    if last is None:
+        return False, f"the release controller is not activated (zuck: `{ACTIVATE}` on #453)"
+    return last[1], f"the release controller is {'ON' if last[1] else 'OFF'} since {last[0]}"
 
 
 def approved(clear: Mapping[str, str], at: str | None) -> tuple[bool, str]:
@@ -342,6 +446,26 @@ def run(
         _summary(f"#{pr} comes from a fork: never merged by the gate")
         return 0
     files = _flat(_gh(f"repos/{repo}/pulls/{pr}/files?per_page=100", "--paginate", "--slurp"))
+    p2 = _gh(f"repos/{repo}/pulls/{pr}")
+    if str(p2["head"]["sha"]) != head:
+        _summary(f"#{pr}: head moved while its files were read; the next run decides")
+        return 0
+    low, twhy = tier(
+        files, int(p2.get("changed_files") or 0), lambda n: referenced_by_code(base, n)
+    )
+    if low:
+        on, owhy = activated(
+            _flat(
+                _gh(
+                    f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100",
+                    "--paginate",
+                    "--slurp",
+                )
+            )
+        )
+        if not on:
+            low, twhy = False, f"{twhy}, but {owhy}: it takes the LIVE-tier path"
+    _summary(f"#{pr} @ {head[:9]}: {twhy}")
     wf = touches_workflows(files)
     if wf and not box:
         _status(repo, head, "pending", BOX_MERGES)
@@ -365,7 +489,12 @@ def run(
 
     def verdict_now() -> tuple[dict[str, str] | None, str]:
         pages = _gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate", "--slurp")
-        clear, why = cleared(verdicts(_flat(pages)), head, same_change)
+        found = verdicts(_flat(pages))
+        if low:
+            if found and found[-1]["verdict"] == "HOLD":
+                return None, f"{twhy}, but the latest verdict is AUDIT HOLD ({found[-1]['at']})"
+            return {"verdict": "LOW", "sha": head, "method": "merge", "at": "", "by": ""}, twhy
+        clear, why = cleared(found, head, same_change)
         if clear is None:
             return None, why
         ap = _gh(
@@ -403,7 +532,7 @@ def run(
         if state == "fail":
             _summary(f"#{pr} @ {head[:9]}: not merged -- CI {cwhy}")
             return 1
-        if box:
+        if box or low:  # a LOW-tier PR never holds a runner: the box sweep looks again
             _summary(f"#{pr} @ {head[:9]}: CI {cwhy}; the next sweep looks again")
             return 0
         if time.monotonic() > deadline:
@@ -425,7 +554,11 @@ def run(
         data={
             "sha": head,
             "merge_method": clear["method"],
-            "commit_title": f"Merge #{pr} ({clear['method']}): audit CLEAR {clear['sha'][:9]}",
+            "commit_title": (
+                f"Merge #{pr} (LOW tier: prose only)"
+                if low
+                else f"Merge #{pr} ({clear['method']}): audit CLEAR {clear['sha'][:9]}"
+            ),
         },
     )
     _summary(f"#{pr} @ {head[:9]}: MERGED ({clear['method']}){' from the box' if box else ''}")

@@ -13,7 +13,7 @@ name: audit-gate
 
 on:
   pull_request_target:
-    types: [labeled, synchronize, reopened, ready_for_review]
+    types: [opened, labeled, synchronize, reopened, ready_for_review]
     branches: ["claude/llm-auto-upgrade-verify-gcjac3"]
 
 permissions:

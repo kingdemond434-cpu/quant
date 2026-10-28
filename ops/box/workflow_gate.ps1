@@ -80,8 +80,10 @@ try {
         & git clone -q --filter=blob:none --no-checkout "https://github.com/$Repo.git" $Clone 2>&1 | ForEach-Object { Say "clone: $_" }
         if ($LASTEXITCODE -ne 0) { throw "git clone failed ($LASTEXITCODE)" }
     }
-    # every run, so a moved gate script is followed (only this one file is ever checked out)
-    & git -C $Clone sparse-checkout set --no-cone /.github/scripts/audit_gate.py
+    # every run, so a moved gate script is followed. The code files come too: the LOW-tier check
+    # greps LIVE's code for any program that reads a document, and a checkout fetches their
+    # blobs in one batch (a grep over a blobless tree would fetch them one by one).
+    & git -C $Clone sparse-checkout set --no-cone /.github/scripts/audit_gate.py '*.py' '*.ps1' '*.sh' '*.cmd' '*.txt' '*.yml' '*.yaml' '*.toml' '*.manifest' '*.service' /ops/githooks/
     if ($LASTEXITCODE -ne 0) { throw "sparse-checkout failed ($LASTEXITCODE)" }
     & git -C $Clone fetch -q --no-tags origin "+refs/heads/${Live}:refs/remotes/origin/${Live}" 2>&1 | ForEach-Object { Say "fetch: $_" }
     if ($LASTEXITCODE -ne 0) { throw "git fetch failed ($LASTEXITCODE)" }
