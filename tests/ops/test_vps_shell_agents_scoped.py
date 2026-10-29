@@ -198,6 +198,22 @@ REFUSED_PUSHES = [
     ("nested_shell", 'bash -c "git push origin feature --force"'),
     ("inline_alias", "git -c alias.p=push p origin feature"),
     ("all_refs", "git push --all origin"),
+    # audit must-fix: git takes any unambiguous long-option prefix
+    ("delete_abbrev", "git push --del origin branch"),
+    ("delete_abbrev_after_remote", "git push origin --dele branch"),
+    ("mirror_abbrev", "git push --mirr origin"),
+    ("force_abbrev", "git push --forc origin feature"),
+    ("prune_abbrev", "git push --pru origin"),
+    ("receive_pack_abbrev", "git push --rece=/bin/x origin feature"),
+    # audit must-fix: a target the shell expands cannot be read, so it is refused
+    ("var_target", "git push origin $BR"),
+    ("braced_var_target", "git push origin ${BR}"),
+    ("var_dst_refspec", "git push origin HEAD:$BR"),
+    ("cmdsub_target", 'git push origin "$(git branch --show-current)"'),
+    ("cmdsub_unquoted", "git push origin $(echo x)"),
+    ("backtick_target", "git push origin `echo x`"),
+    ("var_flags", "git push $FLAGS origin feature"),
+    ("var_subcommand", "git $SUB origin feature"),
 ]
 
 
@@ -218,8 +234,11 @@ def test_push_matcher_resolves_a_bare_push_to_the_checked_out_branch() -> None:
 @pytest.mark.parametrize("cmd", [
     "git push origin desk-sync-clean", "git push -u origin claude/fix-x",
     "git push origin HEAD:claude/fix-x", "git status", "git log --force-with-lease",
-    "echo git-push --force",
-], ids=["desk_branch", "upstream_feature", "head_to_feature", "status", "log_flag", "echo"])
+    "echo git-push --force", "git push --set-up origin claude/fix-x",
+    "git push --follow-tags origin claude/fix-x", "git push --no-verify origin claude/fix-x",
+    "git push --dry-run origin claude/fix-x",
+], ids=["desk_branch", "upstream_feature", "head_to_feature", "status", "log_flag", "echo",
+        "set_upstream_abbrev", "follow_tags", "no_verify", "dry_run"])
 def test_push_matcher_allows_ordinary_pushes(cmd: str) -> None:
     assert lg.push_refusal(cmd, "desk-sync-clean") is None
 
@@ -244,6 +263,19 @@ REFUSED_SECRET_READS = [
     ("variable", "cat data/$SECRET_DIR/keys.env"),
     ("chained", "ls data && head data/secrets/keys.env"),
     ("nested_shell", "bash -c 'jq . data/secrets/keys.json'"),
+    # audit must-fix: -d recurse / --directories=recurse is -r by another name
+    ("grep_d_recurse", "grep -d recurse token ."),
+    ("grep_d_recurse_attached", "grep -drecurse token ."),
+    ("grep_d_recurse_combined", "grep -nd recurse token ."),
+    ("grep_directories_recurse", "grep --directories=recurse token data"),
+    ("grep_directories_abbrev", "grep --dir rec token ."),
+    ("grep_recursive_abbrev", "grep --recur token ."),
+    ("grep_d_variable", "grep -d $MODE token ."),
+    # audit must-fix: an exclude that does not match `secrets` excludes nothing
+    ("grep_exclude_secretsX", "grep -rn --exclude-dir=secretsX token ."),
+    ("grep_exclude_secrets_prefix", "grep -rn --exclude-dir=secretsfoo token data"),
+    ("grep_exclude_other", "grep -rn --exclude-dir=.git token ."),
+    ("grep_recursive_var_path", "grep -r token $DIR"),
 ]
 
 
@@ -257,7 +289,11 @@ def test_secrets_fence_refuses(cmd: str) -> None:
 @pytest.mark.parametrize("cmd", [
     "head data/universe.json", "jq . data/*.json", "grep -rn edge docs/research",
     "grep -r edge desks/mt5/data", "tail -n 50 data/cro_ai_logs/x.log",
-], ids=["head_catalog", "jq_glob_flat", "grep_r_docs", "grep_r_desk_data", "tail_log"])
+    "grep -rn --exclude-dir=secrets edge .", "grep -rn --exclude-dir secrets edge data",
+    "grep -d skip edge .", "grep -erd docs/research",
+], ids=["head_catalog", "jq_glob_flat", "grep_r_docs", "grep_r_desk_data", "tail_log",
+        "grep_r_excluding_secrets", "grep_r_excluding_secrets_separate", "grep_d_skip",
+        "grep_e_value_is_not_flags"])
 def test_secrets_fence_allows_the_catalogs(cmd: str) -> None:
     assert lg.secrets_refusal(cmd) is None
 

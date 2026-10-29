@@ -17,10 +17,15 @@ WHAT THIS MODULE DOES. It parses the WHOLE command the way a shell would split i
     swaps the remote's programs (`--receive-pack`, `--exec`), or targets the box branch
     `claude/llm-auto-upgrade-verify-gcjac3` in any spelling (`x`, `HEAD:x`, `refs/heads/x`,
     `src:refs/heads/x`; a bare `git push origin` or `HEAD` refspec is resolved to the checked-out
-    branch, and an unresolvable one is refused, never guessed);
+    branch, and an unresolvable one is refused, never guessed). Long options are resolved the
+    way git resolves them, by unambiguous PREFIX (`--del` is `--delete`, `--mirr` is `--mirror`),
+    and any argument the shell would expand first (`$BR`, `${BR}`, `$(...)`, backticks) is
+    refused: its option, remote or target cannot be read before the shell runs;
   * any command whose arguments reach `data/secrets` -- by path (relative, absolute, `./`, `..`,
     backslashes, doubled slashes), by a glob that can expand into it, by a variable or command
-    substitution beside a `data` path, or by a recursive grep over an ancestor of it -- whatever
+    substitution beside a `data` path, or by a recursive grep over an ancestor of it (`-r`,
+    `-R`, `-d recurse`, `--directories=recurse`, any abbreviation; only an `--exclude-dir` glob
+    that matches the base name `secrets` lets it through, never `secretsX`) -- whatever
     the program (`cat`, `head`, `tail`, `grep`, `jq`, `scripts/*`, anything);
   * a non-Bash tool whose path/pattern input reaches `data/secrets`.
 
@@ -63,8 +68,23 @@ _PUSH_VALUE_OPTS = {"-o", "--push-option", "--repo", "--signed"}
 _PUSH_REFUSED_LONG = ("--force", "--force-with-lease", "--force-if-includes", "--delete",
                       "--mirror", "--all", "--branches", "--prune", "--receive-pack", "--exec")
 _PUSH_REFUSED_SHORT = set("fd")
+#: Every long `git push` option git itself accepts, so an abbreviation (git takes any unambiguous
+#: prefix: `--del` IS `--delete`, `--mirr` IS `--mirror`) is resolved against the whole table, not
+#: matched literally. An abbreviation that is a prefix of a refused option is refused even when git
+#: would call it ambiguous: failing closed costs one retry, failing open costs a remote branch.
+_PUSH_LONG = ("--all", "--branches", "--mirror", "--delete", "--tags", "--dry-run", "--porcelain",
+              "--force", "--force-with-lease", "--force-if-includes", "--prune", "--verbose",
+              "--quiet", "--progress", "--no-verify", "--verify", "--set-upstream",
+              "--follow-tags", "--signed", "--atomic", "--push-option", "--repo",
+              "--receive-pack", "--exec", "--recurse-submodules", "--thin", "--no-thin",
+              "--ipv4", "--ipv6", "--no-signed", "--no-atomic", "--no-force-with-lease",
+              "--no-force-if-includes", "--no-recurse-submodules", "--no-progress",
+              "--no-follow-tags")
 _GLOB = re.compile(r"[*?\[]")
 _EXPANSION = re.compile(r"[$`]|<\(")
+#: A token the shell would expand before git saw it (`$BR`, `${BR}`, `$(...)`, backticks): the
+#: tokenizer splits `$(` into `$` and `(`, so a lone `$` is the start of a substitution too.
+_SHELL_EXPANDS = re.compile(r"[$`]")
 
 
 # ------------------------------------------------------------------ splitting
@@ -115,7 +135,21 @@ def _git_push_args(seg: Sequence[str]) -> list[str] | None:
                 j += 2 if opt in _GIT_VALUE_OPTS else 1
             if j < len(seg) and seg[j] == "push":
                 return list(seg[j + 1:])
+            if j < len(seg) and _SHELL_EXPANDS.search(seg[j]):
+                return ["--expanded-subcommand"]  # `git $CMD ...` may be a push
     return None
+
+
+def _long_option(name: str) -> str | None:
+    """The `git push` long option an (abbreviated) `--name` denotes; a refused option whenever
+    the abbreviation could be one, None when it names nothing git push knows."""
+    if name in _PUSH_LONG:
+        return name
+    cands = [o for o in _PUSH_LONG if o.startswith(name)]
+    refused = [o for o in cands if o in _PUSH_REFUSED_LONG]
+    if refused:
+        return refused[0]
+    return cands[0] if len(cands) == 1 else None
 
 
 def _dst_of(refspec: str, current_branch: str | None) -> str | None:
@@ -151,11 +185,23 @@ def push_refusal(command: str, current_branch: str | None = None) -> str | None:
                 continue
             if a == "--alias-definition":
                 return "git -c alias.* can hide a forced push -- refused"
+            if a == "--expanded-subcommand":
+                return ("git subcommand is a shell expansion ($VAR / $(...)) and may be a push "
+                        "-- refused rather than guessed")
+            if _SHELL_EXPANDS.search(a):
+                return (f"git push argument {a!r} is a shell expansion: its option, remote or "
+                        "target cannot be read before the shell runs -- refused")
+            if a == "--":
+                continue
             if a.startswith("--"):
                 name = a.split("=", 1)[0]
-                if name in _PUSH_REFUSED_LONG or name.startswith("--force"):
+                if name.startswith("--force"):
                     return f"git push {name} (forces, deletes or sweeps remote refs) is refused"
-                if name in _PUSH_VALUE_OPTS and "=" not in a:
+                full = _long_option(name)
+                if full in _PUSH_REFUSED_LONG:
+                    return (f"git push {name} (= {full}: forces, deletes or sweeps remote refs) "
+                            "is refused")
+                if full in _PUSH_VALUE_OPTS and "=" not in a:
                     skip = True
                 continue
             if a.startswith("-") and len(a) > 1:
@@ -223,20 +269,107 @@ def _reaches_secrets(token: str) -> bool:
     return bool(_GLOB.search(p)) and _glob_reaches_secrets(p)
 
 
+#: GNU grep short options that take a value: the characters after one are its value, not flags.
+_GREP_VALUE_SHORT = set("efmABCDd")
+#: GNU grep long options that take a value (abbreviations resolved by prefix below).
+_GREP_VALUE_LONG = ("--regexp", "--file", "--max-count", "--after-context", "--before-context",
+                    "--context", "--devices", "--directories", "--include", "--exclude",
+                    "--exclude-dir", "--exclude-from", "--label", "--binary-files", "--color",
+                    "--colour", "--group-separator")
+_GREP_RECURSIVE_LONG = ("--recursive", "--dereference-recursive")
+
+
+def _grep_long(name: str) -> str | None:
+    """The grep long option an (abbreviated) `--name` denotes. An abbreviation that could be a
+    recursion switch is read as one even where grep would call it ambiguous (fails closed)."""
+    known = (*_GREP_VALUE_LONG, *_GREP_RECURSIVE_LONG)
+    if name in known:
+        return name
+    cands = [o for o in known if o.startswith(name)]
+    rec = [o for o in cands if o in _GREP_RECURSIVE_LONG]
+    if rec and len(name) > 3:
+        return rec[0]
+    if "--directories" in cands and len(name) > 3:
+        return "--directories"
+    return cands[0] if len(cands) == 1 else None
+
+
+def _is_recurse(value: str) -> bool:
+    """`-d ACTION` / `--directories=ACTION`: grep takes any unambiguous prefix of `recurse`, and
+    an expansion (`-d $MODE`) cannot be read, so it counts as recursion."""
+    v = value.strip().lower()
+    return (bool(v) and "recurse".startswith(v)) or _SHELL_EXPANDS.search(v) is not None
+
+
+def _excludes_secrets(value: str) -> bool:
+    """An `--exclude-dir` glob that matches the secrets directory's BASE NAME, which is all GNU
+    grep compares while it recurses. `secretsX` (and `data/secrets`) do NOT exclude it."""
+    return fnmatch.fnmatchcase("secrets", value.rstrip("/"))
+
+
+def _grep_walk(seg: Sequence[str]) -> tuple[bool, bool, list[str]]:
+    """(recursive, secrets excluded, path operands) for one grep segment, options parsed the way
+    getopt does: combined short flags, attached and separate values, long-option prefixes."""
+    recursive = excluded = pattern_given = False
+    operands: list[str] = []
+    i = 1
+    while i < len(seg):
+        a = seg[i]
+        i += 1
+        if a == "--":
+            operands.extend(seg[i:])
+            break
+        if a.startswith("--"):
+            name, eq, val = a.partition("=")
+            full = _grep_long(name)
+            if full in _GREP_RECURSIVE_LONG:
+                recursive = True
+            elif full in _GREP_VALUE_LONG:
+                if not eq:
+                    val = seg[i] if i < len(seg) else ""
+                    i += 1
+                if full == "--directories" and _is_recurse(val):
+                    recursive = True
+                elif full == "--exclude-dir" and _excludes_secrets(val):
+                    excluded = True
+                elif full in ("--regexp", "--file"):
+                    pattern_given = True
+            continue
+        if a.startswith("-") and len(a) > 1:
+            k = 1
+            while k < len(a):
+                c = a[k]
+                k += 1
+                if c in ("r", "R"):
+                    recursive = True
+                elif c in _GREP_VALUE_SHORT:
+                    val = a[k:]
+                    if not val:
+                        val = seg[i] if i < len(seg) else ""
+                        i += 1
+                    if c == "d" and _is_recurse(val):
+                        recursive = True
+                    elif c in ("e", "f"):
+                        pattern_given = True
+                    break
+            continue
+        operands.append(a)
+    return recursive, excluded, operands if pattern_given else operands[1:]
+
+
 def _recursive_over_ancestor(seg: Sequence[str]) -> bool:
-    """`grep -r pat .` / `grep -R pat data` (or no path at all) walks into data/secrets."""
+    """`grep -r pat .` / `grep -d recurse pat data` (or no path at all) walks into data/secrets."""
     prog = posixpath.basename(seg[0]) if seg else ""
     if prog not in ("grep", "egrep", "fgrep", "rg"):
         return False
-    recursive = prog == "rg" or any(
-        a in ("--recursive", "--dereference-recursive") or
-        (a.startswith("-") and not a.startswith("--") and set(a[1:]) & {"r", "R"})
-        for a in seg[1:])
-    if not recursive:
+    if prog == "rg":
+        # rg always recurses and has no --exclude-dir: its path operands decide it alone.
+        recursive, excluded = True, False
+        paths = [a for a in seg[1:] if not a.startswith("-")][1:]
+    else:
+        recursive, excluded, paths = _grep_walk(seg)
+    if not recursive or excluded:
         return False
-    if any(a.startswith(("--exclude-dir=secrets", "--exclude-dir=data/secrets")) for a in seg):
-        return False
-    paths = [a for a in seg[1:] if not a.startswith("-")][1:]  # first operand is the pattern
     if not paths:
         return True  # recursive grep with no path walks the cwd, i.e. the repo
     for a in paths:
@@ -245,6 +378,8 @@ def _recursive_over_ancestor(seg: Sequence[str]) -> bool:
             return True
         if p.startswith("/") and VPS_SECRETS.startswith(p.rstrip("/") + "/"):
             return True
+        if _SHELL_EXPANDS.search(a) or (_GLOB.search(p) and fnmatch.fnmatchcase("data", p)):
+            return True  # `grep -r k $DIR` / `grep -r k d*`: may expand to an ancestor
     return False
 
 
