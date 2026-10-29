@@ -1112,6 +1112,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_reconcile", "clock_liveness", "certificate_clock_law",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    # The noon CRO pass must land a ledger row every day; one file read, so it is core.
+    "cro_noon_freshness",
     # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
@@ -1397,7 +1399,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "build_failure_bank", "experiment_contracts", "health_board",
                      "runtime_attestation", "self_repair", "desk_self_heal",
                      "tier5_acceptance", "mission_control", "tier_s", "tier_s_door",
-                     "research_live_identity",
+                     "research_live_identity", "cro_noon_freshness",
                      # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
                      # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
                      "unknown_census"), "meta"),
@@ -2207,6 +2209,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "forward_calibration": 180,
     "desk_self_heal": 240,
     "tier5_acceptance": 180,
+    "cro_noon_freshness": 60,
     "mission_control": 180,
     # The producer census relights at most six dark producers at 240s each and re-measures after
     # every repair; the cap sits above 6*240 so a pass is never cut inside a repair it has
@@ -5903,6 +5906,11 @@ def main() -> None:
         "meta_rnd", "research/meta_rnd.py", "--once", "--budget-s", "180"))
     ac = _costed("acceptance", lambda: _producer(
         "acceptance", "scripts/check_acceptance_properties.py"))
+    # RED WHEN THE NOON CRO PASS STOPS LANDING (2026-10-29). It was driven from a laptop session
+    # parked since 09-29 and the ledger held two noon rows in a month with nothing turning red.
+    # The pass now runs here as MT5-CycleNoon; this reads its rows and fails the leg past 26 h.
+    cnf = _costed("cro_noon_freshness", lambda: _producer(
+        "cro_noon_freshness", "scripts/check_cro_noon_freshness.py"))
     # THE REBUILT 25-SEP LANES (2026-09-30), after every leg whose output they read:
     #   build_failure_bank    compile_candidates, run_external_backtest and the sealed gauntlet's
     #                         report -> why cells never BUILT, ranked into fix work
@@ -6233,6 +6241,7 @@ def main() -> None:
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
                     "opportunity_cost": oc, "acceptance": ac, "opportunity_forecast": ofc,
+                    "cro_noon_freshness": cnf,
                     "build_failure_bank": bfb, "trade_pathology": tpa,
                     "experiment_contracts": exc_, "health_board": hbd,
                     "preregistration": prg, "organ_census": ogc,
