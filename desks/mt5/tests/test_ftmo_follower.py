@@ -1071,9 +1071,10 @@ def test_an_unmeasurable_day_start_raises(bad: str) -> None:
         with pytest.raises(ValueError, match="no readable time"):
             ff.day_start_balance(mt5, 100_000.0, midnight, NOW)
         return
-    epoch = (NOW - timedelta(days=2)).timestamp() if bad == "stale_tick" else 0.0
+    # every clock symbol's tick is that stale (or absent): nothing to read the server clock from
+    epoch = int((NOW - timedelta(days=2)).timestamp()) if bad == "stale_tick" else 0
     with pytest.raises(ValueError, match="server clock"):
-        ff.day_start_balance(_MT5(), 100_000.0, midnight, NOW, server_epoch=epoch)
+        ff.day_start_balance(_MT5(tick=epoch), 100_000.0, midnight, NOW, server_epoch=epoch)
 
 
 @pytest.mark.parametrize(("minutes_old", "skew_s"), [(0, 0), (4, 0), (0, 240), (0, -240)])
