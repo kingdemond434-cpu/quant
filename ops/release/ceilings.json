@@ -15,7 +15,8 @@
       "REQUEST_HARD_CAP": 1950,
       "DAILY_LOSS_FRAC": 0.05,
       "MAX_LOSS_FRAC": 0.1,
-      "MAX_NOTIONAL_X": 5.0
+      "MAX_NOTIONAL_X": 5.0,
+      "REQUEST_BUDGET": 1500
     }
   },
   "equal": {
@@ -31,6 +32,9 @@
       "KEEP_TRADED": 400,
       "ALLOW_CROSS_FIRM_COPY": true,
       "PASS_RAIL": "ftmo_executor_pass"
+    },
+    "desks/mt5/prop/ftmo_follower.py": {
+      "MAGIC": 341955
     }
   },
   "superset": {
