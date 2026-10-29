@@ -44,8 +44,12 @@ OUT = DESK / "reports" / "CRO_DUTIES.json"
 
 ROW = re.compile(r"^\| (D\d+) \| \*\*(.+?)\*\* \|(.*)$")
 ARTIFACT = re.compile(r"`((?:desks/mt5/)?(?:reports|data)/[A-Za-z0-9_./-]+\.jsonl?)`")
-#: statuses a pass may claim that an unmeasured artifact cannot support
+#: statuses a pass may claim that an unmeasured artifact cannot support (compared upper-cased)
 _CLAIMS = {"MET", "OPTIMAL"}
+#: a stamp further ahead of the clock than this is a defect, never FRESH
+FUTURE_SLACK_S = 600
+#: a .jsonl artifact is read from its tail: some (gate_verdict_ledger) are far too big to parse
+TAIL_BYTES = 1 << 20
 
 
 def duty_rows(text: str) -> dict[str, dict[str, Any]]:
@@ -80,15 +84,32 @@ def _parse_ts(s: Any) -> datetime | None:
     return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
 
+def _tail_row(path: Path) -> tuple[Any, str | None]:
+    """The last complete row of a .jsonl, read from the file's last TAIL_BYTES only."""
+    with path.open("rb") as fh:
+        fh.seek(0, 2)
+        size = fh.tell()
+        fh.seek(max(0, size - TAIL_BYTES))
+        blob = fh.read()
+    lines = blob.decode("utf-8-sig", errors="replace").splitlines()
+    if size > TAIL_BYTES and lines:
+        lines = lines[1:]          # the first line of a mid-file read is a fragment
+    for ln in reversed(lines):
+        if ln.strip():
+            return json.loads(ln), None
+    return None, "empty"
+
+
 def _load(path: Path) -> tuple[Any, str | None]:
     try:
+        if path.suffix == ".jsonl":
+            return _tail_row(path)
         text = path.read_text("utf-8-sig")
     except OSError as e:
         return None, f"unreadable: {type(e).__name__}"
+    except ValueError:
+        return None, "not JSON"
     try:
-        if path.suffix == ".jsonl":
-            rows = [json.loads(ln) for ln in text.splitlines() if ln.strip()]
-            return (rows[-1] if rows else None), None if rows else "empty"
         return json.loads(text), None
     except ValueError:
         return None, "not JSON"
@@ -110,16 +131,28 @@ def _stamp(doc: Any, path: Path, root: Path = ROOT) -> tuple[datetime | None, st
     """The artifact's own measurement time, else its last commit time, else None (UNSTAMPED).
     Never the file's mtime: that is reset whenever the box adopts a release."""
     if isinstance(doc, Mapping):
-        for k in ("at", "generated_at", "generated_utc", "measured_at", "updated", "swept_at"):
-            ts = _parse_ts(doc.get(k))
-            if ts is not None:
-                return ts, k
+        # a review keeps every pass under `history`; its own time is the latest pass's
+        latest = doc.get("latest")
+        for src, prefix in ((latest, "latest."), (doc, "")):
+            if not isinstance(src, Mapping):
+                continue
+            for k in ("at", "generated_at", "generated_utc", "measured_at", "updated",
+                      "swept_at"):
+                ts = _parse_ts(src.get(k))
+                if ts is not None:
+                    return ts, prefix + k
     ts = _git_time(path, root)
     return (ts, "git_commit") if ts is not None else (None, "none")
 
 
 def find_key(doc: Any, key: str, depth: int = 6) -> tuple[bool, Any]:
-    """First value under `key` anywhere in `doc` (breadth-first, bounded depth)."""
+    """First value under `key` anywhere in `doc` (breadth-first, bounded depth).
+
+    Never from an earlier pass: a document with a `latest` block is searched there only, and a
+    `history` array is never descended into, so a counter the latest pass did not publish reads
+    UNMEASURED instead of borrowing an old pass's value (auditor MF1, #154)."""
+    if isinstance(doc, Mapping) and isinstance(doc.get("latest"), Mapping):
+        doc = doc["latest"]
     level: list[Any] = [doc]
     for _ in range(depth):
         nxt: list[Any] = []
@@ -127,7 +160,7 @@ def find_key(doc: Any, key: str, depth: int = 6) -> tuple[bool, Any]:
             if isinstance(node, Mapping):
                 if key in node:
                     return True, node[key]
-                nxt.extend(node.values())
+                nxt.extend(v for k, v in node.items() if k != "history")
             elif isinstance(node, list):
                 nxt.extend(node[:200])
         if not nxt:
@@ -189,6 +222,10 @@ def measure(rows: Mapping[str, Mapping[str, Any]], spec: Mapping[str, Any],
                                     "its mtime is reset by adoption and proves nothing"}
                 continue
             age_h = (now - stamp).total_seconds() / 3600
+            if age_h * 3600 < -FUTURE_SLACK_S:
+                arts[rel] = {"status": "FUTURE", "age_h": round(age_h, 2), "stamp_basis": basis,
+                             "why": "stamped ahead of the clock; a future stamp proves nothing"}
+                continue
             arts[rel] = {"status": "STALE" if age_h > max_age else "FRESH",
                          "age_h": round(age_h, 2), "max_age_h": max_age, "stamp_basis": basis}
             if age_h <= max_age:
@@ -264,8 +301,10 @@ def apply_to_review(review: Path, measured: Mapping[str, Any],
     if not isinstance(latest, dict):
         out["why"] = "review has no latest block"
         return out
+    # A review with no `latest.at` is read as this pass's: its claims are checked, never left
+    # standing because the pass forgot to stamp it.
     start, wrote = _parse_ts(started_at), _parse_ts(latest.get("at"))
-    if start is not None and (wrote is None or wrote < start):
+    if start is not None and wrote is not None and wrote < start:
         out["why"] = "review predates this pass; not rewritten"
         return out
     duties = latest.setdefault("duties", {})
@@ -288,12 +327,13 @@ def _changed(duties: dict[str, Any], measured: Mapping[str, Any]) -> Iterable[st
         verdict = m["status"]
         cur = duties.get(duty)
         entry: dict[str, Any] = dict(cur) if isinstance(cur, Mapping) else {}
-        prior = str(entry.get("status") or "")
+        claimed = entry.get("status")
+        prior = str(claimed or "").strip().upper()
         entry["artifact_check"] = m.get("why")
         entry["counts_as"] = "MISSED"
         if prior in _CLAIMS or not prior:
             if prior:
-                entry["status_claimed"] = prior
+                entry["status_claimed"] = claimed
             entry["status"] = "MISSED"
             entry["verdict"] = verdict
             entry["reason"] = ("artifact_unmeasured" if verdict == "UNMEASURED"
