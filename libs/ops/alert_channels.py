@@ -43,8 +43,13 @@ thread can handle itself is `"desk"`.
   BORDERLINE? Read what the page asks the reader to DO. A human action -> principal; else desk.
 
   `page_principal(title, body)` is THE sanctioned "needs zuck" path for a thread that must ping him
-  once: it is `send_all(..., audience="principal")` and nothing else. Use it sparingly -- every
+  once: it is `send_all(..., audience="principal")`, plus the desk ntfy topic from
+  data/secrets/ntfy.json when the registry arms no ntfy channel. Use it sparingly -- every
   principal page spends the credibility of the next one.
+
+  WHERE A DESK PAGE GOES. Desk pages are not dropped, they are routed to something that acts: the
+  ledger, hc /log (recorded, notifies nobody; /fail is principal only), and a row in
+  desks/mt5/reports/DESK_ALERTS.json that check_desk_health turns into a PROBLEM while fresh.
 
   The default, for a caller that names no audience, is "principal" (the safe direction for money:
   a forgotten argument can over-page, never swallow a page). `tests/ops/test_alert_audience.py`
@@ -62,6 +67,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import os
 import smtplib
 import urllib.error
 import urllib.request
@@ -77,6 +83,7 @@ _LEDGER = Path("data/alert_delivery.jsonl")
 _SILENT_FLAG = Path("data/ALERT_CHANNELS_SILENT")
 
 _HEARTBEAT = Path("data/secrets/heartbeat_url.json")
+_NTFY_SECRET = Path("data/secrets/ntfy.json")
 
 _TIMEOUT = 12.0
 _KINDS = ("ntfy", "telegram", "webhook", "email", "hc")
@@ -89,6 +96,24 @@ AUDIENCES = (PRINCIPAL, DESK)
 #: Channels that reach the owner personally. Only a PRINCIPAL page is sent to these.
 _PERSONAL_KINDS = frozenset({"ntfy", "telegram", "email"})
 ROUTED_DETAIL = "routed: desk audience"
+
+#: THE DESK ALERT ARTIFACT. A desk page that only reaches a ledger reaches nobody who acts, so
+#: every desk send_all also upserts one row per alert key here -- {key, title, msg, first_seen,
+#: last_seen, source} -- and desks/mt5/scripts/check_desk_health.py turns any row seen inside
+#: DESK_ALERT_FRESH_H into a PROBLEM (a RED the threads read and fix). Repo-relative like the
+#: ledger; a caller with its own ledger gets the artifact beside it (`desk_alerts_path`).
+_DESK_ALERTS = Path("desks/mt5/reports/DESK_ALERTS.json")
+#: One day of re-pages (the slowest run_alerts dedupe is 24h) plus an hour of slack: a condition
+#: still alerting keeps its row fresh; one that stopped ages out a day later.
+DESK_ALERT_FRESH_H = 25.0
+#: Rows not seen for this long are pruned so the artifact cannot grow without bound.
+_DESK_ALERT_KEEP_D = 7.0
+#: A PERSONAL CHANNEL NOBODY HAS PROVEN. ntfy carries only principal pages now, which are rare by
+#: design -- so a dead topic (quota, encoding, a rotated secret) would stay invisible until the
+#: one page that mattered. `personal_channel_health` calls it stale when its last REAL (non-routed)
+#: success is older than this, or when a real attempt failed after it; the canary writes that as
+#: a desk alert row, so it is a RED, never a buzz.
+PERSONAL_STALE_DAYS = 7.0
 
 
 def _log(channel: str, ok: bool, detail: str, title: str, ledger: Path = _LEDGER, *,
@@ -219,7 +244,8 @@ _CANARY_AWARE = frozenset(_CANARY_SENDERS)
 
 def send_all(title: str, body: str, *, config: Path = _CONFIG,
              ledger: Path = _LEDGER, canary: bool = False,
-             audience: str = PRINCIPAL) -> dict[str, Any]:
+             audience: str = PRINCIPAL, key: str | None = None, source: str = "",
+             resolved: bool = False) -> dict[str, Any]:
     """Fire EVERY armed channel the audience allows; one channel's failure can never stop another's.
 
     Returns {"armed": n, "delivered": n, "routed": n, "audience": a, "results": [...]}. When
@@ -235,8 +261,19 @@ def send_all(title: str, body: str, *, config: Path = _CONFIG,
     `canary=True` marks the send as a synthetic reachability probe. Channels that can distinguish
     the two use the non-notifying variant, so proving the route works never costs the principal an
     alert they have to read and dismiss -- a canary that pages is a canary that gets muted.
+
+    A DESK send (not a canary) also upserts its row in the desk alert artifact under `key`
+    (default: the title), tagged with `source`; `resolved=True` removes that row instead, so a
+    cleared condition stops holding the desk RED. The hc channel takes a desk send on its /log
+    endpoint (recorded, notifies nobody) and only a principal send on /fail.
     """
     aud = audience if audience in AUDIENCES else PRINCIPAL
+    if aud == DESK and not canary:
+        if resolved:
+            clear_desk_alert(key or title, path=desk_alerts_path(ledger))
+        else:
+            record_desk_alert(key or title, title, body, source=source,
+                              path=desk_alerts_path(ledger))
     channels = load_channels(config)
     if not channels:
         _log("none", False, "NOT-ARMED: data/secrets/alert_channels.json absent or empty",
@@ -253,7 +290,8 @@ def send_all(title: str, body: str, *, config: Path = _CONFIG,
                             "routed": True})
             continue
         try:
-            detail = (_CANARY_SENDERS[kind](cfg, title, body, canary=canary)
+            # a desk page rides the non-notifying endpoint, exactly like the canary (hc /log)
+            detail = (_CANARY_SENDERS[kind](cfg, title, body, canary=canary or aud == DESK)
                       if kind in _CANARY_SENDERS else _SENDERS[kind](cfg, title, body))
             ok = True
         except (urllib.error.URLError, urllib.error.HTTPError, OSError, KeyError,
@@ -267,11 +305,140 @@ def send_all(title: str, body: str, *, config: Path = _CONFIG,
 
 
 def page_principal(title: str, body: str, *, config: Path = _CONFIG,
-                   ledger: Path = _LEDGER) -> dict[str, Any]:
+                   ledger: Path = _LEDGER, ntfy_secret: Path = _NTFY_SECRET) -> dict[str, Any]:
     """THE sanctioned "needs zuck" page: a thread that must have the owner's personal action pings
     him through this, and only for that (module docstring: a human action only he can take).
-    Same failure semantics as `send_all` -- never raises, every attempt is ledgered."""
-    return send_all(title, body, config=config, ledger=ledger, audience="principal")
+    Same failure semantics as `send_all` -- never raises, every attempt is ledgered.
+
+    THE PHONE IS NOT OPTIONAL HERE. The desk's ntfy topic lives in data/secrets/ntfy.json, which
+    the registry does not read, so on a box whose alert_channels.json arms no ntfy channel a
+    principal page would reach everything except the one channel he actually carries. When the
+    registry has no ntfy channel and that topic exists, it is sent there too (ledgered)."""
+    res = send_all(title, body, config=config, ledger=ledger, audience="principal")
+    if any(str(c.get("kind")) == "ntfy" for c in load_channels(config)):
+        return res
+    try:
+        topic = str(json.loads(ntfy_secret.read_text("utf-8")).get("topic") or "").strip()
+    except (OSError, ValueError, AttributeError):
+        topic = ""
+    if not topic:
+        return res
+    try:
+        detail, ok = _SENDERS["ntfy"]({"kind": "ntfy", "topic": topic}, title, body), True
+    except Exception as e:                      # never raises into the alert path
+        ok, detail = False, f"{type(e).__name__}: {e}"[:200]
+    _log("ntfy", ok, detail, title, ledger)
+    res = dict(res)
+    res["results"] = [*res.get("results", []), {"channel": "ntfy", "ok": ok, "detail": detail,
+                                                 "via": "ntfy.json"}]
+    res["delivered"] = int(res.get("delivered", 0)) + (1 if ok else 0)
+    return res
+
+
+def desk_alerts_path(ledger: Path = _LEDGER) -> Path:
+    """Where the desk alert artifact lives for a given ledger: the repo artifact for the repo's
+    own `data/alert_delivery.jsonl` (relative or rooted), else beside the ledger (tests, tools)."""
+    if ledger == _LEDGER:
+        return _DESK_ALERTS
+    if ledger.name == _LEDGER.name and ledger.parent.name == "data":
+        return ledger.parent.parent / _DESK_ALERTS
+    return ledger.parent / _DESK_ALERTS.name
+
+
+def load_desk_alerts(path: Path = _DESK_ALERTS) -> dict[str, dict[str, Any]]:
+    """The artifact's rows by key; absent or unreadable is empty (never raises)."""
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    rows = doc.get("alerts") if isinstance(doc, dict) else None
+    if not isinstance(rows, list):
+        return {}
+    return {str(r["key"]): r for r in rows if isinstance(r, dict) and "key" in r}
+
+
+def _write_desk_alerts(rows: dict[str, dict[str, Any]], path: Path) -> None:
+    floor = datetime.now(tz=UTC) - timedelta(days=_DESK_ALERT_KEEP_D)
+    kept = []
+    for r in rows.values():
+        try:
+            if datetime.fromisoformat(str(r.get("last_seen"))) < floor:
+                continue
+        except (ValueError, TypeError):
+            continue
+        kept.append(r)
+    kept.sort(key=lambda r: str(r.get("last_seen")), reverse=True)
+    doc = {"schema": "desk_alerts/1", "fresh_h": DESK_ALERT_FRESH_H, "alerts": kept}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.tmp")
+    tmp.write_text(json.dumps(doc, indent=1), "utf-8")
+    os.replace(tmp, path)
+
+
+def record_desk_alert(key: str, title: str, msg: str, *, source: str = "",
+                      path: Path = _DESK_ALERTS) -> None:
+    """Upsert one desk alert row (first_seen kept, last_seen/title/msg refreshed). Never raises:
+    a failed write must not kill the page that called it. Text is truncated -- this artifact is
+    published, so callers keep book state out of desk pages exactly as they do for the ledger."""
+    with contextlib.suppress(Exception):
+        now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+        rows = load_desk_alerts(path)
+        prev = rows.get(key, {})
+        rows[key] = {"key": key, "title": title[:160], "msg": msg[:400],
+                     "first_seen": prev.get("first_seen", now), "last_seen": now,
+                     "source": source or prev.get("source", "")}
+        _write_desk_alerts(rows, path)
+
+
+def clear_desk_alert(key: str, *, path: Path = _DESK_ALERTS) -> None:
+    """Drop a resolved alert's row. Never raises."""
+    with contextlib.suppress(Exception):
+        rows = load_desk_alerts(path)
+        if rows.pop(key, None) is not None:
+            _write_desk_alerts(rows, path)
+
+
+def fresh_desk_alerts(*, path: Path = _DESK_ALERTS, hours: float = DESK_ALERT_FRESH_H,
+                      now: datetime | None = None) -> list[dict[str, Any]]:
+    """Rows seen inside the freshness window, newest first -- the ones that hold the desk RED."""
+    floor = (now or datetime.now(tz=UTC)) - timedelta(hours=hours)
+    out = []
+    for r in load_desk_alerts(path).values():
+        with contextlib.suppress(ValueError, TypeError):
+            if datetime.fromisoformat(str(r.get("last_seen"))) >= floor:
+                out.append(r)
+    return sorted(out, key=lambda r: str(r.get("last_seen")), reverse=True)
+
+
+def personal_channel_health(kind: str = "ntfy", *, ledger: Path = _LEDGER,
+                            days: float = PERSONAL_STALE_DAYS,
+                            now: datetime | None = None) -> dict[str, Any]:
+    """Is a personal channel PROVEN to deliver? Reads only real rows (routed ones prove nothing).
+
+    stale = no real success inside `days`, or a real attempt failed after the last success.
+    `last_success` None means the ledger has never recorded one."""
+    last_ok: str | None = None
+    failed_after = False
+    try:
+        lines = ledger.read_text("utf-8").splitlines()
+    except OSError:
+        lines = []
+    for line in lines:
+        with contextlib.suppress(json.JSONDecodeError, AttributeError):
+            row = json.loads(line)
+            if row.get("channel") != kind or row.get("routed"):
+                continue
+            if row.get("ok"):
+                last_ok, failed_after = str(row.get("ts")), False
+            else:
+                failed_after = True
+    floor = (now or datetime.now(tz=UTC)) - timedelta(days=days)
+    old = True
+    if last_ok:
+        with contextlib.suppress(ValueError, TypeError):
+            old = datetime.fromisoformat(last_ok) < floor
+    return {"channel": kind, "last_success": last_ok, "failed_since": failed_after,
+            "stale": old or failed_after, "days": days}
 
 
 def ledger_tail(n: int = 20, *, ledger: Path = _LEDGER) -> list[dict[str, Any]]:

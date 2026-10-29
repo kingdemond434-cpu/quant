@@ -437,6 +437,55 @@ def check_stall_watch_alerts() -> None:
     print()
 
 
+#: libs.ops.alert_channels.DESK_ALERT_FRESH_H, read from the artifact when it states one
+DESK_ALERT_FRESH_H = 25.0
+
+
+def check_desk_alerts(path: Path | None = None, now: datetime | None = None) -> None:
+    """DESK PAGES MUST REACH SOMETHING THAT ACTS (2026-10-29). A desk-audience page no longer
+    rings the owner's phone; libs.ops.alert_channels.send_all records it in DESK_ALERTS.json
+    instead, and every row seen inside the freshness window is a PROBLEM here -- the RED the
+    threads read. A resolved condition removes its row; an abandoned one ages out."""
+    _section("DESK ALERTS  (reports/DESK_ALERTS.json, written by every desk page)")
+    p = path or DESK / "reports" / "DESK_ALERTS.json"
+    try:
+        doc = json.loads(p.read_text("utf-8-sig"))
+    except FileNotFoundError:
+        _ok("no desk alert recorded (DESK_ALERTS.json absent)")
+        print()
+        return
+    except (OSError, ValueError) as exc:
+        _unknown(f"reports/DESK_ALERTS.json unreadable ({_exc_reason(exc)})")
+        print()
+        return
+    rows = doc.get("alerts") if isinstance(doc, dict) else None
+    if not isinstance(rows, list):
+        _unknown("DESK_ALERTS.json carries no alerts list -- desk alerts are UNMEASURED")
+        print()
+        return
+    fresh_h = doc.get("fresh_h")
+    hours = float(fresh_h) if isinstance(fresh_h, (int, float)) else DESK_ALERT_FRESH_H
+    floor = (now or datetime.now(UTC)) - timedelta(hours=hours)
+    fresh = 0
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        try:
+            seen = datetime.fromisoformat(str(r.get("last_seen")))
+            if seen < floor:
+                continue
+        except (ValueError, TypeError):
+            _unknown(f"desk alert {r.get('key')!r} has no readable last_seen")
+            continue
+        fresh += 1
+        _bad(f"desk alert {r.get('key')}: {str(r.get('title'))[:120]} -- "
+             f"{str(r.get('msg'))[:200]} (source {r.get('source') or '?'}, first "
+             f"{r.get('first_seen')}, last {r.get('last_seen')})")
+    if not fresh:
+        _ok(f"no desk alert seen in the last {hours:g}h ({len(rows)} older row(s))")
+    print()
+
+
 def check_gateway_state() -> None:
     _section("THE GATEWAY'S OWN LAST WORD")
     p = DESK / "data" / "gateway_state.json"
@@ -502,6 +551,7 @@ def main(argv: list[str] | None = None) -> int:
     check_bars_state()
     check_state_flow()
     check_stall_watch_alerts()
+    check_desk_alerts()
     check_gateway_state()
     print("Every [PROBLEM] line above is a thing to fix. [UNKNOWN] means this could not check,")
     print("which is a finding too -- it is never the same as OK.")

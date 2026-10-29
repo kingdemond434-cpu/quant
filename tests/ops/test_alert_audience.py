@@ -150,10 +150,17 @@ def test_the_canary_is_desk_and_still_exercises_hc_log(tmp_path: Path,
 #: Byte-pinned canon copies of box watchers (desks/mt5/tests/test_box_watchers_canon.py holds
 #: them to the sha256 the box reported). They cannot gain an argument without a re-port from the
 #: box, so they ride the PRINCIPAL default: both page about a LIVE account (an E8 fail-open order,
-#: an FTMO manual-follow trade the owner places and closes by hand).
+#: an FTMO manual-follow trade the owner places and closes by hand). PER CALL SITE: (file, the
+#: enclosing function or "<module>", the literal title or "*" when it is not a literal) ->
+#: reason, so a NEW call in one of these files is fenced like any other.
 CANON_EXEMPT = {
-    "desks/mt5/scripts/watchers/e8_window_guard.py": "byte-pinned box canon; live-order guard",
-    "desks/mt5/scripts/watchers/ftmo_follow.py": "byte-pinned box canon; owner follows by hand",
+    ("desks/mt5/scripts/watchers/e8_window_guard.py", "<module>",
+     "E8 FAIL-OPEN: pinned window placed"):
+        "byte-pinned box canon; E8 fail-open order placed on a live account",
+    ("desks/mt5/scripts/watchers/e8_window_guard.py", "<module>", "E8 fail-open guard: done"):
+        "byte-pinned box canon; the guard's report on live orders it cancelled",
+    ("desks/mt5/scripts/watchers/ftmo_follow.py", "page", "*"):
+        "byte-pinned box canon; manual-follow trade the owner places and closes by hand",
 }
 
 
@@ -168,15 +175,72 @@ def _is_test(rel: str) -> bool:
     return "tests" in parts or Path(rel).name.startswith("test_")
 
 
+_SENDERS_FENCED = frozenset({"send_all"})
+
+
+def _send_all_aliases(tree: ast.AST) -> set[str]:
+    """Local names bound to send_all: `from x import send_all as y`, `y = mod.send_all`,
+    `y = getattr(mod, "send_all")`, `y = send_all`."""
+    names = set(_SENDERS_FENCED)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            for al in node.names:
+                if al.name in _SENDERS_FENCED:
+                    names.add(al.asname or al.name)
+    changed = True
+    while changed:                                  # y = x where x is already an alias
+        changed = False
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign) and _is_send_all_ref(node.value, names):
+                for t in node.targets:
+                    if isinstance(t, ast.Name) and t.id not in names:
+                        names.add(t.id)
+                        changed = True
+    return names
+
+
+def _is_getattr_send_all(node: ast.AST) -> bool:
+    return (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+            and node.func.id == "getattr" and len(node.args) >= 2
+            and isinstance(node.args[1], ast.Constant) and node.args[1].value in _SENDERS_FENCED)
+
+
+def _is_send_all_ref(node: ast.AST, names: set[str]) -> bool:
+    return ((isinstance(node, ast.Name) and node.id in names)
+            or (isinstance(node, ast.Attribute) and node.attr in _SENDERS_FENCED)
+            or _is_getattr_send_all(node))
+
+
 def _send_all_calls(tree: ast.AST) -> list[ast.Call]:
-    return [n for n in ast.walk(tree) if isinstance(n, ast.Call) and (
-        (isinstance(n.func, ast.Name) and n.func.id == "send_all")
-        or (isinstance(n.func, ast.Attribute) and n.func.attr == "send_all"))]
+    names = _send_all_aliases(tree)
+    return [n for n in ast.walk(tree)
+            if isinstance(n, ast.Call) and _is_send_all_ref(n.func, names)]
 
 
-def _scan() -> tuple[list[str], dict[str, int]]:
+def _scopes(tree: ast.AST) -> dict[int, str]:
+    """id(call) -> name of the innermost enclosing def ("<module>" at top level)."""
+    out: dict[int, str] = {}
+
+    def walk(node: ast.AST, scope: str) -> None:
+        for child in ast.iter_child_nodes(node):
+            inner = (child.name if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef))
+                     else scope)
+            if isinstance(child, ast.Call):
+                out[id(child)] = scope
+            walk(child, inner)
+
+    walk(tree, "<module>")
+    return out
+
+
+def _title(call: ast.Call) -> str:
+    first = call.args[0] if call.args else None
+    return first.value if isinstance(first, ast.Constant) and isinstance(first.value, str) else "*"
+
+
+def _scan() -> tuple[list[str], set[tuple[str, str, str]]]:
     missing: list[str] = []
-    exempt_seen: dict[str, int] = {}
+    exempt_seen: set[tuple[str, str, str]] = set()
     for rel in _tracked_py():
         if _is_test(rel) or not (ROOT / rel).is_file():
             continue
@@ -187,12 +251,13 @@ def _scan() -> tuple[list[str], dict[str, int]]:
             tree = ast.parse(src)
         except SyntaxError:
             continue
+        scopes = _scopes(tree)
         for call in _send_all_calls(tree):
-            kw = {k.arg: k.value for k in call.keywords}
-            if rel in CANON_EXEMPT:
-                exempt_seen[rel] = exempt_seen.get(rel, 0) + 1
+            site = (rel, scopes.get(id(call), "<module>"), _title(call))
+            if site in CANON_EXEMPT:
+                exempt_seen.add(site)
                 continue
-            val = kw.get("audience")
+            val = {k.arg: k.value for k in call.keywords}.get("audience")
             if not (isinstance(val, ast.Constant) and val.value in ac.AUDIENCES):
                 missing.append(f"{rel}:{call.lineno}")
     return missing, exempt_seen
@@ -200,12 +265,13 @@ def _scan() -> tuple[list[str], dict[str, int]]:
 
 def test_every_send_all_call_site_names_its_audience() -> None:
     """A page whose audience nobody chose is how the phone filled with noise. Every non-test
-    call names "principal" or "desk" as a literal, so the choice is reviewable at the call."""
+    call names "principal" or "desk" as a literal, so the choice is reviewable at the call --
+    including calls through an import alias, a module alias or getattr."""
     missing, exempt_seen = _scan()
     assert not missing, ("send_all call(s) without a literal audience=\"principal\"|\"desk\" "
                          f"(rule: libs/ops/alert_channels.py docstring): {missing}")
-    # the exemption list cannot rot: each entry still exists and still calls send_all
-    assert set(exempt_seen) == set(CANON_EXEMPT), exempt_seen
+    # the exemption list cannot rot: each call site still exists and still calls send_all
+    assert exempt_seen == set(CANON_EXEMPT), exempt_seen
 
 
 def test_the_fence_sees_a_missing_audience(tmp_path: Path) -> None:
@@ -214,6 +280,25 @@ def test_the_fence_sees_a_missing_audience(tmp_path: Path) -> None:
     calls = _send_all_calls(tree)
     assert len(calls) == 2
     assert [any(k.arg == "audience" for k in c.keywords) for c in calls] == [False, True]
+
+
+def test_the_fence_sees_through_aliases() -> None:
+    src = ("from libs.ops.alert_channels import send_all as page\n"
+           "import libs.ops.alert_channels as chan\n"
+           "page('t', 'b')\n"
+           "chan.send_all('t', 'b')\n"
+           "getattr(chan, 'send_all')('t', 'b')\n"
+           "fire = getattr(chan, 'send_all')\n"
+           "fire('t', 'b')\n"
+           "again = chan.send_all\n"
+           "twice = again\n"
+           "twice('t', 'b', audience='desk')\n"
+           "print('t')\n")
+    calls = _send_all_calls(ast.parse(src))
+    assert sorted(c.lineno for c in calls) == [3, 4, 5, 7, 10]
+    tree = ast.parse("def f():\n    send_all('t')\nsend_all('u')\n")
+    scopes = _scopes(tree)
+    assert sorted(scopes[id(c)] for c in _send_all_calls(tree)) == ["<module>", "f"]
 
 
 # --- BOX HEARTBEAT ------------------------------------------------------------------------------
@@ -271,6 +356,7 @@ def test_run_alerts_pushes_ntfy_only_for_keys_that_need_him(monkeypatch: pytest.
     ra = _run_alerts()
     assert ra.audience_for("deadman_latched") == "principal"
     assert ra.audience_for("principal_action_needed") == "principal"
+    assert ra.audience_for("auth_broken") == "principal"       # only he can `claude setup-token`
     for key in ("heartbeat_dead", "brain_down", "clock_slots_idle", "recorder_stale",
                 "digger_blocked_dataaxis", "research_chain_failed"):
         assert ra.audience_for(key) == "desk", key
@@ -289,7 +375,9 @@ def test_run_alerts_pushes_ntfy_only_for_keys_that_need_him(monkeypatch: pytest.
         rows.append((d, routed))
 
     monkeypatch.setattr(ra, "_ledger_ok", ledger_ok)
-    monkeypatch.setattr(ra, "_second_channel", lambda _t: None)
+    second: list[str] = []
+    monkeypatch.setattr(ra, "_second_channel",
+                        lambda _t, **k: second.append(k.get("audience", "principal")))
     seen: list[Any] = []
 
     def fake(t: str, b: str, **k: Any) -> dict[str, Any]:
@@ -298,7 +386,7 @@ def test_run_alerts_pushes_ntfy_only_for_keys_that_need_him(monkeypatch: pytest.
 
     monkeypatch.setattr(ac, "send_all", fake)
     ra._push("topic", "WARNING Quant desk: brain_down", "x", audience="desk")
-    assert opened == [] and seen == ["desk"]
+    assert opened == [] and seen == ["desk"] and second == ["desk"]
     assert rows == [("routed: desk audience", "desk")]
 
 

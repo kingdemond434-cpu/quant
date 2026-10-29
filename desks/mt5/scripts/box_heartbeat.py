@@ -21,11 +21,13 @@ WHAT IT CHECKS, on hour scales (the disarm rule works in days; this is its early
     watchdog   `data/stall_watch.json` older than WATCHDOG_MAX_MIN
     disk       free space on the repo's drive under DISK_MIN_GB
 
-All healthy: GET the ping URL. Anything failing: POST `<url>/fail` with the failing checks, and
-on the TRANSITION into failing, one page through `libs.ops.alert_channels.send_all` (whatever is
-armed there; unarmed is recorded, never silent). A failing check does not stop the ping: `/fail`
-is itself a ping, so "the box is alive and something on it is wrong" and "the box is gone" stay
-two different pages.
+All healthy: GET the ping URL. Anything failing: the box is still alive, so it still sends the
+success ping, and POSTs the failing checks to `<url>/log` (recorded on the check, notifies nobody)
+because every check here is DESK -- box health is a RED the threads fix (2026-10-29). Only a
+check in PRINCIPAL_CHECKS (none today) would POST `<url>/fail`. On the TRANSITION into failing,
+one desk page through `libs.ops.alert_channels.send_all` (ledger, hc /log, and a row in
+DESK_ALERTS.json; cleared on recovery). "The box is gone" is unchanged: the pings stop and
+healthchecks.io pages, which is the one alarm that needs nothing on the box.
 
 CREDENTIAL. The check's ping URL, in `data/secrets/box_heartbeat_url.json` (`{"url":
 "https://hc-ping.com/<uuid>"}`), a SEPARATE check from the VPS's `heartbeat_url.json` so the two
@@ -69,8 +71,20 @@ GATEWAY_MAX_MIN = 30.0
 #: worst-case normal run (bounded by the cadence itself, since a run past it overlaps the next
 #: fire) + 5 min margin = 2 x 30 + 5 = 65 min. A watchdog really gone quiet still fails inside
 #: ~2 missed fires.
-WATCHDOG_CADENCE_MIN = 30.0
-WATCHDOG_MAX_MIN = 2 * WATCHDOG_CADENCE_MIN + 5.0
+#:
+#: THE CADENCE IS THE MEASURED TRIGGER, NOT THE MANIFEST'S. desks/mt5/ops/box_tasks.manifest
+#: lists MT5-StallWatch as "every 10 minutes"; the box's own task fires at :20 and :50 (30 min,
+#: measured 2026-10-29 from stall_watch.json mtimes). The larger of the two is the safe one for an
+#: age limit, and tests/ops/test_alert_audience.py pins WATCHDOG_MAX_MIN >= 2 x the manifest
+#: cadence + 5, so the manifest can never be raised past this limit unnoticed.
+STALL_WATCH_TRIGGER_MINUTES = (20, 50)        # past the hour, as the box's task fires
+WATCHDOG_CADENCE_MIN = 60.0 / len(STALL_WATCH_TRIGGER_MINUTES)
+WATCHDOG_MARGIN_MIN = 5.0
+WATCHDOG_MAX_MIN = 2 * WATCHDOG_CADENCE_MIN + WATCHDOG_MARGIN_MIN
+#: Checks whose failure needs the owner's own hands (hc /fail). Box health never does.
+PRINCIPAL_CHECKS: frozenset[str] = frozenset()
+#: the desk alert row this heartbeat owns in DESK_ALERTS.json
+DESK_ALERT_KEY = "box_heartbeat:unhealthy"
 DISK_MIN_GB = 5.0
 TIMEOUT_S = 10.0
 
@@ -147,11 +161,25 @@ def _url(paths: tuple[Path, ...] = SECRETS) -> str:
     return ""
 
 
-def _ping(url: str, body: str, fail: bool) -> str:
-    endpoint = url.rstrip("/") + ("/fail" if fail else "")
-    req = urllib.request.Request(endpoint, data=body.encode("utf-8", "ignore")[:9000])
-    with urllib.request.urlopen(req, timeout=TIMEOUT_S) as r:
-        return f"http {r.status}"
+def _ping(url: str, body: str, fail: bool, *, audience: str = "desk") -> str:
+    """fail + principal: POST /fail (notifies). Otherwise the success ping -- the box IS alive --
+    and, when something desk-level is failing, the detail on /log (recorded, notifies nobody)."""
+    data = body.encode("utf-8", "ignore")[:9000]
+    base = url.rstrip("/")
+    if fail and audience == "principal":
+        with urllib.request.urlopen(urllib.request.Request(base + "/fail", data=data),
+                                    timeout=TIMEOUT_S) as r:
+            return f"http {r.status} fail"
+    with urllib.request.urlopen(urllib.request.Request(base, data=data), timeout=TIMEOUT_S) as r:
+        detail = f"http {r.status}"
+    if fail:
+        try:                                    # the liveness ping above already landed
+            with urllib.request.urlopen(urllib.request.Request(base + "/log", data=data),
+                                        timeout=TIMEOUT_S) as r:
+                detail += f"; log http {r.status}"
+        except Exception as exc:
+            detail += f"; log {type(exc).__name__}"
+    return detail
 
 
 def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = SECRETS,
@@ -181,7 +209,9 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
         doc["ping"] = {"status": "DRY_RUN"}
     else:
         try:
-            doc["ping"] = {"status": "SENT", "detail": _ping(url, body, bool(doc["failing"]))}
+            aud = ("principal" if set(doc["failing"]) & PRINCIPAL_CHECKS else "desk")
+            doc["ping"] = {"status": "SENT",
+                           "detail": _ping(url, body, bool(doc["failing"]), audience=aud)}
         except Exception as exc:
             doc["ping"] = {"status": "ERROR", "detail": type(exc).__name__}
     newly = doc["verdict"] == "FAIL" and prev.get("verdict") != "FAIL"
@@ -189,13 +219,20 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
     if newly and not dry_run:
         try:
             from libs.ops.alert_channels import send_all
-            # DESK, every check including gateway and disk (owner, 2026-10-29: box health never
-            # needs him -- it is a RED the threads fix). The title names the failing checks so the
-            # ledger and the non-personal channels say WHICH organ, not just "unhealthy".
-            res = send_all(page_title(doc["failing"]), body, audience="desk")
+            # DESK, every check including gateway and disk. The owner's words (2026-10-29): "only
+            # notify me on things which need me or Else it's confusing handle rest n don't tell
+            # me". Our reading of them, not his words: box health never needs him -- it is a RED
+            # the threads fix. The title names the failing checks so the ledger, hc /log and the
+            # DESK_ALERTS.json row say WHICH organ, not just "unhealthy".
+            res = send_all(page_title(doc["failing"]), body, audience="desk",
+                           key=DESK_ALERT_KEY, source="box_heartbeat")
             doc["paged"] = {k: v for k, v in res.items() if k in ("armed", "delivered", "status")}
         except Exception as exc:
             doc["paged"] = {"status": "ERROR", "detail": type(exc).__name__}
+    if (doc["verdict"] == "OK" and prev.get("verdict") == "FAIL" and not dry_run):
+        with contextlib.suppress(Exception):    # recovered: stop holding the desk RED
+            from libs.ops.alert_channels import clear_desk_alert
+            clear_desk_alert(DESK_ALERT_KEY)   # same (default) artifact send_all wrote
     doc["since"] = (prev.get("since") if doc["verdict"] == prev.get("verdict") and prev.get("since")
                     else doc["at"])
     out.parent.mkdir(parents=True, exist_ok=True)

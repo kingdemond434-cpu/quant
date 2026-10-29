@@ -71,7 +71,7 @@ def test_url_is_read_but_never_written(tmp_path: Path, monkeypatch: pytest.Monke
     sec = tmp_path / "box_heartbeat_url.json"
     sec.write_text(json.dumps({"url": "https://hc-ping.com/secret-uuid"}))
     calls: list[tuple[str, bool]] = []
-    monkeypatch.setattr(hb, "_ping", lambda u, b, f: calls.append((u, f)) or "http 200")
+    monkeypatch.setattr(hb, "_ping", lambda u, b, f, **_k: calls.append((u, f)) or "http 200")
     out = tmp_path / "o.json"
     hb.run(out=out, secrets=(sec,), reading={"at": "x", "checks": {}, "failing": [],
                                              "verdict": "OK"})
