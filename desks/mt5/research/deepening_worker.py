@@ -91,6 +91,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -1489,11 +1490,15 @@ def _work(argv: list[str] | None = None) -> int:
     write_lock = threading.Lock()
     decided_ids: set[str] = set()
 
+    touched: set[str] = set()
+
     def commit(task: dict, candidates: list[dict], disposition: str, wall_s: float) -> None:
         """Record one decision. Holds the lock only for the append, so the pool never serialises
         on a seat call -- only on the few microseconds of writing a line."""
         cls = task_class(task)
         head = disposition.split(":")[0]
+        if not is_outage(disposition):
+            touched.add(task_id(task))
         entry = {"id": task_id(task), "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                  "source": task.get("source"), "url": task.get("url"),
                  "disposition": disposition, "n_candidates": len(candidates),
@@ -1591,6 +1596,41 @@ def _work(argv: list[str] | None = None) -> int:
             dlog("seat lane stopped: the provider refused the DAY's allowance, not a burst. The "
                  "remaining rows keep their place and their published age, and the rule lane has "
                  "already had its turn at every row it can decide")
+
+    # ---- THE LOCAL LANE: the hours AFTER the free allowance (2026-10-13) --------------------
+    # `_seat_budget` measured that OpenRouter's free allowance is per ACCOUNT per day, so once it
+    # is spent the seat lane stands down for the rest of the day. A local open-weight model on
+    # the box has no allowance: when one is DECLARED (QUANT_LOCAL_LLM_URLS), the rows the seat
+    # lane did not reach go to it, one at a time, and only while the box is idle --
+    # `free_chain.local_blocked` yields to the judge and the miners on every call. The same
+    # `work_task` -> `validate` -> `compile_row` door applies: a local model's quote must be in
+    # the row's own text exactly as a cloud model's must.
+    with contextlib.suppress(Exception):
+        from libs.ops import free_chain
+        if seat_tasks and free_chain.local_declared() and not out_of_time():
+            rest = [t for t in seat_tasks if task_id(t) not in touched][:budget]
+
+            def local_chat(prompt: str, **kw: Any) -> tuple[str, str | None]:
+                kw.pop("timeout", None)
+                return free_chain.seat_compatible_chat(prompt, local_only=True, **kw)
+
+            done_local = 0
+            for task in rest:
+                if out_of_time():
+                    break
+                why_busy = free_chain.local_blocked()
+                if why_busy:
+                    dlog(f"local lane yielded: {why_busy}; {len(rest) - done_local} row(s) keep "
+                         "their place")
+                    break
+                t0 = time.monotonic()
+                try:
+                    candidates, disposition = work_task(task, universe, chat=local_chat)
+                except Exception as exc:
+                    candidates, disposition = [], f"ERROR: {type(exc).__name__}: {exc}"
+                commit(task, candidates, disposition, time.monotonic() - t0)
+                done_local += 1
+            dlog(f"local lane: {done_local} row(s) worked on the local open-weight rung")
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     prior = []

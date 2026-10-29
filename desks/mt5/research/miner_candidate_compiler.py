@@ -743,6 +743,11 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
         # top-level `parent` of an arbitrary crawler row is NOT lineage and is not read here.
         **{k: row[k] for k in ("lineage", "operator", "mutated_from", "parent_ids")
            if row.get(k)},
+        # THE LOOK-AHEAD GUARD RIDES ONTO THE CANDIDATE (2026-10-13). A model-proposed cell names
+        # the first date whose data is evidence (`llm_lab.lookahead_guard`); dropping it here
+        # would let the history the model was trained on read as an out-of-sample result.
+        **({"lookahead_guard": row["lookahead_guard"]}
+           if isinstance(row.get("lookahead_guard"), dict) else {}),
     }
 
 
