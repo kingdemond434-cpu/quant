@@ -62,6 +62,7 @@ from mt5desk.decision_core import (  # noqa: E402
     atr_last,
     book_direction,
     bracket_from_bars,
+    decay_zero,
     gold_send_late,
     h1_frame,
     window_end_hour,
@@ -1342,6 +1343,19 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                          "armed": bool(armed)})
             continue
         _billed = state.setdefault("rail_logged", {})
+        # THE DECAY ZERO REACHES EVERY VENUE (#494 audit MF3). The same key the Fusion gateway stops
+        # on its own live record stops here too, on the same rail, billed once a day.
+        _dz = decay_zero(f"gold_{name}")
+        if _dz is not None:
+            why = f"decay zero on gold_{name} ({_dz}); stands aside"
+            doc["skipped"].append({"window": name, "why": why})
+            if _billed.get(f"decay_zero/{name}") != today:
+                _billed[f"decay_zero/{name}"] = today
+                _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                         "status": "RAIL_BLOCKED", "rail": "decay_zero", "why": why,
+                         "missed_growth_risk_usd": round(equity * max(frac, 0.0), 2),
+                         "armed": bool(armed)})
+            continue
         if not frac > 0:
             if frac_src == "cert_book":
                 # A CERT-BOOK ZERO IS A CAP TOO (r7.1): gold_asia 0.0 in the book writes its

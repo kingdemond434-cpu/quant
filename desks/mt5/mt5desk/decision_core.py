@@ -702,10 +702,58 @@ def cert_book_zero(name: object, venue: str = "fusion") -> bool:
     return False
 
 
+#: The decay monitor's zeros for keys that trade outside the LIVE roster (research/decay_monitor,
+#: DECAY_ZERO). Read at call time so a test or the box may point it elsewhere.
+DECAY_ZERO_FILE = _DESK / "data" / "DECAY_ZERO.json"
+#: THE KILL SWITCH (#494 audit MF5): while this file exists, `decay_zero` names nothing and every
+#: key trades exactly as it did before the decay zero existed. Created by hand, on the box.
+DECAY_ZERO_DISABLED = _DESK / "data" / "DECAY_ZERO_DISABLED"
+#: The live ledger's sleeve stem: the venue truncates "DW" + name to 29 characters (measured on
+#: the venue as gateway.COMMENT_MAX), so the stem is 29 - 2; decay_monitor.LEDGER_NAME_MAX.
+_LEDGER_STEM = 27
+
+
+def decay_zero(name: object) -> str | None:
+    """Why `name` sends nothing because its own live record failed the promoter's retirement
+    bars (decay_monitor.book_key_verdict), or None.
+
+    Matched by the name, its unversioned `book_name`, or the 27-character ledger stem the
+    monitor knows it by. A TORN or malformed file is never read as "no zeros" (#494 audit MF1):
+    the monitor's last good copy (`DECAY_ZERO.last_good.json`) answers instead, and only when
+    neither exists is nothing named (the zero is a measurement; allocator liveness is RED on an
+    unreadable primary)."""
+    if not name:
+        return None
+    if Path(DECAY_ZERO_DISABLED).exists():
+        return None
+    zeros = None
+    primary = Path(DECAY_ZERO_FILE)
+    for path in (primary, primary.with_name(primary.stem + ".last_good.json")):
+        try:
+            doc = json.loads(path.read_text("utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(doc, dict) and isinstance(doc.get("zeros") or {}, dict):
+            zeros = doc.get("zeros") or {}
+            break
+    if not zeros:
+        return None
+    folded = {str(k).lower(): v for k, v in zeros.items()}
+    for key in {str(name), book_name(name)}:
+        for cand in (key, key[:_LEDGER_STEM]):
+            z = folded.get(cand.lower())
+            if isinstance(z, dict):
+                return str(z.get("why") or "decay zero")
+    return None
+
+
 def cert_zero_row(s: dict[str, Any], venue: str = "fusion") -> bool:
     """`cert_book_zero` for a roster row: by its name, or by the allocator book key the gateway
-    joined it to (`book_key`, e.g. `EURZAR_overnight_gap_decay_asia`)."""
-    return cert_book_zero(s.get("name"), venue) or cert_book_zero(s.get("book_key"), venue)
+    joined it to (`book_key`, e.g. `EURZAR_overnight_gap_decay_asia`). A key the decay monitor
+    zeroed on its own live record (`decay_zero`) sends nothing on the same paths."""
+    return (cert_book_zero(s.get("name"), venue) or cert_book_zero(s.get("book_key"), venue)
+            or decay_zero(s.get("name")) is not None
+            or decay_zero(s.get("book_key")) is not None)
 
 
 def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
@@ -743,6 +791,11 @@ def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
         # sovereignty off (ALLOCATOR_SOVEREIGN.json {"enabled": false}) can never re-open it.
         return 0.0, (f"cert book pins {name} at 0.0 (zuck 2026-10-20 21:52Z: gold_asia only); "
                      f"no order")
+    _dz = decay_zero(name)
+    if _dz is not None:
+        # ITS OWN LIVE RECORD FAILED THE PROMOTER'S RETIREMENT BARS (decay_monitor DECAY_ZERO):
+        # nothing on either path, like a cert-book zero, until the trailing window re-arms it.
+        return 0.0, f"decay zero: {name} {_dz}; no order"
     floor_lot = gold_lot(equity, dist_usd, info)
     try:
         frac = float(h_i)  # type: ignore[arg-type]
@@ -969,6 +1022,9 @@ def minlot_override_size(s: dict[str, Any], symbol: str, info: object | None,
         return None
     if not allocator_sovereign():
         return None
+    _dz = decay_zero(s.get("name")) or decay_zero(s.get("book_key"))
+    if _dz is not None:
+        return 0.0, 0.0, f"fusion book: decay zero on {s.get('name')} ({_dz}); no order"
     if cert_zero_row(s):
         # The principal's 0.0 in CERT_BOOK_LIVE.json binds even a marked row whose allocator
         # fraction did not come through the overlay (zuck 2026-10-20 21:52Z: gold_asia only).
