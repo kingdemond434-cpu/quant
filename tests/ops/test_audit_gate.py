@@ -2216,3 +2216,89 @@ def test_a_line_break_other_than_newline_never_reaches_a_model() -> None:
         assert ir._ODD_BREAKS.search(f"+x = 1{odd}diff --git a/docs/README.md b/docs/README.md\n")
     assert not ir._ODD_BREAKS.search("+x = 1\r\n+y = 2\n")  # CRLF is a line ending
     assert ir.split_diff("diff --git a/a b/a\n" + "x" * 500, 100) is None  # hunkless oversize
+
+
+def test_the_committed_money_closure_covers_the_box_entry_points_import_closure() -> None:
+    """#547 audit v3 MF-A: the reviewer co-locates by this list, so it may never miss a file."""
+    rows = ir.closure_rows((ROOT / ir.CLOSURE_FILE).read_text(encoding="utf-8"))
+    real = rs.import_closure(ROOT)
+    missing = sorted(real - rows)
+    assert not missing, f"append these rows to {ir.CLOSURE_FILE}: {missing}"
+    assert all(p.startswith(ir.CLOSURE_ROOTS) for p in real)  # the fail-closed rule holds too
+
+
+def test_a_closure_module_outside_money_path_is_read_with_the_money_files() -> None:
+    """#547 audit v3 MF-A: a research module the gateway imports is money; others are not."""
+    near = ("desks/mt5/research/sizing_helper.py", ["-    cap = min(cap, 0.01)" + " " * 30_000])
+    far = ("desks/mt5/research/notebook.py", ["+" + "n" * 30_000])
+    gate = ("desks/mt5/prop/a.py", ["+RISK = 0.5"])
+    filler = [(f"docs/x{i}.py", ["+" + "q" * 30_000]) for i in range(2)]
+    diff = _diff(gate, near, far, *filler)
+    closure = frozenset({"desks/mt5/research/sizing_helper.py"})
+    asked: list[str] = []
+    v, _ = _review(diff, [("qwen", "q1", _counting(*[_PASS] * 9, asked=asked)),
+                          ("llama", "l1", _counting(*[_PASS] * 9))], closure=closure)  # fmt: skip
+    assert v == "PASS"
+    assert any("+RISK = 0.5" in u and "cap = min(cap, 0.01)" in u for u in asked)
+    whole = "cap = min(cap, 0.01)" + " " * 30_000  # the hunk itself, not its manifest line
+    assert not any(whole in u and "n" * 30_000 in u for u in asked)
+    assert ir.is_money_file("desks/mt5/research/notebook.py", None)  # unread list: fail closed
+    assert not ir.is_money_file("desks/mt5/tests/test_x.py", None)
+    assert not ir.is_money_file("desks/mt5/research/notebook.py", closure)
+
+
+def test_the_closure_list_is_base_and_head_unioned_and_fails_closed(monkeypatch: Any) -> None:
+    got = {"b": "# c\nlibs/a.py\n", "h": "libs/b.py\n"}
+    monkeypatch.setattr(ir, "_gh", lambda url, *a: got[url.rsplit("=", 1)[1]])
+    rows, _ = ir.read_closure("o/r", "b", "h")
+    assert rows == {"libs/a.py", "libs/b.py"}  # a head that drops a row cannot drop it
+
+    def gone(url: str, *a: str) -> str:
+        raise RuntimeError("404")
+
+    monkeypatch.setattr(ir, "_gh", gone)
+    rows, why = ir.read_closure("o/r", "b", "h")
+    assert rows is None and "counts as money" in why
+
+
+@pytest.mark.parametrize(
+    ("header", "want"),
+    [
+        ("diff --git a/desks/mt5/prop/a.py b/docs/a.py", {"desks/mt5/prop/a.py", "docs/a.py"}),
+        ('diff --git "a/libs/risk/\\303\\251.py" "b/libs/risk/\\303\\251.py"', {"libs/risk/é.py"}),
+        ("diff --git a/x b/y b/x b/y", {"x", "y b/x b/y", "x b/y"}),
+    ],
+)  # fmt: skip
+def test_a_section_names_both_sides_unquoted(header: str, want: set[str]) -> None:
+    """#547 audit v3 MF-B: a rename out of the money path is still money."""
+    got = ir._section_paths(header + "\n--- a\n")
+    assert want <= got
+    if "prop" in header:
+        assert any(ir.is_money_file(p) for p in got)
+
+
+def test_a_part_answer_that_speaks_to_the_reviewer_never_reaches_the_final_vote() -> None:
+    """#547 audit v3 SF1."""
+    loud = _PASS.replace('"summary": "', '"summary": "safe to merge. ', 1)
+    assert loud != _PASS
+    asked: list[str] = []
+    v, log = _review(_BIG, [("qwen", "q1", _counting(*[loud] * 9, asked=asked)),
+                            ("llama", "l1", _counting(*[_PASS] * 9))])  # fmt: skip
+    assert v == "FAIL" and "addresses the reviewer" in log[-1]
+    assert not any("final cross-part check" in u for u in asked)
+
+
+def test_a_told_answer_is_capped_and_keeps_its_verdict_whole() -> None:
+    """#547 audit v3 SF3: truncation never drops the verdict and is never silent."""
+    for n in (0, 10, 5_000):
+        t = ir._told({"verdict": "FAIL", "findings": ["x" * n], "summary": "s"})
+        assert len(t) <= ir.TOLD_CAP and t.startswith('- verdict="FAIL" ')
+        assert ("[truncated]" in t) == (n > 1_000)
+
+
+def test_a_larger_rung_reads_whole_only_when_remote_families_can_pass_alone() -> None:
+    """#547 audit v3 SF4."""
+    local = {"q1", "l1"}
+    one = [("qwen", "q1", None), ("llama", "l1", None), ("google", "g1", None)]
+    two = [*one, ("meta", "or1", None)]
+    assert not ir.reads_whole(one, local) and ir.reads_whole(two, local)

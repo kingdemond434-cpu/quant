@@ -725,10 +725,45 @@ def vote(
     return "UNAVAILABLE", log
 
 
-def is_money_file(path: str) -> bool:
-    """replay_shadow's always-money prefixes and the box's order entry points (no import
-    closure here: this job checks out ops/release only)."""
-    return path.startswith(_rs.MONEY_PATH) or path in _rs.ENTRY_POINTS
+#: The entry points' import closure, committed (#547 audit v3 MF-A). This job checks out
+#: ops/release only, so it reads the list at the base AND at the head and takes the union: the
+#: base copy is trusted, and the head copy can only add. tests/ops/test_audit_gate.py pins the
+#: committed list to cover replay_shadow.import_closure() of the real tree, so a PR that grows
+#: the closure carries its own new rows.
+CLOSURE_FILE = "desks/mt5/ops/MONEY_CLOSURE.txt"
+#: Where the closure can live: every non-test module under them is money when the list cannot
+#: be read (fail closed; the same test pins that the closure never leaves them).
+CLOSURE_ROOTS = ("desks/mt5/", "libs/")
+_TEST_FILE = re.compile(r"(^|/)(tests?/|test_[^/]*\.py$|conftest\.py$)")
+
+
+def closure_rows(text: str) -> frozenset[str]:
+    return frozenset(x.strip() for x in text.splitlines() if x.strip() and not x.startswith("#"))
+
+
+def is_money_file(path: str, closure: frozenset[str] | None = None) -> bool:
+    """replay_shadow's always-money prefixes, the box's order entry points, and the import
+    closure; `closure` None (the list could not be read) makes every non-test module under
+    CLOSURE_ROOTS money."""
+    if path.startswith(_rs.MONEY_PATH) or path in _rs.ENTRY_POINTS:
+        return True
+    if closure is None:
+        return path.startswith(CLOSURE_ROOTS) and not _TEST_FILE.search(path)
+    return path in closure
+
+
+def read_closure(repo: str, base: str, head: str) -> tuple[frozenset[str] | None, str]:
+    """The closure list at the base and the head, unioned; None when either cannot be read."""
+    rows: set[str] = set()
+    for sha in (base, head):
+        try:
+            url = f"repos/{repo}/contents/{CLOSURE_FILE}?ref={sha}"
+            rows |= closure_rows(_gh(url, "-H", "Accept: application/vnd.github.raw"))
+        except RuntimeError as exc:
+            roots = ", ".join(CLOSURE_ROOTS)
+            return None, (f"the money closure could not be read at {sha[:9]} ({exc}): "
+                           f"every module under {roots} counts as money")  # fmt: skip
+    return frozenset(rows), f"money closure: {len(rows)} files (base and head unioned)"
 
 
 def manifest(diff: str, skip: frozenset[str] = frozenset()) -> str:
@@ -739,7 +774,7 @@ def manifest(diff: str, skip: frozenset[str] = frozenset()) -> str:
     mine = False
     for line in diff.split("\n"):
         if line.startswith("diff --git "):
-            mine = _section_path(line) in skip
+            mine = bool(_section_paths(line) & skip)
             out.append(line + ("  (in this part, whole)" if mine else ""))
         elif mine:
             continue
@@ -763,6 +798,7 @@ def review(
     sleep: Callable[[float], None] = time.sleep,
     clock: Callable[[], float] = time.monotonic,
     whole_only: bool = False,
+    closure: frozenset[str] | None = None,
 ) -> tuple[str, list[str]]:
     """vote() on the whole diff when it fits the runner's models (or a larger rung is on the
     ladder: `whole_only`), else in parts under three rules (#547 audit MF1):
@@ -781,9 +817,12 @@ def review(
     if limit <= 0:
         return "FAIL", ["FAIL: the file list and manifest alone do not fit the reviewers"]
     sections = [x for x in re.split(r"(?=^diff --git )", diff, flags=re.M) if x]
-    money = "".join(x for x in sections if is_money_file(_section_path(x)))
-    rest = "".join(x for x in sections if not is_money_file(_section_path(x)))
-    own = frozenset(_section_path(x) for x in sections if is_money_file(_section_path(x)))
+    # a section is money if EITHER side is (a rename out of the money path is money; v3 MF-B)
+    is_money = [any(is_money_file(p, closure) for p in _section_paths(x)) for x in sections]
+    pairs = list(zip(sections, is_money, strict=True))
+    money = "".join(x for x, m in pairs if m)
+    rest = "".join(x for x, m in pairs if not m)
+    own = frozenset(p for x, m in pairs if m for p in _section_paths(x))
     mhead = manifest(diff, own)
     if money and len(prompt(mhead + money, files, "0" * 16, f"{10**6} of {10**6}")) > room:
         return "FAIL", [f"FAIL: the money-path files ({len(money)} characters) do not fit one "
@@ -805,10 +844,11 @@ def review(
         log += [f"part {tag}: {x}" for x in got]
         if verdict != "PASS":
             return verdict, log
-    told = "\n".join(
-        f"- {json.dumps({k: a.get(k) for k in ('verdict', 'findings', 'summary')})[:600]}"
-        for a in answers
-    )
+    told = "\n".join(_told(a) for a in answers)
+    # a part's answer is model text going in front of the next model: same screen (v3 SF1)
+    if addressed_to_reviewer("\n".join("+" + x for x in told.split("\n"))):
+        return "FAIL", [*log, "FAIL: a part's review addresses the reviewer; the manual path "
+                              "reads it"]  # fmt: skip
     final = head + "\nEVERY PART'S REVIEW:\n" + told + "\n"
     if len(prompt(final, files, "0" * 16, "final")) > room:
         return "FAIL", [*log, "FAIL: the manifest and the parts' reviews do not fit a final vote"]
@@ -822,9 +862,50 @@ def review(
     return verdict, log
 
 
-def _section_path(section: str) -> str:
-    first = section.split("\n", 1)[0]
-    return first.split(" b/", 1)[1] if " b/" in first else first
+TOLD_CAP = 600
+
+
+def _told(answer: dict[str, Any]) -> str:
+    """One part's answer for the final vote, at most TOLD_CAP characters. The verdict is first
+    and always whole; a cut is marked, never silent (v3 SF3)."""
+    body = json.dumps({k: answer.get(k) for k in ("findings", "summary")})
+    head = f"- verdict={json.dumps(answer.get('verdict'))} "
+    room = TOLD_CAP - len(head)
+    return head + (body if len(body) <= room else body[: room - 12] + " [truncated]")
+
+
+_QUOTED = re.compile(r'"((?:[^"\\]|\\.)*)"')
+
+
+def _unquote(p: str) -> str:
+    """git's C-style quoting of an odd path ("a/x\303\251.py") back to the path."""
+    raw = p.encode("latin-1", "backslashreplace").decode("unicode_escape").encode("latin-1")
+    return raw.decode("utf-8", "replace")
+
+
+def _section_paths(section: str) -> frozenset[str]:
+    """Both sides of a section's `diff --git` header, unquoted (#547 audit v3 MF-B)."""
+    first = section.split("\n", 1)[0][len("diff --git ") :]
+    quoted = _QUOTED.findall(first)
+    if quoted:
+        sides = [_unquote(q) for q in quoted]
+        rest = _QUOTED.sub("\0", first).split()  # an unquoted side beside a quoted one
+        sides += [x for x in rest if x != "\0"]
+    elif " b/" in first:
+        # a path may itself hold " b/": every split is a candidate, so none is missed
+        sides = []
+        for i in [m.start() for m in re.finditer(" b/", first)]:
+            sides += [first[:i], first[i + 1 :]]
+    else:
+        return frozenset({first})
+    return frozenset(x[2:] if x[:2] in ("a/", "b/") else x for x in sides)
+
+
+def reads_whole(ladder: list[tuple[str, str, Asker]], local: set[str]) -> bool:
+    """Larger free rungs read the diff whole, but only when they alone can make a PASS: one
+    remote family beside the runner's models would leave a local model a prompt it cannot hold
+    (#547 audit v3 SF4)."""
+    return len({fam for fam, mid, _ in ladder if mid not in local}) >= VOTES
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -863,14 +944,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"FAIL: the diff names {len(named)} files, the PR changes {want}")
         return 1
     ladder, notes = rungs(len(diff))
+    closure, why = read_closure(a.repo, a.base_sha, a.head)
+    notes.append(why)
     for n in notes:
         print(n)
     cfg = json.loads(LOCAL.read_text(encoding="utf-8"))
     local = {str(m["name"]) for m in cfg["models"]}
-    # a larger free rung on the ladder reads the diff whole: never split then (#547 audit SF)
-    whole = any(mid not in local for _, mid, _ in ladder)
+    whole = reads_whole(ladder, local)
     verdict, log = (
-        review(diff, files, ladder, int(cfg["num_ctx"]), whole_only=whole)
+        review(diff, files, ladder, int(cfg["num_ctx"]), whole_only=whole, closure=closure)
         if ladder
         else ("UNAVAILABLE", ["no free model"])
     )
