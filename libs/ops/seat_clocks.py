@@ -234,7 +234,7 @@ def _daily_steps(desk: Path) -> list[str]:
         if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "STEPS"
                                                 for t in node.targets) \
                 and isinstance(node.value, ast.Tuple):
-            return [e.elts[0].value for e in node.value.elts
+            return [str(e.elts[0].value) for e in node.value.elts
                     if isinstance(e, ast.Tuple) and e.elts and isinstance(e.elts[0], ast.Constant)]
     return []
 
