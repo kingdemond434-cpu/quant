@@ -13,12 +13,20 @@ map onto free equivalents as follows, and each is measured or carries its reason
                                 history, the term shape as a conditioning key, and the rows in
                                 the sensor ledger. Until 2026-10-06 nothing read that archive.
     GC (curve)                  3m/2y/5y/10y/30y Treasury: level, 10y-3m and 10y-2y slopes,
-                                2x5y-2y-10y curvature, five-print changes
+                                2x5y-2y-10y curvature, five-print changes; per COUNTRY
+                                (DATA-22) long/short/slope from the rate archives on the host,
+                                `macro/global_curves.py` (block `global_curves`)
     BETA                        63-day beta and correlation of every charted MT5 instrument's
-                                daily return to US500's
+                                daily return to US500's; UPGRADED (DATA-22, `macro/beta_state.py`,
+                                block `beta_upgraded`): up/down beta, tail dependence,
+                                Engle-Granger cointegration with half-life, regime beta
     OMST (per-strike chains)    STATE in `macro/option_chains.py`; its cells are TERMS-HELD, and a
                                 cleared chain source is routed to discovery as an acquisition
-                                target, never approximated
+                                target, never approximated. The unusual-options RANKING is
+                                `macro/unusual_options.py` (OPTION_CHAINS.json `unusual_options`)
+    HDS (holders)               13F / 13D/G / Form 4 parsed from data/edgar_ownership/ by
+                                `macro/ownership_state.py` (block `ownership`); UNMEASURED while
+                                no fetcher fills that folder
 
 PIT. Every number is read AS OF the instant the desk held it: a vol_archive row at its own
 `observed_at`, a Treasury constant-maturity yield the next business afternoon (16:30 ET, H.15)
@@ -373,7 +381,9 @@ def _held_key(ser: Mapping[str, list[tuple[str, float]]], when: datetime) -> tup
 
 def build(*, now: datetime | None = None, series: Mapping[str, list[tuple[str, float]]] | None
           = None, charts: Mapping[str, Any] | None = None,
-          vol_rows: Sequence[Mapping[str, Any]] | None = None) -> dict[str, Any]:
+          vol_rows: Sequence[Mapping[str, Any]] | None = None,
+          own: Mapping[str, list[tuple[str, float]]] | None = None,
+          ownership_root: Path | None = None) -> dict[str, Any]:
     when = now or datetime.now(UTC)
     ser = load_series() if series is None else series
     if charts is None:
@@ -381,10 +391,11 @@ def build(*, now: datetime | None = None, series: Mapping[str, list[tuple[str, f
     vol = vol_state(read_vol_archive() if vol_rows is None else vol_rows, when)
     gc = curve(ser, when)
     bt = betas(charts, when)
+    ext = extended(charts, ser, when, own=own, ownership_root=ownership_root)
     vol_terms = terms(VOL_SOURCE)
     held_key = (None if vol_terms["gauntlet"] == "admitted" else _held_key(ser, when))
     return {"at": when.isoformat(timespec="seconds"), "source": "market_state",
-            "vol": vol, "curve": gc, "beta": bt,
+            "vol": vol, "curve": gc, "beta": bt, **ext,
             "option_chains": {"status": "EXTERNALLY_BLOCKED", "why": CHAINS_BLOCKED},
             "terms": {"vol": vol_terms, "curve": terms(CURVE_SOURCE),
                       "beta": {"gauntlet": "admitted", "why": "the desk's own MT5 bars"}},
@@ -394,6 +405,64 @@ def build(*, now: datetime | None = None, series: Mapping[str, list[tuple[str, f
             "regime_source": "vol_archive" if held_key is None else held_key[1],
             "series_present": sorted(ser),
             "rule": "states, never directions; every number PIT as of its knowable instant"}
+
+
+def _own_pit(when: datetime) -> dict[str, list[tuple[str, float]]]:
+    try:
+        from libs.data import own_risk
+        return dict(own_risk.load_pit(as_of=when))
+    except Exception:
+        return {}
+
+
+def extended(charts: Mapping[str, Any], ser: Mapping[str, list[tuple[str, float]]],
+             when: datetime, *, own: Mapping[str, list[tuple[str, float]]] | None = None,
+             ownership_root: Path | None = None) -> dict[str, Any]:
+    """DATA-22: the upgraded BETA (conditional, tail, cointegration, regime), the multi-country
+    curves (GC) and the holder state (HDS). Each block is MEASURED or says why not; a block that
+    raises is UNMEASURED with the exception named, never absent."""
+    out: dict[str, Any] = {}
+    try:
+        from macro import beta_state as bs
+
+        def closes(sym: str) -> list[tuple[str, float]]:
+            return [r for r in daily_closes(charts.get(sym), when)
+                    if bs.available_time(r[0]) <= when.isoformat()]
+        out["beta_upgraded"] = bs.build(closes, BETA_SYMBOLS, now=when,
+                                        own=_own_pit(when) if own is None else own)
+    except Exception as exc:                             # pragma: no cover - organ guard
+        out["beta_upgraded"] = _un(f"{type(exc).__name__}: {str(exc)[:160]}")
+    try:
+        from macro import global_curves as gcm
+        out["global_curves"] = gcm.build(now=when, series=ser)
+    except Exception as exc:                             # pragma: no cover - organ guard
+        out["global_curves"] = _un(f"{type(exc).__name__}: {str(exc)[:160]}")
+    try:
+        from macro import ownership_state as hds
+        out["ownership"] = (hds.build(now=when) if ownership_root is None
+                            else hds.build(now=when, root=ownership_root))
+    except Exception as exc:                             # pragma: no cover - organ guard
+        out["ownership"] = _un(f"{type(exc).__name__}: {str(exc)[:160]}")
+    return out
+
+
+def emit_extended(rep: Mapping[str, Any], charts: Mapping[str, Any], when: datetime, *,
+                  dry_run: bool = False) -> dict[str, Any]:
+    """Lake series and cells of the DATA-22 blocks, through the one terms-gated door."""
+    out: dict[str, Any] = {}
+    try:
+        from macro import beta_state as bs
+        out["beta_upgraded"] = bs.emit(lambda s: daily_closes(charts.get(s), when),
+                                       rep.get("beta_upgraded") or {}, now=when,
+                                       dry_run=dry_run)
+    except Exception as exc:                             # pragma: no cover - organ guard
+        out["beta_upgraded"] = _un(f"{type(exc).__name__}: {str(exc)[:160]}")
+    try:
+        from macro import global_curves as gcm
+        out["global_curves"] = gcm.emit(rep.get("global_curves") or {}, dry_run=dry_run)
+    except Exception as exc:                             # pragma: no cover - organ guard
+        out["global_curves"] = _un(f"{type(exc).__name__}: {str(exc)[:160]}")
+    return out
 
 
 def regime_label(now: datetime | None = None) -> str:
@@ -457,14 +526,40 @@ def observations(report: Mapping[str, Any], received_at: datetime) -> list[Any]:
     return out
 
 
+def extended_observations(rep: Mapping[str, Any], received_at: datetime) -> list[Any]:
+    out: list[Any] = []
+    try:
+        from macro import beta_state as bs
+        out += bs.observations(rep.get("beta_upgraded") or {}, received_at)
+    except Exception:                                    # pragma: no cover - ledger guard
+        pass
+    try:
+        from macro import global_curves as gcm
+        out += gcm.observations(rep.get("global_curves") or {}, received_at)
+    except Exception:                                    # pragma: no cover - ledger guard
+        pass
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
-    rep = build()
+    when = datetime.now(UTC)
+    charts = {s: _chart(s) for s in sorted(set(BETA_SYMBOLS) | {"US500"})}
+    rep = build(now=when, charts=charts)
     rep["option_chains"] = route_chains_to_discovery()
+    rep["cells"] = emit_extended(rep, charts, when)
+    full_curves = rep.get("global_curves") or {}
+    try:
+        from macro import global_curves as gcm
+        rep["global_curves"] = gcm.public(full_curves)
+    except Exception:                                    # pragma: no cover - import guard
+        pass
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(rep, indent=1, default=str), "utf-8")
     try:
         from libs.research import sensor_contract as sc
-        led = sc.SensorLedger().append(observations(rep, datetime.now(UTC)))
+        rows = observations(rep, when) + extended_observations(
+            {**rep, "global_curves": full_curves}, when)
+        led = sc.SensorLedger().append(rows)
     except Exception as exc:                             # pragma: no cover - ledger guard
         led = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {str(exc)[:120]}"}
     print(f"market_state regime={rep['regime']} vol={len(rep['vol'])} "
