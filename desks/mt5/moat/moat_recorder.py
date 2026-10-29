@@ -42,6 +42,12 @@ DOM_INTERVAL_S = float(os.environ.get("MOAT_DOM_INTERVAL_S", "2.0"))
 HEALTH_INTERVAL_S = int(os.environ.get("MOAT_HEALTH_INTERVAL_S", "60"))
 BACKFILL_H = int(os.environ.get("MOAT_BACKFILL_H", "48"))
 DISK_FLOOR_GB = float(os.environ.get("MOAT_DISK_FLOOR_GB", "10"))
+#: How often the terminal's OWN last quote is read for every symbol (`symbol_info_tick`, a local
+#: call, no server round trip) and how often a symbol the terminal is not quoting is re-selected
+#: into Market Watch. See `quote_probe`.
+QUOTE_PROBE_S = int(os.environ.get("MOAT_QUOTE_PROBE_S", "300"))
+RESELECT_S = int(os.environ.get("MOAT_RESELECT_S", "3600"))
+QUOTES = Path(os.environ.get("MOAT_QUOTES", r"C:\moat\terminal_quotes.json"))
 PULL_CAP = 500_000            # ticks per copy_ticks_range call; loop drains the rest
 OVERLAP_MS = 2_000            # re-pull window overlap; dedupe is the reader's job
 
@@ -120,7 +126,9 @@ class Recorder:
         self.dom_last_hash: dict[str, str] = {}
         self.counters = {"ticks": 0, "spec_changes": 0, "dom_rows": 0, "gaps": 0, "pulls": 0}
         self.skew_samples: list[int] = []
-        self.last = {"universe": 0.0, "ticks": 0.0, "specs": 0.0, "health": 0.0}
+        self.last = {"universe": 0.0, "ticks": 0.0, "specs": 0.0, "health": 0.0, "quotes": 0.0}
+        self.zero_pulls: dict[str, int] = {}
+        self.reselected_at: dict[str, float] = {}
         self.paused = False
 
     # -- universe -------------------------------------------------------------------------
@@ -157,7 +165,9 @@ class Recorder:
                                     err=str(mt5.last_error()))
                     break
                 if len(arr) == 0:
+                    self.zero_pulls[sym] = self.zero_pulls.get(sym, 0) + 1
                     break
+                self.zero_pulls[sym] = 0
                 recv = datetime.now(tz=UTC).isoformat(timespec="milliseconds")
                 mono = time.monotonic()
                 names = arr.dtype.names
@@ -182,6 +192,48 @@ class Recorder:
                     break                             # drained
                 start = datetime.fromtimestamp(cur / 1000, tz=UTC)
         write_json_atomic(CHECKPOINTS / "tick_cursors.json", self.cursors)
+
+    # -- the terminal's own quotes ----------------------------------------------------------
+    def quote_probe(self) -> None:
+        """What the TERMINAL itself last quoted, per symbol, next to how many pulls in a row
+        returned nothing -- the one reading that tells a broker/subscription outage from a
+        recorder fault (2026-10-29: 102 share CFDs had zero ticks in every store for a whole US
+        session and no recorder said a word, because "0 new ticks" was not an event).
+
+        A symbol with a run of empty pulls and no recent terminal quote is re-selected into
+        Market Watch at most once an hour (`symbol_select(sym, True)`): a symbol dropped from
+        Market Watch stops streaming, and re-adding it is the one repair inside this process's
+        reach. It only adds a row to Market Watch; it never places, modifies or closes anything.
+        """
+        now_ms = int(time.time() * 1000)
+        mono = time.monotonic()
+        rows: dict[str, dict[str, object]] = {}
+        for sym in self.universe:
+            info = mt5.symbol_info(sym)
+            tick = mt5.symbol_info_tick(sym)
+            quote_ms = int(getattr(tick, "time_msc", 0) or 0) if tick else 0
+            rows[sym] = {
+                "path": getattr(info, "path", None) if info else None,
+                "visible": bool(getattr(info, "visible", False)) if info else None,
+                "quote_ms": quote_ms or None, "zero_pulls": self.zero_pulls.get(sym, 0)}
+        # STALENESS AGAINST THE TERMINAL'S OWN NEWEST QUOTE, never against this host's clock:
+        # `time_msc` is the trade server's stamp, and comparing it to local time would bake a
+        # timezone assumption into the one probe meant to settle disputes about the clock.
+        ref = max((int(r["quote_ms"] or 0) for r in rows.values()), default=0)
+        for sym, row in rows.items():
+            quote_ms = int(row["quote_ms"] or 0)
+            stale = not quote_ms or ref - quote_ms > 30 * 60_000
+            if (stale and self.zero_pulls.get(sym, 0) >= 3
+                    and mono - self.reselected_at.get(sym, -RESELECT_S) >= RESELECT_S):
+                self.reselected_at[sym] = mono
+                row["reselected"] = bool(mt5.symbol_select(sym, True))
+        write_json_atomic(QUOTES, {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                                   "now_ms": now_ms, "terminal_newest_ms": ref or None,
+                                   "symbols": rows})
+        reselected = sorted(s for s, r in rows.items() if "reselected" in r)
+        if reselected:
+            self.health_row(event="market_watch_reselect", symbols=reselected[:50],
+                            n=len(reselected))
 
     # -- specs ----------------------------------------------------------------------------
     def snapshot_specs(self) -> None:
@@ -267,6 +319,12 @@ class Recorder:
             self.snapshot_specs()
             self.last["specs"] = mono
         self.poll_dom()
+        if mono - self.last["quotes"] >= QUOTE_PROBE_S:
+            try:
+                self.quote_probe()
+            except Exception as exc:  # a probe must never take the recorder down
+                self.health_row(event="quote_probe_failed", err=f"{type(exc).__name__}: {exc}")
+            self.last["quotes"] = mono
         if mono - self.last["health"] >= HEALTH_INTERVAL_S:
             self.health_row()
             self.last["health"] = mono

@@ -13,6 +13,7 @@ for _p in (str(_DESK), str(_DESK.parent.parent)):
         sys.path.insert(0, _p)
 
 import importlib.util  # noqa: E402
+import json  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location("tape_liveness", _DESK / "moat" / "tape_liveness.py")
 assert _spec is not None and _spec.loader is not None
@@ -155,7 +156,6 @@ def test_absent_or_stale_coverage_is_unmeasured():
 
 
 def _point(tmp_path, monkeypatch, universe, cov) -> dict:
-    import json
     state = _state(LIVE)
     (tmp_path / "state.json").write_text(json.dumps(state))
     if universe is not None:
@@ -169,6 +169,9 @@ def _point(tmp_path, monkeypatch, universe, cov) -> dict:
     ticks = tmp_path / "ticks"
     _probe_files(ticks, ["2026-10-29.parquet", "20261029.parquet"])
     monkeypatch.setattr(tl, "TICKS", ticks)
+    (tmp_path / "quotes.json").write_text(json.dumps({"at": NOW.isoformat(), "symbols": {
+        s: {"quote_ms": int(NOW.timestamp() * 1000), "visible": True} for s in UNIVERSE}}))
+    monkeypatch.setattr(tl, "TERMINAL_QUOTES", tmp_path / "quotes.json")
     return state
 
 
@@ -250,3 +253,38 @@ def test_a_dead_compact_writer_is_red_even_while_tape_state_is_fresh(tmp_path):
     assert red == [] and amber == []
     _, red, amber = tl.writer_block(NOW, tmp_path / "absent")
     assert red == [] and amber
+
+
+def test_a_dead_class_is_split_into_broker_side_or_our_side():
+    """The 10-29 equities: no tick in any store. The terminal's own quotes say whose fault."""
+    us = datetime(2026, 10, 29, 16, 0, tzinfo=UTC)
+    newest = int(us.timestamp() * 1000)
+    quotes = {"symbols": {"EURUSD": {"quote_ms": newest, "visible": True},
+                          "Apple": {"quote_ms": newest - 17 * 3_600_000, "visible": True,
+                                    "reselected": True},
+                          "Tesla": {"quote_ms": None, "visible": False}}}
+    term, amber = tl.terminal_block(quotes, UNIVERSE)
+    assert amber == []
+    assert term["classes"]["Equities"] == {"symbols": 2, "terminal_fresh": 0, "not_visible": 1,
+                                           "reselected": 1}
+    _, amber = tl.terminal_block(None, UNIVERSE)
+    assert amber and amber[0].startswith("UNMEASURED")
+
+
+
+def test_run_names_the_side_of_a_dead_class(tmp_path, monkeypatch):
+    us = datetime(2026, 10, 29, 16, 0, tzinfo=UTC)
+    cov = {"at": us.isoformat(), "families": {
+        f: {"mined": 10, "judged_total": 3} for f in tl.TAPE_FAMILIES}}
+    _point(tmp_path, monkeypatch, UNIVERSE, cov)
+    st = {s: {"last_tick_utc": (us - timedelta(hours=h)).isoformat()}
+          for s, h in dict(LIVE, Apple=17.0, Tesla=17.0).items()}
+    (tmp_path / "state.json").write_text(json.dumps(st))
+    newest = int(us.timestamp() * 1000)
+    (tmp_path / "quotes.json").write_text(json.dumps({"symbols": dict(
+        {s: {"quote_ms": newest, "visible": True} for s in UNIVERSE},
+        Apple={"quote_ms": newest - 17 * 3_600_000, "visible": True},
+        Tesla={"quote_ms": newest - 17 * 3_600_000, "visible": True})}))
+    rep = tl.run(now=us, reader=_reader_seeing(st), prior=SETTLED)
+    dead = [r for r in rep["red"] if r.startswith("CLASS_DEAD: Equities")]
+    assert dead and "TERMINAL is not quoting" in dead[0]

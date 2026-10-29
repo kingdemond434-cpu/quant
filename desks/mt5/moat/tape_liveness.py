@@ -57,6 +57,8 @@ TICKS = DESK / "data" / "tape" / "ticks"
 UNIVERSE = DESK / "data" / "universe" / "universe.json"
 JUDGE_COVERAGE = DESK / "reports" / "JUDGE_COVERAGE.json"
 OUT = DESK / "reports" / "TAPE_LIVENESS.json"
+#: The moat recorder's per-symbol read of the TERMINAL's own last quote (moat_recorder.quote_probe).
+TERMINAL_QUOTES = Path(os.environ.get("MOAT_QUOTES", r"C:\moat\terminal_quotes.json"))
 
 STALE_H = float(os.environ.get("TAPE_STALE_H", "2"))
 #: A class is OPEN when at least this share of its taped symbols is fresh.
@@ -237,6 +239,31 @@ def writer_block(now: datetime, ticks: Path | None = None
     return {"probe": WRITER_PROBE, "newest_day": newest}, red, amber
 
 
+def terminal_block(quotes: dict[str, Any] | None, universe: dict[str, Any]
+                   ) -> tuple[dict[str, Any], list[str]]:
+    """Per asset class: how many symbols the TERMINAL itself quoted within STALE_H of its own
+    newest quote (clock-free: both stamps are the trade server's). (block, amber)."""
+    if not quotes or not isinstance(quotes.get("symbols"), dict):
+        return {}, ["UNMEASURED: no terminal_quotes.json from the moat recorder -- a dead class "
+                    "cannot be split into broker/subscription side vs our writers"]
+    rows = quotes["symbols"]
+    ref = max((int(r.get("quote_ms") or 0) for r in rows.values() if isinstance(r, dict)),
+              default=0)
+    out: dict[str, dict[str, Any]] = {}
+    for sym, r in rows.items():
+        if not isinstance(r, dict):
+            continue
+        cls = str(((universe or {}).get(sym) or {}).get("asset_class") or "Unclassified")
+        q = int(r.get("quote_ms") or 0)
+        c = out.setdefault(cls, {"symbols": 0, "terminal_fresh": 0, "not_visible": 0,
+                                 "reselected": 0})
+        c["symbols"] += 1
+        c["terminal_fresh"] += int(bool(q) and ref - q <= STALE_H * 3_600_000)
+        c["not_visible"] += int(r.get("visible") is False)
+        c["reselected"] += int("reselected" in r)
+    return {"at": quotes.get("at"), "classes": out}, []
+
+
 def _default_reader(symbol: str) -> Any:
     from mt5desk.tape_days import recent_quotes
     return recent_quotes(TICKS / symbol, PROBE_DAYS)
@@ -330,6 +357,19 @@ def run(now: datetime | None = None, reader: Callable[[str], Any] | None = None,
         prior = (_read(OUT) or {}).get("recorder")
     rec, red, amber = recorder_block(state, universe, now, prior)
     wrt, red_w, amber_w = writer_block(now)
+    term, amber_t = terminal_block(_read(TERMINAL_QUOTES), universe)
+    amber += amber_t
+    for i, line in enumerate(red):
+        cls = line[len("CLASS_DEAD: "):].split(" is inside")[0] if line.startswith(
+            "CLASS_DEAD: ") else None
+        c = (term.get("classes") or {}).get(cls) if cls else None
+        if c:
+            side = ("the TERMINAL is not quoting it either -- broker, session or Market Watch "
+                    "side" if c["terminal_fresh"] == 0 else
+                    "the TERMINAL IS quoting it -- our writers are missing it")
+            red[i] = (f"{line} [terminal: {c['terminal_fresh']}/{c['symbols']} quoting, "
+                      f"{c['not_visible']} not in Market Watch, {c['reselected']} re-selected; "
+                      f"{side}]")
     rdr, red_r, amber_r = reader_block(state, now, reader)
     jdg, red_j, amber_j = judge_block(_read(JUDGE_COVERAGE), now)
     red += red_w + red_r + red_j
@@ -338,7 +378,7 @@ def run(now: datetime | None = None, reader: Callable[[str], Any] | None = None,
     return {"at": now.isoformat(timespec="seconds"), "verdict": verdict,
             "red_count": len(red), "amber_count": len(amber),
             "red": red, "amber": amber, "stale_h": STALE_H,
-            "recorder": rec, "writers": wrt, "reader": rdr, "judge": jdg,
+            "recorder": rec, "writers": wrt, "terminal": term, "reader": rdr, "judge": jdg,
             "rule": "RED on the first break between writer, reader and judge; AMBER when any "
                     "part could not be measured; see module doc"}
 
