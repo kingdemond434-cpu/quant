@@ -396,7 +396,9 @@ def venue_clock_skew_ms(journal: list[dict], rows: list[dict]) -> int | None:
 
 
 def matching_resting_order(orders: list[dict], side: str, price: float, known_ids: set[int],
-                           *, lot: float, instrument_id: int, since_ms: int) -> int | None:
+                           *, lot: float, instrument_id: int, since_ms: int,
+                           resting: bool = False, protective_ids: set[int] | None = None
+                           ) -> int | None:
     """The id of a venue order that IS this leg, if the failed send landed anyway.
 
     EVERY FIELD MUST AGREE, because a wrong match is worse than none (audit 2026-09-30: matching
@@ -407,11 +409,21 @@ def matching_resting_order(orders: list[dict], side: str, price: float, known_id
     already owns -- today's legs AND every id in the intents journal, so yesterday's own leg
     cannot come back as today's after the rollover empties the windows. A row missing any of
     those fields does not match.
+
+    `resting=True` reads the OPEN order book, where a match must also be an unattached entry
+    stop (audit of #423, 2026-10-27): a protective stop-loss of the position that just filled
+    sits at the twin's trigger level at the same lot whenever the range is >= 1.2 x ATR, and
+    matched every other field -- so an order with a positionId, isOpen false, a type other
+    than "stop", or an id named as an open position's stopLossId/takeProfitId never matches.
     """
     want = "buy" if side == "buy_stop" else "sell"
+    guarded = set(protective_ids or ())
     for o in orders:
         oid = o.get("id")
         if oid is None or int(oid) in known_ids:
+            continue
+        if resting and (int(oid) in guarded or o.get("positionId") or o.get("isOpen") is False
+                        or str(o.get("type") or "").lower() != "stop"):
             continue
         if str(o.get("side") or "").lower() != want:
             continue
@@ -431,6 +443,19 @@ def matching_resting_order(orders: list[dict], side: str, price: float, known_id
             continue
         return int(oid)
     return None
+
+
+def protective_order_ids(positions: list[dict]) -> set[int]:
+    """Every open position's stop-loss and take-profit order id: never an entry leg."""
+    out: set[int] = set()
+    for p in positions:
+        for k in ("stopLossId", "takeProfitId"):
+            try:
+                if p.get(k):
+                    out.add(int(p[k]))
+            except (TypeError, ValueError):
+                continue
+    return out
 
 
 def position_since_failure(positions: list[dict], side: str, first_at: Any, state: dict,
@@ -538,7 +563,10 @@ def rollover_state(state: dict, today: str) -> dict:
         if n.startswith("carried:") or w.get("closed") or w.get("position_id") is None:
             continue
         carried[f"{old_date}/{n}" if n in carried else n] = w
-    return {"date": today, "windows": {}, "carried": carried}
+    out = {"date": today, "windows": {}, "carried": carried}
+    if state.get("landed_abandoned"):
+        out["landed_abandoned"] = dict(state["landed_abandoned"])   # until the sweep cancels it
+    return out
 
 
 def own_entry_orders(journal: list[dict], state: dict) -> dict[int, dict]:
@@ -553,6 +581,8 @@ def own_entry_orders(journal: list[dict], state: dict) -> dict[int, dict]:
         if row.get("status") == "SENT" and row.get("order_id") is not None:
             own[int(row["order_id"])] = {k: row.get(k) for k in
                                          ("window", "side", "price", "sl", "tp", "lot")}
+    for oid, leg in (state.get("landed_abandoned") or {}).items():
+        own.setdefault(int(oid), dict(leg))
     for bucket in ("carried", "windows"):
         for name, w in (state.get(bucket) or {}).items():
             for side, leg in (w.get("orders") or {}).items():
@@ -1364,9 +1394,24 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             fits, budget_why = risk_budget_allows(committed or 0.0, risk_usd, room)
             if not fits:
                 blocker = f"concurrent risk would reach today's floor: {budget_why}"
+        adopt_hold = None
+        if blocker is None:
+            # THE ADOPTER'S HOLD (libs/ops/new_risk_hold): while a release is being adopted or
+            # rolled back and not yet proved healthy, nothing new opens; resting legs and
+            # positions stay. A veto, so billed once per window per day (missed_growth).
+            from libs.ops import new_risk_hold as _nrh
+            blocker = adopt_hold = _nrh.reason()
         if blocker is not None:
             doc["skipped"].append({"window": name, "why": blocker})
             log(f"[{name}] DEFERRED: {blocker}")
+            if adopt_hold is not None:
+                _billed = state.setdefault("rail_logged", {})
+                if _billed.get(f"adopt_new_risk_hold/{name}") != today:
+                    _billed[f"adopt_new_risk_hold/{name}"] = today
+                    _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                             "status": "RAIL_BLOCKED", "rail": "adopt_new_risk_hold",
+                             "why": adopt_hold, "missed_growth_risk_usd": round(risk_usd, 2),
+                             "armed": armed})
             continue
         committed = (committed or 0.0) + risk_usd
         legs: dict[str, dict] = {}
@@ -1546,12 +1591,83 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         act = {"act": "stale_cancel", "window": str(own[oid].get("window")), "order_id": oid}
         try:
             act["ok"] = bool(venue.cancel(int(oid)))
+            if act["ok"]:
+                (state.get("landed_abandoned") or {}).pop(str(int(oid)), None)
             log(f"[{act['window']}] stale_cancel: our GTC entry order {oid} outlived its day; "
                 f"cancelled")
         except Exception as exc:
             act["ok"] = False
             act["why"] = f"{type(exc).__name__}: {exc}"[:160]
             log(f"[{act['window']}] stale_cancel FAILED: {act['why']}")
+        doc["actions"].append(act)
+
+    # THE DESK'S OWN LEVER (mt5desk.cancel_pending, 2026-10-28): a resting order of this lane --
+    # a journalled entry or a window leg, still open at the venue -- that data/CANCEL_PENDING.json
+    # asks to withdraw. Nothing else on the account is a candidate; nothing is opened or closed.
+    from mt5desk import cancel_pending as _cancel_req
+    legs = {int(leg["id"]) for w in (state.get("windows") or {}).values()
+            for leg in (w.get("orders") or {}).values() if leg.get("id") is not None}
+    mine = sorted((set(own) | legs) & open_ids)
+    by_id = {int(o["id"]): o for o in open_orders if o.get("id") is not None}
+
+    def _leg_of(tid: int) -> dict[str, Any]:
+        return own.get(tid) or next(
+            (lg for w in (state.get("windows") or {}).values()
+             for lg in (w.get("orders") or {}).values()
+             if lg.get("id") is not None and int(lg["id"]) == tid), {})
+
+    # A PAUSED LANE WITHDRAWS ITS RESTING ENTRIES (2026-10-28, FTMO ticket 111616773 filled
+    # after its lane was removed). E8 is the leader, so it is never removed from GOLD_OCO_MODE;
+    # unarmed (no data/E8_GOLD_ARMED) it places nothing, and an entry it placed while armed is
+    # withdrawn here rather than left to fill. Sent although unarmed: a cancel opens nothing.
+    withdraw = _cancel_req.withdraw_reason("e8", armed)
+    if withdraw is not None and mine:
+        doc["withdrawn"] = withdraw
+        for tid in list(mine):
+            act = {"act": "lane_withdrawn", "order_id": tid, "why": withdraw, "ok": False}
+            try:
+                act["ok"] = bool(venue.cancel(int(tid)))
+            except Exception as exc:
+                act["why"] += f"; FAILED {type(exc).__name__}: {exc}"[:160]
+            if act["ok"]:
+                mine.remove(tid)
+                open_ids.discard(tid)
+                leg = _leg_of(tid)
+                _record({"at": now.isoformat(timespec="seconds"), "status": "RAIL_BLOCKED",
+                         "rail": _cancel_req.RAIL, "reason": _cancel_req.WITHDRAWN,
+                         "order_id": tid, "why": withdraw, "window": leg.get("window"),
+                         "missed_growth_risk_usd": round(leg_missed_usd(leg), 2),
+                         "armed": armed})
+            log(f"withdrew resting order {tid}: {act['why']} -> {act['ok']}")
+            doc["actions"].append(act)
+    # each order's own setup time, so an `all` request never reaches an order placed after it
+    # (v7 audit MF6). The stamp is read AS IF it were UTC: if the venue stamps on the broker
+    # clock (LEG_MATCH_WINDOW_MS above) that reads 2-3 h late, which only ever leaves an order
+    # out; reading it as broker time would read 2-3 h early if the venue stamps real UTC
+    # (unverified live), and could take in an order placed after the request (v10 audit).
+    setup = {t: (datetime.fromtimestamp(ms / 1000, UTC)
+                 if (ms := _order_ms(by_id.get(t) or {})) is not None else None) for t in mine}
+    todo, notes = _cancel_req.due("e8", setup, now=now)
+    if notes:
+        doc["cancel_request_notes"] = notes
+    for c in todo:
+        act = {"act": "cancel_requested", "order_id": c["ticket"], "why": c["why"], "ok": False}
+        if armed:
+            try:
+                act["ok"] = bool(venue.cancel(int(c["ticket"])))
+            except Exception as exc:
+                act["why"] += f"; FAILED {type(exc).__name__}: {exc}"[:160]
+            _cancel_req.record("e8", c["request"], c["ticket"], act["ok"], now=now)
+            if act["ok"]:  # a withdrawn order is a refusal too (Rule 1): billed at its own risk
+                leg = _leg_of(c["ticket"])
+                _record({"at": now.isoformat(timespec="seconds"), "status": "RAIL_BLOCKED",
+                         "rail": _cancel_req.RAIL, "order_id": c["ticket"], "why": c["why"],
+                         "window": leg.get("window"),
+                         "missed_growth_risk_usd": round(leg_missed_usd(leg), 2),
+                         "armed": armed})
+        else:
+            act["shadow"] = True
+        log(f"requested cancel of resting order {c['ticket']}: {act['why']} -> {act['ok']}")
         doc["actions"].append(act)
 
     # The Fusion gold book and this E8 port are the same bracket strategy.  Both therefore use
@@ -1760,6 +1876,12 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                                   (f"the E8 account does not join ({account_ok[1]})",
                                    armed and not account_ok[0]))
              if bad]
+    # THE ADOPTER'S HOLD (libs/ops/new_risk_hold): a re-sent leg is a fresh entry, so it waits
+    # like a first send does; billed once per held leg per day.
+    from libs.ops import new_risk_hold as _nrh
+    adopt_hold = _nrh.reason()
+    if adopt_hold is not None:
+        blind.append(adopt_hold)
     journal = _journal_read()
     if journal is None:
         blind.append("the intents journal is missing or unreadable, so this lane's own order "
@@ -1769,21 +1891,24 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                    for side in (w.get("failed") or {})]
         doc["retry_skipped"] = {"why": blind, "legs": waiting}
         log(f"dropped legs {waiting} not re-sent this pass: {'; '.join(blind)}")
-        if armed and not account_ok[0]:
-            # Billed once per held leg per day, under the same rail as a refused placement.
-            _billed = state.setdefault("rail_logged", {})
-            today = now.date().isoformat()
+        held = [(rail, why) for rail, why, on in (
+            ("e8_account_undeclared",
+             f"retry held: the E8 account does not join ({account_ok[1]})",
+             armed and not account_ok[0]),
+            ("adopt_new_risk_hold", f"retry held: {adopt_hold}", adopt_hold is not None)) if on]
+        # Billed once per held leg per day, under the same rail as a refused placement.
+        _billed = state.setdefault("rail_logged", {})
+        today = now.date().isoformat()
+        for rail, why in held:
             for n, w in (state.get("windows") or {}).items():
                 for side, leg in (w.get("failed") or {}).items():
-                    if _billed.get(f"e8_account_undeclared/{n}/{side}") == today:
+                    if _billed.get(f"{rail}/{n}/{side}") == today:
                         continue
-                    _billed[f"e8_account_undeclared/{n}/{side}"] = today
+                    _billed[f"{rail}/{n}/{side}"] = today
                     _record({"at": now.isoformat(timespec="seconds"), "window": n,
-                             "side": side, "status": "RAIL_BLOCKED",
-                             "rail": "e8_account_undeclared",
-                             "why": f"retry held: the E8 account does not join ({account_ok[1]})",
+                             "side": side, "status": "RAIL_BLOCKED", "rail": rail, "why": why,
                              "missed_growth_risk_usd": (leg or {}).get("risk_usd"),
-                             "armed": True})
+                             "armed": armed})
         return
     try:
         bid, ask = venue.quote(SYMBOL)
@@ -1819,6 +1944,7 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
         venue_min = float(venue.min_lot(SYMBOL))
     except Exception:
         venue_min = 0.0
+    protected = protective_order_ids(xau_positions)
     for dec in retry_decisions(state, hour, float(bid), float(ask), filled, blocked):
         name, side, leg = dec["window"], dec["side"], dec["leg"]
         w = state["windows"][name]
@@ -1826,7 +1952,48 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                "attempts": int(leg.get("attempts") or 0)}
         if dec["act"] == "hold":
             continue
+        sent_at = _iso_ms(leg.get("first_at"))
+        since = (sent_at + skew if skew is not None
+                 # the matcher allows LEG_MATCH_WINDOW_MS of slack below `since`; none of it
+                 # may reach back past the rollover
+                 else max(sent_at - UNMEASURED_SKEW_MS,
+                          last_rollover_ms(sent_at) + LEG_MATCH_WINDOW_MS))
         if dec["act"] == "abandon":
+            # AN ABANDONED LEG MAY HAVE LANDED (audit of #423, 2026-10-27). The failed send can
+            # be resting at the venue as a GTC stop with no SENT row, so neither the OCO nor the
+            # stale sweep would ever own it. Look for it first; if it is there, own it in the
+            # journal and cancel it, since the leg is abandoned (a failed cancel is picked up by
+            # `stale_entry_orders` on a later pass, because the SENT row now names it).
+            landed = matching_resting_order(open_orders, side, float(leg["price"]), known,
+                                            lot=max(float(leg["lot"]), venue_min),
+                                            instrument_id=int(instrument_id), since_ms=since,
+                                            resting=True, protective_ids=protected)
+            if landed is not None:
+                # Stamped with the FAILED SEND's box time, not now: `venue_clock_skew_ms` reads
+                # every SENT row's `at` against the venue's own stamp on that order.
+                _record({"at": leg.get("first_at") or now.isoformat(timespec="seconds"),
+                         "adopted_at": now.isoformat(timespec="seconds"), "window": name,
+                         "side": side, **{k: leg[k] for k in ("price", "sl", "tp", "lot")},
+                         "status": "SENT", "order_id": int(landed), "adopted": True,
+                         "abandoned": True, "retry_of": leg.get("first_at")})
+                known.add(int(landed))
+                # Owned in STATE too, so a journal write that failed cannot leave it unmanaged.
+                state.setdefault("landed_abandoned", {})[str(int(landed))] = {
+                    "window": name, "side": side,
+                    **{k: leg.get(k) for k in ("price", "sl", "tp", "lot")}}
+                cancel = {"act": "abandoned_landed_cancel", "window": name, "side": side,
+                          "order_id": int(landed)}
+                try:
+                    cancel["ok"] = bool(venue.cancel(int(landed)))
+                except Exception as exc:
+                    cancel.update({"ok": False, "why": f"{type(exc).__name__}: {exc}"[:160]})
+                if cancel["ok"]:
+                    open_orders[:] = [o for o in open_orders
+                                      if o.get("id") is None or int(o["id"]) != int(landed)]
+                    state["landed_abandoned"].pop(str(int(landed)), None)
+                log(f"[{name}] {side} the abandoned send had landed as order {landed}: "
+                    f"cancel {'ok' if cancel['ok'] else 'FAILED, the stale sweep retries'}")
+                doc["actions"].append(cancel)
             w["failed"].pop(side, None)
             w.setdefault("abandoned", {})[side] = {**leg, "why": dec["why"]}
             act["why"] = dec["why"]
@@ -1845,21 +2012,16 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             continue
         levels = {k: leg[k] for k in ("price", "sl", "tp", "lot")}
         done = [o for o in hist_rows if str(o.get("status") or "").lower() == "filled"]
-        # The send time on the VENUE's clock, and the size the venue actually sends (the adapter
-        # floors every lot at the venue minimum), so neither a skewed box nor a small lot can
-        # hide a send that landed.
-        sent_at = _iso_ms(leg.get("first_at"))
-        since = (sent_at + skew if skew is not None
-                 # the matcher allows LEG_MATCH_WINDOW_MS of slack below `since`; none of it
-                 # may reach back past the rollover
-                 else max(sent_at - UNMEASURED_SKEW_MS,
-                          last_rollover_ms(sent_at) + LEG_MATCH_WINDOW_MS))
+        # `since` above is the send time on the VENUE's clock, and the matcher takes the size the
+        # venue actually sends (the adapter floors every lot at the venue minimum), so neither a
+        # skewed box nor a small lot can hide a send that landed.
         oid = None
         for book in (open_orders, done):
             oid = oid or matching_resting_order(book, side, float(leg["price"]), known,
                                                 lot=max(float(leg["lot"]), venue_min),
                                                 instrument_id=int(instrument_id),
-                                                since_ms=since)
+                                                since_ms=since, resting=book is open_orders,
+                                                protective_ids=protected)
         pos_id = None if oid is not None else position_since_failure(
             xau_positions, side, leg.get("first_at"), state, filled)
         if pos_id is not None:
@@ -1890,7 +2052,8 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
         row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
                **levels, "armed": True, "retry_of": leg.get("first_at")}
         if oid is not None:
-            row.update({"status": "SENT", "order_id": oid, "adopted": True})
+            row.update({"status": "SENT", "order_id": oid, "adopted": True,
+                        "at": leg.get("first_at") or row["at"], "adopted_at": row["at"]})
             log(f"[{name}] {side} the failed send had landed: adopted order {oid}")
         else:
             try:

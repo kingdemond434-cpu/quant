@@ -175,6 +175,10 @@ UNKNOWN_REASON_CLASS: dict[str, str] = {
     "missing_bars": DEFECT,
     "missing_identity_input": DEFECT,
     "unnamed": DEFECT,
+    # a never-judged cell whose build PROVABLY refuses for want of an input absent on this host
+    # (`research/build_input_probe.py`): parked out of the docket, kept in the backlog (the desk
+    # still owes the input), re-admitted the pass every named input is present again
+    "build_input_missing": DEFECT,
 }
 
 
@@ -287,11 +291,15 @@ class _LedgerScan:
     original OSError branch over the rows read before the error.
     """
 
-    __slots__ = ("cell_seen", "err", "judged_at", "judged_total", "live_at", "passed", "tail")
+    __slots__ = ("cell_ruled", "cell_seen", "err", "judged_at", "judged_total", "live_at",
+                 "passed", "tail")
 
     def __init__(self, path: Path) -> None:
         self.err = False
         self.cell_seen: set[str] = set()
+        #: every cell the judge recorded ANY fate for (gate-0 reject, UNKNOWN or ten-gate; never a
+        #: NOT_RUN deferral) -- what `judge_prescreen` may never kill and must hand a charge to.
+        self.cell_ruled: set[str] = set()
         #: per family, rows that carry a real verdict (judged_index's all-time count; the
         #: realised pass rates' denominator is the same filter).
         self.judged_total: dict[str, int] = {}
@@ -309,6 +317,7 @@ class _LedgerScan:
         judged_append = self.judged_at.append
         live_append = self.live_at.append
         total, passed, seen = self.judged_total, self.passed, self.cell_seen
+        ruled = self.cell_ruled
         try:
             with path.open("r", encoding="utf-8", errors="replace") as fh:
                 for raw in fh:
@@ -325,6 +334,8 @@ class _LedgerScan:
                     if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
                         continue
                     ok = row.get("passed")
+                    if row.get("cell"):
+                        ruled.add(str(row["cell"]))
                     unk = ok is not True and str(row.get("terminal_gate") or "") in ("", "UNKNOWN")
                     raw_at = row.get("at")
                     try:
@@ -1737,11 +1748,356 @@ READMIT_MAX_DAYS = 90.0
 CPCV_MIN_DAYS = 60
 
 
+#: The bank reason `research/build_input_probe.py` parks under (its `REASON`; a test pins them).
+BUILD_INPUT_MISSING = "build_input_missing"
+
+
+def _build_input_probe() -> Any:
+    """The probe module, or None when it cannot be imported (then nothing is named)."""
+    try:
+        try:
+            import build_input_probe as probe  # type: ignore[import-not-found]
+        except ImportError:                                    # pragma: no cover - import context
+            from research import build_input_probe as probe  # type: ignore[no-redef]
+        return probe
+    except Exception:
+        return None
+
+
+def _build_inputs_present(row: dict[str, Any]) -> bool:
+    """Every input a `build_input_missing` row names is present again (fail open: True)."""
+    probe = _build_input_probe()
+    if probe is None:
+        return True
+    try:
+        ctx = _pass_value("build_input_probe_ctx", probe._Pass)
+        return bool(probe.all_present(row.get("missing"), ctx))
+    except Exception:
+        return True
+
+
+#: CELLS THE READMIT_MAX_DAYS BACKSTOP RELEASED, and when (audit of 9bf6542be, M1). The probe
+#: does not name a cell held here until the judge has ruled on it (`release_ruled`), so a
+#: released cell reaches the judge however long it takes and the judge's own word stands. Written
+#: under the bank's lock, in the same transaction as the bank, as one unit with the bank's pop.
+BUILD_INPUT_RELEASED = HYP / "build_input_released.json"
+
+
+#: THE TRIALS A PARKED CELL STILL STANDS FOR (audit of 9bf6542be, S4). `effective_trials`
+#: measures the campaign charge from the shipped docket, floored at its count of distinct
+#: mechanisms; parking a cell takes its row out of that docket, and measured on the box's docket
+#: (2026-10-22, 57,538 rows) removing 15% of rows from the probed families moved the measured
+#: charge 62 -> 61 on one seed of three, and removing them all 62 -> 52 -- the floor falls when a
+#: mechanism's last row leaves. Parking must not move a trial charge either way, so the rows
+#: parked here are written beside the docket, trimmed to the fields `trial_from_record` reads,
+#: and `effective_trials` counts them with the docket. Bounded at the rows that organ reads.
+PARKED_TRIAL_ROWS = HYP / "build_input_parked_trials.json"
+PARKED_TRIAL_ROWS_MAX = 60_000
+#: Exactly the fields `libs.research.trial_ledger.trial_from_record` reads (a test pins it).
+TRIAL_KEYS: frozenset[str] = frozenset({
+    "params", "params_json", "genome", "family", "trial_family", "declared_width",
+    "search_width", "claim_selection_trials", "claim_family", "lineage", "family_id",
+    "trial_id", "id", "candidate_id", "hypothesis_id", "cell",
+    "mechanism", "data", "representation", "geography", "state", "horizon", "execution",
+    "failure", "symbol", "sym", "chart", "timeframe", "session", "regime", "information",
+    "asset_class", "model_family", "dataset", "feature", "signal", "method"})
+
+
+def parked_trial_rows(blocked: list[dict[str, Any]],
+                      bank: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    """The docket rows this pass held back as `build_input_missing`, trimmed to TRIAL_KEYS."""
+    out: list[dict[str, Any]] = []
+    for r in blocked:
+        b = bank.get(str(r.get("_cell") or ""))
+        if isinstance(b, dict) and b.get("reason") == BUILD_INPUT_MISSING:
+            out.append({k: v for k, v in r.items() if k in TRIAL_KEYS})
+            if len(out) >= PARKED_TRIAL_ROWS_MAX:
+                break
+    return out
+
+
+def prescreen_trial_rows(before: list[dict[str, Any]], after: list[dict[str, Any]], *,
+                         room: int = PARKED_TRIAL_ROWS_MAX) -> list[dict[str, Any]]:
+    """The rows `_prescreen` took out of the docket (in `before`, not in `after`, by object
+    identity -- the screen returns the rows it keeps, never copies), trimmed to TRIAL_KEYS."""
+    kept = {id(r) for r in after}
+    out: list[dict[str, Any]] = []
+    for r in before:
+        if len(out) >= room:
+            break
+        if id(r) not in kept and isinstance(r, dict):
+            out.append({k: v for k, v in r.items() if k in TRIAL_KEYS})
+    return out
+
+
+def _manifest_names(final: Path, ratchet: Path | None = None) -> bool:
+    """Does a committed manifest still on disk (kept, or awaiting roll-forward) name `final`?
+
+    Matched on the manifest's PARSED ops, each target and `final` compared as
+    `normcase(abspath(...))` (audit of v1.3), never as a substring of its text. A manifest that
+    cannot be read or parsed counts as naming it: never write over what recovery may apply.
+    """
+    want = os.path.normcase(os.path.abspath(str(final)))
+    try:
+        manifests = list((ratchet or RATCHET).parent.glob(f"{TXN_MANIFEST_PREFIX}*"))
+    except OSError:
+        return True
+    for m in manifests:
+        try:
+            ops = json.loads(m.read_text("utf-8")).get("ops")
+        except (OSError, ValueError, AttributeError):
+            return True
+        if not isinstance(ops, list):
+            return True
+        for op in ops:
+            if not isinstance(op, list) or len(op) < 2:
+                return True                 # a malformed op: fail closed, never write over it
+            if os.path.normcase(os.path.abspath(str(op[1]))) == want:
+                return True
+    return False
+
+
+def _write_parked_trials(rows: list[dict[str, Any]], txn: Any) -> Path:
+    """The parked list, every pass and EMPTY included: a stale list counts trials twice once the
+    rows it names ship again. Staged with the bank inside a pass; written now outside one.
+    Beside the bank (in production: beside the docket, where `effective_trials` reads it)."""
+    path = UNRUNNABLE_BANK.parent / PARKED_TRIAL_ROWS.name
+    text = json.dumps(rows, separators=(",", ":"), default=str)
+    try:
+        if isinstance(txn, _Txn):
+            txn.put_text(path, text)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            _atomic_write_text(path, text)
+    except OSError:
+        pass
+    return path
+
+
+#: The release file's reading (audit of v1.3). UNREADABLE (an OSError: a reader holds it, a
+#: permission) is retried next pass and the file is never moved; TORN (it parses to no mapping)
+#: and VANISHED (absent, though its `.born` marker says it was written) SELF-HEAL on the pass
+#: that finds them: the torn bytes are kept aside as evidence, due releases go, and the file is
+#: rebuilt from this pass's releases. While any of the three holds, the probe names nothing new.
+RELEASED_MEASURED, RELEASED_ABSENT = "MEASURED", "ABSENT"
+RELEASED_UNREADABLE, RELEASED_TORN, RELEASED_VANISHED = "UNREADABLE", "TORN", "VANISHED"
+
+
+def _released_path() -> Path:
+    # Beside the bank it belongs to (where `update_unrunnable_bank` writes it), so a test's
+    # bank never reads the desk's file.
+    return UNRUNNABLE_BANK.parent / BUILD_INPUT_RELEASED.name
+
+
+def read_build_input_released(path: Path | None = None
+                              ) -> tuple[dict[str, str] | None, str]:
+    """(cell -> released_at, state). The cells are None unless MEASURED or ABSENT ({}).
+
+    Read directly, never through the pass memo: an OSError there is cached as None for the
+    whole pass and read as torn, which set a byte-identical good file aside (audit of v1.3).
+    """
+    target = path or _released_path()
+    staged = _PASS.get(("staged_json", str(target))) if _PASS is not None else None
+    if isinstance(staged, dict) and isinstance(staged.get("cells"), dict):
+        return {str(k): str(v) for k, v in staged["cells"].items()}, RELEASED_MEASURED
+    try:
+        text = target.read_text("utf-8")
+    except FileNotFoundError:
+        if _born_marker(target).exists():
+            return None, RELEASED_VANISHED
+        return {}, RELEASED_ABSENT
+    except OSError:
+        return None, RELEASED_UNREADABLE
+    try:
+        doc = json.loads(text)
+    except ValueError:
+        return None, RELEASED_TORN
+    cells = doc.get("cells") if isinstance(doc, dict) else None
+    if not isinstance(cells, dict):
+        return None, RELEASED_TORN
+    return ({str(k): str(v) for k, v in cells.items() if isinstance(v, str)},
+            RELEASED_MEASURED)
+
+
+#: Consecutive NOT-OK release-file passes before `check_judge_coverage` FAILs (its
+#: RELEASE_ASIDE_MAX_PASSES; a test pins them equal).
+RELEASE_NOT_OK_MAX_PASSES = 3
+
+
+def _release_prior_not_ok(ratchet: Path | None = None) -> int:
+    """The previous pass's consecutive NOT-OK count, from the ratchet. A ratchet that exists but
+    cannot be read or parsed is NOT a zero (audit of v1.4): the count is unknown, so it reads as
+    already at the limit -- one more NOT-OK pass FAILs, never restarts at 1."""
+    path = ratchet or RATCHET
+    try:
+        if not path.exists():
+            return 0
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return RELEASE_NOT_OK_MAX_PASSES
+    if not isinstance(doc, dict):
+        return RELEASE_NOT_OK_MAX_PASSES
+    try:
+        return max(0, int(doc.get("release_not_ok_passes") or 0))
+    except (TypeError, ValueError):
+        return RELEASE_NOT_OK_MAX_PASSES
+
+
+def build_input_released(path: Path | None = None) -> dict[str, str] | None:
+    """cell -> released_at; {} when there never was a file; None when UNMEASURED (unreadable,
+    torn or vanished) -- the holds are unknown, so no reader may treat it as "no holds"."""
+    return read_build_input_released(path)[0]
+
+
+def release_ruled(cell: str, released_at: str, *, bank: dict[str, dict[str, Any]],
+                  judged: Any = None) -> bool:
+    """Has the judge ruled on a released cell? It is judged, or the bank holds a row for it
+    stamped AFTER the release (the judge's own word: a build failure, an UNKNOWN reason)."""
+    if judged is not None and cell in judged:
+        return True
+    row = bank.get(cell)
+    if not isinstance(row, dict):
+        return False
+    t_row, t_rel = _ts(row.get("parked_at")), _ts(released_at)
+    return t_row is not None and t_rel is not None and t_row > t_rel
+
+
+def _record_build_input_released(released_now: dict[str, str], *, at: str, path: Path,
+                                 txn: Any, lock_path: Path | None = None,
+                                 bank: dict[str, dict[str, Any]] | None = None,
+                                 judged: Any = None,
+                                 docket_cells: Any = None) -> str:
+    """Add this pass's releases, drop the ruled, write only when the mapping changed.
+
+    A RELEASE HOLDS UNTIL THE JUDGE RULES (audit of v1.1, MF1), never on a calendar: on a stalled
+    judge (0 verdicts/day on 2026-10-27) a calendar grace re-parked the cell before any ruling,
+    so "the judge gets one turn" was never delivered. An entry leaves when the judge has ruled
+    (`release_ruled`), or -- the file's bound -- when it is READMIT_MAX_DAYS old and its cell is
+    no longer in the docket at all (a producer dropped it; nothing is left to hold back).
+    """
+    old, state = read_build_input_released(path)
+    if state == RELEASED_UNREADABLE:
+        # NEVER MOVE A FILE THAT COULD NOT BE READ: it may be whole. The caller keeps this pass's
+        # releases parked on their old clocks and the next pass reads it again.
+        return "UNREADABLE"
+    healed = ""
+    if state == RELEASED_TORN:
+        # SELF-HEAL (audit of v1.3): the torn bytes go aside as evidence (the coverage fence
+        # warns, and fails once they have sat more than three passes), and the file is rebuilt
+        # below from this pass's releases. The probe already names nothing new this pass.
+        try:
+            path.rename(_aside_name(path, "torn", at))
+        except OSError:
+            return "UNREADABLE"            # cannot move it: leave it exactly as found, retry
+        old, healed = {}, "HEALED_FROM_TORN"
+    elif state == RELEASED_VANISHED:
+        with contextlib.suppress(OSError), _aside_name(path, "vanished", at).open(
+                "x", encoding="utf-8") as fh:
+            fh.write(json.dumps({"at": at, "why": "the release file was born here and is now "
+                                 "absent; the holds it carried are not recoverable"}))
+        old, healed = {}, "HEALED_FROM_VANISHED"
+    old = old if old is not None else {}
+    now_t = _ts(at)
+    bank = bank or {}
+    keep: dict[str, str] = {}
+    for cell, when in old.items():
+        if release_ruled(cell, when, bank=bank, judged=judged):
+            continue
+        t = _ts(when)
+        aged = (t is not None and now_t is not None
+                and (now_t.timestamp() - t.timestamp()) / 86400.0 >= READMIT_MAX_DAYS)
+        if aged and docket_cells is not None and cell not in docket_cells:
+            continue
+        keep[cell] = when
+    keep.update(released_now)
+    if keep == old and not healed:
+        return "UNCHANGED"
+    text = json.dumps({"schema": 2, "at": at,
+                       "rule": ("a build_input_missing cell released by READMIT_MAX_DAYS is not "
+                                "named again by the probe until the judge has ruled on it: it is "
+                                "judged, or the judge wrote a bank row for it after the release"),
+                       "cells": dict(sorted(keep.items()))}, separators=(",", ":"))
+    born = _born_marker(path)
+    try:
+        if txn is None:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            _atomic_write_text(path, text)
+            if not born.exists():
+                born.write_text(json.dumps({"born_at": at}), "utf-8")
+        else:
+            txn.put_text(path, text)
+            if not born.exists():
+                # BORN WITH ITS FIRST WRITE (audit of v1.3): a deleted file then reads VANISHED,
+                # never "no holds", so its held cells are not re-parked silently.
+                txn.put_text(born, json.dumps({"born_at": at}))
+            if lock_path is not None:
+                txn.guard(lock_path, path)      # lands only while the bank's lock holds
+                txn.guard(lock_path, born)
+            if _PASS is not None:
+                _PASS[("staged_json", str(path))] = json.loads(text)
+    except OSError:
+        return "WRITE_FAILED"
+    if healed:
+        return healed
+    return "WRITTEN"
+
+
+def probe_build_inputs(rows: list[dict[str, Any]], judged: Any,
+                       bank: dict[str, dict[str, Any]], banned: Any,
+                       now: datetime | None = None
+                       ) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    """`build_input_probe.name` over the docket, or nothing named with the reason why."""
+    probe = _build_input_probe()
+    if probe is None:
+        return {}, {"status": "UNMEASURED", "why": "build_input_probe could not be imported"}
+    try:
+        ctx = _pass_value("build_input_probe_ctx", probe._Pass)
+        released, rstate = read_build_input_released()
+        named, census = probe.name(rows, judged=judged, bank=bank, banned=banned, ctx=ctx,
+                                   now=now, released=released or {},
+                                   released_unmeasured=released is None)
+        census["release_file_state"] = rstate
+        return named, census
+    except Exception as exc:                                   # never costs the pass
+        return {}, {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {str(exc)[:200]}"}
+
+
+#: WHY A PARKED CELL CAME BACK (audit of 9bf6542be, S2): every readmission is booked under one
+#: of these, by reason, so an input that appeared is never reported as bar growth.
+READMIT_CAUSES = ("input_appeared", "bars_appeared", "retry_days", "bar_growth", "max_age")
+
+
 def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
                 bar_sizes: dict[tuple[str, str], int] | None = None) -> bool:
     """True when a parked cell's history has grown enough, or it has waited long enough."""
+    return readmit_cause(row, now=now, bar_sizes=bar_sizes) is not None
+
+
+def readmit_cause(row: dict[str, Any], *, now: datetime | None = None,
+                  bar_sizes: dict[tuple[str, str], int] | None = None) -> str | None:
+    """WHY a parked cell is due back (one of READMIT_CAUSES), or None while it stays parked."""
     parked_bytes = int(row.get("bar_bytes") or 0)
     key = (str(row.get("sym") or ""), str(row.get("tf") or "H1"))
+    _tn = now or datetime.now(tz=UTC)
+    _pa = _ts(row.get("parked_at"))
+    aged = (_pa is not None
+            and (_tn.timestamp() - _pa.timestamp()) / 86400.0 >= READMIT_MAX_DAYS)
+    if row.get("reason") == "needs_data":
+        # THE INPUT IS THE BINDING CAUSE: the family returns [] on any bars without it, so bar
+        # growth cannot change the outcome. Back the moment the probe stops answering NEEDS_DATA
+        # (the input appeared, or the probe can no longer say: fail open toward judging), and
+        # after READMIT_MAX_DAYS regardless, like every parked cell.
+        if _fire_probe(str(row.get("sym") or ""), str(row.get("family") or "")).get(
+                "status") != "NEEDS_DATA":
+            return "input_appeared"
+        return "max_age" if aged else None
+    if row.get("reason") == BUILD_INPUT_MISSING:
+        # THE NAMED INPUT IS THE BINDING CAUSE, not the cell's own history: back the pass every
+        # input the probe named is present again (an unreadable probe reads present: fail open
+        # toward judging), and after READMIT_MAX_DAYS regardless, like every parked cell.
+        if _build_inputs_present(row):
+            return "input_appeared"
+        return "max_age" if aged else None
     # A pass measures each chart once. Never retain this snapshot across passes: new
     # bars must re-admit every eligible sibling on the next reading.
     if bar_sizes is None:
@@ -1750,36 +2106,19 @@ def readmit_due(row: dict[str, Any], *, now: datetime | None = None,
         if key not in bar_sizes:
             bar_sizes[key] = _bar_bytes(*key)
         bars = bar_sizes[key]
-    if row.get("reason") == "needs_data":
-        # THE INPUT IS THE BINDING CAUSE: the family returns [] on any bars without it, so bar
-        # growth cannot change the outcome. Back the moment the probe stops answering NEEDS_DATA
-        # (the input appeared, or the probe can no longer say: fail open toward judging), and
-        # after READMIT_MAX_DAYS regardless, like every parked cell.
-        if _fire_probe(str(row.get("sym") or ""), str(row.get("family") or "")).get(
-                "status") != "NEEDS_DATA":
-            return True
-        _pa = _ts(row.get("parked_at"))
-        _tn = now or datetime.now(tz=UTC)
-        return (_pa is not None
-                and (_tn.timestamp() - _pa.timestamp()) / 86400.0 >= READMIT_MAX_DAYS)
     if parked_bytes <= 0:
-        return bars > 0
-    if row.get("reason") in ("build_failed", "series_exception", "no_series", "unnamed",
-                             "observations_under_60_days", "no_terminal_gate_recorded"):
-        _at = _ts(row.get("parked_at"))
-        _t = now or datetime.now(tz=UTC)
-        if _at is not None and (_t.timestamp() - _at.timestamp()) / 86400.0 \
-                >= BUILD_FAILED_RETRY_DAYS:
-            return True
+        return "bars_appeared" if bars > 0 else None
+    if (row.get("reason") in ("build_failed", "series_exception", "no_series", "unnamed",
+                              "observations_under_60_days", "no_terminal_gate_recorded")
+            and _pa is not None
+            and (_tn.timestamp() - _pa.timestamp()) / 86400.0 >= BUILD_FAILED_RETRY_DAYS):
+        return "retry_days"
     days = int(row.get("days") or 0)
     need = READMIT_GROWTH if days <= 0 else min(
         READMIT_GROWTH_CAP, max(READMIT_GROWTH, CPCV_MIN_DAYS / float(days)))
     if bars >= parked_bytes * need:
-        return True
-    parked_at = _ts(row.get("parked_at"))
-    t = now or datetime.now(tz=UTC)
-    return (parked_at is not None
-            and (t.timestamp() - parked_at.timestamp()) / 86400.0 >= READMIT_MAX_DAYS)
+        return "bar_growth"
+    return "max_age" if aged else None
 
 
 #: WHEN NOT-TESTABLE CELLS RETURN TO THE BACKLOG, one line per pass that re-admitted any: the
@@ -2072,7 +2411,8 @@ def _still_needs_data(row: dict[str, Any]) -> bool:
 
 def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                            path: Path | None = None,
-                           log: Path | None = None) -> dict[str, Any]:
+                           log: Path | None = None, judged: Any = None,
+                           docket_cells: Any = None) -> dict[str, Any]:
     """Park every newly-named unrunnable cell, and RE-ADMIT any whose bars have since grown.
 
     A cell the latest report names AGAIN is updated in place and never re-admitted on the same
@@ -2087,6 +2427,12 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     parkable = {c for c, r in named.items() if r.get("reason") != "missing_bars"}
     readmitted_nt: dict[str, int] = {}
     readmitted_nt_reason: dict[str, int] = {}
+    by_reason_all: dict[str, int] = {}
+    by_cause: dict[str, int] = {}
+    by_reason_cause: dict[str, dict[str, int]] = {}
+    released_now: dict[str, str] = {}
+    released_state = "NOTHING_RELEASED"
+    release_write_failed = 0
 
     def _count_readmit(old_row: dict[str, Any]) -> None:
         fam = str(old_row.get("family") or "")
@@ -2105,9 +2451,15 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
     # land (audit of a5847f82a, R9).
     with _bank_lock(out_path, at, txn) as locked:
         bank = unrunnable_bank(target)
-        readmitted = ([cell for cell, row in bank.items() if cell not in parkable
-                       and readmit_due(row, now=now_ts, bar_sizes=bar_sizes)]
-                      if locked else [])
+        causes: dict[str, str] = {}
+        if locked:
+            for cell, row in bank.items():
+                if cell in parkable:
+                    continue
+                cause = readmit_cause(row, now=now_ts, bar_sizes=bar_sizes)
+                if cause is not None:
+                    causes[cell] = cause
+        readmitted = list(causes)
         if locked:
             outstanding, out_state = read_needs_data_outstanding(out_path)
         else:
@@ -2215,6 +2567,22 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         if out_writable and not out_written:
             out_state = OUTSTANDING_WRITE_FAILED
         if locked and not locked_lost and locked.owned():
+            # THE POP AND THE RELEASE ARE ONE UNIT (audit of v1.1): a backstop release leaves the
+            # bank only once its release record is written (staged with the bank inside a pass).
+            # A release write that failed keeps the row parked -- re-asked next pass on its old
+            # clock, never re-parked on a fresh one -- and the failure is counted.
+            released_now = {c: at for c, old in popped.items()
+                            if isinstance(old, dict) and old.get("reason") == BUILD_INPUT_MISSING
+                            and causes.get(c) == "max_age"}
+            released_state = _record_build_input_released(
+                released_now, at=at, path=target.parent / BUILD_INPUT_RELEASED.name, txn=txn,
+                lock_path=out_path, bank=bank, judged=judged, docket_cells=docket_cells)
+            if released_state in ("WRITE_FAILED", "UNREADABLE"):
+                for c in released_now:
+                    bank[c] = popped.pop(c)
+                release_write_failed = len(released_now)
+                released_now = {}
+        if locked and not locked_lost and locked.owned():
             # Inside a judge_coverage pass (v2.3 `_Txn`) the bank is STAGED here and renamed at
             # the pass's commit point, so a pass killed or timed out before it leaves the bank as
             # it was; outside one it is written now, tmp + replace, under this lock.
@@ -2245,14 +2613,21 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                         _PASS[("json", *_wk)] = bank
         if bank_write == "WRITTEN":
             # COUNTED ONLY ONCE THE BANK LANDED: a readmission the disk never saw is not one.
-            for old in popped.values():
+            for cell, old in popped.items():
                 if isinstance(old, dict) and old.get("reason") in NOT_TESTABLE_REASONS:
                     _count_readmit(old)
+                _rsn = str(old.get("reason") or "") if isinstance(old, dict) else ""
+                _cause = causes.get(cell, "max_age")
+                by_reason_all[_rsn] = by_reason_all.get(_rsn, 0) + 1
+                by_cause[_cause] = by_cause.get(_cause, 0) + 1
+                by_reason_cause.setdefault(_rsn, {})
+                by_reason_cause[_rsn][_cause] = by_reason_cause[_rsn].get(_cause, 0) + 1
         else:
             # Not ours to write, or the write failed: nothing this pass changed is on disk, and
             # nothing counts.
             bank = unrunnable_bank(target)
             added, popped = 0, {}
+            released_now = {}
             readmitted_nt.clear()
             readmitted_nt_reason.clear()
     out_measured = (out_written and out_state in (OUTSTANDING_MEASURED, OUTSTANDING_FIRST)
@@ -2270,6 +2645,9 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
         locked_line = {"at": at, "state": "LOCKED"}
         line = (locked_line if bank_write == "SKIPPED_LOCKED" else
                 {"at": at, "readmitted": n_re, "by_reason": readmitted_nt_reason,
+                 # EVERY readmission, not-testable or not, by reason and by cause (audit S2).
+                 "readmitted_all": sum(by_reason_all.values()),
+                 "all_by_reason": by_reason_all, "all_by_cause": by_cause,
                  **({"state": bank_write} if bank_write != "WRITTEN" else {})})
         if txn is not None:
             # The whole log is staged (old bytes + this line) and renamed at commit: a rename is
@@ -2283,7 +2661,18 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                 fh.write(json.dumps(line) + "\n")
     except OSError:
         pass
-    return {"parked_this_pass": added, "readmitted_on_bar_growth": len(popped),
+    return {"parked_this_pass": added,
+            # Bar growth ONLY (audit S2): an input that appeared or an aged-out row is booked
+            # under its own cause below, never here.
+            "readmitted_on_bar_growth": sum(by_cause.get(c, 0)
+                                            for c in ("bar_growth", "bars_appeared")),
+            "readmitted_total": sum(by_reason_all.values()),
+            "readmitted_by_reason": by_reason_all,
+            "readmitted_by_cause": by_cause,
+            "readmitted_by_reason_cause": by_reason_cause,
+            "build_input_released": len(released_now),
+            "build_input_released_state": released_state,
+            "build_input_release_write_failed": release_write_failed,
             "needs_data_readmit_held_back": len(held_back),
             "readmitted_not_testable": n_re,
             "readmitted_not_testable_by_family": readmitted_nt,
@@ -2743,6 +3132,33 @@ def variant_split(rows: list[dict[str, Any]],
                                            if grid_seen else None)}
 
 
+def family_stamp(rows: list[dict[str, Any]],
+                 unjudged_ids: set[str] | None = None) -> dict[str, Any]:
+    """Stamp `_famdup` (research/hypothesis_families.family_split). Never raises, never removes:
+    a failure leaves rows unstamped, which ranks every one of them exactly as before."""
+    for mod in ("research.hypothesis_families", "hypothesis_families"):
+        try:
+            hf = __import__(mod, fromlist=["family_split"])
+            break
+        except Exception:
+            hf = None
+    if hf is None:
+        return {"status": "UNMEASURED", "why": "research/hypothesis_families.py did not import"}
+    try:
+        out = dict(hf.family_split(rows, unjudged_ids))
+        out["status"] = "MEASURED"
+        return out
+    except Exception as exc:
+        for r in rows:
+            r.pop("_famdup", None)
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+
+
+def _unseen_families_in_prefix(rows: list[dict[str, Any]], n: int) -> int:
+    """How many of the first `n` rows the judge will reach are family representatives."""
+    return sum(1 for r in rows[:max(int(n), 0)] if not int(r.get("_famdup") or 0))
+
+
 def _unseen_in_prefix(rows: list[dict[str, Any]], n: int) -> int:
     """How many of the first `n` rows the judge will reach are unseen mechanisms."""
     return sum(1 for r in rows[:max(int(n), 0)] if not int(r.get("_variant") or 0))
@@ -2753,6 +3169,7 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
                    demote_variants: bool = True,
                    use_keff: bool = True,
                    use_occupancy: bool = True,
+                   use_families: bool = True,
                    limit: int | None = None) -> list[dict[str, Any]]:
     """Weighted interleave of the families, so EVERY PREFIX of the docket is family-balanced.
 
@@ -2777,6 +3194,12 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
     simply added to it; unstamped rows score 0 and keep their place. `use_occupancy=False`
     reproduces the order before these two terms existed.
 
+    FAMILY REPRESENTATIVE FIRST (2026-10-28): after the variant test, the first claim of an L2
+    hypothesis family -- the same rule on instruments that co-move (research/
+    hypothesis_families.py, `_famdup`) -- ranks ahead of later members, so the judge reaches one
+    representative of each independent family before it spends a second cell on a correlated
+    copy. Unstamped rows score 0; `use_families=False` reproduces the order before this term.
+
     No row is dropped. A family with no quota still ships, after the quota'd stream, because the
     docket this returns is the whole docket and the judge's budget -- not this order -- decides
     where the hour stops.
@@ -2789,7 +3212,7 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
         return []
     ids = unjudged_ids or set()
 
-    def rank(row: dict[str, Any]) -> tuple[int, int, float, str]:
+    def rank(row: dict[str, Any]) -> tuple[int, int, int, float, str]:
         cid = str(row.get("_cell") or "")
         fresh = 0 if (not ids or cid in ids) else 1
         # A parameter variant of a rule already claiming this grid cell ranks below an unseen
@@ -2799,7 +3222,8 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
         keff = -float(row.get("_keff") or 0.0) if use_keff else 0.0
         if use_occupancy:
             keff -= float(row.get("_occ") or 0.0) + float(row.get("_orth") or 0.0)
-        return (fresh, variant, keff, str(row.get("first_seen") or "9999"))
+        famdup = int(row.get("_famdup") or 0) if use_families else 0
+        return (fresh, variant, famdup, keff, str(row.get("first_seen") or "9999"))
 
     streams: dict[str, list[dict[str, Any]]] = {}
     for row in rows:
@@ -2877,6 +3301,7 @@ FAILURE_CLASS: dict[str, str] = {
     "too_rare": "untestable_as_specified",
     "never_fires": "untestable_as_specified",
     "needs_data": "needs_data",
+    "build_input_missing": "input_missing",
     "missing_identity_input": "unnamed",
     "no_terminal_gate_recorded": "unnamed",
     "unnamed": "unnamed",
@@ -2903,6 +3328,9 @@ FAILURE_ROUTES: dict[str, dict[str, Any]] = {
     # `acquire_named_input` and `proxy_series` were listed here with no organ reading them (audit
     # of c72ecfc53); the named input itself rides in `missing_input`, which is what is read.
     "needs_data": {"owner": "converter", "axes": ["cross_asset_transplant"]},
+    # The named inputs (peer/factor/leg/driver bars, a surface, a COT series) ride in `missing`;
+    # `conversion_maximiser.backfill_bars` is the organ that reads bar demand.
+    "input_missing": {"owner": "converter", "axes": ["backfill_bars"]},
     "budget_deferred": {"owner": "judge", "axes": ["next_sweep_by_unlock_value"]},
     "save_fail": {"owner": "judge", "axes": ["rebuild_next_sweep"]},
     "unnamed": {"owner": "judge", "axes": ["name_the_reason"]},
@@ -2988,6 +3416,10 @@ def _missing_input(cls: str, row: dict[str, Any]) -> dict[str, Any] | None:
     if cls == "no_series":
         return {"kind": "series", "symbol": sym, "timeframe": tf, "clock": BAR_CLOCK,
                 "why": str(row.get("why") or "")[:200]}
+    if cls == "input_missing":
+        # Compact rows (audit S3): the labels are the record, and the cell's symbol, family and
+        # chart already ride on the handoff row beside this; no prose is stored per row.
+        return {"kind": "inputs", "inputs": row.get("missing")}
     if cls == "needs_data":
         return {"kind": "input", "input": row.get("missing_input"), "symbol": sym,
                 "family": row.get("family"), "timeframe": tf,
@@ -3019,7 +3451,8 @@ def write_conversion_handoff(bank: dict[str, dict[str, Any]], *, at: str,
         rows.append({"cell": cell, "family": fam, "trial_family": fam,
                      "symbol": row.get("sym"), "timeframe": row.get("tf") or "H1",
                      "reason": row.get("reason"), "class": cls, "axes": route.get("axes"),
-                     "missing_input": _missing_input(cls, row), "why": row.get("why"),
+                     "missing_input": _missing_input(cls, row),
+                     **({} if cls == "input_missing" else {"why": row.get("why")}),
                      "first_parked_utc": row.get("parked_at"),
                      **({"readmitted_at": row.get("readmitted_at"),
                          "still_missing_after_readmit": True}
@@ -3194,8 +3627,19 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     unknown = unknown_breakdown()
     named_unknowns = name_unknowns()
     not_run = name_not_run()
-    unrunnable = update_unrunnable_bank({**named_unknowns, **not_run},
-                                        at=at.isoformat(timespec="seconds"))
+    # CELLS WHOSE BUILD MUST FAIL, NAMED BEFORE THE DOCKET SHIPS (`research/build_input_probe`).
+    # The judge's own words win: a cell it named this pass keeps the judge's reason.
+    built_probe, probe_census = probe_build_inputs(rows, judged_cells, bank_rows, banned,
+                                                   now=at)
+    _check_budget("build_input_probe")
+    unrunnable = update_unrunnable_bank({**built_probe, **named_unknowns, **not_run},
+                                        at=at.isoformat(timespec="seconds"),
+                                        judged=judged_cells,
+                                        # UNMEASURED membership (a row with no id) is
+                                        # never read as "left the docket" (audit of v1.2).
+                                        docket_cells=(None if any(not r.get("_cell")
+                                                                  for r in rows)
+                                                      else {str(r["_cell"]) for r in rows}))
     _bank_now = unrunnable_bank()
     failures = judging_failures(bank=_bank_now)
     _outstanding, _out_state = read_needs_data_outstanding()
@@ -3208,6 +3652,42 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
         if _r.get("reason") == "data_missing":
             _k = f"{_r.get('sym')}_{_r.get('tf')}"
             bars_wanted[_k] = bars_wanted.get(_k, 0) + 1
+    # THE BARS A PARKED BUILD IS WAITING ON (audit of 9bf6542be, S1). A `build_input_missing` row
+    # names the peer / factor / leg / driver chart its build loads by name; nothing fetched them,
+    # so the cell came back only if the bars arrived by another path. They join the demand the
+    # hourly chart repair reads (`hourly_cycle.bars_wanted_symbols` -> `fetch_universe`), one
+    # count per parked cell, exactly as an own chart is counted above.
+    _probe_mod = _build_input_probe()
+    _wanted_probe = 0
+    if _probe_mod is not None:
+        for _r in _bank_now.values():
+            if _r.get("reason") == BUILD_INPUT_MISSING:
+                for _k in _probe_mod.bar_charts(_r.get("missing")):
+                    bars_wanted[_k] = bars_wanted.get(_k, 0) + 1
+                    _wanted_probe += 1
+    if isinstance(probe_census, dict):
+        probe_census["bars_wanted_added"] = _wanted_probe
+        _rc = (unrunnable.get("readmitted_by_reason_cause") or {}).get(BUILD_INPUT_MISSING) or {}
+        probe_census["readmitted"] = {"total": int(sum(_rc.values())), "by_cause": _rc,
+                                      "released_max_age": unrunnable.get(
+                                          "build_input_released")}
+        probe_census["parked_stock"] = sum(1 for _r in _bank_now.values()
+                                           if _r.get("reason") == BUILD_INPUT_MISSING)
+        # THE RELEASE FILE'S HEALTH, for `check_judge_coverage` (audit of v1.3, v1.4): the state
+        # it was read in, what this pass's write did, the evidence set aside, and for how many
+        # CONSECUTIVE passes it has been NOT OK in any way -- unreadable, torn (healed or with
+        # its rename refused), vanished, a refused write, or evidence still aside -- carried in
+        # the ratchet. A persistent UNREADABLE holds due cells, so it must end in a FAIL too.
+        _aside = [n for n in _set_aside(_released_path())
+                  if n.startswith(_released_path().name + ".")]
+        _rstate = probe_census.get("release_file_state")
+        _rwrite = unrunnable.get("build_input_released_state")
+        _not_ok = bool(_aside) or _rstate in (RELEASED_UNREADABLE, RELEASED_TORN,
+                                              RELEASED_VANISHED) or _rwrite in (
+            "UNREADABLE", "WRITE_FAILED")
+        probe_census["release_file"] = {
+            "state": _rstate, "write": _rwrite, "set_aside": _aside,
+            "not_ok_passes": (_release_prior_not_ok(ratchet) + 1) if _not_ok else 0}
     # MARGINAL k_eff, STAMPED BEFORE THE RANKING READS IT (research/docket_keff.py). Reorders
     # only: the family factor lifts a family's share of the remainder, the per-cell stamp orders
     # rows inside each family stream. Nothing is removed and the floor is untouched.
@@ -3223,6 +3703,7 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
     # Mark the variants BEFORE the order is taken, so the head this table reports is the head
     # that actually ships (`order_docket` re-derives the same marks and measures what they freed).
     variant_split(judgeable, unjudged_ids)
+    family_stamp(judgeable, unjudged_ids)
     # Only the head is read here (the queued census and the k_eff head census both stop at
     # `capacity`), so the interleave stops there too; `order_docket` takes the whole order.
     ordered = coverage_order(judgeable, quota, unjudged_ids,
@@ -3468,6 +3949,7 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
             "neither judged nor passed, because nobody looked is not a failure"),
         "unknown_reasons": unknown,
         "unrunnable": unrunnable,
+        "build_input_probe": probe_census,
         "keff_order": _keff_summary(keff),
         "_keff_detail": keff,
         "occupancy_order": occ,
@@ -3585,6 +4067,28 @@ def fireability_order(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
                  "skipped, every row still judged and counted by the sealed judge in its turn")}
 
 
+def _prescreen(rows: list[dict[str, Any]], *, publish: bool,
+               seconds_per_cell: float | None = None
+               ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """`judge_prescreen.intake` on the docket, or the rows untouched when it cannot run."""
+    try:
+        try:
+            import judge_prescreen as _jp
+        except ImportError:                                    # pragma: no cover - import context
+            from research import judge_prescreen as _jp  # type: ignore[no-redef]
+        # THE JUDGE'S RULED SET, from this pass's memoised ledger scan: a row the judge already
+        # ruled is never screened, and a charged kill the judge has since ruled hands its trial
+        # over (exactly once). Unreadable -> None, and the screen then kills nothing.
+        scan = _ledger_scan(GATE_LEDGER)
+        ruled = None if scan is None or scan.err else scan.cell_ruled
+        return _jp.intake(rows, cell_of=lambda r: r.get("_cell") or _cell_id(r),
+                          probe=_fire_probe, publish=publish, ruled=ruled,
+                          seconds_per_cell=seconds_per_cell)
+    except (Exception, SystemExit) as exc:                     # never costs the docket
+        return rows, {"mode": "UNMEASURED", "removed_from_docket": 0,
+                      "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+
+
 def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
                  now: datetime | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """THE INTAKE CALL. Return the docket re-ordered for coverage, and the table it implies.
@@ -3603,11 +4107,21 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
 def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | None
                   ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     doc: dict[str, Any] | None = None
+    # THE ROWS AS THEY ARRIVED (audit of v1.2, MF2): any failure returns these, unfiltered, so a
+    # parked row is never shipped nowhere and counted nowhere. And once the commit point is
+    # reached nothing here is written directly again (MF1): a kept manifest rolls forward.
+    entry_rows = list(rows)
+    commit_reached = False
     try:
         doc = build(rows, now=now, defer=publish)
         if not doc.get("families"):
             _txn = doc.pop("_txn", None)
+            # THE ROWS SHIP UNFILTERED HERE, so nothing is parked out of this docket: the parked
+            # list is rewritten EMPTY with it, or the census counts last pass's rows twice
+            # (audit of v1.1, MF2: rows 35 -> 40, charge 56 -> 49).
+            _write_parked_trials([], _txn)
             if _txn is not None:
+                commit_reached = True
                 _txn.commit()
             return rows, doc
         quota = {str(k): int(v) for k, v in (doc.get("quota") or {}).items()}
@@ -3626,6 +4140,31 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         bank = unrunnable_bank()
         blocked = [r for r in rows if str(r.get("_cell") or "") in bank]
         rows = [r for r in rows if str(r.get("_cell") or "") not in bank]
+        _ptrials = parked_trial_rows(blocked, bank)
+        # THE PRE-BUILD SCREEN (research/judge_prescreen, principal 2026-10-28), AFTER the bank
+        # filter so it never re-decides a parked cell. SHADOW by default: the rows come back
+        # untouched and JUDGE_PRESCREEN_INTAKE.json records what each rule WOULD remove. Only
+        # when the code constant judge_prescreen.CANON is flipped by a reviewed commit does a
+        # canon-eligible rule remove a row -- after its KILL is durable in the kill ledger, as
+        # a recorded terminal verdict charged exactly once. Fails open: any error ships the rows.
+        _cap = int((doc.get("totals") or {}).get("capacity_measured") or 0)
+        _screened = rows
+        rows, doc["prescreen"] = _prescreen(
+            rows, publish=publish,
+            seconds_per_cell=judge_seconds_per_cell(_cap) if _cap else None)
+        # A SCREENED-OUT ROW STAYS IN THE TRIAL CENSUS, exactly as a parked one does (the same
+        # audit S4 reasoning: removing a row from the docket must move no `effective_trials`
+        # charge). Empty in SHADOW, where the screen removes nothing; under CANON the rows the
+        # kill ledger durably removed are written beside the docket with the parked rows, and
+        # `effective_trials.census_rows` counts each trial identity once.
+        _ptrials = _ptrials + prescreen_trial_rows(
+            _screened, rows, room=PARKED_TRIAL_ROWS_MAX - len(_ptrials))
+        _ppath = _write_parked_trials(_ptrials, doc.get("_txn"))
+        doc["build_input_parked_trials"] = {
+            "rows": len(_ptrials), "path": str(_ppath),
+            "rule": ("rows parked as build_input_missing, and rows the pre-build screen removed "
+                     "under CANON, stay in the trial census (effective_trials reads them beside "
+                     "the docket): neither parking nor screening moves a charge")}
         judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
         study = [r for r in rows if str(r.get("family") or "") in banned]
         # CHARGE VARIANTS AGAINST THEIR PARENT. The split marks the rows; the two orders below
@@ -3633,9 +4172,10 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         # inside the judge's measured capacity is exactly what the demotion freed. Nothing is
         # dropped in either order: both hold every row.
         split = variant_split(judgeable, ids)
+        fam_split = family_stamp(judgeable, ids)
         cap = int((doc.get("totals") or {}).get("capacity_measured") or 0)
         before = coverage_order(judgeable, quota, ids, demote_variants=False, use_keff=False,
-                                use_occupancy=False)
+                                use_occupancy=False, use_families=False)
         ordered_j = coverage_order(judgeable, quota, ids)
         # NEVER-FIRING GROUND TO THE TAIL (2026-09-30). Order only; every row stays.
         dead = never_fire_pairs(bank, fired_pairs())
@@ -3677,15 +4217,25 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
                      "and horizon ranks below an unseen mechanism inside its own family stream. "
                      "The queue is uncapped and no row is dropped; only the order changes"),
         }
+        doc["family_demotion"] = {
+            **fam_split, "capacity": cap,
+            "representatives_in_capacity_before": _unseen_families_in_prefix(before, cap),
+            "representatives_in_capacity_after": _unseen_families_in_prefix(ordered_j, cap),
+            "rule": ("the first claim of an L2 hypothesis family (same rule, co-moving "
+                     "instruments) ranks ahead of later members inside its family stream, after "
+                     "the variant test. Nothing dropped, nothing inherited, every cell judged and "
+                     "counted; only the order changes"),
+        }
         doc["unrunnable_filtered_from_docket"] = len(blocked)
         for _b in blocked:
-            for _k in ("_cell", "_keff", "_occ", "_orth"):
+            for _k in ("_cell", "_keff", "_occ", "_orth", "_famdup"):
                 _b.pop(_k, None)
         # `orthogonality` (the published per-row score) is KEPT on the row; the ordering terms go.
         for row in ordered:
-            for _k in ("_cell", "_variant", "_keff", "_occ", "_orth"):
+            for _k in ("_cell", "_variant", "_keff", "_occ", "_orth", "_famdup"):
                 row.pop(_k, None)
         if publish:
+            commit_reached = True
             write(doc)
         return ordered, doc
     except Exception as exc:                                             # pragma: no cover
@@ -3693,7 +4243,19 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
         _left = doc.pop("_txn", None) if isinstance(doc, dict) else None
         if isinstance(_left, _Txn):
             _left.discard()
-        return rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+        # The rows ship as they arrived: none is parked out of them, so the parked list is empty
+        # -- written directly only while no commit point was reached and no committed manifest
+        # still names it (a roll-forward lands its own list; `census_rows` never counts a parked
+        # row the docket holds).
+        if not commit_reached and not _manifest_names(UNRUNNABLE_BANK.parent
+                                                      / PARKED_TRIAL_ROWS.name):
+            _write_parked_trials([], None)
+        for _r in entry_rows:
+            # `_famdup` (judge-families' stamp) too: on efde2f1c4 a fault after `family_stamp`
+            # shipped it, failing #424's test_a_fault_after_the_filter_ships_the_rows_as_they_arrived
+            for _k in ("_cell", "_variant", "_keff", "_occ", "_orth", "_famdup"):
+                _r.pop(_k, None)
+        return entry_rows, {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
 
 
 def write(doc: dict[str, Any], *, report: Path | None = None,
@@ -3752,6 +4314,8 @@ def _write_staged(doc: dict[str, Any], txn: _Txn, *, report: Path | None,
         "unknown_share": (doc.get("totals") or {}).get("unknown_share"),
         "unknown_share_basis": (doc.get("totals") or {}).get("unknown_share_basis"),
         "prewarm_fail_share": (doc.get("totals") or {}).get("prewarm_fail_share"),
+        "release_not_ok_passes": int(((doc.get("build_input_probe") or {}).get("release_file")
+                                      or {}).get("not_ok_passes") or 0),
         "drain_status": (doc.get("totals") or {}).get("drain_status"),
         "priors_cursor": (doc.get("priors_learned") or {}).get("cursor") or "",
         "why": ("the baseline the carried-cohort ratchet is measured against: rows already in "

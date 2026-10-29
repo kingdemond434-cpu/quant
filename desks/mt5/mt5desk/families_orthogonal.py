@@ -329,6 +329,18 @@ def family_vol_transition(
     _a_atr = atr.to_numpy()
     _a_d_close = d["close"].to_numpy()
     _a_ret = ret.to_numpy()
+    from mt5desk import families_vector as _vec
+    if _vec.enabled():
+        # Speed only: the same signals from the bars that can emit (families_vector).
+        try:
+            _fast = _vec.vol_transition_emit(
+                d=d, vf=_a_v_fast, vs=_a_v_slow, at=_a_atr, cl=_a_d_close, ret=_a_ret,
+                slow=slow, ratio_in=ratio_in, stop_atr=stop_atr, rr=rr, ttl_bars=ttl_bars)
+        except Exception as exc:
+            _vec.fell_back("vol_transition", exc)
+            _fast = None
+        if _fast is not None:
+            return _fast
     for i in range(slow + 1, len(d) - 1):
         prev = float(_a_v_fast[i - 1] / _a_v_slow[i - 1]) if _a_v_slow[i - 1] else np.nan
         now = float(_a_v_fast[i] / _a_v_slow[i]) if _a_v_slow[i] else np.nan
@@ -868,6 +880,18 @@ def family_vol_mean_reversion(
     _a_atr = atr.to_numpy()
     _a_d_close = d["close"].to_numpy()
     _a_ret = ret.to_numpy()
+    from mt5desk import families_vector as _vec
+    if _vec.enabled():
+        # Speed only: the same signals from the bars that can emit (families_vector).
+        try:
+            _fast = _vec.vol_mean_reversion_emit(
+                d=d, z=_a_z, at=_a_atr, cl=_a_d_close, ret=_a_ret, lookback=lookback,
+                z_in=z_in, stop_atr=stop_atr, rr=rr, ttl_bars=ttl_bars)
+        except Exception as exc:
+            _vec.fell_back("vol_mean_reversion", exc)
+            _fast = None
+        if _fast is not None:
+            return _fast
     for i in range(lookback + 1, len(d) - 1):
         zi = float(_a_z[i]) if np.isfinite(_a_z[i]) else np.nan
         if not np.isfinite(zi) or zi > z_in:

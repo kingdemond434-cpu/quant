@@ -236,6 +236,7 @@ LEG_LAYER: dict[str, str] = {
     # redundancy organ and the forward-evidence series measure the machine itself: meta.
     "live_calibration_posterior": "prediction", "constrained_book": "sizing",
     "kelly_survival": "sizing", "stop_geometry_derivation": "sizing",
+    "prop_challenge_allocator": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "recovery_drills": "meta",
@@ -371,6 +372,10 @@ LEG_LAYER: dict[str, str] = {
     # Which families the scarce judge actually spends itself on, measured per family as unjudged
     # backlog. It buys INFORMATION about the mined population, not a signal or a position.
     "judge_coverage": "information",
+    # What the judge's pre-build screen WOULD remove from the docket, and the measured cost of
+    # that (true survivors a sibling rule would have taken, by a time-ordered ledger replay). It
+    # buys INFORMATION about the docket before any signal is built.
+    "judge_prescreen": "information",
     # How much ORTHOGONALITY and how many CERTIFICATES each producer actually returns per hour of
     # compute. It buys INFORMATION about the producers themselves -- which of them opens ground
     # nothing else covers, and which of them converts the judge's hour into a certificate.
@@ -527,6 +532,10 @@ LEG_LAYER: dict[str, str] = {
     "pf_allocator": "portfolio",
     "allocator_liveness": "portfolio",
     "allocator_trigger": "portfolio",
+    # `input_ablation` re-solves the allocator with each input switched off and judges it against
+    # the plain solve out of sample: evidence about how the book is composed, so it bills to the
+    # same layer as the allocator it judges.
+    "input_ablation": "portfolio",
     # The balance-sheet layer and the Allocator-V2 evidence: what the book costs to carry and
     # what each sleeve is worth to it -- a question about the book's composition, not about
     # how an order reaches the venue.

@@ -279,6 +279,19 @@ def frontier_report(health: dict) -> None:
     print(f"frontier report written ({rep['swept_at']})", flush=True)
 
 
+#: `daily_cycle.EXIT_STOOD_DOWN`, restated so this cycle never imports the chain to read one int;
+#: `test_daily_cycle_single_chain` pins the two equal.
+DAILY_CYCLE_STOOD_DOWN = 75
+#: `daily_cycle.EXIT_HOLDER_HUNG`: stood down behind a holder past its ceiling -- a failure (v1.3).
+DAILY_CYCLE_HOLDER_HUNG = 76
+#: `daily_cycle.EXIT_STAMP_UNREADABLE` / `_PERSISTENT` (v1.6): the stamp could not be read, so
+#: nothing ran; the second is the escalation after three consecutive passes.
+DAILY_CYCLE_STAMP_UNREADABLE = 77
+DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT = 78
+DAILY_CYCLE_STOOD_DOWN_REASON = ("daily chain stood down: another chain healthily holds the lock "
+                                 "and runs the same steps; the next pass re-reads the stamp")
+
+
 def daily() -> dict:
     """The operating chain -- shadow -> promoter -> markout -- run once per UTC day.
 
@@ -301,10 +314,37 @@ def daily() -> dict:
         r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target)],
                       capture_output=True, text=True, cwd=str(BASE),
                       timeout=timeout_s, check=False)
+        tail = (r.stdout or r.stderr or "")[-500:]
+        at = datetime.now(UTC).isoformat(timespec="seconds")
+        # A STAND-DOWN IS A VERDICT, NOT OK AND NOT A FAILURE (v1.1, re-done v1.2). `daily_cycle`
+        # exits EXIT_STOOD_DOWN (75) when another chain healthily holds its lock and this bounded
+        # caller ran nothing. Recording it as OK credits this leg with a chain it never ran; the
+        # v1.1 status "STOOD_DOWN" was worse in the other direction -- `_costed` wrote it as the
+        # outcome, `completion` read every non-"ok" outcome as FAILING and `write_or_explain`
+        # read the undeclared exit 75 as LEG_FAILED. So: no "status" key (the ledger writes
+        # `verdict_exit=75` from VERDICT_EXITS["daily"]), and a `noop_reason`, which is how a leg
+        # tells `write_or_explain` it wrote nothing ON PURPOSE.
+        if r.returncode == DAILY_CYCLE_STOOD_DOWN:
+            return {"exit_code": DAILY_CYCLE_STOOD_DOWN, "verdict_exit": True,
+                    "stood_down": True, "noop_reason": DAILY_CYCLE_STOOD_DOWN_REASON,
+                    "tail": tail, "at": at}
+        if r.returncode == DAILY_CYCLE_HOLDER_HUNG:
+            # NOT a verdict (v1.3): no status and no noop_reason, so the ledger names it
+            # `exit_code=76:HOLDER_HUNG` (NAMED_FAILURE_EXITS), write_or_explain reads LEG_FAILED
+            # and the leg's completion streak counts it -- a hung MT5-Daily is surfaced, not
+            # muted. (completion.judge itself rates `daily` UNDECLARED: it has no capability-graph
+            # node, which predates this change.)
+            return {"exit_code": DAILY_CYCLE_HOLDER_HUNG, "holder_hung": True,
+                    "tail": tail, "at": at}
+        if r.returncode in (DAILY_CYCLE_STAMP_UNREADABLE,
+                            DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT):
+            # Named failures, like 76 (v1.6): no status, so the ledger writes
+            # `exit_code=77:STAMP_UNREADABLE` / `exit_code=78:STAMP_UNREADABLE_PERSISTENT`.
+            return {"exit_code": int(r.returncode), "stamp_unreadable": True,
+                    "tail": tail, "at": at}
         return {"exit_code": int(r.returncode),
                 "status": "OK" if r.returncode == 0 else "FAILED",
-                "tail": (r.stdout or r.stderr or "")[-500:],
-                "at": datetime.now(UTC).isoformat(timespec="seconds")}
+                "tail": tail, "at": at}
     except subprocess.TimeoutExpired as exc:
         return {"exit_code": None, "status": "TIMEOUT", "timeout_s": exc.timeout,
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
@@ -1019,6 +1059,9 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
     "model_skill": (2,),
     "deep_forest": (1,),
     "maintain_miners": (2,),
+    # `daily_cycle` exits 75 (EXIT_STOOD_DOWN) when another chain healthily holds its lock and
+    # this bounded caller ran nothing: the holder is running the same steps (v1.2).
+    "daily": (DAILY_CYCLE_STOOD_DOWN,),
 }
 
 #: The other side of the same rule: exit codes a leg uses to NAME a failure. They stay failures
@@ -1028,8 +1071,15 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #:   judge_coverage 4 -- --reuse-fresh found no fresh same-cycle table (JUDGE_COVERAGE_REUSE.json)
 #:   judge_coverage 5 -- a committed transaction manifest could not be rolled forward safely; it
 #:                       is kept and every pass refuses until it is resolved by hand
+#:   daily 76          -- stood down behind a chain-lock holder older than its 16 h ceiling: a
+#:                       hung MT5-Daily (daily_cycle.EXIT_HOLDER_HUNG)
+#:   daily 77 / 78     -- the day's stamp could not be READ, so no step ran; 78 once that has
+#:                       lasted past 3 consecutive passes (daily_cycle.EXIT_STAMP_UNREADABLE*)
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
     "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
+    "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG",
+              DAILY_CYCLE_STAMP_UNREADABLE: "STAMP_UNREADABLE",
+              DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT: "STAMP_UNREADABLE_PERSISTENT"},
 }
 
 
@@ -1150,6 +1200,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
+    # The FTMO book's solve on the same cadence (2026-10-28): it re-solves from the account's live
+    # phase every hour, so a phase change or a new certificate moves the book within the hour.
+    "prop_challenge_allocator",
     # The two stop-geometry constants on the same solve (2026-09-30): a report the sizing fence's
     # citations point at, re-derived hourly so a stale number is visible as stale.
     "stop_geometry_derivation",
@@ -1212,7 +1265,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
-                     "judge_coverage", "orthogonality_yield", "effective_trials",
+                     "judge_coverage", "judge_prescreen", "orthogonality_yield",
+                     "effective_trials",
                      "occupancy_map", "dsr_inputs"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
@@ -2110,6 +2164,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # in QUANT_LEG_BUDGET_S) minus its commit margin -- so it never stops earlier than the kill
     # it replaces, and a stopped pass changes no file. The cap is unchanged.
     "judge_coverage": 300,
+    # The pre-build screen streams the gate ledger once (time-ordered replay, dict updates only),
+    # stats each bar file's time column only when its size or mtime moved, and probes two
+    # families' input guards per symbol. Measured ~1 s on a 3,557-row ledger in the cloud
+    # container; the box's ~1M-row ledger is UNMEASURED, so the cap is generous.
+    "judge_prescreen": 600,
     # Orthogonality yield is one indexed scan of the candidate registry, one pass over the gate
     # ledger and 79 leave-one-out SVDs of a 79 x ~1000 indicator matrix. Measured 2026-09-23 on
     # the trading box against 323,313 registry rows and 146,359 ledger rows: under a minute. The
@@ -4568,6 +4627,18 @@ def main() -> None:
     # QUANT_PIPELINE_STARTED_AT, ratchet in step, merge report of this cycle written after it),
     # and otherwise exits 4 with reports/JUDGE_COVERAGE_REUSE.json naming why. It never writes
     # the table, so a stale table stays stale under its own `at`. The cap is unchanged.
+    # THE JUDGE'S PRE-BUILD SCREEN (principal 2026-10-28; research/judge_prescreen). Replays the
+    # gate ledger in time order to measure, per K, what `sibling_dead` would have killed and how
+    # many true survivors it would have taken (the canon gate is ZERO in both halves), refreshes
+    # the chart calendars `chart_short` proves from, audits the provable rules on every known
+    # certificate, and writes the tables `judge_coverage.order_docket` screens the docket with
+    # at intake. SHADOW by default -- nothing leaves the docket until the code constant
+    # judge_prescreen.CANON is flipped by a reviewed commit (no state file can), and then only
+    # for a canon-eligible rule (needs_data; sibling_dead is not eligible in code). Runs
+    # at below-normal priority: the judge never outranks the miners. Data department,
+    # information layer.
+    jps = _costed("judge_prescreen", lambda: _producer("judge_prescreen",
+                                                       "research/judge_prescreen.py", "--once"))
     jcv = _costed("judge_coverage", lambda: _producer("judge_coverage",
                                                       "research/judge_coverage.py",
                                                       "--once", "--reuse-fresh",
@@ -5535,6 +5606,12 @@ def main() -> None:
     # 2026-09-08 and never re-measured. `--step markout` runs that one step here, unchanged.
     fmk = _costed("fill_markout", lambda: _producer(
         "fill_markout", "research/daily_cycle.py", "--step", "markout"))
+    # EACH ALLOCATOR INPUT AGAINST THE PLAIN SOLVE, OUT OF SAMPLE (zuck 2026-10-27). Its own leg:
+    # the daily chain is killed at 900 s and its proposers alone measured 9,056 s. The organ
+    # stops itself at 600 s inside the 720 s default cap and caches every solved window, so the
+    # backlog shrinks each hour and an hour with no new window costs a few cache reads.
+    iab = _costed("input_ablation", lambda: _producer(
+        "input_ablation", "research/input_ablation.py", "--budget-s", "600"))
     exo = _costed("exogenous_search", exogenous_search)
     srx = _costed("stop_reverse", stop_reverse_census)
     fwr = _costed("forward_reconcile", forward_reconcile_leg)
@@ -5895,6 +5972,13 @@ def main() -> None:
     # block, principal 2026-10-06); nothing sizes from it until the gateway reads it.
     kls = _costed("kelly_survival", lambda: _producer(
         "kelly_survival", "research/kelly_survival.py", "--book"))
+    # THE FTMO BOOK BY SOLVE (principal 2026-10-28 14:34Z): pass-speed x pass-probability over the
+    # Tier S sleeves FTMO lists, at FTMO's own hour costs, from the account's live phase
+    # (reports/FTMO_ACCOUNT_STATE.json). Writes reports/FTMO_ALLOCATOR.json and the FTMO gap
+    # hypotheses for the miners; the CERT_BOOK_LIVE `ftmo` block moves only when
+    # data/FTMO_ALLOCATOR_ARMED exists. Re-runs every pass, so a certificate change is picked up.
+    fta = _costed("prop_challenge_allocator", lambda: _producer(
+        "prop_challenge_allocator", "research/prop_challenge_allocator.py"))
     # THE STOP GEOMETRY ON THE SAME SOLVE (2026-09-30): MIN_STOP_SPREAD_MULT and
     # ENTRY_DRIFT_TOL_FRAC re-derived from the bars' spreads, the entry drift and the live edge.
     # A report only -- the money path carries the cited values. Each value passes a two-sided
@@ -6046,6 +6130,7 @@ def main() -> None:
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
                     "coverage_tensor": cov, "coverage_drain": cdr, "judge_coverage": jcv,
+                    "judge_prescreen": jps,
                     "regional_parity": rpp,
                     "orthogonality_yield": oyz, "effective_trials": eft,
                     "dsr_inputs": dsi,
@@ -6161,9 +6246,9 @@ def main() -> None:
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
-                    "kelly_survival": kls,
+                    "kelly_survival": kls, "prop_challenge_allocator": fta,
                     "stop_geometry_derivation": sgd,
-                    "decay_monitor": dmo, "fill_markout": fmk,
+                    "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,
