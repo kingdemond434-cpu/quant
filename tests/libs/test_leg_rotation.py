@@ -70,7 +70,8 @@ def test_always_run_legs_are_never_rotated_out() -> None:
 def test_overrun_yields_to_legs_that_have_never_run() -> None:
     """Estimates are wrong; when the pass runs long, the legs that pay must not be the dark ones."""
     roster = ["old", "dark"]
-    att = _att({"old": 3, "dark": 0}, costs={"old": 1.0, "dark": 1.0})
+    # Above CHEAP_LEG_S on purpose: a cheap leg is never yielded (see the starvation tests).
+    att = _att({"old": 3, "dark": 0}, costs={"old": 30.0, "dark": 30.0})
     dec = LR.plan_pass(roster, att, plan="core", budget_s=100.0)
     assert dec.admitted == {"old", "dark"}
     ran_ok, why = dec.should_run("old", att, elapsed_s=500.0)
@@ -198,3 +199,258 @@ def test_fence_fails_on_a_never_run_leg_and_on_an_absent_record(tmp_path: Path) 
     rec.write_text(json.dumps({"generated": stale.isoformat(), "never_run": [],
                                "outside_window": [], "window_h": 24.0}), encoding="utf-8")
     assert not mod.check(rec)["ok"], "a stale record means the cycle is not running on its clock"
+
+
+# ------------------------------------------------------------------------------------------------
+# THE 2026-10-29 STARVATION, REPRODUCED. The always-run set alone was charged 3,749 s against a
+# 2,640 s budget (`tier_s` at its 1,500 s LEG_TIMEOUT every pass, `smoke_release` at 120 s), so
+# `spent + cost <= budget` was false for EVERY other leg: `clock_ledger` (~1 s) went four days
+# unadmitted under a "1s would pass the 2640s budget ... it leads the next pass" line, and
+# `prop_challenge_allocator` never ran. These pin the class closed.
+# ------------------------------------------------------------------------------------------------
+
+BOX_BUDGET_S = 2640.0
+#: The always-run set as the box measured it: 1500 + 120 + 2129 = 3749 s, past the budget alone.
+HEAVY_ALWAYS = {"tier_s": 1500.0, "smoke_release": 120.0, "forward_reconcile": 2129.0}
+
+
+def _load(path: Path, name: str) -> object:
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _prior(started: datetime, starve: dict[str, int], declared: list[str],
+           plan: str = "core") -> dict:
+    """A previous record in the published shape: per-plan ageing state, declared roster."""
+    return {"generated": started.isoformat(), "declared": list(declared),
+            "ageing": {plan: {"generated": started.isoformat(),
+                              "pass_started": started.isoformat(),
+                              "starve_passes": dict(starve), "red": {}}}}
+
+
+def _box_roster() -> tuple[list[str], LR.Attendance, datetime]:
+    """Heavy always-run legs FIRST, then a cheap leg, a never-run money leg, a chronic-timeout
+    non-always leg and twenty ordinary ones -- the shape of the box on 2026-10-29."""
+    now = datetime(2026, 10, 29, 14, 0, tzinfo=UTC)
+    ordinary = [f"organ{i:02d}" for i in range(20)]
+    roster = [*HEAVY_ALWAYS, "clock_ledger", "prop_challenge_allocator", "slow_timeout",
+              *ordinary]
+    costs = {**HEAVY_ALWAYS, "clock_ledger": 1.2, "slow_timeout": 1400.0,
+             **dict.fromkeys(ordinary, 300.0)}
+    runs = {**dict.fromkeys(roster, 40), "prop_challenge_allocator": 0}
+    att = _att(runs, ages_h=dict.fromkeys(roster, 1.0), costs=costs, now=now)
+    att.timeouts = {"tier_s": 9, "slow_timeout": 9}
+    return roster, att, now
+
+
+def _simulate(roster: list[str], att: LR.Attendance, now: datetime, tmp_path: Path,
+              passes: int, prior: dict | None = None) -> tuple[list[LR.Decision], dict]:
+    """Run `passes` hourly passes, each admitted leg actually running, the record chained."""
+    out = tmp_path / "LEG_ROTATION.json"
+    decisions: list[LR.Decision] = []
+    doc = prior
+    t = now
+    for _ in range(passes):
+        dec = LR.plan_pass(roster, att, plan="core", budget_s=BOX_BUDGET_S, now=t, prior=doc)
+        ran = [leg for leg in roster if leg in dec.admitted]
+        for leg in ran:
+            att.runs[leg] = att.runs.get(leg, 0) + 1
+            att.last_at[leg] = (t + timedelta(minutes=1)).isoformat(timespec="seconds")
+        doc = LR.record(dec, att, ran, path=out, started=t, now=t + timedelta(minutes=50))
+        decisions.append(dec)
+        t += timedelta(hours=1)
+    return decisions, doc or {}
+
+
+def test_reproduces_and_ends_the_2026_10_29_starvation(tmp_path: Path) -> None:
+    roster, att, now = _box_roster()
+    first = LR.plan_pass(roster, att, plan="core", budget_s=BOX_BUDGET_S, now=now)
+    always_cost = sum(HEAVY_ALWAYS.values())
+    assert always_cost > BOX_BUDGET_S, "the reproduction needs the always-run set past budget"
+    # THE CHEAP LEG IS ADMITTED EVEN THOUGH THE BUDGET IS ALREADY GONE. Before the fix this was
+    # "deferred this pass: 1s would pass the 2640s budget (3749s planned)".
+    assert "clock_ledger" in first.admitted and "clock_ledger" in first.protected
+    # The box adopts this code mid-flight: its last record predates `starve_passes`.
+    adoption = {"generated": (now - timedelta(minutes=30)).isoformat(), "elapsed_s": 0.0}
+    decisions, _ = _simulate(roster, att, now, tmp_path, passes=12, prior=adoption)
+    streak: dict[str, int] = dict.fromkeys(roster, 0)
+    worst: dict[str, int] = dict.fromkeys(roster, 0)
+    for dec in decisions:
+        assert "clock_ledger" in dec.admitted, "a cheap leg must be admitted every pass"
+        for leg in roster:
+            streak[leg] = streak[leg] + 1 if leg in dec.deferred else 0
+            worst[leg] = max(worst[leg], streak[leg])
+    over = {leg: n for leg, n in worst.items() if n > LR.MAX_DEFERRALS}
+    assert not over, f"legs deferred past the {LR.MAX_DEFERRALS}-pass bound: {over}"
+    ran = set().union(*(d.admitted for d in decisions))
+    assert ran == set(roster), f"never admitted in 12 passes: {set(roster) - ran}"
+    assert "prop_challenge_allocator" in decisions[0].admitted, "never run: aged in at once"
+    assert "prop_challenge_allocator" in decisions[0].red, "and named RED until it has run"
+    assert not decisions[-1].red, f"steady state must be GREEN, got {decisions[-1].red}"
+
+
+def test_deferral_ages_into_unconditional_admission(tmp_path: Path) -> None:
+    """With no room at all, a leg is deferred at most MAX_DEFERRALS passes, then admitted."""
+    roster = ["tier_s", "waiter"]
+    now = datetime(2026, 10, 29, tzinfo=UTC)
+    att = _att({"tier_s": 5, "waiter": 5}, costs={"tier_s": 5000.0, "waiter": 200.0}, now=now)
+    decisions, doc = _simulate(roster, att, now, tmp_path, passes=LR.MAX_DEFERRALS + 1,
+                               prior=_prior(now - timedelta(hours=1), {"waiter": 0}, roster))
+    states = ["waiter" in d.admitted for d in decisions]
+    assert states == [False] * LR.MAX_DEFERRALS + [True], states
+    last = decisions[-1]
+    assert "waiter" in last.aged and "aged" in last.why["waiter"]
+    assert doc["starve_passes"]["waiter"] == LR.MAX_DEFERRALS
+    assert "it leads the next pass" not in json.dumps(doc["why"]), "the false promise is gone"
+
+
+def test_aged_and_cheap_legs_are_not_yielded_on_overrun() -> None:
+    """tier_s timing out early puts the clock past budget for the rest of the pass; the aged and
+    cheap legs it admitted must still run, or admission is a promise the runtime breaks."""
+    roster = ["tier_s", "cheap", "aged", "plain"]
+    att = _att({"tier_s": 5, "cheap": 5, "aged": 5, "plain": 5},
+               costs={"tier_s": 1500.0, "cheap": 0.5, "aged": 300.0, "plain": 30.0})
+    prior = _prior(datetime.now(tz=UTC) - timedelta(hours=1),
+                   {"aged": LR.MAX_DEFERRALS, "cheap": 0, "plain": 0}, roster)
+    att.last_at = dict.fromkeys(roster, "2020-01-01T00:00:00+00:00")
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=2000.0, prior=prior)
+    assert {"cheap", "aged"} <= dec.protected
+    for leg in ("cheap", "aged", "tier_s"):
+        ok, why = dec.should_run(leg, att, elapsed_s=5000.0)
+        assert ok, f"{leg} yielded on overrun: {why}"
+    ok, why = dec.should_run("plain", att, elapsed_s=5000.0)
+    assert not ok and "at most" in why
+
+
+def test_chronic_timeout_is_ranked_last_not_removed(tmp_path: Path) -> None:
+    """A non-always leg timing out every pass cedes its slot to a stale leg, but still ages in."""
+    roster = ["slow_timeout", "stale"]
+    now = datetime(2026, 10, 29, tzinfo=UTC)
+    att = _att({"slow_timeout": 5, "stale": 5}, ages_h={"slow_timeout": 9.0, "stale": 2.0},
+               costs={"slow_timeout": 600.0, "stale": 600.0}, now=now)
+    att.timeouts = {"slow_timeout": LR.CHRONIC_TIMEOUT_RUNS}
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=700.0, now=now)
+    assert dec.chronic_timeouts == ["slow_timeout"]
+    assert dec.admitted == {"stale"}, "older, but a chronic timeout ranks behind a stale leg"
+    assert "CHRONIC TIMEOUT" in dec.why["slow_timeout"]
+    decisions, _ = _simulate(roster, att, now, tmp_path, passes=4,
+                             prior=_prior(now - timedelta(hours=1), {}, roster))
+    assert any("slow_timeout" in d.admitted for d in decisions), "demoted, never removed"
+
+
+def test_attendance_counts_consecutive_timeouts(tmp_path: Path) -> None:
+    led = tmp_path / "compute_ledger.jsonl"
+    rows = [{"at": f"2026-10-29T0{i}:00:00+00:00", "run": "tier_s", "wall_s": 1500.0,
+             "outcome": "TIMEOUT"} for i in range(LR.CHRONIC_TIMEOUT_RUNS)]
+    led.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+    att = LR.read_attendance(led)
+    assert att.chronic_timeout("tier_s")
+    again = LR.Attendance.from_json(json.loads(json.dumps(att.to_json())))
+    assert again.chronic_timeout("tier_s"), "the streak must survive the record round trip"
+    with led.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"at": "2026-10-29T09:00:00+00:00", "run": "tier_s",
+                             "wall_s": 900.0, "outcome": "ok"}) + "\n")
+    assert not LR.read_attendance(led, prior=att).chronic_timeout("tier_s")
+
+
+def test_adoption_seeds_the_wait_from_attendance_age() -> None:
+    """The first pass after this ships reads a record with no `starve_passes`: a leg already dark
+    four days, and a never-run one, are admitted on that very pass and named RED."""
+    now = datetime(2026, 10, 29, 14, 37, tzinfo=UTC)
+    roster = ["tier_s", "clock_ledger_big", "prop_challenge_allocator", "fresh"]
+    att = _att({"tier_s": 9, "clock_ledger_big": 9, "prop_challenge_allocator": 0, "fresh": 9},
+               ages_h={"tier_s": 0.5, "clock_ledger_big": 104.0, "fresh": 0.5},
+               costs={"tier_s": 5000.0, "clock_ledger_big": 120.0, "fresh": 120.0}, now=now)
+    old_format = {"generated": (now - timedelta(minutes=20)).isoformat(), "elapsed_s": 0.0,
+                  "never_run": ["prop_challenge_allocator"]}
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=2640.0, now=now, prior=old_format)
+    assert {"clock_ledger_big", "prop_challenge_allocator"} <= set(dec.aged)
+    assert "fresh" in dec.deferred
+    assert "prop_challenge_allocator" in dec.red
+
+
+def test_red_names_a_leg_starved_past_the_bound(tmp_path: Path) -> None:
+    """Admitted at the bound and STILL not run (pass killed before it): RED, by name, in the
+    record, in the fence and in the desk-health checker."""
+    now = datetime(2026, 10, 29, 15, 0, tzinfo=UTC)
+    roster = ["tier_s", "clock_ledger"]
+    att = _att({"tier_s": 9, "clock_ledger": 9}, ages_h={"tier_s": 0.5, "clock_ledger": 100.0},
+               costs={"tier_s": 5000.0, "clock_ledger": 1.0}, now=now)
+    prior = _prior(now - timedelta(hours=1), {"clock_ledger": LR.MAX_DEFERRALS, "tier_s": 0},
+                   roster)
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=2640.0, now=now, prior=prior)
+    assert dec.starve_passes["clock_ledger"] == LR.RED_AFTER_PASSES
+    assert list(dec.red) == ["clock_ledger"], dec.red
+    out = tmp_path / "LEG_ROTATION.json"
+    doc = LR.record(dec, att, [], path=out, started=now, now=now, complete=False)
+    assert doc["liveness"]["verdict"] == "RED"
+    assert doc["liveness"]["red_legs"] == ["clock_ledger"]
+
+    fence = _load(ROOT / "scripts" / "check_leg_rotation.py", "_check_leg_rotation_red")
+    rep = fence.check(out, now=now)  # type: ignore[attr-defined]
+    assert not rep["ok"] and rep["liveness"] == "RED"
+    assert any("liveness RED" in f and "clock_ledger" in f for f in rep["failures"])
+
+    health = _load(ROOT / "desks" / "mt5" / "scripts" / "check_desk_health.py", "_cdh_red")
+    health._FINDINGS.clear()  # type: ignore[attr-defined]
+    health.check_leg_rotation(out)  # type: ignore[attr-defined]
+    found = health._FINDINGS  # type: ignore[attr-defined]
+    assert [f["level"] for f in found] == ["PROBLEM"]
+    assert "clock_ledger" in found[0]["message"]
+
+    # ... and the same leg, run, is GREEN on the next pass.
+    att.last_at["clock_ledger"] = (now + timedelta(minutes=2)).isoformat()
+    nxt = LR.plan_pass(roster, att, plan="core", budget_s=2640.0,
+                       now=now + timedelta(hours=1), prior=doc)
+    assert nxt.starve_passes["clock_ledger"] == 0 and not nxt.red
+    green = LR.record(nxt, att, ["clock_ledger"], path=out, started=now + timedelta(hours=1),
+                      now=now + timedelta(hours=1))
+    assert green["liveness"]["verdict"] == "GREEN"
+    health._FINDINGS.clear()  # type: ignore[attr-defined]
+    health.check_leg_rotation(out)  # type: ignore[attr-defined]
+    assert [f["level"] for f in health._FINDINGS] == ["OK"]  # type: ignore[attr-defined]
+
+
+def test_a_newly_wired_leg_is_not_red_before_it_has_had_a_pass() -> None:
+    now = datetime(2026, 10, 29, tzinfo=UTC)
+    roster = ["old", "brand_new"]
+    att = _att({"old": 3, "brand_new": 0}, costs={"old": 30.0}, now=now)
+    prior = _prior(now - timedelta(hours=1), {"old": 0}, ["old"])
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=1000.0, now=now, prior=prior)
+    assert "brand_new" in dec.never_run and "brand_new" not in dec.red
+    prior2 = {**prior, "declared": roster}
+    assert "brand_new" in LR.plan_pass(roster, att, plan="core", budget_s=1000.0, now=now,
+                                       prior=prior2).red
+
+
+def test_a_department_pass_cannot_reset_the_core_plans_wait(tmp_path: Path) -> None:
+    """Core and the department residents share LEG_ROTATION.json; a dept write in between two
+    core passes must neither reset core's counts nor paper over core's RED."""
+    now = datetime(2026, 10, 29, 10, tzinfo=UTC)
+    out = tmp_path / "LEG_ROTATION.json"
+    core = ["tier_s", "waiter"]
+    att = _att({"tier_s": 5, "waiter": 5, "dept_leg": 5},
+               costs={"tier_s": 5000.0, "waiter": 200.0, "dept_leg": 10.0}, now=now)
+    doc = _prior(now - timedelta(hours=1), {"waiter": LR.RED_AFTER_PASSES - 2}, core)
+    att.last_at["waiter"] = (now - timedelta(hours=9)).isoformat()
+    dec = LR.plan_pass(core, att, plan="core", budget_s=2640.0, now=now, prior=doc)
+    assert dec.red == {} and "waiter" in dec.aged
+    LR.record(dec, att, [], path=out, started=now, now=now)    # killed: aged waiter never ran
+    d2 = LR.plan_pass(["dept_leg"], att, plan="dept:data", budget_s=600.0,
+                      now=now + timedelta(minutes=30), prior=LR.load_record(out))
+    LR.record(d2, att, ["dept_leg"], path=out, started=now + timedelta(minutes=30))
+    rec = LR.load_record(out)
+    assert set(rec["ageing"]) == {"core", "dept:data"}
+    nxt = LR.plan_pass(core, att, plan="core", budget_s=2640.0, now=now + timedelta(hours=1),
+                       prior=rec)
+    assert nxt.starve_passes["waiter"] == LR.RED_AFTER_PASSES, "the dept write reset core"
+    LR.record(nxt, att, [], path=out, started=now + timedelta(hours=1))
+    d3 = LR.plan_pass(["dept_leg"], att, plan="dept:data", budget_s=600.0,
+                      now=now + timedelta(hours=1, minutes=30), prior=LR.load_record(out))
+    final = LR.record(d3, att, ["dept_leg"], path=out)
+    assert final["plan"] == "dept:data" and final["liveness"]["verdict"] == "RED"
+    assert final["liveness"]["red_by_plan"] == {"core": ["waiter"]}

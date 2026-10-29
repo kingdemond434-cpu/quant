@@ -1502,8 +1502,10 @@ def in_plan(name: str, plan: str | None = None) -> bool:
 #: The cure is the law-gate battery's (`run_law_gate.rotate_gate`): rotate the roster across
 #: passes inside a stated window and publish by name what the window did not reach. Rotation
 #: decides MEMBERSHIP only -- legs still execute in file order, so every "must run after" comment
-#: below still holds -- and it never shrinks the work: a deferred leg leads the next pass, and
-#: the budget it is charged against is the scheduler's own limit, which rotation did not create.
+#: below still holds -- and it never shrinks the work: a deferred leg's wait is counted and, at
+#: `leg_rotation.MAX_DEFERRALS` passes, it is admitted outside the budget (it used to say "leads the
+#: next pass", which was false the moment the always-run set alone overran the budget: a 1 s leg
+#: then starved four days -- 2026-10-29). The budget is the scheduler's own limit.
 _ROTATION: dict[str, Any] = {}
 
 
@@ -1522,9 +1524,11 @@ def _rotation() -> Any:
         from libs.ops import leg_rotation as _lr
         full = _lr.legs_in_order(Path(__file__).resolve())
         roster = [leg for leg in full if in_plan(leg)]
-        att = _lr.read_attendance(
-            prior=_lr.Attendance.from_json(_lr.load_record().get("attendance")))
-        dec = _lr.plan_pass(roster, att, plan=HOURLY_PLAN, full_roster=full)
+        # THE PRIOR RECORD CARRIES THE AGEING STATE (`starve_passes`, `pass_started`): without it
+        # nothing ages into priority, which is how a 1 s leg starved four days (2026-10-29).
+        prior = _lr.load_record()
+        att = _lr.read_attendance(prior=_lr.Attendance.from_json(prior.get("attendance")))
+        dec = _lr.plan_pass(roster, att, plan=HOURLY_PLAN, full_roster=full, prior=prior)
         _ROTATION.update({"decision": dec, "attendance": att, "lr": _lr,
                           "started": datetime.now(UTC), "ran": []})
         print(f"leg rotation plan={HOURLY_PLAN} roster={len(roster)}/{len(full)} "
@@ -1533,6 +1537,13 @@ def _rotation() -> Any:
               f"never_run={len(dec.never_run)}", flush=True)
         if dec.never_run:
             print(f"  NEVER RUN ({len(dec.never_run)}): {', '.join(dec.never_run[:40])}",
+                  flush=True)
+        if dec.aged or dec.chronic_timeouts:
+            print(f"  AGED IN ({len(dec.aged)}): {', '.join(dec.aged[:40])} | CHRONIC TIMEOUT "
+                  f"({len(dec.chronic_timeouts)}): {', '.join(dec.chronic_timeouts[:20])}",
+                  flush=True)
+        if dec.red:
+            print(f"  LEG LIVENESS RED ({len(dec.red)}): {', '.join(sorted(dec.red)[:40])}",
                   flush=True)
         # PUBLISHED BEFORE THE FIRST LEG RUNS. A pass killed at its 40-minute limit never reaches
         # its own epilogue, which is precisely how the cycle came to hold no record of what it
@@ -1715,7 +1726,7 @@ def _costed(name: str, fn):
     # this one boundary, so membership can be decided for all 325 of them without moving a line
     # of `main()` -- which means the dependency order every leg comment states is untouched. A
     # ROTATED_OUT leg returns in microseconds, so the pass races past it and the 40-minute clock
-    # actually reaches the tail; it is the FIRST thing admitted next pass. No ledger row, for the
+    # actually reaches the tail; its wait is counted and ages into admission. No ledger row, for the
     # same reason SKIPPED_BY_PLAN writes none: it did not run here, and `opportunity_cost` and
     # the meta-controller's epoch must read that truth rather than a phantom run.
     _rot = _rotation()

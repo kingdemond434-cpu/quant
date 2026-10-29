@@ -52,6 +52,40 @@ THE BOUND, STATED. Admitted cost per pass is held under the scheduler's own limi
 admitted leg is actually REACHED. A leg therefore waits at most ceil(total_roster_cost / budget)
 passes, and never-run legs wait at most ceil(never_run_cost / budget) -- with the measured roster
 and a 40-minute core window that is a small number of hours, well inside ROTATION_WINDOW_H.
+
+THAT BOUND WAS FALSE, AND A ONE-SECOND LEG STARVED FOR FOUR DAYS (measured 2026-10-29).
+The proof above assumes the always-run set leaves SOME room. It stopped doing so: `tier_s` hit its
+1,500 s LEG_TIMEOUT on every pass and `smoke_release` its 120 s, so the always-run set alone was
+charged 3,749 s against a 2,640 s budget. `plan_pass` charged that set FIRST and unconditionally,
+then admitted every other leg only if `spent + cost <= budget` -- which no leg can satisfy once
+`spent` is already past the budget, however cheap and however long it has waited. Oldest-first
+ranking decided the order of a queue nobody was being admitted from, so "it leads the next pass"
+was printed beside every deferral and was true of none: `clock_ledger` (0.3-4.6 s) was last
+admitted 2026-10-25 06:13Z, and `prop_challenge_allocator` -- money-side -- never ran at all.
+The rotation had become exactly the tail-starvation it was written to end.
+
+THE CLASS, CLOSED (rule 23). Waiting is now a COUNTED, PERSISTED quantity, not an inferred one:
+
+    AGEING.  `starve_passes` counts, per roster leg, the consecutive passes it has not run
+    (read from attendance `last_at` against the previous pass's start, so a leg admitted but
+    never reached because the pass was killed still counts as waiting). Once it reaches
+    MAX_DEFERRALS the leg is admitted UNCONDITIONALLY -- outside the budget arithmetic -- and is
+    exempt from the overrun yield. No leg can be deferred more than MAX_DEFERRALS passes in a row.
+
+    CHEAP LEGS.  A leg whose measured cost is at most CHEAP_LEG_S is admitted every pass and never
+    yielded: deferring a second of work buys no room for anything.
+
+    CHRONIC TIMEOUTS.  A leg whose last CHRONIC_TIMEOUT_RUNS ledger rows are all TIMEOUT is named in
+    `chronic_timeouts`. Outside the always-run set it is ranked LAST among the budget-limited
+    legs, so it cannot keep taking its full slot ahead of a starved leg; inside it (`tier_s`) it is
+    still admitted and charged its realised cost -- the money path is not this module's to defer --
+    but the aged and cheap legs no longer compete with it for room at all. Nothing is deleted and
+    no leg's own budget is touched: this is admission order only.
+
+    LIVENESS, RED BY NAME.  `liveness` in the record is RED, listing each leg, whenever a roster leg
+    has gone RED_AFTER_PASSES passes without running, or a declared leg is still in `never_run`
+    after a pass has run with it on the books. `scripts/check_leg_rotation.py` fails the fence on
+    it and `desks/mt5/scripts/check_desk_health.py` reports it as a PROBLEM.
 """
 from __future__ import annotations
 
@@ -88,6 +122,26 @@ BUDGET_FILL: float = 0.80
 #: not be so large that one unknown crowds out the pass. This is the median declared `--budget-s`
 #: of the cycle's `_producer` legs, which is the desk's own statement of what such a leg costs.
 UNKNOWN_LEG_COST_S: float = 60.0
+
+#: THE AGEING BOUND: the most consecutive passes any roster leg may be deferred. On the next pass it
+#: is admitted unconditionally. Two hourly passes -- a leg waits at most two hours for its turn.
+MAX_DEFERRALS: int = 2
+
+#: A leg whose measured median cost is at or below this many seconds is never rotated out and never
+#: yielded on overrun. Sized so the whole cheap set of a 150-leg roster costs a few minutes at most.
+CHEAP_LEG_S: float = 5.0
+
+#: Consecutive ledger rows ending in TIMEOUT after which a leg is a CHRONIC timeout.
+CHRONIC_TIMEOUT_RUNS: int = 3
+
+#: RED: a roster leg that has gone this many consecutive passes without running. One more than
+#: MAX_DEFERRALS, so RED means the ageing guarantee itself did not deliver -- the leg was admitted
+#: and still did not run (killed pass, crash before the ledger row), which a person must look at.
+RED_AFTER_PASSES: int = MAX_DEFERRALS + 1
+
+#: Used only to SEED `starve_passes` from attendance age the first time a record without it is read
+#: (adoption on a running box): the core clock fires hourly.
+PASS_CADENCE_S: float = 3600.0
 
 #: How many recent costs are kept per leg. Enough to take a median that survives one slow pass.
 COST_SAMPLES: int = 5
@@ -167,6 +221,12 @@ class Attendance:
     last_at: dict[str, str] = field(default_factory=dict)
     costs: dict[str, list[float]] = field(default_factory=dict)
     offset: int = 0
+    #: consecutive TIMEOUT outcomes at the end of each leg's ledger history (0 = last row was not)
+    timeouts: dict[str, int] = field(default_factory=dict)
+
+    def chronic_timeout(self, leg: str) -> bool:
+        """Has this leg timed out on each of its last CHRONIC_TIMEOUT_RUNS runs?"""
+        return self.timeouts.get(leg, 0) >= CHRONIC_TIMEOUT_RUNS
 
     def cost_s(self, leg: str) -> float:
         """The seconds to plan for this leg: the median of what it recently cost."""
@@ -187,7 +247,8 @@ class Attendance:
 
     def to_json(self) -> dict[str, Any]:
         return {"offset": self.offset, "runs": self.runs, "last_at": self.last_at,
-                "costs": {k: v[-COST_SAMPLES:] for k, v in self.costs.items()}}
+                "costs": {k: v[-COST_SAMPLES:] for k, v in self.costs.items()},
+                "timeouts": {k: v for k, v in self.timeouts.items() if v}}
 
     @classmethod
     def from_json(cls, doc: Any) -> Attendance:
@@ -204,7 +265,9 @@ class Attendance:
             offset = int(doc.get("offset") or 0)
         except (TypeError, ValueError):
             offset = 0
-        return cls(runs=runs, last_at=last, costs=costs, offset=offset)
+        tos = {str(k): int(v) for k, v in (doc.get("timeouts") or {}).items()
+               if isinstance(v, (int, float))}
+        return cls(runs=runs, last_at=last, costs=costs, offset=offset, timeouts=tos)
 
 
 def read_attendance(ledger: Path | None = None, prior: Attendance | None = None) -> Attendance:
@@ -224,7 +287,7 @@ def read_attendance(ledger: Path | None = None, prior: Attendance | None = None)
         return att
     start = att.offset if 0 <= att.offset <= size else 0
     if start == 0:
-        att.runs, att.last_at, att.costs = {}, {}, {}
+        att.runs, att.last_at, att.costs, att.timeouts = {}, {}, {}, {}
     try:
         with path.open("r", encoding="utf-8", errors="replace") as fh:
             fh.seek(start)
@@ -242,6 +305,10 @@ def read_attendance(ledger: Path | None = None, prior: Attendance | None = None)
                 if not isinstance(name, str) or not name:
                     continue
                 att.runs[name] = att.runs.get(name, 0) + 1
+                if str(row.get("outcome") or "").upper().startswith("TIMEOUT"):
+                    att.timeouts[name] = att.timeouts.get(name, 0) + 1
+                else:
+                    att.timeouts[name] = 0
                 at = row.get("at")
                 if isinstance(at, str) and at:
                     att.last_at[name] = at
@@ -272,6 +339,18 @@ class Decision:
     roster: list[str] = field(default_factory=list)
     planned_s: float = 0.0
     why: dict[str, str] = field(default_factory=dict)
+    #: every leg the cycle declares (the roster of every plan), so the next pass can tell a leg
+    #: that has been on the books through a whole pass from one wired since
+    declared: list[str] = field(default_factory=list)
+    #: consecutive passes each roster leg has gone without running, as of the start of this pass
+    starve_passes: dict[str, int] = field(default_factory=dict)
+    #: admitted OUTSIDE the budget arithmetic and never yielded on overrun: aged or cheap legs
+    protected: set[str] = field(default_factory=set)
+    aged: list[str] = field(default_factory=list)
+    cheap: list[str] = field(default_factory=list)
+    chronic_timeouts: list[str] = field(default_factory=list)
+    #: RED legs by name, each with the reason; empty means GREEN
+    red: dict[str, str] = field(default_factory=dict)
 
     def runs(self, leg: str) -> bool:
         """Does `leg` run in this pass? An unknown leg always runs (rotation never invents a veto
@@ -285,20 +364,39 @@ class Decision:
         what the ledger said it would cost, the legs that pay are the ones at the tail -- which is
         the original defect, re-entering through the estimate. So once the pass is past its
         budget, a leg that HAS run before yields the rest of the pass to the legs that never have.
-        Nothing is cancelled: a yielded leg is the oldest one next pass and therefore leads it.
+        Nothing is cancelled: a yielded leg's `starve_passes` grows, and at MAX_DEFERRALS it is
+        admitted unconditionally.
 
-        The always-run set and the never-run set are never yielded. A never-run leg is the whole
-        point of the pass, and it carries its own `--budget-s`, so it cannot run away with the
-        clock it was finally given.
+        The always-run set, the never-run set and the PROTECTED set (aged or cheap legs) are never
+        yielded. That last exemption is load-bearing: when an always-run leg times out early in the
+        pass the clock is past the budget for the rest of it, and without the exemption an aged
+        leg would be admitted on paper and yielded in fact -- the same starvation by another door.
         """
         if leg in self.deferred:
             return False, self.why.get(leg, "deferred by rotation")
-        if leg in ALWAYS_RUN:
+        if leg in ALWAYS_RUN or leg in self.protected:
             return True, ""
         if self.budget_s > 0 and elapsed_s > self.budget_s and att.runs.get(leg, 0) > 0:
+            waited = self.starve_passes.get(leg, 0) + 1
             return False, (f"budget overrun at {elapsed_s:.0f}s of {self.budget_s:.0f}s: this "
-                           f"pass yields to legs that have never run; it leads the next pass")
+                           f"pass yields to legs that have never run (wait {waited} of at most "
+                           f"{MAX_DEFERRALS}; admitted unconditionally after that)")
         return True, ""
+
+
+def liveness(ageing: dict[str, Any]) -> dict[str, Any]:
+    """RED/GREEN over every plan's latest pass, naming each RED leg and the plan it starved in."""
+    by_plan: dict[str, list[str]] = {}
+    why: dict[str, str] = {}
+    for plan, st in sorted(ageing.items()):
+        red = st.get("red") if isinstance(st, dict) else None
+        if isinstance(red, dict) and red:
+            by_plan[plan] = sorted(map(str, red))
+            for leg, reason in red.items():
+                why.setdefault(str(leg), f"[{plan}] {reason}")
+    return {"verdict": "RED" if why else "GREEN", "red_legs": sorted(why),
+            "red_by_plan": by_plan, "why": dict(sorted(why.items())),
+            "max_deferrals": MAX_DEFERRALS, "red_after_passes": RED_AFTER_PASSES}
 
 
 def budget_for(plan: str, env: dict[str, str] | None = None) -> float:
@@ -320,27 +418,120 @@ def budget_for(plan: str, env: dict[str, str] | None = None) -> float:
     return 2400.0 * BUDGET_FILL if plan == "core" else 0.0
 
 
-def _rank(leg: str, att: Attendance, now: datetime,
-          order: dict[str, int]) -> tuple[int, float, int]:
-    """Sort key: always-run first, then never-run, then oldest-first, then file order."""
+def _rank(leg: str, att: Attendance, now: datetime, order: dict[str, int],
+          dec: Decision | None = None) -> tuple[int, int, float, int]:
+    """Sort key for the budget band: never-run first, then stale, then CHRONIC TIMEOUTS last;
+    within a tier the longest-starved, then the oldest, then file order."""
     if leg in ALWAYS_RUN:
         tier = 0
+    elif dec is not None and leg in dec.chronic_timeouts:
+        tier = 3
     elif att.runs.get(leg, 0) <= 0:
         tier = 1
     else:
         tier = 2
+    waited = dec.starve_passes.get(leg, 0) if dec is not None else 0
     age = att.age_s(leg, now)
-    return (tier, -age if age != float("inf") else float("-inf"), order.get(leg, 0))
+    return (tier, -waited, -age if age != float("inf") else float("-inf"), order.get(leg, 0))
+
+
+def _parse_at(raw: Any) -> datetime | None:
+    """An ISO stamp as an aware UTC datetime, or None. Naive stamps are read as UTC."""
+    if not raw:
+        return None
+    try:
+        t = datetime.fromisoformat(str(raw))
+    except (TypeError, ValueError):
+        return None
+    return t if t.tzinfo is not None else t.replace(tzinfo=UTC)
+
+
+def _plan_state(prior: dict[str, Any] | None, plan: str) -> dict[str, Any] | None:
+    """The previous pass OF THIS PLAN's ageing state, from the record's `ageing[plan]`.
+
+    PER PLAN, BECAUSE THE RECORD IS SHARED. The core task and every department resident
+    (`department_resident.run_pass`, HOURLY_PLAN=dept:<name>) write the same LEG_ROTATION.json.
+    Reading one top-level map would let a dept pass's write reset the core plan's counts every
+    hour, and nothing would ever age."""
+    if not prior:
+        return None
+    ageing = prior.get("ageing")
+    state = ageing.get(plan) if isinstance(ageing, dict) else None
+    return state if isinstance(state, dict) else None
+
+
+def starvation(roster: list[str], att: Attendance, prior: dict[str, Any] | None,
+               now: datetime, plan: str = "core") -> dict[str, int]:
+    """Consecutive passes each roster leg has gone without running, as of THIS pass's start.
+
+    A leg whose ledger `last_at` is at or after the previous pass's start ran in it: 0. Otherwise
+    it is the previous count plus one -- whether it was deferred, yielded, or admitted and never
+    reached because the pass was killed. All three are the same thing to the leg.
+
+    No prior record at all is a fresh box: nothing is known to have waited, so every count is 0.
+    A prior record with no ageing state for this plan is a running box adopting this code (or a
+    plan's first pass): the count is seeded from attendance age in PASS_CADENCE_S units, capped
+    at MAX_DEFERRALS (a never-run leg is seeded at MAX_DEFERRALS), so a leg already starved for
+    days is admitted on the very first pass.
+    """
+    if not prior:
+        return dict.fromkeys(roster, 0)
+    state = _plan_state(prior, plan)
+    prev_start = _parse_at(state.get("pass_started")) if state else None
+    raw_map = state.get("starve_passes") if state else None
+    prev_map = ({str(k): int(v) for k, v in raw_map.items() if isinstance(v, (int, float))}
+                if isinstance(raw_map, dict) and prev_start is not None else None)
+    cutoff = prev_start.replace(microsecond=0) if prev_start is not None else None
+    out: dict[str, int] = {}
+    for leg in roster:
+        last = _parse_at(att.last_at.get(leg))
+        if cutoff is not None and last is not None and last >= cutoff:
+            out[leg] = 0
+        elif prev_map is not None:
+            # A leg absent from the previous map was wired since: it has missed no pass yet.
+            out[leg] = prev_map[leg] + 1 if leg in prev_map else 0
+        else:
+            age = att.age_s(leg, now)
+            out[leg] = (MAX_DEFERRALS if age == float("inf")
+                        else min(MAX_DEFERRALS, int(max(0.0, age) // PASS_CADENCE_S)))
+    return out
+
+
+def _red(dec: Decision, prior: dict[str, Any] | None) -> dict[str, str]:
+    """RED by name: starved RED_AFTER_PASSES passes, or still never-run after a pass ran with it."""
+    red: dict[str, str] = {}
+    for leg in dec.roster:
+        n = dec.starve_passes.get(leg, 0)
+        if n >= RED_AFTER_PASSES:
+            red[leg] = (f"starved: {n} consecutive passes without a run (bound "
+                        f"{MAX_DEFERRALS} deferrals; RED at {RED_AFTER_PASSES})")
+    if prior:
+        declared_before = prior.get("declared")
+        known = (set(map(str, declared_before)) if isinstance(declared_before, list) else None)
+        for leg in dec.never_run:
+            # Adoption (no `declared` yet): every never-run leg has had passes to run in.
+            if known is None or leg in known:
+                red.setdefault(leg, "never run: still absent from the compute ledger after a "
+                                    "pass of the cycle ran with it declared")
+    return red
 
 
 def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float | None = None,
-              now: datetime | None = None, full_roster: list[str] | None = None) -> Decision:
+              now: datetime | None = None, full_roster: list[str] | None = None,
+              prior: dict[str, Any] | None = None) -> Decision:
     """Choose this pass's membership so that every admitted leg is actually REACHED.
 
-    Greedy oldest-first admission under the scheduler's own clock. The greed is the point: a leg
-    is admitted because it has waited longest, not because it is cheap, so a slow leg only ever
-    climbs. Admission stops when the planned seconds reach the budget -- and NOT admitting a leg
-    costs nothing, because a deferred leg returns a dict without running.
+    Four bands, in this order:
+
+      1. ALWAYS_RUN -- admitted, charged its realised cost (a chronic timeout included).
+      2. PROTECTED -- legs that have waited MAX_DEFERRALS passes (`aged`) and legs that cost at
+         most CHEAP_LEG_S (`cheap`). Admitted unconditionally. THIS IS THE FIX: before it, these
+         were judged by `spent + cost <= budget` after band 1 had already spent past the budget,
+         so a one-second leg could wait forever behind a timing-out always-run leg.
+      3. BUDGET -- the rest, oldest-first (never-run first, chronic timeouts last), while the
+         planned seconds stay inside the budget.
+      4. DEFERRED -- what band 3 could not fit. Each deferral increments `starve_passes`, so it is a
+         turn to wait that ends in band 2, never a leg removed.
 
     An unbounded budget (0.0) admits the whole roster: the department residents have no time
     limit, and adding one here would be the throttle this desk does not permit.
@@ -349,29 +540,54 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
     is charged against the first, but `never_run` and `outside_window` are measured against the
     second -- a leg dark on the heavy clock is still dark, and a report that only ever named the
     legs of the plan that happened to be running would hide exactly the defect this file exists
-    to end.
+    to end. `prior` is the previous published record (`load_record()`), which carries the
+    persisted per-plan `ageing` state; without it nothing ages.
     """
     t0 = now or datetime.now(tz=UTC)
     bud = budget_for(plan) if budget_s is None else budget_s
     order = {leg: i for i, leg in enumerate(roster)}
     everything = list(full_roster) if full_roster is not None else list(roster)
-    dec = Decision(plan=plan, budget_s=bud, roster=list(roster))
+    dec = Decision(plan=plan, budget_s=bud, roster=list(roster), declared=sorted(everything))
     dec.never_run = sorted(leg for leg in everything if att.runs.get(leg, 0) <= 0)
     window_s = ROTATION_WINDOW_H * 3600.0
     dec.outside_window = sorted(leg for leg in everything if att.age_s(leg, t0) > window_s)
+    dec.starve_passes = starvation(roster, att, prior, t0, plan=plan)
+    dec.chronic_timeouts = sorted(leg for leg in roster if att.chronic_timeout(leg))
+    dec.red = _red(dec, prior)
     if bud <= 0:
         dec.admitted = set(roster)
         dec.why = dict.fromkeys(roster, "unbounded plan: no time limit to rotate against")
         dec.planned_s = sum(att.cost_s(leg) for leg in roster)
         return dec
     spent = 0.0
-    for leg in sorted(roster, key=lambda n: _rank(n, att, t0, order)):
+    rest: list[str] = []
+    for leg in roster:
         cost = att.cost_s(leg)
+        waited = dec.starve_passes.get(leg, 0)
         if leg in ALWAYS_RUN:
             dec.admitted.add(leg)
             spent += cost
-            dec.why[leg] = "always-run: irreversible or on the money path"
-            continue
+            dec.why[leg] = ("always-run: irreversible or on the money path"
+                            + (f" (CHRONIC TIMEOUT: charged its realised {cost:.0f}s)"
+                               if leg in dec.chronic_timeouts else ""))
+        elif waited >= MAX_DEFERRALS:
+            dec.admitted.add(leg)
+            dec.protected.add(leg)
+            dec.aged.append(leg)
+            spent += cost
+            dec.why[leg] = (f"aged: {waited} consecutive passes without a run reached the "
+                            f"{MAX_DEFERRALS}-pass bound; admitted outside the budget")
+        elif leg in att.costs and cost <= CHEAP_LEG_S:
+            dec.admitted.add(leg)
+            dec.protected.add(leg)
+            dec.cheap.append(leg)
+            spent += cost
+            dec.why[leg] = (f"cheap: measured {cost:.1f}s <= {CHEAP_LEG_S:.0f}s; never rotated "
+                            "out for budget")
+        else:
+            rest.append(leg)
+    for leg in sorted(rest, key=lambda n: _rank(n, att, t0, order, dec)):
+        cost = att.cost_s(leg)
         if spent + cost <= bud:
             dec.admitted.add(leg)
             spent += cost
@@ -380,8 +596,13 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
                             f"rotation: idle {att.age_s(leg, t0) / 3600.0:.1f}h")
         else:
             dec.deferred.add(leg)
-            dec.why[leg] = (f"deferred this pass: {cost:.0f}s would pass the "
-                            f"{bud:.0f}s budget ({spent:.0f}s planned); it leads the next pass")
+            waited = dec.starve_passes.get(leg, 0) + 1
+            dec.why[leg] = (f"deferred this pass ({waited} of at most {MAX_DEFERRALS}): "
+                            f"{cost:.0f}s would pass the {bud:.0f}s budget ({spent:.0f}s "
+                            f"planned); admitted unconditionally once it has waited "
+                            f"{MAX_DEFERRALS} passes"
+                            + (" [CHRONIC TIMEOUT: ranked last]"
+                               if leg in dec.chronic_timeouts else ""))
     dec.planned_s = spent
     return dec
 
@@ -406,6 +627,7 @@ def record(dec: Decision, att: Attendance, ran: list[str], *, path: Path | None 
         "budget_s": round(dec.budget_s, 1),
         "planned_s": round(dec.planned_s, 1),
         "elapsed_s": round((t1 - started).total_seconds(), 1) if started else None,
+        "pass_started": (started or t1).isoformat(),
         "n_roster": len(dec.roster),
         "n_admitted": len(dec.admitted),
         "n_deferred": len(dec.deferred),
@@ -416,9 +638,33 @@ def record(dec: Decision, att: Attendance, ran: list[str], *, path: Path | None 
         "never_run": list(dec.never_run),
         "outside_window": list(dec.outside_window),
         "why": dec.why,
+        "max_deferrals": MAX_DEFERRALS,
+        "cheap_leg_s": CHEAP_LEG_S,
+        "starve_passes": dict(sorted(dec.starve_passes.items())),
+        "aged_admitted": sorted(dec.aged),
+        "cheap_admitted": sorted(dec.cheap),
+        "chronic_timeouts": list(dec.chronic_timeouts),
+        "declared": list(dec.declared),
         "attendance": att.to_json(),
     }
     out = path or RECORD
+    # THE AGEING STATE, PER PLAN, CARRIED ACROSS WRITERS. Core and every department resident
+    # share this file, so each write keeps the other plans' fresh state and replaces only its own.
+    # The next pass of this plan reads `ageing[plan]` to count how long each leg has waited.
+    ageing: dict[str, Any] = {}
+    prev = load_record(out).get("ageing")
+    for name, st in (prev.items() if isinstance(prev, dict) else ()):
+        gen = _parse_at(st.get("generated")) if isinstance(st, dict) else None
+        if name != dec.plan and gen is not None and \
+                (t1 - gen).total_seconds() <= ROTATION_WINDOW_H * 3600.0:
+            ageing[str(name)] = st
+    ageing[dec.plan] = {"generated": t1.isoformat(), "pass_started": doc["pass_started"],
+                        "starve_passes": dict(sorted(dec.starve_passes.items())),
+                        "red": dict(sorted(dec.red.items()))}
+    doc["ageing"] = dict(sorted(ageing.items()))
+    # RED BY NAME, ACROSS EVERY PLAN STILL RUNNING: what `check_leg_rotation` and
+    # `check_desk_health` read. A dept pass writing GREEN must not paper over a RED core leg.
+    doc["liveness"] = liveness(ageing)
     try:
         out.parent.mkdir(parents=True, exist_ok=True)
         tmp = out.with_suffix(".json.tmp")
