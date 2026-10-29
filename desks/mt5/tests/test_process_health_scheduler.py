@@ -125,9 +125,27 @@ def test_the_realised_risk_row_sits_beside_the_board_rows_and_a_breach_needs_att
     fills.write_text("".join(json.dumps({"status": "MEASURED", "ratio": 2.5}) + "\n"
                              for _ in range(5)), "utf-8")
     monkeypatch.setattr(ph, "RISK_FILLS", fills)
+    # The v3 cross-check reads the gateway's order journal too: an empty, READABLE journal here,
+    # never the repository's own (whose fills this ledger does not hold).
+    intents = tmp_path / "order_intents.jsonl"
+    intents.write_text("", "utf-8")
+    monkeypatch.setattr(ph, "ORDER_INTENTS", intents)
+    # The other off-scheduler rows are held clear so the headline is the breach's alone.
+    monkeypatch.setattr(ph, "_alerts_armed", lambda root=None: {"armed": 1, "kinds": ["hc"],
+                                                                "line": None})
+    monkeypatch.setattr(ph, "deadman_invariant", lambda **kw: None)
+    monkeypatch.setattr(ph, "disk_state", lambda *a, **kw: {"verdict": "OK"})
     doc = ph.build()
     risk = _row(doc, ph.RISK_ROW)
     assert risk["verdict"] == "RISK_BREACH" and risk["metric"]["n_breaches"] == 5
+    # A breach is a definite fault off the scheduler: ATTENTION even over an unread scheduler.
     assert "RISK_BREACH" in ph.ATTENTION and doc["status"] == "ATTENTION"
+    assert doc["processes"][0] is risk
+    # NO_FILLS sits at rank 5 (never OK, never paged); RISK_BREACH at rank 1 beside FAILING.
+    intents.write_text("", "utf-8")
+    fills.unlink()
+    doc = ph.build()
+    assert _row(doc, ph.RISK_ROW)["verdict"] == "NO_FILLS" and "NO_FILLS" not in ph.ATTENTION
+    assert doc["status"] == "UNMEASURED", "an idle lane over an unread scheduler is not a fault"
     # The board's own extra fields survive the merge alongside the risk row.
     assert "disk" in doc and "alerts" in doc and "age_basis_counts" in doc

@@ -551,13 +551,13 @@ def test_post_fill_risk_reads_the_stop_back_from_the_opened_position(tmp_path, m
 
 def test_netting_the_position_is_found_through_the_deal_not_the_order(tmp_path, monkeypatch):
     # Netting: the deal lands on the symbol's existing position 4242, not on order 9.
-    st, row = _armed_family(tmp_path, monkeypatch, position_sl=1.0950, deal=77, order=9,
+    _st, row = _armed_family(tmp_path, monkeypatch, position_sl=1.0950, deal=77, order=9,
                             position_id=4242)
     assert row["sl_source"] == "position via deal" and row["sl"] == pytest.approx(1.0950)
 
 
 def test_without_a_deal_the_position_is_found_through_the_order(tmp_path, monkeypatch):
-    st, row = _armed_family(tmp_path, monkeypatch, position_sl=1.0950, deal=None, order=9,
+    _st, row = _armed_family(tmp_path, monkeypatch, position_sl=1.0950, deal=None, order=9,
                             position_id=4242, via="order")
     assert row["sl_source"] == "position via order" and row["sl"] == pytest.approx(1.0950)
 
@@ -574,6 +574,97 @@ def test_an_unresolvable_position_falls_back_by_name_and_never_reads_the_order_t
         tmp_path, monkeypatch):
     # position_id unknown: nothing in history. A position that happens to carry the ORDER's
     # ticket must not be read as this fill's.
-    st, row = _armed_family(tmp_path, monkeypatch, position_sl=1.0950, deal=77, order=9,
+    _st, row = _armed_family(tmp_path, monkeypatch, position_sl=1.0950, deal=77, order=9,
                             position_id=None)
     assert row["sl_source"].startswith("requested (position SL unreadable: LookupError")
+
+
+# ------------------------------------------------- audit v2 re-audit 2026-10-20 (HOLD must-fixes)
+@pytest.mark.parametrize("ledger", ["corrupt_line", "non_object_line", "unreadable"])
+def test_an_unreadable_or_corrupt_fill_ledger_is_unmeasured_and_pages_never_no_fills(
+        tmp_path, monkeypatch, ledger):
+    """Must-fix 1: ratio_summary used to reset rows to [] on OSError/ValueError, so a corrupt
+    ledger read n_rows 0 -> NO_FILLS, an absence the board never pages."""
+    fills, intents = tmp_path / "fills.jsonl", tmp_path / "intents.jsonl"
+    _write(intents, [])                       # the witness is readable and shows no fill
+    if ledger == "corrupt_line":
+        fills.write_text(json.dumps({"status": "MEASURED", "ratio": 1.0}) + "\n{not json\n",
+                         "utf-8")
+    elif ledger == "non_object_line":
+        fills.write_text("[1, 2]\n", "utf-8")
+    else:
+        fills.mkdir()                         # reading a directory raises an OSError
+    summary = ri.ratio_summary(fills)
+    assert summary["status"] == "UNREADABLE" and summary["n_rows"] is None
+    ph = _ph(monkeypatch, fills, intents)
+    row = ph._realised_risk_row()
+    assert row["verdict"] == "UNMEASURED", row["why"]
+    assert "unreadable" in row["why"] and "zero fills is not assumed" in row["why"]
+    monkeypatch.setattr(ph, "_alerts_armed", lambda root=None: {"armed": 1, "kinds": ["hc"],
+                                                                "line": None})
+    monkeypatch.setattr(ph, "deadman_invariant", lambda **kw: None)
+    monkeypatch.setattr(ph, "disk_state", lambda *a, **kw: {"verdict": "OK"})
+    monkeypatch.setattr(ph, "_tasks", lambda: ([], "UNMEASURED: no scheduler here"))
+    monkeypatch.setattr(ph, "_contracts", lambda: {})
+    doc = ph.build()
+    assert doc["status"] == "ATTENTION", "an unreadable ledger is a definite fault: it pages"
+    sent: list[str] = []
+    page = ph.page_attention(doc, state_path=tmp_path / "pg.json",
+                             sender=lambda t, b: (sent.append(b), {"armed": 1,
+                                                                   "delivered": 1})[1])
+    assert page["sent"] and f"{ph.RISK_ROW}|UNMEASURED" in page["new"]
+    assert "UNMEASURED" in sent[0]
+
+
+def test_an_absent_ledger_with_a_quiet_journal_is_still_no_fills(tmp_path, monkeypatch):
+    fills, intents = tmp_path / "fills.jsonl", tmp_path / "intents.jsonl"
+    _write(intents, [])
+    assert ri.ratio_summary(fills)["n_rows"] == 0
+    assert _ph(monkeypatch, fills, intents)._realised_risk_row()["verdict"] == "NO_FILLS"
+
+
+def test_a_future_dated_sleeve_ack_lifts_nothing(tmp_path):
+    """Must-fix 2: {"sleeve", "at": "2099-..."} was 'later than the halt' for every breach of
+    that sleeve until 2099 -- the never-expiring ack again. It is ignored and lifts nothing."""
+    st = _halted_state()
+    acks = _ack(tmp_path, {"sleeve": "a", "at": "2099-01-01T00:00:00+00:00"})
+    assert acks["sleeves"] == {} and acks["ignored"] == [
+        {"sleeve": "a", "at": "2099-01-01T00:00:00+00:00"}]
+    notes = ri.review_halts(st, acks, lambda *a: [], lambda s: _UNIT)
+    assert "a" in st["risk_halt"] and "UNMEASURED" in notes[0]
+
+
+@pytest.mark.parametrize("ahead_s, lifts", [(60.0, True), (ri.ACK_FUTURE_SKEW_S + 60.0, False),
+                                            (86400.0, False), (365 * 86400.0, False)])
+def test_an_ack_ahead_of_now_lifts_only_within_the_named_skew(tmp_path, ahead_s, lifts):
+    from datetime import UTC, datetime, timedelta
+    now = datetime(2026, 10, 21, 9, 0, tzinfo=UTC)
+    st = _halted_state()                                  # halt at 2026-10-20T12:00Z
+    at = (now + timedelta(seconds=ahead_s)).isoformat()
+    path = tmp_path / "ack.json"
+    path.write_text(json.dumps({"acknowledged": [{"sleeve": "a", "at": at}]}), "utf-8")
+    ri.review_halts(st, ri.read_acks(path, now=now), lambda *a: [], lambda s: _UNIT, now=now)
+    assert ("risk_halt" not in st) is lifts
+    assert ri.ACK_FUTURE_SKEW_S == 300.0
+
+
+def test_a_future_ack_built_outside_read_acks_is_refused_too():
+    from datetime import UTC, datetime
+    st = _halted_state()
+    acks = {"ids": set(), "sleeves": {"a": datetime(2099, 1, 1, tzinfo=UTC)}, "ignored": []}
+    ri.review_halts(st, acks, lambda *a: [], lambda s: _UNIT)
+    assert "a" in st["risk_halt"]
+
+
+def test_never_stale_escalates_the_risk_rows_findings_and_lists_no_fills(tmp_path, monkeypatch):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "never_stale_ri", _DESK.parent.parent / "ops" / "never_stale.py")
+    assert spec and spec.loader
+    ns = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ns)
+    ph = _ph(monkeypatch, tmp_path / "f.jsonl", tmp_path / "i.jsonl")
+    assert ns.RISK_ROW == ph.RISK_ROW
+    for verdict in ("UNMEASURED", "FINDING", "RISK_BREACH"):
+        assert verdict in ns.RISK_ROW_DIAGNOSIS or verdict in ns.VERDICT_DIAGNOSIS
+    assert "NO_FILLS" in ns.VERDICT_DIAGNOSIS

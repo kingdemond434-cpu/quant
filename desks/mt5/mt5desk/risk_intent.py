@@ -47,6 +47,11 @@ PRE_TOL = 1.10
 POST_TOL = 1.50
 #: How many recent fills the health row summarises.
 FILL_WINDOW = 50
+#: Ordinary two-host clock skew an acknowledgement's `at` may run ahead of this pass's clock
+#: (the same 300 s the process-health board allows a stamp, ops/organ_contract.FUTURE_SKEW_S).
+#: An ack dated further ahead is ignored: `{"sleeve", "at": "2099-..."}` would otherwise be
+#: "later than the halt" for every breach of that sleeve until 2099 (audit v2, 2026-10-20).
+ACK_FUTURE_SKEW_S = 300.0
 
 
 class Unmeasured(ValueError):
@@ -276,7 +281,12 @@ def _when(value: object) -> datetime | None:
     return at if at.tzinfo else at.replace(tzinfo=UTC)
 
 
-def read_acks(path: Path) -> dict[str, Any]:
+def _future(at: datetime, now: datetime) -> bool:
+    """True when `at` is later than `now` by more than ACK_FUTURE_SKEW_S."""
+    return (at - now).total_seconds() > ACK_FUTURE_SKEW_S
+
+
+def read_acks(path: Path, now: datetime | None = None) -> dict[str, Any]:
     """Acknowledgements from {"acknowledged": [...]}. Unreadable -> none.
 
     Two forms, and only two, because an acknowledgement must name ONE breach:
@@ -284,7 +294,10 @@ def read_acks(path: Path) -> dict[str, Any]:
       {"sleeve": "<name>", "at": "<iso>"}  -- any halt of that sleeve that STARTED BEFORE `at`
     A bare sleeve name is NOT an acknowledgement: it never expires, so it would silently lift
     every later breach of that sleeve on the next pass (audit 2026-10-20, probe P5). It is
-    reported under `ignored` and lifts nothing."""
+    reported under `ignored` and lifts nothing. So is a dated ack whose `at` is later than `now`
+    plus ACK_FUTURE_SKEW_S: a future date is the same never-expiring lift in another form
+    (audit v2, 2026-10-20: an at=2099 ack lifted 3 of 3 later breaches)."""
+    now = now or datetime.now(tz=UTC)
     out: dict[str, Any] = {"ids": set(), "sleeves": {}, "ignored": []}
     try:
         doc = json.loads(path.read_text("utf-8"))
@@ -294,26 +307,37 @@ def read_acks(path: Path) -> dict[str, Any]:
     for v in vals if isinstance(vals, list) else []:
         if isinstance(v, str) and ":" in v:
             out["ids"].add(v)
-        elif isinstance(v, dict) and v.get("sleeve") and _when(v.get("at")) is not None:
-            name, at = str(v["sleeve"]), _when(v["at"])
+            continue
+        at = _when(v.get("at")) if isinstance(v, dict) else None
+        if isinstance(v, dict) and v.get("sleeve") and at is not None and not _future(at, now):
+            name = str(v["sleeve"])
             prev = out["sleeves"].get(name)
             out["sleeves"][name] = at if prev is None or at > prev else prev
         else:
-            out["ignored"].append(v)
+            out["ignored"].append(v)      # bare name, undated, or dated in the future
     return out
 
 
-def _acknowledged(name: str, h: dict[str, Any], acks: dict[str, Any]) -> bool:
+def _acknowledged(name: str, h: dict[str, Any], acks: dict[str, Any],
+                  now: datetime | None = None) -> bool:
     if h.get("breach_id") and str(h["breach_id"]) in (acks.get("ids") or set()):
         return True
     ack_at = (acks.get("sleeves") or {}).get(name)
     halt_at = _when(h.get("at"))
-    return bool(ack_at is not None and halt_at is not None and ack_at > halt_at)
+    if not isinstance(ack_at, datetime) or halt_at is None:
+        return False
+    # Checked again here, not only in read_acks: an acks dict built any other way must not
+    # carry a future-dated lift through either.
+    if _future(ack_at if ack_at.tzinfo else ack_at.replace(tzinfo=UTC),
+               now or datetime.now(tz=UTC)):
+        return False
+    return ack_at > halt_at
 
 
 def review_halts(st: dict[str, Any], acks: dict[str, Any],
                  positions_for: Callable[[str, str], Iterable[Any]],
-                 unit_for: Callable[[str], float]) -> list[str]:
+                 unit_for: Callable[[str], float],
+                 now: datetime | None = None) -> list[str]:
     """Lift halts that are acknowledged or re-measured clean. Returns one note per halt read.
 
     Re-measure: the sleeve's OPEN positions, each priced from its own open price to its current
@@ -324,7 +348,7 @@ def review_halts(st: dict[str, Any], acks: dict[str, Any],
     book = st.get("risk_halt") or {}
     for name in list(book):
         h = book[name] if isinstance(book[name], dict) else {}
-        if _acknowledged(name, h, acks):
+        if _acknowledged(name, h, acks, now):
             book.pop(name, None)
             notes.append(f"[{name}] realised-risk halt LIFTED: acknowledged")
             continue
@@ -365,16 +389,19 @@ def _quantile(xs: list[float], q: float) -> float:
 
 
 def ratio_summary(path: Path, n: int = FILL_WINDOW) -> dict[str, Any]:
-    """realised/intended over the last `n` MEASURED fills. None of them is UNMEASURED."""
-    rows: list[dict[str, Any]] = []
+    """realised/intended over the last `n` MEASURED fills. None of them is UNMEASURED.
+
+    AN UNREADABLE LEDGER IS NOT AN EMPTY ONE (audit v2, 2026-10-20). This used to reset the rows
+    to [] on OSError/ValueError, so a corrupt or locked ledger reported `n_rows: 0` and the
+    health row called it NO_FILLS -- an absence, not paged. Now only an ABSENT file is zero
+    rows; an unreadable file, a corrupt line or a line that is not an object returns status
+    UNREADABLE with `n_rows: None`, which `health` reads as UNMEASURED and the board pages."""
     try:
-        for line in path.read_text("utf-8").splitlines():
-            if line.strip():
-                r = json.loads(line)
-                if isinstance(r, dict):
-                    rows.append(r)
-    except (OSError, ValueError):
-        rows = []
+        rows = _read_rows(path)
+    except (OSError, ValueError) as exc:
+        return {"status": "UNREADABLE", "n": 0, "n_rows": None,
+                "why": f"{path.name} unreadable ({type(exc).__name__}: {exc})"}
+    rows = rows or []
     ratios = [float(r["ratio"]) for r in rows
               if r.get("status") == "MEASURED" and isinstance(r.get("ratio"), (int, float))
               and math.isfinite(float(r["ratio"]))][-n:]
@@ -413,11 +440,12 @@ def _read_rows(path: Path) -> list[dict[str, Any]] | None:
     except FileNotFoundError:
         return None
     rows: list[dict[str, Any]] = []
-    for line in text.splitlines():
+    for i, line in enumerate(text.splitlines(), 1):
         if line.strip():
             r = json.loads(line)          # a corrupt line is UNREADABLE, never skipped quietly
-            if isinstance(r, dict):
-                rows.append(r)
+            if not isinstance(r, dict):
+                raise ValueError(f"line {i} is a JSON {type(r).__name__}, not a row")
+            rows.append(r)
     return rows
 
 
@@ -466,6 +494,10 @@ def health(fills_path: Path, intents_path: Path,
     """
     try:
         summary = ratio_summary(fills_path)
+        if summary.get("status") == "UNREADABLE":
+            # Never NO_FILLS: a ledger nobody can read says nothing about whether fills happened.
+            return ("UNMEASURED", f"fill ledger {summary.get('why')}; zero fills is not assumed",
+                    summary)
         ledger = _read_rows(fills_path) or []
     except Exception as exc:
         return "UNMEASURED", f"fill ledger unreadable ({type(exc).__name__}: {exc})", {}

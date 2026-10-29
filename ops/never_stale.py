@@ -183,6 +183,31 @@ VERDICT_DIAGNOSIS = {
         "\"LIVE\". NEVER RESTARTED FROM HERE: a start runs the rail in whatever mode its task "
         "was registered with, and arming (`--live`) is the principal's act under LAWS §4. The "
         "exact arm step is in the row's `why` and in patches/process_health_stamps/README.md."),
+    "RISK_BREACH": (
+        "the realised-risk invariant's fills (desks/mt5/data/realised_risk_fills.jsonl) risk "
+        "materially more EUR than the allocator intended at the p95. The gateway already halts "
+        "each breaching sleeve's NEW entries until desks/mt5/data/realised_risk_ack.json names "
+        "the breach id; read realised_risk_breaches.jsonl. Nothing here starts or acknowledges."),
+    "NO_FILLS": (
+        "no family/scalp fill in the gateway's order journal over the cross-check window and "
+        "none in the realised-risk ledger: an idle or unarmed lane. Nothing to measure is not "
+        "clean, and nothing is broken -- listed, never escalated, never restarted."),
+}
+
+#: The process-health row the realised-risk invariant publishes (ops/process_health.RISK_ROW).
+#: Its UNMEASURED is not a missing stamp: it is a fill the ledger lacks, or an unreadable ledger
+#: or journal -- a money-path finding a human reads, escalated with its own diagnosis.
+RISK_ROW = "MT5 realised-risk invariant (fills)"
+RISK_ROW_DIAGNOSIS = {
+    "UNMEASURED": (
+        "the realised-risk health row cannot vouch for the fills: the fill ledger or the order "
+        "journal is unreadable, or the journal shows a family/scalp fill the ledger has no row "
+        "for (named in the row's `why`). A restart cannot cure it: read the gateway log around "
+        "the named fill and the two files."),
+    "FINDING": (
+        "too many fills were priced from the REQUESTED stop because the position's own stop "
+        "could not be read back (risk_intent.SL_FALLBACK_FINDING): the post-fill check is "
+        "measuring the request, not the account. Read the gateway log's `sl_source` lines."),
 }
 
 #: TASKS THIS WATCHDOG NEVER STARTS, whatever the verdict. MT5-FusionDeadman is declared in
@@ -391,6 +416,12 @@ def run(apply: bool) -> dict:
             uncontracted.append(name)
             continue
 
+        if name == RISK_ROW and verdict in RISK_ROW_DIAGNOSIS:
+            escalated.append({"task": name, "verdict": verdict, "code": None,
+                              "why": row.get("why"), "diagnosis": RISK_ROW_DIAGNOSIS[verdict],
+                              "needs_human": True})
+            continue
+
         if verdict in VERDICT_DIAGNOSIS:
             # REPORT-ONLY SHAPES. UNMEASURED is listed apart so it never reads as healthy and
             # never escalates beside a dead gateway; ALERTS_UNARMED is the owner's step.
@@ -401,7 +432,7 @@ def run(apply: bool) -> dict:
                                   "why": row.get("why"),
                                   "diagnosis": VERDICT_DIAGNOSIS["DEADMAN_UNARMED"],
                                   "needs_human": True})
-            elif verdict == "UNMEASURED":
+            elif verdict in ("UNMEASURED", "NO_FILLS"):
                 unmeasured.append({"task": name, "why": row.get("why"),
                                    "diagnosis": VERDICT_DIAGNOSIS[verdict]})
             else:
