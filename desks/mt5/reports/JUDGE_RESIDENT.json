@@ -17,7 +17,7 @@
  "uptime_s": 145411.9,
  "last_sweep_ended_utc": "2026-10-29T09:04:46+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-10-29T15:20:12+00:00",
+ "heartbeat_utc": "2026-10-29T15:35:13+00:00",
  "sweep_phase": {
   "pid": 29832,
   "sweep_started_utc": "2026-10-29T09:05:29+00:00",
@@ -144,25 +144,25 @@
      }
     },
     "build_shards": {
-     "samples": 1136,
+     "samples": 1232,
      "top": [
       {
        "stack": "threading.py:wait:369 < _base.py:result:445 < _base.py:_result_or_cancel:311 < _base.py:result_iterator:639 < run_sharded_gauntlet.py:dispatch:1395 < run_sharded_gauntlet.py:_timed_dispatch:3487",
        "n": 1074,
-       "share": 0.945
+       "share": 0.872
       },
       {
        "stack": "subprocess.py:_wait:1604 < subprocess.py:wait:1278 < run_sharded_gauntlet.py:_watched_run:1220 < run_sharded_gauntlet.py:_one:1331 < run_sharded_gauntlet.py:one:1304 < run_sharded_gauntlet.py:dispatch:1425",
-       "n": 57,
-       "share": 0.05
-      },
-      {
-       "stack": "<frozen abc>:__instancecheck__:117 < subprocess.py:_execute_child:1470 < subprocess.py:__init__:1038 < run_sharded_gauntlet.py:_watched_run:1213 < run_sharded_gauntlet.py:_one:1331 < run_sharded_gauntlet.py:one:1304",
-       "n": 1,
-       "share": 0.001
+       "n": 152,
+       "share": 0.123
       },
       {
        "stack": "__init__.py:children:978 < run_sharded_gauntlet.py:_sample_tree:2899 < run_sharded_gauntlet.py:_watched_run:1225 < run_sharded_gauntlet.py:_one:1331 < run_sharded_gauntlet.py:one:1304 < run_sharded_gauntlet.py:dispatch:1425",
+       "n": 2,
+       "share": 0.002
+      },
+      {
+       "stack": "<frozen abc>:__instancecheck__:117 < subprocess.py:_execute_child:1470 < subprocess.py:__init__:1038 < run_sharded_gauntlet.py:_watched_run:1213 < run_sharded_gauntlet.py:_one:1331 < run_sharded_gauntlet.py:one:1304",
        "n": 1,
        "share": 0.001
       },
@@ -173,13 +173,13 @@
       }
      ],
      "process": {
-      "cpu_s": 1317.1,
-      "page_faults": 32560580.0,
+      "cpu_s": 1331.5,
+      "page_faults": 32846803.0,
       "read_bytes": 1690.0,
-      "write_bytes": 1210564.0,
-      "sampled_s": 11350.0,
+      "write_bytes": 1320566.0,
+      "sampled_s": 12310.0,
       "rss_mb_max": 1809.3,
-      "cpu_share_of_wall": 0.116
+      "cpu_share_of_wall": 0.108
      }
     }
    }
@@ -194,15 +194,15 @@
   "shards": {
    "phase": "build",
    "total": 15,
-   "started": 16,
-   "done_ok": 9,
+   "started": 17,
+   "done_ok": 10,
    "failed": 6,
-   "retries": 1,
+   "retries": 2,
    "running": 1,
-   "last_finish_epoch": 1793286518.2006319,
-   "last_finish_utc": "2026-10-29T15:08:38+00:00",
+   "last_finish_epoch": 1793287616.106708,
+   "last_finish_utc": "2026-10-29T15:26:56+00:00",
    "longest_shard_s": 12224.7,
-   "seconds_since_last_finish": 14.6,
+   "seconds_since_last_finish": 0.1,
    "stalled_hint": false,
    "stalled_hint_authority": "report_only"
   }
