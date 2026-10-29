@@ -1269,6 +1269,8 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
         "from scripts.run_sharded_gauntlet import record_own_peak;"
         "import atexit,os;"
         "atexit.register(record_own_peak,os.environ.get('GAUNTLET_PEAK_RECEIPT',''));"
+        "from scripts.run_sharded_gauntlet import start_shard_sampler;"
+        "start_shard_sampler(os.environ.get('GAUNTLET_WALL_RECEIPT',''));"
         "from scripts.external_gauntlet import shard_worker;"
         "shard_worker(sys.argv[1],int(sys.argv[2]),sys.argv[3])"
     )
@@ -1326,7 +1328,9 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
             _progress_bump("running")
             try:
                 child_env = {**os.environ, "GAUNTLET_PEAK_RECEIPT": str(
-                    logs / f"{invocation}-{phase}-{k}-attempt-{attempt}.peak.json")}
+                    logs / f"{invocation}-{phase}-{k}-attempt-{attempt}.peak.json"),
+                    "GAUNTLET_WALL_RECEIPT": str(
+                    logs / f"{invocation}-{phase}-{k}-attempt-{attempt}.wall.json")}
                 try:
                     run([sys.executable, "-u", "-c", code, str(shard_dir), str(k), phase],
                         cwd=DESK, env=child_env, capture_output=False,
@@ -1401,6 +1405,7 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
               f"last admission reading {gate.last}", flush=True)
         _progress_set(admission={"floor": width, "widest": gate.width_max, "last": gate.last})
     _record_peaks(logs, invocation, phase)
+    _record_shard_walls(logs, invocation, phase)
     if walls:
         _record_phase_times(shard_walls={phase: walls})
 
@@ -1427,7 +1432,7 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
     # fail-closed merge are unchanged, so no verdict, trial or gate input can move.
     width = 1 if _serial_recovery() else _parallelism(len(failed), phase)
     print(f"SHARD RECOVERY: {len(failed)}/{n} {phase} shard(s) failed in parallel; "
-          f"retrying them {width} at a time after peer memory was released", flush=True)
+          f"retrying them {width} at a time (memory-gated)", flush=True)
 
     def recover(item: tuple[int, Exception | None]) -> BaseException | None:
         k, first_exc = item
@@ -1491,6 +1496,89 @@ def record_own_peak(path: str) -> None:
         return
     with contextlib.suppress(OSError):
         Path(path).write_text(json.dumps({"peak_mb": round(peak, 1)}), encoding="utf-8")
+
+
+#: WHERE A SHARD'S WALL GOES (2026-10-29). The sweep of 10-28 23:44Z planned ~20,000 cells per
+#: build shard; every shard found the build budget already spent (its clock starts before the
+#: pre-warm), built NOTHING fresh, replayed ~1,000 cached cells -- and still took 11,250-12,133 s.
+#: The parent's sampler sees only `dispatch` waiting on the children, so nothing named what the
+#: children wait on. Each child now samples its own main thread (deeper, so a stack inside
+#: pandas/pyarrow still reaches the judge's caller) into a receipt beside its peak receipt, and
+#: the parent folds every shard's receipt into `shard_wall_profile` in JUDGE_SWEEP_PHASE.json.
+#: REPORT-ONLY, like the parent's: it never touches the judge's state and its failure costs only
+#: its own record.
+SHARD_WALL_DEPTH = 12
+SHARD_WALL_TOP = 8
+
+
+def start_shard_sampler(path: str) -> WallSampler | None:
+    """In a shard child: sample this process's main thread and keep its profile at `path`."""
+    if not path:
+        return None
+    target = Path(path)
+    try:
+        sampler = WallSampler(phase=lambda: "shard", depth=SHARD_WALL_DEPTH)
+
+        def write() -> None:
+            snap = sampler.snapshot()
+            snap["pid"] = os.getpid()
+            # every stack, not the top few: the parent sums them across shards
+            snap["stacks"] = dict(sampler.stacks.get("shard", {}))
+            tmp = target.with_name(f"{target.name}.tmp")
+            try:
+                tmp.write_text(json.dumps(snap, default=str), encoding="utf-8")
+                os.replace(tmp, target)
+            except Exception:
+                with contextlib.suppress(OSError):
+                    tmp.unlink(missing_ok=True)
+
+        sampler.publish = write  # type: ignore[method-assign]
+        import atexit
+        atexit.register(sampler.stop)
+        return sampler.start()
+    except Exception:
+        return None
+
+
+def _record_shard_walls(logs: Path, invocation: str, phase: str) -> dict[str, Any] | None:
+    """Fold every shard child's wall receipt for this phase into `shard_wall_profile`."""
+    try:
+        stacks: dict[str, int] = {}
+        proc: dict[str, float] = {}
+        receipts = 0
+        for f in sorted(logs.glob(f"{invocation}-{phase}-*-attempt-*.wall.json")):
+            try:
+                doc = json.loads(f.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            receipts += 1
+            for sig, c in (doc.get("stacks") or {}).items():
+                stacks[sig] = stacks.get(sig, 0) + int(c)
+            for k, v in (((doc.get("phases") or {}).get("shard") or {}).get("process")
+                         or {}).items():
+                if k == "rss_mb_max":
+                    proc[k] = max(proc.get(k, 0.0), float(v))
+                elif k != "cpu_share_of_wall":
+                    proc[k] = proc.get(k, 0.0) + float(v)
+        if not receipts:
+            return None
+        n = max(1, sum(stacks.values()))
+        if proc.get("sampled_s"):
+            proc["cpu_share_of_wall"] = round(proc.get("cpu_s", 0.0) / proc["sampled_s"], 3)
+        top = sorted(stacks.items(), key=lambda kv: (-kv[1], kv[0]))[:SHARD_WALL_TOP]
+        out = {"receipts": receipts, "samples": sum(stacks.values()), "depth": SHARD_WALL_DEPTH,
+               "authority": "report_only",
+               "top": [{"stack": sig[:600], "n": c, "share": round(c / n, 3)} for sig, c in top],
+               "process": {k: round(v, 3 if k == "cpu_share_of_wall" else 1)
+                           for k, v in proc.items()}}
+        with _PHASE_LOCK:
+            prof = _PHASE_DOC.get("shard_wall_profile")
+            prof = dict(prof) if isinstance(prof, dict) else {}
+            prof[phase] = out
+            _PHASE_DOC["shard_wall_profile"] = prof
+        return out
+    except Exception:
+        return None
 
 
 # ------------------------------------------------------------------------- the resident judge
@@ -1772,8 +1860,9 @@ class WallSampler:
                  thread_id: int | None = None,
                  phase: Callable[[], str | None] | None = None,
                  counters: Callable[[], dict[str, float] | None] = _proc_counters,
-                 clock: Callable[[], float] = time.monotonic) -> None:
-        self.every_s, self.publish_s = every_s, publish_s
+                 clock: Callable[[], float] = time.monotonic,
+                 depth: int = WALL_STACK_DEPTH) -> None:
+        self.every_s, self.publish_s, self.depth = every_s, publish_s, depth
         self.thread_id = threading.main_thread().ident if thread_id is None else thread_id
         self._phase = phase or (lambda: _PHASE_DOC.get("phase"))
         self._counters, self._clock = counters, clock
@@ -1789,7 +1878,8 @@ class WallSampler:
         if not name:
             return
         frame = sys._current_frames().get(self.thread_id) if self.thread_id else None
-        sig = _stack_signature(frame) if frame is not None else "<main thread not running>"
+        sig = (_stack_signature(frame, self.depth) if frame is not None
+               else "<main thread not running>")
         row = self.stacks.setdefault(name, {})
         row[sig] = row.get(sig, 0) + 1
         self.samples[name] = self.samples.get(name, 0) + 1
@@ -1805,7 +1895,7 @@ class WallSampler:
         self._prev = (name, now)
 
     def snapshot(self) -> dict[str, Any]:
-        out: dict[str, Any] = {"every_s": self.every_s, "depth": WALL_STACK_DEPTH,
+        out: dict[str, Any] = {"every_s": self.every_s, "depth": self.depth,
                                "authority": "report_only", "phases": {}}
         for name, row in self.stacks.items():
             n = max(1, self.samples.get(name, 0))

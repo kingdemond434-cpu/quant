@@ -520,6 +520,66 @@ def _overlapping_retries(monkeypatch, tmp_path) -> int:
     return live["max"]
 
 
+def test_a_shard_child_keeps_its_own_wall_profile_and_the_parent_folds_them(tmp_path):
+    """10-29: shards that built nothing fresh still took 3.2 h, and no artifact said on what."""
+    import json
+    import threading
+    import time
+
+    logs = tmp_path / "logs"
+    logs.mkdir()
+    stop = threading.Event()
+
+    def busy() -> None:          # stands in for the shard's main thread
+        while not stop.is_set():
+            time.sleep(0.001)
+
+    worker = threading.Thread(target=busy)
+    worker.start()
+    try:
+        for k in (0, 1):
+            sampler = runner.WallSampler(phase=lambda: "shard", every_s=60,
+                                         thread_id=worker.ident, depth=runner.SHARD_WALL_DEPTH)
+            for _ in range(3):
+                sampler.sample()
+            receipt = logs / f"inv-build-{k}-attempt-0.wall.json"
+            started = runner.start_shard_sampler(str(receipt))
+            assert started is not None
+            started._stop.set()
+            started.stacks, started.samples = sampler.stacks, sampler.samples
+            started.publish()
+            doc = json.loads(receipt.read_text(encoding="utf-8"))
+            assert sum(doc["stacks"].values()) == 3 and doc["depth"] == runner.SHARD_WALL_DEPTH
+    finally:
+        stop.set()
+        worker.join()
+    (logs / "inv-rule-0-attempt-0.wall.json").write_text("{}", encoding="utf-8")   # other phase
+    (logs / "inv-build-2-attempt-0.wall.json").write_text("torn", encoding="utf-8")
+    out = runner._record_shard_walls(logs, "inv", "build")
+    assert out is not None and out["receipts"] == 2 and out["samples"] == 6
+    assert "busy" in out["top"][0]["stack"] and out["authority"] == "report_only"
+    assert runner._PHASE_DOC["shard_wall_profile"]["build"] == out
+
+
+def test_no_wall_receipts_leaves_the_profile_alone(tmp_path):
+    assert runner._record_shard_walls(tmp_path, "inv", "build") is None
+    assert "shard_wall_profile" not in runner._PHASE_DOC
+    assert runner.start_shard_sampler("") is None
+
+
+def test_the_shard_child_starts_its_sampler_from_the_receipt_it_is_given(monkeypatch, tmp_path):
+    seen: list[dict] = []
+
+    def fake_run(argv, **kwargs):
+        seen.append({"code": argv[3], "wall": kwargs["env"].get("GAUNTLET_WALL_RECEIPT", "")})
+
+    monkeypatch.setattr(runner, "run", fake_run)
+    runner._phase("build_shards")
+    runner.dispatch(tmp_path / "shards", 1, "build")
+    assert "start_shard_sampler(os.environ.get('GAUNTLET_WALL_RECEIPT',''))" in seen[0]["code"]
+    assert seen[0]["wall"].endswith("-build-0-attempt-0.wall.json")
+
+
 def test_failed_shards_recover_side_by_side(monkeypatch, tmp_path):
     """Measured 10-29: two failed build shards retried back to back, a full shard wall each.
     They now retry together, as wide as the memory rule allows."""
