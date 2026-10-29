@@ -94,6 +94,8 @@ def test_every_certificate_without_a_lane_clock_is_farmed(
     clocked = sf.sleeve_key("GBPUSD", "asia", {"gap_atr": 0.5}, "overnight_gap_decay", "LONG")
     monkeypatch.setattr(shadow_admission, "authorized_runs", lambda base: runs)
     monkeypatch.setattr(admission_integrity, "lane_clock_keys", lambda d: {clocked})
+    monkeypatch.setattr(admission_integrity.IntegrityGate, "load",
+                        classmethod(lambda cls, **kw: cls(alarm={}, verdicts={})))
     rows, refused, why = nmf.clockless_cert_rows()
     assert [r[0] for r in rows] == ["EURUSD"] and not refused
     assert rows[0][5] == nmf.CERT_ADMISSION and rows[0][7] is False
@@ -153,3 +155,20 @@ def test_a_farm_pass_never_touches_the_global_registry_or_clock_ledger(
     lane = tmp_path / "lane_clock_ledger.json"
     later = "2026-10-29T00:00:00+00:00"
     assert stamp("FARM.K", "id", later, path=lane)["start"] == later
+
+
+def test_a_replication_mismatch_is_quarantined_never_farmed(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit on #487: a MISMATCH means the desk's implementation disagrees with the written spec,
+    so its forward evidence is evidence about the wrong strategy."""
+    from research import admission_integrity, shadow_admission
+    run = {"certificate": "c1", "symbol": "EURUSD", "selector": "asia",
+           "family": "overnight_gap_decay", "side": "LONG", "params": {"gap_atr": 0.5}}
+    fp = admission_integrity.spec_fingerprint("EURUSD", "overnight_gap_decay", "asia", "LONG",
+                                              {"gap_atr": 0.5})
+    monkeypatch.setattr(shadow_admission, "authorized_runs", lambda base: [run])
+    monkeypatch.setattr(admission_integrity, "lane_clock_keys", lambda d: set())
+    monkeypatch.setattr(admission_integrity.IntegrityGate, "load", classmethod(
+        lambda cls, **kw: cls(alarm={}, verdicts={"c1": {"fp": fp, "verdict": "MISMATCH"}})))
+    rows, refused, _ = nmf.clockless_cert_rows()
+    assert rows == [] and refused[0]["why"].startswith(admission_integrity.HELD_MISMATCH)

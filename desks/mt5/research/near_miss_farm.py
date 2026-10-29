@@ -166,13 +166,17 @@ def clockless_cert_rows() -> tuple[list[tuple[Any, ...]], list[dict[str, Any]], 
     writes is the key the lane will use once the door opens.
     """
     from research import shadow_forward as sf
-    from research.admission_integrity import lane_clock_keys
+    from research.admission_integrity import HELD_MISMATCH, IntegrityGate, lane_clock_keys
     from research.shadow_admission import authorized_runs
     try:
         runs = list(authorized_runs(BASE))
     except Exception as exc:
         return [], [], f"{UNMEASURED}: authorized_runs failed ({type(exc).__name__}: {exc})"
     clocked = lane_clock_keys(sf.SHADOW_DIR)
+    try:
+        gate: IntegrityGate | None = IntegrityGate.load()
+    except Exception:
+        gate = None
     rows: list[tuple[Any, ...]] = []
     refused: list[dict[str, Any]] = []
     for run in sorted(runs, key=lambda r: (str(r.get("symbol")), str(r.get("selector")))):
@@ -192,6 +196,16 @@ def clockless_cert_rows() -> tuple[list[tuple[Any, ...]], list[dict[str, Any]], 
             continue
         key = sf.sleeve_key(run["symbol"], run["selector"], params, fam, side)
         if key in clocked:
+            continue
+        # QUARANTINE IS NOT A WAIT (audit on #487). A MISMATCH means an independent rebuild from
+        # the written spec disagrees with the desk's implementation; forward evidence from that
+        # implementation is evidence about the wrong strategy, so it is named and not farmed.
+        held = gate.hold(str(run.get("certificate") or ""), symbol=run.get("symbol"),
+                         family=run.get("family"), selector=run.get("selector"),
+                         side=run.get("side"),
+                         params=run.get("params")) if gate is not None else None
+        if held and held.startswith(HELD_MISMATCH):
+            refused.append({"cell": run.get("certificate"), "why": held[:200]})
             continue
         rows.append((str(run["symbol"]), str(run["selector"]), params, fam, side,
                      CERT_ADMISSION, tuple(run.get("power_deficiencies") or ()), False))
