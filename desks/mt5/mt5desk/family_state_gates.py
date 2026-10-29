@@ -69,6 +69,7 @@ from __future__ import annotations
 
 import bisect
 import contextlib
+import hashlib
 import math
 import sys
 from collections.abc import Callable, Sequence
@@ -790,9 +791,425 @@ def family_absorption_gated(
         keep_top=mech in SYNC_HIGH, tail=tail, min_history=min_history)
 
 
+def is_h1(index: pd.Index) -> bool:
+    """Whether a frame is an H1 chart: the median step between its stamps is one hour. The
+    Markov refit grid is counted in hours and the rough-vol day closes on its 23:00 slot, so
+    both read only H1; a frame on another chart is refused (audit SF-4), never re-read."""
+    if not isinstance(index, pd.DatetimeIndex) or len(index) < 3:
+        return False
+    step = np.diff(index.as_unit("ns").asi8)
+    return bool(np.median(step) == HOUR_NS)
+
+
+# ------------------------------------------------------------ Markov-switching variance (HMM) ---
+#: Fit window (H1 returns), refit spacing (H1 bars) and the EM's stopping rule.
+MS_FIT_WINDOW = 2000
+MS_REFIT = 168
+MS_MAX_ITER = 100
+MS_TOL = 1e-8
+#: A state's variance is floored at this share of its fit window's sample variance, and the
+#: stay probabilities are clipped inside [MS_P_MIN, 1 - MS_P_MIN]: a state that collapses onto a
+#: handful of identical returns, or a chain that never switches, is a degenerate fit.
+MS_VAR_FLOOR = 1e-3
+MS_P_MIN = 1e-6
+#: The refit grid is anchored to TIME, not to the frame: grid instants are Saturday 00:00 UTC
+#: plus whole multiples of `refit` hours since the epoch's first Saturday (1970-01-03), so a
+#: frame cut at its start, a backfill, a subperiod removal and the live read all fit on the same
+#: bars (audit M-1: a frame-counted grid re-phased on every leading cut). At the registered 168
+#: the fit lands on the week's last bar, before the Sunday open.
+MS_GRID_ANCHOR_NS = 2 * 24 * 3600 * 10**9
+#: Fit memo, keyed on a digest of the fit window's own bytes and the EM settings, so every base
+#: and cell on one symbol in a process shares a fit and a revised bar is never served a stale
+#: one. A digest, not the 16 KB window: 50,000 raw keys held ~800 MB (audit SF-2).
+_MS_MEMO: dict[tuple[Any, ...], tuple[float, ...] | None] = {}
+_MS_MEMO_MAX = 50_000
+_LOG_2PI = math.log(2.0 * math.pi)
+
+
+def _gauss_logpdf(x: np.ndarray, mu: np.ndarray, var: np.ndarray) -> np.ndarray:
+    """Row-wise Gaussian log density: x (F, T), mu and var (F,)."""
+    out: np.ndarray = -0.5 * (_LOG_2PI + np.log(var)[:, None]
+                              + (x - mu[:, None]) ** 2 / var[:, None])
+    return out
+
+
+def ms_fit(x: np.ndarray, *, max_iter: int = MS_MAX_ITER, tol: float = MS_TOL,
+           var_floor: float = MS_VAR_FLOOR) -> np.ndarray:
+    """Baum-Welch for a 2-state Gaussian HMM on each row of `x` (F windows x T returns).
+
+    Returns (F, 6): mu_low, mu_high, var_low, var_high, p_stay_low, p_stay_high, with the states
+    ORDERED BY VARIANCE (label switching resolved) and NaN rows for a degenerate window -- flat,
+    unreadable, or a converged state whose variance sits on its floor. Each row
+    stops on its own log-likelihood (|dLL| <= tol * (1 + |LL|)) and is frozen there, so a row's
+    fit never depends on which other windows share its batch. The chain starts in its stationary
+    distribution; forward/backward are scaled; the emission densities are shifted by their
+    per-bar maximum so no extreme return underflows both states. The E-step uses the SMOOTHED
+    probabilities, as Baum-Welch must; only the gate (`ms_filter_logodds`) is filtered.
+    """
+    x = np.atleast_2d(np.asarray(x, dtype="float64"))
+    f_n, t_n = x.shape
+    out = np.full((f_n, 6), np.nan)
+    if t_n < 10 or f_n == 0:
+        return out
+    with np.errstate(invalid="ignore"):
+        v_all = x.var(axis=1)
+    good = np.isfinite(x).all(axis=1) & (v_all > 0)
+    rows = np.flatnonzero(good)
+    if not len(rows):
+        return out
+    xr = x[rows]
+    floor = var_floor * v_all[rows]
+    # Start: both means at the window mean, variances from the calm / wild split of the squared
+    # deviations at their 70th percentile, stay probabilities 0.98.
+    mean = xr.mean(axis=1)
+    sq = (xr - mean[:, None]) ** 2
+    calm = sq <= np.quantile(sq, 0.7, axis=1)[:, None]
+    v0 = np.maximum((sq * calm).sum(1) / np.maximum(calm.sum(1), 1), floor)
+    v1 = np.maximum((sq * ~calm).sum(1) / np.maximum((~calm).sum(1), 1), 2.0 * v0)
+    stay = np.full(len(rows), 0.98)
+    th = np.column_stack([mean, mean, v0, v1, stay, stay])
+    ll_prev = np.full(len(rows), -np.inf)
+    active = np.arange(len(rows))
+    for _ in range(max(1, int(max_iter))):
+        if not len(active):
+            break
+        new, ll = _ms_em_step(xr[active], th[active], floor[active])
+        done = np.abs(ll - ll_prev[active]) <= tol * (1.0 + np.abs(ll))
+        th[active] = new
+        ll_prev[active] = ll
+        active = active[~done]
+    # A state sitting ON the variance floor collapsed onto a run of identical returns (a stalled
+    # quote): its likelihood ratio is then astronomically large after any move and the gate
+    # reads the feed, not the regime (audit M-2: log-odds 7e3..1e6). No fit.
+    floored = np.minimum(th[:, 2], th[:, 3]) <= floor * (1.0 + 1e-6)
+    th[floored] = np.nan
+    swap = th[:, 2] > th[:, 3]                    # state 1 is ALWAYS the high-variance regime
+    th[swap] = th[swap][:, [1, 0, 3, 2, 5, 4]]
+    out[rows] = th
+    return out
+
+
+def _ms_em_step(x: np.ndarray, th: np.ndarray, floor: np.ndarray
+                ) -> tuple[np.ndarray, np.ndarray]:
+    """One EM step on each row: (new parameters, the log-likelihood under the OLD ones)."""
+    mu0, mu1, v0, v1, a00, a11 = (th[:, k] for k in range(6))
+    f_n, t_n = x.shape
+    ld0, ld1 = _gauss_logpdf(x, mu0, v0), _gauss_logpdf(x, mu1, v1)
+    mx = np.maximum(ld0, ld1)
+    e0, e1 = np.exp(ld0 - mx), np.exp(ld1 - mx)
+    f0 = np.empty((f_n, t_n))
+    f1 = np.empty((f_n, t_n))
+    c = np.empty((f_n, t_n))
+    q1 = (1.0 - a00) / (2.0 - a00 - a11)          # stationary P(high)
+    q0 = 1.0 - q1
+    for t in range(t_n):
+        n0 = q0 * e0[:, t]
+        n1 = q1 * e1[:, t]
+        ct = n0 + n1
+        c[:, t] = ct
+        p0, p1 = n0 / ct, n1 / ct
+        f0[:, t] = p0
+        f1[:, t] = p1
+        q0 = p0 * a00 + p1 * (1.0 - a11)
+        q1 = p0 * (1.0 - a00) + p1 * a11
+    ll = (np.log(c) + mx).sum(axis=1)
+    b0 = np.empty((f_n, t_n))
+    b1 = np.empty((f_n, t_n))
+    b0[:, -1] = 1.0
+    b1[:, -1] = 1.0
+    for t in range(t_n - 2, -1, -1):
+        g0 = e0[:, t + 1] * b0[:, t + 1] / c[:, t + 1]
+        g1 = e1[:, t + 1] * b1[:, t + 1] / c[:, t + 1]
+        b0[:, t] = a00 * g0 + (1.0 - a00) * g1
+        b1[:, t] = (1.0 - a11) * g0 + a11 * g1
+    gam0 = f0 * b0
+    gam1 = f1 * b1
+    s = gam0 + gam1
+    gam0 /= s
+    gam1 /= s
+    w0 = e0[:, 1:] * b0[:, 1:] / c[:, 1:]
+    w1 = e1[:, 1:] * b1[:, 1:] / c[:, 1:]
+    xi00 = (f0[:, :-1] * a00[:, None] * w0).sum(1)  # expected low -> low transitions
+    xi11 = (f1[:, :-1] * a11[:, None] * w1).sum(1)  # expected high -> high transitions
+    n0, n1 = gam0.sum(1), gam1.sum(1)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        m0 = (gam0 * x).sum(1) / n0
+        m1 = (gam1 * x).sum(1) / n1
+        nv0 = np.maximum((gam0 * (x - m0[:, None]) ** 2).sum(1) / n0, floor)
+        nv1 = np.maximum((gam1 * (x - m1[:, None]) ** 2).sum(1) / n1, floor)
+        na00 = np.clip(xi00 / gam0[:, :-1].sum(1), MS_P_MIN, 1.0 - MS_P_MIN)
+        na11 = np.clip(xi11 / gam1[:, :-1].sum(1), MS_P_MIN, 1.0 - MS_P_MIN)
+    new = np.column_stack([m0, m1, nv0, nv1, na00, na11])
+    bad = ~np.isfinite(new).all(axis=1)           # an emptied state keeps its last parameters
+    new[bad] = th[bad]
+    return new, ll
+
+
+def ms_filter_logodds(x: np.ndarray, th: Sequence[float]) -> np.ndarray:
+    """log P(high | x_0..x_t) - log P(low | x_0..x_t) for each t: the Hamilton filter of one
+    return path under fit `th` (variance-ordered, as `ms_fit` returns it), started in the
+    chain's stationary distribution. Causal by construction: entry t reads x_0..x_t only.
+
+    The gate ranks the log-odds, not the probability: the two order the bars identically, and the
+    probability rounds to exactly 0 or 1 in floating point after a large return, which would tie
+    readings the log-odds keeps apart.
+    """
+    r = np.asarray(x, dtype="float64")
+    mu0, mu1, v0, v1, a00, a11 = (float(v) for v in th)
+    out = np.full(len(r), np.nan)
+    if not (v0 > 0 and v1 > 0 and np.isfinite([mu0, mu1, a00, a11]).all()):
+        return out
+    lr = 0.5 * (math.log(v0) - math.log(v1)) + 0.5 * ((r - mu0) ** 2 / v0 - (r - mu1) ** 2 / v1)
+    p1 = (1.0 - a00) / (2.0 - a00 - a11)        # predicted P(high) before the first return
+    for t in range(len(r)):
+        lo = math.log(p1) - math.log1p(-p1) + float(lr[t])
+        if not math.isfinite(lo):
+            continue                            # an unreadable return leaves the prediction
+        out[t] = lo
+        f1 = 1.0 / (1.0 + math.exp(-lo)) if lo > -700.0 else 0.0
+        p1 = min(max((1.0 - f1) * (1.0 - a00) + f1 * a11, 1e-300), 1.0 - 1e-16)
+    return out
+
+
+def ms_grid_bars(stamps: Sequence[int] | np.ndarray, positions: Sequence[int] | np.ndarray,
+                 *, refit: int = MS_REFIT) -> np.ndarray:
+    """For each bar index p, the index g <= p of the last bar stamped at or before the last
+    grid instant <= stamp(p) (see MS_GRID_ANCHOR_NS); -1 where no bar precedes it."""
+    st = np.asarray(stamps, dtype="int64")
+    pos = np.asarray(positions, dtype="int64").ravel()
+    out = np.full(len(pos), -1, dtype="int64")
+    inside = (pos >= 0) & (pos < len(st))
+    if not inside.any():
+        return out
+    span = max(1, int(refit)) * HOUR_NS
+    t = st[pos[inside]]
+    inst = MS_GRID_ANCHOR_NS + ((t - MS_GRID_ANCHOR_NS) // span) * span
+    out[inside] = np.searchsorted(st, inst, side="right") - 1
+    return out
+
+
+def markov_vol_state(index: pd.Index, close: Sequence[float] | np.ndarray,
+                     positions: Sequence[int] | np.ndarray, *, fit_window: int = MS_FIT_WINDOW,
+                     refit: int = MS_REFIT, max_iter: int = MS_MAX_ITER, tol: float = MS_TOL
+                     ) -> np.ndarray:
+    """The filtered log-odds of the high-variance regime at each bar index in `positions`.
+
+    Bar j's return is R_j = log c_j - log c_{j-1}. The model is refitted on a grid fixed in TIME
+    (`ms_grid_bars`): at bar p the fit is the one at g = the last bar stamped at or before the
+    last grid instant <= stamp(p), on the `fit_window` returns over bars [g - fit_window + 1, g]
+    (memoised on a digest of those returns), so its parameters read data at bars <= g <= p; the
+    Hamilton filter then runs under that fit from the window's first bar THROUGH p. NaN before
+    the first full fit window or where a window is degenerate. A frame cut at its start changes
+    nothing at p while the window still fits inside it; one cut after p changes nothing at p.
+    """
+    c = np.asarray(close, dtype="float64")
+    pos = np.asarray(positions, dtype="int64").ravel()
+    out = np.full(len(pos), np.nan)
+    w = int(fit_window)
+    if (w < 10 or len(c) < w + 1 or not len(pos) or not isinstance(index, pd.DatetimeIndex)
+            or len(index) != len(c)):
+        return out
+    ix = index.tz_localize("UTC") if index.tz is None else index.tz_convert("UTC")
+    with np.errstate(divide="ignore", invalid="ignore"):
+        r = np.concatenate([[np.nan], np.diff(np.log(c))])   # r[j] = the return INTO bar j
+    grid = ms_grid_bars(ix.as_unit("ns").asi8, pos, refit=refit)
+    ok = (pos >= 0) & (pos < len(c)) & (grid >= w)
+    fits: dict[int, tuple[float, ...] | None] = {}
+    todo: list[tuple[int, tuple[Any, ...]]] = []
+    for g in sorted({int(v) for v in grid[ok]}):
+        key = (hashlib.blake2b(r[g - w + 1:g + 1].tobytes(), digest_size=16).digest(), w,
+               int(max_iter), float(tol))
+        if key in _MS_MEMO:
+            fits[g] = _MS_MEMO[key]
+        else:
+            todo.append((g, key))
+    if todo:
+        th = ms_fit(np.vstack([r[g - w + 1:g + 1] for g, _ in todo]), max_iter=max_iter, tol=tol)
+        if len(_MS_MEMO) + len(todo) > _MS_MEMO_MAX:
+            _MS_MEMO.clear()
+        for (g, key), row in zip(todo, th, strict=True):
+            val = tuple(float(v) for v in row) if np.isfinite(row).all() else None
+            _MS_MEMO[key] = fits[g] = val
+    by_grid: dict[int, list[int]] = {}
+    for i in np.flatnonzero(ok):
+        by_grid.setdefault(int(grid[i]), []).append(int(i))
+    for g, idx in by_grid.items():
+        fit = fits.get(g)
+        if fit is None:
+            continue
+        start = g - w + 1
+        lo = ms_filter_logodds(r[start:max(int(pos[i]) for i in idx) + 1], fit)
+        for i in idx:
+            out[i] = lo[int(pos[i]) - start]
+    return out
+
+
+def family_markov_vol_gated(
+    df: pd.DataFrame,
+    *,
+    base_family: str = "",
+    base_params: dict[str, Any] | None = None,
+    fit_window: int = MS_FIT_WINDOW,
+    refit: int = MS_REFIT,
+    max_iter: int = MS_MAX_ITER,
+    tail: float = 1.0 / 3.0,
+    min_history: int = 30,
+) -> list[Signal]:
+    """`base_family`'s signals kept where the filtered probability of the high-variance regime
+    of a 2-state Markov-switching model of the symbol's own H1 returns ranks in the tail its
+    class fixes, against that probability at the base's earlier signals only: a trend/breakout
+    base the BOTTOM tail (the calm regime), a reversion base the TOP tail (the wild one)."""
+    mech = mechanism_class(base_family)
+    if mech not in SYNC_HIGH and mech not in SYNC_LOW:
+        return []
+    d, sigs = base_signals(df, base_family, base_params)
+    if not sigs or d.empty or "close" not in d.columns:
+        return []
+    keys = sorted({k for s in sigs if (k := _ns(s.time)) is not None})
+    if not keys:
+        return []
+    pos = _positions(d.index, keys)
+    if not is_h1(d.index):
+        return []
+    vals = markov_vol_state(d.index, d["close"].to_numpy(dtype="float64"), pos,
+                            fit_window=fit_window, refit=refit, max_iter=max_iter)
+    state = {k: (float(v) if p >= 0 and np.isfinite(v) else None)
+             for k, p, v in zip(keys, pos, vals, strict=True)}
+    return keep_in_tail(sigs, lambda key, s: state.get(key), keep_top=mech in SYNC_LOW,
+                        tail=tail, min_history=min_history)
+
+
+# ------------------------------------------------------------- rough volatility (H of log RV) ---
+DAY_NS = 24 * HOUR_NS
+#: A UTC day is COMPLETE when it holds at least this share of the median bar count of the
+#: trailing RV_COUNT_WINDOW days (itself included): a Sunday open stub or a half day at the
+#: start of the file is not a day of variance. Read causally and per symbol, so a soft with a
+#: nine-hour session is judged against its own sessions, never against a 24-hour FX clock.
+RV_MIN_SHARE = 0.75
+RV_COUNT_WINDOW = 20
+#: ... and holds at most this share of exactly-zero H1 returns.
+RV_MAX_FLAT_SHARE = 0.5
+
+
+def daily_realised_variance(index: pd.Index, close: Sequence[float] | np.ndarray
+                            ) -> tuple[np.ndarray, np.ndarray]:
+    """(day start ns, RV) for every COMPLETE UTC day: RV = the sum of the squared H1 log returns
+    of the bars stamped that day (the return INTO each bar, so the first carries the overnight).
+
+    A day's value is knowable only once its last H1 slot (23:00 UTC) has printed, which is what
+    `rough_vol_state` checks before it counts the day.
+    """
+    if not isinstance(index, pd.DatetimeIndex) or len(index) < 2:
+        return np.empty(0, dtype="int64"), np.empty(0)
+    ix = index.tz_localize("UTC") if index.tz is None else index.tz_convert("UTC")
+    st = ix.as_unit("ns").asi8
+    c = np.asarray(close, dtype="float64")
+    with np.errstate(divide="ignore", invalid="ignore"):
+        r = np.concatenate([[np.nan], np.diff(np.log(c))])
+    days, inv, counts = np.unique(st // DAY_NS, return_inverse=True, return_counts=True)
+    inv = inv.ravel()
+    fine = np.isfinite(r)
+    rv = np.bincount(inv, weights=np.where(fine, r * r, 0.0), minlength=len(days))
+    # A day holding an unreadable return (the file's first bar has none) is incomplete.
+    bad = np.bincount(inv, weights=(~fine).astype("float64"), minlength=len(days))
+    # A day mostly of unchanged closes is a stalled feed, not a quiet day: a one-tick day's
+    # log RV of -41 moved H by ~0.04 (audit SF-1).
+    flat = np.bincount(inv, weights=(fine & (r == 0.0)).astype("float64"), minlength=len(days))
+    med = (pd.Series(counts.astype("float64"))
+           .rolling(RV_COUNT_WINDOW, min_periods=1).median().to_numpy())
+    keep = ((counts >= RV_MIN_SHARE * med) & (bad == 0) & (rv > 0)
+            & (flat <= RV_MAX_FLAT_SHARE * counts))
+    return (days[keep] * DAY_NS).astype("int64"), rv[keep]
+
+
+def hurst_of_log_rv(x: Sequence[float] | np.ndarray, *, window: int = 250, max_lag: int = 10
+                    ) -> np.ndarray:
+    """H at each day k: the least-squares slope of log m(q) on log q, q = 1..max_lag, where m(q)
+    is the mean |x_{j+q} - x_j| over the pairs inside the trailing `window` days
+    [k - window + 1, k] (Gatheral, Jaisson & Rosenbaum 2018, "Volatility is rough", the first
+    absolute moment). NaN until `window` days exist. x is log RV = 2 log sigma + noise, and the
+    factor 2 does not move the slope.
+    """
+    v = np.asarray(x, dtype="float64")
+    n, w, lmax = len(v), int(window), int(max_lag)
+    out = np.full(n, np.nan)
+    if lmax < 2 or w <= lmax + 1 or n < w:
+        return out
+    lq = np.log(np.arange(1, lmax + 1, dtype="float64"))
+    lq -= lq.mean()
+    k = np.arange(w - 1, n)
+    logm = np.empty((len(k), lmax))
+    for q in range(1, lmax + 1):
+        cs = np.concatenate([[0.0], np.cumsum(np.abs(v[q:] - v[:-q]))])  # pair j is (j, j + q)
+        with np.errstate(divide="ignore"):
+            logm[:, q - 1] = np.log((cs[k - q + 1] - cs[k - w + 1]) / (w - q))
+    out[w - 1:] = ((logm - logm.mean(axis=1, keepdims=True)) @ lq) / float(lq @ lq)
+    return np.where(np.isfinite(out), out, np.nan)
+
+
+def rough_vol_state(index: pd.Index, close: Sequence[float] | np.ndarray, keys: Sequence[int],
+                    *, window: int = 250, max_lag: int = 10) -> np.ndarray:
+    """H at each ns stamp in `keys`, over the last `window` complete days whose final H1 slot
+    (23:00 UTC) is at or before the stamp: a day still in progress at t never counts, and an
+    incomplete day never counts at all. NaN until `window` such days exist."""
+    k_arr = np.asarray(keys, dtype="int64")
+    out = np.full(len(k_arr), np.nan)
+    days, rv = daily_realised_variance(index, close)
+    if len(days) < int(window):
+        return out
+    h = hurst_of_log_rv(np.log(rv), window=window, max_lag=max_lag)
+    j = np.searchsorted(days + 23 * HOUR_NS, k_arr, side="right") - 1
+    have = j >= 0
+    out[have] = h[j[have]]
+    return out
+
+
+def family_rough_vol_gated(
+    df: pd.DataFrame,
+    *,
+    base_family: str = "",
+    base_params: dict[str, Any] | None = None,
+    window: int = 250,
+    max_lag: int = 10,
+    tail: float = 1.0 / 3.0,
+    min_history: int = 30,
+) -> list[Signal]:
+    """`base_family`'s signals kept where the roughness H of the symbol's own daily realised
+    variance ranks in the tail its class fixes, against H at the base's earlier signals only: a
+    trend/breakout base the TOP tail (persistent volatility), a reversion base the BOTTOM tail
+    (rough, anti-persistent volatility)."""
+    mech = mechanism_class(base_family)
+    if mech not in SYNC_HIGH and mech not in SYNC_LOW:
+        return []
+    d, sigs = base_signals(df, base_family, base_params)
+    if not sigs or d.empty or "close" not in d.columns:
+        return []
+    keys = sorted({k for s in sigs if (k := _ns(s.time)) is not None})
+    if not keys or not is_h1(d.index):
+        return []
+    vals = rough_vol_state(d.index, d["close"].to_numpy(dtype="float64"), keys,
+                           window=window, max_lag=max_lag)
+    state = {k: (float(v) if np.isfinite(v) else None) for k, v in zip(keys, vals, strict=True)}
+    return keep_in_tail(sigs, lambda key, s: state.get(key), keep_top=mech in SYNC_HIGH,
+                        tail=tail, min_history=min_history)
+
+
+#: WHY NO STATE GATE IS LIVE-EXECUTABLE YET (audit of #399, SF-3). Every wrapper ranks its state
+#: against the state at ALL the base's earlier signals in the frame (`keep_in_tail`, at least
+#: `min_history` of them), and the slow states need long windows besides (Markov 2,000 H1 returns,
+#: rough-vol 250 complete days). The gateway's family read is 400 H1 bars, so a certificate
+#: traded today would rank against a different, shorter history than it was certified on -- or
+#: keep nothing -- with no refusal naming why. `executables.executor_gap` names this instead,
+#: until the history is bounded in market time and the gateway reads that much.
+LIVE_READ_GAP = ("state-gated wrapper: ranks against every earlier base signal in the frame "
+                 "and needs up to 250 days of H1 history; the gateway's family read is 400 H1 "
+                 "bars, so a live read would not reproduce the certified gate")
+
 STATE_GATE_FAMILIES: dict[str, Callable[..., list[Signal]]] = {
     "sync_gated": family_sync_gated,
     "entropy_gated": family_entropy_gated,
     "fisher_rao_gated": family_fisher_rao_gated,
     "absorption_gated": family_absorption_gated,
+    "markov_vol_gated": family_markov_vol_gated,
+    "rough_vol_gated": family_rough_vol_gated,
 }

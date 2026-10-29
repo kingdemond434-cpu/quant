@@ -2509,6 +2509,24 @@ FAMILY_TIMEFRAMES["absorption_gated"] = (
     "the absorption panel is read from the H1 bar store and `window` = 360 counts H1 returns "
     "(15 trading days); on another chart the base would be gated by an hourly state under a "
     "name claiming that chart")
+# GAP_MAP row 92 (2026-10-14, the derivatives / vol-modelling gap, MT5 bars only): the same
+# operator with a VOLATILITY-MODEL state -- the filtered probability of the high-variance regime
+# of a 2-state Markov-switching model of the symbol's own H1 returns (`markov_vol_gated`) and the
+# roughness H of its daily realised variance (`rough_vol_gated`, Gatheral-Jaisson-Rosenbaum).
+FAMILY_INPUTS["markov_vol_gated"] = (
+    "a price-only base family's bars plus the filtered high-variance regime probability of a "
+    "2-state Markov-switching model of the symbol's own H1 returns", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["rough_vol_gated"] = (
+    "a price-only base family's bars plus the roughness H of the symbol's own daily realised "
+    "variance (from its H1 bars)", "data/universe/*_H1.parquet")
+FAMILY_TIMEFRAMES["markov_vol_gated"] = (
+    ("H1",),
+    "`fit_window` = 2000 and `refit` = 168 count H1 returns and bars; on another chart the "
+    "regime would be fitted on a different horizon under a recipe registered for this one")
+FAMILY_TIMEFRAMES["rough_vol_gated"] = (
+    ("H1",),
+    "the daily realised variance is summed from H1 squared returns; on another chart each day "
+    "would hold a different number of returns under a recipe registered for this one")
 
 # CROSS-SECTIONAL CLASS BOOKS, ONE LEG PER CELL (2026-09-30). The desk read k_eff 2.53 on 453
 # nominal sleeves with 6 of 15 alpha clusters empty, and `cross_sectional_fx` had never held a

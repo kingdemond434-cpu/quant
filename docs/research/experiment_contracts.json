@@ -267,7 +267,7 @@
    }
   },
   "state_gate_proposer": {
-   "hypothesis": "Gating price-only base families by a market STATE read off prices (FX+gold panel phase synchronisation with the direction fixed by the base's mechanism, the symbol's own low permutation entropy, the Fisher-Rao velocity of the symbol's own return distribution, or the hypothesis-lane panel's absorption-ratio shift, each tail direction fixed by the base's mechanism) finds entries that pay where the ungated base does not, at one charged trial per (wrapper, base, symbol) and no gate-parameter search.",
+   "hypothesis": "Gating price-only base families by a market STATE read off prices (FX+gold panel phase synchronisation with the direction fixed by the base's mechanism, the symbol's own low permutation entropy, the Fisher-Rao velocity of the symbol's own return distribution, the hypothesis-lane panel's absorption-ratio shift, the symbol's own Markov-switching high-variance regime probability, or the roughness H of its daily realised variance, each tail direction fixed by the base's mechanism) finds entries that pay where the ungated base does not, at one charged trial per (wrapper, base, symbol) and no gate-parameter search.",
    "metric": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "minted",

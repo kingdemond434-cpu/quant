@@ -301,9 +301,19 @@ def test_every_timeframe_restriction_is_a_real_chart_and_carries_its_reason() ->
 def test_most_families_run_on_every_chart() -> None:
     """The default is ALL SEVEN. A restriction is an exception with a reason, never the norm --
     if this ever inverts, the ladder has been narrowed one family at a time."""
-    unrestricted = [f for f in families_orthogonal.ORTHOGONAL_FAMILIES
-                    if f not in families_orthogonal.FAMILY_TIMEFRAMES]
-    assert len(unrestricted) > len(families_orthogonal.FAMILY_TIMEFRAMES)
+    # The state-gated wrappers (mt5desk/family_state_gates.py) are OPERATORS over a base family,
+    # not mechanisms of their own: each is registered H1-only because its STATE is read off H1
+    # bars, while the base it gates still runs on every chart. Counting them would read six
+    # operator registrations as six mechanisms narrowed, so the ratio is taken over mechanisms.
+    from mt5desk.family_state_gates import STATE_GATE_FAMILIES
+    mechanisms = [f for f in families_orthogonal.ORTHOGONAL_FAMILIES
+                  if f not in STATE_GATE_FAMILIES]
+    restricted = [f for f in families_orthogonal.FAMILY_TIMEFRAMES if f not in STATE_GATE_FAMILIES]
+    unrestricted = [f for f in mechanisms if f not in families_orthogonal.FAMILY_TIMEFRAMES]
+    assert len(unrestricted) > len(restricted)
+    # and a wrapper that IS restricted is restricted to H1, the chart its state is read on
+    assert all(families_orthogonal.FAMILY_TIMEFRAMES[f][0] == ("H1",)
+               for f in STATE_GATE_FAMILIES if f in families_orthogonal.FAMILY_TIMEFRAMES)
     assert families_orthogonal.timeframe_domain("vol_transition") == TIMEFRAMES
     assert families_orthogonal.timeframe_refusal("vol_transition", "M1") is None
     refusal = families_orthogonal.timeframe_refusal("hedging_demand_close", "D1")
