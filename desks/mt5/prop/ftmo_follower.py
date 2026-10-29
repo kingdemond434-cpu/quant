@@ -361,12 +361,26 @@ def cet_day(now: datetime) -> tuple[str, datetime]:
 
 def day_start_balance(mt5: Any, balance: float, since: datetime, now: datetime) -> float:
     """The balance at FTMO's midnight: today's balance less every deal's result since then.
-    RAISES when the deal history cannot be read (the guard then refuses)."""
-    deals = mt5.history_deals_get(since, now + timedelta(minutes=5))
+    RAISES when the deal history cannot be read (the guard then refuses).
+
+    ON THE SERVER CLOCK (audit MF4, 2026-10-29). MT5 stamps a deal with the server's wall clock
+    as if it were UTC, and the API reads its datetime window the same way, so a window in real UTC
+    was shifted by the server offset: it counted the last two or three hours of the previous CET
+    day as today's and DROPPED the last two or three hours of today's deals (the most recent
+    losses, the ones the daily-loss rail most needs). The query is wide (a day each side) and
+    each deal is kept when its own server stamp is at or after CET midnight on the server clock
+    (the broker clock NY+7, `e8_guard.server_offset_hours`, which the executor checks the FTMO
+    server equals every pass). A deal whose time cannot be read is counted as today's."""
+    from prop.e8_guard import server_offset_hours
+    deals = mt5.history_deals_get(since - timedelta(days=1), now + timedelta(days=1))
     if deals is None:
         raise ValueError("the deal history is unreadable")
+    start = since.timestamp() + server_offset_hours(now) * 3600.0
     moved = 0.0
     for d in deals:
+        ts = getattr(d, "time", None)
+        if isinstance(ts, (int, float)) and not isinstance(ts, bool) and 0 < ts < start:
+            continue
         for k in ("profit", "commission", "swap", "fee"):
             v = getattr(d, k, 0.0)
             if isinstance(v, (int, float)) and not isinstance(v, bool):

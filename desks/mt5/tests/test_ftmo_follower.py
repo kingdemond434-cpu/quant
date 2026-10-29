@@ -1032,3 +1032,19 @@ def test_two_writers_never_tear_a_line(world, tmp_path) -> None:
     assert len(rows) == 300
     assert {f"{r['book']}:{r['position_id']}" for r in rows} == (
         {f"ftmo:{1000 + i}" for i in range(150)} | {f"e8:{5000 + i}" for i in range(150)})
+
+
+def test_the_day_start_balance_is_read_on_the_server_clock() -> None:
+    """Audit MF4: deals carry the server's wall clock (UTC+3 here). CET midnight of 10-21 is
+    22:00 UTC of 10-20 = 01:00 on the server. A deal stamped 00:30 server is yesterday's; one
+    stamped 01:30 and one stamped in the last hour (which the old real-UTC window dropped) are
+    today's; an unstamped deal counts as today's."""
+    _, midnight = ff.cet_day(NOW)
+    srv = midnight.timestamp() + 3 * 3600
+
+    def deal(profit: float, ts: object) -> SimpleNamespace:
+        return SimpleNamespace(profit=profit, commission=0.0, swap=0.0, fee=0.0, time=ts)
+
+    mt5 = _MT5(deals=(deal(-700.0, srv - 1800), deal(-1000.0, srv + 1800),
+                      deal(-2000.0, TICK - 600), deal(-50.0, None)))
+    assert ff.day_start_balance(mt5, 96_950.0, midnight, NOW) == pytest.approx(100_000.0)
