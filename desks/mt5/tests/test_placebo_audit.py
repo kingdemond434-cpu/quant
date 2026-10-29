@@ -8,8 +8,8 @@ gauntlet and lookahead sentinel and require recall 1.0 with every positive admit
 """
 from __future__ import annotations
 
-import sys
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -27,17 +27,18 @@ import placebo_audit as pa  # noqa: E402
 @pytest.fixture(scope="module", autouse=True)
 def owned_lifetime_trials(tmp_path_factory):
     """Real lifetime writer over owned synthetic screening receipts, never the VPS bank."""
-    from libs.research import experiment_ledger as el, hypothesis_graph as hg
+    from libs.research import experiment_ledger as el
+    from libs.research import hypothesis_graph as hg
     desk = tmp_path_factory.mktemp("placebo_trials")
     intel = desk / "data" / "intelligence" / "controls"
     intel.mkdir(parents=True)
     (intel / "discoveries_controls.json").write_text(json.dumps({
         "tests_run": 200, "discoveries": [{"family": "fixture"}]}), encoding="utf-8")
-    graph = hg.Graph(desk / "data" / "hypothesis_graph.jsonl")
+    graph_path = desk / "data" / "hypothesis_graph.jsonl"
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(el, "DESK", desk)
         mp.setattr(el, "OUT", desk / "reports" / "EXPERIMENT_LEDGER.json")
-        mp.setattr(hg, "Graph", lambda: graph)
+        mp.setattr(hg, "LEDGER", graph_path)
         doc = el.lifetime(write=True)
         assert doc["lifetime_trials"] == 200
         yield el.OUT

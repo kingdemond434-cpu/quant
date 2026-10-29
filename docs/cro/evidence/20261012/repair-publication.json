@@ -1,0 +1,172 @@
+{
+  "at": "2026-10-11T22:13:48.036368+00:00",
+  "status": "DRAFT_REVIEW_NOT_RELEASED",
+  "branch": "codex/repair-closure-20261009",
+  "base_sha": "fd950f32657fb9c7d36be3bbafae56dd3d900086",
+  "code_deployed": false,
+  "github_installation_verified": true,
+  "github_installation_id": 170400640,
+  "github_repository": "kingdemond434-cpu/quant",
+  "record_prefixes_preserved": 194,
+  "vintage_seals_preserved": 1,
+  "source_sha256": {
+    "desks/mt5/mt5desk/families.py": "181cadefb47f11c76d2313872208d764d3220215a0e87085f763f6fbfe2781e6",
+    "desks/mt5/mt5desk/family_inputs.py": "2c8b2afebe9b8bcf609c88a745df7d73cbe7c3d787eceb50062881916a63d0ea",
+    "desks/mt5/mt5desk/legacy_family_inputs.py": "769486bc358813cad39da42b5881f9820cf9c0e4cf51b497eedf053482099617",
+    "desks/mt5/research/burn_in.py": "6b91b5eff50af092f75a25190962f473e6e81acdfe0714bcf636b3aef423c2a5",
+    "desks/mt5/research/pf_allocator.py": "0f2c64e556bedbea31c22b5912cf7157b45a477a28682700555267f868404f2c",
+    "desks/mt5/research/quantbench.py": "05cfc69d4f4a0bb52e08a936121fe1c2e05d1a11c29a4004aa866f0510abba3c",
+    "desks/mt5/research/research_artifacts.py": "a51e2cd77e41ff1fb6fd79e8d0f7e0f7f59019ea5f4df4582be60a03735e30c6",
+    "desks/mt5/scripts/external_gauntlet.py": "44505acc9652daf074acc90702c279fac77e0dc8af51dfa1fd81093f5335922c",
+    "desks/mt5/scripts/warm_gauntlet_cache.py": "e62dc31dcd8b4b9853efa26dfb0825339acfab440c97d4a795e3d5c1dc2c5259",
+    "desks/mt5/tests/conftest.py": "d0166d4ef014020a439d83e703c15a2ca625e575f6811be824f804c72728a723",
+    "desks/mt5/tests/test_empty_book_admission_clock.py": "75afc1be1d4792a5e18fdafc12a072ec66d6ac293de3aefc07e71a1702554bfc",
+    "desks/mt5/tests/test_entry_geometry_integrity.py": "db646f4dba6c512a47df27139303f42e98d21b63ec782249c7f9f6b95ac16d6c",
+    "desks/mt5/tests/test_gateway_adapter.py": "21b337b3893f927f8924a7f3c7e56bd913b8002598a82a071f30282d0c856b62",
+    "desks/mt5/tests/test_legacy_family_inputs.py": "8e5dee658ac2f611cdc871704ba37059efdfd65ffbea3bd455adc818be375a1e",
+    "desks/mt5/tests/test_quantbench.py": "d8f937e51be8c1eaee56105535cec78dab7dbb2b6debc9a479d65adb41e597d7",
+    "desks/mt5/tests/test_release_identity.py": "0cbf3804696aa303dc3e5f4e5a56fd8ef954b33a9c277e6489520d251dcb33c2",
+    "desks/mt5/tests/test_replay_input_cache_identity.py": "39b7927db9f8cf56aedb2497f914ddda22d3df5cfce7439a91840e482cd4f0d2",
+    "desks/mt5/tests/test_research_artifacts.py": "823a147904ad20a14a7667511d98ba860797d81326ac9ec1d4d655f08a6c6d12",
+    "desks/mt5/tests/test_resolve_inputs_cache.py": "223d3b71d6ec17440dc2548200b24dfabadad722b610defdeedc25d141b1a376",
+    "desks/mt5/tests/test_warm_gauntlet_defers_never_drops.py": "9bd7fccb74fd7cae12aa8d4df7be9efa3374475ad3f33b3a28673dbb68fdfc02",
+    "libs/validation/independent_replica.py": "3e7f72bf33102b59fb858e1bc3ce9b5780573953d05c21a2dc16bfb637d3f3a2",
+    "libs/validation/replay2.py": "e0c5e33d2a2467b3e3def14444627128fc05a2d9d9ea423cd387e8438a513038",
+    "scripts/check_immutable_evaluator.py": "3cda4b1e10d466ee7a272357bee441f6bb3d1a4029a0cc21119133d0cab77d6a",
+    "tests/conftest.py": "aef4ec21292606a950af152619dee6afe3b856523e5a8b399e9d10a02ae897d5",
+    "tests/ops/test_offsite_backup.py": "ee281abff49fd33186ab305ea4414d47c97552e17c8757d2c3cabcd05c234106",
+    "tests/scripts/test_check_credentials.py": "d5fd3eec3f8297640b0786e2427ecb375e5d89059d96b9c397eaddfd3b29f9d2",
+    "tests/scripts/test_check_immutable_evaluator_wall.py": "8a85e9da77bcfb69a3df9fe58aa3d164228e07f47d46044052e9d909779bf979",
+    "tests/scripts/test_kimi_hunter_no_giving_up.py": "17c7cc1589863823d137d1f9bf755fec8816d30380873b653a815b596be5f3e4",
+    "desks/mt5/mt5desk/canonical.py": "82a75de73790a5c0f5241bfe7e3249b20ec19e8444cb1f9da79e208786124397",
+    "desks/mt5/tests/test_trial_census_scaling.py": "3330f4de4823be68e988d2fa129fa132b99cffea14679c906f592f18214991d8"
+  },
+  "validation": {
+    "closure-root-recovery-junit.xml": {
+      "artifact_name": "closure-root-recovery-junit.xml",
+      "tests": 16221,
+      "failures": 74,
+      "errors": 0,
+      "skipped": 93
+    },
+    "desk-final-20261011-junit.xml": {
+      "artifact_name": "desk-final-20261011-junit.xml",
+      "tests": 11133,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 25
+    },
+    "validation-portability-junit.xml": {
+      "artifact_name": "validation-portability-junit.xml",
+      "tests": 31,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "validation-cache-junit.xml": {
+      "artifact_name": "validation-cache-junit.xml",
+      "tests": 74,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "root-failures-repaired-20261011-junit.xml": {
+      "artifact_name": "root-failures-repaired-20261011-junit.xml",
+      "tests": 68,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "pull-receipt-rerun-20261011-junit.xml": {
+      "artifact_name": "pull-receipt-rerun-20261011-junit.xml",
+      "tests": 26,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "full_validation_green": false,
+  "validation_notes": [
+    "Initial root full suite: 74 failures. Sixty-two were Bash PATH failures, six actual Windows symlink privilege failures, and six portable fixture/privacy/journal/routing failures.",
+    "After repair, 67 of 68 previously failed non-privilege cases passed. The single deployment-receipt failure subsequently passed an isolated reproduction and all 26 deployment-gate tests.",
+    "The completed desk full suite had one remaining 20-second smoke timing failure under concurrent load. An isolated production smoke measured 14.084 seconds with all 16 money-path imports checked.",
+    "A combined-scanner proposal passed 50 tests but was rejected and reverted because an identical-source A/B benchmark was slower (14.816 versus 11.081 seconds). These 50 tests do not certify the reverted proposal for deployment.",
+    "No test was skipped to clear Windows symlink privilege. Canonical Ubuntu CI is required to complete the release validation and coverage on the final commit."
+  ],
+  "runtime_repair": {
+    "canonical_replication_completed_utc": "2026-10-11T21:13:59Z",
+    "priority_live_certificates_replicated": 4,
+    "e8_consumer_completed_utc": "2026-10-11T21:15:08Z",
+    "before": "STALE_REPLICATION_BLOCK",
+    "after": "NO_SIGNAL",
+    "orders_forced": false
+  },
+  "remaining_release_conditions": [
+    "Canonical CI, coverage floors, and immutable/law gates must pass for the final integrated tree.",
+    "Resolve any branch divergence semantically before merge and signed release promotion.",
+    "Canonical adoption must verify deployed code identity and actual consumer receipts.",
+    "Measure post-release unique terminal judging rate, allocator admission freshness, forward clocks, and producer/conversion receipts; no 100k/day or universal optimality claim is made."
+  ],
+  "trial_census_repair": {
+    "tests": {
+      "tests": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "benchmark": {
+      "same_input": [
+        {
+          "label": "before",
+          "cells": 1200,
+          "seconds": 6.4781,
+          "report": {
+            "n_raw": 1200,
+            "n_effective": 1198.97,
+            "inflation": 1.0,
+            "sr0_raw": 0.6339,
+            "sr0_effective": 0.6339,
+            "threshold_relief": 0.0,
+            "method": "null_calibrated_participation_ratio",
+            "why": "observed participation rank 88.09; fixed 8-permutation independent-null rank 88.17; calibrated to 1198.97 of 1200 trials",
+            "guard": "both counts are reported deliberately. Lowering N makes every threshold easier, so the correction must be visible and defensible, not silent."
+          }
+        },
+        {
+          "label": "after",
+          "cells": 1200,
+          "seconds": 0.2259,
+          "report": {
+            "n_raw": 1200,
+            "n_effective": 1198.97,
+            "inflation": 1.0,
+            "sr0_raw": 0.6339,
+            "sr0_effective": 0.6339,
+            "threshold_relief": 0.0,
+            "method": "null_calibrated_participation_ratio",
+            "why": "observed participation rank 88.09; fixed 8-permutation independent-null rank 88.17; calibrated to 1198.97 of 1200 trials",
+            "guard": "both counts are reported deliberately. Lowering N makes every threshold easier, so the correction must be visible and defensible, not silent."
+          }
+        }
+      ],
+      "public_reports_identical": true,
+      "wide": {
+        "cells": 20000,
+        "seconds": 4.6814,
+        "method": "null_calibrated_participation_ratio",
+        "n_raw": 20000,
+        "n_effective": 20000.0
+      },
+      "speedup": 28.68
+    },
+    "scope": "Exact finite-input participation ratio from smaller Gram trace identities; legacy nonfinite fallback and every null draw preserved. Unlabelled reports and null ranks omit unused clone enumeration; labelled audits retain all pairs.",
+    "code_deployed": false
+  },
+  "coverage": {
+    "repo_percent": 86.57,
+    "repo_floor": 86.48,
+    "root_money_path_percent": 98.96,
+    "mt5_money_path_floor": "PASS",
+    "full_validation_green": false
+  }
+}
