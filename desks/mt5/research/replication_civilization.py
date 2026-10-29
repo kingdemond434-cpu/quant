@@ -106,7 +106,11 @@ UNMEASURED = "UNMEASURED"
 FORBIDDEN_IMPORTS: tuple[str, ...] = (
     "mt5desk.families", "mt5desk.families_orthogonal", "mt5desk.families_edge_queue",
     "mt5desk.engine", "mt5desk.family_call", "proposer_common", "external_gauntlet",
-    "lead_replication", "shadow_forward", "external_shadow")
+    "lead_replication", "shadow_forward", "external_shadow",
+    # the formula, residual and modifier code the three families of `replication_families`
+    # would otherwise reuse: their rules are rebuilt from the written text, never imported
+    "alpha_grammar", "mt5desk.cell_modifiers", "mt5desk.causal_residual",
+    "mt5desk.families_vector", "mt5desk.family_formula")
 
 RULE = ("a second implementation from the written specification and the raw bars only; a "
         "material disagreement on fills, P&L, position state or costs is quarantined by name")
@@ -153,6 +157,10 @@ class Bars:
     low: np.ndarray
     c: np.ndarray
     minutes: int
+    #: the broker's per-bar spread and tick volume when the parquet carries them (the formula
+    #: rule's `spread` / `activity` terminals); None when it does not
+    spread: np.ndarray | None = None
+    tick_volume: np.ndarray | None = None
 
     def __len__(self) -> int:
         return int(self.t.size)
@@ -171,16 +179,22 @@ class Bars:
 
 
 def bars_from_arrays(t_ns: np.ndarray, o: np.ndarray, h: np.ndarray, low: np.ndarray,
-                     c: np.ndarray) -> Bars:
+                     c: np.ndarray, spread: np.ndarray | None = None,
+                     tick_volume: np.ndarray | None = None) -> Bars:
     t = np.asarray(t_ns, dtype="int64")
     order = np.argsort(t, kind="stable")
     t = t[order]
+    # one bar per stamp, the LAST one written (a re-fetched bar supersedes the earlier copy)
+    last = np.concatenate([t[1:] != t[:-1], [True]]) if len(t) else np.zeros(0, bool)
+    order, t = order[last], t[last]
     gaps = np.diff(t) if len(t) > 1 else np.asarray([3_600_000_000_000])
     gaps = gaps[gaps > 0]
     step = int(np.median(gaps)) if len(gaps) else 3_600_000_000_000
+    extra = [None if x is None else np.asarray(x, dtype="float64")[order]
+             for x in (spread, tick_volume)]
     return Bars(t, np.asarray(o, dtype="float64")[order], np.asarray(h, dtype="float64")[order],
                 np.asarray(low, dtype="float64")[order], np.asarray(c, dtype="float64")[order],
-                max(1, step // 60_000_000_000))
+                max(1, step // 60_000_000_000), extra[0], extra[1])
 
 
 def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) -> Bars | None:
@@ -223,11 +237,14 @@ def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) 
         if t_ns is None:
             return None
         arrs = [frame[cols[k]].to_numpy(dtype="float64")[keep] for k in need]
+        extra = [frame[cols[k]].to_numpy(dtype="float64")[keep]
+                 if k in cols and cols[k] in frame.columns else None
+                 for k in ("spread", "tick_volume")]
     except Exception:
         return None
     if len(t_ns) < 2:
         return None
-    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), *arrs)
+    return bars_from_arrays(np.asarray(t_ns, dtype="int64"), *arrs, *extra)
 
 
 # ------------------------------------------------------------------------------ indicators
@@ -276,6 +293,9 @@ class Order:
     ttl_bars: int
     trigger: float | None = None
     wait_bars: int = 1
+    #: the written fill rule of the families in `replication_families`: an order whose next-open
+    #: fill already lies at or beyond its stop or its target is UNFILLED, never a trade
+    unfilled_if_crossed: bool = False
 
 
 @dataclass
@@ -556,6 +576,13 @@ def simulate(b: Bars, orders: Sequence[Order], cost_price_units: float) -> list[
                 continue
             fill_bar, entry = hit, tgt
         side, stop, target = order.side, float(order.stop), float(order.target)
+        if order.unfilled_if_crossed:
+            lv = (entry, stop, target)
+            tol = 8.0 * float(np.spacing(max(abs(x) for x in lv))) if all(
+                np.isfinite(x) for x in lv) else 0.0
+            if not all(np.isfinite(x) for x in lv) or side * (entry - stop) <= tol \
+                    or side * (target - entry) <= tol:
+                continue
         sd = abs(entry - stop)
         if sd <= 0:
             continue
@@ -615,6 +642,9 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
                  side: str | int | None) -> tuple[dict[str, Any] | None, str]:
     """The parameters the written rule names, with the selector's window (breakouts) or session
     (everything else) applied, or the reason there is no written rule."""
+    own = OWN_RESOLVERS.get(str(family or ""))
+    if own is not None:                 # replication_families: strict, wrappers by name
+        return own(params, selector, side)
     spec = SPEC_BOOK.get(str(family or ""))
     if spec is None:
         return None, f"no written specification in the spec book for family {family!r}"
@@ -791,8 +821,30 @@ def ledger_for(key: str, identity: Mapping[str, Any], shadow_dir: Path = SHADOW_
     return []
 
 
+def attach_inputs(family: str, params: Mapping[str, Any] | None, p: dict[str, Any],
+                  inputs_loader: Callable[[str, str], Bars | None] | None = None) -> str | None:
+    """Load the other symbols' bars a rule reads (factors, a peer) through THIS lane's loader,
+    on the cell's own chart, into `p["_inputs"]`; the named reason when one is absent."""
+    names = input_symbols(family, params)
+    if not names:
+        return None
+    tf = str(dict(params or {}).get("timeframe") or "H1")
+    loader = inputs_loader or load_bars
+    got = []
+    for name in names:
+        bars = loader(name, tf)
+        if bars is None or len(bars) < MIN_BARS:
+            return (f"input {name} {tf} bars absent or shorter than {MIN_BARS} rows: a partial "
+                    "basket is a different model")
+        got.append(bars)
+    p["_inputs"] = got
+    return None
+
+
 def replicate_certificate(row: Mapping[str, Any], *, meta: Mapping[str, Any],
-                          bars: Bars | None) -> dict[str, Any]:
+                          bars: Bars | None,
+                          inputs_loader: Callable[[str, str], Bars | None] | None = None
+                          ) -> dict[str, Any]:
     spec = dict(row.get("shadow_spec") or {})
     fam, sym = str(spec.get("family") or ""), str(spec.get("symbol") or row.get("sym") or "")
     out: dict[str, Any] = {"lane": "certificate", "key": str(row.get("cell") or f"{sym} {fam}"),
@@ -806,6 +858,10 @@ def replicate_certificate(row: Mapping[str, Any], *, meta: Mapping[str, Any],
     if bars is None or len(bars) < MIN_BARS:
         out["why"] = [f"{sym} bars absent or shorter than {MIN_BARS} rows"]
         return out
+    missing = attach_inputs(fam, spec.get("params"), p, inputs_loader)
+    if missing:
+        out["why"] = [missing]
+        return out
     cost = cost_spec(meta)
     _orders, fills = rebuild(fam, bars, p, cost.price_units)
     ours, n_days = sharpe(fills)
@@ -817,13 +873,16 @@ def replicate_certificate(row: Mapping[str, Any], *, meta: Mapping[str, Any],
                ours={"sharpe": None if ours is None else round(ours, 4), "n_fills": len(fills),
                      "n_days": n_days, "cost_price_units": cost.price_units,
                      "cost_basis": cost.basis, "spec": SPEC_BOOK[fam].text,
-                     "params": {k: v for k, v in p.items() if not k.startswith("_")}},
+                     "params": {k: v for k, v in p.items() if not k.startswith("_")},
+                     "inputs": input_symbols(fam, spec.get("params"))},
                theirs={"sharpe": recorded, "days": row.get("days")})
     return out
 
 
 def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: Bars | None,
-                      ledger: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+                      ledger: Sequence[Mapping[str, Any]],
+                      inputs_loader: Callable[[str, str], Bars | None] | None = None
+                      ) -> dict[str, Any]:
     ident = dict(row.get("identity") or {})
     fam, sym = str(ident.get("family") or ""), str(ident.get("symbol") or "")
     out: dict[str, Any] = {"lane": "forward", "key": str(row.get("key") or ""), "symbol": sym,
@@ -839,6 +898,10 @@ def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: 
         return out
     if bars is None or len(bars) < MIN_BARS:
         out["why"] = [f"{sym} bars absent or shorter than {MIN_BARS} rows"]
+        return out
+    missing = attach_inputs(fam, ident.get("params"), p, inputs_loader)
+    if missing:
+        out["why"] = [missing]
         return out
     cost = cost_spec(meta)
     _orders, fills = rebuild(fam, bars, p, cost.price_units)
@@ -1086,6 +1149,16 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(f"  -> {REPORT}")
     return 0
+
+
+# THE THREE FAMILIES WRITTEN IN `replication_families` (2026-10-29): formula,
+# cross_asset_residual, relative_value. That module builds on this one's Bars/Order/atr, so it is
+# imported last, with this module registered under its own name first -- run as a script this is
+# `__main__`, and without the alias the import would load a second copy of this file.
+sys.modules.setdefault("replication_civilization", sys.modules[__name__])
+from replication_families import OWN_RESOLVERS, SPECS, input_symbols  # noqa: E402
+
+SPEC_BOOK.update(SPECS)
 
 
 if __name__ == "__main__":
