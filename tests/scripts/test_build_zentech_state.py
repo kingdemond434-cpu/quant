@@ -77,3 +77,39 @@ def test_gate_stat_changed_format_fails_closed(monkeypatch, tmp_path: Path) -> N
     monkeypatch.setattr(module, "DESK", desk)
 
     assert module._gate_stat("n_judged") is None
+
+
+def test_docket_count_streams_nested_candidate_objects(tmp_path: Path) -> None:
+    docket = tmp_path / "external_survivors.json"
+    docket.write_text(
+        '[{"params":{"windows":[1,2]},"note":"comma, and \\\"quote\\\""},'
+        '{"params":{},"note":"brackets ] } inside a string"}]',
+        encoding="utf-8",
+    )
+
+    assert module._count_json_array_items(docket, chunk_size=7) == 2
+
+
+def test_docket_count_fails_closed_on_non_object_or_truncated_rows(tmp_path: Path) -> None:
+    docket = tmp_path / "external_survivors.json"
+    docket.write_text('[{"candidate": 1}, 2]', encoding="utf-8")
+    assert module._count_json_array_items(docket, chunk_size=3) is None
+
+    docket.write_text('[{"candidate": 1}', encoding="utf-8")
+    assert module._count_json_array_items(docket, chunk_size=3) is None
+
+    docket.write_text('[{"candidate": 1},]', encoding="utf-8")
+    assert module._count_json_array_items(docket, chunk_size=3) is None
+
+
+def test_pulled_snapshot_count_bypasses_campaign_docket_scan(
+    monkeypatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(module, "DESK", tmp_path / "desks" / "mt5")
+
+    def must_not_scan() -> int:
+        raise AssertionError("the 1.9 GB docket must not be scanned during a pull")
+
+    monkeypatch.setattr(module, "_funnel_docket", must_not_scan)
+
+    assert module._funnel({}, docket_candidates=123)["docket_candidates"] == 123

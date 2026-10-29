@@ -71,3 +71,15 @@ def test_tick_source_cannot_autostart_terminal_in_session_zero(monkeypatch):
     assert source.initialize() is False
     assert source.alive() is False
     assert fake.initialize_calls == []
+
+
+def test_hourly_tape_cannot_spawn_session_zero_terminal(monkeypatch):
+    from mt5desk import tape
+    from research import mt5_session as session
+
+    fake = FakeMT5()
+    fake.last_error = lambda: (-10003, "unavailable")
+    monkeypatch.setitem(sys.modules, "MetaTrader5", fake)
+    monkeypatch.setattr(session, "windows_session_id", lambda: 0)
+    assert tape.main([]) == 1
+    assert fake.initialize_calls == []

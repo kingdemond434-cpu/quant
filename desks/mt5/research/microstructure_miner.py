@@ -71,6 +71,33 @@ def surface(d: pd.DataFrame) -> dict:
     return out
 
 
+def _grid_order(syms: list[str], previous: dict) -> list[str]:
+    """The proposal grid's order: start at the first instrument the last run did not reach."""
+    start = previous.get("grid_next") if isinstance(previous, dict) else None
+    if start in syms:
+        i = syms.index(start)
+        return syms[i:] + syms[:i]
+    return list(syms)
+
+
+def _write_surfaces(payload: dict, *, attempts: int = 5) -> None:
+    """Replace SURFACES whole. The judge's build workers read it while this runs: an in-place
+    write let a reader parse half a file, which `_surfaces` reads as no surface at all. A
+    reader holding the file open can refuse the rename on Windows, so it is retried, then
+    written in place as before rather than not at all."""
+    text = json.dumps(payload, indent=1)
+    tmp = SURFACES.with_name(f"{SURFACES.name}.tmp")
+    tmp.write_text(text, "utf-8")
+    for i in range(attempts):
+        try:
+            tmp.replace(SURFACES)
+            return
+        except PermissionError:
+            time.sleep(0.2 * (2 ** i))
+    SURFACES.write_text(text, "utf-8")
+    tmp.unlink(missing_ok=True)
+
+
 def run(symbols: list[str] | None = None, budget_s: float = 1500.0) -> dict:
     meta = pc.universe_meta()
     have = sorted(p.stem.removesuffix("_H1") for p in pc.UNI.glob("*_H1.parquet"))
@@ -80,16 +107,33 @@ def run(symbols: list[str] | None = None, budget_s: float = 1500.0) -> dict:
     rows: list[dict] = []
     surfaces: dict[str, dict] = {}
     skipped: dict[str, str] = {}
-    started = time.monotonic()
+    # EVERY SURFACE FIRST, THE GRID AFTER (2026-10-29). The surface used to be computed inside the
+    # grid loop, which walked the instruments alphabetically and stopped at the budget, so every
+    # instrument past it -- NOK*, NZD*, SGD* -- got NO surface, and the judge's execution_state
+    # builds on them failed by name: 2,989 of the 19,729 cells the sweep of 10-28 23:44Z tried to
+    # build, across 85 instruments. A surface is one groupby; the grid is 26 backtests. The grid
+    # keeps its budget and now resumes where the last run stopped, so the tail is mined too.
     for sym in have:
-        if time.monotonic() - started > budget_s:
-            skipped[sym] = "budget exhausted"
-            continue
         d = pc.bars(sym)
         if d is None or len(d) < 24 * 250 or "spread" not in d.columns:
             skipped[sym] = "no spread column or under 250 days"
             continue
         surfaces[sym] = surface(d)
+    try:
+        previous = json.loads(REPORT.read_text("utf-8"))
+    except (OSError, ValueError):
+        previous = {}
+    order = _grid_order(list(surfaces), previous)
+    grid_next: str | None = None
+    started = time.monotonic()
+    for sym in order:
+        if time.monotonic() - started > budget_s:
+            grid_next = grid_next or sym
+            skipped[sym] = "grid budget exhausted (surface written)"
+            continue
+        d = pc.bars(sym)
+        if d is None:
+            continue
         cost = pc.cost_frac(sym, meta, d["close"])
         if cost is None:
             skipped[sym] = "no contract terms"
@@ -122,9 +166,9 @@ def run(symbols: list[str] | None = None, budget_s: float = 1500.0) -> dict:
                                     "n_tests_sweep")},
     ) for r in proposals]
     SURFACES.parent.mkdir(parents=True, exist_ok=True)
-    SURFACES.write_text(json.dumps({"generated_at": datetime.now(tz=UTC).isoformat(),
-                                    "symbols": surfaces}, indent=1), "utf-8")
+    _write_surfaces({"generated_at": datetime.now(tz=UTC).isoformat(), "symbols": surfaces})
     report = {"generated_at": datetime.now(tz=UTC).isoformat(), "symbols_swept": len(surfaces),
+              "grid_next": grid_next,
               "tests_run": len(rows), "cells_proposed": len(proposals), "skipped": skipped,
               "proposals": proposals, "all": rows}
     REPORT.write_text(json.dumps(report, indent=1, default=str), "utf-8")
