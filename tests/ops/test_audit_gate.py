@@ -1859,3 +1859,57 @@ def test_formerly_protected_files_merge_only_on_every_auto_check(auto_hub: Any, 
 def test_a_secrets_path_never_merges(auto_hub: Any) -> None:
     h = auto_hub(files=("data/secrets/k.txt",), runs=_auto_green())
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1 and _merges(h) == []
+
+
+# ------------------------------------------- an audit verdict no longer pins a PR (zuck 19:12Z)
+
+
+def test_a_cleared_auto_pr_merges_with_no_approval_on_every_auto_job(auto_hub: Any) -> None:
+    """zuck 2026-10-29 19:12Z: "i want to be free not having to do any merges". A CLEAR he has
+    not approved leaves the PR on the AUTO path: no APPROVE, but every AUTO job."""
+    for sha in (A, C):  # a CLEAR of this head, and a stale one of another change
+        h = auto_hub(runs=_green(), comments=[_c(f"AUDIT CLEAR {sha}", "2026-10-29T10:00:00Z")])
+        assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+        assert _merges(h) == []  # the AUTO jobs never ran: no pass
+        h = auto_hub(
+            runs=_auto_green(), comments=[_c(f"AUDIT CLEAR {sha}", "2026-10-29T10:00:00Z")]
+        )
+        assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+        (merge,) = _merges(h)
+        assert "AUTO tier" in " ".join(merge)
+
+
+def test_a_standing_hold_or_an_edit_still_pins_an_auto_pr(auto_hub: Any) -> None:
+    hold = [
+        _c(f"AUDIT CLEAR {A}", "2026-10-29T10:00:00Z"),
+        _c(f"AUDIT HOLD {A}", "2026-10-29T11:00:00Z"),
+    ]
+    edited = [
+        {**_c(f"AUDIT CLEAR {A}", "2026-10-29T10:00:00Z"), "updated_at": "2026-10-29T12:00:00Z"}
+    ]
+    for comments in (hold, edited):
+        h = auto_hub(runs=_auto_green(), comments=comments)
+        assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+        assert _merges(h) == []
+
+
+def test_zucks_approved_clear_of_the_head_still_takes_his_path(auto_hub: Any) -> None:
+    """His override (a CLEAR he approved) merges on the gating jobs alone, as before."""
+    h = auto_hub(
+        runs=[*_green(), _r("independent-review", conclusion="failure")],
+        comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T22:00:00Z")],
+        approvals=[*BOTH, _ok("2026-10-28T23:00:00Z")],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    (merge,) = _merges(h)
+    assert "audit CLEAR" in " ".join(merge)
+
+
+def test_an_audited_low_pr_runs_every_auto_job(low_hub: Any) -> None:
+    """#454 audit S1 kept: an audited LOW PR never merges on gating CI alone."""
+    comments = [_c(f"AUDIT CLEAR {C}", "2026-10-29T10:00:00Z")]
+    h = low_hub(comments=comments, approvals=list(BOTH))
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+    h = low_hub(comments=comments, approvals=list(BOTH), runs=_auto_green())
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert len(_merges(h)) == 1

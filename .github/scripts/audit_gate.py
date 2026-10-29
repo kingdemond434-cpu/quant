@@ -816,29 +816,49 @@ def run(
                 "--slurp",
             )
         )
+        boards.append(board)
         on, owhy = activated(board)
         if on and level == "AUTO":
             on, owhy = activated(board, ACTIVATE_AUTO)
         return on, owhy
+
+    boards: list[list[dict[str, Any]]] = []
+
+    def pinned(found: list[dict[str, str]]) -> str | None:
+        """Why an audited PR takes the manual path, or None: it may take the no-comment path.
+        zuck 2026-10-29 19:12Z ("i want to be free not having to do any merges"): an AUDIT verdict
+        no longer pins a PR to his path for good. Only a standing HOLD (an edit counts as one), or
+        a CLEAR he has already approved (his override, which skips the AUTO jobs), sends it there;
+        any other CLEAR leaves the PR on the AUTO path with every AUTO job."""
+        if not found:
+            return None
+        last = found[-1]
+        if last["verdict"] != "CLEAR":
+            return f"the latest verdict is AUDIT HOLD {last['sha'][:9]}"
+        if last["sha"] == head and boards and approved(last, approval_at(boards[-1]))[0]:
+            return "zuck approved its CLEAR of this head"
+        return None
 
     def pr_verdicts() -> list[dict[str, str]]:
         pages = _gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate", "--slurp")
         return verdicts(_flat(pages))
 
     # The path a PR takes: "low" / "auto" (no comment needed) or "manual" (CLEAR + APPROVE).
-    # Once the auditor has spoken on a PR (any CLEAR or HOLD, on any sha), the audit governs it:
-    # it takes the manual path.
+    # A standing HOLD, or a CLEAR zuck approved, sends an audited PR to the manual path (pinned).
     mode = "manual"
     if level in ("LOW", "AUTO"):
         on, owhy = switches()
         if not on:
             twhy = f"{twhy}, but {owhy}: it takes the CLEAR + APPROVE path"
-        elif pr_verdicts():
-            twhy = f"{twhy}, but it carries an AUDIT verdict: it takes the CLEAR + APPROVE path"
+        elif pin := pinned(audited := pr_verdicts()):
+            twhy = f"{twhy}, but {pin}: it takes the CLEAR + APPROVE path"
         else:
             fresh, fwhy = up_to_date(base, head)
-            if fresh:
-                mode = level.lower()
+            auto_on = bool(boards) and activated(boards[-1], ACTIVATE_AUTO)[0]
+            if fresh and audited and not auto_on:
+                twhy = f"{twhy}, but it is audited and AUTO is off: the CLEAR + APPROVE path"
+            elif fresh:  # an audited LOW PR runs every AUTO job (#454 audit S1)
+                mode = "auto" if audited else level.lower()
             else:
                 twhy = f"{twhy}, but {fwhy}: it takes the CLEAR + APPROVE path"
     low = mode != "manual"  # no verdict or approval needed on this path
@@ -868,8 +888,9 @@ def run(
     def verdict_now() -> tuple[dict[str, str] | None, str]:
         found = pr_verdicts()
         if low:
-            if found:  # the auditor spoke mid-run: the next run takes the manual path
-                return None, f"{twhy}, but an AUDIT verdict arrived: the audit governs it now"
+            pin = pinned(found)
+            if pin:  # a HOLD (or zuck's approval) arrived mid-run: the next run decides
+                return None, f"{twhy}, but {pin}: the audit governs it now"
             on, owhy = switches()  # a DEACTIVATE since the first read is honoured
             if not on:
                 return None, f"{twhy}, but {owhy}"
