@@ -91,6 +91,7 @@ LEG_LAYER: dict[str, str] = {
     "alpha_periodic_table": "prediction", "regime_coverage": "prediction",
     "arena": "meta", "prosecutor": "meta", "scaling_laws": "meta", "dead_architecture": "meta",
     "producer_census": "meta", "productivity_census": "meta",
+    "llm_yield": "meta", "llm_budget_census": "meta",
     # Every producer's reach against what it minted, and the share the sealed judge can build:
     # the machine measuring its own breadth, which is meta.
     "producer_breadth": "meta",
