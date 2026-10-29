@@ -172,8 +172,6 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/reports/process_health.json",
     # Backup and restore-drill state, scheme only (ops/backup_state.py, v5f).
     "desks/mt5/reports/BACKUP_STATE.json",
-    # Which auditor CLEARs have not landed (check_desk_health.py, owner rule 23).
-    "desks/mt5/reports/UNLANDED_CLEARS.json",
     # The Tier S box attestation and live door, published since 2026-09-30 and never declared
     # here (test_every_path_the_box_publishes_is_declared_non_code was red on the live branch).
     "desks/mt5/data/tier_s/box_evidence.json",
