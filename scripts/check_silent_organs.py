@@ -113,15 +113,31 @@ def _declared_verdict_exits() -> dict[str, tuple[int, ...]]:
         tree = ast.parse((DESK / "research" / "hourly_cycle.py").read_text(encoding="utf-8"))
     except (OSError, SyntaxError, ValueError):
         return {}
+    # Module-level integer constants, so an exit code written by NAME (`"daily":
+    # (DAILY_CYCLE_STOOD_DOWN,)`) resolves instead of failing literal_eval for the whole table.
+    consts: dict[str, int] = {}
     for node in tree.body:
         target = (node.target if isinstance(node, ast.AnnAssign) else
                   node.targets[0] if isinstance(node, ast.Assign) and node.targets else None)
-        if isinstance(target, ast.Name) and target.id == "VERDICT_EXITS" and node.value:
-            try:
-                val = ast.literal_eval(node.value)
-            except ValueError:
-                return {}
-            return {str(k): tuple(v) for k, v in val.items()} if isinstance(val, dict) else {}
+        if not isinstance(target, ast.Name) or node.value is None:
+            continue
+        if isinstance(node.value, ast.Constant) and type(node.value.value) is int:
+            consts[target.id] = node.value.value
+        if target.id == "VERDICT_EXITS" and isinstance(node.value, ast.Dict):
+            out: dict[str, tuple[int, ...]] = {}
+            for k, v in zip(node.value.keys, node.value.values, strict=True):
+                if not isinstance(k, ast.Constant) or not isinstance(v, ast.Tuple | ast.List):
+                    return {}
+                codes: list[int] = []
+                for e in v.elts:
+                    if isinstance(e, ast.Constant) and type(e.value) is int:
+                        codes.append(e.value)
+                    elif isinstance(e, ast.Name) and e.id in consts:
+                        codes.append(consts[e.id])
+                    else:
+                        return {}
+                out[str(k.value)] = tuple(codes)
+            return out
     return {}
 
 

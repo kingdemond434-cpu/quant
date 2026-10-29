@@ -228,6 +228,24 @@ def test_schtasks_timeout_existence_only_listing_reads_unmeasured(tmp_path: Path
     assert "existence-only" in doc["unmeasured"][0]["why"]
 
 
+def test_lives_brief_only_scheduler_status_reads_unmeasured(tmp_path: Path) -> None:
+    """LIVE's process_health: an inventory without the run history proves which tasks exist and
+    not how they ran, and a SCHEDULER_UNMEASURED row is never read as a cleared organ."""
+    status = "OK schtasks (brief: last run and last result UNMEASURED)"
+    h = _w(tmp_path / "process_health.json", {
+        "at": "t", "scheduler_status": status, "run_history": "UNMEASURED",
+        "processes": [{"name": "MT5-A", "verdict": "SCHEDULER_UNMEASURED", "why": status}]})
+    m = _w(tmp_path / "sync_marker.json", {"last_cycle": "t"})
+    prev = {"organs": [{"organ": "MT5-A", "source": "task", "verdict": "FAILING"}]}
+    doc = so.build(health_path=h, marker_path=m, previous=prev,
+                   never_stale_path=tmp_path / "n.json")
+    assert doc["status"] == doc["fence"] == "UNMEASURED"
+    assert "existence-only" in doc["unmeasured"][0]["why"]
+    assert "MT5-A" not in (doc.get("cleared") or [])
+    assert so._scheduler({"scheduler_status": "OK schtasks",
+                          "run_history": "MEASURED"})["read"] is True
+
+
 def test_a_watchdog_that_refused_to_judge_is_unmeasured(tmp_path: Path) -> None:
     h, m = _inputs(tmp_path, {}, [])
     ns = _w(tmp_path / "NEVER_STALE.json", {"status": "UNMEASURED", "escalated": [],

@@ -35,3 +35,24 @@ def test_existence_only_is_not_a_scheduler_reading(tmp_path: Path,
     assert bool(rows) is escalates
     if sched.get("existence_only"):
         assert "existence-only" in rows[0]["why"] and rows[0]["verdict"] == "UNMEASURED"
+
+
+@pytest.mark.parametrize("status,escalates", [
+    ("OK schtasks", False),
+    ("OK schtasks (brief: last run and last result UNMEASURED)", False),
+    ("UNMEASURED: schtasks /query timed out after 45s", True),
+])
+def test_lives_scheduler_status_is_read_the_same_way(tmp_path: Path,
+                                                     monkeypatch: pytest.MonkeyPatch,
+                                                     status: str, escalates: bool) -> None:
+    """LIVE's process_health publishes `scheduler_status`, not a `scheduler` block; an
+    inventory it could not read escalates once, and its SCHEDULER_UNMEASURED rows are skipped."""
+    health = tmp_path / "process_health.json"
+    health.write_text(json.dumps({"scheduler_status": status, "processes": [
+        {"name": "MT5-A", "verdict": "SCHEDULER_UNMEASURED", "why": status}]}),
+        encoding="utf-8")
+    monkeypatch.setattr(ns, "HEALTH", health)
+    monkeypatch.setattr(ns, "_capital_faults", lambda: [])
+    doc = ns.run(apply=False)
+    assert [e["task"] for e in doc["escalated"]] == (["(scheduler)"] if escalates else [])
+    assert doc["acted"] == []

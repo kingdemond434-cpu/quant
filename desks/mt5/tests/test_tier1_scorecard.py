@@ -451,10 +451,11 @@ def test_row07_a_stale_green_census_is_unmeasured(sandbox: Path) -> None:
 
 
 def test_row07_existence_only_scheduler_is_unmeasured(sandbox: Path) -> None:
-    """schtasks timed out and the task directory was listed: FAILING is unmeasurable."""
-    _write(sandbox, "PROCESS_HEALTH", {"at": "2026-09-30T07:15:01+00:00",
-                                       "counts": {"FAILING": 0, "NOT_SCHEDULED": 0},
-                                       "scheduler": {"read": False, "existence_only": True,
-                                                     "why": "schtasks timed out"}})
+    """The inventory landed but the run history did not (LIVE's brief-only read): FAILING is
+    unmeasurable, so zero FAILING is not a reading of zero failures."""
+    _write(sandbox, "PROCESS_HEALTH", {
+        "at": "2026-09-30T07:15:01+00:00", "status": "OK",
+        "scheduler_status": "OK schtasks (brief: last run and last result UNMEASURED)",
+        "counts": {"FAILING": 0, "NOT_SCHEDULED": 0}, "processes": []})
     row = sc._r07_silent_failures()
-    assert row["current"] is None and "scheduler unread" in row["basis"]
+    assert row["current"] is None and row["basis"].startswith("UNMEASURED")
