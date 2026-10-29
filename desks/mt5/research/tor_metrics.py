@@ -558,7 +558,7 @@ def fetch_kind(kind: str, start: date, end: date, *, deadline: float | None,
     url = f"{BASE_URL.format(kind=kind)}?start={start.isoformat()}&end={end.isoformat()}"
     r = pf.get(url, timeout=60.0, retries=2, deadline=deadline, max_bytes=MAX_BYTES,
                leg=SOURCE, opener=opener, access=access, live_input=True)
-    meta = {"url": url, "status": r.status, "verdict": r.verdict or "",
+    meta = {"url": url, "http_status": r.status, "verdict": r.verdict or "",
             "error": r.error[:200], "bytes": len(r.body or b"")}
     return (r.text if r.ok and not r.verdict else ""), meta
 
@@ -596,7 +596,7 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 240.0, dry_run: bool 
             body, meta = (fetcher or fetch_kind)(kind, start, now.date(), deadline=deadline)
         rows = parse_csv(body or "", kind)
         meta["rows"] = len(rows)
-        if not rows and "status" not in meta:
+        if not rows and not meta.get("status"):
             why = meta.get("verdict") or meta.get("error") or "NO_ROWS"
             meta["status"] = f"{UNMEASURED}:{str(why)[:120]}"
         elif rows:

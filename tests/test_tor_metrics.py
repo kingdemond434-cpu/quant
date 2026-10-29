@@ -168,7 +168,7 @@ def test_dry_run_writes_only_the_report(tmp_path: Path) -> None:
 
 def test_no_data_is_unmeasured_never_zero(tmp_path: Path) -> None:
     def refused(kind: str, start: date, end: date, *, deadline: float | None):
-        return "", {"status": None, "verdict": "", "error": "Tunnel connection failed: 403"}
+        return "", {"http_status": None, "verdict": "", "error": "Tunnel connection failed: 403"}
     p = _paths(tmp_path)
     rep = T.run(p, now=NOW, fetcher=refused, onion=False)
     assert rep["status"].startswith("UNMEASURED")
