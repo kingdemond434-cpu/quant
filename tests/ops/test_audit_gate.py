@@ -951,12 +951,22 @@ def test_a_forged_same_name_run_counts_for_nothing(auto_hub: Any, forged: dict[s
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
 
 
-def test_a_stale_github_tree_takes_the_manual_path(
+def test_a_behind_auto_pr_gets_live_merged_in_never_the_manual_path(
     auto_hub: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Desk health 2026-10-29 20:20Z: AUTO PRs behind LIVE went to zuck's path and nothing
+    merged. The box merges LIVE in (pinned to the head) and the next run decides."""
     h = auto_hub(runs=_auto_green())
     monkeypatch.setattr(ag, "up_to_date", lambda base, head: (False, "it is behind"))
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+    (put,) = [w for w in h.writes if w[1].endswith("/pulls/7/update-branch")]
+    assert put[0] == "PUT" and f"expected_head_sha={A}" in put
+    # a red head spends no CI on a merge-in, and the Actions run never merges LIVE in
+    red = [*_green()[:-1], _r(ag.GATING_JOBS[-1], conclusion="failure")]
+    for runs, box in ((red, True), (_auto_green(), False)):
+        h = auto_hub(runs=runs)
+        ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=box)
+        assert not any(w[1].endswith("/update-branch") for w in h.writes)
 
 
 @pytest.mark.parametrize(

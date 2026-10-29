@@ -414,3 +414,33 @@ def test_one_manifest_row_per_task_and_the_watcher_has_an_independent_contract()
     assert dup == []
     oc = (ROOT / "ops/organ_contract.py").read_text(encoding="utf-8")
     assert '"desks/mt5/reports/MERGE_PIPELINE.json", 45' in oc
+
+
+def test_the_box_sweep_runs_merge_ready_prs_first_and_skips_failed_ones(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Desk health 2026-10-29 20:20Z: in listing order, a green PR waited behind PRs that could
+    not merge. Every check green first, then gating green; a failed gating check is skipped."""
+    prs = [{"number": n, "head": {"sha": f"{n:040d}"}} for n in (1, 2, 3, 4)]
+
+    def ok(j: str, c: str = "success") -> dict[str, Any]:
+        return {"name": j, "status": "completed", "conclusion": c, "started_at": "t"}
+
+    gating = [ok(j) for j in ag.GATING_JOBS]
+    every = gating + [ok(j) for j in ag.AUTO_JOBS]
+    red = [ok(ag.GATING_JOBS[0], "failure"), *gating[1:]]
+    by = {1: gating, 2: red, 3: every, 4: gating}
+
+    def gh(path: str, *a: Any, **k: Any) -> Any:
+        if path.startswith("repos/o/r/pulls?"):
+            return [prs]
+        if "/check-runs" in path:
+            return {"check_runs": by[int(path.split("/")[4])]}
+        raise AssertionError(path)
+
+    ran: list[int] = []
+    monkeypatch.setattr(ag, "_gh", gh)
+    monkeypatch.setattr(ag, "run", lambda repo, n, *a, **k: ran.append(n) or 0)
+    assert ag.sweep("o/r", ag.LIVE) == 0 and ran == [3, 1, 4]
+    ps = (ROOT / "ops/box/workflow_gate.ps1").read_text(encoding="utf-8")
+    assert "-cmatch ': MERGED \\('" in ps  # the count reads the gate's own word only

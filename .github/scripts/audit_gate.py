@@ -574,6 +574,22 @@ def provenance(repo: str, pr: int, head: str) -> Callable[[Mapping[str, Any]], b
     return genuine
 
 
+def bring_up(repo: str, pr: int, head: str) -> bool:
+    """Merge the base into a PR whose own gating checks pass, pinned to `head` (GitHub refuses
+    if the head moved). False when its checks do not pass (no CI is spent on a red head), on a
+    conflict (422: a merge by hand, Autonomy's) or any other refusal: the PR is left as it is."""
+    try:
+        got = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")
+        if checks((got or {}).get("check_runs") or [], GATING_JOBS, lambda r: True)[0] != "pass":
+            return False
+        _gh(f"repos/{repo}/pulls/{pr}/update-branch", "-X", "PUT",
+            data={"expected_head_sha": head})  # fmt: skip
+    except RuntimeError as exc:
+        _summary(f"#{pr} @ {head[:9]}: LIVE could not be merged in ({str(exc)[:200]})")
+        return False
+    return True
+
+
 def up_to_date(base_ref: str, head: str) -> tuple[bool, str]:
     """May a no-comment path test-and-merge this head? Only when the head already contains the
     base's tip (#456 audit MF3: otherwise the tree that merges, base + PR, was never tested) and
@@ -870,6 +886,14 @@ def run(
                 twhy = f"{twhy}, but it is audited and AUTO is off: the CLEAR + APPROVE path"
             elif fresh:  # an audited LOW PR runs every AUTO job (#454 audit S1)
                 mode = "auto" if audited else level.lower()
+            elif box and bring_up(repo, pr, head):
+                # BEHIND IS NOT A DEMOTION (Desk health 2026-10-29 20:20Z: AUTO PRs behind LIVE
+                # went to zuck's path and nothing merged for 40 min). The box merges LIVE into
+                # the branch with zuck's login, which starts the PR's CI on the new head; the
+                # next run decides on that tested tree.
+                _summary(f"#{pr} @ {head[:9]}: {twhy}, but {fwhy}: LIVE merged in; the next "
+                         "run decides on the new head")  # fmt: skip
+                return 0
             else:
                 twhy = f"{twhy}, but {fwhy}: it takes the CLEAR + APPROVE path"
     low = mode != "manual"  # no verdict or approval needed on this path
@@ -1031,27 +1055,46 @@ def sweep(
     pages = _gh(f"repos/{repo}/pulls?state=open&base={base}&per_page=100", "--paginate", "--slurp")
     rc = 0
     deadline = clock() + budget_s
-    looked = skipped = 0
-    for p in _flat(pages):
+    looked = skipped = failed = 0
+    # MERGE-READY FIRST (Desk health 2026-10-29 20:20Z: ~6 PRs a sweep, in listing order, so a
+    # green PR waited behind dozens that could not merge). One cheap read per PR sorts them:
+    # every check green, then the gating ones; a PR whose gating checks are still running or
+    # failed cannot merge this pass and is skipped without its full run.
+    ready: list[tuple[int, int, int]] = []
+    for i, p in enumerate(_flat(pages)):
         n = int(p["number"])
+        head = str((p.get("head") or {}).get("sha") or "")
+        rank = 1
+        if head:  # no sha in the listing: no shortcut, the full run decides
+            try:
+                got = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")
+            except RuntimeError as exc:
+                _summary(f"#{n}: its checks could not be read: {exc}")
+                rc = 1
+                continue
+            runs = (got or {}).get("check_runs") or []
+            state = checks(runs, GATING_JOBS, lambda r: True)[0]
+            if state == "pending":
+                skipped += 1
+                continue
+            if state == "fail":
+                failed += 1
+                continue
+            rank = 0 if checks(runs, GATING_JOBS + AUTO_JOBS, lambda r: True)[0] == "pass" else 1
+        ready.append((rank, i, n))
+    for _rank, _i, n in sorted(ready):
         if clock() > deadline:
             _summary(f"sweep budget of {budget_s / 60:.0f} min spent after {looked} PRs; "
                      "the next sweep goes on")  # fmt: skip
             break
         try:
-            head = str((p.get("head") or {}).get("sha") or "")
-            if head:  # no sha in the listing: no shortcut, the full run decides
-                got = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")
-                runs = (got or {}).get("check_runs") or []
-                if checks(runs, GATING_JOBS, lambda r: True)[0] == "pending":
-                    skipped += 1
-                    continue
             looked += 1
             rc = max(rc, run(repo, n, base, 0.0, box=True, approvals_issue=approvals_issue))
         except (RuntimeError, subprocess.SubprocessError, KeyError, TypeError) as exc:
             _summary(f"#{n}: the box gate failed: {exc}")
             rc = 1
-    _summary(f"sweep: {looked} PR(s) looked at, {skipped} skipped with CI still running")
+    _summary(f"sweep: {looked} PR(s) looked at, {skipped} skipped with CI still running, "
+             f"{failed} skipped with a gating check failed")  # fmt: skip
     return rc
 
 
