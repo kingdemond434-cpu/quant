@@ -21,13 +21,17 @@ own IP, so on THAT path every HTTP request in the process (and in the miner chil
 
 A refusal raises `RailRefusal` (a requests ConnectionError for requests callers, a URLError for
 urllib callers), which every miner already books as a fetch_error row -- so a refusal is a
-recorded fact on disk, never a silent skip and never a retry. Redirects are checked hop by hop.
+recorded fact on disk, never a silent skip and never a retry. Redirects are checked hop by hop;
+robots.txt's own redirects are followed by hand (at most ROBOTS_MAX_HOPS, RFC 9309), each hop
+wall-checked, never through the patched opener.
 
 Installed only by `vps_seat_clock.py` child processes (env `QUANT_BOX_RAILS=1`); the VPS's own
 timers run the miners exactly as before.
 """
 from __future__ import annotations
 
+import json
+import os
 import threading
 import urllib.error
 import urllib.request
@@ -36,6 +40,10 @@ from typing import Any
 from urllib.parse import urlsplit
 
 ENV = "QUANT_BOX_RAILS"
+#: When set, every refusal in this process AND in every child that inherits the environment (the
+#: miner processes `run_all_miners` spawns) is appended here as one JSON line, so the unit's
+#: report names the children's refusals too, not only its own process's.
+LOG_ENV = "QUANT_BOX_RAILS_LOG"
 REPO_URL = "https://github.com/kingdemond434-cpu/quant"
 AGENT_TOKEN = "QuantResearchCrawler"  # noqa: S105 - a robots.txt agent token, not a secret
 USER_AGENT = f"{AGENT_TOKEN}/1.0 (+{REPO_URL})"
@@ -44,6 +52,7 @@ ROBOTS_TOKENS: tuple[str, ...] = ("*", AGENT_TOKEN, "ClaudeBot")
 ROBOTS_TIMEOUT_S = 15.0
 
 _LOCK = threading.Lock()
+_INSTALL_LOCK = threading.Lock()
 _ROBOTS: dict[str, tuple[urllib.robotparser.RobotFileParser | None, str]] = {}
 _STATE: dict[str, Any] = {"installed": False, "walled": frozenset(), "orig": {},
                           "refused": []}
@@ -77,19 +86,55 @@ def host_walled(host: str, walled: frozenset[str] | None = None) -> bool:
     return any(h == w or h.endswith("." + w) for w in ws)
 
 
+#: RFC 9309 2.3.1.2: follow at least five consecutive redirects for robots.txt. Past that, or a
+#: redirect onto a walled host, the policy is UNREACHABLE (not consent) -- never a recursion.
+ROBOTS_MAX_HOPS = 5
+_GUARD = threading.local()
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Surface every 3xx as an HTTPError so robots.txt hops are followed (and checked) by hand.
+
+    The stock handler re-enters `OpenerDirector.open` -- the PATCHED open -- for each hop, and a
+    robots.txt that redirects to a non-robots path then re-entered `check()` -> `_robots()` ->
+    `_fetch_robots()` until RecursionError (PR #524 audit: 109 requests in 0.3 s)."""
+
+    def redirect_request(self, req: Any, fp: Any, code: Any, msg: Any, headers: Any,
+                         newurl: Any) -> None:
+        return None
+
+
 def _fetch_robots(scheme: str, netloc: str) -> tuple[int | None, str]:
-    """(status, text) of robots.txt, read with the honest UA through the UNPATCHED opener."""
-    req = urllib.request.Request(f"{scheme}://{netloc}/robots.txt",
-                                 headers={"User-Agent": USER_AGENT})
-    opener = urllib.request.build_opener()
+    """(status, text) of robots.txt, read with the honest UA through the UNPATCHED opener, with
+    redirects followed by hand: at most ROBOTS_MAX_HOPS, each hop wall-checked."""
+    from urllib.parse import urljoin
+    opener = urllib.request.build_opener(_NoRedirect)
     open_ = _STATE["orig"].get("urllib_open") or urllib.request.OpenerDirector.open
+    url = f"{scheme}://{netloc}/robots.txt"
+    _GUARD.active = getattr(_GUARD, "active", 0) + 1
     try:
-        with open_(opener, req, timeout=ROBOTS_TIMEOUT_S) as r:
-            return int(r.status), r.read(512_000).decode("utf-8", "replace")
-    except urllib.error.HTTPError as e:
-        return int(e.code), ""
-    except Exception as e:  # unreachable is a verdict, recorded below
-        return None, f"{type(e).__name__}: {e}"[:200]
+        for _hop in range(ROBOTS_MAX_HOPS + 1):
+            host = urlsplit(url).hostname or ""
+            if host_walled(host):
+                return None, f"robots.txt redirects to walled host {host}"[:200]
+            req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+            try:
+                with open_(opener, req, timeout=ROBOTS_TIMEOUT_S) as r:
+                    return int(r.status), r.read(512_000).decode("utf-8", "replace")
+            except urllib.error.HTTPError as e:
+                loc = e.headers.get("Location") if e.headers is not None else None
+                if e.code in (301, 302, 303, 307, 308) and loc:
+                    nxt = urljoin(url, loc)
+                    if urlsplit(nxt).scheme not in ("http", "https"):
+                        return None, f"robots.txt redirects to non-http {nxt[:120]}"
+                    url = nxt
+                    continue
+                return int(e.code), ""
+            except Exception as e:  # unreachable is a verdict, recorded below
+                return None, f"{type(e).__name__}: {e}"[:200]
+        return None, f"robots.txt: more than {ROBOTS_MAX_HOPS} redirects"
+    finally:
+        _GUARD.active -= 1
 
 
 def _robots(scheme: str, netloc: str) -> tuple[urllib.robotparser.RobotFileParser | None, str]:
@@ -134,27 +179,57 @@ def check(url: str, exc_t: type[Exception] = RailRefusal) -> None:
 
 
 def _refuse(url: str, why: str, exc_t: type[Exception] = RailRefusal) -> None:
+    row = {"url": url[:300], "why": why, "pid": os.getpid()}
     with _LOCK:
-        _STATE["refused"].append({"url": url[:300], "why": why})
+        _STATE["refused"].append(row)
+        log = os.environ.get(LOG_ENV)
+        if log:
+            try:
+                with open(log, "a", encoding="utf-8") as fh:
+                    fh.write(json.dumps(row) + "\n")
+            except OSError:
+                pass
     print(f"BOX_RAILS REFUSED {url[:200]} -- {why}", flush=True)
     raise exc_t(f"box rails refused {url[:200]}: {why}")
 
 
-def refused() -> list[dict[str, str]]:
+def refused() -> list[dict[str, Any]]:
     with _LOCK:
         return list(_STATE["refused"])
 
 
+def logged_refusals(path: str | os.PathLike[str]) -> list[dict[str, Any]]:
+    """Every refusal appended to `path` (LOG_ENV) by this process and its children."""
+    out: list[dict[str, Any]] = []
+    try:
+        with open(path, encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    d = json.loads(line)
+                except ValueError:
+                    continue
+                if isinstance(d, dict):
+                    out.append(d)
+    except OSError:
+        pass
+    return out
+
+
 def install(walled: frozenset[str] | None = None) -> None:
-    """Patch requests and urllib in THIS process. Idempotent."""
-    with _LOCK:
+    """Patch requests and urllib in THIS process. Idempotent. `installed` is set only once every
+    patch is in place: a failure part-way (the wall list unreadable, say) raises, leaves the flag
+    clear, and the next call tries again rather than reading as installed with no rails."""
+    with _INSTALL_LOCK:
         if _STATE["installed"]:
             return
+        _install(walled)
         _STATE["installed"] = True
-    _STATE["walled"] = walled_hosts() if walled is None else frozenset(_norm(h) for h in walled)
 
-    orig_open = urllib.request.OpenerDirector.open
-    _STATE["orig"]["urllib_open"] = orig_open
+
+def _install(walled: frozenset[str] | None) -> None:
+    ws = walled_hosts() if walled is None else frozenset(_norm(h) for h in walled)
+
+    orig_open = _STATE["orig"].get("urllib_open") or urllib.request.OpenerDirector.open
 
     class _UrllibRefusal(RailRefusal, urllib.error.URLError):
         def __init__(self, msg: str) -> None:
@@ -171,18 +246,25 @@ def install(walled: frozenset[str] | None = None) -> None:
         for k in [k for k in req.unredirected_hdrs if k.lower() == "user-agent"]:
             del req.unredirected_hdrs[k]
         req.add_header("User-Agent", USER_AGENT)
-        check(req.full_url, _UrllibRefusal)
+        if getattr(_GUARD, "active", 0):
+            # The rails' own robots.txt read: the wall check only, never a nested robots read.
+            host = urlsplit(req.full_url).hostname or ""
+            if host_walled(host):
+                _refuse(req.full_url, f"host {host} is walled on the VPS", _UrllibRefusal)
+        else:
+            check(req.full_url, _UrllibRefusal)
         if timeout is None:
             return orig_open(self, req, **kw)
         return orig_open(self, req, timeout=timeout, **kw)
 
+    _STATE["walled"] = ws
+    _STATE["orig"]["urllib_open"] = orig_open
     urllib.request.OpenerDirector.open = _open  # type: ignore[method-assign]
-
     try:
         import requests
     except ImportError:                                   # pragma: no cover - always present
         return
-    orig_send = requests.Session.send
+    orig_send = _STATE["orig"].get("requests_send") or requests.Session.send
     _STATE["orig"]["requests_send"] = orig_send
 
     class _RequestsRefusal(RailRefusal, requests.exceptions.ConnectionError):

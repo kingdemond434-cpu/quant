@@ -488,6 +488,26 @@ def proposer_bound(budget_s: float | None, st: dict | None = None) -> float:
     return max(UNBUDGETED_BOUND_S, 1.5 * last_ok, grown)
 
 
+def _proposer_absent(name: str, exc: ModuleNotFoundError) -> bool:
+    """True only when the module that could not be found IS the proposer itself (PR #524 audit).
+
+    A ModuleNotFoundError raised while importing a proposer that is on this tree -- its own
+    `import scipy`, say -- names the dependency, not the proposer: that proposer is FAILED."""
+    missing = str(getattr(exc, "name", "") or "")
+    if missing:
+        return missing == name or name.startswith(missing + ".")
+    import importlib.util
+    try:
+        return importlib.util.find_spec(name) is None
+    except (ImportError, ValueError):
+        return False
+
+
+def _missing_dep_error(name: str, exc: ModuleNotFoundError) -> str:
+    return (f"{name} is present but its import failed: ModuleNotFoundError: "
+            f"{getattr(exc, 'name', None) or exc}: {exc}")[:400]
+
+
 def _proposer_budget(name: str) -> float | None:
     """The bandit-scaled budget for `name`, exactly as the in-process loop computed it; None
     when its `run()` takes no budget. Raises ModuleNotFoundError when it is not on this tree."""
@@ -512,6 +532,13 @@ def _proposer_child(name: str, budget_s: float | None) -> int:
         mod = __import__(name)
         rep = mod.run(**({"budget_s": float(budget_s)} if budget_s is not None else {}))
     except ModuleNotFoundError as exc:
+        if not _proposer_absent(name, exc):
+            # A proposer that IS on this tree but cannot import a dependency is broken, not
+            # absent: ABSENT is skipped by the liveness check, so it would read OK forever.
+            traceback.print_exc()
+            print(PROPOSER_RESULT_PREFIX + json.dumps(
+                {"status": "FAILED", "error": _missing_dep_error(name, exc)}), flush=True)
+            return 1
         print(PROPOSER_RESULT_PREFIX + json.dumps({"status": "ABSENT", "error": str(exc)}),
               flush=True)
         return 3
@@ -612,11 +639,22 @@ def _proposers() -> None:
         st = state.setdefault(name, {})
         try:
             budget = _proposer_budget(name)
-        except ModuleNotFoundError:
-            dlog(f"{name}: not present on this tree")
-            rows[name] = {"status": "ABSENT"}
-            st.update({"last_status": "ABSENT", "done_day": today})
+        except ModuleNotFoundError as exc:
+            if _proposer_absent(name, exc):
+                dlog(f"{name}: not present on this tree")
+                rows[name] = {"status": "ABSENT"}
+                st.update({"last_status": "ABSENT", "done_day": today})
+            else:
+                # Present but broken (a missing dependency): FAILED, with its cause, so the
+                # liveness check names it RED instead of skipping it as ABSENT forever.
+                err = _missing_dep_error(name, exc)
+                dlog(f"{name} FAILED (non-fatal): {err}")
+                now_iso = datetime.now(UTC).isoformat(timespec="seconds")
+                rows[name] = {"status": "FAILED", "error": err}
+                st.update({"last_status": "FAILED", "last_error": err, "last_at": now_iso,
+                           "done_day": today})
             _write_json(PROPOSER_STATE, state)
+            _publish_proposers(rows, order, today)
             continue
         except Exception as exc:
             budget = None

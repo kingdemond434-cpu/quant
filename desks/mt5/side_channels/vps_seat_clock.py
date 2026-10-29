@@ -38,6 +38,7 @@ next hour. Progress is published after every unit.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import subprocess
@@ -57,6 +58,7 @@ for _p in (str(HERE), str(BASE), str(ROOT)):
         sys.path.insert(0, _p)
 
 import box_rails  # noqa: E402
+
 from libs.ops import seat_clocks  # noqa: E402
 
 STATE = BASE / "data" / seat_clocks.BOX_STATE.name
@@ -114,14 +116,24 @@ def bound_s(unit: str, st: dict[str, Any] | None = None) -> float:
 
 
 def vps_shipped_ts(root: Path = ROOT, ref: str = SHIP_REF,
-                   runner: Callable[..., Any] | None = None) -> tuple[dict[str, float], str]:
-    """({seat: newest commit time on the VPS transport ref touching that seat}, basis).
+                   runner: Callable[..., Any] | None = None,
+                   now: float | None = None) -> tuple[dict[str, float], str]:
+    """({seat: newest commit time on the VPS transport ref that ADDED a discoveries file}, basis).
+
+    The same basis as `seat_clocks.last_output_ts` (PR #524 audit): only an ADDED
+    `intelligence/<seat>/discoveries_*` file counts as the VPS having mined that seat. A
+    compaction commit (deleting old discoveries, adding a rollup), a `rollup_*.jsonl.gz` add, or a
+    modify-only commit (central_banks' `cb_documents.jsonl`) mined nothing and must not stand the
+    box down. A commit time past `now` (clock skew on the VPS) is ignored, never trusted: it
+    would hold the unit down until that future time plus the cadence.
 
     Read-only `git log` over the ref; never fetches. An unreadable ref is an empty map with its
     reason as the basis -- the plan then falls back to the files on disk, and says so."""
     runner = runner or subprocess.run
+    now = time.time() if now is None else now
     cmd = ["git", "-C", str(root), "log", f"-n{SHIP_LOG_COMMITS}", "--format=@%ct",
-           "--name-only", ref, "--", "desks/mt5/data/intelligence", "data/intelligence"]
+           "--name-only", "--diff-filter=A", "--no-renames", ref, "--",
+           "desks/mt5/data/intelligence", "data/intelligence"]
     try:
         r = runner(cmd, capture_output=True, text=True, timeout=30, check=False)
     except Exception as exc:  # a basis, never a crash
@@ -130,6 +142,7 @@ def vps_shipped_ts(root: Path = ROOT, ref: str = SHIP_REF,
         return {}, f"UNMEASURED: git log {ref} exit {r.returncode}: {(r.stderr or '')[:200]}"
     out: dict[str, float] = {}
     ts = 0.0
+    future = 0
     for line in (r.stdout or "").splitlines():
         line = line.strip()
         if line.startswith("@"):
@@ -137,13 +150,22 @@ def vps_shipped_ts(root: Path = ROOT, ref: str = SHIP_REF,
                 ts = float(line[1:])
             except ValueError:
                 ts = 0.0
+            if ts > now:
+                future += 1
             continue
         parts = line.split("/")
-        if "intelligence" in parts:
-            i = parts.index("intelligence")
-            if i + 2 < len(parts) and ts and ts > out.get(parts[i + 1], 0.0):
-                out[parts[i + 1]] = ts
-    return out, f"{ref}: newest shipped commit per seat over the last {SHIP_LOG_COMMITS} commits"
+        if "intelligence" not in parts or not ts or ts > now:
+            continue
+        i = parts.index("intelligence")
+        # exactly intelligence/<seat>/discoveries_* -- what last_output_ts globs
+        if len(parts) == i + 3 and parts[i + 2].startswith("discoveries_") \
+                and ts > out.get(parts[i + 1], 0.0):
+            out[parts[i + 1]] = ts
+    basis = (f"{ref}: newest commit ADDING intelligence/<seat>/discoveries_* per seat over the "
+             f"last {SHIP_LOG_COMMITS} commits")
+    if future:
+        basis += f"; {future} commit(s) dated in the future ignored"
+    return out, basis
 
 
 def last_touch(unit: str, state: dict[str, Any], desk: Path = BASE) -> float:
@@ -202,13 +224,35 @@ def run_unit(unit: str) -> dict[str, Any]:
     raise ValueError(f"unknown unit {unit!r}")
 
 
+#: Refusal rows carried on the result line. The line must survive the parent's output tail.
+RAILS_REFUSED_SHOWN = 10
+
+
 def _child_main(unit: str) -> int:
+    import tempfile
     t0 = time.monotonic()
+    fd, log = tempfile.mkstemp(prefix="box_rails_", suffix=".jsonl")
+    os.close(fd)
+    # Inherited by every miner process run_all_miners spawns: their refusals land here too.
+    os.environ[box_rails.LOG_ENV] = log
     try:
-        res = run_unit(unit)
-    except Exception as exc:
-        res = {"status": "FAILED", "error": f"{type(exc).__name__}: {exc}"[:300]}
-    res["rails_refused"] = box_rails.refused()[:20]
+        try:
+            res = run_unit(unit)
+        except Exception as exc:
+            res = {"status": "FAILED", "error": f"{type(exc).__name__}: {exc}"[:300]}
+        logged = box_rails.logged_refusals(log)
+    finally:
+        with contextlib.suppress(OSError):
+            os.unlink(log)
+    own = box_rails.refused()
+    # The log holds this process's refusals AND its children's; fall back to our own if the
+    # log could not be read.
+    allr = logged if len(logged) >= len(own) else own
+    me = os.getpid()
+    res["rails_refused"] = [{"url": str(r.get("url", ""))[:150], "why": str(r.get("why", ""))[:150],
+                             "child": r.get("pid") != me} for r in allr[:RAILS_REFUSED_SHOWN]]
+    res["rails_refused_n"] = len(allr)
+    res["rails_refused_children_n"] = sum(1 for r in allr if r.get("pid") != me)
     res["wall_s"] = round(time.monotonic() - t0, 1)
     print(RESULT_PREFIX + json.dumps(res, default=str), flush=True)
     return 0 if res.get("status") == "OK" else 1
@@ -229,7 +273,7 @@ def _default_runner(cmd: list[str], timeout_s: float) -> tuple[int | None, str]:
                  cwd=str(BASE))
     except subprocess.TimeoutExpired:
         return None, ""
-    return r.returncode, ((r.stdout or "") + (r.stderr or ""))[-4000:]
+    return r.returncode, ((r.stdout or "") + (r.stderr or ""))[-16000:]
 
 
 def _parse(tail: str) -> dict[str, Any]:
@@ -269,6 +313,8 @@ def run_pass(budget_s: float = BUDGET_S, *, runner: Runner | None = None,
             "vps_fetched": sorted(u for u, r in rows.items()
                                   if r.get("status") == "VPS_FETCHED"),
             "vps_shipped": {"basis": ship_basis, "seats": len(shipped)},
+            "rails_refused": {u: int(r.get("rails_refused_n") or 0) for u, r in rows.items()
+                              if r.get("rails_refused_n")},
             "rails": {"user_agent": box_rails.USER_AGENT,
                       "robots_tokens": list(box_rails.ROBOTS_TOKENS)},
             "rule": ("a unit runs only when no clock (VPS or box) has produced its seats inside "

@@ -157,3 +157,104 @@ def test_a_redirect_hop_is_checked_too(rails):
     with pytest.raises(box_rails.RailRefusal):
         s.send(req)
     assert wire == []
+
+
+# ------------------------------------------- PR #524 audit v3: robots.txt redirects, install
+
+
+@pytest.fixture
+def local_site(monkeypatch):
+    """A real localhost server; `routes` maps a path to (status, location-or-body)."""
+    import http.server
+    import threading
+
+    for k in ("http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY", "all_proxy",
+              "ALL_PROXY"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setenv("no_proxy", "*")
+    monkeypatch.setenv("NO_PROXY", "*")
+    hits: list[str] = []
+    routes: dict[str, tuple[int, str]] = {}
+
+    class H(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            hits.append(self.path)
+            code, val = routes.get(self.path, (200, "page"))
+            self.send_response(code)
+            if 300 <= code < 400:
+                self.send_header("Location", val)
+                val = ""
+            body = val.encode()
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *a):
+            pass
+
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
+    t = threading.Thread(target=srv.serve_forever, daemon=True)
+    t.start()
+    box_rails._reset_for_tests()
+    box_rails.install(walled=frozenset())
+    try:
+        yield f"http://127.0.0.1:{srv.server_address[1]}", routes, hits
+    finally:
+        box_rails._reset_for_tests()
+        srv.shutdown()
+        srv.server_close()
+
+
+def test_a_robots_redirect_to_a_non_robots_path_does_not_recurse(local_site):
+    base, routes, hits = local_site
+    routes["/robots.txt"] = (302, "/login")
+    routes["/login"] = (200, "User-agent: *\nDisallow: /private\n")
+    with urllib.request.urlopen(f"{base}/page", timeout=5) as r:      # no RecursionError
+        assert r.read() == b"page"
+    assert hits == ["/robots.txt", "/login", "/page"]
+    with pytest.raises(box_rails.RailRefusal):
+        requests.get(f"{base}/private/x", timeout=5)
+    assert len(hits) == 3                       # robots read once; the refused URL never sent
+
+
+def test_a_robots_redirect_loop_stops_after_five_hops_and_is_not_consent(local_site):
+    base, routes, hits = local_site
+    for i in range(20):
+        routes["/robots.txt" if i == 0 else f"/r{i}"] = (302, f"/r{i + 1}")
+    with pytest.raises(box_rails.RailRefusal, match="redirects"):
+        urllib.request.urlopen(f"{base}/page", timeout=5)
+    assert len(hits) <= box_rails.ROBOTS_MAX_HOPS + 1 and "/page" not in hits
+
+
+def test_a_robots_redirect_onto_a_walled_host_is_never_followed(local_site, monkeypatch):
+    base, routes, hits = local_site
+    routes["/robots.txt"] = (302, "https://www.forexpeacearmy.com/robots.txt")
+    monkeypatch.setitem(box_rails._STATE, "walled", frozenset({"forexpeacearmy.com"}))
+    with pytest.raises(box_rails.RailRefusal, match="walled"):
+        requests.get(f"{base}/page", timeout=5)
+    assert hits == ["/robots.txt"]
+
+
+def test_install_is_not_marked_done_until_the_patches_are_in(monkeypatch):
+    box_rails._reset_for_tests()
+    orig_open = urllib.request.OpenerDirector.open
+    orig_send = requests.Session.send
+
+    def broken():
+        raise RuntimeError("SOURCE_WALLS unreadable")
+
+    monkeypatch.setattr(box_rails, "walled_hosts", broken)
+    try:
+        with pytest.raises(RuntimeError):
+            box_rails.install()
+        assert box_rails._STATE["installed"] is False
+        assert urllib.request.OpenerDirector.open is orig_open
+        assert requests.Session.send is orig_send
+        monkeypatch.setattr(box_rails, "walled_hosts", lambda: frozenset())
+        box_rails.install()                   # the retry installs, rather than reading done
+        assert box_rails._STATE["installed"] is True
+        assert urllib.request.OpenerDirector.open is not orig_open
+        assert requests.Session.send is not orig_send
+    finally:
+        box_rails._reset_for_tests()
+    assert urllib.request.OpenerDirector.open is orig_open

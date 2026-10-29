@@ -253,3 +253,48 @@ def test_task_limit_decodes_utf16_and_never_raises(dc, monkeypatch):
     assert daily_cycle._task_limit_s(runner=boom) is None
     assert "weird schtasks failure" in (dc / "daily_cycle.log").read_text("utf-8")
     assert daily_cycle._task_limit_s(runner=lambda *a, **k: R(b"garbage")) is None
+
+
+# ------------------------------------- PR #524 audit v3: a missing DEPENDENCY is not ABSENT
+
+
+def test_a_proposer_with_a_missing_dependency_is_failed_not_absent(tmp_path, monkeypatch):
+    mods = tmp_path / "mods"
+    mods.mkdir()
+    (mods / "fake_prop_needs_dep.py").write_text(
+        "import no_such_dependency_xyz  # noqa: F401\ndef run():\n    return {}\n", "utf-8")
+    monkeypatch.setenv("PYTHONPATH", str(mods))
+    monkeypatch.setattr(daily_cycle, "LOG", tmp_path / "daily_cycle.log")
+    broken = daily_cycle._run_proposer("fake_prop_needs_dep", None, 60.0)
+    assert broken["status"] == "FAILED"
+    assert "no_such_dependency_xyz" in broken["error"]
+    assert daily_cycle._run_proposer("no_such_proposer_xyz", None, 60.0)["status"] == "ABSENT"
+
+
+def test_absent_is_only_the_proposer_module_itself():
+    own = ModuleNotFoundError("No module named 'p'", name="p")
+    dep = ModuleNotFoundError("No module named 'scipy'", name="scipy")
+    assert daily_cycle._proposer_absent("p", own) is True
+    assert daily_cycle._proposer_absent("p", dep) is False
+
+
+def test_the_pass_books_a_broken_import_failed_and_the_liveness_check_names_it(dc,
+                                                                                monkeypatch):
+    victim = daily_cycle.PROPOSERS[0]
+
+    def budget(name):
+        if name == victim:
+            raise ModuleNotFoundError("No module named 'scipy'", name="scipy")
+        raise ModuleNotFoundError(f"No module named {name!r}", name=name)
+
+    monkeypatch.setattr(daily_cycle, "_proposer_budget", budget)
+    monkeypatch.setattr(daily_cycle, "_run_proposer", lambda *a: pytest.fail("ran"))
+    daily_cycle._proposers()
+    st = _state(dc)
+    assert st[victim]["last_status"] == "FAILED" and "scipy" in st[victim]["last_error"]
+    assert all(st[n]["last_status"] == "ABSENT" for n in daily_cycle.PROPOSERS if n != victim)
+    from libs.ops import seat_clocks
+    (dc / "data").mkdir()
+    (dc / "data" / seat_clocks.PROPOSER_STATE.name).write_text(json.dumps(st), "utf-8")
+    red = seat_clocks.red_proposers(desk=dc, names=list(daily_cycle.PROPOSERS))
+    assert [r["seat"] for r in red] == [victim]

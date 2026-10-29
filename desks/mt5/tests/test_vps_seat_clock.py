@@ -290,7 +290,7 @@ def test_vps_shipped_ts_reads_the_transport_ref_and_says_when_it_cannot():
                   "data/intelligence/cot/discoveries_z.json\n"
                   "desks/mt5/data/intelligence/latest_discoveries.json\n")
 
-    got, basis = vsc.vps_shipped_ts(runner=lambda *a, **k: R())
+    got, basis = vsc.vps_shipped_ts(runner=lambda *a, **k: R(), now=1_800_000_100.0)
     assert got == {"darwinex": 1_800_000_000.0, "cot": 1_799_990_000.0}
     assert "intel-ship/send" in basis
 
@@ -413,3 +413,114 @@ def test_never_stale_does_not_read_an_unmeasured_seat_check_as_ok(tmp_path, monk
     assert "ImportError" in doc["seat_clocks"]["error"]
     monkeypatch.setattr(seat_clocks, "report", lambda: {"status": "OK", "red": []})
     assert never_stale.run(apply=False)["status"] == "OK"
+
+
+# ------------------------------------------------- PR #524 audit v3: what counts as "shipped"
+
+def _git(repo: Path, *args: str, ts: float | None = None) -> None:
+    import subprocess
+    env = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t",
+               GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
+    if ts is not None:
+        env["GIT_AUTHOR_DATE"] = env["GIT_COMMITTER_DATE"] = f"@{int(ts)} +0000"
+    subprocess.run(["git", "-C", str(repo), "-c", "core.hooksPath=/dev/null",
+                    "-c", "commit.gpgsign=false", *args],
+                   check=True, capture_output=True, env=env)
+
+
+@pytest.fixture
+def ship(tmp_path):
+    """A transport ref in a scratch repo: one real discoveries add long ago, then the case."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "send")
+    seat = repo / "desks" / "mt5" / "data" / "intelligence"
+    for s in ("darwinex", "central_banks", "cot"):
+        (seat / s).mkdir(parents=True)
+        (seat / s / "discoveries_20261001_0100.json").write_text("[]", "utf-8")
+    (seat / "central_banks" / "cb_documents.jsonl").write_text("a\n", "utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "old mining", ts=NOW - 30 * 86400)
+    return repo, seat
+
+
+def _shipped(repo: Path) -> dict[str, float]:
+    got, basis = vsc.vps_shipped_ts(root=repo, ref="send", now=NOW)
+    assert not basis.startswith("UNMEASURED"), basis
+    return got
+
+
+def test_a_compaction_commit_is_not_shipped_output(ship):
+    repo, seat = ship
+    (seat / "darwinex" / "discoveries_20261001_0100.json").unlink()
+    (seat / "darwinex" / "rollup_202610.jsonl.gz").write_bytes(b"x")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "compact darwinex", ts=NOW - 600)
+    assert _shipped(repo)["darwinex"] == NOW - 30 * 86400
+    p = vsc.plan({}, NOW, repo / "desks" / "mt5", shipped=_shipped(repo))
+    assert "seed:darwinex" in p["due"] and "seed:darwinex" not in p["vps_fetched"]
+
+
+def test_a_daily_rollup_add_is_not_shipped_output(ship):
+    repo, seat = ship
+    (seat / "cot" / "rollup_20261028.jsonl.gz").write_bytes(b"x")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "rollup", ts=NOW - 600)
+    assert _shipped(repo)["cot"] == NOW - 30 * 86400
+
+
+def test_a_modify_only_commit_is_not_shipped_output(ship):
+    repo, seat = ship
+    (seat / "central_banks" / "cb_documents.jsonl").write_text("a\nb\n", "utf-8")
+    (seat / "central_banks" / "discoveries_20261001_0100.json").write_text("[1]", "utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "cb docs", ts=NOW - 600)
+    assert _shipped(repo)["central_banks"] == NOW - 30 * 86400
+    p = vsc.plan({}, NOW, repo / "desks" / "mt5", shipped=_shipped(repo))
+    assert "external:central_bank" in p["due"]
+
+
+def test_a_future_dated_commit_never_holds_the_unit_down(ship):
+    repo, seat = ship
+    (seat / "cot" / "discoveries_20261029_0900.json").write_text("[]", "utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "skewed clock", ts=NOW + 86400)
+    got, basis = vsc.vps_shipped_ts(root=repo, ref="send", now=NOW)
+    assert got["cot"] == NOW - 30 * 86400 and "future" in basis
+    assert "external:cot" in vsc.plan({}, NOW, repo / "desks" / "mt5", shipped=got)["due"]
+
+
+def test_an_added_discoveries_file_still_stands_the_box_down(ship):
+    repo, seat = ship
+    (seat / "cot" / "discoveries_20261029_0900.json").write_text("[]", "utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "mined cot", ts=NOW - 600)
+    got = _shipped(repo)
+    assert got["cot"] == NOW - 600
+    p = vsc.plan({}, NOW, repo / "desks" / "mt5", shipped=got)
+    assert "external:cot" in p["vps_fetched"]
+
+
+def test_child_refusals_reach_the_unit_report(monkeypatch, capsys):
+    """Refusals raised in the miner processes run_all_miners spawns are on the result line,
+    not only the unit process's own (they were booked as bare fetch_errors)."""
+    import subprocess
+
+    import box_rails
+
+    def fake_run_unit(unit):
+        here = str(Path(box_rails.__file__).parent)
+        code = (f"import sys; sys.path.insert(0, {here!r}); import box_rails\n"
+                "try:\n    box_rails._refuse('https://x.example/p', 'robots says no')\n"
+                "except OSError:\n    pass\n")
+        subprocess.run([sys.executable, "-c", code], check=True, env=dict(os.environ))
+        return {"status": "OK", "rows": 0}
+
+    monkeypatch.setattr(vsc, "run_unit", fake_run_unit)
+    monkeypatch.delenv(box_rails.LOG_ENV, raising=False)
+    assert vsc._child_main("external:cot") == 0
+    res = vsc._parse(capsys.readouterr().out)
+    assert res["rails_refused_n"] == 1 and res["rails_refused_children_n"] == 1
+    assert res["rails_refused"][0]["url"] == "https://x.example/p"
+    assert res["rails_refused"][0]["child"] is True
+    os.environ.pop(box_rails.LOG_ENV, None)
