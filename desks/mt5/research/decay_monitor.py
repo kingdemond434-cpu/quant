@@ -371,7 +371,8 @@ def degenerate(rs: list[float]) -> str:
     value, hits = max(counts.items(), key=lambda kv: kv[1])
     if hits / len(rs) >= 0.80:
         return (f"{hits} of {len(rs)} r_multiples are exactly {value:+.3f} "
-                f"({100 * hits / len(rs):.0f}%) -- a near-constant series is a computation defect, not performance; a real "
+                f"({100 * hits / len(rs):.0f}%) -- a near-constant series is a computation "
+                f"defect, not performance; a real "
                 f"sleeve's losses differ in size. Refusing to retire on it")
     return ""
 
@@ -421,26 +422,11 @@ def book_key_verdict(rs: list[float]) -> tuple[str, str, dict]:
     return "HEALTHY", f"n={n}, roll20 exp {roll_exp:.3f}R, maxDD {s['max_dd_r']}R", facts
 
 
-def principal_pins() -> set[str]:
-    """Every key the PRINCIPAL pinned to a non-zero size: CERT_BOOK_LIVE.json's venue blocks and
-    `decision_core.MINLOT_OVERRIDE_SLEEVES`, lowercased, unversioned and stemmed. zuck
-    2026-10-29: a pinned key is FLAGGED to him, never auto-zeroed, until he rules otherwise."""
-    out: set[str] = set()
-    try:
-        cert = json.loads((SLEEVES_FILE.parent / "CERT_BOOK_LIVE.json").read_text("utf-8"))
-        for venue in ("fusion", "e8", "ftmo"):
-            block = cert.get(venue) if isinstance(cert, dict) else None
-            for k, v in (block or {}).items() if isinstance(block, dict) else ():
-                if isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0:
-                    out.add(str(k))
-    except (OSError, ValueError, AttributeError):
-        pass
-    try:
-        from mt5desk.decision_core import MINLOT_OVERRIDE_SLEEVES
-        out |= {str(k) for k in MINLOT_OVERRIDE_SLEEVES}
-    except Exception:
-        pass
-    return {_stem(k) for k in out}
+#: THE ONLY FLAG-INSTEAD-OF-ZERO KEYS (zuck 2026-10-29 15:55Z: "zeroing is allowed pin is only fr
+#: gold Asia one temporarily only"). A key here that trips the bars is FLAGGED to the principal
+#: while no LIVE (promoted) row on its symbol exists; once one does, the exemption ends and the
+#: key is zeroed like any other. Every other key, principal-pinned book or not, is zeroed.
+TEMPORARY_EXEMPT: frozenset[str] = frozenset({"gold_asia"})
 
 
 def _stem(name: object) -> str:
@@ -449,15 +435,16 @@ def _stem(name: object) -> str:
     return re.sub(r"_v\d+$", "", str(name or "").strip()).lower()[:LEDGER_NAME_MAX]
 
 
-def replacement_for(name: str, symbol: str, roster: dict[str, dict]) -> str | None:
-    """A certified roster row that could take `name`'s place: another LIVE or STANDBY row on the
-    same symbol under a different book name. None when there is none -- zuck 2026-10-29: a key
-    with no replacement is flagged, never zeroed."""
+def replacement_for(name: str, symbol: str, roster: dict[str, dict],
+                    statuses: tuple[str, ...] = ("LIVE", "STANDBY")) -> str | None:
+    """A certified roster row that could take `name`'s place: another row on the same symbol
+    under a different book name, in one of `statuses`. None when there is none. Recorded on
+    every zero; for a TEMPORARY_EXEMPT key only a LIVE (promoted) row ends the exemption."""
     me = _stem(name)
     for k, row in roster.items():
         if _stem(k) == me or not isinstance(row, dict):
             continue
-        if str(row.get("status") or "").upper() in ("LIVE", "STANDBY") \
+        if str(row.get("status") or "").upper() in statuses \
                 and str(row.get("symbol") or "").upper() == str(symbol or "").upper():
             return str(k)
     return None
@@ -484,15 +471,15 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
       * A ZERO IS ONE-WAY. It never re-arms because losses age out of the window; it lifts only
         when the key's roster row carries a DIFFERENT certificate than when it was zeroed (a
         fresh re-cert), exactly like the promoter's one-way retirement.
-      * A key the principal pinned (`principal_pins`), or one with no certified replacement on
-        its symbol (`replacement_for`), is FLAGGED, never zeroed: it keeps trading and the flag
-        names it for the principal.
+      * ZEROING IS ALLOWED ON EVERY KEY (15:55Z ruling), principal-pinned books included, except
+        the TEMPORARY_EXEMPT keys (gold_asia only): those are FLAGGED while no promoted
+        replacement exists on their symbol, and zeroed once one does.
     Only live-account rows count (a demo fill is not live evidence); an UNMEASURED key (no
     measurable R, or a degenerate series) is listed apart and moves nothing.
     """
     roster = roster or {}
     prev_zeros = dict((prev or {}).get("zeros") or {})
-    pins = principal_pins()
+    exempt = {_stem(k) for k in TEMPORARY_EXEMPT}
     judged: dict[str, dict] = {}
     unmeasured: dict[str, dict] = {}
     zeros: dict[str, dict] = {}
@@ -520,9 +507,10 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
                  "roll20_exp": facts["roll20_exp"], "max_dd_r": facts["max_dd_r"],
                  "symbol": symbol, "roster_rows": stem_rows, "since": now,
                  "certificate": _cert_of(name, roster)}
-        if _stem(name) in pins or repl is None:
-            flags[name] = {**entry, "flag": ("principal pin: zuck decides" if _stem(name) in pins
-                                             else f"no certified replacement on {symbol}")}
+        if _stem(name) in exempt and replacement_for(name, symbol, roster, ("LIVE",)) is None:
+            flags[name] = {**entry, "replacement": repl,
+                           "flag": (f"temporary exemption (zuck 2026-10-29): no promoted "
+                                    f"replacement on {symbol} yet; the principal decides")}
         else:
             zeros[name] = {**entry, "replacement": repl}
     # ONE-WAY: every earlier zero stands unless its row's certificate changed since.
@@ -544,8 +532,9 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
                      f"LIVE roster row is judged on the promoter's retirement bars "
                      f"(degenerate series refused; roll{BOOK_RETIRE_ROLL} exp <= 0R at n >= "
                      f"{BOOK_RETIRE_MIN_N}; maxDD < {BOOK_RETIRE_MAX_DD}R; n >= 50 and exp < "
-                     f"{BOOK_RETIRE_MIN_EXP}R). A tripped key is ZEROED when it is not a principal "
-                     f"pin and a certified replacement exists on its symbol, else FLAGGED. A zero "
+                     f"{BOOK_RETIRE_MIN_EXP}R). A tripped key is ZEROED; only "
+                     f"{sorted(TEMPORARY_EXEMPT)} "
+                     f"is FLAGGED instead while no promoted replacement exists. A zero "
                      f"is one-way and lifts only on a new certificate. The zeroed key's heat is "
                      f"not redeployed by this file; the allocator's next solve decides it")}
 

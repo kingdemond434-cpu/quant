@@ -6,9 +6,10 @@ row: usdnok_carry closed 23 live trades in October for -9.36R and kept sending. 
 
   * the guard and the bars are the PROMOTER'S (degenerate_evidence, then its three doors),
     mirrored and pinned equal -- no new threshold;
-  * zuck's rules (2026-10-29 15:21Z): a tripped key is ZEROED only when it is not a principal
-    pin and a certified replacement exists on its symbol, else FLAGGED; a zero is ONE-WAY and
-    lifts only on a new certificate; demo rows and unmeasurable series move nothing;
+  * zuck's rules (2026-10-29 15:21Z and 15:55Z): every tripped key is ZEROED, pinned books
+    included, except gold_asia, which is FLAGGED while no promoted replacement exists on its
+    symbol; a zero is ONE-WAY and lifts only on a new certificate; demo rows and unmeasurable
+    series move nothing;
   * `decision_core.decay_zero` names a zero by name, book name or 27-char stem, names nothing
     from an absent or torn file or while the kill switch exists, and every sizing door sends
     nothing for a named key with a decay reason, billed on its own registered rail;
@@ -35,7 +36,7 @@ from mt5desk import decision_core as dc  # noqa: E402
 from research import decay_monitor as D  # noqa: E402
 
 NOW = datetime.now(tz=UTC).replace(microsecond=0)
-LOSER = "usdnok_carry_asia_p_ff35bb7c8427d66"        # pinned (MINLOT_OVERRIDE_SLEEVES)
+LOSER = "usdnok_carry_asia_p_ff35bb7c8427d66"        # on the principal's min-lot book
 FREE = "eurgbp_formula_asia_p_1234567890abcdef"      # not pinned; longer than the 27-char stem
 LOSSES = [-0.4, -0.55, 0.2, -0.7, -0.35, -0.6, 0.1, -0.45, -0.5, -0.65, -0.3, -0.4]
 
@@ -99,7 +100,7 @@ def test_book_key_verdict_refuses_degenerate_series_then_reads_the_three_doors()
     assert D._promoter_dd([-1.0, -2.0]) == -2.0 and D._promoter_dd([1.0, -3.0]) == -3.0
 
 
-def test_an_unpinned_loser_with_a_replacement_is_zeroed_and_a_pin_is_flagged(desk) -> None:
+def test_every_tripped_key_is_zeroed_pinned_book_or_not(desk) -> None:
     roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP", "certificate": "c1"},
               {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"},
               {"name": LOSER, "status": "RETIRED", "symbol": "USDNOK"},
@@ -111,24 +112,33 @@ def test_an_unpinned_loser_with_a_replacement_is_zeroed_and_a_pin_is_flagged(des
     _write(desk, roster, trades)
     assert D.main(write_queue=False) == 0
     doc = _zero(desk)
-    assert set(doc["zeros"]) == {FREE[:27]} and doc["zeros"][FREE[:27]]["replacement"]
-    assert set(doc["flags"]) == {LOSER[:27]}
-    assert "principal pin" in doc["flags"][LOSER[:27]]["flag"]
+    # zuck 15:55Z, "zeroing is allowed": USDNOK carry is zeroed though it is on the principal's
+    # min-lot book and has no replacement on its symbol (recorded as None)
+    assert set(doc["zeros"]) == {FREE[:27], LOSER[:27]} and doc["flags"] == {}
+    assert doc["zeros"][FREE[:27]]["replacement"]
+    assert doc["zeros"][LOSER[:27]]["replacement"] is None
     assert "gold_asia" in doc["judged"] and "eurusd_live_one" not in doc["judged"]
     acts = [json.loads(x) for x in (desk / "decay_actions.jsonl").read_text("utf-8").splitlines()]
     assert {(a["sleeve"], a["action"]) for a in acts if a["action"].startswith("BOOK")} \
-        == {(FREE[:27], "BOOK_ZERO"), (LOSER[:27], "BOOK_FLAG")}
+        == {(FREE[:27], "BOOK_ZERO"), (LOSER[:27], "BOOK_ZERO")}
     live = json.loads((desk / "decay_live.json").read_text("utf-8"))
-    assert live["book_keys"]["zeroed"] == [FREE[:27]]
-    assert live["book_keys"]["flagged"] == [LOSER[:27]]
+    assert live["book_keys"]["zeroed"] == sorted([FREE[:27], LOSER[:27]])
 
 
-def test_a_loser_with_no_certified_replacement_is_flagged_not_zeroed(desk) -> None:
-    _write(desk, [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP"}],
-           _trades(FREE[:27], LOSSES))
+def test_gold_asia_alone_is_flagged_until_a_promoted_replacement_exists(desk) -> None:
+    roster = [{"name": "gold_asia", "status": "STANDBY", "symbol": "XAUUSD"},
+              {"name": "xauusd_range_reversion_p_1", "status": "STANDBY", "symbol": "XAUUSD"}]
+    _write(desk, roster, _trades("gold_asia", LOSSES, symbol="XAUUSD"))
     D.main(write_queue=False)
     doc = _zero(desk)
-    assert doc["zeros"] == {} and "no certified replacement" in doc["flags"][FREE[:27]]["flag"]
+    assert doc["zeros"] == {} and "temporary exemption" in doc["flags"]["gold_asia"]["flag"]
+    # a STANDBY row is not a replacement; a promoted (LIVE) one ends the exemption
+    roster[1]["status"] = "LIVE"
+    _write(desk, roster, _trades("gold_asia", LOSSES, symbol="XAUUSD"))
+    D.main(write_queue=False)
+    doc = _zero(desk)
+    assert "gold_asia" in doc["zeros"] and doc["flags"] == {}
+    assert frozenset({"gold_asia"}) == D.TEMPORARY_EXEMPT
 
 
 def test_a_zero_is_one_way_and_lifts_only_on_a_new_certificate(desk) -> None:
@@ -246,3 +256,10 @@ def test_a_close_inside_the_grace_or_outside_the_window_is_not_yet_a_gap(tmp_pat
     assert AL._judge_coverage(NOW.timestamp())["status"] == "OK"
     (data / "live_ledger.jsonl").unlink()
     assert AL._judge_coverage(NOW.timestamp())["status"] == "UNMEASURED"
+
+
+def test_the_decay_monitor_is_never_rotated_out_of_the_hourly_pass() -> None:
+    """It writes DECAY_ZERO, which the gateway reads: the core rotation listed it NEVER RUN from
+    2026-10-21 while keys kept closing live trades (hourly pass 22)."""
+    from libs.ops import leg_rotation as LR
+    assert "decay_monitor" in LR.ALWAYS_RUN
