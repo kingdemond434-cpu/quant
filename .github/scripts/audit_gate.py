@@ -88,15 +88,15 @@ ready), no HOLD stands, and the gating jobs AND the AUTO jobs (risk-invariants, 
 independent-review) all succeeded. A PR whose CI fails on the LOW or AUTO path is QUARANTINED:
 labelled `quarantined`, left open, never merged until a new head passes.
 
-NO PROTECTED PATHS BUT THE SELF-JUDGED (2026-10-29, zuck: "remove all protected ... always ... so
-i never have to approve"). The rails, ceilings, kill switches, sealed manifest, box and bridge,
-agent instructions and governing prose (the old floor, now FORMERLY_PROTECTED, plus every pattern
-in ops/release/protected_paths.txt, which is read as that floor now) take the AUTO path: no
-comment, but every AUTO job, never LOW. A HOLD or any DEACTIVATE still stops them. What stays
-PROTECTED is only what defines or runs a check that judges the PR itself (.github/, ops/release/, test configuration): a `pull_request` run executes
-the PR's own copy of those, so the AUTO jobs would be self-attested; until a base-run lane judges
-such PRs, keeping them on the manual path is what keeps every gate above automatic and real.
-A secrets path never merges at all (REFUSED).
+NO PROTECTED PATHS BUT THE SELF-JUDGED (2026-10-29, zuck: "remove all protected ... always ... so i
+never have to approve"). The rails, ceilings, kill switches, sealed manifest, box and bridge, agent
+instructions and governing prose (the old floor, now FORMERLY_PROTECTED, plus every pattern in
+ops/release/protected_paths.txt, which is read as that floor now) take the AUTO path: no comment,
+but every AUTO job, never LOW. A HOLD or any DEACTIVATE still stops them. What stays PROTECTED is
+only what defines or runs a check that judges the PR itself (.github/, ops/release/, test
+configuration): a `pull_request` run executes the PR's own copy of those, so the AUTO jobs would be
+self-attested; until a base-run lane judges such PRs, keeping them on the manual path is what keeps
+every gate above automatic and real. A secrets path never merges at all (REFUSED).
 
 STEP C. The PROTECTED floor above is widened by ops/release/protected_paths.txt (every LAWS 5m
 rail, test configuration, signing, kill switches); an unreadable list makes every PR PROTECTED.
