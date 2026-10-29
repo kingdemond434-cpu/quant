@@ -261,18 +261,35 @@ def says_risk_up(words: str) -> bool:
     return False
 
 
-def decide(answer: dict[str, Any]) -> tuple[bool, str]:
-    """PASS needs the reviewer's PASS, neither flag, and no word of its own that risk goes up."""
-    if answer.get("risk_increasing") is not False:
+def decide(answer: dict[str, Any], money: bool = True) -> tuple[bool, str]:
+    """PASS needs the reviewer's PASS, neither flag, and no word of its own that risk goes up.
+
+    `money` False (trusted code found NO money-path or sizing file in the diff, see
+    `money_files`) drops only the rule-1 tests: the risk flag and the risk words. The reviewer's
+    own verdict and its control flag still decide, so a FAIL is never turned into a PASS here."""
+    if money and answer.get("risk_increasing") is not False:
         return False, "the reviewer flagged a risk increase"
     if answer.get("touches_control") is not False:
         return False, "the reviewer flagged a change to control machinery"
     if answer.get("verdict") != "PASS":
         return False, "the reviewer did not pass it"
     words = " ".join(str(x) for x in [answer.get("summary", ""), *answer.get("findings", [])])
-    if says_risk_up(words):
+    if money and says_risk_up(words):
         return False, "the reviewer's own words describe a risk increase"
-    return True, "PASS"
+    return True, "PASS" if money else "PASS (no money-path or sizing file: rule 1 not asked)"
+
+
+#: Put in front of a reviewer that FAILed a diff on rule 1 alone when trusted code (replay_shadow
+#: on the BASE tree, fail closed) found no money-path or sizing file in it. MEASURED 2026-10-29:
+#: qwen2.5-coder:7b FAILed #485 (a compute-budget share in the replication queue, no trading
+#: path) as risk_increasing, and #479 (box backup tasks) the same way; the Auditor CLEARed both.
+#: The model is asked again with the fact, never overruled: its second verdict stands.
+NOT_MONEY_NOTE = (
+    "TRUSTED CONTEXT, computed by the release controller from the base tree, not from the diff: "
+    "no file in this diff is on the trading money path or sizes positions. Rule 1 (raising "
+    "trading risk) therefore cannot apply; set risk_increasing to false. Judge rules 2-6 in full "
+    "and FAIL on any of them, or when you cannot tell.\n\n"
+)
 
 
 def parse(text: str) -> dict[str, Any] | None:
@@ -539,6 +556,7 @@ def vote(
     clock: Callable[[], float] = time.monotonic,
     make: Callable[[str], str] | None = None,
     answers: list[tuple[str, dict[str, Any]]] | None = None,
+    money: bool = True,
 ) -> tuple[str, list[str]]:
     """("PASS" | "FAIL" | "UNAVAILABLE", log). Asks family by family until VOTES distinct
     families PASS or one model FAILs; a model that is busy is asked again after a pause. An
@@ -583,7 +601,22 @@ def vote(
             if answer is None:  # a refusal or a broken format, twice (#457 audit MF3)
                 log.append(f"{mid}: no readable answer twice: FAIL")
                 return "FAIL", log
-            ok, why = decide(answer)
+            ok, why = decide(answer, money)
+            if (
+                not ok and not money and answer.get("risk_increasing") is True
+                and answer.get("touches_control") is False
+            ):  # a rule-1-only objection to a diff with no money path: asked once with the fact
+                log.append(f"{mid}: FAIL on rule 1 alone ({why}) {json.dumps(answer)[:2000]}")
+                log.append(f"{mid}: no money-path or sizing file; asked once more with that fact")
+                try:
+                    answer = parse(ask(rubric, NOT_MONEY_NOTE + make(secrets.token_hex(8))))
+                except (Unavailable, TooLarge, RuntimeError, KeyError, IndexError, TypeError,
+                        ValueError) as exc:  # fmt: skip
+                    answer = None
+                    log.append(f"{mid}: the second ask failed ({type(exc).__name__}: {exc})")
+                if answer is None:  # no second verdict: the first one stands
+                    return "FAIL", log
+                ok, why = decide(answer, money)
             log.append(f"{mid}: {'PASS' if ok else 'FAIL'} ({why}) {json.dumps(answer)[:2000]}")
             if not ok:
                 return "FAIL", log
@@ -708,7 +741,10 @@ def main(argv: list[str] | None = None) -> int:
     if not ladder:
         verdict, log = "UNAVAILABLE", ["no free model"]
     elif fits_whole(diff, files) or not all(mid in _local_names() for _, mid, _ in ladder):
-        verdict, log = vote(diff, files, ladder)  # a larger free rung may still read it whole
+        hits, mwhy = money_files(files)
+        print(f"money-path or sizing files: {len(hits)} ({mwhy})")
+        # a larger free rung may still read it whole
+        verdict, log = vote(diff, files, ladder, money=bool(hits))
     else:
         verdict, log = review_in_parts(diff, files, ladder)
     for line in log:
