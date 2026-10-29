@@ -2,11 +2,19 @@
   "_doc": "The independent reviewer's open-weight models, run on the Actions runner itself (zero API cost, no key). PROTECTED. The workflow runs the Ollama archive only when its sha256 matches `archive_sha256`; a model is asked only when the sha256 of its manifest file on disk matches its `digest`. A null or changed pin means nothing runs and the review queues (REVIEW_UNAVAILABLE). Pin each value from the 'archive sha256' and 'manifest sha256' lines a review run prints.",
   "ollama": "0.12.3",
   "archive": "https://github.com/ollama/ollama/releases/download/v0.12.3/ollama-linux-amd64.tgz",
-  "archive_sha256": null,
+  "archive_sha256": "649ac33e3e22304f650207e4f6379dbc2c2397d840593caf5bba6605c2886229",
   "url": "http://127.0.0.1:11434",
   "num_ctx": 32768,
   "models": [
-    {"family": "qwen", "name": "qwen2.5-coder:7b", "digest": null},
-    {"family": "meta-llama", "name": "llama3.1:8b", "digest": null}
+    {
+      "family": "qwen",
+      "name": "qwen2.5-coder:7b",
+      "digest": "dae161e27b0e90dd1856c8bb3209201fd6736d8eb66298e75ed87571486f4364"
+    },
+    {
+      "family": "meta-llama",
+      "name": "llama3.1:8b",
+      "digest": "46e0c10c039e019119339687c3c1757cc81b9da49709a3b3924863ba87ca666e"
+    }
   ]
 }
