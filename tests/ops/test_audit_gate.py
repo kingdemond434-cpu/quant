@@ -251,8 +251,11 @@ class _Hub:
             "head": {"sha": head, "repo": {"full_name": "o/fork" if fork else "o/r"}},
             "base": {"ref": ag.LIVE},
             "labels": [{"name": n} for n in labels],
+            "changed_files": len(files),
         }
-        self.files = [{"filename": f} for f in files]
+        self.files = [
+            {"filename": f, "status": "modified", "additions": 1, "deletions": 0} for f in files
+        ]
         # zuck's daily approval, by default given after every CLEAR these tests post
         self.approvals = approvals if approvals is not None else [_ok()]
         self.comments = comments or []
@@ -527,3 +530,206 @@ def test_a_hold_after_the_approval_still_wins(hub: Any) -> None:
         approvals=[_ok("2026-10-28T12:00:00Z")],
     )
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
+# ------------------------------------------------------------------------------ the two tiers
+
+DOC = "docs/research/notes_on_carry.md"
+
+
+def _f(name: str, **kw: Any) -> dict[str, Any]:
+    return {"filename": name, "status": "modified", "additions": 1, "deletions": 0, **kw}
+
+
+@pytest.mark.parametrize(
+    ("files", "changed", "read", "low"),
+    [
+        ([_f(DOC)], 1, set(), True),
+        ([_f("context/decision_journal.jsonl")], 1, {"context/decision_journal.jsonl"}, True),
+        ([_f("context/decision_journal.jsonl", deletions=1)], 1, set(), False),  # not an append
+        ([_f(DOC)], 2, set(), False),  # the count does not add up
+        ([], 0, set(), False),
+        ([_f(DOC)], 1, {DOC}, False),  # a program reads it
+        ([_f("docs/LAWS.md")], 1, set(), False),  # a governing document
+        ([_f("docs/x/CLAUDE.md")], 1, set(), False),
+        ([_f("docs/ops/prompt_notes.md")], 1, set(), False),
+        ([_f("desks/mt5/research/x.py")], 1, set(), False),  # code
+        ([_f("docs/research/x.json")], 1, set(), False),  # data
+        ([_f("tests/test_x.py")], 1, set(), False),
+        ([_f(".github/scripts/audit_gate.py")], 1, set(), False),
+        ([_f(DOC, previous_filename="ops/x.py", status="renamed")], 1, set(), False),
+        ([_f(DOC), _f("libs/risk/x.py")], 2, set(), False),
+    ],
+)
+def test_only_prose_no_program_reads_is_low_tier(
+    files: list[dict[str, Any]], changed: int, read: set[str], low: bool
+) -> None:
+    assert ag.tier(files, changed, lambda n: n in read)[0] is low
+
+
+@pytest.fixture
+def low_hub(hub: Any, monkeypatch: pytest.MonkeyPatch) -> Any:
+    def make(**kw: Any) -> Any:
+        h = hub(files=(DOC,), approvals=kw.pop("approvals", [_ok(body=ag.ACTIVATE)]), **kw)
+        monkeypatch.setattr(ag, "referenced_by_code", lambda base, n: False)
+        return h
+
+    return make
+
+
+def test_a_low_tier_pr_merges_on_green_ci_with_no_comment_from_anyone(low_hub: Any) -> None:
+    h = low_hub(comments=[])
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 0
+    (merge,) = _merges(h)
+    assert f"sha={A}" in merge and "LOW tier" in " ".join(merge)
+
+
+def test_a_low_tier_pr_never_waits_and_a_hold_still_stops_it(low_hub: Any) -> None:
+    h = low_hub(comments=[], runs=_green()[:2])
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=300, poll_s=0) == 0 and _merges(h) == []
+    h = low_hub(comments=[_c(f"AUDIT HOLD {A}", "2026-10-28T10:00:00Z")])
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
+def test_a_low_tier_file_that_code_reads_needs_the_full_live_path(
+    hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    h = hub(files=(DOC,), approvals=[_ok(body=ag.ACTIVATE)], comments=[])
+    monkeypatch.setattr(ag, "referenced_by_code", lambda base, n: True)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
+def test_referenced_by_code_fails_closed_when_git_cannot_look(tmp_path: Path) -> None:
+    import os
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)  # not a repository: git grep exits 128
+    try:
+        assert ag.referenced_by_code(ag.LIVE, DOC) is True
+    finally:
+        os.chdir(cwd)
+
+
+@pytest.mark.parametrize(
+    "approvals",
+    [
+        [],  # never activated: ships off
+        [_ok(body=ag.ACTIVATE, app="claude")],  # a Claude session cannot switch it on
+        [_ok(body=ag.ACTIVATE, assoc="COLLABORATOR")],
+        [_ok(body=ag.ACTIVATE, updated_at="2026-10-28T23:09:00Z")],  # edited
+        # anyone trusted may switch it off, a Claude session included
+        [_ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE), _ok(body=ag.DEACTIVATE, app="claude")],
+    ],
+)
+def test_the_low_tier_is_off_until_zuck_himself_activates_it(
+    low_hub: Any, approvals: list[dict[str, Any]]
+) -> None:
+    h = low_hub(comments=[], approvals=approvals)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
+def test_zuck_can_switch_it_back_on_after_a_deactivate(low_hub: Any) -> None:
+    h = low_hub(
+        comments=[],
+        approvals=[
+            _ok("2026-10-28T20:00:00Z", body=ag.DEACTIVATE, app="claude"),
+            _ok("2026-10-28T21:00:00Z", body=ag.ACTIVATE),
+        ],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert len(_merges(h)) == 1
+
+
+# ------------------------------------------------------------------------ #454 audit fixes
+
+
+def test_a_case_variant_of_a_code_named_path_is_read_by_code(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#454 audit MF1: the box checks out on NTFS, where a new `gap_register.md` overwrites the
+    `GAP_REGISTER.md` a program reads, so the reference check ignores case."""
+    origin, work = tmp_path / "origin", tmp_path / "work"
+    _git(tmp_path, "init", "-q", "-b", ag.LIVE, str(origin))
+    for k, v in (("user.name", "t"), ("user.email", "t@t")):
+        _git(origin, "config", k, v)
+    (origin / "reader.py").write_text('P = "docs/GAP_REGISTER.md"\n')
+    _git(origin, "add", ".")
+    _git(origin, "commit", "-qm", "base")
+    _git(tmp_path, "clone", "-q", str(origin), str(work))
+    monkeypatch.chdir(work)
+    assert ag.referenced_by_code(ag.LIVE, "docs/GAP_REGISTER.md") is True
+    assert ag.referenced_by_code(ag.LIVE, "docs/gap_register.md") is True
+    assert ag.referenced_by_code(ag.LIVE, "docs/research/other.md") is False
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "docs/research/FAILED_BREAKOUT_PREREGISTRATION.md",
+        "docs/research/axis_preregistrations.md",
+        "docs/GAP_REGISTER.md",
+        "docs/research/panel_rulings.md",
+    ],
+)
+def test_preregistrations_registers_and_rulings_are_governing(name: str) -> None:
+    """#454 audit MF2: a study's pre-registered bar never moves on the no-comment path."""
+    assert ag.tier([_f(name)], 1, lambda n: False)[0] is False
+
+
+def test_once_the_auditor_has_spoken_a_low_pr_takes_the_live_path(low_hub: Any) -> None:
+    """#454 audit S1: any AUDIT verdict, on any sha, sends the PR down the full LIVE path."""
+    stale_clear = [
+        _c(f"AUDIT HOLD {A}", "2026-10-28T10:00:00Z"),
+        _c(f"AUDIT CLEAR {C}", "2026-10-28T10:05:00Z"),  # a stale sha, a different change
+    ]
+    h = low_hub(comments=stale_clear)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+    h = low_hub(
+        comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")],
+        approvals=[_ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE), _ok()],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    (merge,) = _merges(h)
+    assert "audit CLEAR" in " ".join(merge)
+
+
+@pytest.mark.parametrize(
+    "board",
+    [
+        # an edited trusted comment, whatever it says now, switches it off at its edit time
+        [
+            _ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE),
+            _ok("2026-10-28T19:00:00Z", body="hi", updated_at="2026-10-28T21:00:00Z"),
+        ],
+        # OFF wins a tie
+        [
+            _ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE),
+            _ok("2026-10-28T20:00:00Z", body=ag.DEACTIVATE),
+        ],
+        [
+            _ok("2026-10-28T20:00:00Z", body=ag.DEACTIVATE),
+            _ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE),
+        ],
+    ],
+)
+def test_the_switch_fails_safe(board: list[dict[str, Any]]) -> None:
+    assert ag.activated(board)[0] is False
+
+
+def test_a_deactivate_between_the_reads_stops_the_low_merge(
+    low_hub: Any,
+) -> None:
+    """#454 audit S3: the switch is read again right before the merge."""
+    h = low_hub(comments=[])
+    reads = {"n": 0}
+    on = [_ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE)]
+    off = [*on, _ok("2026-10-28T21:00:00Z", body=ag.DEACTIVATE, app="claude")]
+
+    class _Board(list):  # type: ignore[type-arg]
+        def __iter__(self):  # type: ignore[no-untyped-def]
+            reads["n"] += 1
+            return iter(on if reads["n"] < 3 else off)
+
+    h.approvals = _Board()
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert _merges(h) == [] and reads["n"] >= 3
