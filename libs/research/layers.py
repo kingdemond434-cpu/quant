@@ -238,6 +238,9 @@ LEG_LAYER: dict[str, str] = {
     "kelly_survival": "sizing", "stop_geometry_derivation": "sizing",
     "prop_challenge_allocator": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution",
+    # Per-live-sleeve tradability (feature/parameter/cost/execution drift, regime, capacity,
+    # forward posterior) beside the demotion organ whose roster it reads: portfolio.
+    "tradability_health": "portfolio",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "recovery_drills": "meta",
     "forward_evidence_tracker": "meta",
