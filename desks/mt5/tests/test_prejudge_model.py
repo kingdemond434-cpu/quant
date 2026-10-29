@@ -353,3 +353,84 @@ def test_labels_never_carry_the_holdout_outcome() -> None:
     assert pm._label({**base, "terminal_gate": "lockbox"}) is None
     assert pm._label({**base, "terminal_gate": "cpcv"}) == 0
     assert pm._label({**base, "passed": True, "terminal_gate": "PASSED"}) == 1
+
+
+# ---- audit of 66412eb26: the refit's liveness reaches the report, and the state is JSON ----------
+
+def test_the_stream_state_is_json_and_a_pickle_is_never_loaded(tmp_path: Path) -> None:
+    import pickle
+    led = _ledger(tmp_path / "ledger.jsonl", n=100)
+    state = tmp_path / "m" / pm.STREAM_STATE.name
+    pm.stream_ledger(led, seed=0, state_path=state)
+    snap = json.loads(state.read_text("utf-8"))
+    assert snap["v"] == pm.STREAM_STATE_V
+    # A pickle in its place (the v1 format, or anything else) is not read: the pass restarts.
+    state.write_bytes(pickle.dumps({"v": pm.STREAM_STATE_V}))
+    again = pm.stream_ledger(led, seed=0, state_path=state)
+    assert not again["resumed"]
+    assert _tables_and_sample(again) == _tables_and_sample(pm.stream_ledger(led, seed=0))
+
+
+def test_catching_up_reaches_the_report_and_reads_unmeasured(tmp_path: Path, monkeypatch) -> None:
+    led = _ledger(tmp_path / "ledger.jsonl", n=3000)
+    monkeypatch.setenv("QUANT_LEG_BUDGET_S", "4")
+    monkeypatch.setattr(pm, "_STREAM_CHECK_EVERY", 500)
+    ticks = iter(range(10**6))
+    monkeypatch.setattr(pm.time, "monotonic", lambda: float(next(ticks)))
+    mdir = tmp_path / "m"
+    doc = pm.train(ledger=led, model_dir=mdir, force=True)
+    report = tmp_path / "PREJUDGE.json"
+    pm._write_report(report, None, model_doc=doc, model_dir=mdir)
+    out = json.loads(report.read_text("utf-8"))
+    assert str(out["model"]["stream"]).startswith("CATCHING_UP")
+    assert 0 < out["model"]["stream_offset"] < out["model"]["stream_size"]
+    assert out["liveness"]["status"] == "UNMEASURED"
+
+
+def test_a_model_past_twice_the_refit_window_is_red(tmp_path: Path) -> None:
+    now = 10.0 * pm.STALE_MODEL_S
+    stale = pm.model_liveness({"trained_ts": now - pm.STALE_MODEL_S - 60,
+                               "stream": "FIT_DEFERRED: ..."}, now=now, model_dir=tmp_path)
+    assert stale["status"] == "RED" and "FIT_DEFERRED" in stale["why"]
+    fresh = pm.model_liveness({"trained_ts": now - 3600}, now=now, model_dir=tmp_path)
+    assert fresh["status"] == "OK"
+
+
+def test_a_fit_killed_mid_way_leaves_a_marker_that_reads_red(tmp_path: Path) -> None:
+    (tmp_path / pm.FIT_MARKER.name).write_text(json.dumps({"started_ts": 100.0}), "utf-8")
+    live = pm.model_liveness({"trained_ts": 99.0}, now=200.0, model_dir=tmp_path)
+    assert live["status"] == "RED" and live["fit_started_age_s"] == 100.0
+
+
+def test_a_finished_fit_removes_its_marker_and_times_the_whole_phase(tmp_path: Path) -> None:
+    led = _ledger(tmp_path / "ledger.jsonl", n=300)
+    mdir = tmp_path / "m"
+    doc = pm.train(ledger=led, model_dir=mdir, force=True)
+    assert doc["refit"] is True and doc["stream"] == "CURRENT"
+    assert not (mdir / pm.FIT_MARKER.name).exists()
+    if doc["status"] == "MODEL":
+        assert doc["fit_seconds"] >= 0.0
+    assert pm.model_liveness(doc, model_dir=mdir)["status"] == "OK"
+
+
+def test_atomic_bytes_retries_a_refused_replace_and_leaves_no_temp(tmp_path: Path,
+                                                                   monkeypatch) -> None:
+    real = pm.os.replace
+    calls = {"n": 0}
+
+    def refuse_twice(src, dst):
+        calls["n"] += 1
+        if calls["n"] <= 2:
+            raise PermissionError(13, "held open")
+        return real(src, dst)
+
+    monkeypatch.setattr(pm.os, "replace", refuse_twice)
+    target = tmp_path / "x.json"
+    pm._atomic_bytes(target, b"{}", sleep=lambda s: None)
+    assert target.read_bytes() == b"{}" and calls["n"] == 3
+    assert [p.name for p in tmp_path.iterdir()] == ["x.json"]
+    monkeypatch.setattr(pm.os, "replace", lambda s, d: (_ for _ in ()).throw(
+        PermissionError(13, "held open")))
+    with pytest.raises(PermissionError):
+        pm._atomic_bytes(tmp_path / "y.json", b"{}", sleep=lambda s: None)
+    assert [p.name for p in tmp_path.iterdir()] == ["x.json"]

@@ -272,8 +272,16 @@ def _label(row: Mapping[str, Any]) -> int | None:
 #: every hour, forever. The tables, the reservoir, its RNG and the byte offset are saved here, so a
 #: pass reads only what was appended (whole lines only) and a pass cut by its deadline resumes.
 #: A ledger whose head or last-read bytes changed, or that shrank, is read again from the start.
-STREAM_STATE = MODEL_DIR / "stream_state.pkl"
-STREAM_STATE_V = 1
+#: JSON, never pickle (audit should-fix of 66412eb26): a state file is read back on every pass and
+#: must not be able to run code if anything else ever writes it. v1 was a pickle and is ignored.
+STREAM_STATE = MODEL_DIR / "stream_state.json"
+STREAM_STATE_V = 2
+#: A fit that started and never finished (the leg was killed mid-fit) leaves this marker behind.
+FIT_MARKER = MODEL_DIR / "fit_started.json"
+#: THE REFIT'S LIVENESS (audit MF1 of 66412eb26). A model older than this, or a fit marker left by
+#: a killed fit, reads RED in PREJUDGE.json: a stream that never catches up or a fit killed every
+#: pass would otherwise leave the old model answering with nothing anywhere saying so.
+STALE_MODEL_S = 2 * REFIT_MIN_S
 STREAM_HEAD_BYTES = 4096
 _STREAM_CHECK_EVERY = 4096
 #: Share of the leg's cap (`QUANT_LEG_BUDGET_S`) the stream may take; the fit needs the rest.
@@ -292,10 +300,14 @@ def _load_stream_state(path: Path, ledger: Path, size: int) -> dict[str, Any] | 
     """The saved stream, or None when the ledger is not the one it read (head or last-read bytes
     changed, or it shrank) or the state cannot be read."""
     try:
-        with path.open("rb") as fh:
-            st = pickle.load(fh)  # noqa: S301 -- written only by this module, box-local
+        st = json.loads(path.read_text("utf-8"))
         if not isinstance(st, dict) or st.get("v") != STREAM_STATE_V:
             return None
+        st["res"] = {(str(f), int(y)): [tuple(it) for it in items]
+                     for f, y, items in st["res"]}
+        st["seen"] = {(str(f), int(y)): int(n) for f, y, n in st["seen"]}
+        v, internal, gauss = st["rng"]
+        st["rng"] = (int(v), tuple(int(x) for x in internal), gauss)
         off, hl = int(st["offset"]), int(st["head_len"])
         tl = min(off, STREAM_HEAD_BYTES)
         if (off > size or st.get("ledger") != str(ledger)
@@ -388,10 +400,12 @@ def stream_ledger(path: Path, seed: int = 0, *, state_path: Path | None = None,
             snap = {"v": STREAM_STATE_V, "ledger": str(path), "offset": offset,
                     "head_len": hl, "head": _bytes_hash(path, 0, hl),
                     "tail": _bytes_hash(path, offset - hl, hl),
-                    "tables": tables.c, "res": res, "seen": seen, "gates": gates,
-                    "rng": rng.getstate(), "read": read, "used": used}
+                    "tables": tables.c,
+                    "res": [[f, y, [list(it) for it in items]] for (f, y), items in res.items()],
+                    "seen": [[f, y, n] for (f, y), n in seen.items()], "gates": gates,
+                    "rng": list(rng.getstate()), "read": read, "used": used}
             state_path.parent.mkdir(parents=True, exist_ok=True)
-            _atomic_bytes(state_path, pickle.dumps(snap))
+            _atomic_bytes(state_path, json.dumps(snap, separators=(",", ":")).encode("utf-8"))
         except OSError:
             pass                            # the next pass reads from the last saved offset
     # The state was saved BEFORE the shuffle below draws from `rng`, so a resumed pass and an
@@ -489,13 +503,15 @@ def train(*, ledger: Path | None = None, model_dir: Path | None = None, force: b
         # PROGRESS SAVED, NOTHING FITTED: the model in hand keeps answering, and the next pass
         # resumes the stream where this one stopped.
         return {**keep, "status": keep.get("status") or "NO_EVIDENCE",
-                "stream": f"CATCHING_UP: byte {st['offset']:,} of {st['size']:,}"}
+                "stream": f"CATCHING_UP: byte {st['offset']:,} of {st['size']:,}",
+                "stream_offset": st["offset"], "stream_size": st["size"]}
     fit_s = float(prev.get("fit_seconds") or 0.0) if isinstance(prev, dict) else 0.0
     if cap is not None and fit_s and cap - (time.monotonic() - m0) < FIT_MARGIN * fit_s:
         return {**keep, "status": keep.get("status") or "NO_EVIDENCE",
                 "stream": (f"FIT_DEFERRED: {cap - (time.monotonic() - m0):.0f} s left against a "
                            f"last fit of {fit_s:.0f} s; the stream is current, so the next "
-                           "pass has the time")}
+                           "pass has the time"),
+                "stream_offset": st["offset"], "stream_size": st["size"]}
     tables: Tables = st["tables"]
     sample = st["sample"]
     ys_all = [s[4] for s in sample]
@@ -509,12 +525,22 @@ def train(*, ledger: Path | None = None, model_dir: Path | None = None, force: b
         "terminal_gates_by_family": {f: dict(sorted(g.items(), key=lambda kv: -kv[1])[:6])
                                      for f, g in st["gates"].items()},
         "auc_holdout": UNMEASURED, "model_sha256": None, "refit": True,
+        "stream": "CURRENT", "stream_offset": st.get("offset"), "stream_size": st.get("size"),
     }
     if len(sample) < MIN_TRAIN or n_pos < MIN_CLASS or n_neg < MIN_CLASS:
         doc["status"] = "PRIOR_FALLBACK" if st["used"] else "NO_EVIDENCE"
         doc["why"] = (f"{len(sample)} labelled rows, {n_pos} passes, {n_neg} failures -- below "
                       f"{MIN_TRAIN}/{MIN_CLASS}/{MIN_CLASS}; rate tables answer alone")
     else:
+        marker = mdir / FIT_MARKER.name
+        try:
+            mdir.mkdir(parents=True, exist_ok=True)
+            _atomic_bytes(marker, json.dumps({"started_ts": time.time()}).encode("utf-8"))
+        except OSError:
+            pass
+        # THE WHOLE PHASE IS TIMED (audit should-fix): the holdout fit and predict are about as
+        # long as the final fit, and FIT_MARGIN is against this number.
+        f0 = time.monotonic()
         try:
             hold = [s for s in sample if _holdout(s[0])]
             fit_rows = [s for s in sample if not _holdout(s[0])]
@@ -532,7 +558,6 @@ def train(*, ledger: Path | None = None, model_dir: Path | None = None, force: b
                     doc["auc_holdout"] = round(float(roc_auc_score(
                         [h[4] for h in hold], ph, sample_weight=[h[5] for h in hold])), 4)
                     doc["n_holdout"] = len(hold)
-            f0 = time.monotonic()
             xs, ys, ws = _matrix(sample, tables)
             clf = _fit(xs, ys, ws)
             doc["fit_seconds"] = round(time.monotonic() - f0, 1)
@@ -544,6 +569,11 @@ def train(*, ledger: Path | None = None, model_dir: Path | None = None, force: b
         except Exception as exc:
             doc["status"] = "PRIOR_FALLBACK"
             doc["why"] = f"model fit failed ({type(exc).__name__}: {exc}); rate tables answer"
+        # The fit ENDED (success or a caught failure); only a killed process leaves the marker.
+        try:
+            marker.unlink()
+        except OSError:
+            pass
     try:
         mdir.mkdir(parents=True, exist_ok=True)
         _atomic_bytes(schema_path, json.dumps(doc, default=str).encode("utf-8"))
@@ -786,21 +816,69 @@ def _read_json(path: Path) -> Any:
         return None
 
 
-def _atomic_bytes(path: Path, data: bytes) -> None:
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_bytes(data)
-    os.replace(tmp, path)
+def _atomic_bytes(path: Path, data: bytes, *, attempts: int = 6, sleep=time.sleep) -> None:
+    """Write via a per-process temp name and replace, retried while Windows refuses the replace
+    (a reader holding the destination open raises PermissionError there, never on POSIX)."""
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{os.urandom(4).hex()}.tmp")
+    try:
+        tmp.write_bytes(data)
+        for attempt in range(1, attempts + 1):
+            try:
+                os.replace(tmp, path)
+                return
+            except PermissionError:
+                if attempt >= attempts:
+                    raise
+                sleep(0.1 * (2 ** (attempt - 1)))
+    finally:
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
+
+
+def model_liveness(model: Mapping[str, Any], *, now: float | None = None,
+                   model_dir: Path | None = None) -> dict[str, Any]:
+    """RED when the model in hand is older than `STALE_MODEL_S` or a fit was killed mid-way;
+    UNMEASURED when nothing was ever trained (the stream may still be catching up)."""
+    t = time.time() if now is None else now
+    mdir = model_dir or MODEL_DIR
+    out: dict[str, Any] = {"stale_after_s": STALE_MODEL_S, "stream": model.get("stream")}
+    marker = _read_json(mdir / FIT_MARKER.name)
+    if isinstance(marker, dict) and isinstance(marker.get("started_ts"), (int, float)):
+        started = float(marker["started_ts"])
+        out.update(status="RED", fit_started_age_s=round(t - started, 1),
+                   why=(f"a fit started {t - started:.0f} s ago and never finished: the leg was "
+                        "killed mid-fit, so the model in hand is not being replaced"))
+        return out
+    ts = model.get("trained_ts")
+    if not isinstance(ts, (int, float)):
+        out.update(status="UNMEASURED", why=("no model trained yet"
+                                             + (f" ({model.get('stream')})"
+                                                if model.get("stream") else "")))
+        return out
+    age = t - float(ts)
+    out["model_age_s"] = round(age, 1)
+    if age > STALE_MODEL_S:
+        out.update(status="RED", why=(f"the model is {age / 3600:.1f} h old, past "
+                                      f"{STALE_MODEL_S / 3600:.0f} h; stream: "
+                                      f"{model.get('stream') or 'unknown'}"))
+    else:
+        out.update(status="OK", why=f"the model is {age / 3600:.1f} h old")
+    return out
 
 
 def _model_section(schema: Mapping[str, Any]) -> dict[str, Any]:
     keep = ("status", "why", "trained_at", "ledger_rows_read", "ledger_rows_labelled", "n_train",
             "n_pos", "n_neg", "n_holdout", "auc_holdout", "model_sha256", "features",
-            "terminal_gates_by_family", "refit")
+            "terminal_gates_by_family", "refit", "stream", "stream_offset", "stream_size",
+            "fit_seconds")
     return {k: schema.get(k) for k in keep if k in schema}
 
 
 def _write_report(path: Path | None, apply_doc: Mapping[str, Any] | None,
-                  sc: Scorer | None = None, model_doc: Mapping[str, Any] | None = None) -> None:
+                  sc: Scorer | None = None, model_doc: Mapping[str, Any] | None = None,
+                  model_dir: Path | None = None) -> None:
     if path is None:
         return
     prev = _read_json(path)
@@ -818,8 +896,10 @@ def _write_report(path: Path | None, apply_doc: Mapping[str, Any] | None,
     if model_doc is not None:
         doc["model"] = _model_section(model_doc)
         doc["model"]["auc_holdout"] = model_doc.get("auc_holdout", UNMEASURED)
+        doc["liveness"] = model_liveness(model_doc, model_dir=model_dir)
     elif sc is not None and sc.schema:
         doc["model"] = {**_model_section(sc.schema), "loaded_as": sc.status}
+        doc["liveness"] = model_liveness(sc.schema, model_dir=model_dir)
     elif sc is not None:
         doc["model"] = {"status": sc.status, "auc_holdout": UNMEASURED, "n_train": 0}
     if apply_doc is not None:
