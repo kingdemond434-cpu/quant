@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-29T07:30:04.689264+00:00",
+  "swept_at": "2026-10-29T07:45:47.809345+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -1142,7 +1142,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.4736,
+      "shadow_exp_r": -0.471,
       "woke_on_shadow": false
     },
     "EURCHF|discovered_asia": {
@@ -1714,7 +1714,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3794,
+      "shadow_exp_r": -0.3776,
       "woke_on_shadow": false
     },
     "EURZAR|formula_asia": {
@@ -1725,7 +1725,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 51,
-      "shadow_exp_r": 0.6154,
+      "shadow_exp_r": 0.6176,
       "woke_on_shadow": false
     },
     "EURZAR|formula_continuous": {
@@ -1923,7 +1923,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.3947,
+      "shadow_exp_r": -0.395,
       "woke_on_shadow": false
     },
     "GBPCHF|clock_transition_asia": {
@@ -1956,7 +1956,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 54,
-      "shadow_exp_r": 0.3479,
+      "shadow_exp_r": 0.3514,
       "woke_on_shadow": false
     },
     "GBPCHF|overnight_gap_decay_asia": {
@@ -3749,7 +3749,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.7079,
+      "shadow_exp_r": -0.7154,
       "woke_on_shadow": false
     },
     "USDJPY|asia": {
@@ -3881,7 +3881,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0336,
+      "shadow_exp_r": 0.0296,
       "woke_on_shadow": false
     },
     "USDNOK|carry_continuous": {
@@ -5079,8 +5079,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 65,
-      "shadow_exp_r": -0.2392,
+      "shadow_n": 25,
+      "shadow_exp_r": -0.0328,
       "woke_on_shadow": false
     },
     "XAUUSD|cross_asset_residual_continuous": {
