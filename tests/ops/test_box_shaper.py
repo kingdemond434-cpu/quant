@@ -180,7 +180,8 @@ def test_a_real_pass_measures_this_host_and_writes_the_report(tmp_path: Path) ->
     assert out["verdict"] == "MEASURED" and out["n_processes"] > 0
     doc = json.loads(report_path.read_text())
     assert {"top", "judge", "memecoin", "actions", "refused", "ram", "disk_free_gb"} <= set(doc)
-    assert doc["line"].startswith("CPU SHAPE: box ")
+    assert doc["line"].startswith("CPU SHAPE ") and "box " in doc["line"]
+    assert doc["health"]["verdict"] in ("GREEN", "WATCH", "RED")
 
 
 def _applied(out: bs.Plan) -> bs.Plan:
@@ -229,6 +230,171 @@ def test_the_allocator_wall_time_is_carried_pass_to_pass() -> None:
     gone = bs.track_wall([p for p in procs if p.pid != 10], rule["match"], first, now=5_200.0)
     assert gone["running"] == []
     assert gone["finished"][0]["wall_s_at_least"] == 3_600
+
+
+# ------------------------------------------------------------------------------------ judge reserve
+RES = RULES["judge_reserve"]
+FLOOR = RULES["mining_floor_cores"]
+
+
+def _reserve_box() -> list[Proc]:
+    procs = _box()
+    procs.append(Proc(33, "python.exe", cmdline="python.exe quiet_helper.py", create_time=300,
+                      cpu_pct=5, priority="Normal", affinity=[0, 1]))
+    bs.classify(procs, RULES["groups"])
+    return procs
+
+
+def test_the_committed_masks_keep_the_mining_floor_and_the_owner_split() -> None:
+    reserve, side, note = bs.reserve_masks(RES, N, FLOOR, boost=False)
+    assert bs.cpus_to_mask(reserve) == "0xff00" and bs.cpus_to_mask(side) == "0x300ff"
+    reserve, side, note = bs.reserve_masks(RES, N, FLOOR, boost=True)
+    assert bs.cpus_to_mask(reserve) == "0xfff0" and bs.cpus_to_mask(side) == "0x3000f"
+    assert len(side) == FLOOR and note is None
+    # a boost that would breach the floor falls back to the base, and says so
+    reserve, side, note = bs.reserve_masks({**RES, "boost_mask": "0xFFFF"}, N, FLOOR, boost=True)
+    assert bs.cpus_to_mask(reserve) == "0xff00" and note and "floor" in note
+    # a reserve the box cannot afford above the floor reserves nothing
+    reserve, side, note = bs.reserve_masks(RES, 12, 10, boost=False)
+    assert reserve == [] and len(side) == 12 and note
+
+
+def test_the_base_reserve_moves_only_mining_and_other_python() -> None:
+    procs = _reserve_box()
+    actions, _moved, meta = bs.plan_reserve(procs, RES, N, boost=False, floor_cores=FLOOR,
+                                           skip_pids=set(), previous_moved={})
+    assert meta["mode"] == "base"
+    assert {a.pid for a in actions} == {31, 32}       # mining + other python on all cores
+    assert all(a.after == "0x300ff" for a in actions)
+    # never: terminals, judge, protected recorder, memecoin node, the exempt allocator,
+    # and a process already off the reserve (33)
+    assert not {a.pid for a in actions} & {10, 11, 12, 13, 14, 20, 21, 30, 33}
+
+
+def test_a_serial_phase_boosts_then_the_shaper_widens_back_what_it_narrowed() -> None:
+    procs = _reserve_box()
+    boost, moved, meta = bs.plan_reserve(procs, RES, N, boost=True, floor_cores=FLOOR,
+                                         skip_pids=set(), previous_moved={})
+    assert meta["mode"] == "boost" and {a.after for a in boost} == {"0x3000f"}
+    for p in procs:                                   # the boost landed
+        if p.pid in moved_pids(boost):
+            p.affinity = bs.mask_to_cpus("0x3000f", N)
+    back, _moved2, meta2 = bs.plan_reserve(procs, RES, N, boost=False, floor_cores=FLOOR,
+                                          skip_pids=set(), previous_moved=moved)
+    assert meta2["mode"] == "base"
+    assert {(a.pid, a.after) for a in back} == {(31, "0x300ff"), (32, "0x300ff")}
+    # a process the reservation never touched is never widened (33 stays on 0-1)
+    assert 33 not in moved_pids(back)
+
+
+def moved_pids(actions: list[bs.Action]) -> set[int]:
+    return {a.pid for a in actions}
+
+
+def test_the_judge_phase_is_believed_only_while_its_writer_lives() -> None:
+    doc = {"phase": "collect_and_cut", "pid": 4242}
+    assert bs.judge_phase(doc, lambda pid: True) == ("collect_and_cut", 4242)
+    assert bs.judge_phase(doc, lambda pid: False) == (None, 4242)
+    assert bs.judge_phase(None, lambda pid: True) == (None, None)
+    assert bs.judge_phase({"phase": "plan"}, lambda pid: True) == (None, None)
+
+
+def test_every_switch_is_logged_with_the_judge_share_before_and_after() -> None:
+    h = bs.log_switch([], at="t0", mode="base", phase=None, starved=False, judge_share=0.20)
+    h = bs.log_switch(h, at="t1", mode="boost", phase="plan", starved=False, judge_share=0.21)
+    assert h[-1] == {"at": "t1", "from": "base", "mode": "boost", "phase": "plan",
+                     "starved": False, "judge_share_before": 0.21, "judge_share_after": None}
+    h = bs.log_switch(h, at="t2", mode="boost", phase="plan", starved=False, judge_share=0.35)
+    assert len(h) == 2 and h[-1]["judge_share_after"] == 0.35
+
+
+def test_the_reserve_holds_only_when_every_move_landed() -> None:
+    procs = _reserve_box()
+    actions, _, meta = bs.plan_reserve(procs, RES, N, boost=False, floor_cores=FLOOR,
+                                       skip_pids=set(), previous_moved={})
+    assert not bs.reserve_holds(actions, meta)[0]          # planned, not applied
+    for a in actions:
+        a.applied = True
+    assert bs.reserve_holds(actions, meta)[0]
+    actions[0].error = "AccessDenied"
+    assert not bs.reserve_holds(actions, meta)[0]
+    assert not bs.reserve_holds([], {"reserve_mask": None})[0]
+
+
+def test_stall_watch_retires_the_core_trial_only_when_the_reserve_holds() -> None:
+    text = (REPO / "desks/mt5/scripts/stall_watch.ps1").read_text("utf-8")
+    assert "$cpuShape.judge_reserve_holds -eq $true" in text
+    assert "Disable-ScheduledTask -TaskName 'Quant-JudgeCoreTrial'" in text
+
+
+# ------------------------------------------------------------------------------------ red check
+def test_red_only_after_more_than_two_low_passes_with_runnable_work() -> None:
+    h = None
+    seen = []
+    for _ in range(4):
+        h = bs.health(h, measured=True, runnable=True, judge_share=0.05, min_share=0.15)
+        seen.append(h["verdict"])
+    assert seen == ["WATCH", "WATCH", "RED", "RED"]
+    # a clean pass resets the count
+    h = bs.health(h, measured=True, runnable=True, judge_share=0.30, min_share=0.15)
+    assert h["verdict"] == "GREEN" and h["judge_low_strikes"] == 0
+
+
+def test_a_judge_with_no_runnable_work_never_counts_against_the_floor() -> None:
+    h = None
+    for _ in range(5):
+        h = bs.health(h, measured=True, runnable=False, judge_share=0.0, min_share=0.15)
+    assert h is not None and h["verdict"] == "GREEN"
+    assert bs.judge_runnable("done", ["done"]) is False
+    assert bs.judge_runnable(None, ["done"]) is False
+    assert bs.judge_runnable("rule_shards", ["done"]) is True
+
+
+def test_red_after_more_than_two_unmeasured_passes_and_measured_resets_it() -> None:
+    h = None
+    seen = []
+    for _ in range(3):
+        h = bs.health(h, measured=False, runnable=False, judge_share=None, min_share=0.15)
+        seen.append(h["verdict"])
+    assert seen == ["UNMEASURED", "UNMEASURED", "RED"]
+    h = bs.health(h, measured=True, runnable=False, judge_share=None, min_share=0.15)
+    assert h["verdict"] == "GREEN" and h["unmeasured_strikes"] == 0
+
+
+def test_unmeasured_passes_are_counted_across_runs_in_the_report(tmp_path: Path) -> None:
+    bad = tmp_path / "CPU_SHAPE.json"
+    bad.write_text(json.dumps({"rules": [{"name": "x", "match": "y", "priority": "High"}]}))
+    report = tmp_path / "BOX_BOTTLENECKS.json"
+    verdicts = [bs.run_once(rules_path=bad, report_path=report)["health"]["verdict"]
+                for _ in range(3)]
+    assert verdicts == ["UNMEASURED", "UNMEASURED", "RED"]
+
+
+def test_stall_watch_carries_the_health_verdict_and_counts_an_unrunnable_shaper() -> None:
+    text = (REPO / "desks/mt5/scripts/stall_watch.ps1").read_text("utf-8")
+    assert "cpu_shape = $cpuShapeVerdict" in text and "cpu_shape_why = $cpuShapeWhy" in text
+    assert "$cpuShapeUnrun -gt 2" in text
+    assert "cpu_shape_unrunnable = $cpuShapeUnrun" in text
+
+
+def test_desk_health_reads_a_red_hunter_as_a_problem(tmp_path: Path,
+                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    import importlib.util
+    script = REPO / "desks/mt5/scripts/check_desk_health.py"
+    spec = importlib.util.spec_from_file_location("_quant_desk_health_cpu_shape", script)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    (tmp_path / "data").mkdir()
+    monkeypatch.setattr(mod, "DESK", tmp_path)
+    for verdict, level in (("RED", "PROBLEM"), ("GREEN", "OK"), ("UNMEASURED", "UNKNOWN")):
+        (tmp_path / "data" / "stall_watch.json").write_text(json.dumps(
+            {"checked_at": "t", "cpu_shape": verdict, "cpu_shape_why": "w"}))
+        mod._FINDINGS.clear()
+        mod.check_cpu_shape()
+        assert [f["level"] for f in mod._FINDINGS] == [level]
+
+
 # ------------------------------------------------------------------------------------ dedupe
 def _dupes() -> list[Proc]:
     loop = r"python.exe C:\opt\quant\desks\mt5\research\some_loop.py"

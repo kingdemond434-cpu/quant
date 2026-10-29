@@ -448,6 +448,15 @@ try {
 # hand is still possible. Cadence cost: a NEW memecoin process waits up to 10 min for its cap
 # here; the hand task capped it within 2.
 $cpuShape = $null
+# RED CHECK (owner rule 23). box_shaper computes its own health (RED when the judge sits under
+# judge_min_share for >2 passes with runnable work, or its measurement is UNMEASURED for >2); this
+# script adds the one case Python cannot see -- box_shaper not running at all -- counted across
+# passes in stall_watch.json, and RED after more than two. The verdict is cpu_shape below.
+$cpuShapeUnrun = 0
+try {
+  $prevSw = Get-Content $stateFile -Raw | ConvertFrom-Json
+  if ($prevSw.cpu_shape_unrunnable) { $cpuShapeUnrun = [int]$prevSw.cpu_shape_unrunnable }
+} catch {}
 Push-Location 'C:\opt\quant'
 try {
   $cpuShapeRaw = & py -3 -m libs.ops.box_shaper 2>$null
@@ -464,9 +473,31 @@ try {
   } elseif ($cpuShape) {
     $actions += ("CPU SHAPE: hand tasks not disabled this pass -- replacement not proven (" + $cpuShape.memecoin_cap_why + ")")
   }
+  # THE JUDGE CORE RESERVATION (owner override 2026-10-29) replaces the hand trial
+  # Quant-JudgeCoreTrial on the same rule: disabled (never deleted) only when this pass verified
+  # the reserve holds -- a reserve in force and every move it planned landed.
+  if ($cpuShape.verdict -eq 'MEASURED' -and $cpuShape.judge_reserve_holds -eq $true) {
+    $jt = Get-ScheduledTask -TaskName 'Quant-JudgeCoreTrial' -ErrorAction SilentlyContinue
+    if ($jt -and $jt.State -ne 'Disabled') {
+      Disable-ScheduledTask -TaskName 'Quant-JudgeCoreTrial' -ErrorAction SilentlyContinue | Out-Null
+      $actions += "CPU SHAPE: hand task Quant-JudgeCoreTrial disabled; the judge_reserve in desks\mt5\ops\CPU_SHAPE.json now holds"
+    }
+  } elseif ($cpuShape) {
+    $actions += ("CPU SHAPE: Quant-JudgeCoreTrial not disabled this pass -- reserve not verified (" + $cpuShape.judge_reserve_why + ")")
+  }
 } catch {
   $actions += "CPU SHAPE UNRUNNABLE: py -3 -m libs.ops.box_shaper failed ($_) -- CPU rules not applied this pass"
 } finally { Pop-Location }
+if ($cpuShape -and $cpuShape.health) {
+  $cpuShapeUnrun = 0
+  $cpuShapeVerdict = [string]$cpuShape.health
+  $cpuShapeWhy = [string]$cpuShape.health_why
+} else {
+  $cpuShapeUnrun += 1
+  $cpuShapeVerdict = if ($cpuShapeUnrun -gt 2) { 'RED' } else { 'UNMEASURED' }
+  $cpuShapeWhy = "box_shaper did not run or printed no verdict for $cpuShapeUnrun consecutive pass(es)"
+}
+if ($cpuShapeVerdict -eq 'RED') { $actions += "CPU SHAPE RED: $cpuShapeWhy" }
 
 # THE PAGER ON ITS OWN CLOCK (2026-09-30). The hourly publish_state leg pages STALLED /
 # SOURCE_STALE, so when that leg or the hourly cycle dies nothing pages at all. This task runs
@@ -641,7 +672,7 @@ if ($free -lt $DiskFloorGB) {
   }
 }
 
-@{ checked_at = $now.ToUniversalTime().ToString('o'); actions = $actions; procs = $procsOut; free_gb = [math]::Round((Get-PSDrive C).Free / 1GB, 1); low_mem_strikes = $strikes; memory = $memCensus; state_flow = $(if ($stateFlow) { $stateFlow.verdict } else { 'UNMEASURED' }); state_flow_watch = $(if ($flowWatch) { $flowWatch.verdict } else { 'UNMEASURED' }); alerts_armed = $(if ($flowWatch -and $flowWatch.alerts) { $flowWatch.alerts.armed } else { $null }); alerts_line = $(if ($flowWatch) { $flowWatch.alerts_line } else { 'ALERTS UNMEASURED: the state flow watcher did not run' }); cpu_shape = $(if ($cpuShape) { $cpuShape.verdict } else { 'UNMEASURED' }) } |
+@{ checked_at = $now.ToUniversalTime().ToString('o'); actions = $actions; procs = $procsOut; free_gb = [math]::Round((Get-PSDrive C).Free / 1GB, 1); low_mem_strikes = $strikes; memory = $memCensus; state_flow = $(if ($stateFlow) { $stateFlow.verdict } else { 'UNMEASURED' }); state_flow_watch = $(if ($flowWatch) { $flowWatch.verdict } else { 'UNMEASURED' }); alerts_armed = $(if ($flowWatch -and $flowWatch.alerts) { $flowWatch.alerts.armed } else { $null }); alerts_line = $(if ($flowWatch) { $flowWatch.alerts_line } else { 'ALERTS UNMEASURED: the state flow watcher did not run' }); cpu_shape = $cpuShapeVerdict; cpu_shape_why = $cpuShapeWhy; cpu_shape_unrunnable = $cpuShapeUnrun } |
   ConvertTo-Json -Depth 4 | Set-Content $stateFile
 
 if ($actions) { $actions | ForEach-Object { "$($now.ToUniversalTime().ToString('u')) $_" } }

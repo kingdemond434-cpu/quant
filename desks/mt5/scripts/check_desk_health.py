@@ -437,6 +437,31 @@ def check_stall_watch_alerts() -> None:
     print()
 
 
+def check_cpu_shape() -> None:
+    """The bottleneck hunter's own RED check (owner rule 23), as stall_watch.json carries it."""
+    _section("IS THE JUDGE GETTING THE BOX  (stall_watch.json cpu_shape, every ten minutes)")
+    p = DESK / "data" / "stall_watch.json"
+    try:
+        doc = json.loads(p.read_text("utf-8-sig"))
+    except FileNotFoundError:
+        _unknown("data/stall_watch.json is absent -- MT5-StallWatch has not run here")
+        print()
+        return
+    except (OSError, ValueError) as exc:
+        _unknown(f"data/stall_watch.json unreadable ({_exc_reason(exc)})")
+        print()
+        return
+    verdict = str(doc.get("cpu_shape") or "") if isinstance(doc, dict) else ""
+    why = str(doc.get("cpu_shape_why") or "") if isinstance(doc, dict) else ""
+    if verdict == "RED":
+        _bad(f"bottleneck hunter RED: {why} (stall_watch {doc.get('checked_at')})")
+    elif verdict in ("GREEN", "WATCH"):
+        _ok(f"bottleneck hunter {verdict}: {why}")
+    else:
+        _unknown(f"bottleneck hunter {verdict or 'absent'}: {why or 'no cpu_shape verdict'}")
+    print()
+
+
 def check_gateway_state() -> None:
     _section("THE GATEWAY'S OWN LAST WORD")
     p = DESK / "data" / "gateway_state.json"
@@ -502,6 +527,7 @@ def main(argv: list[str] | None = None) -> int:
     check_bars_state()
     check_state_flow()
     check_stall_watch_alerts()
+    check_cpu_shape()
     check_gateway_state()
     print("Every [PROBLEM] line above is a thing to fix. [UNKNOWN] means this could not check,")
     print("which is a finding too -- it is never the same as OK.")
