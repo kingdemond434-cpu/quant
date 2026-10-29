@@ -83,6 +83,53 @@ def kill_tree(pid: int, *, include_parent: bool = True) -> dict[str, Any]:
     return out
 
 
+def kill_verified_tree(root: Any, *, timeout: float = 10.0) -> dict[str, Any]:
+    """Kill a process the caller has ALREADY VERIFIED (a `psutil.Process` whose pid and creation
+    time it checked) and every descendant of it. Never raises; reports what it did.
+
+    Unlike `kill_tree(pid)` there is NO pid-only fallback: `taskkill /PID` or `os.kill` on a bare
+    pid can hit a process that reused it after the check, so a failure here is reported, never
+    retried by number. `root_gone` is the only proof of a stop: the root itself is no longer
+    running (psutil's `is_running` compares the creation time too, so a reused pid reads gone).
+    Killing only the children is NOT a stop.
+    """
+    out: dict[str, Any] = {"pid": getattr(root, "pid", None), "killed": 0,
+                           "method": "psutil-verified", "root_gone": False}
+    if psutil is None:
+        out["note"] = "psutil absent: a verified stop needs it; nothing killed"
+        return out
+    try:
+        kids = root.children(recursive=True)
+    except psutil.NoSuchProcess:
+        out["root_gone"] = True
+        return out
+    except psutil.Error as exc:
+        out["note"] = f"children: {type(exc).__name__}"
+        return out
+    for k in kids:
+        try:
+            k.kill()
+            out["killed"] += 1
+        except psutil.Error:
+            pass
+    try:
+        root.kill()
+        out["killed"] += 1
+    except psutil.NoSuchProcess:
+        pass
+    except psutil.Error as exc:
+        out["note"] = f"root: {type(exc).__name__}"
+    try:
+        psutil.wait_procs([root, *kids], timeout=timeout)
+    except Exception as exc:  # the wait is a courtesy; is_running below is the verdict
+        out["wait"] = f"{type(exc).__name__}"
+    try:
+        out["root_gone"] = not root.is_running()
+    except psutil.Error:
+        out["root_gone"] = False
+    return out
+
+
 #: CPU seconds of every child `run()` has waited for, on WINDOWS ONLY. `os.times()` reports
 #: `children_user`/`children_system` as 0 there (documented), so the compute ledger booked every
 #: subprocess leg on the trading box at ~0 CPU -- measured 2026-09-30, the forest_* legs read

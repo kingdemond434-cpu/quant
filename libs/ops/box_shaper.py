@@ -51,6 +51,7 @@ into data/stall_watch.json beside its other verdicts.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -123,6 +124,10 @@ class Proc:
     priority: str | None = None   # one of PRIORITY_ORDER, None when unreadable
     affinity: list[int] | None = None
     group: str = "other"
+    #: identity of a dedupe candidate (read only for those): working directory and a hash of the
+    #: environment. None = unread; a duplicate is never stopped on an unread identity.
+    cwd: str | None = None
+    env_sig: str | None = None
 
     @property
     def key(self) -> str:
@@ -145,6 +150,7 @@ class Action:
     applied: bool = False
     error: str | None = None
     tree: list[int] = field(default_factory=list)   # a stop's measured descendants
+    ancestors: list[str] = field(default_factory=list)  # a stop's measured parent chain (keys)
 
 
 @dataclass
@@ -928,8 +934,12 @@ def plan_dedupe(procs: Sequence[Proc], cfg: Mapping[str, Any],
     is shared by two scheduled starts, which IgnoreNew serialises -- so duplicates launched
     straight by Task Scheduler are NOT REPORTED here at all). The oldest is kept. A stop is
     planned only when an allow pattern names the command line AND the same duplicate (pid and
-    creation time) was already reported on the previous pass, AND no descendant of the duplicate
-    is in NEVER_IN_A_STOPPED_TREE (the refusal is reported in `refused`).
+    creation time) was already reported on the previous pass, AND no descendant AND no ancestor
+    of the duplicate is in NEVER_IN_A_STOPPED_TREE (a child of the gateway is the money path),
+    AND both share one working directory and environment (`read_identity`; unread is never
+    stopped). The refusal is reported on the row. At apply time the pid, the tree and the parent
+    chain are re-checked against the measurement, the verified process object itself is killed
+    (no pid-only fallback), and the stop counts only once the root is gone.
 
     TORN OUTPUT (audit S3): on Windows psutil's terminate() and kill() are the same
     TerminateProcess -- a detached SYSTEM-run loop has no console to send CTRL_BREAK to -- so
@@ -940,17 +950,25 @@ def plan_dedupe(procs: Sequence[Proc], cfg: Mapping[str, Any],
     allow = [str(a).lower() for a in cfg.get("allow", [])]
     seen_before = set(previous_duplicates)
     buckets: dict[tuple[str, str], list[Proc]] = {}
-    for p in procs:
-        if p.group not in DEDUPE_GROUPS or not p.cmdline.strip():
-            continue
-        if any(m in p.cmdline.lower() for m in _WORKER_MARKERS):
-            continue
+    for p in dedupe_candidates(procs):
         buckets.setdefault((p.exe.lower(), p.cmdline), []).append(p)
     stops: list[Action] = []
     report: list[dict[str, Any]] = []
     children: dict[int, list[Proc]] = {}
+    by_pid = {p.pid: p for p in procs}
     for p in procs:
         children.setdefault(p.ppid, []).append(p)
+
+    def ancestors(p: Proc) -> list[Proc]:
+        """The measured parent chain, nearest first (audit #482 MF1)."""
+        out: list[Proc] = []
+        seen: set[int] = {p.pid}
+        cur = p
+        while cur.ppid in by_pid and cur.ppid not in seen and len(out) < 64:
+            cur = by_pid[cur.ppid]
+            seen.add(cur.pid)
+            out.append(cur)
+        return out
 
     def descendants(pid: int) -> list[Proc]:
         out: list[Proc] = []
@@ -971,23 +989,81 @@ def plan_dedupe(procs: Sequence[Proc], cfg: Mapping[str, Any],
         parents = [m.ppid for m in members]
         if any(pp in pids for pp in parents) or len(set(parents)) < len(parents):
             continue
-        members = sorted(members, key=lambda m: (m.create_time, m.pid))
-        keeper = members[0]
-        allowed = any(a in keeper.haystack for a in allow)
-        for dup in members[1:]:
-            tree = descendants(dup.pid)
-            guarded = [c for c in tree if c.group in NEVER_IN_A_STOPPED_TREE]
-            row: dict[str, Any] = {"keep": keeper.key, "duplicate": dup.key, "name": dup.name,
-                                   "group": dup.group, "allowed": allowed, "cmd": _short_cmd(dup)}
-            if guarded:
-                row["refused"] = (f"descendant {guarded[0].pid} ({guarded[0].name}) is "
-                                  f"{guarded[0].group}: a tree stop would take it down")
-            report.append(row)
-            if allowed and dup.key in seen_before and not guarded:
-                stops.append(Action(dup.pid, dup.name, dup.group, "dedupe", "stop", dup.key,
-                                    f"stopped; kept {keeper.key}",
-                                    tree=sorted(c.pid for c in tree)))
+        # SAME LOOP, NOT JUST THE SAME COMMAND LINE (audit #482 SF3): two loops for different
+        # accounts can share exe and command line and differ only in working directory or
+        # environment. Members are grouped by (cwd, env hash) too; a member whose identity was
+        # not read is reported but never stopped.
+        unread = any(m.cwd is None or m.env_sig is None for m in members)
+        if unread:
+            sets = [members]
+        else:
+            groups: dict[tuple[str, str], list[Proc]] = {}
+            for m in members:
+                groups.setdefault((str(m.cwd).lower(), str(m.env_sig)), []).append(m)
+            sets = [g for g in groups.values() if len(g) > 1]
+        for same in sets:
+            same = sorted(same, key=lambda m: (m.create_time, m.pid))
+            keeper = same[0]
+            allowed = any(a in keeper.haystack for a in allow)
+            for dup in same[1:]:
+                tree = descendants(dup.pid)
+                chain = ancestors(dup)
+                guarded = [c for c in tree if c.group in NEVER_IN_A_STOPPED_TREE]
+                guarded_up = [c for c in chain if c.group in NEVER_IN_A_STOPPED_TREE]
+                row: dict[str, Any] = {"keep": keeper.key, "duplicate": dup.key,
+                                       "name": dup.name, "group": dup.group, "allowed": allowed,
+                                       "cmd": _short_cmd(dup)}
+                if guarded:
+                    row["refused"] = (f"descendant {guarded[0].pid} ({guarded[0].name}) is "
+                                      f"{guarded[0].group}: a tree stop would take it down")
+                elif guarded_up:
+                    # A CHILD OF THE MONEY PATH IS PART OF THE MONEY PATH (audit #482 MF1): the
+                    # gateway's own state_pusher_loop was planned for a stop because an older,
+                    # unrelated launcher ran the same command line.
+                    row["refused"] = (f"ancestor {guarded_up[0].pid} ({guarded_up[0].name}) is "
+                                      f"{guarded_up[0].group}: its child is never stopped")
+                elif unread:
+                    row["refused"] = ("cwd/environment unread: not shown to be the same loop "
+                                      "(different accounts can share one command line)")
+                report.append(row)
+                if allowed and dup.key in seen_before and "refused" not in row:
+                    stops.append(Action(dup.pid, dup.name, dup.group, "dedupe", "stop", dup.key,
+                                        f"stopped; kept {keeper.key}",
+                                        tree=sorted(c.pid for c in tree),
+                                        ancestors=[c.key for c in chain]))
     return stops, report
+
+
+def dedupe_candidates(procs: Sequence[Proc]) -> list[Proc]:
+    """Processes that may be a duplicate: mining/other with a command line, no pool worker."""
+    return [p for p in procs if p.group in DEDUPE_GROUPS and p.cmdline.strip()
+            and not any(m in p.cmdline.lower() for m in _WORKER_MARKERS)]
+
+
+def read_identity(procs: Sequence[Proc]) -> None:
+    """Fill cwd / env_sig for every candidate whose exe + command line appears twice (the only
+    ones dedupe compares), from the SAME process (pid and creation time re-checked). An
+    unreadable one stays None, which dedupe never stops on."""
+    if psutil is None:
+        return
+    counts: dict[tuple[str, str], int] = {}
+    cands = dedupe_candidates(procs)
+    for p in cands:
+        counts[(p.exe.lower(), p.cmdline)] = counts.get((p.exe.lower(), p.cmdline), 0) + 1
+    for p in cands:
+        if counts[(p.exe.lower(), p.cmdline)] < 2:
+            continue
+        try:
+            pr = psutil.Process(p.pid)
+            if int(pr.create_time()) != int(p.create_time):
+                continue
+            cwd = pr.cwd()
+            env = pr.environ()
+        except Exception:  # access denied / gone: identity unread, never guessed
+            continue
+        p.cwd = str(cwd)
+        blob = json.dumps(sorted((str(k).upper(), str(v)) for k, v in env.items()))
+        p.env_sig = hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
 
 
 def _affinity_refusal(p: Proc, cpus: Sequence[int], judge_starved: bool,
@@ -1086,16 +1162,21 @@ def apply(actions: Sequence[Action], n_cpu: int) -> None:
                     a.error = (f"tree changed since measurement (unclassified descendant(s) "
                                f"{unknown[:5]}); not stopped")[:200]
                     continue
-                # THE DESK'S OWN TREE KILL (libs/ops/proctree.kill_tree), so a duplicate loop's
-                # pool goes with it instead of being orphaned against the commit limit.
-                from libs.ops.proctree import kill_tree
-                result = kill_tree(a.pid)
-                if result.get("method") == "taskkill":
-                    landed = result.get("rc") == 0          # taskkill's own verdict, nothing else
-                else:
-                    landed = bool(result.get("killed"))
-                if not landed:
-                    a.error = f"kill_tree did not stop it: {result}"[:200]
+                # THE PARENT CHAIN MUST BE THE ONE THAT WAS CLASSIFIED (audit #482 MF1): a live
+                # ancestor the plan never saw was never checked against the guarded groups.
+                up = [f"{x.pid}:{int(x.create_time())}" for x in pr.parents()]
+                foreign = [k for k in up if k not in set(a.ancestors)]
+                if foreign:
+                    a.error = (f"ancestor chain changed since measurement (unclassified "
+                               f"{foreign[:3]}); not stopped")[:200]
+                    continue
+                # THE VERIFIED PROCESS IS WHAT IS KILLED (audit #482 SF1): never the bare pid,
+                # and no taskkill /PID fallback that could hit a pid reused since the check.
+                # LANDED ONLY WHEN THE ROOT IS GONE (SF2): its children dying is not a stop.
+                from libs.ops.proctree import kill_verified_tree
+                result = kill_verified_tree(pr)
+                if not result.get("root_gone"):
+                    a.error = f"the duplicate's root is still running: {result}"[:200]
                     continue
             elif a.kind == "priority":
                 pr.nice(getattr(psutil, _PSUTIL_CLASS[str(a.after)]))
@@ -1221,6 +1302,7 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH,
     starved_now = bool(summary["judge"]["starved"])
     the_plan = plan(procs, rules, n_cpu, judge_starved=starved_now,
                     previous_heavy=list(prev.get("heavy") or []))
+    read_identity(procs)
     stops, duplicates = plan_dedupe(
         procs, rules.get("dedupe") or {},
         [str(d.get("duplicate")) for d in prev.get("duplicates") or []

@@ -574,6 +574,8 @@ def _dupes() -> list[Proc]:
         Proc(80, "node.exe", ppid=800, exe=r"C:\memecoin\node.exe", cmdline="node bot.js"),
         Proc(81, "node.exe", ppid=801, exe=r"C:\memecoin\node.exe", cmdline="node bot.js"),
     ]
+    for p in procs:     # one working directory and environment: the same loop (SF3)
+        p.cwd, p.env_sig = r"C:\opt\quant", "env-a"
     bs.classify(procs, RULES["groups"])
     return procs
 
@@ -610,37 +612,69 @@ def test_a_too_broad_allow_pattern_is_refused() -> None:
         bs.validate_rules(rules)
 
 
-def test_a_stop_goes_through_the_desks_tree_kill_and_refuses_a_reused_pid(
+def _chain(psutil: Any, pid: int) -> list[str]:
+    return [f"{x.pid}:{int(x.create_time())}" for x in psutil.Process(pid).parents()]
+
+
+def test_a_stop_kills_the_verified_process_and_refuses_a_reused_pid(
         monkeypatch: pytest.MonkeyPatch) -> None:
+    """#482 SF1: the psutil.Process that passed the pid+create-time check is what is killed."""
     psutil = pytest.importorskip("psutil")
     import subprocess
     import sys
 
     from libs.ops import proctree
-    calls: list[int] = []
-    real = proctree.kill_tree
+    calls: list[Any] = []
+    real = proctree.kill_verified_tree
 
-    def spy(pid: int, **kw: Any) -> dict[str, Any]:
-        calls.append(pid)
-        return real(pid, **kw)
+    def spy(root: Any, **kw: Any) -> dict[str, Any]:
+        calls.append(root)
+        return real(root, **kw)
 
-    monkeypatch.setattr(proctree, "kill_tree", spy)
+    monkeypatch.setattr(proctree, "kill_verified_tree", spy)
+    monkeypatch.setattr(proctree, "kill_tree", lambda *a, **k: pytest.fail("pid-only kill"))
     monkeypatch.setattr(bs, "IS_WINDOWS", True)
     child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
     try:
         ct = int(psutil.Process(child.pid).create_time())
+        up = _chain(psutil, child.pid)
         stale = bs.Action(child.pid, "python", "other", "dedupe", "stop", f"{child.pid}:{ct - 5}",
-                          "stopped")
+                          "stopped", ancestors=up)
         bs.apply([stale], N)
         assert not stale.applied and "reused" in str(stale.error) and calls == []
         good = bs.Action(child.pid, "python", "other", "dedupe", "stop", f"{child.pid}:{ct}",
-                         "stopped")
+                         "stopped", ancestors=up)
         bs.apply([good], N)
-        assert good.applied and calls == [child.pid]
+        assert good.applied and len(calls) == 1
+        assert isinstance(calls[0], psutil.Process) and calls[0].pid == child.pid
         assert child.wait(timeout=10) is not None
     finally:
         if child.poll() is None:
             child.kill()
+
+
+def test_a_verified_kill_never_falls_back_to_a_bare_pid(monkeypatch: pytest.MonkeyPatch) -> None:
+    """#482 SF1: no taskkill /PID or os.kill by number once the process object failed."""
+    psutil = pytest.importorskip("psutil")
+    import subprocess
+
+    from libs.ops import proctree
+
+    class _Denied:
+        pid = 999999
+
+        def children(self, recursive: bool = False) -> list[Any]:
+            return []
+
+        def kill(self) -> None:
+            raise psutil.AccessDenied(self.pid)
+
+        def is_running(self) -> bool:
+            return True
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: pytest.fail("taskkill fallback"))
+    monkeypatch.setattr(proctree.os, "kill", lambda *a: pytest.fail("os.kill fallback"))
+    out = proctree.kill_verified_tree(_Denied(), timeout=0.1)
+    assert out["root_gone"] is False and "AccessDenied" in out["note"]
 
 
 def test_a_stop_is_refused_when_its_tree_holds_a_guarded_process() -> None:
@@ -669,26 +703,110 @@ def _sleeper() -> Any:
     return subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
 
 
-def test_a_taskkill_fallback_counts_only_on_exit_code_zero(
-        monkeypatch: pytest.MonkeyPatch) -> None:
-    """#482 S1: taskkill's rc is the only proof the fallback stopped anything."""
+def test_a_stop_lands_only_when_the_root_is_gone(monkeypatch: pytest.MonkeyPatch) -> None:
+    """#482 SF2: children killed but the root alive is NOT a stop."""
     psutil = pytest.importorskip("psutil")
     from libs.ops import proctree
+    real = proctree.kill_verified_tree
     monkeypatch.setattr(bs, "IS_WINDOWS", True)
     child = _sleeper()
     try:
         key = f"{child.pid}:{int(psutil.Process(child.pid).create_time())}"
-        for rc, landed in ((128, False), (0, True)):
-            monkeypatch.setattr(proctree, "kill_tree",
-                                lambda pid, _rc=rc, **kw: {"pid": pid, "killed": 0,
-                                                           "method": "taskkill", "rc": _rc})
-            a = bs.Action(child.pid, "python", "other", "dedupe", "stop", key, "stopped")
+        for gone, killed in ((False, 3), (True, 1)):
+            monkeypatch.setattr(proctree, "kill_verified_tree",
+                                lambda root, _g=gone, _k=killed, **kw: {
+                                    "pid": root.pid, "killed": _k, "root_gone": _g})
+            a = bs.Action(child.pid, "python", "other", "dedupe", "stop", key, "stopped",
+                          ancestors=_chain(psutil, child.pid))
             bs.apply([a], N)
-            assert a.applied is landed, rc
-            assert (a.error is None) is landed
+            assert a.applied is gone, (gone, killed)
+            assert (a.error is None) is gone
+            if not gone:
+                assert "root is still running" in str(a.error)
     finally:
         child.kill()
         child.wait(timeout=10)
+    # the real verified kill reports root_gone only once the root has exited
+    root = _sleeper()
+    out = real(psutil.Process(root.pid))
+    assert out["root_gone"] is True and root.wait(timeout=10) is not None
+
+
+def test_a_stop_refuses_an_ancestor_the_plan_never_saw(monkeypatch: pytest.MonkeyPatch) -> None:
+    """#482 MF1 at apply time: a live parent chain unlike the measured one refuses."""
+    psutil = pytest.importorskip("psutil")
+    from libs.ops import proctree
+    monkeypatch.setattr(proctree, "kill_verified_tree",
+                        lambda *a, **k: pytest.fail("must not kill"))
+    monkeypatch.setattr(bs, "IS_WINDOWS", True)
+    child = _sleeper()
+    try:
+        key = f"{child.pid}:{int(psutil.Process(child.pid).create_time())}"
+        a = bs.Action(child.pid, "python", "other", "dedupe", "stop", key, "stopped",
+                      ancestors=[])
+        bs.apply([a], N)
+        assert not a.applied and "ancestor chain changed" in str(a.error)
+    finally:
+        child.kill()
+        child.wait(timeout=10)
+
+
+def test_a_child_of_the_money_path_is_never_a_stoppable_duplicate() -> None:
+    """#482 MF1 repro: the gateway's own state_pusher_loop vs an older unrelated launcher."""
+    cfg = {"allow": ["state_pusher_loop.py"]}
+    loop = "python.exe state_pusher_loop.py"
+    procs = [
+        Proc(300, "python.exe", ppid=4, exe="py.exe", cmdline="python.exe stray_launcher.py",
+             create_time=1),
+        Proc(301, "python.exe", ppid=300, exe="py.exe", cmdline=loop, create_time=2),
+        Proc(400, "python.exe", ppid=4, exe="py.exe",
+             cmdline=r"python.exe C:\opt\quant\desks\mt5\run_gateway_loop.py", create_time=3),
+        Proc(401, "python.exe", ppid=400, exe="py.exe", cmdline=loop, create_time=4),
+    ]
+    for p in procs:
+        p.cwd, p.env_sig = r"C:\opt\quant", "env-a"
+    bs.classify(procs, RULES["groups"])
+    assert _by_pid(procs)[400].group == "money" and _by_pid(procs)[401].group == "other"
+    keys = [d["duplicate"] for d in bs.plan_dedupe(procs, cfg)[1]]
+    stops, seen = bs.plan_dedupe(procs, cfg, previous_duplicates=keys)
+    assert stops == []
+    assert seen[0]["duplicate"] == "401:4" and "ancestor 400" in seen[0]["refused"]
+    assert "money" in seen[0]["refused"]
+    # a stop that is allowed carries its measured parent chain for the apply-time re-check
+    stops, _ = bs.plan_dedupe(_dupes(), {"allow": ["some_loop.py"]},
+                              previous_duplicates=["41:20"])
+    assert [a.ancestors for a in stops] == [[]]
+
+
+def test_different_cwd_or_env_is_not_a_duplicate() -> None:
+    """#482 SF3: two loops for different accounts share a command line, not an identity."""
+    cfg = {"allow": ["some_loop.py"]}
+    procs = _dupes()
+    _by_pid(procs)[41].env_sig = "env-b"         # e.g. another MT5 account's environment
+    assert bs.plan_dedupe(procs, cfg, previous_duplicates=["41:20"]) == ([], [])
+    procs = _dupes()
+    _by_pid(procs)[41].cwd = r"C:\opt\quant-acct2"
+    assert bs.plan_dedupe(procs, cfg, previous_duplicates=["41:20"]) == ([], [])
+    procs = _dupes()
+    _by_pid(procs)[41].cwd = None                # unread: reported, never stopped
+    stops, seen = bs.plan_dedupe(procs, cfg, previous_duplicates=["41:20"])
+    assert stops == [] and "unread" in seen[0]["refused"]
+
+
+def test_read_identity_fills_only_compared_candidates(monkeypatch: pytest.MonkeyPatch) -> None:
+    psutil = pytest.importorskip("psutil")
+    import os as _os
+    me = psutil.Process(_os.getpid())
+    ct = me.create_time()
+    procs = [Proc(_os.getpid(), "python.exe", exe="py.exe", cmdline="python.exe x.py",
+                  create_time=ct),
+             Proc(_os.getpid(), "python.exe", exe="py.exe", cmdline="python.exe x.py",
+                  create_time=ct - 100),           # creation time differs: unread
+             Proc(_os.getpid(), "python.exe", exe="py.exe", cmdline="python.exe solo.py",
+                  create_time=ct)]
+    bs.read_identity(procs)
+    assert procs[0].cwd == me.cwd() and procs[0].env_sig
+    assert procs[1].cwd is None and procs[2].cwd is None
 
 
 def test_a_stop_refuses_a_descendant_born_after_the_measurement(
