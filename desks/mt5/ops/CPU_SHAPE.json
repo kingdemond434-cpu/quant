@@ -5,7 +5,10 @@
   "priority_ceiling": "AboveNormal",
   "groups": {
     "money": ["terminal64", "run_gateway_loop", "gateway_resident", "e8_executor", "e8_window_guard",
-              "e8-executor", "ftmo_follow", "ftmo_venue_reader", "fusion_deadman", "executor"],
+              "e8-executor", "ftmo_follow", "ftmo_venue_reader", "fusion_deadman", "executor",
+              "e8_gold.py", "e8_book.py", "run_deadman_switch.py"],
+    "money_feed": ["prop_challenge_allocator.py", "allocator_trigger.py",
+                   "pf_allocator.py --mode fast"],
     "adopt": ["adopt-and-seal", "adopt-release"],
     "judge": ["run_sharded_gauntlet", "external_gauntlet", "quant-research-runtime"],
     "memecoin": ["memecoin"],
@@ -26,7 +29,9 @@
      "why": "Owner rule: the memecoin bot keeps running on at most 10% of the box. The mask is the hand task's two top cores; the code narrows it to floor(10% x cores) of them (1 of 18 on the trading box)."},
     {"name": "pf_allocator_heavy", "match": "pf_allocator.py --mode heavy", "affinity": "0xFF",
      "track_wall": true,
-     "why": "The overnight allocator measured at 3162% (31 cores) beside the judge; eight cores, priority untouched. track_wall records each run's wall time in BOX_BOTTLENECKS.json wall.pf_allocator_heavy, so the 8-core cap can be checked against allocator proof staleness."},
+     "why": "The recorded exception D-20261029-011 codifies (pf_allocator --mode heavy on cores 0-7): the overnight allocator measured at 3162% (31 cores) beside the judge; eight cores, priority untouched. Only --mode heavy is pinned: --mode fast (MT5-AllocatorFast, every 5 min, keeps the book fresh for the executors) is group money_feed and is never narrowed. track_wall records each run's wall time in BOX_BOTTLENECKS.json wall.pf_allocator_heavy, so the 8-core cap can be checked against allocator proof staleness."},
+    {"name": "money_feed_never_narrowed", "group": "money_feed",
+     "why": "Audit MF1 (2026-10-29): the processes that size the money path's book -- prop_challenge_allocator.py, allocator_trigger.py and pf_allocator --mode fast (MT5-AllocatorFast) -- read as mining/other and were reserve-moved, narrowed and share-capped. Group money_feed (with every process below them by parent chain) is raise-only: never on the side mask, never share-capped, never a dedupe candidate, widened back to every core if an earlier pass narrowed it. It is NOT raised: the allocator is CPU-heavy, and AboveNormal beside the judge would take CPU from it. This rule sets nothing; it names the group."},
     {"name": "money_path_raise", "group": "money", "priority": "AboveNormal",
      "why": "Money path on top (audit MF2, 2026-10-29): the whole money group -- the MT5 terminals, the gateway python (MT5-GatewayResident ran at default Normal, BELOW the adopt tree at AboveNormal), the executors, the window guard and the deadman -- is raised to AboveNormal so research load never starves a fill. Raise-only: a terminal already at High stays there. The code also holds the adopt tree at or under the lowest money class this pass leaves, and applies the money raises first: an adopt raise lands only if every money raise did."}
   ],
