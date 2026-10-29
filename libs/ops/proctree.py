@@ -115,20 +115,14 @@ def kill_verified_tree(root: Any, *, verified: Mapping[int, float],
         out["note"] = f"children: {type(exc).__name__}"
         return out
     foreign: list[int] = []
-    kid_ct: list[float | None] = []
     for k in kids:
         try:
-            ct: float | None = float(k.create_time())
-        except Exception:  # unreadable: never a verified descendant
+            ct = float(k.create_time())
+        except psutil.Error:
             ct = None
-        kid_ct.append(ct)
         want = verified.get(k.pid)
         if ct is None or want is None or int(ct) != int(want):
             foreign.append(k.pid)
-    try:
-        root_ct: float | None = float(root.create_time())
-    except Exception:  # an unreadable creation time: never billed as dead
-        root_ct = None
     if foreign:
         out["refused"] = (f"tree changed since verification: unverified descendant(s) "
                           f"{sorted(foreign)[:5]}; nothing killed")
@@ -154,19 +148,6 @@ def kill_verified_tree(root: Any, *, verified: Mapping[int, float],
         out["root_gone"] = not root.is_running()
     except psutil.Error:
         out["root_gone"] = False
-    # WHAT ACTUALLY DIED, by key (pid:creation second), so a caller bills only those: children
-    # killed under a denied root, or a root gone beside a denied child, are partial stops.
-    dead: list[str] = []
-    for proc, ct in [(root, root_ct), *zip(kids, kid_ct, strict=True)]:
-        if ct is None:
-            continue
-        try:
-            gone = not proc.is_running()
-        except Exception:  # unreadable is not proof of death
-            gone = False
-        if gone:
-            dead.append(f"{proc.pid}:{int(ct)}")
-    out["dead"] = dead
     return out
 
 
