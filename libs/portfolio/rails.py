@@ -167,16 +167,6 @@ RAILS: tuple[Rail, ...] = (
     Rail("e8_unowned_position_block", "integrity",
          "prop.e8_gold._retry_failed_legs <- position_since_failure",
          "measure_e8_unowned_block"),
-    # THE HEAVY PASS'S WALL CLOCK AND THE ALLOCATOR LOCK LEASE (2026-10-29, #529). Two compute
-    # bounds, billed both ways: what the 20-minute admission deadline left unscored this pass
-    # (growth it may have deferred) against the fast lane it kept alive (the 6.5-hour hold it
-    # ended), and how often the 45-minute lease was reclaimed from a living holder.
-    Rail("heavy_admission_deadline", "cap",
-         "pf_allocator.marginal_admission(pass_deadline=) <- HEAVY_ADMISSION_BUDGET_S",
-         "measure_admission_deadline"),
-    Rail("allocator_lock_lease", "integrity",
-         "job_lock.exclusive_job(lease_s=) <- pf_allocator.HEAVY_LEASE_S",
-         "measure_lock_lease"),
 )
 
 _CACHE: dict[str, Any] = {"mtime": None, "doc": {}}
