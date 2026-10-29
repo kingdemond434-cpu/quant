@@ -311,8 +311,10 @@ def test_proposals_stay_in_the_hypothesis_lane_and_name_a_runnable_session(desk)
                         {"equities": ["APPLE"]}, 1.0) is None, "equities are never hunted"
     overlap = {"asset_class": "forex", "mechanism": "carry_rollover",
                "information_source": "carry", "chart": "H1", "session": "overlap"}
-    assert ar._proposal(overlap, "global_explore", "w", _FAMILIES, frozenset(),
-                        {"forex": ["EURUSD"]}, 1.0) is None, "no window exists for overlap"
+    # overlap has a window of its own since 2026-10-06, so it is a runnable session now
+    row = ar._proposal(overlap, "global_explore", "w", _FAMILIES, frozenset(),
+                       {"forex": ["EURUSD"]}, 1.0)
+    assert row is not None and row["params"]["session"] == "overlap"
 
 
 def test_the_three_selectors_share_one_budget_and_every_row_is_shaped_for_the_intake(desk):

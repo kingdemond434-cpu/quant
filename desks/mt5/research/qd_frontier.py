@@ -104,7 +104,7 @@ CONNECTOR_POOL = 40             #: bound on the O(n^2) pairing: the strongest el
 REPORT_NICHES = 400             #: rows in the report; the map on disk keeps every niche
 EXPLOIT_PER_NICHE = 3           #: turns one niche takes before the next gets the exploiter's arm
 
-PROPOSABLE_SESSIONS = ("all", "asia", "london", "ny")
+PROPOSABLE_SESSIONS = ("all", "asia", "london", "ny", "tokyo_fix", "london_fix", "overlap")
 PROPOSABLE_HORIZONS = ("intrabar", "sub_4h", "sub_1d", "multi_day")
 #: `axis_registry.horizon_of` read backwards: the chart a proposal uses to REACH a horizon.
 HORIZON_CHART = {"intrabar": "M15", "sub_4h": "H1", "sub_1d": "H4", "multi_day": "D1"}

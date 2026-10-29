@@ -755,7 +755,7 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
 #: read (`family_call.session_filter`, `external_gauntlet.timeframe_of`). A source that named
 #: its own chart or session is respected as written.
 INTRADAY_CHARTS = ("M5", "M15", "M30")
-SESSION_AXIS = ("all", "asia", "london", "ny")
+SESSION_AXIS = ("all", "asia", "london", "ny", "tokyo_fix", "london_fix", "overlap")
 
 
 def _charts_with_bars(symbol: str) -> list[str]:

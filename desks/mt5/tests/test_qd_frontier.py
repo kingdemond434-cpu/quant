@@ -261,7 +261,8 @@ def test_the_mutation_menu_is_an_adjacent_chart_another_session_and_a_sibling_fa
     # One step each way on the chart ladder is M30 and H4. M30 lands in the SAME horizon bucket
     # as H1, whose representative chart is H1, so it is not a distinct proposal and is dropped.
     assert {v for a, v, _n in moves if a == "chart"} == {"H4"}
-    assert {v for a, v, _n in moves if a == "session"} == {"all", "london", "ny"}
+    assert {v for a, v, _n in moves if a == "session"} == {
+        "all", "london", "ny", "tokyo_fix", "london_fix", "overlap"}
     assert {v for a, v, _n in moves if a == "family"} == {"level_breakout"}
     for _a, _v, n in moves:
         assert n["mechanism"] == "breakout_liquidity", "a mutation never leaves the mechanism"
