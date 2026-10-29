@@ -71,6 +71,15 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     # The cursor's staleness WAS a real signal, just about a different organ -- the gauntlet was
     # re-testing one head of the docket forever because the rotation key never advanced. That is
     # now its own row below, where it can be read as what it is.
+    # THE LLM REASONING ORGANS (2026-10-29, Hourly pass 21). Both ran UNCONTRACTED, so the
+    # deepening task could sit on 0x800710E0 refusals and the DeepSeek seat could 404 every call
+    # while the board read neither as a fault. Each now owes the artifact it writes every pass.
+    "MT5-Deepening":      ("desks/mt5/reports/DEEPENING_THROUGHPUT.json", 120,
+                           "decisions per pass on the deepening queue -- the LLM reasoning that "
+                           "inherited the dead brain seat; silence means the queue has no reader"),
+    "MT5-DeepSeek":       ("desks/mt5/reports/DEEPSEEK_RESEARCH.json", 150,
+                           "the hourly LLM research cycle's liveness and result, published even "
+                           "on a dark or budget-held hour"),
     "MT5-Hourly":         ("desks/mt5/data/events.jsonl", 180,
                            "every research leg appends here; silence means no leg ran"),
     # NOT A TASK, AND NAMING IT LIKE ONE COST A PERMANENT FALSE ALARM. There is no
