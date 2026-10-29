@@ -1269,7 +1269,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "effective_trials",
                      "occupancy_map", "dsr_inputs"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
-    **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
+    **dict.fromkeys(("world_crawler", "world_strategy_hunt", "deep_forest", "moat_miner",
+                     "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
                      "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
@@ -5626,6 +5627,11 @@ def main() -> None:
     pla = _costed("placebo_audit", lambda: _producer(
         "placebo_audit", "research/placebo_audit.py"))
     fr = _costed("frontier", frontier)
+    # THE WORLD STRATEGY HUNTER (hourly item 18, principal 2026-10-28/29), BEFORE the forest so
+    # the grounds it mints for the world map's GAP cells are worked on the same hour. Offline:
+    # it opens no socket, adds no judge path, and publishes WORLD_STRATEGY_HUNT.json.
+    wsh = _costed("world_strategy_hunt", lambda: _producer(
+        "world_strategy_hunter", "research/world_strategy_hunter.py"))
     df = _costed("deep_forest", deep_forest)
     ssm_leg = _costed("session_structure", session_structure)
     mm = _costed("maintain_miners", maintain_miners)
@@ -6214,7 +6220,8 @@ def main() -> None:
                     "stop_reverse": srx,
                     "forward_reconcile": fwr,
                     "model_skill": ms,
-                    "frontier": fr, "refresh_bars": rb, "deep_forest": df,
+                    "frontier": fr, "refresh_bars": rb, "world_strategy_hunt": wsh,
+                    "deep_forest": df,
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,

@@ -596,11 +596,28 @@ def data_endpoints(page: str, base: str) -> list[str]:
 
 
 # ------------------------------------------------------------------------------- ledgers
+#: Grounds `world_strategy_hunter` mints for the world map's GAP cells and for emergent places,
+#: kept beside the curated file (and resolved beside SOURCES, so a test that redirects SOURCES
+#: redirects this too). A minted ground never shadows a curated one of the same name.
+MINTED_NAME = "world_hunter_grounds.json"
+
+
 def _load_sources() -> dict[str, Any]:
     try:
-        return json.loads(SOURCES.read_text("utf-8"))
+        raw = json.loads(SOURCES.read_text("utf-8"))
     except (OSError, ValueError):
-        return {"grounds": []}
+        raw = None
+    cfg: dict[str, Any] = raw if isinstance(raw, dict) else {"grounds": []}
+    try:
+        minted = json.loads(SOURCES.with_name(MINTED_NAME).read_text("utf-8")).get("grounds")
+    except (OSError, ValueError, AttributeError):
+        minted = None
+    if isinstance(minted, list):
+        names = {str(g.get("name")) for g in cfg.get("grounds") or [] if isinstance(g, dict)}
+        cfg["grounds"] = list(cfg.get("grounds") or []) + [
+            g for g in minted if isinstance(g, dict) and str(g.get("name")) not in names
+            and str(g.get("route") or "") in ROUTES]
+    return cfg
 
 
 def _load_seen() -> dict[str, Any]:
