@@ -71,6 +71,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from collections.abc import Iterator
 from typing import Any
 
 import numpy as np
@@ -142,7 +143,20 @@ DEFAULT_DISK_FLOOR_BYTES = 10 * 1024**3
 #: Per-cycle wall budget. When it is spent the cycle stops where it is and the NEXT cycle
 #: resumes from the same rotation offset, so a slow symbol can never starve the tail of the
 #: alphabet -- the failure mode of every "first N symbols" slice.
-DEFAULT_CYCLE_BUDGET_S = 45.0
+DEFAULT_CYCLE_BUDGET_S = float(os.environ.get("MT5_TICK_CYCLE_BUDGET_S", "") or 45.0)
+
+#: THE BOOK FIRST WHILE IT IS BEHIND. Measured 2026-10-28: after a six-day outage the rotation
+#: moved about 1,000 symbol-hours of history an hour across 250 symbols, so XAUUSD -- the live
+#: gold book -- waited behind every exotic and the 63 traded symbols would have taken about a
+#: day to come current. A priority symbol more than this far behind is pulled BEFORE the
+#: rotation, most-behind first (ties in the listed order, so gold leads), for up to
+#: PRIORITY_SHARE of the cycle budget. Once it is within the lag it rejoins the rotation like
+#: any other symbol, so a caught-up book costs the tail of the alphabet nothing.
+DEFAULT_PRIORITY_LAG_MS = 2 * 3600 * 1000
+DEFAULT_PRIORITY_SHARE = 0.75
+
+#: Symbols the desk trades whatever the sleeve registry says; the registry's symbols follow.
+CORE_PRIORITY = ("XAUUSD", "XAGUSD")
 
 #: Ticks above which a single pull is trimmed and the remainder deferred to the next cycle.
 MAX_TICKS_PER_PULL = 2_000_000
@@ -219,6 +233,10 @@ class RecorderConfig:
     #: deliver the last ticks of a session slightly late, and sealing a day that is still
     #: receiving would make a normal delivery look like a post-seal write.
     seal_after_hours: int = 6
+    #: Symbols pulled ahead of the rotation while they are behind (see DEFAULT_PRIORITY_LAG_MS).
+    priority_symbols: tuple[str, ...] = ()
+    priority_lag_ms: int = DEFAULT_PRIORITY_LAG_MS
+    priority_share: float = DEFAULT_PRIORITY_SHARE
 
 
 @dataclass
@@ -256,6 +274,8 @@ class CycleReport:
     paused: str = ""
     errors: dict[str, str] = field(default_factory=dict)
     budget_exhausted: bool = False
+    #: Pulls spent on behind priority (book) symbols ahead of the rotation this cycle.
+    priority_pulls: int = 0
     elapsed_s: float = 0.0
     completed_at: str = ""
 
@@ -287,6 +307,8 @@ class CycleReport:
         if self.clock_behind:
             bits.append(f"{self.clock_behind} symbol(s) IDLE: the query mark is ahead of the "
                         f"wall clock -- the system clock stepped backward")
+        if self.priority_pulls:
+            bits.append(f"{self.priority_pulls} book pulls ahead of the rotation")
         if self.budget_exhausted:
             bits.append("budget spent; next cycle resumes where this stopped")
         if self.errors:
@@ -406,26 +428,27 @@ class TickRecorder:
         budget = self.config.cycle_budget_s
         processed = 0
 
+        # -- THE BOOK FIRST, while it is behind; the rotation gets whatever is left.
+        pulled_first: set[str] = set()
+        with_ticks: set[str] = set()
+        for sym in self._priority_pulls(active, cursors, end_ms, t_start, budget):
+            res = self._pull_symbol(sym, cursors, end_ms, cycle_id)
+            self._tally(rep, res, count_symbol=False)    # one symbol, many pulls: counted once
+            rep.priority_pulls += 1
+            pulled_first.add(sym)
+            if res.ticks or res.segments:
+                with_ticks.add(sym)
+        rep.symbols_pulled += len(with_ticks)
+
         for sym in order:
             if time.monotonic() - t_start > budget:
                 rep.budget_exhausted = True
                 break
             processed += 1
+            if sym in pulled_first:
+                continue                       # already pulled this cycle, ahead of the rotation
             res = self._pull_symbol(sym, cursors, end_ms, cycle_id)
-            rep.ticks += res.ticks
-            rep.segments += res.segments
-            rep.bytes += res.bytes
-            rep.gaps_recorded += len(res.gaps)
-            if res.truncated:
-                rep.truncations += 1
-            if res.idle_clock_behind:
-                rep.clock_behind += 1
-            rep.sides_filled += res.sides_filled
-            if res.error:
-                rep.errors[sym] = res.error
-            if res.ticks or res.segments:
-                rep.symbols_pulled += 1
-            rep.gaps_resolved += res.resolved
+            self._tally(rep, res)
         # WHOEVER WAS NEXT GOES FIRST NEXT TIME. Advancing by what was actually processed --
         # never by the whole list -- is what stops a slow symbol starving the tail of the
         # alphabet, which is the standing defect of every "first N symbols" slice.
@@ -448,6 +471,53 @@ class TickRecorder:
         return rep
 
     # ------------------------------------------------------------- internals --
+
+    @staticmethod
+    def _tally(rep: CycleReport, res: _PullResult, count_symbol: bool = True) -> None:
+        rep.ticks += res.ticks
+        rep.segments += res.segments
+        rep.bytes += res.bytes
+        rep.gaps_recorded += len(res.gaps)
+        if res.truncated:
+            rep.truncations += 1
+        if res.idle_clock_behind:
+            rep.clock_behind += 1
+        rep.sides_filled += res.sides_filled
+        if res.error:
+            rep.errors[res.symbol] = res.error
+        if count_symbol and (res.ticks or res.segments):
+            rep.symbols_pulled += 1
+        rep.gaps_resolved += res.resolved
+
+    def _priority_pulls(self, active: list[str], cursors: dict[str, dict[str, Any]],
+                        end_ms: int, t_start: float, budget: float) -> Iterator[str]:
+        """Yield priority symbols to pull, most-behind first, until each is within the lag or
+        the priority share of the budget is spent.
+
+        One pull moves a cursor by at most `max_window_ms`, so a symbol days behind is yielded
+        again and again in one cycle -- that is the point. A pull that does NOT move the cursor
+        (a failed pull, a clock step) drops the symbol for the rest of the cycle, so a stuck
+        symbol can never spin the loop.
+        """
+        rank = {s: i for i, s in enumerate(self.config.priority_symbols)}
+        live = set(active)
+        todo = [s for s in rank if s in live]
+        cap = budget * self.config.priority_share
+        while todo:
+            if time.monotonic() - t_start > cap:
+                return
+            behind = []
+            for s in todo:
+                cur = int((cursors.get(s) or {}).get("cursor_ms") or end_ms)
+                if end_ms - cur > self.config.priority_lag_ms:
+                    behind.append((cur, rank[s], s))
+            if not behind:
+                return
+            cur, _, sym = min(behind)
+            yield sym
+            after = int((cursors.get(sym) or {}).get("cursor_ms") or end_ms)
+            if after <= cur:
+                todo.remove(sym)
     def _sync_universe(self, listed: list[str], cursors: dict[str, dict[str, Any]],
                        now_ms: int, cycle_id: str, rep: CycleReport) -> None:
         listed_set = set(listed)
@@ -1045,6 +1115,21 @@ class _PullResult(SymbolResult):
     idle_clock_behind: bool = False
 
 
+def book_symbols(sleeves_path: Path | None = None) -> tuple[str, ...]:
+    """The traded symbols, gold first: CORE_PRIORITY, MT5_TICK_PRIORITY (comma list), then every
+    symbol in data/sleeves.json. An unreadable registry yields the core list, never an empty
+    one -- the recorder still runs its plain rotation for everything else either way."""
+    out: list[str] = list(CORE_PRIORITY)
+    out += [s.strip() for s in os.environ.get("MT5_TICK_PRIORITY", "").split(",") if s.strip()]
+    try:
+        doc = json.loads((sleeves_path or _DESK / "data" / "sleeves.json").read_text("utf-8"))
+        rows = doc.get("sleeves", []) if isinstance(doc, dict) else []
+        out += sorted({str(r["symbol"]) for r in rows if isinstance(r, dict) and r.get("symbol")})
+    except (OSError, ValueError):
+        pass
+    return tuple(dict.fromkeys(out))
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Continuous MT5/Fusion tick recorder")
     ap.add_argument("--once", action="store_true", help="one cycle, print the report, exit")
@@ -1054,12 +1139,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--cold-start-days", type=int, default=DEFAULT_COLD_START_DAYS)
     ap.add_argument("--disk-floor-gb", type=float, default=DEFAULT_DISK_FLOOR_BYTES / 1024**3)
     ap.add_argument("--json", action="store_true", help="print the cycle report as JSON")
+    ap.add_argument("--cycle-budget-s", type=float, default=DEFAULT_CYCLE_BUDGET_S,
+                    help="capture wall budget per cycle (env MT5_TICK_CYCLE_BUDGET_S)")
     args = ap.parse_args(argv)
 
     cfg = RecorderConfig(
         tape_root=args.root or Path(DEFAULT_TAPE_ROOT),
         cycle_s=args.cycle_s, cold_start_days=args.cold_start_days,
         disk_floor_bytes=int(args.disk_floor_gb * 1024**3),
+        cycle_budget_s=args.cycle_budget_s,
+        priority_symbols=book_symbols(),
     )
     from mt5desk.config import terminal_path
 
