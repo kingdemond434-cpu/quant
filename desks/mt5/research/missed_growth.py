@@ -662,6 +662,17 @@ def measure_replication_live_door(_r: Any, alloc: dict[str, Any],
     return _price_held(held, alloc, "replication LIVE door")
 
 
+def measure_restore_door(_r: Any, alloc: dict[str, Any],
+                         _fv: dict[str, Any]) -> dict[str, Any]:
+    """What the restore door withholds NOW: STANDBY rows an admitting reading would have put back
+    LIVE but a promotion door refused (`restore_refusal`), priced by their forward R. A refusal
+    that only says an input was unreadable (`*_UNMEASURED`) is billed the same way: fail-closed
+    stands, and its cost is a number."""
+    held = [x for x in _sleeve_rows() if str(x.get("status") or "").upper() == "STANDBY"
+            and str(x.get("restore_refusal") or "").strip()]
+    return _price_held(held, alloc, "restore door")
+
+
 #: E8 gold's intents journal: the duplicate guard journals each block as RAIL_BLOCKED there.
 E8_INTENTS = BASE / "data" / "e8_gold_intents.jsonl"
 
@@ -1079,7 +1090,8 @@ def admission_cadence_line(alloc: dict[str, Any]) -> dict[str, Any]:
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 #: Measures that price their rail directly each pass (no daily-sample ledger behind them).
 DIRECT_MEASURES = frozenset({"measure_veto", "measure_shrinkage",
-                             "measure_ordered_standby_hold", "measure_replication_live_door"})
+                             "measure_ordered_standby_hold", "measure_replication_live_door",
+                             "measure_restore_door"})
 
 
 # --------------------------------------------------------------------------- the ledger

@@ -2122,6 +2122,38 @@ def _after(a: str, b: str) -> bool:
 ORDERED_HOLD_FIELDS: tuple[str, ...] = ("standby_reason",)
 
 
+def _recert_unreadable() -> str:
+    """Why the recertification audit cannot be READ, or "" when it reads (or is absent).
+
+    `regrade_failures` turns an unreadable audit into {} -- no failures -- which at the promotion
+    door is a pre-existing pass-through. A RESTORE fails closed on it (restore door audit
+    must-fix 5, 2026-10-20): a file that exists and does not parse is not evidence of a clean
+    certificate. An ABSENT audit, or one older than RECERT_FRESH_H, is read as the promotion door
+    reads it -- not binding -- because the daily recertify step owns its freshness and refusing
+    every restore on its schedule would be an outage wearing a risk decision."""
+    try:
+        doc = json.loads(RECERT_AUDIT.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return ""
+    except (OSError, ValueError) as exc:
+        return f"{type(exc).__name__}: {exc}"
+    if not isinstance(doc, dict) or not isinstance(doc.get("rows", []), list):
+        return "not an audit document (no rows list)"
+    return ""
+
+
+def _blind_verdicts() -> tuple[dict[str, str], str]:
+    """(the blind reviewer's latest verdicts, why they could not be read or "")."""
+    try:
+        import blind_reviewer
+        verdicts = blind_reviewer.latest_verdicts()
+    except Exception as exc:
+        return {}, f"{type(exc).__name__}: {exc}"
+    if not isinstance(verdicts, dict):
+        return {}, f"verdicts are a {type(verdicts).__name__}, not a mapping"
+    return verdicts, ""
+
+
 def restore_door_refusal(row: dict, fails: dict[str, dict] | None = None) -> str:
     """Why a STANDBY row may NOT be restored to LIVE, or "" when every promotion door passes.
 
@@ -2133,10 +2165,22 @@ def restore_door_refusal(row: dict, fails: dict[str, dict] | None = None) -> str
     under every name the row is known by (its name, its certificate key, its canon certificate),
     plus the principal-stop fence (`mt5desk.principal_stops`), which the gateway also enforces.
     Replication is asked separately (`replication_check`); a banned family never reaches here
-    (`retire_banned` runs first in the pass). Fails closed: a stop record that cannot be read
-    refuses, as `tier_s_block` does with DOOR_ERROR; the built-in stops hold even with no file
-    (`principal_stops.load`)."""
+    (`retire_banned` runs first in the pass).
+
+    FAILS CLOSED ON EVERY INPUT IT CANNOT READ (audit 2026-10-20, must-fixes 2, 3, 5): a
+    recertification audit that exists and does not parse, a blind reviewer that raises, a stop
+    fence that does not import, and a stop record `load` reports a problem with each refuse with
+    an `*_UNMEASURED` reason. The built-in stops hold whatever the file says. What this costs is
+    billed on the `restore_door` rail (missed_growth.measure_restore_door)."""
     fails = regrade_failures() if fails is None else fails
+    bad_audit = _recert_unreadable()
+    if bad_audit:
+        return (f"COST_REGRADE_UNMEASURED: the recertification audit did not read "
+                f"({bad_audit}); withheld until it does")
+    verdicts, bad_review = _blind_verdicts()
+    if bad_review:
+        return (f"BLIND_REVIEW_UNMEASURED: the blind reviewer did not load ({bad_review}); "
+                "withheld until it does")
     names: list[str] = []
     try:
         canon = live_certificate(row)
@@ -2150,7 +2194,7 @@ def restore_door_refusal(row: dict, fails: dict[str, dict] | None = None) -> str
         if bad:
             return ("BLOCKED_COST_REGRADE: fails its own ten gates at the current cost model: "
                     + ", ".join(bad.get("gates_failing_now") or ["unspecified"]))
-        veto = blind_review_veto(n)
+        veto = blind_review_veto(n, verdicts)
         if veto:
             return f"BLOCKED_BLIND_REVIEW: the blind reviewer could not reproduce {veto} (VETO)"
         ts = tier_s_block(n)
@@ -2158,19 +2202,20 @@ def restore_door_refusal(row: dict, fails: dict[str, dict] | None = None) -> str
             return f"BLOCKED_TIER_S: {ts}"
     try:
         from mt5desk.principal_stops import load, match, why
-    except ImportError:
-        # The fence's module is absent from this tree (it lands before this re-sign); with no
-        # fence there is no stop record to ask, and refusing every restore on that would be an
-        # outage wearing a risk decision. Any other failure below refuses.
-        return ""
+    except ImportError as exc:
+        return (f"PRINCIPAL_STOP_UNMEASURED: the stop fence is not importable ({exc}); "
+                "withheld until it is")
     try:
-        stops, _problem = load(SLEEVES_FILE.with_name("PRINCIPAL_STOPS.json"))
+        stops, problem = load(SLEEVES_FILE.with_name("PRINCIPAL_STOPS.json"))
         hit = match(row, stops)
     except Exception as exc:
         return (f"PRINCIPAL_STOP_UNMEASURED: the stop fence did not load "
                 f"({type(exc).__name__}: {exc}); withheld until it does")
     if hit:
         return f"PRINCIPAL_STOP: {why(hit)}"
+    if problem:
+        return (f"PRINCIPAL_STOP_UNMEASURED: the stop record did not read ({problem}); "
+                "withheld until it does")
     return ""
 
 
@@ -2291,6 +2336,10 @@ def reconcile_capital(sleeves: list[dict], view: dict, *, now: datetime | None =
                 # 2026-10-14: three false RESTORED events in three passes). The reading stands.
                 if s.get("replication_refusal") != refusal:
                     s["replication_refusal"] = refusal
+                    changed = True
+                # The restore door was not asked this pass, so its last refusal is stale
+                # (audit should-fix, 2026-10-20); replication's own field says why it is held.
+                if s.pop("restore_refusal", None) is not None:
                     changed = True
                 plog(f"HELD {s['name']} at STANDBY despite an admitting reading -- {refusal}")
                 continue

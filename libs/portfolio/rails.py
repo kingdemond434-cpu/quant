@@ -182,6 +182,14 @@ RAILS: tuple[Rail, ...] = (
     Rail("replication_live_door", "gate",
          "promoter.replication_door <- admission_integrity.live_refusal",
          "measure_replication_live_door"),
+    # THE RESTORE DOOR (Judge, 2026-10-20: a restore is a promotion). A STANDBY row the allocator
+    # admits again is restored to LIVE only past the doors a new LIVE row must pass -- cost
+    # re-grade, blind reviewer, Tier S, principal stops -- and stays STANDBY when any refuses or
+    # cannot be read. Rows already LIVE are not touched. Billed from the forward clocks of the rows
+    # it holds (`restore_refusal`), which keep running as paper.
+    Rail("restore_door", "gate",
+         "promoter.restore_door_refusal <- reconcile_capital / heal_silent_demotions",
+         "measure_restore_door"),
 )
 
 _CACHE: dict[str, Any] = {"mtime": None, "doc": {}}

@@ -36,6 +36,7 @@ import json
 import shutil
 import sys
 from collections import Counter
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -137,6 +138,30 @@ def _door() -> tuple[object | None, set[str]]:
     return gate, waived
 
 
+def _restore_door() -> Callable[[dict], str]:
+    """THE PROMOTER'S RESTORE DOOR, AT THIS WRITER TOO (Judge 2026-10-20: a restore is a
+    promotion). This script lifts STANDBY to LIVE outside the promoter, so a silent row it restores
+    is asked the same doors `promoter.reconcile_capital` asks (`promoter.restore_door_refusal`:
+    cost re-grade, blind reviewer, Tier S, principal stops). Fails closed: a promoter that does
+    not import refuses every restore with its reason. "" means the row may be restored."""
+    try:
+        sys.path.insert(0, str(ROOT / "desks" / "mt5" / "research"))
+        import promoter
+        fails = promoter.regrade_failures()
+    except Exception as exc:
+        why = (f"RESTORE_DOOR_UNMEASURED: the promoter's restore door did not load "
+               f"({type(exc).__name__}: {exc})")
+        return lambda _row: why
+
+    def ask(row: dict) -> str:
+        try:
+            return promoter.restore_door_refusal(row, fails)
+        except Exception as exc:
+            return (f"RESTORE_DOOR_UNMEASURED: the restore door raised "
+                    f"({type(exc).__name__}: {exc})")
+    return ask
+
+
 def heal(apply: bool) -> int:
     doc = json.loads(SLEEVES.read_text(encoding="utf-8"))
     rows = doc["sleeves"]
@@ -160,11 +185,19 @@ def heal(apply: bool) -> int:
 
     silent, reasoned, held = [], [], []
     gate, waived = _door()
+    door: Callable[[dict], str] | None = None
     for r in rows:
         if str(r.get("status") or "").upper() not in LIFTABLE:
             continue
         if match(r, stops) is not None:
             held.append(r)
+            continue
+        if str(r.get("restore_refusal") or "").strip():
+            # THE RESTORE DOOR'S REFUSAL HOLDS HERE TOO (audit 2026-10-20, must-fix 1). It is not
+            # a `*_reason` -- reconcile_capital re-asks the doors every pass and clears it the pass
+            # they open -- so `_reason` reads "" for a row the door just refused, and lifting it
+            # here would put back LIVE what the promoter withheld an hour earlier.
+            reasoned.append(r)
             continue
         if not _reason(r):
             refusal = _replication_refusal(r, gate, waived)
@@ -176,12 +209,21 @@ def heal(apply: bool) -> int:
                 reasoned.append(r)
                 continue
             r.pop("replication_refusal", None)
+            if door is None:
+                door = _restore_door()
+            refusal = door(r)
+            if refusal:
+                # The promoter's own field and wording: reconcile_capital re-asks and clears it.
+                r["restore_refusal"] = refusal
+                reasoned.append(r)
+                continue
         (reasoned if _reason(r) else silent).append(r)
     print(f"STANDBY held by a principal stop: {len(held)}  (never restored here)")
 
     print(f"\nSTANDBY with a recorded reason : {len(reasoned)}  (left alone -- a real verdict)")
     for r in reasoned[:4]:
-        why = _reason(r) or str(r.get("replication_refusal") or "")
+        why = (_reason(r) or str(r.get("restore_refusal") or "")
+               or str(r.get("replication_refusal") or ""))
         print(f"   {str(r.get('name'))[:46]:<48} {why[:70]}")
     print(f"STANDBY with NO reason         : {len(silent)}  (restorable)")
     for r in silent[:8]:
