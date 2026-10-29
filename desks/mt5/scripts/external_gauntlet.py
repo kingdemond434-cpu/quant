@@ -4630,6 +4630,7 @@ def shard_worker(shard_dir: Path | str, k: int, phase: str = "build") -> dict:
     # does -- so a shard finds the pool's cells cached and defers what the pool did not reach, for
     # the same reason and with the same status. Only the per-cell work after the pool is split.
     built_syms: set[str] = set()
+    last_days: dict = {}
     acc: dict = {"cell_objs": [], "deferred": [], "cache_hits": 0, "built_fresh": 0,
                  "mem_deferred": 0}
     blocked: list[dict] = []
@@ -4641,7 +4642,7 @@ def shard_worker(shard_dir: Path | str, k: int, phase: str = "build") -> dict:
         acc = _build_specs([sp], meta, build_t0, s0, s0v, built_syms, blocked,
                            cell_objs=acc["cell_objs"], deferred=acc["deferred"],
                            cache_hits=acc["cache_hits"], built_fresh=acc["built_fresh"],
-                           _mem_deferred=acc["mem_deferred"])
+                           _mem_deferred=acc["mem_deferred"], last_days=last_days)
         if len(acc["cell_objs"]) > n_cells:
             kind, obj = "cell", acc["cell_objs"][-1]
         elif len(acc["deferred"]) > n_def:
@@ -4870,10 +4871,45 @@ def run_sharded(n_shards: int, dispatch, shard_dir: Path | str | None = None,
             return 0
 
 
+def _parquet_signature(sym: str, timeframe: str) -> tuple[int, int] | None:
+    """(mtime_ns, size) of the chart's parquet, or None when there is none (the terminal path)."""
+    try:
+        st = (UNI / f"{sym}_{str(timeframe).upper()}.parquet").stat()
+    except OSError:
+        return None
+    return (int(st.st_mtime_ns), int(st.st_size))
+
+
+def _chart_last_day(sym: str, timeframe: str, memo: dict | None = None):
+    """The chart's last bar, normalised to its day, or None when the chart has no bars.
+
+    WHY A SHARD MEMOISES IT (box read 2026-10-29): the plan is ordered by priority, which
+    interleaves symbols, so the bounded frame cache evicted every chart before its next spec and
+    each of a shard's ~19,700 specs re-read and re-normalised a parquet (66-130 ms each) only to
+    learn the day that keys its cache entry -- 945 replayed cells took 3,123 s alone. With `memo`
+    each chart is read once per parquet version: the key carries the file's (mtime_ns, size), so
+    a parquet rewritten mid-shard is read again, exactly as an evicted frame would have been.
+    """
+    if memo is None:
+        frame = _bars_for(sym, timeframe)
+        if frame is None or len(frame) == 0:
+            return None
+        return frame.index[-1].normalize()
+    mkey = (str(sym), str(timeframe).upper())
+    sig = _parquet_signature(sym, timeframe)
+    hit = memo.get(mkey)
+    if hit is not None and hit[0] == sig:
+        return hit[1]
+    day = _chart_last_day(sym, timeframe)
+    memo[mkey] = (sig, day)
+    return day
+
+
 def _build_specs(eligible_specs: list, meta: dict, _build_t0: float, _stage0: dict,
                  _stage0_verdicts: dict, _built_syms: set, blocked_build: list, *,
                  cell_objs: list | None = None, deferred: list | None = None,
-                 cache_hits: int = 0, built_fresh: int = 0, _mem_deferred: int = 0) -> dict:
+                 cache_hits: int = 0, built_fresh: int = 0, _mem_deferred: int = 0,
+                 last_days: dict | None = None) -> dict:
     """THE BUILD LOOP, MOVED VERBATIM OUT OF `main` so a shard runs the same lines.
 
     Every spec leaves in exactly one of three places -- `cell_objs` (cached or freshly built),
@@ -4881,6 +4917,9 @@ def _build_specs(eligible_specs: list, meta: dict, _build_t0: float, _stage0: di
     the lists and counters are passed in and handed back, so a caller may drive it over the
     whole docket (the unsharded sweep) or one spec at a time (`shard_worker`) and read which
     list grew. Nothing in the loop reads another spec's outcome.
+
+    `last_days` (a shard passes its own dict; every other caller passes nothing and runs the old
+    lines) remembers each chart's data-day so a cached or deferred spec needs no frame at all.
     """
     cell_objs = [] if cell_objs is None else cell_objs
     deferred = [] if deferred is None else deferred
@@ -4891,13 +4930,12 @@ def _build_specs(eligible_specs: list, meta: dict, _build_t0: float, _stage0: di
         # and the boundary `_series_trim_partial` drops the partial day at; taking it from H1 for
         # an M5 cell would key the cell to a day its own tape may not have reached and trim its
         # series at a boundary from a different feed.
-        frame = _bars_for(spec["sym"], spec_tf)
-        if frame is None or len(frame) == 0:
+        last_day = _chart_last_day(spec["sym"], spec_tf, last_days)
+        if last_day is None:
             print(f"  SKIP {key}: {spec_tf} parquet missing")
             blocked_build.append({**spec, "downstream_status": "NOT_RUN_DATA_MISSING",
                                   "why": f"point-in-time {spec_tf} parquet is missing or empty"})
             continue
-        last_day = frame.index[-1].normalize()
         ckey = _cache_key(spec["sym"], spec["family"], spec["params"] or {}, str(last_day.date()),
                           spec_tf)
         cached = cache_load(ckey)
