@@ -523,6 +523,12 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/shadow/precert_shadow_state.json
 !desks/mt5/reports/LEDGER_VIEW_ADOPTION.json
 !desks/mt5/reports/LOGIN_FENCE.json
+# the judge speed switch's daily drift monitor (daily_cycle:vector_families_check, 2026-10-28)
+!desks/mt5/reports/VECTOR_FAMILIES_CHECK.json
+# ...and its fail-closed marker: one box's MISMATCH verdict, read by families_vector.enabled()
+# on that box only. Box state (data/ is a STATE_PREFIX); never published, never carried across.
+desks/mt5/data/VECTOR_FAMILIES_MISMATCH.json
+desks/mt5/data/VECTOR_FAMILIES_MISMATCH.json.tmp
 # Judge-owned box state, read on the box only (audit of PR #290): never published by a git add sweep.
 desks/mt5/data/hypotheses/unrunnable_specs.json
 desks/mt5/data/hypotheses/unrunnable_specs.json.tmp
