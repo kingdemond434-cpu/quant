@@ -84,9 +84,14 @@ def test_each_family_classifies_into_execution_entry_by_exact_key() -> None:
         assert ac.FAMILY_CLUSTER[name] == fee.TARGET_CLUSTER == "execution_entry"
         assert ac.classify_family(name) == "execution_entry"
         assert ac.classify_sleeve(f"EURUSD_{name}_asia") == "execution_entry"
+    from mt5desk.families_empty_clusters import EMPTY_CLUSTER_FAMILIES
+    # The empty-cluster seeder (#163) registers its own entry_alpha_* operators in the same
+    # cluster; the map must hold exactly the two modules' families together.
+    theirs = {k for k in EMPTY_CLUSTER_FAMILIES if k.startswith("entry_alpha_")}
     declared = {k for k, v in ac.FAMILY_CLUSTER.items()
                 if v == "execution_entry" and k.startswith("entry_alpha_")}
-    assert declared == set(NAMES), "the cluster map and the module disagree on the family set"
+    assert declared == set(NAMES) | theirs, (
+        "the cluster map and the modules disagree on the family set")
 
 
 def test_each_family_has_a_named_mechanism_so_the_breadth_law_can_raise_a_debt() -> None:
