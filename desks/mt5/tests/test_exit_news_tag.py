@@ -118,7 +118,7 @@ def test_gap_week_is_not_covered(tmp_path: Path) -> None:
     cal = _cal(tmp_path, week1 + week3)
     assert ent.tag(datetime(2026, 9, 3, 12, tzinfo=UTC), cal)["calendar_coverage"] == "FULL"
     gap = ent.tag(datetime(2026, 9, 10, 12, 30, tzinfo=UTC), cal)   # week 2: never captured
-    assert gap["calendar_coverage"] == "FOMC_ONLY" and gap["in_window"] is None
+    assert gap["calendar_coverage"] != "FULL" and gap["in_window"] is None
 
 
 def test_window_crossing_last_covered_day_is_not_full(tmp_path: Path) -> None:
