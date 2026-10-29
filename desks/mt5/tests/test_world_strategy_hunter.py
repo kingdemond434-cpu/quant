@@ -104,6 +104,21 @@ def test_an_unregistered_host_that_keeps_yielding_becomes_an_emergent_ground(wor
     assert rep["this_pass"]["emergent_places"] == ["newfx.example"]  # 5ch.net is registered
 
 
+def test_redirectors_search_engines_and_caches_are_never_places() -> None:
+    for h in ("t.co", "news.google.com", "google.co.jp", "web.archive.org", "x.translate.goog"):
+        assert wsh._not_a_place(h), h
+    assert not wsh._not_a_place("newfx.example")
+
+
+def test_yield_is_split_minted_against_curated() -> None:
+    grounds = [{"name": "a"}, {"name": "m", "minted_by": wsh.MINTED_BY}]
+    vec = {"a": {"outcome": "YIELDED"}, "m": {"outcome": "EMPTY"}}
+    out = wsh.minted_yield(grounds, vec, [{"ground": "a"}, {"ground": "a"}])
+    assert out["curated"]["claims_per_worked_ground"] == 2.0
+    assert out["minted"] == {"grounds": 1, "worked": 1, "claims": 0,
+                             "claims_per_worked_ground": 0.0}
+
+
 def test_strategy_coverage_is_chao1_over_mechanism_keys() -> None:
     out = wsh.chao1([1, 1, 1, 1, 2, 2, 3])
     assert out["observed"] == 7 and out["f1"] == 4 and out["f2"] == 2
@@ -131,7 +146,7 @@ def test_the_miner_loads_minted_grounds_beside_the_curated_file(tmp_path, monkey
 
 
 def test_the_shipped_world_map_mints_only_readable_languages() -> None:
-    world = wsh.load_world(_DESK / "data" / "world_strategy_map.json")
+    world = wsh.load_world(wsh.MAP)
     from libs.research import mechanism_claims as mc
     assert set(world["vocab"]) <= set(mc.LANGUAGES)
     keys = set(world["vocab_keys"])

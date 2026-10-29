@@ -11,7 +11,7 @@ route, extracts verbatim claims in 26 languages, dedupes on the mechanism key an
 deepening task per mechanism (the path the coverage steer and the true-duplicate dedup sit on).
 What it lacked was a MAP to measure itself against. This organ:
 
-  1. MAPS. `data/world_strategy_map.json` (data) declares countries, their languages and the
+  1. MAPS. `research/world_strategy_map.json` (data) declares countries, their languages and the
      kinds of place strategies are shared. A CELL is country x language x kind; each takes the
      best hunt-frontier outcome of its grounds: YIELDED > EMPTY > BLOCKED > NAMED_ONLY > GAP.
   2. GAPS. Non-worked cells are ranked (country prior x kind weight, primary language first) and
@@ -55,7 +55,9 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 DATA = DESK / "data"
-MAP = DATA / "world_strategy_map.json"
+#: Beside this file, not under data/: the map is origin-owned config, not box state, and data/ is a
+#: money-path state directory to the replay-shadow release gate.
+MAP = Path(__file__).resolve().with_name("world_strategy_map.json")
 CURATED = DATA / "deep_forest_sources.json"
 #: The miner reads this beside its curated file (`deep_forest_miner._load_sources`).
 MINTED = DATA / "world_hunter_grounds.json"
@@ -70,6 +72,12 @@ REPORT = DESK / "reports" / "WORLD_STRATEGY_HUNT.json"
 MAX_NEW_PER_PASS = 120
 #: Distinct claims an unregistered host must carry before it becomes a ground of its own.
 EMERGENT_MIN_CLAIMS = 2
+#: Hosts that are never a place in their own right: redirectors, search engines, caches,
+#: translators and archives point AT places, and a `site:` ground on them would mine the index.
+NOT_A_PLACE = ("t.co", "bit.ly", "goo.gl", "tinyurl.com", "ow.ly", "lnkd.in", "bing.com",
+               "duckduckgo.com", "yandex.ru", "baidu.com", "sogou.com", "naver.com",
+               "web.archive.org", "archive.org", "archive.ph", "ampproject.org",
+               "translate.goog", "webcache.googleusercontent.com", "googleusercontent.com")
 #: Queries a minted ground keeps; deepening rotates the oldest out once it is full.
 MAX_QUERIES = 8
 #: Language-neutral MT5 instruments the deepening rotation walks, one per worked pass.
@@ -336,6 +344,34 @@ def _known(host: str, hosts: set[str]) -> bool:
     return any(".".join(parts[i:]) in hosts for i in range(len(parts) - 1))
 
 
+def _not_a_place(host: str) -> bool:
+    parts = host.split(".")
+    if "google" in parts:  # google.com, google.co.jp, news.google.com ...
+        return True
+    return any(".".join(parts[i:]) in NOT_A_PLACE for i in range(len(parts)))
+
+
+def minted_yield(grounds: list[dict[str, Any]], vectors: Mapping[str, Any],
+                 claims: list[dict[str, Any]]) -> dict[str, Any]:
+    """Claims per worked ground, minted against curated: the evidence the minting pace reads.
+
+    A ground counts as worked once the miner attempted it (any outcome but NAMED_ONLY). The miner
+    records no seconds per ground, so this is per ground worked, not per ground-hour.
+    """
+    by_ground = Counter(str(r.get("ground") or "") for r in claims)
+    out: dict[str, Any] = {}
+    for side, keep in (("minted", True), ("curated", False)):
+        names = [str(g.get("name")) for g in grounds
+                 if (g.get("minted_by") == MINTED_BY) is keep]
+        worked = [n for n in names if isinstance(vectors.get(n), Mapping)
+                  and str(vectors[n].get("outcome") or "NAMED_ONLY") != "NAMED_ONLY"]
+        n_claims = sum(by_ground.get(n, 0) for n in names)
+        out[side] = {"grounds": len(names), "worked": len(worked), "claims": n_claims,
+                     "claims_per_worked_ground": round(n_claims / len(worked), 3)
+                     if worked else None}
+    return out
+
+
 def emergent_places(claims: list[dict[str, Any]], hosts: set[str], minted_names: set[str],
                     now: str, min_claims: int = EMERGENT_MIN_CLAIMS) -> list[dict[str, Any]]:
     """Hosts the miner's own claims keep landing on that no ground names: places nobody declared.
@@ -346,7 +382,7 @@ def emergent_places(claims: list[dict[str, Any]], hosts: set[str], minted_names:
     by_host: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for r in claims:
         h = _host(str(r.get("url") or ""))
-        if h and not _known(h, hosts):
+        if h and not _known(h, hosts) and not _not_a_place(h):
             by_host[h].append(r)
     out = []
     for h, rows in sorted(by_host.items()):
@@ -465,6 +501,7 @@ def run(*, dry_run: bool = False, max_new: int = MAX_NEW_PER_PASS,
             "emergent_places": [g["site"] for g in emergent],
             "grounds_minted": len(new_grounds), "grounds_deepened": deepened,
             "minted_total": len(minted_all), "dry_run": dry_run},
+        "yield_by_origin": minted_yield(curated + minted_all, vectors, claims),
         "by_region": rollup(cells, "country"),
         "by_language": rollup(cells, "language"),
         "by_kind": rollup(cells, "kind"),
@@ -485,9 +522,9 @@ def run(*, dry_run: bool = False, max_new: int = MAX_NEW_PER_PASS,
     if not dry_run:
         _atomic(MINTED, json.dumps({
             "note": "Grounds minted by research/world_strategy_hunter.py for GAP cells of "
-                    "data/world_strategy_map.json and for emergent places. The deep-forest miner "
-                    "loads them beside deep_forest_sources.json. Never edited by hand; a ground "
-                    "is never removed (widen the map instead).",
+                    "research/world_strategy_map.json and for emergent places. The deep-forest "
+                    "miner loads them beside deep_forest_sources.json. Never edited by hand; a "
+                    "ground is never removed (widen the map instead).",
             "updated_utc": stamp, "grounds": minted_all}, ensure_ascii=False, indent=1))
         _atomic(REPORT, json.dumps(report, ensure_ascii=False, indent=1))
         PASSES.parent.mkdir(parents=True, exist_ok=True)
