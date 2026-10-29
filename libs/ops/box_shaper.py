@@ -1206,9 +1206,14 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH,
     # where an output count is cheap. A ledger failure is named, never allowed to stop the pass.
     try:
         from libs.ops import box_compute_ledger
+        try:
+            ct = psutil.cpu_times()
+            box_cpu_s: float | None = float(ct.user) + float(ct.system)
+        except Exception:  # unread box CPU: the ledger marks every yield UNMEASURED
+            box_cpu_s = None
         report["compute_ledger"] = box_compute_ledger.update(
             procs, rules.get("compute_ledger") or {},
-            path=report_path.parent / box_compute_ledger.LEDGER_PATH.name)
+            path=report_path.parent / box_compute_ledger.LEDGER_PATH.name, box_cpu_s=box_cpu_s)
     except Exception as exc:  # the hunter's own pass must still land
         report["compute_ledger"] = {"error": f"{type(exc).__name__}: {exc}"[:200]}
     _write(report_path, report)

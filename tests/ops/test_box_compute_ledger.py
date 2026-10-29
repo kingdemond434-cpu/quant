@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from libs.ops import box_compute_ledger as cl
 from libs.ops.box_shaper import Proc
@@ -27,6 +28,11 @@ def _procs(cpu: float = 100.0, io: float = 10.0) -> list[Proc]:
              group="other", create_time=9, cpu_s=cpu / 10, io_mb=0, rss_mb=50),
         Proc(6, "MsMpEng.exe", group="system", create_time=1, cpu_s=cpu, rss_mb=300),
     ]
+
+
+def _box(procs: list[Proc], extra: float = 0.0) -> float:
+    """The box's cumulative CPU seconds when every second is a measured process's (+ extra)."""
+    return sum(p.cpu_s for p in procs) + extra
 
 
 def test_every_process_lands_on_a_named_organ() -> None:
@@ -132,13 +138,14 @@ def test_yield_waits_for_a_window_that_matches_the_output(tmp_path: Path) -> Non
     for i in range(25):                       # one pass an hour for a day, 360 core-s each time
         (tmp_path / "J.json").write_text(json.dumps(
             {"verdicts_per_day": 2400, "at": t.isoformat()}))
-        cl.update(_procs(100 + 60 * i), cfg, now=t, path=path, repo=tmp_path)
+        procs = _procs(100 + 60 * i)
+        cl.update(procs, cfg, now=t, path=path, repo=tmp_path, box_cpu_s=_box(procs))
         doc = json.loads(path.read_text())
         judge = next(r for r in doc["free_cpu_first"]
                      if r["organ"] == "judge:run_sharded_gauntlet")
         if i < 23:
             assert judge["output_per_core_hour"] is None, i
-            assert "window covers" in judge["output"]
+            assert "window observed" in judge["output"]
         t += timedelta(hours=1)
     assert doc["window"]["covered_h"] == 24.0 and len(doc["hours"]) == cl.KEEP_HOURS
     # 24 hourly buckets x 180 core-s for the judge launcher + shard = 4320 s = 1.2 core-h
@@ -153,3 +160,70 @@ def test_an_exited_process_is_counted_not_guessed(tmp_path: Path) -> None:
     cl.update(_procs(200), {}, now=NOON.replace(minute=10), path=path, repo=tmp_path)
     cl.update(_procs(300)[:4], {}, now=NOON.replace(minute=20), path=path, repo=tmp_path)
     assert json.loads(path.read_text())["exited_since_last_pass"] == 2
+
+
+def _judge_cfg(tmp_path: Path) -> dict[str, Any]:
+    return {"outputs": {"judge": {"unit": "verdicts", "sources": [
+        {"file": "J.json", "path": ["verdicts_per_day"]}]}}}
+
+
+def _judge_row(doc: dict[str, Any]) -> dict[str, Any]:
+    return next(r for r in doc["free_cpu_first"] if r["organ"] == "judge:run_sharded_gauntlet")
+
+
+def test_an_outage_is_not_coverage_and_old_buckets_leave_the_window(tmp_path: Path) -> None:
+    """#493 MF1 repro: hourly passes with a 10 h outage. Before: covered_h read 24.0, the
+    window was the last 24 buckets however old, and the yield was published (overstated)."""
+    from datetime import timedelta
+    path = tmp_path / "L.json"
+    cfg = _judge_cfg(tmp_path)
+    t, cum = NOON, 100.0
+    hours = [h for h in range(31) if not 10 < h < 20]      # passes at 0..10, then 20..30
+    for h in hours:
+        t = NOON + timedelta(hours=h)
+        (tmp_path / "J.json").write_text(json.dumps({"verdicts_per_day": 2400,
+                                                     "at": t.isoformat()}))
+        cum += 60
+        procs = _procs(cum)
+        cl.update(procs, cfg, now=t, path=path, repo=tmp_path, box_cpu_s=_box(procs))
+        doc = json.loads(path.read_text())
+        if h == 20:
+            assert doc["baseline_pass"] is True and doc["gap_s"] == 10 * 3600.0
+    # window = hours 7..30 wall; observed: 7..10 (4 h) and 21..30 (10 h) = 14 h
+    assert doc["window"]["covered_h"] == 14.0
+    judge = _judge_row(doc)
+    assert judge["output_per_core_hour"] is None and "observed 14.0 h" in judge["output"]
+    end = NOON + timedelta(hours=30)
+    assert all(cl.in_window(k, end) for k in doc["hours"])
+    assert all(cl.in_window(k, end) for k in doc["observed"])
+    # the restarted spend after the outage is not booked into any hour: re-baselined
+    gap_hour = (NOON + timedelta(hours=20)).strftime("%Y-%m-%dT%H")
+    assert all(v["core_s"] == 0.0 for v in doc["hours"][gap_hour].values())
+    assert doc["observed"][gap_hour]["s"] == 0.0
+
+
+def test_short_lived_spend_marks_yield_unmeasured(tmp_path: Path) -> None:
+    """#493 SF1 repro: judge shards under 10 min are never booked; the box's own CPU time shows
+    the unbooked spend and the yield is UNMEASURED, never overstated."""
+    from datetime import timedelta
+    cfg = _judge_cfg(tmp_path)
+    for extra_per_pass, box_known, measured in ((0.0, True, True), (200.0, True, False),
+                                                (0.0, False, False)):
+        path = tmp_path / f"L{extra_per_pass}{box_known}.json"
+        t = NOON
+        for i in range(25):
+            (tmp_path / "J.json").write_text(json.dumps({"verdicts_per_day": 2400,
+                                                         "at": t.isoformat()}))
+            procs = _procs(100 + 60 * i)
+            box = _box(procs, extra_per_pass * i) if box_known else None
+            cl.update(procs, cfg, now=t, path=path, repo=tmp_path, box_cpu_s=box)
+            t += timedelta(hours=1)
+        doc = json.loads(path.read_text())
+        judge = _judge_row(doc)
+        assert (judge["output_per_core_hour"] is not None) is measured, (extra_per_pass,
+                                                                         box_known)
+        if not measured:
+            assert "short-lived processes unmeasured" in judge["output"]
+        if extra_per_pass:
+            # 200 of 566 core-s a pass were booked to no organ
+            assert doc["window"]["unbooked_share"] == round(200 / 566, 4)

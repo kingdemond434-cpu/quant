@@ -32,6 +32,18 @@ WHAT IS UNMEASURED, NEVER GUESSED (audit of #493, 2026-10-29):
   * A STALE OUTPUT IS NO OUTPUT. Each source is believed only while its own timestamp
     (`at_path`, default `at`) is younger than `max_age_s` (default 7200: twice the judging
     throughput leg's hourly cadence). Older, or with no readable timestamp: UNMEASURED.
+  * THE WINDOW IS WALL HOURS, AND COVERAGE IS WHAT WAS OBSERVED (audit #493 MF1). The rolling
+    window holds only buckets whose hour began within the last 24 wall hours (never "the last 24
+    buckets that exist"), and `covered_h` is the pass intervals actually observed inside it, not
+    "now minus the first pass". A pass more than MAX_GAP_S after the previous one (an outage) books
+    nothing and observes nothing: it re-baselines, because what ran and exited in the gap cannot be
+    placed in any hour. With a 10 h outage the window covers ~14 h and every yield is UNMEASURED.
+  * SHORT-LIVED PROCESSES ARE NEVER BOOKED PER ORGAN (audit #493 SF1). A process born and gone
+    between two passes (a judge shard under 10 minutes) is never seen. The box's own CPU time
+    (psutil.cpu_times user+system) is read each pass, so the window's UNBOOKED core-seconds --
+    box minus everything booked -- are measured; while they exceed `max_unbooked_share`
+    (default 5%) of the box's CPU in the window, or the box reading is missing, every yield reads
+    UNMEASURED (a spender's undercount would overstate its yield).
   * AN EXITING PROCESS IS UNDERCOUNTED. A process seen last pass and gone now booked its CPU up to
     last pass; what it spent between that pass and its exit cannot be read once it is gone (psutil
     has no handle to an exited process). The undercount is at most one pass interval per exited
@@ -55,6 +67,11 @@ KEEP_HOURS = 24
 WINDOW_MIN_H = 23.0
 #: Default age past which an output source is stale: twice its hourly cadence.
 DEFAULT_MAX_AGE_S = 7200.0
+#: A pass further than this from the previous one is an outage: it re-baselines (books nothing,
+#: observes nothing). One hour: the bucket width; the real cadence is 10 minutes.
+MAX_GAP_S = 3600.0
+#: Unbooked share of the box's CPU in the window above which every yield is UNMEASURED.
+DEFAULT_MAX_UNBOOKED_SHARE = 0.05
 _PY = re.compile(r"([\w.-]+)\.pyw?\b", re.I)
 
 
@@ -108,13 +125,22 @@ def attribute(procs: Sequence[ProcLike]) -> dict[int, str]:
 
 
 def pass_delta(procs: Sequence[ProcLike], last: Mapping[str, Any] | None,
+               now_epoch: float | None = None, max_gap_s: float = MAX_GAP_S,
                ) -> tuple[dict[str, dict[str, float]], dict[str, Any]]:
-    """Per-organ {core_s, io_mb, rss_mb, n} since the previous pass, and the new state. Pure."""
+    """Per-organ {core_s, io_mb, rss_mb, n} since the previous pass, and the new state. Pure.
+
+    The first pass, and a pass more than `max_gap_s` after the previous one (an outage), are
+    baselines: nothing is booked (`gap_s` says how long the outage was)."""
     prev = last or {}
     totals_raw = prev.get("totals")
     totals_prev: dict[str, Any] = totals_raw if isinstance(totals_raw, dict) else {}
     since = prev.get("at_epoch")
     baseline = not isinstance(since, (int, float))
+    gap_s = None
+    if not baseline and now_epoch is not None:
+        interval = float(now_epoch) - float(since)  # type: ignore[arg-type]
+        if interval > max_gap_s or interval < 0:
+            baseline, gap_s = True, round(interval, 1)
     organs = attribute(procs)
     out: dict[str, dict[str, float]] = {}
     totals: dict[str, list[float]] = {}
@@ -135,7 +161,7 @@ def pass_delta(procs: Sequence[ProcLike], last: Mapping[str, Any] | None,
         # else: alive before the last pass but unseen then (access denied, a race) -- its
         # history is not this pass's, so nothing is booked rather than a guess
     exited = 0 if baseline else sum(1 for k in totals_prev if k not in totals)
-    return out, {"totals": totals, "baseline": baseline, "exited": exited}
+    return out, {"totals": totals, "baseline": baseline, "exited": exited, "gap_s": gap_s}
 
 
 def _dig(doc: Any, path: Sequence[str]) -> float | None:
@@ -223,6 +249,9 @@ def accumulate_hours(ledger: Mapping[str, Any], delta: Mapping[str, Mapping[str,
                      hour: str) -> dict[str, Any]:
     """Add one pass's core-seconds and IO into its hourly bucket; keep KEEP_HOURS. Pure."""
     hours = {k: dict(v) for k, v in (ledger.get("hours") or {}).items() if isinstance(v, dict)}
+    start = _hour_start(hour)
+    if start is not None:   # wall hours, not the last KEEP_HOURS buckets that happen to exist
+        hours = {k: v for k, v in hours.items() if in_window(k, start)}
     h = hours.setdefault(hour, {})
     for organ, v in delta.items():
         o = dict(h.get(organ) or {"core_s": 0.0, "io_mb": 0.0})
@@ -233,10 +262,70 @@ def accumulate_hours(ledger: Mapping[str, Any], delta: Mapping[str, Mapping[str,
     return {k: hours[k] for k in sorted(hours)[-KEEP_HOURS:]}
 
 
-def window(hours: Mapping[str, Any], days: Mapping[str, Any]) -> dict[str, Any]:
-    """The rolling window: every kept hourly bucket summed per organ (peak RSS from the days)."""
+def _hour_start(key: str) -> datetime | None:
+    try:
+        return datetime.strptime(key, "%Y-%m-%dT%H").replace(tzinfo=UTC)
+    except ValueError:
+        return None
+
+
+def in_window(key: str, now: datetime) -> bool:
+    """The bucket's hour began within the last 24 WALL hours (the current hour included)."""
+    start = _hour_start(key)
+    if start is None:
+        return False
+    floor = now.replace(minute=0, second=0, microsecond=0)
+    return 0 <= (floor - start).total_seconds() <= 23 * 3600
+
+
+def accumulate_observed(ledger: Mapping[str, Any], hour: str, *, observed_s: float,
+                        box_core_s: float | None, booked_core_s: float,
+                        now: datetime) -> dict[str, Any]:
+    """Per hour: seconds of pass interval actually observed, the box's CPU over them and what
+    was booked to organs. Only buckets inside the wall window are kept. Pure."""
+    obs = {k: dict(v) for k, v in (ledger.get("observed") or {}).items()
+           if isinstance(v, dict) and in_window(k, now)}
+    h = obs.setdefault(hour, {"s": 0.0, "box_core_s": 0.0, "booked_core_s": 0.0,
+                              "box_unread_passes": 0})
+    h["s"] = round(float(h.get("s", 0.0)) + observed_s, 1)
+    h["booked_core_s"] = round(float(h.get("booked_core_s", 0.0)) + booked_core_s, 1)
+    if box_core_s is None:
+        if observed_s > 0:
+            h["box_unread_passes"] = int(h.get("box_unread_passes", 0)) + 1
+    else:
+        h["box_core_s"] = round(float(h.get("box_core_s", 0.0)) + box_core_s, 1)
+    obs[hour] = h
+    return {k: obs[k] for k in sorted(obs)}
+
+
+def coverage(observed: Mapping[str, Any], now: datetime) -> dict[str, Any]:
+    """Observed hours, box CPU, booked and unbooked core-seconds over the wall window. Pure."""
+    s = box = booked = 0.0
+    unread = 0
+    for k, v in observed.items():
+        if not in_window(k, now) or not isinstance(v, Mapping):
+            continue
+        s += float(v.get("s", 0.0))
+        box += float(v.get("box_core_s", 0.0))
+        booked += float(v.get("booked_core_s", 0.0))
+        unread += int(v.get("box_unread_passes", 0))
+    unbooked = max(0.0, box - booked) if not unread else None
+    share = (unbooked / box) if unbooked is not None and box > 0 else None
+    return {"covered_h": round(min(24.0, s / 3600.0), 2), "box_core_s": round(box, 1),
+            "booked_core_s": round(booked, 1),
+            "unbooked_core_s": None if unbooked is None else round(unbooked, 1),
+            "unbooked_share": None if share is None else round(share, 4),
+            "box_unread_passes": unread}
+
+
+def window(hours: Mapping[str, Any], days: Mapping[str, Any],
+           now: datetime | None = None) -> dict[str, Any]:
+    """The rolling window: every hourly bucket whose hour began within the last 24 wall hours,
+    summed per organ (peak RSS from the days). Without `now`, every kept bucket."""
     organs: dict[str, dict[str, Any]] = {}
-    for bucket in hours.values():
+    for key, bucket in hours.items():
+        if now is not None and not in_window(key, now):
+            continue
         for organ, v in (bucket or {}).items():
             o = organs.setdefault(organ, {"core_s": 0.0, "io_mb": 0.0, "rss_mb_peak": None})
             o["core_s"] = round(o["core_s"] + float(v.get("core_s", 0.0)), 1)
@@ -287,8 +376,12 @@ def rank(day: Mapping[str, Any], outs: Mapping[str, Mapping[str, Any]], *,
 
 
 def update(procs: Sequence[ProcLike], cfg: Mapping[str, Any], *, now: datetime | None = None,
-           path: Path = LEDGER_PATH, repo: Path = REPO) -> dict[str, Any]:
-    """One pass into the ledger file. Never raises into the hunter: a failure is a reading."""
+           path: Path = LEDGER_PATH, repo: Path = REPO,
+           box_cpu_s: float | None = None) -> dict[str, Any]:
+    """One pass into the ledger file. Never raises into the hunter: a failure is a reading.
+
+    `box_cpu_s` is the box's cumulative user+system CPU seconds (psutil.cpu_times); without it the
+    unbooked share is unread and every yield is UNMEASURED."""
     now = now or datetime.now(UTC)
     try:
         ledger = json.loads(path.read_text(encoding="utf-8"))
@@ -298,27 +391,52 @@ def update(procs: Sequence[ProcLike], cfg: Mapping[str, Any], *, now: datetime |
         ledger = {}
     raw_state = ledger.get("state")
     prev_state: dict[str, Any] = raw_state if isinstance(raw_state, dict) else {}
-    delta, state = pass_delta(procs, prev_state)
+    delta, state = pass_delta(procs, prev_state, now.timestamp())
     day = now.date().isoformat()
+    hour = now.strftime("%Y-%m-%dT%H")
     days = accumulate(ledger, delta, day)
-    hours = accumulate_hours(ledger, delta, now.strftime("%Y-%m-%dT%H"))
+    hours = accumulate_hours(ledger, delta, hour)
     outs = outputs(cfg, repo, now)
-    # The window starts at the first pass that booked anything; its coverage is capped at 24 h.
-    since = prev_state.get("since_epoch")
-    if not isinstance(since, (int, float)):
-        since = None if state["baseline"] else prev_state.get("at_epoch")
-    covered_h = 0.0 if since is None else min(24.0, (now.timestamp() - float(since)) / 3600.0)
-    win = window(hours, days)
-    short = (None if covered_h >= WINDOW_MIN_H else
-             f"ledger window covers {covered_h:.1f} h of the output's 24 h")
+    # COVERAGE IS WHAT WAS OBSERVED (MF1): the interval since the previous pass counts only when
+    # this pass booked it (not a baseline, not across an outage). The box's own CPU over the same
+    # interval measures what no organ was booked for (SF1: short-lived processes).
+    observed_s = 0.0 if state["baseline"] else now.timestamp() - float(prev_state["at_epoch"])
+    prev_box = prev_state.get("box_cpu_s")
+    box_delta: float | None = None
+    if (not state["baseline"] and box_cpu_s is not None and isinstance(prev_box, (int, float))
+            and box_cpu_s >= float(prev_box)):
+        box_delta = float(box_cpu_s) - float(prev_box)
+    booked = sum(float(v["core_s"]) for v in delta.values())
+    observed = accumulate_observed(ledger, hour, observed_s=observed_s, box_core_s=box_delta,
+                                   booked_core_s=booked, now=now)
+    cov = coverage(observed, now)
+    covered_h = float(cov["covered_h"])
+    win = window(hours, days, now)
+    max_unbooked = float(cfg.get("max_unbooked_share", DEFAULT_MAX_UNBOOKED_SHARE))
+    if covered_h < WINDOW_MIN_H:
+        short: str | None = (f"ledger window observed {covered_h:.1f} h of the output's 24 h "
+                             "(gaps and outages are not coverage)")
+    elif cov["unbooked_share"] is None:
+        short = ("short-lived processes unmeasured: the box's CPU time was not read for the "
+                 "whole window, so what no organ was booked for is unknown")
+    elif float(cov["unbooked_share"]) > max_unbooked:
+        short = (f"short-lived processes unmeasured: {float(cov['unbooked_share']):.0%} of the "
+                 f"box's CPU in the window was booked to no organ (limit {max_unbooked:.0%})")
+    else:
+        short = None
     doc = {"schema": "box_compute_ledger/v1", "at": now.isoformat(timespec="seconds"),
            "authority": "report_only", "baseline_pass": state["baseline"],
+           "gap_s": state.get("gap_s"),
            "exited_since_last_pass": state["exited"],
-           "window": {"basis": "rolling 24 h of hourly buckets", "covered_h": round(covered_h, 2),
-                      "min_h_for_yield": WINDOW_MIN_H, "organs": win["organs"]},
-           "days": days, "hours": hours, "outputs": outs,
+           "window": {"basis": "hourly buckets begun within the last 24 wall hours",
+                      "covered_h": round(covered_h, 2), "min_h_for_yield": WINDOW_MIN_H,
+                      "box_core_s": cov["box_core_s"], "booked_core_s": cov["booked_core_s"],
+                      "unbooked_core_s": cov["unbooked_core_s"],
+                      "unbooked_share": cov["unbooked_share"],
+                      "max_unbooked_share": max_unbooked, "organs": win["organs"]},
+           "days": days, "hours": hours, "observed": observed, "outputs": outs,
            "free_cpu_first": rank(win, outs, unmeasured_why=short)[:25],
-           "state": {"at_epoch": now.timestamp(), "since_epoch": since,
+           "state": {"at_epoch": now.timestamp(), "box_cpu_s": box_cpu_s,
                      "totals": state["totals"]}}
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
@@ -327,4 +445,5 @@ def update(procs: Sequence[ProcLike], cfg: Mapping[str, Any], *, now: datetime |
     top = doc["free_cpu_first"][0] if doc["free_cpu_first"] else None
     return {"path": str(path.name), "baseline_pass": state["baseline"],
             "organs_today": len(days[day].get("organs", {})),
+            "covered_h": round(covered_h, 2), "unbooked_share": cov["unbooked_share"],
             "free_cpu_first": top["organ"] if top else None}
