@@ -83,9 +83,17 @@ def kill_tree(pid: int, *, include_parent: bool = True) -> dict[str, Any]:
     return out
 
 
-def kill_verified_tree(root: Any, *, timeout: float = 10.0) -> dict[str, Any]:
+def kill_verified_tree(root: Any, *, verified: Mapping[int, float],
+                       timeout: float = 10.0) -> dict[str, Any]:
     """Kill a process the caller has ALREADY VERIFIED (a `psutil.Process` whose pid and creation
-    time it checked) and every descendant of it. Never raises; reports what it did.
+    time it checked) and the descendants it verified with it. Never raises; reports what it did.
+
+    `verified` is the descendant set the caller classified: pid -> creation time. THE TREE MUST
+    STILL BE THAT SET (audit #482, 2026-10-29): if any live descendant is missing from it, or its
+    creation time differs or cannot be read, nothing is killed and `refused` says why -- a child
+    born between the check and the kill was never classified and may be the money path. Only the
+    process objects enumerated and matched here are killed; one born after this enumeration is
+    not touched.
 
     Unlike `kill_tree(pid)` there is NO pid-only fallback: `taskkill /PID` or `os.kill` on a bare
     pid can hit a process that reused it after the check, so a failure here is reported, never
@@ -105,6 +113,19 @@ def kill_verified_tree(root: Any, *, timeout: float = 10.0) -> dict[str, Any]:
         return out
     except psutil.Error as exc:
         out["note"] = f"children: {type(exc).__name__}"
+        return out
+    foreign: list[int] = []
+    for k in kids:
+        try:
+            ct = float(k.create_time())
+        except psutil.Error:
+            ct = None
+        want = verified.get(k.pid)
+        if ct is None or want is None or int(ct) != int(want):
+            foreign.append(k.pid)
+    if foreign:
+        out["refused"] = (f"tree changed since verification: unverified descendant(s) "
+                          f"{sorted(foreign)[:5]}; nothing killed")
         return out
     for k in kids:
         try:

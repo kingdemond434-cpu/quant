@@ -149,7 +149,7 @@ class Action:
     after: Any
     applied: bool = False
     error: str | None = None
-    tree: list[int] = field(default_factory=list)   # a stop's measured descendants
+    tree: list[str] = field(default_factory=list)   # a stop's measured descendants (keys)
     ancestors: list[str] = field(default_factory=list)  # a stop's measured parent chain (keys)
 
 
@@ -804,7 +804,8 @@ _LEDGER_KEEP = 20
 
 def throttle_mechanisms(rules: Mapping[str, Any]) -> list[str]:
     """Every mechanism in the rules that can take CPU from a process: affinity rules, rules that
-    may lower a class (not raise-only), the share cap and the judge reserve."""
+    may lower a class (not raise-only), the share cap, the judge reserve and the dedupe stop
+    (a stopped duplicate is the hardest throttle there is: its whole share goes)."""
     ceiling = rules.get("priority_ceiling", "AboveNormal")
     out = [str(r["name"]) for r in rules.get("rules", [])
            if "affinity" in r or (r.get("priority") and r.get("group") not in RAISE_ONLY
@@ -813,10 +814,14 @@ def throttle_mechanisms(rules: Mapping[str, Any]) -> list[str]:
         out.append("share_cap")
     if rules.get("judge_reserve"):
         out.append("judge_reserve")
+    if rules.get("dedupe") is not None:
+        out.append("dedupe")
     return out
 
 
 def _narrows(a: Action) -> bool:
+    if a.kind == "stop":
+        return True
     if a.kind == "priority":
         # A class set from an UNREADABLE one may be a lowering, so it is billed as one (audit,
         # 2026-10-29): before, _rank(None) = -1 made every such set read as a raise.
@@ -886,9 +891,14 @@ def missed_growth_ledger(previous: Mapping[str, Any] | None, *, rules: Mapping[s
             p = next((q for q in procs if q.pid == a.pid), None)
             if p is None:
                 continue
+            pct = p.cpu_pct
+            if a.kind == "stop":
+                # A STOP TAKES THE TREE (audit #482): the duplicate and every measured
+                # descendant it took down are what was given up.
+                pct += sum(by_key[k].cpu_pct for k in a.tree if k in by_key)
             still_open.append({"at": at, "key": p.key, "pid": p.pid, "name": p.name,
                                "group": p.group, "kind": a.kind, "before": a.before,
-                               "after": a.after, "share_before": round(p.cpu_pct / cap, 4),
+                               "after": a.after, "share_before": round(pct / cap, 4),
                                "judge_share_before": judge_share})
         out[name] = {"two_sided": True,
                      "cost": "forgone_share: the throttled process's share of the box given up",
@@ -1098,7 +1108,7 @@ def plan_dedupe(procs: Sequence[Proc], cfg: Mapping[str, Any],
                 if allowed and dup.key in seen_before and "refused" not in row:
                     stops.append(Action(dup.pid, dup.name, dup.group, "dedupe", "stop", dup.key,
                                         f"stopped; kept {keeper.key}",
-                                        tree=sorted(c.pid for c in tree),
+                                        tree=sorted(c.key for c in tree),
                                         ancestors=[c.key for c in chain]))
     return stops, report
 
@@ -1210,6 +1220,26 @@ def measure(window_s: float) -> tuple[list[Proc], float | None]:
     return procs, box
 
 
+def _keys_to_ctimes(keys: Sequence[str]) -> dict[int, float]:
+    """Measured process keys ("pid:create_time") -> {pid: create_time}; a malformed key drops."""
+    out: dict[int, float] = {}
+    for k in keys:
+        pid_s, _sep, ct_s = str(k).partition(":")
+        try:
+            out[int(pid_s)] = float(ct_s)
+        except ValueError:
+            continue
+    return out
+
+
+def _ctime_of(pr: Any) -> int | None:
+    """A live psutil.Process's creation second, or None when it cannot be read."""
+    try:
+        return int(pr.create_time())
+    except Exception:  # gone / denied: unread, never guessed
+        return None
+
+
 def apply(actions: Sequence[Action], n_cpu: int) -> None:
     """Make each planned change on Windows; record the outcome on the action itself."""
     for a in actions:
@@ -1225,8 +1255,10 @@ def apply(actions: Sequence[Action], n_cpu: int) -> None:
                     continue
                 # THE TREE MUST STILL BE THE ONE THAT WAS CLASSIFIED: a descendant born since
                 # the measurement was never checked against the guarded groups, so it refuses.
-                live = {c.pid for c in pr.children(recursive=True)}
-                unknown = sorted(live - set(a.tree))
+                verified = _keys_to_ctimes(a.tree)
+                unknown = sorted(c.pid for c in pr.children(recursive=True)
+                                 if c.pid not in verified
+                                 or _ctime_of(c) != int(verified[c.pid]))
                 if unknown:
                     a.error = (f"tree changed since measurement (unclassified descendant(s) "
                                f"{unknown[:5]}); not stopped")[:200]
@@ -1243,7 +1275,10 @@ def apply(actions: Sequence[Action], n_cpu: int) -> None:
                 # and no taskkill /PID fallback that could hit a pid reused since the check.
                 # LANDED ONLY WHEN THE ROOT IS GONE (SF2): its children dying is not a stop.
                 from libs.ops.proctree import kill_verified_tree
-                result = kill_verified_tree(pr)
+                result = kill_verified_tree(pr, verified=verified)
+                if result.get("refused"):
+                    a.error = str(result["refused"])[:200]
+                    continue
                 if not result.get("root_gone"):
                     a.error = f"the duplicate's root is still running: {result}"[:200]
                     continue
