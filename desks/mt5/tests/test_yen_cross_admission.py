@@ -107,19 +107,25 @@ def test_the_shipped_policy_file_admits_exactly_the_certified_book() -> None:
     """The artifact itself, as it will be read on the box. Principal 2026-10-07: EURZAR, USDZAR
     and AUDCHF joined gold for the certified sleeve book; USDJPY stays a live symbol but its
     rr2.5 sleeve is Reddit-lineage quarantined (`live_sleeves.USDJPY == []`) until re-certified,
-    and the CHFNOK carry rows are quarantined for lookahead."""
+    and the CHFNOK carry rows are quarantined for lookahead. BOOKS_PATCH v5 (2026-10-13): the
+    gap_decay rows are stopped (AUDCHF and USDZAR leave the universe, EURZAR admits only its
+    carry name) and USDNOK / EURILS join for their one funded sleeve each."""
     f = DESK / "data" / "live_sleeve_policy.json"
     if not f.exists():                      # the box writes its own; absent on a fresh clone
         pytest.skip("no live_sleeve_policy.json in this checkout")
     pol = lp.policy(f)
-    assert pol.live_symbols == frozenset({"XAUUSD", "USDJPY", "EURZAR", "USDZAR", "AUDCHF"})
+    assert pol.live_symbols == frozenset({"XAUUSD", "USDJPY", "EURZAR", "USDNOK", "EURILS"})
     assert "discovered" in pol.banned_families
     for name in (CHOSEN_MT5, "USDJPY.asia#rr=2.5"):
         assert lp.refuse({"symbol": "USDJPY", "name": name}, pol) is not None
     assert lp.refuse({"symbol": "CHFNOK", "name": "chfnok_carry_asia_p_98d776f3e210d3e2"},
                      pol) is not None
     for sym in ("EURZAR", "USDZAR", "AUDCHF"):
-        assert lp.refuse({"symbol": sym, "family": "overnight_gap_decay"}, pol) is None
+        assert lp.refuse({"symbol": sym, "family": "overnight_gap_decay"}, pol) is not None
+    for sym, name in (("EURZAR", "eurzar_carry_asia_p_8339edce23032d21"),
+                      ("USDNOK", "usdnok_carry_asia_p_ff35bb7c8427d66f"),
+                      ("EURILS", "eurils_formula_asia_p_673857a649d3c271")):
+        assert lp.refuse({"symbol": sym, "name": name}, pol) is None
     assert lp.refuse({"symbol": "EURJPY", "name": "eurjpy_session_range_breakout_asia_0_wb_12"},
                      pol) is not None
     assert lp.refuse({"symbol": "EURJPY", "family": "discovered"}, pol) is not None
