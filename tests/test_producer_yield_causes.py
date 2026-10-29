@@ -102,6 +102,11 @@ def test_a_platform_that_never_yielded_is_fetch_failure_and_one_that_did_is_not(
     ev = _ev(platforms=plats)
     assert fence.cause_of("hfm_pamm", None, ev)["cause"] == "FETCH_FAILURE"
     assert fence.cause_of("amarkets", None, ev)["cause"] != "FETCH_FAILURE"
+    # A blocked_sources entry older than a clean fetch of the same ground is history.
+    ev["blocked"] = {"amarkets": {"diagnosis": "FETCH_ERROR"},
+                     "share4you": {"diagnosis": "HTTP_BLOCKED"}}
+    assert fence.cause_of("amarkets", None, ev)["cause"] != "FETCH_FAILURE"
+    assert fence.cause_of("share4you", None, ev)["cause_detail"] == "BLOCKED:HTTP_BLOCKED"
 
 
 def test_retirement_needs_a_declared_successor_and_no_clock_here() -> None:

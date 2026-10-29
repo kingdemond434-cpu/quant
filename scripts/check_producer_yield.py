@@ -568,7 +568,10 @@ def cause_of(name: str, seat: str | None, ev: dict[str, Any]) -> dict[str, Any]:
                               f"ALT_DATA_YIELD: last_state {state} at {plat.get('last_attempt')}, "
                               f"best_rows {best}: the ground has never yielded a record")
         blk = ev["blocked"].get(k)
-        if isinstance(blk, dict):
+        # A blocked entry is history, not a verdict, once the same ground has since fetched
+        # cleanly: litefinance was blocked once on 2026-08-28 and then yielded 15 records.
+        recovered = isinstance(plat, dict) and str(plat.get("last_state") or "") == "ok"
+        if isinstance(blk, dict) and not recovered:
             return _cause("FETCH_FAILURE", f"BLOCKED:{blk.get('diagnosis') or 'BLOCKED'}",
                           f"blocked_sources.json: {blk.get('diagnosis')} -- "
                           f"{str(blk.get('fix_hint') or '')[:120]}")
