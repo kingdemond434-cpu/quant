@@ -278,9 +278,19 @@ def rule_signals(df: pd.DataFrame, *, feat: str, op: str, thr: float, direction:
     hr, wd = clock_arrays(h1)
     m = condition_mask(feats, hr, wd, feat=feat, op=op, thr=thr, cond_feat=cond_feat,
                        cond_lo=cond_lo, cond_hi=cond_hi, hour=hour, weekday=weekday)
+    return signals_from_mask(h1, m, direction=direction, hold=hold, stop_atr=stop_atr,
+                             atr_n=atr_n, tag=tag)
+
+
+def signals_from_mask(h1: pd.DataFrame, m: np.ndarray, *, direction: int, hold: int,
+                      stop_atr: float, atr_n: int = 20, tag: str = "mass_screen") -> list[Signal]:
+    """The fires in `m` (bar closes, BEFORE thinning) as the engine's Signals: ATR stop from the
+    signal bar's close, a far target, `hold` bars, thinned by the one law (`thin`). Shared by every
+    grammar that screens through `mass_screen.Prepared`, so the screen's R and the judge's replay
+    are computed from the same trade list whatever produced the mask."""
     atr = _atr(h1, atr_n).to_numpy(dtype="float64")
     close = h1["close"].to_numpy(dtype="float64")
-    m &= np.isfinite(atr) & (atr > 0) & np.isfinite(close)
+    m = np.asarray(m, dtype=bool) & np.isfinite(atr) & (atr > 0) & np.isfinite(close)
     kept = thin(np.flatnonzero(m), int(hold), entry_days(h1.index))
     side = 1 if int(direction) >= 0 else -1
     idx = h1.index

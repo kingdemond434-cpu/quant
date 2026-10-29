@@ -239,6 +239,10 @@ FAMILY_CLUSTER: dict[str, str] = {
     # -- execution and entry alpha
     "entry_alpha": "execution_entry",
     "execution_alpha": "execution_entry",
+    # The registered execution-entry operators (mt5desk/family_execution_entry.py, 2026-10-06),
+    # declared EXACTLY so `classify_family` places their cells by registry key.
+    "entry_alpha_spread_session_median": "execution_entry",
+    "entry_alpha_post_open_normalised": "execution_entry",
     # -- unscheduled news reaction
     "cb_tone": "news_reaction",
     "news_reaction": "news_reaction",
@@ -257,6 +261,29 @@ FAMILY_CLUSTER: dict[str, str] = {
     "lead_lag_class_catchup": "cross_asset_lead_lag",
     # Fires ONLY in a lagged class-stress regime and is idle otherwise: forced deleveraging.
     "crisis_only_class_defensive": "crisis_drawdown",
+    # THE SIX EMPTY CLUSTERS' FAMILIES (desks/mt5/mt5desk/families_empty_clusters.py,
+    # 2026-09-30), declared EXACTLY. Each names its payer in that module's docstring.
+    "implied_vol_risk_premium": "options_implied",
+    "implied_vol_shock_fade": "options_implied",
+    "positioning_crowding_unwind": "positioning_flow",
+    "positioning_hedging_pressure": "positioning_flow",
+    "positioning_flow_momentum": "positioning_flow",
+    "entry_alpha_limit_pullback": "execution_entry",
+    "entry_alpha_spread_gate": "execution_entry",
+    "entry_alpha_open_offset": "execution_entry",
+    "cb_tone_speech_reaction": "news_reaction",
+    "news_reaction_unscheduled_shock": "news_reaction",
+    "event_surprise_impact_drift": "event_surprise",
+    "event_surprise_consensus": "event_surprise",
+    "lead_lag_session_handoff": "cross_asset_lead_lag",
+    # The CFTC families in `mt5desk.families` were never declared, so every one of them read
+    # UNCLASSIFIED while `positioning_flow` was reported empty. Their payer is the crowd.
+    "cot_net_fade": "positioning_flow",
+    "cot_change_fade": "positioning_flow",
+    "cot_change_momentum": "positioning_flow",
+    "cot_comm_follow": "positioning_flow",
+    # The desk's first family whose entry condition is the venue's execution state.
+    "execution_state": "execution_entry",
     # -- crisis and drawdown alpha
     "drawdown_conditional": "crisis_drawdown",
     "crisis_only": "crisis_drawdown",

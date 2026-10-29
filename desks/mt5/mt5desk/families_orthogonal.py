@@ -2516,3 +2516,93 @@ for _av_name in ("analyst_revision_drift", "analyst_cross_market_lead"):
         "a view is a daily-cadence event measured at +1/+5/+21 trading days; its hold is counted "
         "in H1 bars per trading day, and the tracker that set the measured side read H1 closes")
 del _av_name
+
+# THE UNKNOWN-UNKNOWN GRAMMARS (2026-09-30). `research/unknown_unknown.py` enumerates and evolves
+# expressions over bar primitives nobody named (`mt5desk.uu_grammar`), screens them cheaply,
+# controls FDR over the FULL screened width and donates only novel survivors; this is the
+# constructor the sealed gauntlet rebuilds each one with. Five names, one executable rule, so the
+# multiplicity ledger charges each grammar its own width. A cross-asset leaf is loaded by the
+# family itself from the bar store, so `build_cell`'s ordinary `fn(h1, **params)` call suffices.
+# Every argument that defines the rule is required: a default-parameter sweep sets them aside.
+from mt5desk.uu_grammar import UU_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(UU_FAMILIES)
+for _uu_name in UU_FAMILIES:
+    FAMILY_INPUTS[_uu_name] = ("price, volume and calendar only (uu_cross: the named reference "
+                               "symbol's bars too)", "data/universe/*_H1.parquet")
+    FAMILY_TIMEFRAMES[_uu_name] = (
+        ("H1",),
+        "the expression's windows are counted in H1 bars and a cross-asset leaf is read from the "
+        "reference's H1 store; on another chart every window would change meaning and the "
+        "reference would be joined to a clock it does not carry")
+del _uu_name
+
+# DATASET-CONDITIONED (2026-09-30): the INDIRECT use of every dataset the desk holds. An existing,
+# rebuildable family's own entries kept only while a dataset's point-in-time reading is in a named
+# state (`mt5desk.family_dataset_conditioned`), read through ONE loader for the lake, the CFTC files
+# and the intelligence snapshots (`mt5desk.dataset_series`, lagged a publication day). It loads its
+# own input, so `build_cell`'s ordinary call builds it; the base family, the dataset and the field
+# are required, so a default-parameter sweep sets it aside and only `producer_swarm`'s dataset
+# producers mint it. H1 only: the base is rebuilt on H1 bars, as `exit_operated` rebuilds its own.
+from mt5desk.family_dataset_conditioned import family_dataset_conditioned  # noqa: E402
+
+ORTHOGONAL_FAMILIES["dataset_conditioned"] = family_dataset_conditioned
+FAMILY_INPUTS["dataset_conditioned"] = (
+    "a base family's price inputs, filtered by a dataset's own series on its availability clock",
+    "data/lake/series/*, data/cot*/*.parquet, data/intelligence/<seat>/")
+FAMILY_TIMEFRAMES["dataset_conditioned"] = (
+    ("H1",),
+    "the base family is rebuilt on H1 bars and the dataset is joined to the H1 clock a "
+    "publication day late; on another chart the base would change meaning")
+
+# THE SIX EMPTY ALPHA CLUSTERS (2026-09-30): options_implied, positioning_flow, execution_entry,
+# news_reaction, event_surprise and cross_asset_lead_lag. Measured on LIVE, every one was empty
+# because the SEALED gauntlet could not build its families -- `lead_lag` gets driver=None,
+# `event_reaction` a bare index, the `cot_*` families a positional frame nobody passes, and three
+# clusters had no family at all. Each family in `mt5desk.families_empty_clusters` loads its own
+# input from `symbol` (and `cond_symbol` / `base_family` where it has one), so `build_cell`'s
+# ordinary `fn(h1, side=1, **params)` builds it. `symbol` is required, so a default-parameter sweep
+# sets them aside; `research/empty_cluster_breadth` enumerates, measures and charges the grid.
+from mt5desk.families_empty_clusters import (  # noqa: E402
+    ALL_CHART_FAMILIES as _EC_ALL_CHARTS,
+)
+from mt5desk.families_empty_clusters import (  # noqa: E402
+    EMPTY_CLUSTER_FAMILIES,
+)
+from mt5desk.families_empty_clusters import INPUTS as _EC_INPUTS  # noqa: E402
+from mt5desk.families_empty_clusters import WALL_CLOCK as _EC_WALL_CLOCK  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(EMPTY_CLUSTER_FAMILIES)
+WALL_CLOCK_PARAMS.update(_EC_WALL_CLOCK)
+for _ec_name in EMPTY_CLUSTER_FAMILIES:
+    FAMILY_INPUTS[_ec_name] = _EC_INPUTS[_ec_name]
+    if _ec_name in _EC_ALL_CHARTS:
+        continue
+    FAMILY_TIMEFRAMES[_ec_name] = (
+        ("H1",),
+        "reads an HOUR-WIDE event bar, a session open's stamp-hour or an H1 driver panel, and "
+        "counts its read and hold in H1 bars; on another chart the hour it reads does not exist "
+        "or the driver is joined to a clock it does not carry")
+del _ec_name
+
+# THE EXECUTION-ENTRY FAMILIES (2026-10-06). `execution_entry` was a declared alpha cluster with
+# no registered family, so `empty_cluster_forcer` filed it UNREACHABLE and the breadth law could
+# raise no debt against it. Both are OPERATORS over a price-only base family's market entries,
+# conditioned on the bars' own `spread` column and the `family_call.SESSIONS` clock: enter only
+# off a bar whose spread is at or below its session's trailing median, or move an open-window
+# fill past the open once the spread has normalised. Price-only by construction (the spread is a
+# column of the bars the gauntlet already passes), every argument has a default, so the sealed
+# `fn(h1, **params)` call and the compiler's family-default mint both build them unchanged.
+from mt5desk.family_execution_entry import FAMILIES as EXECUTION_ENTRY_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(EXECUTION_ENTRY_FAMILIES)
+for _ee_name in EXECUTION_ENTRY_FAMILIES:
+    FAMILY_INPUTS[_ee_name] = ("price only",
+                               "data/universe/*_<chart>.parquet (OHLC + the bars' own spread "
+                               "column; the base family is rebuilt from the same bars)")
+    FAMILY_TIMEFRAMES[_ee_name] = (
+        ("M1", "M5", "M15", "M30", "H1"),
+        "the claim is about WHEN inside a session the fill lands -- the rollover/open bar against "
+        "the bars after it -- and a four-hour or daily bar spans the open window and its "
+        "normalisation alike, so the operator would have no later bar to move an entry to")
+del _ee_name

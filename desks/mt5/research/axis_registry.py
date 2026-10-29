@@ -162,12 +162,17 @@ _FAMILY_GROUPS: dict[str, str] = {
     "fx_fixing_flow price_only market": "fx_fixing_reversal",
     "forced_flow event market": "forced_flow",
     "macro_release macro market": "macro_conditional macro_gold_yield",
-    "macro_release event market": "event_reaction",
+    "macro_release event market": "event_reaction"
+                                  " cb_tone_speech_reaction event_surprise_consensus"
+                                  " event_surprise_impact_drift",
     "macro_release cross_asset market": "usd_session_shock",
     "carry_rollover carry market": "carry mass_screen_carry",
     "positioning_crowding positioning market": "cot_change_fade cot_change_momentum"
                                                " cot_comm_follow cot_net_fade cot_positioning"
-                                               " retail_overlap_reversal",
+                                               " retail_overlap_reversal"
+                                               " positioning_crowding_unwind"
+                                               " positioning_flow_momentum"
+                                               " positioning_hedging_pressure",
     "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month"
                                                " mass_screen_clock",
     "relative_value_dislocation cross_asset market": "correlation_regime cross_asset_residual"
@@ -178,7 +183,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     "relative_value_dislocation microstructure limit": "triangle",
     "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup"
                                             " gnn_propagation mass_screen_lead"
-                                            " ae_latent",
+                                            " ae_latent"
+                                            " cross_asset_lead_lag",
     # The learned attention forecast (2026-09-30, research/learned_miners): whether a move is a
     # concession that reverts or information that continues, read off the recent path.
     "inventory_shock price_only market": "attention_ts rocket_ts sig_path",
@@ -203,9 +209,16 @@ _FAMILY_GROUPS: dict[str, str] = {
     "volatility_shock price_only stop": "d1_inside volatility_squeeze",
     "regime_transition price_only market": "drawdown_conditional regime_split"
                                            " regime_transition vol_transition",
-    "execution_microstructure microstructure market": "liquidity_regime orderflow_imbalance",
+    # The execution-entry operators (2026-10-06): the payer is the liquidity provider the desk
+    # pays the spread to, and the information is the bars' own spread on the session clock.
+    "execution_microstructure microstructure market": "liquidity_regime orderflow_imbalance"
+                                                      " entry_alpha_spread_session_median"
+                                                      " entry_alpha_post_open_normalised"
+                                                      " entry_alpha_open_offset"
+                                                      " entry_alpha_spread_gate",
     "execution_microstructure microstructure limit": "execution_state moat_spread_window"
-                                                     " spread_state",
+                                                     " spread_state"
+                                                     " entry_alpha_limit_pullback",
     "gamma_hedging_state microstructure market": "liquidity_gamma_reversal",
     "inventory_shock microstructure market": "volume_spike",
     # NO MECHANISM NAMED, AND THAT IS THE MEASUREMENT. `discovered` is the desk's own generated
@@ -213,7 +226,11 @@ _FAMILY_GROUPS: dict[str, str] = {
     # constructors. All map to UNKNOWN so the count is visible rather than assumed away.
     # `mass_screen_thresh` / `_cond` are statistical finds of the mass screen (2026-09-30): a
     # feature-threshold rule names no payer, so the mechanism is UNKNOWN and counted, not guessed.
-    f"{UNKNOWN} price_only market": "discovered mass_screen_cond mass_screen_thresh",
+    f"{UNKNOWN} price_only market": "discovered mass_screen_cond mass_screen_thresh"
+                                    " uu_unary uu_binary uu_cond uu_gp",
+    # The unknown-unknown grammars (`mt5desk.uu_grammar`, 2026-09-30): expressions nobody named,
+    # so no payer is named either -- UNKNOWN and counted. `uu_cross` names a cross-asset leaf.
+    f"{UNKNOWN} cross_asset market": "uu_cross",
     f"{UNKNOWN} price_only {UNKNOWN}": "ensemble formula generic joint_genome exit_operated"
                                        " alt_conditioned",
     # Registered 2026-09-23/24 in `families_orthogonal`. `exit_operated` is an OPERATOR over any
@@ -226,7 +243,13 @@ _FAMILY_GROUPS: dict[str, str] = {
     # `alt_conditioned` is an operator over a base family's entries, like `exit_operated`.
     # `world_macro_state` (2026-09-30) conditions on one hunted world series named on the recipe,
     # the same shape as `exogenous_conditioner`: the series is named, the payer is not.
-    f"{UNKNOWN} macro market": "exogenous_conditioner world_macro_state alt_series_momentum",
+    f"{UNKNOWN} macro market": "exogenous_conditioner world_macro_state alt_series_momentum"
+                               " dataset_conditioned",
+    # THE EMPTY-CLUSTER FAMILIES (`mt5desk.families_empty_clusters`, PR #163): each names its
+    # payer on its own docstring.
+    "volatility_shock event market": "news_reaction_unscheduled_shock",
+    "volatility_shock macro market": "implied_vol_risk_premium implied_vol_shock_fade",
+    "session_information_handoff cross_asset market": "lead_lag_session_handoff",
 }
 FAMILY_TABLE: dict[str, tuple[str, str, str]] = {}
 for _key, _fams in _FAMILY_GROUPS.items():
