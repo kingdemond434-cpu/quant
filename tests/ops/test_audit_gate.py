@@ -2109,3 +2109,58 @@ def test_an_answer_with_a_key_twice_is_unreadable() -> None:
         '"risk_increasing": false', '"risk_increasing": true, "risk_increasing": false'
     )
     assert dup != _PASS and ir.parse(dup) is None
+
+
+# ------------------------------------------- a diff too large whole is reviewed in parts (#523)
+
+
+def _diff(*files: tuple[str, list[str]]) -> str:
+    out = ""
+    for name, hunks in files:
+        out += f"diff --git a/{name} b/{name}\n--- a/{name}\n+++ b/{name}\n"
+        out += "".join(f"@@ -1 +1 @@\n{h}\n" for h in hunks)
+    return out
+
+
+def test_split_diff_cuts_only_at_files_and_hunks_and_keeps_every_line() -> None:
+    d = _diff(("a.py", ["+" + "x" * 50]), ("b.py", ["+" + "y" * 50, "+" + "z" * 50]))
+    parts = ir.split_diff(d, 150)
+    assert parts is not None and len(parts) == 3
+    assert all(p.startswith("diff --git ") and len(p) <= 150 for p in parts)
+    assert all("+++ b/b.py" in p for p in parts[1:])  # a cut file keeps its header
+    body = [ln for p in parts for ln in p.splitlines() if ln.startswith("+") and "+++" not in ln]
+    assert sorted(body) == sorted(ln for ln in d.splitlines() if ln.startswith("+x")
+                                  or ln.startswith("+y") or ln.startswith("+z"))  # fmt: skip
+    assert ir.split_diff(d, 10_000) == [d]  # fits whole: one part
+    assert ir.split_diff(_diff(("a.py", ["+" + "x" * 500])), 150) is None  # a hunk never in part
+
+
+def test_a_large_diff_passes_only_when_every_part_passes() -> None:
+    big = _diff(*((f"f{i}.py", ["+" + "q" * 9_000]) for i in range(8)))  # ~72k chars
+    clock = iter(range(0, 10**6, 10)).__next__
+    asked: list[str] = []
+
+    def model(*answers: str) -> Any:
+        it = iter(answers)
+
+        def ask(rubric: str, user: str) -> str:
+            asked.append(user)
+            return next(it)
+
+        return ask
+
+    n = len(ir.split_diff(big, 40_000) or [])
+    v, log = ir.review(big, ["f.py"], [("qwen", "q1", model(*[_PASS] * 9)),
+                                       ("llama", "l1", model(*[_PASS] * 9))],
+                       num_ctx=32_768, sleep=lambda s: None, clock=clock)  # fmt: skip
+    assert v == "PASS" and "parts" in log[0] and log[-1].startswith("PASS: all")
+    assert any("This is part 1 of" in u for u in asked) and n >= 1
+    v, _ = ir.review(big, ["f.py"], [("qwen", "q1", model(_PASS, _FAIL, *[_PASS] * 9)),
+                                     ("llama", "l1", model(*[_PASS] * 9))],
+                     num_ctx=32_768, sleep=lambda s: None, clock=clock)  # fmt: skip
+    assert v == "FAIL"  # one part's FAIL stands
+    small = _diff(("a.py", ["+x"]))
+    asked.clear()
+    v, _ = ir.review(small, ["a.py"], [("qwen", "q1", model(_PASS)), ("llama", "l1", model(_PASS))],
+                     num_ctx=32_768, sleep=lambda s: None, clock=clock)  # fmt: skip
+    assert v == "PASS" and not any("This is part" in u for u in asked)  # whole: never split
