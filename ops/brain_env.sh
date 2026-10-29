@@ -160,7 +160,15 @@ brain_mem_gate() {
 
 # --- D3 self-healing (founders directive, principal 2026-07-19) ---
 _brain_page() {
-    # page the principal via the desk pager topic (ntfy.sh); never fails the caller
+    # DESK page via libs/ops/alert_channels.send_all; never fails the caller
+    #
+    # AUDIENCE: DESK (owner, 2026-10-29: "only notify me on things which need me ... handle rest
+    # n don't tell me"; rule in libs/ops/alert_channels.py). Every caller is brain plumbing --
+    # model fallback active, quota walls, the metered fallback absent, auth down, a law-gate
+    # breach -- the same class run_alerts already routes desk (brain_down, auth_broken). A step
+    # that truly needs the owner goes on data/PRINCIPAL_ACTION.md, which run_alerts pages as
+    # principal_action_needed. So this no longer curls ntfy.sh: send_all ledgers the page, mirrors
+    # it to the non-personal channels and records the phone as `routed: desk audience`.
     #
     # PER-MESSAGE DEDUPE (2026-08-05). This bypassed run_alerts' entire dedupe discipline -- no
     # state, no throttle -- and sent 191 near-identical "LAW GUARD: DOCTRINE-GAP" pages in 24h,
@@ -170,9 +178,7 @@ _brain_page() {
     # is exactly what exhausted the quota 07-11 -> 07-16 and silently dropped EVERY page for five
     # days including a dead-man fire (run_alerts.py:332-335). Same 6h window run_alerts uses for
     # slow-moving conditions; identical text inside it is dropped, changed text pages immediately.
-    local topic stampdir stamp
-    topic="$(python3 -c "import json;d=json.load(open('/home/quant/quant-platform/data/secrets/ntfy.json'));print(d.get('topic') or d.get('ntfy_topic') or '')" 2>/dev/null)"
-    [ -n "$topic" ] || return 0
+    local stampdir stamp
     stampdir="/home/quant/quant-platform/data/.brain_page_stamps"
     mkdir -p "$stampdir" 2>/dev/null || true
     stamp="$stampdir/$(printf '%s' "$1" | sha1sum | cut -c1-16)"
@@ -180,8 +186,17 @@ _brain_page() {
     if [ -n "$(find "$stamp" -mmin -360 2>/dev/null)" ]; then
         return 0
     fi
-    if curl -fsS -m 10 -H "Title: BRAIN" -H "Priority: high" -H "Tags: robot" \
-        -d "$1" "https://ntfy.sh/$topic" >/dev/null 2>&1; then
+    # "success" = send_all RAN: a desk page's destination is the delivery ledger, and send_all
+    # writes a row there for every outcome (routed, delivered, failed, NOT-ARMED). Stamping on a
+    # per-channel success instead would leave an unarmed box with NO stamps, so every call would
+    # re-spawn python -- and libs/ops/lawful._page's pre-spawn dedupe reads these same stamps;
+    # without them it re-buys the 2026-08-26 OOM loop. Only a crash (exit != 0) retries.
+    if (cd /home/quant/quant-platform 2>/dev/null && BRAIN_PAGE_MSG="$1" timeout 30 python3 -c '
+import os
+from libs.ops.alert_channels import send_all
+m = os.environ.get("BRAIN_PAGE_MSG", "")
+send_all("BRAIN: " + m[:120], m, audience="desk")
+') >/dev/null 2>&1; then
         : > "$stamp" 2>/dev/null || true    # stamp ONLY on success, so a failed page retries
     fi
     # prune stamps older than a week so the dir cannot grow without bound

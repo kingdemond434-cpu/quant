@@ -20,17 +20,17 @@ Idempotent: writes data/.last_digest_page so a re-run inside the same UTC day is
 """
 from __future__ import annotations
 
-import json
 import re
+import sys
 import time
-import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DIGEST = ROOT / "docs/desk_digest.md"
 STAMP = ROOT / "data/.last_digest_page"
-NTFY = ROOT / "data/secrets/ntfy.json"
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 
 def _section(text: str, name: str, limit: int = 3) -> list[str]:
@@ -67,31 +67,32 @@ def main() -> None:
                  for ln in txt.splitlines() if ln.strip().startswith("-")][:5]
 
     body = f"DESK DIGEST {today}\n" + "\n".join(parts[:8])
-    try:
-        topic = json.loads(NTFY.read_text("utf-8")).get("topic")
-    except Exception:
-        topic = None
-    if not topic:
-        print("no ntfy topic configured -- digest not paged")
-        return
-    # ntfy.sh free tier rate-limits per source; the 08:30 slot can collide with the max_audit
-    # escalation page, and 2 of the first 4 digest fires died on HTTP 429 (delivery is the whole
-    # point -- a digest that half-fails is register-#3 all over again). One patient retry clears
-    # a burst limit; anything still failing after that is reported, never raised.
+    # AUDIENCE: DESK (owner, 2026-10-29: "only notify me on things which need me ... handle rest
+    # n don't tell me"; rule in libs/ops/alert_channels.py). A digest asks him to DO nothing, so it
+    # no longer posts to ntfy.sh directly: send_all routes it to the ledger and the non-personal
+    # channels and records the phone as `routed: desk audience`. One patient retry is kept for a
+    # transient failure of an armed channel; anything still failing is reported, never raised.
     for attempt in (0, 1):
         if attempt:
             time.sleep(90)
-        req = urllib.request.Request(f"https://ntfy.sh/{topic}", data=body.encode("utf-8"),
-                                     method="POST")
-        req.add_header("Title", "Quant desk: daily digest")
-        req.add_header("Priority", "low")           # informational -- never buzzes like an alarm
         try:
-            urllib.request.urlopen(req, timeout=20)
-            STAMP.write_text(today, "utf-8")
-            print(f"digest paged ({len(parts)} lines)")
-            return
+            from libs.ops.alert_channels import send_all
+            res = send_all("Quant desk: daily digest", body, audience="desk")
         except Exception as exc:                    # a failed digest must never break a cycle
             print(f"digest page failed{' (after retry)' if attempt else ''}: {exc!r}")
+            continue
+        if res.get("delivered"):
+            try:
+                STAMP.write_text(today, "utf-8")
+            except OSError as exc:                  # same contract: report, never raise
+                print(f"digest stamp not written: {exc!r}")
+            print(f"digest paged to desk ({len(parts)} lines, {res.get('routed', 0)} routed)")
+            return
+        if not res.get("armed"):
+            print("no alert channel armed -- digest ledgered NOT-ARMED, not paged")
+            return
+        print(f"digest page failed{' (after retry)' if attempt else ''}: "
+              f"{[r.get('detail') for r in res.get('results', [])]!r}")
 
 
 if __name__ == "__main__":

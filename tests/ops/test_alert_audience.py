@@ -14,6 +14,7 @@ import ast
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -299,3 +300,220 @@ def test_run_alerts_pushes_ntfy_only_for_keys_that_need_him(monkeypatch: pytest.
     ra._push("topic", "WARNING Quant desk: brain_down", "x", audience="desk")
     assert opened == [] and seen == ["desk"]
     assert rows == [("routed: desk audience", "desk")]
+
+
+# --- THE DIRECT-POST FENCE (no page reaches ntfy.sh around send_all) ------------------------------
+
+#: Files allowed to hold an ntfy.sh URL literal, each with WHY. Every other non-test file must page
+#: through `alert_channels.send_all(..., audience=...)` / `page_principal`, so the audience rule is
+#: applied in one place and the phone only rings for "principal".
+NTFY_DIRECT_EXEMPT = {
+    "libs/ops/alert_channels.py":
+        "THE sanctioned sender (_send_ntfy); send_all only reaches it for audience principal",
+    "scripts/run_alerts.py":
+        "the VPS pager: its principal path keeps the direct push (429 backoff, ntfy.json topic) "
+        "and the reply poll; desk keys skip it (test_run_alerts_pushes_ntfy_only_for_keys...)",
+    "scripts/run_deadman_switch.py":
+        "TIER-3 ruin rail, hash-locked in scripts/check_risk_kernel.KERNEL and isolated from libs/ "
+        "by design (tests/scripts/test_deadman_atomic_state.py); every page it sends -- fired, "
+        "feed stale with open positions, disarmed on a live book -- is PRINCIPAL anyway",
+    "scripts/_retired/publish_dashboard_url.py":
+        "retired: not in ops/crontab.manifest, not imported; kept for history only",
+}
+
+#: an ntfy.sh URL or bare host as a STRING LITERAL (a URL being built), not prose that mentions it
+_NTFY_URL = re.compile(r"^\s*(?:https?://)?ntfy\.sh(?:[/:]|$)")
+#: the same, in shell/PowerShell/batch source (comment lines are prose and are skipped)
+_NTFY_URL_SHELL = re.compile(r"(?:https?://)?\bntfy\.sh/")
+_SHELL_GLOBS = ("*.sh", "*.bash", "*.ps1", "*.psm1", "*.bat", "*.cmd")
+
+
+def _tracked(*globs: str) -> list[str]:
+    out = subprocess.run(["git", "ls-files", "-z", "--", *globs], cwd=ROOT, check=True,
+                         capture_output=True).stdout.decode("utf-8", "replace")
+    return [p for p in out.split("\0") if p]
+
+
+def _ntfy_literals(tree: ast.AST) -> list[int]:
+    """Line numbers of string literals that ARE an ntfy.sh URL (f-strings included); docstrings
+    are prose and skipped."""
+    docs: set[int] = set()
+    for node in ast.walk(tree):
+        body = getattr(node, "body", None)
+        if isinstance(body, list) and body and isinstance(body[0], ast.Expr) and isinstance(
+                body[0].value, ast.Constant) and isinstance(body[0].value.value, str):
+            docs.add(id(body[0].value))
+    hits: list[int] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.JoinedStr):
+            text = "".join(v.value if isinstance(v, ast.Constant) and isinstance(v.value, str)
+                           else "\0" for v in node.values)
+        elif (isinstance(node, ast.Constant) and isinstance(node.value, str)
+              and id(node) not in docs):
+            text = node.value
+        else:
+            continue
+        if _NTFY_URL.search(text):
+            hits.append(node.lineno)
+    return sorted(set(hits))
+
+
+def _shell_hits(src: str) -> list[int]:
+    return [i for i, ln in enumerate(src.splitlines(), 1)
+            if not ln.lstrip().startswith(("#", "REM ", "rem ", "::"))
+            and _NTFY_URL_SHELL.search(ln)]
+
+
+def _scan_direct() -> tuple[list[str], set[str]]:
+    bad: list[str] = []
+    exempt_seen: set[str] = set()
+    for rel in _tracked_py():
+        if _is_test(rel) or not (ROOT / rel).is_file():
+            continue
+        src = (ROOT / rel).read_text("utf-8", "replace")
+        if "ntfy" not in src:
+            continue
+        try:
+            tree = ast.parse(src)
+        except SyntaxError:
+            continue
+        lines = _ntfy_literals(tree)
+        if lines and rel in NTFY_DIRECT_EXEMPT:
+            exempt_seen.add(rel)
+        elif lines:
+            bad += [f"{rel}:{n}" for n in lines]
+    for rel in _tracked(*_SHELL_GLOBS):
+        if _is_test(rel) or not (ROOT / rel).is_file():
+            continue
+        lines = _shell_hits((ROOT / rel).read_text("utf-8", "replace"))
+        if lines and rel in NTFY_DIRECT_EXEMPT:
+            exempt_seen.add(rel)
+        elif lines:
+            bad += [f"{rel}:{n}" for n in lines]
+    return bad, exempt_seen
+
+
+def test_nothing_posts_to_ntfy_sh_around_send_all() -> None:
+    """A direct ntfy.sh post bypasses the audience rule entirely -- that is how the phone filled
+    with digests, model-chain notes and brain plumbing. Page through send_all(audience=...) or
+    page_principal; a file that truly cannot goes on NTFY_DIRECT_EXEMPT with its reason."""
+    bad, exempt_seen = _scan_direct()
+    assert not bad, ("direct ntfy.sh post(s) outside alert_channels.send_all -- route them "
+                     f"through send_all(..., audience=\"principal\"|\"desk\"): {bad}")
+    # the exemption list cannot rot: each entry still exists and still holds an ntfy.sh URL
+    assert exempt_seen == set(NTFY_DIRECT_EXEMPT), exempt_seen
+    for rel, why in NTFY_DIRECT_EXEMPT.items():
+        assert len(why) > 30, f"{rel}: an exemption needs a reason"
+
+
+def test_the_direct_post_fence_sees_each_shape() -> None:
+    src = ('"""Docstring naming https://ntfy.sh/topic is prose."""\n'
+           'import urllib.request\n'
+           'urllib.request.Request(f"https://ntfy.sh/{t}", data=b"x")\n'
+           'URL = "https://ntfy.sh/" + t\n'
+           'HOST = "ntfy.sh"\n'
+           'subprocess.run(["curl", "-d", m, f"ntfy.sh/{t}"])\n'
+           'print(f"subscribe at: https://ntfy.sh/{t}")\n'
+           'HELP = "subscribe in the ntfy app or at https://ntfy.sh/<topic>"\n')
+    assert _ntfy_literals(ast.parse(src)) == [3, 4, 5, 6]
+    sh = ('# page via ntfy.sh/topic -- a comment is prose\n'
+          'curl -d "$1" "https://ntfy.sh/$topic"\n'
+          'Invoke-RestMethod -Uri "https://ntfy.sh/$t" -Method Post\n')
+    assert _shell_hits(sh) == [2, 3]
+
+
+# --- THE FORMER DIRECT POSTERS, NOW DESK ---------------------------------------------------------
+
+def _load(rel: str, name: str) -> Any:
+    spec = importlib.util.spec_from_file_location(name, ROOT / rel)
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _no_network(monkeypatch: pytest.MonkeyPatch) -> None:
+    import urllib.request
+
+    def urlopen(*_a: Any, **_k: Any) -> Any:
+        pytest.fail("a desk page reached the network directly")
+
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+
+
+def _fake_send_all(monkeypatch: pytest.MonkeyPatch, result: dict[str, Any] | None = None,
+                   exc: Exception | None = None) -> list[tuple[str, str, Any]]:
+    seen: list[tuple[str, str, Any]] = []
+
+    def fake(t: str, b: str, **k: Any) -> dict[str, Any]:
+        seen.append((t, b, k.get("audience")))
+        if exc:
+            raise exc
+        return result if result is not None else {"armed": 1, "delivered": 1, "routed": 1}
+
+    monkeypatch.setattr(ac, "send_all", fake)
+    return seen
+
+
+def test_the_digest_is_desk_stamps_once_and_never_raises(tmp_path: Path,
+                                                        monkeypatch: pytest.MonkeyPatch) -> None:
+    pd = _load("scripts/page_digest.py", "page_digest_audience")
+    digest = tmp_path / "desk_digest.md"
+    digest.write_text("## Book\n- flat\n## Open\n- one item\n", "utf-8")
+    monkeypatch.setattr(pd, "DIGEST", digest)
+    monkeypatch.setattr(pd, "STAMP", tmp_path / ".last_digest_page")
+    monkeypatch.setattr(pd.time, "sleep", lambda _s: None)
+    _no_network(monkeypatch)
+    seen = _fake_send_all(monkeypatch)
+    pd.main()
+    pd.main()                                            # same UTC day: a no-op
+    assert [(t, a) for t, _b, a in seen] == [("Quant desk: daily digest", "desk")]
+    assert "DESK DIGEST" in seen[0][1] and pd.STAMP.exists()
+
+
+def test_a_failing_digest_retries_once_and_does_not_stamp(tmp_path: Path,
+                                                          monkeypatch: pytest.MonkeyPatch) -> None:
+    pd = _load("scripts/page_digest.py", "page_digest_audience_fail")
+    digest = tmp_path / "desk_digest.md"
+    digest.write_text("- something\n", "utf-8")
+    monkeypatch.setattr(pd, "DIGEST", digest)
+    monkeypatch.setattr(pd, "STAMP", tmp_path / ".last_digest_page")
+    monkeypatch.setattr(pd.time, "sleep", lambda _s: None)
+    seen = _fake_send_all(monkeypatch, exc=OSError("down"))
+    pd.main()                                            # never raises
+    assert len(seen) == 2 and not pd.STAMP.exists()
+    seen2 = _fake_send_all(monkeypatch, result={"armed": 1, "delivered": 0, "results": []})
+    pd.main()
+    assert len(seen2) == 2 and not pd.STAMP.exists()
+    seen3 = _fake_send_all(monkeypatch, result={"armed": 0, "delivered": 0, "results": []})
+    pd.main()                                            # unarmed: one ledgered try, no retry
+    assert len(seen3) == 1 and not pd.STAMP.exists()
+
+
+def test_model_upgrade_and_seats_page_desk_and_swallow_errors(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    sys.path.insert(0, str(ROOT))
+    rmu = _load("scripts/run_model_upgrade.py", "run_model_upgrade_audience")
+    seats = _load("scripts/seats.py", "seats_audience")
+    _no_network(monkeypatch)
+    seen = _fake_send_all(monkeypatch)
+    rmu._page("MODEL CHAIN: 1 rung(s) NOT served")
+    seats._page("seat LOST in audit: a -> LOST (no substitute)")
+    assert [(t, a) for t, _b, a in seen] == [("MODEL UPGRADE", "desk"), ("SEATS", "desk")]
+    _fake_send_all(monkeypatch, exc=RuntimeError("boom"))
+    rmu._page("x")                                       # never raises into the caller
+    seats._page("x")
+
+
+def test_panel_spend_line_and_brain_page_are_desk() -> None:
+    """Source pins: the panel's alert-line notice and ops/brain_env.sh's _brain_page go through
+    send_all as desk (the panel's BUDGET/PURCHASE DECISION still reaches him via
+    data/PRINCIPAL_ACTION.md -> run_alerts principal_action_needed)."""
+    panel = (ROOT / "scripts" / "run_external_panel.py").read_text("utf-8")
+    assert 'send_all("PANEL SPEND"' in panel and 'audience="desk"' in panel
+    assert "_principal_page(" in panel and 'marker="BUDGET DECISION:"' in panel
+    be = (ROOT / "ops" / "brain_env.sh").read_text("utf-8")
+    fn = be.split("_brain_page() {", 1)[1].split("\n}\n", 1)[0]
+    code = "\n".join(ln for ln in fn.splitlines() if not ln.lstrip().startswith("#"))
+    assert 'audience="desk"' in code and "curl " not in code and "ntfy" not in code
+    assert ".brain_page_stamps" in code and "return 0" in code

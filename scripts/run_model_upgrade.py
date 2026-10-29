@@ -177,16 +177,18 @@ def _ping(model: str, timeout: int = 120) -> tuple[bool, str]:
 
 
 def _page(msg: str) -> None:
-    """Best-effort principal page; never fails the caller (same contract as brain_env.sh)."""
+    """Best-effort DESK page; never fails the caller (same contract as brain_env.sh).
+
+    AUDIENCE: DESK (owner, 2026-10-29: "only notify me on things which need me ... handle rest n
+    don't tell me"; rule in libs/ops/alert_channels.py). Every page here -- an auto-adopted head,
+    a dead rung, an unrecognised family that was NOT adopted -- leaves the desk running on a chain
+    that works, and the follow-up (prune a rung, declare a family in FAMILY_TIER) is a code change
+    a thread makes. So this no longer posts to ntfy.sh directly: it goes through send_all, which
+    ledgers it, mirrors it to the non-personal channels and records the phone as routed."""
     try:
-        cfg = json.loads((_ROOT / "data/secrets/ntfy.json").read_text("utf-8"))
-        topic = cfg.get("topic") or cfg.get("ntfy_topic")
-        if not topic:
-            return
-        req = urllib.request.Request(f"https://ntfy.sh/{topic}", data=msg.encode("utf-8"),
-                                     headers={"Title": "MODEL UPGRADE", "Priority": "high"})
-        urllib.request.urlopen(req, timeout=10).close()
-    except (OSError, ValueError, KeyError):
+        from libs.ops.alert_channels import send_all
+        send_all("MODEL UPGRADE", msg, audience="desk")
+    except Exception:                       # telemetry must never fail the upgrade run
         return
 
 
