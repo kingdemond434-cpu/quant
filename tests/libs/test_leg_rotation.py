@@ -651,3 +651,20 @@ def test_a_dead_waiters_ticket_is_not_a_red_resident(tmp_path: Path, monkeypatch
 def test_an_absent_queue_is_green_and_never_raises(tmp_path: Path) -> None:
     res = LR.resident_liveness(tmp_path / "nope")
     assert res["red"] == {} and res["expected_wait_s"] is None and not res["oversubscribed"]
+
+
+def test_money_critical_is_additive_to_always_run(monkeypatch) -> None:
+    """A leg in BOTH sets (decay_monitor once it moves to ALWAYS_RUN) is charged once."""
+    monkeypatch.setattr(LR, "ALWAYS_RUN", LR.ALWAYS_RUN | {"decay_monitor"})
+    roster = ["decay_monitor", "other"]
+    att = _att({"decay_monitor": 3, "other": 3}, costs={"decay_monitor": 40.0, "other": 50.0})
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=100.0)
+    assert dec.planned_s == pytest.approx(90.0), "charged once, not twice"
+    assert "always-run" in dec.why["decay_monitor"]
+    assert dec.capacity["always_run_s"] == pytest.approx(40.0)
+    assert dec.capacity["money_critical_s"] == pytest.approx(0.0)
+
+
+def test_every_money_critical_leg_is_a_real_leg_of_the_cycle() -> None:
+    legs = set(LR.legs_in_order())
+    assert legs >= LR.MONEY_CRITICAL, f"not in the cycle: {sorted(LR.MONEY_CRITICAL - legs)}"

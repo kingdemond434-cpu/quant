@@ -81,8 +81,10 @@ THE CLASS, CLOSED (rule 23). Waiting is now a COUNTED, PERSISTED quantity, not a
     deferring seconds of work buys no room for anything.
 
     MONEY-CRITICAL LEGS.  MONEY_CRITICAL (decay_monitor, prop_challenge_allocator, allocator_join,
-    edge_reliability, release_identity, kelly_survival) are admitted every pass outside the budget
-    and carry a HARD staleness bound of MONEY_MAX_STALE_PASSES.
+    edge_reliability, release_identity, kelly_survival, desk_health, fill_markout,
+    placement_interlock, box_state_freshness) are admitted every pass outside the budget and carry
+    a HARD staleness bound of MONEY_MAX_STALE_PASSES. Additive to ALWAYS_RUN: a leg in both is
+    charged once, as always-run.
 
     CAPACITY.  `capacity` publishes whether the bound fits inside the budget at all
     (`oversubscribed`). Ageing admits on time either way; past capacity the scheduler's limit is
@@ -158,9 +160,15 @@ CHEAP_BATCH_FILL: float = 0.10
 #: MONEY-CRITICAL LEGS: a HARD maximum staleness. They feed the allocator, the sizing and the
 #: release identity the gateway trades on, and each costs seconds, so they are admitted EVERY pass
 #: outside the budget and never yielded, and are RED after MONEY_MAX_STALE_PASSES missed passes.
+#: ADDITIVE TO ALWAYS_RUN, NEVER IN CONFLICT WITH IT: a leg in both is admitted and charged ONCE,
+#: as always-run (`plan_pass` and `_capacity` test ALWAYS_RUN first), so a PR that moves one of
+#: these into ALWAYS_RUN (decay_monitor, #494's Allocator work) lands cleanly in either order.
+#: desk_health, fill_markout, placement_interlock and box_state_freshness were NEVER RUN on the
+#: box on 2026-10-29.
 MONEY_CRITICAL: frozenset[str] = frozenset({
     "decay_monitor", "prop_challenge_allocator", "allocator_join", "edge_reliability",
     "release_identity", "kelly_survival",
+    "desk_health", "fill_markout", "placement_interlock", "box_state_freshness",
 })
 MONEY_MAX_STALE_PASSES: int = 1
 
