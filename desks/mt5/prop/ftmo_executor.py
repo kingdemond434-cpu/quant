@@ -697,9 +697,9 @@ def _send_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], row: dict[st
                 same = "long" if side == "buy" else "short"
                 if not ALLOW_CROSS_FIRM_COPY and book is not None and any(
                         _xa.same_instrument(b, sym) and r.get(same) for b, r in book.items()):
-                    why, rail = (f"cross-firm copy: the {acct} account holds the same {same} on "
-                                 f"{sym}; the cross-firm copy override is switched off"),
-                                "cross_firm_copy"
+                    rail = "cross_firm_copy"
+                    why = (f"cross-firm copy: the {acct} account holds the same {same} on {sym}; "
+                           f"the cross-firm copy override is switched off")
                     break
         if why is None:
             live_p, live_o = mt5.positions_get(), mt5.orders_get()
