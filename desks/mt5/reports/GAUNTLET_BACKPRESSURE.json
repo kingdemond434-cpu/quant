@@ -1,5 +1,5 @@
 {
- "at": "2026-10-03T12:44:22+00:00",
+ "at": "2026-10-29T07:56:56+00:00",
  "windows": {
   "24h": {
    "hours": 24.0,
@@ -11306,16 +11306,16 @@
    "why": "seconds of FIRST-TIME cell building one sweep may spend; cached cells are free and are always all loaded"
   },
   "measured": {
-   "swept_at": "2026-10-03T12:38:16.788667+00:00",
-   "age_h": 0.1,
-   "n_cells": 13598,
-   "n_judged": 3679,
-   "n_unmeasured": 9919,
-   "n_cells_discovered": 63513,
-   "n_cells_deferred_build_budget": 0,
+   "swept_at": "2026-10-28T18:03:58.606853+00:00",
+   "age_h": 13.88,
+   "n_cells": 8153,
+   "n_judged": 5797,
+   "n_unmeasured": 2356,
+   "n_cells_discovered": 1550805,
+   "n_cells_deferred_build_budget": 309999,
    "n_cells_deferred_memory_budget": 0,
-   "memory_budget_mb": 13824.0,
-   "workers": 18,
+   "memory_budget_mb": 11520.0,
+   "workers": 15,
    "why": "cells judged by the LAST sweep: the per-pass capacity the desk actually has"
   }
  },
@@ -11430,5 +11430,27 @@
  "prior_write": {
   "status": "NOT_ATTEMPTED",
   "why": "measurement refresh only"
+ },
+ "mode": "core",
+ "full_at": "2026-10-03T12:44:22+00:00",
+ "core": {
+  "at": "2026-10-29T07:56:56+00:00",
+  "inputs": {},
+  "testing_24h": {
+   "status": "MEASURED",
+   "verdicts": 5823,
+   "cells_judged": 5823,
+   "per_hour": 242.625,
+   "passed": 128,
+   "ledger": "READ",
+   "measured_at": "2026-10-29T07:56:56+00:00",
+   "source": "build_core"
+  },
+  "re_measured": [
+   "capacity",
+   "core.testing_24h"
+  ],
+  "carried_from_full_at": "2026-10-03T12:44:22+00:00",
+  "why": "every block other than `capacity` and `core.testing_24h` is the last FULL build's, stamped `full_at`, and unchanged; a reader that needs a fresh window must check `full_at`, never `at`"
  }
 }

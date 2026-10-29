@@ -28,14 +28,14 @@
       "type": 1,
       "volume": 0.01,
       "price_open": 4036.05,
-      "sl": 4069.51,
+      "sl": 4037.07,
       "tp": 3969.74,
-      "profit": 7.7,
+      "profit": 2.31,
       "symbol": "XAUUSD"
     }
   ],
   "last_bracket_date": "2026-10-29",
-  "last_reconcile": "2026-10-29T07:49:19+00:00",
+  "last_reconcile": "2026-10-29T08:04:44+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {
@@ -78,7 +78,7 @@
     }
   },
   "lot": 0.06,
-  "equity": 468.02,
+  "equity": 464.53,
   "placement_health": {
     "consecutive_total_rejections": 0,
     "last_ok": "2026-10-29T04:24:44+00:00",
@@ -102,7 +102,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-29T10:50:08+00:00",
+  "placement_pass": "2026-10-29T11:02:30+00:00",
   "netting_booked": {
     "242662542": {
       "sleeve": "gold_asia",
@@ -533,7 +533,7 @@
     "242662542": 33.460000000000036
   },
   "restart_reconcile": {
-    "at": "2026-10-29T07:50:09+00:00",
+    "at": "2026-10-29T08:02:44+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
@@ -544,7 +544,7 @@
         "symbol": "XAUUSD",
         "comment": "DWgold_asia",
         "volume": 0.01,
-        "sl": 4069.51
+        "sl": 4037.07
       }
     ],
     "orders": [],
