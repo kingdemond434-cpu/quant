@@ -1,0 +1,1561 @@
+{
+ "schema": "capacity_table/1",
+ "version": "2026-10-29.1",
+ "rule": "Declared, versioned capacities with their public source. A row is VERIFIED only when a session read the cited edition and recorded the figure as printed (verification.figure_text), the URL(s), the page or table and checked_at; its figure is set to the source's. A row still marked VERIFY was written from memory and could not be checked here: its figure is UNMEASURED and is never used for scale (macro/supply_scale.py), and verification.tried records what was attempted. A missing row is UNMEASURED, never a zero.",
+ "commodities": {
+  "crude_oil": {
+   "unit": "kb/d",
+   "global_supply": 102500,
+   "spare_capacity": 5000,
+   "instruments": [
+    "XTIUSD",
+    "XBRUSD",
+    "USOIL",
+    "UKOIL"
+   ],
+   "keywords": [
+    "crude",
+    "oil",
+    "barrel",
+    "bpd",
+    "b/d",
+    "refinery",
+    "oilfield",
+    "oil field",
+    "pipeline",
+    "tanker"
+   ],
+   "source": "IEA Oil Market Report (world supply, 2024 annual); spare capacity: EIA Short-Term Energy Outlook (OPEC surplus capacity)",
+   "as_of": "2024",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://www.iea.org/reports/oil-market-report-january-2025 (read: gives December 2024 supply 103.5 mb/d and 2024 growth only, no 2024 annual level)",
+     "https://www.eia.gov/outlooks/steo/report/global_oil.php (read: OPEC surplus capacity only as a chart linked to XLSX, no value in text)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  "natural_gas": {
+   "unit": "Mt/y",
+   "global_supply": 410,
+   "spare_capacity": 0,
+   "instruments": [
+    "XNGUSD",
+    "NATGAS",
+    "NGAS"
+   ],
+   "keywords": [
+    "lng",
+    "liquefied natural gas",
+    "natural gas",
+    "gas field",
+    "gas pipeline",
+    "liquefaction"
+   ],
+   "source": "GIIGNL Annual Report (global LNG imports, 2023); spare: LNG liquefaction runs near nameplate, declared 0",
+   "as_of": "2023",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://giignl.org/wp-content/uploads/2024/06/GIIGNL-2024-Annual-Report-1.pdf (fetch error)",
+     "https://giignl.org/?p=13086 (read: 2025 figures only)",
+     "curl giignl.org from this container: proxy 000"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  "copper": {
+   "unit": "kt/y",
+   "global_supply": 23000,
+   "spare_capacity": 0,
+   "instruments": [
+    "XCUUSD",
+    "COPPER"
+   ],
+   "keywords": [
+    "copper",
+    "smelter",
+    "concentrate"
+   ],
+   "source": "USGS Mineral Commodity Summaries 2025, copper (world mine production 2024)",
+   "as_of": "2024",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "World total (rounded) 22,600 23,000 27,000 27,000 980,000  [mine 2023, mine 2024e, refinery 2023, refinery 2024e, reserves; thousand metric tons]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-copper.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, mine production 2024e",
+    "edition": "USGS MCS 2025 (January 2025)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 22000
+   },
+   "checked_at": "2026-10-13"
+  },
+  "aluminium": {
+   "unit": "kt/y",
+   "global_supply": 72000,
+   "spare_capacity": 0,
+   "instruments": [
+    "XALUSD",
+    "ALUMINIUM"
+   ],
+   "keywords": [
+    "aluminium",
+    "aluminum",
+    "alumina",
+    "bauxite",
+    "smelter"
+   ],
+   "source": "USGS Mineral Commodity Summaries 2025, aluminum (world smelter production 2024)",
+   "as_of": "2024",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "World total (rounded) 70,000 72,000 78,300 78,400  [smelter production 2023, 2024e; yearend capacity 2023, 2024e; thousand metric tons]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-aluminum.pdf"
+    ],
+    "page_or_table": "World Smelter Production and Capacity table, smelter production 2024e",
+    "edition": "USGS MCS 2025 (January 2025)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 72000
+   },
+   "checked_at": "2026-10-13"
+  },
+  "nickel": {
+   "unit": "kt/y",
+   "global_supply": 3700,
+   "spare_capacity": 0,
+   "instruments": [
+    "XNIUSD",
+    "NICKEL"
+   ],
+   "keywords": [
+    "nickel"
+   ],
+   "source": "USGS Mineral Commodity Summaries 2025, nickel (world mine production 2024)",
+   "as_of": "2024",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "World total (rounded) 3,750,000 3,700,000 >130,000,000  [mine production 2023, 2024e, reserves; metric tons nickel content]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-nickel.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, mine production 2024e",
+    "edition": "USGS MCS 2025 (January 2025)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 3700,
+    "note": "3,700,000 t = 3,700 kt"
+   },
+   "checked_at": "2026-10-13"
+  },
+  "zinc": {
+   "unit": "kt/y",
+   "global_supply": 12000,
+   "spare_capacity": 0,
+   "instruments": [
+    "XZNUSD",
+    "ZINC"
+   ],
+   "keywords": [
+    "zinc"
+   ],
+   "source": "USGS Mineral Commodity Summaries 2025, zinc (world mine production 2024)",
+   "as_of": "2024",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "World total (rounded) 12,100 12,000 230,000  [mine production 2023, 2024e, reserves; thousand metric tons zinc content]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-zinc.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, mine production 2024e",
+    "edition": "USGS MCS 2025 (January 2025)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 12000
+   },
+   "checked_at": "2026-10-13"
+  },
+  "platinum": {
+   "unit": "t/y",
+   "global_supply": 179,
+   "spare_capacity": 0,
+   "instruments": [
+    "XPTUSD",
+    "PLATINUM"
+   ],
+   "keywords": [
+    "platinum",
+    "pgm"
+   ],
+   "source": "USGS Mineral Commodity Summaries 2026, platinum-group metals (world mine production 2024)",
+   "as_of": "2024",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "World total (rounded) 217,000 190,000 179,000 170,000 >76,000,000  [World Mine Production and Reserves; header 'Mine production PGM reserves9 / Palladium Platinum / 2024 2025e 2024 2025e'; kilograms of PGM content]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-platinum-group.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, platinum mine production 2024",
+    "edition": "USGS MCS 2026 (February 2026); its 2024 column is the revised figure for the year MCS 2025 printed as 2024e (MCS 2025 itself was not readable here)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF and the figure quoted from that extraction",
+    "previous_unverified_figure": 179,
+    "tried_before": [
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum.pdf (fetch error)",
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum-group.pdf (fetch error, twice)",
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum-group-metals.pdf (fetch error)",
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025.pdf (fetch error)",
+     "web.archive.org copy (site blocked)",
+     "curl pubs.usgs.gov from this container: proxy 000"
+    ]
+   },
+   "checked_at": "2026-10-29"
+  },
+  "palladium": {
+   "unit": "t/y",
+   "global_supply": 217,
+   "spare_capacity": 0,
+   "instruments": [
+    "XPDUSD",
+    "PALLADIUM"
+   ],
+   "keywords": [
+    "palladium",
+    "pgm"
+   ],
+   "source": "USGS Mineral Commodity Summaries 2026, platinum-group metals (world mine production 2024)",
+   "as_of": "2024",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "World total (rounded) 217,000 190,000 179,000 170,000 >76,000,000  [World Mine Production and Reserves; header 'Mine production PGM reserves9 / Palladium Platinum / 2024 2025e 2024 2025e'; kilograms of PGM content]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-platinum-group.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, palladium mine production 2024",
+    "edition": "USGS MCS 2026 (February 2026); its 2024 column is the revised figure for the year MCS 2025 printed as 2024e (MCS 2025 itself was not readable here)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF and the figure quoted from that extraction",
+    "previous_unverified_figure": 217,
+    "tried_before": [
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum.pdf (fetch error)",
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum-group.pdf (fetch error, twice)",
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum-group-metals.pdf (fetch error)",
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025.pdf (fetch error)",
+     "web.archive.org copy (site blocked)",
+     "curl pubs.usgs.gov from this container: proxy 000"
+    ]
+   },
+   "checked_at": "2026-10-29"
+  },
+  "silver": {
+   "unit": "t/y",
+   "global_supply": 25000,
+   "spare_capacity": 0,
+   "instruments": [
+    "XAGUSD"
+   ],
+   "keywords": [
+    "silver"
+   ],
+   "source": "USGS Mineral Commodity Summaries 2025, silver (world mine production 2024)",
+   "as_of": "2024",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "World total (rounded) 25,500 25,000 640,000  [mine production 2023, 2024e, reserves; metric tons silver content]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-silver.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, mine production 2024e",
+    "edition": "USGS MCS 2025 (January 2025)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 25000
+   },
+   "checked_at": "2026-10-13"
+  },
+  "gold": {
+   "unit": "t/y",
+   "global_supply": 3300,
+   "spare_capacity": 0,
+   "instruments": [
+    "XAUUSD"
+   ],
+   "keywords": [
+    "gold mine",
+    "gold"
+   ],
+   "source": "USGS Mineral Commodity Summaries 2025, gold (world mine production 2024)",
+   "as_of": "2024",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "World total (rounded) 3,250 3,300 64,000  [mine production 2023, 2024e, reserves; metric tons gold content]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-gold.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, mine production 2024e",
+    "edition": "USGS MCS 2025 (January 2025)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 3300
+   },
+   "checked_at": "2026-10-13"
+  },
+  "cocoa": {
+   "unit": "kt/y",
+   "global_supply": 4382,
+   "spare_capacity": 0,
+   "instruments": [
+    "UKCOCOA",
+    "USCOCOA"
+   ],
+   "keywords": [
+    "cocoa",
+    "cacao"
+   ],
+   "source": "ICCO Quarterly Bulletin of Cocoa Statistics (world production, 2023/24)",
+   "as_of": "2023/24",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "World total 4826 100% 5044 100% 4382 100%  [production of cocoa beans, thousand tonnes; columns 2021/22, 2022/23, 2023/24]",
+    "urls": [
+     "https://www.icco.org/wp-content/uploads/Production_QBCS-L-No.-4.pdf"
+    ],
+    "page_or_table": "Production of cocoa beans table, 2023/24 column (third column)",
+    "edition": "ICCO QBCS Vol. L No. 4, published 29-11-2024",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 4800,
+    "note": "the extracted header text attaches 'Estimates'/'Forecasts' labels ambiguously; the third column is 2023/24. Cross-check: Africa row 3103 = 300+1740+480+300+283 and world 4382 = 3103+1005+275 (rounded)"
+   },
+   "checked_at": "2026-10-13"
+  },
+  "coffee": {
+   "unit": "m_bags/y",
+   "global_supply": 176.816,
+   "spare_capacity": 0,
+   "instruments": [
+    "COFARA",
+    "COFROB"
+   ],
+   "keywords": [
+    "coffee",
+    "arabica",
+    "robusta"
+   ],
+   "source": "USDA FAS Coffee: World Markets and Trade (world production, 2024/25)",
+   "as_of": "2024/25",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Total 165,044 164,529 169,335 176,816 178,830 189,667  [Thousand 60-Kilogram Bags; 2021/22 .. 2025/26, Jul 2026/27]",
+    "urls": [
+     "https://apps.fas.usda.gov/psdonline/circulars/coffee.pdf"
+    ],
+    "page_or_table": "Coffee Summary, Production, page 7, 2024/25 column",
+    "edition": "USDA FAS Coffee: World Markets and Trade, July 2026",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 175,
+    "note": "176,816 thousand bags = 176.816 m bags"
+   },
+   "checked_at": "2026-10-13"
+  },
+  "sugar": {
+   "unit": "Mt/y",
+   "global_supply": 180.345,
+   "spare_capacity": 0,
+   "instruments": [
+    "SUGAR",
+    "SUGARRAW"
+   ],
+   "keywords": [
+    "sugar",
+    "sugarcane",
+    "cane crush"
+   ],
+   "source": "USDA FAS Sugar: World Markets and Trade (world production, 2024/25)",
+   "as_of": "2024/25",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Total 180,601 178,756 179,565 180,345 186,056 184,854  [1,000 Metric Tons, Raw Value; 2021/22 .. 2025/26, May 2026/27]",
+    "urls": [
+     "https://apps.fas.usda.gov/psdonline/circulars/sugar.pdf"
+    ],
+    "page_or_table": "World Centrifugal Sugar: Production and Consumption, page 5, 2024/25 column",
+    "edition": "USDA FAS Sugar: World Markets and Trade, May 2026",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 180,
+    "note": "180,345 kt = 180.345 Mt"
+   },
+   "checked_at": "2026-10-13"
+  },
+  "wheat": {
+   "unit": "Mt/y",
+   "global_supply": 800.86,
+   "spare_capacity": 0,
+   "instruments": [
+    "WHEAT"
+   ],
+   "keywords": [
+    "wheat",
+    "grain export",
+    "grain corridor"
+   ],
+   "source": "USDA WASDE (world wheat production, 2024/25)",
+   "as_of": "2024/25",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "World  3/                 270.70  800.86  199.43  155.88  809.14  209.57  262.42  [Million Metric Tons; Beginning Stocks, Production, Imports, Feed, Total, Exports, Ending Stocks; 2024/25 Est.]",
+    "urls": [
+     "https://esmis.nal.usda.gov/sites/default/release-files/3t945q76s/z890tt821/g732g907r/wasde0925.txt"
+    ],
+    "page_or_table": "World Wheat Supply and Use, WASDE-664-18, 2024/25 Est.",
+    "edition": "WASDE-664, September 2025",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 790,
+    "note": "row balances: 270.70+800.86-809.14=262.42"
+   },
+   "checked_at": "2026-10-13"
+  },
+  "corn": {
+   "unit": "Mt/y",
+   "global_supply": 1228.91,
+   "spare_capacity": 0,
+   "instruments": [
+    "CORN"
+   ],
+   "keywords": [
+    "corn",
+    "maize"
+   ],
+   "source": "USDA WASDE (world corn production, 2024/25)",
+   "as_of": "2024/25",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "World  3/                 315.53 1228.91  182.96  786.68 1260.26  193.80  284.18  [Million Metric Tons; 2024/25 Est.]",
+    "urls": [
+     "https://esmis.nal.usda.gov/sites/default/release-files/3t945q76s/z890tt821/g732g907r/wasde0925.txt"
+    ],
+    "page_or_table": "World Corn Supply and Use, WASDE-664-22, 2024/25 Est.",
+    "edition": "WASDE-664, September 2025",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 1220,
+    "note": "row balances: 315.53+1228.91-1260.26=284.18"
+   },
+   "checked_at": "2026-10-13"
+  },
+  "soybeans": {
+   "unit": "Mt/y",
+   "global_supply": 424.2,
+   "spare_capacity": 0,
+   "instruments": [
+    "SOYBEAN"
+   ],
+   "keywords": [
+    "soybean",
+    "soybeans",
+    "soy"
+   ],
+   "source": "USDA WASDE (world soybean production, 2024/25)",
+   "as_of": "2024/25",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "World  2/                 115.14  424.20  178.17  354.51  410.45  183.47  123.58  [Million Metric Tons; 2024/25 Est.]",
+    "urls": [
+     "https://esmis.nal.usda.gov/sites/default/release-files/3t945q76s/z890tt821/g732g907r/wasde0925.txt"
+    ],
+    "page_or_table": "World Soybean Supply and Use, WASDE-664-28, 2024/25 Est.",
+    "edition": "WASDE-664, September 2025",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 420,
+    "note": "row balances: 115.14+424.20+178.17-410.45-183.47=123.59 (rounding)"
+   },
+   "checked_at": "2026-10-13"
+  }
+ },
+ "facilities": [
+  {
+   "id": "abqaiq",
+   "type": "processing",
+   "commodity": "crude_oil",
+   "country": "SA",
+   "capacity": 7000,
+   "aliases": [
+    "abqaiq"
+   ],
+   "source": "EIA Country Analysis Brief: Saudi Arabia",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://www.eia.gov/international/content/analysis/countries_long/Saudi_Arabia/saudi_arabia.pdf (read, last updated December 2, 2021: names no Abqaiq capacity)",
+     "https://www.eia.gov/international/analysis/country/SAU (script-rendered, no text)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "ras_tanura",
+   "type": "port",
+   "commodity": "crude_oil",
+   "country": "SA",
+   "capacity": 2500,
+   "aliases": [
+    "ras tanura"
+   ],
+   "source": "EIA Country Analysis Brief: Saudi Arabia (terminal capacity, exports share)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://www.eia.gov/international/content/analysis/countries_long/Saudi_Arabia/saudi_arabia.pdf (read, last updated December 2, 2021: names no Ras Tanura capacity)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "hormuz",
+   "type": "chokepoint",
+   "commodity": "crude_oil",
+   "country": "",
+   "capacity": 20900,
+   "aliases": [
+    "strait of hormuz",
+    "hormuz"
+   ],
+   "source": "EIA World Oil Transit Chokepoints (oil flow 2023, crude and products)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Strait of Hormuz 21.4 20.0 18.4 19.0 21.1 20.9  [million barrels per day; 2018..2023]",
+    "urls": [
+     "https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/wotc.pdf"
+    ],
+    "page_or_table": "Table 1, page 1, 2023 column",
+    "edition": "EIA World Oil Transit Chokepoints, last updated June 25, 2024",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 20000,
+    "note": "20.9 mb/d = 20,900 kb/d"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "bab_el_mandeb",
+   "type": "chokepoint",
+   "commodity": "crude_oil",
+   "country": "",
+   "capacity": 8600,
+   "aliases": [
+    "bab el-mandeb",
+    "bab-el-mandeb",
+    "bab al-mandab",
+    "red sea shipping"
+   ],
+   "source": "EIA World Oil Transit Chokepoints (oil flow 2023)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Bab el-Mandeb 6.4 6.0 5.2 5.4 7.5 8.6  [million barrels per day; 2018..2023]",
+    "urls": [
+     "https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/wotc.pdf"
+    ],
+    "page_or_table": "Table 1, page 1, 2023 column",
+    "edition": "EIA World Oil Transit Chokepoints, last updated June 25, 2024",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 8600
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "suez_sumed",
+   "type": "chokepoint",
+   "commodity": "crude_oil",
+   "country": "EG",
+   "capacity": 8800,
+   "aliases": [
+    "suez canal",
+    "sumed"
+   ],
+   "source": "EIA World Oil Transit Chokepoints (Suez Canal and SUMED, 2023)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Suez Canal and SUMED Pipeline 6.4 6.2 5.3 5.1 7.3 8.8  [million barrels per day; 2018..2023]",
+    "urls": [
+     "https://www.eia.gov/international/content/analysis/special_topics/World_Oil_Transit_Chokepoints/wotc.pdf"
+    ],
+    "page_or_table": "Table 1, page 1, 2023 column",
+    "edition": "EIA World Oil Transit Chokepoints, last updated June 25, 2024",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 9000,
+    "note": "Table 4 (page 11) of the same report lists 8.6 for this route; Table 1's 8.8 is recorded"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "cpc",
+   "type": "pipeline",
+   "commodity": "crude_oil",
+   "country": "KZ",
+   "capacity": 1500,
+   "aliases": [
+    "caspian pipeline consortium",
+    "cpc pipeline",
+    "cpc terminal",
+    "novorossiysk"
+   ],
+   "source": "CPC annual throughput (company report); EIA Country Analysis Brief: Kazakhstan",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://www.eia.gov/international/content/analysis/countries_long/Kazakhstan/kazakhstan.pdf (eia.gov countries_long PDF via WebFetch (fetch error))"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "druzhba",
+   "type": "pipeline",
+   "commodity": "crude_oil",
+   "country": "RU",
+   "capacity": 1000,
+   "aliases": [
+    "druzhba"
+   ],
+   "source": "EIA Country Analysis Brief: Russia (Druzhba design throughput, pre-2022 flows)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://www.eia.gov/international/content/analysis/countries_long/Russia/russia.pdf (eia.gov countries_long PDF via WebFetch (fetch error))"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "sharara",
+   "type": "field",
+   "commodity": "crude_oil",
+   "country": "LY",
+   "capacity": 300,
+   "aliases": [
+    "sharara",
+    "el sharara"
+   ],
+   "source": "EIA Country Analysis Brief: Libya",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://www.eia.gov/international/content/analysis/countries_long/Libya/libya.pdf (eia.gov countries_long PDF via WebFetch (fetch error))"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "forcados",
+   "type": "port",
+   "commodity": "crude_oil",
+   "country": "NG",
+   "capacity": 250,
+   "aliases": [
+    "forcados"
+   ],
+   "source": "EIA Country Analysis Brief: Nigeria",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://www.eia.gov/international/content/analysis/countries_long/Nigeria/nigeria.pdf (eia.gov countries_long PDF via WebFetch (fetch error))"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "gulf_coast_refining",
+   "type": "refinery",
+   "commodity": "crude_oil",
+   "country": "US",
+   "capacity": 9987.031,
+   "aliases": [
+    "gulf coast refiner",
+    "gulf coast refining",
+    "padd 3"
+   ],
+   "source": "EIA Refinery Capacity Report (PADD 3 operable atmospheric distillation, 2024)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Operable (Barrels per Calendar Day) 9,751,400 9,606,610 9,676,729 9,987,031 10,062,653 9,876,563  [2021..2026, as of January 1]",
+    "urls": [
+     "https://www.eia.gov/dnav/pet/pet_pnp_cap1_dcu_r30_a.htm"
+    ],
+    "page_or_table": "Gulf Coast (PADD 3) Number and Capacity of Petroleum Refineries, atmospheric crude distillation, 2024 column (as of January 1, 2024)",
+    "edition": "EIA Refinery Capacity data (DNAV), release of June 26, 2026",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 9800,
+    "note": "distinct from the U.S. total, read from pet_pnp_cap1_dcu_nus_a.htm as 18,384,228 for 2024"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "us_spr",
+   "type": "reserves",
+   "commodity": "crude_oil",
+   "country": "US",
+   "capacity": 4400,
+   "aliases": [
+    "strategic petroleum reserve",
+    "spr release",
+    "spr drawdown"
+   ],
+   "source": "DOE Office of Petroleum Reserves (maximum drawdown rate)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://www.energy.gov/ceser/strategic-petroleum-reserve (read: states terminal distribution capacity 2.220 MMbbl/d contracted plus 0.4 owned, no maximum drawdown rate)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "ras_laffan",
+   "type": "lng",
+   "commodity": "natural_gas",
+   "country": "QA",
+   "capacity": 77,
+   "aliases": [
+    "ras laffan",
+    "qatarenergy lng",
+    "qatar lng"
+   ],
+   "source": "GIIGNL Annual Report (Qatar liquefaction capacity)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://giignl.org/wp-content/uploads/2024/06/GIIGNL-2024-Annual-Report-1.pdf (fetch error)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "freeport_lng",
+   "type": "lng",
+   "commodity": "natural_gas",
+   "country": "US",
+   "capacity": 15,
+   "aliases": [
+    "freeport lng"
+   ],
+   "source": "EIA Natural Gas Weekly / FERC (Freeport LNG nameplate, three trains)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://www.eia.gov/naturalgas/importsexports/liquefactioncapacity/U.S.liquefactioncapacity_2026_Q3.xlsx (binary XLSX, not readable through the fetcher)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "sabine_pass",
+   "type": "lng",
+   "commodity": "natural_gas",
+   "country": "US",
+   "capacity": 30,
+   "aliases": [
+    "sabine pass"
+   ],
+   "source": "EIA U.S. liquefaction capacity table",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://www.eia.gov/naturalgas/importsexports/liquefactioncapacity/U.S.liquefactioncapacity_2026_Q3.xlsx (binary XLSX, not readable through the fetcher)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "gorgon",
+   "type": "lng",
+   "commodity": "natural_gas",
+   "country": "AU",
+   "capacity": 15.6,
+   "aliases": [
+    "gorgon"
+   ],
+   "source": "GIIGNL Annual Report (Australia liquefaction capacity)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://giignl.org/wp-content/uploads/2024/06/GIIGNL-2024-Annual-Report-1.pdf (fetch error)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "escondida",
+   "type": "mine",
+   "commodity": "copper",
+   "country": "CL",
+   "capacity": 1125.3,
+   "aliases": [
+    "escondida"
+   ],
+   "source": "BHP annual report (Escondida copper production, FY2024)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Escondida (kt) ... YTD FY24 1,125.3",
+    "urls": [
+     "https://www.sec.gov/Archives/edgar/data/811809/000119312524188292/d871158d6k.htm"
+    ],
+    "page_or_table": "production summary table, Escondida (kt), FY24",
+    "edition": "BHP Operational Review for the year ended 30 June 2024 (17 July 2024), as filed on SEC Form 6-K 30 July 2024",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 1100,
+    "note": "100% basis; the operational review rather than the annual report itself"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "grasberg",
+   "type": "mine",
+   "commodity": "copper",
+   "country": "ID",
+   "capacity": 816.5,
+   "aliases": [
+    "grasberg"
+   ],
+   "source": "Freeport-McMoRan annual report (Grasberg copper, 2024)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Production from the Grasberg minerals district totaled 1.8 billion pounds of copper and 1.9 million ounces of gold in 2024",
+    "urls": [
+     "https://www.sec.gov/Archives/edgar/data/831259/000083125925000006/fcx-20241231.htm"
+    ],
+    "page_or_table": "Form 10-K FY2024, Indonesia (Grasberg minerals district) narrative",
+    "edition": "Freeport-McMoRan Form 10-K for 2024 (SEC EDGAR)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 800,
+    "note": "1.8 billion lb x 0.45359237 kg/lb = 816.5 kt; the source figure is itself rounded to 0.1 billion lb"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "cobre_panama",
+   "type": "mine",
+   "commodity": "copper",
+   "country": "PA",
+   "capacity": 350,
+   "aliases": [
+    "cobre panama",
+    "cobre panamá"
+   ],
+   "source": "First Quantum annual report (Cobre Panama copper, 2022)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://www.first-quantum.com/English/our-operations/operating-mines/cobre-panama/default.aspx (fetch error)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "kamoa_kakula",
+   "type": "mine",
+   "commodity": "copper",
+   "country": "CD",
+   "capacity": 450,
+   "aliases": [
+    "kamoa-kakula",
+    "kamoa kakula"
+   ],
+   "source": "Ivanhoe Mines annual report (Kamoa-Kakula copper guidance 2024)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://www.ivanhoemines.com/news/2025/ivanhoe-mines-announces-2025-production-guidance/ (fetch error)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "norilsk",
+   "type": "smelter",
+   "commodity": "nickel",
+   "country": "RU",
+   "capacity": 200,
+   "aliases": [
+    "norilsk",
+    "nornickel"
+   ],
+   "source": "Nornickel annual report (nickel output 2023)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "no reachable copy of the Nornickel annual report tried successfully; nornickel.com not reached"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "ci_cocoa",
+   "type": "crop",
+   "commodity": "cocoa",
+   "country": "CI",
+   "capacity": 1740,
+   "aliases": [
+    "ivory coast cocoa",
+    "côte d'ivoire cocoa",
+    "cote d'ivoire cocoa"
+   ],
+   "source": "ICCO Quarterly Bulletin (Côte d'Ivoire production)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Côte d'Ivoire 2121 2241 1740 ; Ghana 683 654 480  [thousand tonnes; 2021/22, 2022/23, 2023/24]",
+    "urls": [
+     "https://www.icco.org/wp-content/uploads/Production_QBCS-L-No.-4.pdf"
+    ],
+    "page_or_table": "Production of cocoa beans table, Africa block, 2023/24 column",
+    "edition": "ICCO QBCS Vol. L No. 4, published 29-11-2024",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 2000
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "gh_cocoa",
+   "type": "crop",
+   "commodity": "cocoa",
+   "country": "GH",
+   "capacity": 480,
+   "aliases": [
+    "ghana cocoa",
+    "cocobod"
+   ],
+   "source": "ICCO Quarterly Bulletin (Ghana production)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Côte d'Ivoire 2121 2241 1740 ; Ghana 683 654 480  [thousand tonnes; 2021/22, 2022/23, 2023/24]",
+    "urls": [
+     "https://www.icco.org/wp-content/uploads/Production_QBCS-L-No.-4.pdf"
+    ],
+    "page_or_table": "Production of cocoa beans table, Africa block, 2023/24 column",
+    "edition": "ICCO QBCS Vol. L No. 4, published 29-11-2024",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 600
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "br_coffee",
+   "type": "crop",
+   "commodity": "coffee",
+   "country": "BR",
+   "capacity": 65.5,
+   "aliases": [
+    "brazil coffee",
+    "minas gerais coffee"
+   ],
+   "source": "USDA FAS Coffee: World Markets and Trade (Brazil)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Brazil 58,100 62,600 66,300 65,500 63,000 71,900 ; Vietnam 31,580 28,300 27,550 29,000 31,700 32,500  [Thousand 60-Kilogram Bags; 2021/22 .. 2025/26, Jul 2026/27]",
+    "urls": [
+     "https://apps.fas.usda.gov/psdonline/circulars/coffee.pdf"
+    ],
+    "page_or_table": "Coffee Summary, Production, page 7, 2024/25 column",
+    "edition": "USDA FAS Coffee: World Markets and Trade, July 2026",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 65
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "vn_coffee",
+   "type": "crop",
+   "commodity": "coffee",
+   "country": "VN",
+   "capacity": 29.0,
+   "aliases": [
+    "vietnam coffee",
+    "vietnamese robusta"
+   ],
+   "source": "USDA FAS Coffee: World Markets and Trade (Vietnam)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Brazil 58,100 62,600 66,300 65,500 63,000 71,900 ; Vietnam 31,580 28,300 27,550 29,000 31,700 32,500  [Thousand 60-Kilogram Bags; 2021/22 .. 2025/26, Jul 2026/27]",
+    "urls": [
+     "https://apps.fas.usda.gov/psdonline/circulars/coffee.pdf"
+    ],
+    "page_or_table": "Coffee Summary, Production, page 7, 2024/25 column",
+    "edition": "USDA FAS Coffee: World Markets and Trade, July 2026",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 29
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "id": "black_sea_grain",
+   "type": "port",
+   "commodity": "wheat",
+   "country": "UA",
+   "capacity": 40,
+   "aliases": [
+    "black sea grain",
+    "odesa port",
+    "odessa port",
+    "grain corridor"
+   ],
+   "source": "USDA WASDE (Ukraine wheat and Russia/Ukraine Black Sea exports)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://esmis.nal.usda.gov/sites/default/release-files/3t945q76s/z890tt821/g732g907r/wasde0925.txt (read: WASDE carries country production and exports, no single Black Sea port/corridor figure; 40 Mt is not a printed number there)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  }
+ ],
+ "country_production": [
+  {
+   "country": "US",
+   "commodity": "crude_oil",
+   "capacity": 13267,
+   "source": "EIA Petroleum Supply Monthly (2024 crude output)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "U.S. Field Production of Crude Oil (Thousand Barrels per Day) ... 2024: 13,267",
+    "urls": [
+     "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=MCRFPUS2&f=A"
+    ],
+    "page_or_table": "annual series MCRFPUS2, 2024",
+    "edition": "EIA Petroleum Supply (DNAV annual history)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 13200
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "SA",
+   "commodity": "crude_oil",
+   "capacity": 9000,
+   "source": "OPEC Monthly Oil Market Report, secondary sources (2024)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://static.poder360.com.br/2025/01/OPEC_MOMR_January_2025.pdf (mirror of the January 2025 MOMR; the fetcher's text stops at page 18, the secondary-sources table is on page 54)",
+     "opec.org PDFs via WebFetch (fetch error); curl opec.org from this container: proxy 000"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "RU",
+   "commodity": "crude_oil",
+   "capacity": 9200,
+   "source": "IEA Oil Market Report (2024)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://www.iea.org/reports/oil-market-report-january-2025 (read: monthly Nov/Dec 2024 crude only -- RU 9.32/9.28, KZ 1.43/1.43 mb/d -- no 2024 annual figure)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "IQ",
+   "commodity": "crude_oil",
+   "capacity": 4200,
+   "source": "OPEC MOMR secondary sources (2024)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://static.poder360.com.br/2025/01/OPEC_MOMR_January_2025.pdf (mirror of the January 2025 MOMR; the fetcher's text stops at page 18, the secondary-sources table is on page 54)",
+     "opec.org PDFs via WebFetch (fetch error); curl opec.org from this container: proxy 000"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "AE",
+   "commodity": "crude_oil",
+   "capacity": 3000,
+   "source": "OPEC MOMR secondary sources (2024)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://static.poder360.com.br/2025/01/OPEC_MOMR_January_2025.pdf (mirror of the January 2025 MOMR; the fetcher's text stops at page 18, the secondary-sources table is on page 54)",
+     "opec.org PDFs via WebFetch (fetch error); curl opec.org from this container: proxy 000"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "IR",
+   "commodity": "crude_oil",
+   "capacity": 3300,
+   "source": "OPEC MOMR secondary sources (2024)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://static.poder360.com.br/2025/01/OPEC_MOMR_January_2025.pdf (mirror of the January 2025 MOMR; the fetcher's text stops at page 18, the secondary-sources table is on page 54)",
+     "opec.org PDFs via WebFetch (fetch error); curl opec.org from this container: proxy 000"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "KW",
+   "commodity": "crude_oil",
+   "capacity": 2450,
+   "source": "OPEC MOMR secondary sources (2024)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://static.poder360.com.br/2025/01/OPEC_MOMR_January_2025.pdf (mirror of the January 2025 MOMR; the fetcher's text stops at page 18, the secondary-sources table is on page 54)",
+     "opec.org PDFs via WebFetch (fetch error); curl opec.org from this container: proxy 000"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "KZ",
+   "commodity": "crude_oil",
+   "capacity": 1600,
+   "source": "IEA Oil Market Report (2024)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://www.iea.org/reports/oil-market-report-january-2025 (read: monthly Nov/Dec 2024 crude only -- RU 9.32/9.28, KZ 1.43/1.43 mb/d -- no 2024 annual figure)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "NG",
+   "commodity": "crude_oil",
+   "capacity": 1450,
+   "source": "OPEC MOMR secondary sources (2024)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://static.poder360.com.br/2025/01/OPEC_MOMR_January_2025.pdf (mirror of the January 2025 MOMR; the fetcher's text stops at page 18, the secondary-sources table is on page 54)",
+     "opec.org PDFs via WebFetch (fetch error); curl opec.org from this container: proxy 000"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "LY",
+   "commodity": "crude_oil",
+   "capacity": 1200,
+   "source": "OPEC MOMR secondary sources (2024)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://static.poder360.com.br/2025/01/OPEC_MOMR_January_2025.pdf (mirror of the January 2025 MOMR; the fetcher's text stops at page 18, the secondary-sources table is on page 54)",
+     "opec.org PDFs via WebFetch (fetch error); curl opec.org from this container: proxy 000"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "VE",
+   "commodity": "crude_oil",
+   "capacity": 850,
+   "source": "OPEC MOMR secondary sources (2024)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://static.poder360.com.br/2025/01/OPEC_MOMR_January_2025.pdf (mirror of the January 2025 MOMR; the fetcher's text stops at page 18, the secondary-sources table is on page 54)",
+     "opec.org PDFs via WebFetch (fetch error); curl opec.org from this container: proxy 000"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "NO",
+   "commodity": "crude_oil",
+   "capacity": 1800,
+   "source": "Norwegian Offshore Directorate (2024 liquids)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://www.sodir.no/en/whats-new/news/production-figures/2024/production-figures-december-2024/ (fetch error)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "QA",
+   "commodity": "natural_gas",
+   "capacity": 77,
+   "source": "GIIGNL Annual Report (Qatar LNG exports)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://giignl.org/wp-content/uploads/2024/06/GIIGNL-2024-Annual-Report-1.pdf (fetch error)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "AU",
+   "commodity": "natural_gas",
+   "capacity": 80,
+   "source": "GIIGNL Annual Report (Australia LNG exports)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://giignl.org/wp-content/uploads/2024/06/GIIGNL-2024-Annual-Report-1.pdf (fetch error)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "US",
+   "commodity": "natural_gas",
+   "capacity": 85,
+   "source": "GIIGNL Annual Report (US LNG exports)",
+   "status": "VERIFY",
+   "verification": {
+    "tried": [
+     "https://giignl.org/wp-content/uploads/2024/06/GIIGNL-2024-Annual-Report-1.pdf (fetch error)"
+    ],
+    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "CL",
+   "commodity": "copper",
+   "capacity": 5300,
+   "source": "USGS Mineral Commodity Summaries 2025 (Chile)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Chile 5,250 5,300 2,080 1,900 190,000  [mine 2023, mine 2024e, refinery 2023, refinery 2024e, reserves; thousand metric tons]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-copper.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, mine production 2024e",
+    "edition": "USGS MCS 2025 (January 2025)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 5300
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "PE",
+   "commodity": "copper",
+   "capacity": 2600,
+   "source": "USGS Mineral Commodity Summaries 2025 (Peru)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Peru 2,760 2,600 403 390 100,000  [mine 2023, mine 2024e, refinery 2023, refinery 2024e, reserves; thousand metric tons]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-copper.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, mine production 2024e",
+    "edition": "USGS MCS 2025 (January 2025)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 2600
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "CD",
+   "commodity": "copper",
+   "capacity": 3300,
+   "source": "USGS Mineral Commodity Summaries 2025 (DR Congo)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Congo (Kinshasa) 2,930 3,300 2,170 2,500 80,000  [mine 2023, mine 2024e, refinery 2023, refinery 2024e, reserves; thousand metric tons]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-copper.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, mine production 2024e",
+    "edition": "USGS MCS 2025 (January 2025)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 3300
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "ID",
+   "commodity": "nickel",
+   "capacity": 2200,
+   "source": "USGS Mineral Commodity Summaries 2025 (Indonesia)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Indonesia 2,030,000 2,200,000 55,000,000  [mine production 2023, 2024e, reserves; metric tons]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-nickel.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, mine production 2024e",
+    "edition": "USGS MCS 2025 (January 2025)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 2200,
+    "note": "2,200,000 t = 2,200 kt"
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "ZA",
+   "commodity": "platinum",
+   "capacity": 126,
+   "source": "USGS Mineral Commodity Summaries 2026 (South Africa, platinum, 2024)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "South Africa 82,600 70,000 126,000 120,000 63,000,000  [World Mine Production and Reserves; header 'Mine production PGM reserves9 / Palladium Platinum / 2024 2025e 2024 2025e'; kilograms of PGM content]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-platinum-group.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, South Africa platinum 2024",
+    "edition": "USGS MCS 2026 (February 2026); its 2024 column is the revised figure for the year MCS 2025 printed as 2024e (MCS 2025 itself was not readable here)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF and the figure quoted from that extraction",
+    "previous_unverified_figure": 126,
+    "tried_before": [
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum.pdf (fetch error)",
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum-group.pdf (fetch error, twice)",
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum-group-metals.pdf (fetch error)",
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025.pdf (fetch error)",
+     "web.archive.org copy (site blocked)",
+     "curl pubs.usgs.gov from this container: proxy 000"
+    ]
+   },
+   "checked_at": "2026-10-29"
+  },
+  {
+   "country": "RU",
+   "commodity": "palladium",
+   "capacity": 89,
+   "source": "USGS Mineral Commodity Summaries 2026 (Russia, palladium, 2024, USGS estimate)",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Russiae 89,000 84,000 22,000 20,000 1011,000,000  [World Mine Production and Reserves; header 'Mine production PGM reserves9 / Palladium Platinum / 2024 2025e 2024 2025e'; kilograms of PGM content]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-platinum-group.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, Russia (estimated) palladium 2024",
+    "edition": "USGS MCS 2026 (February 2026); its 2024 column is the revised figure for the year MCS 2025 printed as 2024e (MCS 2025 itself was not readable here)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF and the figure quoted from that extraction",
+    "previous_unverified_figure": 89,
+    "tried_before": [
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum.pdf (fetch error)",
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum-group.pdf (fetch error, twice)",
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum-group-metals.pdf (fetch error)",
+     "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025.pdf (fetch error)",
+     "web.archive.org copy (site blocked)",
+     "curl pubs.usgs.gov from this container: proxy 000"
+    ]
+   },
+   "checked_at": "2026-10-29"
+  },
+  {
+   "country": "CI",
+   "commodity": "cocoa",
+   "capacity": 1740,
+   "source": "ICCO Quarterly Bulletin",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Côte d'Ivoire 2121 2241 1740 ; Ghana 683 654 480  [thousand tonnes; 2021/22, 2022/23, 2023/24]",
+    "urls": [
+     "https://www.icco.org/wp-content/uploads/Production_QBCS-L-No.-4.pdf"
+    ],
+    "page_or_table": "Production of cocoa beans table, Africa block, 2023/24 column",
+    "edition": "ICCO QBCS Vol. L No. 4, published 29-11-2024",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 2000
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "GH",
+   "commodity": "cocoa",
+   "capacity": 480,
+   "source": "ICCO Quarterly Bulletin",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Côte d'Ivoire 2121 2241 1740 ; Ghana 683 654 480  [thousand tonnes; 2021/22, 2022/23, 2023/24]",
+    "urls": [
+     "https://www.icco.org/wp-content/uploads/Production_QBCS-L-No.-4.pdf"
+    ],
+    "page_or_table": "Production of cocoa beans table, Africa block, 2023/24 column",
+    "edition": "ICCO QBCS Vol. L No. 4, published 29-11-2024",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 600
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "BR",
+   "commodity": "coffee",
+   "capacity": 65.5,
+   "source": "USDA FAS Coffee: World Markets and Trade",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Brazil 58,100 62,600 66,300 65,500 63,000 71,900 ; Vietnam 31,580 28,300 27,550 29,000 31,700 32,500  [Thousand 60-Kilogram Bags; 2021/22 .. 2025/26, Jul 2026/27]",
+    "urls": [
+     "https://apps.fas.usda.gov/psdonline/circulars/coffee.pdf"
+    ],
+    "page_or_table": "Coffee Summary, Production, page 7, 2024/25 column",
+    "edition": "USDA FAS Coffee: World Markets and Trade, July 2026",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 65
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "BR",
+   "commodity": "sugar",
+   "capacity": 43.7,
+   "source": "USDA FAS Sugar: World Markets and Trade",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Brazil 35,450 38,050 45,544 43,700 43,800 42,500 ; India 36,880 37,000 29,500 28,000 30,000 33,600  [1,000 Metric Tons, Raw Value; 2021/22 .. 2025/26, May 2026/27]",
+    "urls": [
+     "https://apps.fas.usda.gov/psdonline/circulars/sugar.pdf"
+    ],
+    "page_or_table": "World Centrifugal Sugar: Production and Consumption, page 5, 2024/25 column",
+    "edition": "USDA FAS Sugar: World Markets and Trade, May 2026",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 44
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "IN",
+   "commodity": "sugar",
+   "capacity": 28.0,
+   "source": "USDA FAS Sugar: World Markets and Trade",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Brazil 35,450 38,050 45,544 43,700 43,800 42,500 ; India 36,880 37,000 29,500 28,000 30,000 33,600  [1,000 Metric Tons, Raw Value; 2021/22 .. 2025/26, May 2026/27]",
+    "urls": [
+     "https://apps.fas.usda.gov/psdonline/circulars/sugar.pdf"
+    ],
+    "page_or_table": "World Centrifugal Sugar: Production and Consumption, page 5, 2024/25 column",
+    "edition": "USDA FAS Sugar: World Markets and Trade, May 2026",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 32
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "RU",
+   "commodity": "wheat",
+   "capacity": 81.6,
+   "source": "USDA WASDE",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Russia                 11.69   81.60    0.30   17.00   40.00   43.00   10.59  [Million Metric Tons; 2024/25 Est.]",
+    "urls": [
+     "https://esmis.nal.usda.gov/sites/default/release-files/3t945q76s/z890tt821/g732g907r/wasde0925.txt"
+    ],
+    "page_or_table": "World Wheat Supply and Use, WASDE-664-18, 2024/25 Est.",
+    "edition": "WASDE-664, September 2025",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 82
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "UA",
+   "commodity": "wheat",
+   "capacity": 23.4,
+   "source": "USDA WASDE",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Ukraine                 1.41   23.40    0.07    3.60    8.20   15.75    0.93  [Million Metric Tons; 2024/25 Est.]",
+    "urls": [
+     "https://esmis.nal.usda.gov/sites/default/release-files/3t945q76s/z890tt821/g732g907r/wasde0925.txt"
+    ],
+    "page_or_table": "World Wheat Supply and Use, WASDE-664-18, 2024/25 Est.",
+    "edition": "WASDE-664, September 2025",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 22
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "US",
+   "commodity": "corn",
+   "capacity": 377.63,
+   "source": "USDA WASDE",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "United States              44.79  377.63    0.51  144.15  317.39   71.89   33.66  [Million Metric Tons; 2024/25 Est.]",
+    "urls": [
+     "https://esmis.nal.usda.gov/sites/default/release-files/3t945q76s/z890tt821/g732g907r/wasde0925.txt"
+    ],
+    "page_or_table": "World Corn Supply and Use, WASDE-664-22, 2024/25 Est.",
+    "edition": "WASDE-664, September 2025",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 377
+   },
+   "checked_at": "2026-10-13"
+  },
+  {
+   "country": "BR",
+   "commodity": "soybeans",
+   "capacity": 169.0,
+   "source": "USDA WASDE",
+   "status": "VERIFIED",
+   "verification": {
+    "figure_text": "Brazil                 29.76  169.00    0.65   57.00   61.10  102.10   36.21  [Million Metric Tons; 2024/25 Est.]",
+    "urls": [
+     "https://esmis.nal.usda.gov/sites/default/release-files/3t945q76s/z890tt821/g732g907r/wasde0925.txt"
+    ],
+    "page_or_table": "World Soybean Supply and Use, WASDE-664-28, 2024/25 Est.",
+    "edition": "WASDE-664, September 2025",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "previous_unverified_figure": 169
+   },
+   "checked_at": "2026-10-13"
+  }
+ ],
+ "regions": {
+  "SA": "middle_east",
+  "IQ": "middle_east",
+  "AE": "middle_east",
+  "IR": "middle_east",
+  "KW": "middle_east",
+  "QA": "middle_east",
+  "EG": "middle_east",
+  "RU": "europe_cis",
+  "KZ": "europe_cis",
+  "UA": "europe_cis",
+  "NO": "europe_cis",
+  "LY": "africa",
+  "NG": "africa",
+  "CD": "africa",
+  "ZA": "africa",
+  "CI": "africa",
+  "GH": "africa",
+  "US": "americas",
+  "VE": "americas",
+  "CL": "americas",
+  "PE": "americas",
+  "PA": "americas",
+  "BR": "americas",
+  "AU": "asia_pacific",
+  "ID": "asia_pacific",
+  "VN": "asia_pacific",
+  "IN": "asia_pacific"
+ }
+}

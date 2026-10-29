@@ -1,0 +1,61 @@
+{
+ "schema": "opec_quotas/1",
+ "version": "2026-10-13.1",
+ "unit": "kb/d",
+ "rule": "Required crude production per OPEC+ country from public OPEC+ decisions. A decision is used for compliance only when VERIFIED against the cited statement (figure_text, urls, checked_at); a VERIFY decision is UNMEASURED. A country absent from the decision's table is listed under exempt with required null. Compliance is computed only against a production estimate on this host; without one it is UNMEASURED.",
+ "decisions": [
+  {
+   "id": "onomm37_2025",
+   "decision": "37th OPEC and non-OPEC Ministerial Meeting: required production levels for 2025 (before the additional voluntary adjustments)",
+   "source": "37th OPEC and non-OPEC Ministerial Meeting statement, 2 June 2024 (required production level for 2025)",
+   "source_url": "https://www.opec.org/pr-detail/12-02-jun-2024.html",
+   "effective_from": "2025-01-01",
+   "effective_to": "2026-12-31",
+   "status": "VERIFIED",
+   "required": {
+    "AE": 3519,
+    "AZ": 551,
+    "BH": 196,
+    "BN": 83,
+    "CG": 277,
+    "DZ": 1007,
+    "GA": 177,
+    "GQ": 70,
+    "IQ": 4431,
+    "KW": 2676,
+    "KZ": 1628,
+    "MX": 1753,
+    "MY": 401,
+    "NG": 1500,
+    "OM": 841,
+    "RU": 9949,
+    "SA": 10478,
+    "SD": 64,
+    "SS": 124
+   },
+   "exempt": {
+    "IR": "not listed in the 37th ONOMM required-production table for 2025 (the statement read gives no reason)",
+    "LY": "not listed in the 37th ONOMM required-production table for 2025 (the statement read gives no reason)",
+    "VE": "not listed in the 37th ONOMM required-production table for 2025 (the statement read gives no reason)"
+   },
+   "checked_at": "2026-10-13",
+   "verification": {
+    "figure_text": "Country Required Production Level for 2025: Algeria 1,007; Congo 277; Eq.Guinea 70; Gabon 177; Iraq 4,431; Kuwait 2,676; Nigeria 1,500; Saudi Arabia 10,478; UAE 3,519; Azerbaijan 551; Bahrain 196; Brunei 83; Kazakhstan 1,628; Malaysia 401; Mexico 1,753; Oman 841; Russia 9,949; Sudan 64; South Sudan 124; OPEC 24,135; Non-OPEC 15,590; OPEC+ 39,725. Note (1): UAE required production has been increased by 300 kbd. Note (2): The required production level is before applying any additional production adjustments.",
+    "urls": [
+     "https://static.poder360.com.br/2024/06/opec-comunicado-2jun2024.pdf",
+     "https://www.opec.org/pr-detail/12-02-jun-2024.html",
+     "https://www.opec.org/pr-detail/28-05-dec-2024.html"
+    ],
+    "page_or_table": "statement annex, 'Country Required Production Level for 2025'",
+    "provenance": "the table was read from a third-party mirror (poder360) of the statement as printed from the Saudi Ministry of Energy portal; OPEC's own table PDF (https://www.opec.org/assets/assetdb/production-table-37th-onomm.pdf) returned a fetch error. OPEC's own release page (12-02-jun-2024) was read and confirms the meeting and 'as per the attached table starting 1 January 2025 until 31 December 2025'; the 38th ONOMM release (28-05-dec-2024) reads 'Extend the level of overall crude oil production ... as per the attached table until 31 December 2026', which is the basis of effective_to",
+    "cross_check": "OPEC rows sum to 24,135 and non-OPEC rows to 15,590, matching the printed totals",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF/page and the figure quoted from that extraction",
+    "corrections": {
+     "GA": "169 -> 177",
+     "MX": "absent ('no required level') -> 1,753",
+     "exempt reasons": "'sanctions'/'security' were not in the statement and were removed"
+    }
+   }
+  }
+ ]
+}
