@@ -106,6 +106,7 @@ class Proc:
     cmdline: str = ""
     create_time: float = 0.0
     cpu_pct: float = 0.0          # percent of ONE core over the window (Task Manager x cores)
+    cpu_s: float = 0.0            # cumulative CPU seconds since the process started
     threads: int = 0
     rss_mb: float = 0.0
     io_mb: float = 0.0
@@ -1162,7 +1163,7 @@ def measure(window_s: float) -> tuple[list[Proc], float | None]:
                 ppid=int(info.get("ppid") or 0), exe=str(info.get("exe") or ""),
                 cmdline=" ".join(info.get("cmdline") or []),
                 create_time=float(info.get("create_time") or 0.0),
-                cpu_pct=max(0.0, (now_cpu - base[1]) / elapsed * 100.0),
+                cpu_pct=max(0.0, (now_cpu - base[1]) / elapsed * 100.0), cpu_s=now_cpu,
                 threads=int(info.get("num_threads") or 0),
                 rss_mb=(mi.rss / 1048576.0) if mi else 0.0,
                 io_mb=((io.read_bytes + io.write_bytes) / 1048576.0) if io else 0.0,
@@ -1459,6 +1460,20 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH,
               f"applied, {len(the_plan.refused)} refused; judge reserve "
               f"{reserve_doc.get('mode', 'off')} {reserve_doc.get('reserve_mask') or ''}"
               f"{' phase ' + str(reserve_doc['phase']) if reserve_doc.get('phase') else ''}"))
+    # THE COMPUTE LEDGER (report only): per-organ core-seconds, IO and RSS, per day, with yield
+    # where an output count is cheap. A ledger failure is named, never allowed to stop the pass.
+    try:
+        from libs.ops import box_compute_ledger
+        try:
+            ct = psutil.cpu_times()
+            box_cpu_s: float | None = float(ct.user) + float(ct.system)
+        except Exception:  # unread box CPU: the ledger marks every yield UNMEASURED
+            box_cpu_s = None
+        report["compute_ledger"] = box_compute_ledger.update(
+            procs, rules.get("compute_ledger") or {},
+            path=report_path.parent / box_compute_ledger.LEDGER_PATH.name, box_cpu_s=box_cpu_s)
+    except Exception as exc:  # the hunter's own pass must still land
+        report["compute_ledger"] = {"error": f"{type(exc).__name__}: {exc}"[:200]}
     _write(report_path, report)
     return report
 

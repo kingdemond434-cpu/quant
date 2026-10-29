@@ -47,6 +47,15 @@
   "judge_wait_phases": ["done"],
   "adopt_red_after_min": 15,
   "health_why": "RED CHECK (owner rule 23): BOX_BOTTLENECKS.json health and stall_watch.json cpu_shape go RED when the judge's share of the box stays under judge_min_share (0.15 = ~2.7 of 18 cores; raise it by commit once the reserve's effect is measured) for more than 2 consecutive passes while it has runnable work (a live sweep whose JUDGE_SWEEP_PHASE.json phase is not in judge_wait_phases), or when the hunter's own measurement is UNMEASURED for more than 2 passes, or when the judge's phase is UNKNOWN (JUDGE_SWEEP_PHASE.json absent, unreadable or without a pid; a dead pid or phase done is no work, not unknown) for more than 2 passes. RED at once when desks/mt5/reports/ADOPTION_HEARTBEAT.json shows an Adopt-And-Seal run started more than adopt_red_after_min (15) minutes ago with no finished_at (no seal or refusal line). Read by desks/mt5/scripts/check_desk_health.py.",
+  "compute_ledger": {
+    "outputs": {
+      "judge": {"unit": "verdicts",
+                "max_age_s": 7200,
+                "sources": [{"file": "desks/mt5/reports/JUDGING_THROUGHPUT.json", "path": ["rate", "verdicts_per_day"], "at_path": ["rate", "at"]},
+                            {"file": "desks/mt5/reports/JUDGING_RATE.json", "path": ["verdicts_per_day"], "at_path": ["at"]}]}
+    },
+    "why": "REPORT ONLY. libs/ops/box_compute_ledger.py books every process's CPU-seconds, IO and RSS to its organ each pass and sums them per UTC day in desks/mt5/reports/BOX_COMPUTE_LEDGER.json; an output count listed here (by group) turns that into yield per core-hour, and free_cpu_first ranks which organ should get freed CPU first. An output that is absent, not a number, undated or older than max_age_s (7200 = twice the hourly judging_throughput cadence) is UNMEASURED, never zero. verdicts_per_day is a rolling 24 h count, so yield divides it by the ledger's rolling 24 WALL hours of core-seconds (hourly buckets begun within the last 24 h; older buckets leave the window) and reads UNMEASURED until the pass intervals actually OBSERVED in that window cover 23 h (a pass more than an hour after the previous one is an outage: it re-baselines and observes nothing). Short-lived processes (judge shards under 10 min) are never booked to an organ: the box's own CPU time is read each pass, and while the window's unbooked share (box minus booked) exceeds 5% or is unread, every yield is UNMEASURED. A process that exits between passes is undercounted by what it spent after the last pass (it cannot be read once gone); exited_since_last_pass counts them. Add a group's cheap output count here by commit."
+  },
   "mining_floor_cores": 6,
   "judge_reserve": {
     "base_mask": "0xFF00",
