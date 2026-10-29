@@ -225,7 +225,8 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
             # the threads fix. The title names the failing checks so the ledger, hc /log and the
             # DESK_ALERTS.json row say WHICH organ, not just "unhealthy".
             res = send_all(page_title(doc["failing"]), body, audience="desk",
-                           key=DESK_ALERT_KEY, source="box_heartbeat")
+                           key=DESK_ALERT_KEY, source="box_heartbeat",
+                           public_title=True)       # check names only; the body stays out
             doc["paged"] = {k: v for k, v in res.items() if k in ("armed", "delivered", "status")}
         except Exception as exc:
             doc["paged"] = {"status": "ERROR", "detail": type(exc).__name__}

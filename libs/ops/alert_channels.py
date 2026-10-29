@@ -69,6 +69,7 @@ import contextlib
 import json
 import os
 import smtplib
+import sys
 import urllib.error
 import urllib.request
 from collections.abc import Callable
@@ -98,22 +99,20 @@ _PERSONAL_KINDS = frozenset({"ntfy", "telegram", "email"})
 ROUTED_DETAIL = "routed: desk audience"
 
 #: THE DESK ALERT ARTIFACT. A desk page that only reaches a ledger reaches nobody who acts, so
-#: every desk send_all also upserts one row per alert key here -- {key, title, msg, first_seen,
-#: last_seen, source} -- and desks/mt5/scripts/check_desk_health.py turns any row seen inside
-#: DESK_ALERT_FRESH_H into a PROBLEM (a RED the threads read and fix). Repo-relative like the
-#: ledger; a caller with its own ledger gets the artifact beside it (`desk_alerts_path`).
+#: every desk send_all also upserts one row per alert key here -- {key, source, title_sha,
+#: first_seen, last_seen}, plus `title` (<=160) ONLY when the caller declares it value-free
+#: (`public_title=True`) -- and desks/mt5/scripts/check_desk_health.py turns any row seen inside
+#: DESK_ALERT_FRESH_H into a PROBLEM (a RED the threads read and fix). THIS FILE IS PUBLISHED, so
+#: it never holds a page body and never a title that could carry book state: the key alone (a
+#: check name, or the calling file:function) is what a thread follows back to the source.
+#: Repo-relative like the ledger; a caller with its own ledger gets it beside the ledger.
 _DESK_ALERTS = Path("desks/mt5/reports/DESK_ALERTS.json")
 #: One day of re-pages (the slowest run_alerts dedupe is 24h) plus an hour of slack: a condition
 #: still alerting keeps its row fresh; one that stopped ages out a day later.
 DESK_ALERT_FRESH_H = 25.0
 #: Rows not seen for this long are pruned so the artifact cannot grow without bound.
 _DESK_ALERT_KEEP_D = 7.0
-#: A PERSONAL CHANNEL NOBODY HAS PROVEN. ntfy carries only principal pages now, which are rare by
-#: design -- so a dead topic (quota, encoding, a rotated secret) would stay invisible until the
-#: one page that mattered. `personal_channel_health` calls it stale when its last REAL (non-routed)
-#: success is older than this, or when a real attempt failed after it; the canary writes that as
-#: a desk alert row, so it is a RED, never a buzz.
-PERSONAL_STALE_DAYS = 7.0
+_REPO = Path(__file__).resolve().parents[2]
 
 
 def _log(channel: str, ok: bool, detail: str, title: str, ledger: Path = _LEDGER, *,
@@ -245,7 +244,7 @@ _CANARY_AWARE = frozenset(_CANARY_SENDERS)
 def send_all(title: str, body: str, *, config: Path = _CONFIG,
              ledger: Path = _LEDGER, canary: bool = False,
              audience: str = PRINCIPAL, key: str | None = None, source: str = "",
-             resolved: bool = False) -> dict[str, Any]:
+             resolved: bool = False, public_title: bool = False) -> dict[str, Any]:
     """Fire EVERY armed channel the audience allows; one channel's failure can never stop another's.
 
     Returns {"armed": n, "delivered": n, "routed": n, "audience": a, "results": [...]}. When
@@ -263,17 +262,21 @@ def send_all(title: str, body: str, *, config: Path = _CONFIG,
     alert they have to read and dismiss -- a canary that pages is a canary that gets muted.
 
     A DESK send (not a canary) also upserts its row in the desk alert artifact under `key`
-    (default: the title), tagged with `source`; `resolved=True` removes that row instead, so a
-    cleared condition stops holding the desk RED. The hc channel takes a desk send on its /log
-    endpoint (recorded, notifies nobody) and only a principal send on /fail.
+    (default: the calling file:function), tagged with `source` (default: the calling file);
+    `resolved=True` removes that row instead, so a cleared condition stops holding the desk RED.
+    The body is never written there, and the title only with `public_title=True`. The hc
+    channel takes a desk send on its /log endpoint (recorded, notifies nobody) and only a
+    principal send on /fail.
     """
     aud = audience if audience in AUDIENCES else PRINCIPAL
     if aud == DESK and not canary:
+        where = _caller()
+        k = key or where
         if resolved:
-            clear_desk_alert(key or title, path=desk_alerts_path(ledger))
+            clear_desk_alert(k, path=desk_alerts_path(ledger))
         else:
-            record_desk_alert(key or title, title, body, source=source,
-                              path=desk_alerts_path(ledger))
+            record_desk_alert(k, title, source=source or where.split(":", 1)[0],
+                              public_title=public_title, path=desk_alerts_path(ledger))
     channels = load_channels(config)
     if not channels:
         _log("none", False, "NOT-ARMED: data/secrets/alert_channels.json absent or empty",
@@ -327,12 +330,28 @@ def page_principal(title: str, body: str, *, config: Path = _CONFIG,
         detail, ok = _SENDERS["ntfy"]({"kind": "ntfy", "topic": topic}, title, body), True
     except Exception as e:                      # never raises into the alert path
         ok, detail = False, f"{type(e).__name__}: {e}"[:200]
+    detail = detail.replace(topic, "<topic>")   # the topic is the secret: never echo it
     _log("ntfy", ok, detail, title, ledger)
     res = dict(res)
     res["results"] = [*res.get("results", []), {"channel": "ntfy", "ok": ok, "detail": detail,
                                                  "via": "ntfy.json"}]
     res["delivered"] = int(res.get("delivered", 0)) + (1 if ok else 0)
     return res
+
+
+def _caller() -> str:
+    """`repo/relative/file.py:function` of send_all's caller -- a desk row's default key, so a
+    thread can find the code that paged without the row repeating anything the page said."""
+    try:
+        f = sys._getframe(2)
+        name = Path(f.f_code.co_filename).resolve()
+        try:
+            rel = name.relative_to(_REPO).as_posix()
+        except ValueError:
+            rel = name.name
+        return f"{rel}:{f.f_code.co_name}"
+    except Exception:
+        return "unknown:unknown"
 
 
 def desk_alerts_path(ledger: Path = _LEDGER) -> Path:
@@ -375,18 +394,23 @@ def _write_desk_alerts(rows: dict[str, dict[str, Any]], path: Path) -> None:
     os.replace(tmp, path)
 
 
-def record_desk_alert(key: str, title: str, msg: str, *, source: str = "",
+def record_desk_alert(key: str, title: str, *, source: str = "", public_title: bool = False,
                       path: Path = _DESK_ALERTS) -> None:
-    """Upsert one desk alert row (first_seen kept, last_seen/title/msg refreshed). Never raises:
-    a failed write must not kill the page that called it. Text is truncated -- this artifact is
-    published, so callers keep book state out of desk pages exactly as they do for the ledger."""
+    """Upsert one desk alert row (first_seen kept, last_seen refreshed). Never raises: a failed
+    write must not kill the page that called it. The artifact is PUBLISHED: no body is stored,
+    the title is stored as its sha (exactly as the ledger does) and in clear only when the caller
+    passes `public_title=True` for a title made of check names, never of values."""
     with contextlib.suppress(Exception):
         now = datetime.now(tz=UTC).isoformat(timespec="seconds")
         rows = load_desk_alerts(path)
         prev = rows.get(key, {})
-        rows[key] = {"key": key, "title": title[:160], "msg": msg[:400],
-                     "first_seen": prev.get("first_seen", now), "last_seen": now,
-                     "source": source or prev.get("source", "")}
+        row: dict[str, Any] = {
+            "key": key, "source": source or prev.get("source", ""),
+            "title_sha": sha256(title.encode("utf-8", "ignore")).hexdigest()[:12],
+            "first_seen": prev.get("first_seen", now), "last_seen": now}
+        if public_title:
+            row["title"] = title[:160]
+        rows[key] = row
         _write_desk_alerts(rows, path)
 
 
@@ -410,12 +434,12 @@ def fresh_desk_alerts(*, path: Path = _DESK_ALERTS, hours: float = DESK_ALERT_FR
     return sorted(out, key=lambda r: str(r.get("last_seen")), reverse=True)
 
 
-def personal_channel_health(kind: str = "ntfy", *, ledger: Path = _LEDGER,
-                            days: float = PERSONAL_STALE_DAYS,
-                            now: datetime | None = None) -> dict[str, Any]:
-    """Is a personal channel PROVEN to deliver? Reads only real rows (routed ones prove nothing).
+def personal_channel_health(kind: str = "ntfy", *, ledger: Path = _LEDGER) -> dict[str, Any]:
+    """Is a personal channel FAILING? Reads only real rows (routed ones prove nothing).
 
-    stale = no real success inside `days`, or a real attempt failed after the last success.
+    stale = a real (non-routed) attempt FAILED after the channel's last real success (or with no
+    success ever). Silence is NOT staleness: principal pages are rare by design, a quiet week is
+    the normal state, and a RED the threads cannot clear without buzzing the owner is noise.
     `last_success` None means the ledger has never recorded one."""
     last_ok: str | None = None
     failed_after = False
@@ -432,13 +456,8 @@ def personal_channel_health(kind: str = "ntfy", *, ledger: Path = _LEDGER,
                 last_ok, failed_after = str(row.get("ts")), False
             else:
                 failed_after = True
-    floor = (now or datetime.now(tz=UTC)) - timedelta(days=days)
-    old = True
-    if last_ok:
-        with contextlib.suppress(ValueError, TypeError):
-            old = datetime.fromisoformat(last_ok) < floor
     return {"channel": kind, "last_success": last_ok, "failed_since": failed_after,
-            "stale": old or failed_after, "days": days}
+            "stale": failed_after}
 
 
 def ledger_tail(n: int = 20, *, ledger: Path = _LEDGER) -> list[dict[str, Any]]:

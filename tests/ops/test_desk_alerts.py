@@ -116,17 +116,35 @@ def test_a_desk_page_upserts_one_row_and_resolving_clears_it(tmp_path: Path,
     assert path == tmp_path / "desks" / "mt5" / "reports" / "DESK_ALERTS.json"
     cfg = _cfg(tmp_path, ["hc"])
     ac.send_all("WARNING Quant desk: brain_down", "m1", config=cfg, ledger=led,
-                audience="desk", key="brain_down", source="run_alerts")
+                audience="desk", key="brain_down", source="run_alerts", public_title=True)
     first = ac.load_desk_alerts(path)["brain_down"]
     ac.send_all("WARNING Quant desk: brain_down", "m2", config=cfg, ledger=led,
-                audience="desk", key="brain_down", source="run_alerts")
+                audience="desk", key="brain_down", source="run_alerts", public_title=True)
     row = ac.load_desk_alerts(path)["brain_down"]
-    assert row["first_seen"] == first["first_seen"] and row["msg"] == "m2"
-    assert set(row) == {"key", "title", "msg", "first_seen", "last_seen", "source"}
+    assert row["first_seen"] == first["first_seen"]
+    assert set(row) == {"key", "source", "title", "title_sha", "first_seen", "last_seen"}
+    assert row["title"] == "WARNING Quant desk: brain_down"
     assert [r["key"] for r in ac.fresh_desk_alerts(path=path)] == ["brain_down"]
     ac.send_all("RESOLVED Quant desk: brain_down", "cleared", config=cfg, ledger=led,
                 audience="desk", key="brain_down", resolved=True)
     assert ac.load_desk_alerts(path) == {}
+
+
+def test_the_published_row_never_holds_the_body_or_a_value_title(
+        tmp_path: Path, quiet: list[tuple[str, bool]]) -> None:
+    """DESK_ALERTS.json is published: no body ever, the title only as its sha unless the caller
+    declares it value-free, and the key -- by default the calling file:function -- is what a
+    thread follows back to the source."""
+    led = tmp_path / "data" / "alert_delivery.jsonl"
+    ac.send_all("gold leg 2.37 lots @ 2411.5 unprotected", "equity 10423.17 on acct 5551234",
+                config=_cfg(tmp_path, ["hc"]), ledger=led, audience="desk")
+    text = ac.desk_alerts_path(led).read_text("utf-8")
+    for leak in ("2.37", "2411", "10423", "5551234", "unprotected"):
+        assert leak not in text, leak
+    (row,) = ac.load_desk_alerts(ac.desk_alerts_path(led)).values()
+    here = "tests/ops/test_desk_alerts.py"
+    assert row["key"] == f"{here}:test_the_published_row_never_holds_the_body_or_a_value_title"
+    assert row["source"] == here and "title" not in row and len(row["title_sha"]) == 12
 
 
 def test_principal_and_canary_sends_write_no_desk_row(tmp_path: Path,
@@ -140,7 +158,7 @@ def test_principal_and_canary_sends_write_no_desk_row(tmp_path: Path,
 
 def test_a_stale_row_ages_out_of_the_red(tmp_path: Path) -> None:
     path = tmp_path / "DESK_ALERTS.json"
-    ac.record_desk_alert("k", "t", "m", path=path)
+    ac.record_desk_alert("k", "t", path=path)
     later = datetime.now(tz=UTC) + timedelta(hours=ac.DESK_ALERT_FRESH_H + 1)
     assert ac.fresh_desk_alerts(path=path, now=later) == []
     assert len(ac.fresh_desk_alerts(path=path)) == 1
@@ -158,7 +176,7 @@ def test_check_desk_health_goes_red_on_a_fresh_desk_alert(tmp_path: Path) -> Non
         return rep
 
     assert run()["verdict"] == "OK"                       # absent: nothing recorded
-    ac.record_desk_alert("box_heartbeat:unhealthy", "MT5 box unhealthy: disk", "free 1GB",
+    ac.record_desk_alert("box_heartbeat:unhealthy", "MT5 box unhealthy: disk",
                          source="box_heartbeat", path=path)
     rep = run()
     assert rep["verdict"] == "PROBLEM"
@@ -226,31 +244,39 @@ def test_box_heartbeat_keeps_pinging_alive_and_logs_desk_failures(
 
 # --- SF3: the personal channel's liveness is a desk RED, never a buzz ----------------------------
 
-def test_personal_channel_health_reads_only_real_rows(tmp_path: Path) -> None:
+def test_personal_channel_is_stale_only_when_a_real_send_failed(tmp_path: Path) -> None:
+    """Silence is not staleness: a quiet week (or a routed-only ledger) is the normal state."""
     led = _ledger(tmp_path, ROUTED_ONLY)
-    assert ac.personal_channel_health(ledger=led)["stale"]               # routed proves nothing
-    led = _ledger(tmp_path, [{"ts": _now_iso(days=1), "channel": "ntfy", "ok": True}])
     assert not ac.personal_channel_health(ledger=led)["stale"]
-    led = _ledger(tmp_path, [{"ts": _now_iso(days=8), "channel": "ntfy", "ok": True}])
-    assert ac.personal_channel_health(ledger=led)["stale"]
+    led = _ledger(tmp_path, [{"ts": _now_iso(days=30), "channel": "ntfy", "ok": True}])
+    assert not ac.personal_channel_health(ledger=led)["stale"]          # a quiet month
     led = _ledger(tmp_path, [{"ts": _now_iso(days=1), "channel": "ntfy", "ok": True},
                              {"ts": _now_iso(hours=1), "channel": "ntfy", "ok": False}])
     h = ac.personal_channel_health(ledger=led)
     assert h["stale"] and h["failed_since"]
+    led = _ledger(tmp_path, [{"ts": _now_iso(hours=2), "channel": "ntfy", "ok": False},
+                             *ROUTED_ONLY,
+                             {"ts": _now_iso(hours=1), "channel": "ntfy", "ok": True}])
+    assert not ac.personal_channel_health(ledger=led)["stale"]          # recovered
+    led = _ledger(tmp_path, [{"ts": _now_iso(hours=1), "channel": "ntfy", "ok": False}])
+    assert ac.personal_channel_health(ledger=led)["stale"]              # never succeeded
 
 
 def test_the_canary_raises_and_clears_the_personal_channel_red(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     canary = _load("scripts/run_alert_canary.py", "run_alert_canary_personal")
     monkeypatch.chdir(tmp_path)
+    path = tmp_path / "desks" / "mt5" / "reports" / "DESK_ALERTS.json"
     _ledger(tmp_path, ROUTED_ONLY)
     canary.check_personal_channel(ntfy_known=True)
-    path = tmp_path / "desks" / "mt5" / "reports" / "DESK_ALERTS.json"
+    assert not path.exists()                                # quiet is not a RED
+    _ledger(tmp_path, [{"ts": _now_iso(hours=1), "channel": "ntfy", "ok": False}])
+    canary.check_personal_channel(ntfy_known=True)
     assert canary.PERSONAL_STALE_KEY in ac.load_desk_alerts(path)
     _ledger(tmp_path, [{"ts": _now_iso(hours=1), "channel": "ntfy", "ok": True}])
     canary.check_personal_channel(ntfy_known=True)
     assert ac.load_desk_alerts(path) == {}
-    _ledger(tmp_path, ROUTED_ONLY)
+    _ledger(tmp_path, [{"ts": _now_iso(hours=1), "channel": "ntfy", "ok": False}])
     assert not canary.check_personal_channel(ntfy_known=False)["stale"]   # no ntfy here at all
     assert ac.load_desk_alerts(path) == {}
 
@@ -267,6 +293,24 @@ def test_page_principal_reaches_the_ntfy_json_topic_when_the_registry_has_none(
     ac.page_principal("needs you", "b", config=_cfg(tmp_path, ["ntfy"]), ledger=led,
                       ntfy_secret=secret)
     assert quiet == [("ntfy", False)]                      # armed in the registry: sent once
+
+
+def test_page_principal_never_echoes_the_topic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+                                               capsys: pytest.CaptureFixture[str]) -> None:
+    secret = tmp_path / "ntfy.json"
+    secret.write_text(json.dumps({"topic": "quant-s3cret"}), "utf-8")
+
+    def boom(_c: dict[str, Any], _t: str, _b: str) -> str:
+        raise OSError(f"cannot reach https://ntfy.sh/{_c['topic']}")
+
+    monkeypatch.setitem(ac._SENDERS, "ntfy", boom)
+    led = tmp_path / "l.jsonl"
+    res = ac.page_principal("needs you", "b", config=tmp_path / "absent.json", ledger=led,
+                            ntfy_secret=secret)
+    out = capsys.readouterr()
+    for blob in (json.dumps(res), led.read_text("utf-8"), out.out, out.err):
+        assert "s3cret" not in blob
+    assert res["results"][-1]["detail"].endswith("<topic>")
 
 
 # --- SF4: the dedupe key carries the audience ----------------------------------------------------

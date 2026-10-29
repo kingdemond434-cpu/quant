@@ -209,7 +209,8 @@ m = os.environ.get("BRAIN_PAGE_MSG", "")
 if os.environ.get("BRAIN_PAGE_AUD") == "principal":
     page_principal("BRAIN: " + m[:120], m)
 else:
-    send_all("BRAIN: " + m[:120], m, audience="desk", key="brain:" + m[:60], source="brain_env")
+    send_all("BRAIN: " + m[:120], m, audience="desk", key="ops/brain_env.sh:_brain_page",
+             source="ops/brain_env.sh")
 ') >/dev/null 2>&1; then
         : > "$stamp" 2>/dev/null || true    # stamp ONLY on success, so a failed page retries
     fi

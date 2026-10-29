@@ -97,8 +97,9 @@ def _push(topic: str, title: str, body: str, *, audience: str = "principal",
         _second_channel(f"{safe_title}: {body}", audience="desk")
         with contextlib.suppress(Exception):
             from libs.ops.alert_channels import send_all
+            # the title is "WARNING|RESOLVED Quant desk: <check key>" -- a check name, no values
             send_all(safe_title, body, audience="desk", key=key, source="run_alerts",
-                     resolved=resolved)
+                     resolved=resolved, public_title=True)
         _ledger_ok("ntfy", "routed: desk audience", safe_title, routed="desk")
         return
     # 429 backoff (2026-07-20): ntfy rate-limits the topic; a due re-page retried on

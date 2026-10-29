@@ -53,9 +53,10 @@ def sent_count(res: dict[str, Any] | None) -> int | str:
 def check_personal_channel(*, ntfy_known: bool | None = None) -> dict[str, Any]:
     """THE PHONE'S OWN LIVENESS, WITHOUT TOUCHING THE PHONE. ntfy now carries principal pages
     only, so between incidents nothing exercises it; a dead topic would surface on the one page
-    that mattered. When its last real success is older than PERSONAL_STALE_DAYS (or a real attempt
-    failed after it) this writes a DESK alert row -- a RED in DESK_ALERTS.json that
-    check_desk_health surfaces -- and clears it once a real success lands. Never a page."""
+    that mattered. When a REAL attempt has failed since its last real success, this writes a DESK
+    alert row -- a RED in DESK_ALERTS.json that check_desk_health surfaces -- and clears it once a
+    real success lands. A quiet channel is not a failing one, so silence alone raises nothing.
+    Never a page."""
     known = ntfy_known
     if known is None:
         known = _NTFY_SECRET.exists() or "ntfy" in status()["armed_kinds"]
@@ -63,13 +64,10 @@ def check_personal_channel(*, ntfy_known: bool | None = None) -> dict[str, Any]:
     if not known:
         return {**h, "stale": False, "why": "no ntfy topic configured on this box"}
     if h["stale"]:
-        record_desk_alert(
-            PERSONAL_STALE_KEY, "personal channel ntfy unproven",
-            f"ntfy last real success {h['last_success'] or 'NEVER'}"
-            f"{'; a real attempt failed after it' if h['failed_since'] else ''} -- older than "
-            f"{h['days']:.0f}d. Desk pages never exercise it, so a principal page may not arrive: "
-            "check data/alert_delivery.jsonl, the topic in data/secrets/ntfy.json, and ntfy.sh "
-            "rate limits.", source="run_alert_canary")
+        # key + fixed title only (the artifact is published): a thread follows the key to this
+        # function, then reads data/alert_delivery.jsonl for the failing ntfy rows
+        record_desk_alert(PERSONAL_STALE_KEY, "personal channel ntfy: a real send failed",
+                          source="scripts/run_alert_canary.py", public_title=True)
     else:
         clear_desk_alert(PERSONAL_STALE_KEY)
     return h

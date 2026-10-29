@@ -478,9 +478,9 @@ def check_desk_alerts(path: Path | None = None, now: datetime | None = None) -> 
             _unknown(f"desk alert {r.get('key')!r} has no readable last_seen")
             continue
         fresh += 1
-        _bad(f"desk alert {r.get('key')}: {str(r.get('title'))[:120]} -- "
-             f"{str(r.get('msg'))[:200]} (source {r.get('source') or '?'}, first "
-             f"{r.get('first_seen')}, last {r.get('last_seen')})")
+        label = str(r.get("title") or f"title sha {r.get('title_sha') or '?'}")[:120]
+        _bad(f"desk alert {r.get('key')}: {label} (source {r.get('source') or '?'}, first "
+             f"{r.get('first_seen')}, last {r.get('last_seen')}) -- follow the key to its source")
     if not fresh:
         _ok(f"no desk alert seen in the last {hours:g}h ({len(rows)} older row(s))")
     print()
