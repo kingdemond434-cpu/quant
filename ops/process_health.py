@@ -1240,7 +1240,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"process health retry: {retry_scheduler(for_at).get('state')}")
         return 0
     doc = build()
-    doc["page"] = page_attention(doc)
+    # Real tree only, like `_backup_state`: a test's temp box never reaches the real channels.
+    doc["page"] = (page_attention(doc) if Path(__file__).resolve().parent.parent == ROOT
+                   else {"sent": False, "reason": "SKIPPED (ROOT is not this checkout)"})
     if doc["scheduler_timeouts"]:
         # A READ TIMED OUT. Hand it to the detached retry and get off the hot path: this pass
         # never waits on the longer bound itself. The report is written BEFORE the spawn, so the

@@ -318,7 +318,15 @@ def test_unarmed_pager_is_a_red_row_with_the_owner_action(
         "armed": 1, "kinds": ["telegram"], "line": None})
     doc = ph.build()
     assert not any(r["name"] == "ALERT CHANNELS" for r in doc["processes"])
-    assert doc["status"] == "OK"
+    # Zero scheduler rows read is UNMEASURED on LIVE (v5b), never "OK": the pager alone clearing
+    # does not make an empty board healthy.
+    assert doc["status"] == "UNMEASURED"
+    # With the run history read and one healthy task, the cleared pager leaves the board OK.
+    monkeypatch.setattr(ph, "_tasks", lambda: ([{
+        "TaskName": r"\MT5-Quiet", "Scheduled Task State": "Ready", "Status": "Ready",
+        "Last Result": "0"}], "OK schtasks"))
+    doc = ph.build()
+    assert doc["status"] == "OK", [(r["name"], r["verdict"]) for r in doc["processes"]]
 
 
 def test_disk_under_the_floor_is_a_red_row_that_lists_and_never_deletes(tmp_path, monkeypatch):

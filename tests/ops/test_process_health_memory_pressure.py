@@ -13,6 +13,7 @@ import importlib.util
 import json
 import subprocess
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -59,8 +60,15 @@ def _fake(monkeypatch: pytest.MonkeyPatch, answers: dict[int, Any]) -> list[tupl
 
 @pytest.fixture
 def box(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
-    (tmp_path / "fresh.json").write_text("{}", "utf-8")
+    (tmp_path / "fresh.json").write_text(
+        json.dumps({"generated_at": datetime.now(UTC).isoformat(timespec="seconds")}), "utf-8")
     monkeypatch.setattr(ph, "ROOT", tmp_path)
+    # The board's off-scheduler rows (pager, Fusion deadman, disk floor) read the real box;
+    # these tests are about the scheduler, so those rows are held clear.
+    monkeypatch.setattr(ph, "_alerts_armed", lambda root=None: {"armed": 1, "kinds": ["hc"],
+                                                                "line": None})
+    monkeypatch.setattr(ph, "deadman_invariant", lambda **kw: None)
+    monkeypatch.setattr(ph, "disk_state", lambda *a, **kw: {"verdict": "OK"})
     monkeypatch.setattr(ph, "OUT", tmp_path / "reports" / "process_health.json")
     monkeypatch.setattr(ph, "_contracts", lambda: {"MT5-Hourly": ("fresh.json", 120, "hourly")})
     monkeypatch.setattr(ph, "memory_snapshot", lambda: dict(MEM))

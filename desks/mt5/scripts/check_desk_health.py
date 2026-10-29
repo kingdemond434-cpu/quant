@@ -295,15 +295,17 @@ def check_artifacts() -> None:
         if not p.exists():
             _bad(f"{rel} does not exist -- {producer} has never written it here")
             continue
+        try:
+            mtime_age_h = (now - p.stat().st_mtime) / 3600.0
+        except OSError as exc:
+            # Read here, not inside the stamp reader, so the finding names the error's TYPE and
+            # errno only (v2.2: DESK_HEALTH.json publishes no local path, no raw exception text).
+            _unknown(f"{rel} could not be read ({_exc_reason(exc)}); UNREADABLE is not the "
+                     f"same as absent")
+            continue
         r = _artifact_age(p, ARTIFACT_STAMP.get(rel))
         if r is None:
-            try:
-                age_h = (now - p.stat().st_mtime) / 3600.0
-            except OSError as exc:
-                _unknown(f"{rel} could not be read ({_exc_reason(exc)}); UNREADABLE is not the "
-                         f"same as absent")
-                continue
-            basis = "mtime (stamp reader unavailable)"
+            age_h, basis = mtime_age_h, "mtime (stamp reader unavailable)"
         elif r.get("age_min") is None:
             _unknown(f"{rel}: {r.get('why')} -- {producer}")
             continue

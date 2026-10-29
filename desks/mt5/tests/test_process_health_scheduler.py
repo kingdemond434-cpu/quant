@@ -46,6 +46,12 @@ def test_unreadable_scheduler_is_not_empty_scheduler(monkeypatch):
         "MT5-Gateway": ("gateway.json", 10, "broker check"),
     })
     monkeypatch.setattr(ph, "_reading", _aged(lambda path: 1.0))
+    # The off-scheduler rows are definite faults that would headline ATTENTION; this test is
+    # about the unread scheduler alone, so they are held clear.
+    monkeypatch.setattr(ph, "_alerts_armed", lambda root=None: {"armed": 1, "kinds": ["hc"],
+                                                                "line": None})
+    monkeypatch.setattr(ph, "deadman_invariant", lambda **kw: None)
+    monkeypatch.setattr(ph, "disk_state", lambda *a, **kw: {"verdict": "OK"})
 
     doc = ph.build()
 

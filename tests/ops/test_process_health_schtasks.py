@@ -12,7 +12,9 @@ from __future__ import annotations
 import csv
 import importlib.util
 import io
+import json
 import subprocess
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -107,12 +109,25 @@ def test_both_queries_answer_and_the_run_history_is_joined(monkeypatch: pytest.M
     assert by['\\Odd, "quoted" name']["ResultUnmeasured"]
 
 
+def _now_iso() -> str:
+    return datetime.now(UTC).isoformat(timespec="seconds")
+
+
 def _build(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, contracts: dict[str, tuple[str, int, str]]
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    (tmp_path / "fresh.json").write_text("{}", "utf-8")
+    # A stamped artifact: freshness is read from the stamp inside it, never the mtime.
+    # (MT5-Gateway's declared stamp is `last_reconcile`, ops/organ_contract.STAMP_SPEC.)
+    (tmp_path / "fresh.json").write_text(
+        json.dumps({"generated_at": _now_iso(), "last_reconcile": _now_iso()}), "utf-8")
     monkeypatch.setattr(ph, "ROOT", tmp_path)
     monkeypatch.setattr(ph, "_contracts", lambda: dict(contracts))
+    # The board's off-scheduler rows (pager, Fusion deadman, disk floor) read the real box;
+    # these tests are about the scheduler, so those rows are held clear.
+    monkeypatch.setattr(ph, "_alerts_armed", lambda root=None: {"armed": 1, "kinds": ["hc"],
+                                                                "line": None})
+    monkeypatch.setattr(ph, "deadman_invariant", lambda **kw: None)
+    monkeypatch.setattr(ph, "disk_state", lambda *a, **kw: {"verdict": "OK"})
     doc = ph.build()
     return doc, {r["name"]: r for r in doc["processes"]}
 
@@ -130,7 +145,7 @@ def test_full_read_judges_failures_and_absences(
     _fake(monkeypatch, BRIEF, VERBOSE)
     doc, by = _build(monkeypatch, tmp_path, CONTRACTS)
     assert by["MT5-Hourly"]["verdict"] == "FAILING"  # 0x80070002, printed signed
-    assert by["MT5-Gateway"]["verdict"] == "OK"  # 267009 = running
+    assert by["MT5-Gateway"]["verdict"] == "RUNNING"  # 267009 = running, artifact fresh
     assert by["MT5-Old"]["verdict"] == "DISABLED"
     assert by["MT5-Vanished"]["verdict"] == "NOT_SCHEDULED"
     assert doc["counts"].get("SCHEDULER_UNMEASURED", 0) == 0
@@ -417,12 +432,11 @@ def test_a_brief_only_read_with_a_definite_fault_headlines_attention(
 ) -> None:
     """Coordinator ruling 2026-10-21: the worst finding wins, so a fault the brief read can see
     is ATTENTION, not UNMEASURED."""
-    import os
-    import time
+    from datetime import timedelta
     stale = tmp_path / "stale.json"
-    stale.write_text("{}", "utf-8")
-    old = time.time() - 3600
-    os.utime(stale, (old, old))
+    # Stale BY ITS STAMP (an hour old against a 1-minute contract): the mtime is not read.
+    stale.write_text(json.dumps({"generated_at": (datetime.now(UTC) - timedelta(hours=1))
+                                 .isoformat(timespec="seconds")}), "utf-8")
     _fake(monkeypatch, BRIEF, subprocess.TimeoutExpired(["schtasks", "/v"], 90))
     doc, by = _build(monkeypatch, tmp_path, contracts)
     assert doc["scheduler_status"].startswith("OK schtasks (brief")
@@ -469,7 +483,7 @@ def test_disabled_raises_attention_with_both_reads(
           _with_disabled(VERBOSE_ADOPT, "MT5-Other"))
     doc, by = _build(monkeypatch, tmp_path, _GW_ONLY)
     assert doc["run_history"] == "MEASURED"
-    assert by["MT5-Gateway"]["verdict"] == "OK"
+    assert by["MT5-Gateway"]["verdict"] == "RUNNING"  # 267009, artifact fresh
     assert by["MT5-Other"]["verdict"] == "DISABLED"
     assert by["MT5-Other"]["expected_disabled"] is None
     assert doc["status"] == "ATTENTION" and doc["n_needing_attention"] == 1
