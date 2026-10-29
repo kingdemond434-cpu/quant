@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-29T15:58:11+00:00",
+ "generated_utc": "2026-10-29T13:46:10+00:00",
  "trees": [
   "desks/mt5/research",
   "desks/mt5/mt5desk",
@@ -28,7 +28,7 @@
   "wgc_goldhub",
   "xauusd_scalp_bars"
  ],
- "readers": 66,
+ "readers": 68,
  "routed": {
   "desks/mt5/research/alt_proxies.py": [
    "gdelt"
@@ -332,18 +332,25 @@
     "assumed": false
    }
   },
-  "undeclared": {},
+  "undeclared": {
+   "desks/mt5/research/labs/scientists.py": [
+    "fred_macro"
+   ],
+   "desks/mt5/research/science_labs.py": [
+    "fred_macro"
+   ]
+  },
   "flagged_assumed": [
    "desks/mt5/mt5desk/macro_view.py"
   ]
  },
  "accounting": {
-  "readers": 66,
+  "readers": 68,
   "joining": 16,
   "joining_routed": 16,
   "no_join_routed_in_code": 37,
   "no_join_declared": 13,
-  "undeclared": 0,
+  "undeclared": 2,
   "offenders": 0,
   "routed_or_declared": 66
  },
