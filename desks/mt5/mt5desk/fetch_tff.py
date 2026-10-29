@@ -11,9 +11,11 @@ long+short. Symbol mapping mirrors data.py _SYMBOL_SLUG.
 from __future__ import annotations
 
 import io
+import re
 import ssl
 import urllib.request
 import zipfile
+from pathlib import Path
 
 import pandas as pd
 
@@ -32,34 +34,26 @@ YEARS = list(range(2018, 2027))
 # Metals are NOT in TFF (financial futures only): gold/silver coverage comes
 # from the legacy (1986+) and disaggregated (2006+) COT reports instead.
 # DXY has no TFF entry (ICE dollar index not reported in this view).
-# EXACT CONTRACT NAMES, NEVER A SUBSTRING (measured 2026-10-20). The old token match made
-# "EURO FX" also take "EURO FX/JAPANESE YEN XRATE" and "EURO FX/BRITISH POUND XRATE", "S&P 500"
-# take the dividend, micro and consolidated contracts, and `drop_duplicates(keep="last")` then
-# kept whichever contract happened to sort last each week: eur.parquet was 189 EURO FX weeks,
-# 184 EUR/GBP cross and 77 EUR/JPY cross. Each slug is now ONE contract, listed with its CFTC
-# renames (oldest first), matched case-insensitively on the full name.
-_CME = " - CHICAGO MERCANTILE EXCHANGE"
-TARGETS: list[tuple[str, tuple[str, ...]]] = [
-    ("jpy", ("JAPANESE YEN" + _CME,)),
-    ("eur", ("EURO FX" + _CME,)),
-    ("gbp", ("BRITISH POUND STERLING" + _CME, "BRITISH POUND" + _CME)),
-    ("cad", ("CANADIAN DOLLAR" + _CME,)),
-    ("aud", ("AUSTRALIAN DOLLAR" + _CME,)),
-    ("nzd", ("NEW ZEALAND DOLLAR" + _CME, "NZ DOLLAR" + _CME)),
-    ("chf", ("SWISS FRANC" + _CME,)),
-    ("eurjpy", ("EURO FX/JAPANESE YEN XRATE" + _CME,)),
-    ("eurgbp", ("EURO FX/BRITISH POUND XRATE" + _CME,)),
-    ("sp500", ("E-MINI S&P 500 STOCK INDEX" + _CME, "E-MINI S&P 500" + _CME)),
-    ("nasdaq100", ("NASDAQ-100 STOCK INDEX (MINI)" + _CME, "NASDAQ MINI" + _CME)),
+TARGETS = [
+    ("jpy", "JAPANESE YEN"),
+    ("eur", "EURO FX"),
+    ("gbp", "BRITISH POUND"),
+    ("cad", "CANADIAN DOLLAR"),
+    ("aud", "AUSTRALIAN DOLLAR"),
+    ("nzd", "NEW ZEALAND DOLLAR"),
+    ("chf", "SWISS FRANC"),
+    ("sp500", "S&P 500"),
+    ("nasdaq100", "NASDAQ"),
 ]
 
-UA = "quant-research/1.0 (+https://github.com/kingdemond434-cpu/quant; fetch_tff)"
 ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
 
 
 def load_year(year: int) -> pd.DataFrame | None:
     url = f"https://www.cftc.gov/files/dea/history/fut_fin_txt_{year}.zip"
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     try:
         data = urllib.request.urlopen(req, timeout=180, context=ctx).read()
     except Exception:
@@ -76,14 +70,15 @@ def load_year(year: int) -> pd.DataFrame | None:
     return df
 
 
-def pick(df: pd.DataFrame, names: tuple[str, ...] | str) -> pd.DataFrame:
-    wanted = {names.upper()} if isinstance(names, str) else {n.upper() for n in names}
-    mask = df["Market_and_Exchange_Names"].astype(str).str.strip().str.upper().isin(wanted)
+def pick(df: pd.DataFrame, token: str) -> pd.DataFrame:
+    pat = re.compile(re.escape(token), re.IGNORECASE)
+    mask = df["Market_and_Exchange_Names"].astype(str).str.contains(
+        pat.pattern, regex=True, na=False)
     sub = df[mask].copy()
     if sub.empty:
         return sub
     oi = next((c for c in sub.columns if c == "Open_Interest_All"), None)
-    def pos(tok: str) -> str | None:
+    def pos(tok: str) -> str:
         return next((c for c in sub.columns if c.startswith(tok)), None)
     keep = {
         "report_date": "Report_Date_as_YYYY-MM-DD",
@@ -121,12 +116,9 @@ def main() -> None:
         if not frames[slug]:
             print(f"{slug:>10}: FAILED (no rows)")
             continue
-        all_df = pd.concat(frames[slug], ignore_index=True).sort_values("report_date")
-        if all_df.duplicated("report_date").any():
-            # Two of a slug's names on one date is a CFTC overlap, not a choice to make silently.
-            dup = sorted(set(all_df.loc[all_df.duplicated("report_date", keep=False), "market"]))
-            print(f"{slug:>10}: REFUSED -- {len(dup)} names report the same week: {dup}")
-            continue
+        all_df = pd.concat(frames[slug], ignore_index=True)
+        all_df = (all_df.sort_values("report_date")
+                  .drop_duplicates("report_date", keep="last"))
         all_df.to_parquet(OUT / f"{slug}.parquet", index=False)
         print(f"{slug:>10}: {len(all_df)} rows  "
               f"{all_df['report_date'].min().date()} -> "

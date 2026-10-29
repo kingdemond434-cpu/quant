@@ -8,7 +8,7 @@ execution. Maximised every hour and never exhausted.
 
 WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
 
-  1. COLLECTS from the rows in `data/futures_state/sources.json` -- rows, never code. The OPEN
+  1. COLLECTS from the rows in `research/futures_state_sources.json` -- rows, never code. The OPEN
      sources are the CFTC public reporting API (legacy, disaggregated and TFF, each futures-only
      AND futures+options combined, so the difference is the delta-adjusted OPTIONS-ON-FUTURES
      book), EIA's republished NYMEX contracts 1-4 (WTI, Henry Hub: a dated curve from a
@@ -74,7 +74,9 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-REGISTRY = DESK / "data" / "futures_state" / "sources.json"
+#: The source rows live beside the code, not under data/: data/ is the box's state (and money
+#: path to the release gates), and these rows are reviewed configuration, not state.
+REGISTRY = DESK / "research" / "futures_state_sources.json"
 RAW = DESK / "data" / "futures_state" / "raw"
 STATE = DESK / "data" / "futures_state" / "state.json"
 SERIES = DESK / "data" / "lake" / "series"

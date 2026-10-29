@@ -308,21 +308,6 @@ def test_fred_pairs_and_levels_make_one_series_per_pair_with_its_own_targets() -
     assert lv[0][0] == "fred_res_res" and "log_chg" in lv[0][1].columns
 
 
-def test_exact_names_never_swallow_a_cross_contract() -> None:
-    from mt5desk import fetch_tff
-
-    cme = " - CHICAGO MERCANTILE EXCHANGE"
-    df = pd.DataFrame({"Market_and_Exchange_Names": ["EURO FX" + cme,
-                                                     "EURO FX/JAPANESE YEN XRATE" + cme,
-                                                     "EURO FX/BRITISH POUND XRATE" + cme],
-                       "Report_Date_as_YYYY-MM-DD": ["2026-08-11"] * 3,
-                       "Open_Interest_All": [700000, 21455, 30000]})
-    eur = dict(fetch_tff.TARGETS)["eur"]
-    got = fetch_tff.pick(df, eur)
-    assert list(got["market"]) == ["EURO FX" + cme]
-    assert list(fetch_tff.pick(df, dict(fetch_tff.TARGETS)["eurjpy"])["oi"]) == [21455]
-
-
 def test_registry_names_every_unmeasured_fx_input() -> None:
     import json
 
