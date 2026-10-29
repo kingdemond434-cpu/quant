@@ -28,16 +28,25 @@ you hesitate to run is a diagnostic you do not run.
 STALE IS NOT DEAD, AND MISSING IS NOT ZERO. An artifact this cannot read is reported as
 UNREADABLE, and a task Windows will not describe is reported UNKNOWN. Both are findings. The one
 thing this must never do is print a reassuring line about something it could not actually check.
+
+THE PUBLISHED REPORT CARRIES NO LOCAL PATH AND NO RAW EXCEPTION TEXT (BARS_STATE v2.2). It rides
+the sync to the public repository. Every error finding says only the exception's type and errno
+(`_exc_reason`); `desk_root` is published repo-relative; and `report()` passes every published
+string through `_publishable`, which replaces the desk and repo roots and any remaining absolute
+path (a drive letter, a UNC share, a POSIX root) with a placeholder -- because a finding also
+quotes text other organs wrote (a sync refusal line, an alert line). The console output is local
+and keeps the full paths.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -61,7 +70,11 @@ TASKS: tuple[tuple[str, str], ...] = (
 #: process -> why it matters. Matched on the command line, never killed.
 PROCS: tuple[tuple[str, str], ...] = (
     ("terminal64", "the MT5 terminal itself"),
-    ("run_gateway_loop", "the gateway pass"),
+    # Either process IS the gateway pass: MT5-Gateway starts run_gateway_loop once a minute and
+    # MT5-GatewayResident keeps gateway_resident running when the Interactive task cannot start
+    # (Install-QuantWindows.ps1). Reading only the first called a healthy resident loop "NOT
+    # running" (DESK_HEALTH 2026-10-12).
+    ("run_gateway_loop|gateway_resident", "the gateway pass"),
     ("run_deadman_switch", "the Tier-3 protective rail"),
 )
 
@@ -82,6 +95,40 @@ ARTIFACTS: tuple[tuple[str, str, float], ...] = (
 def _section(title: str) -> None:
     _SECTION[0] = title
     print(title)
+
+
+def _exc_reason(exc: BaseException) -> str:
+    """What a published finding may say about an error: its type and errno, never str(exc)."""
+    errno = getattr(exc, "errno", None)
+    return type(exc).__name__ + (f" errno={errno}" if isinstance(errno, int) else "")
+
+
+#: Absolute paths that survive the root substitution: a drive letter (C:\ or C:/), a UNC or
+#: doubled-backslash root, and a POSIX root: a `/` not preceded by a word character, a dot, a
+#: colon, another slash or a placeholder's `>`. So `n/a`, `8/12`, a URL and a repo-relative
+#: `data/x.json` are untouched.
+_ABS_PATH = re.compile(
+    r"(?<![A-Za-z0-9])[A-Za-z]:[\\/][^\s'\"<>|,;)]*"
+    r"|\\\\[^\s'\"<>|,;)]+"
+    r"|(?<![\w.:/~>-])/[^\s'\"<>|,;)]+")
+PATH_PLACEHOLDER = "<path>"
+
+
+def _publishable(text: str) -> str:
+    """A string fit for the public repository: no desk/repo root, no absolute local path."""
+    out = str(text)
+    for root, tag in ((DESK, "<desk_root>"), (ROOT, "<repo>")):
+        for form in {str(root), root.as_posix()}:
+            if len(form) > 1:
+                out = out.replace(form, tag)
+    return _ABS_PATH.sub(PATH_PLACEHOLDER, out)
+
+
+def _desk_root_published() -> str:
+    try:
+        return DESK.resolve().relative_to(ROOT.resolve()).as_posix()
+    except (ValueError, OSError):
+        return "<desk_root>"
 
 
 def _note(level: str, msg: str) -> None:
@@ -108,7 +155,7 @@ def _run(args: list[str], timeout: int = 30) -> tuple[int, str]:
         r = subprocess.run(args, capture_output=True, text=True, timeout=timeout, check=False)
         return r.returncode, (r.stdout or "") + (r.stderr or "")
     except (subprocess.TimeoutExpired, OSError) as exc:
-        return 124, f"{type(exc).__name__}: {exc}"
+        return 124, _exc_reason(exc)
 
 
 def check_python() -> None:
@@ -116,11 +163,32 @@ def check_python() -> None:
     print(f"  running as: {sys.executable}")
     rc, out = _run(["py", "-3", "-c", "import sys; print(sys.executable)"])
     if rc == 0 and out.strip():
-        _ok(f"`py -3` resolves to {out.strip().splitlines()[-1]}")
+        exe = out.strip().splitlines()[-1]
+        print(f"  `py -3` -> {exe}")
+        # The interpreter's location is a local path: the report names only the executable.
+        name = re.split(r"[\\/]", exe)[-1]
+        _ok(f"`py -3` resolves to {name}")
     else:
         _bad("`py -3` does NOT work on this machine. Every .cmd launcher uses it, so every "
              "scheduled task that runs one exits immediately, doing nothing, reporting success.")
     print()
+
+
+#: 0 = success, 267009 = currently running, 267011 = has not run yet (ops/process_health.py).
+_HEALTHY_CODES = frozenset({0, 267009, 267011})
+#: 0x800710E0: the scheduler refused to start this trigger. schtasks prints it SIGNED
+#: (-2147020576) and the cmdlets UNSIGNED (2147946720); both are this one code.
+_REFUSED = 0x800710E0
+
+
+def _result_code(raw: str) -> int | None:
+    """One task result as ONE unsigned number, whichever tool printed it; None if unreadable."""
+    text = str(raw or "").strip()
+    try:
+        code = int(text, 16) if text.lower().startswith("0x") else int(text)
+    except ValueError:
+        return None
+    return code + 0x1_0000_0000 if code < 0 else code
 
 
 def check_tasks() -> None:
@@ -137,16 +205,22 @@ def check_tasks() -> None:
                 k, _, v = line.partition(":")
                 fields[k.strip().lower()] = v.strip()
         status = fields.get("scheduled task state", fields.get("status", "?"))
+        state = fields.get("status", status)
         last_run = fields.get("last run time", "?")
         last_res = fields.get("last result", "?")
+        code = _result_code(last_res)
         if status.lower() in {"disabled"}:
             _bad(f"{name} is INSTALLED BUT DISABLED -- {what}. Enable it in Task Scheduler.")
-        elif last_res not in {"0", "267009", "?"}:
-            # 267009 is "task is currently running", which is healthy.
+        elif state.lower() == "running" or code in _HEALTHY_CODES:
+            _ok(f"{name}: {state}, last run {last_run}, result {last_res} -- {what}")
+        elif code == _REFUSED:
+            _bad(f"{name}: the trigger at {last_run} was REFUSED and nothing ran (0x800710E0) and "
+                 f"no instance is running now -- either the task's Interactive principal had no "
+                 f"desktop session, or the previous run was still going when the trigger fired "
+                 f"(IgnoreNew) -- {what}")
+        else:
             _bad(f"{name} last run {last_run} and returned {last_res} (non-zero = it failed) "
                  f"-- {what}")
-        else:
-            _ok(f"{name}: {status}, last run {last_run}, result {last_res} -- {what}")
     print()
 
 
@@ -177,7 +251,7 @@ def check_processes() -> None:
         return
     blob = out.lower()
     for needle, what in PROCS:
-        if needle.lower() in blob:
+        if any(n.lower() in blob for n in needle.split("|")):
             _ok(f"{what} is running ({needle})")
         else:
             _bad(f"{what} is NOT running ({needle} is absent from the process list)")
@@ -197,13 +271,108 @@ def check_artifacts() -> None:
         try:
             age_h = (now - p.stat().st_mtime) / 3600.0
         except OSError as exc:
-            _unknown(f"{rel} could not be read ({exc}); UNREADABLE is not the same as absent")
+            _unknown(f"{rel} could not be read ({_exc_reason(exc)}); UNREADABLE is not the same "
+                     f"as absent")
             continue
         if age_h <= max_h:
             _ok(f"{rel} is {age_h:.1f}h old -- {producer}")
         else:
             _bad(f"{rel} is {age_h:.1f}h old (expected under {max_h:.0f}h) -- {producer} has "
                  f"stopped producing")
+    print()
+
+
+#: BARS_STATE.json (research/bars_state.py, core leg `bars_state`, run just before this one).
+BARS_STATE = DESK / "data" / "BARS_STATE.json"
+#: Hours after which the newest bar / newest tick on the box is a finding while the market is open,
+#: and how old the report itself may be. The ages are the report's TRUE-UTC ages (converted through
+#: the server anchor), never a broker stamp subtracted from UTC.
+BAR_STALE_H = 2.0
+TICK_STALE_H = 2.0
+BARS_REPORT_STALE_H = 2.0
+#: The FX weekend: server Saturday and Sunday, plus the first server hour of Monday. Bars and ticks
+#: legitimately stop for ~48h; a Friday close read on Sunday is not a dead feed. Broker H1 stamps
+#: run Fri 23:00 -> Mon 00:00 (49 broker hours), which is 48h of true UTC across the March US
+#: change and 50h across the November one; 52h covers both plus the first Monday hour.
+#: The allowance is granted ONLY on a POSITIVE reading of the weekend: when the market state is
+#: unknown (no anchor), the weekday limit applies and a breach reads UNKNOWN, never OK (v2.1).
+WEEKEND_STALE_H = 52.0
+
+
+
+def _market_closed(now: datetime) -> bool | None:
+    """Is the FX market in its weekend at `now` (server clock = New York + 7h)? None if unknown."""
+    try:
+        from zoneinfo import ZoneInfo
+        if str(DESK) not in sys.path:
+            sys.path.insert(0, str(DESK))
+        from prop.e8_guard import SERVER_ANCHOR_TZ, SERVER_MIDNIGHT_ET_HOUR
+        server = (now.astimezone(ZoneInfo(SERVER_ANCHOR_TZ))
+                  + timedelta(hours=24 - int(SERVER_MIDNIGHT_ET_HOUR)))
+    except Exception:
+        return None
+    return server.weekday() >= 5 or (server.weekday() == 0 and server.hour < 1)
+
+
+def check_bars_state(path: Path | None = None, now: datetime | None = None) -> None:
+    """THE BOX'S BAR AND TICK FEED, read from BARS_STATE.json: newest bar age, newest tick age."""
+    _section("ARE THE BOX'S BARS AND TICKS FRESH  (data/BARS_STATE.json)")
+    p = path or (DESK / "data" / BARS_STATE.name)
+    now = now or datetime.now(UTC)
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except FileNotFoundError:
+        _unknown("data/BARS_STATE.json is absent -- leg bars_state has not run here; bar and "
+                 "tick freshness is UNMEASURED, not fine")
+        print()
+        return
+    except (OSError, ValueError) as exc:
+        _unknown(f"data/BARS_STATE.json unreadable ({_exc_reason(exc)})")
+        print()
+        return
+    summary = doc.get("summary") if isinstance(doc, dict) else None
+    if not isinstance(summary, dict):
+        _unknown("BARS_STATE.json carries no summary -- freshness is UNMEASURED")
+        print()
+        return
+    try:
+        gen = datetime.fromisoformat(str(doc.get("generated_at")))
+        rep_age = (now - gen).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        rep_age = None
+    if rep_age is None:
+        _unknown("BARS_STATE.json has no readable generated_at")
+    elif rep_age > BARS_REPORT_STALE_H:
+        _bad(f"BARS_STATE.json is {rep_age:.1f}h old (expected under {BARS_REPORT_STALE_H:.0f}h) "
+             f"-- leg bars_state has stopped producing")
+    closed = _market_closed(now)
+    for what, key, mkey, verdict_key, limit in (
+            ("bar", "newest_bar_age_h", "newest_bar_file_mtime_age_h", "bars_verdict",
+             BAR_STALE_H),
+            ("tick", "newest_tick_age_h", "newest_tick_file_mtime_age_h", "tape_verdict",
+             TICK_STALE_H)):
+        lim = WEEKEND_STALE_H if closed is True else limit
+        age = summary.get(key)
+        verdict = summary.get(verdict_key) or "UNMEASURED"
+        when = summary.get(f"newest_{what}_time_utc")
+        if not isinstance(age, (int, float)):
+            mt = summary.get(mkey)
+            extra = (f"; the youngest measured file was written {mt:.1f}h ago"
+                     if isinstance(mt, (int, float)) else "")
+            _unknown(f"newest {what} age is UNMEASURED ({verdict_key} {verdict}){extra}")
+            continue
+        line = (f"newest {what} {age:.1f}h old (UTC {when}; {verdict_key} {verdict}; limit "
+                f"{lim:.0f}h{', market weekend' if closed else ''}"
+                f"{', market state unknown' if closed is None else ''})")
+        if age > lim and closed is None:
+            _unknown(f"{line} -- over the weekday limit, and without the server anchor this "
+                     f"cannot tell a weekend from a dead {what} feed")
+        elif age > lim:
+            _bad(f"{line} -- the box's {what} feed is STALE")
+        elif verdict != "MEASURED":
+            _unknown(f"{line}, but only part of the {what} store measured")
+        else:
+            _ok(line)
     print()
 
 
@@ -218,7 +387,7 @@ def check_state_flow() -> None:
         print()
         return
     except (OSError, ValueError) as exc:
-        _unknown(f"reports/BOX_STATE_FLOW.json unreadable ({exc})")
+        _unknown(f"reports/BOX_STATE_FLOW.json unreadable ({_exc_reason(exc)})")
         print()
         return
     verdict = str(doc.get("verdict") or "UNMEASURED")
@@ -254,7 +423,7 @@ def check_stall_watch_alerts() -> None:
         print()
         return
     except (OSError, ValueError) as exc:
-        _unknown(f"data/stall_watch.json unreadable ({exc})")
+        _unknown(f"data/stall_watch.json unreadable ({_exc_reason(exc)})")
         print()
         return
     if not isinstance(doc, dict) or ("alerts_armed" not in doc and "alerts_line" not in doc):
@@ -279,7 +448,7 @@ def check_gateway_state() -> None:
     try:
         doc = json.loads(p.read_text("utf-8"))
     except (OSError, ValueError) as exc:
-        _unknown(f"gateway_state.json could not be parsed ({exc})")
+        _unknown(f"gateway_state.json could not be parsed ({_exc_reason(exc)})")
         print()
         return
     rec = doc.get("last_reconcile")
@@ -311,8 +480,10 @@ def report(checked_at: str) -> dict[str, Any]:
               for lvl in ("OK", "PROBLEM", "UNKNOWN")}
     verdict = ("PROBLEM" if counts["PROBLEM"] else "UNMEASURED" if counts["UNKNOWN"] or not
                _FINDINGS else "OK")
-    return {"schema": "desk_health/1", "checked_at": checked_at, "desk_root": str(DESK),
-            "verdict": verdict, "counts": counts, "findings": list(_FINDINGS)}
+    findings = [{k: _publishable(v) for k, v in f.items()} for f in _FINDINGS]
+    return {"schema": "desk_health/1", "checked_at": checked_at,
+            "desk_root": _desk_root_published(),
+            "verdict": verdict, "counts": counts, "findings": findings}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -329,6 +500,7 @@ def main(argv: list[str] | None = None) -> int:
     check_tasks()
     check_processes()
     check_artifacts()
+    check_bars_state()
     check_state_flow()
     check_stall_watch_alerts()
     check_gateway_state()
@@ -341,7 +513,7 @@ def main(argv: list[str] | None = None) -> int:
             out.write_text(json.dumps(report(checked_at), indent=2), "utf-8")
             print(f"report: {out}")
         except OSError as exc:
-            print(f"report NOT written ({exc})", file=sys.stderr)
+            print(f"report NOT written ({_exc_reason(exc)})", file=sys.stderr)
     return 0
 
 

@@ -169,6 +169,15 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
     prev: dict[str, Any] = {}
     with contextlib.suppress(OSError, ValueError):
         prev = json.loads(out.read_text("utf-8"))
+    # A CRASHING JUDGE STALL PAGER IS A FAILING CHECK (audit of e759c01f6). `main` records the
+    # pager's exit in this file after each run; a failed one fails the NEXT heartbeat, so the
+    # healthchecks.io /fail route -- which needs no alert channel -- says so off the box.
+    js = prev.get("judge_stall_pager") if isinstance(prev, dict) else None
+    if isinstance(js, dict) and "ok" in js:
+        doc.setdefault("checks", {})["judge_stall_pager"] = {
+            "rc": js.get("rc"), "at": js.get("at"), "fail": not js.get("ok")}
+        doc["failing"] = sorted(k for k, v in doc["checks"].items() if v.get("fail"))
+        doc["verdict"] = "FAIL" if doc["failing"] else "OK"
     body = (f"box {doc['verdict']}: " + (", ".join(
         f"{k} {json.dumps({a: b for a, b in doc['checks'][k].items() if a != 'fail'})}"
         for k in doc["failing"]) or "all organs fresh"))
@@ -208,14 +217,66 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
     return doc
 
 
+#: THE JUDGE STALL PAGER RIDES THIS CLOCK (2026-10-21). A stalled judge is an organ gone quiet,
+#: and this is the five-minute watchdog that already runs on the box, so `judge_stall_pager.py`
+#: is invoked here rather than given a task of its own that would wait on a human to install it.
+#: A bounded subprocess: its outcome is its own (JUDGE_STALL.json and its page state), and
+#: nothing it does -- a hang, a crash, a pager failure -- can touch this heartbeat's ping,
+#: verdict or exit code.
+JUDGE_STALL = BASE / "scripts" / "judge_stall_pager.py"
+#: Inside the task's 2-minute ExecutionTimeLimit, after this heartbeat has already pinged and
+#: written its report.
+JUDGE_STALL_TIMEOUT_S = 60.0
+
+
+def _judge_stall(out: Path = OUT) -> dict[str, Any]:
+    """Run the pager, bounded, and record its exit in this heartbeat's own report. Never raises.
+
+    The rc is recorded rather than discarded (audit of e759c01f6): exit 0 is a pager that ran;
+    anything else -- a send error, an unwritable state, a crash, the timeout -- is `ok: false`,
+    and `run` turns it into a failing check on the next heartbeat."""
+    import subprocess
+    at = datetime.now(UTC).isoformat(timespec="seconds")
+    try:
+        r = subprocess.run([sys.executable, "-W", "ignore", str(JUDGE_STALL)], cwd=str(ROOT),
+                           capture_output=True, timeout=JUDGE_STALL_TIMEOUT_S, check=False)
+        rec: dict[str, Any] = {"at": at, "rc": r.returncode, "ok": r.returncode == 0}
+    except subprocess.TimeoutExpired:
+        rec = {"at": at, "rc": "TIMEOUT", "ok": False}
+    except Exception as exc:
+        rec = {"at": at, "rc": f"ERROR {type(exc).__name__}", "ok": False}
+    with contextlib.suppress(OSError, ValueError, TypeError):
+        doc = json.loads(out.read_text("utf-8"))
+        doc["judge_stall_pager"] = rec
+        tmp = out.with_name(f"{out.name}.tmp")
+        tmp.write_text(json.dumps(doc, indent=1), "utf-8")
+        tmp.replace(out)
+    return rec
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
     doc = run(dry_run=a.dry_run)
+    if not a.dry_run:
+        _judge_stall()
     print(json.dumps({"verdict": doc["verdict"], "failing": doc["failing"],
                       "ping": doc["ping"]["status"]}))
+    if not a.dry_run:
+        print(json.dumps({"account_key_alerts": deliver_account_key_alerts()}))
     return 0
+
+
+def deliver_account_key_alerts() -> dict[str, Any]:
+    """Deliver the account-key alert outbox (v5f): the order path only enqueues, this 5-minute
+    task delivers, so no page is ever sent between order_send and a bracket leg. NEVER RAISES."""
+    try:
+        from libs.ops import provenance
+        res = provenance.deliver_pending()
+        return {k: res.get(k) for k in ("rows", "sent", "ledger", "error")}
+    except Exception as exc:
+        return {"error": type(exc).__name__}
 
 
 if __name__ == "__main__":

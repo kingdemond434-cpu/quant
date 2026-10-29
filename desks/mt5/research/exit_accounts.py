@@ -58,7 +58,8 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, p)
 
 EXCURSIONS = _DESK / "data" / "excursions.jsonl"
-LIVE = _DESK / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE = _audited_ledger_path(_DESK / "data" / "live_ledger.jsonl")
 FORECASTS = _DESK / "data" / "pf_forecast_log.jsonl"
 LEDGER_DIRS = (_DESK / "reports" / "shadow", _ROOT / "backups" / "moat" / "shadow_ledgers")
 REPORT = _DESK / "reports" / "EXIT_ACCOUNTS.json"

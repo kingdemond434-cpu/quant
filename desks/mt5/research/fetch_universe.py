@@ -402,6 +402,14 @@ def main(argv: list[str] | None = None) -> None:
             # symbol from one the desk can only exit, and the sweep spent budget on both.
             "trade_mode": int(getattr(info, "trade_mode", -1)),
             "tradeable": bool(int(getattr(info, "trade_mode", -1)) == 4),
+            # THE OVERNIGHT COST, FROM THE SAME READING (2026-10-07). Only `expand_universe`
+            # wrote swaps, and only for symbols it added, so every row this collector created
+            # carried none -- and the sealed judge's `swap_cost` stage fails closed on a registry
+            # row without `swap_long`/`swap_short` (`registry_cost_basis`), with the live
+            # fallback unreachable from the research runtime. 0.0 is a real swap-free reading.
+            **{f: (int(v) if f == "swap_mode" else float(v))
+               for f in ("swap_long", "swap_short", "swap_mode")
+               if (v := getattr(info, f, None)) is not None},
         }
         # INTRADAY, on the same pass. Failures here never abort the H1 write above: an M5 gap is
         # a coverage fact to record, not a reason to lose the hourly series the whole desk runs on.

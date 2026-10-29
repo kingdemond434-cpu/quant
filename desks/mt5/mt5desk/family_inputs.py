@@ -160,6 +160,10 @@ def resolve(sym: str, family: str, params: dict[str, Any],
     every caller passes bars) is already the cell's own chart -- the caller loaded it -- so this
     only has to make the OTHER instruments agree with it.
     """
+    from mt5desk.legacy_family_inputs import RAW_COT_FAMILIES, input_preflight, legacy_inputs
+    why = input_preflight(family, params)
+    if why:
+        return None, why
     extra: dict[str, Any] = {}
     call = dict(params or {})
     tf = timeframe_of(params)
@@ -172,6 +176,10 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             return None, "orthogonal_sweep unavailable to rebuild runtime inputs"
 
     try:
+        if family == "usd_session_shock" or family in RAW_COT_FAMILIES:
+            return legacy_inputs(sym, family, params,
+                                 lambda driver, chart: _runtime_bars(inputs, driver, chart, h1))
+
         if family == "carry":
             # The gauntlet passes the SYMBOL and lets the family read its own recorded terms.
             extra["symbol"] = sym
@@ -398,4 +406,4 @@ IDENTITY_KEYS = frozenset({"peer_symbol", "factor_symbols", "input_symbol",
                            # valid E8 cells fail with `unexpected keyword argument 'session'`.
                            # The fill surface's vintage: it identifies WHICH map selected the
                            # cell's windows and is not an argument any family accepts.
-                           "surface_generated_at"})
+                           "surface_generated_at", "fx_symbol"})

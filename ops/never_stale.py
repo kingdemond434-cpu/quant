@@ -255,7 +255,7 @@ def run(apply: bool) -> dict:
         # fact here to restart against. The read failure itself is escalated ONCE below, rather
         # than as one NEEDS_HUMAN row per contracted organ -- which is how a single slow
         # `schtasks` became "71 NOT_SCHEDULED" on 2026-09-30.
-        if verdict == "UNMEASURED":
+        if verdict in ("UNMEASURED", "SCHEDULER_UNMEASURED"):
             continue
         # UNCONTRACTED IS A BOOKKEEPING GAP, NOT A BREAKAGE. The organ runs fine; nobody wrote it
         # an artifact contract, so nothing would notice if it stopped. That is worth fixing and
@@ -272,7 +272,7 @@ def run(apply: bool) -> dict:
                 continue
             # A contract row may be an ASPECT of a task ("MT5-FrontierAudit (orthogonality)");
             # the scheduler only knows the owning task, so that is what is started.
-            ok, msg = _start(str(row.get("task") or name))
+            ok, msg = _start(str(row.get("task") or name.split(" (", 1)[0].strip() or name))
             acted.append({"task": name, "verdict": verdict,
                           "action": "started" if ok else "start FAILED",
                           "detail": msg, "why": row.get("why")})
@@ -296,6 +296,12 @@ def run(apply: bool) -> dict:
         })
 
     sched = doc.get("scheduler") if isinstance(doc.get("scheduler"), dict) else {}
+    # process_health on LIVE publishes the read as `scheduler_status` ("OK schtasks", "OK ..."
+    # for a brief-only inventory, anything else for no inventory) rather than a `scheduler`
+    # block; an inventory it could not read is the same unread scheduler.
+    status = doc.get("scheduler_status")
+    if not sched and isinstance(status, str) and not status.startswith("OK "):
+        sched = {"read": False, "why": status}
     # EXISTENCE-ONLY IS NOT A READ (audit 2026-09-30). On a schtasks timeout process_health lists
     # the task directory instead: that proves which tasks exist and nothing about how any of them
     # ran, so every FAILING verdict is unmeasured and the scheduler still needs a human.

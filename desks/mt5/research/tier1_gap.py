@@ -158,6 +158,20 @@ def ingestion(now: datetime) -> dict[str, Any]:
     return out
 
 
+def _judging_rate(now: datetime) -> dict[str, Any]:
+    """JUDGING_RATE.json with its FRESH/STALE/UNMEASURED verdict (judging_rate_attempt)."""
+    try:
+        try:
+            from research import judging_rate_attempt as jra
+        except ImportError:
+            from desks.mt5.research import judging_rate_attempt as jra  # type: ignore[no-redef]
+        return jra.read_rate(now, rate_path=REPORTS / "JUDGING_RATE.json",
+                             attempt_path=REPORTS / "JUDGING_RATE.attempt.json")
+    except Exception as exc:   # the reader is evidence; its failure is UNMEASURED, never fatal
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}",
+                "rate": _read(REPORTS / "JUDGING_RATE.json")}
+
+
 def mining_and_judging(now: datetime) -> dict[str, Any]:
     out: dict[str, Any] = {}
     cov = _read(REPORTS / "JUDGE_COVERAGE.json")
@@ -167,10 +181,22 @@ def mining_and_judging(now: datetime) -> dict[str, Any]:
                   "oldest_unjudged_age_h", "drain_status", "backlog_growth_per_hour",
                   "capacity_sustained_per_hour", "hours_to_drain", "unrunnable_bank"):
             out[k] = tot.get(k, UNMEASURED)
-    rate = _read(REPORTS / "JUDGING_RATE.json")
-    if isinstance(rate, dict):
+    # JUDGING_RATE IS READ WITH ITS ATTEMPT MARKER (2026-10-21): a pass that died after the last
+    # write leaves JUDGING_RATE.attempt.json newer than the rate, and the numbers then read STALE
+    # with the phase it died in -- never an old value passed off as this hour's.
+    verdict = _judging_rate(now)
+    rate = verdict.get("rate")
+    out["judging_rate_status"] = verdict.get("status", UNMEASURED)
+    out["judging_rate_why"] = verdict.get("why", "")
+    if isinstance(rate, dict) and verdict.get("status") == "FRESH":
         out["cells_created_per_day"] = rate.get("created_per_day", UNMEASURED)
         out["verdicts_per_day"] = rate.get("verdicts_per_day", UNMEASURED)
+    elif isinstance(rate, dict):
+        tag = str(verdict.get("status") or UNMEASURED)
+        out["cells_created_per_day"] = out["verdicts_per_day"] = tag
+        out["judging_rate_last_measured"] = {
+            "at": rate.get("at"), "created_per_day": rate.get("created_per_day"),
+            "verdicts_per_day": rate.get("verdicts_per_day")}
     mass = _read(REPORTS / "MASS_SCREEN.json")
     if isinstance(mass, dict):
         out["mass_screen"] = {k: v for k, v in mass.items() if not isinstance(v, (dict, list))}
@@ -250,7 +276,8 @@ def edges_and_live(now: datetime) -> dict[str, Any]:
     since = now - timedelta(days=30)
     per_day: dict[str, set[str]] = {}
     trades = 0
-    for row in _jsonl(DATA / "live_ledger.jsonl", since, at_key="time"):
+    from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+    for row in _jsonl(_audited_ledger_path(DATA / "live_ledger.jsonl"), since, at_key="time"):
         trades += 1
         d = str(row.get("time"))[:10]
         per_day.setdefault(d, set()).add(str(row.get("symbol") or ""))
@@ -307,6 +334,7 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     mj = mining_and_judging(t)
     el = edges_and_live(t)
     flat = {**ing, **mj, **el}
+    from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
     return {
         "at": t.isoformat(timespec="seconds"),
         "reference_basis": "tier-1 references are public estimates; desk values are measured "
@@ -315,9 +343,10 @@ def build(now: datetime | None = None) -> dict[str, Any]:
         "gaps": gap_table(flat),
         "sources": {p.name: _mtime(p) for p in (
             DATA / "data_registry.json", REPORTS / "JUDGE_COVERAGE.json",
-            REPORTS / "JUDGING_RATE.json", HYP / "gate_verdict_ledger.jsonl",
+            REPORTS / "JUDGING_RATE.json", REPORTS / "JUDGING_RATE.attempt.json",
+            HYP / "gate_verdict_ledger.jsonl",
             REPORTS / "universal_gates_external.json", DATA / "UNIVERSAL_SURVIVORS.canon.json",
-            DATA / "effective_breadth.jsonl", DATA / "sleeves.json", DATA / "live_ledger.jsonl",
+            DATA / "effective_breadth.jsonl", DATA / "sleeves.json", _audited_ledger_path(DATA / "live_ledger.jsonl"),
             REPORTS / "DATASET_HUNT.json", REPORTS / "MASS_SCREEN.json",
             REPORTS / "ALT_DATA_YIELD.json", REPORTS / "CROSS_SECTIONAL_BREADTH.json")},
     }

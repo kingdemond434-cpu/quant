@@ -177,6 +177,8 @@ def test_row06_an_empty_ledger_is_UNMEASURED_and_never_one_hundred(sandbox: Path
 
 def test_row07_sums_failing_organs_and_failed_or_timed_out_legs(sandbox: Path) -> None:
     _write(sandbox, "PROCESS_HEALTH", {"at": "2026-09-12T07:15:01+00:00",
+                                       "scheduler_status": "OK schtasks", "status": "ATTENTION",
+                                       "processes": [],
                                        "counts": {"FAILING": 7, "NOT_SCHEDULED": 1, "OK": 15}})
     _write(sandbox, "SYNC_MARKER", {"last_cycle": "2026-09-16T13:53:37+00:00",
                                     "daily": {"status": "TIMEOUT"},
@@ -185,6 +187,73 @@ def test_row07_sums_failing_organs_and_failed_or_timed_out_legs(sandbox: Path) -
     row = sc._r07_silent_failures()
     assert row["current"] == 10.0 and row["verdict"] == sc.BELOW
     assert row["lower_is_better"] is True and "legs=2" in row["basis"]
+
+
+@pytest.mark.parametrize("health", [
+    # the committed 2026-10-20 18:15Z reading: every row unread, scored 0.0 AT before the fix
+    {"scheduler_status": "UNMEASURED: schtasks /fo csv TimeoutExpired",
+     "counts": {"SCHEDULER_UNMEASURED": 73}},
+    # inventory read, but some rows could not be judged
+    {"scheduler_status": "OK schtasks", "counts": {"SCHEDULER_UNMEASURED": 2, "OK": 40}},
+    # a reading with no scheduler status at all
+    {"counts": {"OK": 40}},
+    # audit v3: the verbose query failed and the brief one answered -- "OK " prefix, no codes
+    {"scheduler_status": "OK schtasks (brief: last run and last result UNMEASURED -- "
+                         "schtasks /v TimeoutExpired: 45)",
+     "counts": {"OK": 40}},
+    # audit v3: the status reads fully OK but a task row's code is null
+    {"scheduler_status": "OK schtasks", "counts": {"OK": 2},
+     "processes": [{"name": "MT5-Hourly", "verdict": "OK", "state": "Ready",
+                    "last_result_code": None},
+                   {"name": "MT5-Gateway", "verdict": "OK", "state": "Running",
+                    "last_result_code": 267009}]},
+], ids=["all-unread", "some-unread", "no-scheduler-status", "brief-only", "ok-row-null-code"])
+def test_row07_an_unread_scheduler_is_UNMEASURED_never_zero_failures(
+        sandbox: Path, health: dict) -> None:
+    _write(sandbox, "PROCESS_HEALTH", {"at": "2026-10-20T18:15:00+00:00", **health})
+    _write(sandbox, "SYNC_MARKER", {"tape": {"exit_code": 0}})
+    row = sc._r07_silent_failures()
+    assert row["current"] is None and row["verdict"] == sc.UNMEASURED
+    assert row["basis"].startswith("UNMEASURED:")
+
+
+@pytest.mark.parametrize("health", [
+    {"scheduler_status": "OK schtasks", "status": "OK", "processes": []},             # no counts
+    {"scheduler_status": "OK schtasks", "status": "OK", "processes": [], "counts": [1]},
+    {"scheduler_status": "OK schtasks", "status": "OK", "counts": {"OK": 3}},         # no rows
+    {"scheduler_status": "OK schtasks", "status": "OK", "counts": {"OK": 3},
+     "processes": None},
+    {"scheduler_status": "OK schtasks", "status": "UNMEASURED", "counts": {"OK": 3},
+     "processes": []},                                       # the producer's own verdict
+], ids=["no-counts", "counts-not-object", "no-processes", "processes-null", "headline-unmeasured"])
+def test_row07_a_malformed_or_self_unmeasured_reading_is_UNMEASURED(
+        sandbox: Path, health: dict) -> None:
+    # audit v4: each of these used to score 0.0 AT from the legs alone
+    _write(sandbox, "PROCESS_HEALTH", {"at": "2026-10-20T18:15:00+00:00", **health})
+    _write(sandbox, "SYNC_MARKER", {"tape": {"exit_code": 0}})
+    row = sc._r07_silent_failures()
+    assert row["current"] is None and row["verdict"] == sc.UNMEASURED
+
+
+def test_row07_no_process_health_reading_is_UNMEASURED_even_with_the_legs(sandbox: Path) -> None:
+    # audit v3: the legs alone used to score 0.0 AT with process_health.json absent
+    _write(sandbox, "SYNC_MARKER", {"tape": {"exit_code": 0}})
+    row = sc._r07_silent_failures()
+    assert row["current"] is None and row["verdict"] == sc.UNMEASURED
+    assert "process_health.json ABSENT/UNREADABLE" in row["basis"]
+
+
+def test_row07_a_component_row_without_a_code_is_not_an_unread_result(sandbox: Path) -> None:
+    _write(sandbox, "PROCESS_HEALTH", {
+        "at": "2026-10-20T18:15:00+00:00", "scheduler_status": "OK schtasks", "status": "OK",
+        "counts": {"OK": 2},
+        "processes": [{"name": "MT5-Gauntlet", "verdict": "OK", "state": "Running",
+                       "last_result_code": 267009},
+                      {"name": "MT5-Gauntlet (rotation)", "verdict": "OK",
+                       "state": "COMPONENT", "last_result_code": None}]})
+    _write(sandbox, "SYNC_MARKER", {"tape": {"exit_code": 0}})
+    row = sc._r07_silent_failures()
+    assert row["current"] == 0.0 and row["verdict"] == sc.AT
 
 
 def test_row08_joins_certificates_to_forward_clocks_on_symbol_and_selector(sandbox: Path) -> None:
@@ -216,10 +285,22 @@ def test_row10_counts_the_edge_fields_the_causal_graph_actually_carries(sandbox:
         "recorded_not_admitted": [{"src": "US500", "dst": "USDKRW", "lag": 5, "stability": 1.0,
                                    "state_dependence": 0.046, "conditional": None}]})
     row = sc._r10_cross_asset()
-    assert row["current"] == 3.0 and row["verdict"] == sc.ABOVE
+    assert row["current"] == 1.0 and row["verdict"] != sc.ABOVE, "no admitted edge, no intelligence"
     assert "edges_admitted=0" in row["basis"], "the reader must see that nothing was admitted"
-    _write(sandbox, "WORLD_CAUSAL_GRAPH", {"recorded_not_admitted": [{"src": "a", "dst": "b"}]})
+    assert "capped at 1" in row["basis"]
+    _write(sandbox, "WORLD_CAUSAL_GRAPH", {
+        "edges_admitted": 1, "chains_seeded": 14, "conditioning": {"US500": ["VIX"]},
+        "admitted_edges": [{"src": "US500", "dst": "USDKRW", "lag": 5, "stability": 1.0,
+                            "state_dependence": 0.046, "conditional": None}]})
+    row = sc._r10_cross_asset()
+    assert row["current"] == 3.0 and row["verdict"] == sc.ABOVE
+    _write(sandbox, "WORLD_CAUSAL_GRAPH", {"edges_admitted": 0,
+                                           "recorded_not_admitted": [{"src": "a", "dst": "b"}]})
     assert sc._r10_cross_asset()["current"] == 1.0
+    _write(sandbox, "WORLD_CAUSAL_GRAPH", {"recorded_not_admitted": [{"src": "a", "dst": "b"}]})
+    row = sc._r10_cross_asset()
+    assert row["current"] is None, "an absent admitted count is UNMEASURED, not a measured zero"
+    assert row["basis"].startswith("UNMEASURED")
 
 
 def test_row10_falls_back_to_the_counts_only_cross_asset_graph(sandbox: Path) -> None:

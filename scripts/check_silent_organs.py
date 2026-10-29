@@ -125,6 +125,27 @@ def _declared_verdict_exits() -> dict[str, tuple[int, ...]]:
     return {}
 
 
+def _scheduler(health: Any) -> dict[str, Any]:
+    """process_health's reading of the scheduler, in one shape whichever writer produced it.
+
+    A `scheduler` block ({read, why, existence_only}) is used as written. LIVE's process_health
+    publishes `scheduler_status` and `run_history` instead: "OK schtasks" with the run history
+    MEASURED is a read; an "OK ..." inventory without the run history proves which tasks exist and
+    not how they ran (existence-only, so FAILING is unmeasurable); anything else is unread. {} when
+    neither field is present (nothing to say either way)."""
+    if not isinstance(health, dict):
+        return {}
+    sch = health.get("scheduler")
+    if isinstance(sch, dict):
+        return sch
+    status = health.get("scheduler_status")
+    if not isinstance(status, str):
+        return {}
+    if status == "OK schtasks" or health.get("run_history") == "MEASURED":
+        return {"read": True, "why": status}
+    return {"read": False, "why": status, "existence_only": status.startswith("OK ")}
+
+
 def task_silences(doc: Any) -> list[dict[str, Any]]:
     """Silent rows of process_health, one per organ."""
     out: list[dict[str, Any]] = []
@@ -227,11 +248,11 @@ def build(*, health_path: Path | None = None, marker_path: Path | None = None,
                                   f"min old against {INPUT_MAX_AGE_MIN['process_health']:.0f} -- "
                                   "MT5-ProcessHealth has stopped writing it"})
         health = None
-    elif isinstance(health.get("scheduler"), dict) and not health["scheduler"].get("read"):
+    elif not _scheduler(health).get("read", True):
         # EXISTENCE-ONLY IS UNREAD (audit 2026-09-30). The schtasks-timeout fallback lists the
         # task directory: it proves a task exists, never how its last run ended, so FAILING is
         # unmeasurable and the fence must say so rather than read the listing as a measurement.
-        sch = health["scheduler"]
+        sch = _scheduler(health)
         unmeasured.append({"what": "scheduling verdicts (NOT_SCHEDULED / FAILING)",
                            "why": ("process_health could not read the scheduler"
                                    + (" (existence-only: the task directory was listed, which "
@@ -250,8 +271,7 @@ def build(*, health_path: Path | None = None, marker_path: Path | None = None,
         marker = None
 
     health_unread = not isinstance(health, dict)
-    scheduler_unread = (not health_unread and isinstance(health.get("scheduler"), dict)
-                        and not health["scheduler"].get("read"))
+    scheduler_unread = not health_unread and not _scheduler(health).get("read", True)
     marker_unread = not isinstance(marker, dict)
     # What each organ reads as NOW in process_health, so a row whose verdict went UNMEASURED can
     # be told apart from a row that recovered.
@@ -309,6 +329,8 @@ def build(*, health_path: Path | None = None, marker_path: Path | None = None,
             if health_unread:
                 return True
             verdict = now_task_verdict.get(str(prev.get("organ") or ""))
+            if verdict == "SCHEDULER_UNMEASURED":    # LIVE's per-row "could not judge"
+                return True
             return verdict in (None, "UNMEASURED") and (scheduler_unread or verdict is not None)
         return src != "escalation"
 

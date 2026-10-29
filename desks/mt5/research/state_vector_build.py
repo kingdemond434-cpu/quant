@@ -210,7 +210,13 @@ def event_state(now: datetime, symbols: list[str]) -> tuple[dict, str]:
     try:
         from libs.regime.event_state import NORMAL, classify, parse_rows, relevant
 
-        rows = parse_rows(_calendar_rows())
+        # ASIA-NATIVE RELEASES JOIN THE SAME LIFECYCLE (directive PART XVIII, audit row 42). The
+        # ForexFactory vintages never carried the CFETS fix, the Korean 10/20-day exports, the
+        # KOSPI200 expiry, gotobi, the SHFE Friday stocks, the NBS PMI or the LPR; they are
+        # rule-derived here and scoped by currency AND instrument, so a mainland release is an
+        # event for USDCNH and copper and an ordinary hour for EURUSD.
+        asia_rows, asia_objs = _asia_rows(now)
+        rows = parse_rows(_calendar_rows() + asia_rows)
         if not rows:
             return {"phase": NORMAL, "basis": "no calendar vintages with usable stamps"}, ""
         meta = _meta()
@@ -221,6 +227,14 @@ def event_state(now: datetime, symbols: list[str]) -> tuple[dict, str]:
             st = classify(now, [r["_stamp"] for r in scoped], symbol=sym, rows=scoped,
                           shock_move=shock, move_since=since)
             per[sym] = st.to_dict()
+            mine = relevant(asia_objs, sym, meta)
+            if mine:
+                per[sym]["asia_events"] = [
+                    {k: o.get(k) for k in ("event_id", "kind", "entity", "stage",
+                                           "scheduled_time", "publication_time", "value",
+                                           "expected_value", "raw_surprise", "surprise_z",
+                                           "revision_delta", "decay_weight", "sensor_status")}
+                    for o in mine[-6:]]
         if not per:
             return {"phase": NORMAL, "basis": "no book symbols to scope events to"}, ""
         # The desk-level phase is the most urgent any book instrument is in: a book with one
@@ -230,9 +244,52 @@ def event_state(now: datetime, symbols: list[str]) -> tuple[dict, str]:
              "PRE_EVENT", "NORMALIZATION", "NORMAL"))}
         worst = min(per.values(), key=lambda d: order.get(str(d.get("phase")), 99))
         return {"phase": worst["phase"], "n_calendar_rows": len(rows),
+                "n_asia_rows": len(asia_rows), "n_asia_objects": len(asia_objs),
                 "per_symbol": per}, ""
     except Exception as exc:
         return {}, f"event: {type(exc).__name__}: {exc}"
+
+
+#: The Asia event objects `macro_state_engine` publishes each hour (lifecycle + sensor values).
+ASIA_EVENTS = BASE / "data" / "latent" / "asia_events.json"
+
+
+def _asia_rows(now: datetime) -> tuple[list[dict], list[dict]]:
+    """(schedule rows for the lifecycle, lifecycle objects near now).
+
+    The schedule is rule-derived HERE, so the market phase never waits on another organ; the
+    information lifecycle (expectation, surprise, revision, decay) comes from the artifact
+    `macro_state_engine` writes, and an absent artifact simply contributes no objects.
+    """
+    from datetime import timedelta
+
+    try:
+        from libs.regime.event_state import asia_schedule
+        try:
+            from research.macro_state_engine import asia_calendars
+            cal = asia_calendars()
+        except Exception:
+            cal = {}
+        rows = asia_schedule((now - timedelta(days=2)).date(), (now + timedelta(days=2)).date(),
+                             calendars=cal)
+    except Exception:
+        rows = []
+    objs: list[dict] = []
+    try:
+        doc = json.loads(ASIA_EVENTS.read_text("utf-8"))
+        lo, hi = now - timedelta(days=3), now + timedelta(days=2)
+        for o in doc.get("events") or []:
+            if not isinstance(o, dict):
+                continue
+            t = pd.to_datetime(o.get("scheduled_time"), utc=True, errors="coerce")
+            if t is None or pd.isna(t) or not (lo <= t.to_pydatetime() <= hi):
+                continue
+            scope = o.get("scope") or {}
+            objs.append({**o, "currency": scope.get("currencies") or [],
+                         "instruments": scope.get("instruments") or []})
+    except (OSError, ValueError, AttributeError):
+        objs = []
+    return rows, objs
 
 
 def _calendar_rows() -> list[dict]:
@@ -427,6 +484,15 @@ def world_conditioning(symbols: list[str]) -> tuple[dict[str, list[dict]], str]:
         actor_rows = hints_for(list(symbols))
     except Exception:                                    # absence is UNMEASURED, never a demotion
         actor_rows = {}
+    # THE PROPRIETARY LATENT STATES (directive PART XVII, package P5): China industrial, China
+    # physical gold, Asia export and Asia funding, read from the allocation-intel artifact
+    # `macro_state_engine` publishes. Same law as the rows above: information, never authority.
+    latent_rows: dict[str, list[dict]] = {}
+    try:
+        from research.macro_state_engine import latent_hints_for
+        latent_rows = latent_hints_for(list(symbols))
+    except Exception:                                    # absence is UNMEASURED, never a demotion
+        latent_rows = {}
     out: dict[str, list[dict]] = {}
     for sym in symbols:
         rows = [dict(r) for r in (hints.get(sym) or []) if isinstance(r, dict)]
@@ -434,6 +500,7 @@ def world_conditioning(symbols: list[str]) -> tuple[dict[str, list[dict]], str]:
             r["weight"] = _hint_weight(r)
             r["stale"] = bool(r["weight"] < STALE_WEIGHT)
         rows.extend(dict(r) for r in (actor_rows.get(sym) or []) if isinstance(r, dict))
+        rows.extend(dict(r) for r in (latent_rows.get(sym) or []) if isinstance(r, dict))
         if rows:
             out[sym] = rows
     return out, ""
