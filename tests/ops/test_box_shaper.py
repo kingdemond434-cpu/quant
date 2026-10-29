@@ -1768,15 +1768,20 @@ def test_the_bridge_and_the_deadman_reconciliation_are_raise_only(cmd: str) -> N
 
 
 # ------------------------------------------------------------ fifth audit (#482), 2026-10-29
-@pytest.mark.parametrize("cmd", [c for c, g, _p in _ALLOCATOR_FORMS if g == "money_feed"])
-def test_a_duplicate_whose_child_is_any_allocator_form_is_never_stopped(cmd: str) -> None:
+@pytest.mark.parametrize(("cmd", "pinned"),
+                         [(c, p) for c, _g, p in _ALLOCATOR_FORMS]
+                         + [("python.exe research/pf_allocator.py --mode fast --mode heavy", True)])
+def test_a_duplicate_whose_child_is_any_allocator_form_is_never_stopped(cmd: str,
+                                                                        pinned: bool) -> None:
     """MF-A through #482: a normal-mode (or -m, --mode=fast, bare) allocator under an
-    allow-listed duplicate read as "other" and went down with the tree."""
+    allow-listed duplicate read as "other" and went down with the tree. SF-b: so did the
+    pinned heavy run (group other), e.g. under a duplicate hourly_cycle."""
     cfg = {"allow": ["some_loop.py"]}
     procs = _dupes()
     procs.append(Proc(90, "python.exe", ppid=41, cmdline=cmd, create_time=30))
     bs.classify(procs, RULES["groups"])
-    assert _by_pid(procs)[90].group == "money_feed"
+    g = _by_pid(procs)[90]
+    assert (g.group, g.pinned_mode) == (("other", True) if pinned else ("money_feed", False))
     keys = [d["duplicate"] for d in bs.plan_dedupe(procs, cfg)[1]]
     stops, seen = bs.plan_dedupe(procs, cfg, previous_duplicates=keys)
     assert stops == [] and "descendant 90" in seen[0]["refused"]
@@ -1822,3 +1827,25 @@ def test_the_last_mode_decides_pin_or_money_feed() -> None:
     assert [(a.pid, a.rule, a.after) for a in out.actions if a.kind == "affinity"] == [
         (70, "pf_allocator_heavy", "0xff")]
     assert [(a.pid, a.after) for a in bs.widen_money(procs, N, set())] == [(71, "0x3ffff")]
+
+
+def test_a_duplicate_hourly_cycle_running_the_heavy_allocator_is_never_stopped() -> None:
+    """SF-b probe: with a non-empty allow list, a duplicate hourly_cycle whose child is
+    pf_allocator --mode heavy was planned for STOP; and two heavy runs are never compared."""
+    loop = r"python.exe C:\opt\quant\desks\mt5\research\hourly_cycle.py"
+    heavy = r"pythonw.exe -u research\pf_allocator.py --mode heavy"
+    procs = [Proc(40, "python.exe", ppid=400, exe="py.exe", cmdline=loop, create_time=10),
+             Proc(41, "python.exe", ppid=401, exe="py.exe", cmdline=loop, create_time=20),
+             Proc(90, "pythonw.exe", ppid=41, exe="py.exe", cmdline=heavy, create_time=30)]
+    for p in procs:
+        p.cwd, p.env_sig = r"C:\opt\quant", "env-a"
+    cfg = {"allow": ["hourly_cycle.py"]}
+    bs.classify(procs, RULES["groups"])
+    keys = [d["duplicate"] for d in bs.plan_dedupe(procs, cfg)[1]]
+    stops, seen = bs.plan_dedupe(procs, cfg, previous_duplicates=keys)
+    assert stops == [] and "descendant 90" in seen[0]["refused"]
+    assert "pinned allocator" in seen[0]["refused"]
+    twins = [Proc(50, "pythonw.exe", ppid=500, exe="py.exe", cmdline=heavy, create_time=1),
+             Proc(51, "pythonw.exe", ppid=501, exe="py.exe", cmdline=heavy, create_time=2)]
+    bs.classify(twins, RULES["groups"])
+    assert bs.dedupe_candidates(twins) == []

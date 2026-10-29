@@ -127,6 +127,10 @@ class Proc:
     affinity: list[int] | None = None
     group: str = "other"
     money_root: bool = False      # matched a money token by name (not by tree or stickiness)
+    #: a feed script in a pinned mode (groups.money_feed_pinned: pf_allocator heavy). Its group
+    #: stays the one its pin rule governs, but it is never a dedupe candidate and never inside
+    #: a stopped tree (audit SF-b, 2026-10-29)
+    pinned_mode: bool = False
     #: identity of a dedupe candidate (read only for those): working directory and a hash of the
     #: environment. None = unread; a duplicate is never stopped on an unread identity.
     cwd: str | None = None
@@ -369,6 +373,7 @@ def classify(procs: Sequence[Proc], groups: Mapping[str, Sequence[str]],
     system = {s.lower() for s in groups.get("system_names", ())}
     for p in procs:
         p.money_root = hit(p, "money")
+        p.pinned_mode = is_pinned(p)
         if p.pid in money_tree:
             p.group = "money"
         elif p.pid in feed_tree:
@@ -1235,20 +1240,22 @@ def plan_dedupe(procs: Sequence[Proc], cfg: Mapping[str, Any],
             for dup in same[1:]:
                 tree = descendants(dup.pid)
                 chain = ancestors(dup)
-                guarded = [c for c in tree if c.group in NEVER_IN_A_STOPPED_TREE]
-                guarded_up = [c for c in chain if c.group in NEVER_IN_A_STOPPED_TREE]
+                guarded = [c for c in tree if _never_stopped(c)]
+                guarded_up = [c for c in chain if _never_stopped(c)]
                 row: dict[str, Any] = {"keep": keeper.key, "duplicate": dup.key,
                                        "name": dup.name, "group": dup.group, "allowed": allowed,
                                        "cmd": _short_cmd(dup)}
                 if guarded:
                     row["refused"] = (f"descendant {guarded[0].pid} ({guarded[0].name}) is "
-                                      f"{guarded[0].group}: a tree stop would take it down")
+                                      f"{_guard_label(guarded[0])}: a tree stop would take it "
+                                      "down")
                 elif guarded_up:
                     # A CHILD OF THE MONEY PATH IS PART OF THE MONEY PATH (audit #482 MF1): the
                     # gateway's own state_pusher_loop was planned for a stop because an older,
                     # unrelated launcher ran the same command line.
                     row["refused"] = (f"ancestor {guarded_up[0].pid} ({guarded_up[0].name}) is "
-                                      f"{guarded_up[0].group}: its child is never stopped")
+                                      f"{_guard_label(guarded_up[0])}: its child is never "
+                                      "stopped")
                 elif unread:
                     row["refused"] = ("cwd/environment unread: not shown to be the same loop "
                                       "(different accounts can share one command line)")
@@ -1261,9 +1268,22 @@ def plan_dedupe(procs: Sequence[Proc], cfg: Mapping[str, Any],
     return stops, report
 
 
+def _never_stopped(p: Proc) -> bool:
+    """In a guarded group, or a feed script in its pinned mode (pf_allocator heavy, SF-b)."""
+    return p.group in NEVER_IN_A_STOPPED_TREE or p.pinned_mode
+
+
+def _guard_label(p: Proc) -> str:
+    if p.group in NEVER_IN_A_STOPPED_TREE:
+        return p.group
+    return "a pinned allocator (money_feed_pinned)"
+
+
 def dedupe_candidates(procs: Sequence[Proc]) -> list[Proc]:
-    """Processes that may be a duplicate: mining/other with a command line, no pool worker."""
+    """Processes that may be a duplicate: mining/other with a command line, no pool worker, not
+    a pinned allocator run."""
     return [p for p in procs if p.group in DEDUPE_GROUPS and p.cmdline.strip()
+            and not p.pinned_mode
             and not any(m in p.cmdline.lower() for m in _WORKER_MARKERS)]
 
 
