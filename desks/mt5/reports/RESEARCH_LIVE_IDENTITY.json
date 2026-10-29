@@ -1,10 +1,10 @@
 {
- "generated_utc": "2026-10-13T17:02:57+00:00",
+ "generated_utc": "2026-10-16T19:13:43+00:00",
  "status": "MEASURED",
  "inputs": {
   "sleeves": "desks/mt5/data/sleeves.json",
   "survivors": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
-  "survivor_rows": 974,
+  "survivor_rows": 982,
   "registry_rows": 1708,
   "docket_cells": 1624039
  },
