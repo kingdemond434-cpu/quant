@@ -373,6 +373,8 @@ REUSED_PID_MARGIN_S = 300.0
 SHARD_POLL_S = 5.0
 #: The most `_kill_tree` spends re-enumerating a respawning tree before naming the survivors.
 KILL_WALL_S = 60.0
+KILL_POLL_S = 0.05
+KILL_RESETTLE_S = 2.0
 #: A takeover never kills on the heartbeat alone: it measures the prior sweep's tree for this
 #: long first, and kills only if that live sample is idle too.
 TAKEOVER_SAMPLE_S = 60.0
@@ -2169,13 +2171,39 @@ def _kill_tree(pid: int, *, wall_s: float | None = None,
                     out_kids.append(k)
         return out_kids
 
+    def gone(p: Any) -> bool:
+        try:
+            return (not p.is_running()) or p.status() == psutil.STATUS_ZOMBIE
+        except psutil.Error:
+            return True
+
+    def settle(procs: list[Any], limit_s: float) -> None:
+        # ZOMBIE-AWARE WAIT (2026-10-29). `psutil.wait_procs` counts a zombie as running, and a
+        # killed child of a SUSPENDED parent stays a zombie until the root dies -- so it burned
+        # its whole timeout on corpses (CI: wall_s 5.09 on one pass) while a real survivor went
+        # unexamined. Poll until every process is gone or a zombie, or the limit passes.
+        end = time.monotonic() + max(0.0, limit_s)
+        while any(not gone(p) for p in procs) and time.monotonic() < end:
+            time.sleep(KILL_POLL_S)
+
+    empty_scans = 0
     while True:
         try:
             kids = live_kids()
         except psutil.Error:
             break
-        if not kids or time.monotonic() - t0 > budget:
+        if time.monotonic() - t0 > budget:
             break
+        if not kids:
+            # TWO CONSECUTIVE EMPTY SCANS, KILL_POLL_S apart (2026-10-29): a process mid-clone
+            # can be invisible to one /proc scan and appear in the next, re-parented away the
+            # moment its parent dies. CI caught exactly that orphan under load.
+            empty_scans += 1
+            if empty_scans >= 2:
+                break
+            time.sleep(KILL_POLL_S)
+            continue
+        empty_scans = 0
         # FREEZE THE WHOLE TREE BEFORE ANY KILL: a grandchild started between enumeration and
         # suspension would be re-parented away (and orphaned) the moment its parent died, so
         # enumerate-and-suspend repeats until a pass finds nobody new.
@@ -2190,6 +2218,9 @@ def _kill_tree(pid: int, *, wall_s: float | None = None,
                 frozen[k.pid] = k
             try:
                 kids = live_kids()
+                if not [k for k in kids if k.pid not in frozen]:
+                    time.sleep(KILL_POLL_S)            # one settle re-scan before any kill
+                    kids = live_kids()
             except psutil.Error:
                 break
         kids = list(frozen.values())
@@ -2198,17 +2229,23 @@ def _kill_tree(pid: int, *, wall_s: float | None = None,
             with contextlib.suppress(psutil.Error):
                 k.kill()
                 killed += 1
-        psutil.wait_procs(kids, timeout=max(0.1, min(5.0, budget - (time.monotonic() - t0))))
+        settle(kids, max(0.1, min(5.0, budget - (time.monotonic() - t0))))
     if include_root:
         with contextlib.suppress(psutil.Error):
             root.kill()
             killed += 1
             root.wait(timeout=10)
+    # A SURVIVOR IS KILLED AGAIN BEFORE IT IS NAMED: anything seen and still alive gets one
+    # more SIGKILL and a bounded settle, so a slow reap under load is not reported as an orphan.
+    survivors = [p for p in seen.values() if not gone(p)]
+    for p in survivors:
+        with contextlib.suppress(psutil.Error):
+            p.kill()
+    settle(survivors, KILL_RESETTLE_S)
     orphans: set[int] = set()
     for p in seen.values():
-        with contextlib.suppress(psutil.Error):
-            if p.is_running() and p.status() != psutil.STATUS_ZOMBIE:
-                orphans.add(p.pid)
+        if not gone(p):
+            orphans.add(p.pid)
     with contextlib.suppress(psutil.Error):
         orphans.update(k.pid for k in live_kids())
     out.update(killed=killed, orphans=sorted(orphans), wall_s=round(time.monotonic() - t0, 2))

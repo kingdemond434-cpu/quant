@@ -431,6 +431,31 @@ def test_the_tree_kill_leaves_no_orphan_while_the_root_respawns(tmp_path) -> Non
             root.kill()
 
 
+def test_the_tree_kill_does_not_wait_on_corpses(tmp_path) -> None:
+    """CI flake 10-29 (killed 61, wall_s 5.09): a killed child of the SUSPENDED root stays a
+    zombie, and `wait_procs` counted it as running for its whole 5 s. The wait is zombie-aware."""
+    import subprocess
+    import sys as _sys
+    import time as _t
+
+    psutil = pytest.importorskip("psutil")
+    root = subprocess.Popen([_sys.executable, "-c",
+                             "import subprocess,sys,time;"
+                             "[subprocess.Popen([sys.executable,'-c','import time;time.sleep(60)'])"
+                             " for _ in range(3)];time.sleep(60)"])
+    try:
+        deadline = _t.monotonic() + 10
+        while len(psutil.Process(root.pid).children()) < 3 and _t.monotonic() < deadline:
+            _t.sleep(0.05)
+        rep = runner._kill_sweep_tree(root.pid)
+        root.wait(timeout=15)
+        assert rep["orphans"] == [] and rep["killed"] == 4, rep
+        assert rep["wall_s"] < 3.0, rep
+    finally:
+        with __import__("contextlib").suppress(Exception):
+            root.kill()
+
+
 def test_a_sweep_names_its_phase_and_a_kill_records_it(monkeypatch) -> None:
     """The 33h stall could not say which part of the sweep the core was in: each phase is now
     stamped, folded into the resident's heartbeat, and named on a hung kill."""
