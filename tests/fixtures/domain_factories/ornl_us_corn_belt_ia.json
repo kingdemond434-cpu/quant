@@ -1,0 +1,7 @@
+{"xllcorner": "-7718283.52", "yllcorner": "4669858.34", "cellsize": 231.656358264, "nrows": 3, "ncols": 3,
+ "band": "250m_16_days_NDVI", "units": "NDVI ratio - No units", "scale": "0.0001",
+ "latitude": 42.0, "longitude": -93.5, "header": "synthetic fixture",
+ "subset": [
+  {"modis_date": "A2026177", "calendar_date": "2026-06-26", "band": "250m_16_days_NDVI", "tile": "h10v04", "proc_date": "2026194031522", "data": [8000, 8200, -3000, 7800, 8100, 8000, 7900, 8300, 8100]},
+  {"modis_date": "A2026193", "calendar_date": "2026-07-12", "band": "250m_16_days_NDVI", "tile": "h10v04", "proc_date": "2026210040000", "data": [-3000, -3000, -3000, -3000, -3000, -3000, -3000, -3000, -3000]}
+ ]}
