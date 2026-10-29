@@ -24,8 +24,9 @@ and per certificate: in a promoting lane, in the farm, or in NO lane. A certific
 for longer than one cycle is RED.
 
 ONLY THE FARM IS EVER RESTARTED HERE, and only when its ledger FILE is older than its allowance.
-Silent clocks in a fresh file are reported, never restarted: the farm retires the keys it stops
-enrolling, so a silent ACTIVE row is a defect to see, not a pass to re-run. A stale promoting lane
+Silent clocks in a fresh file are reported, never restarted. The farm is judged only on the keys
+its last pass enrolled (`enrolled_keys` in NEAR_MISS_FARM.json): a row it stopped enrolling stays
+in the ledger as evidence, untouched, and is neither stale nor cover. A stale promoting lane
 is reported RED and paged through the alert ledger; its scheduled task and stall_watch own it.
 Coverage counts only ACTIVE farm rows. THE RESTART IS THE FARM'S OWN
 ENGINE, run as a subprocess inside this leg's budget, skipped when
@@ -121,8 +122,30 @@ def lane_rows(doc: Any) -> dict[str, dict[str, Any]]:
     return rows
 
 
+FARM_REPORT = BASE / "reports" / "NEAR_MISS_FARM.json"
+
+
+def farm_enrolled() -> set[str] | None:
+    """The keys the farm enrolled on its last pass, or None when its report is unreadable."""
+    doc = _read(FARM_REPORT)
+    keys = doc.get("enrolled_keys") if isinstance(doc, dict) else None
+    return {str(k) for k in keys} if isinstance(keys, list) else None
+
+
+def current_farm(doc: Any, enrolled: set[str] | None) -> Any:
+    """The farm ledger restricted to the rows the farm still enrols (audit on #487).
+
+    `_persist_state` keeps every row a pass did not touch, so a key the farm stopped enrolling
+    stays in the file ACTIVE and silent. It is evidence and is never rewritten -- absence is not a
+    retirement -- but it is not a clock the farm runs, so it is neither stale nor cover. With no
+    readable farm report every row is judged, which can only read stricter."""
+    if not isinstance(doc, dict) or enrolled is None:
+        return doc
+    return {k: v for k, v in doc.items() if not isinstance(v, dict) or k in enrolled}
+
+
 def active_keys(doc: Any) -> set[str]:
-    """Keys of rows still ACTIVE in a lane: a retired row is evidence, never cover."""
+    """Keys of rows ACTIVE in a lane."""
     return {k for k, r in lane_rows(doc).items()
             if str(r.get("status") or "").upper() in ACTIVE}
 
@@ -281,7 +304,9 @@ def run(*, budget_s: float = 900.0, repair: bool = True,
         out: Path | None = None) -> dict[str, Any]:
     deadline = time.monotonic() + max(0.0, budget_s)
     now = _now()
+    enrolled = farm_enrolled()
     docs = {name: _read(SHADOW / spec["state"]) for name, spec in LANES.items()}
+    docs["farm"] = current_farm(docs.get("farm"), enrolled)
     lanes = [lane_verdict(n, LANES[n], docs[n], now) for n in LANES]
     census, census_source = enrolment_census(now)
     cov = coverage(census, active_keys(docs.get("farm")), now)
@@ -301,9 +326,9 @@ def run(*, budget_s: float = 900.0, repair: bool = True,
                                        "stall_watch, never restarted by this leg"})
                 continue
             if lane.get("stale_by") != "age":
-                # Silent clocks inside a fresh file are not cured by running the engine again:
-                # the farm retires the keys it stops enrolling, so a silent ACTIVE row is a real
-                # defect to report, and a restart on it would run the farm twice an hour.
+                # Silent clocks inside a fresh file are not cured by running the engine again,
+                # and only the keys the farm still enrols are judged, so a silent one is a real
+                # defect to report; a restart on it would run the farm twice an hour.
                 repairs.append({"lane": lane["lane"], "status": "REPORTED",
                                 "why": "fresh ledger with silent clocks; restarts are on file "
                                        "age only"})
@@ -311,7 +336,9 @@ def run(*, budget_s: float = 900.0, repair: bool = True,
             repairs.append(restart(lane["lane"], LANES[lane["lane"]], deadline))
         if repairs:
             now = _now()
+            enrolled = farm_enrolled()
             docs = {name: _read(SHADOW / spec["state"]) for name, spec in LANES.items()}
+            docs["farm"] = current_farm(docs.get("farm"), enrolled)
             lanes = [lane_verdict(n, LANES[n], docs[n], now) for n in LANES]
             cov = coverage(census, active_keys(docs.get("farm")), now)
     stale = [lane["lane"] for lane in lanes if lane["verdict"] == STALE]
