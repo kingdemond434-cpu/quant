@@ -1114,7 +1114,15 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
     # live record sends nothing here either.
     _dz = decay_zero(CERT_KEY)
     if _dz is not None:
-        _skip(doc, st, "decay_zero", f"decay zero on {CERT_KEY} ({_dz})", today=today, now=now)
+        _book = load_cert_book(CERT_BOOK_FILE, "ftmo") or {}
+        try:
+            _eq = float(mt5.account_info().equity)
+        except Exception:
+            _eq = None
+        _f = _book.get(CERT_KEY)
+        _skip(doc, st, "decay_zero", f"decay zero on {CERT_KEY} ({_dz})", today=today, now=now,
+              missed_usd=(round(_eq * float(_f), 2)
+                          if _eq is not None and isinstance(_f, (int, float)) else None))
         return
     book = load_cert_book(CERT_BOOK_FILE, "ftmo")
     frac = (book or {}).get(CERT_KEY)

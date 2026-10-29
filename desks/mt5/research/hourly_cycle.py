@@ -1076,6 +1076,9 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #:   daily 77 / 78     -- the day's stamp could not be READ, so no step ran; 78 once that has
 #:                       lasted past 3 consecutive passes (daily_cycle.EXIT_STAMP_UNREADABLE*)
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
+    # decay_monitor exits 1 when DECAY_ZERO.json exists and cannot be read: it refuses to rewrite
+    # it and the gateway stays on the last good copy (#540).
+    "decay_monitor": {1: "ZERO_FILE_UNREADABLE"},
     "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
     "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG",
               DAILY_CYCLE_STAMP_UNREADABLE: "STAMP_UNREADABLE",

@@ -326,6 +326,8 @@ from mt5desk.decision_core import (  # the principal's zeros, in code (audit r5 
     SCALP_LANE_ZERO as SCALP_LANE_ZERO,
     book_name as book_name,
     cert_zero_row as cert_zero_row,
+    DECAY_ZERO_DISABLED as DECAY_ZERO_DISABLED,
+    DECAY_ZERO_FILE as DECAY_ZERO_FILE,
     decay_zero as decay_zero,
     principal_zero as principal_zero,
 )
@@ -5261,8 +5263,10 @@ def main() -> None:
             _rails.line_once("decay_zero",
                              f"{_s['name']}/{datetime.now(tz=UTC).date().isoformat()}",
                              sleeve=_s["name"], symbol=_s.get("symbol"), book_key=_key,
+                             # A non-book row is billed at its own risk fraction (#540 S).
                              missed_growth_risk_frac=(float(_book.get(_key) or 0.0)
-                                                      if from_book else None),
+                                                      if from_book
+                                                      else float(_s.get("risk_frac") or 0.0)),
                              why=f"decay zero ({_dz_why}); no order")
         elif cert_zero_row(_s):
             # A PRINCIPAL ZERO (code pin or cert book) sends nothing on every lane and path; the

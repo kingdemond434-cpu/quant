@@ -164,12 +164,21 @@ def _read_json(p: Path, default):
 
 def _write_atomic(p: Path, doc: Any) -> None:
     """Write `doc` as JSON through a temp file and `os.replace`, so the gateway never reads a
-    torn file (a torn DECAY_ZERO reads as no zeros, which is the pre-existing behaviour)."""
+    torn file. On Windows a reader holding the destination open makes `os.replace` raise
+    PermissionError; the replace is retried a few times before the error stands."""
     import os
+    import time as _t
     tmp = p.with_name(f".{p.name}.{os.getpid()}.tmp")
     try:
         tmp.write_text(json.dumps(doc, indent=2), "utf-8")
-        os.replace(tmp, p)
+        for attempt in range(5):
+            try:
+                os.replace(tmp, p)
+                break
+            except PermissionError:
+                if attempt == 4:
+                    raise
+                _t.sleep(0.2 * (attempt + 1))
     finally:
         if tmp.exists():
             tmp.unlink()
@@ -475,12 +484,53 @@ def _forward_r(name: str, row: dict | None, symbol: str) -> list[float]:
     window = "asia" if asia else "continuous"
     sym = _norm_symbol(symbol or row.get("symbol"))
     fam = str(row.get("family") or "")
-    for key in ([f"{sym}_{fam}_{window}"] if fam else []) + [f"{sym}_{window}"]:
+    # A family-bearing key reads ITS family's clock only; the symbol-only clock is the gold
+    # windows' (no family), never a fallback for another mechanism (#540 audit MF4).
+    for key in ([f"{sym}_{fam}_{window}"] if fam else [f"{sym}_{window}"]):
         rs = [_row_r(r) for r in _shadow_ledger_rows(key)]
         out = [float(x) for x in rs if isinstance(x, (int, float))]
         if out:
             return out
     return []
+
+
+#: The one-sided bar the live mean must clear BELOW the certificate's own forward mean, in its
+#: own standard errors: T_PROMOTE, the same evidence the desk asks of good, asked of harm.
+DECAY_T = T_PROMOTE
+#: Live trades before the soft doors may zero: N_MIN_VERDICT, the desk's own verdict count.
+DECAY_MIN_N = N_MIN_VERDICT
+
+
+def cert_decay_verdict(live: list[float], forward: list[float], band: float | None,
+                       door: str) -> tuple[str, str]:
+    """ZERO, HOLD or FLAG for a key a soft promoter door tripped, judged against the
+    certificate's own forward record: ZERO when the live mean sits DECAY_T of the forward
+    standard errors below the forward mean at n >= DECAY_MIN_N and the live roll-20 is below the
+    certificate's own bad-streak band; HOLD when either is not so; FLAG when the forward record
+    (or the live n) is too thin to measure it."""
+    import statistics
+    n = len(live)
+    if band is None or len(forward) < STREAK_MIN_N or n < DECAY_MIN_N:
+        return "FLAG", (f"{door}, but the certificate's own forward record is UNMEASURED "
+                        f"(forward n={len(forward)}, live n={n}; need {STREAK_MIN_N} and "
+                        f"{DECAY_MIN_N}): flagged, not zeroed")
+    mu_f, sd_f = statistics.fmean(forward), statistics.pstdev(forward)
+    mu_l = statistics.fmean(live)
+    roll = statistics.fmean(live[-BOOK_RETIRE_ROLL:])
+    t = (mu_l - mu_f) / (sd_f / n ** 0.5) if sd_f > 0 else (-99.0 if mu_l < mu_f else 0.0)
+    if mu_f <= 0.0 and roll <= 0.0:
+        # NO EDGE TO HAVE A BAD STRETCH OF: the certificate's own forward clock is flat or losing
+        # and so is the live record -- holding it as "within its variance" would protect a loss.
+        return "ZERO", (f"{door}; the certificate's own forward clock shows no edge "
+                        f"({mu_f:+.3f}R over {len(forward)} trades) and the live roll-20 is "
+                        f"{roll:+.3f}R")
+    if t <= -DECAY_T and roll < band:
+        return "ZERO", (f"{door}; live mean {mu_l:+.3f}R is {t:.2f} standard errors below the "
+                        f"certificate's forward {mu_f:+.3f}R (n={n}) and roll-20 {roll:+.3f}R is "
+                        f"below its own p{STREAK_PCT:g} bad-streak band {band:+.3f}R")
+    return "HOLD", (f"{door}, but against the certificate's own record (forward {mu_f:+.3f}R, "
+                    f"t={t:.2f}, band {band:+.3f}R) it is a bad stretch the edge has survived "
+                    f"before, not decay")
 
 
 def cert_streak_band(forward: list[float]) -> float | None:
@@ -546,19 +596,22 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
         # the live run sits inside the certificate's own forward bad streaks. The drawdown rail
         # and the 50-trade expectancy door are never held this way.
         own = next((r for k, r in roster.items() if _stem(k) == _stem(name)), None)
-        band = cert_streak_band(_forward_r(name, own, symbol))
+        fwd = _forward_r(name, own, symbol)
+        band = cert_streak_band(fwd)
         facts["cert_streak_band_r"] = None if band is None else round(band, 4)
-        if v == "ZERO" and why.startswith("roll20") and band is not None \
-                and facts["roll20_exp"] >= band:
-            v, why = "HOLD", (f"roll20 {facts['roll20_exp']:.3f}R is inside the certificate's "
-                              f"own forward bad streaks (p{STREAK_PCT:g} {band:.3f}R): a bad "
-                              f"stretch the edge has survived before, not decay")
+        if v == "ZERO" and not why.startswith("live maxDD"):
+            # THE SOFT DOORS NEED THE CERTIFICATE'S OWN VARIANCE (#540 audit MF4, Rule 1). A raw
+            # roll-20 <= 0 at n=10 zeroes a +0.20R sleeve with p~0.42; so a soft-door ZERO stands
+            # only when a one-sided test against the certificate's own forward mean and spread
+            # rejects at n >= 20 AND the live run sits below its own bad-streak band. Without
+            # that record the key is FLAGGED, not zeroed. The -25R drawdown stays a hard zero.
+            v, why = cert_decay_verdict(rs, fwd, band, why)
         row = {**facts, "verdict": v, "why": why}
         if v == "UNMEASURED":
             unmeasured[name] = row
             continue
         judged[name] = row
-        if v != "ZERO":
+        if v not in ("ZERO", "FLAG"):
             continue
         repl = replacement_for(name, symbol, roster)
         stem_rows = sorted(k for k in roster if _stem(k) == _stem(name))
@@ -567,7 +620,9 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
                  "symbol": symbol, "roster_rows": stem_rows, "since": now,
                  "certificate": _cert_of(name, roster)}
         live_repl = replacement_for(name, symbol, roster, ("LIVE",))
-        if _stem(name) in exempt and not (live_repl and _traded_recently(live_repl)):
+        if v == "FLAG":
+            flags[name] = {**entry, "replacement": repl, "flag": why}
+        elif _stem(name) in exempt and not (live_repl and _traded_recently(live_repl)):
             flags[name] = {**entry, "replacement": repl,
                            "flag": (f"temporary exemption (zuck 2026-10-29): no promoted "
                                     f"replacement on {symbol} yet; the principal decides")}
@@ -577,11 +632,9 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
     for k, z in prev_zeros.items():
         if not isinstance(z, dict):
             continue
-        cert_now = _cert_of(k, roster)
-        # A key zeroed with NO certificate lifts when one appears (audit S: it could never lift).
-        if cert_now and cert_now != z.get("certificate"):
-            lifted[k] = {**z, "lifted": now, "why_lifted": f"re-certified ({cert_now})"}
-            continue
+        # ONE-WAY, NO AUTOMATIC LIFT (#540 audit MF2): a certificate gaining a field, or a
+        # sibling row sharing the stem, must never re-arm a zeroed key. Re-entry is a NEW key
+        # (a fresh certification under its own name), never this one.
         zeros.setdefault(k, z)
         if isinstance(zeros[k], dict):
             zeros[k]["since"] = z.get("since") or now
@@ -1040,7 +1093,11 @@ def main(write_queue: bool = True) -> int:
         print(f"decay monitor: {zero_path.name} exists and is unreadable -- NOT rewritten; the "
               f"gateway reads {zero_path.name.replace('.json', '.last_good.json')}")
     if source != "UNMEASURED" and not zero_unreadable:
-        prev_doc = _read_json(zero_path, {})
+        # NEVER DROP A ZERO SILENTLY (#540 audit MF3): a missing primary, or one without a
+        # `zeros` key, is seeded from the last good copy, so deleting the file cannot re-arm a key.
+        prev_doc = _read_json(zero_path, None)
+        if not (isinstance(prev_doc, dict) and isinstance(prev_doc.get("zeros"), dict)):
+            prev_doc = _read_json(zero_path.with_name(zero_path.stem + ".last_good.json"), {})
         prev_doc = prev_doc if isinstance(prev_doc, dict) else {}
         zero_doc = decay_zero_doc(live, now, roster_rows(doc), prev_doc)
         before_z, before_f = set(prev_doc.get("zeros") or {}), set(prev_doc.get("flags") or {})

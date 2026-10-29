@@ -733,8 +733,9 @@ def decay_zero(name: object) -> str | None:
             doc = json.loads(path.read_text("utf-8"))
         except (OSError, ValueError):
             continue
-        if isinstance(doc, dict) and isinstance(doc.get("zeros") or {}, dict):
-            zeros = doc.get("zeros") or {}
+        # The `zeros` key is REQUIRED (#540 audit MF3): {"checked_at": ...} alone is not a reading.
+        if isinstance(doc, dict) and isinstance(doc.get("zeros"), dict):
+            zeros = doc["zeros"]
             break
     if not zeros:
         return None
@@ -793,8 +794,8 @@ def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
                      f"no order")
     _dz = decay_zero(name)
     if _dz is not None:
-        # ITS OWN LIVE RECORD FAILED THE PROMOTER'S RETIREMENT BARS (decay_monitor DECAY_ZERO):
-        # nothing on either path, like a cert-book zero, until the trailing window re-arms it.
+        # ITS OWN LIVE RECORD FAILED THE DECAY TEST (decay_monitor DECAY_ZERO): nothing on either
+        # path, like a cert-book zero. One-way: only a new certified key trades again.
         return 0.0, f"decay zero: {name} {_dz}; no order"
     floor_lot = gold_lot(equity, dist_usd, info)
     try:

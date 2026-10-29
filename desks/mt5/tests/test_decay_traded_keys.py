@@ -8,8 +8,8 @@ row: usdnok_carry closed 23 live trades in October for -9.36R and kept sending. 
     mirrored and pinned equal -- no new threshold;
   * zuck's rules (2026-10-29 15:21Z and 15:55Z): every tripped key is ZEROED, pinned books
     included, except gold_asia, which is FLAGGED while no promoted replacement exists on its
-    symbol; a zero is ONE-WAY and lifts only on a new certificate; demo rows and unmeasurable
-    series move nothing;
+    symbol; a soft-door zero needs the certificate's own forward record (else FLAG); a zero is
+    ONE-WAY and never lifts itself; demo rows and unmeasurable series move nothing;
   * `decision_core.decay_zero` names a zero by name, book name or 27-char stem, names nothing
     from an absent or torn file or while the kill switch exists, and every sizing door sends
     nothing for a named key with a decay reason, billed on its own registered rail;
@@ -31,8 +31,9 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_DESK.parent.parent)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import research.regime_coverage as rc  # noqa: E402
 from mt5desk import decision_core as dc  # noqa: E402
+
+import research.regime_coverage as rc  # noqa: E402
 from research import decay_monitor as D  # noqa: E402
 
 NOW = datetime.now(tz=UTC).replace(microsecond=0)
@@ -69,6 +70,20 @@ def _zero(desk: Path) -> dict:
     return json.loads((desk / "DECAY_ZERO.json").read_text("utf-8"))
 
 
+#: A certificate's forward clock: a real edge (+0.3R mean) with ordinary dispersion and one bad
+#: stretch, long enough (n=60) for the bad-streak band and the one-sided test.
+FORWARD = ([0.9, -0.4, 0.6, 0.5, -0.3, 0.8, -0.2, 0.7, 0.4, -0.5] * 5
+           + [-0.3, -0.6, 0.2, -0.4, 0.3, -0.2, 0.3, -0.5, 0.4, 0.2] * 2)    # a losing stretch
+#: A live record that has collapsed against it: 24 trades at about -0.4R.
+DECAYED = LOSSES * 2
+
+
+def _clock(desk: Path, key: str, rs: list[float] = FORWARD) -> None:
+    d = desk / "shadow"
+    d.mkdir(exist_ok=True)
+    (d / f"ledger_{key}.json").write_text(json.dumps([{"r_multiple": r} for r in rs]), "utf-8")
+
+
 def test_the_guard_and_bars_are_the_promoters_own() -> None:
     src = (_DESK / "research" / "promoter.py").read_text(encoding="utf-8")
     for name, mine in (("RETIRE_MIN_N", D.BOOK_RETIRE_MIN_N),
@@ -96,19 +111,56 @@ def test_book_key_verdict_refuses_degenerate_series_then_reads_the_three_doors()
     assert D.book_key_verdict(deep)[0] == "ZERO"
     assert D.book_key_verdict([0.04, 0.03, 0.06, 0.05, 0.045] * 10)[0] == "ZERO"
     assert D.book_key_verdict([0.5, -0.3, 0.6, -0.2] * 5)[0] == "HEALTHY"
-    # the drawdown is measured as the promoter measures it: the peak starts at the first trade
     assert D._promoter_dd([-1.0, -2.0]) == -2.0 and D._promoter_dd([1.0, -3.0]) == -3.0
 
 
+def test_a_soft_door_zero_needs_the_certificates_own_record_else_it_is_flagged(desk) -> None:
+    """#540 audit MF4 (Rule 1): a raw roll-20 <= 0 at n=10 zeroes a +0.20R sleeve with p~0.42.
+    Without the certificate's forward record a tripped key is FLAGGED; with it, it is zeroed only
+    when the live mean is DECAY_T standard errors below the forward mean at n >= 20."""
+    roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP", "family": "formula"},
+              {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"}]
+    _write(desk, roster, _trades(FREE[:27], DECAYED))
+    D.main(write_queue=False)
+    doc = _zero(desk)
+    assert doc["zeros"] == {} and "UNMEASURED" in doc["flags"][FREE[:27]]["flag"]
+    # the certificate's own clock exists: the collapse is measured against it and zeroed
+    _clock(desk, "EURGBP_formula_asia")
+    _write(desk, roster, _trades(FREE[:27], DECAYED))
+    D.main(write_queue=False)
+    doc = _zero(desk)
+    assert FREE[:27] in doc["zeros"] and "standard errors below" in doc["zeros"][FREE[:27]]["why"]
+
+
+def test_a_bad_stretch_the_certificate_has_lived_through_is_held(desk) -> None:
+    _clock(desk, "EURGBP_formula_asia")
+    roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP", "family": "formula"},
+              {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"}]
+    mild = FORWARD[-20:]          # the very bad stretch its forward clock lived through
+    _write(desk, roster, _trades(FREE[:27], mild))
+    D.main(write_queue=False)
+    doc = _zero(desk)
+    assert doc["zeros"] == {} and doc["judged"][FREE[:27]]["verdict"] == "HOLD"
+    assert D.cert_streak_band([0.1] * 10) is None                       # too short: UNMEASURED
+
+
+def test_the_forward_clock_is_the_keys_own_family_never_a_symbol_fallback(desk) -> None:
+    _clock(desk, "EURGBP_asia")                     # a symbol-only clock is the gold windows'
+    assert D._forward_r(FREE, {"symbol": "EURGBP", "family": "formula"}, "EURGBP") == []
+    assert D._forward_r("gold_asia", {"symbol": "EURGBP"}, "EURGBP") == FORWARD
+
+
 def test_every_tripped_key_is_zeroed_pinned_book_or_not(desk) -> None:
-    roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP", "certificate": "c1"},
+    _clock(desk, "EURGBP_formula_asia")
+    _clock(desk, "USDNOK_carry_asia")
+    roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP", "family": "formula"},
               {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"},
-              {"name": LOSER, "status": "RETIRED", "symbol": "USDNOK"},
+              {"name": LOSER, "status": "RETIRED", "symbol": "USDNOK", "family": "carry"},
               {"name": "gold_asia", "status": "STANDBY", "symbol": "XAUUSD"},
               {"name": "eurusd_live_one", "status": "LIVE", "symbol": "EURUSD"}]
-    trades = (_trades(FREE[:27], LOSSES) + _trades(LOSER[:27], LOSSES, symbol="USDNOK")
+    trades = (_trades(FREE[:27], DECAYED) + _trades(LOSER[:27], DECAYED, symbol="USDNOK")
               + _trades("gold_asia", [0.6, -0.3] * 6, symbol="XAUUSD")
-              + _trades("eurusd_live_one", LOSSES))
+              + _trades("eurusd_live_one", DECAYED))
     _write(desk, roster, trades)
     assert D.main(write_queue=False) == 0
     doc = _zero(desk)
@@ -126,19 +178,18 @@ def test_every_tripped_key_is_zeroed_pinned_book_or_not(desk) -> None:
 
 
 def test_gold_asia_alone_is_flagged_until_a_promoted_replacement_trades(desk) -> None:
+    _clock(desk, "XAUUSD_asia")
     roster = [{"name": "gold_asia", "status": "STANDBY", "symbol": "XAUUSD"},
               {"name": "xauusd_range_reversion_p_1", "status": "STANDBY", "symbol": "XAUUSD.r"}]
-    _write(desk, roster, _trades("gold_asia", LOSSES, symbol="XAUUSD"))
+    _write(desk, roster, _trades("gold_asia", DECAYED, symbol="XAUUSD"))
     D.main(write_queue=False)
     doc = _zero(desk)
     assert doc["zeros"] == {} and "temporary exemption" in doc["flags"]["gold_asia"]["flag"]
-    # promoted but never traded: still not a replacement (audit S)
-    roster[1]["status"] = "LIVE"
-    _write(desk, roster, _trades("gold_asia", LOSSES, symbol="XAUUSD"))
+    roster[1]["status"] = "LIVE"                     # promoted, never traded: not yet
+    _write(desk, roster, _trades("gold_asia", DECAYED, symbol="XAUUSD"))
     D.main(write_queue=False)
     assert "gold_asia" in _zero(desk)["flags"]
-    # promoted AND trading (its symbol carries a broker suffix): the exemption ends
-    _write(desk, roster, _trades("gold_asia", LOSSES, symbol="XAUUSD")
+    _write(desk, roster, _trades("gold_asia", DECAYED, symbol="XAUUSD")
            + _trades("xauusd_range_reversion_p_1", [0.4, -0.2], symbol="XAUUSD.r"))
     D.main(write_queue=False)
     doc = _zero(desk)
@@ -147,90 +198,81 @@ def test_gold_asia_alone_is_flagged_until_a_promoted_replacement_trades(desk) ->
 
 
 def test_the_exemption_is_gold_asia_and_its_versions_never_its_siblings(desk) -> None:
+    _clock(desk, "XAUUSD_asia")
     roster = [{"name": "gold_asia_v3", "status": "STANDBY", "symbol": "XAUUSD"},
               {"name": "gold_london_am", "status": "STANDBY", "symbol": "XAUUSD"},
               {"name": "xauusd_other", "status": "STANDBY", "symbol": "XAUUSD"}]
-    _write(desk, roster, _trades("gold_asia_v3", LOSSES, symbol="XAUUSD")
-           + _trades("gold_london_am", LOSSES, symbol="XAUUSD"))
+    _write(desk, roster, _trades("gold_asia_v3", DECAYED, symbol="XAUUSD")
+           + _trades("gold_london_am", DECAYED, symbol="XAUUSD"))
     D.main(write_queue=False)
     doc = _zero(desk)
-    assert set(doc["flags"]) == {"gold_asia_v3"} and set(doc["zeros"]) == {"gold_london_am"}
+    # gold_london_am has no clock of its own (its window is not asia): flagged, never zeroed
+    flag = doc["flags"]["gold_asia_v3"]["flag"]
+    assert "temporary exemption" in flag
+    assert "gold_london_am" not in doc["zeros"]
 
 
-def test_a_bad_stretch_inside_the_certificates_own_forward_streaks_is_held(desk) -> None:
-    (desk / "shadow").mkdir()
-    # the certificate's forward clock: profitable, with roll-20 runs as bad as -0.5R in it
-    fwd = ([0.6, -0.4, 0.5, 0.3, -0.2] * 10) + ([-0.5, -0.6, -0.4, -0.55] * 6) + [0.7, 0.4] * 10
-    (desk / "shadow" / "ledger_EURGBP_formula_asia.json").write_text(
-        json.dumps([{"r_multiple": r} for r in fwd]), "utf-8")
+def test_a_zero_is_one_way_and_never_lifts_itself(desk) -> None:
+    """#540 audit MF2: neither a certificate gaining a field nor a sibling row lifts a zero."""
+    _clock(desk, "EURGBP_formula_asia")
+    roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP", "family": "formula",
+               "certificate": {"cell": "c1"}},
+              {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"}]
+    _write(desk, roster, _trades(FREE[:27], DECAYED))
+    D.main(write_queue=False)
+    since = _zero(desk)["zeros"][FREE[:27]]["since"]
+    _write(desk, roster, _trades(FREE[:27], DECAYED, days_ago=D.TRAIL_DAYS + 2))
+    D.main(write_queue=False)
+    roster[0]["certificate"] = {"cell": "c1", "swap_cost": 0.1}
+    roster.insert(0, {"name": FREE[:27] + "_sibling", "status": "STANDBY", "symbol": "EURGBP",
+                      "certificate": {"cell": "other"}})
+    _write(desk, roster, [])
+    D.main(write_queue=False)
+    doc = _zero(desk)
+    assert doc["zeros"][FREE[:27]]["since"] == since and doc["lifted"] == {}
+
+
+def test_a_missing_or_partial_primary_never_loses_a_zero(desk) -> None:
+    """#540 audit MF3: deleting the primary, or a primary with no `zeros` key, cannot re-arm."""
+    _clock(desk, "EURGBP_formula_asia")
     roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP", "family": "formula"},
               {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"}]
-    _write(desk, roster, _trades(FREE[:27], LOSSES))                  # roll20 about -0.38R
+    _write(desk, roster, _trades(FREE[:27], DECAYED))
     D.main(write_queue=False)
-    doc = _zero(desk)
-    assert doc["zeros"] == {} and doc["judged"][FREE[:27]]["verdict"] == "HOLD"
-    assert doc["judged"][FREE[:27]]["cert_streak_band_r"] <= -0.38
-    # worse than anything the certificate lived through: zeroed
-    _write(desk, roster, _trades(FREE[:27], [x - 1.0 for x in LOSSES]))
+    (desk / "DECAY_ZERO.json").unlink()
+    _write(desk, roster, [])
     D.main(write_queue=False)
     assert FREE[:27] in _zero(desk)["zeros"]
-    assert D.cert_streak_band([0.1] * 10) is None                       # too short: UNMEASURED
+    (desk / "DECAY_ZERO.json").write_text(json.dumps({"checked_at": "x"}), "utf-8")
+    assert dc.decay_zero(FREE) is not None              # last good answers, not "no zeros"
+    D.main(write_queue=False)
+    assert FREE[:27] in _zero(desk)["zeros"]
 
 
 def test_a_torn_zero_file_is_never_read_as_no_zeros(desk) -> None:
-    roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP"},
+    _clock(desk, "EURGBP_formula_asia")
+    roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP", "family": "formula"},
               {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"}]
-    _write(desk, roster, _trades(FREE[:27], LOSSES))
+    _write(desk, roster, _trades(FREE[:27], DECAYED))
     assert D.main(write_queue=False) == 0
     assert dc.decay_zero(FREE) is not None
     (desk / "DECAY_ZERO.json").write_text("{not json", "utf-8")
-    # the gateway answers from the last good copy ...
     assert dc.decay_zero(FREE) is not None
-    # ... the monitor refuses to rewrite the torn file, says so and exits non-zero ...
     assert D.main(write_queue=False) == 1
     assert (desk / "DECAY_ZERO.json").read_text("utf-8") == "{not json"
     assert json.loads((desk / "decay_live.json").read_text("utf-8"))["zero_file"] == "UNREADABLE"
     assert dc.decay_zero(FREE) is not None
 
 
-def test_a_zero_with_no_certificate_lifts_when_one_appears(desk) -> None:
-    roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP"},
-              {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"}]
-    _write(desk, roster, _trades(FREE[:27], LOSSES))
-    D.main(write_queue=False)
-    assert _zero(desk)["zeros"][FREE[:27]]["certificate"] is None
-    roster[0]["certificate"] = {"cell": "recert"}
-    _write(desk, roster, [])
-    D.main(write_queue=False)
-    assert FREE[:27] in _zero(desk)["lifted"]
-
-
-def test_the_zero_reaches_the_e8_and_ftmo_lanes() -> None:
+def test_the_zero_reaches_the_e8_and_ftmo_lanes_and_the_gateway_reexports_it() -> None:
     for rel, call in (("prop/e8_gold.py", 'decay_zero(f"gold_{name}")'),
                       ("prop/ftmo_follower.py", "decay_zero(CERT_KEY)")):
-        src = (_DESK / rel).read_text(encoding="utf-8")
-        assert call in src, rel
+        assert call in (_DESK / rel).read_text(encoding="utf-8"), rel
     from research import missed_growth
     assert "decay_zero" in missed_growth._E8_BILLED_RAILS
-
-
-def test_a_zero_is_one_way_and_lifts_only_on_a_new_certificate(desk) -> None:
-    roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP", "certificate": "c1"},
-              {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"}]
-    _write(desk, roster, _trades(FREE[:27], LOSSES))
-    D.main(write_queue=False)
-    since = _zero(desk)["zeros"][FREE[:27]]["since"]
-    # the losses age out of the window: the zero STANDS (zuck: no re-arm on silence)
-    _write(desk, roster, _trades(FREE[:27], LOSSES, days_ago=D.TRAIL_DAYS + 2))
-    D.main(write_queue=False)
-    assert _zero(desk)["zeros"][FREE[:27]]["since"] == since
-    # a fresh certificate on the row is the only way back
-    roster[0]["certificate"] = "c2"
-    _write(desk, roster, [])
-    D.main(write_queue=False)
-    doc = _zero(desk)
-    assert doc["zeros"] == {} and FREE[:27] in doc["lifted"]
-    assert "BOOK_LIFT" in (desk / "decay_actions.jsonl").read_text("utf-8")
+    gw = (_DESK / "mt5desk" / "gateway.py").read_text(encoding="utf-8")
+    assert "DECAY_ZERO_DISABLED as DECAY_ZERO_DISABLED" in gw
+    assert "DECAY_ZERO_FILE as DECAY_ZERO_FILE" in gw
 
 
 def test_demo_rows_and_unmeasurable_keys_move_nothing(desk) -> None:
@@ -272,6 +314,7 @@ def test_every_book_door_sends_nothing_for_a_zeroed_key_on_a_registered_rail(des
     block = gw[i:gw.index('_rails.line_once("principal_zero_pin"', i)]
     assert '_rails.line_once("decay_zero"' in block and "missed_growth_risk_frac" in block
     from mt5desk import fusion_rails
+
     from research import missed_growth
     assert "decay_zero" in fusion_rails.RAILS and "decay_zero" in missed_growth.FUSION_RAIL_NAMES
 
@@ -336,3 +379,14 @@ def test_the_decay_monitor_is_never_rotated_out_of_the_hourly_pass() -> None:
     2026-10-21 while keys kept closing live trades (hourly pass 22)."""
     from libs.ops import leg_rotation as LR
     assert "decay_monitor" in LR.ALWAYS_RUN
+
+
+def test_a_certificate_whose_own_forward_clock_has_no_edge_is_zeroed_when_live_loses(desk) -> None:
+    """USDNOK carry on 2026-10-29: its forward clock averaged -0.17R, so 'inside its own bad
+    streaks' would have protected a loss. No forward edge and a losing live run is a zero."""
+    _clock(desk, "EURGBP_formula_asia", [-x for x in FORWARD])
+    roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP", "family": "formula"},
+              {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"}]
+    _write(desk, roster, _trades(FREE[:27], DECAYED))
+    D.main(write_queue=False)
+    assert "shows no edge" in _zero(desk)["zeros"][FREE[:27]]["why"]
