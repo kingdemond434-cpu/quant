@@ -311,14 +311,15 @@ def test_a_429_at_the_door_holds_the_refusing_site_and_nothing_more_is_sent(site
 
 
 def test_the_importers_reach_the_checks_through_the_door(site: int) -> None:
-    """seed_miners fetches through `fenced_urlopen` and global_survivor_frontier through the
-    polite seam (`polite_urlopen`, robots-coverage 2026-10-14): a held site refuses both with
-    nothing sent -- the seam names the hold as its PoliteRefused verdict."""
+    """seed_miners and global_survivor_frontier fetch through the polite seam (`polite_urlopen`,
+    robots-coverage 2026-10-14): a held site refuses both with nothing sent -- the seam names
+    the hold as its PoliteRefused verdict."""
     import global_survivor_frontier as gsf
     import seed_miners as sm
     pf.hold_site(f"http://127.0.0.1:{site}/", 403)
-    with pytest.raises(pf.AccessRefused):
+    with pytest.raises(pf.PoliteRefused) as refused_sm:
         sm.fetch(f"http://127.0.0.1:{site}/ok", timeout=5)
+    assert refused_sm.value.verdict == "METHOD_BLOCKED"
     with pytest.raises(pf.PoliteRefused) as refused:
         gsf._get_text(f"http://127.0.0.1:{site}/ok", 5)
     assert refused.value.verdict == "METHOD_BLOCKED"
