@@ -131,11 +131,12 @@ def test_the_miner_loads_minted_grounds_beside_the_curated_file(tmp_path, monkey
 
 
 def test_the_shipped_world_map_mints_only_readable_languages() -> None:
-    world = json.loads((_DESK / "data" / "world_strategy_map.json").read_text("utf-8"))
+    world = wsh.load_world(_DESK / "data" / "world_strategy_map.json")
     from libs.research import mechanism_claims as mc
     assert set(world["vocab"]) <= set(mc.LANGUAGES)
     keys = set(world["vocab_keys"])
-    assert all(set(v) == keys for v in world["vocab"].values())
+    assert all(set(v) == keys and all(v.values()) for v in world["vocab"].values())
+    assert all(c["iso"] and c["languages"] and c["market"] for c in world["countries"])
     assert all(c["cluster"] in set(dfm.REGION_CLUSTER.values()) for c in world["countries"])
 
 

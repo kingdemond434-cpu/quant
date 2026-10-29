@@ -485,7 +485,3 @@
 {"at":"2026-09-12T11:04:05+00:00","kind":"LEG_DONE","leg":"dead_architecture","outcome":"ok"}
 {"at":"2026-09-12T11:04:11+00:00","kind":"LEG_DONE","leg":"input_identity","outcome":"ok"}
 {"at":"2026-09-12T11:04:12+00:00","kind":"LEG_DONE","leg":"session_capital","outcome":"ok"}
-{"at":"2026-10-29T13:42:30+00:00","kind":"LEG_FAILED","producer":"boom","schema_version":"1","topic":"leg_failed","evidence_grade":"OPERATIONAL_EVENT","priority":0,"allowed_consumers":["*"],"host":"vm","leg":"boom","outcome":"ValueError: simulated leg failure","artifact_id":"e1b91512b52da1a037fc3573","ack_state":"UNACKNOWLEDGED"}
-{"at":"2026-10-29T13:42:30+00:00","kind":"LEG_DONE","producer":"fine","schema_version":"1","topic":"leg_done","evidence_grade":"OPERATIONAL_EVENT","priority":0,"allowed_consumers":["*"],"host":"vm","leg":"fine","outcome":"ok","artifact_id":"93b1e024843ca637944ce190","ack_state":"UNACKNOWLEDGED"}
-{"at":"2026-10-29T13:42:30+00:00","kind":"LEG_DONE","producer":"some_leg","schema_version":"1","topic":"leg_done","evidence_grade":"OPERATIONAL_EVENT","priority":0,"allowed_consumers":["*"],"host":"vm","leg":"some_leg","outcome":"ok","artifact_id":"d5271346562602e9f99d41dd","ack_state":"UNACKNOWLEDGED"}
-{"at":"2026-10-29T13:42:30+00:00","kind":"LEG_DONE","producer":"some_leg","schema_version":"1","topic":"leg_done","evidence_grade":"OPERATIONAL_EVENT","priority":0,"allowed_consumers":["*"],"host":"vm","leg":"some_leg","outcome":"ok","artifact_id":"d5271346562602e9f99d41dd","ack_state":"UNACKNOWLEDGED"}

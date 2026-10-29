@@ -1,61 +1,35 @@
 #!/usr/bin/env python3
 """THE WORLD STRATEGY HUNTER -- every strategy shared or described anywhere, mapped, gapped, grown.
 
-THE PRINCIPAL'S ORDER, 2026-10-28/29 (hourly item 18): the machinery hunts every strategy shared
-or described anywhere in the world -- forums, blogs, videos, social, messaging channels, repos,
-papers, code marketplaces, competitions, in every language and region -- and every pass expands
-its breadth, coverage and depth toward the whole web. The goal is 100% coverage, and coverage %
-is tracked against it.
+PRINCIPAL 2026-10-28/29 (hourly item 18): hunt every strategy shared or described anywhere --
+forums, blogs, videos, social, messaging, repos, papers, code marketplaces, competitions, every
+language and region -- widen breadth, coverage and depth every pass, and track coverage % against
+100%.
 
-IT IS A PLANNER OVER THE DESK'S EXISTING MINER, NOT A SECOND MINER. The deep-forest miner already
-reaches a ground by route (search-engine `site:` queries in the ground's own locale, platform APIs,
-RSS, Wayback ...), extracts verbatim claims in 26 languages, dedupes them on the mechanism key and
-queues ONE deepening task per mechanism -- the path to the gauntlet that the coverage steer and
-the true-duplicate dedup already sit on. What it never had is a MAP of the world to measure itself
-against, so nothing could say which country, language or kind of place had no ground at all, and
-nothing ever added one except a session editing `deep_forest_sources.json` by hand. This organ:
+A PLANNER OVER THE DEEP-FOREST MINER, NOT A SECOND MINER. The miner already reaches grounds by
+route, extracts verbatim claims in 26 languages, dedupes on the mechanism key and queues one
+deepening task per mechanism (the path the coverage steer and the true-duplicate dedup sit on).
+What it lacked was a MAP to measure itself against. This organ:
 
-  1. MAPS. `data/world_strategy_map.json` (data, not code) declares countries, the languages
-     strategies are written in there, and the kinds of place a strategy is shared. A CELL is
-     country x language x kind. Every registered ground -- the curated forest and the grounds
-     minted here -- is placed in its cell, and each cell takes the best measured outcome of its
-     grounds from the miner's own hunt-frontier ledger: YIELDED > EMPTY > BLOCKED > NAMED_ONLY,
-     or GAP when nothing is registered there at all.
-  2. GAPS. Every non-worked cell is ranked (country prior x kind weight, primary language first)
-     and rolled up per region and per language, so "Iranian Persian forums" or "Nigerian
-     Telegram channels" is a named instruction, not "look harder".
-  3. GROWS. Each pass mints SEARCH grounds for the top GAP cells -- native-language queries from
-     the map's vocabulary, the kind's platform site where it has one -- into
-     `data/world_hunter_grounds.json`, which the deep-forest miner loads beside its curated file.
-     It also promotes EMERGENT PLACES: a host that keeps turning up in the miner's own claims and
-     that no ground names becomes a ground of its own (the unknown unknowns: places nobody
-     declared). And it DEEPENS: a minted ground the miner has already worked gets its next query
-     from an instrument rotation, so depth grows where breadth is already bought.
-  4. COUNTS. Coverage % three ways, each with its own denominator stated: place coverage (worked
-     cells / map cells), strategy coverage (distinct mechanisms seen / Chao1 estimate of the
-     mechanisms the tellings imply exist), and the number of NEW CIVILIZATIONS opened this pass
-     (cells that went from GAP to registered, plus emergent places promoted).
+  1. MAPS. `data/world_strategy_map.json` (data) declares countries, their languages and the
+     kinds of place strategies are shared. A CELL is country x language x kind; each takes the
+     best hunt-frontier outcome of its grounds: YIELDED > EMPTY > BLOCKED > NAMED_ONLY > GAP.
+  2. GAPS. Non-worked cells are ranked (country prior x kind weight, primary language first) and
+     rolled up per region, language and kind.
+  3. GROWS. Mints native-language SEARCH grounds for the top GAP cells into
+     `data/world_hunter_grounds.json`, which the miner loads beside its curated file; promotes
+     EMERGENT PLACES (hosts the miner's own claims keep landing on that no ground names); and
+     DEEPENS worked minted grounds with an instrument rotation.
+  4. COUNTS. Place coverage (worked cells / map cells), strategy coverage (distinct mechanisms /
+     Chao1 estimate, the closed form `source_frontier` uses) and NEW CIVILIZATIONS per pass.
 
-WHY THE DENOMINATOR IS A DECLARED MAP AND IS NEVER CALLED THE WEB. "100% of the World Wide Web"
-has no measurable denominator; any number printed against it would be invented. The map is the
-honest proxy: it is finite, it is written down, and it only ever GROWS (L1.50 ratchet) -- adding a
-country, language or kind lowers the percentage, which is the correct reading of having found
-more world. `source_frontier` refuses an all-empty cross product as a coverage map because it
-INFLATES apparent exploration; here the cross product is the DENOMINATOR, so it can only deflate
-the figure, and every cell in it is one this hunter will mint a ground for. Strategy coverage uses
-Chao1 (f1^2 / 2 f2) over the claims ledger's mechanism keys, the same closed form `source_frontier`
-and `unseen_frontier` use, so the three can never disagree about what "unseen" means.
+THE DENOMINATOR IS A DECLARED MAP, NEVER "THE WEB", whose size is unmeasurable. The map only
+GROWS (L1.50), so declaring more world LOWERS the figure; the cross product can only deflate it.
+Languages the extractor cannot read are EXTRACTOR_GAP: named with their countries, never minted.
 
-LANGUAGES THE EXTRACTOR CANNOT READ ARE NAMED, NOT MINTED. A cell whose language has no row in
-the map's vocabulary or in `libs.research.mechanism_claims.LANGUAGES` would mint grounds that
-extract nothing; it is reported as EXTRACTOR_GAP with its countries, which is the build order for
-the next language pack (L1.28a: unmeasured by name, never a silent zero).
-
-WHAT IT NEVER DOES. It opens no socket: the miner owns every fetch, through `polite_fetch`'s
-per-host gate, so no rate limit, login, paywall or CAPTCHA is ever bypassed. It mints no
-hypothesis and adds no judge path: every claim still goes miner -> mechanism-key dedup ->
-deepening -> compiler -> coverage steer -> gauntlet, and a public claim is a hypothesis, never a
-cert. It never removes or demotes a ground. It never throttles mining.
+IT NEVER opens a socket (the miner owns every fetch, through polite_fetch: no login, paywall,
+CAPTCHA or rate-limit bypass), adds a judge path, mints a hypothesis, removes or demotes a ground,
+or throttles mining. A public claim is a hypothesis, never a cert.
 
     python desks/mt5/research/world_strategy_hunter.py            # one pass
     python desks/mt5/research/world_strategy_hunter.py --dry-run  # report only, mint nothing
@@ -157,6 +131,25 @@ def extractable_languages() -> frozenset[str]:
 
 
 # ------------------------------------------------------------------------------------ map
+def load_world(path: Path) -> dict[str, Any]:
+    """The map with compact rows expanded: countries as `country_columns` rows, vocab as lists
+    in `vocab_keys` order. Dict-shaped entries are accepted as they are."""
+    w = _read_json(path, {})
+    if not isinstance(w, dict):
+        return {}
+    cols = list(w.get("country_columns") or [])
+    countries = []
+    for c in w.get("countries") or []:
+        row = dict(zip(cols, c, strict=False)) if isinstance(c, list) else dict(c)
+        iso = str(row.get("iso") or "")
+        row.setdefault("market", "US" if iso == "global" else iso.upper())
+        countries.append(row)
+    keys = list(w.get("vocab_keys") or [])
+    vocab = {lang: dict(zip(keys, v, strict=False)) if isinstance(v, list) else dict(v)
+             for lang, v in (w.get("vocab") or {}).items()}
+    return {**w, "countries": countries, "vocab": vocab}
+
+
 def kind_of(ground: Mapping[str, Any], kinds: Mapping[str, Any]) -> str | None:
     """The map kind a registered ground belongs to, or None (datasets, macro, rulebooks ...:
     grounds that are not a place strategies are shared, so they sit outside the map)."""
@@ -397,7 +390,7 @@ def run(*, dry_run: bool = False, max_new: int = MAX_NEW_PER_PASS,
         now: datetime | None = None) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
     stamp = now.isoformat()
-    world = _read_json(MAP, {})
+    world = load_world(MAP)
     if not world.get("countries"):
         empty: dict[str, Any] = {"generated_utc": stamp,
                                  "verdict": f"UNMEASURED: no world map at {MAP}"}
