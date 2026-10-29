@@ -913,6 +913,36 @@ def judged_index(path: Path | None = None, *, now: datetime | None = None,
     return seen, total, in_window
 
 
+#: THE DOCKET MUST SHIP EVERY CYCLE (2026-10-29). MergeDocket died on 10-27 on a Windows replace of
+#: the 1.55M-row docket and nothing went RED for two days: the judge kept judging the old docket and
+#: only JUDGE_COVERAGE_REUSE's refusal hinted at it. Merge runs every hourly cycle; a merge older
+#: than this is more than one missed pass plus a long cycle.
+MERGE_LAG_H = 3.0
+
+
+def docket_merge_lag(at: datetime, path: Path | None = None, *,
+                     lag_h: float = MERGE_LAG_H) -> dict[str, Any]:
+    """RED when `merge_report.json` says the docket was last merged more than `lag_h` ago;
+    UNMEASURED when the report is absent, unreadable or carries no `merged_at`."""
+    src = path or MERGE_REPORT
+    out: dict[str, Any] = {"source": str(src), "lag_h": lag_h}
+    doc = _read(src)
+    merged = _ts(doc.get("merged_at")) if isinstance(doc, dict) else None
+    if merged is None:
+        out.update(status="UNMEASURED", merged_at=None,
+                   why="merge_report.json absent, unreadable or without merged_at")
+        return out
+    age = (at - merged).total_seconds() / 3600.0
+    out.update(merged_at=merged.isoformat(timespec="seconds"), age_h=round(age, 2))
+    if age > lag_h:
+        out.update(status="RED", why=(f"the docket was last merged {age:.1f} h ago (past "
+                                      f"{lag_h:g} h): the merge is not shipping, so the judge "
+                                      "is judging a stale docket"))
+    else:
+        out.update(status="OK", why=f"docket merged {age:.1f} h ago")
+    return out
+
+
 def not_testable_index(bank: dict[str, dict[str, Any]] | None = None
                        ) -> dict[str, str]:
     """cell id -> reason, for every cell the unrunnable bank holds as NOT TESTABLE right now.
@@ -3922,6 +3952,7 @@ def _build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = 
                  f"{FLOOR_SHARE:.0%} of measured capacity to every family holding backlog), then "
                  "the remainder in proportion to backlog; the docket ships whole, interleaved, "
                  "so every prefix the judge's budget reaches is family-balanced"),
+        "docket_merge": docket_merge_lag(at),
         "families": table,
         "totals": totals,
         "quota": quota,

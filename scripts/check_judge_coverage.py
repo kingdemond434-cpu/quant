@@ -398,6 +398,22 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
         out["checks"].append({"metric": "families_starved", "state": "OK",
                               "why": "every family holding unjudged cells is in the queue"})
 
+    # 1c. THE DOCKET SHIPS (2026-10-29): MergeDocket died on a Windows replace on 10-27 and the
+    #     judge judged a two-day-old docket with nothing RED. A report without the block (written
+    #     before this check) reads UNMEASURED.
+    dm = doc.get("docket_merge")
+    if not isinstance(dm, dict) or dm.get("status") not in ("RED", "OK"):
+        out["checks"].append({"metric": "docket_merge", "state": "UNMEASURED",
+                              "why": (dm.get("why") if isinstance(dm, dict) else None)
+                              or "report carries no docket_merge block"})
+    elif dm["status"] == "RED":
+        failures.append("docket_merge")
+        out["checks"].append({"metric": "docket_merge", "state": "FAIL",
+                              "why": str(dm.get("why") or "docket merge is stale")})
+    else:
+        out["checks"].append({"metric": "docket_merge", "state": "OK",
+                              "why": str(dm.get("why") or "docket merged this cycle")})
+
     # 2. THE CARRIED COHORT FALLS. UNMEASURED on the first reading (no baseline) and on a pass
     #    where the judge recorded nothing at all (nothing ran; that is not intake's failure).
     rows_with_baseline = [(f, r) for f, r in fams.items() if r.get("carried") is not None

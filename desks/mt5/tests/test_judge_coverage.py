@@ -600,3 +600,27 @@ def test_parked_cells_are_handed_to_the_converter(tmp_path: Path) -> None:
     # EMPTY IS WRITTEN: absence must never read as zero cells awaiting conversion.
     assert jc.write_conversion_handoff({}, at="t", path=out) == 0
     assert json.loads(out.read_text("utf-8"))["rows"] == []
+
+
+def test_a_docket_merge_older_than_the_lag_is_red(tmp_path: Path) -> None:
+    """10-27: MergeDocket died on a Windows replace and the judge judged a stale docket for two
+    days with nothing RED."""
+    mr = tmp_path / "merge_report.json"
+    mr.write_text(json.dumps({"merged_at": (NOW - timedelta(hours=50)).isoformat()}), "utf-8")
+    red = jc.docket_merge_lag(NOW, mr)
+    assert red["status"] == "RED" and red["age_h"] == pytest.approx(50.0)
+    mr.write_text(json.dumps({"merged_at": (NOW - timedelta(minutes=40)).isoformat()}), "utf-8")
+    assert jc.docket_merge_lag(NOW, mr)["status"] == "OK"
+    assert jc.docket_merge_lag(NOW, tmp_path / "absent.json")["status"] == "UNMEASURED"
+
+
+def test_the_fence_fails_a_stale_docket_merge(tmp_path: Path) -> None:
+    report = tmp_path / "JUDGE_COVERAGE.json"
+    report.write_text(json.dumps({
+        "at": NOW.isoformat(), "totals": {},
+        "docket_merge": {"status": "RED", "why": "merged 50.0 h ago"},
+        "families": {"alpha": {"unjudged": 40, "queued": 10, "judged_window": 12, "quota": 10,
+                               "window_h": 4.0}}}), "utf-8")
+    doc = fence.judge(report, now=NOW)
+    assert doc["verdict"] == "FAIL"
+    assert any(c["metric"] == "docket_merge" and c["state"] == "FAIL" for c in doc["checks"])

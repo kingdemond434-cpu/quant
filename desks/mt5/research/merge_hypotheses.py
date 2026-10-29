@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
@@ -27,6 +28,9 @@ from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 HYP = BASE / "data" / "hypotheses"
+if str(BASE.parents[1]) not in sys.path:
+    sys.path.insert(0, str(BASE.parents[1]))
+from libs.ops.atomic_replace import replace_with_retry  # noqa: E402
 TARGET = HYP / "external_survivors.json"
 
 
@@ -56,7 +60,9 @@ def _write_docket_atomically(path: Path, rows: list[dict[str, Any]] | dict[str, 
                 stream.write("\n]\n")
             stream.flush()
             os.fsync(stream.fileno())
-        os.replace(pending, path)
+        # A READER HOLDING THE DOCKET OPEN REFUSES THE RENAME ON WINDOWS (10-27: the merge died
+        # here on [WinError 5] and the docket never shipped again). Retried, never skipped.
+        replace_with_retry(pending, path)
     finally:
         if os.path.exists(pending):
             os.unlink(pending)
