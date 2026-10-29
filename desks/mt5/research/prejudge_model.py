@@ -54,7 +54,7 @@ import pickle
 import random
 import sys
 import time
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
@@ -527,17 +527,24 @@ def train(*, ledger: Path | None = None, model_dir: Path | None = None, force: b
         "auc_holdout": UNMEASURED, "model_sha256": None, "refit": True,
         "stream": "CURRENT", "stream_offset": st.get("offset"), "stream_size": st.get("size"),
     }
+    # THE LAST PASS WHOSE FIT DID NOT FAIL (audit of 8c77ac60e): liveness follows this, so a fit
+    # that raises every pass reads RED instead of OK on a fresh trained_ts.
+    prev_ok = prev.get("fit_ok_ts") if isinstance(prev, dict) else None
+    doc["fit_ok_ts"] = prev_ok if isinstance(prev_ok, (int, float)) else None
     if len(sample) < MIN_TRAIN or n_pos < MIN_CLASS or n_neg < MIN_CLASS:
         doc["status"] = "PRIOR_FALLBACK" if st["used"] else "NO_EVIDENCE"
         doc["why"] = (f"{len(sample)} labelled rows, {n_pos} passes, {n_neg} failures -- below "
                       f"{MIN_TRAIN}/{MIN_CLASS}/{MIN_CLASS}; rate tables answer alone")
+        doc["fit_ok_ts"] = t0                 # nothing to fit is not a failed fit
+        # A marker a killed fit left behind is cleared by any pass that reaches this decision,
+        # not only by the next one that fits (otherwise a thin ledger reads RED for ever).
+        with contextlib.suppress(OSError):
+            (mdir / FIT_MARKER.name).unlink()
     else:
         marker = mdir / FIT_MARKER.name
-        try:
+        with contextlib.suppress(OSError):
             mdir.mkdir(parents=True, exist_ok=True)
             _atomic_bytes(marker, json.dumps({"started_ts": time.time()}).encode("utf-8"))
-        except OSError:
-            pass
         # THE WHOLE PHASE IS TIMED (audit should-fix): the holdout fit and predict are about as
         # long as the final fit, and FIT_MARGIN is against this number.
         f0 = time.monotonic()
@@ -566,14 +573,13 @@ def train(*, ledger: Path | None = None, model_dir: Path | None = None, force: b
             _atomic_bytes(model_path, blob)
             doc["model_sha256"] = hashlib.sha256(blob).hexdigest()
             doc["status"] = "MODEL"
+            doc["fit_ok_ts"] = t0
         except Exception as exc:
             doc["status"] = "PRIOR_FALLBACK"
             doc["why"] = f"model fit failed ({type(exc).__name__}: {exc}); rate tables answer"
         # The fit ENDED (success or a caught failure); only a killed process leaves the marker.
-        try:
+        with contextlib.suppress(OSError):
             marker.unlink()
-        except OSError:
-            pass
     try:
         mdir.mkdir(parents=True, exist_ok=True)
         _atomic_bytes(schema_path, json.dumps(doc, default=str).encode("utf-8"))
@@ -816,7 +822,8 @@ def _read_json(path: Path) -> Any:
         return None
 
 
-def _atomic_bytes(path: Path, data: bytes, *, attempts: int = 6, sleep=time.sleep) -> None:
+def _atomic_bytes(path: Path, data: bytes, *, attempts: int = 6,
+                  sleep: Callable[[float], Any] = time.sleep) -> None:
     """Write via a per-process temp name and replace, retried while Windows refuses the replace
     (a reader holding the destination open raises PermissionError there, never on POSIX)."""
     tmp = path.with_name(f"{path.name}.{os.getpid()}.{os.urandom(4).hex()}.tmp")
@@ -831,10 +838,8 @@ def _atomic_bytes(path: Path, data: bytes, *, attempts: int = 6, sleep=time.slee
                     raise
                 sleep(0.1 * (2 ** (attempt - 1)))
     finally:
-        try:
+        with contextlib.suppress(OSError):
             tmp.unlink()
-        except OSError:
-            pass
 
 
 def model_liveness(model: Mapping[str, Any], *, now: float | None = None,
@@ -851,7 +856,9 @@ def model_liveness(model: Mapping[str, Any], *, now: float | None = None,
                    why=(f"a fit started {t - started:.0f} s ago and never finished: the leg was "
                         "killed mid-fit, so the model in hand is not being replaced"))
         return out
-    ts = model.get("trained_ts")
+    ts = model.get("fit_ok_ts")
+    if not isinstance(ts, (int, float)):
+        ts = model.get("trained_ts") if "fit_ok_ts" not in model else None
     if not isinstance(ts, (int, float)):
         out.update(status="UNMEASURED", why=("no model trained yet"
                                              + (f" ({model.get('stream')})"
@@ -921,9 +928,15 @@ def main(argv: Iterable[str] | None = None) -> int:
         return 0
     doc = train(force=a.force)
     _write_report(REPORT, None, model_doc=doc)
+    live = model_liveness(doc)
     print(f"prejudge_model: {doc.get('status')} n_train={doc.get('n_train')} "
           f"pos={doc.get('n_pos')} auc_holdout={doc.get('auc_holdout')} "
-          f"refit={doc.get('refit')} -> {REPORT.name}")
+          f"refit={doc.get('refit')} liveness={live.get('status')} -> {REPORT.name}")
+    # THE LIVENESS HAS A READER (audit MF1 of 8c77ac60e): a RED model fails the hourly
+    # `prejudge_model` leg, which the cycle records like any other failed leg.
+    if live.get("status") == "RED":
+        print(f"prejudge_model: RED -- {live.get('why')}")
+        return 1
     return 0
 
 

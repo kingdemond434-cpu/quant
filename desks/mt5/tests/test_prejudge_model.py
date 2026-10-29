@@ -434,3 +434,52 @@ def test_atomic_bytes_retries_a_refused_replace_and_leaves_no_temp(tmp_path: Pat
     with pytest.raises(PermissionError):
         pm._atomic_bytes(tmp_path / "y.json", b"{}", sleep=lambda s: None)
     assert [p.name for p in tmp_path.iterdir()] == ["x.json"]
+
+
+def test_a_red_model_fails_the_hourly_leg(tmp_path: Path, monkeypatch) -> None:
+    """Audit MF1 of 8c77ac60e: the liveness RED needs a reader -- the leg's exit code."""
+    monkeypatch.setattr(pm, "REPORT", tmp_path / "PREJUDGE.json")
+    monkeypatch.setattr(pm, "MODEL_DIR", tmp_path / "m")
+    old = {"schema": pm.SCHEMA, "trained_ts": 0.0, "fit_ok_ts": 0.0, "status": "MODEL",
+           "refit": False}
+    monkeypatch.setattr(pm, "train", lambda force=False: dict(old))
+    assert pm.main(["--train"]) == 1
+    fresh = {**old, "trained_ts": pm.time.time(), "fit_ok_ts": pm.time.time()}
+    monkeypatch.setattr(pm, "train", lambda force=False: dict(fresh))
+    assert pm.main(["--train"]) == 0
+
+
+def test_liveness_follows_the_last_successful_fit_not_the_last_attempt(tmp_path: Path) -> None:
+    now = 10.0 * pm.STALE_MODEL_S
+    failing = {"trained_ts": now - 60, "fit_ok_ts": now - pm.STALE_MODEL_S - 60,
+               "status": "PRIOR_FALLBACK"}
+    assert pm.model_liveness(failing, now=now, model_dir=tmp_path)["status"] == "RED"
+    never_ok = {"trained_ts": now - 60, "fit_ok_ts": None}
+    assert pm.model_liveness(never_ok, now=now, model_dir=tmp_path)["status"] == "UNMEASURED"
+
+
+def test_a_thin_ledger_pass_clears_a_killed_fits_marker(tmp_path: Path) -> None:
+    led = _ledger(tmp_path / "ledger.jsonl", n=3)            # below MIN_TRAIN
+    mdir = tmp_path / "m"
+    mdir.mkdir()
+    (mdir / pm.FIT_MARKER.name).write_text(json.dumps({"started_ts": 1.0}), "utf-8")
+    doc = pm.train(ledger=led, model_dir=mdir, force=True)
+    assert doc["status"] in ("PRIOR_FALLBACK", "NO_EVIDENCE")
+    assert not (mdir / pm.FIT_MARKER.name).exists()
+    assert pm.model_liveness(doc, model_dir=mdir)["status"] == "OK"
+
+
+def test_a_fit_that_raises_keeps_the_last_good_stamp(tmp_path: Path, monkeypatch) -> None:
+    led = _ledger(tmp_path / "ledger.jsonl", n=300)
+    mdir = tmp_path / "m"
+    first = pm.train(ledger=led, model_dir=mdir, force=True)
+    ok = first["fit_ok_ts"]
+    assert isinstance(ok, float)
+
+    def boom(*a, **k):
+        raise RuntimeError("fit exploded")
+
+    monkeypatch.setattr(pm, "_fit", boom)
+    second = pm.train(ledger=led, model_dir=mdir, force=True, now=ok + 100.0)
+    if first["status"] == "MODEL":
+        assert second["status"] == "PRIOR_FALLBACK" and second["fit_ok_ts"] == ok

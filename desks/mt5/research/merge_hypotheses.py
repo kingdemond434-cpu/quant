@@ -1135,9 +1135,9 @@ def main() -> int:
         from research import prejudge_model as _pjm
         _before = len(rows_out)
         _pj_rows, _pj_doc = _pjm.apply(
-            rows_out, scorer=_pjm.Scorer.load(BASE / "data" / "prejudge_model"),
+            rows_out, scorer=_pjm.Scorer.load(_pjm.MODEL_DIR),
             seen_path=HYP / "gauntlet_seen_cells.json",
-            report=BASE / "reports" / "PREJUDGE.json")
+            report=_pjm.REPORT)
         if len(_pj_rows) != _before:
             raise RuntimeError(f"pre-judge changed the row count {_before} -> {len(_pj_rows)}")
         rows_out = _pj_rows
