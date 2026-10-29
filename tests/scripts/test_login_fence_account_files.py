@@ -69,6 +69,26 @@ def test_an_absent_file_declares_nothing(tmp_path: Path) -> None:
     assert lf.declared(tmp_path, {}) == (frozenset({_FTMO}), ("FTMO_LIVE_ACCOUNT.json",))
 
 
+@pytest.mark.parametrize("login", [float(_FUSION), f"0{_FUSION}", f"  000{_FUSION} "],
+                         ids=["integral-float", "leading-zero", "leading-zeros-padded"])
+def test_a_login_declares_the_form_the_publisher_compares(tmp_path: Path, login: Any) -> None:
+    # cross_account.norm_login / ftmo_follower._canon: 70010042.0 and "070010042" are the
+    # terminal's int login 70010042. An integral float must not stop publication (rc 2).
+    _write(tmp_path, FTMO_REL, {"login": login, "server": "FTMO-Server"})
+    assert lf.declared(tmp_path, {}) == (frozenset({_FUSION}), ("FTMO_LIVE_ACCOUNT.json",))
+
+
+def test_a_leading_zero_is_checked_after_normalising(tmp_path: Path) -> None:
+    # "0700100" passed the 4-12 check before and declared "700100": that is what norm_login
+    # makes of it, and 6 digits, so it stands. "0000" -> "0" and "0123" -> "123" do not.
+    _write(tmp_path, FUSION_REL, {"login": "0700100"})
+    assert lf.declared(tmp_path, {})[0] == frozenset({"700100"})
+    for bad in ("0000", "0123", 0.0):
+        _write(tmp_path, FUSION_REL, {"login": bad})
+        with pytest.raises(lf.FenceConfigError, match=r"leading zeros|4-12"):
+            lf.declared(tmp_path, {})
+
+
 def test_the_e8_declaration_is_not_a_login_source(tmp_path: Path) -> None:
     # cross_account.expected_key reads E8_ACCOUNT.json as {"account_key": hash}: no login.
     _write(tmp_path, "desks/mt5/data/E8_ACCOUNT.json", "{torn")
@@ -77,12 +97,16 @@ def test_the_e8_declaration_is_not_a_login_source(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("doc", [
     "{", "", "[]", json.dumps([_FUSION]), {"server": "S"}, {"login": None}, {"login": ""},
-    {"login": True}, {"login": float(_FUSION)}, {"login": "123"}, {"login": "1234567890123"},
+    {"login": True}, {"login": float(_FUSION) + 0.5}, '{"login": NaN}', '{"login": Infinity}',
+    '{"login": -Infinity}', {"login": 1e300}, {"login": "123"}, {"login": "1234567890123"},
     {"login": f"{_FUSION}x"}, {"login": _folded(0x0660)},
     {"login": _folded(0xFF10)}, {"login": -int(_FUSION)},
-    {"login": {"n": _FUSION}},
-], ids=["torn", "empty", "list", "list-of-login", "no-login", "null", "blank", "bool", "float",
-        "short", "long", "word", "arabic-indic", "fullwidth", "negative", "object"])
+    {"login": {"n": _FUSION}}, {"login": "0000"}, {"login": "0123"}, {"login": "00000000"},
+    {"login": 0.0},
+], ids=["torn", "empty", "list", "list-of-login", "no-login", "null", "blank", "bool",
+        "non-integral-float", "nan", "inf", "-inf", "huge-float", "short", "long", "word",
+        "arabic-indic", "fullwidth", "negative", "object", "zeros", "zero-led-short",
+        "eight-zeros", "zero-float"])
 @pytest.mark.parametrize("rel", [FUSION_REL, FTMO_REL], ids=["fusion", "ftmo"])
 def test_a_malformed_file_or_a_bad_login_is_a_config_error(
         tmp_path: Path, rel: str, doc: Any) -> None:
@@ -150,3 +174,54 @@ def test_a_bad_account_file_fails_the_publish_closed_without_the_value(
     rc, doc, out, err = _run_main(tmp_path, monkeypatch, {"a.json": b"{}"})
     assert rc == 2 and doc == {} and out == ""
     assert "FTMO_LIVE_ACCOUNT.json" in err and _FTMO not in err
+
+
+def test_a_config_error_pages_deduped_and_without_the_value(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # rc 2 writes nothing and the publisher discards stderr: without a page a typo in an account
+    # file stops all box state publication in silence. It pages through page()/send_all, deduped
+    # by login_fence_alert.json like every other fence page, and the text carries no value.
+    _git(tmp_path, "init", "-q")
+    _write(tmp_path, FTMO_REL, {"login": f"{_FTMO}-x"})
+    sent: list[tuple[str, str]] = []
+
+    def sender(title: str, body: str) -> dict[str, Any]:
+        sent.append((title, body))
+        return {"armed": 1, "delivered": 1}
+
+    monkeypatch.setattr(lf, "_default_sender", lambda root: sender)
+    monkeypatch.delenv(lf.ID_ENV, raising=False)
+    art = tmp_path / "LOGIN_FENCE.json"
+    for _ in range(2):
+        monkeypatch.setattr("sys.stdin", io.StringIO(""))
+        assert lf.main(["--repo", str(tmp_path), "--artifact", str(art)]) == 2
+    assert not art.exists()
+    assert len(sent) == 1, "the rc-2 page was not deduplicated"
+    title, body = sent[0]
+    assert "config error" in title and "NO box state is published" in body
+    state = (tmp_path / lf.PAGE_STATE_REL).read_text("utf-8")
+    assert json.loads(state)["status"] == lf.CONFIG_ERROR
+    assert all(_FTMO not in t for t in (title, body, state)), "a login reached the page"
+
+    # Fixed: the next judged pass pages the recovery once (the existing idiom).
+    _write(tmp_path, FTMO_REL, {"login": _FTMO})
+    monkeypatch.setattr(lf, "record_alert", lambda doc, root=None: None)
+    monkeypatch.setattr("sys.stdin", io.StringIO(""))
+    assert lf.main(["--repo", str(tmp_path), "--artifact", str(art)]) == 0
+    assert [t for t, _ in sent[1:]] == ["LOGIN FENCE OK again"]
+
+
+def test_a_config_error_page_that_raises_still_exits_2(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _write(tmp_path, FTMO_REL, {"login": f"{_FTMO}-x"})
+
+    def boom(doc: dict[str, Any], root: object = None) -> dict[str, Any]:
+        raise OSError("pager down")
+
+    monkeypatch.setattr(lf, "page", boom)
+    monkeypatch.delenv(lf.ID_ENV, raising=False)
+    monkeypatch.setattr("sys.stdin", io.StringIO(""))
+    err = io.StringIO()
+    monkeypatch.setattr("sys.stderr", err)
+    assert lf.main(["--repo", str(tmp_path)]) == 2
+    assert "page failed (OSError)" in err.getvalue() and _FTMO not in err.getvalue()

@@ -48,7 +48,7 @@ digit-bounded match above covers nothing, so the pass reads `UNMEASURED` and the
 open (it pages) -- publication proceeds on the key rules alone. The sources (`declared`) are
 QUANT_FENCE_ACCOUNT_IDS, ACCOUNT_PROFILES.json, and the `login` of the box's live account files
 FUSION_LIVE_ACCOUNT.json and FTMO_LIVE_ACCOUNT.json. A declaration source that exists and
-yields an unreadable token is a config error: exit 2, nothing published.
+yields an unreadable token is a config error: exit 2, nothing published, and it PAGES (below).
 
 A refusal (or UNMEASURED) is written to desks/mt5/reports/LOGIN_FENCE.json (published on the
 next pass), opens `state_login_fence_refusal` in data/alert_ledger.json, and PAGES through
@@ -83,6 +83,8 @@ ALERTS = ROOT / "data" / "alert_ledger.json"
 ALERT_ID = "state_login_fence_refusal"
 PAGE_STATE_REL = "desks/mt5/logs/login_fence_alert.json"   # gitignored with desks/mt5/logs/
 REPAGE_H = 6.0
+#: page() status for an rc-2 pass: the declarations could not be read, nothing published.
+CONFIG_ERROR = "CONFIG_ERROR"
 Sender = Callable[[str, str], dict[str, Any]]
 
 #: Binary state the fence does not read as text (market frames; a regex over pickled bytes only
@@ -212,15 +214,27 @@ def _account_file_login(path: Path, rel: str, field: str) -> str:
     except (OSError, ValueError) as exc:
         raise FenceConfigError(f"{rel} unreadable ({type(exc).__name__})") from exc
     login = doc.get(field) if isinstance(doc, dict) else None
+    # cross_account.norm_login's types: an int, an INTEGRAL float (`7000001.0` -- an FTMO file
+    # written that way must not stop all publication with rc 2) and a digit string are one
+    # account. bool, a non-integral float, NaN and inf are not (NaN/inf are not `is_integer`).
     if isinstance(login, int) and not isinstance(login, bool):
         text = str(login)
+    elif isinstance(login, float) and login.is_integer():
+        text = str(int(login))
     elif isinstance(login, str):
         text = login.strip()
     else:
         raise FenceConfigError(f"{rel} carries no {field!r} of 4-12 digits")
     if not _ASCII_LOGIN.fullmatch(text):
         raise FenceConfigError(f"{rel} carries a {field!r} that is not 4-12 ASCII digits")
-    return str(int(text))           # cross_account.norm_login's form: the terminal's int login
+    # norm_login's form is str(int(...)): leading zeros go, as the terminal's int login has none.
+    # The NORMALISED form is what the publisher compares, so it must still be 4-12 digits:
+    # "0000" (-> "0") and "0123" (-> "123") are config errors, "0700100" declares "700100".
+    norm = str(int(text))
+    if not _ASCII_LOGIN.fullmatch(norm):
+        raise FenceConfigError(f"{rel} carries a {field!r} that is not 4-12 digits without its "
+                               "leading zeros")
+    return norm
 
 
 def declared(root: Path, env: dict[str, str] | None = None
@@ -779,6 +793,11 @@ def judge(repo: Path, entries: list[tuple[str, str]],
 
 
 def _why(doc: dict[str, Any]) -> str:
+    if doc.get("status") == CONFIG_ERROR:
+        return ("a declared-login source (QUANT_FENCE_ACCOUNT_IDS / ACCOUNT_PROFILES.json / "
+                "FUSION_LIVE_ACCOUNT.json / FTMO_LIVE_ACCOUNT.json) exists but is unreadable or "
+                "not 4-12 digits: login_fence exits 2 and NO box state is published until fixed "
+                "(run libs/ops/login_fence.py on the box to see which)")
     if doc.get("status") == "UNMEASURED":
         return ("no account number declared (QUANT_FENCE_ACCOUNT_IDS / ACCOUNT_PROFILES.json / "
                 "FUSION_LIVE_ACCOUNT.json / FTMO_LIVE_ACCOUNT.json): "
@@ -811,6 +830,7 @@ def record_alert(doc: dict[str, Any], root: Path | None = None) -> str | None:
 def _default_sender(root: Path) -> Sender:
     def send(title: str, body: str) -> dict[str, Any]:
         from libs.ops import alert_channels
+        # desk audience: box health (a publish fence / its config), not an owner action.
         return alert_channels.send_all(
             title, body, config=root / "data/secrets/alert_channels.json",
             ledger=root / "data/alert_delivery.jsonl")
@@ -819,11 +839,11 @@ def _default_sender(root: Path) -> Sender:
 
 def page(doc: dict[str, Any], root: Path | None = None, *, sender: Sender | None = None,
          now: datetime | None = None, repage_h: float = REPAGE_H) -> dict[str, Any]:
-    """Page a REFUSED or UNMEASURED pass off the box (state_publication.page_flow's idiom):
-    on a change, again every `repage_h` hours while it stands, once on recovery to OK. A send
-    whose `delivered` is 0 or falsy is NOT a page: nothing is recorded and the next pass
-    re-sends. The page names paths and key names only. RAISES if the sender does: the CLI turns
-    that into rc 3."""
+    """Page a REFUSED, UNMEASURED or CONFIG_ERROR (rc 2) pass off the box
+    (state_publication.page_flow's idiom): on a change, again every `repage_h` hours while it
+    stands, once on recovery to OK. A send whose `delivered` is 0 or falsy is NOT a page:
+    nothing is recorded and the next pass re-sends. The page names paths and key names only.
+    RAISES if the sender does: the CLI turns that into rc 3 (on rc 2 it stays rc 2)."""
     base = Path(root or ROOT)
     now = now or datetime.now(UTC)
     status = str(doc.get("status") or "UNMEASURED")
@@ -845,12 +865,16 @@ def page(doc: dict[str, Any], root: Path | None = None, *, sender: Sender | None
         else:
             return {"sent": False, "reason": "deduplicated"}
         title = (f"STATE PUBLISH REFUSED: {doc.get('n_refused', 0)} path(s) held back"
-                 if status == "REFUSED" else "LOGIN FENCE UNMEASURED: no declared account number")
+                 if status == "REFUSED" else
+                 "STATE PUBLISH STOPPED: login fence config error" if status == CONFIG_ERROR
+                 else "LOGIN FENCE UNMEASURED: no declared account number")
     elif prev.get("status") not in (None, "OK"):
         reason, title = f"recovered from {prev.get('status')}", "LOGIN FENCE OK again"
     else:
         return {"sent": False, "reason": "OK: nothing to page"}
-    body = f"{_why(doc) or status}\n(values withheld; see desks/mt5/reports/LOGIN_FENCE.json)"
+    see = ("nothing was written this pass" if status == CONFIG_ERROR
+           else "see desks/mt5/reports/LOGIN_FENCE.json")
+    body = f"{_why(doc) or status}\n(values withheld; {see})"
     res = (sender or _default_sender(base))(title, body[:1500])
     res = res if isinstance(res, dict) else {}
     # A page that reached NOBODY was not a page (v5b): `delivered` 0, absent or falsy leaves the
@@ -874,8 +898,9 @@ def _write(out: Path, doc: dict[str, Any]) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     """stdin: one `<blob>\\t<rel>` per line. stdout: one refused rel per line.
-    rc 0 = judged; 2 = the declarations are unreadable; 3 = a non-OK pass could not be alerted
-    or paged. The publisher publishes NOTHING on any non-zero rc."""
+    rc 0 = judged; 2 = the declarations are unreadable (paged, deduped; nothing written);
+    3 = a non-OK pass could not be alerted or paged. The publisher publishes NOTHING on any
+    non-zero rc."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", type=Path, default=ROOT)
     ap.add_argument("--artifact", type=Path, default=None)
@@ -898,6 +923,13 @@ def main(argv: list[str] | None = None) -> int:
     except FenceConfigError as exc:
         # FAIL CLOSED: the publisher reads any non-zero exit as "publish nothing this pass".
         print(f"login fence: {exc}", file=sys.stderr)
+        # ...and it discards stderr (sync_shadow_to_git.ps1), so a typo would stop publication
+        # in silence: PAGE it, through the same deduped page() (login_fence_alert.json). The
+        # text is fixed -- a FenceConfigError names sources and fields only, and is not echoed.
+        try:
+            page({"status": CONFIG_ERROR, "refused": {}}, args.repo)
+        except Exception as pexc:
+            print(f"login fence: page failed ({type(pexc).__name__})", file=sys.stderr)
         return 2
     doc = judge(args.repo, entries, ids, sources)
     out = args.artifact or (args.repo / "desks" / "mt5" / "reports" / "LOGIN_FENCE.json")
