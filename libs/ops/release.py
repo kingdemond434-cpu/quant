@@ -170,6 +170,8 @@ NON_CODE: frozenset[str] = frozenset({
     # Which scheduled organs are FAILING / NOT_SCHEDULED (ops/process_health.py, N14
     # 2026-10-13): the scorecard counted them, nobody off the box could name them.
     "desks/mt5/reports/process_health.json",
+    # Backup and restore-drill state, scheme only (ops/backup_state.py, v5f).
+    "desks/mt5/reports/BACKUP_STATE.json",
     # The Tier S box attestation and live door, published since 2026-09-30 and never declared
     # here (test_every_path_the_box_publishes_is_declared_non_code was red on the live branch).
     "desks/mt5/data/tier_s/box_evidence.json",
