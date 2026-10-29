@@ -2135,32 +2135,84 @@ def test_split_diff_cuts_only_at_files_and_hunks_and_keeps_every_line() -> None:
     assert ir.split_diff(_diff(("a.py", ["+" + "x" * 500])), 150) is None  # a hunk never in part
 
 
-def test_a_large_diff_passes_only_when_every_part_passes() -> None:
-    big = _diff(*((f"f{i}.py", ["+" + "q" * 9_000]) for i in range(8)))  # ~72k chars
-    clock = iter(range(0, 10**6, 10)).__next__
-    asked: list[str] = []
+def _counting(*answers: str, asked: list[str] | None = None) -> Any:
+    it = iter(answers)
 
-    def model(*answers: str) -> Any:
-        it = iter(answers)
-
-        def ask(rubric: str, user: str) -> str:
+    def ask(rubric: str, user: str) -> str:
+        if asked is not None:
             asked.append(user)
-            return next(it)
+        return next(it)
 
-        return ask
+    return ask
 
-    n = len(ir.split_diff(big, 40_000) or [])
-    v, log = ir.review(big, ["f.py"], [("qwen", "q1", model(*[_PASS] * 9)),
-                                       ("llama", "l1", model(*[_PASS] * 9))],
-                       num_ctx=32_768, sleep=lambda s: None, clock=clock)  # fmt: skip
-    assert v == "PASS" and "parts" in log[0] and log[-1].startswith("PASS: all")
-    assert any("This is part 1 of" in u for u in asked) and n >= 1
-    v, _ = ir.review(big, ["f.py"], [("qwen", "q1", model(_PASS, _FAIL, *[_PASS] * 9)),
-                                     ("llama", "l1", model(*[_PASS] * 9))],
-                     num_ctx=32_768, sleep=lambda s: None, clock=clock)  # fmt: skip
+
+def _review(diff: str, ladder: list[Any], **kw: Any) -> tuple[str, list[str]]:
+    clock = iter(range(0, 10**7, 10)).__next__
+    return ir.review(diff, ["f.py"], ladder, num_ctx=32_768, sleep=lambda s: None, clock=clock,
+                     **kw)  # fmt: skip
+
+
+_BIG = _diff(*((f"docs/f{i}.py", ["+" + "q" * 15_000]) for i in range(8)))  # ~120k chars
+
+
+def test_a_large_diff_passes_only_when_every_part_and_the_final_vote_pass() -> None:
+    asked: list[str] = []
+    v, log = _review(_BIG, [("qwen", "q1", _counting(*[_PASS] * 9, asked=asked)),
+                            ("llama", "l1", _counting(*[_PASS] * 9))])  # fmt: skip
+    assert v == "PASS" and "final vote" in log[0] and "final cross-part" in log[-1]
+    assert any("This is part 1 of" in u for u in asked)
+    assert any("final cross-part check" in u for u in asked)
+    assert all("MANIFEST OF THE WHOLE DIFF" in u for u in asked)  # every part carries it
+    v, _ = _review(_BIG, [("qwen", "q1", _counting(_PASS, _FAIL, *[_PASS] * 9)),
+                          ("llama", "l1", _counting(*[_PASS] * 9))])  # fmt: skip
     assert v == "FAIL"  # one part's FAIL stands
+
+    def final_fails(rubric: str, user: str) -> str:
+        return _FAIL if "final cross-part check" in user else _PASS
+
+    v, log = _review(_BIG, [("qwen", "q1", final_fails), ("llama", "l1", _counting(*[_PASS] * 9))])
+    assert v == "FAIL" and any(x.startswith("final:") for x in log)  # parts passed; final did not
     small = _diff(("a.py", ["+x"]))
     asked.clear()
-    v, _ = ir.review(small, ["a.py"], [("qwen", "q1", model(_PASS)), ("llama", "l1", model(_PASS))],
-                     num_ctx=32_768, sleep=lambda s: None, clock=clock)  # fmt: skip
+    v, _ = _review(small, [("qwen", "q1", _counting(_PASS, asked=asked)),
+                           ("llama", "l1", _counting(_PASS))])  # fmt: skip
     assert v == "PASS" and not any("This is part" in u for u in asked)  # whole: never split
+    asked.clear()
+    v, _ = _review(_BIG, [("qwen", "q1", _counting(_PASS, asked=asked)),
+                          ("llama", "l1", _counting(_PASS))], whole_only=True)  # fmt: skip
+    assert not any("This is part" in u for u in asked)  # a larger rung reads it whole
+
+
+def test_money_files_are_read_together_in_one_part_or_the_review_fails() -> None:
+    """#547 audit MF1 (a): max_lot raised in one money file, its min() dropped in another."""
+    a = ("desks/mt5/prop/a.py", ["+MAX_LOT = 50" + " " * 30_000])
+    b = ("desks/mt5/mt5desk/gateway.py", ["-    lot = min(lot, MAX_LOT)"])
+    filler = [(f"docs/x{i}.py", ["+" + "q" * 30_000]) for i in range(3)]
+    asked: list[str] = []
+    v, _ = _review(_diff(a, b, *filler), [("qwen", "q1", _counting(*[_PASS] * 9, asked=asked)),
+                                         ("llama", "l1", _counting(*[_PASS] * 9))])  # fmt: skip
+    assert v == "PASS"
+    both = [u for u in asked if "+MAX_LOT = 50" in u and "-    lot = min(lot, MAX_LOT)" in u]
+    assert both  # one prompt read both money halves
+    assert all("MAX_LOT" in u for u in asked)  # and every part's manifest names the risk line
+    huge = ("desks/mt5/prop/a.py", ["+" + "q" * 90_000])
+    v, log = _review(_diff(huge, b), [("qwen", "q1", _counting(_PASS)),
+                                      ("llama", "l1", _counting(_PASS))])  # fmt: skip
+    assert v == "FAIL" and "never read apart" in log[0]
+
+
+def test_an_abstention_carries_across_parts() -> None:
+    """#547 audit SF: qwen abstaining on one part and llama on another is never a PASS."""
+    vague = _VAGUE_506
+    qwen = _counting(vague, vague, *[_PASS] * 9)
+    llama = _counting(_PASS, vague, vague, *[_PASS] * 9)
+    v, _ = _review(_BIG, [("qwen", "q1", qwen), ("llama", "l1", llama)])
+    assert v != "PASS"
+
+
+def test_a_line_break_other_than_newline_never_reaches_a_model() -> None:
+    """#547 audit MF2: a fake header after U+2028 would relabel the hunks after it."""
+    for odd in ("\u2028", "\r", "\x0c", "\x85"):
+        assert ir._ODD_BREAKS.search(f"+x = 1{odd}diff --git a/docs/README.md b/docs/README.md\n")
+    assert not ir._ODD_BREAKS.search("+x = 1\r\n+y = 2\n")  # CRLF is a line ending
+    assert ir.split_diff("diff --git a/a b/a\n" + "x" * 500, 100) is None  # hunkless oversize
