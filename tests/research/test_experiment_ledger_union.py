@@ -117,7 +117,7 @@ def test_lifetime_subtracts_the_overlap_once(monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setattr(L, "_mass_screen_counts", lambda: (0, {}))
     monkeypatch.setattr(L, "_claim_selection_counts", lambda: (0, {}))
     monkeypatch.setattr(L, "_graph_judged",
-                        lambda: {"a": "carry", "b": "carry", "c": "carry", "d": "carry",
+                        lambda *a: {"a": "carry", "b": "carry", "c": "carry", "d": "carry",
                                  "z": "carry"})
     doc = L.lifetime(write=False)
     assert doc["judged_already_screened"] == 4

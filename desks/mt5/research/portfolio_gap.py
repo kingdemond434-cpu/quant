@@ -136,7 +136,8 @@ def load_survivors() -> list[dict[str, Any]]:
         return []
     rows = doc.get("survivors") if isinstance(doc, dict) else doc
     if isinstance(rows, dict):
-        rows = list(rows.values())
+        # The dict KEY is the certificate id (`external.SYM...`) every roster row cites.
+        rows = [{**v, "_key": k} for k, v in rows.items() if isinstance(v, dict)]
     out: list[dict[str, Any]] = []
     for r in rows or []:
         if not isinstance(r, dict):
@@ -154,6 +155,7 @@ def load_survivors() -> list[dict[str, Any]]:
             }
         if not axes:
             continue
+        axes["key"] = str(r.get("_key") or r.get("key") or "")
         axes["hunt"] = str(r.get("hunt") or "")
         axes["days"] = str(r.get("days") or "")
         out.append(axes)

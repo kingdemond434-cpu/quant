@@ -129,7 +129,11 @@ def test_rows_from_another_account_are_not_this_account_s_evidence(desk) -> None
     promoter.main()
     assert "gold_asia" not in desk.retired()
     why = desk.voided()["gold_asia"]["voided_why"]
-    assert "all stamped to another account" in why and "9990001@FusionMarkets-Demo/demo" in why
+    # Since 2026-10-20 the rows carry account_key, not the raw login, and the promoter's message
+    # (a SEALED file, quantbench QB-002) still reads r.get('account'), so a post-cutover row is
+    # named by its server and kind only. The verdict is unchanged; the wording is the sealed one.
+    assert "all stamped to another account" in why and "@FusionMarkets-Demo/demo" in why
+    assert "9990001" not in why
     assert "login=5551234" in why and "kind=live" in why
     assert desk.voided()["gold_asia"]["voided_at"] > _ENTRY["retired_at"]
     assert desk.roster_names() == ["gold_asia", "gold_london_am", "gold_afternoon"]
