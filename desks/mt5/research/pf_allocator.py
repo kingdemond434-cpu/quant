@@ -3588,7 +3588,7 @@ def _lock_token() -> str | None:
 #: os.replace backoff (seconds): on Windows a reader holding the destination open (the gateway
 #: reads pf_allocation.json every pass) makes the replace raise PermissionError for a moment.
 #: DERIVATION: measured 2026-10-29 on the trading box, one read of the 840 KB artifact holds it
-#: 4.5 ms median / 81 ms worst of 20; the doubling schedule's first step outlasts the median
+#: 6.7 ms median / 81 ms worst of 20; the doubling schedule's first step outlasts the median
 #: and its 3.15 s total outlasts the worst read ~39x, before the last attempt's error propagates.
 REPLACE_BACKOFF_S = (0.05, 0.1, 0.2, 0.4, 0.8, 1.6)
 
