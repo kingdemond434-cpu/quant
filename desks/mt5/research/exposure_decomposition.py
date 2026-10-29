@@ -217,6 +217,18 @@ def _pairs_of(points: Any) -> list[tuple[Any, Any]]:
     return out
 
 
+def _third_party_fred(series_id: str) -> bool:
+    """True for a FRED series a third party owns (libs/data/terms_fence `fred_copyrighted`:
+    VIXCLS, BAMLH0A0HYM2, ...). Such a series is never live input -- read from no file, however
+    fresh or stale -- so the reader sees it ABSENT and its dependent output is UNMEASURED."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.insert(0, _root)
+    from libs.data.terms_fence import fred_series_source
+    return bool(fred_series_source(str(series_id)))
+
+
 def _fred_points(names: Sequence[str], as_of: datetime | None = None
                  ) -> tuple[pd.Series | None, str | None]:
     """A daily FRED state series, first-differenced so a return regression can read it.
@@ -231,6 +243,8 @@ def _fred_points(names: Sequence[str], as_of: datetime | None = None
     for path in (_at("data", "fred_macro.json"), _at("data", "axes", "fred.json")):
         series = _json(path).get("series")
         for name in names if isinstance(series, dict) else ():
+            if _third_party_fred(name):
+                continue                # third-party series: never a factor input
             row = series.get(name)
             pairs = _pairs_of(row.get("points") if isinstance(row, dict) else row)
             if len(pairs) < MIN_OBS + 1:

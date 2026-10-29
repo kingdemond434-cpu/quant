@@ -414,9 +414,14 @@ def test_whole_pass_on_a_planted_tree_writes_axes_and_a_report(tree: dict[str, P
     assert doc["sensor_problems"] == []
     assert tree["report"].exists()
     risk = next(r for r in doc["ensembles"] if r["latent"] == "global_risk_appetite")
-    assert risk["status"] == "MEASURED"
-    assert risk["n_sensors_used"] == 3
-    assert (tree["axes"] / "shadow_global_risk_appetite.json").exists()
+    # VIXCLS and BAMLH0A0HYM2 are third-party FRED series (terms_fence fred_copyrighted): a
+    # planted value is never read, so T10Y2Y stands alone and the latent is UNMEASURED, not zero.
+    assert risk["status"] == si.UNMEASURED
+    assert risk["n_sensors_used"] == 1
+    whys = {u["sensor"]: u["why"] for u in risk["unmeasured"]}
+    assert whys["vix_level"].startswith("UNMEASURED_NO_LICENSED_SOURCE: VIXCLS")
+    assert whys["credit_spread"].startswith("UNMEASURED_NO_LICENSED_SOURCE: BAMLH0A0HYM2")
+    assert risk["latest_estimate"] is None
     # every other latent is UNMEASURED BY NAME on a tree with nothing planted for it
     china = next(r for r in doc["ensembles"] if r["latent"] == "china_activity")
     assert china["status"] == si.UNMEASURED

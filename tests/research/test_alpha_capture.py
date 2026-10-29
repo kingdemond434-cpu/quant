@@ -298,12 +298,19 @@ def test_one_offline_pass_writes_every_artifact(desk: dict[str, Any]) -> None:
     rep = ac.run(budget_s=120, now=now, get=_fake_get(calls), loader=_loader,
                  clock=av.identity_clock, universe_doc=UNIVERSE_DOC, n_placebo=30,
                  yahoo_opener=object())
-    for sid in ac.SOURCES:
+    live = [sid for sid in ac.SOURCES if not ac.live_refused(sid)]
+    assert ac.live_refused("yahoo_upgrades") == "yahoo", "Yahoo is IDEAS_ONLY: never live input"
+    for sid in live:
         s = rep["sources"][sid]
         assert s["status"] == "FETCHED", (sid, s)
         assert s["live_yield"]["status"] == "MEASURED"
         assert s["rows_in_store"] > 0, sid
-    assert rep["store"]["added"] >= 20 and rep["store"]["refused_unstamped"] == 0
+    y = rep["sources"]["yahoo_upgrades"]
+    assert y["status"] == ac.UNMEASURED_NO_LICENSED_SOURCE and y["rows_in_store"] == 0
+    assert y["missed_growth"]["delta_elogw"] == "UNMEASURED"
+    assert rep["cut_sources"] == ["yahoo_upgrades"] and rep["missed_growth"]
+    # 16 from the four live sources (Yahoo's views are no longer fetched)
+    assert rep["store"]["added"] >= 16 and rep["store"]["refused_unstamped"] == 0
     rows = av.AnalystViewStore(ac.STORE).rows()
     assert all(r["first_seen_at"] == now.isoformat(timespec="seconds") for r in rows)
     assert all(r.get("payload_hash") and r.get("available_time") for r in rows)
@@ -325,18 +332,18 @@ def test_one_offline_pass_writes_every_artifact(desk: dict[str, Any]) -> None:
     # the small COMMITTED digest carries this organ's section (reports/ is gitignored)
     dig = json.loads(ac.DIGEST.read_text("utf-8"))["organs"]["alpha_capture"]
     assert dig["status"] == "LIVE" and dig["rows"] == rep["store"]["rows_total"]
-    assert set(dig["measured"]) == set(ac.SOURCES) and not dig["unmeasured"]
+    assert set(dig["measured"]) == set(live) and dig["unmeasured"] == ["yahoo_upgrades"]
     assert dig["gain"]["sec_8k_guidance"] == av.UNMEASURED
     assert dig["cells"]["donated"] == 0
-    # the SEC request carried the declared User-Agent path, Yahoo went through the crumb
-    assert any("getcrumb" in c for c in calls) and any("efts.sec.gov" in c for c in calls)
+    # the SEC request carried the declared User-Agent path; Yahoo was never asked at all
+    assert not any("yahoo" in c for c in calls) and any("efts.sec.gov" in c for c in calls)
     # a second pass inside the cadence fetches nothing
     calls.clear()
     rep2 = ac.run(budget_s=60, now=now + timedelta(minutes=5), get=_fake_get(calls),
                   loader=_loader, clock=av.identity_clock, universe_doc=UNIVERSE_DOC,
                   n_placebo=10, yahoo_opener=object())
     assert not calls
-    assert all(s["status"] == "NOT_DUE" for s in rep2["sources"].values())
+    assert all(s["status"] == "NOT_DUE" for sid, s in rep2["sources"].items() if sid in live)
     assert all(s["live_yield"]["status"] == ac.UNMEASURED_LIVE_YIELD
                for s in rep2["sources"].values())
 
@@ -363,3 +370,21 @@ def test_a_failing_source_never_takes_the_others_down(desk: dict[str, Any]) -> N
     assert rep["sources"]["naver_research"]["status"] == "FAILED"
     assert rep["sources"]["tdnet_revisions"]["status"] == "FETCHED"
     assert rep["sources"]["naver_research"]["live_yield"]["status"] == ac.UNMEASURED_LIVE_YIELD
+
+
+def test_stored_yahoo_views_are_never_measured_or_donated(desk: dict[str, Any]) -> None:
+    """THE CUT BINDS THE STORE: views Yahoo left behind stay in the append-only store but never
+    reach the measurement, the axis, the intel or a donated cell."""
+    calls: list[str] = []
+    now = datetime(2024, 9, 27, 3, 0, tzinfo=UTC)
+    views = ac.parse_yahoo("NVIDIA", json.loads(_fx("yahoo_quotesummary_nvda.json")))
+    assert views
+    av.AnalystViewStore(ac.STORE).append(views, now=now)
+    rep = ac.run(budget_s=60, now=now, get=_fake_get(calls), loader=_loader,
+                 clock=av.identity_clock, universe_doc=UNIVERSE_DOC, n_placebo=10,
+                 only=["yahoo_upgrades"])
+    assert not calls
+    assert rep["store"]["rows_cut_not_measured"] == len(views)
+    assert rep["sources"]["yahoo_upgrades"]["rows_in_store"] == len(views)
+    assert "yahoo_upgrades" not in (rep["by_source"] or {})
+    assert rep["cells"]["candidates"] == 0 and not desk["donated"]

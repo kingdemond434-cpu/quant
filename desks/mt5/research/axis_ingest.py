@@ -355,8 +355,18 @@ def ingest_fred():
     index, VIX, OAS -- there is nothing to revise and the risk is negligible. It would NOT be
     negligible for GDP or payrolls, and no survey or national-accounts series is in this list.
     """
+    import free_data as fd
     series, failed = {}, {}
+    # THIRD-PARTY FRED SERIES (terms_fence fred_copyrighted: VIXCLS, BAMLH0A0HYM2, ...) are
+    # IDEAS_ONLY: refused BEFORE any request and carried by name as UNMEASURED_NO_LICENSED_SOURCE
+    # with their missed-growth line -- never a point, never zero, and (the axis file is rewritten
+    # whole by `publish`) never a stale point kept as current.
+    cut: dict[str, dict] = {}
     for sid, what in FRED_SERIES.items():
+        row = fd.fred_refusal(sid, "axis_ingest.fred")
+        if row is not None:
+            cut[sid] = {"what": what, **row}
+            continue
         try:
             req = urllib.request.Request(FRED_URL.format(sid=sid), headers={"User-Agent": UA})
             with _live_urlopen(req, timeout=TIMEOUT) as r:
@@ -375,7 +385,10 @@ def ingest_fred():
             "vintage_note": ("CURRENT vintage only. Daily market series barely revise; no survey "
                              "or national-accounts series is in this list on purpose."),
             "shape": "series[sid].points -- one dated state variable each",
-            "series": series}
+            "series": series,
+            "unmeasured_no_licensed_source": cut,
+            "missed_growth": [v["missed_growth"] for v in cut.values()
+                              if isinstance(v.get("missed_growth"), dict)]}
 
 
 def ingest_ecb():

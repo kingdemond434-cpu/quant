@@ -9,7 +9,10 @@ judged.
 A strategy is not "working" because it is positive. It is working when it beats what you could
 have had for free, net of everything. Three benchmarks, hardest first:
 
-  1. RISK-FREE   -- US 3-month T-bill (^IRX). Capital has a price; ignoring it flatters everything.
+  1. RISK-FREE   -- US 3-month T-bill (FRED DTB3, H.15 secondary market, public domain). Capital
+                    has a price; ignoring it flatters everything. It was Yahoo's ^IRX until the
+                    2026-10-14 cut (Yahoo is IDEAS_ONLY in terms_fence.SOURCE_POLICY); an
+                    unreachable DTB3 is ABSENT, never the old 4.5% default.
   2. BUY-AND-HOLD GOLD -- the zero-effort alternative on the desk's flagship MT5 instrument.
   3. 50/50 gold+cash   -- the honest risk-matched comparison for a market-neutral book, since a
                         hedged or netted book should NOT be compared to full XAUUSD beta.
@@ -26,36 +29,32 @@ Benchmark 2 reads the MT5 bar store on disk rather than any venue API. If gold b
 is reported ABSENT and excluded from the verdict, never defaulted to zero: a benchmark that
 silently becomes 0% is one the desk beats by standing still.
 
-Free (Yahoo + the MT5 bar store + the desk's own state). Read-only. Run from repo root, daily.
+Free (FRED public-domain DTB3 + the MT5 bar store + the desk's own state). Read-only. Run from repo root, daily.
 """
 
 from __future__ import annotations
 
 import json
-import urllib.request
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
-
-try:
-    from libs.data.polite_fetch import DESK_UA
-except ImportError:  # run as a script: the repo root is not on the path
-    import sys as _sys
-    from pathlib import Path as _Path
-    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
-    from libs.data.polite_fetch import DESK_UA
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data/hurdle_rate.json"
 
 
-def _get(u, t=35):
-    return json.loads(
-        urllib.request.urlopen(
-            urllib.request.Request(u, headers={"User-Agent": DESK_UA}), timeout=t
-        )
-        .read()
-        .decode()
-    )
+def _risk_free_annual() -> float:
+    """The latest US 3-month T-bill rate (FRED DTB3, percent -> fraction) through the desk's
+    keyless FRED collector, mirror refused; NaN (ABSENT) when it cannot be read."""
+    sys.path.insert(0, str(ROOT / "desks" / "mt5" / "research"))
+    try:
+        import free_data
+        got = free_data.fred_series("DTB3", start="2020-01-01", alternate=False) or {}
+    except Exception:
+        got = {}
+    if not got:
+        return float("nan")
+    return float(got[max(got)]) / 100.0
 
 
 def load(p: Path):
@@ -111,13 +110,7 @@ def main() -> None:
         return
 
     # --- benchmarks over the SAME window ---------------------------------------------------
-    try:
-        irx = _get(
-            "https://query1.finance.yahoo.com/v8/finance/chart/%5EIRX?interval=1d&range=1mo"
-        )["chart"]["result"][0]
-        rf_annual = float([c for c in irx["indicators"]["quote"][0]["close"] if c][-1]) / 100.0
-    except Exception:
-        rf_annual = 0.045
+    rf_annual = _risk_free_annual()            # NaN is ABSENT: excluded, never defaulted
     rf = rf_annual * (days / 365.0)
 
     gold = _gold_hold(days)

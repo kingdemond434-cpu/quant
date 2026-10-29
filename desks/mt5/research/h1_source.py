@@ -450,7 +450,19 @@ def from_yfinance(sym: str, start: datetime) -> Bars | None:
     Yahoo serves only ~730 days of hourly data, which is ample for a forward
     shadow record and useless for a backtest — do not reach for this to extend
     history, only to keep shadow alive.
+
+    REFUSED AS LIVE INPUT (2026-10-14): Yahoo is an IDEAS_ONLY row of
+    libs/data/terms_fence.SOURCE_POLICY, and shadow bars are live input. The
+    register is asked first and, while the row says IDEAS_ONLY, this returns None
+    (NO DATA, a real answer) even when registered. No licensed hourly substitute
+    exists outside the broker's own bars, which `fetch_h1` already reads first.
     """
+    try:
+        from libs.data import terms_fence as _tf
+        if _tf.input_source("https://query1.finance.yahoo.com/v8/finance/chart/"):
+            return None
+    except ImportError:
+        return None                       # no register on the path: fail closed
     try:
         import yfinance as yf
     except ImportError:

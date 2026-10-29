@@ -72,13 +72,20 @@ GRAMS_PER_TROY_OZ = 31.1034768
 #: spread vs the desk's actually-tradeable price IS the signal, and the file is on disk with no
 #: network dependency.
 XAU_H1 = BASE / "data" / "universe" / "XAUUSD_H1.parquet"
+#: The fix this leg replaced is a third-party series (terms_fence `fred_copyrighted`: LBMA/IBA,
+#: deleted from FRED 2022) and is REFUSED as live input, never a fallback. The USD gold leg is
+#: carried under its OWN name and label, never under the fix's id.
+REFUSED_INTL_SERIES = "GOLDPMGBD228NLBM"
+INTL_LEG = {"series": "XAUUSD", "source": "fusion_xauusd_h1_0700Z",
+            "label": ("the desk's own MT5 XAUUSD spot, 07:00 UTC H1 close -- NOT the LBMA PM "
+                      "fix, which is refused (terms_fence fred_copyrighted)")}
 
 #: USDCNY primary: ECB reference rates, USD and CNY from the SAME 16:00 CET snapshot, crossed.
 #: Keyless, daily, ~0-1 day lag. Fallback: FRED DEXCHUS (H.10 noon-NY), keyless but published
 #: with weeks of lag. One source per run for the WHOLE join — never mixed day-by-day — and the
 #: report records which.
 ECB_90D = "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist-90d.xml"
-USDCNY_FRED = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXCHUS"
+USDCNY_FRED_SERIES = "DEXCHUS"
 
 #: SGE official graph endpoint (R0649, verified live 2026-08-26). Serves ONE contract's
 #: current-session minute curve:
@@ -96,22 +103,25 @@ SGE_CONTRACTS = {"au9999_cny_g": "Au99.99", "au_td_cny_g": "Au(T+D)"}
 _DELAY_RE = re.compile(r"(\d{4})年(\d{2})月(\d{2})日")
 
 
-def _fred_csv(url: str, col: str, timeout: int = 45) -> pd.Series | None:
+def _free_data():
+    import free_data as fd
+    return fd
+
+
+def _fred_series(series_id: str, col: str) -> pd.Series | None:
+    """A FRED series through free_data.fred_series: the method fence, the desk UA, and the
+    third-party refusal (terms_fence `fred_copyrighted`) before any request -- never a bare GET.
+    None when refused or unavailable; the caller fails closed."""
     try:
-        r = polite_requests_get(url, timeout=timeout)
-        r.raise_for_status()
+        obs = _free_data().fred_series(series_id, start="2015-01-01", alternate=False)
     except Exception as exc:                                        # noqa: BLE001
         print(f"  {col}: {type(exc).__name__}: {exc}", flush=True)
         return None
-    from io import StringIO
-    df = pd.read_csv(StringIO(r.text))
-    date_col = df.columns[0]
-    val_col = df.columns[1]
-    df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
-    df[val_col] = pd.to_numeric(df[val_col], errors="coerce")
-    s = df.dropna(subset=[date_col]).set_index(date_col)[val_col].dropna()
+    if not obs:
+        return None
+    s = pd.Series({pd.Timestamp(k): float(v) for k, v in obs.items()}, dtype=float).sort_index()
     s.name = col
-    return s if len(s) else None
+    return s
 
 
 def _parse_graph(payload: object, instid: str) -> tuple[pd.Timestamp, float] | None:
@@ -248,6 +258,13 @@ def build_premium(sge_cny_g: pd.Series, intl_usd_oz: pd.Series,
 
 def main() -> int:
     report: dict[str, object] = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+    refused = _free_data().fred_refusal(REFUSED_INTL_SERIES, "fetch_sge_premium",
+                                        substituted=True)
+    report["intl_leg"] = {**INTL_LEG, "refused_fred_series": REFUSED_INTL_SERIES}
+    if refused is not None:
+        report["unmeasured_no_licensed_source"] = {
+            REFUSED_INTL_SERIES: {k: v for k, v in refused.items() if k != "missed_growth"}}
+        report["missed_growth"] = [refused["missed_growth"]]
     print("SGE Au99.99 + Au(T+D)...", flush=True)
     prints, prov = fetch_sge()
     if "au9999_cny_g" not in prints:
@@ -277,7 +294,7 @@ def main() -> int:
     cny = _ecb_usdcny()
     cny_source = "ecb_cross"
     if cny is None:
-        cny = _fred_csv(USDCNY_FRED, "usdcny")
+        cny = _fred_series(USDCNY_FRED_SERIES, "usdcny")
         cny_source = "fred_dexchus"
     missing = [n for n, s in (("XAUUSD_H1", intl), ("USDCNY", cny)) if s is None]
     if missing:
@@ -305,7 +322,7 @@ def main() -> int:
         return 0
 
     df["source_sge"] = prov
-    df["intl_source"] = "fusion_xauusd_h1_0700Z"
+    df["intl_source"] = INTL_LEG["source"]
     df["usdcny_source"] = cny_source
     df["fetched_at"] = report["at"]
     df.to_parquet(OUT / "sge_premium.parquet")

@@ -1068,6 +1068,77 @@ def admission_cadence_line(alloc: dict[str, Any]) -> dict[str, Any]:
             "unpriced": "longer reuse of the heavy growth curve on normal/fast passes"}
 
 
+#: THE YAHOO CUT (2026-10-14): each organ that read Yahoo as live input now publishes the
+#: missed-growth line of every cut input on its own artifact. Read here so the bill sits beside
+#: the rails' (never appended to the ledger).
+YAHOO_CUT_ARTIFACTS: tuple[tuple[str, Path], ...] = (
+    ("macro_desk.anchors", BASE / "data" / "cross_asset_anchors.provenance.json"),
+    ("vol_archive", BASE / "reports" / "VOL_ARCHIVE.json"),
+    ("fetch_futures_curves", BASE / "reports" / "futures_curve_coverage.json"),
+    ("futures_lead_lag", BASE / "reports" / "FUTURES_LEAD_LAG.json"),
+    ("alpha_capture", BASE / "reports" / "ANALYST_VIEWS.json"),
+)
+
+
+#: THE THIRD-PARTY FRED CUT (follow-up, 2026-10-14): the FRED series whose notes carry a copyright
+#: notice (terms_fence `fred_copyrighted`) are refused as live input; the organs that read them
+#: publish the lines on their own artifacts, gathered here beside the Yahoo cut's.
+FRED_COPYRIGHTED_CUT_ARTIFACTS: tuple[tuple[str, Path], ...] = (
+    ("macro_desk.anchors", BASE / "data" / "cross_asset_anchors.provenance.json"),
+    ("macro_desk.state", BASE / "data" / "macro_state.json"),
+    ("run_hunt23", BASE / "reports" / "hunt23.json"),
+    ("axis_ingest.fred", BASE / "data" / "axes" / "fred.json"),
+    ("collect_fred_macro", BASE.parent.parent / "data" / "fred_macro.json"),
+    ("screen_fred_macro_axis", BASE.parent.parent / "data" / "fred_macro_screen.json"),
+    ("run_cot_screen", BASE.parent.parent / "data" / "cot_screen_summary.json"),
+    ("fetch_sge_premium", BASE / "reports" / "sge_premium.json"),
+)
+
+
+def _cut_lines(policy_row: str, artifacts: tuple[tuple[str, Path], ...]
+               ) -> tuple[list[dict[str, Any]], list[str]]:
+    """(lines whose `policy_row` is `policy_row`, organs with none) from each organ's artifact.
+    A line without a policy_row is counted under every carrier that reads it (fail closed)."""
+    lines: list[dict[str, Any]] = []
+    unread: list[str] = []
+    for organ, path in artifacts:
+        doc = _json(path)
+        got = [x for x in (doc.get("missed_growth") or []) if isinstance(x, dict)
+               and x.get("policy_row", policy_row) == policy_row] if doc else []
+        if not got:
+            unread.append(organ)
+        lines.extend({**x, "organ": organ} for x in got)
+    return lines, unread
+
+
+def fred_copyrighted_cut_lines(artifacts: tuple[tuple[str, Path], ...] | None = None
+                               ) -> dict[str, Any]:
+    """The refused third-party FRED series' missed-growth lines. An organ without its artifact
+    on this host is listed as UNMEASURED, never as zero."""
+    lines, unread = _cut_lines("fred_copyrighted", artifacts or FRED_COPYRIGHTED_CUT_ARTIFACTS)
+    return {"verdict": UNMEASURED, "lines": lines, "n_cut": len(lines),
+            "unmeasured_no_licensed_source": sorted({
+                str(x.get("source")) for x in lines
+                if x.get("series_status") == "UNMEASURED_NO_LICENSED_SOURCE"}),
+            "organs_without_artifact": unread,
+            "why": ("FRED series owned by third parties (terms_fence fred_copyrighted) are "
+                    "refused as live input: delta E[log W] is UNMEASURED until the owner's "
+                    "permission or a licensed feed arrives")}
+
+
+def yahoo_cut_lines(artifacts: tuple[tuple[str, Path], ...] | None = None) -> dict[str, Any]:
+    """The cut Yahoo inputs' missed-growth lines, read from each organ's own artifact. An organ
+    that has not written its artifact on this host is listed as UNMEASURED, never as zero."""
+    lines, unread = _cut_lines("yahoo", artifacts or YAHOO_CUT_ARTIFACTS)
+    return {"verdict": UNMEASURED, "lines": lines, "n_cut": len(lines),
+            "unmeasured_no_licensed_source": sorted(
+                str(x.get("source")) for x in lines
+                if x.get("series_status") == "UNMEASURED_NO_LICENSED_SOURCE"),
+            "organs_without_artifact": unread,
+            "why": ("Yahoo is IDEAS_ONLY (terms_fence.SOURCE_POLICY): every cut input's delta "
+                    "E[log W] is UNMEASURED until a licensed source or the unblock arrives")}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -1196,7 +1267,9 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         unspilled=JUDGE_PRIORITY_RECORDS),
                                     "deepening_memory_guard": organ_published_lines(
                                         DEEPENING_GUARD),
-                                    "admission_scan_cadence": admission_cadence_line(alloc)},
+                                    "admission_scan_cadence": admission_cadence_line(alloc),
+                                    "yahoo_live_input_cut": yahoo_cut_lines(),
+                                    "fred_copyrighted_cut": fred_copyrighted_cut_lines()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

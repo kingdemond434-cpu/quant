@@ -12,6 +12,11 @@ self-healing). Series chosen for crypto relevance, not macro completeness:
   WALCL     Fed balance sheet (W)     (system liquidity; the 2020-22 crypto liquidity driver)
   M2SL      M2 money supply (M)       (broad liquidity; slow regime context)
 
+VIXCLS (Cboe's copyright) and every other series whose FRED notes carry a third-party copyright
+notice (libs/data/terms_fence `fred_copyrighted`) is REFUSED before any request: the archives
+carry it under `unmeasured_no_licensed_source` with its missed_growth line, never in `series`
+(the archives are rewritten whole, so no stale copy survives as current).
+
 Key: data/secrets/fred.json {"key": "..."} or FRED_API_KEY env. No key -> graceful skip
 (exit 0, cycle stays green). API host verified reachable from the VPS 2026-07-16 (the
 registry's old "blocked" note was the website host, not api.stlouisfed.org).
@@ -41,6 +46,10 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 from libs.research.vintage import record  # noqa: E402
+
+if str(_ROOT / "desks" / "mt5" / "research") not in sys.path:
+    sys.path.insert(0, str(_ROOT / "desks" / "mt5" / "research"))
+import free_data as fd  # noqa: E402
 
 _KEYFILE = Path("data/secrets/fred.json")
 _ARCHIVE = Path("data/fred_macro.json")
@@ -89,7 +98,12 @@ def main() -> None:
         print("fred-macro: no key (data/secrets/fred.json or FRED_API_KEY) -- skipped")
         return
     series: dict[str, list[tuple[str, float]]] = {}
+    cut: dict[str, dict] = {}
     for sid in _SERIES:
+        row = fd.fred_refusal(sid, "collect_fred_macro")
+        if row is not None:                              # third-party: refused before request
+            cut[sid] = row
+            continue
         try:
             series[sid] = _fetch(key, sid)
         except Exception as e:                           # one dead series never kills the rest
@@ -119,10 +133,13 @@ def main() -> None:
     # fetch for the allocator's regime kernel and factor set (`libs.portfolio.macro_state`,
     # `libs.portfolio.leg_factors`), which rank against a TRAILING year and need every day of the
     # backtest matrix to carry a state.
-    _ARCHIVE_LONG.write_text(json.dumps({"updated": ts, "series": series}), "utf-8")
-    cut = (datetime.now(tz=UTC) - timedelta(days=_SHORT_DAYS)).date().isoformat()
-    short = {sid: [r for r in rows if r[0] >= cut] for sid, rows in series.items()}
-    _ARCHIVE.write_text(json.dumps({"updated": ts, "series": short}), "utf-8")
+    held = {"unmeasured_no_licensed_source": cut,
+            "missed_growth": [v["missed_growth"] for v in cut.values()
+                              if isinstance(v.get("missed_growth"), dict)]}
+    _ARCHIVE_LONG.write_text(json.dumps({"updated": ts, "series": series, **held}), "utf-8")
+    since = (datetime.now(tz=UTC) - timedelta(days=_SHORT_DAYS)).date().isoformat()
+    short = {sid: [r for r in rows if r[0] >= since] for sid, rows in series.items()}
+    _ARCHIVE.write_text(json.dumps({"updated": ts, "series": short, **held}), "utf-8")
     latest = {sid: {"date": rows[-1][0], "value": rows[-1][1],
                     "chg_30obs": (round(rows[-1][1] - rows[-31][1], 4)
                                   if len(rows) > 31 else None)}
@@ -134,6 +151,8 @@ def main() -> None:
                  "from day one -- backtestable immediately, no forward clock needed."),
     }, indent=2), "utf-8")
     n = sum(len(r) for r in series.values())
+    if cut:
+        print(f"fred-macro: refused as live input (third-party): {', '.join(sorted(cut))}")
     print(f"fred-macro: {len(series)}/{len(_SERIES)} series, {n} obs -> {_ARCHIVE}; "
           f"{revised} new-or-revised values -> {_ROOT / 'data/vintages'}")
 

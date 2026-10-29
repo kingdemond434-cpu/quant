@@ -614,8 +614,9 @@ def _live_fetchers() -> list[tuple[str, Any]]:
         ("alt_proxies.http_get", lambda: A.http_get(_START)),
         ("cot_source._get", lambda: cot_source._get(_START)),
         ("axis_ingest._fetch", lambda: axis_ingest._fetch(_START)),
-        ("fetch_futures_curves.fetch_contract",
-         lambda: fetch_futures_curves.fetch_contract("GCZ26.CMX")),
+        # the Yahoo contract fetch is now refused at its FIRST URL (live_input=True, 2026-10-14);
+        # its licensed substitute (EIA) is the live fetcher whose hops must be fenced
+        ("fetch_futures_curves.eia_get", lambda: fetch_futures_curves.eia_get(_START)),
     ]
 
 

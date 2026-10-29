@@ -634,6 +634,18 @@ def _write_atomic(path: Path, payload: Any) -> None:
     tmp.unlink(missing_ok=True)
 
 
+def _third_party_fred(series_id: str) -> bool:
+    """True for a FRED series a third party owns (libs/data/terms_fence `fred_copyrighted`:
+    VIXCLS, BAMLH0A0HYM2, ...). Such a series is never live input -- read from no file, however
+    fresh or stale -- so the reader sees it ABSENT and its dependent output is UNMEASURED."""
+    import sys as _sys
+    _root = str(Path(__file__).resolve().parents[3])
+    if _root not in _sys.path:
+        _sys.path.insert(0, _root)
+    from libs.data.terms_fence import fred_series_source
+    return bool(fred_series_source(str(series_id)))
+
+
 def read_axis_points(axes: Path, name: str, series: str = "*") -> list[tuple[str, float]]:
     """(day, value) from ANY of the three axis shapes this tree actually writes.
 
@@ -655,7 +667,8 @@ def read_axis_points(axes: Path, name: str, series: str = "*") -> list[tuple[str
     got = doc.get("series")
     if isinstance(got, Mapping):
         blocks = [v.get("points") for k, v in got.items()
-                  if isinstance(v, Mapping) and (series in ("*", k))]
+                  if isinstance(v, Mapping) and (series in ("*", k))
+                  and not (name == "fred" and _third_party_fred(str(k)))]
     if not blocks and isinstance(doc.get("points"), list):
         blocks = [doc["points"]]
     tally: dict[str, list[float]] = {}
@@ -1176,6 +1189,9 @@ def _gather(latent: str, sensors: Sequence[Sensor], *, axes: Path, universe: Pat
             pts = read_axis_points(axes, s.axis_file, s.axis_series or "*")
             why = "" if pts else (f"data/axes/{s.axis_file}.json holds no readable point for"
                                   f" series {s.axis_series or '*'!r} -- UNMEASURED, not barren")
+            if s.axis_file == "fred" and _third_party_fred(s.axis_series):
+                why = (f"UNMEASURED_NO_LICENSED_SOURCE: {s.axis_series} is a third-party FRED "
+                       "series (terms_fence fred_copyrighted), never live input")
         elif s.fetch_class == "desk_axis":
             sym = next((t for t in MT5_TARGETS if t in (s.verb or "")), "")
             pts = read_bars(sym, "D1", universe) if sym else []

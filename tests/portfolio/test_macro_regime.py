@@ -205,12 +205,15 @@ def _factor_frame(n: int = 500) -> pd.DataFrame:
 def test_fit_loadings_recovers_the_leg_and_restricts_to_own_factors() -> None:
     frame = _factor_frame()
     fs = leg_factors.factor_set(frame)
-    assert fs is not None and fs.names == ("EUR", "CHF", "USD", "d_vix", "d_r10")
+    # d_vix derives from VIXCLS, a third-party FRED series (terms_fence fred_copyrighted): it is
+    # refused even when a frame carries it, and named UNMEASURED_NO_LICENSED_SOURCE.
+    assert fs is not None and fs.names == ("EUR", "CHF", "USD", "d_r10")
+    assert set(fs.unmeasured) == {"d_vix"}
     # A sleeve that is long EURCHF: returns = 200 * (EUR - CHF) + noise, in R/day.
     rng = np.random.default_rng(9)
     r = 200.0 * (frame["EUR"].to_numpy() - frame["CHF"].to_numpy()) + rng.normal(0, 0.3, 500)
     fl = leg_factors.fit_loadings(r, frame.index, fs, "EURCHF")
-    assert fl.n == 500 and set(fl.used) == {"EUR", "CHF", "d_vix", "d_r10"}
+    assert fl.n == 500 and set(fl.used) == {"EUR", "CHF", "d_r10"}
     assert fl.betas["EUR"] > 0 and fl.betas["CHF"] < 0
     assert "USD" not in fl.betas
     assert fl.explained > 0.7
@@ -233,7 +236,7 @@ def test_fit_loadings_shrinks_a_fortnight_hard_and_refuses_two_days() -> None:
     r2 = np.full(500, np.nan)
     r2[-2:] = [0.1, -0.2]
     assert leg_factors.fit_loadings(r2, frame.index, fs, "EURUSD").n == 2
-    assert leg_factors.fit_loadings(r2, frame.index, fs, "EURUSD").load.tolist() == [0.0] * 5
+    assert leg_factors.fit_loadings(r2, frame.index, fs, "EURUSD").load.tolist() == [0.0] * 4
 
 
 def test_factor_corr_abs_is_symmetric_and_bounded() -> None:
@@ -303,7 +306,9 @@ def test_one_current_series_makes_the_whole_state_current(tmp_path: Path) -> Non
               np.array([v for _d, v in series["DTWEXBGS"]], dtype=float))
     doc = macro_state.daily_states(p)
     assert doc["vintage_by_series"]["DTWEXBGS"] == macro_state.VINTAGE_ALFRED
-    assert doc["vintage_by_series"]["VIXCLS"] == "current (look-ahead risk)"
+    assert doc["vintage_by_series"]["DGS10"] == "current (look-ahead risk)"
+    # VIXCLS is a third-party series: refused, never read, so it carries no vintage at all.
+    assert "VIXCLS" not in doc["vintage_by_series"]
     assert doc["vintage"] == "current (look-ahead risk)"
 
 
@@ -339,8 +344,11 @@ def test_an_all_nan_macro_column_is_unmeasured_and_does_not_void_the_legs() -> N
     assert fl.n == 500 and fl.unmeasured == ("d_vix",)
 
 
-def test_a_full_macro_frame_claims_nothing_unmeasured() -> None:
+def test_a_full_macro_frame_claims_only_the_unlicensed_factor_unmeasured() -> None:
+    """A full frame claims nothing UNMEASURED except d_vix, which no licensed source supplies."""
     fs = leg_factors.factor_set(_factor_frame())
-    assert fs is not None and fs.unmeasured == {} and "UNMEASURED" not in fs.note
+    assert fs is not None and set(fs.unmeasured) == {"d_vix"}
+    assert fs.unmeasured["d_vix"].startswith("UNMEASURED_NO_LICENSED_SOURCE")
+    assert "d_r10" in fs.names
     fl = leg_factors.fit_loadings(np.zeros(500), _factor_frame().index, fs, "EURCHF")
-    assert fl.unmeasured == () and "UNMEASURED" not in fl.why
+    assert fl.unmeasured == ("d_vix",)

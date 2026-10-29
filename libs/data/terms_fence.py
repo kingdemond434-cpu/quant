@@ -269,6 +269,191 @@ SOURCE_POLICY.update({
         "https://www.imo.org/en/MediaCentre/PressBriefings/_vti_bin/RSS.svc/news", PUBLIC_PAGE,
         _UNREAD, "", "terms page not read: imo.org refused the fetch (robots.txt redirect loop)"),
 })
+#: THE YAHOO SUBSTITUTES (coordinator + auditor ruling 2026-10-14): Yahoo is IDEAS_ONLY, so every
+#: series a live organ read from it is either re-sourced from a row below -- whose OWN terms page
+#: was read and quoted -- or is UNMEASURED_NO_LICENSED_SOURCE. Neither row holds anything (a public
+#: page, fetched politely); the clauses are the evidence a live-input organ acts on, and the
+#: restricting clauses are quoted beside them so the principal can overrule.
+SOURCE_POLICY.update({
+    "fred_public_domain": {
+        "hosts": ("fred.stlouisfed.org", "alfred.stlouisfed.org"), "status": PUBLIC_PAGE,
+        "sources": ("fred_public_domain",),
+        "why": ("FRED series tagged 'Public Domain: Citation Requested' (H.15 rates, H.10 FX, "
+                "EIA spot prices) may be used for internal commercial use with attribution; a "
+                "series carrying a third-party copyright notice (VIXCLS, the ICE/LBMA series) is "
+                "NOT covered and FRED cannot grant it; access stays polite (prohibition (g) bars "
+                "excessive or disruptive automated access)"),
+        "terms": {"url": "https://fred.stlouisfed.org/legal/", "checked_at": "2026-10-14",
+                  "clauses": {
+                      "public_domain": ("may be used without permission, provided you do not "
+                                        "engage in any prohibited use."),
+                      "IV": ("may be used for internal commercial uses and may be displayed in "
+                             "textbooks, newsletters, or reports to clients"),
+                      "g": ("Use scripts, spiders, scrapers, bots, or any manual or automatic "
+                            "technology, tool, software, process, or device [...] excessive, "
+                            "disruptive, or adversely impacts the stability, performance, or "
+                            "availability of the FRED® Services"),
+                      "copyrighted": ("Series with a copyright notice are owned by third parties "
+                                      "and have special restrictions."),
+                      "ml": ("in connection with the development or training of any software "
+                             "program or system or machine learning")},
+                  "series_labels": {
+                      "DGS10": "Public Domain: Citation Requested (Board of Governors, H.15)",
+                      "DTWEXBGS": "Public Domain: Citation Requested (Board of Governors, H.10)",
+                      "DEXUSEU": "Public Domain: Citation Requested (Board of Governors, H.10)",
+                      "DCOILWTICO": "Public Domain: Citation Requested (EIA, Spot Prices)",
+                      "VIXCLS": ("Copyright, 2016, Chicago Board Options Exchange, Inc. "
+                                 "Reprinted with permission. -- NOT a licensed substitute")}}},
+    "eia_open_data": {
+        "hosts": ("eia.gov",), "status": PUBLIC_PAGE, "sources": ("eia_open_data",),
+        "why": ("U.S. government publications are public domain; EIA grants use and "
+                "distribution of its data files with an acknowledgment; no automated-access "
+                "clause restricts a polite fetch"),
+        "terms": {"url": "https://www.eia.gov/about/copyrights_reuse.php",
+                  "checked_at": "2026-10-14",
+                  "clauses": {
+                      "public_domain": ("U.S. government publications are in the public domain "
+                                        "and are not subject to copyright protection."),
+                      "use": ("You may use and/or distribute any of our data, files, databases, "
+                              "reports, graphs, charts, and other information products"),
+                      "acknowledgment": ("However, if you use or reproduce any of our "
+                                         "information products, you should use an "
+                                         "acknowledgment,")}}},
+    "mt5_own_bars": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED,
+        "sources": ("mt5_own_bars",),
+        "why": ("the desk's own broker bars (Fusion MT5 terminal, data/universe parquets): the "
+                "venue the desk trades, received under its own account; no third-party host is "
+                "read"),
+        "terms": {"url": "desks/mt5/data/universe/universe.json", "checked_at": "2026-10-14",
+                  "clauses": {
+                      "own_data": ("auditor ruling 2026-10-14: MT5/Fusion bars from the desk's "
+                                   "own bar lake are the preferred substitute for the vol "
+                                   "archive and index/commodity levels")}}},
+})
+#: FRED SERIES OWNED BY THIRD PARTIES (follow-up to the Yahoo cut, 2026-10-14). FRED's own
+#: definition ("Copyrighted series contain the word 'Copyright' in their notes") decides the
+#: list, read per series from FRED's own series page -- never guessed. Each is IDEAS_ONLY: its
+#: page may still be read for ideas, but `free_data.fred_series` refuses it as LIVE INPUT before
+#: any URL is built (no cache, no DBnomics mirror: a mirror of a copyrighted series is the same
+#: series). FRED itself says it cannot grant the permission, so the unblock is the owner's.
+FRED_COPYRIGHTED_NOTES: dict[str, str] = {
+    "VIXCLS": ("Copyright, 2016, Chicago Board Options Exchange, Inc. Reprinted with "
+               "permission."),
+    "BAMLH0A0HYM2": ("Copyright, 2023, ICE Data Indices. [...] Reproduction of this data in any "
+                     "form is prohibited except with the prior written permission of ICE Data "
+                     "Indices."),
+    "UMCSENT": ("Copyright, 2016, Surveys of Consumers, University of Michigan. Reprinted with "
+                "permission."),
+    # FRED deleted every ICE Benchmark Administration series on 2022-01-31 (its notice, read
+    # 2026-10-14: "On January 31, 2022, FRED will no longer include data from ICE Benchmark
+    # Administration Limited (IBA)."), so the series page and its notes cannot be read: FAIL
+    # CLOSED, treated as copyrighted (LBMA Gold Price, IBA-administered).
+    "GOLDAMGBD228NLBM": ("UNREADABLE: series deleted from FRED 2022-01-31 (IBA data, LBMA Gold "
+                         "Price); treated as copyrighted, fail closed"),
+    "GOLDPMGBD228NLBM": ("UNREADABLE: series deleted from FRED 2022-01-31 (IBA data, LBMA Gold "
+                         "Price PM); treated as copyrighted, fail closed"),
+    # research/fetch_fred.py's lake (second pass, 2026-10-20: each page read for its notes)
+    "SP500": ("Copyright \u00a9 2016, S&P Dow Jones Indices LLC. All rights reserved. "
+              "Reproduction of S&P 500 in any form is prohibited except with the prior written "
+              "permission of S&P Dow Jones Indices LLC"),
+    "NASDAQCOM": "Copyright \u00a9 2016, NASDAQ OMX Group, Inc.",
+    "NIKKEI225": "Copyright, 2016, Nikkei Inc. Reprinted with permission.",
+    # the IMF's own terms grant commercial reuse of 'Data' only where it "is not owned by a
+    # third-party", and a primary commodity price is a third-party benchmark: fail closed
+    "PCOPPUSDM": ("Copyright \u00a9 2016, International Monetary Fund. Reprinted with "
+                  "permission. [IMF terms: \u201cData\u201d refers to any published statistical "
+                  "data produced by the IMF that is not owned by a third-party.]"),
+}
+SOURCE_POLICY.update({
+    "fred_copyrighted": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("fred_copyrighted",),
+        "series": tuple(FRED_COPYRIGHTED_NOTES),
+        # the series' own pages (fredgraph.csv names the series in its QUERY, which a route
+        # pattern does not read: `fred_series_source` answers for it by series id)
+        "url_patterns": tuple(r"^(?:[^/]*\.)?(?:fred|alfred)\.stlouisfed\.org/(?:series|data|"
+                              r"graph)/" + re.escape(s) + r"(?:[./]|$)"
+                              for s in FRED_COPYRIGHTED_NOTES),
+        "why": ("FRED series whose notes carry a third-party copyright notice (Cboe VIX, ICE BofA "
+                "HY OAS, University of Michigan sentiment, the deleted IBA/LBMA gold fix): FRED's "
+                "terms say any use beyond personal use needs the OWNER's permission, which FRED "
+                "cannot give; no owner's permission is on record, so they are never live input"),
+        "unblock": ("the copyright holder's written permission (Cboe / ICE Data Indices / "
+                    "University of Michigan / IBA), or a licensed vendor feed"),
+        "terms": {"url": "https://fred.stlouisfed.org/legal/", "checked_at": "2026-10-14",
+                  "clauses": {
+                      "faq:copyright": ("Series with a copyright notice are owned by third "
+                                        "parties and have special restrictions."),
+                      "faq:permission": ("you must contact the data owner to obtain "
+                                         "permission"),
+                      "faq:cannot": ("Unfortunately, the Federal Reserve Bank of St. Louis "
+                                     "cannot give you such permission."),
+                      "tou:third_party": ("BEFORE USING DATA SERIES OWNED BY THIRD PARTIES FOR "
+                                          "ANYTHING OTHER THAN YOUR OWN PERSONAL USE, YOU MUST "
+                                          "CONTACT THE DATA OWNER TO OBTAIN PERMISSION."),
+                      "tou:no_grant": ("The Bank cannot give you such permission and making the "
+                                       "data series available does not constitute such "
+                                       "permission."),
+                      "api:definition": ("Copyrighted series contain the word 'Copyright' in "
+                                         "their notes."),
+                      # quoted so the principal can overrule: the summarized label VIXCLS also
+                      # carries reads more permissively than the full terms and the notice; the
+                      # stricter reading governs (fail closed)
+                      "summary:citation_required": ("These series are under copyright; but, "
+                                                    "provided you have not engaged in any "
+                                                    "prohibited uses")},
+                  "series_notes": dict(FRED_COPYRIGHTED_NOTES),
+                  # read the same day and NOT held: no 'Copyright' notice in the notes (FRED's own
+                  # definition), or the owner's own licence permits reuse
+                  "not_held": {
+                      "SOFR": "tag 'Copyrighted: Citation Required'; no notice in the notes",
+                      "RRPONTSYD": "tag 'Copyrighted: Citation Required'; no notice in the notes",
+                      "JPNCPIALLMINMEI": ("tag 'Copyrighted: Citation Required'; notes carry an "
+                                          "OECD citation instruction, no notice"),
+                      "IR3TIB01JPM156N": ("tag 'Copyrighted: Citation Required'; no notice in "
+                                          "the notes"),
+                      "ECBDFR": (
+                          "notes: 'Copyright, 2021, European Central Bank (ECB). Reprinted with "
+                          "permission.'; the ECB's own terms (ecb.europa.eu/services/disclaimer, "
+                          "read 2026-10-20): 'users of this website may make free use of the "
+                          "information obtained directly from it subject to the following "
+                          "conditions:' (accurate, ECB cited as the source)"),
+                      "CP0000EZ19M086NEST": (
+                          "notes: 'Copyright, European Union: https://commission.europa.eu/"
+                          "legal-notice_en#copyright-notice'; that page (read 2026-10-14): "
+                          "'This means that reuse is allowed, provided appropriate credit is "
+                          "given and changes are indicated.' (CC BY 4.0)")}}},
+})
+
+
+def fred_series_source(series_id: str) -> str | None:
+    """'fred_copyrighted' when a FRED series id is owned by a third party (its notes carry a
+    copyright notice, or it could not be read), else None. Case-insensitive: FRED ids are."""
+    sid = str(series_id or "").strip().upper()
+    return "fred_copyrighted" if sid in SOURCE_POLICY["fred_copyrighted"]["series"] else None
+
+
+#: FRED's hosts whose QUERY names the series (fredgraph.csv?id=, the API's series_id=).
+_FRED_HOSTS = ("fred.stlouisfed.org", "alfred.stlouisfed.org", "api.stlouisfed.org")
+
+
+def _fred_query_source(url: str) -> str | None:
+    """'fred_copyrighted' when a FRED URL's query names a third-party series (any of `id`,
+    `series_id`; comma lists included), else None. A route pattern reads host + path only, so
+    without this a fredgraph.csv?id=VIXCLS request would read as a public-domain page."""
+    parts = _parse(url)
+    if parts is None or not _on(_host(url), _FRED_HOSTS):
+        return None
+    from urllib.parse import parse_qs
+    q = parse_qs(parts.query or "", keep_blank_values=False)
+    for k in ("id", "series_id"):
+        for v in q.get(k) or ():
+            if any(fred_series_source(x) for x in str(v).split(",")):
+                return "fred_copyrighted"
+    return None
+
+
 #: JPX's site terms (Japanese and English pages), read 2026-10-14 for the pass-6 F4 holds. One
 #: reading shared by every JPX route held on it (a value, not a second register).
 _JPX_TERMS: dict[str, Any] = {
@@ -1040,7 +1225,7 @@ def source_of_url(url: str, _depth: int = 0) -> str | None:
     k = _host_source(h)
     if k and status(k) in HOLDING:
         return k
-    kp = _pattern_source(url)
+    kp = _pattern_source(url) or _fred_query_source(url)
     if kp:
         # a route row (`url_patterns`: host + path) names this exact route; a HOLDING host row
         # above still wins, being the stricter answer

@@ -47,6 +47,16 @@ carries `resolution: H1` so no reader can quote it as one.
 MANDATE: the futures side is REFERENCE DATA informing an MT5 instrument, never a hunted universe
 of its own.
 
+THE YAHOO CUT (coordinator + auditor ruling 2026-10-14). The reference bars came from Yahoo's
+chart API, an IDEAS_ONLY row of libs/data/terms_fence.SOURCE_POLICY (Terms 2.d.9): never live
+input. `fetch_bars` now asks THE ONE FETCH DOOR with live_input=True and is refused before any
+request, and the Yahoo-era cache under data/reference/futures is never read again. No licensed
+source of intraday COMEX/NYMEX bars exists in the key set (CME is a held route), so every pair is
+UNMEASURED_NO_LICENSED_SOURCE with a missed_growth line. BAR_CLOCK.json has ONE writer,
+research/bar_clock_probe.py (2026-10-21), so no pass of this leg can overwrite it; the licensed
+re-measure (`tape_offsets`: the desk's own tick tape, receipt time against the broker's
+time_msc) is published in this leg's own report as `tape_remeasure`.
+
     python desks/mt5/research/futures_lead_lag.py
     python desks/mt5/research/futures_lead_lag.py --no-fetch    # cached reference bars only
 """
@@ -280,21 +290,26 @@ class Reading:
         }
 
 
-def fetch_bars(symbol: str, *, rng: str = "2y", interval: str = "1h",
-               timeout: int = 60) -> pd.DataFrame | None:
-    """Hourly bars for one reference contract, or None with nothing written.
+UNMEASURED_NO_LICENSED_SOURCE = "UNMEASURED_NO_LICENSED_SOURCE"
+NO_LICENSED_REFERENCE = ("intraday COMEX/NYMEX bars: Yahoo (which served them) is IDEAS_ONLY and "
+                         "CME's own pages are a held route; no licensed intraday futures feed is "
+                         "in the key set")
 
-    A FAILED FETCH RETURNS None AND NEVER TOUCHES THE CACHE. A partial write would shorten the
-    sample on the next run without saying so, and a clock measured on a silently shorter window
-    is a different measurement wearing the same name.
-    """
-    url = _CHART.format(sym=symbol.replace("=", "%3D"), rng=rng, iv=interval)
-    req = urllib.request.Request(url, headers={"User-Agent": _UA})
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            doc = json.loads(r.read().decode("utf-8"))
-    except (urllib.error.URLError, TimeoutError, ValueError, OSError):
-        return None
+
+def missed_growth_line(future: str) -> dict[str, Any]:
+    """The cut Yahoo input's missed-growth line (terms_fence.held_missed_growth, kind
+    ideas_only_refusal): delta E[log W] UNMEASURED, never zero."""
+    from libs.data import terms_fence as _tf
+    line = _tf.held_missed_growth("yahoo", None, source=f"futures_lead_lag:{future}",
+                                  live_input_refusal=True)
+    line.update({"yahoo_symbol": future, "series_status": UNMEASURED_NO_LICENSED_SOURCE,
+                 "substitute": None, "why_unsubstituted": NO_LICENSED_REFERENCE,
+                 "unblock_named": "re-measure the bar clock from the desk's own tick tape"})
+    return line
+
+
+def parse_chart(doc: Any) -> pd.DataFrame | None:
+    """A chart document's hourly closes on an epoch-second (UTC) index, or None."""
     try:
         res = doc["chart"]["result"][0]
         stamps, close = res["timestamp"], res["indicators"]["quote"][0]["close"]
@@ -308,16 +323,30 @@ def fetch_bars(symbol: str, *, rng: str = "2y", interval: str = "1h",
     return pd.DataFrame({"close": close}, index=pd.DatetimeIndex(idx, name="time")).dropna()
 
 
-def cached(symbol: str) -> pd.DataFrame | None:
-    path = CACHE / f"{symbol.replace('=', '_')}_H1.parquet"
-    if not path.exists():
-        return None
+def fetch_bars(symbol: str, *, rng: str = "2y", interval: str = "1h",
+               timeout: int = 60) -> pd.DataFrame | None:
+    """REFUSED AS LIVE INPUT (2026-10-14). THE ONE FETCH DOOR is asked with live_input=True and
+    refuses Yahoo before any request is built, so this returns None and writes nothing.
+
+    A FAILED FETCH RETURNS None AND NEVER TOUCHES THE CACHE. A partial write would shorten the
+    sample on the next run without saying so, and a clock measured on a silently shorter window
+    is a different measurement wearing the same name.
+    """
+    url = _CHART.format(sym=symbol.replace("=", "%3D"), rng=rng, iv=interval)
+    req = urllib.request.Request(url, headers={"User-Agent": _UA})
     try:
-        frame = pd.read_parquet(path)
-    except (OSError, ValueError):
+        from libs.data import terms_fence as _tf
+        with _tf.guarded_urlopen(req, timeout=timeout, live_input=True) as r:
+            doc = json.loads(r.read().decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError, ValueError, OSError):
         return None
-    frame.index = pd.DatetimeIndex(frame.index).tz_convert(UTC)
-    return frame
+    return parse_chart(doc)
+
+
+def cached(symbol: str) -> pd.DataFrame | None:
+    """The licensed reference cache, or None. The Yahoo-era files under data/reference/futures are
+    NOT read (a cached Yahoo series is the same Yahoo series); no licensed store exists yet."""
+    return None
 
 
 def store(symbol: str, frame: pd.DataFrame) -> Path:
@@ -368,9 +397,10 @@ def read_pair(future: str, symbol: str, why: str, *, fetch: bool = True) -> Read
 
     empty: dict[int, float | None] = dict.fromkeys(LAGS)
     if fut is None:
-        return Reading(future, symbol, why, "UNMEASURED", None, None, 0, {}, {}, {}, empty,
-                       f"no bars for {future}: the fetch failed and nothing is cached. A feed "
-                       "gap, not a finding about the clock or the lead")
+        return Reading(future, symbol, why, UNMEASURED_NO_LICENSED_SOURCE, None, None, 0, {}, {},
+                       {}, empty,
+                       f"no licensed bars for {future}: {NO_LICENSED_REFERENCE}. Not a finding "
+                       "about the clock or the lead")
     if cfd is None:
         return Reading(future, symbol, why, "UNMEASURED", None, None, 0, {}, {}, {}, empty,
                        f"{symbol} has no H1 parquet in this tree")
@@ -477,6 +507,10 @@ def census(*, fetch: bool = True) -> dict[str, Any]:
         "n_measured": sum(1 for r in rows if r.status == "MEASURED"),
         "clock": clock_verdict(rows),
         "pairs": [r.to_dict() for r in rows],
+        "unmeasured_no_licensed_source": [r.future for r in rows
+                                          if r.status == UNMEASURED_NO_LICENSED_SOURCE],
+        "missed_growth": [missed_growth_line(r.future) for r in rows
+                          if r.status == UNMEASURED_NO_LICENSED_SOURCE],
         "cluster": "cross_asset_lead_lag",
         "rule": (
             "the clock is measured BEFORE any lead is reported, and no lead is reported at all "
@@ -485,6 +519,93 @@ def census(*, fetch: bool = True) -> dict[str, Any]:
             "rows, because a row is not an hour on an index with weekend and session gaps. An "
             "hourly lead is an ECONOMIC lead and never a microstructure one"),
     }
+
+
+# ------------------------------------------------------------------ the tape re-measure
+#: THE LICENSED RE-MEASUREMENT OF THE BAR CLOCK (follow-up to the Yahoo cut, 2026-10-14). The
+#: offsets on disk were inferred against Yahoo's futures bars. The desk's own tick tape carries,
+#: on every row the recorder wrote, the broker's stamp (`time_msc`: broker wall time encoded as
+#: epoch ms) beside OUR receipt instant (`recv_utc`: genuinely UTC). Their difference is the
+#: broker offset minus the receipt latency, so the median rounded to a whole hour IS the offset --
+#: measured on the desk's own data, no third party read. Readers are feed_clock_lab's (one tape
+#: reader, never a second).
+TAPE_ROOT = BASE / "data" / "tape" / "ticks"
+#: |median delta - whole hours| above this and the day does not resolve an offset: a receipt
+#: latency of 15 minutes is not a poll offset, it is a stalled recorder.
+TAPE_RESIDUAL_MAX_MS = 15 * 60_000.0
+#: Rows with both stamps below this and the day is not a reading.
+TAPE_MIN_TICKS = 200
+#: The most recent tape days read per symbol (bounded: the build box has 8 GB).
+TAPE_MAX_DAYS = 30
+
+
+def tape_day_offset(tape: dict[str, Any]) -> dict[str, Any]:
+    """One tape day's offset reading from time_msc (broker) against recv_ms (OUR receipt, UTC):
+    {offset_h, residual_ms, n} or {status: UNMEASURED, why}. Never guesses."""
+    recv, arr = tape.get("recv_ms"), tape.get("arrival_ms")
+    if recv is None or arr is None:
+        return {"status": "UNMEASURED", "why": "no recv_utc beside time_msc on this day"}
+    delta = np.asarray(arr, dtype=float) - np.asarray(recv, dtype=float)
+    delta = delta[np.isfinite(delta)]
+    if delta.size < TAPE_MIN_TICKS:
+        return {"status": "UNMEASURED", "why": f"{delta.size} rows carry both stamps"}
+    med = float(np.median(delta))
+    off = round(med / 3_600_000.0)
+    resid = med - off * 3_600_000.0
+    if abs(resid) > TAPE_RESIDUAL_MAX_MS:
+        return {"status": "UNMEASURED", "n": int(delta.size), "median_delta_ms": round(med, 1),
+                "why": (f"median broker-minus-receipt is {resid / 60_000:.1f} min off a whole "
+                        "hour: the receipt lag is too large to resolve the offset")}
+    return {"status": "MEASURED", "offset_h": off, "residual_ms": round(resid, 1),
+            "n": int(delta.size)}
+
+
+def tape_offsets(tape_root: Path | None = None, *, max_days: int = TAPE_MAX_DAYS
+                 ) -> dict[str, Any]:
+    """The bar clock per season from the desk's own tick tape, in BAR_CLOCK.json's shape
+    (`per_season.<s>.offset_h` + `agrees_across_pairs`). A season with no tape day inside its
+    window, or whose days disagree, has offset_h None -- UNMEASURED, never a guess."""
+    import feed_clock_lab as fcl
+
+    from libs.research import bar_clock
+    root = tape_root or TAPE_ROOT
+    readings: dict[str, dict[str, list[dict[str, Any]]]] = {n: {} for n, _, _ in SEASONS}
+    unresolved = 0
+    for sym, days in sorted(fcl.tape_days(root).items()):
+        for day, path in sorted(days.items())[-max_days:]:
+            try:
+                when = datetime.fromisoformat(day)
+            except ValueError:
+                continue
+            season = bar_clock.season_of(when)
+            if season is None or season not in readings:
+                continue                       # a shoulder day measures neither season
+            tape = fcl.read_tape(path)
+            if tape is not None and tape.get("recv_ms") is None:
+                sib = fcl.sibling_receipt(path)
+                if sib is not None:
+                    tape = sib
+            got = tape_day_offset(tape or {})
+            if got.get("status") != "MEASURED":
+                unresolved += 1
+                continue
+            readings[season].setdefault(sym, []).append({"day": day, **got})
+    per_season: dict[str, dict[str, Any]] = {}
+    for name, rows in readings.items():
+        offs = {r["offset_h"] for days_ in rows.values() for r in days_}
+        per_season[name] = {
+            "offset_h": next(iter(offs)) if len(offs) == 1 else None,
+            "agrees_across_pairs": len(offs) == 1,
+            "n_symbols": len(rows), "n_days": sum(len(v) for v in rows.values()),
+            "readings": {k: {"days": len(v), "offsets": sorted({r["offset_h"] for r in v})}
+                         for k, v in rows.items()},
+        }
+    measured = [n for n, b in per_season.items() if b["offset_h"] is not None]
+    return {"status": "MEASURED" if measured else "UNMEASURED",
+            "measured_seasons": measured, "per_season": per_season,
+            "unresolved_days": unresolved, "tape_root": str(root),
+            "measured_by": ("broker time_msc minus OUR recv_utc on the desk's own tick tape, "
+                            "median per day rounded to whole hours")}
 
 
 def render(doc: dict[str, Any]) -> str:
@@ -526,7 +647,18 @@ def main(argv: list[str] | None = None) -> int:
     doc = census(fetch=not args.no_fetch)
     # ONE WRITER PER FILE (2026-10-21). BAR_CLOCK.json is published by research/bar_clock_probe.py,
     # which reads this report's `clock` block as its multi-year cross-venue opinion; writing it
-    # here too meant whichever leg ran last silently erased the other's evidence.
+    # here too meant whichever leg ran last silently erased the other's evidence. So an
+    # unmeasured pass (the Yahoo cut leaves every pair UNMEASURED_NO_LICENSED_SOURCE) cannot
+    # overwrite a measured clock: this leg never writes it at all.
+    # THE LICENSED RE-MEASURE (Yahoo cut, 2026-10-14) is published HERE, in this report only: the
+    # desk's own tick tape (broker time_msc against OUR recv_utc), per season. It is a reading for
+    # the record, never a writer of BAR_CLOCK.json and never the `clock` block the probe reads.
+    try:
+        tape = tape_offsets(ROOT / "desks" / "mt5" / "data" / "tape" / "ticks")
+    except Exception as exc:              # a reader fault is UNMEASURED, never a crash
+        tape = {"status": "UNMEASURED", "per_season": {},
+                "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
+    doc["tape_remeasure"] = tape
     out = ROOT / Path(*OUT_REL.split("/"))
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
