@@ -98,7 +98,7 @@ def _regime_keep(b: Bars, regime: str) -> np.ndarray:
         rv = (c / c.shift(1) - 1.0).rolling(20, min_periods=20).std()
         med = rv.rolling(100, min_periods=100).median()
         keep = rv > med if VOL_REGIMES[regime] == "high" else rv < med
-        return keep.fillna(False).to_numpy(dtype=bool)
+        return np.asarray(keep.fillna(False).to_numpy(dtype=bool), dtype=bool)
     stamps = pd.to_datetime(pd.Series(b.t), utc=True)
     keep = (stamps.dt.day >= 26).to_numpy()
     if regime == "quarter_end":

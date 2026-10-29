@@ -644,7 +644,8 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
     (everything else) applied, or the reason there is no written rule."""
     own = OWN_RESOLVERS.get(str(family or ""))
     if own is not None:                 # replication_families: strict, wrappers by name
-        return own(params, selector, side)
+        resolved: tuple[dict[str, Any] | None, str] = own(params, selector, side)
+        return resolved
     spec = SPEC_BOOK.get(str(family or ""))
     if spec is None:
         return None, f"no written specification in the spec book for family {family!r}"
