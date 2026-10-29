@@ -421,6 +421,15 @@ def test_with_no_sample_in_the_epoch_the_epoch_itself_is_zero() -> None:
     assert law._prior_sample(_samples((300, 24)), "K", NOW, 100.0, young) == (None, None)
 
 
+
+def test_a_history_younger_than_the_epoch_never_reads_zero_at_the_epoch() -> None:
+    """Audit HOLD on #487: a clock frozen at n=5 across a 150h hole read ACCUMULATING because the
+    epoch was taken as a zero sample the history never saw. Without a sample at or before the
+    epoch, the prior is UNMEASURED."""
+    epoch = NOW - timedelta(hours=400)
+    assert law._prior_sample(_samples((90, 5), (1, 5)), "K", NOW, 100.0, epoch) == (None, None)
+    assert law._prior_sample(_samples((450, 3), (1, 5)), "K", NOW, 100.0, epoch) == (0, epoch)
+
 # ----------------------------------------------- a duplicate convicts only while it breaks a clock
 def _dup_scan(monkeypatch, tmp_path, rows):
     monkeypatch.setattr(law, "host_runs_clocks", lambda desk=None: (True, "test host"))

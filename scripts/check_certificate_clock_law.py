@@ -332,7 +332,13 @@ def _prior_sample(samples: list[dict[str, Any]], key: str,
             continue
         if best is None or t < best[1]:
             best = (n, t)
-    if best is None and epoch is not None and (now - epoch).total_seconds() / 3600.0 >= threshold_h:
+    # (0, epoch) needs the HISTORY to reach back to the epoch. If the oldest retained sample is
+    # younger than the epoch (the history is capped at MAX_SAMPLES, or it has a hole), there is no
+    # record of what happened in between, and a frozen clock would read ACCUMULATING off nothing
+    # (audit HOLD on #487, 2026-10-29: n=5 frozen across a 150h gap). That is UNMEASURED.
+    stamps = [t for t in (_parse_ts(s.get("at")) for s in samples) if t is not None]
+    if (best is None and epoch is not None and stamps and min(stamps) <= epoch
+            and (now - epoch).total_seconds() / 3600.0 >= threshold_h):
         return 0, epoch
     return best if best is not None else (None, None)
 
