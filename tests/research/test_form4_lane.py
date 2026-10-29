@@ -710,14 +710,23 @@ def test_the_real_getter_returns_every_header_and_the_error_body(monkeypatch) ->
     msg["Retry-After"] = "120"
     msg["cf-mitigated"] = "challenge"
 
-    def boom(req, timeout=None):
+    sent: list[str] = []
+
+    def boom(req, timeout=None, context=None):
+        # the getter goes through the polite door: robots.txt is read first (404: allow all),
+        # then the page itself answers 403 with a challenge
+        sent.append(req.full_url)
+        if req.full_url.endswith("/robots.txt"):
+            raise urllib.error.HTTPError(req.full_url, 404, "Not Found", email.message.Message(),
+                                         io.BytesIO(b""))
         raise urllib.error.HTTPError(req.full_url, 403, "Forbidden", msg,
                                      io.BytesIO(b"<title>Just a moment...</title>"))
 
-    monkeypatch.setattr(fl.urllib.request, "urlopen", boom)
     monkeypatch.setattr(fl, "SPACING_S", 0.0)
-    status, body, headers = fl._call(fl.urllib_getter("desk research contact@example.com"),
-                                     "https://www.sec.gov/x")
+    status, body, headers = fl._call(
+        fl.urllib_getter("desk research contact@example.com", opener=boom),
+        "https://www.sec.gov/x")
+    assert sent == ["https://www.sec.gov/robots.txt", "https://www.sec.gov/x"]
     assert status == 403
     assert headers.get("retry-after") == "120"
     assert headers.get("cf-mitigated") == "challenge"

@@ -61,6 +61,8 @@ ALLOWED: dict[str, tuple[str, str]] = {
     "scripts/seats.py": (NOT_SCRAPING, "OpenRouter balance API + ntfy alert"),
     "scripts/_retired/llm_blind_researcher.py": (NOT_SCRAPING, "retired LLM API caller"),
     "scripts/_retired/llm_code_auditor.py": (NOT_SCRAPING, "retired LLM API caller"),
+    "ops/release/independent_review.py": (NOT_SCRAPING, "LLM inference APIs (OpenRouter, "
+                                                        "Gemini) for the release review, keyed"),
     # ---- not scraping: alerts and heartbeats the desk SENDS
     "libs/ops/alert_channels.py": (NOT_SCRAPING, "Telegram/ntfy/webhook alerts sent by the desk"),
     "scripts/run_alerts.py": (NOT_SCRAPING, "ntfy / healthchecks pings sent by the desk"),

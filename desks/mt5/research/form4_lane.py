@@ -174,8 +174,12 @@ def _parse_time(v: Any) -> datetime | None:
     return t if t.tzinfo is not None else t.replace(tzinfo=UTC)
 
 
-def urllib_getter(ua: str) -> Getter:
-    """A spaced GET with the declared User-Agent. Never logs the header."""
+def urllib_getter(ua: str, *, opener: Callable[..., Any] | None = None) -> Getter:
+    """A spaced GET with the declared User-Agent, through THE ONE polite door
+    (`polite_fetch.polite_urlopen`: the origin's holds and robots.txt are read before any byte
+    leaves, LAWS 5e amended 2026-10-14; the SEC's declared-contact UA is kept, never replaced).
+    Never logs the header. `opener` is a test's network stand-in, passed to the door."""
+    from libs.data import polite_fetch as _pf
     last = [0.0]
 
     def get(url: str, headers: dict[str, str]) -> tuple[int, bytes, dict[str, str]]:
@@ -186,9 +190,10 @@ def urllib_getter(ua: str) -> Getter:
         req = urllib.request.Request(url, headers={"User-Agent": ua,
                                                    "Accept-Encoding": "identity", **headers})
         try:
-            with urllib.request.urlopen(req, timeout=TIMEOUT_S) as resp:
-                return (int(resp.status), resp.read(8 * 1024 * 1024),
-                        {str(k): str(v) for k, v in resp.headers.items()})
+            resp = _pf.polite_urlopen(req, timeout=TIMEOUT_S, max_bytes=8 * 1024 * 1024,
+                                      retries=0, leg="form4_lane", opener=opener)
+            return (int(resp.status), resp.read(8 * 1024 * 1024),
+                    {str(k): str(v) for k, v in resp.headers.items()})
         except urllib.error.HTTPError as exc:
             # Every response header and the error body go back, so the hard stop sees
             # Retry-After and a WAF challenge (cf-mitigated / challenge page) on a refusal.
@@ -200,6 +205,8 @@ def urllib_getter(ua: str) -> Getter:
                 err_body = b""
             return int(exc.code), err_body, hdrs
         except (urllib.error.URLError, TimeoutError, OSError):
+            # a polite refusal (robots, a hold, the fence: PoliteRefused is a URLError) or a
+            # transport failure: nothing was received
             return 0, b"", {}
     return get
 

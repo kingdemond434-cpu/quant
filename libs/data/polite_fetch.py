@@ -40,6 +40,7 @@ No secret is read or sent. Stdlib only (certifi is optional).
 from __future__ import annotations
 
 import contextlib
+import io
 import json
 import random
 import re
@@ -1059,6 +1060,12 @@ class Response:
     #: (platform, url) when THE METHOD FENCE refused the fetch (first URL or a hop); a seam
     #: re-raises it as `terms_fence.TermsFenced` so a urlopen-shaped caller keeps its fence path.
     fenced: tuple[str, str] | None = None
+    #: The last response's headers, every one (an HTTP error's too), so a urlopen-shaped caller
+    #: still sees Retry-After or a challenge marker on a refusal; {} when nothing was received.
+    headers: dict[str, str] = field(default_factory=dict)
+    #: An HTTP error's body (bounded), kept apart from `body` so no caller ever ingests it as
+    #: content; the urlopen seam hands it back on its HTTPError, as urlopen does.
+    error_body: bytes = b""
 
     @property
     def ok(self) -> bool:
@@ -1189,6 +1196,7 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 resp.status = status
                 resp.final_url = final
                 resp.content_type = ctype
+                resp.headers = {str(k): str(v) for k, v in h.items()} if h is not None else {}
                 resp.body = inflate(raw, cenc)
                 resp.text = text
                 # hops a caller-supplied opener followed itself, after the ones this loop took
@@ -1212,7 +1220,9 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
             try:
                 wait = _retry_after(getattr(exc, "headers", None))
                 loc = exc.headers.get("Location") if exc.headers is not None else None
-                if code not in REDIRECT_STATUS and code not in BLOCK_STATUS:
+                if code not in REDIRECT_STATUS:
+                    # a refusal's body too: a challenge page on a 403 is how a caller's own
+                    # hard stop tells a WAF from a plain refusal (bounded; never ingested)
                     with contextlib.suppress(Exception):
                         ebody = exc.read(16000)
             finally:
@@ -1236,6 +1246,9 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
                 cur = nxt                          # the next pass checks THIS hop's fence + robots
                 continue
             resp.status = code
+            eh = getattr(exc, "headers", None)
+            resp.headers = {str(k): str(v) for k, v in eh.items()} if eh is not None else {}
+            resp.error_body = ebody
             _stat(leg, http_errors=1, error=f"HTTP {code}")
             if code in BLOCK_STATUS:
                 resp.verdict = acc.block(cur, code)
@@ -1466,9 +1479,17 @@ class SeamResponse:
         self.close()
 
 
-def _seam_http_error(url: str, status: int, error: str) -> urllib.error.HTTPError:
+def _seam_http_error(url: str, status: int, error: str,
+                     headers: Mapping[str, str] | None = None,
+                     body: bytes = b"") -> urllib.error.HTTPError:
+    """The HTTPError a urlopen-shaped caller expects: the response's own headers and (bounded)
+    error body travel with it, exactly as urlopen's would, so Retry-After and a challenge page
+    still reach the caller's hard stop."""
+    msg = Message()
+    for k, v in (headers or {}).items():
+        msg[k] = v
     return urllib.error.HTTPError(redact_url(url), status, error or f"HTTP {status}",
-                                  Message(), None)
+                                  msg, io.BytesIO(body))
 
 
 def _keyed_open(url: str, hdr: dict[str, str], data: bytes | None, method: str | None,
@@ -1560,7 +1581,7 @@ def polite_urlopen(req: urllib.request.Request | str, timeout: float = 30.0, *,
         return SeamResponse(r.final_url or url, int(r.status or 200), r.body, r.content_type)
     if r.status is not None and (r.status >= 400 or r.status == 304):
         # urlopen raises for a 304 too; a conditional-GET caller reads it from the HTTPError
-        raise _seam_http_error(url, int(r.status), r.error)
+        raise _seam_http_error(url, int(r.status), r.error, r.headers, r.error_body)
     if r.fenced is not None:
         # the method fence's own refusal type, so a caller's `except TermsFenced` path still
         # names the held platform (it is a URLError too)
