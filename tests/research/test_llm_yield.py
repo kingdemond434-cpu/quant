@@ -27,6 +27,7 @@ def paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(ly, "REGISTRY", tmp_path / "absent.sqlite")
     monkeypatch.setattr(ly, "CERT_PROVENANCE", tmp_path / "cp.json")
     monkeypatch.setattr(ly, "LAB_REPORTS", {n: tmp_path / f"{n}.absent" for n in ly.LAB_REPORTS})
+    monkeypatch.setattr(ly, "LEG_CONTRACT", tmp_path / "WRITE_OR_EXPLAIN.absent")
     (tmp_path / "data").mkdir()
     return tmp_path
 
@@ -164,3 +165,21 @@ def test_producer_fence_flags_a_dead_replacement() -> None:
         target = fence.replacement_target(fence.REPLACEMENTS[name])
         assert target not in {"mathlab", "physics_lab", "lab_crossasset", "lab_timeseries",
                               "lab_probability", "lab_microstructure"}, name
+
+
+def test_a_leg_that_times_out_every_pass_is_red(paths: Path, monkeypatch: pytest.MonkeyPatch,
+                                                ) -> None:
+    from libs.ops import write_or_explain as woe
+    rows = [{"leg": "math_lab", "verdict": woe.LEG_TIMEOUT, "wrote": [], "at": f"t{i}"}
+            for i in range(3)]
+    rows.insert(1, {"leg": "other", "verdict": woe.OK, "wrote": ["x"]})
+    chronic = woe.chronic_timeouts(rows)
+    assert [c["leg"] for c in chronic] == ["math_lab"]
+    assert woe.chronic_timeouts(rows[:-1]) == []           # two in a row is not chronic yet
+    assert woe.chronic_timeouts([*rows, {"leg": "math_lab", "verdict": woe.OK,
+                                         "wrote": ["r"]}]) == []
+    contract = paths / "woe.json"
+    contract.write_text(json.dumps({"chronic_timeouts": chronic}), "utf-8")
+    monkeypatch.setattr(ly, "LEG_CONTRACT", contract)
+    assert ("chronic_timeout", "math_lab") in {(v["check"], v["generator"])
+                                               for v in ly.run(now=NOW)["violations"]}

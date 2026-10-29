@@ -70,3 +70,38 @@ def test_no_ledger_yet_is_empty_and_reads_no_files(tmp_path: Path) -> None:
 def test_a_pass_names_why_it_gave_what_it_gave(rows: int, donated: int, already: int,
                                                refused: int, want: str) -> None:
     assert ML.donation_status(rows, donated, already, refused) == want
+
+
+def test_the_pass_stops_waiting_on_a_scientist_at_the_deadline(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """A scientist that ignores its budget held both labs past their leg caps every pass from
+    10-10 to 10-29 (LEG_TIMEOUT, nothing written). `collect` stops waiting at the deadline."""
+    import threading
+    import time as _t
+    from concurrent.futures import ThreadPoolExecutor
+    release = threading.Event()
+    monkeypatch.setattr(ML, "ABANDONED_THREADS", 0)
+    pool = ThreadPoolExecutor(max_workers=2)
+    futures = {"fast": pool.submit(lambda: {"ok": 1}),
+               "slow": pool.submit(lambda: release.wait(30) and {"ok": 2}),
+               "boom": pool.submit(lambda: 1 / 0)}
+    t0 = _t.monotonic()
+    got, late = ML.collect(futures, _t.monotonic() + 0.5,
+                           lambda k, status, why: {"status": status, "why": why})
+    assert _t.monotonic() - t0 < 5
+    assert got["fast"] == {"ok": 1}
+    assert late == ["slow"] and got["slow"]["status"] == "TIMED_OUT"
+    assert got["boom"]["status"] == "FAILED" and "ZeroDivisionError" in got["boom"]["why"]
+    assert ML.ABANDONED_THREADS == 1
+    release.set()
+    pool.shutdown(wait=True)
+
+
+def test_a_checkpoint_lands_the_donation_before_the_slow_phases(tmp_path: Path) -> None:
+    out = tmp_path / "MATH_LAB.json"
+    ML.checkpoint(out, 0.0, "donated", {"donated": 4, "status": "DONATED"}, 9, dry_run=False)
+    doc = json.loads(out.read_text("utf-8"))
+    assert doc["partial"] is True and doc["donation"]["donated"] == 4
+    assert doc["dry_run"] is False and "at" in doc
+    ML.checkpoint(tmp_path / "dry.json", 0.0, "donated", {}, 0, dry_run=True)
+    assert not (tmp_path / "dry.json").exists()

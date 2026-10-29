@@ -43,7 +43,8 @@ import json
 import os
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeout
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -812,6 +813,64 @@ def _entry_exit(params: dict[str, Any]) -> dict[str, str]:
 
 DONATED_LEDGER_VERSION = 2
 
+#: THE SCIENTISTS GET THIS SHARE OF THE WALL CLOCK, MEASURED FROM THE START OF THE PASS.
+#: MEASURED ON THE BOX 2026-10-29 (Desk health): with every core saturated, math_lab and
+#: physics_lab hit their 720 s / 700 s leg caps on every pass since 10-10 -- LEG_TIMEOUT, 0 of
+#: 3 artifacts moved, no donation since 10-10 08:26Z. Each tradition's budget is advisory to a
+#: scientist under CPU contention, and `future.result()` waited on it without limit, so one
+#: slow scientist held the whole pass past the kill. The pass now stops WAITING at this share;
+#: a scientist still running is recorded TIMED_OUT (its objects UNMEASURED, never invented) and
+#: the judge, the donation and the report run on what came back.
+SCIENCE_WALL_SHARE = 0.45
+#: Scientist threads a pass stopped waiting for. Non-daemon pool threads would hold the process
+#: open at exit -- the same kill by another name -- so `main` exits hard once the report is out.
+ABANDONED_THREADS = 0
+
+
+def collect(futures: dict[Any, Future[Any]], deadline: float,
+            failed: Any) -> tuple[dict[Any, Any], list[Any]]:
+    """Each future's result, waiting no later than `deadline` (monotonic) in total.
+
+    `failed(key, status, why)` builds the row for a future that raised or did not finish.
+    Returns (results, timed_out_keys). Never raises.
+    """
+    global ABANDONED_THREADS
+    out: dict[Any, Any] = {}
+    late: list[Any] = []
+    for key, fut in futures.items():
+        try:
+            out[key] = fut.result(timeout=max(0.0, deadline - time.monotonic()))
+        except FutureTimeout:
+            fut.cancel()
+            late.append(key)
+            out[key] = failed(key, "TIMED_OUT", "still running at the pass's science deadline; "
+                                                "its objects are UNMEASURED this pass")
+        except Exception as exc:
+            out[key] = failed(key, "FAILED", f"{type(exc).__name__}: {exc}")
+    ABANDONED_THREADS += sum(1 for k in late if not futures[k].done())
+    return out, late
+
+
+def hard_exit_if_abandoned(code: int) -> int:
+    """Exit now when scientist threads are still running, so they cannot hold the leg open."""
+    if ABANDONED_THREADS:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os._exit(code)
+    return code
+
+
+def checkpoint(path: Path, started: float, phase: str, donation: dict[str, Any],
+               admitted: int, dry_run: bool) -> None:
+    """A partial report the moment the donation has landed, so a kill afterwards still leaves
+    the pass's one load-bearing fact -- what it donated -- on disk. The full report replaces it."""
+    if dry_run:
+        return
+    with contextlib.suppress(OSError):
+        _atomic(path, {"at": now_iso(), "partial": True, "phase": phase, "dry_run": False,
+                       "elapsed_s": round(time.monotonic() - started, 2),
+                       "objects": {"admitted": admitted}, "donation": donation})
+
 
 def load_donated(path: Path, source: str) -> tuple[set[str], dict[str, Any]]:
     """Object ids already WRITTEN to the intake, and how that was established.
@@ -1096,18 +1155,15 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     census = _operator_census([])
     budgets = {t: max(5.0, budget_s * float(plan["traditions"][t].get(
         "budget_share", plan["traditions"][t]["share"]))) for t in chosen}
-    results: dict[str, dict[str, Any]] = {}
-    with ThreadPoolExecutor(max_workers=max(1, min(workers, len(chosen)))) as pool:
-        futures = {pool.submit(_run_tradition, t, panels, budgets[t], roi, census): t
-                   for t in chosen}
-        for future, tradition in futures.items():
-            try:
-                results[tradition] = future.result()
-            except Exception as exc:
-                results[tradition] = {"tradition": tradition, "status": "FAILED",
-                                      "why": f"{type(exc).__name__}: {exc}", "objects": [],
-                                      "panels": [], "evaluated": 0, "distinct": set(),
-                                      "unmeasured": [], "minted": [], "compute_s": 0.0}
+    pool = ThreadPoolExecutor(max_workers=max(1, min(workers, len(chosen))))
+    futures = {t: pool.submit(_run_tradition, t, panels, budgets[t], roi, census)
+               for t in chosen}
+    results, timed_out = collect(
+        futures, started + SCIENCE_WALL_SHARE * budget_s,
+        lambda t, status, why: {"tradition": t, "status": status, "why": why, "objects": [],
+                                "panels": [], "evaluated": 0, "distinct": set(),
+                                "unmeasured": [], "minted": [], "compute_s": 0.0})
+    pool.shutdown(wait=not timed_out, cancel_futures=True)
 
     rng = np.random.default_rng(SEED)
     # THE WALL CLOCK GOVERNS THE JUDGE TOO (2026-09-23). `budgets` above bounds the SCIENTISTS;
@@ -1254,6 +1310,7 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
         len(rows), int(donation.get("donated") or 0),
         int(donation["already_donated_in_a_previous_pass"]), len(refused)))
 
+    checkpoint(OUT, started, "donated", donation, len(admitted), dry_run)
     representations = representation_manifest(minted, dry_run)
     registry = ({"status": "SKIPPED_DRY_RUN"} if dry_run
                 else record_registry(admitted, per_tradition, donated_by_tradition))
@@ -1360,7 +1417,7 @@ def main(argv: list[str] | None = None) -> int:
                       "passed": report["objects"]["passed_burden"],
                       "donated": report["donation"].get("donated"),
                       "unmeasured": len(report["unmeasured"])}, indent=1, default=str))
-    return 0
+    return hard_exit_if_abandoned(0)
 
 
 if __name__ == "__main__":                                                # pragma: no cover

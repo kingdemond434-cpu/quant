@@ -222,24 +222,28 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
                                                "engines": budget_s / 3}
     pops = populations(pass_index, physics, maths)
     civ_results: dict[str, dict[str, dict[str, Any]]] = {}
-    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
-        futures = {}
-        for civ, traditions in pops.items():
-            for tradition in traditions:
-                dept = "physics" if tradition in PHYSICS_REGISTRY else "mathematics"
-                n_dept = max(1, sum(1 for t in traditions
-                                    if (t in PHYSICS_REGISTRY) == (dept == "physics")))
-                share = float(budgets.get(dept, budget_s / 3)) / (len(pops) * n_dept)
-                futures[(civ, tradition)] = pool.submit(_run_tradition, civ, tradition, working,
-                                                        max(2.0, share), CIVILIZATIONS[civ])
-        for (civ, tradition), fut in futures.items():
-            try:
-                civ_results.setdefault(civ, {})[tradition] = fut.result()
-            except Exception as exc:
-                civ_results.setdefault(civ, {})[tradition] = {
-                    "civilization": civ, "tradition": tradition, "objects": [], "evaluated": 0,
-                    "distinct": set(), "unmeasured": [], "status": "FAILED",
-                    "why": f"{type(exc).__name__}: {exc}", "compute_s": 0.0, "panels": []}
+    pool = ThreadPoolExecutor(max_workers=max(1, workers))
+    futures = {}
+    for civ, traditions in pops.items():
+        for tradition in traditions:
+            dept = "physics" if tradition in PHYSICS_REGISTRY else "mathematics"
+            n_dept = max(1, sum(1 for t in traditions
+                                if (t in PHYSICS_REGISTRY) == (dept == "physics")))
+            share = float(budgets.get(dept, budget_s / 3)) / (len(pops) * n_dept)
+            futures[(civ, tradition)] = pool.submit(_run_tradition, civ, tradition, working,
+                                                    max(2.0, share), CIVILIZATIONS[civ])
+    # The scientists stop being WAITED ON at the shared science deadline (math_lab.collect):
+    # a scientist that ignores its budget under CPU contention held this pass past its 700 s cap
+    # on every run from 10-10 to 10-29, so nothing was ever judged, carded or donated.
+    collected, timed_out = ML.collect(
+        futures, started + ML.SCIENCE_WALL_SHARE * budget_s,
+        lambda key, status, why: {"civilization": key[0], "tradition": key[1], "objects": [],
+                                  "evaluated": 0, "distinct": set(), "unmeasured": [],
+                                  "status": status, "why": why, "compute_s": 0.0,
+                                  "panels": []})
+    pool.shutdown(wait=not timed_out, cancel_futures=True)
+    for (civ, tradition), row in collected.items():
+        civ_results.setdefault(civ, {})[tradition] = row
 
     # ---- judge every object inside its civilization, then card it
     lifetime = {m: int((previous.get("methods", {}).get(m) or {}).get("lifetime_trials", 0))
@@ -506,6 +510,7 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
         len(donation_rows), int(donation.get("donated") or 0),
         int(donation["already_donated_in_a_previous_pass"]), len(refused)))
     donation["by_tradition"] = donated_by_tradition
+    ML.checkpoint(OUT, started, "donated", donation, len(unique_forward), dry_run)
     per_tradition_registry = {t: {"proposed": v["proposed"], "distinct": v.get("evaluated", 0),
                                   "evaluated": v["evaluated"], "passed": v["passed"],
                                   "compute_s": v["compute_s"],
@@ -635,7 +640,7 @@ def main(argv: list[str] | None = None) -> int:
                       "wiring_complete": report["wiring_proof"].get("complete"),
                       "donated": report["donation"].get("donated"),
                       "unmeasured": len(report["unmeasured"])}, indent=1, default=str))
-    return 0
+    return ML.hard_exit_if_abandoned(0)
 
 
 if __name__ == "__main__":                                                # pragma: no cover

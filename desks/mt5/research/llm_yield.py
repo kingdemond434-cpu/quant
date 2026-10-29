@@ -71,6 +71,7 @@ REPORT = BASE / "reports" / "LLM_YIELD.json"
 LAB_REPORTS = {"mathlab": BASE / "reports" / "MATH_LAB.json",
                "physics_lab": BASE / "reports" / "PHYSICS_LAB.json",
                "world_lab": BASE / "reports" / "WORLD_LAB.json"}
+LEG_CONTRACT = BASE / "reports" / "WRITE_OR_EXPLAIN.json"
 #: A lab report older than this is a clock that stopped (the labs run hourly).
 LAB_STALE_H = 6.0
 PRIORITY = BASE / "data" / "llm_model_priority.json"
@@ -392,6 +393,10 @@ def run(*, window_days: float = WINDOW_DAYS, now: datetime | None = None) -> dic
                 gens["math_traditions"].setdefault(f"math:{tradition}", {})[
                     f"donated_last_pass_{name}"] = n
     bad = violations(calls, gens, lab_runs)
+    contract = _read_json(LEG_CONTRACT)
+    for c in (contract or {}).get("chronic_timeouts") or [] if isinstance(contract, dict) else []:
+        bad.append({"check": "chronic_timeout", "generator": c.get("leg"),
+                    "why": c.get("detail") or "timed out every pass with nothing moved"})
     prio = priority(calls, lab)
     return {"generated_utc": now.isoformat(timespec="seconds"), "window_days": window_days,
             "law": "every model and generator is measured to the certificate; silent success "
