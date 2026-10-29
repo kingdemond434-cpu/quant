@@ -818,6 +818,87 @@ SOURCE_POLICY["sge"] = {
               "unread": {"https://www.sge.com.cn/": (
                   "no terms link; footer 'Copyright 2016 上海黄金交易所 All Right Reserved' "
                   "(2026-10-29)")}}}
+#: THE TURKISH HOUSEHOLD GOLD DEMAND STATE (IDEA_QUEUE 257, 2026-10-29). Three rows, one per
+#: publisher. EVDS's OWN terms ("EVDS Kullanim Sartlari", served by evds3 as document 18) govern
+#: the EVDS web service and permit third-party use and publication with the source credited, for
+#: commercial or non-commercial purposes; that is narrower and later than the tcmb.gov.tr site
+#: disclaimer (also quoted), which put commercial use of SITE information under prior written
+#: permission and is why tr_tuik_retail once skipped EVDS. Borsa Istanbul's own notice refuses
+#: copying or storing without prior written consent; Istanbul Gold Refinery links no terms page.
+_TR_GOLD_MISSED = ("delta E[log W] UNMEASURED: the Turkish domestic gold {what} for the XAUUSD "
+                   "Europe and Asia windows cannot be read from this publisher until its terms "
+                   "permit automated access; the CBRT EVDS rows carry the state meanwhile, and no "
+                   "conversion of this route is on record")
+SOURCE_POLICY.update({
+    "tr_evds_gold": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED, "key_env": ("EVDS_API_KEY",),
+        "sources": ("tr_gold_try_price", "tr_gold_imports", "tr_gold_reserves"),
+        "why": ("the CBRT EVDS web service (an API taking the user's key in a request header); "
+                "EVDS's own terms (clauses quoted) let third parties use and publish EVDS data "
+                "with the source credited, commercial use included, with no extra charge passed "
+                "to users, and let the CBRT cap query counts; robots.txt is read per request by "
+                "polite_fetch (a Disallow is a hold). One-line revert: status -> IDEAS_ONLY if "
+                "the auditor reads the tcmb.gov.tr site disclaimer as governing EVDS data"),
+        "api": "https://evds3.tcmb.gov.tr/igmevdsms-dis/",
+        "credit": "Kaynak: TCMB EVDS (Türkiye Cumhuriyet Merkez Bankası Elektronik Veri "  # noqa: RUF001
+                  "Dağıtım Sistemi); premium and z computed by the desk",  # noqa: RUF001
+        "robots": "read per request by polite_fetch for DESK_UA (not readable from the authoring "
+                  "container, whose proxy refuses the host)",
+        "terms": {"url": ("https://evds3.tcmb.gov.tr/igmevdsms-dis/documents/showDocument"
+                          "?docId=18"),
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "use": ("EVDS uygulaması, EVDS web servisi ve EVDS MCP'de sunulan veriler "  # noqa: RUF001
+                              "kaynak gösterilmek koşuluyla ... üçüncü kişiler tarafından "  # noqa: RUF001
+                              "kullanılabilir ve yayımlanabilir."),  # noqa: RUF001
+                      "commercial": ("ticari veya ticari olmayan amaçla dahi kullanıldığında, "  # noqa: RUF001
+                                     "ürünün kullanıcılarına ve abonelerine ..."),  # noqa: RUF001
+                      "web_service": ("EVDS web servisi: EVDS verilerine programatik erişim "
+                                      "sağlayan API."),
+                      "limits": ("TCMB gerekli gördüğü takdirde EVDS bileşenleri üzerinde sorgu "
+                                 "sayısı, eşzamanlı bağlantı sayısı ...")},  # noqa: RUF001
+                  "site_disclaimer": {
+                      "url": ("https://www.tcmb.gov.tr/wps/wcm/connect/EN/TCMB+EN/Bottom+Menu/"
+                              "Other/Disclaimer"),
+                      "quote": ("Information published in this site may be quoted by specific "
+                                "reference thereto, but the use of such information for "
+                                "commercial purposes shall be subject to prior written "
+                                "permission of the CBRT.")}}},
+    "tr_bist_gold": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("tr_bist_gold",),
+        "why": ("Borsa Istanbul's own notice (clause quoted) forbids copying, distributing or "
+                "storing its information for subsequent use without prior written consent, so "
+                "its precious-metals price table is never automated live input; the parser is "
+                "ready on fixtures"),
+        "unblock": ("a Borsa Istanbul data licence (or written consent) for the precious metals "
+                    "market price table, quoted into this row, and the row flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _TR_GOLD_MISSED.format(
+                              what="market price (Borsa Istanbul precious metals market)")},
+        "terms": {"url": "https://borsaistanbul.com/sayfa/3642", "checked_at": "2026-10-29",
+                  "clauses": {
+                      "copying": ("The information contained herein may not otherwise be "
+                                  "copied, performed, distributed, rented, reproduced, "
+                                  "sublicensed, altered, stored for subsequent use, etc., in "
+                                  "whole or in part, in any manner without Borsa İstanbul's "
+                                  "prior written consent.")}}},
+    "tr_iar_gold": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("tr_iar_gold",),
+        "why": ("Istanbul Gold Refinery's site links no terms of use (only a KVKK personal-data "
+                "page) and its home page prints no price table (read 2026-10-29), so its terms "
+                "are UNREAD and UNREAD terms never permit automated live input; no parser is "
+                "built because no price page shape was readable"),
+        "unblock": ("an iar.com.tr statement permitting automated access to a published price "
+                    "page, quoted into this row, and a parser on a fixture of that page"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _TR_GOLD_MISSED.format(what="refinery price")},
+        "terms": {"url": "https://www.iar.com.tr/", "checked_at": "2026-10-29",
+                  "unread": {"https://www.iar.com.tr/": (
+                      "no terms link; footer links only 'Kişisel Verilerin Korunması' "  # noqa: RUF001
+                      "(https://www.iar.com.tr/Kurumsal/kvkk/148), 2026-10-29")}}},
+})
 #: The held-route rows, by key (read by `alt_proxies.HELD_ROUTES`).
 HELD_ROUTE_KEYS: frozenset[str] = frozenset(
     k for k, r in SOURCE_POLICY.items() if r.get("held_route"))

@@ -2939,8 +2939,10 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
                                  "mechanically, and it prints later than BKM"),
         crowding_prior="low", substitutes_for=_CARD,
         note=("stands in for tr_bkm_card (BKM refuses reuse). CBRT EVDS card spending "
-              "(TP.KKHARTUT) is NOT used: the CBRT terms put commercial use under written "
-              "permission. The TÜİK data portal is a JS app, so the bulletin URL comes only from "
+              "(TP.KKHARTUT) is not used here: the tcmb.gov.tr SITE disclaimer puts commercial "
+              "use under written permission, but EVDS's own terms (terms_fence tr_evds_gold, "
+              "read 2026-10-29) permit use with the source credited, so it is a candidate. "
+              "The TÜİK data portal is a JS app, so the bulletin URL comes only from "
               "ALT_TUIK_RETAIL_URL; unset, the row is UNCONFIGURED and nothing is requested")),
     Source(
         id="kr_mof_container_teu",
@@ -3830,11 +3832,120 @@ ASIA_GOLD_SOURCES: tuple[Source, ...] = (
 )
 
 
+#: THE TURKISH HOUSEHOLD GOLD DEMAND STATE (IDEA_QUEUE 257). Three CBRT EVDS series under the
+#: one terms row `tr_evds_gold` (EVDS's own terms permit use with the source credited; the key
+#: travels in the `key` header, never in a URL), and the Borsa Istanbul precious-metals table
+#: under `tr_bist_gold` (IDEAS_ONLY: never requested). Each conditions XAUUSD parents in the
+#: Europe AND the Asia windows. The EVDS series CODES have no default: none was readable on an
+#: official page from the authoring container, and a guessed code is never sent, so each row is
+#: UNCONFIGURED:<ENV> until the code is read from EVDS's own catalogue on the box and set.
+EVDS_BASE = os.environ.get("ALT_EVDS_BASE", "https://evds3.tcmb.gov.tr/igmevdsms-dis/")
+BIST_METAL_URL = ("https://www.borsaistanbul.com/en/data/precious-metals-and-diamond-markets/"
+                  "metal-prices")
+TR_SELECTORS = ("asia", "london", "london_am", "europe")
+#: How many days of EVDS history one pass asks for (the vintage store dedupes; the first pass on
+#: an empty store asks for the full z window and more).
+TR_EVDS_DAYS = {_agp.TR_PRICE_ID: 400, _agp.TR_IMPORT_ID: 365 * 6, _agp.TR_RESERVE_ID: 730}
+TR_EVDS_CODE_ENV = {_agp.TR_PRICE_ID: "ALT_EVDS_GOLD_PRICE_SERIES",
+                    _agp.TR_IMPORT_ID: "ALT_EVDS_GOLD_IMPORT_SERIES",
+                    _agp.TR_RESERVE_ID: "ALT_EVDS_GOLD_RESERVE_SERIES"}
+
+
+def parse_tr_evds(body: bytes, ctx: Ctx) -> list[Obs]:
+    """One EVDS series body -> Obs of the row's series (the request part names the row). The
+    stamp is the row's release rule (EVDS prints none)."""
+    sid = ctx.part
+    if sid not in _agp.TR_SERIES:
+        return []
+    code = config_value(TR_EVDS_CODE_ENV[sid])
+    return [Obs(_agp.TR_SERIES[sid], date.fromisoformat(r["date"]), float(r["value"]))
+            for r in _agp.parse_evds(body, code)]
+
+
+def parse_tr_bist(body: bytes, ctx: Ctx) -> list[Obs]:
+    out: list[Obs] = []
+    for r in _agp.parse_bist_metal_prices(body):
+        d = date.fromisoformat(r["date"])
+        out += [Obs("try_per_kg", d, r["try_per_kg"]), Obs("usd_per_oz", d, r["usd_per_oz"])]
+    return out
+
+
+def _tr_rule(sid: str) -> Callable[[date], datetime]:
+    return lambda period: _agp.tr_release_at(sid, period)
+
+
+_TR_META: dict[str, Any] = {
+    "instruments": {"XAUUSD": 1}, "parent_selectors": TR_SELECTORS, "region": "TR",
+    "language": "tr", "source_culture": "TR/tr", "crowding_prior": "low",
+    "payer": "Western gold holders pricing on real yields and the dollar only",
+    "constraint": ("CBRT-managed lira, capital-flow rules and gold import quotas slow the "
+                   "repricing; the premium is the local market clearing against them")}
+_TR_EVDS_META: dict[str, Any] = {**_TR_META, "key_env": "EVDS_API_KEY", "polite": True,
+                                 "url": EVDS_BASE, "parse": parse_tr_evds,
+                                 "licence": ("EVDS terms of use (Kullanim Sartlari): use and "
+                                             "publication with the source credited "
+                                             "(terms_fence tr_evds_gold)")}
+
+TR_GOLD_SOURCES: tuple[Source, ...] = (
+    Source(
+        id=_agp.TR_PRICE_ID, name="Turkish TRY gold price premium over XAUUSD x USDTRY (CBRT "
+        "EVDS)", cadence="daily", rule=_tr_rule(_agp.TR_PRICE_ID), transform="given",
+        signal_series=("premium_pct",), config_env=(TR_EVDS_CODE_ENV[_agp.TR_PRICE_ID],),
+        mechanism=("Turkish households hold gold as the lira's alternative; a domestic TRY gold "
+                   "price above XAUUSD x USDTRY is local demand and capital flight the London "
+                   "tape prices only later"),
+        participant_structure=("physical_flow", "retail_heavy", "policy_driven"),
+        failure_mode_hypothesis=("fails when the lira gaps (a CBRT rate shock) and the local "
+                                 "quote lags the cross, a timing artefact, not demand"),
+        note=("premium = TRY/gram / (XAUUSD x USDTRY / 31.1035 g at 995 fine) - 1, both MT5 legs "
+              "at the 12:00 UTC H1 bar; PIT: next weekday 06:00 UTC (late on purpose)"),
+        **_TR_EVDS_META),
+    Source(
+        id=_agp.TR_IMPORT_ID, name="Turkish monthly gold imports, surge vs prior months (CBRT "
+        "EVDS)", cadence="monthly", rule=_tr_rule(_agp.TR_IMPORT_ID),
+        transform="anomaly_monthly", signal_series=("gold_imports",),
+        config_env=(TR_EVDS_CODE_ENV[_agp.TR_IMPORT_ID],),
+        mechanism=("an import surge is household demand crossing the border; quotas and duties "
+                   "are set after the surge, so the surge leads the policy response"),
+        participant_structure=("physical_flow", "policy_driven"),
+        failure_mode_hypothesis=("fails when a quota change or a pre-duty rush moves imports "
+                                 "mechanically"),
+        note=("monthly; PIT: month end + 31 days 08:00 UTC, the TÜİK foreign-trade release "
+              "(late on purpose); the state artifact carries the import-surge z"),
+        **_TR_EVDS_META),
+    Source(
+        id=_agp.TR_RESERVE_ID, name="CBRT gold reserves, weekly change (CBRT EVDS)",
+        cadence="weekly", rule=_tr_rule(_agp.TR_RESERVE_ID), transform="diff_weekly",
+        signal_series=("gold_reserves",), config_env=(TR_EVDS_CODE_ENV[_agp.TR_RESERVE_ID],),
+        mechanism=("the CBRT's gold holdings move with household gold deposited into banks "
+                   "(reserve-option and gold-deposit schemes) and official buying"),
+        participant_structure=("policy_driven",),
+        failure_mode_hypothesis="fails when valuation, not tonnage, moves the reported total",
+        note="weekly; PIT: the reading's date + 6 days 12:00 UTC (the Thursday release)",
+        **_TR_EVDS_META),
+    Source(
+        id=_agp.TR_BIST_ID, name="Borsa Istanbul precious-metals gold price premium (TRY/kg)",
+        url=BIST_METAL_URL, cadence="daily", parse=parse_tr_bist,
+        rule=_tr_rule(_agp.TR_PRICE_ID), transform="given", signal_series=("premium_pct",),
+        mechanism="the exchange's own gold price is the domestic clearing level",
+        participant_structure=("physical_flow",),
+        failure_mode_hypothesis="as the CBRT price; the exchange's session clock is UNREAD",
+        licence="Borsa Istanbul notice: no copying or storing without prior written consent",
+        note="IDEAS_ONLY (terms_fence tr_bist_gold): parser on fixtures, never requested",
+        **_TR_META),
+)
+
+
+def _policy(sid: str) -> str:
+    return _agp.POLICY_OF.get(sid, sid)
+
+
 def _gold_terms(sid: str) -> tuple[str, str]:
-    return _tf.terms_verdict(sid), str(_tf.SOURCE_POLICY[sid]["why"])
+    return _tf.terms_verdict(_policy(sid)), str(_tf.SOURCE_POLICY[_policy(sid)]["why"])
 
 
 def _gold_evidence(sid: str) -> dict[str, str]:
+    sid = _policy(sid)
     row = _tf.SOURCE_POLICY[sid]
     t = row.get("terms") or {}
     clauses = " / ".join(str(v) for v in (t.get("clauses") or {}).values())
@@ -3847,8 +3958,9 @@ def _gold_evidence(sid: str) -> dict[str, str]:
     return ev
 
 
-TERMS.update({s.id: _gold_terms(s.id) for s in ASIA_GOLD_SOURCES})
-TERMS_EVIDENCE.update({s.id: _gold_evidence(s.id) for s in ASIA_GOLD_SOURCES})
+TERMS.update({s.id: _gold_terms(s.id) for s in (*ASIA_GOLD_SOURCES, *TR_GOLD_SOURCES)})
+TERMS_EVIDENCE.update({s.id: _gold_evidence(s.id)
+                       for s in (*ASIA_GOLD_SOURCES, *TR_GOLD_SOURCES)})
 #: The SGE premium reader's verdict is the `sge` host row's (UNREAD terms: IDEAS_ONLY).
 TERMS["cn_sge_premium"] = (_tf.terms_verdict("sge"), str(_tf.SOURCE_POLICY["sge"]["why"]))
 
@@ -3901,6 +4013,15 @@ def asia_gold_derived(paths: Paths, src: Source, store: dict[str, Any]
                                                   rate), xau[d])
             _add("premium_pct", d, (pb + ps) / 2.0, [buy[d], sell[d], fx[d]])
             _add("buy_sell_gap_pct", d, ps - pb, [buy[d], sell[d], fx[d]])
+    elif src.id in (_agp.TR_PRICE_ID, _agp.TR_BIST_ID):
+        px = _rows("try_per_gram" if src.id == _agp.TR_PRICE_ID else "try_per_kg")
+        per_kg = src.id == _agp.TR_BIST_ID
+        xau = _agp.xau_daily_close(paths.universe, _agp.TR_XAU_HOUR)
+        usdtry = _agp.xau_daily_close(paths.universe, _agp.TR_XAU_HOUR, "USDTRY")
+        for d in sorted(set(px) & set(xau) & set(usdtry)):
+            g = float(px[d]["value_first"]) / (1000.0 if per_kg else 1.0)
+            _add("premium_pct", d, _agp.premium_pct(
+                _agp.usd_per_oz(g, 1.0, _agp.TR_BAR_PURITY, usdtry[d]), xau[d]), [px[d]])
     elif src.id == _agp.SGE_ID:
         dirs = _rows("pay_direction")
         days = sorted(dirs)
@@ -3909,12 +4030,13 @@ def asia_gold_derived(paths: Paths, src: Source, store: dict[str, Any]
             _add("pay_streak", d, float(run_), [dirs[d]])
     if not synth:
         return {}
-    return build_points(replace(src, transform="level_dev" if src.id in GOLD_XAU_HOUR
-                                else "given"), synth)
+    return build_points(replace(src, transform="level_dev" if src.id in (
+        *GOLD_XAU_HOUR, _agp.TR_PRICE_ID, _agp.TR_BIST_ID) else "given"), synth)
 
 
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
-                for s in (*SOURCES, *SUBSTITUTE_SOURCES, *PASS5_SOURCES, *ASIA_GOLD_SOURCES))
+                for s in (*SOURCES, *SUBSTITUTE_SOURCES, *PASS5_SOURCES, *ASIA_GOLD_SOURCES,
+                          *TR_GOLD_SOURCES))
 SUBSTITUTE_SOURCES = tuple(s for s in SOURCES if s.substitutes_for)
 BY_ID = {s.id: s for s in SOURCES}
 
@@ -4252,6 +4374,15 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
         return [Request(src.url, Ctx(part="gta", fetched_at=now)),
                 Request(BOT_REF_RATE_URL.format(start=d0, end=now.date().isoformat()),
                         Ctx(part="bot", fetched_at=now))]
+    if src.id in TR_EVDS_CODE_ENV:
+        # The key travels ONLY in the `key` header (EVDS moved it out of the URL), so the
+        # vaulted URL and every logged error are clean by construction. No key, no request.
+        code = config_value(TR_EVDS_CODE_ENV[src.id])
+        if not key or not _agp.evds_code_ok(code):
+            return []
+        start = (now - timedelta(days=TR_EVDS_DAYS[src.id])).date()
+        return [Request(_agp.evds_url(src.url, code, start, now.date()),
+                        Ctx(part=src.id, fetched_at=now), {_agp.EVDS_KEY_HEADER: key})]
     if src.id == _agp.SGE_ID:
         d0 = (now - timedelta(days=10)).date().isoformat()
         return [Request(f"{src.url}?start_date={d0}&end_date={now.date().isoformat()}",
@@ -5378,7 +5509,7 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
             continue
         store = _read_json(paths.obs_dir / f"{src.id}.json", {})
         pts = build_points(src, store) if store else {}
-        if store and src.id in _agp.STATE_IDS:
+        if store and src.id in _agp.ALL_STATE_IDS:
             pts.update(asia_gold_derived(paths, src, store))
         if pts:
             points_by_source[src.id] = pts

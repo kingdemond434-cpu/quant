@@ -168,7 +168,7 @@ def test_policy_rows_live_only_on_a_quoted_clause() -> None:
 
 def test_missed_growth_lines_are_unmeasured_never_zero() -> None:
     lines = G.missed_growth_lines()
-    assert {ln["source"] for ln in lines} == set(IDEAS)
+    assert {ln["source"] for ln in lines} == {*IDEAS, G.TR_BIST_ID, G.TR_IAR_POLICY}
     for ln in lines:
         assert ln["delta_elogw"] == "UNMEASURED" and ln["kind"] == "ideas_only_refusal"
 
@@ -249,7 +249,7 @@ def test_fixture_dry_run_writes_the_artifact(tmp_path: Path) -> None:
     out = tmp_path / "state.json"
     assert G.main(["--once", "--fixtures", str(FIX), "--out", str(out)]) == 0
     doc = json.loads(out.read_text("utf-8"))
-    assert doc["mode"] == "fixtures" and set(doc["states"]) == set(G.STATE_IDS)
+    assert doc["mode"] == "fixtures" and set(doc["states"]) == set(G.ALL_STATE_IDS)
     assert all(b["verdict"] == "MEASURED" for b in doc["states"].values())
     assert doc["states"][G.HK_ID]["latest"]["available_time"].startswith("2026-09-27")
     assert doc["states"][G.TH_ID]["latest"]["revisions"] == 4.0

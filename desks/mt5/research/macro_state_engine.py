@@ -1380,6 +1380,17 @@ LATENT_SPECS: tuple[LatentSpec, ...] = (
             LatentInput("vn_sjc_premium", "Vietnam SJC bar premium to XAUUSD (SBV central "
                         "rate; IDEA_QUEUE 237)", "alt_vn_sjc_premium", "premium_pct.value", 1,
                         "daily", terms_source="vn_sjc_premium"),
+            LatentInput("tr_gold_premium", "Turkish TRY gold price premium over XAUUSD x "
+                        "USDTRY (CBRT EVDS; IDEA_QUEUE 257)", "alt_tr_gold_try_price",
+                        "premium_pct.value", 1, "daily", terms_source="tr_gold_try_price",
+                        key_env="EVDS_API_KEY"),
+            LatentInput("tr_gold_import_surge", "Turkish monthly gold imports vs prior months "
+                        "(CBRT EVDS; IDEA_QUEUE 257)", "alt_tr_gold_imports",
+                        "gold_imports.value", 1, "monthly", terms_source="tr_gold_imports",
+                        key_env="EVDS_API_KEY"),
+            LatentInput("tr_cbrt_gold_reserves", "CBRT gold reserves, weekly (CBRT EVDS; "
+                        "IDEA_QUEUE 257)", "alt_tr_gold_reserves", "gold_reserves.value", 1,
+                        "weekly", terms_source="tr_gold_reserves", key_env="EVDS_API_KEY"),
             _pending("swiss_gold_exports", "Swiss gold exports to China/HK/India", 1, "monthly",
                      "registry row swiss_customs_gold only (no parser)"),
             _pending("lbma_vaults", "LBMA London vault holdings", -1, "monthly",

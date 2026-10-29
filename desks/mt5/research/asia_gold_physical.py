@@ -18,6 +18,11 @@ Four slow states, each a separate physical-demand axis the Western tape does not
                       tightness), -1 when the longs pay the shorts, its signed streak, and the fee
                       rate when a page prints it (the daily table does not: UNMEASURED).
 
+Beside them, the TURKISH household gold demand state (row 257) for the Europe AND Asia XAUUSD
+windows: the CBRT EVDS TRY gold price's premium over XAUUSD x USDTRY, the monthly gold
+import-surge z and CBRT gold reserves (terms_fence row tr_evds_gold, LIVE on EVDS's own terms
+with EVDS_API_KEY), and Borsa Istanbul's metal-price table on fixtures only (IDEAS_ONLY).
+
 WHO OWNS WHAT -- NO SECOND LANE. Fetching, vintages, PIT stamps, the axis files, the lake series
 and the conditioned gold_asia children all belong to `research/alt_proxies.py` (an hourly leg):
 each state is one `Source` row there, its parser lives HERE as a pure function, and the SGE
@@ -355,6 +360,201 @@ def sge_deferral_state(rows: Iterable[Mapping[str, Any]],
     return out
 
 
+# ============================================================================ row 257: Turkey
+#: THE TURKISH HOUSEHOLD GOLD DEMAND STATE (IDEA_QUEUE 257). Turkish households hold gold as the
+#: lira's alternative; a domestic TRY gold price running above XAUUSD x USDTRY is local demand
+#: and capital flight the London tape sees only later, and a monthly import surge is the same
+#: demand crossing the border. Sources: CBRT EVDS (terms_fence row tr_evds_gold, LIVE with the
+#: key) for the TRY gold price, monthly gold imports and CBRT gold reserves; Borsa Istanbul's
+#: precious-metals table (row tr_bist_gold, IDEAS_ONLY: its notice forbids storing without
+#: written consent) parsed on fixtures only; Istanbul Gold Refinery (row tr_iar_gold, UNREAD).
+TR_PRICE_ID = "tr_gold_try_price"
+TR_IMPORT_ID = "tr_gold_imports"
+TR_RESERVE_ID = "tr_gold_reserves"
+TR_BIST_ID = "tr_bist_gold"
+TR_IDS = (TR_PRICE_ID, TR_IMPORT_ID, TR_RESERVE_ID, TR_BIST_ID)
+TR_EVDS_POLICY = "tr_evds_gold"
+TR_IAR_POLICY = "tr_iar_gold"
+#: The terms_fence row each state reads its policy from (the three EVDS series share one row).
+POLICY_OF = {TR_PRICE_ID: TR_EVDS_POLICY, TR_IMPORT_ID: TR_EVDS_POLICY,
+             TR_RESERVE_ID: TR_EVDS_POLICY}
+#: Policy rows with no state of their own (no readable page shape) that still owe a line.
+POLICY_ONLY = (TR_IAR_POLICY,)
+ALL_STATE_IDS = (*STATE_IDS, *TR_IDS)
+IDEA_ROW.update(dict.fromkeys(TR_IDS, 257))
+#: Turkish bullion ("kulce altin") is 995 fine; the offset is a constant inside a level_dev state.
+TR_BAR_PURITY = 0.995
+#: The XAUUSD and USDTRY H1 bar the TRY price is compared against: 12:00 UTC (15:00 TR), the bar
+#: holding the CBRT's afternoon announcement. The bar's time of day is an assumption (the EVDS
+#: series does not print one): UNMEASURED until the box compares first_seen_at to it.
+TR_XAU_HOUR = 12
+#: The EVDS web service takes the key in this request header (the parameter moved out of the URL
+#: in 2024); the key is never put in a URL, a log or a vault file.
+EVDS_KEY_HEADER = "key"
+_EVDS_CODE = re.compile(r"^TP\.[A-Z0-9_.]{2,60}$")
+_TARIH_DMY = re.compile(r"^(\d{1,2})-(\d{1,2})-(\d{4})$")
+_TARIH_YM = re.compile(r"^(\d{4})-(\d{1,2})$")
+
+
+#: PIT BY RELEASE. EVDS prints no release stamp, so each series is stamped by its publisher's
+#: release clock, pushed LATE: the CBRT's daily gold price for day d is first read the next
+#: weekday 06:00 UTC; monthly imports (TÜİK's foreign-trade release, ~the last working day of
+#: the next month, 10:00 TR) at month end + 31 days 08:00 UTC; weekly reserves (the CBRT's
+#: Thursday 14:30 TR release for the prior Friday) at the reading's date + 6 days 12:00 UTC.
+#: The alt_proxies rules ARE these functions; a vintage first seen later keeps its later stamp.
+TR_SERIES = {TR_PRICE_ID: "try_per_gram", TR_IMPORT_ID: "gold_imports",
+             TR_RESERVE_ID: "gold_reserves"}
+
+
+def tr_release_at(sid: str, period: date) -> datetime:
+    """The instant a Turkish reading for `period` is first knowable (UTC), per the rules above."""
+    from datetime import timedelta
+    if sid == TR_IMPORT_ID:
+        t = datetime(period.year, period.month, period.day, 8, tzinfo=UTC) + timedelta(days=31)
+    elif sid == TR_RESERVE_ID:
+        return datetime(period.year, period.month, period.day, 12, tzinfo=UTC) + timedelta(6)
+    else:
+        t = datetime(period.year, period.month, period.day, 6, tzinfo=UTC) + timedelta(days=1)
+    while t.weekday() >= 5:
+        t += timedelta(days=1)
+    return t
+
+
+def tr_release(sid: str, period: str) -> str:
+    """`tr_release_at` for a 'YYYY-MM' (month, dated to its end) or 'YYYY-MM-DD' period."""
+    if len(period) == 7:
+        d = _month_end(int(period[:4]), int(period[5:7]))
+    else:
+        d = date.fromisoformat(period[:10])
+    return tr_release_at(sid, d).isoformat(timespec="seconds")
+
+
+def evds_code_ok(code: str) -> bool:
+    """A series code is TP.<letters/digits/dots>; anything else never reaches a URL."""
+    return bool(_EVDS_CODE.match(str(code or "").strip()))
+
+
+def evds_url(base: str, code: str, start: date, end: date) -> str:
+    """The EVDS series request (the key travels in the `key` header, never here)."""
+    if not evds_code_ok(code):
+        raise ValueError(f"not an EVDS series code: {code!r}")
+    root = base if base.endswith("/") else base + "/"
+    return (f"{root}series={code.strip()}&startDate={start:%d-%m-%Y}&endDate={end:%d-%m-%Y}"
+            "&type=json")
+
+
+def _month_end(y: int, m: int) -> date:
+    import calendar
+    return date(y, m, calendar.monthrange(y, m)[1])
+
+
+def parse_evds(body: bytes, code: str) -> list[dict[str, Any]]:
+    """EVDS series JSON -> [{date, value, freq}]. `items[]` carry `Tarih` and the series column
+    named as the code with dots as underscores. Tarih `dd-mm-yyyy` is a day (daily and weekly
+    series); `yyyy-m` is a month, dated to its month END. A null or empty cell is absent, never 0;
+    a body without the requested column (a wrong code, an error envelope) parses to []."""
+    try:
+        doc = json.loads(body.decode("utf-8-sig"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return []
+    items = doc.get("items") if isinstance(doc, Mapping) else None
+    if not isinstance(items, list):
+        return []
+    col = str(code).strip().replace(".", "_")
+    if not col:
+        # no code named: read the body's ONE series column, and nothing when there are several
+        cols = {str(k) for it in items if isinstance(it, Mapping) for k in it
+                if str(k).startswith("TP_")}
+        if len(cols) != 1:
+            return []
+        col = cols.pop()
+    out: dict[str, dict[str, Any]] = {}
+    for it in items:
+        if not isinstance(it, Mapping):
+            continue
+        v = _num(it.get(col))
+        t = str(it.get("Tarih") or "").strip()
+        if v is None:
+            continue
+        m = _TARIH_DMY.match(t)
+        if m:
+            d, freq = date(int(m.group(3)), int(m.group(2)), int(m.group(1))), "D"
+        elif (m := _TARIH_YM.match(t)):
+            d, freq = _month_end(int(m.group(1)), int(m.group(2))), "M"
+        else:
+            continue
+        out[d.isoformat()] = {"date": d.isoformat(), "value": v, "freq": freq}
+    return [out[k] for k in sorted(out)]
+
+
+_BIST_ROW = re.compile(
+    r"<tr[^>]*>\s*<td[^>]*>\s*(\d{1,2})[./](\d{1,2})[./](\d{4})\s*</td>\s*"
+    r"<td[^>]*>\s*([\d.,]+)\s*</td>\s*<td[^>]*>\s*([\d.,]+)\s*</td>", re.I)
+
+
+def _tr_num(s: str) -> float | None:
+    """Turkish number format: '.' groups thousands, ',' is the decimal mark."""
+    t = s.strip()
+    if "," in t:
+        t = t.replace(".", "").replace(",", ".")
+    return _num(t)
+
+
+def parse_bist_metal_prices(body: bytes) -> list[dict[str, Any]]:
+    """Borsa Istanbul precious-metals price history table (Date | Fiyat(TL/Kg) | Fiyat(USD/Ons)
+    | Fiyat(EUR/Ons)) -> [{date, try_per_kg, usd_per_oz}]. Built on a fixture: the row is
+    IDEAS_ONLY, so these bytes are never fetched as live input."""
+    html = body.decode("utf-8", "replace")
+    out: dict[str, dict[str, Any]] = {}
+    for m in _BIST_ROW.finditer(html):
+        d = date(int(m.group(3)), int(m.group(2)), int(m.group(1))).isoformat()
+        kg, oz = _tr_num(m.group(4)), _tr_num(m.group(5))
+        if kg and oz and kg > 0 and oz > 0:
+            out[d] = {"date": d, "try_per_kg": kg, "usd_per_oz": oz}
+    return [out[k] for k in sorted(out)]
+
+
+def tr_premium_series(try_per_gram: Mapping[str, float], usdtry: Mapping[str, float],
+                      xau: Mapping[str, float], *, purity: float = TR_BAR_PURITY
+                      ) -> list[dict[str, Any]]:
+    """The domestic TRY gold price over XAUUSD x USDTRY, INNER-joined on date (a day missing a
+    leg has no premium, never a carried one), with a PIT z of the premium."""
+    rows: list[dict[str, Any]] = []
+    for d in sorted(set(try_per_gram) & set(usdtry) & set(xau)):
+        px, fx, x = float(try_per_gram[d]), float(usdtry[d]), float(xau[d])
+        rows.append({"date": d, "try_per_gram": px, "usdtry": fx, "xau_usd_oz": x,
+                     "premium_pct": premium_pct(usd_per_oz(px, 1.0, purity, fx), x)})
+    zs = pit_z([r["premium_pct"] for r in rows], Z_WINDOW["daily"], Z_MIN_N["daily"])
+    for r, z in zip(rows, zs, strict=True):
+        r["premium_z"] = z
+    return rows
+
+
+def tr_import_surge(monthly: Mapping[str, float], published: Mapping[str, str]
+                    ) -> list[dict[str, Any]]:
+    """Monthly gold imports with the import-surge z against the strictly prior months, each row
+    stamped with the instant it was first knowable (the release, never the month end)."""
+    pers = sorted(monthly)
+    zs = pit_z([monthly[p] for p in pers], Z_WINDOW["monthly"], Z_MIN_N["monthly"])
+    return [{"period": p, "imports": monthly[p], "import_surge_z": z,
+             "available_time": published.get(p, UNMEASURED)}
+            for p, z in zip(pers, zs, strict=True)]
+
+
+def tr_reserves(weekly: Mapping[str, float], published: Mapping[str, str]
+                ) -> list[dict[str, Any]]:
+    """CBRT gold reserves per reading and the change on the previous reading (None first)."""
+    rows: list[dict[str, Any]] = []
+    prev: float | None = None
+    for d in sorted(weekly):
+        v = float(weekly[d])
+        rows.append({"date": d, "gold_reserves": v,
+                     "change": None if prev is None else v - prev,
+                     "available_time": published.get(d, UNMEASURED)})
+        prev = v
+    return rows
+
+
 # ============================================================================ premium series
 def premium_series(local: Mapping[str, Mapping[str, float]], fx: Mapping[str, float],
                    xau: Mapping[str, float], *, grams: float, purity: float,
@@ -377,11 +577,12 @@ def premium_series(local: Mapping[str, Mapping[str, float]], fx: Mapping[str, fl
     return rows
 
 
-def xau_daily_close(paths_universe: Path, hour_utc: int = 7) -> dict[str, float]:
+def xau_daily_close(paths_universe: Path, hour_utc: int = 7,
+                    symbol: str = "XAUUSD") -> dict[str, float]:
     """XAUUSD close of the `hour_utc` H1 bar per date from the desk's own feed (the gold_asia
     window places at 04:00 UTC in summer; the 07:00 bar is the one the SGE premium uses, so the
     Asian premiums share its clock). Absent file -> {} (the premium is then UNMEASURED)."""
-    p = paths_universe / "XAUUSD_H1.parquet"
+    p = paths_universe / f"{symbol}_H1.parquet"
     if not p.exists():
         return {}
     try:
@@ -417,20 +618,22 @@ def build_state(*, records: Mapping[str, Mapping[str, Any]],
                 vn: Sequence[Mapping[str, Any]] | None = None,
                 th: Sequence[Mapping[str, Any]] | None = None,
                 sge: Sequence[Mapping[str, Any]] | None = None,
+                tr: Mapping[str, Sequence[Mapping[str, Any]] | None] | None = None,
                 missed_growth: Sequence[Mapping[str, Any]] = (),
                 mode: str, now: datetime) -> dict[str, Any]:
     """The artifact: one block per state, each MEASURED (rows and the latest reading) or
     UNMEASURED with its reason. Nothing absent is ever written as zero."""
     from libs.data import terms_fence as tf
     blocks: dict[str, Any] = {}
-    data: dict[str, Any] = {HK_ID: hk, VN_ID: vn, TH_ID: th, SGE_ID: sge}
-    for sid in STATE_IDS:
+    data: dict[str, Any] = {HK_ID: hk, VN_ID: vn, TH_ID: th, SGE_ID: sge, **dict(tr or {})}
+    for sid in ALL_STATE_IDS:
         rec = dict(records.get(sid) or {})
-        got = data[sid]
+        got = data.get(sid)
         rows = (got or {}).get("rows") if isinstance(got, Mapping) else got
+        pk = POLICY_OF.get(sid, sid)
         blk: dict[str, Any] = {
-            "idea_queue_row": IDEA_ROW[sid], "policy_status": tf.status(sid),
-            "terms": tf.terms_verdict(sid), "live_input": tf.input_source(sid) is None,
+            "idea_queue_row": IDEA_ROW[sid], "policy_row": pk, "policy_status": tf.status(pk),
+            "terms": tf.terms_verdict(pk), "live_input": tf.input_source(sid) is None,
             "collector_status": rec.get("status", UNMEASURED)}
         if rows:
             blk.update({"verdict": "MEASURED", "n": len(rows),
@@ -440,14 +643,17 @@ def build_state(*, records: Mapping[str, Mapping[str, Any]],
         else:
             blk.update({"verdict": UNMEASURED,
                         "why": rec.get("why") or (
-                            f"{tf.SOURCE_POLICY[sid]['why']}" if tf.input_source(sid)
+                            "NEEDS_KEY: " + ",".join(tf.SOURCE_POLICY[pk].get("key_env") or ())
+                            + " is not set on this host" if tf.status(pk) == tf.NEEDS_KEY
+                            else f"{tf.SOURCE_POLICY[pk]['why']}" if tf.input_source(sid)
                             else "no observation on this machine yet (the authoring container "
                                  "cannot reach the host; live yield is the trading box's)")})
         blocks[sid] = blk
     return {"at": now.isoformat(timespec="seconds"), "organ": "asia_gold_physical",
             "producer": "research/alt_proxies.py (hourly leg alt_proxies)", "mode": mode,
             "window": "gold_asia (XAUUSD.asia): conditioned children carry "
-                      "params.conditioner = alt:<series>:pace:<op>:0 on the asia selector",
+                      "params.conditioner = alt:<series>:pace:<op>:0 on the asia selector; "
+                      "the Turkish states (row 257) condition the Europe AND Asia windows",
             "states": blocks, "missed_growth_lines": list(missed_growth),
             "n_measured": sum(1 for b in blocks.values() if b["verdict"] == "MEASURED"),
             "rule": ("PIT: monthly HK points are knowable from their release instant, daily "
@@ -458,8 +664,12 @@ def build_state(*, records: Mapping[str, Mapping[str, Any]],
 def missed_growth_lines() -> list[dict[str, Any]]:
     """GROWTH GOVERNANCE: each IDEAS_ONLY state refused as live input carries its line."""
     from libs.data import terms_fence as tf
-    return [tf.held_missed_growth(sid, None, live_input_refusal=True)
-            for sid in STATE_IDS if tf.input_source(sid)]
+    keys = [POLICY_OF.get(sid, sid) for sid in ALL_STATE_IDS if tf.input_source(sid)]
+    keys += [k for k in POLICY_ONLY if tf.input_source(k)]
+    # a keyed row with its key absent is NEEDS_KEY (a named state), not a terms refusal
+    keys = [k for k in keys if tf.SOURCE_POLICY[k]["status"] == tf.IDEAS_ONLY]
+    return [tf.held_missed_growth(k, None, live_input_refusal=True)
+            for k in dict.fromkeys(keys)]
 
 
 def write(path: Path, doc: Mapping[str, Any]) -> None:
@@ -492,9 +702,32 @@ def fixture_state(fixtures: Path, now: datetime) -> dict[str, Any]:
     from research import fetch_sge_premium as fsp
     sge = sge_deferral_state(fsp.parse_daily_quotation(_b(f"{SGE_ID}.html")
                                                        .decode("utf-8", "replace")))
-    recs = {sid: {"status": "FIXTURE"} for sid in STATE_IDS}
-    return build_state(records=recs, hk=hk_state(net, pub), vn=vn, th=th, sge=sge,
+    tr = fixture_tr(fixtures, _b, xau)
+    recs = {sid: {"status": "FIXTURE"} for sid in ALL_STATE_IDS}
+    return build_state(records=recs, hk=hk_state(net, pub), vn=vn, th=th, sge=sge, tr=tr,
                        missed_growth=missed_growth_lines(), mode="fixtures", now=now)
+
+
+def fixture_tr(fixtures: Path, _b: Any, xau: Mapping[str, float]
+               ) -> dict[str, list[dict[str, Any]] | None]:
+    """The Turkish states from fixtures: EVDS bodies, the USDTRY H1 close per day as JSON, and
+    the Borsa Istanbul table. The release instants are the rules alt_proxies stamps with."""
+    codes = json.loads(_b("tr_gold_evds_codes.json") or b"{}")
+    usdtry = {str(k): float(v) for k, v in json.loads(_b("tr_gold_usdtry.json") or b"{}").items()}
+    price = {r["date"]: r["value"] for r in parse_evds(_b(f"{TR_PRICE_ID}.json"),
+                                                       codes.get("price", ""))}
+    imp = {r["date"][:7]: r["value"] for r in parse_evds(_b(f"{TR_IMPORT_ID}.json"),
+                                                         codes.get("imports", ""))}
+    res = {r["date"]: r["value"] for r in parse_evds(_b(f"{TR_RESERVE_ID}.json"),
+                                                     codes.get("reserves", ""))}
+    bist = {r["date"]: r["try_per_kg"] / 1000.0
+            for r in parse_bist_metal_prices(_b(f"{TR_BIST_ID}.html"))}
+    return {TR_PRICE_ID: tr_premium_series(price, usdtry, xau) or None,
+            TR_IMPORT_ID: tr_import_surge(imp, {p: tr_release(TR_IMPORT_ID, p) for p in imp})
+            or None,
+            TR_RESERVE_ID: tr_reserves(res, {d: tr_release(TR_RESERVE_ID, d) for d in res})
+            or None,
+            TR_BIST_ID: tr_premium_series(bist, usdtry, xau) or None}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -568,7 +801,26 @@ def state_from_alt(paths: Any, records: Mapping[str, Mapping[str, Any]],
         sge = [{"date": d, "direction": int(dirs[d][0]), "streak": r, "fee_rate": UNMEASURED}
                for d, r in zip(days, runs, strict=True)] or None
     return build_state(records=records, hk=hk, vn=vn, th=th, sge=sge,
+                       tr=tr_from_stores(_store, _series, uni),
                        missed_growth=missed_growth_lines(), mode="live", now=now)
+
+
+def tr_from_stores(_store: Any, _series: Any, uni: Path
+                   ) -> dict[str, list[dict[str, Any]] | None]:
+    """The Turkish states from the alt_proxies vintage stores. A store of a row refused as live
+    input reads empty (UNMEASURED); a missing USDTRY or XAUUSD bar leaves no premium, never 0."""
+    xau = xau_daily_close(uni, TR_XAU_HOUR)
+    usdtry = xau_daily_close(uni, TR_XAU_HOUR, "USDTRY")
+    price = {d: v for d, (v, _) in _series(_store(TR_PRICE_ID), "try_per_gram").items()}
+    imp_raw = _series(_store(TR_IMPORT_ID), "gold_imports")
+    res_raw = _series(_store(TR_RESERVE_ID), "gold_reserves")
+    bist = {d: v / 1000.0 for d, (v, _) in _series(_store(TR_BIST_ID), "try_per_kg").items()}
+    return {TR_PRICE_ID: tr_premium_series(price, usdtry, xau) or None,
+            TR_IMPORT_ID: tr_import_surge({p[:7]: v for p, (v, _) in imp_raw.items()},
+                                          {p[:7]: t for p, (_, t) in imp_raw.items()}) or None,
+            TR_RESERVE_ID: tr_reserves({d: v for d, (v, _) in res_raw.items()},
+                                       {d: t for d, (_, t) in res_raw.items()}) or None,
+            TR_BIST_ID: tr_premium_series(bist, usdtry, xau) or None}
 
 
 if __name__ == "__main__":
