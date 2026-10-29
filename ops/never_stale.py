@@ -282,6 +282,8 @@ def run(apply: bool) -> dict:
         # PER-ORGAN FIRST, then the generic code table. The specific answer beats the general one
         # whenever both exist, and for the small exit codes only the specific one can exist.
         diag = TASK_DIAGNOSIS.get((name, code)) if isinstance(code, int) else None
+        if diag is None and row.get("cure"):
+            diag = str(row["cure"])   # the producer's own named cure (RESIDENT_UNMEASURED)
         if diag is None and verdict == "HUNG":
             # Never the code's table entry: on a Running task 0x800710E0 means "already running",
             # and the defect is the instance that stopped producing output inside its own limit.

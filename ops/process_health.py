@@ -304,7 +304,7 @@ def expected_disabled(name: str) -> tuple[dict[str, str] | None, str]:
 #: brief-only headline ATTENTION; FAILING cannot arise there (no result code was read) but is
 #: listed so a future change that reads one cannot hide it.
 BRIEF_DEFINITE_FAULTS = frozenset({"NOT_SCHEDULED", "DISABLED", "STALE", "NO_ARTIFACT",
-                                   "FAILING", "HUNG"})
+                                   "FAILING", "HUNG", "RESIDENT_UNMEASURED"})
 
 
 def _missing(rows: list[dict[str, str]], fields: tuple[str, ...]) -> list[str]:
@@ -426,6 +426,14 @@ RESIDENT_MEANING = ("an instance is already running: the task's resident or long
                     "refused a relaunch (MultipleInstances=IgnoreNew)")
 #: With no artifact contract, output older than this many repetition intervals is STALE.
 RESIDENT_CADENCE_FACTOR = 2
+#: A Running resident with NO artifact contract and NO log has zero observable output, and zero
+#: observable output is never green (rule 13; coordinator ruling on #510, 2026-10-29). Its verdict
+#: is RESIDENT_UNMEASURED, it needs attention (the headline is ATTENTION, never OK) and the row
+#: carries this cure.
+RESIDENT_UNMEASURED_CURE = ("declare a log or contract an artifact: give the task's action a "
+                            "`>> \"...\\<Task>.log\" 2>&1` redirect (or write "
+                            "desks/mt5/logs/<Task>.log), or add its output to "
+                            "ops/organ_contract.CONTRACTS")
 _task_limits_mod: Any = None
 
 
@@ -441,7 +449,9 @@ def _task_limits(name: str) -> dict[str, Any]:
             mod = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mod)
             _task_limits_mod = mod
-        return dict(_task_limits_mod.task_limits(name))
+        # ONE task folder for every reader of the definitions: process_health's own TASKS_DIR
+        # when this module defines one (#491 adds it), else task_limits' identically named one.
+        return dict(_task_limits_mod.task_limits(name, globals().get("TASKS_DIR")))
     except Exception as exc:
         return {"execution_time_limit_min": None, "interval_min": None, "logs": [],
                 "why": f"task limits unreadable: {type(exc).__name__}"}
@@ -491,8 +501,9 @@ def judge_resident(name: str, artifact: str, artifact_age: float | None,
         return "STALE", (f"resident instance running but its freshest output is "
                          f"{fresh[0]:.0f} min old against a {interval:g} min cadence"), facts
     if fresh is None:
-        return "RESIDENT_RUNNING", ("resident instance running; output freshness UNMEASURED (no "
-                                    "artifact contract and no log found)"), facts
+        return "RESIDENT_UNMEASURED", ("resident instance running with ZERO observable output "
+                                       "(no artifact contract and no log found) -- never "
+                                       f"green; cure: {RESIDENT_UNMEASURED_CURE}"), facts
     bound = ("its ExecutionTimeLimit" if limit is not None else "no ExecutionTimeLimit")
     return "RESIDENT_RUNNING", (f"resident instance running; freshest output "
                                 f"{fresh[0]:.0f} min old, inside {bound}"), facts
@@ -624,6 +635,7 @@ def build() -> dict[str, Any]:
                             else RESIDENT_MEANING if resident is not None
                             else RESULT_MEANING.get(code, f"code {code}")),
             "resident": resident,
+            "cure": RESIDENT_UNMEASURED_CURE if verdict == "RESIDENT_UNMEASURED" else None,
             "artifact": artifact or None,
             "artifact_age_min": None if age is None else round(age, 1),
             "contract_max_age_min": max_age or None,
@@ -673,14 +685,17 @@ def build() -> dict[str, Any]:
 
     order = {"HUNG": 0, "NOT_SCHEDULED": 0, "SCHEDULER_UNMEASURED": 0, "FAILING": 1,
              "NO_ARTIFACT": 2, "STALE": 3,
-             "DISABLED": 4, "UNCONTRACTED": 5, "RESIDENT_RUNNING": 6, "OK": 6}
+             "RESIDENT_UNMEASURED": 3, "DISABLED": 4, "UNCONTRACTED": 5,
+             "RESIDENT_RUNNING": 6, "OK": 6}
     rows.sort(key=lambda r: (order.get(str(r["verdict"]), 9), str(r["name"])))
     counts: dict[str, int] = {}
     for r in rows:
         counts[str(r["verdict"])] = counts.get(str(r["verdict"]), 0) + 1
 
     # DISABLED IS A FAULT (v5b ruling) unless the task is EXPECTED_DISABLED.
-    bad = [r for r in rows if r["verdict"] in ("HUNG", "NOT_SCHEDULED", "SCHEDULER_UNMEASURED",
+    # RESIDENT_UNMEASURED is here (rule 13): zero observable output is never green.
+    bad = [r for r in rows if r["verdict"] in ("HUNG", "RESIDENT_UNMEASURED", "NOT_SCHEDULED",
+                                             "SCHEDULER_UNMEASURED",
                                              "FAILING", "NO_ARTIFACT", "STALE")
            or (r["verdict"] == "DISABLED" and not r.get("expected_disabled"))]
     run_history_read = scheduler_status == "OK schtasks"

@@ -191,13 +191,41 @@ def test_a_daemon_with_no_limit_is_judged_against_its_cadence(
     assert row["verdict"] == "STALE" and "60 min cadence" in row["why"]
 
 
-def test_no_artifact_and_no_log_is_resident_with_freshness_unmeasured(
+def test_zero_observable_output_is_resident_unmeasured_a_fault_never_green(
+    monkeypatch: pytest.MonkeyPatch, box: Path,
+) -> None:
+    # rule 13 (coordinator ruling on #510): no artifact contract and no log is a FAULT
+    _task(box, "MT5-Silent", log_age_min=None)
+    doc = _build(monkeypatch, _row("MT5-Silent"))
+    row = _by(doc)["MT5-Silent"]
+    assert row["verdict"] == "RESIDENT_UNMEASURED"
+    assert row["resident"]["freshest_output"] is None
+    assert row["cure"] == ph.RESIDENT_UNMEASURED_CURE
+    assert row["cure"].startswith("declare a log or contract an artifact")
+    assert "cure: declare a log or contract an artifact" in row["why"]
+    assert doc["n_needing_attention"] == 1
+    assert doc["status"] == "ATTENTION"          # AMBER: never OK, and not RED like HUNG
+    assert doc["hung"] == []
+
+
+def test_one_silent_resident_among_healthy_ones_still_keeps_the_headline_off_ok(
     monkeypatch: pytest.MonkeyPatch, box: Path,
 ) -> None:
     _task(box, "MT5-Silent", log_age_min=None)
-    row = _by(_build(monkeypatch, _row("MT5-Silent")))["MT5-Silent"]
-    assert row["verdict"] == "RESIDENT_RUNNING" and "UNMEASURED" in row["why"]
-    assert row["resident"]["freshest_output"] is None
+    _task(box, "MT5-NewsDesk", log_age_min=3, limit="PT0S")
+    doc = _build(monkeypatch, _row("MT5-Silent"), _row("MT5-NewsDesk"))
+    assert doc["counts"] == {"RESIDENT_UNMEASURED": 1, "RESIDENT_RUNNING": 1}
+    assert doc["status"] == "ATTENTION" and doc["n_needing_attention"] == 1
+
+
+def test_the_task_folder_is_process_healths_tasks_dir_when_it_defines_one(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    # reconciled with #491: one folder, named TASKS_DIR in both modules
+    assert isinstance(tl.TASKS_DIR, Path) and tl.TASKS_DIR.parts[-2:] == ("System32", "Tasks")
+    (tmp_path / "MT5-X").write_bytes(_xml("MT5-X", "a.log", "PT7M"))
+    monkeypatch.setattr(ph, "TASKS_DIR", tmp_path, raising=False)
+    assert ph._task_limits("\\MT5-X")["execution_time_limit_min"] == 7.0
 
 
 def test_the_same_code_on_a_task_that_is_not_running_is_still_failing(
@@ -208,11 +236,13 @@ def test_the_same_code_on_a_task_that_is_not_running_is_still_failing(
     assert row["verdict"] == "FAILING" and row["resident"] is None
 
 
-def test_never_stale_skips_resident_running_and_escalates_hung_with_its_own_cure(
+def test_never_stale_skips_resident_running_and_escalates_hung_and_silent_with_cures(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     doc = {"processes": [
         {"name": "MT5-NewsDesk", "verdict": "RESIDENT_RUNNING", "last_result_code": 0x800710E0},
+        {"name": "MT5-Silent", "verdict": "RESIDENT_UNMEASURED", "last_result_code": 0x800710E0,
+         "cure": ph.RESIDENT_UNMEASURED_CURE},
         {"name": "MT5-IndependenceIntake", "verdict": "HUNG", "why": "HUNG: ...",
          "last_result_code": 0x800710E0},
     ]}
@@ -220,6 +250,9 @@ def test_never_stale_skips_resident_running_and_escalates_hung_with_its_own_cure
     monkeypatch.setattr(ns, "_read", lambda p: doc)
     monkeypatch.setattr(ns, "_capital_faults", lambda: [])
     out = ns.run(apply=False)
-    assert [e["task"] for e in out["escalated"]] == ["MT5-IndependenceIntake"]
-    assert out["escalated"][0]["diagnosis"] == ns.HUNG_DIAGNOSIS
+    by = {e["task"]: e for e in out["escalated"]}
+    assert set(by) == {"MT5-Silent", "MT5-IndependenceIntake"}
+    assert by["MT5-IndependenceIntake"]["diagnosis"] == ns.HUNG_DIAGNOSIS
+    assert by["MT5-Silent"]["diagnosis"] == ph.RESIDENT_UNMEASURED_CURE
+    assert out["status"] == "NEEDS_HUMAN"
     assert out["acted"] == []
