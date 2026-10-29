@@ -450,6 +450,45 @@ def test_live_first_moves_pr_runs_queued_ahead_of_a_waiting_live_run_behind_it()
     assert "scripts\\live_first_ci.py" in gate and "live-first rc=" in gate
 
 
+def test_a_cleared_pr_waits_like_live_and_uncleared_runs_ahead_of_it_go_behind() -> None:
+    """zuck 2026-10-29 22:08Z: the CLEARed fixes waited an hour behind 155 uncleared runs."""
+    lf = _lf()
+    clr = {"id": 1, "event": "pull_request", "head_branch": "c", "head_sha": "hc",
+           "created_at": _iso(30)}  # fmt: skip
+    old = {"id": 2, "event": "pull_request", "head_branch": "u", "head_sha": "hu",
+           "created_at": _iso(60)}  # fmt: skip
+    old_clr = {**clr, "id": 3, "created_at": _iso(90)}  # a CLEARed run is never moved
+    heads = {"c": "hc", "u": "hu"}
+    assert lf.plan(NOW, [clr, old, old_clr], heads, cleared=frozenset({"c"})) == ([], [2])
+    assert lf.plan(NOW, [clr, old], heads) == ([], [])  # no CLEAR, no LIVE: nothing moves
+    fresh = dict(clr, created_at=_iso(2))
+    assert lf.plan(NOW, [fresh, old], heads, cleared=frozenset({"c"})) == ([], [])
+    stale_clr = dict(clr, head_sha="old")  # a run of a superseded head is waste, not a waiter
+    assert lf.plan(NOW, [stale_clr, old], heads, cleared=frozenset({"c"})) == ([1], [])
+
+
+def test_cleared_reads_a_trusted_unedited_clear_of_the_current_head(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lf = _lf()
+    lf._NUMBERS.update({"c": 7, "u": 8, "e": 9})
+    heads = {"c": "abcdef1234", "u": "1234abcd", "e": "eeeeeee99"}
+
+    def note(body: str, assoc: str = "OWNER", edited: bool = False) -> dict[str, Any]:
+        return {"body": body, "author_association": assoc, "created_at": "t",
+                "updated_at": "t2" if edited else "t"}  # fmt: skip
+
+    by = {7: [note("AUDIT CLEAR abcdef1")], 8: [note("AUDIT CLEAR 1234abcd", assoc="NONE")],
+          9: [note("AUDIT CLEAR eeeeeee", edited=True)]}  # fmt: skip
+
+    def gh(path: str, method: str = "GET") -> Any:
+        return by[int(path.split("/issues/")[1].split("/")[0])]
+
+    monkeypatch.setattr(lf, "_gh", gh)
+    queued = [{"event": "pull_request", "head_branch": b} for b in heads]
+    assert lf._cleared("o/r", queued, heads) == {"c"}
+
+
 def test_live_first_owes_before_it_cancels_and_reruns_only_its_own_cancel(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

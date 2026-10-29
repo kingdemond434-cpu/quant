@@ -16,6 +16,11 @@ EACH CALL (the box sweep, workflow_gate.ps1, with zuck's gh login; zuck 19:50Z "
   2. When a push or workflow_dispatch run on LIVE has been queued LIVE_FIRST_MIN or more, every
      queued `pull_request` run on a CURRENT PR head that joined the queue before it is cancelled
      and re-run: the re-run queues behind LIVE, nothing is lost.
+  2b. CLEARED FIRST (zuck 22:08Z "yes", standing: never ask about queue order again). A PR whose
+     current head carries a trusted, unedited AUDIT CLEAR waits like LIVE: once one of its runs
+     has been queued LIVE_FIRST_MIN, every queued run of a PR WITHOUT a CLEAR that joined before
+     it is moved behind it the same way. On 10-29 the fix that greened every PR's quality waited
+     over an hour behind 155 runs of PRs nobody could merge yet.
   3. The owed re-runs are written to the ledger BEFORE the first cancel. A run is re-run only
      when it completed as `cancelled` on the attempt this call cancelled; one still cancelling
      is carried to the next call, at most MAX_CALLS calls, then given up on (rc 2).
@@ -29,6 +34,7 @@ moves in between reads as current (never cancelled) rather than stale.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import os
 import subprocess
@@ -78,27 +84,33 @@ def _queued_at(r: dict[str, Any]) -> str:
 
 
 def plan(
-    now: datetime, queued: list[dict[str, Any]], heads: dict[str, str], base: str = LIVE
+    now: datetime,
+    queued: list[dict[str, Any]],
+    heads: dict[str, str],
+    base: str = LIVE,
+    cleared: frozenset[str] = frozenset(),
 ) -> tuple[list[int], list[int]]:
     """(cancel only, cancel then re-run) from already-fetched data (pure: the tests drive it).
-    `heads`: head branch -> head sha of EVERY open PR. Only `pull_request` runs are candidates."""
+    `heads`: head branch -> head sha of EVERY open PR. `cleared`: head branches whose current
+    head is audit-CLEARed: they wait like LIVE and are never moved. Only `pull_request` runs are
+    candidates."""
     prs = [r for r in queued if r.get("event") == "pull_request"]
     known = [r for r in prs if str(r.get("head_branch")) in heads]
     waste = [int(r["id"]) for r in known if str(r.get("head_sha")) != heads[str(r["head_branch"])]]
-    live = [
-        _queued_at(r)
-        for r in queued
-        if r.get("event") in LIVE_EVENTS
-        and str(r.get("head_branch")) == base
-        and (_age_min(now, _queued_at(r)) or 0.0) >= LIVE_FIRST_MIN
+    current = [r for r in known if str(r.get("head_sha")) == heads[str(r["head_branch"])]]
+    first = [
+        r for r in queued if r.get("event") in LIVE_EVENTS and str(r.get("head_branch")) == base
+    ] + [r for r in current if str(r.get("head_branch")) in cleared]
+    waiting = [
+        _queued_at(r) for r in first if (_age_min(now, _queued_at(r)) or 0.0) >= LIVE_FIRST_MIN
     ]
-    if not live:
+    if not waiting:
         return waste, []
-    newest = max(live)  # every PR run queued before LIVE's newest waiting run goes behind it
+    newest = max(waiting)  # every other PR run queued before the newest waiting one goes behind
     ahead = [
         int(r["id"])
-        for r in known
-        if str(r.get("head_sha")) == heads[str(r["head_branch"])] and _queued_at(r) < newest
+        for r in current
+        if str(r.get("head_branch")) not in cleared and _queued_at(r) < newest
     ]
     return waste, ahead
 
@@ -114,14 +126,53 @@ def _queued(repo: str) -> list[dict[str, Any]]:
     return out
 
 
+_NUMBERS: dict[str, int] = {}  # head branch -> PR number, from the last _heads() listing
+
+
 def _heads(repo: str) -> dict[str, str]:
     out: dict[str, str] = {}
     for page in range(1, 11):  # every open PR, into any base (#546 audit MF1)
         batch = _gh(f"repos/{repo}/pulls?state=open&per_page=100&page={page}")
         out.update({str(p["head"]["ref"]): str(p["head"]["sha"]) for p in batch})
+        _NUMBERS.update({str(p["head"]["ref"]): int(p["number"]) for p in batch if p.get("number")})
         if len(batch) < 100:
             break
     return out
+
+
+def _clear_at() -> Callable[..., Any]:
+    """merge_pipeline_watch.clear_at: the one reading of a trusted, unedited CLEAR (run with -I,
+    so the script's own directory is not on sys.path)."""
+    spec = importlib.util.spec_from_file_location("_mpw", Path(__file__).with_name(
+        "merge_pipeline_watch.py"))  # fmt: skip
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.clear_at
+
+
+def _cleared(repo: str, queued: list[dict[str, Any]], heads: dict[str, str]) -> frozenset[str]:
+    """The head branches with a queued run whose current head is audit-CLEARed. A comment read
+    that fails leaves that PR uncleared: it is only ordered, never dropped."""
+    clear_at = _clear_at()
+    out = set()
+    for b in {str(r.get("head_branch")) for r in queued if r.get("event") == "pull_request"}:
+        n = _NUMBERS.get(b)
+        if not n or b not in heads:
+            continue
+        got: list[dict[str, Any]] = []
+        try:
+            for page in range(1, 6):
+                batch = _gh(f"repos/{repo}/issues/{n}/comments?per_page=100&page={page}") or []
+                got += batch
+                if len(batch) < 100:
+                    break
+        except RuntimeError as exc:
+            print(f"  comments #{n}: {exc}")
+            continue
+        if clear_at(got, heads[b]):
+            out.add(b)
+    return frozenset(out)
 
 
 def _load(path: Path) -> list[dict[str, int]]:
@@ -152,9 +203,11 @@ def run(
     at = now.isoformat(timespec="seconds")
     queued = _queued(repo)  # runs BEFORE heads: a head moving in between reads as current
     heads = _heads(repo)
-    waste, ahead = plan(now, queued, heads, base)
+    cleared = _cleared(repo, queued, heads)
+    waste, ahead = plan(now, queued, heads, base, cleared)
     owed = [r for r in _load(state) if r["id"] not in ahead]
-    print(f"live-first: {len(waste)} superseded, {len(ahead)} ahead of LIVE, {len(owed)} owed")
+    print(f"live-first: {len(waste)} superseded, {len(ahead)} ahead of LIVE or a CLEARed PR "
+          f"({len(cleared)} CLEARed), {len(owed)} owed")  # fmt: skip
     if dry:
         return 0
     cancelled: list[dict[str, int]] = []
