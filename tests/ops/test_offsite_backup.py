@@ -294,7 +294,8 @@ def test_the_backup_hands_restic_the_list_and_drills_every_source(tmp_path: Path
 
 
 def test_a_local_repository_is_never_graded_off_site() -> None:
-    drill = {"at": NOW.isoformat(), "verdict": "PASS", "why": "1/1"}
+    drill: dict[str, Any] = {"at": NOW.isoformat(), "why": "1/1"}
+    drill["verdict"] = "PASS"
     base = {"status": "OK", "last_success_at": NOW.isoformat(), "last_check_at": NOW.isoformat(),
             "last_check_ok": True, "restore_drill": drill, "key_escrowed_off_box": True}
     assert ob.verdict({**base, "offsite": False}, NOW)[0] == "LOCAL_ONLY"
