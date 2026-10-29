@@ -36,9 +36,9 @@ for _p in (str(_DESK), str(_ROOT), str(_DESK / "tests")):
         sys.path.insert(0, _p)
 
 from mt5desk import cross_account as xa  # noqa: E402
-from mt5desk.broker_clock import broker_to_utc  # noqa: E402
 from mt5desk import decision_core as dc  # noqa: E402
 from mt5desk import kelly_sizing  # noqa: E402
+from mt5desk.broker_clock import broker_to_utc  # noqa: E402
 
 
 def _load(name: str, path: Path):
