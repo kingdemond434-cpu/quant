@@ -426,13 +426,36 @@ CLOCK_LABELS = frozenset({"london_fix", "ny_option_cut", "cme_fx_close", "cash_e
                           "broker_rollover"})
 
 
+#: The ladder of charts a frame can be, in minutes.
+CHART_MINUTES = frozenset({1, 5, 15, 30, 60, 240, 1440})
+
+
+def _bars_per_day(b: Bars, default: int = 24) -> int:
+    """How many bars of THIS frame's chart make a 24-hour day, measured from the frame's own
+    modal bar gap (it must be at least half of all gaps and a ladder chart); `default` when the
+    frame is not a regular chart. Written from the spec, not imported: "sixty days of history,
+    on whatever chart this is" (audit on #487: `1440 // minutes` trusted the declared chart)."""
+    if b.t.size < 3:
+        return default
+    gaps = np.diff(b.t.astype("int64"))
+    gaps = gaps[gaps > 0]
+    if gaps.size == 0:
+        return default
+    vals, counts = np.unique(gaps, return_counts=True)
+    span = int(vals[int(np.argmax(counts))])
+    if counts.max() / gaps.size < 0.5 or span % 60_000_000_000:
+        return default
+    minutes = span // 60_000_000_000
+    return max(1, 1440 // minutes) if minutes in CHART_MINUTES else default
+
+
 def _build_clock_transition(b: Bars, p: dict[str, Any]) -> list[Order]:
     side, mode = int(p["side"]), str(p["mode"])
     stamp = int(p["stamp_hour"])
     if (str(p.get("label") or "") not in CLOCK_LABELS or mode not in ("into", "out_of", "fade")
             or side not in (1, -1) or not 0 <= stamp <= 23):
         return []
-    if len(b) < max(1, 1440 // max(1, b.minutes)) * 60:
+    if len(b) < _bars_per_day(b) * 60:
         return []
     hour = b.hour
     at = np.flatnonzero(hour == stamp)
@@ -708,6 +731,12 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
     if spec.params_own_session_and_side:
         raw = dict(params or {})
         for k, v in raw.items():
+            # AN UNKNOWN KEY IS REFUSED, NEVER DROPPED (audit on #487): a key the written rule
+            # does not name may change what trades, and dropping it would rebuild a different
+            # strategy and call the comparison a replication.
+            if (k not in spec.defaults and k not in LABEL_KEYS and k not in NO_OP_MODIFIERS
+                    and k not in VARIANT_KEYS):
+                return None, (f"param {k!r} is not named by the written rule for {family!r}")
             val = str(v if v is not None else "").strip().lower()
             if k in NO_OP_MODIFIERS and val not in NO_OP_MODIFIERS[k]:
                 return None, (f"variant {k}={v!r} has no written rule in the spec book for "

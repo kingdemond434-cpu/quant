@@ -345,3 +345,20 @@ def test_clock_transition_session_is_the_cells_and_a_real_variant_is_refused() -
     refused, why = rc.resolve_spec("clock_transition", {"label": "tokyo_open", "stamp_hour": 0,
                                                         "entry_timing": "delayed"}, "asia", "LONG")
     assert refused is None and "entry_timing" in why
+
+
+def test_clock_transition_refuses_a_param_its_rule_does_not_name() -> None:
+    refused, why = rc.resolve_spec("clock_transition", {"label": "tokyo_open", "stamp_hour": 0,
+                                                        "warp_factor": 3}, "asia", "LONG")
+    assert refused is None and "warp_factor" in why
+
+
+def test_bars_per_day_is_measured_from_the_frame_not_its_declared_chart() -> None:
+    bars, _ = _walk_bars()
+    assert rc._bars_per_day(bars) == 24
+    m5 = rc.bars_from_arrays(np.arange(10, dtype="int64") * 300_000_000_000,
+                             *([np.ones(10)] * 4))
+    assert rc._bars_per_day(m5) == 288
+    irregular = rc.bars_from_arrays(np.array([0, 7, 19, 40, 77], dtype="int64") * 60_000_000_000,
+                                    *([np.ones(5)] * 4))
+    assert rc._bars_per_day(irregular) == 24
