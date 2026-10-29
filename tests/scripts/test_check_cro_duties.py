@@ -206,7 +206,8 @@ def test_pass_questions_are_scored_from_the_review(tmp_path: Path) -> None:
     good = {"answer": "re-judge the COT backlog",
             "evidence": ["reports/X.json@2026-10-07T01:00:00Z"]}
     (tmp_path / "desks" / "mt5" / "reports").mkdir(parents=True)
-    (tmp_path / "desks" / "mt5" / "reports" / "X.json").write_text("{}")
+    (tmp_path / "desks" / "mt5" / "reports" / "X.json").write_text(
+        json.dumps({"at": "2026-10-07T01:00:00+00:00"}))
     review = tmp_path / "review.json"
     review.write_text(json.dumps({"latest": {"at": datetime.now(UTC).isoformat(), "duties": {},
         "pass_questions": {"Q1": good, "Q2": dict(good), "Q3": {**good, "evidence": []},
@@ -232,7 +233,8 @@ def test_judging_sweep_items_a_to_g_are_scored_from_the_review(tmp_path: Path) -
     item = {"finding": "0 first rulings/h",
             "evidence": ["reports/JUDGING_BURNDOWN.json@2026-10-07T01:00:00Z"]}
     (tmp_path / "desks" / "mt5" / "reports").mkdir(parents=True)
-    (tmp_path / "desks" / "mt5" / "reports" / "JUDGING_BURNDOWN.json").write_text("{}")
+    (tmp_path / "desks" / "mt5" / "reports" / "JUDGING_BURNDOWN.json").write_text(
+        json.dumps({"at": "2026-10-07T01:00:00+00:00"}))
     sweep = {k: dict(item) for k in "abcdef"}
     sweep["c"] = {"finding": "UNMEASURED", "evidence": ["x"]}
     review = tmp_path / "review.json"
