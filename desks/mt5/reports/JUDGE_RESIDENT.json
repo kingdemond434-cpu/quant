@@ -17,7 +17,7 @@
  "uptime_s": 111754.3,
  "last_sweep_ended_utc": "2026-10-28T23:43:49+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-10-28T23:49:59+00:00",
+ "heartbeat_utc": "2026-10-29T00:05:02+00:00",
  "sweep_phase": {
   "pid": 23440,
   "sweep_started_utc": "2026-10-28T23:44:12+00:00",
@@ -26,57 +26,61 @@
   "phase_started_utc": "2026-10-28T23:44:12+00:00",
   "plan_steps": {
    "lane_and_docket": 84.2,
-   "docket_grouping": 117.2
+   "docket_grouping": 117.2,
+   "gate0": 308.1,
+   "preflight": 235.8,
+   "cache_prune": 487.1
   },
-  "plan_step": "gate0",
-  "plan_step_started_utc": "2026-10-28T23:47:34+00:00",
+  "plan_step": "order",
+  "plan_step_started_utc": "2026-10-29T00:04:45+00:00",
   "plan_counts": {
    "docket_rows": 1551587,
-   "unique_cells": 1550805
+   "unique_cells": 1550805,
+   "gate0_advance": 1550805
   },
-  "plan_last_marker": "Unique cells to evaluate: 1550805",
+  "plan_last_marker": "  breadth: 36 chart x session bucket(s) judged so far; least covered ('M1', 'overlap') (5), most ('H1', 'all') (53699)",
   "wall_profile": {
    "every_s": 10.0,
    "depth": 6,
    "authority": "report_only",
    "phases": {
     "plan": {
-     "samples": 34,
+     "samples": 117,
      "top": [
+      {
+       "stack": "__init__.py:exists:676 < external_gauntlet.py:symbol_is_tradeable:933 < external_gauntlet.py:partition_at_economic_prior:979 < external_gauntlet.py:main:3569 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3498",
+       "n": 11,
+       "share": 0.094
+      },
+      {
+       "stack": "__init__.py:open:776 < __init__.py:read_text:792 < family_policy.py:banned_families:86 < family_policy.py:family_banned:102 < external_gauntlet.py:main:3685 < external_gauntlet.py:run_sharded:4844",
+       "n": 10,
+       "share": 0.085
+      },
       {
        "stack": "external_gauntlet.py:refill:3387 < external_gauntlet.py:iter_json_array:3421 < external_gauntlet.py:main:3516 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3498 < run_sharded_gauntlet.py:_sweep_once:3389",
        "n": 8,
-       "share": 0.235
+       "share": 0.068
       },
       {
        "stack": "external_gauntlet.py:refill:3387 < external_gauntlet.py:iter_json_array:3421 < external_gauntlet.py:main:3464 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3498 < run_sharded_gauntlet.py:_sweep_once:3389",
        "n": 6,
-       "share": 0.176
+       "share": 0.051
       },
       {
-       "stack": "__init__.py:exists:676 < external_gauntlet.py:symbol_is_tradeable:933 < external_gauntlet.py:partition_at_economic_prior:979 < external_gauntlet.py:main:3569 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3498",
+       "stack": "__init__.py:read_text:792 < family_policy.py:banned_families:86 < family_policy.py:family_banned:102 < external_gauntlet.py:main:3685 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3498",
        "n": 4,
-       "share": 0.118
-      },
-      {
-       "stack": "core.py:read:1585 < core.py:read_table:1959 < parquet.py:read:265 < parquet.py:read_parquet:669 < external_gauntlet.py:_bars_for:480 < external_gauntlet.py:partition_at_economic_prior:987",
-       "n": 2,
-       "share": 0.059
-      },
-      {
-       "stack": "encoder.py:iterencode:261 < encoder.py:encode:200 < __init__.py:dumps:238 < external_gauntlet.py:main:3527 < external_gauntlet.py:run_sharded:4844 < run_sharded_gauntlet.py:_sweep_logged:3498",
-       "n": 2,
-       "share": 0.059
+       "share": 0.034
       }
      ],
      "process": {
-      "cpu_s": 254.3,
-      "page_faults": 6509686.0,
-      "read_bytes": 4929535749.0,
-      "write_bytes": 53736.0,
-      "sampled_s": 330.0,
-      "rss_mb_max": 2995.9,
-      "cpu_share_of_wall": 0.771
+      "cpu_s": 854.2,
+      "page_faults": 8635920.0,
+      "read_bytes": 6578786660.0,
+      "write_bytes": 101248.0,
+      "sampled_s": 1160.0,
+      "rss_mb_max": 5072.7,
+      "cpu_share_of_wall": 0.736
      }
     }
    }
