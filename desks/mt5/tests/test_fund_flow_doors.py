@@ -91,8 +91,8 @@ def test_mof_stamp_is_never_before_the_measured_release(week_end, release):
     released = datetime.combine(date.fromisoformat(release), datetime.min.time(),
                                 tzinfo=UTC) + timedelta(hours=8, minutes=50) - timedelta(hours=9)
     assert available >= released
-    # and an ordinary Thursday week is not pushed past its Friday
-    if (date.fromisoformat(release) - end).days == 5:
+    # and an ordinary week outside a holiday cluster is not pushed past its Friday
+    if W._mof_lag(end) == W._MOF_LAG_D:
         assert (available - released) < timedelta(days=2)
 
 

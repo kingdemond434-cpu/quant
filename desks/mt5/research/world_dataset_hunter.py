@@ -1094,7 +1094,7 @@ _MOF_WEEK = re.compile(r"^\s*(\d{4})\s*[.]\s*(\d{1,2})\s*[.]\s*(\d{1,2})\s*[~\u3
 #: first_seen_utc whenever that is later (`pit_series`).
 _MOF_LAG_D = 6
 _MOF_HOLIDAY_LAG_D = 14
-_MOF_HOLIDAY_WINDOWS = (((4, 25), (5, 10)), ((9, 10), (9, 30)), ((12, 20), (12, 31)),
+_MOF_HOLIDAY_WINDOWS = (((4, 25), (5, 10)), ((9, 13), (9, 23)), ((12, 20), (12, 31)),
                         ((1, 1), (1, 10)))
 
 
