@@ -44,6 +44,7 @@ import secrets
 import subprocess
 import sys
 import tempfile
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -97,7 +98,10 @@ DYNAMIC = re.compile(
     r"|invoke-command|start-scheduledtask|register-scheduledtask|schtasks|\bcall\b|^\s*\.\s"
     r"|\bsource\b|importlib|__import__|runpy|\bexec\s*\(|\beval\s*\(|subprocess|os\.system"
     r"|os\.popen|os\.exec|os\.spawn|&\s*[$(\"']|cmd(\.exe)?\s+/[ck]|powershell(\.exe)?\s"
-    r"|pwsh(\.exe)?\s|python\S*\s+-[cm]\b|sys\.path",
+    r"|pwsh(\.exe)?\s|python\S*\s+-[cm]\b|sys\.path"
+    # #508 v2 audit
+    r"|scriptblock|invokescript|invoke-item|(set|disable|unregister)-scheduledtask|stop-process"
+    r"|getattr\s*\(|__builtins__|\bcompile\s*\(|pickle|posix_spawn|\bpty\b|from\s+os\s+import",
     re.IGNORECASE | re.MULTILINE,
 )
 #: Where `import x` resolves on the box: the repository root and the desk.
@@ -213,11 +217,18 @@ def read(tree: Path, path: str) -> str | None:
     if _is_git(tree):
         p = subprocess.run(
             ["git", "-C", str(tree), "show", f"HEAD:{path}"],
-            capture_output=True, text=True, check=False,
+            capture_output=True, check=False,
         )  # fmt: skip
-        return p.stdout if p.returncode == 0 else None
+        return _text(p.stdout) if p.returncode == 0 else None
     f = tree / path
-    return f.read_text("utf-8", errors="replace") if f.is_file() else None
+    return _text(f.read_bytes()) if f.is_file() else None
+
+
+def _text(raw: bytes) -> str:
+    """Any encoding reads (#508 audit: a UTF-16 script crashed the run): undecodable bytes are
+    replaced, NULs dropped and the text NFKC-normalised, so every scan sees plain words."""
+    text = raw.decode("utf-8", errors="replace").replace("\x00", "")
+    return unicodedata.normalize("NFKC", text)  # fullwidth letters read as ASCII
 
 
 def _module_files(dotted: str, files: set[str]) -> list[str]:
@@ -378,9 +389,19 @@ def money_scripts(
         money |= more
 
 
-def is_money(path: str, closure: set[str], scripts: set[str] | None = None) -> bool:
-    if scripts is not None and is_script(path):
-        return path in scripts
+def exempt_scripts(
+    trees: tuple[Path, ...], closure: set[str], listed: set[str] | None = None
+) -> set[str]:
+    """The scripts in `trees` that are NOT money path: the only way out for a script. A script
+    any caller never showed here (one added only in a tree it did not pass) stays money."""
+    scripts = {f for t in trees for f in tree_files(t) if is_script(f)}
+    return scripts - money_scripts(trees, closure, listed)
+
+
+def is_money(path: str, closure: set[str], *, exempt: set[str] | None = None) -> bool:
+    """A script under SCRIPT_DIRS is money unless `exempt` names it (fail closed, #508 audit)."""
+    if is_script(path):
+        return path not in (exempt or set())
     return path.startswith(MONEY_PATH) or path in closure
 
 
@@ -431,12 +452,12 @@ def bounded() -> dict[str, set[str]]:
 
 
 def knob_changes(
-    base: Path, head: Path, changed: list[str], closure: set[str], scripts: set[str] | None = None
+    base: Path, head: Path, changed: list[str], closure: set[str], exempt: set[str] | None = None
 ) -> list[str]:
     problems = []
     held = bounded()
     for f in changed:
-        if not f.endswith(".py") or not is_money(f, closure, scripts):
+        if not f.endswith(".py") or not is_money(f, closure, exempt=exempt):
             continue
         try:
             was = knobs(read(base, f) or "")
@@ -565,13 +586,15 @@ def compare(
     if not placed:
         problems.append("UNMEASURED: the base tree placed nothing anywhere on the grid")
     closure = import_closure(base)
-    scripts = money_scripts((base, head), closure)
-    uncovered = sorted(f for f in changed if is_money(f, closure, scripts) and f not in imported)
-    not_money = sorted(f for f in changed if is_script(f) and f not in scripts)
+    exempt = exempt_scripts((base, head), closure)
+    uncovered = sorted(
+        f for f in changed if is_money(f, closure, exempt=exempt) and f not in imported
+    )
+    not_money = sorted(f for f in changed if is_script(f) and f in exempt)
     problems += [
         f"UNMEASURED money-path change (the replay never imported it): {f}" for f in uncovered
     ]
-    problems += knob_changes(base, head, changed, closure, scripts)
+    problems += knob_changes(base, head, changed, closure, exempt)
     return {
         "verdict": "FAIL" if problems else "PASS",
         "scenarios": len(grid),

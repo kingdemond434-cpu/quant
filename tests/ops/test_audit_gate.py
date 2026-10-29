@@ -1858,7 +1858,31 @@ def test_every_script_is_money_path_unless_reviewed_and_clean(tmp_path: Path) ->
     # data, state and config under the money directories stay money whatever they say
     for f in ("desks/mt5/scripts/knobs.json", "desks/mt5/ops/CPU_SHAPE.json",
               "desks/mt5/data/sleeves.json"):  # fmt: skip
-        assert rs.is_money(f, set(), money), f
+        assert rs.is_money(f, set(), exempt={f}), f  # only a script can be exempt
+
+
+def test_a_script_no_caller_showed_is_money_path(tmp_path: Path) -> None:
+    """#508 v2 audit MF1: a caller that passes only the base tree never saw a script the PR
+    adds; it must read money, not slip out because the money set never named it."""
+    base = _files_tree(tmp_path / "base", dict(_BASE))
+    exempt = rs.exempt_scripts((base,), rs.import_closure(base), _LISTED)
+    assert "desks/mt5/scripts/backup.ps1" in exempt
+    for f in ("desks/mt5/scripts/new_tool.ps1", "desks/mt5/ops/new_helper.py",
+              "desks/mt5/scripts/new.PS1"):  # fmt: skip
+        assert rs.is_money(f, set(), exempt=exempt), f
+    assert rs.is_money("desks/mt5/scripts/anything.ps1", set())
+
+
+def test_a_utf16_script_reads_and_is_scanned(tmp_path: Path) -> None:
+    """#508 v2 audit: a UTF-16 script crashed the run; now it reads, and its words still count."""
+    base = _files_tree(tmp_path / "base", dict(_BASE))
+    (base / "desks/mt5/scripts/backup.ps1").write_bytes(
+        "Copy-Item a b\nStart-Process terminal64.exe\n".encode("utf-16")
+    )
+    assert "terminal64.exe" in (rs.read(base, "desks/mt5/scripts/backup.ps1") or "")
+    assert "desks/mt5/scripts/backup.ps1" in rs.money_scripts(
+        (base,), rs.import_closure(base), _LISTED
+    )
 
 
 @pytest.mark.parametrize(
@@ -1882,6 +1906,15 @@ def test_every_script_is_money_path_unless_reviewed_and_clean(tmp_path: Path) ->
         "Set-Content PROMOTION_FREEZE.json 1\n",
         "Set-Content MINLOT_OVERRIDE.json 1\n",
         "Start-Process terminal64.exe\n",
+        # #508 v2 audit
+        "$sb = [scriptblock]::Create($x); & $sb\n",
+        "Enable-ScheduledTask MT5-Hourly; Disable-ScheduledTask MT5-Gold\n",
+        "Stop-Process -Name terminal64\n",
+        "getattr(__import__('os'), 'sys' + 'tem')('x')\n",
+        "from os import system\n",
+        "import pickle\npickle.loads(b)\n",
+        "from \uff4d\uff54\uff15\uff44\uff45\uff53\uff4b import "  # fullwidth mt5desk
+        "\uff47\uff41\uff54\uff45\uff57\uff41\uff59\n",
     ],
 )
 def test_every_audited_evasion_of_a_listed_script_is_money_path(tmp_path: Path, body: str) -> None:
