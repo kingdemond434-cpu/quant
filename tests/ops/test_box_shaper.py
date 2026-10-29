@@ -232,9 +232,9 @@ def test_the_allocator_wall_time_is_carried_pass_to_pass() -> None:
     procs = _box()
     alloc = next(p for p in procs if p.pid == 10)
     alloc.create_time = 1_000.0
-    first = bs.track_wall(procs, rule["match"], None, now=4_600.0)
+    first = bs.track_wall(procs, rule, None, now=4_600.0)
     assert first["running"][0]["wall_s"] == 3_600 and first["running"][0]["cores"] == N
-    gone = bs.track_wall([p for p in procs if p.pid != 10], rule["match"], first, now=5_200.0)
+    gone = bs.track_wall([p for p in procs if p.pid != 10], rule, first, now=5_200.0)
     assert gone["running"] == []
     assert gone["finished"][0]["wall_s_at_least"] == 3_600
 
@@ -1635,3 +1635,133 @@ def test_the_verified_kill_reports_which_processes_died() -> None:
 def test_the_dedupe_why_names_the_verified_kill() -> None:
     why = RULES["dedupe"]["why"]
     assert "kill_verified_tree" in why and "proctree.kill_tree" not in why
+
+
+# ------------------------------------------------------------------------------------ fifth audit
+_ALLOCATOR_FORMS = [
+    # (command line, group, pinned to 0xFF by pf_allocator_heavy)
+    (r"python.exe C:\opt\quant\desks\mt5\research\pf_allocator.py --mode normal",
+     "money_feed", False),                                     # hourly_cycle's run
+    (r"python.exe C:\opt\quant\desks\mt5\research\pf_allocator.py", "money_feed", False),
+    (r"pythonw.exe -u research\pf_allocator.py --mode=fast", "money_feed", False),
+    (r"pythonw.exe -u research\pf_allocator.py  --mode   fast", "money_feed", False),
+    ("python.exe -m research.pf_allocator --mode fast", "money_feed", False),
+    ("python.exe -m research.pf_allocator", "money_feed", False),
+    ("python.exe -m research.allocator_trigger", "money_feed", False),
+    ("python.exe -m research.prop_challenge_allocator --once", "money_feed", False),
+    (r"pythonw.exe -u -W ignore research/pf_allocator.py --mode heavy", "other", True),
+    (r"pythonw.exe -u research/pf_allocator.py --mode=heavy", "other", True),
+    ("python.exe -m research.pf_allocator --mode=HEAVY", "other", True),
+]
+
+
+@pytest.mark.parametrize(("cmd", "group", "pinned"), _ALLOCATOR_FORMS)
+def test_every_allocator_form_is_money_feed_except_the_heavy_pin(cmd: str, group: str,
+                                                                pinned: bool) -> None:
+    """MF-A probe: exact substrings missed --mode normal, a bare run, --mode=fast, double
+    spaces and -m forms (share-capped to 0x3000f and reserve-moved), and --mode=heavy missed
+    the pin. Identity is script (path or module) plus parsed mode."""
+    full = list(range(N))
+    procs = [Proc(20, "python.exe", cmdline="python.exe run_sharded_gauntlet.py", create_time=1,
+                  cpu_pct=50, priority="BelowNormal", affinity=full),
+             Proc(70, "python.exe", cmdline=cmd, create_time=5, cpu_pct=900, priority="Normal",
+                  affinity=full)]
+    bs.classify(procs, RULES["groups"])
+    p = _by_pid(procs)[70]
+    assert p.group == group
+    out = bs.plan(procs, RULES, N, judge_starved=True, previous_heavy=[q.key for q in procs])
+    aff = [(a.rule, a.after) for a in out.actions if a.pid == 70 and a.kind == "affinity"]
+    if pinned:
+        assert aff == [("pf_allocator_heavy", "0xff")]
+    else:
+        assert aff == [] and not [k for k in out.heavy if k.startswith("70:")]
+        for boost in (False, True):
+            acts, moved, _ = bs.plan_reserve(procs, RES, N, boost=boost, floor_cores=FLOOR,
+                                             skip_pids=set(), previous_moved={})
+            assert 70 not in moved_pids(acts) and p.key not in moved
+
+
+def test_script_identity_and_mode_parsing() -> None:
+    assert bs.script_identity(r"py.exe C:\a b\x\pf_allocator.pyw --mode fast")[0] == "pf_allocator"
+    assert bs.script_identity("python -c import pf_allocator") == (None, [])
+    assert bs.parse_mode([]) == "normal" and bs.parse_mode(["--mode=Fast"]) == "fast"
+    assert bs.parse_mode(["--mode", "heavy", "--x"]) == "heavy"
+    assert bs.parse_mode(["--mode"]) == "normal"
+
+
+def test_a_pinned_allocator_under_a_feed_parent_keeps_its_pin() -> None:
+    """MF-A: a heavy run launched by allocator_trigger is not swept into money_feed."""
+    full = list(range(N))
+    procs = [Proc(80, "python.exe", cmdline="python.exe -m research.allocator_trigger",
+                  create_time=1, affinity=full),
+             Proc(81, "python.exe", ppid=80, create_time=2, affinity=full,
+                  cmdline="python.exe research/pf_allocator.py --mode heavy"),
+             Proc(82, "python.exe", ppid=80, create_time=3, affinity=full,
+                  cmdline="python.exe research/pf_allocator.py --mode fast")]
+    bs.classify(procs, RULES["groups"])
+    g = _by_pid(procs)
+    assert (g[80].group, g[81].group, g[82].group) == ("money_feed", "other", "money_feed")
+
+
+def test_a_money_feed_child_that_inherited_the_side_mask_is_widened(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """MF-B probe: hourly_cycle (other) and research_supervisor (mining) sit on 0x300ff (0x3000f
+    boosted); the allocators they launch inherit it and nothing widened them."""
+    side = bs.mask_to_cpus("0x300FF", N)
+    boost = bs.mask_to_cpus("0x3000F", N)
+    procs = [
+        Proc(20, "python.exe", cmdline="python.exe run_sharded_gauntlet.py", create_time=1,
+             cpu_pct=50, priority="BelowNormal", affinity=list(range(N))),
+        Proc(90, "python.exe", cmdline="python.exe research/hourly_cycle.py", create_time=2,
+             cpu_pct=100, affinity=side),
+        Proc(91, "python.exe", ppid=90, create_time=3, cpu_pct=400, affinity=side,
+             cmdline="python.exe research/pf_allocator.py --mode normal"),
+        Proc(95, "python.exe", cmdline="python.exe research_supervisor.py", create_time=4,
+             cpu_pct=100, affinity=boost),
+        Proc(96, "python.exe", ppid=95, create_time=5, cpu_pct=100, affinity=boost,
+             cmdline="python.exe -m research.allocator_trigger"),
+        Proc(97, "python.exe", ppid=96, create_time=6, cpu_pct=600, affinity=boost,
+             cmdline="python.exe research/pf_allocator.py --mode fast"),
+        Proc(98, "python.exe", ppid=90, create_time=7, cpu_pct=900, affinity=side,
+             cmdline="python.exe research/pf_allocator.py --mode heavy"),
+        Proc(60, "terminal64.exe", exe=r"C:\MT5\terminal64.exe", create_time=8,
+             priority="AboveNormal", affinity=side),
+    ]
+    bs.classify(procs, RULES["groups"])
+    acts = bs.widen_money(procs, N, set())
+    assert {(a.pid, a.after, a.rule) for a in acts} == {
+        (91, "0x3ffff", "money_widen"), (96, "0x3ffff", "money_widen"),
+        (97, "0x3ffff", "money_widen"), (60, "0x3ffff", "money_widen")}
+    assert all(a.key for a in acts)
+    # end to end: one pass widens them; the heavy run keeps its pin; the parents stay put
+    box = copy.deepcopy(procs)
+    _fake, feed, run = _drive(monkeypatch, tmp_path, box)
+    feed.append((copy.deepcopy(box), 50.0))
+    run()
+    g = _by_pid(box)
+    for pid in (91, 96, 97, 60):
+        assert g[pid].affinity == list(range(N)), pid
+    assert bs.cpus_to_mask(g[98].affinity or []) == "0xff"
+    feed.append((copy.deepcopy(box), 50.0))
+    out = run()                                # nothing left to widen on the next pass
+    assert not [a for a in out["actions"] if a["rule"] == "money_widen"]
+
+
+@pytest.mark.parametrize("cmd", [
+    r"C:\Users\quant\.local\bin\claude.exe remote-control --spawn same-dir --name box",
+    "claude remote-control --spawn same-dir --no-create-session-in-dir",
+    r"powershell.exe -NoProfile -File C:\opt\quant\ops\bridge\bridge_watchdog.ps1",
+    r"python.exe C:\opt\quant\scripts\run_deadman_reconciliation.py"])
+def test_the_bridge_and_the_deadman_reconciliation_are_raise_only(cmd: str) -> None:
+    """SF1: the box bridge and the deadman reconciliation are never moved, capped or stopped."""
+    procs = [Proc(20, "python.exe", cmdline="python.exe run_sharded_gauntlet.py", create_time=1,
+                  cpu_pct=50), Proc(70, "x.exe", cmdline=cmd, create_time=5, cpu_pct=900,
+                                    affinity=list(range(N)))]
+    bs.classify(procs, RULES["groups"])
+    p = _by_pid(procs)[70]
+    assert p.group in bs.RAISE_ONLY
+    out = bs.plan(procs, RULES, N, judge_starved=True, previous_heavy=[q.key for q in procs])
+    assert not [a for a in out.actions if a.pid == 70 and a.kind == "affinity"]
+    acts, moved, _ = bs.plan_reserve(procs, RES, N, boost=True, floor_cores=FLOOR,
+                                     skip_pids=set(), previous_moved={})
+    assert 70 not in moved_pids(acts) and p.key not in moved

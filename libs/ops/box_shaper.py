@@ -198,8 +198,8 @@ def validate_rules(data: Mapping[str, Any]) -> None:
         raise ValueError(f"priority_ceiling {ceiling!r} is above AboveNormal")
     for rule in data.get("rules", []):
         name = rule.get("name")
-        if not name or not (rule.get("match") or rule.get("group")):
-            raise ValueError(f"rule without name and match/group: {rule!r}")
+        if not name or not (rule.get("match") or rule.get("group") or rule.get("script")):
+            raise ValueError(f"rule without name and match/group/script: {rule!r}")
         if rule.get("group") in RAISE_ONLY and "affinity" in rule:
             raise ValueError(f"rule {name}: the {rule['group']} group is never affinity-capped")
         prio = rule.get("priority")
@@ -233,6 +233,54 @@ def validate_rules(data: Mapping[str, Any]) -> None:
 
 
 # ------------------------------------------------------------------------------------ groups
+def script_identity(cmdline: str) -> tuple[str | None, list[str]]:
+    """(script, its arguments) of a python command line, by PATH OR MODULE FORM. Pure.
+
+    `... research\\pf_allocator.py --mode fast` and `-m research.pf_allocator --mode fast` are
+    both "pf_allocator" (audit MF-A, 2026-10-29: exact substrings missed `-m`, `--mode=fast`,
+    double spaces and a bare run). A `-c` program or no script at all is (None, [])."""
+    toks = [t.strip("\"'") for t in cmdline.split()]
+    for i, tok in enumerate(toks):
+        low = tok.lower()
+        if low == "-c":
+            return None, []
+        if low == "-m" and i + 1 < len(toks):
+            return toks[i + 1].lower().rsplit(".", 1)[-1] or None, toks[i + 2:]
+        if low.endswith((".py", ".pyw")):
+            base = re.split(r"[\\/]", low)[-1]
+            return base.rsplit(".", 1)[0] or None, toks[i + 1:]
+    return None, []
+
+
+def parse_mode(args: Sequence[str], default: str = "normal") -> str:
+    """The `--mode` argument: `--mode X` or `--mode=X`; absent is the script's default. Pure."""
+    for i, tok in enumerate(args):
+        low = tok.lower()
+        if low == "--mode" and i + 1 < len(args):
+            return args[i + 1].lower()
+        if low.startswith("--mode="):
+            return low.split("=", 1)[1] or default
+    return default
+
+
+def script_mode(p: Proc) -> tuple[str | None, str]:
+    """(script identity, parsed mode) of a process. Pure."""
+    script, args = script_identity(p.cmdline)
+    return script, parse_mode(args)
+
+
+def rule_matches(rule: Mapping[str, Any], p: Proc) -> bool:
+    """A rule names a process by `group`, by `script` (+ optional `mode`, parsed from argv), or
+    by a `match` substring of exe + command line. Pure."""
+    if rule.get("group"):
+        return p.group == str(rule["group"])
+    if rule.get("script"):
+        script, mode = script_mode(p)
+        return (script == str(rule["script"]).lower()
+                and (rule.get("mode") is None or mode == str(rule["mode"]).lower()))
+    return str(rule.get("match", "")).lower() in p.haystack and bool(rule.get("match"))
+
+
 def classify(procs: Sequence[Proc], groups: Mapping[str, Sequence[str]],
              sticky_money: Collection[str] = ()) -> None:
     """Tag each process; the money, adopt and judge trees are whole. Precedence: money first.
@@ -247,7 +295,19 @@ def classify(procs: Sequence[Proc], groups: Mapping[str, Sequence[str]],
     "other" and move, narrow, cap or dedupe it; a sticky key keeps it (and anything it spawns)
     money for as long as that process lives. `money_root` marks only the name-matched roots.
     """
+    feed = {str(x).lower() for x in groups.get("money_feed", ())}
+    pinned = {str(x).lower() for x in groups.get("money_feed_pinned", ())}
+
+    def is_pinned(p: Proc) -> bool:
+        script, mode = script_mode(p)
+        return f"{script}:{mode}" in pinned
+
     def hit(p: Proc, kind: str) -> bool:
+        if kind == "money_feed":
+            # BY SCRIPT IDENTITY AND PARSED MODE (audit MF-A): every mode of a feed script is
+            # money_feed except a pinned one (pf_allocator heavy keeps its committed pin)
+            script, _mode = script_mode(p)
+            return script in feed and not is_pinned(p)
         return any(s.lower() in p.haystack for s in groups.get(kind, ()))
 
     children: dict[int, list[Proc]] = {}
@@ -272,7 +332,8 @@ def classify(procs: Sequence[Proc], groups: Mapping[str, Sequence[str]],
             if cur in out:
                 continue
             out.add(cur)
-            stack.extend(c.pid for c in children.get(cur, ()) if c.pid != cur)
+            stack.extend(c.pid for c in children.get(cur, ())
+                         if c.pid != cur and not (kind == "money_feed" and is_pinned(c)))
         return out
 
     # THE RELEASE PATH RIDES WITH THE MONEY PATH (2026-10-29): the first automatic Adopt-And-Seal
@@ -358,10 +419,7 @@ def plan(procs: Sequence[Proc], rules: Mapping[str, Any], n_cpu: int, *, judge_s
         if p.group in UNTOUCHED:
             continue
         for rule in rules.get("rules", []):
-            if rule.get("group"):
-                if p.group != rule["group"]:
-                    continue
-            elif str(rule["match"]).lower() not in p.haystack:
+            if not rule_matches(rule, p):
                 continue
             prio = rule.get("priority")
             if prio and prio != p.priority:
@@ -783,6 +841,29 @@ def plan_reserve(procs: Sequence[Proc], cfg: Mapping[str, Any], n_cpu: int, *, b
     return actions, moved, meta
 
 
+#: Groups widened to every core on every pass (audit MF-B): what the money path runs on.
+WIDENED_EVERY_PASS = frozenset({"money", "money_feed"})
+
+
+def widen_money(procs: Sequence[Proc], n_cpu: int, skip_pids: set[int]) -> list[Action]:
+    """Every money / money_feed process not already on every core is widened to every core. Pure.
+
+    A CHILD INHERITS ITS PARENT'S MASK (audit MF-B, 2026-10-29): hourly_cycle (other) and
+    research_supervisor (mining) sit on the side mask, so the allocators they launch started on
+    10 cores (6 boosted), and nothing widened them -- plan_reserve widens only what it moved
+    and release_share_cap only what it pinned. This runs every pass, whoever narrowed it. The
+    pf_allocator heavy pin is untouched: a pinned mode is never money_feed (`classify`).
+    """
+    full = list(range(n_cpu))
+    out: list[Action] = []
+    for p in procs:
+        if (p.group in WIDENED_EVERY_PASS and p.pid not in skip_pids
+                and p.affinity is not None and sorted(set(p.affinity)) != full):
+            out.append(Action(p.pid, p.name, p.group, "money_widen", "affinity",
+                              _mask(p.affinity), cpus_to_mask(full), key=p.key))
+    return out
+
+
 def reserve_holds(actions: Sequence[Action], meta: Mapping[str, Any]) -> tuple[bool, str]:
     """The reservation is verified this pass: a reserve is in force and every move landed."""
     if not meta.get("reserve_mask"):
@@ -1026,8 +1107,8 @@ def judge_runnable(phase: str | None, wait_phases: Sequence[str]) -> bool:
     return phase is not None and phase not in set(wait_phases)
 
 
-def track_wall(procs: Sequence[Proc], match: str, previous: Mapping[str, Any] | None,
-               now: float) -> dict[str, Any]:
+def track_wall(procs: Sequence[Proc], match: str | Mapping[str, Any],
+               previous: Mapping[str, Any] | None, now: float) -> dict[str, Any]:
     """Wall time of each run of a tracked process, carried pass to pass. Pure.
 
     A run still live reports `wall_s` so far; a run seen last pass and gone now moves to
@@ -1037,7 +1118,9 @@ def track_wall(procs: Sequence[Proc], match: str, previous: Mapping[str, Any] | 
     running = [{"key": p.key, "started_at": datetime.fromtimestamp(p.create_time, UTC)
                 .isoformat(timespec="seconds"), "wall_s": round(max(0.0, now - p.create_time)),
                 "cores": None if p.affinity is None else len(p.affinity)}
-               for p in procs if match.lower() in p.haystack]
+               for p in procs
+               if (rule_matches(match, p) if isinstance(match, Mapping)
+                   else match.lower() in p.haystack)]
     live = {r["key"] for r in running}
     finished = list(prev.get("finished") or [])
     for r in prev.get("running") or []:
@@ -1568,6 +1651,8 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH,
                                               mining_share=summary["by_group"].get(
                                                   "mining", {}).get("share_of_box", 0.0),
                                               side_cores=int(meta["side_cores"]))}
+    the_plan.actions.extend(widen_money(
+        procs, n_cpu, {a.pid for a in the_plan.actions if a.kind == "affinity"}))
     for a in the_plan.actions:       # every write is verified against the measured key
         if not a.key and a.pid in key_of:
             a.key = key_of[a.pid]
@@ -1584,7 +1669,7 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH,
     summary["memecoin"].update(cap_holds=holds, cap_why=holds_why)
     prev_wall_raw = prev.get("wall")
     prev_wall: dict[str, Any] = prev_wall_raw if isinstance(prev_wall_raw, dict) else {}
-    wall = {r["name"]: track_wall(procs, str(r["match"]), prev_wall.get(r["name"]), time.time())
+    wall = {r["name"]: track_wall(procs, r, prev_wall.get(r["name"]), time.time())
             for r in rules.get("rules", []) if r.get("track_wall")}
     prev_ledger = prev.get(THROTTLE_LEDGER)
     ledger = missed_growth_ledger(
