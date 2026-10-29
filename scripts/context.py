@@ -65,8 +65,46 @@ def next_id(rows: list[dict[str, Any]], day: str) -> str:
     return f"D-{day}-{n + 1:03d}"
 
 
+#: The branch every host's journal rows end up on.
+LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
+
+
+def _git_lines(cwd: Path, *args: str) -> str | None:
+    try:
+        r = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=20, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return r.stdout if r.returncode == 0 else None
+
+
+def committed_rows(path: Path) -> list[dict[str, Any]]:
+    """The journal rows at HEAD and at every fetched copy of LIVE, beside the file on disk.
+
+    MEASURED 2026-10-29 23:01Z: the box minted D-20261029-003 from its own file, which ended at
+    002, while LIVE already carried a different 003. Ids minted from one host's file collide
+    whenever two hosts append on the same day, and a reused id reads as a rewritten record.
+    Minting past every copy git can see closes that to the gap between fetches; verify still
+    names any duplicate that gets through. Nothing here can fail a decision: an unreadable ref
+    adds no rows."""
+    refs = ["HEAD"]
+    listed = _git_lines(path.parent, "for-each-ref", "--format=%(refname)", "refs/remotes")
+    refs += [r for r in (listed or "").split() if r.endswith("/" + LIVE)]
+    rows: list[dict[str, Any]] = []
+    for ref in refs:
+        text = _git_lines(path.parent, "show", f"{ref}:./{path.name}")
+        for line in (text or "").splitlines():
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(row, dict):
+                rows.append(row)
+    return rows
+
+
 def decide(a: argparse.Namespace, path: Path = JOURNAL) -> dict[str, Any]:
-    rows = read_journal(path)
+    rows = read_journal(path) + committed_rows(path)
     now = datetime.now(UTC)
     row = {"id": next_id(rows, now.strftime("%Y%m%d")), "at": now.isoformat(timespec="seconds"),
            "title": a.title, "decision": a.decision, "why": a.why, "by": a.by,
