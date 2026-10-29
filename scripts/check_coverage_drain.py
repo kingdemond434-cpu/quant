@@ -147,6 +147,23 @@ def _num(value: Any) -> float | None:
     return float(value)
 
 
+#: THE PORTABLE HALF NEVER JUDGES BOX STATE (2026-10-20, the twin of the judge-coverage defect
+#: in auditor ruling 2026-10-14 route 2). `run_law_gate.py --laws-only` sets this flag on every
+#: fence it runs; on a clean box tree that battery runs IN PLACE, where the box's own
+#: COVERAGE_DRAIN.json sits beside the code, so the portable half judged live box state. In a
+#: source view the report and the ledger are not read and the verdict is UNMEASURED, with the
+#: reason. `--require-state` and every run without the flag judge exactly as before.
+SOURCE_VIEW_ENV = "QUANT_LAWGATE_SOURCE_VIEW"
+BOX_STATE_ELSEWHERE = ("box state: judged by the box-side state fence (run_law_gate.py "
+                       "_STATE_FENCES, check_coverage_drain.py --require-state), not here -- an "
+                       "isolated source checkout does not run the producer of COVERAGE_DRAIN.json")
+
+
+def _source_view(require_state: bool) -> bool:
+    """True only for the portable law battery; --require-state always binds."""
+    return os.environ.get(SOURCE_VIEW_ENV) == "1" and not require_state
+
+
 def judge(*, report: Path | None = None, ledger: Path | None = None,
           require_state: bool = False, now: datetime | None = None) -> dict[str, Any]:
     """PASS / FAIL / UNMEASURED, with every comparison printed.
@@ -157,10 +174,15 @@ def judge(*, report: Path | None = None, ledger: Path | None = None,
     """
     rpt_path = report or REPORT
     led_path = ledger or LEDGER
-    doc = _read(rpt_path)
     out: dict[str, Any] = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                            "report": str(rpt_path), "ledger": str(led_path), "rule": RULE,
                            "checks": [], "reasons": [], "verdict": "UNMEASURED"}
+    if _source_view(require_state):
+        out["why"] = BOX_STATE_ELSEWHERE
+        out["checks"].append({"metric": "box_state", "state": "UNMEASURED",
+                              "why": f"{SOURCE_VIEW_ENV}=1: {rpt_path.name} not read"})
+        return out
+    doc = _read(rpt_path)
     if not isinstance(doc, Mapping):
         out["why"] = (f"{rpt_path} is absent or unreadable: the coverage drain has not run on "
                       "this host. UNMEASURED is a real answer and it is not a pass.")
@@ -351,7 +373,8 @@ def main(argv: list[str] | None = None) -> int:
     else:
         for line in render(doc):
             print(line)
-    if args.audit:
+    # The audit is the box's record of its own verdict; a source view writes none over it.
+    if args.audit and not _source_view(bool(args.require_state)):
         with suppress(OSError):
             _write(Path(args.audit), doc)
     return _exit(doc["verdict"])

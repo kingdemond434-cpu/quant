@@ -143,18 +143,8 @@ def test_gauntlet_records_missing_data_and_build_failures_instead_of_dropping_th
     assert "blocked_verdicts" in source
 
 
-def test_a_structurally_untestable_family_is_deepening_and_not_lost(tmp_path: Path) -> None:
-    """A family the gauntlet built and never judged is ROUTED, not dropped.
-
-    `structurally_untestable_families` withholds a whole family from judgement once the sweep has
-    built at least five of its cells and judged none of them -- every one under the 60 trading
-    days the gates need -- and sends them to the deepening queue to be widened. Measured on the
-    live desk 2026-09-14, that routing arrived in the conservation report as `lost: 13`: one
-    family, one parameter hash, thirteen symbols. Attrition does not have that shape.
-
-    A cell withheld from judgement and a cell that fell out of the ledger are different events,
-    and telling them apart is the entire job of a conservation check.
-    """
+def test_exact_deepening_receipts_preserve_historical_dispositions(tmp_path: Path) -> None:
+    """Historical deferrals are accounted only by exact durable queue receipts."""
     desk = tmp_path / "desks" / "mt5"
     # Six cells of one family, built and never judged: over the five-build bar, so the family is
     # measured untestable rather than merely unlucky.
@@ -176,9 +166,11 @@ def test_a_structurally_untestable_family_is_deepening_and_not_lost(tmp_path: Pa
                       "unmeasured": True, "stages": {}}
                      for sym in ("A", "B", "C", "D", "E", "F")],
     })
+    _write(desk / "data" / "hypotheses" / "miner_deepening_queue.json",
+           {"tasks": docket[:-1]})
     cons, _ = reporter._conservation(tmp_path)
 
-    assert cons["deepening"] == 6, "the measured-untestable family belongs in its own bucket"
+    assert cons["deepening"] == 6, "exact queued cells belong in their own bucket"
     # The orphan cell was never judged and is not in gauntlet_seen_cells, so it is PENDING
     # rather than lost -- "lost" now means the ledger dropped a verdict it once held.
     assert cons["lost"] == 0, "a never-built cell is pending, not lost"
@@ -187,3 +179,33 @@ def test_a_structurally_untestable_family_is_deepening_and_not_lost(tmp_path: Pa
     # The formula must actually hold, or the bucket is decoration.
     assert cons["accounted"] + cons["lost"] == cons["discovered"]
     assert cons["balanced"] is True, "nothing was dropped, so conservation holds"
+
+
+def test_family_sample_gap_is_not_proof_of_a_deepening_disposition(tmp_path):
+    desk = tmp_path / 'desks/mt5'
+    candidate = {'symbol': 'EURUSD', 'family': 'lvc_asia_london', 'params': {}}
+    _write(desk / 'data/hypotheses/external_survivors.json', [candidate])
+    _write(desk / 'reports/universal_gates_external.json', {'verdicts': [
+        {'cell': f'OTHER{i}.lvc_asia_london.p=x', 'family': 'lvc_asia_london',
+         'unmeasured': True} for i in range(6)]})
+    cons, _ = reporter._conservation(tmp_path)
+    assert cons['deepening'] == 0 and cons['pending'] == 1
+    # A stale queue must also never hide the loss of a previously observed verdict.
+    _write(desk / 'data/hypotheses/miner_deepening_queue.json', {'tasks': [candidate]})
+    _write(desk / 'data/hypotheses/gauntlet_seen_cells.json',
+           {reporter._cell_id(candidate): True})
+    cons, _ = reporter._conservation(tmp_path)
+    assert cons['lost'] == 1 and cons['deepening'] == 0 and not cons['balanced']
+
+
+def test_deepening_receipt_matches_exact_chart_and_parameters(tmp_path):
+    desk = tmp_path / 'desks/mt5'
+    a = {'symbol': 'EURUSD', 'family': 'lvc_asia_london', 'timeframe': 'M5',
+         'params': {'bias_mode': 'off'}}
+    b = {**a, 'timeframe': 'M15'}
+    c = {**a, 'params': {'bias_mode': 'session_relative'}}
+    _write(desk / 'data/hypotheses/external_survivors.json', [a, b, c])
+    _write(desk / 'data/hypotheses/miner_deepening_queue.json', {'tasks': [a]})
+    cons, _ = reporter._conservation(tmp_path)
+    assert cons['deepening'] == 1 and cons['pending'] == 2
+    assert cons['deepening_cells'] == [reporter._cell_id(a)]

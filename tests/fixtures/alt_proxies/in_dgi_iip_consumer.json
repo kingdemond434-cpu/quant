@@ -1,0 +1,14 @@
+{"index_name": "SYNTHETIC fixture shaped like a data.gov.in OGD API reply (use-based monthly IIP)",
+ "total": 5, "count": 5, "limit": "1000", "offset": "0",
+ "field": [{"id": "year", "name": "Year", "type": "keyword"},
+           {"id": "month", "name": "Month", "type": "keyword"},
+           {"id": "consumer_durables", "name": "Consumer Durables", "type": "double"},
+           {"id": "consumer_non_durables", "name": "Consumer Non-durables", "type": "double"},
+           {"id": "consumer_durables_growth", "name": "Consumer Durables Growth (%)", "type": "double"}],
+ "records": [
+  {"year": "2024-25", "month": "July", "consumer_durables": "118.2", "consumer_non_durables": "141.0", "consumer_durables_growth": "8.2"},
+  {"year": "2024-25", "month": "January", "consumer_durables": "121.5", "consumer_non_durables": "150.3", "consumer_durables_growth": "7.0"},
+  {"year": "2025-26", "month": "March", "consumer_durables": "130.1", "consumer_non_durables": "152.9", "consumer_durables_growth": "5.3"},
+  {"year": "2026", "month": "Apr-2026", "consumer_durables": "NA", "consumer_non_durables": "149.4", "consumer_durables_growth": "NA"},
+  {"note": "a row with no period is skipped", "consumer_durables": "1"}
+ ]}

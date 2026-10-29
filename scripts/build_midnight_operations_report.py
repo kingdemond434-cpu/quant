@@ -90,20 +90,13 @@ def _failure_clusters(verdicts: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _untestable_families(root: Path) -> dict[str, str]:
-    """Families the gauntlet MEASURED as producing zero judgeable cells.
+    """Historical all-unmeasured family batches, retained as diagnostic warnings.
 
-    THIS MIRRORS `miner_candidate_compiler.structurally_untestable_families()` AND MUST KEEP
-    MIRRORING IT. The rule is that family's: the last sweep produced at least five verdicts for
-    it and EVERY one was `unmeasured` -- built, and under the 60 trading days the gates need.
-
-    It is re-derived rather than imported because this report runs on checkouts where the desk
-    package is not importable, and because the compiler's copy resolves its own BASE path while
-    this one must answer for an arbitrary root (the tests pass a tmp_path). That duplication is
-    a real cost and it has already been paid once: the first version of this function keyed on
-    the CELL ID and on `passed`, while the compiler keys on the `family` FIELD and on
-    `unmeasured`. Same intent, different inputs, and it silently returned {} against a live
-    report -- which is precisely the failure L0312 records about two implementations of one
-    measurement. If the rule changes, change it in both, and the test below is what notices.
+    A past sweep with at least five cells and no measured verdict does not prove
+    that another symbol, parameterization, chart or later data version is also
+    untestable. Complete recipes still enter the canonical evaluator, which owns
+    their actual sample and validation requirements. Incomplete prose still needs
+    deepening. These family warnings are never queue-disposition receipts.
     """
     gate = _read(root / "desks" / "mt5" / "reports" / "universal_gates_external.json", {})
     per_fam: dict[str, list[int]] = {}
@@ -126,26 +119,14 @@ def _conservation(root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     gate = _read(desk / "reports" / "universal_gates_external.json", {})
     verdicts = [row for row in gate.get("verdicts", []) if isinstance(row, dict)]
     by_cell = {str(row.get("cell")): row for row in verdicts if row.get("cell")}
-    # A CELL ROUTED TO DEEPENING IS ACCOUNTED FOR, NOT LOST (fixed 2026-09-14).
-    #
-    # `lost` meant "the docket holds this cell and the gauntlet published no verdict for it", and
-    # for most cells that is exactly right. But the compiler DELIBERATELY withholds whole families
-    # from judgement: `structurally_untestable_families()` measures which families built cells and
-    # judged none of them -- every cell under the 60 trading days the gates need -- and routes
-    # them to the deepening queue instead. Its own docstring says "Routing them to the DEEPENING
-    # queue is not a rejection: it is the statement that these parameterizations need widening
-    # before any gate can rule".
-    #
-    # So the desk's most careful piece of routing arrived here as its most alarming number. All 13
-    # reported lost were `lvc_asia_london` at one parameter hash across 13 symbols -- one family,
-    # one parameterization, every instance. Random attrition does not look like that, and the
-    # shape was the clue that nothing had been dropped at all.
-    #
-    # THE POINT IS NOT TO MAKE THE NUMBER ZERO. A cell withheld from judgement and a cell that
-    # fell out of the ledger are different events that a conservation check exists to tell apart,
-    # and they were rendering identically (WS-005). `deepening` is now its own bucket with its own
-    # cells named, so `lost` means what it says: unaccounted, and still a hard failure at one.
-    untestable = _untestable_families(root)
+    # Only identity-matched durable tasks prove deepening. A family warning
+    # cannot account for an unqueued cell or hide a missing old verdict.
+    untestable = _untestable_families(root)  # diagnostic, not a routing receipt
+    queue_doc = _read(desk / "data" / "hypotheses" / "miner_deepening_queue.json", {})
+    tasks = queue_doc.get("tasks", []) if isinstance(queue_doc, dict) else []
+    queued_deepening = {_cell_id(task) for task in tasks if isinstance(task, dict)
+                        and (task.get("symbol") or task.get("sym"))
+                        and task.get("family") and isinstance(task.get("params"), dict)}
     # A CELL THE SWEEP HAS NOT REACHED YET IS PENDING, NOT LOST (fixed 2026-09-14).
     #
     # `lost` meant "in the docket, no verdict row", which silently counted every candidate the
@@ -186,17 +167,16 @@ def _conservation(root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     for cell in cells:
         row = by_cell.get(cell)
         if row is None:
-            fam = cell.split(".")[1] if "." in cell else ""
-            if fam in untestable:
-                buckets["deepening"] += 1
-                deepening.append(cell)
-            elif cell in indexed:
+            if cell in indexed:
                 # A standing verdict exists in the persistent index; this sweep simply did not
                 # re-judge it. Accounted for, and not re-tested every hour by design.
                 buckets["rejected"] += 1
             elif cell in seen:
                 buckets["lost"] += 1
                 lost.append(cell)
+            elif cell in queued_deepening:
+                buckets["deepening"] += 1
+                deepening.append(cell)
             else:
                 buckets["pending"] += 1
         elif row.get("passed") is True:
