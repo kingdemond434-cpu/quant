@@ -213,6 +213,24 @@ def stamp_sidecar(path: str | Path, component: Any, inputs: Iterable[str] = (),
     return env
 
 
+def _top_level_is_object(p: Path) -> bool:
+    """True unless the document's first value is plainly not an object.
+
+    A JSON array cannot carry `ENVELOPE_KEY` at its top level, so parsing it is pure cost: the
+    judge's docket (`external_survivors.json`, 1.4M+ rows, ~1.8 GB) is an array, and acknowledging
+    it parsed the whole file -- 21.5 s and a 5.8 GB peak measured 2026-10-07 -- only to find no
+    envelope and fall through to the sidecar. Only the first non-blank byte is read; anything
+    unreadable or ambiguous returns True, so the document is parsed exactly as before.
+    """
+    try:
+        with p.open("rb") as fh:
+            head = fh.read(4096)
+    except OSError:
+        return True
+    head = head.removeprefix(b"\xef\xbb\xbf").lstrip()
+    return not head.startswith(b"[")
+
+
 def read_envelope(path: str | Path) -> dict[str, Any] | None:
     """The lease for one artifact: from inside the document, else from its sidecar, else None.
 
@@ -220,7 +238,7 @@ def read_envelope(path: str | Path) -> dict[str, Any] | None:
     and it must never be silently upgraded to "fresh because the file is recent".
     """
     p = Path(path)
-    if p.suffix == ".json":
+    if p.suffix == ".json" and _top_level_is_object(p):
         try:
             doc = json.loads(p.read_text(encoding="utf-8-sig"))
             env = doc.get(ENVELOPE_KEY) if isinstance(doc, dict) else None

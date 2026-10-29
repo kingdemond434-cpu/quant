@@ -1,0 +1,13 @@
+{
+  "state": "TESTED_CANONICAL_REVIEW_BRANCH_NOT_DEPLOYED",
+  "native_controls_passed": 17,
+  "source_at": "2026-10-13T16:26:06+00:00",
+  "source_age_h": 53.710988085555556,
+  "canonical_freshness_window_h": 6,
+  "original_status": "OK",
+  "repair_status": "UNMEASURED",
+  "ratchet_and_history_preserved_on_bad_source": true,
+  "policy": "Reuse check_judge_coverage.STALE_H; no new threshold or judging/trading restriction",
+  "release_requirements": "Normal hooks, CI and canonical adoption; no release-integrity bypass",
+  "private_record_captures_included": false
+}

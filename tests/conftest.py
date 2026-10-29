@@ -54,6 +54,19 @@ import pytest
 
 _ROOT = Path(__file__).resolve().parent.parent
 
+# Windows shell integration tests require the Bash already shipped with Git for Windows.
+# Git's installer often adds only cmd/ to PATH; add its sibling bin/ for this process.
+if sys.platform == "win32":
+    import os
+    import shutil
+
+    if shutil.which("bash") is None:
+        _git_executable = shutil.which("git")
+        if _git_executable:
+            _git_bash = Path(_git_executable).resolve().parent.parent / "bin" / "bash.exe"
+            if _git_bash.is_file():
+                os.environ["PATH"] = str(_git_bash.parent) + os.pathsep + os.environ.get("PATH", "")
+
 # PATH BOOTSTRAP, and it must happen here. pytest imports conftest before collecting anything, so
 # without this a `libs` import below resolves only when the project is pip-installed into the
 # interpreter in use -- which is not how the gates invoke it.
@@ -238,10 +251,41 @@ def _tier_s_state_stays_out_of_the_checkout(monkeypatch: pytest.MonkeyPatch,
 
     def record(root: Path, rep: Any, ledger: str = blinding.RUNTIME_LEDGER) -> None:
         target = (Path(root) / ledger).resolve()
-        if target.is_relative_to(repo):
+        if (target.is_relative_to(repo)
+                and not target.is_relative_to(tmp_path_factory.getbasetemp().resolve())):
             root, ledger = sink, str(target.relative_to(repo))
         real_record(root, rep, ledger)
 
     monkeypatch.setattr(blinding, "record", record)
     if Path(pa.LEDGER).resolve().is_relative_to(repo):
         monkeypatch.setattr(pa, "LEDGER", sink / "promotion_blocks.jsonl")
+    if Path(pa.SUSPENDED_LEDGER).resolve().is_relative_to(repo):
+        monkeypatch.setattr(pa, "SUSPENDED_LEDGER", sink / "door_suspended.jsonl")
+
+
+@pytest.fixture(autouse=True)
+def _openrouter_key_info_offline(tmp_path_factory: pytest.TempPathFactory,
+                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    """No test reads the box's OpenRouter account file or asks OpenRouter for it: budgets read
+    the account's daily limit from it, so a box with credit would shift every budget a test pins."""
+    from libs.ops import openrouter_guard
+    monkeypatch.setattr(openrouter_guard, "KEY_INFO",
+                        tmp_path_factory.mktemp("openrouter") / "openrouter_key.json")
+    monkeypatch.setattr(openrouter_guard, "NETWORK", False)
+
+
+@pytest.fixture(scope="session")
+def _account_key_file(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """A throwaway HMAC key for the suite (fixed bytes, so keys are reproducible run to run)."""
+    path = tmp_path_factory.mktemp("account_key") / "account_key.hmac"
+    path.write_bytes(b"0123456789abcdef" * 4)
+    return path
+
+
+@pytest.fixture(autouse=True)
+def _account_key_in_tmp(_account_key_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """THE SUITE NEVER READS OR CREATES THE BOX'S ACCOUNT KEY (2026-10-20). `account_key(...,
+    create=True)` would otherwise write data/secrets/account_key.hmac into the checkout; every
+    test gets a throwaway key instead. A test about the absent key points the env elsewhere."""
+    from libs.ops import provenance as _acct_prov
+    monkeypatch.setenv(_acct_prov.KEY_ENV, str(_account_key_file))
