@@ -57,6 +57,10 @@ MODULES = [
     "desks/mt5/research/free_data.py",          # vol_archive's fallback chain
     "desks/mt5/mt5desk/families.py",
     "desks/mt5/mt5desk/families_orthogonal.py",
+    # The judge's fast family paths (2026-10-28): `families.py` imports it AT MODULE SCOPE (the
+    # orthogonal and single-family modules lazily), so a box copy without it fails `import
+    # mt5desk.families`, and a stale copy is a fast path the box's identity check never proved.
+    "desks/mt5/mt5desk/families_vector.py",
     # THE BAR LADDER, and `families.py` now imports it AT MODULE SCOPE (2026-09-05). That is the
     # dangerous shape this list exists for: a new import of an UNWATCHED module. If the box holds
     # a copy without `TIMEFRAME_MINUTES`, `import mt5desk.families` raises ImportError and every
@@ -163,6 +167,13 @@ MODULES = [
     "desks/mt5/research/research_gap_map.py",
     "desks/mt5/research/simplifier.py",
     "desks/mt5/research/wiring_ceo.py",
+    # daily_cycle:vector_families_check (2026-10-28): the box identity check for the fast family
+    # paths (run as a child), and the two modules it exercises beyond families/families_vector --
+    # its forced_flow engagement probe imports family_forced_flow, whose rules path is
+    # forced_flow_calendar's per-call memo. A stale copy of any of them is a check of other code.
+    "desks/mt5/scripts/check_vector_families.py",
+    "desks/mt5/mt5desk/family_forced_flow.py",
+    "desks/mt5/research/forced_flow_calendar.py",
     # The weekly sweep moved out of the order-gateway lock and into daily_cycle. Its six
     # executors now belong to this watched import closure; otherwise the release could
     # silently restore stale hunt code on the trading box while the drift fence said OK.

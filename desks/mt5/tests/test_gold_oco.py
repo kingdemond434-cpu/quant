@@ -1,0 +1,1219 @@
+"""THE CROSS-ACCOUNT GOLD DIRECTION LOCK (mt5desk.gold_oco), on stubbed venues and fake IDs.
+
+E8 (TradeLocker), Fusion (the MT5 gateway) and later FTMO trade gold_asia. The first fill on any
+account sets the day's direction; opposite resting legs are cancelled everywhere; nothing opens
+against another account's open gold; everything fails closed; identity is the keyed account key.
+No real login appears here: every login below is a made-up number.
+"""
+from __future__ import annotations
+
+import hashlib
+import importlib.util
+import json
+import os
+import subprocess
+import sys
+import textwrap
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from types import SimpleNamespace
+from typing import Any, ClassVar
+
+import pytest
+
+_DESK = Path(__file__).resolve().parents[1]
+_ROOT = _DESK.parent.parent
+for _p in (str(_DESK), str(_ROOT), str(_DESK / "tests")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from mt5desk import cross_account as xa  # noqa: E402
+from mt5desk import fusion_rails  # noqa: E402
+from mt5desk import gold_oco as oco  # noqa: E402
+
+# The REAL identity readers, captured before conftest wraps them with a fake-login fallback.
+REAL_TL_KEY = oco.tradelocker_oco_key
+REAL_MT5_KEY = oco.mt5_oco_key
+
+_spec = importlib.util.spec_from_file_location("_gold_oco_adapter",
+                                               _DESK / "tests" / "test_gateway_adapter.py")
+assert _spec is not None and _spec.loader is not None
+ga = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(ga)
+
+#: Fake logins (never a real account). Distinctive, so a leak is findable by substring.
+#: E8 is the conftest's DECLARED E8 identity (conftest.CONFTEST_LOGINS/SERVERS["e8"]): r7.1
+#: declares E8_ACCOUNT.json under it, and the OCO's key join refuses any other E8 key (v2s).
+E8_LOGIN, E8_SERVER = 31337, "E8-Test"
+FU_LOGIN, FU_SERVER = 72345678, "FusionMarkets-Test"
+FT_LOGIN, FT_SERVER = 63456789, "FTMO-Test"
+DAY = "2026-10-21"
+MAGIC = 341953
+
+
+def e8_key() -> str:
+    return oco.oco_account_key(E8_LOGIN, E8_SERVER)
+
+
+def fu_key() -> str:
+    return oco.oco_account_key(FU_LOGIN, FU_SERVER)
+
+
+def _mode(lanes: list[str] | None = None, **modes: str) -> None:
+    doc: dict[str, Any] = {"modes": modes}
+    if lanes is not None:
+        doc["lanes"] = lanes
+    oco.MODE_FILE.write_text(json.dumps(doc), encoding="utf-8")
+
+
+def _flat(lane: str, key: str, *, positions: list | None = None, orders: list | None = None,
+          now: datetime | None = None) -> None:
+    oco.publish_lane(lane, key, positions=positions or [], orders=orders or [], date=DAY,
+                     now=now)
+
+
+def _world(mode_fusion: str = "fallback") -> None:
+    _mode(["e8", "fusion"], fusion=mode_fusion)
+    _flat("e8", e8_key())
+    _flat("fusion", fu_key())
+
+
+# ======================================================================== identity
+
+def test_the_suite_e8_identity_is_the_declared_one_and_a_foreign_key_still_refuses() -> None:
+    """v2s: the fixtures name E8 by the key E8_ACCOUNT.json declares (r7.1's conftest, as on the
+    box), so the key join holds -- and is never loosened: an E8 state under ANY other key is
+    still refused, fail closed."""
+    assert xa.expected_key("e8") == e8_key()
+    assert oco._key_join_refusal("e8", e8_key()) is None
+    foreign = oco.oco_account_key(81234567, "E8-Live-Test")
+    assert foreign != e8_key()
+    assert "does not join" in (oco._key_join_refusal("e8", foreign) or "")
+
+
+def test_the_identity_is_keyed_never_the_plain_sha256_of_login_at_server() -> None:
+    key = oco.oco_account_key(FU_LOGIN, FU_SERVER)
+    plain = "sha256:" + hashlib.sha256(f"{FU_LOGIN}@{FU_SERVER}".encode()).hexdigest()[:16]
+    assert xa.valid_key(key) and key != plain
+    assert key == xa.account_key(FU_LOGIN, FU_SERVER)            # ONE helper: the fence's key
+    # One account, one key, however the venue spells its login.
+    assert oco.oco_account_key(str(FU_LOGIN), FU_SERVER) == key
+    assert oco.oco_account_key(float(FU_LOGIN), FU_SERVER) == key
+
+
+def test_the_oco_key_joins_the_r6_norm_login_spellings() -> None:
+    """Fusion r6's cross_account.norm_login: an int, an integral float and a padded digit string
+    are one account, and the server is stripped -- the OCO key follows it, so the two fences
+    name one account one way."""
+    key = oco.oco_account_key(FU_LOGIN, FU_SERVER)
+    for spelling in (FU_LOGIN, float(FU_LOGIN), f" {FU_LOGIN} ", str(FU_LOGIN)):
+        assert xa.norm_login(spelling) == str(FU_LOGIN)
+        assert oco.oco_account_key(spelling, f" {FU_SERVER} ") == key
+    # A username is not a login (publish_sync v5d keys it None and alerts): it names nothing.
+    for bad in (None, "", "  ", True, " trader01 "):
+        with pytest.raises(oco.IdentityUnavailable):
+            oco.oco_account_key(bad, FU_SERVER)
+
+
+def test_the_oco_key_equals_the_bracket_guard_evidence_key_and_the_fence_key() -> None:
+    """THE KEY JOIN (coordinator, OCO v2): bracket guard v5's evidence lane stamps
+    `provenance.account_key(int(login), server, create=False)`; the OCO key, the existing
+    fence's `cross_account.account_key` and the FTMO prop-ledger key are that same value."""
+    from libs.ops import provenance as p
+    for login, server in ((FU_LOGIN, FU_SERVER), (E8_LOGIN, E8_SERVER), (FT_LOGIN, FT_SERVER)):
+        evidence = p.account_key(int(login), server, create=False)
+        assert evidence is not None and xa.valid_key(evidence)
+        assert oco.oco_account_key(login, server) == evidence
+        assert oco.oco_account_key(str(login), server) == evidence
+        assert xa.account_key(login, server) == evidence
+        assert evidence != "sha256:" + hashlib.sha256(
+            f"{login}@{server}".encode()).hexdigest()[:16]
+
+
+def test_the_fence_has_no_plain_sha256_fallback(monkeypatch, tmp_path) -> None:
+    """With no box key the fence's own key refuses (its readers fail closed): no plain sha256
+    is ever computed in its place and written to a book."""
+    from libs.ops import provenance as p
+    monkeypatch.setenv(p.KEY_ENV, str(tmp_path / "absent.hmac"))
+    assert xa.account_key(FU_LOGIN, FU_SERVER) is None          # r7: unresolvable is None
+    term = SimpleNamespace(account_info=lambda: SimpleNamespace(login=FU_LOGIN, server=FU_SERVER),
+                           positions_get=lambda symbol=None: [], orders_get=lambda symbol=None: [])
+    with pytest.raises(ValueError):
+        xa.publish_mt5(term, source="t")
+
+
+def test_the_key_written_to_state_is_not_the_plain_sha256(monkeypatch) -> None:
+    _world("oco")
+    res = oco.claim_fill("fusion", fu_key(), "buy", date=DAY)
+    assert res["won"]
+    plain = "sha256:" + hashlib.sha256(f"{FU_LOGIN}@{FU_SERVER}".encode()).hexdigest()[:16]
+    written = oco.direction_path().read_text("utf-8") + oco.lane_path("fusion").read_text("utf-8")
+    assert fu_key() in written and plain not in written
+
+
+def test_no_box_key_means_no_identity_and_no_gold_leg(monkeypatch, tmp_path) -> None:
+    from libs.ops import provenance as p
+    monkeypatch.setenv(p.KEY_ENV, str(tmp_path / "absent.hmac"))
+    with pytest.raises(oco.IdentityUnavailable, match="absent"):
+        oco.oco_account_key(FU_LOGIN, FU_SERVER)
+    assert not (tmp_path / "absent.hmac").exists()        # a reader never creates the key
+    v = oco.gate("fusion", "buy_stop", key=None, date=DAY)
+    assert not v.allowed and "keyed" in v.why
+
+
+def test_a_missing_provenance_helper_is_refused(monkeypatch) -> None:
+    from libs.ops import provenance as p
+    monkeypatch.delattr(p, "account_key")
+    with pytest.raises(oco.IdentityUnavailable, match="not landed"):
+        oco.oco_account_key(FU_LOGIN, FU_SERVER)
+
+
+def test_venue_identities_go_through_the_one_helper() -> None:
+    # TLAPI 0.56.2 keeps the server in `_credentials`; `api.server` is None and is never read.
+    venue = SimpleNamespace(_raw_api=SimpleNamespace(acc_id=E8_LOGIN, server=None,
+                                                     _credentials={"server": E8_SERVER}),
+                            _creds=None)
+    assert REAL_TL_KEY(venue) == oco.oco_account_key(E8_LOGIN, E8_SERVER)
+    # No server anywhere fails closed (v1 fell back to a constant that joins nothing).
+    with pytest.raises(oco.IdentityUnavailable, match="server"):
+        REAL_TL_KEY(SimpleNamespace(_raw_api=SimpleNamespace(acc_id=E8_LOGIN, server=None,
+                                                             _credentials={}), _creds=None))
+    term = SimpleNamespace(account_info=lambda: SimpleNamespace(login=FU_LOGIN, server=FU_SERVER))
+    assert REAL_MT5_KEY(term) == fu_key()
+    with pytest.raises(oco.IdentityUnavailable):
+        REAL_MT5_KEY(SimpleNamespace(account_info=lambda: None))
+    with pytest.raises(oco.IdentityUnavailable):
+        REAL_TL_KEY(SimpleNamespace())
+
+
+# ======================================================================== E8 fills long first
+
+class _GwTerminal(ga._Terminal):
+    TRADE_ACTION_REMOVE = 8
+
+    def order_send(self, req: dict) -> SimpleNamespace:
+        if req.get("action") == self.TRADE_ACTION_REMOVE:
+            self.sent.append(req)
+            self.pending = [o for o in self.pending if int(o.ticket) != int(req["order"])]
+            return SimpleNamespace(retcode=10009, order=req["order"], comment="removed")
+        return super().order_send(req)
+
+
+def _gw_order(ticket: int, typ: int) -> SimpleNamespace:
+    return SimpleNamespace(ticket=ticket, symbol="XAUUSD", type=typ, magic=MAGIC,
+                           price_open=2000.0, comment="DWgold_asia")
+
+
+def test_e8_long_first_cancels_fusions_sell_stop_and_fusion_never_shorts(
+        monkeypatch, tmp_path) -> None:
+    _world("oco")
+    _flat("e8", e8_key(), positions=[{"id": 1, "side": "long", "opened_date": DAY}])
+    assert oco.claim_fill("e8", e8_key(), "buy", date=DAY)["won"]
+    rows = ga._gold_rows()
+    mt5 = _GwTerminal(rows, *ga._quote(rows))
+    mt5.pending = [_gw_order(11, 4), _gw_order(12, 5)]          # Fusion's buy and sell stops
+    ns = ga._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    gone = ns["cancel_gold_against_direction"]({"armed": True}, "fusion", fu_key(), DAY)
+    assert gone == 1 and [o.ticket for o in mt5.pending] == [11]
+    entry, _ = oco.day_entry(DAY)
+    assert entry is not None
+    assert [(c["lane"], c["order_id"], c["side"]) for c in entry["legs_cancelled"]] == [
+        ("fusion", "12", "short")]
+    for mode in ("oco", "fallback"):
+        _mode(["e8", "fusion"], fusion=mode)
+        assert not oco.gate("fusion", "sell_stop", key=fu_key(), date=DAY).allowed
+        assert oco.gate("fusion", "buy_stop", key=fu_key(), date=DAY).allowed
+
+
+# ======================================================================== Fusion fills short first
+
+class _E8Venue:
+    def __init__(self) -> None:
+        self.cancelled: list[int] = []
+
+    def cancel(self, order_id: int) -> bool:
+        self.cancelled.append(int(order_id))
+        return True
+
+
+def _e8_state(day: str = DAY) -> dict:
+    return {"date": day, "carried": {}, "windows": {"asia": {
+        "placed_hour": 7.0, "position_id": None, "shadow": False,
+        "orders": {"buy_stop": {"id": 501, "price": 4340.0}, "sell_stop": {"id": 502,
+                                                                          "price": 4300.0}}}}}
+
+
+def test_fusion_short_first_cancels_e8s_buy_stop(monkeypatch) -> None:
+    from prop import e8_gold as g
+    _world("oco")
+    assert oco.claim_fill("fusion", fu_key(), "sell", date=DAY)["won"]
+    venue, state = _E8Venue(), _e8_state()
+    doc: dict = {"gold_oco": {"date": DAY, "key": e8_key()}, "actions": []}
+    gone = g.oco_cancel_opposite(venue, state, doc, {501, 502}, armed=True)
+    assert gone == {501} and venue.cancelled == [501]
+    assert [a["act"] for a in doc["actions"]] == ["oco_direction_cancel"]
+    entry, _ = oco.day_entry(DAY)
+    assert entry is not None and [c["order_id"] for c in entry["legs_cancelled"]] == ["501"]
+    assert g.oco_block(doc, "buy_stop") is not None          # no new E8 long today
+    assert g.oco_block(doc, "sell_stop") is None
+
+
+def test_on_a_day_e8_set_its_own_twin_is_cancelled_and_never_re_placed() -> None:
+    """v2 growth upgrade (supersedes v1's rule 8; audit must-fix 4): E8's first fill cancels
+    E8's OWN twin through the direction lock -- the twin no longer waits on E8's history-driven
+    twin cancel -- and the gate refuses an E8 leg against the day E8 itself set."""
+    from prop import e8_gold as g
+    _world("oco")
+    assert oco.claim_fill("e8", e8_key(), "buy", date=DAY)["won"]
+    venue, state = _E8Venue(), _e8_state()
+    doc: dict = {"gold_oco": {"date": DAY, "key": e8_key()}, "actions": []}
+    assert g.oco_cancel_opposite(venue, state, doc, {501, 502}, armed=True) == {502}
+    assert venue.cancelled == [502]
+    entry, _ = oco.day_entry(DAY)
+    assert entry is not None and [c["order_id"] for c in entry["legs_cancelled"]] == ["502"]
+    assert not oco.gate("e8", "sell_stop", key=e8_key(), date=DAY).allowed
+    assert oco.gate("e8", "buy_stop", key=e8_key(), date=DAY).allowed
+    assert oco.legs_to_cancel("e8", entry, [{"id": 1, "side": "long"},
+                                            {"id": 2, "side": "short"}]) == [
+        {"id": 2, "side": "short"}]
+
+
+# ======================================================================== both fill in one pass
+
+def test_two_claims_in_one_pass_exactly_one_wins() -> None:
+    _world("oco")
+    a = oco.claim_fill("e8", e8_key(), "buy", date=DAY)
+    b = oco.claim_fill("fusion", fu_key(), "sell", date=DAY)
+    assert (a["won"], b["won"]) == (True, False) and b["conflict"] and b["direction"] == "long"
+    again = oco.claim_fill("fusion", fu_key(), "sell", date=DAY)
+    entry, _ = oco.day_entry(DAY)
+    assert entry is not None and entry["direction"] == "long" and len(entry["conflicts"]) == 1
+    assert again["conflict"] and not again["won"]
+
+
+def test_a_claim_without_the_lock_waits_and_claims_nothing() -> None:
+    _world("oco")
+    lock = xa.XACCT_DIR / "placement.lock"
+    lock.write_text(json.dumps({"holder": "other-lane", "pid": os.getpid(), "host": "elsewhere",
+                                "token": "t"}), encoding="utf-8")
+    res = oco.claim_fill("fusion", fu_key(), "sell", date=DAY, wait_s=0.0)
+    assert not res["ok"] and not res["won"] and oco.day_entry(DAY) == (None, None)
+
+
+_RACER = textwrap.dedent("""
+    import json, sys, time
+    from pathlib import Path
+    sys.path[:0] = [sys.argv[1], sys.argv[2]]
+    from mt5desk import cross_account as xa
+    from mt5desk import gold_oco as oco
+    xa.XACCT_DIR = Path(sys.argv[3])
+    go = Path(sys.argv[3]) / "go"
+    while not go.exists():
+        time.sleep(0.005)
+    res = oco.claim_fill(sys.argv[4], sys.argv[5], sys.argv[6], date=sys.argv[7], wait_s=20.0)
+    print(json.dumps(res))
+""")
+
+
+def test_two_processes_racing_opposite_claims_exactly_one_wins(tmp_path) -> None:
+    _world("oco")
+    script = tmp_path / "racer.py"
+    script.write_text(_RACER, encoding="utf-8")
+    env = dict(os.environ)
+    procs = [subprocess.Popen([sys.executable, str(script), str(_DESK), str(_ROOT),
+                               str(xa.XACCT_DIR), lane, key, side, DAY],
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, text=True)
+             for lane, key, side in (("e8", e8_key(), "buy"), ("fusion", fu_key(), "sell"))]
+    (xa.XACCT_DIR / "go").write_text("go", encoding="utf-8")
+    outs = []
+    for p in procs:
+        out, err = p.communicate(timeout=60)
+        assert p.returncode == 0, err
+        outs.append(json.loads(out.strip().splitlines()[-1]))
+    assert sum(1 for o in outs if o["won"]) == 1 and all(o["ok"] for o in outs)
+    winner = next(o for o in outs if o["won"])
+    entry, _ = oco.day_entry(DAY)
+    assert entry is not None and entry["direction"] == winner["direction"]
+    assert len(entry["conflicts"]) == 1
+
+
+# ======================================================================== fail closed
+
+def _tear(path: Path) -> None:
+    """A body change the digest does not cover: what a half-written or hand-edited file reads as."""
+    doc = json.loads(path.read_text("utf-8"))
+    doc["tampered"] = True
+    path.write_text(json.dumps(doc), encoding="utf-8")
+
+
+@pytest.mark.parametrize("damage", ["absent", "stale", "torn", "unreadable", "unreadable_side",
+                                    "direction_torn", "undeclared_lane_state"])
+def test_an_unreadable_stale_or_torn_state_places_nothing(damage: str) -> None:
+    _world("oco")
+    p = oco.lane_path("e8")
+    if damage == "absent":
+        p.unlink()
+    elif damage == "stale":
+        _flat("e8", e8_key(), now=datetime.now(tz=UTC) - timedelta(
+            seconds=oco.MAX_STATE_AGE_S + 60))
+    elif damage == "torn":
+        _tear(p)
+    elif damage == "unreadable":
+        p.write_bytes(b"\xff\xfe{not json")
+    elif damage == "unreadable_side":
+        _flat("e8", e8_key(), positions=[{"id": 9, "side": "sideways"}])
+    elif damage == "direction_torn":
+        oco.claim_fill("e8", e8_key(), "buy", date=DAY)
+        _tear(oco.direction_path())
+    elif damage == "undeclared_lane_state":
+        _mode(["e8", "fusion", "ftmo"], fusion="oco")         # FTMO declared, never published
+    for side in ("buy_stop", "sell_stop"):
+        v = oco.gate("fusion", side, key=fu_key(), date=DAY)
+        assert not v.allowed and "fail closed" in v.why, (damage, v.why)
+
+
+def test_the_staleness_bound_is_two_e8_passes() -> None:
+    assert oco.MAX_STATE_AGE_S == 600.0 < xa.MAX_AGE_S
+    _world("oco")
+    _flat("e8", e8_key(), now=datetime.now(tz=UTC) - timedelta(seconds=540))
+    assert oco.gate("fusion", "buy_stop", key=fu_key(), date=DAY).allowed
+
+
+def _e8_harness(monkeypatch, tmp_path, *, fusion_positions=(), fusion_orders=()):
+    import test_e8_gold_guard_and_open_risk as h
+
+    class _V(h._Venue):
+        _by_key: ClassVar[dict[str, int]] = {"XAUUSD": 6102}
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.placed: list[tuple] = []
+            self._raw_api = SimpleNamespace(acc_id=E8_LOGIN,
+                                            _credentials={"server": E8_SERVER})
+
+        def place_stop(self, symbol, side, lot, *, price, stop, take_profit):
+            self.placed.append((side, lot))
+            return 500 + len(self.placed)
+
+    class _M(h._MT5):
+        def account_info(self):
+            return SimpleNamespace(login=FU_LOGIN, server=FU_SERVER, trade_mode=2)
+
+        def positions_get(self, symbol=None):
+            return fusion_positions
+
+        def orders_get(self, symbol=None):
+            return fusion_orders
+
+    h._sandbox(monkeypatch, tmp_path)
+    monkeypatch.setattr(oco, "tradelocker_oco_key", REAL_TL_KEY)
+    monkeypatch.setattr(oco, "mt5_oco_key", REAL_MT5_KEY)
+    venue = _V()
+    doc = h.g.run(venue, _M(), armed=True)
+    ip = tmp_path / "intents.json"
+    intents = [json.loads(ln) for ln in ip.read_text().splitlines() if ln.strip()] \
+        if ip.exists() else []
+    return doc, venue, intents, h
+
+
+def test_e8_with_a_torn_direction_state_places_nothing_and_bills_it(monkeypatch, tmp_path):
+    from research import missed_growth as mg
+    _world("oco")
+    oco.claim_fill("fusion", fu_key(), "sell", date="2026-10-15")
+    _tear(oco.direction_path())
+    doc, venue, intents, _h = _e8_harness(monkeypatch, tmp_path)
+    assert venue.placed == []
+    blocked = [r for r in intents if r.get("status") == "RAIL_BLOCKED"]
+    assert {r["side"] for r in blocked} == {"buy_stop", "sell_stop"}
+    assert all(r["rail"] == oco.RAIL and r["missed_growth_risk_usd"] > 0
+               and "fail closed" in r["why"] for r in blocked)
+    assert not doc["placed"]                                  # the window waits, unplaced
+    monkeypatch.setattr(mg, "E8_INTENTS", tmp_path / "intents.json")
+    monkeypatch.setattr(mg, "E8_EXEC_INTENTS", tmp_path / "absent.jsonl")
+    monkeypatch.setattr(mg, "FUSION_RAILS", tmp_path / "rails.jsonl")
+    (tmp_path / "rails.jsonl").write_text("", "utf-8")
+    line = mg.published_fusion_book_lines()["rails"][oco.RAIL]
+    assert line["n_e8"] == 2 and line["e8_undeployed_risk_usd"] > 0
+
+
+def test_e8_with_no_box_key_places_nothing_and_says_why(monkeypatch, tmp_path) -> None:
+    from libs.ops import provenance as p
+    _world("oco")
+    monkeypatch.setenv(p.KEY_ENV, str(tmp_path / "absent.hmac"))
+    doc, venue, intents, _h = _e8_harness(monkeypatch, tmp_path)
+    assert venue.placed == [] and doc["gold_oco"]["key"] is None
+    blocked = [r for r in intents if r.get("status") == "RAIL_BLOCKED"]
+    # Both fences now name accounts by the one keyed helper, so with no box key the existing
+    # two-account fence refuses first (its book cannot be named) and the OCO behind it too. On
+    # r7.1+ the account rail refuses before either: the venue's own key is unresolvable, so the
+    # declaration cannot be joined (`e8_account_undeclared`, billed). Every refusal names why.
+    assert blocked and all(
+        (r["rail"] in (oco.RAIL, "cross_account_opposite")
+         and ("HMAC" in r["why"] or "no box key" in r["why"]) and "fail closed" in r["why"])
+        or (r["rail"] == "e8_account_undeclared" and "unresolvable" in r["why"])
+        for r in blocked)
+
+
+def test_e8_in_a_readable_world_places_both_legs_and_publishes_keyed_states(
+        monkeypatch, tmp_path) -> None:
+    _world("oco")
+    _doc, venue, _intents, h = _e8_harness(monkeypatch, tmp_path)
+    assert sorted(s for s, _ in venue.placed) == ["buy", "sell"]
+    st, _ = oco.read_lane("e8")
+    assert st is not None and st["account_key"] == oco.oco_account_key(E8_LOGIN, E8_SERVER)
+    # NO RAW LOGIN ANYWHERE THE PASS WROTE: the xacct states, the report, the state, the journal.
+    texts = [f.read_text("utf-8", errors="replace") for f in xa.XACCT_DIR.iterdir()
+             if f.is_file()]
+    texts += [Path(p).read_text("utf-8") for p in (h.g.OUT, h.g.STATE, h.g.INTENTS)
+              if Path(p).exists()]
+    for login in (E8_LOGIN, FU_LOGIN):
+        assert not any(str(login) in t for t in texts)
+
+
+def test_the_gateway_with_a_torn_direction_state_sends_no_gold(monkeypatch, tmp_path) -> None:
+    _world("oco")
+    oco.claim_fill("e8", e8_key(), "buy", date=ga._DAY)
+    _tear(oco.direction_path())
+    rows = ga._gold_rows()
+    mt5 = _GwTerminal(rows, *ga._quote(rows))
+    ns = ga._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    ns["main"]()
+    assert mt5.sent == []
+    lines = [json.loads(ln) for ln in fusion_rails.LEDGER.read_text("utf-8").splitlines()
+             if ln.strip()]
+    mine = [r for r in lines if r["rail"] == oco.RAIL]
+    assert {r["side"] for r in mine} == {"buy_stop", "sell_stop"}
+    assert all(r["risk_frac"] > 0 and "fail closed" in r["why"] for r in mine)
+
+
+# ======================================================================== across the date boundary
+
+def test_an_open_long_on_one_account_blocks_a_short_on_another_across_days() -> None:
+    _world("oco")
+    _flat("e8", e8_key(), positions=[{"id": 1, "side": "long", "opened_date": DAY}])
+    tomorrow = (datetime.fromisoformat(DAY) + timedelta(days=1)).date().isoformat()
+    assert oco.day_entry(tomorrow) == (None, None)            # no direction set tomorrow
+    v = oco.gate("fusion", "sell_stop", key=fu_key(), date=tomorrow)
+    assert not v.allowed and "open gold long" in v.why
+    assert oco.gate("fusion", "buy_stop", key=fu_key(), date=tomorrow).allowed
+    # And the reverse: Fusion's open short blocks E8's long.
+    _flat("e8", e8_key())
+    _flat("fusion", fu_key(), positions=[{"id": 2, "side": "short", "opened_date": DAY}])
+    assert not oco.gate("e8", "buy_stop", key=e8_key(), date=tomorrow).allowed
+    assert oco.gate("e8", "sell_stop", key=e8_key(), date=tomorrow).allowed
+
+
+def test_a_resting_opposite_entry_on_another_account_blocks_too() -> None:
+    _world("oco")
+    _flat("e8", e8_key(), orders=[{"id": 5, "side": "sell"}])
+    assert not oco.gate("fusion", "buy_stop", key=fu_key(), date=DAY).allowed
+
+
+# ======================================================================== fallback mode
+
+def test_fallback_fusion_waits_for_e8s_fill_then_copies_its_direction(
+        monkeypatch, tmp_path) -> None:
+    oco.MODE_FILE.unlink()                                    # no mode file = the default
+    _flat("e8", e8_key())
+    _flat("fusion", fu_key())
+    assert oco.configured_mode("fusion") == "fallback"
+    v = oco.gate("fusion", "buy_stop", key=fu_key(), date=ga._DAY)
+    assert not v.allowed and "no E8 fill yet" in v.why
+    rows = ga._gold_rows()
+    mt5 = _GwTerminal(rows, *ga._quote(rows))
+    ns = ga._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    ns["main"]()
+    assert mt5.sent == []                                     # waits: nothing placed
+    # E8 fills short; its sibling is gone; Fusion now places only the short.
+    _flat("e8", e8_key(), positions=[{"id": 3, "side": "short", "opened_date": ga._DAY}])
+    assert oco.claim_fill("e8", e8_key(), "sell", date=ga._DAY)["won"]
+    ns["_state_file"].write_text(json.dumps({"armed": True, "brackets": {}, "position": None,
+                                             "last_bracket_date": None}), "utf-8")
+    ns["main"]()
+    assert [r["type"] for r in mt5.sent] == [mt5.ORDER_TYPE_SELL_STOP]
+
+
+def test_fallback_copies_only_e8_and_oco_is_not_taken_unproven() -> None:
+    _world("fallback")
+    oco.claim_fill("fusion", fu_key(), "buy", date=DAY)
+    v = oco.gate("fusion", "buy_stop", key=fu_key(), date=DAY)
+    assert not v.allowed and "copies only E8" in v.why
+    # Full OCO asked for, but a lane runs older code (no protocol): fallback stands.
+    _mode(["e8", "fusion"], fusion="oco")
+    body = json.loads(oco.lane_path("e8").read_text("utf-8"))
+    body.pop("digest")
+    body["protocol"] = 0
+    oco._write(oco.lane_path("e8"), body)
+    v = oco.gate("fusion", "buy_stop", key=fu_key(), date=DAY)
+    assert v.mode == "fallback" and not v.allowed
+
+
+def test_an_undeclared_lane_and_an_unknown_gateway_lane_place_nothing(monkeypatch) -> None:
+    _world("oco")
+    assert not oco.gate("ftmo", "buy_stop", key=fu_key(), date=DAY).allowed
+    monkeypatch.setenv(oco.LANE_ENV, "e8")
+    assert oco.gateway_lane() is None
+    monkeypatch.setenv(oco.LANE_ENV, "ftmo")
+    assert oco.gateway_lane() == "ftmo"
+    monkeypatch.delenv(oco.LANE_ENV)
+    assert oco.gateway_lane() == "fusion"
+
+
+# ======================================================================== the day boundary
+
+def test_the_trading_day_rolls_over_on_the_server_clock() -> None:
+    eod = datetime(2026, 10, 21, 23, 59, 59, tzinfo=UTC).timestamp()
+    assert oco.trading_date(eod) == "2026-10-21" and oco.trading_date(eod + 1) == "2026-10-22"
+    assert oco.ms_trading_date(int((eod + 1) * 1000)) == "2026-10-22"
+    assert oco.ms_trading_date(None) is None and oco.ms_trading_date(0) is None
+    _world("oco")
+    oco.claim_fill("e8", e8_key(), "buy", date="2026-10-21")
+    assert not oco.gate("fusion", "sell_stop", key=fu_key(), date="2026-10-21").allowed
+    assert oco.gate("fusion", "sell_stop", key=fu_key(), date="2026-10-22").allowed
+    # Yesterday's position claims nothing today; today's does.
+    res = oco.observe_fills("fusion", fu_key(), [
+        {"id": 1, "side": "short", "opened_date": "2026-10-21"}], date="2026-10-22")
+    assert res == [] and oco.day_entry("2026-10-22") == (None, None)
+    # Days older than KEEP_DAYS leave the file at the next write.
+    oco.claim_fill("e8", e8_key(), "buy", date="2026-11-05")
+    days, _ = oco.read_directions()
+    assert days is not None and set(days) == {"2026-11-05"}
+
+
+def test_mt5_and_tradelocker_rows_date_their_positions_on_the_broker_clock() -> None:
+    t = int(datetime(2026, 10, 21, 7, 5, tzinfo=UTC).timestamp())
+    term = SimpleNamespace(
+        positions_get=lambda: (SimpleNamespace(symbol="XAUUSD+", type=0, ticket=1, time=t),
+                               SimpleNamespace(symbol="EURUSD", type=1, ticket=2, time=t)),
+        orders_get=lambda: (SimpleNamespace(symbol="XAUUSD", type=5, ticket=3),))
+    pos, ords = oco.mt5_gold_rows(term)
+    assert pos == [{"id": 1, "side": "long", "opened_date": "2026-10-21"}]
+    assert ords == [{"id": 3, "side": "short"}]
+    tl_pos = [{"id": 9, "tradableInstrumentId": 6102, "side": "buy", "stopLossId": 90,
+               "openDate": t * 1000}]
+    tl_ord = [{"id": 90, "tradableInstrumentId": 6102, "side": "sell"},     # its protective stop
+              {"id": 91, "tradableInstrumentId": 6102, "side": "sell"},     # a resting entry
+              {"id": 92, "tradableInstrumentId": 7000, "side": "sell"}]     # another instrument
+    pos, ords = oco.tradelocker_gold_rows(tl_pos, tl_ord, 6102)
+    assert pos == [{"id": 9, "side": "buy", "opened_date": "2026-10-21"}]
+    assert ords == [{"id": 91, "side": "sell"}]
+
+
+def test_no_raw_login_in_any_written_state() -> None:
+    _mode(["e8", "fusion", "ftmo"], fusion="oco", ftmo="fallback")
+    ft_key = oco.oco_account_key(FT_LOGIN, FT_SERVER)
+    for lane, key in (("e8", e8_key()), ("fusion", fu_key()), ("ftmo", ft_key)):
+        _flat(lane, key, positions=[{"id": 1, "side": "long", "opened_date": DAY}])
+        oco.claim_fill(lane, key, "buy", date=DAY)
+        oco.note_cancelled(DAY, lane, key, 77, "sell")
+    blob = "".join(f.read_text("utf-8") for f in xa.XACCT_DIR.iterdir()
+                   if f.is_file() and f.name.startswith("gold_"))
+    assert blob
+    for login in (E8_LOGIN, FU_LOGIN, FT_LOGIN):
+        assert str(login) not in blob
+
+
+# ======================================================================== v2: blind cancels all
+
+def test_cancel_plan_cancels_every_leg_when_the_direction_state_is_unreadable() -> None:
+    legs = [{"id": 1, "side": "long"}, {"id": 2, "side": "short"}]
+    plan, why = oco.cancel_plan("fusion", None, "the gold direction state is torn", legs)
+    assert plan == legs and "unreadable" in why
+    plan, _ = oco.cancel_plan("fusion", None, None, legs)
+    assert plan == []                                         # readable, no direction yet
+
+
+def test_the_gateway_with_a_torn_direction_state_cancels_every_resting_gold_leg(
+        monkeypatch, tmp_path) -> None:
+    _world("oco")
+    oco.claim_fill("e8", e8_key(), "buy", date=DAY)
+    _tear(oco.direction_path())
+    rows = ga._gold_rows()
+    mt5 = _GwTerminal(rows, *ga._quote(rows))
+    mt5.pending = [_gw_order(11, 4), _gw_order(12, 5),
+                   SimpleNamespace(ticket=13, symbol="XAUUSD", type=4, magic=0,
+                                   price_open=2000.0, comment="manual")]
+    ns = ga._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    gone = ns["cancel_gold_against_direction"]({"armed": True}, "fusion", fu_key(), DAY)
+    assert gone == 2 and [o.ticket for o in mt5.pending] == [13]     # manual never touched
+
+
+def test_e8_with_a_torn_direction_state_cancels_its_resting_legs() -> None:
+    from prop import e8_gold as g
+    _world("oco")
+    oco.claim_fill("fusion", fu_key(), "sell", date=DAY)
+    _tear(oco.direction_path())
+    venue, state = _E8Venue(), _e8_state()
+    doc: dict = {"gold_oco": {"date": DAY, "key": e8_key()}, "actions": []}
+    assert g.oco_cancel_opposite(venue, state, doc, {501, 502}, armed=True) == {501, 502}
+    assert sorted(venue.cancelled) == [501, 502] and doc["gold_oco_unreadable"]
+    assert any("blind" in a for a in doc["alerts"])
+
+
+def test_a_leg_that_filled_before_its_cancel_is_not_noted_as_cancelled(
+        monkeypatch, tmp_path) -> None:
+    _world("oco")
+    assert oco.claim_fill("e8", e8_key(), "buy", date=DAY)["won"]
+    rows = ga._gold_rows()
+
+    class _Filling(_GwTerminal):
+        def order_send(self, req: dict) -> SimpleNamespace:
+            if req.get("action") == self.TRADE_ACTION_REMOVE:
+                # The sell stop filled between the read and the remove.
+                self.pending = [o for o in self.pending if int(o.ticket) != int(req["order"])]
+                self.positions = [SimpleNamespace(ticket=12, identifier=12, symbol="XAUUSD",
+                                                  type=1, magic=MAGIC, volume=0.05,
+                                                  comment="DWgold_asia", time=0)]
+                return SimpleNamespace(retcode=10013, order=req["order"], comment="filled")
+            return super().order_send(req)
+
+        def positions_get(self, symbol=None):
+            return list(getattr(self, "positions", []))
+    mt5 = _Filling(rows, *ga._quote(rows))
+    mt5.pending = [_gw_order(12, 5)]
+    ns = ga._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    assert ns["cancel_gold_against_direction"]({"armed": True}, "fusion", fu_key(), DAY) == 0
+    entry, _ = oco.day_entry(DAY)
+    assert entry is not None and entry["legs_cancelled"] == []
+
+
+# ======================================================================== v2: flatten
+
+def test_positions_to_flatten_takes_only_todays_wrong_side_fills() -> None:
+    entry = {"direction": "long"}
+    pos = [{"id": 1, "side": "short", "opened_date": DAY},
+           {"id": 2, "side": "long", "opened_date": DAY},
+           {"id": 3, "side": "short", "opened_date": "2026-10-20"},     # carried: not touched
+           {"id": 4, "side": "sell", "opened_date": None}]              # undated: today's
+    assert [p["id"] for p in oco.positions_to_flatten(entry, pos, date=DAY)] == [1, 4]
+    assert oco.positions_to_flatten(None, pos, date=DAY) == []
+
+
+def test_the_gateway_flattens_its_own_wrong_side_gold_fill_and_alerts_a_manual_one(
+        monkeypatch, tmp_path) -> None:
+    _world("oco")
+    assert oco.claim_fill("e8", e8_key(), "buy", date=DAY)["won"]
+    rows = ga._gold_rows()
+    epoch = int(datetime.fromisoformat(DAY + "T08:00:00+00:00").timestamp())
+
+    class _Pos(_GwTerminal):
+        def positions_get(self, symbol=None):
+            return [SimpleNamespace(ticket=21, symbol="XAUUSD", type=1, magic=MAGIC,
+                                    volume=0.05, comment="DWgold_asia", time=epoch),
+                    SimpleNamespace(ticket=22, symbol="XAUUSD", type=1, magic=0,
+                                    volume=0.10, comment="", time=epoch),
+                    SimpleNamespace(ticket=23, symbol="XAUUSD", type=0, magic=MAGIC,
+                                    volume=0.05, comment="DWgold_asia", time=epoch)]
+    mt5 = _Pos(rows, *ga._quote(rows))
+    ns = ga._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    assert ns["flatten_gold_against_direction"]({"armed": True}, "fusion", DAY) == 1
+    deals = [r for r in mt5.sent if r.get("action") == mt5.TRADE_ACTION_DEAL]
+    assert [(d["position"], d["type"]) for d in deals] == [(21, mt5.ORDER_TYPE_BUY)]
+    assert any("MANUAL" in ln for ln in ns["log"].__self__)
+
+
+def test_e8_flattens_its_own_twin_fill_against_the_direction() -> None:
+    from prop import e8_gold as g
+    _world("oco")
+    assert oco.claim_fill("e8", e8_key(), "buy", date=DAY)["won"]
+    ms = int(datetime.fromisoformat(DAY + "T08:00:00+00:00").timestamp() * 1000)
+
+    class _V(_E8Venue):
+        closed: ClassVar[list[int]] = []
+
+        def close(self, position_id: int) -> bool:
+            self.closed.append(int(position_id))
+            return True
+    venue, state = _V(), _e8_state()
+    state["windows"]["asia"]["position_id"] = 9001                    # the buy stop's position
+    doc: dict = {"gold_oco": {"date": DAY, "key": e8_key()}, "actions": []}
+    xau = [{"id": 9001, "side": "buy", "openDate": ms},
+           {"id": 9002, "side": "sell", "openDate": ms},             # the twin, filled
+           {"id": 9003, "side": "sell", "openDate": ms}]             # not this lane's
+    out = g.oco_flatten_opposite(venue, state, doc, xau, {502: 9002}, armed=True)
+    assert out == {9002} and venue.closed == [9002]
+    assert [a["act"] for a in doc["actions"]] == ["oco_direction_flatten"]
+    assert len([a for a in doc["alerts"] if "against" in a]) == 2
+
+
+# ======================================================================== v2: the identity page
+
+def test_a_missing_key_pages_once_dedupes_and_pages_the_recovery(monkeypatch) -> None:
+    t0 = datetime(2026, 10, 21, 6, 0, tzinfo=UTC)
+    oco.PAGES.clear()
+    assert oco.page_identity("fusion", "the box-held HMAC account key is absent", now=t0)["sent"]
+    assert oco.page_identity("fusion", "the box-held HMAC account key is absent",
+                             now=t0 + timedelta(hours=1))["reason"] == "deduplicated"
+    assert oco.page_identity("fusion", "the box-held HMAC account key is absent",
+                             now=t0 + timedelta(hours=7))["sent"]
+    assert oco.page_identity("fusion", None, now=t0 + timedelta(hours=8))["reason"] == "recovered"
+    assert oco.page_identity("fusion", None, now=t0 + timedelta(hours=9))["sent"] is False
+    assert len(oco.PAGES) == 3 and "fusion" in oco.PAGES[0][0]
+    from libs.ops.alert_ledger import AlertLedger
+    led = AlertLedger(Path(oco.ALERT_ROOT) / "data" / "alert_ledger.json")
+    assert not led.alerts[f"{oco.ALERT_ID}:fusion"].open
+    monkeypatch.setattr(oco, "PAGER", lambda t, b: 1 / 0)
+    assert "error" in oco.page_identity("e8", "boom", now=t0)       # never raises
+
+
+def test_an_undelivered_identity_page_records_nothing_and_is_re_sent(monkeypatch) -> None:
+    """v2s SF-1: a page whose `delivered` is 0 is NOT a page -- no dedup state is written, so the
+    next pass re-sends it (it used to be muted for REPAGE_H). A delivered one is recorded,
+    atomically (no temp file left), and then deduplicated."""
+    t0 = datetime(2026, 10, 21, 6, 0, tzinfo=UTC)
+    sent: list[str] = []
+    delivered = {"n": 0}
+    monkeypatch.setattr(oco, "PAGER", lambda t, b: (sent.append(t),
+                                                    {"armed": 1, "delivered": delivered["n"]})[1])
+    state = Path(oco.ALERT_ROOT) / oco.PAGE_STATE_REL
+    why = "the box-held HMAC account key is absent"
+    r1 = oco.page_identity("fusion", why, now=t0)
+    assert r1["sent"] is False and "undelivered" in r1["reason"] and not state.exists()
+    r2 = oco.page_identity("fusion", why, now=t0 + timedelta(minutes=5))
+    assert r2["reason"] != "deduplicated" and len(sent) == 2          # re-sent, not muted
+    delivered["n"] = 1
+    assert oco.page_identity("fusion", why, now=t0 + timedelta(minutes=10))["sent"] is True
+    assert json.loads(state.read_text("utf-8"))["fusion"]["why"] == why
+    assert not [x for x in state.parent.iterdir() if x.name.endswith(".tmp")]
+    assert oco.page_identity("fusion", why,
+                             now=t0 + timedelta(minutes=15))["reason"] == "deduplicated"
+    # An undelivered RECOVERY is not recorded either: the next pass re-sends it.
+    delivered["n"] = 0
+    assert oco.page_identity("fusion", None, now=t0 + timedelta(hours=1))["sent"] is False
+    assert json.loads(state.read_text("utf-8"))["fusion"]["why"] == why
+    delivered["n"] = 1
+    assert oco.page_identity("fusion", None, now=t0 + timedelta(hours=2))["reason"] == "recovered"
+
+
+def test_in_production_the_identity_page_goes_through_provenance_page(monkeypatch) -> None:
+    """v2s SF-1 on r7.3 (v5f merged): with no test PAGER the page is v5f's enqueue-only
+    `provenance._page` -- nothing is sent on the order path; `deliver_pending` (the heartbeat)
+    delivers it, records only a DELIVERED page, and re-sends an undelivered one."""
+    from libs.ops import provenance as p
+    monkeypatch.setattr(oco, "PAGER", None)
+    for name in ("_ENQUEUED", "_LAST_TRY", "_ENQUEUE_FAILED"):
+        monkeypatch.setattr(p, name, {})
+    got: list[str] = []
+    delivered = {"n": 0}
+    # Only this alert's sends are counted: the suite's outbox is shared by every test.
+    monkeypatch.setattr(p, "SENDER", lambda t, b: (
+        got.append(t) if t.startswith("GOLD OCO") else None,
+        {"armed": 1, "delivered": delivered["n"]})[1])
+    p.deliver_pending()                                  # drain what earlier tests enqueued
+    p._LAST_TRY.clear()
+    why = "the box-held HMAC account key is absent"
+    r1 = oco.page_identity("fusion", why)
+    assert r1["via"] == "provenance._page" and r1["sent"] is False and r1["queued"] is True
+    assert got == []                                     # nothing sent on the order path
+    p.deliver_pending()
+    assert len(got) == 1 and "fusion" in got[0]          # undelivered: nothing recorded
+    p._LAST_TRY.clear()                                  # past the undelivered-retry throttle
+    delivered["n"] = 1
+    p.deliver_pending()
+    assert len(got) == 2                                 # re-sent, not muted
+    p.deliver_pending()
+    assert len(got) == 2                                 # delivered: deduplicated
+    assert not (Path(oco.ALERT_ROOT) / oco.PAGE_STATE_REL).exists()   # one dedup state: v5f's
+
+
+def test_a_v5f_enqueue_only_page_is_reported_as_queued(monkeypatch) -> None:
+    """publish_sync v5f keeps `_page(aid, status, sig, title, body) -> dict` and makes it
+    enqueue-only (`sent` False, `queued` True). page_identity reports that unchanged."""
+    from libs.ops import provenance as p
+    monkeypatch.setattr(oco, "PAGER", None)
+    calls: list[tuple] = []
+    monkeypatch.setattr(p, "_page", lambda aid, status, sig, title, body: (
+        calls.append((aid, status, sig)),
+        {"sent": False, "queued": True, "reason": "queued: delivered off the order path"})[1])
+    r = oco.page_identity("e8", "the TradeLocker venue cannot be named")
+    assert r["queued"] is True and r["sent"] is False and r["via"] == "provenance._page"
+    assert calls == [(f"{oco.ALERT_ID}:e8", "OPEN", "the TradeLocker venue cannot be named")]
+    oco.page_identity("e8", None)
+    assert calls[-1] == (f"{oco.ALERT_ID}:e8", "OK", "recovered")
+
+
+def test_e8_with_no_box_key_pages(monkeypatch, tmp_path) -> None:
+    from libs.ops import provenance as p
+    _world("oco")
+    oco.PAGES.clear()
+    monkeypatch.setenv(p.KEY_ENV, str(tmp_path / "absent.hmac"))
+    doc, venue, _intents, _h = _e8_harness(monkeypatch, tmp_path)
+    assert venue.placed == [] and any("e8" in t for t, _b in oco.PAGES)
+    assert any("identity" in a for a in doc.get("alerts") or [])
+    assert str(E8_LOGIN) not in str(oco.PAGES)
+
+
+# ======================================================================== v2: every refusal bills
+
+def test_a_retry_refusal_bills_dollars_never_none() -> None:
+    from prop import e8_gold as g
+    assert g.leg_missed_usd({"risk_usd": 412.5}) == 412.5
+    assert g.leg_missed_usd({"lot": 0.3, "price": 4340.0, "sl": 4320.0}) == pytest.approx(600.0)
+    assert g.leg_missed_usd({}) == 0.0
+
+
+def test_the_gateways_gold_lines_carry_their_dollars_into_missed_growth(
+        monkeypatch, tmp_path) -> None:
+    from research import missed_growth as mg
+    ns: dict[str, Any] = {}
+    exec(compile(ga.ast.Module(body=[n for n in ga._GW_TREE.body
+                                     if getattr(n, "name", None) == "_missed_usd"],
+                               type_ignores=[]), "gateway", "exec"), ns)
+    assert ns["_missed_usd"](100_000.0, 0.0075) == 750.0 and ns["_missed_usd"](None, 0.1) is None
+    rails = tmp_path / "rails.jsonl"
+    rails.write_text("\n".join(json.dumps(r) for r in (
+        {"rail": oco.RAIL, "lot": 0.05, "risk_frac": 0.0075, "missed_growth_risk_usd": 750.0},
+        {"rail": oco.RAIL, "lot": 0.05, "risk_frac": 0.0075, "missed_growth_risk_usd": None},
+        {"rail": "cross_account_opposite", "lot": 0.05, "risk_frac": 0.0075,
+         "missed_growth_risk_usd": 750.0})) + "\n", "utf-8")
+    monkeypatch.setattr(mg, "FUSION_RAILS", rails)
+    monkeypatch.setattr(mg, "E8_INTENTS", tmp_path / "absent1.jsonl")
+    monkeypatch.setattr(mg, "E8_EXEC_INTENTS", tmp_path / "absent2.jsonl")
+    (tmp_path / "absent1.jsonl").write_text("", "utf-8")
+    (tmp_path / "absent2.jsonl").write_text("", "utf-8")
+    out = mg.published_fusion_book_lines()["rails"]
+    assert out[oco.RAIL]["fusion_undeployed_risk_usd"] == 750.0
+    assert out[oco.RAIL]["n_unpriced"] == 1
+    assert out["cross_account_opposite"]["fusion_undeployed_risk_usd"] == 750.0
+
+
+# ================================================== v2s MF-A: family and scalp XAU sends
+
+_sp_spec = importlib.util.spec_from_file_location("_gold_oco_scalp_harness",
+                                                  _DESK / "tests" / "test_scalp_promotion.py")
+assert _sp_spec is not None and _sp_spec.loader is not None
+sp = importlib.util.module_from_spec(_sp_spec)
+_sp_spec.loader.exec_module(sp)
+
+
+def _oco_rail_rows() -> list[dict]:
+    p = Path(fusion_rails.LEDGER)
+    if not p.exists():
+        return []
+    return [r for r in (json.loads(ln) for ln in p.read_text("utf-8").splitlines() if ln.strip())
+            if r.get("rail") == oco.RAIL]
+
+
+def _day_world(day: str, *, setter: str, direction: str) -> None:
+    """Full OCO mode on e8 + fusion + ftmo; `setter`'s fill set `day`'s `direction` and it still
+    holds that position; every other lane flat."""
+    _mode(["e8", "fusion", "ftmo"], fusion="oco", ftmo="oco")
+    keys = {"e8": e8_key(), "ftmo": oco.oco_account_key(FT_LOGIN, FT_SERVER)}
+    for lane, key in keys.items():
+        pos = [{"id": 5, "side": direction, "opened_date": day}] if lane == setter else []
+        oco.publish_lane(lane, key, positions=pos, orders=[], date=day)
+    assert oco.claim_fill(setter, keys[setter], direction, date=day)["won"]
+
+
+def _family_xau(tmp_path: Path, monkeypatch) -> tuple[Any, dict, str]:
+    rows = ga._rows()
+    mt5 = ga._fake_mt5(rows)
+    t = rows[-1]["time"]
+    mt5.symbol_info_tick = lambda symbol: SimpleNamespace(bid=1.1100, ask=1.1102, time=t)
+    ns = ga._family_ns(tmp_path, mt5, monkeypatch, armed_file=True, sig_hour=ga._sig_hour(rows))
+    return mt5, ns, oco.trading_date(t)
+
+
+@pytest.mark.parametrize("setter", ["e8", "ftmo"])
+def test_a_family_xau_send_against_the_days_direction_is_refused_and_billed(
+        tmp_path, monkeypatch, setter) -> None:
+    """MF-A: the family lane's XAUUSD market DEAL asks gold_oco.gate (the bracket path's gate)
+    under the placement lock. The sleeve buys; the day is SHORT (set by E8, or by FTMO, which
+    the old E8-only fence never saw): nothing is sent, and the refusal is a billed RAIL_BLOCKED
+    line carrying the order's own risk."""
+    mt5, ns, day = _family_xau(tmp_path, monkeypatch)
+    _day_world(day, setter=setter, direction="short")
+    ga._run_family(ns, {"armed": True}, [ga._sleeve(symbol="XAUUSD")], 10_000.0)
+    assert mt5.sent == []
+    assert any("FAMILY-EXEC NOT SENT" in x and "gold OCO" in x for x in ns["_logs"])
+    (row,) = _oco_rail_rows()
+    assert row["status"] == "RAIL_BLOCKED" and row["side"] == "buy" and row["day"] == day
+    assert row["exec_lane"] == "family_market" and row["lane"] == "fusion"
+    # 0.12 lot x |1.1102 - 1.1050| x (1.0 / 0.00001): the order's own risk, priced.
+    assert row["missed_growth_risk_usd"] == pytest.approx(62.4)
+    assert row["risk_frac"] == pytest.approx(62.4 / 10_000.0)
+
+
+def test_a_family_xau_send_with_the_days_direction_passes_and_republishes(
+        tmp_path, monkeypatch) -> None:
+    mt5, ns, day = _family_xau(tmp_path, monkeypatch)
+    _day_world(day, setter="ftmo", direction="long")
+    ga._run_family(ns, {"armed": True}, [ga._sleeve(symbol="XAUUSD")], 10_000.0)
+    (req,) = mt5.sent
+    assert req["type"] == mt5.ORDER_TYPE_BUY and req["symbol"] == "XAUUSD"
+    assert _oco_rail_rows() == []
+
+
+def test_a_family_xau_send_with_an_unreadable_gold_state_fails_closed_and_bills(
+        tmp_path, monkeypatch) -> None:
+    mt5, ns, day = _family_xau(tmp_path, monkeypatch)
+    _day_world(day, setter="e8", direction="long")
+    oco.lane_path("ftmo").write_text("{torn", "utf-8")
+    ga._run_family(ns, {"armed": True}, [ga._sleeve(symbol="XAUUSD")], 10_000.0)
+    assert mt5.sent == []
+    (row,) = _oco_rail_rows()
+    assert "fail closed" in row["why"] and row["missed_growth_risk_usd"] > 0
+
+
+def test_a_non_gold_family_send_never_asks_the_gold_lock(tmp_path, monkeypatch) -> None:
+    rows = ga._rows()
+    mt5 = ga._fake_mt5(rows)
+    ns = ga._family_ns(tmp_path, mt5, monkeypatch, armed_file=True, sig_hour=ga._sig_hour(rows))
+    oco.MODE_FILE.write_text("{torn", "utf-8")             # a gold lock that would refuse
+    ga._run_family(ns, {"armed": True}, [ga._sleeve()], 10_000.0)
+    assert len(mt5.sent) == 1 and _oco_rail_rows() == []
+
+
+def _scalp_xau(tmp_path: Path) -> tuple[Any, dict, str]:
+    bars = sp._with_forming(sp._bars(recent=True))
+    mt5 = sp._fake_mt5(bars)
+    mt5.symbol_info = lambda symbol: SimpleNamespace(volume_min=0.01, volume_step=0.01,
+                                                     trade_tick_size=0.01, trade_tick_value=1.0)
+    ns = sp._ns(tmp_path, mt5, armed_file=True)
+    return mt5, ns, oco.trading_date(int(bars.index[-1].timestamp()))
+
+
+def _scalp_side(tmp_path: Path) -> str:
+    """The side the scalp fixture's signal takes, read from a send in an open world."""
+    mt5, ns, day = _scalp_xau(tmp_path / "probe")
+    sp._run_scalp(ns, {"armed": True}, [sp._sleeve()], 10_000.0)
+    (req,) = mt5.sent
+    return "long" if req["type"] == mt5.ORDER_TYPE_BUY else "short"
+
+
+@pytest.mark.parametrize("setter", ["e8", "ftmo"])
+def test_a_scalp_xau_send_against_the_days_direction_is_refused_and_billed(
+        tmp_path, setter) -> None:
+    (tmp_path / "probe").mkdir()
+    want = _scalp_side(tmp_path)
+    mt5, ns, day = _scalp_xau(tmp_path)
+    _day_world(day, setter=setter, direction=oco.opposite(want))
+    sp._run_scalp(ns, {"armed": True}, [sp._sleeve()], 10_000.0)
+    assert mt5.sent == []
+    assert any("SCALP-EXEC NOT SENT" in x and "gold OCO" in x for x in ns["_logs"])
+    (row,) = _oco_rail_rows()
+    assert row["status"] == "RAIL_BLOCKED" and row["exec_lane"] == "scalp_market"
+    assert row["side"] == ("buy" if want == "long" else "sell") and row["day"] == day
+    assert isinstance(row["missed_growth_risk_usd"], float) and row["missed_growth_risk_usd"] > 0
+    # Billed once per sleeve, day and side: the same refusal on the next pass adds no line.
+    sp._run_scalp(ns, {"armed": True}, [sp._sleeve()], 10_000.0)
+    assert len(_oco_rail_rows()) == 1
+
+
+def test_a_scalp_xau_send_with_the_days_direction_passes(tmp_path) -> None:
+    (tmp_path / "probe").mkdir()
+    want = _scalp_side(tmp_path)
+    mt5, ns, day = _scalp_xau(tmp_path)
+    _day_world(day, setter="e8", direction=want)
+    sp._run_scalp(ns, {"armed": True}, [sp._sleeve()], 10_000.0)
+    assert len(mt5.sent) == 1 and _oco_rail_rows() == []
+
+
+def test_every_xau_send_site_in_the_gateway_asks_the_gold_lock_under_the_placement_lock() -> None:
+    """Source shape: each TRADE_ACTION_DEAL send on the family and scalp lanes sits inside a
+    `placement_lock` block that asks `gold_oco_send_refusal` before `order_send`."""
+    src = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
+    for fn in ("def run_family_sleeves(", "def run_scalp_sleeves("):
+        body = src.split(fn, 1)[1].split("\ndef ", 1)[0]
+        lock = body.index("_xa.placement_lock(")
+        gate = body.index("gold_oco_send_refusal(", lock)
+        send = body.index("mt5.order_send(", lock)
+        assert lock < gate < send
+        assert body.count("TRADE_ACTION_DEAL") == 1
+
+
+# ================================================== v2s SF-3: the DEFAULT mode (no mode file)
+# The conftest runs the gateway in full "oco" mode; the box runs with NO mode file, which is
+# fallback for every non-E8 lane: Fusion's MINLOT gold_asia waits for E8's first fill, then
+# follows E8's direction. These pin that default (unchanged; the principal confirms it).
+
+def _default_world(day: str) -> None:
+    oco.MODE_FILE.unlink(missing_ok=True)
+    oco.publish_lane("e8", e8_key(), positions=[], orders=[], date=day)
+
+
+def _e8_fills(day: str, side: str) -> None:
+    oco.publish_lane("e8", e8_key(), positions=[{"id": 3, "side": side, "opened_date": day}],
+                     orders=[], date=day)
+    assert oco.claim_fill("e8", e8_key(), side, date=day)["won"]
+
+
+def test_the_default_is_fallback_with_e8_leading_and_ftmo_undeclared() -> None:
+    oco.MODE_FILE.unlink(missing_ok=True)
+    assert oco.configured_mode("e8") == "leader"
+    assert oco.configured_mode("fusion") == "fallback"
+    assert oco.configured_mode("ftmo") == "fallback"
+    assert oco.declared_lanes() == ("e8", "fusion")
+    # FTMO is not a gold lane until the mode file declares it: it places nothing by default.
+    v = oco.gate("ftmo", "buy_stop", key=oco.oco_account_key(FT_LOGIN, FT_SERVER), date=DAY)
+    assert not v.allowed and "not declared" in v.why
+
+
+def test_default_fusion_bracket_waits_for_e8_and_the_wait_is_billed(monkeypatch, tmp_path):
+    _default_world(ga._DAY)
+    oco.publish_lane("fusion", fu_key(), positions=[], orders=[], date=ga._DAY)
+    rows = ga._gold_rows()
+    mt5 = _GwTerminal(rows, *ga._quote(rows))
+    ns = ga._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    ns["main"]()
+    assert mt5.sent == []
+    billed = _oco_rail_rows()
+    assert {r["side"] for r in billed} == {"buy_stop", "sell_stop"}
+    assert all("no E8 fill yet" in r["why"] and r["missed_growth_risk_usd"] is not None
+               for r in billed)
+    # A Fusion fill of its own never sets the day in fallback: still nothing until E8 fills.
+    oco.claim_fill("fusion", fu_key(), "buy", date=ga._DAY)
+    assert not oco.gate("fusion", "buy_stop", key=fu_key(), date=ga._DAY).allowed
+
+
+@pytest.mark.parametrize("e8_side,placed", [("long", "ORDER_TYPE_BUY_STOP"),
+                                             ("short", "ORDER_TYPE_SELL_STOP")])
+def test_default_fusion_bracket_follows_e8s_direction_only(monkeypatch, tmp_path, e8_side,
+                                                          placed) -> None:
+    _default_world(ga._DAY)
+    _e8_fills(ga._DAY, e8_side)
+    rows = ga._gold_rows()
+    mt5 = _GwTerminal(rows, *ga._quote(rows))
+    ns = ga._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    ns["main"]()
+    assert [r["type"] for r in mt5.sent] == [getattr(mt5, placed)]
+
+
+def test_default_family_xau_waits_for_e8_then_follows_it(tmp_path, monkeypatch) -> None:
+    mt5, ns, day = _family_xau(tmp_path, monkeypatch)
+    _default_world(day)
+    sleeve = ga._sleeve(symbol="XAUUSD")                      # a LONG family sleeve
+    ga._run_family(ns, {"armed": True}, [sleeve], 10_000.0)
+    assert mt5.sent == []
+    (row,) = _oco_rail_rows()
+    assert "no E8 fill yet" in row["why"] and row["missed_growth_risk_usd"] > 0
+    # E8 fills SHORT: the long family send stays refused (billed once that day and side).
+    _e8_fills(day, "short")
+    (tmp_path / "b").mkdir()
+    mt5b, nsb, _ = _family_xau(tmp_path / "b", monkeypatch)
+    ga._run_family(nsb, {"armed": True}, [ga._sleeve(symbol="XAUUSD")], 10_000.0)
+    assert mt5b.sent == [] and any("NOT SENT: gold OCO" in x and "short" in x
+                                   for x in nsb["_logs"])
+
+
+def test_default_family_xau_with_e8s_direction_is_sent(tmp_path, monkeypatch) -> None:
+    mt5, ns, day = _family_xau(tmp_path, monkeypatch)
+    _default_world(day)
+    _e8_fills(day, "long")
+    ga._run_family(ns, {"armed": True}, [ga._sleeve(symbol="XAUUSD")], 10_000.0)
+    assert len(mt5.sent) == 1 and mt5.sent[0]["type"] == mt5.ORDER_TYPE_BUY
+
+
+def test_default_scalp_xau_waits_for_e8_then_follows_it(tmp_path) -> None:
+    (tmp_path / "probe").mkdir()
+    want = _scalp_side(tmp_path)
+    mt5, ns, day = _scalp_xau(tmp_path)
+    _default_world(day)
+    sp._run_scalp(ns, {"armed": True}, [sp._sleeve()], 10_000.0)
+    assert mt5.sent == [] and "no E8 fill yet" in _oco_rail_rows()[0]["why"]
+    _e8_fills(day, want)
+    (tmp_path / "c").mkdir()
+    mt5c, nsc, _ = _scalp_xau(tmp_path / "c")
+    sp._run_scalp(nsc, {"armed": True}, [sp._sleeve()], 10_000.0)
+    assert len(mt5c.sent) == 1
+
+
+# ============================================ a fallback follower's late rule runs from E8's fill
+#
+# The lock made Fusion wait for E8's first fill and the late rule refused every gold bracket five
+# minutes after 07:00 server; E8's stops almost never fill that fast, so Fusion's gold_asia sent
+# nothing on any day after both landed. These run `main` WITH the late rule on (the harness lifts
+# it) at 09:30 on the harness clock, and stamp E8's claim on that same clock.
+
+class _LimitTerminal(_GwTerminal):
+    ORDER_TYPE_BUY_LIMIT, ORDER_TYPE_SELL_LIMIT = 2, 3
+
+
+def _late_main(tmp_path, monkeypatch, mt5) -> dict:
+    ns = ga._main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    monkeypatch.setattr(ga.dc, "GOLD_SEND_GRACE_MIN", 5.0)      # the rule, back on
+    ns["main"]()
+    return ns
+
+
+def _e8_claimed(side: str, minutes_before: float) -> None:
+    _e8_fills(ga._DAY, side)
+    days, _ = oco.read_directions()
+    days[ga._DAY]["claimed_at"] = (ga._WHEN - timedelta(minutes=minutes_before)).isoformat()
+    oco._save_days(days, ga._DAY)
+
+
+def test_a_waiting_follower_keeps_the_late_rule_and_sends_once_e8_fills(
+        monkeypatch, tmp_path) -> None:
+    _default_world(ga._DAY)
+    oco.publish_lane("fusion", fu_key(), positions=[], orders=[], date=ga._DAY)
+    rows = ga._gold_rows()
+    mt5 = _LimitTerminal(rows, *ga._quote(rows))
+    ns = _late_main(tmp_path, monkeypatch, mt5)
+    # Nothing can be sent while waiting, so nothing is resolved or charged: the late rule stands.
+    assert mt5.sent == [] and any(r.get("reason") == "late_send" for r in ns["_intents"])
+    _e8_claimed("long", 2)
+    (tmp_path / "b").mkdir()
+    mt5b = _LimitTerminal(rows, *ga._quote(rows))
+    _late_main(tmp_path / "b", monkeypatch, mt5b)
+    assert [r["type"] for r in mt5b.sent] == [mt5b.ORDER_TYPE_BUY_STOP]
+
+
+def test_a_follower_restarted_long_after_e8s_fill_is_late(monkeypatch, tmp_path) -> None:
+    _default_world(ga._DAY)
+    _e8_claimed("long", 145)                     # E8 filled 07:05; Fusion comes back at 09:30
+    rows = ga._gold_rows()
+    mt5 = _LimitTerminal(rows, *ga._quote(rows))
+    ns = _late_main(tmp_path, monkeypatch, mt5)
+    assert mt5.sent == [] and any(r.get("reason") == "late_send" for r in ns["_intents"])
+
+
+def test_the_follow_grace_is_e8s_pass_plus_the_gateways_own() -> None:
+    assert ga.dc.E8_GOLD_SEND_GRACE_MIN + ga.dc.GOLD_SEND_GRACE_MIN == 15.0
+
+
+@pytest.mark.parametrize("e8_side,placed", [("long", "ORDER_TYPE_BUY_LIMIT"),
+                                             ("short", "ORDER_TYPE_SELL_LIMIT")])
+def test_a_follower_through_its_level_rests_a_limit_at_the_same_level(
+        monkeypatch, tmp_path, e8_side, placed) -> None:
+    _default_world(ga._DAY)
+    _e8_claimed(e8_side, 3)
+    rows = ga._gold_rows()
+    hi, lo, spec = ga.dc.bracket_from_bars(ga.dc.h1_frame(rows), None, 7, 0.01, 20)
+    # E8's stop filled, so the price has run a dollar past the edge it broke.
+    bid, ask = (hi + 1.0, hi + 1.1) if e8_side == "long" else (lo - 1.1, lo - 1.0)
+    mt5 = _LimitTerminal(rows, bid, ask)
+    _late_main(tmp_path, monkeypatch, mt5)
+    (req,) = mt5.sent
+    leg = spec["buy_stop" if e8_side == "long" else "sell_stop"]
+    assert req["type"] == getattr(mt5, placed)
+    assert (req["price"], req["sl"], req["tp"]) == (leg["price"], leg["sl"], leg["tp"])
+
+
+@pytest.mark.parametrize("where", ["past_target", "under_stop"])
+def test_a_follow_after_the_trade_played_out_sends_nothing(monkeypatch, tmp_path, where) -> None:
+    _default_world(ga._DAY)
+    _e8_claimed("long", 3)
+    rows = ga._gold_rows()
+    _, _, spec = ga.dc.bracket_from_bars(ga.dc.h1_frame(rows), None, 7, 0.01, 20)
+    leg = spec["buy_stop"]
+    px = leg["tp"] + 5.0 if where == "past_target" else leg["sl"] - 1.0
+    mt5 = _LimitTerminal(rows, px, px + 0.1)
+    _late_main(tmp_path, monkeypatch, mt5)
+    assert mt5.sent == []
+
+
+def test_a_follower_limit_inside_the_band_is_not_available() -> None:
+    assert ga.dc.follow_limit_is_legal(2000.0, "buy_stop", 2000.0, 2000.1, 0.01, 20)[0] is False
+    assert ga.dc.follow_limit_is_legal(2000.0, "buy_stop", 2000.9, 2001.0, 0.01, 20)[0] is True
+    assert ga.dc.follow_limit_is_legal(2000.0, "sell_stop", 1999.9, 2000.0, 0.01, 20)[0] is False
+    assert ga.dc.follow_limit_is_legal(2000.0, "sell_stop", 1999.0, 1999.1, 0.01, 20)[0] is True
+
+
+def test_an_oco_lane_keeps_the_late_rule(monkeypatch, tmp_path) -> None:
+    _world("oco")
+    rows = ga._gold_rows()
+    mt5 = _LimitTerminal(rows, *ga._quote(rows))
+    ns = _late_main(tmp_path, monkeypatch, mt5)
+    assert mt5.sent == []
+    assert any(r.get("reason") == "late_send" for r in ns["_intents"])

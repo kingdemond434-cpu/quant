@@ -47,11 +47,11 @@ from typing import Any
 __all__ = [
     "CAPABILITY_LEDGER",
     "CONTAMINATION_KEYS",
+    "DISPOSITIONS",
     "ESCALATION_STATES",
     "EVIDENCE",
     "INHERITED_REGISTRIES",
     "OBJECT_TYPES",
-    "DISPOSITIONS",
     "SEED_ROLES",
     "budget_gate",
     "cold_context",

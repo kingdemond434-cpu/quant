@@ -1,0 +1,18 @@
+{
+  "_doc": "Hard ceilings the risk-invariants job holds every AUTO-tier PR to. Read statically (ast, never imported) from the PR head. A value above its ceiling, a constant that is no longer a plain literal, a constant or file that disappeared, or a rail list that lost a member FAILS the job, and the release controller quarantines the PR. The CLEAR + APPROVE MERGES path ignores this job: a change zuck approves himself may move a ceiling. This file is PROTECTED.",
+  "max": {
+    "desks/mt5/mt5desk/sizing.py": {
+      "BASE_RISK_FRAC": 0.03,
+      "MAX_RISK_FRAC": 0.10
+    }
+  },
+  "equal": {
+    "desks/mt5/mt5desk/sizing.py": {
+      "FADE_FACTOR": 0.5
+    }
+  },
+  "superset": {
+    "libs/execution/ruin_rail.py": "RAILS",
+    "desks/mt5/mt5desk/fusion_rails.py": "RAILS"
+  }
+}

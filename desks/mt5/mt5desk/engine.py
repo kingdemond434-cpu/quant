@@ -7,6 +7,7 @@ All times UTC. No lookahead: signals computed on closed bars only, entries at ne
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from pathlib import Path
@@ -560,6 +561,120 @@ def rollover_price_nights(idx_ns: np.ndarray, px: np.ndarray, first_bar: int, la
     return float(np.sum(w * px[pos].astype(float)))
 
 
+#: Nanoseconds in a day and the rollover's offset into a UTC day, for `_rollover_nights_ns`.
+_NS_PER_DAY = 86_400 * 10**9
+_ROLLOVER_NS = ROLLOVER_HOUR_UTC * 3_600 * 10**9
+#: `pd.NaT.value`; an epoch-ns of NaT is not a time and takes the Timestamp path instead.
+_NAT_NS = int(np.iinfo("int64").min)
+
+
+def _rollover_nights_ns(a: int, b: int) -> float:
+    """`rollovers_between` on UTC epoch-ns integers: the SAME integer count, so the SAME float.
+
+    `rollovers_between(t0, t1)` converts both ends to naive UTC and counts rollover instants with
+    Timestamp arithmetic; `pd.Timestamp(t).value` is exactly that naive-UTC instant in ns (for a
+    tz-aware stamp it is UTC epoch-ns, for a naive one its wall ns, which the engine reads as
+    UTC), so the count can be taken on integers. Midnight is a floor division, a day is
+    `_NS_PER_DAY`, and 1970-01-01 was a Thursday (weekday 3). It cost ~30 us a trade through
+    Timestamp objects and sat under every replayed trade twice (both cost arms); this is the
+    same answer at integer speed. Pinned against `rollovers_between` by
+    `tests/test_engine_prewarm_reuse.py` over tz-aware, naive, pre-1970, DST-edge and reversed
+    pairs. Callers pass NaT through `rollovers_between`, never here.
+    """
+    if not (b > a):
+        return 0.0
+    cur = (a // _NS_PER_DAY) * _NS_PER_DAY + _ROLLOVER_NS
+    if cur <= a:
+        cur += _NS_PER_DAY
+    if cur > b:
+        return 0.0
+    k = (b - cur) // _NS_PER_DAY + 1
+    first_triple = (TRIPLE_SWAP_WEEKDAY - (cur // _NS_PER_DAY + 3) % 7) % 7
+    triples = 0 if first_triple >= k else 1 + (k - 1 - first_triple) // 7
+    return float(k + 2 * triples)
+
+
+class _LegMemo:
+    """The cost-independent half of the LAST `run_backtest` call, for the next call on it.
+
+    WHY (judge pre-warm ceiling, 2026-10-27). Every cell the judge builds is replayed TWICE on
+    the identical frame and the identical signal list -- once at 1x costs and once at the 3x
+    stress (`external_gauntlet._warm_one`, `daily_series` x2; the warmer's `_warm_one` does the
+    same). The trade PATH -- which signals fill, on which bar, where and why each exits, the
+    pyramid adds, the geometry refusals -- reads only bars and signals; costs enter only after the
+    exit is fixed (the spread and financing lines below). So the second arm re-walked every bar
+    of every trade to reach the same exits. Measured on the live docket's local cells: the replay
+    is ~20% of a warmed cell's CPU, half of it the repeated walk.
+
+    ONE SLOT, IDENTITY-KEYED AND CONTENT-CHECKED. A hit needs the SAME frame object, the SAME
+    list object, the same `max_hold_bars`, the same length, every signal's fields equal to what
+    they were when the path was walked (timestamps compared by their text too, so the same instant
+    re-stamped in another zone re-walks and the refusals keep the caller's strings), and the
+    walked arrays -- open, high, low and the epoch-ns index, plus the index's zone -- equal to
+    COPIES taken at store time. The copies are what make an in-place frame edit safe: a `.loc`
+    write, a replaced column or a new `df.index` changes the live arrays, never the copies
+    (audit SF1/SF2 on 2cf8a3f43). So a list mutated in place, a frame mutated in place, or a
+    different frame that happens to share an id, re-walks. Strong references are held, so an id
+    cannot be reused while the slot lives. The slot is one cell's legs: bounded, never a
+    function of the sweep.
+    Pricing is the SAME code on the same floats in the same order for both arms, so every
+    `Trade` -- and every daily series, cache file and verdict built from it -- is byte-identical
+    (`tests/test_engine_prewarm_reuse.py`, and the harness in patches/judge_prewarm).
+    `MT5_ENGINE_LEG_MEMO=0` turns it off.
+    """
+
+    __slots__ = ("slot",)
+
+    def __init__(self) -> None:
+        self.slot: tuple[Any, ...] | None = None
+
+    @staticmethod
+    def fingerprint(signals: Any) -> tuple[Any, ...] | None:
+        try:
+            return tuple((str(s.time), *vars(s).values()) for s in signals)
+        except (TypeError, AttributeError):
+            return None
+
+    @staticmethod
+    def same_bars(kept: tuple[Any, ...], arrays: tuple[Any, ...]) -> bool:
+        if kept[0] != arrays[0]:
+            return False
+        return all(np.array_equal(a, b, equal_nan=a.dtype.kind == "f")
+                   for a, b in zip(kept[1:], arrays[1:], strict=True))
+
+    def lookup(self, df: Any, signals: Any, max_hold_bars: Any,
+               arrays: tuple[Any, ...]) -> tuple[Any, ...] | None:
+        slot = self.slot
+        if slot is None or slot[0] is not df or slot[1] is not signals:
+            return None
+        if slot[2] != max_hold_bars or slot[3] != len(df) or slot[4] != len(signals):
+            return None
+        fp = self.fingerprint(signals)
+        if fp is None or fp != slot[5]:
+            return None
+        if not self.same_bars(slot[8], arrays):
+            return None
+        return slot
+
+    def store(self, df: Any, signals: Any, max_hold_bars: Any, legs: list[tuple[Any, ...]],
+              rejections: list[dict[str, Any]], arrays: tuple[Any, ...]) -> None:
+        fp = self.fingerprint(signals)
+        kept = (arrays[0], *(np.array(a, copy=True) for a in arrays[1:]))
+        # Slot layout: 0 df, 1 signals, 2 max_hold_bars, 3 len(df), 4 len(signals),
+        # 5 fingerprint, 6 legs, 7 geometry refusals, 8 copies of the walked bars (zone, open,
+        # high, low, epoch-ns index), 9 financing nights per leg.
+        self.slot = (None if fp is None else
+                     (df, signals, max_hold_bars, len(df), len(signals), fp, legs,
+                      rejections, kept, [None] * len(legs)))
+
+
+_LEGS = _LegMemo()
+
+
+def _leg_memo_on() -> bool:
+    return os.environ.get("MT5_ENGINE_LEG_MEMO", "1").strip() != "0"
+
+
 def run_backtest(
     df: pd.DataFrame,
     signals: list[Signal],
@@ -572,6 +687,7 @@ def run_backtest(
     Stops checked intrabar via low/high; targets similarly. TTL and max-hold
     force exits. Position closed at next bar open if no stop/target hit.
     """
+    memo_on = _leg_memo_on()
     o = df["open"].to_numpy()
     h = df["high"].to_numpy()
     lows = df["low"].to_numpy()
@@ -596,17 +712,23 @@ def run_backtest(
     # survived: the gauntlet dropped 118 of 122 cells as untestable and nothing said why.
     # `as_unit("ns")` pins the comparison to one resolution regardless of what wrote the file.
     idx_ns = np.asarray(pd.DatetimeIndex(idx).as_unit("ns").asi8, dtype="int64")
+    walked = (str(getattr(idx, "tz", None)), o, h, lows, idx_ns)
+    memo_hit = _LEGS.lookup(df, signals, max_hold_bars, walked) if memo_on else None
+    # A HIT WALKS NOTHING: the legs below were walked on this exact frame and signal list by the
+    # previous call (`_LegMemo`), so the loop is given no signals and only the pricing runs.
+    walk = signals if memo_hit is None else ()
     sig_ns = np.array(
-        [pd.Timestamp(s.time).value for s in signals], dtype="int64"
+        [pd.Timestamp(s.time).value for s in walk], dtype="int64"
     )
     locs = np.searchsorted(idx_ns, sig_ns)
     trades: list[Trade] = []
     geometry_rejections: list[dict[str, Any]] = []
-    filled = 0
+    #: One entry per trade the path produced, in signal order: everything pricing reads.
+    legs: list[tuple[Any, ...]] = []
     per_oz_cost = costs.per_oz_roundtrip() / costs.contract_oz
     last_exit_idx = -1  # single-position discipline: no overlapping trades
 
-    for sig, i0 in zip(signals, locs, strict=True):
+    for sig, i0 in zip(walk, locs, strict=True):
         i = i0 + 1
         if i <= 0 or i >= len(idx) - 1:
             continue
@@ -793,6 +915,26 @@ def run_backtest(
         for fill_px in adds:
             r += add_frac * (exit_price - fill_px) / stop_dist * side
             units += add_frac
+        # THE PATH ENDS HERE. Everything above read bars and signals only; everything below reads
+        # `costs`. The leg carries what pricing needs, so a second cost arm on the same path
+        # (`_LegMemo`) prices these exact floats in this exact order without re-walking a bar.
+        legs.append((fill_bar, bars_held, side, entry, exit_price, r, units, stop_dist,
+                     sig.stop, sig.target, reason, len(adds)))
+
+    if memo_hit is not None:
+        legs = memo_hit[6]
+        geometry_rejections = [dict(g) for g in memo_hit[7]]
+        nights_memo = memo_hit[9]
+    else:
+        nights_memo = [None] * len(legs)
+        if memo_on:
+            _LEGS.store(df, signals, max_hold_bars, legs,
+                        [dict(g) for g in geometry_rejections], walked)
+            slot = _LEGS.slot
+            if slot is not None:
+                nights_memo = slot[9]
+    for n_leg, (fill_bar, bars_held, side, entry, exit_price, r, units, stop_dist,
+                sig_stop, sig_target, reason, n_adds) in enumerate(legs):
         r -= per_oz_cost * units / stop_dist
         # FINANCING, PER NIGHT ACTUALLY CROSSED. Zero for every intraday sleeve, which is why
         # this changes nothing for the scalp lane and is decisive for the overnight one. It is
@@ -804,7 +946,13 @@ def run_backtest(
         # PRICE-AWARE for the interest modes (5/6) and a pair's base/margin money (2/3): those
         # nights are charged at the price of THAT night, or at the entry for mode 6.
         if costs.charges_swap:
-            nights = rollovers_between(entry_ts, exit_ts)
+            nights = nights_memo[n_leg]
+            if nights is None:
+                a_ns, b_ns = entry_ts.value, exit_ts.value
+                nights = (rollovers_between(entry_ts, exit_ts)
+                          if a_ns == _NAT_NS or b_ns == _NAT_NS
+                          else _rollover_nights_ns(a_ns, b_ns))
+                nights_memo[n_leg] = nights
             if nights:
                 price_nights = None
                 if costs.swap_per_lot_per_price:
@@ -821,12 +969,11 @@ def run_backtest(
                 entry_time=entry_ts,
                 exit_time=exit_ts,
                 side=side, entry=entry, exit=exit_price,
-                stop=sig.stop, target=sig.target,
+                stop=sig_stop, target=sig_target,
                 bars_held=bars_held, r_multiple=float(r), reason=reason,
-                units=float(units), adds=len(adds),
+                units=float(units), adds=n_adds,
             )
         )
-        filled += 1
 
     return BacktestResult(trades=trades, signal_count=len(signals),
                           geometry_rejections=geometry_rejections)

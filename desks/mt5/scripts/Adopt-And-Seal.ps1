@@ -246,6 +246,110 @@ if (-not $gotLock) {
     Done 6 "mutex-held"
 }
 Write-GitWriterWitness -Script "Adopt-And-Seal.ps1" -Name $mutexHandle.Name
+# HEAD AS THE LOCK FOUND IT (2026-10-28). The value read at the top predates up to nine minutes of
+# waiting for the sync and the mutex, and a writer that held them may have moved HEAD. A rollback
+# goes back to THIS commit, so it is read again now that nobody else can move it.
+try { $script:HeadBefore = (git -C $RepoRoot rev-parse HEAD 2>$null | Out-String).Trim() } catch { }
+if (-not $script:HeadBefore) { Log "cannot read HEAD under the lock"; Done 2 "head-before-unreadable" }
+
+# ------------------------------------------------ 0a. THE GUARD, AND A STALE HOLD HEALED FIRST
+$script:GuardScript = Join-Path $RepoRoot "scripts\adopt_guard.py"
+$script:Adopted = $false
+$script:Recycled = $false
+# THIS RUN'S NAME ON ITS HOLD (adopter v3 audit MF1): a "nothing was adopted" exit lifts only the
+# hold this run placed, never one a failed rollback left standing.
+$script:RunId = [guid]::NewGuid().ToString("N")
+# The code roots release.seal refuses to seal over (libs.ops.adopt_guard.CODE_ROOTS is the same list).
+$releaseCodePaths = @(
+    "desks/mt5/mt5desk", "desks/mt5/prop", "desks/mt5/research",
+    "desks/mt5/policy", "desks/mt5/scripts", "libs", "ops", "scripts", "pyproject.toml"
+)
+# CODE ON DISK THAT DIFFERS FROM HEAD after Adopt-Release: never sealed over, never lifted over.
+function Get-DirtyCode {
+    return @(git diff --name-only --no-ext-diff HEAD -- $releaseCodePaths 2>$null |
+             Where-Object { "$_" -match '\S' } | ForEach-Object { "$($_)".Trim().Trim('"') })
+}
+function Lift-IfClean([string] $stage) {
+    $d = Get-DirtyCode
+    if ($d.Count -gt 0) {
+        $d | Select-Object -First 12 | ForEach-Object { Log "    $_" }
+        Undo-Adoption "$($d.Count) code path(s) dirty on a nothing-to-seal exit" 3 "$stage-dirty-code"
+    }
+    $null = Invoke-AdoptGuard @("lift", "--run", $script:RunId)
+}
+# Log both writes the file and EMITS the line; inside a function an emitted line would join the
+# return value, so every Log here goes to the host instead.
+function Invoke-AdoptGuard([string[]] $guardArgs) {
+    $out = @(& $py @pyArgs $script:GuardScript @guardArgs 2>&1 | ForEach-Object { "$_" })
+    $rc = $LASTEXITCODE
+    $json = @($out | Where-Object { $_ -match '^\s*\{' }) | Select-Object -Last 1
+    $doc = $null
+    if ($json) { try { $doc = $json | ConvertFrom-Json } catch { $doc = $null } }
+    $why = if ($doc -and $doc.reason) { [string]$doc.reason } else { ($out | Select-Object -Last 2) -join ' | ' }
+    $decision = if ($doc -and $doc.decision) { [string]$doc.decision } else { "ERROR" }
+    Log ("adopt guard {0}: exit {1} {2} -- {3}" -f $guardArgs[0], $rc, $decision, $why) | Out-Host
+    return @{ Code = $rc; Doc = $doc; Decision = $decision; Why = $why }
+}
+# THE WAY BACK. `rollback` puts up the new-risk hold before it writes a byte (every lane stops
+# OPENING; management, cancels and flattens keep running) and pages if it fails. A resident that
+# was asked to recycle, or restarted on its own during the adoption, imported the bad code, so it
+# is recycled again; then the restored release must pass the same health check, and only that
+# lifts the hold. Unhealthy after the rollback: the hold stays, the guard pages, exit 12.
+function Undo-Adoption([string] $why, [int] $code, [string] $stage) {
+    if (-not $script:Adopted) { Done $code $stage }
+    $rb = Invoke-AdoptGuard @("rollback", "--to", $script:HeadBefore, "--bad", $gateTarget, "--why", $why)
+    if ($rb.Code -ne 0) {
+        Log "ROLLBACK FAILED; new risk held on every lane until a healthy run; paged: $($rb.Why)" | Out-Host
+        Done 12 "$stage-rollback-failed"
+    }
+    Log ("rolled back to {0}: {1}" -f $script:HeadBefore.Substring(0, 12), $why) | Out-Host
+    $loaded = "0"
+    try { $loaded = ((& $py @pyArgs $script:GuardScript loaded-since --since $script:StartedAt 2>$null) | Select-Object -Last 1).Trim() } catch { }
+    $expect = "0"
+    $rbAt = (Get-Date).ToUniversalTime().ToString('o')
+    if ($script:Recycled -or $loaded -eq "1") {
+        New-Item -ItemType File -Path (Join-Path $desk "data\GATEWAY_RECYCLE") -Force | Out-Null
+        Start-ScheduledTask -TaskName "MT5-GatewayResident" -ErrorAction SilentlyContinue
+        $expect = $script:GatewayExpected
+    }
+    $after = Invoke-AdoptGuard @("health", "--sealed-at", "HEAD", "--since", $rbAt, "--gateway-expected", $expect, "--page-on-fail")
+    if ($after.Code -ne 0) {
+        Log "the restored release is not healthy either; new risk stays held; paged" | Out-Host
+        Done 12 "$stage-rolled-back-unhealthy"
+    }
+    Done $code "$stage-rolled-back"
+}
+# THE BOX'S SWITCHES, TOO (adopter v4; zuck 2026-10-28 06:43Z: no typed word for a live change).
+# A switch committed under desks/mt5/data/box_state_desired/ with an auditor CLEAR (today:
+# GOLD_OCO_MODE.json) is written to the box's live copy by libs/ops/desired_state.py, once per
+# committed version, outside the gold windows, and stays provisional -- put back by itself by
+# state-verify -- until a gold window has run on it.
+# Called on every exit where the running release is the sealed one; it never changes the exit.
+function Invoke-StateApply {
+    $st = Invoke-AdoptGuard @("state-apply")
+    if ($st.Code -ne 0 -and $st.Code -ne 10) { Log "box-state apply: $($st.Decision) -- $($st.Why)" | Out-Host }
+}
+if (-not (Test-Path $script:GuardScript)) {
+    Log "adopt guard absent in this tree (scripts\adopt_guard.py); keeping the running release"
+    Done 8 "adopt-guard-absent"
+}
+# A GATEWAY IS EXPECTED when one was passing before this run OR its task is not disabled: a
+# resident that was down at the start is still supposed to come back on the new code.
+$gatewayWasAlive = "0"
+try { $gatewayWasAlive = ((& $py @pyArgs $script:GuardScript gateway-alive 2>$null) | Select-Object -Last 1).Trim() } catch { }
+$script:GatewayExpected = $gatewayWasAlive
+if ($script:GatewayExpected -ne "1") {
+    $gr = Get-ScheduledTask -TaskName "MT5-GatewayResident" -ErrorAction SilentlyContinue
+    if ($gr -and [string]$gr.State -ne "Disabled") { $script:GatewayExpected = "1" }
+}
+# A HOLD AN EARLIER RUN LEFT UP comes down here the moment the running release looks healthy (one
+# look, no wait); a person's hold is never touched. FIRST, straight after the mutex (adopter v3
+# audit MF2): the release-gate hold and error exits below used to run before it, so a hold left by
+# a killed run stood -- and never paged -- for as long as the gate kept holding.
+$null = Invoke-AdoptGuard @("heal", "--gateway-expected", $script:GatewayExpected)
+# A PROVISIONAL BOX SWITCH IS WATCHED EVERY RUN, the gold windows included: it only ever puts the
+# old switch back (a lane failed on it, or a lane it added went silent and froze gold everywhere).
+$null = Invoke-AdoptGuard @("state-verify")
 
 # ------------------------------------------------ 0b. THE RELEASE GATE: ONLY GREEN CODE LANDS
 # 2026-09-30. Until today this box adopted the branch TIP, so a commit CI had not finished
@@ -302,6 +406,40 @@ if (Test-Path $gateScript) {
     Done 8 "release-gate-absent"
 }
 
+# ------------------------------------------------- 0b. AUDITED CODE ONLY, NEVER NEAR A TRADE
+# THE ADOPTER RAN ON "CI IS GREEN" ALONE (2026-10-28), so it sat disabled and adoption went back to
+# a laptop sitting -- and the night that sitting stalled, the E8/FTMO/Fusion gold trade the fix was
+# for was missed. `scripts/adopt_guard.py` (libs/ops/adopt_guard.py has the rules) adds what the
+# desk's own rules ask of a release and the release gate cannot see:
+#
+#     pre       every governed path the target changes (code, scripts, money-path config) carries
+#               content an auditor CLEAR row in desks/mt5/data/ADOPT_CLEARS.jsonl vouches for, no
+#               HOLD revokes it, none of it was rolled back before, and the BROKER clock is clear
+#               of every gold window's blackout (asia, london_am, afternoon) with the margin a
+#               cold adoption needs
+#     smoke     after the in-place write, before the seal: the live entry modules import and
+#               prestart_check.py (when the box has one) says start
+#     health    after the seal and recycle: the release identity allows new risk under the new
+#               seal, a resident gateway started after the recycle stamps that seal and a finished
+#               pass, and no live lane task failed since
+#
+# and on ANY failure after the first byte is written, puts the code back to the commit this run
+# started from (an accepted seal a minute ago) by itself, under a new-risk hold that every lane
+# obeys and only a passing health check lifts. A guard that cannot run keeps the running release.
+$pre = Invoke-AdoptGuard @("pre", "--target", $gateTarget)
+if ($pre.Code -eq 10) {
+    $held = switch ($pre.Decision) {
+        "HOLD_BLACKOUT"    { "held-blackout" }
+        "HOLD_ROLLED_BACK" { "held-rolled-back" }
+        default            { "held-awaiting-audit" }
+    }
+    foreach ($p in @($pre.Doc.uncovered) + @($pre.Doc.rolled_back) | Where-Object { $_ } | Select-Object -First 12) {
+        Log "    $p"
+    }
+    Done 0 $held
+}
+if ($pre.Code -ne 0) { Done 8 "adopt-guard-error" }
+
 # ---------------------------------------------------------------- 1. adopt the branch's tree
 # NEXT TO THIS SCRIPT FIRST, then the repository's copy. The two ship together and the mutex
 # helper is already dotted from $PSScriptRoot, so resolving one of the three from $RepoRoot and
@@ -331,6 +469,22 @@ try {
 # The verified gate choice is mandatory; it already fetched the immutable target.
 $adoptArgs = @("-RepoRoot", $RepoRoot, "-Branch", $Branch)
 $adoptArgs += @("-Target", $gateTarget, "-NoFetch")
+# THE HOLD GOES UP BEFORE THE FIRST BYTE (adopter v2 audit MF2). The E8 and FTMO lanes import from
+# disk on every run and never ask the release identity, so a run killed between here and the
+# health check (the task's time limit) would leave them trading a half-written tree. Every lane
+# opens nothing while it stands; health or a later run's heal lifts it, and a heal that still
+# finds it after 90 minutes pages. Billed as a veto (adopt_new_risk_hold). No hold, no adoption.
+# ONLY WHEN SOMETHING GOVERNED CHANGES (adopter v3 audit MF3): most hours the target is the running
+# release plus state commits, and holding every lane through that Adopt-Release bought nothing.
+# A missing answer holds. A failure without a hold still rolls back, and the rollback holds first.
+if ($pre.Doc -and $pre.Doc.needs_hold -eq $false) {
+    Log "no governed path changes; adopting without the new-risk hold"
+} else {
+    $hold = Invoke-AdoptGuard @("hold", "--run", $script:RunId, "--why", ("adopting {0} over {1}" -f $gateTarget.Substring(0, 12), $script:HeadBefore.Substring(0, 12)))
+    if ($hold.Code -ne 0) { Log "the new-risk hold could not be written; not adopting"; Done 8 "hold-unwritable" }
+}
+# FROM HERE ON A BYTE MAY BE WRITTEN, so every failure below goes back through Undo-Adoption.
+$script:Adopted = $true
 if ($adoptConsole) {
     $adoptOut = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $adoptScript `
         @adoptArgs 2>&1 |
@@ -347,6 +501,7 @@ if ($adoptExit -eq 7) {
         Log ("    " + $line.Trim())
     }
     Log "target judge is not sealed; nothing adopted, current release kept"
+    $null = Invoke-AdoptGuard @("lift", "--run", $script:RunId)
     Done 7 "target-unsealed"
 }
 if ($adoptExit -ne 0) {
@@ -366,7 +521,7 @@ if ($adoptExit -ne 0) {
         Log ("    " + $line.Trim())
     }
     Log "full console: desks/mt5/logs/adopt_release_console.log; paths: desks/mt5/reports/ADOPTION_STATE.json"
-    Done $adoptExit "adopt-release-partial"
+    Undo-Adoption "Adopt-Release exited $adoptExit (partial adoption)" $adoptExit "adopt-release-partial"
 }
 
 # The released reader requires an explicit state handoff: ordinary adoption preserves box state.
@@ -378,8 +533,20 @@ if (Test-Path -LiteralPath $ledgerMigration) {
     foreach ($line in $migrationOut) { Log ("ledger handoff: " + $line) }
     if ($migrationExit -ne 0) {
         Log "ledger handoff failed; refusing to seal an incomplete adoption"
-        Done $migrationExit "ledger-handoff-failed"
+        Undo-Adoption "ledger handoff exited $migrationExit" $migrationExit "ledger-handoff-failed"
     }
+}
+
+# ------------------------------------------- 1a. THE NEW CODE MUST RUN, AND NOT INTO A WINDOW
+# Checked BEFORE the seal: until the seal moves, release_identity refuses new risk on the adopted
+# tree, so a failure here costs minutes of no new risk and is undone before it costs a trade.
+$headNow = (git rev-parse HEAD 2>$null | Out-String).Trim()
+if ($headNow -and $headNow -ne $script:HeadBefore) {
+    $smoke = Invoke-AdoptGuard @("smoke")
+    if ($smoke.Code -ne 0) { Undo-Adoption ("smoke: " + $smoke.Why) 11 "smoke-failed" }
+    # Thirty minutes of margin: the seal, the recycle and the health wait still follow.
+    $clock = Invoke-AdoptGuard @("blackout", "--margin-min", "30")
+    if ($clock.Code -ne 0) { Undo-Adoption ("ran into a trade window: " + $clock.Why) 0 "blackout" }
 }
 
 # ------------------------------------- 1b. TASKS THE ADOPTED TREE DECLARES BUT THE BOX LACKS
@@ -430,7 +597,7 @@ function Ensure-Signed {
 
 # ------------------------------------------------------ 2. seal, only if HEAD is not sealed
 $head = (git rev-parse HEAD 2>$null | Out-String).Trim()
-if (-not $head) { Log "cannot read HEAD"; Done 2 "head-unreadable" }
+if (-not $head) { Log "cannot read HEAD"; Undo-Adoption "HEAD unreadable after adoption" 2 "head-unreadable" }
 $sealed = ""
 if (Test-Path $release) {
     try { $sealed = [string](Get-Content $release -Raw | ConvertFrom-Json).code_sha } catch { $sealed = "" }
@@ -438,6 +605,8 @@ if (Test-Path $release) {
 if ($sealed -eq $head) {
     Log "HEAD $($head.Substring(0,12)) is already the sealed code; nothing to do"
     Ensure-Signed
+    Lift-IfClean "already-sealed"   # the code is the sealed code: nothing was adopted
+    Invoke-StateApply
     Done 0 "already-sealed"
 }
 # A SEAL COMMIT OR A STATE-SYNC COMMIT ON TOP OF THE SEALED CODE IS THE SAME RELEASE. After the
@@ -450,6 +619,8 @@ if ($sealed) {
     if ("$acc" -match '^OK') {
         Log "HEAD $($head.Substring(0,12)) is the sealed release $($sealed.Substring(0,12)) plus seal/state commits only; nothing to seal"
         Ensure-Signed
+        Lift-IfClean "accepts-nothing-to-seal"   # state only: no code was adopted
+        Invoke-StateApply
         Done 0 "accepts-nothing-to-seal"
     }
 }
@@ -459,10 +630,7 @@ if ($sealed) {
 # ledger is dirty for most of every hour by design, and a check that refused on it could only
 # ever seal in the seconds after a sync (it never did). The same prefixes
 # `libs.ops.release.STATE_PREFIXES` names, and `release.seal` applies the same rule itself.
-$releaseCodePaths = @(
-    "desks/mt5/mt5desk", "desks/mt5/prop", "desks/mt5/research",
-    "desks/mt5/policy", "desks/mt5/scripts", "libs", "ops", "scripts", "pyproject.toml"
-)
+# ($releaseCodePaths is defined in 0a, beside Get-DirtyCode, which needs it first.)
 # A BUILD ARTIFACT IS NOT CODE DRIFT, AND COUNTING IT REFUSED EVERY SEAL FOREVER (2026-09-24).
 # `dist/quant-platform.zip` is REGENERATED by the build, so it differs from HEAD on every pass by
 # construction. Measured on the box: Adopt-Release's own `code_drift` reads 0 while this check
@@ -481,14 +649,14 @@ $dirty = @(git diff --name-only --no-ext-diff HEAD -- $releaseCodePaths 2>$null 
 if ($dirty.Count -gt 0) {
     Log "refusing to seal: $($dirty.Count) tracked code path(s) differ from HEAD after adoption:"
     $dirty | Select-Object -First 12 | ForEach-Object { Log "    $_" }
-    Done 3 "dirty-code-path"
+    Undo-Adoption "$($dirty.Count) code path(s) dirty after adoption" 3 "dirty-code-path"
 }
 & $py @pyArgs -c "from libs.ops import release; d=release.seal(by='Adopt-And-Seal'); print(d.get('code_sha') or d.get('live_sha'))"
-if ($LASTEXITCODE -ne 0) { Log "release.seal failed (exit $LASTEXITCODE)"; Done 4 "seal-failed" }
+if ($LASTEXITCODE -ne 0) { Log "release.seal failed (exit $LASTEXITCODE)"; Undo-Adoption "release.seal failed" 4 "seal-failed" }
 
 # --------------------------------------------- 3. RELEASE.json alone -- the pure-seal commit
 git add -- "desks/mt5/data/RELEASE.json"
-if ($LASTEXITCODE -ne 0) { Log "seal stage failed (exit $LASTEXITCODE)"; Done 5 "seal-stage-failed" }
+if ($LASTEXITCODE -ne 0) { Log "seal stage failed (exit $LASTEXITCODE)"; Undo-Adoption "seal stage failed" 5 "seal-stage-failed" }
 
 # `git commit` repeatedly crashed with 0xC0000005 on the trading box while refreshing its
 # 28,000+ path Windows index.  The index already contains the adopted HEAD plus this one staged
@@ -499,25 +667,25 @@ $staged = @(git diff --cached --name-only --no-ext-diff 2>$null |
             Where-Object { "$_" -match '\S' } | ForEach-Object { "$($_)".Trim().Trim('"') })
 if ($LASTEXITCODE -ne 0 -or $staged.Count -ne 1 -or $staged[0] -ne "desks/mt5/data/RELEASE.json") {
     Log "seal commit refused: staged paths are not exactly RELEASE.json: $($staged -join ', ')"
-    Done 5 "seal-stage-contaminated"
+    Undo-Adoption "seal stage contaminated" 5 "seal-stage-contaminated"
 }
 $branchRef = (git symbolic-ref -q HEAD 2>$null | Out-String).Trim()
 if ($LASTEXITCODE -ne 0 -or -not $branchRef) {
     Log "seal commit refused: HEAD is detached or branch ref is unreadable"
-    Done 5 "seal-branch-unreadable"
+    Undo-Adoption "branch unreadable at seal" 5 "seal-branch-unreadable"
 }
 $tree = (git write-tree 2>$null | Out-String).Trim()
-if ($LASTEXITCODE -ne 0 -or -not $tree) { Log "seal write-tree failed"; Done 5 "seal-write-tree-failed" }
+if ($LASTEXITCODE -ne 0 -or -not $tree) { Log "seal write-tree failed"; Undo-Adoption "seal write-tree failed" 5 "seal-write-tree-failed" }
 $message = "Seal release $($head.Substring(0,12)) (Adopt-And-Seal, unattended)"
 $sealCommit = (git commit-tree $tree -p $head -m $message 2>$null | Out-String).Trim()
 if ($LASTEXITCODE -ne 0 -or -not $sealCommit) {
     Log "seal commit-tree failed (exit $LASTEXITCODE)"
-    Done 5 "seal-commit-tree-failed"
+    Undo-Adoption "seal commit-tree failed" 5 "seal-commit-tree-failed"
 }
 git update-ref $branchRef $sealCommit $head
 if ($LASTEXITCODE -ne 0) {
     Log "seal update-ref refused; HEAD changed concurrently"
-    Done 5 "seal-update-ref-failed"
+    Undo-Adoption "seal update-ref refused" 5 "seal-update-ref-failed"
 }
 Log "pure seal commit $($sealCommit.Substring(0,12)) created by atomic commit-tree/update-ref"
 
@@ -526,8 +694,10 @@ Log "pure seal commit $($sealCommit.Substring(0,12)) created by atomic commit-tr
 # is MT5-GatewayResident, which recycles itself between passes when this marker exists. Starting
 # the task is the backstop for a resident that is not running (the singleton makes it a no-op
 # otherwise). The gate attestation re-tests the sealed sha at once so tested_sha never lags.
+$recycledAt = (Get-Date).ToUniversalTime().ToString('o')
 New-Item -ItemType File -Path (Join-Path $desk "data\GATEWAY_RECYCLE") -Force | Out-Null
 Start-ScheduledTask -TaskName "MT5-GatewayResident" -ErrorAction SilentlyContinue
+$script:Recycled = $true
 Start-ScheduledTask -TaskName "MT5-GateAttest" -ErrorAction SilentlyContinue
 
 # ------------------------------------------- 5. THE ONE BIT, RECORDED BY THE ACT THAT SEALS
@@ -544,5 +714,13 @@ Start-ScheduledTask -TaskName "MT5-GateAttest" -ErrorAction SilentlyContinue
 # standing order (2026-09-08) forbids. The bit is measured, logged and published; turning it
 # into a veto is the principal's call, not this script's.
 & $py @pyArgs (Join-Path $desk "research\release_authority.py") --once 2>&1 | ForEach-Object { Log "  $_" }
+
+# ------------------------------------------------ 6. THE NEW RELEASE MUST BE THE ONE RUNNING
+# The identity must run under the seal of $head, the code just sealed (not HEAD, which the box's
+# own state commits move); an expected gateway must restart after the recycle, stamp that seal
+# and finish a pass; and no live lane may have failed on it. A pass lifts any hold of ours.
+$hl = Invoke-AdoptGuard @("health", "--sealed", $head, "--since", $recycledAt, "--gateway-expected", $script:GatewayExpected)
+if ($hl.Code -ne 0) { Undo-Adoption ("health: " + $hl.Why) 11 "unhealthy" }
 Log "sealed $($head.Substring(0,12)) from $Branch; resident asked to recycle; gate attestation triggered"
+Invoke-StateApply
 Done 0 "sealed"
