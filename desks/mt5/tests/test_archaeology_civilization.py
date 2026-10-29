@@ -287,17 +287,35 @@ def test_v_s_names_every_factor_and_every_cost(desk):
     assert paid["v_s"] > got["v_s"] and "measured" in paid["p_useful_basis"]
 
 
-def test_an_unread_policy_is_unknown_and_the_ground_is_mined_anyway(desk):
-    """LAWS 5e (2026-09-23): the verdict still says UNKNOWN -- that is honest -- but the reason
-    no longer says "not fetched". An unread policy is UNMEASURED, and UNMEASURED is not a
-    prohibition."""
+def test_an_unread_policy_is_unknown_and_robots_decides_the_fetch(desk, monkeypatch):
+    """LAWS 5e as amended by the principal 2026-10-14: robots.txt DECIDES (the 2026-09-23 "an
+    unread policy is mined anyway" reading this test used to pin is withdrawn). --no-fetch reads
+    nothing and says UNKNOWN with nothing fetched; with fetch, the polite door's answer for the
+    candidate url is the verdict: allowed -> ALLOWED, a Disallow -> FORBIDDEN, and a check that
+    cannot run -> FORBIDDEN (fail closed)."""
+    asked: list[str] = []
+    answer: dict[str, object] = {"ok": True}
+
+    def _admit(url: str) -> tuple[bool, str]:
+        asked.append(url)
+        if answer.get("raise"):
+            raise OSError("robots read failed")
+        return (True, "") if answer["ok"] else (False, "ROBOTS_DISALLOW: /x")
+
+    monkeypatch.setattr(civ, "admit", _admit)
     verdict, why = civ._machine_use_from_robots("https://example.org/x", fetch=False)
     assert verdict == snap.UNKNOWN
-    assert "mined all the same" in why and "not fetched" not in why
-    assert desk["calls"] == [], "--no-fetch must not read even a robots.txt"
+    assert "nothing is fetched" in why
+    assert asked == [] and desk["calls"] == [], "--no-fetch must not read even a robots.txt"
     ok, _why = civ._machine_use_from_robots("https://example.org/x", fetch=True)
     assert ok == snap.ALLOWED
-    assert desk["calls"] == ["https://example.org/robots.txt"]
+    assert asked == ["https://example.org/x"]
+    answer["ok"] = False
+    no, why_no = civ._machine_use_from_robots("https://example.org/x", fetch=True)
+    assert no == snap.FORBIDDEN and "ROBOTS_DISALLOW" in why_no and "not fetched" in why_no
+    answer["raise"] = True
+    broken, why_broken = civ._machine_use_from_robots("https://example.org/x", fetch=True)
+    assert broken == snap.FORBIDDEN and "not fetched" in why_broken
 
 
 # --------------------------------------------------------------------------- expansion

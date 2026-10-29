@@ -219,23 +219,43 @@ def test_the_boundary_is_read_before_any_permissive_label_can_rescue_it() -> Non
 
 # -------------------------------------------------- the shared fetch path carries no brake
 
-def test_no_collector_still_refuses_a_fetch_on_robots() -> None:
-    """A STRUCTURAL test, because the shared fetch helper has no unit test of its own and the
-    brake lived there longest.
+def test_every_collector_refuses_a_fetch_on_robots(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ROBOTS DECIDES (LAWS 5e as amended by the principal 2026-10-14; the 2026-09-23 "robots is
+    a label, never a gate" reading this test used to pin is withdrawn).
 
-    `asia_collector._fetch` is called by `event_surprise` and `data_acquisition_scientist`, and
-    it used to set `status = "BLOCKED_BY_ROBOTS"` and return before fetching. Nothing pinned
-    that, so nothing would have caught it coming back. The reading is still taken and still
-    recorded (`robots`, `robots_disallows`, `terms_note`) -- what must never return is the
-    ASSIGNMENT of that status, so this asserts on the assignment and not on the name, which
-    still appears in prose and in the census tuple that prints old rows.
-    """
+    `asia_collector.collect_one` (called by `event_surprise` and `data_acquisition_scientist`)
+    asks the polite door's robots/holds answer FIRST: a Disallow means status BLOCKED_BY_ROBOTS,
+    the reading recorded (`robots`, `robots_disallows`) and NOTHING sent; an allowing robots.txt
+    sends the request through the polite seam. Behaviour on stubs, then the same rule pinned in
+    the scientist's own sampler by its assignment."""
+    import sys
     from pathlib import Path
 
     repo = Path(__file__).resolve().parents[2]
-    for rel in ("desks/mt5/research/asia_collector.py",
-                "desks/mt5/research/data_acquisition_scientist.py"):
-        src = (repo / rel).read_text("utf-8")
-        assert '"status": "BLOCKED_BY_ROBOTS"' not in src, rel
-        assert 'status="BLOCKED_BY_ROBOTS"' not in src, rel
-        assert '= "BLOCKED_BY_ROBOTS"' not in src, rel
+    research = str(repo / "desks" / "mt5" / "research")
+    if research not in sys.path:
+        sys.path.insert(0, research)
+    import asia_collector as asc
+
+    sent: list[str] = []
+
+    def _door(req, *_a, **_k):
+        sent.append(req.full_url)
+        raise asc.PoliteRefused(req.full_url, "", "no network in this test")
+
+    monkeypatch.setattr(asc, "polite_urlopen", _door)
+    monkeypatch.setattr(asc, "admit", lambda url: (False, "ROBOTS_DISALLOW: /data"))
+    src = {"id": "robots_probe", "url": "https://example.invalid/data", "access": "public"}
+    rec = asc.collect_one(src)
+    assert rec["status"] == "BLOCKED_BY_ROBOTS" and rec["robots_disallows"] is True
+    assert rec["robots"].startswith("ROBOTS_DISALLOW")
+    assert sent == [], "robots disallows: nothing is requested"
+
+    monkeypatch.setattr(asc, "admit", lambda url: (True, ""))
+    rec = asc.collect_one(src)
+    assert rec["robots_disallows"] is False and rec["status"] != "BLOCKED_BY_ROBOTS"
+    assert sent == ["https://example.invalid/data"], "robots allows: the polite door is opened"
+
+    sci = (repo / "desks/mt5/research/data_acquisition_scientist.py").read_text("utf-8")
+    assert '"status": "BLOCKED_BY_ROBOTS"' in sci
+    assert "allowed, robots_note = _robots_allows(url)" in sci

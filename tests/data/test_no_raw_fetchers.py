@@ -94,12 +94,8 @@ ALLOWED: dict[str, tuple[str, str]] = {
                                                             "(Yahoo reader)"),
     "desks/mt5/research/futures_lead_lag.py": (PENDING, "claude/yahoo-live-substitutes "
                                                         "(Yahoo reader)"),
-    "desks/mt5/side_channels/earnings_miner.py": (PENDING, "yahoo follow-up: earnings_miner via "
-                                                           "polite_fetch"),
     "scripts/check_source_routes.py": (PENDING, "yahoo follow-up: check_source_routes via "
                                                 "polite_fetch"),
-    "scripts/hurdle_rate.py": (PENDING, "claude/yahoo-live-substitutes (^IRX reader refused / "
-                                        "FRED DTB3 substitute)"),
 }
 
 _RAW_NAMES = frozenset({"urlopen", "fenced_urlopen", "guarded_urlopen"})
