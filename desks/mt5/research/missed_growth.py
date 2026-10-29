@@ -848,19 +848,25 @@ def published_ftmo_follower_lines() -> dict[str, Any]:
 FTMO_EXEC_INTENTS = BASE / "data" / "ftmo_exec_intents.jsonl"
 
 
+#: The executor's statuses that are not a refusal (the order went, or the pass was unarmed).
+FTMO_EXEC_SENT = frozenset({"SENT", "WOULD_SEND", "CLOSE"})
+
+
 def published_ftmo_executor_lines() -> dict[str, Any]:
     """The FTMO sleeve executor's rails (prop/ftmo_executor.py, 2026-10-29), one bill per rail
-    it journalled: every RAIL_BLOCKED row carries the risk it held back. The same reading as the
-    follower's: an absent journal binds nothing yet, an unreadable one is UNMEASURED, a row
-    without a dollar figure is counted unpriced, never zero. Published, not priced."""
+    it journalled: every row a rail stopped from sending (RAIL_BLOCKED, and the rails journalled
+    under their own status -- STALE_BARS, UNSIZEABLE at the venue minimum, TIER_S_BLOCKED, ...;
+    audit S2) carries the risk it held back. The same reading as the follower's: an absent
+    journal binds nothing yet, an unreadable one is UNMEASURED, a row without a dollar figure is
+    counted unpriced, never zero. Published, not priced."""
     rows = _jsonl(FTMO_EXEC_INTENTS) if FTMO_EXEC_INTENTS.exists() else []
     if rows is None:
         return {"source": f"data/{FTMO_EXEC_INTENTS.name}",
                 "unreadable": [FTMO_EXEC_INTENTS.name], "rails": {}}
+    billed = [r for r in rows if r.get("rail") and r.get("status") not in FTMO_EXEC_SENT]
     lines: dict[str, Any] = {}
-    for rail in sorted({str(r.get("rail")) for r in rows
-                        if r.get("status") == "RAIL_BLOCKED" and r.get("rail")}):
-        mine = [r for r in rows if r.get("rail") == rail and r.get("status") == "RAIL_BLOCKED"]
+    for rail in sorted({str(r.get("rail")) for r in billed}):
+        mine = [r for r in billed if r.get("rail") == rail]
         usd = [float(r["missed_growth_risk_usd"]) for r in mine
                if isinstance(r.get("missed_growth_risk_usd"), (int, float))
                and not isinstance(r.get("missed_growth_risk_usd"), bool)]
@@ -868,9 +874,11 @@ def published_ftmo_executor_lines() -> dict[str, Any]:
                        "undeployed_risk_usd": round(sum(usd), 2),
                        "n_unpriced": len(mine) - len(usd), "last_at": mine[-1].get("at"),
                        "sleeves": sorted({str(r.get("sleeve")) for r in mine}),
+                       "statuses": sorted({str(r.get("status")) for r in mine}),
                        "why": ("the risk the executor held back, not what the trade would have "
                                "earned; published, not priced")}
-    return {"source": f"data/{FTMO_EXEC_INTENTS.name} RAIL_BLOCKED", "rails": lines}
+    return {"source": f"data/{FTMO_EXEC_INTENTS.name} rows a rail kept from sending",
+            "rails": lines}
 
 
 #: THE JUDGE'S WATCHDOG AND THE DEEPENING MEMORY GUARD (audit of 2832cebd1, 2026-10-20). Neither

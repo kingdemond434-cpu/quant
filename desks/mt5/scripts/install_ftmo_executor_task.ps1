@@ -7,8 +7,9 @@
     runs the FTMO terminal over RDP (MetaTrader5 attaches to a running terminal only from that
     desktop session; the executor refuses session 0 and SSH). It trades every non-gold sleeve the
     FTMO allocator lays into CERT_BOOK_LIVE's ftmo block, behind FTMO's loss rails and the
-    cross-account opposite-side fence. STANDBY until data\FTMO_EXECUTOR_ARMED exists: it then
-    logs what it would send (reports\FTMO_EXEC.json, data\ftmo_exec_intents.jsonl).
+    cross-account opposite-side fence. STANDBY until data\FTMO_EXECUTOR_ARMED exists: until then
+    it logs what it would send (reports\FTMO_EXEC.json, data\ftmo_exec_intents.jsonl); once the
+    marker exists it SENDS real orders to the FTMO account.
 
         powershell -NoProfile -ExecutionPolicy Bypass -File desks\mt5\scripts\install_ftmo_executor_task.ps1
 #>

@@ -44,6 +44,9 @@ class _MT5:
         self.orders: list[SimpleNamespace] = []
         self.sent: list[dict] = []
         self.tick_epoch = SERVER.timestamp()
+        self.retcode = 10009
+        self.rates_shift_h = 0
+        self.point = 0.00001
 
     def account_info(self) -> SimpleNamespace:
         return self.acc
@@ -56,7 +59,7 @@ class _MT5:
 
     def symbol_info(self, sym: str) -> SimpleNamespace:
         return SimpleNamespace(volume_min=0.01, volume_step=0.01, volume_max=50.0,
-                               trade_contract_size=100_000.0, point=0.00001, filling_mode=2)
+                               trade_contract_size=100_000.0, point=self.point, filling_mode=2)
 
     def order_calc_profit(self, typ: int, sym: str, vol: float, a: float, b: float) -> float:
         return (b - a if typ == 0 else a - b) * 100_000.0 * vol * 0.6   # NZD -> USD
@@ -74,7 +77,7 @@ class _MT5:
         return []
 
     def copy_rates_from_pos(self, sym: str, tf: int, start: int, n: int) -> list:
-        t0 = int(SERVER.replace(minute=0).timestamp()) - 200 * 3600
+        t0 = int(SERVER.replace(minute=0).timestamp()) - (200 + self.rates_shift_h) * 3600
         return [{"time": t0 + 3600 * i, "open": 1.1, "high": 1.101, "low": 1.099,
                  "close": 1.1, "tick_volume": 1} for i in range(201)]
 
@@ -84,10 +87,10 @@ class _MT5:
             self.positions.append(SimpleNamespace(
                 ticket=7000 + len(self.sent), symbol=req["symbol"], type=req["type"],
                 magic=req["magic"], volume=req["volume"], price_open=req["price"],
-                sl=req["sl"], comment=req["comment"]))
+                sl=req["sl"], comment=req["comment"], time=int(self.tick_epoch)))
         else:
             self.positions = [p for p in self.positions if p.ticket != req["position"]]
-        return SimpleNamespace(retcode=10009, order=7000 + len(self.sent))
+        return SimpleNamespace(retcode=self.retcode, order=7000 + len(self.sent))
 
 
 def _sig(side: int = 1) -> SimpleNamespace:
@@ -111,7 +114,8 @@ def world(monkeypatch, tmp_path) -> SimpleNamespace:
                                 "ftmo": {"gold_asia": 0.002, KEY: 0.003}}))
     monkeypatch.setattr(kelly_sizing, "CERT_BOOK_FILE", cert)
     fx.ALLOCATOR.write_text(json.dumps({"generated_at": NOW.isoformat(), "deployable": True,
-                                        "status": "OK", "specs": {KEY: SPEC}}))
+                                        "status": "OK", "specs": {KEY: SPEC},
+                                        "executable": {"gold_asia": 0.002, KEY: 0.003}}))
     fx.ARMED_MARKER.write_text("")
     monkeypatch.setattr(fx._fw, "bound_account", lambda mt5: (
         "sha256:" + "a" * 16, {"initial_balance": 100_000.0, "daily_loss_frac": 0.05}, "ok"))
@@ -284,3 +288,102 @@ def test_every_executor_refusal_reaches_the_missed_growth_bill(world, monkeypatc
     line = mg.published_ftmo_executor_lines()["rails"]["cross_account_opposite"]
     assert line["n"] == 1 and line["undeployed_risk_usd"] == pytest.approx(0.98 * 306.0)
     assert line["sleeves"] == [KEY]
+
+
+# ============================================================== the audit's fixes (2026-10-29)
+
+def _alloc(**kw: Any) -> None:
+    alloc = json.loads(fx.ALLOCATOR.read_text())
+    alloc.update(kw)
+    fx.ALLOCATOR.write_text(json.dumps(alloc))
+
+
+def test_the_smaller_of_the_block_and_this_passs_solve_is_traded(world) -> None:
+    """MF1: a block an unarmed or refused apply left behind never outsizes this pass's solve."""
+    _alloc(executable={"gold_asia": 0.002, KEY: 0.001})
+    fx.run(world.mt5, armed=True, now=NOW)
+    (req,) = world.mt5.sent
+    assert req["volume"] == pytest.approx(0.32)              # $100 at $306/lot
+
+
+def test_a_key_this_pass_did_not_solve_is_not_traded(world) -> None:
+    _alloc(executable={"gold_asia": 0.002})
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert world.mt5.sent == [] and doc["status"] == "NO_BOOK"
+
+
+def test_a_feed_that_stopped_reads_no_signal_and_is_billed(world) -> None:
+    """MF2: the last closed bar must be the one before the bar forming on the server's clock."""
+    world.mt5.rates_shift_h = 2
+    world.sigs["list"] = [SimpleNamespace(**dict(vars(_sig()), time=BAR - pd.Timedelta(hours=2)))]
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    row = doc["sleeves"][0]
+    assert world.mt5.sent == [] and row["status"] == "STALE_BARS"
+    assert row["rail"] == "ftmo_stale_bars"
+
+
+def test_a_partial_fill_is_a_live_position(world) -> None:
+    """MF3: 10010 is a partial fill: counted SENT, so the bar is spent and the position managed."""
+    world.mt5.retcode = 10010
+    fx.run(world.mt5, armed=True, now=NOW)
+    assert _rows()[-1]["status"] == "SENT"
+
+
+def test_the_time_exit_is_read_off_the_position_and_survives_a_lost_state(world) -> None:
+    """MF3: the hold rides in the order comment; the state file holds nothing the exit needs."""
+    fx.run(world.mt5, armed=True, now=NOW)
+    (pos,) = world.mt5.positions
+    assert pos.comment.startswith("FX6H1|")
+    assert fx.exit_epoch(pos) == pytest.approx(pos.time + 6 * 3600)
+    fx.STATE.unlink()
+    world.mt5.tick_epoch = SERVER.timestamp() + 8 * 3600
+    doc = fx.run(world.mt5, armed=True, now=NOW + timedelta(hours=8))
+    assert any(a["act"] == "close" and "time exit" in a["why"] for a in doc["actions"])
+    assert world.mt5.positions == []
+
+
+def test_an_unmeasurable_lot_cap_refuses_and_is_billed(world) -> None:
+    """MF5: the notional cap is never skipped because it cannot be read."""
+    world.mt5.point = 0.0
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    row = doc["sleeves"][0]
+    assert world.mt5.sent == [] and row["status"] == "RAIL_BLOCKED"
+    assert row["rail"] == fx._fw.LOT_CAP_RAIL
+
+
+def test_a_bracket_that_cannot_be_measured_is_billed_not_raised(world, monkeypatch) -> None:
+    """S1: one sleeve's bracket error never ends the pass for the others."""
+    from mt5desk import decision_core
+
+    def boom(*a: Any) -> None:
+        raise ValueError("no ATR")
+    monkeypatch.setattr(decision_core, "family_bracket", boom)
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    row = doc["sleeves"][0]
+    assert world.mt5.sent == [] and row["status"] == "UNMEASURED_BRACKET"
+
+
+def test_the_same_side_on_another_firm_is_copied_by_zucks_override(world, monkeypatch) -> None:
+    """zuck 2026-10-29 15:27Z, "extend copy override to all": a same-side holding on E8 is sent;
+    the switch off restores the refusal; the opposite side is refused either way."""
+    world.books["e8"] = ({"AUDNZD": {"long": True, "short": False}}, "ok")
+    assert fx.ALLOW_CROSS_FIRM_COPY is True
+    fx.run(world.mt5, armed=True, now=NOW)
+    assert len(world.mt5.sent) == 1
+    world.mt5.sent.clear()
+    world.mt5.positions.clear()
+    fx.STATE.unlink()
+    monkeypatch.setattr(fx, "ALLOW_CROSS_FIRM_COPY", False)
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert world.mt5.sent == [] and doc["sleeves"][0]["rail"] == "cross_firm_copy"
+
+
+def test_a_rail_journalled_under_its_own_status_is_billed_too(world, monkeypatch) -> None:
+    """S2: STALE_BARS, UNSIZEABLE at the venue minimum, ... are refusals by a rail as well."""
+    import missed_growth as mg
+    world.cert.write_text(json.dumps({"enabled": True, "excluded": {}, "ftmo": {KEY: 0.00001}}))
+    _alloc(executable={KEY: 0.00001})
+    fx.run(world.mt5, armed=True, now=NOW)
+    monkeypatch.setattr(mg, "FTMO_EXEC_INTENTS", Path(fx.INTENTS))
+    line = mg.published_ftmo_executor_lines()["rails"]["venue_min_lot"]
+    assert line["n"] == 1 and line["statuses"] == ["UNSIZEABLE"]
