@@ -755,6 +755,53 @@ RETIRED_MACHINE_KEYS = ("WARM_WORKERS",)
 SEALED_FRESH_BUDGET_SEC = 2700.0
 FRESH_BUDGET_SHARE_OF_LIMIT = 0.6
 
+#: THE RESIDENT JUDGE'S BUILD BUDGET IS SIZED FROM ITS OWN SWEEP, NOT FROM A DEAD TASK LIMIT
+#: (2026-10-29). Once `MT5-Gauntlet` went to PT0S the branch below could only RETAIN the last
+#: number, so the budget froze at 8,640 s -- 60% of a PT4H limit that no longer exists. MEASURED on
+#: the sweep of 10-28 23:44Z: the pre-warm pool is the ONLY fresh build in a sweep (the shards
+#: start after its deadline and defer every uncached cell); it warmed 16,740 cells in 8,050 s and
+#: left 281,478 planned cells unreached, while the rest of the sweep (plan, shard replay, collect,
+#: rule, merge) ran for hours on what it had built. Verdicts per hour are r*B/(O+B) for a build of
+#: B seconds at r cells/s against O seconds of everything else, so with O several times B most of
+#: the judge's wall was overhead. The budget is therefore RESIDENT_BUILD_SHARE x O, O being the sum
+#: of the medians of the last RESIDENT_HISTORY_N successful sweeps' non-build phases
+#: (`judge_phase_times.json`, written by the launcher): at 2x the build is two thirds of a sweep.
+#: An older history whose `plan` still contained the pre-warm overstates O; the cap bounds that.
+#: RESIDENT_BUILD_CAP_S is a LATENCY bound, not a throughput one: verdicts land only when a sweep
+#: publishes, and one lost sweep loses its whole build, so a sweep is kept inside the day until
+#: verdicts land per shard; lift it then. Floored at what is already applied: one way, up only.
+PHASE_TIMES = BASE / "data" / "judge_phase_times.json"
+RESIDENT_BUILD_SHARE = 2.0
+RESIDENT_BUILD_CAP_S = 12 * 3600.0
+RESIDENT_HISTORY_N = 5
+RESIDENT_OVERHEAD_PHASES = ("plan", "plan_handoff", "build_shards", "collect_and_cut",
+                            "rule_shards", "merge_and_publish")
+#: Without these two the sum would leave out most of a sweep and read as a small overhead.
+RESIDENT_OVERHEAD_REQUIRED = ("build_shards", "merge_and_publish")
+
+
+def resident_overhead_s(times: Any) -> tuple[float | None, str]:
+    """Seconds of a resident sweep that are NOT the build, from the launcher's phase history."""
+    import math
+    import statistics
+    phases = times.get("phases") if isinstance(times, dict) else None
+    if not isinstance(phases, dict):
+        return None, "judge_phase_times.json is unreadable or holds no phases"
+    parts: dict[str, float] = {}
+    for name in RESIDENT_OVERHEAD_PHASES:
+        raw = phases.get(name)
+        vals = [float(v) for v in (raw if isinstance(raw, list) else [])[-RESIDENT_HISTORY_N:]
+                if isinstance(v, (int, float)) and not isinstance(v, bool)
+                and math.isfinite(v) and v > 0]
+        if vals:
+            parts[name] = statistics.median(vals)
+    missing = [n for n in RESIDENT_OVERHEAD_REQUIRED if n not in parts]
+    if missing:
+        return None, f"no measured {', '.join(missing)} in judge_phase_times.json"
+    total = sum(parts.values())
+    return total, ("sum of medians of the last {} successful sweeps: {}".format(
+        RESIDENT_HISTORY_N, ", ".join(f"{k} {v:.0f}s" for k, v in parts.items())))
+
 
 def task_time_limit_s(task: str = GAUNTLET_TASK) -> float | None:
     """The judge task's own ExecutionTimeLimit in seconds, read off the box. None if unreadable.
@@ -786,9 +833,11 @@ def task_time_limit_s(task: str = GAUNTLET_TASK) -> float | None:
 
 
 def fresh_budget_s(limit_s: float | None,
-                   current_budget_s: float | None = None) -> tuple[float | None, str]:
+                   current_budget_s: float | None = None,
+                   phase_times: Any = None) -> tuple[float | None, str]:
     """The build seconds to publish, or None to leave the sealed default alone. ONE WAY: the
-    figure is floored at the sealed default, so this can only ever give the judge MORE time."""
+    figure is floored at the sealed default, so this can only ever give the judge MORE time.
+    With an unlimited task it is sized from `phase_times` (see RESIDENT_BUILD_SHARE)."""
     if limit_s is None:
         return None, ("the judge task's ExecutionTimeLimit is unreadable, so the sealed "
                       f"{SEALED_FRESH_BUDGET_SEC:.0f}s build budget stands unchanged")
@@ -798,8 +847,20 @@ def fresh_budget_s(limit_s: float | None,
         want = (max(SEALED_FRESH_BUDGET_SEC, prior)
                 if isinstance(prior, (int, float)) and math.isfinite(prior)
                 else SEALED_FRESH_BUDGET_SEC)
+        overhead, basis = resident_overhead_s(phase_times)
+        if overhead is not None:
+            sized = min(RESIDENT_BUILD_CAP_S, RESIDENT_BUILD_SHARE * overhead)
+            if sized > want:
+                return sized, (f"task execution is unlimited; build {sized:.0f}s = "
+                               f"min({RESIDENT_BUILD_SHARE:g} x {overhead:.0f}s of measured "
+                               f"non-build sweep wall, cap {RESIDENT_BUILD_CAP_S:.0f}s) ({basis})")
+            return (want if want > SEALED_FRESH_BUDGET_SEC else None,
+                    f"task execution is unlimited; retain the bounded {want:.0f}s build budget, "
+                    f"which is not below {RESIDENT_BUILD_SHARE:g} x the measured {overhead:.0f}s "
+                    f"non-build sweep wall (capped {RESIDENT_BUILD_CAP_S:.0f}s)")
         return (want if want > SEALED_FRESH_BUDGET_SEC else None,
-                f"task execution is unlimited; retain the bounded {want:.0f}s build budget")
+                f"task execution is unlimited; retain the bounded {want:.0f}s build budget "
+                f"(sweep overhead UNMEASURED: {basis})")
     want = max(SEALED_FRESH_BUDGET_SEC, limit_s * FRESH_BUDGET_SHARE_OF_LIMIT)
     if want <= SEALED_FRESH_BUDGET_SEC:
         return None, (f"{FRESH_BUDGET_SHARE_OF_LIMIT:.0%} of the task's {limit_s:.0f}s limit is "
@@ -1220,7 +1281,8 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
             with contextlib.suppress(TypeError, ValueError):
                 _current_budget = float((previous_env.get("env") or {}).get(
                     "GAUNTLET_FRESH_BUDGET_SEC"))
-    _fresh, _fresh_why = fresh_budget_s(_limit, _current_budget)
+    _fresh, _fresh_why = fresh_budget_s(
+        _limit, _current_budget, _read_json(PHASE_TIMES, {}) if _limit == 0 else None)
     decision["fresh_budget_s"] = _fresh
     decision["fresh_budget_why"] = _fresh_why
     decision["task_time_limit_s"] = _limit if _limit is not None else UNMEASURED
