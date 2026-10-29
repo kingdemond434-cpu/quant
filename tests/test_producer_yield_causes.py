@@ -134,8 +134,9 @@ def test_key_missing_checks_existence_only(tmp_path: Path,
 
 
 def test_upstream_dead_only_when_the_named_input_is_stale() -> None:
-    fresh = _ev(bars={"newest_bar_age_h": 0.1})
-    stale = _ev(bars={"newest_bar_age_h": 300.0})
+    legs = {"plumbing_miner": {"proposer_rotation"}}
+    fresh = _ev(legs=legs, bars={"newest_bar_age_h": 0.1})
+    stale = _ev(legs=legs, bars={"newest_bar_age_h": 300.0})
     assert fence.cause_of("plumbing_miner", None, fresh)["cause"] != "UPSTREAM_DEAD"
     got = fence.cause_of("plumbing_miner", None, stale)
     assert (got["cause"], got["cause_detail"]) == ("UPSTREAM_DEAD", "BARS_STALE")
