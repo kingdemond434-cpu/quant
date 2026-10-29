@@ -440,15 +440,19 @@ try {
 # writes desks\mt5\reports\BOX_BOTTLENECKS.json, and applies only what that file says inside the
 # rails the module enforces (nothing above AboveNormal; money path, judge and protected writers
 # only ever raised; mining never below BelowNormal; nothing killed). No arguments are passed.
-# Once a pass has MEASURED, the hand tasks it replaces are DISABLED (never deleted), so two
-# shapers never fight over one mask; re-enabling one by hand is still possible.
+# The hand tasks it replaces are DISABLED (never deleted) ONLY when the report POSITIVELY shows
+# the replacement holds: a memecoin process live, every memecoin action applied without error (or
+# none needed), and memecoin's measured share of the box within max_box_share
+# (memecoin_cap_holds). Otherwise both stay enabled and the reason is logged. Re-enabling one by
+# hand is still possible. Cadence cost: a NEW memecoin process waits up to 10 min for its cap
+# here; the hand task capped it within 2.
 $cpuShape = $null
 Push-Location 'C:\opt\quant'
 try {
   $cpuShapeRaw = & py -3 -m libs.ops.box_shaper 2>$null
   $cpuShape = ($cpuShapeRaw | Select-Object -Last 1) | ConvertFrom-Json
   if ($cpuShape.line) { $actions += $cpuShape.line }
-  if ($cpuShape.verdict -eq 'MEASURED') {
+  if ($cpuShape.verdict -eq 'MEASURED' -and $cpuShape.memecoin_cap_holds -eq $true) {
     foreach ($handTask in @('Quant-CpuShaper', 'Quant-MemecoinCpuCap')) {
       $ht = Get-ScheduledTask -TaskName $handTask -ErrorAction SilentlyContinue
       if ($ht -and $ht.State -ne 'Disabled') {
@@ -456,6 +460,8 @@ try {
         $actions += "CPU SHAPE: hand task $handTask disabled; desks\mt5\ops\CPU_SHAPE.json now owns its rules"
       }
     }
+  } elseif ($cpuShape) {
+    $actions += ("CPU SHAPE: hand tasks not disabled this pass -- replacement not proven (" + $cpuShape.memecoin_cap_why + ")")
   }
 } catch {
   $actions += "CPU SHAPE UNRUNNABLE: py -3 -m libs.ops.box_shaper failed ($_) -- CPU rules not applied this pass"

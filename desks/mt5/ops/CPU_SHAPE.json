@@ -22,7 +22,8 @@
      "max_box_share": 0.10,
      "why": "Owner rule: the memecoin bot keeps running on at most 10% of the box. The mask is the hand task's two top cores; the code narrows it to floor(10% x cores) of them (1 of 18 on the trading box)."},
     {"name": "pf_allocator_heavy", "match": "pf_allocator.py --mode heavy", "affinity": "0xFF",
-     "why": "The overnight allocator measured at 3162% (31 cores) beside the judge; eight cores, priority untouched."},
+     "track_wall": true,
+     "why": "The overnight allocator measured at 3162% (31 cores) beside the judge; eight cores, priority untouched. track_wall records each run's wall time in BOX_BOTTLENECKS.json wall.pf_allocator_heavy, so the 8-core cap can be checked against allocator proof staleness."},
     {"name": "mt5_terminals_raise", "match": "terminal64.exe", "priority": "AboveNormal",
      "why": "The MT5 terminals are the money path; raised so research load never starves a fill."}
   ],
@@ -30,7 +31,7 @@
     "threshold_cores": 6,
     "sustained_runs": 2,
     "mask": "0x3F00",
-    "why": "Any single non-money, non-judge, non-protected process above 6 cores in two consecutive passes is pinned to cores 8-13 (clear of the allocator's 0-7 and memecoin's 16-17). Mining is capped this way only while the judge is starved."
+    "why": "Any single mining or other process above 6 cores in two consecutive passes is pinned to cores 8-13 (clear of the allocator's 0-7 and memecoin's 16-17), and ONLY while the judge is starved: an unlisted process is never throttled on its own size alone."
   },
   "judge_starved": {"box_cpu_pct_at_least": 90, "judge_share_of_busy_below": 0.5},
   "mining_floor_cores": 6

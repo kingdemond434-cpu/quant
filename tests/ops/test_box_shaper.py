@@ -112,14 +112,15 @@ def test_rules_above_abovenormal_are_refused_at_load() -> None:
         bs.validate_rules(rules)
 
 
-def test_share_cap_needs_two_passes_and_spares_mining_unless_the_judge_starves() -> None:
+def test_share_cap_needs_two_passes_and_a_starved_judge() -> None:
     first = bs.plan(_box(), RULES, N, judge_starved=False)
     assert not any(a.rule == "share_cap" for a in first.actions)
     heavy = first.heavy
     assert any(k.startswith("32:") for k in heavy) and any(k.startswith("31:") for k in heavy)
     second = bs.plan(_box(), RULES, N, judge_starved=False, previous_heavy=heavy)
-    capped = {a.pid for a in second.actions if a.rule == "share_cap"}
-    assert capped == {32}                       # the allocator has its own rule; mining spared
+    # an unlisted process is never throttled on size alone: "other" waits for a starved judge too
+    assert not any(a.rule == "share_cap" for a in second.actions)
+    assert {r["pid"] for r in second.refused if r["rule"] == "share_cap"} == {31, 32}
     starved = bs.plan(_box(), RULES, N, judge_starved=True, previous_heavy=heavy)
     cap_masks = {a.pid: str(a.after) for a in starved.actions if a.rule == "share_cap"}
     assert set(cap_masks) == {31, 32}
@@ -155,6 +156,10 @@ def test_run_once_writes_the_report_and_refuses_a_bad_rules_file(tmp_path: Path)
 def test_secrets_never_reach_the_report() -> None:
     p = Proc(1, "x", cmdline="bot.py --api-key sk-abc123 --token=xyz")
     assert "sk-abc123" not in bs._short_cmd(p) and "xyz" not in bs._short_cmd(p)
+    t = Proc(2, "terminal64.exe", cmdline="terminal64.exe /login:5551234 /server:FTMO-Demo2 "
+             "/account=778899")
+    out = bs._short_cmd(t)
+    assert "5551234" not in out and "FTMO-Demo2" not in out and "778899" not in out
 
 
 def test_stall_watch_runs_the_shaper_with_no_arguments() -> None:
@@ -176,3 +181,51 @@ def test_a_real_pass_measures_this_host_and_writes_the_report(tmp_path: Path) ->
     doc = json.loads(report_path.read_text())
     assert {"top", "judge", "memecoin", "actions", "refused", "ram", "disk_free_gb"} <= set(doc)
     assert doc["line"].startswith("CPU SHAPE: box ")
+
+
+def _applied(out: bs.Plan) -> bs.Plan:
+    for a in out.actions:
+        a.applied, a.error = True, None
+    return out
+
+
+def test_hand_tasks_retire_only_on_positive_proof() -> None:
+    procs = _box()
+    out = bs.plan(procs, RULES, N, judge_starved=False)
+    # measured over the cap (900% of 1800%) before this pass narrowed it: not proven
+    ok, why = bs.memecoin_cap_holds(procs, RULES, _applied(out), 0.5)
+    assert not ok and "above" in why
+    ok, _ = bs.memecoin_cap_holds(procs, RULES, _applied(out), 0.05)
+    assert ok
+    failed = bs.plan(procs, RULES, N, judge_starved=False)
+    next(a for a in failed.actions if a.rule == "memecoin_cap").error = "AccessDenied"
+    ok, why = bs.memecoin_cap_holds(procs, RULES, failed, 0.05)
+    assert not ok and "did not land" in why
+    no_meme = [p for p in procs if p.group != "memecoin"]
+    ok, why = bs.memecoin_cap_holds(no_meme, RULES, bs.Plan(), 0.0)
+    assert not ok and "no memecoin process" in why
+    # already on the narrowed mask at BelowNormal: no action needed, and that holds
+    m = next(p for p in procs if p.group == "memecoin")
+    m.affinity, m.priority = [17], "BelowNormal"
+    quiet = bs.plan(procs, RULES, N, judge_starved=False)
+    assert not any(a.rule == "memecoin_cap" for a in quiet.actions)
+    assert bs.memecoin_cap_holds(procs, RULES, quiet, 0.05)[0]
+
+
+def test_stall_watch_retires_hand_tasks_only_when_the_cap_holds() -> None:
+    text = (REPO / "desks/mt5/scripts/stall_watch.ps1").read_text("utf-8")
+    assert "$cpuShape.memecoin_cap_holds -eq $true" in text
+    assert "hand tasks not disabled this pass" in text
+
+
+def test_the_allocator_wall_time_is_carried_pass_to_pass() -> None:
+    rule = next(r for r in RULES["rules"] if r["name"] == "pf_allocator_heavy")
+    assert rule["track_wall"] is True
+    procs = _box()
+    alloc = next(p for p in procs if p.pid == 10)
+    alloc.create_time = 1_000.0
+    first = bs.track_wall(procs, rule["match"], None, now=4_600.0)
+    assert first["running"][0]["wall_s"] == 3_600 and first["running"][0]["cores"] == N
+    gone = bs.track_wall([p for p in procs if p.pid != 10], rule["match"], first, now=5_200.0)
+    assert gone["running"] == []
+    assert gone["finished"][0]["wall_s_at_least"] == 3_600

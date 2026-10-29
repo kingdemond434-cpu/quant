@@ -23,7 +23,8 @@ re-run). It takes no arguments and reads no queue: what it may do is this file p
          starved and never narrower than `mining_floor_cores`;
        * memecoin's mask is narrowed to its `max_box_share` of the box;
        * any other single process above `share_cap.threshold_cores` for `sustained_runs`
-         consecutive passes is pinned to `share_cap.mask`;
+         consecutive passes is pinned to `share_cap.mask` -- only while the judge is starved
+         and never under `mining_floor_cores`, exactly as for mining;
        * nothing is killed, nothing is deleted.
   3. APPLY (Windows only) and write desks/mt5/reports/BOX_BOTTLENECKS.json: the top consumers,
      the judge's share, memecoin's share, and every action with whether it landed.
@@ -69,7 +70,9 @@ RAISE_ONLY = frozenset({"money", "judge", "protected"})
 #: Groups no rule or cap touches at all.
 UNTOUCHED = frozenset({"system"})
 TOP_N = 25
-_SECRET = re.compile(r"(?i)(key|token|secret|passw\w*|auth\w*)([=:\s]+)\S+")
+#: login/account/server cover terminal64's /login: /server: switches and their kin.
+_SECRET = re.compile(
+    r"(?i)(key|token|secret|passw\w*|auth\w*|login|account|server)([=:\s]+)\S+")
 
 
 @dataclass
@@ -295,7 +298,14 @@ def plan(procs: Sequence[Proc], rules: Mapping[str, Any], n_cpu: int, *, judge_s
             out.heavy.append(p.key)
             if p.pid in ruled_affinity or (need > 1 and p.key not in seen):
                 continue
+            # AN UNLISTED PROCESS IS NEVER THROTTLED ON ITS OWN SIZE ALONE: "other" waits for the
+            # same starved-judge condition and the same core floor as mining. Only a committed
+            # rule above may pin a process the judge is not losing CPU to.
             why = _affinity_refusal(p, cap_cpus, judge_starved, floor_cores)
+            if why is None and not judge_starved:
+                why = "share_cap acts only while the judge is starved"
+            if why is None and len(cap_cpus) < floor_cores:
+                why = f"mask below the floor of {floor_cores} cores"
             if why:
                 out.refused.append({"pid": p.pid, "name": p.name, "group": p.group,
                                     "rule": "share_cap", "why": why})
@@ -303,6 +313,53 @@ def plan(procs: Sequence[Proc], rules: Mapping[str, Any], n_cpu: int, *, judge_s
                 out.actions.append(Action(p.pid, p.name, p.group, "share_cap", "affinity",
                                           _mask(p.affinity), cpus_to_mask(cap_cpus)))
     return out
+
+
+def memecoin_cap_holds(procs: Sequence[Proc], rules: Mapping[str, Any], the_plan: Plan,
+                       share_of_box: float) -> tuple[bool, str]:
+    """Does the report POSITIVELY show the memecoin cap holding? (Gate for retiring hand tasks.)
+
+    True only when a memecoin process is live; every memecoin rule action was applied without
+    error (no action at all means each process already sat on the narrowed mask and class --
+    `plan` emits one for any mismatch); no memecoin rule was refused; and the measured share of
+    the box is within the rule's `max_box_share`. Anything else keeps the hand tasks enabled.
+    """
+    mrules = [r for r in rules.get("rules", []) if str(r.get("match", "")).lower() == "memecoin"]
+    if not mrules:
+        return False, "no memecoin rule in CPU_SHAPE.json"
+    names = {r["name"] for r in mrules}
+    if not any(p.group == "memecoin" for p in procs):
+        return False, "no memecoin process live: the cap is unproven this pass"
+    bad = [a for a in the_plan.actions if a.rule in names and (not a.applied or a.error)]
+    if bad:
+        return False, f"{len(bad)} memecoin action(s) did not land: {bad[0].error}"
+    if any(r.get("rule") in names for r in the_plan.refused):
+        return False, "a memecoin rule was refused"
+    share = min(float(r.get("max_box_share", 1.0)) for r in mrules)
+    if share_of_box > share:
+        return False, f"memecoin measured at {share_of_box:.1%} of the box, above {share:.0%}"
+    return True, f"memecoin cap holds at {share_of_box:.1%} of the box"
+
+
+def track_wall(procs: Sequence[Proc], match: str, previous: Mapping[str, Any] | None,
+               now: float) -> dict[str, Any]:
+    """Wall time of each run of a tracked process, carried pass to pass. Pure.
+
+    A run still live reports `wall_s` so far; a run seen last pass and gone now moves to
+    `finished` with `wall_s_at_least` (its last reading: the true end is up to one pass later).
+    """
+    prev = previous or {}
+    running = [{"key": p.key, "started_at": datetime.fromtimestamp(p.create_time, UTC)
+                .isoformat(timespec="seconds"), "wall_s": round(max(0.0, now - p.create_time)),
+                "cores": None if p.affinity is None else len(p.affinity)}
+               for p in procs if match.lower() in p.haystack]
+    live = {r["key"] for r in running}
+    finished = list(prev.get("finished") or [])
+    for r in prev.get("running") or []:
+        if isinstance(r, dict) and r.get("key") not in live:
+            finished.append({"key": r.get("key"), "started_at": r.get("started_at"),
+                             "wall_s_at_least": r.get("wall_s"), "cores": r.get("cores")})
+    return {"running": running, "finished": finished[-10:]}
 
 
 def _affinity_refusal(p: Proc, cpus: Sequence[int], judge_starved: bool,
@@ -410,11 +467,12 @@ def _row(p: Proc) -> dict[str, Any]:
             "cmd": _short_cmd(p)}
 
 
-def _previous_heavy(path: Path) -> list[str]:
+def _previous_doc(path: Path) -> dict[str, Any]:
     try:
-        return list(json.loads(path.read_text(encoding="utf-8")).get("heavy") or [])
-    except (OSError, ValueError, AttributeError):
-        return []
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        return doc if isinstance(doc, dict) else {}
+    except (OSError, ValueError):
+        return {}
 
 
 def _disk_free_gb() -> float | None:
@@ -441,12 +499,20 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH) 
         _write(report_path, report)
         return report
     n_cpu = int(psutil.cpu_count() or 1)
+    prev = _previous_doc(report_path)
     procs, box_pct = measure(float(rules.get("window_s", 5)))
     classify(procs, rules.get("groups", {}))
     summary = summarize(procs, n_cpu, box_pct, rules.get("judge_starved", {}))
     the_plan = plan(procs, rules, n_cpu, judge_starved=summary["judge"]["starved"],
-                    previous_heavy=_previous_heavy(report_path))
+                    previous_heavy=list(prev.get("heavy") or []))
     apply(the_plan.actions, n_cpu)
+    holds, holds_why = memecoin_cap_holds(procs, rules, the_plan,
+                                          float(summary["memecoin"]["share_of_box"]))
+    summary["memecoin"].update(cap_holds=holds, cap_why=holds_why)
+    prev_wall_raw = prev.get("wall")
+    prev_wall: dict[str, Any] = prev_wall_raw if isinstance(prev_wall_raw, dict) else {}
+    wall = {r["name"]: track_wall(procs, str(r["match"]), prev_wall.get(r["name"]), time.time())
+            for r in rules.get("rules", []) if r.get("track_wall")}
     vm = psutil.virtual_memory()
     top = sorted(procs, key=lambda p: p.cpu_pct, reverse=True)[:TOP_N]
     landed = sum(1 for a in the_plan.actions if a.applied)
@@ -457,7 +523,7 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH) 
         disk_free_gb=_disk_free_gb(), **summary,
         top=[_row(p) for p in top],
         actions=[asdict(a) for a in the_plan.actions], refused=the_plan.refused,
-        heavy=the_plan.heavy,
+        heavy=the_plan.heavy, wall=wall,
         line=(f"CPU SHAPE: box {box_pct}% on {n_cpu} cores; judge "
               f"{summary['judge']['share_of_box']:.0%} of box"
               f"{' (STARVED)' if summary['judge']['starved'] else ''}; memecoin "
@@ -477,7 +543,10 @@ def _write(path: Path, payload: Mapping[str, Any]) -> None:
 
 def main() -> int:
     report = run_once()
-    print(json.dumps({"verdict": report.get("verdict"), "line": report.get("line")}))
+    meme = report.get("memecoin") or {}
+    print(json.dumps({"verdict": report.get("verdict"), "line": report.get("line"),
+                      "memecoin_cap_holds": bool(meme.get("cap_holds")),
+                      "memecoin_cap_why": meme.get("cap_why") or "not measured"}))
     return 0
 
 
