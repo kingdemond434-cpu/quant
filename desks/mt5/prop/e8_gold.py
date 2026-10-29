@@ -1237,6 +1237,13 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     publish_books(venue, mt5, doc,
                   positions=None if "positions_unreadable" in doc else venue_positions)
     oco_sync(venue, mt5, doc, today=today)
+    # THE SCHEDULED-RELEASE FENCE (mt5desk.news_fence; default OFF behind data/E8_NEWS_FENCE.json,
+    # patch e8_news_fence/v1). ON: no new bracket, no re-sent leg and no resting entry leg inside
+    # -pre/+post min of a tier-1 release. OFF: the same decisions are journalled as SHADOW_FENCE
+    # rows with their risk, so the lane's own record measures the fence before anyone arms it.
+    from mt5desk import news_fence as _nf
+    news = _nf.verdict(now)
+    doc["news_fence"] = news.as_dict()
     # -------------------------------------------------------------- placements
     due_now = [] if stood_down else plan(df, hour, state)
     # A LATE GOLD SEND IS REFUSED (Judge 2026-10-21, r6; decision_core.GOLD_SEND_GRACE_MIN): a
@@ -1401,6 +1408,20 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             # positions stay. A veto, so billed once per window per day (missed_growth).
             from libs.ops import new_risk_hold as _nrh
             blocker = adopt_hold = _nrh.reason()
+        news_hold = None
+        if blocker is None and (news.blocks or news.would_block):
+            _billed = state.setdefault("rail_logged", {})
+            _tag = f"{_nf.RAIL}/{name}" + ("" if news.blocks else "/shadow")
+            if _billed.get(_tag) != today:
+                _billed[_tag] = today
+                _record({"at": now.isoformat(timespec="seconds"), "window": name,
+                         "status": "RAIL_BLOCKED" if news.blocks else _nf.SHADOW_STATUS,
+                         "rail": _nf.RAIL, "why": news.why, "release": news.release,
+                         "missed_growth_risk_usd": round(risk_usd, 2), "armed": bool(armed)})
+            if news.blocks:
+                blocker = news_hold = f"news fence: {news.why}"
+            else:
+                log(f"[{name}] news fence SHADOW (off): would defer -- {news.why}")
         if blocker is not None:
             doc["skipped"].append({"window": name, "why": blocker})
             log(f"[{name}] DEFERRED: {blocker}")
@@ -1573,7 +1594,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                            xau_positions=xau_positions, positions_ok=positions_ok,
                            stood_down=stood_down, armed=armed, hist_rows=hist_rows,
                            history_ok="history_unreadable" not in doc, instrument_id=iid,
-                           mt5=mt5, account_ok=(e8_declared, e8_account_why))
+                           mt5=mt5, account_ok=(e8_declared, e8_account_why),
+                           news_why=(f"the news fence holds ({news.why})" if news.blocks
+                                     else None))
         open_ids = {int(o.get("id")) for o in open_orders if o.get("id") is not None}
 
     # OUR OWN ORDERS AND POSITIONS, RE-DERIVED FROM THE VENUE EVERY PASS -- so a rollover (or a
@@ -1788,6 +1811,35 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         # A flattened twin is no window's position: management records the day's own leg.
         position_ids -= _flat
         filled = {o: p for o, p in filled.items() if p not in _flat}
+    # THE NEWS FENCE'S CANCEL LEG: a resting ENTRY leg inside the window is cancelled (on) or
+    # journalled as what would have been (off). Positions and their stops are never touched.
+    if "orders_unreadable" not in doc and (news.blocks or news.would_block):
+        _billed = state.setdefault("rail_logged", {})
+        for _wn, _side, _oid in _nf.resting_entry_legs(state, open_ids, filled):
+            _w = state["windows"].get(_wn) or {}
+            _usd = round(equity * window_risk(_wn, kelly)[0], 2)
+            _tag = f"{_nf.RAIL}/cancel/{_oid}" + ("" if news.blocks else "/shadow")
+            act = {"act": "news_cancel" if news.blocks else "news_cancel_shadow",
+                   "window": _wn, "side": _side, "order_id": _oid}
+            if news.blocks:
+                try:
+                    if (armed or not _w.get("shadow", False)) and not venue.cancel(_oid):
+                        raise RuntimeError(f"venue did not acknowledge cancel of order {_oid}")
+                    open_ids.discard(_oid)
+                    act["ok"] = True
+                    log(f"[{_wn}] news fence: resting {_side} {_oid} cancelled ({news.why})")
+                except Exception as exc:
+                    act["ok"] = False
+                    act["why"] = f"{type(exc).__name__}: {exc}"[:160]
+                    log(f"[{_wn}] news fence cancel FAILED: {act['why']}")
+            doc["actions"].append(act)
+            if _billed.get(_tag) != today:
+                _billed[_tag] = today
+                _record({"at": now.isoformat(timespec="seconds"), "window": _wn, "side": _side,
+                         "order_id": _oid, "rail": _nf.RAIL, "release": news.release,
+                         "status": "RAIL_BLOCKED" if news.blocks else _nf.SHADOW_STATUS,
+                         "why": f"resting entry leg inside the release window: {news.why}",
+                         "missed_growth_risk_usd": _usd, "armed": bool(armed)})
     # Positions carried from a previous day are closed at the close hour like today's.
     for name, w in list((state.get("carried") or {}).items()):
         state["windows"].setdefault(f"carried:{name}",
@@ -1855,7 +1907,8 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                        xau_positions: list[dict], positions_ok: bool, stood_down: bool,
                        armed: bool, hist_rows: list[dict], history_ok: bool,
                        instrument_id: int, mt5: Any = None,
-                       account_ok: tuple[bool, str] = (True, "")) -> None:
+                       account_ok: tuple[bool, str] = (True, ""),
+                       news_why: str | None = None) -> None:
     """Re-send the legs `retry_decisions` says still belong to a live window. Mutates `state`,
     appends to `doc["actions"]` and to `open_orders` (so the rest of the pass sees the new leg).
 
@@ -1866,7 +1919,8 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
     resting order, then as a filled order in the history, then as a position on its side opened
     since the failed send.
     """
-    blind = [why for why, bad in (("the pass is disarmed", not armed),
+    blind = [why for why, bad in ((news_why or "", news_why is not None),
+                                  ("the pass is disarmed", not armed),
                                   ("the guard stands down", stood_down),
                                   ("the order book is unreadable", not orders_ok),
                                   ("the position book is unreadable", not positions_ok),
@@ -1895,7 +1949,8 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             ("e8_account_undeclared",
              f"retry held: the E8 account does not join ({account_ok[1]})",
              armed and not account_ok[0]),
-            ("adopt_new_risk_hold", f"retry held: {adopt_hold}", adopt_hold is not None)) if on]
+            ("adopt_new_risk_hold", f"retry held: {adopt_hold}", adopt_hold is not None),
+            ("e8_news_fence", f"retry held: {news_why}", news_why is not None)) if on]
         # Billed once per held leg per day, under the same rail as a refused placement.
         _billed = state.setdefault("rail_logged", {})
         today = now.date().isoformat()

@@ -807,6 +807,41 @@ def published_fusion_book_lines() -> dict[str, Any]:
     return out
 
 
+#: THE E8 SCHEDULED-RELEASE FENCE (mt5desk.news_fence, patch e8_news_fence/v1). Registers no
+#: rail (the register is sealed); prop/e8_gold.py journals each refusal as RAIL_BLOCKED (fence
+#: on) or SHADOW_FENCE (fence off: what it WOULD have refused) with the risk, rail e8_news_fence.
+NEWS_FENCE_RAIL = "e8_news_fence"
+
+
+def published_news_fence_lines() -> dict[str, Any]:
+    """The news fence's bill, both sides. `held` is the risk the fence refused while ON; `shadow`
+    is what it would have refused while OFF. Neither side is priced in log-wealth here -- the
+    trades those legs would have made are not in the line -- so any line is UNMEASURED with its
+    dollars; no rows on a readable journal is NOT_BINDING; an unreadable journal is UNMEASURED."""
+    rows = _jsonl(E8_INTENTS) if E8_INTENTS.exists() else []
+    if rows is None:
+        return {"verdict": UNMEASURED, "source": f"data/{E8_INTENTS.name}",
+                "unreadable": [E8_INTENTS.name], "held": {"n": 0}, "shadow": {"n": 0}}
+    mine = [r for r in rows if r.get("rail") == NEWS_FENCE_RAIL]
+
+    def side(status: str) -> dict[str, Any]:
+        got = [r for r in mine if r.get("status") == status]
+        usd = [float(r["missed_growth_risk_usd"]) for r in got
+               if isinstance(r.get("missed_growth_risk_usd"), (int, float))
+               and not isinstance(r.get("missed_growth_risk_usd"), bool)]
+        return {"n": len(got), "risk_usd": round(sum(usd), 2), "n_unpriced": len(got) - len(usd),
+                "releases": sorted({str(r.get("release")) for r in got if r.get("release")}),
+                "last_at": got[-1].get("at") if got else None}
+
+    held, shadow = side("RAIL_BLOCKED"), side("SHADOW_FENCE")
+    return {"verdict": UNMEASURED if mine else NOT_BINDING,
+            "source": f"data/{E8_INTENTS.name} rail {NEWS_FENCE_RAIL}",
+            "held": held, "shadow": shadow,
+            "why": ("held = risk refused while ON (the cost side); shadow = risk it would have "
+                    "refused while OFF. The saved side is the realised R of those legs' trades, "
+                    "joined from the exits; published, not priced")}
+
+
 #: THE FTMO FOLLOWER'S RAILS (gold OCO v2, audit must-fix 5): prop/ftmo_follower.py journals
 #: every refusal as a RAIL_BLOCKED row (rail ftmo_follower, with its reason) and every lot its
 #: cap clipped (rail ftmo_lot_cap) in its own intents journal; they register no rail (the
@@ -1146,6 +1181,7 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            # here so the bill sits beside the rails' (never appended to the ledger).
            "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
                                     "fusion_book_rails": published_fusion_book_lines(),
+                                    "e8_news_fence": published_news_fence_lines(),
                                     "ftmo_follower_rails": published_ftmo_follower_lines(),
                                     "gauntlet_watchdog": organ_published_lines(GAUNTLET_STALL),
                                     "judge_priority_raise": organ_published_lines(
