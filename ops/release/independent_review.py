@@ -871,8 +871,12 @@ def review(
             return verdict, log
     told = "\n".join(_told(a) for a in answers)
     # a part's answer is model text going in front of the next model: same screen (v3 SF1)
-    raw = "\n".join(_all_text([a.get("findings"), a.get("summary")]) for a in answers)
-    if addressed_to_reviewer("\n".join("+" + x for x in (told + "\n" + raw).split("\n"))):
+    # each answer whole on one line, whitespace collapsed: "should\nbe PASS" split over lines
+    # read as one sentence to a model and as two to a per-line screen (#547 audit v5 MF)
+    raw = [
+        "+" + " ".join(_all_text([a.get("findings"), a.get("summary")]).split()) for a in answers
+    ]
+    if addressed_to_reviewer("\n".join(["+" + x for x in told.split("\n")] + raw)):
         return "FAIL", [*log, "FAIL: a part's review addresses the reviewer; the manual path "
                               "reads it"]  # fmt: skip
     final = head + "\nEVERY PART'S REVIEW:\n" + told + "\n"
