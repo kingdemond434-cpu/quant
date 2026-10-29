@@ -376,7 +376,7 @@ def _as_day(d: Any) -> str:
 
 def kernel_weights(dates: Iterable[Any], path: Path | None = None, at: datetime | None = None,
                    dims: Sequence[str] = KERNEL_DIMS, bandwidth: float = BANDWIDTH,
-                   ) -> tuple[np.ndarray, dict[str, Any]]:
+                   asof: str | None = None) -> tuple[np.ndarray, dict[str, Any]]:
     """Weight in [0, 1] per date: how much that day's macro state resembles today's.
 
     Product over `dims` of a Gaussian kernel in rank distance. A day with no state on some
@@ -388,6 +388,10 @@ def kernel_weights(dates: Iterable[Any], path: Path | None = None, at: datetime 
     both sides of the contrast -- and a day unlike today is a small positive number, never NaN.
     `meta["status"]` is UNMEASURED when nothing could be weighted, in which case every weight is
     NaN and the posterior behaves as if this level did not exist.
+
+    `asof` (an ISO date) is the replay reading: "today" is the state on that day, no print dated
+    after it is used, and freshness is judged at that day. Point-in-time only where the series is
+    an ALFRED vintage; a current-vintage series still carries later revisions (`meta["vintage"]`).
     """
     days = [_as_day(d) for d in dates]
     # NaN IS "NO STATE FOR THIS DAY" AND 0.0 IS "A DAY UNLIKE TODAY". They are different
@@ -398,6 +402,12 @@ def kernel_weights(dates: Iterable[Any], path: Path | None = None, at: datetime 
     w = np.full(len(days), np.nan, dtype=float)
     doc = daily_states(path)
     states, newest = doc["states"], doc["newest"]
+    if asof is not None and newest:
+        cut = str(asof)[:10]
+        states = {d: {k: v for k, v in by.items() if k <= cut} for d, by in states.items()}
+        states = {d: by for d, by in states.items() if by}
+        newest = min(newest, cut)
+        at = at or datetime.fromisoformat(cut).replace(tzinfo=UTC)
     use = [d for d in dims if d in states]
     if not use or not newest:
         return w, {"status": "UNMEASURED", "why": "no kernel dimension has a rankable series",
