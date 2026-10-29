@@ -456,6 +456,55 @@ def test_the_tree_kill_does_not_wait_on_corpses(tmp_path) -> None:
             root.kill()
 
 
+def test_a_corpse_that_reads_alive_while_reaped_is_never_an_orphan(monkeypatch) -> None:
+    """CI #500 10-29 (killed 4, orphans [5488], wall_s 0.17): once the root died, init reaped its
+    re-parented corpses, and one /proc sample read a corpse as alive ('running'/'dead', not
+    'zombie') after is_running() said True. A process seen gone once is gone for good: here
+    every kid reads alive for ever after the root's kill, and none of them may be named."""
+    import subprocess
+    import sys as _sys
+    import time as _t
+
+    psutil = pytest.importorskip("psutil")
+    root = subprocess.Popen([_sys.executable, "-c",
+                             "import subprocess,sys,time;"
+                             "[subprocess.Popen([sys.executable,'-c','import time;time.sleep(60)'])"
+                             " for _ in range(3)];time.sleep(60)"])
+    try:
+        deadline = _t.monotonic() + 10
+        while len(psutil.Process(root.pid).children()) < 3 and _t.monotonic() < deadline:
+            _t.sleep(0.05)
+        kids = {k.pid for k in psutil.Process(root.pid).children()}
+        root_dead = {"v": False}
+        real_kill, real_status, real_running = (psutil.Process.kill, psutil.Process.status,
+                                                psutil.Process.is_running)
+
+        def kill(self):
+            real_kill(self)
+            if self.pid == root.pid:
+                root_dead["v"] = True
+
+        def lying(real, lie):
+            def wrapped(self):
+                if root_dead["v"] and self.pid in kids:
+                    return lie
+                return real(self)
+            return wrapped
+
+        monkeypatch.setattr(psutil.Process, "kill", kill)
+        monkeypatch.setattr(psutil.Process, "status", lying(real_status, psutil.STATUS_RUNNING))
+        monkeypatch.setattr(psutil.Process, "is_running", lying(real_running, True))
+        rep = runner._kill_sweep_tree(root.pid)
+        monkeypatch.undo()
+        root.wait(timeout=15)
+        assert root_dead["v"], rep
+        assert rep["orphans"] == [] and rep["killed"] == 4, rep
+        assert rep["wall_s"] < 1.5, rep
+    finally:
+        with __import__("contextlib").suppress(Exception):
+            root.kill()
+
+
 def test_a_sweep_names_its_phase_and_a_kill_records_it(monkeypatch) -> None:
     """The 33h stall could not say which part of the sweep the core was in: each phase is now
     stamped, folded into the resident's heartbeat, and named on a hung kill."""

@@ -2363,15 +2363,29 @@ def _kill_tree(pid: int, *, wall_s: float | None = None,
         out_kids = []
         for k in root.children(recursive=True):
             with contextlib.suppress(psutil.Error):
-                if k.status() != psutil.STATUS_ZOMBIE:
+                if k not in corpses and k.status() not in (psutil.STATUS_ZOMBIE,
+                                                           psutil.STATUS_DEAD):
                     out_kids.append(k)
         return out_kids
 
+    # DEATH IS ONE-WAY (2026-10-29). A process seen gone once is gone for good, so it is
+    # remembered: while init reaps the root's re-parented corpses, /proc can read a corpse as
+    # 'running' or 'dead' (not 'zombie') for one sample after is_running() said True, and the
+    # final sweep named such a corpse an orphan (CI #500: killed 4, orphans [5488], wall_s 0.17).
+    # Keyed by the psutil.Process itself (pid + create time), so a reused pid is a new process.
+    corpses: set[Any] = set()
+
     def gone(p: Any) -> bool:
-        try:
-            return (not p.is_running()) or p.status() == psutil.STATUS_ZOMBIE
-        except psutil.Error:
+        if p in corpses:
             return True
+        try:
+            dead = (not p.is_running()) or p.status() in (psutil.STATUS_ZOMBIE,
+                                                          psutil.STATUS_DEAD)
+        except psutil.Error:
+            dead = True
+        if dead:
+            corpses.add(p)
+        return dead
 
     def settle(procs: list[Any], limit_s: float) -> None:
         # ZOMBIE-AWARE WAIT (2026-10-29). `psutil.wait_procs` counts a zombie as running, and a
