@@ -173,6 +173,32 @@ def features_of(row: dict[str, Any]) -> dict[str, str]:
             "chart": _axis(row, "chart", "timeframe", "tf")}
 
 
+#: (outcome, features as sorted-key item pairs, failure class, failure stage) -- everything
+#: `GraveyardModel.fit` reads from one judged row. Class and stage are "" for a survivor.
+JudgedEntry = tuple[str, tuple[tuple[str, str], ...], str, str]
+
+
+def judged_entry(row: dict[str, Any],
+                 intern: dict[Any, Any] | None = None) -> JudgedEntry | None:
+    """The part of a hypothesis-graph row `fit` uses, or None when its fate is not a verdict.
+
+    `intern` (optional) shares equal values between entries, so a million entries from a few
+    hundred families, symbols and sources cost a million small tuples and not a million copies.
+    """
+    fate = str(row.get("fate"))
+    if fate not in ("FAILED", "BURIED", "CERTIFIED"):
+        return None
+    pool = intern if intern is not None else {}
+    feats = tuple((k, pool.setdefault(v, v)) for k, v in features_of(row).items())
+    feats = pool.setdefault(feats, feats)
+    if fate == "CERTIFIED":
+        return ("CERTIFIED", feats, "", "")
+    why = str(row.get("why") or "")
+    cls = failure_class(row.get("gates"), why)
+    stage = failure_stage(row.get("gates"), why, cls)
+    return ("FAILED", feats, pool.setdefault(cls, cls), pool.setdefault(stage, stage))
+
+
 class GraveyardModel:
     def __init__(self) -> None:
         self.class_counts: Counter[str] = Counter()
@@ -190,21 +216,29 @@ class GraveyardModel:
         for r in rows:
             if isinstance(r, dict) and r.get("id"):
                 latest[str(r["id"])] = r
-        for r in latest.values():
-            fate = str(r.get("fate"))
-            if fate not in ("FAILED", "BURIED", "CERTIFIED"):
+        return self.fit_entries(judged_entry(r) for r in latest.values())
+
+    def fit_entries(self, entries: Iterable[JudgedEntry | None]) -> GraveyardModel:
+        """`fit` on rows already reduced by `judged_entry` -- the same counts, byte for byte.
+
+        WHY IT EXISTS (2026-10-20). `fit` needs only the LATEST row per id, and of that row only
+        its fate, its features and (for a death) its class and stage. A caller holding every row
+        of the hypothesis graph to call `fit` paid ~3.1 KB per row: 5.74M rows measured
+        2026-10-03 is ~18 GB, the deepening worker's resident size on the trading box. A streamed
+        caller keeps one `judged_entry` per id instead and fits from those.
+        """
+        for e in entries:
+            if e is None:
                 continue
-            f = features_of(r)
+            outcome, feats, cls, stage = e
             self.n += 1
-            outcome = "CERTIFIED" if fate == "CERTIFIED" else "FAILED"
             self.survive_counts[outcome] += 1
-            for k, v in f.items():
+            for k, v in feats:
                 self.survive_feat[outcome][k][v] += 1
             if outcome == "FAILED":
-                cls = failure_class(r.get("gates"), str(r.get("why") or ""))
                 self.class_counts[cls] += 1
-                self.stage_counts[failure_stage(r.get("gates"), str(r.get("why") or ""), cls)] += 1
-                for k, v in f.items():
+                self.stage_counts[stage] += 1
+                for k, v in feats:
                     self.feat_counts[cls][k][v] += 1
         return self
 
