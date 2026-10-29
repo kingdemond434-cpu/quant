@@ -305,6 +305,15 @@ def candidate(source: str, symbol: str, family: str, params: dict, mechanism: st
 #: What the last `donate` did with its candidates, so a proposer's report can carry the refusal
 #: count without every proposer being rewritten to thread it through. Replaced on every call.
 LAST_DONATION: dict[str, Any] = {}
+# The rows the last `donate` call actually WROTE, after the blinding, lane and PIT doors. A
+# proposer that keeps a "donated once, never again" ledger must mark only these: marking what it
+# OFFERED burns every row a door turned away, forever (math_lab and physics_lab did, 2026-10).
+LAST_WRITTEN: list[dict] = []
+
+
+def donated_rows() -> list[dict]:
+    """The rows the last `donate` call wrote ([] when it wrote nothing)."""
+    return list(LAST_WRITTEN)
 
 
 def donation_counts() -> dict[str, Any]:
@@ -499,7 +508,8 @@ def donate(source: str, candidates: list[dict], tests_run: int,
     them does not leave at all. The counts ride on the contract file (`counts.refused_unstamped`)
     and on `donation_counts()` for the proposer's own report.
     """
-    global LAST_DONATION
+    global LAST_DONATION, LAST_WRITTEN
+    LAST_WRITTEN = []
     LAST_DONATION = {"source": source, "donated": 0, "refused_unstamped": 0,
                      "refused_wrong_lane": 0, "refusals": [], "lane_refusals": []}
     if not candidates:
@@ -546,6 +556,7 @@ def donate(source: str, candidates: list[dict], tests_run: int,
                                          "available_time is not permission to use the row")},
                                indent=1, default=str), "utf-8")
     _record_in_registry(source, candidates)
+    LAST_WRITTEN = list(candidates)
     return path
 
 

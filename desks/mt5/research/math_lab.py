@@ -810,6 +810,64 @@ def _entry_exit(params: dict[str, Any]) -> dict[str, str]:
     }
 
 
+DONATED_LEDGER_VERSION = 2
+
+
+def load_donated(path: Path, source: str) -> tuple[set[str], dict[str, Any]]:
+    """Object ids already WRITTEN to the intake, and how that was established.
+
+    THE LEDGER USED TO RECORD WHAT WAS OFFERED, NOT WHAT WAS WRITTEN (root cause of the 10-13
+    silence, hourly pass item 26). Every row `proposer_common.donate` refused -- wrong lane,
+    no PIT stamp, blinded -- was still marked donated, so one pass where a door refused rows
+    burned those objects for good, and a deterministic lab that rediscovers the same objects
+    then donates nothing, every pass, with exit 0. A v1 ledger is therefore rebuilt ONCE from
+    the discovery files the source actually wrote; an object found in none is offered again
+    (the compiler's intake is idempotent by object id, so a re-offer charges no new trial).
+    """
+    if not path.exists():
+        return set(), {"ledger": "new"}
+    doc = _read_json(path) or {}
+    if int(doc.get("version") or 1) >= DONATED_LEDGER_VERSION:
+        return set(doc.get("object_ids") or []), {"ledger": "v2"}
+    from research import proposer_common as PC
+    written: set[str] = set()
+    files = 0
+    for f in sorted((PC.INTEL / source).glob("discoveries_*.json")):
+        try:
+            rows = json.loads(f.read_text("utf-8", errors="replace")).get("discoveries") or []
+        except (OSError, ValueError, AttributeError):
+            continue
+        files += 1
+        written |= {str(r["mathlab_object_id"]) for r in rows
+                    if isinstance(r, dict) and r.get("mathlab_object_id")}
+    offered = set(doc.get("object_ids") or [])
+    return written, {"ledger": "v1 rebuilt from writes", "files_read": files,
+                     "offered_v1": len(offered), "written": len(written),
+                     "reoffered": len(offered - written)}
+
+
+def mark_donated(path: Path, already: set[str]) -> None:
+    """Record the ids `donate` WROTE (never the ones it was offered) as a v2 ledger."""
+    from research import proposer_common as PC
+    ids = already | {str(r["mathlab_object_id"]) for r in PC.donated_rows()
+                     if r.get("mathlab_object_id")}
+    _atomic(path, {"at": now_iso(), "version": DONATED_LEDGER_VERSION,
+                   "object_ids": sorted(ids),
+                   "rule": "an object WRITTEN to the intake once is never donated again; a row "
+                           "a door refused is not written and is offered again next pass"})
+
+
+def donation_status(rows: int, donated: int, already: int, refused: int) -> str:
+    """Why a pass gave what it gave, in one word the yield report can go RED on."""
+    if donated:
+        return "DONATED"
+    if rows:
+        return "REFUSED_AT_THE_DOOR"
+    if already:
+        return "NOTHING_NEW"
+    return "NOTHING_TRADEABLE" if refused else "NO_SURVIVORS"
+
+
 def donation_rows(objects: list[MathObject], already: set[str]) -> tuple[list[dict[str, Any]],
                                                                         list[dict[str, str]]]:
     """Executable candidates for the compiler's EXACT_RECIPE door, plus what could not be one."""
@@ -1153,7 +1211,7 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     # first under MAX_DONATIONS, and a disliked one goes when there is room instead of never.
     survivors = sorted(admitted, key=lambda o: (0 if o.passed else 1, -(o.value or -9e9)))
 
-    already = set((_read_json(DONATED) or {}).get("object_ids") or [])
+    already, ledger = load_donated(DONATED, SOURCE)
     # THE BATCH BUDGET IS GONE (MAX_DONATIONS = -1). It was 40 against 132 admitted objects, and
     # a budget that binds every pass on a producer whose screen may not gate is the screen wearing
     # a different hat. The `sa.take` call stays so the stage keeps writing its ledger line --
@@ -1173,7 +1231,8 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     donation: dict[str, Any] = {"donated": 0, "path": None, "refused_untradeable": len(refused),
                                 "refusals": refused[:20],
                                 "already_donated_in_a_previous_pass":
-                                    len([o for o in survivors if o.object_id in already])}
+                                    len([o for o in survivors if o.object_id in already]),
+                                "ledger": ledger}
     donated_by_tradition: dict[str, int] = {}
     if rows and not dry_run:
         try:
@@ -1181,20 +1240,19 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
             path = PC.donate(SOURCE, rows, tests_run=sum(
                 int(v.get("evaluated", 0)) for v in per_tradition.values()))
             donation.update({"path": str(path) if path else None, **PC.donation_counts()})
-            for row in rows:
+            for row in PC.donated_rows():
                 tradition = str(row.get("evidence", {}).get("tradition") or "")
                 donated_by_tradition[tradition] = donated_by_tradition.get(tradition, 0) + 1
             donation["by_tradition"] = dict(donated_by_tradition)
-            _atomic(DONATED, {"at": now_iso(),
-                              "object_ids": sorted(already | {r["mathlab_object_id"]
-                                                              for r in rows}),
-                              "rule": "an object donated once is never donated again; the "
-                                      "compiler's intake is idempotent by object id"})
+            mark_donated(DONATED, already)
         except Exception as exc:
             donation["status"] = f"{UNMEASURED}: donate raised {type(exc).__name__}: {exc}"
     elif rows:
         donation["donated"] = 0
         donation["status"] = "SKIPPED_DRY_RUN"
+    donation.setdefault("status", donation_status(
+        len(rows), int(donation.get("donated") or 0),
+        int(donation["already_donated_in_a_previous_pass"]), len(refused)))
 
     representations = representation_manifest(minted, dry_run)
     registry = ({"status": "SKIPPED_DRY_RUN"} if dry_run

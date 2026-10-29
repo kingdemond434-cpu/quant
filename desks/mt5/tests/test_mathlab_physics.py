@@ -425,6 +425,7 @@ def test_A_no_llm_end_to_end_pass_runs_on_synthetic_data(tmp_path: Path,
 
         monkeypatch.setattr(PC, "donate", fake_donate)
         monkeypatch.setattr(PC, "donation_counts", lambda: {"donated": len(donated)})
+        monkeypatch.setattr(PC, "donated_rows", lambda: list(donated))
         report = PL.run(budget_s=30.0, permutations=20,
                         physics=["renormalisation", "turbulence", "symmetry_invariance"],
                         maths=["spectral"])

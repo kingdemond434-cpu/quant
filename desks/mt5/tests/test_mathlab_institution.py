@@ -83,6 +83,7 @@ def full_run(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
     mp.setattr(PC, "donate", lambda source, candidates, tests_run: donated.extend(candidates)
                or tmp / "intel.json")
     mp.setattr(PC, "donation_counts", lambda: {"donated": len(donated)})
+    mp.setattr(PC, "donated_rows", lambda: list(donated))
     try:
         report = PL.run(budget_s=60.0, permutations=20, maths=["spectral", "control_theory"])
         second = PL.run(budget_s=20.0, permutations=20, physics=["turbulence"], maths=[])

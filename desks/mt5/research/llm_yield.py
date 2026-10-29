@@ -68,6 +68,11 @@ MINER_CANDIDATES = BASE / "data" / "hypotheses" / "miner_candidates.json"
 REGISTRY = REPO / "data" / "alpha_registry.sqlite"
 CERT_PROVENANCE = BASE / "data" / "certificate_provenance.json"
 REPORT = BASE / "reports" / "LLM_YIELD.json"
+LAB_REPORTS = {"mathlab": BASE / "reports" / "MATH_LAB.json",
+               "physics_lab": BASE / "reports" / "PHYSICS_LAB.json",
+               "world_lab": BASE / "reports" / "WORLD_LAB.json"}
+#: A lab report older than this is a clock that stopped (the labs run hourly).
+LAB_STALE_H = 6.0
 PRIORITY = BASE / "data" / "llm_model_priority.json"
 
 UNMEASURED = "UNMEASURED"
@@ -267,6 +272,30 @@ def generators() -> dict[str, Any]:
             "math_traditions": math or UNMEASURED, "rows": rows}
 
 
+def labs(now: datetime) -> dict[str, Any]:
+    """The math, physics and world labs' own last pass: did it donate, and if not, why."""
+    out: dict[str, Any] = {}
+    for name, path in LAB_REPORTS.items():
+        doc = _read_json(path)
+        if not isinstance(doc, dict):
+            out[name] = {"status": UNMEASURED, "source": str(path.relative_to(REPO))}
+            continue
+        at = _at(doc.get("at"))
+        don: dict[str, Any] = doc["donation"] if isinstance(doc.get("donation"), dict) else {}
+        age_h = round((now - at).total_seconds() / 3600, 2) if at else None
+        out[name] = {"status": "MEASURED", "at": doc.get("at"), "age_h": age_h,
+                     "dry_run": bool(doc.get("dry_run")),
+                     "donated": int(don.get("donated") or doc.get("donated") or 0),
+                     "donation_status": don.get("status", UNMEASURED),
+                     "already_donated": don.get("already_donated_in_a_previous_pass"),
+                     "refused_untradeable": don.get("refused_untradeable"),
+                     "refused_wrong_lane": don.get("refused_wrong_lane"),
+                     "refused_unstamped": don.get("refused_unstamped"),
+                     "ledger": don.get("ledger"),
+                     "by_tradition": don.get("by_tradition") or {}}
+    return out
+
+
 # ============================================================================ the red checks
 def _replacement_target(text: Any) -> str:
     """The producer a free-text replacement names first (`"mathlab -- the ..."` -> mathlab)."""
@@ -274,8 +303,22 @@ def _replacement_target(text: Any) -> str:
     return "" if not head or head.upper().startswith("NONE") else head.split()[0].strip(";,")
 
 
-def violations(calls: dict[str, Any], gens: dict[str, Any]) -> list[dict[str, Any]]:
+def violations(calls: dict[str, Any], gens: dict[str, Any],
+               lab: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
+    for name, r in (lab or {}).items():
+        if r.get("status") != "MEASURED":
+            continue
+        if r["age_h"] is None or r["age_h"] > LAB_STALE_H:
+            out.append({"check": "lab_clock_stale", "generator": name,
+                        "why": f"{name}'s last report is {r['age_h']}h old (> {LAB_STALE_H}h)"})
+        elif not r["dry_run"] and r["donated"] == 0:
+            out.append({"check": "lab_gave_nothing", "generator": name,
+                        "why": f"{name} ran {r['age_h']}h ago and donated 0: "
+                               f"{r['donation_status']} (already donated "
+                               f"{r['already_donated']}, untradeable "
+                               f"{r['refused_untradeable']}, wrong lane "
+                               f"{r['refused_wrong_lane']}, unstamped {r['refused_unstamped']})"})
     for r in calls.get("rows") or []:
         if r["silent"]:
             out.append({"check": "silent_success", "organ": r["organ"], "model": r["model"],
@@ -335,13 +378,20 @@ def run(*, window_days: float = WINDOW_DAYS, now: datetime | None = None) -> dic
     calls = calls_by_model(now, window_days)
     lab = lab_funnel()
     gens = generators()
-    bad = violations(calls, gens)
+    lab_runs = labs(now)
+    for name, r in lab_runs.items():
+        for tradition, n in (r.get("by_tradition") or {}).items():
+            if isinstance(gens.get("math_traditions"), dict):
+                gens["math_traditions"].setdefault(f"math:{tradition}", {})[
+                    f"donated_last_pass_{name}"] = n
+    bad = violations(calls, gens, lab_runs)
     prio = priority(calls, lab)
     return {"generated_utc": now.isoformat(timespec="seconds"), "window_days": window_days,
             "law": "every model and generator is measured to the certificate; silent success "
                    "and a dead replacement are RED; the budget follows conversion",
             "calls": calls, "panel": panel_counters(), "lab": lab,
             "proposals": proposals_by_model(now, window_days), "generators": gens,
+            "labs": lab_runs,
             "priority": prio, "violations": bad, "red": bool(bad)}
 
 

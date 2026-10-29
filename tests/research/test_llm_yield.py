@@ -130,3 +130,36 @@ def test_leg_is_wired_and_layered() -> None:
     assert '_producer("llm_yield", "research/llm_yield.py")' in src
     assert '"research/llm_budget_census.py"' in src
     assert layers.LEG_LAYER["llm_yield"] == "meta"
+
+
+def _lab_report(path: Path, at: datetime, **donation: Any) -> None:
+    path.write_text(json.dumps({"at": at.isoformat(), "dry_run": False,
+                                "donation": donation}), "utf-8")
+
+
+def test_a_lab_that_ran_and_gave_nothing_is_red_with_its_reason(
+        paths: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    reports = {n: paths / f"{n}.json" for n in ("mathlab", "physics_lab", "world_lab")}
+    monkeypatch.setattr(ly, "LAB_REPORTS", reports)
+    _lab_report(reports["mathlab"], NOW - timedelta(hours=1), donated=0, status="NOTHING_NEW",
+                already_donated_in_a_previous_pass=132, refused_untradeable=0)
+    _lab_report(reports["physics_lab"], NOW - timedelta(hours=30), donated=5)
+    _lab_report(reports["world_lab"], NOW - timedelta(hours=1), donated=3,
+                by_tradition={"causal": 3})
+    doc = ly.run(now=NOW)
+    got = {(v["check"], v["generator"]) for v in doc["violations"]}
+    assert got == {("lab_gave_nothing", "mathlab"), ("lab_clock_stale", "physics_lab")}
+    assert "NOTHING_NEW" in next(v["why"] for v in doc["violations"]
+                                 if v["generator"] == "mathlab")
+
+
+def test_producer_fence_flags_a_dead_replacement() -> None:
+    import importlib
+    fence = importlib.import_module("scripts.check_producer_yield")
+    assert fence.replacement_target("mathlab -- the lab") == "mathlab"
+    assert fence.replacement_target("NONE DECLARED -- x") == ""
+    for name in ("lab_probability", "lab_timeseries", "lab_crossasset", "lab_microstructure",
+                 "mathlab", "physics_lab"):
+        target = fence.replacement_target(fence.REPLACEMENTS[name])
+        assert target not in {"mathlab", "physics_lab", "lab_crossasset", "lab_timeseries",
+                              "lab_probability", "lab_microstructure"}, name

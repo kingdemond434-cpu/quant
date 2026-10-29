@@ -85,6 +85,7 @@ def lab(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setattr(PC, "donate", fake_donate)
     monkeypatch.setattr(PC, "donation_counts", lambda: {"donated": len(donated)})
+    monkeypatch.setattr(PC, "donated_rows", lambda: list(donated))
     yield {"tmp": tmp_path, "donated": donated, "registry": R}
     R.set_path(None)
 

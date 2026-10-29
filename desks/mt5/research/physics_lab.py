@@ -467,7 +467,7 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
         if obj.object_id not in seen:
             seen.add(obj.object_id)
             unique_forward.append(obj)
-    already = set((_read_json(DONATED) or {}).get("object_ids") or [])
+    already, ledger = ML.load_donated(DONATED, SOURCE)
     donation_rows, refused = ML.donation_rows(
         sa.take(unique_forward, MAX_DONATIONS, organ="physics_lab", stage="donations",
                 ordering="card status (FORWARD, PROVISIONAL, then the rest), then -value"),
@@ -483,6 +483,7 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
     donation: dict[str, Any] = {"donated": 0, "path": None, "refused_untradeable": len(refused),
                                 "already_donated_in_a_previous_pass":
                                     len([o for o in unique_forward if o.object_id in already]),
+                                "ledger": ledger,
                                 "rule": "every card's executable object is donated, ordered by "
                                         "card status then value; the status is a RANK and the "
                                         "ten gates are the only judge"}
@@ -493,15 +494,17 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
             path = PC.donate(SOURCE, donation_rows,
                              tests_run=sum(evaluated_by_method.values()))
             donation.update({"path": str(path) if path else None, **PC.donation_counts()})
-            for row in donation_rows:
+            for row in PC.donated_rows():
                 t = str(row.get("evidence", {}).get("tradition") or "")
                 donated_by_tradition[t] = donated_by_tradition.get(t, 0) + 1
-            I.atomic_json(DONATED, {"at": I.now_iso(), "object_ids": sorted(
-                already | {r["mathlab_object_id"] for r in donation_rows})})
+            ML.mark_donated(DONATED, already)
         except Exception as exc:
             donation["status"] = f"{UNMEASURED}: donate raised {type(exc).__name__}: {exc}"
     elif donation_rows:
         donation["status"] = "SKIPPED_DRY_RUN"
+    donation.setdefault("status", ML.donation_status(
+        len(donation_rows), int(donation.get("donated") or 0),
+        int(donation["already_donated_in_a_previous_pass"]), len(refused)))
     donation["by_tradition"] = donated_by_tradition
     per_tradition_registry = {t: {"proposed": v["proposed"], "distinct": v.get("evaluated", 0),
                                   "evaluated": v["evaluated"], "passed": v["passed"],
