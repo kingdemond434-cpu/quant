@@ -333,7 +333,8 @@ def run(*, n_skills: int = SKILLS_PER_PASS, per_skill: int = PER_SKILL, dry_run:
             path = INTEL / f"discoveries_{now.strftime('%Y%m%d_%H%M%S')}.json"
             _atomic(path, {"source": SOURCE, "generated_at": now.isoformat(),
                            "discoveries": stamped})
-            report["written"] = str(path.relative_to(REPO))
+            report["written"] = (str(path.relative_to(REPO)) if path.is_relative_to(REPO)
+                                 else str(path))
         report["leads"] = len(stamped)
     report["status"] = "OK" if report["leads"] else "ZERO_PROPOSALS"
     return report
