@@ -70,7 +70,8 @@ from typing import Any
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
-LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 OUT = BASE / "data" / "decay_live.json"
 ACTIONS = BASE / "data" / "decay_actions.jsonl"
 #: Names the gateway must close out on its next pass: a sleeve that leaves the roster leaves the

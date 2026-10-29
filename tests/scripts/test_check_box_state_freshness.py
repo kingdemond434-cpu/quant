@@ -33,6 +33,7 @@ needs_git = pytest.mark.skipif(shutil.which("git") is None, reason="git required
 
 _SCRIPT = '''$relPaths = @(
     "desks/mt5/reports/shadow/shadow_health.json",
+    "desks/mt5/data/RELEASE.json",
     "desks/mt5/data/live_ledger.jsonl"
 )
 '''
@@ -46,7 +47,7 @@ def _git(cwd: Path, *args: str, date: str | None = None) -> None:
 
 
 def _repo(tmp_path: Path, stamp: datetime | None, commit_at: datetime,
-          author: str = "Contabo MT5 Desk") -> Path:
+          author: str = "Contabo MT5 Desk", subject: str = "state") -> Path:
     repo = tmp_path / "r"
     _git(tmp_path, "init", "-q", "-b", "live", str(repo))
     _git(repo, "config", "user.email", "b@example.com")
@@ -60,7 +61,7 @@ def _repo(tmp_path: Path, stamp: datetime | None, commit_at: datetime,
     health.write_text(json.dumps({"updated_at": stamp.isoformat() if stamp else None,
                                   "status": "OPERATING"}), "utf-8")
     _git(repo, "add", ".")
-    _git(repo, "commit", "-q", "-m", "state", date=commit_at.strftime("%Y-%m-%dT%H:%M:%S+0000"))
+    _git(repo, "commit", "-q", "-m", subject, date=commit_at.strftime("%Y-%m-%dT%H:%M:%S+0000"))
     return repo
 
 
@@ -101,6 +102,77 @@ def test_no_box_evidence_is_unmeasured_and_fails(tmp_path: Path) -> None:
     now = datetime.now(UTC)
     doc = fence.measure(_repo(tmp_path, None, now, author="Someone Else"), ref="HEAD")
     assert doc["verdict"] == "UNMEASURED", doc
+
+
+BOX_MSG = ("mt5 box state 2026-10-13_1635 (published onto origin; inbound code left to "
+           "MT5-AdoptRelease)")
+
+
+@needs_git
+def test_the_box_is_known_by_its_publisher_subject_not_its_author(tmp_path: Path) -> None:
+    """2026-10-13: the publisher commits as "Codex", the same identity the VPS uses for code, so
+    the author match found nothing and the fence read UNMEASURED while the box published every
+    fifteen minutes."""
+    now = datetime.now(UTC)
+    doc = fence.measure(_repo(tmp_path, now - timedelta(hours=1), now, author="Codex",
+                              subject=BOX_MSG), ref="HEAD")
+    assert doc["verdict"] == "FRESH", doc
+    assert doc["newest_box_commit"]["author"] == "Codex"
+
+
+@needs_git
+def test_a_codex_code_commit_is_not_a_box_write(tmp_path: Path) -> None:
+    now = datetime.now(UTC)
+    doc = fence.measure(_repo(tmp_path, now - timedelta(hours=1), now, author="Codex",
+                              subject="Record durable resident completions"), ref="HEAD")
+    assert doc["verdict"] == "UNMEASURED", doc
+    assert doc["stamps_ignored_not_box_written"] == {
+        "desks/mt5/reports/shadow/shadow_health.json": "Codex"}
+
+
+@needs_git
+def test_a_body_line_quoting_the_subject_is_not_a_box_commit(tmp_path: Path) -> None:
+    """git --grep anchors ^ on every line: a code commit whose BODY starts with the publisher's
+    subject must not lend the fence its commit date."""
+    now = datetime.now(UTC)
+    doc = fence.measure(_repo(tmp_path, None, now, author="Codex",
+                              subject=f"Fix the publisher\n\n{BOX_MSG}"), ref="HEAD")
+    assert doc["verdict"] == "UNMEASURED", doc
+    assert "newest_box_commit" not in doc
+
+
+@pytest.mark.parametrize(("author", "subject", "box"), [
+    ("Codex", BOX_MSG, True),
+    ("Contabo MT5 Desk", "anything", True),
+    ("x", "mt5 shadow state sync 2026-09-03_0820", True),
+    ("Codex", "mt5 box state is discussed here", False),
+    ("Codex", "Merge mt5 box state 2026-10-13_1635 (published onto origin", False),
+])
+def test_box_identity(author: str, subject: str, box: bool) -> None:
+    assert fence.is_box_commit(author, subject) is box
+
+
+def test_the_subject_matches_what_the_publisher_writes() -> None:
+    ps1 = (ROOT / "desks/mt5/scripts/sync_shadow_to_git.ps1").read_text("utf-8", errors="ignore")
+    assert '$msg = "mt5 box state $stampNow (published onto origin;' in ps1
+    assert '.ToString("yyyy-MM-dd_HHmm")' in ps1
+
+
+@needs_git
+def test_a_fresh_stamp_written_by_ci_does_not_make_the_box_fresh(tmp_path: Path) -> None:
+    """2026-10-06: CI's release seal rewrote RELEASE.json (a published path) with a fresh
+    generated_utc, and the fence read the box FRESH while its last own write was 12 days old."""
+    now = datetime.now(UTC)
+    repo = _repo(tmp_path, now - timedelta(days=12), now - timedelta(days=12))
+    rel = repo / "desks/mt5/data/RELEASE.json"
+    rel.parent.mkdir(parents=True, exist_ok=True)
+    rel.write_text(json.dumps({"generated_utc": now.isoformat()}), "utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "-c", "user.name=quant-ci", "commit", "-q", "-m", "seal release")
+    doc = fence.measure(repo, ref="HEAD")
+    assert doc["verdict"] == "STALE", doc
+    assert doc["stamps_ignored_not_box_written"] == {"desks/mt5/data/RELEASE.json": "quant-ci"}
+    assert doc["age_h"] > 200
 
 
 def test_it_is_a_state_fence_on_the_box_clock_never_a_push_gate() -> None:

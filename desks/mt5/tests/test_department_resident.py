@@ -14,6 +14,30 @@ for p in (str(DESK / "research"), str(DESK), str(DESK.parents[1])):
 import department_resident as dr  # noqa: E402
 
 
+def test_recycled_resident_records_durable_completion_not_process_start(monkeypatch):
+    from libs.moat import registry
+    from libs.ops.control_plane import watermarks
+
+    monkeypatch.setattr(registry, "worker_heartbeat", lambda *args, **kwargs: None)
+    state = {"value": 48}
+    updates = []
+    monkeypatch.setattr(watermarks, "read", lambda _component: state.copy())
+
+    def record(component, metric, value, **kwargs):
+        updates.append((component, metric, value, kwargs))
+        state["value"] = value
+
+    monkeypatch.setattr(watermarks, "progress", record)
+    dr.heartbeat("discovery", 1)
+    assert not updates, "starting a recycled process is not completed work"
+    dr.heartbeat("discovery", 1, done_inc=1)
+    dr.heartbeat("discovery", 2, done_inc=1)
+    dr.heartbeat("discovery", 2, status="stopped")
+    assert [row[2] for row in updates] == [49, 50]
+    assert updates[-1][0:2] == ("resident:dept_discovery", "passes")
+    assert updates[-1][3]["local_pass"] == 2
+
+
 def test_singleton_lock_is_exclusive(monkeypatch, tmp_path):
     monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
     a = dr.claim_singleton("intel")

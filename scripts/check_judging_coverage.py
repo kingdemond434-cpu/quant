@@ -64,6 +64,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from check_judge_coverage import STALE_H
+
 ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"
 SOURCE = DESK / "reports" / "JUDGE_COVERAGE.json"
@@ -100,11 +102,12 @@ def _parse(ts: object) -> datetime | None:
     return out if out.tzinfo else out.replace(tzinfo=UTC)
 
 
-def measure(source: Path | None = None, ratchet: Path | None = None) -> dict:
+def measure(source: Path | None = None, ratchet: Path | None = None, *,
+            now: datetime | None = None) -> dict:
     """The coverage reading, the ratchet it advances, and the verdict. Pure of argv."""
     src = source or SOURCE
     rat = ratchet or RATCHET
-    now = datetime.now(UTC)
+    now = now or datetime.now(UTC)
 
     if not src.exists():
         return {"status": "NOT_APPLICABLE", "ok": True, "at": now.isoformat(timespec="seconds"),
@@ -120,6 +123,17 @@ def measure(source: Path | None = None, ratchet: Path | None = None) -> dict:
                 "why": (f"{src.name} exists and cannot be read ({type(exc).__name__}: {exc}). "
                         f"A judging host that cannot say what it has judged is exactly the "
                         f"silence this fence exists to break (L1.28a)")}
+
+    source_at = _parse(doc.get("at"))
+    age_h = (now - source_at).total_seconds() / 3600.0 if source_at else None
+    if age_h is None or age_h < 0 or age_h > STALE_H:
+        return {"status": "UNMEASURED", "ok": False,
+                "at": now.isoformat(timespec="seconds"), "source": str(src),
+                "source_at": source_at.isoformat(timespec="seconds") if source_at else None,
+                "source_age_h": age_h, "source_max_age_h": STALE_H,
+                "why": (f"{src.name} timestamp missing, invalid, future or older than "
+                        f"the canonical {STALE_H:g}h freshness window; coverage and movement "
+                        "are unmeasured. Last valid ratchet/history retained.")}
 
     unjudged = int(totals.get("unjudged_total") or 0)
     docket = int(totals.get("docket_rows") or 0)
@@ -166,6 +180,10 @@ def measure(source: Path | None = None, ratchet: Path | None = None) -> dict:
         "at": now.isoformat(timespec="seconds"),
         "source": str(src),
         **reading,
+        "measured_at": now.isoformat(timespec="seconds"),
+        "source_at": reading["at"],
+        "source_age_h": age_h,
+        "source_max_age_h": STALE_H,
         "judged_share": round(judged / docket, 6) if docket else None,
         "judged_high_water": high_water,
         "readings_held": len(history),
