@@ -24,7 +24,7 @@
   },
   "position": null,
   "last_bracket_date": "2026-10-29",
-  "last_reconcile": "2026-10-29T11:20:22+00:00",
+  "last_reconcile": "2026-10-29T11:34:13+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {
@@ -91,7 +91,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-29T14:19:15+00:00",
+  "placement_pass": "2026-10-29T14:35:16+00:00",
   "netting_booked": {},
   "generic": {
     "audcad_discovered_asia_p_7c996ac8456c8919": {
@@ -516,7 +516,7 @@
     "242662542": 33.460000000000036
   },
   "restart_reconcile": {
-    "at": "2026-10-29T11:19:17+00:00",
+    "at": "2026-10-29T11:35:17+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
