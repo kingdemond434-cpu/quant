@@ -187,7 +187,12 @@ def _runs(repo: str, status: str, pages: int = 5) -> list[dict[str, Any]]:
 
 def collect(repo: str, base: str = LIVE) -> dict[str, Any]:
     now = datetime.now(UTC)
-    prs = _gh(f"repos/{repo}/pulls?state=open&base={base}&per_page=100")
+    prs: list[dict[str, Any]] = []
+    for page in range(1, 11):  # 231 PRs were open on 2026-10-29: one page of 100 is not all
+        batch = _gh(f"repos/{repo}/pulls?state=open&base={base}&per_page=100&page={page}")
+        prs += batch
+        if len(batch) < 100:
+            break
     checks: dict[str, list[Mapping[str, Any]]] = {}
     clears: dict[int, str | None] = {}
     for p in prs:
