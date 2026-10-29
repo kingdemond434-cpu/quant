@@ -4,6 +4,7 @@ from __future__ import annotations
 import copy
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -553,3 +554,232 @@ def test_an_adopt_run_past_fifteen_minutes_with_no_seal_or_refusal_is_red() -> N
     h = bs.health(None, measured=False, runnable=False, judge_share=None, min_share=0.15,
                   adopt_why=why)
     assert h["verdict"] == "RED"
+
+
+# ------------------------------------------------------------ second audit (#477), 2026-10-29
+class _FakePsutil:
+    """Just enough of psutil for run_once with an injected measurement."""
+    def __init__(self) -> None:
+        self.alive: set[int] = set()
+
+    def cpu_count(self) -> int:
+        return N
+
+    def pid_exists(self, pid: int) -> bool:
+        return pid in self.alive
+
+    def virtual_memory(self) -> Any:
+        class _VM:
+            total = 64 * 1048576 * 1024
+            available = 32 * 1048576 * 1024
+        return _VM()
+
+
+def _drive(monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+           box: list[Proc]) -> tuple[_FakePsutil, list[Any], Any]:
+    """run_once against `box`; landed affinity actions are written back onto it."""
+    fake = _FakePsutil()
+    fake.alive = {p.pid for p in box}
+    feed: list[Any] = []
+    monkeypatch.setattr(bs, "psutil", fake)
+    monkeypatch.setattr(bs, "measure", lambda _w: feed.pop(0))
+
+    def _apply(actions: list[bs.Action], n_cpu: int) -> None:
+        for a in actions:
+            a.applied = True
+            for p in box:
+                if p.pid == a.pid and a.kind == "affinity":
+                    p.affinity = bs.mask_to_cpus(str(a.after), n_cpu)
+                elif p.pid == a.pid:
+                    p.priority = str(a.after)
+    monkeypatch.setattr(bs, "apply", _apply)
+    rules_path = tmp_path / "CPU_SHAPE.json"
+    rules_path.write_text(json.dumps(RULES))
+
+    def run() -> dict[str, Any]:
+        return bs.run_once(rules_path=rules_path, report_path=tmp_path / "B.json",
+                           phase_path=tmp_path / "absent.json",
+                           adopt_heartbeat_path=tmp_path / "absent2.json")
+    return fake, feed, run
+
+
+def test_an_unmeasured_pass_never_strands_a_pin(monkeypatch: pytest.MonkeyPatch,
+                                                 tmp_path: Path) -> None:
+    """MF1 + SF1 repro: 3 starved passes, 1 empty, then calm. Before: the miner stayed on
+    0x3000f and a non-python 'other' ended on 0x300ff. Now both go back where they were."""
+    full = list(range(N))
+    judge = Proc(20, "python.exe", cmdline="python.exe run_sharded_gauntlet.py", create_time=1,
+                 cpu_pct=50, priority="BelowNormal", affinity=full)
+    miner = Proc(31, "python.exe", cmdline="python.exe moat_miner.py", create_time=100,
+                 cpu_pct=900, priority="BelowNormal", affinity=full)
+    other = Proc(40, "render.exe", cmdline="render.exe --big", create_time=300,
+                 cpu_pct=800, priority="Normal", affinity=full)
+    box = [judge, miner, other]
+    _fake, feed, run = _drive(monkeypatch, tmp_path, box)
+
+    def snap() -> list[Proc]:
+        return copy.deepcopy(box)
+    for _ in range(3):
+        feed.append((snap(), 100.0))
+        out = run()
+        assert out["judge"]["starved"] is True
+    assert bs.cpus_to_mask(miner.affinity) == "0x3000f"
+    assert bs.cpus_to_mask(other.affinity) == "0x3000f"            # pinned by share_cap
+    feed.append(([], None))                                         # the empty pass
+    out = run()
+    assert out["verdict"] == "UNMEASURED"
+    assert out["share_cap_moved"] and out["judge_reserve"]["moved"]  # carried, not dropped
+    miner.cpu_pct, other.cpu_pct = 300, 300
+    feed.append((snap(), 40.0))
+    out = run()
+    assert out["judge"]["starved"] is False
+    assert bs.cpus_to_mask(miner.affinity) == "0x300ff"            # back to the side mask
+    assert bs.cpus_to_mask(other.affinity) == "0x3ffff"            # its original 18 cores
+    assert out["share_cap_moved"] == {} and out["judge_reserve"]["moved"]
+
+
+def test_rules_refused_carries_the_records_forward(tmp_path: Path) -> None:
+    """MF1: a RULES_REFUSED pass rewrites the report without forgetting the pins."""
+    report = tmp_path / "B.json"
+    report.write_text(json.dumps({"generated_at": "t0",
+                                  "share_cap_moved": {"40:300": {"mask": "0x3000f",
+                                                                 "orig": list(range(N))}},
+                                  "judge_reserve": {"moved": {"31:100": "0x3000f"},
+                                                    "switches": [{"mode": "boost"}]}}))
+    bad = tmp_path / "CPU_SHAPE.json"
+    bad.write_text(json.dumps({"rules": [{"name": "x", "match": "y", "priority": "High"}]}))
+    out = bs.run_once(rules_path=bad, report_path=report)
+    assert out["verdict"] == "RULES_REFUSED"
+    doc = json.loads(report.read_text())
+    assert doc["share_cap_moved"] == {"40:300": {"mask": "0x3000f", "orig": list(range(N))}}
+    assert doc["judge_reserve"]["moved"] == {"31:100": "0x3000f"}
+    assert doc["judge_reserve"]["switches"] == [{"mode": "boost"}]
+
+
+def test_a_released_non_python_process_gets_its_original_cores_back() -> None:
+    """SF1: release targets the pre-pin mask for a process the reservation does not apply to."""
+    side = bs.mask_to_cpus("0x300FF", N)
+    p = Proc(40, "render.exe", cmdline="render.exe", create_time=300, cpu_pct=100,
+             affinity=bs.mask_to_cpus("0x3000F", N), group="other")
+    rec = {p.key: {"mask": "0x3000f", "orig": list(range(N))}}
+    acts, keep = bs.release_share_cap([p], rec, judge_starved=False, side_now=side,
+                                      side_base=side, n_cpu=N, skip_pids=set(),
+                                      reserved=lambda q: bs.reserve_applies(q, RES))
+    assert [(a.pid, a.after) for a in acts] == [(40, "0x3ffff")] and keep == {}
+
+
+def _money_box(gateway_class: str | None) -> list[Proc]:
+    full = list(range(N))
+    procs = [
+        Proc(11, "terminal64.exe", exe=r"C:\MT5\terminal64.exe", create_time=1,
+             priority="Normal", affinity=full),
+        Proc(60, "python.exe", cmdline=r"python.exe C:\opt\quant\desks\mt5\run_gateway_loop.py",
+             create_time=2, priority=gateway_class, affinity=full),
+        Proc(500, "powershell.exe", cmdline="powershell.exe -File Adopt-And-Seal.ps1",
+             create_time=3, priority="Normal", affinity=full),
+    ]
+    bs.classify(procs, RULES["groups"])
+    return procs
+
+
+def test_the_adopt_tree_never_rises_above_the_money_path() -> None:
+    """MF2: with the gateway python at default Normal, adopt must not go above it."""
+    procs = _money_box("Normal")
+    out = bs.plan(procs, RULES, N, judge_starved=False)
+    got = {a.pid: a.after for a in out.actions if a.kind == "priority"}
+    # the committed rules raise the whole money group first: gateway at AboveNormal, adopt ties
+    assert got[60] == "AboveNormal" and got[11] == "AboveNormal" and got[500] == "AboveNormal"
+    # with only the terminals raised (the old rules), adopt is held at the gateway's class
+    old = {**RULES, "rules": [r for r in RULES["rules"] if r["name"] != "money_path_raise"]
+           + [{"name": "mt5_terminals_raise", "match": "terminal64.exe",
+               "priority": "AboveNormal"}]}
+    out = bs.plan(_money_box("Normal"), old, N, judge_starved=False)
+    assert 500 not in {a.pid for a in out.actions if a.kind == "priority"}
+    assert any(r["pid"] == 500 and "lowest money-path class is Normal" in r["why"]
+               for r in out.refused)
+    out = bs.plan(_money_box("BelowNormal"), old, N, judge_starved=False)
+    assert any(r["pid"] == 500 for r in out.refused)
+    # a money class we cannot read: adopt is refused, never assumed under it
+    out = bs.plan(_money_box(None), old, N, judge_starved=False)
+    assert any(r["pid"] == 500 and "unreadable" in r["why"] for r in out.refused)
+    assert 500 not in {a.pid for a in out.actions if a.kind == "priority"}
+
+
+def test_adopt_raises_land_only_after_every_money_raise(monkeypatch: pytest.MonkeyPatch) -> None:
+    """MF2: money raises are applied first; a failed one holds the adopt raise back."""
+    out = bs.plan(_money_box("Normal"), RULES, N, judge_starved=False)
+    order: list[int] = []
+
+    def _apply(actions: list[bs.Action], _n: int) -> None:
+        for a in actions:
+            order.append(a.pid)
+            if a.pid == 60:
+                a.error = "AccessDenied"
+            else:
+                a.applied = True
+    monkeypatch.setattr(bs, "apply", _apply)
+    bs.apply_ordered(out.actions, N)
+    adopt = [a for a in out.actions if a.pid == 500 and a.kind == "priority"]
+    assert adopt and not adopt[0].applied and "money raise on pid 60" in str(adopt[0].error)
+    assert 500 not in order
+
+
+def test_every_throttle_carries_a_two_sided_missed_growth_line() -> None:
+    """SF2: share_cap, the memecoin cap and the allocator cap each bill cost AND gain."""
+    names = bs.throttle_mechanisms(RULES)
+    assert {"memecoin_cap", "pf_allocator_heavy", "share_cap", "judge_reserve"} <= set(names)
+    assert "money_path_raise" not in names and "adopt_release_raise" not in names
+    p = Proc(40, "render.exe", create_time=300, cpu_pct=800, group="other")
+    a = bs.Action(40, "render.exe", "other", "share_cap", "affinity", "0x3ffff", "0x3000f",
+                  applied=True)
+    led = bs.missed_growth_ledger(None, rules=RULES, procs=[p], actions=[a], n_cpu=N, at="t1",
+                                  judge_share=0.10)
+    assert all(led[n]["two_sided"] and led[n]["cost"] and led[n]["gain"] for n in names)
+    assert led["share_cap"]["open"][0]["share_before"] == round(800 / 1800, 4)
+    p.cpu_pct = 500
+    led = bs.missed_growth_ledger(led, rules=RULES, procs=[p], actions=[], n_cpu=N, at="t2",
+                                  judge_share=0.30)
+    ev = led["share_cap"]["closed"][0]
+    assert ev["forgone_share"] == pytest.approx(300 / 1800, abs=2e-4)
+    assert ev["judge_gain_share"] == pytest.approx(0.2)
+    assert ev["net_share"] == round(0.2 - ev["forgone_share"], 4)
+    assert led["share_cap"]["open"] == [] and led["share_cap"]["totals"]["n"] == 1
+    # a widening (release) is not a throttle and opens nothing
+    w = bs.Action(40, "render.exe", "other", "share_cap", "affinity", "0x3000f", "0x3ffff",
+                  applied=True)
+    led = bs.missed_growth_ledger(None, rules=RULES, procs=[p], actions=[w], n_cpu=N, at="t3",
+                                  judge_share=0.3)
+    assert led["share_cap"]["open"] == []
+
+
+#: A throttle on ANOTHER process: its cores narrowed or its class set. Re-nicing oneself
+#: (`me.nice`, `os.nice`) is not one.
+_THROTTLE_CALL = re.compile(r"(\w+)\.(nice|cpu_affinity)\(\s*([^)\s])")
+
+
+def _throttles_without_ledger(root: Path) -> list[str]:
+    bad = []
+    for path in sorted((root / "libs" / "ops").glob("*.py")):
+        s = path.read_text("utf-8")
+        calls = [m for m in _THROTTLE_CALL.finditer(s) if m.group(1) not in ("me", "os", "self")]
+        if calls and ('THROTTLE_LEDGER = "missed_growth"' not in s
+                      or "def missed_growth_ledger(" not in s):
+            bad.append(path.name)
+    return bad
+
+
+def test_every_libs_ops_throttle_is_two_sided(tmp_path: Path) -> None:
+    """SF2 / growth governance G5 in spirit: any libs/ops module that throttles another process
+    carries the two-sided missed_growth ledger, and the shaper's covers every CPU_SHAPE throttle.
+    (scripts/check_growth_governance.py is a signed immutable evaluator: wiring this scan into it
+    needs a human re-sign, so the fence lives here until then.)"""
+    assert _throttles_without_ledger(REPO) == []
+    led = bs.missed_growth_ledger(None, rules=RULES, procs=[], actions=[], n_cpu=N, at="",
+                                  judge_share=None)
+    for name in bs.throttle_mechanisms(RULES):
+        assert led[name]["two_sided"] and led[name]["cost"] and led[name]["gain"], name
+    fake = tmp_path / "libs" / "ops"
+    fake.mkdir(parents=True)
+    (fake / "squeezer.py").write_text("def go(pr):\n    pr.cpu_affinity([0])\n")
+    (fake / "self_nice.py").write_text("def go(me):\n    me.nice(10)\n")
+    assert _throttles_without_ledger(tmp_path) == ["squeezer.py"]
