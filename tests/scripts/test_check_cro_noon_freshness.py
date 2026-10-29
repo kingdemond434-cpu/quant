@@ -19,7 +19,8 @@ def _ledger(tmp_path: Path, rows: list[dict | str]) -> Path:
 
 
 def test_a_fresh_noon_row_is_green(tmp_path: Path) -> None:
-    p = _ledger(tmp_path, [{"lane": "noon", "event": "end", "at": "2026-10-29T11:30:00+00:00"},
+    p = _ledger(tmp_path, [{"lane": "noon", "event": "end", "rc": 0,
+                            "at": "2026-10-29T11:30:00+00:00"},
                            {"lane": "midnight", "at": "2026-10-29T23:00:00+00:00"}])
     out = tmp_path / "out.json"
     assert chk.main(["--ledger", str(p), "--out", str(out),
