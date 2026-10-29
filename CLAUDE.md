@@ -300,13 +300,19 @@ at every law-gate boundary and `scripts/check_heat_floor_wiring.py` on the box. 
 Timid is not risk-aware. Never read restraint language (minimise, only, never, bounded) as a
 licence to do less; never add a veto, cap, shrinkage or gate without its missed-growth ledger
 line (`libs/portfolio/rails.py`, `research/missed_growth.py`); every capital modifier must be
-two-sided (`libs/portfolio/capital_modifiers.py`). The heat law: **20% floor, flat, 24/7;
-growth free above it to the 30% ceiling; the resolved heat is filled, never reported short; the
+two-sided (`libs/portfolio/capital_modifiers.py`). The heat law (principal 2026-10-29,
+D-20261029-012; ALLOC-11 of 2026-10-06): **heat is whatever the measured growth optimum says,
+inside the measured survival bars -- no fixed floor and no fixed cap. The 20% target holds the
+book up whenever the measured growth curve certifies it free; below it, down to cash, only when
+the curve says 20% gives up growth; above it there is no 30% (or any fixed) ceiling; when the
+curve is unmeasured the fallback is 20%. The resolved heat is filled, never reported short; the
 gateway deploys the allocator's fractions un-re-shrunk and falls back to the best baseline at
-the floor when the proof is stale.** Research is anti-timid (weak public claims are hypotheses,
+the target when the proof is stale. Survival and firm rails (E8/FTMO loss limits, the deadman,
+the survival ceiling, the catastrophe guard) still bind: a rail is not a cap.** The flat
+20%-24/7 floor and the fixed 30% ceiling are retired. Research is anti-timid (weak public claims are hypotheses,
 never privileged); capital is evidence-hard (nothing gets authority for sounding institutional).
 - **NEVER REDUCE AGGRESSIVENESS (2026-09-08, principal's standing order, given three times).**
-  No session lowers risk by fiat: the 20% heat floor, the daily-loss and size parameters and
+  No session lowers risk by fiat: the heat law above, the daily-loss and size parameters and
   the allocator's fractions stay as they are. Dynamic sizing the allocator DERIVES from
   evidence is fine; a cap, shrink, veto or "conditional exception" added because a reviewer
   called the book aggressive is not (Rule 1: prove robust forward E[log W] rises, or leave it).

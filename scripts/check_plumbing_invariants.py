@@ -118,9 +118,12 @@ INVARIANTS: tuple[dict[str, Any], ...] = (
     {
         "id": "PI-5",
         "invariant": "heat-floor-never-breached",
-        "law": "GROWTH_GOVERNANCE + LAWS 2a: 20% floor, flat, 24/7; the resolved heat is FILLED, "
-               "never reported short; growth is free above it to the 30% ceiling. The one "
-               "declared exception is the objective's own catastrophe constraint (L1.23, sealed).",
+        "law": "GROWTH_GOVERNANCE + LAWS 2a, two-sided since 2026-10-29 (D-20261029-012): the 20% "
+               "target is never breached while the measured growth curve certifies it free; below "
+               "it, toward cash, only when the curve says it costs growth; the resolved heat is "
+               "never negative and is FILLED, never reported short; growth is free above it to "
+               "the measured ceilings. The one declared exception is the objective's own "
+               "catastrophe constraint (L1.23, sealed).",
         "subject": "desks/mt5/research/heat_policy.py:520 resolve",
         "level": "PROPERTY",
         "why_level": "free optima from -0.5 to 1.5 and randomised growth curves (including "

@@ -70,8 +70,19 @@ Source reputation is a prior, never proof.
 
 ## The heat law, as wired
 
-* The utilisation floor is **20% (HEAT_TARGET), flat, 24/7**, and it is a STANDING MANDATE. It
-  does not ramp with readiness; readiness is measured and reported, never gating.
+* **The 20% target (HEAT_TARGET) is TWO-SIDED** (principal 2026-10-29 18:24Z: *"use 10 6 one
+  abandone the 20 flat floor 24 7 mandatory one simple"* -- ALLOC-11 of 2026-10-06,
+  D-20261007-001, `heat_policy.py:83-104`; journal D-20261029-012). It holds the book up whenever
+  the measured growth curve certifies 20% free (or the curve is unmeasured); exposure may fall
+  below it, down to cash, only when the curve says 20% gives up growth. The flat 20%-24/7 floor of
+  2026-09-04 is retired. It does not ramp with readiness; readiness is measured and reported,
+  never gating.
+* **No fixed cap on deployed heat** (principal 2026-10-29 18:31Z: *"there is no cap on how much
+  percent is deployed either is growth optimum says 40 as example we use 40 if it says 5 or 10 it
+  uses5 or 10"*): heat is the measured growth optimum inside the measured survival bars. The
+  sealed `HEAT_HARD_CEILING = 0.30` (`gateway_config_fallback.py:105`) is removed as a cap
+  (principal 19:02Z/19:03Z, "make sure 30 cap max is removed ... fallback 20%"): an unmeasured
+  growth curve falls back to the 20% target, never to a fixed ceiling.
 * **The fixed 30% ceiling was REMOVED on 2026-09-05 by principal order** — *"if growth optimum
   permits 32 35 40 45 wtv in future w new edges etc it can use those w 20 as minimum floor"*. The
   bound above the floor is no longer a constant. It is **measured from the growth curve every
@@ -143,7 +154,7 @@ got less.
 | cost stress | 2x cost used live | live allocation charges measured cost only (`cost_stress` rail) |
 | all gates must pass | one weak gate blocks | gate value measured in the funnel; graveyard model |
 | fixed fractional Kelly | tiny fraction despite evidence | posterior sizing on worlds; Kelly surface reported |
-| cash preference | thresholds too hard | `floor_mandate` rail: 20% is deployed 24/7 |
+| cash preference | thresholds too hard | the 20% target holds whenever the curve certifies it free (two-sided since 2026-10-29) |
 
 ### Accidental timidity found and removed (2026-09-04)
 
