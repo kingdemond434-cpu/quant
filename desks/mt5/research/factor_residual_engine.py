@@ -202,6 +202,13 @@ def book_daily() -> tuple[pd.Series | None, str]:
                     v = float(val)
                 except (TypeError, ValueError):
                     continue
+                # A MISSING TIME IS NaT, NOT AN EXCEPTION (2026-10-29). `pd.Timestamp(None)`,
+                # `("")` and `("NaT")` all RETURN NaT, which has no `.normalize()`: one open
+                # ledger row with no entry_time raised AttributeError out of the whole step on
+                # the box ("'NaTType' object has no attribute 'normalize'"). A row with no time
+                # cannot be placed on a day, so it is skipped like any other unreadable row.
+                if pd.isna(ts) or not np.isfinite(v):
+                    continue
                 ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
                 rows.setdefault(ts.normalize(), []).append(v)
     if len(rows) >= 40:

@@ -200,3 +200,19 @@ def test_factor_basket_can_use_complete_broker_native_fallback(monkeypatch) -> N
         "XAUUSD", "cross_asset_residual", {"factor_symbols": ["USDX", "UST10Y"]}, frame)
     assert why == "ok"
     assert got is not None and len(got["factors"]) == 2
+
+
+def test_a_ledger_row_with_no_time_is_skipped_not_fatal(tmp_path, monkeypatch) -> None:
+    """MT5-Daily 2026-10-28: factor_residual FAILED with "'NaTType' object has no attribute
+    'normalize'". `pd.Timestamp(None/""/"NaT")` returns NaT rather than raising, so one open
+    ledger row with no entry_time took down the whole step."""
+    _isolate(tmp_path, monkeypatch)
+    (tmp_path / "shadow").mkdir()
+    rows = [{"entry_time": str(d.date()), "r_multiple": 0.1}
+            for d in pd.date_range("2024-01-01", periods=60, freq="D")]
+    rows += [{"entry_time": None, "r_multiple": 1.0}, {"entry_time": "", "r": 1.0},
+             {"time": "NaT", "r": 2.0}, {"entry_time": "2024-01-02", "r": float("nan")}]
+    (tmp_path / "shadow" / "ledger_x.json").write_text(json.dumps(rows), "utf-8")
+    s, why = eng.book_daily()
+    assert s is not None and len(s) == 60 and not s.index.isna().any()
+    assert float(s.max()) == pytest.approx(0.1)

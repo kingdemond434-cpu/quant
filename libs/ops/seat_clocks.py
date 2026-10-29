@@ -223,11 +223,60 @@ def _daily_proposers(desk: Path) -> list[str]:
     return []
 
 
+def _daily_steps(desk: Path) -> list[str]:
+    """`daily_cycle.STEPS` names, from the file's text (the chain is never imported here)."""
+    import ast
+    try:
+        tree = ast.parse((desk / "research" / "daily_cycle.py").read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, ValueError):
+        return []
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "STEPS"
+                                                for t in node.targets) \
+                and isinstance(node.value, ast.Tuple):
+            return [e.elts[0].value for e in node.value.elts
+                    if isinstance(e, ast.Tuple) and e.elts and isinstance(e.elts[0], ast.Constant)]
+    return []
+
+
+def red_daily_steps(now: float | None = None, desk: Path = DESK,
+                    names: list[str] | None = None) -> list[dict[str, Any]]:
+    """Daily-chain steps with no COMPLETED run in RED_CADENCES days (2026-10-29: MT5-Daily's log
+    read "36 step(s) of 37 never did" day after day, and nothing named which)."""
+    now = time.time() if now is None else now
+    if names is None:
+        names = _daily_steps(desk)
+    hist = _read(desk / "data" / "daily_step_history.json")
+    threshold_h = RED_CADENCES * PROPOSER_CADENCE_H
+    out: list[dict[str, Any]] = []
+    for n in names:
+        h = hist.get(n) or {}
+        last = _iso_ts(h.get("last_ok_at"))
+        age_h = None if last is None else (now - last) / 3600.0
+        if age_h is not None and age_h <= threshold_h:
+            continue
+        out.append({
+            "seat": n, "unit": "daily_cycle:step", "kind": "daily_step",
+            "clocks": [f"MT5-Daily / hourly_cycle:daily every {PROPOSER_CADENCE_H:g}h"],
+            "last_output_at": _iso(last), "age_h": None if age_h is None else round(age_h, 1),
+            "threshold_h": threshold_h, "last_at": h.get("last_at"),
+            "last_error": h.get("last_error"),
+            "why": (f"no completed run for {'ever' if age_h is None else f'{age_h:.1f}h'}, past "
+                    f"{RED_CADENCES} daily cadences"
+                    + (f"; last error: {str(h['last_error'])[:120]}" if h.get("last_error")
+                       else "" if h else "; never recorded as run")),
+        })
+    return out
+
+
 def report(now: float | None = None, desk: Path = DESK) -> dict[str, Any]:
     seats = red_seats(now, desk)
     props = red_proposers(now, desk)
-    return {"status": "RED" if (seats or props) else "OK",
+    steps = red_daily_steps(now, desk)
+    red = seats + props + steps
+    return {"status": "RED" if red else "OK",
             "rule": (f"RED = no output for more than {RED_CADENCES} cadences of the slowest "
                      f"clock that runs it (VPS-only seats: VPS timer 1h + box clock "
-                     f"{BOX_CADENCE_H:g}h; daily proposers: {PROPOSER_CADENCE_H:g}h)"),
-            "n_red": len(seats) + len(props), "red": seats + props}
+                     f"{BOX_CADENCE_H:g}h; daily proposers and daily-chain steps: "
+                     f"{PROPOSER_CADENCE_H:g}h)"),
+            "n_red": len(red), "red": red}

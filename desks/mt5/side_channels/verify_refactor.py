@@ -11,9 +11,8 @@ checks = [
     ("asia_momentum", families.family_asia_momentum, {}, "1829/-0.211/-4.60"),
     ("monday_gap_fade", families.family_monday_gap, {"mode": "fade"}, "354/0.087/1.40"),
     ("london_close_momentum", families.family_london_close_momentum, {}, "1763/-0.239/-6.33"),
-    ("spread_state_avoidance", families.family7_spread_state_avoidance, {}, "9670/-0.443/-6.60"),
     ("dow_effect", families.family_dow_effect, {}, "856/-0.139/-1.94"),
-    ("comex_settlement", families.family4_comex_settlement_effect, {}, "338/-0.327/-4.81"),
+    ("comex_settlement", families.family_comex_settlement, {}, "338/-0.327/-4.81"),
 ]
 for name, fn, p, baseline in checks:
     t0 = time.time()

@@ -356,7 +356,7 @@ def test_bar_refresh_cannot_tear_down_the_daily_cycle() -> None:
     """`SystemExit` is a BaseException. A bare `sys.exit(1)` in a daily-cycle step would tear
     down the ENTIRE cycle -- promotion chain included -- because a terminal happened to be shut."""
     src = (_DESK / "scripts" / "refresh_tail.py").read_text(encoding="utf-8")
-    body = src.split("def main()", 1)[1].split('if __name__', 1)[0]
+    body = src.split("def main(", 1)[1].split('if __name__', 1)[0]
     assert "sys.exit(" not in body, "refresh_tail.main still exits instead of returning"
     assert "return 2" in body and "return 0" in body
 

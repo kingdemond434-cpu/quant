@@ -53,6 +53,17 @@ TIMEFRAMES: dict[str, int] = {
 #: rather than writing a file with a hole in it.
 MAX_FETCH = 50_000
 
+#: THE RESUME CURSOR (2026-10-29). One run of this file over the whole lake took 6h34m inside
+#: MT5-Daily (box, 2026-10-28), so the 10-hour task limit killed the chain four steps later and
+#: the 31 steps after it -- shadow, promoter, markout, ... -- never ran. The hourly
+#: `refresh_bars` leg is killed at its budget the same way, always inside the same alphabetical
+#: prefix. So each run is now BOUNDED (`--budget-s`) and resumes where the last one stopped: a
+#: series' last-refreshed time is kept here, and the stalest series go first after the
+#: forward-blocked ones. Outside data/universe on purpose: that directory is the bar lake.
+STATE = desk_root() / "data" / "refresh_tail_state.json"
+#: Default wall budget of one run when the caller names none: under the hourly leg's 720 s kill.
+DEFAULT_BUDGET_S = 600.0
+
 #: Series this desk BUILDS from a finer one it already holds, rather than fetching: `{derived:
 #: source}`. Only D1 so far, and it exists because of a hole with a price on it.
 #:
@@ -121,10 +132,32 @@ def _forward_priority() -> set[str]:
     return priority
 
 
-def refresh_order(paths: list[Path]) -> list[Path]:
-    """Repair evidence-blocked symbols first, then retain deterministic full-lake coverage."""
+def _read_state() -> dict:
+    try:
+        doc = json.loads(STATE.read_text("utf-8"))
+        return doc if isinstance(doc, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _write_state(doc: dict) -> None:
+    try:
+        STATE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = STATE.with_name(f".{STATE.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(doc, indent=0), encoding="utf-8")
+        os.replace(tmp, STATE)
+    except OSError as exc:
+        print(f"refresh cursor not saved: {type(exc).__name__}: {exc}", flush=True)
+
+
+def refresh_order(paths: list[Path], state: dict | None = None) -> list[Path]:
+    """Repair evidence-blocked symbols first, then the STALEST series (never-refreshed first),
+    then by name -- so a bounded run always advances through the lake instead of re-reading the
+    same prefix (see STATE)."""
     priority = _forward_priority()
-    return sorted(paths, key=lambda p: (p.stem.rpartition("_")[0] not in priority, p.name))
+    seen = (state or {}).get("last_refreshed") or {}
+    return sorted(paths, key=lambda p: (p.stem.rpartition("_")[0] not in priority,
+                                        float(seen.get(p.stem) or 0.0), p.name))
 
 
 def _mt5_timeframe(tf: str) -> int | None:
@@ -183,6 +216,15 @@ def derive_series(sym: str, tf: str = "D1") -> str:
     if not src.exists():
         # ABSENCE IS NEVER A PASS: a symbol with no source is REPORTED, not counted as derived.
         return f"no-{src_tf}-source"
+    dst = OUT / f"{sym}_{tf}.parquet"
+    try:
+        if dst.exists() and dst.stat().st_mtime >= src.stat().st_mtime:
+            # The source has not changed since this file was built from it (2026-10-29).
+            have = pd.read_parquet(dst, columns=[]).index
+            if len(have):
+                return f"{len(have)} bars (last {have.max().date()}; source unchanged)"
+    except Exception:
+        pass
     try:
         bars = pd.read_parquet(src)
     except Exception as e:
@@ -281,6 +323,20 @@ def refresh_symbol(sym: str, tf: str = "H1") -> str:
         # ABSENCE IS NEVER A PASS. An unknown timeframe is reported, never silently skipped as if
         # it had been refreshed -- a skip that reads as success is how this failure lasted weeks.
         return f"unknown-timeframe({tf})"
+    # NOTHING NEW CAN HAVE CLOSED: skip before reading the file (2026-10-29). The next bar after
+    # the cached tail closes one bar-length after it STARTS, so until two bar-lengths have passed
+    # there is nothing to fetch. Only the index is read for this test -- the whole file was being
+    # read, re-fetched and re-written for every series on every run.
+    try:
+        tail_idx = pd.read_parquet(pq, columns=[]).index
+    except Exception:
+        tail_idx = None
+    if isinstance(tail_idx, pd.DatetimeIndex) and len(tail_idx):
+        last_cached = tail_idx.max()
+        if last_cached.tz is None:
+            last_cached = last_cached.tz_localize("UTC")
+        if (pd.Timestamp.now(tz="UTC") - last_cached).total_seconds() < 2 * seconds:
+            return f"fresh (last {last_cached})"
     old = pd.read_parquet(pq)
     # SELECT BEFORE YOU READ. A symbol absent from Market Watch is not subscribed, so
     # `copy_rates_from_pos` serves whatever history happens to be cached and reports no error --
@@ -340,6 +396,10 @@ def refresh_symbol(sym: str, tf: str = "H1") -> str:
     combined = pd.concat([old, new])
     combined = combined[~combined.index.duplicated(keep="last")].sort_index()
     added = len(combined) - len(old)
+    if added <= 0 and not hole:
+        # NOTHING TO WRITE (market shut, or the terminal served only bars we hold): the file is
+        # left as it is rather than rewritten byte-for-byte.
+        return f"+0 bars (last {combined.index.max()}; unchanged, not rewritten)"
     _atomic_parquet(combined, pq)
     return f"+{added} bars (last {combined.index.max()}){hole}"
 
@@ -355,8 +415,12 @@ def _report_derivation(doc: dict) -> None:
             print(f"   {name:20s} {why}")
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     """0 = refreshed, 2 = no terminal on this box (an honest answer, not a failure).
+
+    `--budget-s N` bounds the run (default DEFAULT_BUDGET_S, or REFRESH_TAIL_BUDGET_S): no
+    series STARTS after it, and the next run resumes with the stalest (see STATE). An in-process
+    caller passes its own argv (`daily_cycle._refresh_bars`), never the cycle's.
 
     RETURNS, NEVER `sys.exit`. This is called as a daily-cycle step, and `SystemExit` is a
     BaseException: a bare exit here would tear down the entire cycle -- promotion chain included
@@ -390,7 +454,16 @@ def main() -> int:
     priority = _forward_priority()
     if priority:
         print(f"Repair-first refresh: {len(priority)} forward-blocked symbol(s)")
-    for pq in refresh_order(list(OUT.glob("*.parquet"))):
+    budget_s = _budget_from(sys.argv[1:] if argv is None else argv)
+    t0 = time.monotonic()
+    state = _read_state()
+    seen = state.setdefault("last_refreshed", {})
+    ordered = refresh_order(list(OUT.glob("*.parquet")), state)
+    deferred = 0
+    for pq in ordered:
+        if time.monotonic() - t0 >= budget_s:
+            deferred += 1
+            continue
         sym, _, tf = pq.stem.rpartition("_")
         if not sym:
             results.append(f"{pq.stem:16s} unparseable-name")
@@ -402,6 +475,9 @@ def main() -> int:
             status = f"error:{e}"
         results.append(f"{sym}_{tf:<16s} {status}")
         print(results[-1], flush=True)
+        if not str(status).startswith(("error:", "fetch-fail")):
+            seen[pq.stem] = time.time()
+            _write_state(state)
         # Record server for this symbol (once; the broker is a property of the symbol, not of
         # the timeframe we happen to be holding for it).
         if sym not in broker_info and mt5.symbol_info(sym):
@@ -414,6 +490,12 @@ def main() -> int:
     holes = [r for r in results if "GAP" in r]
     print(f"\n{ok}/{len(results)} (symbol, timeframe) series refreshed "
           f"across {len(broker_info)} symbol(s)")
+    if deferred:
+        print(f"BUDGET {budget_s:.0f}s reached: {deferred} series left for the next run, which "
+              f"starts with the stalest", flush=True)
+    state.update({"last_run_at": time.time(), "last_run_deferred": deferred,
+                  "last_run_seen": len(results)})
+    _write_state(state)
     if holes:
         # Loud, and listed. A gap that only appears as a suffix on one line of a 300-line log is
         # a gap nobody reads.
@@ -437,6 +519,17 @@ def main() -> int:
 
     mt5.shutdown()
     return 0
+
+
+def _budget_from(argv: list[str]) -> float:
+    budget = float(os.environ.get("REFRESH_TAIL_BUDGET_S", "") or DEFAULT_BUDGET_S)
+    if "--budget-s" in argv:
+        i = argv.index("--budget-s")
+        try:
+            budget = float(argv[i + 1])
+        except (IndexError, ValueError):
+            pass
+    return max(30.0, budget)
 
 
 if __name__ == "__main__":

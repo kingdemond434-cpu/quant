@@ -257,10 +257,17 @@ def _refresh_bars() -> None:
     """
     import refresh_tail
 
-    rc = refresh_tail.main()
+    # BOUNDED, RESUMING (2026-10-29): one unbounded pass over the lake took 6h34m of MT5-Daily's
+    # 10 h. The hourly `refresh_bars` leg runs the same refresher every hour, and both now resume
+    # from refresh_tail's cursor (stalest series first, forward-blocked symbols before all).
+    rc = refresh_tail.main(["--budget-s", f"{REFRESH_BARS_BUDGET_S:.0f}"])
     # rc=2 is "no terminal on this box", the honest answer everywhere but the desk box.
     if rc not in (0, 2):
         raise RuntimeError(f"refresh_tail returned {rc}")
+
+
+#: The daily step's share of the bar refresh; the hourly leg refreshes every hour as well.
+REFRESH_BARS_BUDGET_S = 1800.0
 
 
 def _deepen_bars() -> None:
@@ -606,7 +613,7 @@ def _proposers() -> None:
             budget = None
             dlog(f"{name}: budget unreadable ({type(exc).__name__}: {exc}); running unbudgeted")
         bound = proposer_bound(budget, st)
-        left = _time_left_s()
+        left = _research_left_s()
         if left is not None and bound > left:
             dlog(f"{name}: DEFERRED -- bound {bound:.0f}s does not fit the {left:.0f}s left "
                  f"before this pass's deadline ({_DEADLINE['basis']}); it leads the next pass")
@@ -1181,6 +1188,63 @@ def _time_left_s() -> float | None:
     if _DEADLINE.get("seconds") is None or _DEADLINE.get("t0") is None:
         return None
     return float(_DEADLINE["seconds"]) - (time.monotonic() - float(_DEADLINE["t0"]))
+
+
+#: THE STEPS THAT MOVE AN EDGE TOWARD CAPITAL, ON THEIR OWN BUDGET (2026-10-29). MT5-Daily's log
+#: read "36 step(s) of 37 never did" every day: research steps ahead of these (research_gap_map
+#: 2h20m, refresh_bars 6h34m) spent the 10-hour limit and the task was killed before `shadow`.
+#: The declared ORDER is unchanged; what changed is that a non-critical step only STARTS when,
+#: by its last measured wall, it leaves room for every critical step still owed this pass. One
+#: that does not fit is deferred (left unstamped) and the critical steps run now.
+CRITICAL_STEPS: frozenset[str] = frozenset({
+    "reconcile", "shadow", "qquant_shadow", "execution", "recertify", "promoter", "markout",
+    "portfolio", "control_room", "decay", "build_allocator", "probation"})
+#: Reserve for a critical step with no measured wall yet.
+CRITICAL_DEFAULT_S = 300.0
+#: Steps that bound THEMSELVES to what is left (or to a fixed budget): their expected wall is
+#: this, not their history -- `proposers` adapts to `_research_left_s()` per proposer.
+STEP_EXPECTED_CAP_S: dict[str, float] = {"proposers": 0.0, "refresh_bars": 1920.0,
+                                          "deepen_bars": 1620.0}
+#: Per-step memory across days: last outcome, last completed run, last wall. Read by the RED
+#: check (`libs/ops/seat_clocks.red_daily_steps`): a step with no completed run in two days.
+STEP_HISTORY_NAME = "daily_step_history.json"
+_RESERVE: dict = {"s": 0.0}
+
+
+def _research_left_s() -> float | None:
+    """Time left for a NON-critical step: the deadline minus the critical steps' reserve."""
+    left = _time_left_s()
+    return None if left is None else left - float(_RESERVE.get("s") or 0.0)
+
+
+def _expected_s(name: str, hist: dict) -> float:
+    measured = float((hist.get(name) or {}).get("last_seconds") or 0.0)
+    cap = STEP_EXPECTED_CAP_S.get(name)
+    return measured if cap is None else min(measured, cap)
+
+
+def critical_reserve_s(names: list[str], hist: dict) -> float:
+    """Seconds the critical steps among `names` are expected to need."""
+    return sum(_expected_s(n, hist) if n in hist else CRITICAL_DEFAULT_S
+               for n in names if n in CRITICAL_STEPS)
+
+
+def _record_step(hist: dict, name: str, out: dict) -> None:
+    now = datetime.now(UTC).isoformat(timespec="seconds")
+    h = hist.setdefault(name, {})
+    h.update({"last_at": now, "last_ok": bool(out.get("ok")),
+              "last_seconds": out.get("seconds")})
+    if out.get("ok"):
+        h["last_ok_at"] = now
+        h.pop("last_error", None)
+    else:
+        h["last_error"] = str(out.get("error") or "")[:300]
+    _write_json(_step_history_path(), hist)
+
+
+def _step_history_path() -> Path:
+    """Beside the day's stamp (data/), so whatever relocates the stamp relocates this too."""
+    return STAMP.with_name(STEP_HISTORY_NAME)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1900,6 +1964,8 @@ def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
     results: dict[str, dict] = {}
     if _DEADLINE.get("seconds") is not None:
         dlog(f"pass deadline {float(_DEADLINE['seconds']):.0f}s ({_DEADLINE['basis']})")
+    hist = _read_json(_step_history_path())
+    deferred: list[str] = []
     for i, (name, fn) in enumerate(todo):
         left = _time_left_s()
         if left is not None and left <= 0:
@@ -1910,6 +1976,16 @@ def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
             dlog(f"DEADLINE ({_DEADLINE['basis']}): {len(rest)} step(s) left for the next "
                  f"pass: {', '.join(rest)}")
             break
+        _RESERVE["s"] = 0.0
+        if left is not None and name not in CRITICAL_STEPS:
+            reserve = critical_reserve_s([n for n, _ in todo[i + 1:]], hist)
+            if left - _expected_s(name, hist) < reserve:
+                dlog(f"{name}: DEFERRED -- its last wall {_expected_s(name, hist):.0f}s would "
+                     f"leave under the {reserve:.0f}s the critical steps need of the "
+                     f"{left:.0f}s left; it runs on a later pass")
+                deferred.append(name)
+                continue
+            _RESERVE["s"] = reserve
         if lock is not None and not lock.held:
             # RUNNING UNLOCKED (v1.2 should-fix 1). Before every step: take the lock if it is
             # free; if a HEALTHY holder has it, wait for that holder rather than run the step it
@@ -1923,6 +1999,7 @@ def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
             if not lock.held:
                 lock.unlocked_steps.append(name)
         results[name] = run_step(name, fn)
+        _record_step(hist, name, results[name])
         _write_stamp(today, {**prior, **results}, lock)
 
     # THE STAMP RECORDS THE ATTEMPT, NOT A SUCCESS. Marking the day done only on a clean run would
@@ -1935,6 +2012,8 @@ def _run_chain(force: bool, lock: ChainLock | None = None) -> int:
     _write_stamp(today, {**prior, **results}, lock)
 
     failed = [n for n, r in results.items() if not r["ok"]]
+    if deferred:
+        dlog(f"deferred to a later pass (critical steps first): {', '.join(deferred)}")
     dlog(f"daily cycle {today} done" + (f" -- FAILED: {', '.join(failed)}" if failed else ""))
     return 1 if failed else 0
 
