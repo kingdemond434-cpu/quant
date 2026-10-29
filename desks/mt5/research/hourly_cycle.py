@@ -1273,6 +1273,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "moat_candidate_compiler", "algorithm_db",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
                      "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
+                     "fsi_skill_proposer",
                      "knowledge_graph", "moat_collectors", "actor_atlas", "scout_swarm",
                      "source_frontier", "data_scout", "external_federation",
                      "understanding_seat", "archaeology", "sares", "shadow_institutional",
@@ -4420,6 +4421,11 @@ def main() -> None:
     # / time to maturity; REPLACEABLE clocks reported with their missed-growth line, never acted.
     fsr = _costed("forward_slot_ranker", lambda: _producer("forward_slot_ranker",
                                                             "research/forward_slot_ranker.py"))
+    # CLAUDE'S FINANCE AND TRADING SKILLS (wave 3): two vendored institutional methods a pass,
+    # applied by a free model to the discovery-lane universe and written as LEADS -- run just
+    # ahead of the analyst pipeline so the same hour triages, screens and donates them.
+    fsi = _costed("fsi_skill_proposer", lambda: _producer("fsi_skill_proposer",
+                                                           "research/fsi_skill_proposer.py"))
     # THE ANALYST PIPELINE (W5): leads -> triage -> structuring -> pre-screen -> donation ->
     # follow-up, every rejection coded and counted, conversion per lead kind. Intel department.
     anp = _costed("analyst_pipeline", lambda: _producer("analyst_pipeline",
@@ -6119,7 +6125,8 @@ def main() -> None:
                     "research_os_archive": roa, "regime_router": rgr, "moat_series": mos,
                     "scout_roster": scr, "descendants": dsc, "forward_slot_ranker": fsr,
                     "htf_anchor": htf, "empty_cluster_forcer": ecf,
-                    "analyst_pipeline": anp, "knowledge_graph": kng, "card_explosion": mce,
+                    "analyst_pipeline": anp, "fsi_skill_proposer": fsi,
+                    "knowledge_graph": kng, "card_explosion": mce,
                     "alpha_lineage": mal, "graveyard_resurrection": mgr, "shadow_discovery": msd,
                     "forward_exploitation": mfe, "alpha_recombination": mar,
                     "unused_information": mui, "discovery_compiler": dcp,

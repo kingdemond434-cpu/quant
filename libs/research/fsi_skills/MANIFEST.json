@@ -1,0 +1,150 @@
+{
+ "source": "https://github.com/anthropics/financial-services",
+ "commit": "60565064557ca77b12f62aa7877f365d111c129d",
+ "license": "Apache-2.0 (LICENSE in this directory, copied from the upstream root)",
+ "vendored_utc": "2026-10-29",
+ "use": "METHOD TEXT ONLY: each file is handed to a free model as a research method; the model proposes hypotheses, the analyst pipeline and the sealed gauntlet judge them",
+ "skills": [
+  {
+   "skill": "fx-carry-trade",
+   "file": "fx-carry-trade.md",
+   "upstream_path": "plugins/partner-built/lseg/skills/fx-carry-trade/SKILL.md",
+   "sha256": "ef999638f8a04b3bdba126a151e6767c37861c4797bac56b7df3884ac785cc4b",
+   "classes": [
+    "forex"
+   ],
+   "desk_reading": "carry and carry-to-vol on FX pairs; implied vol is UNMEASURED here, so realised vol on H1 bars stands in"
+  },
+  {
+   "skill": "macro-rates-monitor",
+   "file": "macro-rates-monitor.md",
+   "upstream_path": "plugins/partner-built/lseg/skills/macro-rates-monitor/SKILL.md",
+   "sha256": "0f8df5324aa0698eb1aeb266ed6cec904745f332cce868ee068e1e1a806d70c2",
+   "classes": [
+    "forex",
+    "indices",
+    "bonds",
+    "metals"
+   ],
+   "desk_reading": "rate and curve regime shifts expressed through FX, index, bond and gold price paths"
+  },
+  {
+   "skill": "swap-curve-strategy",
+   "file": "swap-curve-strategy.md",
+   "upstream_path": "plugins/partner-built/lseg/skills/swap-curve-strategy/SKILL.md",
+   "sha256": "7aa595a57090de79db65afda23361e102f082594391b814b1f8f75e9c21c3cd5",
+   "classes": [
+    "bonds",
+    "forex"
+   ],
+   "desk_reading": "curve steepener/flattener views mapped to bond CFDs and the rate-sensitive currencies"
+  },
+  {
+   "skill": "bond-relative-value",
+   "file": "bond-relative-value.md",
+   "upstream_path": "plugins/partner-built/lseg/skills/bond-relative-value/SKILL.md",
+   "sha256": "0b92ffc123750217f3c0e9ec14a7689b708569dc8a6a7825ff9e1e8b60b56db1",
+   "classes": [
+    "bonds"
+   ],
+   "desk_reading": "relative value between bond CFDs on the desk's own bars"
+  },
+  {
+   "skill": "bond-futures-basis",
+   "file": "bond-futures-basis.md",
+   "upstream_path": "plugins/partner-built/lseg/skills/bond-futures-basis/SKILL.md",
+   "sha256": "685ac17d3cbf31078d59836e1685ce9211a1d3f514c3e310dff86d68a0a1027a",
+   "classes": [
+    "bonds"
+   ],
+   "desk_reading": "basis and roll mechanics as calendar effects on bond CFD bars"
+  },
+  {
+   "skill": "option-vol-analysis",
+   "file": "option-vol-analysis.md",
+   "upstream_path": "plugins/partner-built/lseg/skills/option-vol-analysis/SKILL.md",
+   "sha256": "d4d5a4259077c94ea72cdbe75275dbc3bfe8afabf5f698323d1a0056ace8d3d4",
+   "classes": [
+    "forex",
+    "indices",
+    "metals",
+    "energy"
+   ],
+   "desk_reading": "volatility regimes; option surfaces are UNMEASURED here, realised-vol families only"
+  },
+  {
+   "skill": "idea-generation",
+   "file": "idea-generation.md",
+   "upstream_path": "plugins/vertical-plugins/equity-research/skills/idea-generation/SKILL.md",
+   "sha256": "e5f49f0f513fc434bb3448c8a942f6f99f66457e425a65b9375bb230922e9a45",
+   "classes": [
+    "indices",
+    "forex",
+    "metals",
+    "energy",
+    "commodities"
+   ],
+   "desk_reading": "systematic screens and thematic sweeps, run over the non-equity MT5 universe"
+  },
+  {
+   "skill": "catalyst-calendar",
+   "file": "catalyst-calendar.md",
+   "upstream_path": "plugins/vertical-plugins/equity-research/skills/catalyst-calendar/SKILL.md",
+   "sha256": "12ac4ae7659ab848a8910dfceadab5b21479f23c8d3e0c57a3f5bf814bcf8186",
+   "classes": [
+    "forex",
+    "indices",
+    "metals",
+    "energy"
+   ],
+   "desk_reading": "scheduled-event effects (central banks, data releases, auctions) on the instruments they move"
+  },
+  {
+   "skill": "sector-overview",
+   "file": "sector-overview.md",
+   "upstream_path": "plugins/vertical-plugins/equity-research/skills/sector-overview/SKILL.md",
+   "sha256": "8d4b7b47c3fe1591bde0a4260b1ffbe489e7ddbe3eddd3dbeb046ce29f315608",
+   "classes": [
+    "indices",
+    "energy",
+    "commodities",
+    "metals"
+   ],
+   "desk_reading": "sector and commodity-cycle structure expressed through indices and commodity CFDs"
+  },
+  {
+   "skill": "thesis-tracker",
+   "file": "thesis-tracker.md",
+   "upstream_path": "plugins/vertical-plugins/equity-research/skills/thesis-tracker/SKILL.md",
+   "sha256": "6b4ce2967c5e01c6b42f5c140fa1e94dee2713b5d2de3eb71957ff5a5c11469b",
+   "classes": [
+    "forex",
+    "indices",
+    "metals",
+    "energy",
+    "commodities"
+   ],
+   "desk_reading": "a thesis restated as a falsifiable price rule with a named kill condition"
+  },
+  {
+   "skill": "earnings-preview",
+   "file": "earnings-preview.md",
+   "upstream_path": "plugins/vertical-plugins/equity-research/skills/earnings-preview/SKILL.md",
+   "sha256": "a30d383a6f1c06b732b4d34e422dd2ff18f6340db67229a3347d057d52697f33",
+   "classes": [
+    "indices"
+   ],
+   "desk_reading": "index-level earnings-season effects; single names stay in the event lane"
+  },
+  {
+   "skill": "earnings-analysis",
+   "file": "earnings-analysis.md",
+   "upstream_path": "plugins/vertical-plugins/equity-research/skills/earnings-analysis/SKILL.md",
+   "sha256": "4db857c27a53141b6ebc38ec9ee7f0020dec59cab084ae6753e53366d118c8ee",
+   "classes": [
+    "indices"
+   ],
+   "desk_reading": "post-season drift at index level; single names stay in the event lane"
+  }
+ ]
+}

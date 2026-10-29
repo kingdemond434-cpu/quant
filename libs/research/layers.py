@@ -328,6 +328,7 @@ LEG_LAYER: dict[str, str] = {
     # hour this box has ever done. It buys no prediction; it finds the hours nothing was produced.
     "duty_cycle": "meta",
     "analyst_pipeline": "information", "knowledge_graph": "information",
+    "fsi_skill_proposer": "information",
     "card_explosion": "prediction", "alpha_lineage": "prediction",
     "graveyard_resurrection": "prediction", "shadow_discovery": "information",
     "forward_exploitation": "information", "alpha_recombination": "prediction",

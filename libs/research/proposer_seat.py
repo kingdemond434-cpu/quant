@@ -132,6 +132,11 @@ ORGANS: dict[str, str] = {
                             "each, for the judge to separate by experiment",
     "forensic_committee": "competing mechanisms (registered SARES branches) for an extreme "
                           "record, each donated as a candidate",
+    # CLAUDE'S FINANCE AND TRADING SKILLS (desks/mt5/research/fsi_skill_proposer.py): a vendored
+    # institutional method applied to the MT5 universe, returned as leads for the analyst
+    # pipeline -- a family, symbols, a claim and its falsifier, never a verdict.
+    "fsi_skills": "falsifiable price rules an institutional finance method implies, as leads "
+                  "for the analyst pipeline",
 }
 
 #: What an `ask` may ask for. Four kinds, and the difference between them is what the organ is
