@@ -189,3 +189,13 @@ def test_ledger_rows_carry_a_basis(planted: dict[str, Any]) -> None:
     for o in obs:
         assert o.knowable_basis == "declared_lag"
         assert sc.defects(o) == []
+
+
+def test_nothing_inside_the_training_window_is_published(planted: dict[str, Any]) -> None:
+    """Audit #211 v3: the filters are fitted on the first TRAIN days, so a row dated inside that
+    window would carry parameters estimated on its own future. None may be published."""
+    first_oos = planted["w"]["days"][TRAIN]
+    for sid in (ls.S_INFL, ls.S_USD, ls.S_GOLD):
+        rows = planted["rep"]["series"][sid]
+        assert rows
+        assert min(date.fromisoformat(r["event_time"]) for r in rows) >= first_oos, sid

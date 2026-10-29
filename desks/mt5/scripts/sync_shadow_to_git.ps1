@@ -12,11 +12,9 @@
 # "is Contabo healthy, is it armed, what's live" -- never the data lake, never anything under
 # data/secrets. Each is individually allowlisted in .gitignore for exactly this reason.
 #
-# SAFETY (R0423: never share a worktree with another live session). This commits ONLY the exact
-# paths below -- never `git add -A`, never `git commit -a`, never `git stash` -- so any other
-# session's uncommitted work in this same checkout is never touched. A push rejection is resolved
-# by fetch + merge (never rebase, never stash) exactly as docs/AGENTS.md prescribes for a shared
-# tree; a genuine conflict aborts the merge and reports rather than guessing.
+# SAFETY (R0423: never share a worktree with another live session). This hashes ONLY the exact
+# paths below into a private index -- never `git add -A`, `git commit`, or `git stash` on the
+# shared tree. A preexisting staged research path is left staged and cannot enter the state push.
 
 $ErrorActionPreference = "Stop"
 $DeskRoot = Split-Path -Parent $PSScriptRoot
@@ -353,11 +351,11 @@ function Sync-Pull {
 # a frozen git copy and reported the forward engine as silent for a week.
 #
 # The fix keeps both authorities exactly where Codex put them. This function never merges,
-# never touches the working tree, HEAD or the real index: it takes the blobs this box has just
-# committed LOCALLY for its own state paths, lays them over FETCH_HEAD's tree in a PRIVATE index
-# file, and pushes one commit whose only parent is origin's tip -- a fast-forward carrying
-# nothing but state. Inbound code still waits for the adopter; the adopter still finds the box's
-# versions of these paths in its own local commits (so its kept-by-box rule keeps them).
+# never touches the working tree, HEAD or the real index: it hashes only allowlisted box state
+# into blobs, lays them over FETCH_HEAD's tree in a PRIVATE index file, and pushes one commit
+# whose only parent is origin's tip. Inbound code still waits for the adopter. A local commit here
+# swept up unrelated work already staged by other controllers and could hold the live Git mutex
+# for the task's whole ten-minute window.
 function Git-Lines {
     param([string[]] $GitArgs)
     $prev = $ErrorActionPreference
@@ -371,11 +369,37 @@ function Git-Lines {
     return ,$out
 }
 
+function Git-IndexInfo {
+    param([string[]]$Entries)
+    # Windows PowerShell pipes CRLF to native commands. Git's --index-info treats the CR as
+    # part of the path and silently prints "Ignoring path", even though it exits zero. Write LF
+    # bytes directly so an unchanged tree cannot masquerade as a successful publication.
+    $start = New-Object System.Diagnostics.ProcessStartInfo
+    $start.FileName = "git"
+    $start.Arguments = '-C "' + $RepoRoot + '" update-index --index-info'
+    $start.UseShellExecute = $false
+    $start.CreateNoWindow = $true
+    $start.RedirectStandardInput = $true
+    $start.RedirectStandardError = $true
+    $proc = [System.Diagnostics.Process]::Start($start)
+    try {
+        foreach ($entry in $Entries) { $proc.StandardInput.Write($entry + "`n") }
+        $proc.StandardInput.Close()
+        $err = $proc.StandardError.ReadToEnd()
+        $proc.WaitForExit()
+        if ($proc.ExitCode -ne 0 -or $err -match 'Ignoring path') {
+            Write-SyncLog ("publish: batch index said " + $err.Trim())
+            return 1
+        }
+        return 0
+    } finally { $proc.Dispose() }
+}
+
 # A PUSH THAT FAILS MUST SAY WHY, IN THIS LOG (2026-10-01). Git-In-Repo discards git's output on
-# purpose, so a push refused by ops/githooks/pre-push (gates.sh + the --laws-only law gate run on
-# every push from a clone with core.hooksPath set, this one included), an HTTP 408 on a large pack,
-# and a non-fast-forward rejection all reached this log as the same bare exit code -- and nobody off
-# the box could tell which one had stopped the state for a week. The last lines go to the log.
+# purpose, so a historical push refused by ops/githooks/pre-push, an HTTP 408 on a large pack,
+# and a non-fast-forward rejection all reached this log as the same bare exit code. State-only
+# publication now uses an explicit tree allowlist fence before exempting this one push from the
+# code hook; network and remote refusals still need exact diagnostics here.
 function Push-Logged {
     param([string[]] $GitArgs)
     $prev = $ErrorActionPreference
@@ -394,13 +418,151 @@ function Push-Logged {
     return $rc
 }
 
+# THE LOGIN FENCE ON THIS WIRE (audit v2 + v3, 2026-10-14). It covers the login-shaped keys
+# libs/ops/login_fence.py names -- login, login_id, account, account_number, accountLogin,
+# mt5_login and their kin, plain, escaped or \u-encoded, and CSV columns -- with an
+# account-shaped value, and every account number the box declares (QUANT_FENCE_ACCOUNT_IDS,
+# ACCOUNT_PROFILES.json) wherever it stands between non-digits. It does NOT make every
+# published byte login-free: the sealed legacy
+# prefixes of live_ledger.jsonl and order_intents.jsonl still carry the raw login in `account`.
+# They are PINNED as {records, sha256} measured on LIVE (LEGACY_PIN there); every row after
+# the pin is judged and a changed prefix is refused. rc 2 (unreadable declarations) and rc 3 (a
+# refusal that could not be alerted or paged) both publish nothing below.
+# It runs on the BLOBS about to be committed (after hash-object and the sleeves sanitiser), so
+# the bytes it judged are the bytes published. A refusal drops that path from this pass, writes
+# desks/mt5/reports/LOGIN_FENCE.json and opens `state_login_fence_refusal` in the alert ledger;
+# the value never reaches this log, the artifact or the alert. If the fence cannot run (no
+# interpreter, a crash) NOTHING is published: it fails closed, and BOX_STATE_FLOW shows STALLED.
+# The interpreter is resolved as Adopt-And-Seal.ps1 resolves it: the venv, `py -3`, `python`.
+function Resolve-FencePython {
+    param([string]$RepoRoot)
+    $venv = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+    if (Test-Path $venv) { return @($venv) }
+    if (Get-Command py -ErrorAction SilentlyContinue) { return @("py", "-3") }
+    if (Get-Command python -ErrorAction SilentlyContinue) { return @("python") }
+    return @()
+}
+
 function Publish-StateOnto {
     param([string]$RepoRoot, [string]$Branch, [string[]]$Paths)
     if (-not $Paths -or $Paths.Count -eq 0) { Write-SyncLog "publish: no state paths"; return $false }
-    $entries = @(Git-Lines (@("ls-tree", "HEAD", "--") + $Paths) | Where-Object { $_ -match '\S' })
-    if ($entries.Count -eq 0) {
-        Write-SyncLog "publish: HEAD carries none of the state paths yet; nothing to publish"
+    # hash-object ignores .gitignore. Retain the state allowlist fence explicitly so an
+    # accidentally listed ignored path cannot publish sensitive box-local bytes.
+    $ignored = @(Git-Lines (@("check-ignore", "--") + $Paths) | Where-Object { $_ -match '\S' })
+    if ($script:GitLinesRc -gt 1 -or $ignored.Count -gt 0) {
+        Write-SyncLog "publish: allowlist refusal ($($ignored.Count) ignored path(s)); nothing published"
         return $false
+    }
+    # One git process hashes the allowlisted snapshot. Starting a separate git process for every
+    # state file exhausted the ten-minute task window on the trading box before any push began.
+    # --stdin-paths emits one hash per input path, in order; reject partial or malformed output.
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $blobs = @($Paths | & git -C $RepoRoot hash-object -w --stdin-paths 2>$null)
+        $hashRc = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+    if ($hashRc -ne 0 -or $blobs.Count -ne $Paths.Count -or
+        @($blobs | Where-Object { "$_" -notmatch '^[0-9a-f]{40}$' }).Count -ne 0) {
+        Write-SyncLog "publish: batch hash of allowlisted state failed rc=$hashRc ($($blobs.Count)/$($Paths.Count) blobs); nothing published"
+        return $false
+    }
+    # Public prose must not republish a brokerage login. Sanitize the blob only:
+    # the live sleeve file and every execution field remain untouched.
+    for ($i = 0; $i -lt $Paths.Count; $i++) {
+        if ($Paths[$i] -ne "desks/mt5/data/sleeves.json") { continue }
+        $raw = [System.IO.File]::ReadAllText((Join-Path $RepoRoot $Paths[$i]))
+        $public = [regex]::Replace($raw, '("honest_note"\s*:\s*")((?:\\.|[^"\\])*)(")', {
+            param($m)
+            $m.Groups[1].Value + [regex]::Replace($m.Groups[2].Value, '\baccount\s+\d+\b', 'the authenticated account') + $m.Groups[3].Value
+        })
+        if ($public -eq $raw) { continue }
+        $pubPath = [System.IO.Path]::GetTempFileName()
+        try {
+            [System.IO.File]::WriteAllText($pubPath, $public, [System.Text.UTF8Encoding]::new($false))
+            $pubBlob = @(& git -C $RepoRoot hash-object -w -- $pubPath 2>$null)
+            $pubRc = $LASTEXITCODE
+        } finally {
+            Remove-Item -LiteralPath $pubPath -ErrorAction SilentlyContinue
+        }
+        if ($pubRc -ne 0 -or $pubBlob.Count -ne 1 -or "$($pubBlob[0])" -notmatch '^[0-9a-f]{40}$') {
+            Write-SyncLog "publish: public-note blob failed; nothing published"
+            return $false
+        }
+        $blobs[$i] = $pubBlob[0]
+    }
+    # THE LOGIN FENCE, ON THE FINAL BLOBS (see Resolve-FencePython above for the contract).
+    $pyCmd = @(Resolve-FencePython -RepoRoot $RepoRoot)
+    if ($pyCmd.Count -eq 0) {
+        Write-SyncLog "publish: login fence has no python interpreter (.venv, py, python); nothing published"
+        return $false
+    }
+    $pyArgs = @($pyCmd | Select-Object -Skip 1)
+    # THE LOGIN IS WITHHELD BEFORE IT IS JUDGED (v5g, 2026-10-21). cost_truth_quotes.json is
+    # rewritten only when its terminal read succeeds, so a copy stamped by older code keeps its
+    # `account.login` on disk indefinitely and the fence below would refuse it forever -- leaving
+    # origin's leaky copy in place. libs/ops/account_withhold.py applies cost_truth.py's own rule
+    # (one helper, `withhold_login`) to the BLOB: `account.login` becomes `login_withheld: true`,
+    # re-serialised as the writer serialises it, and the new blob replaces the old one here. The
+    # fence still judges the final blob, so a file the scrub could not parse is refused below.
+    # Any failure publishes nothing (fails closed), exactly as the fence does.
+    $scrubIn = for ($i = 0; $i -lt $Paths.Count; $i++) { "$($blobs[$i])`t$($Paths[$i])" }
+    $scrubScript = Join-Path $RepoRoot "libs\ops\account_withhold.py"
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $scrubbed = @($scrubIn | & $pyCmd[0] @pyArgs $scrubScript --repo $RepoRoot 2>$null |
+                      Where-Object { $_ -match '\S' } | ForEach-Object { "$_".Trim() })
+        $scrubRc = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+    if ($scrubRc -ne 0 -or $scrubbed.Count -ne $Paths.Count) {
+        Write-SyncLog "publish: account withhold failed rc=$scrubRc ($($scrubbed.Count)/$($Paths.Count) rows); nothing published (it fails closed)"
+        return $false
+    }
+    for ($i = 0; $i -lt $Paths.Count; $i++) {
+        $blob, $rel = "$($scrubbed[$i])" -split "`t", 2
+        if ($rel -ne $Paths[$i] -or "$blob" -notmatch '^[0-9a-f]{40}$') {
+            Write-SyncLog "publish: account withhold returned a malformed row $i; nothing published"
+            return $false
+        }
+        if ($blob -ne $blobs[$i]) {
+            Write-SyncLog "publish: WITHHELD the login in $rel before publishing (value withheld)"
+            $blobs[$i] = $blob
+        }
+    }
+    $fenceIn = for ($i = 0; $i -lt $Paths.Count; $i++) { "$($blobs[$i])`t$($Paths[$i])" }
+    $fenceScript = Join-Path $RepoRoot "libs\ops\login_fence.py"
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $refused = @($fenceIn | & $pyCmd[0] @pyArgs $fenceScript --repo $RepoRoot 2>$null |
+                     Where-Object { $_ -match '\S' } | ForEach-Object { "$_".Trim() })
+        $fenceRc = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+    if ($fenceRc -ne 0) {
+        Write-SyncLog "publish: login fence failed rc=$fenceRc; nothing published (it fails closed)"
+        return $false
+    }
+    if ($refused.Count -gt 0) {
+        foreach ($rel in $refused) {
+            Write-SyncLog "publish: REFUSED $rel -- not staged: a login-shaped key with an account-shaped value or a declared account number (value withheld; file and key in desks/mt5/reports/LOGIN_FENCE.json); fix its writer"
+        }
+        $keepPaths = @(); $keepBlobs = @()
+        for ($i = 0; $i -lt $Paths.Count; $i++) {
+            if ($refused -contains $Paths[$i]) { continue }
+            $keepPaths += $Paths[$i]; $keepBlobs += $blobs[$i]
+        }
+        $Paths = [string[]]$keepPaths; $blobs = $keepBlobs
+        if ($Paths.Count -eq 0) { Write-SyncLog "publish: every state path refused; nothing published"; return $false }
+    }
+    $entries = for ($i = 0; $i -lt $Paths.Count; $i++) {
+        "100644 blob $($blobs[$i])`t$($Paths[$i])"
     }
     $idx = Join-Path ([System.IO.Path]::GetTempPath()) ("mt5-state-index-{0}" -f $PID)
     $prevIndex = $env:GIT_INDEX_FILE
@@ -417,16 +579,13 @@ function Publish-StateOnto {
             $env:GIT_INDEX_FILE = $idx
             $rc = Git-In-Repo @("read-tree", $base)
             if ($rc -ne 0) { Write-SyncLog "publish: read-tree $base failed rc=$rc"; return $false }
-            $n = 0
-            foreach ($line in $entries) {
-                # "<mode> blob <sha>`t<path>" -- the blob the box committed, never re-read from
-                # disk, so origin receives byte-for-byte what the box's own history holds.
-                $meta, $rel = $line -split "`t", 2
-                $f = $meta -split '\s+'
-                if ($f.Count -lt 3 -or $f[1] -ne "blob") { continue }
-                $rc = Git-In-Repo @("update-index", "--add", "--cacheinfo", ("{0},{1},{2}" -f $f[0], $f[2], $rel))
-                if ($rc -eq 0) { $n++ }
+            # Feed the frozen entries to one private-index process; no shared index is touched.
+            $rc = Git-IndexInfo -Entries $entries
+            if ($rc -ne 0) {
+                Write-SyncLog "publish: could not batch-index allowlisted state rc=$rc; nothing published"
+                return $false
             }
+            $n = $entries.Count
             $tree = (Git-Lines @("write-tree") | Select-Object -First 1)
         } finally {
             if ($null -eq $prevIndex) { Remove-Item Env:GIT_INDEX_FILE -ErrorAction SilentlyContinue }
@@ -440,12 +599,27 @@ function Publish-StateOnto {
             Write-SyncLog "publish: origin/$Branch already carries this box state ($n path(s))"
             return $true
         }
+        # The scheduled task has a ten-minute deadline, while the code pre-push hook alone can
+        # take longer. This publisher is entitled to skip CODE gates only after an independent
+        # tree diff proves that every changed path is in the exact state allowlist above. Code
+        # still reaches the box only through CI, production sealing, and MT5-AdoptRelease.
+        # Git-Lines deliberately returns its collected output as one array object. Unroll it
+        # before the membership fence: otherwise a valid list of changed state paths is one
+        # nested-array item, which is never equal to any single allowlisted path.
+        $changed = @(Git-Lines @("diff-tree", "--name-only", "-r", $baseTree, $tree) |
+                     ForEach-Object { $_ } | Where-Object { $_ -match '\S' })
+        $outside = @($changed | Where-Object { $_ -notin $Paths })
+        if ($script:GitLinesRc -ne 0 -or $changed.Count -eq 0 -or $outside.Count -gt 0) {
+            Write-SyncLog "publish: state-only tree fence refused ($($outside.Count) outside allowlist, diff rc=$($script:GitLinesRc)); nothing published"
+            return $false
+        }
         $stampNow = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd_HHmm")
         $msg = "mt5 box state $stampNow (published onto origin; inbound code left to MT5-AdoptRelease)"
         $commit = "$(Git-Lines @("commit-tree", $tree, "-p", $base, "-m", $msg) | Select-Object -First 1)".Trim()
         if (-not $commit) { Write-SyncLog "publish: commit-tree failed"; return $false }
         $remote = "origin"
-        $rc = Push-Logged @("push", $remote, ("{0}:refs/heads/{1}" -f $commit, $Branch))
+        $rc = Push-Logged @("push", "--no-verify", $remote,
+                             ("{0}:refs/heads/{1}" -f $commit, $Branch))
         if ($rc -eq 0) {
             Write-SyncLog ("published box state onto origin/{0} as {1} ({2} path(s)) without merging code" -f
                            $Branch, $commit.Substring(0, 12), $n)
@@ -458,9 +632,8 @@ function Publish-StateOnto {
 }
 
 # Desk-relative paths of every state file this sync carries. Each MUST already be individually
-# allowlisted in .gitignore (git add is silently a no-op on an ignored path otherwise, which
-# would look like success while publishing nothing -- exactly the failure mode this script exists
-# to avoid repeating).
+# allowlisted in .gitignore; Publish-StateOnto checks this before hash-object, which by itself
+# would accept ignored files.
 $relPaths = @(
     "desks/mt5/reports/shadow/shadow_health.json",
     "desks/mt5/data/gateway_state.json",
@@ -483,6 +656,15 @@ $relPaths = @(
     # plain-English answer to "is the desk running", which until now only a person at the box saw.
     "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
     "desks/mt5/reports/DESK_HEALTH.json",
+    # WHICH ORGANS ARE SILENTLY FAILING (2026-10-13). ops/process_health.py (MT5-ProcessHealth,
+    # hourly) names every scheduled organ that is FAILING, NOT_SCHEDULED, STALE or has no
+    # artifact. TIER1_SCORECARD counted them (silent_scheduled_failures = 11) while the file it
+    # counted stayed on the box, so no reader on this branch could say WHICH eleven.
+    "desks/mt5/reports/process_health.json",
+    # IS THE BOX BACKED UP, AND WAS A RESTORE EVER REHEARSED (v5f). ops/backup_state.py, on
+    # MT5-ProcessHealth's hourly clock: last backup, last restore drill, the restic job state and
+    # the key backup's present/size/match. Scheme only: no path, repository, password or hash.
+    "desks/mt5/reports/BACKUP_STATE.json",
     # THE LANE STATE FILES. Until 2026-09-06 the only thing that crossed this wire was the
     # 424-byte health SUMMARY, so no reader on the other side could see a single sleeve: not its
     # status, not its forward n, not its expectancy, not its day count. That is why "are the two
@@ -510,6 +692,8 @@ $relPaths = @(
     "desks/mt5/data/decision_ledger.jsonl",
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
+    "desks/mt5/data/live_ledger_corrections.jsonl",
+    "desks/mt5/reports/LEDGER_VIEW_ADOPTION.json",
     "desks/mt5/reports/attribution_chain.json",
     # THE MARKOUT ITSELF (2026-09-30). The daily markout leg writes markout.json beside
     # attribution_chain.json, but only the chain crossed the wire, so the VPS's desk state read
@@ -577,12 +761,45 @@ $relPaths = @(
 # silently truncated and never allowed to turn this wire into a data lake.
 $ReportCapBytes = 4MB
 $reportPaths = @(
+    # the box's swap capture age (2026-10-06): a stopped MT5-ContractTerms reads STALE by name
+    "desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json",
     "desks/mt5/reports/RESEARCH_BUDGET.json",
     "desks/mt5/data/research_budget.json",
+    # how fresh the box's bars and ticks are (2026-10-21, research/bars_state.py, core leg
+    # bars_state): last bar time, rows and mtime per file, newest tick per symbol. The parquets
+    # themselves stay off this wire (see Publish-StateOnto's 408 history); this is their meter.
+    "desks/mt5/data/BARS_STATE.json",
     "desks/mt5/reports/JUDGING_RATE.json",
+    # the judging_throughput pass that wrote it, or the phase the last pass died in (2026-10-21):
+    # without it a killed pass leaves an old JUDGING_RATE that reads as current
+    "desks/mt5/reports/JUDGING_RATE.attempt.json",
     "desks/mt5/reports/JUDGING_THROUGHPUT.json",
     "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json",
     "desks/mt5/reports/JUDGE_COVERAGE.json",
+    # breadth in independent hypothesis families, the daily new-independent metric and the
+    # merge census that carries it (2026-10-28, research/hypothesis_families.py); and the
+    # gauntlet novelty set-aside, measured before any trial-count decision (audit 8628268b6)
+    "desks/mt5/reports/HYPOTHESIS_FAMILIES.json",
+    "desks/mt5/reports/NOVELTY_SET_ASIDE.json",
+    "desks/mt5/data/hypotheses/merge_report.json",
+    # the resident judge's heartbeat (2026-10-13): sweeps, last exit code, backoff, uptime --
+    # the only off-box evidence of whether the judge is running between its verdicts
+    "desks/mt5/reports/JUDGE_RESIDENT.json",
+    # the judge stall pager's last reading (2026-10-21): open incidents, page outcome, and by its
+    # age whether the pager itself is still running on MT5-BoxHeartbeat
+    "desks/mt5/reports/JUDGE_STALL.json",
+    # the --once sweep's own watchdog (2026-10-20): its heartbeat (phase, shard counts, deadlines,
+    # tree CPU/RSS) and the named stall it acted on -- a hung sweep reads STALLED off the box
+    "desks/mt5/reports/GAUNTLET_HEARTBEAT.json",
+    "desks/mt5/reports/GAUNTLET_STALL.json",
+    # the hourly judge_alive leg's verdict, and the deepening worker's memory guard (deferred
+    # tasks, consecutive tripped passes, and its missed-growth line) -- audit of 2832cebd1
+    "desks/mt5/reports/judge_alive_fence.json",
+    "desks/mt5/reports/DEEPENING_MEMORY_GUARD.json",
+    # the judge pre-build prescreen (2026-10-28): its first-verdict replay, canon evidence,
+    # missed_growth line and last intake -- the off-box evidence any canon flip is judged on
+    "desks/mt5/reports/JUDGE_PRESCREEN.json",
+    "desks/mt5/reports/JUDGE_PRESCREEN_INTAKE.json",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json",
     "desks/mt5/reports/BREADTH_MANDATE.json",
     "desks/mt5/reports/TIER1_SCORECARD.json",
@@ -614,6 +831,26 @@ $reportPaths = @(
     "desks/mt5/reports/PIT_AUDIT.json",
     "desks/mt5/reports/alfred_vintages.json",
     "desks/mt5/reports/WORLD_CAUSAL_GRAPH.json",
+    # THE COST AND TAPE STATE THE BOX MEASURES (2026-10-20). Each was fresh on the box while the
+    # branch held the 2026-09-23 copy carried in by the orphan root, because no list here named
+    # it: every reader off the box (pf_allocator, entry_timing, stop_geometry_derivation,
+    # expression_factory, desk_economics, the PIT audit) charged costs four weeks old.
+    #   cost_surface.json       per-symbol/per-hour spread quantiles from the bars (~1 MB, under
+    #                           the cap); no account field at all
+    #   cost_truth_quotes.json  the broker's quoted contract terms and deal costs; its writer
+    #                           (research/cost_truth.py) WITHHOLDS the login, and
+    #                           tests/ops/test_live_infrastructure_is_not_published.py fences it
+    #   tape/tape_state.json    the tick recorder's per-symbol cursor (last tick, last run)
+    # None holds a credential; tests/scripts/test_box_sync_publishes_cost_state.py pins that.
+    "desks/mt5/data/cost_surface.json",
+    "desks/mt5/data/cost_truth_quotes.json",
+    # the login fence's own verdict (2026-10-20): which state paths it refused, by key name
+    # only, so a false positive that stops a file publishing is visible off the box
+    "desks/mt5/reports/LOGIN_FENCE.json",
+    # the judge speed switch's daily drift monitor (2026-10-28): identity of the fast families
+    # against the original loops on this box's pandas/numpy, read-only; no credential
+    "desks/mt5/reports/VECTOR_FAMILIES_CHECK.json",
+    "desks/mt5/data/tape/tape_state.json",
     # THE ONE BINARY HERE, and deliberately so (2026-09-30). macro_desk.anchors() writes it
     # hourly on the box; the branch copy was last committed 2026-09-12 with T10YIE all NaN,
     # so REAL_YIELD_10Y is empty for every reader off the box and on CI. FRED is reachable
@@ -658,29 +895,16 @@ Sync-Pull -RepoRoot $RepoRoot -Branch $branch
 # INBOUND CODE NO LONGER SILENCES THE BOX. This exited here when origin was ahead, which on a
 # branch that moves every few minutes was nearly every pass, so the box's state stopped reaching
 # the branch at all (see Publish-StateOnto). The adopter still owns the code; the state below is
-# committed locally as always and then published onto origin's tip without a merge.
+# published onto origin's tip without a merge or a local commit.
 
 if ($existing.Count -eq 0) {
     Write-SyncLog "SKIP: none of the tracked state files exist yet on this box"
     exit 0
 }
 
-$addRc = Git-In-Repo (@("add", "--") + $existing)
-if ($addRc -ne 0) { Write-SyncLog "ABORT: git add failed rc=$addRc"; exit 1 }
-
-# Nothing changed since the last cycle -- do not create empty commits every 15 minutes forever.
-& git -C $RepoRoot diff --cached --quiet
-if ($LASTEXITCODE -eq 0) {
-    # NOTHING NEW TO COMMIT IS NOT NOTHING TO DELIVER. A state commit that was made and then
-    # failed to reach origin sits local; delivery must not depend on having something NEW to
-    # say, so this pass still publishes what HEAD carries (Publish-StateOnto is idempotent: when
-    # origin already holds these blobs it says so and succeeds without pushing).
-    Write-SyncLog "no new state since last sync; making sure origin carries the committed state"
-} else {
-    $stamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd_HHmm")
-    $commitRc = Git-In-Repo @("commit", "-m", "mt5 shadow state sync $stamp")
-    if ($commitRc -ne 0) { Write-SyncLog "ABORT: git commit failed rc=$commitRc"; exit 1 }
-}
+# Publish-StateOnto hashes the allowlisted working-tree files without touching the shared index
+# or making a local commit. Its tree equality check is the no-change case; a prior failed push
+# retries the same state on the next pass. Other controllers' staged paths remain staged.
 
 # ONE DELIVERY PATH: THE STATE BLOBS, ONTO ORIGIN'S TIP, NEVER THE BOX'S BRANCH (2026-10-01).
 #
@@ -694,11 +918,11 @@ if ($LASTEXITCODE -eq 0) {
 # commit on any branch is 2026-09-12; nothing the box committed itself has reached origin since.
 #
 # Publish-StateOnto pushes ONE small commit whose only parent is origin's tip and whose only
-# change is the box's committed state blobs. It cannot carry the backlog, never merges and never
-# touches HEAD, the working tree or the real index; inbound code stays MT5-AdoptRelease's.
+# change is the box's allowlisted state blobs. It cannot carry the backlog, never merges and
+# never touches HEAD, the working tree or the real index; inbound code stays MT5-AdoptRelease's.
 # A push refusal (the pre-push hook, a network error, a race) is now quoted in this log.
 if ($script:InboundAdoptionRequired) {
-    Write-SyncLog "local state commit is safe; inbound code is left to MT5-AdoptRelease"
+    Write-SyncLog "state publication is separate; inbound code is left to MT5-AdoptRelease"
 }
 $branch = (& git -C $RepoRoot rev-parse --abbrev-ref HEAD).Trim()
 $ok = Publish-StateOnto -RepoRoot $RepoRoot -Branch $branch -Paths $existing

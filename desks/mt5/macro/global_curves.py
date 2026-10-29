@@ -19,7 +19,8 @@ THE SOURCES, in the order a country's leg is taken (the first present wins, per 
     bis:cbpol               BIS central-bank policy rates, axes/bis.json            short, any
 
 TERMS. Every leg names its source id and the terms gate's verdict. A HELD source (ecb, boe, snb,
-bis carry no recorded terms basis today) is MEASURED AND KEPT as state; it reaches no cell. Cells
+bis carry no recorded terms basis today; every fred: leg is held as a fitted-model input under
+terms_hold.FRED_FITTED_HOLD) is MEASURED AND KEPT as state; it reaches no cell. Cells
 go through `sensor_engines.emit_conditioner_cells`, which re-applies the same gate.
 
 PIT. Each leg's observation is read as of its knowable instant: H.15 the next day 16:30 ET (via

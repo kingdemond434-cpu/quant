@@ -341,15 +341,20 @@ def heartbeat(dept: str, passes: int, status: str = "running", done_inc: int = 0
     except Exception:
         pass
     # THE PROGRESS WATERMARK (LAWS.md 7). The heartbeat above says this process is alive; the
-    # watermark says it is WORKING. A resident holding its lock with a frozen pass counter was
-    # green to every liveness probe this desk had and is STALLED to the control plane.
+    # watermark says a pass COMPLETED. Process-local pass numbers restart at one after recycling;
+    # the durable counter must continue instead of regressing behind its previous high water.
+    # Starting or stopping a pass is liveness, not completed work, and cannot refresh this clock.
+    if done_inc <= 0:
+        return
     try:
         root = str(DESK.parents[1])
         if root not in sys.path:
             sys.path.insert(0, root)
         from libs.ops.control_plane import watermarks as wm
-        wm.progress(f"resident:dept_{dept}", "passes", passes, run_id=f"pid:{os.getpid()}",
-                    status=status)
+        component = f"resident:dept_{dept}"
+        previous = wm.read(component) or {}
+        wm.progress(component, "passes", int(previous.get("value") or 0) + done_inc,
+                    run_id=f"pid:{os.getpid()}", status=status, local_pass=passes)
     except Exception:
         pass
 

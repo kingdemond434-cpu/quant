@@ -60,3 +60,49 @@ def test_named_inputs_are_unchanged(monkeypatch) -> None:
     children, report = fid.derive(rows, identity=identity)
     assert children == []
     assert report["targets"] == 0
+
+
+def test_cached_input_selection_preserves_variant_knobs_and_chart(monkeypatch) -> None:
+    calls = []
+
+    def complete(row, ctx, meta):
+        calls.append((row["symbol"], row["family"], row["chart"]))
+        basket = [meta["factor"] + row["chart"]]
+        return {**row, "params": {**row["params"], "factor_symbols": basket},
+                "input_completed": "factor_symbols"}
+
+    monkeypatch.setattr(fid.compiler, "complete_inputs", complete)
+    rows = [{"symbol": "EURUSD", "family": "pca_residual",
+             "params": {"timeframe": chart, "beta_win": beta}}
+            for chart, beta in (("H1", 80), ("H1", 240), ("M15", 80))]
+    children, report = fid.derive(rows, identity=identity, ctx=object(), meta={"factor": "USDJPY"})
+    assert len(children) == 3
+    assert len(calls) == 2
+    assert [c["params"]["beta_win"] for c in children] == [80, 240, 80]
+    assert children[0]["params"]["factor_symbols"] == ["USDJPYH1"]
+    assert children[2]["params"]["factor_symbols"] == ["USDJPYM15"]
+    children[0]["params"]["factor_symbols"].append("mutated child")
+    assert children[1]["params"]["factor_symbols"] == ["USDJPYH1"]
+    assert all("factor_symbols" not in r["params"] for r in rows)
+    assert report["input_selection"]["cache_hits"] == 1
+
+    newer, _ = fid.derive(rows, identity=identity, ctx=object(), meta={"factor": "AUDUSD"})
+    assert len(calls) == 4, "a new pass must re-read its own input snapshot"
+    assert newer[0]["params"]["factor_symbols"] == ["AUDUSDH1"]
+
+
+def test_unresolved_input_selection_is_counted_per_parent_and_retried_next_pass(monkeypatch):
+    calls = []
+
+    def missing(row, ctx, meta):
+        calls.append(row["symbol"])
+        return row
+
+    monkeypatch.setattr(fid.compiler, "complete_inputs", missing)
+    rows = [{"symbol": "EURUSD", "family": "relative_value", "params": {"entry_z": z}}
+            for z in (1.0, 2.0, 3.0)]
+    children, report = fid.derive(rows, identity=identity, ctx=object(), meta={})
+    assert children == [] and report["unresolved"] == 3
+    assert calls == ["EURUSD"]
+    fid.derive(rows, identity=identity, ctx=object(), meta={})
+    assert calls == ["EURUSD", "EURUSD"]

@@ -186,7 +186,10 @@ def test_global_curves_pit_terms_and_partial_countries(tmp_path: Path) -> None:
     g = gc.build(now=NOW, series=ser, ecb=ecb, bis=bis, boe=tmp_path / "no.jsonl",
                  snb=tmp_path / "no.jsonl")
     de = g["countries"]["DE"]
-    assert de["status"] == "MEASURED" and de["terms"] == "admitted"
+    # FRED is held as an input to fitted models (terms_hold.FRED_FITTED_HOLD, coordinator ruling
+    # 2026-10-07, landed on world-sensor-jkl after this PR branched): the OECD-via-FRED leg is
+    # MEASURED AND KEPT, and reaches no cell until it moves to the owner's feed.
+    assert de["status"] == "MEASURED" and de["terms"] == "HELD"
     assert de["long_source"] == "fred:IRLTLT01DEM156N"
     # PIT: a month-start stamp is knowable 75 days later, so the newest readable month is the
     # last one whose stamp + 75 days <= NOW
@@ -199,7 +202,7 @@ def test_global_curves_pit_terms_and_partial_countries(tmp_path: Path) -> None:
     assert jp["status"] == "PARTIAL" and jp["short"] == 0.5 and jp["long"]["status"] == "UNMEASURED"
     assert g["countries"]["NO"]["status"] == "UNMEASURED"
     cells = {c["country"]: c for c in gc.emit(g, dry_run=True)}
-    assert cells["DE"]["cells"]["emitted"] > 0
+    assert cells["DE"]["cells"]["emitted"] == 0 and cells["DE"]["cells"]["status"] == "HELD_TERMS"
     assert cells["EA"]["cells"]["emitted"] == 0 and cells["EA"]["cells"]["status"] == "HELD_TERMS"
     assert "history" not in gc.public(g)["countries"]["DE"]
     obs = gc.observations(g, NOW)

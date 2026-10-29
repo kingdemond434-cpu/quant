@@ -142,3 +142,27 @@ def test_nonboolean_authority_never_reaches_primitives(tmp_path, monkeypatch, au
     monkeypatch.setattr(pd, "read_parquet", lambda path: reads.append(path))
     assert acquisition.acquired_series() == {}
     assert reads == []
+
+
+def test_parity_lane_is_additive_and_terms_gated(monkeypatch, tmp_path: Path) -> None:
+    """The regional-parity lane gets its own seats ON TOP of the pass and fails closed on terms."""
+    world = tmp_path / "world"
+    world.mkdir()
+    monkeypatch.setattr(acquisition, "_SEED_ENDPOINTS", ())
+    monkeypatch.setattr(acquisition, "REGISTRY", tmp_path / "missing.json")
+    monkeypatch.setattr(acquisition, "WORLD", world)
+    now = datetime(2026, 9, 28, tzinfo=UTC)
+    base = acquisition._endpoints(40, now=now)
+    permitted = [f"https://www.cftc.gov/files/dea/history/x{i}.zip" for i in range(9)]
+    held = ["https://home.treasury.gov/resource-center/x.csv", "https://example.org/y.csv"]
+    rows = [{"kind": "dataset", "lane": acquisition.PARITY_LANE, "host": "www.cftc.gov",
+             "endpoints": held + permitted},
+            {"kind": "dataset", "host": "www.cftc.gov", "endpoints": ["https://www.cftc.gov/z"]}]
+    (world / "discoveries_parity_20261006.json").write_text(json.dumps(rows), "utf-8")
+    endpoints = acquisition._endpoints(40, now=now)
+    urls = [u for u, _ in endpoints]
+    assert len(endpoints) == 40 + acquisition.PARITY_LANE_MAX
+    assert urls[:40] == [u for u, _ in base], "no other lane loses a seat"
+    assert urls[40:] == permitted[:acquisition.PARITY_LANE_MAX]
+    assert not set(held) & set(urls), "a URL no terms quote permits is never fetched"
+    assert "https://www.cftc.gov/z" not in urls[40:], "only lane-marked rows ride the lane"

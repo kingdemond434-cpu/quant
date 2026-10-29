@@ -41,8 +41,22 @@ for _p in (str(REPO), str(BASE / "research")):
         sys.path.insert(0, _p)
 
 OUT = BASE / "reports" / "TRADE_AUTOPSY.json"
+
+
+def _deal_account_key(deal: dict[str, Any]) -> str | None:
+    """`mt5desk.provenance.row_key`: the deal's account_key, or a legacy row's raw login hashed."""
+    try:
+        if str(BASE) not in sys.path:
+            sys.path.insert(0, str(BASE))
+        from mt5desk.provenance import row_key
+        return row_key(deal)
+    except Exception:
+        key = deal.get("account_key")
+        return key if isinstance(key, str) else None
+
 AUTOPSIES = BASE / "data" / "autopsies.jsonl"
-LIVE = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 DECISIONS = BASE / "data" / "decision_ledger.jsonl"
 SLEEVES = BASE / "data" / "sleeves.json"
 SCRATCH_R = 0.1
@@ -178,7 +192,8 @@ def autopsy(deal: dict[str, Any], decision: dict[str, Any] | None,
                   "world_state_id": (decision or {}).get("world_state_id"),
                   "regime": (decision or {}).get("regime") or "UNMEASURED",
                   "decided_at": (decision or {}).get("decided_at")},
-        "account": deal.get("account"), "server": deal.get("server"),
+        # the hashed key, never the raw login: TRADE_AUTOPSY.json is a published report
+        "account_key": _deal_account_key(deal), "server": deal.get("server"),
     }
 
 
