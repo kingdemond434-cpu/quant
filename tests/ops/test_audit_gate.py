@@ -1842,6 +1842,112 @@ def test_gh_output_is_read_as_utf8_whatever_the_locale(monkeypatch: pytest.Monke
     assert seen["encoding"] == "utf-8"
 
 
+# ------------------------------------------------- GitHub's own outages (2026-10-29, #492)
+def _scripted(answers: list[tuple[int, str, str]], calls: list[list[str]]) -> Any:
+    def fake(cmd: list[str], **kw: Any) -> Any:
+        calls.append(cmd)
+        rc, out, err = answers.pop(0) if answers else (0, "{}", "")
+        return subprocess.CompletedProcess(cmd, rc, out, err)
+
+    return fake
+
+
+def test_the_review_retries_a_github_5xx_and_then_answers(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        ir.subprocess,
+        "run",
+        _scripted([(1, "", "gh: HTTP 503"), (1, "", "gh: HTTP 502"), (0, "ok", "")], calls),
+    )
+    assert ir._gh("repos/x/y/pulls/1", sleep=lambda s: None) == "ok"
+    assert len(calls) == 3
+
+
+def test_a_review_github_never_answers_is_unavailable_not_fail(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The job that failed #492 at 15:19Z: a 503 on pulls/492 is GitHub's fault, so it is exit
+    75 (queued for a re-run), never exit 1 (a FAIL, and a quarantine on the no-comment path)."""
+    monkeypatch.setattr(ir.subprocess, "run", _scripted([(1, "", "gh: HTTP 503")] * 10, []))
+    monkeypatch.setattr(ir.time, "sleep", lambda s: None)
+    rc = ir.main(["--repo", "o/r", "--pr", "7", "--head", "a" * 40, "--base-sha", "b" * 40])
+    assert rc == ir.UNAVAILABLE
+    assert "REVIEW_UNAVAILABLE" in capsys.readouterr().out
+
+
+def test_a_review_404_is_not_retried(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+    monkeypatch.setattr(ir.subprocess, "run", _scripted([(1, "", "gh: HTTP 404")], calls))
+    with pytest.raises(RuntimeError):
+        ir._gh("repos/x/y/pulls/1", sleep=lambda s: None)
+    assert len(calls) == 1
+
+
+def test_the_gate_retries_a_read_but_never_a_write(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        ag.subprocess, "run", _scripted([(1, "", "gh: HTTP 503"), (0, '{"n": 1}', "")], calls)
+    )
+    assert ag._gh("repos/x/y/pulls/1", sleep=lambda s: None) == {"n": 1}
+    assert len(calls) == 2
+    for write in (("repos/x/y/pulls/1/merge", "-X", "PUT"), ("repos/x/y/labels", "-f", "a=b")):
+        calls.clear()
+        monkeypatch.setattr(ag.subprocess, "run", _scripted([(1, "", "gh: HTTP 503")] * 4, calls))
+        with pytest.raises(RuntimeError):
+            ag._gh(*write, sleep=lambda s: None)
+        assert len(calls) == 1, write  # a write that got a 5xx may have happened
+    calls.clear()
+    monkeypatch.setattr(ag.subprocess, "run", _scripted([(1, "", "gh: HTTP 503")] * 4, calls))
+    with pytest.raises(RuntimeError):
+        ag._gh("repos/x/y/statuses/s", data={"state": "pending"}, sleep=lambda s: None)
+    assert len(calls) == 1
+
+
+def test_the_gate_and_the_review_agree_on_what_is_transient() -> None:
+    assert ag._TRANSIENT.pattern == ir.TRANSIENT.pattern
+
+
+@pytest.mark.parametrize(
+    "err, transient",
+    [
+        ("gh: API rate limit exceeded for installation ID 1. (HTTP 403)", True),
+        ("gh: You have exceeded a secondary rate limit. (HTTP 403)", True),
+        ("gh: Resource not accessible by integration (HTTP 403)", False),
+        ("gh: HTTP 401: Bad credentials", False),
+        ("gh: unexpected EOF", True),
+        ("gh: Not Found (HTTP 404) for geoffrey", False),
+    ],
+)
+def test_rate_limits_are_transient_and_a_real_403_is_not(err: str, transient: bool) -> None:
+    """#498 audit MF1/S1: GitHub's rate limits answer 403, and a bare `EOF` matched inside
+    names. Both patterns, one answer."""
+    assert bool(ir.TRANSIENT.search(err)) is transient
+    assert bool(ag._TRANSIENT.search(err)) is transient
+
+
+def test_a_rate_limited_review_is_unavailable_and_a_refused_one_raises_at_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        ir.subprocess,
+        "run",
+        _scripted([(1, "", "gh: API rate limit exceeded (HTTP 403)")] * 4, calls),
+    )
+    with pytest.raises(ir.Unavailable):
+        ir._gh("repos/x/y/pulls/1", sleep=lambda s: None)
+    assert len(calls) == ir.GH_TRIES
+    calls.clear()
+    monkeypatch.setattr(
+        ir.subprocess,
+        "run",
+        _scripted([(1, "", "gh: Resource not accessible by integration (HTTP 403)")], calls),
+    )
+    with pytest.raises(RuntimeError) as exc:
+        ir._gh("repos/x/y/pulls/1", sleep=lambda s: None)
+    assert not isinstance(exc.value, ir.Unavailable) and len(calls) == 1
+
+
 @pytest.mark.parametrize(
     "name",
     ["docs/RESEARCH.md", "docs/cro/CRO_CYCLE.md", "scripts/run_deadman_switch.py",

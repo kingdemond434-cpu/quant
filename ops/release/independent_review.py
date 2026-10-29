@@ -105,12 +105,33 @@ class Unavailable(RuntimeError):
     """The model could not be asked right now (rate limit, outage, timeout): no vote."""
 
 
-def _gh(*args: str) -> str:
+#: GitHub's own outage answers. A read that gets one is retried, and if it never succeeds the
+#: review is UNAVAILABLE (exit 75, queued), never a FAIL: a 503 on `pulls/492` failed this job
+#: and, on the no-comment path, would have quarantined a PR for GitHub's fault (2026-10-29).
+#: GitHub answers its rate limits with HTTP 403 ("API rate limit exceeded", "secondary rate
+#: limit"), so `rate limit` is matched by text; any other 403 is a real refusal. Bounded: the
+#: gate re-runs an UNAVAILABLE review at most MAX_ATTEMPTS times, then it stays queued.
+TRANSIENT = re.compile(
+    r"HTTP (?:429|5\d\d)\b|rate limit|timed? ?out|connection (?:reset|refused)|\bEOF\b",
+    re.IGNORECASE,
+)
+GH_TRIES = 4
+
+
+def _gh(*args: str, sleep: Callable[[float], None] = time.sleep) -> str:
     env = {k: v for k, v in os.environ.items() if k not in KEY_ENVS}
-    p = subprocess.run(["gh", "api", *args], capture_output=True, text=True, env=env, check=False)
-    if p.returncode != 0:
-        raise RuntimeError(f"gh api {args[0]}: {p.stderr.strip()[:300]}")
-    return p.stdout
+    err = ""
+    for attempt in range(GH_TRIES):
+        p = subprocess.run(["gh", "api", *args], capture_output=True, text=True, env=env,
+                           check=False)
+        if p.returncode == 0:
+            return p.stdout
+        err = p.stderr.strip()[:300]
+        if not TRANSIENT.search(err):
+            raise RuntimeError(f"gh api {args[0]}: {err}")
+        if attempt < GH_TRIES - 1:
+            sleep(2.0 * 2**attempt)
+    raise Unavailable(f"gh api {args[0]}: {err} (after {GH_TRIES} tries)")
 
 
 def _http(url: str, body: dict[str, Any] | None, headers: dict[str, str]) -> Any:
@@ -511,12 +532,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--base-sha", required=True)
     a = ap.parse_args(argv)
     # pinned to the exact shas this job runs for, never "the PR's diff right now"
-    diff = _gh(
-        f"repos/{a.repo}/compare/{a.base_sha}...{a.head}",
-        "-H",
-        "Accept: application/vnd.github.diff",
-    )
-    pr = json.loads(_gh(f"repos/{a.repo}/pulls/{a.pr}"))
+    try:
+        diff = _gh(
+            f"repos/{a.repo}/compare/{a.base_sha}...{a.head}",
+            "-H",
+            "Accept: application/vnd.github.diff",
+        )
+        pr = json.loads(_gh(f"repos/{a.repo}/pulls/{a.pr}"))
+    except Unavailable as exc:
+        print(f"independent review @ {a.head[:9]}: UNAVAILABLE ({exc})")
+        print("::error title=REVIEW_UNAVAILABLE::GitHub did not answer; queued for retry")
+        return UNAVAILABLE
     if pr["head"]["sha"] != a.head:
         print("FAIL: the head moved while the diff was read; the new head gets its own review")
         return 1

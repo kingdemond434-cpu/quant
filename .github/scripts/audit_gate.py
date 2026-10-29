@@ -485,31 +485,54 @@ def checks(
 # ------------------------------------------------------------------------ the GitHub side
 
 
+#: GitHub's own outage answers (independent_review.TRANSIENT, mirrored: that job runs `python -I`
+#: from ops/release and imports nothing from here). Only a READ is retried: a merge, a label or a
+#: status write that got a 5xx may have happened, and doing it twice is not this function's call.
+_TRANSIENT = re.compile(
+    r"HTTP (?:429|5\d\d)\b|rate limit|timed? ?out|connection (?:reset|refused)|\bEOF\b",
+    re.IGNORECASE,
+)
+_GH_TRIES = 4
 #: Seconds any one gh call may take before the gate gives up on it.
 GH_TIMEOUT_S = 120
 
 
-def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
+def _gh(
+    *args: str, data: Mapping[str, Any] | None = None, sleep: Callable[[float], None] = time.sleep
+) -> Any:
     cmd = ["gh", "api", *args]
     if data is not None:
         cmd += ["--input", "-"]
-    p = subprocess.run(
-        cmd,
-        input=json.dumps(data) if data is not None else None,
-        capture_output=True,
-        text=True,
-        # gh prints UTF-8; the Windows box defaults to cp1252, and one multibyte character in a PR
-        # body killed the reader thread and left stdout None, so every sweep crashed (2026-10-29).
-        encoding="utf-8",
-        errors="replace",
-        check=False,
-        # A hung gh held the box sweep's mutex from 13:53Z on 2026-10-29 and no sweep ran after:
-        # every call ends, and a timeout is an error the sweep logs (it never merges on one).
-        timeout=GH_TIMEOUT_S,
-    )
-    if p.returncode != 0:
-        raise RuntimeError(f"gh api {' '.join(args)}: {p.stderr.strip()[:300]}")
-    return json.loads(p.stdout) if p.stdout.strip() else None
+    # gh turns -f/-F fields into a POST by itself
+    read = data is None and not {"-X", "--method", "-f", "-F", "--field", "--raw-field"} & set(args)
+    for attempt in range(_GH_TRIES if read else 1):
+        try:
+            p = subprocess.run(
+                cmd,
+                input=json.dumps(data) if data is not None else None,
+                capture_output=True,
+                text=True,
+                # gh prints UTF-8; the Windows box defaults to cp1252, and one multibyte character
+                # in a PR body killed the reader thread and left stdout None, so every sweep
+                # crashed (2026-10-29).
+                encoding="utf-8",
+                errors="replace",
+                check=False,
+                # A hung gh held the box sweep's mutex from 13:53Z on 2026-10-29 and no sweep ran
+                # after: every call ends, and a timeout is an error the sweep logs (it never
+                # merges on one).
+                timeout=GH_TIMEOUT_S,
+            )
+        except subprocess.TimeoutExpired:
+            err = f"timed out after {GH_TIMEOUT_S}s"
+        else:
+            if p.returncode == 0:
+                return json.loads(p.stdout) if p.stdout.strip() else None
+            err = p.stderr.strip()[:300]
+        if not (read and _TRANSIENT.search(err)) or attempt == _GH_TRIES - 1:
+            raise RuntimeError(f"gh api {' '.join(args)}: {err}")
+        sleep(2.0 * 2**attempt)
+    raise AssertionError("unreachable")
 
 
 def _git(*args: str) -> str:
