@@ -37,6 +37,14 @@
   "judge_min_share": 0.15,
   "judge_wait_phases": ["done"],
   "health_why": "RED CHECK (owner rule 23): BOX_BOTTLENECKS.json health and stall_watch.json cpu_shape go RED when the judge's share of the box stays under judge_min_share (0.15 = ~2.7 of 18 cores; raise it by commit once the reserve's effect is measured) for more than 2 consecutive passes while it has runnable work (a live sweep whose JUDGE_SWEEP_PHASE.json phase is not in judge_wait_phases), or when the hunter's own measurement is UNMEASURED for more than 2 passes. Read by desks/mt5/scripts/check_desk_health.py.",
+  "compute_ledger": {
+    "outputs": {
+      "judge": {"unit": "verdicts",
+                "sources": [{"file": "desks/mt5/reports/JUDGING_THROUGHPUT.json", "path": ["rate", "verdicts_per_day"]},
+                            {"file": "desks/mt5/reports/JUDGING_RATE.json", "path": ["verdicts_per_day"]}]}
+    },
+    "why": "REPORT ONLY. libs/ops/box_compute_ledger.py books every process's CPU-seconds, IO and RSS to its organ each pass and sums them per UTC day in desks/mt5/reports/BOX_COMPUTE_LEDGER.json; an output count listed here (by group) turns that into yield per core-hour, and free_cpu_first ranks which organ should get freed CPU first. An output that is absent or not a number is UNMEASURED, never zero. Add a group's cheap output count here by commit."
+  },
   "mining_floor_cores": 6,
   "judge_reserve": {
     "base_mask": "0xFF00",

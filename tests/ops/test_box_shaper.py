@@ -182,6 +182,8 @@ def test_a_real_pass_measures_this_host_and_writes_the_report(tmp_path: Path) ->
     assert {"top", "judge", "memecoin", "actions", "refused", "ram", "disk_free_gb"} <= set(doc)
     assert doc["line"].startswith("CPU SHAPE ") and "box " in doc["line"]
     assert doc["health"]["verdict"] in ("GREEN", "WATCH", "RED")
+    # the compute ledger rides the same pass, next to the report, and never acts
+    assert (tmp_path / "BOX_COMPUTE_LEDGER.json").exists() and "error" not in doc["compute_ledger"]
 
 
 def _applied(out: bs.Plan) -> bs.Plan:
