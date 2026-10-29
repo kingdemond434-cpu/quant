@@ -665,6 +665,9 @@ $relPaths = @(
     # MT5-ProcessHealth's hourly clock: last backup, last restore drill, the restic job state and
     # the key backup's present/size/match. Scheme only: no path, repository, password or hash.
     "desks/mt5/reports/BACKUP_STATE.json",
+    # DID EVERY AUDITOR CLEAR LAND (owner rule 23, 2026-10-29): check_desk_health.py's
+    # unlanded-clears reader (the hourly `desk_health` leg) writes it beside DESK_HEALTH.json.
+    "desks/mt5/reports/UNLANDED_CLEARS.json",
     # THE LANE STATE FILES. Until 2026-09-06 the only thing that crossed this wire was the
     # 424-byte health SUMMARY, so no reader on the other side could see a single sleeve: not its
     # status, not its forward n, not its expectancy, not its day count. That is why "are the two
