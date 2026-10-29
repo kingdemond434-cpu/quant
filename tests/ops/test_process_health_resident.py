@@ -256,3 +256,72 @@ def test_never_stale_skips_resident_running_and_escalates_hung_and_silent_with_c
     assert by["MT5-Silent"]["diagnosis"] == ph.RESIDENT_UNMEASURED_CURE
     assert out["status"] == "NEEDS_HUMAN"
     assert out["acted"] == []
+
+
+# --- Auditor HOLD on #510 (35ed8f4ec): the regressions ----------------------------------------
+
+def _art(box: Path, rel: str, age_min: float) -> None:
+    art = box / rel
+    art.write_text("{}", "utf-8")
+    t = time.time() - age_min * 60
+    os.utime(art, (t, t))
+
+
+def test_an_unreadable_task_definition_is_resident_unmeasured_with_its_cure_never_green(
+    monkeypatch: pytest.MonkeyPatch, box: Path,
+) -> None:
+    # MF1: garbage XML, no contract, 5-day-old desk log -> was RESIDENT_RUNNING
+    (box / "Tasks" / "MT5-Garbled").write_bytes(b"<Task><not-closed>")
+    log = box / "desks" / "mt5" / "logs" / "MT5-Garbled.log"
+    log.write_text("x", "utf-8")
+    t = time.time() - 5 * 1440 * 60
+    os.utime(log, (t, t))
+    doc = _build(monkeypatch, _row("MT5-Garbled"))
+    row = _by(doc)["MT5-Garbled"]
+    assert row["verdict"] == "RESIDENT_UNMEASURED"
+    assert "task definition unreadable" in row["why"]
+    assert row["cure"] == ph.RESIDENT_LIMITS_CURE
+    assert "cure: " + ph.RESIDENT_LIMITS_CURE in row["why"]
+    assert doc["status"] == "ATTENTION" and doc["n_needing_attention"] == 1
+
+
+def test_a_wedged_instance_appending_to_its_log_is_hung_on_its_contracted_artifact(
+    monkeypatch: pytest.MonkeyPatch, box: Path,
+) -> None:
+    # MF2: PT20M limit, contracted artifact 300 min old, log 1 min old -> was RESIDENT_RUNNING
+    _task(box, "MT5-Wedged", log_age_min=1, limit="PT20M")
+    _art(box, "wedged.json", 300)
+    monkeypatch.setattr(ph, "_contracts", lambda: {"MT5-Wedged": ("wedged.json", 600, "x")})
+    doc = _build(monkeypatch, _row("MT5-Wedged"))
+    row = _by(doc)["MT5-Wedged"]
+    assert row["verdict"] == "HUNG" and "wedged.json" in row["why"]
+    assert row["resident"]["judged_output"] == "wedged.json"
+    assert doc["status"] == "RED" and doc["hung"] == ["MT5-Wedged"]
+
+
+def test_no_limit_no_contract_and_no_cadence_is_resident_unmeasured_not_green(
+    monkeypatch: pytest.MonkeyPatch, box: Path,
+) -> None:
+    # Should: PT0S + no contract + no repetition interval -> nothing bounds the output's age
+    xml = _xml("MT5-Unbounded", str(box / "u.log"), "PT0S").decode("utf-16")
+    xml = xml.replace("<Repetition><Interval>PT1H</Interval></Repetition>", "")
+    (box / "Tasks" / "MT5-Unbounded").write_bytes(xml.encode("utf-16"))
+    (box / "u.log").write_text("x", "utf-8")
+    doc = _build(monkeypatch, _row("MT5-Unbounded"))
+    row = _by(doc)["MT5-Unbounded"]
+    assert row["verdict"] == "RESIDENT_UNMEASURED"
+    assert row["cure"] == ph.RESIDENT_UNBOUNDED_CURE and doc["status"] == "ATTENTION"
+
+
+@pytest.mark.parametrize("enc", ["utf-8", "utf-16"])
+def test_a_definition_carrying_a_doctype_is_refused_before_parsing(
+    tmp_path: Path, enc: str,
+) -> None:
+    # Should: XXE / billion-laughs -- a DOCTYPE never reaches ET.fromstring
+    bomb = ('<?xml version="1.0"?><!DOCTYPE t [<!ENTITY a "aaaaaaaaaa">'
+            '<!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;">]><Task>&b;</Task>')
+    with pytest.raises(ValueError, match="DOCTYPE"):
+        tl.parse_limits(bomb.encode(enc))
+    (tmp_path / "MT5-Bomb").write_bytes(bomb.encode(enc))
+    lim = tl.task_limits("\\MT5-Bomb", tmp_path)
+    assert lim["execution_time_limit_min"] is None and "unreadable" in lim["why"]

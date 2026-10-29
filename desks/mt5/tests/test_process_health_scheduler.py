@@ -72,6 +72,10 @@ def test_running_gateway_with_overlap_result_and_fresh_artifact_is_healthy(monke
         "MT5-Gateway": ("gateway.json", 10, "broker check"),
     })
     monkeypatch.setattr(ph, "_age_min", lambda path: 1.0)
+    # a READABLE definition (Auditor MF1 on #510: an unreadable one is RESIDENT_UNMEASURED)
+    monkeypatch.setattr(ph, "_task_limits", lambda name: {
+        "execution_time_limit": "PT72H (default)", "execution_time_limit_min": 4320.0,
+        "interval_min": None, "logs": [], "why": ""})
 
     # 0x800710E0 on a Running task is its own resident instance refusing a relaunch (2026-10-29):
     # RESIDENT_RUNNING, judged healthy by its fresh artifact -- not a fault on the board.

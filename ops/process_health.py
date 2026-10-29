@@ -419,7 +419,7 @@ def _age_min(path: Path) -> float | None:
 #: such tasks were Running, none a run-as or logon refusal). Under MultipleInstances=IgnoreNew the
 #: scheduler refuses the NEXT start because the task's own resident or long instance is still in
 #: the first one. So the code says nothing about health; the instance's output does. The row is
-#: RESIDENT_RUNNING, judged by the freshest of its artifact and its log, against its own
+#: RESIDENT_RUNNING, judged by its contracted artifact (else its log), against its own
 #: ExecutionTimeLimit (past it: HUNG, RED) and its contract or cadence (past it: STALE).
 RESIDENT_CODE = 0x800710E0
 RESIDENT_MEANING = ("an instance is already running: the task's resident or long instance "
@@ -434,6 +434,13 @@ RESIDENT_UNMEASURED_CURE = ("declare a log or contract an artifact: give the tas
                             "`>> \"...\\<Task>.log\" 2>&1` redirect (or write "
                             "desks/mt5/logs/<Task>.log), or add its output to "
                             "ops/organ_contract.CONTRACTS")
+#: The task definition could not be read (missing, garbled, DOCTYPE refused): bounds unknown.
+RESIDENT_LIMITS_CURE = ("make the task definition readable: re-register the task (its install_*"
+                        "_task.ps1) so C:\\Windows\\System32\\Tasks\\<Task> is a well-formed "
+                        "task XML that MT5-ProcessHealth's account can read")
+#: PT0S, no contract and no repetition interval: nothing says how old its output may be.
+RESIDENT_UNBOUNDED_CURE = ("bound the resident: give it an ExecutionTimeLimit or a repetition "
+                           "interval, or add its output to ops/organ_contract.CONTRACTS")
 _task_limits_mod: Any = None
 
 
@@ -472,6 +479,7 @@ def judge_resident(name: str, artifact: str, artifact_age: float | None,
     lim = _task_limits(name)
     limit = lim.get("execution_time_limit_min")
     interval = lim.get("interval_min")
+    limits_why = str(lim.get("why") or "")
     ages: list[tuple[float, str]] = []
     if artifact and artifact_age is not None:
         ages.append((artifact_age, artifact))
@@ -480,30 +488,55 @@ def judge_resident(name: str, artifact: str, artifact_age: float | None,
         if a is not None:
             ages.append((a, str(log)))
     fresh = min(ages) if ages else None
+    # WHAT HUNG IS JUDGED ON (Auditor MF2, #510): with an artifact contract, the ARTIFACT's age.
+    # A wedged instance can keep appending retry lines to its `>>` log, so the log never proves
+    # the work is moving. The log is the measure only when there is no contracted artifact.
+    judged = fresh
+    if artifact:
+        judged = None if artifact_age is None else (artifact_age, artifact)
     facts: dict[str, Any] = {
         "execution_time_limit": lim.get("execution_time_limit"),
         "execution_time_limit_min": limit, "interval_min": interval,
         "freshest_output": None if fresh is None else fresh[1],
         "freshest_output_age_min": None if fresh is None else round(fresh[0], 1),
-        "limits_why": lim.get("why") or None,
+        "judged_output": None if judged is None else judged[1],
+        "judged_output_age_min": None if judged is None else round(judged[0], 1),
+        "limits_why": limits_why or None,
+        "cure": None,
     }
-    if fresh is not None and limit is not None and fresh[0] > limit:
-        return "HUNG", (f"HUNG: {name} is Running with no output for {fresh[0]:.0f} min, past its "
-                        f"own ExecutionTimeLimit {lim.get('execution_time_limit')} "
-                        f"({limit:g} min); freshest output {fresh[1]}"), facts
+    if judged is not None and limit is not None and judged[0] > limit:
+        return "HUNG", (f"HUNG: {name} is Running with no output for {judged[0]:.0f} min, past "
+                        f"its own ExecutionTimeLimit {lim.get('execution_time_limit')} "
+                        f"({limit:g} min); judged on {judged[1]}"), facts
     if artifact and artifact_age is None:
         return "NO_ARTIFACT", f"{artifact} does not exist (resident instance running)", facts
     if artifact and max_age and artifact_age is not None and artifact_age > max_age:
         return "STALE", (f"resident instance running but {artifact_age:.0f} min old against a "
                          f"{max_age} min contract"), facts
+    if limits_why:
+        # Auditor MF1 (#510): an unreadable definition means the limit, cadence and declared log
+        # are all UNKNOWN, so neither HUNG nor STALE could be judged. Never green.
+        facts["cure"] = RESIDENT_LIMITS_CURE
+        return "RESIDENT_UNMEASURED", (f"resident instance running but {limits_why}: its "
+                                       "ExecutionTimeLimit and cadence are UNMEASURED -- never "
+                                       f"green; cure: {RESIDENT_LIMITS_CURE}"), facts
     if not artifact and interval and fresh is not None and \
             fresh[0] > RESIDENT_CADENCE_FACTOR * interval:
         return "STALE", (f"resident instance running but its freshest output is "
                          f"{fresh[0]:.0f} min old against a {interval:g} min cadence"), facts
     if fresh is None:
+        facts["cure"] = RESIDENT_UNMEASURED_CURE
         return "RESIDENT_UNMEASURED", ("resident instance running with ZERO observable output "
                                        "(no artifact contract and no log found) -- never "
                                        f"green; cure: {RESIDENT_UNMEASURED_CURE}"), facts
+    if limit is None and not artifact and not interval:
+        # No ExecutionTimeLimit (PT0S), no contract and no repetition interval: nothing bounds
+        # how old the output may be, so a log of any age would read green. UNMEASURED.
+        facts["cure"] = RESIDENT_UNBOUNDED_CURE
+        return "RESIDENT_UNMEASURED", ("resident instance running with no ExecutionTimeLimit, no "
+                                       "artifact contract and no repetition interval: nothing "
+                                       "bounds its output's age -- never green; cure: "
+                                       f"{RESIDENT_UNBOUNDED_CURE}"), facts
     bound = ("its ExecutionTimeLimit" if limit is not None else "no ExecutionTimeLimit")
     return "RESIDENT_RUNNING", (f"resident instance running; freshest output "
                                 f"{fresh[0]:.0f} min old, inside {bound}"), facts
@@ -635,7 +668,7 @@ def build() -> dict[str, Any]:
                             else RESIDENT_MEANING if resident is not None
                             else RESULT_MEANING.get(code, f"code {code}")),
             "resident": resident,
-            "cure": RESIDENT_UNMEASURED_CURE if verdict == "RESIDENT_UNMEASURED" else None,
+            "cure": (resident or {}).get("cure") if verdict == "RESIDENT_UNMEASURED" else None,
             "artifact": artifact or None,
             "artifact_age_min": None if age is None else round(age, 1),
             "contract_max_age_min": max_age or None,

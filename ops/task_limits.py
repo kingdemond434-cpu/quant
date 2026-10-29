@@ -47,7 +47,13 @@ def _find(root: ET.Element, path: str) -> ET.Element | None:
 
 
 def parse_limits(data: bytes) -> dict[str, Any]:
-    """The limits in one task definition (UTF-16 with a BOM, as Windows writes it)."""
+    """The limits in one task definition (UTF-16 with a BOM, as Windows writes it).
+    A DOCTYPE (and so any entity declaration: XXE, billion laughs) is refused with ValueError
+    BEFORE parsing; a real task definition never carries one."""
+    up = data.upper()
+    for enc in ("utf-8", "utf-16-le", "utf-16-be"):
+        if "<!DOCTYPE".encode(enc) in up or "<!ENTITY".encode(enc) in up:
+            raise ValueError("task definition carries a DOCTYPE/ENTITY declaration: refused")
     root = ET.fromstring(data)
     limit = _find(root, "Settings/ExecutionTimeLimit")
     policy = _find(root, "Settings/MultipleInstancesPolicy")

@@ -377,6 +377,10 @@ def test_a_localised_running_state_excuses_an_overlap_code(
             "OK schtasks",
         ),
     )
+    # a READABLE definition (Auditor MF1 on #510: an unreadable one is RESIDENT_UNMEASURED)
+    monkeypatch.setattr(ph, "_task_limits", lambda name: {
+        "execution_time_limit": "PT72H (default)", "execution_time_limit_min": 4320.0,
+        "interval_min": None, "logs": [], "why": ""})
     doc, by = _build(monkeypatch, tmp_path, {"MT5-Gateway": ("fresh.json", 120, "gateway")})
     # the resident instance refusing a relaunch (0x800710E0, 2026-10-29), read in German too
     assert by["MT5-Gateway"]["verdict"] == "RESIDENT_RUNNING"
