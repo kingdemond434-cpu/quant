@@ -21,10 +21,11 @@ THE VERDICTS, per lane (`LANES`):
     UNMEASURED   no state file on this host; a real answer, never a pass (L1.28a)
 
 and per certificate: in a promoting lane, in the farm, or in NO lane. A certificate in no lane
-for longer than one cycle is RED, and the farm (which enrols every lane-less certificate) is
-re-run on this pass.
+for longer than one cycle is RED.
 
-THE RESTART IS THE LANE'S OWN ENGINE, run as a subprocess inside this leg's budget, skipped when
+ONLY THE FARM IS EVER RESTARTED HERE, and only when its own ledger is stale. A stale promoting
+lane is reported RED and left to its scheduled task and stall_watch. THE RESTART IS THE FARM'S OWN
+ENGINE, run as a subprocess inside this leg's budget, skipped when
 a process already runs that script (a hung engine is `stall_watch`'s to kill, not this leg's),
 and proved only by the lane's `updated_at` moving -- never by a return code.
 
@@ -279,11 +280,19 @@ def run(*, budget_s: float = 900.0, repair: bool = True,
     repairs: list[dict[str, Any]] = []
     if repair:
         for lane in lanes:
-            if lane["verdict"] == STALE:
-                repairs.append(restart(lane["lane"], LANES[lane["lane"]], deadline))
-        farm_restarted = any(r.get("lane") == "farm" for r in repairs)
-        if cov.get("in_no_lane_over_one_cycle") and not farm_restarted:
-            repairs.append(restart("farm", LANES["farm"], deadline))
+            if lane["verdict"] != STALE:
+                continue
+            if LANES[lane["lane"]].get("promoting"):
+                # A PROMOTING LANE IS NEVER RESTARTED FROM HERE (audit on #487, 2026-10-29): its
+                # engine is owned by its scheduled task (MT5-Shadow every 15 min, 2,700 s budget),
+                # a restart inside this leg's 900 s would be killed partway, and "not running"
+                # races that task. The lane is RED in this report and in the failure ledger;
+                # killing a hung engine is stall_watch's.
+                repairs.append({"lane": lane["lane"], "status": "REPORTED",
+                                "why": "promoting lane: owned by its scheduled task and "
+                                       "stall_watch, never restarted by this leg"})
+                continue
+            repairs.append(restart(lane["lane"], LANES[lane["lane"]], deadline))
         if repairs:
             now = _now()
             docs = {name: _read(SHADOW / spec["state"]) for name, spec in LANES.items()}

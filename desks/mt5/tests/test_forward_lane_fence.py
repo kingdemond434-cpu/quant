@@ -74,11 +74,12 @@ def test_common_clock_counts_clocks_per_horizon() -> None:
     assert got["clocks_with_at_least_days"]["30"] == 0
 
 
-def test_a_stale_lane_is_restarted_and_proved_by_its_stamp(
+def test_a_stale_farm_is_restarted_and_a_stale_promoting_lane_only_reported(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     shadow = tmp_path / "shadow"
-    shadow.mkdir()
+    (shadow / "farm").mkdir(parents=True)
     (shadow / "qquant_shadow_state.json").write_text(json.dumps(_lane(9.0, {})))
+    (shadow / "farm" / "near_miss_farm.json").write_text(json.dumps(_lane(9.0, {})))
     monkeypatch.setattr(flf, "SHADOW", shadow)
     monkeypatch.setattr(flf, "_now", lambda: NOW)
     monkeypatch.setattr(flf, "_running", lambda script: False)
@@ -88,7 +89,7 @@ def test_a_stale_lane_is_restarted_and_proved_by_its_stamp(
 
     def fake_run(cmd: list[str], **_: Any) -> Any:
         ran.append(cmd)
-        (shadow / "qquant_shadow_state.json").write_text(json.dumps(_lane(0.0, {})))
+        (shadow / "farm" / "near_miss_farm.json").write_text(json.dumps(_lane(0.0, {})))
 
         class P:
             returncode, stdout, stderr = 0, "ok", ""
@@ -96,9 +97,10 @@ def test_a_stale_lane_is_restarted_and_proved_by_its_stamp(
 
     monkeypatch.setattr(flf.subprocess, "run", fake_run)
     doc = flf.run(out=tmp_path / "out.json")
-    assert [Path(c[1]).name for c in ran] == ["qquant_shadow.py"]
-    assert doc["repairs"][0]["status"] == "RESTARTED"
-    assert doc["stale_lanes"] == [] and doc["verdict"] == "GREEN"
+    assert [Path(c[1]).name for c in ran] == ["near_miss_farm.py"], "never a promoting engine"
+    by_lane = {r["lane"]: r["status"] for r in doc["repairs"]}
+    assert by_lane == {"qquant": "REPORTED", "farm": "RESTARTED"}
+    assert doc["stale_lanes"] == ["qquant"] and doc["verdict"] == "RED"
 
 
 def test_hourly_leg_is_wired() -> None:
