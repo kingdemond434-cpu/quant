@@ -414,3 +414,51 @@ def test_one_manifest_row_per_task_and_the_watcher_has_an_independent_contract()
     assert dup == []
     oc = (ROOT / "ops/organ_contract.py").read_text(encoding="utf-8")
     assert '"desks/mt5/reports/MERGE_PIPELINE.json", 45' in oc
+
+
+def test_a_queued_live_push_run_is_red() -> None:
+    """2026-10-29 19:45Z: LIVE's push runs sat queued behind ~120 PR runs and Adopt-And-Seal
+    waited on them; nothing went RED because no PR check was the one waiting."""
+    live = [_commit("fix", 1)]
+    run = {"event": "push", "head_branch": mp.LIVE, "created_at": _iso(45)}
+    rep = mp.assess(NOW, [], {}, {}, [run], 20, live)
+    assert [r.split(":")[0] for r in rep["red"]] == ["LIVE_CI_QUEUED"]
+    pr_run = dict(run, event="pull_request")
+    assert (
+        mp.assess(NOW, [], {}, {}, [pr_run, dict(run, created_at=_iso(5))], 20, live)["status"]
+        == "GREEN"
+    )
+
+
+def test_the_sign_train_heartbeat_reds_when_stale_failing_wedged_or_unread() -> None:
+    """#541 audit MF3: a failing or wedged sign train is never silent."""
+    live = [_commit("fix", 1)]
+    ok = {"at": _iso(5), "rc": 0, "fail_runs": 0, "mutex_held_runs": 0}
+    rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=ok, sign_expected=True)
+    assert rep["status"] == "GREEN" and rep["sign_train"]["rc"] == 0
+    cases = (
+        (dict(ok, at=_iso(45)), "SIGN_TRAIN_STALE"),
+        (dict(ok, rc=1, fail_runs=3), "SIGN_TRAIN_FAILING"),
+        (dict(ok, rc=4, mutex_held_runs=3), "SIGN_TRAIN_WEDGED"),
+        (None, "SIGN_TRAIN_BLIND"),
+    )
+    for beat, kind in cases:
+        rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=beat, sign_expected=True)
+        assert [r.split(":")[0] for r in rep["red"]] == [kind]
+    two = dict(ok, rc=1, fail_runs=2)  # two in a row is not yet RED
+    assert mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=two, sign_expected=True)["red"] == []
+
+
+def test_the_sign_train_leg_never_stacks_a_sign_and_is_watched() -> None:
+    ps = (ROOT / "ops/box/sign_train_leg.ps1").read_text(encoding="utf-8")
+    assert '--search "head:claude/sign-train-" --limit 100' in ps  # #541 audit MF1
+    assert "ls-remote origin" in ps and "reused the pushed" in ps  # MF2: a pushed sign is reused
+    assert "AbandonedMutexException" in ps and "mutex_held_runs" in ps  # S1, S2
+    assert "--principal" not in ps.split("& $Python", 1)[1].split("\n", 1)[0]
+    assert "signed \\d+ file" not in ps  # S3: read from git, not the wording
+    gate = (ROOT / "ops/box/workflow_gate.ps1").read_text(encoding="utf-8")
+    assert "--sign-heartbeat $sign" in gate
+    rows = (ROOT / "desks/mt5/ops/box_tasks.manifest").read_text(encoding="utf-8")
+    assert 'TASK name="Quant-SignTrain"' in rows
+    inst = (ROOT / "ops/box/install_unattended.ps1").read_text(encoding="utf-8")
+    assert "Add-QuantTask 'Quant-SignTrain' 'sign_train_leg.ps1'" in inst

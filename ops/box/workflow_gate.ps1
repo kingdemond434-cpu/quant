@@ -59,7 +59,8 @@ function Watch {
         $script = Join-Path $Clone "scripts\merge_pipeline_watch.py"
         if (-not $py -or -not (Test-Path -LiteralPath $script)) { Say "watch: no Python or no watcher in the clone"; return }
         $report = Join-Path $QuantRoot "desks\mt5\reports\MERGE_PIPELINE.json"
-        $wout = (& $py -I -u $script --repo $Repo --base $Live --out $report --heartbeat $beat 2>&1 | Out-String)
+        $sign = Join-Path $LogDir "sign_train.json"  # Quant-SignTrain's heartbeat (#541 audit MF3)
+        $wout = (& $py -I -u $script --repo $Repo --base $Live --out $report --heartbeat $beat --sign-heartbeat $sign 2>&1 | Out-String)
         Say "watch rc=$LASTEXITCODE $($wout.Trim())"
     } catch {
         Say "watch failed: $($_.Exception.Message)"
