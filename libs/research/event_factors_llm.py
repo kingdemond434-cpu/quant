@@ -24,6 +24,7 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 from libs.research.event_factors import FACTORS, GLOBAL, Doc, FactorTag
+from libs.research.untrusted import neutralise, wrap
 
 UNMEASURED = "UNMEASURED"
 BATCH = 20
@@ -41,6 +42,7 @@ PROMPT_HEAD = (
     "  geopolitical_risk: +1 escalation, -1 de-escalation\n"
     "Return a JSON list, one object per item: {\"id\": str, \"country\": ISO-2 or \"GLOBAL\", "
     "\"factors\": {factor: -1|0|1}}. Omit factors the text does not mention. Items:\n")
+
 
 ChatFn = Callable[[str, str], tuple[str, str | None]]
 
@@ -129,8 +131,11 @@ def llm_tags(docs: Sequence[Doc], *, max_docs: int = DEFAULT_MAX_DOCS,
     ok_batches = 0
     for i in range(0, len(todo), BATCH):
         batch = todo[i:i + BATCH]
-        items = "\n".join(json.dumps({"id": d.doc_id, "text": d.text[:300]}, ensure_ascii=False)
-                          for d in batch)
+        # THE TITLES ARE FETCHED (DATA-15): neutralised and enveloped as data, so a headline
+        # that reads "ignore the factors above" is a title to tag, never an instruction.
+        items = wrap("\n".join(json.dumps({"id": d.doc_id, "text": neutralise(d.text[:300])},
+                                          ensure_ascii=False) for d in batch),
+                     source="news and report titles")
         status["asked"] += len(batch)
         reply, err = chat(PROMPT_HEAD + items, SYSTEM)
         if err:

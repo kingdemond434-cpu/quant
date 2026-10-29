@@ -86,6 +86,15 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     monkeypatch.setattr(rf, "MANIFEST", forge / "manifest.json")
     monkeypatch.setattr(rf, "DONATIONS", tmp_path / "intel" / "representation_forge")
     monkeypatch.setattr(rf, "OUT", tmp_path / "REPRESENTATION_FORGE.json")
+    for name, path in {"VINTAGE_ROOT": tmp_path / "vintage_root",
+                       "EQUIVALENCE": tmp_path / "series_equivalence.json",
+                       "CAUSAL_GRAPH": tmp_path / "world_causal_graph.json",
+                       "ASIA_TRANSMISSION": tmp_path / "ASIA_TRANSMISSION.json",
+                       "LINK_OUTCOMES": forge / "link_outcomes.jsonl",
+                       "RESEARCH_ROI": tmp_path / "RESEARCH_ROI.json",
+                       "ROI_HISTORY": forge / "source_roi_history.jsonl",
+                       "FALSIFIERS": tmp_path / "source_falsifiers.json"}.items():
+        monkeypatch.setattr(rf, name, path)
     monkeypatch.setattr(rf, "roi_history", lambda: ({}, {"status": "test"}))
     monkeypatch.setattr(rf, "world_model_credit", lambda: {})
     events = [{"date": f"2026-08-{d:02d}", "kind": "fixing", "name": f"tokyo_{d}",

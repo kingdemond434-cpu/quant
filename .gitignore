@@ -155,6 +155,9 @@ web/*
 **/reports/shadow/*
 !**/reports/shadow/shadow_health.json
 lake/
+# domain_factories' axis docs are DERIVED every pass from its vintage store (~20 MB each for the
+# job-postings panels); the store under data/domain_factories/ is the record, these are views.
+desks/mt5/data/axes/alt_df[jnpw]_*.json
 docs/EXTERNAL_PANEL_DOSSIER.md
 # commit-audit payload: 425KB of `git log --since=24h` patches, REGENERATED on every run by
 # ops/run_commit_audit.sh. Same class as EXTERNAL_PANEL_DOSSIER.md above -- a derived panel
@@ -252,6 +255,16 @@ desks/mt5/data/task_queue.jsonl
 desks/mt5/data/dsr_trial_sharpes.jsonl
 desks/mt5/data/task_queue.subs.json
 desks/mt5/data/task_queue.watermark
+# The lanes' sidecars (DATA-50): links, per-host rate limits and token-bucket levels are as
+# box-local as the leases, and the data versions the lanes producer has already queued.
+desks/mt5/data/task_queue.links.json
+desks/mt5/data/task_queue.limits.json
+desks/mt5/data/task_queue.buckets.json
+desks/mt5/data/task_queue.buckets.tmp
+desks/mt5/data/queue_data_versions.json
+# The discovery loop's per-box state (ledger, priors, flow stamps, pass history); its fold is
+# desks/mt5/reports/DISCOVERY_LOOP.json.
+desks/mt5/data/discovery_loop/
 # Cross-account fence (mt5desk.cross_account): each account's book as THIS box's lanes last read
 # it, and the placement lock. A book or lock carried to another checkout would be read there as
 # the live account's state; both are box-local by construction.

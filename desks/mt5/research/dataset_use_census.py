@@ -42,6 +42,17 @@ would spend that budget off the books. So the value side is split honestly: nove
 trial) and credited outcome (paid for, by the gauntlet). The unfed list is ordered by novelty, so
 a reader added to close D18 feeds the most informative series first.
 
+THE SOURCE LEDGER (DATA-07, 2026-10-07). The same pass publishes one row per source / dataset /
+version in `reports/DATASET_LEDGER.json` (+ a committed digest): access state, coverage, history
+depth, the fields it cannot fill (by name), PIT status, latest release and ingestion, freshness
+against its own cadence, consumers and last consumption, features minted from it, credited
+outcomes, NON-CELL utility (reads in any use but `new_hypotheses`), cost, the first blocker, the
+contract's acquisition method / licence / production eligibility / provenance (DATA-38), and
+BASELINE vs BASELINE+DATA: where the one gauntlet judged a conditioned child AND its unconditioned
+parent (`params.conditioner` naming the dataset), the verdict delta is published; everywhere else
+it is UNMEASURED by name. The stage chain and PIT stamp of the registry sources are read from
+`source_drain`'s own chain state, never re-derived.
+
 THE TARGET IS 0 AND THE FIX IS A READER, NEVER A DELETION. Retiring a dataset to improve this
 number is the museum the principal forbade in the other direction; the list is the work queue.
 
@@ -76,7 +87,26 @@ REPORT = DESK / "reports" / "DATASET_USE.json"
 DIGEST = DESK / "data" / "digests" / "dataset_use_digest.json"
 DIGEST_LIST = 200
 RESEARCH_ROI = DESK / "reports" / "RESEARCH_ROI.json"
+LEDGER_REPORT = DESK / "reports" / "DATASET_LEDGER.json"
+LEDGER_DIGEST = DESK / "data" / "digests" / "dataset_ledger_digest.json"
+CHAIN_STATE = DESK / "data" / "source_chain_state.json"
+DRAIN_REPORT = DESK / "reports" / "SOURCE_DRAIN.json"
+ASIA_SOURCES = DESK / "data" / "asia_sources.json"
+GENOMES = DESK / "data" / "feature_genome" / "genomes.json"
+CONTRACTS_STORE = DESK / "data" / "feature_genome" / "contracts.json"
+GATE_VERDICTS = DESK / "reports" / "universal_gates_external.json"
+#: The fields a ledger row owes, in order. One left UNMEASURED is named in `missing_fields`.
+LEDGER_FIELDS: tuple[str, ...] = (
+    "source", "version", "access_state", "coverage", "history_depth_days", "pit_status",
+    "latest_release", "latest_ingestion", "freshness", "consumers", "last_consumption",
+    "features", "outcomes", "non_cell_utility", "cost", "acquisition_method", "licence",
+    "production_eligible", "provenance", "baseline_vs_data")
+#: Hours a dataset may go unrefreshed: three times its own cadence (source_drain's rule).
+CADENCE_WINDOW_H = {"realtime": 3.0, "intraday": 18.0, "daily": 144.0, "weekly": 1_008.0,
+                    "monthly": 4_320.0, "quarterly": 12_960.0, "irregular": 6_480.0}
+NON_CELL_USES = tuple(u for u in U.USES if u != "new_hypotheses")
 NOVELTY_MIN_OVERLAP = 24
+UNMEASURED = "UNMEASURED"
 #: Bound on the pairwise novelty pass: series beyond it read UNMEASURED by name, never 1.0.
 NOVELTY_MAX_SERIES = 4000
 
@@ -103,7 +133,7 @@ def _monthly_changes(path: str) -> pd.Series | None:
     """Month-end first-seen values, differenced. Panels (repeated index) are not one series."""
     try:
         df = pd.read_parquet(path)
-    except Exception:                                                   # noqa: BLE001
+    except Exception:
         return None
     if "value" not in df.columns or not df.index.is_unique:
         return None
@@ -234,7 +264,7 @@ def build(now: datetime | None = None, *, use_root: Path | None = None,
         k = by_kind.setdefault(r["kind"], {"held": 0, "fed": 0, "unfed": 0})
         k["held"] += 1
         k["fed" if r["status"] == "FED" else "unfed"] += 1
-    by_use: dict[str, int] = {u: 0 for u in U.USES}
+    by_use: dict[str, int] = dict.fromkeys(U.USES, 0)
     for r in rows:
         for u in r["uses"]:
             by_use[u] = by_use.get(u, 0) + 1
@@ -247,7 +277,9 @@ def build(now: datetime | None = None, *, use_root: Path | None = None,
     ranked = sorted(((k, v) for k, v in value.items() if "novelty_per_fetch_s" in v),
                     key=lambda kv: -float(kv[1]["novelty_per_fetch_s"]))
     orphan_reads = sorted(set(reads) - set(held))
+    led = ledger(rows, value, reads, now, acquired=acquired, axes=axes, lake=lake)
     return {
+        "ledger": led, "ledger_summary": ledger_summary(led),
         "measured_at": now.isoformat(timespec="seconds"),
         "duty": "CRO D18 -- no unfed datasets",
         "unfed_datasets": len(unfed),
@@ -281,6 +313,280 @@ def build(now: datetime | None = None, *, use_root: Path | None = None,
     }
 
 
+def _read(path: Path, default: Any) -> Any:
+    try:
+        return json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return default
+
+
+def _ts(value: Any) -> datetime | None:
+    try:
+        t = pd.Timestamp(str(value))
+    except (TypeError, ValueError):
+        return None
+    if pd.isna(t):
+        return None
+    return (t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")).to_pydatetime()
+
+
+def _feature_counts(path: Path = GENOMES) -> dict[str, int] | None:
+    doc = _read(path, None)
+    rows = doc.get("genomes") if isinstance(doc, dict) else None
+    if not isinstance(rows, dict):
+        return None
+    out: dict[str, int] = {}
+    for row in rows.values():
+        if isinstance(row, dict) and row.get("dataset"):
+            out[str(row["dataset"])] = out.get(str(row["dataset"]), 0) + 1
+    return out
+
+
+def _chain_rows() -> dict[str, dict[str, Any]]:
+    """source_drain's per-source chain (its own report rows, else its committed chain state)."""
+    rows = (_read(DRAIN_REPORT, {}) or {}).get("rows")
+    if isinstance(rows, list) and rows:
+        return {str(r.get("id")): r for r in rows if isinstance(r, dict) and r.get("id")}
+    by = (_read(CHAIN_STATE, {}) or {}).get("by_source")
+    return {str(k): dict(v) for k, v in by.items()} if isinstance(by, dict) else {}
+
+
+def baseline_deltas(path: Path = GATE_VERDICTS) -> dict[str, list[dict[str, Any]]]:
+    """dataset -> [child vs parent verdict pairs] where the gauntlet judged BOTH the cell
+    conditioned on the dataset and the same cell without it. Pairs only on exact equality of
+    family, symbol and every other parameter -- a delta against a different cell is not one."""
+    doc = _read(path, {})
+    verdicts = [v for v in (doc.get("verdicts") or []) if isinstance(v, dict)
+                and not v.get("unmeasured")] if isinstance(doc, dict) else []
+    def _key(v: dict[str, Any]) -> str:
+        p = {k: x for k, x in (v.get("params") or {}).items() if k != "conditioner"} \
+            if isinstance(v.get("params"), dict) else {}
+        return json.dumps([v.get("family"), v.get("sym") or v.get("symbol"), p],
+                          sort_keys=True, default=str)
+    parents = {_key(v): v for v in verdicts
+               if not (isinstance(v.get("params"), dict) and v["params"].get("conditioner"))}
+    out: dict[str, list[dict[str, Any]]] = {}
+    from research_only_fence import dataset_ids
+    for v in verdicts:
+        cond = v.get("params", {}).get("conditioner") if isinstance(v.get("params"), dict) \
+            else None
+        if not cond:
+            continue
+        par = parents.get(_key(v))
+        if par is None:
+            continue
+        def _metric(x: dict[str, Any]) -> float | None:
+            for k in ("sharpe", "exp_r", "mean_r", "expectancy"):
+                if isinstance(x.get(k), (int, float)):
+                    return float(x[k])
+            return None
+        mc, mp = _metric(v), _metric(par)
+        row = {"child": v.get("cell"), "parent": par.get("cell"), "conditioner": cond,
+               "child_passed": bool(v.get("passed")), "parent_passed": bool(par.get("passed")),
+               "delta_passed": int(bool(v.get("passed"))) - int(bool(par.get("passed"))),
+               "delta_metric": (round(mc - mp, 6) if mc is not None and mp is not None
+                                else UNMEASURED)}
+        for ds in dataset_ids(cond):
+            out.setdefault(ds, []).append(row)
+    return out
+
+
+def _freshness(latest_ingestion: datetime | None, cadence: str | None,
+               coverage: dict[str, Any], now: datetime) -> dict[str, Any]:
+    if latest_ingestion is None:
+        return {"status": UNMEASURED, "why": "no ingestion timestamp"}
+    age_h = round((now - latest_ingestion).total_seconds() / 3600.0, 2)
+    window, basis = None, ""
+    if cadence and str(cadence).lower() in CADENCE_WINDOW_H:
+        window, basis = CADENCE_WINDOW_H[str(cadence).lower()], f"declared cadence {cadence}"
+    else:
+        first, last, rows = coverage.get("first"), coverage.get("last"), coverage.get("rows")
+        a, b = _ts(first), _ts(last)
+        if a and b and isinstance(rows, int) and rows > 1:
+            spacing_h = (b - a).total_seconds() / 3600.0 / (rows - 1)
+            window, basis = max(24.0, 3.0 * spacing_h), "3x the observed spacing of its rows"
+    if window is None:
+        return {"status": UNMEASURED, "age_h": age_h, "why": "no cadence declared or inferable"}
+    return {"status": "FRESH" if age_h <= window else "STALE", "age_h": age_h,
+            "window_h": round(window, 1), "basis": basis}
+
+
+def _blocker(row: dict[str, Any]) -> str:
+    acc = str(row.get("access_state") or "")
+    if acc.startswith(("REFUSED", "BLOCKED", "NEEDS_KEY", "TERMS")):
+        return f"ACCESS: {acc}"
+    stage = row.get("stage_reached")
+    if stage not in (None, "cells_judged") and row.get("stops_at"):
+        return f"CHAIN: stops at {row['stops_at']} ({row.get('chain_why') or 'source_drain'})"
+    if str(row.get("pit_status") or "").startswith(("NO_AUTHORITY", "UNSTAMPED")):
+        return f"PIT: {row['pit_status']}"
+    if (row.get("freshness") or {}).get("status") == "STALE":
+        return "FRESHNESS: older than three times its own cadence"
+    if row.get("status") != "FED":
+        return "CONSUMPTION: no recorded consumer read inside the window"
+    if row.get("production_eligible") is False:
+        return "PRODUCTION: research-only (no live_signal permission) -- research use only"
+    return "NONE"
+
+
+def ledger(rows: list[dict[str, Any]], value: dict[str, dict[str, Any]],
+           reads: dict[str, dict[str, Any]], now: datetime, *, acquired: Path = ACQUIRED,
+           axes: Path = AXES, lake: Path = LAKE) -> list[dict[str, Any]]:
+    """DATA-07: one row per source / dataset / version, every field measured or named missing."""
+    reg = _read(acquired, {}) or {}
+    series_meta = reg.get("series") or {}
+    by_url = reg.get("by_url") or {}
+    keyed = reg.get("access") or {}
+    chain = _chain_rows()
+    asia = {str(r.get("id")): r for r in ((_read(ASIA_SOURCES, {}) or {}).get("sources") or [])
+            if isinstance(r, dict) and r.get("id")}
+    feats = _feature_counts(GENOMES)
+    deltas = baseline_deltas(GATE_VERDICTS)
+    try:
+        from research_only_fence import eligibility_index
+        elig = eligibility_index([r["dataset"] for r in rows], contracts_path=CONTRACTS_STORE,
+                                 acquired_path=acquired)
+    except Exception as exc:
+        elig = {r["dataset"]: {"production_eligible": None,
+                               "why": f"fence unavailable: {type(exc).__name__}"} for r in rows}
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        ds, kind = r["dataset"], r["kind"]
+        name = ds.split(":", 1)[1]
+        e: dict[str, Any] = {"dataset": ds, "kind": kind, "status": r["status"]}
+        coverage: dict[str, Any] = {}
+        ingest: datetime | None = None
+        cadence: str | None = None
+        if kind == "acquired":
+            m = series_meta.get(name) or {}
+            url = str(m.get("url") or "")
+            u = by_url.get(url) or {}
+            e["source"] = url or UNMEASURED
+            seen = m.get("refreshed_at") or m.get("acquired_at")
+            e["version"] = (f"{seen}#{str(m.get('schema_hash') or '')[:12]}".rstrip("#")
+                            if seen else UNMEASURED)
+            e["access_state"] = str((keyed.get(url) or {}).get("state") or u.get("status")
+                                    or ("COLLECTED" if m.get("rows") else UNMEASURED))
+            if u.get("refusal"):
+                e["access_state"] = f"REFUSED: {u['refusal']}"
+            coverage = {"first": m.get("first"), "last": m.get("last"), "rows": m.get("rows")}
+            e["pit_status"] = ("AUTHORITY" if m.get("pit_authority") is True else
+                               ("NO_AUTHORITY: " + (", ".join(str(b) for b in
+                                                              (m.get("pit_blocking") or [])[:3])
+                                                    or "the certifier withheld it")
+                                if m.get("pit_authority") is False else UNMEASURED))
+            e["latest_release"] = m.get("last") or UNMEASURED
+            ingest = _ts(seen)
+            e["history_status"] = m.get("history_status")
+        elif kind == "axis":
+            a = _read(axes / f"{name}.json", {}) or {}
+            e["source"] = a.get("source") or UNMEASURED
+            e["version"] = a.get("at") or UNMEASURED
+            e["access_state"] = "COLLECTED" if a.get("n_rows") else UNMEASURED
+            coverage = {"first": a.get("first"), "last": a.get("last"), "rows": a.get("n_rows")}
+            e["pit_status"] = (f"KNOWABLE_LAG_{a['knowable_lag_days']}D"
+                               if a.get("knowable_lag_days") is not None else UNMEASURED)
+            e["latest_release"] = a.get("last") or UNMEASURED
+            ingest = _ts(a.get("at"))
+        else:                                            # lake series, often an asia source
+            c = chain.get(name) or {}
+            src = asia.get(name) or {}
+            pit = _read(lake / f"{name}.pit.json", {}) or {}
+            e["source"] = src.get("url") or c.get("url") or UNMEASURED
+            cadence = src.get("cadence") or c.get("cadence")
+            path = next((lake / f"{name}{x}" for x in (".parquet", ".csv")
+                         if (lake / f"{name}{x}").exists()), None)
+            try:
+                mtime = datetime.fromtimestamp(path.stat().st_mtime, UTC) if path else None
+            except OSError:
+                mtime = None
+            e["version"] = mtime.isoformat(timespec="seconds") if mtime else UNMEASURED
+            e["access_state"] = str(c.get("last_status") or ("COLLECTED" if c.get("collected")
+                                                             else UNMEASURED))
+            frames = pit.get("frames") if isinstance(pit, dict) else None
+            coverage = {"first": pit.get("first") if isinstance(pit, dict) else None,
+                        "last": pit.get("last") if isinstance(pit, dict) else None,
+                        "rows": c.get("n_rows") or (pit.get("n_rows") if isinstance(pit, dict)
+                                                    else None)}
+            e["pit_status"] = ("STAMPED" if c.get("pit_stamped") or any(
+                isinstance(f, dict) and f.get("status") == "STAMPED" for f in frames or [])
+                else (f"UNSTAMPED: {c.get('parse_error')}" if c.get("parse_error")
+                      else UNMEASURED))
+            e["latest_release"] = coverage.get("last") or UNMEASURED
+            e["stage_reached"], e["stops_at"] = c.get("stage_reached"), c.get("stops_at")
+            e["chain_why"] = c.get("why")
+            ingest = mtime
+        e["coverage"] = coverage if any(v is not None for v in coverage.values()) else UNMEASURED
+        a, b = _ts(coverage.get("first")), _ts(coverage.get("last"))
+        e["history_depth_days"] = round((b - a).total_seconds() / 86400.0, 1) if a and b \
+            else UNMEASURED
+        e["latest_ingestion"] = ingest.isoformat(timespec="seconds") if ingest else UNMEASURED
+        e["freshness"] = _freshness(ingest, cadence, coverage, now)
+        rd = reads.get(ds) or {}
+        cons = rd.get("consumers") or {}
+        e["consumers"] = sorted(cons) or UNMEASURED
+        lasts = [str(v.get("last_read_at")) for v in cons.values() if v.get("last_read_at")]
+        e["last_consumption"] = max(lasts) if lasts else UNMEASURED
+        e["versions_read"] = sorted({str(v.get("version")) for v in cons.values()
+                                     if v.get("version") is not None})
+        if feats is None:
+            e["features"] = UNMEASURED
+        else:
+            host = str((series_meta.get(name) or {}).get("host") or "") if kind == "acquired" \
+                else ""
+            e["features"] = feats.get(ds, 0) + (feats.get(f"acquired:{host}", 0) if host else 0)
+        iv = value.get(ds) or {}
+        e["outcomes"] = iv.get("outcome") or UNMEASURED
+        e["cost"] = iv.get("cost") or UNMEASURED
+        live_uses = set(rd.get("uses") or [])
+        e["non_cell_utility"] = (sorted(live_uses & set(NON_CELL_USES)) if rd else UNMEASURED)
+        el = elig.get(ds) or {}
+        e["acquisition_method"] = el.get("acquisition_method", UNMEASURED)
+        e["licence"] = el.get("licence", UNMEASURED)
+        e["production_eligible"] = el.get("production_eligible")
+        e["production_why"] = el.get("why")
+        e["provenance"] = el.get("provenance", UNMEASURED)
+        pairs = deltas.get(ds)
+        e["baseline_vs_data"] = ({"status": "MEASURED", "pairs": pairs[:10], "n_pairs": len(pairs),
+                                  "mean_delta_passed": round(sum(p["delta_passed"] for p in pairs)
+                                                             / len(pairs), 4)}
+                                 if pairs else
+                                 {"status": UNMEASURED,
+                                  "why": "no cell conditioned on this dataset was judged beside "
+                                         "its unconditioned parent"})
+        e["missing_fields"] = [f for f in LEDGER_FIELDS
+                               if e.get(f) in (None, UNMEASURED, [], "")
+                               or (isinstance(e.get(f), dict)
+                                   and e[f].get("status") == UNMEASURED)]
+        e["blocker"] = _blocker(e)
+        out.append(e)
+    return out
+
+
+def ledger_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    def count(pred: Any) -> int:
+        return sum(1 for r in rows if pred(r))
+    blockers: dict[str, int] = {}
+    for r in rows:
+        k = str(r["blocker"]).split(":", 1)[0]
+        blockers[k] = blockers.get(k, 0) + 1
+    missing: dict[str, int] = {}
+    for r in rows:
+        for f in r["missing_fields"]:
+            missing[f] = missing.get(f, 0) + 1
+    return {"datasets": len(rows), "blockers": blockers, "missing_field_counts": missing,
+            "pit_authority": count(lambda r: str(r.get("pit_status")).startswith(
+                ("AUTHORITY", "STAMPED", "KNOWABLE"))),
+            "fresh": count(lambda r: (r.get("freshness") or {}).get("status") == "FRESH"),
+            "stale": count(lambda r: (r.get("freshness") or {}).get("status") == "STALE"),
+            "with_non_cell_use": count(lambda r: isinstance(r.get("non_cell_utility"), list)
+                                       and r["non_cell_utility"]),
+            "production_eligible": count(lambda r: r.get("production_eligible") is True),
+            "research_only_or_uncontracted": count(lambda r: r.get("production_eligible")
+                                                   is False),
+            "baseline_measured": count(lambda r: r["baseline_vs_data"]["status"] == "MEASURED")}
+
+
 def _atomic(path: Path, doc: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(f".tmp{os.getpid()}")
@@ -290,6 +596,16 @@ def _atomic(path: Path, doc: Any) -> None:
 
 def main() -> int:
     doc = build()
+    led = doc.pop("ledger")
+    _atomic(LEDGER_REPORT, {"measured_at": doc["measured_at"],
+                            "row": "DATA-07: per source / dataset / version ledger",
+                            "fields": list(LEDGER_FIELDS), "summary": doc["ledger_summary"],
+                            "rows": led})
+    _atomic(LEDGER_DIGEST, {"measured_at": doc["measured_at"], "summary": doc["ledger_summary"],
+                            "report": "desks/mt5/reports/DATASET_LEDGER.json",
+                            "blocked_first": [{k: r.get(k) for k in ("dataset", "blocker",
+                                                                       "missing_fields")}
+                                              for r in led if r["blocker"] != "NONE"][:100]})
     _atomic(REPORT, doc)
     digest = {k: doc[k] for k in ("measured_at", "duty", "unfed_datasets", "target",
                                   "datasets_held", "fed", "by_kind", "fed_by_use", "evidence")}
@@ -301,6 +617,8 @@ def main() -> int:
     _atomic(DIGEST, digest)
     print(f"dataset use: {doc['fed']}/{doc['datasets_held']} fed, unfed_datasets="
           f"{doc['unfed_datasets']} (target 0); by kind {doc['by_kind']}")
+    print(f"source ledger: {doc['ledger_summary']['datasets']} row(s), blockers "
+          f"{doc['ledger_summary']['blockers']} -> {LEDGER_REPORT}")
     print("YIELD " + json.dumps({"targets": doc["unfed_datasets"]}))
     return 0
 

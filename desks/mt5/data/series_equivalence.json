@@ -1,0 +1,15 @@
+{
+ "rule": "Each class lists series ids (as world_model.load_inputs names them) from DIFFERENT sources that measure ONE quantity. The representation forge publishes, per cross-source pair, the spread, its z-score and the first member conditioned on the disagreement state. A member absent on this box is reported by name, never imputed. Add a class here when a second source of a quantity is ingested.",
+ "classes": {
+  "eur_usd_spot": {
+   "members": ["ecb_sdw:eur_usd_ref", "fred_series:DEXUSEU", "fred:DEXUSEU"],
+   "unit": "USD per EUR",
+   "why": "the ECB euro reference rate (14:15 CET concertation) and the Federal Reserve H.10 noon buying rate price the same exchange rate at different instants from different institutions"
+  },
+  "us_policy_rate": {
+   "members": ["bis_policy_rates:EURUSD:quote_rate", "fred_series:DFF", "fred:DFF"],
+   "unit": "percent",
+   "why": "BIS central-bank policy-rate statistics (the USD leg of the EURUSD row) and the effective federal funds rate published by the Federal Reserve both measure the US policy stance"
+  }
+ }
+}

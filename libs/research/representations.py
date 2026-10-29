@@ -473,6 +473,147 @@ def vintage_revision(series: Series) -> Series:
                    series_id=representation_id(series.dataset, "vintage_revision", {}))
 
 
+#: The 5% critical value of sup|Brownian bridge| (Kolmogorov): the OLS-CUSUM statistic of
+#: Ploberger and Kraemer crosses it with probability 0.05 on a window with no break in its mean.
+BREAK_CRITICAL: Final[float] = 1.358
+BREAK_OUTPUTS: Final[tuple[str, ...]] = ("stat", "flag", "age")
+
+
+def structural_break(series: Series, *, window: int = 60, output: str = "stat",
+                     min_prior: int = MIN_PRIOR) -> Series:
+    """A rolling OLS-CUSUM break test over the trailing window ENDING AT t, inclusive.
+
+    The window holds only points knowable at t, so the statistic at t reads nothing later. The
+    CUSUM of deviations from the window's own mean, scaled by sd * sqrt(n), is the sup of a
+    Brownian bridge when the mean did not move, and crosses `BREAK_CRITICAL` five times in a
+    hundred when it did not. `output` picks the representation:
+
+        stat   the statistic itself (the strength of the evidence for a break)
+        flag   1.0 when it crosses the critical value, else 0.0 (the break FLAG)
+        age    observations since the last flagged point (the break DATE, as a distance) --
+               absent until a first break has been flagged, never a fabricated "infinitely old"
+    """
+    if output not in BREAK_OUTPUTS:
+        raise ValueError(f"structural_break output must be one of {BREAK_OUTPUTS}")
+    points = series.sorted().points
+    buf: deque[float] = deque(maxlen=max(4, window))
+    out: list[Point] = []
+    seen = 0
+    last_break: int | None = None
+    floor = max(4, min_prior)
+    for point in points:
+        if not _finite(point.value):
+            continue
+        buf.append(point.value)
+        seen += 1
+        n = len(buf)
+        if n < floor:
+            continue
+        values = list(buf)
+        mu = _mean(values)
+        sd = _sd(values)
+        stat = 0.0
+        if _finite(sd) and sd > EPS:
+            running = peak = 0.0
+            for v in values:
+                running += v - mu
+                peak = max(peak, abs(running))
+            stat = peak / (sd * math.sqrt(n))
+        flagged = stat > BREAK_CRITICAL
+        if flagged:
+            last_break = seen
+        if output == "stat":
+            out.append(point.with_value(stat))
+        elif output == "flag":
+            out.append(point.with_value(1.0 if flagged else 0.0))
+        elif last_break is not None:
+            out.append(point.with_value(float(seen - last_break)))
+    return replace(series, points=tuple(out),
+                   series_id=representation_id(series.dataset, "structural_break",
+                                               {"window": window, "output": output}))
+
+
+def half_life(series: Series, *, window: int = 120, min_prior: int = MIN_PRIOR) -> Series:
+    """The AR(1) mean-reversion half-life, in observations, over the trailing window ending at t.
+
+    dx_j = a + beta * x_{j-1} on the pairs inside the window; phi = 1 + beta; the half-life is
+    -ln 2 / ln phi. Only 0 < phi < 1 reverts, so a trending or oscillating window emits NOTHING
+    at t -- absence, not an infinite or negative number. Running sums over a deque of pairs keep
+    it O(n), for the reason `zscore` records.
+    """
+    points = [p for p in series.sorted().points if _finite(p.value)]
+    pairs: deque[tuple[float, float]] = deque()
+    sx = sy = sxx = sxy = 0.0
+    out: list[Point] = []
+    cap = max(4, window)
+    for i in range(1, len(points)):
+        xl = points[i - 1].value
+        dx = points[i].value - xl
+        pairs.append((xl, dx))
+        sx += xl
+        sy += dx
+        sxx += xl * xl
+        sxy += xl * dx
+        if len(pairs) > cap:
+            ox, oy = pairs.popleft()
+            sx -= ox
+            sy -= oy
+            sxx -= ox * ox
+            sxy -= ox * oy
+        n = len(pairs)
+        if n < max(4, min_prior):
+            continue
+        var = sxx - sx * sx / n
+        if var <= EPS * max(1.0, abs(sxx)):
+            continue
+        beta = (sxy - sx * sy / n) / var
+        phi = 1.0 + beta
+        if 0.0 < phi < 1.0:
+            hl = -math.log(2.0) / math.log(phi)
+            if _finite(hl) and hl <= 10.0 * cap:
+                out.append(points[i].with_value(hl))
+    return replace(series, points=tuple(out),
+                   series_id=representation_id(series.dataset, "half_life", {"window": window}))
+
+
+def ar_residual(series: Series, *, window: int = 0, min_prior: int = MIN_PRIOR) -> Series:
+    """The value minus its fitted expectation from its OWN LAG: x_t - (a + b * x_{t-1}).
+
+    a and b are fitted on the STRICT prior pairs only (window 0 = expanding, else the trailing
+    `window` pairs that end one step before t), so the point being explained never helps fit the
+    model that explains it. The seasonal half of "residual" is `surprise`; this is the
+    autoregressive half, and the two are different claims about what was expected.
+    """
+    points = [p for p in series.sorted().points if _finite(p.value)]
+    pairs: deque[tuple[float, float]] = deque()
+    sx = sy = sxx = sxy = 0.0
+    out: list[Point] = []
+    for i in range(1, len(points)):
+        x_prev, x_now = points[i - 1].value, points[i].value
+        n = len(pairs)
+        if n >= max(4, min_prior):
+            var = sxx - sx * sx / n
+            if var > EPS * max(1.0, abs(sxx)):
+                b = (sxy - sx * sy / n) / var
+                a = (sy - b * sx) / n
+                out.append(points[i].with_value(x_now - (a + b * x_prev)))
+        # Updated AFTER the point is emitted: the pair (x_{t-1}, x_t) only fits the model for t+1.
+        pairs.append((x_prev, x_now))
+        sx += x_prev
+        sy += x_now
+        sxx += x_prev * x_prev
+        sxy += x_prev * x_now
+        if window > 0 and len(pairs) > window:
+            ox, oy = pairs.popleft()
+            sx -= ox
+            sy -= oy
+            sxx -= ox * ox
+            sxy -= ox * oy
+    return replace(series, points=tuple(out),
+                   series_id=representation_id(series.dataset, "ar_residual",
+                                               {"window": window, "min_prior": min_prior}))
+
+
 #: Points between refits of the regime bucket cuts. Refitting at every point re-sorts the whole
 #: prefix -- O(n^2 log n) -- and the cuts move by nothing between neighbours; the block is still
 #: labelled by the cut fitted on everything BEFORE the block began, so causality is unchanged.
@@ -923,7 +1064,8 @@ class TransformSpec:
 #: The FAMILY is the unit ROI is tracked by. Two parameterisations of `zscore` are one bet about
 #: what normalisation buys; `zscore` and `vintage_revision` are not.
 FAMILIES: Final[tuple[str, ...]] = ("normalisation", "surprise", "seasonal", "dynamics",
-                                    "interaction", "event", "vintage", "state")
+                                    "interaction", "event", "vintage", "state", "structure",
+                                    "disagreement", "latent")
 
 TRANSFORMS: Final[dict[str, TransformSpec]] = {
     "diff": TransformSpec("diff", "dynamics", 1, diff, {"lag": 1}),
@@ -940,6 +1082,10 @@ TRANSFORMS: Final[dict[str, TransformSpec]] = {
                                         {"window": 20}),
     "spectral_state": TransformSpec("spectral_state", "state", 1, spectral_state, {"window": 32}),
     "vintage_revision": TransformSpec("vintage_revision", "vintage", 1, vintage_revision, {}),
+    "structural_break": TransformSpec("structural_break", "structure", 1, structural_break,
+                                      {"window": 60, "output": "stat"}),
+    "half_life": TransformSpec("half_life", "structure", 1, half_life, {"window": 120}),
+    "ar_residual": TransformSpec("ar_residual", "surprise", 1, ar_residual, {"window": 0}),
     "regime_conditioned": TransformSpec("regime_conditioned", "state", 2, regime_conditioned,
                                         {"buckets": 3}),
     "ratio": TransformSpec("ratio", "interaction", 2, ratio, {}),
