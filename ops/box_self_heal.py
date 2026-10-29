@@ -64,7 +64,9 @@ A process that is on neither list is never stopped: there is no default action.
 RED-LOGGED. Every action and every refusal is a RED row in desks/mt5/reports/BOX_SELF_HEAL.json
 (this pass) and appended to desks/mt5/logs/box_self_heal.jsonl (the ledger). The report carries its
 own `at`, and `check_desk_health.py` and the organ contract both read it, so a watchdog that
-stopped running shows RED rather than silence.
+stopped running shows RED rather than silence. When a pass STOPS, ENDS or STARTS anything (or
+fails to), or the gate restart gives up at its daily cap (paged once a UTC day), it pages zuck
+through libs/ops/alert_channels.send_all (ntfy on the box). A dry run never pages.
 """
 from __future__ import annotations
 
@@ -782,9 +784,33 @@ def rules_table() -> list[dict[str, Any]]:
              "budget_source": r.budget_source} for r in RULES]
 
 
+#: Verdicts that page zuck: something was stopped, ended or started (or failed to be), or the
+#: gate restart gave up at its daily cap. A refusal for any other reason is RED in the report only.
+PAGE_VERDICTS = frozenset({"STOPPED", "ENDED", "STARTED", "STOP_FAILED", "END_FAILED",
+                           "START_FAILED"})
+
+
+def _send_alert(title: str, body: str) -> dict[str, Any]:
+    """libs/ops/alert_channels.send_all, anchored on the repo root (ntfy is armed on the box)."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.ops import alert_channels
+    return alert_channels.send_all(title, body,
+                                   config=ROOT / "data" / "secrets" / "alert_channels.json",
+                                   ledger=ROOT / "data" / "alert_delivery.jsonl")
+
+
+def _pages(rows: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    return [r for r in rows if r.get("verdict") in PAGE_VERDICTS
+            or (r.get("rule") == "workflow_gate_restart" and r.get("verdict") == "REFUSED"
+                and "restarts already today" in str(r.get("why")))]
+
+
 def run(*, apply: bool = True, box: Box | None = None, now: float | None = None,
-        report: Path = REPORT, ledger: Path = LEDGER, state: Path = STATE) -> dict[str, Any]:
-    """One pass. Writes the report, appends RED rows to the ledger, keeps cross-pass state."""
+        report: Path = REPORT, ledger: Path = LEDGER, state: Path = STATE,
+        alert: Callable[[str, str], Any] | None = None) -> dict[str, Any]:
+    """One pass. Writes the report, appends RED rows to the ledger, keeps cross-pass state, and
+    pages zuck when it acted or gave up at the restart cap (once a UTC day for the give-up)."""
     b = box or real_box()
     t = datetime.now(UTC).timestamp() if now is None else now
     prior = _read_json(state)
@@ -808,12 +834,28 @@ def run(*, apply: bool = True, box: Box | None = None, now: float | None = None,
            "rows": p.rows, "rules": rules_table(),
            "deferred": [{"paste_line": k, "owner": v} for k, v in DEFERRED],
            "deny": [n for n, _ in DENY]}
+    pages = _pages(p.rows) if apply else []
+    day = datetime.fromtimestamp(t, tz=UTC).date().isoformat()
+    gave_up = [r for r in pages if r.get("verdict") == "REFUSED"]
+    if gave_up and prior.get("gave_up_paged") == day:
+        pages = [r for r in pages if r.get("verdict") != "REFUSED"]   # one give-up page a day
+    doc["paged"] = None
+    if pages:
+        body = "\n".join(f"{r['rule']}: {r['verdict']} -- {r['why']}" for r in pages)[:1500]
+        try:
+            res = (alert or _send_alert)(f"Box self-heal on {b.host}: {len(pages)} action(s)",
+                                         body)
+            doc["paged"] = {"rows": len(pages), "result": res if isinstance(res, dict) else
+                            str(res)}
+        except Exception as exc:          # a pager failure is RED, never a lost pass
+            doc["paged"] = {"rows": len(pages), "error": f"{type(exc).__name__}: {exc}"[:200]}
     _write_json(report, doc)
     _append_ledger(ledger, red)
     keep = dict(p.observed)
     cutoff = t - 2 * 86400
     _write_json(state, {"at": _iso(t), "cpu": keep, "gate_tree": p.gate_tree,
                         "no_owner": p.next_no_owner,
+                        "gave_up_paged": (day if gave_up else prior.get("gave_up_paged")),
                         "restarts": [x for x in p.restarts if x >= cutoff]})
     return doc
 

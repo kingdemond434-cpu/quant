@@ -90,6 +90,11 @@ class FakeBox:
                        gate_beat=self.beat, windows=True)
 
 
+@pytest.fixture(autouse=True)
+def _no_real_pager(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(bsh, "_send_alert", lambda t, b: {"armed": 0, "test": True})
+
+
 def two_passes(tmp: Path, fb: FakeBox, *, cpu_after: dict[int, float] | None = None,
                apply: bool = True, gap_s: float = 5 * MIN) -> tuple[dict, dict]:
     """Pass 1 baselines CPU; pass 2 (gap_s later) judges progress. Returns both reports."""
@@ -431,6 +436,43 @@ def test_a_fresh_beat_from_runs_refused_by_a_held_mutex_is_still_a_dead_sweep(
     assert fb2.started == []
     held = rows(doc, "workflow_gate_restart")[0]
     assert held["verdict"] == "RUN_IN_PROGRESS" and held["mutex_held_runs"] == 5
+
+
+def test_it_pages_when_it_acts_and_once_a_day_when_it_gives_up(tmp_path: Path) -> None:
+    base = datetime(2026, 10, 29, 0, 30, tzinfo=UTC).timestamp()
+    sent: list[tuple[str, str]] = []
+    fb = FakeBox(tmp_path, [], beat_age_s=None)
+    fb.beat.write_text(json.dumps({"at": datetime.fromtimestamp(base - 6 * 3600, tz=UTC)
+                                   .isoformat(), "rc": 1}), "utf-8")
+    kw = {"report": tmp_path / "r.json", "ledger": tmp_path / "l.jsonl",
+          "state": tmp_path / "s.json", "alert": lambda t, b: sent.append((t, b))}
+    bsh.run(box=fb.box(), now=base, **kw)
+    assert len(sent) == 1 and "STARTED" in sent[0][1]
+    bsh.run(box=fb.box(), now=base + 60, **kw)                 # BACKOFF: RED, no page
+    assert len(sent) == 1
+    t = base
+    for wait in (30 * MIN, 60 * MIN, 120 * MIN):
+        t += wait + 1
+        bsh.run(box=fb.box(), now=t, **kw)
+    assert len(sent) == 4
+    bsh.run(box=fb.box(), now=t + 3600, **kw)                  # the cap: one give-up page
+    assert len(sent) == 5 and "restarts already today" in sent[-1][1]
+    bsh.run(box=fb.box(), now=t + 7200, **kw)                  # ...and not again today
+    assert len(sent) == 5
+    bsh.run(apply=False, box=fb.box(), now=base + 24 * 3600, **kw)   # a dry run never pages
+    assert len(sent) == 5
+
+
+def test_a_failing_pager_never_loses_the_pass(tmp_path: Path) -> None:
+    fb = FakeBox(tmp_path, [], beat_age_s=6 * 3600)
+
+    def boom(t: str, b: str) -> None:
+        raise OSError("ntfy down")
+
+    doc = bsh.run(box=fb.box(), now=NOW, report=tmp_path / "r.json",
+                  ledger=tmp_path / "l.jsonl", state=tmp_path / "s.json", alert=boom)
+    assert fb.started == ["Quant-WorkflowGate"] and "ntfy down" in doc["paged"]["error"]
+    assert json.loads((tmp_path / "r.json").read_text())["paged"]["error"]
 
 
 # ------------------------------------------------------------------------------- the report
