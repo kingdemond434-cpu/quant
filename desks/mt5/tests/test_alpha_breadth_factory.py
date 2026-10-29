@@ -679,3 +679,46 @@ def test_thin_pair_coverage_reads_unmeasured() -> None:
         series[f"s{i}"] = {x: float(v) for x, v in zip(d, rng.normal(size=len(d)), strict=True)}
     r = eb.realised_breadth(series)
     assert not r.measured and "coverage" in r.why
+
+
+def test_allocator_history_reading_is_informational_and_long(tmp_path: Path) -> None:
+    import pandas as pd
+
+    abm = ab
+    rng = np.random.default_rng(21)
+    idx = pd.date_range("2024-01-01", periods=300, freq="D", tz="UTC")
+    df = pd.DataFrame({f"s{i}": rng.normal(size=300) for i in range(12)}, index=idx)
+    df.iloc[:50, 0] = 0.0                               # flat days are absent, not zero
+    p = tmp_path / "daily_r.parquet"
+    df.to_parquet(p)
+    row = abm.allocator_history_reading(p)
+    assert row["status"] == eb.MEASURED and row["in_headline"] is False
+    assert row["n_obs"] == 250 and row["n_eff"] > 5.0
+    missing = abm.allocator_history_reading(tmp_path / "absent.parquet")
+    assert missing["status"] == eb.UNMEASURED and missing["n_eff"] is None
+
+
+def test_allocator_history_sums_rows_sharing_a_date_and_stamps_the_source(
+        tmp_path: Path) -> None:
+    import pandas as pd
+
+    idx = pd.DatetimeIndex(["2024-01-01T00:00Z", "2024-01-01T12:00Z", "2024-01-02T00:00Z"])
+    df = pd.DataFrame({"a": [0.01, 0.02, -0.01], "b": [0.03, 0.0, 0.02]}, index=idx)
+    p = tmp_path / "daily_r.parquet"
+    df.to_parquet(p)
+    seen: dict[str, dict[str, float]] = {}
+    real = ab.realised_breadth
+
+    def spy(series: dict[str, dict[str, float]], **kw: object) -> object:
+        seen.update(series)
+        return real(series, **kw)
+
+    ab.realised_breadth = spy  # type: ignore[assignment]
+    try:
+        row = ab.allocator_history_reading(p)
+    finally:
+        ab.realised_breadth = real  # type: ignore[assignment]
+    assert seen["a"]["2024-01-01"] == pytest.approx(0.03)          # R is additive: summed
+    assert seen["b"]["2024-01-01"] == pytest.approx(0.03)
+    assert row["rows_summed_into_a_day"] == 1 and row["unit"].startswith("R")
+    assert row["source_mtime"] and row["source_mtime"].startswith("20")
