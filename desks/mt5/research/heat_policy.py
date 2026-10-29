@@ -7,6 +7,10 @@ THE HIERARCHY, in the principal's words (2026-09-02):
 
     H_actual = clip(H*_robust, HEAT_TARGET, HEAT_HARD_CEILING)
 
+(2026-10-29, D-20261029-012: HEAT_HARD_CEILING is now 1.00 -- the principal removed the fixed
+30% cap -- so the outer bar is the measured curve ceiling and the survival envelope, and an
+unmeasured curve falls back to HEAT_UNMEASURED_FALLBACK, the 20% target.)
+
 and NOT `H_actual = HEAT_HARD_CEILING` (that is overbetting whenever the optimum is lower), and
 NOT a ceiling that shrinks every time uncertainty wiggles (that is a ceiling that becomes the
 growth bottleneck, which is the failure this module exists to end).
@@ -546,7 +550,7 @@ def catastrophe_override(*, broker_ok: bool = True, prices_fresh: bool = True,
 
 
 def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
-            target: float = HEAT_TARGET, hard_ceiling: float = HEAT_HARD_CEILING,
+            target: float = HEAT_TARGET, hard_ceiling: float | None = None,
             survival_ceiling: float | None = None,
             survival_why: str = "",
             mandate: bool = True, readiness: float = 1.0,
@@ -585,6 +589,11 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
     survive more heat than it can profitably use. None means unmeasured, and unmeasured never
     widens anything -- it simply leaves `hard_ceiling` as the only bar, exactly as before.
     """
+    # NO CURVE, NO LICENCE ABOVE THE FALLBACK (#303 v3 audit SF): the default ceiling is the
+    # measured-free HEAT_HARD_CEILING (1.00) only when a growth curve is in hand to choose inside
+    # it; with no curve it is HEAT_UNMEASURED_FALLBACK, the 20% target.
+    if hard_ceiling is None:
+        hard_ceiling = HEAT_HARD_CEILING if curve else HEAT_UNMEASURED_FALLBACK
     reasons: list[str] = []
     override, bad = catastrophe_override(**integrity) if integrity else (None, ())
     if override is not None:
@@ -715,7 +724,10 @@ def measured_ceiling(curve: dict[float, float], *, floor: float = HEAT_TARGET,
     wtv in future w new edges etc it can use those w 20 as minimum floor". The 20% floor stays.
 
     Deleting the constant outright would have been the wrong reading of that instruction, and the
-    constant itself says why. `HEAT_HARD_CEILING = 0.30` is not a round number somebody liked: it
+    constant itself says why. (Since 2026-10-29, D-20261029-012, the constant is 1.00 and the
+    fallback for an unreadable curve is HEAT_UNMEASURED_FALLBACK, 20%; the history below is why a
+    MEASURED ceiling replaced it.) `HEAT_HARD_CEILING = 0.30` was not a round number somebody
+    liked: it
     records a measurement taken 2026-09-02 across 256 sampled worlds on the 109-sleeve matrix,
     where the robust score ran +0.00133/day at the free optimum, +0.00072 at 20%, +0.00011 at 25%
     and NEGATIVE at 30%. On the book as it stood, 30% already destroyed wealth in the worlds the

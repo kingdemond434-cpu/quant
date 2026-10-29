@@ -39,6 +39,8 @@ for p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from mt5desk.gateway_config_fallback import HEAT_UNMEASURED_FALLBACK  # noqa: E402
+
 from libs.portfolio.rails import CALIBRATION, RAILS, calibration  # noqa: E402
 
 LEDGER = BASE / "data" / "missed_growth.jsonl"
@@ -213,7 +215,8 @@ def measure_survival_ceiling(r, alloc: dict, _fv: dict) -> dict[str, Any]:
         return {"verdict": UNMEASURED, "why": "the pass bound on survival without recording it"}
     curve = _curve(alloc)
     wanted = max(float(heat.get("free_optimum", 0.0)), float(heat.get("state_optimum", 0.0)))
-    g_want = _growth_at(curve, min(wanted, float(heat.get("hard_ceiling", 0.30))))
+    ceiling = float(heat.get("hard_ceiling", HEAT_UNMEASURED_FALLBACK))
+    g_want = _growth_at(curve, min(wanted, ceiling))
     g_cap = _growth_at(curve, float(surv))
     if g_want is None or g_cap is None:
         return {"verdict": UNMEASURED, "why": "curve does not cover the survival bar"}
@@ -236,7 +239,7 @@ def measure_effective_ceiling(r, alloc: dict, _fv: dict) -> dict[str, Any]:
     # What growth WANTED: the free optimum, or the state curve's argmax when that was higher.
     wanted = min(max(float(heat.get("free_optimum", 0.0)),
                      float(heat.get("state_optimum", 0.0))),
-                 float(heat.get("hard_ceiling", 0.30)))
+                 float(heat.get("hard_ceiling", HEAT_UNMEASURED_FALLBACK)))
     g_want = _growth_at(curve, wanted)
     g_cap = _growth_at(curve, float(heat.get("effective_ceiling", 0.0)))
     if g_want is None or g_cap is None:

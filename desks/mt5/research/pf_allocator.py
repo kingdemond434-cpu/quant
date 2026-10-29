@@ -56,7 +56,10 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from mt5desk.gateway_config_fallback import MAX_SLEEVE_HEAT_SHARE  # noqa: E402
+from mt5desk.gateway_config_fallback import (  # noqa: E402
+    HEAT_UNMEASURED_FALLBACK,
+    MAX_SLEEVE_HEAT_SHARE,
+)
 
 from libs.portfolio.latent_factors import crisis_share_from_drift  # noqa: E402
 from libs.portfolio.robust_elog import (  # noqa: E402
@@ -4557,11 +4560,14 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             # floor with a flat book while its own solve had earned 22.5%, and the artifact read
             # `binding: catastrophe` on a desk that was working perfectly.
             #
-            # Bounded by HEAT_HARD_CEILING (30%), which is the desk's standing policy ceiling and
-            # what every other deploy path already respects. The growth curve keeps its full 1.00
-            # sampling grid, so nothing about what the desk can MEASURE changes -- which is what
-            # the comment above promised in the first place.
-            _post_ceiling = max(HEAT_HARD_CEILING, float(verdict.total_heat))
+            # Bounded by the OPERATIVE ceiling the heat law resolved for this pass
+            # (`verdict.effective_ceiling`: the measured curve ceiling, clipped by the survival
+            # envelope and the book's independent risk), which every other deploy path already
+            # respects. HEAT_HARD_CEILING was 30% here until the principal removed the fixed cap
+            # (2026-10-29, D-20261029-012); it is now 1.00 and bounds nothing, so using it would
+            # reopen exactly the 100% licence above (#303 v3 audit MF1). The growth curve keeps
+            # its full 1.00 sampling grid: what the desk can MEASURE is unchanged.
+            _post_ceiling = max(float(verdict.effective_ceiling or 0.0), float(verdict.total_heat))
             _pbook = _pg_solve(ev, h_prev=_pg_prev, paths=_pg_paths_,
                                floor=float(verdict.total_heat),
                                ceiling=_post_ceiling,
@@ -5109,7 +5115,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     effective_heat["ceiling"] = {
         "growth_bar": round(float(ceiling_now), 6),
         "survival_bar": (None if surv_ceiling is None else round(float(surv_ceiling), 6)),
-        "unmeasured_fallback": HEAT_HARD_CEILING,
+        "unmeasured_fallback": HEAT_UNMEASURED_FALLBACK,
         "effective_bar": round(verdict.effective_ceiling, 6),
         "derived_from": verdict.effective,
         "bound_by": verdict.binding,
@@ -5330,7 +5336,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                         float(verdict.effective_ceiling) if verdict.effective_ceiling > 0
                         else float("inf")), 6),
                 "sample_max": CURVE_SAMPLE_MAX,
-                "unmeasured_fallback": HEAT_HARD_CEILING,
+                "unmeasured_fallback": HEAT_UNMEASURED_FALLBACK,
                 "rule": ("the operative ceiling is min(growth, survival, effective-independence) "
                          "-- three MEASURED bars, none of them a constant. The recorded 0.30 "
                          "survives only as the fallback when a bar cannot be read, because a "

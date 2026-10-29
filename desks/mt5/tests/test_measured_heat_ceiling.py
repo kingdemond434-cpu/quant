@@ -131,7 +131,11 @@ class TestTheSamplerNoLongerCapsTheCeilingAtThirty:
         """The two must stay separate constants. Collapsing them would make widening the sampler
         look like raising the risk bound, and the whole safety argument here is that it is not."""
         pfa = pytest.importorskip("research.pf_allocator")
-        assert pfa.CURVE_SAMPLE_MAX is not hp.HEAT_HARD_CEILING or "CURVE_SAMPLE_MAX" in dir(pfa)
+        src = (Path(pfa.__file__)).read_text(encoding="utf-8")
+        # its OWN assignment, never an alias of the policy constant
+        flat = src.replace(chr(13), "")
+        assert chr(10) + "CURVE_SAMPLE_MAX = " in flat
+        assert "CURVE_SAMPLE_MAX = HEAT_HARD_CEILING" not in flat
         assert pfa.CURVE_SAMPLE_MAX >= hp.HEAT_HARD_CEILING     # the sampler covers the account
 
 
@@ -171,3 +175,22 @@ class TestExtendingTheSamplerCannotRaiseTodaysHeat:
                  (0.10, 0.20, 0.30, 0.325, 0.35, 0.375, 0.40, 0.425, 0.45)}
         ceiling, _ = hp.measured_ceiling(curve)
         assert ceiling == pytest.approx(0.45)
+
+
+def test_the_posterior_challenger_is_bounded_by_the_operative_ceiling() -> None:
+    """#303 v3 audit MF1: with HEAT_HARD_CEILING at 1.00 the posterior challenger (which passes no
+    target) must be bounded by the ceiling the heat law resolved, never by the retired cap; and
+    the published unmeasured fallback is the 20% target (MF2)."""
+    src = (Path(__file__).resolve().parents[1] / "research" / "pf_allocator.py").read_text(
+        encoding="utf-8")
+    assert "_post_ceiling = max(float(verdict.effective_ceiling or 0.0)" in src
+    assert "max(HEAT_HARD_CEILING, float(verdict.total_heat))" not in src
+    assert '"unmeasured_fallback": HEAT_HARD_CEILING' not in src
+    assert src.count('"unmeasured_fallback": HEAT_UNMEASURED_FALLBACK') == 2
+
+
+def test_resolve_with_no_curve_defaults_to_the_fallback_not_the_open_ceiling() -> None:
+    from mt5desk.gateway_config_fallback import HEAT_UNMEASURED_FALLBACK
+    v = hp.resolve(0.9)
+    assert v.hard_ceiling == HEAT_UNMEASURED_FALLBACK
+    assert v.total_heat <= HEAT_UNMEASURED_FALLBACK + 1e-12
