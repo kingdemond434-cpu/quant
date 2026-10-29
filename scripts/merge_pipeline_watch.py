@@ -74,6 +74,14 @@ CLEAR_RE = re.compile(r"AUDITCLEAR([0-9a-f]{7,40})", re.I)
 NOT_CODE_RE = re.compile(r"^(mt5 box state|seal release)\b", re.I)
 
 
+def _streak(v: Any) -> int:
+    """A beat's run counter; anything that is not a whole number reads as past the RED bar."""
+    try:
+        return int(v or 0)
+    except (TypeError, ValueError):
+        return SWEEP_WEDGED_RUNS + 1
+
+
 def _ts(s: str | None) -> datetime | None:
     if not s:
         return None
@@ -198,8 +206,8 @@ def assess(
             red.append("SIGN_TRAIN_BLIND: the sign train's heartbeat could not be read")
         else:
             sage = _age_min(now, str(sign_beat.get("at") or ""))
-            sfails = int(sign_beat.get("fail_runs") or 0)
-            sheld = int(sign_beat.get("mutex_held_runs") or 0)
+            sfails = _streak(sign_beat.get("fail_runs"))
+            sheld = _streak(sign_beat.get("mutex_held_runs"))
             sign = {"at": sign_beat.get("at"), "age_min": sage, "rc": sign_beat.get("rc"),
                     "note": sign_beat.get("note"), "fail_runs": sfails,
                     "mutex_held_runs": sheld}  # fmt: skip
@@ -211,6 +219,9 @@ def assess(
                 red.append(f"SIGN_TRAIN_WEDGED: its mutex refused {sheld} runs in a row")
             wage = _age_min(now, str(sign_beat.get("waiting_since") or ""))
             sign["waiting_on"], sign["waiting_min"] = sign_beat.get("waiting_on"), wage
+            if sign_beat.get("waiting_on") and wage is None:  # a wait nobody can time
+                red.append(f"SIGN_TRAIN_WAITING: {sign_beat.get('waiting_on')} has no readable "
+                           "waiting_since")  # fmt: skip
             if wage is not None and wage / 60.0 > CLEAR_RED_H:  # a sign PR open, never merged
                 red.append(f"SIGN_TRAIN_WAITING: {sign_beat.get('waiting_on')} open "
                            f"{wage / 60.0:.1f} h")  # fmt: skip
@@ -220,7 +231,7 @@ def assess(
             red.append("SWEEP_BLIND: the box sweep's heartbeat could not be read")
         else:
             bage = _age_min(now, str(beat.get("at") or ""))
-            held = int(beat.get("mutex_held_runs") or 0)
+            held = _streak(beat.get("mutex_held_runs"))
             sweep = {"at": beat.get("at"), "age_min": bage, "rc": beat.get("rc"),
                      "note": beat.get("note"), "mutex_held_runs": held}  # fmt: skip
             if bage is None or bage > SWEEP_STALE_MIN:

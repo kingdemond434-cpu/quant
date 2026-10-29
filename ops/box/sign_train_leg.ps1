@@ -49,8 +49,23 @@ function Beat([int] $rc, [string] $note, [int] $held = 0, [string] $waitingOn = 
     if ($rc -ne 0 -and $rc -ne 4) { $fails = (Prev 'fail_runs') + 1 } elseif ($rc -eq 4) { $fails = Prev 'fail_runs' }
     $doc = [ordered]@{ at = (Get-Date).ToUniversalTime().ToString('o'); rc = $rc; note = $note; fail_runs = $fails; mutex_held_runs = $held }
     if ($waitingOn) { $doc.waiting_on = $waitingOn; $doc.waiting_since = $waitingSince }
-    $doc | ConvertTo-Json -Compress | Set-Content -LiteralPath "$beat.tmp" -Encoding UTF8
+    [System.IO.File]::WriteAllText("$beat.tmp", ($doc | ConvertTo-Json -Compress), (New-Object System.Text.UTF8Encoding($false)))
     Move-Item -LiteralPath "$beat.tmp" -Destination $beat -Force
+}
+# A wait keeps the first time it was seen, so a wait that never ends goes RED (v2 SF, v3 MF1).
+function Wait([string] $on, [string] $note) {
+    $since = (Get-Date).ToUniversalTime().ToString('o')
+    try { $prev = Get-Content -LiteralPath $beat -Raw | ConvertFrom-Json; if ($prev.waiting_on -eq $on -and $prev.waiting_since) { $since = $prev.waiting_since } } catch { }
+    Say $note; Beat 0 $note 0 $on $since
+}
+# gh's answer to a count query is its stdout alone, and it must be a number (v3 MF1): stderr
+# text such as an update notice can never read as "not zero".
+function GhCount([string[]] $ghArgs) {
+    $err = Join-Path $LogDir "sign_train_gh.err"
+    $out = (& $Gh @ghArgs 2>$err | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw "gh $($ghArgs[0..1] -join ' ') failed ($LASTEXITCODE): $((Get-Content -LiteralPath $err -Raw -ErrorAction SilentlyContinue))" }
+    if ($out -notmatch '^\d+$') { throw "gh $($ghArgs[0..1] -join ' ') answered '$out', not a count" }
+    return [int]$out
 }
 
 # A run the task's time limit killed leaves the mutex abandoned: the next run owns it (#541 S2).
@@ -93,15 +108,13 @@ try {
     # head (#541 audit MF1, v2 SF): no search prefix is trusted.
     $refs = (& git ls-remote "https://github.com/$Repo.git" 'refs/heads/claude/sign-train-*' 2>$null)
     if ($LASTEXITCODE -ne 0) { throw "git ls-remote failed ($LASTEXITCODE)" }
-    $trains = @($refs | ForEach-Object { if ("$_" -match 'refs/heads/(claude/sign-train-[0-9a-f]+)$') { $Matches[1] } })
-    foreach ($b in $trains) {
-        $n = (& $Gh pr list -R $Repo --head $b --state open --json number --jq 'length' 2>&1 | Out-String).Trim()
-        if ($LASTEXITCODE -ne 0) { throw "gh pr list failed for ${b}: $n" }
-        if ($n -ne '0') {
-            # how long it has waited rides in the beat, so a PR open forever goes RED (v2 SF)
-            $since = (Get-Date).ToUniversalTime().ToString('o')
-            try { $prev = Get-Content -LiteralPath $beat -Raw | ConvertFrom-Json; if ($prev.waiting_on -eq $b -and $prev.waiting_since) { $since = $prev.waiting_since } } catch { }
-            Say "waiting on $b"; Beat 0 "waiting on $b" 0 $b $since; exit 0
+    $remoteSha = @{}
+    foreach ($r in $refs) {
+        if ("$r" -match '^([0-9a-f]{40})\s+refs/heads/(claude/sign-train-[0-9a-f]+)$') { $remoteSha[$Matches[2]] = $Matches[1] }
+    }
+    foreach ($b in $remoteSha.Keys) {
+        if ((GhCount @('pr', 'list', '-R', $Repo, '--head', $b, '--state', 'open', '--json', 'number', '--jq', 'length')) -ne 0) {
+            Wait $b "waiting on $b"; exit 0
         }
     }
 
@@ -121,9 +134,9 @@ try {
     $short = $head.Substring(0, 9)
     # A sign PR a person closed unmerged is not opened again for the same head (v2 SF): the
     # train waits for LIVE to move.
-    $closed = (& $Gh pr list -R $Repo --head $branch --state closed --json mergedAt --jq '[.[] | select(.mergedAt == null)] | length' 2>&1 | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0) { throw "gh pr list (closed) failed: $closed" }
-    if ($closed -ne '0') { Beat 0 "a sign PR for $short was closed unmerged; waiting for LIVE to move"; exit 0 }
+    if ((GhCount @('pr', 'list', '-R', $Repo, '--head', $branch, '--state', 'closed', '--json', 'mergedAt', '--jq', '[.[] | select(.mergedAt == null)] | length')) -ne 0) {
+        Wait $branch "a sign PR for $short was closed unmerged; waiting for LIVE to move"; exit 0
+    }
 
     Push-Location -LiteralPath $Clone
     try {
@@ -138,13 +151,22 @@ try {
     # exactly one new commit whose parent is the target.
     $now = (& git -C $Clone rev-parse HEAD).Trim()
     if ($now -eq $head) { Beat 0 "train@${short}: nothing to sign"; exit 0 }
-    if ((& git -C $Clone rev-parse "HEAD~1").Trim() -ne $head) { throw "HEAD $now does not sit on the target $short" }
-    & git -C $Clone push -q --force origin "HEAD:refs/heads/$branch" 2>&1 | ForEach-Object { Say "push: $_" }
+    # Exactly one single-parent commit on the target, touching exactly the two sealed-state files
+    # (v3 SF): anything else the train left is never pushed.
+    $parents = @((& git -C $Clone rev-list --parents -n 1 HEAD).Trim() -split '\s+')
+    if ($parents.Count -ne 2 -or $parents[1] -ne $head) { throw "HEAD $now is not one single-parent commit on $short" }
+    if ((& git -C $Clone rev-list --count "$head..HEAD").Trim() -ne '1') { throw "more than one commit over $short" }
+    $touched = @(& git -C $Clone diff --name-only $head HEAD | Sort-Object)
+    if (($touched -join ',') -ne 'desks/mt5/data/IMMUTABLE_MANIFEST.json,desks/mt5/research/quantbench.py') { throw "the sign touched $($touched -join ', ')" }
+    # The lease is the branch as git listed it at the start, or absent (v3 SF): a branch that
+    # moved since is never overwritten.
+    $lease = "refs/heads/${branch}:$($remoteSha[$branch])"
+    & git -C $Clone push -q "--force-with-lease=$lease" origin "HEAD:refs/heads/$branch" 2>&1 | ForEach-Object { Say "push: $_" }
     if ($LASTEXITCODE -ne 0) { throw "git push of $branch failed ($LASTEXITCODE)" }
 
     # Fixed text only, through a file: nothing from git or the train reaches gh's argv (v2 MF2).
     $bodyFile = Join-Path $LogDir "sign_train_body.md"
-    Set-Content -LiteralPath $bodyFile -Encoding UTF8 -Value ("The sign train signed LIVE at $head from the CLEAR rows committed in desks/mt5/data/SEAL_CLEARS.jsonl (D-20261027-003).`n`nOpened by ops/box/sign_train_leg.ps1; its log is logs\sign_train.log on the box.")
+    [System.IO.File]::WriteAllText($bodyFile, ("The sign train signed LIVE at $head from the CLEAR rows committed in desks/mt5/data/SEAL_CLEARS.jsonl (D-20261027-003).`n`nOpened by ops/box/sign_train_leg.ps1; its log is logs\sign_train.log on the box."), (New-Object System.Text.UTF8Encoding($false)))
     $pr = (& $Gh pr create -R $Repo --base $Live --head $branch --title "Sign train at $($head.Substring(0, 12))" --body-file $bodyFile 2>&1 | Out-String)
     if ($LASTEXITCODE -ne 0) { throw "gh pr create failed: $($pr.Trim())" }
     Say "opened $($pr.Trim())"
