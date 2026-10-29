@@ -39,6 +39,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
@@ -321,6 +322,94 @@ def build_evidence(*, force: bool = False) -> tuple[pd.DataFrame, dict[str, dict
     return daily, forward
 
 
+#: The forward clocks' own table: one row per certificate, carrying the clock's verdict and the
+#: exact spec it runs (`key` = `SYM.family.selector@TF#k=v_k=v`).
+CLOCK_LAW = BASE / "reports" / "CERTIFICATE_CLOCK_LAW.json"
+_CLOCK_PARAM = re.compile(r"(?:^|_)([a-z][a-z0-9_]*?)=(\[[^\]]*\]|[^_]+)")
+
+
+def _clock_params(key: str) -> dict[str, Any]:
+    """The params a clock key spells after `#`, typed the way the docket wrote them."""
+    import ast
+    out: dict[str, Any] = {}
+    for k, raw in _CLOCK_PARAM.findall(key.split("#", 1)[1] if "#" in key else ""):
+        try:
+            out[k] = ast.literal_eval(raw)
+        except (ValueError, SyntaxError):
+            out[k] = raw
+    return out
+
+
+def _cert_axes(cell: str) -> tuple[str, str, str]:
+    """(SYMBOL, timeframe or "", family) from `external.SYM[@TF].family.<params>`."""
+    parts = cell.removeprefix("external.").split(".")
+    head = parts[0] if parts else ""
+    sym, _, tf = head.partition("@")
+    return sym.upper(), tf.upper(), parts[1] if len(parts) > 1 else ""
+
+
+def _rostered_certificates(survivor_params: dict[str, dict]) -> tuple[
+        dict[str, dict[str, Any]], dict[str, str], dict[str, str]]:
+    """Every STANDBY row's certificate, resolved to a spec this pass can replay.
+
+    Returns (specs by roster name, recorded zeros by name, unmeasured by name). A spec's params
+    come from the survivors file when it still holds the certificate, else from the forward
+    clock's own key, and are accepted ONLY when `frontier_identity.cell_id` rebuilds the
+    certificate's exact id from them -- a guessed parameter set would price a different strategy
+    under the certified name. A clock that reached KILL is the forward evidence refusing the
+    certificate: a recorded zero. A clock with no bars, an unrecoverable spec or a second roster
+    row on one certificate is UNMEASURED, never a zero.
+    """
+    zero: dict[str, str] = {}
+    unmeasured: dict[str, str] = {}
+    try:
+        rows = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8")).get("sleeves") or []
+    except (OSError, ValueError, AttributeError):
+        return {}, zero, unmeasured
+    try:
+        law = json.loads(CLOCK_LAW.read_text("utf-8"))
+    except (OSError, ValueError):
+        law = {}
+    clocks = {str(r.get("certificate")): r for v in (law.values() if isinstance(law, dict) else [])
+              if isinstance(v, list) for r in v if isinstance(r, dict) and r.get("certificate")}
+    try:
+        from research.frontier_identity import cell_id
+    except ImportError:                                   # pragma: no cover - box path only
+        from frontier_identity import cell_id  # type: ignore[no-redef]
+    specs: dict[str, dict[str, Any]] = {}
+    owner: dict[str, str] = {}
+    for r in rows:
+        if not isinstance(r, dict) or str(r.get("status") or "").upper() != "STANDBY":
+            continue
+        cell, name = str((r.get("certificate") or {}).get("cell") or ""), str(r.get("name") or "")
+        if not cell or not name:
+            continue
+        if cell in owner:
+            unmeasured[name] = f"second roster row on {cell} (priced once, as {owner[cell]})"
+            continue
+        owner[cell] = name
+        sym, tf, fam = _cert_axes(cell)
+        clock = clocks.get(cell) or {}
+        if str(clock.get("status") or "").upper() == "KILL":
+            zero[name] = (f"its forward clock reached KILL ({clock.get('key')}): the forward "
+                          f"evidence refuses this certificate, so the allocator records zero")
+            continue
+        if str(clock.get("status") or "").upper().startswith("BLOCKED"):
+            unmeasured[name] = f"its forward clock is {clock.get('status')}: no bars to replay on"
+            continue
+        params = survivor_params.get(cell)
+        if params is None and clock.get("key"):
+            params = _clock_params(str(clock["key"]))
+            if tf and tf != "H1":
+                params.setdefault("timeframe", tf)
+        if params is None or f"external.{cell_id({'sym': sym, 'family': fam, 'params': params})}" \
+                != cell:
+            unmeasured[name] = f"no recoverable spec rebuilds {cell}"
+            continue
+        specs[name] = {"cell": cell, "symbol": sym, "family": fam, "params": params}
+    return specs, zero, unmeasured
+
+
 def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
     """Daily-R series for every sleeve that has cleared the ten gates, replayed the gauntlet's way.
 
@@ -355,24 +444,17 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
         acct["refused"]["universe"] = str(exc)
         return {}, acct
 
-    seen: set[tuple[str, str, str]] = set()
     out: dict[str, pd.Series] = {}
-    survivors = load_survivors()
-    acct["certificates"] = len(survivors)
-    for sv in survivors:
-        sym, fam, win = sv.get("symbol", ""), sv.get("family", ""), sv.get("window", "")
-        if not sym or not fam or (sym, fam, win) in seen:
-            continue
-        seen.add((sym, fam, win))
-        name = f"{sym}_{fam}_{win}" if win else f"{sym}_{fam}"
+
+    def _price(name: str, sym: str, fam: str, params: dict) -> None:
         try:
             # THE CERTIFICATE'S OWN PARAMS, not defaults. Replaying `{}` runs a different
             # strategy under the certified strategy's name -- the same substitution that put an
             # unconditioned +0.163R behind a conditioned sleeve's +0.276R promotion.
-            cell = eg.build_cell(sym, fam, dict(sv.get("params") or {}), meta)
+            cell = eg.build_cell(sym, fam, dict(params or {}), meta)
             if not cell or cell.get("sigs") is None:
                 acct["refused"][name] = "build_cell returned no signals"
-                continue
+                return
             ser = eg.daily_series(cell["df"], cell["sigs"], cell["costs"])
             rejections = ser.attrs.get("geometry_rejections") if ser is not None else None
             if rejections:
@@ -383,7 +465,7 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
                 }
             if ser is None or len(ser) < 2:
                 acct["refused"][name] = f"replay produced {0 if ser is None else len(ser)} days"
-                continue
+                return
             # DATE-INDEXED, and that is not cosmetic. `sample_worlds` stacks sleeves by
             # POSITION, so handing it two series on different clocks pairs unrelated days and
             # destroys every correlation in the book. Measured 2026-09-02: unaligned certified
@@ -394,7 +476,45 @@ def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
             acct["priced"] += 1
         except Exception as exc:
             acct["refused"][name] = f"{type(exc).__name__}: {exc}"
-    _log(f"certified library: {acct['priced']}/{len(seen)} sleeves priced "
+
+    seen: set[tuple[str, str, str]] = set()
+    cell_cert: dict[str, str] = {}
+    survivors = load_survivors()
+    acct["certificates"] = len(survivors)
+    for sv in survivors:
+        sym, fam, win = sv.get("symbol", ""), sv.get("family", ""), sv.get("window", "")
+        if not sym or not fam or (sym, fam, win) in seen:
+            continue
+        seen.add((sym, fam, win))
+        _cell_name = f"{sym}_{fam}_{win}" if win else f"{sym}_{fam}"
+        _price(_cell_name, sym, fam, dict(sv.get("params") or {}))
+        if _cell_name in out and sv.get("key"):
+            cell_cert[_cell_name] = str(sv["key"])
+    # EVERY STANDBY CERTIFICATE IS PRICED UNDER ITS OWN NAME (2026-10-13). The loop above prices
+    # ONE certificate per (symbol, family, window) under the cell's name, so a rostered variant
+    # either borrowed that certificate's reading through the promoter's `sym|family|selector`
+    # join or joined nothing: measured, 14 certified XAUUSD sleeves sat at STANDBY ~13 days. A
+    # STANDBY row whose certificate IS the one priced above keeps that join (no second column of
+    # one bet); every other one is replayed on its own certificate's params under its own name,
+    # carrying the certificate's symbol and family so the family cap and the structured
+    # correlation floor see it as the sibling it is. LIVE rows are never re-keyed here.
+    survivor_params = {str(sv.get("key")): dict(sv.get("params") or {})
+                       for sv in survivors if sv.get("key")}
+    specs, zero, unmeasured = _rostered_certificates(survivor_params)
+    identity: dict[str, tuple[str, str]] = {}
+    for name, sp in specs.items():
+        if sp["cell"] in cell_cert.values():
+            continue
+        _price(name, sp["symbol"], sp["family"], sp["params"])
+        if name in out:
+            identity[name] = (sp["symbol"], sp["family"])
+        else:
+            unmeasured[name] = acct["refused"].get(name, "replay produced no series")
+    acct["identity"] = identity
+    acct["rostered_zero"] = zero
+    acct["rostered_unmeasured"] = unmeasured
+    _log(f"certified library: {acct['priced']} sleeves priced ({len(seen)} cells, "
+         f"{len(acct['identity'])} STANDBY certificates under their own names) "
          f"({acct['certificates']} certificates), {len(acct['refused'])} refused")
     return out, acct
 
@@ -533,7 +653,7 @@ def live_days_by_sleeve() -> dict[str, int]:
     return {k: len(v) for k, v in days.items()}
 
 
-def regime_state(daily: pd.DataFrame,
+def regime_state(daily: pd.DataFrame, asof: str | None = None,
                  ) -> tuple[tuple[str, ...], tuple[tuple[str, float], ...], dict[str, Any]]:
     """Per-day regime label over the matrix's own clock, and the regime mix to SIZE AGAINST.
 
@@ -560,6 +680,10 @@ def regime_state(daily: pd.DataFrame,
     be trending while gold ranges. A per-asset regime hierarchy is the next piece of work; this
     function's contract does not change when it arrives. Returns empty tuples when the engine
     cannot fit, in which case `sample_worlds` draws unconditioned worlds and says so.
+
+    `asof` (an ISO date) fits on the closes up to and including that day only, so a replay
+    (`research.input_ablation`) sees exactly what a pass on that day could have seen. None is
+    today's pass, unchanged.
     """
     diag: dict[str, Any] = {}
     try:
@@ -574,6 +698,8 @@ def regime_state(daily: pd.DataFrame,
         idx = pd.to_datetime(px[tcol] if tcol else px.index, utc=True, errors="coerce")
         close = pd.Series(px[col].to_numpy(dtype=float), index=idx).dropna()
         close = close.groupby(close.index.date).last()
+        if asof is not None:
+            close = close[[str(d) <= str(asof)[:10] for d in close.index]]
         if close.size < 250:
             raise ValueError(f"only {close.size} daily closes; refusing to fit a regime on that")
 
@@ -811,7 +937,8 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
                     phase: str | None = None,
                     trades_by_sleeve: dict[str, list[dict]] | None = None,
                     broker_utc_offset_h: int = 0,
-                    forward_only_days: dict[str, int] | None = None) -> list[SleeveEvidence]:
+                    forward_only_days: dict[str, int] | None = None,
+                    identity: dict[str, tuple[str, str]] | None = None) -> list[SleeveEvidence]:
     """Fold backtest, certified, forward and live evidence into one record per sleeve.
 
     THE UNIVERSE IS THE UNION, which is the whole point. The backtest matrix (gold book + hunt12
@@ -881,8 +1008,14 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
         tr = trials or {}
         n_trials = (max(tr.get("hunt12", 1), tr.get("hunt16", 1)) if fam == "session_bracket"
                     else tr.get("external", max(tr.values()) if tr else 1))
+        # A STANDBY certificate priced under its roster name carries its certificate's own
+        # symbol and family: parsed from a lowercase roster name they would read as a new
+        # instrument and a family of one, past the family cap and the structured floor.
+        sym_of = parts[0]
+        if identity and name in identity:
+            sym_of, fam = identity[name]
         out.append(SleeveEvidence(
-            name=name, daily_r=hist, family=fam, symbol=parts[0], n_trials=int(n_trials),
+            name=name, daily_r=hist, family=fam, symbol=sym_of, n_trials=int(n_trials),
             # A LANE WHOSE WHOLE SERIES IS FORWARD COUNTS ITS OWN DAYS. `forward` holds days
             # APPENDED to a backtest history, so `len(fwd)` is right for a sleeve with both.
             # The scalp lane has no backtest half: `scalp_evidence` reads FORWARD PHASE ONLY
@@ -976,7 +1109,11 @@ class _MacroContext:
             self._leg_factors = leg_factors
             self.fs = leg_factors.factor_set(leg_factors.daily_factor_returns())
             self.meta["factors"] = ({"status": "MEASURED", "note": self.fs.note,
-                                     "names": list(self.fs.names)} if self.fs is not None
+                                     "names": list(self.fs.names),
+                                     # a held/empty macro archive is named, never silent
+                                     "macro": {m: {"status": "UNMEASURED", "why": why}
+                                               for m, why in self.fs.unmeasured.items()}}
+                                    if self.fs is not None
                                     else {"status": "UNMEASURED",
                                           "why": "no factor history could be built from the "
                                                  "universe bars"})
@@ -3058,7 +3195,8 @@ def without_explore(book: dict[str, float], lend: dict[str, float]) -> dict[str,
 
 
 def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
-                extra: dict[str, float] | None = None) -> dict[str, str]:
+                extra: dict[str, float] | None = None,
+                recorded: dict[str, str] | None = None) -> dict[str, str]:
     """Rostered sleeves this solve gave NO heat -- 0% right now, and NOT retired.
 
         "Never have 'this strategy is allocated 3% forever'. Have 'this strategy currently earns
@@ -3087,13 +3225,28 @@ def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
     rostered: set[str] = set()
     try:
         rows = json.loads((BASE / "data" / "sleeves.json").read_text("utf-8")).get("sleeves") or []
+        # STANDBY rows too (2026-10-13): a priced STANDBY certificate the solve gives nothing
+        # gets the same recorded zero, so the promoter reads a refusal, not "never priced".
         rostered = {str(r.get("name")) for r in rows
-                    if isinstance(r, dict) and str(r.get("status") or "").upper() == "LIVE"}
+                    if isinstance(r, dict)
+                    and str(r.get("status") or "").upper() in ("LIVE", "STANDBY")}
     except (OSError, ValueError, AttributeError):
         rostered = set()
     rostered |= {str(k) for k in (extra or {})}
-    out: dict[str, str] = {}
+    # Zeros decided before the solve (a forward clock's KILL), each with its reason.
+    out: dict[str, str] = {str(k): str(v) for k, v in (recorded or {}).items()}
     for name in sorted(rostered):
+        if name in out:
+            continue
+        base = re.sub(r"_v\d+$", "", name) if name.startswith("gold_") else name
+        if base != name and name not in priced and base in priced:
+            # A versioned gold bracket (gold_asia_v2..) carries the SAME signal as its base
+            # window: decision_core's roster has no rr field, so it trades identically. It is the
+            # same bet, priced once under the base name; its recorded answer is zero.
+            out[name] = (f"same signal as {base} (a second copy of one bet, not a variant): the "
+                         f"allocator prices and funds {base}; this copy earns 0% so the bet is "
+                         f"never bought twice. NOT retired.")
+            continue
         if name in funded or name not in priced:
             continue
         out[name] = ("the current solve gives this sleeve no heat: its posterior edge, "
@@ -3384,7 +3537,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                          # The scalp lane's series IS its forward record, so its own day
                          # count is the forward day count. `join_forward` never sees these
                          # names -- they are not in `forward` -- so nothing else supplies it.
-                         forward_only_days={n: len(sr) for n, sr in scalp.items()})
+                         forward_only_days={n: len(sr) for n, sr in scalp.items()},
+                         identity=cert_acct.get("identity"))
     # CROSS-CULTURE ORTHOGONALITY: merge groups share one cap family and one mechanism, proven-
     # divergent cultures get their own. Labels only -- heat-neutral (see apply_culture_labels).
     culture_family, culture_meta = apply_culture_labels(ev)
@@ -4293,7 +4447,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # SLEEVES THIS SOLVE ZEROED, NAMED so the answer can actually BE zero. Without this list the
     # gateway cannot see a zeroed sleeve at all and falls back to the 3% base fraction: see
     # `zeroed_live` for the trace. Not a retirement -- the row and the clock stand.
-    zeroed = zeroed_live(ev, funded, extra={**prev_book, **dict.fromkeys(ts_zero, 0.0)})
+    zeroed = zeroed_live(ev, funded, extra={**prev_book, **dict.fromkeys(ts_zero, 0.0)},
+                         recorded=cert_acct.get("rostered_zero"))
     if zeroed:
         _log(f"zeroed but NOT retired: {len(zeroed)} rostered sleeve(s) earn 0% this pass "
              f"({', '.join(sorted(zeroed)[:6])})")

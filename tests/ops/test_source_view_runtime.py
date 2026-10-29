@@ -59,3 +59,44 @@ def test_missing_detector_code_still_fails_in_source_context(tmp_path, monkeypat
 def test_actual_state_battery_explicitly_checks_family_birth_and_detector_state():
     assert ("check_self_repair.py", ("--require-state",)) in gate._STATE_FENCES
     assert ("check_birth_obligations.py", ("--require-state",)) in gate._STATE_FENCES
+
+
+def test_a_clean_tree_laws_only_run_is_a_source_view_too(tmp_path, monkeypatch):
+    """A clean tree skips the HEAD re-exec, and that path used to run every fence WITHOUT
+    QUANT_LAWGATE_SOURCE_VIEW: the same commit read as live runtime only because it was clean."""
+    monkeypatch.delenv("QUANT_LAWGATE_SOURCE_VIEW", raising=False)
+    monkeypatch.setattr(gate, "_at_head", lambda root: (root, "cwd==HEAD (tree clean)", []))
+    monkeypatch.setattr(gate, "_LAW_FENCES", (("check_x.py", ()),))
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "check_x.py").write_text("", "utf-8")
+    seen: list[dict[str, str] | None] = []
+
+    class _Done:
+        returncode, stdout, stderr = 0, "ok", ""
+
+    def _run(*a, **kw):
+        seen.append(kw.get("env"))
+        return _Done()
+
+    monkeypatch.setattr(gate.subprocess, "run", _run)
+    assert gate.full_gate(tmp_path, laws_only=True)["ok"]
+    assert seen and seen[0] is not None and seen[0]["QUANT_LAWGATE_SOURCE_VIEW"] == "1"
+
+
+def test_published_gateway_state_does_not_make_an_off_box_checkout_the_trading_host(
+        tmp_path, monkeypatch):
+    """The box publishes gateway_state.json to origin; fresh stamps in a copy are not this
+    machine's gateway. Identity decides first, the gateway's age decides on the box."""
+    from datetime import UTC, datetime
+
+    from libs.ops import host_identity as hi
+    cfg = {"hostname": "vmi3571445", "machine_id": "0123456789abcdef0123456789abcdef"}
+    gs = tmp_path / "desks" / "mt5" / "data" / "gateway_state.json"
+    gs.parent.mkdir(parents=True)
+    gs.write_text(json.dumps({"last_reconcile": datetime.now(UTC).isoformat()}), "utf-8")
+    monkeypatch.setattr(hi, "identify", lambda config_path=None: hi.classify(
+        "fedcba9876543210fedcba9876543210", "runner", cfg))
+    assert repair._trading_host(tmp_path) is False
+    monkeypatch.setattr(hi, "identify", lambda config_path=None: hi.classify(
+        cfg["machine_id"], "vmi3571445", cfg))
+    assert repair._trading_host(tmp_path) is True

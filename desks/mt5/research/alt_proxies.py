@@ -2969,6 +2969,15 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "robots": "data.gdeltproject.org is the documented raw-file host",
         "credit": "The GDELT Project, https://www.gdeltproject.org/",
         "checked_at": _CHK},
+    # the Translingual export is the same project, the same terms page and the same raw host
+    "gdelt_translingual_country": {
+        "terms_url": "https://gdeltproject.org/about.html",
+        "terms_quote": ("all datasets released by the GDELT Project are available for unlimited "
+                        "and unrestricted use for any academic, commercial, or governmental use "
+                        "of any kind without fee."),
+        "robots": "data.gdeltproject.org is the documented raw-file host",
+        "credit": "The GDELT Project, https://www.gdeltproject.org/",
+        "checked_at": _CHK},
     "wiki_asia_attention": {
         "terms_url": "https://dumps.wikimedia.org/other/pageviews/readme.html",
         "terms_quote": ("All Analytics datasets are available under the Creative Commons CC0 "

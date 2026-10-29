@@ -153,3 +153,147 @@ def assess(equity_usd: float, cfg: dict[str, Any]) -> dict[str, Any]:
                  "config/desk_costs.yaml -- a hurdle computed from a partial cost base is the "
                  "one output of this module that could do harm."),
     }
+
+
+# --- MEASURED LINES (ARCH-28, 2026-10-07) ---------------------------------------------------
+#
+# A declared cost is the operator's word; a measured one is the desk's own ledger. Where the
+# desk has a ledger the measurement wins over the YAML and the basis says which it was. Where
+# it has none (the two hosts' invoices: no billing API key exists for either provider) the line
+# stays what the YAML says, and a `null` there stays UNKNOWN -- never zero.
+
+WINDOW_DAYS = 30.0
+
+
+def _within(stamp: Any, now: Any, days: float) -> bool:
+    from datetime import UTC, datetime
+    try:
+        if isinstance(stamp, (int, float)):
+            t = datetime.fromtimestamp(float(stamp), tz=UTC)
+        else:
+            t = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+            if t.tzinfo is None:
+                t = t.replace(tzinfo=UTC)
+    except (TypeError, ValueError, OSError):
+        return False
+    age = float((now - t).total_seconds()) / 86_400.0
+    return bool(0.0 <= age <= days)
+
+
+def _parse(stamp: Any) -> Any:
+    from datetime import UTC, datetime
+    try:
+        t = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=UTC)
+
+
+def measure_llm(rows: list[dict[str, Any]], now: Any, is_free: Any,
+                days: float = WINDOW_DAYS) -> dict[str, Any]:
+    """Trailing-window model spend from the seat ledger, scaled to a 30-day month BY THE SPAN
+    THE LEDGER ACTUALLY COVERS, never by the window it was asked for.
+
+    THE `usd` ON A ROW IS AN ESTIMATE, not a bill: `llm_seat._record_spend` writes tokens times a
+    flat, deliberately high per-1k rate. So a priced result is ESTIMATED, never MEASURED, and its
+    basis says so. A paid row with no `usd` is UNPRICED: it is not $0, and while any exists the
+    line is UNMEASURED, because a total that silently omits calls lowers the hurdle. Free-model
+    rows cost zero by model id, the same rule `llm_seat.month_spend_usd` applies.
+    """
+    paid = 0.0
+    calls = free_calls = tokens = unpriced = 0
+    first = None
+    for r in rows:
+        if not _within(r.get("utc"), now, days):
+            continue
+        calls += 1
+        tokens += int(r.get("tokens") or 0)
+        t = _parse(r.get("utc"))
+        if t is not None and (first is None or t < first):
+            first = t
+        if r.get("free") is True or is_free(str(r.get("model") or "")):
+            free_calls += 1
+            continue
+        if r.get("usd") is None:
+            unpriced += 1
+            continue
+        paid += float(r["usd"])
+    if not calls or first is None:
+        return {"status": "UNMEASURED", "why": f"no seat call in the last {days:g} days"}
+    # The ledger covers from its first row in the window to now; a ledger that began yesterday
+    # is one day of evidence, and scaling it as thirty would understate the month thirty-fold.
+    span = max(1.0 / 24.0, min(days, (now - first).total_seconds() / 86_400.0))
+    out = {"basis": "data/llm_spend.jsonl usd = tokens x flat per-1k rate (an over-estimate "
+                    "by design, not a provider bill)",
+           "window_days": days, "span_days": round(span, 3), "calls": calls,
+           "free_calls": free_calls, "unpriced_calls": unpriced, "tokens": tokens,
+           "window_usd": round(paid, 4)}
+    if unpriced:
+        return {**out, "status": "UNMEASURED",
+                "why": f"{unpriced} paid call(s) carry no price; the total would omit them"}
+    return {**out, "status": "ESTIMATED", "monthly_usd": round(paid * 30.0 / span, 2)}
+
+
+def measure_broker(deals: list[dict[str, Any]], now: Any, currency: str | None,
+                   days: float = WINDOW_DAYS) -> dict[str, Any]:
+    """What the account PAID the broker in the window: commission, swap and fees per deal.
+
+    Reported, never added to the burn: these are already inside realised P&L, so adding them to
+    the hurdle would charge them twice. Swap can be income; it is signed so a cost is positive.
+    """
+    comm = swap = fee = 0.0
+    n = 0
+    for d in deals:
+        if not _within(d.get("epoch", d.get("at")), now, days):
+            continue
+        n += 1
+        comm += -float(d.get("comm") or 0.0)
+        swap += -float(d.get("swap") or 0.0)
+        fee += -float(d.get("fee") or 0.0)
+    if not n:
+        return {"status": "UNMEASURED", "why": f"no broker deal in the last {days:g} days"}
+    return {"status": "MEASURED", "basis": "data/cost_truth_quotes.json deals "
+            "(history_deals_get, account currency)", "currency": currency,
+            "deals": n, "window_days": days,
+            "commission": round(comm, 2), "swap": round(swap, 2), "fee": round(fee, 2),
+            "total": round(comm + swap + fee, 2),
+            "monthly": round((comm + swap + fee) * 30.0 / days, 2),
+            "in_burn": False,
+            "why_not_in_burn": "already inside realised P&L; the hurdle is what the desk must "
+                               "earn ON TOP of trading costs"}
+
+
+def alert_burden(summary: dict[str, int], escalations: list[dict[str, Any]],
+                 events: dict[str, int]) -> dict[str, Any]:
+    """How much of the operator's attention the desk asks for, and how much of it is meaningful.
+
+    `needs_human` is the manual-repair load (only a person can close it); `escalate` is the subset
+    worth a page (FAILED, REGRESSED, or NEEDS_HUMAN aged a day, `AlertLedger.escalations`); the
+    rest is noise the desk is expected to absorb itself. The share that is meaningful is the
+    number to push UP: a pager that cries about self-healing work gets muted.
+    """
+    open_n = sum(v for k, v in summary.items() if k != "FIXED")
+    fixed = int(summary.get("FIXED", 0))
+    esc = len(escalations)
+    return {"open": open_n, "fixed": fixed, "needs_human": int(summary.get("NEEDS_HUMAN", 0)),
+            "escalate": esc, "escalations": escalations[:20],
+            "self_healed_share": round(fixed / (fixed + open_n), 3) if fixed + open_n else None,
+            "meaningful_share": round(esc / open_n, 3) if open_n else None,
+            "defect_events_window": events}
+
+
+def merge_measured(cfg: dict[str, Any], measured: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """The YAML with each MEASURED or ESTIMATED line written over its declared value; the basis
+    per line says which. An UNMEASURED line leaves the declared value, and a null stays UNKNOWN.
+    """
+    out = dict(cfg)
+    lines = dict(cfg.get("monthly_usd") or {})
+    basis = {k: ("declared" if v is not None else "unknown") for k, v in lines.items()}
+    for name, m in measured.items():
+        st = m.get("status")
+        if st in ("MEASURED", "ESTIMATED") and m.get("monthly_usd") is not None:
+            lines[name] = float(m["monthly_usd"])
+            basis[name] = f"{str(st).lower()}: {m.get('basis')}"
+    out["monthly_usd"] = lines
+    out["basis"] = basis
+    return out
