@@ -84,6 +84,6 @@ def test_installer_is_declared_idempotent_and_hooked_into_adoption() -> None:
     assert "install_frontier_audit_task.ps1" in adopt
     hook = adopt.index("install_frontier_audit_task.ps1")
     # After a SUCCESSFUL adoption (the partial branch exits first) and before the seal.
-    assert adopt.index('Done $adoptExit "adopt-release-partial"') < hook
+    assert adopt.index('$adoptExit "adopt-release-partial"') < hook
     assert hook < adopt.index("release.seal(by='Adopt-And-Seal')")
     assert "-IfMissing" in adopt[hook:hook + 800]

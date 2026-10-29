@@ -260,6 +260,13 @@ desks/mt5/data/xacct/
 # brokerage login is never tracked (tests/ops/test_live_infrastructure_is_not_published.py); the
 # operator writes this once on the box.
 desks/mt5/data/FUSION_LIVE_ACCOUNT.json
+# The unattended adopter's markers (libs/ops/adopt_guard, libs/ops/new_risk_hold): the new-risk
+# hold and the resident gateway's load stamp describe THIS box's processes. Carried by a sync to
+# origin and adopted elsewhere, a hold would stop another box's lanes; a stamp would vouch for a
+# gateway that never ran there.
+desks/mt5/data/ADOPT_NEW_RISK_HOLD.json
+desks/mt5/data/new_risk_holds/
+desks/mt5/data/GATEWAY_LOADED.json
 # judge_cpu_fair_share: per-box caches. The cadence state records what THIS box's scheduler
 # accepted; the core pid file names a process that exists only on the machine that wrote it.
 desks/mt5/data/gauntlet_cadence_state.json
@@ -494,6 +501,16 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/GAUNTLET_STALL.json
 !desks/mt5/reports/judge_alive_fence.json
 !desks/mt5/reports/DEEPENING_MEMORY_GUARD.json
+# the judge pre-build prescreen's replay/canon evidence and last intake (2026-10-28)
+!desks/mt5/reports/JUDGE_PRESCREEN.json
+!desks/mt5/reports/JUDGE_PRESCREEN_INTAKE.json
+# the kill ledger's writer-lock sidecar and any quarantined (corrupt) ledger copy: host-local
+desks/mt5/data/hypotheses/prescreen_verdicts.lock
+desks/mt5/data/hypotheses/prescreen_verdicts.corrupt-*.jsonl
+desks/mt5/data/hypotheses/prescreen_verdicts.jsonl.tmp
+# trials.sources' byte-offset checkpoint: a host-local cache, rebuilt from 0 if lost
+desks/mt5/data/hypotheses/prescreen_sources_state.json
+desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/EFFECTIVE_BREADTH.json
 !desks/mt5/reports/BREADTH_MANDATE.json
 !desks/mt5/reports/TIER1_SCORECARD.json
@@ -506,6 +523,12 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/shadow/precert_shadow_state.json
 !desks/mt5/reports/LEDGER_VIEW_ADOPTION.json
 !desks/mt5/reports/LOGIN_FENCE.json
+# the judge speed switch's daily drift monitor (daily_cycle:vector_families_check, 2026-10-28)
+!desks/mt5/reports/VECTOR_FAMILIES_CHECK.json
+# ...and its fail-closed marker: one box's MISMATCH verdict, read by families_vector.enabled()
+# on that box only. Box state (data/ is a STATE_PREFIX); never published, never carried across.
+desks/mt5/data/VECTOR_FAMILIES_MISMATCH.json
+desks/mt5/data/VECTOR_FAMILIES_MISMATCH.json.tmp
 # Judge-owned box state, read on the box only (audit of PR #290): never published by a git add sweep.
 desks/mt5/data/hypotheses/unrunnable_specs.json
 desks/mt5/data/hypotheses/unrunnable_specs.json.tmp
@@ -530,6 +553,11 @@ desks/mt5/data/hypotheses/needs_data_outstanding.json*
 # host that reads them; never published by a git add sweep.
 desks/mt5/data/hypotheses/build_input_released.json*
 desks/mt5/data/hypotheses/build_input_parked_trials.json*
+# coverage_steer's shared coverage map and its once-per-parent ledger (research/coverage_steer.py):
+# box-local state rebuilt by every merge; tens of MB on the box, never published by a git add sweep.
+desks/mt5/data/hypotheses/coverage_map.json
+desks/mt5/data/hypotheses/.coverage_map.json.*.tmp
+desks/mt5/data/hypotheses/steer_ledger.jsonl
 # THE OPEN BOOK, PER POSITION (ops/publish_account_state.py, 2026-10-07). The repository is
 # public: tickets, sizes and stops never reach a tracked file. Last line on purpose, after every
 # negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.
@@ -552,10 +580,21 @@ desks/mt5/data/E8_ACCOUNT.json*
 desks/mt5/data/FUSION_DEADMAN_ARMED.json*
 # The gold direction lock's mode switch (mt5desk.gold_oco.MODE_FILE): box-local, like the books.
 desks/mt5/data/GOLD_OCO_MODE.json*
+desks/mt5/data/box_state_backups/
+desks/mt5/data/CANCEL_PENDING.json
+desks/mt5/data/cancel_pending_acks/
+desks/mt5/data/ADOPT_UNTRACKED_BASELINE.json
+desks/mt5/data/ADOPT_UNTRACKED_BASELINE.tmp
 # The FTMO follower's account declaration and its arming marker (prop/ftmo_follower.py): the
 # principal's own box-local files, never committed.
 desks/mt5/data/FTMO_LIVE_ACCOUNT.json*
 desks/mt5/data/FTMO_FOLLOWER_ARMED
+# The FTMO allocator's arming marker and the principal's copy ceiling (research/
+# prop_challenge_allocator.py: box-local, written only by the principal's step), and the FTMO terminal's
+# H1 bars the venue reader pulls for FTMO's own cost surface (prop/ftmo_venue_reader.py): box-local.
+desks/mt5/data/FTMO_ALLOCATOR_ARMED
+desks/mt5/data/FTMO_COPY_PRINCIPAL.json
+desks/mt5/data/universe_ftmo/
 # bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
 desks/mt5/data/bar_clock_probes.jsonl.tmp
 desks/mt5/data/bar_clock_probes.summary.json.tmp

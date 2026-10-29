@@ -24,9 +24,12 @@ both is belt and braces, not a race.
 """
 from __future__ import annotations
 
+import contextlib
+import json
 import os
 import sys
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 DESK = Path(__file__).resolve().parents[1]
@@ -287,6 +290,40 @@ def _spawn_successor() -> bool:
     return False
 
 
+#: WHICH CODE THIS PROCESS LOADED (2026-10-28, adopter audit HOLD). The gateway's own state file
+#: is rewritten by whatever process runs a pass, so after a release a pass still in flight on the
+#: OLD code made the new release look healthy. A resident imports its modules once, at start; this
+#: stamp records the release it started under and the last pass it finished, and the adopter's
+#: health check requires a stamp started after the recycle, under the new seal, with a pass done.
+LOADED = DESK / "data" / "GATEWAY_LOADED.json"
+
+
+def _stamp_loaded(identity: dict[str, object], **fields: object) -> bool:
+    """Write the WHOLE stamp -- this process's identity plus `fields` -- never a partial update,
+    so one lost write (the start stamp included) is repaired by the next pass's. Never takes a
+    pass down; a failure is logged and returned, since a stamp that never lands makes the adopter
+    read the resident as not restarted and roll a good release back."""
+    tmp = LOADED.with_suffix(".tmp")
+    try:
+        tmp.write_text(json.dumps({**identity, **fields}, sort_keys=True), encoding="utf-8")
+        os.replace(tmp, LOADED)
+        return True
+    except OSError as exc:
+        with contextlib.suppress(Exception):
+            from mt5desk import gateway as _gw
+            _gw.log(f"RESIDENT: load stamp {LOADED.name} NOT written ({type(exc).__name__}: "
+                    f"{exc}); the adopter's health check cannot see this resident until one lands")
+        return False
+
+
+def _release_at_start() -> str | None:
+    try:
+        rec = json.loads((DESK / "data" / "RELEASE.json").read_text(encoding="utf-8"))
+        return str(rec.get("code_sha") or rec.get("live_sha") or "") or None
+    except Exception:
+        return None
+
+
 def main() -> int:
     global _HANDLE
     handle = _claim_singleton()
@@ -294,6 +331,9 @@ def main() -> int:
         print("another resident gateway already holds the slot; exiting")
         return 0
     _HANDLE = handle
+    identity: dict[str, object] = {"pid": os.getpid(), "started_at": datetime.now(UTC).isoformat(),
+                                   "release_sha": _release_at_start()}
+    _stamp_loaded(identity, last_pass_at=None)
     import run_gateway_loop
     try:
         from mt5desk import gateway as _gw
@@ -328,6 +368,7 @@ def main() -> int:
             return 0
         try:
             run_gateway_loop.main()
+            _stamp_loaded(identity, last_pass_at=datetime.now(UTC).isoformat())
         except Exception as exc:
             # A failed pass is one missed look, not a dead gateway. The failure is already logged
             # by the pass itself; swallowing it here is what keeps the next bar reachable.
