@@ -36,7 +36,11 @@ WHAT IT DOES, IN ONE PASS, AND WHY IN THIS ORDER.
      -- which arrive as the three refused access labels (PRIVATE, CONFIDENTIAL_MNPI,
      STOLEN_UNAUTHORIZED), a declared authenticated surface or declared MNPI. Those are stamped
      with their reason and never queued again. THE REFUSAL IS STILL KNOWLEDGE: the row is kept,
-     because dropping it would lose the fact that the ground exists.
+     because dropping it would lose the fact that the ground exists. ROBOTS (LAWS 5e, AMENDED
+     2026-10-14 07:35Z by the principal, decision card
+     cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR) is respected AT FETCH TIME by the
+     collector this organ drives -- a disallowed page is not fetched and is logged as a hold --
+     and is never a permanent registry refusal here, because robots.txt changes and is re-read.
   4. DRAIN. What is left is crawled through the machinery that already exists --
      `research/moat_collectors.py`, which owns the robots probe, the media typing, the collectors,
      the point-in-time capture and the claim writer -- with the budget spent OLDEST AND HIGHEST
@@ -88,7 +92,7 @@ import os
 import sqlite3
 import sys
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import closing, suppress
 from datetime import UTC, datetime
 from pathlib import Path
@@ -127,9 +131,13 @@ LEASE_H = 24.0
 #: principal's five refused ACTS (LAWS 5e), which reach this organ as the three refused access
 #: labels or a declared authenticated/MNPI surface. `refused-no-root` is not a legal refusal at
 #: all -- it is the factual statement that there is nothing to fetch. The statuses this organ
-#: USED to carry, `refused-machine-use` and `refused-robots`, are named in `REMOVED_BRAKES` and
-#: are kept in this tuple for ONE reason: rows stamped with them by an earlier build must still
-#: be recognised as refusals rather than read as successful crawls.
+#: USED to carry, `refused-machine-use` and `refused-robots`, are kept in this tuple for ONE
+#: reason: rows stamped with them by an earlier build must still be recognised as refusals rather
+#: than read as successful crawls. `refused-machine-use` is a deleted brake (`REMOVED_BRAKES`).
+#: `refused-robots` is retired for a different reason since LAWS 5e was AMENDED 2026-10-14 07:35Z
+#: (decision card cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR): robots IS respected, but
+#: at FETCH TIME by the collector as a re-checked hold, never as a permanent registry stamp that
+#: would outlive the robots.txt that justified it.
 REFUSAL_STATUSES: tuple[str, ...] = ("refused-hard-boundary", "refused-no-root",
                                      "refused-machine-use", "refused-robots",
                                      "refused-unreachable")
@@ -155,8 +163,9 @@ SOURCE_LAYERS: tuple[str, ...] = (
 RULE = ("the uncrawled set falls every hour: overdue backlog and oldest wait ratchet DOWN, "
         "drained total ratchets UP, every refusal is a permanent registered fact with its rule "
         "and its date, and the only refusals are the principal's five ACTS (LAWS 5e) -- a "
-        "terms, licence, robots or machine_use_allowed label travels with the row and never "
-        "stops it being read")
+        "terms, licence or machine_use_allowed label travels with the row and never stops it "
+        "being read; a robots Disallow is respected at fetch time by the collector as a hold "
+        "(LAWS 5e amended 2026-10-14), never as a registry refusal")
 
 
 # --------------------------------------------------------------------------------- small tools
@@ -521,13 +530,23 @@ def refusal_for(row: Mapping[str, Any], shares: dict[str, Any] | None) -> tuple[
     of that law, so this organ can never drift from it. The second is not a legal refusal at all:
     a row with no url anywhere has nothing to fetch.
 
-    WHAT IS DELIBERATELY NOT A WALL HERE: a terms page, a licence note, a robots Disallow, a
-    paywalled domain, `machine_use_allowed=false`, `route=unreachable`, snippets-only, an
-    ACCESS_UNCLEAR label, a social or user-submitted ground. Every one of those is a ROUTING
-    LABEL: it withholds redistribution and changes nothing about reading. LAWS 5e names each as a
-    deleted brake that "no session may re-introduce, in any form, under any name", so a future
-    edit that adds one back to this function is a violation of the section and of growth
-    governance, not a tightening.
+    WHAT IS DELIBERATELY NOT A WALL HERE: a terms page, a licence note, a paywalled domain,
+    `machine_use_allowed=false`, `route=unreachable`, snippets-only, an ACCESS_UNCLEAR label, a
+    social or user-submitted ground. Every one of those is a ROUTING LABEL: it withholds
+    redistribution and changes nothing about reading. LAWS 5e names each as a deleted brake that
+    "no session may re-introduce, in any form, under any name", so a future edit that adds one
+    back to this function is a violation of the section and of growth governance, not a
+    tightening.
+
+    A robots Disallow is not a wall HERE either, for a different reason: since LAWS 5e was
+    AMENDED 2026-10-14 07:35Z (decision card cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR)
+    robots is respected at FETCH TIME, page by page. NOTE WHAT ENFORCES IT, because an earlier
+    text here overclaimed (audit 22b9c91a7): `moat_collectors.robots_barred` is a STATIC list of
+    host/prefix pairs measured 2026-08-27, not a live robots read. The live read is
+    `asia_collector.robots_verdict` -- robots.txt fetched under DESK_UA, cached a day per origin,
+    matched by `hard_stop.robots_verdict` -- and this organ calls it itself before it reopens a
+    `refused-robots` row (`reopen_deleted_brakes`). A permanent registry refusal would outlive the
+    robots.txt that justified it; a disallow read today keeps the row held.
     """
     url = str(row.get("url") or "").strip()
     if not url:
@@ -704,13 +723,35 @@ def _read_json_text(text: str) -> Any:
 
 
 # ------------------------------------------------------------------------------------ seeding
-#: Refusal statuses whose RULE NO LONGER EXISTS. LAWS 5e deleted the brakes that wrote them, so
-#: a row still carrying one is not a refusal -- it is a ground the desk stopped reading because
-#: of a law that was repealed, and leaving it stamped would make the repeal cosmetic.
+#: Refusal statuses whose RULE NO LONGER EXISTS AS A REGISTRY STAMP. LAWS 5e deleted the
+#: machine-use brake, so a row carrying `refused-machine-use` is a ground the desk stopped reading
+#: under a repealed law. `refused-robots` is NOT reopened blindly (audit 22b9c91a7): the
+#: collector this organ drives checks robots only against `moat_collectors.robots_barred`, a static
+#: 2026-08-27 list, so a reopened row could be fetched against a live Disallow. A `refused-robots`
+#: row is reopened only when a LIVE robots read (`robots_allows_now`) allows its url today; a
+#: disallow, a person hold or an unreadable robots.txt keeps it held and counted by name.
 DELETED_BRAKE_STATUSES: tuple[str, ...] = ("refused-machine-use", "refused-robots")
+ROBOTS_REFUSAL = "refused-robots"
 
 
-def reopen_deleted_brakes(conn: sqlite3.Connection) -> dict[str, Any]:
+def robots_allows_now(url: str) -> tuple[bool, str]:
+    """(allowed, why) from a LIVE robots read of `url` under the desk's one agent: the shared
+    collector reader `asia_collector.robots_verdict` (24h cache per origin, person holds, the
+    `hard_stop.robots_verdict` matcher). Fails CLOSED: an unimportable reader allows nothing."""
+    try:
+        try:
+            from research import asia_collector as ACOL
+        except ImportError:                                                  # pragma: no cover
+            import asia_collector as ACOL  # type: ignore[no-redef]
+        v = ACOL.robots_verdict(url, ACOL.DESK_UA)
+    except Exception as exc:  # a reader that cannot run is not consent
+        return False, f"robots unread ({type(exc).__name__}): held"
+    return bool(v.allowed), f"{v.cause}: {v.why}"
+
+
+def reopen_deleted_brakes(conn: sqlite3.Connection,
+                          robots_check: Callable[[str], tuple[bool, str]] | None = None
+                          ) -> dict[str, Any]:
     """Return to the queue every row refused under a rule that has since been deleted.
 
     WHY THIS RUNS EVERY PASS AND NOT ONCE. A repealed brake leaves its damage in the DATA, not in
@@ -726,21 +767,32 @@ def reopen_deleted_brakes(conn: sqlite3.Connection) -> dict[str, Any]:
     this ground is part of its history, and a ledger that quietly rewrites its own past is worth
     less than one that says what it changed and when.
     """
-    out: dict[str, Any] = {"reopened": 0, "statuses": {}}
+    out: dict[str, Any] = {"reopened": 0, "statuses": {}, "robots_held": 0, "robots_named": []}
     rows = [r for r in _stamped_rows(conn) if r[1] in DELETED_BRAKE_STATUSES]
     if not rows:
         return out
+    check = robots_check or robots_allows_now
     stamp = _now()
     for url, status, _crawled, why in rows:
+        if status == ROBOTS_REFUSAL:
+            allowed, rwhy = check(url) if url else (False, "no url: nothing to re-read")
+            if not allowed:
+                out["robots_held"] += 1
+                if len(out["robots_named"]) < 50:
+                    out["robots_named"].append({"url": url[:300], "why": str(rwhy)[:300]})
+                continue
         out["statuses"][status] = int(out["statuses"].get(status, 0)) + 1
         with suppress(sqlite3.Error):
             conn.execute(
                 "UPDATE sources SET last_crawled=NULL, status=?, route_reason=? "
                 "WHERE url=? AND status=?",
                 (CLEARED,
-                 (f"REOPENED {stamp} by {SOURCE}: the rule that refused this row was DELETED by "
-                  f"LAWS 5e (2026-09-23) and the ground returns to the queue. Original: {why}"
-                  )[:900], url, status))
+                 ((f"REOPENED {stamp} by {SOURCE}: a live robots read allows this url today "
+                   f"(LAWS 5e amended 2026-10-14). Original: {why}")
+                  if status == ROBOTS_REFUSAL else
+                  (f"REOPENED {stamp} by {SOURCE}: the rule that refused this row was DELETED "
+                   f"by LAWS 5e (2026-09-23) and the ground returns to the queue. Original: "
+                   f"{why}"))[:900], url, status))
             out["reopened"] += 1
     with suppress(sqlite3.Error):
         conn.commit()
@@ -1434,29 +1486,51 @@ def no_lawful_ground(mod: Any) -> list[dict[str, str]]:
 
 # ----------------------------------------------------------------------------- the daily verdict
 #: Words that identify a refusal raised under a rule LAWS 5e DELETED. Matched against the
-#: reasons other organs hand back, never against anything this organ decides itself.
-_DELETED_BRAKE_WORDS: tuple[str, ...] = ("robots", "machine_use", "machine use", "disallow",
-                                         "snippets", "unreachable")
+#: reasons other organs hand back, never against anything this organ decides itself. "robots" and
+#: "disallow" LEFT this list on 2026-10-14: a robots hold is the amended law being obeyed, and it
+#: is counted by name in `robots_holds` instead.
+_DELETED_BRAKE_WORDS: tuple[str, ...] = ("machine_use", "machine use", "snippets", "unreachable")
 
 
 def deleted_brake_refusals(collector: Mapping[str, Any]) -> list[dict[str, str]]:
     """Refusals handed back by ANOTHER organ under a rule this desk repealed on 2026-09-23.
 
-    This organ cannot fix `moat_collectors.robots_barred` -- that file has its own owner and a
-    drain that edited every organ it touched would be a second desk. What it CAN do is refuse to
-    let the loss go unnamed: a ground the collector declined on a robots Disallow is ground the
-    desk is lawfully entitled to read and is not reading, and the only reason it stays invisible
-    is that nobody counts it. So it is counted, named with the organ that raised it, and offered
-    as a gap family in its own right.
+    This organ cannot fix another organ's refusals -- that file has its own owner and a drain
+    that edited every organ it touched would be a second desk. What it CAN do is refuse to let the
+    loss go unnamed: a ground the collector declined under a repealed rule is ground the desk is
+    entitled to read and is not reading, and the only reason it stays invisible is that nobody
+    counts it. So it is counted, named with the organ that raised it, and offered as a gap family
+    in its own right.
+
+    A ROBOTS HOLD IS NOT A DELETED BRAKE (LAWS 5e, AMENDED 2026-10-14 07:35Z, decision card
+    cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR): a robots-disallowed page declined is the
+    amended law being obeyed. It is not dropped either -- `robots_holds` counts it by name. (The
+    collector's decline comes from `moat_collectors.robots_barred`, a static list measured
+    2026-08-27, not a live robots read.)
     """
     out: list[dict[str, str]] = []
     for row in list(collector.get("refused") or ()):
         if not isinstance(row, Mapping):
             continue
         why = str(row.get("why") or "").lower()
+        if "robots" in why:
+            continue                       # a robots HOLD: counted by `robots_holds`, by name
         if any(word in why for word in _DELETED_BRAKE_WORDS):
             out.append({"source": str(row.get("source") or ""), "why": str(row.get("why") or ""),
                         "organ": "research/moat_collectors.py"})
+    return out
+
+
+def robots_holds(collector: Mapping[str, Any]) -> list[dict[str, str]]:
+    """Every ground the collector declined on robots this pass, BY NAME -- a hold, not a drop.
+
+    It is neither a deleted brake nor nothing: the 2026-10-14 amendment obeyed is still ground the
+    desk is not reading, and a count that silently omits it reads as coverage it does not have."""
+    out: list[dict[str, str]] = []
+    for row in list(collector.get("refused") or ()):
+        if isinstance(row, Mapping) and "robots" in str(row.get("why") or "").lower():
+            out.append({"source": str(row.get("source") or ""), "why": str(row.get("why") or ""),
+                        "organ": "research/moat_collectors.py", "hold": "robots"})
     return out
 
 
@@ -1538,8 +1612,8 @@ def largest_gap(backlog: Mapping[str, Any], layers: Mapping[str, Any],
             "gap": "DELETED_BRAKE_STILL_ENFORCED", "reach": len(stale_brakes), "value": 1.0,
             "cost": 0.5, "ev": round(len(stale_brakes) / 0.5, 3),
             "what": (f"{len(stale_brakes)} ground(s) declined this pass under a rule LAWS 5e "
-                     f"REPEALED on 2026-09-23 (robots Disallow, machine_use_allowed=false, "
-                     f"snippets-only, route=unreachable). Raised by {organs}. The desk is "
+                     f"REPEALED on 2026-09-23 (machine_use_allowed=false, snippets-only, "
+                     f"route=unreachable). Raised by {organs}. The desk is "
                      f"lawfully entitled to read every one of them."),
             "fix": (f"the owner of {organs} makes those labels travel with the row instead of "
                     "refusing the fetch, as `coverage_drain.refusal_for` does"),
@@ -1764,6 +1838,10 @@ def run(*, budget_s: float = 900.0, max_sources: int | None = None, dry_run: boo
     report["ratchet"] = ratchet({**prev, **prev_floors}, current)
     report["verdict"] = largest_gap(after, report["layers"], grounds,
                                     (report["drain"] or {}).get("collector") or {})
+    held = robots_holds((report["drain"] or {}).get("collector") or {})
+    report["robots_holds"] = {"count": len(held), "named": held[:50],
+                              "registry_held": int((report.get("reopened") or {}).get(
+                                  "robots_held") or 0)}
     report["seeded_this_pass"] = int((report["seed"] or {}).get("inserted") or 0)
     report["status"] = "MEASURED"
     report["elapsed_s"] = round(time.monotonic() - started, 1)
@@ -1900,6 +1978,8 @@ __all__ = [
     "registry_grounds",
     "reopen_deleted_brakes",
     "resolve_root",
+    "robots_allows_now",
+    "robots_holds",
     "run",
     "save_ledger",
     "seed_grounds",

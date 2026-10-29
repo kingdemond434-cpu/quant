@@ -10,10 +10,19 @@ The failure this module exists to prevent is not a legal one: it is a TIMID one.
 meets an unfamiliar page and discards it "because it looks risky" throws away most of the world's
 information for no measured reason, and nothing in the desk ever records that it happened. Things
 published on the open internet are lawful to read. The 2026-09-17 version of this module carried a
-quarantine, a machine-extraction veto and a robots refusal; all three were DISCOVERY BRAKES THE
-DESK IMPOSED ON ITSELF, and all three are deleted. There is no ACCESS_UNCLEAR quarantine any more:
-an unclear row is mined and tested with its label attached. Fringe, retail, forum, archive and
-machine-translated ground are FIRST-CLASS INPUTS.
+quarantine and a machine-extraction veto; both were DISCOVERY BRAKES THE DESK IMPOSED ON ITSELF,
+and both are deleted. There is no ACCESS_UNCLEAR quarantine any more: an unclear row is mined and
+tested with its label attached. Fringe, retail, forum, archive and machine-translated ground are
+FIRST-CLASS INPUTS.
+
+ROBOTS.TXT IS RESPECTED AT FETCH TIME (LAWS 5e, AMENDED 2026-10-14 07:35Z by the principal,
+decision card cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR). The 2026-09-23 text had made
+robots a label only; the amendment restores it as the one fetch-time rule. A page whose robots.txt
+disallows it is NOT FETCHED (`AccessVerdict.fetch_allowed` is False) and the fetcher logs the skip
+as a hold with a named cause, never a silent drop. The row keeps its PUBLIC_WITH_TERMS label and
+its `terms_note`, and content ABOUT that page the desk obtained lawfully by other means is still
+labelled and mined. Robots never decides whether a row is mined; it decides whether that one page
+is fetched.
 
 WHAT REMAINS REFUSED IS ABOUT ACTS, NOT ABOUT CONTENT, AND IT IS EXACTLY FIVE (`HARD_BOUNDARY`).
 Nothing else is a brake. A later session must not re-derive the old caution from silence: if an
@@ -67,7 +76,10 @@ from typing import Any, Literal, cast
 PRINCIPLE = ("The desk mines and tests everything it can see on the open internet. Licence, "
              "robots, source class and credibility are routing and provenance labels: they "
              "describe what may be redistributed and how much weight the evidence carries, and "
-             "they never stop discovery, ingestion, representation or testing.")
+             "they never stop discovery, ingestion, representation or testing. Robots is "
+             "the one fetch-time rule (amended 2026-10-14): a page that robots.txt disallows "
+             "is not fetched, the skip is logged as a hold with a named cause, and content "
+             "about it obtained lawfully by other means is still labelled and mined.")
 
 #: THE HARD BOUNDARY -- five ACTS, verbatim and absolute. Nothing in this module or its callers
 #: may widen it, and nothing may add a sixth. These are acts, not content: they describe things
@@ -86,10 +98,12 @@ HARD_BOUNDARY_COUNT = 5
 
 #: DELETED BRAKES, named so a later session recognises them if it meets one in old code or prose
 #: and does not mistake it for a live rule. Each was a discovery brake, not a legal requirement.
+#: (robots.txt is NOT on this list since LAWS 5e was AMENDED 2026-10-14 07:35Z by the principal,
+#: decision card cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR: a Disallow is respected at
+#: fetch time -- see `AccessVerdict.fetch_allowed`.)
 REMOVED_BRAKES: tuple[str, ...] = (
     "ACCESS_UNCLEAR quarantine (metadata kept, content not consumed)",
     "machine-extraction veto on PUBLIC_WITH_TERMS",
-    "robots.txt Disallow treated as a refusal",
     "machine_use_allowed=false treated as 'registered, never scraped'",
     "'public/licensed sources only' as a pre-filter on discovery",
     "source-class and credibility used to drop rather than weight a row",
@@ -164,7 +178,8 @@ ROUTING: dict[AccessLabel, dict[str, Any]] = {
         "allowed_uses": MINING_USES,
         "quarantine": False, "refused": False, "evidence_weight_cap": 1.0,
         "reason": ("public with terms or a robots note: MINED AND TESTED IN FULL; the label "
-                   "routes redistribution and provenance, never discovery"),
+                   "routes redistribution and provenance, never discovery (a robots Disallow "
+                   "additionally means that page is not fetched, LAWS 5e amended 2026-10-14)"),
     },
     "LICENSED": {
         "allowed_uses": MINING_USES,
@@ -342,10 +357,16 @@ class AccessVerdict:
     #: True unless the row is refused on the hard boundary. Never False for terms or robots.
     machine_use_allowed: bool = True
     #: THE ROUTING LABEL THAT REPLACED THE BRAKE: may the desk republish this outside itself?
-    #: A terms or robots note lands here and NOWHERE ELSE, so it can never stop mining again.
+    #: A terms note lands here and NOWHERE ELSE, so it can never stop mining again.
     redistribute_allowed: bool = False
     #: Free-text provenance note carried with the row (terms, robots, paywall, licence).
     terms_note: str = ""
+    #: MAY THIS PAGE BE FETCHED? False when the metadata says robots.txt disallows it (LAWS 5e,
+    #: AMENDED 2026-10-14 07:35Z, decision card
+    #: cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR).
+    #: It governs the FETCH of that page only: the row stays mined, labelled and researchable,
+    #: and the fetcher logs the skip as a hold with a named cause.
+    fetch_allowed: bool = True
 
     def may(self, use: str) -> bool:
         """Is `use` permitted? The only question a caller should ever ask this object."""
@@ -359,7 +380,7 @@ class AccessVerdict:
 
 
 def _verdict(label: AccessLabel, basis: str, *, reason: str | None = None,
-             terms_note: str = "") -> AccessVerdict:
+             terms_note: str = "", fetch_allowed: bool = True) -> AccessVerdict:
     row = ROUTING[label]
     uses = cast(tuple[str, ...], row["allowed_uses"])
     refused = bool(row["refused"])
@@ -368,10 +389,30 @@ def _verdict(label: AccessLabel, basis: str, *, reason: str | None = None,
         refused=refused, reason=reason or str(row["reason"]),
         evidence_weight_cap=float(row["evidence_weight_cap"]), basis=basis,
         machine_use_allowed=not refused, redistribute_allowed="redistribute" in uses,
-        terms_note=terms_note)
+        terms_note=terms_note, fetch_allowed=fetch_allowed)
+
+
+#: The `robots` metadata values that mean robots.txt disallows the page.
+ROBOTS_DISALLOW_VALUES: tuple[str, ...] = ("disallow", "disallowed", "barred", "blocked")
 
 
 def classify(meta: dict[str, Any]) -> AccessVerdict:
+    """The LEGAL/ACCESS stage, plus the one fetch-time rule (robots, LAWS 5e amended 2026-10-14).
+
+    A robots Disallow sets `fetch_allowed=False` on WHATEVER label the row earns -- an archive or
+    an open-data page that robots.txt disallows is still not fetched -- and never changes whether
+    the row is mined. A refused row is refused for its own reason and is untouched here.
+    """
+    verdict = _classify(meta)
+    robots = str(meta.get("robots") or "unknown").strip().lower()
+    if verdict.refused or not verdict.fetch_allowed or robots not in ROBOTS_DISALLOW_VALUES:
+        return verdict
+    note = f"robots={robots} (page not fetched; LAWS 5e amended 2026-10-14)"
+    return replace(verdict, fetch_allowed=False,
+                   terms_note="; ".join(n for n in (verdict.terms_note, note) if n))
+
+
+def _classify(meta: dict[str, Any]) -> AccessVerdict:
     """The LEGAL/ACCESS stage: one source's metadata -> one access verdict.
 
     ORDER MATTERS AND IT IS THE HARD BOUNDARY FIRST -- the five acts, and nothing else. Anything
@@ -423,17 +464,21 @@ def classify(meta: dict[str, Any]) -> AccessVerdict:
     if obtained == "archive" or str(meta.get("source_class") or "") == "archive":
         return _verdict("PUBLIC_ARCHIVE", "public archive")
 
-    # TERMS, ROBOTS AND PAYWALLS ARE LABELS, NOT BRAKES (2026-09-23). Every one of these rows is
-    # MINED AND TESTED IN FULL; what the label withholds is `redistribute`, which PUBLIC_WITH_TERMS
-    # does not grant. The old branch removed `machine_extract` and `store_raw` and registered the
-    # source "never scraped" -- that was the brake, and it is gone.
+    # TERMS, ROBOTS AND PAYWALLS ARE LABELS, NOT BRAKES ON MINING (2026-09-23). Every one of
+    # these rows is MINED AND TESTED IN FULL; what the label withholds is `redistribute`, which
+    # PUBLIC_WITH_TERMS does not grant. The old branch removed `machine_extract` and `store_raw`
+    # and registered the source "never scraped" -- that was the brake, and it is gone.
+    # ROBOTS, AMENDED 2026-10-14 07:35Z (decision card
+    # cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR): a Disallow ALSO sets
+    # `fetch_allowed=False` -- that page is not fetched -- while the row keeps every mining use.
     machine = _flag(meta, "machine_use_allowed")
     robots = str(meta.get("robots") or "unknown").strip().lower()
     notes: list[str] = []
+    robots_disallows = robots in ROBOTS_DISALLOW_VALUES
     if machine is False:
         notes.append("the source declares machine_use_allowed=false")
-    if robots in ("disallow", "disallowed", "barred", "blocked"):
-        notes.append(f"robots={robots}")
+    if robots_disallows:
+        notes.append(f"robots={robots} (page not fetched; LAWS 5e amended 2026-10-14)")
     if _flag(meta, "paywalled") is True:
         # The open surface of a paywalled domain is mined; the wall itself is never bypassed
         # (hard boundary act 2), which is enforced by the DUMP_MARKERS branch above.
@@ -444,7 +489,7 @@ def classify(meta: dict[str, Any]) -> AccessVerdict:
         note = "; ".join(notes)
         return _verdict("PUBLIC_WITH_TERMS", note,
                         reason=(f"{ROUTING['PUBLIC_WITH_TERMS']['reason']} [{note}]"),
-                        terms_note=note)
+                        terms_note=note, fetch_allowed=not robots_disallows)
 
     klass = str(meta.get("source_class") or "")
     if klass in ("retail_ecology", "app_ecosystem") or _flag(meta, "is_social") is True:
@@ -562,6 +607,7 @@ def route(source_meta: dict[str, Any], content_meta: dict[str, Any] | None = Non
                     "url": source_meta.get("url"),
                     "machine_use_allowed": verdict.machine_use_allowed,
                     "redistribute_allowed": verdict.redistribute_allowed,
+                    "fetch_allowed": verdict.fetch_allowed,
                     "terms_note": verdict.terms_note},
     ).preserve()
 

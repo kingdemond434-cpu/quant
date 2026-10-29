@@ -267,7 +267,7 @@ def _portfolio(base: Path) -> dict[str, Any]:
                                              "open_positions")},
         "allocator": {"mode": pf.get("mode"), "armed": pf.get("armed"),
                       "effective_heat": pf.get("effective_heat"),
-                      "book_rows": len(book), "no_trade": pf.get("no_trade")},
+                      "book_rows": len(book or {}), "no_trade": pf.get("no_trade")},
         "mechanism_mix": list((pf.get("mechanism_mix") or {}).keys())[:MAX_ITEMS]
         if isinstance(pf.get("mechanism_mix"), dict) else [],
     }

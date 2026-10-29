@@ -108,7 +108,11 @@ the data nobody else can buy. Every owned dataset below 100% explored is a stand
   and is exactly five: no credential theft or logging in as someone else; no bypassing an access
   control or a paywall; no material non-public information; no stolen or leaked private data; no
   personal data harvesting or doxxing. If a page sits behind a login or a paywall the desk does
-  not break in — and the open surface of that same domain is mined like any other.
+  not break in — and the open surface of that same domain is mined like any other. **AMENDED
+  2026-10-14 07:35Z by the principal (LAWS §5e): robots.txt is respected at fetch time.** A page
+  robots.txt disallows is not fetched and the skip is logged as a hold with a named cause
+  (RFC 9309: exact host, the UA actually sent, re-read at most once per 24h; 404 allow;
+  5xx/unreachable disallow-for-now on a timed re-check; 401/403/429 a person-released hold). Robots still never decides whether a source is mined.
 - **The search engine is a self-optimizing asset:** operators, lexicons and diaspora expand every
   dig; digger parity — every upgrade propagates to ALL diggers (no digger left behind);
   search-space expansion is a standing rule; canary searches and the information-ecology monitor

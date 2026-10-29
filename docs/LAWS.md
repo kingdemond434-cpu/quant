@@ -364,7 +364,8 @@ orthogonality, independent survivor yield and marginal contribution to effective
 ## 5c. THE DATA-UTILIZATION LAW (principal's standing order, 2026-09-17, permanent)
 
 No dataset is collected to sit in storage. Every source the desk can see (§5e: no licence,
-robots, source-class or access pre-filter stands between a source and this law) has
+source-class or access pre-filter stands between a source and this law; a robots.txt Disallow
+is respected at fetch time for that page only, per the 2026-10-14 amendment) has
 explicit paths into research breadth, macro and world-state intelligence, regime inference,
 live decision context, execution intelligence and portfolio allocation, where its information
 is relevant. Maximum useful exploitation, never brute force: controlled candidate generation,
@@ -415,7 +416,8 @@ experiments or retires with evidence. (`scripts/check_ingestion_exploitation.py`
 ## 5d. THE GLOBAL 24/7 INTELLIGENCE LAW (principal's standing order, 2026-09-17, permanent)
 
 Continuously observe EVERY information surface the desk can see on the open internet (§5e: no
-licence, robots, source-class or access pre-filter, and no quarantine) that
+licence, source-class or access pre-filter, and no quarantine; a robots.txt Disallow is respected
+at fetch time for that page only, per the 2026-10-14 amendment) that
 can describe the global economy, markets, physical activity, positioning, behaviour or market
 structure; convert it into PIT-safe world-state intelligence and the largest statistically
 defensible set of novel orthogonal candidate cells; route those cells through the canonical
@@ -438,7 +440,27 @@ geometric growth, never forced into a position every second.
 open internet are lawful to read. Licence, robots, source class and credibility are **ROUTING AND
 PROVENANCE LABELS on the row**: they describe what the desk may **REDISTRIBUTE or publish**, and
 **how much weight the evidence carries**. They **NEVER** stop discovery, ingestion, representation
-or testing. Classification routes USE; it never gates MINING.
+or testing. Classification routes USE; it never gates MINING. The one fetch-time rule is robots
+(amendment below): a page robots.txt disallows is not fetched, and that is all it changes.
+
+**AMENDED 2026-10-14 07:35Z by the principal (decision card
+cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR): robots.txt is respected at fetch time.** A
+page whose robots.txt disallows it is **NOT fetched**, and the skip is logged as a **HOLD with a
+named cause** (`BLOCKED_BY_ROBOTS`, `hold_cause`), never as a silent drop: the source's row stays
+visible with its `robots`, `robots_disallows` and `terms_note`. The semantics are RFC 9309's:
+robots.txt is read at the **exact host** (scheme, host and port) of the page, under the **User-Agent
+the fetch actually sends** (groups matched on its product token), and a robots.txt that was read is
+re-read **at most once per 24h per host**; a **404** on robots.txt means **allow**; a **5xx or an
+unreachable** robots.txt means **treat as disallow and re-check on a timer** -- that is not a
+refusal; a **401, 403 or 429** on robots.txt is a **PERSON-RELEASED HOLD** (auditor's ruling
+2026-10-14): the host is recorded as `site:<host>` (`ROBOTS_HOLD`), receives **zero requests**, and
+no timer ever releases it -- only a named person does (`released_by`, `released_at`).
+Nothing else in this section changes: labels never stop mining, there is no quarantine, the
+`machine_use_allowed=false` veto stays deleted, there is no public-only pre-filter, and source
+class only weights evidence. Robots moved from "label only" to "respected at fetch time"; it
+governs whether one page is fetched, never whether a source is mined
+(`libs.research.access_classifier.AccessVerdict.fetch_allowed`,
+`desks/mt5/research/asia_collector.robots_verdict`).
 
 The pipeline on every source is DISCOVER -> CAPTURE METADATA -> ACCESS/PROVENANCE LABELLING ->
 EVIDENCE CLASSIFICATION -> RESEARCH, and every source walks all five. There is no "looks risky ->
@@ -454,7 +476,9 @@ Every source carries THREE INDEPENDENT labels, never collapsed into one:
 Behaviour by access label: **every label but the refused three is mined, ingested, represented and
 tested in full.** PUBLIC_WITH_TERMS (terms present, a robots Disallow, a declared
 `machine_use_allowed=false`, or a paywalled domain) is **mined and tested in full**; the label
-withholds `redistribute` and nothing else, and the fact is carried on the row as `terms_note`.
+withholds `redistribute`, and the fact is carried on the row as `terms_note`. A robots Disallow
+additionally means **that page is not fetched** (2026-10-14 amendment); content about it that the
+desk obtained lawfully by other means is still labelled and mined.
 LICENSED is used per its licence and its licence bears on republication, not on reading.
 **ACCESS_UNCLEAR IS MINED AND TESTED WITH ITS LABEL ATTACHED — there is no quarantine.**
 PUBLIC_SOCIAL, USER_SUBMITTED, PUBLIC_ARCHIVE and machine-translated ground are **first-class
@@ -464,10 +488,12 @@ permission.
 
 **THE BRAKES THAT ARE DELETED, NAMED SO A LATER SESSION CANNOT RE-DERIVE THEM FROM SILENCE**
 (`libs.research.access_classifier.REMOVED_BRAKES` carries the same list as data): the
-ACCESS_UNCLEAR quarantine; the machine-extraction veto on PUBLIC_WITH_TERMS; robots.txt Disallow
-read as a refusal; `machine_use_allowed=false` read as "registered, never scraped"; any
+ACCESS_UNCLEAR quarantine; the machine-extraction veto on PUBLIC_WITH_TERMS;
+`machine_use_allowed=false` read as "registered, never scraped"; any
 "public/licensed sources only" pre-filter on discovery; and source class or credibility used to
-DROP a row rather than WEIGHT it. None of these was ever a legal requirement. Each was a discovery
+DROP a row rather than WEIGHT it. (A robots.txt Disallow is no longer on this list: since the
+2026-10-14 amendment it is respected at fetch time, as above.) None of these was ever a legal
+requirement. Each was a discovery
 brake the desk imposed on itself, and each cost it ground it never measured. **No session may
 re-introduce one, in any form, under any name.** A new cap, veto, gate or refusal on research
 input is a violation of this section and of the growth governance rules (§ GROWTH GOVERNANCE).
@@ -498,8 +524,10 @@ STOLEN_UNAUTHORIZED carry these five acts, are refused with the reason recorded,
 refusals in the desk.
 
 Enforced by `libs/research/access_classifier.py` (`PRINCIPLE`, `HARD_BOUNDARY`,
-`HARD_BOUNDARY_COUNT`, `REMOVED_BRAKES`, `ROUTING`), `desks/mt5/research/evidence_router.py`, the
-ingestion law (§5c) and `tests/research/test_access_routing.py`.
+`HARD_BOUNDARY_COUNT`, `REMOVED_BRAKES`, `ROUTING`, `AccessVerdict.fetch_allowed`),
+`desks/mt5/research/evidence_router.py`, the shared fetch path's robots reader
+(`desks/mt5/research/asia_collector.robots_verdict`), the ingestion law (§5c) and
+`tests/research/test_access_routing.py`.
 
 ## 5f. THE MAXIMUM FORM (principal's standing order, 2026-09-17, permanent)
 

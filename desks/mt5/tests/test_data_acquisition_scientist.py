@@ -26,6 +26,7 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 
 from libs.moat import registry as REG  # noqa: E402
 from libs.research import data_contract as DC  # noqa: E402
+from research import asia_collector as ACOL  # noqa: E402
 from research import data_acquisition_scientist as das  # noqa: E402
 
 COVERAGE = {"frontier": {"top": [
@@ -80,14 +81,22 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     monkeypatch.setattr(das, "INTEL", tmp_path / "intel" / das.SEAT)
     monkeypatch.setattr(das.DS, "gather", lambda **kw: ([], {}))
     calls: dict[str, list[str]] = {"fetch": [], "robots": []}
-    monkeypatch.setattr(das, "_robots_allows",
-                        lambda url: (calls["robots"].append(url) or True, "robots.txt stub"))
+    disallowed: set[str] = set()
+
+    def _robots(url: str) -> Any:
+        calls["robots"].append(url)
+        if url in disallowed:
+            return ACOL.RobotsVerdict(False, "disallow", "robots.txt stub disallows", "stub")
+        return ACOL.RobotsVerdict(True, "allowed", "robots.txt stub", "stub")
+
+    monkeypatch.setattr(das, "_robots_verdict", _robots)
     monkeypatch.setattr(das, "_fetch", lambda url: (calls["fetch"].append(url) or CSV,
                                                     "text/csv"))
     axes = tmp_path / "axes"
     axes.mkdir()
     conn = REG.connect()
-    yield {"tmp": tmp_path, "conn": conn, "axes": axes, "calls": calls}
+    yield {"tmp": tmp_path, "conn": conn, "axes": axes, "calls": calls,
+           "disallowed": disallowed}
     conn.close()
     REG.set_path(None)
 
@@ -176,6 +185,24 @@ def test_the_sample_goes_through_the_lawful_route_and_the_request_carries_the_co
     assert set(roi) == set(doc["requests"]["datasets"])
     assert roi["kr_krx_short_sale_balance"]["acquired"] is False
     assert roi["kr_krx_short_sale_balance"]["roi"]["measured"] is False
+
+
+def test_a_robots_disallowed_sample_is_a_named_hold_and_is_never_fetched(desk: Any) -> None:
+    """LAWS 5e, AMENDED 2026-10-14 07:35Z (decision card
+    cmsg_012XFUfE12Rvggnu86fDb8pr5ze7a7HLob52jUdGwu28JR): a robots Disallow means the page is NOT
+    fetched, and the skip is a hold with a named cause that keeps the request visible."""
+    desk["disallowed"].add("https://data.krx.example/short.csv")
+    doc = _build(desk)
+    samples = {s["dataset"]: s for s in doc["samples"]}
+    krx = samples["kr_krx_short_sale_balance"]
+    assert krx["status"] == "BLOCKED_BY_ROBOTS"
+    assert krx["hold_cause"] == "robots:disallow" and krx["robots_disallows"] is True
+    assert "robots" in krx and "not fetched" in krx["terms_note"]
+    assert desk["calls"]["robots"] == ["https://data.krx.example/short.csv"]
+    assert desk["calls"]["fetch"] == [], "a disallowed page must never be requested"
+    assert not (das.SAMPLES / "kr_krx_short_sale_balance.json").exists()
+    # THE ROW STAYS VISIBLE: still requested, carrying its hold.
+    assert "kr_krx_short_sale_balance" in doc["requests"]["datasets"]
 
 
 def test_a_second_pass_re_requests_nothing_until_the_value_moves_or_the_day_turns(
