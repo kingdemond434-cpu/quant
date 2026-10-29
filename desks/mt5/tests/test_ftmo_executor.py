@@ -100,11 +100,11 @@ def _sig(side: int = 1) -> SimpleNamespace:
 
 @pytest.fixture
 def world(monkeypatch, tmp_path) -> SimpleNamespace:
+    import admission_integrity
     from mt5desk import cross_account as xa
-    from mt5desk import decision_core, family_call, families, kelly_sizing, order_door
+    from mt5desk import decision_core, families, family_call, kelly_sizing, order_door
     from prop import e8_executor
 
-    import admission_integrity
     from libs.ops import new_risk_hold
     from libs.tiers import promotion_authority
     for name in ("STATE", "OUT", "INTENTS", "LOG", "ARMED_MARKER", "ALLOCATOR"):
