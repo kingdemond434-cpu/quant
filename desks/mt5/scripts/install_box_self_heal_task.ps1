@@ -27,15 +27,27 @@
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File desks\mt5\scripts\install_box_self_heal_task.ps1
 #   powershell -NoProfile -ExecutionPolicy Bypass -File desks\mt5\scripts\install_box_self_heal_task.ps1 -IfMissing
-param([switch]$IfMissing)
+#   ... install_box_self_heal_task.ps1 -RepoRoot C:\path\to\quant   (the source repo, explicitly)
+param([switch]$IfMissing, [string]$RepoRoot = '')
 
 $ErrorActionPreference = 'Stop'
 
 $TaskName = 'Quant-BoxSelfHeal'
-$DeskRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$RepoRoot = (Resolve-Path (Join-Path $DeskRoot '..\..')).Path
-$Script   = Join-Path $RepoRoot 'ops\box_self_heal.py'
-if (-not (Test-Path $Script)) { throw "box_self_heal.py missing at $Script" }
+if ($IfMissing -and (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue)) {
+    "{0} already registered; -IfMissing: nothing to do" -f $TaskName
+    return
+}
+# THE SOURCE REPO IS EXPLICIT (v4 must-fix 2): -RepoRoot, or the repo this script sits in; either
+# way git must confirm it is a work tree's top level, and every copied file is read from ITS HEAD.
+if (-not $RepoRoot) { $RepoRoot = Join-Path $PSScriptRoot '..\..\..' }
+$RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
+$Git = (Get-Command git.exe -ErrorAction SilentlyContinue).Source
+if (-not $Git) { throw "git.exe is not on PATH: the copied files are read from the committed blobs with git; not installing" }
+$top = (& $Git -C $RepoRoot rev-parse --show-toplevel 2>$null)
+if ($LASTEXITCODE -ne 0 -or -not $top) { throw "$RepoRoot is not a git work tree (git rev-parse failed); not installing" }
+if ((Resolve-Path -LiteralPath $top).Path -ne $RepoRoot) { throw "$RepoRoot is not the top of its work tree ($top); pass -RepoRoot <repo root>" }
+"source repo: {0}" -f $RepoRoot
+$DeskRoot = Join-Path $RepoRoot 'desks\mt5'
 
 # THE SYSTEM TASK RUNS AN ADMIN-ONLY COPY, NEVER THE REPO TREE (audit HOLD of 7a01c1b09). The repo
 # is writable by the non-elevated bridge and every cloud session; a SYSTEM task that executed a
@@ -54,16 +66,40 @@ $BinDir = Join-Path $Root 'bin'
 # provably Administrators/SYSTEM only. Only the report (which nothing reads back to decide) is
 # published into the repo.
 $StateDir = Join-Path $Root 'state'
-# EACH COPIED FILE IS PINNED TO THE sha256 OF ITS COMMITTED BLOB (audit HOLD of 5b3504f50). A
-# session could swap the working-tree file in the moment before an admin runs this; comparing the
-# copy only with that (already-swapped) source would not catch it. The source must match the pin
-# below, which `tests/ops/test_box_self_heal.py` asserts equals the file at HEAD so it cannot
-# drift. Regenerate after any change to a copied file:
+# EACH COPIED FILE IS PINNED TO THE sha256 OF ITS COMMITTED BLOB (audit HOLD of 5b3504f50), AND
+# IS WRITTEN FROM THAT BLOB, NOT FROM THE WORKING TREE (v4 must-fix 2). The box checks out with
+# core.autocrlf, and these three files are outside desks/mt5/.gitattributes (eol=lf), so their
+# working-tree bytes are CRLF and never match a pin of the LF blob. `git cat-file blob HEAD:<path>`
+# is the raw committed bytes, with no eol or filter conversion; a session that swaps the working
+# tree changes nothing it reads. The destination is then hashed against the pin, which
+# `tests/ops/test_box_self_heal.py` asserts equals the blob at HEAD so it cannot drift. Regenerate
+# after any change to a copied file:
 #   git show HEAD:ops/box_self_heal.py | sha256sum   (and the other two)
 $Pins = [ordered]@{
-    'box_self_heal.py' = @{ src = (Join-Path $RepoRoot 'ops\box_self_heal.py');       sha256 = 'a69e9a3e2973a5efe49c567d724b798e92efca13e278bbd352be0bfc86add938' }
-    'process_health.py' = @{ src = (Join-Path $RepoRoot 'ops\process_health.py');      sha256 = 'cfdddafe46e4a7e9257846b1c87a0d1342bddc49f25302db0afe08df3e3c72a2' }
-    'alert_channels.py' = @{ src = (Join-Path $RepoRoot 'libs\ops\alert_channels.py'); sha256 = '4448f782dfa7dc4ec0aecd1dc71145403d3de1d1dcbb9c64e81cf95be3e5f4b5' }
+    'box_self_heal.py' = @{ src = 'ops/box_self_heal.py';       sha256 = 'fdeac937696c3c6d3a054f1d0f08426e49516ae2e1c8d9bcf0afb6b1a9a74ebe' }
+    'process_health.py' = @{ src = 'ops/process_health.py';      sha256 = 'cfdddafe46e4a7e9257846b1c87a0d1342bddc49f25302db0afe08df3e3c72a2' }
+    'alert_channels.py' = @{ src = 'libs/ops/alert_channels.py'; sha256 = '4448f782dfa7dc4ec0aecd1dc71145403d3de1d1dcbb9c64e81cf95be3e5f4b5' }
+}
+
+function Save-GitBlob([string] $rel, [string] $dst) {
+    # The committed bytes of HEAD:<rel>, copied raw from git's stdout into a NEW file: never a
+    # PowerShell pipeline (it re-encodes text), never the working-tree file.
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $Git
+    $psi.Arguments = ('-C "{0}" cat-file blob "HEAD:{1}"' -f $RepoRoot, $rel)
+    $psi.UseShellExecute = $false
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.CreateNoWindow = $true
+    $proc = [System.Diagnostics.Process]::Start($psi)
+    $err = $proc.StandardError.ReadToEndAsync()
+    $fs = [System.IO.File]::Open($dst, [System.IO.FileMode]::CreateNew, [System.IO.FileAccess]::Write)
+    try { $proc.StandardOutput.BaseStream.CopyTo($fs) } finally { $fs.Dispose() }
+    $proc.WaitForExit()
+    if ($proc.ExitCode -ne 0) {
+        Remove-Item -LiteralPath $dst -Force -ErrorAction SilentlyContinue
+        throw "git cat-file blob HEAD:$rel failed in $RepoRoot (rc $($proc.ExitCode): $($err.Result.Trim())); the blob is missing -- not installing"
+    }
 }
 $Installed = Join-Path $BinDir 'box_self_heal.py'
 
@@ -75,6 +111,7 @@ $adm = 'S-1-5-32-544'; $sys = 'S-1-5-18'; $usr = 'S-1-5-32-545'
 function Test-DirAdminOnly([string] $dir) {
     # Admins/SYSTEM may hold anything; Users read-only; any other SID, or a Users write bit, fails.
     if (-not (Test-Path -LiteralPath $dir)) { return "absent" }
+    if ((Get-Item -LiteralPath $dir -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { return "a junction or symlink" }
     foreach ($a in (Get-Acl -LiteralPath $dir).Access | Where-Object { $_.AccessControlType -eq 'Allow' }) {
         $sid = $a.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value
         $write = [int64]$a.FileSystemRights -band ([int64][System.Security.AccessControl.FileSystemRights]"Write, Delete, ChangePermissions, TakeOwnership" -bor 0x50000000)
@@ -86,6 +123,9 @@ function Test-DirAdminOnly([string] $dir) {
 # A PATH python.exe IS ONLY TRUSTED FROM AN ADMIN-ONLY DIRECTORY (audit should-fix of 5b3504f50):
 # a SYSTEM task that ran a python a non-admin could replace would run their code as SYSTEM. Prefer
 # the known Program Files interpreter; fall back to PATH only when its own directory is admin-only.
+# Not only the exe's folder (v4 should-fix 7): the stdlib (Lib), the third-party packages
+# (Lib\site-packages, where psutil lives) and DLLs are code the SYSTEM task imports, so each must be
+# admin-only too, whichever interpreter is chosen. (-I already drops the user site and PYTHONPATH.)
 $Python = 'C:\Program Files\Python314\python.exe'
 if (-not (Test-Path $Python)) {
     $cand = (Get-Command python.exe -ErrorAction Stop).Source
@@ -93,7 +133,14 @@ if (-not (Test-Path $Python)) {
     if ($why) { throw "refusing PATH python at $cand: its directory is not admin-only ($why); install Python to C:\Program Files or fix its ACL" }
     $Python = $cand
 }
-& $Python -c "import psutil" 2>$null
+$PyHome = Split-Path -Parent $Python
+foreach ($sub in @('Lib', 'Lib\site-packages', 'DLLs')) {
+    $d = Join-Path $PyHome $sub
+    if ($sub -eq 'DLLs' -and -not (Test-Path -LiteralPath $d)) { continue }
+    $why = Test-DirAdminOnly $d
+    if ($why) { throw "refusing python at ${Python}: $d is not admin-only ($why); a non-admin could plant code the SYSTEM task imports" }
+}
+& $Python -I -c "import psutil" 2>$null
 if ($LASTEXITCODE -ne 0) {
     "WARNING: psutil is not importable by $Python; the watchdog will report UNMEASURED (RED) and stop nothing until it is"
 }
@@ -130,18 +177,15 @@ function Assert-AdminOnly {
 }
 Assert-AdminOnly
 foreach ($name in $Pins.Keys) {
-    $src = $Pins[$name].src; $pin = $Pins[$name].sha256.ToLower(); $dst = Join-Path $BinDir $name
-    if (-not (Test-Path -LiteralPath $src)) { throw "$name missing at $src" }
-    $srcHash = (Get-FileHash $src -Algorithm SHA256).Hash.ToLower()
-    if ($srcHash -ne $pin) {
-        throw "$name at $src has sha256 $srcHash, not its pinned $pin; the working tree does not match the reviewed file -- not installing"
-    }
+    $rel = $Pins[$name].src; $pin = $Pins[$name].sha256.ToLower(); $dst = Join-Path $BinDir $name
     Remove-Item -LiteralPath $dst -Force -ErrorAction SilentlyContinue
-    Copy-Item -LiteralPath $src -Destination $dst
-    if ((Get-FileHash $dst -Algorithm SHA256).Hash.ToLower() -ne $pin) {
-        throw "copy of $name does not match its pin; not installing"
+    Save-GitBlob $rel $dst
+    $dstHash = (Get-FileHash -LiteralPath $dst -Algorithm SHA256).Hash.ToLower()
+    if ($dstHash -ne $pin) {
+        Remove-Item -LiteralPath $dst -Force -ErrorAction SilentlyContinue
+        throw "HEAD:$rel in $RepoRoot has sha256 $dstHash, not its pinned $pin; HEAD is not the reviewed file -- not installing"
     }
-    "copied {0} (sha256 {1})" -f $dst, $pin.Substring(0, 12)
+    "installed {0} from HEAD:{1} (sha256 {2})" -f $dst, $rel, $pin.Substring(0, 12)
 }
 Assert-AdminOnly     # the copies and the state dir inherit the root's ACL; proved, not assumed
 
@@ -197,4 +241,4 @@ Start-ScheduledTask -TaskName $TaskName
 Start-Sleep -Seconds 20
 $i = Get-ScheduledTaskInfo -TaskName $TaskName
 "started {0}: state={1} last_run={2} last_result={3}" -f $TaskName, (Get-ScheduledTask -TaskName $TaskName).State, $i.LastRunTime, $i.LastTaskResult
-"report: desks\mt5\reports\BOX_SELF_HEAL.json; ledger: desks\mt5\logs\box_self_heal.jsonl; log: {0}" -f $Log
+"report: desks\mt5\reports\BOX_SELF_HEAL.json; state + ledger: {0} (admin-only); log: {1}" -f $StateDir, $Log

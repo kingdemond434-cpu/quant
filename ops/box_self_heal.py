@@ -98,8 +98,10 @@ import os
 import re
 import shlex
 import socket
+import stat
 import subprocess
 import sys
+import tempfile
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -305,6 +307,10 @@ class Proc:
     user: str | None = None
 
 
+def _on_windows() -> bool:
+    return sys.platform == "win32"
+
+
 def _fold(text: str) -> str:
     return re.sub(r"\s+", " ", (text or "").replace('"', " ").replace("'", " ")).strip().lower()
 
@@ -319,7 +325,9 @@ def _argv(p: Proc) -> list[str]:
     try:
         toks = shlex.split(p.cmdline or "", posix=False)
     except ValueError:
-        toks = (p.cmdline or "").split()
+        # Unbalanced quotes: not parseable, so the whole line is ONE token. Nothing that needs
+        # an exact argument then matches it, and the deny list sees all of it.
+        return [(p.cmdline or "").strip()]
     return [t.strip('"') for t in toks]
 
 
@@ -343,15 +351,11 @@ def unreadable(p: Proc) -> str | None:
 #: Python's own options that take a value (the next token is not the script).
 _PY_OPT_ARG = frozenset({"-W", "-X", "-Q"})
 
-#: Images whose arguments are DATA, not code they run: a git/gh ref, an API path, a console title.
-#: `git fetch origin claude/miner-x` is git, not a miner, so only their image identifies them.
-_DATA_ARG_IMAGES = frozenset({
-    "gh", "git", "git-remote-https", "git-credential-manager", "conhost", "sh",
-})
-#: Suffixes of an argument that names code (a later `launcher.py gateway.py` names two organs).
-_CODE_SUFFIXES = (".py", ".pyw", ".pyz", ".ps1", ".psm1", ".exe", ".cmd", ".bat", ".js", ".dll")
-#: PowerShell switches that carry code the deny list must still see.
-_PS_CODE_FLAGS = frozenset({"-command", "-c", "-encodedcommand", "-e", "-ec", "-file", "-f"})
+#: Images whose arguments are PURE DATA, never code they run: a git/gh ref, an API path, a
+#: console title. `git fetch origin claude/miner-x` is git, not a miner, so only their image
+#: identifies them. Nothing that runs code (no shell, no interpreter) belongs here.
+_DATA_ARG_IMAGES = frozenset({"gh", "git", "git-credential-manager", "conhost"})
+_DATA_ARG_PREFIXES = ("git-remote-",)
 #: The only switches the installers pass BEFORE -File. A valued one (its value is the next token).
 _PS_PRE_FILE_FLAGS = frozenset({"-noprofile", "-noninteractive", "-nologo", "-sta", "-mta"})
 _PS_PRE_FILE_VALUED = frozenset({"-windowstyle", "-executionpolicy", "-ex", "-ep"})
@@ -376,31 +380,23 @@ def _ps_file(argv: Sequence[str]) -> str | None:
     return None
 
 
+def _is_data_image(base: str) -> bool:
+    return base in _DATA_ARG_IMAGES or base.startswith(_DATA_ARG_PREFIXES)
+
+
 def _deny_haystack(p: Proc) -> str:
-    """The folded tokens that say WHAT `p` runs, for the deny list -- its image and the code it
-    executes, never a data argument such as a branch name. Fail-safe: an image this cannot parse
-    contributes its WHOLE command line, so a new launcher is over-matched, never under-matched."""
-    argv = _argv(p)
+    """What the deny list searches: the WHOLE folded command line, for every image except the
+    pure-data ones (git, gh, git-remote-*, git-credential-manager, conhost), whose arguments are
+    refs and paths, never code; those contribute their image and argv[0] only. No interpreter or
+    shell is parsed for "the code it runs": `run.py --role gateway`, `-Command Invoke-Desk -Name
+    gateway` and `sh -c "python gateway.py"` all carry the money organ in an ARGUMENT, so any
+    token anywhere on the line denies (over-match, never under-match)."""
     img = _image(p)
-    base = img.removesuffix(".exe")
-    toks = [img, *(argv[:1])]
-    pyset = {x.removesuffix(".exe") for x in _PY}
-    psset = {x.removesuffix(".exe") for x in _PS}
-    if base in _DATA_ARG_IMAGES:
-        pass                                      # image (and its own path) only
-    elif base in pyset:
-        got = _py_identity(argv)
-        if got is None:
-            toks.append(_fold(p.cmdline))         # could not parse: the whole line
-        else:
-            toks += got
-    elif base in psset:
-        toks += [a for i, a in enumerate(argv)
-                 if i and (argv[i - 1].lower() in _PS_CODE_FLAGS
-                           or _norm_path(a).endswith(_CODE_SUFFIXES))]
-    else:
-        toks.append(_fold(p.cmdline or " ".join(p.argv)))
-    return _fold(" ".join(t for t in toks if t))
+    whole = _fold(p.cmdline or " ".join(p.argv))
+    if _is_data_image(img.removesuffix(".exe")):
+        argv = _argv(p)
+        return _fold(" ".join(t for t in (img, *(argv[:1])) if t))
+    return _fold(f"{img} {whole}")
 
 
 def denied(p: Proc) -> str | None:
@@ -413,35 +409,6 @@ def denied(p: Proc) -> str | None:
         if needle in text:
             return f"{needle!r}: {why}"
     return None
-
-
-def _py_identity(argv: Sequence[str]) -> list[str] | None:
-    """The tokens a python command line RUNS: its script, or its -m module, or (all of) its -c
-    code, plus any later argument that names code. None when nothing can be identified (then the
-    caller treats the whole line as identity -- fail-safe)."""
-    i = 1
-    while i < len(argv):
-        a = argv[i]
-        if a in _PY_OPT_ARG:
-            i += 2
-            continue
-        if a == "-c":
-            return list(argv[i + 1:]) or None
-        if a == "-m":
-            head, rest = list(argv[i + 1:i + 2]), argv[i + 2:]
-            break
-        if a == "-":
-            return None
-        if a.startswith("-"):                   # a flag, or -Wignore / -Xutf8 (value attached)
-            i += 1
-            continue
-        head, rest = [a], argv[i + 1:]
-        break
-    else:
-        return None
-    if not head:
-        return None
-    return [*head, *(x for x in rest if _norm_path(x).endswith(_CODE_SUFFIXES))]
 
 
 def _py_script(argv: Sequence[str]) -> tuple[str, list[str]] | None:
@@ -616,9 +583,11 @@ class Box:
     windows: bool = sys.platform == "win32"
     #: secure(path): why the state directory (or a file in it) is NOT admin-only, or None.
     secure: Callable[[Path], str | None] = field(default=lambda p: admin_only(p))
-    #: task_principal(task): the account the task is registered to run as, lower-cased, or None.
+    #: task_principal(task): the account the task is registered to run as (name or SID), or None.
     task_principal: Callable[[str | None], str | None] = field(
         default=lambda t: _task_principal(t) if t else None)
+    #: sid_of(account): the SID of an account name or SID string, or None (`_account_sid`).
+    sid_of: Callable[[str | None], str | None] = field(default=lambda a: _account_sid(a))
 
 
 def _live_procs() -> list[Proc] | None:
@@ -666,34 +635,96 @@ def _schtasks(verb: str, task: str, *, xml: bool = False) -> dict[str, Any]:
 #: The images Task Scheduler launches a task through. A task's process is a child of one of these;
 #: a gate or intake command line run by hand (an operator shell, an agent) is not.
 _SCHEDULER_IMAGES = frozenset({"svchost.exe", "taskeng.exe", "taskhostw.exe", "services.exe"})
-#: The SYSTEM account, in the forms psutil and schtasks print.
-_SYSTEM_USERS = frozenset({"nt authority\\system", "system", "s-1-5-18"})
+#: The SYSTEM account's SID. Owners and principals are compared as SIDs, never as names: the
+#: names are localized ("NT-AUTORITÄT\\SYSTEM") and schtasks may export a SID or a name.
+_SYSTEM_SID = "S-1-5-18"
+#: The English names of SYSTEM, for when the account lookup itself is unavailable (off Windows).
+_WELL_KNOWN_SIDS = {"nt authority\\system": _SYSTEM_SID, "system": _SYSTEM_SID,
+                    "localsystem": _SYSTEM_SID}
+
+
+def _lookup_sid(name: str) -> str:
+    """LookupAccountNameW + ConvertSidToStringSidW through ctypes (Windows only). Raises."""
+    import ctypes
+    from ctypes import wintypes
+
+    advapi = ctypes.WinDLL("advapi32", use_last_error=True)  # type: ignore[attr-defined,unused-ignore]
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined,unused-ignore]
+    vp = ctypes.c_void_p
+    dw = ctypes.POINTER(wintypes.DWORD)
+    advapi.LookupAccountNameW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR, vp, dw,
+                                          wintypes.LPWSTR, dw, ctypes.POINTER(ctypes.c_int)]
+    advapi.LookupAccountNameW.restype = wintypes.BOOL
+    advapi.ConvertSidToStringSidW.argtypes = [vp, ctypes.POINTER(wintypes.LPWSTR)]
+    advapi.ConvertSidToStringSidW.restype = wintypes.BOOL
+    kernel.LocalFree.argtypes = [vp]
+    kernel.LocalFree.restype = vp
+    cb, cch, use = wintypes.DWORD(0), wintypes.DWORD(0), ctypes.c_int(0)
+    advapi.LookupAccountNameW(None, name, None, ctypes.byref(cb), None, ctypes.byref(cch),
+                              ctypes.byref(use))
+    if not cb.value:
+        raise OSError(ctypes.get_last_error(), "LookupAccountNameW")  # type: ignore[attr-defined,unused-ignore]
+    sid = ctypes.create_string_buffer(cb.value)
+    dom = ctypes.create_unicode_buffer(max(cch.value, 1))
+    if not advapi.LookupAccountNameW(None, name, ctypes.cast(sid, vp), ctypes.byref(cb), dom,
+                                     ctypes.byref(cch), ctypes.byref(use)):
+        raise OSError(ctypes.get_last_error(), "LookupAccountNameW")  # type: ignore[attr-defined,unused-ignore]
+    out = wintypes.LPWSTR()
+    if not advapi.ConvertSidToStringSidW(ctypes.cast(sid, vp), ctypes.byref(out)):
+        raise OSError(ctypes.get_last_error(), "ConvertSidToStringSidW")  # type: ignore[attr-defined,unused-ignore]
+    try:
+        return str(out.value).upper()
+    finally:
+        kernel.LocalFree(ctypes.cast(out, vp))
+
+
+def _account_sid(account: str | None) -> str | None:
+    """The SID of `account` -- a name in any locale ("DOMAIN\\user") or a SID string -- upper-
+    cased; None when it does not resolve (the caller fails closed)."""
+    a = (account or "").strip()
+    if not a:
+        return None
+    if re.fullmatch(r"(?i)s-1(-\d+)+", a):
+        return a.upper()
+    if _on_windows():
+        try:
+            return _lookup_sid(a)
+        except Exception:
+            pass
+    return _WELL_KNOWN_SIDS.get(a.lower())
 
 
 def _task_principal(task: str) -> str | None:
-    """The account `task` runs as, from its registration XML, lower-cased; None if unreadable."""
+    """The account `task` runs as, from its registration XML (a name or a SID, as exported);
+    None if unreadable. scheduler_owned resolves it to a SID before comparing."""
     r = _schtasks("/Query", task, xml=True)
     if r.get("rc") != 0:
         return None
     m = re.search(r"<UserId>\s*([^<]+?)\s*</UserId>", str(r.get("out") or ""),
                   re.IGNORECASE)
-    return m.group(1).strip().lower() if m else None
+    return m.group(1).strip() if m else None
 
 
 def scheduler_owned(p: Proc, procs: Sequence[Proc], box: Box, task: str | None) -> str | None:
     """Why `p` is NOT a process Task Scheduler launched for `task`, or None (audit should-fix of
     5b3504f50): a `-Command ... -File <gate>` or a hand-run intake matches the string but is not
     the task. Require SYSTEM (or the task's own principal) to own it, and the parent chain to pass
-    through svchost/taskeng. Fail CLOSED: an unreadable owner or principal is a reason."""
-    owner = (p.user or "").strip().lower()
-    if not owner:
-        return f"pid {p.pid}'s owner is unreadable"
-    allowed = set(_SYSTEM_USERS)
+    through svchost/taskeng. Owner and principal are compared as SIDs (v4 should-fix 9): a
+    localized name or a principal schtasks exports as a SID must not decide it. Fail CLOSED: an
+    owner that does not resolve to a SID is a reason; an unresolvable principal allows SYSTEM
+    only."""
+    owner = (p.user or "").strip()
+    owner_sid = box.sid_of(owner) if owner else None
+    if not owner_sid:
+        return (f"pid {p.pid}'s owner {owner!r} is unreadable or has no SID: not provably SYSTEM "
+                f"or {task}'s principal")
+    allowed = {_SYSTEM_SID}
     principal = box.task_principal(task) if task else None
-    if principal:
-        allowed.add(principal)
-    if owner not in allowed:
-        return f"pid {p.pid} runs as {owner!r}, not SYSTEM or {task}'s principal"
+    principal_sid = box.sid_of(principal) if principal else None
+    if principal_sid:
+        allowed.add(principal_sid)
+    if owner_sid not in allowed:
+        return f"pid {p.pid} runs as {owner!r} ({owner_sid}), not SYSTEM or {task}'s principal"
     by = {q.pid: q for q in procs}
     for a in ancestors(p.pid, procs):
         anc = by.get(a)
@@ -840,7 +871,7 @@ def admin_only(path: Path) -> str | None:
     Fail closed: absent, a junction, an unreadable ACL, a NULL DACL, an owner outside
     Administrators/SYSTEM, an allow ACE of a kind this does not parse, or any write right for any
     other SID is a reason. Off Windows nothing can be proven, which is also a reason."""
-    if sys.platform != "win32":
+    if not _on_windows():
         return "not Windows: an admin-only ACL cannot be proven here"
     try:
         st = os.lstat(path)
@@ -1432,8 +1463,10 @@ def _read_json(path: Path) -> Any:
 
 
 def _read_state(path: Path) -> tuple[str, dict[str, Any]]:
-    """("ok" | "absent" | "unreadable", doc). A state that exists and cannot be read is NOT a
-    fresh start: it is a lost attempt count."""
+    """("ok" | "absent" | "unreadable" | "marked", doc). A state that exists and cannot be read is
+    NOT a fresh start: it is a lost attempt count. "marked" is a state a previous pass wrote while
+    the history was unknown: it is readable, and a readable ledger now clears it (v4 should-fix
+    4), so one bad pass is not a refusal forever."""
     try:
         doc = json.loads(path.read_text("utf-8"))
     except FileNotFoundError:
@@ -1443,15 +1476,42 @@ def _read_state(path: Path) -> tuple[str, dict[str, Any]]:
     if not isinstance(doc, dict):
         return "unreadable", {}
     if doc.get("history") == "UNREADABLE":
-        return "unreadable", doc
+        return "marked", doc
     return "ok", doc
 
 
 def _write_json(path: Path, doc: Any) -> None:
+    """Atomic write. The temp file has a fresh random name and is created EXCLUSIVELY (mkstemp:
+    O_CREAT|O_EXCL), so a symlink or hard link planted at a predictable `<path>.tmp` is never
+    written through; os.replace then swaps the directory entry, never writing through `path`."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(doc, indent=1, sort_keys=False), "utf-8")
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write(json.dumps(doc, indent=1, sort_keys=False))
     os.replace(tmp, path)
+
+
+_REPARSE_POINT = 0x400          # FILE_ATTRIBUTE_REPARSE_POINT
+
+
+def redirected(path: Path) -> str | None:
+    """Why a SYSTEM write to `path` -- a file under the user-writable repo -- could land somewhere
+    else, or None (v4 should-fix 2): any component of the path (the file, its folder, or any folder
+    above) that is a junction or symlink, or an existing file with a second hard link. Absent
+    components are fine (they are created as plain folders). Checked before EVERY such write."""
+    full = Path(os.path.abspath(path))
+    for comp in (full, *full.parents):
+        try:
+            st = os.lstat(comp)
+        except FileNotFoundError:
+            continue
+        except OSError as exc:
+            return f"{comp} cannot be inspected ({type(exc).__name__})"
+        if stat.S_ISLNK(st.st_mode) or getattr(st, "st_file_attributes", 0) & _REPARSE_POINT:
+            return f"{comp} is a junction or symlink"
+        if comp == full and stat.S_ISREG(st.st_mode) and st.st_nlink > 1:
+            return f"{comp} has {st.st_nlink} hard links"
+    return None
 
 
 def _append_ledger(path: Path, rows: Iterable[Mapping[str, Any]]) -> None:
@@ -1521,15 +1581,57 @@ def rules_table() -> list[dict[str, Any]]:
 PAGE_VERDICTS = frozenset({"STOPPED", "ENDED", "STARTED", *FAILED_VERDICTS})
 
 
+def _https_channel(cfg: Mapping[str, Any], heartbeat: Path) -> dict[str, Any] | None:
+    """`cfg` with every URL it would open proven https, or None (v4 should-fix 3). The config is
+    read from the repo, which a non-admin can write; SYSTEM must not open a file:// or http://
+    URL from it. ntfy and telegram build their own https URL; email opens no URL."""
+    out = dict(cfg)
+    kind = out.get("kind")
+    if kind == "webhook" or kind == "hc":
+        url = str(out.get("url") or "").strip()
+        if not url and kind == "hc":
+            if redirected(heartbeat):
+                return None
+            try:
+                url = str(json.loads(heartbeat.read_text("utf-8")).get("url", "")).strip()
+            except (OSError, ValueError, AttributeError):
+                return None
+        if not url.lower().startswith("https://"):
+            return None
+        out["url"] = url
+    return out
+
+
 def _send_alert(title: str, body: str) -> dict[str, Any]:
-    """libs/ops/alert_channels.send_all (ntfy on the box). Loaded by path from the admin-only copy
-    beside the installed watchdog, or from the repo when run from the repo."""
+    """libs/ops/alert_channels' senders (ntfy on the box), loaded by path from the admin-only copy
+    beside the installed watchdog, or from the repo when run from the repo. Only channels whose
+    URLs are https are fired; the delivery ledger is written in the repo only when no component of
+    its path is a junction or symlink, else beside the admin-only state."""
     mod = _load("_box_self_heal_alert_channels",
                 _dep("alert_channels.py", "libs/ops/alert_channels.py"))
-    res: dict[str, Any] = mod.send_all(title, body,
-                                       config=ROOT / "data" / "secrets" / "alert_channels.json",
-                                       ledger=ROOT / "data" / "alert_delivery.jsonl")
-    return res
+    config = ROOT / "data" / "secrets" / "alert_channels.json"
+    ledger = ROOT / "data" / "alert_delivery.jsonl"
+    if redirected(ledger):
+        ledger = STATE_DIR / "alert_delivery.jsonl"
+    raw = [] if redirected(config) else mod.load_channels(config)
+    heartbeat = ROOT / "data" / "secrets" / "heartbeat_url.json"
+    channels = [c for c in (_https_channel(x, heartbeat) for x in raw) if c is not None]
+    if not channels:
+        mod._log("none", False, f"NOT-ARMED: no https channel of {len(raw)} configured",
+                 title, ledger)
+        return {"armed": 0, "delivered": 0, "results": [], "configured": len(raw)}
+    results = []
+    for cfg in channels:
+        kind = str(cfg.get("kind"))
+        try:
+            detail = str(mod._SENDERS[kind](cfg, title, body))
+            ok = True
+        except Exception as exc:          # one channel's failure never stops another's
+            ok, detail = False, f"{type(exc).__name__}: {exc}"[:200]
+        mod._log(kind, ok, detail, title, ledger)
+        results.append({"channel": kind, "ok": ok, "detail": detail})
+    return {"armed": len(channels), "delivered": sum(1 for r in results if r["ok"]),
+            "results": results, "configured": len(raw)}
 
 
 def _once_key(r: Mapping[str, Any]) -> str | None:
@@ -1568,12 +1670,20 @@ def run(*, apply: bool = True, box: Box | None = None, now: float | None = None,
     # clocks and a reset cap. If it is not provably writable by Administrators/SYSTEM alone, the
     # pass reads no state, keeps no state, and -- because an unprovable store is an uncapped one
     # -- acts on nothing.
-    insecure = None
-    for probe in (state.parent, state, ledger):
-        why = b.secure(probe)
-        if why is not None:
-            insecure = why
-            break
+    #
+    # A FRESH INSTALL (v4 must-fix 1): the installer creates the folder only. Once the FOLDER is
+    # proven admin-only, nobody else can create a file in it, so a file that is absent is accepted
+    # and is created by this SYSTEM pass with the folder's inherited ACL. A file that EXISTS must
+    # itself be proven admin-only (the state, the ledger and the rotated ledger.1).
+    insecure = b.secure(state.parent)
+    if insecure is None:
+        for probe in (state, ledger, ledger.with_suffix(ledger.suffix + ".1")):
+            if not os.path.lexists(probe):
+                continue
+            why = b.secure(probe)
+            if why is not None:
+                insecure = why
+                break
     status, prior = _read_state(state)
     history_known = True
     history_source = "state"
@@ -1586,7 +1696,8 @@ def run(*, apply: bool = True, box: Box | None = None, now: float | None = None,
         # MAX(STATE, LEDGER), never the state alone (audit HOLD of 5b3504f50): a state that erased
         # attempts cannot lower the count below what the admin-only ledger proves. A line the
         # ledger cannot parse is skipped, not fatal.
-        state_attempts = _attempts_from(prior.get("attempts")) if status == "ok" else {}
+        state_attempts = (_attempts_from(prior.get("attempts"))
+                          if status in ("ok", "marked") else {})
         legacy = [float(x) for x in (prior.get("restarts") or [])
                   if isinstance(x, (int, float)) and not isinstance(x, bool)]
         if legacy:
@@ -1603,6 +1714,10 @@ def run(*, apply: bool = True, box: Box | None = None, now: float | None = None,
                     attempts[k] = clamp(set(attempts[k]) | set(v))
             if status == "ok":
                 history_source = "state+ledger"
+            elif status == "marked":
+                # The previous pass could not read the history; the ledger -- admin-only, and
+                # written BEFORE every action -- is readable now, so it is the history again.
+                history_source = "ledger(cleared_unreadable)"
             elif ledgered_attempts:
                 history_source = "ledger"
             elif status == "absent":
@@ -1611,12 +1726,12 @@ def run(*, apply: bool = True, box: Box | None = None, now: float | None = None,
                 history_known, history_source = False, "UNREADABLE"
             if torn and history_known:
                 history_source = f"{history_source}+{len(torn)}_torn_lines_skipped"
-    prior_report = _read_json(report)
-    prior_report = prior_report if isinstance(prior_report, dict) else {}
+    # Once-a-day page keys come from the admin-only state ONLY (v4 should-fix 1): the report
+    # lives in the repo, and a planted `paged_once` there would silence a page.
     paged_once: dict[str, str] = {}
-    for po_src in (prior_report.get("paged_once"), prior.get("paged_once")):
-        if isinstance(po_src, dict):
-            paged_once.update({str(pk): str(pv) for pk, pv in po_src.items()})
+    po_src = prior.get("paged_once")
+    if isinstance(po_src, dict):
+        paged_once.update({str(pk): str(pv) for pk, pv in po_src.items()})
     if isinstance(prior.get("gave_up_paged"), str):          # the pre-v2 key
         paged_once.setdefault("workflow_gate_restart:CAPPED", prior["gave_up_paged"])
 
@@ -1710,7 +1825,14 @@ def run(*, apply: bool = True, box: Box | None = None, now: float | None = None,
             doc["status"] = "RED"
         with contextlib.suppress(OSError):
             _append_ledger(ledger, [r for r in red if id(r) not in p.ledgered])
-    _write_json(report, doc)          # the report ALWAYS lands in the repo, read by nothing here
+    # The report lands in the repo (read by nothing here), unless a component of its path is a
+    # junction or symlink: SYSTEM must not write through one (v4 should-fix 2).
+    doc["report_refused"] = redirected(report)
+    if doc["report_refused"] is None:
+        try:
+            _write_json(report, doc)
+        except OSError as exc:
+            doc["report_refused"] = f"{type(exc).__name__}: {exc}"[:200]
     return doc
 
 

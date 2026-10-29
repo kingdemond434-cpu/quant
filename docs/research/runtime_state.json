@@ -467,7 +467,7 @@
     ]
    },
    {
-    "at": "2026-10-29T20:09:39+00:00",
+    "at": "2026-10-29T21:24:21+00:00",
     "host": "vm",
     "machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
     "on_attesting_host": false,
@@ -26528,7 +26528,7 @@
    "artifact": "desks/mt5/reports/BOX_SELF_HEAL.json",
    "artifact_declared": "desks/mt5/reports/BOX_SELF_HEAL.json",
    "artifact_resolved_by": "absent",
-   "artifact_declared_n": 2,
+   "artifact_declared_n": 1,
    "artifact_age_s": null,
    "artifact_bytes": 0,
    "artifact_sha256": "UNMEASURED",
@@ -26537,7 +26537,7 @@
    "consumer": "desks/mt5/scripts/check_desk_health.py",
    "measured_on": "vm",
    "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
-   "measured_at": "2026-10-29T20:09:39+00:00"
+   "measured_at": "2026-10-29T21:24:21+00:00"
   },
   {
    "organ": "executable:scripts/merge_pipeline_watch.py",
@@ -26565,7 +26565,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
-   "measured_at": "2026-10-29T20:09:39+00:00"
+   "measured_at": "2026-10-29T21:24:21+00:00"
   }
  ],
  "ratchet": {

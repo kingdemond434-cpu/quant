@@ -89,6 +89,9 @@ class FakeBox:
         self.ended: list[str] = []
         self.started: list[str] = []
         self.beat = tmp / "workflow_gate.json"
+        #: account -> SID, as LookupAccountNameW would answer on the box (SIDs pass through).
+        self.sids: dict[str, str] = {"box\\administrator": "S-1-5-21-7-7-7-500",
+                                     "box\\svc-gate": "S-1-5-21-7-7-7-1001"}
         if beat_age_s is not None:
             self.beat.write_text(json.dumps({"at": datetime.fromtimestamp(
                 NOW - beat_age_s, tz=UTC).isoformat(), "rc": 0}), "utf-8")
@@ -114,11 +117,18 @@ class FakeBox:
                        task_running=lambda t: self.running.get(t, False),
                        end_task=end, run_task=run, kill=kill, host=HOST,
                        gate_beat=self.beat, windows=True,
-                       secure=self.secure, task_principal=lambda t: SYSTEM.lower())
+                       secure=self.secure, task_principal=lambda t: self.principal,
+                       sid_of=self.sid_of)
 
     #: by default the admin-only state check passes; a test sets this to a reason to simulate a
     #: writable store.
     secure_reason: str | None = None
+    #: the task's registered principal, as schtasks exports it (a name or a SID).
+    principal: str | None = SYSTEM.lower()
+
+    def sid_of(self, account: str | None) -> str | None:
+        got = self.sids.get((account or "").strip().lower())
+        return got or bsh._account_sid(account)
 
     def secure(self, path: Path) -> str | None:
         return self.secure_reason
@@ -950,13 +960,40 @@ def test_an_unreadable_state_and_ledger_act_on_nothing_and_page_once(tmp_path: P
     fb.beat.write_text(json.dumps({"at": datetime.fromtimestamp(base - 6 * 3600, tz=UTC)
                                    .isoformat(), "rc": 1}), "utf-8")
     (tmp_path / "s.json").write_text("{torn", "utf-8")
-    (tmp_path / "l.jsonl").write_text('{"ok": 1}\nnot json\n{"ok": 2}\n', "utf-8")
+    (tmp_path / "l.jsonl").mkdir()                    # exists, and cannot be read as a file
     sent: list[str] = []
     kw = _kw(tmp_path, alert=lambda t, b: sent.append(b))
     docs = [bsh.run(box=fb.box(), now=base + k * 5 * MIN, **kw) for k in range(6)]
     assert fb.killed == [] and fb.ended == [] and fb.started == []
     assert len(sent) == 1 and "unreadable" in sent[0]
     assert all(d["attempt_history"] == "UNREADABLE" for d in docs)
+
+
+# --- v4 should-fix 4: an UNREADABLE marker is not sticky once the ledger reads again ---------
+def test_a_readable_ledger_clears_a_previous_unreadable_marker(tmp_path: Path) -> None:
+    base = datetime(2026, 10, 29, 0, 30, tzinfo=UTC).timestamp()
+    fb = _dead_gate(tmp_path, base)
+    (tmp_path / "l.jsonl").mkdir()
+    first = bsh.run(box=fb.box(), now=base, **_kw(tmp_path))
+    assert first["attempt_history"] == "UNREADABLE" and fb.started == []
+    assert json.loads((tmp_path / "s.json").read_text("utf-8"))["history"] == "UNREADABLE"
+    (tmp_path / "l.jsonl").rmdir()                    # the ledger is readable again (empty)
+    later = bsh.run(box=fb.box(), now=base + 5 * MIN, **_kw(tmp_path))
+    assert later["attempt_history"] == "ledger(cleared_unreadable)"
+    assert fb.started == ["Quant-WorkflowGate"], "a readable ledger is the history again"
+    assert json.loads((tmp_path / "s.json").read_text("utf-8"))["history"] == "known"
+
+
+def test_a_cleared_marker_still_counts_the_attempts_the_ledger_proves(tmp_path: Path) -> None:
+    base = datetime(2026, 10, 29, 0, 30, tzinfo=UTC).timestamp()
+    fb = _dead_gate(tmp_path, base)
+    (tmp_path / "s.json").write_text(json.dumps({"history": "UNREADABLE"}), "utf-8")
+    (tmp_path / "l.jsonl").write_text("".join(
+        json.dumps({"rule": "workflow_gate_restart", "verdict": "ATTEMPT", "attempt": True,
+                    "ts": base - k * 60}) + "\n" for k in range(1, 5)), "utf-8")
+    doc = bsh.run(box=fb.box(), now=base, **_kw(tmp_path))
+    assert doc["attempt_history"] == "ledger(cleared_unreadable)"
+    assert fb.started == [], "four ledgered attempts today: the cap holds"
 
 
 def test_an_attempt_that_cannot_be_recorded_is_not_made(tmp_path: Path,
@@ -1172,6 +1209,8 @@ def test_the_installer_pins_match_the_files_at_head() -> None:
     paths = {"box_self_heal.py": "ops/box_self_heal.py",
              "process_health.py": "ops/process_health.py",
              "alert_channels.py": "libs/ops/alert_channels.py"}
+    srcs = dict(__import__("re").findall(r"'([\w.]+\.py)' = @\{ src = '([\w/.]+)'", src))
+    assert srcs == paths, "each pin names the repo-relative blob it is read from"
     for name, rel in paths.items():
         blob = _sp.run(["git", "show", f"HEAD:{rel}"], cwd=ROOT, capture_output=True).stdout
         import hashlib
@@ -1195,7 +1234,7 @@ def test_scheduler_owned_requires_system_and_a_task_scheduler_ancestor(tmp_path:
     hand = P(8720, GATE, name="powershell.exe", ppid=4242, user="BOX\\Administrator")
     shell = P(4242, "powershell.exe -NoExit", name="powershell.exe", age_s=4 * 3600)
     why = bsh.scheduler_owned(hand, [shell, hand], box, "Quant-WorkflowGate")
-    assert why and "SYSTEM" in why
+    assert why and "SYSTEM" in why and "S-1-5-21-7-7-7-500" in why
     orphan_owner = P(8720, GATE, name="powershell.exe", ppid=9, user=SYSTEM)
     assert bsh.scheduler_owned(orphan_owner, [orphan_owner], box, "Quant-WorkflowGate")
 
@@ -1265,15 +1304,46 @@ def test_future_dated_attempts_count_at_now_not_tomorrow(tmp_path: Path) -> None
     assert rows(doc, "workflow_gate_restart")[0]["verdict"] == "REFUSED"
 
 
-# --- SF-6: the deny list matches code tokens, not a raw command-line substring ---------------
+# --- SF-6 / v4 NEW-MF3: only PURE-DATA images (git, gh, git-remote-*, git-credential-manager,
+# conhost) are judged by their image alone; every other image by its WHOLE command line ---------
 @pytest.mark.parametrize("cmd,name", [
+    (r"git.exe fetch origin claude/miner-x", "git.exe"),
     (r"git.exe fetch origin claude/miner-experiment", "git.exe"),
     (r"gh.exe pr checkout claude/fusion-rework", "gh.exe"),
     (r"git.exe -C C:\gate-repo log --oneline e8_branch", "git.exe"),
-    (r"python.exe build.py --note merge_hypotheses-rerun", "python.exe"),
+    (r"git-remote-https.exe origin https://github.com/x/quant claude/miner-x",
+     "git-remote-https.exe"),
+    (r"git-credential-manager.exe get claude/miner-x", "git-credential-manager.exe"),
+    (r"conhost.exe 0xffffffff -ForceV1 miner", "conhost.exe"),
 ])
 def test_a_data_argument_named_like_a_denied_job_is_not_denied(cmd: str, name: str) -> None:
     assert bsh.denied(P(1, cmd, name=name)) is None
+
+
+@pytest.mark.parametrize("cmd,name", [
+    (r"python run.py --role gateway", "python.exe"),
+    (r"python -m desks.mt5.cli executor --live", "python.exe"),
+    (r"python desk.py --account FTMO", "python.exe"),
+    (r"python follower.py --broker fusion", "python.exe"),
+    (r"python -mdesks.mt5.gateway cfg.json", "python.exe"),
+    (r"powershell -Command Invoke-Desk -Name gateway", "powershell.exe"),
+    (r"powershell -File run.ps1 -Role gateway", "powershell.exe"),
+    (r'sh.exe -c "python C:\opt\quant\desks\mt5\gateway.py"', "sh.exe"),
+    (r'python.exe "C:\opt\quant\run.py --role gateway', "python.exe"),     # unbalanced quote
+    (r"python.exe build.py --note merge_hypotheses-rerun", "python.exe"),
+])
+def test_a_money_organ_anywhere_on_a_non_data_command_line_is_denied(cmd: str, name: str
+                                                                        ) -> None:
+    """v4 NEW-MF3: the v3 code-token haystack let each of these through."""
+    assert bsh.denied(P(1, cmd, name=name)) is not None
+
+
+def test_sh_is_not_a_data_image_and_an_unparseable_line_is_one_token() -> None:
+    assert "sh" not in bsh._DATA_ARG_IMAGES
+    line = r'python.exe "C:\opt\quant\run.py --role gateway'
+    assert bsh._argv(P(1, line)) == [line]
+    # a git line that cannot be parsed is judged by all of it (fail-safe), not by its image
+    assert bsh.denied(P(1, r'git.exe fetch "origin claude/miner-x', name="git.exe"))
 
 
 @pytest.mark.parametrize("cmd,name", [
@@ -1289,3 +1359,205 @@ def test_code_tokens_and_unknown_images_still_deny(cmd: str, name: str) -> None:
 def test_a_python_launcher_running_a_denied_script_is_denied() -> None:
     # fail-safe: a later argument that names code is identity too
     assert bsh.denied(P(1, r"py.exe -I runner.py gateway.py --live", name="py.exe"))
+
+
+# --- v4 NEW-MF1: a fresh install (folder only, no files) acts and then persists ---------------
+_ADMIN_ACL = ("S-1-5-18", [(0, 0x1F01FF, "S-1-5-18"), (0, 0x1F01FF, "S-1-5-32-544"),
+                           (0, 0x1200A9, "S-1-5-32-545")])
+
+
+def _real_admin_only(monkeypatch: pytest.MonkeyPatch,
+                     acl: Any = lambda p: _ADMIN_ACL) -> list[str]:
+    """The REAL admin_only, with only the Windows ACL read stubbed."""
+    seen: list[str] = []
+    monkeypatch.setattr(bsh, "_on_windows", lambda: True)
+    monkeypatch.setattr(bsh, "_acl_entries", lambda p: (seen.append(Path(p).name), acl(p))[1])
+    return seen
+
+
+def test_a_fresh_install_with_only_the_folder_acts_and_then_persists(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    seen = _real_admin_only(monkeypatch)
+    base = datetime(2026, 10, 29, 0, 30, tzinfo=UTC).timestamp()
+    fb = _dead_gate(tmp_path, base)
+    sd = tmp_path / "state"
+    sd.mkdir()                                       # what the installer creates: the folder
+    kw = {"report": tmp_path / "r.json", "ledger": sd / "box_self_heal.jsonl",
+          "state": sd / "box_self_heal_state.json"}
+    box = fb.box()
+    box.secure = bsh.admin_only
+    doc = bsh.run(box=box, now=base, **kw)
+    assert seen == ["state"], "a fresh folder: only the folder's ACL is proven"
+    assert doc["state_dir_secure"] is True and doc["attempt_history"] == "fresh"
+    assert fb.started == ["Quant-WorkflowGate"], "the fresh pass acts"
+    assert json.loads(kw["state"].read_text("utf-8"))["history"] == "known"
+    assert any(json.loads(x).get("verdict") == "ATTEMPT"
+               for x in kw["ledger"].read_text("utf-8").splitlines())
+    seen.clear()
+    later = bsh.run(box=box, now=base + 5 * MIN, **kw)
+    assert seen == ["state", "box_self_heal_state.json", "box_self_heal.jsonl"]
+    assert later["state_dir_secure"] is True and later["attempt_history"] == "state+ledger"
+    assert len(fb.started) == 1, "the persisted attempt holds the backoff"
+
+
+def test_a_writable_folder_or_an_existing_writable_file_is_still_refused(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    users_write = ("S-1-5-18", [*_ADMIN_ACL[1], (0, 0x2, "S-1-5-32-545")])
+    base = datetime(2026, 10, 29, 0, 30, tzinfo=UTC).timestamp()
+    for bad in ("state", "box_self_heal.jsonl.1"):
+        _real_admin_only(monkeypatch, lambda p, bad=bad: users_write if Path(p).name == bad
+                         else _ADMIN_ACL)
+        root = tmp_path / bad
+        sd = root / "state"
+        sd.mkdir(parents=True)
+        (sd / "box_self_heal.jsonl.1").write_text("", "utf-8")
+        fb = _dead_gate(root, base)
+        box = fb.box()
+        box.secure = bsh.admin_only
+        doc = bsh.run(box=box, now=base, report=root / "r.json",
+                      ledger=sd / "box_self_heal.jsonl", state=sd / "box_self_heal_state.json")
+        assert doc["state_dir_secure"] is False and fb.started == [], bad
+        assert not (sd / "box_self_heal_state.json").exists()
+
+
+# --- v4 should-fix 1: the repo report cannot silence a page -----------------------------------
+def test_a_planted_paged_once_in_the_report_does_not_suppress_a_page(tmp_path: Path) -> None:
+    base = datetime(2026, 10, 29, 0, 30, tzinfo=UTC).timestamp()
+    fb = _dead_gate(tmp_path, base)
+    box = fb.box()
+    box.run_task = lambda t: {"rc": 1, "out": "access denied"}
+    day = datetime.fromtimestamp(base, tz=UTC).strftime("%Y-%m-%d")
+    (tmp_path / "r.json").write_text(json.dumps({"paged_once": {
+        "workflow_gate_restart:START_FAILED": day, "workflow_gate_restart:CAPPED": day}}),
+        "utf-8")
+    sent: list[str] = []
+    bsh.run(box=box, now=base, **_kw(tmp_path, alert=lambda t, b: sent.append(b)))
+    assert sent and "START_FAILED" in sent[0], "the planted report key is ignored"
+
+
+# --- v4 should-fix 2: SYSTEM never writes into the repo through a junction or symlink ---------
+def test_a_symlinked_report_folder_is_not_written_through(tmp_path: Path) -> None:
+    base = datetime(2026, 10, 29, 0, 30, tzinfo=UTC).timestamp()
+    fb = _dead_gate(tmp_path, base)
+    target = tmp_path / "elsewhere"
+    target.mkdir()
+    (tmp_path / "reports").symlink_to(target, target_is_directory=True)
+    doc = bsh.run(box=fb.box(), now=base, **{**_kw(tmp_path),
+                                             "report": tmp_path / "reports" / "r.json"})
+    assert doc["report_refused"] and "symlink" in doc["report_refused"]
+    assert list(target.iterdir()) == []
+    assert bsh.redirected(tmp_path / "plain" / "r.json") is None
+
+
+def test_a_hard_linked_report_is_not_written_through(tmp_path: Path) -> None:
+    victim = tmp_path / "victim.txt"
+    victim.write_text("keep", "utf-8")
+    (tmp_path / "r.json").hardlink_to(victim)
+    assert "hard links" in (bsh.redirected(tmp_path / "r.json") or "")
+
+
+def test_a_planted_tmp_symlink_is_never_written_through(tmp_path: Path) -> None:
+    victim = tmp_path / "victim.txt"
+    victim.write_text("keep", "utf-8")
+    (tmp_path / "r.json.tmp").symlink_to(victim)
+    bsh._write_json(tmp_path / "r.json", {"a": 1})
+    assert victim.read_text("utf-8") == "keep"
+    assert json.loads((tmp_path / "r.json").read_text("utf-8")) == {"a": 1}
+
+
+# --- v4 should-fix 3: only https channel URLs are opened -------------------------------------
+@pytest.mark.parametrize("cfg,ok", [
+    ({"kind": "webhook", "url": "https://hooks.example/x"}, True),
+    ({"kind": "webhook", "url": "http://hooks.example/x"}, False),
+    ({"kind": "webhook", "url": "file:///C:/Windows/win.ini"}, False),
+    ({"kind": "webhook"}, False),
+    ({"kind": "hc", "url": "HTTPS://hc-ping.com/abc"}, True),
+    ({"kind": "hc", "url": "ftp://hc-ping.com/abc"}, False),
+    ({"kind": "ntfy", "topic": "box"}, True),
+    ({"kind": "telegram", "token": "t", "chat_id": "1"}, True),
+])
+def test_only_https_channels_are_fired(tmp_path: Path, cfg: dict[str, Any], ok: bool) -> None:
+    assert (bsh._https_channel(cfg, tmp_path / "hb.json") is not None) is ok
+
+
+def test_an_hc_channel_without_a_url_needs_an_https_heartbeat(tmp_path: Path) -> None:
+    hb = tmp_path / "hb.json"
+    hb.write_text(json.dumps({"url": "http://hc-ping.com/abc"}), "utf-8")
+    assert bsh._https_channel({"kind": "hc"}, hb) is None
+    hb.write_text(json.dumps({"url": "https://hc-ping.com/abc"}), "utf-8")
+    assert bsh._https_channel({"kind": "hc"}, hb) == {"kind": "hc",
+                                                       "url": "https://hc-ping.com/abc"}
+
+
+# --- v4 should-fix 9: owner and principal are compared as SIDs --------------------------------
+def test_a_principal_exported_as_a_sid_matches_its_account_by_sid(tmp_path: Path) -> None:
+    fb = FakeBox(tmp_path, [])
+    fb.principal = "S-1-5-21-7-7-7-1001"             # schtasks /XML exported the SID
+    box = fb.box()
+    sv = svchost()
+    gate = P(8720, GATE, name="powershell.exe", user="BOX\\svc-gate")
+    assert bsh.scheduler_owned(gate, [sv, gate], box, "Quant-WorkflowGate") is None
+    other = P(8720, GATE, name="powershell.exe", user="BOX\\Administrator")
+    assert bsh.scheduler_owned(other, [sv, other], box, "Quant-WorkflowGate")
+    localized = P(8720, GATE, name="powershell.exe", user="NT-AUTORITÄT\\SYSTEM")
+    fb.sids["nt-autorität\\system"] = "S-1-5-18"
+    assert bsh.scheduler_owned(localized, [sv, localized], box, "Quant-WorkflowGate") is None
+    unknown = P(8720, GATE, name="powershell.exe", user="BOX\\nobody")
+    assert "no SID" in (bsh.scheduler_owned(unknown, [sv, unknown], box, "Quant-WorkflowGate")
+                        or "")
+
+
+def test_task_principal_returns_the_exported_userid_verbatim(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(bsh, "_schtasks", lambda *a, **k: {
+        "rc": 0, "out": "<Principal><UserId>S-1-5-18</UserId></Principal>"})
+    assert bsh._task_principal("Quant-WorkflowGate") == "S-1-5-18"
+    assert bsh._account_sid("s-1-5-18") == "S-1-5-18"
+    assert bsh._account_sid("NT AUTHORITY\\SYSTEM") == "S-1-5-18"
+    assert bsh._account_sid("") is None
+
+
+# --- v4 NEW-MF2: the installer writes each copy from the committed blob, not the CRLF tree ----
+def test_the_installer_writes_each_copy_from_git_cat_file_blob() -> None:
+    src = (ROOT / "desks" / "mt5" / "scripts" / "install_box_self_heal_task.ps1").read_text("utf-8")
+    code = "\n".join(x for x in src.splitlines() if not x.lstrip().startswith("#"))
+    assert 'cat-file blob "HEAD:{1}"' in code and "BaseStream.CopyTo" in code
+    assert "Copy-Item" not in code, "nothing is copied from the working tree"
+    assert "git.exe is not on PATH" in code and "the blob is missing" in code
+    assert "[string]$RepoRoot" in code and "rev-parse --show-toplevel" in code
+    assert "Get-FileHash -LiteralPath $dst" in code
+
+
+def test_a_crlf_checkout_differs_from_the_pin_but_its_blob_matches(tmp_path: Path) -> None:
+    """The box checks out with core.autocrlf=true: the working-tree bytes are CRLF and can never
+    match the pin; `git cat-file blob HEAD:<path>` is the LF blob, which does."""
+    import hashlib
+    import subprocess as _sp
+
+    def git(*a: str, cwd: Path) -> bytes:
+        return _sp.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", *a], cwd=cwd,
+                       check=True, capture_output=True).stdout
+
+    rel = "ops/box_self_heal.py"
+    blob = git("show", f"HEAD:{rel}", cwd=ROOT)
+    pin = hashlib.sha256(blob).hexdigest()
+    origin = tmp_path / "origin"
+    (origin / "ops").mkdir(parents=True)
+    git("init", "-q", cwd=origin)
+    (origin / rel).write_bytes(blob)
+    git("add", rel, cwd=origin)
+    git("commit", "-q", "-m", "x", cwd=origin)
+    box = tmp_path / "box"
+    git("-c", "core.autocrlf=true", "clone", "-q", "-c", "core.autocrlf=true", str(origin),
+        str(box), cwd=tmp_path)
+    tree = (box / rel).read_bytes()
+    assert b"\r\n" in tree and hashlib.sha256(tree).hexdigest() != pin
+    assert hashlib.sha256(git("cat-file", "blob", f"HEAD:{rel}", cwd=box)).hexdigest() == pin
+
+
+# --- v4 should-fix 7: the interpreter's code folders are admin-only, the probe is isolated ----
+def test_the_installer_checks_the_interpreters_lib_and_site_packages() -> None:
+    src = (ROOT / "desks" / "mt5" / "scripts" / "install_box_self_heal_task.ps1").read_text("utf-8")
+    code = "\n".join(x for x in src.splitlines() if not x.lstrip().startswith("#"))
+    assert "@('Lib', 'Lib\\site-packages', 'DLLs')" in code
+    assert '& $Python -I -c "import psutil"' in code
