@@ -1765,3 +1765,31 @@ def test_the_bridge_and_the_deadman_reconciliation_are_raise_only(cmd: str) -> N
     acts, moved, _ = bs.plan_reserve(procs, RES, N, boost=True, floor_cores=FLOOR,
                                      skip_pids=set(), previous_moved={})
     assert 70 not in moved_pids(acts) and p.key not in moved
+
+
+# ------------------------------------------------------------ fifth audit (#482), 2026-10-29
+@pytest.mark.parametrize("cmd", [c for c, g, _p in _ALLOCATOR_FORMS if g == "money_feed"])
+def test_a_duplicate_whose_child_is_any_allocator_form_is_never_stopped(cmd: str) -> None:
+    """MF-A through #482: a normal-mode (or -m, --mode=fast, bare) allocator under an
+    allow-listed duplicate read as "other" and went down with the tree."""
+    cfg = {"allow": ["some_loop.py"]}
+    procs = _dupes()
+    procs.append(Proc(90, "python.exe", ppid=41, cmdline=cmd, create_time=30))
+    bs.classify(procs, RULES["groups"])
+    assert _by_pid(procs)[90].group == "money_feed"
+    keys = [d["duplicate"] for d in bs.plan_dedupe(procs, cfg)[1]]
+    stops, seen = bs.plan_dedupe(procs, cfg, previous_duplicates=keys)
+    assert stops == [] and "descendant 90" in seen[0]["refused"]
+
+
+def test_two_allocator_runs_are_never_dedupe_candidates() -> None:
+    """MF-A: two identical pf_allocator --mode normal runs are money_feed, never compared."""
+    cmd = r"python.exe C:\opt\quant\desks\mt5\research\pf_allocator.py --mode normal"
+    procs = [Proc(40, "python.exe", ppid=400, exe="py.exe", cmdline=cmd, create_time=10),
+             Proc(41, "python.exe", ppid=401, exe="py.exe", cmdline=cmd, create_time=20)]
+    for p in procs:
+        p.cwd, p.env_sig = r"C:\opt\quant", "env-a"
+    bs.classify(procs, RULES["groups"])
+    assert bs.dedupe_candidates(procs) == []
+    assert bs.plan_dedupe(procs, {"allow": ["pf_allocator.py"]},
+                          previous_duplicates=["41:20"]) == ([], [])
