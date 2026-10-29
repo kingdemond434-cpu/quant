@@ -75,6 +75,10 @@ TASK name="MT5-FusionDeadman"      trigger="UNDECLARED"           runs="scripts/
 # (no `--live`), so its failure costs a measurement, which is why the lane is ops. Arming is the
 # principal's decision.
 TASK name="MT5-FusionDeadmanDryRun" trigger="every 5 minutes"     runs="desks/mt5/proposals/fusion_deadman.py"  installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="ops"
+# THE SAME RAIL, ARMED (audit r5 must-fix 4, 2026-10-20). Runs with --live but ACTS only while the
+# principal's gitignored marker data/FUSION_DEADMAN_ARMED.json exists ({"armed_by": "zuck"}); the
+# gateway opens no new Fusion risk unless its stamp reads LIVE and is fresh, so this is money.
+TASK name="MT5-FusionDeadmanLive"  trigger="every 5 minutes"     runs="desks/mt5/proposals/fusion_deadman.py"  installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="money"
 TASK name="MT5-TerminalBoot"       trigger="at startup"           runs="terminal64.exe"                        installer="NONE" lane="money"
 
 # ---------------------------------------------------------------------------- the research lane
@@ -86,7 +90,7 @@ TASK name="MT5-TerminalBoot"       trigger="at startup"           runs="terminal
 # protocol. The sealed file is never edited; the cadence below
 # is raised to :05 by `judging_throughput.apply_cadence` while the queue is deep and headroom
 # exists, and the manifest records the base trigger.
-TASK name="MT5-Gauntlet"           trigger="every 10 minutes, at :01 (raised to every 5 by judging_throughput while the queue is deep)" runs="desks/mt5/scripts/run_sharded_gauntlet.py" organ="desks/mt5/scripts/external_gauntlet.py" installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="research"
+TASK name="MT5-Gauntlet"           trigger="resident (sweeps back to back); every 1 minute respawns it if it died, IgnoreNew, no time limit" runs="desks/mt5/scripts/run_sharded_gauntlet.py" organ="desks/mt5/scripts/external_gauntlet.py" installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="research"
 TASK name="MT5-Shadow"             trigger="every 1 hour, at :55" runs="desks/mt5/research/shadow_cycle.py"          installer="NONE" lane="research"
 TASK name="MT5-UniversalGate"      trigger="every 1 hour, at :07" runs="desks/mt5/research/universal_gate.py"        installer="NONE" lane="research"
 TASK name="MT5-QQuantShadow"       trigger="every 30 minutes, at :25" runs="desks/mt5/research/qquant_shadow.py"         installer="NONE" lane="research"
@@ -142,6 +146,13 @@ TASK name="MT5-Forest-Latam" trigger="at startup + every 10 minutes (keep-alive 
 TASK name="MT5-Forest-Mena" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
 TASK name="MT5-Forest-Africa" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
 TASK name="MT5-Deepening"          trigger="every 1 hour"  runs="desks/mt5/research/deepening_worker.py"  installer="desks/mt5/scripts/install_deepening_task.ps1" lane="research"
+# THE DEEPSEEK THIRD BRAIN ON THIS BOX (2026-10-20). The cycle formerly ran only as a systemd
+# unit on the Linux box, and only while that machine was awake; this box -- the one that holds the
+# live account, the cells and the judge -- had no DeepSeek clock at all. The addendum requires the
+# laboratory to run here, 24/7, with no session and no laptop. One hourly call, offset to :24 so it
+# does not coincide with the merge docket (:14/:44) or the gauntlet's :00/:05 slots. Research
+# generation only: it proposes, the canonical compiler and gauntlet decide.
+TASK name="MT5-DeepSeek"           trigger="every 1 hour, at :24"  runs="ops/run_deepseek_windows.ps1"  installer="desks/mt5/scripts/install_deepseek_brain_task.ps1" lane="research"
 
 # ------------------------------------------------------------------------------- the data moat
 TASK name="MT5-TickRecorder"       trigger="every 1 hour"          runs="desks/mt5/recorders/tick_recorder.py"   installer="desks/mt5/recorders/install_tape_tasks.ps1" lane="data"
@@ -159,13 +170,15 @@ TASK name="MT5-ContractTerms"      trigger="every 1 hour"          runs="UNKNOWN
 # MT5-CacheWarm warms the JUDGE'S OWN next docket (research/judge_docket_order.py), never-judged first,
 # with IDLE-priority workers sized from psutil-measured idle cores; WARM_GAUNTLET.json is read by
 # research/judging_burndown.py (leg judging_burndown). The installer names this script.
-TASK name="MT5-CacheWarm"          trigger="every 30 minutes"      runs="desks/mt5/scripts/warm_gauntlet_cache.py"   installer="desks/mt5/scripts/install_cachewarm_task.ps1" lane="data"
+TASK name="MT5-CacheWarm"          trigger="every 1 hour"          runs="desks/mt5/scripts/warm_gauntlet_cache.py"   installer="desks/mt5/scripts/install_cachewarm_task.ps1" lane="data"
 
 # -------------------------------------------------------------------------------------- ops
 TASK name="MT5-StallWatch"         trigger="every 10 minutes" runs="desks/mt5/scripts/stall_watch.ps1"        installer="desks/mt5/scripts/install_stall_watch_task.ps1" lane="ops"
 # MT5-BoxHeartbeat (2026-09-30): the box's outside alarm. Pings its own healthchecks.io check
 # (data/secrets/box_heartbeat_url.json), /fail when research, gateway, watchdog or disk go stale;
 # writes desks/mt5/reports/BOX_HEARTBEAT.json. NOT_ARMED without the secret.
+# It also invokes desks/mt5/scripts/judge_stall_pager.py (2026-10-21) as a bounded subprocess:
+# the judge stall pager rides this 5-minute clock and writes desks/mt5/reports/JUDGE_STALL.json.
 TASK name="MT5-BoxHeartbeat"       trigger="every 5 minutes"  runs="desks/mt5/scripts/box_heartbeat.py" installer="desks/mt5/scripts/install_box_heartbeat_task.ps1" lane="ops"
 # MT5-OffsiteBackup (2026-09-30): restic, encrypted client-side, of the box-only data (bronze ticks,
 # tape, terminal profile; secrets and accounts.dat excluded). Report OFFSITE_BACKUP.json feeds
@@ -241,6 +254,17 @@ TASK name="MT5-MoatRecorder-Watchdog" trigger="every 30 minutes" runs="desks/mt5
 TASK name="E8-Executor" trigger="every 5 minutes" runs="desks/mt5/prop/e8_executor.py --enable-certified-entries" installer="desks/mt5/scripts/install_e8_tasks.ps1" lane="prop"
 TASK name="E8-Book" trigger="every 1 hour" runs="desks/mt5/prop/e8_book.py" installer="desks/mt5/scripts/install_e8_tasks.ps1" lane="prop"
 TASK name="E8-Spreads" trigger="every 1 hour, at :02" runs="desks/mt5/prop/e8_spread_sampler.py" installer="NONE" lane="prop"
+# The two hand-registered box watchers (2026-10-21), ported from C:\opt\quant-ops into the repo.
+# MT5-E8WindowGuard is REQUIRED (components.REQUIRED_TASKS): it cancels orders, so a stopped guard
+# must alarm. The lane column stays "prop" because that is the lane it serves.
+TASK name="MT5-FTMOFollow" trigger="every 1 minute" runs="desks/mt5/scripts/watchers/ftmo_follow.py" installer="desks/mt5/scripts/install_box_watchers_canon.ps1" lane="prop"
+# The FTMO follower (prop/ftmo_follower.py), the gold_oco "ftmo" lane; distinct from the MT5-FTMOFollow
+# watcher above. Read off the box 2026-10-28: Ready, every minute, last result 0.
+TASK name="MT5-FTMO-Follower" trigger="every 1 minute" runs="desks/mt5/prop/ftmo_follower.py" installer="desks/mt5/scripts/install_ftmo_follower_task.ps1" lane="prop"
+# The FTMO venue reader (2026-10-28): read-only, the account's phase/state, the symbol list and FTMO's
+# own hour spreads for research/prop_challenge_allocator.py. Interactive session, like the follower.
+TASK name="MT5-FTMO-VenueReader" trigger="every 5 minutes" runs="desks/mt5/prop/ftmo_venue_reader.py" installer="desks/mt5/scripts/install_ftmo_venue_reader_task.ps1" lane="prop"
+TASK name="MT5-E8WindowGuard" trigger="every 1 minute" runs="desks/mt5/scripts/watchers/e8_window_guard.py" installer="desks/mt5/scripts/install_box_watchers_canon.ps1" lane="prop"
 TASK name="MT5-Healers" trigger="every 1 hour, at :48" runs="ops/run_healers.cmd" installer="NONE" lane="research"
 # Referenced by ops/run_gold_hour_sweep.cmd; not installed on the box 2026-09-16, cadence unknown.
 TASK name="MT5-GoldHourSweep" trigger="UNDECLARED" runs="ops/run_gold_hour_sweep.cmd" installer="NONE" lane="research"
@@ -285,3 +309,17 @@ TASK name="MT5-Dept-Rest" trigger="at startup + every 10 minutes (keep-alive of 
 # with each fence's own `ran_at`, and a fence whose verdict ages past the stated 48 h window is
 # dropped from the record and reported as never run. No fence is disabled to make this pass.
 TASK name="MT5-LawGate" trigger="hourly at :40" runs="scripts/run_law_gate.py --rotate --budget-s 1800" installer="desks/mt5/scripts/install_law_gate_task.ps1" lane="ops"
+
+# Ledger adoption child: scripts/migrate_live_ledger_view.py runs only from MT5-AdoptRelease; emits reports/LEDGER_VIEW_ADOPTION.json, consumed by the adopter and runtime attestation. No independent scheduler.
+
+# THE BOX BRIDGE (2026-10-28). Keeps `claude remote-control` in C:\opt\bridge\quant alive so box steps
+# never wait on an RDP session; runs as the bridge user, interactive, from the admin-only C:\ProgramData\ClaudeBridge\bin.
+TASK name="Claude-Bridge-Watchdog" trigger="at logon + every 5 minutes" runs="ops/bridge/bridge_watchdog.ps1" installer="ops/bridge/install_bridge_watchdog.ps1" lane="ops"
+# THE UNATTENDED BOX (2026-10-28, zuck: "I wish we could make it so even these become automated
+# not needing me"). With Windows auto-logon on, a reboot logs this user in by itself; the boot
+# session restarts the MT5 terminals that were running before it and locks the console, and the
+# workflow gate merges the audit-CLEARed, CI-green PRs into LIVE with zuck's own gh login (no
+# label needed; .github/workflows PRs too, which the Actions gate cannot merge).
+TASK name="Quant-BootSession"  trigger="at logon"                    runs="ops/box/unattended_boot.ps1" installer="ops/box/install_unattended.ps1" lane="ops"
+TASK name="Quant-BootRecord"   trigger="every 10 minutes"            runs="ops/box/unattended_boot.ps1" installer="ops/box/install_unattended.ps1" lane="ops"
+TASK name="Quant-WorkflowGate" trigger="at logon + every 10 minutes" runs="ops/box/workflow_gate.ps1"   installer="ops/box/install_unattended.ps1" lane="ops"

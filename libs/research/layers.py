@@ -62,6 +62,7 @@ LEG_LAYER: dict[str, str] = {
     # A leg with no layer is an hour of compute that `opportunity_cost` cannot attribute, so
     # "what did the desk NOT test this hour" silently omits it.
     "futures_lead_lag": "information", "tape_features": "information",
+    "bar_clock_probe": "information",
     # prediction: turning information into a claim about returns
     "intake_catchup": "prediction",
     "compile_candidates": "prediction", "merge_docket": "prediction", "search": "prediction",
@@ -84,6 +85,7 @@ LEG_LAYER: dict[str, str] = {
     "miner_conversion": "prediction", "opportunity_gap": "prediction",
     "research_org": "prediction", "queue_compact": "prediction",
     "requeue_unrunnable": "prediction", "falsifier_run": "prediction",
+    "style_novelty": "prediction",
     "opportunity_forecast": "prediction", "edge_reliability": "prediction",
     "edges_macro_fusion_sweep": "prediction", "alpha_breadth": "prediction",
     "alpha_periodic_table": "prediction", "regime_coverage": "prediction",
@@ -222,6 +224,8 @@ LEG_LAYER: dict[str, str] = {
     # Whether the desk has stopped placing without saying so is a measurement of its own
     # execution wiring, not an act on the book: meta.
     "placement_interlock": "meta",
+    # Whether the judge's own sweep is alive and progressing is the machine watching itself: meta.
+    "judge_alive": "meta",
     # THE TIER-1 CLOSED-LOOP B ROWS (2026-09-23).
     # Whether the running code may create new exposure, which scientist earned what, which
     # structures have started surviving again, and one EVIG price over every research resource
@@ -246,13 +250,17 @@ LEG_LAYER: dict[str, str] = {
     # experimental budget accounts for principal-override heat inside the book: portfolio. The
     # redundancy organ and the forward-evidence series measure the machine itself: meta.
     "live_calibration_posterior": "prediction", "constrained_book": "sizing",
-    "kelly_survival": "sizing",
+    "kelly_survival": "sizing", "stop_geometry_derivation": "sizing",
+    "prop_challenge_allocator": "sizing",
     "decay_monitor": "portfolio", "fill_markout": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "recovery_drills": "meta",
     "forward_evidence_tracker": "meta",
     # The box-state freshness fence and the desk health report, hourly before publication.
     "box_state_freshness": "meta", "desk_health": "meta",
+    # The box's bar and tick freshness report, hourly before publication: the machine measuring
+    # its own inputs, not any strategy.
+    "bars_state": "meta",
     # THE 2026-09-16 BLUEPRINT ORGANS (Tier-1 phases C/D).
     "axis_registry": "information", "forced_flow_calendar": "information",
     "standing_questions": "information",
@@ -327,7 +335,8 @@ LEG_LAYER: dict[str, str] = {
     # JUDGE (how many cells reach a verdict an hour, from measured cores/memory/commit) and the
     # other guarantees every certificate gets a forward clock the moment it is minted. They are
     # the machine that runs the machine -- throughput and evidence plumbing, not edge.
-    "judging_throughput": "meta", "forward_enrolment": "meta", "judging_burndown": "meta",
+    "judging_throughput": "meta", "blas_differential": "meta", "forward_enrolment": "meta",
+    "judging_burndown": "meta",
     "rejection_throughput": "meta",
     # META for the same reason, and it is the one that measures whether the other two are even
     # being reached: what fraction of the day the desk actually mints and judges, against the best
@@ -362,6 +371,11 @@ LEG_LAYER: dict[str, str] = {
     # the same question `source_routes`, `value_of_data` and `unseen_frontier` are information for
     # -- even though the frontier rows it writes become research work downstream. LAWS 5f.
     "coverage_tensor": "information",
+    # REGIONAL PARITY BY EQUIVALENCE. Which country holds which local functional equivalent of
+    # each information class (directive CORE LAW / PART III), disposed against a frozen ontology
+    # and projected from the tensor above: a question about the desk's INPUTS, asked before any
+    # signal exists, so information by the same reading as `coverage_tensor`.
+    "regional_parity": "information",
     # THE COVERAGE DRAIN. The tensor above says which inputs EXIST; this leg spends its hour
     # turning ground the desk already owns and has never read into ground it has actually
     # fetched -- registering every root the country packs declare, resolving the rows that were
@@ -373,6 +387,10 @@ LEG_LAYER: dict[str, str] = {
     # Which families the scarce judge actually spends itself on, measured per family as unjudged
     # backlog. It buys INFORMATION about the mined population, not a signal or a position.
     "judge_coverage": "information",
+    # What the judge's pre-build screen WOULD remove from the docket, and the measured cost of
+    # that (true survivors a sibling rule would have taken, by a time-ordered ledger replay). It
+    # buys INFORMATION about the docket before any signal is built.
+    "judge_prescreen": "information",
     # How much ORTHOGONALITY and how many CERTIFICATES each producer actually returns per hour of
     # compute. It buys INFORMATION about the producers themselves -- which of them opens ground
     # nothing else covers, and which of them converts the judge's hour into a certificate.
@@ -454,6 +472,9 @@ LEG_LAYER: dict[str, str] = {
     # THE TWO ADVERSARIAL COMMITTEES argue explanations and run the falsifiers the judge picks:
     # they decide which experiments a hypothesis meets, so prediction, like falsifier_run.
     "committees": "prediction",
+    # THE SIX COMMITTEES (deterministic specialist ensembles, 2026-09-30 17:04 ruling) choose the
+    # next experiment each hypothesis meets and run the falsifiers on the gauntlet's own cell.
+    "committee_ensembles": "prediction",
     # ONE CERTIFICATE TRUTH: the audit of every certificate/clock store against the one lane is a
     # fence over the machine's own bookkeeping -- meta, like every other fence.
     "certificate_truth": "meta",
@@ -526,6 +547,10 @@ LEG_LAYER: dict[str, str] = {
     "pf_allocator": "portfolio",
     "allocator_liveness": "portfolio",
     "allocator_trigger": "portfolio",
+    # `input_ablation` re-solves the allocator with each input switched off and judges it against
+    # the plain solve out of sample: evidence about how the book is composed, so it bills to the
+    # same layer as the allocator it judges.
+    "input_ablation": "portfolio",
     # The balance-sheet layer and the Allocator-V2 evidence: what the book costs to carry and
     # what each sleeve is worth to it -- a question about the book's composition, not about
     # how an order reaches the venue.
@@ -608,7 +633,8 @@ LEG_LAYER: dict[str, str] = {
     "desk_dashboard_state": "meta",
     "session_capital": "portfolio",
     # Tier S institution: the machine judging and improving its own research machinery
-    "tier_s": "meta", "adversary_evolution": "prediction", "frontier_map": "information",
+    "tier_s": "meta", "tier_s_door": "meta",
+    "adversary_evolution": "prediction", "frontier_map": "information",
     "market_ecology": "information", "research_diversity_archive": "information",
     "execution_science": "execution",
     # FOURTEEN LEGS THAT RAN WITH NO LAYER (measured 2026-09-30, `unassigned()`): each placed by

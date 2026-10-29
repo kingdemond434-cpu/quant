@@ -19,6 +19,9 @@ WHAT IS CHECKED, per fault, on the gateway's real `connect`, `place_bracket` and
   EVERY_SEND_JOURNALED  every `order_send` the double saw has an intent row on disk
   REJECTION_COUNTED a rejected or empty send is not recorded as `placed`
   NO_SEND_BLIND     no order is sent when the double has no quote for the symbol
+  NO_SEND_STALE     no order is sent on a quote two hours old while the terminal is connected:
+                    the pass-level feed check reads one reference symbol, so a single symbol
+                    whose feed stopped would otherwise be traded at its last price
   DOWN_IS_FALSE     `connect()` answers False while the terminal is down and will not start
   RECONCILE_BEFORE_EXPOSURE  a pass whose broker state could not be read (the restart reconcile
                     finds the venue unreadable) or whose terminal is running but DISCONNECTED
@@ -44,7 +47,7 @@ DESK = ROOT / "desks" / "mt5"
 
 FAULTS: tuple[str, ...] = ("healthy", "send_none", "reject_10015", "requote_10004",
                            "send_raises", "tick_none", "terminal_down", "orders_get_raises",
-                           "terminal_disconnected", "reconcile_unreadable")
+                           "terminal_disconnected", "reconcile_unreadable", "stale_tick")
 #: The faults after which the pass must refuse NEW exposure (RECONCILE_BEFORE_EXPOSURE).
 REFUSE_NEW_RISK: frozenset[str] = frozenset({"terminal_disconnected", "reconcile_unreadable"})
 TIMEOUT_S = 90
@@ -53,7 +56,7 @@ TIMEOUT_S = 90
 #: against it and prints one JSON line of observations. Kept as source so the child needs
 #: nothing from this module and cannot share its state.
 _CHILD = r'''
-import json, sys, types, traceback
+import json, sys, time, types, traceback
 from types import SimpleNamespace as NS
 fault = sys.argv[1]
 desk = sys.argv[2]
@@ -73,7 +76,12 @@ def initialize(**kw):
 def last_error():
     return (-10004, "No IPC connection") if fault == "terminal_down" else (1, "ok")
 def symbol_info_tick(symbol):
-    return None if fault == "tick_none" else NS(bid=100.0, ask=100.05, time=0)
+    if fault == "tick_none":
+        return None
+    # A live quote is stamped now; the stale one is two hours old while the terminal is up and
+    # connected -- a symbol whose feed stopped while the rest of the book still ticks.
+    return NS(bid=100.0, ask=100.05,
+              time=int(time.time()) - (7200 if fault == "stale_tick" else 0))
 def symbol_info(symbol):
     return NS(point=0.01, trade_stops_level=0, expiration_mode=0, volume_min=0.01,
               volume_step=0.01, trade_contract_size=100.0, digits=2)
@@ -214,6 +222,8 @@ def judge(fault: str, obs: dict[str, Any]) -> list[str]:
             out.append(f"REJECTION_COUNTED: {placed} failed send(s) recorded as placed")
     if fault == "tick_none" and sends:
         out.append(f"NO_SEND_BLIND: {sends} order(s) sent with no quote for the symbol")
+    if fault == "stale_tick" and sends:
+        out.append(f"NO_SEND_STALE: {sends} order(s) sent on a quote two hours old")
     if fault == "terminal_down" and obs.get("connect") is not False:
         out.append(f"DOWN_IS_FALSE: connect() returned {obs.get('connect')} with the terminal "
                    "down")
