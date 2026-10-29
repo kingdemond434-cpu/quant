@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 from desks.mt5.research import llm_yield as ly
@@ -29,12 +30,12 @@ def paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path
 
 
-def _spend(root: Path, rows: list[dict]) -> None:
+def _spend(root: Path, rows: list[dict[str, Any]]) -> None:
     (root / "data" / "llm_spend.jsonl").write_text(
         "".join(json.dumps(r) + "\n" for r in rows), "utf-8")
 
 
-def _row(minutes_ago: int, model: str = "m/a:free", empty: bool = False) -> dict:
+def _row(minutes_ago: int, model: str = "m/a:free", empty: bool = False) -> dict[str, Any]:
     return {"utc": (NOW - timedelta(minutes=minutes_ago)).isoformat(), "organ": "deepseek",
             "model": model, "tokens": 10, "empty_content": empty}
 
