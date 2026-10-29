@@ -132,6 +132,12 @@ ORGANS: dict[str, str] = {
                             "each, for the judge to separate by experiment",
     "forensic_committee": "competing mechanisms (registered SARES branches) for an extreme "
                           "record, each donated as a candidate",
+    # THE OWNED MULTI-LAB RESEARCH CIVILIZATION (desks/mt5/research/llm_lab.py, 2026-10-13).
+    # Sixteen labs with distinct scientific mandates propose MECHANISMS compiled to exact cells
+    # of registered families; the novelty classes, the banal filter and the conversion debt are
+    # the lab's own, and the canonical gauntlet is the only judge of any of it.
+    "llm_lab": "mechanism hypotheses with an exact registered-family recipe or a named "
+               "conversion blocker, one lab mandate per call",
 }
 
 #: What an `ask` may ask for. Four kinds, and the difference between them is what the organ is
@@ -270,11 +276,27 @@ def enabled() -> bool:
     """
     if os.environ.get("QUANT_PROPOSER_SEAT", "1") == "0":
         return False
+    if _chain_enabled():
+        return True
     seat = _seat_module()
     if seat is None:
         return False
     try:
         return bool(seat.seats())
+    except Exception:                                    # pragma: no cover - defensive
+        return False
+
+
+def _chain_enabled() -> bool:
+    """A free-chain rung is reachable: a free cloud key in the env, or a local server DECLARED in
+    QUANT_LOCAL_LLM_URLS. Offline -- an undeclared local default is probed on call, not here."""
+    if os.environ.get("QUANT_LOCAL_LLM_URLS", "").strip():
+        return True
+    chain = _chain_module()
+    if chain is None:
+        return False
+    try:
+        return any(p.usable() and p.tier != "local" for p in chain.providers())
     except Exception:                                    # pragma: no cover - defensive
         return False
 
@@ -448,7 +470,8 @@ def verdict_leak(obj: Any) -> str:
 
 
 # ------------------------------------------------------------------------------ the call
-def _ask(role: str, prompt: str, *, timeout: float) -> tuple[str, str, str | None]:
+def _ask(role: str, prompt: str, *, timeout: float,
+         model_hint: str = "") -> tuple[str, str, str | None]:
     """One completion. Returns (text, model, error). NEVER raises -- a scheduled organ survives it.
 
     THE FREE PANEL FIRST, THE SEAT SECOND, AND NEITHER IS REIMPLEMENTED HERE. `free_panel.ask`
@@ -457,7 +480,20 @@ def _ask(role: str, prompt: str, *, timeout: float) -> tuple[str, str, str | Non
     route that exists when the free roster is exhausted. Both already encode policies -- the
     monthly cap, the daily free-request budget, the observed ceiling -- that a third transport
     here would drift from on exactly the properties that must not drift.
+
+    THE FREE CHAIN IS THE THIRD RUNG (2026-10-13, the owned multi-lab research lab): free cloud
+    providers beyond OpenRouter, then a local OpenAI-compatible server, all zero-cost, all in
+    `libs.ops.free_chain` -- so free-quota exhaustion on one provider never darkens the seat.
+    A `model_hint` ("provider:model") asks the chain FIRST, which is how independent labs are
+    pinned to different models; an exhausted hint falls through to the ordinary order.
     """
+    chain = _chain_module()
+    last = ""
+    if model_hint and chain is not None:
+        got = _chain_ask(chain, prompt, timeout=timeout, model_hint=model_hint)
+        if got[0]:
+            return got
+        last = got[2] or ""
     panel = _panel_module()
     if panel is not None:
         try:
@@ -472,6 +508,11 @@ def _ask(role: str, prompt: str, *, timeout: float) -> tuple[str, str, str | Non
             last = "free_panel: empty completion"
     else:
         last = "free_panel: unimportable"
+    if chain is not None and not model_hint:
+        got = _chain_ask(chain, prompt, timeout=timeout)
+        if got[0]:
+            return got
+        last = f"{last}; {got[2]}"
     seat = _seat_module()
     if seat is None:
         return "", "", last
@@ -489,6 +530,26 @@ def _ask(role: str, prompt: str, *, timeout: float) -> tuple[str, str, str | Non
     except Exception:                                     # pragma: no cover - defensive
         model = ""
     return text, model or "llm_seat", None
+
+
+def _chain_module() -> Any:
+    try:
+        from libs.ops import free_chain
+        return free_chain
+    except Exception:                                     # pragma: no cover - defensive
+        return None
+
+
+def _chain_ask(chain: Any, prompt: str, *, timeout: float,
+               model_hint: str = "") -> tuple[str, str, str | None]:
+    """One free-chain completion as (text, "provider:model", error). Never raises."""
+    try:
+        reply = chain.chat("Propose candidates. Shapes and names only.", prompt,
+                           max_tokens=1600, temperature=0.9, timeout=timeout,
+                           model_hint=model_hint)
+    except Exception as exc:                              # includes ChainExhausted
+        return "", "", f"free_chain: {type(exc).__name__}: {str(exc)[:200]}"
+    return reply.text, f"{reply.provider}:{reply.model}", None
 
 
 def _rows(text: str, limit: int) -> list[Any]:
@@ -520,7 +581,7 @@ def propose(factory: str, *, role: str, task: str, grammar: str,
             context: Sequence[str] = (), n: int = 6, kind: str = "skeleton",
             extract: Callable[[Any], Any] | None = None,
             validate: Callable[[Any], str | None] | None = None,
-            timeout: float = 120.0) -> list[Proposal]:
+            timeout: float = 120.0, model_hint: str = "") -> list[Proposal]:
     """Ask for `n` candidates of `kind` and return them JUDGED ONLY FOR VALIDITY.
 
     `extract` pulls the payload out of one parsed row (default: the row itself); `validate`
@@ -541,7 +602,10 @@ def propose(factory: str, *, role: str, task: str, grammar: str,
                           role, factory)
         return [Proposal(kind=kind, factory=factory, payload=None, provenance=prov,
                          accepted=False, reason=f"prompt refused: {exc}")]
-    text, model, err = _ask(role, prompt, timeout=timeout)
+    # The hint rides only when set, so a caller (or a test) that replaces `_ask` with the
+    # three-argument shape it always had keeps working.
+    hint = {"model_hint": model_hint} if model_hint else {}
+    text, model, err = _ask(role, prompt, timeout=timeout, **hint)
     stamp = datetime.now(UTC).isoformat(timespec="seconds")
     prov = Provenance(SEAT_NAME, model, prompt_hash(prompt), stamp, role, factory)
     if err or not text.strip():
@@ -912,10 +976,10 @@ def ask(organ: str, kind: str, *, options: Sequence[str] = (),
 
 def _asked(organ: str, *, role: str, task: str, grammar: str, context: Sequence[str], n: int,
            label: str, validate: Callable[[Any], str | None] | None,
-           timeout: float) -> list[Proposal]:
+           timeout: float, model_hint: str = "") -> list[Proposal]:
     """propose(), logged to the inline census on the way past, so `run()` can report the organ."""
     props = propose(organ, role=role, task=task, grammar=grammar, context=context, n=n,
-                    kind=label, validate=validate, timeout=timeout)
+                    kind=label, validate=validate, timeout=timeout, model_hint=model_hint)
     if props:
         _log_inline(organ, props)
     return props

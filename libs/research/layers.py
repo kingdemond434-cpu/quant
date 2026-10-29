@@ -48,7 +48,8 @@ LEG_LAYER: dict[str, str] = {
     # The proposer seat and the kimi hunter both buy the desk a PRIOR it did not have -- which
     # skeleton, which mechanism name, which territory -- before any claim about returns is made.
     # That is information, not prediction: neither one scores anything.
-    "proposer_seat": "information", "kimi_hunt": "information",
+    "proposer_seat": "information", "llm_lab": "information", "llm_coverage": "meta",
+    "kimi_hunt": "information",
     "deep_forest": "information", "market_intel": "information", "record_tape": "information",
     "archive_tape": "information", "refresh_bars": "information",
     "timeframe_coverage": "information", "frontier": "information",
