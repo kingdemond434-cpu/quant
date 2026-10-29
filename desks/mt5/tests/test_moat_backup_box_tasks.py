@@ -35,8 +35,15 @@ def test_each_task_runs_from_the_repository_root_and_never_stacks() -> None:
     text = INSTALLER.read_text("utf-8")
     assert "cd /d $repo" in text and "-WorkingDirectory $repo" in text
     assert "-MultipleInstances IgnoreNew" in text
-    assert "-Daily -At '03:55'" in text
-    assert "-Weekly -DaysOfWeek Sunday -At '06:25'" in text
+    assert "-Daily -At '06:40'" in text
+    assert "-Weekly -DaysOfWeek Sunday -At '07:20'" in text
+
+
+def test_neither_task_runs_in_the_money_window() -> None:
+    """01:00-05:00Z holds the gold Asia placements and the money-path quiet window."""
+    text = INSTALLER.read_text("utf-8")
+    for hh in re.findall(r"-At '(\d\d):\d\d'", text):
+        assert not 1 <= int(hh) < 5, hh
 
 
 def test_the_installer_never_names_secrets() -> None:

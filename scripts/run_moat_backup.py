@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import sqlite3
@@ -166,27 +167,81 @@ def _snapshot_sqlite(src: Path, dst: Path) -> tuple[str, dict[str, int]]:
     return _sha256(dst), src_census
 
 
-def _copy_capped(src: Path, dst: Path, skipped: list[dict[str, Any]]) -> dict[str, str]:
+#: Copies of a file whose source keeps changing before it is recorded as moving (#479 MF1).
+_COPY_TRIES = 3
+
+
+def _copy_one(f: Path, out: Path) -> tuple[str, bool]:
+    """(digest to record, raced). Copies to `out` through a temp file and checks the copy against
+    the SOURCE as it stands after the copy.
+
+    A file appended while it was copied (the tape, capital_events) used to record the source's
+    later hash beside a copy of its earlier bytes, so the drill failed a healthy replica. Now: copy
+    == source -> the shared digest. Source changed during the copy -> try again, and after
+    _COPY_TRIES record the copy's own digest with `raced` set, so the gap is listed rather than
+    hidden. Source unchanged yet the copy differs -> the copy is wrong: record the SOURCE digest so
+    the drill fails, exactly as it must on a bad copy."""
+    tmp = out.with_name(out.name + ".moat-tmp")
+    for attempt in range(_COPY_TRIES):
+        before = _sha256(f)
+        shutil.copyfile(f, tmp)
+        copied, after = _sha256(tmp), _sha256(f)
+        if copied == after:
+            os.replace(tmp, out)
+            return copied, False
+        if before == after:            # the source held still and the copy is still wrong
+            os.replace(tmp, out)
+            return after, False
+        if attempt == _COPY_TRIES - 1:
+            os.replace(tmp, out)
+            return copied, True
+    raise AssertionError("unreachable")
+
+
+def _copy_capped(src: Path, dst: Path, skipped: list[dict[str, Any]],
+                 unread: list[dict[str, Any]] | None = None) -> dict[str, str]:
     """Copy file or tree, skipping (and RECORDING) anything over the git-sane cap.
 
     THE DIGEST IS TAKEN FROM THE SOURCE, and that one word is the whole difference between a real
     restore drill and a self-certifying one. This used to record `_sha256(out)` -- the copy's own
     hash -- which `_drill` then recomputed from the same file and compared to itself. It passed
-    unconditionally, including on a truncated or empty copy.
+    unconditionally, including on a truncated or empty copy. `_copy_one` keeps that rule and adds
+    the one exception it needs: a source that never held still across _COPY_TRIES copies.
+
+    ONE FILE NEVER ABORTS THE RUN (#479 MF1). On Windows a file the live writer holds open raises a
+    sharing violation, and a file deleted between the listing and the copy raises
+    FileNotFoundError; either used to abort the whole backup before the manifest was written. Each
+    is now listed in `unread` (locked / vanished / moving, with errno) and the run goes on.
     """
+    unread = unread if unread is not None else []
     digests: dict[str, str] = {}
     files = [src] if src.is_file() else sorted(p for p in src.rglob("*") if p.is_file())
     for f in files:
-        rel = f.name if src.is_file() else str(f.relative_to(src))
-        if f.stat().st_size > _MAX_FILE_MB * 1e6:
-            skipped.append({"file": str(f.relative_to(_ROOT) if f.is_absolute() else f),
-                            "bytes": f.stat().st_size,
-                            "reason": f"over the {_MAX_FILE_MB}MB git-sane cap"})
-            continue
+        rel = f.name if src.is_file() else f.relative_to(src).as_posix()
+        shown = str(f.relative_to(_ROOT) if f.is_relative_to(_ROOT) else f)
         out = dst / rel if not src.is_file() else dst
-        out.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(f, out)
-        digests[rel] = _sha256(f)          # SOURCE, never `out` -- see the docstring
+        try:
+            if f.stat().st_size > _MAX_FILE_MB * 1e6:
+                skipped.append({"file": shown, "bytes": f.stat().st_size,
+                                "reason": f"over the {_MAX_FILE_MB}MB git-sane cap"})
+                continue
+            out.parent.mkdir(parents=True, exist_ok=True)
+            digest, raced = _copy_one(f, out)
+        except FileNotFoundError as exc:
+            unread.append({"file": shown, "reason": "vanished", "errno": exc.errno})
+            continue
+        except OSError as exc:
+            unread.append({"file": shown, "reason": "locked", "errno": exc.errno})
+            continue
+        finally:
+            tmp = out.with_name(out.name + ".moat-tmp")
+            if tmp.exists():
+                tmp.unlink(missing_ok=True)
+        digests[rel] = digest
+        if raced:
+            unread.append({"file": shown, "reason": "moving", "errno": None,
+                           "note": f"source changed during each of {_COPY_TRIES} copies; the "
+                                   "last copy's own digest is recorded"})
     return digests
 
 
@@ -216,6 +271,7 @@ def build_backup(root: Path, dest: Path | None = None,
     dest = dest or root / "backups/moat"
     dest.mkdir(parents=True, exist_ok=True)
     skipped: list[dict[str, Any]] = []
+    unread: list[dict[str, Any]] = []
     stores: dict[str, Any] = {}
     for name, (rel, kind) in _STORES.items():
         src = root / rel
@@ -242,7 +298,7 @@ def build_backup(root: Path, dest: Path | None = None,
         else:
             if target.is_dir():
                 shutil.rmtree(target)
-            digests = _copy_capped(src, target, skipped)
+            digests = _copy_capped(src, target, skipped, unread)
         stores[name] = {"status": "REPLICATED", "kind": kind, "path": rel,
                         "bytes": _du(src), "sha256": digests}
         if census is not None:
@@ -255,6 +311,8 @@ def build_backup(root: Path, dest: Path | None = None,
         "law": "L1.23 -- survival first: the moat is capital in information form",
         "stores": stores,
         "skipped_over_cap": skipped,
+        # locked by a live writer, deleted mid-run, or never still across three copies (#479 MF1)
+        "unread_files": unread,
         "not_covered_bytes": {p: _du(root / p) for p in _NOT_COVERED if (root / p).exists()},
         "not_covered_note": "bulk lake/L2 need the Storage-Box/R2 principal decision -- "
                             "measured here every run so the gap stays a number",

@@ -15,8 +15,15 @@
 # evidence from that replica into a temp directory, parses it as its readers do, and fails below
 # 90% of the live row counts. Neither writes to a live path; neither reads data/secrets.
 #
-# THE SAME HOURS THE VPS USED: backup 03:55 daily, drill Sunday 06:25 (after that day's backup).
+# OUTSIDE THE MONEY WINDOW, NOT THE VPS'S HOURS. Times are the box's own clock, which is UTC on
+# vmi3571445. The VPS ran the backup at 03:55, which here lands inside the gold Asia placements
+# (E8 ~04:01Z, Fusion and FTMO ~04:16-04:24Z) and the 01:30-04:30Z money-path quiet window, so an
+# IO burst could delay an order. Backup 06:40 daily; drill Sunday 07:20, after that day's backup.
 # BelowNormal priority and IgnoreNew so neither can stack or starve the gateway.
+#
+# LAST RESULT 0x2 IS A VERDICT, NOT A BROKEN TASK. run_moat_backup.py exits 2 on DEGRADED,
+# DRILL-FAILED, DISK-FUSE and NOTHING-REPLICATED, and run_restore_drill.py exits 1 on FAIL, on
+# purpose: the scheduler's Last Result is then the alarm. Do not "fix" it to 0.
 param([switch]$DryRun)
 
 $ErrorActionPreference = 'Stop'
@@ -29,13 +36,16 @@ $py = @((Join-Path $repo '.venv\Scripts\python.exe'),
         'C:\Users\Administrator\AppData\Local\Programs\Python\Python314\python.exe') |
       Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $py) { throw 'no python.exe found in .venv or either Python314 install' }
+# SYSTEM can run a per-user install but does not see that user's site-packages.
+if ($py -like '*\AppData\*') { Write-Warning "using the per-user python $py: SYSTEM cannot see its user-site packages" }
+Write-Output "python: $py"
 
 $jobs = @(
   @{ Name = 'MT5-MoatBackup'; Script = 'scripts\run_moat_backup.py'
-     Trigger = (New-ScheduledTaskTrigger -Daily -At '03:55')
+     Trigger = (New-ScheduledTaskTrigger -Daily -At '06:40')
      Limit = (New-TimeSpan -Hours 1) },
   @{ Name = 'MT5-RestoreDrill'; Script = 'scripts\run_restore_drill.py'
-     Trigger = (New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At '06:25')
+     Trigger = (New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At '07:20')
      Limit = (New-TimeSpan -Minutes 30) }
 )
 

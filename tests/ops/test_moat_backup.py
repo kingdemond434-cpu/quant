@@ -122,3 +122,61 @@ def test_uncovered_bulk_is_a_number(tmp_path):
 def test_nothing_replicated_is_a_failure_not_a_pass(tmp_path):
     rep = build_backup(tmp_path, free_pct=50.0)  # no stores seeded at all
     assert rep["status"] == "NOTHING-REPLICATED"
+
+
+def test_a_locked_or_vanished_file_is_listed_and_the_run_still_writes_its_manifest(
+    tmp_path, monkeypatch
+):
+    """#479 MF1: on Windows a file the live writer holds open raises a sharing violation, and one
+    deleted mid-run raises FileNotFoundError. Either used to abort the run before the manifest."""
+    import shutil as _sh
+
+    _seed(tmp_path)
+    tape = tmp_path / "data/moat/execution_tape"
+    (tape / "held.jsonl").write_text('{"fill": 3}\n', "utf-8")
+    (tape / "gone.jsonl").write_text('{"fill": 4}\n', "utf-8")
+    real = _sh.copyfile
+
+    def flaky(src, dst, **kw):
+        name = Path(src).name
+        if name == "held.jsonl":
+            raise PermissionError(13, "The process cannot access the file", src)
+        if name == "gone.jsonl":
+            raise FileNotFoundError(2, "No such file", src)
+        return real(src, dst, **kw)
+
+    monkeypatch.setattr(_sh, "copyfile", flaky)
+    rep = build_backup(tmp_path, free_pct=50.0)
+    monkeypatch.setattr(_sh, "copyfile", real)
+    assert (tmp_path / "backups/moat/manifest.json").exists()
+    assert rep["restore_drill_passed"] is True
+    reasons = {Path(u["file"]).name: u["reason"] for u in rep["unread_files"]}
+    assert reasons == {"held.jsonl": "locked", "gone.jsonl": "vanished"}
+    assert not list((tmp_path / "backups/moat").rglob("*.moat-tmp"))
+
+
+def test_a_file_appended_during_the_copy_is_retried_not_failed(tmp_path, monkeypatch):
+    """#479 MF1: the digest used to be the source's LATER hash beside a copy of its earlier bytes,
+    so the drill failed a healthy replica of a file the live writer appends to."""
+    import shutil as _sh
+
+    _seed(tmp_path)
+    live = tmp_path / "data/moat/execution_tape/cashcarry_trades.jsonl"
+    real = _sh.copyfile
+    appended = {"n": 0}
+
+    def appending(src, dst, **kw):
+        out = real(src, dst, **kw)
+        if Path(src) == live and appended["n"] == 0:  # the writer appends once, mid-copy
+            appended["n"] += 1
+            with live.open("a", encoding="utf-8") as fh:
+                fh.write('{"fill": 9}\n')
+        return out
+
+    monkeypatch.setattr(_sh, "copyfile", appending)
+    rep = build_backup(tmp_path, free_pct=50.0)
+    monkeypatch.setattr(_sh, "copyfile", real)
+    assert rep["restore_drill_passed"] is True and rep["status"] == "OK"
+    copy = tmp_path / "backups/moat/execution_tape/cashcarry_trades.jsonl"
+    assert copy.read_bytes() == live.read_bytes()  # the retry caught the appended line
+    assert rep["unread_files"] == []
