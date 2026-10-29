@@ -647,3 +647,15 @@ def test_a_preserved_docket_reads_preserved_never_ok_never_red(tmp_path: Path) -
     out = fence.judge(report, now=NOW)
     assert any(c["metric"] == "docket_merge" and c["state"] == "WARN" for c in out["checks"])
     assert out["verdict"] != "FAIL"
+
+
+def test_order_docket_past_its_deadline_ships_every_row_unordered(tmp_path: Path) -> None:
+    """2026-10-29: the merge wedged after alpha_rl, in the ordering, holding the docket lane.
+    A deadline already past stops the build uncommitted and the rows ship as they arrived."""
+    import time as _t
+    rows = _rows({"alpha": 30, "beta": 6})
+    before = [dict(r) for r in rows]
+    out, doc = jc.order_docket(rows, publish=False, now=NOW,
+                               deadline=(_t.monotonic() - 10.0, _t.monotonic() - 5.0))
+    assert out == before
+    assert doc.get("verdict") == "UNMEASURED" and "JudgeCoverageTimeout" in doc.get("why", "")

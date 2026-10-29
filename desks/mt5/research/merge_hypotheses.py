@@ -37,6 +37,11 @@ from libs.ops.atomic_replace import DEFAULT_MAX_WAIT_S, replace_with_retry  # no
 _T0 = time.monotonic()
 #: Seconds kept back from the leg cap for the report writes after the docket lands.
 REPLACE_TAIL_S = 60.0
+#: THE ORDERING IS BOUNDED (2026-10-29). The merge wedged 15 h after "alpha_rl family values",
+#: in the steps that follow it, holding the docket writer lane while every intake refused. Past
+#: this many seconds the coverage build stops uncommitted (JudgeCoverageTimeout) and the rows ship
+#: in the order they arrived: an ordering organ may cost the order, never the docket.
+ORDER_BUDGET_S = float(os.environ.get("MERGE_ORDER_BUDGET_S", "2700") or 2700)
 #: A docket temp file older than this belongs to a pass that was killed mid-write.
 ORPHAN_TMP_AGE_S = 2 * 3600.0
 
@@ -1145,7 +1150,11 @@ def main() -> int:
         if str(BASE) not in _sys.path:
             _sys.path.insert(0, str(BASE))
         from research.judge_coverage import order_docket
-        rows_out, coverage = order_docket(rows_out)
+        _o0 = time.monotonic()
+        rows_out, coverage = order_docket(rows_out, deadline=(_o0, _o0 + ORDER_BUDGET_S))
+        if str(coverage.get("why") or "").startswith("JudgeCoverageTimeout"):
+            print(f"   judge coverage stopped at its {ORDER_BUDGET_S:.0f}s budget -- the docket "
+                  "ships in arrival order this pass")
     except Exception as exc:
         print(f"   judge coverage unavailable ({type(exc).__name__}: {exc}) -- falling back to "
               f"least-judged-family order")

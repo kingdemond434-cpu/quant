@@ -152,7 +152,7 @@ def sweep_locks(dry_run: bool = False) -> list[dict[str, Any]]:
         return out
     now = time.time()
     for p in sorted(LOCK_ROOT.glob("*.json")):
-        if p.name.endswith(".peaks.json"):
+        if p.name.endswith((".peaks.json", ".progress.json")):
             continue
         try:
             row = json.loads(p.read_text("utf-8"))

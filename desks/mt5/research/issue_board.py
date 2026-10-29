@@ -169,6 +169,9 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
     # No auto-repair: its producer is the hourly cycle's `judge_alive` leg
     # (`scripts/check_judge_coverage.py --liveness --require-state`), which takes arguments.
     ("judge_alive", "desks/mt5/reports/judge_alive_fence.json", 3600, None),
+    # Held locks' owners (hourly `job_lock_health` leg): a stale report means nobody is looking at
+    # a lock that may be wedged -- the 15 h docket-lane hold of 2026-10-29.
+    ("job_lock_health", "desks/mt5/reports/JOB_LOCK_HEALTH.json", 3600, None),
 )
 
 #: Alarm files any detector on this tree may raise. Presence IS the issue; the file's first line

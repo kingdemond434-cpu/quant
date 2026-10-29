@@ -4129,7 +4129,8 @@ def _prescreen(rows: list[dict[str, Any]], *, publish: bool,
 
 
 def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
-                 now: datetime | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+                 now: datetime | None = None, deadline: tuple[float, float] | None = None
+                 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """THE INTAKE CALL. Return the docket re-ordered for coverage, and the table it implies.
 
     `merge_hypotheses` calls this as the last thing it does before writing the file the sealed
@@ -4140,10 +4141,11 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
     able to cost the desk a docket (L1.28a).
     """
     with _pass_memo():
-        return _order_docket(rows, publish=publish, now=now)
+        return _order_docket(rows, publish=publish, now=now, deadline=deadline)
 
 
-def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | None
+def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | None,
+                  deadline: tuple[float, float] | None = None
                   ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     doc: dict[str, Any] | None = None
     # THE ROWS AS THEY ARRIVED (audit of v1.2, MF2): any failure returns these, unfiltered, so a
@@ -4152,7 +4154,7 @@ def _order_docket(rows: list[dict[str, Any]], *, publish: bool, now: datetime | 
     entry_rows = list(rows)
     commit_reached = False
     try:
-        doc = build(rows, now=now, defer=publish)
+        doc = build(rows, now=now, defer=publish, deadline=deadline)
         if not doc.get("families"):
             _txn = doc.pop("_txn", None)
             # THE ROWS SHIP UNFILTERED HERE, so nothing is parked out of this docket: the parked

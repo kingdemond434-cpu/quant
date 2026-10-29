@@ -1127,6 +1127,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # heartbeat and stall record were read only by the law gate's rotation, which reaches a given
     # fence every few hours -- so a stalled judge could sit unread that long. Two small JSON reads.
     "judge_alive",
+    # EVERY HELD LOCK'S OWNER, EVERY HOUR (2026-10-29): the docket writer lane sat 15 h behind a
+    # living, wedged owner because the lock was only looked at on contention. Reads the lock dir.
+    "job_lock_health",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
     # CANON PUBLICATION IS CORE. `MT5-Gauntlet` is the judge's own hourly task, so a sweep can
     # complete on a pass this cycle never ran; if the seal were only refreshed on the heavy plan
@@ -3204,6 +3207,14 @@ def judge_alive() -> dict:
                      "--require-state")
 
 
+def job_lock_health() -> dict:
+    """`job_lock_health`: is every held research lock's owner making CPU progress?
+    `scripts/check_job_locks.py` writes reports/JOB_LOCK_HEALTH.json, exits 1 while any owner is
+    WEDGED, and stops a WEDGED owner on the research allowlist after two hours (never the judge,
+    certifier, terminal lane or money path)."""
+    return _producer("job_lock_health", "scripts/check_job_locks.py")
+
+
 def pit_canaries() -> dict:
     """`pit_canaries`: planted past/now/future rows read point-in-time every hour; green only
     when the future row is invisible at now (closed-loop `truth.pit_canaries_green`)."""
@@ -4113,6 +4124,7 @@ def main() -> None:
     pcn = _costed("pit_canaries", pit_canaries)
     pil = _costed("placement_interlock", placement_interlock)
     jal = _costed("judge_alive", judge_alive)
+    jlh = _costed("job_lock_health", job_lock_health)
     myd = _costed("mutation_yield", mutation_yield)
     # DELAYED TRUTH (principal F12, 2026-09-12; wired 2026-09-16): realised R credited back
     # to the scientist that proposed each cell, live when the live ledger is thick enough,
@@ -6085,6 +6097,7 @@ def main() -> None:
                     "search": se, "breadth_sweep": bs, "mass_screen": msc,
                     "session_variant_remap": svr, "candidate_conservation": ccv,
                     "pit_canaries": pcn, "placement_interlock": pil, "judge_alive": jal,
+                    "job_lock_health": jlh,
                     "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,

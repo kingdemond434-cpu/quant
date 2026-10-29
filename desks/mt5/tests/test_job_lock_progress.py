@@ -88,3 +88,13 @@ def test_a_contender_publishes_red_and_still_does_not_steal(lock: Path, monkeypa
         assert health["locks"]["merge_hypotheses"]["status"] == "ACQUIRED"
     with suppress(OSError):
         side.unlink()
+
+
+def test_a_wedged_row_clears_when_its_owner_releases(lock: Path, monkeypatch) -> None:
+    lock.unlink()
+    J._publish_health("merge_hypotheses", {"status": "WEDGED", "pid": 1, "why": "x"})
+    with J.exclusive_job("merge_hypotheses") as got:
+        assert got is True
+    health = json.loads(J.HEALTH_REPORT.read_text("utf-8"))
+    assert health["status"] == "OK"
+    assert health["locks"]["merge_hypotheses"]["status"] in ("RELEASED", "ACQUIRED")

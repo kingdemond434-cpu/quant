@@ -383,7 +383,10 @@ def owner_progress(lock: Path, *, now: float | None = None,
 
 
 def _publish_health(name: str, health: dict, *, now: float | None = None) -> None:
-    """One row per contended lock in JOB_LOCK_HEALTH.json; RED when any row is WEDGED."""
+    """One row per contended lock in JOB_LOCK_HEALTH.json; RED when any row is WEDGED.
+
+    An unlocked read-modify-write: two writers at once can drop each other's row. Benign for a
+    report -- the hourly `job_lock_health` leg rewrites every held lock's row each pass."""
     t = time.time() if now is None else now
     try:
         doc = json.loads(HEALTH_REPORT.read_text("utf-8"))
@@ -634,5 +637,14 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
                 path.unlink()
                 with suppress(OSError):
                     _progress_path(path).unlink()
+                # A row left WEDGED or IDLE clears when the owner lets go, not only when the
+                # next contender arrives (audit SF1 of 70b4df4a0).
+                try:
+                    _row = json.loads(HEALTH_REPORT.read_text("utf-8")).get("locks", {}).get(name)
+                except (OSError, ValueError, AttributeError):
+                    _row = None
+                if isinstance(_row, dict) and _row.get("status") not in ("RELEASED", "OK"):
+                    _publish_health(name, {"status": "RELEASED", "pid": os.getpid(),
+                                           "why": "lock released by its owner"})
         except (OSError, ValueError, AttributeError):
             pass
