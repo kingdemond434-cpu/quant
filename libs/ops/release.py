@@ -657,6 +657,31 @@ STATE_FILES: frozenset[str] = frozenset({
 })
 
 
+#: STATE THAT GOVERNS WHAT CODE MAY DO. Box-written like the rest of STATE_PREFIXES, but a change
+#: to one of these changes what a tested tree is allowed to be or do: the sealed-file pins and sign
+#: rows, the survivor canon, the allocator's proof, the live manifest, and the behaviour switches.
+#: A PR tested against an older copy is not tested against the new one (#521 audit MF1, 2026-10-29),
+#: so the gate's state-only lag and LIVE's push CI treat these as CODE.
+GOVERNED_STATE_FILES: frozenset[str] = frozenset({
+    IMMUTABLE_MANIFEST, SURVIVORS, ALLOCATOR_PROOF,
+    "desks/mt5/data/LIVE_MANIFEST.jsonl", "desks/mt5/data/ALLOCATOR_SOVEREIGN.json",
+})
+#: Switch files by name, under desks/mt5/data/ (GENERIC_EXEC_ENABLED, MARGIN_CLAUSE_DISABLED, ...).
+GOVERNED_STATE_GLOBS: tuple[str, ...] = (
+    "desks/mt5/data/*_ENABLED*", "desks/mt5/data/*_DISABLED*",
+)
+
+
+def is_governed_state(rel: str) -> bool:
+    """A state path whose change governs what code may do (see GOVERNED_STATE_FILES)."""
+    import fnmatch
+
+    p = str(rel).replace("\\", "/").lstrip("./")
+    return p in GOVERNED_STATE_FILES or any(  # `*` stays in one directory, as in a workflow glob
+        fnmatch.fnmatchcase(p, g) and p.count("/") == g.count("/") for g in GOVERNED_STATE_GLOBS
+    )
+
+
 def is_state_path(rel: str) -> bool:
     """A repo-relative path that is evidence/record/rendering rather than code."""
     p = str(rel).replace("\\", "/").lstrip("./")
