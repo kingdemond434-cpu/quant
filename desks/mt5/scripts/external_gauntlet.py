@@ -455,6 +455,29 @@ def _frame_rows(frame) -> int:
         return 0
 
 
+#: A SHARING COLLISION IS NOT MISSING DATA (measured 2026-10-29). The universe parquets are
+#: rewritten in place while a sweep reads them, and Windows refuses an open that lands on the
+#: rewrite with PermissionError [Errno 13]. Two of fifteen build shards died on exactly that
+#: (US500_H1, XAUAUD_H1), each throwing away hours of work and costing a full retry wall; earlier
+#: waves lost one to four shards the same way and every one recovered on its first retry. So the
+#: read is retried with a short backoff before it is allowed to fail. An error that outlasts the
+#: retries is RAISED exactly as before -- never turned into "no bars", which would block cells.
+PARQUET_READ_ATTEMPTS = max(1, int(os.environ.get("GAUNTLET_PARQUET_READ_ATTEMPTS", "6") or 6))
+PARQUET_READ_BACKOFF_S = 0.5
+
+
+def _read_parquet_shared(pq: Path, *, sleep=time.sleep):
+    """`pd.read_parquet(pq)`, retried on OSError (a file another process holds mid-rewrite)."""
+    for attempt in range(1, PARQUET_READ_ATTEMPTS + 1):
+        try:
+            return pd.read_parquet(pq)
+        except OSError:
+            if attempt >= PARQUET_READ_ATTEMPTS:
+                raise
+            sleep(PARQUET_READ_BACKOFF_S * (2 ** (attempt - 1)))
+    raise AssertionError("unreachable")
+
+
 def _bars_for(sym: str, timeframe: str = "H1"):
     """Replay bars on their native clock, from parquet or the promotion-authority terminal.
 
@@ -477,7 +500,7 @@ def _bars_for(sym: str, timeframe: str = "H1"):
         # `families._h1` no longer FORCES an hourly clock: it normalises a frame that already is a
         # chart and hands it back on that chart (it used to resample an M15 parquet of 100,000 bars
         # into 25,001 H1 bars, silently). Same call, byte-identical H1 result, M5 stays M5.
-        frame = families._h1(pd.read_parquet(pq))
+        frame = families._h1(_read_parquet_shared(pq))
     if not isinstance(frame.index, pd.DatetimeIndex) or len(frame) == 0:
         return None
     _FRAME_CACHE[key] = frame
