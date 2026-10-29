@@ -624,8 +624,8 @@ EXTRACT_MAX_TOKENS = int(os.environ.get("DEEPEN_EXTRACT_MAX_TOKENS", "3000"))
 def extract(task: dict, *, chat=None) -> tuple[dict, str]:
     """Ask the seat what the row's own text states. ({}, reason) on any doubt."""
     if chat is None:
-        from libs.ops import llm_seat
-        chat = llm_seat.chat
+        from libs.ops import llm_overflow
+        chat = llm_overflow.chat_with_overflow
     text = task_text(task)
     kind = str(task.get("kind") or "")
     system = _SYSTEM_BY_KIND.get(kind, _SYSTEM)
@@ -1266,6 +1266,12 @@ def publish_throughput(decided: int, elapsed_s: float, backlog_before: int,
             prior = loaded
     best = float(prior.get("best_decisions_per_h") or 0.0)
     mark = max(best, rate)
+    # A SEAT AT ITS QUOTA WITH WORK WAITING IS A CAP, NOT A PAUSE (2026-10-29). Pass after pass
+    # logged "0 free request(s) left" with a backlog of 146 and the task still read healthy. The
+    # streak counts consecutive passes that stood down on the seat while rows waited; a reader
+    # (`scripts/check_seat_health.py`) turns it RED past STARVED_PASSES_RED.
+    starved = outages > 0 and backlog_after > 0
+    streak = int(prior.get("seat_starved_passes") or 0) + 1 if starved else 0
     doc = {
         "at": now.isoformat(timespec="seconds"),
         "decisions": decided, "outages": outages, "elapsed_s": round(elapsed_s, 1),
@@ -1277,6 +1283,10 @@ def publish_throughput(decided: int, elapsed_s: float, backlog_before: int,
         "drained": backlog_before - backlog_after,
         "dispositions": counts,
         "work_limited": bool(work_limited),
+        "seat_starved_passes": streak,
+        "seat_starved_since": ((prior.get("seat_starved_since") or now.isoformat(
+            timespec="seconds")) if streak > 1 else
+            now.isoformat(timespec="seconds") if streak == 1 else None),
         "status": ("RATCHET" if rate >= best else
                    "WORK_LIMITED" if work_limited else "REGRESSION"),
         "rule": ("the high-water mark only ever rises. A pass that got SLOWER is a REGRESSION and "
@@ -1448,7 +1458,14 @@ def _work(argv: list[str] | None = None) -> int:
     # budget on the trading box. The seat lane is the only lane whose order can change an outcome,
     # because it is the only lane with a scarce resource to spend.
     rule_tasks = [t for t in open_tasks if lane(t) == "rule"]
-    seat_tasks = voi_order([t for t in open_tasks if lane(t) == "seat"], costs=costs)
+    seat_open = [t for t in open_tasks if lane(t) == "seat"]
+    # WHEN THE DAY'S REQUESTS BIND, THE DENOMINATOR IS REQUESTS, NOT SECONDS (2026-10-29). Every
+    # seat row costs one request, so ranking by value per second spends the scarce allowance on
+    # the rows that are quick rather than the ones most likely to certify. Seconds still rank the
+    # lane whenever the allowance covers every row.
+    seat_left, _ = _seat_budget()
+    request_bound = 0 <= seat_left < len(seat_open)
+    seat_tasks = voi_order(seat_open, costs=None if request_bound else costs)
     mem_stop: dict = {}
 
     def over_memory() -> bool:
@@ -1471,6 +1488,7 @@ def _work(argv: list[str] | None = None) -> int:
     lane_census = {"rule": len(rule_tasks), "seat": len(seat_tasks)}
     dlog(f"queue={len(tasks)} already-decided={len(done)} pending={len(pending)} "
          f"lanes={lane_census} limit={args.limit} cost_basis={cost_basis} "
+         f"seat_order={'value_per_request' if request_bound else 'value_per_second'} "
          f"controller_variant={variant}")
     if args.dry_run:
         for t in (pending if args.limit <= 0 else pending[:args.limit]):
@@ -1638,17 +1656,26 @@ def _seat_budget() -> tuple[int, str]:
     THE CEILING IS EXTERNAL AND CANNOT BE WISHED AWAY. All fifteen configured seats are free
     OpenRouter models on ONE account key and the provider's free allowance is per-ACCOUNT per-day
     -- it refused at 458 calls on 2026-09-23 with `limit_source: openrouter_free_tier_daily` --
-    so adding models buys nothing. What asking here buys is the seventeen hours a day AFTER the
-    allowance is gone: they are now spent in the rule lane instead of on one refusal per row.
+    so adding OpenRouter models buys nothing. The GitHub free overflow (`libs/ops/llm_overflow.py`)
+    is a separate allowance counted per model, and carries the lane once OpenRouter's day is gone.
+
+    -1 also covers the overflow's UNMEASURED (no catalog read yet): the lane tries it.
 
     -1 means UNMEASURED (the seat module could not be read), which is never treated as zero: an
     unreadable counter must not silence a lane that might be working.
     """
     try:
-        from libs.ops import llm_seat
+        from libs.ops import llm_overflow, llm_seat
         left = int(llm_seat.free_budget_left())
-        return left, (f"{left} free request(s) left today of a {llm_seat.free_daily_max()} "
-                      f"ceiling ({llm_seat.calls_today()} used)")
+        why = (f"{left} free request(s) left today of a {llm_seat.free_daily_max()} "
+               f"ceiling ({llm_seat.calls_today()} used)")
+        if left > 0:
+            return left, why
+        # OPENROUTER'S DAY IS GONE: the GitHub free overflow carries the lane (2026-10-29).
+        # -1 is its UNMEASURED (no catalog read yet), which runs the lane rather than parks it.
+        extra = llm_overflow.budget_left()
+        return extra, (f"{why}; GitHub overflow "
+                       f"{'UNMEASURED, trying' if extra < 0 else f'{extra} left'}")
     except Exception as exc:
         return -1, (f"seat budget UNMEASURED ({type(exc).__name__}): the lane runs rather than "
                     f"stand down on an unreadable counter")

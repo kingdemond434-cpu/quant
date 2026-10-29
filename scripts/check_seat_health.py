@@ -152,6 +152,36 @@ def _read(path: Path, default: Any = None) -> Any:
         return default
 
 
+#: A SEAT PARKED AT ITS QUOTA WITH WORK WAITING IS RED (2026-10-29, hourly pass 21). MT5-Deepening
+#: ran every hour and logged "seat lane stood down: 0 free request(s) left today of a 519 ceiling"
+#: with 146 rows waiting and 0 new candidates. The task, the producer census and the organ
+#: contract all read it as alive, because it was: it was capped. A cap that holds for more than
+#: STARVED_PASSES_RED consecutive passes is the brain's real throughput limit and breaches here.
+DEEPENING_THROUGHPUT = DESK / "reports" / "DEEPENING_THROUGHPUT.json"
+STARVED_PASSES_RED = 2
+
+
+def seat_starvation(doc: dict[str, Any] | None = None) -> dict[str, Any]:
+    """GREEN, RED or UNMEASURED for the deepening seat lane, with the sentence that says why."""
+    if doc is None:
+        got = _read(DEEPENING_THROUGHPUT)
+        doc = got if isinstance(got, dict) else None
+    if not doc:
+        return {"verdict": UNMEASURED, "why": f"{DEEPENING_THROUGHPUT.name} absent or unreadable"}
+    if "seat_starved_passes" not in doc:
+        return {"verdict": UNMEASURED,
+                "why": "the worker that wrote this artifact predates the starvation streak"}
+    n = int(doc.get("seat_starved_passes") or 0)
+    base = {"seat_starved_passes": n, "since": doc.get("seat_starved_since"),
+            "backlog": doc.get("backlog_after"), "at": doc.get("at")}
+    if n > STARVED_PASSES_RED:
+        return {**base, "verdict": "RED",
+                "why": (f"the deepening seat stood down at its daily quota for {n} consecutive "
+                        f"passes with {doc.get('backlog_after')} row(s) waiting")}
+    return {**base, "verdict": "GREEN",
+            "why": f"{n} starved pass(es), limit {STARVED_PASSES_RED}"}
+
+
 def retired_seats() -> dict[str, str]:
     """Seats retired on purpose, with the reason, from the desk's own retirement ledger.
 
@@ -492,7 +522,9 @@ def audit(*, strict: bool = False, window_cadences: float = WINDOW_CADENCES,
     for r in overdue:
         r["declared_debt"] = BASELINE_OVERDUE.get(str(r["seat"]))
     new_debt = [r["seat"] for r in overdue if str(r["seat"]) not in BASELINE_OVERDUE]
-    breach = bool(new_debt) or len(overdue) > len(BASELINE_OVERDUE)
+    starvation = seat_starvation()
+    breach = (bool(new_debt) or len(overdue) > len(BASELINE_OVERDUE)
+              or starvation["verdict"] == "RED")
     return {
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "law": ("EVERY CONFIGURED SEAT DONATES ON ITS OWN CADENCE, OR IT IS NAMED. A seat with "
@@ -507,6 +539,7 @@ def audit(*, strict: bool = False, window_cadences: float = WINDOW_CADENCES,
         "declared_debt": sorted(BASELINE_OVERDUE),
         "overdue_outside_the_declared_debt": new_debt,
         "breach": breach,
+        "seat_starvation": starvation,
         "verdict": ("OVERDUE" if overdue else
                     ("RAN" if census.get("FRESH") else UNMEASURED)),
         "seats": sorted(rows, key=lambda r: (str(r["verdict"]), str(r["seat"]))),
@@ -593,6 +626,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n  overdue {len(doc['overdue'])} against a declared debt of "
               f"{len(BASELINE_OVERDUE)}; outside it: "
               f"{doc['overdue_outside_the_declared_debt'] or 'none'}")
+    st = doc["seat_starvation"]
+    print(f"  seat starvation: {st['verdict']}: {st['why']}")
     print(f"  -> {OUT}")
 
     if census_doc is not None:

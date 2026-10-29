@@ -423,3 +423,56 @@ def test_stale_pins_reach_status(monkeypatch) -> None:
     st = llm_seat.status()
     assert st["stale_pins"][0]["pinned"] == "gpt-4o"
     assert st["effort"] == "high"
+
+
+def test_a_refused_parameter_is_not_asked_for_again(monkeypatch) -> None:
+    """THE LADDER IS CLIMBED ONCE PER MODEL, NOT ONCE PER CALL. Every call to a model that refuses
+    `reasoning_effort` spent two of the day's free requests; the second call must spend one."""
+    calls: list[dict] = []
+
+    def post(u, k, payload, **kw):
+        body = json.loads(payload)
+        calls.append(body)
+        if "reasoning_effort" in body:
+            return {}, "HTTP 400: Unsupported parameter: 'reasoning_effort'"
+        return {"choices": [{"message": {"content": "ok"}}], "usage": {"total_tokens": 10}}, None
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setattr(llm_seat, "discover_model", lambda *a, **k: ("gpt-5", None))
+    monkeypatch.setattr(llm_seat, "_post", post)
+    assert llm_seat.chat("hi")[0] == "ok" and len(calls) == 2
+    assert llm_seat.chat("again")[0] == "ok" and len(calls) == 3
+    assert "reasoning_effort" not in calls[-1]
+    # Another model on the same host has refused nothing, so it is still asked at full effort.
+    monkeypatch.setattr(llm_seat, "discover_model", lambda *a, **k: ("gpt-6", None))
+    llm_seat.chat("other")
+    assert calls[-2]["model"] == "gpt-6" and "reasoning_effort" in calls[-2]
+
+
+def test_a_remembered_token_rename_keeps_the_cap(monkeypatch) -> None:
+    calls: list[dict] = []
+
+    def post(u, k, payload, **kw):
+        body = json.loads(payload)
+        calls.append(body)
+        if "max_completion_tokens" in body:
+            return {}, "HTTP 400: Unsupported parameter: 'max_completion_tokens', use 'max_tokens'"
+        return {"choices": [{"message": {"content": "ok"}}], "usage": {"total_tokens": 10}}, None
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setattr(llm_seat, "discover_model", lambda *a, **k: ("gpt-5", None))
+    monkeypatch.setattr(llm_seat, "_post", post)
+    llm_seat.chat("hi", max_tokens=1234)
+    n = len(calls)
+    assert llm_seat.chat("again", max_tokens=777)[0] == "ok"
+    assert len(calls) == n + 1 and calls[-1]["max_tokens"] == 777
+
+
+def test_a_stale_refusal_expires(monkeypatch) -> None:
+    """A provider that starts accepting a parameter gets asked for it again within the week."""
+    from datetime import UTC, datetime, timedelta
+    url = "https://api.openai.com/v1/chat/completions"
+    llm_seat._note_reject(url, "gpt-5", "reasoning_effort")
+    assert llm_seat.known_rejects(url, "gpt-5") == {"reasoning_effort"}
+    later = datetime.now(UTC) + timedelta(days=llm_seat._REJECT_TTL_DAYS + 1)
+    assert llm_seat.known_rejects(url, "gpt-5", now=later) == set()

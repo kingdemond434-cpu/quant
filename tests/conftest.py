@@ -274,6 +274,22 @@ def _openrouter_key_info_offline(tmp_path_factory: pytest.TempPathFactory,
     monkeypatch.setattr(openrouter_guard, "NETWORK", False)
 
 
+@pytest.fixture(autouse=True)
+def _param_rejects_in_tmp(tmp_path_factory: pytest.TempPathFactory,
+                          monkeypatch: pytest.MonkeyPatch) -> None:
+    """No test teaches the box's seat which parameters a provider refused: a stub 400 recorded in
+    the real memo would strip `reasoning_effort` from live calls for a week."""
+    from libs.ops import llm_seat
+    monkeypatch.setattr(llm_seat, "PARAM_REJECTS",
+                        tmp_path_factory.mktemp("seat") / "llm_param_rejects.json")
+    from libs.ops import llm_overflow
+    d = tmp_path_factory.mktemp("overflow")
+    monkeypatch.setattr(llm_overflow, "STATE", d / "llm_overflow_state.json")
+    monkeypatch.setattr(llm_overflow, "TOKEN_FILE", str(d / "no_token"))
+    for var in llm_overflow.TOKEN_ENVS:
+        monkeypatch.delenv(var, raising=False)
+
+
 @pytest.fixture(scope="session")
 def _account_key_file(tmp_path_factory: pytest.TempPathFactory) -> Path:
     """A throwaway HMAC key for the suite (fixed bytes, so keys are reproducible run to run)."""
