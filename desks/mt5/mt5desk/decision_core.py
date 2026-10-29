@@ -705,7 +705,8 @@ def cert_book_zero(name: object, venue: str = "fusion") -> bool:
 #: The decay monitor's zeros for keys that trade outside the LIVE roster (research/decay_monitor,
 #: DECAY_ZERO). Read at call time so a test or the box may point it elsewhere.
 DECAY_ZERO_FILE = _DESK / "data" / "DECAY_ZERO.json"
-#: The live ledger's sleeve stem: the venue truncates "DW" + name to 29 characters.
+#: The live ledger's sleeve stem: the venue truncates "DW" + name to 29 characters (measured on
+#: the venue as gateway.COMMENT_MAX), so the stem is 29 - 2; decay_monitor.LEDGER_NAME_MAX.
 _LEDGER_STEM = 27
 
 
