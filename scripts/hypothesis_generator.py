@@ -168,6 +168,8 @@ def _ask(base, key, model, messages, timeout=240.0):
                                      method="POST",
                                      headers={"Authorization": f"Bearer {key}",
                                               "Content-Type": "application/json"})
+        from libs.ops import openrouter_guard
+        openrouter_guard.check_request(req)
         with urllib.request.urlopen(req, timeout=timeout, context=CTX) as r:
             out = json.loads(r.read())
         m = out["choices"][0]["message"]
