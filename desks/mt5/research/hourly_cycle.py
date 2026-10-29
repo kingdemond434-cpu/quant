@@ -1203,6 +1203,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # The FTMO book's solve on the same cadence (2026-10-28): it re-solves from the account's live
     # phase every hour, so a phase change or a new certificate moves the book within the hour.
     "prop_challenge_allocator",
+    # STOP EXITS AGAINST THE CALENDAR (2026-10-29, report-only): reports/EXIT_NEWS_TAGS.jsonl.
+    "exit_news_tag",
     # The two stop-geometry constants on the same solve (2026-09-30): a report the sizing fence's
     # citations point at, re-derived hourly so a stale number is visible as stale.
     "stop_geometry_derivation",
@@ -5979,6 +5981,10 @@ def main() -> None:
     # data/FTMO_ALLOCATOR_ARMED exists. Re-runs every pass, so a certificate change is picked up.
     fta = _costed("prop_challenge_allocator", lambda: _producer(
         "prop_challenge_allocator", "research/prop_challenge_allocator.py"))
+    # EVERY EXIT TAGGED WITH THE ECON CALENDAR (2026-10-29, row-244 slip tail): report-only,
+    # research-side; the gateway and the ledger writers are untouched.
+    ent = _costed("exit_news_tag", lambda: _producer(
+        "exit_news_tag", "research/exit_news_tag.py"))
     # THE STOP GEOMETRY ON THE SAME SOLVE (2026-09-30): MIN_STOP_SPREAD_MULT and
     # ENTRY_DRIFT_TOL_FRAC re-derived from the bars' spreads, the entry drift and the live edge.
     # A report only -- the money path carries the cited values. Each value passes a two-sided
@@ -6247,6 +6253,7 @@ def main() -> None:
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls, "prop_challenge_allocator": fta,
+                    "exit_news_tag": ent,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
