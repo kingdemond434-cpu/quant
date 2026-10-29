@@ -394,7 +394,10 @@ def _reclaim(path: Path, judged: str | None) -> None:
     """Remove the lock judged stale, and ONLY that lock (#529 audit S: two reclaimers racing on
     one expired lease could each unlink, the slower one deleting the faster one's FRESH lock).
     The file is renamed aside first, which only one reclaimer can win; if what was moved is not
-    the lock that was judged (a successor's fresh one), it is put back and nothing is removed."""
+    the lock that was judged (a successor's fresh one), it is put back and nothing is removed.
+    The put-back is a hard link (#529 v3 audit SF): it fails rather than clobbers when yet another
+    writer has created the lock meanwhile, and that writer then owns it; the moved holder's
+    `holds()` reads False and it publishes nothing."""
     tomb = path.with_name(f"{path.name}.{uuid.uuid4().hex}.reclaim")
     try:
         os.rename(path, tomb)
@@ -402,7 +405,9 @@ def _reclaim(path: Path, judged: str | None) -> None:
         return                    # another reclaimer moved it first; O_EXCL decides the rest
     if _token_of(tomb) != judged:
         with suppress(OSError):
-            os.rename(tomb, path)
+            os.link(tomb, path)
+        with suppress(OSError):
+            tomb.unlink()
         return
     with suppress(OSError):
         tomb.unlink()

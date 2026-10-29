@@ -123,5 +123,8 @@ def test_run_binds_the_zero_on_every_solve_and_the_published_book() -> None:
     assert "per_sleeve_bounds(dd," not in run_src, "every solve's bounds carry the zero"
     assert "exchange_zero(funded, ts_zero" in run_src
     assert "zero_contested_books(" in run_src
-    assert run_src.index("zero_contested_books(") < run_src.index("certify(proof")
+    # #529: the certificate is held as `cert_pending` and written beside the book; the zero must
+    # bind the contested books before the proof is held for certification.
+    assert run_src.index("zero_contested_books(") < run_src.index("cert_pending = (proof")
+    assert run_src.index("cert_pending = (proof") < run_src.index("certify(cert_pending[0]")
     assert '"exchange_zero": exchange_zero_meta' in run_src

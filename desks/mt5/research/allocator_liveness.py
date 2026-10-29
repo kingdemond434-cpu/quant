@@ -385,6 +385,25 @@ def _stand_down(now: float) -> dict[str, Any]:
                                and str(doc.get("status") or "").upper() == "STOOD_DOWN")}
 
 
+def certificate_pair(alloc: dict[str, Any] | None) -> dict[str, Any]:
+    """Whether the certificate on disk names the book on disk (#529 v3 audit SF). The gateway
+    sizes a MISMATCHED pair as uncertified, so this is a RED demotion, never a quiet `why`."""
+    proof = next((d for d in (_read(p) for p in PROOF_PATHS) if isinstance(d, dict)), None)
+    if alloc is None or proof is None:
+        return {"status": UNMEASURED, "why": "no certificate or no allocation on disk"}
+    if "book" not in proof:
+        return {"status": "LEGACY", "why": "the certificate names no book (pre-#529)"}
+    try:
+        from mt5desk.decision_core import book_pair_matches
+    except ImportError as exc:
+        return {"status": UNMEASURED, "why": f"comparator unavailable ({exc})"}
+    if book_pair_matches(proof.get("book"), alloc.get("book")):
+        return {"status": "MATCH", "why": "the certificate names the published book"}
+    return {"status": "MISMATCH",
+            "why": ("the certificate names a different book than pf_allocation.json: the "
+                    "gateway is sizing the allocator UNCERTIFIED (best-baseline path)")}
+
+
 def measure(*, now: float | None = None) -> dict[str, Any]:
     """The whole liveness reading. Pure: reads artifacts, writes nothing."""
     now = time.time() if now is None else now
@@ -465,6 +484,9 @@ def measure(*, now: float | None = None) -> dict[str, Any]:
     lock = _lock_held(now)
     if lock["status"] == "HELD_TOO_LONG":
         breaches.append({"check": "LOCK_HELD", "why": str(lock["why"])[:300]})
+    pair = certificate_pair(alloc)
+    if pair["status"] == "MISMATCH":
+        breaches.append({"check": "CERT_BOOK_MISMATCH", "why": pair["why"]})
 
     # A CYCLE THAT PRODUCED NEITHER. The only legal states are "there is a fresh allocation" and
     # "there is a named stand-down that covers the gap". Nothing is the third state, and it is
@@ -492,6 +514,7 @@ def measure(*, now: float | None = None) -> dict[str, Any]:
         "join": join,
         "stand_down": sd,
         "lock": lock,
+        "certificate_pair": pair,
         "breaches": breaches,
         "boundary": ("REPORT ONLY. This organ reads artifacts and publishes ages, declarations "
                      "and the join. It sets no fraction, no cap and no veto, and it never "

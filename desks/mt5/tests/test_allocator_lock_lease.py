@@ -207,3 +207,36 @@ def test_the_deadline_and_lease_lines_are_published_both_ways(tmp_path, monkeypa
     assert '"admission_deadline": admission_deadline_line(alloc)' in src
     assert '"allocator_lock_lease": lock_lease_line(alloc)' in src
     assert "def measure_admission_deadline" not in src and "def measure_lock_lease" not in src
+
+
+def test_a_mismatched_pair_is_red_and_published(tmp_path, monkeypatch) -> None:
+    from research import allocator_liveness as AL
+    from research import missed_growth as MG
+    proof = tmp_path / "ALLOCATOR_PROOF.json"
+    monkeypatch.setattr(AL, "PROOF_PATHS", (proof, tmp_path / "absent.json"))
+    alloc = {"book": {"a": 0.1}}
+    assert AL.certificate_pair(alloc)["status"] == AL.UNMEASURED
+    proof.write_text(json.dumps({"passed": True}), "utf-8")
+    assert AL.certificate_pair(alloc)["status"] == "LEGACY"
+    proof.write_text(json.dumps({"book": {"a": 0.1}}), "utf-8")
+    assert AL.certificate_pair(alloc)["status"] == "MATCH"
+    assert MG.certificate_pair_line(alloc)["verdict"] == MG.NOT_BINDING
+    proof.write_text(json.dumps({"book": {"a": 0.2}}), "utf-8")
+    assert AL.certificate_pair(alloc)["status"] == "MISMATCH"
+    assert MG.certificate_pair_line(alloc)["mismatch"] is True
+    src = (_DESK / "research" / "allocator_liveness.py").read_text(encoding="utf-8")
+    assert '"check": "CERT_BOOK_MISMATCH"' in src
+
+
+def test_the_reclaim_put_back_never_clobbers_a_newer_lock(locks, monkeypatch) -> None:
+    path = locks / "pf_allocator.json"
+    path.write_text(json.dumps({"token": "moved"}), "utf-8")
+    real_rename = os.rename
+
+    def rename_then_race(a, b):
+        real_rename(a, b)
+        Path(a).write_text(json.dumps({"token": "newest"}), "utf-8")   # a third writer
+    monkeypatch.setattr(JL.os, "rename", rename_then_race)
+    JL._reclaim(path, "expired")
+    assert json.loads(path.read_text("utf-8"))["token"] == "newest"  # noqa: S105
+    assert not list(locks.glob("*.reclaim"))

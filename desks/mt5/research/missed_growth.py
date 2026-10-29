@@ -1054,6 +1054,20 @@ def admission_deadline_line(alloc: dict[str, Any]) -> dict[str, Any]:
                     f"is deferred (unpriced: unscored), set against a fast lane kept live")}
 
 
+def certificate_pair_line(alloc: dict[str, Any]) -> dict[str, Any]:
+    """The one-pair rule, BOTH WAYS, as a published line. Cost: while the certificate names a
+    different book, the gateway sizes the allocator uncertified (the best-baseline book), forgoing
+    whatever the certified book adds over it -- unpriced, since the two books' dE[log W] gap is not
+    on this artifact. Earn: a torn or stale pair is never sized as certified."""
+    from allocator_liveness import certificate_pair
+    pair = certificate_pair(alloc or None)
+    if pair["status"] == "MISMATCH":
+        return {"verdict": UNMEASURED, "mismatch": True, "why": pair["why"]}
+    if pair["status"] in ("MATCH", "LEGACY"):
+        return {"verdict": NOT_BINDING, "mismatch": False, "status": pair["status"]}
+    return {"verdict": UNMEASURED, "why": pair["why"]}
+
+
 def lock_lease_line(alloc: dict[str, Any]) -> dict[str, Any]:
     """The allocator lock lease, BOTH WAYS, as a published line. Cost: a LEASE_LOST pass whose
     computed book was discarded. Earn: the successor that took the lease published a fresher
@@ -1208,7 +1222,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         DEEPENING_GUARD),
                                     "admission_scan_cadence": admission_cadence_line(alloc),
                                     "admission_deadline": admission_deadline_line(alloc),
-                                    "allocator_lock_lease": lock_lease_line(alloc)},
+                                    "allocator_lock_lease": lock_lease_line(alloc),
+                                    "certificate_pair": certificate_pair_line(alloc)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
