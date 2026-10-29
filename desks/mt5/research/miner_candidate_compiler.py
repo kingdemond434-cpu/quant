@@ -379,7 +379,11 @@ def _atomic_json(path: Path, document: dict) -> None:
                                          suffix=".tmp", delete=False) as handle:
             temporary = Path(handle.name)
             json.dump(document, handle, indent=1, default=str)
-        os.replace(temporary, path)
+        # A READER HOLDING THE TARGET OPEN REFUSES A RENAME ON WINDOWS (WinError 5/32), and this
+        # 70 MB artifact is read by the merger, the judge's intake and the dashboards. A plain
+        # `os.replace` turned one such overlap into a failed pass that published nothing.
+        from libs.ops.win_write import replace_resilient
+        replace_resilient(temporary, path)
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
@@ -1941,12 +1945,13 @@ def main() -> int:
     # Consumer-owned receipts are emitted only after both canonical output artifacts are durable.
     # The factory producer reconciles these on its next pass; it may never assert its own ACK.
     if factory_receipts:
+        from libs.ops.win_write import replace_resilient
         FACTORY_RECEIPTS.mkdir(parents=True, exist_ok=True)
         for receipt in factory_receipts:
             target = FACTORY_RECEIPTS / f"{receipt['input_version_id']}.json"
             tmp = target.with_suffix(".json.tmp")
             tmp.write_text(json.dumps(receipt, indent=1) + "\n", "utf-8")
-            os.replace(tmp, target)
+            replace_resilient(tmp, target)
     _save_cursor()
     if bank is not None:
         bank.flush()

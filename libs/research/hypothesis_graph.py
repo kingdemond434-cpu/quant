@@ -633,7 +633,13 @@ def record_candidates(cands: Iterable[dict[str, Any]], source: str,
     # 18 MB ledger per row. New nodes are added as they are written, so a batch can be its own
     # ancestry -- a mutation donated beside its parent still resolves.
     known: set[str] = set(g.current())
-    n = 0
+    # ONE OPEN PER PASS (2026-10-29). This appended row by row: a mkdir, an open, a write and a
+    # close per candidate, against a ledger the live judge is appending to on the same disk --
+    # on the trading box that loop sat between the compiler's bounded compile and its output
+    # write, and was one of the unbounded tails a killed pass died in. The rows are built in
+    # order and written through `append_rows` in one open; `known` still grows per row, so a
+    # batch remains its own ancestry exactly as before.
+    batch: list[dict[str, Any]] = []
     for c in cands:
         seed = seed_key_of(c)
         params = dict(c.get("params") or {})
@@ -659,10 +665,10 @@ def record_candidates(cands: Iterable[dict[str, Any]], source: str,
                     edges=edges_for(sym, params, parent=mut_parent, operator=op,
                                     source_url=str(c.get("source_url") or ""),
                                     co_parents=others))
-        g.append(node)
+        batch.append(node.to_row())
         known.add(node.id)
-        n += 1
-    return n
+    g.append_rows(batch)
+    return len(batch)
 
 
 def record_verdicts(verdicts: Iterable[dict[str, Any]], graph: Graph | None = None) -> int:

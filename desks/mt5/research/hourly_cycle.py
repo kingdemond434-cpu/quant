@@ -1127,6 +1127,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # heartbeat and stall record were read only by the law gate's rotation, which reaches a given
     # fence every few hours -- so a stalled judge could sit unread that long. Two small JSON reads.
     "judge_alive",
+    # THE COMPILER'S CONTENT STAMP, EVERY HOUR (2026-10-29): miner_candidates.json sat weeks old
+    # under a moving mtime with every task rc 0. One 64 KiB head read and a ledger tail.
+    "miner_compiler_fresh",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
     # CANON PUBLICATION IS CORE. `MT5-Gauntlet` is the judge's own hourly task, so a sweep can
     # complete on a pass this cycle never ran; if the seal were only refreshed on the heavy plan
@@ -3157,8 +3160,92 @@ def compile_candidates() -> dict:
     reach the gauntlet until 11:xx at the earliest and only if somebody had run the compiler by
     hand in between.
     """
-    return _producer("miner_candidate_compiler", "research/miner_candidate_compiler.py",
-                     "--budget-s", "600")
+    before, _ = _compiled_at()
+    out = _producer("miner_candidate_compiler", "research/miner_candidate_compiler.py",
+                    "--budget-s", "600")
+    out = _require_compiled_at_advance(out, before)
+    _record_compiler_attempt("compile_candidates", out)
+    return out
+
+
+#: The compiler's one canonical artifact, and the file each attempt's outcome is written to.
+MINER_CANDIDATES = BASE / "data" / "hypotheses" / "miner_candidates.json"
+MINER_COMPILER_ATTEMPT = BASE / "reports" / "MINER_COMPILER_ATTEMPT.json"
+
+
+def _compiled_at(path: Path | None = None) -> tuple[datetime | None, str]:
+    """`compiled_at` read from the HEAD of miner_candidates.json (no 70 MB parse). Never raises."""
+    try:
+        from libs.ops.content_stamp import read_head_stamp
+        return read_head_stamp(path or MINER_CANDIDATES, "compiled_at")
+    except Exception as exc:
+        return None, f"UNMEASURED: content_stamp unavailable ({type(exc).__name__}: {exc})"
+
+
+def _require_compiled_at_advance(out: dict, before: datetime | None,
+                                 path: Path | None = None) -> dict:
+    """THE COMPILER LEG IS JUDGED ON ITS CONTENT STAMP, NOT ON ITS EXIT (2026-10-29).
+
+    `miner_candidates.json` sat at one `compiled_at` for weeks on the trading box while every
+    scheduled task returned 0 and this leg's ledger rows read `ok` or `TIMEOUT`: a pass killed
+    at its cap after the bounded compile -- inside the unbounded hypothesis-graph pass that ran
+    BEFORE the write -- published nothing, saved no cursor, and repeated the same prefix every
+    hour. Nothing compared the artifact before and after. Now: an exit of 0, or a kill, that
+    leaves `compiled_at` where it was (or unreadable) is FAILED with the reason named. A kill
+    AFTER the publication (the compiler now publishes before the graph pass) keeps its honest
+    TIMEOUT and says the artifact advanced. A non-zero exit is already a failure and is only
+    annotated.
+    """
+    if not isinstance(out, dict):
+        return out
+    after, how = _compiled_at(path)
+    advanced = after is not None and (before is None or after > before)
+    out = {**out, "compiled_at_before": before.isoformat() if before else None,
+           "compiled_at_after": after.isoformat() if after else None,
+           "compiled_at_advanced": advanced}
+    code = out.get("exit_code")
+    if out.get("error") or str(out.get("status") or "").upper() == "MISSING":
+        return out
+    if code not in (0, None):
+        return out
+    if advanced:
+        if code is None:
+            out["note"] = ("killed at its cap AFTER publishing: the fresh artifact stands; the "
+                           "hypothesis-graph annotation pass did not finish (graph.pending)")
+        return out
+    if after is None:
+        why = f"compiled_at unreadable after the pass -- {how}"
+    elif code is None:
+        why = (f"killed at its {out.get('timeout_s')}s cap before publishing: compiled_at still "
+               f"{after.isoformat()} -- the pass wrote nothing and saved no cursor, so the next "
+               "pass repeats it")
+    else:
+        why = (f"exited 0 without advancing compiled_at (still {after.isoformat()}): a "
+               "silent no-op")
+    return {**out, "status": "FAILED", "why": why}
+
+
+def _record_compiler_attempt(leg: str, out: dict) -> None:
+    """One record per attempt, success or not, for the freshness fence to name as the cause.
+
+    The compute ledger says a leg ran and how long; it does not say that a pass stood down for
+    memory, found the lane locked, or exited 0 without publishing -- the three ways this artifact
+    went stale while every row read `ok`. Never fails the leg."""
+    try:
+        from libs.ops.win_write import write_text_resilient
+        rec = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "leg": leg,
+               **{k: out.get(k) for k in ("status", "why", "skip_reason", "exit_code",
+                                          "timeout_s", "compiled_at_before",
+                                          "compiled_at_after", "compiled_at_advanced", "note")
+                  if k in out}}
+        if isinstance(out.get("compile"), dict):
+            rec["compile"] = {k: out["compile"].get(k) for k in (
+                "status", "why", "exit_code", "timeout_s", "compiled_at_advanced")
+                if k in out["compile"]}
+        MINER_COMPILER_ATTEMPT.parent.mkdir(parents=True, exist_ok=True)
+        write_text_resilient(MINER_COMPILER_ATTEMPT, json.dumps(rec, indent=1, default=str))
+    except Exception as exc:
+        print(f"  miner compiler attempt not recorded: {type(exc).__name__}: {exc}", flush=True)
 
 
 def catch_up_intake() -> dict:
@@ -3169,20 +3256,45 @@ def catch_up_intake() -> dict:
     existing discoveries need not wait behind hours of generation to reach the judge.
     Never merge an old compiler artifact after a failed compilation.
     """
+    from research import job_lock
     from research.job_lock import exclusive_job
 
+    out: dict
     with exclusive_job("miner_candidate_compiler", need_mb=14000) as acquired:
         if not acquired:
-            return {"status": "SKIPPED", "why": "canonical compiler lane already owned"}
+            # TWO DIFFERENT REFUSALS, AND THIS USED TO NAME ONLY ONE (2026-10-29). Every
+            # refusal read "canonical compiler lane already owned", including the memory
+            # stand-down, so a box too full to admit the compiler hour after hour looked like a
+            # healthy lane with a busy owner.
+            ref = dict(getattr(job_lock, "LAST_REFUSAL", {}).get("miner_candidate_compiler")
+                       or {})
+            reason = str(ref.get("reason") or "UNKNOWN")
+            why = {"MEMORY_STAND_DOWN": "memory stand-down: the box could not fit the compiler",
+                   "LOCK_HELD": "canonical compiler lane already owned by another writer",
+                   "LOCK_UNRECOVERABLE": "compiler lock is stale and could not be recovered",
+                   }.get(reason, "job lock refused the compiler for an unrecorded reason")
+            out = {"status": "SKIPPED", "skip_reason": reason,
+                   "why": f"{why}: {ref.get('detail', '')}".rstrip(": "), "refusal": ref}
+            _record_compiler_attempt("intake_catchup", out)
+            return out
         compiled = compile_candidates()
-    if compiled.get("exit_code") != 0:
-        return {"status": "FAILED", "compile": compiled,
-                "why": "fresh compilation failed; catch-up merge withheld"}
+    # A pass that was killed AFTER it published left a complete, fresh artifact; graph
+    # annotations are stamped, never filtered, so merging it is merging a fresh compilation.
+    fresh = bool(compiled.get("compiled_at_advanced")) and compiled.get("exit_code") in (0, None)
+    if not fresh or str(compiled.get("status") or "").upper() == "FAILED":
+        out = {"status": "FAILED", "compile": compiled,
+               "why": ("fresh compilation failed; catch-up merge withheld: "
+                       + str(compiled.get("why") or compiled.get("error")
+                             or f"exit {compiled.get('exit_code')}"))}
+        _record_compiler_attempt("intake_catchup", out)
+        return out
     # The child now owns the same writer lock for EVERY entry point, including Scheduler.
     # Holding it in this parent would make that child correctly defer against its own caller.
     merged = _producer("merge_hypotheses", "research/merge_hypotheses.py")
-    return {"status": "OK" if merged.get("exit_code") == 0 else "FAILED",
-            "compile": compiled, "merge": merged}
+    out = {"status": "OK" if merged.get("exit_code") == 0 else "FAILED",
+           "compile": compiled, "merge": merged}
+    _record_compiler_attempt("intake_catchup", out)
+    return out
 
 
 def placement_interlock() -> dict:
@@ -3202,6 +3314,18 @@ def judge_alive() -> dict:
     on a SLOW sweep that is still burning CPU. Hourly here, and in the law gate's rotation."""
     return _producer("judge_alive", "scripts/check_judge_coverage.py", "--liveness",
                      "--require-state")
+
+
+def miner_compiler_fresh() -> dict:
+    """`miner_compiler_fresh`: is miner_candidates.json's CONTENT current? `ops/organ_contract.py
+    --only "MT5-Hourly (miner compiler)"` reads `compiled_at` from the file head (never the
+    mtime, which its readers refresh), writes reports/MINER_COMPILER_FRESHNESS.json and exits 1
+    naming the artifact, its age, the 180 min cadence and the likely cause (compute-ledger tail,
+    LEG_ROTATION, the job lock, the last attempt record) when it is stale or unreadable. Core,
+    so it runs every hour whichever plan the compiler's own legs rode."""
+    return _producer("miner_compiler_fresh", "ops/organ_contract.py", "--only",
+                     "MT5-Hourly (miner compiler)", "--out",
+                     "desks/mt5/reports/MINER_COMPILER_FRESHNESS.json")
 
 
 def pit_canaries() -> dict:
@@ -4113,6 +4237,7 @@ def main() -> None:
     pcn = _costed("pit_canaries", pit_canaries)
     pil = _costed("placement_interlock", placement_interlock)
     jal = _costed("judge_alive", judge_alive)
+    mcf = _costed("miner_compiler_fresh", miner_compiler_fresh)
     myd = _costed("mutation_yield", mutation_yield)
     # DELAYED TRUTH (principal F12, 2026-09-12; wired 2026-09-16): realised R credited back
     # to the scientist that proposed each cell, live when the live ledger is thick enough,
@@ -6085,6 +6210,7 @@ def main() -> None:
                     "search": se, "breadth_sweep": bs, "mass_screen": msc,
                     "session_variant_remap": svr, "candidate_conservation": ccv,
                     "pit_canaries": pcn, "placement_interlock": pil, "judge_alive": jal,
+                    "miner_compiler_fresh": mcf,
                     "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,
