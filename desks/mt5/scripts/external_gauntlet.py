@@ -991,6 +991,11 @@ def partition_at_economic_prior(specs: list[dict],
     """
     eligible: list[dict] = []
     rejected: list[dict] = []
+    # ONCE PER SYMBOL AND PER CHART, NOT PER CELL (box plan profile 2026-10-29: the docket holds
+    # ~1.55M cells on ~100 symbols, and each one stat'ed the H1 parquet and, off H1, loaded a
+    # whole frame just to learn it was not None). Both answers depend only on the key here.
+    _tradeable: dict[str, tuple[bool, str]] = {}
+    _has_chart: dict[tuple[str, str], bool] = {}
     for spec in specs:
         if meta is not None:
             # NORMALISE BEFORE JUDGING, and keep the canonical spelling on the spec: everything
@@ -999,7 +1004,9 @@ def partition_at_economic_prior(specs: list[dict],
             canon = canonical_symbol(str(spec.get("sym") or ""), meta)
             if canon != spec.get("sym"):
                 spec["sym"] = canon
-            ok, why = symbol_is_tradeable(canon, meta)
+            if canon not in _tradeable:
+                _tradeable[canon] = symbol_is_tradeable(canon, meta)
+            ok, why = _tradeable[canon]
             if ok:
                 # AND THE CELL'S OWN CHART HAS TO EXIST. Registry membership says the broker
                 # quotes it and the H1 parquet says a clock can replay it; neither says this
@@ -1007,7 +1014,9 @@ def partition_at_economic_prior(specs: list[dict],
                 # spends the other nine gates and then fails to build with "parquet missing" --
                 # a message about the wrong file, at the wrong stage, after the compute is spent.
                 _tf = timeframe_of(spec.get("params"), str(spec.get("family") or ""))
-                if _tf != "H1" and _bars_for(canon, _tf) is None:
+                if _tf != "H1" and (canon, _tf) not in _has_chart:
+                    _has_chart[(canon, _tf)] = _bars_for(canon, _tf) is not None
+                if _tf != "H1" and not _has_chart[(canon, _tf)]:
                     ok, why = False, (f"symbol {canon!r} has no {canon}_{_tf}.parquet; the chart "
                                       f"this cell was hunted on is not on this box")
             if not ok:
@@ -3630,11 +3639,19 @@ def main():
     blocked_build: list[dict] = list(_modifier_blocked)
     _build_t0 = time.time()
     # Yesterday's keys die with yesterday's data-day; prune so the cache never grows unbounded.
+    # ONE DIRECTORY SCAN, NOT A STAT PER FILE (box plan profile 2026-10-29: this prune took 787 s
+    # of a 1,753 s plan). On Windows `os.scandir` hands back each entry's mtime from the listing
+    # itself, where `Path.stat` opened every file again. `fnmatch` matches "*.npz" with the
+    # platform's case rule, as the glob did.
     try:
+        import fnmatch as _fn
         import time as _t
-        for _f in CACHE_DIR.glob("*.npz"):
-            if _t.time() - _f.stat().st_mtime > 3 * 86400:
-                _f.unlink(missing_ok=True)
+        with os.scandir(CACHE_DIR) as _it:
+            for _e in _it:
+                if not _fn.fnmatch(_e.name, "*.npz"):
+                    continue
+                if _t.time() - _e.stat().st_mtime > 3 * 86400:
+                    Path(_e.path).unlink(missing_ok=True)
     except OSError:
         pass
     # SYMBOL ORDER IS A PERFORMANCE CONTRACT, NOT A PREFERENCE. build_cell -> resolve_inputs
@@ -3704,10 +3721,17 @@ def main():
     # BANNED FAMILIES ARE SET ASIDE BEFORE ANYTHING IS ORDERED (2026-09-16): the hour they would
     # have taken goes to every other mechanism, which is the principal's order verbatim.
     try:
-        from research.family_policy import ban_reason, family_banned
-        _set_aside = [sp for sp in eligible_specs if family_banned(sp.get("family"))]
+        from research.family_policy import ban_reason, banned_families
+        # THE LIST IS READ ONCE (box plan profile 2026-10-29: `family_banned` re-reads
+        # banned_families.json on every call, twice per cell over ~1.55M cells). Same predicate.
+        _banned = {k.lower() for k in banned_families()}
+
+        def _is_banned(fam: object) -> bool:
+            f = str(fam or "").strip().lower()
+            return bool(f) and f in _banned
+        _set_aside = [sp for sp in eligible_specs if _is_banned(sp.get("family"))]
         if _set_aside:
-            eligible_specs = [sp for sp in eligible_specs if not family_banned(sp.get("family"))]
+            eligible_specs = [sp for sp in eligible_specs if not _is_banned(sp.get("family"))]
             _fams = sorted({str(sp.get("family") or "") for sp in _set_aside})
             print(f"  banned families: {len(_set_aside)} cell(s) set aside "
                   f"({'; '.join(ban_reason(f) for f in _fams)})")
