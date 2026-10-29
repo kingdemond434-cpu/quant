@@ -688,9 +688,9 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
 }
 SOURCE_POLICY.update(_HELD_ROUTES)
 #: THE ASIAN PHYSICAL-GOLD STATES (IDEA_QUEUE 245, 237, 228, 215; 2026-10-29). One row per
-#: `alt_proxies` source id; `hosts` is empty so the row governs only that source NAME (the SGE
-#: graph route `fetch_sge_premium` reads, and the country packs' idea grounds on these hosts,
-#: keep whatever row or default they had). A row is LIVE only on a quoted clause of its own terms
+#: `alt_proxies` source id; `hosts` is empty so the row governs only that source NAME (the
+#: country packs' idea grounds on these hosts keep whatever row or default they had; sge.com.cn
+#: as a whole is the `sge` row below). A row is LIVE only on a quoted clause of its own terms
 #: page; the other three were not readable and are IDEAS_ONLY: never live input, ideas still
 #: mined, parsers built on fixtures, and each carries its missed-growth line here and in the
 #: state artifact (`asia_gold_physical.missed_growth_lines`). Flipping a row is the only unblock.
@@ -773,6 +773,51 @@ SOURCE_POLICY.update({
                       "no terms link; footer 'Copyright 2016 上海黄金交易所 All Right Reserved' "
                       "(2026-10-29)")}}},
 })
+#: THE SGE HOST (2026-10-29, coordinator follow-up to the asia-gold build). `fetch_sge_premium`
+#: fetched sge.com.cn as LIVE INPUT with a bare `requests.get` while SGE's terms were UNREAD. Under
+#: the fail-closed ruling the whole host is IDEAS_ONLY: every request goes through polite_fetch
+#: (robots, DESK_UA, hard stops), live input from it is refused before anything is sent, and the
+#: deep-forest / world-crawler idea grounds on it keep reading for ideas. `consumers` is the grep
+#: of every organ, state, cell and proposal that reads the SGE premium or SGE data (2026-10-29);
+#: each reads a refused fetch as UNMEASURED. No certificate, sleeve or shadow clock consumes it.
+_SGE_CONSUMERS = (
+    "leg sge_premium -> research/fetch_sge_premium.py (writes data/lake/sge_daily.parquet, "
+    "data/lake/sge_premium.parquet, reports/sge_premium.json)",
+    "alt_proxies source cn_sge_premium (reader of sge_premium.parquet; terms to_confirm, never "
+    "read)",
+    "macro_state_engine latent cn_physical_gold input sge_premium (terms_source cn_sge_premium)",
+    "dislocation_lab engine P6 (reads reports/sge_premium.json row count for XAUUSD)",
+    "asia_plane in-hand census (counted sge_benchmark from sge_daily.parquet)",
+    "asia_collector registry rows sge_benchmark and sge_silver (asia_sources.json, sjzx/mrhq and "
+    "sjzx/yjstjb)",
+    "world_dataset_hunter sge_benchmark (en.sge.com.cn/data_BenchmarkPrice)",
+    "asia_transmission edge sge_premium_to_gold (declared proxy, not yet collected)",
+    "scripts/check_source_routes.py route sge_quotations (shape probe only)",
+    "alt_proxies source cn_sge_deferral (IDEA_QUEUE 215; its own IDEAS_ONLY row)",
+    "compiled proposal XAU_locbasis_split (data_source names SGE Au99.99 daily close)",
+    "36 external_survivors genomes with SGE idea provenance (miner:asia:sge_benchmark XAUUSD "
+    "range_reversion/spread_state, miner:asia:sge_silver XAGUSD): idea lineage only, they trade "
+    "on MT5 data and stay judged (rule 4)",
+)
+SOURCE_POLICY["sge"] = {
+    "hosts": ("sge.com.cn",), "status": IDEAS_ONLY,
+    "sources": ("sge_premium", "cn_sge_premium", "sge_benchmark", "sge_silver"),
+    "why": ("the SGE site prints only 'Copyright 2016 上海黄金交易所 All Right Reserved' and links "
+            "no terms page (read 2026-10-29), so its terms are UNREAD and UNREAD terms never "
+            "permit automated live input; its pages are read politely for ideas only"),
+    "unblock": ("an SGE statement permitting automated access to its quotation data for internal "
+                "research, quoted into this row, and the row flipped to PUBLIC_PAGE"),
+    "consumers": _SGE_CONSUMERS,
+    "missed_growth": {
+        "delta_elogw": "UNMEASURED",
+        "cause": ("the SGE premium (and the Au(T+D) basis) for the gold_asia window is cut as live "
+                  "input until SGE's terms are read; consumers cut: " + "; ".join(_SGE_CONSUMERS)
+                  + ". No certificate, sleeve or shadow clock reads it, so the forgone growth is "
+                  "UNMEASURED, never zero")},
+    "terms": {"url": "https://www.sge.com.cn/", "checked_at": "2026-10-29",
+              "unread": {"https://www.sge.com.cn/": (
+                  "no terms link; footer 'Copyright 2016 上海黄金交易所 All Right Reserved' "
+                  "(2026-10-29)")}}}
 #: The held-route rows, by key (read by `alt_proxies.HELD_ROUTES`).
 HELD_ROUTE_KEYS: frozenset[str] = frozenset(
     k for k, r in SOURCE_POLICY.items() if r.get("held_route"))

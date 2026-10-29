@@ -161,9 +161,9 @@ def test_policy_rows_live_only_on_a_quoted_clause() -> None:
     # no second register: alt_proxies' TERMS rows ARE the fence's verdicts
     for sid in G.STATE_IDS:
         assert A.TERMS[sid][0] == tf.terms_verdict(sid) == A.BY_ID[sid].terms
-    # the rows bind the source NAME only: SGE's graph route and the hosts' other pages keep
-    # their own policy
-    assert tf.input_source("https://www.sge.com.cn/graph/quotations?instid=Au99.99") is None
+    # the rows bind the source NAME only; sge.com.cn as a whole is the `sge` host row
+    assert tf.input_source("https://www.sge.com.cn/graph/quotations?instid=Au99.99") == "sge"
+    assert tf.input_source("https://sjc.com.vn/") is None
 
 
 def test_missed_growth_lines_are_unmeasured_never_zero() -> None:

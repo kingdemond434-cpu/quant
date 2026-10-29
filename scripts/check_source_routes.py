@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import urllib.error
 import urllib.request
 from datetime import UTC, datetime
@@ -44,6 +45,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 OUT = ROOT / "desks" / "mt5" / "reports" / "SOURCE_ROUTES.json"
 
 #: (name, url, expected shape). The shape is what makes a MOVED verdict possible: without a
@@ -84,11 +87,47 @@ _ACCEPT = {
 MIN_BODY_BYTES = 64
 
 
+#: Policy rows whose hosts are probed ONLY through `libs.data.polite_fetch.get` (robots.txt,
+#: the site's access holds, DESK_UA, 401/403/429/WAF a hard stop). sge.com.cn's terms are UNREAD
+#: (terms_fence row `sge`, IDEAS_ONLY): no bare urlopen may reach it, the probe included.
+POLITE_ROWS = ("sge",)
+
+
+def _polite_host(url: str) -> bool:
+    from urllib.parse import urlsplit
+
+    from libs.data import terms_fence as tf
+    host = (urlsplit(url).hostname or "").lower()
+    return any(host == h or host.endswith("." + h)
+               for k in POLITE_ROWS for h in tf.SOURCE_POLICY[k]["hosts"])
+
+
+def _polite_probe(url: str, timeout: float) -> tuple[int, str, bytes] | dict[str, Any]:
+    """(status, content type, first bytes) through the polite door, or the verdict dict when it
+    refused or failed (a refusal sends nothing and is UNMEASURED, never a pass or a MOVED)."""
+    from libs.data import polite_fetch
+    r = polite_fetch.get(url, timeout=timeout, retries=0, max_bytes=4096, leg="source_routes")
+    if r.verdict:
+        return {"status": "UNMEASURED", "why": f"refused by polite_fetch: {r.error[:120]}"}
+    if r.status is None:
+        return {"status": "UNREACHABLE", "why": r.error[:120]}
+    if r.status >= 400:
+        return {"status": "HTTP_ERROR", "http": r.status, "why": f"HTTP {r.status}"}
+    return r.status, r.content_type.lower(), r.body[:4096]
+
+
 def probe(route: dict[str, Any], timeout: float = 15.0) -> dict[str, Any]:
     """One route, one verdict. Never raises: an unprobed route is UNMEASURED, not a pass."""
     name, url = str(route.get("name")), str(route.get("url"))
     expect = str(route.get("expect") or "any")
     out: dict[str, Any] = {"name": name, "url": url, "expect": expect}
+    if _polite_host(url):
+        got = _polite_probe(url, timeout)
+        if isinstance(got, dict):
+            out.update(got)
+            return out
+        status, ctype, body = got
+        return _shape(out, status, ctype, body, expect)
     req = urllib.request.Request(url, headers={"User-Agent": "quant-desk-route-probe/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -110,6 +149,12 @@ def probe(route: dict[str, Any], timeout: float = 15.0) -> dict[str, Any]:
         out.update({"status": "UNMEASURED", "why": f"{type(e).__name__}: {str(e)[:90]}"})
         return out
 
+    return _shape(out, status, ctype, body, expect)
+
+
+def _shape(out: dict[str, Any], status: int, ctype: str, body: bytes,
+           expect: str) -> dict[str, Any]:
+    """The NOAA rule on what came back: OK, or MOVED when the shape is wrong."""
     out["http"] = status
     out["content_type"] = ctype
     out["bytes_read"] = len(body)

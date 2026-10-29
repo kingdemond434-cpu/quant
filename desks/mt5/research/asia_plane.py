@@ -135,8 +135,11 @@ def _have_data(as_of: Any = None) -> set[str]:
     if vault.is_dir():
         out |= {d.name for d in vault.iterdir()
                 if d.is_dir() and any(d.glob("*.gz"))}
-    # `fetch_sge_premium` writes its own history outside the generic collector's tree.
-    if (_LAKE / "sge_daily.parquet").exists():
+    # `fetch_sge_premium` writes its own history outside the generic collector's tree. It counts
+    # as in hand only while SGE may be live input (terms_fence row `sge`: IDEAS_ONLY on UNREAD
+    # terms, so a file on disk is not data the desk may use -- UNMEASURED, not in hand).
+    from libs.data import terms_fence as _tf
+    if (_LAKE / "sge_daily.parquet").exists() and not _tf.input_source("sge_benchmark"):
         out.add("sge_benchmark")
     return out
 

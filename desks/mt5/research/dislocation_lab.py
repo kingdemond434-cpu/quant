@@ -750,15 +750,20 @@ def _cot_series(ctx: Context, sym: str) -> tuple[list[tuple[datetime, float]], s
 def engine_p6(ctx: Context, sym: str, h: str, df: pd.DataFrame, close_t: np.ndarray) -> Reading:
     pts, src = _cot_series(ctx, sym)
     sge_n = 0
+    sge_note = ""
     if sym == "XAUUSD" and isinstance(ctx.sge, dict):
         sge_n = int(_num(ctx.sge.get("rows")) or 0)
+        if ctx.sge.get("status") == "UNMEASURED":
+            # a refused SGE fetch (terms_fence row `sge`) is UNMEASURED, never zero rows
+            sge_note = f"; sge_premium UNMEASURED ({str(ctx.sge.get('refusal') or '')[:80]})"
     if len(pts) < 30:
         syms = sorted({str(r.get("symbol")) for r in ((ctx.cot or {}).get("rows") or [])
                        if isinstance(r, dict)}) if isinstance(ctx.cot, dict) else []
         why = (f"{sym}: no positioning series with >= 30 knowable_at-stamped rows "
                f"(cot.json covers {len(syms)} symbols; cot_gold.parquet "
                f"{'present' if ctx.cot_gold is not None else 'absent'}"
-               + (f"; sge_premium {sge_n} rows < {PE.MIN_N_TABLE}" if sym == "XAUUSD" else "")
+               + (sge_note or (f"; sge_premium {sge_n} rows < {PE.MIN_N_TABLE}")
+                  if sym == "XAUUSD" else "")
                + "; weather: no data plane in the tree)")
         return _unmeasured(P6, why, source="cot.json; cot_gold.parquet; sge_premium.json")
     stamps = np.array([np.datetime64(t.replace(tzinfo=None), "ns") for t, _ in pts])
@@ -782,8 +787,8 @@ def engine_p6(ctx: Context, sym: str, h: str, df: pd.DataFrame, close_t: np.ndar
     return Reading(engine=P6, status=MEASURED, p=p, available=avail, source=src, n_basis=n,
                    why="fade of a positioning extreme (z of net spec % of OI vs 156 weeks), "
                        "usable only from each row's knowable_at"
-                       + (f"; sge_premium {sge_n} rows < {PE.MIN_N_TABLE}: UNMEASURED"
-                          if sym == "XAUUSD" else ""))
+                       + ((sge_note or f"; sge_premium {sge_n} rows < {PE.MIN_N_TABLE}: "
+                           "UNMEASURED") if sym == "XAUUSD" else ""))
 
 
 ENGINE_FNS = {P1: engine_p1, P2: engine_p2, P3: engine_p3, P4: engine_p4, P5: engine_p5,

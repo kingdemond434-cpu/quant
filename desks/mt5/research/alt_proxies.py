@@ -3849,6 +3849,8 @@ def _gold_evidence(sid: str) -> dict[str, str]:
 
 TERMS.update({s.id: _gold_terms(s.id) for s in ASIA_GOLD_SOURCES})
 TERMS_EVIDENCE.update({s.id: _gold_evidence(s.id) for s in ASIA_GOLD_SOURCES})
+#: The SGE premium reader's verdict is the `sge` host row's (UNREAD terms: IDEAS_ONLY).
+TERMS["cn_sge_premium"] = (_tf.terms_verdict("sge"), str(_tf.SOURCE_POLICY["sge"]["why"]))
 
 
 def polite_get(url: str, headers: dict[str, str] | None = None) -> tuple[bytes, str]:
