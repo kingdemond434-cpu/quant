@@ -842,6 +842,11 @@ def _atomic_bytes(path: Path, data: bytes, *, attempts: int = 6,
             tmp.unlink()
 
 
+#: The exit while the model is RED: a failure, named MODEL_STALE in hourly_cycle's
+#: NAMED_FAILURE_EXITS (a stage that is not running, never a report). Not 2, argparse's usage error.
+EXIT_MODEL_STALE = 3
+
+
 def model_liveness(model: Mapping[str, Any], *, now: float | None = None,
                    model_dir: Path | None = None) -> dict[str, Any]:
     """RED when the model in hand is older than `STALE_MODEL_S` or a fit was killed mid-way;
@@ -936,7 +941,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     # `prejudge_model` leg, which the cycle records like any other failed leg.
     if live.get("status") == "RED":
         print(f"prejudge_model: RED -- {live.get('why')}")
-        return 1
+        return EXIT_MODEL_STALE
     return 0
 
 

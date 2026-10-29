@@ -443,7 +443,11 @@ def test_a_red_model_fails_the_hourly_leg(tmp_path: Path, monkeypatch) -> None:
     old = {"schema": pm.SCHEMA, "trained_ts": 0.0, "fit_ok_ts": 0.0, "status": "MODEL",
            "refit": False}
     monkeypatch.setattr(pm, "train", lambda force=False: dict(old))
-    assert pm.main(["--train"]) == 1
+    assert pm.main(["--train"]) == pm.EXIT_MODEL_STALE == 3
+    sys.path.insert(0, str(Path(pm.__file__).resolve().parents[1]))
+    from research import hourly_cycle as hc
+    assert hc._exit_outcome("prejudge_model", 3) == "exit_code=3:MODEL_STALE"
+    assert 3 not in hc.VERDICT_EXITS.get("prejudge_model", ())
     fresh = {**old, "trained_ts": pm.time.time(), "fit_ok_ts": pm.time.time()}
     monkeypatch.setattr(pm, "train", lambda force=False: dict(fresh))
     assert pm.main(["--train"]) == 0

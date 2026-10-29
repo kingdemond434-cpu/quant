@@ -1077,6 +1077,9 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #:                       lasted past 3 consecutive passes (daily_cycle.EXIT_STAMP_UNREADABLE*)
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
     "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
+    # research/prejudge_model.py EXIT_MODEL_STALE: the pre-judge model is past its age or a fit
+    # died mid-way, so the docket is ordered by a stale model -- a failure, named.
+    "prejudge_model": {3: "MODEL_STALE"},
     "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG",
               DAILY_CYCLE_STAMP_UNREADABLE: "STAMP_UNREADABLE",
               DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT: "STAMP_UNREADABLE_PERSISTENT"},
