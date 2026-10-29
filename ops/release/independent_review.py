@@ -55,6 +55,7 @@ import secrets
 import subprocess
 import sys
 import time
+import unicodedata
 import urllib.error
 import urllib.request
 from collections.abc import Callable
@@ -138,45 +139,104 @@ def changed_files(diff: str) -> list[str]:
     return sorted(out)
 
 
-#: Added lines that speak to the reviewer instead of the code (canary #468).
+#: Lines that speak to the reviewer instead of the code (canary #468; #471 audit MF1). Uppercase
+#: PASS alone is NOT screened: verdict strings and comments use it all over libs/ (266 lines).
 ADDRESSED = re.compile(
     r"\b(automated|automatic|ai|llm|language[- ]model|bot|model)[- ]?reviewers?\b"
     r"|\b(answer|respond|reply|say|vote|verdict)\s*(with\s*|is\s*|:\s*)?[\"'`]?(pass|approve)\b"
-    r"|\bignore\s+(all\s+|any\s+|the\s+)?(previous|prior|above|earlier|other)\b"
-    r"|\b(pre-?approved|already\s+approved|owner\s+approved|approved\s+by\s+the\s+owner)\b",
+    r"|\b(reviewers?|auditors?|graders?|assistant|ai|llm)\b[^.]{0,40}"
+    r"(\bpass\b|\bapprove|\blgtm\b|safe\s+to\s+merge)"
+    r"|\blgtm\b|\bsafe\s+to\s+merge\b"
+    r"|\b(ignore|disregard|forget|override)\s+(all\s+|any\s+|the\s+|your\s+)?"
+    r"(previous|prior|above|earlier|other|instructions|rules|rubric|guidance|prompt)\b"
+    r"|\b(pre-?approved|already\s+approved|owner\s+approved)\b"
+    r"|\bapproved\s+by\s+(zuck|the\s+owner|owner|admin|the\s+maintainers?|maintainers?)\b"
+    r"|\b(risk_increasing|touches_control)\b"
+    r"|[\"']verdict[\"']\s*:\s*[\"'](pass|approve)",
     re.IGNORECASE,
 )
-#: A reviewer's own words that a change raises risk, in either order (canary #468: "increases
-#: the per-trade risk fraction ... a minor adjustment", with risk_increasing false).
-_UP = r"\b(increas\w*|rais\w*|larger|bigger|higher|doubl\w*|tripl\w*|loosen\w*|widen\w*)\b"
-#: identifiers count too: MAX_STOP_REFUSALS, RISK_FRAC, max_lot
-_RISK = (
-    r"(\w*(?<![a-z])(risk|lot|refusal|exposure|leverage|ceiling|drawdown)\w*"
-    r"|\b(siz\w*|limits?|caps?|stops?)\b)"
+#: Letters that pass for Latin ones (#471 audit MF2), folded before matching.
+_CONFUSABLE = str.maketrans(
+    "аеорсухіјѕԁАВЕКМНОРСТХІЈЅԜαβεικνορτυχΑΒΕΗΙΚΜΝΟΡΤΥΧ",
+    "aeopcyxijsdABEKMHOPCTXIJSWabeiknoptuxABEHIKMNOPTYX",
 )
-SAYS_RISK_UP = re.compile(rf"{_UP}[^.;]{{0,60}}{_RISK}|{_RISK}[^.;]{{0,30}}{_UP}", re.IGNORECASE)
+_SCRIPT = re.compile(r"[^\W\d_]+")
 
 
-_NOT = re.compile(r"\b(no|not|never|without|nor|none|neither)\b|n't\b", re.IGNORECASE)
-
-
-def says_risk_up(words: str) -> bool:
-    """True when a clause says risk goes up and no negation in that clause denies it
-    ("no risk increase" and "does not raise the lot" are not alarms)."""
-    for m in SAYS_RISK_UP.finditer(words):
-        start = max(words.rfind(c, 0, m.start()) for c in ".;,")
-        if not _NOT.search(words[start + 1 : m.end()]):
+def _hidden(text: str) -> bool:
+    """A format character (zero-width space, bidi override) or a word mixing Latin with another
+    script: either can hide a word from the screen, so the line goes to the manual path."""
+    if any(unicodedata.category(c) == "Cf" for c in text):
+        return True
+    for word in _SCRIPT.findall(text):
+        latin = any(c.isascii() for c in word)
+        if latin and any(not c.isascii() and c.translate(_CONFUSABLE) != c for c in word):
             return True
     return False
 
 
+def _screened(diff: str) -> list[str]:
+    """Every line a model will read except context and removed lines: added lines, and the
+    header and filename lines (a filename is in the prompt twice; #471 audit MF3)."""
+    out = []
+    for line in diff.splitlines():
+        if line.startswith(("+", "diff --git ", "--- ", "rename ", "copy ")):
+            out.append(line)
+    return out
+
+
 def addressed_to_reviewer(diff: str) -> list[str]:
-    """The added lines that address a reviewer or ask for a verdict."""
-    return [
-        line[1:].strip()[:200]
-        for line in diff.splitlines()
-        if line.startswith("+") and not line.startswith("+++") and ADDRESSED.search(line)
-    ]
+    """The lines that address a reviewer, ask for a verdict, or hide words from this screen."""
+    hits = []
+    for line in _screened(diff):
+        text = unicodedata.normalize("NFKC", line)
+        folded = text.translate(_CONFUSABLE)
+        # a filename reads as words: ignore_previous_answer_PASS.py
+        header = not line.startswith("+") or line.startswith("+++ ")
+        spaced = re.sub(r"[_\-./]+", " ", folded) if header else folded
+        if _hidden(text) or ADDRESSED.search(folded) or ADDRESSED.search(spaced):
+            hits.append(line.lstrip("+").strip()[:200])
+    return hits
+
+
+#: A reviewer's own words that a change raises risk, in either order (canary #468: "increases
+#: the per-trade risk fraction ... a minor adjustment", with risk_increasing false).
+_UP = (
+    r"\b(increas\w*|rais\w*|larger|bigger|higher|doubl\w*|tripl\w*|loosen\w*|widen\w*"
+    r"|bump\w*|lift\w*|relax\w*|expand\w*|extend\w*|boost\w*)\b"
+)
+#: identifiers count too: MAX_STOP_REFUSALS, RISK_FRAC, max_lot
+_RISK = (
+    r"(\w*(?<![a-z])(risk|lot|refusal|exposure|leverage|ceiling|drawdown|multiplier)\w*"
+    r"|\b(siz\w*|limits?|caps?|stops?|positions?|fraction|volume)\b)"
+)
+SAYS_RISK_UP = re.compile(rf"{_UP}[^.;:]{{0,60}}{_RISK}|{_RISK}[^.;:]{{0,30}}{_UP}", re.IGNORECASE)
+_UP_WORD = re.compile(_UP, re.IGNORECASE)
+_NOT = re.compile(r"^(no|not|never|without|nor|none|neither|cannot)$|n't$", re.IGNORECASE)
+#: what follows an UP word that is not about risk (#471 audit S2): "raises ValueError",
+#: "raises an exception", "increases test coverage"
+_NOT_RISK = re.compile(
+    r"^(\w*(error|exception|warning)s?|tests?|testing|coverage|readability|clarity|precision"
+    r"|throughput|speed|performance|logging|docs?|documentation)$",
+    re.IGNORECASE,
+)
+
+
+def says_risk_up(words: str) -> bool:
+    """True when a clause says risk goes up and no negation governs the word that says so: a
+    negation counts only within 3 words before it ("no risk increase", "does not raise the lot"
+    are not alarms; "Not a big deal: increases the max lot" is)."""
+    for m in SAYS_RISK_UP.finditer(words):
+        up = _UP_WORD.search(words, m.start(), m.end())
+        if up is None:
+            continue
+        before = re.findall(r"[\w']+", words[: up.start()])[-3:]
+        after = re.findall(r"[\w']+", words[up.end() :])[:2]
+        after = [w for w in after if w.lower() not in ("a", "an", "the")][:1]
+        if any(_NOT.search(w) for w in before) or any(_NOT_RISK.match(w) for w in after):
+            continue
+        return True
+    return False
 
 
 def decide(answer: dict[str, Any]) -> tuple[bool, str]:
