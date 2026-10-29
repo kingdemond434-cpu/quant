@@ -155,6 +155,8 @@ ADDRESSED = re.compile(
     r"|\bapproved\s+by\s+(zuck|the\s+owner|owner|admin|the\s+maintainers?|maintainers?)\b"
     r"|\b(risk_increasing|touches_control)\b"
     r"|\b(previous|prior|last|earlier)\s+answer\b|\banswer\s+again\b"  # VAGUE_NOTE (#538 SF3)
+    r"|\bdo\s+not\s+fail\b|\bfail\s+only\s+(for|if|when)\b|\bno\s+finding\s+named\b"
+    r"|\bnamed\s+a\s+concrete\s+defect\b"  # the note's other sentences (#538 audit SF-c)
     r"|[\"']verdict[\"']\s*:\s*[\"'](pass|approve)",
     re.IGNORECASE,
 )
@@ -276,15 +278,33 @@ VAGUE_NOTE = (
 )
 
 
+def _finding_text(x: Any) -> str:
+    """A finding as words: a structured one ({"file", "line", ...}) reads as `file:line ...`, so
+    a place it names is seen (#538 audit SF-a)."""
+    if isinstance(x, dict):
+        place = f"{x.get('file', '')}:{x.get('line', '')}" if x.get("file") else ""
+        rest = " ".join(str(v) for k, v in x.items() if k not in ("file", "line"))
+        return f"{place} {rest}".strip()
+    return str(x)
+
+
 def vague_fail(answer: dict[str, Any]) -> bool:
-    """A FAIL on the risk flag alone whose every finding hedges and names no place. Never one
-    that flags control machinery, says in its own words that risk goes up, or names a risk,
-    guard or money mechanism anywhere: those stay hard FAILs (#538 audit MF1). _PLACE takes
-    any file:line without checking it against the diff; that only errs toward keeping a FAIL."""
-    if answer.get("touches_control") is not False or answer.get("verdict") == "PASS":
+    """A FAIL that flags NOTHING (risk_increasing and touches_control both exactly False) and
+    whose every finding hedges and names no place. A model that flags a risk increase but cannot
+    name it never abstains: its FAIL stands (#538 audit MF-A); the deny-lists below only add to
+    that. Never one that says in its own words that risk goes up, or names a risk, guard or money
+    mechanism anywhere (#538 audit MF1). Answers are NFKC- and confusable-folded first. _PLACE
+    takes any file:line without checking it against the diff; that only errs toward a FAIL."""
+    if answer.get("verdict") == "PASS":
         return False
-    found = [str(x) for x in answer.get("findings") or []]
+    if answer.get("risk_increasing") is not False or answer.get("touches_control") is not False:
+        return False
+    found = [_finding_text(x) for x in answer.get("findings") or []]
     words = " ".join([str(answer.get("summary", "")), *found])
+    words = unicodedata.normalize("NFKC", words)
+    if _hidden(words):  # a mixed-script word hides from the lists: never vague
+        return False
+    words = words.translate(_CONFUSABLE)
     if says_risk_up(words) or _MECHANISM.search(words) or _PLACE.search(words):
         return False
     return bool(found) and all(_HEDGE.search(f) for f in found)
