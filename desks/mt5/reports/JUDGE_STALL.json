@@ -1,22 +1,22 @@
 {
- "at": "2026-10-29T08:01:08+00:00",
+ "at": "2026-10-29T08:16:24+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 8.49,
-   "why": "no new verdict for 8.5h (last 2026-10-28T23:31:43+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 8.74,
+   "why": "no new verdict for 8.7h (last 2026-10-28T23:31:43+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "resident_dead": {
    "open": false,
-   "heartbeat_age_min": 0.3,
+   "heartbeat_age_min": 0.0,
    "pid_alive": true,
-   "why": "resident SWEEPING pid 21384: heartbeat 0.3 min old (limit 10), pid alive"
+   "why": "resident SWEEPING pid 21384: heartbeat 0.0 min old (limit 10), pid alive"
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 8.29,
+   "hours": 8.54,
    "limit_h": 25.59,
-   "why": "8.3h since the last sweep ended (2026-10-28T23:43:49+00:00), status SWEEPING; limit 25.59h"
+   "why": "8.5h since the last sweep ended (2026-10-28T23:43:49+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
@@ -32,10 +32,10 @@
   },
   "phase_overrun": {
    "open": false,
-   "phase": "collect_and_cut",
-   "hours": 0.6,
+   "phase": "rule_shards",
+   "hours": 0.03,
    "known_phase": true,
-   "why": "sweep phase collect_and_cut has run 0.6h since 2026-10-29T07:25:25+00:00 (limit 1h)"
+   "why": "sweep phase rule_shards has run 0.0h since 2026-10-29T08:14:51+00:00 (limit 1h)"
   },
   "host_unreadable": {
    "open": false,
@@ -77,7 +77,7 @@
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-10-29T08:00:50+00:00",
+  "heartbeat_utc": "2026-10-29T08:16:24+00:00",
   "last_sweep_ended_utc": "2026-10-28T23:43:49+00:00",
   "last_rc": 0
  },

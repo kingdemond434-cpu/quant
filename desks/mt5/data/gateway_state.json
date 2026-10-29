@@ -30,12 +30,12 @@
       "price_open": 4036.05,
       "sl": 4037.07,
       "tp": 3969.74,
-      "profit": 2.31,
+      "profit": 6.54,
       "symbol": "XAUUSD"
     }
   ],
   "last_bracket_date": "2026-10-29",
-  "last_reconcile": "2026-10-29T08:04:44+00:00",
+  "last_reconcile": "2026-10-29T08:20:21+00:00",
   "bracket_cancelled": true,
   "pending": null,
   "brackets": {
@@ -78,7 +78,7 @@
     }
   },
   "lot": 0.06,
-  "equity": 464.53,
+  "equity": 464.86,
   "placement_health": {
     "consecutive_total_rejections": 0,
     "last_ok": "2026-10-29T04:24:44+00:00",
@@ -102,7 +102,7 @@
     }
   },
   "vetoed_today": {},
-  "placement_pass": "2026-10-29T11:02:30+00:00",
+  "placement_pass": "2026-10-29T11:20:08+00:00",
   "netting_booked": {
     "242662542": {
       "sleeve": "gold_asia",
@@ -533,7 +533,7 @@
     "242662542": 33.460000000000036
   },
   "restart_reconcile": {
-    "at": "2026-10-29T08:02:44+00:00",
+    "at": "2026-10-29T08:20:09+00:00",
     "caller": "restart_reconcile",
     "kind": "restart_reconcile",
     "magic": 341953,
