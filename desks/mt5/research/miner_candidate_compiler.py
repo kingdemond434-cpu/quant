@@ -2042,6 +2042,29 @@ def main() -> int:
     disposition_total = converted_total + refusal_total
     producer_debt = [s for s, v in sorted(per_source.items())
                      if int(v["owes_convertible_rows"]) > 0]
+    # AIMED BEFORE IT IS EMITTED (principal 2026-10-28: "stop miners from producing them").
+    # This compiler is ~96% of the docket and 78% of its rows repeated an already-mined rule in
+    # thresholds only. Each repeat is moved, here, to the nearest lawful empty ground of the same
+    # mechanism (research/coverage_steer, against the map the last merge wrote). One row out per
+    # row in; the net-edge order decides which row keeps the claim. A fault costs the steer.
+    steer_note: dict = {"status": "UNAVAILABLE"}
+    try:
+        from research import coverage_steer as _cs
+        _steerer = _cs.for_producer("miner_candidates.json", OUT.parent / _cs.MAP.name,
+                                     now=now)
+        if os.environ.get("QUANT_COVERAGE_STEER", "1") == "0":
+            _steerer.closed.append("QUANT_COVERAGE_STEER=0 (revert path)")
+        ordered = _steerer.steer(ordered, "miner_candidates.json")
+        _rep = _steerer.report()
+        steer_note = {"status": "APPLIED", "fail_closed": _rep["fail_closed"],
+                      **(_rep["by_producer"].get("miner_candidates.json") or {}),
+                      "steered_by_axis": _rep["steered_by_axis"], "map": _rep["map"]}
+        print(f"coverage steer: {steer_note.get('duplicate_in', 0)} repeat(s) in, "
+              f"{steer_note.get('steered', 0)} steered to empty ground, "
+              f"{steer_note.get('unsteerable', 0)} unsteerable "
+              f"(fail closed: {_rep['fail_closed']})")
+    except Exception as exc:
+        steer_note = {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
     from libs.data.pit import stamp_or_refuse
 
     # These rules were compiled in this pass; source event dates cannot backdate a rule.
@@ -2070,6 +2093,7 @@ def main() -> int:
         | {"seats_with_outcomes": {s: d for s, d in (blinding_note.get("seats") or {}).items()
                                    if d.get("rows_with_outcomes")}},
         "graph": graph_note,
+        "coverage_steer": steer_note,
         "impossible_metrics": fence_tally.to_dict(),
         "rows_accounted": rows_total,
         "executable_candidates": len(candidates),

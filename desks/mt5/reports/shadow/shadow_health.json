@@ -1,33 +1,29 @@
 {
-  "updated_at": "2026-10-14T02:34:13+00:00",
-  "configured_sleeves": 698,
-  "represented_sleeves": 698,
-  "certified_sleeves_total": 974,
-  "forward_clocks_total": 698,
+  "updated_at": "2026-10-29T11:12:28+00:00",
+  "configured_sleeves": 650,
+  "represented_sleeves": 650,
+  "certified_sleeves_total": 1204,
+  "forward_clocks_total": 650,
   "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
-  "n_distinct_param_hashes": 215,
+  "n_distinct_param_hashes": 209,
   "n_mechanisms": 11,
-  "retired_shadow_sleeves": 148,
+  "retired_shadow_sleeves": 258,
   "quarantined_uncertified_candidates": 0,
-  "sleeves_with_forward_trades": 626,
+  "sleeves_with_forward_trades": 573,
   "zero_trade_clocks": {
-    "count": 72,
+    "count": 77,
     "by_status": {
-      "ACTIVE": 58,
-      "BLOCKED_NO_BARS": 4,
-      "IDENTITY_BROKEN": 10
+      "ACTIVE": 67,
+      "BLOCKED_NO_BARS": 1,
+      "IDENTITY_BROKEN": 9
     },
-    "age_measured": 72,
-    "median_age_days": 6.6,
-    "mature_14d_without_trade": 18,
-    "fresh_attempts": 62,
-    "naturally_inactive": 58,
-    "suppressed_or_unproven": 14,
+    "age_measured": 77,
+    "median_age_days": 21.955,
+    "mature_14d_without_trade": 40,
+    "fresh_attempts": 68,
+    "naturally_inactive": 67,
+    "suppressed_or_unproven": 10,
     "suppressed_examples": [
-      "UNKNOWN",
-      "UNKNOWN",
-      "UNKNOWN",
-      "UNKNOWN",
       "UNKNOWN",
       "UNKNOWN",
       "UNKNOWN",
@@ -41,23 +37,15 @@
     ],
     "rule": "zero trades is not automatically a plumbing failure: blocked statuses name a repair; only ACTIVE + fresh attempt + valid bar source + no current error is natural inactivity. An ACTIVE clock older than 14 days is a low-frequency/selection finding routed to forward exploitation; no synthetic or backdated trade is ever created"
   },
-  "evidence_blocked_sleeves": 14,
+  "evidence_blocked_sleeves": 10,
   "missing_sleeves": [
-    "128 certified sleeve(s)"
+    "296 certified sleeve(s)"
   ],
   "errors": {},
-  "seconds": 2456.197,
+  "seconds": 4442.215,
   "gateway_armed": true,
-  "promoted_live_sleeves": [
-    "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
-    "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
-    "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
-  ],
-  "promoted_live_certificate_rows": [
-    "audchf_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
-    "eurzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007",
-    "usdzar_overnight_gap_decay_asia_p_44136fa355b3678a_principal_20261007"
-  ],
+  "promoted_live_sleeves": [],
+  "promoted_live_certificate_rows": [],
   "live_exposure_aliases": {},
   "status": "ENROLMENT_GAP"
 }

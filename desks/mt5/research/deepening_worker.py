@@ -204,6 +204,86 @@ COMPACT_OVER_BYTES = int(os.environ.get("DEEPEN_COMPACT_OVER_BYTES", str(64 * 10
 #: hours. Asking more of a failing seat layer produces more of the same nothing.
 DEFAULT_LIMIT = int(os.environ.get("DEEPEN_LIMIT", "0"))          # 0 = the whole queue
 
+#: THE MEMORY SELF-CHECK (2026-10-20). `deepening_worker.py --limit 25` sat at 18 GB in session 0
+#: on the trading box. The cause is fixed (`graph_index`), and this is the rail for the next one:
+#: once this process's resident size passes this share of the box's AVAILABLE memory -- both
+#: measured live with psutil, never a figure for either box -- the pass stops starting work,
+#: publishes what it decided and exits 0. Every decision is already in the append-only worked
+#: ledger the moment it is made, so that IS the checkpoint: the next pass resumes exactly where
+#: this one stopped, and nothing is skipped, dropped or capped.
+RSS_SHARE_OF_AVAILABLE = 0.5
+
+
+def memory_guard(rss_mb: float | None = None, avail_mb: float | None = None) -> tuple[bool, str]:
+    """(over, why). Over when RSS > share x available memory; UNMEASURED is never over."""
+    try:
+        share = float(os.environ.get("DEEPEN_RSS_SHARE", str(RSS_SHARE_OF_AVAILABLE)))
+    except ValueError:
+        share = RSS_SHARE_OF_AVAILABLE
+    if not 0.0 < share <= 4.0:
+        share = RSS_SHARE_OF_AVAILABLE
+    try:
+        import psutil
+        mb = 1024.0 * 1024.0
+        rss = float(psutil.Process().memory_info().rss) / mb if rss_mb is None else rss_mb
+        avail = float(psutil.virtual_memory().available) / mb if avail_mb is None else avail_mb
+    except Exception as exc:
+        return False, f"memory UNMEASURED ({type(exc).__name__}): the pass runs on"
+    limit = share * avail
+    return rss > limit, (f"rss {rss:.0f}MB vs {share:g} x {avail:.0f}MB available "
+                         f"= {limit:.0f}MB")
+
+
+#: The memory guard's own report: did it trip, how many tasks it deferred, and for how many
+#: consecutive passes -- with the missed-growth line `research/missed_growth.py` carries.
+MEMORY_GUARD_REPORT = BASE / "reports" / "DEEPENING_MEMORY_GUARD.json"
+MEMORY_GUARD_HISTORY = 50
+
+
+def publish_memory_guard(mem_stop: dict, *, worked: int, pending: int,
+                         path: Path | None = None) -> dict:
+    """Publish one pass's guard outcome. A tripped pass defers `pending - worked` tasks to the
+    next pass (nothing is dropped: the worked ledger is the checkpoint), and that deferral is a
+    missed-growth line in its own units -- its E[log W] price is UNMEASURED, said, never zero.
+    `consecutive_tripped` counts passes in a row the guard stopped; one untripped pass resets it.
+    """
+    out_path = path or MEMORY_GUARD_REPORT
+    try:
+        prev = json.loads(out_path.read_text("utf-8"))
+        prev = prev if isinstance(prev, dict) else {}
+    except (OSError, ValueError):
+        prev = {}
+    tripped = bool(mem_stop)
+    deferred = max(0, int(pending) - int(worked)) if tripped else 0
+    now = datetime.now(tz=UTC)
+    lines = list(prev.get("missed_growth") or [])
+    if tripped:
+        lines.append({"day": now.date().isoformat(), "at": now.isoformat(timespec="seconds"),
+                      "rail": "deepening_memory_guard", "kind": "opportunity_cost",
+                      "value": None, "verdict": "UNMEASURED", "units": "tasks deferred",
+                      "deferred": deferred, "worked": int(worked),
+                      "why": (f"the memory guard stopped the pass after {worked} task(s) "
+                              f"({mem_stop.get('why')}); {deferred} deferred to the next pass")})
+    doc = {"generated_utc": now.isoformat(timespec="seconds"), "tripped": tripped,
+           "why": mem_stop.get("why") if tripped else None, "worked_this_pass": int(worked),
+           "pending_at_start": int(pending), "deferred": deferred,
+           "consecutive_tripped": (int(prev.get("consecutive_tripped") or 0) + 1) if tripped
+           else 0,
+           "tripped_passes_total": int(prev.get("tripped_passes_total") or 0) + int(tripped),
+           "missed_growth": lines[-MEMORY_GUARD_HISTORY:]}
+    try:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = out_path.with_name(f"{out_path.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+        os.replace(tmp, out_path)
+    except OSError:
+        pass                                    # a report never stops the pass
+    if tripped and doc["consecutive_tripped"] >= 3:
+        dlog(f"MEMORY GUARD has stopped {doc['consecutive_tripped']} consecutive passes: the "
+             f"worker's working set is the defect to fix, not the guard")
+    return doc
+
+
 #: Wall clock a single run may spend. 40 minutes inside the 60-minute cycle leaves the remaining
 #: legs their time and absorbs an overrun on the last task without colliding with the next hour.
 RUN_BUDGET_SEC = float(os.environ.get("DEEPEN_RUN_BUDGET_SEC", "2400"))
@@ -953,6 +1033,62 @@ def voi_order(tasks: list[dict], costs: dict[str, float] | None = None,
     return sorted(tasks, key=_key)
 
 
+def graph_index(path: Path | None = None) -> tuple[object | None, dict[str, int], int]:
+    """(graveyard model, buried rows per region, rows read) from ONE streamed graph read.
+
+    THIS WAS THE WORKER'S RESIDENT SIZE (2026-10-20). `_scorer` held `Graph().snapshot()` -- every
+    row of `hypothesis_graph.jsonl` as a parsed dict, ~3.1 KB each measured here -- for the whole
+    pass, then fitted the graveyard model over it. The judge appends up to a million first fates
+    per sweep; the box's graph held 5,742,434 lines on 2026-10-03 (GAUNTLET_BACKPRESSURE.json),
+    which is ~18 GB, the size `deepening_worker.py --limit 25` sat at in session 0. It grows with
+    every sweep, so it grew with every run whatever the limit.
+
+    The scorer reads exactly two things from the graph: the LATEST fate per node id (a region's
+    FAILED/BURIED count, `prior_failures()["n_failed"]`) and the graveyard model `fit` derives
+    from those same latest rows. Both are kept per id as a few interned values while the file is
+    streamed a line at a time, so the answers are the same and the memory is a small fraction.
+    A torn line (the judge appending while this reads) is skipped, where the old read discarded
+    the whole graph on it.
+    """
+    from libs.research import graveyard_model as _gm
+    from libs.research.hypothesis_graph import BURIED, FAILED, LEDGER
+
+    src = path or LEDGER
+    pool: dict = {}
+    regions: dict = {}           # Graph.current() keys: str(id), every row -> region or None
+    judged: dict = {}            # GraveyardModel.fit keys: truthy ids only -> judged_entry
+    n = 0
+    try:
+        with open(src, encoding="utf-8") as fh:
+            for ln in fh:
+                if not ln.strip():
+                    continue
+                try:
+                    r = json.loads(ln)
+                except ValueError:
+                    continue
+                if not isinstance(r, dict):
+                    continue
+                n += 1
+                rid = r.get("id")
+                fate = r.get("fate")
+                reg = str(r.get("region")) if fate in (FAILED, BURIED) else None
+                regions[str(rid)] = None if reg is None else pool.setdefault(reg, reg)
+                if rid:
+                    judged[str(rid)] = _gm.judged_entry(r, pool)
+    except OSError:
+        return None, {}, 0
+    counts: dict[str, int] = {}
+    for reg in regions.values():
+        if reg is not None:
+            counts[reg] = counts.get(reg, 0) + 1
+    regions.clear()
+    model = _gm.GraveyardModel().fit_entries(judged.values())
+    judged.clear()
+    pool.clear()
+    return model, counts, n
+
+
 def _scorer():
     """The value-of-information score for one task, as a callable built once per run."""
     try:
@@ -965,22 +1101,19 @@ def _scorer():
         pooled = float(sum(p_fam.values()) / max(1, len(p_fam))) if p_fam else 0.05
     except Exception:
         p_fam, pooled = {}, 0.05
+    # ONE STREAMED READ OF THE GRAPH, never the whole graph in memory (see `graph_index`).
     try:
-        from libs.research.hypothesis_graph import Graph
-        graph = Graph().snapshot()
-        graph.buried()
+        from libs.research.hypothesis_graph import region_key
+        _model, buried_n, _rows = graph_index()
+        graph_ok = _rows > 0
     except Exception:
-        graph = None
+        _model, buried_n, graph_ok = None, {}, False
     # THE META-MODEL OF RESEARCH SUCCESS: P(survivor | family, symbol, source, ...) from the
     # graveyard, blended with the pooled family rate wherever the task names enough to ask.
     # The bandit's 20% exploration floor still applies through `direction`, so the queue
     # cannot become trapped by its own history.
-    try:
-        from libs.research.graveyard_model import GraveyardModel
-        gm = GraveyardModel().fit(graph.rows()) if graph is not None else None
-        if gm is not None and gm.n < 50:
-            gm = None
-    except Exception:
+    gm = _model if graph_ok else None
+    if gm is not None and getattr(gm, "n", 0) < 50:
         gm = None
 
     def _score(t: dict) -> float:
@@ -1011,10 +1144,11 @@ def _scorer():
             or (src == "fund_playbook" and str(t.get("evidence_grade")) == "A")
             else (1.5 if strong_story else 1.0))
         novelty = 1.0
-        if graph is not None and fam and t.get("symbols"):
+        if graph_ok and fam and t.get("symbols"):
             try:
-                pf = graph.prior_failures(str(t["symbols"][0]), fam, dict(t.get("params") or {}))
-                novelty = 1.0 / (1.0 + float(pf.get("n_failed", 0)))
+                n_failed = buried_n.get(region_key(str(t["symbols"][0]), fam,
+                                                   dict(t.get("params") or {})), 0)
+                novelty = 1.0 / (1.0 + float(n_failed))
             except Exception:
                 pass
         # THE BANDIT'S SHARE for this task's research direction (uniform budget = 1.0), so the
@@ -1172,11 +1306,17 @@ def compact_ledger(path: Path | None = None, *, over_bytes: int | None = None) -
     if size <= limit:
         return {"compacted": False, "why": f"{size} bytes is within the {limit}-byte budget",
                 "bytes": size}
-    kept: list[str] = []
+    # STREAMED TO THE NEW FILE, NEVER HELD (2026-10-20). Every kept line used to sit in a list and
+    # then in one joined string -- twice the ledger in memory -- and a ledger of real decisions
+    # past the budget was rewritten that way on EVERY pass, because compaction can only remove
+    # outage rows. Now kept lines go straight to the new file and a pass that would drop nothing
+    # leaves the ledger untouched.
     outage_days: set[str] = set()
-    rows = dropped = 0
+    rows = dropped = kept = 0
+    tmp = p.with_suffix(".jsonl.compact")
     try:
-        with p.open("r", encoding="utf-8", errors="replace") as fh:
+        with p.open("r", encoding="utf-8", errors="replace") as fh, \
+                tmp.open("w", encoding="utf-8") as out:
             for line in fh:
                 if not line.strip():
                     continue
@@ -1184,25 +1324,33 @@ def compact_ledger(path: Path | None = None, *, over_bytes: int | None = None) -
                 try:
                     row = json.loads(line)
                 except ValueError:
-                    kept.append(line.rstrip("\n"))     # unreadable is never silently dropped
+                    out.write(line.rstrip("\n") + "\n")   # unreadable is never silently dropped
+                    kept += 1
                     continue
-                disposition = str(row.get("disposition") or "")
+                disposition = str(row.get("disposition") or "") if isinstance(row, dict) else ""
                 if not is_outage(disposition):
-                    kept.append(line.rstrip("\n"))
+                    out.write(line.rstrip("\n") + "\n")
+                    kept += 1
                     continue
                 day = str(row.get("at") or "")[:10]
                 if day in outage_days:
                     dropped += 1
                     continue
                 outage_days.add(day)
-                kept.append(line.rstrip("\n"))
-        tmp = p.with_suffix(".jsonl.compact")
-        tmp.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+                out.write(line.rstrip("\n") + "\n")
+                kept += 1
+        if not dropped:
+            tmp.unlink(missing_ok=True)
+            return {"compacted": False, "bytes": size, "rows": rows,
+                    "why": (f"{size} bytes is over the {limit}-byte budget but holds no repeated "
+                            "outage row to drop: every line is a decision, kept as it is")}
         os.replace(tmp, p)
     except OSError as exc:
+        with contextlib.suppress(OSError):
+            tmp.unlink(missing_ok=True)
         return {"compacted": False, "why": f"{type(exc).__name__}: {exc}"}
     after = p.stat().st_size
-    return {"compacted": True, "rows_before": rows, "rows_after": len(kept),
+    return {"compacted": True, "rows_before": rows, "rows_after": kept,
             "outage_rows_dropped": dropped, "outage_days_kept": len(outage_days),
             "bytes_before": size, "bytes_after": after,
             "why": ("repeated seat-outage rows are non-terminal by construction (worked_ids "
@@ -1510,6 +1658,24 @@ def _work(argv: list[str] | None = None) -> int:
     # because it is the only lane with a scarce resource to spend.
     rule_tasks = [t for t in open_tasks if lane(t) == "rule"]
     seat_tasks = voi_order([t for t in open_tasks if lane(t) == "seat"], costs=costs)
+    mem_stop: dict = {}
+
+    def over_memory() -> bool:
+        if mem_stop:
+            return True
+        # AT LEAST ONE TASK EVERY PASS (audit of 2832cebd1). Checked before the first task, the
+        # guard could stop a pass at zero tasks and exit 0 every hour -- a silent mining cut. The
+        # worker's own working set is the thing measured, so it is only judged once work is done.
+        # An OUTAGE row (a seat unavailable) is not work done (audit of 7cf2ece90): only a real
+        # decision counts, so a pass of outages can never satisfy the one-task guarantee.
+        if not decided_ids:
+            return False
+        over, why = memory_guard()
+        if over:
+            mem_stop.update(why=why, at=datetime.now(tz=UTC).isoformat(timespec="seconds"))
+            dlog(f"MEMORY GUARD: {why} -- no new task is started; every decision so far is in "
+                 f"{WORKED.name} and the rest resumes on the next pass")
+        return over
     pending = rule_tasks + seat_tasks
     lane_census = {"rule": len(rule_tasks), "seat": len(seat_tasks)}
     dlog(f"queue={len(tasks)} already-decided={len(done)} pending={len(pending)} "
@@ -1566,6 +1732,8 @@ def _work(argv: list[str] | None = None) -> int:
     # moves the backlog, and running it first means a pass that dies later still drained.
     budget = args.limit if args.limit > 0 else len(pending)
     for task in rule_tasks[:budget]:
+        if over_memory():
+            break
         if out_of_time():
             dlog("run budget spent in the rule lane; the rest carries to the next pass -- "
                  "nothing is dropped and its age is published in DEEPENING_BACKLOG.json")
@@ -1609,6 +1777,9 @@ def _work(argv: list[str] | None = None) -> int:
         def run_one(task: dict) -> None:
             if stop.is_set() or out_of_time():
                 return
+            if over_memory():
+                stop.set()
+                return
             t0 = time.monotonic()
             try:
                 candidates, disposition = work_task(task, universe)
@@ -1642,7 +1813,9 @@ def _work(argv: list[str] | None = None) -> int:
         "candidates": prior + recovered,
         "recovered_this_run": len(recovered),
         "dispositions": counts,
+        **({"memory_guard": mem_stop} if mem_stop else {}),
     }, indent=1), encoding="utf-8")
+    publish_memory_guard(mem_stop, worked=len(decided_ids), pending=backlog_before)
 
     elapsed = max(1e-6, time.monotonic() - pass_started)
     # THE CENSUS COUNTS EVERY ROW WITHOUT A TERMINAL DECISION, including the rows this pass never
