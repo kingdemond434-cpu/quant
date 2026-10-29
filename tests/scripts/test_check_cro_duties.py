@@ -286,7 +286,8 @@ def test_a_citation_must_resolve_to_a_timestamped_artifact_a_ledger_row_or_a_com
     (data / "cro_cycle_ledger.jsonl").write_text(json.dumps(
         {"lane": "noon", "date": "2026-10-07", "work_items": [{"id": "noon-1007-01"}]}) + "\n")
     (tmp_path / "desks" / "mt5" / "reports").mkdir()
-    (tmp_path / "desks" / "mt5" / "reports" / "JUDGE_COVERAGE.json").write_text("{}")
+    (tmp_path / "desks" / "mt5" / "reports" / "JUDGE_COVERAGE.json").write_text(
+        json.dumps({"at": "2026-10-01T11:58:00+00:00"}))
     ok = ccd.citation_resolves
     assert ok("reports/JUDGE_COVERAGE.json@2026-10-01T11:58:00Z", tmp_path)
     assert ok("desks/mt5/reports/JUDGE_COVERAGE.json@2026-10-01T11:58:00+00:00", tmp_path)
@@ -299,6 +300,12 @@ def test_a_citation_must_resolve_to_a_timestamped_artifact_a_ledger_row_or_a_com
     assert not ok("reports@2026-10-01T11:58:00Z", tmp_path)                 # a directory
     future = (datetime.now(UTC) + timedelta(days=1)).isoformat()
     assert not ok(f"reports/JUDGE_COVERAGE.json@{future}", tmp_path)       # not yet measured
+    # auditor should-fix on #286: the cited time is checked against the artifact's own stamp
+    assert not ok("reports/JUDGE_COVERAGE.json@1970-01-01T00:00:00Z", tmp_path)
+    assert not ok("reports/JUDGE_COVERAGE.json@2026-10-03T11:58:00Z", tmp_path)  # after it
+    assert ok("reports/JUDGE_COVERAGE.json@2026-09-30T20:00:00Z", tmp_path)  # within its window
+    (tmp_path / "desks" / "mt5" / "reports" / "UNSTAMPED.json").write_text("{}")
+    assert not ok("reports/UNSTAMPED.json@2026-10-01T11:58:00Z", tmp_path)
     (tmp_path / "desks" / "mt5" / "reports" / "LINK.json").symlink_to("/etc/hostname")
     assert not ok("reports/LINK.json@2026-10-01T11:58:00Z", tmp_path)       # symlink escape
     assert ok("ledger:noon-2026-10-07", tmp_path) and ok("ledger:noon-1007-01", tmp_path)
@@ -310,3 +317,51 @@ def test_a_citation_must_resolve_to_a_timestamped_artifact_a_ledger_row_or_a_com
     assert not ok("the judge looked slow", tmp_path)
     assert ccd._entry_miss({"answer": "x", "evidence": ["trust me"]}, "answer",
                            tmp_path) == "evidence_unresolvable"
+
+
+# ------------------------------------------------- auditor HOLD on #154 (2026-10-29), each probe
+def test_a_counter_is_never_borrowed_from_an_earlier_pass(tmp_path: Path) -> None:
+    """MF1: `latest` without the counter read MET from `history[0]`."""
+    _write(tmp_path, "reports/TIER1_BREADTH_REVIEW.json",
+           {"latest": {"at": datetime.now(UTC).isoformat()},
+            "history": [{"machinery_improvements": [1]}]}, stamped=False)
+    d = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)["duties"]["D44"]
+    assert d["status"] == "UNMEASURED"
+    assert d["metrics"]["machinery_improvements"]["status"] == "UNMEASURED"
+
+
+def test_a_review_ages_by_its_latest_pass(tmp_path: Path) -> None:
+    old = (datetime.now(UTC) - timedelta(hours=60)).isoformat()
+    _write(tmp_path, "reports/TIER1_BREADTH_REVIEW.json",
+           {"latest": {"at": old, "machinery_improvements": [1]}}, stamped=False)
+    art = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)["duties"]["D44"]["artifacts"]
+    assert art["reports/TIER1_BREADTH_REVIEW.json"]["status"] == "STALE"
+    assert art["reports/TIER1_BREADTH_REVIEW.json"]["stamp_basis"] == "latest.at"
+
+
+def test_a_future_stamp_is_never_fresh(tmp_path: Path) -> None:
+    _write(tmp_path, "reports/dead_architecture.json", {"unreached": []}, age_h=-400 * 24)
+    d = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)["duties"]["D41"]
+    assert d["artifacts"]["reports/dead_architecture.json"]["status"] == "FUTURE"
+    assert d["status"] == "UNMEASURED" and d["counts_as"] == "MISSED"
+
+
+def test_an_unstamped_review_is_checked_and_lowercase_claims_count(tmp_path: Path) -> None:
+    review = tmp_path / "review.json"
+    review.write_text(json.dumps({"latest": {"duties": {"D41": {"status": "met"}}}}))
+    measured = ccd.measure(ccd.duty_rows(TABLE), SPEC, root=tmp_path)
+    res = ccd.apply_to_review(review, measured, datetime.now(UTC).isoformat())
+    assert res["applied"] and "D41" in res["changed"]
+    d41 = json.loads(review.read_text())["latest"]["duties"]["D41"]
+    assert d41["status"] == "MISSED" and d41["status_claimed"] == "met"
+
+
+def test_a_big_jsonl_is_read_from_its_tail(tmp_path: Path) -> None:
+    p = tmp_path / "big.jsonl"
+    filler = json.dumps({"pad": "x" * 200})
+    with p.open("w", encoding="utf-8") as fh:
+        for _ in range((ccd.TAIL_BYTES // len(filler)) + 50):
+            fh.write(filler + "\n")
+        fh.write(json.dumps({"at": "2026-10-29T00:00:00+00:00", "last": True}) + "\n")
+    doc, err = ccd._load(p)
+    assert err is None and doc["last"] is True
