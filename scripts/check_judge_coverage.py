@@ -381,6 +381,25 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
                             if isinstance(r, dict)}
     judged_any = sum(int(r.get("judged_window") or 0) for r in fams.values())
 
+    # 0. NO LIVE FAMILY IS UNMINED (2026-10-29). `judge_coverage` publishes every registered
+    #    family with zero docket rows; fifteen sat there for weeks (JUDGE_COVERAGE 2026-10-27)
+    #    because each was owned by a producer that emitted only its own screen's survivors, and
+    #    a published list is a page nobody reads. A family nobody mines is never judged at all,
+    #    which is the starvation below one level earlier, so it fails the same way. The remedy is
+    #    cells (research/breadth_sweep READY / default families), never a removal from the registry.
+    unmined = [str(f) for f in (doc.get("unmined_live_families") or []) if f]
+    n_unmined = (doc.get("totals") or {}).get("families_unmined")
+    n_unmined = int(n_unmined) if isinstance(n_unmined, (int, float)) else len(unmined)
+    if n_unmined > 0:
+        failures.extend(f"unmined:{f}" for f in (unmined[:10] or ["?"]))
+        out["checks"].append({
+            "metric": "families_unmined", "state": "FAIL",
+            "why": (f"{n_unmined} registered famil(ies) hold zero docket rows and can never be "
+                    f"judged: " + ", ".join(unmined[:15]) + (" ..." if n_unmined > 15 else ""))})
+    else:
+        out["checks"].append({"metric": "families_unmined", "state": "OK",
+                              "why": "every live family holds at least one docket row"})
+
     # 1. STARVATION: unjudged cells and no place in the queue.
     starved = sorted((f for f, r in fams.items()
                       if int(r.get("unjudged") or 0) > 0

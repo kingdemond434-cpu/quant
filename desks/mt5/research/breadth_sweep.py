@@ -151,6 +151,119 @@ READY: dict[str, dict] = {
     },
 }
 
+# ---------------------------------------------------------------- recipe families (2026-10-29)
+# FIFTEEN REGISTERED FAMILIES HAD NEVER HELD ONE DOCKET ROW (JUDGE_COVERAGE 2026-10-27,
+# `unmined_live_families`). Each had been handed to exactly one other producer -- the learned
+# miner, the mass screen, the alpha-capture organ -- and that producer emitted only what passed
+# its own screen, so a family whose screen never passed was never judged at all. The gauntlet is
+# the judge; these entries give each family its cells by the same rule every READY family uses:
+# the input is NAMED on the cell (a peer panel, a leader, a measured store pair) and nothing is
+# claimed. `scripts/check_judge_coverage.py` fails RED on any live family that still holds none.
+
+def _learned_targets(fam: str) -> Any:
+    """(symbol, params) for a learned family: each instrument of each declared panel against the
+    rest of that panel, at the FIRST configuration the model grid declares (fixed before any
+    result, `libs/models/learned_propagation`). One configuration, never the grid: the learned
+    miner charges the grid; this is the family's floor, judged by the gauntlet."""
+    def targets(syms: list[str]) -> list[tuple[str, dict]]:
+        try:
+            from research import learned_miners as LM
+        except Exception:
+            return []
+        spec = next((m for m in LM.MINERS.values() if m.get("family") == fam), None)
+        if not spec or not spec.get("grid"):
+            return []
+        config = dict(spec["grid"][0])
+        have = set(syms)
+        out: list[tuple[str, dict]] = []
+        for panel in LM.PANELS.values():
+            members = [m for m in panel if m in have]
+            if len(members) < LM.MIN_PANEL:
+                continue
+            for sym in members:
+                out.append((sym, {**config, **LM.FIXED, "symbol": sym,
+                                  "peer_symbols": [m for m in members if m != sym]}))
+        return out
+    return targets
+
+
+def _lead_targets(syms: list[str]) -> list[tuple[str, dict]]:
+    """(symbol, params) for `mass_screen_lead`: every liquid-core follower against every leader
+    the mass screen loads, on the leader's normalised 1- and 4-bar returns beyond +-1.5 sigma,
+    followed and faded. A coarse declared grid -- 2 lookbacks x 2 signs x 2 directions -- on the
+    rule the mass screen and the gauntlet share (`mt5desk/mass_screen_rules`)."""
+    try:
+        from research.mass_screen import LEADERS
+    except Exception:
+        return []
+    have = set(syms)
+    out: list[tuple[str, dict]] = []
+    for sym in (s for s in CORE if s in have):
+        for leader in (ldr for ldr in LEADERS if ldr != sym and ldr in have):
+            for n in (1, 4):
+                for op, thr in (("gt", 1.5), ("lt", -1.5)):
+                    for follow in (1, -1):
+                        direction = follow if op == "gt" else -follow
+                        out.append((sym, {"feat": f"lead_ret_{n}", "op": op, "thr": thr,
+                                          "direction": direction, "hold": 6, "stop_atr": 1.5,
+                                          "leader": leader}))
+    return out
+
+
+def _analyst_targets(relation: str) -> Any:
+    """(symbol, params) for an analyst family: every (target, source[, lead]) pair the
+    alpha-capture store holds at least `analyst_views.MIN_EVENTS` first-seen daily observations
+    for, on an instrument this sweep may hypothesise on, followed and faded. The pairs are the
+    store's own evidence, read point-in-time by the family; an absent store mints nothing."""
+    def targets(syms: list[str]) -> list[tuple[str, dict]]:
+        try:
+            from mt5desk import family_analyst_revision as far
+
+            from libs.research import analyst_views as av
+            obs, _ = av.observations(far._rows(far.store_path()), basis="first_seen")
+        except Exception:
+            return []
+        counts: dict[tuple[str, str, str], int] = {}
+        for o in av.daily_net([o for o in obs if o.relation == relation]):
+            k = (o.target, o.source, o.lead)
+            counts[k] = counts.get(k, 0) + 1
+        have = set(syms)
+        out: list[tuple[str, dict]] = []
+        for (target, source, lead), n in sorted(counts.items()):
+            if n < av.MIN_EVENTS or target not in have:
+                continue
+            for side in (1, -1):
+                p: dict = {"symbol": target, "source": source, "side": side}
+                if relation == "lead":
+                    p["lead"] = lead
+                out.append((target, p))
+        return out
+    return targets
+
+
+for _fam in ("gnn_propagation", "attention_ts", "rocket_ts", "ae_latent", "sig_path"):
+    READY[_fam] = {
+        "why": f"the learned {_fam} forecast had never reached the judge: its only producer "
+               "donates screen survivors, and none had survived",
+        "targets": _learned_targets(_fam), "grid": [{}],
+        # A next-day forecast acted on once a day: finer charts and session slots re-emit the
+        # same signal (`families_orthogonal.FAMILY_TIMEFRAMES`).
+        "charts": ("H1", "D1"), "sessions": ("all",),
+    }
+READY["mass_screen_lead"] = {
+    "why": "cross-asset information transmission from a leader instrument had never reached "
+           "the judge: the mass screen forwards FDR survivors only, and no lead cell survived",
+    "targets": _lead_targets, "grid": [{}], "charts": ("H1",),
+}
+READY["analyst_revision_drift"] = {
+    "why": "slow diffusion of analyst revisions had never reached the judge",
+    "targets": _analyst_targets("direct"), "grid": [{}], "charts": ("H1",),
+}
+READY["analyst_cross_market_lead"] = {
+    "why": "another market's analyst views leading this instrument had never reached the judge",
+    "targets": _analyst_targets("lead"), "grid": [{}], "charts": ("H1",),
+}
+
 #: Families still genuinely blocked. EMPTY as of 2026-09-12: every loader the gauntlet's build
 #: path uses was tested and every one returned data -- cot 1,392 obs, macro 27,793, events 57,
 #: tape spread/flow on every symbol tried, peer bars 37,366. The breadth board had been reporting
@@ -204,17 +317,18 @@ def _charts_for(sym: str) -> list[str]:
     return [tf for tf in CHARTS if (UNIVERSE / f"{sym}_{tf}.parquet").exists()]
 
 
-def _sessions_for(tf: str) -> tuple[str, ...]:
-    return ("all",) if tf == "D1" else SESSION_AXIS
+def _sessions_for(tf: str, only: tuple[str, ...] | None = None) -> tuple[str, ...]:
+    axis = ("all",) if tf == "D1" else SESSION_AXIS
+    return tuple(s for s in axis if s in only) if only else axis
 
 
-def _session_slots(family: str, base: dict, tf: str,
-                   symbol: str) -> list[tuple[dict, dict | None]]:
+def _session_slots(family: str, base: dict, tf: str, symbol: str,
+                   only: tuple[str, ...] | None = None) -> list[tuple[dict, dict | None]]:
     """(params, remap note) per session slot on chart `tf`. A slot whose window the family can
     never fire in is minted as the firing-hours oracle's stand-in (re-anchored hour params, or
     re-homed to where it fires) -- one cell per slot, so the sweep mints exactly as many cells as
     before; an UNMEASURED family keeps the plain axis (`libs/research/family_firing.py`)."""
-    axis = _sessions_for(tf)
+    axis = _sessions_for(tf, only)
     try:
         from libs.research import family_firing
         return [(p, remap) for _s, p, remap in
@@ -260,6 +374,18 @@ def default_families() -> tuple[dict[str, str], dict[str, str]]:
             names[str(name)] = fn
     for name, fn in getattr(fo, "ORTHOGONAL_FAMILIES", {}).items():
         names.setdefault(str(name), fn)
+    # EVERY LIVE FAMILY, resolved the way the gauntlet resolves it (2026-10-29). The two tables
+    # above omit the hunt16 population, which `families` serves through its module `__getattr__`,
+    # so seven `dav_*` families were never swept and never held a docket row.
+    try:
+        live = fam_mod.live_family_names()
+    except Exception:
+        live = []
+    for name in live:
+        if str(name) not in names:
+            fn = getattr(fam_mod, f"family_{name}", None)
+            if callable(fn):
+                names[str(name)] = fn
     ok: dict[str, str] = {}
     blocked: dict[str, str] = {}
     for name, fn in sorted(names.items()):
@@ -299,6 +425,8 @@ def _targets(fam: str, spec: dict, syms: list[str]) -> list[tuple[str, dict]]:
     family to the instruments its input actually covers (COT has 11, not 24 -- sweeping the other
     13 would build cells whose input is None and fail them for a reason that says nothing).
     """
+    if callable(spec.get("targets")):
+        return list(spec["targets"](syms))
     if spec.get("pairs"):
         return [(a, {"peer_symbol": b}) for a, b in spec["pairs"] if a in syms]
     if spec.get("factor_sets"):
@@ -395,14 +523,16 @@ def cells(only: str | None = None) -> list[dict]:
             continue
         if _banned(fam):
             continue
+        charts = spec.get("charts")
         for sym, extra in _targets(fam, spec, syms):
             for params in spec["grid"]:
-                for tf in _charts_for(sym) or ["H1"]:
+                for tf in [t for t in (_charts_for(sym) or ["H1"])
+                           if not charts or t in charts]:
                     base = dict(params)
                     base.update(extra)
                     if tf != "H1":
                         base["timeframe"] = tf
-                    for p, remap in _session_slots(fam, base, tf, sym):
+                    for p, remap in _session_slots(fam, base, tf, sym, spec.get("sessions")):
                         if _testable(fam, p):
                             out.append(_remapped(_cell(sym, fam, p, spec, now), remap))
     sweepable, _blocked = default_families()
@@ -559,6 +689,12 @@ def _apply_locked(new: list[dict], max_new: int) -> tuple[int, int]:
                           sort_keys=True, default=str)
 
     seen = {key(r) for r in docket if isinstance(r, dict)}
+    # A FAMILY THE DOCKET HOLDS NO ROW OF GOES FIRST under the per-run cap (2026-10-29), so a
+    # newly reachable family is never queued behind another hour of a family already held. A
+    # stable partition: the order inside each half is the sweep's own.
+    held = {r.get("family") for r in docket if isinstance(r, dict)}
+    new = ([r for r in new if r.get("family") not in held]
+           + [r for r in new if r.get("family") in held])
     add = []
     for row in new:
         ident = key(row)
