@@ -1063,7 +1063,7 @@ def test_the_server_offset_is_measured_off_the_tick_not_assumed() -> None:
     assert ff.day_start_balance(mt5, 50_000.0, midnight, NOW) == pytest.approx(52_000.0)
 
 
-@pytest.mark.parametrize("bad", ["unstamped_deal", "stale_tick", "tick_40min_old", "no_tick"])
+@pytest.mark.parametrize("bad", ["unstamped_deal", "stale_tick", "no_tick"])
 def test_an_unmeasurable_day_start_raises(bad: str) -> None:
     _, midnight = ff.cet_day(NOW)
     if bad == "unstamped_deal":
@@ -1071,8 +1071,23 @@ def test_an_unmeasurable_day_start_raises(bad: str) -> None:
         with pytest.raises(ValueError, match="no readable time"):
             ff.day_start_balance(mt5, 100_000.0, midnight, NOW)
         return
-    # 40 minutes old on a UTC+3 server reads +2.33h: it would round to +2, the wrong hour
-    epoch = {"stale_tick": (NOW - timedelta(days=2)).timestamp(),
-             "tick_40min_old": (NOW + timedelta(hours=3, minutes=-40)).timestamp()}.get(bad, 0.0)
+    epoch = (NOW - timedelta(days=2)).timestamp() if bad == "stale_tick" else 0.0
     with pytest.raises(ValueError, match="server clock"):
         ff.day_start_balance(_MT5(), 100_000.0, midnight, NOW, server_epoch=epoch)
+
+
+@pytest.mark.parametrize(("minutes_old", "skew_s", "want"), [(0, 0, 3), (40, 0, 3), (54, 0, 3),
+                                                             (0, 240, 3), (0, -240, 3)])
+def test_a_lagging_tick_still_reads_the_right_hour(minutes_old: int, skew_s: int,
+                                                    want: int) -> None:
+    """A stale tick only lags: 40 minutes old on a UTC+3 server reads +2.33h, which a round()
+    took for +2. The offset is the whole hour at or above the reading (less the box skew)."""
+    epoch = (NOW + timedelta(hours=3, minutes=-minutes_old, seconds=skew_s)).timestamp()
+    assert ff.server_offset_from_tick(epoch, NOW) == want
+
+
+@pytest.mark.parametrize("epoch", [0.0, (NOW + timedelta(hours=6)).timestamp(),
+                                   (NOW - timedelta(hours=2)).timestamp()])
+def test_a_tick_that_cannot_be_the_server_clock_raises(epoch: float) -> None:
+    with pytest.raises(ValueError):
+        ff.server_offset_from_tick(epoch, NOW)

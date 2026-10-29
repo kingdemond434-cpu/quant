@@ -211,7 +211,10 @@ def clock_ok(tick_epoch: float, now: datetime) -> tuple[bool, str]:
     own tick: MT5 stamps server wall time as if it were UTC."""
     from prop.e8_guard import server_offset_hours
     want = server_offset_hours(now)
-    got = round((float(tick_epoch) - now.timestamp()) / 3600.0)
+    try:
+        got = _fw.server_offset_from_tick(float(tick_epoch), now)
+    except ValueError as exc:
+        return False, f"the FTMO server clock is unreadable: {exc}"
     if got != want:
         return False, (f"the FTMO server runs at UTC{got:+d}, the certificates' broker clock at "
                        f"UTC{want:+d}: an hour-branching family would read the wrong bars")
@@ -384,9 +387,11 @@ def manage(mt5: Any, st: dict[str, Any], doc: dict[str, Any], own: list[Any], *,
             hold = (st.get("holds") or {}).get(str(int(p.ticket)))
             if isinstance(hold, dict) and isinstance(hold.get("exit"), (int, float)):
                 due = float(hold["exit"])
-        if due is None and _COMMENT_RE.match(str(getattr(p, "comment", "") or "")) \
-                and _COMMENT_RE.match(str(p.comment)).group(1) == "0":
-            pass                                     # FX0: certified with no time exit at all
+        cm = _COMMENT_RE.match(str(getattr(p, "comment", "") or ""))
+        if due is None and cm is not None and cm.group(1) == "0":
+            # FX0: certified with no time exit at all; recorded, so it is not taken for a
+            # position this lane never looked at
+            doc.setdefault("manage_stop_target_only", []).append(f"{p.symbol} #{p.ticket}")
         elif due is None or not server_epoch:
             # NEVER SILENT: a position whose time exit cannot be read, or a pass with no server
             # clock, is reported and paged every pass it lasts; its stop and target still stand.

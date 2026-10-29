@@ -491,3 +491,4 @@ def test_a_position_certified_with_no_time_exit_is_not_paged(world) -> None:
         sl=1.09, comment="FX0H1|" + KEY, time=int(SERVER.timestamp())))
     doc = fx.run(world.mt5, armed=True, now=NOW)
     assert not [a for a in doc["alerts"] if "#56" in a]
+    assert doc["manage_stop_target_only"] == ["AUDNZD #56"]
