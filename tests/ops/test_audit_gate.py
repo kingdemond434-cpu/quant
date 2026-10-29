@@ -5,6 +5,7 @@ green."""
 from __future__ import annotations
 
 import importlib.util
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -1859,3 +1860,65 @@ def test_formerly_protected_files_merge_only_on_every_auto_check(auto_hub: Any, 
 def test_a_secrets_path_never_merges(auto_hub: Any) -> None:
     h = auto_hub(files=("data/secrets/k.txt",), runs=_auto_green())
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1 and _merges(h) == []
+
+
+# ------------------------------------- a FAIL that names no defect is asked again (#525 rework)
+
+_VAGUE_516 = json.dumps({
+    "verdict": "FAIL", "risk_increasing": True, "touches_control": False,
+    "findings": ["The change introduces new variables and logic that could increase risk, such "
+                 "as `TIE_EPS`, `EMPTY_PROBE`, and the tie-break mechanism in `search`."],
+    "summary": "could increase risk without sufficient justification or testing.",
+})  # fmt: skip
+_VAGUE_506 = json.dumps({
+    "verdict": "FAIL", "risk_increasing": True, "touches_control": False,
+    "findings": ["could potentially introduce new risks", "increases complexity",
+                 "tests' purpose unclear"],
+    "summary": "x",
+})  # fmt: skip
+
+
+@pytest.mark.parametrize(
+    "finding",
+    [
+        "raises max lot and adds a call to a new network host",  # #525 audit probe
+        "desks/mt5/mt5desk/gateway.py:212 drops the daily-loss check",
+        "removes the deadman guard",
+        "This could double the position size at gateway.py line 88",
+    ],
+)
+def test_a_specific_fail_is_never_vague(finding: str) -> None:
+    ans = {"verdict": "FAIL", "risk_increasing": True, "touches_control": False,
+           "findings": [finding], "summary": "x"}  # fmt: skip
+    assert not ir.vague_fail(ans)
+    assert not ir.vague_fail({**ans, "findings": ["could be risky"], "touches_control": True})
+    assert not ir.vague_fail({**ans, "findings": []})  # a bare FAIL stays a FAIL
+    assert _vote([("qwen", "q1", _model(json.dumps(ans))), ("g", "g1", _model(_PASS))])[0] == "FAIL"
+
+
+@pytest.mark.parametrize("vague", [_VAGUE_516, _VAGUE_506])
+def test_a_vague_fail_is_asked_once_more_and_the_second_answer_stands(vague: str) -> None:
+    assert ir.vague_fail(json.loads(vague))
+    seen: list[str] = []
+
+    def q(*answers: str) -> Any:
+        inner = _model(*answers)
+
+        def ask(rubric: str, user: str) -> str:
+            seen.append(user)
+            return inner(rubric, user)
+
+        return ask
+
+    v, log = _vote([("qwen", "q1", q(vague, _PASS)), ("llama", "l1", _model(_PASS))])
+    assert v == "PASS" and any("REASKED" in x for x in log)
+    assert seen[1].startswith(ir.VAGUE_NOTE)
+    specific = json.dumps({**json.loads(vague), "findings": ["raises the lot cap at x.py:3"]})
+    v, _ = _vote([("qwen", "q1", _model(vague, specific)), ("llama", "l1", _model(_PASS))])
+    assert v == "FAIL"  # the re-ask named a defect
+    v, log = _vote([("qwen", "q1", _model(vague, vague)), ("llama", "l1", _model(_PASS))])
+    assert v == "PASS" and "abstaining" in log[-1]  # boilerplate twice: one family abstains
+    v, _ = _vote([("qwen", "q1", _model(vague, vague)), ("llama", "l1", _model(vague, vague))])
+    assert v == "UNAVAILABLE"  # never a PASS with no family passing
+    v, _ = _vote([("qwen", "q1", _model(vague, vague)), ("llama", "l1", _model(_FAIL))])
+    assert v == "FAIL"
