@@ -132,7 +132,7 @@ def test_nass_condition_national_only_with_good_excellent_and_release_stamp():
     row = ge[ge["period"] == "2026-06-01"].iloc[0]
     assert row["release_utc"] == "2026-06-08T20:00:00+00:00"
     assert not any("poor" in c for c in codes)                     # (D) is absent, not zero
-    assert 70.0 not in set(df["value"])                            # the IOWA state row is not read
+    assert 77.0 not in set(df["value"])                            # the IOWA state row is not read
 
 
 def test_nass_error_document_is_a_named_failure():
