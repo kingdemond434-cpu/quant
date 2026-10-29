@@ -85,7 +85,11 @@ which looked at the clock. Three things changed:
     ONE DEADLINE. `libs.ops.run_budget.RunBudget` is created at the top of the run; every stage
     asks it before starting, every registry read carries a progress handler that interrupts the
     query once the deadline passes, and a watchdog at budget + grace publishes what the run has,
-    marked `partial`, and exits 124. The scheduler's limit is never what stops this organ.
+    marked `partial`, and exits 124. The scheduler's limit is never what stops this organ. A run
+    that stops cooperatively on the deadline publishes verdict PARTIAL and exits 3 (EXIT_PARTIAL),
+    never 0; under the hourly cycle the budget is cut so budget + grace sits inside the leg's
+    QUANT_LEG_BUDGET_S. A block carried from an earlier artifact keeps the time it was measured
+    and reads UNMEASURED once that is older than CARRY_MAX_AGE_S.
 
     AN INCREMENTAL CENSUS. The registry only grows (rows are never lost), so the occupied cells,
     the per-class gain sets, the donors and the ladder are folded forward from a cursor on `seq`
@@ -149,6 +153,18 @@ PUBLISH_RESERVE_S = 15.0
 #: task's 600 s budget that is 720 s, well inside its 20-minute ExecutionTimeLimit.
 WATCHDOG_GRACE_SHARE = 0.2
 WATCHDOG_MIN_GRACE_S = 30.0
+#: Seconds the watchdog's stop must sit inside the hourly cycle's SIGKILL (QUANT_LEG_BUDGET_S):
+#: the partial publish, the interpreter's exit and the cycle's own reap. At the leg's 240 s budget
+#: under its 300 s cap the stop was 288 s -- 12 s of slack for all three (audit, 2026-10-29).
+LEG_CAP_MARGIN_S = 20.0
+#: THE EXIT OF A RUN THAT STOPPED ON ITS OWN DEADLINE (verdict PARTIAL). Not 0: the artifact said
+#: PARTIAL while LastTaskResult and the hourly ledger recorded success, so a run that never once
+#: finished read green everywhere a reader looks first. Not 1 (an error), 2 (argparse) or 124
+#: (the watchdog's EXIT_OVERRUN). Named in hourly_cycle.NAMED_FAILURE_EXITS.
+EXIT_PARTIAL = 3
+#: A block carried from an earlier artifact is published stale only this long after it was last
+#: MEASURED; past it the block reads UNMEASURED. Twenty-four passes of the 15-minute task.
+CARRY_MAX_AGE_S = 6 * 3600.0
 #: The job broker's name for this organ (`data/.job_locks/<name>.peaks.json`).
 JOB_NAME = "independence_intake"
 
@@ -1061,19 +1077,59 @@ def _budget(budget_s: float) -> Any:
     return RunBudget(budget_s)
 
 
-def _carry(blocks: dict[str, Any], prev: dict[str, Any] | None) -> list[str]:
-    """Fill each missing block from the previous artifact, marked stale. Returns what it carried."""
+def _measured_at(block: dict[str, Any], prev: dict[str, Any]) -> Any:
+    """When `block` (a block of the artifact `prev`) was last MEASURED, not last republished.
+
+    A block `prev` itself carried keeps the stamp it was carried with; only a block `prev`
+    measured takes `prev`'s own time. Restamping on every carry made a block N partial passes
+    old read as one pass old.
+    """
+    if block.get("stale") and block.get("carried_from_generated_utc"):
+        return block["carried_from_generated_utc"]
+    return prev.get("generated_utc")
+
+
+def _age_s(stamp: Any, now: datetime) -> float | None:
+    try:
+        t = datetime.fromisoformat(str(stamp))
+    except (TypeError, ValueError):
+        return None
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=UTC)
+    return (now - t).total_seconds()
+
+
+def _carry(blocks: dict[str, Any], prev: dict[str, Any] | None, *,
+           now: datetime | None = None) -> list[str]:
+    """Fill each missing block from the previous artifact, marked stale. Returns what it carried.
+
+    The block keeps the time it was MEASURED (`carried_from_generated_utc`) across any number of
+    carries, and past CARRY_MAX_AGE_S it is not carried at all: it reads UNMEASURED with that
+    time, so a reader can never take a days-old grid for a fresh one.
+    """
     carried: list[str] = []
     if not isinstance(prev, dict):
         return carried
+    now = now or datetime.now(tz=UTC)
     for key in _CARRIED:
         have = blocks.get(key)
         if isinstance(have, dict) and have.get("available"):
             continue
         old = prev.get(key)
         if isinstance(old, dict) and old.get("available"):
+            measured_at = _measured_at(old, prev)
+            age = _age_s(measured_at, now)
+            if age is None or age > CARRY_MAX_AGE_S:
+                blocks[key] = {"available": False, "stale": True,
+                               "last_measured_utc": measured_at,
+                               "why": (f"{UNMEASURED}: last measured {measured_at}, "
+                                       + ("at an unreadable time" if age is None
+                                          else f"{age / 3600:.1f} h ago")
+                                       + f" -- past the {CARRY_MAX_AGE_S / 3600:g} h carry cap")}
+                continue
             blocks[key] = {**old, "stale": True,
-                           "carried_from_generated_utc": prev.get("generated_utc"),
+                           "carried_from_generated_utc": measured_at,
+                           "carried_age_s": round(age, 1),
                            "why_carried": (have or {}).get("why") if isinstance(have, dict)
                            else "not reached before the run deadline"}
             carried.append(key)
@@ -1114,8 +1170,9 @@ def _assemble(blocks: dict[str, Any], rb: Any, *, prev: dict[str, Any] | None,
     }
     measured = [b for b in (doc["headline"], doc["dedup_ladder"], doc["grid"])
                 if b.get("available") and not b.get("stale")]
-    # PARTIAL IS A VERDICT, NOT A FAILURE AND NOT A PASS: the run stopped on its own clock and
-    # says which stages it did not reach (`run_budget.skipped_stages`, `partial_reasons`).
+    # PARTIAL IS A VERDICT, NOT A PASS: the run stopped on its own clock and says which stages
+    # it did not reach (`run_budget.skipped_stages`, `partial_reasons`); `main` exits
+    # EXIT_PARTIAL on it, a named failure, so no scheduler records it as success.
     doc["verdict"] = ("PARTIAL" if partial_reasons
                       else "MEASURED" if len(measured) == 3 else UNMEASURED)
     return doc
@@ -1307,17 +1364,59 @@ def render(doc: dict[str, Any]) -> list[str]:
     return lines
 
 
+def _grace_s(budget_s: float) -> float:
+    return max(WATCHDOG_MIN_GRACE_S, WATCHDOG_GRACE_SHARE * budget_s)
+
+
+def effective_budget_s(requested: float, env: Any = None) -> float:
+    """The run's budget: its own `--budget-s`, cut so budget + grace lands inside the leg cap.
+
+    `QUANT_LEG_BUDGET_S` is the hourly cycle's SIGKILL for this leg. The watchdog stops the run
+    at budget + grace, and that stop must sit LEG_CAP_MARGIN_S inside the kill, or the kill is
+    the stop and nothing partial is published. Run by hand or by MT5-IndependenceIntake (no cap
+    exported) the requested budget stands.
+    """
+    source = os.environ if env is None else env
+    try:
+        cap = float(source.get("QUANT_LEG_BUDGET_S") or 0.0)
+    except (TypeError, ValueError):
+        cap = 0.0
+    want = float(requested)
+    if cap <= 0.0:
+        return want
+    ceiling = cap - LEG_CAP_MARGIN_S
+    # budget + max(MIN_GRACE, SHARE * budget) <= ceiling, solved for budget.
+    fit = min(ceiling - WATCHDOG_MIN_GRACE_S, ceiling / (1.0 + WATCHDOG_GRACE_SHARE))
+    return max(1.0, min(want, fit))
+
+
+def _positive(raw: str) -> float:
+    try:
+        v = float(raw)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"not a number: {raw!r}") from None
+    if not v > 0:                     # also refuses nan
+        raise argparse.ArgumentTypeError(f"--budget-s must be > 0, got {raw}")
+    return v
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Independence at intake: order, mutate, spread")
     ap.add_argument("--once", action="store_true", help="one pass (the only mode)")
-    ap.add_argument("--budget-s", type=float, default=240.0,
-                    help="seconds for the WHOLE run; a watchdog stops it at budget + grace")
+    ap.add_argument("--budget-s", type=_positive, default=240.0,
+                    help="seconds for the WHOLE run (> 0); a watchdog stops it at budget + "
+                         "grace, and under the hourly cycle budget + grace stays inside "
+                         "QUANT_LEG_BUDGET_S")
     args = ap.parse_args(argv)
-    budget_s = float(args.budget_s)
+    budget_s = effective_budget_s(float(args.budget_s))
+    if budget_s < float(args.budget_s):
+        print(f"independence_intake: --budget-s {args.budget_s:g} cut to {budget_s:.1f}s so the "
+              f"watchdog stops it {LEG_CAP_MARGIN_S:g}s inside the leg cap "
+              f"(QUANT_LEG_BUDGET_S={os.environ.get('QUANT_LEG_BUDGET_S')})")
     rb = _budget(budget_s)
     from libs.ops.run_budget import unbuffer_stdio
     unbuffer_stdio()          # a launcher that forgot -u still gets a live log
-    grace_s = max(WATCHDOG_MIN_GRACE_S, WATCHDOG_GRACE_SHARE * budget_s)
+    grace_s = _grace_s(budget_s)
     declare_to_broker(budget_s, grace_s)
     print(f"independence_intake: start budget={budget_s:g}s watchdog=+{grace_s:g}s")
     rb.watchdog(grace_s, _publish_partial, name="independence_intake")
@@ -1327,7 +1426,9 @@ def main(argv: list[str] | None = None) -> int:
     _record_peak()
     for line in render(doc):
         print(line)
-    return 0
+    # PARTIAL IS NOT SUCCESS TO A SCHEDULER. The artifact already says what was not reached;
+    # the exit makes LastTaskResult and the hourly ledger (`exit_code=3:PARTIAL`) say it too.
+    return EXIT_PARTIAL if doc.get("verdict") == "PARTIAL" else 0
 
 
 if __name__ == "__main__":                                               # pragma: no cover

@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +27,11 @@ from research import independence_intake as ii  # noqa: E402
 _COLS = ("family TEXT, symbol TEXT, horizon TEXT, content_hash TEXT, mechanism TEXT, "
          "params_json TEXT, origin TEXT, generator TEXT, producer TEXT, discovery_id TEXT, "
          "region TEXT")
+
+
+def _ago(seconds: float, now: datetime | None = None) -> str:
+    t = (now or datetime.now(tz=UTC)) - timedelta(seconds=seconds)
+    return t.isoformat(timespec="seconds")
 
 
 class _Clock:
@@ -175,8 +181,8 @@ def test_a_run_past_its_deadline_publishes_what_it_has_marked_partial(
     grid is carried forward stamped stale so `empty_pairs` still has targets."""
     _isolate(tmp_path, monkeypatch)
     prev_grid = {"available": True, "targets": [{"family": "carry", "symbol": "xauusd"}]}
-    ii.OUT.write_text(json.dumps({"generated_utc": "2026-10-29T14:07:00+00:00",
-                                  "grid": prev_grid}), encoding="utf-8")
+    ii.OUT.write_text(json.dumps({"generated_utc": _ago(900), "grid": prev_grid}),
+                      encoding="utf-8")
     db = _db(tmp_path, [_row("carry", "eurusd", "sub_4h", "a")])
     clock = _Clock()
     rb = RunBudget(10.0, clock=clock)
@@ -282,3 +288,89 @@ def test_a_second_pass_never_re_aims_at_cells_the_first_pass_filled(tmp_path: Pa
     assert second["grid"]["reachable_empty_cells"] == 0
     assert second["fill"].get("already_present", 0) == 0
     assert second["census"]["seq_read_this_pass"] == 3        # only the three new rows read
+
+
+# ---- audit HOLD, 2026-10-29 -------------------------------------------------------------------
+
+
+def _partial_doc() -> dict[str, Any]:
+    return {"verdict": "PARTIAL", "partial": True, "partial_reasons": ["deadline"]}
+
+
+def test_a_run_stopped_on_its_own_deadline_exits_a_named_failure(tmp_path: Path,
+                                                                 monkeypatch: Any) -> None:
+    """MUST-FIX 1: the artifact said PARTIAL while main returned 0, so LastTaskResult and the
+    hourly ledger recorded success for a run that never finished. It exits EXIT_PARTIAL, and the
+    cycle's ledger names it."""
+    _isolate(tmp_path, monkeypatch)
+    monkeypatch.setattr(ii, "declare_to_broker", lambda *a: None)
+    monkeypatch.setattr(ii, "_record_peak", lambda: None)
+    import libs.ops.events as events
+    monkeypatch.setattr(events, "emit", lambda *a, **kw: None)     # never the live event log
+    monkeypatch.delenv("QUANT_LEG_BUDGET_S", raising=False)
+    monkeypatch.setattr(ii, "run", lambda **kw: _partial_doc())
+    assert ii.main(["--once", "--budget-s", "5"]) == ii.EXIT_PARTIAL
+    assert ii.EXIT_PARTIAL not in (0, 1, 2, 124)
+    assert json.loads(ii.OUT.read_text("utf-8"))["verdict"] == "PARTIAL"
+    monkeypatch.setattr(ii, "run", lambda **kw: {"verdict": "MEASURED", "partial": False})
+    assert ii.main(["--once", "--budget-s", "5"]) == 0
+
+    from research import hourly_cycle as hc
+    assert hc._exit_outcome("independence_intake", ii.EXIT_PARTIAL) == "exit_code=3:PARTIAL"
+    assert ii.EXIT_PARTIAL not in hc.VERDICT_EXITS.get("independence_intake", ())
+    from libs.ops.run_budget import EXIT_OVERRUN
+    assert hc._exit_outcome("independence_intake", EXIT_OVERRUN).endswith(":OVERRAN")
+
+
+def test_a_block_carried_twice_keeps_the_time_it_was_measured() -> None:
+    """MUST-FIX 2: every partial pass restamped the carried block with the previous artifact's
+    time, so after N partial runs a block days old read one pass old."""
+    now = datetime.now(tz=UTC)
+    measured = _ago(3600, now)
+    grid = {"available": True, "targets": [{"family": "carry", "symbol": "xauusd"}]}
+    first: dict[str, Any] = {}
+    assert ii._carry(first, {"generated_utc": measured, "grid": grid}, now=now) == ["grid"]
+    assert first["grid"]["carried_from_generated_utc"] == measured
+    # The next partial pass carries the block the first one carried, from a newer artifact.
+    second: dict[str, Any] = {}
+    prev = {"generated_utc": _ago(900, now), "grid": first["grid"]}
+    assert ii._carry(second, prev, now=now) == ["grid"]
+    assert second["grid"]["carried_from_generated_utc"] == measured
+    assert second["grid"]["carried_age_s"] == pytest.approx(3600, abs=1)
+
+
+def test_a_carried_block_past_the_age_cap_reads_unmeasured() -> None:
+    now = datetime.now(tz=UTC)
+    measured = _ago(ii.CARRY_MAX_AGE_S + 60, now)
+    old = {"available": True, "stale": True, "carried_from_generated_utc": measured,
+           "targets": [{"family": "carry", "symbol": "xauusd"}]}
+    blocks: dict[str, Any] = {}
+    carried = ii._carry(blocks, {"generated_utc": _ago(900, now), "grid": old}, now=now)
+    assert carried == []
+    assert blocks["grid"]["available"] is False
+    assert blocks["grid"]["why"].startswith(ii.UNMEASURED)
+    assert blocks["grid"]["last_measured_utc"] == measured
+    assert "targets" not in blocks["grid"]
+
+
+def test_budget_s_must_be_positive(monkeypatch: Any) -> None:
+    monkeypatch.setattr(ii, "run", lambda **kw: pytest.fail("a refused budget must not run"))
+    for bad in ("0", "-5", "nan"):
+        with pytest.raises(SystemExit) as exc:
+            ii.main(["--once", "--budget-s", bad])
+        assert exc.value.code == 2
+
+
+def test_under_the_leg_cap_the_watchdog_stops_inside_the_kill() -> None:
+    """The hourly leg runs --budget-s 240 under a 300 s cap: 240 + 48 s of grace left 12 s for
+    the partial publish and exit. The budget is cut so budget + grace sits LEG_CAP_MARGIN_S in."""
+    for cap in (300.0, 120.0, 1000.0):
+        b = ii.effective_budget_s(240.0, {"QUANT_LEG_BUDGET_S": str(cap)})
+        assert b <= 240.0
+        assert b + ii._grace_s(b) <= cap - ii.LEG_CAP_MARGIN_S + 1e-9
+    assert ii.effective_budget_s(240.0, {"QUANT_LEG_BUDGET_S": "1000"}) == 240.0
+    assert ii.effective_budget_s(600.0, {}) == 600.0               # MT5-IndependenceIntake
+    from research import hourly_cycle as hc
+    cap = float(hc.LEG_BUDGET_SEC["independence_intake"])           # the leg's base cap
+    b = ii.effective_budget_s(240.0, {"QUANT_LEG_BUDGET_S": str(cap)})
+    assert b + ii._grace_s(b) + ii.LEG_CAP_MARGIN_S <= cap

@@ -1075,11 +1075,16 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
 #:                       hung MT5-Daily (daily_cycle.EXIT_HOLDER_HUNG)
 #:   daily 77 / 78     -- the day's stamp could not be READ, so no step ran; 78 once that has
 #:                       lasted past 3 consecutive passes (daily_cycle.EXIT_STAMP_UNREADABLE*)
+#:   independence_intake 3   -- the run stopped on its own deadline and published verdict
+#:                              PARTIAL (independence_intake.EXIT_PARTIAL)
+#:   independence_intake 124 -- the watchdog stopped it at budget + grace and published what it
+#:                              had (libs.ops.run_budget.EXIT_OVERRUN)
 NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
     "judge_coverage": {3: "TIMEOUT_UNCOMMITTED", 4: "REUSE_STALE", 5: "RECOVERY_REFUSED"},
     "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG",
               DAILY_CYCLE_STAMP_UNREADABLE: "STAMP_UNREADABLE",
               DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT: "STAMP_UNREADABLE_PERSISTENT"},
+    "independence_intake": {3: "PARTIAL", 124: "OVERRAN"},
 }
 
 
@@ -2135,7 +2140,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The dislocation lab stops itself at --budget-s 900 and writes; the cap sits above it.
     "dislocation_lab": 1_000,
     # The intake measurement stops itself at --budget-s 240: one registry scan and three
-    # artifact reads. The cap sits above it.
+    # artifact reads. The cap sits above it, and the organ cuts its own budget so budget + its
+    # watchdog grace lands 20 s inside this cap (independence_intake.effective_budget_s).
     "independence_intake": 300,
     # Rank recovery stops itself at --budget-s 240: one registry scan, one donor census and a
     # plan walked inside 60% of that. The cap sits above it and must never bind.
