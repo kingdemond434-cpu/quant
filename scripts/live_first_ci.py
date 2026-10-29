@@ -43,7 +43,7 @@ import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 ROOT = Path(__file__).resolve().parents[1]
 LIVE = "claude/llm-auto-upgrade-verify-gcjac3"
@@ -148,7 +148,7 @@ def _clear_at() -> Callable[..., Any]:
     assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    return mod.clear_at
+    return cast(Callable[..., Any], mod.clear_at)
 
 
 def _cleared(repo: str, queued: list[dict[str, Any]], heads: dict[str, str]) -> frozenset[str]:
@@ -203,7 +203,11 @@ def run(
     at = now.isoformat(timespec="seconds")
     queued = _queued(repo)  # runs BEFORE heads: a head moving in between reads as current
     heads = _heads(repo)
-    cleared = _cleared(repo, queued, heads)
+    try:  # CLEARed-first never costs LIVE-first: any failure here orders by LIVE alone (#556 SF1)
+        cleared = _cleared(repo, queued, heads)
+    except Exception as exc:
+        print(f"  cleared-first skipped: {type(exc).__name__}: {exc}")
+        cleared = frozenset()
     waste, ahead = plan(now, queued, heads, base, cleared)
     owed = [r for r in _load(state) if r["id"] not in ahead]
     print(f"live-first: {len(waste)} superseded, {len(ahead)} ahead of LIVE or a CLEARed PR "

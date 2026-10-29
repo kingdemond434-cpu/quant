@@ -489,6 +489,21 @@ def test_cleared_reads_a_trusted_unedited_clear_of_the_current_head(
     assert lf._cleared("o/r", queued, heads) == {"c"}
 
 
+def test_a_broken_cleared_read_never_stops_live_first(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """#556 audit SF1: CLEARed-first failing leaves LIVE-first intact."""
+    lf = _lf()
+
+    def boom(*a: Any) -> Any:
+        raise ImportError("no watcher")
+
+    monkeypatch.setattr(lf, "_cleared", boom)
+    monkeypatch.setattr(lf, "_queued", lambda repo: [])
+    monkeypatch.setattr(lf, "_heads", lambda repo: {})
+    assert lf.run("o/r", lf.LIVE, tmp_path / "s.json", settle_s=0, sleep=lambda s: None) == 0
+
+
 def test_live_first_owes_before_it_cancels_and_reruns_only_its_own_cancel(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
