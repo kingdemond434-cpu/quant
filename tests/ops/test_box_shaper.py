@@ -640,3 +640,89 @@ def test_a_stop_goes_through_the_desks_tree_kill_and_refuses_a_reused_pid(
     finally:
         if child.poll() is None:
             child.kill()
+
+
+def test_a_stop_is_refused_when_its_tree_holds_a_guarded_process() -> None:
+    """#482 S2: a tree kill never takes a money/judge/protected/memecoin/adopt process down."""
+    cfg = {"allow": ["some_loop.py"]}
+    for cmd in ("terminal64.exe /portable", "python.exe moat_recorder.py", "node memecoin.js",
+                "python.exe run_sharded_gauntlet.py", "powershell -File Adopt-And-Seal.ps1"):
+        procs = _dupes()
+        procs.append(Proc(90, "x.exe", ppid=41, cmdline=cmd, create_time=30))
+        bs.classify(procs, RULES["groups"])
+        keys = [d["duplicate"] for d in bs.plan_dedupe(procs, cfg)[1]]
+        stops, seen = bs.plan_dedupe(procs, cfg, previous_duplicates=keys)
+        assert stops == [], cmd
+        assert "refused" in seen[0] and "90" in seen[0]["refused"]
+    # an ordinary child is carried on the action as the measured tree
+    procs = _dupes()
+    procs.append(Proc(91, "python.exe", ppid=41, cmdline="python.exe helper.py", create_time=31))
+    bs.classify(procs, RULES["groups"])
+    stops, _ = bs.plan_dedupe(procs, cfg, previous_duplicates=["41:20"])
+    assert [(a.pid, a.tree) for a in stops] == [(41, [91])]
+
+
+def _sleeper() -> Any:
+    import subprocess
+    import sys
+    return subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+
+
+def test_a_taskkill_fallback_counts_only_on_exit_code_zero(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """#482 S1: taskkill's rc is the only proof the fallback stopped anything."""
+    psutil = pytest.importorskip("psutil")
+    from libs.ops import proctree
+    monkeypatch.setattr(bs, "IS_WINDOWS", True)
+    child = _sleeper()
+    try:
+        key = f"{child.pid}:{int(psutil.Process(child.pid).create_time())}"
+        for rc, landed in ((128, False), (0, True)):
+            monkeypatch.setattr(proctree, "kill_tree",
+                                lambda pid, _rc=rc, **kw: {"pid": pid, "killed": 0,
+                                                           "method": "taskkill", "rc": _rc})
+            a = bs.Action(child.pid, "python", "other", "dedupe", "stop", key, "stopped")
+            bs.apply([a], N)
+            assert a.applied is landed, rc
+            assert (a.error is None) is landed
+    finally:
+        child.kill()
+        child.wait(timeout=10)
+
+
+def test_a_stop_refuses_a_descendant_born_after_the_measurement(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    psutil = pytest.importorskip("psutil")
+    import subprocess
+    import sys
+
+    from libs.ops import proctree
+    calls: list[int] = []
+    def spy(pid: int, **kw: Any) -> dict[str, Any]:
+        calls.append(pid)
+        return {}
+
+    monkeypatch.setattr(proctree, "kill_tree", spy)
+    monkeypatch.setattr(bs, "IS_WINDOWS", True)
+    parent = subprocess.Popen([sys.executable, "-c", (
+        "import subprocess, sys, time; "
+        "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)']); "
+        "time.sleep(60)")])
+    try:
+        pr = psutil.Process(parent.pid)
+        for _ in range(100):
+            if pr.children():
+                break
+            psutil.wait_procs([], timeout=0.05)
+        assert pr.children()
+        a = bs.Action(parent.pid, "python", "other", "dedupe", "stop",
+                      f"{parent.pid}:{int(pr.create_time())}", "stopped", tree=[])
+        bs.apply([a], N)
+        assert not a.applied and "tree changed" in str(a.error) and calls == []
+    finally:
+        kids = psutil.Process(parent.pid).children(recursive=True)
+        for c in kids:
+            c.kill()
+        psutil.wait_procs(kids, timeout=10)
+        parent.kill()
+        parent.wait(timeout=10)

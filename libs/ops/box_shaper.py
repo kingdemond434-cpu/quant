@@ -89,6 +89,9 @@ UNTOUCHED = frozenset({"system"})
 #: The only groups an exact duplicate may be stopped in. Money, judge, memecoin, protected
 #: writers (tick recorders, ledgers, certificates, tape) and system processes never are.
 DEDUPE_GROUPS = frozenset({"mining", "other"})
+#: A stop is refused when any descendant of the duplicate is in one of these groups: a tree kill
+#: must never take a money, judge, protected, memecoin or adopt process down with a loop.
+NEVER_IN_A_STOPPED_TREE = frozenset({"money", "judge", "protected", "memecoin", "adopt"})
 #: Pool workers share one command line by design; they are never duplicates.
 _WORKER_MARKERS: tuple[str, ...] = ("multiprocessing", "spawn_main", "joblib", "loky",
                                     "shard_worker")
@@ -137,6 +140,7 @@ class Action:
     after: Any
     applied: bool = False
     error: str | None = None
+    tree: list[int] = field(default_factory=list)   # a stop's measured descendants
 
 
 @dataclass
@@ -738,7 +742,14 @@ def plan_dedupe(procs: Sequence[Proc], cfg: Mapping[str, Any],
     is shared by two scheduled starts, which IgnoreNew serialises -- so duplicates launched
     straight by Task Scheduler are NOT REPORTED here at all). The oldest is kept. A stop is
     planned only when an allow pattern names the command line AND the same duplicate (pid and
-    creation time) was already reported on the previous pass.
+    creation time) was already reported on the previous pass, AND no descendant of the duplicate
+    is in NEVER_IN_A_STOPPED_TREE (the refusal is reported in `refused`).
+
+    TORN OUTPUT (audit S3): on Windows psutil's terminate() and kill() are the same
+    TerminateProcess -- a detached SYSTEM-run loop has no console to send CTRL_BREAK to -- so
+    there is no graceful stop to wait on, and a duplicate stopped mid-write can leave a
+    half-written file. Allow-list only a loop whose writes are atomic (tmp file + os.replace),
+    whose surviving twin rewrites the same outputs on its next cycle.
     """
     allow = [str(a).lower() for a in cfg.get("allow", [])]
     seen_before = set(previous_duplicates)
@@ -751,6 +762,22 @@ def plan_dedupe(procs: Sequence[Proc], cfg: Mapping[str, Any],
         buckets.setdefault((p.exe.lower(), p.cmdline), []).append(p)
     stops: list[Action] = []
     report: list[dict[str, Any]] = []
+    children: dict[int, list[Proc]] = {}
+    for p in procs:
+        children.setdefault(p.ppid, []).append(p)
+
+    def descendants(pid: int) -> list[Proc]:
+        out: list[Proc] = []
+        seen: set[int] = {pid}
+        stack = [pid]
+        while stack:
+            for c in children.get(stack.pop(), ()):
+                if c.pid not in seen:
+                    seen.add(c.pid)
+                    out.append(c)
+                    stack.append(c.pid)
+        return out
+
     for members in buckets.values():
         if len(members) < 2:
             continue
@@ -762,11 +789,18 @@ def plan_dedupe(procs: Sequence[Proc], cfg: Mapping[str, Any],
         keeper = members[0]
         allowed = any(a in keeper.haystack for a in allow)
         for dup in members[1:]:
-            report.append({"keep": keeper.key, "duplicate": dup.key, "name": dup.name,
-                           "group": dup.group, "allowed": allowed, "cmd": _short_cmd(dup)})
-            if allowed and dup.key in seen_before:
+            tree = descendants(dup.pid)
+            guarded = [c for c in tree if c.group in NEVER_IN_A_STOPPED_TREE]
+            row: dict[str, Any] = {"keep": keeper.key, "duplicate": dup.key, "name": dup.name,
+                                   "group": dup.group, "allowed": allowed, "cmd": _short_cmd(dup)}
+            if guarded:
+                row["refused"] = (f"descendant {guarded[0].pid} ({guarded[0].name}) is "
+                                  f"{guarded[0].group}: a tree stop would take it down")
+            report.append(row)
+            if allowed and dup.key in seen_before and not guarded:
                 stops.append(Action(dup.pid, dup.name, dup.group, "dedupe", "stop", dup.key,
-                                    f"stopped; kept {keeper.key}"))
+                                    f"stopped; kept {keeper.key}",
+                                    tree=sorted(c.pid for c in tree)))
     return stops, report
 
 
@@ -858,12 +892,24 @@ def apply(actions: Sequence[Action], n_cpu: int) -> None:
                 if f"{a.pid}:{int(pr.create_time())}" != str(a.before):
                     a.error = "pid reused since measurement; not stopped"
                     continue
+                # THE TREE MUST STILL BE THE ONE THAT WAS CLASSIFIED: a descendant born since
+                # the measurement was never checked against the guarded groups, so it refuses.
+                live = {c.pid for c in pr.children(recursive=True)}
+                unknown = sorted(live - set(a.tree))
+                if unknown:
+                    a.error = (f"tree changed since measurement (unclassified descendant(s) "
+                               f"{unknown[:5]}); not stopped")[:200]
+                    continue
                 # THE DESK'S OWN TREE KILL (libs/ops/proctree.kill_tree), so a duplicate loop's
                 # pool goes with it instead of being orphaned against the commit limit.
                 from libs.ops.proctree import kill_tree
                 result = kill_tree(a.pid)
-                if not result.get("killed") and result.get("method") != "taskkill":
-                    a.error = f"kill_tree killed nothing: {result}"[:200]
+                if result.get("method") == "taskkill":
+                    landed = result.get("rc") == 0          # taskkill's own verdict, nothing else
+                else:
+                    landed = bool(result.get("killed"))
+                if not landed:
+                    a.error = f"kill_tree did not stop it: {result}"[:200]
                     continue
             elif a.kind == "priority":
                 pr.nice(getattr(psutil, _PSUTIL_CLASS[str(a.after)]))
