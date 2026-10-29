@@ -89,8 +89,11 @@ def test_missed_growth_publishes_both_sides_of_the_bill(tmp_path, monkeypatch) -
     from research import missed_growth as mg
     j = tmp_path / "e8_gold_intents.jsonl"
     monkeypatch.setattr(mg, "E8_INTENTS", j)
+    rep = tmp_path / "E8_GOLD.json"
+    monkeypatch.setattr(mg, "E8_GOLD_REPORT", rep)
     assert mg.published_news_fence_lines()["verdict"] == mg.UNMEASURED      # absent journal
     j.write_text("", "utf-8")
+    rep.write_text(json.dumps({"news_fence": {"calendar_ok": True, "error": None}}), "utf-8")
     assert mg.published_news_fence_lines()["verdict"] == mg.NOT_BINDING
     rows = [{"rail": "e8_news_fence", "status": "SHADOW_FENCE", "missed_growth_risk_usd": 250.0,
              "release": "2026-10-02 12:30Z NFP", "at": "2026-10-02T12:25:00+00:00"},
@@ -155,3 +158,34 @@ def test_liveness_is_not_silent_red_on_a_no_bars_pass_but_is_red_on_an_error(tmp
     rep.write_text(json.dumps({"at": now, "status": "OK",
                                "news_fence": {"error": "boom"}}), "utf-8")
     assert any("FAILED OPEN" in r for r in chk.assess(report=rep, flag=tmp_path / "none")["red"])
+
+
+def test_no_rows_from_a_blind_fence_is_unmeasured_and_named(tmp_path, monkeypatch) -> None:
+    """Audit v2 MUST (L1.28a): a blind or failed fence fails open and journals NOTHING, so a
+    readable journal with no fence rows must not read NOT_BINDING."""
+    from research import missed_growth as mg
+    j = tmp_path / "e8_gold_intents.jsonl"
+    rep = tmp_path / "E8_GOLD.json"
+    monkeypatch.setattr(mg, "E8_INTENTS", j)
+    monkeypatch.setattr(mg, "E8_GOLD_REPORT", rep)
+    j.write_text("", "utf-8")
+    rep.write_text(json.dumps({"news_fence": {"calendar_ok": False,
+                                              "uncovered": ["CPI:2026-10"]}}), "utf-8")
+    out = mg.published_news_fence_lines()
+    assert out["verdict"] == mg.UNMEASURED and out["uncovered_last_pass"] == ["CPI:2026-10"]
+    rep.write_text(json.dumps({"news_fence": {"calendar_ok": True, "error": "boom"}}), "utf-8")
+    out = mg.published_news_fence_lines()
+    assert out["verdict"] == mg.UNMEASURED and out["error"] == "boom"
+    # A clean last pass, but the journal spans months the calendar cannot see.
+    rep.write_text(json.dumps({"news_fence": {"calendar_ok": True}}), "utf-8")
+    j.write_text(json.dumps({"rail": "cross_account_opposite", "status": "RAIL_BLOCKED",
+                             "at": "2026-10-02T12:25:00+00:00"}), "utf-8")
+    out = mg.published_news_fence_lines()
+    assert out["verdict"] == mg.UNMEASURED and "CPI:2026-10" in out["uncovered_journal_span"]
+
+
+def test_the_retry_shadow_bills_only_legs_actually_re_sent() -> None:
+    src = (_DESK / "prop" / "e8_gold.py").read_text("utf-8")
+    body = src[src.index("def _retry_failed_legs"):]
+    assert body.index('dec["act"] == "retry" and news_shadow_why') > body.index(
+        "for dec in retry_decisions(")

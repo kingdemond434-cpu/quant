@@ -813,6 +813,47 @@ def published_fusion_book_lines() -> dict[str, Any]:
 NEWS_FENCE_RAIL = "e8_news_fence"
 
 
+E8_GOLD_REPORT = BASE / "reports" / "E8_GOLD.json"
+
+
+def _news_fence_blindness(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """What the fence could not see: the lane's last verdict (reports/E8_GOLD.json news_fence:
+    calendar_ok False or an error), and the calendar's gaps over the journal's span. {} only
+    when both are known clean. Unreadable inputs are blindness too, said so."""
+    out: dict[str, Any] = {}
+    nfv = (_json(E8_GOLD_REPORT) or {}).get("news_fence")
+    if isinstance(nfv, dict):
+        if nfv.get("error"):
+            out["error"] = str(nfv.get("error"))
+        if nfv.get("calendar_ok") is False:
+            out["calendar_ok"] = False
+            out["uncovered_last_pass"] = list(nfv.get("uncovered") or [])
+    days: list[str] = []
+    for r in rows:
+        at = str(r.get("at") or "")[:10]
+        if len(at) == 10:
+            days.append(at)
+    try:
+        from datetime import date as _date
+
+        from mt5desk.news_fence import uncovered_families
+        if days:
+            gaps = uncovered_families(_date.fromisoformat(min(days)),
+                                      _date.fromisoformat(max(days)))
+            if gaps:
+                out["uncovered_journal_span"] = list(gaps)
+                out["journal_span"] = [min(days), max(days)]
+        elif not isinstance(nfv, dict):
+            out["why_blind"] = "no dated journal rows and no lane verdict: span unknown"
+    except Exception as exc:                          # by contract: blindness, never a raise
+        out["error_reading_calendar"] = f"{type(exc).__name__}: {exc}"[:200]
+    if out:
+        out.setdefault("why", "the fence could not see every tier-1 release in the window it "
+                              "was asked about, and a blind fence fails open and journals "
+                              "nothing -- no rows here is not evidence it never bound")
+    return out
+
+
 def published_news_fence_lines() -> dict[str, Any]:
     """The news fence's bill, both sides. `held` is the risk the fence refused while ON; `shadow`
     is what it would have refused while OFF. Neither side is priced in log-wealth here -- the
@@ -840,6 +881,13 @@ def published_news_fence_lines() -> dict[str, Any]:
                 "last_at": got[-1].get("at") if got else None}
 
     held, shadow = side("RAIL_BLOCKED"), side("SHADOW_FENCE")
+    blind = _news_fence_blindness(rows) if not mine else {}
+    if blind:
+        # NO ROWS IS NOT "NEVER BOUND" WHEN THE FENCE COULD NOT SEE (audit v2 MUST, L1.28a): a
+        # blind calendar or a failed verdict fails OPEN and journals nothing, so the silence is
+        # the blindness, named here, never a clean NOT_BINDING.
+        return {"verdict": UNMEASURED, "source": f"data/{E8_INTENTS.name} rail {NEWS_FENCE_RAIL}",
+                "held": held, "shadow": shadow, **blind}
     return {"verdict": UNMEASURED if mine else NOT_BINDING,
             "source": f"data/{E8_INTENTS.name} rail {NEWS_FENCE_RAIL}",
             "held": held, "shadow": shadow,
@@ -1109,10 +1157,14 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                         "value": float(m.get("value_logw_per_day", 0.0)),
                         "at": datetime.now(tz=UTC).isoformat()})
     if new and write:
-        LEDGER.parent.mkdir(parents=True, exist_ok=True)
-        with LEDGER.open("a", encoding="utf-8") as fh:
-            for row in new:
-                fh.write(json.dumps(row) + "\n")
+        try:
+            LEDGER.parent.mkdir(parents=True, exist_ok=True)
+            with LEDGER.open("a", encoding="utf-8") as fh:
+                for row in new:
+                    fh.write(json.dumps(row) + "\n")
+        except (OSError, ValueError) as exc:           # audit v2: a full disk never kills the bill
+            print(f"missed_growth: ledger append failed ({type(exc).__name__}: {exc})",
+                  file=sys.stderr)
     rows = existing + new
     # 2. verdicts from the accumulated samples (or the direct measurement for vetoes)
     verdicts: dict[str, dict[str, Any]] = {}

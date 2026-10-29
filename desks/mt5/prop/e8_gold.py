@@ -1963,21 +1963,6 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
     resting order, then as a filled order in the history, then as a position on its side opened
     since the failed send.
     """
-    if news_shadow_why is not None:
-        # OFF but inside a window: the re-send goes ahead, and what the fence WOULD have held is
-        # journalled (SHADOW_FENCE), once per leg per day, like a first send.
-        _sb = state.setdefault("rail_logged", {})
-        _day = now.date().isoformat()
-        for _n, _w in (state.get("windows") or {}).items():
-            for _side, _leg in (_w.get("failed") or {}).items():
-                if _sb.get(f"{NEWS_RAIL}/{_n}/{_side}/shadow") == _day:
-                    continue
-                _sb[f"{NEWS_RAIL}/{_n}/{_side}/shadow"] = _day
-                _record({"at": now.isoformat(timespec="seconds"), "window": _n, "side": _side,
-                         "status": NEWS_SHADOW, "rail": NEWS_RAIL,
-                         "why": f"retry inside the release window: {news_shadow_why}",
-                         "missed_growth_risk_usd": (_leg or {}).get("risk_usd"),
-                         "armed": armed})
     blind = [why for why, bad in ((news_why or "", news_why is not None),
                                   ("the pass is disarmed", not armed),
                                   ("the guard stands down", stood_down),
@@ -2066,6 +2051,19 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                "attempts": int(leg.get("attempts") or 0)}
         if dec["act"] == "hold":
             continue
+        if dec["act"] == "retry" and news_shadow_why is not None:
+            # OFF but inside a window: this leg IS being re-sent, so what the fence WOULD have
+            # held is journalled (SHADOW_FENCE) once per leg per day -- only legs
+            # retry_decisions actually re-sends, never every failed leg in state (audit v2).
+            _sb = state.setdefault("rail_logged", {})
+            _day = now.date().isoformat()
+            if _sb.get(f"{NEWS_RAIL}/{name}/{side}/shadow") != _day:
+                _sb[f"{NEWS_RAIL}/{name}/{side}/shadow"] = _day
+                _record({"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
+                         "status": NEWS_SHADOW, "rail": NEWS_RAIL,
+                         "why": f"retry inside the release window: {news_shadow_why}",
+                         "missed_growth_risk_usd": (leg or {}).get("risk_usd"),
+                         "armed": armed})
         sent_at = _iso_ms(leg.get("first_at"))
         since = (sent_at + skew if skew is not None
                  # the matcher allows LEG_MATCH_WINDOW_MS of slack below `since`; none of it
