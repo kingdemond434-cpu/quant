@@ -20,21 +20,21 @@
   },
   "rules": [
     {"name": "adopt_release_raise", "group": "adopt", "priority": "AboveNormal",
-     "why": "Owner rule 23 / money path on top (2026-10-29): the first automatic Adopt-And-Seal run (MT5-AdoptRelease, SYSTEM) was measured with its python child on ~13% of a core, a step that took 2.5 min at 14:25Z running past 25 min. The whole Adopt-And-Seal / Adopt-Release tree (the powershell matched by command line, every py/python/git below it by parent chain) is group adopt: raise-only like the money path, so it is never put on the side mask, never share-capped, and is raised to AboveNormal while it runs."},
+     "why": "Owner rule 23 / money path on top (2026-10-29): the first automatic Adopt-And-Seal run (MT5-AdoptRelease, SYSTEM) was measured with its python child on ~13% of a core, a step that took 2.5 min at 14:25Z running past 25 min. The whole Adopt-And-Seal / Adopt-Release tree (the powershell matched by command line, every py/python/git below it by parent chain) is group adopt: raise-only like the money path, so it is never put on the side mask, never share-capped, and is raised to AboveNormal while it runs -- never above the lowest money-path class (the code cuts it to that class and refuses it when a money class is unreadable)."},
     {"name": "memecoin_cap", "match": "memecoin", "affinity": "0x30000", "priority": "BelowNormal",
      "max_box_share": 0.10,
      "why": "Owner rule: the memecoin bot keeps running on at most 10% of the box. The mask is the hand task's two top cores; the code narrows it to floor(10% x cores) of them (1 of 18 on the trading box)."},
     {"name": "pf_allocator_heavy", "match": "pf_allocator.py --mode heavy", "affinity": "0xFF",
      "track_wall": true,
      "why": "The overnight allocator measured at 3162% (31 cores) beside the judge; eight cores, priority untouched. track_wall records each run's wall time in BOX_BOTTLENECKS.json wall.pf_allocator_heavy, so the 8-core cap can be checked against allocator proof staleness."},
-    {"name": "mt5_terminals_raise", "match": "terminal64.exe", "priority": "AboveNormal",
-     "why": "The MT5 terminals are the money path; raised so research load never starves a fill."}
+    {"name": "money_path_raise", "group": "money", "priority": "AboveNormal",
+     "why": "Money path on top (audit MF2, 2026-10-29): the whole money group -- the MT5 terminals, the gateway python (MT5-GatewayResident ran at default Normal, BELOW the adopt tree at AboveNormal), the executors, the window guard and the deadman -- is raised to AboveNormal so research load never starves a fill. Raise-only: a terminal already at High stays there. The code also holds the adopt tree at or under the lowest money class this pass leaves, and applies the money raises first: an adopt raise lands only if every money raise did."}
   ],
   "share_cap": {
     "threshold_cores": 6,
     "sustained_runs": 2,
     "mask": "0x3000F",
-    "why": "Any single mining or other process above 6 cores in two consecutive passes is pinned to cores 0-3 and 16-17 (six cores, the mining floor, entirely outside the judge reserve even when boosted), and ONLY while the judge is starved: an unlisted process is never throttled on its own size alone."
+    "why": "Any single mining or other process above 6 cores in two consecutive passes is pinned to cores 0-3 and 16-17 (six cores, the mining floor, entirely outside the judge reserve even when boosted), and ONLY while the judge is starved: an unlisted process is never throttled on its own size alone. Once the judge is no longer starved each pin is released to where the process was (its original cores; the side mask for mining/other python under the judge reserve), the pins surviving any UNMEASURED or RULES_REFUSED pass. Every throttle (this cap, memecoin_cap, pf_allocator_heavy, judge_reserve) bills a two-sided line in BOX_BOTTLENECKS.json missed_growth: the share the throttled process gave up and the judge share gained."
   },
   "judge_starved": {"box_cpu_pct_at_least": 90, "judge_share_of_busy_below": 0.5},
   "judge_min_share": 0.15,
