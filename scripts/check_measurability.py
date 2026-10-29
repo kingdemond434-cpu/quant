@@ -420,6 +420,9 @@ def judge(doc: dict[str, Any], state: dict[str, Any], now: datetime | None = Non
             f["red"] = age > GRACE_S
     doc.update({"red": sorted(red), "unmeasured": sorted(unmeasured),
                 "unmeasured_by_field": dict(sorted(by_field.items(), key=lambda kv: -kv[1])),
+                # counts, so the leg's experiment contract can read a number
+                "n_subjects": len(doc["subjects"]), "n_red": len(red),
+                "n_unmeasured": len(red) + len(unmeasured),
                 "verdict": "RED" if red else ("UNMEASURED" if unmeasured else "OK")})
     return doc, {"first_unmeasured": keep, "updated_utc": at.isoformat(timespec="seconds")}
 
