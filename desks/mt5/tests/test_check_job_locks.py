@@ -23,6 +23,7 @@ import job_lock as J  # noqa: E402
 def root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(J, "LOCK_ROOT", tmp_path)
     monkeypatch.setattr(J, "HEALTH_REPORT", tmp_path / "JOB_LOCK_HEALTH.json")
+    monkeypatch.setattr(J, "STOPS_LEDGER", tmp_path / "JOB_LOCK_STOPS.jsonl")
     monkeypatch.setattr(J, "_owner_state", lambda path: "ALIVE")
     monkeypatch.setattr(C, "_journal", lambda name, health: None)
     return tmp_path
@@ -79,7 +80,6 @@ def test_a_refused_stop_stays_red(root: Path) -> None:
 
 
 def test_stop_checks_the_command_line_before_touching_a_pid(monkeypatch) -> None:
-    import os
     res = C._stop(os.getpid(), ("definitely_not_this_process_xyz",))
     assert res["stopped"] is False and "pid reused" in res["why"]
 
@@ -104,6 +104,7 @@ def test_the_leg_is_hourly_and_its_report_is_watched() -> None:
 
 
 # --- audit of v5 ---------------------------------------------------------------------------
+import os  # noqa: E402
 import subprocess  # noqa: E402
 import time  # noqa: E402
 from datetime import UTC, datetime  # noqa: E402
@@ -148,13 +149,18 @@ def test_mf1_a_parent_waiting_on_a_busy_child_is_progressing(tmp_path: Path) -> 
         proc.wait()
 
 
-def test_mf1_a_descendant_exiting_is_activity_not_a_stall(tmp_path: Path,
-                                                          monkeypatch) -> None:
+def test_a_descendant_exiting_rebases_the_cpu_but_not_the_idle_clock(tmp_path: Path,
+                                                                    monkeypatch) -> None:
     monkeypatch.setattr(J, "LOCK_ROOT", tmp_path)
     lock = _hold(tmp_path, "warm_gauntlet_cache")
     J.owner_progress(lock, now=0.0, cpu_of=lambda pid: 100.0)
-    out = J.owner_progress(lock, now=J.WEDGED_AFTER_S + 60, cpu_of=lambda pid: 3.0)
-    assert out["status"] == "PROGRESSING" and "descendant exited" in out["why"]
+    # a helper exits every half hour: the sum drops, but a drop is not progress
+    for k in range(1, 5):
+        out = J.owner_progress(lock, now=k * 1800.0 + 60, cpu_of=lambda pid, k=k: 100.0 - k)
+    assert out["status"] == "WEDGED" and out["idle_s"] >= C.AUTO_STOP_AFTER_S
+    # and the next child's work counts from the lowered baseline
+    nxt = J.owner_progress(lock, now=4 * 1800.0 + 120, cpu_of=lambda pid: 97.5)
+    assert nxt["status"] == "PROGRESSING"
 
 
 def test_mf1_the_stop_takes_the_whole_tree(tmp_path: Path) -> None:
@@ -243,12 +249,110 @@ def test_a_stop_is_journaled(root: Path, monkeypatch, tmp_path: Path) -> None:
 
 def test_red_exits_with_a_named_failure(root: Path, monkeypatch) -> None:
     monkeypatch.setattr(C, "run", lambda: {"status": "RED", "wedged": ["x"], "locks": {}})
-    assert C.main([]) == C.EXIT_WEDGED == 2
+    assert C.main([]) == C.EXIT_WEDGED == 3
     sys.path.insert(0, str(ROOT / "desks" / "mt5"))
     from research import hourly_cycle as hc
-    assert hc._exit_outcome("job_lock_health", 2) == "exit_code=2:OWNER_WEDGED"
-    assert 2 not in hc.VERDICT_EXITS.get("job_lock_health", ())
+    assert hc._exit_outcome("job_lock_health", 3) == "exit_code=3:OWNER_WEDGED"
+    assert 3 not in hc.VERDICT_EXITS.get("job_lock_health", ())
+    assert hc._exit_outcome("job_lock_health", 2) == "exit_code=2"   # argparse, never WEDGED
 
 
 def test_the_bound_artifact_is_the_report_job_lock_writes() -> None:
     assert C.OUT.resolve() == J.HEALTH_REPORT.resolve()
+
+
+# --- audit of v6 (should-fixes) --------------------------------------------------------------
+_SPAWNS_IN_A_LOOP = (
+    "import subprocess, sys, time, pathlib\n"
+    "d = pathlib.Path(sys.argv[1])\n"
+    "while True:\n"
+    "    p = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\n"
+    "    (d / str(p.pid)).write_text('')\n"
+    "    time.sleep(0.01)\n")
+
+
+def test_sf1_an_owner_spawning_in_a_loop_leaves_no_orphan(tmp_path: Path) -> None:
+    pids = tmp_path / "pids"
+    pids.mkdir()
+    script = tmp_path / "merge_hypotheses.py"
+    script.write_text(_SPAWNS_IN_A_LOOP, "utf-8")
+    proc = subprocess.Popen([sys.executable, str(script), str(pids)])
+    try:
+        _wait_children(proc.pid, 5)
+        res = C._stop(proc.pid, ("merge_hypotheses",), datetime.now(UTC).isoformat())
+        assert res["stopped"] is True, res
+        proc.wait(timeout=30)
+        time.sleep(0.5)
+        born = [int(p.name) for p in pids.iterdir()]
+        assert born
+        alive = []
+        for pid in born:
+            try:
+                q = psutil.Process(pid)
+                if q.status() != psutil.STATUS_ZOMBIE and "time.sleep(60)" in " ".join(
+                        q.cmdline()):
+                    alive.append(pid)
+            except psutil.NoSuchProcess:
+                pass
+        assert not alive, f"{len(alive)} orphan(s) of {len(born)}"
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait()
+
+
+def test_sf6_only_the_first_script_element_counts() -> None:
+    m = ("merge_hypotheses",)
+    assert not C.runs_script(["python", "other.py", "--in", "merge_hypotheses.py"], m)
+    assert not C.runs_script(["python", "-c", "import x", "merge_hypotheses.py"], m)
+    assert C.runs_script(["python", "-u", "research/merge_hypotheses.py", "--x"], m)
+    assert C.runs_script(["pythonw.exe", "-m", "research.merge_hypotheses"], m)
+
+
+def test_sf7_a_stale_contender_never_drops_a_stop(root: Path) -> None:
+    _hold(root, "edge_search")
+    ok = lambda *a: {"stopped": True, "why": "terminated"}  # noqa: E731
+    C.run(root=root, now=0.0, stop=ok, cpu_of=lambda pid: 1.0)
+    stale = json.loads(J.HEALTH_REPORT.read_text("utf-8"))
+    C.run(root=root, now=C.AUTO_STOP_AFTER_S + 60, stop=ok, cpu_of=lambda pid: 1.0)
+    J.HEALTH_REPORT.write_text(json.dumps(stale), "utf-8")      # a contender's old copy
+    J._publish_health("macro_desk", {"status": "ACQUIRED"})
+    doc = json.loads(J.HEALTH_REPORT.read_text("utf-8"))
+    assert [r["lock"] for r in doc["stops"]] == ["edge_search"]
+    assert len(J.STOPS_LEDGER.read_text("utf-8").splitlines()) == 1
+
+
+def _own_lock(root: Path, name: str = "merge_hypotheses") -> Path:
+    p = root / f"{name}.json"
+    p.write_text(json.dumps({"token": "mine", "pid": os.getpid(), "host": socket.gethostname(),
+                             "started_at": "2026-10-29T00:00:00+00:00"}), "utf-8")
+    return p
+
+
+def test_an_owner_that_beats_is_judged_by_its_beats_not_its_cpu(root: Path) -> None:
+    lock = _own_lock(root)
+    assert J.heartbeat("merge_hypotheses", "order", expect_s=2700, now=0.0)
+    spinning = iter(range(0, 10_000, 140))          # ~2.3 s of CPU a minute, like 2026-10-29
+    inside = J.owner_progress(lock, now=2000.0, cpu_of=lambda pid: float(next(spinning)))
+    assert inside["status"] == "PROGRESSING" and inside["phase"] == "order"
+    past = J.owner_progress(lock, now=2700.0 + 60, cpu_of=lambda pid: float(next(spinning)))
+    assert past["status"] == "WEDGED" and past["signal"] == "beat"
+    out = C.run(root=root, now=C.AUTO_STOP_AFTER_S + 60,
+                stop=lambda *a: {"stopped": True, "why": "t"},
+                cpu_of=lambda pid: float(next(spinning)))
+    assert out["locks"]["merge_hypotheses"]["status"] == "STOPPED"
+
+
+def test_a_beat_is_written_only_by_the_lock_owner(root: Path) -> None:
+    _hold(root, "merge_hypotheses", pid=1)
+    assert J.heartbeat("merge_hypotheses", "order") is False
+    assert not (root / "merge_hypotheses.beat.json").exists()
+    assert "merge_hypotheses.beat.json" not in [p.name for p in C._locks(root)]
+
+
+def test_a_previous_owners_beat_is_ignored(root: Path) -> None:
+    lock = _own_lock(root)
+    J.heartbeat("merge_hypotheses", "order", now=0.0)
+    lock.write_text(json.dumps({"token": "next", "pid": os.getpid(),
+                                "host": socket.gethostname()}), "utf-8")
+    assert J.owner_progress(lock, now=10 * 3600.0, cpu_of=lambda pid: 1.0)["signal"] == "cpu"

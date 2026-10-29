@@ -329,8 +329,9 @@ def _owner_cpu_s(pid: int) -> float | None:
     `miner_candidate_compiler` around a compile child; warm_gauntlet_cache's pool) uses almost no
     CPU of its own. Counting only its own time read it WEDGED while the child burned (audit of
     v5, MF1: 0.02 s parent against 3.9 s child). `children_*` carries reaped children on POSIX
-    (zero on Windows); a descendant that exits makes the sum DROP, which `owner_progress` reads
-    as the tree changing -- activity, never a stall."""
+    (zero on Windows) and is summed for every descendant too, so a grandchild's time survives its
+    exit there. On Windows a descendant that exits makes the sum DROP; `owner_progress` rebases
+    the baseline down and keeps the idle clock running -- a drop is not progress."""
     try:
         import psutil
 
@@ -341,14 +342,75 @@ def _owner_cpu_s(pid: int) -> float | None:
         for child in proc.children(recursive=True):
             with suppress(Exception):
                 c = child.cpu_times()
-                total += float(c.user + c.system)
+                total += float(c.user + c.system + getattr(c, "children_user", 0.0)
+                               + getattr(c, "children_system", 0.0))
         return total
     except Exception:
         return None
 
 
+#: Files beside the locks that are not locks.
+SIDECAR_SUFFIXES = (".peaks.json", ".progress.json", ".beat.json")
+
+
 def _progress_path(lock: Path) -> Path:
     return lock.with_name(lock.stem + ".progress.json")
+
+
+def _beat_path(lock: Path) -> Path:
+    return lock.with_name(lock.stem + ".beat.json")
+
+
+def heartbeat(name: str, phase: str, *, expect_s: float | None = None,
+              now: float | None = None) -> bool:
+    """The lock OWNER says it reached `phase`, which may take up to `expect_s` seconds.
+
+    WHY A BEAT AND NOT ONLY CPU (audit of judge atomic-replace v6). The 15 h merge owner of
+    2026-10-29 burned ~2.3 s of CPU a minute while making no progress, which a CPU threshold of
+    1 s per window reads as PROGRESSING: the CPU signal alone would not have caught the incident
+    it was written for. An owner that beats is judged by its beats -- WEDGED once a phase runs
+    past max(`expect_s`, WEDGED_AFTER_S) with no new beat, whatever its CPU does. Written only
+    when this process holds the lock (its pid is the lock's), so a beat can never vouch for
+    another owner. Never raises: bookkeeping must not break the owner."""
+    lock = LOCK_ROOT / f"{name}.json"
+    try:
+        row = json.loads(lock.read_text("utf-8"))
+        if row.get("pid") != os.getpid() or row.get("host") != socket.gethostname():
+            return False
+        rec = {"token": str(row.get("token") or ""), "phase": str(phase),
+               "at": time.time() if now is None else float(now),
+               "expect_s": float(expect_s) if expect_s else None}
+        _beat_path(lock).write_text(json.dumps(rec), "utf-8")
+        return True
+    except Exception:
+        return False
+
+
+def _beat_progress(lock: Path, token: str, t: float, out: dict) -> dict | None:
+    """The owner's state from its beats, or None when this owner has never beaten."""
+    try:
+        beat = json.loads(_beat_path(lock).read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(beat, dict) or beat.get("token") != token:
+        return None
+    at = beat.get("at")
+    if not isinstance(at, (int, float)):
+        return None
+    expect = beat.get("expect_s")
+    limit = max(float(WEDGED_AFTER_S),
+                float(expect) if isinstance(expect, (int, float)) else 0.0)
+    idle = max(0.0, t - float(at))
+    phase = str(beat.get("phase") or "?")
+    out.update(signal="beat", phase=phase, idle_s=round(idle, 1), limit_s=round(limit, 1))
+    if idle > limit:
+        out.update(status="WEDGED", why=(f"owner alive but its phase '{phase}' has run "
+                                         f"{idle / 60:.0f} min with no beat (limit "
+                                         f"{limit / 60:.0f} min)"))
+    else:
+        out.update(status="PROGRESSING", why=(f"owner in phase '{phase}' for "
+                                              f"{idle / 60:.0f} min (limit {limit / 60:.0f} min)"))
+    return out
 
 
 def owner_progress(lock: Path, *, now: float | None = None,
@@ -365,6 +427,10 @@ def owner_progress(lock: Path, *, now: float | None = None,
         return {"status": "UNMEASURED", "why": "lock unreadable"}
     pid, token = row.get("pid"), str(row.get("token") or "")
     out: dict = {"pid": pid, "started_at": row.get("started_at")}
+    beaten = _beat_progress(lock, token, t, out)
+    if beaten is not None:
+        return beaten
+    out["signal"] = "cpu"
     cpu = (cpu_of or _owner_cpu_s)(pid) if isinstance(pid, int) else None
     if cpu is None:
         out.update(status="UNMEASURED", why="owner CPU time unreadable")
@@ -376,16 +442,21 @@ def owner_progress(lock: Path, *, now: float | None = None,
         prev = None
     base_cpu = float(prev.get("cpu_s") or 0.0) if isinstance(prev, dict) else 0.0
     if (not isinstance(prev, dict) or prev.get("token") != token
-            or cpu >= base_cpu + PROGRESS_CPU_S or cpu < base_cpu - 1e-6):
+            or cpu >= base_cpu + PROGRESS_CPU_S):
         rec = {"token": token, "cpu_s": cpu, "cpu_at": t}
         with suppress(OSError):
             side.write_text(json.dumps(rec), "utf-8")
         first = not isinstance(prev, dict) or prev.get("token") != token
         out.update(status="UNMEASURED" if first else "PROGRESSING", cpu_s=cpu, idle_s=0.0,
                    why=("first observation of this owner" if first
-                        else "a descendant exited, so the owner's tree changed" if cpu < base_cpu
                         else "the owner tree's CPU time advanced since the last observation"))
         return out
+    if cpu < base_cpu - 1e-6:
+        # A descendant exited (Windows keeps no reaped-child time): rebase the baseline DOWN so
+        # the next child's work counts, but keep the idle clock -- a drop is not progress, or a
+        # wedged tree whose idle helper exits every two hours would never reach the stop.
+        with suppress(OSError):
+            side.write_text(json.dumps({**prev, "cpu_s": cpu}), "utf-8")
     at = prev.get("cpu_at")
     idle = t - (float(at) if isinstance(at, (int, float)) else t)
     out.update(cpu_s=cpu, idle_s=round(idle, 1))
@@ -397,8 +468,23 @@ def owner_progress(lock: Path, *, now: float | None = None,
     return out
 
 
-#: Auto-stops kept in JOB_LOCK_HEALTH.json across passes, newest last.
+#: Auto-stops shown in JOB_LOCK_HEALTH.json, newest last, read from `STOPS_LEDGER`.
 STOP_HISTORY_MAX = 50
+#: Every auto-stop, appended once by the hourly leg. The report's `stops` is this file's tail, so
+#: a contender rewriting the report from a stale copy can never drop one (audit of v6, SF7).
+STOPS_LEDGER = BASE / "reports" / "JOB_LOCK_STOPS.jsonl"
+
+
+def _stops_tail() -> list:
+    try:
+        lines = STOPS_LEDGER.read_text("utf-8").splitlines()[-STOP_HISTORY_MAX:]
+    except OSError:
+        return []
+    out = []
+    for line in lines:
+        with suppress(ValueError):
+            out.append(json.loads(line))
+    return out
 
 
 def _read_health() -> dict:
@@ -409,14 +495,16 @@ def _read_health() -> dict:
     return doc if isinstance(doc, dict) else {}
 
 
-def _write_health(locks: dict, stops: list, t: float) -> None:
+def _write_health(locks: dict, t: float) -> None:
     wedged = sorted(k for k, v in locks.items()
                     if isinstance(v, dict) and v.get("status") == "WEDGED")
     doc = {"at": datetime.fromtimestamp(t, UTC).isoformat(timespec="seconds"),
            "locks": locks, "wedged": wedged, "status": "RED" if wedged else "OK",
-           "stops": stops[-STOP_HISTORY_MAX:],
-           "rule": (f"an owner whose process tree is alive with no CPU progress for "
-                    f"{WEDGED_AFTER_S // 60} min is WEDGED; it is never reclaimed by a "
+           "stops": _stops_tail(),
+           "rule": (f"an owner that beats is WEDGED when a phase outruns max(its expect_s, "
+                    f"{WEDGED_AFTER_S // 60} min) with no new beat; an owner that never beats is "
+                    f"WEDGED when its process tree makes no CPU progress for "
+                    f"{WEDGED_AFTER_S // 60} min; it is never reclaimed by a "
                     "contender. The hourly job_lock_health leg stops an allowlisted research "
                     "owner after its tree has made no progress for two hours, and names every "
                     "other one RED for an operator")}
@@ -452,19 +540,24 @@ def _publish_health(name: str, health: dict, *, now: float | None = None) -> Non
     doc = _read_health()
     locks = doc.get("locks") if isinstance(doc.get("locks"), dict) else {}
     locks[name] = _stamp(health, t)
-    stops = doc.get("stops") if isinstance(doc.get("stops"), list) else []
-    _write_health(locks, stops, t)
+    _write_health(locks, t)
 
 
 def write_health_report(rows: dict, *, now: float | None = None,
                         new_stops: list | None = None) -> None:
     """The hourly leg's FULL report: exactly the locks held now, written every pass -- also when
     none is held, so a quiet hour reads fresh and a WEDGED row whose owner died is gone (audit
-    of v5, MF3). Auto-stops accumulate in `stops`, so a kill outlives the pass that made it."""
+    of v5, MF3). Auto-stops are appended to STOPS_LEDGER, so a kill outlives its pass."""
     t = time.time() if now is None else now
-    prior = _read_health().get("stops")
-    stops = (prior if isinstance(prior, list) else []) + list(new_stops or [])
-    _write_health({k: _stamp(v, t) for k, v in rows.items()}, stops, t)
+    if new_stops:
+        try:
+            STOPS_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+            with STOPS_LEDGER.open("a", encoding="utf-8") as fh:
+                for row in new_stops:
+                    fh.write(json.dumps(row, default=str) + "\n")
+        except OSError:
+            pass                          # the JOB_LOCK_STOPPED event still carries it
+    _write_health({k: _stamp(v, t) for k, v in rows.items()}, t)
 
 
 def free_mb() -> int | None:

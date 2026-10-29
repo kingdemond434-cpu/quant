@@ -1080,9 +1080,10 @@ NAMED_FAILURE_EXITS: dict[str, dict[int, str]] = {
     "daily": {DAILY_CYCLE_HOLDER_HUNG: "HOLDER_HUNG",
               DAILY_CYCLE_STAMP_UNREADABLE: "STAMP_UNREADABLE",
               DAILY_CYCLE_STAMP_UNREADABLE_PERSISTENT: "STAMP_UNREADABLE_PERSISTENT"},
-    # scripts/check_job_locks.py EXIT_WEDGED: a held lock's owner tree made no CPU progress for
-    # 30 min. A stage that is not running, so a failure -- named, never read as a crash.
-    "job_lock_health": {2: "OWNER_WEDGED"},
+    # scripts/check_job_locks.py EXIT_WEDGED (3; 2 is argparse's usage error): a held lock's
+    # owner made no progress for 30 min. A stage that is not running, so a failure -- named,
+    # never read as a crash.
+    "job_lock_health": {3: "OWNER_WEDGED"},
 }
 
 
@@ -1976,6 +1977,11 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # THE DOCKET WRITER (audit of judge atomic-replace v6, 2026-10-29). On the 720 s default the
+    # merge's ordering budget (`merge_hypotheses._order_budget_s`, cut to what the cap leaves)
+    # could not cover a 1.5M-row docket's load AND its ordering, so every pass shipped without
+    # the family interleave. The merge times its own ordering and ships within this cap.
+    "merge_hypotheses": 1_800,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -3212,8 +3218,8 @@ def judge_alive() -> dict:
 
 def job_lock_health() -> dict:
     """`job_lock_health`: is every held research lock's owner making CPU progress?
-    `scripts/check_job_locks.py` writes reports/JOB_LOCK_HEALTH.json, exits 1 while any owner is
-    WEDGED, and stops a WEDGED owner on the research allowlist after two hours (never the judge,
+    `scripts/check_job_locks.py` writes reports/JOB_LOCK_HEALTH.json, exits 3 (OWNER_WEDGED)
+    while any owner is WEDGED, and stops a WEDGED owner on the research allowlist after two hours (never the judge,
     certifier, terminal lane or money path)."""
     return _producer("job_lock_health", "scripts/check_job_locks.py")
 

@@ -669,3 +669,32 @@ def test_a_docket_preserved_for_over_a_day_is_red(tmp_path: Path) -> None:
                               "checked_at": (NOW - timedelta(minutes=20)).isoformat()}), "utf-8")
     doc = jc.docket_merge_lag(NOW, mr)
     assert doc["status"] == "RED" and "no producer" in doc["why"]
+
+
+def test_an_ordering_that_times_out_pass_after_pass_is_red(tmp_path: Path) -> None:
+    sys.path.insert(0, str(Path(jc.__file__).parent))
+    import merge_hypotheses as mh
+    mr = tmp_path / "merge_report.json"
+    assert mh.order_timeout_streak(mr, True) == 1
+    mr.write_text(json.dumps({"order_timeout_streak": 2}), "utf-8")
+    assert mh.order_timeout_streak(mr, True) == 3
+    assert mh.order_timeout_streak(mr, False) == 0
+    fresh = (NOW - timedelta(minutes=40)).isoformat()
+    mr.write_text(json.dumps({"merged_at": fresh, "order_timeout_streak": 2}), "utf-8")
+    assert jc.docket_merge_lag(NOW, mr)["status"] == "OK"
+    mr.write_text(json.dumps({"merged_at": fresh,
+                              "order_timeout_streak": jc.ORDER_TIMEOUT_RED_STREAK}), "utf-8")
+    red = jc.docket_merge_lag(NOW, mr)
+    assert red["status"] == "RED" and "interleave" in red["why"]
+
+
+def test_the_merge_ordering_budget_follows_the_leg_cap(monkeypatch) -> None:
+    sys.path.insert(0, str(Path(jc.__file__).parent))
+    import merge_hypotheses as mh
+    monkeypatch.delenv("QUANT_LEG_BUDGET_S", raising=False)
+    assert mh._order_budget_s() == mh.ORDER_BUDGET_S
+    monkeypatch.setenv("QUANT_LEG_BUDGET_S", "1800")
+    monkeypatch.setattr(mh, "_T0", __import__("time").monotonic())
+    assert mh._order_budget_s() <= 1800 - mh.REPLACE_TAIL_S - mh.ORDER_WRITE_RESERVE_S
+    from research import hourly_cycle as hc
+    assert hc.LEG_BUDGET_SEC["merge_hypotheses"] >= 1_800

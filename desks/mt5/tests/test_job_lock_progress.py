@@ -25,6 +25,7 @@ import job_lock as J  # noqa: E402
 def lock(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(J, "LOCK_ROOT", tmp_path)
     monkeypatch.setattr(J, "HEALTH_REPORT", tmp_path / "JOB_LOCK_HEALTH.json")
+    monkeypatch.setattr(J, "STOPS_LEDGER", tmp_path / "JOB_LOCK_STOPS.jsonl")
     path = tmp_path / "merge_hypotheses.json"
     path.write_text(json.dumps({"token": "t1", "pid": 18040, "host": socket.gethostname(),
                                 "started_at": "2026-10-29T03:14:56+00:00"}), "utf-8")

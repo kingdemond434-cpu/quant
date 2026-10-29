@@ -923,6 +923,10 @@ MERGE_LAG_H = 3.0
 PRESERVE_MAX_H = 24.0
 
 
+#: Consecutive merge passes whose ordering timed out before docket_merge reads RED.
+ORDER_TIMEOUT_RED_STREAK = 3
+
+
 def docket_merge_lag(at: datetime, path: Path | None = None, *,
                      lag_h: float = MERGE_LAG_H) -> dict[str, Any]:
     """RED when `merge_report.json` says the docket was last merged more than `lag_h` ago;
@@ -956,7 +960,15 @@ def docket_merge_lag(at: datetime, path: Path | None = None, *,
                                       f"{lag_h:g} h): the merge is not shipping, so the judge "
                                       "is judging a stale docket"))
     else:
-        out.update(status="OK", why=f"docket merged {age:.1f} h ago")
+        streak = doc.get("order_timeout_streak")
+        if isinstance(streak, int) and streak >= ORDER_TIMEOUT_RED_STREAK:
+            out.update(status="RED", order_timeout_streak=streak,
+                       why=(f"the docket ships, but its family ordering has hit its budget "
+                            f"{streak} passes running: the judge gets least-judged order, never "
+                            "the family interleave -- raise the merge leg's cap or speed the "
+                            "ordering"))
+        else:
+            out.update(status="OK", why=f"docket merged {age:.1f} h ago")
     return out
 
 

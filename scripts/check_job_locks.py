@@ -3,15 +3,17 @@
 2026-10-29: the canonical docket writer lane (`merge_hypotheses`) was held 15 h by a living pid
 at ~1.5 GB that used 2.3 s of CPU a minute and did no IO, and every docket intake refused behind
 it reading "owner ALIVE". `job_lock` only looked at the owner when someone contended, and only
-asked whether it was alive. This leg looks at every held lock every hour, measures the CPU
-progress of the owner's WHOLE process tree (`job_lock.owner_progress`: a parent waiting on a
-busy child is progressing), rewrites `reports/JOB_LOCK_HEALTH.json` in full every pass, and exits
+asked whether it was alive. This leg looks at every held lock every hour and asks whether the
+owner is progressing (`job_lock.owner_progress`): by its BEATS when it beats
+(`job_lock.heartbeat`, phase by phase -- CPU alone read that 2.3 s-a-minute owner as working),
+else by the CPU of its WHOLE process tree (a parent waiting on a busy child is progressing). It
+rewrites `reports/JOB_LOCK_HEALTH.json` in full every pass, and exits
 `EXIT_WEDGED` (named OWNER_WEDGED in hourly_cycle.NAMED_FAILURE_EXITS) while any owner is WEDGED.
 
 THE CURE, UNDER THE ITEM-21 RAILS. WEDGED is called after `job_lock.WEDGED_AFTER_S` (30 min) of
-no tree progress. A lock on the research allowlist whose owner's tree has then made no progress
-for `AUTO_STOP_AFTER_S` (two hours of no progress -- 90 minutes after the WEDGED call) is
-stopped, with its descendants, children first. Never by bare pid: the owner must be a Python
+no progress (or a beaten phase's own longer limit). A lock on the research allowlist whose owner
+has then made no progress for `AUTO_STOP_AFTER_S` (two hours) is stopped with its descendants:
+the tree is frozen, listed until nothing new appears, then terminated children first. Never by bare pid: the owner must be a Python
 interpreter whose argv carries the lock's own script as an ELEMENT (a path or a `-m` module, not
 a substring of some other argument), and it must have been created no later than the lock's
 `started_at`, so a recycled pid is never touched. The stop is SIGTERM on POSIX and
@@ -44,10 +46,12 @@ import job_lock as J  # noqa: E402
 #: runtime attestation can see what this organ writes (a test pins the two equal).
 OUT = ROOT / "desks" / "mt5" / "reports" / "JOB_LOCK_HEALTH.json"
 #: The exit while any owner is WEDGED. A failure, named (hourly_cycle.NAMED_FAILURE_EXITS), not
-#: a verdict: a wedged lock is a stage that is not running.
-EXIT_WEDGED = 2
+#: a verdict: a wedged lock is a stage that is not running. Not 2, argparse's usage error.
+EXIT_WEDGED = 3
 #: A WEDGED research owner is stopped once its tree has made no CPU progress for this long.
 AUTO_STOP_AFTER_S = 2 * 3600.0
+#: Listing rounds while freezing the owner's tree before a stop.
+STOP_LIST_ROUNDS = 20
 #: Seconds of clock slack when checking the owner was created before its lock was written.
 CREATE_SLACK_S = 2.0
 #: Lock name -> the scripts (file stem or module leaf) that legitimately hold it. The owner's
@@ -73,7 +77,7 @@ NEVER_STOP = frozenset({"external_gauntlet", "certification_lane",
 
 def _locks(root: Path) -> list[Path]:
     return sorted(p for p in root.glob("*.json")
-                  if not p.name.endswith((".peaks.json", ".progress.json")))
+                  if not p.name.endswith((".peaks.json", ".progress.json", ".beat.json")))
 
 
 def _leaf(arg: str) -> str:
@@ -88,14 +92,17 @@ def runs_script(argv: list[str], scripts: tuple[str, ...]) -> bool:
     exe = _leaf(argv[0]).lower() if argv else ""
     if "python" not in exe and exe not in ("py", "py.exe"):
         return False
+    # THE FIRST SCRIPT ELEMENT ONLY (audit of v6, SF6): it is what the interpreter runs; a later
+    # `.py` is an argument to it (`python other.py --in merge_hypotheses.py`).
     for i, arg in enumerate(argv[1:], start=1):
-        if not arg or any(c.isspace() for c in arg):
-            continue
         if argv[i - 1] == "-m":
-            if arg.rsplit(".", 1)[-1] in scripts:
-                return True
-        elif arg.endswith(".py") and _leaf(arg) in scripts:
-            return True
+            return arg.rsplit(".", 1)[-1] in scripts
+        if arg == "-c":
+            return False
+        if arg.startswith("-"):
+            continue
+        return arg.endswith(".py") and not any(c.isspace() for c in arg) \
+            and _leaf(arg) in scripts
     return False
 
 
@@ -120,11 +127,29 @@ def _stop(pid: int, scripts: tuple[str, ...], started_at: object = None) -> dict
         if born > lock_at + CREATE_SLACK_S:
             return {"stopped": False, "why": (f"pid {pid} was created after the lock was "
                                               "written (pid reused); not stopped")}
-        tree = proc.children(recursive=True)
+        # FREEZE, THEN LIST (audit of v6, SF1): an owner that spawns in a loop added children
+        # between one listing and the terminate -- 5 orphans in 130, the two-writers case. The
+        # owner is suspended first, then every descendant found, re-listed until a pass finds
+        # nothing new, so nothing can be born after the tree is known.
+        proc.suspend()
+        tree: list = []
+        seen: set[int] = set()
+        for _ in range(STOP_LIST_ROUNDS):
+            fresh = [c for c in proc.children(recursive=True) if c.pid not in seen]
+            if not fresh:
+                break
+            for c in fresh:
+                seen.add(c.pid)
+                with contextlib.suppress(psutil.NoSuchProcess):
+                    c.suspend()
+            tree.extend(fresh)
         for p in reversed(tree):          # deepest descendants first, the owner last
             with contextlib.suppress(psutil.NoSuchProcess):
                 p.terminate()
         proc.terminate()
+        for p in [*tree, proc]:           # SIGTERM waits on a stopped process until SIGCONT
+            with contextlib.suppress(psutil.NoSuchProcess):
+                p.resume()
         _, alive = psutil.wait_procs([*tree, proc], timeout=30)
         for p in alive:
             with contextlib.suppress(psutil.NoSuchProcess):
