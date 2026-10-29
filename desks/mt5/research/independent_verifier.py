@@ -148,6 +148,17 @@ def verify_one(key: str, rec: dict[str, Any], universe_meta: dict[str, Any]) -> 
     meta = universe_meta.get(str(spec["symbol"]))
     if not isinstance(meta, dict):
         return {**base, "verdict": UNMEASURED, "why": "symbol not in universe.json"}
+    # THE SWAP UNIT IS A CONTRACT TERM, HANDED TO BOTH SIDES AS DATA. A registry row without its
+    # own `swap_mode` gets the venue's recorded one, so the replica prices financing in the same
+    # unit the original does (and refuses by name when neither knows it).
+    if meta.get("swap_mode") is None:
+        try:
+            from mt5desk.engine import swap_mode_of
+            _mode, _src = swap_mode_of({**meta, "symbol": meta.get("symbol") or spec["symbol"]})
+        except Exception:
+            _mode = None
+        if _mode is not None:
+            meta = {**meta, "swap_mode": _mode}
     df = rep.load_bars(UNIVERSE / f"{spec['symbol']}_{str(spec['timeframe']).upper()}.parquet")
     if df is None:
         return {**base, "verdict": UNMEASURED, "why": "bars unavailable to the replica"}
