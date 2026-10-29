@@ -77,6 +77,24 @@ ACTIONS = BASE / "data" / "decay_actions.jsonl"
 #: Names the gateway must close out on its next pass: a sleeve that leaves the roster leaves the
 #: book (gateway.close_retired_positions reads and drains this).
 CLOSE_QUEUE = BASE / "data" / "RETIRED_CLOSE_QUEUE.json"
+#: THE DECAY ZERO FOR KEYS THAT TRADE OUTSIDE THE LIVE ROSTER (zuck 2026-10-29: "if a strat
+#: starts decaying losing etc does our allocators notice n replace it"). Every live order since
+#: the gold-only order of 2026-09-16 has gone out through a BOOK key (the principal's cert book,
+#: the Fusion min-lot book, the gold windows), whose roster row is STANDBY or RETIRED -- so the
+#: LIVE-only verdict loop below judged nothing, and the promoter's own retirement never touches
+#: a RETIRED row. Measured: usdnok_carry_asia_p_ff35bb7, RETIRED on the roster since September,
+#: closed 23 live trades in October for -9.36R and kept sending until a principal zero (#425).
+#: This file names every key that TRADED in the trailing window and now fails the promoter's own
+#: retirement bars on its live record; `decision_core.decay_zero` reads it and the gateway sends
+#: nothing for a named key, with a missed-growth line. Rebuilt in full every pass.
+DECAY_ZERO = BASE / "data" / "DECAY_ZERO.json"
+#: promoter.RETIRE_MIN_N / RETIRE_MAX_DD / RETIRE_MIN_EXP and its roll-20 window, mirrored (the
+#: promoter imports the terminal bindings; this organ runs without them). Pinned equal by
+#: test_decay_traded_keys.py, so the two retirement doors can never disagree.
+BOOK_RETIRE_MIN_N = 10
+BOOK_RETIRE_MAX_DD = -25.0
+BOOK_RETIRE_MIN_EXP = 0.05
+BOOK_RETIRE_ROLL = 20
 #: The forward clocks' own ledgers, the model's fallback series while the live ledger is thin:
 #: a promoted sleeve's shadow clock keeps running (promoter.py never stops it), so its forward
 #: rows are the longest untouched expectancy series the desk holds for that sleeve.
@@ -142,6 +160,19 @@ def _read_json(p: Path, default):
         return json.loads(p.read_text("utf-8"))
     except (OSError, ValueError):
         return default
+
+
+def _write_atomic(p: Path, doc: Any) -> None:
+    """Write `doc` as JSON through a temp file and `os.replace`, so the gateway never reads a
+    torn file (a torn DECAY_ZERO reads as no zeros, which is the pre-existing behaviour)."""
+    import os
+    tmp = p.with_name(f".{p.name}.{os.getpid()}.tmp")
+    try:
+        tmp.write_text(json.dumps(doc, indent=2), "utf-8")
+        os.replace(tmp, p)
+    finally:
+        if tmp.exists():
+            tmp.unlink()
 
 
 def sleeve_trades(name: str) -> list[dict]:
@@ -291,6 +322,92 @@ def pooled_verdicts(live: dict[str, dict], trades: Any = None) -> dict[str, dict
                               f"inside the band; fades stand as they are")
         out[key] = {**s, "verdict": v, "why": why, "sleeves": sorted(names)}
     return out
+
+
+def unattributed(sleeve: str) -> bool:
+    """A ledger `sleeve` that is the BROKER'S rewrite of the order comment ("[sl 4300.69]",
+    "[tp ...]", "#222731812 by #222705155"), not a sleeve: it names no key a zero could reach."""
+    return sleeve.startswith(("[", "#"))
+
+
+def traded_names() -> list[str]:
+    """Every sleeve name the live ledger holds a closed deal for inside the trailing window."""
+    if not LEDGER.exists():
+        return []
+    cutoff = datetime.now(tz=UTC) - timedelta(days=TRAIL_DAYS)
+    seen: dict[str, None] = {}
+    for line in LEDGER.read_text("utf-8").splitlines():
+        try:
+            r = json.loads(line) if line.strip() else None
+        except ValueError:
+            continue
+        if not isinstance(r, dict) or not r.get("sleeve") or unattributed(str(r["sleeve"])):
+            continue
+        try:
+            ts = datetime.fromisoformat(str(r.get("time", "")).replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if (ts if ts.tzinfo else ts.replace(tzinfo=UTC)) >= cutoff:
+            seen[str(r["sleeve"])] = None
+    return list(seen)
+
+
+def book_key_verdict(rs: list[float]) -> tuple[str, str, dict]:
+    """The PROMOTER'S retirement bars on a key's trailing live record: ZERO or HEALTHY.
+
+    The same three doors `promoter.run` applies to a LIVE or STANDBY row, in the same order: the
+    roll-20 expectancy at or below 0R once 10 trades exist; a drawdown past -25R at any n; a
+    50-trade expectancy under 0.05R. No new threshold is introduced.
+
+    GROWTH GOVERNANCE, RULE 1. A key that trips a door has a measured live expectancy at or below
+    zero (or a drawdown the forward verdicts already call ruinous), so every unit of risk it is
+    given lowers E[log W] in expectation: the zero raises robust forward growth rather than
+    trading it away. The forgone risk is still billed as a missed-growth line by the gateway.
+    """
+    n = len(rs)
+    s = stats(rs)
+    roll = rs[-BOOK_RETIRE_ROLL:]
+    roll_exp = sum(roll) / len(roll) if roll else 0.0
+    facts = {**s, "roll20_exp": round(roll_exp, 4)}
+    if n >= BOOK_RETIRE_MIN_N and roll_exp <= 0.0:
+        return "ZERO", f"roll20 exp {roll_exp:.3f}R <= 0 over n={n}", facts
+    if s["max_dd_r"] < BOOK_RETIRE_MAX_DD:
+        return "ZERO", f"live maxDD {s['max_dd_r']:.1f}R < {BOOK_RETIRE_MAX_DD}R", facts
+    if n >= 50 and s["exp_r"] < BOOK_RETIRE_MIN_EXP:
+        return "ZERO", f"n={n} exp {s['exp_r']:.3f}R < {BOOK_RETIRE_MIN_EXP}R", facts
+    return "HEALTHY", f"n={n}, roll20 exp {roll_exp:.3f}R, maxDD {s['max_dd_r']}R", facts
+
+
+def decay_zero_doc(live: dict[str, dict], now: str) -> dict:
+    """DECAY_ZERO.json: every key that traded in the window, outside the LIVE roster rows the
+    loop in `main` already judges, with the keys the promoter's bars zero.
+
+    RE-ENTRY IS THE WINDOW. A zeroed key sends nothing, so its trailing record only ages: once
+    its losing trades fall out of the TRAIL_DAYS window it no longer trips a door, drops out of
+    this file and trades again at the allocator's fraction -- and is zeroed again the moment its
+    fresh record trips. The promoter's forward clocks keep running for it meanwhile, so the
+    replacement path (a better certified candidate filling the book) is never blocked.
+    """
+    judged: dict[str, dict] = {}
+    zeros: dict[str, dict] = {}
+    live_stems = {str(k)[:LEDGER_NAME_MAX] for k in live}
+    for name in traded_names():
+        if name in live or name in live_stems:
+            continue                                  # the LIVE loop judges it, on its own bars
+        rs = [float(t["r_multiple"]) for t in sleeve_trades(name)]
+        v, why, facts = book_key_verdict(rs)
+        judged[name] = {**facts, "verdict": v, "why": why}
+        if v == "ZERO":
+            zeros[name] = {"why": why, "n": facts["n"], "exp_r": facts["exp_r"],
+                           "roll20_exp": facts["roll20_exp"], "max_dd_r": facts["max_dd_r"],
+                           "since": now}
+    return {"checked_at": now, "trail_days": TRAIL_DAYS, "zeros": zeros, "judged": judged,
+            "rule": (f"a key that closed a live trade in the last {TRAIL_DAYS} days and is not a "
+                     f"LIVE roster row is zeroed when its trailing live record trips the "
+                     f"promoter's retirement bars (roll{BOOK_RETIRE_ROLL} exp <= 0R at n >= "
+                     f"{BOOK_RETIRE_MIN_N}; maxDD < {BOOK_RETIRE_MAX_DD}R; n >= 50 and exp < "
+                     f"{BOOK_RETIRE_MIN_EXP}R); it re-arms when the window no longer trips; "
+                     f"decision_core.decay_zero makes the gateway send nothing for it")}
 
 
 def queue_close(names: list[str], path: Path | None = None) -> None:
@@ -714,16 +831,41 @@ def main(write_queue: bool = True) -> int:
     rows_seen = roster_rows(doc)
     shape_note = None
     if rows_seen and not live:
-        shape_note = (f"the roster holds {len(rows_seen)} row(s) in the LIST shape "
-                      f"promoter.save_sleeves writes; the verdict loop reads a DICT-shaped roster "
-                      f"and judged none of them (a standing defect, reported here and NOT "
-                      f"changed by the model half -- fixing it arms a demotion path)")
+        # The loop reads both shapes since 2026-09-16; what it finds is no LIVE row. The keys that
+        # trade anyway (book keys on STANDBY or RETIRED rows) are judged into DECAY_ZERO below.
+        shape_note = (f"the roster holds {len(rows_seen)} row(s) and none is LIVE, so the "
+                      f"verdict loop judged none; every key that traded is judged against the "
+                      f"promoter's retirement bars into {DECAY_ZERO.name} instead")
+    # THE BOOK KEYS, every pass the roster was read: rebuilt in full, keeping the first `since`.
+    zero_doc = None
+    if source != "UNMEASURED":
+        zero_doc = decay_zero_doc(live, now)
+        prev = _read_json(DECAY_ZERO, {}).get("zeros") or {}
+        for k, z in zero_doc["zeros"].items():
+            if isinstance(prev.get(k), dict) and prev[k].get("since"):
+                z["since"] = prev[k]["since"]
+            if k not in prev:
+                actions.append({"at": now, "sleeve": k, "action": "BOOK_ZERO", "why": z["why"]})
+        for k in prev:
+            if k not in zero_doc["zeros"]:
+                actions.append({"at": now, "sleeve": k, "action": "BOOK_UNZERO",
+                                "why": (zero_doc["judged"].get(k) or {}).get(
+                                    "why", "no live trade left in the trailing window")})
+        _write_atomic(DECAY_ZERO, zero_doc)
+        new_actions = [a for a in actions if a["action"] in ("BOOK_ZERO", "BOOK_UNZERO")]
+        if new_actions:
+            with ACTIONS.open("a", encoding="utf-8") as f:
+                for a in new_actions:
+                    f.write(json.dumps(a) + "\n")
 
     OUT.write_text(json.dumps({
         "checked_at": now,
         "live_sleeves": None if source == "UNMEASURED" else len(live),
         "roster_state": source, "roster_why": source_why,
         "roster_rows_seen": len(rows_seen), "roster_shape_note": shape_note,
+        "book_keys": (None if zero_doc is None else
+                      {"judged": len(zero_doc["judged"]), "zeroed": sorted(zero_doc["zeros"]),
+                       "file": DECAY_ZERO.name}),
         "verdicts": report, "actions_taken": actions,
         "decay_model": models, "successor_hunts": hunts, "queue": queue,
         "model_rule": (
@@ -756,7 +898,9 @@ def main(write_queue: bool = True) -> int:
           f"{sum(1 for r in report.values() if r['verdict'] != 'HEALTHY')} flagged, "
           f"{len(actions)} action(s); model: {len(models)} row(s), "
           f"{sum(1 for m in models.values() if m['status'] == 'MEASURED')} half-life(s) "
-          f"measured, {len(hunts)} successor hunt(s) -- {queue['why']}")
+          f"measured, {len(hunts)} successor hunt(s) -- {queue['why']}; book keys: "
+          f"{len(zero_doc['judged']) if zero_doc else 0} judged, "
+          f"{len(zero_doc['zeros']) if zero_doc else 0} zeroed")
     return 0
 
 
