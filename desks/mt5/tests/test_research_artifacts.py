@@ -73,6 +73,25 @@ def _build(chain: Path, **kw: Any) -> dict[str, Any]:
     return report
 
 
+def test_intelligence_in_a_sibling_with_the_same_path_prefix_preserves_its_source(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repo = tmp_path / "repo"
+    external = tmp_path / "repo-data"
+    repo.mkdir()
+    external.mkdir()
+    monkeypatch.setattr(ra, "ROOT", repo)
+    chain = _plant(external, monkeypatch)
+
+    report = _build(chain)
+    assert report["status"] == "OK", report["why"]
+    assert ac.verify(chain).ok
+    document = external / "intelligence" / "lead.json"
+    source = ac.latest("source", f"intel:{str(document).replace(chr(92), '/')}", path=chain)
+    assert source is not None
+    assert source.payload["url_or_ground"] == str(document)
+    assert source.payload["source_hash"] == ac.sha256_file(document)
+
+
 # --------------------------------------------------------------- (a) the spine, appended once
 
 def test_a_full_spine_is_appended_once_and_a_second_pass_appends_nothing(

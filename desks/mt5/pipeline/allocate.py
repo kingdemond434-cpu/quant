@@ -11,7 +11,8 @@ import pandas as pd
 
 BASE = Path(__file__).resolve().parent.parent.parent
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
-LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 
 
 @dataclass
