@@ -1,5 +1,5 @@
 {
- "at": "2026-10-28T13:43:12+00:00",
+ "at": "2026-10-28T23:43:54+00:00",
  "legs": {
   "alpha_evolution": {
    "leg": "alpha_evolution",
@@ -9,26 +9,26 @@
     "combine_survivors",
     "new_mechanism"
    ],
-   "at": "2026-10-28T13:43:00+00:00",
+   "at": "2026-10-28T23:43:47+00:00",
    "bandit_at": "2026-10-27T06:58:58.297893+00:00",
-   "hour": "2026-10-28T13",
+   "hour": "2026-10-28T23",
    "arm": "control",
    "wanted_s": 480,
    "floor_s": 240,
    "extra_wanted_s": 240,
    "extra_due_s": 240,
    "extra_s": 0,
-   "surplus_s": 1677.1,
-   "surplus_why": "department 'discovery' measured spare 1677s/hour",
+   "surplus_s": 1692.1,
+   "surplus_why": "department 'discovery' measured spare 1692s/hour",
    "contract": {
     "n_treated": 27,
-    "n_control": 13,
+    "n_control": 12,
     "mean_treated": 0.296296,
-    "mean_control": 0.076923,
-    "delta": 0.219373,
-    "t": 1.858,
+    "mean_control": 0.083333,
+    "delta": 0.212963,
+    "t": 1.741,
     "verdict": "ADMITTED",
-    "why": "Welch t=1.858 over 27 treated vs 13 held-out leg-runs in the last 14 days",
+    "why": "Welch t=1.741 over 27 treated vs 12 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "trial": true,
@@ -66,9 +66,9 @@
     "alt_data_hypothesis",
     "failure_derived"
    ],
-   "at": "2026-10-28T10:33:59+00:00",
+   "at": "2026-10-28T21:57:54+00:00",
    "bandit_at": "2026-10-27T06:58:58.297893+00:00",
-   "hour": "2026-10-28T10",
+   "hour": "2026-10-28T21",
    "arm": "none",
    "wanted_s": 0,
    "floor_s": 0,
@@ -125,13 +125,13 @@
   "legs": {
    "alpha_evolution": {
     "n_treated": 27,
-    "n_control": 13,
+    "n_control": 12,
     "mean_treated": 0.296296,
-    "mean_control": 0.076923,
-    "delta": 0.219373,
-    "t": 1.858,
+    "mean_control": 0.083333,
+    "delta": 0.212963,
+    "t": 1.741,
     "verdict": "ADMITTED",
-    "why": "Welch t=1.858 over 27 treated vs 13 held-out leg-runs in the last 14 days",
+    "why": "Welch t=1.741 over 27 treated vs 12 held-out leg-runs in the last 14 days",
     "window_d": 14.0
    },
    "deepen": {
