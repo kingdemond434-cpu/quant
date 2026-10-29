@@ -744,10 +744,12 @@ def vote(
 
 #: The entry points' import closure, committed (#547 audit v3 MF-A). This job checks out
 #: ops/release only, so it reads the list at the base AND at the head and takes the union: the
-#: base copy is trusted, and the head copy can only add. tests/ops/test_audit_gate.py pins the
-#: committed list to cover replay_shadow.import_closure() of the real tree, so a PR that grows
-#: the closure carries its own new rows.
-CLOSURE_FILE = "desks/mt5/ops/MONEY_CLOSURE.txt"
+#: base copy is trusted, and the head copy can only add. tests/ops/test_money_closure_pin.py pins
+#: the committed list to cover replay_shadow.import_closure() of the real tree, so a PR that grows
+#: the closure carries its own new rows. It lives outside replay_shadow.MONEY_PATH: under
+#: desks/mt5/ops/ every appended row read as an UNMEASURED money-path change, so any PR that grew
+#: the closure failed replay-shadow for a file the live book never reads.
+CLOSURE_FILE = "ops/money_closure.txt"
 #: Where the closure can live: every non-test module under them is money when the list cannot
 #: be read (fail closed; the same test pins that the closure never leaves them).
 CLOSURE_ROOTS = ("desks/mt5/", "libs/")

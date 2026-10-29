@@ -29,3 +29,12 @@ def test_the_committed_money_closure_covers_the_box_entry_points_import_closure(
     missing = sorted(real - rows)
     assert not missing, f"append these rows to {ir.CLOSURE_FILE}: {missing}"
     assert all(p.startswith(ir.CLOSURE_ROOTS) for p in real)  # the fail-closed rule holds too
+
+
+def test_growing_the_closure_list_is_not_itself_a_money_path_change() -> None:
+    """Under desks/mt5/ops/ the list was money path, so every PR that appended its new rows failed
+    replay-shadow as UNMEASURED for a file the live book never reads (#547, 2026-10-29)."""
+    ir, rs = _load("independent_review"), _load("replay_shadow")
+    real = rs.import_closure(ROOT)
+    assert not rs.is_money(ir.CLOSURE_FILE, real)
+    assert ir.CLOSURE_FILE not in real

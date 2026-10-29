@@ -1,6 +1,6 @@
 # The box entry points' import closure (ops/release/replay_shadow.py import_closure), read by
 # the independent reviewer at the base and the head so money files stay in one part (#547).
-# A PR that grows the closure appends its new rows; tests/ops/test_audit_gate.py names them.
+# A PR that grows the closure appends its new rows; tests/ops/test_money_closure_pin.py names them.
 desks/mt5/edge_search.py
 desks/mt5/mt5desk/account_profile.py
 desks/mt5/mt5desk/build_memo.py
