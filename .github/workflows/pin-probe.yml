@@ -24,16 +24,18 @@ jobs:
           cfg=ops/release/local_models.json
           url=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["archive"])' "$cfg")
           ver=$(python -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["ollama"])' "$cfg")
-          gh api "repos/ollama/ollama/releases/tags/v$ver" --jq '.assets[] | select(.name | startswith("ollama-linux-amd64")) | "official asset \(.name) \(.digest) \(.browser_download_url)"' || true
+          : > "$RUNNER_TEMP/pins.txt"
+          gh api "repos/ollama/ollama/releases/tags/v$ver" --jq '.assets[] | select(.name | startswith("ollama-linux-amd64")) | "official asset \(.name) \(.digest) \(.browser_download_url)"' >> "$RUNNER_TEMP/pins.txt" || true
           dir="$RUNNER_TEMP/ollama"; mkdir -p "$dir"
           curl -fsSL --retry 3 -o "$dir/ollama.tgz" "$url"
-          echo "archive sha256 $(sha256sum "$dir/ollama.tgz" | cut -d' ' -f1)"
+          echo "archive sha256 $(sha256sum "$dir/ollama.tgz" | cut -d' ' -f1)" >> "$RUNNER_TEMP/pins.txt"
           tar -xzf "$dir/ollama.tgz" -C "$dir"
           nohup "$dir/bin/ollama" serve >"$RUNNER_TEMP/ollama.log" 2>&1 &
           for _ in $(seq 60); do curl -sf http://127.0.0.1:11434/api/version && break; sleep 2; done
           for m in $(python -I -c 'import json,sys; print(" ".join(m["name"] for m in json.load(open(sys.argv[1]))["models"]))' "$cfg"); do
-            "$dir/bin/ollama" pull "$m" >/dev/null
+            "$dir/bin/ollama" pull "$m" >/dev/null 2>&1
             repo=${m%%:*}; tag=${m#*:}
-            echo "manifest sha256 $m $(sha256sum ~/.ollama/models/manifests/registry.ollama.ai/library/$repo/$tag | cut -d' ' -f1)"
+            echo "manifest sha256 $m $(sha256sum ~/.ollama/models/manifests/registry.ollama.ai/library/$repo/$tag | cut -d' ' -f1)" >> "$RUNNER_TEMP/pins.txt"
           done
           curl -sf http://127.0.0.1:11434/api/tags | python -I -c 'import json,sys; [print("server digest", m["name"], m["digest"]) for m in json.load(sys.stdin)["models"]]'
+          echo "=== PINS ==="; cat "$RUNNER_TEMP/pins.txt"
