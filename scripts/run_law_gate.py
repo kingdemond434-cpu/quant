@@ -347,6 +347,9 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # moving is. It caps nothing and rations nothing -- judging more is free in
     # multiplicity terms. LIVE coverage state, so it belongs here, not in _LAW_FENCES.
     ("check_judging_coverage.py", ()),
+    # AN ARMED LOSS RAIL PUBLISHES ITS ANCHOR AND HEADROOM (2026-10-29). The Fusion weekly rail
+    # was armed at -19.5% from peak with no anchor on its stamp; RED for the whole class.
+    ("check_loss_rail_anchors.py", ()),
     ("check_conversion.py", ()),               # L1.28b -- FLATLINE fails
     # EVERY SOURCE COLLECTED AND CONVERTED (principal 2026-09-23, "make sure they are always
     # collected, 100% exploited and converted"). Two ratchets that may only fall -- sources never
