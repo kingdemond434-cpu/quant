@@ -56,7 +56,7 @@ def test_null_case_and_low_impact_ignored(tmp_path: Path) -> None:
 
 def test_null_without_full_coverage_is_unmeasured(tmp_path: Path) -> None:
     cal = _cal(tmp_path)
-    t = ent.tag(datetime(2026, 10, 20, 12, 30, tzinfo=UTC), cal)
+    t = ent.tag(datetime(2026, 11, 6, 13, 30, tzinfo=UTC), cal)
     assert t["news_window"] is None and t["calendar_coverage"] == "FOMC_ONLY"
     assert t["in_window"] is None and "NFP" in t["unmeasured_series"]
     t = ent.tag(datetime(2027, 6, 1, tzinfo=UTC), cal)
