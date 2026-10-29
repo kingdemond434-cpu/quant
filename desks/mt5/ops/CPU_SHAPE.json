@@ -40,10 +40,11 @@
   "compute_ledger": {
     "outputs": {
       "judge": {"unit": "verdicts",
-                "sources": [{"file": "desks/mt5/reports/JUDGING_THROUGHPUT.json", "path": ["rate", "verdicts_per_day"]},
-                            {"file": "desks/mt5/reports/JUDGING_RATE.json", "path": ["verdicts_per_day"]}]}
+                "max_age_s": 7200,
+                "sources": [{"file": "desks/mt5/reports/JUDGING_THROUGHPUT.json", "path": ["rate", "verdicts_per_day"], "at_path": ["rate", "at"]},
+                            {"file": "desks/mt5/reports/JUDGING_RATE.json", "path": ["verdicts_per_day"], "at_path": ["at"]}]}
     },
-    "why": "REPORT ONLY. libs/ops/box_compute_ledger.py books every process's CPU-seconds, IO and RSS to its organ each pass and sums them per UTC day in desks/mt5/reports/BOX_COMPUTE_LEDGER.json; an output count listed here (by group) turns that into yield per core-hour, and free_cpu_first ranks which organ should get freed CPU first. An output that is absent or not a number is UNMEASURED, never zero. Add a group's cheap output count here by commit."
+    "why": "REPORT ONLY. libs/ops/box_compute_ledger.py books every process's CPU-seconds, IO and RSS to its organ each pass and sums them per UTC day in desks/mt5/reports/BOX_COMPUTE_LEDGER.json; an output count listed here (by group) turns that into yield per core-hour, and free_cpu_first ranks which organ should get freed CPU first. An output that is absent, not a number, undated or older than max_age_s (7200 = twice the hourly judging_throughput cadence) is UNMEASURED, never zero. verdicts_per_day is a rolling 24 h count, so yield divides it by the ledger's rolling 24 h of core-seconds (hourly buckets) and reads UNMEASURED until that window covers 23 h. A process that exits between passes is undercounted by what it spent after the last pass (it cannot be read once gone); exited_since_last_pass counts them. Add a group's cheap output count here by commit."
   },
   "mining_floor_cores": 6,
   "judge_reserve": {
