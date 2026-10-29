@@ -17,6 +17,8 @@ re-run). It takes no arguments and reads no queue: what it may do is this file p
      money / judge / memecoin / protected / system / mining / other.
   2. PLAN, inside fixed rails (`plan`, pure, tested):
        * no class above AboveNormal, ever;
+       * the Adopt-And-Seal / Adopt-Release tree (group `adopt`, by command line and parent
+         chain) is raised to AboveNormal while it runs and never narrowed;
        * money path, judge and protected writers are only RAISED -- never an affinity, never a
          lower class;
        * mining never below BelowNormal; an affinity cap on mining only while the judge is
@@ -24,7 +26,9 @@ re-run). It takes no arguments and reads no queue: what it may do is this file p
        * memecoin's mask is narrowed to its `max_box_share` of the box;
        * any other single process above `share_cap.threshold_cores` for `sustained_runs`
          consecutive passes is pinned to `share_cap.mask` -- only while the judge is starved
-         and never under `mining_floor_cores`, exactly as for mining;
+         and never under `mining_floor_cores`, exactly as for mining -- and once the judge is
+         no longer starved every process it pinned is widened back to the side mask
+         (`release_share_cap`; the pins are carried pass to pass in `share_cap_moved`);
        * nothing is killed, nothing is deleted.
   2b. RESERVE JUDGE CORES (`plan_reserve`, owner override 2026-10-29): mining/other python
      processes always stay off `judge_reserve.base_mask` (cores 8-15); during the judge's serial
@@ -62,6 +66,7 @@ REPO = Path(__file__).resolve().parents[2]
 RULES_PATH = REPO / "desks" / "mt5" / "ops" / "CPU_SHAPE.json"
 REPORT_PATH = REPO / "desks" / "mt5" / "reports" / "BOX_BOTTLENECKS.json"
 PHASE_PATH = REPO / "desks" / "mt5" / "reports" / "JUDGE_SWEEP_PHASE.json"
+ADOPT_HEARTBEAT_PATH = REPO / "desks" / "mt5" / "reports" / "ADOPTION_HEARTBEAT.json"
 
 #: Windows priority classes, lowest to highest. HIGH and REALTIME are named only so a rule that
 #: asks for them is REFUSED by name rather than silently misread.
@@ -72,8 +77,10 @@ _PSUTIL_CLASS = {
     "Normal": "NORMAL_PRIORITY_CLASS", "AboveNormal": "ABOVE_NORMAL_PRIORITY_CLASS",
     "High": "HIGH_PRIORITY_CLASS", "RealTime": "REALTIME_PRIORITY_CLASS",
 }
-#: Groups that may only ever be raised: no affinity, no lower class.
-RAISE_ONLY = frozenset({"money", "judge", "protected"})
+#: Groups that may only ever be raised: no affinity, no lower class. "adopt" is the
+#: Adopt-And-Seal / Adopt-Release tree (the release path rides with the money path): never put on
+#: the side mask, never share-capped, and widened back to every core if an earlier pass narrowed it.
+RAISE_ONLY = frozenset({"money", "judge", "protected", "adopt"})
 #: Groups no rule or cap touches at all.
 UNTOUCHED = frozenset({"system"})
 TOP_N = 25
@@ -159,8 +166,10 @@ def validate_rules(data: Mapping[str, Any]) -> None:
         raise ValueError(f"priority_ceiling {ceiling!r} is above AboveNormal")
     for rule in data.get("rules", []):
         name = rule.get("name")
-        if not name or not rule.get("match"):
-            raise ValueError(f"rule without name/match: {rule!r}")
+        if not name or not (rule.get("match") or rule.get("group")):
+            raise ValueError(f"rule without name and match/group: {rule!r}")
+        if rule.get("group") in RAISE_ONLY and "affinity" in rule:
+            raise ValueError(f"rule {name}: the {rule['group']} group is never affinity-capped")
         prio = rule.get("priority")
         if prio is not None and (prio not in PRIORITY_ORDER or
                                  PRIORITY_ORDER.index(prio) > PRIORITY_ORDER.index(ceiling)):
@@ -190,26 +199,36 @@ def validate_rules(data: Mapping[str, Any]) -> None:
 
 # ------------------------------------------------------------------------------------ groups
 def classify(procs: Sequence[Proc], groups: Mapping[str, Sequence[str]]) -> None:
-    """Tag each process; the judge's whole tree is judge. Precedence: money first, always."""
+    """Tag each process; the adopt and judge trees are whole. Precedence: money first, always."""
     def hit(p: Proc, kind: str) -> bool:
         return any(s.lower() in p.haystack for s in groups.get(kind, ()))
 
     children: dict[int, list[Proc]] = {}
     for p in procs:
         children.setdefault(p.ppid, []).append(p)
-    judge_tree: set[int] = set()
-    roots = [p for p in procs if hit(p, "judge")]
-    stack = [p.pid for p in roots]
-    while stack:
-        cur = stack.pop()
-        if cur in judge_tree:
-            continue
-        judge_tree.add(cur)
-        stack.extend(c.pid for c in children.get(cur, ()) if c.pid != cur)
+
+    def tree(kind: str) -> set[int]:
+        out: set[int] = set()
+        stack = [p.pid for p in procs if hit(p, kind)]
+        while stack:
+            cur = stack.pop()
+            if cur in out:
+                continue
+            out.add(cur)
+            stack.extend(c.pid for c in children.get(cur, ()) if c.pid != cur)
+        return out
+
+    # THE RELEASE PATH RIDES WITH THE MONEY PATH (2026-10-29): the first automatic Adopt-And-Seal
+    # run was measured with its python child on ~13% of a core, a 2.5-minute step past 25. Its
+    # powershell and every py/python/git below it are `adopt` by parent chain, not by name.
+    adopt_tree = tree("adopt")
+    judge_tree = tree("judge")
     system = {s.lower() for s in groups.get("system_names", ())}
     for p in procs:
         if hit(p, "money"):
             p.group = "money"
+        elif p.pid in adopt_tree:
+            p.group = "adopt"
         elif p.pid in judge_tree:
             p.group = "judge"
         elif hit(p, "memecoin"):
@@ -271,7 +290,10 @@ def plan(procs: Sequence[Proc], rules: Mapping[str, Any], n_cpu: int, *, judge_s
         if p.group in UNTOUCHED:
             continue
         for rule in rules.get("rules", []):
-            if str(rule["match"]).lower() not in p.haystack:
+            if rule.get("group"):
+                if p.group != rule["group"]:
+                    continue
+            elif str(rule["match"]).lower() not in p.haystack:
                 continue
             prio = rule.get("priority")
             if prio and prio != p.priority:
@@ -371,6 +393,128 @@ def judge_phase(doc: Mapping[str, Any] | None, alive: Any) -> tuple[str | None, 
     return phase, pid_i
 
 
+def read_doc(path: Path) -> tuple[dict[str, Any] | None, str]:
+    """(document, "ok" | "absent" | "unreadable"). Absent and unreadable are kept apart."""
+    try:
+        text = path.read_text(encoding="utf-8-sig")
+    except FileNotFoundError:
+        return None, "absent"
+    except OSError:
+        return None, "unreadable"
+    try:
+        doc = json.loads(text)
+    except ValueError:
+        return None, "unreadable"
+    return (doc, "ok") if isinstance(doc, dict) else (None, "unreadable")
+
+
+def phase_status(doc: Mapping[str, Any] | None, file_state: str, alive: Any,
+                 wait_phases: Sequence[str]) -> tuple[str | None, int | None, str]:
+    """(phase, pid, status) of the judge's sweep. Pure.
+
+    status is one of:
+      absent / unreadable / no_pid -- WE DO NOT KNOW whether the judge has work: an unknown,
+                                      counted as an unmeasured strike by `health`;
+      dead / done                  -- truly no runnable work (the writer is gone, or it says
+                                      it is in a wait phase);
+      live                         -- runnable work.
+    """
+    if file_state != "ok" or not isinstance(doc, Mapping):
+        return None, None, file_state if file_state != "ok" else "unreadable"
+    phase, pid = judge_phase(doc, alive)
+    if pid is None:
+        return None, None, "no_pid"
+    if phase is None:
+        raw = doc.get("phase")
+        return None, pid, ("dead" if isinstance(raw, str) else "unreadable")
+    if phase in set(wait_phases):
+        return phase, pid, "done"
+    return phase, pid, "live"
+
+
+#: phase_status values that are a KNOWN answer (anything else is an unknown).
+PHASE_KNOWN = frozenset({"dead", "done", "live"})
+
+
+def adopt_overdue(doc: Mapping[str, Any] | None, now: float, limit_s: float,
+                  alive: Any = None) -> str | None:
+    """Why an Adopt-And-Seal run is overdue, or None. Pure.
+
+    Adopt-And-Seal stamps ADOPTION_HEARTBEAT.json `started_at` (finished_at null) when it starts
+    and `finished_at` + `stage` in `Done`, which every exit -- every seal and every refusal --
+    goes through. A heartbeat started more than `limit_s` ago with no finished_at is a run with no
+    seal or refusal line: RED. (A killed run reads the same until the next run restamps it, and
+    the why says whether its pid still lives.)
+    """
+    if not isinstance(doc, Mapping) or doc.get("finished_at"):
+        return None
+    started = _parse_ts(doc.get("started_at"))
+    if started is None:
+        return None
+    age = now - started
+    if age <= limit_s:
+        return None
+    pid = doc.get("pid")
+    state = ""
+    if alive is not None and isinstance(pid, int):
+        state = " (pid alive)" if alive(pid) else " (pid gone: killed?)"
+    return (f"Adopt-And-Seal pid {pid}{state} started {round(age / 60)} min ago with no seal or "
+            f"refusal line (stage {doc.get('stage')!r}; limit {round(limit_s / 60)} min)")
+
+
+def _parse_ts(value: Any) -> float | None:
+    """ISO-8601 to epoch seconds. PowerShell's 'o' format has 7 fractional digits: cut to 6."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    v = re.sub(r"(\.\d{6})\d+", r"\1", value.strip()).replace("Z", "+00:00")
+    try:
+        dt = datetime.fromisoformat(v)
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+    return dt.timestamp()
+
+
+def release_share_cap(procs: Sequence[Proc], previous: Mapping[str, str], *, judge_starved: bool,
+                      side_now: Sequence[int], side_base: Sequence[int], n_cpu: int,
+                      skip_pids: set[int]) -> tuple[list[Action], dict[str, str]]:
+    """Widen back what share_cap pinned once the judge is no longer starved. Pure.
+
+    `previous` is last pass's `share_cap_moved` (process key -> mask set). While the judge is
+    starved a pin stands. Once it is not, a pinned mining/other process still narrower than this
+    pass's side mask is widened to it; the record is kept while the process is narrower than the
+    BASE side (a boost still on), so the widening finishes when the boost ends. A process now in a
+    raise-only group (e.g. it turned out to be the adopt tree) is widened to every core.
+    """
+    full = set(range(n_cpu))
+    now_mask = cpus_to_mask(side_now)
+    actions: list[Action] = []
+    keep: dict[str, str] = {}
+    for p in procs:
+        if p.key not in previous or p.pid in skip_pids:
+            continue
+        cur = set(p.affinity) if p.affinity is not None else full
+        if p.group in RAISE_ONLY:
+            if cur != full:
+                actions.append(Action(p.pid, p.name, p.group, "share_cap_release", "affinity",
+                                      _mask(p.affinity), cpus_to_mask(sorted(full))))
+            continue
+        if p.group not in ("mining", "other"):
+            continue
+        if judge_starved:
+            keep[p.key] = previous[p.key]
+            continue
+        after = cur
+        if side_now and cur < set(side_now):
+            actions.append(Action(p.pid, p.name, p.group, "share_cap_release", "affinity",
+                                  _mask(p.affinity), now_mask))
+            after = cur | set(side_now)
+        if after < set(side_base):
+            keep[p.key] = now_mask
+    return actions, keep
+
+
 def reserve_masks(cfg: Mapping[str, Any], n_cpu: int, floor_cores: int,
                   boost: bool) -> tuple[list[int], list[int], str | None]:
     """(reserve cores, side cores, why-the-boost-fell-back). The side never drops under the floor.
@@ -411,7 +555,14 @@ def plan_reserve(procs: Sequence[Proc], cfg: Mapping[str, Any], n_cpu: int, *, b
     side_mask = cpus_to_mask(side)
     moved: dict[str, str] = {}
     actions: list[Action] = []
+    full = set(range(n_cpu))
     for p in procs:
+        if p.group in RAISE_ONLY and p.key in previous_moved and p.pid not in skip_pids:
+            # narrowed while it read as mining/other; it is raise-only now: every core back
+            if p.affinity is not None and set(p.affinity) != full:
+                actions.append(Action(p.pid, p.name, p.group, "judge_reserve", "affinity",
+                                      _mask(p.affinity), cpus_to_mask(sorted(full))))
+            continue
         if (p.group not in ("mining", "other") or "python" not in p.name.lower()
                 or p.pid in skip_pids or any(e in p.haystack for e in exempt)):
             continue
@@ -443,16 +594,28 @@ def reserve_holds(actions: Sequence[Action], meta: Mapping[str, Any]) -> tuple[b
 
 
 def log_switch(history: Sequence[Mapping[str, Any]], *, at: str, mode: str,
-               phase: str | None, starved: bool, judge_share: float | None) -> list[dict[str, Any]]:
-    """Append a mode switch with the judge's share before it; fill the previous one's after."""
+               phase: str | None, starved: bool, judge_share: float | None,
+               mining_share: float | None = None,
+               side_cores: int | None = None) -> list[dict[str, Any]]:
+    """Append a mode switch with the judge's and mining's shares before it; fill the previous
+    switch's after on the next pass. `mining_donation` is what mining gave up across the
+    switch (its share before minus after, of the whole box); `side_cores` is how many cores the
+    new mode leaves mining/other."""
     out = [dict(h) for h in history][-19:]
     if out and out[-1].get("judge_share_after") is None and out[-1].get("mode") != "init":
-        out[-1]["judge_share_after"] = judge_share
+        last = out[-1]
+        last["judge_share_after"] = judge_share
+        last["mining_share_after"] = mining_share
+        before = last.get("mining_share_before")
+        if isinstance(before, (int, float)) and mining_share is not None:
+            last["mining_donation"] = round(float(before) - mining_share, 4)
     last_mode = out[-1]["mode"] if out else None
     if mode != last_mode:
         out.append({"at": at, "from": last_mode, "mode": mode, "phase": phase,
-                    "starved": starved, "judge_share_before": judge_share,
-                    "judge_share_after": None})
+                    "starved": starved, "side_cores": side_cores,
+                    "judge_share_before": judge_share, "judge_share_after": None,
+                    "mining_share_before": mining_share, "mining_share_after": None,
+                    "mining_donation": None})
     return out
 
 
@@ -461,40 +624,66 @@ RED_AFTER_RUNS = 2
 
 
 def health(previous: Mapping[str, Any] | None, *, measured: bool, runnable: bool,
-           judge_share: float | None, min_share: float) -> dict[str, Any]:
+           judge_share: float | None, min_share: float, phase_known: bool = True,
+           phase_status: str | None = None, adopt_why: str | None = None) -> dict[str, Any]:
     """THE HUNTER'S OWN RED CHECK (owner rule 23, 2026-10-29). Pure.
 
-    RED when the judge's share of the box has stayed below `min_share` for MORE than
-    RED_AFTER_RUNS consecutive passes while it had runnable work (a live judge not in a wait
-    phase), or when this hunter's own measurement has been UNMEASURED for more than
-    RED_AFTER_RUNS passes. One or two strikes read WATCH; a clean pass resets its counter.
+    RED when any of:
+      * the judge's share of the box stayed below `min_share` for MORE than RED_AFTER_RUNS
+        consecutive passes while it had runnable work (a live sweep not in a wait phase);
+      * this hunter's own measurement has been UNMEASURED for more than RED_AFTER_RUNS passes;
+      * the judge's phase has been UNKNOWN (JUDGE_SWEEP_PHASE.json absent, unreadable or with no
+        pid) for more than RED_AFTER_RUNS passes -- an unknown is never read as "no work";
+      * `adopt_why` is set: an Adopt-And-Seal run is past its limit with no seal or refusal
+        line (immediately: the release path rides with the money path).
+    One or two strikes read WATCH; a clean pass resets its counter. A pass with an unknown phase
+    neither adds to nor resets the judge-low counter.
     """
     prev = previous or {}
     low = int(prev.get("judge_low_strikes") or 0)
     unmeasured = int(prev.get("unmeasured_strikes") or 0)
+    unknown = int(prev.get("phase_unknown_strikes") or 0)
     if not measured:
         unmeasured += 1
     else:
         unmeasured = 0
-        starved = runnable and judge_share is not None and judge_share < min_share
-        low = low + 1 if starved else 0
+        if not phase_known:
+            unknown += 1
+        else:
+            unknown = 0
+            starved = runnable and judge_share is not None and judge_share < min_share
+            low = low + 1 if starved else 0
     out: dict[str, Any] = {"judge_low_strikes": low, "unmeasured_strikes": unmeasured,
-                           "judge_min_share": min_share, "red_after_runs": RED_AFTER_RUNS}
-    if unmeasured > RED_AFTER_RUNS:
+                           "phase_unknown_strikes": unknown, "phase_status": phase_status,
+                           "judge_min_share": min_share, "red_after_runs": RED_AFTER_RUNS,
+                           "adopt_overdue": adopt_why}
+    if adopt_why:
+        out.update(verdict="RED", why=f"release path stalled: {adopt_why}")
+    elif unmeasured > RED_AFTER_RUNS:
         out.update(verdict="RED", why=f"the hunter has been UNMEASURED for {unmeasured} "
                    "consecutive passes: nobody is watching the box's CPU")
+    elif unknown > RED_AFTER_RUNS:
+        out.update(verdict="RED", why=f"the judge's phase has been unknown ({phase_status}) for "
+                   f"{unknown} consecutive passes: nobody can say whether it is starved")
     elif low > RED_AFTER_RUNS:
         out.update(verdict="RED", why=f"judge below {min_share:.0%} of the box for {low} "
                    "consecutive passes with runnable work")
     elif not measured:
         out.update(verdict="UNMEASURED", why=f"unmeasured pass {unmeasured} of "
                    f"{RED_AFTER_RUNS} tolerated")
+    elif unknown:
+        out.update(verdict="UNMEASURED", why=f"judge phase unknown ({phase_status}), pass "
+                   f"{unknown} of {RED_AFTER_RUNS} tolerated")
     elif low:
         out.update(verdict="WATCH", why=f"judge below {min_share:.0%} of the box, pass {low} of "
                    f"{RED_AFTER_RUNS} tolerated")
+    elif runnable:
+        share = "unmeasured" if judge_share is None else f"{judge_share:.0%}"
+        out.update(verdict="GREEN", why=f"at/above floor: judge {share} of the box with "
+                   f"runnable work, floor {min_share:.0%}")
     else:
-        out.update(verdict="GREEN", why="judge share at or above its floor, or no runnable "
-                   "judge work")
+        out.update(verdict="GREEN", why=f"no runnable work: judge phase {phase_status or 'n/a'} "
+                   "(writer gone or in a wait phase)")
     return out
 
 
@@ -644,16 +833,21 @@ def _disk_free_gb() -> float | None:
         return None
 
 
-def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH) -> dict[str, Any]:
+def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH,
+             phase_path: Path = PHASE_PATH,
+             adopt_heartbeat_path: Path = ADOPT_HEARTBEAT_PATH) -> dict[str, Any]:
     now = datetime.now(UTC).isoformat(timespec="seconds")
+    alive = psutil.pid_exists if psutil is not None else None
+    adopt_doc, _adopt_state = read_doc(adopt_heartbeat_path)
     report: dict[str, Any] = {"schema": "box_bottlenecks/v1", "generated_at": now,
                               "host": socket.gethostname(), "rules": str(rules_path.name)}
     prev = _previous_doc(report_path)
     prev_health = prev.get("health") if isinstance(prev.get("health"), dict) else None
 
-    def _unmeasured(verdict: str, why: str, line: str, min_share: float) -> dict[str, Any]:
+    def _unmeasured(verdict: str, why: str, line: str, min_share: float,
+                    adopt_why: str | None = None) -> dict[str, Any]:
         h = health(prev_health, measured=False, runnable=False, judge_share=None,
-                   min_share=min_share)
+                   min_share=min_share, adopt_why=adopt_why)
         report.update(verdict=verdict, why=why, health=h,
                       line=f"{line} [{h['verdict']}: {h['why']}]"[:300])
         _write(report_path, report)
@@ -663,27 +857,57 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH) 
         rules = load_rules(rules_path)
     except (OSError, ValueError, KeyError, TypeError) as exc:
         return _unmeasured("RULES_REFUSED", f"{type(exc).__name__}: {exc}"[:300],
-                           f"CPU SHAPE RULES REFUSED: {exc}"[:200], 0.0)
+                           f"CPU SHAPE RULES REFUSED: {exc}"[:200], 0.0,
+                           adopt_overdue(adopt_doc, time.time(), 15 * 60.0, alive))
     min_share = float(rules.get("judge_min_share", 0.0))
+    adopt_why = adopt_overdue(adopt_doc, time.time(),
+                              60.0 * float(rules.get("adopt_red_after_min", 15)), alive)
+    report["adopt_run"] = {"heartbeat": adopt_doc, "overdue": adopt_why}
     if psutil is None:
         return _unmeasured("UNMEASURED", "psutil is not importable on this interpreter",
-                           "CPU SHAPE UNMEASURED: psutil absent; nothing shaped", min_share)
+                           "CPU SHAPE UNMEASURED: psutil absent; nothing shaped", min_share,
+                           adopt_why)
     n_cpu = int(psutil.cpu_count() or 1)
     procs, box_pct = measure(float(rules.get("window_s", 5)))
     if not procs or box_pct is None:
         return _unmeasured("UNMEASURED", "psutil returned no process with a CPU rate",
-                           "CPU SHAPE UNMEASURED: no process measured; nothing shaped", min_share)
-    phase, phase_pid = judge_phase(_previous_doc(PHASE_PATH), psutil.pid_exists)
+                           "CPU SHAPE UNMEASURED: no process measured; nothing shaped", min_share,
+                           adopt_why)
+    wait_phases = rules.get("judge_wait_phases", ["done"])
+    phase_doc, phase_file = read_doc(phase_path)
+    phase, phase_pid, phase_st = phase_status(phase_doc, phase_file, psutil.pid_exists,
+                                              wait_phases)
     classify(procs, rules.get("groups", {}))
     summary = summarize(procs, n_cpu, box_pct, rules.get("judge_starved", {}))
-    the_plan = plan(procs, rules, n_cpu, judge_starved=summary["judge"]["starved"],
+    starved_now = bool(summary["judge"]["starved"])
+    the_plan = plan(procs, rules, n_cpu, judge_starved=starved_now,
                     previous_heavy=list(prev.get("heavy") or []))
     reserve_cfg = rules.get("judge_reserve") or {}
+    floor_cores = int(rules.get("mining_floor_cores", 1))
+    serial = bool(reserve_cfg) and phase in set(reserve_cfg.get("serial_phases", []))
+    boost = bool(serial or starved_now)
+    if reserve_cfg:
+        side_now = reserve_masks(reserve_cfg, n_cpu, floor_cores, boost)[1]
+        side_base = reserve_masks(reserve_cfg, n_cpu, floor_cores, False)[1]
+    else:
+        side_now = side_base = list(range(n_cpu))
+    # SHARE-CAP PINS ARE RECORDED AND RELEASED (audit MF1, 2026-10-29): without this a miner
+    # pinned to 0x3000F stayed on six cores after starvation ended -- `plan` refuses outside
+    # starvation and `plan_reserve` never knew the shaper had narrowed it.
+    prev_cap_raw = prev.get("share_cap_moved")
+    prev_cap: dict[str, str] = prev_cap_raw if isinstance(prev_cap_raw, dict) else {}
+    key_of = {p.pid: p.key for p in procs}
+    pinned_now = {a.pid for a in the_plan.actions if a.kind == "affinity"}
+    release_actions, cap_moved = release_share_cap(
+        procs, prev_cap, judge_starved=starved_now, side_now=side_now, side_base=side_base,
+        n_cpu=n_cpu, skip_pids=pinned_now)
+    the_plan.actions.extend(release_actions)
+    for a in the_plan.actions:
+        if a.rule == "share_cap" and a.pid in key_of:
+            cap_moved[key_of[a.pid]] = str(a.after)
     reserve_doc: dict[str, Any] = {}
     reserve_actions: list[Action] = []
     if reserve_cfg:
-        serial = phase in set(reserve_cfg.get("serial_phases", []))
-        boost = bool(serial or summary["judge"]["starved"])
         prev_res_raw = prev.get("judge_reserve")
         prev_res: dict[str, Any] = prev_res_raw if isinstance(prev_res_raw, dict) else {}
         prev_moved_raw = prev_res.get("moved")
@@ -691,23 +915,26 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH) 
         pinned = {a.pid for a in the_plan.actions if a.kind == "affinity"}
         reserve_actions, moved, meta = plan_reserve(
             procs, reserve_cfg, n_cpu, boost=boost,
-            floor_cores=int(rules.get("mining_floor_cores", 1)), skip_pids=pinned,
+            floor_cores=floor_cores, skip_pids=pinned,
             previous_moved=prev_moved)
         the_plan.actions.extend(reserve_actions)
         reserve_doc = {**meta, "phase": phase, "phase_pid": phase_pid, "serial": serial,
                        "starved": summary["judge"]["starved"], "moved": moved,
                        "switches": log_switch(prev_res.get("switches") or [], at=now,
                                               mode=str(meta["mode"]), phase=phase,
-                                              starved=bool(summary["judge"]["starved"]),
-                                              judge_share=summary["judge"]["share_of_box"])}
+                                              starved=starved_now,
+                                              judge_share=summary["judge"]["share_of_box"],
+                                              mining_share=summary["by_group"].get(
+                                                  "mining", {}).get("share_of_box", 0.0),
+                                              side_cores=int(meta["side_cores"]))}
     apply(the_plan.actions, n_cpu)
     if reserve_cfg:
         ok, why = reserve_holds(reserve_actions, reserve_doc)
         reserve_doc.update(holds=ok, holds_why=why)
     hunter_health = health(
-        prev_health, measured=True,
-        runnable=judge_runnable(phase, rules.get("judge_wait_phases", ["done"])),
-        judge_share=float(summary["judge"]["share_of_box"]), min_share=min_share)
+        prev_health, measured=True, runnable=phase_st == "live",
+        judge_share=float(summary["judge"]["share_of_box"]), min_share=min_share,
+        phase_known=phase_st in PHASE_KNOWN, phase_status=phase_st, adopt_why=adopt_why)
     holds, holds_why = memecoin_cap_holds(procs, rules, the_plan,
                                           float(summary["memecoin"]["share_of_box"]))
     summary["memecoin"].update(cap_holds=holds, cap_why=holds_why)
@@ -725,8 +952,8 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH) 
         disk_free_gb=_disk_free_gb(), **summary,
         top=[_row(p) for p in top],
         actions=[asdict(a) for a in the_plan.actions], refused=the_plan.refused,
-        heavy=the_plan.heavy, wall=wall, judge_reserve=reserve_doc, health=hunter_health,
-        judge_phase=phase,
+        heavy=the_plan.heavy, share_cap_moved=cap_moved, wall=wall, judge_reserve=reserve_doc,
+        health=hunter_health, judge_phase=phase, judge_phase_status=phase_st,
         line=(f"CPU SHAPE {hunter_health['verdict']}: box {box_pct}% on {n_cpu} cores; judge "
               f"{summary['judge']['share_of_box']:.0%} of box"
               f"{' (STARVED)' if summary['judge']['starved'] else ''}; memecoin "
