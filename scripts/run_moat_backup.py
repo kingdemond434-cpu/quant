@@ -248,7 +248,7 @@ def _copy_capped(src: Path, dst: Path, skipped: list[dict[str, Any]],
 def _drill(dest: Path, manifest: dict[str, Any]) -> bool:
     """Restore drill on EVERY run: sqlite replicas must integrity-check, files must re-hash."""
     for store, entry in manifest["stores"].items():
-        if entry["status"] != "REPLICATED":
+        if entry["status"] not in ("REPLICATED", "PARTIAL"):
             continue
         base = dest / store
         for rel, digest in entry["sha256"].items():
@@ -298,7 +298,25 @@ def build_backup(root: Path, dest: Path | None = None,
         else:
             if target.is_dir():
                 shutil.rmtree(target)
+            first = len(unread)
             digests = _copy_capped(src, target, skipped, unread)
+            # A FILE NOT READ IS A FILE NOT BACKED UP (#479 re-audit MF1). The drill checks only
+            # recorded digests, so a store whose one file was locked passed vacuously and reported
+            # OK beside a replica holding the previous run's bytes. "moving" is not counted: it
+            # has a recorded copy of its own.
+            missed = [u for u in unread[first:] if u["reason"] != "moving"]
+            if missed:
+                stale = None
+                if kind != "tree" and target.exists() and not digests:
+                    # the replica on disk is the previous run's: renamed, never deleted, so a
+                    # restore can never take it for current
+                    stale = target.with_name(target.name + ".stale")
+                    os.replace(target, stale)
+                stores[name] = {"status": "PARTIAL" if digests else "UNREAD", "kind": kind,
+                                "path": rel, "bytes": _du(src), "sha256": digests,
+                                "unread": [u["file"] for u in missed],
+                                "stale_replica": stale.name if stale else None}
+                continue
         stores[name] = {"status": "REPLICATED", "kind": kind, "path": rel,
                         "bytes": _du(src), "sha256": digests}
         if census is not None:
@@ -329,16 +347,18 @@ def build_backup(root: Path, dest: Path | None = None,
     # store that cannot exist is to stop declaring it, never to tolerate absence generally.)
     absent = sorted(n for n, s in stores.items() if s["status"] == "ABSENT")
     oversized = sorted(n for n, s in stores.items() if s["status"] == "OVERSIZED")
+    unread_stores = sorted(n for n, s in stores.items() if s["status"] in ("PARTIAL", "UNREAD"))
     manifest["absent_stores"] = absent
     manifest["oversized_stores"] = oversized
+    manifest["unread_stores"] = unread_stores
     status = "OK"
     if free < FUSE_PCT:
         status = "DISK-FUSE"
     elif not manifest["restore_drill_passed"]:
         status = "DRILL-FAILED"
-    elif all(s["status"] == "ABSENT" for s in stores.values()):
+    elif all(s["status"] in ("ABSENT", "UNREAD") for s in stores.values()):
         status = "NOTHING-REPLICATED"
-    elif absent or oversized:
+    elif absent or oversized or unread_stores:
         status = "DEGRADED"
     manifest["status"] = status
     (dest / "manifest.json").write_text(json.dumps(manifest, indent=2), "utf-8")
@@ -368,6 +388,9 @@ def main() -> int:
     if rep.get("oversized_stores"):
         print(f"   OVERSIZED (outgrew the covered class, refused loudly): "
               f"{', '.join(rep['oversized_stores'])}")
+    if rep.get("unread_stores"):
+        print(f"   UNREAD (a file locked or gone, replica not current): "
+              f"{', '.join(rep['unread_stores'])}")
     if args.report_only:
         return 0
     # DEGRADED joins the failing set: every store here is declared "small and irreplaceable", so a

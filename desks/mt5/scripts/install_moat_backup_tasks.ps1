@@ -37,7 +37,7 @@ $py = @((Join-Path $repo '.venv\Scripts\python.exe'),
       Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $py) { throw 'no python.exe found in .venv or either Python314 install' }
 # SYSTEM can run a per-user install but does not see that user's site-packages.
-if ($py -like '*\AppData\*') { Write-Warning "using the per-user python $py: SYSTEM cannot see its user-site packages" }
+if ($py -like '*\AppData\*') { Write-Warning "using the per-user python ${py}: SYSTEM cannot see its user-site packages" }
 Write-Output "python: $py"
 
 $jobs = @(

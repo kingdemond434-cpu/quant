@@ -155,6 +155,56 @@ def test_a_locked_or_vanished_file_is_listed_and_the_run_still_writes_its_manife
     assert not list((tmp_path / "backups/moat").rglob("*.moat-tmp"))
 
 
+def test_a_locked_single_file_store_is_never_reported_ok(tmp_path, monkeypatch):
+    """#479 re-audit MF1: a store whose only file was locked passed the drill vacuously (no
+    digest to check) and the run said OK beside a replica holding the previous run's bytes."""
+    import shutil as _sh
+
+    _seed(tmp_path)
+    assert build_backup(tmp_path, free_pct=50.0)["status"] == "OK"
+    live = tmp_path / "data/capital_events.jsonl"
+    with live.open("a", encoding="utf-8") as fh:
+        fh.write('{"event": "deposit", "usd": 1}\n')
+    real = _sh.copyfile
+
+    def locked(src, dst, **kw):
+        if Path(src) == live:
+            raise PermissionError(13, "The process cannot access the file", src)
+        return real(src, dst, **kw)
+
+    monkeypatch.setattr(_sh, "copyfile", locked)
+    rep = build_backup(tmp_path, free_pct=50.0)
+    monkeypatch.setattr(_sh, "copyfile", real)
+    st = rep["stores"]["capital_events"]
+    assert st["status"] == "UNREAD" and rep["status"] == "DEGRADED"
+    assert rep["unread_stores"] == ["capital_events"]
+    # the previous run's replica is kept, renamed, never taken for current
+    assert not (tmp_path / "backups/moat/capital_events").exists()
+    assert (tmp_path / "backups/moat" / st["stale_replica"]).exists()
+    # and the next clean run is whole again
+    assert build_backup(tmp_path, free_pct=50.0)["status"] == "OK"
+
+
+def test_a_partly_read_tree_store_is_degraded_not_ok(tmp_path, monkeypatch):
+    import shutil as _sh
+
+    _seed(tmp_path)
+    tape = tmp_path / "data/moat/execution_tape"
+    (tape / "held.jsonl").write_text('{"fill": 3}\n', "utf-8")
+    real = _sh.copyfile
+
+    def flaky(src, dst, **kw):
+        if Path(src).name == "held.jsonl":
+            raise PermissionError(13, "locked", src)
+        return real(src, dst, **kw)
+
+    monkeypatch.setattr(_sh, "copyfile", flaky)
+    rep = build_backup(tmp_path, free_pct=50.0)
+    monkeypatch.setattr(_sh, "copyfile", real)
+    assert rep["stores"]["execution_tape"]["status"] == "PARTIAL"
+    assert rep["status"] == "DEGRADED" and rep["restore_drill_passed"] is True
+
+
 def test_a_file_appended_during_the_copy_is_retried_not_failed(tmp_path, monkeypatch):
     """#479 MF1: the digest used to be the source's LATER hash beside a copy of its earlier bytes,
     so the drill failed a healthy replica of a file the live writer appends to."""
