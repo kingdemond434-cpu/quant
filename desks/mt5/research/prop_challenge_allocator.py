@@ -58,8 +58,8 @@ THE UNIVERSE, every gate fail-closed and every refusal NAMED in `screen`:
      rule now lives where it can actually be enforced, at the order: a sleeve that shares a symbol
      with E8 is marked `e8_overlap` and its `direction_fence`, and no FTMO executor may send it
      without the cross-account opposite-side fence (`mt5desk.cross_account.opposite_block`, the
-     gold direction lock for XAUUSD). No such executor exists for non-gold keys today
-     (`FTMO_EXECUTABLE`), so the override widens what is sized and reported, not what is sent.
+     gold direction lock for XAUUSD). `prop/ftmo_executor.py` is that executor: it checks the
+     Fusion and E8 books under the placement lock before every send.
 The one exception is the gold_asia COPY, and it is the principal's switch, not this solve's
 (`COPY_COLUMNS`, `copy_switch`): FTMO bans cross-firm copying and the principal overrode that with
 informed consent (2026-10-28 14:31Z). It is a column only while the principal holds it on, and the
@@ -72,8 +72,12 @@ cells. Trials are counted by the gauntlet at its fixed canonical count, so this 
 
 DEPLOYMENT. reports/FTMO_ALLOCATOR.json always. The `ftmo` block of data/CERT_BOOK_LIVE.json is
 rewritten ONLY when data/FTMO_ALLOCATOR_ARMED exists, the account state is MEASURED and fresh, the
-book validated, and only for keys an FTMO executor trades today (`FTMO_EXECUTABLE`). A sized sleeve
-with no executor is published as SIZED_NO_EXECUTOR with the J it would add.
+book validated, and only for keys an FTMO executor trades: the gold copy (`FTMO_EXECUTABLE`, the
+follower) and every non-gold sleeve whose certificate spec is published in `specs` (the sleeve
+executor, `prop/ftmo_executor.py`, 2026-10-29). A key that was in the block and is no longer
+executable is written 0 -- a sleeve the solve dropped is never left funded. A sized sleeve with no
+executor (a non-copy gold window: gold has one FTMO owner) is published as SIZED_NO_EXECUTOR with
+the J it would add.
 
     python desks/mt5/research/prop_challenge_allocator.py [--venue ftmo] [--paths 1500]
 """
@@ -128,8 +132,11 @@ STEPS = (0.004, 0.002, 0.001, 0.0005)
 STARTS = 4
 #: The account state must be younger than this to deploy from (the reader runs every 5 minutes).
 STATE_MAX_AGE_S = 3 * 3600
-#: Keys an FTMO executor can trade today. Everything else is sized and reported, never sent.
+#: Keys the gold follower trades (prop/ftmo_follower.py). Non-gold keys are the sleeve
+#: executor's (`executor_runs`); a non-copy gold window has no FTMO executor.
 FTMO_EXECUTABLE = frozenset({"gold_asia"})
+#: Symbols the sleeve executor never trades: gold has one FTMO owner, the follower.
+EXECUTOR_SKIP_SYMBOLS = frozenset({"XAUUSD"})
 #: THE COPY IS THE PRINCIPAL'S SWITCH, NEVER THIS SOLVE'S. FTMO's rules ban copied/coordinated
 #: trades across firms; the principal overrode that with informed consent on 2026-10-28 14:31Z
 #: ("Copy anyway", cmsg G7EkJ9KTaSMy5a42YV4Hxg). So the gold_asia copy is a column ONLY while the
@@ -514,6 +521,42 @@ def quarantined_symbols() -> set[str]:
     return {s for s, v in (allow or {}).items() if isinstance(v, list) and not v}
 
 
+def executor_runs(col: str, specs: dict[str, Any]) -> bool:
+    """Does an FTMO executor trade `col`? The follower's gold copy, or a non-gold sleeve whose
+    certificate spec the sleeve executor can rebuild."""
+    if col in FTMO_EXECUTABLE:
+        return True
+    spec = specs.get(col)
+    return isinstance(spec, dict) and str(spec.get("symbol") or "").upper() not in \
+        EXECUTOR_SKIP_SYMBOLS
+
+
+def sleeve_spec(cert_key: str) -> tuple[dict[str, Any] | None, str]:
+    """(the spec the sleeve executor runs, why): the certificate's own `shadow_spec`, in the
+    E8 book's shape (prop/e8_book._load_survivors) so one reconstruction serves both lanes."""
+    store = _read_json(BASE / "reports" / "UNIVERSAL_SURVIVORS.json") or {}
+    if not store.get("survivors"):
+        store = _read_json(BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json") or {}
+    cert = (store.get("survivors") or {}).get(cert_key)
+    if not isinstance(cert, dict):
+        return None, f"certificate {cert_key} is not in the store"
+    spec = cert.get("shadow_spec") or {}
+    sym = str(spec.get("symbol") or cert.get("sym") or "").upper()
+    fam = str(spec.get("family") or "")
+    if not sym or not fam:
+        return None, f"certificate {cert_key} carries no symbol/family spec"
+    try:
+        from admission_integrity import spec_fingerprint
+        fp = spec_fingerprint(spec.get("symbol"), spec.get("family"), spec.get("selector"),
+                              spec.get("side"), spec.get("params"))
+    except Exception as exc:
+        return None, f"spec fingerprint unavailable ({type(exc).__name__})"
+    return {"key": cert_key, "symbol": sym, "family": fam,
+            "selector": spec.get("selector") or "asia", "fingerprint": fp,
+            "params": {k: v for k, v in spec.items()
+                       if k not in ("symbol", "family", "selector", "is_universe", "hunt")}}, "ok"
+
+
 def build_universe(seed: int = 0) -> dict[str, Any]:
     """Columns, world tensor and the screen, every gate fail-closed and named."""
     import kelly_survival as ks
@@ -540,6 +583,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
     slices: list[np.ndarray] = []
     costs: dict[str, Any] = {}
     columns: dict[str, dict[str, Any]] = {}
+    specs: dict[str, dict[str, Any]] = {}
 
     deals: list[dict[str, Any]] = []
     try:
@@ -593,6 +637,12 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
             columns[col] = {"admitted": False, "why": reason, "rail": "ftmo_universe"}
             continue
         admit(col, r_c[:, :, k], f"Tier S via {tier_s[col]}")
+        if columns[col].get("admitted"):
+            spec, swhy = sleeve_spec(tier_s[col])
+            if spec is not None:
+                specs[col] = spec
+            else:
+                columns[col]["no_spec"] = swhy
         if sym in e8_syms and columns[col].get("admitted"):
             columns[col]["e8_overlap"] = True
             columns[col]["direction_fence"] = (
@@ -614,7 +664,7 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
         post[c] = {"prior_r": round(prior, 4), "live_n": len(live_r),
                    "posterior_r": round(mean, 4), "live_weight": round(weight, 3)}
     return {"status": "OK", "cols": cols, "r": r, "columns": columns, "screen": screen,
-            "caps": caps,
+            "caps": caps, "specs": specs,
             "costs": costs, "posterior": post, "listing_source": listing_src,
             "unpriced": unpriced, "listing": listing, "tier_s": tier_s}
 
@@ -808,14 +858,17 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     doc["book"] = dict(now_block["risk_frac"])
     # THE EXECUTOR SIZES ON EQUITY (prop/ftmo_follower: fraction x equity); the solve sizes on the
     # initial balance. The written fraction carries the same dollars at today's equity.
+    specs = uni.get("specs") or {}
     doc["executable"] = {c: math.floor(v / st.equity * 1e5) / 1e5 for c, v in doc["book"].items()
-                         if c in FTMO_EXECUTABLE}
-    doc["sized_no_executor"] = {c: v for c, v in doc["book"].items() if c not in FTMO_EXECUTABLE}
+                         if executor_runs(c, specs)}
+    doc["specs"] = {c: specs[c] for c in doc["executable"] if c in specs}
+    doc["sized_no_executor"] = {c: v for c, v in doc["book"].items()
+                                if not executor_runs(c, specs)}
     # Missed growth (Rule 1): what the missing executors cost, and every column a rail kept out.
     if doc["sized_no_executor"] and now_block["status"] == "OK":
         here = st
         h_full = np.array([doc["book"].get(c, 0.0) for c in cols])
-        h_exec = np.array([doc["book"].get(c, 0.0) if c in FTMO_EXECUTABLE else 0.0
+        h_exec = np.array([doc["book"].get(c, 0.0) if executor_runs(c, specs) else 0.0
                            for c in cols])
         j_full = evaluate(valid_w, h_full, rules, st.phase, here, cont)["score"]
         j_exec = evaluate(valid_w, h_exec, rules, st.phase, here, cont)["score"]
@@ -904,7 +957,11 @@ def apply_book(doc: dict[str, Any], path: Path = CERT_BOOK, armed: Path = ARMED,
     if not isinstance(book, dict) or book.get("enabled") is not True:
         return {"applied": False, "why": "CERT_BOOK_LIVE.json unreadable or not enabled"}
     block = dict(book.get("ftmo") or {})
-    new = {k: float(doc["executable"].get(k, 0.0)) for k in FTMO_EXECUTABLE}
+    # Every key the solve can execute, and every numeric key already in the block: one the solve
+    # no longer funds is written 0 (fail closed), never left at its old size.
+    keys = set(FTMO_EXECUTABLE) | set(doc.get("executable") or {}) | {
+        k for k, v in block.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}
+    new = {k: float((doc.get("executable") or {}).get(k, 0.0)) for k in sorted(keys)}
     if any(not 0.0 <= v <= MAX_RISK_FRAC for v in new.values()):
         return {"applied": False, "why": "a value lies outside [0, MAX_RISK_FRAC]"}
     ceiling = principal_ceiling(principal)

@@ -1,0 +1,275 @@
+"""THE FTMO SLEEVE EXECUTOR (prop/ftmo_executor.py): the allocator's non-gold sleeves, sent.
+
+A stubbed MT5 terminal and a stub family; the doors (replication, Tier S, the cross-account books)
+are replaced by stubs so each test moves one of them.
+"""
+from __future__ import annotations
+
+import json
+import sys
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
+
+import pandas as pd
+import pytest
+
+_DESK = Path(__file__).resolve().parents[1]
+for _p in (str(_DESK), str(_DESK / "research"), str(_DESK.parent.parent)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from prop import ftmo_executor as fx  # noqa: E402
+
+NOW = datetime(2026, 10, 29, 2, 3, tzinfo=UTC)          # 04:03 on the UTC+2 broker clock
+SERVER = NOW + timedelta(hours=2)
+BAR = pd.Timestamp(SERVER.replace(minute=0) - timedelta(hours=1)).tz_convert(UTC)
+KEY = "AUDNZD_overnight_gap_decay_asia"
+SPEC = {"key": "external.AUDNZD.overnight_gap_decay.p=1", "symbol": "AUDNZD",
+        "family": "overnight_gap_decay", "selector": "asia", "fingerprint": "fp",
+        "params": {"timeframe": "H1"}}
+
+
+class _MT5:
+    TRADE_ACTION_DEAL = 1
+    ORDER_TYPE_BUY, ORDER_TYPE_SELL = 0, 1
+    ORDER_TIME_GTC, ORDER_FILLING_FOK, ORDER_FILLING_IOC, ORDER_FILLING_RETURN = 0, 0, 1, 2
+    TIMEFRAME_H1 = 16385
+
+    def __init__(self) -> None:
+        self.acc = SimpleNamespace(equity=100_000.0, balance=100_000.0)
+        self.positions: list[SimpleNamespace] = []
+        self.orders: list[SimpleNamespace] = []
+        self.sent: list[dict] = []
+        self.tick_epoch = SERVER.timestamp()
+
+    def account_info(self) -> SimpleNamespace:
+        return self.acc
+
+    def symbol_select(self, sym: str, on: bool) -> bool:
+        return True
+
+    def symbol_info_tick(self, sym: str) -> SimpleNamespace:
+        return SimpleNamespace(time=self.tick_epoch, bid=1.1000, ask=1.1001)
+
+    def symbol_info(self, sym: str) -> SimpleNamespace:
+        return SimpleNamespace(volume_min=0.01, volume_step=0.01, volume_max=50.0,
+                               trade_contract_size=100_000.0, point=0.00001, filling_mode=2)
+
+    def order_calc_profit(self, typ: int, sym: str, vol: float, a: float, b: float) -> float:
+        return (b - a if typ == 0 else a - b) * 100_000.0 * vol * 0.6   # NZD -> USD
+
+    def positions_get(self, symbol: str | None = None) -> list:
+        return [p for p in self.positions if symbol is None or p.symbol == symbol]
+
+    def orders_get(self, symbol: str | None = None) -> list:
+        return [o for o in self.orders if symbol is None or o.symbol == symbol]
+
+    def history_orders_get(self, a: datetime, b: datetime) -> list:
+        return []
+
+    def history_deals_get(self, a: datetime, b: datetime) -> list:
+        return []
+
+    def copy_rates_from_pos(self, sym: str, tf: int, start: int, n: int) -> list:
+        t0 = int(SERVER.replace(minute=0).timestamp()) - 200 * 3600
+        return [{"time": t0 + 3600 * i, "open": 1.1, "high": 1.101, "low": 1.099,
+                 "close": 1.1, "tick_volume": 1} for i in range(201)]
+
+    def order_send(self, req: dict) -> SimpleNamespace:
+        self.sent.append(req)
+        if req.get("position") is None:
+            self.positions.append(SimpleNamespace(
+                ticket=7000 + len(self.sent), symbol=req["symbol"], type=req["type"],
+                magic=req["magic"], volume=req["volume"], price_open=req["price"],
+                sl=req["sl"], comment=req["comment"]))
+        else:
+            self.positions = [p for p in self.positions if p.ticket != req["position"]]
+        return SimpleNamespace(retcode=10009, order=7000 + len(self.sent))
+
+
+def _sig(side: int = 1) -> SimpleNamespace:
+    return SimpleNamespace(time=BAR, side=side, stop=1.0950 if side > 0 else 1.1050,
+                           target=1.1100 if side > 0 else 1.0900, ttl_bars=6)
+
+
+@pytest.fixture
+def world(monkeypatch, tmp_path) -> SimpleNamespace:
+    from mt5desk import cross_account as xa
+    from mt5desk import decision_core, family_call, families, kelly_sizing, order_door
+    from prop import e8_executor
+
+    import admission_integrity
+    from libs.ops import new_risk_hold
+    from libs.tiers import promotion_authority
+    for name in ("STATE", "OUT", "INTENTS", "LOG", "ARMED_MARKER", "ALLOCATOR"):
+        monkeypatch.setattr(fx, name, tmp_path / name.lower())
+    cert = tmp_path / "CERT_BOOK_LIVE.json"
+    cert.write_text(json.dumps({"enabled": True, "excluded": {},
+                                "ftmo": {"gold_asia": 0.002, KEY: 0.003}}))
+    monkeypatch.setattr(kelly_sizing, "CERT_BOOK_FILE", cert)
+    fx.ALLOCATOR.write_text(json.dumps({"generated_at": NOW.isoformat(), "deployable": True,
+                                        "status": "OK", "specs": {KEY: SPEC}}))
+    fx.ARMED_MARKER.write_text("")
+    monkeypatch.setattr(fx._fw, "bound_account", lambda mt5: (
+        "sha256:" + "a" * 16, {"initial_balance": 100_000.0, "daily_loss_frac": 0.05}, "ok"))
+    monkeypatch.setattr(fx._fw, "day_start_balance", lambda mt5, b, s, n: 100_000.0)
+    monkeypatch.setattr(fx._fw, "near_market_close", lambda now: False)
+    monkeypatch.setattr(order_door, "guard", lambda mt5, caller="", log=None: mt5)
+    monkeypatch.setattr(new_risk_hold, "reason", lambda root=None: None)
+    gate = SimpleNamespace(alarm={}, replication=lambda k, f: ("REPLICATED", "ok"))
+    monkeypatch.setattr(admission_integrity.IntegrityGate, "load", classmethod(lambda c: gate))
+    monkeypatch.setattr(admission_integrity, "REPLICATED", "REPLICATED")
+    monkeypatch.setattr(promotion_authority, "block", lambda k: None)
+    sigs = {"list": [_sig()]}
+    monkeypatch.setattr(families, "get_family_func", lambda f: (lambda d, **k: sigs["list"]))
+    monkeypatch.setattr(family_call, "certified_session_filter", lambda s, sl: s)
+    monkeypatch.setattr(family_call, "signal_reference_price", lambda f, b, g: None)
+    monkeypatch.setattr(decision_core, "family_bracket", lambda g, s, b, a, c: (
+        a, g.stop, g.target, abs(a - g.stop), "certified", 0.0, "certified"))
+    monkeypatch.setattr(e8_executor, "_call_params", lambda s, sym, bars: {})
+    books: dict[str, Any] = {"fusion": ({}, "ok"), "e8": ({}, "ok")}
+    monkeypatch.setattr(xa, "read_book", lambda a, now=None, **k: books[a])
+    return SimpleNamespace(mt5=_MT5(), books=books, sigs=sigs, cert=cert)
+
+
+def _rows() -> list[dict]:
+    return [json.loads(x) for x in fx.INTENTS.read_text().splitlines()]
+
+
+def test_a_funded_sleeve_with_a_signal_is_sent_with_its_stop_and_target(world) -> None:
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert doc["status"] == "OK", doc
+    (req,) = world.mt5.sent
+    assert req["symbol"] == "AUDNZD" and req["magic"] == fx.MAGIC
+    assert req["sl"] == 1.0950 and req["tp"] == 1.1100
+    # 0.003 x 100k = $300 at a 50-pip stop worth $300/lot -> 1.00 lot
+    assert req["volume"] == pytest.approx(1.0)
+    assert _rows()[-1]["status"] == "SENT"
+
+
+def test_the_same_bar_is_never_sent_twice(world) -> None:
+    fx.run(world.mt5, armed=True, now=NOW)
+    world.mt5.positions.clear()                                  # even after the position closed
+    doc = fx.run(world.mt5, armed=True, now=NOW + timedelta(minutes=5))
+    assert len(world.mt5.sent) == 1
+    assert doc["sleeves"][0]["status"] == "ALREADY_TRADED"
+
+
+def test_standby_sends_nothing_and_says_what_it_would(world) -> None:
+    doc = fx.run(world.mt5, armed=False, now=NOW)
+    assert world.mt5.sent == []
+    assert doc["sleeves"][0]["status"] == "WOULD_SEND"
+
+
+def test_an_opposite_side_on_e8_blocks_the_order_and_bills_it(world) -> None:
+    world.books["e8"] = ({"AUDNZD": {"long": False, "short": True}}, "ok")
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert world.mt5.sent == []
+    row = doc["sleeves"][0]
+    assert row["status"] == "RAIL_BLOCKED" and row["rail"] == "cross_account_opposite"
+    assert row["missed_growth_risk_usd"] == pytest.approx(300.0)
+
+
+def test_an_unreadable_fusion_book_fails_closed(world) -> None:
+    world.books["fusion"] = (None, "absent")
+    fx.run(world.mt5, armed=True, now=NOW)
+    assert world.mt5.sent == []
+    assert _rows()[-1]["rail"] == "cross_account_opposite"
+
+
+def test_the_daily_loss_rail_counts_the_whole_book(world) -> None:
+    # $4,800 already lost today against a $5,000 daily limit: a $300 trade would cross it
+    world.mt5.acc = SimpleNamespace(equity=95_200.0, balance=95_200.0)
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert world.mt5.sent == []
+    assert doc["sleeves"][0]["rail"] == "ftmo_loss_guard"
+
+
+def test_a_position_without_a_stop_refuses_new_risk(world) -> None:
+    world.mt5.positions.append(SimpleNamespace(ticket=1, symbol="EURUSD", type=0, magic=0,
+                                               volume=1.0, price_open=1.1, sl=0.0))
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert world.mt5.sent == []
+    assert doc["sleeves"][0]["rail"] == "ftmo_loss_guard"
+
+
+@pytest.mark.parametrize("change", ["stale", "undeployable", "no_spec", "void_block"])
+def test_no_fresh_deployable_book_trades_nothing(world, change: str) -> None:
+    alloc = json.loads(fx.ALLOCATOR.read_text())
+    if change == "stale":
+        alloc["generated_at"] = (NOW - timedelta(hours=4)).isoformat()
+    elif change == "undeployable":
+        alloc["deployable"] = False
+    elif change == "no_spec":
+        alloc["specs"] = {}
+    fx.ALLOCATOR.write_text(json.dumps(alloc))
+    if change == "void_block":
+        world.cert.write_text(json.dumps({"enabled": True, "ftmo": {KEY: "x"}}))
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert world.mt5.sent == [] and doc["status"] == "NO_BOOK"
+
+
+def test_gold_is_never_this_lanes(world) -> None:
+    spec = dict(SPEC, symbol="XAUUSD")
+    sleeves, _ = fx.book_sleeves({"generated_at": NOW.isoformat(), "deployable": True,
+                                  "specs": {"XAUUSD_x_asia": spec}},
+                                 {"XAUUSD_x_asia": 0.003}, NOW)
+    assert sleeves == []
+
+
+def test_a_server_off_the_broker_clock_reads_no_signal(world) -> None:
+    world.mt5.tick_epoch = NOW.timestamp()                     # a UTC server
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert doc["status"] == "CLOCK_MISMATCH" and world.mt5.sent == []
+
+
+def test_a_sleeve_below_the_minimum_lot_is_billed_not_lifted(world) -> None:
+    world.cert.write_text(json.dumps({"enabled": True, "excluded": {}, "ftmo": {KEY: 0.00001}}))
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    row = doc["sleeves"][0]
+    assert world.mt5.sent == [] and row["rail"] == "venue_min_lot"
+    assert row["missed_growth_risk_usd"] == pytest.approx(1.0)
+
+
+def test_an_open_position_is_closed_when_another_account_takes_the_other_side(world) -> None:
+    fx.run(world.mt5, armed=True, now=NOW)
+    world.books["fusion"] = ({"AUDNZD": {"long": False, "short": True}}, "ok")
+    doc = fx.run(world.mt5, armed=True, now=NOW + timedelta(minutes=5))
+    closes = [a for a in doc["actions"] if a["act"] == "close"]
+    assert closes and closes[0]["ok"] and world.mt5.positions == []
+    assert doc["alerts"]
+
+
+def test_the_certified_time_exit_closes_the_position(world) -> None:
+    fx.run(world.mt5, armed=True, now=NOW)
+    world.mt5.tick_epoch = SERVER.timestamp() + 8 * 3600       # past bar + (6 + 1) hours
+    doc = fx.run(world.mt5, armed=True, now=NOW + timedelta(hours=8))
+    assert any(a["act"] == "close" and "time exit" in a["why"] for a in doc["actions"])
+
+
+def test_the_allocator_lays_non_gold_sleeves_into_the_ftmo_block_and_zeroes_dropped_ones(
+        tmp_path: Path) -> None:
+    import prop_challenge_allocator as pca
+    armed = tmp_path / "ARMED"
+    armed.touch()
+    principal = tmp_path / "P.json"
+    principal.write_text(json.dumps({"gold_asia": 0.009}))
+    book = tmp_path / "CERT_BOOK_LIVE.json"
+    book.write_text(json.dumps({"enabled": True, "ftmo": {"gold_asia": 0.002,
+                                                          "OLD_x_asia": 0.004}}))
+    doc = {"deployable": True, "executable": {"gold_asia": 0.002, KEY: 0.003},
+           "generated_at": "t", "account": {"phase": "phase1", "status": "MEASURED"}}
+    assert pca.apply_book(doc, book, armed, principal)["applied"] is True
+    assert json.loads(book.read_text())["ftmo"] == {"gold_asia": 0.002, KEY: 0.003,
+                                                    "OLD_x_asia": 0.0}
+
+
+def test_the_allocator_marks_a_non_gold_spec_executable_and_gold_windows_not() -> None:
+    import prop_challenge_allocator as pca
+    specs = {KEY: SPEC, "XAUUSD_x_london": dict(SPEC, symbol="XAUUSD")}
+    assert pca.executor_runs(KEY, specs)
+    assert pca.executor_runs("gold_asia", specs)
+    assert not pca.executor_runs("XAUUSD_x_london", specs)
+    assert not pca.executor_runs("EURUSD_y_asia", specs)
