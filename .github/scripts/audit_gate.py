@@ -823,6 +823,14 @@ def run(
         return on, owhy
 
     boards: list[list[dict[str, Any]]] = []
+    # The head's own diff identity, computed only when a CLEAR names another sha (a sweep looks
+    # at every open PR, most of which carry no verdict at all).
+    ids: dict[str, str | None] = {}
+
+    def same_change(sha: str) -> bool:
+        if "head" not in ids:
+            ids["head"] = patch_id(base, head)
+        return ids["head"] is not None and patch_id(base, sha) == ids["head"]
 
     def pinned(found: list[dict[str, str]]) -> str | None:
         """Why an audited PR takes the manual path, or None: it may take the no-comment path.
@@ -835,7 +843,10 @@ def run(
         last = found[-1]
         if last["verdict"] != "CLEAR":
             return f"the latest verdict is AUDIT HOLD {last['sha'][:9]}"
-        if last["sha"] == head and boards and approved(last, approval_at(boards[-1]))[0]:
+        # the CLEAR names this change: its head, or the same diff carried over (as cleared() reads
+        # it), so a rebased identical change zuck approved keeps his override (#537 audit S1)
+        ours = last["sha"] == head or same_change(last["sha"])
+        if ours and boards and approved(last, approval_at(boards[-1]))[0]:
             return "zuck approved its CLEAR of this head"
         return None
 
@@ -876,24 +887,19 @@ def run(
             _gh(f"repos/{repo}/issues/{pr}/labels/{LABEL}", "-X", "DELETE")
         except RuntimeError as exc:
             _summary(f"(label not removed: {exc})")
-    # The head's own diff identity, computed only when a CLEAR names another sha (a sweep looks
-    # at every open PR, most of which carry no verdict at all).
-    ids: dict[str, str | None] = {}
-
-    def same_change(sha: str) -> bool:
-        if "head" not in ids:
-            ids["head"] = patch_id(base, head)
-        return ids["head"] is not None and patch_id(base, sha) == ids["head"]
 
     def verdict_now() -> tuple[dict[str, str] | None, str]:
         found = pr_verdicts()
         if low:
+            on, owhy = switches()  # a DEACTIVATE since the first read is honoured; read first so
+            if not on:  # pinned() sees a mid-run APPROVE on this poll (#537 audit S2)
+                return None, f"{twhy}, but {owhy}"
             pin = pinned(found)
             if pin:  # a HOLD (or zuck's approval) arrived mid-run: the next run decides
                 return None, f"{twhy}, but {pin}: the audit governs it now"
-            on, owhy = switches()  # a DEACTIVATE since the first read is honoured
-            if not on:
-                return None, f"{twhy}, but {owhy}"
+            if found and mode == "low":  # a verdict arrived mid-run on an unaudited LOW PR: it is
+                # audited now and must run every AUTO job, so the next run decides (#537 audit MF1)
+                return None, f"{twhy}, but it was audited mid-run: the next run decides"
             fresh, fwhy = up_to_date(base, head)  # LIVE may have moved: the merged tree
             if not fresh:  # must still be the tested one
                 return None, f"{twhy}, but {fwhy}"

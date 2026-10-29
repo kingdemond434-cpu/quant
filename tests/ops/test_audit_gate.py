@@ -1913,3 +1913,35 @@ def test_an_audited_low_pr_runs_every_auto_job(low_hub: Any) -> None:
     h = low_hub(comments=comments, approvals=list(BOTH), runs=_auto_green())
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
     assert len(_merges(h)) == 1
+
+
+def test_a_clear_arriving_mid_run_never_merges_a_low_pr_on_gating_ci_alone(
+    low_hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#537 audit MF1: a run that began unaudited (LOW, gating jobs only) re-decides once a
+    verdict lands, even with AUTO off, so an audited LOW PR never skips the AUTO jobs."""
+    h = low_hub(comments=[])
+    reads = {"n": 0}
+
+    def gh(*args: str, data: Any = None) -> Any:
+        if args[0].endswith("/issues/7/comments?per_page=100"):
+            reads["n"] += 1
+            if reads["n"] == 2:
+                h.comments.append(_c(f"AUDIT CLEAR {A}", "2026-10-29T10:00:00Z"))
+        return h(*args, data=data)
+
+    monkeypatch.setattr(ag, "_gh", gh)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert reads["n"] >= 2 and _merges(h) == []
+
+
+def test_zucks_approved_clear_carries_to_a_rebased_identical_change(auto_hub: Any) -> None:
+    """#537 audit S1: a CLEAR of B (same diff as head A) that zuck approved keeps his override,
+    as cleared() reads it: it merges on the gating jobs even though an AUTO job failed."""
+    h = auto_hub(
+        runs=[*_green(), _r("independent-review", conclusion="failure")],
+        comments=[_c(f"AUDIT CLEAR {B}", "2026-10-28T22:00:00Z")],
+        approvals=[*BOTH, _ok("2026-10-28T23:00:00Z")],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert len(_merges(h)) == 1
