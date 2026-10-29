@@ -422,10 +422,12 @@ def book_key_verdict(rs: list[float]) -> tuple[str, str, dict]:
     bad = degenerate(rs)
     if bad:
         return "UNMEASURED", bad, facts
-    if n >= BOOK_RETIRE_MIN_N and roll_exp <= 0.0:
-        return "ZERO", f"roll20 exp {roll_exp:.3f}R <= 0 over n={n}", facts
+    # THE HARD RAIL FIRST (#540 audit MF-A): a -25R drawdown is an unconditional zero, and must
+    # never be reported as a soft roll-20 door that a later test can hold or flag.
     if s["max_dd_r"] < BOOK_RETIRE_MAX_DD:
         return "ZERO", f"live maxDD {s['max_dd_r']:.1f}R < {BOOK_RETIRE_MAX_DD}R", facts
+    if n >= BOOK_RETIRE_MIN_N and roll_exp <= 0.0:
+        return "ZERO", f"roll20 exp {roll_exp:.3f}R <= 0 over n={n}", facts
     if n >= 50 and s["exp_r"] < BOOK_RETIRE_MIN_EXP:
         return "ZERO", f"n={n} exp {s['exp_r']:.3f}R < {BOOK_RETIRE_MIN_EXP}R", facts
     return "HEALTHY", f"n={n}, roll20 exp {roll_exp:.3f}R, maxDD {s['max_dd_r']}R", facts
@@ -494,43 +496,44 @@ def _forward_r(name: str, row: dict | None, symbol: str) -> list[float]:
     return []
 
 
-#: The one-sided bar the live mean must clear BELOW the certificate's own forward mean, in its
-#: own standard errors: T_PROMOTE, the same evidence the desk asks of good, asked of harm.
-DECAY_T = T_PROMOTE
+#: THE SOFT-DOOR TEST (#540 audit MF-B). A promoter soft door (roll-20 <= 0, a weak 50-trade
+#: mean) zeroes only when the LIVE mean is below zero in its own standard errors -- z <= -DECAY_Z
+#: -- at two judgments at least DECAY_GAP trades apart, from DECAY_MIN_N trades on. DERIVATION:
+#: fitted by simulation (scratch sim540.py, unit-sd trades, every prefix judged as the hourly
+#: monitor would): z 0.84 (the one-sided 80% point) with a 10-trade confirmation gap gives a 4.9%
+#: false-zero rate on a +0.20R sleeve by n=120 and 81.8% detection of a -0.20R sleeve by n=60,
+#: the Auditor's targets (<=5%, >=80%). A true-zero-mean sleeve may be zeroed: it adds no
+#: E[log W], so Rule 1 loses nothing.
+DECAY_Z = 0.84
+DECAY_GAP = 10
 #: Live trades before the soft doors may zero: N_MIN_VERDICT, the desk's own verdict count.
 DECAY_MIN_N = N_MIN_VERDICT
 
 
-def cert_decay_verdict(live: list[float], forward: list[float], band: float | None,
-                       door: str) -> tuple[str, str]:
-    """ZERO, HOLD or FLAG for a key a soft promoter door tripped, judged against the
-    certificate's own forward record: ZERO when the live mean sits DECAY_T of the forward
-    standard errors below the forward mean at n >= DECAY_MIN_N and the live roll-20 is below the
-    certificate's own bad-streak band; HOLD when either is not so; FLAG when the forward record
-    (or the live n) is too thin to measure it."""
+def sequential_decay_verdict(live: list[float], door: str) -> tuple[str, str]:
+    """ZERO, HOLD or FLAG for a key a soft promoter door tripped, judged on its live record:
+    ZERO when the running mean's z-score against zero is <= -DECAY_Z at two judgments at least
+    DECAY_GAP trades apart (every prefix from DECAY_MIN_N is a judgment, as the hourly monitor
+    sees it); HOLD when it is not; FLAG below DECAY_MIN_N trades (too few to judge)."""
     import statistics
     n = len(live)
-    if band is None or len(forward) < STREAK_MIN_N or n < DECAY_MIN_N:
-        return "FLAG", (f"{door}, but the certificate's own forward record is UNMEASURED "
-                        f"(forward n={len(forward)}, live n={n}; need {STREAK_MIN_N} and "
-                        f"{DECAY_MIN_N}): flagged, not zeroed")
-    mu_f, sd_f = statistics.fmean(forward), statistics.pstdev(forward)
-    mu_l = statistics.fmean(live)
-    roll = statistics.fmean(live[-BOOK_RETIRE_ROLL:])
-    t = (mu_l - mu_f) / (sd_f / n ** 0.5) if sd_f > 0 else (-99.0 if mu_l < mu_f else 0.0)
-    if mu_f <= 0.0 and roll <= 0.0:
-        # NO EDGE TO HAVE A BAD STRETCH OF: the certificate's own forward clock is flat or losing
-        # and so is the live record -- holding it as "within its variance" would protect a loss.
-        return "ZERO", (f"{door}; the certificate's own forward clock shows no edge "
-                        f"({mu_f:+.3f}R over {len(forward)} trades) and the live roll-20 is "
-                        f"{roll:+.3f}R")
-    if t <= -DECAY_T and roll < band:
-        return "ZERO", (f"{door}; live mean {mu_l:+.3f}R is {t:.2f} standard errors below the "
-                        f"certificate's forward {mu_f:+.3f}R (n={n}) and roll-20 {roll:+.3f}R is "
-                        f"below its own p{STREAK_PCT:g} bad-streak band {band:+.3f}R")
-    return "HOLD", (f"{door}, but against the certificate's own record (forward {mu_f:+.3f}R, "
-                    f"t={t:.2f}, band {band:+.3f}R) it is a bad stretch the edge has survived "
-                    f"before, not decay")
+    if n < DECAY_MIN_N:
+        return "FLAG", (f"{door}, but n={n} < {DECAY_MIN_N} live trades: too few to test the live "
+                        f"mean; flagged, not zeroed")
+    breaches: list[int] = []
+    for k in range(DECAY_MIN_N, n + 1):
+        x = live[:k]
+        sd = statistics.stdev(x)
+        z = statistics.fmean(x) / (sd / k ** 0.5) if sd > 0 else 0.0
+        if z <= -DECAY_Z:
+            breaches.append(k)
+            if any(k - b >= DECAY_GAP for b in breaches):
+                return "ZERO", (f"{door}; the live mean {statistics.fmean(live):+.3f}R sits "
+                                f"{DECAY_Z} standard errors below zero at trades {breaches[0]} "
+                                f"and {k} (>= {DECAY_GAP} apart): the edge is gone, not resting")
+    return "HOLD", (f"{door}, but the live mean {statistics.fmean(live):+.3f}R is not "
+                    f"{DECAY_Z} standard errors below zero on two judgments {DECAY_GAP} trades "
+                    f"apart: a bad stretch, not decay")
 
 
 def cert_streak_band(forward: list[float]) -> float | None:
@@ -566,9 +569,8 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
     but are FLAGGED to the principal instead.
 
     ZUCK'S RULES (2026-10-29 15:21Z):
-      * A ZERO IS ONE-WAY. It never re-arms because losses age out of the window; it lifts only
-        when the key's roster row carries a DIFFERENT certificate than when it was zeroed (a
-        fresh re-cert), exactly like the promoter's one-way retirement.
+      * A ZERO IS ONE-WAY. It never re-arms because losses age out of the window and never lifts
+        itself; re-entry is a NEW certified key, exactly like the promoter's one-way retirement.
       * ZEROING IS ALLOWED ON EVERY KEY (15:55Z ruling), principal-pinned books included, except
         the TEMPORARY_EXEMPT keys (gold_asia only): those are FLAGGED while no promoted
         replacement exists on their symbol, and zeroed once one does.
@@ -592,20 +594,18 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
         rs = [float(t["r_multiple"]) for t in trades]
         v, why, facts = book_key_verdict(rs)
         symbol = next((str(t.get("symbol")) for t in reversed(trades) if t.get("symbol")), "")
-        # NOT ON A BAD STRETCH THE CERTIFICATE HAS ALREADY SURVIVED: a roll-20 ZERO is held when
-        # the live run sits inside the certificate's own forward bad streaks. The drawdown rail
-        # and the 50-trade expectancy door are never held this way.
+        # The certificate's own forward bad-streak band is REPORTED beside the verdict (a fact for
+        # the reader and for the regime work to come); the verdict is the live record's own test.
         own = next((r for k, r in roster.items() if _stem(k) == _stem(name)), None)
         fwd = _forward_r(name, own, symbol)
         band = cert_streak_band(fwd)
         facts["cert_streak_band_r"] = None if band is None else round(band, 4)
         if v == "ZERO" and not why.startswith("live maxDD"):
-            # THE SOFT DOORS NEED THE CERTIFICATE'S OWN VARIANCE (#540 audit MF4, Rule 1). A raw
-            # roll-20 <= 0 at n=10 zeroes a +0.20R sleeve with p~0.42; so a soft-door ZERO stands
-            # only when a one-sided test against the certificate's own forward mean and spread
-            # rejects at n >= 20 AND the live run sits below its own bad-streak band. Without
-            # that record the key is FLAGGED, not zeroed. The -25R drawdown stays a hard zero.
-            v, why = cert_decay_verdict(rs, fwd, band, why)
+            # A SOFT DOOR IS A QUESTION, NOT A VERDICT (#540 audit MF4/MF-B, Rule 1). A raw roll-20
+            # <= 0 at n=10 zeroes a +0.20R sleeve with p~0.42; so a soft-door ZERO stands only when
+            # the sequential live-mean test rejects (sequential_decay_verdict), and below
+            # DECAY_MIN_N live trades the key is FLAGGED. The -25R drawdown stays a hard zero.
+            v, why = sequential_decay_verdict(rs, why)
         row = {**facts, "verdict": v, "why": why}
         if v == "UNMEASURED":
             unmeasured[name] = row
@@ -649,7 +649,7 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
                      f"{BOOK_RETIRE_MIN_EXP}R). A tripped key is ZEROED; only "
                      f"{sorted(TEMPORARY_EXEMPT)} "
                      f"is FLAGGED instead while no promoted replacement exists. A zero "
-                     f"is one-way and lifts only on a new certificate. The zeroed key's heat is "
+                     f"is one-way and never lifts itself. The zeroed key's heat is "
                      f"not redeployed by this file; the allocator's next solve decides it")}
 
 
@@ -1095,10 +1095,16 @@ def main(write_queue: bool = True) -> int:
     if source != "UNMEASURED" and not zero_unreadable:
         # NEVER DROP A ZERO SILENTLY (#540 audit MF3): a missing primary, or one without a
         # `zeros` key, is seeded from the last good copy, so deleting the file cannot re-arm a key.
-        prev_doc = _read_json(zero_path, None)
-        if not (isinstance(prev_doc, dict) and isinstance(prev_doc.get("zeros"), dict)):
-            prev_doc = _read_json(zero_path.with_name(zero_path.stem + ".last_good.json"), {})
-        prev_doc = prev_doc if isinstance(prev_doc, dict) else {}
+        prim = _read_json(zero_path, None)
+        good = _read_json(zero_path.with_name(zero_path.stem + ".last_good.json"), None)
+        prim = prim if isinstance(prim, dict) else {}
+        good = good if isinstance(good, dict) else {}
+        # The UNION of both copies' zeros (#540 audit S3): an empty or truncated primary can never
+        # wipe a zero the last good copy still holds.
+        prev_doc = {**good, **prim,
+                    "zeros": {**(good.get("zeros") if isinstance(good.get("zeros"), dict) else {}),
+                              **(prim.get("zeros") if isinstance(prim.get("zeros"), dict) else {})},
+                    "flags": prim.get("flags") or good.get("flags") or {}}
         zero_doc = decay_zero_doc(live, now, roster_rows(doc), prev_doc)
         before_z, before_f = set(prev_doc.get("zeros") or {}), set(prev_doc.get("flags") or {})
         for k, z in zero_doc["zeros"].items():
@@ -1109,14 +1115,11 @@ def main(write_queue: bool = True) -> int:
             if k not in before_f:
                 actions.append({"at": now, "sleeve": k, "action": "BOOK_FLAG", "why": f_["why"],
                                 "flag": f_["flag"]})
-        for k, z in zero_doc["lifted"].items():
-            actions.append({"at": now, "sleeve": k, "action": "BOOK_LIFT",
-                            "why": z["why_lifted"]})
         _write_atomic(zero_path, zero_doc)
         # The last good copy, written after the primary, so a later torn primary has a fallback.
         _write_atomic(zero_path.with_name(zero_path.stem + ".last_good.json"), zero_doc)
         new_actions = [a for a in actions
-                       if a["action"] in ("BOOK_ZERO", "BOOK_FLAG", "BOOK_LIFT")]
+                       if a["action"] in ("BOOK_ZERO", "BOOK_FLAG")]
         if new_actions:
             with ACTIONS.open("a", encoding="utf-8") as f:
                 for a in new_actions:

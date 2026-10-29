@@ -5257,6 +5257,8 @@ def main() -> None:
         if _dz_why is not None:
             # ITS OWN LIVE RECORD FAILED THE PROMOTER'S RETIREMENT BARS (decay_monitor
             # DECAY_ZERO): nothing on every lane and path, billed once per sleeve per day.
+            _forgone = (float(_book.get(_key) or 0.0) if from_book
+                        else float(_s.get("risk_frac") or 0.0))  # billed BEFORE the zero
             _s["risk_frac"], _s["sized_by"] = 0.0, "allocator_book"
             _s["decay_zero"] = _dz_why
             from mt5desk import fusion_rails as _rails
@@ -5264,9 +5266,7 @@ def main() -> None:
                              f"{_s['name']}/{datetime.now(tz=UTC).date().isoformat()}",
                              sleeve=_s["name"], symbol=_s.get("symbol"), book_key=_key,
                              # A non-book row is billed at its own risk fraction (#540 S).
-                             missed_growth_risk_frac=(float(_book.get(_key) or 0.0)
-                                                      if from_book
-                                                      else float(_s.get("risk_frac") or 0.0)),
+                             missed_growth_risk_frac=_forgone,
                              why=f"decay zero ({_dz_why}); no order")
         elif cert_zero_row(_s):
             # A PRINCIPAL ZERO (code pin or cert book) sends nothing on every lane and path; the

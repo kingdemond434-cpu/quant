@@ -74,8 +74,9 @@ def _zero(desk: Path) -> dict:
 #: stretch, long enough (n=60) for the bad-streak band and the one-sided test.
 FORWARD = ([0.9, -0.4, 0.6, 0.5, -0.3, 0.8, -0.2, 0.7, 0.4, -0.5] * 5
            + [-0.3, -0.6, 0.2, -0.4, 0.3, -0.2, 0.3, -0.5, 0.4, 0.2] * 2)    # a losing stretch
-#: A live record that has collapsed against it: 24 trades at about -0.4R.
-DECAYED = LOSSES * 2
+#: A live record that has collapsed: 36 trades at about -0.4R, past the sequential test's two
+#: judgments DECAY_GAP trades apart.
+DECAYED = LOSSES * 3
 
 
 def _clock(desk: Path, key: str, rs: list[float] = FORWARD) -> None:
@@ -114,29 +115,48 @@ def test_book_key_verdict_refuses_degenerate_series_then_reads_the_three_doors()
     assert D._promoter_dd([-1.0, -2.0]) == -2.0 and D._promoter_dd([1.0, -3.0]) == -3.0
 
 
-def test_a_soft_door_zero_needs_the_certificates_own_record_else_it_is_flagged(desk) -> None:
-    """#540 audit MF4 (Rule 1): a raw roll-20 <= 0 at n=10 zeroes a +0.20R sleeve with p~0.42.
-    Without the certificate's forward record a tripped key is FLAGGED; with it, it is zeroed only
-    when the live mean is DECAY_T standard errors below the forward mean at n >= 20."""
+def test_a_soft_door_zero_needs_the_sequential_live_test_else_it_is_flagged(desk) -> None:
+    """#540 audit MF4/MF-B (Rule 1): a raw roll-20 <= 0 at n=10 zeroes a +0.20R sleeve with
+    p~0.42. Below DECAY_MIN_N live trades a tripped key is FLAGGED; past it, it is zeroed only when
+    the live mean is DECAY_Z standard errors below zero at two judgments DECAY_GAP trades apart."""
     roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP", "family": "formula"},
               {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"}]
-    _write(desk, roster, _trades(FREE[:27], DECAYED))
+    _write(desk, roster, _trades(FREE[:27], LOSSES))                  # n=12: too few to test
     D.main(write_queue=False)
     doc = _zero(desk)
-    assert doc["zeros"] == {} and "UNMEASURED" in doc["flags"][FREE[:27]]["flag"]
-    # the certificate's own clock exists: the collapse is measured against it and zeroed
-    _clock(desk, "EURGBP_formula_asia")
-    _write(desk, roster, _trades(FREE[:27], DECAYED))
+    assert doc["zeros"] == {} and "too few" in doc["flags"][FREE[:27]]["flag"]
+    _write(desk, roster, _trades(FREE[:27], DECAYED))                 # n=36: the edge is gone
     D.main(write_queue=False)
     doc = _zero(desk)
     assert FREE[:27] in doc["zeros"] and "standard errors below" in doc["zeros"][FREE[:27]]["why"]
 
 
-def test_a_bad_stretch_the_certificate_has_lived_through_is_held(desk) -> None:
+def test_the_sequential_test_needs_two_judgments_a_gap_apart() -> None:
+    assert D.sequential_decay_verdict(LOSSES, "d")[0] == "FLAG"
+    assert D.sequential_decay_verdict(LOSSES * 2, "d")[0] == "HOLD"   # breaches 20..24 only
+    assert D.sequential_decay_verdict(LOSSES * 3, "d")[0] == "ZERO"   # 20 and 30
+    assert D.sequential_decay_verdict([1.0, -1.1] * 20, "d")[0] == "HOLD"
+
+
+def test_the_hard_drawdown_rail_is_read_before_any_soft_door(desk) -> None:
+    """#540 audit MF-A: a -25R drawdown at n >= 30 is an unconditional zero, even on a sleeve
+    whose overall live mean is positive (which the sequential test alone would HOLD)."""
+    rs = [5.0] * 20 + [-1.0] * 26                                    # +74R, then -26R
+    v, why, _ = D.book_key_verdict(rs)
+    assert v == "ZERO" and why.startswith("live maxDD")
+    assert D.sequential_decay_verdict(rs, "d")[0] == "HOLD"
+    roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP", "family": "formula"},
+              {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"}]
+    _write(desk, roster, _trades(FREE[:27], rs))
+    D.main(write_queue=False)
+    assert _zero(desk)["zeros"][FREE[:27]]["why"].startswith("live maxDD")
+
+
+def test_a_bad_stretch_that_is_not_decay_is_held(desk) -> None:
     _clock(desk, "EURGBP_formula_asia")
     roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP", "family": "formula"},
               {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"}]
-    mild = FORWARD[-20:]          # the very bad stretch its forward clock lived through
+    mild = [1.0, -1.1] * 10       # roll-20 -0.05R trips the door; z ~ -0.2 is no evidence
     _write(desk, roster, _trades(FREE[:27], mild))
     D.main(write_queue=False)
     doc = _zero(desk)
@@ -206,10 +226,10 @@ def test_the_exemption_is_gold_asia_and_its_versions_never_its_siblings(desk) ->
            + _trades("gold_london_am", DECAYED, symbol="XAUUSD"))
     D.main(write_queue=False)
     doc = _zero(desk)
-    # gold_london_am has no clock of its own (its window is not asia): flagged, never zeroed
+    # the exemption is gold_asia's alone: its decayed sibling window is zeroed on its own record
     flag = doc["flags"]["gold_asia_v3"]["flag"]
     assert "temporary exemption" in flag
-    assert "gold_london_am" not in doc["zeros"]
+    assert "gold_london_am" in doc["zeros"] and "gold_london_am" not in doc["flags"]
 
 
 def test_a_zero_is_one_way_and_never_lifts_itself(desk) -> None:
@@ -389,4 +409,4 @@ def test_a_certificate_whose_own_forward_clock_has_no_edge_is_zeroed_when_live_l
               {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"}]
     _write(desk, roster, _trades(FREE[:27], DECAYED))
     D.main(write_queue=False)
-    assert "shows no edge" in _zero(desk)["zeros"][FREE[:27]]["why"]
+    assert "standard errors below zero" in _zero(desk)["zeros"][FREE[:27]]["why"]
