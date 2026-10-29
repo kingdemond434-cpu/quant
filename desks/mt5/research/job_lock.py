@@ -365,9 +365,37 @@ def free_mb() -> int | None:
     return None
 
 
+#: Locks this process holds, name -> (path, token): `holds` asks whether it STILL holds one.
+_HELD: dict[str, tuple[Path, str]] = {}
+
+
+def holds(name: str) -> bool | None:
+    """Whether this process still owns the `name` lock: True / False, or None when it never took
+    it here (a direct call outside `exclusive_job`). False means a successor reclaimed it after this
+    holder's LEASE expired, and the holder must not publish what it computed."""
+    held = _HELD.get(name)
+    if held is None:
+        return None
+    path, token = held
+    try:
+        return bool(json.loads(path.read_text("utf-8")).get("token") == token)
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
+def _lease_expired(path: Path) -> bool:
+    """True when the lock names a `lease_until` (epoch seconds) that has passed."""
+    try:
+        until = json.loads(path.read_text("utf-8")).get("lease_until")
+    except (OSError, ValueError, AttributeError):
+        return False
+    return isinstance(until, (int, float)) and time.time() > float(until)
+
+
 @contextmanager
 def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
-                  deadline_s: float | None = None, evsi: float | None = None) -> Iterator[bool]:
+                  deadline_s: float | None = None, evsi: float | None = None,
+                  lease_s: float | None = None) -> Iterator[bool]:
     """Yield True to one writer, False to duplicates OR when the box cannot fit this job.
 
     THE MEMORY PRECONDITION (2026-08-28). This desk box has 8GB and runs the LIVE MT5 terminal
@@ -454,6 +482,9 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
     payload = json.dumps({
         "token": token, "pid": os.getpid(), "host": socket.gethostname(),
         "started_at": datetime.now(UTC).isoformat(),
+        # THE LEASE (2026-10-29): past it a living owner no longer blocks the next writer.
+        **({"lease_until": time.time() + float(lease_s), "lease_s": float(lease_s)}
+           if lease_s else {}),
     })
     owned = False
     for _attempt in range(2):
@@ -467,6 +498,14 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
             state = _owner_state(path)
             if state == "DEAD":
                 print(f"{name}: reclaiming lock from dead owner (pid gone) -- {path}")
+                stale = True
+            elif state == "ALIVE" and _lease_expired(path):
+                # A LEASE IS A PROMISE OF HOW LONG THE HOLDER NEEDS. Past it the holder is alive
+                # and late: it keeps running, but `holds()` now tells it it may not publish, and
+                # this writer goes ahead (PID 28696 held pf_allocator 6.5h on 2026-10-29 while
+                # every fast pass stood down behind it).
+                print(f"{name}: the living owner's LEASE EXPIRED -- reclaiming; the late holder "
+                      f"may not publish")
                 stale = True
             elif state == "ALIVE" and stale:
                 # LIVENESS VETOES AGE. The holder is running; the lock is not abandoned, it is
@@ -485,6 +524,7 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
             with os.fdopen(fd, "w", encoding="utf-8") as handle:
                 handle.write(payload)
             owned = True
+            _HELD[name] = (path, token)
             break
     if not owned:
         print(f"{name}: REFUSED writer; stale lock could not be recovered")
@@ -506,6 +546,7 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
         # unreadable. Recording them only alongside a peak would leave every job on a platform
         # without `getrusage` permanently unrankable.
         record_spec(name, mb=int(need_mb), cpu=cpu, deadline_s=deadline_s, evsi=evsi)
+        _HELD.pop(name, None)
         # Never delete a successor's lock after a stale-owner race.
         try:
             current = json.loads(path.read_text("utf-8"))

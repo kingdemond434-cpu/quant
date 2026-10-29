@@ -49,8 +49,38 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-import pandas as pd
+#: See `_cap_blas_threads` for the derivation (the box CPU shaper's measured 8-core cap).
+BLAS_THREAD_CAP = 8
+
+
+def _cap_blas_threads() -> int | None:
+    """BLAS/OpenMP threads = the cores this process may run on, set BEFORE numpy loads.
+
+    2026-10-29: a heavy pass ran 85 threads on one process (about 31 cores of load) and starved
+    the judge; the box's CPU shaper then pinned it to 8 cores, where ~18 BLAS threads fought over
+    8. Sizing the pools to the affinity mask stops that oversubscription without changing a single
+    result (the same arithmetic, fewer contending threads). An explicit setting is never
+    overridden, and an unreadable mask changes nothing.
+
+    Capped at BLAS_THREAD_CAP as well: the shaper applies its mask AFTER the process starts (every
+    2 min), so the mask read at import can still be all 18 cores. DERIVATION: 8 is the shaper's own
+    measured cap for this job (Desk health, Quant-CpuShaper, 2026-10-29)."""
+    try:
+        import psutil
+        n = min(len(psutil.Process().cpu_affinity() or []), BLAS_THREAD_CAP)
+    except Exception:
+        return None
+    if n <= 0:
+        return None
+    for var in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+        os.environ.setdefault(var, str(n))
+    return n
+
+
+_cap_blas_threads()
+
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -2679,6 +2709,17 @@ def state_book(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfig, *,
 #: candidate re-solve is ~1.2 s on the desk's 110-sleeve population; 8 s is headroom for one
 #: that starts far from the incumbent, not a cap on the scan. Zero or negative means unbounded.
 ADMISSION_CANDIDATE_BUDGET_S = 8.0
+#: THE HEAVY PASS'S OWN WALL CLOCK (2026-10-29). The admission scan stops starting re-solves this
+#: many seconds after the pass began; the rest carry as UNSCORED and go first next pass. DERIVATION:
+#: MT5-AllocatorFast's freshness contract is 90 min and the fast clock fires every 5 min; the rest
+#: of a heavy pass was measured at ~5 min (`main`'s note), so a 20-min scan bounds the lock at
+#: ~25 min and leaves the fast lane well inside its contract. PID 28696 held it 6.5h without this.
+HEAVY_ADMISSION_BUDGET_S = 20 * 60
+#: The lock lease a heavy pass takes: past it, a live owner no longer blocks the next writer, and a
+#: pass that has lost its lease may not publish (`job_lock.holds`). Derived from the measured
+#: schedule: above the ~25-min expected heavy pass with room for a slow box, and half the fast
+#: lane's 90-min freshness contract.
+HEAVY_LEASE_S = 45 * 60
 #: Share of the book's TOTAL heat that may be lent to exploration among candidates whose
 #: dE[log W] sits INSIDE the admission margin -- the ambiguous ones, which the criterion could
 #: neither admit nor refuse on evidence and which were parked at zero for ever. Lent from
@@ -2796,7 +2837,8 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
                        margin_frac: float = ADMISSION_MARGIN_FRAC,
                        warm: dict[str, dict[str, float]] | None = None,
                        explore_share: float = EXPLORE_SHARE,
-                       explore_seed: int | None = None) -> dict[str, Any]:
+                       explore_seed: int | None = None,
+                       pass_deadline: float | None = None) -> dict[str, Any]:
     """dE[log W]_i = E[log W | book + i] - E[log W | book], on ONE world population.
 
         "Don't rank candidates primarily by Sharpe. Rank by dE[log W] after adding the candidate
@@ -2931,6 +2973,14 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
     warm_in = {str(k): v for k, v in (warm or {}).items() if isinstance(v, dict) and v}
     solve_s: list[float] = []
     for name in cand_names:
+        # THE PASS HAS A DEADLINE TOO (2026-10-29). Per-candidate budgets alone let one heavy pass
+        # hold the allocator lock for 6.5h (PID 28696) while every fast pass stood down. Past
+        # `pass_deadline` (epoch seconds) the rest are carried as UNSCORED -- the same carry the
+        # ordering above already puts first next pass -- never refused, never admitted.
+        if pass_deadline is not None and time.time() > pass_deadline:
+            doc["unscored"][name] = ("pass deadline reached before this candidate's re-solve; "
+                                     "NOT admitted, carried first to the next pass")
+            continue
         e = by_name[name]
         sharpe = _annual_sharpe(e.daily_r)
         corr = _corr_to_book(e.daily_r, held, by_name)
@@ -3502,6 +3552,23 @@ def decision_state_fingerprint(ev: Sequence[SleeveEvidence], cfg: WorldConfig) -
                                          default=str).encode("utf-8"))
             digest.update(b"\0")
     return digest.hexdigest()
+
+
+class LeaseLost(RuntimeError):
+    """This pass's allocator lock was reclaimed after its lease expired: it may not publish."""
+
+
+def _lease_guard(step: str) -> None:
+    """Raise LeaseLost when this process took the allocator lock and no longer holds it, so a pass
+    that outlived its lease never overwrites the book a successor published (one writer, always).
+    A call outside `exclusive_job` (tests, a direct run) holds nothing and is not stopped."""
+    try:
+        from research.job_lock import holds
+    except ModuleNotFoundError:
+        from job_lock import holds  # type: ignore[no-redef,import-not-found]
+    if holds("pf_allocator") is False:
+        raise LeaseLost(f"allocator lease lost before {step}: a successor holds the lock; this "
+                        f"pass publishes nothing")
 
 
 def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
@@ -4315,6 +4382,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     if heavy:
         admission = marginal_admission(ev, worlds, cfg, incumbent=funded, bounds=adm_bounds,
                                        total_heat=book.total_heat, order=free.marginal,
+                                       pass_deadline=t0 + HEAVY_ADMISSION_BUDGET_S,
                                        # Whatever the last scan could not finish goes first, and
                                        # continues from the book its solve had reached.
                                        prefer=set(prev_admission.get("unscored") or {}),
@@ -4474,6 +4542,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # from those books whenever the dynamic proof is stale or a challenger won the state.
         exchange_zero_meta["contested_books"] = zero_contested_books(
             proof, ts_zero, eligible=[e.name for e in ev])
+        _lease_guard("certify")
         certify(proof, root=ROOT, book=funded)
         # THE FLOOR'S FALLBACK: the best baseline at the same total heat, carried on the
         # artifact so a failed or stale proof changes who allocates the floor, never whether.
@@ -4935,6 +5004,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "capacity_growth": _capacity_growth(),
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
+    _lease_guard("publish")
     OUT.write_text(json.dumps(art, indent=2, default=str), encoding="utf-8")
     DONE.write_text(datetime.now(UTC).isoformat(), encoding="utf-8")
 
@@ -5051,7 +5121,8 @@ def main() -> int:
             return 0
         need = 0                            # room confirmed above; do not wait a second time
 
-    with exclusive_job("pf_allocator", need_mb=need) as go:
+    with exclusive_job("pf_allocator", need_mb=need,
+                       lease_s=HEAVY_LEASE_S if args.mode == "heavy" else None) as go:
         if not go:
             _log(f"stood down: another allocator pass holds the lock, or the box cannot fit "
                  f"{_NEED_MB[args.mode]}MB. The previous book stands.")
@@ -5062,6 +5133,10 @@ def main() -> int:
             return 0
         try:
             run(args.mode, seed=args.seed)
+        except LeaseLost as exc:
+            _log(f"stood down: {exc}")
+            _record_stand_down(args.mode, "LEASE_LOST", str(exc))
+            return 0
         except Exception as exc:
             # A crash here must never read as "no allocation was needed" (L1.28a). The artifact
             # keeps its last good content and the failure is loud and non-zero.
