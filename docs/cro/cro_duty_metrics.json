@@ -4,6 +4,31 @@
  "default_max_age_h": 26,
  "artifact_backed_from": 15,
  "duties": {
+  "D3": {
+   "artifact_max_age_h": {
+    "reports/JUDGING_BURNDOWN.json": 2
+   },
+   "metrics": [
+    "first_rulings_per_hour",
+    "created_per_hour",
+    "busy_cores",
+    "planned_workers"
+   ]
+  },
+  "D4": {
+   "metrics": [
+    "never_fires_days_0",
+    "too_rare_1_to_59_days",
+    "requeued_without_terminal"
+   ],
+   "targets": [
+    {
+     "metric": "requeued_without_terminal",
+     "op": "==",
+     "value": 0
+    }
+   ]
+  },
   "D17": {
    "max_age_h": 3,
    "metrics": [
@@ -100,10 +125,14 @@
     "shards_completed",
     "verdicts_committed_per_attempt",
     "build_failures",
-    "worker_peak_mb"
+    "worker_peak_mb",
+    "warm_rate",
+    "cold_build_seconds",
+    "build_failures_by_cause"
    ],
    "artifacts": [
-    "reports/JUDGING_QUEUE_AGE.json"
+    "reports/JUDGING_QUEUE_AGE.json",
+    "reports/JUDGING_THROUGHPUT.json"
    ]
   },
   "D39": {

@@ -325,3 +325,12 @@ def test_the_lane_widening_is_read_only_and_from_the_one_domain_file() -> None:
                       "Remove-Item", "secrets", "Bash(*)", "Bash(powershell", "Bash(cmd"):
         assert forbidden not in allowed, forbidden
     assert '"Read(data/secrets/**)"' in args
+
+
+def test_the_end_row_carries_the_enforced_misses_not_the_agents_claim() -> None:
+    """Auditor should-fix on #271: the end ledger row copies the duty check's own verdict."""
+    src = LAUNCHER.read_text("utf-8")
+    assert "$dutyCheck = Invoke-DutyCheck" in src and "ConvertFrom-Json" in src
+    for field in ("duties_missed", "pass_questions_missed", "judging_sweep_missed"):
+        assert f"{field} = $enforced.{field}" in src, field
+    assert 'duties_missed = "UNMEASURED"' in src
