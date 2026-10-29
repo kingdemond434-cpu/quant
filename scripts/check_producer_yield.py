@@ -48,6 +48,7 @@ import argparse
 import glob
 import json
 import os
+import re
 import sqlite3
 import sys
 import time
@@ -176,6 +177,10 @@ def _read(p: Path, default: Any = None) -> Any:
         return default if default is not None else {}
 
 
+#: A miner sweep's file name; group 1 is its UTC hour.
+_SWEEP_NAME = re.compile(r"^discoveries_(\d{8}_\d{2})\d{2}\.json$")
+
+
 def _seat_output(window_days: float) -> dict[str, int]:
     """Rows each intelligence seat donated inside the window, from the files themselves.
 
@@ -184,6 +189,11 @@ def _seat_output(window_days: float) -> dict[str, int]:
     """
     cutoff = time.time() - window_days * 86400.0
     out: Counter[str] = Counter()
+    # ONE SWEEP PER SEAT PER HOUR, WHICHEVER CLOCK WROTE IT (2026-10-29). A seat now has two
+    # clocks -- the VPS timer (shipped over intel-ship/send) and the box's `vps_seat_clock` leg --
+    # and both name a sweep `discoveries_<YYYYmmdd_HHMM>.json`. Two sweeps of one source in one
+    # hour are the same rows twice, so those count once: the larger of the two.
+    slots: dict[tuple[str, str], int] = {}
     for root in (DESK / "data" / "intelligence", ROOT / "data" / "intelligence"):
         for pat in ("*/*.json", "*/*.jsonl"):
             for f in glob.glob(str(root / pat)):
@@ -196,8 +206,35 @@ def _seat_output(window_days: float) -> dict[str, int]:
                         n = sum(1 for _ in fh)
                 except OSError:
                     continue
+                m = _SWEEP_NAME.match(os.path.basename(f))
+                if m:
+                    key = (seat, m.group(1))
+                    slots[key] = max(slots.get(key, 0), max(n, 1))
+                    out.setdefault(seat, 0)
+                    continue
                 out[seat] += max(n, 1)
+    for (seat, _hour), n in slots.items():
+        out[seat] += n
     return dict(out)
+
+
+def _daily_proposers() -> list[str]:
+    """`daily_cycle.PROPOSERS`, read from the file's text (never imported: importing the chain
+    would pull in every proposer). Empty when the file or the tuple cannot be read."""
+    import ast
+    try:
+        tree = ast.parse((DESK / "research" / "daily_cycle.py").read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, ValueError):
+        return []
+    for node in tree.body:
+        target = (node.target if isinstance(node, ast.AnnAssign)
+                  else node.targets[0] if isinstance(node, ast.Assign) and node.targets else None)
+        if isinstance(target, ast.Name) and target.id == "PROPOSERS" and node.value is not None:
+            try:
+                return [str(n) for n in ast.literal_eval(node.value)]
+            except ValueError:
+                return []
+    return []
 
 
 def audit(window_days: float = 3.0) -> dict[str, Any]:
@@ -206,16 +243,7 @@ def audit(window_days: float = 3.0) -> dict[str, Any]:
 
     # THE PROPOSERS, from the daily cycle's own list rather than a copy of it. A list that can
     # drift from the runner is a list that reports on organs nobody runs.
-    proposers: list[str] = []
-    try:
-        src = (DESK / "research" / "daily_cycle.py").read_text(encoding="utf-8")
-        start = src.find('for name in ("plumbing_miner"')
-        if start > 0:
-            block = src[start:src.find("):", start)]
-            proposers = [t.strip().strip('"') for t in block.split("(", 1)[1].split(",")
-                         if t.strip().strip('"').isidentifier()]
-    except OSError:
-        pass
+    proposers = _daily_proposers()
 
     # THE SEAT DIRECTORY IS NOT ALWAYS THE MODULE NAME, and a mismatch reads as DEAD. `asia_plane`
     # donates into `data/intelligence/asia/`, so without this it would be reported as producing

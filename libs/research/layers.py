@@ -188,6 +188,8 @@ LEG_LAYER: dict[str, str] = {
     "synthetic_usdx": "information",
     # Formulaic alpha generation is a predictor search; the closed-loop attestation is meta.
     "alpha_evolution": "prediction",
+    # The VPS-only seat miners on the box's own clock (2026-10-29): public sources read for claims.
+    "vps_seat_clock": "information",
     "closed_loop": "meta",
     # The breadth sweep mints cells for every unbanned family on every chart the desk holds bars
     # for -- a predictor search, scheduled hourly since the discovery hunt was banned (2026-09-16).

@@ -669,12 +669,20 @@ def _write_rows(name: str, rows_: list[dict], ts: str, results: dict, summary: d
         summary["raw_only"] += 0 if real else 1
 
 
-def run_and_save() -> dict:
+def run_and_save(only: set[str] | frozenset[str] | None = None, tail: bool = True) -> dict:
+    """Every source, or only the named ones (the box's `vps_seat_clock` leg, 2026-10-29).
+
+    `only` changes WHICH sources run, never how: walls, probes, politeness and the stub/error
+    dispositions are identical. `tail=False` skips the once-per-sweep proposer-seat ask and the
+    cohort/identity join, which a caller running sources one at a time runs once at its end.
+    """
     ts = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
     results, summary = {}, {"total": 0, "ok": 0, "raw_only": 0, "failed": 0, "walled": 0}
     st = _state()
     probes = st.setdefault("wall_probes", {})
     for name, fn in MINERS.items():
+        if only is not None and name not in only:
+            continue
         wall = SOURCE_WALLS.get(name)
         if wall:
             # A walled source is a DISPOSITIONED state, not a silent failure. It emits a
@@ -749,6 +757,12 @@ def run_and_save() -> dict:
     except (OSError, ValueError):
         latest = {}
     latest.update(results)
+    if not tail:
+        latest_p.write_text(json.dumps(latest, indent=1, default=str), "utf-8")
+        print(f"seed miners: {summary['total']} rows across {len(results)} source(s) "
+              f"(ok={summary['ok']} raw={summary['raw_only']} "
+              f"walled={summary['walled']} failed={summary['failed']})")
+        return results
     # THE PROPOSER SEAT, OPTIONAL: source NAMES the fleet does not already mine.
     # A name is not a ground. It is written into the fleet's own state as a CANDIDATE for the
     # source registry to vet -- nothing here fetches it, no MINERS entry is created, and the
@@ -775,14 +789,18 @@ def run_and_save() -> dict:
     print(f"seed miners: {summary['total']} rows across {len(MINERS)} sources "
           f"(ok={summary['ok']} raw={summary['raw_only']} "
           f"walled={summary['walled']} failed={summary['failed']})")
-    # JOIN STAGE (Drop 3): forward-cohort enrollment/mortality + identity graph run on every
-    # sweep's output -- relationships and TIME are the corpus the sites cannot sell us.
+    join_stage()
+    return results
+
+
+def join_stage() -> None:
+    """JOIN STAGE (Drop 3): forward-cohort enrollment/mortality + identity graph run on every
+    sweep's output -- relationships and TIME are the corpus the sites cannot sell us."""
     try:
         from cohort_and_identity import run_and_save as _cohorts
         _cohorts()
     except Exception as exc:
         print(f"cohort/identity join failed (non-fatal): {exc}")
-    return results
 
 
 if __name__ == "__main__":

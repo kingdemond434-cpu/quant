@@ -132,10 +132,14 @@ ALL_MINERS = [
 ]
 
 
-def run_all_miners() -> dict:
+def run_all_miners(only: set[str] | frozenset[str] | None = None) -> dict:
+    """Every channel, or only the named ones (the box's `vps_seat_clock` leg, 2026-10-29).
+    Each still runs under its own MINER_TIMEOUT_S kill."""
     results = {}
     total = 0
     for name, fn in ALL_MINERS:
+        if only is not None and name not in only:
+            continue
         status, payload = _run_miner(name, fn)
         if status == "ok":
             disc = payload
@@ -150,7 +154,7 @@ def run_all_miners() -> dict:
 
     ok = sum(1 for r in results.values() if r.get("count", 0) > 0)
     results["summary"] = {
-        "total_miners": len(ALL_MINERS),
+        "total_miners": len(results),
         "total_discoveries": total,
         "successful_miners": ok,
         "timestamp": datetime.now(timezone.utc).isoformat(),

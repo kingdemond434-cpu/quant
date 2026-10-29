@@ -1285,7 +1285,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "sandbox_roster", "proposer_seat", "kimi_hunt",
                      # Derives each instrument's own session from its own bars and mints the
                      # breakout aimed at it, instead of porting gold's hours everywhere.
-                     "session_structure"),
+                     "session_structure",
+                     # The seats only the VPS ever clocked, on the box's own clock (2026-10-29).
+                     "vps_seat_clock"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "session_variant_remap",
@@ -1970,6 +1972,8 @@ def _producer(name: str, script: str,
 #: must consume its backlog first so that truncation still makes progress. `shadow_forward` gets
 #: the budget to finish; the gauntlet already does the other (never-judged cells sort first).
 LEG_BUDGET_SEC: dict[str, int] = {
+    # vps_seat_clock.BUDGET_S (1,800 s, its own stop: no unit starts that cannot finish) + room.
+    "vps_seat_clock": 2_000,
     # Up to forty public endpoints with a 25-second transport timeout. The acquirer is bounded
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
@@ -5723,6 +5727,10 @@ def main() -> None:
         "graveyard_model", "libs/research/graveyard_model.py"))
     wc = _costed("world_crawler", lambda: _producer(
         "world_crawler", "side_channels/world_crawler.py"))
+    # THE SEATS ONLY THE VPS EVER CLOCKED (2026-10-29): seed_miners / run_all_miners units, run
+    # here only when no clock has fed their seats inside the cadence. See vps_seat_clock.py.
+    vsc = _costed("vps_seat_clock", lambda: _producer(
+        "vps_seat_clock", "side_channels/vps_seat_clock.py"))
     # THE PROPOSER SEAT (2026-09-23). An OPTIONAL external-model prior over which expression
     # skeletons and which mechanism names are worth a trial. It proposes candidates and never a
     # verdict: every proposal enters the population with provenance, is charged effective trials,
@@ -6226,7 +6234,7 @@ def main() -> None:
                     "execution_resolver": xr, "counterfactual_world": cw,
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
-                    "graveyard_model": gm, "world_crawler": wc,
+                    "graveyard_model": gm, "world_crawler": wc, "vps_seat_clock": vsc,
                     "proposer_seat": prs, "committees": cmt,
                     "committee_ensembles": cme, "kimi_hunt": kh,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,

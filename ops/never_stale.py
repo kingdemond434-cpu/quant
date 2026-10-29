@@ -219,6 +219,18 @@ def _capital_faults() -> list[dict]:
     return faults
 
 
+def _seat_clock_red() -> dict:
+    """`libs.ops.seat_clocks.report()`; UNMEASURED (never a pass) when it cannot be read."""
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.ops import seat_clocks
+        return seat_clocks.report()
+    except Exception as exc:
+        return {"status": "UNMEASURED", "error": f"{type(exc).__name__}: {exc}"[:300],
+                "red": []}
+
+
 def _safe(fn, fam: str) -> bool:
     try:
         return fn(fam) is not None
@@ -288,14 +300,20 @@ def run(apply: bool) -> dict:
         })
 
     capital = _capital_faults()
+    seats = _seat_clock_red()
     return {
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "health_age_min": round(age, 1),
-        "status": "OK" if not (escalated or capital) else "NEEDS_HUMAN",
+        "status": "OK" if not (escalated or capital or seats.get("red")) else "NEEDS_HUMAN",
         "n_acted": len(acted), "n_escalated": len(escalated),
         "applied": bool(apply),
         "acted": acted, "escalated": escalated,
         "capital_faults": capital,
+        # SEATS WITH NO LIVE CLOCK (2026-10-29). A task can be OK while every clock that feeds a
+        # seat is dead -- the VPS-only seats read healthy here for two weeks after their
+        # transport went silent. Each RED row names the seat, its clocks and how long it has
+        # been silent. Reported, never acted on: the cure is a clock, not a restart.
+        "seat_clocks": seats,
         "uncontracted": uncontracted,
         "uncontracted_note": ("these run but have no artifact contract, so nothing would notice "
                               "if they stopped. Not broken -- unwatched. Add each to "
@@ -321,6 +339,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"                 {str(r['diagnosis'])[:110]}")
     for r in doc.get("capital_faults", []):
         print(f"  CAPITAL FAULT  {str(r['sleeve'])[:28]:<28} {str(r['fault'])[:70]}")
+    for r in (doc.get("seat_clocks") or {}).get("red", []):
+        print(f"  SEAT RED       {str(r['seat'])[:28]:<28} {str(r['why'])[:80]}")
     if doc.get("uncontracted"):
         print(f"  unwatched      {len(doc['uncontracted'])} organ(s) with no artifact contract: "
               f"{', '.join(doc['uncontracted'][:6])}")
