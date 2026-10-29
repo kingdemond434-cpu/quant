@@ -227,34 +227,128 @@ def test_a_model_no_better_than_a_coin_orders_nothing(tmp_path: Path) -> None:
         assert sc.model is None and sc.status == "PRIOR_FALLBACK", auc
 
 
-def test_no_symbol_starves_under_a_backlog_that_never_empties() -> None:
-    """The audit's starvation case: inflow 100/h against capacity 60/h, two symbols the scorer
-    ranks last. With the age bound their oldest wait stays within FIFO's plus the bound."""
-    def run(bound: float) -> float:
-        old = pm.FLAG_MAX_AGE_H
-        pm.FLAG_MAX_AGE_H = bound
-        try:
-            queue: list[dict] = []
-            worst = 0.0
-            for hour in range(150):
-                now = NOW + timedelta(hours=hour)
-                for i in range(100):
-                    sym = SYMS[i % len(SYMS)]
-                    r = {"symbol": sym, "family": "f", "params": {"k": hour * 100 + i},
-                         "source": "sim", "first_seen": now.isoformat()}
-                    queue.append(r)
-                sc = FixedScorer()
-                sc.by_cell = {docket_cell_id(r): (0.01 if r["symbol"] in SYMS[3:] else 0.5)
-                              for r in queue}
-                queue, _ = pm.apply(queue, now=now, scorer=sc, seen=set(), report=None)
-                queue = queue[60:]
-                for r in queue:
-                    seen = datetime.fromisoformat(r["first_seen"])
-                    worst = max(worst, (now - seen).total_seconds() / 3600.0)
-            return worst
-        finally:
-            pm.FLAG_MAX_AGE_H = old
+def test_a_flag_delays_a_row_in_the_judges_own_order_by_at_most_the_age_bound(
+        tmp_path: Path) -> None:
+    """Audit S1 of 680f2856e: through `judge_docket_order.order` -- the sort the judge runs, which
+    has no age key -- a flagged row sorts behind its clean siblings, and once it is older than
+    FLAG_MAX_AGE_H the next apply leaves it unflagged, so it sorts exactly as if never flagged."""
+    from types import SimpleNamespace
 
-    fifo = run(-1.0)                      # nothing is ever young enough to flag: pure FIFO
-    bounded = run(pm.FLAG_MAX_AGE_H)
-    assert bounded <= fifo + pm.FLAG_MAX_AGE_H + 1.0, (bounded, fifo)
+    from desks.mt5.scripts import external_gauntlet as G
+    from research import judge_docket_order as O
+
+    def specs(rows: list[dict]) -> list[dict]:
+        return [{"sym": r["symbol"], "family": r["family"], "params": r["params"],
+                 "_never_judged": True,
+                 "prejudge_flagged": bool((r.get("prejudge") or {}).get("flags"))} for r in rows]
+
+    fake = SimpleNamespace(BASE=tmp_path, _build_cursor=dict, timeframe_of=G.timeframe_of)
+    (tmp_path / "desks" / "mt5" / "reports").mkdir(parents=True)
+    rows = _docket(20, fams=("f",))
+    sc = _fixed(rows)
+    flagged, _ = pm.apply([dict(r) for r in rows], now=NOW, scorer=sc, seen=set(), report=None,
+                          quota=0.0)
+    order = O.order(fake, specs(flagged))
+    n_flag = sum(sp["prejudge_flagged"] for sp in order)
+    assert n_flag and all(sp["prejudge_flagged"] for sp in order[-n_flag:])
+    later = NOW + timedelta(hours=pm.FLAG_MAX_AGE_H + 2)
+    aged, _ = pm.apply(flagged, now=later, scorer=sc, seen=set(), report=None, quota=0.0)
+    assert not any(sp["prejudge_flagged"] for sp in specs(aged))
+    clean = [{k: v for k, v in r.items() if k != "prejudge"} for r in rows]
+    # Same sort keys, position by position (ties keep their input order, as `sorted` does).
+    assert ([sp["sym"] for sp in O.order(fake, specs(aged))]
+            == [sp["sym"] for sp in O.order(fake, specs(clean))])
+
+
+# ------------------------------------------------- audit MF1 of 680f2856e: the stream resumes
+
+def _tables_and_sample(st: dict) -> tuple[dict, list]:
+    return st["tables"].c, st["sample"]
+
+
+def test_a_resumed_stream_equals_one_uninterrupted_pass(tmp_path: Path) -> None:
+    led = _ledger(tmp_path / "ledger.jsonl", n=400)
+    whole = pm.stream_ledger(led, seed=3)
+    text = led.read_text("utf-8").splitlines(keepends=True)
+    part = tmp_path / "grow.jsonl"
+    part.write_text("".join(text[:300]), "utf-8")
+    state = tmp_path / "state.pkl"
+    first = pm.stream_ledger(part, seed=3, state_path=state)
+    assert first["complete"] and not first["resumed"]
+    with part.open("a", encoding="utf-8") as fh:
+        fh.write("".join(text[300:]))
+    led2 = tmp_path / "ledger.jsonl"
+    resumed = pm.stream_ledger(part, seed=3, state_path=state)
+    assert resumed["resumed"] and resumed["read"] == whole["read"]
+    assert _tables_and_sample(resumed) == _tables_and_sample(whole)
+    assert led2.exists()
+
+
+def test_a_deadline_keeps_progress_and_the_next_pass_finishes(tmp_path: Path,
+                                                              monkeypatch) -> None:
+    led = _ledger(tmp_path / "ledger.jsonl", n=3000)
+    whole = pm.stream_ledger(led, seed=1)
+    monkeypatch.setattr(pm, "_STREAM_CHECK_EVERY", 500)
+    ticks = iter(range(10**6))
+    monkeypatch.setattr(pm.time, "monotonic", lambda: float(next(ticks)))
+    state = tmp_path / "state.pkl"
+    cut = pm.stream_ledger(led, seed=1, state_path=state, deadline=3.0)
+    assert not cut["complete"] and 0 < cut["offset"] < cut["size"]
+    monkeypatch.undo()
+    done = pm.stream_ledger(led, seed=1, state_path=state)
+    assert done["complete"] and done["resumed"]
+    assert _tables_and_sample(done) == _tables_and_sample(whole)
+
+
+def test_a_rewritten_ledger_is_read_again_from_the_start(tmp_path: Path) -> None:
+    led = _ledger(tmp_path / "ledger.jsonl", n=200)
+    state = tmp_path / "state.pkl"
+    pm.stream_ledger(led, seed=0, state_path=state)
+    lines = led.read_text("utf-8").splitlines(keepends=True)
+    led.write_text("".join(lines[:150]) + "".join(reversed(lines[150:])), "utf-8")
+    again = pm.stream_ledger(led, seed=0, state_path=state)
+    assert not again["resumed"]
+    assert _tables_and_sample(again) == _tables_and_sample(pm.stream_ledger(led, seed=0))
+
+
+def test_train_saves_progress_and_keeps_the_model_while_the_stream_catches_up(
+        tmp_path: Path, monkeypatch) -> None:
+    led = _ledger(tmp_path / "ledger.jsonl", n=3000)
+    monkeypatch.setenv("QUANT_LEG_BUDGET_S", "4")
+    monkeypatch.setattr(pm, "_STREAM_CHECK_EVERY", 500)
+    ticks = iter(range(10**6))
+    monkeypatch.setattr(pm.time, "monotonic", lambda: float(next(ticks)))
+    doc = pm.train(ledger=led, model_dir=tmp_path / "m", force=True)
+    assert doc["refit"] is False and str(doc["stream"]).startswith("CATCHING_UP")
+    assert (tmp_path / "m" / pm.STREAM_STATE.name).exists()
+    assert not (tmp_path / "m" / "model.json").exists()
+
+
+def test_a_fit_that_will_not_fit_the_time_left_is_deferred(tmp_path: Path,
+                                                            monkeypatch) -> None:
+    led = _ledger(tmp_path / "ledger.jsonl", n=50)
+    mdir = tmp_path / "m"
+    mdir.mkdir()
+    (mdir / "model.json").write_text(json.dumps({"schema": pm.SCHEMA, "trained_ts": 0,
+                                                 "fit_seconds": 500.0, "status": "MODEL"}),
+                                     "utf-8")
+    monkeypatch.setenv("QUANT_LEG_BUDGET_S", "600")
+    doc = pm.train(ledger=led, model_dir=mdir)
+    assert doc["refit"] is False and str(doc["stream"]).startswith("FIT_DEFERRED")
+    assert doc["status"] == "MODEL"
+
+
+def test_the_refit_window_is_longer_than_the_hourly_cadence() -> None:
+    assert pm.REFIT_MIN_S > 3600
+
+
+def test_labels_never_carry_the_holdout_outcome() -> None:
+    """Audit S4: a cell's lockbox result must not decide which cells are judged first."""
+    base = {"cell": "EURUSD.f.p=1", "passed": False}
+    assert pm._label({**base, "terminal_gate": "lockbox", "failed_gates": ["lockbox"]}) == 1
+    assert pm._label({**base, "terminal_gate": "lockbox",
+                      "failed_gates": ["lockbox", "expected_value"]}) == 0
+    assert pm._label({**base, "terminal_gate": "cpcv", "failed_gates": ["cpcv", "lockbox"]}) == 0
+    assert pm._label({**base, "terminal_gate": "lockbox"}) is None
+    assert pm._label({**base, "terminal_gate": "cpcv"}) == 0
+    assert pm._label({**base, "passed": True, "terminal_gate": "PASSED"}) == 1

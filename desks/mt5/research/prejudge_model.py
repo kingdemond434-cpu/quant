@@ -88,15 +88,19 @@ MIN_FAMILY_ROWS = 4
 #: family, so under a backlog that never empties it would never be reached: the audit's sim at
 #: 100/h inflow against 60/h capacity left two symbols with cells waiting the whole 336h while
 #: FIFO kept every symbol under 135h. A row first seen longer ago than this is never flagged, so it
-#: sorts as clean (oldest first) and its wait is bounded. Unknown age is treated as old.
+#: sorts with its family's clean rows -- in the judge's own order, which has NO age key (audit S1:
+#: a 500 h row sorted behind 26 rows 1 h old), so the bound is on how long a flag can delay a row,
+#: not a promise of oldest-first. Unknown age is treated as old.
 FLAG_MAX_AGE_H = float(os.environ.get("PREJUDGE_FLAG_MAX_AGE_H", "72"))
 #: Training sample cap (stratified by family x label, inverse-inclusion weighted).
 MAX_TRAIN_ROWS = int(os.environ.get("PREJUDGE_MAX_TRAIN_ROWS", "200000"))
 PER_KEY_CAP = max(500, MAX_TRAIN_ROWS // 50)
 #: Below these the boosted model is not fitted and the rate tables answer alone.
 MIN_TRAIN, MIN_CLASS = 200, 10
-#: Refit at most this often (the leg is hourly; a second call inside the window reuses the model).
-REFIT_MIN_S = 3000
+#: Refit at most this often (audit S5 of 680f2856e). The model persists and a flag lives at most
+#: FLAG_MAX_AGE_H, so an hourly refit bought nothing; 3000 s sat below the hourly cadence and refit
+#: every pass. A pass inside the window reuses the persisted model and reads nothing.
+REFIT_MIN_S = 6 * 3600
 #: Pseudo-counts of the parent rate mixed into every table rate.
 SMOOTH = 20.0
 #: Out-of-fold folds for the rate features the booster is trained on.
@@ -238,32 +242,115 @@ def family_prior(fam: str) -> float:
 # training
 # ------------------------------------------------------------------------------------------------
 
+#: Gates read on the HELD-OUT window (audit S4 of 680f2856e). A label that knew their outcome would
+#: make which cells get judged first a selection on the holdout, uncharged in DSR. The label is
+#: therefore the PRE-holdout outcome: a cell that failed only these is labelled as passing.
+HOLDOUT_GATES = frozenset({"lockbox"})
+
+
 def _label(row: Mapping[str, Any]) -> int | None:
-    """1 passed every gate, 0 a real terminal gate; None for UNKNOWN / NOT_RUN (not a failure)."""
+    """1 passed every development gate, 0 failed one; None for UNKNOWN / NOT_RUN (not a failure)
+    or when the row cannot say whether anything but a holdout gate failed."""
     if str(row.get("downstream_status") or "").startswith("NOT_RUN"):
         return None
     if row.get("passed") is True or str(row.get("passed")).lower() == "true":
         return 1
-    return None if str(row.get("terminal_gate") or "") in ("", "UNKNOWN") else 0
+    term = str(row.get("terminal_gate") or "")
+    if term in ("", "UNKNOWN"):
+        return None
+    failed = row.get("failed_gates")
+    if isinstance(failed, list) and failed:
+        return 0 if any(str(g) not in HOLDOUT_GATES for g in failed) else 1
+    # No failed-gate list: the terminal gate is the FIRST failure, so a holdout gate there says
+    # nothing about the development gates after it.
+    return None if term in HOLDOUT_GATES else 0
 
 
-def stream_ledger(path: Path, seed: int = 0) -> dict[str, Any]:
+#: THE STREAM RESUMES (audit MF1 of 680f2856e). The refit used to stream the whole verdict ledger
+#: every time, with no budget and nothing saved until the end; on the box that is the same file
+#: whose full read made JUDGING_RATE overrun, and a leg killed at its cap would start from byte 0
+#: every hour, forever. The tables, the reservoir, its RNG and the byte offset are saved here, so a
+#: pass reads only what was appended (whole lines only) and a pass cut by its deadline resumes.
+#: A ledger whose head or last-read bytes changed, or that shrank, is read again from the start.
+STREAM_STATE = MODEL_DIR / "stream_state.pkl"
+STREAM_STATE_V = 1
+STREAM_HEAD_BYTES = 4096
+_STREAM_CHECK_EVERY = 4096
+#: Share of the leg's cap (`QUANT_LEG_BUDGET_S`) the stream may take; the fit needs the rest.
+STREAM_BUDGET_SHARE = 0.5
+#: The fit runs only when the time left covers this multiple of the last measured fit.
+FIT_MARGIN = 1.25
+
+
+def _bytes_hash(path: Path, start: int, n: int) -> str:
+    with path.open("rb") as fh:
+        fh.seek(max(0, start))
+        return hashlib.blake2b(fh.read(max(0, n)), digest_size=16).hexdigest()
+
+
+def _load_stream_state(path: Path, ledger: Path, size: int) -> dict[str, Any] | None:
+    """The saved stream, or None when the ledger is not the one it read (head or last-read bytes
+    changed, or it shrank) or the state cannot be read."""
+    try:
+        with path.open("rb") as fh:
+            st = pickle.load(fh)  # noqa: S301 -- written only by this module, box-local
+        if not isinstance(st, dict) or st.get("v") != STREAM_STATE_V:
+            return None
+        off, hl = int(st["offset"]), int(st["head_len"])
+        tl = min(off, STREAM_HEAD_BYTES)
+        if (off > size or st.get("ledger") != str(ledger)
+                or _bytes_hash(ledger, 0, hl) != st["head"]
+                or _bytes_hash(ledger, off - tl, tl) != st["tail"]):
+            return None
+        return st
+    except Exception:
+        return None
+
+
+def stream_ledger(path: Path, seed: int = 0, *, state_path: Path | None = None,
+                  deadline: float | None = None) -> dict[str, Any]:
     """One pass over the ledger, bounded memory: full-population tables plus a stratified
-    reservoir (family x label, `PER_KEY_CAP` each) with its inclusion weights."""
+    reservoir (family x label, `PER_KEY_CAP` each) with its inclusion weights.
+
+    With `state_path` the pass resumes from the saved state and saves it again (whole lines
+    only); `deadline` (a `time.monotonic()` instant) stops it early with `complete` False and
+    its progress kept. Resumed or not, the tables and the reservoir are those of one pass over
+    every line, in file order."""
     tables = Tables()
     res: dict[tuple[str, int], list[tuple[str, str, str, str, int]]] = {}
     seen: dict[tuple[str, int], int] = {}
     gates: dict[str, dict[str, int]] = {}
     rng = random.Random(seed)  # noqa: S311 -- sampling, never a secret
     read = used = 0
+    offset = 0
     try:
-        fh = path.open("r", encoding="utf-8", errors="replace")
+        size = path.stat().st_size
+        fh = path.open("rb")
     except OSError:
-        return {"tables": tables, "sample": [], "read": 0, "used": 0, "gates": {}}
+        return {"tables": tables, "sample": [], "read": 0, "used": 0, "gates": {},
+                "complete": True, "resumed": False}
+    st = _load_stream_state(state_path, path, size) if state_path is not None else None
+    if st is not None:
+        tables = Tables(st["tables"])
+        res, seen, gates = st["res"], st["seen"], st["gates"]
+        rng.setstate(st["rng"])
+        read, used, offset = int(st["read"]), int(st["used"]), int(st["offset"])
+    complete = True
     with fh:
-        for line in fh:
+        fh.seek(offset)
+        n_line = 0
+        while True:
+            if (deadline is not None and n_line % _STREAM_CHECK_EVERY == 0
+                    and time.monotonic() > deadline):
+                complete = False
+                break
+            raw = fh.readline()
+            if not raw or not raw.endswith(b"\n"):
+                break                       # EOF, or a row the writer is still appending
+            n_line += 1
+            offset += len(raw)
             read += 1
-            line = line.strip()
+            line = raw.decode("utf-8", errors="replace").strip()
             if not line:
                 continue
             try:
@@ -295,6 +382,20 @@ def stream_ledger(path: Path, seed: int = 0) -> dict[str, Any]:
                 j = rng.randrange(seen[key])
                 if j < PER_KEY_CAP:
                     bucket[j] = item
+    if state_path is not None:
+        try:
+            hl = min(offset, STREAM_HEAD_BYTES)
+            snap = {"v": STREAM_STATE_V, "ledger": str(path), "offset": offset,
+                    "head_len": hl, "head": _bytes_hash(path, 0, hl),
+                    "tail": _bytes_hash(path, offset - hl, hl),
+                    "tables": tables.c, "res": res, "seen": seen, "gates": gates,
+                    "rng": rng.getstate(), "read": read, "used": used}
+            state_path.parent.mkdir(parents=True, exist_ok=True)
+            _atomic_bytes(state_path, pickle.dumps(snap))
+        except OSError:
+            pass                            # the next pass reads from the last saved offset
+    # The state was saved BEFORE the shuffle below draws from `rng`, so a resumed pass and an
+    # uninterrupted one make the same draws.
     sample: list[tuple[str, str, str, str, int, float]] = []
     for key, items in res.items():
         w = seen[key] / max(len(items), 1)
@@ -304,7 +405,8 @@ def stream_ledger(path: Path, seed: int = 0) -> dict[str, Any]:
         scale = len(sample) / MAX_TRAIN_ROWS
         sample = [(*s[:5], s[5] * scale) for s in sample[:MAX_TRAIN_ROWS]]
     sample.sort(key=lambda s: s[0])
-    return {"tables": tables, "sample": sample, "read": read, "used": used, "gates": gates}
+    return {"tables": tables, "sample": sample, "read": read, "used": used, "gates": gates,
+            "complete": complete, "resumed": st is not None, "offset": offset, "size": size}
 
 
 def _holdout(cell: str) -> bool:
@@ -358,6 +460,15 @@ def _fit(xs: list[list[float]], ys: list[int], ws: list[float]) -> Any:
     return clf
 
 
+def leg_cap_s(env: Mapping[str, str] | None = None) -> float | None:
+    """The hourly cycle's SIGKILL for this leg (`QUANT_LEG_BUDGET_S`), or None run by hand."""
+    try:
+        cap = float((os.environ if env is None else env).get("QUANT_LEG_BUDGET_S") or 0.0)
+    except (TypeError, ValueError):
+        return None
+    return cap if cap > 0 else None
+
+
 def train(*, ledger: Path | None = None, model_dir: Path | None = None, force: bool = False,
           now: float | None = None) -> dict[str, Any]:
     """Refit (at most every `REFIT_MIN_S`) and persist model + schema. Never raises."""
@@ -368,7 +479,23 @@ def train(*, ledger: Path | None = None, model_dir: Path | None = None, force: b
     fresh = isinstance(prev, dict) and t0 - float(prev.get("trained_ts") or 0) < REFIT_MIN_S
     if not force and fresh and isinstance(prev, dict):
         return {**prev, "refit": False}
-    st = stream_ledger(ledger or GATE_LEDGER)
+    m0 = time.monotonic()
+    cap = leg_cap_s()
+    st = stream_ledger(ledger or GATE_LEDGER, state_path=mdir / STREAM_STATE.name,
+                       deadline=None if cap is None else m0 + STREAM_BUDGET_SHARE * cap)
+    keep = {**prev, "refit": False} if isinstance(prev, dict) else {"schema": SCHEMA,
+                                                                     "refit": False}
+    if not st["complete"]:
+        # PROGRESS SAVED, NOTHING FITTED: the model in hand keeps answering, and the next pass
+        # resumes the stream where this one stopped.
+        return {**keep, "status": keep.get("status") or "NO_EVIDENCE",
+                "stream": f"CATCHING_UP: byte {st['offset']:,} of {st['size']:,}"}
+    fit_s = float(prev.get("fit_seconds") or 0.0) if isinstance(prev, dict) else 0.0
+    if cap is not None and fit_s and cap - (time.monotonic() - m0) < FIT_MARGIN * fit_s:
+        return {**keep, "status": keep.get("status") or "NO_EVIDENCE",
+                "stream": (f"FIT_DEFERRED: {cap - (time.monotonic() - m0):.0f} s left against a "
+                           f"last fit of {fit_s:.0f} s; the stream is current, so the next "
+                           "pass has the time")}
     tables: Tables = st["tables"]
     sample = st["sample"]
     ys_all = [s[4] for s in sample]
@@ -405,8 +532,10 @@ def train(*, ledger: Path | None = None, model_dir: Path | None = None, force: b
                     doc["auc_holdout"] = round(float(roc_auc_score(
                         [h[4] for h in hold], ph, sample_weight=[h[5] for h in hold])), 4)
                     doc["n_holdout"] = len(hold)
+            f0 = time.monotonic()
             xs, ys, ws = _matrix(sample, tables)
             clf = _fit(xs, ys, ws)
+            doc["fit_seconds"] = round(time.monotonic() - f0, 1)
             blob = pickle.dumps(clf)
             mdir.mkdir(parents=True, exist_ok=True)
             _atomic_bytes(model_path, blob)
@@ -598,14 +727,16 @@ def apply(rows: list[dict[str, Any]], *, now: datetime | None = None,
         return rows, summary
     by_fam: dict[str, list[tuple[int, str]]] = {}
     for i, r in enumerate(rows):
+        # AGE FIRST (audit S3): it is a string parse, and it rules out ~97% of the docket before
+        # the cell id is hashed at all.
+        if _age_h(r.get("first_seen"), when) > FLAG_MAX_AGE_H:
+            summary["aged_unflaggable"] += 1          # waits as a clean row: no starvation
+            continue
         cid = row_cell(r)
         if not cid:
             continue
         if cid in judged:
             summary["judged_skipped"] += 1
-            continue
-        if _age_h(r.get("first_seen"), when) > FLAG_MAX_AGE_H:
-            summary["aged_unflaggable"] += 1          # waits as a clean row: no starvation
             continue
         by_fam.setdefault(str(r.get("family") or ""), []).append((i, cid))
     vt, term_status = value_terms(sc.tables)
