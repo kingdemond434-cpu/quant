@@ -440,9 +440,12 @@ def successor_hunt(body: dict[str, Any], path: Path | None = None,
     try:
         lines = p.read_text(encoding="utf-8").splitlines()
     except FileNotFoundError:
-        return {"status": "NO_QUEUE", "path": str(p), "n_open": 0, "hunts": [],
-                "repair_keys": [], "why": ("hazard_engine has queued no successor_search yet "
-                                           "(the file is absent): nothing to hunt")}
+        # Absence is not an empty queue (L1.28a): the file may never have been written because
+        # hazard_engine has not run, so the open count is UNKNOWN, never a measured zero.
+        return {"status": UNMEASURED, "path": str(p), "n_open": None, "hunts": [],
+                "repair_keys": [], "why": ("successor queue absent: hazard_engine has written no "
+                                           "successor_search file, so whether any incumbent "
+                                           "needs a successor is UNMEASURED, not zero")}
     except OSError as exc:
         return {"status": UNMEASURED, "path": str(p), "n_open": None, "hunts": [],
                 "repair_keys": [], "why": f"successor queue unreadable: {type(exc).__name__}"}

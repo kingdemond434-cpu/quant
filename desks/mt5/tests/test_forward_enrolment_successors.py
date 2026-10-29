@@ -57,7 +57,9 @@ def test_the_leg_publishes_the_hunt_and_is_scheduled() -> None:
 
 def test_absent_queue_is_a_state_not_an_all_clear(tmp_path) -> None:
     out = fe.successor_hunt({"certificates": []}, tmp_path / "none.jsonl", NOW)
-    assert out["status"] == "NO_QUEUE" and out["why"] and out["n_open"] == 0
+    # L1.28a: an absent queue is UNMEASURED with no count, never NO_QUEUE with n_open 0.
+    assert out["status"] == fe.UNMEASURED and out["why"] and out["n_open"] is None
+    assert out["status"] != "NO_QUEUE"
 
 
 def test_each_open_hunt_is_answered_and_stalled_candidates_are_repaired(tmp_path) -> None:
