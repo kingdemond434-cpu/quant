@@ -1,0 +1,56 @@
+{
+  "state": "TESTED_REPAIRS_CANONICAL_ADOPTION_REQUIRES_RELEASE_RECEIPT",
+  "scope": "Research intake, build capacity, reporting and producer diagnostics; no new arming or manufactured orders",
+  "build_conversion_release": {
+    "pull_request": "https://github.com/kingdemond434-cpu/quant/pull/322",
+    "head": "9581ee8d5e5b9affb10eeaa8aeb36e6788e4abb4",
+    "merged_commit": "1ff743c2a24bd7ae93afc8eec82e43ecddeff885",
+    "pr_ci": "https://github.com/kingdemond434-cpu/quant/actions/runs/38377082855",
+    "canonical_ci": "https://github.com/kingdemond434-cpu/quant/actions/runs/38381273580",
+    "measurement": {
+      "frozen_plan_cells": 367664,
+      "additional_named_preflight_failures": 48714,
+      "futile_attempts_avoided_in_measured_prefix": 34135,
+      "policy_functions_unchanged": 95,
+      "bounded_reporting_control_seconds": 30.001,
+      "bounded_reporting_peak_rss_mb": 42,
+      "reporting_result": "UNMEASURED; no partial population published",
+      "input_completion_control_parents": 40,
+      "input_completion_control_children": 40,
+      "input_completion_speedup": 126.36,
+      "exact_children_identical": true,
+      "control_children_donated_or_judged": false
+    },
+    "limitations": "Avoided failed compute is not completed judging. The canary is not production conversion. Actual unique terminal throughput and durable consumer publication still require measurement."
+  },
+  "producer_followup": {
+    "repairs": [
+      "Preserve decision timestamps while selecting the latest prior taken decision for adverse live fills",
+      "Advance resident progress only on completed passes, continuing the durable counter across recycling",
+      "Persist silent native shard failure exit codes immediately without changing retries or merge refusal",
+      "Give all merger runtime entry points the existing writer lock and memory admission; prevent the catch-up parent from competing with its own child"
+    ],
+    "producer_and_dispatcher_controls_passed": 32,
+    "merger_controls_passed": 22,
+    "existing_merger_functions_unchanged": 22,
+    "tests": [
+      "desks/mt5/tests/test_missed_trade_archaeologist.py",
+      "desks/mt5/tests/test_department_resident.py",
+      "desks/mt5/tests/test_department_resident_cycle_floor.py",
+      "desks/mt5/tests/test_run_sharded_gauntlet.py",
+      "desks/mt5/tests/test_merge_hypotheses_writer.py",
+      "desks/mt5/tests/test_intake_catchup.py",
+      "desks/mt5/tests/test_merge_fresh_pit.py",
+      "desks/mt5/tests/test_merge_docket_streaming.py",
+      "desks/mt5/tests/test_merge_chart_locality.py",
+      "desks/mt5/tests/test_merge_lane_batch.py"
+    ]
+  },
+  "open_findings": {
+    "allocator_certificate_coverage": "974 distinct specifications collapse into179 replay groups;795 require exact-identity pricing, evidence joins and admission. No economic eligibility inferred from certificate count.",
+    "recertification": "69 READY tasks; last report2026-09-29T00:02:53Z. The existing discovery resident is MT5-Hourly; no duplicate schedule created.",
+    "promotion": "15 forward candidates; zero newly fully live-eligible proved. Retired roster, live-universe and exact allocator admission remain distinct checks.",
+    "throughput": "100000 unique completed terminal verdicts/day not proved. Existing checkpoints and workers preserved."
+  },
+  "preserved": ["sealed record prefixes", "statistical thresholds", "multiplicity and lineage", "signal semantics", "risk policy", "deadman controls", "concurrency and budgets"]
+}

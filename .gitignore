@@ -252,6 +252,25 @@ desks/mt5/data/task_queue.jsonl
 desks/mt5/data/dsr_trial_sharpes.jsonl
 desks/mt5/data/task_queue.subs.json
 desks/mt5/data/task_queue.watermark
+# Cross-account fence (mt5desk.cross_account): each account's book as THIS box's lanes last read
+# it, and the placement lock. A book or lock carried to another checkout would be read there as
+# the live account's state; both are box-local by construction.
+desks/mt5/data/xacct/
+# The Fusion live login the Fusion book is bound to (decision_core.FUSION_ACCOUNT_FILE). A live
+# brokerage login is never tracked (tests/ops/test_live_infrastructure_is_not_published.py); the
+# operator writes this once on the box.
+desks/mt5/data/FUSION_LIVE_ACCOUNT.json
+# The unattended adopter's markers (libs/ops/adopt_guard, libs/ops/new_risk_hold): the new-risk
+# hold and the resident gateway's load stamp describe THIS box's processes. Carried by a sync to
+# origin and adopted elsewhere, a hold would stop another box's lanes; a stamp would vouch for a
+# gateway that never ran there.
+desks/mt5/data/ADOPT_NEW_RISK_HOLD.json
+desks/mt5/data/new_risk_holds/
+desks/mt5/data/GATEWAY_LOADED.json
+# judge_cpu_fair_share: per-box caches. The cadence state records what THIS box's scheduler
+# accepted; the core pid file names a process that exists only on the machine that wrote it.
+desks/mt5/data/gauntlet_cadence_state.json
+desks/mt5/data/gauntlet_backpressure_core.json
 
 # CREDENTIALS. Never tracked. secrets/ was NOT ignored until 2026-08-17 -- a FRED API key
 # landed there and `git check-ignore` returned no match, meaning one `git add -A` would have
@@ -312,6 +331,13 @@ desks/mt5/data/text_store/
 # The committed Asian/alt-data digest's writer lock and temp file (the digest itself is tracked).
 desks/mt5/data/digests/*.lock
 desks/mt5/data/digests/*.tmp
+# Regional parity (`research/regional_parity_pass.py`, hourly leg `regional_parity`): every file it
+# writes is the measuring box's state, never a committed fact -- a digest measured on a build VM
+# and committed once described the wrong machine (audit of #242, 2026-10-06).
+desks/mt5/data/digests/regional_parity_digest.json
+desks/mt5/data/intelligence/world/discoveries_parity_*.json
+desks/mt5/data/equivalence_candidates.json
+desks/mt5/data/parity_hunt_targets.json
 
 # THE BOX'S OWN REPORT, ALLOWLISTED LAST SO IT WINS (2026-09-06). `sync_shadow_to_git.ps1` lists
 # every path here in $relPaths and its header warns that an ignored path makes `git add` a SILENT
@@ -447,6 +473,10 @@ desks/mt5/data/import_stems_cache.json
 # check had no reader off the box at all.
 !desks/mt5/reports/BOX_STATE_FRESHNESS.json
 !desks/mt5/reports/DESK_HEALTH.json
+!desks/mt5/reports/process_health.json
+# BACKUP_STATE (v5f): whether the box is backed up and a restore was rehearsed, scheme only
+# (ops/backup_state.py, written on MT5-ProcessHealth's hourly clock).
+!desks/mt5/reports/BACKUP_STATE.json
 # THE RESEARCH MEASUREMENTS THE BOX PUBLISHES (2026-09-30). `sync_shadow_to_git.ps1` lists these
 # in $reportPaths; each is a small JSON summary the CRO cycle, the audits and the breadth review
 # read from the branch, and none had ever crossed the wire -- `**/reports/*` above ignored them,
@@ -454,9 +484,33 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/RESEARCH_BUDGET.json
 !desks/mt5/data/research_budget.json
 !desks/mt5/reports/JUDGING_RATE.json
+!desks/mt5/reports/JUDGING_RATE.attempt.json
 !desks/mt5/reports/JUDGING_THROUGHPUT.json
 !desks/mt5/reports/GAUNTLET_BACKPRESSURE.json
 !desks/mt5/reports/JUDGE_COVERAGE.json
+# breadth in independent hypothesis families + the daily new-independent metric (2026-10-28,
+# research/hypothesis_families.py via merge_docket; capped summary), and the gauntlet's novelty
+# set-aside census, published so any trial-count decision is made on a measurement
+!desks/mt5/reports/HYPOTHESIS_FAMILIES.json
+!desks/mt5/reports/NOVELTY_SET_ASIDE.json
+!desks/mt5/reports/JUDGE_RESIDENT.json
+# the judge stall pager's reading and page outcome (2026-10-21): its age on origin is the
+# off-box evidence that the pager itself is running
+!desks/mt5/reports/JUDGE_STALL.json
+!desks/mt5/reports/GAUNTLET_HEARTBEAT.json
+!desks/mt5/reports/GAUNTLET_STALL.json
+!desks/mt5/reports/judge_alive_fence.json
+!desks/mt5/reports/DEEPENING_MEMORY_GUARD.json
+# the judge pre-build prescreen's replay/canon evidence and last intake (2026-10-28)
+!desks/mt5/reports/JUDGE_PRESCREEN.json
+!desks/mt5/reports/JUDGE_PRESCREEN_INTAKE.json
+# the kill ledger's writer-lock sidecar and any quarantined (corrupt) ledger copy: host-local
+desks/mt5/data/hypotheses/prescreen_verdicts.lock
+desks/mt5/data/hypotheses/prescreen_verdicts.corrupt-*.jsonl
+desks/mt5/data/hypotheses/prescreen_verdicts.jsonl.tmp
+# trials.sources' byte-offset checkpoint: a host-local cache, rebuilt from 0 if lost
+desks/mt5/data/hypotheses/prescreen_sources_state.json
+desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/EFFECTIVE_BREADTH.json
 !desks/mt5/reports/BREADTH_MANDATE.json
 !desks/mt5/reports/TIER1_SCORECARD.json
@@ -467,3 +521,80 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
 !desks/mt5/reports/shadow/precert_shadow_state.json
+!desks/mt5/reports/LEDGER_VIEW_ADOPTION.json
+!desks/mt5/reports/LOGIN_FENCE.json
+# the judge speed switch's daily drift monitor (daily_cycle:vector_families_check, 2026-10-28)
+!desks/mt5/reports/VECTOR_FAMILIES_CHECK.json
+# ...and its fail-closed marker: one box's MISMATCH verdict, read by families_vector.enabled()
+# on that box only. Box state (data/ is a STATE_PREFIX); never published, never carried across.
+desks/mt5/data/VECTOR_FAMILIES_MISMATCH.json
+desks/mt5/data/VECTOR_FAMILIES_MISMATCH.json.tmp
+# Judge-owned box state, read on the box only (audit of PR #290): never published by a git add sweep.
+desks/mt5/data/hypotheses/unrunnable_specs.json
+desks/mt5/data/hypotheses/unrunnable_specs.json.tmp
+desks/mt5/data/hypotheses/conversion_handoff.json
+# judge_coverage's one-pass transaction (desks/mt5/research/judge_coverage.py, `_Txn`): staged
+# copies of judge-owned state (bank, handoff, priors, report, ratchet), the commit manifests,
+# a set-aside unreadable manifest, and the atomic-write siblings. Transient box state, written
+# beside its target; never published by a `git add -A` sweep (audit of v2.1, MF2).
+*.jc-txn-*
+**/research_priors/.jc-txn-*/
+judge_coverage_txn-*
+desks/mt5/reports/JUDGE_COVERAGE_TIMEOUT.json.tmp
+desks/mt5/data/hypotheses/unrunnable_specs.json.tmp-*
+desks/mt5/data/hypotheses/conversion_handoff.json.tmp-*
+# per-shard verdict publications (sealed judge, IDEA_QUEUE 159): a provisional copy, never state
+desks/mt5/data/hypotheses/shard_verdicts/
+# The sidecar AND its markers (.born, .torn-*, .vanished-*, .tmp, .lock): box-local state; a
+# committed marker reads VANISHED in every other checkout (audit of fcef73b92).
+desks/mt5/data/hypotheses/needs_data_outstanding.json*
+# build_input_probe's box-local state beside the bank (judge_coverage v1.1): the backstop's
+# releases and the parked rows effective_trials still counts. Written by the hourly pass on the
+# host that reads them; never published by a git add sweep.
+desks/mt5/data/hypotheses/build_input_released.json*
+desks/mt5/data/hypotheses/build_input_parked_trials.json*
+# coverage_steer's shared coverage map and its once-per-parent ledger (research/coverage_steer.py):
+# box-local state rebuilt by every merge; tens of MB on the box, never published by a git add sweep.
+desks/mt5/data/hypotheses/coverage_map.json
+desks/mt5/data/hypotheses/.coverage_map.json.*.tmp
+desks/mt5/data/hypotheses/steer_ledger.jsonl
+# THE OPEN BOOK, PER POSITION (ops/publish_account_state.py, 2026-10-07). The repository is
+# public: tickets, sizes and stops never reach a tracked file. Last line on purpose, after every
+# negation above, because the last match wins. tests/ops/test_publish_account_state.py pins it.
+desks/mt5/data/account_positions.json
+desks/mt5/data/account_positions.json.tmp
+# The box's account declarations ("<login>@<server>" keys): box-local, never published (audit v5).
+desks/mt5/data/ACCOUNT_PROFILES.json
+
+# apply_fusion_state.py's backups and temp files (patches/fusion_book_go_live). A backup of
+# FUSION_LIVE_ACCOUNT.json carries the live login, and box-repair stages desks/mt5/data with
+# `git add -A`, so these must never be trackable. Kept last: in gitignore the last match wins.
+desks/mt5/data/*.bak_fusionbook
+desks/mt5/data/*.bak_fusionbook.*
+desks/mt5/data/*.tmp_fusionbook
+desks/mt5/data/FUSION_LIVE_ACCOUNT.json*
+# The E8 account key this box trades (cross_account.E8_ACCOUNT_FILE): box-local, like the books.
+desks/mt5/data/E8_ACCOUNT.json*
+# The principal's arming marker for the Fusion ruin rail (proposals/fusion_deadman.py ARMED_MARKER):
+# only zuck creates it, on the box; no adoption, restore or session may carry it in.
+desks/mt5/data/FUSION_DEADMAN_ARMED.json*
+# The gold direction lock's mode switch (mt5desk.gold_oco.MODE_FILE): box-local, like the books.
+desks/mt5/data/GOLD_OCO_MODE.json*
+desks/mt5/data/box_state_backups/
+desks/mt5/data/CANCEL_PENDING.json
+desks/mt5/data/cancel_pending_acks/
+desks/mt5/data/ADOPT_UNTRACKED_BASELINE.json
+desks/mt5/data/ADOPT_UNTRACKED_BASELINE.tmp
+# The FTMO follower's account declaration and its arming marker (prop/ftmo_follower.py): the
+# principal's own box-local files, never committed.
+desks/mt5/data/FTMO_LIVE_ACCOUNT.json*
+desks/mt5/data/FTMO_FOLLOWER_ARMED
+# The FTMO allocator's arming marker and the principal's copy ceiling (research/
+# prop_challenge_allocator.py: box-local, written only by the principal's step), and the FTMO terminal's
+# H1 bars the venue reader pulls for FTMO's own cost surface (prop/ftmo_venue_reader.py): box-local.
+desks/mt5/data/FTMO_ALLOCATOR_ARMED
+desks/mt5/data/FTMO_COPY_PRINCIPAL.json
+desks/mt5/data/universe_ftmo/
+# bar_clock_probe's atomic-write temporaries; the ledger and summary themselves are tracked state.
+desks/mt5/data/bar_clock_probes.jsonl.tmp
+desks/mt5/data/bar_clock_probes.summary.json.tmp

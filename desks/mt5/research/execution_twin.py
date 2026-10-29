@@ -75,7 +75,8 @@ from libs.execution import meta_label as ml  # noqa: E402
 #: The gateway's three ledgers (declared on the gateway node of the capability graph).
 INTENTS = BASE / "data" / "order_intents.jsonl"
 OUTCOMES = BASE / "data" / "execution_algo_outcomes.jsonl"
-LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 #: The registry the simulator prices from, for the spread it charges per symbol.
 UNIVERSE = BASE / "data" / "universe" / "universe.json"
 #: This organ's own: the watermark, the private dataset, the report.
