@@ -482,7 +482,8 @@ def test_money_critical_legs_have_a_hard_staleness_bound() -> None:
                now=now)
     dec = LR.plan_pass(roster, att, plan="core", budget_s=100.0, now=now,
                        prior=_prior(now - timedelta(hours=1), dict.fromkeys(money, 0), roster))
-    assert set(money) <= dec.admitted & dec.protected
+    assert set(money) <= dec.admitted
+    assert set(money) <= dec.protected | LR.ALWAYS_RUN
     for leg in money:
         assert dec.should_run(leg, att, elapsed_s=99_999.0)[0], leg
     for leg in money:
@@ -668,3 +669,70 @@ def test_money_critical_is_additive_to_always_run(monkeypatch) -> None:
 def test_every_money_critical_leg_is_a_real_leg_of_the_cycle() -> None:
     legs = set(LR.legs_in_order())
     assert legs >= LR.MONEY_CRITICAL, f"not in the cycle: {sorted(LR.MONEY_CRITICAL - legs)}"
+
+
+def test_stale_report_publishers_are_red_after_one_missed_pass() -> None:
+    """2026-10-29: PRODUCER_YIELD, CERTIFICATE_CLOCK_LAW (11:4xZ) and JUDGING_THROUGHPUT (14:18Z)
+    went stale. Their publishers carry the hard 1-pass bound: admitted every pass, RED after
+    two missed ones -- judging_throughput too, although it is ALWAYS_RUN."""
+    now = datetime(2026, 10, 29, 16, tzinfo=UTC)
+    pubs = ["productivity_census", "certificate_clock_law", "judging_throughput"]
+    assert set(pubs) <= LR.MONEY_CRITICAL and "judging_throughput" in LR.ALWAYS_RUN
+    roster = ["tier_s", *pubs]
+    att = _att(dict.fromkeys(roster, 9),
+               ages_h={"tier_s": 0.5, "productivity_census": 4.2, "certificate_clock_law": 4.2,
+                       "judging_throughput": 1.7},
+               costs={"tier_s": 9000.0, "productivity_census": 300.0,
+                      "certificate_clock_law": 90.0, "judging_throughput": 200.0}, now=now)
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=2640.0, now=now,
+                       prior=_prior(now - timedelta(hours=1), dict.fromkeys(pubs, 1), roster))
+    assert set(pubs) <= dec.admitted, "admitted every pass, whatever the budget"
+    assert set(dec.red) == set(pubs), dec.red
+    assert dec.planned_s == pytest.approx(9000.0 + 300.0 + 90.0 + 200.0), "each charged once"
+
+
+def test_a_stuck_leg_timeout_is_red_and_its_cap_grows(tmp_path: Path) -> None:
+    """math_lab (720 s) / physics_lab (700 s): LEG_TIMEOUT every pass, 0 artifacts moved."""
+    led = tmp_path / "compute_ledger.jsonl"
+    rows = [{"at": f"2026-10-29T0{i}:00:00+00:00", "run": leg, "wall_s": cap,
+             "outcome": "TIMEOUT", "output_hash": "same"}
+            for i in range(4) for leg, cap in (("math_lab", 720.0), ("physics_lab", 700.0))]
+    rows.append({"at": "2026-10-29T05:00:00+00:00", "run": "moving", "wall_s": 600.0,
+                 "outcome": "TIMEOUT", "output_hash": "a"})
+    rows.append({"at": "2026-10-29T06:00:00+00:00", "run": "moving", "wall_s": 600.0,
+                 "outcome": "TIMEOUT", "output_hash": "b"})
+    led.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+    att = LR.read_attendance(led)
+    # The first row only sets the artifact baseline; the three after it moved nothing.
+    assert att.stuck["math_lab"] == 3 and att.stuck_timeout("physics_lab")
+    assert not att.stuck_timeout("moving"), "a timeout that moved its artifact is progress"
+    dec = LR.plan_pass(["math_lab", "physics_lab", "moving"], att, plan="dept:mathlab",
+                       budget_s=8856.0)
+    assert dec.stuck_timeouts == ["math_lab", "physics_lab"]
+    assert {"math_lab", "physics_lab"} <= set(dec.red)
+    assert "0 artifacts moved" in dec.red["math_lab"]
+    cap, why = LR.measured_cap("math_lab", att, 720.0, 8856.0)
+    assert cap == pytest.approx(720.0 * LR.TIMEOUT_GROWTH) and "stuck" in why
+    # Bounded: never past TIMEOUT_GROWTH_MAX x base, nor half a bounded plan's budget.
+    att.stuck["math_lab"] = 40
+    assert LR.measured_cap("math_lab", att, 720.0, 8856.0)[0] == pytest.approx(2880.0)
+    assert LR.measured_cap("math_lab", att, 720.0, 2000.0)[0] == pytest.approx(1000.0)
+    # One-sided, and never for an ALWAYS_RUN leg (tier_s's cap is its owner's).
+    att.stuck["tier_s"] = 40
+    assert LR.measured_cap("tier_s", att, 1500.0, 0.0) == (1500.0, "")
+    assert LR.measured_cap("never_seen", att, 300.0)[0] == pytest.approx(300.0)
+
+
+def test_a_finish_resets_stuck_and_the_measured_cap_holds(tmp_path: Path) -> None:
+    led = tmp_path / "compute_ledger.jsonl"
+    rows = [{"at": f"2026-10-29T0{i}:00:00+00:00", "run": "math_lab", "wall_s": 720.0,
+             "outcome": "TIMEOUT", "output_hash": "x"} for i in range(3)]
+    rows.append({"at": "2026-10-29T04:00:00+00:00", "run": "math_lab", "wall_s": 1228.0,
+                 "outcome": "ok", "output_hash": "y"})
+    led.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+    att = LR.read_attendance(led)
+    assert not att.stuck_timeout("math_lab")
+    cap, why = LR.measured_cap("math_lab", att, 720.0, 8856.0)
+    assert cap == pytest.approx(1228.0 * LR.MEASURED_HEADROOM) and "measured" in why
+    again = LR.Attendance.from_json(json.loads(json.dumps(att.to_json())))
+    assert again.ok_walls["math_lab"] == [1228.0], "the measurement survives the record"

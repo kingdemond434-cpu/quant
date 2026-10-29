@@ -2461,6 +2461,22 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
                       "floor_why": f"{name} stops itself at {_floor}s; a shorter cap kills it "
                                    f"before it writes, at the same prefix every hour"}
         budget = _floor
+    # THE LEG_TIMEOUT CLASS (2026-10-29): math_lab/physics_lab were killed at 720/700 s on every
+    # pass with 0 artifacts moved. `measured_cap` raises the cap -- one-sided, bounded, never for
+    # an ALWAYS_RUN leg -- to what the leg measurably needs. Any failure leaves `budget` as it is.
+    with suppress(Exception):
+        _lr_mod = _ROTATION.get("lr")
+        _att_now = _ROTATION.get("attendance")
+        _dec_now = _ROTATION.get("decision")
+        if _lr_mod is not None and _att_now is not None:
+            _cap, _cap_why = _lr_mod.measured_cap(
+                name, _att_now, float(budget), float(getattr(_dec_now, "budget_s", 0.0) or 0.0))
+            if _cap > budget:
+                print(f"  {name} cap {budget}s -> {int(_cap)}s ({_cap_why})", flush=True)
+                _price_rec = {**(_price_rec if isinstance(_price_rec, dict) else {}),
+                              "measured_cap_s": int(_cap), "measured_from_s": budget,
+                              "measured_why": _cap_why}
+                budget = int(_cap)
     try:
         # THE CAP IS TOLD TO THE CHILD. An organ that stops itself at its own budget can only stop
         # INSIDE the cap if it knows the cap; the pricer moves it hourly. Read by

@@ -82,7 +82,8 @@ THE CLASS, CLOSED (rule 23). Waiting is now a COUNTED, PERSISTED quantity, not a
 
     MONEY-CRITICAL LEGS.  MONEY_CRITICAL (decay_monitor, prop_challenge_allocator, allocator_join,
     edge_reliability, release_identity, kelly_survival, desk_health, fill_markout,
-    placement_interlock, box_state_freshness) are admitted every pass outside the budget and carry
+    placement_interlock, box_state_freshness, and the PRODUCER_YIELD / CERTIFICATE_CLOCK_LAW /
+    JUDGING_THROUGHPUT publishers) are admitted every pass outside the budget and carry
     a HARD staleness bound of MONEY_MAX_STALE_PASSES. Additive to ALWAYS_RUN: a leg in both is
     charged once, as always-run.
 
@@ -169,6 +170,10 @@ MONEY_CRITICAL: frozenset[str] = frozenset({
     "decay_monitor", "prop_challenge_allocator", "allocator_join", "edge_reliability",
     "release_identity", "kelly_survival",
     "desk_health", "fill_markout", "placement_interlock", "box_state_freshness",
+    # The publishers of three reports the hourly pass found stale on 2026-10-29: PRODUCER_YIELD
+    # and CERTIFICATE_CLOCK_LAW (last 11:4xZ) and JUDGING_THROUGHPUT (14:18Z). judging_throughput
+    # is already ALWAYS_RUN; listing it here only gives it the 1-pass RED bound (charged once).
+    "productivity_census", "certificate_clock_law", "judging_throughput",
 })
 MONEY_MAX_STALE_PASSES: int = 1
 
@@ -182,6 +187,24 @@ AGED_MIN_FILL: float = 0.25
 
 #: Consecutive ledger rows ending in TIMEOUT after which a leg is a CHRONIC timeout.
 CHRONIC_TIMEOUT_RUNS: int = 3
+
+#: THE LEG_TIMEOUT CLASS (2026-10-29): math_lab (720 s) and physics_lab (700 s) hit LEG_TIMEOUT on
+#: every pass with 0 artifacts moved and had not donated since 10-10. A leg is STUCK when its last
+#: STUCK_TIMEOUT_RUNS ledger rows are all TIMEOUT and none moved its declared artifact (the row's
+#: `output_hash` unchanged, or no artifact hash at all). Stuck is RED by name, and `measured_cap`
+#: sizes its next cap from what it measurably needs instead of re-killing it at the same second.
+STUCK_TIMEOUT_RUNS: int = 3
+
+#: How a stuck leg's cap grows per further stuck timeout, and the most it may grow to: a multiple
+#: of its base cap, and never more than half the plan's pass budget (one leg may not take a whole
+#: bounded pass). ONE-SIDED: a cap is only ever raised from the base, never cut below it.
+TIMEOUT_GROWTH: float = 1.5
+TIMEOUT_GROWTH_MAX: float = 4.0
+TIMEOUT_PLAN_SHARE: float = 0.5
+
+#: A leg that finishes is given at least this multiple of the longest of its recent finishing
+#: runs, so a leg measured needing 1,228 s is not handed 720 s.
+MEASURED_HEADROOM: float = 1.25
 
 #: RED: a roster leg that has gone this many consecutive passes without running. One more than
 #: MAX_DEFERRALS, so RED means the ageing guarantee itself did not deliver -- the leg was admitted
@@ -278,6 +301,16 @@ class Attendance:
     offset: int = 0
     #: consecutive TIMEOUT outcomes at the end of each leg's ledger history (0 = last row was not)
     timeouts: dict[str, int] = field(default_factory=dict)
+    #: consecutive TIMEOUT rows that moved NO artifact (see STUCK_TIMEOUT_RUNS)
+    stuck: dict[str, int] = field(default_factory=dict)
+    #: the last `output_hash` each leg's ledger row carried
+    last_output: dict[str, str] = field(default_factory=dict)
+    #: wall seconds of each leg's recent runs that FINISHED (not TIMEOUT)
+    ok_walls: dict[str, list[float]] = field(default_factory=dict)
+
+    def stuck_timeout(self, leg: str) -> bool:
+        """Has this leg timed out STUCK_TIMEOUT_RUNS times running without moving an artifact?"""
+        return self.stuck.get(leg, 0) >= STUCK_TIMEOUT_RUNS
 
     def chronic_timeout(self, leg: str) -> bool:
         """Has this leg timed out on each of its last CHRONIC_TIMEOUT_RUNS runs?"""
@@ -303,7 +336,10 @@ class Attendance:
     def to_json(self) -> dict[str, Any]:
         return {"offset": self.offset, "runs": self.runs, "last_at": self.last_at,
                 "costs": {k: v[-COST_SAMPLES:] for k, v in self.costs.items()},
-                "timeouts": {k: v for k, v in self.timeouts.items() if v}}
+                "timeouts": {k: v for k, v in self.timeouts.items() if v},
+                "stuck": {k: v for k, v in self.stuck.items() if v},
+                "last_output": self.last_output,
+                "ok_walls": {k: v[-COST_SAMPLES:] for k, v in self.ok_walls.items()}}
 
     @classmethod
     def from_json(cls, doc: Any) -> Attendance:
@@ -322,7 +358,15 @@ class Attendance:
             offset = 0
         tos = {str(k): int(v) for k, v in (doc.get("timeouts") or {}).items()
                if isinstance(v, (int, float))}
-        return cls(runs=runs, last_at=last, costs=costs, offset=offset, timeouts=tos)
+        stuck = {str(k): int(v) for k, v in (doc.get("stuck") or {}).items()
+                 if isinstance(v, (int, float))}
+        outs = {str(k): str(v) for k, v in (doc.get("last_output") or {}).items() if v}
+        oks: dict[str, list[float]] = {}
+        for k, v in (doc.get("ok_walls") or {}).items():
+            if isinstance(v, list):
+                oks[str(k)] = [float(x) for x in v if isinstance(x, (int, float))]
+        return cls(runs=runs, last_at=last, costs=costs, offset=offset, timeouts=tos,
+                   stuck=stuck, last_output=outs, ok_walls=oks)
 
 
 def read_attendance(ledger: Path | None = None, prior: Attendance | None = None) -> Attendance:
@@ -343,6 +387,7 @@ def read_attendance(ledger: Path | None = None, prior: Attendance | None = None)
     start = att.offset if 0 <= att.offset <= size else 0
     if start == 0:
         att.runs, att.last_at, att.costs, att.timeouts = {}, {}, {}, {}
+        att.stuck, att.last_output, att.ok_walls = {}, {}, {}
     try:
         with path.open("r", encoding="utf-8", errors="replace") as fh:
             fh.seek(start)
@@ -360,10 +405,21 @@ def read_attendance(ledger: Path | None = None, prior: Attendance | None = None)
                 if not isinstance(name, str) or not name:
                     continue
                 att.runs[name] = att.runs.get(name, 0) + 1
-                if str(row.get("outcome") or "").upper().startswith("TIMEOUT"):
+                timed_out = str(row.get("outcome") or "").upper().startswith("TIMEOUT")
+                out_hash = row.get("output_hash")
+                moved = bool(out_hash) and out_hash != att.last_output.get(name)
+                if out_hash:
+                    att.last_output[name] = str(out_hash)
+                if timed_out:
                     att.timeouts[name] = att.timeouts.get(name, 0) + 1
+                    att.stuck[name] = 0 if moved else att.stuck.get(name, 0) + 1
                 else:
                     att.timeouts[name] = 0
+                    att.stuck[name] = 0
+                    ok_wall = row.get("wall_s")
+                    if isinstance(ok_wall, (int, float)) and ok_wall > 0:
+                        att.ok_walls.setdefault(name, []).append(float(ok_wall))
+                        del att.ok_walls[name][:-COST_SAMPLES]
                 at = row.get("at")
                 if isinstance(at, str) and at:
                     att.last_at[name] = at
@@ -406,6 +462,8 @@ class Decision:
     #: aged legs the ageing queue could not reach this pass (oversubscribed): first next pass
     queued: list[str] = field(default_factory=list)
     chronic_timeouts: list[str] = field(default_factory=list)
+    #: timing out every run with no artifact moved (STUCK_TIMEOUT_RUNS) -- RED by name
+    stuck_timeouts: list[str] = field(default_factory=list)
     #: RED legs by name, each with the reason; empty means GREEN
     red: dict[str, str] = field(default_factory=dict)
     #: whether the bound is satisfiable inside the budget (see `_capacity`)
@@ -546,6 +604,48 @@ def liveness(ageing: dict[str, Any], residents: dict[str, Any] | None = None) ->
             "money_max_stale_passes": MONEY_MAX_STALE_PASSES}
 
 
+def measured_cap(leg: str, att: Attendance | None, base_s: float,
+                 plan_budget_s: float = 0.0) -> tuple[float, str]:
+    """THE CAP A LEG MEASURABLY NEEDS, never less than the cap it was given (`base_s`).
+
+    A cap below a leg's real runtime is the truncated-job defect: the leg is killed at the same
+    second every pass and moves nothing (math_lab at 720 s, physics_lab at 700 s, 0 artifacts,
+    no donation since 10-10). Two one-sided raises:
+
+      MEASURED  -- MEASURED_HEADROOM x the longest of its recent FINISHING runs.
+      STUCK     -- after STUCK_TIMEOUT_RUNS zero-output timeouts, base x TIMEOUT_GROWTH per stuck
+                   run past the threshold (starting at one step), until it finishes; a finish
+                   resets `stuck` and the MEASURED raise then holds the cap at what it took.
+
+    Both are bounded by TIMEOUT_GROWTH_MAX x base and, on a bounded plan, TIMEOUT_PLAN_SHARE of the
+    plan budget. ALWAYS_RUN legs are never raised here (tier_s's cap is its owner's), and the cap
+    never falls below `base_s`.
+    """
+    base = float(base_s)
+    if att is None or base <= 0 or leg in ALWAYS_RUN:
+        return base, ""
+    ceiling = base * TIMEOUT_GROWTH_MAX
+    if plan_budget_s > 0:
+        ceiling = min(ceiling, TIMEOUT_PLAN_SHARE * plan_budget_s)
+    ceiling = max(base, ceiling)
+    want, why = base, ""
+    oks = att.ok_walls.get(leg) or []
+    if oks:
+        need = MEASURED_HEADROOM * max(oks)
+        if need > want:
+            want, why = need, (f"measured: longest recent finish {max(oks):.0f}s x "
+                               f"{MEASURED_HEADROOM}")
+    n = att.stuck.get(leg, 0)
+    if n >= STUCK_TIMEOUT_RUNS:
+        grown = base * TIMEOUT_GROWTH ** (n - STUCK_TIMEOUT_RUNS + 1)
+        if grown > want:
+            want, why = grown, (f"stuck: {n} zero-output LEG_TIMEOUTs at {base:.0f}s; cap "
+                                f"grown x{TIMEOUT_GROWTH} per stuck run")
+    if want > ceiling:
+        want, why = ceiling, why + f" (held at the {ceiling:.0f}s ceiling)"
+    return max(base, want), why
+
+
 def budget_for(plan: str, env: dict[str, str] | None = None) -> float:
     """The wall-clock seconds this pass may plan into.
 
@@ -644,7 +744,8 @@ def starvation(roster: list[str], att: Attendance, prior: dict[str, Any] | None,
     return out
 
 
-def _red(dec: Decision, prior: dict[str, Any] | None) -> dict[str, str]:
+def _red(dec: Decision, prior: dict[str, Any] | None,
+         att: Attendance | None = None) -> dict[str, str]:
     """RED by name: a roster leg past its `stale_bound`, or still never-run after a pass ran."""
     red: dict[str, str] = {}
     for leg in dec.roster:
@@ -653,6 +754,11 @@ def _red(dec: Decision, prior: dict[str, Any] | None) -> dict[str, str]:
             kind = "money-critical " if leg in MONEY_CRITICAL else ""
             red[leg] = (f"starved: {n} consecutive passes without a run, past its {kind}bound "
                         f"of {stale_bound(leg)}")
+    for leg in dec.stuck_timeouts:
+        n = att.stuck.get(leg, 0) if att is not None else STUCK_TIMEOUT_RUNS
+        red.setdefault(leg, f"LEG_TIMEOUT {n} runs running with 0 artifacts moved: the leg is "
+                            "killed before it writes or donates (needs incremental "
+                            "checkpoint/donate; its cap is now sized by `measured_cap`)")
     if prior:
         declared_before = prior.get("declared")
         known = (set(map(str, declared_before)) if isinstance(declared_before, list) else None)
@@ -727,7 +833,8 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
     dec.outside_window = sorted(leg for leg in everything if att.age_s(leg, t0) > window_s)
     dec.starve_passes = starvation(roster, att, prior, t0, plan=plan)
     dec.chronic_timeouts = sorted(leg for leg in roster if att.chronic_timeout(leg))
-    dec.red = _red(dec, prior)
+    dec.stuck_timeouts = sorted(leg for leg in roster if att.stuck_timeout(leg))
+    dec.red = _red(dec, prior, att)
     if bud <= 0:
         dec.admitted = set(roster)
         dec.why = dict.fromkeys(roster, "unbounded plan: no time limit to rotate against")
@@ -856,6 +963,7 @@ def record(dec: Decision, att: Attendance, ran: list[str], *, path: Path | None 
         "aged_queued": list(dec.queued),
         "cheap_admitted": sorted(dec.cheap),
         "chronic_timeouts": list(dec.chronic_timeouts),
+        "stuck_timeouts": list(dec.stuck_timeouts),
         "capacity": dict(dec.capacity),
         "declared": list(dec.declared),
         "attendance": att.to_json(),
