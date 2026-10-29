@@ -673,6 +673,23 @@ def _append_jsonl(path: Path, row: dict[str, Any]) -> None:
         fh.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
 
 
+def call_status(err: str) -> str:
+    """What a failed seat call MEANS for the cycle's exit code.
+
+    BUDGET_EXHAUSTED and RATE_LIMITED are holds: the seat is fine and the next cadence retries.
+    MODEL_RETIRED is a vendor-locked seat whose pin is gone with no DeepSeek id to move to -- a
+    repin only a person can make, so it is red. Anything else is CALL_FAILED, also red.
+    """
+    low = err.lower()
+    if "budget exhausted" in low or "cap reached" in low:
+        return "BUDGET_EXHAUSTED"
+    if "vendor-locked" in low:
+        return "MODEL_RETIRED"
+    if "429" in low:
+        return "RATE_LIMITED"
+    return "CALL_FAILED"
+
+
 def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, Any] | None = None,
             run_id: str | None = None, root: Path | None = None,
             env: dict[str, str] | None = None) -> dict[str, Any]:
@@ -721,7 +738,7 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
     text, err = llm_seat.chat(user, system=system, seat=ls_seat,
                               max_tokens=(16000 if deep else 4000))
     if err:
-        return {"status": "CALL_FAILED", "role": role_name, "model": model, "why": err}
+        return {"status": call_status(err), "role": role_name, "model": model, "why": err}
     # A retired pin is swapped inside llm_seat for a listed DeepSeek id; every record below
     # names the id that ANSWERED, never the pin.
     model = llm_seat.last_resolved(ls_seat) or model

@@ -279,6 +279,22 @@ def flagship_rank(model_id: str) -> tuple[int, int, int, int] | None:
 def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | None]:
     """Ask the provider what it serves and pick the HIGHEST-VERSION FLAGSHIP. Returns (model, err).
 
+    A VENDOR-LOCKED SEAT (`Seat.lock_vendor`) never leaves its pin's vendor, on ANY path below:
+    a retired pin, a guard-refused pin and plain discovery are all checked here, once, rather
+    than at each return.
+    """
+    model, err = _discover(seat, timeout=timeout)
+    if (not err and model and getattr(seat, "lock_vendor", False) and seat.model
+            and _vendor(model) != _vendor(seat.model)):
+        return "", (f"{seat.model} cannot be served and no {_vendor(seat.model)!r} id is listed "
+                    f"in its tier (best other: {model}); this seat is vendor-locked, so nothing "
+                    "else is substituted")
+    return model, err
+
+
+def _discover(seat: Seat, *, timeout: float) -> tuple[str, str | None]:
+    """`discover_model` without the vendor lock. Returns (model, err).
+
     A PINNED MODEL STRING IS A TIME BOMB. It works until the provider retires it and then every
     organ fails with something that reads like an outage rather than like a rename. A pinned
     PREFERENCE LIST is the same bomb with a longer fuse: the day `gpt-6` ships, a list containing
@@ -318,7 +334,7 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
         if getattr(seat, "lock_vendor", False):
             return "", (f"{seat.model} is no longer served and {_vendor(seat.model)!r} lists no "
                         "replacement in its tier; this seat is vendor-locked, so nothing else "
-                        "is substituted")
+                        "is substituted (MODEL_RETIRED)")
     guarded = openrouter_guard.refusal(f"{seat.base_url}/chat/completions",
                                        {"model": ""}) is not None
     if free_tier_only() or guarded or (pin_dead and _is_free(seat.model)):
@@ -356,6 +372,10 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
         if guarded:
             return "", ("no ':free' model listed on OpenRouter, and paid ids are refused "
                         f"unless {openrouter_guard.PAID_ENV}=1")
+        # A FREE PIN OR THE FREE TIER NEVER FALLS THROUGH TO A PAID FLAGSHIP, guard or no guard:
+        # zero API cost is the rule, and the guard only covers OpenRouter's own URL.
+        return "", (f"no ':free' model listed on {seat.base_url}, and this seat is free-only "
+                    "(a free pin, or the free tier); a paid id is never substituted")
     ranked = [(r, i) for i in ids if (r := flagship_rank(i)) is not None]
     if ranked:
         return max(ranked)[1], None
@@ -379,28 +399,58 @@ SWAP_LEDGER = _ROOT / "data" / "llm_model_swaps.jsonl"
 #: on the next day's first call rather than never.
 DEAD_TTL_H = 24.0
 
-#: The provider's words for "this id is not served", as OpenRouter and the OpenAI-compatible
-#: servers phrase them. A 429 or a 5xx is NOT here: those are a busy model, not a retired one.
-_DEAD_RE = re.compile(
-    r"no endpoints found|not a valid model id|model[^.]{0,80}?(?:does not exist|not found)"
-    r"|unknown model", re.I)
+#: NOT RETIREMENT, though they share its words. OpenRouter says "No endpoints found matching your
+#: data policy" (an ACCOUNT privacy setting), "...that support tool use", "...that support image
+#: input" and "...that can handle the requested parameters" (a capability or a parameter); and
+#: "model `x` does not exist or you do not have access to it" is a KEY's permission. Reading any
+#: of those as a retired id would write the id off for every seat on the provider for a day, and
+#: one call per id would empty the vendor (measured by the audit of 2026-10-29: four free DeepSeek
+#: ids in four calls behind one data-policy 404).
+_NOT_RETIRED = re.compile(r"no endpoints found (?:matching|that|for your)|do not have access",
+                          re.I)
+
+#: At most this many DISTINCT ids may be written off per provider per hour. More than that is
+#: not a catalogue retiring models one by one; it is the account or the request, and swapping
+#: further would only spend the vendor's list.
+MAX_DEAD_PER_HOUR = 2
 
 
 def _is_free(model_id: str) -> bool:
     return model_id.endswith((":free", "-free"))
 
 
-def is_dead_endpoint(err: str | None) -> bool:
-    """The provider refused the MODEL ID (retired or unknown), not the request or the rate."""
-    if not err or not re.search(r"\b(?:400|404)\b", err):
+def is_dead_endpoint(err: str | None, model: str = "") -> bool:
+    """The provider refused THIS MODEL ID as unserved -- and said so naming it.
+
+    Only two phrasings count, and both must carry the requested id: OpenRouter's "No endpoints
+    found for <id>" and the OpenAI-compatible "<id> is not a valid model ID". A 429 or a 5xx is
+    a busy model, and the forms in `_NOT_RETIRED` are the account, a capability or a key.
+    """
+    if not err or not model or not re.search(r"\b(?:400|404)\b", err):
         return False
-    return bool(_DEAD_RE.search(err))
+    if _NOT_RETIRED.search(err):
+        return False
+    mid = re.escape(model.lower())
+    end = r"(?![\w/:-])"
+    return bool(re.search(rf"no endpoints found for {mid}{end}|{mid}{end}\W{{0,3}}\s*is not a "
+                          r"valid model id", err.lower()))
+
+
+#: (path, mtime_ns, size) -> parsed rows: a dead pin is consulted on every call for a day, and
+#: re-reading the whole ledger each time is the cost the stat check removes.
+_LEDGER_CACHE: dict[str, Any] = {"key": None, "rows": []}
 
 
 def _ledger_rows() -> list[dict[str, Any]]:
+    """Every parseable row. NEVER RAISES: a torn multi-process append on Windows leaves bytes
+    that are not UTF-8, and `chat()` -- documented never to raise -- reads this on every call."""
     try:
-        lines = SWAP_LEDGER.read_text(encoding="utf-8").splitlines()
-    except OSError:
+        st = SWAP_LEDGER.stat()
+        key = (str(SWAP_LEDGER), st.st_mtime_ns, st.st_size)
+        if _LEDGER_CACHE["key"] == key:
+            return list(_LEDGER_CACHE["rows"])
+        lines = SWAP_LEDGER.read_text(encoding="utf-8", errors="replace").splitlines()
+    except (OSError, ValueError):
         return []
     out: list[dict[str, Any]] = []
     for line in lines:
@@ -408,11 +458,13 @@ def _ledger_rows() -> list[dict[str, Any]]:
             row = json.loads(line)
             if isinstance(row, dict):
                 out.append(row)
-    return out
+    _LEDGER_CACHE.update(key=key, rows=out)
+    return list(out)
 
 
-def dead_models(base_url: str, now: datetime | None = None) -> set[str]:
-    """Ids this provider refused as unserved within the last `DEAD_TTL_H` hours."""
+def dead_models(base_url: str, now: datetime | None = None, *,
+                within_h: float = DEAD_TTL_H) -> set[str]:
+    """Ids this provider refused as unserved within the last `within_h` hours."""
     now = now or datetime.now(UTC)
     out: set[str] = set()
     for row in _ledger_rows():
@@ -424,7 +476,7 @@ def dead_models(base_url: str, now: datetime | None = None) -> set[str]:
             continue
         if ts.tzinfo is None:
             ts = ts.replace(tzinfo=UTC)
-        if (now - ts).total_seconds() <= DEAD_TTL_H * 3600:
+        if 0 <= (now - ts).total_seconds() <= within_h * 3600:
             out.add(str(row.get("model") or ""))
     out.discard("")
     return out
@@ -437,14 +489,30 @@ def _append(row: dict[str, Any]) -> None:
             fh.write(json.dumps(row, sort_keys=True) + "\n")
 
 
-def note_dead(seat: Seat, model: str, err: str, now: datetime | None = None) -> None:
-    """Record that `seat`'s provider no longer serves `model`. No key is written."""
-    _append({"kind": "dead", "ts": (now or datetime.now(UTC)).isoformat(),
-             "seat": seat.name, "base_url": seat.base_url, "model": model,
-             "err": str(err)[:240]})
+def note_dead(seat: Seat, model: str, err: str, now: datetime | None = None) -> bool:
+    """Record that `seat`'s provider no longer serves `model`. False when the provider already
+    wrote off `MAX_DEAD_PER_HOUR` other ids this hour: then it is not retirement, and the caller
+    must not swap. No key is written."""
+    now = now or datetime.now(UTC)
+    recent = dead_models(seat.base_url, now=now, within_h=1.0) - {model}
+    if len(recent) >= MAX_DEAD_PER_HOUR:
+        return False
+    _append({"kind": "dead", "ts": now.isoformat(), "seat": seat.name,
+             "base_url": seat.base_url, "model": model, "err": str(err)[:240]})
+    return True
+
+
+#: (base_url, from, to) -> when that swap was last written, so a dead pin consulted on every
+#: call for a day writes one swap row an hour, not one a call.
+_SWAP_NOTED: dict[tuple[str, str, str], float] = {}
 
 
 def _note_swap(seat: Seat, dead: str, chosen: str) -> None:
+    key = (seat.base_url, dead, chosen)
+    now_s = datetime.now(UTC).timestamp()
+    if now_s - _SWAP_NOTED.get(key, float("-inf")) < 3600:
+        return
+    _SWAP_NOTED[key] = now_s
     _append({"kind": "swap", "ts": datetime.now(UTC).isoformat(), "seat": seat.name,
              "base_url": seat.base_url, "from": dead, "to": chosen})
     print(f"[llm_seat] {seat.name}: {dead} is no longer served; using {chosen}",
@@ -466,12 +534,14 @@ def _same_vendor(pin: str, ids: list[str]) -> str:
     A FREE PIN STAYS FREE: a dead `:free` id is never replaced by a paid one, whatever the
     guard would allow, because the person who pinned a free id chose the price as well as the
     model. When the vendor has nothing left in that tier the caller falls through to ordinary
-    discovery, which ranks every family.
+    free discovery, which ranks every family -- unless the seat is vendor-locked.
     """
     vendor = _vendor(pin)
     if not vendor:
         return ""
-    pool = [i for i in ids if _vendor(i) == vendor and i != pin]
+    # A DISTILL IS ANOTHER FAMILY'S WEIGHTS under this vendor's slug
+    # (`deepseek-r1-distill-llama-70b` is a Llama), so it is never a same-vendor replacement.
+    pool = [i for i in ids if _vendor(i) == vendor and i != pin and "distill" not in i.lower()]
     if _is_free(pin) or free_tier_only():
         pool = [i for i in pool if _is_free(i)]
     if not pool:
@@ -505,12 +575,14 @@ def _post_live(s: Seat, model: str, req: dict[str, Any], *, timeout: float
     Returns (body, err, model actually used), so the spend ledger books the model that answered.
     """
     url = f"{s.base_url}/chat/completions"
+    _RESOLVED.pop((s.base_url, s.name), None)        # a failed call never leaves a stale name
     body, err = _post_with_degrade(url, s.key, req, timeout=timeout)
-    if not is_dead_endpoint(err):
+    if not is_dead_endpoint(err, model):
         if err is None:
             _RESOLVED[(s.base_url, s.name)] = model
         return body, err, model
-    note_dead(s, model, str(err))
+    if not note_dead(s, model, str(err)):
+        return body, err, model
     alt, aerr = discover_model(s, timeout=timeout)
     if aerr or not alt or alt == model:
         return body, err, model
