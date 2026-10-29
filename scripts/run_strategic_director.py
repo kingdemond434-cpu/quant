@@ -103,6 +103,8 @@ def _ask(prompt: str, model: str, timeout: float = 360.0) -> tuple[str, str]:
             base.rstrip("/") + "/chat/completions", data=body, method="POST",
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
         try:
+            from libs.ops import openrouter_guard
+            openrouter_guard.check_request(req)
             with urllib.request.urlopen(req, timeout=timeout, context=_CTX) as r:
                 doc = json.loads(r.read())
             msg = doc["choices"][0]["message"]

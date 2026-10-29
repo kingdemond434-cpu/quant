@@ -58,7 +58,7 @@ def test_lifetime_subtracts_the_overlap_once(monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setattr(L, "_mass_screen_counts", lambda: (0, {}))
     monkeypatch.setattr(L, "_claim_selection_counts", lambda: (0, {}))
     monkeypatch.setattr(L, "_graph_judged",
-                        lambda: {"a": "carry", "b": "carry", "c": "carry", "d": "carry",
+                        lambda *a: {"a": "carry", "b": "carry", "c": "carry", "d": "carry",
                                  "z": "carry"})
     doc = L.lifetime(write=False)
     assert doc["judged_already_screened"] == 4
@@ -75,7 +75,7 @@ def test_counts_with_no_overlap_are_untouched(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(L, "_proposer_counts", prop)
     monkeypatch.setattr(L, "_mass_screen_counts", lambda: (0, {}))
     monkeypatch.setattr(L, "_claim_selection_counts", lambda: (0, {}))
-    monkeypatch.setattr(L, "_graph_judged", lambda: {"a": "carry", "t": "trend"})
+    monkeypatch.setattr(L, "_graph_judged", lambda *a: {"a": "carry", "t": "trend"})
     doc = L.lifetime(write=False)
     assert doc["judged_already_screened"] == 0 and doc["lifetime_trials"] == 16
     assert doc["by_family"] == {"carry": 13, "trend": 3}
