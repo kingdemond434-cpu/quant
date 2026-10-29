@@ -271,6 +271,8 @@ desks/mt5/data/GATEWAY_LOADED.json
 # accepted; the core pid file names a process that exists only on the machine that wrote it.
 desks/mt5/data/gauntlet_cadence_state.json
 desks/mt5/data/gauntlet_backpressure_core.json
+# judging_throughput's verdict-ledger index: a per-box cache rebuilt from the ledger itself.
+desks/mt5/data/judging_rate_ledger_index.json
 
 # CREDENTIALS. Never tracked. secrets/ was NOT ignored until 2026-08-17 -- a FRED API key
 # landed there and `git check-ignore` returned no match, meaning one `git add -A` would have

@@ -78,8 +78,15 @@ def _world(tmp: Path, now: datetime, *, verdict_h: float = 1.0, hb_min: float = 
                                     indent=2), "utf-8")
     elif sweep.exists():
         sweep.unlink()
+    rate = tmp / "JUDGING_RATE.json"
+    rate.write_text(json.dumps({"at": _iso(now - timedelta(minutes=20)),
+                                "verdicts": {"status": "MEASURED"}}), "utf-8")
+    bp = tmp / "GAUNTLET_BACKPRESSURE.json"
+    bp.write_text(json.dumps({"at": _iso(now), "mode": "core",
+                              "full_at": _iso(now - timedelta(hours=2))}), "utf-8")
     return {"ledger": ledger, "resident": res, "throughput": tmp / "absent.json",
-            "sweep_result": sweep, "env_file": tmp / "absent.env.json"}
+            "sweep_result": sweep, "env_file": tmp / "absent.env.json", "rate": rate,
+            "backpressure": bp}
 
 
 def _step(jsp, tmp: Path, now: datetime, ch: Channel, alive=_alive, on_box=True, **kw) -> dict:
@@ -213,12 +220,14 @@ def test_unmeasured_inputs_page_after_thirty_minutes(jsp, tmp_path):
         torn.write_text("{torn", "utf-8")
         d = jsp.run(now=t, root=tmp_path, sender=ch, on_box=True,
                     out=tmp_path / "JUDGE_STALL.json", ledger=tmp_path / "empty.jsonl",
-                    resident=torn, throughput=tmp_path / "x.json")
+                    resident=torn, throughput=tmp_path / "x.json", rate=tmp_path / "JUDGING_RATE.json",
+                    backpressure=tmp_path / "GAUNTLET_BACKPRESSURE.json")
         assert d["page"]["sent"] is False
     assert ch.sent == []
     t = NOW + timedelta(minutes=jsp.UNMEASURED_PAGE_MIN)
     d = jsp.run(now=t, root=tmp_path, sender=ch, on_box=True, out=tmp_path / "JUDGE_STALL.json",
-                ledger=tmp_path / "empty.jsonl", resident=torn, throughput=tmp_path / "x.json")
+                ledger=tmp_path / "empty.jsonl", resident=torn, throughput=tmp_path / "x.json", rate=tmp_path / "JUDGING_RATE.json",
+                    backpressure=tmp_path / "GAUNTLET_BACKPRESSURE.json")
     assert d["page"]["opened"] == ["inputs_unmeasured"] and len(ch.sent) == 1
     # an empty ledger is unmeasured too
     (tmp_path / "e").mkdir()
@@ -233,7 +242,8 @@ def test_unmeasured_neither_opens_nor_clears_its_own_incident(jsp, tmp_path):
     (tmp_path / "JUDGE_RESIDENT.json").write_text("{broken", "utf-8")
     d = jsp.run(now=NOW + timedelta(minutes=5), root=tmp_path, sender=ch, on_box=True,
                 out=tmp_path / "JUDGE_STALL.json", ledger=tmp_path / "gate_verdict_ledger.jsonl",
-                resident=tmp_path / "JUDGE_RESIDENT.json", throughput=tmp_path / "x.json")
+                resident=tmp_path / "JUDGE_RESIDENT.json", throughput=tmp_path / "x.json", rate=tmp_path / "JUDGING_RATE.json",
+                    backpressure=tmp_path / "GAUNTLET_BACKPRESSURE.json")
     assert d["incidents"]["resident_dead"]["open"] is None
     assert d["page"]["resolved"] == [] and len(ch.sent) == 1
     assert "resident_dead" in _state(jsp, tmp_path)["open"]
@@ -876,3 +886,41 @@ def test_an_old_unmeasured_predecessor_never_enters_the_flap_window(jsp, tmp_pat
 
     d = _series(jsp, other, ch2, [0, t3d], both)[-1]
     assert d["page"]["opened"] == ["inputs_unmeasured"]
+
+
+def test_a_stale_or_unmeasured_rate_pages(jsp, tmp_path):
+    paths = _world(tmp_path, NOW)
+    assert jsp.measure(NOW, pid_alive=_alive, **paths)["incidents"]["rate_stale"]["open"] is False
+    paths["rate"].write_text(json.dumps({"at": _iso(NOW - timedelta(hours=jsp.RATE_STALE_H + 1)),
+                                         "verdicts": {"status": "MEASURED"}}), "utf-8")
+    assert jsp.measure(NOW, pid_alive=_alive, **paths)["incidents"]["rate_stale"]["open"] is True
+    paths["rate"].write_text(json.dumps({"at": _iso(NOW), "verdicts": {
+        "status": "UNMEASURED", "why": "stream overran its 150 s deadline"}}), "utf-8")
+    got = jsp.measure(NOW, pid_alive=_alive, **paths)["incidents"]["rate_stale"]
+    assert got["open"] is True and "overran" in got["why"]
+    paths["rate"].unlink()
+    assert jsp.measure(NOW, pid_alive=_alive, **paths)["incidents"]["rate_stale"]["open"] is True
+
+
+def test_backpressure_windows_older_than_a_day_page_whatever_at_says(jsp, tmp_path):
+    paths = _world(tmp_path, NOW)
+    paths["backpressure"].write_text(json.dumps({
+        "at": _iso(NOW), "mode": "core", "full_at": "2026-10-03T12:44:22+00:00"}), "utf-8")
+    got = jsp.measure(NOW, pid_alive=_alive, **paths)["incidents"]["backpressure_stale"]
+    assert got["open"] is True and "2026-10-03" in got["why"]
+    paths["backpressure"].write_text(json.dumps({"at": _iso(NOW), "mode": "core"}), "utf-8")
+    got = jsp.measure(NOW, pid_alive=_alive, **paths)["incidents"]["backpressure_stale"]
+    assert got["open"] is True                 # a core with no full build stamped is not fresh
+    paths["backpressure"].write_text(json.dumps({"at": _iso(NOW), "mode": "full"}), "utf-8")
+    got = jsp.measure(NOW, pid_alive=_alive, **paths)["incidents"]["backpressure_stale"]
+    assert got["open"] is False
+
+
+def test_a_stale_reporter_pages_through_the_same_dedupe(jsp, tmp_path):
+    ch = Channel()
+    paths = _world(tmp_path, NOW)
+    paths["rate"].write_text(json.dumps({"at": _iso(NOW - timedelta(hours=9)),
+                                         "verdicts": {"status": "MEASURED"}}), "utf-8")
+    doc = jsp.run(now=NOW, root=tmp_path, sender=ch, on_box=True,
+                  out=tmp_path / "JUDGE_STALL.json", pid_alive=_alive, **paths)
+    assert doc["page"]["opened"] == ["rate_stale"] and len(ch.sent) == 1

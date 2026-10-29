@@ -1584,6 +1584,182 @@ def _verdict_counts(now: datetime, path: Path | None = None,
                          "7d": round(counts["7d"] / 168.0, 3)}}
 
 
+#: THE LEDGER INDEX (2026-10-29). `_verdict_counts` re-read the whole append-only ledger every
+#: pass; on the 18-core box with every core busy that stream overran its deadline after 483,328
+#: rows (JUDGING_RATE.json 14:15Z) and the rate was UNMEASURED pass after pass -- a deadline that
+#: protects the leg but can never be met converges on nothing. The index remembers how far the
+#: ledger has been read, which cells already have a terminal verdict, and the stamps of the rows
+#: the windows still need, so a pass reads only what was appended since the last one. A pass that
+#: overruns SAVES its progress, so even a starved box converges instead of starting again.
+LEDGER_INDEX = BASE / "data" / "judging_rate_ledger_index.json"
+LEDGER_INDEX_SCHEMA = 1
+_BOX_LEDGER = BASE / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
+#: Rows older than this are dropped from the index (the widest fixed window is 7d).
+LEDGER_INDEX_KEEP_H = 8 * 24.0
+#: Bytes hashed from the ledger's head to tell an append from a rewrite or a rotation.
+LEDGER_INDEX_HEAD_BYTES = 4096
+
+
+def _cell_digest(cell: str) -> str:
+    import hashlib
+    return hashlib.blake2b(cell.encode("utf-8"), digest_size=8).hexdigest()
+
+
+def _fresh_index(head: str) -> dict[str, Any]:
+    return {"schema": LEDGER_INDEX_SCHEMA, "head": head, "offset": 0, "rows_total": 0,
+            "rows_unparsed": 0, "last": "", "kept_since": "", "first_cells": [], "recent": []}
+
+
+def _verdict_counts_indexed(now: datetime, path: Path | None = None,
+                            index_path: Path | None = None,
+                            deadline_s: float | None = None,
+                            extra_cuts: dict[str, str] | None = None) -> dict[str, Any]:
+    """`_verdict_counts`, reading only the rows appended since the last pass (LEDGER_INDEX).
+
+    Same counts, same basis: a row is counted in a window when its `at` is inside it and not in
+    the future; a cell's FIRST ruled row in file order is its first terminal verdict. One
+    difference, named: a row stamped in the future when it was read is never re-read, so it stays
+    out of the first-terminal set (the stream re-read it every pass). The index is rebuilt from
+    the start of the ledger when the ledger's head changed, it shrank, or a cut asks for rows
+    the index has already dropped."""
+    import time as _time
+
+    try:
+        from research.judging_burndown import classify
+    except ImportError:
+        from desks.mt5.research.judging_burndown import classify  # type: ignore[no-redef]
+
+    p = GATE_LEDGER if path is None else path
+    # The box's ledger keeps its index in data/ (gitignored, a per-box cache); any other ledger
+    # -- a test's, a copy -- keeps one beside itself, so no two ledgers ever share an index.
+    ip = index_path if index_path is not None else (
+        LEDGER_INDEX if p == _BOX_LEDGER else p.with_name(p.name + ".rate_index.json"))
+    if not p.exists():
+        return {"status": UNMEASURED, "why": f"{p.name} absent: verdicts/hour is UNMEASURED"}
+    cuts = {w: (now - timedelta(hours=h)).isoformat(timespec="seconds")
+            for w, h in (("1h", 1), ("24h", 24), ("7d", 168))}
+    for w, cut in (extra_cuts or {}).items():
+        t_cut = _parse_utc(cut)
+        if t_cut is not None and w not in cuts:
+            cuts[w] = t_cut.astimezone(UTC).isoformat(timespec="seconds")
+    keep_since = min([(now - timedelta(hours=LEDGER_INDEX_KEEP_H)).isoformat(
+        timespec="seconds"), *cuts.values()])
+    try:
+        with p.open("rb") as fh:
+            head = fh.read(LEDGER_INDEX_HEAD_BYTES).hex()
+        size = p.stat().st_size
+    except OSError as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    idx = _read_json(ip, {}) or {}
+    rebuilt = ""
+    if not isinstance(idx, dict) or idx.get("schema") != LEDGER_INDEX_SCHEMA:
+        rebuilt = "no index"
+    elif not head.startswith(str(idx.get("head") or "")[:len(head)]) or not idx.get("head"):
+        rebuilt = "ledger head changed"
+    elif int(idx.get("offset") or 0) > size:
+        rebuilt = "ledger shrank"
+    elif idx.get("kept_since") and keep_since < str(idx["kept_since"]):
+        rebuilt = "a cut predates the rows the index kept"
+    if rebuilt:
+        idx = _fresh_index(head)
+    idx["head"] = head
+    first = set(idx.get("first_cells") or [])
+    recent: list[list[Any]] = [r for r in idx.get("recent") or []
+                               if isinstance(r, list) and len(r) == 2]
+    offset = int(idx.get("offset") or 0)
+    total, unparsed, last = (int(idx.get("rows_total") or 0), int(idx.get("rows_unparsed") or 0),
+                             str(idx.get("last") or ""))
+    now_iso = now.astimezone(UTC).isoformat(timespec="seconds")
+    t_start = _time.monotonic()
+    stop_at = None if deadline_s is None else t_start + float(deadline_s)
+    overran = False
+    try:
+        with p.open("rb") as fh:
+            fh.seek(offset)
+            n_line = 0
+            while True:
+                if (stop_at is not None and n_line % _DEADLINE_EVERY == 0
+                        and _time.monotonic() > stop_at):
+                    overran = True
+                    break
+                raw = fh.readline()
+                if not raw or not raw.endswith(b"\n"):
+                    break                       # EOF, or a row the writer is still appending
+                n_line += 1
+                offset += len(raw)
+                line = raw.decode("utf-8", errors="replace")
+                if not line.strip():
+                    continue
+                total += 1
+                m = _AT.search(line)
+                if not m:
+                    unparsed += 1
+                    continue
+                try:
+                    stamp = datetime.fromisoformat(m.group(1).replace("Z", "+00:00"))
+                    if stamp.tzinfo is None:
+                        unparsed += 1
+                        continue
+                    at = stamp.astimezone(UTC).isoformat(timespec="seconds")
+                except ValueError:
+                    unparsed += 1
+                    continue
+                is_first = 0
+                if stamp <= now:
+                    try:
+                        row = json.loads(line)
+                    except ValueError:
+                        row = None
+                    cell = str(row.get("cell", "")) if isinstance(row, dict) else ""
+                    if cell and classify(row) == "ruled":
+                        d = _cell_digest(cell)
+                        if d not in first:
+                            first.add(d)
+                            is_first = 1
+                recent.append([at, is_first])
+    except OSError as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    recent = [r for r in recent if r[0] >= keep_since]
+    for r in recent:
+        if r[0] <= now_iso:
+            last = max(last, r[0])
+    idx.update({"offset": offset, "rows_total": total, "rows_unparsed": unparsed, "last": last,
+                "kept_since": keep_since, "first_cells": sorted(first), "recent": recent,
+                "updated_at": now_iso, "rebuilt": rebuilt or None})
+    with contextlib.suppress(Exception):
+        _write_atomic(ip, idx)
+    progress = {"index": str(ip.name), "offset": offset, "size": size,
+                "read_s": round(_time.monotonic() - t_start, 1), "rebuilt": rebuilt or None}
+    if overran:
+        return {"status": UNMEASURED, "rows_read": total, "index": progress,
+                "why": (f"{p.name} index caught up to byte {offset:,} of {size:,} before its "
+                        f"{float(deadline_s or 0):.0f} s deadline; the next pass resumes there, "
+                        "and verdicts/hour is UNMEASURED this pass, never a partial count")}
+    counts = dict.fromkeys(cuts, 0)
+    first_counts = dict.fromkeys(cuts, 0)
+    future = 0
+    for at, is_first in recent:
+        if at > now_iso:
+            future += 1
+            continue
+        for w, cut in cuts.items():
+            if at >= cut:
+                counts[w] += 1
+                first_counts[w] += int(is_first)
+    return {"status": "MEASURED", "rows_total": total, "rows_unstamped": unparsed + future,
+            "last_verdict_at": last or None, "counts": counts,
+            "count_basis": "changed verdict events; unchanged retests do not append",
+            "first_terminal_counts": first_counts,
+            "first_terminal_cells": len(first),
+            "first_terminal_per_hour": {
+                "1h": float(first_counts["1h"]),
+                "24h": round(first_counts["24h"] / 24.0, 3),
+                "7d": round(first_counts["7d"] / 168.0, 3)},
+            "per_hour": {"1h": float(counts["1h"]), "24h": round(counts["24h"] / 24.0, 3),
+                         "7d": round(counts["7d"] / 168.0, 3)},
+            "index": progress}
+
+
 def _creation_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
     """Cells the desk CREATED in the last 24h / 7d, from the registry's own created_at."""
     import sqlite3
@@ -1625,7 +1801,10 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
     judges slower than the desk creates never drains: that is reported as GROWING with the net
     growth per day, not as a large finite number. Any missing input makes the ETA UNMEASURED."""
     t = _now(now)
-    ver = _verdict_counts(t, ledger, deadline_s=deadline_s, extra_cuts=extra_cuts)
+    # The box's own ledger goes through the index; a ledger named by the caller is streamed.
+    ver = (_verdict_counts_indexed(t, deadline_s=deadline_s, extra_cuts=extra_cuts)
+           if ledger is None else
+           _verdict_counts(t, ledger, deadline_s=deadline_s, extra_cuts=extra_cuts))
     cre = _creation_counts(t, registry)
     # One sweep can cover only a prefix of the full docket. Its remainder is not
     # the institutional backlog and must never drive a claim of full clearance.

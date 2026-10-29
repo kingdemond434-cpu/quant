@@ -44,6 +44,9 @@ snapshots, 2026-10-14..10-21), and the evidence is beside each constant below:
                      past IDLE_OVERDUE_H in any other live status -- which is how a resident stuck
                      in LANE_HELD or BACKOFF reads, since neither ever reaches phase_overrun.
   zero_judged_sweep  the last sweep completed rc 0 and the judge's own result for it judged 0 cells.
+  rate_stale         JUDGING_RATE.json older than RATE_STALE_H, or its verdict count UNMEASURED.
+  backpressure_stale GAUNTLET_BACKPRESSURE.json's windows (`full_at`) older than
+                     BACKPRESSURE_FULL_STALE_H; the core re-stamping `at` does not refresh them.
   inputs_unmeasured  ANY incident above has read UNMEASURED (`open: None`) for at least
                      UNMEASURED_SHARE of its readings over a full window of UNMEASURED_PAGE_MIN
                      (UNMEASURED_BOUND_MIN overrides it per incident). A window share, not a
@@ -184,7 +187,18 @@ INFLIGHT_RETRY_MIN = 30.0
 #: The desk's reminder convention (state_publication.REPAGE_H, run_alerts._DEDUPE_S).
 REPAGE_H = 6.0
 INCIDENTS = ("no_verdict", "resident_dead", "sweep_dead", "phase_overrun", "sweep_overdue",
-             "zero_judged_sweep", "inputs_unmeasured", "host_unreadable")
+             "zero_judged_sweep", "rate_stale", "backpressure_stale", "inputs_unmeasured",
+             "host_unreadable")
+#: THE JUDGE'S REPORTERS ARE PAGED TOO (2026-10-29). Every volume decision reads them, and both
+#: went silent without a page: JUDGING_RATE.json was UNMEASURED or hours old pass after pass (its
+#: ledger stream overran its deadline on a saturated box), and GAUNTLET_BACKPRESSURE.json's
+#: windows were last built 2026-10-03 while its core re-stamped `at` every sweep. The rate leg
+#: runs hourly, so two missed passes plus slack; the backpressure full build runs hourly, so a
+#: day without one. A rate that says UNMEASURED is a reporter that did not report.
+RATE = BASE / "reports" / "JUDGING_RATE.json"
+BACKPRESSURE = BASE / "reports" / "GAUNTLET_BACKPRESSURE.json"
+RATE_STALE_H = 3.0
+BACKPRESSURE_FULL_STALE_H = 26.0
 #: Bytes read from the ledger's end. Rows are a few hundred bytes; the newest stamp is in here.
 TAIL_BYTES = 256 * 1024
 #: Statuses in which the resident has stopped ON PURPOSE and its heartbeat is expected to stop.
@@ -521,10 +535,46 @@ def phase_limits(budget_s: float) -> dict[str, float]:
     return limits
 
 
+def _reporters(at: datetime, rate: Path = RATE,
+               backpressure: Path = BACKPRESSURE) -> dict[str, dict[str, Any]]:
+    """`rate_stale` and `backpressure_stale`: is each reporter fresh, and did it measure?"""
+    out: dict[str, dict[str, Any]] = {}
+    doc = _read_json(rate)
+    t = _stamp(doc.get("at")) if isinstance(doc, dict) else None
+    if t is None:
+        out["rate_stale"] = {"open": True, "why": f"{rate.name} absent, torn or unstamped"}
+    else:
+        h = max(0.0, (at - t).total_seconds() / 3600.0)
+        st = (doc.get("verdicts") or {}).get("status") if isinstance(
+            doc.get("verdicts"), dict) else doc.get("status")
+        bad = h > RATE_STALE_H or st == UNMEASURED
+        out["rate_stale"] = {
+            "open": bad, "hours": round(h, 2), "verdicts_status": st,
+            "why": (f"{rate.name} is {h:.1f}h old (limit {RATE_STALE_H:g}h), verdicts {st}"
+                    + (f": {str((doc.get('verdicts') or {}).get('why') or doc.get('why'))[:200]}"
+                       if st == UNMEASURED else ""))}
+    doc = _read_json(backpressure)
+    full = None
+    if isinstance(doc, dict):
+        full = _stamp(doc.get("full_at") or (doc.get("at") if doc.get("mode") != "core"
+                                             else None))
+    if full is None:
+        out["backpressure_stale"] = {"open": True, "why": (
+            f"{backpressure.name} absent, torn, or no full build stamped (`full_at`)")}
+    else:
+        h = max(0.0, (at - full).total_seconds() / 3600.0)
+        out["backpressure_stale"] = {
+            "open": h > BACKPRESSURE_FULL_STALE_H, "hours": round(h, 2),
+            "why": (f"{backpressure.name} windows last built {doc.get('full_at') or doc.get('at')}"
+                    f" ({h:.1f}h; limit {BACKPRESSURE_FULL_STALE_H:g}h)")}
+    return out
+
+
 def measure(now: datetime | None = None, *, ledger: Path = LEDGER,
             throughput: Path = THROUGHPUT, resident: Path = RESIDENT,
             sweep_result: Path = SWEEP_RESULT, env_file: Path = ENV_FILE,
-            pid_alive: PidAlive = _pid_alive) -> dict[str, Any]:
+            pid_alive: PidAlive = _pid_alive, rate: Path = RATE,
+            backpressure: Path = BACKPRESSURE) -> dict[str, Any]:
     """Each incident: True (open), False (clear) or None (UNMEASURED), with its reading."""
     at = now or datetime.now(tz=UTC)
     budget, budget_src = fresh_budget_s(throughput, env_file)
@@ -555,6 +605,10 @@ def measure(now: datetime | None = None, *, ledger: Path = LEDGER,
         inc["no_verdict"] = {"open": h > NO_VERDICT_H, "hours": round(h, 2),
                              "why": (f"no new verdict for {h:.1f}h (last {lv['at']}, "
                                      f"{lv['source']}); limit {NO_VERDICT_H:g}h")}
+
+    inc.update(_reporters(at, rate, backpressure))
+    out["thresholds"].update(rate_stale_h=RATE_STALE_H,
+                             backpressure_full_stale_h=BACKPRESSURE_FULL_STALE_H)
 
     doc = _read_json(resident)
     if not isinstance(doc, dict) or not doc:
