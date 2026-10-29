@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-29T16:45:04.506163+00:00",
+  "swept_at": "2026-10-29T17:00:09.795359+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -988,7 +988,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2772,
+      "shadow_exp_r": -0.3033,
       "woke_on_shadow": false
     },
     "CHFSGD|overnight_gap_decay_asia": {
@@ -1549,7 +1549,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.7313,
+      "shadow_exp_r": -0.8077,
       "woke_on_shadow": false
     },
     "EURNOK|overnight_gap_decay_asia": {
@@ -1648,7 +1648,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5776,
+      "shadow_exp_r": -0.6327,
       "woke_on_shadow": false
     },
     "EURSEK|overnight_gap_decay_asia": {
@@ -2979,7 +2979,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.863,
+      "shadow_exp_r": -0.5811,
       "woke_on_shadow": false
     },
     "NZDCAD|cross_asset_residual_continuous": {
@@ -3023,7 +3023,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.2902,
+      "shadow_exp_r": -0.2604,
       "woke_on_shadow": false
     },
     "NZDCAD|macro_conditional_continuous": {
@@ -3958,7 +3958,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.5248,
+      "shadow_exp_r": -0.4877,
       "woke_on_shadow": false
     },
     "USDPLN|formula_asia": {
@@ -3980,7 +3980,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.0387,
+      "shadow_exp_r": 0.0038,
       "woke_on_shadow": false
     },
     "USDRUB|carry_continuous": {
@@ -4123,7 +4123,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1442,
+      "shadow_exp_r": -0.1432,
       "woke_on_shadow": false
     },
     "USDSGD|overnight_drift_continuous": {
@@ -4222,7 +4222,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 39,
-      "shadow_exp_r": -0.3301,
+      "shadow_exp_r": -0.2553,
       "woke_on_shadow": false
     },
     "USDZAR|formula_asia": {
