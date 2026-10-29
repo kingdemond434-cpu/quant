@@ -235,3 +235,17 @@ def test_a_blind_watcher_is_red(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
     out = tmp_path / "MP.json"
     assert mp.main(["--repo", "o/r", "--out", str(out)]) == 2
     assert "WATCH_BLIND" in out.read_text()
+
+
+def test_reviewer_fails_the_audit_cleared_are_a_red_rate() -> None:
+    prs = [_pr(n, f"{n:040d}", f"b{n}") for n in (1, 2, 3, 4)]
+    checks = {
+        f"{n:040d}": [{"name": "independent-review", "status": "completed", "conclusion": c}]
+        for n, c in ((1, "failure"), (2, "failure"), (3, "failure"), (4, "success"))
+    }
+    clears = {1: _iso(10), 2: _iso(10)}
+    rep = mp.assess(NOW, prs, checks, clears, [], 0, [_commit("fix", 1)])
+    assert rep["reviewer"] == {"fails": 3, "cleared_fails": [1, 2], "fp_rate": 0.67}
+    assert any(r.startswith("REVIEWER_FP") for r in rep["red"])
+    rep = mp.assess(NOW, prs, checks, {1: _iso(10)}, [], 0, [_commit("fix", 1)])
+    assert not any(r.startswith("REVIEWER_FP") for r in rep["red"])

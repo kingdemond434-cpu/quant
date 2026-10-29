@@ -23,6 +23,8 @@ RED when any of these holds:
     CI_QUEUED       a check on a PR's current head has been queued over 30 min
     CLEAR_WAITING   a head with a trusted AUDIT CLEAR is still open 2 h after the CLEAR
     LIVE_STALLED    no code commit on LIVE for 6 h while any PR holds a CLEAR
+    REVIEWER_FP     over half of (3+) open heads the independent reviewer FAILed carry an
+                    Auditor CLEAR: the reviewer is blocking what the audit passed
 
 Read-only on GitHub: it never cancels, re-runs, comments or merges. What to do about a RED is
 the owner's call (Autonomy thread), and the report names the stage so the call is quick.
@@ -47,6 +49,11 @@ REPORT = ROOT / "desks" / "mt5" / "reports" / "MERGE_PIPELINE.json"
 QUEUED_RED_MIN = 30.0
 CLEAR_RED_H = 2.0
 LIVE_RED_H = 6.0
+#: REVIEWER_FP: of the open heads the independent reviewer FAILed, the share an Auditor CLEARed
+#: (the human-grade audit read the same head and found nothing): a proxy false-positive rate.
+REVIEWER_FP_MIN_FAILS = 3
+REVIEWER_FP_RED = 0.5
+REVIEWER = "independent-review"
 TRUSTED = ("OWNER", "MEMBER", "COLLABORATOR")
 #: Matched with ALL whitespace removed: zuck's CLEARs arrive with the sha wrapped over lines.
 CLEAR_RE = re.compile(r"AUDITCLEAR([0-9a-f]{7,40})", re.I)
@@ -111,6 +118,9 @@ def assess(
         qmax = max(ages, default=None)
         cat = clears.get(n)
         cage = _age_min(now, cat)
+        review = next(
+            (c.get("conclusion") for c in checks.get(head, []) if c.get("name") == REVIEWER), None
+        )
         rows.append(
             {
                 "pr": n,
@@ -120,12 +130,21 @@ def assess(
                 "oldest_queued_min": qmax,
                 "clear_at": cat,
                 "clear_age_h": None if cage is None else round(cage / 60.0, 2),
+                "review": review,
             }
         )
         if qmax is not None and qmax > QUEUED_RED_MIN:
             red.append(f"CI_QUEUED #{n}: a check queued {qmax:.0f} min on {head[:9]}")
         if cage is not None and cage / 60.0 > CLEAR_RED_H:
             red.append(f"CLEAR_WAITING #{n}: CLEARed {cage / 60.0:.1f} h ago, still open")
+    fails = [r for r in rows if r["review"] == "failure"]
+    fp = [r["pr"] for r in fails if r["clear_at"]]
+    fp_rate = round(len(fp) / len(fails), 2) if fails else None
+    if len(fails) >= REVIEWER_FP_MIN_FAILS and fp_rate is not None and fp_rate > REVIEWER_FP_RED:
+        red.append(
+            f"REVIEWER_FP: {len(fp)} of {len(fails)} reviewer FAILs carry an Auditor CLEAR "
+            f"({', '.join(f'#{n}' for n in fp[:8])})"
+        )
     code = next(
         (c for c in live_commits if not NOT_CODE_RE.match(str(c["commit"]["message"]))), None
     )
@@ -145,6 +164,7 @@ def assess(
             "superseded_queued_runs": len(stale),
             "superseded_run_ids": [r.get("id") for r in stale][:50],
         },
+        "reviewer": {"fails": len(fails), "cleared_fails": fp, "fp_rate": fp_rate},
         "live": {
             "last_code_commit": None if code is None else str(code["sha"])[:9],
             "last_code_at": code_at,
