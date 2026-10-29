@@ -334,3 +334,17 @@ def test_the_join_fix_can_only_raise_a_live_row_never_lower_it() -> None:
         assert key == "gold_afternoon"
         assert clamp_risk_frac(book_frac) >= clamp_risk_frac(row["risk_frac"]) - 1e-12 or \
             clamp_risk_frac(book_frac) == BASE_RISK_FRAC
+
+
+def test_a_converted_ledger_row_stamped_in_broker_time_breaks_liveness(desk: Path) -> None:
+    """Row 247/239: a row written with a UTC basis whose exit stamp leads its own write is the
+    broker clock under a UTC label, and liveness says so."""
+    data = desk / "desks" / "mt5" / "data"
+    row = {"time": "2026-10-29T09:09:15+00:00", "exit_time": "2026-10-29T12:09:01+00:00",
+           "timestamp_basis": "utc_from_broker_epoch:measured", "deal": 217155220}
+    (data / "live_ledger.jsonl").write_text(json.dumps(row) + "\n", encoding="utf-8")
+    rep = AL.measure()
+    assert any(b["check"] == "LEDGER_CLOCK" for b in rep["breaches"])
+    row["exit_time"] = "2026-10-29T09:09:01+00:00"
+    (data / "live_ledger.jsonl").write_text(json.dumps(row) + "\n", encoding="utf-8")
+    assert AL.measure()["ledger_clock"]["status"] == "OK"
