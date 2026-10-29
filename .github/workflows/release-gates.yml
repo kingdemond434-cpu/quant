@@ -1,9 +1,12 @@
 name: release-gates
 
 # The AUTO-tier jobs of the release controller (.github/scripts/audit_gate.py). An AUTO-tier PR
-# merges with no comment only when these succeed on its head, beside the ci.yml gating jobs and
-# the box's replay-shadow verdict. Every other PR ignores them: the CLEAR + APPROVE MERGES path
-# never reads these jobs, so a failure here never blocks a change zuck approves himself.
+# merges with no comment only when these succeed on its head, beside the ci.yml gating jobs.
+# Every other PR ignores them: the CLEAR + APPROVE MERGES path never reads these jobs, so a
+# failure here never blocks a change zuck approves himself.
+#
+# ZERO API COST (zuck 2026-10-28 19:47Z): Actions is free on standard runners for this public
+# repo, and the reviewer is open-weight models on the runner itself: no key, no paid call.
 #
 # An AUTO-tier PR cannot change this file or ops/release/ (both PROTECTED), so on such a PR the
 # copies that run are the base's. The tests and ceilings are taken from the base again anyway.
@@ -55,18 +58,116 @@ jobs:
       - name: Risk suites (base tests, PR code)
         run: xargs -a "$RUNNER_TEMP/suites" pytest -q -p no:randomly -p no:cacheprovider --timeout=600
 
+  replay-shadow:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      # The harness is the base's, in a directory the PR's tree never touches.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: harness
+          sparse-checkout: ops/release
+          persist-credentials: false
+
+      # Each tree holds on disk only what the live book imports and reads (code, books, state).
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+          # blobless: the money-path closure and the knob check read any file through git
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /libs/
+            /desks/mt5/mt5desk/
+            /desks/mt5/prop/
+            /desks/mt5/*.py
+            /desks/mt5/data/*.json
+            /desks/mt5/reports/*.json
+            /data/*.json
+            /pyproject.toml
+          persist-credentials: false
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: head
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /libs/
+            /desks/mt5/mt5desk/
+            /desks/mt5/prop/
+            /desks/mt5/*.py
+            /desks/mt5/data/*.json
+            /desks/mt5/reports/*.json
+            /data/*.json
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # The base's declared dependencies only, never the project itself: an installed copy of
+      # either tree would answer imports the other tree is missing.
+      - name: Install the base's dependencies
+        working-directory: base
+        run: |
+          python -m pip install --upgrade pip
+          python - > "$RUNNER_TEMP/deps.txt" <<'PY'
+          import tomllib
+          print("\n".join(tomllib.load(open("pyproject.toml", "rb"))["project"]["dependencies"]))
+          PY
+          pip install -r "$RUNNER_TEMP/deps.txt"
+
+      # Every changed path, both sides of a rename, from the PR's paginated file list (the
+      # compare API stops at 300 files). The count must match the PR's own, on this very head.
+      - name: The PR's changed paths
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          api="repos/${{ github.repository }}/pulls/$PR"
+          gh api "$api/files?per_page=100" --paginate --jq '.[].filename' > "$RUNNER_TEMP/files.txt"
+          gh api "$api/files?per_page=100" --paginate \
+            --jq '.[] | .previous_filename // empty' > "$RUNNER_TEMP/previous.txt"
+          now=$(gh api "$api" --jq '.head.sha')
+          want=$(gh api "$api" --jq '.changed_files')
+          got=$(wc -l < "$RUNNER_TEMP/files.txt")
+          if [ "$now" != "$HEAD_SHA" ]; then
+            echo "::error::the head moved while its files were read; the new head gets its own run"
+            exit 1
+          fi
+          if [ "$got" -ne "$want" ]; then
+            echo "::error::the file list names $got files, the PR changes $want"
+            exit 1
+          fi
+          sort -u "$RUNNER_TEMP/files.txt" "$RUNNER_TEMP/previous.txt" > "$RUNNER_TEMP/changed.txt"
+
+      - name: Replay the live E8 book, base against PR
+        run: >-
+          python -I harness/ops/release/replay_shadow.py --base base --head head
+          --changed "$RUNNER_TEMP/changed.txt" --report "$RUNNER_TEMP/replay_shadow.json"
+
   independent-review:
     if: github.event.pull_request.head.repo.full_name == github.repository
-    # LIMIT: a same-repo PR can add a workflow that reads REVIEWER_API_KEY (pull_request gets
-    # repository secrets), so the key must carry a spend cap. An Environment restricted to LIVE
-    # would hide it from such a workflow but also from this job, which runs on the PR's ref.
+    # Free and keyless (ops/release/independent_review.py): open-weight models run on this runner
+    # under a sha256-pinned Ollama, each asked only when its manifest matches the pin in
+    # ops/release/local_models.json. No key, no account, no paid call. The two optional key rungs
+    # are used only if such a secret ever exists; none is asked for. No pinned model served, or none answering in time, ends
+    # UNAVAILABLE (exit 75): the controller queues the PR and re-runs this job.
     concurrency:
       group: independent-review-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 200
     steps:
-      # the base only: the PR's code never runs in the job that holds the reviewer's key
+      # the base only: the PR's code never runs in the reviewer's job
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.sha }}
@@ -77,12 +178,41 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install the reviewer client
-        run: python -m pip install "anthropic==2.3.0"
+      # A failure here is not a verdict: the review below finds no pinned model and queues.
+      # #457 audit MF1: no install script and no sudo. The release archive runs only when its
+      # sha256 matches the PROTECTED pin, and the server runs as the runner user.
+      - name: Serve the pinned open-weight reviewers on this runner
+        continue-on-error: true
+        timeout-minutes: 30
+        env:
+          OLLAMA_MAX_LOADED_MODELS: "1"
+          OLLAMA_NUM_PARALLEL: "1"
+        run: |
+          cfg=ops/release/local_models.json
+          pin() { python -I -c 'import json,sys; v=json.load(open(sys.argv[1]))[sys.argv[2]]; print(v or "")' "$cfg" "$1"; }
+          dir="$RUNNER_TEMP/ollama"
+          mkdir -p "$dir"
+          curl -fsSL --retry 3 -o "$dir/ollama.tgz" "$(pin archive)"
+          got=$(sha256sum "$dir/ollama.tgz" | cut -d' ' -f1)
+          echo "archive sha256 $got"
+          want=$(pin archive_sha256)
+          if [ -z "$want" ] || [ "$got" != "$want" ]; then
+            echo "::warning::the Ollama archive does not match its pin ($want); nothing is run"
+            exit 1
+          fi
+          tar -xzf "$dir/ollama.tgz" -C "$dir"
+          nohup "$dir/bin/ollama" serve >"$RUNNER_TEMP/ollama.log" 2>&1 &
+          for _ in $(seq 60); do curl -sf http://127.0.0.1:11434/api/version && break; sleep 2; done
+          for m in $(python -I -c 'import json,sys; print(" ".join(m["name"] for m in json.load(open(sys.argv[1]))["models"]))' "$cfg"); do
+            "$dir/bin/ollama" pull "$m"
+            repo=${m%%:*}; tag=${m#*:}
+            echo "manifest sha256 $m $(sha256sum ~/.ollama/models/manifests/registry.ollama.ai/library/$repo/$tag | cut -d' ' -f1)"
+          done
 
       - name: Review the whole diff
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.REVIEWER_API_KEY }}
+          OPENROUTER_FREE_KEY: ${{ secrets.OPENROUTER_FREE_KEY }}
+          GEMINI_FREE_KEY: ${{ secrets.GEMINI_FREE_KEY }}
           GH_TOKEN: ${{ github.token }}
         run: >-
           python -I ops/release/independent_review.py
