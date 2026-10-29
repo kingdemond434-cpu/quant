@@ -53,7 +53,13 @@ THE UNIVERSE, every gate fail-closed and every refusal NAMED in `screen`:
      R-per-trade bias exactly as `libs.portfolio.execution_cost` does for Fusion (BASE_COST_R x
      (ratio - 1), clipped at MAX_RATIO, never a credit). A sleeve the venue cannot price is OUT;
   5. not quarantined (`live_sleeve_policy.json` empty symbol list) and not a principal zero;
-  6. NEVER OPPOSITE TO E8: a sleeve on a symbol E8's live book trades is out.
+  6. E8'S SYMBOLS ARE ELIGIBLE (principal override, zuck 2026-10-29 14:46Z: "remove the e8
+     exception"). Until then a sleeve on a symbol E8's live book trades was out. The no-opposite
+     rule now lives where it can actually be enforced, at the order: a sleeve that shares a symbol
+     with E8 is marked `e8_overlap` and its `direction_fence`, and no FTMO executor may send it
+     without the cross-account opposite-side fence (`mt5desk.cross_account.opposite_block`, the
+     gold direction lock for XAUUSD). No such executor exists for non-gold keys today
+     (`FTMO_EXECUTABLE`), so the override widens what is sized and reported, not what is sent.
 The one exception is the gold_asia COPY, and it is the principal's switch, not this solve's
 (`COPY_COLUMNS`, `copy_switch`): FTMO bans cross-firm copying and the principal overrode that with
 informed consent (2026-10-28 14:31Z). It is a column only while the principal holds it on, and the
@@ -583,13 +589,15 @@ def build_universe(seed: int = 0) -> dict[str, Any]:
             reason = "quarantined in live_sleeve_policy.json"
         elif principal_zero(col, "ftmo"):
             reason = "principal zero"
-        elif sym in e8_syms:
-            reason = f"E8 trades {sym}: an own FTMO sleeve could stand opposite E8"
         if reason:
-            columns[col] = {"admitted": False, "why": reason,
-                            "rail": ("ftmo_e8_symbol" if sym in e8_syms else "ftmo_universe")}
+            columns[col] = {"admitted": False, "why": reason, "rail": "ftmo_universe"}
             continue
         admit(col, r_c[:, :, k], f"Tier S via {tier_s[col]}")
+        if sym in e8_syms and columns[col].get("admitted"):
+            columns[col]["e8_overlap"] = True
+            columns[col]["direction_fence"] = (
+                f"E8 also trades {sym}: an order needs the cross-account opposite-side fence "
+                "(cross_account.opposite_block / the gold direction lock) before it is sent")
     if not cols:
         return {"status": "NO_ADMISSIBLE_SLEEVE", "columns": columns, "screen": screen,
                 "caps": caps,

@@ -274,7 +274,7 @@ def test_only_executable_keys_are_ever_written(tmp_path: Path) -> None:
     assert set(json.loads(book.read_text())["ftmo"]) == {"gold_asia"}
 
 
-def test_e8_symbols_keep_own_sleeves_out(tmp_path: Path, monkeypatch) -> None:
+def test_e8_symbols_are_read_for_the_overlap_mark(tmp_path: Path, monkeypatch) -> None:
     p = tmp_path / "b.json"
     p.write_text(json.dumps({"enabled": True, "e8": {"gold_asia": 0.006, "AUDCHF_x_asia": 0.0}}))
     monkeypatch.setattr(pca, "CERT_BOOK", p)
@@ -336,3 +336,10 @@ def test_gap_requests_name_one_symbol_per_row(tmp_path: Path) -> None:
     out = pca.write_gap_requests(uni, datetime.now(tz=UTC), tmp_path / "g.jsonl")
     rows = [json.loads(x) for x in (tmp_path / "g.jsonl").read_text().splitlines()]
     assert out["rows"] == 3 and all(len(r["symbols"]) == 1 for r in rows)
+
+
+def test_an_e8_overlap_sleeve_is_sized_never_sent_without_an_executor() -> None:
+    # zuck's 2026-10-29 override admits E8's symbols; the opposite-side fence is the executor's.
+    # Until an FTMO executor carrying that fence exists, only the gold copy (behind the gold
+    # direction lock) is ever written to the traded book.
+    assert frozenset({"gold_asia"}) == pca.FTMO_EXECUTABLE
