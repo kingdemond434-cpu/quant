@@ -261,7 +261,6 @@ def test_process_health_raises_attention_on_a_red_dependency(tmp_path: Path) -> 
 
 
 def test_the_red_check_is_contracted_on_the_ingest_clock() -> None:
-    import ops.organ_contract as OC
-    src = Path(OC.__file__).read_text("utf-8")
+    src = (_ROOT / "ops" / "organ_contract.py").read_text("utf-8")
     assert '"MT5-AxisIngest (dependency liveness)"' in src
     assert "DEPENDENCY_LIVENESS.json" in src
