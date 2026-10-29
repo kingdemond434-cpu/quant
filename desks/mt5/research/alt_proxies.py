@@ -3727,10 +3727,14 @@ def parse_hk_csd(body: bytes, ctx: Ctx) -> list[Obs]:
 
 
 def parse_vn_sjc(body: bytes, ctx: Ctx) -> list[Obs]:
-    if ctx.part == "sbv":
-        return [Obs("sbv_vnd_per_usd", date.fromisoformat(r["date"]), float(r["vnd_per_usd"]))
-                for r in _agp.parse_sbv_central_rate(body)]
+    """SJC board (part `sjc`) or the SBV central-rate page (part `sbv`); a part this source did
+    not name reads whichever shape the bytes are."""
     out: list[Obs] = []
+    if ctx.part != "sjc":
+        out += [Obs("sbv_vnd_per_usd", date.fromisoformat(r["date"]), float(r["vnd_per_usd"]))
+                for r in _agp.parse_sbv_central_rate(body)]
+        if ctx.part == "sbv" or out:
+            return out
     for r in _agp.parse_sjc_prices(body):
         d = date.fromisoformat(r["date"])
         out += [Obs("sjc_buy_vnd", d, float(r["buy"])), Obs("sjc_sell_vnd", d, float(r["sell"]))]
@@ -3738,10 +3742,14 @@ def parse_vn_sjc(body: bytes, ctx: Ctx) -> list[Obs]:
 
 
 def parse_th_gta(body: bytes, ctx: Ctx) -> list[Obs]:
-    if ctx.part == "bot":
-        return [Obs("bot_thb_per_usd", date.fromisoformat(r["date"]), float(r["thb_per_usd"]))
-                for r in _agp.parse_bot_reference_rate(body)]
+    """The association's history table (part `gta`) or the BoT reference rate (part `bot`); a
+    part this source did not name reads whichever shape the bytes are."""
     out: list[Obs] = []
+    if ctx.part != "gta":
+        out += [Obs("bot_thb_per_usd", date.fromisoformat(r["date"]), float(r["thb_per_usd"]))
+                for r in _agp.parse_bot_reference_rate(body)]
+        if ctx.part == "bot" or out:
+            return out
     for d, v in _agp.gta_daily(_agp.parse_gta_history(body)).items():
         p = date.fromisoformat(d)
         out += [Obs("bar_buy_thb", p, v["bar_buy"]), Obs("bar_sell_thb", p, v["bar_sell"]),

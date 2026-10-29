@@ -576,7 +576,10 @@ def test_every_blocked_source_has_candidates_or_says_why_not() -> None:
     # a mirror-only candidate fails closed; the pass-5 rows HELD on their publishers' own terms
     # are sources in their own right, never stand-ins for a paid panel
     held = {s for s in A.PASS5_TERMS if A.PASS5_TERMS[s][0] != "confirmed"}
-    assert blocked == {*BLOCKED, "za_statssa_retail", *held}
+    # the Asian physical-gold rows whose terms are UNREAD (IDEAS_ONLY in terms_fence): sources in
+    # their own right, never stand-ins for a paid panel (IDEA_QUEUE 237, 228, 215)
+    gold = {"vn_sjc_premium", "th_gold_premium", "cn_sge_deferral"}
+    assert blocked == {*BLOCKED, "za_statssa_retail", *held, *gold}
     assert set(A.SUBSTITUTED_BY) | set(A.NO_SUBSTITUTE) == set(BLOCKED)
     assert set(A.NO_SUBSTITUTE) == {"in_npci_upi", "za_beti"}
     for sid, subs in A.SUBSTITUTED_BY.items():
