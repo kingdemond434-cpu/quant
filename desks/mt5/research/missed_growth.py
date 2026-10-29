@@ -807,6 +807,121 @@ def published_fusion_book_lines() -> dict[str, Any]:
     return out
 
 
+#: THE E8 SCHEDULED-RELEASE FENCE (mt5desk.news_fence, patch e8_news_fence/v1). Registers no
+#: rail (the register is sealed); prop/e8_gold.py journals each refusal as RAIL_BLOCKED (fence
+#: on) or SHADOW_FENCE (fence off: what it WOULD have refused) with the risk, rail e8_news_fence.
+NEWS_FENCE_RAIL = "e8_news_fence"
+
+
+E8_GOLD_REPORT = BASE / "reports" / "E8_GOLD.json"
+
+
+#: The lane passes every five minutes; a last verdict older than this is not "the fence now".
+NEWS_FENCE_REPORT_MAX_AGE_H = 2.0
+
+
+def _news_fence_blindness(rows: list[dict[str, Any]],
+                          now: datetime | None = None) -> dict[str, Any]:
+    """What the fence could not see. {} ONLY when every one of these is positively clean:
+    the lane's last verdict (reports/E8_GOLD.json) is FRESH (`at` within
+    NEWS_FENCE_REPORT_MAX_AGE_H) and says `calendar_ok is True` with no error; every journal row
+    carries a parseable date; and the calendar has no gap over the journal's span. A missing
+    key, a stale or undated report, or an undated row is blindness (audit v3), never clean."""
+    out: dict[str, Any] = {}
+    rep = _json(E8_GOLD_REPORT)
+    if not isinstance(rep, dict):                 # a list / scalar report is no verdict (v4)
+        rep = {}
+    nfv = rep.get("news_fence")
+    now = now or datetime.now(tz=UTC)
+    try:
+        at = datetime.fromisoformat(str(rep.get("at")))
+        if at.tzinfo is None:
+            at = at.replace(tzinfo=UTC)
+        age_h: float | None = (now - at).total_seconds() / 3600.0
+    except (TypeError, ValueError):
+        age_h = None
+    if not isinstance(nfv, dict):
+        out["why_verdict"] = "no news_fence verdict in reports/E8_GOLD.json"
+    else:
+        if nfv.get("error"):
+            out["error"] = str(nfv.get("error"))
+        if nfv.get("calendar_ok") is not True:
+            out["calendar_ok"] = nfv.get("calendar_ok")
+            out["uncovered_last_pass"] = list(nfv.get("uncovered") or [])
+        if age_h is None or not 0 <= age_h <= NEWS_FENCE_REPORT_MAX_AGE_H:
+            out["stale_verdict_age_h"] = None if age_h is None else round(age_h, 2)
+    days: list[str] = []
+    undated = 0
+    for r in rows:
+        d = str(r.get("at") or "")[:10]
+        try:
+            datetime.strptime(d, "%Y-%m-%d")
+            days.append(d)
+        except ValueError:
+            undated += 1
+    if undated:
+        out["undated_rows"] = undated
+    try:
+        from datetime import date as _date
+
+        from mt5desk.news_fence import uncovered_families
+        if days:
+            gaps = uncovered_families(_date.fromisoformat(min(days)),
+                                      _date.fromisoformat(max(days)))
+            if gaps:
+                out["uncovered_journal_span"] = list(gaps)
+                out["journal_span"] = [min(days), max(days)]
+    except Exception as exc:                          # by contract: blindness, never a raise
+        out["error_reading_calendar"] = f"{type(exc).__name__}: {exc}"[:200]
+    if out:
+        out.setdefault("why", "the fence could not be shown to see every tier-1 release in the "
+                              "window asked about; a blind fence fails open and journals "
+                              "nothing -- no rows here is not evidence it never bound")
+    return out
+
+
+def published_news_fence_lines() -> dict[str, Any]:
+    """The news fence's bill, both sides. `held` is the risk the fence refused while ON; `shadow`
+    is what it would have refused while OFF. Neither side is priced in log-wealth here -- the
+    trades those legs would have made are not in the line -- so any line is UNMEASURED with its
+    dollars; no rows on a readable journal is NOT_BINDING; an absent or unreadable journal is
+    UNMEASURED."""
+    if not E8_INTENTS.exists():
+        # The lane journals every pass's sends, so an ABSENT journal means this machine has not
+        # received it -- not that the fence never fired (L1.28a; audit v1 SHOULD).
+        return {"verdict": UNMEASURED, "source": f"data/{E8_INTENTS.name}",
+                "absent": [E8_INTENTS.name], "held": {"n": 0}, "shadow": {"n": 0}}
+    rows = _jsonl(E8_INTENTS)
+    if rows is None:
+        return {"verdict": UNMEASURED, "source": f"data/{E8_INTENTS.name}",
+                "unreadable": [E8_INTENTS.name], "held": {"n": 0}, "shadow": {"n": 0}}
+    mine = [r for r in rows if r.get("rail") == NEWS_FENCE_RAIL]
+
+    def side(status: str) -> dict[str, Any]:
+        got = [r for r in mine if r.get("status") == status]
+        usd = [float(r["missed_growth_risk_usd"]) for r in got
+               if isinstance(r.get("missed_growth_risk_usd"), (int, float))
+               and not isinstance(r.get("missed_growth_risk_usd"), bool)]
+        return {"n": len(got), "risk_usd": round(sum(usd), 2), "n_unpriced": len(got) - len(usd),
+                "releases": sorted({str(r.get("release")) for r in got if r.get("release")}),
+                "last_at": got[-1].get("at") if got else None}
+
+    held, shadow = side("RAIL_BLOCKED"), side("SHADOW_FENCE")
+    blind = _news_fence_blindness(rows) if not mine else {}
+    if blind:
+        # NO ROWS IS NOT "NEVER BOUND" WHEN THE FENCE COULD NOT SEE (audit v2 MUST, L1.28a): a
+        # blind calendar or a failed verdict fails OPEN and journals nothing, so the silence is
+        # the blindness, named here, never a clean NOT_BINDING.
+        return {"verdict": UNMEASURED, "source": f"data/{E8_INTENTS.name} rail {NEWS_FENCE_RAIL}",
+                "held": held, "shadow": shadow, **blind}
+    return {"verdict": UNMEASURED if mine else NOT_BINDING,
+            "source": f"data/{E8_INTENTS.name} rail {NEWS_FENCE_RAIL}",
+            "held": held, "shadow": shadow,
+            "why": ("held = risk refused while ON (the cost side); shadow = risk it would have "
+                    "refused while OFF. The saved side is the realised R of those legs' trades, "
+                    "joined from the exits; published, not priced")}
+
+
 #: THE FTMO FOLLOWER'S RAILS (gold OCO v2, audit must-fix 5): prop/ftmo_follower.py journals
 #: every refusal as a RAIL_BLOCKED row (rail ftmo_follower, with its reason) and every lot its
 #: cap clipped (rail ftmo_lot_cap) in its own intents journal; they register no rail (the
@@ -1031,11 +1146,33 @@ MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measu
 
 
 # --------------------------------------------------------------------------- the ledger
-def _rows() -> list[dict]:
+def _rows_counted() -> tuple[list[dict[str, Any]], int]:
+    """The ledger's rows and how many lines were skipped as torn or not a JSON object. Parsed
+    line by line (v4 SHOULD): one bad line used to return [] for the whole ledger, so a repair
+    run believed no day had been sampled and appended the same day again."""
     try:
-        return [json.loads(ln) for ln in LEDGER.read_text("utf-8").splitlines() if ln.strip()]
-    except (OSError, ValueError):
-        return []
+        text = LEDGER.read_text("utf-8", errors="replace")
+    except OSError:
+        return [], 0
+    rows: list[dict[str, Any]] = []
+    bad = 0
+    for ln in text.splitlines():
+        if not ln.strip():
+            continue
+        try:
+            row = json.loads(ln)
+        except ValueError:
+            bad += 1
+            continue
+        if isinstance(row, dict):
+            rows.append(row)
+        else:
+            bad += 1
+    return rows, bad
+
+
+def _rows() -> list[dict[str, Any]]:
+    return _rows_counted()[0]
 
 
 def _verdict_from_samples(samples: list[float]) -> tuple[str, dict[str, Any]]:
@@ -1056,7 +1193,7 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
     fv = _veto_evidence()
     day = today or datetime.now(tz=UTC).date().isoformat()
     # 1. today's samples, appended once per day per rail
-    existing = _rows()
+    existing, skipped_lines = _rows_counted()
     have_today = {(r.get("rail"), r.get("day")) for r in existing}
     new = []
     live: dict[str, dict[str, Any]] = {}
@@ -1067,11 +1204,9 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
             new.append({"day": day, "rail": r.name,
                         "value": float(m.get("value_logw_per_day", 0.0)),
                         "at": datetime.now(tz=UTC).isoformat()})
-    if new and write:
-        LEDGER.parent.mkdir(parents=True, exist_ok=True)
-        with LEDGER.open("a", encoding="utf-8") as fh:
-            for row in new:
-                fh.write(json.dumps(row) + "\n")
+    append_failed, torn_tail = _append_ledger(new) if new and write else (None, 0)
+    if append_failed is not None:
+        new = []                       # nothing was recorded, so no sample is claimed
     rows = existing + new
     # 2. verdicts from the accumulated samples (or the direct measurement for vetoes)
     verdicts: dict[str, dict[str, Any]] = {}
@@ -1137,6 +1272,9 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
     aggression = alloc.get("aggression") or {}
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(), "day": day,
            "ledger_rows": len(rows), "new_samples": len(new), "rails": verdicts,
+           **({"ledger_append_failed": append_failed} if append_failed else {}),
+           **({"ledger_lines_skipped": skipped_lines} if skipped_lines else {}),
+           **({"ledger_torn_tail": torn_tail} if torn_tail else {}),
            "veto_evidence_source": fv.get("source"),
            "costs_growth": sorted(k for k, v in verdicts.items() if v.get("verdict") == COSTS),
            "earns": sorted(k for k, v in verdicts.items() if v.get("verdict") == EARNS),
@@ -1146,6 +1284,7 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
            # here so the bill sits beside the rails' (never appended to the ledger).
            "published_gate_lines": {"stop_geometry_robustness_gate": published_gate_lines(),
                                     "fusion_book_rails": published_fusion_book_lines(),
+                                    "e8_news_fence": published_news_fence_lines(),
                                     "ftmo_follower_rails": published_ftmo_follower_lines(),
                                     "gauntlet_watchdog": organ_published_lines(GAUNTLET_STALL),
                                     "judge_priority_raise": organ_published_lines(
@@ -1164,6 +1303,56 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     return doc
+
+
+def _last_line_tail(fh: Any, size: int, chunk: int = 65536) -> bytes:
+    """The bytes after the file's LAST newline (the whole file when it has none), scanning back
+    in chunks however long the final line is."""
+    pos = size
+    parts: list[bytes] = []                 # newest chunk last; joined ONCE (linear, v6)
+    while pos > 0:
+        step = min(chunk, pos)
+        pos -= step
+        fh.seek(pos)
+        part = bytes(fh.read(step))
+        cut = part.rfind(b"\n")
+        if cut >= 0:
+            parts.append(part[cut + 1:])
+            break
+        parts.append(part)
+    return b"".join(reversed(parts))
+
+
+def _append_ledger(new: list[dict[str, Any]]) -> tuple[str | None, int]:
+    """Append `new` as ONE write. Never cuts and never glues (audit v4 MUST): when the file does
+    not end in a newline, its last line is KEPT and closed with a newline first -- a complete
+    JSON object is a real row that only lost its terminator; anything else is counted as a torn
+    line (returned) and left for `_rows_counted` to skip. Returns (why it failed or None, torn)."""
+    torn = 0
+    try:
+        LEDGER.parent.mkdir(parents=True, exist_ok=True)
+        with LEDGER.open("a+b") as fh:
+            fh.seek(0, 2)
+            size = fh.tell()
+            lead = b""
+            if size:
+                fh.seek(size - 1)
+                if fh.read(1) != b"\n":
+                    tail = _last_line_tail(fh, size)
+                    try:
+                        ok = isinstance(json.loads(tail.decode("utf-8")), dict)
+                    except ValueError:
+                        ok = False
+                    torn = 0 if ok else 1
+                    lead = b"\n"
+            fh.seek(0, 2)
+            fh.write(lead + "".join(json.dumps(r) + "\n" for r in new).encode("utf-8"))
+            fh.flush()
+        return None, torn
+    except (OSError, ValueError) as exc:
+        why = f"{type(exc).__name__}: {exc}"[:200]
+        print(f"missed_growth: ledger append failed ({why})", file=sys.stderr)
+        return why, torn
 
 
 def main() -> int:

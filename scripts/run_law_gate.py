@@ -619,6 +619,10 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # concluded the allocator was dead while both real artifacts were minutes old. A STATE fence:
     # a host that has never run the allocator reads UNMEASURED, which is a fact about the host.
     ("check_allocator_liveness.py", ()),
+    # THE E8 SCHEDULED-RELEASE FENCE IS WIRED AND CAN SEE (patch e8_news_fence/v1): RED when
+    # prop/e8_gold.py stops calling mt5desk.news_fence, the flag is malformed, the fence is ON
+    # with a calendar gap, or a fresh lane report carries no verdict. OFF + gap is UNMEASURED.
+    ("check_news_fence_liveness.py", ()),
     # THE WRITE-OR-EXPLAIN CONTRACT, LIVE HALF (2026-09-23). Reads the contract ledger every leg
     # boundary appends to and sentences the desk on the latest row per leg: SILENT_NO_OP (exited
     # clean, wrote nothing, named no reason), LEG_FAILED/LEG_TIMEOUT, and NEVER_OBSERVED -- a leg
