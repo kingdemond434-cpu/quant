@@ -85,9 +85,9 @@ def test_the_allocator_refuses_to_publish_on_a_lost_lease(monkeypatch) -> None:
     # MF1: the certificate is written only after the final guard, beside the book, and both
     # carry the pass's lock token; nothing certifies ~460 lines before the publish any more.
     g = src.index('    _lease_guard("publish")\n')
-    tail = src[g:g + 1200]
+    tail = src[g:g + 2000]
     assert "certify(cert_pending[0], root=ROOT, book=cert_pending[1])" in tail
-    assert 'art["lock_token"] = token' in tail and "os.replace(_tmp, OUT)" in tail
+    assert 'art["lock_token"] = _lock_token()' in tail and "_replace_retry(_tmp, OUT)" in tail
     assert src.count("certify(") == 1
     # MF2: a lost lease is never swallowed as a failed contest
     assert "    except LeaseLost:\n        raise" in src
@@ -146,3 +146,64 @@ def test_blas_pools_are_sized_before_numpy_and_an_explicit_setting_is_kept(monke
     assert os.environ["OPENBLAS_NUM_THREADS"] == str(n) and os.environ["MKL_NUM_THREADS"] == "3"
     src = (_DESK / "research" / "pf_allocator.py").read_text(encoding="utf-8")
     assert src.index("_cap_blas_threads()\n") < src.index("import numpy as np")
+
+
+def test_the_gateway_certifies_only_the_book_the_certificate_names() -> None:
+    from mt5desk.gateway import book_pair_matches
+    assert book_pair_matches({"a": 0.0123456, "b": 0.0}, {"a": 0.012346})
+    assert not book_pair_matches({"a": 0.01}, {"a": 0.01, "b": 0.02})     # a newer book
+    assert not book_pair_matches(None, {"a": 0.01})
+    assert not book_pair_matches({"a": "x"}, {"a": 0.01})
+
+
+def test_the_publish_replace_retries_a_held_destination(tmp_path, monkeypatch) -> None:
+    from research import pf_allocator as pa
+    monkeypatch.setattr(pa, "REPLACE_BACKOFF_S", (0.0, 0.0))
+    calls = []
+    real = os.replace
+
+    def flaky(a, b):
+        calls.append(1)
+        if len(calls) < 3:
+            raise PermissionError("held by a reader")
+        real(a, b)
+    monkeypatch.setattr(pa.os, "replace", flaky)
+    src, dst = tmp_path / "s", tmp_path / "d"
+    src.write_text("x")
+    pa._replace_retry(src, dst)
+    assert dst.read_text() == "x" and len(calls) == 3
+    calls.clear()
+    monkeypatch.setattr(pa.os, "replace", lambda a, b: (_ for _ in ()).throw(PermissionError()))
+    with pytest.raises(PermissionError):
+        pa._replace_retry(src, dst)
+
+
+def test_a_reclaimer_never_deletes_a_lock_it_did_not_judge(locks) -> None:
+    path = locks / "pf_allocator.json"
+    path.write_text(json.dumps({"token": "fresh"}), "utf-8")
+    JL._reclaim(path, "expired")                       # a successor already replaced it
+    assert json.loads(path.read_text("utf-8"))["token"] == "fresh"  # noqa: S105
+    JL._reclaim(path, "fresh")
+    assert not path.exists() and not list(locks.glob("*.reclaim"))
+    JL._reclaim(path, "fresh")                         # already gone: nothing to do
+
+
+def test_the_deadline_and_lease_lines_are_published_both_ways(tmp_path, monkeypatch) -> None:
+    from research import missed_growth as MG
+    from research import pf_allocator as pa
+    assert MG.ADMISSION_DEADLINE_S == pa.HEAVY_ADMISSION_BUDGET_S
+    assert MG.admission_deadline_line({})["verdict"] == MG.UNMEASURED
+    ok = MG.admission_deadline_line({"admission": {"deadline_cut": 0, "elapsed_s": 900}})
+    assert ok["verdict"] == MG.NOT_BINDING and ok["lock_returned_in_budget"] is True
+    cut = MG.admission_deadline_line({"admission": {"deadline_cut": 4, "elapsed_s": 1210}})
+    assert cut["verdict"] == MG.UNMEASURED and cut["deferred_unscored"] == 4
+    monkeypatch.setattr(MG, "LEASE_LOST", tmp_path / "ALLOCATOR_LEASE_LOST.json")
+    assert MG.lock_lease_line({})["verdict"] == MG.NOT_BINDING
+    MG.LEASE_LOST.write_text(json.dumps({"at": "2026-10-29T12:00:00+00:00"}), "utf-8")
+    assert MG.lock_lease_line({"generated_utc": "2026-10-29T11:00:00+00:00"})["n"] == 1
+    aged = MG.lock_lease_line({"generated_utc": "2026-10-29T13:00:00+00:00"})
+    assert aged["verdict"] == MG.NOT_BINDING and aged["recovered"] is True
+    src = (_DESK / "research" / "missed_growth.py").read_text(encoding="utf-8")
+    assert '"admission_deadline": admission_deadline_line(alloc)' in src
+    assert '"allocator_lock_lease": lock_lease_line(alloc)' in src
+    assert "def measure_admission_deadline" not in src and "def measure_lock_lease" not in src

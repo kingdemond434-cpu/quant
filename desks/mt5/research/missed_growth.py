@@ -1027,33 +1027,56 @@ def admission_cadence_line(alloc: dict[str, Any]) -> dict[str, Any]:
             "unpriced": "longer reuse of the heavy growth curve on normal/fast passes"}
 
 
-def measure_admission_deadline(r, alloc: dict, _fv: dict) -> dict[str, Any]:
-    """The heavy scan's 20-minute deadline, both ways: candidates it left unscored this pass (the
-    growth it may have DEFERRED -- each goes first next pass, never refused) against the fast lane
-    it kept within its 90-minute contract."""
-    adm = alloc.get("admission") or {}
-    if not isinstance(adm, dict) or "deadline_cut" not in adm:
+#: The heavy scan's own budget (pf_allocator.HEAVY_ADMISSION_BUDGET_S), read here as the earn
+#: side's contract: a scan that ends inside it hands the lock back to the fast lane.
+ADMISSION_DEADLINE_S = 20 * 60
+LEASE_LOST = BASE / "reports" / "ALLOCATOR_LEASE_LOST.json"
+
+
+def admission_deadline_line(alloc: dict[str, Any]) -> dict[str, Any]:
+    """The heavy scan's 20-minute deadline, BOTH WAYS, as a published line. Cost: candidates it
+    left unscored (their dE[log W] deferred one heavy pass, never refused; unpriced because an
+    unscored candidate has no measured delta). Earn: the scan ended inside its budget, so the
+    lock went back to the 4-hourly fast lane instead of being held for hours (PID 28696 held it
+    6.5h). A scan that never recorded its deadline is UNMEASURED."""
+    adm = alloc.get("admission") if isinstance(alloc.get("admission"), dict) else {}
+    if "deadline_cut" not in adm:
         return {"verdict": UNMEASURED, "why": "no heavy scan has recorded its deadline yet"}
     cut = int(adm.get("deadline_cut") or 0)
+    elapsed = _num(adm.get("elapsed_s"))
+    sides = {"deferred_unscored": cut, "elapsed_s": elapsed, "budget_s": ADMISSION_DEADLINE_S,
+             "lock_returned_in_budget": (None if elapsed is None
+                                         else bool(elapsed <= ADMISSION_DEADLINE_S * 1.25))}
     if cut == 0:
-        return {"verdict": NOT_BINDING, "n": 0, "complete": True}
-    return {"verdict": UNMEASURED, "n": cut, "complete": False,
-            "why": (f"{cut} candidate(s) carried unscored to the next heavy pass; their dE[log W] "
-                    f"is deferred, not lost, and the fast lane stayed live")}
+        return {"verdict": NOT_BINDING, "complete": True, **sides}
+    return {"verdict": UNMEASURED, "complete": False, **sides,
+            "why": (f"{cut} candidate(s) carried unscored to the next heavy pass: their dE[log W] "
+                    f"is deferred (unpriced: unscored), set against a fast lane kept live")}
 
 
-def measure_lock_lease(r, alloc: dict, _fv: dict) -> dict[str, Any]:
-    """The allocator lock lease, both ways: a LEASE_LOST stand-down is a pass whose work was
-    discarded (growth it computed and could not publish) so a successor could publish fresher."""
-    p = BASE / "reports" / "ALLOCATOR_LEASE_LOST.json"
-    if not p.exists():
+def lock_lease_line(alloc: dict[str, Any]) -> dict[str, Any]:
+    """The allocator lock lease, BOTH WAYS, as a published line. Cost: a LEASE_LOST pass whose
+    computed book was discarded. Earn: the successor that took the lease published a fresher
+    book. A record older than the book on disk is RECOVERED (aged: the next good pass has
+    published), so one old stand-down never reads as a standing cost."""
+    if not LEASE_LOST.exists():
         return {"verdict": NOT_BINDING, "n": 0}
     try:
-        sd = json.loads(p.read_text("utf-8"))
-    except (OSError, ValueError):
+        sd = json.loads(LEASE_LOST.read_text("utf-8"))
+        at = datetime.fromisoformat(str((sd or {}).get("at")))
+    except (OSError, ValueError, TypeError):
         return {"verdict": UNMEASURED, "why": "the lease-lost record is unreadable"}
-    return {"verdict": UNMEASURED, "n": 1, "at": (sd or {}).get("at"),
-            "why": "a heavy pass outlived its lease and published nothing; its successor did"}
+    try:
+        book_at = datetime.fromisoformat(str(alloc.get("generated_utc")))
+    except (ValueError, TypeError):
+        book_at = None
+    if book_at is not None and book_at > at:
+        return {"verdict": NOT_BINDING, "n": 0, "recovered": True, "lease_lost_at": at.isoformat(),
+                "book_at": book_at.isoformat(),
+                "why": "a later pass published; the discarded pass cost one stale interval at most"}
+    return {"verdict": UNMEASURED, "n": 1, "lease_lost_at": at.isoformat(),
+            "why": ("a heavy pass outlived its lease and published nothing; no book newer than "
+                    "the loss is on disk yet (cost: the discarded book, unpriced)")}
 
 
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
@@ -1183,7 +1206,9 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         unspilled=JUDGE_PRIORITY_RECORDS),
                                     "deepening_memory_guard": organ_published_lines(
                                         DEEPENING_GUARD),
-                                    "admission_scan_cadence": admission_cadence_line(alloc)},
+                                    "admission_scan_cadence": admission_cadence_line(alloc),
+                                    "admission_deadline": admission_deadline_line(alloc),
+                                    "allocator_lock_lease": lock_lease_line(alloc)},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "

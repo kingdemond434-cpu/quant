@@ -3567,7 +3567,7 @@ def decision_state_fingerprint(ev: Sequence[SleeveEvidence], cfg: WorldConfig) -
 
 
 #: Where a pass that lost its lease records it (never ALLOCATOR_STANDDOWN.json, which is the
-#: successor's): read by missed_growth.measure_lock_lease.
+#: successor's): read by missed_growth.lock_lease_line.
 LEASE_LOST = BASE / "reports" / "ALLOCATOR_LEASE_LOST.json"
 
 
@@ -3583,6 +3583,24 @@ def _lock_token() -> str | None:
         from job_lock import _HELD  # type: ignore[no-redef,import-not-found]
     held = _HELD.get("pf_allocator")
     return held[1] if held else None
+
+
+#: os.replace backoff (seconds): on Windows a reader holding the destination open (the gateway
+#: reads pf_allocation.json every pass) makes the replace raise PermissionError for a moment.
+REPLACE_BACKOFF_S = (0.05, 0.1, 0.2, 0.4, 0.8, 1.6)
+
+
+def _replace_retry(src: Path, dst: Path) -> None:
+    """`os.replace(src, dst)`, retried through REPLACE_BACKOFF_S on PermissionError; the last
+    attempt's error propagates (a book that cannot be published is a failed pass, never a
+    silent one)."""
+    for wait in REPLACE_BACKOFF_S:
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            time.sleep(wait)
+    os.replace(src, dst)
 
 
 def _lease_guard(step: str) -> None:
@@ -5040,16 +5058,22 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     _lease_guard("publish")
     # ONE WRITER, ONE PAIR: the certificate and the book land together, after the last guard,
     # each through a temp file and an atomic replace, and both carry this pass's lock token.
-    token = _lock_token()
-    art["lock_token"] = token
+    # The gateway trusts the certificate only for the book it names (`gateway._allocator_book`
+    # compares the two), so a pair torn by a crash between these writes is read as uncertified.
+    art["lock_token"] = _lock_token()
     if cert_pending is not None:
         from libs.portfolio.allocator_proof import certify
-        cert_pending[0]["lock_token"] = token
-        certify(cert_pending[0], root=ROOT, book=cert_pending[1])
+        try:
+            certify(cert_pending[0], root=ROOT, book=cert_pending[1])
+        except OSError as exc:
+            # A certificate that cannot be written must not cost the desk its new book: the book
+            # still publishes and the gateway, finding no matching certificate, sizes it as
+            # uncertified (the best-baseline path), exactly as on a failed proof.
+            _log(f"certificate not written ({type(exc).__name__}: {exc}); publishing uncertified")
     _tmp = OUT.with_name(f".{OUT.name}.{os.getpid()}.tmp")
     try:
         _tmp.write_text(json.dumps(art, indent=2, default=str), encoding="utf-8")
-        os.replace(_tmp, OUT)
+        _replace_retry(_tmp, OUT)
     finally:
         if _tmp.exists():
             _tmp.unlink()

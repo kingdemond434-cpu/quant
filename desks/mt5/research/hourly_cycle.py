@@ -834,7 +834,8 @@ def _stamp_heavy_pass(leg: dict | None, art: Path | None = None,
         return False
     if ts.tzinfo is None:
         ts = ts.replace(tzinfo=UTC)
-    if adm.get("status") != "MEASURED" or adm.get("carried_from") or ts < started             or adm.get("complete") is False:
+    if (adm.get("status") != "MEASURED" or adm.get("carried_from") or ts < started
+            or adm.get("complete") is False):
         return False
     try:
         out.parent.mkdir(parents=True, exist_ok=True)

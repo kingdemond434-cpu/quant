@@ -383,6 +383,31 @@ def holds(name: str) -> bool | None:
         return False
 
 
+def _token_of(path: Path) -> str | None:
+    try:
+        return json.loads(path.read_text("utf-8")).get("token")
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
+def _reclaim(path: Path, judged: str | None) -> None:
+    """Remove the lock judged stale, and ONLY that lock (#529 audit S: two reclaimers racing on
+    one expired lease could each unlink, the slower one deleting the faster one's FRESH lock).
+    The file is renamed aside first, which only one reclaimer can win; if what was moved is not
+    the lock that was judged (a successor's fresh one), it is put back and nothing is removed."""
+    tomb = path.with_name(f"{path.name}.{uuid.uuid4().hex}.reclaim")
+    try:
+        os.rename(path, tomb)
+    except OSError:
+        return                    # another reclaimer moved it first; O_EXCL decides the rest
+    if _token_of(tomb) != judged:
+        with suppress(OSError):
+            os.rename(tomb, path)
+        return
+    with suppress(OSError):
+        tomb.unlink()
+
+
 def _lease_expired(path: Path) -> bool:
     """True when the lock names a `lease_until` (epoch seconds) that has passed."""
     try:
@@ -491,6 +516,7 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
         try:
             fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         except FileExistsError:
+            judged = _token_of(path)
             try:
                 stale = datetime.now(UTC).timestamp() - path.stat().st_mtime > STALE_SECONDS
             except OSError:
@@ -514,8 +540,7 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
                       f"ALIVE -- not reclaiming; a long job is not an abandoned one")
                 stale = False
             if stale:
-                with suppress(OSError):
-                    path.unlink()
+                _reclaim(path, judged)
                 continue
             print(f"{name}: REFUSED duplicate writer; active lock {path}")
             yield False
