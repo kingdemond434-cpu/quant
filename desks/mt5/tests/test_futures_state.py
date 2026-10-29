@@ -257,13 +257,6 @@ def test_the_conditioner_family_reads_what_the_factory_writes(tmp_desk: Path) ->
     assert s is not None and len(s) > 30
 
 
-def test_gamma_is_positive_and_peaks_at_the_money() -> None:
-    atm = fs.bs_gamma(100.0, 100.0, 0.6, 30 / 365)
-    otm = fs.bs_gamma(100.0, 140.0, 0.6, 30 / 365)
-    assert atm > otm > 0
-    assert fs._deribit_expiry("BTC-27DEC26").isoformat() == "2026-12-27T08:00:00+00:00"
-
-
 def test_derived_columns_are_asked_once_and_the_cap_queues_the_rest(tmp_desk: Path) -> None:
     get = _fake_get(
         {"GOLD - COMMODITY EXCHANGE": _cot_rows(120, 1, "GOLD - COMMODITY EXCHANGE INC.")}

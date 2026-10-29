@@ -62,10 +62,9 @@
   },
   {
    "id": "deribit_public",
-   "adapter": "deribit",
-   "terms": "OPEN",
-   "url": "https://www.deribit.com/api/v2/public/",
-   "note": "Read-only public market data. Signal for MT5 crypto CFDs only, never a hunted venue (GAP_MAP row 49)"
+   "adapter": "none",
+   "terms": "OWNED_ELSEWHERE",
+   "note": "Crypto venue data may only inform an MT5 instrument, and the one organ allowed to read it is desks/mt5/research/shadow_institutional.py (its sensors declare MT5 consumers; scripts/check_mt5_purity.py allowlists it). Basis, funding and DVOL state belong there as sensors, not here."
   },
   {
    "id": "cboe_vix_history",
@@ -84,21 +83,20 @@
   {
    "id": "binance_futures_public",
    "adapter": "none",
-   "terms": "TO_CONFIRM",
-   "url": "https://fapi.binance.com/fapi/v1/",
-   "note": "funding, OI, long/short ratio, basis for crypto CFD conditioning; terms review pending"
+   "terms": "OWNED_ELSEWHERE",
+   "note": "Crypto venue data may only inform an MT5 instrument, and the one organ allowed to read it is desks/mt5/research/shadow_institutional.py (its sensors declare MT5 consumers; scripts/check_mt5_purity.py allowlists it). Basis, funding and DVOL state belong there as sensors, not here."
   },
   {
    "id": "okx_public",
    "adapter": "none",
-   "terms": "TO_CONFIRM",
-   "url": "https://www.okx.com/api/v5/public/"
+   "terms": "OWNED_ELSEWHERE",
+   "note": "Crypto venue data may only inform an MT5 instrument, and the one organ allowed to read it is desks/mt5/research/shadow_institutional.py (its sensors declare MT5 consumers; scripts/check_mt5_purity.py allowlists it). Basis, funding and DVOL state belong there as sensors, not here."
   },
   {
    "id": "bybit_public",
    "adapter": "none",
-   "terms": "TO_CONFIRM",
-   "url": "https://api.bybit.com/v5/market/"
+   "terms": "OWNED_ELSEWHERE",
+   "note": "Crypto venue data may only inform an MT5 instrument, and the one organ allowed to read it is desks/mt5/research/shadow_institutional.py (its sensors declare MT5 consumers; scripts/check_mt5_purity.py allowlists it). Basis, funding and DVOL state belong there as sensors, not here."
   },
   {
    "id": "cme_settlements",
@@ -610,32 +608,6 @@
    ]
   }
  ],
- "deribit": [
-  {
-   "id": "btc",
-   "currency": "BTC",
-   "targets": [
-    "BTCUSD",
-    "ETHUSD",
-    "SOLUSD",
-    "LTCUSD",
-    "BCHUSD",
-    "NAS100"
-   ]
-  },
-  {
-   "id": "eth",
-   "currency": "ETH",
-   "targets": [
-    "ETHUSD",
-    "BTCUSD",
-    "SOLUSD",
-    "AVAXUSD",
-    "MATICUSD",
-    "DOTUSD"
-   ]
-  }
- ],
  "transmissions": [
   {
    "id": "gold_silver_mm",
@@ -700,17 +672,6 @@
     "USDCAD"
    ],
    "why": "curve backwardation without speculative length (or the reverse) is physical tightness the crowd has not priced"
-  },
-  {
-   "id": "btc_eth_basis",
-   "a": "deribit_btc",
-   "b": "deribit_eth",
-   "column": "basis_ann_30d",
-   "op": "spread",
-   "targets": [
-    "ETHUSD",
-    "BTCUSD"
-   ]
   },
   {
    "id": "real_yield_vs_gold_mm",

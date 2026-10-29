@@ -1,4 +1,4 @@
-"""FUTURES-STATE FACTORY -- global futures positioning, curves and crypto derivatives as MT5 cells.
+"""FUTURES-STATE FACTORY -- global futures positioning, curves and FX state as MT5 cells.
 
 THE PRINCIPAL, 2026-10-19: futures prices, curves, volume, OI, COT, options on futures and dealer
 state go through a futures-state feature factory (level, change, acceleration, percentile, curve
@@ -12,9 +12,8 @@ WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
      sources are the CFTC public reporting API (legacy, disaggregated and TFF, each futures-only
      AND futures+options combined, so the difference is the delta-adjusted OPTIONS-ON-FUTURES
      book), EIA's republished NYMEX contracts 1-4 (WTI, Henry Hub: a dated curve from a
-     public-domain source now that Yahoo is IDEAS_ONLY), and Deribit's public read-only API (BTC
-     and ETH futures term structure, perpetual funding, option OI, implied vol, a dealer-gamma
-     proxy), and Japan's MoF intervention record (every intervention day since 1991, signed,
+     public-domain source now that Yahoo is IDEAS_ONLY), FRED's curves, rate differentials and
+     reserves, and Japan's MoF intervention record (every intervention day since 1991, signed,
      stamped at its quarterly disclosure; monthly totals stamped at their release). Every other
      venue is a row with its terms state (TO_CONFIRM / HELD / IDEAS_ONLY /
      OWNED_ELSEWHERE) and is COUNTED as a named gap, never fetched.
@@ -25,9 +24,9 @@ WHAT THIS ORGAN DOES, end to end, and every stage publishes a number:
 
   3. POINT IN TIME. Every row carries `available_time` in UTC: CFTC data is available the Friday
      after its Tuesday report date (stamped Friday 21:00 UTC, after the 15:30 ET release in both
-     DST regimes); EIA closes are stamped the next day 23:00 UTC; Deribit snapshots at their
-     retrieval time. `family_exogenous_conditioner` then holds every value back a further
-     publication day before it can touch a bar.
+     DST regimes); EIA and daily FRED closes are stamped the next day 23:00 UTC;
+     monthly sets after their own publication lag. `family_exogenous_conditioner` then holds
+     every value back a further publication day before it can touch a bar.
 
   4. FEATURES. Each base column becomes level / change / acceleration / rolling percentile; a
      curve becomes slope, roll yield, curvature and contango flag (their changes are the curve's
@@ -55,7 +54,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import math
 import os
 import sys
 import time
@@ -93,7 +91,6 @@ CHARTS: tuple[str, ...] = ("H1", "H4", "D1")
 PCT_WINDOW = 156          # three years of weekly reports; 156 trading days for daily series
 MIN_ROWS = 30             # below this a series is UNMEASURED and mints nothing
 CFTC_LIMIT = 50000
-DERIBIT = "https://www.deribit.com/api/v2/public/"
 
 
 class HardStop(Exception):
@@ -161,8 +158,8 @@ def curve_features(prices: pd.DataFrame, tenors_years: Sequence[float]) -> pd.Da
     """Slope, roll yield, curvature and contango flag from contract columns ordered near->far.
 
     `tenors_years` are the contracts' times to expiry (approximate for EIA's rolling C1..C4,
-    exact for Deribit). Their changes, taken by `dynamics`, ARE the curve's deformation: a slope
-    change is a twist, a curvature change a butterfly.
+    exact for dated contracts). Their changes, taken by `dynamics`, ARE the curve's deformation:
+    a slope change is a twist, a curvature change a butterfly.
     """
     p = prices.astype(float).where(prices.astype(float) > 0)
     lp = np.log(p)
@@ -252,15 +249,6 @@ def flow_price(net_chg: pd.Series, oi_chg: pd.Series | None, px_chg: pd.Series,
                      np.where((o < 0) & (p > 0), 1.0, np.where((o < 0) & (p < 0), -1.0, np.nan))))
         out["oi_price_quadrant"] = q
     return out
-
-
-def bs_gamma(spot: float, strike: float, iv: float, t_years: float) -> float:
-    """Black-Scholes gamma (rate 0, which is Deribit's own convention for inverse options)."""
-    if spot <= 0 or strike <= 0 or iv <= 0 or t_years <= 0:
-        return 0.0
-    vs = iv * math.sqrt(t_years)
-    d1 = (math.log(spot / strike) + 0.5 * vs * vs) / vs
-    return math.exp(-0.5 * d1 * d1) / (math.sqrt(2.0 * math.pi) * spot * vs)
 
 
 # ----------------------------------------------------------------------------- PIT stamps
@@ -447,107 +435,6 @@ def fred_curve(curve: Mapping[str, Any], key: str, get: Callable[[str], Any]) ->
             cols[s] = pd.Series(pd.to_numeric(d["value"], errors="coerce").to_numpy(),
                                 index=pd.to_datetime(d["date"], utc=True))
     return pd.DataFrame(cols).sort_index()
-
-
-def deribit_snapshot(currency: str, get: Callable[[str], Any], now: datetime) -> dict[str, float]:
-    """One PIT snapshot: futures basis curve, perpetual funding, option OI/IV, gamma proxy."""
-    snap: dict[str, float] = {}
-    fut = (get(f"{DERIBIT}get_book_summary_by_currency?currency={currency}&kind=future")
-           or {}).get("result") or []
-    curve: list[tuple[float, float, float]] = []
-    tot_oi = 0.0
-    for r in fut:
-        name = str(r.get("instrument_name") or "")
-        mark, idx = float(r.get("mark_price") or 0), float(r.get("estimated_delivery_price") or 0)
-        tot_oi += float(r.get("open_interest") or 0)
-        if name.endswith("PERPETUAL"):
-            snap["funding_8h"] = float(r.get("funding_8h") or np.nan)
-            snap["perp_premium"] = (mark / idx - 1.0) if idx else np.nan
-            continue
-        exp = _deribit_expiry(name)
-        if exp is None or not idx or not mark:
-            continue
-        t = (exp - now).total_seconds() / (365.25 * 86400)
-        if t > 1 / 365:
-            curve.append((t, math.log(mark / idx) / t, mark))
-    snap["fut_oi"] = tot_oi
-    if curve:
-        curve.sort()
-        ts, bs = np.array([c[0] for c in curve]), np.array([c[1] for c in curve])
-        for days in (7, 30, 90):
-            snap[f"basis_ann_{days}d"] = float(np.interp(days / 365.25, ts, bs))
-        snap["basis_slope"] = float(bs[-1] - bs[0]) if len(bs) > 1 else np.nan
-    opt = (get(f"{DERIBIT}get_book_summary_by_currency?currency={currency}&kind=option")
-           or {}).get("result") or []
-    put_oi = call_oi = iv_w = gex = 0.0
-    walls: dict[float, float] = {}
-    skew_p: list[float] = []
-    skew_c: list[float] = []
-    spot = float(next((o.get("underlying_price") for o in opt
-                       if o.get("underlying_price")), 0) or 0)
-    for o in opt:
-        parts = str(o.get("instrument_name") or "").split("-")
-        if len(parts) != 4:
-            continue
-        oi, iv = float(o.get("open_interest") or 0), float(o.get("mark_iv") or 0) / 100.0
-        exp = _deribit_expiry("-".join(parts[:2]))
-        strike = float(parts[2]) if parts[2].replace(".", "").isdigit() else 0.0
-        if exp is None or not strike:
-            continue
-        t = (exp - now).total_seconds() / (365.25 * 86400)
-        g = bs_gamma(spot, strike, iv, t) * oi * spot * spot * 0.01
-        # ASSUMPTION, labelled: customers net long puts and short calls, so dealers are long call
-        # gamma and short put gamma. It is a proxy for the sign, not a measured dealer book.
-        if parts[3] == "C":
-            call_oi += oi
-            gex += g
-            if 1.0 < strike / spot <= 1.10 and 7 / 365 < t < 60 / 365:
-                skew_c.append(iv)
-        else:
-            put_oi += oi
-            gex -= g
-            if 0.90 <= strike / spot < 1.0 and 7 / 365 < t < 60 / 365:
-                skew_p.append(iv)
-        iv_w += iv * oi
-        walls[strike] = walls.get(strike, 0.0) + abs(g)
-    if put_oi + call_oi > 0 and spot:
-        snap["opt_oi"] = put_oi + call_oi
-        snap["put_call_oi"] = put_oi / call_oi if call_oi else np.nan
-        snap["iv_oi_weighted"] = iv_w / (put_oi + call_oi)
-        snap["gex_proxy"] = gex
-        wall = max(walls, key=lambda k: walls[k]) if walls else np.nan
-        snap["gamma_wall_dist"] = (wall / spot - 1.0) if walls else np.nan
-        if skew_p and skew_c:
-            snap["skew_10pct"] = float(np.mean(skew_p) - np.mean(skew_c))
-    snap["spot"] = spot
-    return snap
-
-
-_MONTHS = {m: i for i, m in enumerate(
-    ("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"), 1)}
-
-
-def _deribit_expiry(name: str) -> datetime | None:
-    """`BTC-27DEC26` -> 2026-12-27 08:00 UTC (Deribit's expiry hour)."""
-    try:
-        tag = name.split("-")[1]
-        day, mon, yr = int(tag[:-5]), _MONTHS[tag[-5:-2]], 2000 + int(tag[-2:])
-        return datetime(yr, mon, day, 8, tzinfo=UTC)
-    except Exception:
-        return None
-
-
-def deribit_dvol_history(currency: str, get: Callable[[str], Any], now: datetime) -> pd.Series:
-    """Daily DVOL closes back as far as the API serves, for an immediately judgeable history."""
-    end = int(now.timestamp() * 1000)
-    start = end - 5 * 365 * 86400 * 1000
-    url = (f"{DERIBIT}get_volatility_index_data?currency={currency}&start_timestamp={start}"
-           f"&end_timestamp={end}&resolution=1D")
-    rows = ((get(url) or {}).get("result") or {}).get("data") or []
-    if not rows:
-        return pd.Series(dtype=float)
-    return pd.Series([float(r[4]) for r in rows],
-                     index=pd.to_datetime([int(r[0]) for r in rows], unit="ms", utc=True))
 
 
 # ----------------------------------------------------------------------- Japan MoF intervention
@@ -879,52 +766,6 @@ def build_market_series(registry: Mapping[str, Any], *, get: Callable[[str], Any
             built[oid] = {"targets": targets, "kind": kind, "rows": len(feat),
                           "last_event": str(idx.max())}
 
-    der = sources.get("deribit_public") or {}
-    now = datetime.now(UTC)
-    for d in registry.get("deribit") or []:
-        sid = f"deribit_{d['id']}"
-        snap_path = RAW / f"{sid}_snapshots.parquet"
-        snaps = pd.read_parquet(snap_path) if snap_path.exists() else pd.DataFrame()
-        dvol_path = RAW / f"{sid}_dvol.parquet"
-        if get is not None and der.get("terms") == "OPEN" and \
-                "deribit_public" not in state.get("hard_stops", {}):
-            try:
-                row: dict[str, Any] = deribit_snapshot(str(d["currency"]), get, now)
-                row["available_time"] = now.isoformat()
-                snaps = pd.concat([snaps, pd.DataFrame([row])], ignore_index=True)
-                snap_path.parent.mkdir(parents=True, exist_ok=True)
-                snaps.to_parquet(snap_path, index=False)
-                today = now.date().isoformat()
-                if not dvol_path.exists() or state.get("dvol_day", {}).get(sid) != today:
-                    dv = deribit_dvol_history(str(d["currency"]), get, now)
-                    if len(dv):
-                        dv.rename("dvol").to_frame().to_parquet(dvol_path)
-                        state.setdefault("dvol_day", {})[sid] = today
-            except HardStop as hs:
-                state.setdefault("hard_stops", {})["deribit_public"] = {"code": hs.code,
-                                                                        "at": _now()}
-            except Exception as exc:
-                notes.append({"source": sid, "error": f"{type(exc).__name__}"})
-        if dvol_path.exists():
-            dv = pd.read_parquet(dvol_path)
-            feat = dynamics(dv, ["dvol"], window=252)
-            vid = f"{sid}_dvol"
-            frames[vid] = stamped(feat.reset_index(drop=True), daily_available(pd.Series(dv.index)),
-                                  vid, pd.Series(dv.index))
-            built[vid] = {"targets": list(d.get("targets") or []), "kind": "deribit_dvol",
-                          "rows": len(dv), "last_event": str(dv.index.max())}
-        if len(snaps) >= MIN_ROWS:
-            snaps = snaps.sort_values("available_time")
-            at = pd.to_datetime(snaps["available_time"], utc=True)
-            cols = [c for c in snaps.columns if c not in ("available_time", "spot")]
-            feat = dynamics(snaps.reset_index(drop=True), cols, window=24 * 30)
-            frames[sid] = stamped(feat, at.reset_index(drop=True), sid)
-            built[sid] = {"targets": list(d.get("targets") or []), "kind": "deribit_snapshot",
-                          "rows": len(snaps), "last_event": str(at.max())}
-        else:
-            notes.append({"source": sid, "status": "ACCRUING", "snapshots": len(snaps),
-                          "need": MIN_ROWS})
-
     mof = sources.get("mof_japan_intervention") or {}
     if mof.get("adapter") == "mof_feio":
         days, quarters, pages = mof_collect(mof, get_text, state, notes)
@@ -990,8 +831,7 @@ def cell_hash(sid: str, col: str, tf: str, sym: str, chart: str) -> str:
 #: is ordered so the headline state goes first; nothing is dropped, the rest leads next pass.
 MAX_MINT_PER_PASS = 3000
 _HEADLINE = ("m_money", "lev_money", "noncomm", "_opt", "flow_price", "oi_price", "slope",
-             "roll_yield", "curvature", "basis", "funding", "perp_premium", "dvol", "gex",
-             "gamma_wall", "skew", "put_call", "iv_", "x")
+             "roll_yield", "curvature", "mof_q_net", "mof_net_4q", "mof_m_gross", "x")
 _DERIVED = ("_chg", "_acc", "_pct")
 
 
@@ -1139,7 +979,7 @@ def build(*, dry_run: bool = False, offline: bool = False) -> dict[str, Any]:
     cells = mint(built, frames, _universe(), state, dry_run=dry_run, enqueue=enqueue)
     doc = {
         "generated_utc": _now(),
-        "rule": ("Every futures, commodity and crypto-derivative series reaches cells or is named "
+        "rule": ("Every futures, commodity and FX state series reaches cells or is named "
                  "below with its reason. 401/403/429/451 is a hard stop; held venues are never "
                  "fetched; a cell is minted once in its life so trials are never inflated."),
         "series": built,
