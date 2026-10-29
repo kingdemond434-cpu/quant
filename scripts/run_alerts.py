@@ -45,6 +45,19 @@ _DEDUPE_OVERRIDES_S = {"growth_defect": 24 * 3600, "data_health": 24 * 3600,
                        "trade_class_bleeding": 24 * 3600, "auth_broken": 12 * 3600,
                        # the chain runs once a day; its failures can only change once a day
                        "research_chain_failed": 24 * 3600}
+#: WHO EACH PAGE IS FOR (owner, 2026-10-29: "only notify me on things which need me ... handle
+#: rest n don't tell me"; rule in libs/ops/alert_channels.py). Only these keys reach the phone:
+#: each asks for a HUMAN action no organ can take -- reset a fired ruin rail, remove a kill file
+#: only he can judge unintended, open a human-only door. Every other check (organ liveness, brain,
+#: diggers, research chain, slots, data health, forensics) is DESK: ledgered, mirrored to the
+#: non-personal channels, and remediated by the brain/threads -- never pushed to ntfy.
+PRINCIPAL_KEYS = frozenset({"deadman_latched", "kill_switch_stuck", "principal_action_needed"})
+
+
+def audience_for(key: str) -> str:
+    return "principal" if key in PRINCIPAL_KEYS else "desk"
+
+
 _HB = Path("data/cashcarry_exec_heartbeat")
 _PAGER_BACKOFF = Path("data/.pager_backoff")
 _KILL = Path("data/CASHCARRY_KILL")
@@ -61,7 +74,7 @@ def _topic() -> str:
     return topic
 
 
-def _push(topic: str, title: str, body: str) -> None:
+def _push(topic: str, title: str, body: str, *, audience: str = "principal") -> None:
     # HTTP headers must be latin-1 (urllib/http.client encode them that way); a title with an
     # emoji or other non-latin-1 char raises UnicodeEncodeError BEFORE the request is ever sent,
     # silently killing this and every future push (2026-07-19: broke ALL paging for 29h+,
@@ -69,6 +82,15 @@ def _push(topic: str, title: str, body: str) -> None:
     # ntfy already renders an icon from Tags, so titles stay plain ASCII; this encode is a
     # defense-in-depth backstop against the same class recurring via a future non-ASCII edit.
     safe_title = title.encode("latin-1", "ignore").decode("latin-1")
+    if audience == "desk":
+        # DESK: the ledger and the non-personal channels only. The direct ntfy push below is the
+        # phone, so it is skipped -- and RECORDED as routed, never silently dropped.
+        _second_channel(f"{safe_title}: {body}")
+        with contextlib.suppress(Exception):
+            from libs.ops.alert_channels import send_all
+            send_all(safe_title, body, audience="desk")
+        _ledger_ok("ntfy", "routed: desk audience", safe_title, routed="desk")
+        return
     # 429 backoff (2026-07-20): ntfy rate-limits the topic; a due re-page retried on
     # every 3-min tick keeps the topic throttled forever (observed self-DoS loop,
     # journalctl 06:47Z). After any 429, cool down 1h before the next push attempt.
@@ -89,7 +111,7 @@ def _push(topic: str, title: str, body: str) -> None:
     # observable instead of being the thing nobody notices for five days.
     with contextlib.suppress(Exception):
         from libs.ops.alert_channels import send_all
-        send_all(safe_title, body)
+        send_all(safe_title, body, audience="principal")
     req = urllib.request.Request(f"https://ntfy.sh/{topic}", data=body.encode(),
                                  headers={"Title": safe_title, "Priority": "high",
                                           "Tags": "rotating_light"})
@@ -106,12 +128,13 @@ def _push(topic: str, title: str, body: str) -> None:
         raise
 
 
-def _ledger_ok(channel: str, detail: str, title: str, *, ok: bool = True) -> None:
+def _ledger_ok(channel: str, detail: str, title: str, *, ok: bool = True,
+               routed: str | None = None) -> None:
     """Record the PRIMARY path's outcome in the same ledger as the registry channels, so the
     silence check sees one unified view. Never raises -- a logging failure must not kill a page."""
     with contextlib.suppress(Exception):
         from libs.ops.alert_channels import _log
-        _log(channel, ok, detail, title)
+        _log(channel, ok, detail, title, routed=routed)
 
 
 # --- PRINCIPAL REPLY CHANNEL (2026-07-31) --------------------------------------------------
@@ -172,7 +195,8 @@ def _poll_replies(topic: str) -> None:
                 out = ("REARM is retired: the cash-carry size governor it re-armed was deleted "
                        "with the crypto-exchange universe (2026-09-05). Nothing was changed.")
                 with contextlib.suppress(Exception):
-                    _push(topic, "Quant desk: REARM received", out)
+                    _push(topic, "Quant desk: REARM received", out,
+                          audience="principal")      # answers his own reply
         if last_id:
             _REPLY_STATE.write_text(
                 json.dumps({"last_id": last_id,
@@ -520,7 +544,7 @@ def main() -> None:
         return
     if "--test" in sys.argv:
         _push(topic, "Quant desk pager: TEST", "pager wired -- you will only hear from me "
-              "when something is genuinely wrong")
+              "when something needs you", audience="principal")   # he ran --test himself
         print(f"test page sent -> https://ntfy.sh/{topic}")
         return
     _poll_replies(topic)          # read principal replies BEFORE computing pages: a fresh
@@ -545,7 +569,7 @@ def main() -> None:
             continue
         state[f"_try_{key}"] = now
         try:
-            _push(topic, f"WARNING Quant desk: {key}", msg)
+            _push(topic, f"WARNING Quant desk: {key}", msg, audience=audience_for(key))
             state[key] = now
             paged.add(key)
             sent += 1
@@ -559,7 +583,7 @@ def main() -> None:
         if key not in active:
             with contextlib.suppress(Exception):
                 _push(topic, f"RESOLVED Quant desk: {key}",
-                      "auto-fixed / cleared -- no action needed")
+                      "auto-fixed / cleared -- no action needed", audience=audience_for(key))
             paged.discard(key)
             state.pop(key, None)
     state["_paged"] = sorted(paged)

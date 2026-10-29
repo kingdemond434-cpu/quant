@@ -246,9 +246,11 @@ def _default_sender() -> Sender:
         if str(ROOT) not in sys.path:
             sys.path.insert(0, str(ROOT))
         from libs.ops import alert_channels
+        # DESK: a stale or failed restore drill is re-run by a thread.
         return alert_channels.send_all(title, body,
                                        config=ROOT / "data" / "secrets" / "alert_channels.json",
-                                       ledger=ROOT / "data" / "alert_delivery.jsonl")
+                                       ledger=ROOT / "data" / "alert_delivery.jsonl",
+                                       audience="desk")
     return send
 
 

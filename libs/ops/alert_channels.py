@@ -19,6 +19,38 @@ independently wrapped, and always logged.
 WHAT THIS MODULE DELIBERATELY DOES NOT DO: it does not decide WHEN to page (that is
 `run_alerts._checks`), it holds no thresholds, and it never reads book state.
 
+AUDIENCE -- WHO A PAGE IS FOR (2026-10-29, the owner, verbatim: "only notify me on things which
+need me or else it's confusing; handle rest n don't tell me"). Every `send_all` names one of two
+audiences, and THE RULE IS: a page is `"principal"` only when the reader must take a HUMAN action
+that the system and the agent threads cannot take for him. Everything the box, a watchdog or a
+thread can handle itself is `"desk"`.
+
+  * "principal" -- needs zuck personally. Examples: live positions that must be closed (only he
+    may close a position); an account near or past a firm loss rail with no automatic protection
+    having acted; the dead-man firing on a live account; a manual-follow trade he places by hand;
+    a door only a person can open. The ONLY audience delivered to the personal push channels
+    (`_PERSONAL_KINDS`: ntfy, telegram, email).
+  * "desk" -- ops noise: box health (watchdog, gateway, disk, research staleness), state
+    publication flowing/stale, fences UNMEASURED or REFUSED, judge stalls, restore drills, law
+    police, the canary. Delivered to the ledger and the NON-personal channels (webhook, hc), which
+    the reports, REDs and agent threads read and fix. Never pushed to the phone. For each personal
+    channel a desk page writes a ledger row `{"channel": "ntfy", "ok": true, "detail": "routed:
+    desk audience", "routed": "desk"}` so the routing is visible, never silent -- and routed rows
+    are NOT counted as deliveries by `last_success_per_channel`/`all_silent_since`, so a desk-only
+    week can never hide a dead phone channel.
+
+  Box health is never "principal", not even the gateway or the disk: a RED a thread fixes.
+  BORDERLINE? Read what the page asks the reader to DO. A human action -> principal; else desk.
+
+  `page_principal(title, body)` is THE sanctioned "needs zuck" path for a thread that must ping him
+  once: it is `send_all(..., audience="principal")` and nothing else. Use it sparingly -- every
+  principal page spends the credibility of the next one.
+
+  The default, for a caller that names no audience, is "principal" (the safe direction for money:
+  a forgotten argument can over-page, never swallow a page). `tests/ops/test_alert_audience.py`
+  fails on any `send_all` call site in the repo that omits `audience`, except the byte-pinned box
+  watcher canon copies it lists by name.
+
 Config (absent = gracefully unarmed, recorded): `data/secrets/alert_channels.json`
     {"channels": [{"kind": "telegram", "token": "...", "chat_id": "..."},
                   {"kind": "webhook",  "url": "https://..."},
@@ -50,14 +82,28 @@ _TIMEOUT = 12.0
 _KINDS = ("ntfy", "telegram", "webhook", "email", "hc")
 
 
-def _log(channel: str, ok: bool, detail: str, title: str, ledger: Path = _LEDGER) -> None:
+#: The two audiences (see the module docstring). Anything else is treated as PRINCIPAL.
+PRINCIPAL = "principal"
+DESK = "desk"
+AUDIENCES = (PRINCIPAL, DESK)
+#: Channels that reach the owner personally. Only a PRINCIPAL page is sent to these.
+_PERSONAL_KINDS = frozenset({"ntfy", "telegram", "email"})
+ROUTED_DETAIL = "routed: desk audience"
+
+
+def _log(channel: str, ok: bool, detail: str, title: str, ledger: Path = _LEDGER, *,
+         routed: str | None = None) -> None:
     """One row per attempt. The title is HASHED, never stored: alert bodies can name positions,
-    and a delivery ledger is not a place to leak book state."""
+    and a delivery ledger is not a place to leak book state. `routed` marks a row that records a
+    deliberate non-send (a desk page kept off a personal channel)."""
     with contextlib.suppress(OSError):
         ledger.parent.mkdir(parents=True, exist_ok=True)
-        row = {"ts": datetime.now(tz=UTC).isoformat(), "channel": channel, "ok": ok,
-               "detail": detail[:200],
-               "title_sha": sha256(title.encode("utf-8", "ignore")).hexdigest()[:12]}
+        row: dict[str, Any] = {
+            "ts": datetime.now(tz=UTC).isoformat(), "channel": channel, "ok": ok,
+            "detail": detail[:200],
+            "title_sha": sha256(title.encode("utf-8", "ignore")).hexdigest()[:12]}
+        if routed:
+            row["routed"] = routed
         with ledger.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(row, separators=(",", ":")) + "\n")
 
@@ -172,26 +218,40 @@ _CANARY_AWARE = frozenset(_CANARY_SENDERS)
 
 
 def send_all(title: str, body: str, *, config: Path = _CONFIG,
-             ledger: Path = _LEDGER, canary: bool = False) -> dict[str, Any]:
-    """Fire EVERY armed channel; one channel's failure can never stop another's.
+             ledger: Path = _LEDGER, canary: bool = False,
+             audience: str = PRINCIPAL) -> dict[str, Any]:
+    """Fire EVERY armed channel the audience allows; one channel's failure can never stop another's.
 
-    Returns {"armed": n, "delivered": n, "results": [...]}. When nothing is armed the result says
-    so and a row is written -- an unarmed pager is a recorded state, not silence.
+    Returns {"armed": n, "delivered": n, "routed": n, "audience": a, "results": [...]}. When
+    nothing is armed the result says so and a row is written -- an unarmed pager is a recorded
+    state, not silence.
+
+    `audience` (module docstring): "principal" reaches every armed channel; "desk" skips the
+    personal ones (ntfy, telegram, email), writing an ok `routed: desk audience` ledger row for
+    each instead. A routed channel counts in `delivered` -- the page reached the destination its
+    audience names, so a caller's dedupe records it rather than re-sending every pass -- and is
+    counted separately in `routed`. An unknown audience is treated as "principal".
 
     `canary=True` marks the send as a synthetic reachability probe. Channels that can distinguish
     the two use the non-notifying variant, so proving the route works never costs the principal an
     alert they have to read and dismiss -- a canary that pages is a canary that gets muted.
     """
+    aud = audience if audience in AUDIENCES else PRINCIPAL
     channels = load_channels(config)
     if not channels:
         _log("none", False, "NOT-ARMED: data/secrets/alert_channels.json absent or empty",
              title, ledger)
-        return {"armed": 0, "delivered": 0, "results": [],
+        return {"armed": 0, "delivered": 0, "routed": 0, "audience": aud, "results": [],
                 "note": "second-channel arming is a HUMAN step: drop credentials at "
                         "data/secrets/alert_channels.json on the box"}
     results = []
     for cfg in channels:
         kind = str(cfg.get("kind"))
+        if aud == DESK and kind in _PERSONAL_KINDS:
+            _log(kind, True, ROUTED_DETAIL, title, ledger, routed=DESK)
+            results.append({"channel": kind, "ok": True, "detail": ROUTED_DETAIL,
+                            "routed": True})
+            continue
         try:
             detail = (_CANARY_SENDERS[kind](cfg, title, body, canary=canary)
                       if kind in _CANARY_SENDERS else _SENDERS[kind](cfg, title, body))
@@ -202,7 +262,16 @@ def send_all(title: str, body: str, *, config: Path = _CONFIG,
         _log(kind, ok, detail, title, ledger)
         results.append({"channel": kind, "ok": ok, "detail": detail})
     return {"armed": len(channels), "delivered": sum(1 for r in results if r["ok"]),
+            "routed": sum(1 for r in results if r.get("routed")), "audience": aud,
             "results": results}
+
+
+def page_principal(title: str, body: str, *, config: Path = _CONFIG,
+                   ledger: Path = _LEDGER) -> dict[str, Any]:
+    """THE sanctioned "needs zuck" page: a thread that must have the owner's personal action pings
+    him through this, and only for that (module docstring: a human action only he can take).
+    Same failure semantics as `send_all` -- never raises, every attempt is ledgered."""
+    return send_all(title, body, config=config, ledger=ledger, audience="principal")
 
 
 def ledger_tail(n: int = 20, *, ledger: Path = _LEDGER) -> list[dict[str, Any]]:
@@ -226,7 +295,8 @@ def last_success_per_channel(*, ledger: Path = _LEDGER) -> dict[str, str]:
     for line in lines:
         with contextlib.suppress(json.JSONDecodeError, KeyError):
             row = json.loads(line)
-            if row.get("ok"):
+            # a routed row is a deliberate NON-send: it proves nothing about the channel's reach
+            if row.get("ok") and not row.get("routed"):
                 out[str(row["channel"])] = str(row["ts"])
     return out
 

@@ -139,9 +139,11 @@ def _default_sender() -> Sender:
 
     def send(title: str, body: str) -> dict[str, Any]:
         from libs.ops import alert_channels
+        # DESK: an unnamed account FAILS CLOSED (its legs are refused) and restoring the box-held
+        # key is a thread's step; no position is left needing the owner's hand.
         return alert_channels.send_all(title, body,
                                        config=base / "secrets" / "alert_channels.json",
-                                       ledger=base / "alert_delivery.jsonl")
+                                       ledger=base / "alert_delivery.jsonl", audience="desk")
     return send
 
 

@@ -739,9 +739,10 @@ def _default_page_sender(root: Path) -> PageSender:
         from libs.ops import alert_channels
         # Anchored on the repo root so the leg's working directory cannot make an armed box look
         # unarmed. Nothing here reads, prints or records a channel's credentials.
+        # DESK: judge-coverage incidents are fence REDs the threads fix.
         return alert_channels.send_all(
             title, body, config=root / "data/secrets/alert_channels.json",
-            ledger=root / "data/alert_delivery.jsonl")
+            ledger=root / "data/alert_delivery.jsonl", audience="desk")
     return send
 
 

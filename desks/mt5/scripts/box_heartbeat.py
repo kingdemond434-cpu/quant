@@ -61,7 +61,16 @@ GATEWAY_BEAT = BASE / "reports" / "DESK_STALE.json"
 WATCHDOG_BEAT = BASE / "data" / "stall_watch.json"
 RESEARCH_MAX_H = 6.0
 GATEWAY_MAX_MIN = 30.0
-WATCHDOG_MAX_MIN = 30.0
+#: MT5-StallWatch (stall_watch.ps1) fires every 30 min (:20 and :50) and writes stall_watch.json
+#: at the END of its run, which takes 1-28 min under normal box load. So the file's age just
+#: before a healthy write can reach cadence + the previous run's length, and a limit EQUAL to the
+#: cadence tripped on any run a few seconds slower than the one before (15 false pages in 24h,
+#: measured 2026-10-29: "watchdog age_min 30.7 > 30"). Limit = cadence (the next fire) + one
+#: worst-case normal run (bounded by the cadence itself, since a run past it overlaps the next
+#: fire) + 5 min margin = 2 x 30 + 5 = 65 min. A watchdog really gone quiet still fails inside
+#: ~2 missed fires.
+WATCHDOG_CADENCE_MIN = 30.0
+WATCHDOG_MAX_MIN = 2 * WATCHDOG_CADENCE_MIN + 5.0
 DISK_MIN_GB = 5.0
 TIMEOUT_S = 10.0
 
@@ -124,6 +133,11 @@ def measure(now: float | None = None, *, research: dict[str, Any] | None = None,
             "verdict": "FAIL" if failing else "OK"}
 
 
+def page_title(failing: list[str]) -> str:
+    """The transition page's title: which checks failed, e.g. `MT5 box unhealthy: disk, gateway`."""
+    return "MT5 box unhealthy" + (f": {', '.join(failing)}" if failing else "")
+
+
 def _url(paths: tuple[Path, ...] = SECRETS) -> str:
     for p in paths:
         with contextlib.suppress(OSError, ValueError, AttributeError):
@@ -175,7 +189,10 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
     if newly and not dry_run:
         try:
             from libs.ops.alert_channels import send_all
-            res = send_all("MT5 box unhealthy", body)
+            # DESK, every check including gateway and disk (owner, 2026-10-29: box health never
+            # needs him -- it is a RED the threads fix). The title names the failing checks so the
+            # ledger and the non-personal channels say WHICH organ, not just "unhealthy".
+            res = send_all(page_title(doc["failing"]), body, audience="desk")
             doc["paged"] = {k: v for k, v in res.items() if k in ("armed", "delivered", "status")}
         except Exception as exc:
             doc["paged"] = {"status": "ERROR", "detail": type(exc).__name__}

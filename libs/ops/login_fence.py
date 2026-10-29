@@ -748,9 +748,11 @@ def record_alert(doc: dict[str, Any], root: Path | None = None) -> str | None:
 def _default_sender(root: Path) -> Sender:
     def send(title: str, body: str) -> dict[str, Any]:
         from libs.ops import alert_channels
+        # DESK, both verdicts: UNMEASURED is a missing declaration a thread supplies, and REFUSED
+        # means the fence BLOCKED the publication (nothing leaked) -- a thread fixes the blob.
         return alert_channels.send_all(
             title, body, config=root / "data/secrets/alert_channels.json",
-            ledger=root / "data/alert_delivery.jsonl")
+            ledger=root / "data/alert_delivery.jsonl", audience="desk")
     return send
 
 

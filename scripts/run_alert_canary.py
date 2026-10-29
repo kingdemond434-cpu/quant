@@ -61,7 +61,10 @@ def main() -> int:
         sent = send_all("quant canary",
                         f"synthetic canary {datetime.now(tz=UTC).isoformat()} -- "
                         "no action needed; this proves the alert path can deliver",
-                        canary=True)
+                        canary=True,
+                        # DESK: a canary must never reach the phone. It still exercises the
+                        # route through hc /log; the personal channels get a routed row.
+                        audience="desk")
         _stamp()
 
     silent = all_silent_since(args.lookback_h)
