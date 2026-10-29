@@ -641,10 +641,12 @@ def main(dry_run: bool = True) -> int:
                "last_reconcile": st.get("last_reconcile"), "pending": st.get("pending") or [],
                "day_start_equity": st.get("day_start_equity")}
     positions = st.get("position") or []
+    first_run = not STAMP.exists()
     stamp = _read(STAMP, {"peak_equity": 0.0, "consecutive": 0, "halt_codes": [],
                           "rearm_history": {}, "escalated": [], "cleared_at": None,
                           "_stamp_lost": True})
     stamp_lost = bool(stamp.pop("_stamp_lost", False))
+    stamp_state = "FIRST_RUN" if first_run else ("LOST" if stamp_lost else "OK")
     peak = max(float(stamp.get("peak_equity", 0.0)), float(account["equity"] or 0.0))
     expected = expected_lots(intent_rows())
     day = broker_day()
@@ -665,8 +667,10 @@ def main(dry_run: bool = True) -> int:
     messages = [m for _, m in breaches]
     if stamp_lost or peak > float(stamp.get("peak_equity", 0.0) or 0.0) \
             or not stamp.get("peak_equity_ts"):
-        stamp["peak_equity_ts_basis"] = peak_basis(stamp, peak, stamp_lost)
+        stamp["peak_equity_ts_basis"] = peak_basis(stamp, peak, stamp_lost,
+                                                   first_run=first_run)
         stamp["peak_equity_ts"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    stamp["stamp_state"] = stamp_state
     stamp["peak_equity"] = peak
     stamp.pop("rearm_verdict", None)
 
@@ -740,10 +744,12 @@ def main(dry_run: bool = True) -> int:
     return 1 if breaches else 0
 
 
-def peak_basis(stamp: dict, peak: float, stamp_lost: bool) -> str:
+def peak_basis(stamp: dict, peak: float, stamp_lost: bool, *, first_run: bool = False) -> str:
     """Why `peak_equity_ts` is being set. A LOST or torn stamp is its own case: the peak then
     restarts at current equity, which can move the anchor DOWN, and it must never read as a new
     high. A peak set before the field existed is stamped when first recorded and says so."""
+    if first_run:
+        return "FIRST RUN: no stamp file existed; peak starts at current equity"
     if stamp_lost:
         return ("STAMP LOST OR UNREADABLE: peak restarted at current equity (the anchor may "
                 "have moved DOWN); the prior high-water mark is unknown")
@@ -752,20 +758,46 @@ def peak_basis(stamp: dict, peak: float, stamp_lost: bool) -> str:
     return "inherited; first recorded at this instant"
 
 
-def write_stamp_atomic(path: Path, stamp: dict) -> None:
-    """tmp then os.replace, so a reader never sees a torn stamp. On Windows os.replace onto a
-    read-only destination raises (WinError 5), so the read-only bit is cleared first."""
+def write_stamp_atomic(path: Path, stamp: dict, *, attempts: int = 5,
+                       pause_s: float = 0.2) -> str:
+    """tmp then os.replace, so a reader never sees a torn stamp. Returns how it was written.
+
+    Windows: os.replace onto a read-only destination raises WinError 5, and onto a file a reader
+    holds open WinError 5/32 -- so the read-only bit is cleared, the replace is retried, and on
+    final failure the tmp is removed and the stamp is written in place. Never raises: this runs
+    after flatten_and_halt, and an exception there must not escape main()."""
     import os
     import stat
-    path.parent.mkdir(parents=True, exist_ok=True)
+    import time
+    body = json.dumps(stamp, indent=1)
     tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(stamp, indent=1), "utf-8")
     try:
-        if path.exists() and not os.access(path, os.W_OK):
-            os.chmod(path, stat.S_IWRITE | stat.S_IREAD)
-    except OSError:
-        pass
-    os.replace(tmp, path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp.write_text(body, "utf-8")
+    except OSError as exc:
+        log(f"stamp tmp write failed ({type(exc).__name__}); writing in place")
+        tmp = None
+    if tmp is not None:
+        for i in range(attempts):
+            try:
+                if path.exists() and not os.access(path, os.W_OK):
+                    os.chmod(path, stat.S_IWRITE | stat.S_IREAD)
+                os.replace(tmp, path)
+                return "atomic"
+            except OSError:
+                if i + 1 < attempts:
+                    time.sleep(pause_s)
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
+        log(f"stamp os.replace failed {attempts}x; writing in place")
+    try:
+        path.write_text(body, "utf-8")
+        return "in_place"
+    except OSError as exc:
+        log(f"STAMP NOT WRITTEN ({type(exc).__name__})")
+        return "failed"
 
 
 if __name__ == "__main__":

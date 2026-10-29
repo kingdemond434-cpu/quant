@@ -89,6 +89,9 @@ def main(argv: list[str] | None = None) -> int:
         if not isinstance(stamp, dict):
             continue
         defects = judge(stamp, now=now, max_age_h=a.max_age_h)
+        if stamp.get("stamp_state") == "LOST":
+            print(f"AMBER {p.name}: STAMP LOST -- peak restarted at current equity, the anchor "
+                  f"may have moved down ({stamp.get('peak_equity_ts_basis')})")
         if not armed(stamp):
             print(f"ok  {p.name}: not armed ({stamp.get('mode')})")
         elif defects:

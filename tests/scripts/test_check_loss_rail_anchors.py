@@ -132,3 +132,31 @@ def test_a_lost_stamp_is_labelled_and_never_a_new_high(tmp_path: Path) -> None:
     fd.write_stamp_atomic(p, {"peak_equity": 1.0})
     assert json.loads(p.read_text())["peak_equity"] == 1.0
     assert not (tmp_path / "s.json.tmp").exists()
+
+
+def test_first_run_is_not_stamp_lost() -> None:
+    assert fd.peak_basis({}, 457.74, True, first_run=True).startswith("FIRST RUN")
+
+
+def test_a_held_destination_falls_back_in_place(tmp_path: Path, monkeypatch) -> None:
+    import os
+    p = tmp_path / "s.json"
+    p.write_text("{}")
+    calls = []
+
+    def boom(a, b):
+        calls.append(1)
+        raise PermissionError(32, "in use")
+    monkeypatch.setattr(os, "replace", boom)
+    assert fd.write_stamp_atomic(p, {"peak_equity": 2.0}, pause_s=0) == "in_place"
+    assert len(calls) == 5 and json.loads(p.read_text())["peak_equity"] == 2.0
+    assert not (tmp_path / "s.json.tmp").exists()
+
+
+def test_stamp_lost_is_amber(tmp_path: Path, capsys) -> None:
+    d = tmp_path / "desks" / "mt5" / "data"
+    d.mkdir(parents=True)
+    (d / "fusion_deadman_state.json").write_text(json.dumps(
+        {**_stamp(checked_at=datetime.now(tz=UTC).isoformat()), "stamp_state": "LOST"}))
+    assert chk.main(["--root", str(tmp_path)]) == 0
+    assert "AMBER" in capsys.readouterr().out
