@@ -405,26 +405,11 @@ class Graph:
         except OSError:
             return []
         if self._stamp != stamp:
-            # STREAMED, AND ONE BAD LINE COSTS ONE ROW. `read_text().splitlines()` held the whole
-            # file as one string AND as a list of line strings before a single row was parsed --
-            # three copies of a ledger the box has grown to millions of lines -- and one torn
-            # line (an append cut by a kill) raised ValueError and returned an EMPTY graph, so
-            # every reader silently saw a desk that had judged nothing.
-            rows: list[dict[str, Any]] = []
             try:
-                with self.path.open("rb") as fh:
-                    for ln in fh:
-                        if not ln.strip():
-                            continue
-                        try:
-                            r = json.loads(ln)
-                        except ValueError:
-                            continue
-                        if isinstance(r, dict):
-                            rows.append(r)
-            except OSError:
-                rows = []
-            self._rows = rows
+                with self.path.open(encoding="utf-8") as ledger:
+                    self._rows = [json.loads(ln) for ln in ledger if ln.strip()]
+            except (OSError, ValueError):
+                self._rows = []
             self._stamp = stamp
             self._current = None
             self._buried = None
