@@ -18,7 +18,10 @@ deflate more, never less.
 from __future__ import annotations
 
 import glob
+import hashlib
 import json
+import os
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -28,25 +31,67 @@ DESK = ROOT / "desks" / "mt5"
 OUT = DESK / "reports" / "EXPERIMENT_LEDGER.json"
 
 
-def _graph_judged() -> tuple[int, dict[str, int], set[str]]:
-    """(judged cells, per family, their graph node ids) from the hypothesis graph."""
-    try:
-        from libs.research.hypothesis_graph import Graph
-        cur = Graph().current()
-    except Exception:
-        return 0, {}, set()
-    by_fam: dict[str, int] = {}
-    ids: set[str] = set()
-    for nid, r in cur.items():
-        if r.get("fate") in ("FAILED", "BURIED", "CERTIFIED", "JUDGED"):
-            f = str(r.get("family") or "?")
-            by_fam[f] = by_fam.get(f, 0) + 1
-            ids.add(str(nid))
-    return sum(by_fam.values()), by_fam, ids
+def _graph_stamp(path: Path) -> dict[str, Any]:
+    """Cheap content fence for an append-only graph; size/mtime alone miss replacements."""
+    st = path.stat()
+    with path.open("rb") as fh:
+        head = fh.read(65536)
+        fh.seek(max(0, st.st_size - 65536))
+        tail = fh.read(65536)
+    return {"size": st.st_size, "mtime_ns": st.st_mtime_ns,
+            "head_sha256": hashlib.sha256(head).hexdigest(),
+            "tail_sha256": hashlib.sha256(tail).hexdigest()}
+
+
+#: The graph fates charged as judged trials. `research/judge_prescreen` joins its kill charges
+#: against exactly these (a test pins the two equal), so a cell is charged once, by one of them.
+GRAPH_COUNTED_FATES = frozenset({"FAILED", "BURIED", "CERTIFIED", "JUDGED"})
 
 
 def _graph_counts() -> tuple[int, dict[str, int]]:
-    total, by_fam, _ids = _graph_judged()
+    """Count latest fates with compact state, caching only an exact graph version.
+
+    ``Graph.current()`` retains every nested gates/params blob of a 3.7 GB ledger in memory.
+    The allocator's fifteen-minute fast pass spent 50+ minutes and ~20 GB rebuilding that
+    dictionary before it could price a book. Only id, family and fate are needed here. A new
+    append invalidates the small aggregate cache and triggers one bounded-memory rescan.
+    """
+    try:
+        from libs.research.hypothesis_graph import LEDGER
+        stamp = _graph_stamp(LEDGER)
+    except OSError:
+        return 0, {}
+    cache_path = DESK / "data" / "experiment_graph_counts.json"
+    try:
+        cached = json.loads(cache_path.read_text("utf-8"))
+        counts = cached.get("by_family")
+        if cached.get("graph_stamp") == stamp and isinstance(counts, dict):
+            return int(cached["judged_cells"]), {str(k): int(v) for k, v in counts.items()}
+    except (OSError, ValueError, TypeError, KeyError):
+        pass
+    current: dict[str, tuple[str, str]] = {}
+    with LEDGER.open(encoding="utf-8") as fh:
+        for line in fh:
+            if line.strip():
+                row = json.loads(line)
+                current[str(row.get("id"))] = (str(row.get("fate") or ""),
+                                                str(row.get("family") or "?"))
+    by_fam: dict[str, int] = {}
+    for fate, f in current.values():
+        if fate in GRAPH_COUNTED_FATES:
+            by_fam[f] = by_fam.get(f, 0) + 1
+    total = sum(by_fam.values())
+    # If a concurrent judge appended while we scanned, this answer is a dated snapshot. Leave
+    # the cache invalid so the next pass re-reads; never label a partial version exact.
+    try:
+        if _graph_stamp(LEDGER) == stamp:
+            doc = {"graph_stamp": stamp, "judged_cells": total, "by_family": by_fam}
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = cache_path.with_name(f"{cache_path.name}.{os.getpid()}.tmp")
+            tmp.write_text(json.dumps(doc, separators=(",", ":")), encoding="utf-8")
+            os.replace(tmp, cache_path)
+    except OSError:
+        pass  # a missing cache costs time, never a smaller trial count
     return total, by_fam
 
 
@@ -56,6 +101,9 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
     by_fam: dict[str, int] = {}
     intel = DESK / "data" / "intelligence"
     # No early return when there is no intelligence dir: the side ledgers below still count.
+    # The learned miners re-run the SAME grid x symbols x thresholds every day, so their daily
+    # discovery files repeat one charge; they are reconciled below against the trial ledger.
+    learned_files: dict[str, tuple[int, set[str]]] = {}
     for f in glob.glob(str(intel / "*" / "discoveries_*.json")):
         try:
             doc = json.loads(Path(f).read_text("utf-8"))
@@ -64,9 +112,14 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
         if not isinstance(doc, dict) or not isinstance(doc.get("tests_run"), (int, float)):
             continue
         n = int(doc["tests_run"])
-        total += n
         fams = {str(r.get("family")) for r in (doc.get("discoveries") or [])
                 if isinstance(r, dict) and r.get("family")}
+        seat = Path(f).parent.name
+        if seat.startswith("learned_"):
+            prev_n, prev_f = learned_files.get(seat, (0, set()))
+            learned_files[seat] = (max(prev_n, n), prev_f | fams)
+            continue
+        total += n
         for fam in fams or {"?"}:
             by_fam[fam] = by_fam.get(fam, 0) + n // max(1, len(fams))
     # FACTOR x MODEL PAIRINGS ARE TRIALS TOO. Co-evolution writes no discovery file (a pairing is
@@ -99,22 +152,38 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
                 by_fam[str(fam)] = by_fam.get(str(fam), 0) + int(k or 0)
     except (OSError, ValueError, TypeError):
         pass
-    # A MINER RUN THAT PROPOSES NOTHING STILL RAN ITS TESTS. `learned_miners` writes one row per
-    # (config, symbol, threshold) it tried; a run that donated is already counted through its
-    # discovery file's tests_run, so only the runs that donated nothing are charged here -- the
-    # null runs that would otherwise leave no trace in the lifetime count.
+    # THE LEARNED MINERS: ONE CHARGE PER DISTINCT TRIAL, EVER (audit 2026-10-13). The miner
+    # writes one ledger row per (panel, symbol, config, threshold) it tried, donated or not, and
+    # re-runs the same grid daily; a raw row count (or a sum of its daily files' tests_run)
+    # charged the same trial once a day and inflated the judge's N. Per seat the charge is the
+    # number of DISTINCT trial ids in the ledger, or that seat's largest single discovery file if
+    # it is larger (a ledger that began after the seat's first file never undercounts). A max,
+    # never a sum, so nothing is counted twice.
+    ledger_ids: dict[str, dict[str, str]] = {}
     try:
         for ln in (DESK / "data" / "learned_miners_trials.jsonl").read_text("utf-8").splitlines():
             if not ln.strip():
                 continue
             row = json.loads(ln)
-            if not isinstance(row, dict) or row.get("donated"):
+            if not isinstance(row, dict):
                 continue
-            fam = str(row.get("family") or "?").rsplit(":", 1)[-1]
-            total += 1
-            by_fam[fam] = by_fam.get(fam, 0) + 1
+            fam_full = str(row.get("family") or "?")
+            seat = fam_full.split(":", 1)[0] if ":" in fam_full else str(row.get("source") or "?")
+            tid = str(row.get("trial_id") or json.dumps(row, sort_keys=True))
+            ledger_ids.setdefault(seat, {}).setdefault(tid, fam_full.rsplit(":", 1)[-1])
     except (OSError, ValueError, TypeError):
         pass
+    for seat in sorted(set(ledger_ids) | set(learned_files)):
+        ids = ledger_ids.get(seat, {})
+        file_n, file_fams = learned_files.get(seat, (0, set()))
+        if len(ids) >= file_n:
+            total += len(ids)
+            for fam in ids.values():
+                by_fam[fam] = by_fam.get(fam, 0) + 1
+        else:
+            total += file_n
+            for fam in file_fams or {"?"}:
+                by_fam[fam] = by_fam.get(fam, 0) + file_n // max(1, len(file_fams))
     return total, by_fam
 
 
@@ -227,6 +296,81 @@ def _swarm_counts(judged: set[str] | frozenset[str] = frozenset(),
 EMPTY_CLUSTER_TRIALS = DESK / "data" / "EMPTY_CLUSTER_TRIALS.jsonl"
 
 
+def _ledger_cell_ids(path: Path) -> set[str]:
+    """Every graph node id a cell-keyed trial ledger (swarm, empty-cluster seeder) names."""
+    ids: set[str] = set()
+    try:
+        lines = path.read_text("utf-8").splitlines()
+    except OSError:
+        return ids
+    for ln in lines:
+        if not ln.strip():
+            continue
+        try:
+            row = json.loads(ln)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and not row.get("dry_run") and isinstance(row.get("cells"), list):
+            ids.update(str(c) for c in row["cells"])
+    return ids
+
+
+def _already_charged(probe: set[str]) -> set[str]:
+    """Which of `probe`'s graph node ids another source ALREADY charges as a trial: the graph
+    (a counted fate, the same "last row wins" reading `_graph_counts` takes) or the judge's
+    pre-build screen (a cell it ever charged, which `_prescreen_counts` counts unless the graph
+    does). A cell is charged ONCE, by one of them -- the rule `judge_prescreen` and
+    `GRAPH_COUNTED_FATES` already hold on LIVE, applied to the generation-time ledgers.
+
+    Joined at read time on just the probe ids, so the 3.7 GB graph is streamed for membership
+    only, never held. An unreadable source skips NOTHING (inflation only, never deflation)."""
+    if not probe:
+        return set()
+    out: set[str] = set()
+    try:
+        if str(DESK) not in sys.path:
+            sys.path.insert(0, str(DESK))
+        import importlib
+        jp = importlib.import_module("research.judge_prescreen")
+    except Exception:
+        return out
+    try:
+        fates = jp.graph_fates(probe)
+        out |= {g for g, f in fates.items() if f in GRAPH_COUNTED_FATES}
+    except OSError:
+        pass
+    try:
+        for s in jp.fold_ledger().values():
+            g = s.get("graph_id")
+            if s.get("ever_charged") and g and str(g) in probe:
+                out.add(str(g))
+    except Exception:
+        pass  # an unreadable kill ledger skips nothing here: inflation only
+    return out
+
+
+def _prescreen_counts() -> tuple[int, dict[str, int]]:
+    """CELLS THE JUDGE'S PRE-BUILD SCREEN KILLED ARE TRIALS, ONE EACH (research/judge_prescreen,
+    2026-10-28). A canon kill takes a cell away from the sealed judge before its build; the judge
+    would have recorded exactly one fate for it, whatever the outcome, so each standing kill is
+    charged here exactly once and joins the JUDGED count. A READMITTED cell stops counting here
+    because the judge's own fate then counts it. In SHADOW nothing is killed and this is 0."""
+    try:
+        if str(DESK) not in sys.path:
+            sys.path.insert(0, str(DESK))
+        import importlib
+        judge_prescreen = importlib.import_module("research.judge_prescreen")
+    except Exception:
+        # NO KILL CAN EXIST WITHOUT THE MODULE THAT WRITES THEM -- unless its ledger is on disk,
+        # in which case a silent 0 would DEFLATE the count: refuse instead (the writer keeps the
+        # last good ledger and the judge's DSR fails closed on a stale one).
+        if (DESK / "data" / "hypotheses" / "prescreen_verdicts.jsonl").exists():
+            raise
+        return 0, {}
+    n, fam = judge_prescreen.lifetime_kills()
+    return int(n), {str(k): int(v) for k, v in fam.items()}
+
+
 def _claim_selection_counts() -> tuple[int, dict[str, int]]:
     """A SOURCE'S OWN SEARCH IS A TRIAL TOO (libs.research.claim_selection, 2026-09-30). A claim
     reported as the best of N searched variations spent N trials before the desk saw it; the
@@ -249,7 +393,13 @@ def _prereg_counts() -> int:
 
 
 def lifetime(write: bool = True) -> dict[str, Any]:
-    g_total, g_fam, g_ids = _graph_judged()
+    g_total, g_fam = _graph_counts()
+    k_total, k_fam = _prescreen_counts()
+    for fam, k in k_fam.items():
+        g_fam[fam] = g_fam.get(fam, 0) + k
+    g_total += k_total
+    g_ids = _already_charged(_ledger_cell_ids(PRODUCER_SWARM_TRIALS)
+                             | _ledger_cell_ids(EMPTY_CLUSTER_TRIALS))
     p_total, p_fam = _proposer_counts()
     s_total, s_fam, s_judged = _swarm_counts(g_ids)
     e_total, e_fam, e_judged = _swarm_counts(g_ids, EMPTY_CLUSTER_TRIALS)
@@ -280,22 +430,24 @@ def lifetime(write: bool = True) -> dict[str, Any]:
            "lifetime_trials": int(g_total + p_total + c_total),
            "judged_cells": g_total, "screened_cells": p_total, "preregistered_cards": prereg,
            "source_selection_trials": c_total,
-           "mass_screen_cells": m_total, "unknown_unknown_cells": u_total,
+           "mass_screen_cells": m_total, "prescreen_killed_cells": k_total,
+           "unknown_unknown_cells": u_total,
            "regime_split_union_cells": r_total,
            "producer_swarm_cells": s_total,
            "producer_swarm_cells_already_judged": s_judged,
            "empty_cluster_cells": e_total,
            "empty_cluster_cells_already_judged": e_judged,
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
-           "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
-                    "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl and every "
-                    "unknown-unknown cell in UNKNOWN_UNKNOWN_TRIALS.jsonl, and every "
-                    "regime-split cell of the lifetime union in REGIME_SPLIT_TRIALS.jsonl, and "
-                    "every "
-                    "producer-swarm cell at GENERATION from PRODUCER_SWARM_TRIALS.jsonl, "
-                    "deduplicated by graph node id against the judged cells, and every "
-                    "empty-cluster seeder cell MEASURED, from EMPTY_CLUSTER_TRIALS.jsonl, the "
-                    "same way) + each claim family's stated source selection, once; "
+           "rule": ("lifetime = judged (hypothesis graph, plus each standing pre-build "
+                    "prescreen kill as the one fate the judge would have recorded) + "
+                    "screened (every proposer's tests_run, plus every mass-screen cell in "
+                    "MASS_SCREEN_TRIALS.jsonl and every unknown-unknown cell in "
+                    "UNKNOWN_UNKNOWN_TRIALS.jsonl, and every regime-split cell of the lifetime "
+                    "union in REGIME_SPLIT_TRIALS.jsonl, and every producer-swarm cell at "
+                    "GENERATION from PRODUCER_SWARM_TRIALS.jsonl and every empty-cluster seeder "
+                    "cell MEASURED from EMPTY_CLUSTER_TRIALS.jsonl, each deduplicated by graph "
+                    "node id against the cells the graph or the prescreen already charge) + "
+                    "each claim family's stated source selection, once; "
                     "consumers may only deflate MORE with it, never less")}
     if write:
         OUT.parent.mkdir(parents=True, exist_ok=True)

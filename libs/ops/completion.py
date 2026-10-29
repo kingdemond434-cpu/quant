@@ -256,6 +256,10 @@ def _failed(result: Any) -> str | None:
     if status in ("MISSING", "FAILED", "ERROR"):
         return f"status {status}: {result.get('why') or result.get('note') or ''}".strip()
     code = result.get("exit_code")
+    if result.get("verdict_exit") and isinstance(code, int):
+        # Only `hourly_cycle.daily()` sets this flag, and only for a healthy stand-down
+        # (NOOP_EXITS); `write_or_explain` judges that on whether the leg wrote.
+        return None
     if code is None and result.get("timeout_s"):
         return f"stopped at its {result['timeout_s']}s budget before finishing"
     if isinstance(code, int) and code != 0:
@@ -264,7 +268,25 @@ def _failed(result: Any) -> str | None:
     return None
 
 
-def _streak(runs: list[dict[str, Any]]) -> int:
+#: Legs whose declared exit is a genuine NO-OP -- the leg ran nothing ON PURPOSE -- by leg name.
+#: DELIBERATELY NARROWER THAN `hourly_cycle.VERDICT_EXITS` (audit of d841e58a9): there,
+#: deep_forest 1, model_skill 2 and maintain_miners 2 include uncaught exceptions, a data outage
+#: and fence TIMEOUT/ERROR, so reading every `verdict_exit=N` as ok masked real crashes and reset
+#: their outage streaks. Only a code that can mean nothing but "stood down" belongs here.
+#:   daily 75 -- another daily chain healthily holds the lock (daily_cycle.EXIT_STOOD_DOWN)
+NOOP_EXITS: dict[str, tuple[int, ...]] = {"daily": (75,)}
+
+
+def _ok_outcome(outcome: str, leg: str = "") -> bool:
+    """A recorded outcome that is not a failure: "ok", or `verdict_exit=N` where N is in
+    NOOP_EXITS for this leg. Any other verdict exit still counts as a failure here."""
+    if outcome == "ok":
+        return True
+    codes = NOOP_EXITS.get(leg, ())
+    return any(outcome == f"verdict_exit={c}" for c in codes)
+
+
+def _streak(runs: list[dict[str, Any]], leg: str = "") -> int:
     """Consecutive non-ok recorded runs, counting back from the most recent.
 
     THE COUNT IS THE DIFFERENCE BETWEEN A BLIP AND AN OUTAGE, and it is what closes a repair: a
@@ -272,7 +294,7 @@ def _streak(runs: list[dict[str, Any]]) -> int:
     """
     n = 0
     for row in reversed(runs):
-        if str(row.get("outcome") or "ok") == "ok":
+        if _ok_outcome(str(row.get("outcome") or "ok"), leg):
             break
         n += 1
     return n
@@ -298,7 +320,7 @@ def judge(root: Path | None = None, now: datetime | None = None,
         if mine:
             leg.last_at = str(mine[-1].get("at") or "")
             leg.last_outcome = str(mine[-1].get("outcome") or "")
-            leg.streak = _streak(mine)
+            leg.streak = _streak(mine, name)
 
         node = nodes.get(name)
         if node is None:
@@ -323,7 +345,7 @@ def judge(root: Path | None = None, now: datetime | None = None,
             continue
 
         why = _failed(mk.get(name))
-        if why is None and leg.last_outcome and leg.last_outcome != "ok":
+        if why is None and leg.last_outcome and not _ok_outcome(leg.last_outcome, name):
             why = f"last recorded outcome {leg.last_outcome!r}"
         if why is not None:
             leg.verdict, leg.why = FAILING, why

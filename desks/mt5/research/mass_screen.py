@@ -155,15 +155,23 @@ def hypothesis_symbols() -> list[str]:
     return out
 
 
-def cost_model(meta: dict[str, Any]) -> dict[str, float]:
-    """The pieces of `engine.Costs.from_symbol`, so the screen can price a per-bar spread."""
+def cost_model(meta: dict[str, Any]) -> dict[str, Any]:
+    """The pieces of `engine.Costs.from_symbol`, so the screen can price a per-bar spread.
+
+    FINANCING IN THE UNIT swap_mode NAMES (2026-10-07). A night costs
+    `swap_price + swap_rate x price` in price units per unit: `swap_rate` carries the mode-5/6
+    annual-percent part, which `swap_per_lot_per_night` alone reads as 0.0. `swap_unmeasured`
+    names a symbol whose financing cannot be priced; its overnight fires are NaN, never free.
+    """
     from mt5desk.engine import Costs
     c0 = Costs.from_symbol(meta or {})
     cs = float(c0.contract_oz) or 1.0
     return {"cs": cs, "ts": float((meta or {}).get("tick_size", 0.0) or 0.0),
             "median_pts": float((meta or {}).get("median_spread_pts", 0.0) or 0.0),
             "comm_price": 2.0 * float(c0.commission_per_lot) * float(c0.quote_per_account) / cs,
-            "swap_price": float(c0.swap_per_lot_per_night) / cs}
+            "swap_price": float(c0.swap_per_lot_per_night) / cs,
+            "swap_rate": float(c0.swap_per_lot_per_price or 0.0) / cs,
+            "swap_unmeasured": c0.swap_unmeasured}
 
 
 def nights_between(a_ns: np.ndarray, b_ns: np.ndarray) -> np.ndarray:
@@ -246,7 +254,10 @@ class Prepared:
             win_lo = np.lib.stride_tricks.sliding_window_view(lo[1:], h)[:m].min(axis=1)
             win_hi = np.lib.stride_tricks.sliding_window_view(hi[1:], h)[:m].max(axis=1)
             nights = nights_between(self.t_ns[1: m + 1], self.t_ns[1 + h: m + 1 + h])
-            fin = nights * cm["swap_price"]
+            # The bar's own price: a mode-5/6 night is charged on the notional at entry.
+            fin = nights * (cm["swap_price"] + cm["swap_rate"] * entry)
+            if cm["swap_unmeasured"]:
+                fin = np.where(nights > 0, np.nan, 0.0)
             for vi, (d, k) in enumerate(VARIANTS):
                 stop = c[:m] - d * k * atr[:m]
                 sd = np.abs(entry - stop)

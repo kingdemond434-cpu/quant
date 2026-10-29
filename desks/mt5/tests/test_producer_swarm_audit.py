@@ -116,7 +116,9 @@ def test_every_generated_cell_is_charged_once_and_never_again_when_judged(
     # and the lifetime census sums it: judged + swarm = every cell exactly once
     monkeypatch.setattr(EL, "PRODUCER_SWARM_TRIALS", trials)
     fam = rows[0]["family"]
-    monkeypatch.setattr(EL, "_graph_judged", lambda: (3, {fam: 3}, set(judged)))
+    monkeypatch.setattr(EL, "_graph_counts", lambda: (3, {fam: 3}))
+    monkeypatch.setattr(EL, "_prescreen_counts", lambda: (0, {}))
+    monkeypatch.setattr(EL, "_already_charged", lambda probe: set(judged) & probe)
     for name in ("_proposer_counts", "_mass_screen_counts", "_unknown_unknown_counts"):
         monkeypatch.setattr(EL, name, lambda *a, **k: (0, {}))
     monkeypatch.setattr(EL, "_prereg_counts", lambda: 0)
