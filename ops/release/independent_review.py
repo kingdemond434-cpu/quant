@@ -144,8 +144,10 @@ def changed_files(diff: str) -> list[str]:
 ADDRESSED = re.compile(
     r"\b(automated|automatic|ai|llm|language[- ]model|bot|model)[- ]?reviewers?\b"
     r"|\b(answer|respond|reply|say|vote|verdict)\s*(with\s*|is\s*|:\s*)?[\"'`]?(pass|approve)\b"
-    r"|\b(reviewers?|auditors?|graders?|assistant|ai|llm)\b[^.]{0,40}"
-    r"(\bpass\b|\bapprove|\blgtm\b|safe\s+to\s+merge)"
+    r"|\b(reviewers?|auditors?|graders?|assistant|ai|llm|review\s*bots?|reviewing\s+(model|bot))\b"
+    r"[^.]{0,40}(\.[^.]{0,40})?(\bpass\b|\bapprove|\blgtm\b|safe\s+to\s+merge)"
+    r"|\b(classify|mark|label|rate|treat)\w*\s+(this|it|the\s+(change|diff|pr))\s+as\s+"
+    r"[\"'`]?(safe|pass\w*|approved?|low[- ]risk|harmless)\b"
     r"|\blgtm\b|\bsafe\s+to\s+merge\b"
     r"|\b(ignore|disregard|forget|override)\s+(all\s+|any\s+|the\s+|your\s+)?"
     r"(previous|prior|above|earlier|other|instructions|rules|rubric|guidance|prompt)\b"
@@ -210,7 +212,8 @@ _RISK = (
     r"(\w*(?<![a-z])(risk|lot|refusal|exposure|leverage|ceiling|drawdown|multiplier)\w*"
     r"|\b(siz\w*|limits?|caps?|stops?|positions?|fraction|volume)\b)"
 )
-SAYS_RISK_UP = re.compile(rf"{_UP}[^.;:]{{0,60}}{_RISK}|{_RISK}[^.;:]{{0,30}}{_UP}", re.IGNORECASE)
+_RISK_AFTER = re.compile(rf"[^.;:]{{0,60}}{_RISK}", re.IGNORECASE)
+_RISK_BEFORE = re.compile(rf"{_RISK}[^.;:]{{0,30}}$", re.IGNORECASE)
 _UP_WORD = re.compile(_UP, re.IGNORECASE)
 _NOT = re.compile(r"^(no|not|never|without|nor|none|neither|cannot)$|n't$", re.IGNORECASE)
 #: what follows an UP word that is not about risk (#471 audit S2): "raises ValueError",
@@ -223,12 +226,16 @@ _NOT_RISK = re.compile(
 
 
 def says_risk_up(words: str) -> bool:
-    """True when a clause says risk goes up and no negation governs the word that says so: a
+    """True when some UP word sits by a risk noun in its clause and no negation governs it: a
     negation counts only within 3 words before it ("no risk increase", "does not raise the lot"
-    are not alarms; "Not a big deal: increases the max lot" is)."""
-    for m in SAYS_RISK_UP.finditer(words):
-        up = _UP_WORD.search(words, m.start(), m.end())
-        if up is None:
+    are not alarms; "Not a big deal: increases the max lot" is). Every UP word is tried, so one
+    excused early ("raises an exception") never hides a later one (#471 audit F1)."""
+    for up in _UP_WORD.finditer(words):
+        lo = max(words.rfind(c, 0, up.start()) for c in ".;:") + 1
+        hi = min([i for i in (words.find(c, up.end()) for c in ".;:") if i >= 0] or [len(words)])
+        near = _RISK_AFTER.match(words, up.end(), hi)
+        back = _RISK_BEFORE.search(words[lo : up.start()])
+        if not (near or back):
             continue
         before = re.findall(r"[\w']+", words[: up.start()])[-3:]
         after = re.findall(r"[\w']+", words[up.end() :])[:2]
