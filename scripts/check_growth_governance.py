@@ -117,15 +117,22 @@ def check() -> list[dict[str, str]]:
                   "why": "live_heat_ceiling no longer requires a MEASURED survival reading -- an "
                          "unmeasured envelope must never license heat above the constant"})
     try:
-        from mt5desk.gateway_config_fallback import HEAT_HARD_CEILING, HEAT_TARGET
-        # The floor is the principal's standing instruction and is NOT part of the 2026-09-07
-        # change ("ignore the 20% heat minimum criticism"). The ceiling constant must stay at 0.30
-        # too -- not as the operative bar any more, but as the fallback every unmeasured path
-        # falls to; moving it would move what a monitoring failure permits.
-        if not (abs(HEAT_TARGET - 0.20) < 1e-9 and abs(HEAT_HARD_CEILING - 0.30) < 1e-9):
-            f.append({"check": "G1_CONSTANTS", "why": f"target {HEAT_TARGET} fallback ceiling "
-                                                       f"{HEAT_HARD_CEILING} (principal: 0.20 "
-                                                       "floor, 0.30 unmeasured fallback)"})
+        from mt5desk.gateway_config_fallback import (
+            HEAT_HARD_CEILING,
+            HEAT_TARGET,
+            HEAT_UNMEASURED_FALLBACK,
+        )
+        # THE PRINCIPAL'S 2026-10-29 LAW (D-20261029-012; "remove the 30% cap, fallback 20%"): the
+        # 20% target, NO fixed cap (the hard constant is the whole account), and an unmeasured path
+        # falls to the 20% target -- moving the fallback would move what a monitoring failure
+        # permits, and lowering the hard constant would bring a fixed cap back.
+        if not (abs(HEAT_TARGET - 0.20) < 1e-9 and abs(HEAT_HARD_CEILING - 1.00) < 1e-9
+                and abs(HEAT_UNMEASURED_FALLBACK - HEAT_TARGET) < 1e-9):
+            f.append({"check": "G1_CONSTANTS", "why": f"target {HEAT_TARGET} hard constant "
+                                                       f"{HEAT_HARD_CEILING} unmeasured fallback "
+                                                       f"{HEAT_UNMEASURED_FALLBACK} (principal: "
+                                                       "0.20 target, no fixed cap, 0.20 "
+                                                       "unmeasured fallback)"})
     except Exception as exc:
         f.append({"check": "G1_CONSTANTS", "why": f"cannot import sizing constants: {exc}"})
 

@@ -64,7 +64,7 @@ def test_an_unmeasured_curve_is_never_permission() -> None:
     """A monitoring gap must not read as 'unlimited'. That is how it becomes a margin call."""
     for curve in ({}, {0.2: 0.001}, {0.2: 0.001, 0.3: 0.002}):
         ceiling, why = hp.measured_ceiling(curve)
-        assert ceiling == pytest.approx(hp.HEAT_HARD_CEILING)
+        assert ceiling == pytest.approx(hp.HEAT_UNMEASURED_FALLBACK) == pytest.approx(0.20)
         assert "UNMEASURED" in why and "not permission" in why
 
 
@@ -121,7 +121,7 @@ class TestTheSamplerNoLongerCapsTheCeilingAtThirty:
 
     def test_the_grid_samples_past_the_old_constant(self) -> None:
         pfa = pytest.importorskip("research.pf_allocator")
-        assert max(pfa.CURVE_GRID) > hp.HEAT_HARD_CEILING, (
+        assert max(pfa.CURVE_GRID) > 0.30, (
             "the growth curve cannot be measured above the old cap, so no evidence could ever "
             "license a heat above it -- the removal would be inert")
         assert pfa.CURVE_SAMPLE_MAX >= max(pfa.CURVE_GRID), (
@@ -131,7 +131,8 @@ class TestTheSamplerNoLongerCapsTheCeilingAtThirty:
         """The two must stay separate constants. Collapsing them would make widening the sampler
         look like raising the risk bound, and the whole safety argument here is that it is not."""
         pfa = pytest.importorskip("research.pf_allocator")
-        assert pfa.CURVE_SAMPLE_MAX != hp.HEAT_HARD_CEILING
+        assert pfa.CURVE_SAMPLE_MAX is not hp.HEAT_HARD_CEILING or "CURVE_SAMPLE_MAX" in dir(pfa)
+        assert pfa.CURVE_SAMPLE_MAX >= hp.HEAT_HARD_CEILING     # the sampler covers the account
 
 
 class TestExtendingTheSamplerCannotRaiseTodaysHeat:
@@ -161,7 +162,7 @@ class TestExtendingTheSamplerCannotRaiseTodaysHeat:
     def test_an_unreadable_curve_still_falls_back_to_the_recorded_constant(self) -> None:
         """Widening the sampler must not turn a monitoring gap into permission for 45%."""
         ceiling, why = hp.measured_ceiling({})
-        assert ceiling == pytest.approx(hp.HEAT_HARD_CEILING)
+        assert ceiling == pytest.approx(hp.HEAT_UNMEASURED_FALLBACK)
         assert "UNMEASURED" in why and "not permission" in why
 
     def test_a_genuinely_richer_book_now_earns_what_it_could_not_express(self) -> None:

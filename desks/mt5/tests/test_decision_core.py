@@ -174,7 +174,7 @@ def test_every_decision_that_moved_is_still_reachable_through_the_gateway() -> N
 
 def test_the_budget_is_imported_not_restated() -> None:
     assert dc.Q_OPT == Q_OPT and dc.HEAT_TARGET == HEAT_TARGET
-    assert dc.MAX_HEAT_CEILING == dc.HEAT_HARD_CEILING == 0.30
+    assert dc.MAX_HEAT_CEILING == dc.HEAT_HARD_CEILING == 1.00  # no fixed cap since 2026-10-29 (D-20261029-012)
     assert dc.MIN_LOT_RISK_EUR == pytest.approx(0.01 * dc.DIST_USD * dc.CONTRACT_OZ * dc.FX_EUR)
 
 
@@ -378,9 +378,11 @@ def test_allocator_heat_fails_closed_on_every_doubt(tmp_path) -> None:
     assert dc.allocator_heat(tmp_path)[1] == "allocator did not certify the utilisation target"
     # An over-filled solve is SCALED to the measured bar (relative weights kept), not thrown
     # away; a non-positive one is refused.
+    # With no envelope the bar is the 20% unmeasured fallback (principal 2026-10-29, "fallback
+    # 20%"), so an over-filled solve is scaled to it.
     _artifact(tmp_path, {**_OK, "heat": {"total": 0.31, "certified": True}})
     total, why = dc.allocator_heat(tmp_path)
-    assert total == pytest.approx(0.30) and "SCALED to the measured 0.3000 bar" in why
+    assert total == pytest.approx(0.20) and "SCALED to the measured 0.2000 bar" in why
     _artifact(tmp_path, {**_OK, "heat": {"total": 0.0, "certified": True}})
     assert "not positive" in dc.allocator_heat(tmp_path)[1]
     _artifact(tmp_path, {**_OK, "growth": {"annual_growth_pct": float("-inf")}})
@@ -503,7 +505,9 @@ def test_cap_by_heat_admits_nobody_when_nothing_can_be_priced() -> None:
 
 def test_cap_by_heat_greedy_fill_continues_past_a_misfit() -> None:
     """CONTINUE, NOT BREAK: one expensive leg near the front must not defer the cheap tail."""
-    sl = [{"name": "cheap1", "q_charge": 0.05}, {"name": "whale", "q_charge": 0.25},
+    # The whale must not fit the budget-plus-slide envelope; with no fixed cap that is set by
+    # the budget, so the whale is sized past it.
+    sl = [{"name": "cheap1", "q_charge": 0.05}, {"name": "whale", "q_charge": 0.95},
           {"name": "cheap2", "q_charge": 0.05}]
     admitted, note = dc.cap_by_heat(sl, EQ)
     assert [s["name"] for s in admitted] == ["cheap1", "cheap2"]

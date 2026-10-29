@@ -37,7 +37,7 @@ BAD = {0.05: 0.0040, 0.10: 0.0050, 0.15: 0.0030, 0.20: 0.0010, 0.30: -0.0020}
 
 def test_the_numbers_are_the_stated_policy() -> None:
     assert HEAT_TARGET == 0.20
-    assert HEAT_HARD_CEILING == 0.30
+    assert HEAT_HARD_CEILING == 1.00  # no fixed cap since 2026-10-29 (D-20261029-012)
     assert HEAT_TARGET < HEAT_HARD_CEILING, "the target must sit inside the envelope"
 
 
@@ -55,9 +55,11 @@ def test_growth_above_the_target_is_allowed_up_to_the_ceiling() -> None:
 
 
 def test_the_hard_bar_is_hard() -> None:
-    v = resolve(0.55, curve=GOOD)
-    assert v.total_heat == pytest.approx(HEAT_HARD_CEILING)
+    """The bar a caller passes still binds; with no fixed cap the default is the whole account."""
+    v = resolve(0.55, curve=GOOD, hard_ceiling=0.30)
+    assert v.total_heat == pytest.approx(0.30)
     assert v.binding == "ceiling"
+    assert resolve(0.55, curve=GOOD).total_heat == pytest.approx(0.55)
     assert any("GROWTH CEILING" in r for r in v.reasons)
 
 
@@ -76,7 +78,7 @@ def test_growth_may_exceed_the_old_constant_when_the_curve_supports_it() -> None
     v = resolve(0.38, curve=GOOD, hard_ceiling=0.42)
     assert v.total_heat == pytest.approx(0.38)
     assert v.binding == "growth"
-    assert v.total_heat > HEAT_HARD_CEILING, "the recorded constant no longer binds a measurement"
+    assert v.total_heat > 0.30, "the retired 30% constant no longer binds a measurement"
 
 
 def test_the_survival_bar_clips_growth_and_names_itself() -> None:
@@ -253,8 +255,7 @@ def test_the_floor_is_flat_and_the_whole_band_is_available() -> None:
     for r in (0.0, 0.02, 1.0):
         assert resolve(0.005, curve=GOOD, readiness=r).total_heat == pytest.approx(HEAT_TARGET)
         assert resolve(0.24, curve=GOOD, readiness=r).total_heat == pytest.approx(0.24)
-        assert resolve(0.45, curve=GOOD, readiness=r).total_heat == pytest.approx(
-            HEAT_HARD_CEILING)
+        assert resolve(0.45, curve=GOOD, readiness=r).total_heat == pytest.approx(0.45)
 
 
 # ------------------------------------------------------------------- the four heats, asymmetric

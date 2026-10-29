@@ -123,12 +123,12 @@ def test_independent_risk_still_earns_the_full_ceiling() -> None:
     ev = _independent()
     eff = effective(ev, {e.name: 0.28 / len(ev) for e in ev})
     cap, why, detail = effective_ceiling(eff)
-    assert cap == pytest.approx(HEAT_HARD_CEILING), why
-    assert detail["n_eff"] > EFFECTIVE_BREADTH_REF * (HEAT_HARD_CEILING / HEAT_TARGET) ** 2
+    assert cap > 0.30, why                                   # past the retired 30% constant
+    assert detail["n_eff"] > EFFECTIVE_BREADTH_REF * (0.30 / HEAT_TARGET) ** 2
     v = resolve(0.28, curve=GOOD, effective_heat=eff)
     assert v.total_heat == pytest.approx(0.28) and v.binding == "growth"
-    assert resolve(0.45, curve=GOOD, effective_heat=eff).total_heat == pytest.approx(
-        HEAT_HARD_CEILING)
+    # 0.45 sits past what this book's independence earns: the effective ceiling binds, not 30%
+    assert resolve(0.45, curve=GOOD, effective_heat=eff).total_heat == pytest.approx(cap)
 
 
 def test_the_cap_moves_with_breadth_and_is_monotone_in_it() -> None:
@@ -137,7 +137,7 @@ def test_the_cap_moves_with_breadth_and_is_monotone_in_it() -> None:
                                          {f"ind_{i}": 0.07 for i in range(4)}))[0]
     wide = effective_ceiling(effective(_independent(8), {f"ind_{i}": 0.035 for i in range(8)}))[0]
     assert conc < spread < wide, f"{conc:.4f} {spread:.4f} {wide:.4f}"
-    assert conc == pytest.approx(HEAT_TARGET) and wide == pytest.approx(HEAT_HARD_CEILING)
+    assert conc == pytest.approx(HEAT_TARGET) and wide > 0.30
 
 
 # ----------------------------------------------------------------- 2. the worst leg binds
@@ -177,9 +177,9 @@ def test_an_unmeasured_book_keeps_the_nominal_bar_and_says_so(doc) -> None:
 
 
 def test_omitting_effective_heat_leaves_every_existing_caller_unchanged() -> None:
-    for free_optimum, expect in ((0.08, HEAT_TARGET), (0.23, 0.23), (0.45, HEAT_HARD_CEILING)):
+    for free_optimum, expect in ((0.08, HEAT_TARGET), (0.23, 0.23), (0.45, 0.45)):
         assert resolve(free_optimum, curve=GOOD).total_heat == pytest.approx(expect)
-    assert resolve(0.45, curve=GOOD).binding == "ceiling"
+    assert resolve(0.45, curve=GOOD, hard_ceiling=0.30).binding == "ceiling"
 
 
 def test_the_cap_never_falls_below_the_floor_however_bad_the_book_looks() -> None:

@@ -253,8 +253,11 @@ def test_heat_scales_with_independence_not_sleeve_count():
     assert NS["heat_budget"](mid) == pytest.approx(
         min(base * (mid / 2.26) ** 0.5, NS["MAX_HEAT_CEILING"]), rel=1e-6)
     assert NS["heat_budget"](9.0) >= NS["heat_budget"](5.12) >= base
-    assert NS["heat_budget"](9.0) == pytest.approx(NS["MAX_HEAT_CEILING"], rel=1e-9), (
-        "breadth may earn heat up to the hard ceiling and never past it")
+    # No fixed cap since 2026-10-29 (D-20261029-012): breadth earns sqrt(k_eff) scaling past the
+    # retired 30%, bounded only by the whole account.
+    assert NS["heat_budget"](9.0) == pytest.approx(
+        min(base * (9.0 / 2.26) ** 0.5, NS["MAX_HEAT_CEILING"]), rel=1e-9)
+    assert NS["heat_budget"](9.0) > 0.30
 
 
 def test_unmeasured_correlation_gets_the_BASE_budget_never_the_ceiling():
