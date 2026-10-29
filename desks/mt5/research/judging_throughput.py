@@ -755,52 +755,124 @@ RETIRED_MACHINE_KEYS = ("WARM_WORKERS",)
 SEALED_FRESH_BUDGET_SEC = 2700.0
 FRESH_BUDGET_SHARE_OF_LIMIT = 0.6
 
-#: THE RESIDENT JUDGE'S BUILD BUDGET IS SIZED FROM ITS OWN SWEEP, NOT FROM A DEAD TASK LIMIT
-#: (2026-10-29). Once `MT5-Gauntlet` went to PT0S the branch below could only RETAIN the last
-#: number, so the budget froze at 8,640 s -- 60% of a PT4H limit that no longer exists. MEASURED on
-#: the sweep of 10-28 23:44Z: the pre-warm pool is the ONLY fresh build in a sweep (the shards
-#: start after its deadline and defer every uncached cell); it warmed 16,740 cells in 8,050 s and
-#: left 281,478 planned cells unreached, while the rest of the sweep (plan, shard replay, collect,
-#: rule, merge) ran for hours on what it had built. Verdicts per hour are r*B/(O+B) for a build of
-#: B seconds at r cells/s against O seconds of everything else, so with O several times B most of
-#: the judge's wall was overhead. The budget is therefore RESIDENT_BUILD_SHARE x O, O being the sum
-#: of the medians of the last RESIDENT_HISTORY_N successful sweeps' non-build phases
-#: (`judge_phase_times.json`, written by the launcher): at 2x the build is two thirds of a sweep.
-#: An older history whose `plan` still contained the pre-warm overstates O; the cap bounds that.
-#: RESIDENT_BUILD_CAP_S is a LATENCY bound, not a throughput one: verdicts land only when a sweep
-#: publishes, and one lost sweep loses its whole build, so a sweep is kept inside the day until
-#: verdicts land per shard; lift it then. Floored at what is already applied: one way, up only.
+#: THE RESIDENT JUDGE'S BUILD BUDGET IS A MEASURED STEP, KEPT ONLY WHEN IT RAISES VERDICTS/HOUR
+#: (2026-10-29, v2 after the audit HOLD of 7561fee3e). Once `MT5-Gauntlet` went to PT0S the
+#: unlimited branch could only RETAIN the last number, so the budget froze at 8,640 s -- 60% of a
+#: PT4H limit that no longer exists. MEASURED on the sweep of 10-28 23:44Z: the pre-warm pool is
+#: the only fresh build in a sweep; it warmed 16,740 cells in 8,050 s and left 281,478 planned
+#: cells unreached. A longer build means more cells per SWEEP, but whether it means more per HOUR
+#: depends on how the rest of the sweep (shard replay, collect, merge) grows with the cells built,
+#: which is UNMEASURED -- v1 assumed it fixed and the audit showed it is not. So the budget is not
+#: derived from a model; it is TESTED:
+#:   * each budget is a regime, measured from the first sweep that ENDS after it was set (the
+#:     sweep already running when it changed was launched on the old budget), as changed-verdict
+#:     ledger rows per wall-hour, the same rows JUDGING_RATE counts;
+#:   * a regime is judged once it has run max(BUILD_STEP_MIN_WINDOW_S, BUILD_STEP_SWEEPS x the
+#:     median sweep) -- at least two sweeps' publishes;
+#:   * from a measured level the budget steps UP by BUILD_STEP_FACTOR; a step is KEPT, and the
+#:     next one tried, only if its regime beat the level it left by BUILD_STEP_TOL; otherwise it
+#:     is REVERTED and the level held for BUILD_STEP_HOLD_WINDOWS windows before trying again.
+#: Two-sided, so it can come back down when a step does not pay; never below the sealed 2,700 s;
+#: never above RESIDENT_BUILD_CAP_S, a LATENCY bound (verdicts land only at publish and a lost
+#: sweep loses its whole build) to lift once verdicts land per shard. Every decision is kept in
+#: `judge_build_step.json` with the rates it was made on, so the claim is tested every window.
+BUILD_STEP = BASE / "data" / "judge_build_step.json"
+RESIDENT_STATE = BASE / "reports" / "JUDGE_RESIDENT.json"
 PHASE_TIMES = BASE / "data" / "judge_phase_times.json"
-RESIDENT_BUILD_SHARE = 2.0
+BUILD_STEP_FACTOR = 1.5
+BUILD_STEP_TOL = 0.05
+BUILD_STEP_HOLD_WINDOWS = 2
+BUILD_STEP_MIN_WINDOW_S = 24 * 3600.0
+BUILD_STEP_SWEEPS = 2
+BUILD_STEP_HISTORY = 20
 RESIDENT_BUILD_CAP_S = 12 * 3600.0
-RESIDENT_HISTORY_N = 5
-RESIDENT_OVERHEAD_PHASES = ("plan", "plan_handoff", "build_shards", "collect_and_cut",
-                            "rule_shards", "merge_and_publish")
-#: Without these two the sum would leave out most of a sweep and read as a small overhead.
-RESIDENT_OVERHEAD_REQUIRED = ("build_shards", "merge_and_publish")
 
 
-def resident_overhead_s(times: Any) -> tuple[float | None, str]:
-    """Seconds of a resident sweep that are NOT the build, from the launcher's phase history."""
+def _parse_utc(raw: Any) -> datetime | None:
+    try:
+        t = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return t if t.tzinfo is not None else None
+
+
+def median_sweep_s(times: Any) -> float | None:
+    """The median of the launcher's recorded successful sweep walls, or None."""
     import math
     import statistics
-    phases = times.get("phases") if isinstance(times, dict) else None
-    if not isinstance(phases, dict):
-        return None, "judge_phase_times.json is unreadable or holds no phases"
-    parts: dict[str, float] = {}
-    for name in RESIDENT_OVERHEAD_PHASES:
-        raw = phases.get(name)
-        vals = [float(v) for v in (raw if isinstance(raw, list) else [])[-RESIDENT_HISTORY_N:]
-                if isinstance(v, (int, float)) and not isinstance(v, bool)
-                and math.isfinite(v) and v > 0]
-        if vals:
-            parts[name] = statistics.median(vals)
-    missing = [n for n in RESIDENT_OVERHEAD_REQUIRED if n not in parts]
-    if missing:
-        return None, f"no measured {', '.join(missing)} in judge_phase_times.json"
-    total = sum(parts.values())
-    return total, ("sum of medians of the last {} successful sweeps: {}".format(
-        RESIDENT_HISTORY_N, ", ".join(f"{k} {v:.0f}s" for k, v in parts.items())))
+    raw = times.get("sweeps") if isinstance(times, dict) else None
+    vals = [float(v) for v in (raw if isinstance(raw, list) else [])[-5:]
+            if isinstance(v, (int, float)) and not isinstance(v, bool)
+            and math.isfinite(v) and v > 0]
+    return statistics.median(vals) if vals else None
+
+
+def step_build_budget(state: Any, now: datetime, applied_s: float | None,
+                      last_sweep_end: datetime | None, sweep_s: float | None,
+                      rows_since_regime: int | None) -> tuple[dict[str, Any], float, str]:
+    """One step of the build-budget controller (see BUILD_STEP_FACTOR). Pure: returns the next
+    state, the budget to publish and why. `rows_since_regime` counts ledger rows stamped at or
+    after `state["regime_start"]`, or None when unmeasured."""
+    at = now.isoformat(timespec="seconds")
+    st = dict(state) if isinstance(state, dict) else {}
+    budget = st.get("budget_s")
+    if not isinstance(budget, (int, float)) or budget < SEALED_FRESH_BUDGET_SEC:
+        b0 = (float(applied_s) if isinstance(applied_s, (int, float))
+              and applied_s >= SEALED_FRESH_BUDGET_SEC else SEALED_FRESH_BUDGET_SEC)
+        st = {"budget_s": b0, "prev_budget_s": None, "phase": "measure", "changed_at": at,
+              "regime_start": None, "baseline_vph": None, "hold_left": 0, "history": []}
+        return st, b0, f"build step: measuring the applied {b0:.0f}s budget before any step"
+    budget = float(budget)
+    changed = _parse_utc(st.get("changed_at")) or now
+    if st.get("regime_start") is None:
+        if last_sweep_end is not None and last_sweep_end > changed:
+            st["regime_start"] = last_sweep_end.isoformat(timespec="seconds")
+        return st, budget, (f"build step: {budget:.0f}s set {changed.isoformat()}; waiting for "
+                            "the first sweep launched under it")
+    start = _parse_utc(st["regime_start"]) or now
+    hours = max(0.0, (now - start).total_seconds() / 3600.0)
+    window_h = max(BUILD_STEP_MIN_WINDOW_S,
+                   BUILD_STEP_SWEEPS * (sweep_s or BUILD_STEP_MIN_WINDOW_S)) / 3600.0
+    if hours < window_h or rows_since_regime is None or hours <= 0:
+        return st, budget, (f"build step: measuring {budget:.0f}s, {hours:.1f} of {window_h:.1f} h"
+                            + ("" if rows_since_regime is not None else " (rows UNMEASURED)"))
+    vph = rows_since_regime / hours
+    base = st.get("baseline_vph")
+    phase = st.get("phase")
+    hist = [*(st.get("history") or []), {"at": at, "budget_s": budget, "phase": phase,
+                                         "verdicts_per_hour": round(vph, 2),
+                                         "baseline_vph": base, "hours": round(hours, 1)}]
+    st["history"] = hist[-BUILD_STEP_HISTORY:]
+
+    def change(to: float, nxt: str, why: str) -> tuple[dict[str, Any], float, str]:
+        st.update(budget_s=to, phase=nxt, changed_at=at, regime_start=None)
+        return st, to, why
+
+    def step_up(level_vph: float, why: str) -> tuple[dict[str, Any], float, str]:
+        up = min(RESIDENT_BUILD_CAP_S, budget * BUILD_STEP_FACTOR)
+        st["baseline_vph"] = round(level_vph, 3)
+        if up <= budget:
+            st.update(phase="hold", hold_left=BUILD_STEP_HOLD_WINDOWS, regime_start=at)
+            return st, budget, why + f"; at the {RESIDENT_BUILD_CAP_S:.0f}s cap, held"
+        st["prev_budget_s"] = budget
+        return change(up, "trial", why + f"; stepping {budget:.0f}s -> {up:.0f}s")
+
+    if phase == "trial":
+        if isinstance(base, (int, float)) and vph >= base * (1.0 + BUILD_STEP_TOL):
+            return step_up(vph, f"build step: {budget:.0f}s KEPT, {vph:.1f} verdicts/h vs "
+                                f"{base:.1f} at {st.get('prev_budget_s')}s")
+        prev = st.get("prev_budget_s")
+        back = (float(prev) if isinstance(prev, (int, float))
+                and prev >= SEALED_FRESH_BUDGET_SEC else SEALED_FRESH_BUDGET_SEC)
+        st["hold_left"] = BUILD_STEP_HOLD_WINDOWS
+        return change(back, "hold", f"build step: {budget:.0f}s REVERTED to {back:.0f}s, "
+                                    f"{vph:.1f} verdicts/h did not beat {base}")
+    if phase == "hold" and int(st.get("hold_left") or 0) > 1:
+        st["hold_left"] = int(st["hold_left"]) - 1
+        st["regime_start"] = at
+        return st, budget, (f"build step: holding {budget:.0f}s ({vph:.1f} verdicts/h), "
+                            f"{st['hold_left']} window(s) before the next step")
+    return step_up(vph, f"build step: {budget:.0f}s measured at {vph:.1f} verdicts/h")
 
 
 def task_time_limit_s(task: str = GAUNTLET_TASK) -> float | None:
@@ -834,10 +906,10 @@ def task_time_limit_s(task: str = GAUNTLET_TASK) -> float | None:
 
 def fresh_budget_s(limit_s: float | None,
                    current_budget_s: float | None = None,
-                   phase_times: Any = None) -> tuple[float | None, str]:
-    """The build seconds to publish, or None to leave the sealed default alone. ONE WAY: the
-    figure is floored at the sealed default, so this can only ever give the judge MORE time.
-    With an unlimited task it is sized from `phase_times` (see RESIDENT_BUILD_SHARE)."""
+                   step: tuple[float, str] | None = None) -> tuple[float | None, str]:
+    """The build seconds to publish, or None to leave the sealed default alone. Floored at the
+    sealed default. With an unlimited task, `step` (the build-step controller's budget and
+    reason, see BUILD_STEP_FACTOR) decides when given; without it the last figure is retained."""
     if limit_s is None:
         return None, ("the judge task's ExecutionTimeLimit is unreadable, so the sealed "
                       f"{SEALED_FRESH_BUDGET_SEC:.0f}s build budget stands unchanged")
@@ -847,20 +919,13 @@ def fresh_budget_s(limit_s: float | None,
         want = (max(SEALED_FRESH_BUDGET_SEC, prior)
                 if isinstance(prior, (int, float)) and math.isfinite(prior)
                 else SEALED_FRESH_BUDGET_SEC)
-        overhead, basis = resident_overhead_s(phase_times)
-        if overhead is not None:
-            sized = min(RESIDENT_BUILD_CAP_S, RESIDENT_BUILD_SHARE * overhead)
-            if sized > want:
-                return sized, (f"task execution is unlimited; build {sized:.0f}s = "
-                               f"min({RESIDENT_BUILD_SHARE:g} x {overhead:.0f}s of measured "
-                               f"non-build sweep wall, cap {RESIDENT_BUILD_CAP_S:.0f}s) ({basis})")
-            return (want if want > SEALED_FRESH_BUDGET_SEC else None,
-                    f"task execution is unlimited; retain the bounded {want:.0f}s build budget, "
-                    f"which is not below {RESIDENT_BUILD_SHARE:g} x the measured {overhead:.0f}s "
-                    f"non-build sweep wall (capped {RESIDENT_BUILD_CAP_S:.0f}s)")
+        if step is not None:
+            sized, why = step
+            sized = max(SEALED_FRESH_BUDGET_SEC, min(RESIDENT_BUILD_CAP_S, float(sized)))
+            return (sized if sized > SEALED_FRESH_BUDGET_SEC else None,
+                    f"task execution is unlimited; {why}")
         return (want if want > SEALED_FRESH_BUDGET_SEC else None,
-                f"task execution is unlimited; retain the bounded {want:.0f}s build budget "
-                f"(sweep overhead UNMEASURED: {basis})")
+                f"task execution is unlimited; retain the bounded {want:.0f}s build budget")
     want = max(SEALED_FRESH_BUDGET_SEC, limit_s * FRESH_BUDGET_SHARE_OF_LIMIT)
     if want <= SEALED_FRESH_BUDGET_SEC:
         return None, (f"{FRESH_BUDGET_SHARE_OF_LIMIT:.0%} of the task's {limit_s:.0f}s limit is "
@@ -1251,8 +1316,11 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
     # PUBLISHED here, before the schtasks query, the env write and the apply can cost it the hour.
     attempt.phase("rate")
     _budget = RATE_STREAM_BUDGET_S if rate_budget_s is None else float(rate_budget_s)
+    _step_state = _read_json(BUILD_STEP, {}) or {}
+    _regime = _step_state.get("regime_start") if isinstance(_step_state, dict) else None
     try:
-        rate = measure_rate(queue, decision, now, deadline_s=_budget)
+        rate = measure_rate(queue, decision, now, deadline_s=_budget,
+                            extra_cuts={"build_step": _regime} if _regime else None)
     except Exception as exc:     # a broken rate read must never cost the sizing decision
         rate = {"at": _now(now).isoformat(timespec="seconds"), "status": UNMEASURED,
                 "why": f"{type(exc).__name__}: {exc}"}
@@ -1281,8 +1349,25 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
             with contextlib.suppress(TypeError, ValueError):
                 _current_budget = float((previous_env.get("env") or {}).get(
                     "GAUNTLET_FRESH_BUDGET_SEC"))
-    _fresh, _fresh_why = fresh_budget_s(
-        _limit, _current_budget, _read_json(PHASE_TIMES, {}) if _limit == 0 else None)
+    _step = None
+    if _limit == 0:
+        _ver = rate.get("verdicts") if isinstance(rate, dict) else None
+        _rows = ((_ver.get("counts") or {}).get("build_step")
+                 if isinstance(_ver, dict) and _ver.get("status") == "MEASURED" and _regime
+                 else None)
+        _resident = _read_json(RESIDENT_STATE, {}) or {}
+        _next_state, _step_b, _step_why = step_build_budget(
+            _step_state, _now(now), _current_budget,
+            _parse_utc(_resident.get("last_sweep_ended_utc")
+                       if isinstance(_resident, dict) else None),
+            median_sweep_s(_read_json(PHASE_TIMES, {})),
+            _rows if isinstance(_rows, int) else None)
+        _step = (_step_b, _step_why)
+        decision["build_step"] = {k: v for k, v in _next_state.items() if k != "history"}
+        if write:
+            with contextlib.suppress(OSError):
+                _write_atomic(BUILD_STEP, _next_state)
+    _fresh, _fresh_why = fresh_budget_s(_limit, _current_budget, _step)
     decision["fresh_budget_s"] = _fresh
     decision["fresh_budget_why"] = _fresh_why
     decision["task_time_limit_s"] = _limit if _limit is not None else UNMEASURED
@@ -1369,7 +1454,8 @@ _DEADLINE_EVERY = 4096
 
 
 def _verdict_counts(now: datetime, path: Path | None = None,
-                    deadline_s: float | None = None) -> dict[str, Any]:
+                    deadline_s: float | None = None,
+                    extra_cuts: dict[str, str] | None = None) -> dict[str, Any]:
     """Verdict rows the judge appended in the last 1h / 24h / 7d, from its own ledger.
 
     Streams the file and reads only each row's `at` stamp, so a multi-million-row ledger costs
@@ -1390,6 +1476,12 @@ def _verdict_counts(now: datetime, path: Path | None = None,
         return {"status": UNMEASURED, "why": f"{p.name} absent: verdicts/hour is UNMEASURED"}
     cuts = {w: (now - timedelta(hours=h)).isoformat(timespec="seconds")
             for w, h in (("1h", 1), ("24h", 24), ("7d", 168))}
+    # A named cut at an absolute instant (the build step's regime start), counted in the same
+    # pass: `at >= cut` on second-precision ISO-8601 UTC strings, exactly as the windows are.
+    for w, cut in (extra_cuts or {}).items():
+        t_cut = _parse_utc(cut)
+        if t_cut is not None and w not in cuts:
+            cuts[w] = t_cut.astimezone(UTC).isoformat(timespec="seconds")
     counts = dict.fromkeys(cuts, 0)
     first_counts = dict.fromkeys(cuts, 0)
     first_terminal_cells: set[str] = set()
@@ -1492,14 +1584,15 @@ def _creation_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
 def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
                  now: datetime | None = None, *, ledger: Path | None = None,
                  registry: Path | None = None,
-                 deadline_s: float | None = None) -> dict[str, Any]:
+                 deadline_s: float | None = None,
+                 extra_cuts: dict[str, str] | None = None) -> dict[str, Any]:
     """VERDICTS/HOUR AGAINST THE BACKLOG, and how long the backlog takes to drain.
 
     ETA = backlog / (verdicts/hour - created/hour), both over the same 24 h window. A judge that
     judges slower than the desk creates never drains: that is reported as GROWING with the net
     growth per day, not as a large finite number. Any missing input makes the ETA UNMEASURED."""
     t = _now(now)
-    ver = _verdict_counts(t, ledger, deadline_s=deadline_s)
+    ver = _verdict_counts(t, ledger, deadline_s=deadline_s, extra_cuts=extra_cuts)
     cre = _creation_counts(t, registry)
     # One sweep can cover only a prefix of the full docket. Its remainder is not
     # the institutional backlog and must never drive a claim of full clearance.
