@@ -202,7 +202,8 @@ PROVIDER_WEIGHT: dict[str, float] = {
     "SNB": 3.0, "RBA": 3.0, "BOC": 3.0, "NB": 2.5, "RIKSBANK": 3.0, "NORGES": 3.0,
     "BUBA": 2.5, "BDF": 2.0, "Eurostat": 2.0, "WB": 1.5, "BLS": 2.5, "BEA": 2.0,
     "CFTC": 3.0, "FRED": 3.0, "TREASURY": 2.5, "BIS_BULK": 3.0, "DIRECT": 2.0,
-    "EIA": 3.0, "NOAA_CPC": 2.0,
+    "EIA": 3.0, "NOAA_CPC": 2.0, "USDA_NASS": 3.0, "USDA_FAS": 3.0, "USDA_WASDE": 3.0,
+    "NYFED": 3.0,
 }
 
 #: Frequency -> (min finite observations, max staleness in days, exposure bonus).
@@ -646,13 +647,22 @@ def merge_observations(existing: Any, series: list[dict[str, Any]], *, now: date
     rows = []
     for s in series:
         freq = s.get("freq") or ""
+        released = s.get("released") or {}
         for per, val in s["points"]:
             end, f = period_end(per, freq)
             if end is None:
                 continue
-            lag = lag_days(f or freq, declared_lag)
-            rows.append((s["code"], per, pd.Timestamp(end, tz="UTC"), float(val),
-                         pd.Timestamp(end, tz="UTC") + pd.Timedelta(days=lag)))
+            t_end = pd.Timestamp(end, tz="UTC")
+            rel = released.get(per)
+            if rel:
+                # THE PUBLISHER'S OWN RELEASE INSTANT (crop progress Monday 16:00 ET, WASDE
+                # 12:00 ET, export sales Thursday 08:30 ET ...), never before the period ends.
+                ts = pd.Timestamp(rel)
+                ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
+                avail = max(t_end, ts)
+            else:
+                avail = t_end + pd.Timedelta(days=lag_days(f or freq, declared_lag))
+            rows.append((s["code"], per, t_end, float(val), avail))
     if not rows:
         return existing, 0
     new = pd.DataFrame(rows, columns=["series_code", "period", "period_end", "value",
@@ -744,6 +754,15 @@ def frame_from_payload(raw: bytes, mode: str, spec: dict[str, Any]) -> Any:
         return _cpc_ascii_frame(raw, str(spec.get("series_code") or "index"))
     if mode == "eia_v2":
         return _eia_v2_frame(raw, str(spec.get("series_code") or "value"))
+    if mode == "nass_quickstats":
+        return _nass_frame(raw, str(spec.get("series_code") or "nass"))
+    if mode == "fas_esr":
+        return _fas_esr_frame(raw, str(spec.get("series_code") or "esr"),
+                              spec.get("market_year"))
+    if mode == "wasde_csv":
+        return _wasde_frame(raw, str(spec.get("series_code") or "wasde"))
+    if mode == "nowcast_vintage":
+        return _nowcast_frame(raw, str(spec.get("series_code") or "nowcast"))
     if mode == "json_records":
         doc = json.loads(raw.decode("utf-8", "replace"))
         recs = doc.get(spec["data_key"]) if spec.get("data_key") else doc
@@ -912,14 +931,27 @@ def _eia_v2_frame(raw: bytes, code: str) -> Any:
 
 
 def series_from_long(df: Any, *, freq: str = "", hint: str = "") -> list[dict[str, Any]]:
+    """A long frame -> series dicts. A `release_utc` column (the instant the publisher released
+    that value, ISO UTC) becomes the series' `released` map, which `merge_observations` keys the
+    value's availability on instead of a cadence lag."""
     out = []
-    dim_cols = [c for c in df.columns if c not in ("series_code", "period", "value")]
+    dim_cols = [c for c in df.columns if c not in ("series_code", "period", "value",
+                                                   "release_utc", "stem", "market_year")]
     for code, g in df.groupby("series_code", sort=False):
         dims = {c: str(g[c].iloc[0]) for c in dim_cols} if dim_cols else {}
         pts = [(str(p), float(v)) for p, v in zip(g["period"], g["value"], strict=False)]
         fq = freq or dims.get("FREQ", "")
-        out.append({"code": str(code), "name": f"{hint} {code}".strip(), "freq": norm_freq(fq),
-                    "dims": dims, "points": pts})
+        row: dict[str, Any] = {"code": str(code), "name": f"{hint} {code}".strip(),
+                               "freq": norm_freq(fq), "dims": dims, "points": pts}
+        if "stem" in g.columns:
+            # PER-SERIES INSTRUMENT STEMS: a multi-commodity table (WASDE) maps each series to
+            # its own commodity, never every series to every commodity the dataset names.
+            row["stems"] = sorted({str(x) for x in g["stem"] if isinstance(x, str) and x})
+        if "release_utc" in g.columns:
+            row["released"] = {str(p): str(r) for p, r in zip(g["period"], g["release_utc"],
+                                                              strict=False)
+                               if isinstance(r, str) and r}
+        out.append(row)
     return out
 
 
@@ -958,6 +990,7 @@ def direct_sources(now: datetime | None = None) -> list[dict[str, Any]]:
                  "od/avg_interest_rates?sort=-record_date&page%5Bsize%5D=10000")},
     ]
     out += gap_doors()
+    out += agri_nowcast_doors(now)
     for sid in _fred_ids():
         out.append({"provider": "FRED", "dataset": sid, "name": f"FRED {sid}", "mode": "csv",
                     "url": ("https://fred.stlouisfed.org/graph/fredgraph.csv?"
@@ -1034,6 +1067,570 @@ def gap_doors() -> list[dict[str, Any]]:
                     "currencies": ["USD", "CAD"] if kind == "petroleum" else ["USD"],
                     "url": (f"https://api.eia.gov/v2/seriesid/{sid}?"
                             "api_key={api_key}&length=5000")})
+    return out
+
+
+# --------------------------------------- agri supply and nowcast vintage doors (2026-10-29) ----
+#: GAP #4 (agri_supply) AND #5 (macro_nowcasts_vintages) OF research/data_class_gap.py, landed in
+#: this organ's store so `world_macro_proposer` mints `world_macro_state` cells from them. Each
+#: value is keyed on the publisher's OWN release instant (a `release_utc` column; never a guessed
+#: cadence lag): crop progress Monday 16:00 ET for the week ending the Sunday before (Tuesday
+#: when Monday is a federal holiday), export sales Thursday 08:30 ET for the week ending the
+#: Thursday before (Friday in a week with a weekday federal holiday), WASDE 12:00 ET on its own
+#: release date, a nowcast at 18:00 ET of its publication day. Every rule errs LATE: a late stamp
+#: costs edge, an early one invents it. Terms: the `usda_nass_quickstats`, `usda_fas_esr`,
+#: `usda_wasde` and `nyfed_web` rows of libs/data/terms_fence.SOURCE_POLICY, clauses quoted.
+#: CONAB, the Atlanta Fed (GDPNow) and the Philadelphia Fed (ADS) are IDEAS_ONLY rows: their
+#: parsers below are tested on fixtures and NO door fetches them as live input.
+_ET_ZONE = "America/New_York"
+#: When the tz database is missing (a bare Windows Python without tzdata), EST (UTC-5) is the
+#: LATE side of Eastern time all year: an EDT release stamped an hour late, never early.
+_ET_FALLBACK_H = -5
+
+
+def _et_utc(day: date, hh: int, mm: int) -> str:
+    """ISO UTC instant of `hh:mm` Eastern time on `day`."""
+    try:
+        from zoneinfo import ZoneInfo
+        local = datetime(day.year, day.month, day.day, hh, mm, tzinfo=ZoneInfo(_ET_ZONE))
+        return local.astimezone(UTC).isoformat()
+    except Exception:
+        at = datetime(day.year, day.month, day.day, hh, mm, tzinfo=UTC)
+        return (at - timedelta(hours=_ET_FALLBACK_H)).isoformat()
+
+
+def _nth_weekday(year: int, month: int, weekday: int, n: int) -> date:
+    """The n-th `weekday` (Mon=0) of a month; n=-1 is the last."""
+    if n < 0:
+        d = _month_end(year, month)
+        return d - timedelta(days=(d.weekday() - weekday) % 7)
+    d = date(year, month, 1)
+    return d + timedelta(days=(weekday - d.weekday()) % 7 + 7 * (n - 1))
+
+
+@lru_cache(maxsize=64)
+def us_federal_holidays(year: int) -> frozenset[date]:
+    """US federal holidays as observed (5 U.S.C. 6103): fixed dates shift Sat->Fri, Sun->Mon."""
+    out: set[date] = set()
+    fixed = [(1, 1), (7, 4), (11, 11), (12, 25)] + ([(6, 19)] if year >= 2021 else [])
+    for m, d in fixed:
+        day = date(year, m, d)
+        out.add(day - timedelta(days=1) if day.weekday() == 5
+                else day + timedelta(days=1) if day.weekday() == 6 else day)
+    out |= {_nth_weekday(year, 1, 0, 3), _nth_weekday(year, 2, 0, 3),
+            _nth_weekday(year, 5, 0, -1), _nth_weekday(year, 9, 0, 1),
+            _nth_weekday(year, 10, 0, 2), _nth_weekday(year, 11, 3, 4)}
+    return frozenset(out)
+
+
+def _holiday(d: date) -> bool:
+    return d in us_federal_holidays(d.year)
+
+
+def crop_progress_release(week_ending: date) -> str:
+    """NASS Crop Progress: the Monday after the week ending (a Sunday), 16:00 ET; the next
+    business day when that Monday is a federal holiday."""
+    d = week_ending + timedelta(days=(0 - week_ending.weekday()) % 7 or 7)
+    while d.weekday() >= 5 or _holiday(d):
+        d += timedelta(days=1)
+    return _et_utc(d, 16, 0)
+
+
+def export_sales_release(week_ending: date) -> str:
+    """FAS Export Sales: the Thursday a week after the week ending (a Thursday), 08:30 ET; the
+    Friday when any weekday of that release week up to Thursday is a federal holiday."""
+    thu = week_ending + timedelta(days=7)
+    monday = thu - timedelta(days=thu.weekday())
+    if any(_holiday(monday + timedelta(days=i)) for i in range(4)):
+        thu += timedelta(days=1)
+    while _holiday(thu) or thu.weekday() >= 5:
+        thu += timedelta(days=1)
+    return _et_utc(thu, 8, 30)
+
+
+def wasde_release(day: date) -> str:
+    """WASDE: 12:00 ET on the release date the report itself carries."""
+    return _et_utc(day, 12, 0)
+
+
+#: Commodity (as the USDA names it, lower case) -> the MT5 stem it informs. A commodity with no
+#: stem is UNMAPPED and recorded so (`agri_mapping`), never dropped silently.
+AGRI_STEMS: dict[str, str | None] = {
+    "corn": "CORN", "soybeans": "SOYBEAN", "wheat": "WHEAT", "cotton": "COTTON",
+    "sugar": "SUGAR", "cocoa": "COCOA", "orange juice": "OJ", "coffee": "COF",
+    "rice": None, "sorghum": None, "barley": None, "oats": None, "soybean oil": None,
+    "soybean meal": None,
+}
+
+
+def agri_mapping(universe: tuple[tuple[str, str, str], ...] | None = None) -> dict[str, Any]:
+    """Each USDA commodity -> the hypothesis-lane MT5 symbols it reaches in the broker's own
+    registry, and every commodity that reaches none (no stem, or a stem the registry lacks)."""
+    mapped: dict[str, list[str]] = {}
+    unmapped: dict[str, str] = {}
+    for name, stem in AGRI_STEMS.items():
+        if not stem:
+            unmapped[name] = "no MT5 instrument class for it"
+            continue
+        syms = instruments_for([], [stem], universe)
+        if syms:
+            mapped[name] = syms
+        else:
+            unmapped[name] = f"stem {stem} matches no hypothesis-lane symbol in universe.json"
+    return {"mapped": mapped, "unmapped": unmapped}
+
+
+_NASS_NUM = re.compile(r"^-?[\d,]*\.?\d+$")
+
+
+def _nass_frame(raw: bytes, code: str) -> Any:
+    """NASS Quick Stats `api_GET` JSON (`data[]`): NATIONAL weekly crop progress / condition.
+    One series per `short_desc` (e.g. CORN - CONDITION, MEASURED IN PCT GOOD) plus, for
+    condition, the good+excellent share per week. Suppressed values ("(D)", "(NA)") are absent
+    observations, never zeros. The period is the Monday that STARTS the week (the hunter's
+    weekly period), the release is the Monday-after 16:00 ET."""
+    import pandas as pd
+
+    doc = json.loads(raw.decode("utf-8", "replace"))
+    if isinstance(doc, dict) and doc.get("error"):
+        raise FetchError("api_error", f"nass: {str(doc.get('error'))[:120]}")
+    rows: list[dict[str, Any]] = []
+    ge: dict[tuple[str, str], dict[str, float]] = defaultdict(dict)
+    for r in (doc.get("data") or []) if isinstance(doc, dict) else []:
+        if not isinstance(r, dict):
+            continue
+        if str(r.get("agg_level_desc") or "NATIONAL").upper() != "NATIONAL":
+            continue
+        we = str(r.get("week_ending") or "")[:10]
+        val = str(r.get("Value") or "").strip()
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", we) or not _NASS_NUM.match(val):
+            continue
+        end = date.fromisoformat(we)
+        start = (end - timedelta(days=6)).isoformat()
+        short = str(r.get("short_desc") or "")
+        f = float(val.replace(",", ""))
+        rel = crop_progress_release(end)
+        rows.append({"series_code": f"{code}_{_slug(short)}"[:120], "period": start,
+                     "value": f, "release_utc": rel})
+        m = re.match(r"(.+?) - CONDITION, MEASURED IN PCT (GOOD|EXCELLENT)$", short, re.I)
+        if m:
+            ge[(_slug(m[1]), start)][m[2].lower()] = f
+            ge[(_slug(m[1]), start)]["_end"] = float(end.toordinal())
+    for (crop, start), parts in ge.items():
+        if "good" in parts and "excellent" in parts:
+            end = date.fromordinal(int(parts["_end"]))
+            rows.append({"series_code": f"{code}_{crop}_condition_good_excellent",
+                         "period": start, "value": parts["good"] + parts["excellent"],
+                         "release_utc": crop_progress_release(end)})
+    df = pd.DataFrame(rows, columns=["series_code", "period", "value", "release_utc"])
+    if df.empty:
+        raise FetchError("empty", f"nass {code}")
+    return df.drop_duplicates(["series_code", "period"], keep="last")
+
+
+_ESR_FIELDS = (("currentMYNetSales", "net_sales"), ("weeklyExports", "exports"),
+               ("outstandingSales", "outstanding"),
+               ("currentMYTotalCommitment", "total_commitment"),
+               ("nextMYNetSales", "next_my_net_sales"))
+
+
+def _fas_esr_frame(raw: bytes, code: str, market_year: int | None = None) -> Any:
+    """FAS Export Sales API (`/api/esr/exports/...allCountries/marketYear/N`): per-destination
+    weekly records summed over destinations into US totals per week. The period is the Friday
+    that starts the week ending on `weekEndingDate` (a Thursday); release next Thursday 08:30
+    ET. `market_year` rides along so overlapping weeks keep the later market year."""
+    import pandas as pd
+
+    doc = json.loads(raw.decode("utf-8", "replace"))
+    recs = doc if isinstance(doc, list) else (doc.get("data") or [] if isinstance(doc, dict)
+                                              else [])
+    tot: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+    for r in recs:
+        if not isinstance(r, dict):
+            continue
+        we = str(r.get("weekEndingDate") or "")[:10]
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", we):
+            continue
+        for src, name in _ESR_FIELDS:
+            v = _num_or_none(r.get(src))
+            if v is not None:
+                tot[we][name] += v
+    rows = []
+    for we, vals in tot.items():
+        end = date.fromisoformat(we)
+        for name, v in vals.items():
+            rows.append({"series_code": f"{code}_{name}",
+                         "period": (end - timedelta(days=6)).isoformat(), "value": v,
+                         "release_utc": export_sales_release(end),
+                         "market_year": int(market_year or 0)})
+    df = pd.DataFrame(rows, columns=["series_code", "period", "value", "release_utc",
+                                     "market_year"])
+    if df.empty:
+        raise FetchError("empty", f"fas esr {code}")
+    return df
+
+
+_WASDE_COLS = {"release": ("releasedate", "reportdate"), "commodity": ("commodity",),
+               "region": ("region",), "my": ("marketyear",), "flag": ("projestflag",),
+               "attr": ("attribute",), "value": ("value",)}
+#: WASDE regions read; the World balance is the global stocks-to-use the softs price off.
+WASDE_REGIONS = {"united states": "us", "world": "world"}
+
+
+def _wasde_csv_tables(raw: bytes) -> list[Any]:
+    import pandas as pd
+
+    if raw[:2] == b"PK":
+        out = []
+        with zipfile.ZipFile(io.BytesIO(raw)) as zf:
+            for name in zf.namelist():
+                if name.lower().endswith(".csv"):
+                    out.append(pd.read_csv(zf.open(name), low_memory=False, dtype=str))
+        if not out:
+            raise FetchError("unparseable", "wasde zip without csv")
+        return out
+    if raw[:1] == b"<" or raw[:15].lower().startswith(b"<!doctype"):
+        raise FetchError("served_html", "wasde")
+    return [pd.read_csv(io.BytesIO(raw), low_memory=False, dtype=str)]
+
+
+def _wasde_frame(raw: bytes, code: str = "wasde") -> Any:
+    """WASDE as-reported report data (CSV, or a zip of them): for each release, commodity and
+    region (United States, World), the CURRENT projection's ending stocks, total use and
+    stocks-to-use (ending stocks / total use). The current projection is the latest market
+    year flagged a projection in that release. Total use is the table's own total-use line, else
+    domestic use + exports. Period = the release date; release 12:00 ET that day."""
+    import pandas as pd
+
+    frames = []
+    for df in _wasde_csv_tables(raw):
+        cols = {re.sub(r"[^a-z]", "", str(c).lower()): c for c in df.columns}
+        pick = {k: next((cols[a] for a in al if a in cols), None) for k, al in _WASDE_COLS.items()}
+        if any(v is None for v in pick.values()):
+            raise FetchError("unparseable", f"wasde columns {sorted(cols)[:12]}")
+        sub = pd.DataFrame({k: df[v].astype(str).str.strip() for k, v in pick.items()})
+        frames.append(sub)
+    t = pd.concat(frames, ignore_index=True)
+    t["commodity"] = t["commodity"].str.lower()
+    t["region"] = t["region"].str.lower()
+    t = t[t["region"].isin(WASDE_REGIONS) & t["flag"].str.lower().str.startswith("proj")]
+    t = t.assign(day=pd.to_datetime(t["release"], errors="coerce", format="mixed").dt.date,
+                 v=pd.to_numeric(t["value"].str.replace(",", ""), errors="coerce"),
+                 attr=t["attr"].str.lower())
+    t = t.dropna(subset=["day", "v"])
+    rows: list[dict[str, Any]] = []
+    for (day, comm, reg), g in t.groupby(["day", "commodity", "region"], sort=False):
+        base = next((k for k in AGRI_STEMS if comm == k or comm.startswith(k + " ")
+                     or comm.startswith(k + ",")), None)
+        if base is None:
+            continue
+        g = g[g["my"] == max(g["my"])]                     # the current projection year
+        by = {str(a): float(v) for a, v in zip(g["attr"], g["v"], strict=False)}
+        ending = by.get("ending stocks")
+        use = next((by[a] for a in ("use, total", "total use", "use total", "total domestic "
+                                    "and exports") if a in by), None)
+        if use is None:
+            dom = next((by[a] for a in by if a.startswith("domestic") and "total" in a), None)
+            dom = dom if dom is not None else by.get("domestic use")
+            exp = by.get("exports")
+            use = dom + exp if dom is not None and exp is not None else None
+        sid = f"{code}_{WASDE_REGIONS[reg]}_{_slug(base)}"
+        rel = wasde_release(day)
+        for name, v in (("ending_stocks", ending), ("total_use", use),
+                        ("stocks_to_use", ending / use if ending is not None and use else None)):
+            if v is not None:
+                rows.append({"series_code": f"{sid}_{name}", "period": day.isoformat(),
+                             "value": float(v), "release_utc": rel,
+                             "stem": AGRI_STEMS.get(base) or ""})
+    out = pd.DataFrame(rows, columns=["series_code", "period", "value", "release_utc", "stem"])
+    if out.empty:
+        raise FetchError("empty", "wasde: no current projection for a mapped commodity")
+    return out.drop_duplicates(["series_code", "period"], keep="last")
+
+
+# ------------------------------------------------------------------ xlsx without openpyxl ----
+_XNS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+_RNS = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+
+
+def _col_index(ref: str) -> int:
+    n = 0
+    for ch in re.match(r"[A-Z]+", ref or "A")[0]:          # type: ignore[index]
+        n = n * 26 + ord(ch) - 64
+    return n - 1
+
+
+def xlsx_sheets(raw: bytes) -> dict[str, list[list[Any]]]:
+    """Every sheet of an .xlsx as rows of cell values (str, float or None), stdlib only (the box
+    has no guarantee of openpyxl). Dates stay Excel serials: the caller knows which columns
+    hold dates (`excel_date`)."""
+    import xml.etree.ElementTree as ET
+
+    try:
+        zf = zipfile.ZipFile(io.BytesIO(raw))
+    except zipfile.BadZipFile as exc:
+        raise FetchError("unparseable", "not an xlsx") from exc
+    with zf:
+        names = set(zf.namelist())
+        shared: list[str] = []
+        if "xl/sharedStrings.xml" in names:
+            for si in ET.fromstring(zf.read("xl/sharedStrings.xml")).iter(f"{_XNS}si"):
+                shared.append("".join(t.text or "" for t in si.iter(f"{_XNS}t")))
+        rels = {}
+        if "xl/_rels/workbook.xml.rels" in names:
+            for r in ET.fromstring(zf.read("xl/_rels/workbook.xml.rels")):
+                rels[r.get("Id")] = str(r.get("Target") or "").lstrip("/")
+        out: dict[str, list[list[Any]]] = {}
+        wb = ET.fromstring(zf.read("xl/workbook.xml"))
+        for sh in wb.iter(f"{_XNS}sheet"):
+            target = rels.get(sh.get(f"{_RNS}id"), "")
+            path = target if target.startswith("xl/") else f"xl/{target}"
+            if path not in names:
+                continue
+            rows: list[list[Any]] = []
+            for row in ET.fromstring(zf.read(path)).iter(f"{_XNS}row"):
+                cells: list[Any] = []
+                for c in row.iter(f"{_XNS}c"):
+                    i = _col_index(str(c.get("r") or ""))
+                    t = c.get("t")
+                    v = c.find(f"{_XNS}v")
+                    if t == "s" and v is not None:
+                        val: Any = shared[int(v.text or 0)]
+                    elif t == "inlineStr":
+                        val = "".join(x.text or "" for x in c.iter(f"{_XNS}t"))
+                    elif t == "str":
+                        val = v.text if v is not None else None
+                    elif v is not None and v.text is not None:
+                        val = _num_or_none(v.text)
+                    else:
+                        val = None
+                    cells.extend([None] * (i - len(cells) + 1))
+                    cells[i] = val
+                rows.append(cells)
+            out[str(sh.get("name"))] = rows
+    return out
+
+
+def excel_date(v: Any) -> date | None:
+    """An Excel serial (1900 system) or a date string -> date; None when it is neither."""
+    if isinstance(v, (int, float)) and 1000 < float(v) < 80000:
+        return date(1899, 12, 30) + timedelta(days=int(float(v)))
+    s = str(v or "").strip()
+    m = re.match(r"(\d{4})[-:/](\d{1,2})[-:/](\d{1,2})", s) or None
+    if m:
+        try:
+            return date(int(m[1]), int(m[2]), int(m[3]))
+        except ValueError:
+            return None
+    m = re.match(r"(\d{1,2})/(\d{1,2})/(\d{4})", s)
+    if m:
+        try:
+            return date(int(m[3]), int(m[1]), int(m[2]))
+        except ValueError:
+            return None
+    return None
+
+
+_QTR = re.compile(r"(\d{4})\s*[:\-]?\s*Q([1-4])|Q([1-4])\s*[:\-]?\s*(\d{4})", re.I)
+
+
+def _quarter_of(v: Any) -> tuple[int, int] | None:
+    m = _QTR.search(str(v or ""))
+    if m:
+        return (int(m[1]), int(m[2])) if m[1] else (int(m[4]), int(m[3]))
+    d = excel_date(v)
+    return (d.year, (d.month - 1) // 3 + 1) if d else None
+
+
+def _tables(raw: bytes) -> list[list[list[Any]]]:
+    if raw[:2] == b"PK":
+        return list(xlsx_sheets(raw).values())
+    import csv
+    text = raw.decode("utf-8-sig", "replace")
+    if text.lstrip()[:1] == "<":
+        raise FetchError("served_html", "nowcast")
+    return [[list(r) for r in csv.reader(io.StringIO(text))]]
+
+
+def nowcast_vintages(raw: bytes) -> list[tuple[date, tuple[int, int], float]]:
+    """(publication date, target quarter, nowcast) for every published vintage in a nowcast
+    history table, LONG (a date column, a quarter column, a nowcast column: GDPNow's tracking
+    archive) or WIDE (a date column and one column per target quarter: the NY Fed download).
+    Nothing is overwritten: every publication is its own row."""
+    out: list[tuple[date, tuple[int, int], float]] = []
+    for rows in _tables(raw):
+        for hi, head in enumerate(rows[:30]):
+            hs = [str(h or "").strip().lower() for h in head]
+            dcol = next((i for i, h in enumerate(hs)
+                         if re.search(r"forecast date|release date|^date$|timestamp|as of", h)),
+                        None)
+            if dcol is None:
+                continue
+            qcol = next((i for i, h in enumerate(hs)
+                         if re.search(r"quarter|target|reference period", h)), None)
+            vcol = next((i for i, h in enumerate(hs)
+                         if i not in (dcol, qcol) and re.search(r"nowcast|gdp", h)), None)
+            wide = {i: q for i, h in enumerate(head) if i != dcol
+                    and (q := (_quarter_of(h) if _QTR.search(str(h or "")) else None))}
+            for r in rows[hi + 1:]:
+                if dcol >= len(r):
+                    continue
+                d = excel_date(r[dcol])
+                if d is None:
+                    continue
+                if qcol is not None and vcol is not None and max(qcol, vcol) < len(r):
+                    q, v = _quarter_of(r[qcol]), _num_or_none(r[vcol])
+                    if q and v is not None:
+                        out.append((d, q, v))
+                elif wide:
+                    for i, q in wide.items():
+                        v = _num_or_none(r[i]) if i < len(r) else None
+                        if v is not None:
+                            out.append((d, q, v))
+            if out:
+                return sorted(set(out))
+    return sorted(set(out))
+
+
+def _nowcast_frame(raw: bytes, code: str, release_hh: int = 18) -> Any:
+    """Nowcast vintages -> three series on the publication clock (release `release_hh`:00 ET):
+    `<code>_q0` the nowcast of the quarter containing the publication day, `<code>_q0_rev` its
+    change since the previous publication for the SAME quarter (the news the vintage carried),
+    and `<code>_qm1` the previous quarter's nowcast while it is still being tracked."""
+    import pandas as pd
+
+    vint = nowcast_vintages(raw)
+    if not vint:
+        raise FetchError("unparseable", f"nowcast {code}: no dated vintages")
+    by_day: dict[date, dict[tuple[int, int], float]] = defaultdict(dict)
+    for d, q, v in vint:
+        by_day[d][q] = v
+    rows: list[dict[str, Any]] = []
+    last: dict[tuple[int, int], float] = {}
+    for d in sorted(by_day):
+        q0 = (d.year, (d.month - 1) // 3 + 1)
+        qm1 = (q0[0] - (q0[1] == 1), 4 if q0[1] == 1 else q0[1] - 1)
+        rel = _et_utc(d, release_hh, 0)
+        cur = by_day[d]
+        if q0 in cur:
+            rows.append({"series_code": f"{code}_q0", "period": d.isoformat(),
+                         "value": cur[q0], "release_utc": rel})
+            if q0 in last:
+                rows.append({"series_code": f"{code}_q0_rev", "period": d.isoformat(),
+                             "value": cur[q0] - last[q0], "release_utc": rel})
+        if qm1 in cur:
+            rows.append({"series_code": f"{code}_qm1", "period": d.isoformat(),
+                         "value": cur[qm1], "release_utc": rel})
+        last.update(cur)
+    df = pd.DataFrame(rows, columns=["series_code", "period", "value", "release_utc"])
+    if df.empty:
+        raise FetchError("empty", f"nowcast {code}: no current-quarter vintage")
+    return df
+
+
+def _ads_frame(raw: bytes, code: str = "ads") -> Any:
+    """Philadelphia Fed ADS index file (first column a date, `YYYY:MM:DD` or a serial; second
+    the index). IDEAS_ONLY (row `philly_fed`): tested on fixtures, never fetched as live input.
+    A re-read vintage lands as revised rows through `merge_observations`, never an overwrite."""
+    import pandas as pd
+
+    rows = []
+    for table in _tables(raw):
+        for r in table:
+            if len(r) < 2:
+                continue
+            d, v = excel_date(r[0]), _num_or_none(r[1])
+            if d is not None and v is not None:
+                rows.append({"series_code": code, "period": d.isoformat(), "value": v})
+        if rows:
+            break
+    df = pd.DataFrame(rows, columns=["series_code", "period", "value"])
+    if df.empty:
+        raise FetchError("unparseable", "ads")
+    return df
+
+
+#: IDEAS_ONLY nowcast/vintage parsers: policy row -> (parser, what it reads). No URL of theirs
+#: is held in fetching code; the hunter's report carries each one's missed-growth line.
+IDEAS_ONLY_PARSERS: dict[str, tuple[str, str]] = {
+    "atlanta_fed": ("_nowcast_frame", "GDPNow tracking archive (each forecast with its date)"),
+    "philly_fed": ("_ads_frame", "ADS business conditions index, every vintage"),
+    "conab_brazil": ("", "CONAB crop survey: no lawful machine-readable file found"),
+}
+
+
+def ideas_only_lines() -> list[dict[str, Any]]:
+    """The missed-growth line of every IDEAS_ONLY source the gap doors name."""
+    from libs.data import terms_fence as _tf
+    out = []
+    for key, (parser, what) in IDEAS_ONLY_PARSERS.items():
+        if key in _tf.SOURCE_POLICY:
+            line = _tf.held_missed_growth(key, live_input_refusal=True)
+            line.update({"reads": what, "parser": parser or "none (no lawful file found)"})
+            out.append(line)
+    return out
+
+
+_NASS_API = "https://quickstats.nass.usda.gov/api/api_GET/?"
+_NASS_QUERIES = (("CORN", "CONDITION"), ("CORN", "PROGRESS"), ("SOYBEANS", "CONDITION"),
+                 ("SOYBEANS", "PROGRESS"), ("WHEAT", "CONDITION"), ("WHEAT", "PROGRESS"),
+                 ("COTTON", "CONDITION"))
+#: FAS ESR commodity codes (the API's own `/api/esr/commodities` list; UNVERIFIED from this
+#: sandbox, whose reader got client_error on the OpenData page: a wrong code reads as a named
+#: empty/404 failure on the box, never as a zero).
+_ESR_COMMODITIES = (("401", "corn", "CORN"), ("801", "soybeans", "SOYBEAN"),
+                    ("107", "wheat", "WHEAT"), ("1404", "cotton_upland", "COTTON"))
+_ESR_API = "https://apps.fas.usda.gov/OpenData/api/esr/exports/commodityCode/"
+_WASDE_FILES = "https://www.usda.gov/sites/default/files/documents/oce-wasde-report-data-"
+#: The NY Fed Staff Nowcast download (the page renders it client-side; the path is the one the
+#: page's Download button serves, UNVERIFIED from this sandbox: a 404 on the box is reported as
+#: not_found_404 by name).
+_NYFED_NOWCAST = ("https://www.newyorkfed.org/medialibrary/Research/Interactives/Data/NowCast/"
+                  "Downloads/New-York-Fed-Staff-Nowcast_download_data.xlsx")
+
+
+def agri_nowcast_doors(now: datetime) -> list[dict[str, Any]]:
+    """The gap #4 / #5 doors as direct specs. `urls` fetches several payloads into one dataset;
+    `urls_backfill` is added only while the dataset holds no rows yet."""
+    out: list[dict[str, Any]] = []
+    for comm, stat_ in _NASS_QUERIES:
+        out.append({"provider": "USDA_NASS", "dataset": f"{comm}_{stat_}",
+                    "name": f"USDA NASS crop {stat_.lower()} {comm.lower()} weekly national",
+                    "mode": "nass_quickstats", "series_code": f"{comm.lower()}",
+                    "freq": "weekly", "key_env": "NASS_API_KEY", "currencies": [],
+                    "stems": [AGRI_STEMS[comm.lower()] or ""],
+                    "url": _NASS_API + "key={api_key}&" + urllib.parse.urlencode(
+                        {"commodity_desc": comm, "statisticcat_desc": stat_,
+                         "agg_level_desc": "NATIONAL", "freq_desc": "WEEKLY",
+                         "year__GE": "2008", "format": "JSON"})})
+    y = now.year
+    for ccode, name, stem in _ESR_COMMODITIES:
+        urls = [{"url": f"{_ESR_API}{ccode}/allCountries/marketYear/{my}", "market_year": my}
+                for my in (y - 1, y, y + 1)]
+        back = [{"url": f"{_ESR_API}{ccode}/allCountries/marketYear/{my}", "market_year": my}
+                for my in range(y - 10, y - 1)]
+        out.append({"provider": "USDA_FAS", "dataset": f"ESR_{ccode}",
+                    "name": f"USDA FAS weekly export sales {name.replace('_', ' ')}",
+                    "mode": "fas_esr", "series_code": name, "freq": "weekly",
+                    "currencies": [], "stems": [stem], "url": urls[-1]["url"], "urls": urls,
+                    "urls_backfill": back})
+    months = [(now.replace(day=1) - timedelta(days=31 * k)) for k in (2, 1, 0)]
+    recent = [{"url": f"{_WASDE_FILES}{m:%Y-%m}.csv"} for m in months]
+    back = ([{"url": f"{_WASDE_FILES}2010-04-to-2015-12.zip"},
+             {"url": f"{_WASDE_FILES}2016-01-to-2020-12.zip"}]
+            + [{"url": f"{_WASDE_FILES}{yy:04d}-{mm:02d}.csv"}
+               for yy in range(2021, y + 1) for mm in range(1, 13)
+               if (yy, mm) < (months[0].year, months[0].month)])
+    out.append({"provider": "USDA_WASDE", "dataset": "wasde_balance",
+                "name": "USDA WASDE as-reported ending stocks, total use and stocks-to-use "
+                        "(corn soybeans wheat cotton sugar, US and world)",
+                "mode": "wasde_csv", "series_code": "wasde", "freq": "monthly",
+                "currencies": [], "stems": sorted({s for s in AGRI_STEMS.values() if s}),
+                "url": recent[-1]["url"], "urls": recent, "urls_backfill": back})
+    out.append({"provider": "NYFED", "dataset": "staff_nowcast",
+                "name": "New York Fed Staff Nowcast of US real GDP growth, every vintage",
+                "mode": "nowcast_vintage", "series_code": "nyfed_nowcast", "freq": "daily",
+                "currencies": ["USD"], "stems": [], "url": _NYFED_NOWCAST})
     return out
 
 
@@ -1277,9 +1874,14 @@ def ingest_series(provider: str, dataset: str, dname: str, series: list[dict[str
     for s in series:
         ok, reason, freq = quality(s["points"], s.get("freq") or "", now=now)
         qstats[reason] += 1
-        mapping = map_series(f"{s.get('name', '')} {dname}", s.get("dims"))
-        ccys = sorted(set(mapping["currencies"]) | {c.upper() for c in hint_ccys})
-        stems = sorted(set(mapping["stems"]) | {x.upper() for x in hint_stems})
+        if "stems" in s:
+            # the parser named this series' instruments itself: nothing else is inferred
+            ccys = sorted({c.upper() for c in hint_ccys})
+            stems = sorted({x.upper() for x in s["stems"] if x})
+        else:
+            mapping = map_series(f"{s.get('name', '')} {dname}", s.get("dims"))
+            ccys = sorted(set(mapping["currencies"]) | {c.upper() for c in hint_ccys})
+            stems = sorted(set(mapping["stems"]) | {x.upper() for x in hint_stems if x})
         insts = instruments_for(ccys, stems) if (ccys or stems) else []
         fb = FREQ_RULES.get(freq, (0, 0, 0.0))[2]
         score = round(base_score + fb + (2.0 if ccys else 0.0) + (3.0 if stems else 0.0), 3)
@@ -1360,20 +1962,55 @@ def fetch_dbnomics(client: Client, cat: dict[str, Any], *, now: datetime, until:
         by_provider[prov]["rows"] += res["rows_added"]
 
 
-def _fetch_direct(client: Client, spec: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
-    url = spec["url"].replace("{bday}", _last_business_day(now))
+def _fetch_direct(client: Client, spec: dict[str, Any], now: datetime, *,
+                  backfill: bool = False, misses: Counter[str] | None = None
+                  ) -> list[dict[str, Any]]:
+    """One direct door. A spec with `urls` reads several payloads into ONE dataset (export sales
+    by market year, WASDE by month), adding `urls_backfill` while `backfill` is set; a payload
+    that fails is counted in `misses` by reason and the others still land, and only when every
+    payload fails does the door fail (with the first reason)."""
     key_env = str(spec.get("key_env") or "")
+    key = ""
     if key_env:
         key = os.environ.get(key_env) or ""
         if not key:
             raise FetchError("needs_key", key_env)        # named, never a silent skip or a zero
-        url = url.replace("{api_key}", urllib.parse.quote(key, safe=""))
-    raw = client.get(url)
+    parts = list(spec.get("urls") or [{"url": spec["url"]}])
+    if backfill:
+        parts = list(spec.get("urls_backfill") or []) + parts
     mode = spec.get("mode", "csv")
-    df = _lbma_frame(raw) if mode == "lbma_json" else frame_from_payload(raw, mode, {**spec,
-                                                                                     "url": url})
-    if df is None or len(df) == 0:
-        raise FetchError("empty", url)
+    frames = []
+    first: FetchError | None = None
+    for part in parts:
+        url = str(part["url"]).replace("{bday}", _last_business_day(now))
+        if key_env:
+            url = url.replace("{api_key}", urllib.parse.quote(key, safe=""))
+        try:
+            raw = client.get(url)
+            # the parser sees the TEMPLATE url: a key never rides into an error's detail
+            sub = {**spec, **part, "url": str(part["url"])}
+            df = _lbma_frame(raw) if mode == "lbma_json" else frame_from_payload(raw, mode, sub)
+        except FetchError as exc:
+            if exc.reason == "budget_exhausted" or len(parts) == 1:
+                raise
+            first = first or exc
+            if misses is not None:
+                misses[exc.reason] += 1
+            continue
+        if df is not None and len(df):
+            frames.append(df)
+    if not frames:
+        if first is not None:
+            raise first
+        raise FetchError("empty", spec["url"])
+    import pandas as pd
+    df = pd.concat(frames, ignore_index=True) if len(frames) > 1 else frames[0]
+    if "market_year" in df.columns:
+        # a week reported under two market years keeps the LATER market year's record
+        df = (df.sort_values("market_year")
+              .drop_duplicates(["series_code", "period"], keep="last"))
+    elif len(frames) > 1:
+        df = df.drop_duplicates(["series_code", "period"], keep="last")
     return series_from_long(df, freq=spec.get("freq", ""), hint=spec.get("name", ""))
 
 
@@ -1391,8 +2028,10 @@ def fetch_direct(client: Client, cat: dict[str, Any], *, now: datetime, until: f
         row["score"] = dataset_score(spec["provider"], spec.get("name", ""))
         if not _due(row, now):
             continue
+        misses: Counter[str] = Counter()
         try:
-            series = _fetch_direct(client, spec, now)
+            series = _fetch_direct(client, spec, now, misses=misses,
+                                   backfill=not int(row.get("rows") or 0))
         except FetchError as exc:
             if exc.reason == "budget_exhausted":
                 break
@@ -1412,6 +2051,7 @@ def fetch_direct(client: Client, cat: dict[str, Any], *, now: datetime, until: f
                             now=now, base_score=row["score"], declared_lag=spec.get("lag_days"),
                             hint_ccys=spec.get("currencies", ()),
                             hint_stems=spec.get("stems", ()), qstats=qstats)
+        row["partial_misses"] = dict(misses) or None
         row.update({"fetched_at": _iso(now), "fail_count": 0, "fail_reason": None,
                     "series_total": len(series), "series_passed": res["passed"],
                     "rows": res["rows_total"],
@@ -1822,6 +2462,10 @@ def build_report(cat: dict[str, Any], exposure: dict[str, Any], *, stats: Counte
         "http_failures_by_reason": dict(client.failures),
         "quality_by_reason": dict(qstats),
         "legacy_discovered": cat.get("legacy") or UNMEASURED,
+        # GAP #4 / #5 (2026-10-29): which USDA commodities reach an MT5 symbol and which do not,
+        # and the IDEAS_ONLY nowcast/crop sources with their missed-growth lines.
+        "agri_supply_map": agri_mapping(),
+        "ideas_only": ideas_only_lines(),
         "registry": registry,
         "research_door": ("reports/WORLD_MACRO_PROPOSER.json <- world_macro_proposer reads "
                           "exposure.json and mints world_macro_state cells; the family reloads "

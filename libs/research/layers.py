@@ -270,6 +270,9 @@ LEG_LAYER: dict[str, str] = {
     "alt_proxies": "information",
     # which classes of data the desk lacks against tier-1 shops, and which sources would fill them
     "data_class_gap": "information",
+    # ALFRED real-time vintages and the realized-vol PROXY family: dated inputs the cells read
+    "fetch_alfred": "information",
+    "options_implied": "information",
     # every certificate's inputs joined to the one terms register: the machine auditing itself
     "terms_basis_census": "meta",
     # the alt seats' readings as PIT series, and Form 4 filings as clusters + a breadth series:

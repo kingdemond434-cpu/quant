@@ -259,6 +259,194 @@ SOURCE_POLICY.update({
 })
 
 
+#: THE AGRI-SUPPLY, NOWCAST-VINTAGE AND IMPLIED-VOL GAP ROWS (2026-10-29, data_class_gap #4, #5,
+#: #2). Each publisher's OWN page read with WebFetch on 2026-10-29 and quoted verbatim. A key the
+#: data route needs is checked by the door that uses it (`key_checked_by`), never by a `key_env`
+#: here, so the row never holds a keyless page on the same host. IDEAS_ONLY rows are still read
+#: for ideas; `held_missed_growth(key, live_input_refusal=True)` is their missed-growth line
+#: (delta E[log W] UNMEASURED until the `unblock` arrives).
+_USDA_POLICIES = "https://www.usda.gov/policies-and-links"
+_USDA_CLAUSES: dict[str, str] = {
+    "public_domain": ("Most information presented on the USDA Web site is considered public "
+                      "domain information."),
+    "copy": ("Public domain information may be freely distributed or copied, but use of "
+             "appropriate byline/photo/image credits is requested."),
+    "public": ("Information presented on the USDA website is considered public information and "
+               "may be distributed or copied."),
+}
+SOURCE_POLICY.update({
+    "usda_nass_quickstats": {
+        "hosts": ("quickstats.nass.usda.gov",), "status": API_PERMITTED,
+        "sources": ("usda_nass_quickstats", "nass_quickstats"),
+        "key_checked_by": "desks/mt5/research/world_dataset_hunter.py (NASS_API_KEY)",
+        "why": ("USDA NASS Quick Stats API (crop progress and condition) with the desk's key; "
+                "NASS offers the API for direct access to its database and USDA web "
+                "information is public domain"),
+        "terms": {"url": "https://www.nass.usda.gov/developer/index.php",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "api": ("This API provides direct access to the statistical information "
+                              "contained in our on-line Quick Stats database."),
+                      **_USDA_CLAUSES},
+                  "also_read": {_USDA_POLICIES: "public_domain, copy and public clauses",
+                                "https://quickstats.nass.usda.gov/api/":
+                                    ("robots_disallowed to the reader on 2026-10-29 (its "
+                                     "robots.txt too): the API page itself is UNREAD; robots "
+                                     "for the API path is UNMEASURED")}}},
+    "usda_fas_esr": {
+        "hosts": ("apps.fas.usda.gov",), "status": API_PERMITTED,
+        "sources": ("usda_fas_esr", "fas_esr"),
+        "why": ("USDA FAS Export Sales Reporting: FAS's own query page states that no "
+                "registration or login is needed for its API; USDA web information is public "
+                "domain"),
+        "terms": {"url": "https://apps.fas.usda.gov/esrquery/esrq.aspx",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "api": ("No registration or login is required in ESRQS to access "
+                              "reports, the query portal, and the API."),
+                      **_USDA_CLAUSES},
+                  "also_read": {_USDA_POLICIES: "public_domain, copy and public clauses",
+                                "https://catalog-beta.data.gov/dataset/export-sales-reporting":
+                                    ("FAS's data.gov listing: license "
+                                     "https://creativecommons.org/licenses/by/4.0, access level "
+                                     "public"),
+                                "https://apps.fas.usda.gov/OpenData/":
+                                    "client_error to the reader on 2026-10-29: UNREAD"}}},
+    "usda_wasde": {
+        "hosts": ("www.usda.gov",), "status": PUBLIC_PAGE, "sources": ("usda_wasde",),
+        "why": ("USDA OCE WASDE report data as published (the monthly as-reported CSVs on "
+                "usda.gov); USDA web information is public domain"),
+        "terms": {"url": _USDA_POLICIES, "checked_at": "2026-10-29",
+                  "clauses": dict(_USDA_CLAUSES),
+                  "also_read": {"https://www.usda.gov/node/60428":
+                                ("the WASDE historical data page: the files hold WASDE data as "
+                                 "it was reported at the time each report was published, "
+                                 "April 2010 to the present, without later revisions")}}},
+    "conab_brazil": {
+        "hosts": ("conab.gov.br",), "status": IDEAS_ONLY, "sources": ("conab_brazil",),
+        "url_patterns": (r"^(?:[^/]*\.)?gov\.br/conab/",),
+        "wanted": ("CONAB Brazilian crop survey (soy, corn, coffee, sugar cane): supply state for "
+                   "SOYBEAN, CORN, SUGAR and the BRL"),
+        "why": ("gov.br/conab content is CC BY-ND 3.0 (no derivatives) and no clause names "
+                "automated access, and no machine-readable file was found on the series pages: "
+                "no permitting clause, so ideas only"),
+        "unblock": ("a CONAB open-data file (dados abertos) whose own licence permits derived "
+                    "use, quoted into this row"),
+        "terms": {"url": ("https://www.gov.br/conab/pt-br/atuacao/informacoes-agropecuarias/"
+                          "safras/series-historicas/cana-de-acucar"),
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "licence": ("Todo o conteúdo deste site está publicado sob a licença "
+                                  "Creative Commons Atribuição-SemDerivações 3.0 Não "
+                                  "Adaptada")},
+                  "also_read": {"https://www.gov.br/conab/pt-br/acesso-a-informacao/"
+                                "dados-abertos": "not read: a page, no file confirmed"}}},
+    "nyfed_web": {
+        "hosts": ("newyorkfed.org",), "status": API_PERMITTED,
+        "sources": ("nyfed_web", "nyfed_nowcast"),
+        "why": ("the New York Fed's Terms of Use license content for personal or business "
+                "purposes and permit access manually or through an automated process"),
+        "terms": {"url": "https://www.newyorkfed.org/privacy/termsofuse",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "license": ("to use, copy, and distribute Content for your personal or "
+                                  "business purposes."),
+                      "automated": ("Access the Content, manually or through an automated "
+                                    "process or device, provided your access does not have the "
+                                    "effect of disabling, damaging, or interfering with the "
+                                    "function of the Website,"),
+                      "store": "Download, store, and use Content in any format or media,",
+                      "derive": "Modify and create derivative works from the Content.",
+                      "api": ("These Terms generally apply to Content accessed through those "
+                              "other distribution channels as well.")}}},
+    "atlanta_fed": {
+        "hosts": ("atlantafed.org",), "status": IDEAS_ONLY, "sources": ("atlanta_gdpnow",),
+        "wanted": ("GDPNow nowcast history (each forecast with its own date): the surprise of a "
+                   "US release against the nowcast known then, for USD crosses, US500, XAUUSD"),
+        "why": ("the Atlanta Fed's terms permit reproduction only not for commercial gain and bar "
+                "derivative works except as expressly authorized; no clause permits automated "
+                "access, so ideas only"),
+        "unblock": "a written Atlanta Fed authorisation for the desk's internal research use",
+        "terms": {"url": "https://www.atlantafed.org/terms-of-use", "checked_at": "2026-10-29",
+                  "clauses": {
+                      "reproduce": ("provided that such reproductions are not for commercial "
+                                    "gain or monetary profit"),
+                      "derivative": ("create derivative works from or in any way exploit any of "
+                                     "the content, in whole or in part,"),
+                      "authorized": "except as expressly authorized by the Bank."}}},
+    "philly_fed": {
+        "hosts": ("philadelphiafed.org",), "status": IDEAS_ONLY,
+        "sources": ("philly_ads", "philly_rtdsm"),
+        "wanted": ("Aruoba-Diebold-Scotti business conditions index (daily, every vintage) and "
+                   "the Real-Time Data Set: real-time US activity state for USD crosses, US500"),
+        "why": ("the Philadelphia Fed's Online Terms of Use permit use for informational, "
+                "educational and research purposes and bar excessive access, but no clause "
+                "names automated access: fail closed, ideas only"),
+        "unblock": ("a Philadelphia Fed clause or written permission naming automated download "
+                    "of its data files for research"),
+        "terms": {"url": "https://www.philadelphiafed.org/about-us/privacy-notice",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "use": ("The content provided on this website may be used for "
+                              "informational, educational, and research purposes only."),
+                      "access": ("you may not engage in excessive access to the website in a "
+                                 "way that could adversely affect the site for others.")}}},
+    "minneapolis_fed_mpd": {
+        "hosts": ("minneapolisfed.org",), "status": IDEAS_ONLY,
+        "sources": ("minneapolis_mpd",),
+        "wanted": ("Market-based probabilities (option-implied distributions: mean, sd, skew, "
+                   "tails) for corn, soybeans, wheat, gold, crude, the euro, the yen and the S&P "
+                   "500: the implied-vol and risk-reversal state the desk lacks"),
+        "why": ("the Minneapolis Fed's disclaimer permits research and informational use only, "
+                "names no automated access, and the option data it is built from may be "
+                "copyrighted by its owner: fail closed, ideas only"),
+        "unblock": ("a Minneapolis Fed clause or written permission naming automated download "
+                    "of mpd_stats.csv, with the underlying option data's owner cleared"),
+        "terms": {"url": "https://www.minneapolisfed.org/site-information/disclaimer",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "use": ("The information provided on this site may be used for research "
+                              "and informational purposes only."),
+                      "third_party": ("Some information contained on this site may be "
+                                      "copyrighted by its owner,")}}},
+    "eurex_web": {
+        "hosts": ("eurex.com",), "status": IDEAS_ONLY, "sources": ("eurex_settlement",),
+        "wanted": "Eurex index-option settlement prices (implied vol for GER40, EU50)",
+        "why": ("Deutsche Boerse's disclaimer bars copying and reproduction without prior "
+                "written permission, allowing one personal non-commercial copy: ideas only"),
+        "unblock": "a Deutsche Boerse data licence or written permission",
+        "terms": {"url": "https://eurex.com/ex-en/disclaimer", "checked_at": "2026-10-29",
+                  "clauses": {
+                      "copy": ("may not be copied, linked, reproduced, published, transmitted, "
+                               "transferred or distributed and marketed in any manner"),
+                      "permission": "without the prior written permission of Deutsche Börse.",
+                      "personal": "for personal, non-commercial use only"}}},
+    "fred_api": {
+        "hosts": ("api.stlouisfed.org",), "status": API_PERMITTED,
+        "sources": ("fred_api", "alfred"),
+        # The FRED key is checked by the organs that use it (fetch_alfred, collect_fred_macro),
+        # as eia_api's is: a `key_env` here would hold the host for an organ that reads its key
+        # from data/secrets/ instead of the environment.
+        "key_checked_by": "desks/mt5/research/fetch_alfred.py (FRED_API_KEY)",
+        "why": ("the FRED/ALFRED API is offered for programs that retrieve FRED and ALFRED "
+                "data, within its terms; this row covers US-government-owned series only "
+                "(fetch_alfred.SERIES); a third-party copyrighted FRED series is never live "
+                "input through it"),
+        "terms": {"url": "https://fred.stlouisfed.org/docs/api/terms_of_use.html",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "purpose": ("Use the FRED® API only for purposes (a) that are permitted "
+                                  "by the Terms of Use;"),
+                      "programs": ("retrieve economic data from the FRED® and ALFRED® "
+                                   "websites."),
+                      "third_party": ("Data series available through the FRED® API, may be "
+                                      "owned by third parties and subject to copyright "
+                                      "restrictions.")},
+                  "also_read": {"https://fred.stlouisfed.org/docs/api/fred/":
+                                "programs clause above (API v1 section)"}}},
+})
+
+
 def _feed_row(feed_url: str, status_: str, why: str, terms_url: str, read: str,
               clause: str = "") -> dict[str, Any]:
     """One macro event-ledger RSS feed's row (desks/mt5/macro/sources.py `_OFFICIAL_FEEDS`),
