@@ -95,6 +95,8 @@ MIN_BARS = 60
 REQUEST_BUDGET = 200
 #: Closes are never held back by this lane's own budget, only by FTMO's 2,000 (audit S3).
 REQUEST_HARD_CAP = 1950
+#: The reference tick (EURUSD) may trail the symbol's own forming bar by this much.
+STALE_GRACE_S = 60.0
 KEEP_TRADED = 400
 TF_HOURS = {"M1": 1 / 60, "M5": 5 / 60, "M15": 0.25, "M30": 0.5, "H1": 1.0, "H4": 4.0,
             "D1": 24.0}
@@ -130,6 +132,20 @@ def _record(row: dict[str, Any], now: datetime, armed: bool) -> None:
         log(f"intent row not written ({exc})")
 
 
+#: The gold copy's keys in the ftmo block: the follower trades them, never this lane.
+_FOLLOWER_KEYS = frozenset({"gold_asia"})
+#: The rail a whole pass's veto is journalled under (audit SF3: Rule 1 needs a line for it).
+PASS_RAIL = "ftmo_executor_pass"
+
+
+def _veto(doc: dict[str, Any], now: datetime, armed: bool,
+          sleeves: list[str] | None = None) -> None:
+    """One intent row for a pass that traded nothing new as a whole (account, snapshot, clock,
+    book): unpriced, so the bill counts it without inventing a dollar figure."""
+    _record({"status": doc.get("status"), "rail": PASS_RAIL, "why": doc.get("why"),
+             "sleeve": ",".join(sleeves or []) or None}, now, armed)
+
+
 # ------------------------------------------------------------------ pure helpers
 
 def book_sleeves(alloc: Any, cert: dict[str, float] | None, now: datetime
@@ -161,8 +177,9 @@ def book_sleeves(alloc: Any, cert: dict[str, float] | None, now: datetime
         # THE SMALLER OF THE BLOCK AND THIS PASS'S SOLVE (audit MF1): a deployable report is not
         # an applied one (unarmed, or apply_book refused), so a stale block never outsizes it.
         got = solved.get(key)
-        if not isinstance(got, (int, float)) or isinstance(got, bool):
-            continue
+        if not isinstance(got, (int, float)) or isinstance(got, bool) \
+                or not math.isfinite(float(got)) or not math.isfinite(float(frac)):
+            continue                                 # a NaN never reads as "no limit" (min)
         frac = min(float(frac), float(got))
         if not (frac > 0) or not isinstance(spec, dict):
             continue
@@ -305,13 +322,18 @@ def _side_of(t: int) -> str | None:
 
 # ------------------------------------------------------------------ the pass
 
-def _send(mt5: Any, st: dict[str, Any], req: dict[str, Any], *, cet: str,
-          essential: bool = False) -> Any:
+def _reserve(st: dict[str, Any], cet: str, *, essential: bool = False) -> None:
+    """Count one trade request against today's cap, or RAISE at the cap."""
     used = int((st.setdefault("requests", {})).get(cet) or 0)
     cap = REQUEST_HARD_CAP if essential else REQUEST_BUDGET
     if used >= cap:
         raise RuntimeError(f"{used} trade requests today (this lane's cap {cap})")
     st["requests"] = {cet: used + 1}
+
+
+def _send(mt5: Any, st: dict[str, Any], req: dict[str, Any], *, cet: str,
+          essential: bool = False) -> Any:
+    _reserve(st, cet, essential=essential)
     return mt5.order_send(req)
 
 
@@ -356,7 +378,21 @@ def manage(mt5: Any, st: dict[str, Any], doc: dict[str, Any], own: list[Any], *,
             if _xa.opposite_block(book, p.symbol, side, account=acct) is not None:
                 why = f"the {acct} account now holds the opposite side of {p.symbol}"
         due = exit_epoch(p)
-        if why is None and due is not None and server_epoch >= due:
+        if due is None:
+            # THE HOLD KEPT AT THE SEND (audit 2026-10-29): a broker that rewrote or cut the
+            # comment leaves the exit in the state, by ticket.
+            hold = (st.get("holds") or {}).get(str(int(p.ticket)))
+            if isinstance(hold, dict) and isinstance(hold.get("exit"), (int, float)):
+                due = float(hold["exit"])
+        if due is None or not server_epoch:
+            # NEVER SILENT: a position whose time exit cannot be read, or a pass with no server
+            # clock, is reported and paged every pass it lasts; its stop and target still stand.
+            what = ("no server clock this pass" if due is not None
+                    else f"no readable time exit (comment {getattr(p, 'comment', None)!r}, "
+                         f"no hold kept for ticket {p.ticket})")
+            doc.setdefault("manage_unmeasured", []).append(f"{p.symbol} #{p.ticket}: {what}")
+            doc["alerts"].append(f"FTMO {p.symbol} #{p.ticket}: time exit unmanaged ({what})")
+        elif why is None and server_epoch >= due:
             why = "the certified time exit has passed"
         if why is None:
             continue
@@ -377,6 +413,7 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     key, decl, why = _fw.bound_account(mt5)
     if key is None:
         doc.update(status="ACCOUNT_REFUSED", why=why)
+        _veto(doc, now, armed)
         _write_out(doc, None)
         return doc
     st = _fw._read_json(STATE)
@@ -386,6 +423,7 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     positions, orders = mt5.positions_get(), mt5.orders_get()
     if positions is None or orders is None:
         doc.update(status="NO_BROKER_SNAPSHOT", why="the terminal did not answer positions/orders")
+        _veto(doc, now, armed)
         _write_out(doc, st)
         return doc
     positions, orders = list(positions), list(orders)
@@ -410,16 +448,24 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     doc["book"] = {"why": bwhy, "keys": [k for k, _, _ in sleeves]}
     if not sleeves:
         doc.update(status="NO_BOOK", why=bwhy)
+        # billed only when the block funds a non-gold key it could not trade: an empty block is
+        # the allocator's own zero, not a veto here
+        funded = sorted(k for k, v in (cert or {}).items()
+                        if isinstance(v, (int, float)) and v > 0 and k not in _FOLLOWER_KEYS)
+        if funded:
+            _veto(doc, now, armed, sleeves=funded)
         _write_out(doc, st)
         return doc
     if not server_epoch:
         doc.update(status="NO_TICK", why="no EURUSD tick to read the server clock from")
+        _veto(doc, now, armed, sleeves=[k for k, _, _ in sleeves])
         _write_out(doc, st)
         return doc
     ok, cwhy = clock_ok(server_epoch, now)
     doc["clock"] = cwhy
     if not ok:
         doc.update(status="CLOCK_MISMATCH", why=cwhy)
+        _veto(doc, now, armed, sleeves=[k for k, _, _ in sleeves])
         _write_out(doc, st)
         return doc
     _entries(mt5, st, doc, sleeves, decl=decl, armed=armed, now=now, cet=cet,
@@ -450,12 +496,14 @@ def _entries(mt5: Any, st: dict[str, Any], doc: dict[str, Any],
         equity, balance = float(acc.equity), float(acc.balance)
     except (AttributeError, TypeError, ValueError):
         doc.update(status="ACCOUNT_UNREADABLE", why="equity/balance unreadable")
+        _veto(doc, now, armed, sleeves=[k for k, _, _ in sleeves])
         return
     risk_now, rwhy = book_stop_risk(mt5, positions, orders)
     doc["book_stop_risk"] = {"usd": None if risk_now is None else round(risk_now, 2),
                              "why": rwhy}
     try:
-        start = _fw.day_start_balance(mt5, balance, cet_midnight, now)
+        start = _fw.day_start_balance(mt5, balance, cet_midnight, now,
+                                      server_epoch=server_epoch)
     except Exception as exc:
         start, doc["day_start_error"] = None, f"{type(exc).__name__}: {exc}"[:160]
     try:
@@ -534,10 +582,13 @@ def _entries(mt5: Any, st: dict[str, Any], doc: dict[str, Any],
         closed = _e8._last_closed(bars)
         last_bar = closed.index[-1]
         tf_s = TF_HOURS[tf] * 3600
-        forming_open = float(last_bar.timestamp()) + tf_s
-        # THE BAR MUST BE THIS HOUR'S (audit MF2): the forming bar opened within one bar of the
-        # server's clock, or the feed has stopped and the "last closed bar" is history.
-        if not 0.0 <= server_epoch - forming_open < tf_s:
+        # THE BAR MUST BE THIS HOUR'S (audit MF2): the forming bar -- read off the frame, so a
+        # Monday D1 or the first bar after a gap is not taken for a stall -- opened within one
+        # bar of the server's clock (a minute's grace for a reference tick that lags it), or the
+        # feed has stopped and the "last closed bar" is history.
+        forming_open = (float(bars.index[-1].timestamp()) if len(bars) > len(closed)
+                        else float(last_bar.timestamp()) + tf_s)
+        if not -STALE_GRACE_S <= server_epoch - forming_open < tf_s:
             done("STALE_BARS", f"the last closed {tf} bar {last_bar} is not the latest one on the "
                                f"server clock; the feed is behind", rail="ftmo_stale_bars",
                  missed=True)
@@ -635,7 +686,9 @@ def _entries(mt5: Any, st: dict[str, Any], doc: dict[str, Any],
                 done("RAIL_BLOCKED", f"the lot cap ({cap_why}) is below the minimum lot",
                      rail=_fw.LOT_CAP_RAIL, missed=True)
                 continue
-            row["missed_growth_risk_usd"] = round((lot - cap) * lpl, 2)
+            # billed even when the trimmed order is SENT (audit SF2)
+            row.update(missed_growth_risk_usd=round((lot - cap) * lpl, 2),
+                       rail=_fw.LOT_CAP_RAIL, trimmed=True)
             lot = cap
         # the stop one spread wide: FTMO's daily limit counts the fill, not the level
         slip_lpl = loss_per_lot(mt5, sym, side, entry,
@@ -681,7 +734,8 @@ def _entries(mt5: Any, st: dict[str, Any], doc: dict[str, Any],
                  "daily_frac": float(decl.get("daily_loss_frac") or _fw.DAILY_LOSS_FRAC),
                  "committed": committed, "risk": risk}
         _send_locked(mt5, st, doc, row, now=now, cet=cet, sym=sym, side=side, lot=lot,
-                     g=g, info=info, slot=slot, comment=comment, col=col, guard=guard)
+                     g=g, info=info, slot=slot, comment=comment, col=col, guard=guard,
+                     server_epoch=server_epoch)
         if row.get("status") == "SENT":
             committed += risk
             held_syms.add(sym)
@@ -689,7 +743,8 @@ def _entries(mt5: Any, st: dict[str, Any], doc: dict[str, Any],
 
 def _send_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], row: dict[str, Any], *,
                  now: datetime, cet: str, sym: str, side: str, lot: float, g: Any, info: Any,
-                 slot: str, comment: str, col: str, guard: dict[str, Any]) -> None:
+                 slot: str, comment: str, col: str, guard: dict[str, Any],
+                 server_epoch: float = 0.0) -> None:
     """The fences, the loss re-check and the send, as one, under the placement lock every lane
     takes (audit S4: the follower cannot add risk between this lane's reading and its send)."""
     from mt5desk import cross_account as _xa
@@ -739,6 +794,13 @@ def _send_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], row: dict[st
             doc["sleeves"].append(row)
             _record(row, now, True)
             return
+        try:
+            _reserve(st, cet)                          # counted before the write-ahead (SF6)
+        except RuntimeError as exc:
+            row.update(status="REJECTED", why=str(exc))
+            doc["sleeves"].append(row)
+            _record(row, now, True)
+            return
         # WRITE-AHEAD: the (sleeve, bar) is spent before the send, so a lost reply or a crash
         # can never send it twice.
         st["traded"][slot] = now.isoformat(timespec="seconds")
@@ -765,7 +827,7 @@ def _send_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], row: dict[st
             # recorded REJECTED (it may still have landed: the MAGIC history then holds the bar).
             # The symbol is held IN FLIGHT on the FTMO book first, so the gateway and the E8
             # executor see both sides held until the send returns (or its hold expires).
-            res = _xa.bounded(lambda: _send(mt5, st, req, cet=cet),
+            res = _xa.bounded(lambda: mt5.order_send(req),
                               what=f"ftmo_executor:{sym} send", account="ftmo", symbol=sym)
         except Exception as exc:
             row.update(status="REJECTED", why=f"{type(exc).__name__}: {exc}"[:200])
@@ -778,6 +840,15 @@ def _send_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], row: dict[st
                             timeout_s=_xa.LOCKED_PUBLISH_TIMEOUT_S,
                             what="ftmo_executor publish")
         code = getattr(res, "retcode", None)
+        m = _COMMENT_RE.match(comment)
+        if code in OK_CODES and m is not None and int(m.group(1)) > 0 and server_epoch:
+            # the time exit kept by ticket too, for a broker that rewrites the comment (MF3)
+            holds = st.setdefault("holds", {})
+            holds[str(getattr(res, "order", ""))] = {
+                "exit": server_epoch + int(m.group(1)) * TF_HOURS[m.group(2)] * 3600,
+                "sleeve": col}
+            if len(holds) > KEEP_TRADED:
+                st["holds"] = dict(list(holds.items())[-KEEP_TRADED:])
         row.update(status="SENT" if code in OK_CODES else "REJECTED", retcode=code,
                    order_id=getattr(res, "order", None),
                    latency_send_to_ack_ms=round((time.perf_counter() - t0) * 1000.0, 3))

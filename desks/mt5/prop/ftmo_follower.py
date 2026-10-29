@@ -359,27 +359,42 @@ def cet_day(now: datetime) -> tuple[str, datetime]:
     return local.date().isoformat(), midnight.astimezone(UTC)
 
 
-def day_start_balance(mt5: Any, balance: float, since: datetime, now: datetime) -> float:
+def day_start_balance(mt5: Any, balance: float, since: datetime, now: datetime, *,
+                      server_epoch: float | None = None) -> float:
     """The balance at FTMO's midnight: today's balance less every deal's result since then.
-    RAISES when the deal history cannot be read (the guard then refuses).
+    RAISES when it cannot be measured (the guard then refuses): an unreadable deal history, a
+    deal with no readable time, or a server clock that cannot be read off a live tick.
 
     ON THE SERVER CLOCK (audit MF4, 2026-10-29). MT5 stamps a deal with the server's wall clock
     as if it were UTC, and the API reads its datetime window the same way, so a window in real UTC
     was shifted by the server offset: it counted the last two or three hours of the previous CET
     day as today's and DROPPED the last two or three hours of today's deals (the most recent
     losses, the ones the daily-loss rail most needs). The query is wide (a day each side) and
-    each deal is kept when its own server stamp is at or after CET midnight on the server clock
-    (the broker clock NY+7, `e8_guard.server_offset_hours`, which the executor checks the FTMO
-    server equals every pass). A deal whose time cannot be read is counted as today's."""
-    from prop.e8_guard import server_offset_hours
+    each deal is kept when its own server stamp is at or after CET midnight on the server clock.
+
+    THE OFFSET IS MEASURED, NEVER ASSUMED (audit 2026-10-29): read off `server_epoch` (a live
+    tick's time, the caller's own) or, absent, this account's XAUUSD tick. FTMO's server is not
+    asserted to be NY+7: on an EET server the two differ for a week each spring and autumn, and a
+    loss in the first CET hour then fell out of today. An offset outside UTC+0..+4 means the tick
+    is stale, not a server clock, and RAISES. A deal with no readable time RAISES too: counted as
+    today's, a profit or a deposit among them would understate today's loss."""
+    if server_epoch is None:
+        tick = mt5.symbol_info_tick(SYMBOL)
+        server_epoch = float(getattr(tick, "time", 0) or 0) if tick is not None else 0.0
+    off = round((float(server_epoch or 0.0) - now.timestamp()) / 3600.0)
+    if not server_epoch or not 0 <= off <= 4:
+        raise ValueError(f"the server clock is unreadable (offset {off:+d}h off a tick at "
+                         f"{server_epoch}); today's start is unmeasurable")
     deals = mt5.history_deals_get(since - timedelta(days=1), now + timedelta(days=1))
     if deals is None:
         raise ValueError("the deal history is unreadable")
-    start = since.timestamp() + server_offset_hours(now) * 3600.0
+    start = since.timestamp() + off * 3600.0
     moved = 0.0
     for d in deals:
         ts = getattr(d, "time", None)
-        if isinstance(ts, (int, float)) and not isinstance(ts, bool) and 0 < ts < start:
+        if not isinstance(ts, (int, float)) or isinstance(ts, bool) or ts <= 0:
+            raise ValueError(f"a deal ({getattr(d, 'ticket', '?')}) has no readable time")
+        if ts < start:
             continue
         for k in ("profit", "commission", "swap", "fee"):
             v = getattr(d, k, 0.0)
@@ -1167,7 +1182,8 @@ def _place_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[s
         lot = capped
     risk = trade_risk(lot, dist, contract)
     try:
-        start = day_start_balance(mt5, balance, cet_midnight, now)
+        start = day_start_balance(mt5, balance, cet_midnight, now,
+                                  server_epoch=float(tick.time))
     except Exception as exc:
         _skip(doc, st, "loss_guard", f"today's starting balance is unmeasurable ({exc})",
               today=today, now=now, missed_usd=want_usd)

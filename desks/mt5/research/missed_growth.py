@@ -863,7 +863,9 @@ def published_ftmo_executor_lines() -> dict[str, Any]:
     if rows is None:
         return {"source": f"data/{FTMO_EXEC_INTENTS.name}",
                 "unreadable": [FTMO_EXEC_INTENTS.name], "rails": {}}
-    billed = [r for r in rows if r.get("rail") and r.get("status") not in FTMO_EXEC_SENT]
+    # a refusal, or an order SENT trimmed by a rail (the trimmed part is the bill; audit SF2)
+    billed = [r for r in rows if r.get("rail")
+              and (r.get("status") not in FTMO_EXEC_SENT or r.get("trimmed"))]
     lines: dict[str, Any] = {}
     for rail in sorted({str(r.get("rail")) for r in billed}):
         mine = [r for r in billed if r.get("rail") == rail]

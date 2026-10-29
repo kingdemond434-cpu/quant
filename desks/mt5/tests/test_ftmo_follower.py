@@ -597,7 +597,8 @@ def test_the_shipped_cert_book_funds_ftmo_gold_asia_at_0009() -> None:
 
 def test_a_trade_that_could_breach_the_daily_loss_is_refused(world) -> None:
     # 4,000 lost since midnight CET: 4,000 + (20 + 24.13 slip) x 0.45 x 100 = 5,985.85 >= 5,000.
-    mt5 = _MT5(deals=(SimpleNamespace(profit=-4000.0, commission=0.0, swap=0.0, fee=0.0),))
+    mt5 = _MT5(deals=(SimpleNamespace(profit=-4000.0, commission=0.0, swap=0.0, fee=0.0,
+                                      time=TICK - 600),))
     doc = _pass(mt5)
     assert _entries(mt5) == []
     (row,) = [r for r in _rows() if r.get("reason") == "loss_guard"]
@@ -1035,10 +1036,10 @@ def test_two_writers_never_tear_a_line(world, tmp_path) -> None:
 
 
 def test_the_day_start_balance_is_read_on_the_server_clock() -> None:
-    """Audit MF4: deals carry the server's wall clock (UTC+3 here). CET midnight of 10-21 is
-    22:00 UTC of 10-20 = 01:00 on the server. A deal stamped 00:30 server is yesterday's; one
-    stamped 01:30 and one stamped in the last hour (which the old real-UTC window dropped) are
-    today's; an unstamped deal counts as today's."""
+    """Audit MF4: deals carry the server's wall clock (UTC+3 here, measured off the tick). CET
+    midnight of 10-21 is 22:00 UTC of 10-20 = 01:00 on the server. A deal stamped 00:30 server
+    is yesterday's; one stamped 01:30 and one in the last hour (which the old real-UTC window
+    dropped) are today's."""
     _, midnight = ff.cet_day(NOW)
     srv = midnight.timestamp() + 3 * 3600
 
@@ -1046,5 +1047,30 @@ def test_the_day_start_balance_is_read_on_the_server_clock() -> None:
         return SimpleNamespace(profit=profit, commission=0.0, swap=0.0, fee=0.0, time=ts)
 
     mt5 = _MT5(deals=(deal(-700.0, srv - 1800), deal(-1000.0, srv + 1800),
-                      deal(-2000.0, TICK - 600), deal(-50.0, None)))
-    assert ff.day_start_balance(mt5, 96_950.0, midnight, NOW) == pytest.approx(100_000.0)
+                      deal(-2000.0, TICK - 600)))
+    assert ff.day_start_balance(mt5, 97_000.0, midnight, NOW) == pytest.approx(100_000.0)
+
+
+def test_the_server_offset_is_measured_off_the_tick_not_assumed() -> None:
+    """Audit 2026-10-29: an EET server runs UTC+2 in the last week of October while NY+7 is
+    UTC+3. A loss stamped 00:30 on that server is 22:30 UTC, today's CET day; read at +3 it fell
+    out of today and understated today's loss."""
+    _, midnight = ff.cet_day(NOW)
+    tick2 = int((NOW + timedelta(hours=2)).timestamp())
+    loss = SimpleNamespace(profit=-2000.0, commission=0.0, swap=0.0, fee=0.0,
+                           time=midnight.timestamp() + 2 * 3600 + 1800)
+    mt5 = _MT5(deals=(loss,), tick=tick2)
+    assert ff.day_start_balance(mt5, 50_000.0, midnight, NOW) == pytest.approx(52_000.0)
+
+
+@pytest.mark.parametrize("bad", ["unstamped_deal", "stale_tick", "no_tick"])
+def test_an_unmeasurable_day_start_raises(bad: str) -> None:
+    _, midnight = ff.cet_day(NOW)
+    if bad == "unstamped_deal":
+        mt5 = _MT5(deals=(SimpleNamespace(profit=50.0, commission=0.0, swap=0.0, fee=0.0),))
+        with pytest.raises(ValueError, match="no readable time"):
+            ff.day_start_balance(mt5, 100_000.0, midnight, NOW)
+        return
+    epoch = (NOW - timedelta(days=2)).timestamp() if bad == "stale_tick" else 0.0
+    with pytest.raises(ValueError, match="server clock"):
+        ff.day_start_balance(_MT5(), 100_000.0, midnight, NOW, server_epoch=epoch)

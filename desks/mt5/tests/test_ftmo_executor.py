@@ -119,7 +119,7 @@ def world(monkeypatch, tmp_path) -> SimpleNamespace:
     fx.ARMED_MARKER.write_text("")
     monkeypatch.setattr(fx._fw, "bound_account", lambda mt5: (
         "sha256:" + "a" * 16, {"initial_balance": 100_000.0, "daily_loss_frac": 0.05}, "ok"))
-    monkeypatch.setattr(fx._fw, "day_start_balance", lambda mt5, b, s, n: 100_000.0)
+    monkeypatch.setattr(fx._fw, "day_start_balance", lambda mt5, b, s, n, **k: 100_000.0)
     monkeypatch.setattr(fx._fw, "near_market_close", lambda now: False)
     monkeypatch.setattr(order_door, "guard", lambda mt5, caller="", log=None: mt5)
     monkeypatch.setattr(new_risk_hold, "reason", lambda root=None: None)
