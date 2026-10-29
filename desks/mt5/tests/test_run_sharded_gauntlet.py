@@ -505,6 +505,60 @@ def test_a_corpse_that_reads_alive_while_reaped_is_never_an_orphan(monkeypatch) 
             root.kill()
 
 
+@pytest.mark.parametrize("misread", ["dead", "access_denied"])
+def test_a_live_survivor_that_misreads_once_is_still_an_orphan(monkeypatch, misread) -> None:
+    """Audit of 33d70e1c8: remembering "seen gone" must never hide a LIVE survivor. One kid
+    ignores SIGKILL here; after the root dies its first status() sample misreads ('dead', or
+    AccessDenied) and every later sample is the truth. It must still be named an orphan."""
+    import subprocess
+    import sys as _sys
+    import time as _t
+
+    psutil = pytest.importorskip("psutil")
+    root = subprocess.Popen([_sys.executable, "-c",
+                             "import subprocess,sys,time;"
+                             "[subprocess.Popen([sys.executable,'-c','import time;time.sleep(60)'])"
+                             " for _ in range(3)];time.sleep(60)"])
+    survivor = None
+    try:
+        deadline = _t.monotonic() + 10
+        while len(psutil.Process(root.pid).children()) < 3 and _t.monotonic() < deadline:
+            _t.sleep(0.05)
+        survivor = psutil.Process(root.pid).children()[0].pid
+        state = {"root_dead": False, "lies_left": 1}
+        real_kill, real_status = psutil.Process.kill, psutil.Process.status
+
+        def kill(self):
+            if self.pid == survivor:
+                return                                   # it survives every SIGKILL
+            real_kill(self)
+            if self.pid == root.pid:
+                state["root_dead"] = True
+
+        def status(self):
+            if self.pid == survivor and state["root_dead"] and state["lies_left"] > 0:
+                state["lies_left"] -= 1
+                if misread == "dead":
+                    return psutil.STATUS_DEAD
+                raise psutil.AccessDenied(self.pid)
+            return real_status(self)
+
+        monkeypatch.setattr(psutil.Process, "kill", kill)
+        monkeypatch.setattr(psutil.Process, "status", status)
+        monkeypatch.setattr(runner, "KILL_RESETTLE_S", 0.3)
+        rep = runner._kill_sweep_tree(root.pid, wall_s=1.0)
+        monkeypatch.undo()
+        root.wait(timeout=15)
+        assert state["root_dead"] and state["lies_left"] == 0, rep
+        assert rep["orphans"] == [survivor], rep
+    finally:
+        with __import__("contextlib").suppress(Exception):
+            root.kill()
+        if survivor is not None:
+            with __import__("contextlib").suppress(Exception):
+                psutil.Process(survivor).kill()
+
+
 def test_a_sweep_names_its_phase_and_a_kill_records_it(monkeypatch) -> None:
     """The 33h stall could not say which part of the sweep the core was in: each phase is now
     stamped, folded into the resident's heartbeat, and named on a hung kill."""
