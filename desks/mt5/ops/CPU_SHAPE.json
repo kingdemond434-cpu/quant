@@ -1,6 +1,6 @@
 {
   "schema": "cpu_shape/v1",
-  "why": "The trading box's CPU-shaping rules, as committed data. Read every MT5-StallWatch pass (10 min, SYSTEM) by libs/ops/box_shaper.py, which measures every process, writes desks/mt5/reports/BOX_BOTTLENECKS.json and applies ONLY what this file says, inside the rails the code enforces: nothing is ever raised above AboveNormal; the money path, the judge and the protected writers are only ever RAISED (never an affinity, never a lower class); mining is never set below BelowNormal and is affinity-capped only while the judge is starved, never below mining_floor_cores; nothing is ever killed. Replaces the hand-installed Quant-CpuShaper / Quant-MemecoinCpuCap tasks (owner, 2026-10-29: memecoin holds at most 10% of the CPU and keeps running). Change a rule by committing this file; the box adopts it hourly.",
+  "why": "The trading box's CPU-shaping rules, as committed data. Read every MT5-StallWatch pass (10 min, SYSTEM) by libs/ops/box_shaper.py, which measures every process, writes desks/mt5/reports/BOX_BOTTLENECKS.json and applies ONLY what this file says, inside the rails the code enforces: nothing is ever raised above AboveNormal; the money path, the judge and the protected writers are only ever RAISED (never an affinity, never a lower class); mining is never set below BelowNormal and is affinity-capped only while the judge is starved, never below mining_floor_cores; nothing is deleted, and nothing is stopped except an exact duplicate of a loop dedupe.allow names (empty by default). Replaces the hand-installed Quant-CpuShaper / Quant-MemecoinCpuCap tasks (owner, 2026-10-29: memecoin holds at most 10% of the CPU and keeps running). Change a rule by committing this file; the box adopts it hourly.",
   "window_s": 5,
   "priority_ceiling": "AboveNormal",
   "groups": {
@@ -34,5 +34,9 @@
     "why": "Any single mining or other process above 6 cores in two consecutive passes is pinned to cores 8-13 (clear of the allocator's 0-7 and memecoin's 16-17), and ONLY while the judge is starved: an unlisted process is never throttled on its own size alone."
   },
   "judge_starved": {"box_cpu_pct_at_least": 90, "judge_share_of_busy_below": 0.5},
-  "mining_floor_cores": 6
+  "mining_floor_cores": 6,
+  "dedupe": {
+    "allow": [],
+    "why": "DENY BY DEFAULT. A pattern here (6+ characters, matched against exe + command line) names a run-once loop whose exact duplicate -- same exe, same full command line, unrelated launchers, seen on two consecutive passes -- may be stopped (with its process tree, via libs/ops/proctree.kill_tree), keeping the oldest. NOT SEEN: duplicates launched straight by Task Scheduler share its svchost parent and are indistinguishable from pool siblings, so they are neither reported nor stopped (IgnoreNew and the organs' own locks serialise those). Money path, judge, memecoin, protected writers and system processes are never candidates whatever is listed. Empty: duplicates are only reported (BOX_BOTTLENECKS.json duplicates[]); add a pattern by commit once the report has shown which loop doubles."
+  }
 }
