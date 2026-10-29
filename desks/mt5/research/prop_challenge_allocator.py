@@ -935,9 +935,11 @@ def _round(x: Any) -> Any:
 # ===================================================================== gap requests
 
 def write_gap_requests(uni: dict[str, Any], now: datetime,
-                       path: Path = GAP_REQUESTS) -> dict[str, Any]:
+                       path: Path | None = None) -> dict[str, Any]:
     """FTMO-listed FX and metal symbols with no Tier S sleeve, as targeted hypotheses on the
-    families that certify elsewhere. One file, rewritten each pass, read by the miner compiler."""
+    families that certify elsewhere. One file, rewritten each pass, read by the miner compiler.
+    `path` defaults to GAP_REQUESTS read at call time, so a test's redirect reaches it."""
+    path = path or GAP_REQUESTS
     listing = uni.get("listing") or {}
     tier_s = uni.get("tier_s") or {}
     covered = {_symbol_of(c) for c in tier_s}
