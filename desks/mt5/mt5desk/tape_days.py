@@ -111,6 +111,12 @@ def read_quotes(path: Path, extra: tuple[str, ...] = ()) -> pd.DataFrame | None:
         derived = pd.to_datetime(ms, unit="ms", utc=True)
         df["ts"] = derived if "ts" not in df.columns else (
             pd.to_datetime(df["ts"], utc=True).fillna(derived))
+        # A MIXED file (two writers' rows in one day file, measured on the box 2026-10-29 for
+        # EURUSD) carries rows with `ts` and no `time_msc`: give them the clock they do have.
+        if df["time_msc"].isna().any():
+            from_ts = df["ts"].dt.as_unit("ms").astype("int64")
+            df["time_msc"] = df["time_msc"].fillna(pd.Series(from_ts, index=df.index,
+                                                             dtype="Int64"))
     else:
         # A ts-only legacy file: ms whatever unit the writer stored (tape.py stores ms, so a
         # bare int64 cast would read 1793282 where 1793282642940 is meant).

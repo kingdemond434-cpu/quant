@@ -201,3 +201,22 @@ def test_dedupe_survives_a_writer_with_float32_quotes_and_string_stamps(tmp_path
     t = tape_days.recent_quotes(d, 30)
     assert t is not None and len(t) == 50
 
+
+def test_a_mixed_writer_file_keeps_the_rows_that_have_only_ts(tmp_path):
+    """Box 2026-10-29: EURUSD/2026-10-29.parquet held tape.py rows (ts + time_msc) and
+    tape_features silver rows (ts, no time_msc) in one file. Neither half may be dropped."""
+    d = tmp_path / "EURUSD"
+    d.mkdir()
+    t0 = int(pd.Timestamp("2026-10-29", tz="UTC").value // 1_000_000)
+    raw = _frame_at([t0 + i * 1000 for i in range(10)])
+    silver = _frame_at([t0 + 100_000 + i * 1000 for i in range(5)])
+    silver["time_msc"] = None
+    both = pd.concat([raw, silver], ignore_index=True)
+    ms = pd.to_numeric(both["time_msc"]).fillna(
+        pd.Series([t0 + 100_000 + i * 1000 for i in range(5)], index=range(10, 15)))
+    both["ts"] = pd.to_datetime(ms, unit="ms", utc=True)
+    both["time_msc"] = pd.to_numeric(both["time_msc"]).astype("Int64")
+    both.to_parquet(d / "2026-10-29.parquet", index=False)
+    t = tape_days.recent_quotes(d, 30)
+    assert t is not None and len(t) == 15
+
