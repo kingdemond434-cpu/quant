@@ -75,3 +75,19 @@ def test_keyed_ledger_rows_are_read(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(fd, "_declared_key", lambda login: "sha256:aaaa")
     rows, _ = fd.ledger_checked(led, acct)
     assert rows is not None and len(rows) == 2
+
+
+def test_the_weekly_anchor_is_the_peak_not_the_day_start() -> None:
+    """evaluate's day_ref is max(peak, equity) (fusion_deadman.py L334): at peak 568.77 and day
+    start 458.79, a -100 week (beyond 0.2 x 458.79 = 91.76, inside 0.2 x 568.77 = 113.75) does
+    NOT trip; the daily equity leg trips at 0.9 x 458.79 = 412.91."""
+    day = fd.broker_day(NOW)
+    acct = {"equity": 457.74, "day_start_equity": {"date": day, "equity": 458.79}}
+    rows = [{"time": (NOW - timedelta(days=3)).isoformat(), "pl_quote": -100.0}]
+    assert "WEEKLY_LOSS" not in [c for c, _ in fd.evaluate(acct, [], rows, 568.77, now=NOW)]
+    blk = fd.loss_rail_headroom(rows, 568.77, 457.74, None, now=NOW,
+                                opening=acct["day_start_equity"])
+    assert blk["WEEKLY_LOSS"]["trip_at_ccy"] == 113.75
+    assert blk["DAILY_LOSS"]["equity_trip_at"] == 412.91
+    low = {**acct, "equity": 412.91}
+    assert "DAILY_LOSS" in [c for c, _ in fd.evaluate(low, [], [], 568.77, now=NOW)]

@@ -411,7 +411,8 @@ def evaluate(account: dict, positions: list[dict], rows: list[dict],
 
 
 def loss_rail_headroom(rows: list[dict] | None, peak_equity: float, equity: float,
-                       peak_ts: str | None, *, now: datetime | None = None) -> dict:
+                       peak_ts: str | None, *, now: datetime | None = None,
+                       opening: dict | None = None) -> dict:
     """What the two realised-loss rails are measured against, and how far each is from tripping.
 
     Mirrors `evaluate` EXACTLY and changes nothing it decides: the anchor of both rails is
@@ -442,6 +443,19 @@ def loss_rail_headroom(rows: list[dict] | None, peak_equity: float, equity: floa
         out[code] = blk
     w = out["WEEKLY_LOSS"]
     w["weekly_anchor"], w["week_start"] = w["anchor"], w["window_start"]
+    # THE DAILY RAIL'S SECOND LEG (evaluate's elif): equity <= the broker day's opening x 0.9,
+    # only when `day_start_equity` is dated to this broker day.
+    d = out["DAILY_LOSS"]
+    op = None
+    if isinstance(opening, dict) and opening.get("date") == broker_day(now):
+        try:
+            op = float(opening.get("equity"))
+        except (TypeError, ValueError):
+            op = None
+    d["opening_equity"] = op
+    d["equity_trip_at"] = round(op * (1.0 - DAILY_LOSS_PCT), 2) if op else None
+    d["equity_headroom_ccy"] = (round(float(equity) - op * (1.0 - DAILY_LOSS_PCT), 2)
+                                if op and equity else None)
     return out
 
 
@@ -713,7 +727,8 @@ def main(dry_run: bool = True) -> int:
                          "size_guard": size_guard(positions, expected)[1]}
     stamp["rails"] = rails()
     stamp["loss_rails"] = loss_rail_headroom(led_rows, peak, float(account["equity"] or 0.0),
-                                             stamp.get("peak_equity_ts"))
+                                             stamp.get("peak_equity_ts"),
+                                             opening=account.get("day_start_equity"))
     stamp["breaches"] = codes
     stamp["would"] = {"action": action, "executed": not dry_run, "reasons": messages,
                       "confirm": f"{stamp['consecutive']}/{CONFIRM_READS}",
