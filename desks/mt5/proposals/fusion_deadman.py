@@ -213,6 +213,7 @@ def ledger_checked(path: Path | None = None,
     except (OSError, ValueError) as exc:
         return None, f"{p.name} absent or unreadable ({type(exc).__name__}); loss UNMEASURED"
     rows: list[dict] = []
+    key = _declared_key(login)
     body = [ln.strip() for ln in lines if ln.strip()]
     for i, line in enumerate(body):
         try:
@@ -222,9 +223,29 @@ def ledger_checked(path: Path | None = None,
                 continue                          # a torn last line is a write in progress
             return None, f"{p.name} line {i + 1} does not parse; loss UNMEASURED"
         if isinstance(r, dict) and r.get("account_kind") == "live" \
-                and r.get("server") == FUSION_LIVE_SERVER and r.get("account") == login:
+                and r.get("server") == FUSION_LIVE_SERVER and (
+                    r.get("account") == login
+                    or (key is not None and "account" not in r
+                        and r.get("account_key") == key)):
             rows.append(r)
     return rows, f"{len(rows)} live row(s) of the declared Fusion account in {p.name}"
+
+
+def _declared_key(login: int) -> str | None:
+    """The HMAC `account_key` the ledger writer stamps since publish_sync v5, for the declared
+    login -- or None when it cannot be derived (no provenance, no box key). MEASURED 2026-10-29:
+    every live row from 2026-10-23 on carries `account_key` and no raw `account`, so a filter on
+    `account == login` alone read the whole trailing week as zero realised loss."""
+    import sys
+    root = BASE.parent.parent
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    try:
+        from libs.ops import provenance
+        key = provenance.account_key(login, FUSION_LIVE_SERVER, create=False)
+    except Exception:
+        return None
+    return key if isinstance(key, str) and key.startswith("sha256:") else None
 
 
 def realised_pl_since(rows: list[dict], since: datetime) -> float:
@@ -387,6 +408,41 @@ def evaluate(account: dict, positions: list[dict], rows: list[dict],
 
     breaches += size_guard(positions, expected)[0]
     return breaches
+
+
+def loss_rail_headroom(rows: list[dict] | None, peak_equity: float, equity: float,
+                       peak_ts: str | None, *, now: datetime | None = None) -> dict:
+    """What the two realised-loss rails are measured against, and how far each is from tripping.
+
+    Mirrors `evaluate` EXACTLY and changes nothing it decides: the anchor of both rails is
+    `max(peak_equity, equity)` (the stamp's high-water mark of EQUITY, floating included), the
+    weekly window is the ROLLING 7x24h before `now` (no week start: there is no Monday reset),
+    the daily window starts at the broker day's server midnight, and a rail trips when realised
+    P/L in its window is STRICTLY below -PCT x anchor. `rows is None` (ledger UNMEASURED) gives
+    `measured: False` and no headroom -- absence is never a full tank."""
+    now = now or datetime.now(tz=UTC)
+    anchor = max(float(peak_equity or 0.0), float(equity or 0.0))
+    out: dict = {}
+    for code, pct, start in (("WEEKLY_LOSS", WEEKLY_LOSS_PCT, now - timedelta(days=7)),
+                             ("DAILY_LOSS", DAILY_LOSS_PCT, broker_day_start(now))):
+        blk: dict = {"rule": "trip when realised P/L since window_start < -pct x anchor; "
+                             "anchor = max(stamp peak_equity, equity incl. floating)",
+                     "pct": pct, "anchor": round(anchor, 2), "anchor_ts": peak_ts,
+                     "window_start": start.isoformat(timespec="seconds"),
+                     "measured": rows is not None and anchor > 0}
+        if blk["measured"]:
+            pl = realised_pl_since(rows or [], start)
+            trip = pct * anchor
+            blk.update({"realised_pl": round(pl, 2), "loss_frac": round(max(-pl, 0.0) / anchor, 4),
+                        "trip_at_ccy": round(trip, 2), "headroom_ccy": round(trip + pl, 2),
+                        "headroom_frac": round((trip + pl) / anchor, 4)})
+        else:
+            blk.update({"realised_pl": None, "loss_frac": None, "trip_at_ccy": None,
+                        "headroom_ccy": None, "headroom_frac": None})
+        out[code] = blk
+    w = out["WEEKLY_LOSS"]
+    w["weekly_anchor"], w["week_start"] = w["anchor"], w["window_start"]
+    return out
 
 
 def flatten_and_halt(reasons: list[str], dry_run: bool = True) -> None:
@@ -587,6 +643,13 @@ def main(dry_run: bool = True) -> int:
                         tuple(stamp.get('halt_codes') or ()), expected=expected)
     codes = [c for c, _ in breaches]
     messages = [m for _, m in breaches]
+    if peak > float(stamp.get("peak_equity", 0.0) or 0.0) or not stamp.get("peak_equity_ts"):
+        # A peak set before this field existed has no known instant: it is stamped when first
+        # recorded and says so, rather than inventing when the high-water mark was made.
+        stamp["peak_equity_ts_basis"] = ("new high this pass"
+                                         if peak > float(stamp.get("peak_equity", 0.0) or 0.0)
+                                         else "inherited; first recorded at this instant")
+        stamp["peak_equity_ts"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
     stamp["peak_equity"] = peak
     stamp.pop("rearm_verdict", None)
 
@@ -649,6 +712,8 @@ def main(dry_run: bool = True) -> int:
                          "open_positions": len(positions), "peak_equity": peak,
                          "size_guard": size_guard(positions, expected)[1]}
     stamp["rails"] = rails()
+    stamp["loss_rails"] = loss_rail_headroom(led_rows, peak, float(account["equity"] or 0.0),
+                                             stamp.get("peak_equity_ts"))
     stamp["breaches"] = codes
     stamp["would"] = {"action": action, "executed": not dry_run, "reasons": messages,
                       "confirm": f"{stamp['consecutive']}/{CONFIRM_READS}",
