@@ -789,8 +789,7 @@ def language_of(text: str) -> str:
     if _THAI.search(t):
         return "th"
     # Before Devanagari: Bengali and Gujarati text ends sentences with the Devanagari danda.
-    for rx, code in ((_BENGALI, "bn"), (_GUJARATI, "gu"), (_TAMIL, "ta"), (_TELUGU, "te"),
-                     (_GREEK, "el")):
+    for rx, code in ((_BENGALI, "bn"), (_GUJARATI, "gu"), (_TAMIL, "ta"), (_TELUGU, "te")):
         if rx.search(t):
             return code
     if _DEVANAGARI.search(t):
@@ -802,6 +801,11 @@ def language_of(text: str) -> str:
         if any(ch in t for ch in _world.URDU_LETTERS):
             return "ur"
         return "fa" if any(ch in t for ch in _world.PERSIAN_LETTERS) else "ar"
+    # GREEK ONLY WHEN IT DOMINATES: sigma, delta, beta and mu are everywhere in quant writing,
+    # so one Greek letter in an English, Russian or Chinese sentence never makes it Greek.
+    greek = len(_GREEK.findall(t))
+    if greek >= 3 and greek >= 0.3 * sum(ch.isalpha() for ch in t):
+        return "el"
     if _CYRILLIC.search(t):
         return "uk" if _UKR_ONLY.search(t) else "ru"
     viet = _VIET.findall(t)
@@ -1156,7 +1160,12 @@ _LATIN = "a-z0-9À-ɏ"
 
 def _alias_pattern(alias: str) -> str:
     """Substring for CJK/Thai/Arabic aliases; word-bounded for Latin ones, so `gold` does not
-    match `golden` and `dow` does not match `download`."""
+    match `golden` and `dow` does not match `download`. The thirteen-language additions in
+    Arabic and Indic scripts must START a word in their own script (`_world.SCRIPT_BOUNDED`), so
+    Persian gold is not found inside Arabic "انطلاق" or Urdu oil inside "استیل"."""
+    script = _world.SCRIPT_BOUNDED.get(alias)
+    if script:
+        return rf"(?<![{script}])" + re.escape(alias)
     starts = re.match(rf"[{_LATIN}]", alias) is not None
     ends = re.search(rf"[{_LATIN}]$", alias) is not None
     return ((rf"(?<![{_LATIN}])" if starts else "") + re.escape(alias)

@@ -65,3 +65,43 @@ def test_every_new_language_meets_the_vocabulary_floor_and_has_a_search_locale()
         assert lang in mc.LANGUAGES
         assert len(q) >= 25 and len(d) >= 15 and len(h) >= 14, lang
         assert lang == "ms" or lang in dfm._LOCALE, lang
+
+
+#: Sentences in the languages that were already supported, with the language and claim count
+#: the base reader gives them (measured on f7cd3826): the additions must move none of them.
+BASE_CORPUS = [
+    ("Este año el oro sube después de la apertura de Londres y la tendencia continúa.", "es", 1),
+    ("O ouro costuma subir após a abertura de Londres e a tendência continua no dia.", "pt", 1),
+    ("L'oro di solito sale dopo l'apertura di Londra e il trend continua nella seduta.", "it", 1),
+    ("L'or monte souvent après l'ouverture de Londres et la tendance continue dans la séance.",
+     "fr", 1),
+    ("Altın genellikle Londra açılışından sonra yükselir ve günlük trend devam eder.", "tr", 1),
+    ("Złoto zwykle rośnie po otwarciu Londynu i trend dzienny jest kontynuowany.", "pl", 1),
+    ("Gold steigt meist nach der Londoner Eröffnung und der Trend setzt sich fort.", "de", 1),
+    ("Goud stijgt vaak na de opening van Londen en de trend zet door.", "nl", 1),
+    ("Guld brukar stiga efter öppningen i London och trenden fortsätter.", "sv", 1),
+    ("Para la sesión de Londres, el oro sube cuando el dólar cae, este patrón dura un día.",
+     "es", 1),
+    # one Greek symbol never makes a sentence Greek (audit MF1)
+    ("Gold momentum: buy when the 20-day return exceeds 2σ, hold one week.", "en", 1),
+    ("When ΔDXY > 0 sell EURUSD into the London close.", "en", 1),
+    ("Покупаем золото на пробое, когда доходность выше 2σ, держим неделю.", "ru", 1),
+    ("黄金在伦敦开盘后上涨，当波动率超过2σ时做多，持有一周。", "zh", 1),
+]
+
+
+@pytest.mark.parametrize(("text", "lang", "n"), BASE_CORPUS)
+def test_supported_languages_keep_their_base_reading(text: str, lang: str, n: int) -> None:
+    assert mc.language_of(text) == lang
+    assert len(mc.extract(text)["claims"]) == n
+
+
+def test_false_instrument_words_stay_negative() -> None:
+    # Hinglish / romanized Urdu "aur" is "and", never Romanian gold (audit MF2)
+    assert mc.extract("Bhai market me breakout aaya aur price upar gaya, buy karo 1 day ke "
+                      "liye")["claims"] == []
+    assert mc.resolve_instruments("قیمت استیل امروز بالا رفت")["analogues"] == []  # steel
+    assert mc.resolve_instruments("তেলেঙ্গানা বাজারে আজ দাম বেড়েছে")["analogues"] == []
+    # a script-bounded alias still matches at the start of text and after punctuation
+    assert mc.resolve_instruments("طلا امروز")["analogues"] == ["XAUUSD"]
+    assert mc.resolve_instruments("«طلا» امروز")["analogues"] == ["XAUUSD"]

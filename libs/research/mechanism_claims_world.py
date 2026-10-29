@@ -12,6 +12,8 @@ language are added to the existing alias rows rather than as new instruments.
 Kept in a module of its own so the core lexicon is not rewritten to add a row; `mechanism_claims`
 merges these tables once, before anything is compiled. Malay shares Indonesian's function words,
 so a Malay sentence is detected as `id` and read with Indonesian vocabulary widened by Malay's.
+Persian's ک and ی are also typed by Arabic writers on Persian keyboards; such Arabic text reads as
+`fa`, which costs nothing but its label: both vocabularies are searched against English as well.
 """
 from __future__ import annotations
 
@@ -164,19 +166,28 @@ HINDI_MARKERS: tuple[str, ...] = ("है", "और", " के ", "में", "
 URDU_LETTERS = "ٹڈڑںےۓ"
 PERSIAN_LETTERS = "پچژگکی"
 
-#: First symbol of an INSTRUMENT_ALIASES row -> the words for it in the new languages. Arabic-script
-#: aliases are SUBSTRINGS there, so Persian's gold and oil carry a leading space: bare "طلا" is
-#: inside Arabic "انطلاق" (launch) and bare "نفت" inside "انفتاح" (openness). Tamil's silver is
-#: also Friday, so only "silver price" counts; Marathi's oblique gold avoids Hindi "to sleep".
+#: First symbol of an INSTRUMENT_ALIASES row -> the words for it in the new languages. The
+#: Arabic- and Indic-script ones must start a word (SCRIPT_BOUNDED below): bare "طلا" is inside
+#: Arabic "انطلاق" (launch), "نفت" inside "انفتاح" (openness), Urdu "تیل" inside "استیل" (steel).
+#: Bengali oil is "তেলের"/crude, because bare "তেল" begins Telangana; Tamil silver is also Friday,
+#: so only "silver price" counts; Marathi's oblique gold avoids Hindi "to sleep"; Romanian bare
+#: "aur" is Hinglish and romanized Urdu "and", so only its inflected forms count.
 WORLD_ALIASES: dict[str, tuple[str, ...]] = {
-    "XAUUSD": (" طلا", "انس طلا", "سونا", "সোনা", "স্বর্ণ", "தங்கம்", "బంగారం", "सोन्या", "सोनं",
-               "સોનું", "સોના", "ginto", "aurul", "aur", "aurului", "zlato", "zlata",
+    "XAUUSD": ("طلا", "سونا", "সোনা", "স্বর্ণ", "தங்கம்", "బంగారం", "सोन्या", "सोनं",
+               "સોનું", "સોના", "ginto", "aurul", "aurului", "aur fizic", "zlato", "zlata",
                "arany", "aranyat", "χρυσ"),
     "XAGUSD": ("نقره", "چاندی", "রূপা", "வெள்ளி விலை", "వెండి", "ચાંદી", "pilak", "argint",
                "stříbro", "ezüst", "ασήμι"),
-    "XTIUSD": (" نفت", "نفت خام", "تیل", "তেল", "கச்சா எண்ணெய்", "ముడి చమురు", "कच्चे तेल", "ક્રૂડ",
+    "XTIUSD": ("نفت", "تیل", "তেলের", "অপরিশোধিত তেল", "கச்சா எண்ணெய்", "ముడి చమురు", "कच्चे तेल", "ક્રૂડ",
                "langis", "țiței", "olaj", "πετρέλαιο"),
 }
+#: Arabic, Bengali, Tamil, Telugu, Gujarati and Devanagari, as regex character ranges.
+_SCRIPTS = ("؀-ۿ", "ঀ-৿", "஀-௿", "ఀ-౿", "઀-૿", "ऀ-ॿ")
+#: alias -> the script block it must not be preceded by (a letter of its own script).
+SCRIPT_BOUNDED: dict[str, str] = {
+    a: block for terms in WORLD_ALIASES.values() for a in terms
+    for block in _SCRIPTS if block[0] <= a[0] <= block[-1]}
+
 #: Direction buckets the mechanism key reads, so a Persian "buy" and an English "buy" key alike.
 WORLD_DIR_BUCKETS: dict[str, tuple[str, ...]] = {
     "long": ("خرید", "صعود", "لانگ", "কেনা", "বৃদ্ধি", "வாங்க", "உயர்வு", "కొనుగోలు",
