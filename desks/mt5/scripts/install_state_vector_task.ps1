@@ -15,7 +15,7 @@
 #    organ's own budget is the truncated-job defect this desk has now paid for twice: the organ
 #    stops itself and WRITES, rather than being killed holding everything it computed.
 #
-# 2. THE JUDGE HAD NO PRIORITY OVER ANYTHING.
+# 2. THE JUDGE MUST YIELD TO LIVE EXECUTION.
 #    A process census of the box found 96 of 104 desk processes at BELOW_NORMAL and 8 at NORMAL.
 #    `external_gauntlet.py` was one of the 96 -- exactly level with all 23 research department
 #    residents, which set BELOW_NORMAL deliberately. A sweep that is killed loses EVERYTHING it
@@ -23,14 +23,15 @@
 #    that is descheduled loses one pass and leads the next. Those two are not worth the same, and
 #    the scheduler was treating them as if they were.
 #
-#    So MT5-Gauntlet is raised to task priority 4 (NORMAL_PRIORITY_CLASS) and NOTHING is lowered.
-#    That is the whole change: the judge now wins a contended core against the research fleet,
-#    and the fleet keeps every core it has when the judge is not running.
+#    On 2026-10-08, a 15-worker gauntlet saturated all 18 logical CPUs. E8-Executor and E8-Gold
+#    ran at priority 7 and repeatedly hit their four-minute task limits without writing reports.
+#    Both completed promptly after the live tasks were raised to 4 and the judge moved to 7.
+#    The judge continues on spare CPU at priority 7; the live five-minute clocks can preempt it.
 #
 #    THE LIVE TERMINAL IS NOT TOUCHED. terminal64.exe measures BELOW_NORMAL on this box, which is
 #    a real finding and somebody's decision to make -- but not this script's, and not a research
-#    session's. The judge already reserves cores for it (external_gauntlet._worker_count), which
-#    is the guard that makes raising the judge safe without raising anything else.
+#    session's. The judge reserves cores for the terminal, but that did not protect E8 tasks
+#    from competition with its worker pool.
 #
 #    -WhatIf-style dry run: pass -DryRun to print what would change and touch nothing.
 
@@ -69,13 +70,13 @@ if ($DryRun) {
 $g = Get-ScheduledTask -TaskName 'MT5-Gauntlet'
 $before = $g.Settings.Priority
 if ($DryRun) {
-  Write-Output ('DRYRUN MT5-Gauntlet priority ' + $before + ' -> 4')
-} elseif ($before -eq 4) {
-  Write-Output 'MT5-Gauntlet already at priority 4; nothing changed'
+  Write-Output ('DRYRUN MT5-Gauntlet priority ' + $before + ' -> 7')
+} elseif ($before -eq 7) {
+  Write-Output 'MT5-Gauntlet already at priority 7; nothing changed'
 } else {
-  $g.Settings.Priority = 4
+  $g.Settings.Priority = 7
   Set-ScheduledTask -InputObject $g | Out-Null
   $after = (Get-ScheduledTask -TaskName 'MT5-Gauntlet').Settings.Priority
   Write-Output ('MT5-Gauntlet priority ' + $before + ' -> ' + $after +
-                ' (4 = NORMAL_PRIORITY_CLASS; the research fleet stays at 7)')
+                ' (7 = BELOW_NORMAL_PRIORITY_CLASS; live E8 tasks run at 4)')
 }
