@@ -23,6 +23,7 @@ distinction is the whole design:
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import sys
 from datetime import UTC, datetime, timedelta
@@ -787,10 +788,8 @@ def write_stamp_atomic(path: Path, stamp: dict, *, attempts: int = 5,
             except OSError:
                 if i + 1 < attempts:
                     time.sleep(pause_s)
-        try:
+        with contextlib.suppress(OSError):
             tmp.unlink()
-        except OSError:
-            pass
         log(f"stamp os.replace failed {attempts}x; writing in place")
     try:
         path.write_text(body, "utf-8")
