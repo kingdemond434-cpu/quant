@@ -21,8 +21,8 @@ map onto free equivalents as follows, and each is measured or carries its reason
                                 target, never approximated
 
 PIT. Every number is read AS OF the instant the desk held it: a vol_archive row at its own
-`observed_at`, a Treasury constant-maturity yield the next business afternoon (16:30 ET, H.15)
-after its date, and bars only up to `now`.
+`observed_at`, a Treasury par yield at the earlier of the instant the desk first held it and
+09:00 ET the next day (Treasury posts the curve the same evening), and bars only up to `now`.
 
 NOTHING HERE HAS A DIRECTION. These are states. `regime_label` hands a bucket key to
 `event_surprise` (conditioning, never a sign) and every number goes to the sensor ledger.
@@ -52,9 +52,11 @@ BETA_SYMBOLS = ("XAUUSD", "XAGUSD", "USOIL", "UKOIL", "EURUSD", "GBPUSD", "USDJP
                 "USDCAD", "USDCHF", "NAS100", "US30", "GER40", "JP225")
 #: Where each state comes from, for the terms gate (audit #211: a terms gate on the J sources).
 #: The vol indices are CBOE values read through Yahoo's chart API by `recorders/vol_archive.py`;
-#: the curve is the Federal Reserve's H.15 via FRED (public domain); betas are the desk's own bars.
+#: the curve is the US Treasury's own daily par yield curve (`libs.data.owner_feeds`, archive
+#: `data/owner_macro.json`; public domain, 17 U.S.C. 105) -- FRED's H.15 copy is held from every
+#: fitted input under the ruling on prohibition (j), 2026-10-07; betas are the desk's own bars.
 VOL_SOURCE = "yahoo:cboe_indices"
-CURVE_SOURCE = "fred:h15"
+CURVE_SOURCE = "treasury:par_yield_curve"
 #: The discovery request for per-strike chains: written into the acquisition organ's candidate
 #: folder (`source_evig` prices every row there and proposes the next ground to acquire).
 CHAIN_REQUEST = DESK / "data" / "intelligence" / "asia_endpoints" / "endpoints_world_sensor.json"
@@ -251,8 +253,26 @@ def vol_state(rows: Sequence[Mapping[str, Any]], now: datetime) -> dict[str, Any
     return out
 
 
-def curve(series: Mapping[str, list[tuple[str, float]]], now: datetime) -> dict[str, Any]:
-    tenors = {sid: dict(as_of(series.get(sid, []), sid, now)) for sid in CURVE}
+def load_owner() -> dict[str, list[tuple[str, float, str]]]:
+    """The owners' own archive (`data/owner_macro.json`); {} when absent (the curve is then
+    UNMEASURED, never read from FRED)."""
+    try:
+        from libs.data import owner_feeds
+        return owner_feeds.load_archive()
+    except Exception:
+        return {}
+
+
+def _owner_as_of(rows: Sequence[Sequence[Any]], sid: str, now: datetime
+                 ) -> list[tuple[str, float]]:
+    from libs.data import owner_feeds
+    return [(str(r[0])[:10], float(r[1])) for r in rows if owner_feeds.available(sid, r) <= now]
+
+
+def curve(series: Mapping[str, Sequence[Sequence[Any]]], now: datetime) -> dict[str, Any]:
+    """The Treasury curve from the OWNER's par yields (rows (date, value[, first_seen]))."""
+    from libs.data import owner_feeds
+    tenors = {sid: dict(_owner_as_of(series.get(sid, []), sid, now)) for sid in CURVE}
     common = sorted(set.intersection(*(set(v) for v in tenors.values()))) if all(
         tenors.values()) else []
     if not common:
@@ -269,8 +289,9 @@ def curve(series: Mapping[str, list[tuple[str, float]]], now: datetime) -> dict[
     now_s = at(d)
     hist = [at(x) for x in common[-TRAIL - 1:-1]]
     prev = at(common[-6]) if len(common) > 5 else None
+    last = next((r for r in series.get("DGS10", []) if str(r[0])[:10] == d), (d, 0.0))
     out: dict[str, Any] = {"status": "MEASURED", "date": d,
-                           "knowable_at": knowable(d, "DGS10").isoformat()}
+                           "knowable_at": owner_feeds.available("DGS10", last).isoformat()}
     for k, v in now_s.items():
         out[k] = round(v, 4)
         out[f"{k}_chg_5"] = round(v - prev[k], 4) if prev else None
@@ -373,13 +394,17 @@ def _held_key(ser: Mapping[str, list[tuple[str, float]]], when: datetime) -> tup
 
 def build(*, now: datetime | None = None, series: Mapping[str, list[tuple[str, float]]] | None
           = None, charts: Mapping[str, Any] | None = None,
-          vol_rows: Sequence[Mapping[str, Any]] | None = None) -> dict[str, Any]:
+          vol_rows: Sequence[Mapping[str, Any]] | None = None,
+          owner: Mapping[str, Sequence[Sequence[Any]]] | None = None) -> dict[str, Any]:
+    """`series` is the FRED archive (display, and the held VIX copy); `owner` is the owners' own
+    archive the curve is read from."""
     when = now or datetime.now(UTC)
     ser = load_series() if series is None else series
+    own = load_owner() if owner is None else owner
     if charts is None:
         charts = {s: _chart(s) for s in sorted(set(BETA_SYMBOLS) | {"US500"})}
     vol = vol_state(read_vol_archive() if vol_rows is None else vol_rows, when)
-    gc = curve(ser, when)
+    gc = curve(own, when)
     bt = betas(charts, when)
     vol_terms = terms(VOL_SOURCE)
     held_key = (None if vol_terms["gauntlet"] == "admitted" else _held_key(ser, when))
@@ -392,7 +417,7 @@ def build(*, now: datetime | None = None, series: Mapping[str, list[tuple[str, f
             # the permitted own-bars risk state carries the key instead (FRED's copy is held too)
             "regime": regime_from(vol) if held_key is None else held_key[0],
             "regime_source": "vol_archive" if held_key is None else held_key[1],
-            "series_present": sorted(ser),
+            "series_present": sorted(ser), "owner_series_present": sorted(own),
             "rule": "states, never directions; every number PIT as of its knowable instant"}
 
 
@@ -420,7 +445,8 @@ def observations(report: Mapping[str, Any], received_at: datetime) -> list[Any]:
                 "licence": "CBOE index values via Yahoo's chart API: terms UNCLEARED, held from "
                            "the gauntlet by the terms gate"},
         "rates": {"source_id": CURVE_SOURCE, "commercial_rights": "public domain",
-                  "licence": "Federal Reserve H.15 via FRED: public domain"}}
+                  "licence": "US Treasury daily par yield curve, read from the owner "
+                             "(home.treasury.gov): public domain, 17 U.S.C. 105"}}
 
     def add(sensor: str, metric: str, value: Any, row: Mapping[str, Any], entity: str,
             **kw: Any) -> None:

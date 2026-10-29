@@ -69,7 +69,7 @@ def _world(planted: bool, seed: int = 0) -> dict[str, Any]:
               "T5YIE": [(d.isoformat(), float(v)) for d, v in zip(days, be5, strict=True)]}
     # gold on the A_d clock: the regressors the desk holds at A_d are day d-1's FRED values
     clock = [ls.avail(d) for d in days]
-    dfii_asof = ls.asof(ls.fred_daily(series, "DFII10"), clock)
+    dfii_asof = ls.asof(ls.owner_daily(series, "DFII10"), clock)
     dfii_asof = np.where(np.isfinite(dfii_asof), dfii_asof, 1.0)
     if planted:
         s = np.zeros(n)
@@ -199,3 +199,29 @@ def test_nothing_inside_the_training_window_is_published(planted: dict[str, Any]
         rows = planted["rep"]["series"][sid]
         assert rows
         assert min(date.fromisoformat(r["event_time"]) for r in rows) >= first_oos, sid
+
+
+def test_fitted_inputs_are_the_owners_never_fred(planted: dict[str, Any]) -> None:
+    """Ruling on FRED prohibition (j): the published states name the owners' ids (Treasury, BLS,
+    the desk's bars), every one admitted by the terms gate; FRED/ALFRED is state-only."""
+    from libs.data.terms_hold import gauntlet_terms
+    src = planted["rep"]["data_sources"]
+    assert src[ls.S_GOLD].startswith("treasury:DFII10")
+    assert "bls:CUSR0000SA0" in src[ls.S_INFL] and "treasury:T10YIE" in src[ls.S_INFL]
+    for sid in src.values():
+        assert "fred" not in sid and gauntlet_terms(sid)[0] is True, sid
+    assert "pce" in planted["rep"]["inputs"]["held"]
+
+
+def test_owner_cpi_prints_carry_their_own_release_clock() -> None:
+    seen = "2026-09-11T12:31:00+00:00"
+    series = {"CUSR0000SA0": [("2026-07-01", 320.0, ""), ("2026-08-01", 320.8, seen)]}
+    got = ls.inflation_prints(datetime(2026, 10, 1, tzinfo=UTC), series)["cpi"]
+    (at, v), = got["rows"]
+    assert at == datetime(2026, 9, 11, 12, 31, tzinfo=UTC)     # first held beats the 45d lag
+    assert v == pytest.approx(1200.0 * (320.8 / 320.0 - 1.0))
+    assert got["source_id"] == "bls:CUSR0000SA0"
+    assert ls.inflation_prints(datetime(2026, 9, 1, tzinfo=UTC), series) == {}
+    # a missing month (BLS did not publish October 2025) gives no m/m across the gap
+    gap = {"CUSR0000SA0": [("2025-09-01", 324.0, ""), ("2025-11-01", 325.0, "")]}
+    assert ls.inflation_prints(datetime(2026, 1, 1, tzinfo=UTC), gap) == {}

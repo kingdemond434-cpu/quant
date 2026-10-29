@@ -311,11 +311,11 @@ def test_positioning_miner_names_a_symbol_outside_the_cot_map(conn: Any,
 
 def test_rates_miner_recovers_the_transmission_and_charges_a_null(
         conn: Any, world: dict[str, Any]) -> None:
-    ctx = ctx_for(conn, {"XAUUSD": world["frame"]}, series={"fred:DGS10": world["dgs10"]})
+    ctx = ctx_for(conn, {"XAUUSD": world["frame"]}, series={"treasury:DGS10": world["dgs10"]})
     got = MI.run_miner("rates", ctx)
     assert got["ok"] is True and got["n_rows"] == 1
     row = got["rows"][0]
-    assert row["factor"] == "fred:DGS10"
+    assert row["factor"] == "treasury:DGS10"
     assert abs(row["t"]) > 5.0, row
     assert row["p_permutation"] is not None and row["p_permutation"] <= 0.01
     assert abs(row["placebo_t"]) < abs(row["t"]), "the shuffled-date placebo matched the factor"
@@ -323,16 +323,18 @@ def test_rates_miner_recovers_the_transmission_and_charges_a_null(
     assert set(row["by_era"]) >= {"2015_2019", "covid_2020_2021", "hiking_2022_2023"}
     # Every tenor the box does not hold is named, never dropped.
     missing = {u["what"] for u in got["unmeasured"]}
-    assert "rates:fred:DGS2" in missing and "rates:fred:DFII10" in missing
+    assert "rates:treasury:DGS2" in missing and "rates:treasury:DFII10" in missing
 
 
-def test_rates_miner_with_an_empty_fred_axis_names_every_tenor(conn: Any,
-                                                               world: dict[str, Any]) -> None:
+def test_rates_miner_with_an_empty_owner_archive_names_every_tenor(
+        conn: Any, world: dict[str, Any]) -> None:
     ctx = ctx_for(conn, {"XAUUSD": world["frame"]}, series={})
     got = MI.run_miner("rates", ctx)
     assert got["n_rows"] == 0
     assert len(got["unmeasured"]) == len(MI.RATE_FACTORS)
-    assert all("0 series and 7 failures" in u["why"] for u in got["unmeasured"])
+    assert all("owner archive" in u["why"] for u in got["unmeasured"])
+    # the rate factors are the owner's (Treasury) ids, never FRED's (ruling on prohibition (j))
+    assert all(k.startswith("treasury:") for k, _ in MI.RATE_FACTORS)
 
 
 def test_fixing_miner_finds_the_window_against_a_placebo_hour(conn: Any,
@@ -438,7 +440,7 @@ def test_failure_miner_with_no_judged_cell_is_unmeasured(conn: Any) -> None:
 def test_residual_miner_residualises_and_charges_a_null(conn: Any,
                                                         world: dict[str, Any]) -> None:
     ctx = ctx_for(conn, {"XAUUSD": world["frame"], "US500": world["frame"]},
-                  series={"fred:DGS2": world["dgs10"]})
+                  series={"treasury:DGS2": world["dgs10"]})
     got = MI.run_miner("residual", ctx)
     assert got["ok"] is True
     assert got["n_rows"] >= 1
