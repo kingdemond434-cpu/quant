@@ -323,24 +323,11 @@ EDGE_LEVELS = {0.0: 1.0, 1.0: 2.0}
 CROSSED = {0.1: 2.0, 0.9: -1.0}
 
 
-def test_reproduction_forecast_accepts_bad_quantiles() -> None:
-    """REPRODUCED: levels 1.5 / -0.2, levels 0.0 / 1.0 and q10=2.0 > q90=-1.0 all return []."""
-    assert fc.defects(_dist(BAD_LEVELS)) == []
-    assert fc.defects(_dist(EDGE_LEVELS)) == []
-    assert fc.defects(_dist(CROSSED)) == []
-
-
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06: DISTRIBUTION validator accepts levels outside (0,1) "
-    "(desks/mt5/research/forecast_contract.py:131-135). " + SENSOR))
 def test_acceptance_forecast_rejects_levels_outside_open_unit_interval() -> None:
     assert fc.defects(_dist(BAD_LEVELS))
     assert fc.defects(_dist(EDGE_LEVELS))
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06: DISTRIBUTION validator accepts non-monotone quantiles, "
-    "q10 > q90 (desks/mt5/research/forecast_contract.py:131-135). " + SENSOR))
 def test_acceptance_forecast_rejects_crossed_quantiles() -> None:
     """Reject, or repair under a TESTED policy (e.g. rearrangement) that is recorded on the row;
     silently publishing a crossed distribution is the one outcome not allowed."""
@@ -545,20 +532,6 @@ def _priced(tmp: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, dict[str, A
     return {r["id"]: r for r in evig.price(_SOURCES, _STATE, {})}
 
 
-def test_reproduction_evig_new_observable_scores_like_a_duplicate(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """REPRODUCED: with cot_gold collected, the options-skew source (new observable, new
-    mechanism, same instrument) scores novelty 0.0 -- identical to a mirror of cot_gold -- while
-    a COT feed on silver scores 1.0."""
-    rows = _priced(tmp_path, monkeypatch)
-    assert rows["gold_options_skew"]["novelty"] == 0.0
-    assert rows["cot_gold_mirror"]["novelty"] == 0.0
-    assert rows["cot_silver"]["novelty"] == 1.0
-
-
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06: novelty keyed on target symbols only "
-    "(desks/mt5/research/source_evig.py:178-197). " + SENSOR))
 def test_acceptance_evig_novelty_separates_information_from_coverage(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A new observable/mechanism on a covered instrument is NEW INFORMATION and must out-score
