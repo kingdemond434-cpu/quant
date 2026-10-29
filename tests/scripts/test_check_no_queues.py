@@ -182,3 +182,106 @@ def test_the_census_organ_has_a_clock_and_a_layer() -> None:
     cycle = (_REPO / "desks" / "mt5" / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '_costed("queue_census"' in cycle
     assert '"queue_census": qcn' in cycle
+
+
+# ------------------------------------------------- the desk task queue (auditor HOLD on #289)
+
+def _task_queue(root: Path, rows: list[dict[str, Any]]) -> None:
+    from libs.ops.task_queue import TaskQueue
+    q = TaskQueue(root / "desks" / "mt5" / "data" / "task_queue.jsonl")
+    for r in rows:
+        t = q.submit(r["kind"], payload={}, lane=r.get("lane", ""),
+                     not_before=r.get("not_before"))
+        assert t is not None
+        if r.get("created_at"):
+            t.created_at = r["created_at"]
+            q._append(t.to_dict())
+
+
+def test_ready_task_queue_rows_past_the_bound_fail_the_fence(tmp_path: Path) -> None:
+    """`invalidate` / `screen_class` rows once piled up READY with no consumer and the fence was
+    green, because task_queue.jsonl was not watched. A READY row of ANY kind past the bound now
+    breaches."""
+    root = _census(tmp_path, [_queue("carry", "CLEAN", depth=0, oldest_age_h=0.1)])
+    old = (datetime.now(tz=UTC) - timedelta(hours=fence.TASK_QUEUE_MAX_READY_AGE_H + 2)
+           ).isoformat(timespec="seconds")
+    _task_queue(root, [{"kind": "invalidate", "lane": "strategy", "created_at": old},
+                       {"kind": "screen_class", "lane": "strategy"},
+                       {"kind": "recertify", "created_at": old},
+                       {"kind": "ingest_version", "lane": "information", "created_at": old}])
+    rep = build_report(root)
+    assert rep["status"] == "QUEUED"
+    ids = {b["id"] for b in rep["breaches"]}
+    assert ids == {"task_queue:invalidate", "task_queue:recertify",
+                   "task_queue:ingest_version"}            # the fresh row is carry, not a park
+    assert rep["task_queue"]["ready"] == 4 and rep["unconsumed_kinds"] == []
+
+
+def test_unconsumed_kinds_past_the_bound_are_reported_never_a_breach(tmp_path: Path) -> None:
+    """`wire` decisions and the human inbox have no automated consumer by design: they stay
+    visible with counts and ages, and the fence stays CLEAN on them."""
+    root = _census(tmp_path, [_queue("carry", "CLEAN", depth=0, oldest_age_h=0.1)])
+    old = (datetime.now(tz=UTC) - timedelta(hours=fence.TASK_QUEUE_MAX_READY_AGE_H + 5)
+           ).isoformat(timespec="seconds")
+    from libs.ops.org import HUMAN_INBOX
+    _task_queue(root, [{"kind": "wire", "created_at": old}, {"kind": "wire"},
+                       {"kind": HUMAN_INBOX, "created_at": old},
+                       {"kind": "acquire_class", "lane": "information", "created_at": old}])
+    rep = build_report(root)
+    assert rep["status"] == "CLEAN" and rep["breaches"] == [] and rep["parked"] == []
+    got = {r["kind"]: r for r in rep["unconsumed_kinds"]}
+    assert set(got) == {"wire", HUMAN_INBOX, "acquire_class"}
+    assert got["wire"]["ready"] == 2 and got["wire"]["past_bound"] == 1
+    assert got[HUMAN_INBOX]["oldest_age_h"] > fence.TASK_QUEUE_MAX_READY_AGE_H
+    assert all(r["why_no_consumer"] for r in got.values())
+
+
+def test_an_undeclared_unclaimed_kind_past_the_bound_is_parked_and_fails(tmp_path: Path) -> None:
+    """THE AUDITOR'S PROBE (MUST on #289): a kind nobody claims and nobody declared
+    consumer-less, left READY for 5 h, read CLEAN. It is now PARKED and the fence fails."""
+    root = _census(tmp_path, [_queue("carry", "CLEAN", depth=0, oldest_age_h=0.1)])
+    old = (datetime.now(tz=UTC) - timedelta(hours=5)).isoformat(timespec="seconds")
+    _task_queue(root, [{"kind": "probe_unknown_kind", "created_at": old}])
+    rep = build_report(root)
+    assert rep["status"] == "QUEUED"
+    assert [p["id"] for p in rep["parked"]] == ["task_queue:probe_unknown_kind"]
+    assert rep["unconsumed_kinds"] == [] and rep["breaches"] == []
+
+
+def test_an_undeclared_kind_inside_the_bound_is_carry_not_a_park(tmp_path: Path) -> None:
+    root = _census(tmp_path, [_queue("carry", "CLEAN", depth=0, oldest_age_h=0.1)])
+    _task_queue(root, [{"kind": "probe_unknown_kind"}])
+    assert build_report(root)["status"] == "CLEAN"
+
+
+def test_a_backed_up_kind_names_the_leg_that_drains_it(tmp_path: Path) -> None:
+    root = _census(tmp_path, [_queue("carry", "CLEAN", depth=0, oldest_age_h=0.1)])
+    old = (datetime.now(tz=UTC) - timedelta(hours=10)).isoformat(timespec="seconds")
+    _task_queue(root, [{"kind": "recertify", "created_at": old},
+                       {"kind": "ingest_version", "lane": "information", "created_at": old},
+                       {"kind": "invalidate", "lane": "strategy", "created_at": old}])
+    owners = {b["id"]: b["owner_leg"] for b in build_report(root)["breaches"]}
+    assert owners == {"task_queue:recertify": "recertify_canon",
+                      "task_queue:ingest_version": "queue_cycle",
+                      "task_queue:invalidate": "queue_consumers"}
+
+
+def test_the_breach_set_is_the_consumers_claim_lists() -> None:
+    from libs.ops import queue_cycle as QC
+    assert {"recertify", "ingest_version", "invalidate", "screen_class"} == QC.CLAIMED_KINDS
+    assert fence.TASK_QUEUE_MAX_READY_AGE_H == QC.READY_BOUND_H
+
+
+def test_a_task_not_yet_released_is_not_aged(tmp_path: Path) -> None:
+    root = _census(tmp_path, [_queue("carry", "CLEAN", depth=0, oldest_age_h=0.1)])
+    later = datetime.now(tz=UTC) + timedelta(hours=20)
+    old = (datetime.now(tz=UTC) - timedelta(days=3)).isoformat(timespec="seconds")
+    _task_queue(root, [{"kind": "screen_class", "not_before": later, "created_at": old}])
+    rep = build_report(root)
+    assert rep["status"] == "CLEAN" and rep["task_queue"]["ready"] == 0
+
+
+def test_an_absent_task_queue_holds_no_rows(tmp_path: Path) -> None:
+    root = _census(tmp_path, [_queue("carry", "CLEAN", depth=0, oldest_age_h=0.1)])
+    rep = build_report(root)
+    assert rep["status"] == "CLEAN" and rep["task_queue"]["state"] == "ABSENT"
