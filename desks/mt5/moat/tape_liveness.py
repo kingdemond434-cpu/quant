@@ -267,9 +267,10 @@ def run(now: datetime | None = None, reader: Callable[[str], Any] | None = None,
                     "part could not be measured; see module doc"}
 
 
-def write_report(report: dict[str, Any], out: Path = OUT) -> None:
+def write_report(report: dict[str, Any], out: Path | None = None) -> None:
     """Atomic write. A failed replace (WinError 5 on a file a reader holds) never strands the
     temp file and never raises: the verdict is still printed and still sets the exit code."""
+    out = out or OUT
     tmp = out.with_suffix(f".{os.getpid()}.tmp")
     try:
         out.parent.mkdir(parents=True, exist_ok=True)
