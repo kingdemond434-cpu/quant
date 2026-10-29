@@ -1686,3 +1686,26 @@ def test_unarmed_the_retired_close_only_logs(tmp_path) -> None:
     ns["close_retired_positions"]({"armed": False})
     assert sent == [] and any("SHADOW would close 1 retired position" in x for x in logs)
     assert json.loads(queue.read_text("utf-8"))["names"] == [_NAME]
+
+
+def test_an_override_row_on_a_shared_key_ranks_ahead_of_a_better_evidenced_twin() -> None:
+    """#303 merge audit SF-a, exercised through the gateway's own helper: a min-lot override row
+    carries its shared key's h, so it never reads 0 while a twin carries it."""
+    names = frozenset({"usdnok_carry_v2"})
+    ns = _exec(("_override_carrier_evidence",), {"MINLOT_OVERRIDE_SLEEVES": names})
+    rows = [{"name": "usdnok_carry_v2", "minlot_override": True},
+            {"name": "usdnok_carry_v3"},
+            {"name": "eurils_v2", "minlot_override": True}]      # marked but not in the set
+    ev = {"usdnok_carry_v2": (0.0, 1.0, 0.0), "usdnok_carry_v3": (40.0, 40.0, 40.0)}
+    shared = ["usdnok_carry_v2", "usdnok_carry_v3", "eurils_v2"]
+    out = ns["_override_carrier_evidence"](rows, shared, ev)
+    assert out["usdnok_carry_v2"] == (float("inf"),) * 3
+    assert out["usdnok_carry_v3"] == (40.0, 40.0, 40.0) and "eurils_v2" not in out
+    assert ev["usdnok_carry_v2"] == (0.0, 1.0, 0.0)               # the input is not mutated
+    joins = [("usdnok_carry_v2", "usdnok_carry"), ("usdnok_carry_v3", "usdnok_carry")]
+    assert set(dc.book_carriers(joins, out).values()) == {"usdnok_carry_v2"}
+    # an unmarked row (the stamp sets the mark only above the equity line) is not lifted
+    rows[0].pop("minlot_override")
+    assert ns["_override_carrier_evidence"](rows, shared, ev) == ev
+    # an exact owner is never in `shared_rows`, so the helper cannot take its key
+    assert ns["_override_carrier_evidence"](rows, [], ev) == ev
