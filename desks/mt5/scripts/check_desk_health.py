@@ -437,6 +437,55 @@ def check_stall_watch_alerts() -> None:
     print()
 
 
+#: ops/box_self_heal.py's pass report (Quant-BoxSelfHeal, every 5 minutes).
+BOX_SELF_HEAL = DESK / "reports" / "BOX_SELF_HEAL.json"
+#: Four missed passes. Past this the stuck jobs it clears go back to needing an admin paste.
+BOX_SELF_HEAL_STALE_MIN = 20.0
+
+
+def check_box_self_heal(path: Path | None = None, now: datetime | None = None) -> None:
+    """The self-heal watchdog's own liveness, and every action or refusal it made last pass.
+
+    A watchdog that stopped is RED here, never silent: absent, unreadable or older than
+    BOX_SELF_HEAL_STALE_MIN minutes is a PROBLEM, and so is a pass whose status is RED (it stopped,
+    ended or restarted something, or refused to) -- each of those is something that was stuck.
+    """
+    _section("THE BOX SELF-HEAL WATCHDOG  (Quant-BoxSelfHeal, every 5 minutes)")
+    p = path or BOX_SELF_HEAL
+    t = now or datetime.now(UTC)
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except FileNotFoundError:
+        _bad("reports/BOX_SELF_HEAL.json is absent -- the self-heal watchdog has never run here "
+             "(install: desks/mt5/scripts/install_box_self_heal_task.ps1, elevated)")
+        print()
+        return
+    except (OSError, ValueError) as exc:
+        _bad(f"reports/BOX_SELF_HEAL.json unreadable ({_exc_reason(exc)})")
+        print()
+        return
+    try:
+        at = datetime.fromisoformat(str(doc.get("at")).replace("Z", "+00:00"))
+        age_min = (t - at).total_seconds() / 60.0
+    except (TypeError, ValueError, AttributeError):
+        _bad("reports/BOX_SELF_HEAL.json carries no readable `at` -- its liveness is UNMEASURED")
+        print()
+        return
+    if age_min > BOX_SELF_HEAL_STALE_MIN:
+        _bad(f"the self-heal watchdog is STALE: last pass {age_min:.0f}min ago (expected under "
+             f"{BOX_SELF_HEAL_STALE_MIN:.0f}min) -- nothing is clearing stuck jobs")
+    status = str(doc.get("status") or "UNMEASURED")
+    reds = [r for r in (doc.get("rows") or []) if isinstance(r, dict) and r.get("level") == "RED"]
+    if status == "RED":
+        for r in reds[:8]:
+            _bad(f"self-heal {r.get('rule')}: {r.get('verdict')} -- {r.get('why')}")
+    elif status == "OK" and age_min <= BOX_SELF_HEAL_STALE_MIN:
+        _ok(f"self-heal pass {age_min:.0f}min ago: nothing stuck")
+    elif status != "OK":
+        _unknown(f"self-heal pass {age_min:.0f}min ago reads {status}")
+    print()
+
+
 def check_gateway_state() -> None:
     _section("THE GATEWAY'S OWN LAST WORD")
     p = DESK / "data" / "gateway_state.json"
@@ -502,6 +551,7 @@ def main(argv: list[str] | None = None) -> int:
     check_bars_state()
     check_state_flow()
     check_stall_watch_alerts()
+    check_box_self_heal()
     check_gateway_state()
     print("Every [PROBLEM] line above is a thing to fix. [UNKNOWN] means this could not check,")
     print("which is a finding too -- it is never the same as OK.")

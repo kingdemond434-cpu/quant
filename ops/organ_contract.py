@@ -140,6 +140,12 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "the watchdog's own reading -- if THIS goes stale nothing is watching"),
     "MT5-ProcessHealth":  ("desks/mt5/reports/process_health.json", 60,
                            "every process, its last run and whether it is healthy"),
+    # THE SELF-HEAL WATCHDOG (2026-10-29): every 5 minutes, so 20 is four missed passes. If it
+    # stops, the hung intake task and the wedged or dead gate it clears go back to needing
+    # an admin paste -- so its own silence has to be a defect on this board, not an absence.
+    "Quant-BoxSelfHeal":  ("desks/mt5/reports/BOX_SELF_HEAL.json", 20,
+                           "the closed self-heal table's last pass: every stop, end, restart "
+                           "and refusal, RED"),
     "MT5-Healers":        ("desks/mt5/logs/MT5-Healers.log", 180,
                            "proof the standing fixers actually ran"),
     "MT5-MoatRecorder":   ("desks/mt5/data/moat_coverage.json", 180,
