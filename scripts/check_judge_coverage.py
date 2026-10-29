@@ -381,6 +381,51 @@ def _coverage(report: Path | None = None, *, require_state: bool = False,
                             if isinstance(r, dict)}
     judged_any = sum(int(r.get("judged_window") or 0) for r in fams.values())
 
+    # 0. NO LIVE FAMILY IS UNMINED (2026-10-29). `judge_coverage` publishes every registered
+    #    family with zero docket rows; fifteen sat there for weeks (JUDGE_COVERAGE 2026-10-27)
+    #    because each was owned by a producer that emitted only its own screen's survivors, and
+    #    a published list is a page nobody reads. A family nobody mines is never judged at all,
+    #    which is the starvation below one level earlier, so it fails the same way. The remedy is
+    #    cells (research/breadth_sweep READY / default families), never a removal from the registry.
+    #    A family the sweep measured BLOCKED ON ITS INPUT (BREADTH_SWEEP.json `input_blocked`: the
+    #    store absent, zero lawful targets) is amber: its remedy is data, not wiring, and a red the
+    #    box can never clear would only teach everyone to read past it.
+    #    UNMEASURED IS A VERDICT (L1.28a): a report without the list, or whose live registry read
+    #    as empty, measured nothing -- UNMEASURED here, FAIL under --require-state.
+    totals = doc.get("totals") if isinstance(doc.get("totals"), dict) else {}
+    live_n = totals.get("families_live")
+    if ("unmined_live_families" not in doc or not isinstance(live_n, (int, float))
+            or live_n <= 0):
+        out["checks"].append({
+            "metric": "families_unmined", "state": "FAIL" if require_state else "UNMEASURED",
+            "why": ("the report carries no unmined-family list or a live registry of "
+                    f"{live_n!r} families, so whether every family is mined was not measured")})
+        if require_state:
+            failures.append("unmined:unmeasured")
+    else:
+        unmined = [str(f) for f in (doc.get("unmined_live_families") or []) if f]
+        n_unmined = totals.get("families_unmined")
+        n_unmined = int(n_unmined) if isinstance(n_unmined, (int, float)) else len(unmined)
+        breadth = _read(path.parent / "BREADTH_SWEEP.json")
+        blocked = (breadth.get("input_blocked") if isinstance(breadth, dict) else None) or {}
+        amber = [f for f in unmined if f in blocked]
+        red = [f for f in unmined if f not in blocked]
+        red_n = n_unmined - len(amber)
+        if red_n > 0:
+            failures.extend(f"unmined:{f}" for f in (red[:10] or ["?"]))
+            out["checks"].append({
+                "metric": "families_unmined", "state": "FAIL",
+                "why": (f"{red_n} registered famil(ies) hold zero docket rows and can never be "
+                        f"judged: " + ", ".join(red[:15]) + (" ..." if red_n > 15 else ""))})
+        else:
+            out["checks"].append({"metric": "families_unmined", "state": "OK",
+                                  "why": "every live family not blocked on its input holds at "
+                                         "least one docket row"})
+        if amber:
+            out["checks"].append({
+                "metric": "families_unmined_input_blocked", "state": "WARN",
+                "why": "; ".join(f"{f}: {str(blocked[f])[:160]}" for f in amber[:10])})
+
     # 1. STARVATION: unjudged cells and no place in the queue.
     starved = sorted((f for f, r in fams.items()
                       if int(r.get("unjudged") or 0) > 0

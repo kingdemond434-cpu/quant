@@ -60,6 +60,17 @@ DATA_INPUT_ARGS: frozenset[str] = frozenset({
     "spread_series", "flow", "extra", "leg_b", "leg_c", "surface", "_runner",
 })
 
+#: DATA INPUTS A FAMILY LOADS FOR ITSELF from a parameter the cell carries by value (2026-10-29).
+#: The five learned families take an OPTIONAL `peers` frame map and, when it is None, read every
+#: name in their REQUIRED `peer_symbols` from the same `data/universe` store the gauntlet reads
+#: (`mt5desk/family_learned_propagation`, "WHY THE FAMILY LOADS ITS OWN PEERS"). Read as an
+#: unsupplied input they were all INPUT_NOT_SUPPLIED, so no producer that consults this table
+#: could ever emit one and all five sat at zero docket rows. `peer_symbols` stays REQUIRED, so a
+#: bare cell is still refused as MISSING_PARAMS -- the input is self-loaded only from a named panel.
+SELF_LOADED_INPUTS: dict[str, frozenset[str]] = {
+    fam: frozenset({"peers"})
+    for fam in ("gnn_propagation", "attention_ts", "rocket_ts", "ae_latent", "sig_path")}
+
 #: Branches that exist in `build_cell` and hand the family an input it cannot read. Declared,
 #: because a wrong shape is not visible in the branch's text; each is proved by a test.
 SEALED_INPUT_DEFECTS: dict[str, str] = {}
@@ -76,6 +87,20 @@ def _family_table() -> dict[str, Any]:
             out[name[len("family_"):]] = getattr(families, name)
     for name, fn in fo.ORTHOGONAL_FAMILIES.items():
         out.setdefault(str(name), fn)
+    # THE GAUNTLET'S FIRST LOOKUP IS `getattr(families, "family_<name>")`, and `families` answers
+    # it for the hunt16 population through its module `__getattr__`, which `dir()` never lists.
+    # Reading `dir()` alone filed all 14 `dav_*` families NO_IMPLEMENTATION while build_cell built
+    # them (2026-10-29), so every producer that asks this table set them aside. Every live name is
+    # asked the same way the gauntlet asks it.
+    try:
+        names = families.live_family_names()
+    except Exception:
+        names = []
+    for name in names:
+        if name not in out:
+            fn = getattr(families, f"family_{name}", None)
+            if callable(fn):
+                out[str(name)] = fn
     return out
 
 
@@ -154,6 +179,7 @@ def family_verdict(family: str) -> tuple[str, str]:
     if fam in SEALED_INPUT_DEFECTS:
         return SEALED_INPUT_DEFECT, SEALED_INPUT_DEFECTS[fam]
     data, _required = _signature_needs(fn)
+    data = [d for d in data if d not in SELF_LOADED_INPUTS.get(fam, frozenset())]
     if data:
         supplied = supplied_families()
         if not supplied:
