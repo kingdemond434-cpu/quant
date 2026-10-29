@@ -22,8 +22,9 @@ desks/mt5/reports/DESK_HEALTH.json (published by sync_shadow_to_git.ps1), so a r
 gets the same answer. Exit 0 always: it is a report, and every PROBLEM is in the document.
 
 WHAT IT DOES NOT DO. It starts nothing, stops nothing, kills nothing, and writes nothing outside
-its own report. It is safe to run while the desk is trading, which is the point: a diagnostic
-you hesitate to run is a diagnostic you do not run.
+its own reports (DESK_HEALTH.json and, beside it, UNLANDED_CLEARS.json). It is safe to run
+while the desk is trading, which is the point: a diagnostic you hesitate to run is a diagnostic
+you do not run.
 
 STALE IS NOT DEAD, AND MISSING IS NOT ZERO. An artifact this cannot read is reported as
 UNREADABLE, and a task Windows will not describe is reported UNKNOWN. Both are findings. The one
@@ -437,6 +438,59 @@ def check_stall_watch_alerts() -> None:
     print()
 
 
+UNLANDED_CLEARS_OUT = DESK / "reports" / "UNLANDED_CLEARS.json"
+
+
+def _unlanded_judge() -> Any:
+    """scripts/check_unlanded_clears.py's judge, loaded by path (scripts/ is not a package)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "check_unlanded_clears", ROOT / "scripts" / "check_unlanded_clears.py")
+    if spec is None or spec.loader is None:
+        raise ImportError("no loader for scripts/check_unlanded_clears.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.judge
+
+
+def check_unlanded_clears(out: Path | None = None) -> None:
+    """Did every auditor CLEAR land (owner rule 23; audit MF1 on #495)?
+
+    The law gate reads scripts/check_unlanded_clears.py report-only, so a late CLEAR never
+    refused a push -- and nothing paged. This is the box-side reader: it runs the same judge,
+    writes reports/UNLANDED_CLEARS.json when --out is given, and turns RED (a CLEAR unlanded past
+    12h, or a CLEAR with no registry row) into a PROBLEM in DESK_HEALTH.json. BREACH is a
+    PROBLEM; UNMEASURED (no live ref, a shallow clone, a coverage source unread) is UNKNOWN."""
+    _section("DID EVERY AUDITOR CLEAR LAND  (context/clear_landing_registry.jsonl, rule 23)")
+    try:
+        doc = _unlanded_judge()()
+    except Exception as exc:                            # a reader must not take the report down
+        _unknown(f"unlanded-clears judge did not run ({_exc_reason(exc)})")
+        print()
+        return
+    if out is not None:
+        try:
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(_publishable(json.dumps(doc, indent=1)) + "\n", "utf-8",
+                           newline="\n")
+        except OSError as exc:
+            _unknown(f"reports/UNLANDED_CLEARS.json NOT written ({_exc_reason(exc)})")
+    asof = f"as of fetch at {doc.get('live_fetched_at', 'UNMEASURED')}"
+    verdict = doc.get("verdict")
+    if verdict in ("RED", "BREACH"):
+        _bad(f"unlanded clears {verdict}: {doc.get('why')} ({asof})")
+        for i in doc.get("items") or ():
+            if i.get("state") == "LATE":
+                print(f"      LATE {i['id']} {i['sha']} {i['age_h']}h -- {i['how']}")
+        for m in (doc.get("coverage") or {}).get("missing") or ():
+            print(f"      NO ROW {m}")
+    elif verdict == "GREEN":
+        _ok(f"unlanded clears GREEN: {doc.get('why')} ({asof})")
+    else:
+        _unknown(f"unlanded clears {verdict}: {doc.get('why')} ({asof})")
+    print()
+
+
 def check_gateway_state() -> None:
     _section("THE GATEWAY'S OWN LAST WORD")
     p = DESK / "data" / "gateway_state.json"
@@ -503,6 +557,8 @@ def main(argv: list[str] | None = None) -> int:
     check_state_flow()
     check_stall_watch_alerts()
     check_gateway_state()
+    # Beside the --out report (the default is desks/mt5/reports/UNLANDED_CLEARS.json).
+    check_unlanded_clears(Path(args.out).parent / UNLANDED_CLEARS_OUT.name if args.out else None)
     print("Every [PROBLEM] line above is a thing to fix. [UNKNOWN] means this could not check,")
     print("which is a finding too -- it is never the same as OK.")
     if args.out:

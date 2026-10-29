@@ -477,6 +477,8 @@ desks/mt5/data/import_stems_cache.json
 # BACKUP_STATE (v5f): whether the box is backed up and a restore was rehearsed, scheme only
 # (ops/backup_state.py, written on MT5-ProcessHealth's hourly clock).
 !desks/mt5/reports/BACKUP_STATE.json
+# UNLANDED_CLEARS (owner rule 23): which auditor CLEARs have not landed, from desk_health.
+!desks/mt5/reports/UNLANDED_CLEARS.json
 # THE RESEARCH MEASUREMENTS THE BOX PUBLISHES (2026-09-30). `sync_shadow_to_git.ps1` lists these
 # in $reportPaths; each is a small JSON summary the CRO cycle, the audits and the breadth review
 # read from the branch, and none had ever crossed the wire -- `**/reports/*` above ignored them,
