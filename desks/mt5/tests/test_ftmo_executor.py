@@ -482,3 +482,12 @@ def test_a_nan_solve_never_reads_as_no_limit(world) -> None:
         '"' + KEY + '": 0.003}', '"' + KEY + '": NaN}'))
     doc = fx.run(world.mt5, armed=True, now=NOW)
     assert world.mt5.sent == [] and doc["status"] == "NO_BOOK"
+
+
+def test_a_position_certified_with_no_time_exit_is_not_paged(world) -> None:
+    """FX0: a hold of zero bars means stop and target only, by its certificate; not an alarm."""
+    world.mt5.positions.append(SimpleNamespace(
+        ticket=56, symbol="AUDNZD", type=0, magic=fx.MAGIC, volume=0.5, price_open=1.1,
+        sl=1.09, comment="FX0H1|" + KEY, time=int(SERVER.timestamp())))
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert not [a for a in doc["alerts"] if "#56" in a]

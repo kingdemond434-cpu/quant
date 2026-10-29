@@ -1063,7 +1063,7 @@ def test_the_server_offset_is_measured_off_the_tick_not_assumed() -> None:
     assert ff.day_start_balance(mt5, 50_000.0, midnight, NOW) == pytest.approx(52_000.0)
 
 
-@pytest.mark.parametrize("bad", ["unstamped_deal", "stale_tick", "no_tick"])
+@pytest.mark.parametrize("bad", ["unstamped_deal", "stale_tick", "tick_40min_old", "no_tick"])
 def test_an_unmeasurable_day_start_raises(bad: str) -> None:
     _, midnight = ff.cet_day(NOW)
     if bad == "unstamped_deal":
@@ -1071,6 +1071,8 @@ def test_an_unmeasurable_day_start_raises(bad: str) -> None:
         with pytest.raises(ValueError, match="no readable time"):
             ff.day_start_balance(mt5, 100_000.0, midnight, NOW)
         return
-    epoch = (NOW - timedelta(days=2)).timestamp() if bad == "stale_tick" else 0.0
+    # 40 minutes old on a UTC+3 server reads +2.33h: it would round to +2, the wrong hour
+    epoch = {"stale_tick": (NOW - timedelta(days=2)).timestamp(),
+             "tick_40min_old": (NOW + timedelta(hours=3, minutes=-40)).timestamp()}.get(bad, 0.0)
     with pytest.raises(ValueError, match="server clock"):
         ff.day_start_balance(_MT5(), 100_000.0, midnight, NOW, server_epoch=epoch)

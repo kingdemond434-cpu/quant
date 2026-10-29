@@ -384,7 +384,10 @@ def manage(mt5: Any, st: dict[str, Any], doc: dict[str, Any], own: list[Any], *,
             hold = (st.get("holds") or {}).get(str(int(p.ticket)))
             if isinstance(hold, dict) and isinstance(hold.get("exit"), (int, float)):
                 due = float(hold["exit"])
-        if due is None or not server_epoch:
+        if due is None and _COMMENT_RE.match(str(getattr(p, "comment", "") or "")) \
+                and _COMMENT_RE.match(str(p.comment)).group(1) == "0":
+            pass                                     # FX0: certified with no time exit at all
+        elif due is None or not server_epoch:
             # NEVER SILENT: a position whose time exit cannot be read, or a pass with no server
             # clock, is reported and paged every pass it lasts; its stop and target still stand.
             what = ("no server clock this pass" if due is not None

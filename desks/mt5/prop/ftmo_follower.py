@@ -359,6 +359,10 @@ def cet_day(now: datetime) -> tuple[str, datetime]:
     return local.date().isoformat(), midnight.astimezone(UTC)
 
 
+#: How far a tick may sit from a whole-hour server offset to be read as the server clock.
+TICK_SKEW_S = 300.0
+
+
 def day_start_balance(mt5: Any, balance: float, since: datetime, now: datetime, *,
                       server_epoch: float | None = None) -> float:
     """The balance at FTMO's midnight: today's balance less every deal's result since then.
@@ -375,16 +379,20 @@ def day_start_balance(mt5: Any, balance: float, since: datetime, now: datetime, 
     THE OFFSET IS MEASURED, NEVER ASSUMED (audit 2026-10-29): read off `server_epoch` (a live
     tick's time, the caller's own) or, absent, this account's XAUUSD tick. FTMO's server is not
     asserted to be NY+7: on an EET server the two differ for a week each spring and autumn, and a
-    loss in the first CET hour then fell out of today. An offset outside UTC+0..+4 means the tick
-    is stale, not a server clock, and RAISES. A deal with no readable time RAISES too: counted as
+    loss in the first CET hour then fell out of today. An offset outside UTC+0..+4, or a reading
+    more than TICK_SKEW_S off a whole hour, means the tick is stale, not a server clock: RAISES. A deal with no readable time RAISES too: counted as
     today's, a profit or a deposit among them would understate today's loss."""
     if server_epoch is None:
         tick = mt5.symbol_info_tick(SYMBOL)
         server_epoch = float(getattr(tick, "time", 0) or 0) if tick is not None else 0.0
-    off = round((float(server_epoch or 0.0) - now.timestamp()) / 3600.0)
-    if not server_epoch or not 0 <= off <= 4:
-        raise ValueError(f"the server clock is unreadable (offset {off:+d}h off a tick at "
-                         f"{server_epoch}); today's start is unmeasurable")
+    lag = float(server_epoch or 0.0) - now.timestamp()
+    off = round(lag / 3600.0)
+    # A tick minutes old still rounds to the right hour; one 31+ minutes old rounds to the WRONG
+    # one silently (audit 2026-10-29), so the reading must sit within TICK_SKEW_S of a whole hour.
+    if not server_epoch or not 0 <= off <= 4 or abs(lag - off * 3600.0) > TICK_SKEW_S:
+        raise ValueError(f"the server clock is unreadable (a tick {lag / 3600.0:+.2f}h off the "
+                         f"box clock, not within {TICK_SKEW_S:.0f}s of a whole-hour offset); "
+                         f"today's start is unmeasurable")
     deals = mt5.history_deals_get(since - timedelta(days=1), now + timedelta(days=1))
     if deals is None:
         raise ValueError("the deal history is unreadable")
