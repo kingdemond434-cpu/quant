@@ -654,9 +654,14 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
         elif family in {"liquidity_regime", "orderflow_imbalance"}:
             call_params.pop("input_source", None)
             spread, flow = inputs._tape_series(sym, h1.index, timeframe)
-            call_params["spread_series" if family == "liquidity_regime" else "flow"] = (
-                spread if family == "liquidity_regime" else flow
-            )
+            series = spread if family == "liquidity_regime" else flow
+            # NO TAPE IS A FAILED BUILD BY NAME (2026-10-29). A None series was handed to the
+            # family, which fired nothing, and 66k tape cells were judged as though the market
+            # had said no while the reader simply could not open the tape (mt5desk.tape_days).
+            if series is None:
+                return _build_failed(f"{family}: tape series unavailable for {sym} "
+                                     f"(data/tape/ticks/{sym})")
+            call_params["spread_series" if family == "liquidity_regime" else "flow"] = series
         # THE VENUE'S SURFACE IS DATA, NOT A PARAMETER (2026-09-30). `family_execution_state`
         # refuses without the per-symbol spread/activity surface by weekday-hour, and there was
         # no branch here, so every execution_state cell built with ZERO signals. Loaded by the
