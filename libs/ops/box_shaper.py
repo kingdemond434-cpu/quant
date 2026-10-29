@@ -228,15 +228,35 @@ def script_identity(cmdline: str) -> tuple[str | None, list[str]]:
     return None, []
 
 
+#: The `--mode` spellings argparse accepts for pf_allocator (allow_abbrev, the default): every
+#: unambiguous prefix down to `--m` (its only other long options are --seed and --help).
+_MODE_FLAGS = ("--m", "--mo", "--mod", "--mode")
+
+
 def parse_mode(args: Sequence[str], default: str = "normal") -> str:
-    """The `--mode` argument: `--mode X` or `--mode=X`; absent is the script's default. Pure."""
-    for i, tok in enumerate(args):
-        low = tok.lower()
-        if low == "--mode" and i + 1 < len(args):
-            return args[i + 1].lower()
-        if low.startswith("--mode="):
-            return low.split("=", 1)[1] or default
-    return default
+    """The `--mode` argument AS ARGPARSE READS IT. Pure.
+
+    `--mode X` / `--mode=X`, and the unambiguous prefixes argparse accepts (`--mod`, `--mo`,
+    `--m`, each with `=` too); when it is given more than once the LAST one wins, as argparse
+    stores it (audit SF-a, 2026-10-29: the first one was taken, so `--mode fast --mode heavy`
+    read fast and escaped the heavy pin). Nothing after a bare `--` is an option. Absent is the
+    script's default.
+    """
+    mode = default
+    i = 0
+    while i < len(args):
+        low = args[i].lower()
+        if low == "--":
+            break
+        flag, eq, value = low.partition("=")
+        if flag in _MODE_FLAGS:
+            if eq:
+                mode = value or default
+            elif i + 1 < len(args):
+                mode = args[i + 1].lower()
+                i += 1
+        i += 1
+    return mode
 
 
 def script_mode(p: Proc) -> tuple[str | None, str]:
