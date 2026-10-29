@@ -555,6 +555,31 @@ class TestThroughputRatchet:
         assert doc["drained"] == 60 and doc["backlog_before"] == 18128
 
 
+    def test_a_seat_parked_at_quota_with_work_waiting_counts_passes(self, tmp_path,
+                                                                     monkeypatch) -> None:
+        """Pass after pass stood down at 0 free requests with 146 rows waiting and read healthy.
+        The streak is what lets a reader call that RED; any pass that is not starved resets it."""
+        self._at(tmp_path, monkeypatch)
+        now = datetime(2026, 10, 29, tzinfo=UTC)
+        out = {"BLOCKED_SEAT_UNAVAILABLE": 1}
+        docs = [dw.publish_throughput(1, 60.0, 146, 146, now, out) for _ in range(3)]
+        assert [d["seat_starved_passes"] for d in docs] == [1, 2, 3]
+        assert docs[2]["seat_starved_since"] == docs[0]["seat_starved_since"]
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "check_seat_starvation",
+            Path(__file__).resolve().parents[3] / "scripts" / "check_seat_starvation.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        assert mod.verdict(docs[1])["verdict"] == "GREEN"
+        assert mod.verdict(docs[2])["verdict"] == "RED"
+        assert mod.verdict({"at": "x"})["verdict"] == "UNMEASURED"
+        # A drained queue, or a seat that answered, is not starvation.
+        assert dw.publish_throughput(1, 60.0, 1, 0, now, out)["seat_starved_passes"] == 0
+        assert dw.publish_throughput(5, 60.0, 146, 141, now, {"RECOVERED_X": 5}
+                                     )["seat_starved_passes"] == 0
+
+
 class TestSeatParallelism:
     """A seat call is 26.7s of HTTP wait, so concurrency costs neither a core nor a gigabyte --
     and the daily ceiling is unchanged by it. The same 458 calls are made; they are made inside

@@ -911,7 +911,7 @@ def _post_with_degrade(url: str, key: str, req: dict[str, Any], *, timeout: floa
     common 400 across OpenAI-compatible endpoints and losing the cap entirely would let one call
     run away against a metered API.
     """
-    attempt = dict(req)
+    attempt = _apply_known_rejects(url, dict(req))
     for _ in range(len(_DEGRADABLE) + 1):
         body, err = _post(url, key, json.dumps(attempt).encode(), timeout=timeout)
         if err is None or not err.startswith("HTTP 400"):
@@ -919,12 +919,77 @@ def _post_with_degrade(url: str, key: str, req: dict[str, Any], *, timeout: floa
         low = err.lower()
         if "max_completion_tokens" in low and "max_tokens" not in attempt:
             attempt["max_tokens"] = attempt.pop("max_completion_tokens", max(1, 8000))
+            _note_reject(url, str(req.get("model") or ""), "max_completion_tokens")
             continue
         dropped = next((p for p in _DEGRADABLE if p in attempt and p.lower() in low), None)
         if dropped is None:
             return body, err            # a 400 about something we cannot fix by dropping
         attempt.pop(dropped)
+        _note_reject(url, str(req.get("model") or ""), dropped)
     return {}, "exhausted parameter degradation without a successful call"
+
+
+#: What each (host, model) has already refused, so the ladder is climbed ONCE per model and not
+#: once per call (2026-10-29). The ladder was right and its cost was not: every call to a model
+#: that refuses `reasoning_effort` spent two of the day's free requests, one of them on a 400 the
+#: desk had already seen. The census measured 22% to 54% of the day's requests going to waste,
+#: and the box's seat lane now stands down at 519 completions of a 1,000-request allowance. A
+#: memo turns that waste back into calls. Entries expire after `_REJECT_TTL_DAYS`, so a provider
+#: that starts accepting a parameter gets it asked for again within the week.
+PARAM_REJECTS = _ROOT / "data" / "llm_param_rejects.json"
+_REJECT_TTL_DAYS = 7
+
+
+def _reject_key(url: str, model: str) -> str:
+    from urllib.parse import urlparse
+    return f"{(urlparse(url).hostname or '').lower()}|{model}"
+
+
+def _load_rejects() -> dict[str, dict[str, str]]:
+    try:
+        doc = json.loads(PARAM_REJECTS.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def known_rejects(url: str, model: str, now: datetime | None = None) -> set[str]:
+    """Parameters this host refused for this model within the TTL. Empty when unmeasured."""
+    t = now or datetime.now(UTC)
+    row = _load_rejects().get(_reject_key(url, model)) or {}
+    out: set[str] = set()
+    for param, stamp in row.items() if isinstance(row, dict) else ():
+        with contextlib.suppress(TypeError, ValueError):
+            seen = datetime.fromisoformat(str(stamp))
+            if (t - (seen if seen.tzinfo else seen.replace(tzinfo=UTC))).days < _REJECT_TTL_DAYS:
+                out.add(str(param))
+    return out
+
+
+def _apply_known_rejects(url: str, req: dict[str, Any]) -> dict[str, Any]:
+    gone = known_rejects(url, str(req.get("model") or ""))
+    if "max_completion_tokens" in gone and "max_completion_tokens" in req:
+        req["max_tokens"] = req.pop("max_completion_tokens")
+    for p in gone & set(_DEGRADABLE):
+        if p != "max_completion_tokens":
+            req.pop(p, None)
+    return req
+
+
+def _note_reject(url: str, model: str, param: str) -> None:
+    """Remember a refusal. Never raises: a memo write must not take down the call."""
+    if not model:
+        return
+    doc = _load_rejects()
+    row = doc.get(_reject_key(url, model))
+    row = dict(row) if isinstance(row, dict) else {}
+    row[param] = datetime.now(UTC).isoformat(timespec="seconds")
+    doc[_reject_key(url, model)] = row
+    with contextlib.suppress(OSError):
+        PARAM_REJECTS.parent.mkdir(parents=True, exist_ok=True)
+        tmp = PARAM_REJECTS.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+        os.replace(tmp, PARAM_REJECTS)
 
 
 def _post(url: str, key: str, payload: bytes, *, timeout: float
