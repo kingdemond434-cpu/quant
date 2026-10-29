@@ -1,6 +1,7 @@
 """near_miss_farm: every near-miss on the one forward engine, its own ledger, no authority."""
 from __future__ import annotations
 
+import contextlib
 import json
 import sys
 from pathlib import Path
@@ -104,3 +105,51 @@ def test_hourly_leg_is_wired() -> None:
     assert '_costed("near_miss_farm"' in text
     from libs.research.layers import LEG_LAYER
     assert LEG_LAYER["near_miss_farm"] == "timing"
+
+
+def _bytes(p: Path) -> bytes | None:
+    return p.read_bytes() if p.exists() else None
+
+
+def test_a_farm_pass_never_touches_the_global_registry_or_clock_ledger(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit HOLD on #487: a farm pass wrote a LIVE row into the tracked sleeve registry and a
+    clock into the global forward clock ledger, and a later main-lane pass inherited the farm's
+    start with promotion authority. Every import path the engine uses is driven here, because a
+    module imported under two names is two module objects."""
+    import importlib
+
+    from research import shadow_forward as sf
+    real_reg = importlib.import_module("sleeve_registry").REGISTRY
+    real_ledger = importlib.import_module("clock_ledger").LEDGER
+    before = (_bytes(real_reg), _bytes(real_ledger))
+    monkeypatch.setattr(sf, "SHADOW_DIR", tmp_path / "shadow")
+
+    def engine(rows: list, ledger: str) -> None:
+        import clock_ledger
+        import sleeve_registry
+        from research.clock_ledger import stamp
+        stamp("FARM.K", "id", "2026-10-01T00:00:00+00:00")
+        clock_ledger.stamp("FARM.K2", "id", "2026-10-01T00:00:00+00:00")
+        sleeve_registry.freeze("FARM.K", {"params": {}},
+                               forward_start="2026-10-01T00:00:00+00:00")
+        for name in nmf.REGISTRY_MODULES[1:]:
+            with contextlib.suppress(ImportError):
+                importlib.import_module(name).freeze("FARM.K3", {"params": {}})
+
+    monkeypatch.setattr(sf, "main", engine)
+    nmf.evaluate([])
+    assert (_bytes(real_reg), _bytes(real_ledger)) == before, "a global store was written"
+    farm = tmp_path / "shadow" / nmf.FARM_SUBDIR
+    assert "FARM.K" in json.loads((farm / nmf.FARM_REGISTRY).read_text())["sleeves"]
+    clocks = json.loads((farm / nmf.FARM_CLOCK_LEDGER).read_text())["clocks"]
+    assert {r["key"] for r in clocks.values()} >= {"FARM.K", "FARM.K2"}
+    assert real_reg == importlib.import_module("sleeve_registry").REGISTRY, "restored"
+    assert real_ledger == importlib.import_module("clock_ledger").LEDGER, "restored"
+
+    # A promoting lane that later clocks the same key starts FRESH: nothing the farm did is
+    # visible to the lane's ledger.
+    from research.clock_ledger import stamp
+    lane = tmp_path / "lane_clock_ledger.json"
+    later = "2026-10-29T00:00:00+00:00"
+    assert stamp("FARM.K", "id", later, path=lane)["start"] == later

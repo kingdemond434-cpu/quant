@@ -47,8 +47,10 @@ near-miss mechanisms hold up on data nobody fitted), never a promotion.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sys
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -204,13 +206,71 @@ def _farm_watermark(enrolled: int, ledger: str) -> None:
         pass
 
 
+#: The engine's GLOBAL stores, and the module names each is reachable under. `shadow_forward`
+#: imports `sleeve_registry` and `clock_ledger` both bare and as `research.*`, and a module
+#: imported under two names is two module objects, so each is redirected under every name.
+REGISTRY_MODULES = ("sleeve_registry", "research.sleeve_registry")
+CLOCK_LEDGER_MODULES = ("clock_ledger", "research.clock_ledger")
+FARM_REGISTRY = "sleeve_registry.json"
+FARM_CLOCK_LEDGER = "forward_clock_ledger.json"
+
+
+@contextlib.contextmanager
+def farm_stores(farm_dir: Path) -> Iterator[None]:
+    """Point EVERY store `shadow_forward.main` writes at `farm_dir` for one pass, then restore.
+
+    AUDIT HOLD ON #487 (2026-10-29). Redirecting `SHADOW_DIR` alone left two global writers live:
+    `clock_ledger.stamp` (its `path` default is bound when the module loads, and its rule is
+    start = min(recorded, proposed)) and `sleeve_registry.freeze`, which creates every new row
+    LIVE in the tracked registry. Measured: one farm pass on EURUSD H1 wrote a LIVE registry row
+    and a clock for a near miss, and a later main-lane pass inherited the farm's `forward_start`
+    with promotion authority -- in-sample bars counted as forward, from ~1,240 uncharged looks.
+    The farm's registry and clock ledger are its own; a cell that later enters a promoting lane
+    starts a FRESH clock there.
+    """
+    import importlib
+
+    ledger_path = farm_dir / FARM_CLOCK_LEDGER
+    saved: list[tuple[Any, str, Any]] = []
+    for name in REGISTRY_MODULES:
+        try:
+            mod: Any = importlib.import_module(name)
+        except Exception:
+            continue
+        if hasattr(mod, "REGISTRY"):
+            saved.append((mod, "REGISTRY", mod.REGISTRY))
+            mod.REGISTRY = farm_dir / FARM_REGISTRY
+    for name in CLOCK_LEDGER_MODULES:
+        try:
+            mod = importlib.import_module(name)
+        except Exception:
+            continue
+        real = mod.stamp
+
+        def _farm_stamp(key: str, identity: str, proposed: Any, *, path: Path | None = None,
+                        _real: Any = real, **kw: Any) -> Any:
+            return _real(key, identity, proposed, path=ledger_path, **kw)
+
+        saved.append((mod, "stamp", real))
+        mod.stamp = _farm_stamp
+        if hasattr(mod, "LEDGER"):
+            saved.append((mod, "LEDGER", mod.LEDGER))
+            mod.LEDGER = ledger_path
+    try:
+        yield
+    finally:
+        for mod, attr, value in reversed(saved):
+            setattr(mod, attr, value)
+
+
 def evaluate(rows: list[tuple[Any, ...]]) -> Path:
-    """Run the one forward engine over the farm rows into the farm ledger."""
+    """Run the one forward engine over the farm rows into the farm's own stores."""
     from research import shadow_forward as sf
     # THE ENGINE'S DIRECTORY IS THE FARM'S FOR THE RUN. `shadow_forward` writes per-trade ledgers
     # as `ledger_<sym>_<fam>_<win>.json` beside its state, keyed without params, so a farm row on
     # the same symbol, family and window as a certified clock would overwrite that clock's
-    # ledger in `reports/shadow/`. Pointed at `reports/shadow/farm/`, both files stay apart.
+    # ledger in `reports/shadow/`. Pointed at `reports/shadow/farm/`, both files stay apart, and
+    # `farm_stores` does the same for the registry and the clock ledger.
     lane_dir = sf.SHADOW_DIR
     farm_dir = lane_dir / FARM_SUBDIR
     farm_dir.mkdir(parents=True, exist_ok=True)
@@ -218,7 +278,8 @@ def evaluate(rows: list[tuple[Any, ...]]) -> Path:
     sf._enrolment_watermark = _farm_watermark
     sf.SHADOW_DIR = farm_dir
     try:
-        sf.main(rows=rows, ledger=LEDGER_NAME)
+        with farm_stores(farm_dir):
+            sf.main(rows=rows, ledger=LEDGER_NAME)
     finally:
         sf.SHADOW_DIR = lane_dir
         sf._enrolment_watermark = original
