@@ -12,6 +12,7 @@ from collections.abc import Iterable, Iterator
 from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 LOCK_ROOT = BASE / "data" / ".job_locks"
@@ -357,6 +358,12 @@ def _progress_path(lock: Path) -> Path:
     return lock.with_name(lock.stem + ".progress.json")
 
 
+#: A beaten phase's limit is clamped here, so an infinite budget can never disable WEDGED.
+BEAT_EXPECT_MAX_S = 6 * 3600.0
+#: A beat stamped further ahead than this is unreadable, never PROGRESSING forever.
+BEAT_FUTURE_SLACK_S = 120.0
+
+
 def _beat_path(lock: Path) -> Path:
     return lock.with_name(lock.stem + ".beat.json")
 
@@ -379,14 +386,24 @@ def heartbeat(name: str, phase: str, *, expect_s: float | None = None,
             return False
         rec = {"token": str(row.get("token") or ""), "phase": str(phase),
                "at": time.time() if now is None else float(now),
-               "expect_s": float(expect_s) if expect_s else None}
-        _beat_path(lock).write_text(json.dumps(rec), "utf-8")
+               "expect_s": (min(float(expect_s), BEAT_EXPECT_MAX_S)
+                            if expect_s and expect_s > 0 else None)}
+        dst = _beat_path(lock)
+        tmp = dst.with_name(f"{dst.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(rec), "utf-8")
+        try:
+            os.replace(tmp, dst)          # a reader holding it open refuses on Windows: the
+        except OSError:                   # next beat lands; this one is simply skipped
+            with suppress(OSError):
+                tmp.unlink()
+            return False
         return True
     except Exception:
         return False
 
 
-def _beat_progress(lock: Path, token: str, t: float, out: dict) -> dict | None:
+def _beat_progress(lock: Path, token: str, t: float,
+                   out: dict[str, Any]) -> dict[str, Any] | None:
     """The owner's state from its beats, or None when this owner has never beaten."""
     try:
         beat = json.loads(_beat_path(lock).read_text("utf-8"))
@@ -395,11 +412,12 @@ def _beat_progress(lock: Path, token: str, t: float, out: dict) -> dict | None:
     if not isinstance(beat, dict) or beat.get("token") != token:
         return None
     at = beat.get("at")
-    if not isinstance(at, (int, float)):
+    if not isinstance(at, (int, float)) or float(at) > t + BEAT_FUTURE_SLACK_S:
         return None
     expect = beat.get("expect_s")
     limit = max(float(WEDGED_AFTER_S),
-                float(expect) if isinstance(expect, (int, float)) else 0.0)
+                min(float(expect), BEAT_EXPECT_MAX_S) if isinstance(expect, (int, float))
+                else 0.0)
     idle = max(0.0, t - float(at))
     phase = str(beat.get("phase") or "?")
     out.update(signal="beat", phase=phase, idle_s=round(idle, 1), limit_s=round(limit, 1))
@@ -414,7 +432,7 @@ def _beat_progress(lock: Path, token: str, t: float, out: dict) -> dict | None:
 
 
 def owner_progress(lock: Path, *, now: float | None = None,
-                   cpu_of=None) -> dict:
+                   cpu_of=None) -> dict[str, Any]:
     """PROGRESSING / IDLE / WEDGED / UNMEASURED for a lock's owner, from its TREE's CPU time.
 
     Each observer records the owner's CPU seconds and the last time they advanced in a sidecar
@@ -426,7 +444,7 @@ def owner_progress(lock: Path, *, now: float | None = None,
     except (OSError, ValueError):
         return {"status": "UNMEASURED", "why": "lock unreadable"}
     pid, token = row.get("pid"), str(row.get("token") or "")
-    out: dict = {"pid": pid, "started_at": row.get("started_at")}
+    out: dict[str, Any] = {"pid": pid, "started_at": row.get("started_at")}
     beaten = _beat_progress(lock, token, t, out)
     if beaten is not None:
         return beaten
@@ -475,7 +493,7 @@ STOP_HISTORY_MAX = 50
 STOPS_LEDGER = BASE / "reports" / "JOB_LOCK_STOPS.jsonl"
 
 
-def _stops_tail() -> list:
+def _stops_tail() -> list[Any]:
     try:
         lines = STOPS_LEDGER.read_text("utf-8").splitlines()[-STOP_HISTORY_MAX:]
     except OSError:
@@ -487,7 +505,7 @@ def _stops_tail() -> list:
     return out
 
 
-def _read_health() -> dict:
+def _read_health() -> dict[str, Any]:
     try:
         doc = json.loads(HEALTH_REPORT.read_text("utf-8"))
     except (OSError, ValueError):
@@ -495,7 +513,7 @@ def _read_health() -> dict:
     return doc if isinstance(doc, dict) else {}
 
 
-def _write_health(locks: dict, t: float) -> None:
+def _write_health(locks: dict[str, Any], t: float) -> None:
     wedged = sorted(k for k, v in locks.items()
                     if isinstance(v, dict) and v.get("status") == "WEDGED")
     doc = {"at": datetime.fromtimestamp(t, UTC).isoformat(timespec="seconds"),
@@ -525,12 +543,12 @@ def _write_health(locks: dict, t: float) -> None:
         pass                              # bookkeeping never blocks the lock decision
 
 
-def _stamp(health: dict, t: float) -> dict:
+def _stamp(health: dict[str, Any], t: float) -> dict[str, Any]:
     return {**health, "observed_at": datetime.fromtimestamp(t, UTC).isoformat(
         timespec="seconds")}
 
 
-def _publish_health(name: str, health: dict, *, now: float | None = None) -> None:
+def _publish_health(name: str, health: dict[str, Any], *, now: float | None = None) -> None:
     """One contender's row in JOB_LOCK_HEALTH.json; RED when any row is WEDGED.
 
     An unlocked read-modify-write: two writers at once can drop each other's row. Benign for a
@@ -538,13 +556,14 @@ def _publish_health(name: str, health: dict, *, now: float | None = None) -> Non
     (`write_health_report`), dropping rows for locks no longer held."""
     t = time.time() if now is None else now
     doc = _read_health()
-    locks = doc.get("locks") if isinstance(doc.get("locks"), dict) else {}
+    prior = doc.get("locks")
+    locks: dict[str, Any] = prior if isinstance(prior, dict) else {}
     locks[name] = _stamp(health, t)
     _write_health(locks, t)
 
 
-def write_health_report(rows: dict, *, now: float | None = None,
-                        new_stops: list | None = None) -> None:
+def write_health_report(rows: dict[str, Any], *, now: float | None = None,
+                        new_stops: list[Any] | None = None) -> None:
     """The hourly leg's FULL report: exactly the locks held now, written every pass -- also when
     none is held, so a quiet hour reads fresh and a WEDGED row whose owner died is gone (audit
     of v5, MF3). Auto-stops are appended to STOPS_LEDGER, so a kill outlives its pass."""

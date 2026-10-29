@@ -356,3 +356,65 @@ def test_a_previous_owners_beat_is_ignored(root: Path) -> None:
     lock.write_text(json.dumps({"token": "next", "pid": os.getpid(),
                                 "host": socket.gethostname()}), "utf-8")
     assert J.owner_progress(lock, now=10 * 3600.0, cpu_of=lambda pid: 1.0)["signal"] == "cpu"
+
+
+# --- audit of v7 -----------------------------------------------------------------------------
+def test_mf1_the_cycles_own_launch_argv_matches() -> None:
+    m = ("merge_hypotheses",)
+    script = "C:\\opt\\quant\\desks\\mt5\\research\\merge_hypotheses.py"
+    assert C.runs_script([sys.executable, "-u", "-W", "ignore", script], m)  # _producer's argv
+    assert C.runs_script(["python", "-X", "utf8", "merge_hypotheses.py"], m)
+    assert C.runs_script(["python", "-Wignore", "merge_hypotheses.py"], m)
+    assert not C.runs_script(["python", "-W", "merge_hypotheses.py", "other.py"], m)
+    assert not C.runs_script(["python", "-W"], m)
+    hc = (ROOT / "desks" / "mt5" / "research" / "hourly_cycle.py").read_text("utf-8")
+    assert '[sys.executable, "-u", "-W", "ignore", str(target), *args]' in hc
+
+
+def test_mf1_an_hourly_launched_owner_is_stoppable(tmp_path: Path) -> None:
+    script = tmp_path / "merge_hypotheses.py"
+    script.write_text("import time\ntime.sleep(60)\n", "utf-8")
+    proc = subprocess.Popen([sys.executable, "-u", "-W", "ignore", str(script)])
+    try:
+        time.sleep(0.3)
+        res = C._stop(proc.pid, ("merge_hypotheses",), datetime.now(UTC).isoformat())
+        assert res["stopped"] is True and res["list_rounds_capped"] is False, res
+        proc.wait(timeout=30)
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait()
+
+
+def test_mf2_a_refusal_mid_freeze_never_leaves_the_owner_stopped(tmp_path: Path,
+                                                                 monkeypatch) -> None:
+    script = tmp_path / "merge_hypotheses.py"
+    script.write_text("import time\ntime.sleep(60)\n", "utf-8")
+    proc = subprocess.Popen([sys.executable, str(script)])
+    try:
+        time.sleep(0.3)
+
+        def denied(self, recursive=False):
+            raise psutil.AccessDenied(self.pid)
+        monkeypatch.setattr(psutil.Process, "children", denied)
+        res = C._stop(proc.pid, ("merge_hypotheses",), datetime.now(UTC).isoformat())
+        assert res["stopped"] is False and "AccessDenied" in res["why"]
+        time.sleep(0.3)
+        assert psutil.Process(proc.pid).status() != psutil.STATUS_STOPPED
+        assert proc.poll() is None
+    finally:
+        proc.kill()
+        proc.wait()
+
+
+def test_a_beat_limit_is_clamped_and_a_future_beat_is_unreadable(root: Path) -> None:
+    lock = _own_lock(root)
+    J.heartbeat("merge_hypotheses", "order", expect_s=float("inf"), now=0.0)
+    beat = json.loads((root / "merge_hypotheses.beat.json").read_text("utf-8"))
+    assert beat["expect_s"] == J.BEAT_EXPECT_MAX_S
+    assert J.owner_progress(lock, now=J.BEAT_EXPECT_MAX_S + 60,
+                            cpu_of=lambda pid: 1.0)["status"] == "WEDGED"
+    J.heartbeat("merge_hypotheses", "order", now=10_000.0)
+    out = J.owner_progress(lock, now=100.0, cpu_of=lambda pid: 1.0)
+    assert out["signal"] == "cpu"                # a beat from the future vouches for nothing
+    assert not list(root.glob("*.tmp"))

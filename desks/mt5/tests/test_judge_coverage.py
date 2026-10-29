@@ -697,4 +697,5 @@ def test_the_merge_ordering_budget_follows_the_leg_cap(monkeypatch) -> None:
     monkeypatch.setattr(mh, "_T0", __import__("time").monotonic())
     assert mh._order_budget_s() <= 1800 - mh.REPLACE_TAIL_S - mh.ORDER_WRITE_RESERVE_S
     from research import hourly_cycle as hc
-    assert hc.LEG_BUDGET_SEC["merge_hypotheses"] >= 1_800
+    # a core leg: its cap stays inside the core plan's kill (audit of v7, MF3)
+    assert hc.LEG_BUDGET_SEC.get("merge_hypotheses", hc.SEARCH_BUDGET_SEC) <= hc.SEARCH_BUDGET_SEC

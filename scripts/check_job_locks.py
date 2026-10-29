@@ -80,6 +80,10 @@ def _locks(root: Path) -> list[Path]:
                   if not p.name.endswith((".peaks.json", ".progress.json", ".beat.json")))
 
 
+#: Interpreter options whose value is the NEXT argv element (`-W ignore`, `-X utf8`).
+_OPTS_WITH_ARG = frozenset({"-W", "-X", "--check-hash-based-pycs"})
+
+
 def _leaf(arg: str) -> str:
     base = arg.replace("\\", "/").rsplit("/", 1)[-1]
     return base[:-3] if base.endswith(".py") else base
@@ -93,13 +97,22 @@ def runs_script(argv: list[str], scripts: tuple[str, ...]) -> bool:
     if "python" not in exe and exe not in ("py", "py.exe"):
         return False
     # THE FIRST SCRIPT ELEMENT ONLY (audit of v6, SF6): it is what the interpreter runs; a later
-    # `.py` is an argument to it (`python other.py --in merge_hypotheses.py`).
-    for i, arg in enumerate(argv[1:], start=1):
-        if argv[i - 1] == "-m":
-            return arg.rsplit(".", 1)[-1] in scripts
+    # `.py` is an argument to it (`python other.py --in merge_hypotheses.py`). An option that
+    # takes a SEPARATE argument consumes it (audit of v7, MF1): hourly_cycle launches every leg
+    # as `python -u -W ignore <script>`, and reading `ignore` as the script refused every owner.
+    rest = argv[1:]
+    i = 0
+    while i < len(rest):
+        arg = rest[i]
+        if arg == "-m":
+            return i + 1 < len(rest) and rest[i + 1].rsplit(".", 1)[-1] in scripts
         if arg == "-c":
             return False
+        if arg in _OPTS_WITH_ARG:
+            i += 2
+            continue
         if arg.startswith("-"):
+            i += 1
             continue
         return arg.endswith(".py") and not any(c.isspace() for c in arg) \
             and _leaf(arg) in scripts
@@ -131,30 +144,41 @@ def _stop(pid: int, scripts: tuple[str, ...], started_at: object = None) -> dict
         # between one listing and the terminate -- 5 orphans in 130, the two-writers case. The
         # owner is suspended first, then every descendant found, re-listed until a pass finds
         # nothing new, so nothing can be born after the tree is known.
-        proc.suspend()
-        tree: list = []
-        seen: set[int] = set()
-        for _ in range(STOP_LIST_ROUNDS):
-            fresh = [c for c in proc.children(recursive=True) if c.pid not in seen]
-            if not fresh:
-                break
-            for c in fresh:
-                seen.add(c.pid)
+        tree: list[Any] = []
+        suspended: list[Any] = []
+        capped = True
+        # EVERY SUSPEND IS UNDONE, whatever raises (audit of v7, MF2): an AccessDenied while
+        # listing or freezing left the owner SIGSTOPped holding its lock, refused on every
+        # later pass -- a lane frozen for good. The resume also delivers SIGTERM on POSIX,
+        # which waits on a stopped process until SIGCONT.
+        try:
+            proc.suspend()
+            suspended.append(proc)
+            seen: set[int] = set()
+            for _ in range(STOP_LIST_ROUNDS):
+                fresh = [c for c in proc.children(recursive=True) if c.pid not in seen]
+                if not fresh:
+                    capped = False
+                    break
+                for c in fresh:
+                    seen.add(c.pid)
+                    with contextlib.suppress(psutil.NoSuchProcess):
+                        c.suspend()
+                        suspended.append(c)
+                tree.extend(fresh)
+            for p in reversed(tree):      # deepest descendants first, the owner last
                 with contextlib.suppress(psutil.NoSuchProcess):
-                    c.suspend()
-            tree.extend(fresh)
-        for p in reversed(tree):          # deepest descendants first, the owner last
-            with contextlib.suppress(psutil.NoSuchProcess):
-                p.terminate()
-        proc.terminate()
-        for p in [*tree, proc]:           # SIGTERM waits on a stopped process until SIGCONT
-            with contextlib.suppress(psutil.NoSuchProcess):
-                p.resume()
+                    p.terminate()
+            proc.terminate()
+        finally:
+            for p in suspended:
+                with contextlib.suppress(Exception):
+                    p.resume()
         _, alive = psutil.wait_procs([*tree, proc], timeout=30)
         for p in alive:
             with contextlib.suppress(psutil.NoSuchProcess):
                 p.kill()
-        return {"stopped": True, "tree": 1 + len(tree),
+        return {"stopped": True, "tree": 1 + len(tree), "list_rounds_capped": capped,
                 "why": f"terminated pid {pid} and {len(tree)} descendant(s) "
                        f"({' '.join(argv)[:120]})"}
     except Exception as exc:

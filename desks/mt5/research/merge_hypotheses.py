@@ -79,6 +79,9 @@ def _order_budget_s() -> float:
     return max(5.0, min(ORDER_BUDGET_S, left))
 
 
+#: Seconds any other phase may run before it reads WEDGED. The merge also runs outside a leg cap
+#: (run_external_pipeline.sh), where a slow but working phase must not be stopped.
+PHASE_S = 3600.0
 #: Seconds a docket serialise + replace may take before its phase reads WEDGED (beyond the
 #: replace's own retry budget).
 WRITE_PHASE_S = 900.0
@@ -798,7 +801,7 @@ def main() -> int:
     global _T0
     _T0 = time.monotonic()
     now = datetime.now(tz=UTC)
-    _beat("intake")
+    _beat("intake", expect_s=PHASE_S)
     _orphans = sweep_orphan_temps()
     if _orphans:
         print(f"merge: removed {len(_orphans)} docket temp file(s) left by a killed pass")
@@ -940,7 +943,7 @@ def main() -> int:
         if _root not in _sys.path:
             _sys.path.insert(0, _root)
         from libs.moat.docket_feed import feed as _registry_feed
-        _beat("registry_feed")
+        _beat("registry_feed", expect_s=PHASE_S)
         _reg_rows, registry_census = _registry_feed(tradeable=tradeable or None,
                                                     banned=live_banned_families())
         kept = 0
@@ -1168,7 +1171,7 @@ def main() -> int:
             if _p not in _sys.path:
                 _sys.path.insert(0, _p)
         from research import hypothesis_families as _hf
-        _beat("families")
+        _beat("families", expect_s=PHASE_S)
         rows_out, families, families_pending = _hf.apply(
             rows_out, fresh=produced_now - reproposed, reproposed=reproposed,
             identity_fn=_identity, now=now, hyp_dir=HYP,
@@ -1225,7 +1228,7 @@ def main() -> int:
     # clean rows of its OWN family, in that family's own slots. The family-balanced prefix the
     # allocator just built is unchanged, no row leaves the docket, and nothing is billed because
     # nothing is withheld. A screen fault costs the demotion, never a row.
-    _beat("prejudge")
+    _beat("prejudge", expect_s=PHASE_S)
     prejudge: dict[str, Any] = {"status": "UNAVAILABLE"}
     try:
         import sys as _sys
@@ -1335,7 +1338,7 @@ def main() -> int:
         print(f"   preregistration unavailable ({type(exc).__name__}: {exc}); docket unstamped")
     _beat("write", expect_s=_replace_wait_s() + WRITE_PHASE_S)
     _write_docket_atomically(TARGET, rows_out)
-    _beat("publish")
+    _beat("publish", expect_s=PHASE_S)
     _lease(TARGET)
     # THE FAMILIES REPORT, THEN THE RE-AIM LEDGER -- ONLY NOW, after the docket is durable, and
     # only for children that survived into the rows just written (order_docket can filter some).
