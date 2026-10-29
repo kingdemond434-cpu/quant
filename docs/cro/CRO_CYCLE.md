@@ -277,7 +277,7 @@ Standing rules for every duty: never cut mining, ingestion or research generatio
 
 Write the table, the duty statuses, the tier verdict, the ranked gaps, the change since the last pass and each fix's wiring proof to `desks/mt5/reports/TIER1_BREADTH_REVIEW.json` (append to its `history` array). Carry `tier_verdict`, `k_eff`, `top_breadth_gaps`, `duties_missed`, `gaps_named` and `gaps_closed` in the cycle ledger row; each `gaps_closed` entry names its fix commit, its wiring proof and its after-metric.
 
-**PASS QUESTIONS (ARCH-30, principal 2026-10-06; live in the noon routine 2026-10-07).** Every pass answers Q1-Q7 after the duties. Each answer cites box evidence: an artifact path with its timestamp, a ledger row, or a commit. An answer that is UNMEASURED or cites nothing counts as MISSED (L1.28a). Write the answers to `desks/mt5/reports/TIER1_BREADTH_REVIEW.json` under `pass_questions`, keyed `Q1`..`Q7`, each with `answer`, `evidence` and `status` (ANSWERED / MISSED). Carry `pass_questions_missed` in the cycle ledger row.
+**PASS QUESTIONS (ARCH-30, principal 2026-10-06; live in the noon routine 2026-10-07).** Every pass answers Q1-Q7 after the duties. Each answer cites box evidence in a form the checker can resolve: `<artifact path>@<ISO timestamp>` for a file on the box, `ledger:<row id>` for a `cro_cycle_ledger.jsonl` row (`<lane>-<date>`) or work item, or a commit sha. Any other citation reads MISSED (`evidence_unresolvable`); the sweep items below follow the same rule. An answer that is UNMEASURED or cites nothing counts as MISSED (L1.28a). Write the answers to `desks/mt5/reports/TIER1_BREADTH_REVIEW.json` under `pass_questions`, keyed `Q1`..`Q7`, each with `answer`, `evidence` and `status` (ANSWERED / MISSED). Carry `pass_questions_missed` in the cycle ledger row.
 
 | Q | Question | What counts as an answer |
 |---|---|---|
@@ -286,22 +286,26 @@ Write the table, the duty statuses, the tier verdict, the ranked gaps, the chang
 | Q3 | **What opportunities were missed?** | Named trades, cells or sources that a working desk would have taken this window, from the missed-growth ledger and the missed-trade archaeologist, each with its cause. |
 | Q4 | **Did the allocator beat its baselines?** | The allocator's book against equal-risk, inverse-vol and best-single-sleeve baselines, measured on the executable book after lot rounding and costs. A loss to any baseline goes to the desktop "Growth allocator" session with its evidence. Allocator code is money path and is never patched from this lane. |
 | Q5 | **What did stale information, costs or defects cost?** | The measured loss, or the forgone E[log W], from stale inputs, cost slippage against the model and defects since the last pass, each with its cause. |
-| Q6 | **Which components can be removed?** | Components with no consumer, no measured contribution, or a duplicate of another, each with its evidence (D41's dead-architecture report). Removal still follows the retirement law: a named falsifier, never silence. |
+| Q6 | **Which components can be removed?** | Components with no consumer, no measured contribution, or a duplicate of another, each with its evidence (D41's dead-architecture report) and a disposition of retire, wire, or keep at zero weight. Removal still follows the retirement law: a named falsifier, never silence. A producer, miner or crawler whose cells are not yet judged is UNMEASURED, not zero-contribution, and producers are only ever wired or kept, never retired (mining is never cut). |
 | Q7 | **What is the most valuable new capability?** | The one capability (a source, method, actor model or organ) whose addition the evidence ranks first, with what it would unlock. It competes in STEP 7. |
 
-**JUDGING BOTTLENECK SWEEP (principal 2026-10-07; live in the noon routine).** Every pass runs sweep items (a) to (g) and records each one under `judging_sweep` in `TIER1_BREADTH_REVIEW.json`, keyed `a`..`g`, each with `finding`, `evidence` and `status`. The ledger row carries `judging_sweep` too, as the list of missed items. An item that is UNMEASURED or cites no evidence counts as MISSED. `scripts/check_cro_duties.py --review` enforces this alongside the pass questions. Baseline (2026-10-07): 1,389,434 cells unjudged and growing by about 90k a day, 0 first rulings per hour, 1-2 busy judge cores, and 0 cells warmed in 3,662s.
+**JUDGING BOTTLENECK SWEEP (principal 2026-10-07; live in the noon routine).** Every pass runs sweep items (a) to (g) and records each one under `judging_sweep` in `TIER1_BREADTH_REVIEW.json`, keyed `a`..`g`, each with `finding`, `evidence` and `status`. The ledger row carries `judging_sweep` too, as the list of missed items. An item that is UNMEASURED or cites no evidence counts as MISSED. `scripts/check_cro_duties.py --review` enforces this alongside the pass questions. Baseline (box, 2026-10-07 01:40Z): 1,389,434 cells unjudged and growing by about 90k a day (`reports/JUDGE_COVERAGE.json`), 0 first rulings per hour over 24h (`reports/JUDGING_BURNDOWN.json`), 1-2 busy judge cores (box process table), and 0 cells warmed in 3,662s (`reports/WARM_GAUNTLET.json` `warmed` and `seconds`).
 
 | Item | Sweep | Evidence |
 |---|---|---|
 | a | **Rulings rate**: first rulings per hour against cells created per hour | `reports/JUDGING_BURNDOWN.json`, no older than 2h (D3) |
 | b | **Never-fire share**: the share of UNKNOWN that is never-fire or too-rare, and whether every requeued cell reached a terminal verdict | `reports/JUDGE_COVERAGE.json` (D4) |
-| c | **Prewarm and cold builds**: warm rate, cold-build seconds, failed builds by cause | `reports/JUDGING_THROUGHPUT.json`, `reports/JUDGING_QUEUE_AGE.json` (D38) |
+| c | **Prewarm and cold builds**: warm rate, cold-build seconds, failed builds by cause | `reports/WARM_GAUNTLET.json` (`warmed`, `failed`, `missing`, `seconds`, `cells_per_min`, `warm_share_before`, `deferral_census`) and `data/hypotheses/warm_deferrals.json` for each failure's cause and age; `reports/JUDGING_THROUGHPUT.json`, `reports/JUDGING_QUEUE_AGE.json` (D38) |
 | d | **Busy cores against CPU and RAM consumers**: busy judge cores against planned workers, and what else holds the box's CPU and RAM | `stall_watch.json` and the judge's worker census |
 | e | **Fences**: the `coverage_drain` and `judge_coverage` fences pass | their fence output this pass |
 | f | **Failed task changes**: any `schtasks /Change` that failed, with its error | the task log on the box |
 | g | **swap_cost fails closed**: a missing or stale swap cost blocks the cell, never prices it at zero | `reports/BROKER_SWAPS_FRESHNESS.json` and the swap_cost guard |
 
 Act on the worst item in the same pass. Backpressure goes to the judge only: never throttle onboarding, mining or research generation, and never lower a gate.
+
+**Limitation record (ARCH-29).** For each material limitation the pass names, it records what limits capability, the improvement tested, the measured result with its uncertainty, the resources needed and the next experiment, and it keeps the best-supported incumbent until a challenger beats it on the same evidence. These go under `limitations` in the review.
+
+Standing: trial counts are never inflated. There are no lifetime, extra or penalty trial charges, and every charge stays at its original count (principal, 2026-10-07).
 
 ## STEP 4C — SIX-EVENT REALITY TRACE (principal's standing test, 2026-09-30)
 

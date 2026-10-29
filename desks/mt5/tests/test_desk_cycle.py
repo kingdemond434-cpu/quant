@@ -283,6 +283,16 @@ def test_every_pass_runs_the_tier1_breadth_review() -> None:
     for row in ("Datasets in use", "Wasted verdicts", "Unjudged backlog", "Effective breadth",
                 "Cert to forward", "Deep-forest vectors", "Judged", "Live"):
         assert f"| {row} |" in step, row
+    for q in range(1, 8):
+        assert f"| Q{q} |" in step, q
+    for item in "abcdefg":
+        assert f"| {item} |" in step, item
+    assert "PASS QUESTIONS (ARCH-30" in step
+    assert "Limitation record (ARCH-29)" in step
+    assert "`judging_sweep`" in step and "`pass_questions`" in step
+    assert "trial counts are never inflated" in step
+    assert "producers are only ever wired or kept, never retired" in step
+    assert "`reports/WARM_GAUNTLET.json` (`warmed`" in step
     assert "STEP 4B" in LAUNCHER.read_text("utf-8")
     assert "D15-D44" in LAUNCHER.read_text("utf-8")
     assert "check_cro_duties.py" in LAUNCHER.read_text("utf-8")
