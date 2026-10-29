@@ -46,6 +46,95 @@ def test_threshold_variants_collapse_to_one_rule_and_comoving_symbols_to_one_fam
     assert doc["k_eff"] == round(16 / (9 + 1), 3)   # inverse Simpson of cells 3 and 1
 
 
+def test_categorical_params_are_structure_and_thresholds_still_collapse() -> None:
+    """exit_operated on base_family=breakout and base_family=carry are two rules, not a duplicate;
+    a nested numeric threshold (base_params.lookback) still collapses; a re-aim keeps the
+    categorical part, so the L2 family key moves only the instrument."""
+    a = _row("EURUSD", "exit_operated", base_family="breakout", exit_on_anchor_flip=True,
+             base_params={"lookback": 20, "mode": "close"}, rr="1.5")
+    b = _row("EURUSD", "exit_operated", base_family="carry", exit_on_anchor_flip=True,
+             base_params={"lookback": 20, "mode": "close"}, rr="1.5")
+    c = _row("EURUSD", "exit_operated", base_family="breakout", exit_on_anchor_flip=False,
+             base_params={"lookback": 20, "mode": "close"}, rr="1.5")
+    a2 = _row("EURUSD", "exit_operated", base_family="breakout", exit_on_anchor_flip=True,
+              base_params={"lookback": 60, "mode": "close"}, rr="2.5")
+    assert len({hf.rule_key(r) for r in (a, b, c)}) == 3
+    assert hf.rule_key(a) == hf.rule_key(a2)
+    # the structural cell itself is untouched (judge_coverage ordering reads it as before)
+    assert jc.structural_cell(a) == jc.structural_cell(b)
+    assert hf.rule_key(a).startswith(jc.structural_cell(a) + "|")
+    # a row with no categorical params keeps judge_coverage's key exactly
+    plain = _row("EURUSD", lookback=20)
+    assert hf.rule_key(plain) == jc.structural_cell(plain)
+    assert hf.categorical_suffix(plain) == ""
+    g = _row("GBPUSD", "exit_operated", base_family="breakout", exit_on_anchor_flip=True,
+             base_params={"lookback": 20, "mode": "close"}, rr="1.5")
+    assert hf.family_key(a, CL) == hf.family_key(g, CL) != hf.family_key(b, CL)
+    doc = hf.census([a, b, c, a2], CL, detail=100)
+    assert doc["l1_rules"] == 3
+
+
+def test_provenance_params_are_not_structure_and_expr_literals_collapse() -> None:
+    """The audit's must-fix: one executable rule from two populations (or two genome narratives)
+    is ONE L1 rule; a formula whose expression differs only by numeric literals is one too."""
+    a = _row("EURUSD", "formula", expr="decay(sum(div(open,open),240),8)", population="zoo")
+    b = _row("EURUSD", "formula", expr="decay(sum(div(open,open),120),5)", population="bayesian",
+             mechanism_genome={"driver": "flow"}, crossed_slot="driver", claim_id="c-17")
+    c = _row("EURUSD", "formula", expr="decay(sum(div(close,open),240),8)", population="zoo")
+    assert hf.rule_key(a) == hf.rule_key(b)
+    assert hf.rule_key(a) != hf.rule_key(c)
+    # an identifier's digits are not a threshold, and input_source is read by the engine
+    assert hf.categorical_suffix(_row("EURUSD", "x", base_family="ma20")) != hf.categorical_suffix(
+        _row("EURUSD", "x", base_family="ma50"))
+    assert hf.categorical_suffix(_row("EURUSD", "x", input_source="cot")) != ""
+
+
+def _family_kwargs() -> set[str]:
+    import importlib
+    import inspect
+    import pkgutil
+
+    import mt5desk
+    from mt5desk import families
+
+    fns: list[object] = [e["func"] for e in families.FAMILY_REGISTRY.values()]
+    for m in pkgutil.iter_modules(mt5desk.__path__):
+        try:
+            mod = importlib.import_module(f"mt5desk.{m.name}")
+        except Exception:
+            continue        # a box-only module (gateway: MetaTrader5) defines no family
+        fns += [v for k, v in vars(mod).items() if k.startswith("family") and callable(v)
+                and getattr(v, "__module__", "") == mod.__name__]
+    try:
+        from mt5desk.executables import hunt16_families
+        fns += list(hunt16_families().values())
+    except Exception:
+        pass
+    out: set[str] = set()
+    for fn in fns:
+        try:
+            sig = inspect.signature(fn)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            continue
+        out |= {p.name for p in sig.parameters.values()
+                if p.kind in (p.KEYWORD_ONLY, p.POSITIONAL_OR_KEYWORD)}
+    return out
+
+
+def test_no_family_kwarg_is_ever_treated_as_provenance() -> None:
+    """A later family that grows a `title` or `reason` kwarg fails here instead of silently
+    collapsing its distinct rules into one L1 cell (audit 2026-10-28: `label`, `source`)."""
+    kwargs = _family_kwargs()
+    assert len(kwargs) > 100                       # the families were actually reached
+    dropped = {k for k in kwargs if not hf._structural_param(k) and k not in hf._AXIS_PARAMS}
+    assert dropped <= hf._DISCARDED_KWARGS, sorted(dropped)
+    src = (Path(hf.__file__).resolve().parents[1] / "mt5desk" / "family_formula.py").read_text(
+        encoding="utf-8")
+    assert "del population" in src                 # the one exception is still discarded
+    assert hf.categorical_suffix(_row("EURUSD", "clock_transition", label="tokyo_open")) != \
+        hf.categorical_suffix(_row("EURUSD", "clock_transition", label="comex_settle"))
+
+
 def test_an_unmeasured_symbol_is_its_own_cluster() -> None:
     rows = [_row("EURUSD"), _row("AUDNZD")]
     assert hf.census(rows, {}, detail=10)["l2_families"] == 2
