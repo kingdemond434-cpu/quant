@@ -1528,8 +1528,15 @@ def _rotation() -> Any:
         # nothing ages into priority, which is how a 1 s leg starved four days (2026-10-29).
         prior = _lr.load_record()
         att = _lr.read_attendance(prior=_lr.Attendance.from_json(prior.get("attendance")))
-        dec = _lr.plan_pass(roster, att, plan=HOURLY_PLAN, full_roster=full, prior=prior)
-        _ROTATION.update({"decision": dec, "attendance": att, "lr": _lr,
+        # RUN FIRST WHAT FILE ORDER CANNOT REACH (Auditor MF1, 2026-10-29): the legs whose call
+        # can be built outside `main()`, so a money-critical or aged leg the plan projects past
+        # the kill runs in a prelude instead of never. MINING (the discovery department) is
+        # admitted ahead of the bands that spend the budget: mining is never throttled (MF3).
+        lift_src = _lr.liftable_legs(Path(__file__).resolve())
+        mining = {leg for leg in roster if department_of(leg) == "discovery"}
+        dec = _lr.plan_pass(roster, att, plan=HOURLY_PLAN, full_roster=full, prior=prior,
+                            liftable=set(lift_src), mining=mining)
+        _ROTATION.update({"decision": dec, "attendance": att, "lr": _lr, "lift_src": lift_src,
                           "started": datetime.now(UTC), "ran": []})
         print(f"leg rotation plan={HOURLY_PLAN} roster={len(roster)}/{len(full)} "
               f"admitted={len(dec.admitted)} deferred={len(dec.deferred)} "
@@ -1545,6 +1552,10 @@ def _rotation() -> Any:
         if dec.red:
             print(f"  LEG LIVENESS RED ({len(dec.red)}): {', '.join(sorted(dec.red)[:40])}",
                   flush=True)
+        if dec.lifted or dec.unreachable:
+            print(f"  RUN FIRST ({len(dec.lifted)}): {', '.join(dec.lifted[:40])} | UNREACHABLE "
+                  f"past the kill ({len(dec.unreachable)}): {', '.join(dec.unreachable[:20])}",
+                  flush=True)
         if dec.capacity.get("oversubscribed"):
             print(f"  OVERSUBSCRIBED: other legs {dec.capacity.get('other_legs_s')}s over "
                   f"{dec.capacity.get('headroom_s')}s headroom = "
@@ -1558,6 +1569,34 @@ def _rotation() -> Any:
         print(f"leg rotation UNAVAILABLE ({type(exc).__name__}: {exc}); "
               "every leg runs in file order as before", flush=True)
     return _ROTATION.get("decision")
+
+
+def _rotation_prelude(dec: Any) -> None:
+    """RUN FIRST the protected legs the plan projects past the kill (`Decision.lifted`, MF1).
+
+    Once per pass, before the first leg. Each lifted leg's call is rebuilt from its own source
+    expression in `main()` (`leg_rotation.liftable_legs`: module-level names only, so it means here
+    exactly what it means there) and run through `_costed` like any leg -- ledger row, outcome,
+    write-or-explain. Its result is kept, and when `main()` reaches that leg in file order
+    `_costed` hands back the same result without running it again, so every local `main()` binds
+    from it is bound. A call that cannot be rebuilt is skipped LOUDLY and the leg keeps its
+    file-order place. Never fails the pass."""
+    if _ROTATION.get("prelude") is not None:
+        return
+    _ROTATION["prelude"] = {}
+    src = _ROTATION.get("lift_src") or {}
+    for leg in list(getattr(dec, "lifted", None) or []):
+        expr = src.get(leg)
+        if not expr or not in_plan(leg):
+            continue
+        try:
+            fn = eval(compile(expr, f"<run-first {leg}>", "eval"), globals())
+        except Exception as exc:
+            print(f"  RUN FIRST {leg} SKIPPED ({type(exc).__name__}: {exc}); it keeps its "
+                  "file-order place", flush=True)
+            continue
+        print(f"  RUN FIRST {leg}: its file-order place is past the kill", flush=True)
+        _ROTATION["prelude"][leg] = _costed(leg, fn)
 
 
 def _rotation_publish() -> None:
@@ -1736,6 +1775,11 @@ def _costed(name: str, fn):
     # the meta-controller's epoch must read that truth rather than a phantom run.
     _rot = _rotation()
     if _rot is not None:
+        _rotation_prelude(_rot)
+        _early = _ROTATION.get("prelude") or {}
+        if name in _early:
+            # ALREADY RUN THIS PASS, FIRST (MF1): the same result, not a second run.
+            return _early[name]
         _elapsed = (datetime.now(UTC) - _ROTATION["started"]).total_seconds()
         _ok, _why = _rot.should_run(name, _ROTATION.get("attendance"), _elapsed)
         if not _ok:
@@ -2469,8 +2513,12 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
         _att_now = _ROTATION.get("attendance")
         _dec_now = _ROTATION.get("decision")
         if _lr_mod is not None and _att_now is not None:
-            _cap, _cap_why = _lr_mod.measured_cap(
-                name, _att_now, float(budget), float(getattr(_dec_now, "budget_s", 0.0) or 0.0))
+            # THE PLAN'S GRANT, NOT AN UNCHARGED RAISE (Auditor MF2): `cap_for` applies a raise
+            # only as far as `plan_pass` charged it and bounded it across the pass.
+            if _dec_now is not None and hasattr(_dec_now, "cap_for"):
+                _cap, _cap_why = _dec_now.cap_for(name, _att_now, float(budget))
+            else:
+                _cap, _cap_why = _lr_mod.measured_cap(name, _att_now, float(budget), 0.0)
             if _cap > budget:
                 print(f"  {name} cap {budget}s -> {int(_cap)}s ({_cap_why})", flush=True)
                 _price_rec = {**(_price_rec if isinstance(_price_rec, dict) else {}),

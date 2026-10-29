@@ -185,6 +185,17 @@ MONEY_MAX_STALE_PASSES: int = 1
 #: cycle the clock every time it re-ages, and the tail never runs. A queue ordered by wait cannot.
 AGED_MIN_FILL: float = 0.25
 
+#: THE OUT-OF-BUDGET BANDS STOP SHORT OF THE KILL (MF3). The ageing floor and the cheap batch are
+#: admitted outside the budget, and with the mining band filling the budget first they could plan
+#: a pass past the scheduler's kill -- which then takes the tail, mining included. So they may plan
+#: only up to this share of the way from the budget to the kill (2,640 s budget, 3,300 s kill:
+#: 3,069 s), keeping the rest of BUDGET_FILL's margin for estimate error -- and so may a granted
+#: cap raise on the ageing queue's head. 0.65, not more: at 0.75 the sim (13 seeds x 72 passes,
+#: +-15% runtime noise, 30 stuck legs) killed 2 passes; at 0.65, none. EXCEPT when the always-run
+#: and money legs alone are already past that line: file order cannot reach the tail at all then,
+#: the floor stands, and the prelude (`_lift`) decides who runs before the kill.
+OUT_OF_BUDGET_SHARE: float = 0.65
+
 #: Consecutive ledger rows ending in TIMEOUT after which a leg is a CHRONIC timeout.
 CHRONIC_TIMEOUT_RUNS: int = 3
 
@@ -205,6 +216,14 @@ TIMEOUT_PLAN_SHARE: float = 0.5
 #: A leg that finishes is given at least this multiple of the longest of its recent finishing
 #: runs, so a leg measured needing 1,228 s is not handed 720 s.
 MEASURED_HEADROOM: float = 1.25
+
+#: THE RAISE IS BOUNDED ACROSS LEGS, NOT ONLY PER LEG (Auditor MF2, 2026-10-29). `measured_cap`
+#: bounds each leg's raise, but thirty stuck legs raised 300 -> 1,200 s each were charged by
+#: `plan_pass` at their 300 s median and ran for 1,200: the sim killed 17 of 72 passes and missed
+#: 74-85 money-critical passes. Now `plan_pass` GRANTS each raise, charges the raised cap, and
+#: grants at most this share of the budget in raised seconds per pass. A leg not granted this
+#: pass runs at its own cap, times out, stays stuck, and asks for a bigger raise next pass.
+RAISE_PASS_SHARE: float = 0.25
 
 #: RED: a roster leg that has gone this many consecutive passes without running. One more than
 #: MAX_DEFERRALS, so RED means the ageing guarantee itself did not deliver -- the leg was admitted
@@ -289,6 +308,75 @@ def legs_in_order(source: Path | None = None) -> list[str]:
         seen.add(name)
         found.append((node.lineno, node.col_offset, name))
     return [name for _, _, name in sorted(found)]
+
+
+def _bound_names(node: ast.AST) -> set[str]:
+    """Every name a subtree binds: stores, function/lambda parameters, defs and import aliases."""
+    out: set[str] = set()
+    for sub in ast.walk(node):
+        if isinstance(sub, ast.Name) and isinstance(sub.ctx, (ast.Store, ast.Del)):
+            out.add(sub.id)
+        elif isinstance(sub, ast.arg):
+            out.add(sub.arg)
+        elif isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            out.add(sub.name)
+        elif isinstance(sub, (ast.Import, ast.ImportFrom)):
+            out.update((a.asname or a.name).split(".")[0] for a in sub.names)
+        elif isinstance(sub, (ast.Global, ast.Nonlocal)):
+            out.update(sub.names)
+    return out
+
+
+def liftable_legs(source: Path | None = None) -> dict[str, str]:
+    """Legs whose call can be built OUTSIDE `main()`, so the rotation may run them first (MF1).
+
+    `main()` passes results between legs through its locals, so a leg can only be run ahead of
+    file order when its `fn` -- the second argument of `_costed(name, fn)` -- refers to nothing
+    but MODULE-LEVEL names: a bare module function (`allocator_join`), or a lambda over literals
+    and module functions (`lambda: _producer("desk_health", "scripts/check_desk_health.py")`).
+    A name `main()` binds itself disqualifies the leg, even if a global of that name exists. A leg
+    costed more than once is liftable only when every call is the same expression.
+
+    Returns {leg: source of its fn expression}, for `hourly_cycle` to evaluate in its own
+    module globals. Read from the AST for the same reason `legs_in_order` is.
+    """
+    path = source or CYCLE
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, SyntaxError):
+        return {}
+    module = _bound_names(ast.Module(body=[n for n in tree.body if not isinstance(
+        n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))], type_ignores=[]))
+    module |= {n.name for n in tree.body
+               if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))}
+    import builtins
+    known = module | set(dir(builtins))
+    found: dict[str, str | None] = {}
+    for func in tree.body:
+        if not isinstance(func, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        local = _bound_names(func) - {func.name}
+        for node in ast.walk(func):
+            if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                    and node.func.id == "_costed" and len(node.args) >= 2
+                    and isinstance(node.args[0], ast.Constant)
+                    and isinstance(node.args[0].value, str)):
+                continue
+            name, expr = node.args[0].value, node.args[1]
+            inner = _bound_names(expr)
+            free = {n.id for n in ast.walk(expr)
+                    if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)} - inner
+            ok = bool(free) and free <= known and not (free & local)
+            src = ast.unparse(expr) if ok else None
+            if name in found and found[name] != src:
+                src = None
+            found[name] = src
+    return {k: v for k, v in found.items() if v is not None}
+
+
+def kill_for(budget_s: float) -> float:
+    """The scheduler's kill line behind a plan budget: the budget is BUDGET_FILL of it."""
+    return budget_s / BUDGET_FILL if budget_s > 0 else 0.0
 
 
 @dataclass
@@ -459,6 +547,8 @@ class Decision:
     protected: set[str] = field(default_factory=set)
     aged: list[str] = field(default_factory=list)
     cheap: list[str] = field(default_factory=list)
+    #: mining legs admitted in the mining band this pass (MF3)
+    mining: list[str] = field(default_factory=list)
     #: aged legs the ageing queue could not reach this pass (oversubscribed): first next pass
     queued: list[str] = field(default_factory=list)
     chronic_timeouts: list[str] = field(default_factory=list)
@@ -468,6 +558,44 @@ class Decision:
     red: dict[str, str] = field(default_factory=dict)
     #: whether the bound is satisfiable inside the budget (see `_capacity`)
     capacity: dict[str, Any] = field(default_factory=dict)
+    #: the scheduler's kill line for this pass (`kill_for`); 0 = unbounded
+    kill_s: float = 0.0
+    #: RUN FIRST, before file order (Auditor MF1): protected legs (money-critical, then the ageing
+    #: queue) whose file-order position the plan projects past the budget line. Prelude order.
+    lifted: list[str] = field(default_factory=list)
+    #: protected legs projected past the budget line that could NOT be run first (their call
+    #: closes over `main()` locals, or lifting would push a reachable always-run leg past the kill)
+    unreachable: list[str] = field(default_factory=list)
+    #: the seconds `plan_pass` charged each admitted leg (its median, plus any granted raise)
+    charged: dict[str, float] = field(default_factory=dict)
+    #: per-leg cap seconds this pass GRANTS above the leg's median (MF2); absent = no raise
+    raise_grants: dict[str, float] = field(default_factory=dict)
+
+    def cap_for(self, leg: str, att: Attendance | None, base_s: float) -> tuple[float, str]:
+        """The cap `leg` runs under this pass: `measured_cap`, clamped to what the plan GRANTED.
+
+        On a bounded plan a raise the plan did not grant is not applied: an ungranted raise is
+        seconds the plan never charged, which is how thirty stuck legs killed the pass (MF2). An
+        unbounded plan (the department residents, no time limit) keeps `measured_cap` as is."""
+        base = float(base_s)
+        if self.budget_s <= 0:
+            return measured_cap(leg, att, base, 0.0)
+        grant = self.raise_grants.get(leg)
+        if not grant:
+            return base, ""
+        cap, why = measured_cap(leg, att, base, self.budget_s)
+        if att is not None and att.stuck_timeout(leg):
+            # A GRANTED STUCK LEG GETS ITS WHOLE BOUNDED CEILING AT ONCE: rationed, it gets a turn
+            # only every few passes, and growing x1.5 per turn would take a day to reach what it
+            # needs -- while every turn short of it is another zero-output kill.
+            ceiling = max(base, min(base * TIMEOUT_GROWTH_MAX, TIMEOUT_PLAN_SHARE * self.budget_s))
+            cap, why = max(cap, ceiling), (f"stuck: {att.stuck.get(leg, 0)} zero-output "
+                                           f"LEG_TIMEOUTs at {base:.0f}s; granted its bounded "
+                                           f"ceiling")
+        cap = min(cap, max(base, float(grant)))
+        if cap <= base:
+            return base, ""
+        return cap, f"{why}; granted {grant:.0f}s of this pass's raise allowance"
 
     def runs(self, leg: str) -> bool:
         """Does `leg` run in this pass? An unknown leg always runs (rotation never invents a veto
@@ -770,16 +898,19 @@ def _red(dec: Decision, prior: dict[str, Any] | None,
     return red
 
 
-def _capacity(roster: list[str], att: Attendance, bud: float) -> dict[str, Any]:
+def _capacity(roster: list[str], att: Attendance, bud: float,
+              kill_s: float | None = None) -> dict[str, Any]:
     """CAN THE BOUND BE MET AT ALL? Published so an oversubscribed plan is a number, not a guess.
 
     Per pass, the non-always legs get the budget the always-run and money legs leave (never less
-    than AGED_MIN_FILL of it) plus the cheap batch. `passes_to_cover` is how many passes the rest
-    of the roster takes at that rate; the plan fits the MAX_DEFERRALS bound when it is at most
-    MAX_DEFERRALS + 1. Past it (`oversubscribed`), the ageing queue still runs every leg within
-    about `passes_to_cover` passes -- longest wait first, so the wait is bounded and fair -- but
-    legs past their bound are RED by name, and the scheduler's limit is what must move. Never a
-    leg."""
+    than AGED_MIN_FILL of it) plus the cheap batch: `headroom_s`. `passes_to_cover` is how many
+    passes the rest of the roster takes at that rate; the plan fits the MAX_DEFERRALS bound when it
+    is at most MAX_DEFERRALS + 1. Past it (`oversubscribed`), the ageing queue still runs every leg
+    within about `passes_to_cover` passes -- longest wait first, so the wait is bounded and fair --
+    but legs past their bound are RED by name, and the scheduler's limit is what must move. Never a
+    leg. `always_run_past_kill` says the always-run set ALONE is past the scheduler's kill line:
+    file order then cannot reach the tail at all, which is why protected legs are run first."""
+    kill = kill_for(bud) if kill_s is None else float(kill_s)
     always = sum(att.cost_s(leg) for leg in roster if leg in ALWAYS_RUN)
     money = sum(att.cost_s(leg) for leg in roster
                 if leg in MONEY_CRITICAL and leg not in ALWAYS_RUN)
@@ -789,14 +920,85 @@ def _capacity(roster: list[str], att: Attendance, bud: float) -> dict[str, Any]:
     cover = (other / per_pass) if per_pass > 0 else float("inf")
     return {"always_run_s": round(always, 1), "money_critical_s": round(money, 1),
             "other_legs_s": round(other, 1), "per_pass_s": round(per_pass, 1),
+            "headroom_s": round(per_pass, 1), "kill_s": round(kill, 1),
+            "always_run_past_kill": bool(kill > 0 and always > kill),
             "passes_to_cover": None if cover == float("inf") else round(cover, 2),
             "bound_passes": MAX_DEFERRALS + 1,
             "oversubscribed": cover > MAX_DEFERRALS + 1}
 
 
+def _lift(dec: Decision, roster: list[str], liftable: set[str] | frozenset[str],
+          line: float, kill: float) -> None:
+    """MF1: RUN THE PROTECTED LEGS THE KILL WOULD OTHERWISE TAKE, FIRST.
+
+    `main()` runs in file order and the scheduler kills the pass where it stands, so a leg the plan
+    ADMITTED is still lost if the seconds admitted ahead of it pass the kill -- on the box the
+    always-run set alone (3,749 s) is past the 3,300 s kill, and the eight money-critical legs in
+    the last third of the file missed 72 of 72 passes in simulation (desk_health, the reader of
+    this very RED, is the last leg of all). So the plan projects file-order finish times from the
+    charged seconds, and every PROTECTED leg (money-critical first, then the ageing queue longest
+    wait first) whose projected finish passes the budget line is moved into a PRELUDE that runs
+    before the first leg. Legs that fit keep their file-order place, and every "must run after"
+    in `main()` with them: only a leg that would otherwise not run at all gives that up, and it
+    then reads the previous pass's inputs -- one pass stale, against never.
+
+    Refused, and published in `unreachable` by name, when the leg's call cannot be built outside
+    `main()` (`liftable_legs`), or when moving its seconds to the front would push an always-run
+    leg that is projected to finish inside the kill past it."""
+    money = [leg for leg in roster if leg in MONEY_CRITICAL and leg in dec.admitted
+             and leg not in ALWAYS_RUN]
+    cands = money + [leg for leg in dec.aged if leg not in money]
+    order = {leg: i for i, leg in enumerate(roster)}
+    lifted: list[str] = []
+    refused: dict[str, str] = {}
+
+    def finish() -> dict[str, float]:
+        t = sum(dec.charged.get(leg, 0.0) for leg in lifted)
+        out: dict[str, float] = {}
+        for leg in roster:
+            if leg in dec.admitted and leg not in lifted:
+                t += dec.charged.get(leg, 0.0)
+                out[leg] = t
+        return out
+
+    changed = True
+    while changed:
+        changed = False
+        for leg in cands:
+            if leg in lifted or leg in refused:
+                continue
+            fin = finish()
+            if fin.get(leg, 0.0) <= line:
+                continue
+            cost = dec.charged.get(leg, 0.0)
+            pushed = [a for a in roster[:order[leg]] if a in ALWAYS_RUN and a in fin
+                      and fin[a] <= kill < fin[a] + cost]
+            if leg not in liftable:
+                refused[leg] = ("its call closes over main() locals, so it cannot run ahead of "
+                                "file order")
+            elif pushed:
+                refused[leg] = (f"running it first would push always-run {pushed[0]} past the "
+                                f"{kill:.0f}s kill")
+            else:
+                lifted.append(leg)
+                changed = True
+    dec.lifted = sorted(lifted, key=lambda n: (n not in MONEY_CRITICAL, cands.index(n)))
+    for leg in dec.lifted:
+        dec.why[leg] = (dec.why.get(leg, "") + f"; RUN FIRST: its file-order place is projected "
+                        f"past the {line:.0f}s budget line ({kill:.0f}s kill), where it would not "
+                        "run at all")
+    fin = finish()
+    for leg, reason in refused.items():
+        dec.unreachable.append(leg)
+        dec.why[leg] = (dec.why.get(leg, "") + f"; UNREACHABLE: projected to finish at "
+                        f"{fin.get(leg, 0.0):.0f}s, past the {line:.0f}s budget line; {reason}")
+
+
 def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float | None = None,
               now: datetime | None = None, full_roster: list[str] | None = None,
-              prior: dict[str, Any] | None = None) -> Decision:
+              prior: dict[str, Any] | None = None, kill_s: float | None = None,
+              liftable: set[str] | frozenset[str] | None = None,
+              mining: set[str] | frozenset[str] | None = None) -> Decision:
     """Choose this pass's membership so that every admitted leg is actually REACHED.
 
     Four bands, in this order:
@@ -813,6 +1015,22 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
       4. DEFERRED -- what band 3 could not fit. Each deferral increments `starve_passes`, so it is a
          turn to wait that ends in the ageing queue, never a leg removed.
 
+    EVERY LEG IS CHARGED WHAT IT WILL BE ALLOWED TO RUN (MF2). A leg `measured_cap` would raise
+    is charged its median plus the raise, and the raise is GRANTED (`raise_grants`, read by
+    `Decision.cap_for`) only while this pass's raised seconds stay inside RAISE_PASS_SHARE of the
+    budget; past it the leg is charged and capped at its own cap this pass.
+
+    MINING IS NEVER THROTTLED (MF3; constitution: no subsystem may throttle mining). `mining`
+    (the discovery department's legs, from `hourly_cycle.department_of`) is admitted FIRST in the
+    budget band -- every pass, while the planned seconds stay inside the budget -- and never
+    yielded. Before this the out-of-budget bands (ageing floor, cheap batch, raises) took the
+    budget the mining legs had under the LIVE policy: -0..4% mining runs on a healthy box, ~9% with
+    stuck legs. A mining leg the budget cannot fit this pass ages in like every other leg.
+
+    ADMITTED IS NOT ENOUGH: IT MUST BE REACHED (MF1). With `liftable` (the legs whose call can be
+    built outside `main()`), `_lift` moves protected legs projected past the budget line into a
+    prelude that runs first. Without it, file order is unchanged.
+
     An unbounded budget (0.0) admits the whole roster: the department residents have no time
     limit, and adding one here would be the throttle this desk does not permit.
 
@@ -825,9 +1043,11 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
     """
     t0 = now or datetime.now(tz=UTC)
     bud = budget_for(plan) if budget_s is None else budget_s
+    kill = kill_for(bud) if kill_s is None else float(kill_s)
     order = {leg: i for i, leg in enumerate(roster)}
     everything = list(full_roster) if full_roster is not None else list(roster)
-    dec = Decision(plan=plan, budget_s=bud, roster=list(roster), declared=sorted(everything))
+    dec = Decision(plan=plan, budget_s=bud, roster=list(roster), declared=sorted(everything),
+                   kill_s=kill if bud > 0 else 0.0)
     dec.never_run = sorted(leg for leg in everything if att.runs.get(leg, 0) <= 0)
     window_s = ROTATION_WINDOW_H * 3600.0
     dec.outside_window = sorted(leg for leg in everything if att.age_s(leg, t0) > window_s)
@@ -841,40 +1061,99 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
         dec.planned_s = sum(att.cost_s(leg) for leg in roster)
         return dec
     spent = 0.0
+    raise_left = RAISE_PASS_SHARE * bud
+
+    def want(leg: str) -> tuple[float, float]:
+        """(median cost, the raise `measured_cap` would add), with the median standing in for
+        the leg's own cap. Only for a leg whose cap is binding: its last run hit it (a TIMEOUT
+        row), or it last FINISHED well past its median -- a median held down by capped runs, the
+        stuck leg that has just finished at its raised cap and must keep it."""
+        cost = att.cost_s(leg)
+        oks = att.ok_walls.get(leg) or []
+        binding = att.timeouts.get(leg, 0) > 0 or (bool(oks) and max(oks) > TIMEOUT_GROWTH * cost)
+        if leg in ALWAYS_RUN or not binding:
+            return cost, 0.0
+        cap = measured_cap(leg, att, cost, bud)[0]
+        if att.stuck_timeout(leg):
+            cap = max(cap, min(cost * TIMEOUT_GROWTH_MAX, TIMEOUT_PLAN_SHARE * bud))
+        return cost, max(0.0, cap - cost)
+
+    def charge(leg: str, commit: bool = False, raise_ok: bool = True) -> float:
+        """Seconds to charge `leg`; on commit, record the charge and grant its raise."""
+        nonlocal raise_left
+        cost, extra = want(leg)
+        extra = extra if raise_ok else 0.0
+        # WHOLE OR NOT AT ALL: a part-raise still kills a stuck leg short of what it needs, so it
+        # is seconds spent for nothing. The first raise of a pass is always whole (the per-leg
+        # ceiling bounds it), so the allowance can never starve every stuck leg forever.
+        granted = extra if extra > 0 and (extra <= raise_left or not dec.raise_grants) else 0.0
+        if commit:
+            dec.charged[leg] = cost + granted
+            if granted > 0:
+                raise_left = max(0.0, raise_left - granted)
+                dec.raise_grants[leg] = cost + granted
+        return cost + granted
+
     rest: list[str] = []
     cheap_pool: list[str] = []
     aged_pool: list[str] = []
+    mine_pool: list[str] = []
     for leg in roster:
         cost = att.cost_s(leg)
         waited = dec.starve_passes.get(leg, 0)
         if leg in ALWAYS_RUN:
             dec.admitted.add(leg)
-            spent += cost
+            spent += charge(leg, commit=True)
             dec.why[leg] = ("always-run: irreversible or on the money path"
                             + (f" (CHRONIC TIMEOUT: charged its realised {cost:.0f}s)"
                                if leg in dec.chronic_timeouts else ""))
         elif leg in MONEY_CRITICAL:
             dec.admitted.add(leg)
             dec.protected.add(leg)
-            spent += cost
+            spent += charge(leg, commit=True)
             dec.why[leg] = (f"money-critical: admitted every pass outside the budget (hard bound "
                             f"{MONEY_MAX_STALE_PASSES} missed pass)")
+        elif mining and leg in mining and waited >= 1:
+            mine_pool.append(leg)
         elif waited >= MAX_DEFERRALS:
             aged_pool.append(leg)
         elif leg in att.costs and cost <= CHEAP_LEG_S:
             cheap_pool.append(leg)
         else:
             rest.append(leg)
+    line = bud + OUT_OF_BUDGET_SHARE * max(0.0, kill - bud)
+    past_line = spent >= line
+    # MINING, INSIDE THE BUDGET AND AHEAD OF EVERY OTHER BAND THAT SPENDS IT (MF3).
+    for leg in sorted(mine_pool, key=lambda n: _rank(n, att, t0, order, dec)):
+        if spent + charge(leg) <= bud:
+            spent += charge(leg, commit=True)
+            dec.admitted.add(leg)
+            dec.protected.add(leg)
+            dec.mining.append(leg)
+            dec.why[leg] = ("mining: admitted every pass inside the budget, ahead of the ageing, "
+                            "cheap and rotation bands, and never yielded (mining is never "
+                            "throttled)")
+        elif dec.starve_passes.get(leg, 0) >= MAX_DEFERRALS:
+            aged_pool.append(leg)
+        else:
+            rest.append(leg)
     # THE AGEING QUEUE: longest-starved first, then oldest `last_at`, then file order -- into what
     # the budget has left, never less than AGED_MIN_FILL of it, and never fewer than one leg.
-    aged_allow = max(bud - spent, AGED_MIN_FILL * bud)
+    floor = AGED_MIN_FILL * bud if past_line else min(AGED_MIN_FILL * bud, max(0.0, line - spent))
+    aged_allow = max(bud - spent, floor)
     aged_spent = 0.0
     queue = sorted(aged_pool, key=lambda n: (-dec.starve_passes.get(n, 0),
                                              -min(att.age_s(n, t0), 1e18), order.get(n, 0)))
     for pos, leg in enumerate(queue):
-        cost = att.cost_s(leg)
+        cost = charge(leg)
         waited = dec.starve_passes.get(leg, 0)
-        if not dec.aged or aged_spent + cost <= aged_allow:
+        fits = aged_spent + cost <= aged_allow
+        # The queue's head is admitted even when it does not fit -- but not its RAISE, when the
+        # raise would plan the pass past the kill-side line: that raise waits for a pass with room
+        # (the leg still runs, at its own cap, and stays RED by name while it is stuck).
+        raise_ok = fits or past_line or spent + cost <= line
+        if not dec.aged or fits:
+            cost = charge(leg, commit=True, raise_ok=raise_ok)
             dec.admitted.add(leg)
             dec.protected.add(leg)
             dec.aged.append(leg)
@@ -890,10 +1169,13 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
                             "admission this pass); it is ahead of every newer wait next pass")
     # THE CHEAP BATCH: longest-starved first, then oldest, outside the budget up to its allowance.
     allowance = max(CHEAP_LEG_S, CHEAP_BATCH_FILL * bud)
+    if not past_line:
+        allowance = min(allowance, max(0.0, line - spent))
     cheap_spent = 0.0
     for leg in sorted(cheap_pool, key=lambda n: _rank(n, att, t0, order, dec)):
-        cost = att.cost_s(leg)
+        cost = charge(leg)
         if cheap_spent + cost <= allowance:
+            cost = charge(leg, commit=True)
             dec.admitted.add(leg)
             dec.protected.add(leg)
             dec.cheap.append(leg)
@@ -904,10 +1186,10 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
         else:
             rest.append(leg)
     for leg in sorted(rest, key=lambda n: _rank(n, att, t0, order, dec)):
-        cost = att.cost_s(leg)
+        cost = charge(leg)
         if spent + cost <= bud:
+            spent += charge(leg, commit=True)
             dec.admitted.add(leg)
-            spent += cost
             dec.why[leg] = ("never run: admitted ahead of every stale leg"
                             if att.runs.get(leg, 0) <= 0 else
                             f"rotation: idle {att.age_s(leg, t0) / 3600.0:.1f}h")
@@ -920,8 +1202,16 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
                             f"it has waited {MAX_DEFERRALS} passes"
                             + (" [CHRONIC TIMEOUT: ranked last]"
                                if leg in dec.chronic_timeouts else ""))
+    for leg, cap in dec.raise_grants.items():
+        dec.why[leg] = (dec.why.get(leg, "") + f"; cap raise GRANTED: charged {cap:.0f}s "
+                        f"(median {att.cost_s(leg):.0f}s)")
     dec.planned_s = spent
-    dec.capacity = _capacity(roster, att, bud)
+    dec.capacity = _capacity(roster, att, bud, kill)
+    dec.capacity["raised_s"] = round(sum(cap - att.cost_s(leg)
+                                         for leg, cap in dec.raise_grants.items()), 1)
+    dec.capacity["raise_allowance_s"] = round(RAISE_PASS_SHARE * bud, 1)
+    if liftable is not None:
+        _lift(dec, roster, liftable, bud, kill)
     return dec
 
 
@@ -969,6 +1259,34 @@ def record(dec: Decision, att: Attendance, ran: list[str], *, path: Path | None 
         "attendance": att.to_json(),
     }
     out = path or RECORD
+    # ONE WRITER AT A TIME (Auditor 2026-10-29). The core task and ~23 department residents share
+    # this file and each MERGES the others' `ageing` state into its own write: a read-modify-write
+    # done unlocked lets two writers read the same file and the second write silently drops the
+    # first's plan state -- which resets that plan's wait counts, the defect `ageing` exists to
+    # end. The merge and the replace now run under the repo's OS lock on a sidecar
+    # (`alert_ledger.os_lock`: a kernel lock, released when its holder dies), and the temp file is
+    # per-writer so two replaces never share one. A lock that cannot be had in time is recorded as
+    # `write_error`; the pass is never failed by its own measurement.
+    try:
+        from libs.ops.alert_ledger import os_lock
+        out.parent.mkdir(parents=True, exist_ok=True)
+        with os_lock(out.with_name(out.name + ".flock"), timeout_s=RECORD_LOCK_WAIT_S):
+            _merge_and_write(doc, dec, t1, out, residents)
+    except (OSError, TimeoutError, ImportError) as exc:
+        doc["write_error"] = f"{type(exc).__name__}: {exc}"
+        doc.setdefault("liveness", liveness({dec.plan: {"red": dict(sorted(dec.red.items()))}},
+                                            residents))
+    return doc
+
+
+#: How long `record` waits for the shared LEG_ROTATION.json writer lock.
+RECORD_LOCK_WAIT_S: float = 30.0
+
+
+def _merge_and_write(doc: dict[str, Any], dec: Decision, t1: datetime, out: Path,
+                     residents: dict[str, Any] | None) -> None:
+    """Merge the other plans' ageing state into `doc` and atomically replace `out` (caller holds
+    the writer lock)."""
     # THE AGEING STATE, PER PLAN, CARRIED ACROSS WRITERS. Core and every department resident
     # share this file, so each write keeps the other plans' fresh state and replaces only its own.
     # The next pass of this plan reads `ageing[plan]` to count how long each leg has waited.
@@ -994,12 +1312,11 @@ def record(dec: Decision, att: Attendance, ran: list[str], *, path: Path | None 
     doc["liveness"] = liveness(ageing, res)
     try:
         out.parent.mkdir(parents=True, exist_ok=True)
-        tmp = out.with_suffix(".json.tmp")
+        tmp = out.with_name(f"{out.name}.{os.getpid()}.tmp")
         tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
-        tmp.replace(out)
+        os.replace(tmp, out)
     except OSError as exc:
         doc["write_error"] = f"{type(exc).__name__}: {exc}"
-    return doc
 
 
 def load_record(path: Path | None = None) -> dict[str, Any]:

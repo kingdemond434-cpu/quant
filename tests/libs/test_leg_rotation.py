@@ -197,8 +197,17 @@ def test_fence_fails_on_a_never_run_leg_and_on_an_absent_record(tmp_path: Path) 
     assert not bad["ok"] and bad["n_never_run"] == 1
     assert any("clock_liveness" in f for f in bad["failures"])
 
+    # No `liveness` block: UNMEASURED, which fails (L1.28a) -- it no longer reads as a pass.
     rec.write_text(json.dumps({"generated": datetime.now(tz=UTC).isoformat(),
                                "never_run": [], "outside_window": [],
+                               "window_h": 24.0, "n_roster": 300}), encoding="utf-8")
+    unmeasured = mod.check(rec)
+    assert not unmeasured["ok"] and unmeasured["liveness"] == "UNMEASURED"
+    assert any("UNMEASURED" in f for f in unmeasured["failures"])
+
+    rec.write_text(json.dumps({"generated": datetime.now(tz=UTC).isoformat(),
+                               "never_run": [], "outside_window": [],
+                               "liveness": {"verdict": "GREEN", "red_legs": []},
                                "window_h": 24.0, "n_roster": 300}), encoding="utf-8")
     assert mod.check(rec)["ok"]
 
@@ -736,3 +745,163 @@ def test_a_finish_resets_stuck_and_the_measured_cap_holds(tmp_path: Path) -> Non
     assert cap == pytest.approx(1228.0 * LR.MEASURED_HEADROOM) and "measured" in why
     again = LR.Attendance.from_json(json.loads(json.dumps(att.to_json())))
     assert again.ok_walls["math_lab"] == [1228.0], "the measurement survives the record"
+
+
+# --- Auditor HOLD 2026-10-29: MF1 run-first prelude, MF2 charged/bounded raise, MF3 mining ----
+
+
+def test_liftable_legs_admits_module_level_calls_and_refuses_main_locals(tmp_path: Path) -> None:
+    src = tmp_path / "cycle.py"
+    src.write_text(
+        "def _producer(*a):\n    return {}\n"
+        "def allocator_join():\n    return {}\n"
+        "def main():\n"
+        "    h = 1\n"
+        "    _costed('allocator_join', allocator_join)\n"
+        "    _costed('desk_health', lambda: _producer('desk_health', 'x.py', '--out'))\n"
+        "    _costed('frontier_report', lambda: frontier_report(h))\n", encoding="utf-8")
+    lift = LR.liftable_legs(src)
+    assert lift["allocator_join"] == "allocator_join"
+    assert "desk_health" in lift and "_producer" in lift["desk_health"]
+    assert "frontier_report" not in lift, "a call over main() locals cannot run ahead of file order"
+
+
+def test_every_money_critical_core_leg_is_liftable_from_the_real_cycle() -> None:
+    lift = LR.liftable_legs(LR.CYCLE)
+    roster = LR.legs_in_order(LR.CYCLE)
+    assert {leg for leg in LR.MONEY_CRITICAL if leg in roster} <= set(lift)
+
+
+def _tail_roster() -> list[str]:
+    head = ["smoke_release", "tier_s"]
+    return head + [f"leg_{i}" for i in range(20)] + ["kelly_survival", "desk_health"]
+
+
+def test_mf1_money_legs_past_the_kill_run_first() -> None:
+    """Always-run past the kill: money legs in the tail are lifted into the prelude, in file
+    order, and the leg whose call cannot be rebuilt is named UNREACHABLE."""
+    roster = [*_tail_roster(), "prop_challenge_allocator"]
+    costs = {"smoke_release": 120.0, "tier_s": 3600.0, "kelly_survival": 5.0, "desk_health": 5.0,
+             "prop_challenge_allocator": 5.0, **{f"leg_{i}": 30.0 for i in range(20)}}
+    att = _att(dict.fromkeys(roster, 3), costs=costs)
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=2640.0, kill_s=3300.0,
+                       liftable={"kelly_survival", "desk_health"})
+    assert dec.lifted == ["kelly_survival", "desk_health"]
+    assert dec.unreachable == ["prop_challenge_allocator"]
+    assert "RUN FIRST" in dec.why["desk_health"]
+    assert "UNREACHABLE" in dec.why["prop_challenge_allocator"]
+    assert dec.capacity["always_run_past_kill"] is True
+    assert dec.capacity["headroom_s"] == dec.capacity["per_pass_s"]
+    # Without the liftable set, file order is left exactly as it was.
+    assert LR.plan_pass(roster, att, plan="core", budget_s=2640.0).lifted == []
+
+
+def test_mf1_lifting_never_pushes_a_reachable_always_run_leg_past_the_kill() -> None:
+    roster = ["smoke_release", "tier_s", "leg_0", "desk_health"]
+    att = _att(dict.fromkeys(roster, 3), costs={"smoke_release": 100.0, "tier_s": 3195.0,
+                                                "leg_0": 30.0, "desk_health": 10.0})
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=2640.0, kill_s=3300.0,
+                       liftable=set(roster))
+    assert dec.lifted == [] and dec.unreachable == ["desk_health"]
+    assert "tier_s" in dec.why["desk_health"]
+
+
+def test_mf1_money_legs_that_fit_keep_their_file_order_place() -> None:
+    roster = ["smoke_release", "leg_0", "desk_health"]
+    att = _att(dict.fromkeys(roster, 3), costs={"smoke_release": 60.0, "leg_0": 30.0,
+                                                "desk_health": 10.0})
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=2640.0, liftable=set(roster))
+    assert dec.lifted == [] and dec.unreachable == []
+
+
+def _stuck_att(legs: list[str], base: float = 300.0, n: int = 4) -> LR.Attendance:
+    att = _att(dict.fromkeys(legs, n), costs=dict.fromkeys(legs, base))
+    for leg in legs:
+        att.costs[leg] = [base] * n
+        att.timeouts[leg] = n
+        att.stuck[leg] = n
+    return att
+
+
+def test_mf2_raises_are_charged_and_bounded_across_the_pass() -> None:
+    """30 stuck legs: each granted raise is CHARGED, and the raised seconds of a pass stay inside
+    RAISE_PASS_SHARE of the budget (the first raise is whole: a part-raise kills it short)."""
+    legs = [f"stuck_{i}" for i in range(30)]
+    att = _stuck_att(legs)
+    for leg in legs:
+        att.last_at[leg] = (datetime.now(tz=UTC) - timedelta(hours=10)).isoformat()
+    prior = {"ageing": {"core": {"pass_started": (datetime.now(tz=UTC) - timedelta(hours=1))
+                                 .isoformat(), "starve_passes": dict.fromkeys(legs, 5)}}}
+    dec = LR.plan_pass(legs, att, plan="core", budget_s=2640.0, prior=prior)
+    assert dec.raise_grants, "a stuck leg must still be granted its raise"
+    extra = sum(cap - 300.0 for cap in dec.raise_grants.values())
+    assert extra <= max(LR.RAISE_PASS_SHARE * 2640.0, max(
+        cap - 300.0 for cap in dec.raise_grants.values()))
+    assert dec.capacity["raised_s"] == pytest.approx(extra, abs=0.5)
+    for leg, cap in dec.raise_grants.items():
+        assert dec.charged[leg] == cap, "the raised cap is what the plan charges"
+    assert dec.planned_s <= LR.kill_for(2640.0)
+    granted = next(iter(dec.raise_grants))
+    ungranted = next(leg for leg in legs if leg not in dec.raise_grants)
+    assert dec.cap_for(granted, att, 300.0)[0] == pytest.approx(dec.raise_grants[granted])
+    assert dec.cap_for(ungranted, att, 300.0) == (300.0, ""), "no grant, no uncharged raise"
+
+
+def test_mf2_unbounded_plan_keeps_measured_cap() -> None:
+    att = _stuck_att(["math_lab"], base=720.0)
+    dec = LR.plan_pass(["math_lab"], att, plan="dept:labs", budget_s=0.0)
+    assert dec.cap_for("math_lab", att, 720.0) == LR.measured_cap("math_lab", att, 720.0, 0.0)
+
+
+def test_mf3_mining_is_admitted_ahead_of_the_bands_that_spend_the_budget() -> None:
+    roster = ["smoke_release", "queue_cycle"] + [f"leg_{i}" for i in range(40)]
+    costs = {"smoke_release": 1000.0, "queue_cycle": 150.0,
+             **{f"leg_{i}": 100.0 for i in range(40)}}
+    att = _att(dict.fromkeys(roster, 3), costs=costs)
+    for leg in roster:
+        att.last_at[leg] = (datetime.now(tz=UTC) - timedelta(hours=10)).isoformat()
+    prior = {"ageing": {"core": {"pass_started": (datetime.now(tz=UTC) - timedelta(hours=1))
+                                 .isoformat(), "starve_passes": dict.fromkeys(roster, 4)}}}
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=1200.0, prior=prior,
+                       mining={"queue_cycle"})
+    assert dec.mining == ["queue_cycle"]
+    assert "queue_cycle" in dec.protected
+    assert dec.should_run("queue_cycle", att, 5000.0)[0], "mining is never yielded"
+    # The out-of-budget bands stop at the kill-side line.
+    line = 1200.0 + LR.OUT_OF_BUDGET_SHARE * (LR.kill_for(1200.0) - 1200.0)
+    assert dec.planned_s <= line + 100.0
+
+
+def test_record_merges_under_the_writer_lock(tmp_path: Path,
+                                            monkeypatch: pytest.MonkeyPatch) -> None:
+    """The shared record's read-modify-write runs under the repo's OS lock (alert_ledger)."""
+    from libs.ops import alert_ledger
+    seen: list[str] = []
+    real = alert_ledger.os_lock
+
+    def spy(lock: Path, timeout_s: float = 10.0):  # type: ignore[no-untyped-def]
+        seen.append(lock.name)
+        return real(lock, timeout_s)
+    monkeypatch.setattr(alert_ledger, "os_lock", spy)
+    att = _att({"a": 1})
+    dec = LR.plan_pass(["a"], att, plan="core", budget_s=100.0)
+    out = tmp_path / "LEG_ROTATION.json"
+    doc = LR.record(dec, att, ["a"], path=out, residents={})
+    assert seen == ["LEG_ROTATION.json.flock"]
+    assert "write_error" not in doc and LR.load_record(out)["liveness"]["verdict"]
+    assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_record_reports_a_held_lock_instead_of_writing_unlocked(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(LR, "RECORD_LOCK_WAIT_S", 0.05)
+    out = tmp_path / "LEG_ROTATION.json"
+    from libs.ops.alert_ledger import os_lock
+    att = _att({"a": 1})
+    dec = LR.plan_pass(["a"], att, plan="core", budget_s=100.0)
+    # A second open handle conflicts with the first (flock / msvcrt lock per handle).
+    with os_lock(out.with_name(out.name + ".flock")):
+        doc = LR.record(dec, att, ["a"], path=out, residents={})
+    assert "AlertLedgerBusy" in doc["write_error"]
+    assert not out.exists(), "a writer that cannot get the lock never writes unlocked"
+    assert doc["liveness"]["verdict"] in {"RED", "GREEN"}

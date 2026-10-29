@@ -92,6 +92,15 @@ def check(path: Path | None = None, *, now: object = None) -> dict[str, object]:
                         f"{live.get('max_deferrals', LR.MAX_DEFERRALS)}-pass ageing bound or "
                         f"never run: {', '.join(sorted(red)[:40])}"
                         + (" ..." if len(red) > 40 else ""))
+    verdict = str(live.get("verdict") or "").upper()
+    if verdict not in {"RED", "GREEN"}:
+        # UNMEASURED IS AN ANSWER, NEVER A PASS (L1.28a; Auditor 2026-10-29). A record with no
+        # readable `liveness` verdict -- written by a cycle older than the RED/GREEN block, or
+        # hand-edited -- says nothing about whether any leg starved, and that silence is exactly
+        # what this fence exists to refuse.
+        failures.append("leg liveness UNMEASURED: the rotation record carries no RED/GREEN "
+                        "`liveness` verdict, so whether any leg starved past its bound cannot "
+                        "be cashed (L1.28a)")
     if res_red:
         failures.append(f"resident liveness RED: {len(res_red)} department resident(s) waiting "
                         f"past the slot-queue bound: {', '.join(sorted(res_red))}")

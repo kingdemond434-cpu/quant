@@ -137,3 +137,33 @@ def test_the_sixteen_that_were_dark_are_on_the_roster() -> None:
             "counterfactual_timeframes", "producer_census"}
     assert dark <= roster, f"not rostered: {sorted(dark - roster)}"
     assert dark <= set(hourly_cycle.CORE_LEGS), "these are core legs and must stay core"
+
+
+def test_a_lifted_leg_runs_first_once_and_main_gets_its_result(monkeypatch) -> None:
+    """MF1: `Decision.lifted` legs run in a prelude before the first leg; when `main()` reaches
+    the lifted leg in file order it gets the SAME result back without a second run."""
+    monkeypatch.setattr(hourly_cycle, "HOURLY_PLAN", "all", raising=False)
+    dec = _install(monkeypatch, admitted={"first_leg", "lifted_leg"}, deferred=set())
+    dec.lifted = ["lifted_leg"]
+    calls: list[str] = []
+    monkeypatch.setattr(hourly_cycle, "_lift_probe", lambda: calls.append("lifted") or
+                        {"status": "OK", "v": 7}, raising=False)
+    hourly_cycle._ROTATION["lift_src"] = {"lifted_leg": "_lift_probe"}
+
+    hourly_cycle._costed("first_leg", lambda: calls.append("first") or {"status": "OK"})
+    assert calls == ["lifted", "first"], "the lifted leg runs before the first leg"
+    out = hourly_cycle._costed("lifted_leg", lambda: calls.append("again") or {})
+    assert out == {"status": "OK", "v": 7}
+    assert calls == ["lifted", "first"], "no second run when main() reaches it"
+    assert hourly_cycle._ROTATION["ran"].count("lifted_leg") == 1
+
+
+def test_a_lifted_leg_whose_call_cannot_be_rebuilt_keeps_its_place(monkeypatch) -> None:
+    monkeypatch.setattr(hourly_cycle, "HOURLY_PLAN", "all", raising=False)
+    dec = _install(monkeypatch, admitted={"first_leg", "lifted_leg"}, deferred=set())
+    dec.lifted = ["lifted_leg"]
+    hourly_cycle._ROTATION["lift_src"] = {"lifted_leg": "no_such_name_anywhere"}
+    hourly_cycle._costed("first_leg", lambda: {"status": "OK"})
+    calls: list[str] = []
+    hourly_cycle._costed("lifted_leg", lambda: calls.append("ran") or {"status": "OK"})
+    assert calls == ["ran"], "a failed rebuild must leave the leg running in file order"
