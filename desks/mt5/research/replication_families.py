@@ -529,9 +529,9 @@ def _build_relative_value(b: Bars, p: dict[str, Any]) -> list[Order]:
         return []
     with np.errstate(all="ignore"):
         spread = pd.Series(np.log(ca) - np.log(cb))
-    r = spread.rolling(lb, min_periods=lb)
-    mu, sd = r.mean().to_numpy(), r.std().to_numpy()
-    z = (spread.to_numpy() - mu) / sd
+        r = spread.rolling(lb, min_periods=lb)
+        mu, sd = r.mean().to_numpy(), r.std().to_numpy()
+        z = (spread.to_numpy() - mu) / sd          # a flat spread has no z: NaN, no signal
     a = atr(b, int(p["atr_n"]))[np.searchsorted(b.t, t)]
     ez, xz, sa, ttl = float(p["entry_z"]), float(p["exit_z"]), float(p["stop_atr"]), \
         int(p["ttl_bars"])
