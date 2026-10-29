@@ -105,6 +105,8 @@ def roster(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     path = tmp_path / "sleeves.json"
     monkeypatch.setattr(promoter, "SLEEVES_FILE", path)
     monkeypatch.setattr(promoter, "REPLICATION_WAIVER", tmp_path / "waiver.json")
+    # The restore door reads the principal stops beside the roster and refuses an absent record.
+    (tmp_path / "PRINCIPAL_STOPS.json").write_text('{"stops": []}', encoding="utf-8")
     monkeypatch.setattr(promoter, "cost_basis_of", lambda row, universe=None: ("h", "test"))
     monkeypatch.setattr(promoter, "artifact_of", lambda row: {"ok": True, "problems": []})
     monkeypatch.setattr(promoter, "_apply_live_policy", lambda rows: 0)
@@ -408,6 +410,8 @@ def healer(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     sleeves = tmp_path / "sleeves.json"
     monkeypatch.setattr(mod, "SLEEVES", sleeves)
     monkeypatch.setattr(mod, "REPLICATION_WAIVER", tmp_path / "waiver.json")
+    # The healer now restores only against a readable stops record (principal_stops, 2026-10-14).
+    (tmp_path / "PRINCIPAL_STOPS.json").write_text('{"stops": []}', encoding="utf-8")
 
     def run(rows: list[dict], book: dict[str, dict]) -> dict[str, str]:
         monkeypatch.setattr(ai, "REPLICATION_VERDICTS", _book(tmp_path, book))
