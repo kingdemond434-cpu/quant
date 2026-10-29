@@ -415,6 +415,22 @@ def _age_min(path: Path) -> float | None:
         return None
 
 
+def _contract_age(organ: str, artifact: str) -> tuple[float | None, str]:
+    """(age in minutes, basis) for one contract row. An organ in `organ_contract.STAMPS` is aged
+    by its CONTENT stamp read from the file head -- its readers rewrite the file, so its mtime is
+    not its age (miner_candidates.json, 2026-10-29) -- and an unreadable stamp is None with the
+    reason, which grades NO_ARTIFACT (a fault), never fresh. Everything else keeps the mtime."""
+    try:
+        sys.path.insert(0, str(ROOT / "ops"))
+        import organ_contract  # type: ignore[import-not-found]
+        if organ in getattr(organ_contract, "STAMPS", {}):
+            return organ_contract.artifact_age(organ, artifact, root=ROOT)
+    except Exception:
+        pass          # no organ_contract means no contracts at all (`_contracts` returns {})
+    age = _age_min(ROOT / artifact)
+    return age, ("file mtime" if age is not None else f"{artifact} does not exist")
+
+
 def _contracts() -> dict[str, tuple[str, int, str]]:
     """The curated organ -> (artifact, max_age_min, purpose) map, if it is importable."""
     try:
@@ -487,7 +503,7 @@ def build() -> dict[str, Any]:
         if code_unreadable:
             result_unmeasured = f"last result {str(t.get('Last Result') or 'absent')!r} not a code"
         artifact, max_age, purpose = contracts.get(name, ("", 0, ""))
-        age = _age_min(ROOT / artifact) if artifact else None
+        age, age_basis = _contract_age(name, artifact) if artifact else (None, "")
 
         # THE VERDICT IS THE WORST OF THE THREE FACTS, never an average of them. A task that is
         # Disabled is not "half healthy" because its artifact happens to be fresh; a task that
@@ -511,9 +527,10 @@ def build() -> dict[str, Any]:
                 f"task state {sorted(_states) or 'blank'} not recognised: whether the scheduler "
                 "will start this is UNMEASURED")
         elif artifact and age is None:
-            verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
+            verdict, why = "NO_ARTIFACT", age_basis or f"{artifact} does not exist"
         elif artifact and max_age and age is not None and age > max_age:
-            verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
+            verdict, why = "STALE", (f"{age:.0f} min old ({age_basis}) against a {max_age} min "
+                                     "contract")
         elif code_unreadable:
             verdict, why = "SCHEDULER_UNMEASURED", (result_unmeasured + ": whether the last run "
                                                     "succeeded is UNMEASURED")
@@ -552,7 +569,7 @@ def build() -> dict[str, Any]:
     for organ, (artifact, max_age, purpose) in contracts.items():
         if organ in seen:
             continue
-        age = _age_min(ROOT / artifact)
+        age, age_basis = _contract_age(organ, artifact)
         inventory_ok = scheduler_status.startswith("OK ")
         # Parenthesised contracts describe an artifact of an existing scheduled task, not a
         # second Windows task. Treating the name as a task manufactured 31 NOT_SCHEDULED alarms
@@ -562,9 +579,10 @@ def build() -> dict[str, Any]:
         if not inventory_ok:
             verdict, why = "SCHEDULER_UNMEASURED", scheduler_status
         elif is_component and age is None:
-            verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
+            verdict, why = "NO_ARTIFACT", age_basis or f"{artifact} does not exist"
         elif is_component and age is not None and max_age and age > max_age:
-            verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
+            verdict, why = "STALE", (f"{age:.0f} min old ({age_basis}) against a {max_age} min "
+                                     "contract")
         elif is_component:
             verdict, why = "OK", f"artifact of scheduled task {parent}"
         else:

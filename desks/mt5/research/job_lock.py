@@ -12,6 +12,7 @@ from collections.abc import Iterable, Iterator
 from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 LOCK_ROOT = BASE / "data" / ".job_locks"
@@ -365,6 +366,14 @@ def free_mb() -> int | None:
     return None
 
 
+#: WHY the last `exclusive_job(name)` yielded False, per name, for the caller to report.
+#: `exclusive_job` yields a bool, so a memory stand-down and a held lock were indistinguishable to
+#: every caller -- `hourly_cycle.catch_up_intake` labelled a memory refusal "canonical compiler
+#: lane already owned" (2026-10-29). Keys: reason (MEMORY_STAND_DOWN | LOCK_HELD |
+#: LOCK_UNRECOVERABLE), detail, and the figures it was decided on. Cleared on every entry.
+LAST_REFUSAL: dict[str, dict[str, Any]] = {}
+
+
 @contextmanager
 def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
                   deadline_s: float | None = None, evsi: float | None = None) -> Iterator[bool]:
@@ -391,6 +400,7 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
     # not be fitted on. Recording it here means a job that STANDS DOWN still leaves its four
     # declared fields for `admission_order` to rank next hour.
     record_spec(name, mb=int(need_mb), cpu=cpu, deadline_s=deadline_s, evsi=evsi)
+    LAST_REFUSAL.pop(name, None)
     if need_mb > 0:
         need_mb, need_why = measured_need_mb(name, need_mb)
         if need_mb > 0:
@@ -446,6 +456,11 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
                   f"after waiting {ADMIT_PATIENCE_SECONDS // 60}min. "
                   f"Not started (a job that does not fit thrashes the box and the live "
                   f"terminal); the next scheduled trigger retries and the cache makes it resume.")
+            LAST_REFUSAL[name] = {
+                "reason": "MEMORY_STAND_DOWN", "need_mb": int(need_mb), "free_mb": int(avail),
+                "waited_s": ADMIT_PATIENCE_SECONDS,
+                "detail": f"needs ~{need_mb}MB, box had {avail}MB after waiting "
+                          f"{ADMIT_PATIENCE_SECONDS // 60}min ({need_why})"}
             yield False
             return
     LOCK_ROOT.mkdir(parents=True, exist_ok=True)
@@ -479,6 +494,8 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
                     path.unlink()
                 continue
             print(f"{name}: REFUSED duplicate writer; active lock {path}")
+            LAST_REFUSAL[name] = {"reason": "LOCK_HELD", "lock": str(path), "owner": state,
+                                  "detail": f"another writer holds {path} (owner {state})"}
             yield False
             return
         else:
@@ -488,6 +505,8 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
             break
     if not owned:
         print(f"{name}: REFUSED writer; stale lock could not be recovered")
+        LAST_REFUSAL[name] = {"reason": "LOCK_UNRECOVERABLE", "lock": str(path),
+                              "detail": f"stale lock {path} could not be removed"}
         yield False
         return
     try:

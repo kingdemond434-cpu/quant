@@ -169,6 +169,11 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
     # No auto-repair: its producer is the hourly cycle's `judge_alive` leg
     # (`scripts/check_judge_coverage.py --liveness --require-state`), which takes arguments.
     ("judge_alive", "desks/mt5/reports/judge_alive_fence.json", 3600, None),
+    # The miner compiler's content-stamp fence (hourly `miner_compiler_fresh` leg, a fence like
+    # judge_alive, so not a capability-graph node): a fence report that stops being rewritten
+    # means nobody is checking whether miner_candidates.json is current. Its own verdict (stale
+    # compiled_at) is the leg's non-zero exit, which the compute ledger and LEG_FAILED carry.
+    ("miner_compiler_fresh", "desks/mt5/reports/MINER_COMPILER_FRESHNESS.json", 3600, None),
 )
 
 #: Alarm files any detector on this tree may raise. Presence IS the issue; the file's first line

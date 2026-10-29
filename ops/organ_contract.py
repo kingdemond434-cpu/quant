@@ -35,12 +35,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DESK = ROOT / "desks" / "mt5"
 OUT = DESK / "reports" / "organ_contract.json"
+if str(ROOT) not in sys.path:
+    # The stamp reader and the resilient writer live in libs/; this runs as a bare script.
+    sys.path.insert(0, str(ROOT))
 
 #: organ -> (artifact it must refresh, max age in minutes, what the artifact is FOR)
 #: The age is the organ's cadence with room for one missed run: an organ on a 15-minute clock
@@ -90,6 +95,14 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
                            "the symbol registry the whole hypothesis lane reads"),
     "MT5-LocalConvert":   ("desks/mt5/data/hypotheses/local_candidates.json", 180,
                            "deterministic row -> candidate conversion"),
+    # THE MINER COMPILER, JUDGED BY ITS CONTENT STAMP (2026-10-29). The single step between
+    # every crawler and the judge; its legs (`intake_catchup`, `compile_candidates`) run inside
+    # MT5-Hourly, so this is a component row of that task. Its mtime is NOT its age -- readers
+    # rewrite it -- so it is graded on `compiled_at` (see STAMPS). 180 min: hourly, plus two
+    # missed passes, because a single slow or rotated-out pass is not a defect.
+    "MT5-Hourly (miner compiler)": ("desks/mt5/data/hypotheses/miner_candidates.json", 180,
+                                    "every crawler row compiled into an executable candidate or "
+                                    "a deepening task -- the judge's whole text-chain intake"),
 
     # THE E8 PROP ORGANS, CONTRACTED 2026-09-13 -- and the gap they close is one I made.
     #
@@ -379,6 +392,23 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
 }
 
 
+#: organ -> how its age is read when the FILE's mtime is not the content's age.
+#:   key      the producer's own stamp, read from the file HEAD (libs/ops/content_stamp; no parse)
+#:   legs     the hourly legs that produce it, looked up in the compute ledger and LEG_ROTATION
+#:   lock     the job-lock name its writer takes
+#:   attempt  the per-attempt record its legs write (outcome, skip reason, stamps)
+#: A contract here is graded on the stamp ALONE: a missing or unreadable stamp is UNMEASURED and
+#: fails, however young the file looks. That is the whole point -- the young mtime over old
+#: content is the failure this exists to see.
+STAMPS: dict[str, dict[str, Any]] = {
+    "MT5-Hourly (miner compiler)": {
+        "key": "compiled_at",
+        "legs": ("intake_catchup", "compile_candidates"),
+        "lock": "miner_candidate_compiler",
+        "attempt": "desks/mt5/reports/MINER_COMPILER_ATTEMPT.json",
+    },
+}
+
 def _age_min(p: Path, now: datetime) -> float | None:
     try:
         return (now - datetime.fromtimestamp(p.stat().st_mtime, UTC)).total_seconds() / 60.0
@@ -386,21 +416,115 @@ def _age_min(p: Path, now: datetime) -> float | None:
         return None
 
 
-def check() -> dict:
+def artifact_age(organ: str, rel: str, now: datetime | None = None,
+                 root: Path | None = None) -> tuple[float | None, str]:
+    """(age in minutes, basis) for one contract. Stamped organs read their CONTENT stamp; the
+    rest keep the file age. None means ABSENT (mtime organs) or UNMEASURED (stamped organs)."""
+    now = now or datetime.now(UTC)
+    p = (root or ROOT) / rel
+    spec = STAMPS.get(organ)
+    if spec:
+        from libs.ops.content_stamp import stamp_age_min
+        return stamp_age_min(p, str(spec["key"]), now)
+    age = _age_min(p, now)
+    return age, ("file mtime" if age is not None else f"{rel} does not exist")
+
+
+def _tail_lines(p: Path, n_bytes: int = 512 * 1024) -> list[str]:
+    try:
+        with p.open("rb") as fh:
+            fh.seek(0, 2)
+            size = fh.tell()
+            fh.seek(max(0, size - n_bytes))
+            return fh.read().decode("utf-8", errors="replace").splitlines()
+    except OSError:
+        return []
+
+
+def likely_cause(organ: str, root: Path | None = None) -> list[str]:
+    """Where to look, read rather than guessed: the producing legs' newest compute-ledger rows,
+    whether LEG_ROTATION deferred them, whether the job lock is held, and the last attempt's own
+    record. Each line names its source; a source that cannot be read says so."""
+    spec = STAMPS.get(organ) or {}
+    base = root or ROOT
+    desk = base / "desks" / "mt5"
+    out: list[str] = []
+    legs = tuple(spec.get("legs") or ())
+    attempt = spec.get("attempt")
+    if attempt:
+        try:
+            rec = json.loads((base / attempt).read_text("utf-8"))
+            out.append(f"last attempt ({attempt}): {rec.get('at')} leg={rec.get('leg')} "
+                       f"status={rec.get('status')} skip={rec.get('skip_reason')} "
+                       f"why={str(rec.get('why') or rec.get('note') or '')[:200]}")
+        except (OSError, ValueError) as exc:
+            out.append(f"last attempt: {attempt} unreadable ({type(exc).__name__}) -- no attempt "
+                       "has recorded itself since this record was introduced")
+    if legs:
+        last: dict[str, dict[str, Any]] = {}
+        for ln in _tail_lines(desk / "data" / "compute_ledger.jsonl"):
+            try:
+                r = json.loads(ln)
+            except ValueError:
+                continue
+            if isinstance(r, dict) and r.get("run") in legs:
+                last[str(r["run"])] = r
+        for leg in legs:
+            r = last.get(leg)
+            out.append(f"compute ledger: {leg} " + (
+                f"last {r.get('at')} outcome={r.get('outcome')} wall_s={r.get('wall_s')}"
+                if r else "has no row in the ledger tail -- the leg has not run recently "
+                          "(plan, rotation, or the hourly task itself)"))
+        try:
+            rot = json.loads((desk / "reports" / "LEG_ROTATION.json").read_text("utf-8"))
+            for leg in legs:
+                where = [k for k in ("deferred_this_pass", "never_run", "outside_window")
+                         if leg in (rot.get(k) or [])]
+                if where:
+                    out.append(f"LEG_ROTATION ({rot.get('generated')}): {leg} in "
+                               f"{', '.join(where)}")
+        except (OSError, ValueError) as exc:
+            out.append(f"LEG_ROTATION.json unreadable ({type(exc).__name__})")
+    lock = spec.get("lock")
+    if lock:
+        lp = desk / "data" / ".job_locks" / f"{lock}.json"
+        try:
+            held = json.loads(lp.read_text("utf-8"))
+            out.append(f"job lock HELD: {lp} pid={held.get('pid')} since "
+                       f"{held.get('started_at')}")
+        except FileNotFoundError:
+            out.append(f"job lock {lock}: free")
+        except (OSError, ValueError) as exc:
+            out.append(f"job lock {lp} unreadable ({type(exc).__name__})")
+    return out
+
+
+def check(only: str | None = None, root: Path | None = None) -> dict[str, Any]:
     now = datetime.now(UTC)
     rows = []
     for organ, (rel, max_age, what) in sorted(CONTRACTS.items()):
-        p = ROOT / rel
-        age = _age_min(p, now)
-        if age is None:
+        if only is not None and organ != only:
+            continue
+        age, basis = artifact_age(organ, rel, now, root)
+        stamped = organ in STAMPS
+        if age is None and stamped:
+            verdict, why = "UNMEASURED", (f"{rel}: {basis} -- a content stamp that cannot be "
+                                          "read is never fresh")
+        elif age is None:
             verdict, why = "ABSENT", f"{rel} does not exist -- the organ has never produced it"
         elif age > max_age:
-            verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
+            verdict, why = "STALE", (f"{rel} is {age:.0f} min old by its "
+                                     f"{'content stamp ' + basis if stamped else basis} against "
+                                     f"a {max_age} min contract")
         else:
-            verdict, why = "OK", f"{age:.0f} min old"
-        rows.append({"organ": organ, "artifact": rel, "max_age_min": max_age,
-                     "age_min": None if age is None else round(age, 1),
-                     "verdict": verdict, "why": why, "artifact_is": what})
+            verdict, why = "OK", f"{age:.0f} min old ({basis})"
+        row = {"organ": organ, "artifact": rel, "max_age_min": max_age,
+               "age_min": None if age is None else round(age, 1),
+               "age_basis": STAMPS[organ]["key"] if stamped else "mtime",
+               "verdict": verdict, "why": why, "artifact_is": what}
+        if stamped and verdict != "OK":
+            row["likely_cause"] = likely_cause(organ, root)
+        rows.append(row)
     bad = [r for r in rows if r["verdict"] != "OK"]
     return {
         "measured_at": now.isoformat(timespec="seconds"),
@@ -417,19 +541,33 @@ def check() -> dict:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--only", default=None,
+                    help="judge one contract (exact organ name); exit 1 unless it is OK")
+    ap.add_argument("--out", default=None,
+                    help="write the report here instead of reports/organ_contract.json "
+                         "(a single-row --only pass never overwrites the whole board)")
     a = ap.parse_args(argv)
-    rep = check()
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(rep, indent=1), encoding="utf-8")
+    if a.only is not None and a.only not in CONTRACTS:
+        print(f"organ_contract: no contract named {a.only!r}")
+        return 2
+    rep = check(only=a.only)
+    out = Path(a.out) if a.out else (None if a.only else OUT)
+    if out is not None:
+        out = out if out.is_absolute() else ROOT / out
+        out.parent.mkdir(parents=True, exist_ok=True)
+        tmp = out.with_suffix(out.suffix + ".tmp")
+        tmp.write_text(json.dumps(rep, indent=1), encoding="utf-8")
+        from libs.ops.win_write import replace_resilient
+        replace_resilient(tmp, out)
     if a.json:
         print(json.dumps(rep, indent=1))
         return 0 if rep["status"] == "OK" else 1
     print(f"organ contracts: {rep['ok']}/{rep['contracts']} OK   status {rep['status']}")
-    print(f"{'organ':<22}{'verdict':<9}{'age':>8}  artifact")
+    print(f"{'organ':<32}{'verdict':<11}{'age':>8}  artifact")
     print("-" * 96)
     for r in rep["rows"]:
         age = "-" if r["age_min"] is None else f"{r['age_min']:.0f}m"
-        print(f"{r['organ']:<22}{r['verdict']:<9}{age:>8}  {r['artifact']}")
+        print(f"{r['organ']:<32}{r['verdict']:<11}{age:>8}  {r['artifact']}")
     if rep["failing"]:
         print()
         print("FAILING -- each of these reported success while producing nothing:")
@@ -437,7 +575,10 @@ def main(argv: list[str] | None = None) -> int:
             if r["verdict"] != "OK":
                 print(f"  {r['organ']:<22} {r['why']}")
                 print(f"  {'':<22} the artifact is {r['artifact_is']}")
-    print(f"\n-> {OUT}")
+                for c in r.get("likely_cause") or []:
+                    print(f"  {'':<22} cause? {c}")
+    if out is not None:
+        print(f"\n-> {out}")
     return 0 if rep["status"] == "OK" else 1
 
 

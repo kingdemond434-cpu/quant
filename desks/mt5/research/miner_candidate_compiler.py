@@ -379,7 +379,11 @@ def _atomic_json(path: Path, document: dict) -> None:
                                          suffix=".tmp", delete=False) as handle:
             temporary = Path(handle.name)
             json.dump(document, handle, indent=1, default=str)
-        os.replace(temporary, path)
+        # A READER HOLDING THE TARGET OPEN REFUSES A RENAME ON WINDOWS (WinError 5/32), and this
+        # 70 MB artifact is read by the merger, the judge's intake and the dashboards. A plain
+        # `os.replace` turned one such overlap into a failed pass that published nothing.
+        from libs.ops.win_write import replace_resilient
+        replace_resilient(temporary, path)
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
@@ -1775,76 +1779,6 @@ def main() -> int:
                     "cells": dict(sorted(contested.items())[:40])}
 
 
-    # THE GRAPH REMEMBERS WHAT WAS BURIED. Every compiled candidate is registered as BORN with
-    # its miner row as parent, and every one that lands in a parameter region the gauntlet has
-    # already failed carries that count on its face. It is not rejected -- the gauntlet decides
-    # -- but a proposer that keeps re-proposing a dead region is now visible, and the deepening
-    # queue's VOI ordering discounts it.
-    #
-    # EVERY FAILURE IN HERE IS NAMED IN THE ARTIFACT (2026-09-08). Measured on the box: 632 of
-    # 632 compiled candidates carried no premortem and no prior-failure count, and the graph
-    # held no compiler row at all -- this block was failing every hour and `except: pass` made
-    # it look like a graph with nothing to say.
-    graph_note: dict = {"updated": False, "premortem": False}
-    try:
-        from libs.research.hypothesis_graph import record_candidates
-        g = _graph_snapshot()
-        for c in candidates.values():
-            pf = g.prior_failures(str(c.get("symbol")), str(c.get("family")),
-                                  dict(c.get("params") or {}))
-            if pf["n_failed"]:
-                c["prior_failures_in_region"] = pf["n_failed"]
-                c["region"] = pf["region"]
-        # THE LEARNED FAILURE PRIOR, AND THE ONE DIRECTION IT MAY ACT IN (Tier-1 B10).
-        #
-        # `prior_failures_in_region` counts what died HERE; the graveyard model says what a
-        # structure like this usually dies OF. Neither can change its mind: both average every
-        # era of this desk's history together, so a region buried under conditions that have
-        # since ended stays buried, and every generator quietly learns not to propose it.
-        # `failure_prior` fits the same survival model twice -- lifetime and recent -- and
-        # publishes the odds ratio per declared feature. A candidate whose structure has begun
-        # to survive again carries a multiplier above 1 and a `reopen` flag.
-        #
-        # STAMPED, NEVER FILTERED. No candidate is removed by this, here or anywhere: the field
-        # travels with the row and the queue's ordering may read it. A negative prior that could
-        # delete a candidate would make the desk's own history a cage (L1.25).
-        try:
-            from research.failure_prior import multiplier_for
-            prior_table = json.loads((BASE / "data" / "failure_prior.json")
-                                     .read_text("utf-8-sig"))
-            reopen_levels = {
-                (str(r.get("feature")), str(r.get("level")))
-                for r in (prior_table.get("reopen") or [])
-                if isinstance(r, dict)}
-            for c in candidates.values():
-                mult, why = multiplier_for(c, table=prior_table)
-                c["failure_prior"] = mult
-                c["failure_prior_why"] = why
-                c["reopen"] = bool(reopen_levels & {("family", str(c.get("family"))),
-                                                    ("source", str(c.get("source")))})
-            graph_note["failure_prior"] = True
-        except Exception as exc:
-            graph_note["failure_prior_why"] = f"{type(exc).__name__}: {exc}"[:300]
-        # THE PRE-MORTEM: which failure class this candidate most resembles dying of, and the
-        # cheap falsifier that implies. Annotation only -- the gauntlet still decides.
-        try:
-            from libs.research.graveyard_model import GraveyardModel
-            gm = GraveyardModel().fit(g.rows())
-            if gm.n:
-                for c in candidates.values():
-                    c["premortem"] = gm.premortem(c)
-                graph_note["premortem"] = True
-            else:
-                graph_note["premortem_why"] = "graveyard model fitted on zero rows"
-        except Exception as exc:
-            graph_note["premortem_why"] = f"{type(exc).__name__}: {exc}"[:300]
-            print(f"premortem not stamped (non-fatal): {graph_note['premortem_why']}")
-        record_candidates(candidates.values(), source="miner_candidate_compiler", graph=g)
-        graph_note["updated"] = True
-    except Exception as exc:
-        graph_note["why"] = f"{type(exc).__name__}: {exc}"[:300]
-        print(f"hypothesis graph not updated (non-fatal): {graph_note['why']}")
-
     # DOOR (a) OF THE NET-EDGE SPINE: THE INTAKE RANKS ON NET, NOT ON GROSS (2026-09-23).
     # `net_edge_spine` publishes net = gross - spread/slippage - impact - financing - commission
     # - the multiplicity charge already owed, per (symbol, family), in data/net_edge_ranks.json.
@@ -1882,20 +1816,10 @@ def main() -> int:
                      key=lambda c: (c.get("net_edge") is None,
                                     -(c.get("net_edge") or 0.0), str(c.get("symbol") or "")))
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    convertible_total = sum(int(v["convertible_rows"]) for v in per_source.values())
-    converted_total = sum(int(v["converted_rows"]) for v in per_source.values())
-    invalid_total = sum(int(v["invalid_cells"]) for v in per_source.values())
-    recovered_total = sum(int(v["deepening_recovered"]) for v in per_source.values())
-    terminal_refusal_total = sum(
-        int(v["deepening_terminal_refusals"]) for v in per_source.values())
-    unresolved_total = sum(int(v["unresolved_rows"]) for v in per_source.values())
-    rows_total = sum(int(v["rows"]) for v in per_source.values())
-    refusal_total = sum(int(v["valid_refusals"]) for v in per_source.values())
-    disposition_total = converted_total + refusal_total
-    producer_debt = [s for s, v in sorted(per_source.items())
-                     if int(v["owes_convertible_rows"]) > 0]
-    # AIMED BEFORE IT IS EMITTED (principal 2026-10-28: "stop miners from producing them").
+    # AIMED BEFORE IT IS EMITTED, AND BEFORE THE FIRST PUBLICATION: the steered rows are the
+    # ones published, so the pre-graph publication below never carries a repeat the steer
+    # would have moved.
+    # (principal 2026-10-28: "stop miners from producing them").
     # This compiler is ~96% of the docket and 78% of its rows repeated an already-mined rule in
     # thresholds only. Each repeat is moved, here, to the nearest lawful empty ground of the same
     # mechanism (research/coverage_steer, against the map the last merge wrote). One row out per
@@ -1918,81 +1842,194 @@ def main() -> int:
               f"(fail closed: {_rep['fail_closed']})")
     except Exception as exc:
         steer_note = {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
+
+    # PUBLISH FIRST, ANNOTATE SECOND (2026-10-20). The artifact below was stamped
+    # 2026-10-03 on the trading box while every scheduled task reported rc 0. The compile loop
+    # is bounded by `--budget-s` (intake at 35%, compiling at 85%), but EVERYTHING after it was
+    # not: the hypothesis-graph pass parses the judge's whole ledger (gigabytes on the box --
+    # see `_graph_snapshot`), fits the graveyard model over every row and appends one BORN row
+    # per candidate, all before the first byte of `miner_candidates.json` was written and
+    # before the cursor was saved. A pass killed there by the leg's cap published nothing,
+    # saved no cursor, and the next pass re-read the same rows and died at the same place --
+    # the 2026-09-30 "timed out every hour and moved 0 artifacts" shape, moved downstream of
+    # the bound that cured it.
+    #
+    # So the canonical artifacts, the deepening queue, the factory receipts and the cursor are
+    # now durable BEFORE the annotation pass starts. The graph pass then annotates the same
+    # candidates and republishes; if it is killed, the fresh unannotated publication stands
+    # and `graph.pending` says so on its face. Annotation is stamped-never-filtered, so a
+    # candidate without it is exactly as admissible to the judge as one with it.
     from libs.data.pit import stamp_or_refuse
 
     # These rules were compiled in this pass; source event dates cannot backdate a rule.
     candidate_time = datetime.now(UTC).isoformat()
-    emitted, provenance_refused = stamp_or_refuse(
-        [{**candidate, "available_time": candidate_time, "ingested_time": candidate_time}
-         for candidate in ordered], "miner_candidate_compiler")
-    if provenance_refused:
-        raise ValueError(f"Compiler refused {len(provenance_refused)} unstamped rules")
-    emitted_tasks, refused_tasks = stamp_or_refuse(
-        [{**task, "available_time": candidate_time, "ingested_time": candidate_time}
-         for task in deepening.values()], "miner_deepening_queue")
-    if refused_tasks:
-        raise ValueError(f"Compiler refused {len(refused_tasks)} unstamped deepening tasks")
-    _atomic_json(OUT, {
-        "compiled_at": now.isoformat(timespec="seconds"),
-        "hypotheses": emitted,
-        "net_ranking": net_note,
-        "per_source": per_source,
-        "seats": seats,
-        "seats_dark": seats_dark,
-        "agreement": {"candidates_with_2plus_sources": agreement},
-        "disagreement": disagreement,
-        "intake": {"max_rows_per_pass": MAX_ROWS_PER_PASS, **_LAST_INTAKE},
-        "blinding": {k: v for k, v in blinding_note.items() if k != "seats"}
-        | {"seats_with_outcomes": {s: d for s, d in (blinding_note.get("seats") or {}).items()
-                                   if d.get("rows_with_outcomes")}},
-        "graph": graph_note,
-        "coverage_steer": steer_note,
-        "impossible_metrics": fence_tally.to_dict(),
-        "rows_accounted": rows_total,
-        "executable_candidates": len(candidates),
-        "deepening_tasks": len(deepening),
-        "conversion_contract": {
-            "convertible_rows": convertible_total,
-            "converted_rows": converted_total,
-            "convertible_conversion_rate": round(
-                converted_total / convertible_total, 6) if convertible_total else 1.0,
-            "silent_loss": convertible_total - converted_total,
-            "conversion_debt": convertible_total - converted_total,
-            "invalid_cells": invalid_total,
-            "deepening_recovered_rows": recovered_total,
-            "deepening_terminal_refusals": terminal_refusal_total,
-            "unresolved_rows": unresolved_total,
-            "disposition_debt": unresolved_total,
-            "terminally_disposed_rows": disposition_total,
-            "disposition_coverage": round(disposition_total / rows_total, 6)
-            if rows_total else 1.0,
-            "producers_with_debt": producer_debt,
-            "complete": (converted_total == convertible_total and invalid_total == 0
-                         and unresolved_total == 0 and not _LAST_INTAKE.get("bound_hit")),
-            "rule": ("100% of genuinely convertible rows emit a valid executable AlphaCell; "
-                     "100% of all rows must ultimately become a cell or named refusal; pending "
-                     "deepening stays UNRESOLVED and is never forged into strategy yield"),
-        },
-        "rule": "exact recipe or structured causal data only; no prose-to-family guessing",
-    })
-    _lineage(OUT)
-    _atomic_json(DEEPEN, {
-        "built_at": now.isoformat(timespec="seconds"),
-        "tasks": emitted_tasks,
-        "consumer": "hourly/daily research brains must recover a falsifiable rule or reject",
-    })
+
+    def _publish(graph_note: dict) -> None:
+        OUT.parent.mkdir(parents=True, exist_ok=True)
+        convertible_total = sum(int(v["convertible_rows"]) for v in per_source.values())
+        converted_total = sum(int(v["converted_rows"]) for v in per_source.values())
+        invalid_total = sum(int(v["invalid_cells"]) for v in per_source.values())
+        recovered_total = sum(int(v["deepening_recovered"]) for v in per_source.values())
+        terminal_refusal_total = sum(
+            int(v["deepening_terminal_refusals"]) for v in per_source.values())
+        unresolved_total = sum(int(v["unresolved_rows"]) for v in per_source.values())
+        rows_total = sum(int(v["rows"]) for v in per_source.values())
+        refusal_total = sum(int(v["valid_refusals"]) for v in per_source.values())
+        disposition_total = converted_total + refusal_total
+        producer_debt = [s for s, v in sorted(per_source.items())
+                         if int(v["owes_convertible_rows"]) > 0]
+        emitted, provenance_refused = stamp_or_refuse(
+            [{**candidate, "available_time": candidate_time, "ingested_time": candidate_time}
+             for candidate in ordered], "miner_candidate_compiler")
+        if provenance_refused:
+            raise ValueError(f"Compiler refused {len(provenance_refused)} unstamped rules")
+        emitted_tasks, refused_tasks = stamp_or_refuse(
+            [{**task, "available_time": candidate_time, "ingested_time": candidate_time}
+             for task in deepening.values()], "miner_deepening_queue")
+        if refused_tasks:
+            raise ValueError(f"Compiler refused {len(refused_tasks)} unstamped deepening tasks")
+        _atomic_json(OUT, {
+            "compiled_at": now.isoformat(timespec="seconds"),
+            "hypotheses": emitted,
+            "net_ranking": net_note,
+            "per_source": per_source,
+            "seats": seats,
+            "seats_dark": seats_dark,
+            "agreement": {"candidates_with_2plus_sources": agreement},
+            "disagreement": disagreement,
+            "intake": {"max_rows_per_pass": MAX_ROWS_PER_PASS, **_LAST_INTAKE},
+            "blinding": {k: v for k, v in blinding_note.items() if k != "seats"}
+            | {"seats_with_outcomes": {s: d for s, d in (blinding_note.get("seats") or {}).items()
+                                       if d.get("rows_with_outcomes")}},
+            "graph": graph_note,
+            "coverage_steer": steer_note,
+            "impossible_metrics": fence_tally.to_dict(),
+            "rows_accounted": rows_total,
+            "executable_candidates": len(candidates),
+            "deepening_tasks": len(deepening),
+            "conversion_contract": {
+                "convertible_rows": convertible_total,
+                "converted_rows": converted_total,
+                "convertible_conversion_rate": round(
+                    converted_total / convertible_total, 6) if convertible_total else 1.0,
+                "silent_loss": convertible_total - converted_total,
+                "conversion_debt": convertible_total - converted_total,
+                "invalid_cells": invalid_total,
+                "deepening_recovered_rows": recovered_total,
+                "deepening_terminal_refusals": terminal_refusal_total,
+                "unresolved_rows": unresolved_total,
+                "disposition_debt": unresolved_total,
+                "terminally_disposed_rows": disposition_total,
+                "disposition_coverage": round(disposition_total / rows_total, 6)
+                if rows_total else 1.0,
+                "producers_with_debt": producer_debt,
+                "complete": (converted_total == convertible_total and invalid_total == 0
+                             and unresolved_total == 0 and not _LAST_INTAKE.get("bound_hit")),
+                "rule": ("100% of genuinely convertible rows emit a valid executable AlphaCell; "
+                         "100% of all rows must ultimately become a cell or named refusal; pending "
+                         "deepening stays UNRESOLVED and is never forged into strategy yield"),
+            },
+            "rule": "exact recipe or structured causal data only; no prose-to-family guessing",
+        })
+        _lineage(OUT)
+        _atomic_json(DEEPEN, {
+            "built_at": now.isoformat(timespec="seconds"),
+            "tasks": emitted_tasks,
+            "consumer": "hourly/daily research brains must recover a falsifiable rule or reject",
+        })
+
+    _publish({"updated": False, "premortem": False,
+              "pending": ("published before the hypothesis-graph pass; a republish with "
+                          "prior failures, failure prior and premortem follows when that "
+                          "pass completes")})
     # Consumer-owned receipts are emitted only after both canonical output artifacts are durable.
     # The factory producer reconciles these on its next pass; it may never assert its own ACK.
     if factory_receipts:
+        from libs.ops.win_write import replace_resilient
         FACTORY_RECEIPTS.mkdir(parents=True, exist_ok=True)
         for receipt in factory_receipts:
             target = FACTORY_RECEIPTS / f"{receipt['input_version_id']}.json"
             tmp = target.with_suffix(".json.tmp")
             tmp.write_text(json.dumps(receipt, indent=1) + "\n", "utf-8")
-            os.replace(tmp, target)
+            replace_resilient(tmp, target)
     _save_cursor()
     if bank is not None:
         bank.flush()
+    # THE GRAPH REMEMBERS WHAT WAS BURIED. Every compiled candidate is registered as BORN with
+    # its miner row as parent, and every one that lands in a parameter region the gauntlet has
+    # already failed carries that count on its face. It is not rejected -- the gauntlet decides
+    # -- but a proposer that keeps re-proposing a dead region is now visible, and the deepening
+    # queue's VOI ordering discounts it.
+    #
+    # EVERY FAILURE IN HERE IS NAMED IN THE ARTIFACT (2026-09-08). Measured on the box: 632 of
+    # 632 compiled candidates carried no premortem and no prior-failure count, and the graph
+    # held no compiler row at all -- this block was failing every hour and `except: pass` made
+    # it look like a graph with nothing to say.
+    graph_note = {"updated": False, "premortem": False}
+    # Annotate what is PUBLISHED: since the coverage steer runs before the first publication,
+    # a steered child replaces its parent in `ordered` and must carry its own region's count
+    # and premortem, not its parent's (and not none).
+    published = [c for c in ordered if isinstance(c, dict)]
+    try:
+        from libs.research.hypothesis_graph import record_candidates
+        g = _graph_snapshot()
+        for c in published:
+            pf = g.prior_failures(str(c.get("symbol")), str(c.get("family")),
+                                  dict(c.get("params") or {}))
+            if pf["n_failed"]:
+                c["prior_failures_in_region"] = pf["n_failed"]
+                c["region"] = pf["region"]
+        # THE LEARNED FAILURE PRIOR, AND THE ONE DIRECTION IT MAY ACT IN (Tier-1 B10).
+        #
+        # `prior_failures_in_region` counts what died HERE; the graveyard model says what a
+        # structure like this usually dies OF. Neither can change its mind: both average every
+        # era of this desk's history together, so a region buried under conditions that have
+        # since ended stays buried, and every generator quietly learns not to propose it.
+        # `failure_prior` fits the same survival model twice -- lifetime and recent -- and
+        # publishes the odds ratio per declared feature. A candidate whose structure has begun
+        # to survive again carries a multiplier above 1 and a `reopen` flag.
+        #
+        # STAMPED, NEVER FILTERED. No candidate is removed by this, here or anywhere: the field
+        # travels with the row and the queue's ordering may read it. A negative prior that could
+        # delete a candidate would make the desk's own history a cage (L1.25).
+        try:
+            from research.failure_prior import multiplier_for
+            prior_table = json.loads((BASE / "data" / "failure_prior.json")
+                                     .read_text("utf-8-sig"))
+            reopen_levels = {
+                (str(r.get("feature")), str(r.get("level")))
+                for r in (prior_table.get("reopen") or [])
+                if isinstance(r, dict)}
+            for c in published:
+                mult, why = multiplier_for(c, table=prior_table)
+                c["failure_prior"] = mult
+                c["failure_prior_why"] = why
+                c["reopen"] = bool(reopen_levels & {("family", str(c.get("family"))),
+                                                    ("source", str(c.get("source")))})
+            graph_note["failure_prior"] = True
+        except Exception as exc:
+            graph_note["failure_prior_why"] = f"{type(exc).__name__}: {exc}"[:300]
+        # THE PRE-MORTEM: which failure class this candidate most resembles dying of, and the
+        # cheap falsifier that implies. Annotation only -- the gauntlet still decides.
+        try:
+            from libs.research.graveyard_model import GraveyardModel
+            gm = GraveyardModel().fit(g.rows())
+            if gm.n:
+                for c in published:
+                    c["premortem"] = gm.premortem(c)
+                graph_note["premortem"] = True
+            else:
+                graph_note["premortem_why"] = "graveyard model fitted on zero rows"
+        except Exception as exc:
+            graph_note["premortem_why"] = f"{type(exc).__name__}: {exc}"[:300]
+            print(f"premortem not stamped (non-fatal): {graph_note['premortem_why']}")
+        record_candidates(candidates.values(), source="miner_candidate_compiler", graph=g)
+        graph_note["updated"] = True
+    except Exception as exc:
+        graph_note["why"] = f"{type(exc).__name__}: {exc}"[:300]
+        print(f"hypothesis graph not updated (non-fatal): {graph_note['why']}")
+    # The annotated republication. Same candidates, same order, same rule time.
+    _publish(graph_note)
     print(f"miner compiler: {sum(int(v['rows']) for v in per_source.values())} row(s) accounted; "
           f"{len(candidates)} executable candidate(s); {len(deepening)} exact-rule task(s)")
     return 0
