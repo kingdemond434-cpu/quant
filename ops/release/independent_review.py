@@ -356,6 +356,61 @@ def file_sections(diff: str) -> list[str]:
     return [x for x in out if x]
 
 
+#: Data bodies a reviewer is shown as a name, a size and a hash instead (`elide_state_data`).
+DATA_EXTS = (".json", ".jsonl", ".csv", ".tsv", ".parquet", ".txt", ".log")
+
+
+def elide_state_data(diff: str, root: Path = HERE.parents[1]) -> tuple[str, list[str]]:
+    """(the diff with the BODY of each box-state data file replaced by one line naming its size
+    and sha256; the files elided). MEASURED 2026-10-29: #509 changed only docs/research/
+    RUNTIME_STATE.md and runtime_state.json, an organ's generated record, and failed review as
+    "the prompt does not fit 32768 tokens": a data dump crowded out the code it rides with.
+
+    A file is elided only when ALL hold, judged by the BASE tree's own code (fail closed: if
+    libs/ops/release.py or its governed-state test cannot be loaded, nothing is elided):
+    it is state (`is_state_path`), not governed state (`is_governed_state`: pins, sign rows,
+    canon, proof, switches), not money path (`money_files`), and a data file (DATA_EXTS). The
+    injection screen has already read the WHOLE diff before this runs."""
+    try:
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("_ir_release", root / "libs/ops/release.py")
+        if spec is None or spec.loader is None:
+            return diff, []
+        rel = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(rel)
+        state, governed = rel.is_state_path, rel.is_governed_state
+    except Exception:  # unloadable: show every body
+        return diff, []
+    secs = file_sections(diff)
+    sides = [changed_files(sec) for sec in secs]  # a rename has two: both must qualify
+    money, _ = money_files(sorted({n for ns in sides for n in ns}), root)
+
+    def quiet(name: str) -> bool:
+        return (
+            name.lower().endswith(DATA_EXTS)
+            and bool(state(name))
+            and not governed(name)
+            and name not in money
+        )
+
+    out, gone = [], []
+    for sec, ns in zip(secs, sides, strict=True):
+        if ns and all(quiet(n) for n in ns):
+            lines = sec.splitlines()
+            adds = sum(1 for ln in lines if ln.startswith("+") and not ln.startswith("+++"))
+            dels = sum(1 for ln in lines if ln.startswith("-") and not ln.startswith("---"))
+            sha = hashlib.sha256(sec.encode("utf-8")).hexdigest()[:16]
+            out.append(
+                f"{lines[0]}\n[box-state data file, body not shown: +{adds} -{dels} lines, "
+                f"{len(sec)} characters, sha256 {sha}]\n"
+            )
+            gone.extend(ns)
+        else:
+            out.append(sec)
+    return "".join(out), gone
+
+
 def parts(diff: str, limit: int) -> tuple[list[str] | None, str]:
     """(the diff packed into parts of whole files, each at most `limit` characters; why), or
     (None, why) when a single file's section is larger than a part or it needs over MAX_PARTS."""
@@ -735,6 +790,9 @@ def main(argv: list[str] | None = None) -> int:
     if len(named) != want:  # a truncated diff is never reviewed as if it were whole
         print(f"FAIL: the diff names {len(named)} files, the PR changes {want}")
         return 1
+    diff, elided = elide_state_data(diff)
+    if elided:
+        print(f"box-state data shown by size and hash only: {', '.join(elided[:10])}")
     ladder, notes = rungs(len(diff))
     for n in notes:
         print(n)

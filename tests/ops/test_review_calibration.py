@@ -9,12 +9,15 @@ False-positive canaries: the #485 answer on a non-money diff passes once re-aske
 False-negative canaries: the same answer on a money diff, a control flag, a non-risk FAIL, an
 unclassifiable tree, and a second FAIL all stay FAIL.
 """
+
 from __future__ import annotations
 
 import importlib.util
 import json
 from pathlib import Path
 from typing import Any
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 _spec = importlib.util.spec_from_file_location("ir_cal", ROOT / "ops/release/independent_review.py")
@@ -32,7 +35,9 @@ def _ans(verdict: str, risk: bool, control: bool = False, words: str = "ok") -> 
 
 #: qwen's answer on #485, verbatim in substance
 R485 = _ans(
-    "FAIL", True, words="The change introduces a new parameter CERT_BUDGET_SHARE which could "
+    "FAIL",
+    True,
+    words="The change introduces a new parameter CERT_BUDGET_SHARE which could "
     "increase risk by changing the budget allocation for certificate processing.",
 )
 OK = _ans("PASS", False)
@@ -108,3 +113,48 @@ def test_decide_drops_only_rule_one_off_the_money_path() -> None:
 def test_an_unclassifiable_base_counts_every_file_as_money(tmp_path: Path) -> None:
     hits, why = ir.money_files(["scripts/x.py"], root=tmp_path)  # no money closure there
     assert hits == ["scripts/x.py"] and "could not be read" in why
+
+
+# ------------------------------------------- box-state data shown by size and hash (#509 class)
+def _sec(path: str, body: str, old: str | None = None) -> str:
+    return (f"diff --git a/{old or path} b/{path}\n--- a/{old or path}\n+++ b/{path}\n"
+            f"@@ -1 +1 @@\n{body}")  # fmt: skip
+
+
+def _root(tmp_path: Path, governed: bool = True) -> Path:
+    rel = tmp_path / "libs/ops/release.py"
+    rel.parent.mkdir(parents=True)
+    src = "def is_state_path(p):\n    return p.startswith(('docs/', 'desks/mt5/data/'))\n"
+    if governed:
+        src += "def is_governed_state(p):\n    return p.endswith('IMMUTABLE_MANIFEST.json')\n"
+    rel.write_text(src)
+    return tmp_path
+
+
+def test_state_data_bodies_are_elided_and_nothing_else(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(ir, "money_files", lambda files, root: (
+        [f for f in files if f.startswith("desks/mt5/data/")], "test"))  # fmt: skip
+    big = "+" + "x" * 50_000 + "\n"
+    diff = (
+        _sec("docs/research/runtime_state.json", big)
+        + _sec("docs/research/RUNTIME_STATE.md", "+prose\n")
+        + _sec("desks/mt5/data/IMMUTABLE_MANIFEST.json", "+pin\n")
+        + _sec("desks/mt5/data/sleeves.json", "+sleeve\n")
+        + _sec("scripts/x.py", "+code\n")
+        + _sec("docs/research/moved.json", "+y\n", old="scripts/was_code.py")
+    )
+    out, gone = ir.elide_state_data(diff, _root(tmp_path))
+    assert gone == ["docs/research/runtime_state.json"]
+    assert "x" * 100 not in out and "body not shown" in out and len(out) < 2_000
+    for kept in ("+prose", "+pin", "+sleeve", "+code", "+y"):
+        assert kept in out, kept
+
+
+def test_no_governed_state_test_on_the_base_means_nothing_is_elided(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(ir, "money_files", lambda files, root: ([], "test"))
+    diff = _sec("docs/research/runtime_state.json", "+data\n")
+    assert ir.elide_state_data(diff, _root(tmp_path, governed=False)) == (diff, [])
