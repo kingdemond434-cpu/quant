@@ -248,7 +248,10 @@ def run_and_save(fetch: Any = None, report: Path | None = None) -> list[dict[str
         except ModuleNotFoundError:
             from discovery_io import write_discoveries
         rows = write_discoveries(snap, rows)
-    total = sum(1 for _ in ARCHIVE.open(encoding="utf-8")) if ARCHIVE.exists() else 0
+    total = 0
+    if ARCHIVE.exists():
+        with ARCHIVE.open(encoding="utf-8") as fh:
+            total = sum(1 for _ in fh)
     print(f"central_bank: {len(rows)} new dated document(s); archive now {total} row(s) -> {ARCHIVE}")
     read = sum(1 for e in feed_log if e.get("state") == "OK")
     doc = {
