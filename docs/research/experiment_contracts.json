@@ -255,15 +255,15 @@
    "hypothesis": "Tagging every live stop exit with the scheduled high-impact release it sat within +-15 min of separates calendar-driven stop slip from microstructure slip, so a news-window rule can be judged by the gauntlet rather than asserted.",
    "metric": {
     "gain": "ALPHA_DISCOVERY",
-    "metric": "validation_score",
+    "metric": "n_measured",
     "better": "up",
-    "organ": "report:EXIT_NEWS_TAGS.jsonl"
+    "organ": "report:EXIT_NEWS_TAGS_SUMMARY.json"
    },
    "falsifier": {
-    "metric": "validation_score",
+    "metric": "n_measured",
     "op": "==",
     "threshold": 0,
-    "after": "30d on the trading box: every exit stays calendar_coverage FOMC_ONLY/NONE (no CPI/NFP-grade calendar arrives), so no exit is ever tagged out-of-window on full coverage"
+    "after": "30d on the trading box: no exit is ever placed in or out of a release window on FULL calendar coverage (every row UNMEASURED), so the tag buys nothing"
    }
   }
  },
