@@ -920,9 +920,9 @@ def build(now: datetime | None = None, *, root: Path = ROOT,
           classes: Iterable[dict[str, Any]] = CLASSES) -> dict[str, Any]:
     now = now or _now()
     idx = code_hosts(root)
-    legs = hourly_legs()
+    legs = hourly_legs(HOURLY)
     clocks = clock_texts(root)
-    runtime, att_host = runtime_rows()
+    runtime, att_host = runtime_rows(RUNTIME_STATE)
     catalogues = catalogue_rows()
     tracked = tracked_files(root)
     rows = [measure_class(c, idx=idx, legs=legs, clocks=clocks, runtime=runtime,
