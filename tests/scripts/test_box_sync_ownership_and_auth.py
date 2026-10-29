@@ -41,9 +41,9 @@ def test_the_git_env_is_set_before_the_first_git_call() -> None:
     code = _code(SYNC)
     init = code.index("Initialize-BoxGitEnv -RepoRoot $RepoRoot")
     assert '. (Join-Path $PSScriptRoot "GitBoxEnv.ps1")' in code
-    # Only Git-In-Repo is DEFINED above it; every top-level git call (the branch read, the pull,
-    # the add) runs after it.
-    assert init < code.index("function Invoke-GitWriteRetry")
+    # Only Write-SyncLog and Git-In-Repo are DEFINED above it; every top-level git call (the
+    # branch read, the pull, the publish) runs after it.
+    assert init < code.index("function Merge-FetchHead")
     for call in ("$branch = (& git -C $RepoRoot rev-parse", "Sync-Pull -RepoRoot $RepoRoot",
                  "Open-GitWriterMutex"):
         assert init < code.index(call), f"{call!r} runs before safe.directory is set"
@@ -104,22 +104,15 @@ def test_blocked_auth_is_a_named_exit_and_stops_the_futile_retries() -> None:
     assert "exit 3" in code and "ABORT: BLOCKED_AUTH" in code
 
 
-def test_a_crashing_add_or_commit_is_retried_and_never_aborts_delivery() -> None:
+def test_the_publisher_never_writes_head_or_the_real_index() -> None:
+    """LIVE's Publish-StateOnto (2026-10-2x) hashes every state file from disk itself, so the
+    retried `git add` / `git commit` and the -FromDisk fallback this PR first carried have no
+    caller: the box writes no local commit at all, which is the stronger form of the same fix."""
     code = _code(SYNC)
-    assert 'Invoke-GitWriteRetry -GitArgs (@("add", "--") + $existing) -What "git add"' in code
-    assert '-What "git commit"' in code
-    assert 'ABORT: git commit failed' not in code and 'ABORT: git add failed' not in code
-    assert "-FromDisk:$script:PublishFromDisk" in code
-    fn = code[code.index("function Invoke-GitWriteRetry"):]
-    fn = fn[:fn.index("\n}\n")]
-    assert "index.lock" in fn and "TotalMinutes -ge 5" in fn, "stale lock must be aged, not blind"
-
-
-def test_from_disk_publishing_never_touches_head_or_the_real_index() -> None:
-    code = _code(SYNC)
+    assert "Invoke-GitWriteRetry" not in code and "-FromDisk" not in code
     pub = code[code.index("function Publish-StateOnto"):]
     pub = pub[:pub.index("\n}\n")]
-    assert '"hash-object", "-w", "--", $rel' in pub
+    assert "hash-object -w --stdin-paths" in pub
     for forbidden in ('"add"', '"commit",', '"checkout"', '"reset"', '"stash"'):
         assert forbidden not in pub, forbidden
 
@@ -152,49 +145,20 @@ def test_git_reads_safe_directory_and_the_header_from_the_process_env(tmp_path: 
     assert "extraheader" not in (tmp_path / ".git" / "config").read_text("utf-8")
 
 
-def test_a_stale_lock_is_removed_only_when_no_git_process_is_alive() -> None:
-    """Audit R1 (2026-10-06): age alone is not debris. An orphan `git merge` that outlived a killed
-    task holds index.lock without the mutex; deleting it under that git corrupts the index."""
-    code = _code(SYNC)
-    fn = code[code.index("function Invoke-GitWriteRetry"):]
-    fn = fn[:fn.index("\n}\n")]
-    assert "Get-Process -Name git" in fn
-    remove = fn.index("Remove-Item -LiteralPath $lock")
-    cond = fn.rfind("if (", 0, remove)
-    guard = fn[cond:remove]
-    assert "TotalMinutes -ge 5" in guard and "$alive.Count -eq 0" in guard, guard
-    assert "KEEPING .git\\index.lock" in fn, "a kept lock must be logged with the live pids"
-
-
-def test_the_from_disk_fallback_names_every_file_it_drops() -> None:
-    code = _code(SYNC)
-    pub = code[code.index("function Publish-StateOnto"):]
-    pub = pub[:pub.index("\n}\n")]
-    disk = pub[pub.index("if ($FromDisk)"):pub.index("} else {")]
-    assert "could not hash" in disk and "it is NOT in this publish" in disk
-    assert "listed path(s) hashed" in disk
-    assert "EVERY state file failed to hash" in disk, "all-failed needs its own message"
-
-
 def test_an_old_git_is_warned_at_startup() -> None:
     env, sync = _code(ENV), _code(SYNC)
     assert '[version]"2.38"' in env and "Get-BoxGitVersion" in env
     assert "GitTooOldForEnvSafeDirectory" in sync and "WARN:" in sync
 
 
-def test_a_crash_writes_a_diagnosis_that_travels() -> None:
+def test_the_backlog_report_travels_through_every_fence() -> None:
+    """BOX_BACKLOG.json goes up on the ordinary report wire ($reportPaths), so the allowlist,
+    the account withhold and the login fence all judge its final blob -- no side door."""
     code = _code(SYNC)
-    fn = code[code.index("function Write-GitCrashDiag"):]
-    fn = fn[:fn.index("\n}\n")]
-    for key in ("rc_hex", "git_version", "index_bytes", "count-objects", "Get-WinEvent",
-                "git_processes_alive", "command"):
-        assert key in fn, key
-    assert "<{0} path(s)>" in fn, "paths are counted, never listed"
-    assert "Windows Error Reporting" in fn and "git\\.exe" in fn, "events must name git.exe"
-    assert "-match 'git'" not in fn
-    retry = code[code.index("function Invoke-GitWriteRetry"):]
-    assert "if ($rc -lt 0 -or $rc -gt 255) { Write-GitCrashDiag" in retry
-    assert "-Extra @($script:CrashDiagRel, $script:BacklogRel)" in code
+    reports = code[code.index("$reportPaths = @("):]
+    reports = reports[:reports.index("\n)\n")]
+    assert '"desks/mt5/reports/BOX_BACKLOG.json"' in reports
+    assert "-Extra" not in code
 
 
 def test_the_backlog_drain_is_daily_and_never_blocks_the_publish() -> None:
@@ -204,6 +168,11 @@ def test_the_backlog_drain_is_daily_and_never_blocks_the_publish() -> None:
     # Audit HOLD (2026-10-06): the public repository gets nothing pushed until the audit clears
     # the drain, so the box runs it classify-only.
     assert "--push" not in tail, "the box drain must stay classify-only until the audit clears it"
+    # and not merely after the publish line: no argument list in the script carries it at all
+    assert '"--push"' not in code and "'--push'" not in code
+    drain = tail[tail.index('$pyArgs = @("-m", "libs.ops.box_backlog")'):]
+    drain = drain[:drain.index("\n")]
+    assert drain.strip() == '$pyArgs = @("-m", "libs.ops.box_backlog")', drain
     assert "TotalHours -ge 24" in tail
     assert tail.rstrip().endswith("exit 0"), "a failed drain must not fail the state publish"
 
