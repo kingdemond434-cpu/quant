@@ -37,7 +37,7 @@ def test_the_newest_noon_row_older_than_26h_is_red(tmp_path: Path) -> None:
                            {"lane": "midnight", "at": "2026-10-29T01:00:00+00:00"}])
     out = tmp_path / "out.json"
     assert chk.main(["--ledger", str(p), "--out", str(out),
-                     "--now", "2026-10-29T15:00:00+00:00"]) == 1
+                     "--now", "2026-10-29T15:00:00+00:00"]) == chk.EXIT_RED == 2
     doc = json.loads(out.read_text("utf-8"))
     assert doc["status"] == "RED" and doc["last_noon_lane"] == "noon_box"
     assert doc["age_h"] > 26 and doc["noon_rows"] == 2
@@ -48,11 +48,41 @@ def test_absence_is_red_never_green(tmp_path: Path) -> None:
     assert chk.measure(tmp_path / "missing.jsonl", now)["status"] == "RED"
     p = _ledger(tmp_path, [{"lane": "midnight", "at": "2026-10-29T01:00:00+00:00"}, "not json"])
     doc = chk.measure(p, now)
-    assert doc["status"] == "RED" and doc["why"] == "no noon row in the ledger"
+    assert doc["status"] == "RED" and doc["why"] == "no landed noon pass in the ledger"
     assert doc["malformed_rows"] == 1
 
 
 def test_a_date_only_row_counts_from_its_day(tmp_path: Path) -> None:
     p = _ledger(tmp_path, [{"lane": "noon_box", "date": "2026-10-29"}])
     now = chk.datetime.fromisoformat("2026-10-29T20:00:00+00:00")
+    doc = chk.measure(p, now)
+    assert doc["status"] == "GREEN" and doc["last_noon_date_only"] is True
+    assert "date-only" in doc["why"]
+
+
+def test_a_pass_that_started_or_failed_never_reads_green(tmp_path: Path) -> None:
+    # Auditor probe (#439 stack, 2026-10-29): a start row plus an rc=1 end row read GREEN.
+    p = _ledger(tmp_path, [{"lane": "noon", "event": "start", "at": "2026-10-29T11:02:00+00:00"},
+                           {"lane": "noon", "event": "end", "rc": 1,
+                            "at": "2026-10-29T13:00:00+00:00"}])
+    now = chk.datetime.fromisoformat("2026-10-29T15:00:00+00:00")
+    doc = chk.measure(p, now)
+    assert doc["status"] == "RED" and doc["noon_rows"] == 2 and doc["landed_rows"] == 0
+
+
+def test_a_future_row_is_malformed_not_fresh(tmp_path: Path) -> None:
+    p = _ledger(tmp_path, [{"lane": "noon_box", "at": "2027-01-01T00:00:00+00:00"}])
+    now = chk.datetime.fromisoformat("2026-10-29T15:00:00+00:00")
+    doc = chk.measure(p, now)
+    assert doc["status"] == "RED" and doc["future_rows"] == 1 and doc["malformed_rows"] == 1
+
+
+def test_a_bom_first_row_counts_and_bad_bytes_are_red(tmp_path: Path) -> None:
+    p = tmp_path / "bom.jsonl"
+    row = {"lane": "noon", "event": "end", "rc": 0, "at": "2026-10-29T13:00:00+00:00"}
+    p.write_bytes(b"\xef\xbb\xbf" + json.dumps(row).encode() + b"\n")
+    now = chk.datetime.fromisoformat("2026-10-29T15:00:00+00:00")
     assert chk.measure(p, now)["status"] == "GREEN"
+    bad = tmp_path / "bad.jsonl"
+    bad.write_bytes(b"\xff\xfe\x00garbage")
+    assert chk.measure(bad, now)["status"] == "RED"

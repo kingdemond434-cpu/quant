@@ -321,6 +321,8 @@ def test_the_installer_refuses_system_and_a_registration_with_no_next_run() -> N
     # The noon lane can be armed alone (box-native noon pass) while midnight waits on its clone.
     assert "[ValidateSet('noon', 'midnight', 'both')]" in src
     assert "Where-Object { $Lane -eq 'both' -or $_.Lane -eq $Lane }" in src
+    # PowerShell names are case-insensitive: a `$lane` loop variable would BE the -Lane parameter.
+    assert not re.search(r"foreach \(\$lane\b", src, re.IGNORECASE)
 
 
 def test_the_codex_lane_gets_its_own_clone_and_never_the_live_git() -> None:
