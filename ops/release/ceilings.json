@@ -4,11 +4,6 @@
     "desks/mt5/mt5desk/sizing.py": {
       "BASE_RISK_FRAC": 0.03,
       "MAX_RISK_FRAC": 0.1
-    },
-    "desks/mt5/mt5desk/news_fence.py": {
-      "DEFAULT_PRE_MIN": 15,
-      "DEFAULT_POST_MIN": 15,
-      "MAX_WINDOW_MIN": 240
     }
   },
   "equal": {
@@ -17,7 +12,10 @@
     },
     "desks/mt5/mt5desk/news_fence.py": {
       "RAIL": "e8_news_fence",
-      "SHADOW_STATUS": "SHADOW_FENCE"
+      "SHADOW_STATUS": "SHADOW_FENCE",
+      "DEFAULT_PRE_MIN": 15,
+      "DEFAULT_POST_MIN": 15,
+      "MAX_WINDOW_MIN": 240
     },
     "desks/mt5/prop/e8_gold.py": {
       "NEWS_RAIL": "e8_news_fence",
