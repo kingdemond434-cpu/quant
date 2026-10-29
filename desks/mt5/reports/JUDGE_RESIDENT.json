@@ -17,7 +17,7 @@
  "uptime_s": 111754.3,
  "last_sweep_ended_utc": "2026-10-28T23:43:49+00:00",
  "backoff_s": 15,
- "heartbeat_utc": "2026-10-29T02:50:06+00:00",
+ "heartbeat_utc": "2026-10-29T03:05:20+00:00",
  "sweep_phase": {
   "pid": 23440,
   "sweep_started_utc": "2026-10-28T23:44:12+00:00",
@@ -156,27 +156,27 @@
      }
     },
     "build_shards": {
-     "samples": 125,
+     "samples": 203,
      "top": [
       {
        "stack": "threading.py:wait:369 < _base.py:result:445 < _base.py:_result_or_cancel:311 < _base.py:result_iterator:639 < run_sharded_gauntlet.py:dispatch:1395 < run_sharded_gauntlet.py:_timed_dispatch:3487",
-       "n": 123,
-       "share": 0.984
+       "n": 201,
+       "share": 0.99
       },
       {
        "stack": "threading.py:wait:369 < threading.py:wait:669 < threading.py:start:1010 < thread.py:_adjust_thread_count:237 < thread.py:submit:215 < _base.py:map:618",
        "n": 2,
-       "share": 0.016
+       "share": 0.01
       }
      ],
      "process": {
-      "cpu_s": 136.8,
-      "page_faults": 4055948.0,
+      "cpu_s": 215.2,
+      "page_faults": 6615971.0,
       "read_bytes": 0.0,
-      "write_bytes": 200361.0,
-      "sampled_s": 1240.0,
+      "write_bytes": 277954.0,
+      "sampled_s": 2020.0,
       "rss_mb_max": 1288.7,
-      "cpu_share_of_wall": 0.11
+      "cpu_share_of_wall": 0.107
      }
     }
    }
