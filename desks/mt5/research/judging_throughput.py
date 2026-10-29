@@ -767,8 +767,9 @@ FRESH_BUDGET_SHARE_OF_LIMIT = 0.6
 #:   * each budget is a regime, measured from the first sweep that ENDS after it was set (the
 #:     sweep already running when it changed was launched on the old budget), as changed-verdict
 #:     ledger rows per wall-hour, the same rows JUDGING_RATE counts;
-#:   * a regime is judged once it has run max(BUILD_STEP_MIN_WINDOW_S, BUILD_STEP_SWEEPS x the
-#:     median sweep) -- at least two sweeps' publishes;
+#:   * a regime is judged on WHOLE sweeps (audit of 336869467): once it holds BUILD_STEP_SWEEPS
+#:     sweep ends and BUILD_STEP_MIN_WINDOW_S, as rows stamped in (regime start, last end] over
+#:     exactly that span -- a fixed wall window would catch fewer publishes of a longer sweep;
 #:   * from a measured level the budget steps UP by BUILD_STEP_FACTOR; a step is KEPT, and the
 #:     next one tried, only if its regime beat the level it left by BUILD_STEP_TOL; otherwise it
 #:     is REVERTED and the level held for BUILD_STEP_HOLD_WINDOWS windows before trying again.
@@ -778,12 +779,11 @@ FRESH_BUDGET_SHARE_OF_LIMIT = 0.6
 #: `judge_build_step.json` with the rates it was made on, so the claim is tested every window.
 BUILD_STEP = BASE / "data" / "judge_build_step.json"
 RESIDENT_STATE = BASE / "reports" / "JUDGE_RESIDENT.json"
-PHASE_TIMES = BASE / "data" / "judge_phase_times.json"
 BUILD_STEP_FACTOR = 1.5
 BUILD_STEP_TOL = 0.05
 BUILD_STEP_HOLD_WINDOWS = 2
 BUILD_STEP_MIN_WINDOW_S = 24 * 3600.0
-BUILD_STEP_SWEEPS = 2
+BUILD_STEP_SWEEPS = 2                  # whole sweeps a regime must hold before it is judged
 BUILD_STEP_HISTORY = 20
 RESIDENT_BUILD_CAP_S = 12 * 3600.0
 
@@ -796,23 +796,49 @@ def _parse_utc(raw: Any) -> datetime | None:
     return t if t.tzinfo is not None else None
 
 
-def median_sweep_s(times: Any) -> float | None:
-    """The median of the launcher's recorded successful sweep walls, or None."""
-    import math
-    import statistics
-    raw = times.get("sweeps") if isinstance(times, dict) else None
-    vals = [float(v) for v in (raw if isinstance(raw, list) else [])[-5:]
-            if isinstance(v, (int, float)) and not isinstance(v, bool)
-            and math.isfinite(v) and v > 0]
-    return statistics.median(vals) if vals else None
+def observe_sweep_end(state: Any, last_sweep_end: datetime | None) -> dict[str, Any]:
+    """Record a sweep end the controller has not seen yet. Pure; the state is copied.
+
+    Before a regime has started, the first end after `changed_at` STARTS it (the sweep that was
+    running at the change was launched on the old budget). After that, every distinct later end
+    is one whole sweep run inside the regime."""
+    st = dict(state) if isinstance(state, dict) else {}
+    if last_sweep_end is None or not st.get("budget_s"):
+        return st
+    end = last_sweep_end.isoformat(timespec="seconds")
+    if st.get("regime_start") is None:
+        changed = _parse_utc(st.get("changed_at"))
+        if changed is not None and last_sweep_end > changed:
+            st.update(regime_start=end, sweep_ends=[])
+        return st
+    ends = list(st.get("sweep_ends") or [])
+    newest = _parse_utc(ends[-1]) if ends else _parse_utc(st["regime_start"])
+    if newest is None or last_sweep_end > newest:
+        st["sweep_ends"] = [*ends, end]
+    return st
+
+
+def _plus_1s(raw: Any) -> str | None:
+    t = _parse_utc(raw)
+    return None if t is None else (t + timedelta(seconds=1)).isoformat(timespec="seconds")
+
+
+def regime_cuts(state: Any) -> dict[str, str] | None:
+    """The two named ledger cuts that bound a regime's WHOLE sweeps: rows stamped strictly after
+    its start and no later than its last observed sweep end are `lo - hi`."""
+    if not isinstance(state, dict) or not state.get("regime_start") or not state.get("sweep_ends"):
+        return None
+    lo, hi = _plus_1s(state["regime_start"]), _plus_1s(state["sweep_ends"][-1])
+    return {"build_step_lo": lo, "build_step_hi": hi} if lo and hi else None
 
 
 def step_build_budget(state: Any, now: datetime, applied_s: float | None,
-                      last_sweep_end: datetime | None, sweep_s: float | None,
-                      rows_since_regime: int | None) -> tuple[dict[str, Any], float, str]:
+                      rows_in_regime: int | None) -> tuple[dict[str, Any], float, str]:
     """One step of the build-budget controller (see BUILD_STEP_FACTOR). Pure: returns the next
-    state, the budget to publish and why. `rows_since_regime` counts ledger rows stamped at or
-    after `state["regime_start"]`, or None when unmeasured."""
+    state, the budget to publish and why. The state has already seen this pass's sweep end
+    (`observe_sweep_end`); `rows_in_regime` counts ledger rows in (regime_start, last end], or
+    None when unmeasured. A regime is judged on WHOLE sweeps only (audit of 336869467): a fixed
+    wall window catches fewer publishes of a longer sweep and would reject a real gain."""
     at = now.isoformat(timespec="seconds")
     st = dict(state) if isinstance(state, dict) else {}
     budget = st.get("budget_s")
@@ -820,42 +846,45 @@ def step_build_budget(state: Any, now: datetime, applied_s: float | None,
         b0 = (float(applied_s) if isinstance(applied_s, (int, float))
               and applied_s >= SEALED_FRESH_BUDGET_SEC else SEALED_FRESH_BUDGET_SEC)
         st = {"budget_s": b0, "prev_budget_s": None, "phase": "measure", "changed_at": at,
-              "regime_start": None, "baseline_vph": None, "hold_left": 0, "history": []}
+              "regime_start": None, "sweep_ends": [], "baseline_vph": None, "hold_left": 0,
+              "history": []}
         return st, b0, f"build step: measuring the applied {b0:.0f}s budget before any step"
     budget = float(budget)
-    changed = _parse_utc(st.get("changed_at")) or now
     if st.get("regime_start") is None:
-        if last_sweep_end is not None and last_sweep_end > changed:
-            st["regime_start"] = last_sweep_end.isoformat(timespec="seconds")
-        return st, budget, (f"build step: {budget:.0f}s set {changed.isoformat()}; waiting for "
+        return st, budget, (f"build step: {budget:.0f}s set {st.get('changed_at')}; waiting for "
                             "the first sweep launched under it")
-    start = _parse_utc(st["regime_start"]) or now
-    hours = max(0.0, (now - start).total_seconds() / 3600.0)
-    window_h = max(BUILD_STEP_MIN_WINDOW_S,
-                   BUILD_STEP_SWEEPS * (sweep_s or BUILD_STEP_MIN_WINDOW_S)) / 3600.0
-    if hours < window_h or rows_since_regime is None or hours <= 0:
-        return st, budget, (f"build step: measuring {budget:.0f}s, {hours:.1f} of {window_h:.1f} h"
-                            + ("" if rows_since_regime is not None else " (rows UNMEASURED)"))
-    vph = rows_since_regime / hours
+    start = _parse_utc(st["regime_start"])
+    ends = list(st.get("sweep_ends") or [])
+    last = _parse_utc(ends[-1]) if ends else None
+    hours = ((last - start).total_seconds() / 3600.0) if (start and last) else 0.0
+    if (len(ends) < BUILD_STEP_SWEEPS or hours * 3600.0 < BUILD_STEP_MIN_WINDOW_S
+            or rows_in_regime is None or hours <= 0):
+        return st, budget, (f"build step: measuring {budget:.0f}s, {len(ends)} of "
+                            f"{BUILD_STEP_SWEEPS} whole sweeps over {hours:.1f} h"
+                            + ("" if rows_in_regime is not None else " (rows UNMEASURED)"))
+    vph = rows_in_regime / hours
     base = st.get("baseline_vph")
     phase = st.get("phase")
     hist = [*(st.get("history") or []), {"at": at, "budget_s": budget, "phase": phase,
                                          "verdicts_per_hour": round(vph, 2),
-                                         "baseline_vph": base, "hours": round(hours, 1)}]
+                                         "baseline_vph": base, "sweeps": len(ends),
+                                         "hours": round(hours, 1), "rows": rows_in_regime}]
     st["history"] = hist[-BUILD_STEP_HISTORY:]
 
-    def change(to: float, nxt: str, why: str) -> tuple[dict[str, Any], float, str]:
-        st.update(budget_s=to, phase=nxt, changed_at=at, regime_start=None)
+    def restart(to: float, nxt: str, why: str) -> tuple[dict[str, Any], float, str]:
+        # A new regime starts at the NEXT sweep end, whether or not the budget moved: the sweep
+        # running now straddles the decision (audit S2).
+        st.update(budget_s=to, phase=nxt, changed_at=at, regime_start=None, sweep_ends=[])
         return st, to, why
 
     def step_up(level_vph: float, why: str) -> tuple[dict[str, Any], float, str]:
         up = min(RESIDENT_BUILD_CAP_S, budget * BUILD_STEP_FACTOR)
         st["baseline_vph"] = round(level_vph, 3)
         if up <= budget:
-            st.update(phase="hold", hold_left=BUILD_STEP_HOLD_WINDOWS, regime_start=at)
-            return st, budget, why + f"; at the {RESIDENT_BUILD_CAP_S:.0f}s cap, held"
+            st["hold_left"] = BUILD_STEP_HOLD_WINDOWS
+            return restart(budget, "hold", why + f"; at the {RESIDENT_BUILD_CAP_S:.0f}s cap, held")
         st["prev_budget_s"] = budget
-        return change(up, "trial", why + f"; stepping {budget:.0f}s -> {up:.0f}s")
+        return restart(up, "trial", why + f"; stepping {budget:.0f}s -> {up:.0f}s")
 
     if phase == "trial":
         if isinstance(base, (int, float)) and vph >= base * (1.0 + BUILD_STEP_TOL):
@@ -865,13 +894,13 @@ def step_build_budget(state: Any, now: datetime, applied_s: float | None,
         back = (float(prev) if isinstance(prev, (int, float))
                 and prev >= SEALED_FRESH_BUDGET_SEC else SEALED_FRESH_BUDGET_SEC)
         st["hold_left"] = BUILD_STEP_HOLD_WINDOWS
-        return change(back, "hold", f"build step: {budget:.0f}s REVERTED to {back:.0f}s, "
-                                    f"{vph:.1f} verdicts/h did not beat {base}")
+        return restart(back, "hold", f"build step: {budget:.0f}s REVERTED to {back:.0f}s, "
+                                     f"{vph:.1f} verdicts/h did not beat {base}")
     if phase == "hold" and int(st.get("hold_left") or 0) > 1:
         st["hold_left"] = int(st["hold_left"]) - 1
-        st["regime_start"] = at
-        return st, budget, (f"build step: holding {budget:.0f}s ({vph:.1f} verdicts/h), "
-                            f"{st['hold_left']} window(s) before the next step")
+        return restart(budget, "hold", f"build step: holding {budget:.0f}s ({vph:.1f} "
+                                       f"verdicts/h), {st['hold_left']} window(s) before the "
+                                       "next step")
     return step_up(vph, f"build step: {budget:.0f}s measured at {vph:.1f} verdicts/h")
 
 
@@ -1316,11 +1345,13 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
     # PUBLISHED here, before the schtasks query, the env write and the apply can cost it the hour.
     attempt.phase("rate")
     _budget = RATE_STREAM_BUDGET_S if rate_budget_s is None else float(rate_budget_s)
-    _step_state = _read_json(BUILD_STEP, {}) or {}
-    _regime = _step_state.get("regime_start") if isinstance(_step_state, dict) else None
+    _resident = _read_json(RESIDENT_STATE, {}) or {}
+    _step_state = observe_sweep_end(
+        _read_json(BUILD_STEP, {}) or {},
+        _parse_utc(_resident.get("last_sweep_ended_utc") if isinstance(_resident, dict) else None))
+    _cuts = regime_cuts(_step_state)
     try:
-        rate = measure_rate(queue, decision, now, deadline_s=_budget,
-                            extra_cuts={"build_step": _regime} if _regime else None)
+        rate = measure_rate(queue, decision, now, deadline_s=_budget, extra_cuts=_cuts)
     except Exception as exc:     # a broken rate read must never cost the sizing decision
         rate = {"at": _now(now).isoformat(timespec="seconds"), "status": UNMEASURED,
                 "why": f"{type(exc).__name__}: {exc}"}
@@ -1352,21 +1383,23 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True,
     _step = None
     if _limit == 0:
         _ver = rate.get("verdicts") if isinstance(rate, dict) else None
-        _rows = ((_ver.get("counts") or {}).get("build_step")
-                 if isinstance(_ver, dict) and _ver.get("status") == "MEASURED" and _regime
+        _counts = ((_ver.get("counts") or {})
+                   if isinstance(_ver, dict) and _ver.get("status") == "MEASURED" else {})
+        _lo, _hi = _counts.get("build_step_lo"), _counts.get("build_step_hi")
+        _rows = (_lo - _hi if _cuts and isinstance(_lo, int) and isinstance(_hi, int)
                  else None)
-        _resident = _read_json(RESIDENT_STATE, {}) or {}
         _next_state, _step_b, _step_why = step_build_budget(
-            _step_state, _now(now), _current_budget,
-            _parse_utc(_resident.get("last_sweep_ended_utc")
-                       if isinstance(_resident, dict) else None),
-            median_sweep_s(_read_json(PHASE_TIMES, {})),
-            _rows if isinstance(_rows, int) else None)
+            _step_state, _now(now), _current_budget, _rows)
         _step = (_step_b, _step_why)
         decision["build_step"] = {k: v for k, v in _next_state.items() if k != "history"}
         if write:
-            with contextlib.suppress(OSError):
+            try:
                 _write_atomic(BUILD_STEP, _next_state)
+                decision["build_step"]["state_written"] = True
+            except OSError as exc:
+                # LOUD, NOT SUPPRESSED (audit S3): an unwritten state re-bootstraps every pass
+                # and the controller never steps.
+                decision["build_step"]["state_written"] = f"FAILED: {type(exc).__name__}: {exc}"
     _fresh, _fresh_why = fresh_budget_s(_limit, _current_budget, _step)
     decision["fresh_budget_s"] = _fresh
     decision["fresh_budget_why"] = _fresh_why

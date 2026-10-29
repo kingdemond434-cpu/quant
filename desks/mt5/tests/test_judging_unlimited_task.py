@@ -35,83 +35,126 @@ def test_finite_limit_still_uses_existing_policy():
     assert jt.fresh_budget_s(14400)[0] == 8640
 
 
-# THE RESIDENT BUILD BUDGET IS A MEASURED STEP (2026-10-29, v2 after the audit HOLD): kept only
-# when its regime returns more verdicts per wall-hour than the level it left, else reverted.
+# THE RESIDENT BUILD BUDGET IS A MEASURED STEP (2026-10-29, v2.1 after two audit HOLDs): kept only
+# when its regime returns more verdicts per wall-hour of WHOLE sweeps than the level it left.
 from datetime import UTC, datetime, timedelta  # noqa: E402
 
 T0 = datetime(2026, 11, 1, tzinfo=UTC)
 H = timedelta(hours=1)
 
 
-def _run(state, hours, *, applied=8640.0, ended=None, sweep_s=None, rows=None):
-    return jt.step_build_budget(state, T0 + hours * H, applied, ended, sweep_s, rows)
+class Box:
+    """A resident that publishes `rows` changed verdicts at the end of every `hours`-long sweep,
+    driven through the controller exactly as `run` drives it, one pass per hour."""
+
+    def __init__(self) -> None:
+        self.t, self.ledger, self.last_end, self.state, self.budget = T0, [], None, None, None
+        self.whys: list[str] = []
+
+    def rows_between(self, cuts):
+        if not cuts:
+            return None
+        lo, hi = (datetime.fromisoformat(cuts[k]) for k in ("build_step_lo", "build_step_hi"))
+        return sum(1 for at in self.ledger if lo <= at) - sum(1 for at in self.ledger if hi <= at)
+
+    def pass_(self, applied=8640.0):
+        st = jt.observe_sweep_end(self.state, self.last_end)
+        rows = self.rows_between(jt.regime_cuts(st))
+        self.state, self.budget, why = jt.step_build_budget(st, self.t, applied, rows)
+        self.whys.append(why)
+
+    def sweeps(self, n, hours, rows):
+        for _ in range(n):
+            for _h in range(hours):
+                self.t += H
+                self.pass_()
+            stamp = self.t - timedelta(seconds=30)        # rows land before the sweep's end stamp
+            self.ledger.extend([stamp] * rows)
+            self.last_end = self.t
+            self.pass_()                                  # the hourly pass that sees this end
 
 
 def test_the_first_pass_measures_the_applied_budget_and_changes_nothing():
-    st, b, why = _run(None, 0)
-    assert b == 8640.0 and st["phase"] == "measure" and st["regime_start"] is None
-    assert "measuring" in why
+    st, b, why = jt.step_build_budget(None, T0, 8640.0, None)
+    assert b == 8640.0 and st["phase"] == "measure" and "measuring" in why
 
 
-def test_the_regime_starts_only_at_the_first_sweep_end_after_the_change():
-    st, _, _ = _run(None, 0)
-    st, b, why = _run(st, 3, ended=T0 - H)                     # the sweep that was running
-    assert st["regime_start"] is None and "waiting" in why
-    st, b, _ = _run(st, 4, ended=T0 + 4 * H)
-    assert st["regime_start"] == (T0 + 4 * H).isoformat() and b == 8640.0
+def test_the_sweep_running_at_a_change_is_not_counted():
+    st, _, _ = jt.step_build_budget(None, T0, 8640.0, None)
+    st = jt.observe_sweep_end(st, T0 - H)                    # ended before the change
+    assert st["regime_start"] is None
+    st = jt.observe_sweep_end(st, T0 + 3 * H)
+    assert st["regime_start"] == (T0 + 3 * H).isoformat() and st["sweep_ends"] == []
+    assert jt.regime_cuts(st) is None
+    st = jt.observe_sweep_end(st, T0 + 3 * H)                # the same end seen again
+    assert st["sweep_ends"] == []
 
 
-def _measured(rows_per_h: float):
-    st, _, _ = _run(None, 0)
-    st, _, _ = _run(st, 1, ended=T0 + H)
-    st, b, why = _run(st, 25, rows=int(24 * rows_per_h), sweep_s=10 * 3600.0)
-    return st, b, why
+def test_a_longer_sweep_that_truly_pays_is_kept_not_lost_to_publish_phase():
+    """The audit's probe: 30 h / 6,000-row sweeps (200 vph), then a 1.5x trial of 33 h /
+    7,000-row sweeps (212 vph, +6%). A fixed 60 h window read 116.7 and reverted it."""
+    box = Box()
+    box.pass_()                                     # bootstrap at 8,640
+    box.sweeps(1, 30, 6000)                         # the straddling sweep starts the regime
+    box.sweeps(2, 30, 6000)                         # two whole sweeps: measured, step up
+    assert box.budget == 8640.0 * jt.BUILD_STEP_FACTOR, box.whys[-1]
+    assert box.state["baseline_vph"] == 200.0
+    box.sweeps(1, 33, 7000)                         # straddles the step: starts the trial
+    box.sweeps(2, 33, 7000)
+    assert "KEPT" in box.whys[-1], box.whys[-1]
 
 
-def test_a_measured_level_steps_up_and_a_step_that_pays_is_kept():
-    st, b, why = _measured(100)
-    assert b == 8640.0 * jt.BUILD_STEP_FACTOR and st["phase"] == "trial"
-    assert st["baseline_vph"] == 100.0 and st["prev_budget_s"] == 8640.0
-    st, _, _ = _run(st, 26, ended=T0 + 26 * H)
-    st, b2, why = _run(st, 50, rows=24 * 130, sweep_s=10 * 3600.0)
-    assert "KEPT" in why and b2 == min(jt.RESIDENT_BUILD_CAP_S, b * jt.BUILD_STEP_FACTOR)
+def test_a_longer_sweep_that_does_not_pay_is_reverted():
+    box = Box()
+    box.pass_()
+    box.sweeps(3, 30, 6000)
+    stepped = box.budget
+    box.sweeps(3, 45, 9000)                         # 200 vph again: no gain
+    assert "REVERTED" in box.whys[-1] and box.budget == 8640.0 < stepped
+    assert box.state["phase"] == "hold"
+    assert jt.fresh_budget_s(0, stepped, (box.budget, "x"))[0] == 8640.0
 
 
-def test_a_step_that_does_not_pay_is_reverted_and_held():
-    st, b, _ = _measured(100)
-    st, _, _ = _run(st, 26, ended=T0 + 26 * H)
-    st, back, why = _run(st, 50, rows=24 * 102, sweep_s=10 * 3600.0)   # +2% < the 5% bar
-    assert "REVERTED" in why and back == 8640.0 and st["phase"] == "hold"
-    assert jt.fresh_budget_s(0, b, (back, why))[0] == 8640.0          # it comes back down
+def test_a_regime_waits_for_two_whole_sweeps_and_a_day():
+    box = Box()
+    box.pass_()
+    box.sweeps(2, 10, 5000)                         # start + one whole sweep
+    assert box.budget == 8640.0 and "1 of 2 whole sweeps" in box.whys[-1]
+    box.sweeps(1, 10, 5000)                         # two whole sweeps, but only 20 h
+    assert box.budget == 8640.0 and "2 of 2" in box.whys[-1]
+    box.sweeps(1, 10, 5000)
+    assert box.budget > 8640.0
 
 
-def test_the_window_waits_for_two_sweeps_and_unmeasured_rows():
-    st, _, _ = _run(None, 0)
-    st, _, _ = _run(st, 1, ended=T0 + H)
-    _, b, why = _run(st, 30, rows=5000, sweep_s=20 * 3600.0)          # 29 h < 2 x 20 h
-    assert b == 8640.0 and "of 40.0 h" in why
-    _, b, why = _run(st, 45, rows=None, sweep_s=20 * 3600.0)
+def test_unmeasured_rows_never_step():
+    st = {"budget_s": 8640.0, "phase": "measure", "changed_at": T0.isoformat(),
+          "regime_start": T0.isoformat(),
+          "sweep_ends": [(T0 + 20 * H).isoformat(), (T0 + 40 * H).isoformat()]}
+    _, b, why = jt.step_build_budget(st, T0 + 41 * H, 8640.0, None)
     assert b == 8640.0 and "UNMEASURED" in why
 
 
 def test_the_step_never_passes_the_cap_or_the_sealed_floor():
     st = {"budget_s": jt.RESIDENT_BUILD_CAP_S, "phase": "measure", "changed_at": T0.isoformat(),
-          "regime_start": T0.isoformat(), "baseline_vph": None, "hold_left": 0}
-    st, b, why = _run(st, 50, rows=3000)      # no sweep history: a 2 x 24 h window
+          "regime_start": T0.isoformat(),
+          "sweep_ends": [(T0 + 20 * H).isoformat(), (T0 + 40 * H).isoformat()]}
+    st, b, why = jt.step_build_budget(st, T0 + 41 * H, 8640.0, 4000)
     assert b == jt.RESIDENT_BUILD_CAP_S and "cap" in why and st["phase"] == "hold"
+    assert st["regime_start"] is None                      # the next window starts at a sweep end
     assert jt.fresh_budget_s(0, 8640, (1e9, "x"))[0] == jt.RESIDENT_BUILD_CAP_S
-    assert jt.fresh_budget_s(0, 8640, (100.0, "x"))[0] is None         # sealed default
+    assert jt.fresh_budget_s(0, 8640, (100.0, "x"))[0] is None
 
 
 def test_a_finite_task_limit_ignores_the_step():
     assert jt.fresh_budget_s(14400, 8640, (40000.0, "x"))[0] == 8640
 
 
-def test_the_regime_cut_is_counted_in_the_same_ledger_pass(tmp_path):
+def test_the_regime_bounds_are_counted_in_the_same_ledger_pass(tmp_path):
     import json
     led = tmp_path / "ledger.jsonl"
     led.write_text("".join(json.dumps({"at": (T0 + h * H).isoformat(), "cell": f"c{h}"}) + "\n"
                            for h in range(10)), encoding="utf-8")
-    got = jt._verdict_counts(T0 + 10 * H, led,
-                             extra_cuts={"build_step": (T0 + 6 * H).isoformat()})
-    assert got["counts"]["build_step"] == 4
+    st = {"budget_s": 8640.0, "regime_start": (T0 + 2 * H).isoformat(),
+          "sweep_ends": [(T0 + 6 * H).isoformat()]}
+    got = jt._verdict_counts(T0 + 10 * H, led, extra_cuts=jt.regime_cuts(st))["counts"]
+    assert got["build_step_lo"] - got["build_step_hi"] == 4     # hours 3,4,5,6: (start, end]
