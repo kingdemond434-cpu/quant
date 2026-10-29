@@ -38,9 +38,19 @@ HOST = socket.gethostname()
 MIN = 60.0
 
 
-def P(pid: int, cmd: str, *, name: str = "python.exe", ppid: int = 1, age_s: float = 3 * 3600,
-      cpu: float = 10.0) -> bsh.Proc:
-    return bsh.Proc(pid, ppid, name, cmd, NOW - age_s, cpu)
+SYSTEM = "NT AUTHORITY\\SYSTEM"
+SVCHOST_PID = 1000
+
+
+def P(pid: int, cmd: str, *, name: str = "python.exe", ppid: int = SVCHOST_PID,
+      age_s: float = 3 * 3600, cpu: float = 10.0, user: str | None = SYSTEM) -> bsh.Proc:
+    return bsh.Proc(pid, ppid, name, cmd, NOW - age_s, cpu, (), user)
+
+
+def svchost() -> bsh.Proc:
+    """Task Scheduler's host: the ancestor scheduler_owned requires for a task's own process."""
+    return bsh.Proc(SVCHOST_PID, 4, "svchost.exe", "svchost.exe -k netsvcs",
+                    NOW - 30 * 24 * 3600, 0.0, (), SYSTEM)
 
 
 MERGE = (r'"C:\Program Files\Python314\python.exe" '
@@ -54,7 +64,7 @@ INTAKE_CMD = (r'cmd.exe /d /s /c ""C:\Program Files\Python314\python.exe" -W ign
               r'>> "C:\opt\quant\desks\mt5\logs\IndependenceIntake.log" 2>&1"')
 
 
-def intake(pid: int = 3100, *, age_s: float = 96 * MIN, cpu: float = 3.0, ppid: int = 1,
+def intake(pid: int = 3100, *, age_s: float = 96 * MIN, cpu: float = 3.0, ppid: int = SVCHOST_PID,
            cmd: str = INTAKE) -> list[bsh.Proc]:
     """The intake as its task runs it: the task's cmd.exe, and the python under it."""
     return [P(pid - 1, INTAKE_CMD, name="cmd.exe", ppid=ppid, age_s=age_s + 1, cpu=0.0),
@@ -72,7 +82,8 @@ GH_PULLS = r"gh.exe api repos/kingdemond434-cpu/quant/pulls?state=open&per_page=
 class FakeBox:
     def __init__(self, tmp: Path, procs: list[bsh.Proc], *, running: dict[str, bool] | None = None,
                  beat_age_s: float | None = 60.0) -> None:
-        self.table = procs
+        self.table = ([svchost(), *procs] if not any(p.pid == SVCHOST_PID for p in procs)
+                      else list(procs))
         self.running = running or {}
         self.killed: list[int] = []
         self.ended: list[str] = []
@@ -102,7 +113,15 @@ class FakeBox:
         return bsh.Box(procs=lambda: list(self.table),
                        task_running=lambda t: self.running.get(t, False),
                        end_task=end, run_task=run, kill=kill, host=HOST,
-                       gate_beat=self.beat, windows=True)
+                       gate_beat=self.beat, windows=True,
+                       secure=self.secure, task_principal=lambda t: SYSTEM.lower())
+
+    #: by default the admin-only state check passes; a test sets this to a reason to simulate a
+    #: writable store.
+    secure_reason: str | None = None
+
+    def secure(self, path: Path) -> str | None:
+        return self.secure_reason
 
 
 @pytest.fixture(autouse=True)
@@ -117,7 +136,7 @@ def two_passes(tmp: Path, fb: FakeBox, *, cpu_after: dict[int, float] | None = N
     first = bsh.run(apply=apply, box=fb.box(), now=NOW, **kw)
     if cpu_after:
         fb.table = [bsh.Proc(p.pid, p.ppid, p.name, p.cmdline, p.create_time,
-                             cpu_after.get(p.pid, p.cpu_s)) for p in fb.table]
+                             cpu_after.get(p.pid, p.cpu_s), p.argv, p.user) for p in fb.table]
     second = bsh.run(apply=apply, box=fb.box(), now=NOW + gap_s, **kw)
     return first, second
 
@@ -1077,3 +1096,196 @@ def test_the_watchdog_has_one_registry_organ_and_an_attestation_row() -> None:
     assert not any("Quant-BoxSelfHeal" in g for v in gaps.values() for g in v), gaps
     att = json.loads((ROOT / "docs" / "research" / "runtime_state.json").read_text("utf-8"))
     assert any(r.get("organ") == organ.component_id for r in att["organs"])
+
+
+# =============================================================================================
+# REGRESSIONS FOR THE AUDIT HOLD OF 5b3504f50 (v3). Each failed against that head.
+# =============================================================================================
+# --- MF-A: the state store is admin-only, and an insecure or empty one cannot drive action ----
+def test_admin_only_fails_closed_off_windows_and_for_an_absent_path(tmp_path: Path) -> None:
+    assert bsh.admin_only(tmp_path) is not None                 # linux: cannot be proven
+    assert bsh.admin_only(tmp_path / "nope") is not None        # absent
+
+
+def test_a_writable_state_dir_refuses_all_action_and_keeps_nothing(tmp_path: Path) -> None:
+    """A planted state in a user-writable dir named some_admin_job.py as a former gate member and
+    got it STOPPED; an empty one reset the cap. If the dir is not provably admin-only, the pass
+    reads nothing, keeps nothing and stops nothing."""
+    # a state that WOULD stop a planted orphan and WOULD look like an empty cap
+    (tmp_path / "s.json").write_text(json.dumps({
+        "gate_tree": {"777:0.0": 0.0},
+        "cpu": {"777:0.0": {"at": NOW - 10 * MIN, "cpu_s": 0.0, "members": {"777:0.0": 0.0}}},
+        "attempts": {}}), "utf-8")
+    victim = P(777, r"python.exe C:\opt\quant\scripts\some_admin_job.py", name="python.exe",
+               age_s=3 * 3600, cpu=0.0)
+    fb = FakeBox(tmp_path, [victim], beat_age_s=60)
+    fb.secure_reason = "C:\\ProgramData\\QuantBox\\state grants S-1-5-32-545 more than read"
+    doc = bsh.run(box=fb.box(), now=NOW, report=tmp_path / "r.json",
+                  ledger=tmp_path / "l.jsonl", state=tmp_path / "s.json")
+    assert fb.killed == [] and fb.ended == [] and fb.started == []
+    assert doc["state_dir_secure"] is False
+    assert any(r["verdict"] == "REFUSED" and r.get("history") == "INSECURE" for r in doc["rows"])
+    # the state on disk is untouched: the pass never wrote it back
+    assert json.loads((tmp_path / "s.json").read_text())["gate_tree"] == {"777:0.0": 0.0}
+
+
+def test_an_empty_state_cannot_lower_the_cap_below_the_ledger(tmp_path: Path) -> None:
+    base = datetime(2026, 10, 29, 0, 30, tzinfo=UTC).timestamp()
+    fb = FakeBox(tmp_path, [], beat_age_s=None)
+    fb.beat.write_text(json.dumps({"at": datetime.fromtimestamp(base - 6 * 3600, tz=UTC)
+                                   .isoformat(), "rc": 1}), "utf-8")
+    kw = _kw(tmp_path)
+    t = base
+    for wait in (0, 30 * MIN + 1, 60 * MIN + 1, 120 * MIN + 1):
+        t += wait
+        bsh.run(box=fb.box(), now=t, **kw)
+    assert len(fb.started) == 4
+    # a state that erased the attempts, but the admin-only ledger still proves four
+    (tmp_path / "s.json").write_text(json.dumps({"attempts": {}, "cpu": {}}), "utf-8")
+    doc = bsh.run(box=fb.box(), now=t + 6 * 3600, **kw)
+    assert len(fb.started) == 4
+    assert rows(doc, "workflow_gate_restart")[0]["verdict"] == "REFUSED"
+    assert doc["attempt_history"] == "state+ledger"
+
+
+# --- MF-B: the live tree is walked level by level, each child against ITS OWN parent ----------
+def test_a_recycled_pid_grandchild_is_excluded_from_the_live_kill(ps: FakePs) -> None:
+    """psutil children(recursive=True) compares every descendant with the ROOT only, so a Z that
+    adopted a recycled pid (older than its apparent parent) came along. Level by level drops it."""
+    root = ps.add(1, "powershell.exe", GATE, age_s=3600)                 # target, ct oldest
+    child = ps.add(2, "python.exe", GATE_PY, parent=root, age_s=1800)    # legit, younger
+    ps.add(7, "python.exe", r"python.exe C:\opt\quant\scripts\some_admin_job.py",
+           parent=child, age_s=3000)                                     # OLDER than its parent 2
+    target = bsh.Proc(1, 0, "powershell.exe", GATE, NOW - 3600, 0.0)
+    res = bsh._kill_tree(target, [], bsh.GATE_CHILD_IMAGES)
+    assert res["ok"] and 7 not in ps.dead
+    assert set(ps.dead) == {1, 2}, "only the target and its real child are killed"
+
+
+# --- MF-C: each copied file is pinned to its committed sha256 -------------------------------
+def test_the_installer_pins_match_the_files_at_head() -> None:
+    import subprocess as _sp
+    src = (ROOT / "desks" / "mt5" / "scripts" / "install_box_self_heal_task.ps1").read_text("utf-8")
+    pat = r"'([\w.]+\.py)' = @\{ src = .*?sha256 = '([0-9a-f]{64})'"
+    pinned = dict(__import__("re").findall(pat, src))
+    assert set(pinned) == {"box_self_heal.py", "process_health.py", "alert_channels.py"}
+    paths = {"box_self_heal.py": "ops/box_self_heal.py",
+             "process_health.py": "ops/process_health.py",
+             "alert_channels.py": "libs/ops/alert_channels.py"}
+    for name, rel in paths.items():
+        blob = _sp.run(["git", "show", f"HEAD:{rel}"], cwd=ROOT, capture_output=True).stdout
+        import hashlib
+        assert pinned[name] == hashlib.sha256(blob).hexdigest(), f"{name} pin drifted from HEAD"
+
+
+# --- SF-1: a PATH python is trusted only from an admin-only directory -----------------------
+def test_the_installer_only_trusts_a_path_python_from_an_admin_only_directory() -> None:
+    src = (ROOT / "desks" / "mt5" / "scripts" / "install_box_self_heal_task.ps1").read_text("utf-8")
+    code = "\n".join(x for x in src.splitlines() if not x.lstrip().startswith("#"))
+    assert "function Test-DirAdminOnly" in code
+    assert "refusing PATH python" in code and "C:\\Program Files\\Python314\\python.exe" in code
+
+
+# --- SF-2: the two identities must be a SYSTEM task run, not any matching string -------------
+def test_scheduler_owned_requires_system_and_a_task_scheduler_ancestor(tmp_path: Path) -> None:
+    box = FakeBox(tmp_path, []).box()
+    sv = svchost()
+    gate = P(8720, GATE, name="powershell.exe", ppid=SVCHOST_PID, user=SYSTEM)
+    assert bsh.scheduler_owned(gate, [sv, gate], box, "Quant-WorkflowGate") is None
+    hand = P(8720, GATE, name="powershell.exe", ppid=4242, user="BOX\\Administrator")
+    shell = P(4242, "powershell.exe -NoExit", name="powershell.exe", age_s=4 * 3600)
+    why = bsh.scheduler_owned(hand, [shell, hand], box, "Quant-WorkflowGate")
+    assert why and "SYSTEM" in why
+    orphan_owner = P(8720, GATE, name="powershell.exe", ppid=9, user=SYSTEM)
+    assert bsh.scheduler_owned(orphan_owner, [orphan_owner], box, "Quant-WorkflowGate")
+
+
+def test_a_gate_run_not_launched_by_the_scheduler_is_not_stopped(tmp_path: Path) -> None:
+    """A -Command wrapper or a hand run owned by a user, with no svchost ancestor."""
+    shell = P(4242, "powershell.exe -NoExit", name="powershell.exe", age_s=4 * 3600,
+              user="BOX\\Administrator")
+    gate = P(8720, GATE, name="powershell.exe", ppid=4242, age_s=2 * 3600, cpu=4.0,
+             user="BOX\\Administrator")
+    fb = FakeBox(tmp_path, [shell, gate], running={"Quant-WorkflowGate": True},
+                 beat_age_s=2 * 3600)
+    two_passes(tmp_path, fb)
+    assert fb.killed == [] and fb.ended == []
+
+
+def test_a_command_flag_before_file_never_matches_the_gate() -> None:
+    cmd = (r'powershell.exe -Command "Start-Process" -File '
+           r"C:\ProgramData\QuantBox\bin\workflow_gate.ps1")
+    assert not bsh.matches(bsh.RULE_BY_KEY["workflow_gate"], P(1, cmd, name="powershell.exe"))
+
+
+# --- SF-3: a partial kill names what died -----------------------------------------------------
+def test_an_access_denied_mid_kill_names_the_members_already_killed(ps: FakePs) -> None:
+    root = ps.add(1, "powershell.exe", GATE, age_s=3600, fail={"kill": ps.AccessDenied(1)})
+    py = ps.add(2, "python.exe", GATE_PY, parent=root, age_s=3500)
+    ps.add(3, "gh.exe", GH_PULLS, parent=py, age_s=3400)
+    target = bsh.Proc(1, 0, "powershell.exe", GATE, NOW - 3600, 0.0)
+    res = bsh._kill_tree(target, [], bsh.GATE_CHILD_IMAGES)   # 3 and 2 die, the root refuses
+    assert not res["ok"]
+    assert "PARTIALLY" in res["why"] and set(res["killed"]) == {2, 3}
+
+
+# --- SF-4: a torn line in the MIDDLE of the ledger is skipped, not fatal ---------------------
+def test_a_torn_middle_ledger_line_is_skipped_not_the_whole_history(tmp_path: Path) -> None:
+    base = datetime(2026, 10, 29, 0, 30, tzinfo=UTC).timestamp()
+    fb = FakeBox(tmp_path, [], beat_age_s=None)
+    fb.beat.write_text(json.dumps({"at": datetime.fromtimestamp(base - 6 * 3600, tz=UTC)
+                                   .isoformat(), "rc": 1}), "utf-8")
+    kw = _kw(tmp_path)
+    t = base
+    for wait in (0, 30 * MIN + 1):
+        t += wait
+        bsh.run(box=fb.box(), now=t, **kw)
+    assert len(fb.started) == 2
+    lines = (tmp_path / "l.jsonl").read_text("utf-8").splitlines()
+    lines.insert(1, "{ this is torn")                   # a crash left half a line mid-file
+    (tmp_path / "l.jsonl").write_text("\n".join(lines) + "\n", "utf-8")
+    (tmp_path / "s.json").write_text("{corrupt", "utf-8")
+    doc = bsh.run(box=fb.box(), now=t + 10 * MIN, **kw)
+    assert rows(doc, "workflow_gate_restart")[0]["verdict"] == "BACKOFF"   # both attempts counted
+    assert "torn_lines_skipped" in doc["attempt_history"]
+
+
+# --- SF-5: future-dated attempts (a backward clock) are clamped to now -----------------------
+def test_future_dated_attempts_count_at_now_not_tomorrow(tmp_path: Path) -> None:
+    base = datetime(2026, 10, 29, 12, 0, tzinfo=UTC).timestamp()
+    future = base + 2 * 86400
+    futures = [future, future + 60, future + 120, future + 180]
+    fb = FakeBox(tmp_path, [], beat_age_s=None)
+    fb.beat.write_text(json.dumps({"at": datetime.fromtimestamp(base - 6 * 3600, tz=UTC)
+                                   .isoformat(), "rc": 1}), "utf-8")
+    (tmp_path / "s.json").write_text(json.dumps({
+        "attempts": {"workflow_gate_restart": futures}, "cpu": {}}), "utf-8")
+    doc = bsh.run(box=fb.box(), now=base, **_kw(tmp_path))
+    assert fb.started == [], "four future-dated attempts still fill today's cap"
+    assert rows(doc, "workflow_gate_restart")[0]["verdict"] == "REFUSED"
+
+
+# --- SF-6: the deny list matches code tokens, not a raw command-line substring ---------------
+@pytest.mark.parametrize("cmd,name", [
+    (r"git.exe fetch origin claude/miner-experiment", "git.exe"),
+    (r"gh.exe pr checkout claude/fusion-rework", "gh.exe"),
+    (r"git.exe -C C:\gate-repo log --oneline e8_branch", "git.exe"),
+    (r"python.exe build.py --note merge_hypotheses-rerun", "python.exe"),
+])
+def test_a_data_argument_named_like_a_denied_job_is_not_denied(cmd: str, name: str) -> None:
+    assert bsh.denied(P(1, cmd, name=name)) is None
+
+
+@pytest.mark.parametrize("cmd,name", [
+    (r"python.exe C:\opt\quant\desks\mt5\research\pf_allocator.py", "python.exe"),
+    (r"python.exe launcher.py C:\x\gateway_resident.py", "python.exe"),
+    (r"powershell.exe -File C:\opt\quant\ops\bridge\bridge_watchdog.ps1", "powershell.exe"),
+    (r"some_unknown.exe --flag moat_recorder deep", "some_unknown.exe"),
+])
+def test_code_tokens_and_unknown_images_still_deny(cmd: str, name: str) -> None:
+    assert bsh.denied(P(1, cmd, name=name)) is not None
+
+
+def test_a_python_launcher_running_a_denied_script_is_denied() -> None:
+    # fail-safe: a later argument that names code is identity too
+    assert bsh.denied(P(1, r"py.exe -I runner.py gateway.py --live", name="py.exe"))

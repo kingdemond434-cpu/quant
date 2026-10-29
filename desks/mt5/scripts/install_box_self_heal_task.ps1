@@ -47,26 +47,56 @@ if (-not (Test-Path $Script)) { throw "box_self_heal.py missing at $Script" }
 # writes its report, ledger and state). Re-run this installer to deploy a new version.
 $Root   = 'C:\ProgramData\QuantBox'
 $BinDir = Join-Path $Root 'bin'
-$Copies = @(
-    @((Join-Path $RepoRoot 'ops\box_self_heal.py'),        'box_self_heal.py'),
-    @((Join-Path $RepoRoot 'ops\process_health.py'),       'process_health.py'),
-    @((Join-Path $RepoRoot 'libs\ops\alert_channels.py'),  'alert_channels.py')
-)
+# WHAT THE WATCHDOG DECIDES FROM LIVES HERE, NOT IN THE REPO (audit HOLD of 5b3504f50). The bridge
+# and every agent session can write the repo, so a cross-pass state there could plant an orphan
+# target, a STALLED CPU baseline, a dead-owner clock or a reset attempt cap. The state and the
+# attempt ledger live in this admin-only directory; the pass refuses to act unless its ACL is
+# provably Administrators/SYSTEM only. Only the report (which nothing reads back to decide) is
+# published into the repo.
+$StateDir = Join-Path $Root 'state'
+# EACH COPIED FILE IS PINNED TO THE sha256 OF ITS COMMITTED BLOB (audit HOLD of 5b3504f50). A
+# session could swap the working-tree file in the moment before an admin runs this; comparing the
+# copy only with that (already-swapped) source would not catch it. The source must match the pin
+# below, which `tests/ops/test_box_self_heal.py` asserts equals the file at HEAD so it cannot
+# drift. Regenerate after any change to a copied file:
+#   git show HEAD:ops/box_self_heal.py | sha256sum   (and the other two)
+$Pins = [ordered]@{
+    'box_self_heal.py' = @{ src = (Join-Path $RepoRoot 'ops\box_self_heal.py');       sha256 = 'a69e9a3e2973a5efe49c567d724b798e92efca13e278bbd352be0bfc86add938' }
+    'process_health.py' = @{ src = (Join-Path $RepoRoot 'ops\process_health.py');      sha256 = 'cfdddafe46e4a7e9257846b1c87a0d1342bddc49f25302db0afe08df3e3c72a2' }
+    'alert_channels.py' = @{ src = (Join-Path $RepoRoot 'libs\ops\alert_channels.py'); sha256 = '4448f782dfa7dc4ec0aecd1dc71145403d3de1d1dcbb9c64e81cf95be3e5f4b5' }
+}
 $Installed = Join-Path $BinDir 'box_self_heal.py'
 
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) { throw "run this elevated: registering a SYSTEM task needs an administrator" }
 
+$adm = 'S-1-5-32-544'; $sys = 'S-1-5-18'; $usr = 'S-1-5-32-545'
+function Test-DirAdminOnly([string] $dir) {
+    # Admins/SYSTEM may hold anything; Users read-only; any other SID, or a Users write bit, fails.
+    if (-not (Test-Path -LiteralPath $dir)) { return "absent" }
+    foreach ($a in (Get-Acl -LiteralPath $dir).Access | Where-Object { $_.AccessControlType -eq 'Allow' }) {
+        $sid = $a.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value
+        $write = [int64]$a.FileSystemRights -band ([int64][System.Security.AccessControl.FileSystemRights]"Write, Delete, ChangePermissions, TakeOwnership" -bor 0x50000000)
+        if ($sid -notin @($adm, $sys, $usr) -or ($sid -eq $usr -and $write -ne 0)) { return "$($a.IdentityReference) has write" }
+    }
+    return $null
+}
+
+# A PATH python.exe IS ONLY TRUSTED FROM AN ADMIN-ONLY DIRECTORY (audit should-fix of 5b3504f50):
+# a SYSTEM task that ran a python a non-admin could replace would run their code as SYSTEM. Prefer
+# the known Program Files interpreter; fall back to PATH only when its own directory is admin-only.
 $Python = 'C:\Program Files\Python314\python.exe'
 if (-not (Test-Path $Python)) {
-    $Python = (Get-Command python.exe -ErrorAction Stop).Source
+    $cand = (Get-Command python.exe -ErrorAction Stop).Source
+    $why = Test-DirAdminOnly (Split-Path -Parent $cand)
+    if ($why) { throw "refusing PATH python at $cand: its directory is not admin-only ($why); install Python to C:\Program Files or fix its ACL" }
+    $Python = $cand
 }
 & $Python -c "import psutil" 2>$null
 if ($LASTEXITCODE -ne 0) {
     "WARNING: psutil is not importable by $Python; the watchdog will report UNMEASURED (RED) and stop nothing until it is"
 }
-$adm = 'S-1-5-32-544'; $sys = 'S-1-5-18'; $usr = 'S-1-5-32-545'
 # THE ROOT IS ADMIN-ONLY FROM ITS FIRST BYTE (install_unattended.ps1's pattern, verbatim in effect):
 # a new root is created with its locked ACL in one call; an existing one that Administrators/SYSTEM
 # do not own is refused, never taken over; no junction is followed anywhere under it.
@@ -86,6 +116,7 @@ foreach ($c in @(Get-Item -LiteralPath $Root -Force) + @(Get-ChildItem -LiteralP
     if ($c.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "$($c.FullName) is a junction or symlink; not installing" }
 }
 New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
+New-Item -ItemType Directory -Force -Path $StateDir | Out-Null
 function Assert-AdminOnly {
     foreach ($path in @($Root) + @(Get-ChildItem -LiteralPath $Root -Force -Recurse | ForEach-Object { $_.FullName })) {
         foreach ($a in (Get-Acl -LiteralPath $path).Access | Where-Object { $_.AccessControlType -eq 'Allow' }) {
@@ -98,17 +129,21 @@ function Assert-AdminOnly {
     }
 }
 Assert-AdminOnly
-foreach ($pair in $Copies) {
-    $src = $pair[0]; $dst = Join-Path $BinDir $pair[1]
-    if (-not (Test-Path -LiteralPath $src)) { throw "$($pair[1]) missing at $src" }
+foreach ($name in $Pins.Keys) {
+    $src = $Pins[$name].src; $pin = $Pins[$name].sha256.ToLower(); $dst = Join-Path $BinDir $name
+    if (-not (Test-Path -LiteralPath $src)) { throw "$name missing at $src" }
+    $srcHash = (Get-FileHash $src -Algorithm SHA256).Hash.ToLower()
+    if ($srcHash -ne $pin) {
+        throw "$name at $src has sha256 $srcHash, not its pinned $pin; the working tree does not match the reviewed file -- not installing"
+    }
     Remove-Item -LiteralPath $dst -Force -ErrorAction SilentlyContinue
     Copy-Item -LiteralPath $src -Destination $dst
-    if ((Get-FileHash $dst -Algorithm SHA256).Hash -ne (Get-FileHash $src -Algorithm SHA256).Hash) {
-        throw "copy of $($pair[1]) does not match its source; not installing"
+    if ((Get-FileHash $dst -Algorithm SHA256).Hash.ToLower() -ne $pin) {
+        throw "copy of $name does not match its pin; not installing"
     }
-    "copied {0} (sha256 {1})" -f $dst, (Get-FileHash $dst -Algorithm SHA256).Hash.ToLower().Substring(0, 12)
+    "copied {0} (sha256 {1})" -f $dst, $pin.Substring(0, 12)
 }
-Assert-AdminOnly     # the copies inherit the root's ACL; proved, not assumed
+Assert-AdminOnly     # the copies and the state dir inherit the root's ACL; proved, not assumed
 
 $LogDir = Join-Path $DeskRoot 'logs'
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir | Out-Null }

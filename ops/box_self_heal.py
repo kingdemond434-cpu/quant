@@ -79,7 +79,8 @@ denied: what cannot be identified is never touched. A process that is on neither
 stopped: there is no default action.
 
 RED-LOGGED. Every action and every refusal is a RED row in desks/mt5/reports/BOX_SELF_HEAL.json
-(this pass) and appended to desks/mt5/logs/box_self_heal.jsonl (the ledger). The report carries its
+(this pass, the only thing written into the repo) and appended to the attempt ledger under the
+admin-only C:\\ProgramData\\QuantBox\\state (box_self_heal.jsonl). The report carries its
 own `at`, and `check_desk_health.py` and the organ contract both read it, so a watchdog that
 stopped running shows RED rather than silence. When a pass STOPS, ENDS or STARTS anything it pages
 zuck through libs/ops/alert_channels.send_all (ntfy on the box); a FAILED action, the daily cap and
@@ -112,10 +113,18 @@ _HERE = Path(__file__).resolve().parent
 _IN_REPO = _HERE.name == "ops" and (_HERE.parent / "desks" / "mt5").is_dir()
 ROOT = _HERE.parent if _IN_REPO else Path.cwd()
 DESK = ROOT / "desks" / "mt5"
+#: The ONLY thing this file writes into the repo: its report, which it never reads back to decide.
 REPORT = DESK / "reports" / "BOX_SELF_HEAL.json"
-LEDGER = DESK / "logs" / "box_self_heal.jsonl"
-#: Cross-pass memory (CPU baselines, gate tree, attempts). Under logs/, which the box sync ignores.
-STATE = DESK / "logs" / "box_self_heal_state.json"
+#: WHAT IT DECIDES FROM LIVES WHERE ONLY ADMINS CAN WRITE (audit HOLD of 5b3504f50). The bridge
+#: and every agent session can write the repo, so a state there could plant an "orphan" for SYSTEM
+#: to stop, a CPU baseline that reads STALLED, a dead-owner clock, or an empty attempt count. The
+#: state and the attempt ledger live in C:\ProgramData\QuantBox\state, created by the installer
+#: with install_unattended.ps1's locked ACL, and a pass whose directory (or any file in it) is not
+#: provably admin-only acts on nothing.
+STATE_DIR = Path(r"C:\ProgramData\QuantBox\state")
+LEDGER = STATE_DIR / "box_self_heal.jsonl"
+#: Cross-pass memory (CPU baselines, gate tree, attempts, no-owner clocks).
+STATE = STATE_DIR / "box_self_heal_state.json"
 #: The gate's own folder (ops/box/workflow_gate.ps1, $Root). A literal, never an argument.
 QUANTBOX_LOGS = Path(r"C:\ProgramData\QuantBox\logs")
 GATE_BEAT = QUANTBOX_LOGS / "workflow_gate.json"
@@ -292,6 +301,8 @@ class Proc:
     cpu_s: float
     #: The argv as the OS reports it (psutil). Empty: split from `cmdline`, Windows-style.
     argv: tuple[str, ...] = ()
+    #: The account it runs as ("NT AUTHORITY\\SYSTEM", "HOST\\Administrator"); None if unreadable.
+    user: str | None = None
 
 
 def _fold(text: str) -> str:
@@ -329,20 +340,108 @@ def unreadable(p: Proc) -> str | None:
     return None
 
 
+#: Python's own options that take a value (the next token is not the script).
+_PY_OPT_ARG = frozenset({"-W", "-X", "-Q"})
+
+#: Images whose arguments are DATA, not code they run: a git/gh ref, an API path, a console title.
+#: `git fetch origin claude/miner-x` is git, not a miner, so only their image identifies them.
+_DATA_ARG_IMAGES = frozenset({
+    "gh", "git", "git-remote-https", "git-credential-manager", "conhost", "sh",
+})
+#: Suffixes of an argument that names code (a later `launcher.py gateway.py` names two organs).
+_CODE_SUFFIXES = (".py", ".pyw", ".pyz", ".ps1", ".psm1", ".exe", ".cmd", ".bat", ".js", ".dll")
+#: PowerShell switches that carry code the deny list must still see.
+_PS_CODE_FLAGS = frozenset({"-command", "-c", "-encodedcommand", "-e", "-ec", "-file", "-f"})
+#: The only switches the installers pass BEFORE -File. A valued one (its value is the next token).
+_PS_PRE_FILE_FLAGS = frozenset({"-noprofile", "-noninteractive", "-nologo", "-sta", "-mta"})
+_PS_PRE_FILE_VALUED = frozenset({"-windowstyle", "-executionpolicy", "-ex", "-ep"})
+
+
+def _ps_file(argv: Sequence[str]) -> str | None:
+    """The script a PowerShell `-File` runs, ONLY when every switch before it is one the
+    installers pass (audit should-fix of 5b3504f50). A `-Command`/`-EncodedCommand`, or any other
+    switch, before -File means the file is not what runs, so this returns None."""
+    i = 1
+    while i < len(argv):
+        a = argv[i].lower()
+        if a in ("-file", "/file"):
+            return argv[i + 1] if i + 1 < len(argv) else None
+        if a in _PS_PRE_FILE_FLAGS:
+            i += 1
+            continue
+        if a in _PS_PRE_FILE_VALUED:
+            i += 2
+            continue
+        return None
+    return None
+
+
+def _deny_haystack(p: Proc) -> str:
+    """The folded tokens that say WHAT `p` runs, for the deny list -- its image and the code it
+    executes, never a data argument such as a branch name. Fail-safe: an image this cannot parse
+    contributes its WHOLE command line, so a new launcher is over-matched, never under-matched."""
+    argv = _argv(p)
+    img = _image(p)
+    base = img.removesuffix(".exe")
+    toks = [img, *(argv[:1])]
+    pyset = {x.removesuffix(".exe") for x in _PY}
+    psset = {x.removesuffix(".exe") for x in _PS}
+    if base in _DATA_ARG_IMAGES:
+        pass                                      # image (and its own path) only
+    elif base in pyset:
+        got = _py_identity(argv)
+        if got is None:
+            toks.append(_fold(p.cmdline))         # could not parse: the whole line
+        else:
+            toks += got
+    elif base in psset:
+        toks += [a for i, a in enumerate(argv)
+                 if i and (argv[i - 1].lower() in _PS_CODE_FLAGS
+                           or _norm_path(a).endswith(_CODE_SUFFIXES))]
+    else:
+        toks.append(_fold(p.cmdline or " ".join(p.argv)))
+    return _fold(" ".join(t for t in toks if t))
+
+
 def denied(p: Proc) -> str | None:
     """Why `p` may never be touched, or None. Checked before any allowlist match."""
     u = unreadable(p)
     if u:
         return f"unidentifiable: {u}"
-    text = f"{_image(p)} {_fold(p.cmdline or ' '.join(p.argv))}"
+    text = _deny_haystack(p)
     for needle, why in DENY:
         if needle in text:
             return f"{needle!r}: {why}"
     return None
 
 
-#: Python's own options that take a value (the next token is not the script).
-_PY_OPT_ARG = frozenset({"-W", "-X", "-Q"})
+def _py_identity(argv: Sequence[str]) -> list[str] | None:
+    """The tokens a python command line RUNS: its script, or its -m module, or (all of) its -c
+    code, plus any later argument that names code. None when nothing can be identified (then the
+    caller treats the whole line as identity -- fail-safe)."""
+    i = 1
+    while i < len(argv):
+        a = argv[i]
+        if a in _PY_OPT_ARG:
+            i += 2
+            continue
+        if a == "-c":
+            return list(argv[i + 1:]) or None
+        if a == "-m":
+            head, rest = list(argv[i + 1:i + 2]), argv[i + 2:]
+            break
+        if a == "-":
+            return None
+        if a.startswith("-"):                   # a flag, or -Wignore / -Xutf8 (value attached)
+            i += 1
+            continue
+        head, rest = [a], argv[i + 1:]
+        break
+    else:
+        return None
+    if not head:
+        return None
+    return [*head, *(x for x in rest if _norm_path(x).endswith(_CODE_SUFFIXES))]
 
 
 def _py_script(argv: Sequence[str]) -> tuple[str, list[str]] | None:
@@ -382,10 +481,10 @@ def matches(rule: Rule, p: Proc) -> bool:
         got = _py_script(argv)
         return got is not None and _is_intake_script(got[0]) and INTAKE_ONCE in got[1]
     if rule.key == "workflow_gate":
-        for i, a in enumerate(argv[1:], start=1):
-            if a.lower() in ("-file", "/file"):
-                return i + 1 < len(argv) and _norm_path(argv[i + 1]) == GATE_FILE
-        return False
+        # _ps_file refuses when any switch before -File is not an installer's own (so a
+        # `-Command ... -File <gate>` wrapper, which runs the command and not the file, is not it).
+        f = _ps_file(argv)
+        return f is not None and _norm_path(f) == GATE_FILE
     return False
 
 
@@ -515,6 +614,11 @@ class Box:
     host: str = field(default_factory=socket.gethostname)
     gate_beat: Path = GATE_BEAT
     windows: bool = sys.platform == "win32"
+    #: secure(path): why the state directory (or a file in it) is NOT admin-only, or None.
+    secure: Callable[[Path], str | None] = field(default=lambda p: admin_only(p))
+    #: task_principal(task): the account the task is registered to run as, lower-cased, or None.
+    task_principal: Callable[[str | None], str | None] = field(
+        default=lambda t: _task_principal(t) if t else None)
 
 
 def _live_procs() -> list[Proc] | None:
@@ -529,29 +633,73 @@ def _live_procs() -> list[Proc] | None:
             ct = info.get("cpu_times")
             cpu = float(getattr(ct, "user", 0.0) + getattr(ct, "system", 0.0)) if ct else 0.0
             argv = tuple(str(a) for a in (info.get("cmdline") or []))
+            try:
+                user: str | None = str(pr.username())
+            except Exception:
+                user = None
             # An AccessDenied cmdline arrives as None -> "" here, and `unreadable` denies it.
             rows.append(Proc(int(info["pid"]), int(info.get("ppid") or 0),
                              str(info.get("name") or ""), " ".join(argv),
-                             float(info.get("create_time") or 0.0), cpu, argv))
+                             float(info.get("create_time") or 0.0), cpu, argv, user))
         except Exception:
             continue
     return rows
 
 
-def _schtasks(verb: str, task: str) -> dict[str, Any]:
+def _schtasks(verb: str, task: str, *, xml: bool = False) -> dict[str, Any]:
     """The ONLY subprocess this file starts: schtasks with a literal verb on an allowlisted task."""
     allowed = {"/Query": ENDABLE_TASKS | RUNNABLE_TASKS, "/End": ENDABLE_TASKS,
                "/Run": RUNNABLE_TASKS}
     if verb not in allowed or task not in allowed[verb]:
         raise ValueError(f"schtasks {verb} {task!r} is not in the closed table")
-    argv = ["schtasks", verb, "/TN", task] + (["/FO", "CSV", "/NH"] if verb == "/Query" else [])
+    tail = (["/XML"] if xml else ["/FO", "CSV", "/NH"]) if verb == "/Query" else []
+    argv = ["schtasks", verb, "/TN", task, *tail]
     try:
         r = subprocess.run(argv, capture_output=True, text=True, timeout=SCHTASKS_TIMEOUT_S,
                            check=False)
         return {"argv": argv, "rc": r.returncode,
-                "out": ((r.stdout or "") + (r.stderr or "")).strip()[-300:]}
+                "out": ((r.stdout or "") + (r.stderr or "")).strip()[-4000:]}
     except (OSError, subprocess.TimeoutExpired) as exc:
         return {"argv": argv, "rc": None, "out": f"{type(exc).__name__}"}
+
+
+#: The images Task Scheduler launches a task through. A task's process is a child of one of these;
+#: a gate or intake command line run by hand (an operator shell, an agent) is not.
+_SCHEDULER_IMAGES = frozenset({"svchost.exe", "taskeng.exe", "taskhostw.exe", "services.exe"})
+#: The SYSTEM account, in the forms psutil and schtasks print.
+_SYSTEM_USERS = frozenset({"nt authority\\system", "system", "s-1-5-18"})
+
+
+def _task_principal(task: str) -> str | None:
+    """The account `task` runs as, from its registration XML, lower-cased; None if unreadable."""
+    r = _schtasks("/Query", task, xml=True)
+    if r.get("rc") != 0:
+        return None
+    m = re.search(r"<UserId>\s*([^<]+?)\s*</UserId>", str(r.get("out") or ""),
+                  re.IGNORECASE)
+    return m.group(1).strip().lower() if m else None
+
+
+def scheduler_owned(p: Proc, procs: Sequence[Proc], box: Box, task: str | None) -> str | None:
+    """Why `p` is NOT a process Task Scheduler launched for `task`, or None (audit should-fix of
+    5b3504f50): a `-Command ... -File <gate>` or a hand-run intake matches the string but is not
+    the task. Require SYSTEM (or the task's own principal) to own it, and the parent chain to pass
+    through svchost/taskeng. Fail CLOSED: an unreadable owner or principal is a reason."""
+    owner = (p.user or "").strip().lower()
+    if not owner:
+        return f"pid {p.pid}'s owner is unreadable"
+    allowed = set(_SYSTEM_USERS)
+    principal = box.task_principal(task) if task else None
+    if principal:
+        allowed.add(principal)
+    if owner not in allowed:
+        return f"pid {p.pid} runs as {owner!r}, not SYSTEM or {task}'s principal"
+    by = {q.pid: q for q in procs}
+    for a in ancestors(p.pid, procs):
+        anc = by.get(a)
+        if anc is not None and _image(anc) in _SCHEDULER_IMAGES:
+            return None
+    return f"pid {p.pid} has no Task Scheduler ancestor (svchost/taskeng); not a task run"
 
 
 def _task_running(task: str) -> bool | None:
@@ -615,12 +763,122 @@ def _running_states() -> frozenset[str]:
         return frozenset({"running"})
 
 
+#: Admins and SYSTEM may hold any right; Users may read. Any other SID, or a Users ACE with a write
+#: bit, makes the directory writable by someone a SYSTEM pass must not take orders from.
+_ADMIN_SIDS = frozenset({"S-1-5-32-544", "S-1-5-18"})
+_READ_SIDS = frozenset({"S-1-5-32-545"})
+#: FILE_WRITE_DATA|APPEND|WRITE_EA|DELETE_CHILD|WRITE_ATTRIBUTES|DELETE|WRITE_DAC|WRITE_OWNER and
+#: GENERIC_ALL|GENERIC_WRITE.
+_WRITE_BITS = (0x2 | 0x4 | 0x10 | 0x40 | 0x100 | 0x10000 | 0x40000 | 0x80000
+               | 0x10000000 | 0x40000000)
+_ALLOW_ACE, _OTHER_ALLOW_ACES = 0, frozenset({5, 9, 11})
+
+
+def _acl_entries(path: Path) -> tuple[str, list[tuple[int, int, str]] | None]:
+    """(owner SID, [(ace type, access mask, SID)]) of `path`; None for a NULL DACL. Windows only:
+    advapi32 through ctypes, so proving the ACL starts no process."""
+    import ctypes
+    from ctypes import wintypes
+
+    advapi = ctypes.WinDLL("advapi32", use_last_error=True)  # type: ignore[attr-defined,unused-ignore]
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined,unused-ignore]
+    vp = ctypes.c_void_p
+    advapi.GetNamedSecurityInfoW.argtypes = [wintypes.LPCWSTR, ctypes.c_int, wintypes.DWORD,
+                                             ctypes.POINTER(vp), ctypes.POINTER(vp),
+                                             ctypes.POINTER(vp), ctypes.POINTER(vp),
+                                             ctypes.POINTER(vp)]
+    advapi.GetNamedSecurityInfoW.restype = wintypes.DWORD
+    advapi.ConvertSidToStringSidW.argtypes = [vp, ctypes.POINTER(wintypes.LPWSTR)]
+    advapi.ConvertSidToStringSidW.restype = wintypes.BOOL
+    advapi.GetAce.argtypes = [vp, wintypes.DWORD, ctypes.POINTER(vp)]
+    advapi.GetAce.restype = wintypes.BOOL
+    kernel.LocalFree.argtypes = [vp]
+    kernel.LocalFree.restype = vp
+
+    class _ACL(ctypes.Structure):
+        _fields_ = [("AclRevision", ctypes.c_ubyte), ("Sbz1", ctypes.c_ubyte),
+                    ("AclSize", wintypes.WORD), ("AceCount", wintypes.WORD),
+                    ("Sbz2", wintypes.WORD)]
+
+    owner, dacl, sd = vp(), vp(), vp()
+    # SE_FILE_OBJECT = 1; OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION
+    rc = advapi.GetNamedSecurityInfoW(str(path), 1, 0x1 | 0x4, ctypes.byref(owner), None,
+                                      ctypes.byref(dacl), None, ctypes.byref(sd))
+    if rc != 0:
+        raise OSError(rc, "GetNamedSecurityInfoW")
+
+    def sid_text(psid: int | None) -> str:
+        out = wintypes.LPWSTR()
+        if not advapi.ConvertSidToStringSidW(psid, ctypes.byref(out)):
+            raise OSError(ctypes.get_last_error(), "ConvertSidToStringSidW")  # type: ignore[attr-defined,unused-ignore]
+        try:
+            return str(out.value)
+        finally:
+            kernel.LocalFree(ctypes.cast(out, vp))
+
+    try:
+        own = sid_text(owner.value)
+        if not dacl.value:
+            return own, None
+        acl = _ACL.from_address(dacl.value)
+        aces: list[tuple[int, int, str]] = []
+        for i in range(acl.AceCount):
+            ace = vp()
+            if not advapi.GetAce(dacl, i, ctypes.byref(ace)) or not ace.value:
+                raise OSError(ctypes.get_last_error(), "GetAce")  # type: ignore[attr-defined,unused-ignore]
+            kind = ctypes.c_ubyte.from_address(ace.value).value
+            mask = wintypes.DWORD.from_address(ace.value + 4).value
+            aces.append((kind, mask, sid_text(ace.value + 8) if kind in (0, 1) else ""))
+        return own, aces
+    finally:
+        kernel.LocalFree(sd)
+
+
+def admin_only(path: Path) -> str | None:
+    """Why `path` is NOT provably writable by Administrators and SYSTEM alone, or None.
+
+    Fail closed: absent, a junction, an unreadable ACL, a NULL DACL, an owner outside
+    Administrators/SYSTEM, an allow ACE of a kind this does not parse, or any write right for any
+    other SID is a reason. Off Windows nothing can be proven, which is also a reason."""
+    if sys.platform != "win32":
+        return "not Windows: an admin-only ACL cannot be proven here"
+    try:
+        st = os.lstat(path)
+    except FileNotFoundError:
+        return f"{path} is absent (the installer creates it)"
+    except OSError as exc:
+        return f"{path} cannot be inspected ({type(exc).__name__})"
+    if getattr(st, "st_file_attributes", 0) & 0x400:          # FILE_ATTRIBUTE_REPARSE_POINT
+        return f"{path} is a junction or symlink"
+    try:
+        owner, aces = _acl_entries(path)
+    except Exception as exc:
+        return f"{path}'s ACL is unreadable ({type(exc).__name__}: {exc})"[:200]
+    if owner not in _ADMIN_SIDS:
+        return f"{path} is owned by {owner}, not Administrators/SYSTEM"
+    if aces is None:
+        return f"{path} has a NULL DACL: everyone may write it"
+    for kind, mask, sid in aces:
+        if kind in _OTHER_ALLOW_ACES:
+            return f"{path} carries an allow ACE of type {kind} this cannot prove harmless"
+        if kind != _ALLOW_ACE or sid in _ADMIN_SIDS:
+            continue
+        if sid in _READ_SIDS and not mask & _WRITE_BITS:
+            continue
+        return f"{path} grants {sid} more than read (mask 0x{mask:x})"
+    return None
+
+
 def _live_proc(pr: Any, ppid: int | None = None) -> Proc:
     """A psutil process re-read NOW. Raises on anything it cannot read."""
     argv = tuple(str(a) for a in (pr.cmdline() or []))
     name = str(pr.name() or "")
     par = int(pr.ppid()) if ppid is None else ppid
-    return Proc(int(pr.pid), par, name, " ".join(argv), float(pr.create_time()), 0.0, argv)
+    try:
+        user: str | None = str(pr.username())
+    except Exception:
+        user = None
+    return Proc(int(pr.pid), par, name, " ".join(argv), float(pr.create_time()), 0.0, argv, user)
 
 
 def _kill_tree(target: Proc, procs: Sequence[Proc],
@@ -651,7 +909,43 @@ def _kill_tree(target: Proc, procs: Sequence[Proc],
     t0 = clock()
 
     def refuse(why: str) -> dict[str, Any]:
-        return {"ok": False, "target_gone": False, "why": f"{why}; tree resumed, nothing stopped"}
+        # A REFUSAL AFTER THE FIRST KILL NAMES WHAT DIED (audit should-fix of 5b3504f50): an
+        # AccessDenied on the third member is not "nothing stopped" when two are already gone.
+        if killed:
+            return {"ok": False, "target_gone": not target_alive(), "killed": sorted(killed),
+                    "why": f"{why}; PARTIALLY stopped: killed {sorted(killed)}, every other "
+                           f"member resumed"}
+        return {"ok": False, "target_gone": False, "killed": [],
+                "why": f"{why}; tree resumed, nothing stopped"}
+
+    def tree_below(root: Any, root_ct: float) -> list[Any]:
+        """The live tree, LEVEL BY LEVEL (audit HOLD of 5b3504f50): each child is checked against
+        ITS OWN parent's create time. children(recursive=True) only compares every descendant with
+        the root, so a process that adopted a recycled pid deeper down came along."""
+        out: list[Any] = []
+        seen = {root.pid}
+        level = [(root, root_ct)]
+        while level:
+            nxt: list[tuple[Any, float]] = []
+            for par, pct in level:
+                try:
+                    kids = par.children(recursive=False)
+                except psutil.NoSuchProcess:
+                    continue
+                for k in kids:
+                    if k.pid in seen:
+                        continue
+                    try:
+                        kct = float(k.create_time())
+                    except psutil.NoSuchProcess:
+                        continue
+                    if kct < pct:
+                        continue                # older than this parent: a recycled ppid
+                    seen.add(k.pid)
+                    out.append(k)
+                    nxt.append((k, kct))
+            level = nxt
+        return out
 
     def target_alive() -> bool:
         try:
@@ -678,7 +972,7 @@ def _kill_tree(target: Proc, procs: Sequence[Proc],
         if why:
             return refuse(f"the live target {target.pid} no longer qualifies ({why})")
         frozen_pids: set[int] = set()
-        for k in live.children(recursive=True):        # deny-checked BEFORE the first freeze
+        for k in tree_below(live, tp.create_time):     # deny-checked BEFORE the first freeze
             bad = bad_member(k)
             if bad:
                 return refuse(f"descendant {k.pid} may not be stopped ({bad})")
@@ -688,13 +982,7 @@ def _kill_tree(target: Proc, procs: Sequence[Proc],
         for _round in range(5):
             if clock() - t0 > FREEZE_MAX_S:
                 return refuse(f"the freeze took over {FREEZE_MAX_S:.0f}s")
-            fresh = []
-            for k in live.children(recursive=True):
-                if k.pid in frozen_pids:
-                    continue
-                if float(k.create_time()) < target.create_time:
-                    continue
-                fresh.append(k)
+            fresh = [k for k in tree_below(live, tp.create_time) if k.pid not in frozen_pids]
             if not fresh:
                 break
             for k in fresh:                             # identified BEFORE it is suspended
@@ -960,7 +1248,8 @@ class Pass:
     def task_rule(self, rule: Rule) -> None:
         assert rule.task is not None
         mine = [p for p in self.procs if matches(rule, p) and not denied(p)
-                and intake_under_its_task(p, self.procs)]
+                and intake_under_its_task(p, self.procs)
+                and scheduler_owned(p, self.procs, self.box, rule.task) is None]
         running = self.box.task_running(rule.task)
         if running is None:
             self.red(rule.key, "UNMEASURED", f"the scheduler would not say whether {rule.task} "
@@ -1019,7 +1308,8 @@ class Pass:
         self.intake_missed_growth(oldest, age, budget, "stopped past its budget", ok)
 
     def gate_rule(self, rule: Rule) -> None:
-        roots = [p for p in self.procs if matches(rule, p) and not denied(p)]
+        roots = [p for p in self.procs if matches(rule, p) and not denied(p)
+                 and scheduler_owned(p, self.procs, self.box, rule.task) is None]
         live_gate: set[str] = set()
         for root in roots:
             tree = [root, *descendants(root.pid, self.procs)]
@@ -1179,10 +1469,13 @@ def _append_ledger(path: Path, rows: Iterable[Mapping[str, Any]]) -> None:
             fh.write(json.dumps(r, sort_keys=True) + "\n")
 
 
-def attempts_from_ledger(ledger: Path, since: float) -> dict[str, list[float]] | None:
-    """Rebuild the attempt count from the ledger (and its rotated `.1`), or None when it cannot
-    be read. Absent is an empty history (an attempt always writes a row); a torn LAST line is a
-    crash mid-append and is skipped; any other unparseable line is an unreadable ledger."""
+def attempts_from_ledger(ledger: Path, since: float, bad: list[int] | None = None
+                         ) -> dict[str, list[float]] | None:
+    """Rebuild the attempt count from the ledger (and its rotated `.1`), or None when the file
+    itself cannot be read. Absent is an empty history (an attempt always writes a row). A torn or
+    unparseable LINE is skipped and counted into `bad` (audit should-fix of 5b3504f50): one bad
+    line must not throw away every good attempt row around it -- that would read as no history
+    and stop every rule, or (worse, before v2) as a reset cap."""
     out: dict[str, list[float]] = {}
     for path in (ledger.with_suffix(ledger.suffix + ".1"), ledger):
         try:
@@ -1191,17 +1484,17 @@ def attempts_from_ledger(ledger: Path, since: float) -> dict[str, list[float]] |
             continue
         except (OSError, ValueError):
             return None
-        for i, line in enumerate(lines):
+        for line in lines:
             if not line.strip():
                 continue
             try:
                 r = json.loads(line)
             except ValueError:
-                if i == len(lines) - 1:
-                    continue
-                return None
+                r = None
             if not isinstance(r, dict):
-                return None
+                if bad is not None:
+                    bad.append(1)
+                continue
             ts = r.get("ts")
             if not isinstance(ts, (int, float)) or isinstance(ts, bool):
                 ts = _parse_iso(r.get("at"))
@@ -1263,30 +1556,67 @@ def run(*, apply: bool = True, box: Box | None = None, now: float | None = None,
     b = box or real_box()
     t = datetime.now(UTC).timestamp() if now is None else now
     cutoff = t - 2 * 86400
+
+    def clamp(xs: Iterable[float]) -> list[float]:
+        # THE CLOCK MAY HAVE MOVED BACK (audit should-fix of 5b3504f50): a future-dated attempt
+        # is still an attempt and counts toward the cap, but at `now`, so a backward clock cannot
+        # park four restarts in tomorrow and leave today empty.
+        return sorted(min(float(x), t) for x in xs)
+
+    # THE STATE DIRECTORY MUST BE ADMIN-ONLY (audit HOLD of 5b3504f50). On the box, a state the
+    # bridge or an agent could write would plant orphan targets, STALLED baselines, dead-owner
+    # clocks and a reset cap. If it is not provably writable by Administrators/SYSTEM alone, the
+    # pass reads no state, keeps no state, and -- because an unprovable store is an uncapped one
+    # -- acts on nothing.
+    insecure = None
+    for probe in (state.parent, state, ledger):
+        why = b.secure(probe)
+        if why is not None:
+            insecure = why
+            break
     status, prior = _read_state(state)
     history_known = True
     history_source = "state"
-    if status == "ok":
-        attempts = _attempts_from(prior.get("attempts"))
+    attempts: dict[str, list[float]] = {}
+    if insecure is not None:
+        history_known = False
+        history_source = "INSECURE"
+        prior = {}
+    else:
+        # MAX(STATE, LEDGER), never the state alone (audit HOLD of 5b3504f50): a state that erased
+        # attempts cannot lower the count below what the admin-only ledger proves. A line the
+        # ledger cannot parse is skipped, not fatal.
+        state_attempts = _attempts_from(prior.get("attempts")) if status == "ok" else {}
         legacy = [float(x) for x in (prior.get("restarts") or [])
                   if isinstance(x, (int, float)) and not isinstance(x, bool)]
         if legacy:
-            attempts.setdefault("workflow_gate_restart", [])
-            attempts["workflow_gate_restart"] = sorted(
-                set(attempts["workflow_gate_restart"]) | set(legacy))
-    else:
-        rebuilt = attempts_from_ledger(ledger, cutoff)
-        history_source = "ledger" if rebuilt is not None else "UNREADABLE"
-        if status == "absent" and rebuilt is not None and not rebuilt:
-            history_source = "fresh"
-        history_known = rebuilt is not None
-        attempts = rebuilt or {}
+            state_attempts.setdefault("workflow_gate_restart", [])
+            state_attempts["workflow_gate_restart"] += legacy
+        torn: list[int] = []
+        ledgered_attempts = attempts_from_ledger(ledger, cutoff, torn)
+        if ledgered_attempts is None:
+            history_known, history_source = False, "UNREADABLE"
+        else:
+            for src in (state_attempts, ledgered_attempts):
+                for k, v in src.items():
+                    attempts.setdefault(k, [])
+                    attempts[k] = clamp(set(attempts[k]) | set(v))
+            if status == "ok":
+                history_source = "state+ledger"
+            elif ledgered_attempts:
+                history_source = "ledger"
+            elif status == "absent":
+                history_source = "fresh"
+            else:
+                history_known, history_source = False, "UNREADABLE"
+            if torn and history_known:
+                history_source = f"{history_source}+{len(torn)}_torn_lines_skipped"
     prior_report = _read_json(report)
     prior_report = prior_report if isinstance(prior_report, dict) else {}
     paged_once: dict[str, str] = {}
-    for src in (prior_report.get("paged_once"), prior.get("paged_once")):
-        if isinstance(src, dict):
-            paged_once.update({str(k): str(v) for k, v in src.items()})
+    for po_src in (prior_report.get("paged_once"), prior.get("paged_once")):
+        if isinstance(po_src, dict):
+            paged_once.update({str(pk): str(pv) for pk, pv in po_src.items()})
     if isinstance(prior.get("gave_up_paged"), str):          # the pre-v2 key
         paged_once.setdefault("workflow_gate_restart:CAPPED", prior["gave_up_paged"])
 
@@ -1302,7 +1632,10 @@ def run(*, apply: bool = True, box: Box | None = None, now: float | None = None,
                 "paged_once": paged_once, "missed_growth": mg}
 
     def persist(p: Pass, row: dict[str, Any]) -> bool:
-        """BEFORE the action: the state AND the ledger. Either one is enough to count it."""
+        """BEFORE the action: the admin-only state AND ledger. Either one is enough to count it.
+        An insecure store is never written (and the pass never reaches here: it does not act)."""
+        if insecure is not None:
+            return False
         wrote = False
         try:
             _write_json(state, snapshot(p, final=False))
@@ -1318,7 +1651,11 @@ def run(*, apply: bool = True, box: Box | None = None, now: float | None = None,
 
     p = Pass(b, prior, t, apply, attempts=attempts, history_known=history_known,
              persist=persist)
-    if not history_known:
+    if insecure is not None:
+        p.red("*", "REFUSED", f"the state store is not provably admin-only ({insecure}): a "
+              f"writable store could plant targets or reset the cap, so nothing is read, kept "
+              f"or stopped", history="INSECURE")
+    elif not history_known:
         p.red("*", "REFUSED", f"the state ({status}) and the ledger are both unreadable: no "
               f"action is taken until the attempt history can be read", history="UNREADABLE")
     if not b.windows and box is None:
@@ -1346,11 +1683,11 @@ def run(*, apply: bool = True, box: Box | None = None, now: float | None = None,
     day = _day(t)
     keep: list[Mapping[str, Any]] = []
     for r in pages:
-        k = _once_key(r)
-        if k is None:
+        once = _once_key(r)
+        if once is None:
             keep.append(r)
-        elif paged_once.get(k) != day:
-            paged_once[k] = day
+        elif paged_once.get(once) != day:
+            paged_once[once] = day
             keep.append(r)
     pages = keep
     doc["paged"] = None
@@ -1364,14 +1701,16 @@ def run(*, apply: bool = True, box: Box | None = None, now: float | None = None,
                             str(res)}
         except Exception as exc:          # a pager failure is RED, never a lost pass
             doc["paged"] = {"rows": len(pages), "error": f"{type(exc).__name__}: {exc}"[:200]}
-    try:
-        _write_json(state, snapshot(p, final=True))
-    except OSError as exc:
-        doc["state_write_error"] = f"{type(exc).__name__}: {exc}"[:200]
-        doc["status"] = "RED"
-    _write_json(report, doc)
-    with contextlib.suppress(OSError):
-        _append_ledger(ledger, [r for r in red if id(r) not in p.ledgered])
+    doc["state_dir_secure"] = insecure is None
+    if insecure is None:
+        try:
+            _write_json(state, snapshot(p, final=True))
+        except OSError as exc:
+            doc["state_write_error"] = f"{type(exc).__name__}: {exc}"[:200]
+            doc["status"] = "RED"
+        with contextlib.suppress(OSError):
+            _append_ledger(ledger, [r for r in red if id(r) not in p.ledgered])
+    _write_json(report, doc)          # the report ALWAYS lands in the repo, read by nothing here
     return doc
 
 
