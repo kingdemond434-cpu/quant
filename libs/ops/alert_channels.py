@@ -133,15 +133,19 @@ def _redact(text: str, *secrets: object, limit: int = _DETAIL_MAX,
     text that some upstream already cut mid-secret. The prefix strip may eat a few innocent tail
     characters that happen to spell a secret's first letters; a shorter detail is the cheap side.
     """
+    # A SECRET SHORTER THAN 4 CHARACTERS IS NEVER REDACTED, deliberately: replacing "x" or "1"
+    # (a chat_id, a test token) would shred every detail, and no real credential here -- an ntfy
+    # topic, a bot token, an hc URL, a password -- is that short. Pinned by a test.
     keys = sorted({str(x) for x in secrets if x and len(str(x)) >= 4}, key=len, reverse=True)
     for k in keys:
         text = text.replace(k, mask)
     text = text[:limit]
-    for k in keys:
-        for n in range(min(len(k) - 1, len(text)), 0, -1):
-            if text.endswith(k[:n]):
-                text = text[:-n] + mask
-                break
+    # the LONGEST trailing prefix across ALL keys, not the first key that matches: a short match
+    # on one key must not leave a longer prefix of another in place
+    edge = max((n for k in keys for n in range(min(len(k) - 1, len(text)), 0, -1)
+                if text.endswith(k[:n])), default=0)
+    if edge:
+        text = text[:-edge] + mask
     return text
 
 
@@ -309,14 +313,8 @@ def send_all(title: str, body: str, *, config: Path = _CONFIG,
     if aud == DESK and not canary and (desk_row or resolved):
         where = _caller()
         k = key or where
-        if resolved:
-            desk_err = clear_desk_alert(k, path=desk_alerts_path(ledger))
-        else:
-            desk_err = record_desk_alert(k, title, source=source or where.split(":", 1)[0],
-                                         public_title=public_title,
-                                         path=desk_alerts_path(ledger))
-        if desk_err:                            # surfaced: ledgered and in the result
-            _log("desk_alerts", False, desk_err, title, ledger)
+        desk_err = desk_row_write(k, title, source=source or where.split(":", 1)[0],
+                                  public_title=public_title, resolved=resolved, ledger=ledger)
     extra: dict[str, Any] = {"desk_alert_error": desk_err} if desk_err else {}
     channels = load_channels(config)
     if not channels:
@@ -528,6 +526,20 @@ def record_desk_alert(key: str, title: str, *, source: str = "", public_title: b
 def clear_desk_alert(key: str, *, path: Path = _DESK_ALERTS) -> str | None:
     """Drop a resolved alert's row. Never raises; returns the error text, None on success."""
     return _upsert_desk(path, lambda rows: rows.pop(key, None) is not None)
+
+
+def desk_row_write(key: str, title: str, *, source: str = "", public_title: bool = False,
+                   resolved: bool = False, ledger: Path = _LEDGER) -> str | None:
+    """Record (or, `resolved=True`, clear) a desk row in the artifact beside `ledger`, and LEDGER
+    a failure (channel "desk_alerts", ok false) -- the one path send_all and any caller that
+    refreshes a row outside send_all (box_heartbeat) share, so no failed write is silent. Never
+    raises; returns the error text, None on success."""
+    path = desk_alerts_path(ledger)
+    err = (clear_desk_alert(key, path=path) if resolved else
+           record_desk_alert(key, title, source=source, public_title=public_title, path=path))
+    if err:
+        _log("desk_alerts", False, err, title, ledger)
+    return err
 
 
 def fresh_desk_alerts(*, path: Path = _DESK_ALERTS, hours: float = DESK_ALERT_FRESH_H,

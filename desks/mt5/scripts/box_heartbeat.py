@@ -235,14 +235,22 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
         # STILL FAILING: page once (above), but REFRESH the desk row on every failing run. The row
         # holds the RED only while `last_seen` is inside DESK_ALERT_FRESH_H, so writing it on the
         # transition alone let a box failing for more than a day age OUT of RED while still down.
-        with contextlib.suppress(Exception):
-            from libs.ops.alert_channels import record_desk_alert
-            record_desk_alert(DESK_ALERT_KEY, page_title(doc["failing"]),
-                              source="box_heartbeat", public_title=True)
+        # A failed write is LEDGERED (channel "desk_alerts", ok false) exactly as send_all does,
+        # and recorded on this run's doc -- never swallowed.
+        try:
+            from libs.ops.alert_channels import desk_row_write
+            err = desk_row_write(DESK_ALERT_KEY, page_title(doc["failing"]),
+                                 source="box_heartbeat", public_title=True)
+        except Exception as exc:                # an import failure is reported, never raised
+            err = f"{type(exc).__name__}: {exc}"[:200]
+        doc["desk_row"] = {"status": "ERROR", "detail": err} if err else {"status": "REFRESHED"}
     if (doc["verdict"] == "OK" and prev.get("verdict") == "FAIL" and not dry_run):
-        with contextlib.suppress(Exception):    # recovered: stop holding the desk RED
-            from libs.ops.alert_channels import clear_desk_alert
-            clear_desk_alert(DESK_ALERT_KEY)   # same (default) artifact send_all wrote
+        try:                                    # recovered: stop holding the desk RED
+            from libs.ops.alert_channels import desk_row_write
+            err = desk_row_write(DESK_ALERT_KEY, "recovered", resolved=True)   # ledgers a failure
+        except Exception as exc:
+            err = f"{type(exc).__name__}: {exc}"[:200]
+        doc["desk_row"] = {"status": "ERROR", "detail": err} if err else {"status": "CLEARED"}
     doc["since"] = (prev.get("since") if doc["verdict"] == prev.get("verdict") and prev.get("since")
                     else doc["at"])
     out.parent.mkdir(parents=True, exist_ok=True)

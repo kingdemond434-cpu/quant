@@ -120,6 +120,28 @@ def ledger_block() -> str:
 _DESK_ROWS = 12
 
 
+def _desk_alerts_malformed(p: Path) -> str | None:
+    """Why the artifact cannot be read as a desk alert list, or None when it is well formed."""
+    from datetime import datetime
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except FileNotFoundError:
+        return "is absent"
+    except (OSError, ValueError) as exc:
+        return f"is unreadable ({type(exc).__name__})"
+    rows = doc.get("alerts") if isinstance(doc, dict) else None
+    if not isinstance(rows, list):
+        return "has no alerts list"
+    for i, r in enumerate(rows):
+        if not isinstance(r, dict) or not str(r.get("key") or "").strip():
+            return f"row {i} has no key"
+        try:
+            datetime.fromisoformat(str(r.get("last_seen")))
+        except ValueError:
+            return f"row {i} ({r['key']}) has no readable last_seen"
+    return None
+
+
 def desk_alerts_block(path: Path | None = None) -> str:
     """DESK PAGES MUST REACH A READER ON THIS SIDE TOO (2026-10-29, audit SF2 on a072c7d7b).
 
@@ -133,13 +155,14 @@ def desk_alerts_block(path: Path | None = None) -> str:
     """
     from libs.ops import alert_channels as ac
     p = path or (ROOT / "desks" / "mt5" / "reports" / "DESK_ALERTS.json")
-    if p.exists() and not ac.load_desk_alerts(p):
-        try:
-            json.loads(p.read_text("utf-8"))
-        except (OSError, ValueError) as exc:
-            # unreadable is UNMEASURED, never "no desk alert" (L1.41)
-            return (f"\n[DESK ALERTS] UNMEASURED -- {p.name} unreadable "
-                    f"({type(exc).__name__}). This is NOT 'no desk alert'.")
+    # ABSENT OR MALFORMED IS UNMEASURED, NEVER "RED 0" (L1.41; audit MF on 7cb207290). The
+    # tolerant loader returns {} for a missing file, a parse error AND a wrongly shaped document
+    # alike, so it cannot be asked; this reads the file itself and only a valid, correctly shaped
+    # document -- {"alerts": [ {key, last_seen, ...}, ... ]} -- may report zero.
+    why = _desk_alerts_malformed(p)
+    if why:
+        return (f"\n[DESK ALERTS] UNMEASURED -- {p.name} {why}. This is NOT 'no desk alert': "
+                "desk pages on this side cannot be read.")
     rows = ac.fresh_desk_alerts(path=p)
     if not rows:
         return (f"\n[DESK ALERTS] RED 0 -- no desk alert seen in the last "

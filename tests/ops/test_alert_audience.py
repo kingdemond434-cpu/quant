@@ -416,6 +416,10 @@ _NTFY_URL = re.compile(r"^\s*(?:https?://)?ntfy\.sh(?:[/:]|$)")
 _NTFY_HOST = r"(?<![\w./-])(?:https?://)?ntfy\.sh(?![\w-])"
 _NTFY_CMD = re.compile(r"(?:^|[\s;&|(\"'`])(?:curl|wget|http|Invoke-RestMethod|Invoke-WebRequest|"
                        r"irm|iwr)\b.*?" + _NTFY_HOST)
+#: an ntfy host held in a VARIABLE (audit SF4, 7cb207290): `H = "ntfy.sh."`, `f"{p}://ntfy.sh"`,
+#: `"//www.NTFY.sh"` -- a URL piece with no whitespace, later joined into a urllib post. Prose
+#: assigned to a variable (a HELP line) has spaces and is not a host.
+_NTFY_BARE = re.compile(r"(?<![\w-])ntfy\.sh(?![\w-])", re.IGNORECASE)
 #: calls that run a STRING as a shell command: any ntfy.sh host in such a string argument is a post
 _SHELL_CALLS = frozenset({"system", "popen", "run", "call", "check_call", "check_output",
                           "Popen", "getoutput", "getstatusoutput"})
@@ -452,6 +456,22 @@ def _ntfy_literals(tree: ast.AST) -> list[int]:
             continue
         if _NTFY_URL.search(text) or _NTFY_CMD.search(text):
             hits.append(node.lineno)
+    for node in ast.walk(tree):                 # a host or URL piece held in a variable
+        if not isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign, ast.NamedExpr,
+                                 ast.keyword)):
+            continue
+        value = node.value
+        for sub in ast.walk(value) if value is not None else ():
+            if isinstance(sub, ast.JoinedStr):
+                piece = "".join(v.value if isinstance(v, ast.Constant)
+                                and isinstance(v.value, str) else "\0" for v in sub.values)
+            elif isinstance(sub, ast.Constant) and isinstance(sub.value, str):
+                piece = sub.value
+            else:
+                continue
+            piece = piece.strip()
+            if piece and not re.search(r"\s", piece) and _NTFY_BARE.search(piece):
+                hits.append(sub.lineno)
     for node in ast.walk(tree):                 # os.system / subprocess(..., shell) strings
         if not isinstance(node, ast.Call):
             continue
@@ -648,3 +668,21 @@ def test_panel_spend_line_and_brain_page_are_desk() -> None:
     code = "\n".join(ln for ln in fn.splitlines() if not ln.lstrip().startswith("#"))
     assert 'audience="desk"' in code and "curl " not in code and "ntfy" not in code
     assert ".brain_page_stamps" in code and "return 0" in code
+
+
+def test_the_direct_post_fence_sees_a_bare_host_held_in_a_python_variable() -> None:
+    """Audit SF4 (7cb207290): a variable holding the bare host (no slash), later joined into a
+    urllib post, slipped past the anchored literal rule. Each assignment below is caught; prose
+    assigned to a variable (it has spaces) is not."""
+    src = ('import urllib.request\n'
+           'H = "ntfy.sh."\n'                                                         # 2
+           'BASE = f"{scheme}://ntfy.sh"\n'                                           # 3
+           'MIRROR: str = "//www.NTFY.sh"\n'                                          # 4
+           'cfg = dict(host="ntfy.sh?x=1")\n'                                         # 5
+           'urllib.request.Request("https://" + H + "/" + t, data=b"x")\n'
+           'HELP = "subscribe in the ntfy app or at ntfy.sh"\n'                       # prose
+           'OTHER = "send_ntfy.sh"\n')                                                # a filename
+    assert _ntfy_literals(ast.parse(src)) == [2, 3, 4, 5]
+    old = re.compile(r"^\s*(?:https?://)?ntfy\.sh(?:[/:]|$)")                  # the v3 rule
+    assert not any(old.search(x) for x in ("ntfy.sh.", "\0://ntfy.sh", "//www.NTFY.sh",
+                                           "ntfy.sh?x=1"))

@@ -492,7 +492,8 @@ def test_the_vps_brain_brief_carries_fresh_desk_alerts_as_red(tmp_path: Path) ->
     sys.path.insert(0, str(ROOT))
     import scripts.carryover_brief as cb
     path = tmp_path / "DESK_ALERTS.json"
-    assert "RED 0" in cb.desk_alerts_block(path)                   # absent: nothing recorded
+    out = cb.desk_alerts_block(path)                               # absent: UNMEASURED, never 0
+    assert "UNMEASURED" in out and "RED 0" not in out and "is absent" in out
     ac.record_desk_alert("brain_down", "WARNING Quant desk: brain_down", source="run_alerts",
                          public_title=True, path=path)
     ac.record_desk_alert("ops/backup_state.py:send", "Restore drill STALE on box", path=path)
@@ -659,3 +660,92 @@ def test_page_principal_mirrors_to_hc_fail_from_the_heartbeat_url(
     ac.page_principal("needs you", "b", config=_cfg(tmp_path, ["ntfy", "hc"]), ledger=led,
                       ntfy_secret=tmp_path / "no_ntfy.json", heartbeat=hb)
     assert got == [] and ("hc", False) in quiet                    # registry hc: /fail, once
+
+
+
+# --- v4 (audit HOLD on 7cb207290) ----------------------------------------------------------------
+
+@pytest.mark.parametrize("text, why", [
+    ("[]", "has no alerts list"),
+    ('""', "has no alerts list"),
+    ("{}", "has no alerts list"),
+    ('{"alerts": "x"}', "has no alerts list"),
+    ('{"alerts": {"k": {}}}', "has no alerts list"),
+    ('{"alerts": [{"last_seen": "2026-10-29T00:00:00+00:00"}]}', "row 0 has no key"),
+    ('{"alerts": [{"key": "", "last_seen": "2026-10-29T00:00:00+00:00"}]}', "row 0 has no key"),
+    ('{"alerts": ["k"]}', "row 0 has no key"),
+    ('{"alerts": [{"key": "k"}]}', "has no readable last_seen"),
+    ('{"alerts": [{"key": "k", "last_seen": "soon"}]}', "has no readable last_seen"),
+    ("not json", "is unreadable"),
+    ("", "is unreadable"),
+])
+def test_a_malformed_desk_alerts_file_is_unmeasured_never_red_0(
+        tmp_path: Path, text: str, why: str) -> None:
+    """MF (7cb207290): the tolerant loader reads every one of these as {} and the brief printed
+    "RED 0 -- no desk alert seen". A shape the reader cannot trust is UNMEASURED."""
+    sys.path.insert(0, str(ROOT))
+    import scripts.carryover_brief as cb
+    path = tmp_path / "DESK_ALERTS.json"
+    path.write_text(text, "utf-8")
+    out = cb.desk_alerts_block(path)
+    assert "UNMEASURED" in out and why in out and "RED 0" not in out, out
+
+
+def test_only_a_valid_empty_or_stale_file_reads_red_0(tmp_path: Path) -> None:
+    sys.path.insert(0, str(ROOT))
+    import scripts.carryover_brief as cb
+    path = tmp_path / "DESK_ALERTS.json"
+    path.write_text(json.dumps({"schema": "desk_alerts/1", "alerts": []}), "utf-8")
+    assert "RED 0" in cb.desk_alerts_block(path)
+    old = (datetime.now(tz=UTC) - timedelta(hours=ac.DESK_ALERT_FRESH_H + 2)).isoformat()
+    path.write_text(json.dumps({"alerts": [{"key": "k", "last_seen": old}]}), "utf-8")
+    assert "RED 0" in cb.desk_alerts_block(path)                   # aged out: a real zero
+    ac.record_desk_alert("k2", "t", path=path)                     # the writer's own shape
+    assert "RED 1" in cb.desk_alerts_block(path)
+
+
+def test_redact_strips_the_longest_edge_match_across_all_keys() -> None:
+    """SF1: the first key with ANY edge match used to win, so a 1-char match on the longer key
+    left a 4-char prefix of the shorter one at the cut."""
+    long_key, short_key = "Eabcdefghijklmnop", "topSECRET"
+    text = "x" * 10 + "topSE"
+    out = ac._redact(text, long_key, short_key, mask="<T>")
+    assert out == "x" * 10 + "<T>" and "topS" not in out
+
+
+def test_a_secret_shorter_than_4_chars_is_never_redacted() -> None:
+    """SF2, pinned: masking "x" or "12" would shred every detail, and no real credential here
+    is that short -- so short secrets pass through, whole or at the edge."""
+    assert ac._redact("chat 123 failed abc", "123", "abc") == "chat 123 failed abc"
+    assert ac._redact("ends with ab", "abc") == "ends with ab"
+    assert ac._redact("token abcd here", "abcd") == "token <redacted> here"
+
+
+def test_box_heartbeat_ledgers_a_failed_row_refresh(tmp_path: Path,
+                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    """SF3: the refresh error used to vanish inside contextlib.suppress; it is ledgered as a
+    failed desk_alerts row, exactly as send_all does, and recorded on the heartbeat doc."""
+    sys.path.insert(0, str(ROOT / "desks" / "mt5" / "scripts"))
+    import box_heartbeat as hb
+    monkeypatch.chdir(tmp_path)
+
+    def fake_send(t: str, b: str, **k: Any) -> dict[str, Any]:
+        return {"delivered": 1}
+
+    def failing(*_a: Any, **_k: Any) -> str:
+        return "desk alert write failed (DESK_ALERTS.json): PermissionError: open"
+
+    monkeypatch.setattr(ac, "send_all", fake_send)
+    monkeypatch.setattr(ac, "record_desk_alert", failing)
+    monkeypatch.setattr(ac, "clear_desk_alert", failing)
+    out = tmp_path / "BOX_HEARTBEAT.json"
+    fail = {"at": "x", "checks": {"disk": {"fail": True}}, "failing": ["disk"], "verdict": "FAIL"}
+    hb.run(out=out, secrets=(tmp_path / "absent.json",), reading=dict(fail))
+    doc = hb.run(out=out, secrets=(tmp_path / "absent.json",), reading=dict(fail))
+    assert doc["desk_row"]["status"] == "ERROR" and "PermissionError" in doc["desk_row"]["detail"]
+    doc = hb.run(out=out, secrets=(tmp_path / "absent.json",),
+                 reading={"at": "y", "checks": {}, "failing": [], "verdict": "OK"})
+    assert doc["desk_row"]["status"] == "ERROR"                      # a failed clear too
+    rows = [json.loads(ln) for ln in
+            (tmp_path / "data" / "alert_delivery.jsonl").read_text("utf-8").splitlines()]
+    assert [(r["channel"], r["ok"]) for r in rows] == [("desk_alerts", False)] * 2
