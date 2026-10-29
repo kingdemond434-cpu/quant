@@ -68,6 +68,23 @@ function Git-In-Repo {
     return $LASTEXITCODE
 }
 
+# OWNERSHIP AND CREDENTIAL, BEFORE THE FIRST GIT CALL (2026-10-06). See GitBoxEnv.ps1: the box
+# refused every git call for "dubious ownership" and had no credential a scheduled task could use,
+# and the log said only "git add failed rc=128" and "push failed". Both are now set for this
+# process (safe.directory = this repo; GITHUB_TOKEN as a header when the machine has one) and a
+# missing credential is named BLOCKED_AUTH instead of a bare exit code.
+. (Join-Path $PSScriptRoot "GitBoxEnv.ps1")
+$script:GitEnv = Initialize-BoxGitEnv -RepoRoot $RepoRoot
+$script:BlockedAuth = $false
+Write-SyncLog ("git env: safe.directory={0} auth={1} git={2}" -f $script:GitEnv.SafeDirectory,
+               $script:GitEnv.Auth, $script:GitEnv.GitVersion)
+if ($script:GitEnv.GitTooOldForEnvSafeDirectory) {
+    Write-SyncLog (("WARN: '{0}' is older than {1}: it may ignore safe.directory from the environment, " +
+                    "and the ownership refusal (rc=128) would come straight back. Upgrade Git for " +
+                    "Windows or run install_adopt_release_task.ps1 (system safe.directory).") -f
+                   $script:GitEnv.GitVersion, $script:MinGitForEnvSafeDirectory)
+}
+
 # YIELD TO AN ADOPTION IN PROGRESS (2026-09-08). MT5-AdoptRelease rewrites the tree in place and
 # commits by name; this pass would `git checkout -- <path>` its dirty incoming paths (undoing the
 # adoption's writes), race it for `.git/index.lock`, and sweep its chunk-staged code into a
@@ -414,6 +431,7 @@ function Push-Logged {
         foreach ($l in @($out | Where-Object { $_ -match '\S' } | Select-Object -Last 12)) {
             Write-SyncLog ("  push said: " + $l.Trim())
         }
+        if (Test-GitAuthFailure -Lines $out) { $script:BlockedAuth = $true }
     }
     return $rc
 }
@@ -625,6 +643,13 @@ function Publish-StateOnto {
                            $Branch, $commit.Substring(0, 12), $n)
             return $true
         }
+        if ($script:BlockedAuth) {
+            # Re-fetching cannot mint a credential, so the other two attempts would only repeat it.
+            Write-SyncLog (("BLOCKED_AUTH: the push needs a credential this unattended task cannot get " +
+                            "(auth={0}). Set GITHUB_TOKEN as a MACHINE variable on the box (setx /M); " +
+                            "the next slot publishes the state.") -f $script:GitEnv.Auth)
+            return $false
+        }
         Write-SyncLog "publish: push of $($commit.Substring(0, 12)) failed rc=$rc (attempt $try); re-fetching and re-basing onto origin's tip"
     }
     Write-SyncLog "ABORT: box state could not be published after 3 attempts"
@@ -826,6 +851,9 @@ $reportPaths = @(
     # the login fence's own verdict (2026-10-20): which state paths it refused, by key name
     # only, so a false positive that stops a file publishing is visible off the box
     "desks/mt5/reports/LOGIN_FENCE.json",
+    # the box backlog drain's census (2026-10-06, libs/ops/box_backlog.py, classify-only on the
+    # box): counts, code PATH NAMES and withheld names only -- never file contents, never a value
+    "desks/mt5/reports/BOX_BACKLOG.json",
     # the judge speed switch's daily drift monitor (2026-10-28): identity of the fast families
     # against the original loops on this box's pandas/numpy, read-only; no credential
     "desks/mt5/reports/VECTOR_FAMILIES_CHECK.json",
@@ -906,8 +934,46 @@ if ($script:InboundAdoptionRequired) {
 $branch = (& git -C $RepoRoot rev-parse --abbrev-ref HEAD).Trim()
 $ok = Publish-StateOnto -RepoRoot $RepoRoot -Branch $branch -Paths $existing
 if (-not $ok) {
+    if ($script:BlockedAuth) {
+        # A NAMED STATE, NOT rc=1: Task Scheduler's LastTaskResult reads 3, and the log says why.
+        Write-SyncLog "ABORT: BLOCKED_AUTH -- box state did not reach origin/$branch (no usable git credential)"
+        exit 3
+    }
     Write-SyncLog "ABORT: box state did not reach origin/$branch this pass; the next slot retries"
     exit 1
 }
 Write-SyncLog ("shadow state synced to origin/{0} (state blobs onto origin's tip): {1} path(s)" -f $branch, $existing.Count)
+
+# DRAIN THE BACKLOG, ONCE A DAY, ONLY ONCE THE CREDENTIAL HAS JUST WORKED (2026-10-06). The box's
+# branch was 823 commits ahead of origin and is never pushed whole (HTTP 408, #181). State-only
+# commits are superseded by the publish above; libs/ops/box_backlog.py classifies any box-only
+# CODE (it can lift it to a review branch box/backlog-<stamp> with --push, never the live branch,
+# but the box runs it classify-only until the audit clears that) and reports the counts in
+# BOX_BACKLOG.json, which the next publish carries ($reportPaths, so the login fence
+# and the allowlist judge it like every other report). It inherits this process's git environment.
+$script:BacklogRel = "desks/mt5/reports/BOX_BACKLOG.json"
+$backlogFull = Join-Path $RepoRoot ($script:BacklogRel -replace "/", "\")
+$due = -not (Test-Path -LiteralPath $backlogFull) -or
+       (((Get-Date) - (Get-Item -LiteralPath $backlogFull).LastWriteTime).TotalHours -ge 24)
+if ($due) {
+    $py = Join-Path $RepoRoot ".venv\Scripts\python.exe"
+    # CLASSIFY-ONLY (audit HOLD on #210, 2026-10-06): the repository is public, so the first box
+    # runs only measure and report the backlog. Adding --push here waits on the audit's clearance.
+    $pyArgs = @("-m", "libs.ops.box_backlog")
+    if (-not (Test-Path -LiteralPath $py)) { $py = "py"; $pyArgs = @("-3") + $pyArgs }
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        Push-Location $RepoRoot
+        $summary = @(& $py @pyArgs 2>&1 | ForEach-Object { "$_" })
+        $drainRc = $LASTEXITCODE
+    } catch {
+        $summary = @("could not start: " + $_.Exception.Message); $drainRc = 127
+    } finally {
+        Pop-Location
+        $ErrorActionPreference = $prev
+    }
+    foreach ($l in @($summary | Where-Object { $_ -match '\S' } | Select-Object -Last 3)) { Write-SyncLog ("backlog drain: " + $l.Trim()) }
+    if ($drainRc -ne 0) { Write-SyncLog "backlog drain exited rc=$drainRc (state publish above is unaffected)" }
+}
 exit 0
