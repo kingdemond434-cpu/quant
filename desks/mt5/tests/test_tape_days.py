@@ -65,7 +65,7 @@ def test_newest_days_are_dates_not_names(tmp_path):
         _compact(d, day)
     for day in ("2026-10-27", "2026-10-28", "2026-10-29"):
         _dashed(d, day)
-    files = tape_days.day_files(d, last=2)
+    files = tape_days.day_paths(d, last=2)
     assert [f.name for f in files] == ["2026-10-28.parquet", "2026-10-29.parquet"]
     t = tape_days.recent_quotes(d, 2)
     assert t is not None and t.index.min().date().isoformat() == "2026-10-28"
@@ -187,3 +187,17 @@ def test_orthogonal_sweep_reader_sees_the_fresh_tape(tmp_path, monkeypatch):
     assert t is not None
     assert t.index.max().date().isoformat() == "2026-10-29"
     assert {"bid", "ask"} <= set(t.columns)
+
+
+def test_dedupe_survives_a_writer_with_float32_quotes_and_string_stamps(tmp_path):
+    """Auditor S4: dtypes are normalised before the dedupe, so duplicates cannot hide in them."""
+    d = tmp_path / "GBPUSD"
+    t0 = int(pd.Timestamp("2026-10-29", tz="UTC").value // 1_000_000)
+    ms = [t0 + i for i in range(50)]
+    _write(d, "2026-10-29.parquet", _frame_at(ms, bid=1.25), True)
+    odd = _frame_at(ms, bid=1.25).astype({"bid": "float32", "ask": "float32"})
+    odd["time_msc"] = odd["time_msc"].astype(str)
+    _write(d, "20261029.parquet", odd, False)
+    t = tape_days.recent_quotes(d, 30)
+    assert t is not None and len(t) == 50
+

@@ -166,6 +166,9 @@ def _point(tmp_path, monkeypatch, universe, cov) -> dict:
     monkeypatch.setattr(tl, "UNIVERSE", tmp_path / "universe.json")
     monkeypatch.setattr(tl, "JUDGE_COVERAGE", tmp_path / "cov.json")
     monkeypatch.setattr(tl, "OUT", tmp_path / "TAPE_LIVENESS.json")
+    ticks = tmp_path / "ticks"
+    _probe_files(ticks, ["2026-10-29.parquet", "20261029.parquet"])
+    monkeypatch.setattr(tl, "TICKS", ticks)
     return state
 
 
@@ -201,3 +204,49 @@ def test_a_failed_replace_leaves_no_temp_file(tmp_path, monkeypatch):
     monkeypatch.setattr(tl.os, "replace", deny)
     tl.write_report({"verdict": "RED"}, tmp_path / "TAPE_LIVENESS.json")
     assert not list(tmp_path.iterdir())
+
+
+def test_a_whole_class_dead_in_its_core_session_is_red():
+    """Auditor S1, live on 10-29: every equity last ticked 10-28 22:59Z during the US session.
+    Peers cannot catch it (all dead together); the core session can."""
+    us_open = datetime(2026, 10, 29, 16, 0, tzinfo=UTC)
+    st = {s: {"last_tick_utc": (us_open - timedelta(hours=h)).isoformat()}
+          for s, h in dict(LIVE, Apple=17.0, Tesla=17.0).items()}
+    block, red, _ = tl.recorder_block(st, UNIVERSE, us_open, SETTLED)
+    assert block["classes"]["Equities"]["in_core_session"] is True
+    assert any(r.startswith("CLASS_DEAD: Equities") for r in red)
+    # ... and the same stale equities at 22:00Z, after the session, are not RED.
+    late = datetime(2026, 10, 29, 22, 0, tzinfo=UTC)
+    st = {s: {"last_tick_utc": (late - timedelta(hours=h)).isoformat()}
+          for s, h in dict(LIVE, Apple=2.5, Tesla=2.5).items()}
+    _, red, _ = tl.recorder_block(st, UNIVERSE, late, SETTLED)
+    assert not any(r.startswith("CLASS_DEAD") for r in red)
+
+
+def test_a_long_dead_symbol_steps_down_to_amber_and_stays_named():
+    """Auditor S2: a suspended name in an open class must not hold the board RED forever."""
+    ages = dict(LIVE, USDJPY=5.0)
+    prior = dict(SETTLED, stale_since={"USDJPY": (NOW - timedelta(days=4)).isoformat()})
+    block, red, amber = tl.recorder_block(_state(ages), UNIVERSE, NOW, prior)
+    assert not any("USDJPY" in r for r in red)
+    assert any(a.startswith("LONG_DEAD") and "USDJPY" in a for a in amber)
+    assert block["stale_since"]["USDJPY"] == prior["stale_since"]["USDJPY"]
+
+
+def _probe_files(root: Path, names: list[str]) -> None:
+    d = root / tl.WRITER_PROBE
+    d.mkdir(parents=True)
+    for n in names:
+        (d / n).write_bytes(b"")
+
+
+def test_a_dead_compact_writer_is_red_even_while_tape_state_is_fresh(tmp_path):
+    """Auditor S3: tape_state.json is only the dashed writer's; the silver needs its own proof."""
+    _probe_files(tmp_path, ["2026-10-29.parquet", "20260916.parquet"])
+    _, red, _ = tl.writer_block(NOW, tmp_path)
+    assert red and "compact" in red[0]
+    _probe_files(tmp_path / "ok", ["2026-10-29.parquet", "20261029.parquet"])
+    _, red, amber = tl.writer_block(NOW, tmp_path / "ok")
+    assert red == [] and amber == []
+    _, red, amber = tl.writer_block(NOW, tmp_path / "absent")
+    assert red == [] and amber

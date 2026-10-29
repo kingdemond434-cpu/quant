@@ -184,10 +184,10 @@ def _tick_features(symbol: str, index: pd.DatetimeIndex, freq: str) -> dict[str,
     tdir = TICKS / symbol
     if not tdir.is_dir():
         return None
-    # Newest days by DATE, one writer per day (mt5desk.tape_days): name order put the moat
-    # silver's compact names last and read stale days ahead of fresh ones (2026-10-29).
-    from mt5desk.tape_days import day_files, recent_quotes
-    files = day_files(tdir, MAX_TICK_DAYS)
+    # Newest days by DATE, both writers unioned and deduplicated (mt5desk.tape_days): name order
+    # put the moat silver's compact names last and read stale days first (2026-10-29).
+    from mt5desk.tape_days import day_paths, recent_quotes
+    files = day_paths(tdir, MAX_TICK_DAYS)
     got = recent_quotes(tdir, MAX_TICK_DAYS)
     if got is None:
         return None

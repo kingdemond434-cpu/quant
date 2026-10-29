@@ -73,7 +73,7 @@ def _window(by_day: dict[str, list[Path]], last: int) -> tuple[list[str], list[P
     return want, files
 
 
-def day_files(sym_dir: Path, last: int | None = None) -> list[Path]:
+def day_paths(sym_dir: Path, last: int | None = None) -> list[Path]:
     """Every file (both writers) holding the newest `last` day keys, oldest key first."""
     by_day = day_candidates(sym_dir)
     keys = sorted(by_day)
@@ -101,8 +101,13 @@ def read_quotes(path: Path, extra: tuple[str, ...] = ()) -> pd.DataFrame | None:
         df = pd.read_parquet(path, columns=list(dict.fromkeys(cols)))
     except Exception:
         return None
+    # ONE DTYPE PER KEY COLUMN, so the dedupe in union_frames compares like with like: a float32
+    # bid or a string time_msc from one writer would let every duplicate survive.
+    for c in ("bid", "ask"):
+        df[c] = pd.to_numeric(df[c], errors="coerce").astype("float64")
     if "time_msc" in df.columns:
         ms = pd.to_numeric(df["time_msc"], errors="coerce")
+        df["time_msc"] = ms.astype("Int64")
         derived = pd.to_datetime(ms, unit="ms", utc=True)
         df["ts"] = derived if "ts" not in df.columns else (
             pd.to_datetime(df["ts"], utc=True).fillna(derived))

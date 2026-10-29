@@ -20,6 +20,10 @@ This check walks the whole path -- writer, reader, judge -- and goes RED at the 
   READER_BLIND       the shared tape reader (`mt5desk.tape_days`, which every research reader
                      uses) returns nothing for a probe symbol, or its newest tick is > 2h behind
                      what the recorder says it wrote.
+  CLASS_DEAD         a whole asset class is stale inside its CORE session (CORE_SESSIONS) -- the
+                     case peers cannot catch, because every peer is dead too.
+  WRITER_STALE       either tape writer (dashed mt5desk/tape, compact moat_silver) has no file
+                     for today or yesterday on the 24/7 probe.
   ZERO_SPREAD        every probe tick in the last hour has ask == bid: a feed that is quoting
                      nothing tradeable while looking alive.
   TAPE_NEVER_JUDGED  a tape family has mined cells and zero verdicts (principal 2026-10-14: the
@@ -66,6 +70,23 @@ PROBE_DAYS = 2
 TAPE_FAMILIES = ("liquidity_regime", "orderflow_imbalance", "execution_state")
 #: Fewer probe ticks than this in the last hour is too few to call a spread zero.
 ZERO_SPREAD_MIN_TICKS = 100
+#: A symbol stale this long in an open class is named LONG_DEAD (AMBER), not RED every hour: a
+#: suspended or delisted name the universe still lists must not hold the board RED forever.
+LONG_DEAD_D = 3
+#: CORE SESSIONS (UTC): (weekdays, start hour, end hour) inside which a class is EXPECTED to be
+#: quoting. Deliberately narrower than the real session, so DST shifts and late opens cannot
+#: page; an exchange holiday can, once, and is named in the line. A class with no entry is
+#: judged by its peers only.
+CORE_SESSIONS: dict[str, tuple[frozenset[int], float, float]] = {
+    "Forex": (frozenset(range(5)), 1.0, 19.0),
+    "Forex Exotics": (frozenset(range(5)), 8.0, 15.0),
+    "Commodities": (frozenset(range(5)), 1.0, 19.0),
+    "Indices": (frozenset(range(5)), 8.0, 15.0),
+    "Equities": (frozenset(range(5)), 15.0, 19.5),
+    "Crypto": (frozenset(range(7)), 0.0, 24.0),
+}
+#: The 24/7 probe whose two writers must both have a file for today or yesterday.
+WRITER_PROBE = "BTCUSD"
 
 
 def _read(path: Path) -> Any:
@@ -132,6 +153,24 @@ def recorder_block(state: dict[str, Any], universe: dict[str, Any], now: datetim
                          "newest_age_h": _age_h(max(live[s] for s in syms), now)}
         if settled:
             stale_open.extend(stale)
+        core = CORE_SESSIONS.get(cls)
+        in_core = bool(core) and now.weekday() in core[0] and (
+            core[1] <= now.hour + now.minute / 60.0 < core[2])
+        by_class[cls]["in_core_session"] = in_core
+        if in_core and not is_open:
+            red.append(f"CLASS_DEAD: {cls} is inside its core session ({core[1]:g}-{core[2]:g}h "
+                       f"UTC) and only {len(fresh)}/{len(syms)} symbols ticked in {STALE_H}h -- "
+                       f"the recorder is not taping this class (or it is an exchange holiday)")
+
+    prior_since = ((prior or {}).get("stale_since") or {}) if isinstance(prior, dict) else {}
+    stale_since: dict[str, str] = {}
+    long_dead: list[str] = []
+    for sym in stale_open:
+        since = _ts(prior_since.get(sym)) or now
+        stale_since[sym] = since.isoformat()
+        if now - since >= timedelta(days=LONG_DEAD_D):
+            long_dead.append(sym)
+    stale_open = [s for s in stale_open if s not in long_dead]
 
     newest = max(live.values()) if live else None
     newest_age = _age_h(newest, now)
@@ -148,6 +187,10 @@ def recorder_block(state: dict[str, Any], universe: dict[str, Any], now: datetim
     if stale_open:
         red.append(f"SYMBOL_STALE: {len(stale_open)} symbol(s) > {STALE_H}h stale while their "
                    f"class has been open > {STALE_H}h: {', '.join(sorted(stale_open)[:12])}")
+    if long_dead:
+        amber.append(f"LONG_DEAD: {len(long_dead)} symbol(s) stale in an open class for > "
+                     f"{LONG_DEAD_D}d (suspended or delisted?): "
+                     f"{', '.join(sorted(long_dead)[:12])}")
     if untaped:
         amber.append(f"NOT_RECORDED: {len(untaped)} universe symbol(s) have no tape row: "
                      f"{', '.join(untaped[:12])}")
@@ -157,10 +200,41 @@ def recorder_block(state: dict[str, Any], universe: dict[str, Any], now: datetim
     block = {
         "symbols_taped": len(live), "newest_tick_utc": newest.isoformat() if newest else None,
         "newest_age_h": newest_age, "stale_while_open": sorted(stale_open),
+        "long_dead": sorted(long_dead), "stale_since": stale_since,
         "classes": by_class, "untaped_universe_symbols": untaped, "retired": retired,
         "last_tick_utc": {s: t.isoformat() for s, t in sorted(live.items())},
     }
     return block, red, amber
+
+
+def writer_block(now: datetime, ticks: Path | None = None
+                 ) -> tuple[dict[str, Any], list[str], list[str]]:
+    """Both tape writers, by their own file names, on the 24/7 probe. (block, red, amber).
+
+    tape_state.json is written by ONE writer (mt5desk/tape). The moat silver writes nothing a
+    state file reads, so without this a dead silver writer is invisible.
+    """
+    from mt5desk.tape_days import day_key
+    d = (ticks or TICKS) / WRITER_PROBE
+    newest: dict[str, str | None] = {"dashed (mt5desk/tape)": None, "compact (moat_silver)": None}
+    for f in d.glob("*.parquet") if d.is_dir() else []:
+        key = day_key(f.stem)
+        if key is None:
+            continue
+        which = "dashed (mt5desk/tape)" if "-" in f.stem else "compact (moat_silver)"
+        if newest[which] is None or key > str(newest[which]):
+            newest[which] = key
+    red: list[str] = []
+    amber: list[str] = []
+    floor = (now - timedelta(days=1)).date().isoformat()
+    if not any(newest.values()):
+        amber.append(f"UNMEASURED: no {WRITER_PROBE} tape files to prove either writer by")
+    else:
+        for which, key in newest.items():
+            if key is None or key < floor:
+                red.append(f"WRITER_STALE: {which} has no {WRITER_PROBE} day newer than {key} "
+                           f"on a 24/7 symbol")
+    return {"probe": WRITER_PROBE, "newest_day": newest}, red, amber
 
 
 def _default_reader(symbol: str) -> Any:
@@ -255,14 +329,16 @@ def run(now: datetime | None = None, reader: Callable[[str], Any] | None = None,
     if prior is None:
         prior = (_read(OUT) or {}).get("recorder")
     rec, red, amber = recorder_block(state, universe, now, prior)
+    wrt, red_w, amber_w = writer_block(now)
     rdr, red_r, amber_r = reader_block(state, now, reader)
     jdg, red_j, amber_j = judge_block(_read(JUDGE_COVERAGE), now)
-    red += red_r + red_j
-    amber += amber_r + amber_j
+    red += red_w + red_r + red_j
+    amber += amber_w + amber_r + amber_j
     verdict = "RED" if red else ("AMBER" if amber else "GREEN")
     return {"at": now.isoformat(timespec="seconds"), "verdict": verdict,
+            "red_count": len(red), "amber_count": len(amber),
             "red": red, "amber": amber, "stale_h": STALE_H,
-            "recorder": rec, "reader": rdr, "judge": jdg,
+            "recorder": rec, "writers": wrt, "reader": rdr, "judge": jdg,
             "rule": "RED on the first break between writer, reader and judge; AMBER when any "
                     "part could not be measured; see module doc"}
 
