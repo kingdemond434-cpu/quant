@@ -1076,14 +1076,22 @@ def test_an_unmeasurable_day_start_raises(bad: str) -> None:
         ff.day_start_balance(_MT5(), 100_000.0, midnight, NOW, server_epoch=epoch)
 
 
-@pytest.mark.parametrize(("minutes_old", "skew_s", "want"), [(0, 0, 3), (40, 0, 3), (54, 0, 3),
-                                                             (0, 240, 3), (0, -240, 3)])
-def test_a_lagging_tick_still_reads_the_right_hour(minutes_old: int, skew_s: int,
-                                                    want: int) -> None:
-    """A stale tick only lags: 40 minutes old on a UTC+3 server reads +2.33h, which a round()
-    took for +2. The offset is the whole hour at or above the reading (less the box skew)."""
+@pytest.mark.parametrize(("minutes_old", "skew_s"), [(0, 0), (4, 0), (0, 240), (0, -240)])
+def test_a_fresh_tick_reads_the_server_offset(minutes_old: int, skew_s: int) -> None:
     epoch = (NOW + timedelta(hours=3, minutes=-minutes_old, seconds=skew_s)).timestamp()
-    assert ff.server_offset_from_tick(epoch, NOW) == want
+    assert ff.server_offset_from_tick(epoch, NOW) == 3
+
+
+@pytest.mark.parametrize(("minutes_old", "skew_s"), [(6, 0), (40, 0), (54, -240), (56, 0),
+                                                     (70, 0), (0, 400)])
+def test_a_stale_or_skewed_tick_is_never_read_as_the_server_clock(minutes_old: int,
+                                                                   skew_s: int) -> None:
+    """Audit 2026-10-29: one tick cannot tell stale from skewed (70 minutes old on +3 reads as
+    10 minutes old on +2), so anything off a whole hour by more than TICK_SKEW_S refuses rather
+    than shift FTMO's CET day start (and the daily-loss anchor) by an hour."""
+    epoch = (NOW + timedelta(hours=3, minutes=-minutes_old, seconds=skew_s)).timestamp()
+    with pytest.raises(ValueError):
+        ff.server_offset_from_tick(epoch, NOW)
 
 
 @pytest.mark.parametrize("epoch", [0.0, (NOW + timedelta(hours=6)).timestamp(),

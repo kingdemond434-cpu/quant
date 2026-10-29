@@ -359,25 +359,24 @@ def cet_day(now: datetime) -> tuple[str, datetime]:
     return local.date().isoformat(), midnight.astimezone(UTC)
 
 
-#: Box-clock skew tolerated ahead of a whole-hour server offset, and the oldest tick read as
-#: the server clock. A stale tick only ever LAGS, so the offset is the smallest whole hour at or
-#: above the reading (less the skew), and the tick's age under that offset is bounded.
+#: How far a tick may sit from a whole-hour server offset to be read as the server clock: the
+#: box clock's skew plus the tick's age. A single tick cannot tell a stale tick from a skewed
+#: clock (a 70-minute-old tick on UTC+3 reads exactly like a 10-minute-old one on UTC+2), so only
+#: a FRESH tick is read at all; a quiet market or gold's daily break refuses, billed by the caller.
 TICK_SKEW_S = 300.0
-TICK_MAX_AGE_S = 55 * 60.0
 
 
 def server_offset_from_tick(server_epoch: float, now: datetime) -> int:
     """The server's UTC offset in hours, read off a tick's time (MT5 stamps server wall time as
-    if it were UTC). RAISES ValueError when the tick cannot be the server clock: none, older than
-    TICK_MAX_AGE_S under every whole-hour reading, or an offset outside UTC+0..+4."""
+    if it were UTC). RAISES ValueError when the tick cannot be the server clock: none, more than
+    TICK_SKEW_S off a whole hour (stale, or the box clock off), or outside UTC+0..+4."""
     if not server_epoch:
         raise ValueError("no tick to read the server clock from")
     lag = float(server_epoch) - now.timestamp()
-    off = math.ceil((lag - TICK_SKEW_S) / 3600.0)
-    age = off * 3600.0 - lag
-    if not 0 <= off <= 4 or not -TICK_SKEW_S <= age <= TICK_MAX_AGE_S:
+    off = round(lag / 3600.0)
+    if not 0 <= off <= 4 or abs(lag - off * 3600.0) > TICK_SKEW_S:
         raise ValueError(f"a tick {lag / 3600.0:+.2f}h off the box clock is not the server "
-                         f"clock (offset {off:+d}h, {age / 60.0:.0f} min old)")
+                         f"clock (not within {TICK_SKEW_S:.0f}s of a whole-hour offset)")
     return off
 
 
