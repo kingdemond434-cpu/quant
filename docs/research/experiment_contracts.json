@@ -250,6 +250,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "exit_news_tag": {
+   "hypothesis": "Tagging every live stop exit with the scheduled high-impact release it sat within +-15 min of separates calendar-driven stop slip from microstructure slip, so a news-window rule can be judged by the gauntlet rather than asserted.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "n_measured",
+    "better": "up",
+    "organ": "report:EXIT_NEWS_TAGS_SUMMARY.json"
+   },
+   "falsifier": {
+    "metric": "n_measured",
+    "op": "==",
+    "threshold": 0,
+    "after": "30d on the trading box: no exit is ever placed in or out of a release window on FULL calendar coverage (every row UNMEASURED), so the tag buys nothing"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",
