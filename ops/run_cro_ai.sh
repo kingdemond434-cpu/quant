@@ -4,6 +4,8 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
+# Scoped agent runner (no permission bypass; refusals recorded as MISSED): ops/scoped_claude.sh
+source ops/scoped_claude.sh
 # TODAY-GUARD (2026-08-25): one real dig per day; chain and scattered timers cannot double-run.
 # SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
 # offset; this desk commits ~200x/day into the tree these launchers execute from, and a dig
@@ -116,7 +118,7 @@ if [ "${BRAIN_DRY_RUN:-0}" = "1" ]; then
     exit 0
 fi
 echo "=== cro-ai start $(date -u) ===" >> "$LOG"
-claude --effort "${BRAIN_EFFORT:-low}" --append-system-prompt "$_DOCTRINE" -p "$PROMPT" --dangerously-skip-permissions >> "$LOG" 2>&1
+scoped_claude cro_ai "$LOG" "${BRAIN_EFFORT:-low}" <<<"$PROMPT"
 echo "=== cro-ai exit $? at $(date -u) ===" >> "$LOG"
 # Keep the last 30 CYCLE logs -- the dated YYYYMMDD_HHMM.log files this script writes.
 #

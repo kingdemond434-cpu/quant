@@ -2,6 +2,8 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
+# Scoped agent runner (no permission bypass; refusals recorded as MISSED): ops/scoped_claude.sh
+source ops/scoped_claude.sh
 # SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
 # offset; this desk commits ~200x/day into the tree these launchers execute from, and a dig
 # holds its slot up to 3h, so a commit that changes this file's LENGTH mid-run makes bash
@@ -28,7 +30,7 @@ brain_auth_check || { echo "auth unavailable -- next run resumes ($(date -u))" >
 # variable that was computed here and never referenced, under this exact comment.
 # ALL digs at max effort (principal 2026-07-24: Max plan, max everything).
 _DIG_EFFORT="${BRAIN_EFFORT:-low}"
-claude --effort "${BRAIN_EFFORT:-low}" --append-system-prompt "$_DOCTRINE" -p "$(dig_prompt ops/prospector_dig_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
+scoped_claude prospector_dig "$LOG" "${BRAIN_EFFORT:-low}" < <(dig_prompt ops/prospector_dig_prompt.txt)
 
 exit $?
 }

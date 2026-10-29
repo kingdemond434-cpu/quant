@@ -6,6 +6,8 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
+# Scoped agent runner (no permission bypass; refusals recorded as MISSED): ops/scoped_claude.sh
+source ops/scoped_claude.sh
 # SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
 # offset; this desk commits ~200x/day into the tree these launchers execute from, and a dig
 # holds its slot up to 3h, so a commit that changes this file's LENGTH mid-run makes bash
@@ -23,7 +25,7 @@ export BRAIN_MUTEX_LOGFILE="$LOG"
 brain_mutex gap-wirer
 brain_mem_gate || exit 0
 brain_auth_check || { echo "auth unavailable -- next run resumes ($(date -u))" >> "$LOG"; exit 1; }
-claude --effort max --append-system-prompt "$_DOCTRINE" -p "$(dig_prompt ops/gap_wirer_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
+scoped_claude gap_wirer "$LOG" max < <(dig_prompt ops/gap_wirer_prompt.txt)
 echo "=== gap-wirer exit $? at $(date -u) ===" >> "$LOG"
 
 exit $?
