@@ -125,8 +125,8 @@ def test_without_a_tz_database_eastern_falls_back_late(monkeypatch):
 def test_nass_condition_national_only_with_good_excellent_and_release_stamp():
     df = W._nass_frame(_fx("nass_corn_condition.json"), "corn")
     codes = set(df["series_code"])
-    assert "corn_corn_condition_good_excellent" in codes
-    ge = df[df["series_code"] == "corn_corn_condition_good_excellent"].sort_values("period")
+    assert "corn_condition_good_excellent" in codes
+    ge = df[df["series_code"] == "corn_condition_good_excellent"].sort_values("period")
     assert ge["value"].tolist() == [68.0, 70.0, 66.0]
     # the period is the Monday starting the week ending Sunday 2026-06-07; released Mon 16:00 ET
     row = ge[ge["period"] == "2026-06-01"].iloc[0]
@@ -297,7 +297,7 @@ def test_nass_needs_its_key_by_name_and_never_writes_it(store, monkeypatch):
                                       for p in (store / "world_datasets").rglob("*.json"))
     assert secret not in blob
     frame = pd.read_parquet(W.dataset_path("USDA_NASS", "CORN_CONDITION"))
-    ge = frame[frame["series_code"] == "corn_corn_condition_good_excellent"]
+    ge = frame[frame["series_code"] == "corn_condition_good_excellent"]
     assert str(ge["available_time"].min()) == "2026-06-01 20:00:00+00:00"   # Mon 16:00 EDT
     meta = json.loads(W.meta_path("USDA_WASDE", "wasde_balance").read_text("utf-8"))
     corn = meta["series"]["wasde_us_corn_stocks_to_use"]

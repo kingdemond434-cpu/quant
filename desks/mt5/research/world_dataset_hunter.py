@@ -1183,6 +1183,10 @@ def agri_mapping(universe: tuple[tuple[str, str, str], ...] | None = None) -> di
 _NASS_NUM = re.compile(r"^-?[\d,]*\.?\d+$")
 
 
+def _lslug(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", str(text).lower()).strip("_")
+
+
 def _nass_frame(raw: bytes, code: str) -> Any:
     """NASS Quick Stats `api_GET` JSON (`data[]`): NATIONAL weekly crop progress / condition.
     One series per `short_desc` (e.g. CORN - CONDITION, MEASURED IN PCT GOOD) plus, for
@@ -1210,16 +1214,16 @@ def _nass_frame(raw: bytes, code: str) -> Any:
         short = str(r.get("short_desc") or "")
         f = float(val.replace(",", ""))
         rel = crop_progress_release(end)
-        rows.append({"series_code": f"{code}_{_slug(short)}"[:120], "period": start,
+        rows.append({"series_code": _lslug(short)[:120] or code, "period": start,
                      "value": f, "release_utc": rel})
         m = re.match(r"(.+?) - CONDITION, MEASURED IN PCT (GOOD|EXCELLENT)$", short, re.I)
         if m:
-            ge[(_slug(m[1]), start)][m[2].lower()] = f
-            ge[(_slug(m[1]), start)]["_end"] = float(end.toordinal())
+            ge[(_lslug(m[1]), start)][m[2].lower()] = f
+            ge[(_lslug(m[1]), start)]["_end"] = float(end.toordinal())
     for (crop, start), parts in ge.items():
         if "good" in parts and "excellent" in parts:
             end = date.fromordinal(int(parts["_end"]))
-            rows.append({"series_code": f"{code}_{crop}_condition_good_excellent",
+            rows.append({"series_code": f"{crop}_condition_good_excellent",
                          "period": start, "value": parts["good"] + parts["excellent"],
                          "release_utc": crop_progress_release(end)})
     df = pd.DataFrame(rows, columns=["series_code", "period", "value", "release_utc"])
@@ -1334,7 +1338,7 @@ def _wasde_frame(raw: bytes, code: str = "wasde") -> Any:
             dom = dom if dom is not None else by.get("domestic use")
             exp = by.get("exports")
             use = dom + exp if dom is not None and exp is not None else None
-        sid = f"{code}_{WASDE_REGIONS[reg]}_{_slug(base)}"
+        sid = f"{code}_{WASDE_REGIONS[reg]}_{_lslug(base)}"
         rel = wasde_release(day)
         for name, v in (("ending_stocks", ending), ("total_use", use),
                         ("stocks_to_use", ending / use if ending is not None and use else None)):
