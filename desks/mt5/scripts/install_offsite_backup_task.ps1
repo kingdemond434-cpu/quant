@@ -30,13 +30,29 @@ if ($InstallRestic -and -not (Test-Path 'C:\opt\restic\restic.exe')) {
   Invoke-WebRequest -UseBasicParsing -OutFile $zip `
     "https://github.com/restic/restic/releases/download/v$v/$name"
   $rel = Invoke-RestMethod -UseBasicParsing "https://api.github.com/repos/restic/restic/releases/tags/v$v"
-  $want = (($rel.assets | Where-Object { $_.name -eq $name }).digest -replace '^sha256:', '').ToLower()
+  # The asset's own `digest` field first; GitHub leaves it null on some older releases, so then
+  # the SHA256SUMS file restic publishes beside the archives. Neither found: nothing installed.
+  $want = ''; $source = ''
+  $asset = $rel.assets | Where-Object { $_.name -eq $name }
+  if ($asset -and $asset.digest) {
+    $want = ($asset.digest -replace '^sha256:', '').ToLower(); $source = 'GitHub asset digest'
+  } else {
+    $sums = $rel.assets | Where-Object { $_.name -eq 'SHA256SUMS' }
+    if ($sums) {
+      # To a file, not .Content: an octet-stream body comes back as bytes, not text.
+      $sumsFile = "$env:TEMP\restic_${v}_SHA256SUMS"
+      Invoke-WebRequest -UseBasicParsing -OutFile $sumsFile $sums.browser_download_url
+      $line = (Get-Content $sumsFile) |
+              Where-Object { $_ -match ("\s\*?" + [regex]::Escape($name) + '\s*$') } | Select-Object -First 1
+      if ($line) { $want = ($line -split '\s+')[0].ToLower(); $source = 'release SHA256SUMS' }
+    }
+  }
   $got = (Get-FileHash -Algorithm SHA256 $zip).Hash.ToLower()
   if (-not $want -or $want -ne $got) {
     Remove-Item $zip -Force
-    throw "restic $v archive sha256 $got does not match the published digest '$want'; nothing installed"
+    throw "restic $v archive sha256 $got does not match the published digest '$want' ($source); nothing installed"
   }
-  Write-Output "restic $v archive sha256 $got matches the published digest"
+  Write-Output "restic $v archive sha256 $got matches the $source"
   New-Item -ItemType Directory -Force 'C:\opt\restic' | Out-Null
   Expand-Archive -Force $zip 'C:\opt\restic'
   Get-ChildItem 'C:\opt\restic\restic_*.exe' | Select-Object -First 1 |

@@ -4,11 +4,14 @@ key-escrowed snapshot."""
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "desks" / "mt5" / "scripts"))
@@ -68,7 +71,7 @@ def test_backup_prune_check_and_nothing_secret_written(tmp_path: Path) -> None:
     assert d["restore_drill"]["verdict"] == "PASS", d["restore_drill"]
     assert d["restore_drill"]["counts"]["MISSING"] == 0
     b = next(c for c in calls if c[1] == "backup")
-    assert "**/secrets/**" in b and "**/accounts.dat" in b
+    assert "**/secrets/**" in b and "**/accounts.dat*" in b
     assert envs[0]["RESTIC_PASSWORD"] == "PW-SECRET"
     text = out.read_text()
     assert "PW-SECRET" not in text and "CRED" not in text and '"scheme": "s3"' in text
@@ -174,6 +177,84 @@ def test_the_file_list_never_holds_a_secret_and_lists_each_file_once(tmp_path: P
     got = ob.files_to_ship([str(desk), str(desk / "data"), str(desk / "data" / "tape")])
     names = [Path(f).relative_to(desk).as_posix() for f in got]
     assert names == ["data/ledger.jsonl", "data/tape/t.parquet", "term/ok.ini"]
+
+
+def test_secret_lookalikes_links_and_hard_links_never_enter_the_list(tmp_path: Path) -> None:
+    """Audit of #483 MF2: a prefix, not an exact name, and links are fenced by what they are."""
+    desk = tmp_path / "desk"
+    secret = desk / "data" / "secrets" / "key.json"
+    for rel in ("data/Secrets.bak/old.json", "data/secret_old/k.json", "term/accounts.dat.bak",
+                "term/ACCOUNTS.DAT~", "data/ledger.jsonl", "data/secrets/key.json"):
+        p = desk / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("x")
+    try:
+        os.link(secret, desk / "data" / "innocent.json")          # same file, harmless name
+        os.symlink(secret, desk / "data" / "alias.json")           # a link to a secret file
+        os.symlink(desk / "data" / "secrets", desk / "data" / "cfg", target_is_directory=True)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"links unavailable here: {exc}")
+    got = ob.files_to_ship([str(desk)], secret_dirs=())
+    names = [Path(f).relative_to(desk).as_posix() for f in got]
+    # the secrets dir is found by the walk itself, so the hard link is refused with no hint
+    assert names == ["data/ledger.jsonl"], names
+
+
+def test_a_hard_link_to_a_known_secrets_dir_outside_the_sources_is_refused(
+        tmp_path: Path) -> None:
+    vault = tmp_path / "vault" / "secrets"
+    vault.mkdir(parents=True)
+    (vault / "k.json").write_text("x")
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "ok.json").write_text("y")
+    try:
+        os.link(vault / "k.json", src / "copy.json")
+    except OSError as exc:
+        pytest.skip(f"hard links unavailable here: {exc}")
+    got = ob.files_to_ship([str(src)], secret_dirs=(str(vault),))
+    assert [Path(f).name for f in got] == ["ok.json"]
+
+
+def test_a_junction_is_never_walked(tmp_path: Path) -> None:
+    if os.name != "nt":
+        pytest.skip("junctions exist only on Windows")
+    secrets_dir = tmp_path / "data" / "secrets"
+    secrets_dir.mkdir(parents=True)
+    (secrets_dir / "k.json").write_text("x")
+    src = tmp_path / "src"
+    src.mkdir()
+    subprocess.run(["cmd", "/c", "mklink", "/J", str(src / "cfg"), str(secrets_dir)], check=True,
+           capture_output=True)
+    assert ob.files_to_ship([str(src)], secret_dirs=()) == []
+
+
+def test_every_run_is_one_snapshot_series_whatever_the_file_list(tmp_path: Path) -> None:
+    """Audit of #483 MF1: grouped by host,paths each run (a new file list) would be its own
+    series, so forget would keep everything and backup would find no parent."""
+    src = tmp_path / "ticks"
+    src.mkdir()
+    calls: list[list[str]] = []
+
+    def runner(cmd: list[str], env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+        calls.append(cmd)
+        out = (json.dumps({"message_type": "summary", "snapshot_id": "s"})
+               if cmd[1] == "backup" else "")
+        return subprocess.CompletedProcess(cmd, 0, out, "")
+
+    cfg = tmp_path / "c.json"
+    cfg.write_text(json.dumps({"repository": str(tmp_path / "repo"), "password": "K"}))
+    out = tmp_path / "o.json"
+    for i, when in enumerate((NOW, NOW + timedelta(days=1))):
+        (src / f"t{i}.parquet").write_bytes(b"PAR1xPAR1")      # the list grows every run
+        ob.run(config=cfg, out=out, sources=(str(src),), restic="restic", runner=runner,
+               now=when)
+    for verb in ("backup", "forget"):
+        runs = [c for c in calls if c[1] == verb]
+        assert len(runs) == 2, verb
+        for c in runs:
+            i = c.index("--group-by")
+            assert c[i + 1] == "host,tags", c
 
 
 def test_the_backup_hands_restic_the_list_and_drills_every_source(tmp_path: Path) -> None:

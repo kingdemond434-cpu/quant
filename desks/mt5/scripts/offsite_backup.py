@@ -48,9 +48,21 @@ LEDGERS, CERTS AND MOAT TOO (2026-10-29). The moat replica in git refuses the st
 are sources here as well. Restic deduplicates, so a source inside another costs nothing.
 
 SECRETS BY CONSTRUCTION, NOT BY PATTERN. restic is handed an explicit file list
-(`--files-from-verbatim`) built here, and no path with a `secrets` component or an `accounts.dat`
-ever enters it; the `--exclude` patterns stay as a second fence. A Windows-path quirk in restic's
-own pattern matching can therefore never ship a secret.
+(`--files-from-verbatim`) built here, and no path with a component starting `secret` or a name
+starting `accounts.dat` ever enters it, nor a symlink, a junction, a file whose real path is under
+a secrets directory, or a hard link to a file there (see `files_to_ship`); the `--exclude`
+patterns stay as a second fence. A Windows-path quirk in restic's own pattern matching can
+therefore never ship a secret.
+
+WHAT THE TERMINAL PROFILE SHIPS, ON PURPOSE. Everything under `%APPDATA%\\MetaQuotes\\Terminal`
+except `accounts.dat*`, including `Config\\common.ini` (server names, the last login number and
+terminal settings, no password): it is needed to rebuild the terminal, and it leaves the box only
+as restic ciphertext.
+
+WHO MUST BE ABLE TO READ THE CONFIG. MT5-OffsiteBackup runs as SYSTEM (install_offsite_backup_
+task.ps1), which can read `data/secrets/offsite_backup.json` whoever wrote it; `--init-local` is
+run from the same admin installer. If the task principal ever changes, it must keep read access
+to that file, or every run is NOT_ARMED.
 
 Writes `desks/mt5/reports/OFFSITE_BACKUP.json`, read by `research/ops_redundancy.py`.
 """
@@ -91,10 +103,20 @@ SOURCES: tuple[str, ...] = (
 #: local: versioned, but gone with the box.
 REMOTE_SCHEMES = ("s3", "sftp", "rest", "b2", "azure", "gs", "swift", "rclone")
 #: Path components and names that never enter the file list.
-NEVER = ("secrets",)
+NEVER = ("secret",)   # a prefix: secrets, Secrets.bak, secret_old
 NEVER_NAMES = ("accounts.dat",)
+#: Where the box keeps its secrets: every file under these is refused by identity as well as by
+#: name, so a hard link to one under another name never ships.
+SECRET_DIRS: tuple[str, ...] = (str(ROOT / "data" / "secrets"), str(BASE / "data" / "secrets"))
 #: Never shipped, whatever the config says.
-EXCLUDES: tuple[str, ...] = ("**/secrets/**", "**/accounts.dat", "**/*.lock", "**/logs/**")
+EXCLUDES: tuple[str, ...] = ("**/secrets/**", "**/secret*/**", "**/accounts.dat*", "**/*.lock",
+                             "**/logs/**")
+#: ONE SNAPSHOT SERIES, WHATEVER THE FILE LIST. restic groups snapshots by host and paths by
+#: default, and with `--files-from-verbatim` the paths are the file list, which changes every run
+#: (a new tick file). Grouped that way every run is its own series: `forget` keeps each one (the
+#: repository never shrinks) and `backup` finds no parent (a full re-read of ~75 GB every 6
+#: hours). Grouping by host and tag makes every run one series. Audit of #483, MF1.
+GROUP_BY = ("--group-by", "host,tags")
 RETENTION = ("--keep-hourly", "24", "--keep-daily", "30", "--keep-weekly", "12",
              "--keep-monthly", "24")
 PRUNE_EVERY = timedelta(hours=20)
@@ -172,22 +194,84 @@ def _readable(p: Path) -> bool:
         return False
 
 
-def files_to_ship(sources: list[str]) -> list[str]:
+def _secretish(part: str) -> bool:
+    """`secrets`, `Secrets.bak`, `secret_old`: any component that starts like one is one."""
+    return part.lower().startswith(NEVER)
+
+
+def _never_name(name: str) -> bool:
+    low = name.lower()
+    return low.startswith(NEVER_NAMES) or low.endswith(".lock")
+
+
+def _is_link(p: str) -> bool:
+    """A symlink or (on Windows) a junction, which os.walk follows: either can point a harmless
+    name at data/secrets, so neither is ever walked into or shipped."""
+    isjunction = getattr(os.path, "isjunction", None)
+    return os.path.islink(p) or bool(isjunction and isjunction(p))
+
+
+def _identity(p: str) -> tuple[int, int] | None:
+    try:
+        st = os.stat(p, follow_symlinks=False)
+    except OSError:
+        return None
+    return (st.st_dev, st.st_ino) if st.st_ino else None
+
+
+def _secret_identities(dirs: set[str]) -> set[tuple[int, int]]:
+    """(device, inode) of every file under a secrets directory, so a hard link to one under an
+    innocent name is still refused."""
+    ids: set[tuple[int, int]] = set()
+    for top in dirs:
+        for d, _sub, names in os.walk(top):
+            for n in names:
+                i = _identity(os.path.join(d, n))
+                if i:
+                    ids.add(i)
+    return ids
+
+
+def files_to_ship(sources: list[str], secret_dirs: tuple[str, ...] | None = None) -> list[str]:
     """Every file under the sources except secrets, the broker login, locks and logs; each file
-    once, however many sources contain it."""
-    out: set[str] = set()
+    once, however many sources contain it.
+
+    FOUR FENCES, each enough alone (audit of #483): a path component that starts with `secret`
+    (so `Secrets.bak` too) and a name that starts with `accounts.dat` are never listed; symlinks
+    and junctions are never walked or listed; a file whose real path has a secret component is
+    refused; and a file that is the same file (device, inode) as one under a secrets directory,
+    i.e. a hard link, is refused."""
+    found = {str(x) for x in (secret_dirs if secret_dirs is not None else SECRET_DIRS)}
+    cand: set[str] = set()
     for src in sources:
         root = Path(src)
+        if _is_link(str(root)) or any(_secretish(x) for x in root.parts):
+            continue
         walk = [(str(root.parent), [], [root.name])] if root.is_file() else os.walk(root)
         for d, dirs, names in walk:
-            dirs[:] = [x for x in dirs if x.lower() not in NEVER and x.lower() != "logs"]
-            if any(part.lower() in NEVER for part in Path(d).parts):
+            keep = []
+            for x in dirs:
+                full = os.path.join(d, x)
+                if _secretish(x):
+                    found.add(full)
+                elif x.lower() != "logs" and not _is_link(full):
+                    keep.append(x)
+            dirs[:] = keep
+            if any(_secretish(part) for part in Path(d).parts):
                 continue
             for n in names:
-                low = n.lower()
-                if low in NEVER_NAMES or low.endswith(".lock"):
+                full = os.path.join(d, n)
+                if _never_name(n) or _is_link(full):
                     continue
-                out.add(os.path.join(d, n))
+                cand.add(full)
+    banned = _secret_identities({x for x in found if os.path.isdir(x)})
+    out = []
+    for f in cand:
+        if any(_secretish(part) for part in Path(os.path.realpath(f)).parts):
+            continue
+        if banned and _identity(f) in banned:
+            continue
+        out.append(f)
     return sorted(out)
 
 
@@ -371,7 +455,7 @@ def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
             fl.write("\n".join(listing) + "\n")
         try:
             b = runner([exe, "backup", "--json", "--tag", "quant-box", "--exclude-caches",
-                        *ex, "--files-from-verbatim", fl.name], env)
+                        *GROUP_BY, *ex, "--files-from-verbatim", fl.name], env)
         finally:
             with contextlib.suppress(OSError):
                 os.unlink(fl.name)
@@ -382,7 +466,8 @@ def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
         if ok:
             doc["last_success_at"] = doc["at"]
             if _due(prev, "last_prune_at", PRUNE_EVERY, now):
-                f = runner([exe, "forget", "--tag", "quant-box", *RETENTION, "--prune"], env)
+                f = runner([exe, "forget", "--tag", "quant-box", *GROUP_BY, *RETENTION,
+                            "--prune"], env)
                 doc["prune_exit"] = f.returncode
                 if f.returncode == 0:
                     doc["last_prune_at"] = doc["at"]
