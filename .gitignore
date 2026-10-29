@@ -331,6 +331,9 @@ desks/mt5/data/text_store/
 # The committed Asian/alt-data digest's writer lock and temp file (the digest itself is tracked).
 desks/mt5/data/digests/*.lock
 desks/mt5/data/digests/*.tmp
+# Stories evicted whole from the knowledge-graph store at its document cap (DATA-29): an
+# append-only box-local archive, so the store stays bounded and nothing evicted is lost.
+desks/mt5/data/knowledge_graph/story_archive.jsonl
 # Regional parity (`research/regional_parity_pass.py`, hourly leg `regional_parity`): every file it
 # writes is the measuring box's state, never a committed fact -- a digest measured on a build VM
 # and committed once described the wrong machine (audit of #242, 2026-10-06).
