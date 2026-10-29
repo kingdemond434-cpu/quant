@@ -227,3 +227,46 @@ def test_short_lived_spend_marks_yield_unmeasured(tmp_path: Path) -> None:
         if extra_per_pass:
             # 200 of 566 core-s a pass were booked to no organ
             assert doc["window"]["unbooked_share"] == round(200 / 566, 4)
+
+
+def test_the_system_idle_process_is_never_booked_so_unbooked_shards_show(
+        tmp_path: Path) -> None:
+    """#493 MF2 probe: pid 0's cumulative "CPU" is the box's idle time. Booked, it swamped the
+    box's busy CPU: unbooked read 0 and 2 cores of short-lived shards stayed invisible."""
+    from datetime import timedelta
+    cfg = _judge_cfg(tmp_path)
+    path = tmp_path / "L.json"
+    t = NOON
+    shards = 0.0
+    for i in range(25):                       # hourly passes for a day
+        (tmp_path / "J.json").write_text(json.dumps({"verdicts_per_day": 2400,
+                                                     "at": t.isoformat()}))
+        procs = _procs(100 + 60 * i)
+        idle = Proc(0, "System Idle Process", ppid=0, group="system", create_time=0,
+                    cpu_s=1000.0 + 50_000.0 * i)
+        shards = 2 * 3600.0 * i               # 2 cores of shards born and gone between passes
+        box = _box(procs, shards)             # the box's user+system: no idle time in it
+        delta, _ = cl.pass_delta([*procs, idle], None)
+        assert not any(k.startswith("system:system idle") for k in delta)
+        cl.update([*procs, idle], cfg, now=t, path=path, repo=tmp_path, box_cpu_s=box)
+        t += timedelta(hours=1)
+    doc = json.loads(path.read_text())
+    assert not any("idle" in k for k in doc["window"]["organs"])
+    share = doc["window"]["unbooked_share"]
+    assert share is not None and share > 0
+    assert share == round(7200 / (366 + 7200), 4)        # 366 core-s booked a pass
+    judge = _judge_row(doc)
+    assert judge["output_per_core_hour"] is None
+    assert "short-lived processes unmeasured" in judge["output"]
+
+
+def test_the_per_day_output_is_scaled_to_the_hours_covered() -> None:
+    """#493 SF probe: the wall window covers ~23.2 h at a 10-minute cadence while the output is a
+    24 h count; dividing the whole count by 23.2 h of core-seconds overstated the yield."""
+    outs = {"judge": {"per_day": 2400, "unit": "verdicts"}}
+    day = {"organs": {"judge:run_sharded_gauntlet": {"core_s": 3600.0}}}
+    assert cl.rank(day, outs)[0]["output_per_core_hour"] == 2400.0
+    row = cl.rank(day, outs, covered_h=23.2)[0]
+    assert row["output_per_core_hour"] == round(2400 * 23.2 / 24, 3)
+    assert row["output_window_scale"] == round(23.2 / 24, 4)
+    assert cl.rank(day, outs, covered_h=24.0)[0]["output_per_core_hour"] == 2400.0

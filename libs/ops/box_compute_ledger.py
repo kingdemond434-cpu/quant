@@ -43,7 +43,10 @@ WHAT IS UNMEASURED, NEVER GUESSED (audit of #493, 2026-10-29):
     (psutil.cpu_times user+system) is read each pass, so the window's UNBOOKED core-seconds --
     box minus everything booked -- are measured; while they exceed `max_unbooked_share`
     (default 5%) of the box's CPU in the window, or the box reading is missing, every yield reads
-    UNMEASURED (a spender's undercount would overstate its yield).
+    UNMEASURED (a spender's undercount would overstate its yield). pid 0 (System Idle: the box's
+    idle time) is never booked, or it would swamp the box's busy CPU and hide all of this.
+  * A 24 H COUNT OVER THE HOURS COVERED. The window's core-seconds cover `covered_h` (about 23.2 h
+    at a 10-minute cadence), so the output's per-day count is scaled by covered_h / 24 first.
   * AN EXITING PROCESS IS UNDERCOUNTED. A process seen last pass and gone now booked its CPU up to
     last pass; what it spent between that pass and its exit cannot be read once it is gone (psutil
     has no handle to an exited process). The undercount is at most one pass interval per exited
@@ -141,6 +144,10 @@ def pass_delta(procs: Sequence[ProcLike], last: Mapping[str, Any] | None,
         interval = float(now_epoch) - float(since)  # type: ignore[arg-type]
         if interval > max_gap_s or interval < 0:
             baseline, gap_s = True, round(interval, 1)
+    # pid 0 IS THE SYSTEM IDLE PROCESS (audit #493 MF2, 2026-10-29): psutil reports the box's idle
+    # time as its CPU. Booked, it swamped the box's own busy CPU, so `unbooked` read 0 and the
+    # short-lived-spend check could never fire. It is no organ and is never booked.
+    procs = [p for p in procs if p.pid != 0]
     organs = attribute(procs)
     out: dict[str, dict[str, float]] = {}
     totals: dict[str, list[float]] = {}
@@ -339,11 +346,18 @@ def window(hours: Mapping[str, Any], days: Mapping[str, Any],
 
 
 def rank(day: Mapping[str, Any], outs: Mapping[str, Mapping[str, Any]], *,
-         unmeasured_why: str | None = None) -> list[dict[str, Any]]:
+         unmeasured_why: str | None = None,
+         covered_h: float | None = None) -> list[dict[str, Any]]:
     """Which organ should get freed CPU first: measured yield per core-hour, best first; then the
     unmeasured, biggest spender first. A group's output is shared across its organs by spend.
     `unmeasured_why` (e.g. the window does not yet match the output's 24 h) makes every yield
-    UNMEASURED and says why."""
+    UNMEASURED and says why.
+
+    `covered_h` is the hours of pass interval the core-seconds actually cover. The output count
+    is per 24 h, so it is scaled by covered_h / 24 before it is divided (audit #493: the wall
+    window covers ~23.2 h at a 10-minute cadence, and an unscaled 24 h count overstated the
+    yield by ~3%). Without it the window is taken as the whole 24 h."""
+    scale = 1.0 if covered_h is None else max(0.0, min(24.0, float(covered_h))) / 24.0
     organs = day.get("organs") or {}
     group_core: dict[str, float] = {}
     for organ, v in organs.items():
@@ -363,7 +377,9 @@ def rank(day: Mapping[str, Any], outs: Mapping[str, Mapping[str, Any]], *,
         elif isinstance(per_day, (int, float)) and group_core.get(g, 0.0) > 0:
             group_h = group_core[g] / 3600.0
             row["output"] = f"{per_day:g} {out.get('unit')}/day for group {g}"
-            row["output_per_core_hour"] = round(float(per_day) / max(group_h, 1e-9), 3)
+            row["output_per_core_hour"] = round(float(per_day) * scale / max(group_h, 1e-9),
+                                                3)
+            row["output_window_scale"] = round(scale, 4)
         else:
             row["output"] = "UNMEASURED" + (f": {out['why']}" if out.get("why") else "")
             row["output_per_core_hour"] = None
@@ -435,7 +451,8 @@ def update(procs: Sequence[ProcLike], cfg: Mapping[str, Any], *, now: datetime |
                       "unbooked_share": cov["unbooked_share"],
                       "max_unbooked_share": max_unbooked, "organs": win["organs"]},
            "days": days, "hours": hours, "observed": observed, "outputs": outs,
-           "free_cpu_first": rank(win, outs, unmeasured_why=short)[:25],
+           "free_cpu_first": rank(win, outs, unmeasured_why=short,
+                                  covered_h=covered_h)[:25],
            "state": {"at_epoch": now.timestamp(), "box_cpu_s": box_cpu_s,
                      "totals": state["totals"]}}
     path.parent.mkdir(parents=True, exist_ok=True)
