@@ -43,8 +43,7 @@ import json
 import os
 import sys
 import time
-from concurrent.futures import Future, ThreadPoolExecutor
-from concurrent.futures import TimeoutError as FutureTimeout
+from concurrent.futures import Future, ThreadPoolExecutor, wait
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -835,16 +834,20 @@ def collect(futures: dict[Any, Future[Any]], deadline: float,
     Returns (results, timed_out_keys). Never raises.
     """
     global ABANDONED_THREADS
+    # ONE clock reading for the whole wait, not one per future.
+    wait(list(futures.values()),
+         timeout=None if deadline == float("inf") else max(0.0, deadline - time.monotonic()))
     out: dict[Any, Any] = {}
     late: list[Any] = []
     for key, fut in futures.items():
-        try:
-            out[key] = fut.result(timeout=max(0.0, deadline - time.monotonic()))
-        except FutureTimeout:
+        if not fut.done():
             fut.cancel()
             late.append(key)
             out[key] = failed(key, "TIMED_OUT", "still running at the pass's science deadline; "
                                                 "its objects are UNMEASURED this pass")
+            continue
+        try:
+            out[key] = fut.result()
         except Exception as exc:
             out[key] = failed(key, "FAILED", f"{type(exc).__name__}: {exc}")
     ABANDONED_THREADS += sum(1 for k in late if not futures[k].done())

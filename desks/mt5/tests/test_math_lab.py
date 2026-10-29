@@ -191,6 +191,11 @@ def test_the_judge_deadline_costs_an_object_its_score_never_its_donation(lab, mo
         return real(*a, **k)
 
     monkeypatch.setattr(ML.B, "judge", _slow)
+    # This test is about the JUDGE deadline. Its clock jumps past every deadline, so the science
+    # deadline (math_lab.collect, 2026-10-29) is held open here; it has its own test.
+    real_collect = ML.collect
+    monkeypatch.setattr(ML, "collect", lambda futures, deadline, failed: real_collect(
+        futures, float("inf"), failed))
     # a deadline already in the past for every object after the first two
     monkeypatch.setattr(ML.time, "monotonic",
                         _clock_that_expires_after(2, ML.time.monotonic))
