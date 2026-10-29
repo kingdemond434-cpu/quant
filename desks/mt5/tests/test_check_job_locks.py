@@ -422,7 +422,7 @@ def test_a_beat_limit_is_clamped_and_a_future_beat_is_unreadable(root: Path) -> 
 
 # --- audit of v8 (should-fixes) --------------------------------------------------------------
 def test_a_beaten_phase_that_is_busy_is_never_stopped(root: Path) -> None:
-    lock = _own_lock(root)
+    _own_lock(root)
     J.heartbeat("merge_hypotheses", "families", expect_s=3600, now=0.0)
     cpu = iter(float(k * 3000) for k in range(100))   # ~0.8 of a core, working hard
     stops: list[int] = []
@@ -435,7 +435,9 @@ def test_a_beaten_phase_that_is_busy_is_never_stopped(root: Path) -> None:
     assert out["locks"]["merge_hypotheses"]["status"] == "WEDGED"     # named RED ...
     assert out["locks"]["merge_hypotheses"]["cpu_rate"] > J.BUSY_CPU_RATE
     assert not stops                                                    # ... never killed
-    assert not C.stoppable({"signal": "beat", "idle_s": 9e9, "limit_s": 60, "cpu_rate": None})
+    assert out["locks"]["merge_hypotheses"]["auto_stop_withheld"].startswith("busy")
+    assert not C.stoppable({"signal": "beat", "idle_s": 3 * 3600.0, "limit_s": 60,
+                            "cpu_rate": None})
 
 
 def test_sf3_combined_and_inline_flags_parse_like_cpython() -> None:
@@ -478,3 +480,59 @@ def test_sf4_a_nan_beat_vouches_for_nothing(root: Path) -> None:
     (root / "merge_hypotheses.beat.json").write_text(
         '{"token": "mine", "phase": "x", "at": NaN, "expect_s": null}', "utf-8")
     assert J.owner_progress(lock, now=100.0, cpu_of=lambda pid: 1.0)["signal"] == "cpu"
+
+
+# --- audit of v9 (should-fixes) --------------------------------------------------------------
+def test_sf1_a_contenders_look_seconds_later_never_measures_a_rate(root: Path) -> None:
+    lock = _own_lock(root)
+    J.heartbeat("merge_hypotheses", "families", expect_s=3600, now=0.0)
+    J.owner_progress(lock, now=100.0, cpu_of=lambda pid: 1000.0)            # hourly seed
+    J.owner_progress(lock, now=3600.0 - 2, cpu_of=lambda pid: 3880.0)       # the leg's look
+    # a contender 2 s later, across a 2 s IO stall, must not measure 0.0 ...
+    near = J.owner_progress(lock, now=3600.0, cpu_of=lambda pid: 3880.0)
+    assert near["cpu_rate"] is None
+    # ... nor overwrite the baseline: the next hourly look still measures ~0.8 cores
+    later = J.owner_progress(lock, now=7200.0, cpu_of=lambda pid: 6760.0)
+    assert later["cpu_rate"] == pytest.approx(0.8, abs=0.01)
+
+
+def test_sf1_a_clock_jump_or_a_bad_baseline_measures_nothing(root: Path) -> None:
+    lock = _own_lock(root)
+    J.heartbeat("merge_hypotheses", "families", expect_s=3600, now=0.0)
+    J.owner_progress(lock, now=100.0, cpu_of=lambda pid: 1000.0)
+    jump = J.owner_progress(lock, now=100.0 + 9 * 3600, cpu_of=lambda pid: 3880.0)
+    assert jump["cpu_rate"] is None                                        # re-seeded
+    side = root / "merge_hypotheses.progress.json"
+    for bad in (float("-inf"), -1e12, True):
+        rec = json.loads(side.read_text("utf-8"))
+        rec["obs_t"] = bad
+        side.write_text(json.dumps(rec), "utf-8")
+        out = J.owner_progress(lock, now=40_000.0, cpu_of=lambda pid: 5000.0)
+        assert out["cpu_rate"] is None
+
+
+def test_sf2_withheld_says_why_and_a_day_without_a_beat_is_stopped() -> None:
+    beat = {"signal": "beat", "limit_s": 3600.0}
+    assert C.withheld({**beat, "idle_s": 3 * 3600.0, "cpu_rate": 0.8}) == "busy 0.80 cores"
+    assert C.withheld({**beat, "idle_s": 3 * 3600.0}) == "cpu_rate unmeasured"
+    assert C.withheld({**beat, "idle_s": 3 * 3600.0, "cpu_rate": 0.04}) is None
+    assert C.withheld({**beat, "idle_s": C.BEAT_HARD_CEILING_S, "cpu_rate": 0.9}) is None
+    assert C.withheld({**beat, "idle_s": 600.0}).startswith("no beat for 0.2 h")
+
+
+def test_sf3_a_partial_kill_is_journaled_and_ledgered(root: Path, monkeypatch) -> None:
+    journaled: list[str] = []
+    monkeypatch.setattr(C, "_journal", lambda name, health: journaled.append(name))
+    _hold(root, "edge_search")
+    part = lambda *a: {"stopped": False, "terminated": [11], "why": "refused"}  # noqa: E731
+    C.run(root=root, now=0.0, stop=part, cpu_of=lambda pid: 1.0)
+    out = C.run(root=root, now=C.AUTO_STOP_AFTER_S + 60, stop=part, cpu_of=lambda pid: 1.0)
+    assert out["status"] == "RED" and journaled == ["edge_search"]
+    row = json.loads(J.STOPS_LEDGER.read_text("utf-8").splitlines()[-1])
+    assert row["partial"] is True and row["terminated"] == [11]
+
+
+def test_sf5_nits() -> None:
+    assert not C.runs_script(["python", "--", "-u", "x.py"], ("x",))
+    assert C.runs_script(["python", "-u", "--", "x.py"], ("x",))
+    assert not J._finite(True) and not J._finite(float("nan")) and J._finite(1.5)

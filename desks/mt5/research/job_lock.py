@@ -405,9 +405,32 @@ def heartbeat(name: str, phase: str, *, expect_s: float | None = None,
         return False
 
 
+#: The window a CPU rate is measured over: an hourly observer lands inside it, a contender's
+#: look seconds later does not, and a clock jump or a stale baseline falls outside it.
+RATE_WINDOW_MIN_S = 15 * 60.0
+RATE_WINDOW_MAX_S = 3 * 3600.0
+
+
+def _num(x: object) -> float | None:
+    """A finite real number, or None (a bool, NaN or infinity is not a reading)."""
+    if isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(float(x)):
+        return None
+    return float(x)
+
+
+def _finite(x: object) -> bool:
+    return _num(x) is not None
+
+
 def _cpu_rate(lock: Path, token: str, cpu: float | None, t: float) -> float | None:
     """Cores of tree CPU since the previous observation of this owner (sidecar `obs_*`), or
-    None on the first observation or an unreadable reading -- never a guessed zero."""
+    None on the first observation or an unreadable reading -- never a guessed zero.
+
+    ONLY OVER A MEASURING WINDOW (audit of v9, SF1). Contenders call this too, so a baseline
+    seconds old made a 0.8-core owner with a 2 s IO stall read 0.0 and be stopped; a clock jump
+    diluted it the other way. The rate counts only when the baseline is finite, not in the
+    future, and RATE_WINDOW_MIN_S..RATE_WINDOW_MAX_S old. A younger baseline is KEPT (never
+    overwritten by a short look); an older or unusable one is re-seeded with rate None."""
     side = _progress_path(lock)
     try:
         prev = json.loads(side.read_text("utf-8"))
@@ -416,11 +439,14 @@ def _cpu_rate(lock: Path, token: str, cpu: float | None, t: float) -> float | No
     if not isinstance(prev, dict) or prev.get("token") != token:
         prev = {"token": token}
     rate = None
-    pc, pt = prev.get("obs_cpu"), prev.get("obs_t")
-    if (cpu is not None and isinstance(pc, (int, float)) and isinstance(pt, (int, float))
-            and t > pt and cpu >= pc):
-        rate = round((cpu - pc) / (t - pt), 4)
-    if cpu is not None:
+    pc, pt = _num(prev.get("obs_cpu")), _num(prev.get("obs_t"))
+    if cpu is not None and pc is not None and pt is not None and cpu >= pc and pt <= t:
+        window = t - pt
+        if window < RATE_WINDOW_MIN_S:
+            return None                   # too short to measure: keep the older baseline
+        if window <= RATE_WINDOW_MAX_S:
+            rate = round((cpu - pc) / window, 4)
+    if cpu is not None and math.isfinite(cpu):
         with suppress(OSError):
             side.write_text(json.dumps({**prev, "obs_cpu": cpu, "obs_t": t}), "utf-8")
     return rate
@@ -436,14 +462,14 @@ def _beat_progress(lock: Path, token: str, t: float,
     if not isinstance(beat, dict) or beat.get("token") != token:
         return None
     at = beat.get("at")
-    if (not isinstance(at, (int, float)) or not math.isfinite(float(at))
-            or float(at) > t + BEAT_FUTURE_SLACK_S):
+    at_s = _num(at)
+    if at_s is None or at_s > t + BEAT_FUTURE_SLACK_S:
         return None
     expect = beat.get("expect_s")
     limit = max(float(WEDGED_AFTER_S),
                 min(float(expect), BEAT_EXPECT_MAX_S) if isinstance(expect, (int, float))
                 else 0.0)
-    idle = max(0.0, t - float(at))
+    idle = max(0.0, t - at_s)
     phase = str(beat.get("phase") or "?")
     out.update(signal="beat", phase=phase, idle_s=round(idle, 1), limit_s=round(limit, 1))
     if idle > limit:

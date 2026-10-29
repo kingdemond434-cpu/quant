@@ -51,6 +51,8 @@ OUT = ROOT / "desks" / "mt5" / "reports" / "JOB_LOCK_HEALTH.json"
 EXIT_WEDGED = 3
 #: A WEDGED research owner is stopped once its tree has made no CPU progress for this long.
 AUTO_STOP_AFTER_S = 2 * 3600.0
+#: A beaten phase with no beat for this long is stopped whatever its CPU does.
+BEAT_HARD_CEILING_S = 24 * 3600.0
 #: Listing rounds while freezing the owner's tree before a stop.
 STOP_LIST_ROUNDS = 20
 #: Seconds of clock slack when checking the owner was created before its lock was written.
@@ -111,6 +113,9 @@ def runs_script(argv: list[str], scripts: tuple[str, ...]) -> bool:
         arg = rest[i]
         if arg == "-":
             return False
+        if arg == "--":                   # options end: the next element is the script
+            nxt = rest[i + 1] if i + 1 < len(rest) else ""
+            return nxt.endswith(".py") and _leaf(nxt) in scripts
         if arg.startswith("--"):
             i += 2 if arg in _OPTS_WITH_ARG else 1
             continue
@@ -224,13 +229,31 @@ def stoppable(health: dict[str, Any]) -> bool:
     once its phase has run max(AUTO_STOP_AFTER_S, 2 x its limit) with no beat AND its tree is not
     busy -- measured CPU below `job_lock.BUSY_CPU_RATE` cores over the hour. The 2026-10-29
     spinner used ~0.04 of a core; real work uses most of one. An unmeasured rate never stops."""
+    return withheld(health) is None
+
+
+def withheld(health: dict[str, Any]) -> str | None:
+    """Why a WEDGED owner is NOT stopped this pass, or None when it may be (`stoppable`).
+
+    THE HARD CEILING (audit of v9, SF2): a beaten phase with no beat for `BEAT_HARD_CEILING_S`
+    is stopped busy or not -- phase limits are clamped to six hours, so a day without a beat is
+    a hot loop, and a busy-but-wedged owner must not hold the docket lane forever."""
     idle = float(health.get("idle_s") or 0.0)
     if health.get("signal") != "beat":
-        return idle >= AUTO_STOP_AFTER_S
+        return (None if idle >= AUTO_STOP_AFTER_S
+                else f"idle {idle / 3600:.1f} h of {AUTO_STOP_AFTER_S / 3600:g} h")
     limit = float(health.get("limit_s") or 0.0)
+    need = max(AUTO_STOP_AFTER_S, 2.0 * limit)
+    if idle < need:
+        return f"no beat for {idle / 3600:.1f} h of {need / 3600:.1f} h"
+    if idle >= BEAT_HARD_CEILING_S:
+        return None
     rate = health.get("cpu_rate")
-    return (idle >= max(AUTO_STOP_AFTER_S, 2.0 * limit)
-            and isinstance(rate, (int, float)) and rate < J.BUSY_CPU_RATE)
+    if not isinstance(rate, (int, float)):
+        return "cpu_rate unmeasured"
+    if rate >= J.BUSY_CPU_RATE:
+        return f"busy {rate:.2f} cores"
+    return None
 
 
 def run(*, root: Path | None = None, now: float | None = None, stop=_stop,
@@ -247,17 +270,25 @@ def run(*, root: Path | None = None, now: float | None = None, stop=_stop,
                           "owner": state, "why": f"owner {state}"}
             continue
         health = J.owner_progress(lock, now=t, cpu_of=cpu_of)
-        if (health.get("status") == "WEDGED" and name in AUTO_STOP_JOBS
-                and name not in NEVER_STOP and stoppable(health)
-                and isinstance(health.get("pid"), int)):
+        curable = (health.get("status") == "WEDGED" and name in AUTO_STOP_JOBS
+                   and name not in NEVER_STOP and isinstance(health.get("pid"), int))
+        why_not = withheld(health) if curable else None
+        if curable and why_not is not None:
+            health["auto_stop_withheld"] = why_not
+        elif curable:
             health["auto_stop"] = stop(health["pid"], AUTO_STOP_JOBS[name],
                                        health.get("started_at"))
-            if health["auto_stop"].get("stopped"):
+            done = health["auto_stop"]
+            if done.get("stopped"):
                 health["status"] = "STOPPED"
+            # A PARTIAL KILL IS A KILL (audit of v9, SF3): journaled and ledgered like a whole one.
+            if done.get("stopped") or done.get("terminated"):
                 _journal(name, health)
                 stops.append({"lock": name, "pid": health["pid"], "idle_s": health.get("idle_s"),
                               "at": datetime.fromtimestamp(t, UTC).isoformat(timespec="seconds"),
-                              "why": health["auto_stop"].get("why")})
+                              "partial": not done.get("stopped"),
+                              "terminated": done.get("terminated"),
+                              "why": done.get("why")})
         rows[name] = health
     J.write_health_report(rows, now=t, new_stops=stops)
     wedged = sorted(n for n, r in rows.items() if r.get("status") == "WEDGED")
