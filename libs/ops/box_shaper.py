@@ -204,12 +204,24 @@ def validate_rules(data: Mapping[str, Any]) -> None:
 
 # ------------------------------------------------------------------------------------ groups
 def classify(procs: Sequence[Proc], groups: Mapping[str, Sequence[str]]) -> None:
-    """Tag each process; the adopt and judge trees are whole. Precedence: money first, always."""
+    """Tag each process; the money, adopt and judge trees are whole. Precedence: money first.
+
+    A tree is every process matched by name plus all its descendants by parent chain. A child
+    is counted only if it was born no earlier than its parent (a ppid reused by a later process
+    is not a parent): Windows recycles pids and keeps a dead parent's id in the child.
+    """
     def hit(p: Proc, kind: str) -> bool:
         return any(s.lower() in p.haystack for s in groups.get(kind, ()))
 
     children: dict[int, list[Proc]] = {}
+    by_pid = {p.pid: p for p in procs}
     for p in procs:
+        if p.ppid == p.pid:
+            continue
+        parent = by_pid.get(p.ppid)
+        if (parent is not None and parent.create_time and p.create_time
+                and p.create_time < parent.create_time):
+            continue  # the "parent" is a later process that reused the pid
         children.setdefault(p.ppid, []).append(p)
 
     def tree(kind: str) -> set[int]:
@@ -226,11 +238,15 @@ def classify(procs: Sequence[Proc], groups: Mapping[str, Sequence[str]]) -> None
     # THE RELEASE PATH RIDES WITH THE MONEY PATH (2026-10-29): the first automatic Adopt-And-Seal
     # run was measured with its python child on ~13% of a core, a 2.5-minute step past 25. Its
     # powershell and every py/python/git below it are `adopt` by parent chain, not by name.
+    # THE MONEY PATH IS A TREE TOO (audit MF1, 2026-10-29): the gateway's python child
+    # (state_pusher_loop.py) matched no money name and was narrowed by plan_reserve and share_cap.
+    # Every descendant of a money process is money: raise-only, never narrowed.
+    money_tree = tree("money")
     adopt_tree = tree("adopt")
     judge_tree = tree("judge")
     system = {s.lower() for s in groups.get("system_names", ())}
     for p in procs:
-        if hit(p, "money"):
+        if p.pid in money_tree:
             p.group = "money"
         elif p.pid in adopt_tree:
             p.group = "adopt"
@@ -250,6 +266,9 @@ def classify(procs: Sequence[Proc], groups: Mapping[str, Sequence[str]]) -> None
 
 def summarize(procs: Sequence[Proc], n_cpu: int, box_cpu_pct: float | None,
               starved_cfg: Mapping[str, Any]) -> dict[str, Any]:
+    # pid 0 is the System Idle Process: its "CPU" is the box's idle time, not work. Counted, it
+    # inflated `busy` and so hid a starved judge (audit, 2026-10-29).
+    procs = [p for p in procs if p.pid != 0]
     busy = sum(p.cpu_pct for p in procs) or 0.0
     capacity = 100.0 * max(1, n_cpu)
     by_group: dict[str, dict[str, Any]] = {}
@@ -399,8 +418,42 @@ def _clamp_adopt_under_money(procs: Sequence[Proc], out: Plan) -> None:
     out.actions[:] = keep
 
 
-def apply_ordered(actions: Sequence[Action], n_cpu: int) -> None:
-    """Apply money-path raises first; adopt raises only once every money raise has landed."""
+def adopt_floor_actions(procs: Sequence[Proc], money_actions: Sequence[Action]) -> list[Action]:
+    """Lower any adopt process left ABOVE the money path after this pass's money raises. Pure.
+
+    THE ADOPT TREE NEVER OUTLIVES THE MONEY PATH'S CLASS (audit P6, 2026-10-29). An adopt process
+    raised on an EARLIER pass carries no action now, so holding back this pass's adopt raises is
+    not enough: a gateway that restarted at Normal and whose raise failed would sit under an
+    adopt tree still at AboveNormal. The money floor is each money process's class after this
+    pass (a landed raise's target, else the class measured); every adopt process above it is
+    lowered to it. With a money class unreadable the floor is unknown and the adopt tree is held
+    at Normal, the class it started at, never assumed under a money path that cannot be read.
+    """
+    landed = {a.pid: str(a.after) for a in money_actions
+              if a.kind == "priority" and a.applied and not a.error}
+    money = [p for p in procs if p.group == "money"]
+    if not money:
+        return []
+    classes = [landed.get(p.pid, p.priority) for p in money]
+    if any(c not in PRIORITY_ORDER for c in classes):
+        target = "Normal"
+    else:
+        target = PRIORITY_ORDER[min(_rank(c) for c in classes)]
+    out: list[Action] = []
+    for p in procs:
+        if p.group == "adopt" and _rank(p.priority) > _rank(target):
+            out.append(Action(p.pid, p.name, p.group, "adopt_under_money", "priority",
+                              p.priority, target))
+    return out
+
+
+def apply_ordered(actions: Sequence[Action], n_cpu: int,
+                  procs: Sequence[Proc] = ()) -> list[Action]:
+    """Apply money-path raises first; adopt raises only once every money raise has landed.
+
+    Then (`procs` given) any adopt process still above the money floor is lowered to it
+    (`adopt_floor_actions`); those extra actions are applied and returned for the report.
+    """
     money = [a for a in actions if a.group == "money" and a.kind == "priority"]
     adopt = [a for a in actions if a.group == "adopt" and a.kind == "priority"]
     first = {id(a) for a in money} | {id(a) for a in adopt}
@@ -413,7 +466,10 @@ def apply_ordered(actions: Sequence[Action], n_cpu: int) -> None:
                        f"({failed[0].error})")[:200]
     else:
         apply(adopt, n_cpu)
+    lowered = adopt_floor_actions(procs, money) if procs else []
+    apply(lowered, n_cpu)
     apply(rest, n_cpu)
+    return lowered
 
 
 def memecoin_cap_holds(procs: Sequence[Proc], rules: Mapping[str, Any], the_plan: Plan,
@@ -587,17 +643,20 @@ def release_share_cap(procs: Sequence[Proc], previous: Mapping[str, Any], *, jud
         _set, orig_l = _cap_record(previous[p.key])
         orig = (set(orig_l) & full) if orig_l else full
         if is_reserved(p):
-            # the reservation keeps it on the side mask whatever it held before: the side is the
-            # widest it may hold (its pre-pin cores may already be a reserve move)
-            target_now, target_base = set(side_now), set(side_base)
+            # the reservation keeps it on the side mask whatever it held before: its recorded
+            # cores inside the side (the side itself when they held none of it)
+            target_now = (orig & set(side_now)) or set(side_now)
+            target_base = (orig & set(side_base)) or set(side_base)
         else:
             target_now = target_base = orig
+        # RESTORE EXACTLY WHAT WAS RECORDED (audit, 2026-10-29): the pin's cores are not kept on
+        # top of the original (cur | orig gave a mask the process never held).
         after = cur
-        if target_now and not target_now <= cur:
+        if target_now and target_now != cur:
             actions.append(Action(p.pid, p.name, p.group, "share_cap_release", "affinity",
-                                  _mask(p.affinity), cpus_to_mask(sorted(cur | target_now))))
-            after = cur | target_now
-        if not target_base <= after:
+                                  _mask(p.affinity), cpus_to_mask(sorted(target_now))))
+            after = target_now
+        if target_base != after:
             rec = previous[p.key]
             keep[p.key] = dict(rec) if isinstance(rec, Mapping) else {"mask": rec, "orig": None}
     return actions, keep
@@ -736,6 +795,10 @@ def throttle_mechanisms(rules: Mapping[str, Any]) -> list[str]:
 
 def _narrows(a: Action) -> bool:
     if a.kind == "priority":
+        # A class set from an UNREADABLE one may be a lowering, so it is billed as one (audit,
+        # 2026-10-29): before, _rank(None) = -1 made every such set read as a raise.
+        if a.before not in PRIORITY_ORDER:
+            return True
         return _rank(str(a.after)) < _rank(a.before)
     before = len(mask_to_cpus(str(a.before), 4096)) if a.before is not None else 4096
     return len(mask_to_cpus(str(a.after), 4096)) < before
@@ -743,7 +806,7 @@ def _narrows(a: Action) -> bool:
 
 def missed_growth_ledger(previous: Mapping[str, Any] | None, *, rules: Mapping[str, Any],
                          procs: Sequence[Proc], actions: Sequence[Action], n_cpu: int, at: str,
-                         judge_share: float | None) -> dict[str, Any]:
+                         judge_share: float | None, lives: Any = None) -> dict[str, Any]:
     """THE TWO-SIDED LINE FOR EVERY THROTTLE (growth governance). Pure.
 
     Each landed action that narrows a process (fewer cores, lower class) opens an event with the
@@ -752,6 +815,9 @@ def missed_growth_ledger(previous: Mapping[str, Any] | None, *, rules: Mapping[s
     then reads 0 after and says so), `judge_gain_share` is what the judge gained, and
     `net_share` = gain minus forgone. A throttle whose net stays negative is costing growth, and
     the line says so in numbers; one whose gain is unmeasured says UNMEASURED, never zero.
+    A process this pass did not read but that still lives (`lives(key)`: alive, same create
+    time) is not "gone": its event stays open until a pass reads it, so an unreadable process is
+    never billed its whole share as forgone.
     """
     prev = previous or {}
     cap = 100.0 * max(1, n_cpu)
@@ -770,6 +836,9 @@ def missed_growth_ledger(previous: Mapping[str, Any] | None, *, rules: Mapping[s
                 continue
             ev = dict(ev)
             p = by_key.get(str(ev.get("key")))
+            if p is None and lives is not None and lives(str(ev.get("key"))):
+                still_open.append(ev)   # alive but unread this pass: not closed as gone
+                continue
             ev["share_after"] = round(p.cpu_pct / cap, 4) if p is not None else 0.0
             ev["gone"] = p is None
             ev["judge_share_after"] = judge_share
@@ -1038,18 +1107,43 @@ def carried_records(prev: Mapping[str, Any]) -> dict[str, Any]:
     return out
 
 
+def pid_create_time(pid: int) -> float | None:
+    """The live process's create time, or None when it cannot be read (gone, denied, no psutil)."""
+    if psutil is None:
+        return None
+    try:
+        return float(psutil.Process(pid).create_time())
+    except Exception:  # a gone or protected process is a reading, not a crash
+        return None
+
+
+def key_lives(key: str, alive: Any, create_time: Any = None) -> bool:
+    """Is the process named by `key` ("pid:create_time") still the one alive at that pid? Pure.
+
+    The pid must be alive AND, when its create time can be read, born at the key's second: a
+    reused pid is a different process (audit, 2026-10-29). An alive pid whose create time cannot
+    be read is not proven to be another process, so it still counts as the same one.
+    """
+    try:
+        pid_s, _sep, ct_s = str(key).partition(":")
+        pid = int(pid_s)
+        ct_key = int(ct_s) if ct_s else None
+    except ValueError:
+        return False
+    if alive is None or not alive(pid):
+        return False
+    ct = create_time(pid) if create_time is not None else None
+    return ct is None or ct_key is None or int(ct) == ct_key
+
+
 def keep_unseen(records: dict[str, Any], previous: Mapping[str, Any], seen: set[str],
-                alive: Any) -> dict[str, Any]:
-    """Records of processes this pass did not read (a psutil error on one) but whose pid lives
-    are kept: a key holds the create time, so a reused pid never matches it. Pure."""
+                alive: Any, create_time: Any = None) -> dict[str, Any]:
+    """Records of processes this pass did not read (a psutil error on one) but that still live
+    are kept: the pid alive and its create time the key's (`key_lives`). Pure."""
     for k, v in previous.items():
         if k in records or k in seen:
             continue
-        try:
-            pid = int(str(k).split(":", 1)[0])
-        except ValueError:
-            continue
-        if alive is not None and alive(pid):
+        if key_lives(str(k), alive, create_time):
             records[k] = v
     return records
 
@@ -1137,7 +1231,7 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH,
             cap_moved[k] = {"mask": str(a.after),
                             "orig": old_orig if old_orig else (before or list(range(n_cpu)))}
     seen_keys = {p.key for p in procs}
-    keep_unseen(cap_moved, prev_cap, seen_keys, psutil.pid_exists)
+    keep_unseen(cap_moved, prev_cap, seen_keys, psutil.pid_exists, pid_create_time)
     reserve_doc: dict[str, Any] = {}
     reserve_actions: list[Action] = []
     if reserve_cfg:
@@ -1151,7 +1245,7 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH,
             floor_cores=floor_cores, skip_pids=pinned,
             previous_moved=prev_moved)
         the_plan.actions.extend(reserve_actions)
-        keep_unseen(moved, prev_moved, seen_keys, psutil.pid_exists)
+        keep_unseen(moved, prev_moved, seen_keys, psutil.pid_exists, pid_create_time)
         reserve_doc = {**meta, "phase": phase, "phase_pid": phase_pid, "serial": serial,
                        "starved": summary["judge"]["starved"], "moved": moved,
                        "switches": log_switch(prev_res.get("switches") or [], at=now,
@@ -1161,7 +1255,7 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH,
                                               mining_share=summary["by_group"].get(
                                                   "mining", {}).get("share_of_box", 0.0),
                                               side_cores=int(meta["side_cores"]))}
-    apply_ordered(the_plan.actions, n_cpu)
+    the_plan.actions.extend(apply_ordered(the_plan.actions, n_cpu, procs))
     if reserve_cfg:
         ok, why = reserve_holds(reserve_actions, reserve_doc)
         reserve_doc.update(holds=ok, holds_why=why)
@@ -1180,7 +1274,8 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH,
     ledger = missed_growth_ledger(
         prev_ledger if isinstance(prev_ledger, Mapping) else None, rules=rules, procs=procs,
         actions=the_plan.actions, n_cpu=n_cpu, at=now,
-        judge_share=float(summary["judge"]["share_of_box"]))
+        judge_share=float(summary["judge"]["share_of_box"]),
+        lives=lambda k: key_lives(k, psutil.pid_exists, pid_create_time))
     vm = psutil.virtual_memory()
     top = sorted(procs, key=lambda p: p.cpu_pct, reverse=True)[:TOP_N]
     landed = sum(1 for a in the_plan.actions if a.applied)

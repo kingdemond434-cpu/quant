@@ -24,7 +24,9 @@ param(
     [string] $Repo = "kingdemond434-cpu/quant",
     [string] $Live = "claude/llm-auto-upgrade-verify-gcjac3",
     [string] $Gh = "C:\Users\Administrator\tools\gh\bin\gh.exe",
-    [string] $Python = ""
+    [string] $Python = "",
+    # where the merge-pipeline report is written: the desk's reports, published with box state
+    [string] $QuantRoot = "C:\opt\quant"
 )
 $ErrorActionPreference = 'Stop'
 $LogDir = Join-Path $Root "logs"
@@ -32,16 +34,51 @@ $Clone = Join-Path $Root "gate-repo"
 $log = Join-Path $LogDir "workflow_gate.log"
 $beat = Join-Path $LogDir "workflow_gate.json"
 
-$mutex = New-Object System.Threading.Mutex($false, "Global\QuantBox-WorkflowGate")
-if (-not $mutex.WaitOne(0)) { exit 0 }  # the previous sweep is still running
-
 function Say([string] $line) {
     Add-Content -LiteralPath $log -Value ("{0} {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ssK'), $line)
 }
-function Beat([int] $rc, [string] $note, [bool] $scope) {
-    $doc = [ordered]@{ at = (Get-Date).ToUniversalTime().ToString('o'); rc = $rc; workflow_scope = $scope; note = $note }
+function Beat([int] $rc, [string] $note, [bool] $scope, [int] $held = 0) {
+    $doc = [ordered]@{ at = (Get-Date).ToUniversalTime().ToString('o'); rc = $rc; workflow_scope = $scope; note = $note; mutex_held_runs = $held }
     $doc | ConvertTo-Json -Compress | Set-Content -LiteralPath "$beat.tmp" -Encoding UTF8
     Move-Item -LiteralPath "$beat.tmp" -Destination $beat -Force
+}
+
+# The merge pipeline's clock (#521 audit MF2): queued-check ages, CLEARed or green work waiting,
+# LIVE's last code, the reviewer's false-positive rate and this sweep's own heartbeat. It runs on
+# every run, the refused ones too, so a wedged sweep still writes a RED report. Read-only on
+# GitHub; a failure here is logged and never changes the sweep's exit code.
+function Watch {
+    try {
+        $env:GH_BIN = $Gh
+        $py = $Python
+        if (-not $py) {
+            foreach ($cand in @("$env:LOCALAPPDATA\Programs\Python\Python314\python.exe", 'C:\Program Files\Python314\python.exe')) {
+                if (Test-Path -LiteralPath $cand) { $py = $cand; break }
+            }
+        }
+        $script = Join-Path $Clone "scripts\merge_pipeline_watch.py"
+        if (-not $py -or -not (Test-Path -LiteralPath $script)) { Say "watch: no Python or no watcher in the clone"; return }
+        $report = Join-Path $QuantRoot "desks\mt5\reports\MERGE_PIPELINE.json"
+        $wout = (& $py -I -u $script --repo $Repo --base $Live --out $report --heartbeat $beat 2>&1 | Out-String)
+        Say "watch rc=$LASTEXITCODE $($wout.Trim())"
+    } catch {
+        Say "watch failed: $($_.Exception.Message)"
+    }
+}
+
+# A HELD MUTEX IS NEVER SILENT (2026-10-29). A gh call hung from 13:53Z held this mutex and every
+# later run exited 0 here without a line, so the only merger of AUTO PRs was dead for hours and
+# the heartbeat simply stopped. Each refused run now logs, counts and stamps the heartbeat; the
+# merge-pipeline watcher reads it (rc 4, mutex_held_runs) and goes RED past two runs. The gate's
+# own gh calls now time out, so a hold cannot last past one sweep.
+$mutex = New-Object System.Threading.Mutex($false, "Global\QuantBox-WorkflowGate")
+if (-not $mutex.WaitOne(0)) {
+    $held = 1
+    try { $held = [int]((Get-Content -LiteralPath $beat -Raw | ConvertFrom-Json).mutex_held_runs) + 1 } catch { }
+    Say "the previous sweep still holds the mutex (run $held in a row)"
+    Beat 4 "mutex held by the previous sweep ($held runs in a row)" $true $held
+    Watch
+    exit 4
 }
 if ((Test-Path -LiteralPath $log) -and (Get-Item -LiteralPath $log).Length -gt 5MB) {
     Move-Item -LiteralPath $log -Destination "$log.1" -Force
@@ -70,7 +107,7 @@ try {
     $ErrorActionPreference = 'Continue'  # native stderr is data; exit codes are the verdict
     $status = (& $Gh auth status -h github.com 2>&1 | Out-String)
     $scopeLine = ($status -split "`n" | Where-Object { $_ -match 'Token scopes' } | Select-Object -First 1)
-    if ($LASTEXITCODE -ne 0) { Say "gh is not logged in: $($status.Trim())"; Beat 3 "gh not logged in" $false; exit 3 }
+    if ($LASTEXITCODE -ne 0) { Say "gh is not logged in: $($status.Trim())"; Beat 3 "gh not logged in" $false; Watch; exit 3 }
     $scope = $scopeLine -match "'workflow'"
     if (-not $scope) {
         Say "gh login lacks the workflow scope ($scopeLine); workflow-file PRs will fail to merge"
@@ -93,18 +130,26 @@ try {
 
     Push-Location -LiteralPath $Clone
     try {
-        $out = (& $Python -I -u (Join-Path $Clone ".github\scripts\audit_gate.py") --repo $Repo --base $Live --sweep --box 2>&1 | Out-String)
+        # Streamed, one log line per gate line as it comes (2026-10-29: a sweep killed by the
+        # task's time limit had buffered everything and left no line at all).
+        $lines = New-Object System.Collections.Generic.List[string]
+        & $Python -I -u (Join-Path $Clone ".github\scripts\audit_gate.py") --repo $Repo --base $Live --sweep --box 2>&1 | ForEach-Object {
+            $l = "$_"
+            if ($l) { Say "gate@$at $l"; $lines.Add($l) }
+        }
         $rc = $LASTEXITCODE
+        $out = $lines -join "`n"
     } finally { Pop-Location }
-    foreach ($l in ($out -split "`r?`n" | Where-Object { $_ })) { Say "gate@$at $l" }
     $merged = @($out -split "`r?`n" | Where-Object { $_ -match 'MERGED' }).Count
     $note = "gate@{0}: {1} merged" -f $at, $merged
     if (-not $scope) { $note += "; NO workflow scope: run once  gh auth refresh -h github.com -s workflow" }
     Beat $rc $note $scope
+    Watch
     exit $rc
 } catch {
     Say "FAILED: $($_.Exception.Message)"
     Beat 1 "FAILED: $($_.Exception.Message)" $false
+    Watch  # a sweep that fails every run still writes its RED (#521 audit MF-A)
     exit 1
 } finally {
     $mutex.ReleaseMutex()

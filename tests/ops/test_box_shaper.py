@@ -623,6 +623,7 @@ def test_an_unmeasured_pass_never_strands_a_pin(monkeypatch: pytest.MonkeyPatch,
         feed.append((snap(), 100.0))
         out = run()
         assert out["judge"]["starved"] is True
+    assert miner.affinity is not None and other.affinity is not None
     assert bs.cpus_to_mask(miner.affinity) == "0x3000f"
     assert bs.cpus_to_mask(other.affinity) == "0x3000f"            # pinned by share_cap
     feed.append(([], None))                                         # the empty pass
@@ -633,6 +634,7 @@ def test_an_unmeasured_pass_never_strands_a_pin(monkeypatch: pytest.MonkeyPatch,
     feed.append((snap(), 40.0))
     out = run()
     assert out["judge"]["starved"] is False
+    assert miner.affinity is not None and other.affinity is not None
     assert bs.cpus_to_mask(miner.affinity) == "0x300ff"            # back to the side mask
     assert bs.cpus_to_mask(other.affinity) == "0x3ffff"            # its original 18 cores
     assert out["share_cap_moved"] == {} and out["judge_reserve"]["moved"]
@@ -783,3 +785,177 @@ def test_every_libs_ops_throttle_is_two_sided(tmp_path: Path) -> None:
     (fake / "squeezer.py").write_text("def go(pr):\n    pr.cpu_affinity([0])\n")
     (fake / "self_nice.py").write_text("def go(me):\n    me.nice(10)\n")
     assert _throttles_without_ledger(tmp_path) == ["squeezer.py"]
+
+
+# ------------------------------------------------------------------------------------ third audit
+def _gateway_box() -> list[Proc]:
+    """The gateway (money by name) and its python child state_pusher_loop.py (money by tree)."""
+    full = list(range(N))
+    procs = [
+        Proc(20, "python.exe", cmdline="python.exe run_sharded_gauntlet.py", create_time=1,
+             cpu_pct=50, priority="BelowNormal", affinity=full),
+        Proc(60, "python.exe", cmdline=r"python.exe C:\opt\quant\desks\mt5\run_gateway_loop.py",
+             create_time=2, cpu_pct=20, priority="AboveNormal", affinity=full),
+        Proc(61, "python.exe", ppid=60, create_time=3,
+             cmdline=r"python.exe C:\opt\quant\desks\mt5\scripts\state_pusher_loop.py",
+             cpu_pct=900, priority="Normal", affinity=full),
+        # a pid-reuse impostor: its ppid names the gateway, but it is older than the gateway
+        Proc(62, "python.exe", ppid=60, create_time=0.5, cmdline="python.exe other_job.py",
+             cpu_pct=900, priority="Normal", affinity=full),
+    ]
+    bs.classify(procs, RULES["groups"])
+    return procs
+
+
+def test_a_gateway_child_is_money_and_never_reserved_off_its_cores() -> None:
+    """MF1 probe: state_pusher_loop.py under the gateway read as "other" and plan_reserve moved
+    it 0x3ffff -> 0x3000f. The money path is a tree: its children are raise-only."""
+    procs = _gateway_box()
+    g = _by_pid(procs)
+    assert g[61].group == "money" and g[60].group == "money"
+    assert g[62].group == "other"                     # an older process is never a child
+    for boost in (False, True):
+        actions, moved, _ = bs.plan_reserve(procs, RES, N, boost=boost, floor_cores=FLOOR,
+                                            skip_pids=set(), previous_moved={})
+        assert 61 not in moved_pids(actions) and g[61].key not in moved
+        assert 62 in moved_pids(actions)
+    # narrowed on an earlier pass while it read as other: every core back
+    g[61].affinity = bs.mask_to_cpus("0x3000F", N)
+    actions, _, _ = bs.plan_reserve(procs, RES, N, boost=True, floor_cores=FLOOR,
+                                    skip_pids=set(), previous_moved={g[61].key: "0x3000f"})
+    assert [(a.pid, a.after) for a in actions if a.pid == 61] == [(61, "0x3ffff")]
+
+
+def test_a_gateway_child_is_never_share_capped() -> None:
+    """MF1 probe: a 9-core gateway child, two passes, a starved judge: never pinned."""
+    procs = _gateway_box()
+    out = bs.plan(procs, RULES, N, judge_starved=True, previous_heavy=[p.key for p in procs])
+    assert not [a for a in out.actions if a.pid == 61 and a.kind == "affinity"]
+    assert not [a for a in out.actions if a.pid == 61 and a.kind == "priority"
+                and bs._rank(str(a.after)) < bs._rank("Normal")]
+    assert 61 not in {int(k.split(":")[0]) for k in out.heavy}
+    # raised with the money path instead
+    assert any(a.pid == 61 and a.after == "AboveNormal" for a in out.actions)
+    # the impostor is an ordinary other process and is capped
+    assert any(a.pid == 62 and a.rule == "share_cap" for a in out.actions)
+    # and a pin set before the fix is widened back to every core
+    g = _by_pid(procs)[61]
+    g.affinity = bs.mask_to_cpus("0x3000F", N)
+    acts, keep = bs.release_share_cap(procs, {g.key: {"mask": "0x3000f", "orig": None}},
+                                      judge_starved=True, side_now=[0], side_base=[0], n_cpu=N,
+                                      skip_pids=set())
+    assert [(a.pid, a.after) for a in acts] == [(61, "0x3ffff")] and keep == {}
+
+
+def test_release_restores_the_recorded_mask_exactly() -> None:
+    """SF probe :595: release gave cur | orig (0x3000f | 0x300f0 = 0x300ff), a mask the process
+    never held. It restores the recorded original exactly."""
+    side = bs.mask_to_cpus("0x300FF", N)
+    p = Proc(40, "render.exe", cmdline="render.exe", create_time=300, cpu_pct=100,
+             affinity=bs.mask_to_cpus("0x3000F", N), group="other")
+    rec = {p.key: {"mask": "0x3000f", "orig": bs.mask_to_cpus("0x300F0", N)}}
+    acts, keep = bs.release_share_cap([p], rec, judge_starved=False, side_now=side,
+                                      side_base=side, n_cpu=N, skip_pids=set(),
+                                      reserved=lambda q: bs.reserve_applies(q, RES))
+    assert [(a.pid, a.after) for a in acts] == [(40, "0x300f0")] and keep == {}
+    # a reserved python miner whose original cores lay inside the side gets exactly those back
+    m = Proc(31, "python.exe", cmdline="python.exe moat_miner.py", create_time=100,
+             cpu_pct=100, affinity=bs.mask_to_cpus("0x3000F", N), group="mining")
+    rec = {m.key: {"mask": "0x3000f", "orig": bs.mask_to_cpus("0x000F3", N)}}
+    acts, keep = bs.release_share_cap([m], rec, judge_starved=False, side_now=side,
+                                      side_base=side, n_cpu=N, skip_pids=set(),
+                                      reserved=lambda q: bs.reserve_applies(q, RES))
+    assert [(a.pid, a.after) for a in acts] == [(31, "0xf3")] and keep == {}
+
+
+def test_keep_unseen_drops_a_reused_pid() -> None:
+    """SF probe :1040: a record survives an unread pass only for the SAME process."""
+    prev = {"31:100": {"mask": "0x3000f"}, "32:200": "0x300ff", "33:300": "0x300ff"}
+    ctimes = {31: 100.4, 32: 999.0}            # 32's pid now names a younger process
+
+    def alive(pid: int) -> bool:
+        return pid in (31, 32, 33)
+    got = bs.keep_unseen({}, prev, set(), alive, ctimes.get)
+    assert set(got) == {"31:100", "33:300"}     # 33: alive, create time unreadable -> kept
+    assert bs.keep_unseen({}, prev, set(), lambda _p: False, ctimes.get) == {}
+
+
+def test_an_unread_but_alive_process_is_not_billed_as_gone() -> None:
+    """SF probe :771: a process psutil could not read this pass stays open in the ledger."""
+    p = Proc(40, "render.exe", create_time=300, cpu_pct=800, group="other")
+    a = bs.Action(40, "render.exe", "other", "share_cap", "affinity", "0x3ffff", "0x3000f",
+                  applied=True)
+    led = bs.missed_growth_ledger(None, rules=RULES, procs=[p], actions=[a], n_cpu=N, at="t1",
+                                  judge_share=0.10)
+    led2 = bs.missed_growth_ledger(led, rules=RULES, procs=[], actions=[], n_cpu=N, at="t2",
+                                   judge_share=0.30, lives=lambda k: k == p.key)
+    assert led2["share_cap"]["closed"] == [] and len(led2["share_cap"]["open"]) == 1
+    assert led2["share_cap"]["totals"]["n"] == 0
+    led3 = bs.missed_growth_ledger(led2, rules=RULES, procs=[], actions=[], n_cpu=N, at="t3",
+                                   judge_share=0.30, lives=lambda _k: False)
+    ev = led3["share_cap"]["closed"][0]
+    assert ev["gone"] is True and ev["forgone_share"] == round(800 / 1800, 4)
+
+
+def test_a_class_set_from_an_unreadable_class_is_billed_as_a_lowering() -> None:
+    """SF probe :736: _rank(None) = -1 made BelowNormal-from-unknown read as a raise."""
+    a = bs.Action(14, "node.exe", "memecoin", "memecoin_cap", "priority", None, "BelowNormal",
+                  applied=True)
+    assert bs._narrows(a)
+    p = Proc(14, "node.exe", create_time=1, cpu_pct=200, group="memecoin")
+    led = bs.missed_growth_ledger(None, rules=RULES, procs=[p], actions=[a], n_cpu=N, at="t1",
+                                  judge_share=0.1)
+    assert len(led["memecoin_cap"]["open"]) == 1
+    assert not bs._narrows(bs.Action(14, "n", "m", "r", "priority", "Normal", "AboveNormal"))
+
+
+def test_summarize_ignores_the_system_idle_process() -> None:
+    """SF probe :252: pid 0's idle time counted as busy and hid a starved judge."""
+    full = list(range(N))
+    procs = [Proc(0, "System Idle Process", cpu_pct=1200, affinity=full),
+             Proc(20, "python.exe", cmdline="run_sharded_gauntlet.py", cpu_pct=100),
+             Proc(31, "python.exe", cmdline="moat_miner.py", cpu_pct=500)]
+    bs.classify(procs, RULES["groups"])
+    s = bs.summarize(procs, N, 95.0, RULES["judge_starved"])
+    assert s["busy_cpu_pct"] == 600.0 and "system" not in s["by_group"]
+    assert s["judge"]["share_of_busy"] == round(100 / 600, 4) and s["judge"]["starved"] is True
+
+
+def test_a_failed_money_raise_lowers_an_adopt_tree_raised_earlier(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """P6 probe: the gateway restarted at Normal, its raise failed, and the adopt tree raised on
+    an earlier pass sat at AboveNormal above it. It is lowered to the money floor."""
+    procs = _money_box("Normal")
+    for p in procs:
+        if p.pid == 500:
+            p.priority = "AboveNormal"                 # raised on an earlier pass
+        if p.pid == 11:
+            p.priority = "AboveNormal"
+    out = bs.plan(procs, RULES, N, judge_starved=False)
+    assert not [a for a in out.actions if a.pid == 500]   # nothing planned for adopt this pass
+
+    def _apply(actions: list[bs.Action], _n: int) -> None:
+        for a in actions:
+            if a.pid == 60 and a.group == "money":
+                a.error = "AccessDenied"
+            else:
+                a.applied = True
+    monkeypatch.setattr(bs, "apply", _apply)
+    extra = bs.apply_ordered(out.actions, N, procs)
+    assert [(a.pid, a.before, a.after, a.applied) for a in extra] == [
+        (500, "AboveNormal", "Normal", True)]
+    # all money raises land: the adopt tree may stay where it is
+    procs = _money_box("Normal")
+    _by_pid(procs)[500].priority = "AboveNormal"
+    out = bs.plan(procs, RULES, N, judge_starved=False)
+
+    def _land(actions: list[bs.Action], _n: int) -> None:
+        for a in actions:
+            a.applied = True
+    monkeypatch.setattr(bs, "apply", _land)
+    assert bs.apply_ordered(out.actions, N, procs) == []
+    # a money class unreadable: the adopt tree goes back to Normal, never assumed under it
+    procs = _money_box(None)
+    _by_pid(procs)[500].priority = "AboveNormal"
+    extra = bs.apply_ordered([], N, procs)
+    assert [(a.pid, a.after) for a in extra] == [(500, "Normal")]
