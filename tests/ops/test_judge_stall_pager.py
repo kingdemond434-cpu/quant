@@ -89,6 +89,10 @@ def _world(tmp: Path, now: datetime, *, verdict_h: float = 1.0, hb_min: float = 
             "backpressure": bp}
 
 
+def _reporters(tmp: Path) -> dict:
+    return {"rate": tmp / "JUDGING_RATE.json", "backpressure": tmp / "GAUNTLET_BACKPRESSURE.json"}
+
+
 def _step(jsp, tmp: Path, now: datetime, ch: Channel, alive=_alive, on_box=True, **kw) -> dict:
     paths = _world(tmp, now, **kw)
     return jsp.run(now=now, root=tmp, sender=ch, on_box=on_box, out=tmp / "JUDGE_STALL.json",
@@ -220,14 +224,14 @@ def test_unmeasured_inputs_page_after_thirty_minutes(jsp, tmp_path):
         torn.write_text("{torn", "utf-8")
         d = jsp.run(now=t, root=tmp_path, sender=ch, on_box=True,
                     out=tmp_path / "JUDGE_STALL.json", ledger=tmp_path / "empty.jsonl",
-                    resident=torn, throughput=tmp_path / "x.json", rate=tmp_path / "JUDGING_RATE.json",
-                    backpressure=tmp_path / "GAUNTLET_BACKPRESSURE.json")
+                    resident=torn, throughput=tmp_path / "x.json",
+                **_reporters(tmp_path))
         assert d["page"]["sent"] is False
     assert ch.sent == []
     t = NOW + timedelta(minutes=jsp.UNMEASURED_PAGE_MIN)
     d = jsp.run(now=t, root=tmp_path, sender=ch, on_box=True, out=tmp_path / "JUDGE_STALL.json",
-                ledger=tmp_path / "empty.jsonl", resident=torn, throughput=tmp_path / "x.json", rate=tmp_path / "JUDGING_RATE.json",
-                    backpressure=tmp_path / "GAUNTLET_BACKPRESSURE.json")
+                ledger=tmp_path / "empty.jsonl", resident=torn, throughput=tmp_path / "x.json",
+                **_reporters(tmp_path))
     assert d["page"]["opened"] == ["inputs_unmeasured"] and len(ch.sent) == 1
     # an empty ledger is unmeasured too
     (tmp_path / "e").mkdir()
@@ -242,8 +246,8 @@ def test_unmeasured_neither_opens_nor_clears_its_own_incident(jsp, tmp_path):
     (tmp_path / "JUDGE_RESIDENT.json").write_text("{broken", "utf-8")
     d = jsp.run(now=NOW + timedelta(minutes=5), root=tmp_path, sender=ch, on_box=True,
                 out=tmp_path / "JUDGE_STALL.json", ledger=tmp_path / "gate_verdict_ledger.jsonl",
-                resident=tmp_path / "JUDGE_RESIDENT.json", throughput=tmp_path / "x.json", rate=tmp_path / "JUDGING_RATE.json",
-                    backpressure=tmp_path / "GAUNTLET_BACKPRESSURE.json")
+                resident=tmp_path / "JUDGE_RESIDENT.json", throughput=tmp_path / "x.json",
+                **_reporters(tmp_path))
     assert d["incidents"]["resident_dead"]["open"] is None
     assert d["page"]["resolved"] == [] and len(ch.sent) == 1
     assert "resident_dead" in _state(jsp, tmp_path)["open"]
