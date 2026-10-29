@@ -162,12 +162,17 @@ _FAMILY_GROUPS: dict[str, str] = {
     "fx_fixing_flow price_only market": "fx_fixing_reversal",
     "forced_flow event market": "forced_flow",
     "macro_release macro market": "macro_conditional macro_gold_yield",
-    "macro_release event market": "event_reaction",
+    "macro_release event market": "event_reaction"
+                                  " cb_tone_speech_reaction event_surprise_consensus"
+                                  " event_surprise_impact_drift",
     "macro_release cross_asset market": "usd_session_shock",
     "carry_rollover carry market": "carry mass_screen_carry",
     "positioning_crowding positioning market": "cot_change_fade cot_change_momentum"
                                                " cot_comm_follow cot_net_fade cot_positioning"
-                                               " retail_overlap_reversal",
+                                               " retail_overlap_reversal"
+                                               " positioning_crowding_unwind"
+                                               " positioning_flow_momentum"
+                                               " positioning_hedging_pressure",
     "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month"
                                                " mass_screen_clock",
     "relative_value_dislocation cross_asset market": "correlation_regime cross_asset_residual"
@@ -178,7 +183,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     "relative_value_dislocation microstructure limit": "triangle",
     "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup"
                                             " gnn_propagation mass_screen_lead"
-                                            " ae_latent",
+                                            " ae_latent"
+                                            " cross_asset_lead_lag",
     # The learned attention forecast (2026-09-30, research/learned_miners): whether a move is a
     # concession that reverts or information that continues, read off the recent path.
     "inventory_shock price_only market": "attention_ts rocket_ts sig_path",
@@ -203,9 +209,12 @@ _FAMILY_GROUPS: dict[str, str] = {
     "volatility_shock price_only stop": "d1_inside volatility_squeeze",
     "regime_transition price_only market": "drawdown_conditional regime_split"
                                            " regime_transition vol_transition",
-    "execution_microstructure microstructure market": "liquidity_regime orderflow_imbalance",
+    "execution_microstructure microstructure market": "liquidity_regime orderflow_imbalance"
+                                                      " entry_alpha_open_offset"
+                                                      " entry_alpha_spread_gate",
     "execution_microstructure microstructure limit": "execution_state moat_spread_window"
-                                                     " spread_state",
+                                                     " spread_state"
+                                                     " entry_alpha_limit_pullback",
     "gamma_hedging_state microstructure market": "liquidity_gamma_reversal",
     "inventory_shock microstructure market": "volume_spike",
     # NO MECHANISM NAMED, AND THAT IS THE MEASUREMENT. `discovered` is the desk's own generated
@@ -232,6 +241,11 @@ _FAMILY_GROUPS: dict[str, str] = {
     # the same shape as `exogenous_conditioner`: the series is named, the payer is not.
     f"{UNKNOWN} macro market": "exogenous_conditioner world_macro_state alt_series_momentum"
                                " dataset_conditioned",
+    # THE EMPTY-CLUSTER FAMILIES (`mt5desk.families_empty_clusters`, PR #163): each names its
+    # payer on its own docstring.
+    "volatility_shock event market": "news_reaction_unscheduled_shock",
+    "volatility_shock macro market": "implied_vol_risk_premium implied_vol_shock_fade",
+    "session_information_handoff cross_asset market": "lead_lag_session_handoff",
 }
 FAMILY_TABLE: dict[str, tuple[str, str, str]] = {}
 for _key, _fams in _FAMILY_GROUPS.items():
