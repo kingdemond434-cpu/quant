@@ -30,9 +30,19 @@
   "share_cap": {
     "threshold_cores": 6,
     "sustained_runs": 2,
-    "mask": "0x3F00",
-    "why": "Any single mining or other process above 6 cores in two consecutive passes is pinned to cores 8-13 (clear of the allocator's 0-7 and memecoin's 16-17), and ONLY while the judge is starved: an unlisted process is never throttled on its own size alone."
+    "mask": "0x3000F",
+    "why": "Any single mining or other process above 6 cores in two consecutive passes is pinned to cores 0-3 and 16-17 (six cores, the mining floor, entirely outside the judge reserve even when boosted), and ONLY while the judge is starved: an unlisted process is never throttled on its own size alone."
   },
   "judge_starved": {"box_cpu_pct_at_least": 90, "judge_share_of_busy_below": 0.5},
-  "mining_floor_cores": 6
+  "judge_min_share": 0.15,
+  "judge_wait_phases": ["done"],
+  "health_why": "RED CHECK (owner rule 23): BOX_BOTTLENECKS.json health and stall_watch.json cpu_shape go RED when the judge's share of the box stays under judge_min_share (0.15 = ~2.7 of 18 cores; raise it by commit once the reserve's effect is measured) for more than 2 consecutive passes while it has runnable work (a live sweep whose JUDGE_SWEEP_PHASE.json phase is not in judge_wait_phases), or when the hunter's own measurement is UNMEASURED for more than 2 passes. Read by desks/mt5/scripts/check_desk_health.py.",
+  "mining_floor_cores": 6,
+  "judge_reserve": {
+    "base_mask": "0xFF00",
+    "boost_mask": "0xFFF0",
+    "serial_phases": ["plan", "plan_handoff", "collect_and_cut", "merge_and_publish"],
+    "exempt": ["pf_allocator"],
+    "why": "OWNER OVERRIDE (zuck, 2026-10-29): cores 8-15 are reserved for the judge ALWAYS -- his informed override of never-cut-mining for those eight cores. Mining/other python processes run on the full mask minus the reserve: 0x300FF (cores 0-7 and 16-17, ten cores) on the 18-core trading box. BOOST: while desks/mt5/reports/JUDGE_SWEEP_PHASE.json names a serial phase (and its pid is alive) or the judge is starved, the reserve widens to 0xFFF0 (cores 4-15), leaving mining/other 0x3000F (cores 0-3 and 16-17) = exactly the 6-core mining floor; 0x3FF00 was rejected because memecoin sits on 16-17 and it would leave only 8 cores split around the allocator. When the boost ends, processes the reservation narrowed are widened back to 0x300FF. The code refuses any reserve that would leave fewer than mining_floor_cores. Never moved: money path, judge, protected, memecoin, and pf_allocator (exempt here and pinned by its own rule to 0-7, so during a boost it still shares cores 4-7 with the judge)."
+  }
 }

@@ -26,6 +26,12 @@ re-run). It takes no arguments and reads no queue: what it may do is this file p
          consecutive passes is pinned to `share_cap.mask` -- only while the judge is starved
          and never under `mining_floor_cores`, exactly as for mining;
        * nothing is killed, nothing is deleted.
+  2b. RESERVE JUDGE CORES (`plan_reserve`, owner override 2026-10-29): mining/other python
+     processes always stay off `judge_reserve.base_mask` (cores 8-15); during the judge's serial
+     phases (desks/mt5/reports/JUDGE_SWEEP_PHASE.json) or while it is starved they also leave
+     `boost_mask`, and are widened back when the boost ends. The side left to them never holds
+     fewer than `mining_floor_cores`. Money, judge, protected, memecoin and any process a rule
+     already pins (pf_allocator) are never moved.
   3. APPLY (Windows only) and write desks/mt5/reports/BOX_BOTTLENECKS.json: the top consumers,
      the judge's share, memecoin's share, and every action with whether it landed.
 
@@ -55,6 +61,7 @@ except ImportError:  # pragma: no cover - exercised only where psutil is absent
 REPO = Path(__file__).resolve().parents[2]
 RULES_PATH = REPO / "desks" / "mt5" / "ops" / "CPU_SHAPE.json"
 REPORT_PATH = REPO / "desks" / "mt5" / "reports" / "BOX_BOTTLENECKS.json"
+PHASE_PATH = REPO / "desks" / "mt5" / "reports" / "JUDGE_SWEEP_PHASE.json"
 
 #: Windows priority classes, lowest to highest. HIGH and REALTIME are named only so a rule that
 #: asks for them is REFUSED by name rather than silently misread.
@@ -163,6 +170,14 @@ def validate_rules(data: Mapping[str, Any]) -> None:
         share = rule.get("max_box_share")
         if share is not None and not 0 < float(share) <= 1:
             raise ValueError(f"rule {name}: max_box_share {share!r} outside (0, 1]")
+    reserve = data.get("judge_reserve") or {}
+    if reserve:
+        base = int(reserve["base_mask"], 16)
+        boost = int(reserve["boost_mask"], 16)
+        if base <= 0 or base & ~boost:
+            raise ValueError("judge_reserve.boost_mask must contain base_mask")
+        if not reserve.get("serial_phases"):
+            raise ValueError("judge_reserve.serial_phases is empty")
     cap = data.get("share_cap") or {}
     if cap:
         cap_cores = bin(int(cap["mask"], 16)).count("1")
@@ -341,6 +356,153 @@ def memecoin_cap_holds(procs: Sequence[Proc], rules: Mapping[str, Any], the_plan
     return True, f"memecoin cap holds at {share_of_box:.1%} of the box"
 
 
+def judge_phase(doc: Mapping[str, Any] | None, alive: Any) -> tuple[str | None, int | None]:
+    """The judge's sweep phase, believed only while the pid that wrote it is alive."""
+    if not isinstance(doc, Mapping):
+        return None, None
+    phase = doc.get("phase")
+    pid = doc.get("pid")
+    try:
+        pid_i = int(pid) if pid is not None else None
+    except (TypeError, ValueError):
+        pid_i = None
+    if not isinstance(phase, str) or pid_i is None or not alive(pid_i):
+        return None, pid_i
+    return phase, pid_i
+
+
+def reserve_masks(cfg: Mapping[str, Any], n_cpu: int, floor_cores: int,
+                  boost: bool) -> tuple[list[int], list[int], str | None]:
+    """(reserve cores, side cores, why-the-boost-fell-back). The side never drops under the floor.
+
+    With the boost on, the reserve is `boost_mask` only if what it leaves holds `floor_cores`;
+    otherwise the base reserve stands and the reason is returned. With the BASE alone under the
+    floor (a smaller box) nothing is reserved at all.
+    """
+    full = list(range(n_cpu))
+    base = mask_to_cpus(cfg["base_mask"], n_cpu)
+    wide = mask_to_cpus(cfg["boost_mask"], n_cpu)
+    note = None
+    reserve = base
+    if boost:
+        if n_cpu - len(wide) >= floor_cores:
+            reserve = wide
+        else:
+            note = (f"boost would leave {n_cpu - len(wide)} cores, under the floor of "
+                    f"{floor_cores}; base reserve kept")
+    if n_cpu - len(reserve) < floor_cores:
+        return [], full, f"base reserve would leave under {floor_cores} cores; nothing reserved"
+    return reserve, [c for c in full if c not in reserve], note
+
+
+def plan_reserve(procs: Sequence[Proc], cfg: Mapping[str, Any], n_cpu: int, *, boost: bool,
+                 floor_cores: int, skip_pids: set[int],
+                 previous_moved: Mapping[str, str]) -> tuple[list[Action], dict[str, str],
+                                                              dict[str, Any]]:
+    """Keep mining/other python off the judge's cores. Pure.
+
+    A process with any core inside the reserve is moved to the side mask. A process the
+    reservation itself narrowed earlier (`previous_moved`, key -> mask it set) and that now sits
+    on a narrower side than this pass allows (the boost ended) is widened back to the side mask.
+    Anything else -- including a process already inside the side mask by another rule -- is left.
+    """
+    reserve, side, note = reserve_masks(cfg, n_cpu, floor_cores, boost)
+    exempt = [str(e).lower() for e in cfg.get("exempt", [])]
+    side_mask = cpus_to_mask(side)
+    moved: dict[str, str] = {}
+    actions: list[Action] = []
+    for p in procs:
+        if (p.group not in ("mining", "other") or "python" not in p.name.lower()
+                or p.pid in skip_pids or any(e in p.haystack for e in exempt)):
+            continue
+        cur = set(p.affinity) if p.affinity is not None else set(range(n_cpu))
+        if reserve and cur & set(reserve):
+            actions.append(Action(p.pid, p.name, p.group, "judge_reserve", "affinity",
+                                  _mask(p.affinity), side_mask))
+            moved[p.key] = side_mask
+        elif p.key in previous_moved:
+            if cur < set(side):
+                actions.append(Action(p.pid, p.name, p.group, "judge_reserve", "affinity",
+                                      _mask(p.affinity), side_mask))
+            moved[p.key] = side_mask
+    meta = {"mode": "boost" if boost and len(reserve) > len(mask_to_cpus(cfg["base_mask"], n_cpu))
+            else ("base" if reserve else "off"),
+            "reserve_mask": cpus_to_mask(reserve) if reserve else None, "side_mask": side_mask,
+            "side_cores": len(side), "note": note}
+    return actions, moved, meta
+
+
+def reserve_holds(actions: Sequence[Action], meta: Mapping[str, Any]) -> tuple[bool, str]:
+    """The reservation is verified this pass: a reserve is in force and every move landed."""
+    if not meta.get("reserve_mask"):
+        return False, f"no judge reserve in force ({meta.get('note') or 'not configured'})"
+    bad = [a for a in actions if not a.applied or a.error]
+    if bad:
+        return False, f"{len(bad)} judge-reserve move(s) did not land: {bad[0].error}"
+    return True, f"judge reserve {meta['reserve_mask']} holds ({meta['mode']})"
+
+
+def log_switch(history: Sequence[Mapping[str, Any]], *, at: str, mode: str,
+               phase: str | None, starved: bool, judge_share: float | None) -> list[dict[str, Any]]:
+    """Append a mode switch with the judge's share before it; fill the previous one's after."""
+    out = [dict(h) for h in history][-19:]
+    if out and out[-1].get("judge_share_after") is None and out[-1].get("mode") != "init":
+        out[-1]["judge_share_after"] = judge_share
+    last_mode = out[-1]["mode"] if out else None
+    if mode != last_mode:
+        out.append({"at": at, "from": last_mode, "mode": mode, "phase": phase,
+                    "starved": starved, "judge_share_before": judge_share,
+                    "judge_share_after": None})
+    return out
+
+
+#: Consecutive failing passes tolerated before the hunter goes RED (owner rule 23).
+RED_AFTER_RUNS = 2
+
+
+def health(previous: Mapping[str, Any] | None, *, measured: bool, runnable: bool,
+           judge_share: float | None, min_share: float) -> dict[str, Any]:
+    """THE HUNTER'S OWN RED CHECK (owner rule 23, 2026-10-29). Pure.
+
+    RED when the judge's share of the box has stayed below `min_share` for MORE than
+    RED_AFTER_RUNS consecutive passes while it had runnable work (a live judge not in a wait
+    phase), or when this hunter's own measurement has been UNMEASURED for more than
+    RED_AFTER_RUNS passes. One or two strikes read WATCH; a clean pass resets its counter.
+    """
+    prev = previous or {}
+    low = int(prev.get("judge_low_strikes") or 0)
+    unmeasured = int(prev.get("unmeasured_strikes") or 0)
+    if not measured:
+        unmeasured += 1
+    else:
+        unmeasured = 0
+        starved = runnable and judge_share is not None and judge_share < min_share
+        low = low + 1 if starved else 0
+    out: dict[str, Any] = {"judge_low_strikes": low, "unmeasured_strikes": unmeasured,
+                           "judge_min_share": min_share, "red_after_runs": RED_AFTER_RUNS}
+    if unmeasured > RED_AFTER_RUNS:
+        out.update(verdict="RED", why=f"the hunter has been UNMEASURED for {unmeasured} "
+                   "consecutive passes: nobody is watching the box's CPU")
+    elif low > RED_AFTER_RUNS:
+        out.update(verdict="RED", why=f"judge below {min_share:.0%} of the box for {low} "
+                   "consecutive passes with runnable work")
+    elif not measured:
+        out.update(verdict="UNMEASURED", why=f"unmeasured pass {unmeasured} of "
+                   f"{RED_AFTER_RUNS} tolerated")
+    elif low:
+        out.update(verdict="WATCH", why=f"judge below {min_share:.0%} of the box, pass {low} of "
+                   f"{RED_AFTER_RUNS} tolerated")
+    else:
+        out.update(verdict="GREEN", why="judge share at or above its floor, or no runnable "
+                   "judge work")
+    return out
+
+
+def judge_runnable(phase: str | None, wait_phases: Sequence[str]) -> bool:
+    """The judge has runnable work: a live sweep in a phase that is not a pure wait."""
+    return phase is not None and phase not in set(wait_phases)
+
+
 def track_wall(procs: Sequence[Proc], match: str, previous: Mapping[str, Any] | None,
                now: float) -> dict[str, Any]:
     """Wall time of each run of a tracked process, carried pass to pass. Pure.
@@ -486,26 +648,66 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH) 
     now = datetime.now(UTC).isoformat(timespec="seconds")
     report: dict[str, Any] = {"schema": "box_bottlenecks/v1", "generated_at": now,
                               "host": socket.gethostname(), "rules": str(rules_path.name)}
+    prev = _previous_doc(report_path)
+    prev_health = prev.get("health") if isinstance(prev.get("health"), dict) else None
+
+    def _unmeasured(verdict: str, why: str, line: str, min_share: float) -> dict[str, Any]:
+        h = health(prev_health, measured=False, runnable=False, judge_share=None,
+                   min_share=min_share)
+        report.update(verdict=verdict, why=why, health=h,
+                      line=f"{line} [{h['verdict']}: {h['why']}]"[:300])
+        _write(report_path, report)
+        return report
+
     try:
         rules = load_rules(rules_path)
     except (OSError, ValueError, KeyError, TypeError) as exc:
-        report.update(verdict="RULES_REFUSED", why=f"{type(exc).__name__}: {exc}"[:300],
-                      line=f"CPU SHAPE RULES REFUSED: {exc}"[:200])
-        _write(report_path, report)
-        return report
+        return _unmeasured("RULES_REFUSED", f"{type(exc).__name__}: {exc}"[:300],
+                           f"CPU SHAPE RULES REFUSED: {exc}"[:200], 0.0)
+    min_share = float(rules.get("judge_min_share", 0.0))
     if psutil is None:
-        report.update(verdict="UNMEASURED", why="psutil is not importable on this interpreter",
-                      line="CPU SHAPE UNMEASURED: psutil absent; nothing shaped")
-        _write(report_path, report)
-        return report
+        return _unmeasured("UNMEASURED", "psutil is not importable on this interpreter",
+                           "CPU SHAPE UNMEASURED: psutil absent; nothing shaped", min_share)
     n_cpu = int(psutil.cpu_count() or 1)
-    prev = _previous_doc(report_path)
     procs, box_pct = measure(float(rules.get("window_s", 5)))
+    if not procs or box_pct is None:
+        return _unmeasured("UNMEASURED", "psutil returned no process with a CPU rate",
+                           "CPU SHAPE UNMEASURED: no process measured; nothing shaped", min_share)
+    phase, phase_pid = judge_phase(_previous_doc(PHASE_PATH), psutil.pid_exists)
     classify(procs, rules.get("groups", {}))
     summary = summarize(procs, n_cpu, box_pct, rules.get("judge_starved", {}))
     the_plan = plan(procs, rules, n_cpu, judge_starved=summary["judge"]["starved"],
                     previous_heavy=list(prev.get("heavy") or []))
+    reserve_cfg = rules.get("judge_reserve") or {}
+    reserve_doc: dict[str, Any] = {}
+    reserve_actions: list[Action] = []
+    if reserve_cfg:
+        serial = phase in set(reserve_cfg.get("serial_phases", []))
+        boost = bool(serial or summary["judge"]["starved"])
+        prev_res_raw = prev.get("judge_reserve")
+        prev_res: dict[str, Any] = prev_res_raw if isinstance(prev_res_raw, dict) else {}
+        prev_moved_raw = prev_res.get("moved")
+        prev_moved: dict[str, str] = prev_moved_raw if isinstance(prev_moved_raw, dict) else {}
+        pinned = {a.pid for a in the_plan.actions if a.kind == "affinity"}
+        reserve_actions, moved, meta = plan_reserve(
+            procs, reserve_cfg, n_cpu, boost=boost,
+            floor_cores=int(rules.get("mining_floor_cores", 1)), skip_pids=pinned,
+            previous_moved=prev_moved)
+        the_plan.actions.extend(reserve_actions)
+        reserve_doc = {**meta, "phase": phase, "phase_pid": phase_pid, "serial": serial,
+                       "starved": summary["judge"]["starved"], "moved": moved,
+                       "switches": log_switch(prev_res.get("switches") or [], at=now,
+                                              mode=str(meta["mode"]), phase=phase,
+                                              starved=bool(summary["judge"]["starved"]),
+                                              judge_share=summary["judge"]["share_of_box"])}
     apply(the_plan.actions, n_cpu)
+    if reserve_cfg:
+        ok, why = reserve_holds(reserve_actions, reserve_doc)
+        reserve_doc.update(holds=ok, holds_why=why)
+    hunter_health = health(
+        prev_health, measured=True,
+        runnable=judge_runnable(phase, rules.get("judge_wait_phases", ["done"])),
+        judge_share=float(summary["judge"]["share_of_box"]), min_share=min_share)
     holds, holds_why = memecoin_cap_holds(procs, rules, the_plan,
                                           float(summary["memecoin"]["share_of_box"]))
     summary["memecoin"].update(cap_holds=holds, cap_why=holds_why)
@@ -523,13 +725,16 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH) 
         disk_free_gb=_disk_free_gb(), **summary,
         top=[_row(p) for p in top],
         actions=[asdict(a) for a in the_plan.actions], refused=the_plan.refused,
-        heavy=the_plan.heavy, wall=wall,
-        line=(f"CPU SHAPE: box {box_pct}% on {n_cpu} cores; judge "
+        heavy=the_plan.heavy, wall=wall, judge_reserve=reserve_doc, health=hunter_health,
+        judge_phase=phase,
+        line=(f"CPU SHAPE {hunter_health['verdict']}: box {box_pct}% on {n_cpu} cores; judge "
               f"{summary['judge']['share_of_box']:.0%} of box"
               f"{' (STARVED)' if summary['judge']['starved'] else ''}; memecoin "
               f"{summary['memecoin']['share_of_box']:.0%}; top {top[0].name if top else '-'} "
               f"{round(top[0].cpu_pct) if top else 0}%; {landed}/{len(the_plan.actions)} changes "
-              f"applied, {len(the_plan.refused)} refused"))
+              f"applied, {len(the_plan.refused)} refused; judge reserve "
+              f"{reserve_doc.get('mode', 'off')} {reserve_doc.get('reserve_mask') or ''}"
+              f"{' phase ' + str(reserve_doc['phase']) if reserve_doc.get('phase') else ''}"))
     _write(report_path, report)
     return report
 
@@ -544,9 +749,15 @@ def _write(path: Path, payload: Mapping[str, Any]) -> None:
 def main() -> int:
     report = run_once()
     meme = report.get("memecoin") or {}
+    res = report.get("judge_reserve") or {}
+    hh = report.get("health") or {}
     print(json.dumps({"verdict": report.get("verdict"), "line": report.get("line"),
+                      "health": hh.get("verdict") or "UNMEASURED",
+                      "health_why": hh.get("why") or "no health computed",
                       "memecoin_cap_holds": bool(meme.get("cap_holds")),
-                      "memecoin_cap_why": meme.get("cap_why") or "not measured"}))
+                      "memecoin_cap_why": meme.get("cap_why") or "not measured",
+                      "judge_reserve_holds": bool(res.get("holds")),
+                      "judge_reserve_why": res.get("holds_why") or "not measured"}))
     return 0
 
 
