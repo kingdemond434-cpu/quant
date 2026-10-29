@@ -305,9 +305,12 @@ class RedirectStopped(OSError):
     """A redirect hop `fetch_hops` refused to request (a held site, the fence, a login wall, or
     an unread / disallowing robots.txt at another origin). Not a transport failure."""
 
-    def __init__(self, url: str, at: str, why: str) -> None:
+    def __init__(self, url: str, at: str, why: str,
+                 missed_growth: dict[str, Any] | None = None) -> None:
         super().__init__(why)
         self.url, self.at, self.why = url, at, why
+        #: The cut's missed-growth line (`terms_fence.record_redirect_cut`).
+        self.missed_growth = missed_growth
 
 
 def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "",
@@ -326,11 +329,11 @@ def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "",
     if referer:
         hdr["Referer"] = referer
     if held is not None:
-        r, at, stop = fetch_hops(url, headers=hdr, held=held,
-                                 allows=allows or (lambda u: robots_allows(u)),
-                                 timeout=timeout, max_bytes=2_000_000)
+        r, at, stop, line = fetch_hops(url, headers=hdr, held=held,
+                                       allows=allows or (lambda u: robots_allows(u)),
+                                       timeout=timeout, max_bytes=2_000_000)
         if stop:
-            raise RedirectStopped(url, at, stop)
+            raise RedirectStopped(url, at, stop, line)
         url = at
     else:
         r = pf.get(url, headers=hdr, timeout=timeout, retries=0, leg=LEG, max_bytes=2_000_000)
@@ -605,7 +608,10 @@ def canonical_host(host: str) -> str:
     if not h:
         return ""
     with contextlib.suppress(ValueError):
-        return ipaddress.ip_address(h).compressed
+        ip = ipaddress.ip_address(h)
+        # an IPv4-mapped IPv6 address (::ffff:a.b.c.d) IS that IPv4 host: one hold key
+        mapped = getattr(ip, "ipv4_mapped", None)
+        return str(mapped) if mapped is not None else ip.compressed
     return _legacy_ipv4(h) or h
 
 
@@ -669,6 +675,35 @@ class SiteRefused(OSError):
         self.url, self.status = url, int(status)
 
 
+class FetchStatus(OSError):
+    """An HTTP failure that is not a refusal (not 401/403/429), carrying its status, so a
+    robots.txt reader can tell a 404 (no file: ALLOW, RFC 9309 2.3.1.3) from a 5xx or an
+    unreachable host (unread: DISALLOW, 2.3.1.4)."""
+
+    def __init__(self, url: str, status: int, msg: str = "") -> None:
+        super().__init__(msg or f"HTTP {status}")
+        self.url, self.status = url, int(status)
+
+
+def read_robots(origin: str, get: Any) -> Any:
+    """THE DESK'S robots.txt RULE for one origin (RFC 9309; agreed with Breadth and the auditor):
+    a parser for the file read (an empty 200 is an empty file: allow all); a 4xx other than
+    401/403/429 -- 404, 410 -- means NO robots.txt, so ALLOW (an empty parser); 401/403/429 is a
+    refusal (`SiteRefused`: the `get` wrapper holds the site for a person) and 5xx, a transport
+    failure or anything unexplained is UNREAD -- None, which disallows."""
+    try:
+        txt = get(f"{origin}/robots.txt")
+    except SiteRefused:
+        return None
+    except FetchStatus as exc:
+        if 400 <= exc.status < 500 and exc.status not in ACCESS_STOP:
+            return robots_parser("")
+        return None
+    except Exception:
+        return None
+    return robots_parser(str(txt or ""))
+
+
 def _index_get(url: str) -> str:
     """One polite GET with the honest index agent. Raises SiteRefused on a 401/403/429 and
     OSError on any other failure. retries=0: a 429 is a stop, never a retry (MF-C)."""
@@ -678,6 +713,8 @@ def _index_get(url: str) -> str:
         return r.text
     if r.status in ACCESS_STOP:
         raise SiteRefused(url, int(r.status or 0))
+    if r.status is not None and int(r.status) >= 400:
+        raise FetchStatus(url, int(r.status), str(r.error or f"HTTP {r.status}"))
     raise OSError(r.error or f"HTTP {r.status}")
 
 
@@ -740,17 +777,14 @@ def robots_origin(url: str) -> str:
 
 def robots_allows(url: str, *, get: Any = None,
                   cache: dict[str, Any] | None = None) -> bool:
-    """True only when the robots.txt of `url`'s OWN origin was read and allows "*". An unread
-    robots.txt is not a permission."""
+    """True only when the robots.txt of `url`'s OWN origin allows "*" under `read_robots`: a
+    file read and allowing, or a 404/410 (no file: allow). An UNREAD robots.txt (5xx,
+    unreachable) is not a permission, and a 401/403/429 holds the site."""
     get = get or _index_get
     cache = cache if cache is not None else {}
     origin = robots_origin(url)
     if origin not in cache:
-        try:
-            txt = get(f"{origin}/robots.txt")
-            cache[origin] = robots_parser(txt) if txt else None
-        except Exception:
-            cache[origin] = None
+        cache[origin] = read_robots(origin, get)
     rp = cache[origin]
     return bool(rp is not None and rp.can_fetch("*", url))
 
@@ -820,45 +854,56 @@ def hop_opener(sink: dict[str, Any]) -> Any:
 
 
 def fetch_hops(url: str, *, headers: dict[str, str], held: Any, allows: Any,
-               timeout: float = 20.0, max_bytes: int = 2_000_000) -> tuple[Any, str, str]:
+               timeout: float = 20.0, max_bytes: int = 2_000_000
+               ) -> tuple[Any, str, str, dict[str, Any] | None]:
     """GET `url`, following redirects BY HAND: every hop after the first is checked before it is
     requested -- the method fence and login walls, the run's holds (`held(u)` truthy: never
-    requested), and, when the hop leaves the current robots origin, that origin's own
-    robots.txt (`allows(u)`; an unread one is not a permission). retries=0 on every hop.
+    requested), and that hop's own robots.txt (`allows(u)`; same origin or not -- an unread one
+    is not a permission). A non-http(s) target and a chain longer than MAX_HOPS are cut too.
+    retries=0 on every hop.
 
-    Returns (response, the URL that answered, stop) where `stop` names why the chain was cut
-    ('' when it was not). A 401/403/429 is the ANSWERING URL's refusal, so the caller holds THAT
+    Returns (response, the URL that answered, stop, missed_growth): `stop` names why the chain
+    was cut ('' when it was not), and EVERY cut carries its missed-growth line, written through
+    THE ONE register of cut hops (`terms_fence.record_redirect_cut`; pass-6 lanes delta audit
+    e8bd75903 MUST-FIX). A 401/403/429 is the ANSWERING URL's refusal, so the caller holds THAT
     site -- never the first URL's when a hop refused (MUST-FIX 1)."""
     cur, prev = str(url), ""
     hops: list[tuple[int, str, str]] = []
+
+    def cut(kind: str, stop: str, to: str) -> tuple[Any, str, str, dict[str, Any]]:
+        line = _tf.record_redirect_cut(kind, prev or str(url), to, str(url))
+        line["stop"] = stop
+        r = pf.Response(url=str(url), status=int(hops[-1][0]) if hops else None, error=stop)
+        r.redirects = list(hops)
+        return r, to, stop, line
     for i in range(MAX_HOPS + 1):
         if i:
-            fenced = _tf.platform_of_url(cur) or ("login_wall" if _tf.login_wall(cur) else "")
-            stop = (f"redirect into held source {fenced}" if fenced
-                    else "redirect into a held site" if held(cur)
-                    else (f"cross-origin redirect stopped: robots.txt of {robots_origin(cur)} "
-                          "unread or disallowing")
-                    if robots_origin(cur) != robots_origin(prev) and not allows(cur) else "")
-            if stop:
-                r = pf.Response(url=str(url), status=int(hops[-1][0]), error=stop)
-                r.redirects = hops
-                return r, cur, stop
+            fenced = _tf.platform_of_url(cur)
+            if fenced:
+                return cut(fenced, f"redirect into held source {fenced}", cur)
+            if _tf.login_wall(cur):
+                return cut("login_wall", "redirect into a login wall", cur)
+            if held(cur):
+                return cut("site_held", "redirect into a held site", cur)
+            if not allows(cur):
+                return cut("robots", f"redirect stopped: robots.txt of {robots_origin(cur)} "
+                           "unread or disallowing", cur)
         sink: dict[str, Any] = {}
         r = pf.get(cur, headers=headers, timeout=timeout, retries=0, leg=LEG,
                    max_bytes=max_bytes, opener=hop_opener(sink), follow_redirects=False)
         loc = str(sink.get("location") or "")
-        if loc and r.status == sink.get("code") and loc.startswith(("http://", "https://")):
+        if loc and r.status == sink.get("code"):
             hops.append((int(sink["code"]), cur, loc))
             prev, cur = cur, loc
+            if not loc.lower().startswith(("http://", "https://")):
+                return cut("non_http_redirect", "redirect to a non-http(s) target not "
+                           "followed", loc)
             continue
         with contextlib.suppress(AttributeError):
             r.redirects = hops
             r.final_url = getattr(r, "final_url", "") or cur
-        return r, cur, ""
-    r = pf.Response(url=str(url), status=int(hops[-1][0]) if hops else None,
-                    error=f"more than {MAX_HOPS} redirects")
-    r.redirects = hops
-    return r, cur, r.error
+        return r, cur, "", None
+    return cut("too_many_redirects", f"more than {MAX_HOPS} redirects", cur)
 
 
 def index_opener(allows: Any) -> Any:
@@ -1132,7 +1177,9 @@ def frontier_damaged(path: Path) -> bool:
         raw = path.read_text("utf-8")
     except FileNotFoundError:
         return False
-    except OSError:
+    except (OSError, ValueError):
+        # ValueError covers UnicodeDecodeError: a non-UTF-8 frontier is DAMAGED (fail closed,
+        # kept), never an exception out of the run (pass-6 lanes delta audit SF)
         return True
     try:
         blob = json.loads(raw)
@@ -1639,7 +1686,7 @@ class _Run:
         except RedirectStopped as exc:
             self._note_net(True)
             self.status.append({"url": url, "redirect_stopped": exc.at[:200],
-                                "why": exc.why[:160]})
+                                "why": exc.why[:160], "missed_growth": exc.missed_growth})
             return ""
         except urllib.error.HTTPError as exc:
             self._note_net(True)
@@ -1662,7 +1709,8 @@ class _Run:
         cache = self.__dict__.setdefault("_index_robots", {})
         return not self.held_url(u) and robots_allows(u, cache=cache, get=self._index_get)
 
-    def _fetched(self, url: str, r: Any, at: str, stop: str) -> str:
+    def _fetched(self, url: str, r: Any, at: str, stop: str,
+                 line: dict[str, Any] | None = None) -> str:
         """The run's bookkeeping for one `fetch_hops` result: a 401/403/429 holds the site of
         the URL that ANSWERED it (`at`), never the first URL's when a redirect hop refused."""
         if r.ok:
@@ -1671,7 +1719,8 @@ class _Run:
             return str(r.text)
         if stop:
             self._note_net(True)
-            self.status.append({"url": url, "redirect_stopped": at[:200], "why": stop[:160]})
+            self.status.append({"url": url, "redirect_stopped": at[:200], "why": stop[:160],
+                                "missed_growth": line})
         elif r.status is not None and r.status >= 400:
             self._note_net(True)
             row: dict[str, Any] = {"url": url, "http": r.status}
@@ -1750,13 +1799,16 @@ class _Run:
             raise SiteRefused(url, int(h.get("status") or 0))
         # robots.txt itself may redirect (RFC 9309 2.3.1.2): each hop is checked against the
         # holds before it is requested, and a refusal holds the site that refused.
-        r, at, stop = fetch_hops(url, headers=dict(INDEX_HEADERS), held=self.held_url,
-                                 allows=lambda _u: True, timeout=25.0, max_bytes=4_000_000)
+        r, at, stop, _line = fetch_hops(url, headers=dict(INDEX_HEADERS), held=self.held_url,
+                                        allows=lambda _u: True, timeout=25.0,
+                                        max_bytes=4_000_000)
         if r.ok:
             return str(r.text)
         if not stop and r.status in ACCESS_STOP:
             self._hold_site(at, int(r.status or 0))
             raise SiteRefused(at, int(r.status or 0))
+        if not stop and r.status is not None and int(r.status) >= 400:
+            raise FetchStatus(at, int(r.status), str(r.error or f"HTTP {r.status}"))
         raise OSError(stop or r.error or f"HTTP {r.status}")
 
     def rendered(self, url: str) -> str:

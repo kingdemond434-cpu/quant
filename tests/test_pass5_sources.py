@@ -676,12 +676,13 @@ def test_a_cross_origin_redirect_needs_the_new_origins_robots() -> None:
     same = handler(False).redirect_request(req, io.BytesIO(b""), 301, "Moved", {},
                                            "https://ex.com/c")
     assert same is not None and same.full_url == "https://ex.com/c"
-    # robots_allows reads the target ORIGIN's own file, and an unread one is not a permission
+    # robots_allows reads the target ORIGIN's own file, and an unread one (unreachable) is not
+    # a permission; a 404 is no file at all and allows (test_pass6_lanes_holds)
     asked: list[str] = []
 
     def get(url: str) -> str:
         asked.append(url)
-        raise OSError("HTTP 404")
+        raise OSError("connection refused")
     assert D.robots_allows("https://other.example:8080/b", get=get) is False
     assert asked == ["https://other.example:8080/robots.txt"]
 

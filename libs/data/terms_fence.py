@@ -1249,7 +1249,9 @@ def redirect_cut_lines(path: str | None = None, *, limit: int = 200) -> list[dic
         with open(p, encoding="utf-8") as fh:
             rows = fh.read().splitlines()[-max(0, int(limit)):]
     except OSError:
-        return list(REDIRECT_CUTS[-limit:])
+        # an explicitly named ledger that is absent holds no lines; with none named, the
+        # process's own lines (a pytest run, or an unwritable ledger) are the answer
+        return [] if path else list(REDIRECT_CUTS[-limit:])
     out: list[dict[str, Any]] = []
     for ln in rows:
         with contextlib.suppress(ValueError):
