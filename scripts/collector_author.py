@@ -24,6 +24,16 @@ Mitigations (defence in depth, not a sandbox):
 Residual risk is NOT zero. Disclosed to the principal.
 
 Stage-A only, zero promotion authority. Run from repo root.
+
+*** STOOD DOWN 2026-10-13 (money-path urgent). *** The deny-list above was beaten by a canary:
+`__builtins__["__imp"+"ort__"]("o"+"s").popen("id")` passed `safety_scan` and ran, and
+`run_isolated` inherits the full environment (every key), with no rlimits, no file jail and open
+network. A regex over model-written code is not a boundary. `main()` and `run_isolated()` now
+refuse unconditionally and `main()` writes `data/collector_author_status.json` so the battery
+records a STAND_DOWN, never a silent idle. The code, `data/collector_attempts.jsonl` and
+`data/generated_collectors/` are kept. The organ returns only through the LLM lab's isolated code
+path (attribute allowlist, no inherited keys, rlimits, file jail, allowlisted network) -- not by
+flipping a switch here.
 """
 from __future__ import annotations
 
@@ -143,8 +153,21 @@ def safety_scan(code: str) -> str | None:
     return None
 
 
+STAND_DOWN = ("collector_author stood down 2026-10-13: model-written code ran with inherited keys "
+              "behind a regex deny-list a canary beat; returns only via the isolated LLM lab")
+STATUS = ROOT / "data/collector_author_status.json"
+
+
 def run_isolated(code: str, timeout: int = 70) -> tuple[dict | None, str]:
-    """Execute in a SEPARATE process with a hard timeout; series returned as stdout JSON."""
+    """Execute in a SEPARATE process with a hard timeout; series returned as stdout JSON.
+
+    REFUSES (2026-10-13): this was never isolation -- see the module docstring.
+    """
+    return None, "STAND_DOWN: " + STAND_DOWN
+
+
+def _run_isolated_unsafe_stood_down(code: str, timeout: int = 70) -> tuple[dict | None, str]:
+    """The pre-2026-10-13 runner, kept as the record of what the lab port must replace."""
     runner = code + (
         "\n\nif __name__ == '__main__':\n"
         "    import json as _j\n"
@@ -187,7 +210,20 @@ def validate(series: dict) -> tuple[bool, str]:
     return True, f"{len(series)} points, {min(series)}..{max(series)}"
 
 
+def _record_stand_down() -> None:
+    STATUS.parent.mkdir(parents=True, exist_ok=True)
+    STATUS.write_text(json.dumps({"status": "STAND_DOWN", "reason": STAND_DOWN,
+                                  "at": datetime.now(UTC).isoformat(timespec="seconds")},
+                                 indent=2) + "\n", encoding="utf-8")
+
+
 def main() -> None:
+    _record_stand_down()
+    print("STAND_DOWN: " + STAND_DOWN)
+
+
+def _main_unsafe_stood_down() -> None:
+    """The pre-2026-10-13 body, kept for the isolated-lab port. Nothing calls it."""
     if not (KEYS.exists() and FEED.exists()):
         print("missing panel keys or breadth feed")
         return
