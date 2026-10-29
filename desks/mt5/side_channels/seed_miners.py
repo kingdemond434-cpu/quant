@@ -18,8 +18,6 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-import requests
-
 BASE = Path(__file__).resolve().parent.parent
 if str(BASE.parent.parent) not in sys.path:
     sys.path.insert(0, str(BASE.parent.parent))
@@ -27,14 +25,23 @@ INTEL = BASE / "data" / "intelligence"
 STATE = INTEL / "seed_miners_state.json"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                          "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"}
+MAX_BYTES = 5_000_000
 LINK_RE = re.compile(r"https?://[^\s)\"'<>]+")
 
 
 def fetch(url: str, as_json: bool = False, timeout: int = 20):
+    """One polite GET through THE ONE FETCH DOOR (`polite_fetch.fenced_urlopen`): a held source,
+    or a redirect into a login / sign-in / CAPTCHA wall, raises `MethodRefused` (METHOD_BLOCKED)
+    instead of being followed or read; an HTTP error raises HTTPError, as `raise_for_status` did."""
+    import urllib.request
+
+    from libs.data.polite_fetch import decode_body, fenced_urlopen
     time.sleep(1.0)
-    r = requests.get(url, headers=HEADERS, timeout=timeout)
-    r.raise_for_status()
-    return r.json() if as_json else r.text
+    req = urllib.request.Request(url, headers=HEADERS)
+    with fenced_urlopen(req, timeout=timeout) as fh:
+        text = decode_body(fh.read(MAX_BYTES), str(fh.headers.get("Content-Type") or ""),
+                           str(fh.headers.get("Content-Encoding") or ""))
+    return json.loads(text) if as_json else text
 
 
 def row(source: str, kind: str, title: str, url: str = "", text: str = "",
@@ -712,7 +719,12 @@ def run_and_save() -> dict:
         try:
             rows_ = fn()
         except Exception as exc:
-            rows_ = [row(name, "fetch_error", str(exc)[:200], needs_selector_work=True)]
+            # A refusal by METHOD (a held source, or a redirect into a login / CAPTCHA wall) is
+            # named METHOD_BLOCKED, not a selector failure: no selector work can or may fix it.
+            blocked = str(getattr(exc, "status", "")) == "METHOD_BLOCKED"
+            rows_ = [row(name, "method_blocked" if blocked else "fetch_error", str(exc)[:200],
+                         needs_selector_work=not blocked,
+                         **({"verdict": "METHOD_BLOCKED"} if blocked else {}))]
             summary["failed"] += 1
         else:
             # A SUCCESSFUL FETCH THAT PARSED NOTHING IS NOT A QUIET SOURCE (2026-09-01).

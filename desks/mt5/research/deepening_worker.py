@@ -1411,6 +1411,16 @@ def _work(argv: list[str] | None = None) -> int:
 
     queue = json.loads(DEEPEN.read_text("utf-8")) if DEEPEN.exists() else {}
     tasks = [t for t in (queue.get("tasks") or []) if isinstance(t, dict)]
+    # THE LIVE-INPUT CHECK (libs/data/terms_fence.py, rule 4 of the 2026-10-13 ruling). A queued
+    # row is refused only when its DECLARED LIVE INPUT DATA comes from an IDEAS_ONLY or held
+    # source; a row whose IDEA came from Reddit, X or a forum is worked like any other (the cell
+    # trades on MT5 data). Counted by name in the log and on the output, never silently.
+    from libs.data import terms_fence as _tf
+    terms_fenced = sum(1 for t in tasks if _tf.fenced_row(t, str(t.get("source") or "")))
+    if terms_fenced:
+        tasks = [t for t in tasks if not _tf.fenced_row(t, str(t.get("source") or ""))]
+        dlog(f"live-input check: {terms_fenced} queued row(s) declaring live input from an "
+             f"IDEAS_ONLY or held source refused (libs/data/terms_fence.py); not charged")
     if not tasks:
         dlog("queue empty or unreadable -- nothing to work")
         return 0
@@ -1599,11 +1609,16 @@ def _work(argv: list[str] | None = None) -> int:
             prior = (json.loads(OUT.read_text("utf-8")) or {}).get("candidates") or []
         except ValueError:
             prior = []
+    # CELLS WHOSE IDEA A LISTED SOURCE TOUCHED carry `provenance_label` (e.g. reddit_policy) so
+    # the lineage is visible -- a label, never a door (rule 4). Stamped here because this organ
+    # writes the file -- never by hand on the box.
+    labelled = sum(1 for c in prior + recovered if isinstance(c, dict) and _tf.label_row(c))
     OUT.write_text(json.dumps({
         "built_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "candidates": prior + recovered,
         "recovered_this_run": len(recovered),
         "dispositions": counts,
+        "terms_fence": {"queued_rows_refused": terms_fenced, "candidates_labelled": labelled},
         **({"memory_guard": mem_stop} if mem_stop else {}),
     }, indent=1), encoding="utf-8")
     publish_memory_guard(mem_stop, worked=len(decided_ids), pending=backlog_before)

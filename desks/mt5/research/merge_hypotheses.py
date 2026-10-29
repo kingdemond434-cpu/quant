@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
@@ -671,6 +672,56 @@ def _lease(path: Path) -> None:
         pass
 
 
+def label_terms_fenced(rows: list[dict]) -> dict:
+    """Stamp `provenance_label` (and the source's policy row) on every docket row whose IDEA came
+    from a listed source (libs/data/terms_fence.py: Reddit, X, StockTwits, Telegram, mql5 ...).
+    A LABEL ONLY (rule 4 of the 2026-10-13 ruling: idea provenance never blocks a cell). The
+    organ that writes the docket labels it, so the label survives every rebuild; nothing else
+    about a row changes: identity, order and any verdict it already has stay as they were."""
+    root = str(BASE.parents[1])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.data import terms_fence as tf
+    counts: dict[str, int] = {}
+    for r in rows:
+        if isinstance(r, dict):
+            lab = tf.label_row(r)
+            if lab:
+                counts[lab] = counts.get(lab, 0) + 1
+    return {"labelled": counts, "total": sum(counts.values()),
+            "field": "provenance_label",
+            "rule": "label every touched row; a label never keeps a row from a judge (rule 4)"}
+
+
+def quarantine_terms_fenced(rows: list[dict]) -> tuple[list[dict], dict]:
+    """THE LIVE-INPUT CHECK (rule 4 of the 2026-10-13 ruling): a docket row is SKIPPED only when
+    its DECLARED LIVE INPUT DATA (`input_data`, `data_source`, ... -- terms_fence.fenced_row)
+    comes from an IDEAS_ONLY or held source. Its idea's source, route, URL, contributing sources
+    or an older `provenance_label` never skip it. Counted by source and by producer in the merge
+    report; a skipped row is never silently lost. Fails closed: a policy that cannot load
+    raises, and the merge stops rather than ship a docket nobody checked."""
+    root = str(BASE.parents[1])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.data import terms_fence as tf
+    kept: list[dict] = []
+    by_platform: dict[str, int] = {}
+    by_producer: dict[str, int] = {}
+    for r in rows:
+        p = tf.quarantined_row(r) if isinstance(r, dict) else None
+        if p:
+            by_platform[p] = by_platform.get(p, 0) + 1
+            prod = str(r.get("producer") or r.get("source") or "unknown")
+            by_producer[prod] = by_producer.get(prod, 0) + 1
+            continue
+        kept.append(r)
+    return kept, {"skipped": sum(by_platform.values()), "by_platform": by_platform,
+                  "by_producer": dict(sorted(by_producer.items(), key=lambda kv: -kv[1])[:20]),
+                  "reason": ("live input data from an IDEAS_ONLY or held source "
+                             "(libs/data/terms_fence.py)"),
+                  "rule": "skip and count; idea provenance never skips a row (rule 4)"}
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     # HUNT ONLY WHAT THE DESK CAN TRADE (principal, 2026-09-03: "limit all hunting to fusion
@@ -1142,11 +1193,24 @@ def main() -> int:
     # An hourly cycle where "the searcher was slow this hour" cascades into "all certificates
     # revoked" is not a freshness contract, it is a self-destruct. If this run gathered nothing
     # fresh, the existing docket STANDS: yesterday's candidates are still candidates.
+    # LABEL, THEN THE LIVE-INPUT CHECK (libs/data/terms_fence.py): every row whose idea a listed
+    # source touched is labelled; only a row whose declared LIVE INPUT DATA is IDEAS_ONLY or held
+    # is kept from the judge (rule 4: idea provenance never blocks a cell).
+    terms_labels = label_terms_fenced(rows_out)
+    rows_out, terms_quarantine = quarantine_terms_fenced(rows_out)
+    if terms_quarantine["skipped"]:
+        print(f"   live-input check: {terms_quarantine['skipped']} row(s) declaring live input "
+              f"from an IDEAS_ONLY or held source, not judged {terms_quarantine['by_platform']}")
     if not rows_out:
         prior = _read(TARGET)
         if isinstance(prior, list) and prior:
+            # The preserved docket passes the live-input check too.
+            kept_prior, q_prior = quarantine_terms_fenced(prior)
+            if q_prior["skipped"]:
+                _write_docket_atomically(TARGET, kept_prior)
             print(f"merge: 0 fresh rows this run -- PRESERVING the existing docket of "
-                  f"{len(prior)} candidate(s) rather than shipping an empty file downstream.")
+                  f"{len(kept_prior)} candidate(s) rather than shipping an empty file downstream"
+                  f" ({q_prior['skipped']} row(s) failing the live-input check left out).")
             return 0
     # PRE-REGISTRATION, BOTH HALVES, HERE (2026-09-30). This merge runs on the hour BEFORE the
     # judge reads the docket, so it is the last point where a card can honestly precede a
@@ -1204,6 +1268,11 @@ def main() -> int:
     steer_block = publish_steering(steerer, rows_out)
     (HYP / "merge_report.json").write_text(json.dumps({
         "merged_at": now.isoformat(timespec="seconds"),
+        # ROWS WHOSE IDEA A LISTED SOURCE TOUCHED (libs/data/terms_fence.py), labelled and left
+        # exactly where they are: same order, same verdicts, never deleted (rule 4).
+        "terms_fence_labels": terms_labels,
+        # ...and the LIVE-INPUT CHECK: rows declaring live input from an IDEAS_ONLY or held source.
+        "terms_quarantine": terms_quarantine,
         "pipeline_started_at": started_at.isoformat(timespec="seconds") if started_at else None,
         "per_source": per_source, "source_state": source_state, "total": len(rows_out),
         "fresh_intake_stamps": intake_stamped,

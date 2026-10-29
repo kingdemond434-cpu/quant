@@ -489,9 +489,14 @@ def _blinded(source: str, candidates: list[dict]) -> tuple[list[dict], dict[str,
     return clean, {k: rep[k] for k in ("rows", "violations", "fields_stripped")}
 
 
-def donate(source: str, candidates: list[dict], tests_run: int,
+def donate(source: str, candidates: list[dict], tests_run: int | None,
            suffix: str = "") -> Path | None:
     """Write the discovery contract. A control run must NEVER call this.
+
+    `tests_run=None` means "the rows that actually leave": the count is taken AFTER the lane and
+    stamp doors, so a proposer whose every candidate is one test never counts a row the door
+    turned away (#234 should-fix). An int is written as given, for proposers that tested more
+    than they donate.
 
     POINT-IN-TIME BY CONSTRUCTION AND BY REFUSAL. Every row that leaves here carries
     available_time, ingested_time, source_version and a payload hash, so a joiner can refuse it
@@ -530,6 +535,9 @@ def donate(source: str, candidates: list[dict], tests_run: int,
     path = out / (f"discoveries_{stamp}_{suffix}.json" if suffix else f"discoveries_{stamp}.json")
     LAST_DONATION["donated"] = len(candidates)
     LAST_DONATION["path"] = str(path)
+    if tests_run is None:
+        tests_run = len(candidates)
+    LAST_DONATION["tests_run"] = tests_run
     path.write_text(json.dumps({"source": source,
                                 "generated_at": datetime.now(tz=UTC).isoformat(),
                                 "tests_run": tests_run, "discoveries": candidates,

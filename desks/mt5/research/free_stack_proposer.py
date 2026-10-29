@@ -114,6 +114,14 @@ def build_grid(columns: dict[str, Any], roster: dict[str, dict[str, Any]]
         if src is None:
             skipped[sid] = "no roster row"
             continue
+        from libs.data import terms_fence as _tf
+        platform = _tf.input_source(sid, str(src.get("kind") or ""),
+                                    str(src.get("url") or ""))
+        if platform:
+            # A stored series is LIVE INPUT: one from an IDEAS_ONLY or held source mints nothing
+            # (libs/data/terms_fence.py; idea provenance alone never blocks a cell).
+            skipped[sid] = f"not live input ({_tf.status(platform)}): {platform}"
+            continue
         if not series_exists(sid):
             skipped[sid] = "no data/lake/series/fs_<id> frame on this host yet"
             continue
@@ -171,6 +179,8 @@ def main(argv: list[str] | None = None) -> int:
     doc: dict[str, Any] = {"built_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                            "writer": "research/free_stack_proposer.py", "seat": SEAT,
                            "sources_with_columns": len(columns), "skipped": skipped,
+                           "terms_fenced_skipped": sum(1 for v in skipped.values()
+                                                       if v.startswith("not live input")),
                            "grid_total": len(grid),
                            "cn_exchange": cn_exchange_block(grid, roster, columns, skipped)}
     if not grid:

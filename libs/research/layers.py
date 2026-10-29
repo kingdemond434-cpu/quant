@@ -50,6 +50,7 @@ LEG_LAYER: dict[str, str] = {
     # That is information, not prediction: neither one scores anything.
     "proposer_seat": "information", "kimi_hunt": "information",
     "deep_forest": "information", "market_intel": "information", "record_tape": "information",
+    "attention_substitutes": "information",
     "archive_tape": "information", "refresh_bars": "information",
     "timeframe_coverage": "information", "frontier": "information",
     "frontier_ontology": "information", "frontier_unknowns": "information",
@@ -294,6 +295,10 @@ LEG_LAYER: dict[str, str] = {
     # allocator's own evidence work, one rung above a prediction.
     "residual_gate": "portfolio",
     "representation_forge": "information",
+    # THE OPTIONS-IMPLIED STATE (2026-10-06): it publishes features AND mints cells whose every
+    # claim is about the underlying's forward return conditioned on that state -- billed to
+    # prediction, like `free_stack_proposer`, because the cells are what the hour is for.
+    "options_implied": "prediction",
     # THE MATHEMATICS CIVILIZATION (2026-09-17): every object it invents is a claim about the
     # residual -- E[eps | f(x)] -- which is a claim about returns, so the hour is billed to
     # prediction like `world_model` and `discovery_compiler`. The representations it mints are a
@@ -512,6 +517,8 @@ LEG_LAYER: dict[str, str] = {
     # against the instrument's own market-implied state: a claim about returns, prediction.
     "dislocation_lab": "prediction",
     "ingestion_exploitation": "meta",
+    # the deep-forest attempt ledger and its daily-floor fence measure the miner itself
+    "forest_attempts": "meta",
     # INDEPENDENCE AT INTAKE measures how much independent ground an hour of judge bought, and
     # moves intake order, operator mix and generation targets accordingly: the machine measuring
     # and scheduling itself, which is meta.

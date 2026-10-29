@@ -17,11 +17,12 @@ problems that were being treated as one:
                                     Nothing mints them. That is a pure wiring gap and it is what
                                     this file closes.
 
-    STRUCTURALLY UNREACHABLE        execution_entry, news_reaction and options_implied have NO
-                                    registered family that classifies into them at all. The desk
-                                    declared fifteen clusters and built families for eleven.
-                                    No amount of search reaches these: the missing artifact is a
-                                    FAMILY MODULE, and saying so is the remedy.
+    STRUCTURALLY UNREACHABLE        execution_entry and news_reaction have NO registered family
+                                    that classifies into them at all. The desk declared fifteen
+                                    clusters and built families for eleven. No amount of search
+                                    reaches these: the missing artifact is a FAMILY MODULE, and
+                                    saying so is the remedy. (options_implied stood here until
+                                    2026-10-06 -- see MISSING_ARTIFACT's history note below.)
 
 The third case is why this file refuses to fake anything. Minting `event_reaction` cells and
 calling them news_reaction would make the register green and change nothing about the book -- the
@@ -79,13 +80,22 @@ MISSING_ARTIFACT = {
                       "whose arrival time is itself the signal. The 3,854 STRUCTURED_CB_SPEECH "
                       "cells minted on 2026-09-15 are its input and currently route to "
                       "event_reaction, which is the wrong clock."),
-    "options_implied": ("NO ARTIFACT MAKES THIS REACHABLE ON THIS ACCOUNT. Fusion quotes no "
-                        "options on any instrument in the universe registry, so there is no "
-                        "implied surface to trade and no implied series to condition on. This "
-                        "cluster is UNREACHABLE BY VENUE, not unattempted, and the honest "
-                        "disposition is to say so rather than to leave it looking like a gap "
-                        "somebody forgot. Reaching it needs a venue change, which is the "
-                        "principal's decision and not a research task."),
+    # HISTORY, KEPT BECAUSE IT WAS WRONG IN AN INSTRUCTIVE WAY. Until 2026-10-06 this entry read
+    # "NO ARTIFACT MAKES THIS REACHABLE ON THIS ACCOUNT. Fusion quotes no options ... so there is
+    # no implied surface to trade and no implied series to condition on ... Reaching it needs a
+    # venue change." The first half is true and the conclusion does not follow from it. The
+    # cluster's payer (alpha_clusters: dealers short gamma, the implied-realised premium) acts on
+    # the UNDERLYING, and the underlyings are on this account: universe.json lists XAUUSD,
+    # US500, NAS100, US30, EURUSD and XTIUSD, and recorders/vol_archive.py has archived the CBOE
+    # implied series for exactly those (GVZ, VIX + 9D/3M/6M, VXN, VXD, EVZ, OVX) hourly since
+    # 2026-09-05 -- an implied series to condition on, on this desk, the whole time. The family
+    # module now exists (mt5desk/family_implied_vol.py) and the cluster is PROPOSER_OWNED below;
+    # this entry is reported only if no registered family classifies here again.
+    "options_implied": ("desks/mt5/mt5desk/family_implied_vol.py -- implied-vol-CONDITIONED "
+                        "trades on the underlying (no options venue needed), fed by "
+                        "research/options_implied.py from recorders/vol_archive.py. If this "
+                        "text is reported, the two families were unregistered: restore them in "
+                        "families_orthogonal.ORTHOGONAL_FAMILIES."),
 }
 
 
@@ -110,7 +120,61 @@ CLUSTER_PROPOSER = {
     "positioning_flow": "the COT families (cot_positioning, cot_change_fade, cot_net_fade), which "
                         "need a COT print per bar",
     "event_surprise": "event_reaction, fed by the calendar -- 113 cells already built",
+    "options_implied": "research/options_implied.py (hourly leg `options_implied`) -- "
+                       "implied_vol_state / implied_vol_conditioned on every instrument whose "
+                       "CBOE implied series vol_archive maps, read from "
+                       "data/lake/series/oi_<SYMBOL>.parquet",
 }
+
+
+#: CLUSTERS FED BY A REGISTERED SOURCE SET (principal ruling 2026-10-13: no source is banned;
+#: a source is HELD only when its own row in the per-source rule register says METHOD_BLOCKED or
+#: NEEDS_KEY). The cluster carries no verdict of its own: it names the register and the sources
+#: it reads, and it is HELD only while NONE of them is admitted there (`route_admitted`). An
+#: unreadable register admits nothing, so the hold fails closed.
+CLUSTER_SOURCES: dict[str, dict[str, Any]] = {
+    "options_implied": {
+        "register": ("desks/mt5/recorders/vol_archive.py TERMS_EVIDENCE, a view of "
+                     "libs/data/terms_fence.SOURCE_POLICY (yahoo, fred_cboe, cboe_vol_indices)"),
+        "sources": ("yahoo", "fred", "cboe"),
+        "unblocks_when": ("a direct route with a quoted clause permitting automated live input "
+                          "is added to terms_fence and vol_archive (route_admitted)"),
+    },
+}
+
+
+def _register_rows(cluster: str) -> dict[str, dict[str, Any]] | None:
+    """{source: register row} for a registered cluster, or None when the register is unreadable."""
+    spec = CLUSTER_SOURCES.get(cluster)
+    if spec is None:
+        return {}
+    try:
+        from recorders import vol_archive as va
+        reg = dict(va.TERMS_EVIDENCE)
+        return {k: dict(reg.get(k) or {}) for k in spec["sources"]}
+    except Exception:
+        return None
+
+
+def source_hold(cluster: str) -> dict[str, str] | None:
+    """The hold on `cluster` while no source it reads is admitted by its register row, else
+    None. The reason names each source's policy, straight from the register."""
+    spec = CLUSTER_SOURCES.get(cluster)
+    if spec is None:
+        return None
+    rows = _register_rows(cluster)
+    if rows is None:
+        return {"reason": "per-source register unreadable -- fails closed",
+                "record": spec["register"], "unblocks_when": spec["unblocks_when"]}
+    try:
+        from recorders import vol_archive as va
+        if any(va.route_admitted(r) for r in rows.values()):
+            return None
+    except Exception:
+        pass
+    reason = "; ".join(f"{k}: {r.get('policy', 'UNREGISTERED')} -- {r.get('why', '')}"
+                       for k, r in rows.items())
+    return {"reason": reason, "record": spec["register"], "unblocks_when": spec["unblocks_when"]}
 
 
 def _families_by_cluster() -> tuple[dict[str, list[str]], dict[str, list[str]]]:
@@ -198,10 +262,24 @@ def plan() -> dict[str, Any]:
 
     rows: list[dict[str, Any]] = []
     cells: list[dict[str, Any]] = []
-    for c in empty:
+    # A terms-held cluster is reported whether or not breadth lists it as empty, so its register
+    # entry always says why it is not being reached.
+    for c in sorted(set(empty) | {k for k in CLUSTER_SOURCES if source_hold(k)}):
         n = int(counts.get(c, 0))
         fams = by_cluster.get(c) or []
         reg = registered.get(c) or []
+        hold = source_hold(c)
+        if hold:
+            rows.append({"cluster": c, "cells_in_docket": n, "verdict": "HELD",
+                         "status": "HELD", "families": reg,
+                         "owner": CLUSTER_PROPOSER.get(c, ""),
+                         "reason": hold["reason"], "record": hold["record"],
+                         "unblocks_when": hold["unblocks_when"],
+                         "why": (f"reachable by {len(reg)} registered famil(ies) and owned by a "
+                                 f"proposer, but no source of its input is admitted by the "
+                                 f"per-source register: {hold['reason']}. Nothing is minted and "
+                                 f"nothing is fetched until a source is admitted.")})
+            continue
         testable, untestable = _testable(reg)
         if reg and not testable:
             # REGISTERED, AND NOT ONE OF THEM TESTABLE BY THE SEALED JUDGE. Every cell any
@@ -279,7 +357,9 @@ def plan() -> dict[str, Any]:
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "rule": ("an empty cluster is one of three things and they need three different "
                  "remedies: ATTACKED (the gates or the mechanism), REACHABLE-BUT-UNMINTED (a "
-                 "wiring gap, closed here), or UNREACHABLE (a missing family module, named)."),
+                 "wiring gap, closed here), or UNREACHABLE (a missing family module, named). "
+                 "A cluster none of whose input sources the per-source register admits is "
+                 "HELD, with each source's policy and the record that lifts it."),
         "n_empty": len(empty),
         "census": dict(census),
         "cells_per_cluster": CELLS_PER_CLUSTER,
@@ -314,12 +394,15 @@ def main(argv: list[str] | None = None) -> int:
     for r in doc["clusters"]:
         mark = {"FORCED": "  FORCED ", "UNREACHABLE": "  NO FAM ",
                 "PROPOSER_OWNED": "  propsr ", "BLOCKED_BY_SEALED_GAUNTLET": "  SEALED ",
-                "ALREADY_ATTACKED": "  attackd"}.get(str(r["verdict"]), "  ?      ")
+                "ALREADY_ATTACKED": "  attackd",
+                "HELD": "  HELD   "}.get(str(r["verdict"]), "  ?      ")
         print(f"{mark} {r['cluster']!s:24} {r['cells_in_docket']:6} in docket  "
               f"{','.join(r['families'])[:34]}")
     for r in doc["clusters"]:
         if r["verdict"] == "UNREACHABLE":
             print(f"\n  {r['cluster']}: {str(r['missing_artifact'])[:150]}")
+        if r["verdict"] == "HELD":
+            print(f"\n  {r['cluster']}: HELD -- {r['reason']}")
     if doc.get("donated_to"):
         print(f"\n  {doc['n_cells_minted']} cell(s) donated -> {doc['donated_to']}")
     print(f"  -> {OUT}")

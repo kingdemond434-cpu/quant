@@ -84,6 +84,10 @@ from libs.research import representations as R  # noqa: E402
 UNIVERSE_DIR = DESK / "data" / "universe"
 UNIVERSE_JSON = UNIVERSE_DIR / "universe.json"
 AXES = DESK / "data" / "axes"
+#: Axis files a producer regenerates hourly and which therefore live in the (gitignored) lake
+#: rather than beside the committed axes: `research/options_implied.py` writes the
+#: options-implied state here. Same shape, same reader, same CLOCK_PAD_H.
+LAKE_AXES = DESK / "data" / "lake" / "axes"
 FRED = ROOT / "data" / "fred_macro.json"
 REPRESENTATIONS = DESK / "data" / "representations"
 MOAT_SERIES = DESK / "reports" / "MOAT_SERIES.json"
@@ -308,7 +312,8 @@ def load_inputs(*, max_series: int = 240) -> Inputs:
     series: list[R.Series] = []
     unmeasured: list[dict[str, str]] = []
 
-    for path in sorted(AXES.glob("*.json")) if AXES.exists() else []:
+    axis_files = [p for d in (AXES, LAKE_AXES) if d.exists() for p in sorted(d.glob("*.json"))]
+    for path in axis_files:
         doc = _read_json(path)
         if not isinstance(doc, dict):
             unmeasured.append({"name": f"axes:{path.stem}", "why": "unreadable or not an object",

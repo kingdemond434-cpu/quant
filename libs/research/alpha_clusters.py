@@ -236,6 +236,10 @@ FAMILY_CLUSTER: dict[str, str] = {
     # -- options-implied state
     "implied_vol": "options_implied",
     "gamma_exposure": "options_implied",
+    # The registered options-implied families (mt5desk/family_implied_vol.py, 2026-10-06),
+    # declared EXACTLY so `classify_family` places their cells by registry key.
+    "implied_vol_state": "options_implied",
+    "implied_vol_conditioned": "options_implied",
     # -- execution and entry alpha
     "entry_alpha": "execution_entry",
     "execution_alpha": "execution_entry",
