@@ -45,10 +45,11 @@ FOUR LAYERS, and only the fourth may reduce exposure below target:
      exposure, reconciliation failure. This is NOT the allocator turning conservative; it is the
      refusal to keep 20% of the account exposed when the desk cannot say what the 20% consists of.
 
-HEAT_HARD_CEILING SURVIVES AS THE UNMEASURED FALLBACK AND NOTHING ELSE. When the curve cannot be
-read, or the survival surface is too thin, or the artifact is stale, the recorded 0.30 is what
-holds -- because a monitoring failure must never read as permission. It is a floor on caution,
-not a ceiling on ambition, and on a thin book the measured bars are TIGHTER than it ever was.
+NO FIXED CAP, AND A 20% FALLBACK (principal 2026-10-29 19:03Z: "remove the 30% cap, fallback
+20%"; D-20261029-012). HEAT_HARD_CEILING is now the whole account, the only bound no
+measurement can widen; when the curve cannot be read, or the survival surface is too thin, or the
+artifact is stale, HEAT_UNMEASURED_FALLBACK (the 20% target) is what holds -- a monitoring
+failure must never read as permission. The measured growth and survival ceilings bind as before.
 
 CERTIFICATION IS PART OF THE LAW, not a footnote. Forcing full utilisation only maximises growth
 while the target sits at or below the peak of the growth curve. `certify()` measures that on the
@@ -119,6 +120,7 @@ for _p in (str(BASE), str(BASE.parent.parent)):
 from mt5desk.gateway_config_fallback import (  # noqa: E402
     HEAT_HARD_CEILING,
     HEAT_TARGET,
+    HEAT_UNMEASURED_FALLBACK,
     MAX_DRAWDOWN_TOLERANCE,
     MAX_FAMILY_HEAT_SHARE,
     MAX_SLEEVE_HEAT_SHARE,
@@ -130,6 +132,7 @@ __all__ = [
     "EFFECTIVE_BREADTH_REF",
     "HEAT_HARD_CEILING",
     "HEAT_TARGET",
+    "HEAT_UNMEASURED_FALLBACK",
     "MAX_FAMILY_HEAT_SHARE",
     "MIN_STATE_WORLDS",
     "READY_SCALE",
@@ -704,7 +707,7 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
 
 
 def measured_ceiling(curve: dict[float, float], *, floor: float = HEAT_TARGET,
-                     fallback: float = HEAT_HARD_CEILING,
+                     fallback: float = HEAT_UNMEASURED_FALLBACK,
                      tolerance: float = CERTIFY_TOLERANCE) -> tuple[float, str]:
     """The highest heat THIS opportunity set supports, measured on the curve rather than decreed.
 

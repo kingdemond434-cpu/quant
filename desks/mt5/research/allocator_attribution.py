@@ -160,7 +160,8 @@ LOGW = "log-wealth per day"
 #: there when the policy module imports, so this ledger cannot judge the book against a bar the
 #: policy no longer holds. They size nothing here: this is a reading, not a control.
 HEAT_FLOOR = 0.20
-HEAT_CEILING = 0.30
+#: The whole account: no fixed cap since 2026-10-29 (D-20261029-012). Read from heat_policy below.
+HEAT_CEILING = 1.00
 
 #: Every governance rule the decomposition is read under, verbatim, so the report carries them.
 GOVERNANCE_RULES = (

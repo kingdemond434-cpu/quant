@@ -51,6 +51,7 @@ if str(_DESK) not in sys.path:
 from mt5desk.gateway_config_fallback import (  # noqa: E402
     HEAT_HARD_CEILING,
     HEAT_TARGET,
+    HEAT_UNMEASURED_FALLBACK,
     Q_OPT,
 )
 from mt5desk.sizing import (  # noqa: E402
@@ -1544,7 +1545,9 @@ def live_heat_ceiling(heat: dict) -> tuple[float, str]:
     FAILS CLOSED ON EVERY DOUBT, like everything else this function's caller does. A malformed
     envelope, a non-finite number, a wrong type: the constant stands and the reason says which.
     """
-    fallback = float(MAX_HEAT_CEILING)
+    # An unreadable envelope holds the 20% target, never a fixed ceiling (principal 2026-10-29
+    # 19:03Z, "remove the 30% cap, fallback 20%").
+    fallback = float(HEAT_UNMEASURED_FALLBACK)
     env = heat.get("envelope")
     if not isinstance(env, dict):
         return fallback, f"no envelope block: recorded {fallback:.0%} bar"

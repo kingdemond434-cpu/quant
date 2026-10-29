@@ -102,7 +102,21 @@ HEAT_TARGET = 0.20
 #: its weight on the worst 20% of worlds) runs +0.00133/day at the free optimum, +0.00072 at 20%,
 #: +0.00011 at 25% and NEGATIVE at 30%. Past 30% the book loses wealth in the worlds it has to
 #: survive, and no amount of average-case growth buys that back.
-HEAT_HARD_CEILING = 0.30
+#:
+#: NO LONGER A CAP (principal 2026-10-29 19:03Z, in the allocator thread: "yes, update the
+#: heat-law text and CLAUDE.md, remove the 30% cap, fallback 20%"; and 18:31Z: "there is no cap on
+#: how much percent is deployed ... if growth optimum says 40 ... we use 40"; D-20261029-012).
+#: Heat is the measured growth optimum inside the MEASURED survival bars (growth ceiling, survival
+#: ceiling, effective independence, the catastrophe guard), which still bind. This constant is now
+#: the whole account -- the only bound no measurement can widen -- and an UNMEASURED curve or
+#: envelope falls back to HEAT_UNMEASURED_FALLBACK, never to a fixed ceiling. The 2026-09-02
+#: measurement above (robust score negative at 30% on that book) is the curve's to repeat: on a
+#: book where it still holds, the measured growth ceiling stops below 30% by itself.
+HEAT_HARD_CEILING = 1.00
+
+#: What heat holds when the growth curve or the survival envelope cannot be read: the 20% target
+#: (principal 2026-10-29 19:03Z, "fallback 20%"). A monitoring failure never reads as permission.
+HEAT_UNMEASURED_FALLBACK = HEAT_TARGET
 
 #: No single sleeve may hold more than this share of total heat. NOT tidiness -- measured
 #: 2026-09-02: told to spend 20% with no per-sleeve bound, the optimiser put 14.4 of those 20
