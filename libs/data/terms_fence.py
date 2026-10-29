@@ -226,8 +226,9 @@ SOURCE_POLICY: dict[str, dict[str, Any]] = {
                       "sources": ("onion_mirrors",), "source_prefixes": ("onion_",),
                       "routes": ("onion_mirrors",),
                       "why": ("allowlisted public onion mirrors read for ideas only, never live "
-                              "input; off until the auditor rules on Tor egress versus the "
-                              "no-egress-rotation rule"),
+                              "input: each mirror's own terms are UNREAD, and UNREAD terms never "
+                              "permit live input; off until the auditor rules on Tor egress "
+                              "versus the no-egress-rotation rule"),
                       "unblock": ("the auditor's ruling on Tor egress (ONION_LANE.md), then a "
                                   "per-mirror terms clause quoted here for any LIVE use"),
                       "missed_growth": {"delta_elogw": "UNMEASURED",
