@@ -63,6 +63,10 @@ UNMEASURED = "UNMEASURED"
 FAIL_CLOSED_MARKS = ("fail closed", "placement lock", "unreadable", "absent", "not read",
                      "old (limit", "unknown now", "malformed", "another account")
 _NOT_READ = object()
+MAX_BAR_GAP = timedelta(minutes=75)
+OCO_KEEP_DAYS = 7                       # mt5desk.gold_oco.KEEP_DAYS
+RETRY = ("PENDING", "UNMEASURED_NO_BARS", "UNMEASURED_NO_ANCHOR", "UNMEASURED_OCO",
+         "UNMEASURED_BAR_GAP")
 
 
 def _jsonl(path: Path) -> list[Row]:
@@ -102,7 +106,7 @@ def kind_of(why: object) -> str:
     w = str(why or "").lower()
     if "holds or rests" in w and "fail closed" not in w:
         return "fence_block"
-    return "fail_closed" if any(m in w for m in FAIL_CLOSED_MARKS) else "fence_block"
+    return "fail_closed" if any(m in w for m in FAIL_CLOSED_MARKS) else "unclassified"
 
 
 def events(decisions: Iterable[Row] | None = None, e8: Iterable[Row] | None = None,
@@ -230,6 +234,18 @@ def counterfactual(ev: Mapping[str, Any], bars: Any, *, point: float | None = No
     mask = (idx >= start) & (idx <= last_open)
     w = bars[mask]
     walls = idx[mask]
+    # COVERAGE (audit v3 must-fix 1): an empty or holed window is not "never filled". The bars
+    # must reach from the refusal minute to the last bar before the close with no hole longer
+    # than MAX_BAR_GAP (wide enough for the daily rollover break, narrow enough for a lost day
+    # or a feed that starts mid-afternoon); otherwise UNMEASURED_BAR_GAP, retried next run.
+    if len(walls) == 0:
+        return {"status": "UNMEASURED_BAR_GAP", "r": None, "why": "no bars in the window"}
+    edges = [walls[0] - start, last_open - walls[-1]]
+    holes = [walls[k + 1] - walls[k] for k in range(len(walls) - 1)]
+    worst = max([*edges, *holes])
+    if worst > MAX_BAR_GAP:
+        return {"status": "UNMEASURED_BAR_GAP", "r": None,
+                "why": f"a {worst} hole in the bars between the refusal and the close"}
     if "spread" in w.columns and point is None:
         return {"status": "UNMEASURED_NO_POINT", "r": None, "why": "no point size for spread"}
     sp_col = (w["spread"].astype(float) * float(point or 0.0)).tolist() if "spread" in w.columns \
@@ -257,7 +273,7 @@ def counterfactual(ev: Mapping[str, Any], bars: Any, *, point: float | None = No
             return {"status": "MEASURED", "filled": False, "exit": "cancelled_by_oco",
                     "r": 0.0, "cancelled_by": "sibling", "sibling_fill": str(walls[ks])}
     want = "long" if long else "short"
-    for d in {t0.date().isoformat(), t0w.date().isoformat()}:
+    for d in (t0w.date().isoformat(),):        # gold_oco keys days by the BROKER date
         e = (directions or {}).get(d)
         if not isinstance(e, dict):
             continue
@@ -321,8 +337,9 @@ def load_m1(symbol: str) -> Any:
 
 def run(*, evs: list[Row] | None = None, bars_for: Any = None, out: Path = OUT,
         summary: Path = SUMMARY, clock: Any = _NOT_READ, directions: Any = _NOT_READ,
-        cert: Mapping[str, Any] | None = None) -> Row:
+        cert: Mapping[str, Any] | None = None, now: datetime | None = None) -> Row:
     evs = events() if evs is None else evs
+    now = now or datetime.now(tz=UTC)
     bars_for = bars_for or load_m1
     if cert is None:
         try:
@@ -335,13 +352,18 @@ def run(*, evs: list[Row] | None = None, bars_for: Any = None, out: Path = OUT,
     for ev in evs:
         if ev["event_id"] in done:
             continue
+        t = _utc(ev.get("at"))
+        if t is not None and now - t > timedelta(days=OCO_KEEP_DAYS):
+            # gold_oco keeps KEEP_DAYS of direction state; past it the OCO cannot be judged.
+            pending.append({**ev, "status": "UNMEASURED_OCO_EXPIRED", "r": None,
+                            "why": f"older than gold_oco KEEP_DAYS={OCO_KEEP_DAYS}"})
+            continue
         sym = str(ev.get("symbol") or "XAUUSD").upper()
         if sym not in cache:
             cache[sym] = bars_for(sym)
         pt = _point(sym) or (0.01 if sym == "XAUUSD" else None)
         cf = counterfactual(ev, cache[sym], point=pt, clock=clock, directions=directions)
-        if cf["status"] in ("PENDING", "UNMEASURED_NO_BARS", "UNMEASURED_NO_ANCHOR",
-                            "UNMEASURED_OCO"):
+        if cf["status"] in RETRY:
             pending.append({**ev, **cf})
             continue
         ru = risk_usd(ev)

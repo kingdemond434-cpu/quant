@@ -137,13 +137,15 @@ def allowed_choices(intent: Mapping[str, Any]) -> tuple[str, ...]:
     return (d, "none") if d else ("none",)
 
 
-def feasible(acct: Mapping[str, set[str]]) -> bool:
-    """The fence between fence accounts, and FTMO's follow-E8 rule."""
-    for a, b in itertools.combinations([x for x in acct if x in FENCE_ACCOUNTS], 2):
+def feasible(acct: Mapping[str, set[str]], ftmo_new: set[str] | None = None) -> bool:
+    """No account opposite another (the fusion<->e8 fence; FTMO's HELD book joins it through
+    gold_oco's one-direction-a-day lock, so FTMO holding while E8 is flat is feasible), and
+    FTMO's NEW legs follow E8's single direction only."""
+    for a, b in itertools.combinations(list(acct), 2):
         sa, sb = acct[a], acct[b]
         if ("long" in sa and "short" in sb) or ("short" in sa and "long" in sb):
             return False
-    ft = acct.get("ftmo") or set()
+    ft = ftmo_new or set()
     return not (ft and (len(ft) != 1 or acct.get("e8") != ft))
 
 
@@ -154,13 +156,16 @@ def plan_group(intents: list[Row], missing: list[str] | None = None) -> Row:
     for combo in itertools.product(*(allowed_choices(i) for i in intents)):
         by_acct: dict[str, set[str]] = {}
         legs: dict[str, int] = {}
+        ftmo_new: set[str] = set()
         for i, c in zip(intents, combo, strict=True):
             a = str(i["account"])
             by_acct.setdefault(a, set()).update(sides_of(c))
             legs[a] = legs.get(a, 0) + (c != "none")
+            if a == "ftmo" and not i.get("fixed"):
+                ftmo_new |= sides_of(c)
         # One account never hedges itself across sleeves or against its own book.
         own_ok = all(not (s == {"long", "short"} and legs[a] > 1) for a, s in by_acct.items())
-        if not (own_ok and feasible(by_acct)):
+        if not (own_ok and feasible(by_acct, ftmo_new)):
             continue
         vals = [value(i, c) for i, c in zip(intents, combo, strict=True)]
         active = any(c != "none" and not i.get("fixed")
@@ -250,13 +255,60 @@ def edges_from_ledger(rows: Iterable[Row]) -> dict[str, dict[str, Any]]:
     return out
 
 
+def _same(a: str, b: str) -> bool:
+    try:
+        from mt5desk import cross_account as xa
+        return bool(xa.same_instrument(a, b))
+    except Exception:
+        return a.upper()[:6] == b.upper()[:6]
+
+
+def quiet_read_book(account: str, *, now: datetime | None = None) -> tuple[Row | None, str]:
+    """`cross_account.read_book`'s semantics (full book of this account, MAX_AGE_S, the
+    declared key, in-flight sends held both ways) WITHOUT its side effects: `read_book` calls
+    `key_joins`, which pages and CLEARS the fence's key alert; a report must never do either."""
+    from mt5desk import cross_account as xa
+    try:
+        doc = json.loads(xa.book_path(account).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return None, f"the {account} book is absent or unreadable ({type(exc).__name__})"
+    try:
+        at = datetime.fromisoformat(str(doc["at"]))
+        if at.tzinfo is None:
+            raise ValueError("naive timestamp")
+        age = ((now or datetime.now(tz=UTC)) - at).total_seconds()
+        symbols = doc["symbols"]
+        if doc.get("account") != account or doc.get("covers") != "all" \
+                or not isinstance(symbols, dict):
+            raise ValueError("not a full book of this account")
+        key = doc.get("account_key")
+        if not xa.valid_key(key):
+            raise ValueError("the book names no account")
+        book = {xa.norm(k): {"long": bool(v.get("long")), "short": bool(v.get("short"))}
+                for k, v in symbols.items()}
+    except (KeyError, TypeError, ValueError, AttributeError) as exc:
+        return None, f"the {account} book is malformed ({type(exc).__name__})"
+    if not (-60.0 <= age <= xa.MAX_AGE_S):
+        return None, f"the {account} book is {age:.0f}s old (limit {xa.MAX_AGE_S:.0f}s)"
+    want = xa.expected_key(account)
+    if want is not None and (str(want).startswith("invalid:") or key != want):
+        return None, f"the {account} book is of another account than the one this box declares"
+    try:
+        held = xa.inflight(account, now=now)
+    except (OSError, ValueError, TypeError) as exc:
+        return None, f"the {account} in-flight file is unreadable ({type(exc).__name__})"
+    for sym in held:
+        book[sym] = {"long": True, "short": True}
+    return book, f"{account} book {age:.0f}s old"
+
+
 def live_books(now: datetime | None = None) -> dict[str, tuple[Row | None, str]]:
     """{acct: (exposure {SYM: {long, short}} or None, why)} with the fence's own semantics."""
     out: dict[str, tuple[Row | None, str]] = {}
     try:
         from mt5desk import cross_account as xa
         for a in xa.ACCOUNTS:
-            book, why = xa.read_book(a, now=now)
+            book, why = quiet_read_book(a, now=now)
             out[a] = (dict(book) if book is not None else None, why)
     except Exception as exc:
         for a in FENCE_ACCOUNTS:
@@ -362,15 +414,21 @@ def gather(day: str, *, decisions: list[Row] | None = None, e8: list[Row] | None
             it["bracket"] = it["sides"] == {"long", "short"}
             it["direction"] = next(iter(it["sides"])) if len(it["sides"]) == 1 else None
             intents.append(it)
-        # Every readable book is merged as FIXED, whatever intent rows the account has.
+        # Every readable book is merged as FIXED, MINUS the sides the account's own placed
+        # intents for this symbol/day explain (its own resting or filled bracket is the intent,
+        # not a fixed position against it -- audit v2 must-fix 2). Every book symbol that is the
+        # same instrument is merged (cross_account.same_instrument).
         for a, (book, _why) in (books or {}).items():
-            row = None
+            own = set()
+            for it in intents:
+                if it["account"] == a:
+                    own |= set(it.get("placed") or ())
+            merged = {"long": False, "short": False}
             for bsym, brow in (book or {}).items():
-                if str(bsym).upper().startswith(symbol[:6]):
-                    row = brow
-            if not isinstance(row, dict):
-                continue
-            held = [s for s in ("long", "short") if row.get(s)]
+                if isinstance(brow, dict) and _same(str(bsym), symbol):
+                    merged["long"] |= bool(brow.get("long"))
+                    merged["short"] |= bool(brow.get("short"))
+            held = [s for s in ("long", "short") if merged[s] and s not in own]
             if held:
                 intents.append({"account": a, "sleeve": "book", "symbol": symbol, "fixed": True,
                                 "fixed_choice": "both" if len(held) == 2 else held[0],
@@ -408,6 +466,21 @@ def build(day: str | None = None, **kw: Any) -> Row:
                      "half-brackets")}
 
 
+def window_metric(path: Path, day: str, days: int = 14) -> int | None:
+    """Divergent MEASURED symbol-days over the `days` days ending `day` (the falsifier's
+    window), or None when the history holds none of them."""
+    from datetime import date, timedelta
+    try:
+        end = date.fromisoformat(day)
+    except ValueError:
+        return None
+    lo = (end - timedelta(days=days - 1)).isoformat()
+    rows = [r for r in _jsonl(path, tail=100000) if lo <= str(r.get("day") or "") <= day]
+    if not rows:
+        return None
+    return sum(int(r.get("divergent_measured_symbol_days") or 0) for r in rows)
+
+
 def upsert_history(doc: Row, path: Path = HISTORY) -> None:
     """One row per day: today's row is replaced each pass, other days are kept."""
     rows = [r for r in _jsonl(path, tail=100000) if r.get("day") != doc["day"]]
@@ -431,6 +504,8 @@ def main(argv: list[str] | None = None) -> int:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     upsert_history(doc)
+    doc["divergent_measured_symbol_days_14d"] = window_metric(HISTORY, doc["day"])
+    OUT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     print(f"fence_planner: {len(doc['plans'])} group(s) {doc['verdict']}, divergent "
           f"{doc['divergent_measured_symbol_days']}, missing {doc['missing_inputs']}")
     return 0

@@ -239,3 +239,101 @@ def test_legs_are_wired_hourly_and_contracted_on_numeric_metrics():
     assert isinstance(_build(_ledger(12, 12))["divergent_measured_symbol_days"], int)
     mg_src = (DESK / "research" / "missed_growth.py").read_text("utf-8")
     assert '"cross_account_fence": cross_account_fence_line()' in mg_src
+
+
+# ------------------------------------------------------------------------------ v3 probes
+@needs_anchor
+def test_a_missing_day_is_a_bar_gap_not_never_filled(tmp_path):
+    bars = pd.concat([_bars({}, start="2026-10-28 04:55", end="2026-10-28 22:29"),
+                      _bars({}, start="2026-10-30 04:55", end="2026-10-30 22:29")])
+    cf = fmt.counterfactual(_ev(), bars, point=0.01, clock=bs, directions={})
+    assert cf["status"] == "UNMEASURED_BAR_GAP"
+    doc = fmt.run(evs=[_ev()], bars_for=lambda s: bars, out=tmp_path / "m.jsonl",
+                  summary=tmp_path / "s.json", clock=bs, directions={}, cert={},
+                  now=datetime.fromisoformat("2026-10-30T12:00:00+00:00"))
+    assert doc["appended"] == 0 and doc["pending_count"] == 1      # retried next run
+    assert not (tmp_path / "m.jsonl").exists()
+
+
+@needs_anchor
+def test_bars_starting_1500_broker_are_a_bar_gap():
+    bars = _bars({}, start="2026-10-29 15:00")
+    assert fmt.counterfactual(_ev(), bars, point=0.01, clock=bs,
+                              directions={})["status"] == "UNMEASURED_BAR_GAP"
+
+
+def test_events_past_gold_oco_keep_days_are_not_appended(tmp_path):
+    doc = fmt.run(evs=[_ev()], bars_for=lambda s: _bars({}), out=tmp_path / "m.jsonl",
+                  summary=tmp_path / "s.json", clock=bs, directions={}, cert={},
+                  now=datetime.fromisoformat("2026-11-10T00:00:00+00:00"))
+    assert doc["appended"] == 0
+    assert doc["pending"][0]["status"] == "UNMEASURED_OCO_EXPIRED"
+
+
+@needs_anchor
+def test_oco_direction_is_keyed_by_broker_date():
+    # 22:30Z on 10-28 is 01:30 broker on 10-29: the state for 10-29 governs, not 10-28's.
+    late = {**BUY, "time": "2026-10-28T22:30:00+00:00"}
+    bars = _bars({}, start="2026-10-29 01:00", end="2026-10-29 22:29")
+    bars.loc[pd.Timestamp("2026-10-29 08:00"), "high"] = 4140.0
+    days = {"2026-10-29": {"direction": "short", "first_fill_at": "2026-10-28T22:00:00+00:00",
+                           "first_fill_lane": "e8"}}
+    cf = fmt.counterfactual(_ev(late), bars, point=0.01, clock=bs, directions=days)
+    assert cf["exit"] == "cancelled_by_oco"
+    wrong = {"2026-10-28": days["2026-10-29"]}
+    assert fmt.counterfactual(_ev(late), bars, point=0.01, clock=bs,
+                              directions=wrong)["exit"] != "cancelled_by_oco"
+
+
+def test_unknown_reason_is_its_own_kind():
+    assert fmt.kind_of("") == "unclassified"
+    assert fmt.kind_of("something new") == "unclassified"
+
+
+def test_own_placed_bracket_is_not_a_fixed_book_against_itself():
+    # Fusion placed BOTH legs; its own book now shows long and short. That is the intent, not a
+    # fixed position: the plan is the whole bracket and there is no divergence. Before the fix
+    # the book row was merged as fixed `both`, the intent could only be `none`, and the
+    # placed bracket read as a divergence.
+    both = [{**BUY, "taken": True, "outcome": "EXECUTED"}, SELL]
+    books = {**EMPTY_BOOKS, "fusion": ({"XAUUSD": {"long": True, "short": True}}, OK)}
+    doc = fp.build(DAY, decisions=both, e8=[], ftmo=[], cert={"fusion": {"gold_asia": 0.006}},
+                   sleeves=[], ledger=_ledger(12, 12), books=books, today=DAY)
+    p = doc["plans"]["XAUUSD|2026-10-29"]
+    assert p["verdict"] == "PLANNED"
+    assert p["plan"]["assignment"]["fusion:gold_asia"] == "both"
+    assert doc["divergent_measured_symbol_days"] == 0
+    assert not any(i["sleeve"] == "book" and i["account"] == "fusion" for i in p["intents"])
+
+
+def test_ftmo_holding_while_e8_flat_is_feasible_and_same_instrument_merges():
+    books = {**EMPTY_BOOKS, "ftmo": ({"XAUUSD": {"long": True, "short": False}}, OK),
+             "e8": ({"XAUUSD.r": {"long": False, "short": False},
+                     "XAUUSD": {"long": False, "short": False}}, OK)}
+    doc = _build(_ledger(12, 12), books=books)
+    p = doc["plans"]["XAUUSD|2026-10-29"]
+    assert p["verdict"] != "NO_FEASIBLE_PLAN"
+    assert p["plan"]["assignment"]["fusion:gold_asia"] in ("long", "none")
+
+
+def test_quiet_read_book_never_pages_or_clears(monkeypatch, tmp_path):
+    from mt5desk import cross_account as xa
+    calls: list[str] = []
+    monkeypatch.setattr(xa, "page_key", lambda *a, **k: calls.append("page"))
+    monkeypatch.setattr(xa, "clear_key_alert", lambda *a, **k: calls.append("clear"))
+    monkeypatch.setattr(xa, "XACCT_DIR", tmp_path)
+    monkeypatch.setattr(xa, "expected_key", lambda a: "sha256:" + "1" * 16)
+    (tmp_path / "e8_book.json").write_text(json.dumps({
+        "at": datetime.now(tz=bs.UTC).isoformat(), "account": "e8", "covers": "all",
+        "account_key": "sha256:" + "2" * 16, "symbols": {"XAUUSD": {"short": True}}}))
+    book, why = fp.quiet_read_book("e8")
+    assert book is None and "another account" in why
+    assert calls == []
+
+
+def test_planner_window_metric_reads_fourteen_days(tmp_path):
+    h = tmp_path / "h.jsonl"
+    rows = [{"day": f"2026-10-{d:02d}", "divergent_measured_symbol_days": 1} for d in range(1, 30)]
+    h.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    assert fp.window_metric(h, DAY) == 14
+    assert fp.window_metric(tmp_path / "none.jsonl", DAY) is None

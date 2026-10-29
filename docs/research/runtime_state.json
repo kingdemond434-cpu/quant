@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 793,
+  "NEVER": 795,
   "UNMEASURED": 43
  },
  "scope": {
-  "attested": 1017,
+  "attested": 1019,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -464,6 +464,17 @@
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "leg:prop_challenge_allocator"
+    ]
+   },
+   {
+    "at": "2026-10-29T15:00:00+00:00",
+    "host": "vm",
+    "machine_id": "UNMEASURED",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE: appended by hand on the build container",
+    "organs": [
+     "leg:fence_planner",
+     "leg:fence_missed_trades"
     ]
    }
   ]
@@ -26497,6 +26508,62 @@
    "measured_on": "vm",
    "measured_on_machine_id": "f1747157a6464ea88e03c0e61e4c3be4",
    "measured_at": "2026-10-29T01:09:30+00:00"
+  },
+  {
+   "organ": "leg:fence_planner",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/fence_planner.py"
+   ],
+   "clock": "hourly_cycle:fence_planner",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by hand on the build container (no attestation tool in this tree): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/FENCE_PLAN.json",
+   "artifact_declared": "desks/mt5/reports/FENCE_PLAN.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "UNMEASURED",
+   "measured_at": "2026-10-29T15:00:00+00:00"
+  },
+  {
+   "organ": "leg:fence_missed_trades",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/fence_missed_trades.py"
+   ],
+   "clock": "hourly_cycle:fence_missed_trades",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by hand on the build container (no attestation tool in this tree): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/FENCE_MISSED_TRADES.json",
+   "artifact_declared": "desks/mt5/reports/FENCE_MISSED_TRADES.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "UNMEASURED",
+   "measured_at": "2026-10-29T15:00:00+00:00"
   }
  ],
  "ratchet": {

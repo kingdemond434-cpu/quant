@@ -255,15 +255,15 @@
    "hypothesis": "Choosing one direction set per symbol and day across E8, FTMO and Fusion by combined E[log W] under the cross-account fence removes accidental half-brackets and raises combined forward E[log W] above the leg-by-leg fence outcome.",
    "metric": {
     "gain": "ALPHA_DISCOVERY",
-    "metric": "divergent_measured_symbol_days",
+    "metric": "divergent_measured_symbol_days_14d",
     "better": "up",
     "organ": "report:FENCE_PLAN.json"
    },
    "falsifier": {
-    "metric": "divergent_measured_symbol_days",
+    "metric": "divergent_measured_symbol_days_14d",
     "op": "==",
     "threshold": 0,
-    "after": "14d on the trading box: no symbol-day with a MEASURED plan differs from what the accounts actually carried, so the planner buys nothing"
+    "after": "14d on the trading box: over the trailing 14 days (reports/fence_plan_history.jsonl) no symbol-day with a MEASURED plan differs from what the accounts actually carried, so the planner buys nothing"
    }
   },
   "fence_missed_trades": {
