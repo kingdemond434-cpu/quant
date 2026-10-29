@@ -659,3 +659,13 @@ def test_order_docket_past_its_deadline_ships_every_row_unordered(tmp_path: Path
                                deadline=(_t.monotonic() - 10.0, _t.monotonic() - 5.0))
     assert out == before
     assert doc.get("verdict") == "UNMEASURED" and "JudgeCoverageTimeout" in doc.get("why", "")
+
+
+def test_a_docket_preserved_for_over_a_day_is_red(tmp_path: Path) -> None:
+    """Audit of e9bb02582: PRESERVED must not stay WARN forever while producers are silent."""
+    mr = tmp_path / "merge_report.json"
+    mr.write_text(json.dumps({"merged_at": (NOW - timedelta(hours=30)).isoformat(),
+                              "preserved": True,
+                              "checked_at": (NOW - timedelta(minutes=20)).isoformat()}), "utf-8")
+    doc = jc.docket_merge_lag(NOW, mr)
+    assert doc["status"] == "RED" and "no producer" in doc["why"]

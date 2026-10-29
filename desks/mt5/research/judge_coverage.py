@@ -918,6 +918,9 @@ def judged_index(path: Path | None = None, *, now: datetime | None = None,
 #: only JUDGE_COVERAGE_REUSE's refusal hinted at it. Merge runs every hourly cycle; a merge older
 #: than this is more than one missed pass plus a long cycle.
 MERGE_LAG_H = 3.0
+#: A docket PRESERVED (merge ran, 0 fresh rows) for longer than this since its last real merge is
+#: RED: a day with no producer reaching the docket is a producer outage, not a quiet hour.
+PRESERVE_MAX_H = 24.0
 
 
 def docket_merge_lag(at: datetime, path: Path | None = None, *,
@@ -935,12 +938,18 @@ def docket_merge_lag(at: datetime, path: Path | None = None, *,
     age = (at - merged).total_seconds() / 3600.0
     out.update(merged_at=merged.isoformat(timespec="seconds"), age_h=round(age, 2))
     checked = _ts(doc.get("checked_at")) if doc.get("preserved") is True else None
-    if age > lag_h and checked is not None and (at - checked).total_seconds() / 3600.0 <= lag_h:
+    if (age > lag_h and checked is not None and age <= PRESERVE_MAX_H
+            and (at - checked).total_seconds() / 3600.0 <= lag_h):
         # The merge RAN and found nothing fresh, so it kept the docket: its own state, never OK
         # (no new cell reached the judge) and never RED (the writer is not broken).
         out.update(status="PRESERVED", checked_at=checked.isoformat(timespec="seconds"),
                    why=(f"the merge ran {(at - checked).total_seconds() / 3600:.1f} h ago with "
                         f"0 fresh rows and kept the docket last merged {age:.1f} h ago"))
+        return out
+    if age > lag_h and checked is not None and age > PRESERVE_MAX_H:
+        out.update(status="RED", checked_at=checked.isoformat(timespec="seconds"),
+                   why=(f"the merge has run with 0 fresh rows for {age:.1f} h (past "
+                        f"{PRESERVE_MAX_H:g} h): no producer is reaching the docket"))
         return out
     if age > lag_h:
         out.update(status="RED", why=(f"the docket was last merged {age:.1f} h ago (past "
