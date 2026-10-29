@@ -1256,7 +1256,10 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
     """Run every judge-owned shard, retrying only failed children at low concurrency.
 
     Publication remains fail closed: a shard that still fails after the bounded retries raises,
-    so the sealed judge cannot merge a partial result.  The retries are deliberately serial.
+    so the sealed judge cannot merge a partial result.  The FIRST retry of the failed shards runs
+    side by side when `_recovery_gate` can measure room for it (each charged at the largest
+    peak or sampled resident set seen, times SHARD_ADMIT_MARGIN); every later attempt is serial,
+    and GAUNTLET_SHARD_SERIAL_RETRY=1 makes the whole recovery serial again.
     A measured production failure mode had ten of fifteen memory-heavy shards finish, five die,
     and the next scheduled invocation discard all ten successful artifacts before repeating the
     two-hour pre-warm.  Retaining the successful outputs and rerunning only the failed children
@@ -1420,56 +1423,126 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
     failed = [(k, exc) for k, exc in first if exc is not None]
     if not failed:
         return
-    # THE FAILED SHARDS RECOVER SIDE BY SIDE, NOT ONE AFTER ANOTHER (2026-10-29). Measured on the
+    # THE FAILED SHARDS' FIRST RETRY RUNS SIDE BY SIDE, MEMORY-GATED (2026-10-29). Measured on the
     # sweep of 10-28 23:44Z: 13 of 15 build shards finished in about 3.4 h and 2 failed; the
     # serial retry then ran those two back to back, a full shard wall each, while the rest of the
-    # box sat free -- hours of sweep wall bought nothing. The retry wave is sized by the SAME
-    # memory rule as the first wave (`_parallelism`: half of what is available now, over the
-    # largest measured shard peak, which this wave has just refreshed), so it is only as wide as
-    # the memory released by the finished shards allows, and the first wave's historic 2 when
-    # nothing is measured.
-    # Each shard still retries its own attempts in order; the partition, the outputs and the
-    # fail-closed merge are unchanged, so no verdict, trial or gate input can move.
-    width = 1 if _serial_recovery() else _parallelism(len(failed), phase)
-    print(f"SHARD RECOVERY: {len(failed)}/{n} {phase} shard(s) failed in parallel; "
-          f"retrying them {width} at a time (memory-gated)", flush=True)
+    # box sat free. The first retry of every failed shard is now admitted by `_recovery_gate`:
+    # each is charged at the LARGEST of the phase's historic peak, this wave's peak receipts and
+    # every shard's last sampled resident set (`<receipt>.wall.json`, published while the child
+    # runs, so a shard killed before its atexit peak receipt still leaves its size behind), times
+    # SHARD_ADMIT_MARGIN, against available memory re-read before each launch (audit HOLD of
+    # 117963c26, MF1: a killed shard must never be charged at a lighter sibling's peak). A shard
+    # whose first retry fails takes its remaining attempts SERIALLY, so one bad pairing cannot
+    # spend its whole budget. Unmeasured memory, an operator cap, or
+    # GAUNTLET_SHARD_SERIAL_RETRY=1 keeps the whole recovery one at a time, as before. The
+    # partition, the outputs and the fail-closed merge are unchanged.
+    attempts = _retry_attempts() + 1
 
-    def recover(item: tuple[int, Exception | None]) -> BaseException | None:
-        k, first_exc = item
-        assert first_exc is not None
-        last_exc: BaseException = first_exc
-        for attempt in range(1, _retry_attempts() + 1):
-            if _ABORT.is_set() or abort_wave.is_set():
-                return RuntimeError(f"{phase} shard {k} retry not started: the wave was aborted")
-            _progress_bump("retrying")
-            try:
-                one(k, attempt)
-                print(f"SHARD RECOVERY: {phase} shard {k} recovered on retry {attempt}",
-                      flush=True)
-                return None
-            except ShardStalled as exc:
-                abort_wave.set()
-                exc.__cause__ = last_exc
-                return exc
-            except Exception as exc:
-                last_exc = exc
-                print(f"SHARD RECOVERY: {phase} shard {k} retry {attempt} failed: "
-                      f"{type(exc).__name__}: {exc}", flush=True)
-        attempts = _retry_attempts() + 1
+    def try_once(k: int, attempt: int, last_exc: BaseException) -> BaseException | None:
+        if _ABORT.is_set() or abort_wave.is_set():
+            return RuntimeError(f"{phase} shard {k} retry not started: the wave was aborted")
+        _progress_bump("retrying")
+        try:
+            one(k, attempt)
+            print(f"SHARD RECOVERY: {phase} shard {k} recovered on retry {attempt}", flush=True)
+            return None
+        except ShardStalled as exc:
+            abort_wave.set()
+            exc.__cause__ = last_exc
+            return exc
+        except Exception as exc:
+            print(f"SHARD RECOVERY: {phase} shard {k} retry {attempt} failed: "
+                  f"{type(exc).__name__}: {exc}", flush=True)
+            return exc
+
+    def exhausted(k: int, last_exc: BaseException | None) -> RuntimeError:
         err = RuntimeError(
             f"{phase} shard {k} failed after {attempts} attempt(s); refusing partial merge")
         err.__cause__ = last_exc
         return err
 
-    with ThreadPoolExecutor(max_workers=width,
-                            thread_name_prefix=f"judge-{phase}-retry") as pool:
-        outcomes = list(pool.map(recover, failed))
-    stalls = [o for o in outcomes if isinstance(o, ShardStalled)]
+    if attempts <= 1:
+        k0, exc0 = failed[0]
+        raise exhausted(k0, exc0)
+    gate = None if _serial_recovery() else _recovery_gate(len(failed), phase, logs, invocation)
+    print(f"SHARD RECOVERY: {len(failed)}/{n} {phase} shard(s) failed in parallel; first retry "
+          + ("memory-gated side by side (charge "
+             f"{gate.charge_mb:.0f} MB each, available {gate.avail_start_mb:.0f} MB)"
+             if gate is not None else "one at a time"), flush=True)
+
+    def first_retry(i: int) -> tuple[int, Exception | None]:
+        k, exc = failed[i]
+        assert exc is not None
+        return k, try_once(k, 1, exc)  # type: ignore[return-value]
+
+    if gate is None:
+        first_round = [first_retry(i) for i in range(len(failed))]
+    else:
+        first_round = _admitted_wave(len(failed), first_retry, gate,
+                                     aborted=lambda: _ABORT.is_set() or abort_wave.is_set(),
+                                     poll_s=SHARD_ADMIT_POLL_S)
+    stalls = [o for _k, o in first_round if isinstance(o, ShardStalled)]
     if stalls:
+        _record_shard_walls(logs, invocation, phase)
         raise stalled(stalls[0])
+    outcomes: list[BaseException | None] = []
+    for k, res in first_round:
+        last: BaseException | None = res
+        for attempt in range(2, attempts):
+            if last is None or isinstance(last, ShardStalled):
+                break
+            last = try_once(k, attempt, last) or None
+        if isinstance(last, ShardStalled):
+            _record_shard_walls(logs, invocation, phase)
+            raise stalled(last)
+        outcomes.append(None if last is None else (
+            last if "retry not started" in str(last) else exhausted(k, last)))
+    _record_shard_walls(logs, invocation, phase)     # the retries' receipts too (audit S1)
     for o in outcomes:
         if o is not None:
             raise o
+
+
+class _RecoveryAdmission(_Admission):
+    """`_Admission` for a recovery wave: every retry is charged `charge_mb` (or more)."""
+
+    def __init__(self, n: int, phase: str, logs: Path, invocation: str, charge_mb: float,
+                 avail_start_mb: float, **kw: Any) -> None:
+        super().__init__(n, phase, 1, logs, invocation, charge_mb, avail_start_mb, **kw)
+        self.charge_mb = charge_mb
+
+    def estimate_mb(self, running_rss: list[float]) -> tuple[float, str]:
+        return (max([self.charge_mb, *(r * SHARD_ADMIT_MARGIN for r in running_rss)]),
+                "recovery_charge")
+
+
+def _sampled_rss_mb(logs: Path, invocation: str, phase: str) -> list[float]:
+    """Each shard attempt's largest sampled resident set (MB) from its wall receipt."""
+    out: list[float] = []
+    for f in logs.glob(f"{invocation}-{phase}-*.wall.json"):
+        try:
+            doc = json.loads(f.read_text("utf-8"))
+            v = float(doc["phases"]["shard"]["process"]["rss_mb_max"])
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        if v > 0 and math.isfinite(v):
+            out.append(v)
+    return out
+
+
+def _recovery_gate(n: int, phase: str, logs: Path,
+                   invocation: str) -> _RecoveryAdmission | None:
+    """The memory gate for a recovery wave, or None to recover one shard at a time."""
+    if n <= 1 or not _admission_enabled():
+        return None
+    sizes = [*_wave_peaks_mb(logs, invocation, phase), *_sampled_rss_mb(logs, invocation, phase)]
+    historic = _shard_peak_mb(phase)
+    if historic:
+        sizes.append(historic)
+    avail = _available_mb()
+    if not sizes or not avail or not math.isfinite(avail):
+        return None
+    return _RecoveryAdmission(n, phase, logs, invocation, max(sizes) * SHARD_ADMIT_MARGIN, avail)
 
 
 def _serial_recovery() -> bool:
