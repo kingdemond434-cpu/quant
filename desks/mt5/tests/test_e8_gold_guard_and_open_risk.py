@@ -388,3 +388,42 @@ def test_the_refusal_response_is_close_beyond_the_trigger_else_hold() -> None:
     assert g.stop_refusal_response(p, w, bid=4235.6, ask=4236.0)[0] == "close"
     assert g.stop_refusal_response(p, w, bid=4250.0, ask=4250.4)[0] == "hold"
     assert g.stop_refusal_response(p, {"orders": {}}, bid=4200.0, ask=4200.4)[0] == "hold"
+
+
+# ------------------------------------------------------- a paused lane withdraws (2026-10-28)
+
+def test_a_paused_e8_lane_withdraws_its_resting_entry_and_bills_it(monkeypatch, tmp_path) -> None:
+    """FTMO's resting SELL LIMIT 111616773 filled after its lane was taken out (2026-10-28).
+    E8 is the leader and is never undeclared, but it can be PAUSED (no data/E8_GOLD_ARMED): an
+    entry it placed while armed is then withdrawn on the next pass -- although unarmed, since a
+    cancel opens nothing -- billed at the leg's own risk, and cancelled once only."""
+    _sandbox(monkeypatch, tmp_path)
+    leg = {"id": 9001, "lot": _QTY, "price": _ENTRY, "sl": _STOP}
+    state = {"date": str(_DAY.date()), "carried": {}, "windows": {
+        "asia": {"placed_hour": 17.4, "orders": {"short": leg}, "position_id": None,
+                 "shadow": False}}}
+    g.STATE.write_text(json.dumps(state), encoding="utf-8")
+
+    class _Resting(_Venue):
+        cancelled: list[int] = []  # noqa: RUF012
+
+        def orders(self, symbol: str | None = None) -> list[dict]:
+            return [{"id": 9001, "stopPrice": _ENTRY}] if 9001 not in self.cancelled else []
+
+        def cancel(self, order_id: int) -> bool:
+            self.cancelled.append(int(order_id))
+            return True
+
+    venue = _Resting()
+    doc = g.run(venue, _MT5(), armed=False)
+    assert venue.cancelled == [9001] and doc["withdrawn"]
+    rows = [json.loads(ln) for ln in g.INTENTS.read_text("utf-8").splitlines() if ln.strip()]
+    (bill,) = [r for r in rows if r.get("reason") == "lane_withdrawn"]
+    assert bill["status"] == "RAIL_BLOCKED" and bill["rail"] == "cancel_requested"
+    assert bill["order_id"] == 9001 and bill["missed_growth_risk_usd"] == pytest.approx(750.0)
+
+
+def test_only_an_armed_declared_lane_keeps_its_resting_entries() -> None:
+    from mt5desk import cancel_pending as cp
+    assert cp.withdraw_reason("e8", True) is None
+    assert "paused" in (cp.withdraw_reason("e8", False) or "")

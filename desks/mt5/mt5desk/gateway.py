@@ -842,8 +842,14 @@ def load_state() -> dict:
         st = json.loads(STATE.read_text(encoding="utf-8"))
         for k, v in defaults.items():
             st.setdefault(k, v)
+        if st.get("armed") is True:
+            # A human armed this account: from now on `armed: false` is a human's pause.
+            st.pop("armed_default", None)
         return st
-    return defaults
+    # AN ABSENT STATE IS NOT A DECLARATION (v14 audit MF2). Its `armed: false` is a default, and
+    # it is persisted by the first save, so it is marked: `withdraw_lane_gold` reads a defaulted
+    # disarm as UNMEASURED and withdraws nothing on it, until a human has armed the account once.
+    return {**defaults, "armed_default": True}
 
 
 def save_state(st: dict) -> None:
@@ -1619,6 +1625,141 @@ def expire_stale_brackets(st: dict) -> int:
             log(f"TTL: {o.symbol} order {o.ticket} SURVIVED cancellation "
                 f"(retcode {getattr(res, 'retcode', None)}); it is still resting")
     return killed
+
+
+def withdraw_lane_gold(st: dict) -> int:
+    """A REMOVED OR PAUSED GOLD LANE WITHDRAWS ITS RESTING GOLD ENTRIES (2026-10-28).
+
+    FTMO's resting SELL LIMIT 111616773 filled three hours after ftmo left GOLD_OCO_MODE's lanes:
+    the gate refused new orders, nothing withdrew the one already resting. The gateway's gold
+    lane (`gold_oco.gateway_lane()`, "fusion") has the same gap, so on every pass: when that lane
+    is not declared, or the account is not armed (`st["armed"]`: the human's pause -- NOT the
+    adopter's new-risk hold, which must never cost a resting bracket), every MAGIC pending order
+    on the gold symbol is removed. The removal is sent although unarmed (a cancel opens nothing),
+    confirmed by the broker's done retcode AND the order's absence, and billed (Rule 1) as a
+    `cancel_requested` line, reason `lane_withdrawn`, at the order's own risk. Returns how many
+    went. Never raises."""
+    from mt5desk import cancel_pending as _cancel_req
+    from mt5desk import fusion_rails as _rails
+    from mt5desk import gold_oco as _oco
+    lane = _oco.gateway_lane()
+    armed = bool(st.get("armed"))
+    if lane is None:
+        why: str | None = "QUANT_GOLD_LANE names no gold lane this gateway may trade"
+    else:
+        # A disarm that is only the absent state's default is UNMEASURED, never a pause (v14
+        # audit MF2); an unreadable mode file is UNMEASURED too (MF1). Neither cancels anything.
+        defaulted = not armed and st.get("armed_default") is True
+        why, unmeasured = _cancel_req.withdraw_check(lane, armed or defaulted)
+        if defaulted:
+            unmeasured = "; ".join(x for x in (unmeasured, "gateway_state.json was absent: "
+                                   "its disarm is a default, not a pause") if x)
+        if unmeasured:
+            log(f"lane withdraw UNMEASURED: {unmeasured}; resting gold orders kept")
+            if why is None:
+                _rails.line_once(_cancel_req.RAIL, f"{_cancel_req.WITHDRAWN}/unmeasured/"
+                                 f"{datetime.now(tz=UTC).date().isoformat()}",
+                                 status="UNMEASURED", reason=_cancel_req.WITHDRAWN,
+                                 why=unmeasured, missed_growth_risk_usd=None)
+    if why is None:
+        return 0
+    try:
+        orders = [o for o in (mt5.orders_get(symbol=GOLD_SYMBOL) or ())
+                  if int(getattr(o, "magic", 0) or 0) == MAGIC]
+    except Exception as exc:
+        log(f"lane withdraw skipped: orders_get failed ({type(exc).__name__})")
+        return 0
+    gone_n = 0
+    for o in orders:
+        ticket = int(o.ticket)
+        try:
+            res = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": ticket})
+        except Exception as exc:
+            log(f"lane withdraw of {ticket} FAILED: {type(exc).__name__}: {exc}")
+            continue
+        try:
+            gone = not any(int(getattr(x, "ticket", -1)) == ticket
+                           for x in (mt5.orders_get(symbol=GOLD_SYMBOL) or ()))
+        except Exception:
+            gone = False
+        ok = gone and getattr(res, "retcode", None) in (10008, 10009)
+        gone_n += int(ok)
+        if ok:
+            try:
+                usd = _order_risk_usd(mt5.symbol_info(o.symbol), getattr(o, "volume_current", None),
+                                      getattr(o, "price_open", None), getattr(o, "sl", None))
+            except Exception:
+                usd = None
+            _rails.line_once(_cancel_req.RAIL, f"{_cancel_req.WITHDRAWN}/{ticket}",
+                             status="RAIL_BLOCKED", reason=_cancel_req.WITHDRAWN,
+                             symbol=o.symbol, order=ticket,
+                             lot=getattr(o, "volume_current", None), why=why,
+                             missed_growth_risk_usd=usd)
+        state = "withdrawn" if ok else "vanished, no done retcode" if gone else "STILL PRESENT"
+        log(f"lane withdraw of {o.symbol} order {ticket}: {state} "
+            f"(retcode {getattr(res, 'retcode', None)}); {why}")
+    return gone_n
+
+
+def cancel_requested(st: dict) -> int:
+    """Withdraw this desk's resting orders that data/CANCEL_PENDING.json asks for (lane fusion;
+    mt5desk.cancel_pending). Only MAGIC orders are candidates; each removal is confirmed against
+    orders_get, as `cancel_pending` does. Opens nothing, closes nothing. Returns how many went.
+    Each one cancelled is billed (Rule 1): a RAIL_BLOCKED `cancel_requested` line at the order's
+    own risk. A removed or paused gold lane's entries go first, with no request
+    (`withdraw_lane_gold`)."""
+    from mt5desk import cancel_pending as _cancel_req
+    from mt5desk import fusion_rails as _rails
+    try:
+        withdrawn = withdraw_lane_gold(st)
+    except Exception as exc:  # never the pass
+        withdrawn = 0
+        log(f"lane withdraw FAILED: {type(exc).__name__}: {exc}")
+    try:
+        orders = [o for o in (mt5.orders_get() or ()) if int(getattr(o, "magic", 0) or 0) == MAGIC]
+    except Exception as exc:
+        log(f"cancel requests skipped: orders_get failed ({type(exc).__name__})")
+        return withdrawn
+    todo, notes = _cancel_req.due(
+        "fusion", {int(o.ticket): _cancel_req.server_time_utc(getattr(o, "time_setup", None))
+                   for o in orders})
+    for n in notes:
+        log(f"cancel requests: {n}")
+    by_ticket = {int(o.ticket): o for o in orders}
+    gone_n = 0
+    for c in todo:
+        o = by_ticket[c["ticket"]]
+        if not st["armed"]:
+            log(f"SHADOW would cancel requested order {c['ticket']}: {c['why']}")
+            continue
+        try:
+            res = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": c["ticket"]})
+        except Exception as exc:
+            log(f"requested cancel of {c['ticket']} FAILED: {type(exc).__name__}: {exc}")
+            _cancel_req.record("fusion", c["request"], c["ticket"], False)
+            continue
+        gone = not any(getattr(x, "ticket", None) == c["ticket"]
+                       for x in (mt5.orders_get(symbol=o.symbol) or ()))
+        # GONE IS NOT CANCELLED (v7 audit): an order that filled in between vanishes too. Only
+        # the broker's own "done" counts; a vanished order without it is not acked, and the
+        # next pass reports it as no longer resting.
+        ok = gone and getattr(res, "retcode", None) in (10008, 10009)
+        _cancel_req.record("fusion", c["request"], c["ticket"], ok)
+        gone_n += int(ok)
+        if ok:
+            try:
+                usd = _order_risk_usd(mt5.symbol_info(o.symbol), getattr(o, "volume_current", None),
+                                      getattr(o, "price_open", None), getattr(o, "sl", None))
+            except Exception:
+                usd = None
+            _rails.line_once(_cancel_req.RAIL, f"{c['request']}/{c['ticket']}",
+                             status="RAIL_BLOCKED", symbol=o.symbol, order=c["ticket"],
+                             lot=getattr(o, "volume_current", None), why=c["why"],
+                             missed_growth_risk_usd=usd)
+        state = "cancelled" if ok else "vanished, no done retcode" if gone else "STILL PRESENT"
+        log(f"requested cancel of {o.symbol} order {c['ticket']}: {state} "
+            f"(retcode {getattr(res, 'retcode', None)}); {c['why']}")
+    return withdrawn + gone_n
 
 
 def cancel_pending(st: dict, symbol: str) -> None:
@@ -5800,6 +5941,17 @@ def main() -> None:
     if not _dm_ok:
         NEW_RISK_OK = False
         log(f"{_dm_why} -- managing open positions only")
+    # THE ADOPTER'S HOLD (libs/ops/new_risk_hold): while a release is being adopted or rolled
+    # back, and until it passes its health check, no lane takes new risk; management above has
+    # run. A veto, so one missed-growth line per hold per day on the rails ledger.
+    from libs.ops import new_risk_hold as _nrh
+    _hold = _nrh.reason()
+    if _hold is not None:
+        NEW_RISK_OK = False
+        log(f"{_hold} -- managing open positions only")
+        from mt5desk import fusion_rails as _hold_rails
+        _hold_rails.line_once("adopt_new_risk_hold",
+                              f"{datetime.now(UTC).date().isoformat()}/{_hold[:120]}", why=_hold)
     # THE FUSION DAILY-LOSS RAIL (decision_core.fusion_daily_loss, FUSION_DAILY_LOSS_FRAC): at
     # -10% of the server day's starting equity the account takes no new risk for the rest of the
     # day, through the same NEW_RISK_OK gate every lane already obeys (so no bar is burned), and
@@ -6636,6 +6788,7 @@ def main() -> None:
     # housekeeping: expire stale brackets FIRST (every pass, not just at CANCEL_HOUR), then the
     # end-of-day backstop and the force-close.
     expire_stale_brackets(st)
+    cancel_requested(st)
     if hour >= CANCEL_HOUR:
         for s in sleeves:
             cancel_pending(st, s["symbol"])

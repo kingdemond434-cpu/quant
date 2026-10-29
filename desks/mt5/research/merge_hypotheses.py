@@ -693,6 +693,31 @@ def main() -> int:
     per_source: dict[str, int] = {}
     source_state: dict[str, str] = {}
     intake_stamped: dict[str, int] = {}
+    # STEERED BEFORE IT IS BANKED (principal 2026-10-28: "stop miners from producing them ...
+    # same breadth hunts js differently directed ... without reducing quantity"). Every source's
+    # fresh rows pass `research/coverage_steer` against the shared coverage map the last merge
+    # wrote: a row repeating an already-mined structural rule in numeric thresholds only is moved,
+    # here, to the nearest lawful empty instrument/chart/session/regime of the same mechanism.
+    # One row out per row in, so no producer's count moves; a producer that already steered
+    # itself (the compiler) arrives stamped and passes through. A fault costs the steer, never a
+    # row. QUANT_COVERAGE_STEER=0 is the revert path (measured, nothing moved).
+    steerer: Any = None
+    try:
+        import sys as _sys
+        for _p in (str(BASE), str(BASE.parents[1])):
+            if _p not in _sys.path:
+                _sys.path.insert(0, _p)
+        from research import coverage_steer as _cs
+        _cmap = _cs.CoverageMap.load(HYP / _cs.MAP.name)
+        steerer = _cs.Steerer(
+            _cmap, now=now, hyp_dir=HYP,
+            tradeable=(None if not tradeable
+                       else (lambda s, _t=tradeable: s.upper() in _t)))
+        if os.environ.get("QUANT_COVERAGE_STEER", "1") == "0":
+            steerer.closed.append("QUANT_COVERAGE_STEER=0 (revert path)")
+    except Exception as exc:
+        print(f"   coverage steer unavailable ({type(exc).__name__}: {exc}); rows unchanged")
+        steerer = None
 
     for name, key in SOURCES:
         source_path = HYP / name
@@ -713,6 +738,11 @@ def main() -> int:
             per_source[name] = 0
             source_state[name] = "MALFORMED_OR_EMPTY"
             continue
+        if steerer is not None:
+            try:
+                rows = steerer.steer(rows, name)
+            except Exception as exc:
+                print(f"   coverage steer failed on {name} ({type(exc).__name__}); unchanged")
         kept = 0
         for row in rows:
             if not isinstance(row, dict):
@@ -1168,6 +1198,10 @@ def main() -> int:
             families["commit"] = families_pending.commit(rows_out)
         except Exception as exc:
             families["commit"] = {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
+    # THE SHARED COVERAGE MAP AND THE NOVELTY REPORT -- only after the docket is durable, so the
+    # map every producer reads next pass describes exactly the docket that exists, and the steer
+    # ledger never names a child the written docket does not hold.
+    steer_block = publish_steering(steerer, rows_out)
     (HYP / "merge_report.json").write_text(json.dumps({
         "merged_at": now.isoformat(timespec="seconds"),
         "pipeline_started_at": started_at.isoformat(timespec="seconds") if started_at else None,
@@ -1227,6 +1261,7 @@ def main() -> int:
                            "unfilled_by_reason", "legless_after")},
         "claim_selection": claim_selection,
         "hypothesis_families": families,
+        "coverage_steer": steer_block,
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
                  "reach live capital reaches the ten-gate gauntlet, which is the only arbiter; "
                  "a live-banned family is routed to the study bank, never judged and never "
@@ -1242,6 +1277,49 @@ def main() -> int:
         fam[str(r.get("family"))] = fam.get(str(r.get("family")), 0) + 1
     print(f"   families going to the gauntlet: {fam}")
     return 0
+
+
+def publish_steering(steerer: Any, rows_out: list[dict[str, Any]]) -> dict[str, Any]:
+    """Ledger, map, report, in that order, after the docket write. Never raises."""
+    if steerer is None:
+        return {"status": "UNAVAILABLE"}
+    try:
+        from research import coverage_steer as _cs
+        # Every durable steered child, the compiler's and this merge's alike, once per parent.
+        ledger = _cs.load_ledger(HYP / _cs.LEDGER.name)
+        lines = _cs.append_ledger(_cs.ledger_lines_for(rows_out, ledger, _identity),
+                                  HYP / _cs.LEDGER.name)
+        try:
+            from research.hypothesis_families import CLUSTERS, load_clusters
+            clusters, _meta = load_clusters({str(r.get("symbol") or r.get("sym") or "").upper()
+                                             for r in rows_out} - {""},
+                                            path=HYP / CLUSTERS.name,
+                                            refresh=False)   # read only: never a 2nd writer
+        except Exception:
+            clusters = {}
+        cmap = _cs.CoverageMap.from_rows(rows_out, clusters, identity_fn=_identity,
+                                         steered=_cs.load_ledger(HYP / _cs.LEDGER.name))
+        map_ok = cmap.save(HYP / _cs.MAP.name)
+        rep = steerer.report()
+        rep["fence"] = _cs.fence(rep)
+        rep["ledger_lines"] = lines
+        rep["map_written"] = map_ok
+        rep["map_after"] = cmap.summary()
+        rep["novel_by_day"] = _cs.novelty_by_day(cmap)
+        report_path = (BASE / "reports" / _cs.REPORT.name if HYP == BASE / "data" / "hypotheses"
+                       else HYP / _cs.REPORT.name)
+        _cs.write_report(rep, report_path)
+        tot = rep.get("total") or {}
+        print(f"   coverage steer: {tot.get('emitted', 0)} emitted, {tot.get('duplicate_in', 0)} "
+              f"repeats in -> {tot.get('steered', 0)} steered to empty ground, "
+              f"{tot.get('unsteerable', 0)} unsteerable; duplicate share "
+              f"{tot.get('duplicate_share_in')} -> {tot.get('duplicate_share_out')}; "
+              f"fence {rep['fence']['status']}")
+        return {k: rep.get(k) for k in ("at", "version", "fail_closed", "total",
+                                         "steered_by_axis", "fence", "ledger_lines",
+                                         "map_written", "map_after")}
+    except Exception as exc:
+        return {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
 
 
 def run_cli() -> int:

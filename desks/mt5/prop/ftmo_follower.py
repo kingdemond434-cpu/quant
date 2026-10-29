@@ -80,6 +80,7 @@ for _p in (str(DESK), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mt5desk import cancel_pending as _cancel_req  # noqa: E402
 from mt5desk import cross_account as _xa  # noqa: E402
 from mt5desk import gold_oco as _oco  # noqa: E402
 from mt5desk import position_manager as _pm  # noqa: E402
@@ -103,11 +104,13 @@ STATE = DESK / "data" / "ftmo_follower_state.json"
 OUT = DESK / "reports" / "FTMO_FOLLOWER.json"
 INTENTS = DESK / "data" / "ftmo_follower_intents.jsonl"
 LOG = DESK / "logs" / "ftmo_follower.log"
-#: THE PROP FILLS LEDGER (prop/fills_ledger.py, schema prop-fills-v1; E8 appends to it too):
-#: every closed FTMO position, book "ftmo", so FTMO is measured from its first trade.
+#: THE PROP FILLS LEDGER (schema prop-fills-v1): every closed FTMO position, book "ftmo", so
+#: FTMO is measured from its first trade. Written by THIS module (compose_fills / append_fills);
+#: no prop/fills_ledger.py exists in any branch (checked 2026-10-28), and no E8 writer appends
+#: here today -- the O_APPEND one-line writes keep a second writer safe if one is added.
 PROP_LEDGER = DESK / "data" / "live_ledger_prop.jsonl"
 PROP_SCHEMA = "prop-fills-v1"
-#: prop/fills_ledger.append's refusal list: a row carrying any of these is never written.
+#: The ledger's refusal list: a row carrying any of these is never written.
 PROP_BANNED = ("account", "login", "username", "password", "acc_num", "account_id")
 #: THE FEES (v2r fix 1): commission, swap and fee are READ from the position's MT5 deals (its
 #: entry deal and every exit deal, summed per field) -- `fees_status` "MEASURED" when all three
@@ -115,6 +118,15 @@ PROP_BANNED = ("account", "login", "username", "password", "acc_num", "account_i
 #: never 0.0, and `fees_status` names which field and why (`fees_measured` lists the read ones).
 PROP_FEE_FIELDS = (("commission", "commission"), ("swap", "swap"), ("fees", "fee"))
 PROP_FEES_MEASURED = "MEASURED"
+#: MT5 DEAL_REASON of a position's last exit deal: 0 CLIENT (desktop), 1 MOBILE, 2 WEB are a
+#: person's hand close; 3 EXPERT is the desk's own close; 4 SL / 5 TP / 6 SO are the venue's.
+EXIT_REASON = {0: "manual", 1: "manual", 2: "manual", 3: "close", 4: "stop", 5: "target",
+               6: "stop_out"}
+CLOSED_BY = {0: "manual", 1: "manual", 2: "manual", 3: "desk", 4: "venue", 5: "venue",
+             6: "venue"}
+#: How far back the deal history is read: a follow held over a weekend and closed by hand on
+#: Monday still has its entry deal inside the window.
+PROP_LOOKBACK = timedelta(days=7)
 #: E8-Gold's pass report (prop/e8_gold.OUT), the first of the three readings this lane follows.
 E8_REPORT = DESK / "reports" / "E8_GOLD.json"
 #: E8'S STALENESS BOUND (v2r fix 2): one E8 pass plus its grace, DERIVED FROM E8'S CADENCE the
@@ -442,19 +454,29 @@ def deal_fees(deals: list[Any]) -> tuple[dict[str, float | None], list[str], str
 
 def compose_fills(deals: Any, orders: Any, open_ids: set[int], *, account_key: str | None,
                   contract: float | None, recorded_at: str) -> list[dict[str, Any]]:
-    """prop-fills-v1 rows (prop/fills_ledger.compose's field names) for every CLOSED FTMO
-    position in the MAGIC deal history: an entry deal (DEAL_ENTRY_IN) and at least one exit
-    deal (OUT / OUT_BY) on one position id, the position no longer open. Pure. Nothing is
-    invented: an unpriced or still-open position is not written."""
+    """prop-fills-v1 rows (the schema's field names; there is no prop/fills_ledger.py module --
+    this writer IS the ledger's FTMO side) for every CLOSED FTMO position this lane opened: an
+    entry deal (DEAL_ENTRY_IN) under MAGIC and at least one exit deal (OUT / OUT_BY) on its
+    position id, the position no longer open. Pure. Nothing is invented: an unpriced or
+    still-open position is not written.
+
+    A MANUAL OR EXTERNAL CLOSE COUNTS (2026-10-28, FTMO 111616773). zuck closed that position by
+    hand in the terminal; MT5 stamps a hand close's exit deal with magic 0, and the old filter
+    kept MAGIC deals only, so the position had an entry and no exit and was never written --
+    no price, no P&L. The position is ours by its ENTRY deal; every exit deal on it is read,
+    whatever its magic, and `closed_by` says who closed it (deal reason)."""
     by_pos: dict[int, list[Any]] = {}
+    ours: set[int] = set()
     for d in deals or []:
-        if int(getattr(d, "magic", 0) or 0) != MAGIC:
-            continue
         if _xa.norm(getattr(d, "symbol", "")) != _xa.norm(SYMBOL):
             continue
         pid = int(getattr(d, "position_id", 0) or 0)
-        if pid:
-            by_pos.setdefault(pid, []).append(d)
+        if not pid:
+            continue
+        by_pos.setdefault(pid, []).append(d)
+        if int(getattr(d, "magic", 0) or 0) == MAGIC and int(getattr(d, "entry", -1)) == 0:
+            ours.add(pid)
+    by_pos = {pid: ds for pid, ds in by_pos.items() if pid in ours}
     sent = {int(getattr(o, "ticket", 0) or 0): o for o in orders or []}
     rows: list[dict[str, Any]] = []
     for pid, ds in sorted(by_pos.items()):
@@ -462,6 +484,7 @@ def compose_fills(deals: Any, orders: Any, open_ids: set[int], *, account_key: s
             continue
         ins = [d for d in ds if int(getattr(d, "entry", -1)) == 0]
         outs = [d for d in ds if int(getattr(d, "entry", -1)) in (1, 3)]
+        ins = [d for d in ins if int(getattr(d, "magic", 0) or 0) == MAGIC]
         if not ins or not outs:
             continue
         e = min(ins, key=lambda d: float(getattr(d, "time", 0) or 0))
@@ -497,8 +520,9 @@ def compose_fills(deals: Any, orders: Any, open_ids: set[int], *, account_key: s
             "intended_entry": (float(getattr(o, "price_open", 0.0) or 0.0) or None
                                if o is not None else None),
             "sl": sl, "tp": tp, "volume": volume, "fill_price": round(exit_px, 6),
-            "exit_reason": {4: "stop", 5: "target"}.get(int(getattr(last, "reason", -1)),
-                                                         "close"),
+            "exit_reason": EXIT_REASON.get(int(getattr(last, "reason", -1)), "close"),
+            "closed_by": CLOSED_BY.get(int(getattr(last, "reason", -1)), "unknown"),
+            "exit_magic": sorted({int(getattr(d, "magic", 0) or 0) for d in outs}),
             "exit_order_type": None,
             "r_multiple": (round(dirn * (exit_px - entry_px) / dist, 4) if dist else None),
             "r_basis": "price: side x (exit - entry) / |entry - sent stop|, gross of fees",
@@ -524,7 +548,7 @@ def append_fills(rows: list[dict[str, Any]], path: Path | None = None) -> int:
     """Append rows the ledger does not hold, deduped by "ftmo:" + position id. TWO WRITERS (E8
     appends here too): each row is ONE os.write of one whole line on an O_APPEND descriptor, so
     the OS places every line at the end in one piece and no writer can interleave into or
-    overwrite another's. Refuses any row carrying a login-shaped field (fills_ledger.append's
+    overwrite another's. Refuses any row carrying a login-shaped field (the ledger's
     rule). Returns how many were written; RAISES OSError / ValueError."""
     path = Path(path or PROP_LEDGER)
     for r in rows:
@@ -561,7 +585,7 @@ def record_fills(mt5: Any, key: str | None, open_ids: set[int], now: datetime) -
     """Write every closed FTMO position to the prop fills ledger. NEVER RAISES: a ledger that
     cannot be written costs a row, never an order."""
     try:
-        since, until = now - timedelta(days=2), now + timedelta(days=1)
+        since, until = now - PROP_LOOKBACK, now + timedelta(days=1)
         deals = mt5.history_deals_get(since, until)
         orders = mt5.history_orders_get(since, until)
         if deals is None or orders is None:
@@ -576,6 +600,43 @@ def record_fills(mt5: Any, key: str | None, open_ids: set[int], now: datetime) -
 
 
 # ------------------------------------------------------------------ the account
+
+def account_snapshot(mt5: Any, now: datetime) -> dict[str, Any]:
+    """FTMO's equity, balance and floating P&L as the terminal reports them this pass, for the
+    state file (2026-10-28: FTMO equity was in no state file at all). No login or server: the
+    account is named by its key elsewhere. A field the terminal does not give is null, never 0."""
+    out: dict[str, Any] = {"at": now.isoformat(timespec="seconds")}
+    try:
+        acc = mt5.account_info()
+    except Exception as exc:
+        acc = None
+        out["why"] = f"account_info raised {type(exc).__name__}"
+    for f in ("equity", "balance", "profit", "margin", "margin_free"):
+        v = getattr(acc, f, None) if acc is not None else None
+        ok = isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(float(v))
+        out[f] = round(float(v), 2) if ok else None
+    out["currency"] = getattr(acc, "currency", None) if acc is not None else None
+    if acc is None and "why" not in out:
+        out["why"] = "the FTMO terminal did not answer account_info"
+    return out
+
+
+def _carry_day_start(prev: Any, snap: dict[str, Any], cet: str) -> dict[str, Any]:
+    """`snap` plus FTMO's day anchor: the first equity and balance read on each CET day (FTMO's
+    daily loss is measured from the day's start), kept across passes."""
+    prev = prev if isinstance(prev, dict) else {}
+    out = dict(snap)
+    if prev.get("cet_day") == cet and prev.get("day_start_equity") is not None:
+        out["day_start_equity"] = prev["day_start_equity"]
+        out["day_start_balance"] = prev.get("day_start_balance")
+        out["day_start_at"] = prev.get("day_start_at")
+    else:
+        out["day_start_equity"] = snap.get("equity")
+        out["day_start_balance"] = snap.get("balance")
+        out["day_start_at"] = snap.get("at") if snap.get("equity") is not None else None
+    out["cet_day"] = cet if out["day_start_equity"] is not None else None
+    return out
+
 
 def _canon(login: object) -> object:
     """Fusion r6's one login type (cross_account.norm_login): the terminal's int and the
@@ -726,6 +787,7 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
         _write_out(doc, None)
         return doc
     _oco.page_identity(LANE, None)
+    doc["account"] = account_snapshot(mt5, now)
     # MARKET WATCH IS TERMINAL STATE (2026-10-22). The armed follower read NO_TICK every pass
     # because XAUUSD was not in the FTMO terminal's Market Watch, and a terminal reset drops it
     # again. Selecting the symbol is idempotent and places nothing.
@@ -748,8 +810,10 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     st = st if isinstance(st, dict) else {}
     if st.get("date") != today:
         st = {"date": today, "windows": {}, "requests": st.get("requests") or {},
-              "logged": {}, "followed": st.get("followed") or {}}
+              "logged": {}, "followed": st.get("followed") or {}, "account": st.get("account")}
     st.setdefault("followed", {})
+    st["account"] = _carry_day_start(st.get("account"), doc["account"], cet)
+    doc["account"] = st["account"]
     doc.update({"server_time": srv.isoformat(), "hour": round(hour, 3), "trading_date": today})
 
     # This account's gold state for every other lane, and the claim of any fill here.
@@ -775,9 +839,24 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
     # ---------------------------------------------------------------- management (armed only)
     w = st["windows"].get(WINDOW) or {}
     end = window_end_hour(WINDOW)
+    # A REMOVED OR PAUSED LANE WITHDRAWS ITS RESTING ENTRIES (2026-10-28, ticket 111616773):
+    # ftmo was taken out of GOLD_OCO_MODE's lanes at 07:06Z, the gate placed nothing more, and
+    # the SELL LIMIT already resting filled before its 10:00Z self-cancel -- the cross-firm copy
+    # of E8's short that the removal was meant to stop. So the lane's own state is checked
+    # FIRST, and its removal is sent even when unarmed (a cancel opens nothing).
+    # Only a positive reading withdraws: an unreadable mode file keeps the orders and says
+    # UNMEASURED (v14 audit MF1).
+    withdraw, unmeasured = _cancel_req.withdraw_check(LANE, armed)
+    if unmeasured is not None:
+        doc["withdraw_unmeasured"] = unmeasured
+        log(f"[{WINDOW}] lane withdraw UNMEASURED: {unmeasured}")
+    if withdraw is not None and own_ord:
+        doc["withdrawn"] = withdraw
     for o in own_ord:
         why_cancel = None
-        if action != "follow":
+        if withdraw is not None:
+            why_cancel = withdraw
+        elif action != "follow":
             why_cancel = f"E8 shows no live filled asia trade now ({fwhy})"
         elif hour >= CANCEL_HOUR or (end is not None and hour >= end) or \
                 hour - float(w.get("placed_hour") or hour) >= BRACKET_TTL_HOURS:
@@ -788,19 +867,39 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
             continue
         act: dict[str, Any] = {"act": "cancel", "order": int(o.ticket), "why": why_cancel,
                                "ok": False}
-        if armed:
+        if armed or withdraw is not None:
             try:
                 res = _send(mt5, st, {"action": mt5.TRADE_ACTION_REMOVE, "order": int(o.ticket),
                                       "magic": MAGIC, "comment": COMMENT}, cet=cet,
                             essential=True)
                 act["ok"] = getattr(res, "retcode", None) in (10008, 10009)
+                if act["ok"] and withdraw is not None:
+                    # GONE IS CONFIRMED (v14 audit): the venue must no longer hold the order.
+                    still = mt5.orders_get(symbol=SYMBOL)
+                    act["ok"] = still is not None and not any(
+                        int(getattr(x, "ticket", -1)) == int(o.ticket) for x in still)
+                    if not act["ok"]:
+                        act["why"] += "; done retcode but the order is still listed (or unread)"
             except Exception as exc:
                 act["why"] += f"; FAILED {type(exc).__name__}: {exc}"[:160]
         else:
             act["shadow"] = True
         log(f"[{WINDOW}] cancel resting order {o.ticket}: {act['why']} -> {act.get('ok')}")
         doc["actions"].append(act)
-        if act["ok"] and why_cancel != "the asia window's session is over":
+        if act["ok"] and withdraw is not None:
+            # billed per order (not once a day): each withdrawn entry is risk the lane held back
+            try:
+                usd = order_risk_usd(mt5, o)
+            except Exception:
+                usd = None
+            if usd is None:
+                usd = doc.get("planned_usd")
+            _record({"at": now.isoformat(timespec="seconds"), "window": WINDOW, "lane": LANE,
+                     "status": "RAIL_BLOCKED", "rail": RAIL, "reason": _cancel_req.WITHDRAWN,
+                     "why": f"resting order {int(o.ticket)} cancelled: {withdraw}",
+                     "order_id": int(o.ticket),
+                     "missed_growth_risk_usd": None if usd is None else round(float(usd), 2)})
+        elif act["ok"] and why_cancel != "the asia window's session is over":
             # THE CANCEL IS A REFUSAL TOO (OCO v2s, audit v2r MF-B): an entry withdrawn because
             # E8's state is stale, unreadable or no longer shows the fill (or the order is
             # against E8's direction) is risk the lane held back. The "one order" step below
@@ -809,6 +908,44 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
             _bill_cancel(mt5, doc, st, o, reason=("cancel_" + action if action != "follow"
                                                   else "cancel_against_direction"),
                          why=why_cancel, today=today, now=now)
+    # THE DESK'S OWN LEVER (mt5desk.cancel_pending, 2026-10-28): a resting order of this lane
+    # that data/CANCEL_PENDING.json asks to withdraw is removed here, never by a person in the
+    # terminal. Only this lane's MAGIC orders are candidates; nothing is opened or closed.
+    gone = {a["order"] for a in doc["actions"] if a.get("act") == "cancel" and a.get("ok")}
+    # each order's own setup time bounds an `all` request (v7 audit MF6)
+    todo, notes = _cancel_req.due(
+        LANE, {int(o.ticket): _cancel_req.server_time_utc(getattr(o, "time_setup", None))
+               for o in own_ord if int(o.ticket) not in gone}, now=now)
+    by_ticket = {int(o.ticket): o for o in own_ord}
+    if notes:
+        doc["cancel_request_notes"] = notes
+    for c in todo:
+        act = {"act": "cancel_requested", "order": c["ticket"], "why": c["why"], "ok": False}
+        if armed:
+            try:
+                res = _send(mt5, st, {"action": mt5.TRADE_ACTION_REMOVE, "order": c["ticket"],
+                                      "magic": MAGIC, "comment": COMMENT}, cet=cet,
+                            essential=True)
+                act["ok"] = getattr(res, "retcode", None) in (10008, 10009)
+            except Exception as exc:
+                act["why"] += f"; FAILED {type(exc).__name__}: {exc}"[:160]
+            _cancel_req.record(LANE, c["request"], c["ticket"], act["ok"], now=now)
+            if act["ok"]:  # a withdrawn entry is a refusal too (Rule 1), billed per order
+                try:
+                    usd = order_risk_usd(mt5, by_ticket[c["ticket"]])
+                except Exception:
+                    usd = None
+                if usd is None:
+                    usd = doc.get("planned_usd")
+                _record({"at": now.isoformat(timespec="seconds"), "window": WINDOW,
+                         "lane": LANE, "status": "RAIL_BLOCKED", "rail": RAIL,
+                         "reason": _cancel_req.RAIL, "why": c["why"], "order_id": c["ticket"],
+                         "missed_growth_risk_usd": None if usd is None else round(float(usd), 2)})
+        else:
+            act["shadow"] = True
+        log(f"[{WINDOW}] requested cancel of resting order {c['ticket']}: {act['why']} -> "
+            f"{act.get('ok')}")
+        doc["actions"].append(act)
     # A FILL AGAINST THE DAY'S DIRECTION IS CLOSED AT ONCE (gold_oco v2, must-fix 6).
     _rows = [{"p": p, "id": int(p.ticket),
               "side": "long" if int(getattr(p, "type", -1)) == 0 else "short",
@@ -905,6 +1042,12 @@ def _place(mt5: Any, st: dict[str, Any], doc: dict[str, Any], sig: dict[str, Any
            tick: Any,
            e8_doc: Any) -> None:
     side = sig["side"]
+    # THE ADOPTER'S HOLD (libs/ops/new_risk_hold): no new follow while a failed release is rolled
+    # back and not yet proved healthy. Management of an open follow ran before this call.
+    from libs.ops import new_risk_hold as _nrh
+    if (_hold := _nrh.reason()) is not None:
+        _skip(doc, st, "adopt_hold", _hold, today=today, now=now, alert=True)
+        return
     if not book_ok:
         _skip(doc, st, "book_unreadable", "the FTMO terminal did not answer positions/orders",
               today=today, now=now)

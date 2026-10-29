@@ -373,6 +373,8 @@ REUSED_PID_MARGIN_S = 300.0
 SHARD_POLL_S = 5.0
 #: The most `_kill_tree` spends re-enumerating a respawning tree before naming the survivors.
 KILL_WALL_S = 60.0
+KILL_POLL_S = 0.05
+KILL_RESETTLE_S = 2.0
 #: A takeover never kills on the heartbeat alone: it measures the prior sweep's tree for this
 #: long first, and kills only if that live sample is idle too.
 TAKEOVER_SAMPLE_S = 60.0
@@ -1256,7 +1258,10 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
     """Run every judge-owned shard, retrying only failed children at low concurrency.
 
     Publication remains fail closed: a shard that still fails after the bounded retries raises,
-    so the sealed judge cannot merge a partial result.  The retries are deliberately serial.
+    so the sealed judge cannot merge a partial result.  The FIRST retry of the failed shards runs
+    side by side when `_recovery_gate` can measure room for it (each charged at the largest
+    peak or sampled resident set seen, times SHARD_ADMIT_MARGIN); every later attempt is serial,
+    and GAUNTLET_SHARD_SERIAL_RETRY=1 makes the whole recovery serial again.
     A measured production failure mode had ten of fifteen memory-heavy shards finish, five die,
     and the next scheduled invocation discard all ten successful artifacts before repeating the
     two-hour pre-warm.  Retaining the successful outputs and rerunning only the failed children
@@ -1269,6 +1274,8 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
         "from scripts.run_sharded_gauntlet import record_own_peak;"
         "import atexit,os;"
         "atexit.register(record_own_peak,os.environ.get('GAUNTLET_PEAK_RECEIPT',''));"
+        "from scripts.run_sharded_gauntlet import start_shard_sampler;"
+        "start_shard_sampler(os.environ.get('GAUNTLET_WALL_RECEIPT',''));"
         "from scripts.external_gauntlet import shard_worker;"
         "shard_worker(sys.argv[1],int(sys.argv[2]),sys.argv[3])"
     )
@@ -1326,7 +1333,9 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
             _progress_bump("running")
             try:
                 child_env = {**os.environ, "GAUNTLET_PEAK_RECEIPT": str(
-                    logs / f"{invocation}-{phase}-{k}-attempt-{attempt}.peak.json")}
+                    logs / f"{invocation}-{phase}-{k}-attempt-{attempt}.peak.json"),
+                    "GAUNTLET_WALL_RECEIPT": str(
+                    logs / f"{invocation}-{phase}-{k}-attempt-{attempt}.wall.json")}
                 try:
                     run([sys.executable, "-u", "-c", code, str(shard_dir), str(k), phase],
                         cwd=DESK, env=child_env, capture_output=False,
@@ -1401,6 +1410,7 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
               f"last admission reading {gate.last}", flush=True)
         _progress_set(admission={"floor": width, "widest": gate.width_max, "last": gate.last})
     _record_peaks(logs, invocation, phase)
+    _record_shard_walls(logs, invocation, phase)
     if walls:
         _record_phase_times(shard_walls={phase: walls})
 
@@ -1413,30 +1423,133 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
     if _ABORT.is_set():
         raise RuntimeError(f"{phase} wave aborted by the sweep watchdog")
     failed = [(k, exc) for k, exc in first if exc is not None]
-    if failed:
-        print(f"SHARD RECOVERY: {len(failed)}/{n} {phase} shard(s) failed in parallel; "
-              "retrying only those shards serially after peer memory was released", flush=True)
-    for k, first_exc in failed:
-        assert first_exc is not None
-        last_exc = first_exc
-        for attempt in range(1, _retry_attempts() + 1):
-            _progress_bump("retrying")
-            try:
-                one(k, attempt)
-                print(f"SHARD RECOVERY: {phase} shard {k} recovered on retry {attempt}",
-                      flush=True)
+    if not failed:
+        return
+    # THE FAILED SHARDS' FIRST RETRY RUNS SIDE BY SIDE, MEMORY-GATED (2026-10-29). Measured on the
+    # sweep of 10-28 23:44Z: 13 of 15 build shards finished in about 3.4 h and 2 failed; the
+    # serial retry then ran those two back to back, a full shard wall each, while the rest of the
+    # box sat free. The first retry of every failed shard is now admitted by `_recovery_gate`:
+    # each is charged at the LARGEST of the phase's historic peak, this wave's peak receipts and
+    # every shard's last sampled resident set (`<receipt>.wall.json`, published while the child
+    # runs, so a shard killed before its atexit peak receipt still leaves its size behind), times
+    # SHARD_ADMIT_MARGIN, against available memory re-read before each launch (audit HOLD of
+    # 117963c26, MF1: a killed shard must never be charged at a lighter sibling's peak). A shard
+    # whose first retry fails takes its remaining attempts SERIALLY, so one bad pairing cannot
+    # spend its whole budget. Unmeasured memory, an operator cap, or
+    # GAUNTLET_SHARD_SERIAL_RETRY=1 keeps the whole recovery one at a time, as before. The
+    # partition, the outputs and the fail-closed merge are unchanged.
+    attempts = _retry_attempts() + 1
+
+    def try_once(k: int, attempt: int, last_exc: BaseException) -> BaseException | None:
+        if _ABORT.is_set() or abort_wave.is_set():
+            return RuntimeError(f"{phase} shard {k} retry not started: the wave was aborted")
+        _progress_bump("retrying")
+        try:
+            one(k, attempt)
+            print(f"SHARD RECOVERY: {phase} shard {k} recovered on retry {attempt}", flush=True)
+            return None
+        except ShardStalled as exc:
+            abort_wave.set()
+            exc.__cause__ = last_exc
+            return exc
+        except Exception as exc:
+            print(f"SHARD RECOVERY: {phase} shard {k} retry {attempt} failed: "
+                  f"{type(exc).__name__}: {exc}", flush=True)
+            return exc
+
+    def exhausted(k: int, last_exc: BaseException | None) -> RuntimeError:
+        err = RuntimeError(
+            f"{phase} shard {k} failed after {attempts} attempt(s); refusing partial merge")
+        err.__cause__ = last_exc
+        return err
+
+    if attempts <= 1:
+        k0, exc0 = failed[0]
+        raise exhausted(k0, exc0)
+    gate = None if _serial_recovery() else _recovery_gate(len(failed), phase, logs, invocation)
+    print(f"SHARD RECOVERY: {len(failed)}/{n} {phase} shard(s) failed in parallel; first retry "
+          + ("memory-gated side by side (charge "
+             f"{gate.charge_mb:.0f} MB each, available {gate.avail_start_mb:.0f} MB)"
+             if gate is not None else "one at a time"), flush=True)
+
+    def first_retry(i: int) -> tuple[int, Exception | None]:
+        k, exc = failed[i]
+        assert exc is not None
+        return k, try_once(k, 1, exc)  # type: ignore[return-value]
+
+    if gate is None:
+        first_round = [first_retry(i) for i in range(len(failed))]
+    else:
+        first_round = _admitted_wave(len(failed), first_retry, gate,
+                                     aborted=lambda: _ABORT.is_set() or abort_wave.is_set(),
+                                     poll_s=SHARD_ADMIT_POLL_S)
+    stalls = [o for _k, o in first_round if isinstance(o, ShardStalled)]
+    if stalls:
+        _record_shard_walls(logs, invocation, phase)
+        raise stalled(stalls[0])
+    outcomes: list[BaseException | None] = []
+    for k, res in first_round:
+        last: BaseException | None = res
+        for attempt in range(2, attempts):
+            if last is None or isinstance(last, ShardStalled):
                 break
-            except ShardStalled as exc:
-                raise stalled(exc) from last_exc
-            except Exception as exc:
-                last_exc = exc
-                print(f"SHARD RECOVERY: {phase} shard {k} retry {attempt} failed: "
-                      f"{type(exc).__name__}: {exc}", flush=True)
-        else:
-            attempts = _retry_attempts() + 1
-            raise RuntimeError(
-                f"{phase} shard {k} failed after {attempts} attempt(s); refusing partial merge"
-            ) from last_exc
+            last = try_once(k, attempt, last) or None
+        if isinstance(last, ShardStalled):
+            _record_shard_walls(logs, invocation, phase)
+            raise stalled(last)
+        outcomes.append(None if last is None else (
+            last if "retry not started" in str(last) else exhausted(k, last)))
+    _record_shard_walls(logs, invocation, phase)     # the retries' receipts too (audit S1)
+    for o in outcomes:
+        if o is not None:
+            raise o
+
+
+class _RecoveryAdmission(_Admission):
+    """`_Admission` for a recovery wave: every retry is charged `charge_mb` (or more)."""
+
+    def __init__(self, n: int, phase: str, logs: Path, invocation: str, charge_mb: float,
+                 avail_start_mb: float, **kw: Any) -> None:
+        super().__init__(n, phase, 1, logs, invocation, charge_mb, avail_start_mb, **kw)
+        self.charge_mb = charge_mb
+
+    def estimate_mb(self, running_rss: list[float]) -> tuple[float, str]:
+        return (max([self.charge_mb, *(r * SHARD_ADMIT_MARGIN for r in running_rss)]),
+                "recovery_charge")
+
+
+def _sampled_rss_mb(logs: Path, invocation: str, phase: str) -> list[float]:
+    """Each shard attempt's largest sampled resident set (MB) from its wall receipt."""
+    out: list[float] = []
+    for f in logs.glob(f"{invocation}-{phase}-*.wall.json"):
+        try:
+            doc = json.loads(f.read_text("utf-8"))
+            v = float(doc["phases"]["shard"]["process"]["rss_mb_max"])
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        if v > 0 and math.isfinite(v):
+            out.append(v)
+    return out
+
+
+def _recovery_gate(n: int, phase: str, logs: Path,
+                   invocation: str) -> _RecoveryAdmission | None:
+    """The memory gate for a recovery wave, or None to recover one shard at a time."""
+    if n <= 1 or not _admission_enabled():
+        return None
+    sizes = [*_wave_peaks_mb(logs, invocation, phase), *_sampled_rss_mb(logs, invocation, phase)]
+    historic = _shard_peak_mb(phase)
+    if historic:
+        sizes.append(historic)
+    avail = _available_mb()
+    if not sizes or not avail or not math.isfinite(avail):
+        return None
+    return _RecoveryAdmission(n, phase, logs, invocation, max(sizes) * SHARD_ADMIT_MARGIN, avail)
+
+
+def _serial_recovery() -> bool:
+    """GAUNTLET_SHARD_SERIAL_RETRY=1 restores the one-at-a-time recovery (the revert path)."""
+    return os.environ.get("GAUNTLET_SHARD_SERIAL_RETRY", "0").strip() in ("1", "true", "yes")
 
 
 def record_own_peak(path: str) -> None:
@@ -1458,6 +1571,89 @@ def record_own_peak(path: str) -> None:
         return
     with contextlib.suppress(OSError):
         Path(path).write_text(json.dumps({"peak_mb": round(peak, 1)}), encoding="utf-8")
+
+
+#: WHERE A SHARD'S WALL GOES (2026-10-29). The sweep of 10-28 23:44Z planned ~20,000 cells per
+#: build shard; every shard found the build budget already spent (its clock starts before the
+#: pre-warm), built NOTHING fresh, replayed ~1,000 cached cells -- and still took 11,250-12,133 s.
+#: The parent's sampler sees only `dispatch` waiting on the children, so nothing named what the
+#: children wait on. Each child now samples its own main thread (deeper, so a stack inside
+#: pandas/pyarrow still reaches the judge's caller) into a receipt beside its peak receipt, and
+#: the parent folds every shard's receipt into `shard_wall_profile` in JUDGE_SWEEP_PHASE.json.
+#: REPORT-ONLY, like the parent's: it never touches the judge's state and its failure costs only
+#: its own record.
+SHARD_WALL_DEPTH = 12
+SHARD_WALL_TOP = 8
+
+
+def start_shard_sampler(path: str) -> WallSampler | None:
+    """In a shard child: sample this process's main thread and keep its profile at `path`."""
+    if not path:
+        return None
+    target = Path(path)
+    try:
+        sampler = WallSampler(phase=lambda: "shard", depth=SHARD_WALL_DEPTH)
+
+        def write() -> None:
+            snap = sampler.snapshot()
+            snap["pid"] = os.getpid()
+            # every stack, not the top few: the parent sums them across shards
+            snap["stacks"] = dict(sampler.stacks.get("shard", {}))
+            tmp = target.with_name(f"{target.name}.tmp")
+            try:
+                tmp.write_text(json.dumps(snap, default=str), encoding="utf-8")
+                os.replace(tmp, target)
+            except Exception:
+                with contextlib.suppress(OSError):
+                    tmp.unlink(missing_ok=True)
+
+        sampler.publish = write  # type: ignore[method-assign]
+        import atexit
+        atexit.register(sampler.stop)
+        return sampler.start()
+    except Exception:
+        return None
+
+
+def _record_shard_walls(logs: Path, invocation: str, phase: str) -> dict[str, Any] | None:
+    """Fold every shard child's wall receipt for this phase into `shard_wall_profile`."""
+    try:
+        stacks: dict[str, int] = {}
+        proc: dict[str, float] = {}
+        receipts = 0
+        for f in sorted(logs.glob(f"{invocation}-{phase}-*-attempt-*.wall.json")):
+            try:
+                doc = json.loads(f.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            receipts += 1
+            for sig, c in (doc.get("stacks") or {}).items():
+                stacks[sig] = stacks.get(sig, 0) + int(c)
+            for k, v in (((doc.get("phases") or {}).get("shard") or {}).get("process")
+                         or {}).items():
+                if k == "rss_mb_max":
+                    proc[k] = max(proc.get(k, 0.0), float(v))
+                elif k != "cpu_share_of_wall":
+                    proc[k] = proc.get(k, 0.0) + float(v)
+        if not receipts:
+            return None
+        n = max(1, sum(stacks.values()))
+        if proc.get("sampled_s"):
+            proc["cpu_share_of_wall"] = round(proc.get("cpu_s", 0.0) / proc["sampled_s"], 3)
+        top = sorted(stacks.items(), key=lambda kv: (-kv[1], kv[0]))[:SHARD_WALL_TOP]
+        out = {"receipts": receipts, "samples": sum(stacks.values()), "depth": SHARD_WALL_DEPTH,
+               "authority": "report_only",
+               "top": [{"stack": sig[:600], "n": c, "share": round(c / n, 3)} for sig, c in top],
+               "process": {k: round(v, 3 if k == "cpu_share_of_wall" else 1)
+                           for k, v in proc.items()}}
+        with _PHASE_LOCK:
+            prof = _PHASE_DOC.get("shard_wall_profile")
+            prof = dict(prof) if isinstance(prof, dict) else {}
+            prof[phase] = out
+            _PHASE_DOC["shard_wall_profile"] = prof
+        return out
+    except Exception:
+        return None
 
 
 # ------------------------------------------------------------------------- the resident judge
@@ -1739,8 +1935,9 @@ class WallSampler:
                  thread_id: int | None = None,
                  phase: Callable[[], str | None] | None = None,
                  counters: Callable[[], dict[str, float] | None] = _proc_counters,
-                 clock: Callable[[], float] = time.monotonic) -> None:
-        self.every_s, self.publish_s = every_s, publish_s
+                 clock: Callable[[], float] = time.monotonic,
+                 depth: int = WALL_STACK_DEPTH) -> None:
+        self.every_s, self.publish_s, self.depth = every_s, publish_s, depth
         self.thread_id = threading.main_thread().ident if thread_id is None else thread_id
         self._phase = phase or (lambda: _PHASE_DOC.get("phase"))
         self._counters, self._clock = counters, clock
@@ -1756,7 +1953,8 @@ class WallSampler:
         if not name:
             return
         frame = sys._current_frames().get(self.thread_id) if self.thread_id else None
-        sig = _stack_signature(frame) if frame is not None else "<main thread not running>"
+        sig = (_stack_signature(frame, self.depth) if frame is not None
+               else "<main thread not running>")
         row = self.stacks.setdefault(name, {})
         row[sig] = row.get(sig, 0) + 1
         self.samples[name] = self.samples.get(name, 0) + 1
@@ -1772,7 +1970,7 @@ class WallSampler:
         self._prev = (name, now)
 
     def snapshot(self) -> dict[str, Any]:
-        out: dict[str, Any] = {"every_s": self.every_s, "depth": WALL_STACK_DEPTH,
+        out: dict[str, Any] = {"every_s": self.every_s, "depth": self.depth,
                                "authority": "report_only", "phases": {}}
         for name, row in self.stacks.items():
             n = max(1, self.samples.get(name, 0))
@@ -2169,13 +2367,39 @@ def _kill_tree(pid: int, *, wall_s: float | None = None,
                     out_kids.append(k)
         return out_kids
 
+    def gone(p: Any) -> bool:
+        try:
+            return (not p.is_running()) or p.status() == psutil.STATUS_ZOMBIE
+        except psutil.Error:
+            return True
+
+    def settle(procs: list[Any], limit_s: float) -> None:
+        # ZOMBIE-AWARE WAIT (2026-10-29). `psutil.wait_procs` counts a zombie as running, and a
+        # killed child of a SUSPENDED parent stays a zombie until the root dies -- so it burned
+        # its whole timeout on corpses (CI: wall_s 5.09 on one pass) while a real survivor went
+        # unexamined. Poll until every process is gone or a zombie, or the limit passes.
+        end = time.monotonic() + max(0.0, limit_s)
+        while any(not gone(p) for p in procs) and time.monotonic() < end:
+            time.sleep(KILL_POLL_S)
+
+    empty_scans = 0
     while True:
         try:
             kids = live_kids()
         except psutil.Error:
             break
-        if not kids or time.monotonic() - t0 > budget:
+        if time.monotonic() - t0 > budget:
             break
+        if not kids:
+            # TWO CONSECUTIVE EMPTY SCANS, KILL_POLL_S apart (2026-10-29): a process mid-clone
+            # can be invisible to one /proc scan and appear in the next, re-parented away the
+            # moment its parent dies. CI caught exactly that orphan under load.
+            empty_scans += 1
+            if empty_scans >= 2:
+                break
+            time.sleep(KILL_POLL_S)
+            continue
+        empty_scans = 0
         # FREEZE THE WHOLE TREE BEFORE ANY KILL: a grandchild started between enumeration and
         # suspension would be re-parented away (and orphaned) the moment its parent died, so
         # enumerate-and-suspend repeats until a pass finds nobody new.
@@ -2190,6 +2414,9 @@ def _kill_tree(pid: int, *, wall_s: float | None = None,
                 frozen[k.pid] = k
             try:
                 kids = live_kids()
+                if not [k for k in kids if k.pid not in frozen]:
+                    time.sleep(KILL_POLL_S)            # one settle re-scan before any kill
+                    kids = live_kids()
             except psutil.Error:
                 break
         kids = list(frozen.values())
@@ -2198,17 +2425,23 @@ def _kill_tree(pid: int, *, wall_s: float | None = None,
             with contextlib.suppress(psutil.Error):
                 k.kill()
                 killed += 1
-        psutil.wait_procs(kids, timeout=max(0.1, min(5.0, budget - (time.monotonic() - t0))))
+        settle(kids, max(0.1, min(5.0, budget - (time.monotonic() - t0))))
     if include_root:
         with contextlib.suppress(psutil.Error):
             root.kill()
             killed += 1
             root.wait(timeout=10)
+    # A SURVIVOR IS KILLED AGAIN BEFORE IT IS NAMED: anything seen and still alive gets one
+    # more SIGKILL and a bounded settle, so a slow reap under load is not reported as an orphan.
+    survivors = [p for p in seen.values() if not gone(p)]
+    for p in survivors:
+        with contextlib.suppress(psutil.Error):
+            p.kill()
+    settle(survivors, KILL_RESETTLE_S)
     orphans: set[int] = set()
     for p in seen.values():
-        with contextlib.suppress(psutil.Error):
-            if p.is_running() and p.status() != psutil.STATUS_ZOMBIE:
-                orphans.add(p.pid)
+        if not gone(p):
+            orphans.add(p.pid)
     with contextlib.suppress(psutil.Error):
         orphans.update(k.pid for k in live_kids())
     out.update(killed=killed, orphans=sorted(orphans), wall_s=round(time.monotonic() - t0, 2))

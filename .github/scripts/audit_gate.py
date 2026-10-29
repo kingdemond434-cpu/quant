@@ -463,6 +463,10 @@ def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
         input=json.dumps(data) if data is not None else None,
         capture_output=True,
         text=True,
+        # gh prints UTF-8; the Windows box defaults to cp1252, and one multibyte character in a PR
+        # body killed the reader thread and left stdout None, so every sweep crashed (2026-10-29).
+        encoding="utf-8",
+        errors="replace",
         check=False,
     )
     if p.returncode != 0:
@@ -471,7 +475,14 @@ def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
 
 
 def _git(*args: str) -> str:
-    return subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout.strip()
+    return subprocess.run(
+        ["git", *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        check=True,
+    ).stdout.strip()
 
 
 def provenance(repo: str, pr: int, head: str) -> Callable[[Mapping[str, Any]], bool]:
