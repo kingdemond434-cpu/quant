@@ -186,12 +186,12 @@ def test_a_verbose_timeout_serves_the_cached_run_history_with_its_age(
 ) -> None:
     _sched(monkeypatch, verbose=VERBOSE)
     assert ph.build()["run_history"] == "MEASURED"          # a good read, now cached
-    _age_cache(box, "run_history", 2)
+    _age_cache(box, "run_history", 1.5)
     _sched(monkeypatch, verbose=None)                       # then the verbose read times out
     doc = ph.build()
     assert doc["counts"].get("SCHEDULER_UNMEASURED", 0) == 0
     assert doc["run_history"] == "CACHED"
-    assert doc["scheduler_status"].startswith("OK task XML; run history CACHED (120 min old)")
+    assert doc["scheduler_status"].startswith("OK task XML; run history CACHED (90 min old)")
     assert "TimeoutExpired" in doc["scheduler_status"]
     assert doc["scheduler_reads"]["run_history"]["source"] == "cache"
     assert doc["scheduler_timeouts"], "the timeout is still recorded (and still spawns the retry)"
@@ -199,9 +199,9 @@ def test_a_verbose_timeout_serves_the_cached_run_history_with_its_age(
     # judged on the cached code, and labelled with its age -- FAILING stays FAILING
     assert by["MT5-Gateway"]["verdict"] == "FAILING"
     assert by["MT5-Hourly"]["verdict"] == "OK" and by["MT5-Hourly"]["last_result_code"] == 0
-    assert "(120 min old)" in by["MT5-Hourly"]["why"]
+    assert "(90 min old)" in by["MT5-Hourly"]["why"]
     assert by["MT5-Hourly"]["last_result"].endswith("(cached read)")
-    assert 119 <= by["MT5-Hourly"]["last_result_age_min"] <= 121
+    assert 89 <= by["MT5-Hourly"]["last_result_age_min"] <= 91
     assert doc["status"] == "ATTENTION"   # the cached FAILING row, judged like a live one
 
 
@@ -215,6 +215,68 @@ def test_a_cache_past_six_hours_is_not_served(monkeypatch: pytest.MonkeyPatch, b
     assert "(brief: last run and last result UNMEASURED" in doc["scheduler_status"]
     assert _by(doc)["MT5-Hourly"]["last_result_code"] is None
     assert doc["scheduler_reads"]["run_history"]["unmeasured_runs"] == 1
+
+
+def test_run_history_cache_expires_at_two_hours_while_the_inventory_keeps_six(
+    monkeypatch: pytest.MonkeyPatch, box: Path,
+) -> None:
+    # auditor F1 on #491: a 3 h old last result is not served; a 3 h old inventory is
+    assert ph.SCHED_HISTORY_CACHE_MAX_AGE_S == 2 * 3600 and ph.SCHED_CACHE_MAX_AGE_S == 6 * 3600
+    _sched(monkeypatch, verbose=VERBOSE)
+    ph.build()
+    _age_cache(box, "run_history", 3)
+    _age_cache(box, "inventory", 3)
+    monkeypatch.setattr(ph, "TASKS_DIR", box / "absent")
+    _sched(monkeypatch)                                     # every live read fails
+    doc = ph.build()
+    reads = doc["scheduler_reads"]
+    assert reads["inventory"]["source"] == "cache" and 179 <= reads["inventory"]["age_min"] <= 181
+    assert reads["run_history"]["source"] == "unmeasured"
+    assert reads["run_history"]["unmeasured_runs"] == 1
+    assert doc["run_history"] == "UNMEASURED"
+    row = _by(doc)["MT5-Hourly"]
+    assert row["last_result_code"] is None and "inside 2 h" in row["last_result"]
+
+
+def test_an_xml_walk_where_every_file_is_unreadable_is_a_failed_read(
+    monkeypatch: pytest.MonkeyPatch, box: Path,
+) -> None:
+    # auditor F2 on #491: an ACL change makes every file raise; that is no inventory, so the
+    # counter runs and the RED clock with it -- never a "live" read of broken rows
+    for name in ("MT5-Hourly", "MT5-Gateway"):
+        (box / "Tasks" / name).write_bytes(b"<denied")
+    with pytest.raises(ph.SchtasksUnreadable, match="none of 2 task definition"):
+        ph.read_task_xml_dir(box / "Tasks")
+    _sched(monkeypatch)                                     # the brief fallback times out too
+    statuses = []
+    for _ in range(3):
+        doc = ph.build()
+        statuses.append(doc["status"])
+    assert statuses == ["UNMEASURED", "UNMEASURED", "RED"]
+    assert doc["scheduler_reads"]["inventory"]["unmeasured_runs"] == 3
+    assert "none of 2 task definition" in doc["scheduler_reads"]["inventory"]["error"]
+    assert doc["red_reads"] == ["inventory"]
+
+
+def test_an_xml_directory_with_no_desk_task_is_a_failed_read(
+    monkeypatch: pytest.MonkeyPatch, box: Path,
+) -> None:
+    for name in ("MT5-Hourly", "MT5-Gateway"):
+        (box / "Tasks" / name).unlink()                     # only Microsoft tasks are left
+    with pytest.raises(ph.SchtasksUnreadable, match="no non-Microsoft"):
+        ph.read_task_xml_dir(box / "Tasks")
+    _sched(monkeypatch)
+    doc = ph.build()
+    assert doc["scheduler_reads"]["inventory"]["source"] == "unmeasured"
+    assert doc["scheduler_reads"]["inventory"]["unmeasured_runs"] == 1
+    assert doc["counts"].get("NOT_SCHEDULED", 0) == 0
+
+
+def test_one_readable_file_among_unreadable_ones_is_still_a_live_inventory(box: Path) -> None:
+    (box / "Tasks" / "MT5-Gateway").write_bytes(b"<denied")
+    rows = {r["TaskName"]: r for r in ph.read_task_xml_dir(box / "Tasks")}
+    assert "TaskInfoError" not in rows["\\MT5-Hourly"]
+    assert "task XML unreadable" in rows["\\MT5-Gateway"]["TaskInfoError"]
 
 
 def test_an_unreadable_inventory_serves_the_cached_inventory(

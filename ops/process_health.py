@@ -320,8 +320,15 @@ TASKS_DIR = Path(os.environ.get("SYSTEMROOT", r"C:\Windows")) / "System32" / "Ta
 TASK_XML_NS = "{http://schemas.microsoft.com/windows/2004/02/mit/task}"
 
 #: How old a cached scheduler read may be and still be served (with its age) instead of
-#: SCHEDULER_UNMEASURED. Six hourly passes: past that, an inventory or a result code is history.
+#: SCHEDULER_UNMEASURED. The INVENTORY (which tasks exist, enabled or not) changes only when
+#: someone re-registers a task, so six hourly passes. The RUN HISTORY (CACHED_HISTORY_FIELDS)
+#: moves every pass, so two (auditor follow-up F1 on #491): a last result older than that says
+#: little about a task that has run since.
 SCHED_CACHE_MAX_AGE_S = 6 * 3600
+SCHED_HISTORY_CACHE_MAX_AGE_S = 2 * 3600
+#: Max age per read key, for the reads and for the words that cite them.
+SCHED_MAX_AGE_S = {"inventory": SCHED_CACHE_MAX_AGE_S,
+                   "run_history": SCHED_HISTORY_CACHE_MAX_AGE_S}
 #: Run-history columns kept in the cache. State columns are NOT served from cache: the live
 #: inventory always supplies them, and an hours-old "Running" would excuse a fresh failure.
 CACHED_HISTORY_FIELDS = ("Last Run Time", "Last Result")
@@ -393,6 +400,12 @@ def read_task_xml_dir(base: Path) -> list[dict[str, str]]:
                              f"task XML unreadable: {type(exc).__name__}: {exc}"[:200]})
     if not rows:
         raise SchtasksUnreadable(f"{base} holds no non-Microsoft task definition")
+    # EVERY FILE UNREADABLE IS A FAILED READ, not an inventory of broken tasks (auditor F2 on
+    # #491): an ACL change on the folder makes each file raise, and serving those rows as "live"
+    # would reset the UNMEASURED counter and stop the RED clock on a read that saw nothing.
+    if all(r.get("TaskInfoError") for r in rows):
+        raise SchtasksUnreadable(f"{base}: none of {len(rows)} task definition(s) readable "
+                                 f"({rows[0]['TaskInfoError'][:120]})")
     return rows
 
 
@@ -461,7 +474,8 @@ def _tasks() -> tuple[list[dict[str, str]], str]:
     """Read the scheduler, distinguishing a failed inventory from an empty one.
 
     Two reads, each through ops/last_good.read_through (live, else the last good read inside
-    SCHED_CACHE_MAX_AGE_S served WITH ITS AGE, else UNMEASURED with a consecutive-run counter
+    SCHED_MAX_AGE_S -- 6 h inventory, 2 h run history -- served WITH ITS AGE, else UNMEASURED
+    with a consecutive-run counter
     that turns RED past last_good.RED_AFTER_RUNS):
 
       inventory    which tasks exist and whether they are enabled -- the task XML files, else
@@ -488,7 +502,7 @@ def _tasks() -> tuple[list[dict[str, str]], str]:
         for r in brief:
             r["InventoryCachedAt"] = str(inv.at)
 
-    hist = lg.read_through(path, "run_history", _read_history, SCHED_CACHE_MAX_AGE_S,
+    hist = lg.read_through(path, "run_history", _read_history, SCHED_HISTORY_CACHE_MAX_AGE_S,
                            count=count)
     READS["run_history"] = hist.summary()
     verbose: dict[str, dict[str, str]] = hist.value if isinstance(hist.value, dict) else {}
@@ -508,7 +522,7 @@ def _tasks() -> tuple[list[dict[str, str]], str]:
         else:
             why = ("the verbose query did not return this task" if hist.source != "unmeasured"
                    else "the verbose query did not answer and no cached read is inside "
-                        f"{SCHED_CACHE_MAX_AGE_S // 3600} h")
+                        f"{SCHED_HISTORY_CACHE_MAX_AGE_S // 3600} h")
             rows.append({**r, "ResultUnmeasured": why})
 
     lead = "OK schtasks" if via == "schtasks" and inv.source == "live" else (
@@ -621,7 +635,8 @@ def build() -> dict[str, Any]:
         r = reads.get(key) or {}
         return (f"RED: the scheduler {key.replace('_', ' ')} read has been UNMEASURED for "
                 f"{r.get('unmeasured_runs')} consecutive runs (no live read, no cached read "
-                f"inside {SCHED_CACHE_MAX_AGE_S // 3600} h) -- {r.get('error') or 'no reason'}"
+                f"inside {SCHED_MAX_AGE_S.get(key, SCHED_CACHE_MAX_AGE_S) // 3600} h) -- "
+                f"{r.get('error') or 'no reason'}"
                 )[:400]
 
     red_history = _red_why("run_history") if "run_history" in red_reads else ""
@@ -767,7 +782,7 @@ def build() -> dict[str, Any]:
     bad = [r for r in rows if r["verdict"] in ("RED", "NOT_SCHEDULED", "SCHEDULER_UNMEASURED",
                                              "FAILING", "NO_ARTIFACT", "STALE")
            or (r["verdict"] == "DISABLED" and not r.get("expected_disabled"))]
-    # A run history served from the last good read (inside SCHED_CACHE_MAX_AGE_S, every row
+    # A run history served from the last good read (inside SCHED_HISTORY_CACHE_MAX_AGE_S, each row
     # labelled with its age) is judged like a live one: those codes WERE read, just not this pass.
     history_cached = (reads.get("run_history") or {}).get("source") == "cache"
     run_history_read = scheduler_status == "OK schtasks" or (
