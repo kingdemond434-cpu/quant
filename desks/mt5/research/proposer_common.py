@@ -489,7 +489,8 @@ def _blinded(source: str, candidates: list[dict]) -> tuple[list[dict], dict[str,
     return clean, {k: rep[k] for k in ("rows", "violations", "fields_stripped")}
 
 
-def donate(source: str, candidates: list[dict], tests_run: int | None) -> Path | None:
+def donate(source: str, candidates: list[dict], tests_run: int | None,
+           suffix: str = "") -> Path | None:
     """Write the discovery contract. A control run must NEVER call this.
 
     `tests_run=None` means "the rows that actually leave": the count is taken AFTER the lane and
@@ -529,7 +530,9 @@ def donate(source: str, candidates: list[dict], tests_run: int | None) -> Path |
     out = INTEL / source
     out.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
-    path = out / f"discoveries_{stamp}.json"
+    # `suffix` keeps two donations from one source in the same minute (one per panel, say) from
+    # overwriting each other; it sorts after the bare minute stamp, so newest-first still holds.
+    path = out / (f"discoveries_{stamp}_{suffix}.json" if suffix else f"discoveries_{stamp}.json")
     LAST_DONATION["donated"] = len(candidates)
     LAST_DONATION["path"] = str(path)
     if tests_run is None:
