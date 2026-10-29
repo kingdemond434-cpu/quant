@@ -1269,7 +1269,7 @@ def publish_throughput(decided: int, elapsed_s: float, backlog_before: int,
     # A SEAT AT ITS QUOTA WITH WORK WAITING IS A CAP, NOT A PAUSE (2026-10-29). Pass after pass
     # logged "0 free request(s) left" with a backlog of 146 and the task still read healthy. The
     # streak counts consecutive passes that stood down on the seat while rows waited; a reader
-    # (`scripts/check_seat_starvation.py`) turns it RED past STARVED_PASSES_RED.
+    # (`scripts/check_seat_health.py`) turns it RED past STARVED_PASSES_RED.
     starved = outages > 0 and backlog_after > 0
     streak = int(prior.get("seat_starved_passes") or 0) + 1 if starved else 0
     doc = {

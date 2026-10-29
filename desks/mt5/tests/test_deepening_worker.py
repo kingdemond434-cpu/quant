@@ -567,13 +567,13 @@ class TestThroughputRatchet:
         assert docs[2]["seat_starved_since"] == docs[0]["seat_starved_since"]
         import importlib.util
         spec = importlib.util.spec_from_file_location(
-            "check_seat_starvation",
-            Path(__file__).resolve().parents[3] / "scripts" / "check_seat_starvation.py")
+            "check_seat_health",
+            Path(__file__).resolve().parents[3] / "scripts" / "check_seat_health.py")
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
-        assert mod.verdict(docs[1])["verdict"] == "GREEN"
-        assert mod.verdict(docs[2])["verdict"] == "RED"
-        assert mod.verdict({"at": "x"})["verdict"] == "UNMEASURED"
+        assert mod.seat_starvation(docs[1])["verdict"] == "GREEN"
+        assert mod.seat_starvation(docs[2])["verdict"] == "RED"
+        assert mod.seat_starvation({"at": "x"})["verdict"] == "UNMEASURED"
         # A drained queue, or a seat that answered, is not starvation.
         assert dw.publish_throughput(1, 60.0, 1, 0, now, out)["seat_starved_passes"] == 0
         assert dw.publish_throughput(5, 60.0, 146, 141, now, {"RECOVERED_X": 5}
