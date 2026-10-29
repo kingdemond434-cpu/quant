@@ -51,7 +51,7 @@ def test_recovered_journal_gaps_never_reuse_a_receipt_id(tmp_path):
 
 def test_ids_are_minted_past_the_fetched_live_copy_too(tmp_path):
     """The box's file ended at 002 while LIVE carried 003 (2026-10-29 23:01Z): the next id must
-    clear both, or two hosts give two decisions one identity."""
+    clear both and every open PR branch, or two hosts give two decisions one identity."""
     import subprocess
     day = CTX["datetime"].now(CTX["UTC"]).strftime("%Y%m%d")
     j = tmp_path / "decision_journal.jsonl"
@@ -65,11 +65,18 @@ def test_ids_are_minted_past_the_fetched_live_copy_too(tmp_path):
     git("add", j.name)
     git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "live")
     git("update-ref", f"refs/remotes/origin/{CTX['LIVE']}", "HEAD")
+    # an open PR branch already holds 004 and 005: they reach LIVE when it merges
+    j.write_text("".join(json.dumps({"id": f"D-{day}-00{n}"}) + "\n" for n in (4, 5)),
+                 encoding="utf-8")
+    git("add", j.name)
+    git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "pr")
+    git("update-ref", "refs/remotes/origin/claude/some-pr", "HEAD")
+    git("update-ref", "refs/heads/claude/local-pr", "HEAD")
     git("checkout", "-q", "--orphan", "box")
     j.write_text("".join(json.dumps(r) + "\n" for r in rows[:2]), encoding="utf-8")
     a = argparse.Namespace(title="t", decision="d", why="w", by="me", owner="",
                            evidence=[], supersedes="")
-    assert CTX["decide"](a, j)["id"] == f"D-{day}-004"
+    assert CTX["decide"](a, j)["id"] == f"D-{day}-006"
 
 
 def test_rationale_sync_refreshes_generated_block_and_keeps_human_text(tmp_path):
