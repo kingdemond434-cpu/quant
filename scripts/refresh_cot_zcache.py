@@ -25,12 +25,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 try:
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 
 ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / "data" / "cot_zcache.parquet"
@@ -68,7 +68,7 @@ def _fetch(since: str) -> list[dict]:
                         "noncomm_positions_long_all,noncomm_positions_short_all"),
         })
         req = urllib.request.Request(f"{API}?{q}", headers=UA)
-        with urllib.request.urlopen(req, timeout=60) as r:
+        with polite_urlopen(req, timeout=60) as r:
             batch = json.loads(r.read())
         rows.extend(batch)
         if len(batch) < 5000:

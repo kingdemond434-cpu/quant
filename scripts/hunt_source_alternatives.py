@@ -44,7 +44,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from libs.data.polite_fetch import DESK_UA
+from libs.data.polite_fetch import DESK_UA, polite_urlopen
 from libs.research import source_alternatives as alt
 from libs.research import source_health as health
 
@@ -107,7 +107,7 @@ def probe(url: str, *, timeout: float = 25.0) -> tuple[str, str]:
     # All registry URLs are https literals declared in libs/research/source_alternatives.
     req = urllib.request.Request(url, headers=_UA)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as fh:
+        with polite_urlopen(req, timeout=timeout) as fh:
             raw = fh.read()
             ctype = str(fh.headers.get("Content-Type", ""))
     except urllib.error.HTTPError as exc:

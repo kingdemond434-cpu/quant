@@ -14,7 +14,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import requests
 
 BASE = Path(__file__).resolve().parent.parent
 for _p in (str(BASE), str(BASE / "research")):
@@ -51,6 +50,10 @@ if str(BASE.parents[1]) not in sys.path:
 #: any polite fetcher was refused by is held here too, and this miner's own refusals are written
 #: there, so no clock and no other fetcher's view can release trends.google.com.
 from libs.data import polite_fetch as _pf  # noqa: E402
+# THE ONE FETCH DOOR (LAWS 5e amended 2026-10-14): every request below -- robots.txt included --
+# goes through polite_fetch, which reads the origin's holds and robots.txt first. The hard stop
+# and robots_verdict below still decide on what comes back; the two never disagree to fetch.
+from libs.data.polite_fetch import polite_requests_get  # noqa: E402
 
 # Search terms that move markets
 SEARCH_TERMS = {
@@ -181,7 +184,7 @@ def _robots(url: str, now: datetime) -> tuple[int, str, dict] | None:
     if hit is not None:
         return hit[0], hit[1], {}
     try:
-        resp = requests.get(hard_stop.robots_url(url), headers=HEADERS, timeout=15)
+        resp = polite_requests_get(hard_stop.robots_url(url), headers=HEADERS, timeout=15)
         got = (int(getattr(resp, "status_code", 0) or 0), str(getattr(resp, "text", "") or ""),
                dict(getattr(resp, "headers", None) or {}))
     except Exception:
@@ -252,7 +255,7 @@ def mine_google_trends(now: datetime | None = None) -> list[dict]:
                 LAST_PASS["robots_disallowed"] += 1
                 continue
             try:
-                resp = requests.get(url, headers=HEADERS, timeout=15)
+                resp = polite_requests_get(url, headers=HEADERS, timeout=15)
             except Exception:
                 continue
             LAST_PASS["requests"] += 1

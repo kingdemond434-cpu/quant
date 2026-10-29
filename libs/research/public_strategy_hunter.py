@@ -69,8 +69,10 @@ class Source:
 
 
 def fetch(url: str, *, timeout: float = 30.0) -> bytes:
+    from libs.data.polite_fetch import polite_urlopen
     req = urllib.request.Request(url, headers={"User-Agent": _UA, "Accept": "*/*"})
-    with urllib.request.urlopen(req, timeout=timeout, context=_CTX) as response:
+    # holds + robots.txt first (LAWS 5e amended 2026-10-14); a 401/403/429 holds the site
+    with polite_urlopen(req, timeout=timeout, leg="public_strategy_hunter") as response:
         payload: object = response.read()
     if not isinstance(payload, bytes):
         raise TypeError("public-source response must be bytes")

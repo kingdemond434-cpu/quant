@@ -41,13 +41,13 @@ def test_the_miner_emits_nothing_for_an_unmeasurable_term(monkeypatch: pytest.Mo
         status_code = 200
         text = '"timelineData": ' + json.dumps(_tl([40, 50, 60]))
 
-    monkeypatch.setattr(gtm.requests, "get", lambda *a, **k: Resp())
+    monkeypatch.setattr(gtm, "polite_requests_get", lambda *a, **k: Resp())
     assert gtm.mine_google_trends() == []
 
     class Long(Resp):
         text = '"timelineData": ' + json.dumps(_tl([10, 10, 10, 10, 20, 20, 20, 20]))
 
-    monkeypatch.setattr(gtm.requests, "get", lambda *a, **k: Long())
+    monkeypatch.setattr(gtm, "polite_requests_get", lambda *a, **k: Long())
     rows = gtm.mine_google_trends()
     assert rows and all(r["trend_pct"] == 100.0 for r in rows)
 
@@ -101,7 +101,7 @@ def test_a_refusal_holds_until_a_person_releases_it(
     reg = tmp_path / "blocked_sources.json"
     reg.write_text(json.dumps({"note": "n", "sources": {"other": {"diagnosis": "X"}}}))
     calls: list[str] = []
-    monkeypatch.setattr(gtm.requests, "get", _refuse(calls, status, headers))
+    monkeypatch.setattr(gtm, "polite_requests_get", _refuse(calls, status, headers))
     assert gtm.mine_google_trends(now=NOW) == []
     assert len(calls) == 1                                    # exactly one request
     blk = gtm.LAST_PASS["block"]
@@ -117,7 +117,7 @@ def test_a_refusal_holds_until_a_person_releases_it(
     assert doc["holds"]["site:trends.google.com"]["released_by"] is None
     for later in (timedelta(hours=25), timedelta(days=11), timedelta(days=400)):
         calls.clear()
-        monkeypatch.setattr(gtm.requests, "get", _refuse(calls, 200))
+        monkeypatch.setattr(gtm, "polite_requests_get", _refuse(calls, 200))
         assert gtm.mine_google_trends(now=NOW + later) == []
         assert calls == [] and gtm.LAST_PASS["skipped"] is True, later
 
@@ -128,13 +128,13 @@ def test_a_refusal_holds_until_a_person_releases_it(
     def answer(url: str, **_k: object) -> object:
         answered.append(url)
         return _Answer()
-    monkeypatch.setattr(gtm.requests, "get", answer)
+    monkeypatch.setattr(gtm, "polite_requests_get", answer)
     rows = gtm.mine_google_trends(now=NOW + timedelta(days=401))
     assert rows and gtm.LAST_PASS["status"] == "FETCHED" and len(answered) > 1
     assert not gtm.BLOCK_STATE.exists()                       # the released copy is spent
     # a second refusal: a new hold, the released one kept in history
     calls.clear()
-    monkeypatch.setattr(gtm.requests, "get", _refuse(calls, status, headers))
+    monkeypatch.setattr(gtm, "polite_requests_get", _refuse(calls, status, headers))
     gtm.mine_google_trends(now=NOW + timedelta(days=402))
     doc = json.loads(reg.read_text())
     assert doc["holds"]["site:trends.google.com"]["released_by"] is None
@@ -148,7 +148,7 @@ def test_a_free_stack_hold_on_the_same_host_holds_this_miner_too(
     gtm.hard_stop.place_hold(rec, tmp_path / "blocked_sources.json",
                              source_key="free_stack_gtrends")
     calls: list[str] = []
-    monkeypatch.setattr(gtm.requests, "get", _refuse(calls, 200))
+    monkeypatch.setattr(gtm, "polite_requests_get", _refuse(calls, 200))
     gtm.mine_google_trends(now=NOW + timedelta(days=3))
     assert calls == [] and gtm.LAST_PASS["skipped"] is True
 
@@ -157,7 +157,7 @@ def test_a_401_reads_needs_key(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(gtm, "BLOCK_STATE", tmp_path / "block.json")
     monkeypatch.setattr(gtm, "BLOCKED_REGISTER", tmp_path / "r.json")
     calls: list[str] = []
-    monkeypatch.setattr(gtm.requests, "get", _refuse(calls, 401))
+    monkeypatch.setattr(gtm, "polite_requests_get", _refuse(calls, 401))
     gtm.mine_google_trends(now=NOW)
     assert len(calls) == 1 and gtm.LAST_PASS["status"] == "NEEDS_KEY"
 
@@ -189,7 +189,7 @@ def test_a_200_with_no_timeline_is_not_fetched_and_the_desk_ua_is_sent(
     def get(url: str, headers: dict | None = None, **_k: object) -> object:
         seen_ua.append((headers or {}).get("User-Agent", ""))
         return Empty()
-    monkeypatch.setattr(gtm.requests, "get", get)
+    monkeypatch.setattr(gtm, "polite_requests_get", get)
     assert gtm.mine_google_trends(now=NOW) == []
     assert gtm.LAST_PASS["status"] == "FAILED" and gtm.LAST_PASS["timelines_read"] == 0
     assert seen_ua and set(seen_ua) == {gtm.DESK_UA} and "Mozilla" not in gtm.DESK_UA
@@ -206,7 +206,7 @@ def test_a_refusal_whose_record_cannot_be_written_still_ends_the_pass(
         raise OSError("disk full")
     monkeypatch.setattr(gtm.hard_stop, "place_hold", boom)
     calls: list[str] = []
-    monkeypatch.setattr(gtm.requests, "get", _refuse(calls, 429))
+    monkeypatch.setattr(gtm, "polite_requests_get", _refuse(calls, 429))
     assert gtm.mine_google_trends(now=NOW) == []
     assert len(calls) == 1
     assert gtm.LAST_PASS["status"] == "METHOD_BLOCKED" and "disk full" in gtm.LAST_PASS[
@@ -245,7 +245,7 @@ def test_a_robots_disallow_is_not_fetched_and_robots_is_reread_daily(
     text = ("User-agent: *\nAllow: /\n\nUser-agent: " + gtm.hard_stop.DESK_UA_PRODUCT
             + "\nDisallow: /trends/explore\n")
     calls: list[str] = []
-    monkeypatch.setattr(gtm.requests, "get", _robots_site(calls, 200, text))
+    monkeypatch.setattr(gtm, "polite_requests_get", _robots_site(calls, 200, text))
     assert gtm.mine_google_trends(now=NOW) == []
     assert calls == ["https://trends.google.com/robots.txt"]
     assert gtm.LAST_PASS["status"] == "ROBOTS_DISALLOWED"
@@ -254,7 +254,7 @@ def test_a_robots_disallow_is_not_fetched_and_robots_is_reread_daily(
     calls.clear()
     gtm.mine_google_trends(now=NOW + timedelta(hours=23))
     assert calls == []                                            # robots kept a day
-    monkeypatch.setattr(gtm.requests, "get",
+    monkeypatch.setattr(gtm, "polite_requests_get",
                         _robots_site(calls, 200, "User-agent: *\nAllow: /\n"))
     gtm.mine_google_trends(now=NOW + timedelta(hours=25))
     assert calls[0] == "https://trends.google.com/robots.txt" and len(calls) > 1
@@ -263,7 +263,7 @@ def test_a_robots_disallow_is_not_fetched_and_robots_is_reread_daily(
 def test_a_5xx_robots_means_no_fetch_this_pass_and_a_reread_next_pass(
         monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
-    monkeypatch.setattr(gtm.requests, "get", _robots_site(calls, 503, ""))
+    monkeypatch.setattr(gtm, "polite_requests_get", _robots_site(calls, 503, ""))
     gtm.mine_google_trends(now=NOW)
     assert calls == ["https://trends.google.com/robots.txt"]
     assert gtm.LAST_PASS["status"] == "ROBOTS_UNAVAILABLE" and not gtm.BLOCK_STATE.exists()
@@ -276,7 +276,7 @@ def test_a_5xx_robots_means_no_fetch_this_pass_and_a_reread_next_pass(
 def test_a_refusal_on_robots_itself_is_a_person_hold(monkeypatch: pytest.MonkeyPatch,
                                                      status: int) -> None:
     calls: list[str] = []
-    monkeypatch.setattr(gtm.requests, "get", _robots_site(calls, status, ""))
+    monkeypatch.setattr(gtm, "polite_requests_get", _robots_site(calls, status, ""))
     gtm.mine_google_trends(now=NOW)
     assert calls == ["https://trends.google.com/robots.txt"]
     assert gtm.LAST_PASS["block"]["verdict"] == "ROBOTS_HOLD"
@@ -296,7 +296,7 @@ def test_a_404_robots_allows_and_the_pass_runs(tmp_path: Path,
                                                monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(gtm, "BLOCK_STATE", tmp_path / "block.json")
     calls: list[str] = []
-    monkeypatch.setattr(gtm.requests, "get", _robots_site(calls, 404, "not found"))
+    monkeypatch.setattr(gtm, "polite_requests_get", _robots_site(calls, 404, "not found"))
     gtm.mine_google_trends(now=NOW)
     n_terms = sum(len(t) for t in gtm.SEARCH_TERMS.values())
     assert len(calls) == 1 + n_terms and calls.count("https://trends.google.com/robots.txt") == 1

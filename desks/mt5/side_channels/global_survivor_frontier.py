@@ -43,7 +43,7 @@ except ImportError:  # run as a script: the repo root is not on the path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
     from libs.data.polite_fetch import DESK_UA
 
-from libs.data.polite_fetch import decode_body, fenced_urlopen  # noqa: E402
+from libs.data.polite_fetch import decode_body, polite_urlopen  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 INTEL = BASE / "data" / "intelligence"
@@ -56,10 +56,13 @@ MAX_BYTES = 2_000_000
 
 
 def _get_text(url: str, timeout: float) -> str:
-    """One GET through THE ONE FETCH DOOR (polite_fetch.fenced_urlopen): a redirect into a login
-    or CAPTCHA wall raises instead of being followed; an HTTP error raises HTTPError."""
+    """One GET through polite_fetch's seam (THE ONE FETCH DOOR behind the site's holds and the
+    origin's robots.txt, every hop -- LAWS 5e amended 2026-10-14): a redirect into a login or
+    CAPTCHA wall, a Disallow or a hold raises (PoliteRefused, a URLError) instead of being
+    followed; an HTTP error raises HTTPError."""
     req = urllib.request.Request(url, headers=HEADERS)
-    with fenced_urlopen(req, timeout=timeout) as fh:
+    with polite_urlopen(req, timeout=timeout, max_bytes=MAX_BYTES,
+                        leg="global_survivor_frontier") as fh:
         raw = fh.read(MAX_BYTES)
         return decode_body(raw, str(fh.headers.get("Content-Type") or ""),
                            str(fh.headers.get("Content-Encoding") or ""))

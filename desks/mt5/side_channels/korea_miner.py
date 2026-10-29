@@ -7,14 +7,13 @@ import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-import requests
 try:
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "korea"
@@ -42,7 +41,7 @@ def mine_korea() -> list[dict]:
     discoveries = []
     for source, url in SOURCES.items():
         try:
-            resp = requests.get(url, headers={"User-Agent": DESK_UA, "Accept-Language": "ko-KR,ko;q=0.9"},
+            resp = polite_requests_get(url, headers={"User-Agent": DESK_UA, "Accept-Language": "ko-KR,ko;q=0.9"},
                               timeout=15)
             resp.raise_for_status()
             content = re.sub(r'<[^>]+>', ' ', resp.text)[:2000]

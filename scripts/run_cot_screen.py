@@ -30,6 +30,7 @@ import csv
 import io
 import json
 import subprocess
+import urllib.error
 import urllib.request
 import zipfile
 from datetime import UTC, datetime
@@ -37,6 +38,14 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+
+try:
+    from libs.data.polite_fetch import polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+    from libs.data.polite_fetch import polite_urlopen
 
 _ROOT = Path(__file__).resolve().parent.parent
 _CACHE = Path("/tmp/claude-0/-home-user-quant/1c87bc3b-ab99-5043-86ff-5b38ad12af2a/scratchpad/cot")  # noqa: S108 -- session scratchpad path, not a shared world-writable location
@@ -97,9 +106,16 @@ def _fetch(url: str, dest: Path) -> bytes:
         return dest.read_bytes()
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "quant-research/1.0"})
-        with urllib.request.urlopen(req, timeout=45) as r:
+        with polite_urlopen(req, timeout=45) as r:
             blob: bytes = r.read()
-    except Exception:
+    except urllib.error.HTTPError:
+        raise                       # an HTTP answer (401/403/429 already held): no other route
+    except Exception as exc:
+        # ROBOTS DECIDES (LAWS 5e amended 2026-10-14): a refusal -- robots.txt, a site hold, the
+        # method fence -- is final, never routed around through curl. Only a TRANSPORT failure
+        # on a URL the polite path already admitted falls back (no redirects followed).
+        if getattr(exc, "verdict", ""):
+            raise
         subprocess.run(["curl", "-sSf", "-o", str(dest), url, "--max-time", "90"],
                        check=True, capture_output=True)
         return dest.read_bytes()

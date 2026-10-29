@@ -41,7 +41,7 @@ from pathlib import Path
 from typing import Any
 
 from libs.data import bilibili, cn_sources, foreign_sources, papers
-from libs.data.polite_fetch import DESK_UA
+from libs.data.polite_fetch import DESK_UA, polite_urlopen
 from libs.research import conversion_ledger, source_health
 from libs.research.video_triage import SURFACE_THRESHOLD, score_title, triage
 
@@ -85,7 +85,7 @@ CN_SOURCES: tuple[dict[str, str], ...] = (
 
 def _get(url: str, *, timeout: float = 30.0) -> str:
     req = urllib.request.Request(url, headers=_UA)
-    with urllib.request.urlopen(req, timeout=timeout) as fh:
+    with polite_urlopen(req, timeout=timeout) as fh:
         body: str = fh.read().decode("utf8", errors="ignore")
     return body
 

@@ -14,12 +14,13 @@ priced off the scout's catalogue where a route is declared, and gated by a Datas
 traded against value. Since LAWS 5e (2026-09-23) that gate is FIVE ACTS WIDE and nothing else --
 a page whose terms restrict machine extraction is REGISTERED, MINED AND SAMPLED with the terms
 carried as a `terms_note` that routes REDISTRIBUTION; the old "registered and never fetched"
-reading, and the robots Disallow that returned BLOCKED_BY_ROBOTS, were discovery brakes and are
-deleted.
+reading was a discovery brake and is deleted. ROBOTS.TXT IS RESPECTED (LAWS 5e as amended by
+the principal 2026-10-14): a Disallow, an unreadable robots.txt or a site hold returns
+BLOCKED_BY_ROBOTS and nothing is requested.
 
 WHAT IT BUILDS. For the top admissible candidates with a URL route it takes a SMALL
 SAMPLE through the desk's existing fetch path (`acquire_datasets._fetch`; the robots verdict from
-`asia_collector._robots_allows` is READ and recorded, never a skip; never a new scraper),
+`polite_fetch.HostAccess` decides first -- a refusal is a skip, named; never a new scraper),
 content-hashes it into a Vintage and a
 LineageRecord, and records a `dataset_request` discovery in `data/intelligence/<seat>/` carrying
 the contract and the expected value. Report: `reports/DATA_ACQUISITION.json`. Runs as the hourly
@@ -512,11 +513,15 @@ def contract_for(cand: dict[str, Any], route: dict[str, Any], at: str
 
 # --------------------------------------------------------------------------- the sample
 def _robots_allows(url: str) -> tuple[bool, str]:
+    """The site's holds and the url's own origin robots.txt, read by THE ONE implementation
+    (`polite_fetch.HostAccess`, via `admit`; no second parser). LAWS 5e amended 2026-10-14:
+    a refusal here means the sample is NOT fetched."""
+    from libs.data import polite_fetch as _pf
     try:
-        from research import asia_collector as ACOL
-    except ImportError:                                                      # pragma: no cover
-        import asia_collector as ACOL  # type: ignore[no-redef]
-    return ACOL._robots_allows(url)
+        ok, why = _pf.admit(url)
+    except Exception as exc:
+        return False, f"robots/holds check failed ({type(exc).__name__}): not fetched"
+    return (True, "robots.txt consulted: allowed") if ok else (False, why)
 
 
 def _fetch(url: str) -> tuple[bytes | None, str]:
@@ -566,9 +571,14 @@ def sample(cand: dict[str, Any], contract: DC.DatasetContract, verdict: AC.Acces
                 "why": (f"route is {cand.get('how_to_fetch') or 'undeclared'}: no URL to sample "
                         f"through the existing fetch path; the request is donated unsampled")}
     allowed, robots_note = _robots_allows(url)
-    terms_note = (verdict.terms_note or "") + ("" if allowed else
-                                               f" | robots: {robots_note} -- recorded as a "
-                                               f"routing label, never a skip (LAWS 5e)")
+    terms_note = verdict.terms_note or ""
+    if not allowed:
+        # ROBOTS DECIDES (LAWS 5e amended by the principal 2026-10-14): a Disallow, an
+        # unreadable robots.txt or a site hold means no request -- the request row is still
+        # donated, unsampled, with the refusal named.
+        return {"dataset": cand["dataset"], "status": "BLOCKED_BY_ROBOTS", "url": url,
+                "robots": robots_note, "terms_note": terms_note,
+                "why": f"{robots_note}: robots.txt is respected desk-wide; nothing was requested"}
     raw, ctype = _fetch(url)
     if raw is None:
         return {"dataset": cand["dataset"], "status": "UNREACHABLE", "url": url,

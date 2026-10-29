@@ -1,12 +1,12 @@
 import json
 import urllib.request
 try:
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 
 UA = {"User-Agent": DESK_UA}
 
@@ -14,7 +14,7 @@ UA = {"User-Agent": DESK_UA}
 def get(url, timeout=60):
     req = urllib.request.Request(url, headers=UA)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with polite_urlopen(req, timeout=timeout) as r:
             return r.status, r.read().decode("utf-8", errors="replace")
     except Exception as e:
         return "ERR", repr(e)

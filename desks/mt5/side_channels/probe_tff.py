@@ -1,19 +1,19 @@
 import json
 import urllib.request
 try:
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 
 UA = {"User-Agent": DESK_UA}
 for vid in ["r4w3-av2u", "rxbv-e226"]:
     url = "https://publicreporting.cftc.gov/resource/{}.json?$limit=1".format(vid)
     req = urllib.request.Request(url, headers=UA)
     try:
-        rows = json.load(urllib.request.urlopen(req, timeout=90))
+        rows = json.load(polite_urlopen(req, timeout=90))
         if not rows:
             print(vid, "empty")
             continue

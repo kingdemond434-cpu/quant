@@ -34,14 +34,13 @@ from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 
-import requests
 try:
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_requests_get
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "central_banks"
@@ -184,9 +183,9 @@ def mine_central_banks() -> list[dict[str, Any]]:
     seen = _seen_keys()
     for bank, info in FEEDS.items():
         try:
-            resp = requests.get(info["url"], headers={"User-Agent": DESK_UA}, timeout=20)
+            resp = polite_requests_get(info["url"], headers={"User-Agent": DESK_UA}, timeout=20)
             resp.raise_for_status()
-        except requests.RequestException as exc:
+        except RuntimeError as exc:
             # A dead feed is a REPORTED fact, never a silent empty result (the heartbeat lesson).
             print(f"central_bank: {bank} feed unreachable -- {type(exc).__name__}: {exc}")
             continue

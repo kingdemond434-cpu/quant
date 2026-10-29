@@ -48,7 +48,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
-import requests
+try:
+    from libs.data.polite_fetch import polite_requests_get
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import polite_requests_get
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -111,7 +117,7 @@ def fetch_vintages(series_id: str, key: str, timeout: int = 60) -> pd.DataFrame 
     # The tell was the release lag: 14,575 days for CPI. That is not a publication delay, it is
     # 1947 to today -- the distance from the oldest observation to the only vintage present.
     # A number that absurd is the file saying it has one vintage without knowing how to say so.
-    r = requests.get(API, params={"series_id": series_id, "api_key": key,
+    r = polite_requests_get(API, params={"series_id": series_id, "api_key": key,
                                   "file_type": "json", "output_type": 2,
                                   "realtime_start": "1776-07-04",   # FRED's minimum
                                   "realtime_end": "9999-12-31"},    # FRED's maximum

@@ -39,12 +39,12 @@ from pathlib import Path
 import certifi
 
 try:
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 
 ROOT = Path("/home/quant/quant-platform")
 BRONZE = ROOT / "data/lake/bronze"
@@ -57,13 +57,26 @@ def curl(url: str, timeout: int = 90) -> bytes:
     """Some hosts (FRED, Treasury) serve curl but hang urllib -- TLS fingerprint blocking.
     Verified 2026-07-21: curl instant, urllib timed out twice on the same URL."""
     import subprocess
+
+    from libs.data.polite_fetch import admit, refuse_status
+    # ROBOTS DECIDES (LAWS 5e amended 2026-10-14): the site's holds and the origin's robots.txt
+    # (polite_fetch.HostAccess) before curl sends anything. Redirects are NOT followed (no -L):
+    # a hop would skip its own robots check. A 401/403/429 holds the site like any polite fetch.
+    ok, why = admit(url)
+    if not ok:
+        raise RuntimeError(f"refused before any request: {why}")
     r = subprocess.run(
-        ["curl", "-sSL", "--compressed", "--max-time", str(timeout),
-         "-A", DESK_UA, url],
+        ["curl", "-sS", "--compressed", "--max-time", str(timeout),
+         "-A", DESK_UA, "-w", "\n%{http_code}", url],
         capture_output=True, timeout=timeout + 15)
-    if r.returncode != 0 or not r.stdout:
-        raise RuntimeError(f"curl failed rc={r.returncode}: {r.stderr[:160]!r}")
-    return r.stdout
+    body, _, code = r.stdout.rpartition(b"\n")
+    status = int(code) if code.strip().isdigit() else 0
+    if status in (401, 403, 429):
+        refuse_status(url, status)
+        raise RuntimeError(f"HTTP {status}: site held, nothing further is sent")
+    if r.returncode != 0 or not body or status >= 300:
+        raise RuntimeError(f"curl failed rc={r.returncode} http={status}: {r.stderr[:160]!r}")
+    return body
 
 
 def fetch(url: str, timeout: int = 60) -> bytes:
@@ -71,10 +84,13 @@ def fetch(url: str, timeout: int = 60) -> bytes:
     for attempt in (1, 2):                       # one retry -- transient read timeouts
         try:
             r = urllib.request.Request(url, headers=UA)
-            with urllib.request.urlopen(r, timeout=timeout, context=CTX) as resp:
+            with polite_urlopen(r, timeout=timeout, context=CTX) as resp:
                 return resp.read()
         except Exception as e:
             last = e
+            # a refusal (robots, a hold, 401/403/429) is final: never re-asked
+            if getattr(e, "verdict", "") or getattr(e, "code", None) in (401, 403, 429):
+                break
             time.sleep(3 * attempt)
     # `raise None` is a TypeError that MASKS the real network failure -- found by the type gate
     # when scripts/ entered it (2026-07-25).

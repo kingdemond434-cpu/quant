@@ -286,7 +286,7 @@ def _numeric_series(df: pd.DataFrame, stem: str) -> dict[str, pd.Series]:
 #: source (never live input), by source. Such a URL never takes an hourly seat; the count says so.
 _ENDPOINT_FENCED: dict[str, int] = {}
 #: The `_ENDPOINT_FENCED` key for endpoints skipped because their discovery came from the
-#: deep-forest index route (INDEX_UA + robots.txt only; this acquirer sends neither).
+#: deep-forest index route (its owner decides when this acquirer, now DESK_UA + robots, takes them).
 INDEX_ROUTE_SKIP = "index_route_needs_index_ua_and_robots"
 
 
@@ -421,11 +421,11 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
             continue
         for r in rows:
             # AN INDEX-ROUTE DISCOVERY (deep_forest_miner, `route: "index"`) is never fetched
-            # here: this acquirer sends a browser string and reads no robots.txt, and those
-            # endpoints may be requested only with INDEX_UA behind robots.txt (audit 2026-10-14
-            # MF-B). Skipped and counted, never selected.
-            # TODO(world-crawler-honest-ua): the acquirer's own honest UA + robots fix lands on
-            # that branch; once it does, these rows may be fetched under their fetch_policy.
+            # here (audit 2026-10-14 MF-B). Skipped and counted, never selected. The original
+            # reason -- a browser string and no robots.txt -- is gone on this branch: `_fetch`
+            # sends `polite_fetch.DESK_UA` and `polite_fetch.get` reads each hop's robots.txt
+            # through `HostAccess` before any request. Lifting the skip is the index route
+            # owner's call under each row's fetch_policy, not this acquirer's.
             if isinstance(r, dict) and str(r.get("route") or "").startswith("index"):
                 n = len(r.get("endpoints") or [])
                 if n:

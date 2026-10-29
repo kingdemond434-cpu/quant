@@ -60,9 +60,13 @@ from archaeology import decompiler as dc  # noqa: E402
 from archaeology import phenotype as ph  # noqa: E402
 from archaeology import snapshots as snap  # noqa: E402
 
+from libs.data.polite_fetch import admit  # noqa: E402
 from libs.moat import registry as reg  # noqa: E402
 
 UNMEASURED = "UNMEASURED"
+#: The prefix of an access reason that is a robots.txt / site-hold refusal (LAWS 5e amended
+#: 2026-10-14): such a candidate is registered but never fetchable.
+ROBOTS_REFUSAL = "ROBOTS:"
 REPORT: Path = _DESK / "reports" / "TRADING_ARCHAEOLOGY.json"
 BUDGET_S = 600.0
 #: Never spend less than this on a platform the pass chose: below it a fetch cannot finish and
@@ -207,32 +211,29 @@ def platform_budgets(platforms: Sequence[snap.Platform], budget_s: float, conn: 
 
 # --------------------------------------------------------------------------- the source scout
 def _machine_use_from_robots(url: str, *, fetch: bool) -> tuple[str, str]:
-    """READ THE OPERATOR'S POLICY AS A LABEL (LAWS 5e, 2026-09-23), never as a door.
+    """THE OPERATOR'S robots.txt, read by THE ONE implementation (`polite_fetch.HostAccess`, via
+    `admit`: the desk's product token, then `*`, longest match; no second parser).
 
-    Reading robots.txt is always permitted and is what it is for, so the desk still reads it and
-    still records exactly what it said. What changed is the consequence: `forbidden` and `unknown`
-    used to mean NOT FETCHED, which is how the desk talked itself out of most of the deep forest.
-    They are provenance now -- `scout` registers and mines every candidate either way.
+    LAWS 5e AS AMENDED BY THE PRINCIPAL 2026-10-14: robots.txt is RESPECTED desk-wide. A
+    Disallow for the candidate url, an unreadable robots.txt (5xx/unreachable) or a site hold is
+    FORBIDDEN and the candidate is registered NOT FETCHABLE -- the 2026-09-23 "label, never a
+    door" reading is withdrawn. A 404 robots.txt allows (RFC 9309).
     """
     host = urlparse(url).netloc
     if not host:
         return snap.UNKNOWN, "no host in the candidate url"
     if not fetch:
-        return snap.UNKNOWN, ("--no-fetch: the operator's policy was not read, so the label is "
-                              "unknown; the ground is mined all the same")
-    body, status, err = mc.fetch_text(f"https://{host}/robots.txt")
-    if not body:
-        return snap.UNKNOWN, (f"robots.txt unreadable (status {status}{', ' + err if err else ''})"
-                              ": UNMEASURED policy, recorded as a label and mined")
-    low = body.lower()
-    for agent in ("claudebot", "anthropic", "gptbot", "ccbot"):
-        if agent in low:
-            return snap.FORBIDDEN, (f"robots.txt names the agent family ({agent}) on {host}: "
-                                    f"recorded as a routing label, redistribution withheld")
-    if "user-agent: *" in low and "disallow: /\n" in low.replace("\r", ""):
-        return snap.FORBIDDEN, (f"robots.txt carries a wildcard Disallow: / on {host}: recorded "
-                                f"as a routing label, redistribution withheld")
-    return snap.ALLOWED, f"robots.txt on {host} is readable and refuses neither this agent nor all"
+        return snap.UNKNOWN, ("--no-fetch: the operator's robots.txt was not read, so the label "
+                              "is unknown; nothing is fetched on this pass")
+    try:
+        ok, why = admit(url)
+    except Exception as exc:
+        return snap.FORBIDDEN, (f"robots/holds check failed ({type(exc).__name__}) on {host}: "
+                                "not fetched")
+    if not ok:
+        return snap.FORBIDDEN, (f"{ROBOTS_REFUSAL} {why} on {host}: robots.txt is respected "
+                                "desk-wide, not fetched")
+    return snap.ALLOWED, f"robots.txt on {host} allows this url for the desk's agent"
 
 
 def v_s(candidate: Mapping[str, Any], *, known_on_host: int = 0,
@@ -311,11 +312,15 @@ def scout(conn: Any, *, discovered: Sequence[Mapping[str, Any]] = (), fetch: boo
         # `forbidden` or `unknown` robots reading is provenance; only an access control, a login,
         # a paywall or an antibot challenge -- which reading would mean DEFEATING -- refuses.
         boundary = snap.boundary_hit(f"{why} {cand.get('note') or ''}")
+        # ...and robots.txt (LAWS 5e amended 2026-10-14): a refusal read by HostAccess is not
+        # fetchable either.
+        robots_refused = why.startswith(ROBOTS_REFUSAL)
         candidates.append({**dict(cand), "source_id": sid, "host": host,
                            "machine_use_allowed": access, "access_why": why[:240],
                            "terms_note": "" if access == snap.ALLOWED else why[:240],
-                           "hard_boundary": boundary,
-                           "registered": False, "fetchable": not boundary, **score})
+                           "hard_boundary": boundary, "robots_refused": robots_refused,
+                           "registered": False,
+                           "fetchable": not boundary and not robots_refused, **score})
     candidates.sort(key=lambda c: -float(c["v_s"]))
     registered = 0
     for cand in candidates[:limit]:

@@ -532,6 +532,101 @@ def open_no_redirect(req: urllib.request.Request, timeout: float,
 Send = Callable[[urllib.request.Request, float], Any]
 
 
+# --------------------------------------------------------------------------- robots.txt rules
+class RobotsRules:
+    """robots.txt per RFC 9309, the desk's ONE reading of it (`HostAccess` is its only caller
+    on the network path; nothing else in the desk parses robots.txt).
+
+    SEMANTICS, kept identical to `research/hard_stop.robots_verdict` (alt-seat-cells
+    bc6549361) -- `tests/data/robots_parity_fixtures.json` is the shared table both must pass:
+    * GROUP: every group whose `User-agent` value equals the product token (case-insensitive)
+      -- stacked `User-agent` lines accumulate into one group, and several matching groups are
+      merged; when none names it, the `*` group(s); when neither exists, everything is allowed.
+      A group ends only when a `User-agent` line follows an Allow/Disallow line.
+    * MATCH: the LONGEST matching Allow/Disallow pattern wins; an Allow wins a tie. `*` matches
+      any run of characters and a trailing `$` anchors the end. An empty pattern is no rule.
+      Patterns and the path+query are compared as written (no percent-decoding).
+      `/robots.txt` itself is always allowed. A leading UTF-8 BOM is ignored.
+    `urllib.robotparser` is NOT used: it takes the first matching rule in file order (so
+    `Allow: /` above `Disallow: /private` let the private path through) and reads `*`/`$` as
+    literal characters (so `Disallow: /*.pdf` matched nothing)."""
+
+    def __init__(self, text: str = "") -> None:
+        self.groups: list[tuple[set[str], list[tuple[bool, str]], float | None]] = []
+        agents: set[str] = set()
+        rules: list[tuple[bool, str]] = []
+        delay: float | None = None
+        in_rules = False
+        for raw in (text or "").lstrip("\ufeff").splitlines():
+            line = raw.split("#", 1)[0].strip()
+            if ":" not in line:
+                continue
+            key, _, val = line.partition(":")
+            key, val = key.strip().lower(), val.strip()
+            if key == "user-agent":
+                if in_rules:                      # a new group starts after the last one's rules
+                    self.groups.append((agents, rules, delay))
+                    agents, rules, delay, in_rules = set(), [], None, False
+                agents.add(val.lower())           # stacked User-agent lines ACCUMULATE
+            elif key in ("allow", "disallow") and agents:
+                in_rules = True
+                rules.append((key == "allow", val))
+            elif key == "crawl-delay" and agents and delay is None:
+                with contextlib.suppress(ValueError):
+                    delay = max(0.0, float(val))  # not a rule line: it never ends a group
+        if agents:
+            self.groups.append((agents, rules, delay))
+
+    def _group(self, product: str) -> tuple[list[tuple[bool, str]], float | None] | None:
+        token = str(product or "").lower()
+        for want in (token, "*"):
+            if not want:
+                continue
+            rules: list[tuple[bool, str]] = []
+            delay: float | None = None
+            hit = False
+            for agents, grules, gdelay in self.groups:
+                if want in agents:
+                    hit = True
+                    rules.extend(grules)
+                    delay = gdelay if delay is None else delay
+            if hit:
+                return rules, delay
+        return None
+
+    @staticmethod
+    def _matches(pattern: str, target: str) -> bool:
+        anchored = pattern.endswith("$")
+        body = pattern[:-1] if anchored else pattern
+        rx = "".join(".*" if ch == "*" else re.escape(ch) for ch in body)
+        return re.match(rx + ("$" if anchored else ""), target) is not None
+
+    def can_fetch(self, product: str, url: str) -> bool:
+        parts = urlsplit(url)
+        target = (parts.path or "/") + (f"?{parts.query}" if parts.query else "")
+        if target == "/robots.txt":
+            return True
+        group = self._group(product)
+        if group is None:
+            return True
+        best: tuple[int, bool] | None = None      # (pattern length, allow): longest wins
+        for allow, pattern in group[0]:
+            if not pattern or not self._matches(pattern, target):
+                continue
+            if best is None or len(pattern) > best[0] or (len(pattern) == best[0] and allow):
+                best = (len(pattern), allow)
+        return best is None or best[1]
+
+    def crawl_delay(self, product: str) -> float | None:
+        group = self._group(product)
+        return None if group is None else group[1]
+
+
+def parse_robots(text: str) -> RobotsRules:
+    """robots.txt text -> `RobotsRules` (the ONE parser; see its docstring)."""
+    return RobotsRules(text)
+
+
 class HostAccess:
     """robots.txt per scheme://host[:port] and the refusals each site has given.
 
@@ -669,9 +764,13 @@ class HostAccess:
         """Fetch origin/robots.txt. Returns a row: state allow_all | rules | unreadable | blocked.
         Its redirects are followed (each hop held-checked) up to the cap."""
         url = origin + "/robots.txt"
-        for _ in range(MAX_REDIRECTS + 1):
+        for hop in range(MAX_REDIRECTS + 1):
             if self.hold(url):
                 return {"state": "blocked"}
+            if hop and (_tf.platform_of_url(url) or _tf.login_wall(url)):
+                # a robots.txt redirect into a held source or a login wall is never followed:
+                # the rules cannot be read, so nothing on the origin is fetched (fail closed)
+                return {"state": "unreadable", "why": "robots redirect into a fenced route"}
             with self._lock:
                 self.robots_fetches += 1
             try:
@@ -720,7 +819,6 @@ class HostAccess:
         return {"state": "unreadable", "why": "robots redirect loop"}
 
     def _parser(self, origin: str, send: Send) -> Any:
-        import urllib.robotparser as _rp
         with self._lock:
             olock = self._origin_locks.setdefault(origin, threading.Lock())
         with olock:                       # one robots read per origin, however many threads ask
@@ -745,11 +843,9 @@ class HostAccess:
                     self.robots[origin] = row
                 self.save()
             assert row is not None
-            parser = _rp.RobotFileParser()
             # allow_all (a 4xx robots.txt) parses as an empty file, which permits everything.
             text = "" if row.get("state") == "allow_all" else str(row.get("text") or "")
-            parser.parse(text.splitlines())
-            parser.modified()
+            parser = parse_robots(text)
             with self._lock:
                 self._parsers[origin] = parser
             return parser
@@ -960,6 +1056,9 @@ class Response:
     body: bytes = b""
     #: Every redirect hop the fetch followed, [(code, from, to)] -- redirects are VISIBLE.
     redirects: list[tuple[int, str, str]] = field(default_factory=list)
+    #: (platform, url) when THE METHOD FENCE refused the fetch (first URL or a hop); a seam
+    #: re-raises it as `terms_fence.TermsFenced` so a urlopen-shaped caller keeps its fence path.
+    fenced: tuple[str, str] | None = None
 
     @property
     def ok(self) -> bool:
@@ -1002,6 +1101,7 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     _why = _tf.platform_of_url(url)
     if _why:
         resp.error = f"{_tf.PLATFORMS[_why]['status']}:{_why}: {_tf.PLATFORMS[_why]['reason']}"
+        resp.fenced = (_why, url)
         _stat(leg, error=f"terms_fenced:{_why}")
         return resp
     hdr = honest_headers(headers)
@@ -1032,6 +1132,7 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
         if fenced:
             refusal = _tf.TermsFenced(fenced, cur)
             resp.status, resp.error = None, str(refusal.reason)[:240]
+            resp.fenced = (fenced, cur)
             _stat(leg, error=(refusal.status if fenced == "login_wall"
                               else f"terms_fenced:{fenced}"))
             break
@@ -1099,6 +1200,7 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
             # A held source or a 30x into one or into a login wall: refused, never followed,
             # and never retried -- the next attempt would be redirected to the same place.
             resp.error = str(exc.reason)[:240]
+            resp.fenced = (exc.platform, exc.url)
             _stat(leg, error=(exc.status if exc.platform == "login_wall"
                               else f"terms_fenced:{exc.platform}"))
             break
@@ -1255,6 +1357,292 @@ def post(url: str, data: bytes, *, headers: Mapping[str, str] | None = None,
         raise FetchRefused(url, status, v, f"{v}: challenge page")
     _stat(leg, fetches=1, ok=1, bytes=len(raw))
     return text
+
+
+# --------------------------------------------------------------------------- drop-in seams
+# The desk's older fetchers were written against `urllib.request.urlopen` and `requests.get`.
+# These two seams let such a caller keep its shape while every request goes through THIS module:
+# honest UA, the site's holds, the origin's robots.txt (RobotsRules, via HostAccess) before any
+# byte is sent, and 401/403/429 or a challenge recorded as a hold. `tests/data/
+# test_no_raw_fetchers.py` fails CI on a raw urlopen/requests caller outside its audited list.
+
+#: A query parameter whose value is a credential. A URL carrying one is never written into the
+#: access record (a hold stores the URL): the hold is placed on the redacted URL instead.
+_SECRET_PARAM = re.compile(r"(?i)(?:^|_|-)(?:api_?key|apikey|key|token|secret|signature|sig|"
+                           r"password|passwd|access_token|app_?id|appkey)$")
+#: The seams read like `urlopen` -- the whole body -- so their cap is far above `MAX_BYTES`;
+#: a body longer than it is reported as an error, never silently truncated.
+SEAM_MAX_BYTES = 128_000_000
+
+
+def redact_url(url: str) -> str:
+    """`url` with every credential-looking query value replaced by `REDACTED`."""
+    from urllib.parse import parse_qsl, urlencode
+    parts = urlsplit(url)
+    if not parts.query:
+        return url
+    q = [(k, "REDACTED" if _SECRET_PARAM.search(k) else v)
+         for k, v in parse_qsl(parts.query, keep_blank_values=True)]
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q), parts.fragment))
+
+
+def carries_secret(url: str) -> bool:
+    return redact_url(url) != url
+
+
+def admit(url: str, *, access: HostAccess | None = None,
+          opener: Callable[..., Any] | None = None) -> tuple[bool, str]:
+    """(may fetch, why not): the method fence, then the site's holds and the origin's robots.txt
+    (`HostAccess.permits`). For a caller that must send the request itself (a keyed API whose
+    credential rides in the query); it reports a 401/403/429 back with `refuse_status`."""
+    fenced = _tf.platform_of_url(url) or _tf.fenced_request(url, {}) or (
+        "login_wall" if _tf.login_wall(url) else None)
+    if fenced:
+        return False, f"terms_fenced:{fenced}"
+    acc = access if access is not None else default_access()
+    open_ = opener or open_no_redirect
+
+    def _send(req: urllib.request.Request, t: float) -> Any:
+        return open_(req, timeout=t, context=ssl_context())
+
+    return acc.permits(url, send=_send)
+
+
+def refuse_status(url: str, status: int, *, access: HostAccess | None = None) -> str:
+    """Record a 401/403/429 a caller received as the site's hold (on the redacted URL)."""
+    acc = access if access is not None else default_access()
+    return acc.block(redact_url(url), int(status))
+
+
+class PoliteRefused(urllib.error.URLError):
+    """A seam fetch that was refused before or without a status (a hold, robots, the method
+    fence, a transport error). A `URLError`, so an `except URLError` / `except OSError` caller
+    written for urlopen still catches it. `verdict` is the refusal's name or ''."""
+
+    def __init__(self, url: str, verdict: str, error: str) -> None:
+        super().__init__(f"{verdict or 'FETCH_FAILED'}: {error} ({redact_url(url)[:160]})")
+        self.url, self.verdict, self.error = url, verdict, error
+
+
+class SeamResponse:
+    """What `polite_urlopen` returns: a file-like body (`read`, context manager) with `status`,
+    `code`, `headers`, `url` and `geturl()`, like the object urlopen returns."""
+
+    def __init__(self, url: str, status: int, body: bytes, content_type: str = "") -> None:
+        import io
+        self._buf = io.BytesIO(body)
+        self.url = url
+        self.status = self.code = status
+        msg = Message()
+        if content_type:
+            msg["Content-Type"] = content_type
+        self.headers = msg
+
+    def read(self, n: int = -1) -> bytes:
+        return self._buf.read(n)
+
+    def readline(self, n: int = -1) -> bytes:
+        return self._buf.readline(n)
+
+    def __iter__(self) -> Any:
+        return iter(self._buf)
+
+    def geturl(self) -> str:
+        return self.url
+
+    def getcode(self) -> int:
+        return self.status
+
+    def info(self) -> Message:
+        return self.headers
+
+    def close(self) -> None:
+        self._buf.close()
+
+    def __enter__(self) -> SeamResponse:
+        return self
+
+    def __exit__(self, *exc: Any) -> None:
+        self.close()
+
+
+def _seam_http_error(url: str, status: int, error: str) -> urllib.error.HTTPError:
+    return urllib.error.HTTPError(redact_url(url), status, error or f"HTTP {status}",
+                                  Message(), None)
+
+
+def _keyed_open(url: str, hdr: dict[str, str], data: bytes | None, method: str | None,
+                timeout: float, max_bytes: int, acc: HostAccess,
+                opener: Callable[..., Any] | None, live_input: bool = False) -> SeamResponse:
+    """A request whose URL carries a credential: admitted first (holds + robots), sent once
+    through the module's no-redirect door (a 30x is returned as HTTPError, never followed), and
+    a 401/403/429 held on the REDACTED url. `live_input` also refuses an IDEAS_ONLY route."""
+    if live_input:
+        src = _tf.input_source(url)
+        if src:
+            raise _tf.TermsFenced(src, redact_url(url))
+    ok, why = admit(url, access=acc, opener=opener)
+    if not ok and why.startswith("terms_fenced:"):
+        raise _tf.TermsFenced(why.split(":", 1)[1], redact_url(url))
+    if not ok:
+        raise PoliteRefused(url, why.split(" ")[0].split(":")[0], why)
+    open_ = opener or open_no_redirect
+    host = hostname_of(url)
+    if GATE is not None and host:
+        w = GATE.reserve(host)
+        if w > 0:
+            time.sleep(w)
+    req = urllib.request.Request(ascii_url(url), data=data, headers=hdr, method=method)
+    try:
+        with open_(req, timeout=timeout, context=ssl_context()) as fh:
+            raw = fh.read(max_bytes + 1)
+            h = getattr(fh, "headers", None)
+            status = int(getattr(fh, "status", None) or getattr(fh, "code", 200) or 200)
+    except urllib.error.HTTPError as exc:
+        code = int(exc.code)
+        with contextlib.suppress(Exception):
+            exc.close()
+        if code in BLOCK_STATUS:
+            v = refuse_status(url, code, access=acc)
+            raise _seam_http_error(url, code, f"{v}: HTTP {code}") from None
+        raise _seam_http_error(url, code, f"HTTP {code}") from None
+    if len(raw) > max_bytes:
+        raise PoliteRefused(url, "", f"body longer than {max_bytes} bytes")
+    ctype = str(h.get("Content-Type") or "") if h is not None else ""
+    return SeamResponse(url, status, inflate(raw, str(h.get("Content-Encoding") or "")
+                                             if h is not None else ""), ctype)
+
+
+def polite_urlopen(req: urllib.request.Request | str, timeout: float = 30.0, *,
+                   data: bytes | None = None, leg: str = "seam",
+                   max_bytes: int = SEAM_MAX_BYTES, access: HostAccess | None = None,
+                   opener: Callable[..., Any] | None = None, retries: int = 1,
+                   live_input: bool = False, context: Any = None) -> SeamResponse:
+    """`urllib.request.urlopen` for a desk fetcher, under this module's rules. Returns a
+    `SeamResponse`; raises `urllib.error.HTTPError` for an HTTP status >= 400 (a 401/403/429
+    has already been held) and `PoliteRefused` (a URLError) for a refusal -- robots, a hold, the
+    method fence -- or a transport failure. Nothing is sent to a disallowed or held URL.
+    `context` is accepted and ignored: TLS is always this module's verified `ssl_context()`."""
+    del context
+    if isinstance(req, urllib.request.Request):
+        url = req.full_url
+        hdrs = dict(req.header_items())
+        body = req.data if data is None else data
+        method = req.get_method()
+    else:
+        url, hdrs, body, method = str(req), {}, data, ("POST" if data is not None else "GET")
+    if isinstance(body, str):
+        body = body.encode("utf-8")
+    if body is not None and not isinstance(body, bytes | bytearray):
+        body = b"".join(body) if not hasattr(body, "read") else body.read()  # type: ignore[arg-type]
+    payload: bytes | None = bytes(body) if body is not None else None
+    body = payload
+    acc = access if access is not None else default_access()
+    hdr = honest_headers(hdrs)
+    if carries_secret(url) or (method not in ("GET", "HEAD") and body is None):
+        return _keyed_open(url, hdr, body, method, timeout, max_bytes, acc, opener, live_input)
+    if body is not None:
+        if live_input and _tf.input_source(url):
+            raise _tf.TermsFenced(str(_tf.input_source(url)), redact_url(url))
+        try:
+            text = post(url, body, headers=hdr, timeout=timeout, leg=leg, access=acc,
+                        opener=opener)
+        except FetchRefused as exc:
+            if exc.code is not None:
+                raise _seam_http_error(url, int(exc.code), exc.error) from None
+            raise PoliteRefused(url, exc.verdict, exc.error) from None
+        return SeamResponse(url, 200, text.encode("utf-8"), "text/plain; charset=utf-8")
+    r = get(url, headers=hdr, timeout=timeout, retries=retries, leg=leg,
+            max_bytes=max_bytes + 1, access=acc, opener=opener, live_input=live_input)
+    if r.ok:
+        if len(r.body) > max_bytes:
+            raise PoliteRefused(url, "", f"body longer than {max_bytes} bytes")
+        return SeamResponse(r.final_url or url, int(r.status or 200), r.body, r.content_type)
+    if r.status is not None and (r.status >= 400 or r.status == 304):
+        # urlopen raises for a 304 too; a conditional-GET caller reads it from the HTTPError
+        raise _seam_http_error(url, int(r.status), r.error)
+    if r.fenced is not None:
+        # the method fence's own refusal type, so a caller's `except TermsFenced` path still
+        # names the held platform (it is a URLError too)
+        raise _tf.TermsFenced(r.fenced[0], redact_url(r.fenced[1]))
+    raise PoliteRefused(url, r.verdict, r.error or "fetch failed")
+
+
+class SeamRequestsResponse:
+    """What `polite_requests_get` returns: the parts of a `requests.Response` the desk's miners
+    read. `status_code` is 0 when nothing was received (a refusal or a transport failure), and
+    `raise_for_status()` raises `FetchRefused` for anything but a 2xx/3xx."""
+
+    def __init__(self, url: str, status: int, content: bytes, text: str, content_type: str,
+                 verdict: str = "", error: str = "") -> None:
+        self.url = redact_url(url)               # a credential never rides on a response
+        self.status_code = status
+        self.content = content
+        self.text = text
+        self.headers = {"Content-Type": content_type} if content_type else {}
+        self.verdict = verdict
+        self.error = error
+        self.encoding = "utf-8"
+
+    @property
+    def ok(self) -> bool:
+        return 200 <= self.status_code < 400 and not self.error
+
+    def json(self) -> Any:
+        return json.loads(self.text)
+
+    def raise_for_status(self) -> None:
+        if not self.ok:
+            raise FetchRefused(self.url, self.status_code or None, self.verdict,
+                               self.error or f"HTTP {self.status_code}")
+
+
+def polite_requests_get(url: str, params: Mapping[str, Any] | None = None, *,
+                        headers: Mapping[str, str] | None = None, timeout: float = 30.0,
+                        leg: str = "seam", max_bytes: int = SEAM_MAX_BYTES,
+                        access: HostAccess | None = None,
+                        opener: Callable[..., Any] | None = None, retries: int = 1,
+                        live_input: bool = False, **_ignored: Any) -> SeamRequestsResponse:
+    """`requests.get` for a desk fetcher, under this module's rules. NEVER RAISES: a refusal or
+    failure is a response with `status_code` 0 (or the HTTP status) and `verdict`/`error` set.
+    `allow_redirects`, `verify`, `stream` and similar keywords are ignored: redirects are always
+    followed hop by hop under robots and holds, and TLS is always verified."""
+    if params:
+        from urllib.parse import urlencode
+        sep = "&" if urlsplit(url).query else "?"
+        url = f"{url}{sep}{urlencode(dict(params), doseq=True)}"
+    try:
+        r = polite_urlopen(urllib.request.Request(url, headers=dict(headers or {})),
+                           timeout=timeout, leg=leg, max_bytes=max_bytes, access=access,
+                           opener=opener, retries=retries, live_input=live_input)
+    except urllib.error.HTTPError as exc:
+        return SeamRequestsResponse(url, int(exc.code), b"", "", "", "", str(exc.reason))
+    except PoliteRefused as exc:
+        return SeamRequestsResponse(url, 0, b"", "", "", exc.verdict, exc.error)
+    except _tf.TermsFenced as exc:
+        return SeamRequestsResponse(url, 0, b"", "", "", "terms_fenced", str(exc.reason))
+    raw = r.read()
+    ctype = str(r.headers.get("Content-Type") or "")
+    return SeamRequestsResponse(r.url, r.status, raw, decode_body(raw, ctype), ctype)
+
+
+class PoliteSession:
+    """`requests.Session` for a desk fetcher: `headers` persist across calls and every `get` is
+    `polite_requests_get` (holds and robots.txt first, honest UA). Nothing else of a Session --
+    cookies, adapters, auth -- exists here, by design: a fetcher that needs a login is not one."""
+
+    def __init__(self, leg: str = "seam") -> None:
+        self.headers: dict[str, str] = {}
+        self.leg = leg
+
+    def get(self, url: str, params: Mapping[str, Any] | None = None, *,
+            headers: Mapping[str, str] | None = None, timeout: float = 30.0,
+            **kw: Any) -> SeamRequestsResponse:
+        return polite_requests_get(url, params, headers={**self.headers, **dict(headers or {})},
+                                   timeout=timeout, leg=self.leg, **kw)
+
+    def close(self) -> None:
+        return None
 
 
 T = TypeVar("T")

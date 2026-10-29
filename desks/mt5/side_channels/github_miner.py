@@ -13,7 +13,13 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import requests
+try:
+    from libs.data.polite_fetch import polite_requests_get
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import polite_requests_get
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "github"
@@ -87,7 +93,7 @@ def search_repos(query: str, min_stars: int = 5) -> list[GHDiscovery]:
         "per_page": 20,
     }
     try:
-        resp = requests.get(SEARCH_URL, params=params, headers=HEADERS, timeout=15)
+        resp = polite_requests_get(SEARCH_URL, params=params, headers=HEADERS, timeout=15)
         resp.raise_for_status()
         items = resp.json().get("items", [])
     except Exception:

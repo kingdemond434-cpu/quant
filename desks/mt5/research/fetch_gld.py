@@ -9,7 +9,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
-import requests
+try:
+    from libs.data.polite_fetch import polite_requests_get
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.data.polite_fetch import polite_requests_get
 
 OUT = Path(r"C:\Users\dell\mt5-research\data\lake")
 OUT.mkdir(parents=True, exist_ok=True)
@@ -18,7 +24,7 @@ GLD_XLSX = "https://www.spdrgoldshares.com/usa/assets/uploads/GLD_US_holdings.xl
 
 
 def main() -> None:
-    r = requests.get(GLD_XLSX, timeout=60)
+    r = polite_requests_get(GLD_XLSX, timeout=60)
     r.raise_for_status()
     xl = pd.ExcelFile(io := r.content)
     # sheet 1: holdings history (Date | Shares | Holdings in oz | Value | NAV)

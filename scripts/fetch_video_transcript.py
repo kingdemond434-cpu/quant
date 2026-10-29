@@ -33,12 +33,12 @@ import sys
 import urllib.request
 
 try:
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 
 # SEEDS ONLY (LAWS anti-hardcode): the live list is refreshed from the public directories at
 # call time; these are the fallback if the directory fetch fails. Both families are tried because
@@ -57,7 +57,7 @@ _UA = {"User-Agent": DESK_UA}
 
 
 def _get(url: str, timeout: int = 25) -> bytes:
-    with urllib.request.urlopen(
+    with polite_urlopen(
             urllib.request.Request(url, headers=_UA), timeout=timeout) as resp:
         body: bytes = resp.read()
     return body

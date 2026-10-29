@@ -29,13 +29,20 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 from libs.research import adapters as A
 from libs.research import external_federation as fed
 from libs.research.external_federation import ExternalResearchPacket
 
 from . import CellContext, system_id
+try:
+    from libs.data.polite_fetch import polite_urlopen
+except ImportError:  # run as a script: the repo root is not on the path
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[4]))
+    from libs.data.polite_fetch import polite_urlopen
 
 CELL = "edgar_transmission"
 SYSTEM = system_id(CELL)
@@ -82,7 +89,7 @@ def fetch_full_text(query: str, forms: tuple[str, ...], *, since: str, ua: str) 
     url = FULL_TEXT + "?" + urlencode({"q": query, "forms": ",".join(forms), "dateRange":
                                        "custom", "startdt": since})
     req = Request(url, headers={"User-Agent": ua, "Accept": "application/json"})
-    with urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
+    with polite_urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
         return dict(json.loads(resp.read(4_000_000).decode("utf-8")))
 
 

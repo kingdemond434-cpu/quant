@@ -115,8 +115,10 @@ def _live_urlopen(req: urllib.request.Request, timeout: float) -> Any:
     """THE ONE FETCH DOOR, LIVE INPUT (`terms_fence.guarded_urlopen(live_input=True)`): the
     first URL and every redirect hop must be a live-input route; a 30x into a held or
     IDEAS_ONLY route raises TermsFenced (pass-6 audit cf305e3d2 SHOULD-FIX 1)."""
-    from libs.data import terms_fence as _tf
-    return _tf.guarded_urlopen(req, timeout=timeout, live_input=True)
+    # polite_fetch's seam opens through that door AND checks the site's holds and the origin's
+    # robots.txt on every hop first (LAWS 5e amended 2026-10-14); 401/403/429 hold the site.
+    from libs.data import polite_fetch as _pf
+    return _pf.polite_urlopen(req, timeout=timeout, live_input=True, leg="axis_ingest")
 
 
 def _fetch(url: str) -> str:

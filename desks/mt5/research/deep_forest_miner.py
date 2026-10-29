@@ -521,6 +521,8 @@ CC_TERMS = {"terms_url": "https://commoncrawl.org/terms-of-use",
             "checked_at": "2026-10-14"}
 #: An honest agent for the index and robots reads (never a browser string).
 INDEX_UA = FOREST_UA
+#: the product token the index route reads robots.txt groups for (RFC 9309 s2.2.1)
+INDEX_ROBOTS_TOKEN = pf.DESK_UA_PRODUCT
 INDEX_URLS_PER_GROUND = 80
 _STATIC_EXT = (".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".css", ".js", ".ico",
                ".woff", ".woff2", ".ttf", ".mp4", ".mp3", ".zip", ".gz", ".xml", ".json")
@@ -719,10 +721,9 @@ def _index_get(url: str) -> str:
 
 
 def robots_parser(robots_txt: str) -> Any:
-    import urllib.robotparser
-    rp = urllib.robotparser.RobotFileParser()
-    rp.parse(robots_txt.splitlines())
-    return rp
+    """robots.txt text -> THE ONE parser, `polite_fetch.RobotsRules` (RFC 9309: the desk's
+    product-token group, else `*`; longest match). No second robots reader lives here."""
+    return pf.parse_robots(robots_txt)
 
 
 def sitemap_locs(xml: str) -> tuple[list[str], list[str]]:
@@ -777,16 +778,17 @@ def robots_origin(url: str) -> str:
 
 def robots_allows(url: str, *, get: Any = None,
                   cache: dict[str, Any] | None = None) -> bool:
-    """True only when the robots.txt of `url`'s OWN origin allows "*" under `read_robots`: a
-    file read and allowing, or a 404/410 (no file: allow). An UNREAD robots.txt (5xx,
-    unreachable) is not a permission, and a 401/403/429 holds the site."""
+    """True only when the robots.txt of `url`'s OWN origin allows the desk's agent (its
+    product-token group, else "*") under `read_robots`: a file read and allowing, or a 404/410
+    (no file: allow). An UNREAD robots.txt (5xx, unreachable) is not a permission, and a
+    401/403/429 holds the site."""
     get = get or _index_get
     cache = cache if cache is not None else {}
     origin = robots_origin(url)
     if origin not in cache:
         cache[origin] = read_robots(origin, get)
     rp = cache[origin]
-    return bool(rp is not None and rp.can_fetch("*", url))
+    return bool(rp is not None and rp.can_fetch(INDEX_ROBOTS_TOKEN, url))
 
 
 class IndexRedirectHandler(_tf.FencedRedirectHandler):
@@ -1009,7 +1011,7 @@ def site_index_urls(site: str, *, get: Any = None, holds: Any = None) -> dict[st
         hrp = host_rp(robots_origin(u))
         if hrp is None:
             unread += 1
-        elif hrp.can_fetch("*", u):
+        elif hrp.can_fetch(INDEX_ROBOTS_TOKEN, u):
             allowed.append(u)
         else:
             disallowed += 1

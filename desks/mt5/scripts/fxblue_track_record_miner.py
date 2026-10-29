@@ -26,18 +26,18 @@ import argparse
 import json
 import os
 import re
+import sys as _sys
 import time
 import urllib.error
 import urllib.request
 from pathlib import Path
+from pathlib import Path as _Path
 from typing import Any
-try:
-    from libs.data.polite_fetch import DESK_UA
-except ImportError:  # run as a script: the repo root is not on the path
-    import sys as _sys
-    from pathlib import Path as _Path
+
+# this checkout's libs first, so a script run never imports another checkout's polite_fetch
+if str(_Path(__file__).resolve().parents[3]) not in _sys.path:
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data.polite_fetch import DESK_UA
+from libs.data.polite_fetch import DESK_UA, polite_urlopen
 
 BASE = Path(__file__).resolve().parents[1]
 OUT = BASE / "data" / "intelligence" / "fxblue"
@@ -72,7 +72,7 @@ _COL = re.compile(r"data\.addColumn\(\s*'(\w+)'\s*,\s*\"([^\"]*)\"")
 def _get(url: str, timeout: int = 25) -> str | None:
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with polite_urlopen(req, timeout=timeout) as r:
             return str(r.read().decode("utf-8", "replace"))
     except (urllib.error.URLError, OSError, TimeoutError):
         return None
@@ -84,6 +84,12 @@ def enumerate_population(cache: Path) -> list[str]:
     URL index does. This is the generalisable operator, not an FX Blue quirk."""
     if cache.exists():
         return [ln for ln in cache.read_text().split("\n") if ln]
+    # AN ARCHIVE IS NOT A ROUTE AROUND A REFUSAL: the CDX index of fxblue.com is not read while
+    # fxblue.com itself is held (401/403/429/challenge). The archive host's own robots.txt is
+    # checked by the polite fetch in `_get`.
+    from libs.data import polite_fetch as _pf
+    if _pf.default_access().hold("https://www.fxblue.com/"):
+        return []
     raw = _get(CDX, timeout=240) or ""
     users = sorted({m.group(1).lower() for m in re.finditer(r"fxblue\.com/users/([A-Za-z0-9_\-]+)", raw)})
     cache.parent.mkdir(parents=True, exist_ok=True)

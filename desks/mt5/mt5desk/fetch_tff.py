@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import io
 import re
-import ssl
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -27,12 +26,12 @@ import pandas as pd
 # by raising. `config.desk_root()` is the single source of truth for every path here.
 from mt5desk.config import DATA
 try:
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 
 OUT = DATA / "cot_tff"
 OUT.mkdir(parents=True, exist_ok=True)
@@ -53,16 +52,13 @@ TARGETS = [
     ("nasdaq100", "NASDAQ"),
 ]
 
-ctx = ssl.create_default_context()
-ctx.check_hostname = False
-ctx.verify_mode = ssl.CERT_NONE
 
 
 def load_year(year: int) -> pd.DataFrame | None:
     url = f"https://www.cftc.gov/files/dea/history/fut_fin_txt_{year}.zip"
     req = urllib.request.Request(url, headers={"User-Agent": DESK_UA})
     try:
-        data = urllib.request.urlopen(req, timeout=180, context=ctx).read()
+        data = polite_urlopen(req, timeout=180).read()
     except Exception:
         return None
     z = zipfile.ZipFile(io.BytesIO(data))

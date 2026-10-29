@@ -20,14 +20,18 @@ _CLOB = "https://clob.polymarket.com"
 
 
 def _get(url: str, *, tries: int = 4) -> Any:
+    from libs.data.polite_fetch import polite_urlopen
     last: Exception | None = None
     for _ in range(tries):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "quant-platform/1.0"})
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            # holds + robots.txt first (LAWS 5e amended 2026-10-14); a 401/403/429 holds the site
+            with polite_urlopen(req, timeout=30, retries=0, leg="prediction_markets") as resp:
                 return json.loads(resp.read())
         except Exception as exc:
             last = exc
+            if getattr(exc, "verdict", "") or getattr(exc, "code", None) in (401, 403, 429):
+                break                                  # a refusal is final: never re-asked
             time.sleep(1.0)
     raise RuntimeError(f"GET failed: {url} :: {last}")
 

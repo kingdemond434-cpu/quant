@@ -201,7 +201,7 @@ def test_the_side_channel_miner_consults_the_access_record(
         calls.append(url)
         return _R(404 if url.endswith("/robots.txt") else 429)
 
-    monkeypatch.setattr(gtm.requests, "get", _get)
+    monkeypatch.setattr(gtm, "polite_requests_get", _get)
     monkeypatch.setattr(gtm, "BLOCK_STATE", tmp_path / "block.json")
     monkeypatch.setattr(gtm, "ROBOTS_STATE", tmp_path / "robots.json")
     monkeypatch.setattr(gtm, "BLOCKED_REGISTER", tmp_path / "reg.json")

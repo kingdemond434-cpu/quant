@@ -27,12 +27,12 @@ from pathlib import Path
 
 import pandas as pd
 try:
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data.polite_fetch import DESK_UA, polite_urlopen
 
 UA = DESK_UA
 
@@ -52,7 +52,7 @@ TCO_RE = re.compile(r"https://t\.co/\w+")
 def fetch(url: str, timeout: int = 20) -> str:
     import urllib.request
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html,application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    with polite_urlopen(req, timeout=timeout) as resp:
         return resp.read().decode("utf-8", errors="replace")
 
 

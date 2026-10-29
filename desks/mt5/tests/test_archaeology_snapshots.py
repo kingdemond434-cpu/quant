@@ -38,6 +38,14 @@ for _p in (str(_ROOT), str(_DESK), str(_DESK / "research"), str(_DESK / "side_ch
 import moat_collectors as mc  # noqa: E402
 from archaeology import snapshots as snap  # noqa: E402
 
+
+@pytest.fixture(autouse=True)
+def _robots_allow(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The LIVE robots/holds check (`polite_fetch.admit`, LAWS 5e amended 2026-10-14) is stubbed
+    to allow, so no test here reaches a host; tests/data/test_robots_coverage.py proves the live
+    check refuses a Disallow, an unreadable robots.txt and a held site."""
+    monkeypatch.setattr(mc, "admit", lambda url, **kw: (True, ""))
+
 #: MQL5-signals shape: linked cards whose text carries the platform's own published statistics.
 SIGNALS_PAGE = """<html><body>
 <a href="/en/signals/100001" class="signal-card">Gold Asia Scalper Growth: 120% Drawdown: 15%

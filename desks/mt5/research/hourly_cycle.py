@@ -251,13 +251,11 @@ def mine() -> dict:
     hits = []
     for u in urls:
         try:
-            import urllib.request
-
+            from libs.data import polite_fetch as _pf
             from libs.data import terms_fence as _tf
-            req = urllib.request.Request(u, headers={"User-Agent": "quant-research-desk/1.0"})
-            # The method fence: a held source or a redirect into a login wall raises.
-            with _tf.guarded_urlopen(req, timeout=20) as r:
-                data = json.loads(r.read().decode("utf-8", "ignore") or "{}")
+            # polite_fetch: the method fence, the site's holds and the origin's robots.txt before
+            # any request (LAWS 5e amended 2026-10-14); 401/403/429 hold the site.
+            data = json.loads(_pf.get_text(u, timeout=20, leg="idea_seeds") or "{}")
             for child in (data.get("data") or {}).get("children", [])[:15]:
                 d = child.get("data", {})
                 hits.append({"src": u.split("/")[2], "title": d.get("title", "")[:200],

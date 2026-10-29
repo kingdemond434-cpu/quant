@@ -40,6 +40,13 @@ import moat_collectors as mc  # noqa: E402
 
 from libs.moat import registry as R  # noqa: E402
 
+
+@pytest.fixture(autouse=True)
+def _robots_allow(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The live robots/holds check (`polite_fetch.admit`) is stubbed to allow: no test here
+    reaches a host. tests/data/test_robots_coverage.py proves the live check refuses."""
+    monkeypatch.setattr(mc, "admit", lambda url, **kw: (True, ""))
+
 PAGE = (
     '<html><head><title>Gold and the fix</title>'
     '<meta property="article:published_time" content="2026-09-01T10:00:00Z"></head>'
