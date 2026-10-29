@@ -120,6 +120,12 @@ HANDOFF_DAYS = 2
 #: The size grid (risk per trade, fraction of the INITIAL balance) and the search steps.
 STEPS = (0.004, 0.002, 0.001, 0.0005)
 STARTS = 4
+#: Scores closer than this are a tie, broken by progress to the target (see `search`).
+TIE_EPS = 1e-9
+#: Total sizes probed along the unconstrained mix when the constrained book comes back empty:
+#: a positive size there that keeps P(fail) within the margin and makes progress means the
+#: search missed it (EMPTY_BOOK_SEARCH_DEFECT), never that zero is the answer.
+EMPTY_PROBE = (1e-4, 5e-4, 1e-3, 2e-3)
 #: The account state must be younger than this to deploy from (the reader runs every 5 minutes).
 STATE_MAX_AGE_S = 3 * 3600
 #: Keys an FTMO executor can trade today. Everything else is sized and reported, never sent.
@@ -279,7 +285,16 @@ def simulate_phase(r: np.ndarray, h: np.ndarray, rules: VenueRules, phase: str,
             state[hit] = 1
             days[hit] = t + 1 + np.maximum(rules.min_days - done_days[hit], 0)
         start = bal.copy()
-    return {"state": state, "days": days}
+    # PROGRESS TO THE TARGET (the tie-break, 2026-10-29): +1 at a pass, -1 at a failure, and a
+    # running path's signed share of the way from the account now to the target, in [-1, 1].
+    # Signed, so a size whose paths drift down (a negative edge) scores below standing aside.
+    if target is not None:
+        gap = max(1.0 + target - st.balance, 1e-9)
+        prog = np.where(state == 1, 1.0,
+                        np.where(state == 0, np.clip((bal - st.balance) / gap, -1.0, 1.0), -1.0))
+    else:
+        prog = np.zeros(n)
+    return {"state": state, "days": days, "progress": prog}
 
 
 def phase_outcome(sim: dict[str, np.ndarray], cont: np.ndarray | None,
@@ -293,6 +308,7 @@ def phase_outcome(sim: dict[str, np.ndarray], cont: np.ndarray | None,
     j = float(np.mean(np.clip(horizon - t, 0.0, None)) / horizon)
     tp = sim["days"][passed]
     return {"J": j, "p_pass": float(passed.mean()),
+            "progress": float(np.mean(sim["progress"])) if "progress" in sim else 0.0,
             "p_fail": float(np.isin(sim["state"], (2, 3)).mean()),
             "p_daily": float((sim["state"] == 2).mean()),
             "p_max_loss": float((sim["state"] == 3).mean()),
@@ -639,6 +655,7 @@ def evaluate(world: World, h: np.ndarray, rules: VenueRules, phase: str, st: Acc
     e = phase_outcome(simulate_phase(world.est, h, rules, phase, st), c_e)
     hv = phase_outcome(simulate_phase(world.halved, h, rules, phase, st), c_h)
     return {"score": 0.5 * (e["J"] + hv["J"]), "risk": max(e["p_fail"], hv["p_fail"]),
+            "tie": 0.5 * (e["progress"] + hv["progress"]),
             "as_estimated": e, "edges_halved": hv}
 
 
@@ -647,25 +664,39 @@ def search(world: World, rules: VenueRules, phase: str, st: AccountState,
            rng: np.random.Generator,
            margin: float | None) -> tuple[np.ndarray, float]:
     """Multi-start pattern search (coordinate steps + pairwise transfers), the kelly_survival
-    book search on this objective. `margin` None = unconstrained (the frontier's reference)."""
-    k = world.est.shape[2]
+    book search on this objective. `margin` None = unconstrained (the frontier's reference).
 
-    def val(h: np.ndarray) -> float:
+    LEXICOGRAPHIC: a move is taken when it raises the score, or leaves it within TIE_EPS and
+    raises the progress to the target. Without the tie-break the search stalled on a flat zero
+    (2026-10-29 15:33Z): every size small enough to keep P(fail) within the margin passed phase 1
+    too slowly for the whole chain to fund inside the horizon, so J was exactly 0 everywhere
+    feasible, no strict improvement existed, and the zero book deployed over a sleeve the
+    unconstrained solve sized at 0.009. Progress still separates those sizes, so the search now
+    climbs to the largest survivable one. The constraint is unchanged."""
+    k = world.est.shape[2]
+    worst = (-math.inf, -math.inf)
+
+    def val(h: np.ndarray) -> tuple[float, float]:
         if np.any(h < 0) or np.any(h > cap + 1e-12):
-            return -math.inf
+            return worst
         ev = evaluate(world, h, rules, phase, st, cont)
         if margin is not None and ev["risk"] > margin:
-            return -math.inf
-        return float(ev["score"])
+            return worst
+        return float(ev["score"]), float(ev.get("tie", 0.0))
+
+    def better(v: tuple[float, float], cur: tuple[float, float]) -> bool:
+        if v[0] > cur[0] + TIE_EPS:
+            return True
+        return v[0] >= cur[0] - TIE_EPS and v[1] > cur[1] + TIE_EPS
 
     best_h, best_v = np.zeros(k), val(np.zeros(k))
     for s in range(STARTS):
         h = np.full(k, 0.002) if s == 0 else rng.dirichlet(np.ones(k)) * rng.uniform(0.005, 0.03)
         h = np.minimum(h, cap)
-        while val(h) == -math.inf and h.sum() > 1e-4:
+        while val(h) == worst and h.sum() > 1e-4:
             h *= 0.8
         cur = val(h)
-        if cur == -math.inf:
+        if cur == worst:
             continue
         for step in STEPS:
             moved = True
@@ -676,7 +707,7 @@ def search(world: World, rules: VenueRules, phase: str, st: AccountState,
                         t = h.copy()
                         t[i] = max(0.0, t[i] + d)
                         v = val(t)
-                        if v > cur + 1e-9:
+                        if better(v, cur):
                             h, cur, moved = t, v, True
                 for i in range(k):
                     for j in range(k):
@@ -685,11 +716,29 @@ def search(world: World, rules: VenueRules, phase: str, st: AccountState,
                             t[i] -= step
                             t[j] += step
                             v = val(t)
-                            if v > cur + 1e-9:
+                            if better(v, cur):
                                 h, cur, moved = t, v, True
-        if cur > best_v:
+        if better(cur, best_v):
             best_h, best_v = h, cur
-    return best_h, best_v
+    return best_h, best_v[0]
+
+
+def empty_book_probe(world: World, h_u: np.ndarray, rules: VenueRules, phase: str,
+                     st: AccountState, cont: dict[str, np.ndarray] | None,
+                     cap: float | np.ndarray, margin: float) -> dict[str, Any] | None:
+    """When the constrained book is empty: the first probe size along the unconstrained mix
+    (`EMPTY_PROBE`, within the caps) that keeps P(fail) within `margin` AND scores or progresses,
+    or None. A hit means positive sizes are feasible and useful, so the empty book is a search
+    defect and must not deploy; None means zero is the survival answer (every size breaches)."""
+    k = h_u.size
+    d = h_u / h_u.sum() if h_u.sum() > 0 else np.full(k, 1.0 / k)
+    for total in EMPTY_PROBE:
+        h = np.minimum(d * total, cap)
+        ev = evaluate(world, h, rules, phase, st, cont)
+        if ev["risk"] <= margin and (ev["score"] > 0 or ev.get("tie", 0.0) > 0):
+            return {"total_risk": round(float(h.sum()), 5), "risk": round(ev["risk"], 5),
+                    "score": round(ev["score"], 6), "progress": round(ev.get("tie", 0.0), 5)}
+    return None
 
 
 def continuation(world: World, h: np.ndarray, rules: VenueRules, phase: str,
@@ -792,6 +841,17 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
             block["frontier"] = frontier(valid_w, h, rules, phase, here, cont)
         if val["risk"] > EPS_DEATH:
             block["status"] = "VALIDATION_FAILED: independent sample breaches EPS_DEATH"
+        if phase != "funded" and not (h > 0).any() and (h_u > 0).any():
+            # RED, NOT A ZERO (2026-10-29): an empty book while the unconstrained solve sizes an
+            # admitted column is read against the probe. Feasible useful sizes exist -> the
+            # search failed, the block is left as it is. None -> zero is the survival answer.
+            hit = empty_book_probe(solve_w, h_u, rules, phase, here, cont, cap, ks.BOOK_MARGIN)
+            block["empty_book_probe"] = hit or "every probe size breaches the margin or is idle"
+            if hit is not None:
+                prior = block["status"]
+                block["status"] = ("EMPTY_BOOK_SEARCH_DEFECT: a positive size within the margin "
+                                   "makes progress; not deployed"
+                                   + ("" if prior == "OK" else f" (also {prior})"))
         phases[phase] = block
         if phase != "funded" and phase != st.phase:
             cont = continuation(solve_w, h, rules, phase, cont, seed + 10 + i)
@@ -819,7 +879,29 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     doc["validation_score"] = (now_block["validation"]["score"]
                                if now_block["status"] == "OK" else 0.0)
     doc["deployable"] = bool(now_block["status"] == "OK" and st.measured)
+    # `book` and `executable` are the solve, never the deployed block: a reader that does not
+    # check `deployable` is told so in the file itself (audit 2026-10-29).
+    doc["book_deployed"] = doc["deployable"]
+    if str(doc["status"]).startswith("EMPTY_BOOK_SEARCH_DEFECT"):
+        doc["red"] = ("RED EMPTY_BOOK_SEARCH_DEFECT: the solve came back empty while a size within "
+                      "the margin makes progress; the standing ftmo block is left deployed")
     return doc
+
+
+def mark_defect(doc: dict[str, Any], prev: Any) -> None:
+    """Carry a standing EMPTY_BOOK_SEARCH_DEFECT's start across passes (from the last report), so
+    its RED line says how long the old block has stood; a sound pass drops both."""
+    if not str(doc.get("status")).startswith("EMPTY_BOOK_SEARCH_DEFECT"):
+        doc.pop("red", None)
+        doc.pop("defect_since", None)
+        return
+    was = isinstance(prev, dict) and str(prev.get("status")).startswith("EMPTY_BOOK_SEARCH_DEFECT")
+    since = (prev.get("defect_since") if was and isinstance(prev, dict) else None) \
+        or doc.get("generated_at")
+    doc["defect_since"] = since
+    doc["red"] = (f"RED EMPTY_BOOK_SEARCH_DEFECT since {since}: the solve came back empty while "
+                  f"a size within the margin makes progress; the standing ftmo block is left "
+                  f"deployed")
 
 
 def rail_blocks(uni: dict[str, Any]) -> list[dict[str, Any]]:
@@ -928,6 +1010,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=OUT)
     a = ap.parse_args(argv)
     doc = solve(a.venue, n_paths=a.paths, seed=a.seed)
+    mark_defect(doc, _read_json(a.out))
+    if doc.get("red"):
+        print(doc["red"], file=sys.stderr)
     if a.venue == "ftmo":
         try:
             doc["deploy"] = apply_book(doc)

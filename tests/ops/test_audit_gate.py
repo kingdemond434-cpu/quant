@@ -424,9 +424,23 @@ def test_a_hold_after_green_ci_but_before_the_merge_stops_it(hub: Any) -> None:
     assert ag.run("o/r", 7, ag.LIVE, wait_min=5, poll_s=0) == 0 and _merges(h) == []
 
 
-def test_pending_ci_past_the_wait_gives_up_without_merging(hub: Any) -> None:
+def test_pending_ci_past_the_wait_gives_up_without_merging(
+    hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
     h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], runs=_green()[:2])
-    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 1 and _merges(h) == []
+    clock = iter([0.0, 10_000.0])  # the deadline is set, then the first look is past it
+    monkeypatch.setattr(ag.time, "monotonic", lambda: next(clock))
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=5, poll_s=0) == 1 and _merges(h) == []
+
+
+def test_with_no_wait_a_cleared_pr_never_holds_a_runner(
+    hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """2026-10-29: CLEARed PRs' gates polled up to 300 min on the runners their checks needed.
+    The Actions run looks once; pending CI is the box sweep's to look at again, never a fail."""
+    h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], runs=_green()[:2])
+    monkeypatch.setattr(ag.time, "sleep", lambda s: pytest.fail("the gate waited"))
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 0 and _merges(h) == []
 
 
 # --------------------------------------------------------------- workflow-file PRs: the box
@@ -591,24 +605,25 @@ def _f(name: str, **kw: Any) -> dict[str, Any]:
         ([_f(DOC)], 2, set(), "PROTECTED"),  # the count does not add up
         ([], 0, set(), "PROTECTED"),
         ([_f(DOC)], 1, {DOC}, "AUTO"),  # a program reads it
-        ([_f("docs/LAWS.md")], 1, set(), "PROTECTED"),  # a governing document
-        ([_f("docs/ops/prompt_notes.md")], 1, set(), "PROTECTED"),
+        ([_f("docs/LAWS.md")], 1, set(), "AUTO"),  # a governing document, never LOW
+        ([_f("docs/ops/prompt_notes.md")], 1, set(), "AUTO"),
         ([_f(CODE)], 1, set(), "AUTO"),  # code
         ([_f("docs/research/x.json")], 1, set(), "AUTO"),  # data
         ([_f("tests/test_x.py")], 1, set(), "AUTO"),
         ([_f("libs/risk/sizing.py")], 1, set(), "AUTO"),  # risk and sizing are AUTO, not LOW
         ([_f(DOC), _f("libs/risk/x.py")], 2, set(), "AUTO"),
-        # PROTECTED: the controller, workflows, ceilings, release machinery, agent instructions
+        # PROTECTED: only what defines or runs a check that judges the PR (#532); the rest of the
+        # old floor (release machinery, box, agent instructions) is AUTO, never LOW
         ([_f(".github/scripts/audit_gate.py")], 1, set(), "PROTECTED"),
         ([_f(".github/workflows/ci.yml")], 1, set(), "PROTECTED"),
         ([_f("ops/release/ceilings.json")], 1, set(), "PROTECTED"),
-        ([_f("ops/box/workflow_gate.ps1")], 1, set(), "PROTECTED"),
-        ([_f("CODEOWNERS")], 1, set(), "PROTECTED"),
-        ([_f("docs/x/CLAUDE.md")], 1, set(), "PROTECTED"),
-        ([_f("desks/mt5/scripts/smoke_release.py")], 1, set(), "PROTECTED"),
-        ([_f("desks/mt5/mt5desk/release_identity.py")], 1, set(), "PROTECTED"),
-        ([_f("libs/ops/release_promotion.py")], 1, set(), "PROTECTED"),
-        ([_f("desks/mt5/data/secrets/k.txt")], 1, set(), "PROTECTED"),
+        ([_f("ops/box/workflow_gate.ps1")], 1, set(), "AUTO"),
+        ([_f("CODEOWNERS")], 1, set(), "AUTO"),
+        ([_f("docs/x/CLAUDE.md")], 1, set(), "AUTO"),
+        ([_f("desks/mt5/scripts/smoke_release.py")], 1, set(), "AUTO"),
+        ([_f("desks/mt5/mt5desk/release_identity.py")], 1, set(), "AUTO"),
+        ([_f("libs/ops/release_promotion.py")], 1, set(), "AUTO"),
+        ([_f("desks/mt5/data/secrets/k.txt")], 1, set(), "REFUSED"),  # never merges
         ([_f(DOC), _f(CODE), _f(".github/CODEOWNERS")], 3, set(), "PROTECTED"),  # strictest wins
         # a rename out of a protected path is protected
         (
@@ -780,7 +795,8 @@ def test_an_auto_tier_pr_with_a_hold_never_merges(auto_hub: Any) -> None:
 
 
 def test_a_protected_pr_never_takes_a_no_comment_path(auto_hub: Any) -> None:
-    for name in (".github/workflows/ci.yml", "ops/release/ceilings.json", "CLAUDE.md"):
+    """#532 audit MF2: a PR that changes a check that judges it never merges on that check."""
+    for name in (".github/workflows/ci.yml", "ops/release/ceilings.json", "tests/conftest.py"):
         h = auto_hub(files=(name,), runs=_auto_green())
         assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
         assert _merges(h) == []
@@ -969,12 +985,18 @@ def test_a_stale_github_tree_takes_the_manual_path(
         "ops/gates.sh",
         "pyproject.toml",
         "tests/conftest.py",
-        "docs/research/FULL_SWEEP_PREREGISTRATION.md",  # governing prose is PROTECTED, not AUTO
+        "docs/research/FULL_SWEEP_PREREGISTRATION.md",  # governing prose: AUTO, never LOW
+        "docs/cro/CRO_CYCLE.md",
+        "docs/cro/QUANT_REFERENCE.md",
         "desks/mt5/docs/ops_policy.txt",
     ],
 )
-def test_what_only_zuck_may_change_is_protected(name: str) -> None:
-    assert ag.tier([_f(name)], 1, lambda n: False)[0] == "PROTECTED"
+def test_what_only_zuck_used_to_change_takes_the_auto_path(name: str) -> None:
+    """zuck 2026-10-29 18:44Z: "remove all protected ... always". The old floor merges with no
+    comment but always on every AUTO job, never LOW (#532 audit MF1); what judges the PR itself
+    (test configuration, ops/release/) stays PROTECTED (#532 audit MF2)."""
+    want = "PROTECTED" if ag.is_protected(name) else "AUTO"
+    assert ag.tier([_f(name)], 1, lambda n: False)[0] == want
 
 
 def test_up_to_date_needs_the_base_tip_and_the_same_github_tree(
@@ -1029,9 +1051,10 @@ def test_the_manual_path_neither_waits_on_nor_fails_by_the_auto_jobs() -> None:
     assert ag.checks(runs, ag.GATING_JOBS + ag.AUTO_JOBS)[0] == "fail"
 
 
-def test_every_rail_is_on_the_protected_list() -> None:
-    """A LAWS 5m rail (risk-limit authority, live promotion, the sealed judge...) never merges
-    without zuck, and the list on disk is what the generator makes."""
+def test_every_rail_is_on_the_auto_floor() -> None:
+    """A LAWS 5m rail (risk-limit authority, live promotion, the sealed judge...) is on the list
+    the controller reads as the AUTO floor (every AUTO job, never LOW; zuck 2026-10-29), and the
+    list on disk is what the generator makes."""
     sys.path.insert(0, str(ROOT))
     from libs.research import immutable_rails as IR
 
@@ -1040,6 +1063,7 @@ def test_every_rail_is_on_the_protected_list() -> None:
     for r in IR.immutable_rails():
         name = IR.norm(r.path).rstrip("/") + ("/x.json" if r.path.endswith("/") else "")
         assert ag.is_protected(name, extra), r.path
+        assert ag.tier([_f(name)], 1, lambda n: False)[0] in ("AUTO", "PROTECTED"), r.path
     gen = subprocess.run(
         [sys.executable, "-I", str(ROOT / "ops/release/gen_protected_paths.py"), "--check"],
         capture_output=True,
@@ -1065,8 +1089,9 @@ def test_every_rail_is_on_the_protected_list() -> None:
         "libs/research/immutable_rails.py",
     ],
 )
-def test_control_and_rail_files_are_protected(name: str) -> None:
-    assert ag.tier([_f(name)], 1, lambda n: False)[0] == "PROTECTED"
+def test_control_and_rail_files_are_never_low(name: str) -> None:
+    want = "PROTECTED" if ag.is_protected(name) else "AUTO"
+    assert ag.tier([_f(name)], 1, lambda n: False)[0] == want
 
 
 def test_an_unreadable_protected_list_makes_everything_protected(
@@ -1524,8 +1549,9 @@ def test_the_reviewer_sees_both_sides_of_every_file() -> None:
     "name", ["desks/mt5/research/Promoter.py", "tests/Conftest.py", "LIBS/validation/gauntlet.py"]
 )
 def test_the_protected_list_is_case_blind(name: str) -> None:
-    """#456 audit MF2: NTFS folds case, so the list does too."""
-    assert ag.tier([_f(name)], 1, lambda n: False)[0] == "PROTECTED"
+    """#456 audit MF2: NTFS folds case, so the lists do too."""
+    want = "PROTECTED" if ag.is_protected(name) else "AUTO"
+    assert ag.tier([_f(name)], 1, lambda n: False)[0] == want
 
 
 @pytest.mark.parametrize(
@@ -1957,3 +1983,22 @@ def test_the_live_book_installers_are_money_path_on_the_real_tree() -> None:
         assert f"desks/mt5/scripts/{f}" in money, f
     listed = rs.listed_not_money()
     assert all(rs.is_script(f) for f in listed), "only scripts can be listed"
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["docs/RESEARCH.md", "docs/cro/CRO_CYCLE.md", "scripts/run_deadman_switch.py",
+     "desks/mt5/research/heat_policy.py", "CLAUDE.md", "ops/box/workflow_gate.ps1"],
+)  # fmt: skip
+def test_formerly_protected_files_merge_only_on_every_auto_check(auto_hub: Any, name: str) -> None:
+    """zuck 2026-10-29: no comment needed, but a missing or failed AUTO job is never a pass."""
+    h = auto_hub(files=(name,), runs=_green())
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+    h = auto_hub(files=(name,), runs=_auto_green())
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert len(_merges(h)) == 1
+
+
+def test_a_secrets_path_never_merges(auto_hub: Any) -> None:
+    h = auto_hub(files=("data/secrets/k.txt",), runs=_auto_green())
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1 and _merges(h) == []
