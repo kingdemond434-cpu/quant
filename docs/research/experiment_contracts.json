@@ -250,6 +250,21 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "principal_stops": {
+   "hypothesis": "Recording each principal or CRO stop as data and refusing it at the gateway, in the healer and in an hourly fence keeps every stopped sleeve off LIVE until the principal's recorded resume, where a status-only stop was lifted back to LIVE within four hours on 2026-10-13.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "breaches",
+    "better": "down",
+    "organ": "report:PRINCIPAL_STOPS_FENCE.json"
+   },
+   "falsifier": {
+    "metric": "breaches",
+    "op": ">=",
+    "threshold": 1,
+    "after": "any hour in which a stopped sleeve reads LIVE with risk above 0 for two consecutive fence runs: the record is not holding and the writer it names must be fixed"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

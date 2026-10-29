@@ -1,0 +1,26 @@
+{
+ "doc": "Sleeves the principal or the CRO stopped. Each identity (symbol|family|selector, lowercased) or exact name stays off LIVE until its entry carries resumed = {by: \"principal\", at, message}, where message names the principal's own decision. Read by decision_core.load_sleeves_verbose (the gateway places nothing for a match), heal_silent_demotions (never lifts a match) and scripts/check_principal_stops.py (hourly fence, RED on a LIVE match with risk above 0). See desks/mt5/mt5desk/principal_stops.py.",
+ "stops": [
+  {
+   "identity": "audchf|overnight_gap_decay|asia",
+   "by": "principal",
+   "at": "2026-10-13T20:41:00+00:00",
+   "authority": "principal 2026-10-13 20:40Z 'I told take audchf off e8 should we remove from mt5 too', 20:41Z 'Yes remove from fusion live'; left out of the principal's Fusion book 20:53-20:57Z. Forward evidence: -0.68R over 10 trades (EDGE_DECAY).",
+   "resumed": null
+  },
+  {
+   "identity": "usdzar|overnight_gap_decay|asia",
+   "by": "principal",
+   "at": "2026-10-13T20:53:00+00:00",
+   "authority": "principal 2026-10-13 20:53-20:57Z Fusion book: gold_asia, USDNOK carry, gold anti-breakout, EURILS formula, EURZAR carry, NZDJPY -- 'NO USDJPY/USDZAR/AUDCHF'. Every live send since 10-07 refused 10016 at the broker-01 fill-hour spread.",
+   "resumed": null
+  },
+  {
+   "identity": "eurzar|overnight_gap_decay|asia",
+   "by": "CRO stop-the-bleed",
+   "at": "2026-10-13T21:30:29+00:00",
+   "authority": "stood down 2026-10-13 21:30Z with AUDCHF and USDZAR (stop the bleed) and zeroed in the auditor-cleared Fusion forward-only patch, citing the principal's 20:53Z and 20:56Z book messages. The gap-decay sleeve is not the book's EURZAR carry sleeve, which this entry does not touch.",
+   "resumed": null
+  }
+ ]
+}
