@@ -1545,7 +1545,14 @@ def expire_stale_brackets(st: dict) -> int:
         setup = getattr(o, "time_setup", None)
         if not setup:
             continue
-        placed = datetime.fromtimestamp(int(setup), tz=UTC)
+        # `time_setup` is BROKER wall-clock seconds (New York + 7 h), not a UTC epoch: read as
+        # the true UTC instant, or the date test below and the age in the log run 2-3 h ahead.
+        from mt5desk.broker_clock import broker_epoch_to_utc
+        placed = broker_epoch_to_utc(setup)
+        if placed is None:
+            log(f"TTL sweep: {o.symbol} order {o.ticket} has an unreadable time_setup "
+                f"({setup!r}); left to the broker expiry")
+            continue
         # THE SAME PER-SESSION RULE THE ORDER WAS PLACED UNDER, recovered from its own label, so
         # the sweep and the broker expiry can never disagree. A flat cutoff here would defeat the
         # point: it would keep an afternoon bracket alive hours past the force-close the broker
@@ -4972,7 +4979,8 @@ def main() -> None:
     _now_utc = datetime.now(tz=UTC)
     st["placement_pass"] = _now_utc.isoformat(timespec="seconds")
     st["placement_pass_clock"] = "utc"
-    st["placement_tick_broker"] = tnow.tz_localize(None).isoformat()
+    st["placement_tick_broker"] = tnow.tz_localize(None).isoformat()   # naive: broker wall clock
+    st["placement_tick_utc"] = tick_utc.isoformat(timespec="seconds")
     st["broker_utc_offset_h"] = round((tnow - tick_utc) / pd.Timedelta(hours=1))
 
     # stale tick (weekend/holiday/terminal dead): never trade a closed market. On the TICK's true
@@ -4982,7 +4990,8 @@ def main() -> None:
     if age_sec > 1800:
         st = reconcile(st)
         save_state(st)
-        log(f"idle: tick stale {age_sec/60:.0f} min (last {tnow}); market closed")
+        log(f"idle: tick stale {age_sec/60:.0f} min (last {tick_utc:%Y-%m-%d %H:%M:%S} UTC, "
+            f"broker {tnow:%Y-%m-%d %H:%M:%S}); market closed")
         mt5.shutdown()
         return
 
