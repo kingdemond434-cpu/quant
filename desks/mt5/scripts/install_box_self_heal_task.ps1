@@ -47,7 +47,6 @@ $top = (& $Git -C $RepoRoot rev-parse --show-toplevel 2>$null)
 if ($LASTEXITCODE -ne 0 -or -not $top) { throw "$RepoRoot is not a git work tree (git rev-parse failed); not installing" }
 if ((Resolve-Path -LiteralPath $top).Path -ne $RepoRoot) { throw "$RepoRoot is not the top of its work tree ($top); pass -RepoRoot <repo root>" }
 "source repo: {0}" -f $RepoRoot
-$DeskRoot = Join-Path $RepoRoot 'desks\mt5'
 
 # THE SYSTEM TASK RUNS AN ADMIN-ONLY COPY, NEVER THE REPO TREE (audit HOLD of 7a01c1b09). The repo
 # is writable by the non-elevated bridge and every cloud session; a SYSTEM task that executed a
@@ -55,8 +54,8 @@ $DeskRoot = Join-Path $RepoRoot 'desks\mt5'
 # the only two helpers it loads are copied into C:\ProgramData\QuantBox\bin, under
 # install_unattended.ps1's audited ACL (owned by Administrators/SYSTEM, no junction anywhere, no
 # ACE that grants anyone else more than read), and the task runs THAT copy. The installed copy
-# loads its helpers from beside itself only; the repo is just its working directory (where it
-# writes its report, ledger and state). Re-run this installer to deploy a new version.
+# loads its helpers from beside itself only; the repo (named in bin\box_self_heal.root) is only
+# where it writes its report. Re-run this installer to deploy a new version.
 $Root   = 'C:\ProgramData\QuantBox'
 $BinDir = Join-Path $Root 'bin'
 # WHAT THE WATCHDOG DECIDES FROM LIVES HERE, NOT IN THE REPO (audit HOLD of 5b3504f50). The bridge
@@ -76,7 +75,7 @@ $StateDir = Join-Path $Root 'state'
 # after any change to a copied file:
 #   git show HEAD:ops/box_self_heal.py | sha256sum   (and the other two)
 $Pins = [ordered]@{
-    'box_self_heal.py' = @{ src = 'ops/box_self_heal.py';       sha256 = 'fdeac937696c3c6d3a054f1d0f08426e49516ae2e1c8d9bcf0afb6b1a9a74ebe' }
+    'box_self_heal.py' = @{ src = 'ops/box_self_heal.py';       sha256 = 'da87e34e4c93cd96fd2e2f0834426bb1718871f25ef5cd3870631cde615359d7' }
     'process_health.py' = @{ src = 'ops/process_health.py';      sha256 = 'cfdddafe46e4a7e9257846b1c87a0d1342bddc49f25302db0afe08df3e3c72a2' }
     'alert_channels.py' = @{ src = 'libs/ops/alert_channels.py'; sha256 = '4448f782dfa7dc4ec0aecd1dc71145403d3de1d1dcbb9c64e81cf95be3e5f4b5' }
 }
@@ -108,14 +107,27 @@ $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIden
 if (-not $isAdmin) { throw "run this elevated: registering a SYSTEM task needs an administrator" }
 
 $adm = 'S-1-5-32-544'; $sys = 'S-1-5-18'; $usr = 'S-1-5-32-545'
+# A FOLDER WHOSE CODE THE SYSTEM TASK RUNS (the interpreter's) IS JUDGED THE WAY
+# ops/bridge/bridge_watchdog.ps1's Get-AclProblem judges its own folders (v5 MF-B): a stock
+# C:\Program Files\Python314\Lib carries TrustedInstaller, CREATOR OWNER (InheritOnly) and ALL
+# APPLICATION PACKAGES (read/execute), and the v4 check refused every SID it did not list. Now, as in
+# the bridge: the owner must be Administrators, SYSTEM or TrustedInstaller; Administrators, SYSTEM
+# and TrustedInstaller may hold anything; an InheritOnly ACE does not apply to the folder itself and
+# is skipped; any OTHER SID that holds a write-class right fails. Read and execute are not refused.
+$AdminSids = @("S-1-5-32-544", "S-1-5-18", "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464")
+$WriteMask = [int64]([System.Security.AccessControl.FileSystemRights]"Write, Delete, DeleteSubdirectoriesAndFiles, ChangePermissions, TakeOwnership") -bor 0x50000000
 function Test-DirAdminOnly([string] $dir) {
-    # Admins/SYSTEM may hold anything; Users read-only; any other SID, or a Users write bit, fails.
     if (-not (Test-Path -LiteralPath $dir)) { return "absent" }
     if ((Get-Item -LiteralPath $dir -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { return "a junction or symlink" }
-    foreach ($a in (Get-Acl -LiteralPath $dir).Access | Where-Object { $_.AccessControlType -eq 'Allow' }) {
-        $sid = $a.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value
-        $write = [int64]$a.FileSystemRights -band ([int64][System.Security.AccessControl.FileSystemRights]"Write, Delete, ChangePermissions, TakeOwnership" -bor 0x50000000)
-        if ($sid -notin @($adm, $sys, $usr) -or ($sid -eq $usr -and $write -ne 0)) { return "$($a.IdentityReference) has write" }
+    $acl = Get-Acl -LiteralPath $dir -ErrorAction Stop
+    $owner = (New-Object System.Security.Principal.NTAccount($acl.Owner)).Translate([System.Security.Principal.SecurityIdentifier]).Value
+    if ($owner -notin $AdminSids) { return "$dir is owned by $($acl.Owner)" }
+    foreach ($a in $acl.Access) {
+        if ($a.AccessControlType -ne "Allow") { continue }
+        if ($a.PropagationFlags -band [System.Security.AccessControl.PropagationFlags]::InheritOnly) { continue }
+        $sid = try { $a.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value } catch { [string]$a.IdentityReference }
+        if ($sid -in $AdminSids) { continue }
+        if (([int64]$a.FileSystemRights -band $WriteMask) -ne 0) { return "$dir grants $($a.FileSystemRights) to $($a.IdentityReference)" }
     }
     return $null
 }
@@ -140,7 +152,12 @@ foreach ($sub in @('Lib', 'Lib\site-packages', 'DLLs')) {
     $why = Test-DirAdminOnly $d
     if ($why) { throw "refusing python at ${Python}: $d is not admin-only ($why); a non-admin could plant code the SYSTEM task imports" }
 }
-& $Python -I -c "import psutil" 2>$null
+# A native command's stderr under ErrorActionPreference=Stop is a terminating NativeCommandError on
+# Windows PowerShell 5.1 (v5 should-fix 2): probe with a local Continue, then read the exit code.
+& {
+    $ErrorActionPreference = 'Continue'
+    & $Python -I -c "import psutil" 2>$null | Out-Null
+}
 if ($LASTEXITCODE -ne 0) {
     "WARNING: psutil is not importable by $Python; the watchdog will report UNMEASURED (RED) and stop nothing until it is"
 }
@@ -164,6 +181,11 @@ foreach ($c in @(Get-Item -LiteralPath $Root -Force) + @(Get-ChildItem -LiteralP
 }
 New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
 New-Item -ItemType Directory -Force -Path $StateDir | Out-Null
+# THE SYSTEM TASK'S LOG IS ADMIN-ONLY TOO (v5 MF-C): cmd.exe appends to it as SYSTEM, and a log in
+# the repo's desks\mt5\logs could be a junction that redirects that write.
+$LogDir = Join-Path $Root 'logs'
+New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+$Log = Join-Path $LogDir 'Quant-BoxSelfHeal.log'
 function Assert-AdminOnly {
     foreach ($path in @($Root) + @(Get-ChildItem -LiteralPath $Root -Force -Recurse | ForEach-Object { $_.FullName })) {
         foreach ($a in (Get-Acl -LiteralPath $path).Access | Where-Object { $_.AccessControlType -eq 'Allow' }) {
@@ -187,16 +209,41 @@ foreach ($name in $Pins.Keys) {
     }
     "installed {0} from HEAD:{1} (sha256 {2})" -f $dst, $rel, $pin.Substring(0, 12)
 }
-Assert-AdminOnly     # the copies and the state dir inherit the root's ACL; proved, not assumed
 
-$LogDir = Join-Path $DeskRoot 'logs'
-if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir | Out-Null }
-$Log = Join-Path $LogDir 'Quant-BoxSelfHeal.log'
+# THE REPO ROOT IS WRITTEN HERE, NOT TAKEN FROM THE WORKING DIRECTORY (v5 MF-A). The installed copy
+# reads it from this admin-only file (else C:\opt\quant); the task runs in the state folder.
+[System.IO.File]::WriteAllText((Join-Path $BinDir 'box_self_heal.root'), $RepoRoot)
+
+# THE ALERT CONFIG SYSTEM READS IS THE ADMIN'S INSTALL-TIME COPY (v5 should-fix 3). The repo's
+# data\secrets is writable by the bridge and every session, so SYSTEM never reads it: this copies
+# alert_channels.json (and heartbeat_url.json) into the state folder with an Administrators/SYSTEM-
+# only ACL (secrets: not even Users may read them). The watchdog opens only https channels from it.
+# Re-run this installer after changing the channels.
+foreach ($n in @('alert_channels.json', 'heartbeat_url.json')) {
+    $s = Join-Path $RepoRoot (Join-Path 'data\secrets' $n); $d = Join-Path $StateDir $n
+    Remove-Item -LiteralPath $d -Force -ErrorAction SilentlyContinue
+    if (-not (Test-Path -LiteralPath $s)) { "WARNING: no {0}: the watchdog's pages are NOT-ARMED until it exists and this is re-run" -f $s; continue }
+    if ((Get-Item -LiteralPath $s -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "$s is a junction or symlink; not installing" }
+    [System.IO.File]::WriteAllBytes($d, [System.IO.File]::ReadAllBytes($s))
+    $fsec = New-Object System.Security.AccessControl.FileSecurity
+    $fsec.SetAccessRuleProtection($true, $false)
+    $fsec.SetOwner((New-Object System.Security.Principal.SecurityIdentifier $adm))
+    foreach ($sidv in @($adm, $sys)) {
+        $fsec.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
+            (New-Object System.Security.Principal.SecurityIdentifier $sidv), 'FullControl', 'Allow')))
+    }
+    Set-Acl -LiteralPath $d -AclObject $fsec
+    "alert config: copied {0} -> {1} (Administrators/SYSTEM only)" -f $s, $d
+}
+Assert-AdminOnly     # the copies, root file, log and state dir; proved, not assumed
 
 # No arguments: the rule table is in the code, and the only flag it has is --dry-run. The
-# INSTALLED copy, isolated (-I: no PYTHONPATH, no user site, no script-dir imports); the repo is
-# only the working directory, which is where the installed copy writes its report and state.
-$action = New-ScheduledTaskAction -Execute 'cmd.exe' -WorkingDirectory $RepoRoot -Argument `
+# INSTALLED copy, isolated (-I: no PYTHONPATH, no user site, no script-dir imports). cmd.exe by its
+# absolute System32 path, and the WORKING DIRECTORY IS THE ADMIN-ONLY STATE FOLDER, never the repo
+# (v5 MF-A): CreateProcess searches the current directory first, so a repo working directory would
+# let a planted schtasks.exe or python.exe there run as SYSTEM.
+$Cmd = Join-Path ([Environment]::SystemDirectory) 'cmd.exe'
+$action = New-ScheduledTaskAction -Execute $Cmd -WorkingDirectory $StateDir -Argument `
     ('/d /s /c ""{0}" -I -W ignore "{1}" >> "{2}" 2>&1"' -f $Python, $Installed, $Log)
 
 # A DAILY trigger repeating every five minutes for one day, never a long -Once (one expired on

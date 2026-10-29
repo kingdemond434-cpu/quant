@@ -12,7 +12,7 @@ import sys
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 
@@ -33,6 +33,8 @@ def _load_bsh() -> Any:
 
 
 bsh = _load_bsh()
+#: the real pager entry point (an autouse fixture stubs `bsh._send_alert` in every test)
+_REAL_SEND_ALERT = bsh._send_alert
 NOW = datetime(2026, 10, 29, 18, 0, tzinfo=UTC).timestamp()
 HOST = socket.gethostname()
 MIN = 60.0
@@ -1477,16 +1479,19 @@ def test_a_planted_tmp_symlink_is_never_written_through(tmp_path: Path) -> None:
     ({"kind": "telegram", "token": "t", "chat_id": "1"}, True),
 ])
 def test_only_https_channels_are_fired(tmp_path: Path, cfg: dict[str, Any], ok: bool) -> None:
-    assert (bsh._https_channel(cfg, tmp_path / "hb.json") is not None) is ok
+    assert (bsh._https_channel(cfg, tmp_path / "hb.json", lambda p: None) is not None) is ok
 
 
 def test_an_hc_channel_without_a_url_needs_an_https_heartbeat(tmp_path: Path) -> None:
     hb = tmp_path / "hb.json"
+    ok = lambda p: None  # noqa: E731
     hb.write_text(json.dumps({"url": "http://hc-ping.com/abc"}), "utf-8")
-    assert bsh._https_channel({"kind": "hc"}, hb) is None
+    assert bsh._https_channel({"kind": "hc"}, hb, ok) is None
     hb.write_text(json.dumps({"url": "https://hc-ping.com/abc"}), "utf-8")
-    assert bsh._https_channel({"kind": "hc"}, hb) == {"kind": "hc",
-                                                       "url": "https://hc-ping.com/abc"}
+    assert bsh._https_channel({"kind": "hc"}, hb, ok) == {"kind": "hc",
+                                                           "url": "https://hc-ping.com/abc"}
+    # a heartbeat file that is not provably admin-only is never read
+    assert bsh._https_channel({"kind": "hc"}, hb, lambda p: "writable") is None
 
 
 # --- v4 should-fix 9: owner and principal are compared as SIDs --------------------------------
@@ -1561,3 +1566,133 @@ def test_the_installer_checks_the_interpreters_lib_and_site_packages() -> None:
     code = "\n".join(x for x in src.splitlines() if not x.lstrip().startswith("#"))
     assert "@('Lib', 'Lib\\site-packages', 'DLLs')" in code
     assert '& $Python -I -c "import psutil"' in code
+
+
+# --- v5 MF-A: the one image is launched by its absolute System32 path; the root is not cwd ---
+def test_every_subprocess_runs_an_absolute_system32_image(monkeypatch: pytest.MonkeyPatch
+                                                          ) -> None:
+    import ntpath
+    import subprocess as _sp
+    src = (ROOT / "ops" / "box_self_heal.py").read_text("utf-8")
+    tree = ast.parse(src)
+    calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call)
+             and isinstance(n.func, ast.Attribute) and isinstance(n.func.value, ast.Name)
+             and n.func.value.id == "subprocess"]
+    assert len(calls) == 1, "schtasks is the only image this file launches"
+    seen: list[list[str]] = []
+
+    def fake_run(argv: list[str], **k: Any) -> Any:
+        seen.append(list(argv))
+        return _sp.CompletedProcess(argv, 0, "", "")
+
+    monkeypatch.setattr(bsh.subprocess, "run", fake_run)
+    bsh._schtasks("/Query", "Quant-WorkflowGate")
+    bsh._schtasks("/End", "Quant-WorkflowGate")
+    bsh._schtasks("/Run", "Quant-WorkflowGate")
+    for argv in seen:
+        assert ntpath.isabs(argv[0]), argv[0]
+        assert argv[0].lower().endswith("\\system32\\schtasks.exe"), argv[0]
+    assert bsh.SCHTASKS_EXE == "C:\\Windows\\System32\\schtasks.exe" or sys.platform == "win32"
+    assert '"schtasks"' not in src and "'schtasks'" not in src
+
+
+def test_the_root_never_depends_on_the_working_directory(tmp_path: Path,
+                                                        monkeypatch: pytest.MonkeyPatch) -> None:
+    src = (ROOT / "ops" / "box_self_heal.py").read_text("utf-8")
+    assert "Path.cwd" not in src and "getcwd" not in src
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    monkeypatch.chdir(tmp_path)
+    assert bsh._resolve_root(bin_dir, False) == bsh.DEFAULT_BOX_ROOT
+    (bin_dir / bsh.ROOT_FILE_NAME).write_text("relative\\quant", "utf-8")
+    assert bsh._resolve_root(bin_dir, False) == bsh.DEFAULT_BOX_ROOT, "relative is ignored"
+    (bin_dir / bsh.ROOT_FILE_NAME).write_text("\ufeffD:\\repos\\quant\r\n", "utf-8")
+    assert bsh._resolve_root(bin_dir, False) == Path("D:\\repos\\quant")
+    assert bsh._resolve_root(ROOT / "ops", True) == ROOT
+    assert bsh.ROOT == ROOT
+
+
+def test_the_installer_runs_the_task_in_the_state_folder_with_an_absolute_cmd() -> None:
+    src = (ROOT / "desks" / "mt5" / "scripts" / "install_box_self_heal_task.ps1").read_text("utf-8")
+    code = "\n".join(x for x in src.splitlines() if not x.lstrip().startswith("#"))
+    assert "-WorkingDirectory $StateDir" in code and "-WorkingDirectory $RepoRoot" not in code
+    assert "Join-Path ([Environment]::SystemDirectory) 'cmd.exe'" in code
+    assert "-Execute $Cmd" in code and "-Execute 'cmd.exe'" not in code
+    assert "Join-Path $BinDir 'box_self_heal.root'" in code
+    assert bsh.ROOT_FILE_NAME == "box_self_heal.root"
+
+
+# --- v5 MF-B: the interpreter check is the bridge watchdog's ACL check ----------------------
+def test_the_installer_judges_python_folders_like_the_bridge_watchdog() -> None:
+    import re
+    inst = (ROOT / "desks" / "mt5" / "scripts" / "install_box_self_heal_task.ps1").read_text(
+        "utf-8")
+    bridge = (ROOT / "ops" / "bridge" / "bridge_watchdog.ps1").read_text("utf-8")
+    fn = re.search(r"function Test-DirAdminOnly.*?\n}\n", inst, re.S)
+    assert fn, "Test-DirAdminOnly is defined"
+    body = fn.group(0)
+    for line in ("$AdminSids = ", "$WriteMask = "):
+        b = next(x for x in bridge.splitlines() if x.startswith(line))
+        assert b in inst.splitlines(), f"{line} is the bridge's, verbatim"
+    assert "if ($owner -notin $AdminSids) {" in body, "the owner is checked"
+    shared = [
+        'if ($a.AccessControlType -ne "Allow") { continue }',
+        'if ($a.PropagationFlags -band [System.Security.AccessControl.PropagationFlags]'
+        '::InheritOnly) { continue }',
+        '$sid = try { $a.IdentityReference.Translate('
+        '[System.Security.Principal.SecurityIdentifier]).Value } '
+        'catch { [string]$a.IdentityReference }',
+        'if ($sid -in $AdminSids) { continue }',
+    ]
+    for frag in shared:
+        assert frag in bridge and frag in body, frag
+    assert "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464" in body or \
+        "S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464" in inst
+    assert "-band $WriteMask" in body
+
+
+# --- v5 MF-C / should-fix 1-3: nothing SYSTEM writes or reads for alerts is in the repo ------
+def test_the_system_log_and_alert_files_are_admin_only() -> None:
+    src = (ROOT / "desks" / "mt5" / "scripts" / "install_box_self_heal_task.ps1").read_text("utf-8")
+    code = "\n".join(x for x in src.splitlines() if not x.lstrip().startswith("#"))
+    assert "$LogDir = Join-Path $Root 'logs'" in code and "Join-Path $DeskRoot 'logs'" not in code
+    assert "@('alert_channels.json', 'heartbeat_url.json')" in code
+    assert "SetAccessRuleProtection($true, $false)" in code and "Set-Acl -LiteralPath $d" in code
+    for p in (bsh.ALERT_CONFIG, bsh.ALERT_HEARTBEAT, bsh.ALERT_LEDGER):
+        assert p.parent == bsh.STATE_DIR, p
+    mod = (ROOT / "ops" / "box_self_heal.py").read_text("utf-8")
+    assert '"data" / "alert_delivery.jsonl"' not in mod
+    assert '"data" / "secrets"' not in mod
+
+
+def test_the_psutil_probe_cannot_throw_a_native_command_error() -> None:
+    src = (ROOT / "desks" / "mt5" / "scripts" / "install_box_self_heal_task.ps1").read_text("utf-8")
+    i = src.index('& $Python -I -c "import psutil"')
+    block = src[src.rindex("& {", 0, i):i]
+    assert "$ErrorActionPreference = 'Continue'" in block
+
+
+def test_send_alert_reads_only_the_admin_only_copy(monkeypatch: pytest.MonkeyPatch) -> None:
+    loaded: list[Path] = []
+    logged: list[Path] = []
+
+    class Mod:
+        _SENDERS: ClassVar[dict[str, Any]] = {"ntfy": lambda cfg, t, b: "http 200"}
+
+        @staticmethod
+        def load_channels(path: Path) -> list[dict[str, Any]]:
+            loaded.append(path)
+            return [{"kind": "ntfy", "topic": "x"}]
+
+        @staticmethod
+        def _log(kind: str, ok: bool, detail: str, title: str, ledger: Path) -> None:
+            logged.append(ledger)
+
+    monkeypatch.setattr(bsh, "_load", lambda *a: Mod)
+    monkeypatch.setattr(bsh, "admin_only", lambda p: None)
+    res = _REAL_SEND_ALERT("t", "b")
+    assert res["delivered"] == 1 and loaded == [bsh.ALERT_CONFIG]
+    assert logged == [bsh.ALERT_LEDGER]
+    monkeypatch.setattr(bsh, "admin_only", lambda p: "Users may write it")
+    loaded.clear()
+    assert _REAL_SEND_ALERT("t", "b")["armed"] == 0 and loaded == []

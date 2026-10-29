@@ -32,8 +32,10 @@ other.
 WHERE IT RUNS FROM (audit HOLD of 7a01c1b09). The SYSTEM task runs the ADMIN-ONLY copy the
 installer puts in C:\\ProgramData\\QuantBox\\bin (this file, ops/process_health.py and
 libs/ops/alert_channels.py, the only code it loads), never the repo tree a non-admin can write. The
-installed copy loads its two helpers from beside itself and nowhere else; the repo is only where it
-writes its report, ledger and state (the task's working directory).
+installed copy loads its two helpers from beside itself and nowhere else; the repo (the path the
+installer writes to bin\\box_self_heal.root, never the working directory) is only where it writes
+its report. Its state, ledger and alert record live in the admin-only
+C:\\ProgramData\\QuantBox\\state, which is also the task's working directory.
 
 THE RULES (`RULES` below is the table; tests pin it):
 
@@ -111,9 +113,30 @@ from typing import Any
 
 _HERE = Path(__file__).resolve().parent
 #: In the repo this file is ops/box_self_heal.py. The installed copy (C:\ProgramData\QuantBox\bin)
-#: is not, and then the repo is the task's working directory (set by the admin installer).
+#: is not; then the repo is the path the admin installer wrote beside it, in the admin-only bin
+#: (`box_self_heal.root`), else the box's fixed checkout. NEVER the working directory (v5 MF-A):
+#: the task runs in the admin-only state folder, and nothing here depends on where it was started.
 _IN_REPO = _HERE.name == "ops" and (_HERE.parent / "desks" / "mt5").is_dir()
-ROOT = _HERE.parent if _IN_REPO else Path.cwd()
+#: The box's checkout, when the installer's root file is absent or unreadable.
+DEFAULT_BOX_ROOT = Path(r"C:\opt\quant")
+ROOT_FILE_NAME = "box_self_heal.root"
+
+
+def _resolve_root(here: Path, in_repo: bool) -> Path:
+    """The repo root: the repo this file sits in, else the absolute path in `here`'s admin-only
+    root file, else DEFAULT_BOX_ROOT. A relative or empty value is ignored (it would be cwd)."""
+    if in_repo:
+        return here.parent
+    try:
+        text = (here / ROOT_FILE_NAME).read_text("utf-8-sig").strip()
+    except (OSError, ValueError):
+        text = ""
+    if text and ntpath.isabs(text) and "\n" not in text:
+        return Path(text)
+    return DEFAULT_BOX_ROOT
+
+
+ROOT = _resolve_root(_HERE, _IN_REPO)
 DESK = ROOT / "desks" / "mt5"
 #: The ONLY thing this file writes into the repo: its report, which it never reads back to decide.
 REPORT = DESK / "reports" / "BOX_SELF_HEAL.json"
@@ -615,6 +638,27 @@ def _live_procs() -> list[Proc] | None:
     return rows
 
 
+def _system32() -> str:
+    """The absolute System32 folder: GetSystemDirectoryW, else the fixed default (v5 MF-A). Never a
+    bare image name: CreateProcess searches the CURRENT directory before PATH, so a bare
+    `schtasks` would run a planted schtasks.exe in whatever folder the task started in."""
+    if _on_windows():
+        try:
+            import ctypes
+
+            buf = ctypes.create_unicode_buffer(260)
+            n = ctypes.windll.kernel32.GetSystemDirectoryW(buf, 260)  # type: ignore[attr-defined,unused-ignore]
+            if 0 < n < 260 and ntpath.isabs(buf.value):
+                return str(buf.value)
+        except Exception:
+            pass
+    return r"C:\Windows\System32"
+
+
+#: The ONE image this file launches, by absolute path.
+SCHTASKS_EXE = ntpath.join(_system32(), "schtasks.exe")
+
+
 def _schtasks(verb: str, task: str, *, xml: bool = False) -> dict[str, Any]:
     """The ONLY subprocess this file starts: schtasks with a literal verb on an allowlisted task."""
     allowed = {"/Query": ENDABLE_TASKS | RUNNABLE_TASKS, "/End": ENDABLE_TASKS,
@@ -622,7 +666,7 @@ def _schtasks(verb: str, task: str, *, xml: bool = False) -> dict[str, Any]:
     if verb not in allowed or task not in allowed[verb]:
         raise ValueError(f"schtasks {verb} {task!r} is not in the closed table")
     tail = (["/XML"] if xml else ["/FO", "CSV", "/NH"]) if verb == "/Query" else []
-    argv = ["schtasks", verb, "/TN", task, *tail]
+    argv = [SCHTASKS_EXE, verb, "/TN", task, *tail]
     try:
         r = subprocess.run(argv, capture_output=True, text=True, timeout=SCHTASKS_TIMEOUT_S,
                            check=False)
@@ -1581,16 +1625,18 @@ def rules_table() -> list[dict[str, Any]]:
 PAGE_VERDICTS = frozenset({"STOPPED", "ENDED", "STARTED", *FAILED_VERDICTS})
 
 
-def _https_channel(cfg: Mapping[str, Any], heartbeat: Path) -> dict[str, Any] | None:
-    """`cfg` with every URL it would open proven https, or None (v4 should-fix 3). The config is
-    read from the repo, which a non-admin can write; SYSTEM must not open a file:// or http://
-    URL from it. ntfy and telegram build their own https URL; email opens no URL."""
+def _https_channel(cfg: Mapping[str, Any], heartbeat: Path,
+                   trusted: Callable[[Path], str | None] | None = None) -> dict[str, Any] | None:
+    """`cfg` with every URL it would open proven https, or None (v4 should-fix 3): SYSTEM never
+    opens a file:// or http:// URL. ntfy and telegram build their own https URL; email opens no
+    URL. An hc channel without a url reads `heartbeat` only when `trusted` (admin_only) passes."""
+    trusted = trusted or admin_only
     out = dict(cfg)
     kind = out.get("kind")
     if kind == "webhook" or kind == "hc":
         url = str(out.get("url") or "").strip()
         if not url and kind == "hc":
-            if redirected(heartbeat):
+            if trusted(heartbeat) is not None:
                 return None
             try:
                 url = str(json.loads(heartbeat.read_text("utf-8")).get("url", "")).strip()
@@ -1602,19 +1648,27 @@ def _https_channel(cfg: Mapping[str, Any], heartbeat: Path) -> dict[str, Any] | 
     return out
 
 
+#: The alert config SYSTEM reads (v5 should-fix 3): the admin's install-time copy of
+#: data\secrets\alert_channels.json (and heartbeat_url.json), in the admin-only state folder with
+#: an Administrators/SYSTEM-only ACL. The repo copy is writable by the bridge and every session,
+#: so SYSTEM never reads it; re-run the installer after changing the channels.
+ALERT_CONFIG = STATE_DIR / "alert_channels.json"
+ALERT_HEARTBEAT = STATE_DIR / "heartbeat_url.json"
+#: Where SYSTEM records each delivery attempt (v5 should-fix 1): the admin-only state folder,
+#: never a fixed name in the repo.
+ALERT_LEDGER = STATE_DIR / "alert_delivery.jsonl"
+
+
 def _send_alert(title: str, body: str) -> dict[str, Any]:
     """libs/ops/alert_channels' senders (ntfy on the box), loaded by path from the admin-only copy
-    beside the installed watchdog, or from the repo when run from the repo. Only channels whose
-    URLs are https are fired; the delivery ledger is written in the repo only when no component of
-    its path is a junction or symlink, else beside the admin-only state."""
+    beside the installed watchdog, or from the repo when run from the repo. The channels are read
+    only from the admin-only install-time copy, and only https ones are fired; every attempt is
+    logged in the admin-only state folder."""
     mod = _load("_box_self_heal_alert_channels",
                 _dep("alert_channels.py", "libs/ops/alert_channels.py"))
-    config = ROOT / "data" / "secrets" / "alert_channels.json"
-    ledger = ROOT / "data" / "alert_delivery.jsonl"
-    if redirected(ledger):
-        ledger = STATE_DIR / "alert_delivery.jsonl"
-    raw = [] if redirected(config) else mod.load_channels(config)
-    heartbeat = ROOT / "data" / "secrets" / "heartbeat_url.json"
+    ledger = ALERT_LEDGER
+    raw = mod.load_channels(ALERT_CONFIG) if admin_only(ALERT_CONFIG) is None else []
+    heartbeat = ALERT_HEARTBEAT
     channels = [c for c in (_https_channel(x, heartbeat) for x in raw) if c is not None]
     if not channels:
         mod._log("none", False, f"NOT-ARMED: no https channel of {len(raw)} configured",
@@ -1843,8 +1897,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="decide and log every rule, act on nothing")
     args = ap.parse_args(argv)
     if not DESK.is_dir():
-        print(f"box_self_heal: {DESK} is not a desk: run from the repo (the installed task's "
-              f"working directory is the repo root)")
+        print(f"box_self_heal: {DESK} is not a desk: the installed copy reads the repo root from "
+              f"{_HERE / ROOT_FILE_NAME} (written by the installer), else {DEFAULT_BOX_ROOT}")
         return 2
     doc = run(apply=not args.dry_run)
     for r in doc["rows"]:
