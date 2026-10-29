@@ -6,6 +6,7 @@
   "groups": {
     "money": ["terminal64", "run_gateway_loop", "gateway_resident", "e8_executor", "e8_window_guard",
               "e8-executor", "ftmo_follow", "ftmo_venue_reader", "fusion_deadman", "executor"],
+    "adopt": ["adopt-and-seal", "adopt-release"],
     "judge": ["run_sharded_gauntlet", "external_gauntlet", "quant-research-runtime"],
     "memecoin": ["memecoin"],
     "protected": ["moat_recorder", "tick_integrity", "recorders.", "tick_recorder", "promoter",
@@ -18,6 +19,8 @@
                "deep_forest", "world_crawler"]
   },
   "rules": [
+    {"name": "adopt_release_raise", "group": "adopt", "priority": "AboveNormal",
+     "why": "Owner rule 23 / money path on top (2026-10-29): the first automatic Adopt-And-Seal run (MT5-AdoptRelease, SYSTEM) was measured with its python child on ~13% of a core, a step that took 2.5 min at 14:25Z running past 25 min. The whole Adopt-And-Seal / Adopt-Release tree (the powershell matched by command line, every py/python/git below it by parent chain) is group adopt: raise-only like the money path, so it is never put on the side mask, never share-capped, and is raised to AboveNormal while it runs."},
     {"name": "memecoin_cap", "match": "memecoin", "affinity": "0x30000", "priority": "BelowNormal",
      "max_box_share": 0.10,
      "why": "Owner rule: the memecoin bot keeps running on at most 10% of the box. The mask is the hand task's two top cores; the code narrows it to floor(10% x cores) of them (1 of 18 on the trading box)."},
@@ -36,7 +39,8 @@
   "judge_starved": {"box_cpu_pct_at_least": 90, "judge_share_of_busy_below": 0.5},
   "judge_min_share": 0.15,
   "judge_wait_phases": ["done"],
-  "health_why": "RED CHECK (owner rule 23): BOX_BOTTLENECKS.json health and stall_watch.json cpu_shape go RED when the judge's share of the box stays under judge_min_share (0.15 = ~2.7 of 18 cores; raise it by commit once the reserve's effect is measured) for more than 2 consecutive passes while it has runnable work (a live sweep whose JUDGE_SWEEP_PHASE.json phase is not in judge_wait_phases), or when the hunter's own measurement is UNMEASURED for more than 2 passes. Read by desks/mt5/scripts/check_desk_health.py.",
+  "adopt_red_after_min": 15,
+  "health_why": "RED CHECK (owner rule 23): BOX_BOTTLENECKS.json health and stall_watch.json cpu_shape go RED when the judge's share of the box stays under judge_min_share (0.15 = ~2.7 of 18 cores; raise it by commit once the reserve's effect is measured) for more than 2 consecutive passes while it has runnable work (a live sweep whose JUDGE_SWEEP_PHASE.json phase is not in judge_wait_phases), or when the hunter's own measurement is UNMEASURED for more than 2 passes, or when the judge's phase is UNKNOWN (JUDGE_SWEEP_PHASE.json absent, unreadable or without a pid; a dead pid or phase done is no work, not unknown) for more than 2 passes. RED at once when desks/mt5/reports/ADOPTION_HEARTBEAT.json shows an Adopt-And-Seal run started more than adopt_red_after_min (15) minutes ago with no finished_at (no seal or refusal line). Read by desks/mt5/scripts/check_desk_health.py.",
   "compute_ledger": {
     "outputs": {
       "judge": {"unit": "verdicts",
