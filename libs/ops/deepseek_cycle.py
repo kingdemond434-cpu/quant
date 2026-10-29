@@ -44,6 +44,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from libs.ops import machine_env
+
 __all__ = [
     "CAPABILITY_LEDGER",
     "CONTAMINATION_KEYS",
@@ -220,6 +222,9 @@ def resolve_key(env: dict[str, str] | None = None, secrets: Path | None = None
     """
     e = dict(os.environ if env is None else env)
     key = e.get("OPENROUTER_API_KEY", "").strip()
+    if not key and env is None:
+        # A key set at MACHINE scope after this process started (how the box sets every key).
+        key = machine_env.value("OPENROUTER_API_KEY")
     if key:
         return key, "env:OPENROUTER_API_KEY"
     path = secrets or SECRETS

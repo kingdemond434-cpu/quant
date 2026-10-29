@@ -60,7 +60,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from libs.ops import openrouter_guard
+from libs.ops import machine_env, openrouter_guard, public_host
 
 _ROOT = Path(__file__).resolve().parents[2]
 SECRETS = _ROOT / "data" / "secrets" / "llm_panel.json"
@@ -165,6 +165,52 @@ _USD_PER_1K_TOKENS = 0.02
 #: 24x: the six seats went from daily to hourly in the same change. kimi_hunter measured this
 #: trade already and its conclusion holds: a free-tier hunt is worth immeasurably more than no
 #: hunt, and the binding constraint was never model quality, it was the seat being dark.
+#: THE LOCAL SEAT (2026-10-14): an OpenAI-compatible server on THIS machine (Ollama or llama.cpp's
+#: server), declared by the URLs in QUANT_LOCAL_LLM_URLS that `install_local_llm.ps1` sets. It needs
+#: no key, costs nothing and draws on no provider's daily allowance, so it is the seat that keeps
+#: every organ on this module lit when the cloud key is unreadable or the free day is spent.
+#: 28,686 deepening rows went unworked for want of exactly this.
+LOCAL_URLS_ENV = "QUANT_LOCAL_LLM_URLS"
+LOCAL_MODEL_ENV = "QUANT_LOCAL_LLM_MODEL"
+LOCAL_SOURCE = "local:" + LOCAL_URLS_ENV
+#: THE FIRST LOCAL CELL WAITS FOR THE LOOK-AHEAD GUARD. A local open-weight model was trained on
+#: an unknown slice of market history, so a cell it proposes must have its backtest trimmed to
+#: days after its evidence start -- `evidence_trim` in the gauntlet (llm_lookahead_gauntlet v3,
+#: sealed pass). Until that function is in the gauntlet the local seat stays DARK, with the
+#: reason, rather than minting cells the gauntlet would judge on a window the model has seen.
+GAUNTLET = _ROOT / "desks" / "mt5" / "scripts" / "external_gauntlet.py"
+LOOKAHEAD_MARKER = "def evidence_trim("
+
+
+def local_urls() -> list[str]:
+    """The declared local servers that are loopback, in order. Undeclared is empty: a server
+    that happens to listen on a default port is not a seat until the installer declares it."""
+    raw = os.environ.get(LOCAL_URLS_ENV, "")
+    # Loopback only: a "local" URL that points anywhere else is a keyless third party, refused.
+    return [u.strip().rstrip("/") for u in raw.split(",") if public_host.is_loopback_url(u)]
+
+
+def local_dark() -> str:
+    """Why the local seat may not run, or "" when it may."""
+    if not local_urls():
+        if os.environ.get(LOCAL_URLS_ENV, "").strip():
+            return f"{LOCAL_URLS_ENV} names no loopback URL; a non-local server is refused"
+        return f"no local server declared ({LOCAL_URLS_ENV} unset)"
+    try:
+        guarded = LOOKAHEAD_MARKER in GAUNTLET.read_text(encoding="utf-8")
+    except OSError:
+        guarded = False
+    if not guarded:
+        return ("look-ahead guard not in the gauntlet (llm_lookahead_gauntlet v3 has not landed): "
+                "the local seat stays dark until a local model's cells are trimmed to their "
+                "evidence start")
+    return ""
+
+
+def is_local(seat: Seat) -> bool:
+    return getattr(seat, "source", "") == LOCAL_SOURCE
+
+
 def free_tier_only() -> bool:
     """True unless the principal explicitly re-enables spending with QUANT_FREE_TIER=0."""
     return os.environ.get("QUANT_FREE_TIER", "1") != "0"
@@ -222,7 +268,9 @@ def seats() -> list[Seat]:
     """
     out: list[Seat] = []
     for var, name, base in KEY_ENV_VARS:
-        key = os.environ.get(var, "").strip()
+        # machine_env reads a key set at MACHINE scope after this process started, which is how
+        # every key on the box is set and why the resident organs never saw it.
+        key = machine_env.value(var)
         if key:
             out.append(Seat(name=name, base_url=os.environ.get(f"{name.upper()}_BASE_URL", base),
                             key=key, model=os.environ.get(f"{name.upper()}_MODEL", ""),
@@ -239,6 +287,11 @@ def seats() -> list[Seat]:
             out.append(Seat(name=str(p.get("name") or "panel"),
                             base_url=str(p.get("base_url") or "https://openrouter.ai/api/v1"),
                             key=key, model=str(p.get("model") or ""), source="file:llm_panel.json"))
+    # LAST, so a cloud seat stays primary while it is reachable; `chat` falls over to it when the
+    # cloud seat's free day is spent.
+    if not local_dark():
+        out.append(Seat(name="local", base_url=local_urls()[0], key="",
+                        model=os.environ.get(LOCAL_MODEL_ENV, "").strip(), source=LOCAL_SOURCE))
     return out
 
 
@@ -287,6 +340,8 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
     # A PINNED PAID ID ON OPENROUTER IS NOT A CHOICE THE GUARD WILL HONOUR, so it is not
     # returned: discovery below picks the best free id instead of the seat going dark on a
     # refusal (convert_swarm pins one model per lane from the secrets file).
+    if is_local(seat):
+        return _discover_local(seat, timeout=timeout)
     pin_refused = bool(seat.model) and openrouter_guard.refusal(
         f"{seat.base_url}/chat/completions", {"model": seat.model}) is not None
     if seat.model and not pin_refused:
@@ -348,6 +403,44 @@ def discover_model(seat: Seat, *, timeout: float = 20.0) -> tuple[str, str | Non
                 f"(e.g. {', '.join(sorted(ids)[:5])}) -- every candidate carried a downgrade "
                 f"marker {_DOWNGRADE_TOKENS[:6]}... or carried no version at all. Set "
                 "<PROVIDER>_MODEL explicitly.")
+
+
+#: Not a chat model, whatever its size.
+_LOCAL_SKIP = ("embed", "rerank", "guard", "whisper", "tts", "vision-only", "moderation")
+
+
+def _untagged(model_id: str) -> str:
+    return model_id[: -len(":latest")] if model_id.endswith(":latest") else model_id
+
+
+def _discover_local(seat: Seat, *, timeout: float) -> tuple[str, str | None]:
+    """The local server's own catalogue, largest model first. The pin in QUANT_LOCAL_LLM_MODEL
+    wins when the server lists it.
+
+    THE DOWNGRADE TOKENS DO NOT APPLY HERE, and only here. They exist so a cloud seat cannot
+    quietly pick `gpt-6-mini` over `gpt-6`; on this machine every model is open-weight, sized to
+    the RAM the installer measured, and named `qwen2.5:14b-instruct-q4_K_M` -- "instruct" and "7b"
+    are what a local chat model IS. Applying them would refuse every model the installer pulls.
+    """
+    body, err = _get(f"{seat.base_url}/models", "", timeout=timeout)
+    if err:
+        return "", f"local server: {err}"
+    ids = [str(m.get("id") or "") for m in (body.get("data") or []) if isinstance(m, dict)]
+    ids = [i for i in ids if i and not any(t in i.lower() for t in _LOCAL_SKIP)]
+    if seat.model:
+        # Ollama lists `quant-lab` as `quant-lab:latest`; the bare name is the same model.
+        hit = next((i for i in ids if _untagged(i) == _untagged(seat.model)), "")
+        if hit:
+            return hit, None
+        return "", f"local server does not list the pinned {LOCAL_MODEL_ENV}={seat.model!r}"
+    if not ids:
+        return "", "local server lists no chat model"
+
+    def size(mid: str) -> float:
+        m = re.search(r"(\d+(?:\.\d+)?)b\b", mid.lower())
+        return float(m.group(1)) if m else 0.0
+
+    return max(ids, key=lambda i: (size(i), i)), None
 
 
 def _generic_rank(model_id: str) -> tuple[int, int, int] | None:
@@ -619,7 +712,8 @@ def calls_today(now: datetime | None = None) -> int:
             row = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if str(row.get("utc", "")).startswith(stamp):
+        # A local call draws on no provider's allowance, so it never spends the cloud's day.
+        if str(row.get("utc", "")).startswith(stamp) and not row.get("local"):
             n += 1
     return n
 
@@ -664,6 +758,69 @@ def _is_daily_free_refusal(err: str) -> bool:
 JSON_OBJECT: dict[str, str] = {"type": "json_object"}
 
 
+_NO_SEAT = ("no seat: export OPENROUTER_API_KEY (recommended -- one key reaches every "
+            "model family and auto-upgrades across the market, not just within one "
+            "vendor), "
+            "or OPENAI_API_KEY / DEEPSEEK_API_KEY / XAI_API_KEY, or write "
+            "data/secrets/llm_panel.json")
+
+
+def _cloud_refusal() -> str | None:
+    """Why a cloud call may not go out now (the free day, or the month's cap), else None."""
+    # THE CAP CANNOT BIND A FREE RUN, and letting it would be the worst failure mode available:
+    # the ledger accrues an ESTIMATED cost (_USD_PER_1K_TOKENS is a deliberate over-estimate), so
+    # a month of free-tier calls would book phantom spend and then refuse free calls for the rest
+    # of the month -- the desk going dark over money it never spent.
+    # THE FREE TIER'S LIMIT IS REQUESTS PER DAY, so that is what gets checked when the run is
+    # free. Stopping one call short of the ceiling is the difference between an organ that skips
+    # a cycle and an account rate-limited into darkness for the rest of the day -- and a dark
+    # account takes EVERY organ with it, not just the one that spent the last request.
+    if free_tier_only():
+        if free_budget_left() <= 0:
+            return (f"free-tier daily request budget exhausted: {calls_today()} call(s) "
+                    f"today against a {free_daily_max()} ceiling. This is a SKIP, not a "
+                    f"failure -- the budget resets at 00:00 UTC and the next cadence picks "
+                    f"it up. Raise QUANT_FREE_DAILY_MAX only if the provider's real limit "
+                    f"is higher than the one assumed here.")
+        return None
+    spent, cap = month_spend_usd(), monthly_cap_usd()
+    if spent >= cap:
+        return (f"monthly cap reached: ${spent:.2f} of ${cap:.2f}. Raise it with "
+                "$LLM_MONTHLY_CAP_USD if the spend is proven worth it.")
+    return None
+
+
+def _local_busy() -> str:
+    """The local seat yields the cores to the box's own work (free_chain's idle gate)."""
+    from libs.ops import free_chain
+    return free_chain.local_blocked()
+
+
+def _resolve(seat: Seat | None) -> tuple[Seat | None, str]:
+    """The seat this call uses, or (None, why). A named seat is checked as named; with none
+    named, the primary seat is tried and then the local seat, so the local seat takes a call the
+    cloud's spent day would have refused, and never one the cloud could have answered."""
+    if seat is not None:
+        why = _local_busy() if is_local(seat) else _cloud_refusal()
+        return (None, f"local seat: {why}" if is_local(seat) else why) if why else (seat, "")
+    primary = primary_seat()
+    if primary is None:
+        return None, f"{_NO_SEAT}; local seat: {local_dark()}"
+    first = ""
+    for s in [primary] + [x for x in seats() if is_local(x) and not is_local(primary)]:
+        chosen, why = _resolve(s)
+        if chosen is not None:
+            return chosen, ""
+        first = first or why
+    return None, first
+
+
+def _cap_name(seat: Seat) -> str:
+    """The token cap's spelling. A local server honours `max_tokens` and may ignore the newer
+    name, and an uncapped completion on CPU runs for tens of minutes."""
+    return "max_tokens" if is_local(seat) else "max_completion_tokens"
+
+
 def chat(
     prompt: str, *, system: str = "", seat: Seat | None = None, max_tokens: int = 8000,
     timeout: float = 240.0, temperature: float = 0.4, effort: str = DEFAULT_EFFORT,
@@ -682,33 +839,9 @@ def chat(
     The cap is checked BEFORE the call, not after. Checking after is how run_external_panel
     discovered exhaustion mid-run with nothing to show for the spend.
     """
-    s = seat or primary_seat()
+    s, why = _resolve(seat)
     if s is None:
-        return "", ("no seat: export OPENROUTER_API_KEY (recommended -- one key reaches every "
-                    "model family and auto-upgrades across the market, not just within one "
-                    "vendor), "
-                    "or OPENAI_API_KEY / DEEPSEEK_API_KEY / XAI_API_KEY, or write "
-                    "data/secrets/llm_panel.json")
-    spent, cap = month_spend_usd(), monthly_cap_usd()
-    # THE CAP CANNOT BIND A FREE RUN, and letting it would be the worst failure mode available:
-    # the ledger accrues an ESTIMATED cost (_USD_PER_1K_TOKENS is a deliberate over-estimate), so
-    # a month of free-tier calls would book phantom spend and then refuse free calls for the rest
-    # of the month -- the desk going dark over money it never spent.
-    # THE FREE TIER'S LIMIT IS REQUESTS PER DAY, so that is what gets checked when the run is
-    # free. Stopping one call short of the ceiling is the difference between an organ that skips
-    # a cycle and an account rate-limited into darkness for the rest of the day -- and a dark
-    # account takes EVERY organ with it, not just the one that spent the last request.
-    if free_tier_only():
-        left = free_budget_left()
-        if left <= 0:
-            return "", (f"free-tier daily request budget exhausted: {calls_today()} call(s) "
-                        f"today against a {free_daily_max()} ceiling. This is a SKIP, not a "
-                        f"failure -- the budget resets at 00:00 UTC and the next cadence picks "
-                        f"it up. Raise QUANT_FREE_DAILY_MAX only if the provider's real limit "
-                        f"is higher than the one assumed here.")
-    if spent >= cap and not free_tier_only():
-        return "", (f"monthly cap reached: ${spent:.2f} of ${cap:.2f}. Raise it with "
-                    "$LLM_MONTHLY_CAP_USD if the spend is proven worth it.")
+        return "", why
     model, err = discover_model(s)
     if err:
         return "", f"model discovery failed: {err}"
@@ -718,7 +851,7 @@ def chat(
         msgs.append({"role": "system", "content": system})
     msgs.append({"role": "user", "content": prompt})
     req: dict[str, Any] = {"model": model, "messages": msgs,
-                           "max_completion_tokens": int(max_tokens),
+                           _cap_name(s): int(max_tokens),
                            "temperature": float(temperature)}
     if effort:
         req["reasoning_effort"] = effort
@@ -752,34 +885,14 @@ def chat_messages(
     express. Same cap-before-call, same discovery, same degradation ladder, same spend record --
     a second transport here would drift from the first on the exact policies that must not.
     """
-    s = seat or primary_seat()
+    s, why = _resolve(seat)
     if s is None:
-        return "", "no seat: export OPENROUTER_API_KEY (see chat())"
-    spent, cap = month_spend_usd(), monthly_cap_usd()
-    # THE CAP CANNOT BIND A FREE RUN, and letting it would be the worst failure mode available:
-    # the ledger accrues an ESTIMATED cost (_USD_PER_1K_TOKENS is a deliberate over-estimate), so
-    # a month of free-tier calls would book phantom spend and then refuse free calls for the rest
-    # of the month -- the desk going dark over money it never spent.
-    # THE FREE TIER'S LIMIT IS REQUESTS PER DAY, so that is what gets checked when the run is
-    # free. Stopping one call short of the ceiling is the difference between an organ that skips
-    # a cycle and an account rate-limited into darkness for the rest of the day -- and a dark
-    # account takes EVERY organ with it, not just the one that spent the last request.
-    if free_tier_only():
-        left = free_budget_left()
-        if left <= 0:
-            return "", (f"free-tier daily request budget exhausted: {calls_today()} call(s) "
-                        f"today against a {free_daily_max()} ceiling. This is a SKIP, not a "
-                        f"failure -- the budget resets at 00:00 UTC and the next cadence picks "
-                        f"it up. Raise QUANT_FREE_DAILY_MAX only if the provider's real limit "
-                        f"is higher than the one assumed here.")
-    if spent >= cap and not free_tier_only():
-        return "", (f"monthly LLM spend cap reached (${spent:.2f} of ${cap:.2f}) -- raise "
-                    "$LLM_MONTHLY_CAP_USD if the spend is proven worth it.")
+        return "", why
     model, err = discover_model(s)
     if err:
         return "", f"model discovery failed: {err}"
     req: dict[str, Any] = {"model": model, "messages": list(messages),
-                           "max_completion_tokens": int(max_tokens),
+                           _cap_name(s): int(max_tokens),
                            "temperature": float(temperature)}
     if effort:
         req["reasoning_effort"] = effort
@@ -850,6 +963,7 @@ def status() -> dict[str, Any]:
         "month_spend_usd": month_spend_usd(),
         "monthly_cap_usd": monthly_cap_usd(),
         "secrets_file_present": SECRETS.exists(),
+        "local_seat": local_dark() or "LIT",
     }
     if not got:
         out["blocker"] = (
@@ -877,8 +991,16 @@ def status() -> dict[str, Any]:
 # ------------------------------------------------------------------------------------ transport
 
 def _headers(key: str) -> dict[str, str]:
-    return {"Authorization": f"Bearer {key}", "Content-Type": "application/json",
+    head = {"Content-Type": "application/json",
             "HTTP-Referer": "https://localhost", "X-Title": "quant-desk"}
+    if key:                                   # the local seat sends no credential at all
+        head["Authorization"] = f"Bearer {key}"
+    return head
+
+
+#: A loopback request never goes through a proxy and never follows a redirect: either would send
+#: the prompt off the machine, which is the one thing the local seat promises not to do.
+_DIRECT = public_host.LOOPBACK_OPENER
 
 
 def _get(url: str, key: str, *, timeout: float) -> tuple[dict[str, Any], str | None]:
@@ -939,7 +1061,11 @@ def _send(req: urllib.request.Request, timeout: float) -> tuple[dict[str, Any], 
     """HTTP errors carry their BODY into the message. A bare '400 Bad Request' from a model API
     is unactionable; the body says which parameter the provider rejected."""
     try:
-        with urllib.request.urlopen(req, timeout=timeout, context=_ctx()) as fh:
+        if public_host.is_loopback_url(req.full_url):
+            fh_cm = _DIRECT.open(req, timeout=timeout)
+        else:
+            fh_cm = urllib.request.urlopen(req, timeout=timeout, context=_ctx())
+        with fh_cm as fh:
             parsed: dict[str, Any] = json.loads(fh.read().decode("utf8", errors="ignore"))
             return parsed, None
     except urllib.error.HTTPError as exc:
@@ -1015,13 +1141,16 @@ def _record_spend(seat: Seat, model: str, body: dict[str, Any]) -> None:
     raw_usage = body.get("usage")
     usage: dict[str, Any] = raw_usage if isinstance(raw_usage, dict) else {}
     tok = int(usage.get("total_tokens") or 0)
-    free = is_free_model(model)
+    free = is_free_model(model) or is_local(seat)
     row: dict[str, Any] = {
         "utc": datetime.now(UTC).isoformat(timespec="seconds"), "seat": seat.name,
         "organ": calling_organ(), "model": model, "tokens": tok, "free": free,
         # ZERO for a free model, and it is zero because it IS zero -- not a discount, not an
         # assumption. The estimate is kept for metered models only, where erring high is right.
         "usd": 0.0 if free else round(tok / 1000.0 * _USD_PER_1K_TOKENS, 5)}
+    if is_local(seat):
+        # Keyed on the seat's SOURCE, never its name: a panel seat called "local" is a cloud seat.
+        row["local"] = True
     for key in ("prompt_tokens", "completion_tokens"):
         raw = usage.get(key)
         if raw is not None:
