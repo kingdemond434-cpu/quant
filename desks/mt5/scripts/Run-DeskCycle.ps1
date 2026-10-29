@@ -425,9 +425,12 @@ function Invoke-DutyCheck([string[]]$extra) {
     $out = (& $Python scripts\check_cro_duties.py --json @extra 2>&1 | Out-String)
     Pop-Location
     $ErrorActionPreference = $prevEap
-    Write-Cycle ("duty artifacts: {0}" -f ($out.Trim() -split "`n")[-1])
+    $last = ($out.Trim() -split "`n")[-1]
+    Write-Cycle ("duty artifacts: {0}" -f $last)
+    # The parsed verdict, so the end ledger row carries the ENFORCED misses, not the agent's own.
+    try { return ($last | ConvertFrom-Json) } catch { return $null }
 }
-Invoke-DutyCheck @()
+$null = Invoke-DutyCheck @()
 
 $started = Get-Date
 try {
@@ -493,7 +496,17 @@ if ($streamJson) {
 }
 
 # AND AFTER IT: a duty the pass scored MET whose artifacts this host cannot show is MISSED.
-Invoke-DutyCheck @("--review", $Review, "--started-at", $started.ToUniversalTime().ToString("o"))
+$dutyCheck = Invoke-DutyCheck @("--review", $Review, "--started-at", $started.ToUniversalTime().ToString("o"))
+# What the check enforced, for the end row: a field the check did not produce reads UNMEASURED,
+# never an empty list (an empty list would read as "nothing missed").
+$enforced = @{ duties_missed = "UNMEASURED"; pass_questions_missed = "UNMEASURED"; judging_sweep_missed = "UNMEASURED" }
+if ($dutyCheck) {
+    if ($null -ne $dutyCheck.missed) { $enforced.duties_missed = @($dutyCheck.missed) }
+    if ($dutyCheck.review -and $dutyCheck.review.applied) {
+        if ($null -ne $dutyCheck.review.pass_questions_missed) { $enforced.pass_questions_missed = @($dutyCheck.review.pass_questions_missed) }
+        if ($null -ne $dutyCheck.review.judging_sweep_missed) { $enforced.judging_sweep_missed = @($dutyCheck.review.judging_sweep_missed) }
+    }
+}
 
 $mins = [math]::Round(((Get-Date) - $started).TotalMinutes, 1)
 
@@ -546,6 +559,9 @@ Add-LedgerRow @{
     completed = $completed; work_items = $items; binding_constraint = $binding
     research_supervisor = $supState
     permission_denials = $deniedCount
+    duties_missed = $enforced.duties_missed
+    pass_questions_missed = $enforced.pass_questions_missed
+    judging_sweep_missed = $enforced.judging_sweep_missed
 }
 
 # Release the lease whatever the outcome, so the other lane is never locked out by a finished
