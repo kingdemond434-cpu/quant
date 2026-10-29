@@ -3,12 +3,34 @@
   "max": {
     "desks/mt5/mt5desk/sizing.py": {
       "BASE_RISK_FRAC": 0.03,
-      "MAX_RISK_FRAC": 0.10
+      "MAX_RISK_FRAC": 0.1
+    },
+    "desks/mt5/prop/ftmo_executor.py": {
+      "REQUEST_BUDGET": 200,
+      "REQUEST_HARD_CAP": 1950,
+      "STALE_GRACE_S": 60.0
+    },
+    "desks/mt5/prop/ftmo_follower.py": {
+      "TICK_SKEW_S": 300.0,
+      "REQUEST_HARD_CAP": 1950,
+      "DAILY_LOSS_FRAC": 0.05,
+      "MAX_LOSS_FRAC": 0.1,
+      "MAX_NOTIONAL_X": 5.0
     }
   },
   "equal": {
     "desks/mt5/mt5desk/sizing.py": {
       "FADE_FACTOR": 0.5
+    },
+    "desks/mt5/prop/ftmo_executor.py": {
+      "LANE": "ftmo",
+      "TAG": "FX",
+      "MAGIC": 341956,
+      "LOOKBACK_BARS": 900,
+      "MIN_BARS": 60,
+      "KEEP_TRADED": 400,
+      "ALLOW_CROSS_FIRM_COPY": true,
+      "PASS_RAIL": "ftmo_executor_pass"
     }
   },
   "superset": {
