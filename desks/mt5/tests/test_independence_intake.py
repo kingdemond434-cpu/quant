@@ -333,12 +333,12 @@ def test_no_declared_bound_can_bind_the_fill() -> None:
     that neither bound can ever be the reason a pass stops -- the fence checks the same thing
     against the live grid, this checks it without one."""
     assert ii.MAX_FILLS_PER_PASS >= 60_000          # above any grid this desk's axes can make
-    # the artifact slice must not be what the filler reads: run() truncates AFTER filling
+    # the artifact slice must not be what the filler reads: run() truncates AFTER filling, in
+    # `_assemble`, and the filler is handed the grid itself (pinned by behaviour in
+    # test_independence_intake_budget.py::test_the_filler_sees_every_target_the_artifact_slices)
     import inspect
-    src = inspect.getsource(ii.run)
-    fill_at = src.index("fill = (fill_empty_cells")
-    trunc_at = src.index("grid[\"targets\"] = published[:MAX_TARGETS]")
-    assert fill_at < trunc_at, "the fill must see the whole target list, not the published slice"
+    assert "published[:MAX_TARGETS]" in inspect.getsource(ii._assemble)
+    assert "fill_empty_cells(grid," in inspect.getsource(ii.run)
 
 
 def test_the_fill_stops_on_the_budget_and_says_so_rather_than_reporting_success(

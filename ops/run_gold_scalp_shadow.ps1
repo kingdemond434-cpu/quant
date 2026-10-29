@@ -21,7 +21,7 @@ foreach ($terminal in $terminals) {
     try {
         # A present but logged-out Fusion terminal is an expected failover condition, not a
         # reason to abort before the read-only proxy terminal is tried.
-        & $Python $Fetch --terminal $terminal --bars 90000 *>> $Log
+        & $Python -u $Fetch --terminal $terminal --bars 90000 *>> $Log
         $fetchRc = $LASTEXITCODE
     }
     catch {
@@ -37,7 +37,7 @@ if (-not $fetched) {
     throw "No read-only MT5 terminal supplied XAUUSD intraday history"
 }
 
-& $Python $Shadow *>> $Log
+& $Python -u $Shadow *>> $Log
 if ($LASTEXITCODE -ne 0) {
     throw "Gold scalp shadow failed with rc=$LASTEXITCODE"
 }

@@ -24,11 +24,15 @@ foreach ($task in (Get-ScheduledTask | Where-Object { $_.TaskName -like 'MT5-*' 
   if ($acts.Count -ne 1) { continue }
   $a = $acts[0]
   if (-not $a.Arguments) { continue }
-  # Only python invocations, and only ones not already unbuffered.
-  if ($a.Arguments -notmatch 'python\.exe"?\s') { continue }
-  if ($a.Arguments -match 'python\.exe"?\s+(-\w+\s+)*-u\b') { continue }
+  # Only python invocations, and only ones not already unbuffered. BOTH LAUNCHER SPELLINGS: the
+  # full interpreter path AND the `py -3` launcher -- MT5-Deepening, MT5-MoatMiner and
+  # MT5-ContractTerms were registered as `py -3 <script> >> log` and the first version of this
+  # sweep matched only `python.exe`, so it walked straight past them (2026-10-29).
+  $pyRe = '(python\.exe"?|\bpy(?:\.exe)?"?\s+-3)'
+  if ($a.Arguments -notmatch ($pyRe + '\s')) { continue }
+  if ($a.Arguments -match ($pyRe + '\s+(-\w+\s+)*-u\b')) { continue }
 
-  $new = $a.Arguments -replace '(python\.exe"?)(\s+)', '$1 -u$2'
+  $new = $a.Arguments -replace ($pyRe + '(\s+)'), '$1 -u$2'
   if ($new -eq $a.Arguments) { continue }
 
   $act = New-ScheduledTaskAction -Execute $a.Execute -Argument $new

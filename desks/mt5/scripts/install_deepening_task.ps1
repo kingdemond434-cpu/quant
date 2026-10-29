@@ -45,7 +45,7 @@ $template = Get-ScheduledTask -TaskName 'MT5-MoatSilver'
 $userId   = $template.Principal.UserId
 
 $action = New-ScheduledTaskAction -Execute 'cmd.exe' `
-    -Argument ('/d /s /c "cd /d {0} && py -3 research\deepening_worker.py --limit 25 >> {1} 2>&1"' -f $Root, $Log)
+    -Argument ('/d /s /c "cd /d {0} && py -3 -u research\deepening_worker.py --limit 25 >> {1} 2>&1"' -f $Root, $Log)
 
 # :35 past the hour: the compiler rebuilds the queue near the top of the hour, so this reads a
 # queue that has just been refreshed rather than racing it.

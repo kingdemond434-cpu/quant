@@ -92,7 +92,10 @@ if (-not $Python) {
         exit 1
     }
 }
-$pyArgs = if ($Python -eq "py") { "-3 " } else { "" }
+# -u ALWAYS: every task below redirects stdout to a log, and a redirected Python block-buffers
+# it -- the log stays empty until exit, so a hung run and a working one look the same. Fence:
+# desks/mt5/tests/test_task_logs_are_unbuffered.py.
+$pyArgs = if ($Python -eq "py") { "-3 -u " } else { "-u " }
 
 if (-not $InteractiveUser) {
     $terminalTask = Get-ScheduledTask -TaskName "MT5-TerminalBoot" -ErrorAction SilentlyContinue

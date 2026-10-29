@@ -57,7 +57,7 @@ rem its exit code never fails the pass (a missing leg is reported, not an error)
 rem THE REGISTRY REPAIR RUNS WHETHER OR NOT THE EXPANDER SUCCEEDED. It is the step that
 rem reconciles the registry with what is actually on disk, so a partial expansion is exactly
 rem when it is most worth running; chaining it behind `&&` meant it had never run at all.
-"%PYTHON%" %PYARGS% "C:\opt\quant\scripts\repair_universe_registry.py" >>"%LOG%" 2>&1
+"%PYTHON%" %PYARGS% -u "C:\opt\quant\scripts\repair_universe_registry.py" >>"%LOG%" 2>&1
 set RC2=%ERRORLEVEL%
 echo repair_universe_registry rc=%RC2%>>"%LOG%"
 
