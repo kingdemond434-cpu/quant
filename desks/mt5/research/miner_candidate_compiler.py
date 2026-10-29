@@ -1812,6 +1812,33 @@ def main() -> int:
                      key=lambda c: (c.get("net_edge") is None,
                                     -(c.get("net_edge") or 0.0), str(c.get("symbol") or "")))
 
+    # AIMED BEFORE IT IS EMITTED, AND BEFORE THE FIRST PUBLICATION: the steered rows are the
+    # ones published, so the pre-graph publication below never carries a repeat the steer
+    # would have moved.
+    # (principal 2026-10-28: "stop miners from producing them").
+    # This compiler is ~96% of the docket and 78% of its rows repeated an already-mined rule in
+    # thresholds only. Each repeat is moved, here, to the nearest lawful empty ground of the same
+    # mechanism (research/coverage_steer, against the map the last merge wrote). One row out per
+    # row in; the net-edge order decides which row keeps the claim. A fault costs the steer.
+    steer_note: dict = {"status": "UNAVAILABLE"}
+    try:
+        from research import coverage_steer as _cs
+        _steerer = _cs.for_producer("miner_candidates.json", OUT.parent / _cs.MAP.name,
+                                     now=now)
+        if os.environ.get("QUANT_COVERAGE_STEER", "1") == "0":
+            _steerer.closed.append("QUANT_COVERAGE_STEER=0 (revert path)")
+        ordered = _steerer.steer(ordered, "miner_candidates.json")
+        _rep = _steerer.report()
+        steer_note = {"status": "APPLIED", "fail_closed": _rep["fail_closed"],
+                      **(_rep["by_producer"].get("miner_candidates.json") or {}),
+                      "steered_by_axis": _rep["steered_by_axis"], "map": _rep["map"]}
+        print(f"coverage steer: {steer_note.get('duplicate_in', 0)} repeat(s) in, "
+              f"{steer_note.get('steered', 0)} steered to empty ground, "
+              f"{steer_note.get('unsteerable', 0)} unsteerable "
+              f"(fail closed: {_rep['fail_closed']})")
+    except Exception as exc:
+        steer_note = {"status": f"FAILED: {type(exc).__name__}: {exc}"[:300]}
+
     # PUBLISH FIRST, ANNOTATE SECOND (2026-10-20). The artifact below was stamped
     # 2026-10-03 on the trading box while every scheduled task reported rc 0. The compile loop
     # is bounded by `--budget-s` (intake at 35%, compiling at 85%), but EVERYTHING after it was
@@ -1871,6 +1898,7 @@ def main() -> int:
             | {"seats_with_outcomes": {s: d for s, d in (blinding_note.get("seats") or {}).items()
                                        if d.get("rows_with_outcomes")}},
             "graph": graph_note,
+            "coverage_steer": steer_note,
             "impossible_metrics": fence_tally.to_dict(),
             "rows_accounted": rows_total,
             "executable_candidates": len(candidates),
@@ -1933,10 +1961,14 @@ def main() -> int:
     # held no compiler row at all -- this block was failing every hour and `except: pass` made
     # it look like a graph with nothing to say.
     graph_note = {"updated": False, "premortem": False}
+    # Annotate what is PUBLISHED: since the coverage steer runs before the first publication,
+    # a steered child replaces its parent in `ordered` and must carry its own region's count
+    # and premortem, not its parent's (and not none).
+    published = [c for c in ordered if isinstance(c, dict)]
     try:
         from libs.research.hypothesis_graph import record_candidates
         g = _graph_snapshot()
-        for c in candidates.values():
+        for c in published:
             pf = g.prior_failures(str(c.get("symbol")), str(c.get("family")),
                                   dict(c.get("params") or {}))
             if pf["n_failed"]:
@@ -1963,7 +1995,7 @@ def main() -> int:
                 (str(r.get("feature")), str(r.get("level")))
                 for r in (prior_table.get("reopen") or [])
                 if isinstance(r, dict)}
-            for c in candidates.values():
+            for c in published:
                 mult, why = multiplier_for(c, table=prior_table)
                 c["failure_prior"] = mult
                 c["failure_prior_why"] = why
@@ -1978,7 +2010,7 @@ def main() -> int:
             from libs.research.graveyard_model import GraveyardModel
             gm = GraveyardModel().fit(g.rows())
             if gm.n:
-                for c in candidates.values():
+                for c in published:
                     c["premortem"] = gm.premortem(c)
                 graph_note["premortem"] = True
             else:
