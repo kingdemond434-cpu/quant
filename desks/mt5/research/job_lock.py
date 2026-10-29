@@ -12,6 +12,7 @@ from collections.abc import Iterable, Iterator
 from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 BASE = Path(__file__).resolve().parent.parent
 LOCK_ROOT = BASE / "data" / ".job_locks"
@@ -370,7 +371,7 @@ def free_mb() -> int | None:
 #: every caller -- `hourly_cycle.catch_up_intake` labelled a memory refusal "canonical compiler
 #: lane already owned" (2026-10-29). Keys: reason (MEMORY_STAND_DOWN | LOCK_HELD |
 #: LOCK_UNRECOVERABLE), detail, and the figures it was decided on. Cleared on every entry.
-LAST_REFUSAL: dict[str, dict] = {}
+LAST_REFUSAL: dict[str, dict[str, Any]] = {}
 
 
 @contextmanager

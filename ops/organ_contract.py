@@ -38,6 +38,7 @@ import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DESK = ROOT / "desks" / "mt5"
@@ -399,7 +400,7 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
 #: A contract here is graded on the stamp ALONE: a missing or unreadable stamp is UNMEASURED and
 #: fails, however young the file looks. That is the whole point -- the young mtime over old
 #: content is the failure this exists to see.
-STAMPS: dict[str, dict] = {
+STAMPS: dict[str, dict[str, Any]] = {
     "MT5-Hourly (miner compiler)": {
         "key": "compiled_at",
         "legs": ("intake_catchup", "compile_candidates"),
@@ -460,7 +461,7 @@ def likely_cause(organ: str, root: Path | None = None) -> list[str]:
             out.append(f"last attempt: {attempt} unreadable ({type(exc).__name__}) -- no attempt "
                        "has recorded itself since this record was introduced")
     if legs:
-        last: dict[str, dict] = {}
+        last: dict[str, dict[str, Any]] = {}
         for ln in _tail_lines(desk / "data" / "compute_ledger.jsonl"):
             try:
                 r = json.loads(ln)
@@ -498,7 +499,7 @@ def likely_cause(organ: str, root: Path | None = None) -> list[str]:
     return out
 
 
-def check(only: str | None = None, root: Path | None = None) -> dict:
+def check(only: str | None = None, root: Path | None = None) -> dict[str, Any]:
     now = datetime.now(UTC)
     rows = []
     for organ, (rel, max_age, what) in sorted(CONTRACTS.items()):
