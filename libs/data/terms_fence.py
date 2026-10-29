@@ -687,6 +687,92 @@ _HELD_ROUTES: dict[str, dict[str, Any]] = {
                                  "fetched or parsed from the sandbox")}),
 }
 SOURCE_POLICY.update(_HELD_ROUTES)
+#: THE ASIAN PHYSICAL-GOLD STATES (IDEA_QUEUE 245, 237, 228, 215; 2026-10-29). One row per
+#: `alt_proxies` source id; `hosts` is empty so the row governs only that source NAME (the SGE
+#: graph route `fetch_sge_premium` reads, and the country packs' idea grounds on these hosts,
+#: keep whatever row or default they had). A row is LIVE only on a quoted clause of its own terms
+#: page; the other three were not readable and are IDEAS_ONLY: never live input, ideas still
+#: mined, parsers built on fixtures, and each carries its missed-growth line here and in the
+#: state artifact (`asia_gold_physical.missed_growth_lines`). Flipping a row is the only unblock.
+_GOLD_MISSED = ("delta E[log W] UNMEASURED: the {state} state for the gold_asia window cannot be "
+                "judged until this row's terms are read with a clause permitting automated "
+                "access for internal research; no conversion of it is on record")
+SOURCE_POLICY.update({
+    "hk_gold_reexports": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED,
+        "sources": ("hk_gold_reexports",),
+        "why": ("C&SD trade statistics through the Trade-IDDS API published as a DATA.GOV.HK "
+                "resource; the portal's terms (clauses quoted) permit downloading and "
+                "reproducing the Data for commercial purposes with attribution, and the API is "
+                "the portal's own machine route; robots.txt is read per request (a Disallow is "
+                "a hold). One-line revert: status -> IDEAS_ONLY if the auditor reads the "
+                "download grant as not covering automated access"),
+        "api": "https://tradeidds.censtatd.gov.hk/api/get",
+        "api_enquiry": ("https://data.gov.hk/en-data/dataset/hk-censtatd-trade-idds-trade/"
+                        "resource/173a8d40-24ff-4e8e-b9f2-456b20208fa4"),
+        "robots": ("tradeidds.censtatd.gov.hk refused the terms reader's agent by robots on the "
+                   "API spec PDF (2026-10-29); polite_fetch reads robots for DESK_UA on every "
+                   "request, and a Disallow is recorded as a hold, never routed around"),
+        "credit": ("Source: Census and Statistics Department, HKSAR Government (via "
+                   "DATA.GOV.HK); figures modified by the desk (net flow, z-score)"),
+        "terms": {"url": "https://data.gov.hk/en/terms-and-conditions",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "use": ("You are allowed to browse, download, distribute, reproduce, "
+                              "hyperlink to, and print the Data for both commercial and "
+                              "non-commercial purposes on a free-of-charge basis"),
+                      "data": ("“Data” mean the data and all contents provided by the "
+                               "Government and/or other organisations"),
+                      "attribution": "you shall identify clearly the source of the Data"},
+                  "unread": {"https://tradeidds.censtatd.gov.hk/MetadataLink/ApiSpec/"
+                             "API_eng.pdf": "ROBOTS_DISALLOWED to the reader on 2026-10-29: "
+                                            "the response field names are UNREAD"}}},
+    "vn_sjc_premium": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("vn_sjc_premium",),
+        "why": ("SJC's price board and the SBV central-rate page could not be read (client "
+                "error to the reader, 2026-10-29), so their terms are UNREAD and UNREAD terms "
+                "never permit automated live input; the parser is ready on fixtures"),
+        "unblock": ("sjc.com.vn and sbv.gov.vn terms read with a clause permitting automated "
+                    "access for internal research, quoted into this row, and the row flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _GOLD_MISSED.format(state="Vietnam SJC premium")},
+        "terms": {"url": "https://sjc.com.vn/", "checked_at": "2026-10-29",
+                  "unread": {"https://sjc.com.vn/": "client_error to the reader on 2026-10-29",
+                             "https://www.sbv.gov.vn/": ("client_error to the reader on "
+                                                         "2026-10-29")}}},
+    "th_gold_premium": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("th_gold_premium",),
+        "why": ("the Gold Traders Association's terms page renders its body by script and the "
+                "reader saw navigation only (2026-10-29), so its terms are UNREAD and UNREAD "
+                "terms never permit automated live input; the parser is ready on fixtures"),
+        "unblock": ("goldtraders.or.th/terms-and-conditions read with a clause permitting "
+                    "automated access for internal research (and the BoT reference-rate API's "
+                    "terms), quoted into this row, and the row flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _GOLD_MISSED.format(state="Thai 96.5% bar premium")},
+        "terms": {"url": "https://www.goldtraders.or.th/terms-and-conditions",
+                  "checked_at": "2026-10-29",
+                  "unread": {"https://www.goldtraders.or.th/terms-and-conditions": (
+                      "body rendered by script: the reader saw navigation and footer only "
+                      "(footer: 'สงวนสิทธิ์ 2567 สมาคมค้าทองคำ') on 2026-10-29")}}},
+    "cn_sge_deferral": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("cn_sge_deferral",),
+        "why": ("the SGE site prints only 'Copyright 2016 上海黄金交易所 All Right Reserved' and "
+                "links no terms page (read 2026-10-29), so its terms are UNREAD and UNREAD "
+                "terms never permit automated live input; the 交收方向 parser is ready on "
+                "fixtures"),
+        "unblock": ("an SGE statement permitting automated access to its daily quotation "
+                    "table for internal research, quoted into this row, and the row flipped"),
+        "missed_growth": {"delta_elogw": "UNMEASURED",
+                          "cause": _GOLD_MISSED.format(state="SGE Au(T+D) deferral direction")},
+        "terms": {"url": "https://www.sge.com.cn/", "checked_at": "2026-10-29",
+                  "unread": {"https://www.sge.com.cn/": (
+                      "no terms link; footer 'Copyright 2016 上海黄金交易所 All Right Reserved' "
+                      "(2026-10-29)")}}},
+})
 #: The held-route rows, by key (read by `alt_proxies.HELD_ROUTES`).
 HELD_ROUTE_KEYS: frozenset[str] = frozenset(
     k for k, r in SOURCE_POLICY.items() if r.get("held_route"))

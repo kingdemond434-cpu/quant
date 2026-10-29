@@ -2132,6 +2132,12 @@ class Source:
     #: How `rule` reached a period's stamp when that is not plain arithmetic (a holiday table, or
     #: a late bias where the table has no year): recorded as `rule_basis` on each store row.
     rule_basis: Callable[[date], str] | None = None
+    #: Parent selectors the conditioned children are minted on ("asia" = the gold_asia window,
+    #: XAUUSD.asia). Empty = every certified parent on the mapped instrument, as before.
+    parent_selectors: tuple[str, ...] = ()
+    #: Fetch through `libs.data.polite_fetch.get` (robots.txt, the site's access holds, honest
+    #: DESK_UA, 401/403/429/WAF a hard stop) instead of the bare fenced urlopen.
+    polite: bool = False
 
     def instruments_for(self, series: str) -> dict[str, int]:
         for prefix, m in self.series_instruments.items():
@@ -3676,8 +3682,229 @@ def held_missed_growth_lines(paths: Any) -> list[dict[str, Any]]:
         out.append(_tf.held_missed_growth(k, past))
     return out
 
+
+# ============================================================================ Asian physical gold
+#: THE ASIAN PHYSICAL-GOLD STATES (IDEA_QUEUE 245, 237, 228, 215; 2026-10-29), each a slow state
+#: for the gold_asia XAUUSD window. Parsers and arithmetic live in `research/asia_gold_physical`
+#: (the SGE quotation parser in `research/fetch_sge_premium`, which owns SGE); this organ owns
+#: the fetch, the vintages, the PIT stamps, the axis files, the lake series and the conditioned
+#: children, exactly as for every other row. Terms come from the ONE register: TERMS below is a
+#: derived view of `terms_fence.SOURCE_POLICY` for these ids, never a second table.
+from research import asia_gold_physical as _agp  # noqa: E402
+
+#: The Trade-IDDS endpoint and its parameters are from the API Enquiry resource on DATA.GOV.HK
+#: (read 2026-10-29). The SJC, GTA and BoT paths below are the public board / history / API routes
+#: as documented by their users, UNVERIFIED from the authoring container (every host refused it);
+#: their rows are IDEAS_ONLY, so no request to them is ever built until a row flips.
+TRADE_IDDS_URL = "https://tradeidds.censtatd.gov.hk/api/get"
+SJC_PRICE_URL = "https://sjc.com.vn/GoldPrice/Services/PriceService.ashx"
+SBV_HOME_URL = "https://www.sbv.gov.vn/"
+GTA_HISTORY_URL = "https://www.goldtraders.or.th/UpdatePriceList.aspx"
+BOT_REF_RATE_URL = ("https://apigw1.bot.or.th/bot/public/Stat-ReferenceRate/v2/DAILY_REF_RATE/"
+                    "?start_period={start}&end_period={end}")
+#: Months of C&SD history requested per pass (the vintage store dedupes; a revision is recorded).
+HK_MONTHS_BACK = 36
+
+
+def _mend(ym: str) -> date:
+    y, m = int(ym[:4]), int(ym[5:7])
+    return _month_end(y, m)
+
+
+def parse_hk_csd(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Net HK -> Mainland gold flow per month (and the re-export leg), PIT by the API's own
+    release stamp when it prints one; otherwise the release rule stamps it (late)."""
+    rows = _agp.parse_csd_trade(body)
+    rel: dict[str, datetime] = {}
+    for r in rows:
+        if r.get("released") is not None:
+            rel[r["period"]] = max(rel.get(r["period"], r["released"]), r["released"])
+    out = [Obs("net_flow_hkd_k", _mend(p), v, rel.get(p))
+           for p, v in _agp.hk_net_flow(rows).items()]
+    out += [Obs("re_exports_hkd_k", _mend(r["period"]), float(r["value_hkd_k"]),
+                rel.get(r["period"])) for r in rows if r["ttype"] == "re_exports"]
+    return out
+
+
+def parse_vn_sjc(body: bytes, ctx: Ctx) -> list[Obs]:
+    if ctx.part == "sbv":
+        return [Obs("sbv_vnd_per_usd", date.fromisoformat(r["date"]), float(r["vnd_per_usd"]))
+                for r in _agp.parse_sbv_central_rate(body)]
+    out: list[Obs] = []
+    for r in _agp.parse_sjc_prices(body):
+        d = date.fromisoformat(r["date"])
+        out += [Obs("sjc_buy_vnd", d, float(r["buy"])), Obs("sjc_sell_vnd", d, float(r["sell"]))]
+    return out
+
+
+def parse_th_gta(body: bytes, ctx: Ctx) -> list[Obs]:
+    if ctx.part == "bot":
+        return [Obs("bot_thb_per_usd", date.fromisoformat(r["date"]), float(r["thb_per_usd"]))
+                for r in _agp.parse_bot_reference_rate(body)]
+    out: list[Obs] = []
+    for d, v in _agp.gta_daily(_agp.parse_gta_history(body)).items():
+        p = date.fromisoformat(d)
+        out += [Obs("bar_buy_thb", p, v["bar_buy"]), Obs("bar_sell_thb", p, v["bar_sell"]),
+                Obs("revisions", p, v["revisions"])]
+    return out
+
+
+def parse_sge_deferral(body: bytes, ctx: Ctx) -> list[Obs]:
+    from research import fetch_sge_premium as _fsp
+    rows = _fsp.parse_daily_quotation(body.decode("utf-8", "replace"))
+    out: list[Obs] = []
+    for r in _agp.sge_deferral_state(rows):
+        d = date.fromisoformat(str(r["date"]))
+        out.append(Obs("pay_direction", d, float(r["direction"])))
+        if r.get("delivery_lots") is not None:
+            out.append(Obs("delivery_lots", d, float(r["delivery_lots"])))
+    return out
+
+
+_GOLD_META: dict[str, Any] = {
+    "instruments": {"XAUUSD": 1}, "parent_selectors": ("asia",),
+    "payer": "Western gold holders pricing on real yields and the dollar only",
+    "source_culture": "", "crowding_prior": "low"}
+
+ASIA_GOLD_SOURCES: tuple[Source, ...] = (
+    Source(
+        id=_agp.HK_ID, name="Hong Kong C&SD gold (HKHS 7108) trade with the Chinese Mainland",
+        url=TRADE_IDDS_URL, region="HK", language="en", cadence="monthly", parse=parse_hk_csd,
+        rule=_lag_rule(45, 1), transform="level_dev", signal_series=("net_flow_hkd_k",),
+        mechanism=("Hong Kong is the licensed conduit for Mainland gold imports; net flow to the "
+                   "Mainland above its own history is Chinese physical offtake the London and "
+                   "COMEX tape prices only later"),
+        constraint="PBoC import quotas set how much can cross; the flow is the quota being used",
+        licence="DATA.GOV.HK terms (commercial and non-commercial use with attribution)",
+        participant_structure=("physical_flow", "policy_driven"),
+        failure_mode_hypothesis=("fails when PBoC routes imports through Shanghai/Beijing "
+                                 "directly instead of Hong Kong -- a routing change, not demand"),
+        config_env=("ALT_CSD_MAINLAND_CODE",), polite=True,
+        note=("monthly, ~4-6 weeks after month end; PIT by the API's release stamp, else 45 "
+              "days after month end (late)"),
+        **{**_GOLD_META, "source_culture": "HK/en"}),
+    Source(
+        id=_agp.VN_ID, name="Vietnam SJC 1-tael bar premium (SJC board at the SBV central rate)",
+        url=SJC_PRICE_URL, region="VN", language="vi", cadence="daily", parse=parse_vn_sjc,
+        rule=_lag_rule(0, 12), transform="level_dev", signal_series=("premium_pct",),
+        mechanism=("a state-licensed bar whose premium to world gold is local physical demand "
+                   "and capital flight; SBV bar sales cap it, so a jump marks a supply shock"),
+        constraint="SBV licensing and direct bar sales bound how far the premium can run",
+        licence="UNREAD (terms_fence row vn_sjc_premium: IDEAS_ONLY)",
+        participant_structure=("physical_flow", "retail_heavy", "policy_driven"),
+        failure_mode_hypothesis="fails on SBV intervention days, a policy clock, not demand",
+        **{**_GOLD_META, "source_culture": "VN/vi"}),
+    Source(
+        id=_agp.TH_ID, name="Thai Gold Traders Association 96.5% bar premium (BoT reference rate)",
+        url=GTA_HISTORY_URL, region="TH", language="th", cadence="daily", parse=parse_th_gta,
+        rule=_lag_rule(0, 12), transform="level_dev", signal_series=("premium_pct", "revisions"),
+        mechanism=("Thai households buy dips and sell rallies through the shops; a premium that "
+                   "rises on a down day is physical absorption, and the day's announcement "
+                   "count is a local volatility tell"),
+        constraint="the shops quote off world gold and the baht; the premium is their inventory",
+        licence="UNREAD (terms_fence row th_gold_premium: IDEAS_ONLY)",
+        participant_structure=("physical_flow", "retail_heavy"),
+        failure_mode_hypothesis="fails when baht moves, not gold, drive the shop price",
+        **{**_GOLD_META, "source_culture": "TH/th"}),
+    Source(
+        id=_agp.SGE_ID, name="SGE Au(T+D) deferral-fee payment direction (交收方向)",
+        url="https://www.sge.com.cn/sjzx/quotation_daily_new", region="CN", language="zh",
+        cadence="daily", parse=parse_sge_deferral, rule=_lag_rule(1, 0), transform="given",
+        signal_series=("pay_direction",),
+        mechanism=("shorts pay the deferral fee when delivery demand exceeds supply; a run of "
+                   "shorts-pay days marks onshore physical tightness"),
+        constraint="the fee direction is set by the day's delivery applications, not by price",
+        licence="UNREAD (terms_fence row cn_sge_deferral: IDEAS_ONLY)",
+        participant_structure=("physical_flow", "settlement_constrained"),
+        failure_mode_hypothesis="fails around holiday delivery windows that distort applications",
+        note="the fee RATE is not in the daily table: UNMEASURED until a notice feed is read",
+        **{**_GOLD_META, "source_culture": "CN/zh"}),
+)
+
+
+def _gold_terms(sid: str) -> tuple[str, str]:
+    return _tf.terms_verdict(sid), str(_tf.SOURCE_POLICY[sid]["why"])
+
+
+def _gold_evidence(sid: str) -> dict[str, str]:
+    row = _tf.SOURCE_POLICY[sid]
+    t = row.get("terms") or {}
+    clauses = " / ".join(str(v) for v in (t.get("clauses") or {}).values())
+    unread = " | ".join(str(v) for v in (t.get("unread") or {}).values())
+    ev = {"terms_url": str(t["url"]), "terms_quote": clauses or f"(not readable: {unread})",
+          "robots": str(row.get("robots") or "not consulted: the terms are UNREAD"),
+          "checked_at": str(t["checked_at"]), "policy_row": sid}
+    if row.get("credit"):
+        ev["credit"] = str(row["credit"])
+    return ev
+
+
+TERMS.update({s.id: _gold_terms(s.id) for s in ASIA_GOLD_SOURCES})
+TERMS_EVIDENCE.update({s.id: _gold_evidence(s.id) for s in ASIA_GOLD_SOURCES})
+
+
+def polite_get(url: str, headers: dict[str, str] | None = None) -> tuple[bytes, str]:
+    """The polite door for a `polite` source: robots.txt and the site's holds decide, the agent
+    is DESK_UA, live_input refuses an IDEAS_ONLY or held route on every hop, and a refusal or a
+    401/403/429/WAF raises (recorded by `collect`, never routed around)."""
+    from libs.data import polite_fetch
+    r = polite_fetch.get(url, headers=headers, timeout=TIMEOUT, leg=SOURCE, live_input=True)
+    if not r.ok:
+        raise urllib.error.URLError(f"{r.verdict or r.status or 'error'}: {r.error}"[:200])
+    return r.body, r.content_type
+
+
+GOLD_XAU_HOUR = _agp.XAU_HOUR
+
+
+def asia_gold_derived(paths: Paths, src: Source, store: dict[str, Any]
+                      ) -> dict[str, list[dict[str, Any]]]:
+    """The DERIVED series of the Asian gold rows, in the same PIT point envelope: the premium
+    (mid, and the buy-sell gap) for SJC and the association joined INNER with their FX leg and
+    the desk's XAUUSD, and the signed streak of the SGE payment direction. A derived point is
+    knowable only when its LAST leg is (max published_time), so no leg is read early."""
+    def _rows(name: str) -> dict[str, dict[str, Any]]:
+        return {str(r["period"]): r for r in store.values()
+                if isinstance(r, dict) and r.get("series") == name}
+
+    synth: dict[str, Any] = {}
+
+    def _add(series: str, d: str, v: float, legs: list[dict[str, Any]]) -> None:
+        synth[f"{series}|{d}"] = {
+            "series": series, "period": d, "value_first": v, "value_last": v,
+            "first_seen_at": max(str(x.get("first_seen_at")) for x in legs),
+            "published_time": max(str(x.get("published_time")) for x in legs),
+            "published_basis": "derived", "revision_time": None, "n_revisions": 0}
+
+    if src.id in GOLD_XAU_HOUR:
+        legs = (("sjc_buy_vnd", "sjc_sell_vnd", "sbv_vnd_per_usd") if src.id == _agp.VN_ID
+                else ("bar_buy_thb", "bar_sell_thb", "bot_thb_per_usd"))
+        buy, sell, fx = (_rows(n) for n in legs)
+        xau = _agp.xau_daily_close(paths.universe, GOLD_XAU_HOUR[src.id])
+        grams, purity = ((_agp.TAEL_G, _agp.SJC_PURITY) if src.id == _agp.VN_ID
+                         else (_agp.BAHT_WEIGHT_G, _agp.TH_BAR_PURITY))
+        for d in sorted(set(buy) & set(sell) & set(fx) & set(xau)):
+            rate = float(fx[d]["value_first"])
+            pb = _agp.premium_pct(_agp.usd_per_oz(float(buy[d]["value_first"]), grams, purity,
+                                                  rate), xau[d])
+            ps = _agp.premium_pct(_agp.usd_per_oz(float(sell[d]["value_first"]), grams, purity,
+                                                  rate), xau[d])
+            _add("premium_pct", d, (pb + ps) / 2.0, [buy[d], sell[d], fx[d]])
+            _add("buy_sell_gap_pct", d, ps - pb, [buy[d], sell[d], fx[d]])
+    elif src.id == _agp.SGE_ID:
+        dirs = _rows("pay_direction")
+        days = sorted(dirs)
+        for d, run_ in zip(days, _agp.streak([int(float(dirs[d]["value_first"])) for d in days]),
+                           strict=True):
+            _add("pay_streak", d, float(run_), [dirs[d]])
+    if not synth:
+        return {}
+    return build_points(replace(src, transform="level_dev" if src.id in GOLD_XAU_HOUR
+                                else "given"), synth)
+
+
 SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
-                for s in (*SOURCES, *SUBSTITUTE_SOURCES, *PASS5_SOURCES))
+                for s in (*SOURCES, *SUBSTITUTE_SOURCES, *PASS5_SOURCES, *ASIA_GOLD_SOURCES))
 SUBSTITUTE_SOURCES = tuple(s for s in SOURCES if s.substitutes_for)
 BY_ID = {s.id: s for s in SOURCES}
 
@@ -3832,6 +4059,10 @@ CONFIG_DEFAULTS: dict[str, str] = {
     # and served by https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/3/601Y003/M/
     # 202601/202601/201010 (three rows a month: ITEM_CODE2 00 합계, 10 은행계, 20 비은행계;
     # parse_ecos keeps 00). The older 601Y002 (by region) ENDS 202308, so it is not used.
+    # C&SD Trade-IDDS country/territory code for the Chinese Mainland (Annex 1 of the API spec,
+    # which is robots-refused to the authoring container; "CN" is the code C&SD's own API users
+    # pass). A wrong code returns no rows, which reads UNMEASURED, never a zero flow.
+    "ALT_CSD_MAINLAND_CODE": "CN",
     "ALT_ECOS_CARD_STAT": "601Y003",
     "ALT_ECOS_CARD_ITEM": "201010",
     # e-Stat statsDataId 0003449066, 出入国管理統計 "国籍・地域別 入国外国人の在留資格" (monthly,
@@ -3993,6 +4224,28 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
                                         end=now.strftime("%Y%m%d")),
                         Ctx(part=label, fetched_at=now), {"User-Agent": WIKI_UA})
                 for label, proj, title in WIKI_ASIA_ARTICLES]
+    if src.id == _agp.HK_ID:
+        # ONE request: HKHS4 7108, consignment country = the Mainland, every trade type, so the
+        # exports-to and imports-from legs of each month arrive in the same body.
+        first = (now.replace(day=1) - timedelta(days=31 * HK_MONTHS_BACK)).strftime("%Y%m")
+        last = (now.replace(day=1) - timedelta(days=1)).strftime("%Y%m")
+        q = urllib.parse.urlencode({"lang": "EN", "sv": "VCm", "freq": "M",
+                                    "period": f"{first},{last}", "ttype": "ALL",
+                                    "ccclass": "C", "cc": config_value("ALT_CSD_MAINLAND_CODE"),
+                                    "codeclass": "HKHS4", "code": "7108"})
+        return [Request(f"{src.url}?{q}", Ctx(part="csd", fetched_at=now))]
+    if src.id == _agp.VN_ID:
+        return [Request(src.url, Ctx(part="sjc", fetched_at=now)),
+                Request(SBV_HOME_URL, Ctx(part="sbv", fetched_at=now))]
+    if src.id == _agp.TH_ID:
+        d0 = (now - timedelta(days=10)).date().isoformat()
+        return [Request(src.url, Ctx(part="gta", fetched_at=now)),
+                Request(BOT_REF_RATE_URL.format(start=d0, end=now.date().isoformat()),
+                        Ctx(part="bot", fetched_at=now))]
+    if src.id == _agp.SGE_ID:
+        d0 = (now - timedelta(days=10)).date().isoformat()
+        return [Request(f"{src.url}?start_date={d0}&end_date={now.date().isoformat()}",
+                        Ctx(part="sge", fetched_at=now))]
     if src.id == "hk_hkma_liquidity":
         # Full history once (1,000 business days a page, newest first, until a page is empty),
         # then the latest 60 rows each pass; the vintage store dedupes.
@@ -4596,6 +4849,16 @@ def _regime_mask(paths: Paths, src: Source, series: str, op: str, idx: Any) -> A
     return cm.ALT_OPS[op](known.astype(float), 0.0).to_numpy(dtype=bool)
 
 
+def _on_selectors(src: Source, par: dict[str, Any]) -> bool:
+    """A parent on one of the source's declared windows (`parent_selectors`), or any parent when
+    the source declares none. The gold_asia states condition only XAUUSD.asia parents."""
+    if not src.parent_selectors:
+        return True
+    tags = {str(par.get("selector") or ""), str((par.get("params") or {}).get("session") or "")}
+    name = str(par.get("name") or "")
+    return any(sel in tags or f".{sel}" in name for sel in src.parent_selectors)
+
+
 def indirect_cells(paths: Paths, points_by_source: dict[str, dict[str, list[dict[str, Any]]]],
                    state: dict[str, Any], now: datetime,
                    limit: int = INDIRECT_PER_PASS,
@@ -4626,7 +4889,8 @@ def indirect_cells(paths: Paths, points_by_source: dict[str, dict[str, list[dict
             if len(pts) < 24:
                 continue
             for sym in src.instruments_for(series):
-                for par in parents.get(sym, [])[:PARENTS_PER_SYMBOL]:
+                pool = [p for p in parents.get(sym, []) if _on_selectors(src, p)]
+                for par in pool[:PARENTS_PER_SYMBOL]:
                     if may_mint(sym, str(par.get("family") or "")):
                         pairs.append((sid, series, par))
     if not pairs:
@@ -4749,6 +5013,8 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
             getter: Callable[..., tuple[bytes, str]] = http_get) -> dict[str, Any]:
     """Fetch (or read fixtures), parse, and merge into the source's vintage store."""
     rec: dict[str, Any] = {"id": src.id, "status": status_of(src)}
+    if src.polite and getter is http_get:
+        getter = polite_get
     store_p = paths.obs_dir / f"{src.id}.json"
     store = _read_json(store_p, {})
     if src.terms != "confirmed":
@@ -5102,6 +5368,8 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
             continue
         store = _read_json(paths.obs_dir / f"{src.id}.json", {})
         pts = build_points(src, store) if store else {}
+        if store and src.id in _agp.STATE_IDS:
+            pts.update(asia_gold_derived(paths, src, store))
         if pts:
             points_by_source[src.id] = pts
             if not dry_run:
@@ -5171,8 +5439,14 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         "live_yield": ("UNMEASURED until the trading box runs this leg: the fetchers were built "
                        "against fixtures because the authoring container cannot reach the hosts"),
     }
+    gold = _agp.state_from_alt(paths, records, now)
+    report["asia_gold_physical"] = {
+        "path": str(paths.desk / "reports" / _agp.STATE_FILE),
+        "verdicts": {sid: b["verdict"] for sid, b in gold["states"].items()},
+        "missed_growth_lines": gold["missed_growth_lines"]}
     state["last_run"] = report["at"]
     if not dry_run:
+        _agp.write(paths.desk / "reports" / _agp.STATE_FILE, gold)
         _atomic(paths.state, state)
         _atomic(paths.allocation_intel, intel)
         _atomic(paths.equity_handoff, handoff)

@@ -132,6 +132,49 @@ def _parse_graph(payload: object, instid: str) -> tuple[pd.Timestamp, float] | N
     return pd.Timestamp(f"{m.group(1)}-{m.group(2)}-{m.group(3)}"), last
 
 
+#: SGE daily quotation page (每日交易行情, /sjzx/quotation_daily_new). Its table carries, per
+#: contract and date, the 交收方向 (deferral-fee payment direction) and 交收量 (delivery lots) the
+#: Au(T+D) deferral state reads (IDEA_QUEUE row 215; `asia_gold_physical.sge_deferral_state`).
+#: NOT FETCHED: the SGE site prints no terms beyond "All Right Reserved", so its policy row
+#: (terms_fence.SOURCE_POLICY["cn_sge_deferral"]) is IDEAS_ONLY; the parser is ready on fixtures.
+SGE_DAILY_QUOTATION = "https://www.sge.com.cn/sjzx/quotation_daily_new"
+_TR = re.compile(r"<tr[^>]*>(.*?)</tr>", re.S | re.I)
+_TD = re.compile(r"<t[dh][^>]*>(.*?)</t[dh]>", re.S | re.I)
+_TAG = re.compile(r"<[^>]+>")
+
+
+def parse_daily_quotation(html: str) -> list[dict[str, object]]:
+    """Rows of the daily quotation table -> [{date, contract, close, open_interest, direction,
+    delivery_lots}]. Columns are located by their HEADER text (日期, 合约, 收盘价, 市场持仓,
+    交收方向, 交收量), so a reordered table still parses; a table without 合约 and 交收方向
+    headers parses to nothing, never to a guess."""
+    rows = [[_TAG.sub("", c).replace("&nbsp;", " ").strip() for c in _TD.findall(tr)]
+            for tr in _TR.findall(html)]
+    head: dict[str, int] = {}
+    out: list[dict[str, object]] = []
+    for cells in rows:
+        if not head:
+            if any(c.startswith("合约") for c in cells) and any("交收方向" in c for c in cells):
+                for i, c in enumerate(cells):
+                    for key in ("日期", "合约", "收盘价", "市场持仓", "交收方向", "交收量"):
+                        if c.startswith(key) and key not in head:
+                            head[key] = i
+            continue
+        if len(cells) <= max(head.values()) or not re.match(r"\d{4}-\d{2}-\d{2}$",
+                                                             cells[head.get("日期", 0)]):
+            continue
+
+        def _f(key: str, cells: list[str] = cells) -> float | None:
+            try:
+                return float(cells[head[key]].replace(",", ""))
+            except (KeyError, ValueError):
+                return None
+        out.append({"date": cells[head.get("日期", 0)], "contract": cells[head["合约"]],
+                    "close": _f("收盘价"), "open_interest": _f("市场持仓"),
+                    "direction": cells[head["交收方向"]], "delivery_lots": _f("交收量")})
+    return out
+
+
 def fetch_sge() -> tuple[dict[str, tuple[pd.Timestamp, float]], str]:
     """Latest SGE print per contract. Returns ({col: (date, cny_per_gram)}, provenance).
 

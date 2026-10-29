@@ -1367,8 +1367,19 @@ LATENT_SPECS: tuple[LatentSpec, ...] = (
                         terms_source="in_gold_imports"),
             _pending("sge_benchmark", "Shanghai Gold Benchmark AM/PM and SGE volume", 1, "daily",
                      "package P1: fetch_sge_premium benchmark backfill"),
-            _pending("china_gold_imports", "China / Hong Kong gold imports (C&SD, customs)", 1,
-                     "monthly", "package P3: customs query tool; HK C&SD not collected"),
+            LatentInput("hk_gold_net_flow", "Hong Kong net gold (HKHS 7108) flow to the "
+                        "Chinese Mainland (C&SD Trade-IDDS; IDEA_QUEUE 245)",
+                        "alt_hk_gold_reexports", "net_flow_hkd_k.value", 1, "monthly",
+                        terms_source="hk_gold_reexports"),
+            LatentInput("sge_deferral_streak", "SGE Au(T+D) deferral-fee direction streak, + = "
+                        "shorts pay (IDEA_QUEUE 215)", "alt_cn_sge_deferral",
+                        "pay_streak.value", 1, "daily", terms_source="cn_sge_deferral"),
+            LatentInput("th_bar_premium", "Thai 96.5% bar premium to XAUUSD (Gold Traders "
+                        "Association at the BoT rate; IDEA_QUEUE 228)", "alt_th_gold_premium",
+                        "premium_pct.value", 1, "daily", terms_source="th_gold_premium"),
+            LatentInput("vn_sjc_premium", "Vietnam SJC bar premium to XAUUSD (SBV central "
+                        "rate; IDEA_QUEUE 237)", "alt_vn_sjc_premium", "premium_pct.value", 1,
+                        "daily", terms_source="vn_sjc_premium"),
             _pending("swiss_gold_exports", "Swiss gold exports to China/HK/India", 1, "monthly",
                      "registry row swiss_customs_gold only (no parser)"),
             _pending("lbma_vaults", "LBMA London vault holdings", -1, "monthly",
