@@ -25,6 +25,12 @@ from prop import ftmo_venue_reader as fvr  # noqa: E402
 R = pca.FTMO_2STEP
 
 
+@pytest.fixture(autouse=True)
+def _no_gap_file_in_the_real_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A test run never writes a donation file under the real data/intelligence (audit #489)."""
+    monkeypatch.setattr(pca, "GAP_REQUESTS", tmp_path / "ftmo_gap_hypotheses.jsonl")
+
+
 def _paths(rows: list[list[float]]) -> np.ndarray:
     """(paths=1, days, sleeves=1) from one path's daily R."""
     return np.asarray(rows, dtype=float)[None]
