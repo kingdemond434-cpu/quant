@@ -304,7 +304,10 @@ def run(apply: bool) -> dict:
     return {
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "health_age_min": round(age, 1),
-        "status": "OK" if not (escalated or capital or seats.get("red")) else "NEEDS_HUMAN",
+        # The seat check is a pass ONLY when it says OK: UNMEASURED (unreadable roster, import
+        # failure) is not a clean read (PR #524 audit, 2026-10-29).
+        "status": ("OK" if not (escalated or capital) and seats.get("status") == "OK"
+                   else "NEEDS_HUMAN"),
         "n_acted": len(acted), "n_escalated": len(escalated),
         "applied": bool(apply),
         "acted": acted, "escalated": escalated,
@@ -339,8 +342,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"                 {str(r['diagnosis'])[:110]}")
     for r in doc.get("capital_faults", []):
         print(f"  CAPITAL FAULT  {str(r['sleeve'])[:28]:<28} {str(r['fault'])[:70]}")
-    for r in (doc.get("seat_clocks") or {}).get("red", []):
+    sc = doc.get("seat_clocks") or {}
+    for r in sc.get("red", []):
         print(f"  SEAT RED       {str(r['seat'])[:28]:<28} {str(r['why'])[:80]}")
+    if sc.get("error"):
+        print(f"  SEAT UNMEASURED  {str(sc['error'])[:100]}")
+    for r in sc.get("unmeasured") or []:
+        print(f"  SEAT UNMEASURED  {str(r.get('check'))[:16]:<16} {str(r.get('error'))[:90]}")
     if doc.get("uncontracted"):
         print(f"  unwatched      {len(doc['uncontracted'])} organ(s) with no artifact contract: "
               f"{', '.join(doc['uncontracted'][:6])}")

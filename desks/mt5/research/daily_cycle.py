@@ -35,7 +35,7 @@ import time
 import traceback
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import IO
+from typing import IO, Any
 
 BASE = Path(__file__).resolve().parent.parent
 for p in (str(BASE), str(BASE / "research"), str(BASE / "scripts")):
@@ -427,6 +427,12 @@ PROPOSER_GRACE_FLOOR_S = 300.0
 #: A proposer whose `run()` takes no budget: bounded at the larger of this and 1.5x its last
 #: measured complete run, so a slow-but-finishing organ is never killed for being slow.
 UNBUDGETED_BOUND_S = 5400.0
+#: A proposer KILLED at its bound records no wall time, so its bound would never grow and it
+#: could be killed at the same bound every day (fund_playbook, reflective_timing_contract,
+#: 2026-10-29). Each kill raises the next bound by this factor, capped: past the cap it is still
+#: deferred -- keeping its place -- and goes RED by name at 48h (seat_clocks.red_proposers).
+PROPOSER_BOUND_GROWTH = 1.5
+PROPOSER_BOUND_CAP_S = 2 * UNBUDGETED_BOUND_S
 #: The child's stdout line that carries its report back to the chain.
 PROPOSER_RESULT_PREFIX = "PROPOSER_RESULT "
 #: Outcomes that FINISH a proposer's attempt for the day (a kill or a deferral does not).
@@ -472,11 +478,14 @@ def proposer_order(state: dict, today: str,
 
 
 def proposer_bound(budget_s: float | None, st: dict | None = None) -> float:
-    """Seconds a proposer's child may run before it is killed (see PROPOSER_GRACE_FLOOR_S)."""
+    """Seconds a proposer's child may run before it is killed (see PROPOSER_GRACE_FLOOR_S), raised
+    to PROPOSER_BOUND_GROWTH x the bound it was last KILLED at, capped at PROPOSER_BOUND_CAP_S."""
+    killed = float((st or {}).get("killed_at_bound_s") or 0.0)
+    grown = min(PROPOSER_BOUND_CAP_S, PROPOSER_BOUND_GROWTH * killed) if killed else 0.0
     if budget_s is not None:
-        return float(budget_s) + max(PROPOSER_GRACE_FLOOR_S, 0.5 * float(budget_s))
+        return max(float(budget_s) + max(PROPOSER_GRACE_FLOOR_S, 0.5 * float(budget_s)), grown)
     last_ok = float((st or {}).get("last_ok_wall_s") or 0.0)
-    return max(UNBUDGETED_BOUND_S, 1.5 * last_ok)
+    return max(UNBUDGETED_BOUND_S, 1.5 * last_ok, grown)
 
 
 def _proposer_budget(name: str) -> float | None:
@@ -635,6 +644,9 @@ def _proposers() -> None:
         if status == "OK":
             st["last_ok_at"] = st["last_at"]
             st["last_ok_wall_s"] = res.get("wall_s")
+            st.pop("killed_at_bound_s", None)
+        elif status == "KILLED_AT_BOUND":
+            st["killed_at_bound_s"] = round(bound)
         if status in PROPOSER_FINISHED:
             st["done_day"] = today
         _write_json(PROPOSER_STATE, state)
@@ -1148,18 +1160,42 @@ def parse_iso_duration(text: str) -> float | None:
     return total if total > 0 else None
 
 
-def _task_limit_s(task: str = DAILY_TASK_NAME) -> float | None:
-    """The task's ExecutionTimeLimit, read from Task Scheduler (Windows only; read-only query)."""
-    if os.name != "nt":
+def _decode_schtasks(raw: bytes) -> str:
+    """schtasks /xml writes UTF-16 (with a BOM) on most Windows builds and the console code page
+    on others; decoding it as text=True read every NUL-interleaved byte and matched nothing."""
+    if raw[:2] in (b"\xff\xfe", b"\xfe\xff"):
+        return raw.decode("utf-16", "replace")
+    if len(raw) >= 4 and raw[1:2] == b"\x00" and raw[3:4] == b"\x00":
+        return raw.decode("utf-16-le", "replace")
+    if raw[:3] == b"\xef\xbb\xbf":
+        return raw[3:].decode("utf-8", "replace")
+    return raw.decode("utf-8", "replace")
+
+
+def _task_limit_s(task: str = DAILY_TASK_NAME, runner: Any = None) -> float | None:
+    """The task's ExecutionTimeLimit, read from Task Scheduler (Windows only; read-only query).
+
+    NEVER RAISES, AND NEVER SWALLOWS SILENTLY: any failure -- not only OSError/SubprocessError --
+    is logged with its cause before the pass falls back to "no deadline known"."""
+    if os.name != "nt" and runner is None:
         return None
     import subprocess
+    run = runner or subprocess.run
     try:
-        r = subprocess.run(["schtasks", "/query", "/tn", task, "/xml"], capture_output=True,
-                           text=True, timeout=20, check=False)
-    except (OSError, subprocess.SubprocessError):
+        r = run(["schtasks", "/query", "/tn", task, "/xml"], capture_output=True,
+                timeout=20, check=False)
+        out = r.stdout or b""
+        text = out if isinstance(out, str) else _decode_schtasks(out)
+        m = re.search(r"<ExecutionTimeLimit>([^<]+)</ExecutionTimeLimit>", text)
+        if not m:
+            dlog(f"{task}: no ExecutionTimeLimit in schtasks output (rc={r.returncode}, "
+                 f"{len(text)} chars) -- no deadline known")
+            return None
+        return parse_iso_duration(m.group(1))
+    except Exception as exc:  # a deadline read must never crash the chain
+        dlog(f"{task}: ExecutionTimeLimit unreadable ({type(exc).__name__}: {exc}) -- "
+             f"no deadline known")
         return None
-    m = re.search(r"<ExecutionTimeLimit>([^<]+)</ExecutionTimeLimit>", r.stdout or "")
-    return parse_iso_duration(m.group(1)) if m else None
 
 
 def _resolve_deadline() -> tuple[float | None, str]:

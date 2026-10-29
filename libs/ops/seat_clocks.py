@@ -207,36 +207,56 @@ def red_proposers(now: float | None = None, desk: Path = DESK,
     return out
 
 
-def _daily_proposers(desk: Path) -> list[str]:
+class Unmeasured(ValueError):
+    """A roster this check reads could not be read. Never an empty roster: an empty roster has
+    nothing RED in it and so reads clean (PR #524 audit, 2026-10-29)."""
+
+
+def _daily_tree(desk: Path) -> Any:
     import ast
+    src = desk / "research" / "daily_cycle.py"
     try:
-        tree = ast.parse((desk / "research" / "daily_cycle.py").read_text(encoding="utf-8"))
-    except (OSError, SyntaxError, ValueError):
-        return []
-    for node in tree.body:
+        return ast.parse(src.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, ValueError) as exc:
+        raise Unmeasured(f"cannot parse {src}: {type(exc).__name__}: {exc}"[:300]) from exc
+
+
+def _daily_proposers(desk: Path) -> list[str]:
+    """`daily_cycle.PROPOSERS`, from the file's text. Raises Unmeasured -- never returns [] --
+    when the file cannot be parsed or the roster is missing, not a literal, or empty."""
+    import ast
+    for node in _daily_tree(desk).body:
         if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) \
                 and node.target.id == "PROPOSERS" and node.value is not None:
             try:
-                return [str(x) for x in ast.literal_eval(node.value)]
-            except ValueError:
-                return []
-    return []
+                names = [str(x) for x in ast.literal_eval(node.value)]
+            except (ValueError, TypeError, SyntaxError) as exc:
+                raise Unmeasured(f"daily_cycle.PROPOSERS is not a literal: "
+                                 f"{type(exc).__name__}: {exc}"[:300]) from exc
+            if not names:
+                raise Unmeasured("daily_cycle.PROPOSERS is empty")
+            return names
+    raise Unmeasured("daily_cycle.PROPOSERS: no annotated assignment found")
 
 
 def _daily_steps(desk: Path) -> list[str]:
-    """`daily_cycle.STEPS` names, from the file's text (the chain is never imported here)."""
+    """`daily_cycle.STEPS` names, from the file's text (the chain is never imported here).
+    Raises Unmeasured -- never returns [] -- when the roster cannot be read or is empty."""
     import ast
-    try:
-        tree = ast.parse((desk / "research" / "daily_cycle.py").read_text(encoding="utf-8"))
-    except (OSError, SyntaxError, ValueError):
-        return []
-    for node in tree.body:
+    for node in _daily_tree(desk).body:
         if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "STEPS"
                                                 for t in node.targets) \
                 and isinstance(node.value, ast.Tuple):
-            return [str(e.elts[0].value) for e in node.value.elts
-                    if isinstance(e, ast.Tuple) and e.elts and isinstance(e.elts[0], ast.Constant)]
-    return []
+            names = [str(e.elts[0].value) for e in node.value.elts
+                     if isinstance(e, ast.Tuple) and e.elts
+                     and isinstance(e.elts[0], ast.Constant)]
+            if not names:
+                raise Unmeasured("daily_cycle.STEPS holds no (name, ...) tuple")
+            if len(names) != len(node.value.elts):
+                raise Unmeasured(f"daily_cycle.STEPS: {len(node.value.elts) - len(names)} "
+                                 f"entr(ies) whose name is not a literal")
+            return names
+    raise Unmeasured("daily_cycle.STEPS: no tuple assignment found")
 
 
 def red_daily_steps(now: float | None = None, desk: Path = DESK,
@@ -270,11 +290,18 @@ def red_daily_steps(now: float | None = None, desk: Path = DESK,
 
 
 def report(now: float | None = None, desk: Path = DESK) -> dict[str, Any]:
-    seats = red_seats(now, desk)
-    props = red_proposers(now, desk)
-    steps = red_daily_steps(now, desk)
-    red = seats + props + steps
-    return {"status": "RED" if red else "OK",
+    """RED when anything is RED; else UNMEASURED (with each cause) when any roster could not be
+    read; OK only when every check measured and none is RED."""
+    unmeasured: list[dict[str, str]] = []
+    red: list[dict[str, Any]] = []
+    for name, fn in (("seats", red_seats), ("proposers", red_proposers),
+                     ("daily_steps", red_daily_steps)):
+        try:
+            red += fn(now, desk)
+        except Exception as exc:
+            unmeasured.append({"check": name, "error": f"{type(exc).__name__}: {exc}"[:300]})
+    status = "RED" if red else ("UNMEASURED" if unmeasured else "OK")
+    return {"status": status, "unmeasured": unmeasured,
             "rule": (f"RED = no output for more than {RED_CADENCES} cadences of the slowest "
                      f"clock that runs it (VPS-only seats: VPS timer 1h + box clock "
                      f"{BOX_CADENCE_H:g}h; daily proposers and daily-chain steps: "

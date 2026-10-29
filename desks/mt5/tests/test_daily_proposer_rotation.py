@@ -195,3 +195,61 @@ def test_the_census_and_the_liveness_check_read_the_same_list():
     for name in ("anomaly_factory", "microstructure_miner", "plumbing_miner",
                  "style_premia_sweep", "survivor_distiller", "tail_alpha_search"):
         assert name in daily_cycle.PROPOSERS
+
+
+# ------------------------------------------------------------- PR #524 audit (2026-10-29)
+
+def test_a_proposer_killed_at_its_bound_gets_a_longer_bound_capped():
+    budgeted = daily_cycle.proposer_bound(1200.0, {})
+    assert budgeted == 1800.0
+    assert daily_cycle.proposer_bound(1200.0, {"killed_at_bound_s": 1800}) == 2700.0
+    unb = daily_cycle.proposer_bound(None, {"killed_at_bound_s": daily_cycle.UNBUDGETED_BOUND_S})
+    assert unb == daily_cycle.PROPOSER_BOUND_GROWTH * daily_cycle.UNBUDGETED_BOUND_S
+    assert daily_cycle.proposer_bound(None, {"killed_at_bound_s": 10 ** 6}) == \
+        daily_cycle.PROPOSER_BOUND_CAP_S
+
+
+def test_the_killed_bound_is_recorded_and_cleared_on_success(dc, monkeypatch):
+    bounds: dict[str, list[float]] = {}
+    outcome = {"v": "KILLED_AT_BOUND"}
+
+    def fake(name, budget, bound):
+        bounds.setdefault(name, []).append(bound)
+        st = outcome["v"] if name == "fund_playbook" else "OK"
+        return {"status": st, "wall_s": 1}
+
+    monkeypatch.setattr(daily_cycle, "_run_proposer", fake)
+    daily_cycle._proposers()
+    st = _state(dc)
+    first = bounds["fund_playbook"][0]
+    assert st["fund_playbook"]["killed_at_bound_s"] == round(first)
+    daily_cycle._proposers()                           # same day: only the killed one is owed
+    assert bounds["fund_playbook"][1] == daily_cycle.PROPOSER_BOUND_GROWTH * round(first)
+    outcome["v"] = "OK"
+    st = _state(dc)
+    st["fund_playbook"].pop("done_day", None)
+    (dc / "state.json").write_text(json.dumps(st), "utf-8")
+    daily_cycle._proposers()
+    assert "killed_at_bound_s" not in _state(dc)["fund_playbook"]
+
+
+def test_task_limit_decodes_utf16_and_never_raises(dc, monkeypatch):
+    xml = ("<?xml version=\"1.0\" encoding=\"UTF-16\"?><Task><Settings>"
+           "<ExecutionTimeLimit>PT3H</ExecutionTimeLimit></Settings></Task>")
+
+    class R:
+        returncode = 0
+
+        def __init__(self, out):
+            self.stdout = out
+
+    for raw in (b"\xff\xfe" + xml.encode("utf-16-le"), xml.encode("utf-16-le"),
+                xml.encode("utf-8")):
+        assert daily_cycle._task_limit_s(runner=lambda *a, _r=raw, **k: R(_r)) == 10800.0
+
+    def boom(*a, **k):
+        raise ValueError("weird schtasks failure")
+
+    assert daily_cycle._task_limit_s(runner=boom) is None
+    assert "weird schtasks failure" in (dc / "daily_cycle.log").read_text("utf-8")
+    assert daily_cycle._task_limit_s(runner=lambda *a, **k: R(b"garbage")) is None

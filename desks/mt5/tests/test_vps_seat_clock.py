@@ -67,6 +67,7 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(vsc, "BASE", d)
     monkeypatch.setattr(vsc, "STATE", d / "data" / "vps_seat_clock_state.json")
     monkeypatch.setattr(vsc, "REPORT", d / "reports" / "VPS_SEAT_CLOCK.json")
+    monkeypatch.setattr(vsc, "vps_shipped_ts", lambda *a, **k: ({}, "test: no transport ref"))
     return d
 
 
@@ -213,3 +214,202 @@ def test_the_leg_is_on_the_hourly_roster():
     assert '"vps_seat_clock", "side_channels/vps_seat_clock.py"' in src
     from libs.research.layers import LEG_LAYER
     assert LEG_LAYER["vps_seat_clock"] == "information"
+
+
+# ------------------------------------------------------------- PR #524 audit (2026-10-29)
+
+def test_a_killed_unit_gets_a_longer_bound_next_time_capped(desk):
+    base = vsc.bound_s("seed:darwinex", {})
+    assert base == vsc.SEED_BOUND_S
+    grown = vsc.bound_s("seed:darwinex", {"killed_at_bound_s": base})
+    assert grown == vsc.BOUND_GROWTH * base
+    assert vsc.bound_s("seed:darwinex", {"killed_at_bound_s": 10 * base}) == vsc.BOUND_CAP_S
+    assert vsc.bound_s("external:cot", {"killed_at_bound_s": vsc.EXTERNAL_BOUND_S}) == \
+        vsc.BOUND_GROWTH * vsc.EXTERNAL_BOUND_S
+
+
+def test_run_pass_records_the_killed_bound_and_clears_it_on_success(desk):
+    def killer(cmd, timeout_s):
+        unit = cmd[cmd.index("--unit") + 1]
+        if unit == "seed:global_frontier":
+            return None, ""
+        return 0, vsc.RESULT_PREFIX + json.dumps({"status": "OK", "rows": 1})
+
+    vsc.run_pass(5000.0, runner=killer, now=NOW)
+    st = json.loads(vsc.STATE.read_text("utf-8"))
+    assert st["seed:global_frontier"]["killed_at_bound_s"] == vsc.SEED_BOUND_S
+    assert vsc.bound_s("seed:global_frontier", st["seed:global_frontier"]) > vsc.SEED_BOUND_S
+    assert "killed_at_bound_s" not in st["seed:darwinex"]
+
+    def ok(cmd, timeout_s):
+        return 0, vsc.RESULT_PREFIX + json.dumps({"status": "OK", "rows": 1})
+
+    vsc.STATE.write_text(json.dumps({"seed:global_frontier": st["seed:global_frontier"] | {
+        "last_started_at": None}}), "utf-8")
+    vsc.run_pass(5000.0, runner=ok, now=NOW)
+    st2 = json.loads(vsc.STATE.read_text("utf-8"))
+    assert "killed_at_bound_s" not in st2["seed:global_frontier"]
+
+
+def test_the_box_stands_down_when_the_vps_transport_shows_it_fetched(desk):
+    # nothing on disk for darwinex or cot (adoption broken) -- but the VPS shipped both
+    shipped = {"darwinex": NOW - 1800, "cot": NOW - 4 * 3600}
+    p = vsc.plan({}, NOW, desk, shipped=shipped)
+    assert "seed:darwinex" in p["fresh"] and "seed:darwinex" in p["vps_fetched"]
+    assert "external:cot" in p["due"]          # the VPS shipped it outside the cadence
+    assert "seed:fxblue" in p["due"] and "seed:fxblue" not in p["vps_fetched"]
+    # regional_survivors stands down on ANY of its platform seats
+    p2 = vsc.plan({}, NOW, desk, shipped={"amarkets": NOW - 60})
+    assert "seed:regional_survivors" in p2["vps_fetched"]
+
+
+def test_run_pass_reports_a_vps_fetched_unit_and_does_not_run_it(desk, monkeypatch):
+    monkeypatch.setattr(vsc, "vps_shipped_ts", lambda *a, **k: (
+        {"darwinex": NOW - 600}, "test ref"))
+    calls: list[str] = []
+
+    def runner(cmd, timeout_s):
+        calls.append(cmd[cmd.index("--unit") + 1])
+        return 0, vsc.RESULT_PREFIX + json.dumps({"status": "OK", "rows": 1})
+
+    rep = vsc.run_pass(5000.0, runner=runner, now=NOW)
+    assert rep["units"]["seed:darwinex"]["status"] == "VPS_FETCHED"
+    assert "seed:darwinex" not in calls
+    doc = json.loads(vsc.REPORT.read_text("utf-8"))
+    assert doc["vps_fetched"] == ["seed:darwinex"]
+    assert doc["vps_shipped"]["basis"] == "test ref"
+    assert "github.com/kingdemond434-cpu/quant" in doc["rails"]["user_agent"]
+
+
+def test_vps_shipped_ts_reads_the_transport_ref_and_says_when_it_cannot():
+    class R:
+        returncode = 0
+        stderr = ""
+        stdout = ("@1800000000\n\ndesks/mt5/data/intelligence/darwinex/discoveries_x.json\n"
+                  "@1799990000\n\ndesks/mt5/data/intelligence/darwinex/discoveries_y.json\n"
+                  "data/intelligence/cot/discoveries_z.json\n"
+                  "desks/mt5/data/intelligence/latest_discoveries.json\n")
+
+    got, basis = vsc.vps_shipped_ts(runner=lambda *a, **k: R())
+    assert got == {"darwinex": 1_800_000_000.0, "cot": 1_799_990_000.0}
+    assert "intel-ship/send" in basis
+
+    class Bad:
+        returncode = 128
+        stdout = ""
+        stderr = "fatal: bad revision"
+
+    got, basis = vsc.vps_shipped_ts(runner=lambda *a, **k: Bad())
+    assert got == {} and basis.startswith("UNMEASURED")
+
+    def boom(*a, **k):
+        raise FileNotFoundError("git")
+
+    got, basis = vsc.vps_shipped_ts(runner=boom)
+    assert got == {} and basis.startswith("UNMEASURED")
+
+
+def test_the_child_installs_the_rails_before_any_miner_runs(monkeypatch):
+    import box_rails
+    import seed_miners
+    seen: dict[str, object] = {}
+
+    def fake_run_and_save(only=None, tail=True):
+        seen["installed"] = box_rails._STATE["installed"]
+        seen["env"] = os.environ.get(box_rails.ENV)
+        return {}
+
+    monkeypatch.setattr(seed_miners, "run_and_save", fake_run_and_save)
+    monkeypatch.setattr(box_rails, "install", lambda walled=None: box_rails._STATE.update(
+        {"installed": True}))
+    monkeypatch.delenv(box_rails.ENV, raising=False)
+    try:
+        assert vsc.run_unit("seed:darwinex")["status"] == "OK"
+    finally:
+        box_rails._STATE["installed"] = False
+        os.environ.pop(box_rails.ENV, None)
+    assert seen == {"installed": True, "env": "1"}
+
+
+def test_spawned_external_miner_children_reinstall_the_rails(monkeypatch):
+    import box_rails
+    import run_all_miners
+    calls: list[str] = []
+    monkeypatch.setattr(box_rails, "install", lambda walled=None: calls.append("install"))
+
+    class Q:
+        def __init__(self):
+            self.items = []
+
+        def put(self, x):
+            self.items.append(x)
+
+    monkeypatch.setenv("QUANT_BOX_RAILS", "1")
+    q = Q()
+    run_all_miners._run_miner_inner("x", lambda: calls.append("mine") or [], q)
+    assert calls == ["install", "mine"] and q.items == [("ok", [])]
+    monkeypatch.delenv("QUANT_BOX_RAILS")
+    calls.clear()
+    run_all_miners._run_miner_inner("x", lambda: calls.append("mine") or [], Q())
+    assert calls == ["mine"]                    # the VPS path is untouched
+
+
+def test_an_unreadable_roster_is_unmeasured_never_an_empty_pass(tmp_path):
+    desk = tmp_path / "desks" / "mt5"
+    (desk / "research").mkdir(parents=True)
+    with pytest.raises(seat_clocks.Unmeasured, match="cannot parse"):
+        seat_clocks._daily_proposers(desk)          # file absent
+    with pytest.raises(seat_clocks.Unmeasured, match="cannot parse"):
+        seat_clocks._daily_steps(desk)
+    (desk / "research" / "daily_cycle.py").write_text("def broken(:\n", "utf-8")
+    with pytest.raises(seat_clocks.Unmeasured):
+        seat_clocks._daily_proposers(desk)
+    (desk / "research" / "daily_cycle.py").write_text(
+        "PROPOSERS: tuple[str, ...] = ()\nSTEPS = ()\n", "utf-8")
+    with pytest.raises(seat_clocks.Unmeasured, match="empty"):
+        seat_clocks._daily_proposers(desk)
+    with pytest.raises(seat_clocks.Unmeasured):
+        seat_clocks._daily_steps(desk)
+    (desk / "research" / "daily_cycle.py").write_text("X = 1\n", "utf-8")
+    with pytest.raises(seat_clocks.Unmeasured, match="no annotated"):
+        seat_clocks._daily_proposers(desk)
+    with pytest.raises(seat_clocks.Unmeasured, match="no tuple"):
+        seat_clocks._daily_steps(desk)
+    # the real file still reads
+    assert len(seat_clocks._daily_proposers(_DESK)) >= 10
+
+
+def test_report_is_unmeasured_with_its_cause_when_a_roster_cannot_be_read(tmp_path,
+                                                                           monkeypatch):
+    desk = tmp_path / "desks" / "mt5"
+    (desk / "data").mkdir(parents=True)
+    monkeypatch.setattr(seat_clocks, "red_seats", lambda now=None, desk=None: [])
+    rep = seat_clocks.report(NOW, desk)
+    assert rep["status"] == "UNMEASURED" and rep["red"] == []
+    checks = {u["check"]: u["error"] for u in rep["unmeasured"]}
+    assert set(checks) == {"proposers", "daily_steps"}
+    assert all("cannot parse" in e for e in checks.values())
+
+
+def test_never_stale_does_not_read_an_unmeasured_seat_check_as_ok(tmp_path, monkeypatch):
+    sys.path.insert(0, str(_ROOT / "ops"))
+    import never_stale
+    health = tmp_path / "process_health.json"
+    health.write_text(json.dumps({"processes": []}), "utf-8")
+    monkeypatch.setattr(never_stale, "HEALTH", health)
+    monkeypatch.setattr(never_stale, "_capital_faults", lambda: [])
+    monkeypatch.setattr(seat_clocks, "report", lambda: {
+        "status": "UNMEASURED", "red": [],
+        "unmeasured": [{"check": "proposers", "error": "Unmeasured: cannot parse"}]})
+    assert never_stale.run(apply=False)["status"] == "NEEDS_HUMAN"
+
+    def boom():
+        raise ImportError("no seat_clocks")
+
+    monkeypatch.setattr(seat_clocks, "report", boom)
+    doc = never_stale.run(apply=False)
+    assert doc["status"] == "NEEDS_HUMAN"
+    assert doc["seat_clocks"]["status"] == "UNMEASURED"
+    assert "ImportError" in doc["seat_clocks"]["error"]
+    monkeypatch.setattr(seat_clocks, "report", lambda: {"status": "OK", "red": []})
+    assert never_stale.run(apply=False)["status"] == "OK"

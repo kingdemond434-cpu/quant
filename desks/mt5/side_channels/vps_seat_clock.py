@@ -12,11 +12,20 @@ VPS runs and ships, this skips; when it does not, this runs; and a unit is never
 often than the VPS timer it stands in for. The census counts two sweeps of one seat in one hour
 once (`check_producer_yield._seat_output`), so a late-arriving VPS file is not double-counted.
 
-SOURCE RULES ARE THE MINERS' OWN, UNCHANGED. Each unit runs through its runner's normal code
-path (`seed_miners.run_and_save(only=...)`, `run_all_miners.run_all_miners(only=...)`): the
-SOURCE_WALLS robots/anti-bot dispositions, request caps, spacing, timeouts and the stub /
-fetch_error rows all apply exactly as on the VPS. Public data only; nothing here adds a login,
-a key, a paid API or a retry around a refusal.
+SOURCE RULES ARE THE MINERS' OWN, PLUS THE BOX'S RAILS. Each unit runs through its runner's
+normal code path (`seed_miners.run_and_save(only=...)`, `run_all_miners.run_all_miners(only=...)`):
+the SOURCE_WALLS dispositions, request caps, spacing, timeouts and the stub / fetch_error rows all
+apply as on the VPS. ON TOP of them every request this leg's children send goes through
+`box_rails` (PR #524 audit): an honest User-Agent naming the project's research crawler and its
+public repository, robots.txt honoured for `*` AND the agent tokens on EVERY source, and no
+contact at all with a host walled on the VPS. Public data only; nothing here adds a login, a key,
+a paid API or a retry around a refusal.
+
+THE BOX STANDS DOWN WHEN THE VPS FETCHED. Output the VPS shipped counts whether or not this box
+adopted it: the transport ref `refs/remotes/intel-ship/send` (fetched hourly by MT5-IntelShip) is
+read for each seat's newest shipped commit, so a VPS that is fetching and shipping is never
+doubled by this clock even while adoption is broken. A VPS that fetches and ships NOTHING leaves
+no trace this box can read; that case is named in the report (`vps_shipped.basis`), not guessed.
 
 BOUNDED, AND NOTHING STARVES. The seed and external groups run side by side, each one unit at a
 time in its own child (killed at the unit's bound). Units go stalest-first; a unit whose bound
@@ -47,6 +56,7 @@ for _p in (str(HERE), str(BASE), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+import box_rails  # noqa: E402
 from libs.ops import seat_clocks  # noqa: E402
 
 STATE = BASE / "data" / seat_clocks.BOX_STATE.name
@@ -62,6 +72,13 @@ EXTERNAL_BOUND_S = 300.0
 SEED_BOUND_S = 600.0
 SEED_BOUND_OVERRIDES: dict[str, float] = {"regional_survivors": 1200.0}
 JOIN_BOUND_S = 300.0
+#: A unit KILLED at its bound records no wall time, so a fixed bound would kill it forever. Each
+#: kill raises its next bound by this factor, capped at BOUND_CAP_S (the pass budget: a bound
+#: past it could never be started, and the seat would sit DEFERRED rather than RED-and-named).
+BOUND_GROWTH = 1.5
+BOUND_CAP_S = BUDGET_S
+SHIP_REF = "refs/remotes/intel-ship/send"
+SHIP_LOG_COMMITS = 400
 RESULT_PREFIX = "SEAT_CLOCK_RESULT "
 
 
@@ -85,11 +102,48 @@ def _now_iso() -> str:
 
 
 def bound_s(unit: str, st: dict[str, Any] | None = None) -> float:
-    """A unit's child bound: its default, or 1.5x its last complete run when that is longer."""
+    """A unit's child bound: its default, or 1.5x its last complete run when that is longer, or
+    BOUND_GROWTH x the bound it was last KILLED at (capped at BOUND_CAP_S) -- so a unit that
+    needs longer than its default gets longer, rather than being killed at the same bound daily."""
     kind, _, name = unit.partition(":")
     base = EXTERNAL_BOUND_S if kind == "external" else SEED_BOUND_OVERRIDES.get(name, SEED_BOUND_S)
     last_ok = float((st or {}).get("last_ok_wall_s") or 0.0)
-    return max(base, 1.5 * last_ok)
+    killed = float((st or {}).get("killed_at_bound_s") or 0.0)
+    grown = min(BOUND_CAP_S, BOUND_GROWTH * killed) if killed else 0.0
+    return max(base, 1.5 * last_ok, grown)
+
+
+def vps_shipped_ts(root: Path = ROOT, ref: str = SHIP_REF,
+                   runner: Callable[..., Any] | None = None) -> tuple[dict[str, float], str]:
+    """({seat: newest commit time on the VPS transport ref touching that seat}, basis).
+
+    Read-only `git log` over the ref; never fetches. An unreadable ref is an empty map with its
+    reason as the basis -- the plan then falls back to the files on disk, and says so."""
+    runner = runner or subprocess.run
+    cmd = ["git", "-C", str(root), "log", f"-n{SHIP_LOG_COMMITS}", "--format=@%ct",
+           "--name-only", ref, "--", "desks/mt5/data/intelligence", "data/intelligence"]
+    try:
+        r = runner(cmd, capture_output=True, text=True, timeout=30, check=False)
+    except Exception as exc:  # a basis, never a crash
+        return {}, f"UNMEASURED: git log {ref}: {type(exc).__name__}: {exc}"[:300]
+    if r.returncode != 0:
+        return {}, f"UNMEASURED: git log {ref} exit {r.returncode}: {(r.stderr or '')[:200]}"
+    out: dict[str, float] = {}
+    ts = 0.0
+    for line in (r.stdout or "").splitlines():
+        line = line.strip()
+        if line.startswith("@"):
+            try:
+                ts = float(line[1:])
+            except ValueError:
+                ts = 0.0
+            continue
+        parts = line.split("/")
+        if "intelligence" in parts:
+            i = parts.index("intelligence")
+            if i + 2 < len(parts) and ts and ts > out.get(parts[i + 1], 0.0):
+                out[parts[i + 1]] = ts
+    return out, f"{ref}: newest shipped commit per seat over the last {SHIP_LOG_COMMITS} commits"
 
 
 def last_touch(unit: str, state: dict[str, Any], desk: Path = BASE) -> float:
@@ -100,14 +154,23 @@ def last_touch(unit: str, state: dict[str, Any], desk: Path = BASE) -> float:
 
 
 def plan(state: dict[str, Any], now: float | None = None, desk: Path = BASE,
-         cadence_h: float = seat_clocks.BOX_CADENCE_H) -> dict[str, list[str]]:
-    """{"due": [...stalest first], "fresh": [...]} over every unit."""
+         cadence_h: float = seat_clocks.BOX_CADENCE_H,
+         shipped: dict[str, float] | None = None) -> dict[str, list[str]]:
+    """{"due": [...stalest first], "fresh": [...], "vps_fetched": [...]} over every unit.
+
+    `vps_fetched` (a subset of `fresh`): units the box stands down from ONLY because the VPS
+    transport shows it shipped their seats inside the cadence -- the box would otherwise run."""
     now = time.time() if now is None else now
+    shipped = shipped or {}
+    window = cadence_h * 3600.0
     order = seat_clocks.units()
     touch = {u: last_touch(u, state, desk) for u in order}
-    due = [u for u in order if now - touch[u] >= cadence_h * 3600.0]
-    due.sort(key=lambda u: (touch[u], order.index(u)))
-    return {"due": due, "fresh": [u for u in order if u not in due]}
+    vps = {u: max((shipped.get(s, 0.0) for s in seat_clocks.unit_seats(u)), default=0.0)
+           for u in order}
+    due = [u for u in order if now - max(touch[u], vps[u]) >= window]
+    due.sort(key=lambda u: (max(touch[u], vps[u]), order.index(u)))
+    stood = [u for u in order if u not in due and now - touch[u] >= window]
+    return {"due": due, "fresh": [u for u in order if u not in due], "vps_fetched": stood}
 
 
 # ------------------------------------------------------------------------------- child mode
@@ -115,6 +178,10 @@ def plan(state: dict[str, Any], now: float | None = None, desk: Path = BASE,
 def run_unit(unit: str) -> dict[str, Any]:
     """One unit, in this process, through its runner's normal path."""
     kind, _, name = unit.partition(":")
+    # THE RAILS FIRST, before any miner module is imported: an honest UA, robots.txt for every
+    # source, no walled host. The env var carries them into the children run_all_miners spawns.
+    os.environ[box_rails.ENV] = "1"
+    box_rails.install()
     if kind == "seed":
         import seed_miners
         res = seed_miners.run_and_save(only={name}, tail=False)
@@ -141,6 +208,7 @@ def _child_main(unit: str) -> int:
         res = run_unit(unit)
     except Exception as exc:
         res = {"status": "FAILED", "error": f"{type(exc).__name__}: {exc}"[:300]}
+    res["rails_refused"] = box_rails.refused()[:20]
     res["wall_s"] = round(time.monotonic() - t0, 1)
     print(RESULT_PREFIX + json.dumps(res, default=str), flush=True)
     return 0 if res.get("status") == "OK" else 1
@@ -179,10 +247,12 @@ def run_pass(budget_s: float = BUDGET_S, *, runner: Runner | None = None,
              now: float | None = None, write: bool = True) -> dict[str, Any]:
     runner = runner or _default_runner
     state = _read(STATE)
-    p = plan(state, now)
+    shipped, ship_basis = vps_shipped_ts()
+    p = plan(state, now, shipped=shipped)
     t0 = time.monotonic()
     lock = threading.Lock()
-    rows: dict[str, dict[str, Any]] = {u: {"status": "FRESH"} for u in p["fresh"]}
+    rows: dict[str, dict[str, Any]] = {
+        u: {"status": "VPS_FETCHED" if u in p["vps_fetched"] else "FRESH"} for u in p["fresh"]}
 
     def publish() -> None:
         if not write:
@@ -196,6 +266,11 @@ def run_pass(budget_s: float = BUDGET_S, *, runner: Runner | None = None,
                                                                              "KILLED_AT_BOUND")),
             "deferred": sorted(u for u, r in rows.items() if r.get("status") == "DEFERRED"),
             "fresh": sorted(u for u, r in rows.items() if r.get("status") == "FRESH"),
+            "vps_fetched": sorted(u for u, r in rows.items()
+                                  if r.get("status") == "VPS_FETCHED"),
+            "vps_shipped": {"basis": ship_basis, "seats": len(shipped)},
+            "rails": {"user_agent": box_rails.USER_AGENT,
+                      "robots_tokens": list(box_rails.ROBOTS_TOKENS)},
             "rule": ("a unit runs only when no clock (VPS or box) has produced its seats inside "
                      "the cadence; stalest first; a unit that does not fit is deferred, not cut"),
         })
@@ -238,7 +313,10 @@ def run_pass(budget_s: float = BUDGET_S, *, runner: Runner | None = None,
                 if res["status"] == "OK":
                     st["last_ok_at"] = st["last_at"]
                     st["last_ok_wall_s"] = res["wall_s"]
+                    st.pop("killed_at_bound_s", None)
                     ran_ok = True
+                elif res["status"] == "KILLED_AT_BOUND":
+                    st["killed_at_bound_s"] = bound
                 publish()
         if after and ran_ok and budget_s - (time.monotonic() - t0) >= JOIN_BOUND_S:
             res = one(after, JOIN_BOUND_S)
@@ -272,7 +350,11 @@ def main(argv: list[str] | None = None) -> int:
     if a.unit:
         return _child_main(a.unit)
     if a.dry_run:
-        p = plan(_read(STATE))
+        shipped, basis = vps_shipped_ts()
+        p = plan(_read(STATE), shipped=shipped)
+        print(f"vps shipped: {basis}")
+        for u in p["vps_fetched"]:
+            print(f"vps    {u}")
         for u in p["due"]:
             print(f"due    {u}")
         print(f"fresh  {len(p['fresh'])} unit(s)")
