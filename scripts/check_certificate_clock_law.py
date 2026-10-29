@@ -605,7 +605,7 @@ def scan(root: Path | None = None, *, now: datetime | None = None,
     # published as a note; it convicts only when a certificate sharing the key is judged a breach.
     # Latency is NOT the duplicate's doing, so only an accumulation breach convicts it here.
     broken = {e.get("certificate") for e in judged
-              if e.get("verdict") in ("NO_CLOCK", "BLOCKED", "FROZEN_ROWS")}
+              if e.get("verdict") in ("NO_CLOCK", "BLOCKED", "FROZEN_ROWS", "FARM_ONLY")}
     judged_names = {e.get("certificate") for e in judged}
     for k, names in sorted(collisions.items()):
         if all(n in judged_names and n not in broken for n in names):

@@ -23,8 +23,11 @@ THE VERDICTS, per lane (`LANES`):
 and per certificate: in a promoting lane, in the farm, or in NO lane. A certificate in no lane
 for longer than one cycle is RED.
 
-ONLY THE FARM IS EVER RESTARTED HERE, and only when its own ledger is stale. A stale promoting
-lane is reported RED and left to its scheduled task and stall_watch. THE RESTART IS THE FARM'S OWN
+ONLY THE FARM IS EVER RESTARTED HERE, and only when its ledger FILE is older than its allowance.
+Silent clocks in a fresh file are reported, never restarted: the farm retires the keys it stops
+enrolling, so a silent ACTIVE row is a defect to see, not a pass to re-run. A stale promoting lane
+is reported RED and paged through the alert ledger; its scheduled task and stall_watch own it.
+Coverage counts only ACTIVE farm rows. THE RESTART IS THE FARM'S OWN
 ENGINE, run as a subprocess inside this leg's budget, skipped when
 a process already runs that script (a hung engine is `stall_watch`'s to kill, not this leg's),
 and proved only by the lane's `updated_at` moving -- never by a return code.
@@ -118,6 +121,12 @@ def lane_rows(doc: Any) -> dict[str, dict[str, Any]]:
     return rows
 
 
+def active_keys(doc: Any) -> set[str]:
+    """Keys of rows still ACTIVE in a lane: a retired row is evidence, never cover."""
+    return {k for k, r in lane_rows(doc).items()
+            if str(r.get("status") or "").upper() in ACTIVE}
+
+
 def lane_verdict(name: str, spec: dict[str, Any], doc: Any, now: datetime) -> dict[str, Any]:
     out: dict[str, Any] = {"lane": name, "state": f"reports/shadow/{spec['state']}",
                            "cadence_h": spec["cadence_h"], "allowance_h": 2 * spec["cadence_h"],
@@ -142,11 +151,11 @@ def lane_verdict(name: str, spec: dict[str, Any], doc: Any, now: datetime) -> di
     if age is None:
         return {**out, "verdict": UNMEASURED, "why": "state file carries no updated_at"}
     if age > out["allowance_h"]:
-        return {**out, "verdict": STALE,
+        return {**out, "verdict": STALE, "stale_by": "age",
                 "why": f"updated {age:.1f}h ago, allowance {out['allowance_h']:.2f}h"}
     if out["active_silent"]:
         # The file moves while some clocks in it do not: the lane is stale for those clocks.
-        return {**out, "verdict": STALE,
+        return {**out, "verdict": STALE, "stale_by": "silent_clocks",
                 "why": f"{out['active_silent']} active clock(s) not reached in "
                        f"{SILENT_TICK_H:.0f}h although the lane file is fresh"}
     return {**out, "verdict": FRESH, "why": ""}
@@ -275,8 +284,7 @@ def run(*, budget_s: float = 900.0, repair: bool = True,
     docs = {name: _read(SHADOW / spec["state"]) for name, spec in LANES.items()}
     lanes = [lane_verdict(n, LANES[n], docs[n], now) for n in LANES]
     census, census_source = enrolment_census(now)
-    farm_keys = set(lane_rows(docs.get("farm")))
-    cov = coverage(census, farm_keys, now)
+    cov = coverage(census, active_keys(docs.get("farm")), now)
     repairs: list[dict[str, Any]] = []
     if repair:
         for lane in lanes:
@@ -292,12 +300,20 @@ def run(*, budget_s: float = 900.0, repair: bool = True,
                                 "why": "promoting lane: owned by its scheduled task and "
                                        "stall_watch, never restarted by this leg"})
                 continue
+            if lane.get("stale_by") != "age":
+                # Silent clocks inside a fresh file are not cured by running the engine again:
+                # the farm retires the keys it stops enrolling, so a silent ACTIVE row is a real
+                # defect to report, and a restart on it would run the farm twice an hour.
+                repairs.append({"lane": lane["lane"], "status": "REPORTED",
+                                "why": "fresh ledger with silent clocks; restarts are on file "
+                                       "age only"})
+                continue
             repairs.append(restart(lane["lane"], LANES[lane["lane"]], deadline))
         if repairs:
             now = _now()
             docs = {name: _read(SHADOW / spec["state"]) for name, spec in LANES.items()}
             lanes = [lane_verdict(n, LANES[n], docs[n], now) for n in LANES]
-            cov = coverage(census, set(lane_rows(docs.get("farm"))), now)
+            cov = coverage(census, active_keys(docs.get("farm")), now)
     stale = [lane["lane"] for lane in lanes if lane["verdict"] == STALE]
     red = bool(stale) or cov.get("verdict") == "RED"
     doc: dict[str, Any] = {
@@ -317,7 +333,35 @@ def run(*, budget_s: float = 900.0, repair: bool = True,
     tmp = path.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     tmp.replace(path)
+    if out is None:
+        record_alert(doc)
     return doc
+
+
+ALERT_ID = "forward_lane_stale"
+
+
+def record_alert(doc: dict[str, Any]) -> str | None:
+    """A stale promoting lane is paged through the desk's alert ledger, the channel stall_watch
+    and the health board read (stall_watch itself takes no input); FIXED when none is stale."""
+    try:
+        from libs.ops.alert_ledger import AlertLedger
+        ledger = AlertLedger(BASE / "data" / "alert_ledger.json")
+        stale = [ln for ln in doc.get("lanes", [])
+                 if ln.get("verdict") == STALE and ln.get("promoting")]
+        if not stale:
+            alert = ledger.alerts.get(ALERT_ID)
+            if alert is not None and alert.open:
+                ledger.verify(ALERT_ID, still_firing=False)
+                ledger.save()
+                return "FIXED"
+            return None
+        ledger.observe(ALERT_ID, "; ".join(f"{ln['lane']}: {ln.get('why')}" for ln in stale)[:600],
+                       scope="RUNTIME")
+        ledger.save()
+        return "OPEN"
+    except Exception:
+        return None
 
 
 def main(argv: list[str] | None = None) -> int:
