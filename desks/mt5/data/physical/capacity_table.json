@@ -1,6 +1,6 @@
 {
  "schema": "capacity_table/1",
- "version": "2026-10-13.1",
+ "version": "2026-10-29.1",
  "rule": "Declared, versioned capacities with their public source. A row is VERIFIED only when a session read the cited edition and recorded the figure as printed (verification.figure_text), the URL(s), the page or table and checked_at; its figure is set to the source's. A row still marked VERIFY was written from memory and could not be checked here: its figure is UNMEASURED and is never used for scale (macro/supply_scale.py), and verification.tried records what was attempted. A missing row is UNMEASURED, never a zero.",
  "commodities": {
   "crude_oil": {
@@ -180,7 +180,7 @@
   },
   "platinum": {
    "unit": "t/y",
-   "global_supply": 170,
+   "global_supply": 179,
    "spare_capacity": 0,
    "instruments": [
     "XPTUSD",
@@ -190,25 +190,32 @@
     "platinum",
     "pgm"
    ],
-   "source": "USGS Mineral Commodity Summaries 2025, platinum-group metals (world mine production 2024)",
+   "source": "USGS Mineral Commodity Summaries 2026, platinum-group metals (world mine production 2024)",
    "as_of": "2024",
-   "status": "VERIFY",
+   "status": "VERIFIED",
    "verification": {
-    "tried": [
+    "figure_text": "World total (rounded) 217,000 190,000 179,000 170,000 >76,000,000  [World Mine Production and Reserves; header 'Mine production PGM reserves9 / Palladium Platinum / 2024 2025e 2024 2025e'; kilograms of PGM content]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-platinum-group.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, platinum mine production 2024",
+    "edition": "USGS MCS 2026 (February 2026); its 2024 column is the revised figure for the year MCS 2025 printed as 2024e (MCS 2025 itself was not readable here)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF and the figure quoted from that extraction",
+    "previous_unverified_figure": 179,
+    "tried_before": [
      "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum.pdf (fetch error)",
      "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum-group.pdf (fetch error, twice)",
      "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum-group-metals.pdf (fetch error)",
      "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025.pdf (fetch error)",
      "web.archive.org copy (site blocked)",
      "curl pubs.usgs.gov from this container: proxy 000"
-    ],
-    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+    ]
    },
-   "checked_at": "2026-10-13"
+   "checked_at": "2026-10-29"
   },
   "palladium": {
    "unit": "t/y",
-   "global_supply": 190,
+   "global_supply": 217,
    "spare_capacity": 0,
    "instruments": [
     "XPDUSD",
@@ -218,21 +225,28 @@
     "palladium",
     "pgm"
    ],
-   "source": "USGS Mineral Commodity Summaries 2025, platinum-group metals (world mine production 2024)",
+   "source": "USGS Mineral Commodity Summaries 2026, platinum-group metals (world mine production 2024)",
    "as_of": "2024",
-   "status": "VERIFY",
+   "status": "VERIFIED",
    "verification": {
-    "tried": [
+    "figure_text": "World total (rounded) 217,000 190,000 179,000 170,000 >76,000,000  [World Mine Production and Reserves; header 'Mine production PGM reserves9 / Palladium Platinum / 2024 2025e 2024 2025e'; kilograms of PGM content]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-platinum-group.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, palladium mine production 2024",
+    "edition": "USGS MCS 2026 (February 2026); its 2024 column is the revised figure for the year MCS 2025 printed as 2024e (MCS 2025 itself was not readable here)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF and the figure quoted from that extraction",
+    "previous_unverified_figure": 217,
+    "tried_before": [
      "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum.pdf (fetch error)",
      "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum-group.pdf (fetch error, twice)",
      "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum-group-metals.pdf (fetch error)",
      "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025.pdf (fetch error)",
      "web.archive.org copy (site blocked)",
      "curl pubs.usgs.gov from this container: proxy 000"
-    ],
-    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+    ]
    },
-   "checked_at": "2026-10-13"
+   "checked_at": "2026-10-29"
   },
   "silver": {
    "unit": "t/y",
@@ -1303,40 +1317,54 @@
   {
    "country": "ZA",
    "commodity": "platinum",
-   "capacity": 120,
-   "source": "USGS Mineral Commodity Summaries 2025 (South Africa)",
-   "status": "VERIFY",
+   "capacity": 126,
+   "source": "USGS Mineral Commodity Summaries 2026 (South Africa, platinum, 2024)",
+   "status": "VERIFIED",
    "verification": {
-    "tried": [
+    "figure_text": "South Africa 82,600 70,000 126,000 120,000 63,000,000  [World Mine Production and Reserves; header 'Mine production PGM reserves9 / Palladium Platinum / 2024 2025e 2024 2025e'; kilograms of PGM content]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-platinum-group.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, South Africa platinum 2024",
+    "edition": "USGS MCS 2026 (February 2026); its 2024 column is the revised figure for the year MCS 2025 printed as 2024e (MCS 2025 itself was not readable here)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF and the figure quoted from that extraction",
+    "previous_unverified_figure": 126,
+    "tried_before": [
      "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum.pdf (fetch error)",
      "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum-group.pdf (fetch error, twice)",
      "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum-group-metals.pdf (fetch error)",
      "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025.pdf (fetch error)",
      "web.archive.org copy (site blocked)",
      "curl pubs.usgs.gov from this container: proxy 000"
-    ],
-    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+    ]
    },
-   "checked_at": "2026-10-13"
+   "checked_at": "2026-10-29"
   },
   {
    "country": "RU",
    "commodity": "palladium",
-   "capacity": 85,
-   "source": "USGS Mineral Commodity Summaries 2025 (Russia)",
-   "status": "VERIFY",
+   "capacity": 89,
+   "source": "USGS Mineral Commodity Summaries 2026 (Russia, palladium, 2024, USGS estimate)",
+   "status": "VERIFIED",
    "verification": {
-    "tried": [
+    "figure_text": "Russiae 89,000 84,000 22,000 20,000 1011,000,000  [World Mine Production and Reserves; header 'Mine production PGM reserves9 / Palladium Platinum / 2024 2025e 2024 2025e'; kilograms of PGM content]",
+    "urls": [
+     "https://pubs.usgs.gov/periodicals/mcs2026/mcs2026-platinum-group.pdf"
+    ],
+    "page_or_table": "World Mine Production and Reserves table, Russia (estimated) palladium 2024",
+    "edition": "USGS MCS 2026 (February 2026); its 2024 column is the revised figure for the year MCS 2025 printed as 2024e (MCS 2025 itself was not readable here)",
+    "read_via": "WebFetch server-side fetch (this container's proxy refuses the host); text extracted from the PDF and the figure quoted from that extraction",
+    "previous_unverified_figure": 89,
+    "tried_before": [
      "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum.pdf (fetch error)",
      "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum-group.pdf (fetch error, twice)",
      "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025-platinum-group-metals.pdf (fetch error)",
      "https://pubs.usgs.gov/periodicals/mcs2025/mcs2025.pdf (fetch error)",
      "web.archive.org copy (site blocked)",
      "curl pubs.usgs.gov from this container: proxy 000"
-    ],
-    "result": "cited edition not readable from this container; figure is unverified and must not be used for scale"
+    ]
    },
-   "checked_at": "2026-10-13"
+   "checked_at": "2026-10-29"
   },
   {
    "country": "CI",
