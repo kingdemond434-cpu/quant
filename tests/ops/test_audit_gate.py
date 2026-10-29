@@ -242,6 +242,8 @@ class _Hub:
         draft: bool = False,
         fork: bool = False,
         labels: tuple[str, ...] = ("audit-clear",),
+        files: tuple[str, ...] = ("scripts/x.py",),
+        approvals: list[dict[str, Any]] | None = None,
     ) -> None:
         self.pr = {
             "state": "open",
@@ -250,6 +252,9 @@ class _Hub:
             "base": {"ref": ag.LIVE},
             "labels": [{"name": n} for n in labels],
         }
+        self.files = [{"filename": f} for f in files]
+        # zuck's daily approval, by default given after every CLEAR these tests post
+        self.approvals = approvals if approvals is not None else [_ok()]
         self.comments = comments or []
         self.runs = runs if runs is not None else _green()
         self.writes: list[tuple[str, ...]] = []
@@ -265,11 +270,30 @@ class _Hub:
                 )
             )
             return None
+        if f"/issues/{ag.APPROVALS_ISSUE}/comments" in path:
+            return [self.approvals]
         if path.endswith("/comments?per_page=100"):
             return [self.comments]
         if "/check-runs" in path:
             return {"check_runs": self.runs}
+        if "/files?" in path:
+            return [self.files]
+        if "/pulls?" in path:
+            return [[{"number": 7}]]
         return self.pr
+
+
+def _ok(at: str = "2026-10-28T23:00:00Z", app: str | None = None, **kw: Any) -> dict[str, Any]:
+    """zuck's approval comment on the tracking issue."""
+    c = {
+        "body": kw.get("body", ag.APPROVE),
+        "created_at": at,
+        "updated_at": kw.get("updated_at", at),
+        "author_association": kw.get("assoc", "OWNER"),
+        "user": {"login": "kingdemond434-cpu"},
+        "performed_via_github_app": {"slug": app} if app else None,
+    }
+    return c
 
 
 @pytest.fixture
@@ -362,6 +386,76 @@ def test_pending_ci_past_the_wait_gives_up_without_merging(hub: Any) -> None:
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 1 and _merges(h) == []
 
 
+# --------------------------------------------------------------- workflow-file PRs: the box
+
+
+WF = (".github/workflows/ci.yml", "scripts/x.py")
+
+
+def test_touches_workflows_sees_either_side_of_a_rename() -> None:
+    assert ag.touches_workflows([{"filename": ".github/workflows/a.yml"}])
+    assert ag.touches_workflows(
+        [{"filename": "old/a.yml", "previous_filename": ".github/workflows/a.yml"}]
+    )
+    assert not ag.touches_workflows([{"filename": ".github/CODEOWNERS"}, {"filename": "x.py"}])
+
+
+def test_the_actions_gate_leaves_a_workflow_pr_to_the_box_without_failing(hub: Any) -> None:
+    h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], files=WF)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0) == 0
+    assert _merges(h) == []
+    assert any(w[1].endswith(f"statuses/{A}") and "state=pending" in w for w in h.writes)
+
+
+def test_the_box_merges_a_cleared_green_workflow_pr_pinned_and_dispatches_nothing(
+    hub: Any,
+) -> None:
+    h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], files=WF)
+    assert ag.main(["--repo", "o/r", "--sweep", "--box"]) == 0
+    (merge,) = _merges(h)
+    assert f"sha={A}" in merge
+    assert not any("dispatches" in w[1] for w in h.writes)
+    assert not any(w[0] == "DELETE" for w in h.writes)  # the label is the Actions run's
+
+
+@pytest.mark.parametrize("case", ["no_clear", "hold", "red_ci", "pending_ci"])
+def test_the_box_merges_nothing_else(hub: Any, case: str) -> None:
+    comments = {
+        "no_clear": [],
+        "hold": [
+            _c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z"),
+            _c(f"AUDIT HOLD {A}", "2026-10-28T10:01:00Z"),
+        ],
+    }.get(case, [_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")])
+    runs = {
+        "red_ci": [*_green(), _r("lint", conclusion="failure")],
+        "pending_ci": _green()[:2],
+    }.get(case)
+    h = hub(comments=comments, runs=runs, files=WF)
+    code = ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True)
+    assert _merges(h) == [] and code == (1 if case == "red_ci" else 0)
+    assert not any("state=pending" in w for w in h.writes)  # the Actions run owns pending
+
+
+def test_the_box_needs_no_label_and_marks_a_draft_ready_for_any_cleared_pr(
+    hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Cloud sessions cannot add the label or mark ready (2026-10-28): the box does both jobs."""
+    h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], draft=True, labels=())
+    ran: list[list[str]] = []
+    monkeypatch.setattr(ag.subprocess, "run", lambda cmd, **kw: ran.append(cmd))
+    assert ag.main(["--repo", "o/r", "--sweep", "--box"]) == 0
+    (merge,) = _merges(h)
+    assert f"sha={A}" in merge
+    assert ran == [["gh", "pr", "ready", "7", "-R", "o/r"]]
+    assert not any("dispatches" in w[1] for w in h.writes)
+
+
+def test_sweep_needs_box() -> None:
+    with pytest.raises(SystemExit):
+        ag.main(["--repo", "o/r", "--sweep"])
+
+
 # ------------------------------------------------------------------------------ the wiring
 
 
@@ -385,3 +479,51 @@ def test_a_dispatched_ci_run_on_live_seals_and_promotes_like_a_push() -> None:
         start = ci.index(f"\n  {job}:\n")
         assert both in ci[start : start + 400], job
     assert f"{both} && github.sha || 'pr'" in ci
+
+
+# ------------------------------------------------------------- zuck's daily approval (#453)
+
+
+@pytest.mark.parametrize(
+    "approvals",
+    [
+        [],  # none yet
+        [_ok("2026-10-28T09:00:00Z")],  # before the CLEAR: the CLEAR waits for the next one
+        [_ok(app="claude")],  # posted through the Claude app: never an approval
+        [_ok(assoc="COLLABORATOR")],  # not the owner
+        [_ok(updated_at="2026-10-28T23:05:00Z")],  # edited
+        [_ok(body="APPROVE MERGES please")],  # not exactly the line
+    ],
+)
+def test_a_clear_without_zucks_later_approval_merges_nothing(
+    hub: Any, approvals: list[dict[str, Any]]
+) -> None:
+    for box in (False, True):
+        h = hub(comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")], approvals=approvals)
+        assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=box) == 0
+        assert _merges(h) == []
+
+
+def test_one_approval_covers_every_clear_given_before_it_and_the_newest_counts(hub: Any) -> None:
+    h = hub(
+        comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")],
+        approvals=[
+            _ok("2026-10-28T09:00:00Z"),
+            _ok("2026-10-28T11:00:00Z", app="claude"),
+            _ok("2026-10-28T12:00:00Z"),
+        ],
+    )
+    assert ag.main(["--repo", "o/r", "--sweep", "--box"]) == 0
+    (merge,) = _merges(h)
+    assert f"sha={A}" in merge
+
+
+def test_a_hold_after_the_approval_still_wins(hub: Any) -> None:
+    h = hub(
+        comments=[
+            _c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z"),
+            _c(f"AUDIT HOLD {A}", "2026-10-28T13:00:00Z"),
+        ],
+        approvals=[_ok("2026-10-28T12:00:00Z")],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
