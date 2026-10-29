@@ -26,6 +26,7 @@ def paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(ly, "MINER_CANDIDATES", tmp_path / "miner_candidates.json")
     monkeypatch.setattr(ly, "REGISTRY", tmp_path / "absent.sqlite")
     monkeypatch.setattr(ly, "CERT_PROVENANCE", tmp_path / "cp.json")
+    monkeypatch.setattr(ly, "LAB_REPORTS", {n: tmp_path / f"{n}.absent" for n in ly.LAB_REPORTS})
     (tmp_path / "data").mkdir()
     return tmp_path
 

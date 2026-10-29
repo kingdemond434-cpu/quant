@@ -88,6 +88,13 @@ INTEL_FILES_MAX = 4000
 
 
 # ================================================================================= readers
+def _rel(path: Path) -> str:
+    try:
+        return str(path.relative_to(REPO))
+    except ValueError:
+        return str(path)
+
+
 def _read_json(path: Path) -> Any:
     try:
         return json.loads(path.read_text("utf-8", errors="replace"))
@@ -124,7 +131,7 @@ def calls_by_model(now: datetime, window_days: float) -> dict[str, Any]:
     """Per (organ, model): parsed replies, empty replies, tokens, and the trailing empty streak."""
     rows = _jsonl(SPEND)
     if not rows and not SPEND.exists():
-        return {"status": UNMEASURED, "source": str(SPEND.relative_to(REPO)),
+        return {"status": UNMEASURED, "source": _rel(SPEND),
                 "why": "no spend ledger on this host"}
     cutoff = now - timedelta(days=window_days)
     agg: dict[tuple[str, str], dict[str, Any]] = {}
@@ -148,7 +155,7 @@ def calls_by_model(now: datetime, window_days: float) -> dict[str, Any]:
             "empty": a["empty"], "tokens": a["tokens"], "empty_streak": a["streak"],
             "silent": a["streak"] >= SILENT_RUNS, "last_utc": a["last_utc"]}
            for (o, m), a in sorted(agg.items())]
-    return {"status": "MEASURED", "source": str(SPEND.relative_to(REPO)),
+    return {"status": "MEASURED", "source": _rel(SPEND),
             "note": "parsed replies only: a failed call writes no spend row (UNMEASURED stage)",
             "rows": out}
 
@@ -156,11 +163,11 @@ def calls_by_model(now: datetime, window_days: float) -> dict[str, Any]:
 def panel_counters() -> dict[str, Any]:
     st = _read_json(PANEL)
     if not isinstance(st, dict):
-        return {"status": UNMEASURED, "source": str(PANEL.relative_to(REPO))}
+        return {"status": UNMEASURED, "source": _rel(PANEL)}
     calls = st.get("calls") or {}
     fails = st.get("failures") or {}
     models = sorted(set(calls) | set(fails))
-    return {"status": "MEASURED", "source": str(PANEL.relative_to(REPO)), "scope": "lifetime",
+    return {"status": "MEASURED", "source": _rel(PANEL), "scope": "lifetime",
             "rows": [{"model": m, "calls": int(calls.get(m) or 0),
                       "last_failure": fails.get(m)} for m in models]}
 
@@ -168,7 +175,7 @@ def panel_counters() -> dict[str, Any]:
 def lab_funnel() -> dict[str, Any]:
     doc = _read_json(LAB_ATTRIBUTION)
     if not isinstance(doc, dict):
-        return {"status": UNMEASURED, "source": str(LAB_ATTRIBUTION.relative_to(REPO)),
+        return {"status": UNMEASURED, "source": _rel(LAB_ATTRIBUTION),
                 "why": "the third-brain lab's attribution feed is not on this host yet"}
     rows = []
     for model, r in sorted((doc.get("by_model") or {}).items()):
@@ -180,7 +187,7 @@ def lab_funnel() -> dict[str, Any]:
                      "compiled": compiled, "judged": judged, "passed": passed,
                      "roi_per_call": round((compiled + PASS_WEIGHT * passed) / calls, 4)
                      if calls else None})
-    return {"status": "MEASURED", "source": str(LAB_ATTRIBUTION.relative_to(REPO)),
+    return {"status": "MEASURED", "source": _rel(LAB_ATTRIBUTION),
             "rows": rows, "by_lab": doc.get("by_lab") or {}}
 
 
@@ -278,7 +285,7 @@ def labs(now: datetime) -> dict[str, Any]:
     for name, path in LAB_REPORTS.items():
         doc = _read_json(path)
         if not isinstance(doc, dict):
-            out[name] = {"status": UNMEASURED, "source": str(path.relative_to(REPO))}
+            out[name] = {"status": UNMEASURED, "source": _rel(path)}
             continue
         at = _at(doc.get("at"))
         don: dict[str, Any] = doc["donation"] if isinstance(doc.get("donation"), dict) else {}
