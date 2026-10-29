@@ -514,6 +514,14 @@ NODES: tuple[Node, ...] = (
                 "desks/mt5/reports/pf_allocation.json"),
          writes=("desks/mt5/reports/alpha_evolution.json",
                  "desks/mt5/data/intelligence/alpha_evolution/")),
+    # THE STATE-GATED WRAPPERS' PROPOSER (2026-10-14): one sync_gated / entropy_gated cell per
+    # (wrapper, base, hypothesis-lane symbol), donated through the proposer contract into the
+    # intake the compiler merges; its report is the per-pass receipt a person reads. Its ring
+    # cursor is the organ's own position, read back only by itself, so it is not an edge here.
+    Node("state_gate_proposer", "desks/mt5/research/state_gate_proposer.py",
+         reads=("desks/mt5/data/universe/",),
+         writes=("desks/mt5/reports/STATE_GATE_PROPOSER.json",
+                 "desks/mt5/data/intelligence/state_gate_proposer/")),
     Node("style_premia_sweep", "desks/mt5/research/style_premia_sweep.py",
          reads=("desks/mt5/data/universe/",),
          writes=("desks/mt5/reports/style_premia_sweep.json",
@@ -853,6 +861,8 @@ NODES: tuple[Node, ...] = (
          writes=("desks/mt5/reports/UNKNOWN_UNKNOWNS.json",)),
     Node("falsifier_run", "desks/mt5/research/falsifier_run.py",
          writes=("desks/mt5/reports/FALSIFIER_VERDICTS.json",)),
+    Node("measurability", "scripts/check_measurability.py",
+         writes=("desks/mt5/reports/MEASURABILITY.json",)),
     Node("style_novelty", "desks/mt5/research/style_novelty.py",
          writes=("desks/mt5/reports/STYLE_NOVELTY.json", "desks/mt5/reports/NOVELTY_WEEKLY.json")),
     Node("fill_attribution", "desks/mt5/research/fill_attribution.py",
@@ -908,6 +918,10 @@ NODES: tuple[Node, ...] = (
 #: Artifacts a person is expected to read. Being the ONLY reader of a node's output makes that
 #: node advisory. Listed so the check has a definition rather than an opinion.
 HUMAN_READ = frozenset({
+    # The never-UNMEASURED fence's report. Its decision edge is the law gate's state-fence exit
+    # code and the work orders it names; the converters are the organs that already own each
+    # field, so nothing in the graph sizes on it.
+    "desks/mt5/reports/MEASURABILITY.json",
     # The weekly novelty count; its decision input is STYLE_NOVELTY.json above.
     "desks/mt5/reports/NOVELTY_WEEKLY.json",
     # merge_hypotheses writes a census receipt, not a decision input. Its executable
@@ -975,6 +989,7 @@ HUMAN_READ = frozenset({
     "desks/mt5/reports/EXIT_ACCOUNTS.json", "desks/mt5/reports/ACTION_COUNTERFACTUALS.json",
     "desks/mt5/reports/RESEARCH_PNL.json", "desks/mt5/reports/MUTATION_YIELD.json",
     "desks/mt5/reports/RESEARCH_BANDIT.json",
+    "desks/mt5/reports/STATE_GATE_PROPOSER.json",
     # THE BREADTH LANE'S REPORTS. Each producer's DECISION path is the deepening queue it also
     # writes; these three files are the evidence a person reads beside it -- nominal against
     # effective breadth with every reading's status, the book's own drawdown windows and what

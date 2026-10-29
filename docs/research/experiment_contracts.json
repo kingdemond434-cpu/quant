@@ -250,6 +250,36 @@
     "threshold": 0,
     "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
+  },
+  "measurability": {
+   "hypothesis": "Dating every UNMEASURED (subject, field) on every certificate and LIVE sleeve, and naming its converter, turns unmeasured fields into dated work orders, so the count of unmeasured fields falls as the converters run.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "n_unmeasured",
+    "better": "down",
+    "organ": "report:MEASURABILITY.json"
+   },
+   "falsifier": {
+    "metric": "n_subjects",
+    "op": "==",
+    "threshold": 0,
+    "after": "24h window on the box: the fence judged no certificate or LIVE sleeve, so it is not reading the canon it claims to watch"
+   }
+  },
+  "state_gate_proposer": {
+   "hypothesis": "Gating price-only base families by a market STATE read off prices (FX+gold panel phase synchronisation with the direction fixed by the base's mechanism, or the symbol's own low permutation entropy) finds entries that pay where the ungated base does not, at one charged trial per (wrapper, base, symbol) and no gate-parameter search.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "minted",
+    "better": "up",
+    "organ": "report:STATE_GATE_PROPOSER.json"
+   },
+   "falsifier": {
+    "metric": "grid_total",
+    "op": "==",
+    "threshold": 0,
+    "after": "24h window: the grid is empty, so no hypothesis-lane H1 instrument reached the wrappers and the leg tests nothing"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

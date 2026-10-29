@@ -569,6 +569,13 @@ NOT_SOURCED_HERE = {
                     "research/free_stack_proposer from the hunter's published columns, and it "
                     "charges its own grid; called blind here it has no source and returns [] on "
                     "every symbol"),
+    # The state-gated wrappers (mt5desk/family_state_gates.py). Their base family is named by
+    # research/state_gate_proposer, one cell per (wrapper, base, symbol), and that proposer charges
+    # its own grid through `tests_run`.
+    **dict.fromkeys(("sync_gated", "entropy_gated"),
+                    "the base family is named by research/state_gate_proposer, one cell per "
+                    "(wrapper, base, symbol) with no parameter sweep, and it charges its own grid; "
+                    "called blind here it has no base and returns [] on every symbol"),
     # The within-class rank legs (mt5desk/families_cross_sectional.py). Each loads its own class
     # panel from `symbol`, so nothing is unsuppliable -- but the grid is (class member x family x
     # params) and research/cross_sectional_breadth enumerates it, measures every cell's firing
