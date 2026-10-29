@@ -457,8 +457,10 @@ def checks(
 #: GitHub's own outage answers (independent_review.TRANSIENT, mirrored: that job runs `python -I`
 #: from ops/release and imports nothing from here). Only a READ is retried: a merge, a label or a
 #: status write that got a 5xx may have happened, and doing it twice is not this function's call.
-_TRANSIENT = re.compile(r"HTTP (?:429|5\d\d)\b|timed? ?out|connection (?:reset|refused)|EOF",
-                        re.IGNORECASE)
+_TRANSIENT = re.compile(
+    r"HTTP (?:429|5\d\d)\b|rate limit|timed? ?out|connection (?:reset|refused)|\bEOF\b",
+    re.IGNORECASE,
+)
 _GH_TRIES = 4
 
 

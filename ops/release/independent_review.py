@@ -108,8 +108,13 @@ class Unavailable(RuntimeError):
 #: GitHub's own outage answers. A read that gets one is retried, and if it never succeeds the
 #: review is UNAVAILABLE (exit 75, queued), never a FAIL: a 503 on `pulls/492` failed this job
 #: and, on the no-comment path, would have quarantined a PR for GitHub's fault (2026-10-29).
-TRANSIENT = re.compile(r"HTTP (?:429|5\d\d)\b|timed? ?out|connection (?:reset|refused)|EOF",
-                       re.IGNORECASE)
+#: GitHub answers its rate limits with HTTP 403 ("API rate limit exceeded", "secondary rate
+#: limit"), so `rate limit` is matched by text; any other 403 is a real refusal. Bounded: the
+#: gate re-runs an UNAVAILABLE review at most MAX_ATTEMPTS times, then it stays queued.
+TRANSIENT = re.compile(
+    r"HTTP (?:429|5\d\d)\b|rate limit|timed? ?out|connection (?:reset|refused)|\bEOF\b",
+    re.IGNORECASE,
+)
 GH_TRIES = 4
 
 

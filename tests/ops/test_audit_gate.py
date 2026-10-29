@@ -1874,3 +1874,34 @@ def test_the_gate_retries_a_read_but_never_a_write(monkeypatch: pytest.MonkeyPat
 
 def test_the_gate_and_the_review_agree_on_what_is_transient() -> None:
     assert ag._TRANSIENT.pattern == ir.TRANSIENT.pattern
+
+
+@pytest.mark.parametrize("err, transient", [
+    ("gh: API rate limit exceeded for installation ID 1. (HTTP 403)", True),
+    ("gh: You have exceeded a secondary rate limit. (HTTP 403)", True),
+    ("gh: Resource not accessible by integration (HTTP 403)", False),
+    ("gh: HTTP 401: Bad credentials", False),
+    ("gh: unexpected EOF", True),
+    ("gh: Not Found (HTTP 404) for geoffrey", False),
+])
+def test_rate_limits_are_transient_and_a_real_403_is_not(err: str, transient: bool) -> None:
+    """#498 audit MF1/S1: GitHub's rate limits answer 403, and a bare `EOF` matched inside
+    names. Both patterns, one answer."""
+    assert bool(ir.TRANSIENT.search(err)) is transient
+    assert bool(ag._TRANSIENT.search(err)) is transient
+
+
+def test_a_rate_limited_review_is_unavailable_and_a_refused_one_raises_at_once(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+    monkeypatch.setattr(ir.subprocess, "run", _scripted(
+        [(1, "", "gh: API rate limit exceeded (HTTP 403)")] * 4, calls))
+    with pytest.raises(ir.Unavailable):
+        ir._gh("repos/x/y/pulls/1", sleep=lambda s: None)
+    assert len(calls) == ir.GH_TRIES
+    calls.clear()
+    monkeypatch.setattr(ir.subprocess, "run", _scripted(
+        [(1, "", "gh: Resource not accessible by integration (HTTP 403)")], calls))
+    with pytest.raises(RuntimeError) as exc:
+        ir._gh("repos/x/y/pulls/1", sleep=lambda s: None)
+    assert not isinstance(exc.value, ir.Unavailable) and len(calls) == 1
