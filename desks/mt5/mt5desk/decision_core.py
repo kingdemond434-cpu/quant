@@ -1665,6 +1665,21 @@ def allocator_heat(base: Path, now: float | None = None) -> tuple[float | None, 
         return None, f"allocator artifact unreadable ({type(exc).__name__})"
 
 
+def book_pair_matches(cert_book: object, art_book: object) -> bool:
+    """Whether a proof certificate's book and pf_allocation.json's book are the same allocation:
+    the same funded names at the same fractions to 6 places (the artifact's own rounding). The
+    gateway trusts a certificate only for the book it names (#529 audit)."""
+    def norm(b: object) -> dict[str, float] | None:
+        if not isinstance(b, dict):
+            return None
+        try:
+            return {str(k): round(float(v), 6) for k, v in b.items() if round(float(v), 6) > 0}
+        except (TypeError, ValueError):
+            return None
+    a, b = norm(cert_book), norm(art_book)
+    return a is not None and a == b
+
+
 def book_from_allocation(total: float, book: object, book_fallback: object, *,
                          certified: bool, why: str,
                          zeroed: object = None) -> tuple[dict[str, float] | None, str]:

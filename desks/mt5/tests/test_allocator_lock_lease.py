@@ -149,7 +149,7 @@ def test_blas_pools_are_sized_before_numpy_and_an_explicit_setting_is_kept(monke
 
 
 def test_the_gateway_certifies_only_the_book_the_certificate_names() -> None:
-    from mt5desk.gateway import book_pair_matches
+    from mt5desk.decision_core import book_pair_matches
     assert book_pair_matches({"a": 0.0123456, "b": 0.0}, {"a": 0.012346})
     assert not book_pair_matches({"a": 0.01}, {"a": 0.01, "b": 0.02})     # a newer book
     assert not book_pair_matches(None, {"a": 0.01})

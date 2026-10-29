@@ -65,6 +65,7 @@ from mt5desk.decision_core import (
     basket_lots,
     basket_record,
     book_from_allocation,
+    book_pair_matches,
     bracket_deadline,
     bracket_from_bars,
     closed_trade_r,
@@ -606,20 +607,6 @@ def _book_key(s: dict, book: dict[str, float] | None) -> str | None:
     return folded.get(derived.lower())
 
 
-def book_pair_matches(cert_book: object, art_book: object) -> bool:
-    """Whether the certificate's book and the artifact's book are the same allocation: the same
-    funded names at the same fractions to 6 places (the artifact's own rounding)."""
-    def norm(b: object) -> dict[str, float] | None:
-        if not isinstance(b, dict):
-            return None
-        try:
-            return {str(k): round(float(v), 6) for k, v in b.items() if round(float(v), 6) > 0}
-        except (TypeError, ValueError):
-            return None
-    a, b = norm(cert_book), norm(art_book)
-    return a is not None and a == b
-
-
 def _allocator_book() -> tuple[dict[str, float] | None, str]:
     """The optimiser's PER-SLEEVE target risk fractions, or None with the reason.
 
@@ -656,7 +643,8 @@ def _allocator_book() -> tuple[dict[str, float] | None, str]:
     # ONE PAIR OR NONE (#529 audit): the certificate names the book it proved. A certificate
     # for any other book (a pass torn between the two writes, a stale proof beside a newer
     # book) certifies nothing here; the book is then sized as uncertified, never refused.
-    if cert is not None and not book_pair_matches(cert.get("book"), art.get("book")):
+    if (cert is not None and "book" in cert
+            and not book_pair_matches(cert.get("book"), art.get("book"))):
         cert, cwhy = None, "certificate names a different book than pf_allocation.json"
     state = str((art.get("heat") or {}).get("state") or "")
     src, swhy = select(cert, state) if cert is not None else ("", cwhy)
