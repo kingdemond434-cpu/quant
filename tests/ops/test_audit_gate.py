@@ -591,31 +591,32 @@ def _f(name: str, **kw: Any) -> dict[str, Any]:
         ([_f(DOC)], 2, set(), "PROTECTED"),  # the count does not add up
         ([], 0, set(), "PROTECTED"),
         ([_f(DOC)], 1, {DOC}, "AUTO"),  # a program reads it
-        ([_f("docs/LAWS.md")], 1, set(), "PROTECTED"),  # a governing document
-        ([_f("docs/ops/prompt_notes.md")], 1, set(), "PROTECTED"),
+        ([_f("docs/LAWS.md")], 1, set(), "AUTO"),  # a governing document
+        ([_f("docs/ops/prompt_notes.md")], 1, set(), "AUTO"),
         ([_f(CODE)], 1, set(), "AUTO"),  # code
         ([_f("docs/research/x.json")], 1, set(), "AUTO"),  # data
         ([_f("tests/test_x.py")], 1, set(), "AUTO"),
         ([_f("libs/risk/sizing.py")], 1, set(), "AUTO"),  # risk and sizing are AUTO, not LOW
         ([_f(DOC), _f("libs/risk/x.py")], 2, set(), "AUTO"),
-        # PROTECTED: the controller, workflows, ceilings, release machinery, agent instructions
-        ([_f(".github/scripts/audit_gate.py")], 1, set(), "PROTECTED"),
-        ([_f(".github/workflows/ci.yml")], 1, set(), "PROTECTED"),
-        ([_f("ops/release/ceilings.json")], 1, set(), "PROTECTED"),
-        ([_f("ops/box/workflow_gate.ps1")], 1, set(), "PROTECTED"),
-        ([_f("CODEOWNERS")], 1, set(), "PROTECTED"),
-        ([_f("docs/x/CLAUDE.md")], 1, set(), "PROTECTED"),
-        ([_f("desks/mt5/scripts/smoke_release.py")], 1, set(), "PROTECTED"),
-        ([_f("desks/mt5/mt5desk/release_identity.py")], 1, set(), "PROTECTED"),
-        ([_f("libs/ops/release_promotion.py")], 1, set(), "PROTECTED"),
-        ([_f("desks/mt5/data/secrets/k.txt")], 1, set(), "PROTECTED"),
-        ([_f(DOC), _f(CODE), _f(".github/CODEOWNERS")], 3, set(), "PROTECTED"),  # strictest wins
-        # a rename out of a protected path is protected
+        # no PROTECTED paths (zuck 2026-10-29): the controller, workflows, ceilings, release
+        # machinery and agent instructions all take the AUTO path
+        ([_f(".github/scripts/audit_gate.py")], 1, set(), "AUTO"),
+        ([_f(".github/workflows/ci.yml")], 1, set(), "AUTO"),
+        ([_f("ops/release/ceilings.json")], 1, set(), "AUTO"),
+        ([_f("ops/box/workflow_gate.ps1")], 1, set(), "AUTO"),
+        ([_f("CODEOWNERS")], 1, set(), "AUTO"),
+        ([_f("docs/x/CLAUDE.md")], 1, set(), "AUTO"),
+        ([_f("desks/mt5/scripts/smoke_release.py")], 1, set(), "AUTO"),
+        ([_f("desks/mt5/mt5desk/release_identity.py")], 1, set(), "AUTO"),
+        ([_f("libs/ops/release_promotion.py")], 1, set(), "AUTO"),
+        ([_f("desks/mt5/data/secrets/k.txt")], 1, set(), "AUTO"),
+        ([_f(DOC), _f(CODE), _f(".github/CODEOWNERS")], 3, set(), "AUTO"),  # strictest wins
+        # a rename out of a formerly protected path is AUTO, never LOW
         (
             [_f(DOC, previous_filename="ops/release/x.json", status="renamed")],
             1,
             set(),
-            "PROTECTED",
+            "AUTO",
         ),
         ([_f(DOC, previous_filename="ops/x.py", status="renamed")], 1, set(), "AUTO"),
     ],
@@ -779,11 +780,25 @@ def test_an_auto_tier_pr_with_a_hold_never_merges(auto_hub: Any) -> None:
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
 
 
-def test_a_protected_pr_never_takes_a_no_comment_path(auto_hub: Any) -> None:
+def test_formerly_protected_files_merge_only_on_every_auto_check(auto_hub: Any) -> None:
+    """zuck 2026-10-29: no PROTECTED paths. They merge with no comment, but only on the gating
+    AND the AUTO jobs; a missing AUTO job is never a pass."""
     for name in (".github/workflows/ci.yml", "ops/release/ceilings.json", "CLAUDE.md"):
-        h = auto_hub(files=(name,), runs=_auto_green())
+        h = auto_hub(files=(name,), runs=_green())
         assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
         assert _merges(h) == []
+        h = auto_hub(files=(name,), runs=_auto_green())
+        assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+        assert len(_merges(h)) == 1
+
+
+def test_a_pattern_put_back_on_the_list_is_protected_again(
+    auto_hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(ag, "protected_patterns", lambda: ("ops/release/*",))
+    h = auto_hub(files=("ops/release/ceilings.json",), runs=_auto_green())
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert _merges(h) == []
 
 
 @pytest.mark.parametrize("which", ["auto", "low"])
@@ -969,12 +984,13 @@ def test_a_stale_github_tree_takes_the_manual_path(
         "ops/gates.sh",
         "pyproject.toml",
         "tests/conftest.py",
-        "docs/research/FULL_SWEEP_PREREGISTRATION.md",  # governing prose is PROTECTED, not AUTO
+        "docs/research/FULL_SWEEP_PREREGISTRATION.md",  # governing prose is AUTO, never LOW
         "desks/mt5/docs/ops_policy.txt",
     ],
 )
-def test_what_only_zuck_may_change_is_protected(name: str) -> None:
-    assert ag.tier([_f(name)], 1, lambda n: False)[0] == "PROTECTED"
+def test_what_only_zuck_used_to_change_now_takes_the_auto_path(name: str) -> None:
+    """zuck 2026-10-29: "remove all protected ... always". Prose no program reads may be LOW."""
+    assert ag.tier([_f(name)], 1, lambda n: False)[0] in ("AUTO", "LOW")
 
 
 def test_up_to_date_needs_the_base_tip_and_the_same_github_tree(
@@ -1029,17 +1045,17 @@ def test_the_manual_path_neither_waits_on_nor_fails_by_the_auto_jobs() -> None:
     assert ag.checks(runs, ag.GATING_JOBS + ag.AUTO_JOBS)[0] == "fail"
 
 
-def test_every_rail_is_on_the_protected_list() -> None:
-    """A LAWS 5m rail (risk-limit authority, live promotion, the sealed judge...) never merges
-    without zuck, and the list on disk is what the generator makes."""
+def test_the_protected_list_is_empty_and_generated() -> None:
+    """zuck 2026-10-29: no PROTECTED paths. The list on disk is what the generator makes, and it
+    holds no pattern; every LAWS 5m rail now takes the AUTO path (never LOW)."""
     sys.path.insert(0, str(ROOT))
     from libs.research import immutable_rails as IR
 
-    extra = ag.protected_patterns()
-    assert extra is not None
+    assert ag.PROTECTED == ()
+    assert ag.protected_patterns() == ()
     for r in IR.immutable_rails():
         name = IR.norm(r.path).rstrip("/") + ("/x.json" if r.path.endswith("/") else "")
-        assert ag.is_protected(name, extra), r.path
+        assert ag.tier([_f(name)], 1, lambda n: False)[0] == "AUTO", r.path
     gen = subprocess.run(
         [sys.executable, "-I", str(ROOT / "ops/release/gen_protected_paths.py"), "--check"],
         capture_output=True,
@@ -1065,8 +1081,8 @@ def test_every_rail_is_on_the_protected_list() -> None:
         "libs/research/immutable_rails.py",
     ],
 )
-def test_control_and_rail_files_are_protected(name: str) -> None:
-    assert ag.tier([_f(name)], 1, lambda n: False)[0] == "PROTECTED"
+def test_control_and_rail_files_take_the_auto_path(name: str) -> None:
+    assert ag.tier([_f(name)], 1, lambda n: False)[0] == "AUTO"
 
 
 def test_an_unreadable_protected_list_makes_everything_protected(
@@ -1524,8 +1540,9 @@ def test_the_reviewer_sees_both_sides_of_every_file() -> None:
     "name", ["desks/mt5/research/Promoter.py", "tests/Conftest.py", "LIBS/validation/gauntlet.py"]
 )
 def test_the_protected_list_is_case_blind(name: str) -> None:
-    """#456 audit MF2: NTFS folds case, so the list does too."""
-    assert ag.tier([_f(name)], 1, lambda n: False)[0] == "PROTECTED"
+    """#456 audit MF2: NTFS folds case, so the list does too (it is empty since 2026-10-29)."""
+    assert ag.is_protected(name, [name.lower()])
+    assert ag.tier([_f(name)], 1, lambda n: False)[0] == "AUTO"
 
 
 @pytest.mark.parametrize(

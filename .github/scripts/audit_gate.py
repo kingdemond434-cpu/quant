@@ -88,6 +88,13 @@ ready), no HOLD stands, and the gating jobs AND the AUTO jobs (risk-invariants, 
 independent-review) all succeeded. A PR whose CI fails on the LOW or AUTO path is QUARANTINED:
 labelled `quarantined`, left open, never merged until a new head passes.
 
+NO PROTECTED PATHS (2026-10-29, zuck: "remove all protected ... always ... so i never have to
+approve"). The PROTECTED floor is empty and so is ops/release/protected_paths.txt: the controller,
+workflows, ceilings, rails, kill switches and agent instructions all take the AUTO path, merging
+on green gating + AUTO jobs with no comment; a HOLD or any DEACTIVATE still stops them. A workflow
+PR is still merged only by the box (the workflow token cannot), and its green CI is still
+self-attested. The tiers below are kept as written for history and so patterns can be re-added.
+
 STEP C. The PROTECTED floor above is widened by ops/release/protected_paths.txt (every LAWS 5m
 rail, test configuration, signing, kill switches); an unreadable list makes every PR PROTECTED.
 The AUTO jobs come from .github/workflows/release-gates.yml. A gating job counts only from GitHub
@@ -144,34 +151,11 @@ CODE_SPECS = (
     "*.py", "*.ps1", "*.sh", "*.cmd", "*.txt", "*.yml", "*.yaml", "*.toml", "*.manifest",
     "*.service", "ops/githooks/*",
 )  # fmt: skip
-#: PROTECTED: never merged without zuck. fnmatch patterns ("*" crosses "/"). This tuple is the
-#: floor; ops/release/protected_paths.txt (itself protected) adds every LAWS 5m rail and more.
-PROTECTED = (
-    ".github/*", "CODEOWNERS", "*/CODEOWNERS", "ops/release/*", "ops/box/*", "ops/bridge/*",
-    "ops/githooks/*", "IMMUTABLE_MANIFEST*", "*/IMMUTABLE_MANIFEST*", "data/secrets/*",
-    "*/data/secrets/*", "scripts/check_immutable_evaluator.py", "libs/ops/release.py",
-    "libs/ops/release_promotion.py", "desks/mt5/scripts/Adopt*", "desks/mt5/scripts/Seal-*",
-    "desks/mt5/scripts/smoke_release.py", "desks/mt5/mt5desk/release_identity.py",
-    "CLAUDE.md", "*/CLAUDE.md", "AGENTS.md", "*/AGENTS.md", ".claude/*", "*/.claude/*",
-    # what the checks execute (#455 audit MF3)
-    "ops/gates.sh", "pyproject.toml", "conftest.py", "*/conftest.py", "setup.cfg", "setup.py",
-    "pytest.ini", "tox.ini", "*sitecustomize.py", "*usercustomize.py", "*.pth",
-    ".pre-commit-config.yaml", "scripts/moneypath_precommit_guard.py",
-    # Tier-3 and the sealed core: never modified autonomously (LAWS 4)
-    "scripts/run_deadman_switch.py", "ops/principal_doctrine.txt",
-    "scripts/check_constitution_core.py", "ops/brain_env.sh",
-    # bars that never move without zuck
-    "desks/mt5/research/tier_s.py", "libs/ops/canonical_policy.py",
-    "desks/mt5/research/heat_policy.py",
-    # the principal's own switches and ceilings, and the kill files
-    "*allocator_sovereign*", "*margin_clause_disabled*", "*recorders_off*",
-    "*ftmo_copy_principal*", "*gold_oco_mode*", "*gateway_paused*", "*cashcarry_kill*",
-    "*deadman_fired*", "data/freeze", "*/data/freeze",
-    # governing prose
-    "docs/research.md", "docs/cro/*", "ops/memory/*", ".mcp.json", "*/.mcp.json",
-)  # fmt: skip
-#: Prose files: one whose name matches FORCED_LIVE is a governing document, so PROTECTED.
-DOC_EXTS = (".md", ".txt", ".rst")
+#: PROTECTED paths: none (2026-10-29 18:44Z, zuck: "remove all protected", "make all unprotected",
+#: "always", "so i never have to approve"). Every file takes the AUTO path and its six checks; a
+#: HOLD still wins. ops/release/protected_paths.txt can add patterns back. Only an unclassifiable
+#: PR (a file count that does not add up, an unreadable list) still falls to the manual path.
+PROTECTED: tuple[str, ...] = ()
 #: The jobs an AUTO-tier PR needs on top of the gating jobs (step C builds them; until then no
 #: AUTO-tier PR can merge, because a missing job is never a pass).
 AUTO_JOBS = ("risk-invariants", "replay-shadow", "independent-review")
@@ -289,8 +273,6 @@ def protected_patterns() -> tuple[str, ...] | None:
 def is_protected(name: str, extra: Iterable[str] = ()) -> bool:
     """Case-blind (#455 audit MF2): on the box's NTFS checkout `claude.md` IS `CLAUDE.md`."""
     low = name.lower()
-    if low.endswith(DOC_EXTS) and FORCED_LIVE.search(low):
-        return True  # a governing document
     return any(fnmatch.fnmatchcase(low, pat.lower()) for pat in (*PROTECTED, *extra))
 
 
