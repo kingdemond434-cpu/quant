@@ -49,8 +49,38 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-import pandas as pd
+#: See `_cap_blas_threads` for the derivation (the box CPU shaper's measured 8-core cap).
+BLAS_THREAD_CAP = 8
+
+
+def _cap_blas_threads() -> int | None:
+    """BLAS/OpenMP threads = the cores this process may run on, set BEFORE numpy loads.
+
+    2026-10-29: a heavy pass ran 85 threads on one process (about 31 cores of load) and starved
+    the judge; the box's CPU shaper then pinned it to 8 cores, where ~18 BLAS threads fought over
+    8. Sizing the pools to the affinity mask stops that oversubscription without changing a single
+    result (the same arithmetic, fewer contending threads). An explicit setting is never
+    overridden, and an unreadable mask changes nothing.
+
+    Capped at BLAS_THREAD_CAP as well: the shaper applies its mask AFTER the process starts (every
+    2 min), so the mask read at import can still be all 18 cores. DERIVATION: 8 is the shaper's own
+    measured cap for this job (Desk health, Quant-CpuShaper, 2026-10-29)."""
+    try:
+        import psutil
+        n = min(len(psutil.Process().cpu_affinity() or []), BLAS_THREAD_CAP)
+    except Exception:
+        return None
+    if n <= 0:
+        return None
+    for var in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+        os.environ.setdefault(var, str(n))
+    return n
+
+
+_cap_blas_threads()
+
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -2679,6 +2709,17 @@ def state_book(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfig, *,
 #: candidate re-solve is ~1.2 s on the desk's 110-sleeve population; 8 s is headroom for one
 #: that starts far from the incumbent, not a cap on the scan. Zero or negative means unbounded.
 ADMISSION_CANDIDATE_BUDGET_S = 8.0
+#: THE HEAVY PASS'S OWN WALL CLOCK (2026-10-29). The admission scan stops starting re-solves this
+#: many seconds after the pass began; the rest carry as UNSCORED and go first next pass. DERIVATION:
+#: MT5-AllocatorFast's freshness contract is 90 min and the fast clock fires every 5 min; the rest
+#: of a heavy pass was measured at ~5 min (`main`'s note), so a 20-min scan bounds the lock at
+#: ~25 min and leaves the fast lane well inside its contract. PID 28696 held it 6.5h without this.
+HEAVY_ADMISSION_BUDGET_S = 20 * 60
+#: The lock lease a heavy pass takes: past it, a live owner no longer blocks the next writer, and a
+#: pass that has lost its lease may not publish (`job_lock.holds`). Derived from the measured
+#: schedule: above the ~25-min expected heavy pass with room for a slow box, and half the fast
+#: lane's 90-min freshness contract.
+HEAVY_LEASE_S = 45 * 60
 #: Share of the book's TOTAL heat that may be lent to exploration among candidates whose
 #: dE[log W] sits INSIDE the admission margin -- the ambiguous ones, which the criterion could
 #: neither admit nor refuse on evidence and which were parked at zero for ever. Lent from
@@ -2796,7 +2837,8 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
                        margin_frac: float = ADMISSION_MARGIN_FRAC,
                        warm: dict[str, dict[str, float]] | None = None,
                        explore_share: float = EXPLORE_SHARE,
-                       explore_seed: int | None = None) -> dict[str, Any]:
+                       explore_seed: int | None = None,
+                       pass_deadline: float | None = None) -> dict[str, Any]:
     """dE[log W]_i = E[log W | book + i] - E[log W | book], on ONE world population.
 
         "Don't rank candidates primarily by Sharpe. Rank by dE[log W] after adding the candidate
@@ -2930,7 +2972,20 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
 
     warm_in = {str(k): v for k, v in (warm or {}).items() if isinstance(v, dict) and v}
     solve_s: list[float] = []
+    deadline_cut = 0
     for name in cand_names:
+        # THE PASS HAS A DEADLINE TOO (2026-10-29). Per-candidate budgets alone let one heavy pass
+        # hold the allocator lock for 6.5h (PID 28696) while every fast pass stood down. Past
+        # `pass_deadline` (epoch seconds) the rest are carried as UNSCORED -- the same carry the
+        # ordering above already puts first next pass -- never refused, never admitted.
+        if pass_deadline is not None and time.time() > pass_deadline:
+            doc["unscored"][name] = ("pass deadline reached before this candidate's re-solve; "
+                                     "NOT admitted, carried first to the next pass")
+            deadline_cut += 1
+            continue
+        # A HOLDER THAT LOST ITS LEASE STOPS SCANNING (#529 audit S): nothing it computes from
+        # here can be published, so it ends the pass instead of burning the successor's CPU.
+        _lease_guard("admission scan")
         e = by_name[name]
         sharpe = _annual_sharpe(e.daily_r)
         corr = _corr_to_book(e.daily_r, held, by_name)
@@ -3025,6 +3080,13 @@ def marginal_admission(ev: list[SleeveEvidence], worlds: Worlds, cfg: WorldConfi
     doc["elapsed_s"] = round(time.time() - t0, 1)
     doc["per_candidate_s"] = (round(float(np.mean(solve_s)), 3) if solve_s else None)
     doc["max_candidate_s"] = (round(float(max(solve_s)), 3) if solve_s else None)
+    # A DEADLINE-CUT SCAN IS NOT A COMPLETE ONE (#529 audit MF3), and says so: `complete` False
+    # with the `deadline_cut` count, so hourly_cycle never reads it as a fresh heavy scan (the next
+    # hourly pass runs heavy again, carried candidates first). The rows it DID score are real
+    # measurements, so the status stays MEASURED: the sealed promoter prices capital only off a
+    # MEASURED scan, and a PARTIAL status would stall every promotion behind a compute bound.
+    doc["deadline_cut"] = deadline_cut
+    doc["complete"] = deadline_cut == 0
     doc["status"] = "MEASURED"
     # EXPLORATION INSIDE THE MARGIN: the ambiguous candidates, funded a little from within the
     # book so they accrue a forward record instead of standing at zero for ever. Computed here
@@ -3502,6 +3564,59 @@ def decision_state_fingerprint(ev: Sequence[SleeveEvidence], cfg: WorldConfig) -
                                          default=str).encode("utf-8"))
             digest.update(b"\0")
     return digest.hexdigest()
+
+
+#: Where a pass that lost its lease records it (never ALLOCATOR_STANDDOWN.json, which is the
+#: successor's): read by missed_growth.lock_lease_line.
+LEASE_LOST = BASE / "reports" / "ALLOCATOR_LEASE_LOST.json"
+
+
+class LeaseLost(RuntimeError):
+    """This pass's allocator lock was reclaimed after its lease expired: it may not publish."""
+
+
+def _lock_token() -> str | None:
+    """This process's allocator-lock token, or None when it holds no lock (a direct run)."""
+    try:
+        from research.job_lock import _HELD
+    except ModuleNotFoundError:
+        from job_lock import _HELD  # type: ignore[no-redef,import-not-found]
+    held = _HELD.get("pf_allocator")
+    return held[1] if held else None
+
+
+#: os.replace backoff (seconds): on Windows a reader holding the destination open (the gateway
+#: reads pf_allocation.json every pass) makes the replace raise PermissionError for a moment.
+#: DERIVATION: measured 2026-10-29 on the trading box, one read of the 840 KB artifact holds it
+#: 6.7 ms median / 81 ms worst of 20; the doubling schedule's first step outlasts the median
+#: and its 3.15 s total outlasts the worst read ~39x, before the last attempt's error propagates.
+REPLACE_BACKOFF_S = (0.05, 0.1, 0.2, 0.4, 0.8, 1.6)
+
+
+def _replace_retry(src: Path, dst: Path) -> None:
+    """`os.replace(src, dst)`, retried through REPLACE_BACKOFF_S on PermissionError; the last
+    attempt's error propagates (a book that cannot be published is a failed pass, never a
+    silent one)."""
+    for wait in REPLACE_BACKOFF_S:
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            time.sleep(wait)
+    os.replace(src, dst)
+
+
+def _lease_guard(step: str) -> None:
+    """Raise LeaseLost when this process took the allocator lock and no longer holds it, so a pass
+    that outlived its lease never overwrites the book a successor published (one writer, always).
+    A call outside `exclusive_job` (tests, a direct run) holds nothing and is not stopped."""
+    try:
+        from research.job_lock import holds
+    except ModuleNotFoundError:
+        from job_lock import holds  # type: ignore[no-redef,import-not-found]
+    if holds("pf_allocator") is False:
+        raise LeaseLost(f"allocator lease lost before {step}: a successor holds the lock; this "
+                        f"pass publishes nothing")
 
 
 def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
@@ -4315,6 +4430,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     if heavy:
         admission = marginal_admission(ev, worlds, cfg, incumbent=funded, bounds=adm_bounds,
                                        total_heat=book.total_heat, order=free.marginal,
+                                       pass_deadline=t0 + HEAVY_ADMISSION_BUDGET_S,
                                        # Whatever the last scan could not finish goes first, and
                                        # continues from the book its solve had reached.
                                        prefer=set(prev_admission.get("unscored") or {}),
@@ -4461,8 +4577,13 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # The gateway reads the certificate this writes; without a fresh passing one it keeps
     # ranking with the optimiser and sizing with Q_OPT exactly as it does today.
     fallback: dict[str, Any] = {}
+    # THE CERTIFICATE IS WRITTEN BESIDE THE BOOK, NOT HERE (#529 audit MF1). Certifying here and
+    # publishing the book ~460 lines later let a pass that lost its lease in between leave an
+    # ALLOCATOR_PROOF.json for a book that never reached pf_allocation.json. The certify call is
+    # held until the final lease guard, and runs immediately before the artifact is replaced.
+    cert_pending: tuple[dict[str, Any], dict[str, float]] | None = None
     try:
-        from libs.portfolio.allocator_proof import certify, contest
+        from libs.portfolio.allocator_proof import contest
         # A*_t NEEDS THE STATE IT WAS SOLVED IN. Without `now_buckets` the certificate's
         # `by_state` keys carry the regime alone, so `select` can only match by regime suffix and
         # a session- or event-conditioned bucket that the admission gauntlet HAS judged is thrown
@@ -4474,7 +4595,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         # from those books whenever the dynamic proof is stale or a challenger won the state.
         exchange_zero_meta["contested_books"] = zero_contested_books(
             proof, ts_zero, eligible=[e.name for e in ev])
-        certify(proof, root=ROOT, book=funded)
+        cert_pending = (proof, dict(funded))
         # THE FLOOR'S FALLBACK: the best baseline at the same total heat, carried on the
         # artifact so a failed or stale proof changes who allocates the floor, never whether.
         best = str(proof.get("best_baseline") or "")
@@ -4483,6 +4604,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             fallback = {"name": best, "book": {k: round(float(v), 6) for k, v in fb_book.items()
                                                if float(v) > 1e-6}}
         _log(f"proof: {'PASS' if proof['passed'] else 'FAIL'} -- {proof['why']}")
+    except LeaseLost:
+        raise                                   # never swallowed as a failed contest (MF2)
     except Exception as exc:
         # A failed contest must never take the allocation pass with it: the book is still worth
         # publishing for ranking and total heat. What it loses is the right to SIZE, which is
@@ -4935,7 +5058,28 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "capacity_growth": _capacity_growth(),
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(art, indent=2, default=str), encoding="utf-8")
+    _lease_guard("publish")
+    # ONE WRITER, ONE PAIR: the certificate and the book land together, after the last guard,
+    # each through a temp file and an atomic replace, and both carry this pass's lock token.
+    # The gateway trusts the certificate only for the book it names (`gateway._allocator_book`
+    # compares the two), so a pair torn by a crash between these writes is read as uncertified.
+    art["lock_token"] = _lock_token()
+    if cert_pending is not None:
+        from libs.portfolio.allocator_proof import certify
+        try:
+            certify(cert_pending[0], root=ROOT, book=cert_pending[1])
+        except OSError as exc:
+            # A certificate that cannot be written must not cost the desk its new book: the book
+            # still publishes and the gateway, finding no matching certificate, sizes it as
+            # uncertified (the best-baseline path), exactly as on a failed proof.
+            _log(f"certificate not written ({type(exc).__name__}: {exc}); publishing uncertified")
+    _tmp = OUT.with_name(f".{OUT.name}.{os.getpid()}.tmp")
+    try:
+        _tmp.write_text(json.dumps(art, indent=2, default=str), encoding="utf-8")
+        _replace_retry(_tmp, OUT)
+    finally:
+        if _tmp.exists():
+            _tmp.unlink()
     DONE.write_text(datetime.now(UTC).isoformat(), encoding="utf-8")
 
     # THE FORECAST LOG IS APPEND-ONLY AND IT IS WHAT MAKES THIS LOOP LEARN. `pf_allocation.json`
@@ -5051,7 +5195,8 @@ def main() -> int:
             return 0
         need = 0                            # room confirmed above; do not wait a second time
 
-    with exclusive_job("pf_allocator", need_mb=need) as go:
+    with exclusive_job("pf_allocator", need_mb=need,
+                       lease_s=HEAVY_LEASE_S if args.mode == "heavy" else None) as go:
         if not go:
             _log(f"stood down: another allocator pass holds the lock, or the box cannot fit "
                  f"{_NEED_MB[args.mode]}MB. The previous book stands.")
@@ -5062,6 +5207,16 @@ def main() -> int:
             return 0
         try:
             run(args.mode, seed=args.seed)
+        except LeaseLost as exc:
+            # NOT the stand-down record: the successor that took the lease owns that file, and a
+            # late holder writing LEASE_LOST over its CLEARED would misreport the live allocator
+            # (#529 audit S). The loss is recorded beside it instead, for missed_growth.
+            _log(f"stood down: {exc}")
+            with suppress(OSError):
+                LEASE_LOST.write_text(json.dumps({
+                    "at": datetime.now(UTC).isoformat(timespec="seconds"), "mode": args.mode,
+                    "why": str(exc)}), encoding="utf-8")
+            return 0
         except Exception as exc:
             # A crash here must never read as "no allocation was needed" (L1.28a). The artifact
             # keeps its last good content and the failure is loud and non-zero.

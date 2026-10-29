@@ -65,6 +65,7 @@ from mt5desk.decision_core import (
     basket_lots,
     basket_record,
     book_from_allocation,
+    book_pair_matches,
     bracket_deadline,
     bracket_from_bars,
     closed_trade_r,
@@ -639,6 +640,12 @@ def _allocator_book() -> tuple[dict[str, float] | None, str]:
         return None, f"pf_allocation unreadable ({type(exc).__name__})"
     # `heat.state` is the id pf_allocator solved under and the certificate's `by_state` is keyed
     # the same way; a state with no bucket falls back to the global verdict INSIDE `select`.
+    # ONE PAIR OR NONE (#529 audit): the certificate names the book it proved. A certificate
+    # for any other book (a pass torn between the two writes, a stale proof beside a newer
+    # book) certifies nothing here; the book is then sized as uncertified, never refused.
+    if (cert is not None and "book" in cert
+            and not book_pair_matches(cert.get("book"), art.get("book"))):
+        cert, cwhy = None, "certificate names a different book than pf_allocation.json"
     state = str((art.get("heat") or {}).get("state") or "")
     src, swhy = select(cert, state) if cert is not None else ("", cwhy)
     if src and src != "dynamic":

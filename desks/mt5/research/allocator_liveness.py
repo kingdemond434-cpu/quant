@@ -341,6 +341,36 @@ def _join() -> dict[str, Any]:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
 
 
+#: THE LOCK MAY NOT OUTLIVE TWICE ITS EXPECTED RUN (2026-10-29: PID 28696 held pf_allocator 6.5h
+#: and the fast lane went 381 min stale). DERIVATION: a heavy pass is expected to take its
+#: admission budget (`pf_allocator.HEAVY_ADMISSION_BUDGET_S`, 20 min) plus the ~5 min the rest of
+#: the pass was measured at; twice that is 50 min. Pinned to the allocator's constant by a test.
+LOCK_EXPECTED_S = 25 * 60
+LOCK_HELD_RED_S = 2 * LOCK_EXPECTED_S
+
+
+def _lock_held(now: float) -> dict[str, Any]:
+    """How long the allocator lock has been held, and whether that is past LOCK_HELD_RED_S."""
+    path = DATA / ".job_locks" / "pf_allocator.json"
+    row = _read(path)
+    if row is None:
+        return {"status": "FREE", "why": "no allocator lock is held"}
+    started = row.get("started_at")
+    try:
+        t = datetime.fromisoformat(str(started).replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return {"status": UNMEASURED, "why": f"lock has no readable started_at ({started!r})"}
+    age = now - t
+    held = {"age_s": round(age, 1), "pid": row.get("pid"), "started_at": started,
+            "lease_until": row.get("lease_until"), "red_after_s": LOCK_HELD_RED_S}
+    if age > LOCK_HELD_RED_S:
+        return {**held, "status": "HELD_TOO_LONG",
+                "why": (f"pf_allocator lock held {age / 60:.0f} min by pid {row.get('pid')} "
+                        f"(> {LOCK_HELD_RED_S // 60} min, twice the expected heavy run); every "
+                        f"other allocator pass stands down behind it")}
+    return {**held, "status": "HELD", "why": f"held {age / 60:.0f} min"}
+
+
 def _stand_down(now: float) -> dict[str, Any]:
     """The last NAMED stand-down `pf_allocator` wrote, and whether it still covers the gap."""
     doc = _read(STANDDOWN)
@@ -353,6 +383,25 @@ def _stand_down(now: float) -> dict[str, Any]:
             "age_s": None if age is None else round(age, 1),
             "covers_gap": bool(age is not None and age <= ALLOCATION_MAX_AGE_S
                                and str(doc.get("status") or "").upper() == "STOOD_DOWN")}
+
+
+def certificate_pair(alloc: dict[str, Any] | None) -> dict[str, Any]:
+    """Whether the certificate on disk names the book on disk (#529 v3 audit SF). The gateway
+    sizes a MISMATCHED pair as uncertified, so this is a RED demotion, never a quiet `why`."""
+    proof = next((d for d in (_read(p) for p in PROOF_PATHS) if isinstance(d, dict)), None)
+    if alloc is None or proof is None:
+        return {"status": UNMEASURED, "why": "no certificate or no allocation on disk"}
+    if "book" not in proof:
+        return {"status": "LEGACY", "why": "the certificate names no book (pre-#529)"}
+    try:
+        from mt5desk.decision_core import book_pair_matches
+    except ImportError as exc:
+        return {"status": UNMEASURED, "why": f"comparator unavailable ({exc})"}
+    if book_pair_matches(proof.get("book"), alloc.get("book")):
+        return {"status": "MATCH", "why": "the certificate names the published book"}
+    return {"status": "MISMATCH",
+            "why": ("the certificate names a different book than pf_allocation.json: the "
+                    "gateway is sizing the allocator UNCERTIFIED (best-baseline path)")}
 
 
 def measure(*, now: float | None = None) -> dict[str, Any]:
@@ -432,6 +481,12 @@ def measure(*, now: float | None = None) -> dict[str, Any]:
                                     f"not declare it UNMEASURED ({r['declared']})"})
     if str(join.get("status")) == "BROKEN":
         breaches.append({"check": "JOIN", "why": str(join.get("why"))[:300]})
+    lock = _lock_held(now)
+    if lock["status"] == "HELD_TOO_LONG":
+        breaches.append({"check": "LOCK_HELD", "why": str(lock["why"])[:300]})
+    pair = certificate_pair(alloc)
+    if pair["status"] == "MISMATCH":
+        breaches.append({"check": "CERT_BOOK_MISMATCH", "why": pair["why"]})
 
     # A CYCLE THAT PRODUCED NEITHER. The only legal states are "there is a fresh allocation" and
     # "there is a named stand-down that covers the gap". Nothing is the third state, and it is
@@ -458,6 +513,8 @@ def measure(*, now: float | None = None) -> dict[str, Any]:
         "heat": heat,
         "join": join,
         "stand_down": sd,
+        "lock": lock,
+        "certificate_pair": pair,
         "breaches": breaches,
         "boundary": ("REPORT ONLY. This organ reads artifacts and publishes ages, declarations "
                      "and the join. It sets no fraction, no cap and no veto, and it never "

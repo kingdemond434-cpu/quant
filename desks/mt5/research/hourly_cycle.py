@@ -834,7 +834,8 @@ def _stamp_heavy_pass(leg: dict | None, art: Path | None = None,
         return False
     if ts.tzinfo is None:
         ts = ts.replace(tzinfo=UTC)
-    if adm.get("status") != "MEASURED" or adm.get("carried_from") or ts < started:
+    if (adm.get("status") != "MEASURED" or adm.get("carried_from") or ts < started
+            or adm.get("complete") is False):
         return False
     try:
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -949,6 +950,10 @@ def _admission_scan_age_s(art: Path | None = None, now: datetime | None = None,
     except (OSError, ValueError, AttributeError):
         return None
     if not isinstance(adm, dict) or adm.get("status") != "MEASURED":
+        return None
+    # A scan the pass deadline cut short is not a heavy scan to age from (#529 audit MF3): the next
+    # hourly pass runs heavy and continues with the carried candidates.
+    if adm.get("complete") is False:
         return None
     stamp = adm.get("carried_from") or adm.get("measured_utc")
     try:
