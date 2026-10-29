@@ -259,6 +259,151 @@ SOURCE_POLICY.update({
 })
 
 
+#: THE FUND-FLOW GAP DOORS AND THE BROKER FEED (2026-10-29, data-class gap #1 and the census's
+#: TERMS_UNMEASURED finding). Each row quotes the publisher's own terms page as read on that date
+#: with WebFetch; where no clause permits the use, the row is IDEAS_ONLY (fail closed) and the
+#: hunter publishes its missed-growth line (delta E[log W] UNMEASURED).
+_ECB_USAGE = ("https://www.ecb.europa.eu/stats/ecb_statistics/governance_and_quality_framework/"
+              "html/usage_policy.en.html")
+SOURCE_POLICY.update({
+    "jp_mof": {
+        "hosts": ("mof.go.jp",), "status": PUBLIC_PAGE, "sources": ("jp_mof",),
+        "why": ("Japan Ministry of Finance statistics (weekly international transactions in "
+                "securities): the site's content is under the Public Data License 1.0, which "
+                "permits free use including commercial use with the source cited"),
+        "terms": {"url": "https://www.mof.go.jp/english/about_mof/notice/index.html",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "licence": ("belongs to the Ministry of Finance unless otherwise provided, "
+                                  "and Public Data License (Version 1.0; PDL 1.0) applies"),
+                      "pdl_use": ("may be freely used, copied, publicly transmitted, translated "
+                                  "or otherwise modified"),
+                      "pdl_commercial": "Commercial use of “This Content” is also permitted.",
+                      "pdl_citation": "The user must cite the source when using “This Content”."},
+                  "also_read": {
+                      "https://www.digital.go.jp/en/resources/open_data/public_data_license_v1.0":
+                          "PDL 1.0 text: the pdl_* clauses above; no clause on automated access",
+                      "https://www.mof.go.jp/robots.txt":
+                          "client_error to the reader on 2026-10-29: the fetch door asks it at "
+                          "run time (unreadable robots means no fetch)"}}},
+    "ecb_data_portal": {
+        "hosts": ("data-api.ecb.europa.eu", "data.ecb.europa.eu"), "status": API_PERMITTED,
+        "sources": ("ecb_data_portal", "ecb_sdw"),
+        "why": ("the ECB Data Portal's keyless SDMX API (investment fund statistics and other "
+                "ESCB series): the ECB's statistics usage policy grants free reuse, commercial or "
+                "not, with the source quoted and the statistics unmodified"),
+        "terms": {"url": _ECB_USAGE, "checked_at": "2026-10-29",
+                  "clauses": {
+                      "reuse": ("All publicly available ESCB statistics may be reused free of "
+                                "charge on the condition that the source is quoted"),
+                      "unmodified": ("and that the statistics (including metadata) are not "
+                                     "modified."),
+                      "commercial": ("irrespective of any subsequent commercial or "
+                                     "non-commercial use"),
+                      "third_party": ("The right of free reuse does not apply to third-party data "
+                                      "without a prior permission from the originator.")},
+                  "also_read": {
+                      "https://www.ecb.europa.eu/services/disclaimer/html/index.en.html":
+                          ("site copyright: users may make free use of the information obtained "
+                           "directly from it, citing the ECB"),
+                      "https://data-api.ecb.europa.eu/robots.txt":
+                          ("ROBOTS_DISALLOWED to the reader on 2026-10-29 (content not shown): "
+                           "the fetch door asks robots.txt at run time for the desk's own agent "
+                           "and a disallow stops the door, recorded, never routed around")}}},
+    "fed_board": {
+        "hosts": ("federalreserve.gov",), "status": PUBLIC_PAGE, "sources": ("fed_board",),
+        "why": ("Federal Reserve Board releases (Z.1 Financial Accounts, press feeds): the "
+                "Board's own disclaimer puts its information in the public domain"),
+        "terms": {"url": "https://www.federalreserve.gov/disclaimer.htm",
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "public_domain": ("information on Board's website is in the public domain "
+                                        "and may be copied and distributed without permission"),
+                      "citation": "Please cite to the Board as the source of the information.",
+                      "third_party": ("Permission to use copyrighted materials must be obtained "
+                                      "from the original source and cannot be obtained from the "
+                                      "Board.")}}},
+    "us_tic": {
+        "hosts": ("ticdata.treasury.gov",), "status": IDEAS_ONLY, "sources": ("us_tic",),
+        "why": ("US Treasury TIC cross-border securities files: the Treasury site-policies page "
+                "as read carries no copyright, reuse or automated-access clause, so its terms "
+                "are UNREAD and UNREAD terms never permit live input; read for ideas only"),
+        "unblock": ("a Treasury (home.treasury.gov or ticdata.treasury.gov) page quoting a reuse "
+                    "or public-domain clause for TIC data, quoted into this row"),
+        "terms": {"url": "https://home.treasury.gov/subfooter/site-policies-and-notices",
+                  "checked_at": "2026-10-29",
+                  "unread": {
+                      "https://home.treasury.gov/subfooter/site-policies-and-notices":
+                          ("read 2026-10-29: only linking and privacy text, no copyright, reuse "
+                           "or automated-access clause: UNREAD"),
+                      "https://home.treasury.gov/subfooter/privacy-act/privacy-and-legal-notices":
+                          "client_error to the reader on 2026-10-29: UNREAD"}}},
+    "kr_fss": {
+        "hosts": ("fss.or.kr",), "status": IDEAS_ONLY, "sources": ("kr_fss",),
+        "why": ("Korea FSS foreign-investor net purchases are bulletin-board PDF/HWP releases, "
+                "not a machine-readable series; its OpenAPI serves pension products only and no "
+                "copyright or reuse clause was found, so its terms are UNREAD: ideas only"),
+        "unblock": ("an FSS (or KRX) page quoting a reuse clause for a machine-readable foreign "
+                    "net-purchase series, quoted into this row"),
+        "terms": {"url": "https://www.fss.or.kr/", "checked_at": "2026-10-29",
+                  "unread": {
+                      "https://www.fss.or.kr/":
+                          "home page read 2026-10-29: no copyright-policy link found: UNREAD",
+                      "https://www.fss.or.kr/fss/main/contents.do?menuNo=201042":
+                          ("OpenAPI overview read 2026-10-29: pension-portal APIs only, no "
+                           "terms clause shown: UNREAD")}}},
+    "bis_speeches": {
+        "hosts": (), "url_level": False, "status": IDEAS_ONLY,
+        "sources": ("bis_speeches", "bis_cb_speeches"),
+        # the speech routes only: data.bis.org (the statistics) keeps its own reading
+        "url_patterns": (r"^(?:www\.)?bis\.org/(?:speeches|cbspeeches|review|doclist)/",),
+        "why": ("BIS central bankers' speeches (page, RSS and the speeches.zip corpus): the BIS "
+                "terms clause 2.1 permits download and redistribution for non-commercial purposes "
+                "only, so the speeches are read for ideas, never a live tone series"),
+        "unblock": "written permission from the BIS (clause 2.2(c)) for the desk's use",
+        "terms": {"url": "https://www.bis.org/terms_conditions.htm", "checked_at": "2026-10-29",
+                  "clauses": {
+                      "2.1": ("Users may download, display, print out, photocopy or redistribute "
+                              "any BIS Material for non-commercial purposes."),
+                      "2.2(c)": ("which does not meet the above conditions requires written "
+                                 "permission from the BIS.")}}},
+    # THE BROKER'S OWN FEED. Not a URL: the bars, ticks and swaps the desk's MT5 terminal receives
+    # on its own account. terms_basis_census names it `mt5_broker` for every certificate.
+    "mt5_broker": {
+        "hosts": (), "url_level": False, "status": API_PERMITTED, "sources": ("mt5_broker",),
+        "why": ("the desk's own Fusion Markets MT5 price feed, used to decide the desk's trading "
+                "with Fusion Markets, the purpose clause 5.6 names; not for other venues or "
+                "redistribution"),
+        "use_scope": ("clause 5.6 confines platform information to the client's trading with "
+                      "Fusion Markets: research that decides trades on the Fusion account is "
+                      "inside it; using the feed to decide trades at another venue (E8, FTMO) "
+                      "or passing it on is not"),
+        "entity_match": ("UNMEASURED: the document read is issued by Gleneagle Asset Management "
+                         "Limited trading as Fusion Markets (AFSL 226199), version 1.0 of 1 June "
+                         "2019; the desk's terminal names its company 'Fusion Markets Pty Ltd' "
+                         "(data/account_state.json). Whether this is the agreement governing the "
+                         "account, or a later version supersedes it, was not measured"),
+        "terms": {"url": ("https://cdn.locomotive.works/sites/5e1f1e69d809e500a889fce4/assets/"
+                          "5e257357e52cff00a7fa3d67/Fusion_Markets_Financial_Product_Service_"
+                          "Terms_Version_1.0.pdf"),
+                  "checked_at": "2026-10-29",
+                  "clauses": {
+                      "5.6": ("The information provided on Fusion Markets' Online Platforms is to "
+                              "be used for the purpose of your trading with Fusion Markets only, "
+                              "and not for any other purposes."),
+                      "5.6_ip": ("Using Fusion Markets Online Platforms does not transfer "
+                                 "intellectual property rights to you."),
+                      "4.4(i)": ("the information on the Online Platforms will not be used for "
+                                 "unlawful or unauthorised purposes.")},
+                  "also_read": {
+                      "https://fusionmarkets.com/legal":
+                          "client_error to the reader on 2026-10-29: UNREAD",
+                      "silence": ("the document has no clause naming research, back-testing, "
+                                  "automated access or Expert Advisors; the permitting basis is "
+                                  "the purpose clause 5.6 alone")}}},
+})
+
+
 def _feed_row(feed_url: str, status_: str, why: str, terms_url: str, read: str,
               clause: str = "") -> dict[str, Any]:
     """One macro event-ledger RSS feed's row (desks/mt5/macro/sources.py `_OFFICIAL_FEEDS`),

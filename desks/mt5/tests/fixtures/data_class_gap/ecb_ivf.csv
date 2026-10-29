@@ -1,0 +1,5 @@
+KEY,FREQ,REF_AREA,TIME_PERIOD,OBS_VALUE,OBS_STATUS,TITLE
+IVF.M.U2.N.T0.L30.A.0.Z5.0000.Z01.E,M,U2,2026-05,41234,A,Investment fund shares net issues
+IVF.M.U2.N.T0.L30.A.0.Z5.0000.Z01.E,M,U2,2026-06,-1200,A,Investment fund shares net issues
+IVF.M.U2.N.T0.L30.A.0.Z5.0000.Z01.E,M,U2,2026-07,15000,A,Investment fund shares net issues
+IVF.M.U2.N.T0.L30.A.0.Z5.0000.Z01.E,M,U2,2026-08,NaN,A,Investment fund shares net issues

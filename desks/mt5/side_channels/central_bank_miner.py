@@ -34,14 +34,14 @@ from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 
-import requests
 try:
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data import polite_fetch as _pf
 except ImportError:  # run as a script: the repo root is not on the path
     import sys as _sys
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
-    from libs.data.polite_fetch import DESK_UA
+    from libs.data import polite_fetch as _pf
+DESK_UA = _pf.DESK_UA
 
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "central_banks"
@@ -49,6 +49,9 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 #: Append-only dated archive. One JSON object per document, keyed by (bank, link).
 ARCHIVE = OUT / "cb_documents.jsonl"
+#: The hourly leg's artifact (`hourly_cycle:central_bank_miner`): per feed what the pass got, the
+#: refusal word when the polite door refused it, and the register row each feed reads under.
+REPORT = BASE / "reports" / "CENTRAL_BANK_MINER.json"
 
 #: SEED, not a boundary (LAWS §1 anti-hardcode law): every entry is a feed the 2026-08-26 probe
 #: confirmed live and dated. Adding a central bank is adding a row, never editing logic.
@@ -178,43 +181,102 @@ def _seen_keys() -> set[str]:
     return keys
 
 
-def mine_central_banks() -> list[dict[str, Any]]:
-    """Fetch every seeded feed and return the DATED rows not already archived."""
+def _feed_terms(url: str) -> dict[str, Any]:
+    """The ONE register's reading of a feed URL. Every feed here yields ATTENTION (a dated
+    pointer read for ideas), never a live data series, so an IDEAS_ONLY row does not stop it;
+    the label is recorded so a consumer can see which pointers came from such a row."""
+    try:
+        from libs.data import terms_fence as tf
+        pol = tf.policy_of_url(url)
+        return {"policy_row": pol.get("source"), "status": pol.get("status")}
+    except Exception as exc:  # the register unreadable is a reading too, never a pass
+        return {"policy_row": None, "status": "UNMEASURED", "why": f"{type(exc).__name__}"}
+
+
+def mine_central_banks(fetch: Any = None,
+                       feed_log: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    """Fetch every seeded feed and return the DATED rows not already archived.
+
+    EVERY FETCH GOES THROUGH THE POLITE DOOR (`polite_fetch.get`): the desk's honest UA, the
+    feed origin's robots.txt asked first, and a 401/403/429 or challenge a HARD STOP that holds
+    the site for a person (the RBA's edge 403 becomes that recorded hold, never a retry under
+    another UA). `fetch` is the test seam (same signature as `polite_fetch.get`)."""
+    get = fetch or _pf.get
     fresh: list[dict[str, Any]] = []
     seen = _seen_keys()
     for bank, info in FEEDS.items():
-        try:
-            resp = requests.get(info["url"], headers={"User-Agent": DESK_UA}, timeout=20)
-            resp.raise_for_status()
-        except requests.RequestException as exc:
-            # A dead feed is a REPORTED fact, never a silent empty result (the heartbeat lesson).
-            print(f"central_bank: {bank} feed unreachable -- {type(exc).__name__}: {exc}")
+        entry: dict[str, Any] = {"bank": bank, "currency": info["currency"], "url": info["url"],
+                                 **_feed_terms(info["url"])}
+        resp = get(info["url"], timeout=20.0, retries=1, leg="central_bank_miner")
+        if getattr(resp, "verdict", "") or not getattr(resp, "ok", False):
+            # A dead or refused feed is a REPORTED fact, never a silent empty result.
+            entry.update({"state": "REFUSED" if resp.verdict else "FAILED",
+                          "verdict": resp.verdict or None, "http_status": resp.status,
+                          "error": (resp.error or "")[:200]})
+            print(f"central_bank: {bank} feed not read -- {resp.verdict or resp.status} "
+                  f"{(resp.error or '')[:120]}")
+            if feed_log is not None:
+                feed_log.append(entry)
             continue
-        for row in parse_feed(resp.text, bank, info["currency"], info["url"]):
+        rows = parse_feed(resp.text, bank, info["currency"], info["url"])
+        new = 0
+        for row in rows:
             key = f"{row['bank']}|{row['link']}"
             if key in seen:
                 continue
             seen.add(key)
             fresh.append(row)
+            new += 1
+        entry.update({"state": "OK", "http_status": resp.status, "dated_items": len(rows),
+                      "new_items": new})
+        if feed_log is not None:
+            feed_log.append(entry)
     return fresh
 
 
-def run_and_save() -> list[dict[str, Any]]:
-    rows = mine_central_banks()
+def run_and_save(fetch: Any = None, report: Path | None = None) -> list[dict[str, Any]]:
+    feed_log: list[dict[str, Any]] = []
+    rows = mine_central_banks(fetch, feed_log)
     if rows:
         with ARCHIVE.open("a", encoding="utf-8") as fh:
             for row in rows:
                 fh.write(json.dumps(row, ensure_ascii=False) + "\n")
-    snap = OUT / f"discoveries_{datetime.now(UTC).strftime('%Y%m%d_%H%M')}.json"
-    try:
-        from side_channels.discovery_io import write_discoveries
-    except ModuleNotFoundError:
-        from discovery_io import write_discoveries
-    rows = write_discoveries(snap, rows)
+        # an hour with nothing new writes no empty snapshot: the compiler reads every file here
+        snap = OUT / f"discoveries_{datetime.now(UTC).strftime('%Y%m%d_%H%M')}.json"
+        try:
+            from side_channels.discovery_io import write_discoveries
+        except ModuleNotFoundError:
+            from discovery_io import write_discoveries
+        rows = write_discoveries(snap, rows)
     total = sum(1 for _ in ARCHIVE.open(encoding="utf-8")) if ARCHIVE.exists() else 0
     print(f"central_bank: {len(rows)} new dated document(s); archive now {total} row(s) -> {ARCHIVE}")
+    read = sum(1 for e in feed_log if e.get("state") == "OK")
+    doc = {
+        "generated_at": datetime.now(UTC).isoformat(),
+        "organ": "desks/mt5/side_channels/central_bank_miner.py",
+        "leg": "hourly_cycle:central_bank_miner",
+        "feeds": feed_log,
+        "feeds_read": read, "feeds_total": len(FEEDS),
+        # nothing read is UNMEASURED, never "no new documents"
+        "new_documents": len(rows) if read else "UNMEASURED",
+        "archive_rows": total, "archive": "desks/mt5/data/intelligence/central_banks/"
+                                          "cb_documents.jsonl",
+        "consumer": ("data/intelligence/central_banks/discoveries_*.json -> the compiler "
+                     "(data/intelligence/**); the archive feeds nlp_event_factors"),
+        "rule": ("attention only (dated pointers read for ideas), never a live data series; "
+                 "every fetch through polite_fetch.get (robots first, 401/403/429 a held site)"),
+    }
+    out = report or REPORT
+    out.parent.mkdir(parents=True, exist_ok=True)
+    tmp = out.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    tmp.replace(out)
     return rows
 
 
 if __name__ == "__main__":
+    import argparse as _argparse
+    _ap = _argparse.ArgumentParser(description="dated central-bank document stream")
+    _ap.add_argument("--once", action="store_true", help="one pass (the default)")
+    _ap.parse_args()
     run_and_save()

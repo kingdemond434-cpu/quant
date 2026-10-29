@@ -327,8 +327,9 @@ def test_every_input_resolves_to_a_word_and_none_unread_is_ok(canon):
           {"wabc": ["TREASURY", "auctions", "note_10y_bid_to_cover"]})
     doc = C.build(NOW)
     rows = {r["certificate"]: r for r in doc["certificates"]}
-    # the broker feed has no quoted row: every certificate is at best TERMS_UNMEASURED
-    assert all(r["verdict"] != C.OK for r in rows.values())
+    # the broker feed now has its quoted row (mt5_broker, clause 5.6): a broker-only
+    # certificate is OK and every other verdict is its third-party inputs' own
+    assert rows["a.XAUUSD.session_range_breakout"]["verdict"] == C.OK
     assert rows["a.XAUUSD.session_range_breakout"]["third_party_verdict"] == "BROKER_ONLY"
     assert rows["b.EURUSD.world_macro_state"]["third_party_verdict"] == C.OK
     assert rows["c.USDJPY.world_macro_state"]["third_party_verdict"] == C.TERMS_UNMEASURED
@@ -339,8 +340,7 @@ def test_every_input_resolves_to_a_word_and_none_unread_is_ok(canon):
     assert f[-1]["kind"] == "unresolved" and f[-1]["basis"] == C.TERMS_UNMEASURED
     for ln in doc["missed_growth"]:
         assert ln["delta_elogw"] == "UNMEASURED" and ln["cause"]
-    broker = next(x for x in doc["missed_growth"] if x["input"] == "mt5_broker")
-    assert broker["certificates"] == 6
+    assert not any(x.get("input") == "mt5_broker" for x in doc["missed_growth"])
 
 
 def test_a_quoted_broker_row_would_clear_the_broker_input(canon, monkeypatch):

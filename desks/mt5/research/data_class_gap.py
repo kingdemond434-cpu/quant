@@ -180,23 +180,25 @@ CLASSES: tuple[dict[str, Any], ...] = (
     {"id": "fund_flows", "name": "Fund flows (MMF, ETF, cross-border portfolio flows)",
      "weight": 3, "mt5": ["USDJPY", "EURUSD", "US500", "XAUUSD", "AUDUSD"],
      "tier1": "Two Sigma/Millennium read weekly flow data (EPFR-class) as a demand state",
-     "producers": [], "extra_urls": [],
+     # the fund-flow doors (MoF weekly, TIC, ECB IVF, Fed Z.1) live in the world dataset hunter
+     "producers": ["research/world_dataset_hunter.py"], "extra_urls": [],
      "catalogue_terms": r"fund flow|portfolio flow|\bmmf\b|money market fund|\btic\b|"
                         r"international transactions in securities",
      "max_age_h": 200,
      "candidates": [
          _c("jp_mof_weekly_securities", "Japan MoF weekly international transactions in "
             "securities (foreign buying of JGBs/stocks, Japanese buying abroad)",
-            "https://www.mof.go.jp/english/policy/international_policy/reference/"
+            "https://www.mof.go.jp/policy/international_policy/reference/"
             "itn_transactions_in_securities/", "JP", "ja/en"),
          _c("us_tic", "US Treasury TIC monthly cross-border securities flows",
-            "https://home.treasury.gov/data/treasury-international-capital-tic-system",
+            "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/",
             "US", "en"),
          _c("ici_mmf_weekly", "ICI weekly money market fund assets", "https://www.ici.org/",
             "US", "en"),
          _c("fed_z1", "Federal Reserve Z.1 Financial Accounts (sector flows)",
-            "https://www.federalreserve.gov/releases/z1/", "US", "en"),
-         _c("ecb_ivf", "ECB investment fund statistics", "https://data-api.ecb.europa.eu/",
+            "https://www.federalreserve.gov/releases/z1/data/", "US", "en"),
+         _c("ecb_ivf", "ECB investment fund statistics",
+            "https://data-api.ecb.europa.eu/service/data/IVF/",
             "EA", "en"),
          _c("kr_fss_foreign_flows", "Korea FSS foreign investor net equity purchases",
             "https://www.fss.or.kr/", "KR", "ko")]},
