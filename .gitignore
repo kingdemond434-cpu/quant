@@ -521,6 +521,10 @@ desks/mt5/data/hypotheses/prescreen_sources_state.json.*.tmp
 !desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
 !desks/mt5/reports/shadow/precert_shadow_state.json
+# The universal sensor ledger's day shards, clock rows and revision index are box-local state
+# that grows every day; the hourly `sensor_ledger` leg publishes reports/SENSOR_LEDGER.json.
+desks/mt5/data/sensors/
+!desks/mt5/reports/SENSOR_LEDGER.json
 !desks/mt5/reports/LEDGER_VIEW_ADOPTION.json
 !desks/mt5/reports/LOGIN_FENCE.json
 # the judge speed switch's daily drift monitor (daily_cycle:vector_families_check, 2026-10-28)
