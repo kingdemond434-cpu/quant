@@ -419,3 +419,50 @@ def test_with_no_sample_in_the_epoch_the_epoch_itself_is_zero() -> None:
     # An epoch younger than the window has nothing to rule on yet.
     young = NOW - timedelta(hours=50)
     assert law._prior_sample(_samples((300, 24)), "K", NOW, 100.0, young) == (None, None)
+
+
+# ----------------------------------------------- a duplicate convicts only while it breaks a clock
+def _dup_scan(monkeypatch, tmp_path, rows):
+    monkeypatch.setattr(law, "host_runs_clocks", lambda desk=None: (True, "test host"))
+    monkeypatch.setattr(law, "certificates",
+                        lambda p=None: ([_cert(name="a"), _cert(name="b"), _cert(name="z")], []))
+    monkeypatch.setattr(law, "clock_keys",
+                        lambda c, d=None: ({"a": "K", "b": "K", "z": "Z"}, []))
+    monkeypatch.setattr(law, "clock_rows", lambda d=None: (rows, []))
+    return law.scan(root=tmp_path, now=NOW, record=False)
+
+
+def test_a_duplicate_sharing_one_compliant_clock_is_a_note_not_a_breach(monkeypatch,
+                                                                       tmp_path) -> None:
+    """Measured on the box 2026-10-29: both CHFNOK carry pairs ACCUMULATING at n=37, each still
+    convicted. The engine collapses the pair onto one frozen identity, so one clock serves both."""
+    doc = _dup_scan(monkeypatch, tmp_path, {"K": _row(n=3), "Z": _row(n=3)})
+    assert not any("CANON_DUPLICATE" in p for p in doc["problems"])
+    assert any("CANON_DUPLICATE K" in n and "compliant" in n for n in doc["notes"])
+    assert doc["collisions"] == {"K": ["a", "b"]}, "the canon defect is still published"
+
+
+def test_a_duplicate_whose_clock_is_broken_still_breaches(monkeypatch, tmp_path) -> None:
+    doc = _dup_scan(monkeypatch, tmp_path, {"Z": _row(n=3)})
+    assert any("CANON_DUPLICATE K" in p for p in doc["problems"])
+    assert doc["verdict"] == "BREACH"
+
+
+def test_a_farm_clock_is_a_clock_and_a_promoting_lane_wins_a_shared_key(tmp_path) -> None:
+    """A certificate the integrity door holds out of every promoting lane is clocked by the farm
+    on the same engine; that row is forward evidence accumulating, so it is read as a clock."""
+    shadow = tmp_path / "reports" / "shadow"
+    (shadow / "farm").mkdir(parents=True)
+    (shadow / "farm" / "near_miss_farm.json").write_text(
+        json.dumps({"HELD": {"n": 4}, "BOTH": {"n": 1}}), encoding="utf-8")
+    (shadow / "shadow_state.json").write_text(json.dumps({"BOTH": {"n": 9}}), encoding="utf-8")
+    rows, _ = law.clock_rows(tmp_path)
+    assert rows["HELD"]["lane"] == "farm/near_miss_farm.json" and rows["HELD"]["n"] == 4
+    assert rows["BOTH"]["lane"] == "shadow_state.json" and rows["BOTH"]["n"] == 9
+
+
+def test_a_late_duplicate_is_late_not_a_duplicate_breach(monkeypatch, tmp_path) -> None:
+    """Lateness is reported on its own; the shared clock is running, so the pair is a note."""
+    monkeypatch.setattr(law, "LATENCY_BREACH_H", -1.0)
+    doc = _dup_scan(monkeypatch, tmp_path, {"K": _row(n=3), "Z": _row(n=3)})
+    assert not any("CANON_DUPLICATE" in p for p in doc["problems"])

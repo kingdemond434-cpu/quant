@@ -120,8 +120,12 @@ DECIDED_STATUSES = frozenset({"KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED",
                               "PROMOTION CANDIDATE", "PROMOTION_CANDIDATE"})
 
 #: The lane state files that hold forward clock rows, in the order the engine writes them.
+#: The farm ledger is LAST so a promoting lane's row always wins a shared key. A certificate the
+#: integrity door holds out of every promoting lane (HELD_UNREPLICATED) is clocked there by
+#: `near_miss_farm` on the same engine with no promotion authority: it IS accumulating forward
+#: evidence, so it is a clock, and its row carries `lane` so the reader sees which kind.
 LANES = ("shadow_state.json", "qquant_shadow_state.json", "scalp_shadow_state.json",
-         "external_shadow_state.json", "FAMILY_shadow_state.json")
+         "external_shadow_state.json", "FAMILY_shadow_state.json", "farm/near_miss_farm.json")
 
 UNMEASURED = "UNMEASURED"
 
@@ -579,14 +583,27 @@ def scan(root: Path | None = None, *, now: datetime | None = None,
         g = gaps.get(fam)
         notes.append(f"family `{fam}`: measured inter-observation gap "
                      + (f"{g:.2f}h" if g is not None else UNMEASURED))
-    if collisions:
-        for k, names in sorted(collisions.items()):
-            problems.append(
-                f"CANON_DUPLICATE {k}: {len(names)} certificates share one clock key "
-                f"({', '.join(sorted(names))}). They differ only by a default written out "
-                f"explicitly; they alternately rewrite one row, which the identity guard reads "
-                f"as `params changed after the clock froze`. Remedy: collapse the duplicate in "
-                f"the organ that mints canon -- never retire the clock")
+    # A DUPLICATE IS A BREACH ONLY WHILE IT BREAKS THE CLOCK. Since 2026-09-24 the engine's
+    # `_one_clock_per_identity` collapses rows it cannot tell apart, keeping the frozen spelling,
+    # so the pair no longer rewrite one row. Measured 2026-10-29 on the box: both CHFNOK carry
+    # pairs judged ACCUMULATING at n=37, yet each still counted as a breach. The canon defect is
+    # published as a note; it convicts only when a certificate sharing the key is judged a breach.
+    # Latency is NOT the duplicate's doing, so only an accumulation breach convicts it here.
+    broken = {e.get("certificate") for e in judged
+              if e.get("verdict") in ("NO_CLOCK", "BLOCKED", "FROZEN_ROWS")}
+    judged_names = {e.get("certificate") for e in judged}
+    for k, names in sorted(collisions.items()):
+        if all(n in judged_names and n not in broken for n in names):
+            notes.append(f"CANON_DUPLICATE {k}: {len(names)} certificates share one clock key "
+                         f"({', '.join(sorted(names))}) and that one clock is compliant; collapse "
+                         f"the duplicate in the organ that mints canon")
+            continue
+        problems.append(
+            f"CANON_DUPLICATE {k}: {len(names)} certificates share one clock key "
+            f"({', '.join(sorted(names))}). They differ only by a default written out "
+            f"explicitly; they alternately rewrite one row, which the identity guard reads "
+            f"as `params changed after the clock froze`. Remedy: collapse the duplicate in "
+            f"the organ that mints canon -- never retire the clock")
 
     doc = {
         "at": t.isoformat(), "law": "L1.102", "alert_id": ALERT_ID,
