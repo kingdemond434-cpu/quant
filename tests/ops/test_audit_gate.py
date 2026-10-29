@@ -1130,7 +1130,8 @@ def _reader(**files: str | None) -> Any:
         ("MAX_RISK_FRAC = 0.05\nFADE = 0.5\n", None),  # lowering is fine
         ("MAX_RISK_FRAC = 0.2\nFADE = 0.5\n", "over its ceiling"),
         ("MAX_RISK_FRAC: float = 0.11\nFADE = 0.5\n", "over its ceiling"),
-        ("MAX_RISK_FRAC = 0.1\nMAX_RISK_FRAC = 1.0\nFADE = 0.5\n", "over its ceiling"),
+        # bound twice: it fails as no plain literal now (#554 audit SF), still a breach
+        ("MAX_RISK_FRAC = 0.1\nMAX_RISK_FRAC = 1.0\nFADE = 0.5\n", "plain literal"),
         ("import os\nMAX_RISK_FRAC = float(os.environ['R'])\nFADE = 0.5\n", "plain literal"),
         ("FADE = 0.5\n", "is gone"),
         ("MAX_RISK_FRAC = True\nFADE = 0.5\n", "over its ceiling"),
@@ -1912,3 +1913,33 @@ def test_a_new_money_file_the_head_ran_is_covered_only_when_every_knob_is_held(
     monkeypatch.setattr(rs, "bounded", lambda: {"desks/mt5/prop/fence.py": {"WINDOW_MIN"}})
     rep = rs.compare(base, head, changed, _grid())
     assert rep["verdict"] == "FAIL" and any("fence.py" in p for p in rep["problems"])
+
+
+@pytest.mark.parametrize(
+    "tail",
+    [
+        "PRE += 1\n",  # augmented
+        "PRE, X = 0, 1\n",  # a tuple target
+        "*PRE, X = (0, 1)\n",  # starred
+        "if (PRE := 0):\n    pass\n",  # a walrus
+        "def f():\n    global PRE\n    PRE = 0\n",  # global in a function
+        "del PRE\n",
+        "import os as PRE\n",
+        "from os import sep as PRE\n",
+        "for PRE in (0,):\n    pass\n",
+        "with open('x') as PRE:\n    pass\n",
+        "if X:\n    PRE = 0\n",  # a guarded second value
+        "try:\n    pass\nexcept* ValueError:\n    PRE = 0\n",
+        "match X:\n    case 1:\n        PRE = 0\n",
+        "match X:\n    case PRE:\n        pass\n",
+    ],
+)
+def test_every_other_binding_of_a_pinned_name_is_a_mismatch(tail: str) -> None:
+    """#554 audit SF: a rail rebound any way but one plain `NAME = literal` never reads clean."""
+    good = "PRE = 15\n"
+    ceil_eq = {"equal": {"n.py": {"PRE": 15}}}
+    ceil_max = {"max": {"n.py": {"PRE": 240}}}
+    ceil_src = {"source": {"n.py": {"PRE": "15"}}}
+    for ceil in (ceil_eq, ceil_max, ceil_src):
+        assert ri.check(ceil, _reader(n=good), _reader(n=good)) == []
+        assert ri.check(ceil, _reader(n=good + tail), _reader(n=good)), (ceil, tail)

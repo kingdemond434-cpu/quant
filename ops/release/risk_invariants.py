@@ -33,7 +33,7 @@ SYS_PATH_ROOTS = ("", "desks/mt5")
 
 def module_literals(source: str) -> dict[str, Any]:
     """Module-level `NAME = <literal>` / `NAME: T = <literal>`; a non-literal value maps to
-    the sentinel NOT_LITERAL. A name assigned twice keeps the last assignment, as Python does."""
+    the sentinel NOT_LITERAL, and so does a name bound more than once or in any other way."""
     out: dict[str, Any] = {}
     for node in ast.parse(source).body:
         if isinstance(node, ast.Assign):
@@ -49,6 +49,12 @@ def module_literals(source: str) -> dict[str, Any]:
         for t in targets:
             if isinstance(t, ast.Name):
                 out[t.id] = lit
+    # A name bound any other way as well (`+=`, a guarded second value, a tuple target, a
+    # walrus, `global` in a function, del, import as, a loop target...) is no plain literal: the
+    # value read above may not be the one the module ends with (#554 audit SF).
+    for name, ways in _rs.bindings(source, lambda n: n in out).items():
+        if "." not in name and "(" not in name and len(ways) > 1:
+            out[name] = NOT_LITERAL
     return out
 
 
