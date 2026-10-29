@@ -104,3 +104,67 @@ def test_a_test_ledger_never_shares_the_box_index(tmp_path) -> None:
     jt._verdict_counts_indexed(NOW, led)
     assert (tmp_path / "ledger.jsonl.rate_index.json").exists()
     assert jt.LEDGER_INDEX.parent.name == "data"
+
+
+# ------------------------------------------------- audit HOLD of 6fd8ac95f (MF1, S1, S2, S3)
+
+def test_a_row_appended_during_the_pass_is_read_by_the_next_one_as_first(tmp_path) -> None:
+    led = tmp_path / "ledger.jsonl"
+    led.write_text("".join(_rows(50, NOW - timedelta(days=2), 0.5)), encoding="utf-8")
+    with led.open("a", encoding="utf-8") as fh:
+        # Stamped after `now` by a judge appending while the pass reads, then an older row.
+        fh.write(_row(NOW + timedelta(seconds=30), "LATE") + _row(NOW, "AFTER"))
+    got = jt._verdict_counts_indexed(NOW, led)
+    assert got["index"]["stopped_at_a_row_appended_this_pass"] is True
+    later = NOW + timedelta(minutes=5)
+    nxt = jt._verdict_counts_indexed(later, led)
+    _same(nxt, jt._verdict_counts(later, led))
+    assert nxt["first_terminal_counts"]["1h"] == 2       # LATE and AFTER, neither lost
+
+
+def test_a_stamp_beyond_the_skew_bound_is_read_past(tmp_path) -> None:
+    led = tmp_path / "ledger.jsonl"
+    led.write_text(_row(NOW + timedelta(days=3), "SKEW") + _row(NOW - timedelta(minutes=5), "B"),
+                   encoding="utf-8")
+    got = jt._verdict_counts_indexed(NOW, led)
+    assert got["index"]["offset"] == led.stat().st_size
+    assert got["rows_unstamped"] == 1 and got["counts"]["1h"] == 1
+
+
+def test_a_malformed_index_rebuilds_instead_of_staying_unmeasured(tmp_path) -> None:
+    led = tmp_path / "ledger.jsonl"
+    led.write_text("".join(_rows(30, NOW - timedelta(days=1), 0.5)), encoding="utf-8")
+    jt._verdict_counts_indexed(NOW, led)
+    ip = led.with_name(led.name + ".rate_index.json")
+    for bad in ({"offset": "abc"}, {"first_cells": 5}, {"recent": [[1]]}):
+        doc = json.loads(ip.read_text("utf-8"))
+        doc.update(bad)
+        ip.write_text(json.dumps(doc), "utf-8")
+        got = jt._verdict_counts_indexed(NOW, led)
+        assert got["status"] == "MEASURED", bad
+        assert str(got["index"]["rebuilt"]).startswith("index unreadable"), bad
+        _same(got, jt._verdict_counts(NOW, led))
+
+
+def test_a_rewrite_that_keeps_the_head_is_caught(tmp_path) -> None:
+    led = tmp_path / "ledger.jsonl"
+    rows = _rows(200, NOW - timedelta(days=2), 0.2)
+    led.write_text("".join(rows), encoding="utf-8")
+    jt._verdict_counts_indexed(NOW, led)
+    # Compacted: the same head, a different tail of the same length or longer.
+    led.write_text("".join(rows[:100]) + "".join(
+        _row(NOW - timedelta(minutes=m), f"Z{m}") for m in range(1, 101)), encoding="utf-8")
+    got = jt._verdict_counts_indexed(NOW, led)
+    assert got["index"]["rebuilt"] == "the bytes the index last read were rewritten"
+    _same(got, jt._verdict_counts(NOW, led))
+
+
+def test_the_index_stores_digests_as_one_blob(tmp_path) -> None:
+    led = tmp_path / "ledger.jsonl"
+    led.write_text("".join(_row(NOW - timedelta(minutes=i), f"K{i}") for i in range(500)),
+                   encoding="utf-8")
+    jt._verdict_counts_indexed(NOW, led)
+    doc = json.loads(led.with_name(led.name + ".rate_index.json").read_text("utf-8"))
+    assert doc["schema"] == 2 and isinstance(doc["first_cells"], str)
+    assert len(jt._unpack_digests(doc["first_cells"])) == 500
+    assert all(isinstance(a, int) for a, _ in doc["recent"])

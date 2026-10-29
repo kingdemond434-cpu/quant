@@ -892,7 +892,7 @@ def test_an_old_unmeasured_predecessor_never_enters_the_flap_window(jsp, tmp_pat
     assert d["page"]["opened"] == ["inputs_unmeasured"]
 
 
-def test_a_stale_or_unmeasured_rate_pages(jsp, tmp_path):
+def test_a_stale_rate_pages_and_an_unmeasured_one_reads_unmeasured(jsp, tmp_path):
     paths = _world(tmp_path, NOW)
     assert jsp.measure(NOW, pid_alive=_alive, **paths)["incidents"]["rate_stale"]["open"] is False
     paths["rate"].write_text(json.dumps({"at": _iso(NOW - timedelta(hours=jsp.RATE_STALE_H + 1)),
@@ -901,9 +901,25 @@ def test_a_stale_or_unmeasured_rate_pages(jsp, tmp_path):
     paths["rate"].write_text(json.dumps({"at": _iso(NOW), "verdicts": {
         "status": "UNMEASURED", "why": "stream overran its 150 s deadline"}}), "utf-8")
     got = jsp.measure(NOW, pid_alive=_alive, **paths)["incidents"]["rate_stale"]
-    assert got["open"] is True and "overran" in got["why"]
+    assert got["open"] is None and "overran" in got["why"]
     paths["rate"].unlink()
-    assert jsp.measure(NOW, pid_alive=_alive, **paths)["incidents"]["rate_stale"]["open"] is True
+    assert jsp.measure(NOW, pid_alive=_alive, **paths)["incidents"]["rate_stale"]["open"] is None
+
+
+def test_a_persistently_unmeasured_rate_still_pages(jsp, tmp_path):
+    ch = Channel()
+
+    def unmeasured(t: datetime, p: dict) -> None:
+        p["rate"].write_text(json.dumps({"at": _iso(t), "verdicts": {
+            "status": "UNMEASURED", "why": "index catching up"}}), "utf-8")
+
+    one = _series(jsp, tmp_path, ch, [0], unmeasured)[-1]
+    assert "rate_stale" not in one["page"]["opened"]
+    other = tmp_path / "o"
+    other.mkdir()
+    ch2 = Channel()
+    d = _series(jsp, other, ch2, [0, 10, 20, 31], unmeasured)[-1]
+    assert d["page"]["opened"] == ["inputs_unmeasured"]
 
 
 def test_backpressure_windows_older_than_a_day_page_whatever_at_says(jsp, tmp_path):

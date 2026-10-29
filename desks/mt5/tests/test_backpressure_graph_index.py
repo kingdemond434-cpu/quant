@@ -98,3 +98,64 @@ def test_the_horizon_sidecar_only_keeps_horizon_lines(tmp_path) -> None:
     assert kept and all(json.loads(k)["at"][:10] >= cut for k in kept)
     assert os.path.exists(tmp_path / "graph.jsonl.bp_index.json")
     assert gb.GRAPH_INDEX.parent.name == "data"
+
+
+# ------------------------------------------------- audit HOLD of 6fd8ac95f (MF2, S4, S5, S6)
+
+def test_a_sidecar_replaced_without_its_index_is_never_appended_twice(
+        tmp_path, monkeypatch) -> None:
+    g = tmp_path / "graph.jsonl"
+    _graph(g, _base())
+    gb._read_graph_indexed(g, {}, since=SINCE)
+    with g.open("a", encoding="utf-8") as fh:
+        fh.write("".join(_line(f"x{i}", NOW - timedelta(hours=i + 1), fate="born")
+                         for i in range(10)))
+    real = gb._replace_retry
+
+    def index_refused(tmp, dst):
+        if Path(dst).name.endswith(".bp_index.json"):
+            raise OSError("killed between the two replaces")
+        return real(tmp, dst)
+
+    monkeypatch.setattr(gb, "_replace_retry", index_refused)
+    gb._read_graph_indexed(g, {}, since=SINCE)       # new sidecar, old index
+    monkeypatch.undo()
+    old, new, na, nb = _both(g)
+    assert new == old and nb == na                   # no duplicated rows
+    assert not list(tmp_path.glob("*.tmp"))          # S6: no debris from the failed write
+
+
+def test_lines_split_on_newline_only(tmp_path) -> None:
+    g = tmp_path / "graph.jsonl"
+    _graph(g, [*_base(), _line("u1", NOW - timedelta(days=1), note="a b\x0cc")])
+    gb._read_graph_indexed(g, {}, since=SINCE)
+    old, new, na, nb = _both(g)                       # the second read comes off the sidecar
+    assert new == old and any(r.get("id") == "u1" for r in new)
+
+
+def test_a_fresh_build_saves_progress_before_it_finishes(tmp_path, monkeypatch) -> None:
+    g = tmp_path / "graph.jsonl"
+    _graph(g, _base())
+    monkeypatch.setattr(gb, "GRAPH_INDEX_CHECKPOINT_BYTES", 200)
+    saves: list[int] = []
+    real = gb._save_graph_index
+
+    def spy(ip, side, idx, recent):
+        saves.append(int(idx["offset"]))
+        return real(ip, side, idx, recent)
+
+    monkeypatch.setattr(gb, "_save_graph_index", spy)
+    gb._read_graph_indexed(g, {}, since=SINCE)
+    assert len(saves) > 2 and saves == sorted(saves) and saves[-1] == g.stat().st_size
+    monkeypatch.undo()
+    old, new, na, nb = _both(g)
+    assert new == old and nb == na
+
+
+def test_first_seen_dates_are_stored_grouped_by_day(tmp_path) -> None:
+    g = tmp_path / "graph.jsonl"
+    _graph(g, _base())
+    gb._read_graph_indexed(g, {}, since=SINCE)
+    doc = json.loads((tmp_path / "graph.jsonl.bp_index.json").read_text("utf-8"))
+    assert doc["schema"] == 2 and "first" not in doc
+    assert sum(len(v) // 16 for v in doc["first_by_date"].values()) == 41   # h0..h39, n1

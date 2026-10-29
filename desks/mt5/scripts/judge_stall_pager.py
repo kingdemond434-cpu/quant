@@ -541,15 +541,19 @@ def _reporters(at: datetime, rate: Path = RATE,
     out: dict[str, dict[str, Any]] = {}
     doc = _read_json(rate)
     t = _stamp(doc.get("at")) if isinstance(doc, dict) else None
+    # AN UNMEASURED OR UNREADABLE RATE IS AN UNMEASURED READING (audit S7 of 6fd8ac95f), paged
+    # like every other one only once it persists (`inputs_unmeasured`): an hour of index catch-up
+    # is not an incident. A rate that has not been rewritten for RATE_STALE_H is one, always.
     if t is None:
-        out["rate_stale"] = {"open": True, "why": f"{rate.name} absent, torn or unstamped"}
+        out["rate_stale"] = {"open": None,
+                             "why": f"{UNMEASURED}: {rate.name} absent, torn or unstamped"}
     else:
         h = max(0.0, (at - t).total_seconds() / 3600.0)
         st = (doc.get("verdicts") or {}).get("status") if isinstance(
             doc.get("verdicts"), dict) else doc.get("status")
-        bad = h > RATE_STALE_H or st == UNMEASURED
         out["rate_stale"] = {
-            "open": bad, "hours": round(h, 2), "verdicts_status": st,
+            "open": True if h > RATE_STALE_H else (None if st == UNMEASURED else False),
+            "hours": round(h, 2), "verdicts_status": st,
             "why": (f"{rate.name} is {h:.1f}h old (limit {RATE_STALE_H:g}h), verdicts {st}"
                     + (f": {str((doc.get('verdicts') or {}).get('why') or doc.get('why'))[:200]}"
                        if st == UNMEASURED else ""))}
