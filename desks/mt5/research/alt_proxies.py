@@ -8,11 +8,16 @@ migration) and satellite/AIS (Busan, SingStat, China MOT ports). Each row names 
 `substitutes_for`; `substitute_agreement` measures each against an overlapping free series on the
 same keys (the paid originals are not held). They ride this organ's hourly clock unchanged.
 
-BLOCKED+SUBSTITUTE. A source the terms gate blocks is never fetched, but coverage does not shrink:
-SUBSTITUTED_BY names the confirmed-terms rows standing in for it (e-Stat immigration for JNTO,
-HK Immigration crossings for Baidu migration / Maoyan / the holiday tallies, TÜİK for BKM, BCB
-Open Data for Cielo, INEGI EMEC for ANTAD, data.go.kr MOF containers and PortWatch for the port
-boards, India's gold imports for the SGE premium), and its status reads BLOCKED+SUBSTITUTE:<ids>.
+BLOCKED+SUBSTITUTE. A source the terms gate blocks is never fetched. SUBSTITUTED_BY names the
+CANDIDATE lawful rows that may stand in for it (e-Stat immigration for JNTO, HK Immigration
+crossings for Baidu migration / Maoyan / the holiday tallies, TÜİK for BKM, BCB Open Data for
+Cielo, INEGI EMEC for ANTAD, data.go.kr MOF containers and PortWatch for the port boards, India's
+gold imports for the SGE premium, MoSPI's use-based IIP consumer goods for NPCI UPI, Stats SA
+retail trade sales for BETI). Under the #152 law a candidate counts as COVERED only with confirmed
+terms AND a measured correlation >= 0.5 against the original, n reported (SUBSTITUTE_VS_ORIGINAL,
+read by `substitute_check`); only then does the status read BLOCKED+SUBSTITUTE:<ids>. Until then
+it reads BLOCKED_NO_SUBSTITUTE:UNVERIFIED=<candidates>. NO_SUBSTITUTE says why NPCI UPI and BETI
+are weak; SUBSTITUTE_SEARCH keeps how their candidates were found.
 `--write-rosters` regenerates the committed roster YAML and the paid-substitute engine's rows.
 
 WHAT THIS IS. Ten public (keyless or free-key) alternative-data sources, each parsed into a
@@ -817,7 +822,8 @@ def parse_oi_mobility(body: bytes, ctx: Ctx) -> list[Obs]:
 
 def parse_ecos(body: bytes, ctx: Ctx) -> list[Obs]:
     """BOK ECOS StatisticSearch JSON for ONE item (the URL filters to it). TIME is YYYYMM
-    (monthly) or YYYYMMDD; an ECOS error document (RESULT.CODE) parses to nothing."""
+    (monthly) or YYYYMMDD; an ECOS error document (RESULT.CODE) parses to nothing. A table with a
+    second dimension returns one row per ITEM_CODE2 per month; only the total (00) is kept."""
     try:
         doc = json.loads(body.decode("utf-8", errors="replace"))
     except ValueError:
@@ -827,6 +833,8 @@ def parse_ecos(body: bytes, ctx: Ctx) -> list[Obs]:
     for r in rows if isinstance(rows, list) else []:
         if not isinstance(r, dict):
             continue
+        if str(r.get("ITEM_CODE2") or "00") != "00":
+            continue                   # a second dimension's breakdown (은행계/비은행계): keep 합계
         t, v = str(r.get("TIME") or ""), _num(str(r.get("DATA_VALUE") or ""))
         if v is None or not t.isdigit():
             continue
@@ -1498,6 +1506,191 @@ def parse_kr_mof_container(body: bytes, ctx: Ctx) -> list[Obs]:
     return [Obs("container_teu", d, v) for d, v in sorted(tot.items())]
 
 
+_DGI_YM = re.compile(r"\b(20\d{2})\s*[-/]\s*(\d{1,2})\b")
+_DGI_FY = re.compile(r"\b(20\d{2})\s*[-/]\s*(\d{2})\b")
+_DGI_MON = re.compile(r"\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b", re.I)
+
+
+def _dgi_period(row: dict[str, Any]) -> date | None:
+    """A data.gov.in record's month from its month/year/period fields, never by position:
+    `2026-03`, `Mar-2026`, or month `March` with a fiscal year `2025-26` (Jan-Mar belong to the
+    fiscal year's second calendar year)."""
+    txt = " ".join(str(v) for k, v in row.items()
+                   if any(w in str(k).lower() for w in ("month", "year", "period", "date")))
+    mn = _DGI_MON.search(txt)
+    if mn:
+        mo = _EN_MONTHS3[mn.group(1).lower()[:3]]
+        fy = _DGI_FY.search(txt)
+        yr = re.search(r"\b(20\d{2})\b", txt)
+        if fy and int(fy.group(2)) == (int(fy.group(1)) + 1) % 100:
+            y = int(fy.group(1)) + (mo <= 3)
+        elif yr:
+            y = int(yr.group(1))
+        else:
+            return None
+        return _month_end(y, mo)
+    ym = _DGI_YM.search(txt)
+    if ym and 1 <= int(ym.group(2)) <= 12:
+        return _month_end(int(ym.group(1)), int(ym.group(2)))
+    return None
+
+
+def parse_dgi_iip_consumer(body: bytes, ctx: Ctx) -> list[Obs]:
+    """data.gov.in OGD API (`{"records": [...]}`) for ONE configured use-based IIP resource:
+    the consumer-durables and consumer-non-durables index per month. Columns are matched by
+    name (`consumer` + `durable`, with or without `non`); a growth-rate column (`growth`,
+    `change`, `%`) is never read as an index. A reply with no such column is nothing."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    rows = doc.get("records") if isinstance(doc, dict) else None
+    out: list[Obs] = []
+    for r in rows if isinstance(rows, list) else []:
+        if not isinstance(r, dict) or (d := _dgi_period(r)) is None:
+            continue
+        for k, v in r.items():
+            kl = re.sub(r"[^a-z%]", "", str(k).lower())
+            if ("consumer" not in kl or "durable" not in kl
+                    or any(w in kl for w in ("growth", "change", "%", "weight"))):
+                continue
+            x = _num(str(v))
+            if x is not None:
+                name = "consumer_nondurables_index" if "non" in kl else "consumer_durables_index"
+                out.append(Obs(name, d, x))
+    return _first_per_key(out)
+
+
+_ZA_RETAIL = re.compile(
+    r"retail\s+trade\s+sales\s+(increased|decreased|rose|fell|declined|grew|contracted)\s+by\s+"
+    r"(\d+(?:[.,]\d+)?)\s*%\s*(?:year[\s-]*on[\s-]*year|y/y)\s+in\s+"
+    r"(January|February|March|April|May|June|July|August|September|October|November|December)"
+    r"\s+(20\d{2})", re.I)
+
+
+def parse_statssa_retail(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Stats SA P6242.1 retail trade sales release text: 'Retail trade sales increased by 2,6%
+    year-on-year in December 2025' (constant 2019 prices). South African decimals use a comma.
+    The month comes from the sentence itself; a sentence naming no year is not read."""
+    out: list[Obs] = []
+    for m in _ZA_RETAIL.finditer(_text(body)):
+        v = _num(m.group(2).replace(",", "."))
+        if v is None:
+            continue
+        neg = m.group(1).lower() in ("decreased", "fell", "declined", "contracted")
+        out.append(Obs("retail_sales_yoy", _month_end(int(m.group(4)),
+                                                      _MONTHS[m.group(3).lower()]),
+                       -v if neg else v))
+    return _first_per_key(out)
+
+
+#: MoSPI's ACTUAL IIP quick-estimate release instants before the 28-day timeline, reference month
+#: -> (UTC instant, evidence). Read 2026-10-06. MoSPI's own notice (17.04.2025, cited below) says
+#: IIP was released "on the 12th of every month (previous working day if 12th is a holiday) within
+#: 42 days" and moved to "28th of every month at 4:00 PM" from the release of 28 April 2025
+#: (reference month March 2025). Time of day: 17:30 IST (12:00 UTC) until the October-2024 CPI /
+#: September-2024 IIP release of 12 Nov 2024, 16:00 IST (10:30 UTC) from it (Business Standard,
+#: 5 Nov 2024). `press` rows are the dated MoSPI press release itself; `arc` rows are MoSPI's
+#: Advance Release Calendar (dated 30 Apr 2024 and 1 Jul 2024, "expected dates ... subject to
+#: change"), for months whose own press release was not fetched; the 7-day OGD slack in the rule
+#: covers a slip. A month absent here falls back to 12th-of-M+2 (pre-2025) or 28th-of-M+1, which
+#: is never earlier than MoSPI's documented practice.
+_IIP_PR = "https://www.mospi.gov.in/sites/default/files/iip/IIP_PR_{}.pdf"
+_IIP_PR25 = "https://mospi.gov.in/sites/default/files/press_release/IIP_PR_{}.pdf"
+_IIP_ARC = ("https://www.Mospi.gov.in/sites/default/files//main_menu/nsdp_sdds/"
+            "ARC_april24_IIP30042024.pdf; https://mospi.gov.in/sites/default/files//main_menu/"
+            "nsdp_sdds/ARC_July24_IIP01072024.pdf")
+IIP_TIMELINE_NOTICE = ("https://mospi.gov.in/sites/default/files/press_release/"
+                       "NEW_timeline_IIP_press_release_17.04.25.pdf")
+IIP_RELEASES: dict[str, tuple[str, str]] = {
+    "2023-12": ("2024-02-12T12:00:00+00:00", "press " + _IIP_PR.format("12feb24")),
+    "2024-01": ("2024-03-12T12:00:00+00:00", "press " + _IIP_PR.format("12mar24")),
+    "2024-02": ("2024-04-12T12:00:00+00:00", "press " + _IIP_PR.format("12apr24")),
+    "2024-03": ("2024-05-10T12:00:00+00:00", "press " + _IIP_PR.format("10may24")),
+    "2024-04": ("2024-06-12T12:00:00+00:00", "arc " + _IIP_ARC + " (and announced in "
+                + _IIP_PR.format("10may24") + ")"),
+    "2024-05": ("2024-07-12T12:00:00+00:00", "arc " + _IIP_ARC),
+    "2024-06": ("2024-08-12T12:00:00+00:00", "arc " + _IIP_ARC),
+    "2024-07": ("2024-09-12T12:00:00+00:00", "arc " + _IIP_ARC),
+    "2024-08": ("2024-10-11T12:00:00+00:00", "arc " + _IIP_ARC),
+    "2024-09": ("2024-11-12T10:30:00+00:00", "arc " + _IIP_ARC),
+    "2024-10": ("2024-12-12T10:30:00+00:00", "arc " + _IIP_ARC),
+    "2024-11": ("2025-01-10T10:30:00+00:00", "arc " + _IIP_ARC),
+    "2024-12": ("2025-02-12T10:30:00+00:00", "arc " + _IIP_ARC),
+    "2025-01": ("2025-03-12T10:30:00+00:00", "press " + _IIP_PR25.format("12Mar25")),
+    "2025-02": ("2025-04-11T10:30:00+00:00", "press " + _IIP_PR25.format("11Apr25")
+                + " (embargo to 4.00 PM 11th April 2025)"),
+    "2025-03": ("2025-04-28T10:30:00+00:00", "announced in " + _IIP_PR25.format("11Apr25")
+                + " and " + IIP_TIMELINE_NOTICE),
+}
+#: The OGD (data.gov.in) upload follows the press release; a week of slack, then weekday-rolled.
+IIP_OGD_SLACK = timedelta(days=7)
+
+
+def iip_press_release(period: date) -> datetime:
+    """The MoSPI press-release instant for reference month `period` (never early): the recorded
+    instant if held; else, before March 2025, the 12th of M+2 at 17:30 IST (releases were on the
+    12th or the previous working day, so the 12th is never early); else the 28th of M+1 at
+    16:00 IST."""
+    rec = IIP_RELEASES.get(f"{period.year:04d}-{period.month:02d}")
+    if rec:
+        return datetime.fromisoformat(rec[0])
+    if (period.year, period.month) < (2025, 3):
+        y, m = period.year + (period.month >= 11), (period.month + 1) % 12 + 1
+        return _roll_weekday(_utc(y, m, 12, 12, 0))
+    y, m = period.year + (period.month == 12), 1 if period.month == 12 else period.month + 1
+    return _utc(y, m, 28, 10, 30)
+
+
+def rule_in_iip(period: date) -> datetime:
+    """When month M of the use-based IIP is knowable from data.gov.in: MoSPI's press release
+    (iip_press_release: the recorded instant, else MoSPI's documented 12th-of-M+2 / 28th-of-M+1
+    practice) plus IIP_OGD_SLACK for the OGD upload, rolled to a weekday. Late, never early: the
+    old 28th-of-M+1 rule applied to pre-2025 months stamped January 2024 at 2024-03-06, six days
+    BEFORE MoSPI printed it on 2024-03-12 (audit 2026-10-06)."""
+    return _roll_weekday(iip_press_release(period) + IIP_OGD_SLACK)
+
+
+def rule_za_retail(period: date) -> datetime:
+    """Stats SA prints P6242.1 retail trade sales for month M about seven weeks after it, 13:00
+    SAST (11:00 UTC). Observed: Mar 2025 on 21 May 2025 (+51 d), Oct 2025 reported 11 Dec 2025
+    (+41 d), Dec 2025 on 18 Feb 2026 (+49 d), Jun 2026 on 20 Aug 2026 (+51 d). Stamped at +56
+    days 00:00 UTC, weekday-rolled: after every observed release."""
+    return _roll_weekday(_utc(period.year, period.month, period.day) + timedelta(days=56))
+
+
+def rule_estat_immig(period: date) -> datetime:
+    """The Immigration Services Agency's monthly 出入国管理統計 tables (e-Stat 月次) are
+    published about eight weeks after the month: Jan 2026 on 2026-03-25 (+53 d) and Feb 2026 on
+    2026-04-24 (+55 d), per the e-Stat file lists (lid 000001478407 / 000001480323). Stamped at
+    +60 days 00:00 UTC, weekday-rolled: after both. (The 45-day rule it replaces was EARLY.)"""
+    return _roll_weekday(_utc(period.year, period.month, period.day) + timedelta(days=60))
+
+
+#: Seollal and Chuseok (first day of the public holiday) 2018-2030: each closes Korean ministries
+#: for three to five days, and a release due across one slips.
+KR_LONG_HOLIDAYS: tuple[date, ...] = (
+    date(2018, 2, 15), date(2018, 9, 23), date(2019, 2, 4), date(2019, 9, 12),
+    date(2020, 1, 24), date(2020, 9, 30), date(2021, 2, 11), date(2021, 9, 20),
+    date(2022, 1, 31), date(2022, 9, 9), date(2023, 1, 21), date(2023, 9, 28),
+    date(2024, 2, 9), date(2024, 9, 16), date(2025, 1, 28), date(2025, 10, 3),
+    date(2026, 2, 16), date(2026, 9, 24), date(2027, 2, 6), date(2027, 9, 14),
+    date(2028, 1, 26), date(2028, 10, 2), date(2029, 2, 12), date(2029, 9, 21),
+    date(2030, 2, 2), date(2030, 9, 11))
+
+
+def rule_kr_mof_port(period: date) -> datetime:
+    """MOF announces month M's national port throughput about 30 days after it (June 2026 on
+    2026-07-30, reported 17:51 KST), and the data.go.kr API row follows the press release. The
+    30-day rule it replaces stamped 00:00 UTC on that same day, BEFORE the release. Stamped at
+    +45 days, plus 7 when Seollal or Chuseok falls inside that window, 00:00 UTC, weekday-
+    rolled: a conservative bound, late never early."""
+    t = period + timedelta(days=45)
+    if any(period < h <= t for h in KR_LONG_HOLIDAYS):
+        t += timedelta(days=7)
+    return _roll_weekday(_utc(t.year, t.month, t.day))
+
+
 # ============================================================================ the sources
 @dataclass(frozen=True)
 class Source:
@@ -1534,6 +1727,10 @@ class Source:
     terms: str = "to_confirm"
     #: Env vars that must hold REAL codes before a request may be built (no placeholder default).
     config_env: tuple[str, ...] = ()
+    #: "current" when the endpoint serves only the latest revised vintage: every row read on a
+    #: first (history) fetch is that vintage, not what was known at the time. Published with the
+    #: series (axis file, roster) so no reader mistakes a backfill for a first release.
+    vintage: str = ""
 
     def instruments_for(self, series: str) -> dict[str, int]:
         for prefix, m in self.series_instruments.items():
@@ -1877,10 +2074,11 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
         failure_mode_hypothesis=("fails around Chuseok/Lunar New Year month shifts and "
                                  "government consumption-voucher programmes"),
         crowding_prior="low", substitutes_for=_CARD,
-        note=("minimal ECOS reader (no ECOS reader exists in the repo). NO DEFAULT CODES: the "
-              "stat and item codes come only from ALT_ECOS_CARD_STAT / ALT_ECOS_CARD_ITEM, read "
-              "off ECOS StatisticItemList on the box; until both and the key are set the row is "
-              "BLOCKED_ON_KEY / UNCONFIGURED and nothing is requested")),
+        note=("minimal ECOS reader (no ECOS reader exists in the repo). Default codes 601Y003 / "
+              "201010 (personal general-purchase credit-card spend, total of bank and non-bank "
+              "issuers) read off ECOS's own item catalogue (CONFIG_DEFAULTS cites it); "
+              "ALT_ECOS_CARD_STAT / ALT_ECOS_CARD_ITEM override. Without the key the row is "
+              "BLOCKED_ON_KEY and nothing is requested")),
     Source(
         id="jp_meti_retail", name="METI commercial dynamics flash: retail sales YoY (Japan)",
         url=os.environ.get("ALT_METI_RETAIL_URL",
@@ -2169,7 +2367,7 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
         url=("https://api.e-stat.go.jp/rest/3.0/app/json/getStatsData?appId={key}"
              "&statsDataId={ALT_ESTAT_IMMIG_STATS_ID}&cdCat01={ALT_ESTAT_IMMIG_CAT01}"),
         region="JP", language="ja", cadence="monthly", parse=parse_estat_level,
-        rule=_lag_rule(45, 0, weekday=True), transform="yoy_monthly", key_env="ESTAT_APP_ID",
+        rule=rule_estat_immig, transform="yoy_monthly", key_env="ESTAT_APP_ID",
         config_env=("ALT_ESTAT_IMMIG_STATS_ID", "ALT_ESTAT_IMMIG_CAT01"),
         instruments={"USDJPY": -1, "EURJPY": -1, "JPN225": 1},
         signal_series=("foreign_entries",),
@@ -2185,11 +2383,12 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
                                  "arrivals for reasons the yen already priced, and it prints "
                                  "later than JNTO's estimate"),
         crowding_prior="low", substitutes_for=_TRAVEL,
-        note=("stands in for jp_jnto_arrivals (JNTO site policy refuses reuse). NO DEFAULT "
-              "CODES: statsDataId and cdCat01 of the 出入国管理統計 foreign-entries "
-              "table come only "
-              "from ALT_ESTAT_IMMIG_STATS_ID / ALT_ESTAT_IMMIG_CAT01 (candidate table: statdisp "
-              "0003287527, 港別 出入国者 月次); reuses jp_tokyo_cpi's e-Stat key")),
+        note=("stands in for jp_jnto_arrivals (JNTO site policy refuses reuse). statsDataId "
+              "defaults to 0003449066 (国籍・地域別 入国外国人の在留資格, monthly, read off "
+              "e-Stat's dbview page; CONFIG_DEFAULTS cites it). cdCat01 has NO default: its "
+              "code is not printed on an official page, so the row stays UNCONFIGURED until "
+              "ALT_ESTAT_IMMIG_CAT01 is read from getMetaInfo on the box; reuses jp_tokyo_cpi's "
+              "e-Stat key")),
     Source(
         id="hk_immd_passenger",
         name="HK Immigration daily passenger traffic: mainland visitor arrivals (DATA.GOV.HK)",
@@ -2257,8 +2456,15 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
         failure_mode_hypothesis=("fails around Easter and El Buen Fin timing shifts, and it "
                                  "prints about seven weeks after the month"),
         crowding_prior="low", substitutes_for=_CARD,
-        note=("stands in for mx_antad_sss (ANTAD terms refuse reuse). NO DEFAULT CODE: the BIE "
-              "indicator id comes only from ALT_INEGI_EMEC_ID. The desk's Banxico SIE rows "
+        vintage="current",
+        note=("stands in for mx_antad_sss (ANTAD terms refuse reuse). NO DEFAULT CODE (no "
+              "official page reachable without a token prints it; CONFIG_DEFAULTS says why): the "
+              "BIE indicator id comes only from ALT_INEGI_EMEC_ID, and it MUST be the NSA 'serie "
+              "original' retail index (the YoY transform compares the same month a year apart; "
+              "a seasonally adjusted series is revised every month). The BIE API serves the "
+              "current vintage only, so history rows are stamped vintage=current and "
+              "pit_quality=backfill. Release: EMEC Feb 2026 on 2026-04-23 (+54 d), Mar 2026 on "
+              "2026-05-21 (+51 d); the 55-day rule is after both. The desk's Banxico SIE rows "
               "(research/countries/br/data_plane.py) carry no retail series, so none is reused")),
     Source(
         id="tr_tuik_retail", name="TÜİK retail sales volume index, YoY (Turkey)",
@@ -2290,7 +2496,7 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
                            "https://apis.data.go.kr/1192000/SsopCargContnImxprt2?serviceKey={key}"
                            "&sym=201801&eym={yyyymm}&pageNo=1&numOfRows=5000&type=json"),
         region="KR", language="ko", cadence="monthly", parse=parse_kr_mof_container,
-        rule=_lag_rule(30, 0, weekday=True), transform="yoy_monthly", key_env="DATA_GO_KR_KEY",
+        rule=rule_kr_mof_port, transform="yoy_monthly", key_env="DATA_GO_KR_KEY",
         instruments={"USDKRW": -1, "XCUUSD": 1, "CHINAH": 1},
         signal_series=("container_teu",),
         mechanism=("the ministry's monthly count of import and export boxes through Korean ports "
@@ -2307,6 +2513,72 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
         note=("stands in for kr_busan_port (BPA shows no KOGL mark). Endpoint as listed on "
               "data.go.kr/data/15059131; the operation path is overridable "
               "(ALT_KR_MOF_CONTAINER_URL); confirm the route on the box")),
+    Source(
+        id="in_dgi_iip_consumer",
+        name="MoSPI IIP consumer durables and non-durables, monthly (India, data.gov.in OGD API)",
+        url=("https://api.data.gov.in/resource/{ALT_DGI_IIP_RESOURCE}?api-key={key}"
+             "&format=json&limit=1000"),
+        region="IN", language="en", cadence="monthly", parse=parse_dgi_iip_consumer,
+        rule=rule_in_iip, transform="yoy_monthly", key_env="DATA_GOV_IN_KEY",
+        config_env=("ALT_DGI_IIP_RESOURCE",),
+        instruments={"USDINR": -1},
+        signal_series=("consumer_nondurables_index", "consumer_durables_index"),
+        mechanism=("output of consumer goods (non-durables: food, toiletries, medicines; "
+                   "durables: two-wheelers, appliances) is what Indian households buy, read from "
+                   "the factory gate a month after it happens: the retail demand a UPI-value print "
+                   "shows from the payments rail, as an official index"),
+        payer="INR and India-exposed holders waiting for quarterly GDP and RBI commentary",
+        constraint="RBI manages INR volatility, so flow information reprices slowly",
+        licence=("Government Open Data License - India (GODL, Gazette of India 2017): worldwide, "
+                 "royalty-free, commercial use with attribution; free data.gov.in API key"),
+        source_culture="IN/en", participant_structure=("retail_heavy", "policy_driven"),
+        failure_mode_hypothesis=("fails when festival timing (Diwali in October or November) "
+                                 "moves production between months, and on a base-year revision "
+                                 "(2011-12 to 2022-23) that breaks the YoY comparison"),
+        crowding_prior="low", substitutes_for=_CARD,
+        vintage="current",
+        note=("CANDIDATE for in_npci_upi (NPCI robots-refused; RBI 'All Rights Reserved'), "
+              "UNVERIFIED until its correlation with NPCI UPI is measured >= 0.5 with n. "
+              "Production, not payments: it measures the goods households buy, not the payment "
+              "flow. NO DEFAULT CODE: the use-based monthly IIP resource id comes only from "
+              "ALT_DGI_IIP_RESOURCE (catalog: data.gov.in/catalog/monthly-time-series-use-based-"
+              "indices-and-growth); confirm it carries the 2022-23 base on the box. The OGD "
+              "resource serves the CURRENT (revised, final) vintage only, so history rows are "
+              "stamped vintage=current and pit_quality=backfill: never a first-release value. "
+              "Release instants: IIP_RELEASES / rule_in_iip. Credit line "
+              "when published: 'Ministry of Statistics and Programme Implementation, Index of "
+              "Industrial Production, data.gov.in. Published under GODL-India'")),
+    Source(
+        id="za_statssa_retail",
+        name="Stats SA P6242.1 retail trade sales, constant prices, YoY (South Africa)",
+        url=os.environ.get("ALT_STATSSA_RETAIL_URL",
+                           "https://www.statssa.gov.za/?page_id=1854&PPN=P6242.1"),
+        region="ZA", language="en", cadence="monthly", parse=parse_statssa_retail,
+        rule=rule_za_retail, transform="given",
+        config_env=("ALT_STATSSA_RETAIL_URL",),
+        instruments={"USDZAR": -1, "ZARJPY": 1},
+        signal_series=("retail_sales_yoy",),
+        mechanism=("the statistics office's monthly survey of retail sales at constant prices is "
+                   "South African household spending, the consumer half of what the payments "
+                   "clearing house's transaction index reads from the rail"),
+        payer="ZAR carry holders pricing on commodity terms of trade alone",
+        constraint="SARB and ZAR positioning reprice at data dates; GDP is quarterly and late",
+        licence=("Stats SA publication notice: users may apply or process the data with Stats SA "
+                 "acknowledged as the source; the data may not be sold without permission"),
+        source_culture="ZA/en", participant_structure=("retail_heavy", "institutional"),
+        failure_mode_hypothesis=("fails under load-shedding months and on Black Friday and "
+                                 "SASSA grant-payment calendar shifts, and it prints about seven "
+                                 "weeks after the month, later than BETI"),
+        crowding_prior="low", substitutes_for=_CARD,
+        note=("CANDIDATE for za_beti (PayInc terms unreadable; SARB requires written permission), "
+              "UNVERIFIED; its own terms are to_confirm (the Stats SA notice was read only on a "
+              "mirror), so it is BLOCKED_ON_TERMS and never fetched until confirmed. "
+              "Stats SA pages sit behind an Incapsula check, so the release URL (an HTML release "
+              "page carrying the headline sentence) comes only from ALT_STATSSA_RETAIL_URL; unset "
+              "the row is UNCONFIGURED and nothing is requested. Internal research use only: the "
+              "data and anything derived from it are never sold or redistributed for sale. Credit "
+              "line when published: 'Source: Statistics South Africa, P6242.1 Retail trade sales; "
+              "analysis is the desk's own independent processing of the data'")),
 )
 
 #: THE TERMS GATE, FAIL CLOSED. `confirmed` only where the licence is plainly open: government
@@ -2371,6 +2643,12 @@ TERMS: dict[str, tuple[str, str]] = {
                       "allowed with credit"),
     "tr_tuik_retail": ("confirmed", "TÜİK legal notice: reuse without permission, source cited"),
     "kr_mof_container_teu": ("confirmed", "data.go.kr: 이용허락범위 제한 없음 (unrestricted)"),
+    "in_dgi_iip_consumer": ("confirmed", "GODL-India: worldwide, royalty-free licence for "
+                            "commercial and non-commercial use, with attribution; data.gov.in "
+                            "documented OGD API (free key)"),
+    "za_statssa_retail": ("to_confirm", "Stats SA publication notice read ONLY on a third-party "
+                          "mirror (statssa.gov.za serves an Incapsula check); not confirmed until "
+                          "read on a Stats SA page (audit 2026-10-06)"),
 }
 TERMS_VALUES = ("confirmed", "to_confirm", "refused")
 
@@ -2379,6 +2657,45 @@ TERMS_VALUES = ("confirmed", "to_confirm", "refused")
 #: robots is what robots.txt said for the source's host and path. See
 #: /mnt/project-files/reports/asia_source_terms_2026-09-30.md.
 _CHK = "2026-09-30"
+#: e-Stat API terms (every e-Stat row): content follows the e-Stat terms of use (Art. 6) and a
+#: service built on the API must show where it comes from (Art. 7), with the credit line below.
+_ESTAT_API: dict[str, str] = {
+    "api_terms_url": "https://www.e-stat.go.jp/api/agreement",
+    "api_terms_quote": ("第６条 本機能が提供する情報（以下「コンテンツ」という。）の利用条件等は、"  # noqa: RUF001
+                        "「政府統計の総合窓口（e-Stat）利用規約」に準じるものとします。 / 第７条 "  # noqa: RUF001
+                        "利用者は、本機能を利用したサービスを提供する場合には、別途定める方法により、"
+                        "本機能を利用している出所等を明示するものとします。"),
+    "credit_url": "https://www.e-stat.go.jp/api/en/api-info/credit",
+    "credit": ("このサービスは、政府統計総合窓口(e-Stat)のAPI機能を使用していますが、"
+               "サービスの内容は国によって保証されたものではありません。 / This service uses API "
+               "functions from e-Stat, however its contents are not guaranteed by government."),
+}
+_IMF_EV: dict[str, str] = {
+    "terms_url": "https://www.imf.org/external/terms.htm",
+    "terms_quote": ("Users may download, extract, copy, create derivative works, publish, "
+                    "distribute, and sell Data obtained from IMF Sites, including for commercial "
+                    "purposes"),
+    "policy_url": "https://portwatch.imf.org/pages/data-and-methodology",
+    "policy_quote": ("All data and content in the IMF PortWatch are provided by the IMF unless "
+                     "mentioned otherwise."),
+    "judgement": ("PortWatch points to the IMF terms for copyright and usage; the live terms "
+                  "read 2026-09-30 grant commercial reuse (an older copy asked commercial users "
+                  "to email copyright@imf.org). Attribution required"),
+    "robots": "services9.arcgis.com FeatureServer is PortWatch's documented ArcGIS API",
+    "credit": "Source: International Monetary Fund (IMF PortWatch).",
+    "checked_at": _CHK,
+}
+_OI_EV: dict[str, str] = {
+    "terms_url": "https://github.com/opportunityinsights/economictracker",
+    "terms_quote": ("Anyone is welcome to use this data; we simply we ask that you: 1. List the "
+                    "name of the data provider(s) for the particular series you use. 2. "
+                    "Attribute our work by citing or linking to the accompanying paper and the "
+                    "Economic Tracker at https://tracktherecovery.org."),
+    "robots": "raw.githubusercontent.com serves the repository CSVs",
+    "credit": ("Opportunity Insights Economic Tracker (Chetty, Friedman, Stepner and the OI "
+               "Team), https://tracktherecovery.org"),
+    "checked_at": _CHK,
+}
 TERMS_EVIDENCE: dict[str, dict[str, str]] = {
     "cn_maoyan_box_office": {
         "terms_url": "https://piaofang.maoyan.com/i/rules/privacy-agreement?pid=64",
@@ -2478,6 +2795,7 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
         "terms_quote": ("複製、公衆送信、翻訳・変形等の翻案等、自由に利用できます / "
                         "本利用ルールはクリエイティブ・コモンズ・ライセンスの表示 4.0 国際"
                         "...と互換性があり"),
+        **_ESTAT_API,
         "robots": "api.e-stat.go.jp is the documented API (free appId)",
         "checked_at": _CHK},
     "hk_immd_passenger": {
@@ -2517,6 +2835,155 @@ TERMS_EVIDENCE: dict[str, dict[str, str]] = {
                          "별도의 신청절차 없이 이용 가능"),
         "robots": "apis.data.go.kr is the portal's documented Open API (free service key)",
         "checked_at": _CHK},
+    "in_dgi_iip_consumer": {
+        "terms_url": "https://smartcities.data.gov.in/government-open-data-license-india",
+        "terms_quote": ("all users are provided a worldwide, royalty-free, non-exclusive license "
+                        "to use, adapt, publish (either in original, or in adapted and/or "
+                        "derivative forms), translate, display, add value, and create derivative "
+                        "works (including products and services), for all lawful commercial and "
+                        "non-commercial purposes"),
+        "mirror_url": ("https://en.wikisource.org/wiki/Page:Government_Open_Data_License_"
+                       "(India).pdf/5"),
+        "attribution_quote": ("The user must acknowledge the provider, source, and license of "
+                              "data by explicitly publishing the attribution statement"),
+        "release_url": "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2256241&reg=3&lang=2",
+        "judgement": ("robots.txt refusing WebFetch's crawler on www.data.gov.in is a crawler "
+                      "rule, not a licence term; GODL's text grants commercial reuse with "
+                      "attribution, and api.data.gov.in with DATA_GOV_IN_KEY is the portal's "
+                      "documented programmatic route. Only personal information is exempted"),
+        "robots": ("www.data.gov.in pages robots-disallowed to the authoring fetcher; "
+                   "api.data.gov.in is the documented keyed API"),
+        "credit": ("Ministry of Statistics and Programme Implementation, Index of Industrial "
+                   "Production (use-based), data.gov.in. Published under the Government Open "
+                   "Data License - India: https://data.gov.in/government-open-data-license-india"),
+        "checked_at": _CHK},
+    "za_statssa_retail": {
+        "terms_url": ("https://nationalgovernment.co.za/department_annual/531/2024-statistics-"
+                      "south-africa-(stats-sa)-annual-report.pdf"),
+        "terms_quote": ("Users may apply or process this data, provided Statistics South Africa "
+                        "(Stats SA) is acknowledged as the original source of the data; that it "
+                        "is specified that the application and/or analysis is the result of the "
+                        "user's independent processing of the data; and that neither the basic "
+                        "data nor any reprocessed version or application thereof may be sold or "
+                        "offered for sale in any form whatsoever without prior permission from "
+                        "Stats SA."),
+        "judgement": ("TO_CONFIRM (audit 2026-10-06). Stats SA's standard imprint notice was "
+                      "read only from a third-party MIRROR of its 2023/24 Annual Report "
+                      "(nationalgovernment.co.za), because statssa.gov.za serves an Incapsula "
+                      "check to fetchers. A mirror cannot confirm the publisher's own terms, so "
+                      "the row fails closed (BLOCKED_ON_TERMS) until the notice is read on a "
+                      "statssa.gov.za page or release PDF; if confirmed there, the desk's use "
+                      "(own research, never sold) fits it, with the acknowledgement below"),
+        "robots": "statssa.gov.za serves an Incapsula challenge to fetchers (not a robots rule)",
+        "credit": ("Source: Statistics South Africa (Stats SA), P6242.1 Retail trade sales. The "
+                   "analysis is the result of the user's independent processing of the data."),
+        "checked_at": _CHK},
+    # ---- every other confirmed source, verified 2026-09-30 (the evidence test covers all)
+    "kr_exports_early": {
+        "terms_url": "https://www.data.go.kr/data/15157901/openapi.do",
+        "terms_quote": "이용허락범위 제한 없음",
+        "judgement": ("Korea Customs Service's own licence on the national portal for its "
+                      "10-day provisional trade statistics, the statistics its 1-10 / 1-20 day "
+                      "press releases print; customs.go.kr's copyright page timed out"),
+        "robots": "customs.go.kr copyright page timed out 2026-09-30 (not read)",
+        "checked_at": _CHK},
+    "us_tsa_throughput": {
+        "terms_url": "https://catalog.data.gov/dataset/covid-19-passenger-throughput",
+        "terms_quote": "License: https://www.usa.gov/government-works",
+        "robots": "catalog.data.gov lists the TSA checkpoint series as access level 'public'",
+        "checked_at": _CHK},
+    "us_census_marts_ex_autos": {
+        "terms_url": "https://www.census.gov/data/developers/about/terms-of-service.html",
+        "terms_quote": ("You may use the Census Bureau API to develop a service or service to "
+                        "search, display, analyze, retrieve, view and otherwise 'get' information "
+                        "from Census Bureau data."),
+        "robots": "api.census.gov is the documented public API",
+        "credit": ("This product uses the Census Bureau Data API but is not endorsed or "
+                   "certified by the Census Bureau."),
+        "checked_at": _CHK},
+    "jp_tokyo_cpi": {
+        "terms_url": "https://www.e-stat.go.jp/terms-of-use",
+        "terms_quote": ("複製、公衆送信、翻訳・変形等の翻案等、自由に利用できます / "
+                        "本利用ルールはクリエイティブ・コモンズ・ライセンスの表示 4.0 国際"
+                        "...と互換性があり"),
+        **_ESTAT_API,
+        "robots": "api.e-stat.go.jp is the documented API (free appId)",
+        "checked_at": _CHK},
+    "cn_firms_industrial": {
+        "terms_url": ("https://earthdata.nasa.gov/learn/articles/nasa-earth-science-data-yours-"
+                      "use-fully-and-without-restrictions"),
+        "terms_quote": ("NASA's data policy ensures that all NASA data are available fully, "
+                        "openly, and without restrictions."),
+        "robots": "firms.modaps.eosdis.nasa.gov/api is the documented keyed API (MAP_KEY)",
+        "checked_at": _CHK},
+    "imf_portwatch_ports": {**_IMF_EV},
+    "imf_portwatch_chokepoints": {**_IMF_EV},
+    "in_gold_imports": {
+        "terms_url": "https://www.pib.gov.in/content/102_2_Copyright-Policy.aspx?reg=3&lang=1",
+        "terms_quote": ("Material featured on this website may be reproduced free of charge and "
+                        "there is no need for any prior approval for using the content. [...] "
+                        "Wherever the material is being published or issued to others, the "
+                        "source must be prominently acknowledged."),
+        "robots": "pib.gov.in press-release pages fetched",
+        "credit": "Source: Press Information Bureau, Government of India (pib.gov.in)",
+        "checked_at": _CHK},
+    "gdelt_events_country": {
+        "terms_url": "https://gdeltproject.org/about.html",
+        "terms_quote": ("all datasets released by the GDELT Project are available for unlimited "
+                        "and unrestricted use for any academic, commercial, or governmental use "
+                        "of any kind without fee."),
+        "robots": "data.gdeltproject.org is the documented raw-file host",
+        "credit": "The GDELT Project, https://www.gdeltproject.org/",
+        "checked_at": _CHK},
+    "wiki_asia_attention": {
+        "terms_url": "https://dumps.wikimedia.org/other/pageviews/readme.html",
+        "terms_quote": ("All Analytics datasets are available under the Creative Commons CC0 "
+                        "dedication."),
+        "robots": "wikimedia.org/api/rest_v1 is the documented pageviews API",
+        "checked_at": _CHK},
+    "us_oi_card_spend": {**_OI_EV},
+    "us_oi_google_mobility": {**_OI_EV},
+    "kr_bok_card_spend": {
+        "terms_url": "https://www.data.go.kr/data/15059638/openapi.do?recommendDataYn=Y",
+        "terms_quote": "이용허락범위: 이용허락범위 제한 없음",
+        "judgement": ("the Bank of Korea's own licence on the national portal for its ECOS "
+                      "statistics (a LINK-type entry to the ECOS API); ecos.bok.or.kr/api/ "
+                      "returned 404 to the fetcher"),
+        "robots": "ecos.bok.or.kr/api is the documented Open API (free key)",
+        "checked_at": _CHK},
+    "jp_meti_retail": {
+        "terms_url": "https://www.meti.go.jp/main/rules.html",
+        "terms_quote": ("経済産業省ウェブサイトで掲載・発信している情報の著作権は、特記されて"
+                        "いない限り経済産業省に帰属し、権利表記の記載がない限り"
+                        "『公共データ利用規約（第1.0版）』（PDL1.0）に準拠した利用条件の下で、"  # noqa: RUF001
+                        "利用することができます。"),
+        "robots": "meti.go.jp statistics pages fetched",
+        "credit": "出典：『商業動態統計』（経済産業省）",  # noqa: RUF001
+        "checked_at": _CHK},
+    "kr_kobis_box_office": {
+        "terms_url": "https://www.data.go.kr/data/3070263/openapi.do?recommendDataYn=Y",
+        "terms_quote": "이용허락범위 제한 없음",
+        "judgement": ("the Korean Film Council's own licence on the national portal for its "
+                      "box-office DB, the data the KOBIS open API serves"),
+        "robots": "kobis.or.kr/kobisopenapi is the documented Open API (free key)",
+        "checked_at": _CHK},
+    "kr_seoul_subway": {
+        "terms_url": "https://data.seoul.go.kr/dataList/OA-12914/S/1/datasetView.do",
+        "terms_quote": "공공누리 1유형 : 출처표시 (상업적 이용 및 변경 가능)",
+        "robots": "openapi.seoul.go.kr is the documented Open API (free key)",
+        "credit": "출처: 서울 열린데이터광장 (data.seoul.go.kr), 공공누리 제1유형",
+        "checked_at": _CHK},
+    "sg_port_throughput": {
+        "terms_url": "https://singstat.gov.sg/our-services-tools-surveys/singstat-mobile-app/tou",
+        "terms_quote": ("Use of Datasets provided in this application is subject to the terms "
+                        "of the Singapore Open Data Licence on the use of statistical data from "
+                        "this Website (\"ODL\")."),
+        "licence_url": "https://data.gov.sg/open-data-licence",
+        "licence_quote": ("You can use, access, download, copy, distribute, transmit, modify and "
+                          "adapt the datasets, or any derived analyses or applications, whether "
+                          "commercially or non-commercially."),
+        "robots": "tablebuilder.singstat.gov.sg/api is the documented Table Builder API",
+        "checked_at": _CHK},
 }
 
 #: AXIS-ONLY TERMS. Sources this organ never fetches (no `Source` row, so never in BY_ID) whose
@@ -2547,14 +3014,18 @@ SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
 SUBSTITUTE_SOURCES = tuple(s for s in SOURCES if s.substitutes_for)
 BY_ID = {s.id: s for s in SOURCES}
 
-#: COVERAGE DOES NOT SHRINK WHEN TERMS BLOCK A SOURCE. Each blocked source (terms refused or
-#: to_confirm) names the lawful source(s) standing in for it: every id here is a `confirmed`
-#: source of this organ, verified from its own terms page (TERMS_EVIDENCE). Such a source reports
-#: BLOCKED+SUBSTITUTE:<ids> and is counted as substituted, not lost. It is still NEVER fetched.
-#: A blocked source absent from this table has no verified lawful substitute and stays
-#: BLOCKED_ON_TERMS (see NO_SUBSTITUTE for why).
+#: CANDIDATE SUBSTITUTES FOR EACH TERMS-BLOCKED SOURCE (terms refused or to_confirm). A candidate
+#: is a lawful source of this organ that MAY stand in for the blocked one; it is NOT coverage by
+#: being listed. Under the paid-substitute law (#152, MIN_CORRELATION 0.50) a substitute counts
+#: as COVERED only when (a) its own terms are `confirmed` (TERMS_EVIDENCE) and (b) a correlation
+#: >= SUBSTITUTE_MIN_CORR against the ORIGINAL, on at least SUBSTITUTE_MIN_N reported points, is
+#: recorded in SUBSTITUTE_VS_ORIGINAL. Then the source reports BLOCKED+SUBSTITUTE:<ids>; until
+#: then it reports BLOCKED_NO_SUBSTITUTE:UNVERIFIED=<ids> (the candidates named, none counted).
+#: A blocked source with no candidate stays BLOCKED_ON_TERMS. A blocked source is NEVER fetched.
 SUBSTITUTED_BY: dict[str, tuple[str, ...]] = {
     "jp_jnto_arrivals": ("jp_estat_immigration",),
+    "in_npci_upi": ("in_dgi_iip_consumer",),
+    "za_beti": ("za_statssa_retail",),
     "cn_holiday_spend": ("cn_nbs_retail", "hk_immd_passenger"),
     "tr_bkm_card": ("tr_tuik_retail",),
     "br_cielo_icva": ("br_bcb_payments",),
@@ -2565,15 +3036,117 @@ SUBSTITUTED_BY: dict[str, tuple[str, ...]] = {
     "kr_busan_port": ("kr_mof_container_teu", "imf_portwatch_ports"),
     "cn_mot_port_weekly": ("imf_portwatch_ports",),
 }
-#: Blocked sources with NO verified lawful substitute, and why (each has a box action queued in
-#: /mnt/project-files/patches/DESKTOP_PASS2_STATUS.md).
+#: The #152 engine's MIN_CORRELATION, applied here to every blocked -> substitute pair.
+SUBSTITUTE_MIN_CORR = 0.50
+#: A correlation on fewer points than a year of monthly changes is not a measurement.
+SUBSTITUTE_MIN_N = 12
+#: MEASURED substitute-vs-original correlations, {blocked_id: {substitute_id: {"corr": float,
+#: "n": int, "basis": str, "measured_at": iso, "evidence": str}}}. An entry is written ONLY from
+#: a computation on data this desk held (the original's own public outputs on the same keys);
+#: nothing is entered from a guess. EMPTY on 2026-10-06: no original is held (each is blocked by
+#: its terms) and no original's public monthly outputs have been aligned yet, so every pair is
+#: UNMEASURED and no blocked source counts as covered.
+SUBSTITUTE_VS_ORIGINAL: dict[str, dict[str, dict[str, Any]]] = {}
+#: Blocked sources whose candidate substitute is known to be WEAK on mechanism, and why: they
+#: read BLOCKED_NO_SUBSTITUTE until the candidate's correlation with the original is measured.
 NO_SUBSTITUTE: dict[str, str] = {
-    "in_npci_upi": ("RBI payment-system indicators carry '© Reserve Bank of India. All Rights "
-                    "Reserved' and no reuse grant; data.gov.in (GODL) pages are robots-disallowed "
-                    "to the authoring fetcher, so no licence text could be read"),
-    "za_beti": ("SARB disclaimer: IP 'cannot be used without written permission'; Stats SA's "
-                "copyright page and PDFs are behind an Incapsula wall, so no reuse text could be "
-                "read"),
+    "in_npci_upi": ("candidate in_dgi_iip_consumer is UNVERIFIED: use-based IIP consumer goods "
+                    "is factory OUTPUT, not the UPI payments flow, and no correlation against "
+                    "NPCI's monthly UPI volume/value has been measured (NPCI is robots-refused, "
+                    "RBI tables are 'All Rights Reserved'); COVERED only at corr >= 0.5 with n "
+                    "reported"),
+    "za_beti": ("candidate za_statssa_retail is UNVERIFIED: its own terms are to_confirm (only a "
+                "mirror of the Stats SA notice was read, statssa.gov.za is behind Incapsula) and "
+                "no correlation against BETI has been measured (PayInc terms unreadable; SARB "
+                "requires written permission); COVERED only at corr >= 0.5 with n reported"),
+}
+
+
+def substitute_check(blocked: str, sub: str,
+                     measured: dict[str, dict[str, dict[str, Any]]] | None = None
+                     ) -> dict[str, Any]:
+    """One blocked -> candidate pair against the #152 law. VERIFIED only with confirmed terms and
+    a recorded corr >= SUBSTITUTE_MIN_CORR on n >= SUBSTITUTE_MIN_N; anything else is named."""
+    table = SUBSTITUTE_VS_ORIGINAL if measured is None else measured
+    m = (table.get(blocked) or {}).get(sub) or {}
+    corr, n = m.get("corr"), m.get("n")
+    out: dict[str, Any] = {"substitute": sub, "corr": corr if corr is not None else UNMEASURED,
+                           "n": n if n is not None else UNMEASURED,
+                           "min_corr": SUBSTITUTE_MIN_CORR, "min_n": SUBSTITUTE_MIN_N}
+    src = BY_ID.get(sub)
+    if src is None or src.terms != "confirmed" or src.archive_until:
+        return {**out, "verdict": "UNVERIFIED",
+                "why": f"candidate terms {src.terms if src else 'unknown'}: not a lawful source"
+                       if not (src and src.archive_until) else "candidate is DEAD"}
+    ok_corr = isinstance(corr, (int, float)) and not isinstance(corr, bool) and math.isfinite(corr)
+    ok_n = isinstance(n, int) and not isinstance(n, bool)
+    if not (ok_corr and ok_n) or corr is None or n is None:
+        return {**out, "verdict": "UNVERIFIED",
+                "why": "no measured correlation against the original (with n) is recorded"}
+    if n < SUBSTITUTE_MIN_N:
+        return {**out, "verdict": "UNVERIFIED", "why": f"n={n} < {SUBSTITUTE_MIN_N}"}
+    if corr < SUBSTITUTE_MIN_CORR:
+        return {**out, "verdict": "UNVERIFIED",
+                "why": f"corr={corr:.3f} < {SUBSTITUTE_MIN_CORR} on n={n}"}
+    return {**out, "verdict": "VERIFIED", "basis": m.get("basis", ""),
+            "measured_at": m.get("measured_at", ""), "evidence": m.get("evidence", "")}
+
+
+def verified_substitutes(sid: str, measured: dict[str, dict[str, dict[str, Any]]] | None = None
+                         ) -> tuple[str, ...]:
+    return tuple(x for x in SUBSTITUTED_BY.get(sid, ())
+                 if substitute_check(sid, x, measured)["verdict"] == "VERIFIED")
+
+
+def unsubstituted(measured: dict[str, dict[str, dict[str, Any]]] | None = None
+                  ) -> dict[str, str]:
+    """Every blocked paid original with no VERIFIED substitute, and why."""
+    out: dict[str, str] = {}
+    for sid in sorted({*SUBSTITUTED_BY, *NO_SUBSTITUTE}):
+        if verified_substitutes(sid, measured):
+            continue
+        cands = SUBSTITUTED_BY.get(sid, ())
+        out[sid] = NO_SUBSTITUTE.get(sid) or (
+            f"candidate(s) {', '.join(cands)} UNVERIFIED: no measured correlation >= "
+            f"{SUBSTITUTE_MIN_CORR} against the original with n >= {SUBSTITUTE_MIN_N}"
+            if cands else "no candidate substitute")
+    return out
+
+
+#: How the candidates for NPCI UPI and BETI were found on 2026-09-30: every candidate searched,
+#: its URL and why it was taken as a CANDIDATE or rejected. A TAKEN row is a candidate only, never
+#: coverage: it counts when SUBSTITUTE_VS_ORIGINAL records corr >= 0.5 with n (audit 2026-10-06;
+#: report: /mnt/project-files/reports/asia_source_terms_2026-09-30.md).
+SUBSTITUTE_SEARCH: dict[str, tuple[tuple[str, str, str], ...]] = {
+    "in_npci_upi": (
+        ("data.gov.in use-based IIP (GODL)", "https://smartcities.data.gov.in/government-open-"
+         "data-license-india", "TAKEN: GODL text read on a data.gov.in property and on the "
+         "Wikisource copy of the Gazette PDF; api.data.gov.in is the documented keyed API"),
+        ("data.gov.in UPI tables", "https://www.data.gov.in/resource/year-wise-details-digital-"
+         "payments-transactions-including-transactions-through-unified", "rejected: annual "
+         "Parliament-answer tables, not a monthly flow"),
+        ("RBI payment-system indicators", "https://www.rbi.org.in/", "rejected: '(c) Reserve "
+         "Bank of India. All Rights Reserved', no reuse grant"),
+        ("MoSPI eSankhyiki API", "https://github.com/nso-india/esankhyiki-mcp", "not used: the "
+         "MIT licence covers the MCP code only; no data licence text found and the portal was "
+         "unreachable (proxy 403 / fetch not permitted)"),
+        ("PIB IIP quick-estimate releases", "https://www.pib.gov.in/content/102_2_Copyright-"
+         "Policy.aspx?reg=3&lang=1", "confirmed reusable (PIB copyright policy) and used as the "
+         "release calendar; the OGD API is the machine route"),
+        ("dataful.in / Kaggle UPI copies", "https://dataful.in/datasets/432/", "rejected: "
+         "republished NPCI/RBI data; a mirror cannot grant rights NPCI did not"),
+    ),
+    "za_beti": (
+        ("Stats SA P6242.1 retail trade sales", "https://nationalgovernment.co.za/department_"
+         "annual/531/2024-statistics-south-africa-(stats-sa)-annual-report.pdf", "TAKEN as "
+         "candidate: Stats SA's publication notice (read only on a MIRROR; statssa.gov.za is "
+         "behind Incapsula) lets users apply or process the data with acknowledgement, no "
+         "sale; terms stay to_confirm until read on a Stats SA page"),
+        ("SARB statistics", "https://www.resbank.co.za/", "rejected: IP 'cannot be used without "
+         "written permission'"),
+        ("PayInc/BankservAfrica BETI", "https://www.payinc.co.za/", "rejected: JS-only site, no "
+         "terms readable"),
+    ),
 }
 #: The paid-substitute engine (#152) reads Asia-thread rows from
 #: data/paid_data_substitutes_*.json; this is that file (regenerate with --write-rosters).
@@ -2581,20 +3154,62 @@ ENGINE_ROWS_FILE = DESK / "data" / "paid_data_substitutes_asia_blocked.json"
 ROSTER_FILE = DESK / "data" / "source_rosters" / "asia_paid_substitutes_consumer.yaml"
 
 
-def status_of(src: Source, environ: dict[str, str] | None = None) -> str:
+#: Documented defaults for config ids, each read off the provider's own catalogue on 2026-10-06
+#: and cited next to it. The env var of the same name still overrides. An id that could not be
+#: verified from an official page has NO entry here and its row stays UNCONFIGURED.
+CONFIG_DEFAULTS: dict[str, str] = {
+    # BOK ECOS table 601Y003 "7.5.1. 신용카드" (monthly 200301-202606 when read), item 201010
+    # "개인 일반구매 이용금액" (personal general-purchase spend, 백만원): household card spend,
+    # excluding cash advances. Read from the ECOS Open API's own item catalogue:
+    #   https://ecos.bok.or.kr/api/StatisticItemList/sample/json/kr/21/30/601Y003
+    # and served by https://ecos.bok.or.kr/api/StatisticSearch/sample/json/kr/1/3/601Y003/M/
+    # 202601/202601/201010 (three rows a month: ITEM_CODE2 00 합계, 10 은행계, 20 비은행계;
+    # parse_ecos keeps 00). The older 601Y002 (by region) ENDS 202308, so it is not used.
+    "ALT_ECOS_CARD_STAT": "601Y003",
+    "ALT_ECOS_CARD_ITEM": "201010",
+    # e-Stat statsDataId 0003449066, 出入国管理統計 "国籍・地域別 入国外国人の在留資格" (monthly,
+    # 2020-06..2026-07 when read; cat01 has the single item 入国外国人, cat02 国籍・地域 with
+    # 総数, cat03 在留資格 with 総数): https://www.e-stat.go.jp/dbview?sid=0003449066
+    # ALT_ESTAT_IMMIG_CAT01 has NO default: the official dbview page names the cat01 item but
+    # does not print its code, and the code is not guessed. Read it on the box with getMetaInfo
+    # (appId + statsDataId=0003449066) and set the env var. Note for whoever does: the full
+    # table is ~209 x 41 x 70 cells, above getStatsData's 100,000-row page, so the request should
+    # also pin cat02/cat03 to their 総数 codes (from the same getMetaInfo reply).
+    "ALT_ESTAT_IMMIG_STATS_ID": "0003449066",
+    # ALT_INEGI_EMEC_ID has NO default: the BIE indicator id of the EMEC retail revenue index
+    # (serie original) is not printed on any INEGI page reachable without a token (the BIE web
+    # app at https://www.inegi.org.mx/app/indicadores/ is a JS shell and the EMEC programme page
+    # https://www.inegi.org.mx/programas/emec/2018/ carries no series keys). Read it from the
+    # BIE catalogue on the box (CL_INDICATOR with INEGI_TOKEN) and set the env var.
+}
+
+
+def config_value(name: str, environ: Any = None) -> str:
+    """The env override if set, else the documented default, else ''."""
+    env: Any = os.environ if environ is None else environ
+    return str(env.get(name) or "").strip() or CONFIG_DEFAULTS.get(name, "")
+
+
+def status_of(src: Source, environ: dict[str, str] | None = None,
+              measured: dict[str, dict[str, dict[str, Any]]] | None = None) -> str:
     """One named state per source. Nothing here claims live yield: a source that has not returned
     real data on the box is UNMEASURED_LIVE_YIELD, and the pass report says what it parsed.
-    `environ` replaces os.environ (the committed roster uses {} -- its status as declared)."""
+    `environ` replaces os.environ (the committed roster uses {} -- its status as declared).
+    `measured` replaces SUBSTITUTE_VS_ORIGINAL: a blocked source is BLOCKED+SUBSTITUTE only for
+    candidates whose measured correlation with the original clears the #152 law."""
     env: Any = os.environ if environ is None else environ
     if src.archive_until:
         return f"DEAD:{src.archive_until}"
     if src.terms != "confirmed":
-        subs = SUBSTITUTED_BY.get(src.id)
-        return (f"BLOCKED+SUBSTITUTE:{','.join(subs)}" if subs
+        subs = verified_substitutes(src.id, measured)
+        if subs:
+            return f"BLOCKED+SUBSTITUTE:{','.join(subs)}"
+        cands = SUBSTITUTED_BY.get(src.id)
+        return (f"BLOCKED_NO_SUBSTITUTE:UNVERIFIED={','.join(cands)}" if cands
                 else f"BLOCKED_ON_TERMS:{src.terms}")
     if src.key_env and not env.get(src.key_env):
         return f"BLOCKED_ON_KEY:{src.key_env}"
-    missing = [e for e in src.config_env if not env.get(e)]
+    missing = [e for e in src.config_env if not config_value(e, env)]
     if missing:
         return "UNCONFIGURED:" + ",".join(missing)
     return "UNMEASURED_LIVE_YIELD"
@@ -2706,7 +3321,7 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
                 Request(f"{src.url}/{now.year - 1}", Ctx(part="prior_year", fetched_at=now))]
     url = src.url.replace("{key}", key).replace("{yyyymm}", now.strftime("%Y%m"))
     for env in src.config_env:
-        code = os.environ.get(env, "").strip()
+        code = config_value(env)
         if not code:
             return []                  # never a request built on a placeholder code
         url = url.replace("{" + env + "}", urllib.parse.quote(code, safe=""))
@@ -2969,6 +3584,8 @@ def axis_doc(src: Source, points: dict[str, list[dict[str, Any]]], now: datetime
                                            "first": keep[0]["d"], "last": keep[-1]["d"],
                                            "points": keep}
     return {"axis": "alt_proxy", "id": f"alt_{src.id}", "source": src.url.split("?")[0],
+            **({"credit": c} if (c := credit_of(src.id)) else {}),
+            **({"vintage": src.vintage} if src.vintage else {}),
             "at": now.isoformat(timespec="seconds"), "region": src.region,
             "cadence": src.cadence, "n_series": len(series),
             "pit_fields": ["event_time", "published_time", "available_time", "first_seen_at",
@@ -2977,6 +3594,12 @@ def axis_doc(src: Source, points: dict[str, list[dict[str, Any]]], now: datetime
             "vintage_note": ("first value seen is the value; a revision is recorded with its own "
                              "revision_time and never back-dated"),
             "series": series}
+
+
+def credit_of(sid: str) -> str:
+    """The attribution line a publisher's terms require wherever its data is published (the
+    axis file, the roster rows), from TERMS_EVIDENCE; empty when the terms ask for none."""
+    return TERMS_EVIDENCE.get(sid, {}).get("credit", "")
 
 
 def lake_file(src: Source, series: str) -> str:
@@ -3732,6 +4355,10 @@ def substitute_agreement(paths: Paths, pts: dict[str, dict[str, list[dict[str, A
                                  "to the authoring container)" if not theirs else
                                  "no nlp_events_<CC>.parquet tagger panel on this box")})}
     out["paid_original_agreement"] = PAID_ORIGINAL_AGREEMENT
+    # 4. the #152 law per blocked source: each candidate against the ORIGINAL, as recorded.
+    out["substitute_vs_original"] = {
+        sid: [substitute_check(sid, x) for x in SUBSTITUTED_BY[sid]]
+        for sid in sorted(SUBSTITUTED_BY)}
     return out
 
 
@@ -3792,8 +4419,11 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                            "rule": handoff["rule"]},
         "dead_sources": sorted(s.id for s in SOURCES if is_dead(s)),
         "blocked_on_terms": sorted(s.id for s in SOURCES if s.terms != "confirmed"),
-        "blocked_substituted": {sid: list(SUBSTITUTED_BY[sid]) for sid in sorted(SUBSTITUTED_BY)},
-        "blocked_unsubstituted": {sid: NO_SUBSTITUTE[sid] for sid in sorted(NO_SUBSTITUTE)},
+        "blocked_substituted": {sid: list(v) for sid in sorted(SUBSTITUTED_BY)
+                                if (v := verified_substitutes(sid))},
+        "blocked_unsubstituted": unsubstituted(),
+        "substitute_candidates": {sid: [substitute_check(sid, x) for x in SUBSTITUTED_BY[sid]]
+                                  for sid in sorted(SUBSTITUTED_BY)},
         "direct_cells": {"n": len(direct), "donation": donations["direct"],
                          "rule": ("an exogenous_conditioner cell is donated only after its gain "
                                   "test PASSED on this box; every tested cell is charged")},
@@ -3884,8 +4514,15 @@ def roster_rows(sources: Iterable[Source] = SOURCES,
                              "(late-biased); first_seen_at = vault fetch instant"),
                      "uses": uses, "consumer": "desks/mt5/research/alt_proxies.py",
                      "status": status_of(s, environ), "terms": s.terms, **_meta(s)})
+        if credit_of(s.id):
+            rows[-1]["credit"] = credit_of(s.id)
+        if s.vintage:
+            rows[-1]["vintage"] = s.vintage
         if s.id in SUBSTITUTED_BY:
-            rows[-1]["substituted_by"] = list(SUBSTITUTED_BY[s.id])
+            rows[-1]["substituted_by"] = list(verified_substitutes(s.id))
+            rows[-1]["substitute_candidates"] = [
+                {k: c[k] for k in ("substitute", "verdict", "corr", "n")}
+                for c in (substitute_check(s.id, x) for x in SUBSTITUTED_BY[s.id])]
         if s.substitutes_for:
             rows[-1].update({"substitutes_for": s.substitutes_for, "fetcher": "owned",
                              "owner": "asia_gap_thread"})
@@ -3905,8 +4542,9 @@ ROSTER_HEADER = (
     "# every row itself (fetcher: owned). Generated from alt_proxies.roster_file_rows()\n"
     "# (python desks/mt5/research/alt_proxies.py --write-rosters); regenerate rather than\n"
     "# hand-edit. status is as declared with no keys set; live yield is UNMEASURED except\n"
-    "# where the status says otherwise. A BLOCKED+SUBSTITUTE:<ids> row is never fetched: its\n"
-    "# terms block it and the named confirmed rows stand in for it.\n")
+    "# where the status says otherwise. A terms-blocked row is never fetched. It reads\n"
+    "# BLOCKED+SUBSTITUTE:<ids> only when a named confirmed row's correlation with it was\n"
+    "# MEASURED >= 0.5 with n reported; else BLOCKED_NO_SUBSTITUTE:UNVERIFIED=<candidates>.\n")
 
 
 def roster_file_rows() -> list[dict[str, Any]]:
@@ -3936,7 +4574,9 @@ def engine_rows() -> dict[str, Any]:
     Asia-thread table it parses from data/paid_data_substitutes_*.json (class / paid / free /
     region / measure / frequency, found by header words), and `library_rows`, the shape of its
     free-source library (data/paid_substitute_library.json), ready to merge once #152 lands.
-    Every blocked source is marked BLOCKED+SUBSTITUTE:<ids> or BLOCKED_ON_TERMS (unsubstituted)."""
+    Every blocked source is marked BLOCKED+SUBSTITUTE:<ids> (a measured corr >= 0.5 with n),
+    BLOCKED_NO_SUBSTITUTE:UNVERIFIED=<candidates> or BLOCKED_ON_TERMS. `free` names the
+    candidates so the engine can measure them; `substitute_check` says which, if any, count."""
     klass = {_CARD: "card", _FOOT: "foot traffic", _SAT: "satellite (port / AIS activity)",
              _NEWS: "news", _TRAVEL: "foot traffic (travel arrivals)", _GOLD: "gold premium"}
     blocked_class = {"jp_jnto_arrivals": _TRAVEL, "cn_sge_premium": _GOLD}
@@ -3955,12 +4595,16 @@ def engine_rows() -> dict[str, Any]:
             "status": status_of(src, {}),
             "terms": src.terms,
             "blocked_because": TERMS.get(sid, ("", ""))[1],
-            "unsubstituted_because": NO_SUBSTITUTE.get(sid, ""),
+            "unsubstituted_because": unsubstituted().get(sid, ""),
+            "substitute_check": "; ".join(
+                f"{c['substitute']}: {c['verdict']} (corr={c['corr']}, n={c['n']})"
+                for c in (substitute_check(sid, x) for x in subs)),
             "evidence": "; ".join(f"{x}: {TERMS_EVIDENCE[x]['terms_url']}" for x in subs
-                                  if x in TERMS_EVIDENCE),
+                                  if x in TERMS_EVIDENCE and BY_ID[x].terms == "confirmed"),
         })
     lib: list[dict[str, Any]] = []
-    for x in sorted({x for v in SUBSTITUTED_BY.values() for x in v}):
+    for x in sorted({x for v in SUBSTITUTED_BY.values() for x in v
+                     if BY_ID[x].terms == "confirmed"}):        # a blocked candidate: no row
         s = BY_ID[x]
         ev = TERMS_EVIDENCE.get(x, {})
         lib.append({
@@ -3976,6 +4620,7 @@ def engine_rows() -> dict[str, Any]:
             "languages": [s.language], "instruments": sorted(s.instruments),
             "participant_structure": s.participant_structure[0], "licence": s.licence,
             "terms": s.terms, "terms_quote": ev.get("terms_quote", ""),
+            "credit": ev.get("credit", ""),
             "consumer": "desks/mt5/research/alt_proxies.py", "owner": "asia_gap_thread",
             "substitutes_for_blocked": sorted(k for k, v in SUBSTITUTED_BY.items() if x in v),
         })

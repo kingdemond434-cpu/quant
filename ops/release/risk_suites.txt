@@ -1,0 +1,11 @@
+# Risk suites the risk-invariants job runs against the PR's code with THIS BRANCH'S copies of
+# the test files (taken from the base, so a PR cannot weaken the test that judges it).
+desks/mt5/tests/test_sizing.py
+desks/mt5/tests/test_stop_aware_sizing.py
+desks/mt5/tests/test_e8_quote_currency_sizing.py
+desks/mt5/tests/test_rail_evidence.py
+desks/mt5/tests/test_plumbing_invariants.py
+desks/mt5/tests/test_measured_heat_ceiling.py
+tests/execution/test_ruin_rail.py
+tests/governance/test_sizing_derivation.py
+tests/research/test_immutable_rails.py
