@@ -119,7 +119,8 @@ except Exception:                                           # pragma: no cover -
     _SESSION_WINDOWS = {"asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None}
 
 SLEEVES = BASE / "data" / "sleeves.json"
-LIVE_LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_STATE = SHADOW_DIR / "shadow_state.json"
 UNI = BASE / "data" / "universe"

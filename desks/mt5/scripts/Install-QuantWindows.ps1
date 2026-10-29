@@ -216,15 +216,20 @@ $tasks = @(
        Desc = "Rebuild web/desk_state.json -- the file every dashboard reads." },
     @{ Name = "MT5-Gauntlet"
        Script = "scripts\\run_sharded_gauntlet.py"
+       # RESIDENT, NOT HOURLY (principal 2026-10-10: "24 7 uninterrupted, 0 cadences"). The
+       # launcher runs sweeps back to back and never exits while it can judge; this one-minute
+       # repetition (IgnoreNew) only respawns it if it dies, and the zero time limit stops the
+       # scheduler killing a resident judge at the old four-hour ceiling.
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
-                     -RepetitionInterval (New-TimeSpan -Hours 1) `
+                     -RepetitionInterval (New-TimeSpan -Minutes 1) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
+       TimeLimit = ([TimeSpan]::Zero)
        # The launcher invokes the sealed judge's fail-closed shard protocol; the judge still owns
        # every verdict and the one union merge. Also a leg of the hourly cycle, deliberately BOTH:
        # the cycle can be
        # long, and a judged docket is what every downstream stage waits on. Its own job lock
        # makes the overlap a wait, not a race.
-       Desc = "The ten statistical gates, hourly, over every newly backtested cell." },
+       Desc = "The ten statistical gates, resident: sweeps back to back over every backtested cell." },
     @{ Name = "MT5-Frontier"
        Script = "frontier_intel\\frontier_supervisor.py"
        Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
@@ -285,6 +290,20 @@ $tasks = @(
                      -RepetitionInterval (New-TimeSpan -Minutes 5) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
        Desc = "MT5 ruin rail in DRY-RUN: evaluates every rail every 5 minutes and stamps what it would do; arms nothing." },
+    @{ Name = "MT5-FusionDeadmanLive"
+       # THE MT5 DEADMAN, ARMED BY THE PRINCIPAL'S MARKER ONLY (audit r5 must-fix 4).
+       # The same rail with `--live`. It acts ONLY while data\FUSION_DEADMAN_ARMED.json exists and
+       # reads {"armed_by": "zuck"} -- a gitignored file the principal writes on the box; without it
+       # every pass is DRY-RUN and the stamp says "live_requested_but_unarmed". Once armed, the
+       # dry-run row above steps aside so the stamp has one writer. The gateway opens no new Fusion
+       # risk unless that stamp reads LIVE and is under 15 minutes old (decision_core
+       # .fusion_deadman_armed), so registering this row is what makes arming possible at all.
+       Script = "proposals\\fusion_deadman.py"
+       Args = "--live"
+       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
+                     -RepetitionInterval (New-TimeSpan -Minutes 5) `
+                     -RepetitionDuration (New-TimeSpan -Days 3650) }
+       Desc = "MT5 ruin rail, --live: flattens and halts on a confirmed breach, but ONLY while the principal's FUSION_DEADMAN_ARMED.json marker exists." },
     # ---- THE CRO CYCLE LANES (MT5-CycleNoon / MT5-CycleMidnight) ARE NOT IN THIS TABLE --------
     # They run as the account that holds the claude/codex logins (S4U), not SYSTEM, and fire
     # hourly all day with the Europe/Dublin window decided by Run-DeskCycle.ps1. Both facts are

@@ -9039,6 +9039,92 @@
    ]
   },
   {
+   "id": "GEN1",
+   "item": "Public trader genome with a graveyard: one structural row per public trader/system (alive AND dead), mechanism base rates over the full population, survivor-vs-graveyard contrast cells through the donor door, failure memory and crowding prior (Asia directive PART XIV, global PART XXIII, audit row 35)",
+   "domain": "C",
+   "phase": "C",
+   "status": "PARTIAL",
+   "gate": "principal",
+   "evidence": [
+    "desks/mt5/research/book_forensics.py",
+    "desks/mt5/research/provider_reverse.py",
+    "desks/mt5/scripts/fxblue_mechanism_summary.py",
+    "desks/mt5/research/deep_forest_miner.py",
+    "desks/mt5/research/failure_prior.py",
+    "desks/mt5/research/daily_cycle.py:372 (book_forensics in _proposers; run() builds the genome)",
+    "desks/mt5/ops/box_tasks.manifest:215 (MT5-Daily runs daily_cycle.py)",
+    "desks/mt5/tests/test_trader_genome.py"
+   ],
+   "scheduled_by": "daily_cycle:_proposers, MT5-Daily",
+   "artifact": "desks/mt5/reports/TRADER_GENOME.json",
+   "consumer": "desks/mt5/data/trader_genome_priors.json -> desks/mt5/research/failure_prior.py public_graveyard (FAILURE_PRIOR.json); proposer_common.donate -> intelligence/trader_genome/discoveries_* -> miner_candidate_compiler -> gauntlet; desks/mt5/data/trader_genome.parquet (the dataset)",
+   "gap": "Built and scheduled 2026-10-06 on MT5-Daily (daily_cycle _proposers -> book_forensics.run; MT5-FrontierAudit runs only the own-book forensics, without --genome). Derived outputs fail closed on terms. FX Blue terms are UNREAD (robots.txt refuses /terms and /legal/terms from the build host, re-tried 2026-10-06, not bypassed) so its rows are held BLOCKED_ON_TERMS; MQL5 is REFUSED by its Terms of Use 3.7/3.9; Collective2 is REFUSED by its Terms of Service s.7/s.9 (derivative works from platform content); Darwinex stays to_confirm (website terms robots-refused; DARWIN API T&C limit data to internal use inside a registered Application the desk does not hold); Myfxbook is walled. PIT: harvest-decided outcome labels (DORMANT/ALIVE/DELISTED) and competition rankings are knowable from the harvest/fetch. Every screen and contrast is charged, null passes to null_pass_trials.jsonl. Competition tables parse from the next box run; live yield UNMEASURED.",
+   "next_step": "Principal: read fxblue.com terms and each competition ground's terms; record confirmed + URL + verbatim quote in book_forensics.TERMS / TERMS_EVIDENCE. The next daily cycle then publishes base rates, failure memory and screened cells.",
+   "landed": [
+    "trader genome 2026-10-06"
+   ]
+  },
+  {
+   "id": "ASIA_P5",
+   "item": "The four proprietary PIT latent datasets (China industrial activity, China physical gold demand, Asia industrial export, Asia funding/carry) as vintaged dynamic-factor nowcasts, Asia-native event lifecycle objects, and asia_transmission donating with failure memory (Asia directive 2026-10-05 PARTS XV, XVII, XVIII; audit 2026-10-06 rows 22, 36, 38-42, package P5)",
+   "domain": "U",
+   "phase": 2,
+   "status": "PARTIAL",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/macro_state_engine.py:1305 LATENT_SPECS -- the four datasets, every declared input with its axis binding or the package that delivers it",
+    "desks/mt5/research/macro_state_engine.py:1687 nowcast -- one-factor state-space model: PCA loadings shrunk to the declared sign, Kalman filter, per-input news contributions, equal-weight z and PCA baselines",
+    "desks/mt5/research/macro_state_engine.py:1805 build_vintages -- one vintage per release date, re-estimated on the inputs knowable then, appended to data/latent/<dataset>.vintages.jsonl with the universal sensor contract field names",
+    "desks/mt5/research/macro_state_engine.py:1938 axis_doc_latent -- data/axes/latent_<id>.json, read unchanged by alpha_dsl.FieldCatalogue",
+    "desks/mt5/research/macro_state_engine.py:1996 allocation_intel_latent -- reports/LATENT_ALLOCATION_INTEL.json",
+    "desks/mt5/research/macro_state_engine.py:2236 latent_cells -- exogenous_conditioner cells screened, deflated, donated; regime children placebo-gated; every look charged (null passes to data/null_pass_trials.jsonl)",
+    "desks/mt5/research/macro_state_engine.py:2335 build_asia_events -- Asia event objects and the stage-change ledger data/latent/asia_events.jsonl",
+    "libs/regime/event_state.py:352 ASIA_EVENT_RULES -- CFETS fix, LPR, NBS PMI, SHFE weekly stocks, KR 10/20-day exports, KOSPI200 expiry, gotobi",
+    "libs/regime/event_state.py:549 event_lifecycle -- announcement, expectation, release, surprise, revision, decay",
+    "libs/regime/event_state.py:152 relevant -- asset-scoped rows are never global",
+    "desks/mt5/research/state_vector_build.py:257 _asia_rows -- Asia rows join the PRE_EVENT..NORMALIZATION lifecycle per symbol",
+    "desks/mt5/research/state_vector_build.py:492 latent_hints_for -- latent states merged onto the state vector conditioning block",
+    "desks/mt5/research/asia_transmission.py:297 failure_memory -- every chain measurement appended to data/asia_transmission_edges.jsonl and read back",
+    "desks/mt5/research/batteries.py:248 asia_transmission runs with --propose",
+    "desks/mt5/tests/test_asia_latent_datasets.py"
+   ],
+   "scheduled_by": "hourly_cycle:macro_state_engine, hourly_cycle:state_vector, hourly_cycle:organ_battery",
+   "artifact": "desks/mt5/data/latent/latent_cn_industrial.vintages.jsonl + desks/mt5/data/axes/latent_asia_funding.json + desks/mt5/reports/LATENT_ALLOCATION_INTEL.json + desks/mt5/data/latent/asia_events.json",
+   "consumer": "libs/research/alpha_dsl.py FieldCatalogue (axis door); mt5desk/family_exogenous_conditioner.py and the alt: regime modifier in mt5desk/cell_modifiers.py (lake series); desks/mt5/research/state_vector_build.py world_conditioning and event_state -> data/state_vector.json -> pf_allocator; proposer_common.donate -> miner_candidate_compiler",
+   "landed": [
+    "2026-10-06 branch claude/asia-latent-datasets: built and tested on fixtures in the axis-door format; on this host's own data/axes/bis.json the funding state reconstructs 502 vintages over two years"
+   ],
+   "gap": "Runtime yield UNMEASURED until the trading box runs the macro_state_engine leg. Inputs: China industrial has 4 bound hard inputs (FIRMS needs FIRMS_MAP_KEY; MOT port terms to_confirm) and 12 NOT_YET_COLLECTED (packages P2-P4); physical gold has SGE premium BLOCKED_ON_TERMS (to_confirm) and India imports, 8 not collected; Asia export has 7 bound (KR exports, Busan, KR MOF TEU needs DATA_GO_KR_KEY, SingStat, PortWatch Busan/Singapore), 5 not collected; Asia funding has only the two BIS policy differentials, 8 not collected (SHIBOR/DR007, CFETS fix surprise, HIBOR, BOJ/JGB, TFX). CFETS/LPR/PMI/SHFE/expiry/gotobi events have no collected sensor, so their surprise stays UNMEASURED. state_admission's event labeller still reads only the ForexFactory calendar.",
+   "next_step": "Bind each NOT_YET_COLLECTED input's axis in LATENT_SPECS as packages P1-P4/P6 publish it; bind the CFETS fix-surprise and SHFE inventory series as event sensors; extend state_admission's event labeller to asia_schedule rows; read the first box run's MACRO_STATE_ENGINE.json latent_datasets block"
+  },
+  {
+   "id": "ALT1",
+   "item": "The public alternative-data proxies (alt_proxies leg): every keyless or free-key source behind a fail-closed terms gate, each terms-blocked source carried by a lawful substitute that counts as COVERED only on a measured correlation >= 0.5 against the original with n reported (#152 law), else a named UNVERIFIED state, and the pass's report declared as the leg's artifact.",
+   "domain": "U",
+   "phase": "U",
+   "status": "PARTIAL",
+   "gap": "Built and wired, but two parts are not cashed. (1) LIVE YIELD UNMEASURED: no source has returned real data on the trading box yet (fetchers built against fixtures; keys/config ids pending on the box). (2) SUBSTITUTE COVERAGE 0 of 12: every terms-blocked source has only UNVERIFIED candidates (no substitute-vs-original correlation measured, SUBSTITUTE_VS_ORIGINAL empty), and za_statssa_retail is itself BLOCKED_ON_TERMS (terms read only on a mirror). Audit of PR #182, 2026-10-06.",
+   "next_step": "Box: run the leg with DATA_GOV_IN_KEY / ALT_DGI_IIP_RESOURCE and the other keys to measure live yield; align each blocked original's public monthly outputs with its candidate and record corr + n in SUBSTITUTE_VS_ORIGINAL; read the Stats SA notice on a statssa.gov.za page before confirming za_statssa_retail.",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:alt_proxies",
+   "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+   "evidence": [
+    "desks/mt5/research/hourly_cycle.py:5127 -- the leg (the alt_proxies producer, --once --budget-s 300)",
+    "desks/mt5/research/alt_proxies.py:4342 -- run(): one pass over every source; a to_confirm or refused source is never fetched",
+    "desks/mt5/research/alt_proxies.py:4428 -- the report written to desks/mt5/reports/ALT_PROXIES.json (Paths.report)",
+    "desks/mt5/research/alt_proxies.py:3170 -- status_of(): DEAD, BLOCKED+SUBSTITUTE (measured corr >= 0.5 only), BLOCKED_NO_SUBSTITUTE:UNVERIFIED, BLOCKED_ON_TERMS, BLOCKED_ON_KEY, UNCONFIGURED or UNMEASURED_LIVE_YIELD, one named state per source",
+    "desks/mt5/research/alt_proxies.py:3002 -- SUBSTITUTED_BY: candidate substitutes for the twelve terms-blocked sources; none counts until SUBSTITUTE_VS_ORIGINAL (line 3026, empty) records corr >= 0.5 with n; substitute_check (line 3042) applies the law",
+    "desks/mt5/research/alt_proxies.py:2699 -- TERMS_EVIDENCE: a verbatim terms quote and URL for every confirmed source, credit lines carried into the axis files and roster rows",
+    "libs/research/layers.py:266 -- layer: information",
+    "LIVE YIELD UNMEASURED: the fetchers were built against fixtures because the authoring container cannot reach the hosts; the report says so in live_yield until the box runs the leg with its keys"
+   ],
+   "consumer": "desks/mt5/data/digests/asia_alt_data_digest.json (written by libs/research/asia_alt_digest.py, section alt_proxies, on every non-dry pass) and the reviewer; the same pass writes the axis files, lake series and ALT_PROXIES_ALLOCATION_INTEL.json beside it",
+   "tests": [
+    "tests/test_alt_proxies.py",
+    "tests/test_alt_proxies_substitutes.py"
+   ]
+  },
+  {
    "id": "ASIA_P2",
    "item": "China exchange positioning, inventory and curves (directive 2026-10-05 PART II.B/C; audit asia_directive_diff_2026-10-06 rows 11-16): SHFE/INE member rankings, warehouse receipts and weekly inventory, DCE/CZCE/GFEX ranks and quotes, CFFEX index/bond futures ranks, parsed into top-5/20 concentration, top-20 net, state-broker net, HHI, curve slope/roll/curvature, with change, acceleration, seasonal surprise and four divergence scores, minted on mapped MT5 instruments through the free-stack door with every cell charged",
    "domain": "U",

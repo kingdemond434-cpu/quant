@@ -1,25 +1,28 @@
 {
- "signed_utc": "2026-10-04T21:09:49.553374+00:00",
+ "signed_utc": "2026-10-13T16:50:25.269944+00:00",
  "signed_by": "principal",
  "files": {
-  "desks/mt5/scripts/external_gauntlet.py": "d0919bfc921dac2c",
+  "desks/mt5/scripts/external_gauntlet.py": "f56bc72fc5532a67",
   "desks/mt5/research/universal_gate.py": "2923194e016d27ee",
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
   "desks/mt5/research/gate_policy.py": "a01bf170b1b214ec",
   "desks/mt5/policy/gate_spec.yaml": "cd7e57ea9c3d9182",
   "desks/mt5/research/heat_policy.py": "b31c396980f9971e",
-  "desks/mt5/research/promoter.py": "86abbd9aba365860",
+  "desks/mt5/research/promoter.py": "bb9c0e744bad615f",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "0ce1dd51f98b6c23",
-  "libs/portfolio/allocator_proof.py": "09f8f0b9dff5239a",
+  "libs/ops/live_ledger_migration.py": "74ef5609d1ce37a4",
+  "scripts/migrate_live_ledger_view.py": "87cf8fced3671929",
+  "libs/ops/live_ledger_view.py": "5cc676fb56625f2a",
+  "libs/portfolio/allocator_proof.py": "03132b884fdd3c78",
   "libs/portfolio/rails.py": "7a678df5ceb7a4b4",
   "libs/portfolio/capital_modifiers.py": "f73e125559423ec0",
   "libs/validation/redteam.py": "bf1c019bfeee360e",
-  "libs/validation/replay2.py": "81abc1b46a04b694",
+  "libs/validation/replay2.py": "a002827611ea8079",
   "libs/validation/calibration.py": "ccd77ae2a28a7fbd",
   "libs/regime/state_admission.py": "1fc3e4878041db7a",
   "scripts/check_growth_governance.py": "0ea2336e08cd14a9",
   "scripts/check_heat_floor_wiring.py": "e5b3ff5a58848e00",
-  "scripts/check_immutable_evaluator.py": "baa4c6b46cb2f3e5",
+  "scripts/check_immutable_evaluator.py": "19c5c5d23cfec184",
   "scripts/run_deadman_switch.py": "799db26dadc9c8e3"
  },
  "rule": "these files judge hypotheses; a change must arrive with a re-signed manifest -- research organs may change the hypothesis, never the judge",
@@ -1381,6 +1384,1083 @@
    "half": 48,
    "half_sha": "1087b0ac1341e3d5",
    "mode": "rows"
+  },
+  "desks/mt5/data/live_ledger_corrections.jsonl": {
+   "records": 152,
+   "prefix_sha": "c54f08a049672303",
+   "half": 76,
+   "half_sha": "91ab311060d43dcc",
+   "mode": "lines",
+   "host": "vmi3571445",
+   "ruler": "2026-09-24/pass-stamps-excluded",
+   "rows": [
+    "d3e728e86b7e",
+    "e190abb90938",
+    "b2a98593f32b",
+    "92dcd39184c2",
+    "972ea170de21",
+    "0d649605e822",
+    "4bf75830127f",
+    "004d8d2a8999",
+    "cd31bd102df1",
+    "f555897407d2",
+    "c910538bcf7a",
+    "0728686598d4",
+    "009a969b2686",
+    "479b407341c3",
+    "23a6c45cf8bb",
+    "895fd644b6ce",
+    "564360d2333c",
+    "5d0a6317a461",
+    "98bfe22e9beb",
+    "4b1621d829e0",
+    "c172cc8fb2be",
+    "38cb606b3a88",
+    "559307922917",
+    "a5afa9120b30",
+    "e77b2026627e",
+    "570448193f65",
+    "62f9cdc52164",
+    "8540778db389",
+    "dfd61556e4fc",
+    "b07a94268113",
+    "45ac113443df",
+    "fcbde7e1d3e9",
+    "8cdd33c6c693",
+    "bde653277d98",
+    "772794127287",
+    "9cbbe64c3227",
+    "5bb9c045cc4c",
+    "4bbfa2f3e2c6",
+    "f21971369074",
+    "c70e79379629",
+    "d26296bba367",
+    "5b633fba062b",
+    "e2c0fa690e5f",
+    "c11d76d2c65c",
+    "8938a64e704f",
+    "3220a801f621",
+    "03206f31ebce",
+    "e0ed6ce766e3",
+    "84b4bff8fe61",
+    "98833f2f5cab",
+    "abeec6f9f710",
+    "43d5d34274df",
+    "5a19376bd484",
+    "24a03a8a5ae3",
+    "8f17efa44176",
+    "58bae663c984",
+    "32f3b4ac21f7",
+    "2f6a8c64b9b6",
+    "bfefd6f2d2a8",
+    "55909eead515",
+    "d277b4be448f",
+    "21ca2bed42b4",
+    "efbc99f2297f",
+    "266492eeedd6",
+    "f2b59411f695",
+    "4f7855277d7c",
+    "29c18fdaf96e",
+    "974f0a5869b2",
+    "7dac48e0df0f",
+    "d47743264235",
+    "a7c7342743d3",
+    "87b127b14507",
+    "7c26ff632c16",
+    "058995885b10",
+    "9cfb293b3279",
+    "f40c055ad81b",
+    "1b0a3399b0a0",
+    "149c8b2a471b",
+    "2843941a545c",
+    "88639cf1399a",
+    "a1483f00f7c5",
+    "8d55ade8b527",
+    "0250ff798042",
+    "aee59cbd946e",
+    "ae52fce1cf9a",
+    "62a5178ed3e4",
+    "c05ad851cde4",
+    "da6aac0635ee",
+    "afec8344ad8b",
+    "7d1d6fcd7447",
+    "a8042e4cc6b6",
+    "727178b40caa",
+    "b3f86b2a10e1",
+    "abdf7574a9e4",
+    "136c037525db",
+    "52ae16e9344e",
+    "55c09ab93855",
+    "85e8fbedf6ba",
+    "3226ac746725",
+    "3b58cd4bc744",
+    "8558bcbb6dee",
+    "fb5fb1866820",
+    "19f494d02731",
+    "14b846198652",
+    "3744cf495a6f",
+    "3ed4c0b99887",
+    "6bcf380fa864",
+    "95e660e3c71e",
+    "83e0012d72db",
+    "3974a045b4cd",
+    "c9b8b9f1c69a",
+    "f1b0fc9691bf",
+    "b2867ae3c6ec",
+    "bd5e29fedea2",
+    "ee3974336ad1",
+    "12b7c919f342",
+    "ce8cc499a77f",
+    "931c19a7e1ca",
+    "551ea2065f58",
+    "690bd0e3240f",
+    "bb86c8da8767",
+    "bde3d5dbbb9d",
+    "185efb1240d5",
+    "f55cc3d03ee7",
+    "54a726c2562e",
+    "854956c116e5",
+    "4ce4bf45b291",
+    "3a421be02087",
+    "f154c0c5a60d",
+    "69ca139a3819",
+    "c1b760100a8a",
+    "9291918fd023",
+    "fbb89c34b33f",
+    "d3550f4006d3",
+    "733657d9231a",
+    "220089bf5216",
+    "825592143fb3",
+    "e8f73c56ada7",
+    "e2afbd52b557",
+    "ec7f5dbae111",
+    "2be0f1bf9368",
+    "968705aee4ec",
+    "e75a0a51045e",
+    "ca7b2bce4591",
+    "5ad6173e7ed6",
+    "128865d07500",
+    "8c2018df5553",
+    "4cbfc3349813",
+    "355bd74eb34c",
+    "afc80721937f",
+    "6c07c1907233",
+    "7e10bc5d50b3"
+   ],
+   "fields": [
+    {
+     "schema_version": "6b86b273",
+     "raw_prefix_records": "8e612bd1",
+     "raw_prefix_sha256": "e088fc3a",
+     "projection_order": "6276f172"
+    },
+    {
+     "deal": "cefdeb4a",
+     "before_sha256": "cec068a0",
+     "after_sha256": "b09e83ee",
+     "set": "97ee4bb4"
+    },
+    {
+     "deal": "41c5e974",
+     "before_sha256": "ee0c8a18",
+     "after_sha256": "fe1ece68",
+     "set": "b740d763"
+    },
+    {
+     "deal": "821aa93a",
+     "before_sha256": "89212101",
+     "after_sha256": "de60555f",
+     "set": "d9aba7f9"
+    },
+    {
+     "deal": "68c2ecd5",
+     "before_sha256": "0ab5c1b9",
+     "after_sha256": "05cef83a",
+     "set": "417b938c"
+    },
+    {
+     "deal": "34a837cc",
+     "before_sha256": "53afea48",
+     "after_sha256": "fca0e0b1",
+     "set": "250a6b5a"
+    },
+    {
+     "deal": "74352ea6",
+     "before_sha256": "5a5a6ecb",
+     "after_sha256": "7ca50fcd",
+     "set": "08acceb3"
+    },
+    {
+     "deal": "073391c6",
+     "before_sha256": "45d12808",
+     "after_sha256": "79ce7c5b",
+     "set": "2d7fe359"
+    },
+    {
+     "deal": "6557562f",
+     "before_sha256": "465fdf52",
+     "after_sha256": "6d3f5a61",
+     "set": "bcefd92f"
+    },
+    {
+     "deal": "6379e996",
+     "before_sha256": "d1de8d2b",
+     "after_sha256": "598f8c33",
+     "set": "737c4868"
+    },
+    {
+     "deal": "9f6f0af0",
+     "before_sha256": "e201abcf",
+     "after_sha256": "4382d4a3",
+     "set": "5032fd4d"
+    },
+    {
+     "deal": "6adf80bf",
+     "before_sha256": "46133844",
+     "after_sha256": "9e52e27f",
+     "set": "a650b085"
+    },
+    {
+     "deal": "56ac3606",
+     "before_sha256": "0e181c7f",
+     "after_sha256": "b02f2b7c",
+     "set": "a8e4c658"
+    },
+    {
+     "deal": "824e55b3",
+     "before_sha256": "87061592",
+     "after_sha256": "f8704aae",
+     "set": "e3780e25"
+    },
+    {
+     "deal": "26dd5458",
+     "before_sha256": "64e9e6a7",
+     "after_sha256": "a2e118df",
+     "set": "47346de3"
+    },
+    {
+     "deal": "07b1bdfc",
+     "before_sha256": "ded6d9c0",
+     "after_sha256": "6f8649e8",
+     "set": "c22f84c2"
+    },
+    {
+     "deal": "cc471559",
+     "before_sha256": "afdb4adb",
+     "after_sha256": "c8ad6def",
+     "set": "36ec2e3e"
+    },
+    {
+     "deal": "313fbe75",
+     "before_sha256": "42455c35",
+     "after_sha256": "63d49008",
+     "set": "c8c51db8"
+    },
+    {
+     "deal": "066f320c",
+     "before_sha256": "fce779d4",
+     "after_sha256": "b4d41a3d",
+     "set": "f502dcdd"
+    },
+    {
+     "deal": "60b27c4d",
+     "before_sha256": "cc58f244",
+     "after_sha256": "54549f45",
+     "set": "153ed941"
+    },
+    {
+     "deal": "eb4fceb5",
+     "before_sha256": "7580f7b8",
+     "after_sha256": "56ce59ab",
+     "set": "a924e626"
+    },
+    {
+     "deal": "09f5230d",
+     "before_sha256": "93c9dca4",
+     "after_sha256": "873a58c2",
+     "set": "4963a593"
+    },
+    {
+     "deal": "0587ab41",
+     "before_sha256": "c9be9455",
+     "after_sha256": "6f148b86",
+     "set": "67de982d"
+    },
+    {
+     "deal": "33def2a6",
+     "before_sha256": "878ccb24",
+     "after_sha256": "7630da41",
+     "set": "9c988fd7"
+    },
+    {
+     "deal": "7aadaaf8",
+     "before_sha256": "cad3d635",
+     "after_sha256": "300c1f6f",
+     "set": "8308209e"
+    },
+    {
+     "deal": "500c9000",
+     "before_sha256": "3a757b73",
+     "after_sha256": "aa542e0d",
+     "set": "cec215af"
+    },
+    {
+     "deal": "9c785bb0",
+     "before_sha256": "2398e9ad",
+     "after_sha256": "a13497a8",
+     "set": "d1568a38"
+    },
+    {
+     "deal": "cd9ce2cb",
+     "before_sha256": "1b4a916e",
+     "after_sha256": "d9d6c03a",
+     "set": "f663a1f1"
+    },
+    {
+     "deal": "45682184",
+     "before_sha256": "86703b96",
+     "after_sha256": "3d90b895",
+     "set": "96dd9f13"
+    },
+    {
+     "deal": "2aecf502",
+     "before_sha256": "14103d37",
+     "after_sha256": "cc0c172c",
+     "set": "00f5436d"
+    },
+    {
+     "deal": "94abab31",
+     "before_sha256": "bdb6d5c8",
+     "after_sha256": "1be2d190",
+     "set": "4cafdaa2"
+    },
+    {
+     "deal": "0d73db85",
+     "before_sha256": "067b3472",
+     "after_sha256": "b97dd8f2",
+     "set": "8d08c368"
+    },
+    {
+     "deal": "efb1ee5b",
+     "before_sha256": "4c31c5cc",
+     "after_sha256": "54be0b6e",
+     "set": "73085e1a"
+    },
+    {
+     "deal": "b3553c08",
+     "before_sha256": "8faca546",
+     "after_sha256": "c1b2141d",
+     "set": "16dc0f08"
+    },
+    {
+     "deal": "bfc4950d",
+     "before_sha256": "5a7b3f40",
+     "after_sha256": "6113d28f",
+     "set": "23b03edb"
+    },
+    {
+     "deal": "f6067306",
+     "before_sha256": "0d1b742a",
+     "after_sha256": "7717f153",
+     "set": "80717de1"
+    },
+    {
+     "deal": "4f8eae45",
+     "before_sha256": "f353b88e",
+     "after_sha256": "5e57104a",
+     "set": "63c8e5a9"
+    },
+    {
+     "deal": "fb374baa",
+     "before_sha256": "d12f995b",
+     "after_sha256": "bd0732e6",
+     "set": "6b96a9c5"
+    },
+    {
+     "deal": "96f0aa6d",
+     "before_sha256": "30719829",
+     "after_sha256": "a4052a6a",
+     "set": "e5b17430"
+    },
+    {
+     "deal": "3cc27463",
+     "before_sha256": "3b7a8aa4",
+     "after_sha256": "ea49b0a2",
+     "set": "08739a9d"
+    },
+    {
+     "deal": "91d7a297",
+     "before_sha256": "4374eae4",
+     "after_sha256": "609e6bc9",
+     "set": "394e157f"
+    },
+    {
+     "deal": "366aa911",
+     "before_sha256": "acfc8070",
+     "after_sha256": "35ffb98b",
+     "set": "13c3d563"
+    },
+    {
+     "deal": "a5b8f50c",
+     "before_sha256": "de8a6c06",
+     "after_sha256": "1eacbce6",
+     "set": "0cdae333"
+    },
+    {
+     "deal": "1c62ec2e",
+     "before_sha256": "a430ba66",
+     "after_sha256": "9b0cac7c",
+     "set": "031b1262"
+    },
+    {
+     "deal": "fe309391",
+     "before_sha256": "f6238277",
+     "after_sha256": "80595813",
+     "set": "90c57b33"
+    },
+    {
+     "deal": "b08ba35f",
+     "before_sha256": "846ee404",
+     "after_sha256": "2e353e87",
+     "set": "1430b8e1"
+    },
+    {
+     "deal": "2526c2b7",
+     "before_sha256": "e43c8b91",
+     "after_sha256": "85b962f7",
+     "set": "4ae84d5a"
+    },
+    {
+     "deal": "69a65dad",
+     "before_sha256": "8be035bb",
+     "after_sha256": "ebda9102",
+     "set": "ad54c1f0"
+    },
+    {
+     "deal": "ffd4aef7",
+     "before_sha256": "dc5b5bb3",
+     "after_sha256": "b54e158f",
+     "set": "2de5e0de"
+    },
+    {
+     "deal": "374d883d",
+     "before_sha256": "a8b2c8e0",
+     "after_sha256": "5ad81e9b",
+     "set": "a0adf71e"
+    },
+    {
+     "deal": "e6d98a95",
+     "before_sha256": "fef1abf4",
+     "after_sha256": "e3d96b44",
+     "set": "b168c34d"
+    },
+    {
+     "deal": "0ba881e1",
+     "before_sha256": "cfb5bd80",
+     "after_sha256": "133676c2",
+     "set": "cb9d41e6"
+    },
+    {
+     "deal": "9d9bdcc9",
+     "before_sha256": "91e3ef12",
+     "after_sha256": "b18ad5ff",
+     "set": "8b6d5465"
+    },
+    {
+     "deal": "bb873576",
+     "before_sha256": "278f6333",
+     "after_sha256": "41daf7cd",
+     "set": "b6b44978"
+    },
+    {
+     "deal": "1c0c32ff",
+     "before_sha256": "f5224feb",
+     "after_sha256": "3f2c5cc5",
+     "set": "0978c43a"
+    },
+    {
+     "deal": "7fa8fecf",
+     "before_sha256": "ad8b6792",
+     "after_sha256": "168bcdf0",
+     "set": "ce259f06"
+    },
+    {
+     "deal": "f865a1aa",
+     "before_sha256": "e35d5ecb",
+     "after_sha256": "c9008520",
+     "set": "a090863e"
+    },
+    {
+     "deal": "3b637348",
+     "before_sha256": "863e8230",
+     "after_sha256": "2a88c0c2",
+     "set": "35b28ae5"
+    },
+    {
+     "deal": "05753100",
+     "before_sha256": "8a2d908c",
+     "after_sha256": "1223f5eb",
+     "set": "de0cb325"
+    },
+    {
+     "deal": "2eecb12b",
+     "before_sha256": "d6f361af",
+     "after_sha256": "b8e789f7",
+     "set": "a13fe0f1"
+    },
+    {
+     "deal": "89e5231b",
+     "before_sha256": "8ed18ad6",
+     "after_sha256": "17a49cee",
+     "set": "863f4813"
+    },
+    {
+     "deal": "7213de6f",
+     "before_sha256": "951c3c7f",
+     "after_sha256": "05134eb9",
+     "set": "86043117"
+    },
+    {
+     "deal": "95ae3f9b",
+     "before_sha256": "cd03ba50",
+     "after_sha256": "8aa74d1c",
+     "set": "66b69d81"
+    },
+    {
+     "deal": "804bd157",
+     "before_sha256": "3a7e92b5",
+     "after_sha256": "68e50391",
+     "set": "ced93f31"
+    },
+    {
+     "deal": "1e56e782",
+     "before_sha256": "483d2c1f",
+     "after_sha256": "2f3d242b",
+     "set": "41c5b344"
+    },
+    {
+     "deal": "75685ff7",
+     "before_sha256": "d81bcd0b",
+     "after_sha256": "44aa94c4",
+     "set": "9719eb7e"
+    },
+    {
+     "deal": "a27c8891",
+     "before_sha256": "d6e4ca3a",
+     "after_sha256": "d5844af3",
+     "set": "f69b7459"
+    },
+    {
+     "deal": "508dddf6",
+     "before_sha256": "7a25bb80",
+     "after_sha256": "5683e5b2",
+     "set": "ef639a3f"
+    },
+    {
+     "deal": "1e8041ed",
+     "before_sha256": "af038cd4",
+     "after_sha256": "c26f5de2",
+     "set": "53b42803"
+    },
+    {
+     "deal": "a339bb66",
+     "before_sha256": "d150a22d",
+     "after_sha256": "3d8da72f",
+     "set": "29de969e"
+    },
+    {
+     "deal": "0e3695ed",
+     "before_sha256": "f4ccc1f0",
+     "after_sha256": "002c7e82",
+     "set": "f6864a5b"
+    },
+    {
+     "deal": "b345a00e",
+     "before_sha256": "7b2a8926",
+     "after_sha256": "78530bb9",
+     "set": "5cd78cb7"
+    },
+    {
+     "deal": "8e247c00",
+     "before_sha256": "6c350b73",
+     "after_sha256": "70d8f346",
+     "set": "4a6cd256"
+    },
+    {
+     "deal": "0c43593f",
+     "before_sha256": "7b1f87ef",
+     "after_sha256": "5d0dba31",
+     "set": "5ce6c840"
+    },
+    {
+     "deal": "42ac5206",
+     "before_sha256": "941b99e7",
+     "after_sha256": "435f6a61",
+     "set": "38989fc9"
+    },
+    {
+     "deal": "54ab584f",
+     "before_sha256": "3dd7fc56",
+     "after_sha256": "3c131564",
+     "set": "ea721c7e"
+    },
+    {
+     "deal": "d00e8095",
+     "before_sha256": "57367c24",
+     "after_sha256": "32ab552a",
+     "set": "5270d738"
+    },
+    {
+     "deal": "7b3a3ee8",
+     "before_sha256": "f492909e",
+     "after_sha256": "db1bf15d",
+     "set": "0af3c67b"
+    },
+    {
+     "deal": "531e1f2d",
+     "before_sha256": "bb9afe14",
+     "after_sha256": "436e4ff0",
+     "set": "533944c4"
+    },
+    {
+     "deal": "cf99856a",
+     "before_sha256": "a7bcc43d",
+     "after_sha256": "121cd865",
+     "set": "9a8aff4f"
+    },
+    {
+     "deal": "42dfc474",
+     "before_sha256": "2be85f70",
+     "after_sha256": "acc7d003",
+     "set": "f3bf8a96"
+    },
+    {
+     "deal": "e68a0ea6",
+     "before_sha256": "bc4ec8a9",
+     "after_sha256": "c1341d43",
+     "set": "5b301c0b"
+    },
+    {
+     "deal": "28157592",
+     "before_sha256": "0cabf3da",
+     "after_sha256": "e628ae0a",
+     "set": "cd170203"
+    },
+    {
+     "deal": "174d9295",
+     "before_sha256": "ba0c4bc6",
+     "after_sha256": "d1a39021",
+     "set": "f32a42d4"
+    },
+    {
+     "deal": "eb7684cc",
+     "before_sha256": "0910f43e",
+     "after_sha256": "5ce9b29c",
+     "set": "ada3e115"
+    },
+    {
+     "deal": "7f32c1e8",
+     "before_sha256": "84a64b66",
+     "after_sha256": "accdfdbb",
+     "set": "3a09fbac"
+    },
+    {
+     "deal": "46c9e2c0",
+     "before_sha256": "0034cee5",
+     "after_sha256": "058f41f5",
+     "set": "475f681a"
+    },
+    {
+     "deal": "2ba65ae2",
+     "before_sha256": "54c6c08e",
+     "after_sha256": "8bf7248a",
+     "set": "146520b8"
+    },
+    {
+     "deal": "d7586b08",
+     "before_sha256": "9395767b",
+     "after_sha256": "33854084",
+     "set": "7fc19a8c"
+    },
+    {
+     "deal": "c9877914",
+     "before_sha256": "ca7fc951",
+     "after_sha256": "b78957d5",
+     "set": "94bf92bd"
+    },
+    {
+     "deal": "bd016b33",
+     "before_sha256": "f38b1b20",
+     "after_sha256": "92411d99",
+     "set": "31a13252"
+    },
+    {
+     "deal": "58c29b32",
+     "before_sha256": "30d62e98",
+     "after_sha256": "71439a96",
+     "set": "31a13252"
+    },
+    {
+     "deal": "36ff7747",
+     "before_sha256": "8cb22744",
+     "after_sha256": "9f8784a2",
+     "set": "4ad71003"
+    },
+    {
+     "deal": "37c8aaec",
+     "before_sha256": "43b57de2",
+     "after_sha256": "600b1f90",
+     "set": "c32bfa47"
+    },
+    {
+     "deal": "b495da24",
+     "before_sha256": "84180f8e",
+     "after_sha256": "7a917f1c",
+     "set": "1e2bf8ce"
+    },
+    {
+     "deal": "932be606",
+     "before_sha256": "9c9bbfcf",
+     "after_sha256": "34caeb5e",
+     "set": "1e2bf8ce"
+    },
+    {
+     "deal": "050867bf",
+     "before_sha256": "25938ab1",
+     "after_sha256": "7c490e5d",
+     "set": "84422fa6"
+    },
+    {
+     "deal": "be16621d",
+     "before_sha256": "bf5084e0",
+     "after_sha256": "34494f79",
+     "set": "665cd72f"
+    },
+    {
+     "deal": "eedb0140",
+     "before_sha256": "d572b0bb",
+     "after_sha256": "b8739970",
+     "set": "45eac221"
+    },
+    {
+     "deal": "b3181581",
+     "before_sha256": "51c1df93",
+     "after_sha256": "a7632c1f",
+     "set": "45eac221"
+    },
+    {
+     "deal": "42aca1d3",
+     "before_sha256": "72bb25bf",
+     "after_sha256": "62abb6f3",
+     "set": "55d2e484"
+    },
+    {
+     "deal": "468df178",
+     "before_sha256": "281c8d53",
+     "after_sha256": "f3cd37b1",
+     "set": "b44b9fbe"
+    },
+    {
+     "deal": "78fb2d3b",
+     "before_sha256": "a2b2152a",
+     "after_sha256": "6eb48f4c",
+     "set": "b44b9fbe"
+    },
+    {
+     "deal": "7659fa04",
+     "before_sha256": "2f01ea58",
+     "after_sha256": "390e59fb",
+     "set": "34a2f094"
+    },
+    {
+     "deal": "11bb3c5a",
+     "before_sha256": "9d0e0af7",
+     "after_sha256": "c334f03a",
+     "set": "4935b512"
+    },
+    {
+     "deal": "ee926959",
+     "before_sha256": "f7a54f9e",
+     "after_sha256": "074459f7",
+     "set": "4935b512"
+    },
+    {
+     "deal": "867bf1de",
+     "before_sha256": "b42a2cde",
+     "after_sha256": "8afece9b",
+     "set": "4935b512"
+    },
+    {
+     "deal": "ea445b21",
+     "before_sha256": "dbf3654e",
+     "after_sha256": "e77be139",
+     "set": "604d0758"
+    },
+    {
+     "deal": "05095367",
+     "before_sha256": "a43da904",
+     "after_sha256": "7d283d97",
+     "set": "a38520fb"
+    },
+    {
+     "deal": "3c189cb8",
+     "before_sha256": "b3a37003",
+     "after_sha256": "dce352a3",
+     "set": "1234f4be"
+    },
+    {
+     "deal": "432f070f",
+     "before_sha256": "12767745",
+     "after_sha256": "b409e5aa",
+     "set": "05cfc4af"
+    },
+    {
+     "deal": "e832ddc8",
+     "before_sha256": "109003fd",
+     "after_sha256": "e5085c75",
+     "set": "de47301d"
+    },
+    {
+     "deal": "7cf6e6c3",
+     "before_sha256": "46ddd67f",
+     "after_sha256": "69c0258b",
+     "set": "07c12549"
+    },
+    {
+     "deal": "8cbd9a9c",
+     "before_sha256": "1b265463",
+     "after_sha256": "11d57578",
+     "set": "ca3e14d3"
+    },
+    {
+     "deal": "e9f00336",
+     "before_sha256": "eb5121c1",
+     "after_sha256": "2d225bb0",
+     "set": "7abd257b"
+    },
+    {
+     "deal": "2497d5e7",
+     "before_sha256": "488c652e",
+     "after_sha256": "93d0987c",
+     "set": "f66b6084"
+    },
+    {
+     "deal": "eda9538c",
+     "before_sha256": "68b531e1",
+     "after_sha256": "c2ea0759",
+     "set": "2c814bc6"
+    },
+    {
+     "deal": "147eda97",
+     "before_sha256": "29776228",
+     "after_sha256": "367346e5",
+     "set": "f00fb4a1"
+    },
+    {
+     "deal": "8eb1e0d7",
+     "before_sha256": "4423d5a7",
+     "after_sha256": "7e021880",
+     "set": "f00fb4a1"
+    },
+    {
+     "deal": "64b5d029",
+     "before_sha256": "7ade56f2",
+     "after_sha256": "18d0db9f",
+     "set": "1a2f432d"
+    },
+    {
+     "deal": "2a47e5e6",
+     "before_sha256": "149abd9b",
+     "after_sha256": "b74b926e",
+     "set": "0fd9fce1"
+    },
+    {
+     "deal": "a0fcc0d9",
+     "before_sha256": "cdacc310",
+     "after_sha256": "4091ef75",
+     "set": "f4fd43aa"
+    },
+    {
+     "deal": "16d83a43",
+     "before_sha256": "5ac06c44",
+     "after_sha256": "5dd7339e",
+     "set": "97aacb1f"
+    },
+    {
+     "deal": "67faa4b1",
+     "before_sha256": "ee77355c",
+     "after_sha256": "efc5c742",
+     "set": "3d4a8ba0"
+    },
+    {
+     "deal": "63dd639f",
+     "before_sha256": "69dfa921",
+     "after_sha256": "0aa8993e",
+     "set": "f83f529b"
+    },
+    {
+     "deal": "ed044814",
+     "before_sha256": "d19418cc",
+     "after_sha256": "f82d6639",
+     "set": "7141de24"
+    },
+    {
+     "deal": "0ad09601",
+     "before_sha256": "e35d4279",
+     "after_sha256": "415966ab",
+     "set": "81113312"
+    },
+    {
+     "deal": "0fe3c56a",
+     "before_sha256": "c51dabb5",
+     "after_sha256": "7c11fff1",
+     "set": "8b48805f"
+    },
+    {
+     "deal": "6e1e233e",
+     "before_sha256": "2a15f1b7",
+     "after_sha256": "50c3305c",
+     "set": "6dd1bdf5"
+    },
+    {
+     "deal": "bb198624",
+     "before_sha256": "621c181a",
+     "after_sha256": "c5e92b6d",
+     "set": "c1c37a5b"
+    },
+    {
+     "deal": "c0baa666",
+     "before_sha256": "ec5a0538",
+     "after_sha256": "1f76129c",
+     "set": "c68905d1"
+    },
+    {
+     "deal": "e69699f8",
+     "before_sha256": "bbd27429",
+     "after_sha256": "8ff6647a",
+     "set": "b9acf37f"
+    },
+    {
+     "deal": "f8487278",
+     "before_sha256": "d69749df",
+     "after_sha256": "659e6c56",
+     "set": "6a9f55e1"
+    },
+    {
+     "deal": "dba01388",
+     "before_sha256": "8e57e58a",
+     "after_sha256": "af869281",
+     "set": "52301833"
+    },
+    {
+     "deal": "e602ac90",
+     "before_sha256": "89f8da2c",
+     "after_sha256": "858aee73",
+     "set": "8e084d07"
+    },
+    {
+     "deal": "6cc2a9a4",
+     "before_sha256": "07b4ecd7",
+     "after_sha256": "dc2e1e3a",
+     "set": "a1d75a69"
+    },
+    {
+     "deal": "acab89f8",
+     "before_sha256": "1ba1a6cd",
+     "after_sha256": "449b20a2",
+     "set": "16e7f39e"
+    },
+    {
+     "deal": "32983f8c",
+     "before_sha256": "dcd112cf",
+     "after_sha256": "9b4d804a",
+     "set": "68cfe517"
+    },
+    {
+     "deal": "1b238b3c",
+     "before_sha256": "e491b1a2",
+     "after_sha256": "d2a7bfba",
+     "set": "8083bb99"
+    },
+    {
+     "deal": "5a4caef9",
+     "before_sha256": "f9faa769",
+     "after_sha256": "b57f2f5d",
+     "set": "fb458cc8"
+    },
+    {
+     "deal": "b355e9ec",
+     "before_sha256": "5a999e77",
+     "after_sha256": "e2dc4327",
+     "set": "fb458cc8"
+    },
+    {
+     "deal": "4dd44560",
+     "before_sha256": "12af2411",
+     "after_sha256": "f6caf26e",
+     "set": "f94c6fc1"
+    },
+    {
+     "deal": "5f3f1c9c",
+     "before_sha256": "33de4c90",
+     "after_sha256": "559771a5",
+     "set": "8df00fe7"
+    },
+    {
+     "deal": "d54e25aa",
+     "before_sha256": "8ff6d597",
+     "after_sha256": "94eca136",
+     "set": "e4f5b21b"
+    },
+    {
+     "deal": "25adb876",
+     "before_sha256": "72c38872",
+     "after_sha256": "becdaab4",
+     "set": "4f7a3509"
+    },
+    {
+     "deal": "d79b86fc",
+     "before_sha256": "ac328d29",
+     "after_sha256": "ec1776c6",
+     "set": "75448a85"
+    },
+    {
+     "deal": "e3d7c32e",
+     "before_sha256": "349be573",
+     "after_sha256": "a4b60f35",
+     "set": "441f577f"
+    },
+    {
+     "deal": "6d0d6153",
+     "before_sha256": "8a88b4da",
+     "after_sha256": "fc37e15c",
+     "set": "5becf0bb"
+    },
+    {
+     "deal": "90830f04",
+     "before_sha256": "3c97897d",
+     "after_sha256": "e3a65463",
+     "set": "b47b5197"
+    },
+    {
+     "deal": "7cc6ee51",
+     "before_sha256": "da2b8d9f",
+     "after_sha256": "222e4071",
+     "set": "3686aa74"
+    },
+    {
+     "deal": "cf011e3e",
+     "before_sha256": "24e734ea",
+     "after_sha256": "d6b9d103",
+     "set": "dcb8043f"
+    },
+    {
+     "deal": "4a3c2c30",
+     "before_sha256": "3cba363a",
+     "after_sha256": "52970a55",
+     "set": "c8ecce00"
+    }
+   ]
   }
  },
  "vintage": {
@@ -1391,5 +2471,28 @@
  },
  "records_sealed_utc": "2026-09-23T01:17:54.224533+00:00",
  "records_sealed_by": "tier1 W19 builder",
- "record_rule": "the ledgers, the live fills, the cost surface and the lineage chain are RECORDS: the sealed prefix may never change, only grow, and a measured cost surface may be rebuilt, never back-dated"
+ "record_rule": "the ledgers, the live fills, the cost surface and the lineage chain are RECORDS: the sealed prefix may never change, only grow, and a measured cost surface may be rebuilt, never back-dated",
+ "rotation_signers": {
+  "desks/mt5/research/universal_gate.py": "Codex, principal-authorized repair",
+  "desks/mt5/research/multiplicity.py": "Codex, principal-authorized repair",
+  "desks/mt5/research/gate_policy.py": "Codex, principal-authorized repair",
+  "desks/mt5/policy/gate_spec.yaml": "Codex, principal-authorized repair",
+  "desks/mt5/research/heat_policy.py": "Codex, principal-authorized repair",
+  "desks/mt5/mt5desk/gateway_config_fallback.py": "Codex, principal-authorized repair",
+  "libs/portfolio/rails.py": "Codex, principal-authorized repair",
+  "libs/portfolio/capital_modifiers.py": "Codex, principal-authorized repair",
+  "libs/validation/redteam.py": "Codex, principal-authorized repair",
+  "libs/validation/calibration.py": "Codex, principal-authorized repair",
+  "libs/regime/state_admission.py": "Codex, principal-authorized repair",
+  "scripts/check_growth_governance.py": "Codex, principal-authorized repair",
+  "scripts/check_heat_floor_wiring.py": "Codex, principal-authorized repair",
+  "scripts/run_deadman_switch.py": "Codex, principal-authorized repair",
+  "libs/validation/replay2.py": "Codex, principal-authorized repair",
+  "desks/mt5/research/promoter.py": "Codex, principal-authorized audited ledger reader repair",
+  "libs/ops/live_ledger_view.py": "Codex, principal-authorized audited ledger adoption handoff",
+  "libs/ops/live_ledger_migration.py": "Codex, principal-authorized audited ledger adoption handoff",
+  "scripts/migrate_live_ledger_view.py": "Codex, principal-authorized audited ledger adoption handoff",
+  "scripts/check_immutable_evaluator.py": "Codex, principal-authorized audited verification fixture declaration",
+  "desks/mt5/scripts/external_gauntlet.py": "Codex under principal instruction: maximise and repair build bottleneck canonically; policy and record seals preserved"
+ }
 }
