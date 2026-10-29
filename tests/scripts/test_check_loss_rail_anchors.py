@@ -91,3 +91,33 @@ def test_the_weekly_anchor_is_the_peak_not_the_day_start() -> None:
     assert blk["DAILY_LOSS"]["equity_trip_at"] == 412.91
     low = {**acct, "equity": 412.91}
     assert "DAILY_LOSS" in [c for c, _ in fd.evaluate(low, [], [], 568.77, now=NOW)]
+
+
+def _mixed(tmp_path: Path, key: str) -> tuple[Path, Path]:
+    acct = tmp_path / "acct.json"
+    acct.write_text(json.dumps({"login": 123, "server": fd.FUSION_LIVE_SERVER}))
+    led = tmp_path / "led.jsonl"
+    base = {"account_kind": "live", "server": fd.FUSION_LIVE_SERVER, "pl_quote": -1.0,
+            "time": NOW.isoformat()}
+    led.write_text(json.dumps({**base, "account": 123}) + "\n"
+                   + json.dumps({**base, "account_key": key}))
+    return led, acct
+
+
+def test_an_underivable_key_over_keyed_rows_is_unmeasured(tmp_path: Path, monkeypatch) -> None:
+    led, acct = _mixed(tmp_path, "sha256:aaaa")
+    monkeypatch.setattr(fd, "_declared_key", lambda login: None)
+    rows, why = fd.ledger_checked(led, acct)
+    assert rows is None and "UNMEASURED" in why
+
+
+def test_the_real_provenance_key_joins_keyed_rows(tmp_path: Path, monkeypatch) -> None:
+    from libs.ops import provenance
+    kf = tmp_path / "box.key"
+    kf.write_bytes(b"k" * 64)
+    monkeypatch.setenv(provenance.KEY_ENV, str(kf))
+    key = provenance.account_key(123, fd.FUSION_LIVE_SERVER, create=False)
+    assert key and key.startswith("sha256:")
+    led, acct = _mixed(tmp_path, key)
+    rows, _ = fd.ledger_checked(led, acct)
+    assert rows is not None and len(rows) == 2

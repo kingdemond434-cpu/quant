@@ -24,10 +24,14 @@ distinction is the whole design:
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent          # desks/mt5
+#: The repo root on sys.path so `libs.ops.provenance` (the ledger's account_key) imports.
+if str(BASE.parent.parent) not in sys.path:
+    sys.path.insert(0, str(BASE.parent.parent))
 STATE = BASE / "data" / "gateway_state.json"
 LEDGER = BASE / "data" / "live_ledger.jsonl"
 #: The intent ledger: the lot the desk's own sizer sent, per order ticket. For a pending stop the
@@ -222,6 +226,10 @@ def ledger_checked(path: Path | None = None,
             if i == len(body) - 1:
                 continue                          # a torn last line is a write in progress
             return None, f"{p.name} line {i + 1} does not parse; loss UNMEASURED"
+        if key is None and isinstance(r, dict) and r.get("server") == FUSION_LIVE_SERVER \
+                and "account" not in r and r.get("account_key"):
+            return None, ("account_key rows present but the declared key is underivable; "
+                          "loss UNMEASURED")
         if isinstance(r, dict) and r.get("account_kind") == "live" \
                 and r.get("server") == FUSION_LIVE_SERVER and (
                     r.get("account") == login
@@ -236,10 +244,6 @@ def _declared_key(login: int) -> str | None:
     login -- or None when it cannot be derived (no provenance, no box key). MEASURED 2026-10-29:
     every live row from 2026-10-23 on carries `account_key` and no raw `account`, so a filter on
     `account == login` alone read the whole trailing week as zero realised loss."""
-    import sys
-    root = BASE.parent.parent
-    if str(root) not in sys.path:
-        sys.path.insert(0, str(root))
     try:
         from libs.ops import provenance
         key = provenance.account_key(login, FUSION_LIVE_SERVER, create=False)
