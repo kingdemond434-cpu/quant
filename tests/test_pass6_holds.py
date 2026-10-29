@@ -164,7 +164,7 @@ def test_asia_collector_registry_rows_on_held_routes_make_no_request(
     included."""
     import asia_collector as ac
     monkeypatch.setattr(urllib.request, "urlopen", _no_network)
-    monkeypatch.setattr(ac, "fenced_urlopen", _no_network)
+    monkeypatch.setattr(ac, "polite_urlopen", _no_network)
     monkeypatch.setattr(ac, "_robots_allows", _no_network)
     doc = json.loads((DESK / "data" / "asia_sources.json").read_text("utf-8"))
     row = next(r for r in doc["sources"] if r["id"] == rid)
@@ -357,7 +357,7 @@ def test_asia_collector_keeps_the_pre_hold_record_on_every_held_pass(
     later held passes still carry the past conversion."""
     import asia_collector as ac
     monkeypatch.setattr(urllib.request, "urlopen", _no_network)
-    monkeypatch.setattr(ac, "fenced_urlopen", _no_network)
+    monkeypatch.setattr(ac, "polite_urlopen", _no_network)
     monkeypatch.setattr(ac, "_robots_allows", _no_network)
     reg, state, out = tmp_path / "reg.json", tmp_path / "state.json", tmp_path / "out.json"
     reg.write_text(json.dumps({"sources": [{"id": "comex_warehouse", "url": _GOLD,
@@ -407,7 +407,7 @@ def test_cn_exchange_asia_rows_resolve_to_the_held_row_and_make_no_request(
         rid: str, row: str, monkeypatch: pytest.MonkeyPatch) -> None:
     import asia_collector as ac
     monkeypatch.setattr(urllib.request, "urlopen", _no_network)
-    monkeypatch.setattr(ac, "fenced_urlopen", _no_network)
+    monkeypatch.setattr(ac, "polite_urlopen", _no_network)
     monkeypatch.setattr(ac, "_robots_allows", _no_network)
     src = _asia_rows()[rid]
     assert tf.input_source(ac._resolve_url(src), rid) == row

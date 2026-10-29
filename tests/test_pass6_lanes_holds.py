@@ -433,7 +433,13 @@ def robots_srv(monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[int, dict[str,
         def do_GET(self) -> None:
             hits.append(self.path)
             if self.path == "/robots.txt":
-                self.send_response(state["robots"])
+                # an int answers every robots read; a list answers them in order (the last
+                # repeats): the polite door reads the origin's robots before the FIRST request,
+                # the hop check reads it again before the hop
+                code = state["robots"]
+                if isinstance(code, list):
+                    code = code.pop(0) if len(code) > 1 else code[0]
+                self.send_response(code)
                 self.end_headers()
                 return
             if self.path == "/hop":
@@ -454,18 +460,21 @@ def robots_srv(monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[int, dict[str,
 @pytest.mark.parametrize("code", [404, 410])
 @pytest.mark.parametrize("route", ["page", "index_page"])
 def test_robots_404_allows_a_same_origin_hop(robots_srv: Any, code: int, route: str) -> None:
+    """ROBOTS DECIDES EVERY FETCH (LAWS 5e amended 2026-10-14): the polite door reads robots.txt
+    before the first request, and the hop check reads it again before the hop; a 404/410 (no
+    file) allows both."""
     port, state, hits = robots_srv
     state["robots"] = code
     r = _run()
     assert "gold breakout" in getattr(r, route)(f"http://127.0.0.1:{port}/hop")
-    assert hits == ["/hop", "/robots.txt", "/page"] and not r.holds.sites
+    assert hits == ["/robots.txt", "/hop", "/robots.txt", "/page"] and not r.holds.sites
 
 
 @pytest.mark.parametrize("code", [500, 503])
 @pytest.mark.parametrize("route", ["page", "index_page"])
 def test_robots_5xx_disallows_a_same_origin_hop(robots_srv: Any, code: int, route: str) -> None:
     port, state, hits = robots_srv
-    state["robots"] = code
+    state["robots"] = [404, code]          # the first URL is allowed; the hop's read is a 5xx
     r = _run()
     assert getattr(r, route)(f"http://127.0.0.1:{port}/hop") == ""
     assert "/page" not in hits and not r.holds.sites
@@ -473,13 +482,39 @@ def test_robots_5xx_disallows_a_same_origin_hop(robots_srv: Any, code: int, rout
     assert st["missed_growth"]["source"] == "robots"
 
 
+@pytest.mark.parametrize("code", [500, 503])
+@pytest.mark.parametrize("route", ["page", "index_page"])
+def test_robots_5xx_sends_nothing_at_all(robots_srv: Any, code: int, route: str) -> None:
+    """An unreadable robots.txt before the FIRST request: nothing is sent, no hold placed."""
+    port, state, hits = robots_srv
+    state["robots"] = code
+    r = _run()
+    assert getattr(r, route)(f"http://127.0.0.1:{port}/hop") == ""
+    assert hits == ["/robots.txt"] and not r.holds.sites
+    assert "ROBOTS_UNREADABLE" in json.dumps(r.status[-1])
+
+
 @pytest.mark.parametrize("code", [401, 403, 429])
 def test_robots_refusal_on_a_hop_holds_the_site_and_stops(robots_srv: Any, code: int) -> None:
+    port, state, hits = robots_srv
+    state["robots"] = [404, code]          # the first URL is allowed; the hop's read refuses
+    r = _run()
+    assert r.page(f"http://127.0.0.1:{port}/hop") == ""
+    assert "/page" not in hits and r.holds.sites["127.0.0.1"]["status"] == code
+
+
+@pytest.mark.parametrize("code", [401, 403, 429])
+def test_robots_refusal_before_the_first_request_holds_for_a_person(robots_srv: Any,
+                                                                   code: int) -> None:
+    """A 401/403/429 on robots.txt before the first request: nothing else is sent and the site
+    is held in the desk's one polite hold store, for a person to release."""
+    from libs.data import polite_fetch as pf
     port, state, hits = robots_srv
     state["robots"] = code
     r = _run()
     assert r.page(f"http://127.0.0.1:{port}/hop") == ""
-    assert "/page" not in hits and r.holds.sites["127.0.0.1"]["status"] == code
+    assert hits == ["/robots.txt"]
+    assert pf.person_hold(f"http://127.0.0.1:{port}/") in ("NEEDS_KEY", "METHOD_BLOCKED")
 
 
 def test_robots_unreachable_disallows() -> None:
