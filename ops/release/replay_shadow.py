@@ -278,6 +278,8 @@ def bounded() -> dict[str, set[str]]:
             out.setdefault(f, set()).update(names)
     for f, name in (doc.get("superset") or {}).items():
         out.setdefault(f, set()).add(name)
+    for f, names in (doc.get("source") or {}).items():
+        out.setdefault(f, set()).update(names)
     return out
 
 
@@ -300,6 +302,26 @@ def knob_changes(base: Path, head: Path, changed: list[str], closure: set[str]) 
                     "take the manual path"
                 )
     return problems
+
+
+def new_and_bounded(base: Path, head: Path, head_imported: set[str]) -> set[str]:
+    """New money files the HEAD's replay ran (no base can import a file it lacks) whose every
+    knob a ceiling already holds, from the base's ceilings.json. The replay shows their code
+    decides like the base on the grid; the ceilings, not the replay, vouch for their values
+    (#553 audit: a clean replay never measures a knob). A file with one unbounded knob stays
+    UNMEASURED."""
+    held = bounded()
+    out = set()
+    for f in head_imported:
+        if not f.endswith(".py") or read(base, f) is not None:
+            continue
+        try:
+            names = set(knobs(read(head, f) or ""))
+        except SyntaxError:
+            continue
+        if names <= held.get(f, set()):
+            out.add(f)
+    return out
 
 
 def canon(value: Any) -> Any:
@@ -382,6 +404,7 @@ def compare(
     grid = [{**who, **sc} for sc in grid]
     problems: list[str] = []
     imported: set[str] = set()
+    head_imported: set[str] = set()
     placed = 0
     for sc in grid:
         b, h = run_tree(base, sc), run_tree(head, sc)
@@ -391,11 +414,16 @@ def compare(
         if "crash" in h:
             problems.append(f"{sc['id']}: the PR's tree crashed ({h['crash']})")
             continue
-        base_root = str(base.resolve())
+        base_root, head_root = str(base.resolve()), str(head.resolve())
         imported.update(
             Path(f).relative_to(base_root).as_posix()
             for f in b["imported"]
             if f.startswith(base_root + "/")
+        )
+        head_imported.update(
+            Path(f).relative_to(head_root).as_posix()
+            for f in h.get("imported") or []
+            if f.startswith(head_root + "/")
         )
         for bs, hs in zip(b["steps"], h["steps"], strict=True):
             if bs.get("error"):
@@ -414,7 +442,8 @@ def compare(
     if not placed:
         problems.append("UNMEASURED: the base tree placed nothing anywhere on the grid")
     closure = import_closure(base)
-    uncovered = sorted(f for f in changed if is_money(f, closure) and f not in imported)
+    covered = imported | new_and_bounded(base, head, head_imported)
+    uncovered = sorted(f for f in changed if is_money(f, closure) and f not in covered)
     problems += [
         f"UNMEASURED money-path change (the replay never imported it): {f}" for f in uncovered
     ]

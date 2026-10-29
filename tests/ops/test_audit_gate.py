@@ -1163,7 +1163,7 @@ def test_the_live_tree_is_inside_its_ceilings() -> None:
     import json
 
     ceilings = json.loads((ROOT / "ops/release/ceilings.json").read_text(encoding="utf-8"))
-    assert ri.check(ceilings, ri.git_reader("HEAD")) == []
+    assert ri.check(ceilings, ri.git_reader("HEAD"), ri.git_reader("HEAD")) == []
 
 
 # ----------------------------------------------------------------- step C: independent review
@@ -1859,3 +1859,56 @@ def test_formerly_protected_files_merge_only_on_every_auto_check(auto_hub: Any, 
 def test_a_secrets_path_never_merges(auto_hub: Any) -> None:
     h = auto_hub(files=("data/secrets/k.txt",), runs=_auto_green())
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1 and _merges(h) == []
+
+
+# ------------------------------------------- source pins and ceilings that land first (#545)
+
+
+def test_a_source_pin_holds_a_non_literal_knob_to_its_exact_expression() -> None:
+    ceil = {"source": {"n.py": {"FLAG": "DESK / 'data' / 'F.json'", "f(p=)": "None"}}}
+    good = "DESK = 1\nFLAG = DESK / 'data' / 'F.json'\ndef f(p=None):\n    pass\n"
+    assert ri.check(ceil, _reader(n=good), _reader(n=good)) == []
+    for bad in (
+        good.replace("'F.json'", "'G.json'"),  # moved
+        good.replace("p=None", "p=4"),  # a default moved
+        good + "if X:\n    FLAG = 3\n",  # a second value behind a guard
+        good.replace("def f(p=None)", "def f(q=None)"),  # gone while the base has it
+    ):
+        assert ri.check(ceil, _reader(n=bad), _reader(n=good)), bad
+
+
+def test_a_ceiling_for_a_file_or_name_no_tree_has_yet_binds_from_the_pr_that_adds_it() -> None:
+    """#545: ceilings are read from the base, so a fence's rows must land before the fence."""
+    ceil = {"equal": {"n.py": {"RAIL": "fence"}, "s.py": {"NEW": 1}},
+            "source": {"s.py": {"g(x=)": "None"}}, "superset": {"n.py": "MONTHLY"}}  # fmt: skip
+    old = "OLD = 1\n"
+    assert ri.check(ceil, _reader(s=old), _reader(s=old)) == []  # neither tree: nothing binds
+    added = "RAIL = 'other'\nMONTHLY = ()\n"
+    assert ri.check(ceil, _reader(s=old, n=added), _reader(s=old))  # the PR that adds it is held
+    grown = "OLD = 1\nNEW = 2\ndef g(x=5):\n    pass\n"
+    assert len(ri.check(ceil, _reader(s=grown), _reader(s=old))) == 2
+    full = "OLD = 1\nNEW = 1\ndef g(x=None):\n    pass\n"
+    assert ri.check(ceil, _reader(s=old), _reader(s=full))  # the base has them: losing them FAILS
+    assert ri.check(ceil, _reader(s=old))  # no base reader: fail closed
+
+
+def test_a_new_money_file_the_head_ran_is_covered_only_when_every_knob_is_held(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#553 audit: the replay vouches for behaviour, the base's ceilings for values."""
+    fence = "WINDOW_MIN = 15\nFLAG = None\n\ndef ok():\n    return True\n"
+    book = _BOOK.replace("import json", "import json\nfrom desks.mt5.prop import fence")
+    base, head = _tree(tmp_path / "base"), _tree(tmp_path / "head", book)
+    (head / "desks/mt5/prop/fence.py").write_text(fence, "utf-8")
+    (base / "desks/__init__.py").write_text("", "utf-8")
+    (head / "desks/__init__.py").write_text("", "utf-8")
+    (base / "desks/mt5/__init__.py").write_text("", "utf-8")
+    (head / "desks/mt5/__init__.py").write_text("", "utf-8")
+    changed = ["desks/mt5/prop/e8_gold.py", "desks/mt5/prop/fence.py"]
+    held = {"desks/mt5/prop/fence.py": {"WINDOW_MIN", "FLAG"}}
+    monkeypatch.setattr(rs, "bounded", lambda: held)
+    rep = rs.compare(base, head, changed, _grid())
+    assert rep["verdict"] == "PASS", rep["problems"]
+    monkeypatch.setattr(rs, "bounded", lambda: {"desks/mt5/prop/fence.py": {"WINDOW_MIN"}})
+    rep = rs.compare(base, head, changed, _grid())
+    assert rep["verdict"] == "FAIL" and any("fence.py" in p for p in rep["problems"])

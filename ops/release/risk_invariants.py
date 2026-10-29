@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import importlib.util
 import json
 import subprocess
 import sys
@@ -20,6 +21,11 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 NOT_LITERAL = object()
+#: replay_shadow.knobs(), from the file beside this one (one definition of what a knob is)
+_spec = importlib.util.spec_from_file_location("_rs_knobs", HERE / "replay_shadow.py")
+assert _spec is not None and _spec.loader is not None
+_rs = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_rs)
 #: The directories the suites put on sys.path: the root (pyproject `pythonpath`) and the desk
 #: (several desk tests insert it).
 SYS_PATH_ROOTS = ("", "desks/mt5")
@@ -50,8 +56,16 @@ def _keys(seq: Any) -> set[Any]:
     return {x[0] if isinstance(x, tuple | list) and x else x for x in seq}
 
 
-def check(ceilings: dict[str, Any], read: Any) -> list[str]:
-    """Every breach, as text. `read(path)` returns the head's source or None."""
+def _absent(path: str, read: Any, read_base: Any) -> bool:
+    """A row for a file neither tree has yet: it binds from the PR that adds the file, so a
+    ceiling can land before the module it bounds (#545: ceilings are read from the base). A
+    name neither tree sets is skipped the same way; once the base has it, losing it FAILS."""
+    return read_base is not None and read(path) is None and read_base(path) is None
+
+
+def check(ceilings: dict[str, Any], read: Any, read_base: Any = None) -> list[str]:
+    """Every breach, as text. `read(path)` returns the head's source or None; `read_base` the
+    base's (a row whose file neither tree has is skipped, see _absent)."""
     bad: list[str] = []
     cache: dict[str, dict[str, Any] | None] = {}
 
@@ -64,12 +78,24 @@ def check(ceilings: dict[str, Any], read: Any) -> list[str]:
                 cache[path] = None
         return cache[path]
 
+    def _base_has(path: str, name: str, literal: bool) -> bool:
+        """Whether the base sets `name` (no base reader: assume it does, fail closed)."""
+        if read_base is None:
+            return True
+        src = read_base(path)
+        try:
+            return src is not None and name in (module_literals(src) if literal else _rs.knobs(src))
+        except SyntaxError:
+            return True
+
     def value(path: str, name: str) -> Any:
         found = lits(path)
         if found is None:
             bad.append(f"{path}: missing or unparseable")
             return NOT_LITERAL
         if name not in found:
+            if not _base_has(path, name, literal=True):
+                return NOT_LITERAL  # neither tree sets it yet: it binds from the PR that does
             bad.append(f"{path}: {name} is gone")
             return NOT_LITERAL
         if found[name] is NOT_LITERAL:
@@ -77,6 +103,8 @@ def check(ceilings: dict[str, Any], read: Any) -> list[str]:
         return found[name]
 
     for path, caps in ceilings.get("max", {}).items():
+        if _absent(path, read, read_base):
+            continue
         for name, cap in caps.items():
             v = value(path, name)
             if v is NOT_LITERAL:
@@ -84,16 +112,42 @@ def check(ceilings: dict[str, Any], read: Any) -> list[str]:
             if isinstance(v, bool) or not isinstance(v, int | float) or v != v or v > cap:
                 bad.append(f"{path}: {name} = {v!r} is over its ceiling {cap}")
     for path, pins in ceilings.get("equal", {}).items():
+        if _absent(path, read, read_base):
+            continue
         for name, want in pins.items():
             v = value(path, name)
             if v is not NOT_LITERAL and v != want:
                 bad.append(f"{path}: {name} = {v!r}, pinned at {want!r}")
     for path, name in ceilings.get("superset", {}).items():
+        if _absent(path, read, read_base):
+            continue
         v = value(path, name)
         if v is NOT_LITERAL:
             continue
         if not isinstance(v, tuple | list):
             bad.append(f"{path}: {name} is not a sequence")
+    # SOURCE PINS: a knob no literal can express (a Path expression, a tuple-keyed dict, a
+    # function default) is held to its exact expression, compared as an ast: every value the
+    # knob is given, wherever replay_shadow.knobs() finds one, must be exactly that.
+    for path, pins in ceilings.get("source", {}).items():
+        if _absent(path, read, read_base):
+            continue
+        src = read(path)
+        try:
+            found = None if src is None else _rs.knobs(src)
+        except SyntaxError:
+            found = None
+        if found is None:
+            bad.append(f"{path}: missing or unparseable")
+            continue
+        for name, want in pins.items():
+            pinned = ast.dump(ast.parse(want, mode="eval").body)
+            given = found.get(name)
+            if not given:
+                if _base_has(path, name, literal=False):
+                    bad.append(f"{path}: {name} is gone")
+            elif any(g != pinned for g in given):
+                bad.append(f"{path}: {name} is no longer exactly `{want}`")
     return bad
 
 
@@ -174,7 +228,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--ceilings", default=str(HERE / "ceilings.json"))
     a = ap.parse_args(argv)
     ceilings = json.loads(Path(a.ceilings).read_text(encoding="utf-8"))
-    bad = check(ceilings, git_reader(a.head))
+    bad = check(ceilings, git_reader(a.head), git_reader(a.base))
     bad += check_superset(ceilings, git_reader(a.head), git_reader(a.base))
     try:
         added = git_added(a.base, a.head)
