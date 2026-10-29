@@ -176,7 +176,10 @@ def test_a_forward_row_whose_ledger_disagrees_is_quarantined_by_name() -> None:
 
 
 def test_the_lane_never_imports_the_original_implementation() -> None:
-    src = (DESK / "research" / "replication_civilization.py").read_text("utf-8")
+    # BOTH FILES OF THE LANE: the written rules in `replication_families` are bound by the
+    # same rule as the lane that registers them
+    src = "\n".join((DESK / "research" / name).read_text("utf-8")
+                    for name in ("replication_civilization.py", "replication_families.py"))
     imports = re.findall(r"^\s*(?:from|import)\s+([\w.]+)", src, re.M)
     for name in imports:
         for banned in rc.FORBIDDEN_IMPORTS:
@@ -189,7 +192,10 @@ def test_the_lane_never_imports_the_original_implementation() -> None:
     poisoned = {}
     for name in ("mt5desk.families", "mt5desk.families_orthogonal", "mt5desk.engine",
                  "mt5desk.family_call", "research.proposer_common", "proposer_common",
-                 "external_gauntlet", "lead_replication", "shadow_forward"):
+                 "external_gauntlet", "lead_replication", "shadow_forward",
+                 "libs.research.alpha_grammar", "mt5desk.cell_modifiers",
+                 "mt5desk.causal_residual", "mt5desk.families_vector",
+                 "mt5desk.family_formula"):
         mod = types.ModuleType(name)
         mod.__getattr__ = lambda attr, _n=name: (_ for _ in ()).throw(  # type: ignore[assignment]
             AssertionError(f"{_n}.{attr} was reached by the replication lane"))
@@ -203,6 +209,18 @@ def test_the_lane_never_imports_the_original_implementation() -> None:
                        forward=[], universe_meta={"TESTFX": META},
                        bars_loader=lambda s, t: bars)
         assert doc["counts"][rc.REPLICATED] == 1
+        # and the three families of `replication_families`, wrappers included
+        fp, why = rc.resolve_spec("formula", {"expr": ["neg", ["mean", "range", 5]],
+                                              "session": "asia", "entry_timing": "delayed",
+                                              "regime": "low_vol"}, "asia", "LONG")
+        assert fp is not None, why
+        rc.rebuild("formula", bars, fp, 0.0)
+        for fam, extra in (("cross_asset_residual", {"factor_symbols": ["A", "B"]}),
+                           ("relative_value", {"peer_symbol": "A"})):
+            q, why = rc.resolve_spec(fam, {**extra, "lookback": 48}, "asia", "LONG")
+            assert q is not None, why
+            assert rc.attach_inputs(fam, extra, q, lambda s, t: bars) is None
+            rc.rebuild(fam, bars, q, 0.0)
     finally:
         for name, old in poisoned.items():
             if old is None:
