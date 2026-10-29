@@ -1402,8 +1402,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                                  "the Facebook investment and diaspora-remittance groups, the "
                                  "Amharic and Swahili personal-finance YouTube channels, and "
                                  "the DSE/USE shareholder forums", layer="retail_ecology",
-        roots=("https://www.reddit.com/r/Ethiopia/", "https://www.reddit.com/r/Uganda/",
-               "https://www.youtube.com/results?search_query=%E1%8B%B5%E1%88%AD%E1%88%B5"),
+        roots=("https://www.youtube.com/results?search_query=%E1%8B%B5%E1%88%AD%E1%88%B5",),
         queries=("ጥቁር ገበያ ዶላር ዋጋ", "ወርቅ ዋጋ ዛሬ", "እንዴት ብር ማዳን", "bei ya dhahabu leo",
                  "jinsi ya kuwekeza hisa", "dola sokoni leo", "remittance rate Ethiopia"),
         languages=("am", "sw", "en"), access_label="PUBLIC_SOCIAL", credibility="FRINGE",

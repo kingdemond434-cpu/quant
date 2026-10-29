@@ -625,7 +625,6 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
     {"id": "cl_pe_retail_ecology", "layer": "retail_ecology",
      "label": "Andean retail investor communities and the AFP advisory culture",
      "roots": ("https://www.rankia.cl/", "https://www.rankia.pe/",
-               "https://www.reddit.com/r/chile/", "https://www.reddit.com/r/PERU/",
                "https://www.facebook.com/groups/inversionistaschile/"),
      "languages": ("es-CL", "es-PE"),
      "licence": "public social; user-submitted content, nothing republished",

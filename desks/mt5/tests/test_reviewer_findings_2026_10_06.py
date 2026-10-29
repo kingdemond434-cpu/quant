@@ -427,20 +427,6 @@ def _all_text(paths: dict[str, Path], report: dict[str, Any]) -> str:
     return json.dumps(report, default=str) + reg
 
 
-def test_reproduction_acquire_six_column_cap(sandbox: dict[str, Path],
-                                             monkeypatch: pytest.MonkeyPatch) -> None:
-    """REPRODUCED: a dated file with 10 numeric columns persists 6 (qcol0..qcol5);
-    qcol6..qcol9 vanish without a word in the report or registry."""
-    rep = _acquire_one(monkeypatch, _wide_csv())
-    names = sorted(rep["new_series"])
-    assert len(names) == 6 and all(n.endswith(f"_qcol{i}") for i, n in enumerate(names))
-    text = _all_text(sandbox, rep)
-    assert all(f"qcol{i}" not in text for i in range(6, 10))
-
-
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06: _numeric_series stops at 6 columns "
-    "(desks/mt5/research/acquire_datasets.py:246-257, cap at :250). " + DATA))
 def test_acceptance_acquire_every_column_ingested_or_surfaced(
         sandbox: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
     rep = _acquire_one(monkeypatch, _wide_csv())
@@ -449,19 +435,6 @@ def test_acceptance_acquire_every_column_ingested_or_surfaced(
         assert any(n.endswith(f"_qcol{i}") for n in rep["new_series"]) or f"qcol{i}" in text, i
 
 
-def test_reproduction_acquire_zip_keeps_largest_member_only(
-        sandbox: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
-    """REPRODUCED: a zip of big.csv (alpha, 400 rows) + small.csv (beta, 250 rows) yields alpha
-    only; beta and small.csv are named nowhere."""
-    rep = _acquire_one(monkeypatch, _two_member_zip(), "https://example.org/bulk.zip")
-    assert [n.rsplit("_", 1)[-1] for n in rep["new_series"]] == ["alpha"]
-    text = _all_text(sandbox, rep)
-    assert "beta" not in text and "small.csv" not in text
-
-
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06: zip archives keep only the largest member "
-    "(desks/mt5/research/acquire_datasets.py:194-200). " + DATA))
 def test_acceptance_acquire_every_archive_member_ingested_or_surfaced(
         sandbox: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
     rep = _acquire_one(monkeypatch, _two_member_zip(), "https://example.org/bulk.zip")
@@ -469,20 +442,6 @@ def test_acceptance_acquire_every_archive_member_ingested_or_surfaced(
             or "small.csv" in _all_text(sandbox, rep))
 
 
-def test_reproduction_acquire_short_history_misreported_as_undated(
-        sandbox: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
-    """REPRODUCED: 150 cleanly dated daily rows are refused as "no usable date column" -- the
-    MIN_ROWS=200 bar sits inside the DATE check, so a short history is mislabelled undated."""
-    rep = _acquire_one(monkeypatch, _short_csv())
-    assert acq.MIN_ROWS == 200
-    assert rep["new_series"] == []
-    assert rep["refusals"] == {"no usable date column -- refused rather than stamped with now": 1}
-
-
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06: MIN_ROWS=200 is applied inside _dated, so short dated "
-    "series are refused as undated (desks/mt5/research/acquire_datasets.py:66, :227, :238). "
-    + DATA))
 def test_acceptance_acquire_short_history_has_its_own_policy(
         sandbox: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
     """A short but dated series is either ingested (flagged short) or refused under a reason that
@@ -493,23 +452,6 @@ def test_acceptance_acquire_short_history_has_its_own_policy(
     assert rep["new_series"] or "short" in reasons.lower() or "history" in reasons.lower()
 
 
-def test_reproduction_acquire_keyed_sources_skipped_unnamed(
-        sandbox: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
-    """REPRODUCED: a crawler discovery listing a keyed and a plain endpoint yields only the plain
-    one from _endpoints, and the keyed URL appears nowhere in the report or registry."""
-    (sandbox["world"] / "discoveries_20261006.json").write_text(
-        json.dumps([{"host": "example.org", "endpoints": [KEYED, PLAIN]}]), encoding="utf-8")
-    assert acq._endpoints(10) == [(PLAIN, "example.org")]
-    monkeypatch.setattr(acq, "_fetch", lambda u: (None, "html"))
-    rep = acq.acquire(limit=10)
-    text = _all_text(sandbox, rep)
-    assert PLAIN in text and KEYED_SURFACE not in text and KEY_VALUE not in text
-
-
-@pytest.mark.xfail(strict=True, reason=(
-    "ACCEPTANCE OWED 2026-10-06: keyed sources are dropped with `continue` and named nowhere "
-    "(desks/mt5/research/acquire_datasets.py:319, :338; doc at :20 says 'skipped and named'). "
-    + DATA))
 def test_acceptance_acquire_keyed_sources_are_surfaced(
         sandbox: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
     (sandbox["world"] / "discoveries_20261006.json").write_text(

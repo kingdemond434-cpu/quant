@@ -957,8 +957,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
         "ma_retail_forums", "Moroccan retail communities: r/Morocco, Facebook bourse groups, "
                             "YouTube and TikTok Darija market channels, Wafabourse user threads",
         layer="retail_ecology",
-        roots=("https://www.reddit.com/r/Morocco/",
-               "https://www.youtube.com/results?search_query=bourse+casablanca+darija",
+        roots=("https://www.youtube.com/results?search_query=bourse+casablanca+darija",
                "https://www.facebook.com/groups/boursedecasablanca"),
         queries=("بورصة الدار البيضاء نصائح", "شنو نشري", "الاستثمار في البورصة",
                  "comment investir en bourse Maroc", "dirham euro marche noir",

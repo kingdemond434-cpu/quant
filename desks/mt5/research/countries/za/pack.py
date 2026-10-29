@@ -746,8 +746,7 @@ SOURCE_CLASSES: tuple[dict[str, Any], ...] = (
                "author's seniority is irrelevant and is never scored."),
     _src("za_retail_ecology", "Retail boards, Afrikaans farming forums and the crowd's own words",
          layer="retail_ecology",
-         roots=("reddit.com/r/JSE_Bets", "reddit.com/r/southafrica (economy threads)",
-                "mybroadband.co.za/forum (investments)", "landbou.com forums",
+         roots=("mybroadband.co.za/forum (investments)", "landbou.com forums",
                 "forum.sharenet.co.za", "hellopeter.com (broker complaint threads)"),
          languages=("en", "af", "zu"),
          licence="public web; mined for VERBATIM CLAIMS only, never for personal data and never "

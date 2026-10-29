@@ -444,7 +444,10 @@ _REGISTRY: Final[tuple[Replacements, ...]] = (
         information_class=EN_PRACTITIONER_FORUM,
         recorded_reason=("declared 'HTTP 403 -- blocked' in libs/data/papers.probe_all(), which "
                          "hardcodes the row WITHOUT making a request. So this source's true "
-                         "state here is UNKNOWN, not dead, and the ledger will not condemn it"),
+                         "state here is UNKNOWN, not dead, and the ledger will not condemn it. "
+                         "SINCE 2026-09-30 REDDIT IS TERMS-FENCED (libs/data/terms_fence.py): "
+                         "its terms require an agreement for commercial use, so this source is "
+                         "replaced, never probed"),
         candidates=(
             _c("hackernews_algolia", EN_PRACTITIONER_FORUM,
                "https://hn.algolia.com/api/v1/search?query=quant%20trading%20backtest",
@@ -460,12 +463,10 @@ _REGISTRY: Final[tuple[Replacements, ...]] = (
                "score_title needs no change. Anonymous quota is 300 requests/day, ample daily",
                note="quant.stackexchange -- moderated practitioner Q&A with a documented public "
                     "API and no auth for read. The strongest in-class candidate on this list"),
-            _c("old_reddit_json", EN_PRACTITIONER_FORUM,
-               "https://old.reddit.com/r/algotrading/top/.json?t=week&limit=25",
-               "parse children[].data title + selftext + score into the Item shape; identical "
-               "downstream to the stackexchange path",
-               note="Same corpus as Reddit proper, different host and a JSON surface. Worth ONE "
-                    "probe before assuming the 403 that was never actually measured"),
+            # `old_reddit_json` WAS LISTED HERE until 2026-09-30. Reddit's User Agreement and Data
+            # API terms cover the anonymous JSON on every host (old.reddit.com included) and
+            # require an agreement for commercial use: it is terms-fenced
+            # (libs/data/terms_fence.py), so it is not a replacement for anything.
         ),
     ),
     Replacements(

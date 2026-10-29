@@ -50,6 +50,7 @@ LEG_LAYER: dict[str, str] = {
     # That is information, not prediction: neither one scores anything.
     "proposer_seat": "information", "kimi_hunt": "information",
     "deep_forest": "information", "market_intel": "information", "record_tape": "information",
+    "attention_substitutes": "information",
     "archive_tape": "information", "refresh_bars": "information",
     "timeframe_coverage": "information", "frontier": "information",
     "frontier_ontology": "information", "frontier_unknowns": "information",
@@ -512,6 +513,8 @@ LEG_LAYER: dict[str, str] = {
     # against the instrument's own market-implied state: a claim about returns, prediction.
     "dislocation_lab": "prediction",
     "ingestion_exploitation": "meta",
+    # the deep-forest attempt ledger and its daily-floor fence measure the miner itself
+    "forest_attempts": "meta",
     # INDEPENDENCE AT INTAKE measures how much independent ground an hour of judge bought, and
     # moves intake order, operator mix and generation targets accordingly: the machine measuring
     # and scheduling itself, which is meta.
@@ -628,6 +631,9 @@ LEG_LAYER: dict[str, str] = {
     "free_stack_hunt": "information", "free_stack_proposer": "prediction",
     "factory_throughput": "prediction",
     "source_experiment_census": "information", "world_dataset_hunt": "information",
+    # CRO D18 measured on recorded consumer reads: a measurement of the desk's own wiring, meta.
+    "dataset_use_census": "meta",
+    "catalog_routes": "information", "discovery_audit": "meta",
     "world_macro_proposer": "prediction",
     "cross_asset_graph": "information", "transmission_engine": "information",
     "excursions": "exit", "exit_accounts": "exit",

@@ -689,6 +689,25 @@ def suggest(k: int, cells: list[dict[str, Any]], conn: Any = None) -> list[dict[
 
 # ----------------------------------------------------------------------------------- the report
 
+def by_discovery_method(conn: Any) -> list[dict[str, Any]]:
+    """Yield per DISCOVERY METHOD (`sources.discovered_via`: seed, swarm expansion, catalogue
+    route, ...): how many sources each method found, how many testable candidates they gave and
+    the compute they cost. Read by meta_rnd's catalogue-vs-crawl row. A method whose sources have
+    no yield row reads testable UNMEASURED, never 0."""
+    rows = conn.execute(
+        "SELECT COALESCE(NULLIF(s.discovered_via, ''), 'unknown') AS method, "
+        "COUNT(*) AS n, COUNT(y.source_id) AS n_yield, SUM(y.candidates) AS cand, "
+        "SUM(y.compute_s) AS cs FROM sources s LEFT JOIN source_yield y "
+        "ON y.source_id = s.source_id GROUP BY method ORDER BY n DESC").fetchall()
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        method, n, n_yield, cand, cs = (r[0], int(r[1]), int(r[2]), r[3], r[4])
+        out.append({"method": str(method), "sources": n, "sources_with_yield": n_yield,
+                    "testable": int(cand or 0) if n_yield else UNMEASURED,
+                    "compute_h": round(float(cs or 0.0) / 3600.0, 4) if n_yield else UNMEASURED})
+    return out
+
+
 def build(conn: Any = None, top: int = TOP_CELLS, seed: bool = True) -> dict[str, Any]:
     c = conn or reg.connect()
     try:
@@ -722,6 +741,7 @@ def build(conn: Any = None, top: int = TOP_CELLS, seed: bool = True) -> dict[str
                          "expected_marginal_log_growth": r["expected_marginal_log_growth"]}
                         for r in roi[:15]],
             "seeded": seeded,
+            "by_discovery_method": by_discovery_method(c),
             "unmeasured": {
                 "claims_rows": n_claims,
                 "claims_basis": (f"{n_claims} claim row(s) in the registry" if n_claims else

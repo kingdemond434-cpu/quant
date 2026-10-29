@@ -51,6 +51,8 @@ BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE.parent.parent))
 sys.path.insert(0, str(BASE / "side_channels"))
 sys.path.insert(0, str(BASE))
+if str(BASE.parent.parent) not in sys.path:      # the repo root, for libs.data.terms_fence
+    sys.path.append(str(BASE.parent.parent))
 
 import world_frontier as wf  # noqa: E402  # type: ignore[import-not-found]
 
@@ -196,6 +198,15 @@ def _ascii_url(url: str) -> str:
 
 def fetch(url: str) -> tuple[bytes | None, str]:
     """Bytes, or None with the reason. NEVER raises -- one bad page must not end the hour."""
+    # THE PLATFORM TERMS FENCE (2026-09-30): Reddit / StockTwits are never requested; the reason
+    # is the refusal's own text, so the frontier records a named blocker, not a transport error.
+    try:
+        from libs.data import terms_fence as _tf
+        _p = _tf.platform_of_url(url)
+    except Exception as exc:          # the fence must load; if it cannot, fail CLOSED
+        return None, f"terms fence unavailable: {type(exc).__name__}"
+    if _p:
+        return None, f"{_tf.PLATFORMS[_p]['status']}:{_p}"
     try:
         req = urllib.request.Request(_ascii_url(url), headers={
             "User-Agent": UA,
@@ -204,11 +215,14 @@ def fetch(url: str) -> tuple[bytes | None, str]:
             # cover the world quietly stops covering most of it.
             "Accept-Language": "*",
         })
-        with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
+        # THE REDIRECT GUARD: a 30x into a fenced platform is refused, never followed.
+        with _tf.guarded_urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
             ctype = str(resp.headers.get("Content-Type", ""))
             if "html" not in ctype and "text" not in ctype and "json" not in ctype:
                 return None, f"content-type {ctype.split(';')[0] or 'unknown'}"
             return resp.read(MAX_BYTES), ""
+    except _tf.TermsFenced as exc:
+        return None, f"{exc.status}:{exc.platform}"
     except urllib.error.HTTPError as exc:
         return None, f"HTTP {exc.code}"
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
@@ -648,7 +662,7 @@ SEEDS = (
     "https://www.mql5.com/zh/code",
     "https://www.mql5.com/ja/code",
     "https://www.forexfactory.com/forums",
-    "https://www.reddit.com/r/algotrading/top/?t=week",
+    # r/algotrading LEFT THE SEEDS 2026-09-30: Reddit is terms-fenced (libs/data/terms_fence.py).
     "https://quantocracy.com/",
     "https://www.quantstart.com/articles/",
     "https://xueqiu.com/",
