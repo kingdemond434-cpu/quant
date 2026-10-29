@@ -22,7 +22,8 @@ LISTED = ["deepseek/deepseek-chat-v3.1:free", "deepseek/deepseek-r1-0528:free",
 
 
 @pytest.fixture(autouse=True)
-def _free(monkeypatch: pytest.MonkeyPatch) -> None:
+def _free(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    monkeypatch.setattr(llm_seat, "SWAP_LEDGER", tmp_path / "llm_model_swaps.jsonl")
     monkeypatch.delenv("QUANT_LLM_LAB_PAID", raising=False)
     monkeypatch.setattr(llm_seat, "free_tier_only", lambda: True)
     monkeypatch.setattr(llm_seat, "_RESOLVED", {})
