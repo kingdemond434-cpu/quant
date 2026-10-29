@@ -1814,3 +1814,88 @@ def test_gh_output_is_read_as_utf8_whatever_the_locale(monkeypatch: pytest.Monke
     monkeypatch.setattr(ag.subprocess, "run", fake)
     assert ag._gh("repos/x/y/pulls") == [{"body": "before — after \u0081"}]
     assert seen["encoding"] == "utf-8"
+
+
+# ------------------------------------------ large non-money diffs, reviewed by whole files
+import json as _json  # noqa: E402
+
+
+def _section(name: str, lines: int) -> str:
+    return f"diff --git a/{name} b/{name}\n--- a/{name}\n+++ b/{name}\n" + "+x = 1\n" * lines
+
+
+def test_parts_are_whole_files_and_never_split_one() -> None:
+    diff = _section("a.py", 100) + _section("b.py", 100) + _section("c.py", 100)
+    cut, _ = ir.parts(diff, limit=len(_section("a.py", 100)) * 2 + 10)
+    assert cut is not None and len(cut) == 2
+    assert "".join(cut) == diff                       # nothing lost, nothing reordered
+    assert all(p.startswith("diff --git a/") for p in cut)
+    cut, why = ir.parts(diff, limit=len(_section("a.py", 100)) - 1)
+    assert cut is None and "one file's diff alone" in why
+    many = "".join(_section(f"f{i}.py", 100) for i in range(ir.MAX_PARTS + 1))
+    cut, why = ir.parts(many, limit=len(_section("f0.py", 100)) + 10)
+    assert cut is None and "parts" in why
+
+
+def _summarising(fam: str, seen: list[str], verdict: str = "PASS") -> Any:
+    def ask(rubric: str, user: str) -> str:
+        seen.append(user)
+        part = "whole" if "Judge the parts TOGETHER" in user else user.split("PART ")[1][:6]
+        return _json.dumps({"verdict": verdict, "risk_increasing": False,
+                           "touches_control": False, "findings": [],
+                           "summary": f"{fam} read {part}"})
+    return ask
+
+
+def test_a_large_research_diff_is_reviewed_part_by_part_then_as_one(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    diff = "".join(_section(f"desks/mt5/research/m{i}.py", 4_000) for i in range(3))
+    files = ir.changed_files(diff)
+    seen: list[str] = []
+    ladder = [("qwen", "q:7b", _summarising("qwen", seen)),
+              ("meta-llama", "l:8b", _summarising("llama", seen))]
+    v, log = ir.review_in_parts(diff, files, ladder, money=lambda f: ([], "none"),
+                                sleep=lambda s: None)
+    assert v == "PASS", log
+    parts_seen = [u for u in seen if "Judge the parts TOGETHER" not in u]
+    whole = [u for u in seen if "Judge the parts TOGETHER" in u]
+    assert parts_seen and len(whole) == 2            # every part by two families, then the whole
+    assert all("Files changed:\n" + "\n".join(files) in u for u in seen)  # every part lists all
+    assert "qwen read 1 OF" in whole[0] and "llama read" in whole[0]
+    for sec in ir.file_sections(diff):              # every file was read whole in some part
+        assert any(sec in u for u in parts_seen)
+
+
+def test_one_failing_part_fails_the_pr(monkeypatch: pytest.MonkeyPatch) -> None:
+    diff = "".join(_section(f"desks/mt5/research/m{i}.py", 4_000) for i in range(3))
+    seen: list[str] = []
+    ladder = [("qwen", "q:7b", _summarising("qwen", seen, "FAIL")),
+              ("meta-llama", "l:8b", _summarising("llama", seen))]
+    v, _ = ir.review_in_parts(diff, ir.changed_files(diff), ladder,
+                              money=lambda f: ([], "none"), sleep=lambda s: None)
+    assert v == "FAIL"
+
+
+def test_a_large_money_path_diff_is_never_read_in_parts(
+        monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """#457 audit MF2 still holds where it matters: a money-path or release file in a diff too
+    large to read whole is a named RED (REVIEW_TOO_LARGE), never a review in parts."""
+    diff = _section("desks/mt5/prop/e8_gold.py", 200) + "".join(
+        _section(f"desks/mt5/research/m{i}.py", 4_000) for i in range(3))
+    files = ir.changed_files(diff)
+    v, log = ir.review_in_parts(diff, files, [], sleep=lambda s: None)
+    assert v == "TOO_LARGE" and "e8_gold.py" in log[-1]
+    pr = {"head": {"sha": "a" * 40}, "changed_files": len(files)}
+    monkeypatch.setattr(ir, "_gh", lambda *a: _json.dumps(pr) if a[0].endswith("/pulls/7")
+                        else diff)
+    monkeypatch.setattr(ir, "rungs", lambda n: ([("qwen", "qwen2.5-coder:7b", None)], []))
+    rc = ir.main(["--repo", "o/r", "--pr", "7", "--head", "a" * 40, "--base-sha", "b" * 40])
+    out = capsys.readouterr().out
+    assert rc == 1 and "REVIEW_TOO_LARGE" in out and "PR #7" in out
+
+
+def test_the_money_path_split_reads_the_base_tree() -> None:
+    hits, why = ir.money_files(["desks/mt5/prop/e8_gold.py", "desks/mt5/research/a_new_miner.py",
+                                ".github/workflows/ci.yml", "docs/x.md"])
+    assert "desks/mt5/prop/e8_gold.py" in hits and ".github/workflows/ci.yml" in hits, why
+    assert "desks/mt5/research/a_new_miner.py" not in hits and "docs/x.md" not in hits, why

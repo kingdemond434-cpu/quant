@@ -167,11 +167,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 200
     steps:
-      # the base only: the PR's code never runs in the reviewer's job
+      # the base only: the PR's code never runs in the reviewer's job. The whole base tree, not
+      # just ops/release: a diff too large to read whole is reviewed in parts only when no file
+      # of it is money path, and that is read from the BASE tree's import closure (it is parsed,
+      # never run).
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.sha }}
-          sparse-checkout: ops/release
           persist-credentials: false
 
       - uses: actions/setup-python@v5
