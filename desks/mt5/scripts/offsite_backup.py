@@ -36,6 +36,22 @@ key with it and the backup is unreadable). Absent config: NOT_ARMED. Absent rest
 Both are recorded states and exit 0. Nothing here prints the password, the env or the repository
 URL (which can carry a credential); the report carries the scheme only.
 
+LOCAL FIRST (2026-10-29). The job never ran because it had nowhere to send to, so nothing on the
+box had a versioned copy at all. `--init-local C:\\backup\\restic` writes the config with a
+repository on this box's own disk and a random password (never printed), so snapshots, prune,
+check and the restore drill start now. A local repository protects against deletion, corruption
+and a bad deploy, not against losing the box: its verdict is LOCAL_ONLY, never PASS, until the
+repository is pointed off-site.
+
+LEDGERS, CERTS AND MOAT TOO (2026-10-29). The moat replica in git refuses the stores over 64 MB
+(alpha_registry, shadow_ledgers) and was last written 2026-08-29, so the desk's own data dirs
+are sources here as well. Restic deduplicates, so a source inside another costs nothing.
+
+SECRETS BY CONSTRUCTION, NOT BY PATTERN. restic is handed an explicit file list
+(`--files-from-verbatim`) built here, and no path with a `secrets` component or an `accounts.dat`
+ever enters it; the `--exclude` patterns stay as a second fence. A Windows-path quirk in restic's
+own pattern matching can therefore never ship a secret.
+
 Writes `desks/mt5/reports/OFFSITE_BACKUP.json`, read by `research/ops_redundancy.py`.
 """
 from __future__ import annotations
@@ -45,6 +61,7 @@ import contextlib
 import hashlib
 import json
 import os
+import secrets
 import shutil
 import subprocess
 import tempfile
@@ -64,7 +81,18 @@ SOURCES: tuple[str, ...] = (
     str(ROOT / "data" / "tape"),
     str(BASE / "data" / "tape"),
     os.path.expandvars(r"%APPDATA%\MetaQuotes\Terminal"),
+    # ledgers, sleeve registry, certs, shadow ledgers, the moat stores and their git replica
+    str(BASE / "data"),
+    str(BASE / "reports"),
+    str(ROOT / "data"),
+    str(ROOT / "backups"),
 )
+#: Repository schemes that live somewhere other than this box. Anything else (a drive path) is
+#: local: versioned, but gone with the box.
+REMOTE_SCHEMES = ("s3", "sftp", "rest", "b2", "azure", "gs", "swift", "rclone")
+#: Path components and names that never enter the file list.
+NEVER = ("secrets",)
+NEVER_NAMES = ("accounts.dat",)
 #: Never shipped, whatever the config says.
 EXCLUDES: tuple[str, ...] = ("**/secrets/**", "**/accounts.dat", "**/*.lock", "**/logs/**")
 RETENTION = ("--keep-hourly", "24", "--keep-daily", "30", "--keep-weekly", "12",
@@ -144,14 +172,78 @@ def _readable(p: Path) -> bool:
         return False
 
 
-def _sample(nodes: list[dict[str, Any]], k: int = RESTORE_FILES) -> list[dict[str, Any]]:
+def files_to_ship(sources: list[str]) -> list[str]:
+    """Every file under the sources except secrets, the broker login, locks and logs; each file
+    once, however many sources contain it."""
+    out: set[str] = set()
+    for src in sources:
+        root = Path(src)
+        walk = [(str(root.parent), [], [root.name])] if root.is_file() else os.walk(root)
+        for d, dirs, names in walk:
+            dirs[:] = [x for x in dirs if x.lower() not in NEVER and x.lower() != "logs"]
+            if any(part.lower() in NEVER for part in Path(d).parts):
+                continue
+            for n in names:
+                low = n.lower()
+                if low in NEVER_NAMES or low.endswith(".lock"):
+                    continue
+                out.add(os.path.join(d, n))
+    return sorted(out)
+
+
+def is_remote(repository: str) -> bool:
+    return str(repository).split(":", 1)[0].lower() in REMOTE_SCHEMES
+
+
+def _scheme(repository: str) -> str:
+    return str(repository).split(":", 1)[0].lower() if is_remote(repository) else "local"
+
+
+def init_local(path: str, config: Path = CONFIG) -> str:
+    """Arm a repository on this box's disk with a fresh random password. Never overwrites a
+    config that exists (that one holds the only key to its snapshots) and never prints the key."""
+    if config.exists():
+        return f"kept: {config.name} already exists"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    doc = {"repository": path, "password": secrets.token_urlsafe(32),
+           "key_escrowed_off_box": False}
+    config.write_text(json.dumps(doc, indent=1), "utf-8")
+    return f"armed: local repository, key in {config.name} (copy it off the box to escrow it)"
+
+
+def _snap_root(src: str) -> str:
+    """A source as restic writes it in a snapshot: `C:\\x\\y` -> `/C/x/y`."""
+    p = src.replace("\\", "/")
+    if len(p) > 1 and p[1] == ":":
+        p = "/" + p[0] + p[2:]
+    return p.rstrip("/")
+
+
+def _sample(nodes: list[dict[str, Any]], k: int = RESTORE_FILES,
+            roots: list[str] | None = None) -> list[dict[str, Any]]:
     """Up to k restorable files, spread across the snapshot: every n-th of the size-bounded files
-    in path order, so the drill touches every source rather than one directory."""
+    in path order, so the drill touches every source rather than one directory. With `roots`, the
+    k are shared out source by source (a file belongs to the longest root containing it), so the
+    tick archive's file count cannot crowd the ledgers out of the drill."""
     files = sorted((n for n in nodes if n.get("type") == "file"
                     and 0 < int(n.get("size") or 0) <= RESTORE_MAX_BYTES),
                    key=lambda n: str(n.get("path")))
-    step = max(1, len(files) // k) if files else 1
-    return files[::step][:k]
+    if not roots:
+        step = max(1, len(files) // k) if files else 1
+        return files[::step][:k]
+    snap = sorted({_snap_root(r) for r in roots}, key=len, reverse=True)
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for n in files:
+        path = str(n.get("path")).replace("\\", "/")
+        owner = next((r for r in snap if path == r or path.startswith(r + "/")), "")
+        groups.setdefault(owner, []).append(n)
+    per = max(1, -(-k // max(1, len(groups))))
+    pick: list[dict[str, Any]] = []
+    for owner in sorted(groups):
+        g = groups[owner]
+        step = max(1, len(g) // per)
+        pick.extend(g[::step][:per])
+    return pick
 
 
 def _restored_at(target: Path, snap_path: str) -> Path | None:
@@ -173,7 +265,8 @@ def _restored_at(target: Path, snap_path: str) -> Path | None:
 
 
 def restore_drill(exe: str, env: dict[str, str], runner: Any = _run,
-                  now: datetime | None = None) -> dict[str, Any]:
+                  now: datetime | None = None,
+                  roots: list[str] | None = None) -> dict[str, Any]:
     """Restore a sample of the latest snapshot to a temp directory and compare it with the box.
 
     PASS needs at least one file restored and every restored file either byte-identical to its
@@ -191,7 +284,7 @@ def restore_drill(exe: str, env: dict[str, str], runner: Any = _run,
             d = json.loads(line)
             if isinstance(d, dict) and d.get("struct_type") == "node":
                 nodes.append(d)
-    pick = _sample(nodes)
+    pick = _sample(nodes, roots=roots)
     if not pick:
         rep.update(verdict="FAIL", why="the latest snapshot lists no restorable file")
         return rep
@@ -259,9 +352,10 @@ def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
     elif not have:
         doc.update(status="FAIL", why="none of the box-only sources exists on this machine")
     elif dry_run:
-        doc.update(status="DRY_RUN", scheme=str(cfg["repository"]).split(":", 1)[0])
+        doc.update(status="DRY_RUN", scheme=_scheme(cfg["repository"]))
     else:
-        doc["scheme"] = str(cfg["repository"]).split(":", 1)[0]
+        doc["scheme"] = _scheme(cfg["repository"])
+        doc["offsite"] = is_remote(cfg["repository"])
         env = {**os.environ, **{str(k): str(v) for k, v in (cfg.get("env") or {}).items()},
                "RESTIC_REPOSITORY": str(cfg["repository"]),
                "RESTIC_PASSWORD": str(cfg["password"])}
@@ -270,8 +364,17 @@ def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
             init = runner([exe, "init"], env)
             doc["initialised"] = init.returncode == 0
         ex = [a for e in EXCLUDES for a in ("--exclude", e)]
-        b = runner([exe, "backup", "--json", "--tag", "quant-box", "--exclude-caches",
-                    *ex, *have], env)
+        listing = files_to_ship(have)
+        doc["files_listed"] = len(listing)
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".txt",
+                                         delete=False) as fl:
+            fl.write("\n".join(listing) + "\n")
+        try:
+            b = runner([exe, "backup", "--json", "--tag", "quant-box", "--exclude-caches",
+                        *ex, "--files-from-verbatim", fl.name], env)
+        finally:
+            with contextlib.suppress(OSError):
+                os.unlink(fl.name)
         # restic exits 3 when some source files could not be read (a tick file mid-write):
         # the snapshot exists and covers everything else, so it is a success with a warning.
         doc["backup"] = {"exit": b.returncode, **_summary(b.stdout)}
@@ -289,7 +392,7 @@ def run(*, dry_run: bool = False, config: Path = CONFIG, out: Path = OUT,
             last_drill = _ts((doc.get("restore_drill") or {}).get("at"))
             if last_drill is None or now - last_drill >= RESTORE_EVERY:
                 try:
-                    doc["restore_drill"] = restore_drill(exe, env, runner, now)
+                    doc["restore_drill"] = restore_drill(exe, env, runner, now, roots=have)
                 except Exception as exc:   # a drill that cannot run is a failed drill
                     doc["restore_drill"] = {"at": doc["at"], "verdict": "FAIL",
                                             "why": f"{type(exc).__name__}: {exc}"[:300]}
@@ -320,6 +423,9 @@ def verdict(doc: dict[str, Any], now: datetime | None = None) -> tuple[str, str]
     if rd_at is None or now - rd_at > timedelta(days=8) or rd.get("verdict") != "PASS":
         return "UNVERIFIED", ("snapshots decrypt, but no passing RESTORE drill in 8 days: "
                               f"{rd.get('why') or 'never restored'}")
+    if doc.get("offsite") is False:
+        return "LOCAL_ONLY", ("versioned, read back and restore-drilled, but the repository is on "
+                              "this box: losing the box loses it. Point it off-site.")
     if not doc.get("key_escrowed_off_box"):
         return "KEY_NOT_ESCROWED", ("encrypted and verified, but the repository password is not "
                                     "attested as held off the box: a dead box takes the key")
@@ -330,7 +436,12 @@ def verdict(doc: dict[str, Any], now: datetime | None = None) -> tuple[str, str]
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--init-local", metavar="PATH",
+                    help="arm a repository on this box's disk with a random key, then exit")
     a = ap.parse_args(argv)
+    if a.init_local:
+        print(init_local(a.init_local))
+        return 0
     doc = run(dry_run=a.dry_run)
     print(json.dumps({k: doc.get(k) for k in ("status", "included", "missing",
                                               "last_success_at")}))
