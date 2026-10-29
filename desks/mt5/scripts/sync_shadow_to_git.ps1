@@ -767,11 +767,6 @@ $ReportCapBytes = 4MB
 $reportPaths = @(
     # the box's swap capture age (2026-10-06): a stopped MT5-ContractTerms reads STALE by name
     "desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json",
-    # THE COST SURFACE ITSELF (2026-10-14): symbol x broker-hour spread from the bars AND from
-    # the tick tape (zeros included), plus ATR(20) on H1, per symbol. Nine Tier-S clocks waited on
-    # it as UNMEASURED_COST while origin's copy read 2026-09-23 and the H1 bars stay on the box.
-    # ~1-2 MB, under $ReportCapBytes; MT5-CostState rebuilds it.
-    "desks/mt5/data/cost_surface.json",
     "desks/mt5/reports/RESEARCH_BUDGET.json",
     "desks/mt5/data/research_budget.json",
     # how fresh the box's bars and ticks are (2026-10-21, research/bars_state.py, core leg
@@ -823,8 +818,9 @@ $reportPaths = @(
     # branch held the 2026-09-23 copy carried in by the orphan root, because no list here named
     # it: every reader off the box (pf_allocator, entry_timing, stop_geometry_derivation,
     # expression_factory, desk_economics, the PIT audit) charged costs four weeks old.
-    #   cost_surface.json       per-symbol/per-hour spread quantiles from the bars (~1 MB, under
-    #                           the cap); no account field at all
+    #   cost_surface.json       per-symbol/per-hour spread quantiles from the bars AND from the
+    #                           tick tape (zeros included), plus ATR(20) on H1 with its as-of
+    #                           stamp (~1-2 MB, under the cap); no account field at all
     #   cost_truth_quotes.json  the broker's quoted contract terms and deal costs; its writer
     #                           (research/cost_truth.py) WITHHOLDS the login, and
     #                           tests/ops/test_live_infrastructure_is_not_published.py fences it
