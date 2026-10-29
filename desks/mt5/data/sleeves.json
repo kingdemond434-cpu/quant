@@ -54665,6 +54665,49 @@
       "retired_at": "2026-10-29T06:17:31+00:00",
       "retire_reason": "AUDSGD is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
       "retired_by": "live_policy"
+    },
+    {
+      "name": "XCUUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=london_side_mode=revert_ttl_bars=8",
+      "symbol": "XCUUSD",
+      "lot": "auto_ramp",
+      "risk_frac": 0.0,
+      "risk_frac_source": "none",
+      "admission": {
+        "status": "UNMEASURED",
+        "risk_frac": 0.0,
+        "streak": 0,
+        "delta_elogw_per_day": null,
+        "heat_earned": null,
+        "joined": "no allocator row answers to any of [\"xcuusd.cross_asset_residual.asia@m5#beta_win=240_entry_z=2.0_factor_symbols=['nzdusd', 'usdhuf']_lookback=240_session=london_side_mode=revert_ttl_bars=8\", 'xcuusd|cross_asset_residual|asia', 'xcuusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass",
+        "why": "no allocator row answers to any of [\"xcuusd.cross_asset_residual.asia@m5#beta_win=240_entry_z=2.0_factor_symbols=['nzdusd', 'usdhuf']_lookback=240_session=london_side_mode=revert_ttl_bars=8\", 'xcuusd|cross_asset_residual|asia', 'xcuusd|asia']: this sleeve is not in the priced universe, or the admission scan's budget did not reach it, so its marginal contribution has not been measured on this pass. Capital requires a measured marginal, and an unmeasured one is not a positive one -- but it is not a refusal either, so risk already held is not removed on it."
+      },
+      "status": "RETIRED",
+      "promoted_at": "2026-10-29T08:31:36+00:00",
+      "shadow_exp": 0.2789894249925974,
+      "family": "cross_asset_residual",
+      "side": "LONG",
+      "certificate_drift": true,
+      "certificate": "XCUUSD.cross_asset_residual.asia@M5#beta_win=240_entry_z=2.0_factor_symbols=['NZDUSD', 'USDHUF']_lookback=240_session=london_side_mode=revert_ttl_bars=8",
+      "sleeve_id": "642e54bc418293cc44b3",
+      "selector": "asia",
+      "state": null,
+      "params": {
+        "beta_win": 240,
+        "entry_z": 2.0,
+        "factor_symbols": [
+          "NZDUSD",
+          "USDHUF"
+        ],
+        "lookback": 240,
+        "session": "london",
+        "side_mode": "revert",
+        "timeframe": "M5",
+        "ttl_bars": 8
+      },
+      "exec": "family_market",
+      "retired_at": "2026-10-29T08:31:37+00:00",
+      "retire_reason": "XCUUSD is outside the live sleeve universe ['EURILS', 'EURZAR', 'USDJPY', 'USDNOK', 'XAUUSD'] -- principal 2026-09-24: the gold-only restriction on the live account is LIFTED (it existed because gold was the profitable book, not because gold was the only permitted instrument); the 'discovered' family ban STANDS permanently; add ONE yen cross -- the best of the four on maximum growth -- rather than all four, because EURJPY/GBPJPY correlate +0.891 and four yen crosses are barely two independent bets, while gold against that block is -0.117",
+      "retired_by": "live_policy"
     }
   ]
 }
