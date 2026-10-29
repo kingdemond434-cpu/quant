@@ -375,15 +375,22 @@ def record_tape() -> dict:
             results[f"{label}_exit_code"] = rc
             codes.append(int(rc))
     results["exit_code"] = max(codes) if codes else 1
-    # THE THIRD FATE (2026-10-29): is what was just written READABLE and JUDGED? The recorder
-    # ran green for weeks while every tape reader opened the wrong files. Its own key, never
-    # folded into exit_code: a blind reader must not read as a failed recording, nor hide one.
+    return results
+
+
+def tape_liveness() -> dict:
+    """THE THIRD FATE (2026-10-29): is what `record_tape` just wrote READABLE and JUDGED?
+
+    The recorder ran green for weeks while every tape reader opened the wrong files, and nothing
+    compared the two. Its own leg, so a blind reader never reads as a failed recording (nor hides
+    one), and its RED is a ledger VERDICT (exit 2, VERDICT_EXITS) the completion board counts.
+    """
     try:
-        results["liveness_exit_code"] = _tape_liveness_main()
+        rc = _tape_liveness_main()
     except Exception as exc:
         print(f"tick tape liveness FAILED: {type(exc).__name__}: {exc}", flush=True)
-        results["liveness_error"] = f"{type(exc).__name__}: {exc}"
-    return results
+        return {"error": f"{type(exc).__name__}: {exc}"}
+    return {"exit_code": rc, "report": "desks/mt5/reports/TAPE_LIVENESS.json"}
 
 
 def _tape_liveness_main() -> int:
@@ -1078,6 +1085,8 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
     "model_skill": (2,),
     "deep_forest": (1,),
     "maintain_miners": (2,),
+    # TAPE_LIVENESS RED: writer, reader or judge broke. Bad news about the tape, not a crash.
+    "tape_liveness": (2,),
     # `daily_cycle` exits 75 (EXIT_STOOD_DOWN) when another chain healthily holds its lock and
     # this bounded caller ran nothing: the holder is running the same steps (v1.2).
     "daily": (DAILY_CYCLE_STOOD_DOWN,),
@@ -1125,6 +1134,7 @@ def _exit_outcome(name: str, code: int) -> str:
 HOURLY_PLAN = str(os.environ.get("HOURLY_PLAN", "all") or "all").strip().lower()
 CORE_LEGS: frozenset[str] = frozenset({
     "smoke_release", "health", "release_identity", "input_identity", "burn_in", "record_tape",
+    "tape_liveness",
     # `state_vector` is listed here for the reader's sake and runs on NEITHER plan: it is in
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
@@ -4012,6 +4022,7 @@ def main() -> None:
     # compiles and merges discoveries generated during this pass.
     _costed("intake_catchup", catch_up_intake)
     t = _costed("record_tape", record_tape)
+    _costed("tape_liveness", tape_liveness)
     s = _costed("state_vector", state_vector)
     rg = _costed("regime_monitor", refresh_regime)
     d = _costed("daily", daily)

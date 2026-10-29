@@ -97,19 +97,14 @@ def _ts(value: Any) -> datetime | None:
 
 def load_ticks(symbol: str, day: datetime):
     """One day of the venue's own quotes, or None. Absence is UNMEASURED, never zero."""
-    path = TAPE / symbol / f"{day.date().isoformat()}.parquet"
-    if not path.exists():
-        return None
+    # Both tape writers, unioned and deduplicated (mt5desk.tape_days): the dashed name alone
+    # missed every day only the moat silver holds (2026-10-29).
+    from mt5desk.tape_days import day_quotes
     try:
-        import pandas as pd
-        df = pd.read_parquet(path)
-        if "ts" not in df.columns:
-            return None
-        df = df[["ts", "bid", "ask"]].dropna()
-        df["ts"] = pd.to_datetime(df["ts"], utc=True)
-        return df.sort_values("ts").reset_index(drop=True)
+        df = day_quotes(TAPE / symbol, day.date().isoformat())
     except Exception:
         return None
+    return None if df is None else df[["ts", "bid", "ask"]].reset_index(drop=True)
 
 
 def reconstruct(row: dict, sleeve: str, symbol: str, session: str) -> Exec | None:

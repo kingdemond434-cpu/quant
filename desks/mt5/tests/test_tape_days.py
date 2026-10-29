@@ -8,6 +8,7 @@ read threw, and `_tape_series` was None for every symbol while the recorder was 
 from __future__ import annotations
 
 import sys
+from datetime import UTC
 from pathlib import Path
 
 import pandas as pd
@@ -66,6 +67,8 @@ def test_newest_days_are_dates_not_names(tmp_path):
         _dashed(d, day)
     files = tape_days.day_files(d, last=2)
     assert [f.name for f in files] == ["2026-10-28.parquet", "2026-10-29.parquet"]
+    t = tape_days.recent_quotes(d, 2)
+    assert t is not None and t.index.min().date().isoformat() == "2026-10-28"
 
 
 def test_recent_quotes_reads_compact_files_with_no_ts(tmp_path):
@@ -78,22 +81,96 @@ def test_recent_quotes_reads_compact_files_with_no_ts(tmp_path):
     assert t.index.max() == pd.Timestamp(_ms("2026-10-29", 5)[-1], unit="ms", tz="UTC")
 
 
-def test_same_day_from_both_writers_reads_once_and_the_fuller_one_wins(tmp_path):
-    d = tmp_path / "BTCUSD"
-    _dashed(d, "2026-10-29", n=50)
-    _compact(d, "2026-10-29", n=3)       # heavier columns, fewer ticks
-    files = tape_days.day_files(d)
-    assert [f.name for f in files] == ["2026-10-29.parquet"]
+def _frame_at(ms: list[int], bid: float = 1.0) -> pd.DataFrame:
+    return pd.DataFrame({"time_msc": ms, "bid": [bid] * len(ms), "ask": [bid + 0.1] * len(ms)})
+
+
+def _write(d: Path, name: str, df: pd.DataFrame, with_ts: bool) -> None:
+    d.mkdir(parents=True, exist_ok=True)
+    if with_ts:
+        df = df.assign(ts=pd.to_datetime(df["time_msc"], unit="ms", utc=True))
+    df.to_parquet(d / name, index=False)
+
+
+def test_a_restart_split_across_both_writers_keeps_every_tick(tmp_path):
+    """Auditor probe MF1: dashed holds 00-12h, compact holds 10-24h. Union, never pick one."""
+    d = tmp_path / "XAUUSD"
+    t0 = int(pd.Timestamp("2026-10-29", tz="UTC").value // 1_000_000)
+    sec = 1_000
+    _write(d, "2026-10-29.parquet", _frame_at([t0 + i * sec for i in range(0, 43_200)]), True)
+    _write(d, "20261029.parquet", _frame_at([t0 + i * sec for i in range(36_000, 86_400)]), False)
     t = tape_days.recent_quotes(d, 30)
-    assert t is not None and len(t) == 50
+    assert t is not None
+    assert len(t) == 86_400                       # every unique tick, the overlap counted once
+    assert t["time_msc"].is_unique
 
 
-def test_a_torn_best_file_falls_back_to_the_other_writer(tmp_path):
+def test_a_receive_day_file_spilling_into_the_next_day_loses_nothing(tmp_path):
+    """Compact keys by RECEIVE day: 20261029 can hold 00:00-01:00 of the 30th. The 29th's dashed
+    morning must survive and the 30th must not double-count the spill."""
+    d = tmp_path / "EURUSD"
+    day29 = int(pd.Timestamp("2026-10-29", tz="UTC").value // 1_000_000)
+    day30 = day29 + DAY_MS
+    _write(d, "2026-10-29.parquet", _frame_at([day29 + i * 60_000 for i in range(600)]), True)
+    spill = [day29 + 23 * 3_600_000 + i * 60_000 for i in range(120)]   # 23:00 -> 01:00
+    _write(d, "20261029.parquet", _frame_at(spill), False)
+    _write(d, "2026-10-30.parquet", _frame_at([day30 + i * 60_000 for i in range(60)]), True)
+    t = tape_days.recent_quotes(d, 30)
+    assert t is not None
+    assert len(t) == 600 + 120                    # 60 of the spill ARE the 30th's first hour
+    assert t["time_msc"].is_unique
+    one = tape_days.recent_quotes(d, 1)
+    assert one is not None and one.index.min() == pd.Timestamp(day30, unit="ms", tz="UTC")
+    assert len(one) == 60
+
+
+def test_duplicate_ticks_from_overlapping_repulls_are_dropped(tmp_path):
+    """The recorder re-pulls its last window after a crash; its contract is that readers dedupe."""
+    d = tmp_path / "BTCUSD"
+    t0 = int(pd.Timestamp("2026-10-29", tz="UTC").value // 1_000_000)
+    ms = [t0 + i for i in range(500)]
+    _write(d, "20261029.parquet", pd.concat([_frame_at(ms), _frame_at(ms)]), False)
+    t = tape_days.recent_quotes(d, 30)
+    assert t is not None and len(t) == 500
+
+
+def test_a_ts_only_millisecond_file_derives_the_right_time_msc(tmp_path):
+    """Auditor S2: ts stored at ms resolution must give 1793282642940, not 1793282."""
+    d = tmp_path / "USDJPY"
+    d.mkdir()
+    ts = pd.Series(pd.to_datetime([1793282642940], unit="ms", utc=True)).dt.as_unit("ms")
+    pd.DataFrame({"ts": ts, "bid": [1.0], "ask": [1.1]}).to_parquet(d / "2026-10-29.parquet")
+    got = tape_days.read_quotes(d / "2026-10-29.parquet")
+    assert got is not None and int(got["time_msc"].iloc[0]) == 1793282642940
+
+
+def test_a_torn_file_is_skipped_and_the_other_writer_still_reads(tmp_path):
     d = tmp_path / "USDJPY"
     _compact(d, "2026-10-29", n=4)
     (d / "2026-10-29.parquet").write_bytes(b"PAR1 not really parquet PAR1")
     t = tape_days.recent_quotes(d, 30)
     assert t is not None and len(t) == 4
+
+
+def test_triangle_latest_reads_the_newest_day_not_the_newest_name(tmp_path, monkeypatch):
+    """Auditor MF2: sorted(glob)[-1] opened yesterday's ts-less compact file."""
+    from mt5desk import triangle_tape
+    _compact(tmp_path / "EURGBP", "2026-10-28")
+    _dashed(tmp_path / "EURGBP", "2026-10-29")
+    monkeypatch.setattr(triangle_tape, "TICKS", tmp_path)
+    got = triangle_tape._latest("EURGBP")
+    assert got is not None and set(got.columns) >= triangle_tape.QUOTE_COLUMNS
+    assert pd.to_datetime(got["ts"]).max().date().isoformat() == "2026-10-29"
+
+
+def test_shadow_execution_reads_a_day_only_the_silver_holds(tmp_path, monkeypatch):
+    from datetime import datetime as _dt
+
+    from mt5desk import shadow_execution
+    _compact(tmp_path / "XAUUSD", "2026-10-29")
+    monkeypatch.setattr(shadow_execution, "TAPE", tmp_path)
+    got = shadow_execution.load_ticks("XAUUSD", _dt(2026, 10, 29, 5, tzinfo=UTC))
+    assert got is not None and len(got) == 5 and list(got.columns) == ["ts", "bid", "ask"]
 
 
 def test_orthogonal_sweep_reader_sees_the_fresh_tape(tmp_path, monkeypatch):
