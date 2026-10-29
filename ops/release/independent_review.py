@@ -731,13 +731,18 @@ def is_money_file(path: str) -> bool:
     return path.startswith(_rs.MONEY_PATH) or path in _rs.ENTRY_POINTS
 
 
-def manifest(diff: str) -> str:
+def manifest(diff: str, skip: frozenset[str] = frozenset()) -> str:
     """The whole diff in brief, for every part: each file's hunk headers, and every changed
-    line that names a risk word or an UP word (#547 audit MF1 b)."""
+    line that names a risk word or an UP word (#547 audit MF1 b). `skip`: files the part itself
+    carries whole, listed by name only."""
     out: list[str] = []
+    mine = False
     for line in diff.split("\n"):
         if line.startswith("diff --git "):
-            out.append(line)
+            mine = _section_path(line) in skip
+            out.append(line + ("  (in this part, whole)" if mine else ""))
+        elif mine:
+            continue
         elif line.startswith("@@"):
             out.append(line[:160])
         elif (
@@ -778,13 +783,15 @@ def review(
     sections = [x for x in re.split(r"(?=^diff --git )", diff, flags=re.M) if x]
     money = "".join(x for x in sections if is_money_file(_section_path(x)))
     rest = "".join(x for x in sections if not is_money_file(_section_path(x)))
-    if len(money) > limit:
+    own = frozenset(_section_path(x) for x in sections if is_money_file(_section_path(x)))
+    mhead = manifest(diff, own)
+    if money and len(prompt(mhead + money, files, "0" * 16, f"{10**6} of {10**6}")) > room:
         return "FAIL", [f"FAIL: the money-path files ({len(money)} characters) do not fit one "
-                        f"part ({limit}): they are never read apart"]  # fmt: skip
+                        f"part: they are never read apart"]  # fmt: skip
     others = split_diff(rest, limit) if rest else []
     if others is None:
         return "FAIL", ["FAIL: one hunk alone is too large for the reviewers to read whole"]
-    parts = ([money] if money else []) + others
+    parts = ([mhead + money] if money else []) + [head + x for x in others]
     log = [f"the diff does not fit {num_ctx} tokens whole: {len(parts)} parts and a final vote"]
     deadline = clock() + budget_s
     abstained: set[str] = set()
@@ -792,7 +799,7 @@ def review(
     for i, chunk in enumerate(parts, 1):
         tag = f"{i} of {len(parts)}"
         verdict, got = vote(
-            head + chunk, files, ladder, max(0.0, deadline - clock()), sleep, clock,
+            chunk, files, ladder, max(0.0, deadline - clock()), sleep, clock,
             part=tag, abstained=abstained, answers=answers,
         )  # fmt: skip
         log += [f"part {tag}: {x}" for x in got]
