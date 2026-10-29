@@ -720,8 +720,15 @@ NODES: tuple[Node, ...] = (
     # above, and TAPE_RECORDER.json is tick_recorder's. The duplicate name also shadowed the real
     # node in `_decision_paths`, which is why tick_recorder read as reaching nothing.)
     Node("futures_lead_lag", "desks/mt5/research/futures_lead_lag.py",
-         writes=("desks/mt5/reports/FUTURES_LEAD_LAG.json", "desks/mt5/reports/BAR_CLOCK.json"),
+         writes=("desks/mt5/reports/FUTURES_LEAD_LAG.json",),
          reads=("desks/mt5/data/universe/",)),
+    # The ONE writer of BAR_CLOCK.json: terminal server time against UTC, appended to its ledger,
+    # with the release-spike and futures cross-venue readings as second opinions.
+    Node("bar_clock_probe", "desks/mt5/research/bar_clock_probe.py",
+         writes=("desks/mt5/reports/BAR_CLOCK.json", "desks/mt5/data/bar_clock_probes.jsonl",
+                 "desks/mt5/data/bar_clock_probes.summary.json"),
+         reads=("desks/mt5/reports/FUTURES_LEAD_LAG.json",
+                "desks/mt5/data/intelligence/ff_calendar_vintage", "desks/mt5/data/universe/")),
     Node("time_joins", "scripts/check_time_joins.py",
          writes=("desks/mt5/reports/TIME_JOINS.json",)),
     Node("fusion_cost", "libs/portfolio/fusion_cost.py",
@@ -1024,6 +1031,10 @@ HUMAN_READ = frozenset({
     # kimi_hunter and meta_architect both APPEND to it and neither reads it back: a gitignored
     # audit trail (CLAUDE.md, "seat output goes through data/intelligence/<seat>/").
     "data/suggestion_ledger.jsonl",
+    # bar_clock_probe's own cumulative state: every reading is appended to the ledger and the
+    # summary is rebuilt from it; BAR_CLOCK.json (read by the bar clock) is what leaves the node,
+    # and these two are its audit trail, which the self-edge rule cannot credit.
+    "desks/mt5/data/bar_clock_probes.jsonl", "desks/mt5/data/bar_clock_probes.summary.json",
 })
 
 #: Consumers outside this graph that are known to read an artifact -- the crawler reads the
