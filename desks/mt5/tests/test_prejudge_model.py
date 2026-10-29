@@ -266,7 +266,8 @@ def _tables_and_sample(st: dict) -> tuple[dict, list]:
     return st["tables"].c, st["sample"]
 
 
-def test_a_resumed_stream_equals_one_uninterrupted_pass(tmp_path: Path) -> None:
+def test_a_resumed_stream_equals_one_uninterrupted_pass(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(pm, "PER_KEY_CAP", 20)      # the reservoir fills, so its RNG matters
     led = _ledger(tmp_path / "ledger.jsonl", n=400)
     whole = pm.stream_ledger(led, seed=3)
     text = led.read_text("utf-8").splitlines(keepends=True)
