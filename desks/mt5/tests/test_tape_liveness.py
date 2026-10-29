@@ -192,7 +192,7 @@ def test_main_writes_the_report_and_carries_open_since(tmp_path, monkeypatch):
         f: {"mined": 10, "judged_total": 3} for f in tl.TAPE_FAMILIES}}
     state = _point(tmp_path, monkeypatch, UNIVERSE, cov)
     monkeypatch.setattr(tl, "_default_reader", _reader_seeing(state))
-    assert tl.main() == 0
+    assert tl.main(now=NOW) == 0
     rep = json.loads((tmp_path / "TAPE_LIVENESS.json").read_text())
     assert rep["recorder"]["classes"]["Forex"]["open_since"]
     assert not list(tmp_path.glob("*.tmp"))

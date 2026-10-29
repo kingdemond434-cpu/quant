@@ -126,7 +126,12 @@ def union_frames(frames: list[pd.DataFrame]) -> pd.DataFrame | None:
         return None
     t = pd.concat(frames, ignore_index=True)
     t = t.dropna(subset=["ts", "time_msc", "bid", "ask"])
-    t = t.drop_duplicates(subset=list(DEDUPE_KEY), keep="first")
+    # The quote half of the key is compared at float32: a writer that stored float32 reads back
+    # 1.35 as 1.3500000238, and that must still be the same tick. float32 keeps ~7 significant
+    # digits, finer than any venue's tick on this universe (BTC at 67,000 resolves to 0.008).
+    key = pd.DataFrame({"m": t["time_msc"].astype("int64"),
+                        "b": t["bid"].astype("float32"), "a": t["ask"].astype("float32")})
+    t = t[~key.duplicated(keep="first").to_numpy()]
     return t.sort_values("ts", kind="stable")
 
 

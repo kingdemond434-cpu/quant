@@ -358,8 +358,8 @@ def write_report(report: dict[str, Any], out: Path | None = None) -> None:
             tmp.unlink(missing_ok=True)
 
 
-def main() -> int:
-    report = run()
+def main(now: datetime | None = None) -> int:
+    report = run(now=now)
     write_report(report)
     print(f"tape liveness: {report['verdict']}")
     for line in report["red"] + report["amber"]:
