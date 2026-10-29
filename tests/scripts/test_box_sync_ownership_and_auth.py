@@ -41,9 +41,9 @@ def test_the_git_env_is_set_before_the_first_git_call() -> None:
     code = _code(SYNC)
     init = code.index("Initialize-BoxGitEnv -RepoRoot $RepoRoot")
     assert '. (Join-Path $PSScriptRoot "GitBoxEnv.ps1")' in code
-    # Only Git-In-Repo is DEFINED above it; every top-level git call (the branch read, the pull,
-    # the add) runs after it.
-    assert init < code.index("function Invoke-GitWriteRetry")
+    # Only Write-SyncLog and Git-In-Repo are DEFINED above it; every top-level git call (the
+    # branch read, the pull, the publish) runs after it.
+    assert init < code.index("function Merge-FetchHead")
     for call in ("$branch = (& git -C $RepoRoot rev-parse", "Sync-Pull -RepoRoot $RepoRoot",
                  "Open-GitWriterMutex"):
         assert init < code.index(call), f"{call!r} runs before safe.directory is set"
