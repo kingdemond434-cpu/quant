@@ -39,7 +39,7 @@ def test_the_sealed_steps_still_run_in_the_order_restated() -> None:
     main_src = inspect.getsource(G.main)
     marks = ["partition_at_economic_prior(list(cells.values()), meta)",
              "modifier_preflight(_spec)",
-             "family_banned(sp.get(\"family\"))",
+             "_is_banned(sp.get(\"family\"))",
              O.SEALED_SORT_KEY_SOURCE,
              "_ng.screen(_cands)",
              "allocate_by_yield(eligible_specs)",
