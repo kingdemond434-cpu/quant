@@ -9,10 +9,13 @@ nothing:
   * UNWIRED  -- prop/e8_gold.py no longer imports mt5desk.news_fence or calls `verdict`;
   * FLAG     -- data/E8_NEWS_FENCE.json exists but is unreadable or malformed (it reads OFF);
   * BLIND    -- the fence is ON and the calendar refuses this year or holds no date for a
-                monthly tier-1 family (CPI, PPI, PCE, GDP, NFP) this month or next: a gap is a
+                monthly tier-1 family (CPI, PPI, PCE, GDP, NFP) in this or next WHOLE month: a gap is a
                 release the fence cannot see, never a quiet month;
-  * SILENT   -- the lane's last report (reports/E8_GOLD.json, under 1h old) carries no
-                `news_fence` verdict, i.e. a pass ran the old code.
+  * SILENT   -- the lane's last completed (status OK) report, under 1h old, carries no
+                `news_fence` verdict, i.e. a pass ran the old code (NO_BARS / a failed pass
+                return before the fence is asked and are not SILENT);
+  * FAILED OPEN -- that report's verdict carries an `error`: the fence could not be asked and
+                the pass ran unfenced.
 
 With the fence OFF a calendar gap is UNMEASURED (printed, exit 0): the shadow journal still runs
 and the gap is published, but nothing is being relied on. No report on this host is UNMEASURED.
@@ -68,8 +71,13 @@ def assess(*, today: date | None = None, lane: Path = LANE, report: Path = REPOR
             doc = json.loads(report.read_text("utf-8"))
             at = datetime.fromisoformat(str(doc.get("at")))
             age_h = (datetime.now(tz=UTC) - at).total_seconds() / 3600.0
-            if age_h <= REPORT_MAX_AGE_H and "news_fence" not in doc:
+            fresh = age_h <= REPORT_MAX_AGE_H
+            # A NO_BARS or failed pass returns before the fence is asked: not SILENT (v2).
+            if fresh and doc.get("status") == "OK" and "news_fence" not in doc:
                 red.append(f"SILENT: {report.name} ({age_h:.2f}h old) has no news_fence verdict")
+            err = (doc.get("news_fence") or {}).get("error") if fresh else None
+            if err:
+                red.append(f"FAILED OPEN: the lane's last pass could not ask the fence ({err})")
         except (OSError, ValueError, TypeError) as exc:
             unmeasured.append(f"{report.name} unreadable ({type(exc).__name__})")
     else:

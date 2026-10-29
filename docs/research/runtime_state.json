@@ -735,6 +735,26 @@
    "consumer": "desks/mt5/research/plumbing_watchdog.py"
   },
   {
+   "organ": "fence:check_news_fence_liveness",
+   "kind": "task",
+   "code": [
+    "scripts/check_news_fence_liveness.py"
+   ],
+   "clock": "run_law_gate.py",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "UNMEASURED",
+   "why": "row added with patch e8_news_fence/v2: registered in scripts/run_law_gate.py CHECKS; no law-gate run has attested it on any host yet",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/law_gate.json",
+   "artifact_declared": "data/law_gate.json",
+   "artifact_resolved_by": "declared",
+   "progress_metric": "gate_runs",
+   "consumer": "desks/mt5/research/plumbing_watchdog.py"
+  },
+  {
    "organ": "fence:check_autostash",
    "kind": "task",
    "code": [

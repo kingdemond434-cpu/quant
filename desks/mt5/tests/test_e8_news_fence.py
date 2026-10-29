@@ -57,10 +57,10 @@ def test_a_calendar_gap_is_published_never_read_as_a_quiet_month() -> None:
     assert not v.in_window and "UNMEASURED" in v.why and "CPI:2026-10" in v.uncovered
 
 
-def test_an_enabled_fence_with_no_calendar_for_the_year_fails_closed(tmp_path) -> None:
+def test_an_enabled_fence_with_no_calendar_for_the_year_fails_open(tmp_path) -> None:
     f = _flag(tmp_path, {"enabled": True})
     v = nf.verdict(datetime(2027, 1, 8, 9, 0, tzinfo=UTC), flag_path=f)
-    assert not v.calendar_ok and v.blocks
+    assert not v.calendar_ok and not v.blocks and v.uncovered == ("ALL:2027",)
     off = nf.verdict(datetime(2027, 1, 8, 9, 0, tzinfo=UTC), flag_path=tmp_path / "none")
     assert not off.blocks and "UNMEASURED" in off.why
 
@@ -88,6 +88,8 @@ def test_missed_growth_publishes_both_sides_of_the_bill(tmp_path, monkeypatch) -
     from research import missed_growth as mg
     j = tmp_path / "e8_gold_intents.jsonl"
     monkeypatch.setattr(mg, "E8_INTENTS", j)
+    assert mg.published_news_fence_lines()["verdict"] == mg.UNMEASURED      # absent journal
+    j.write_text("", "utf-8")
     assert mg.published_news_fence_lines()["verdict"] == mg.NOT_BINDING
     rows = [{"rail": "e8_news_fence", "status": "SHADOW_FENCE", "missed_growth_risk_usd": 250.0,
              "release": "2026-10-02 12:30Z NFP", "at": "2026-10-02T12:25:00+00:00"},
@@ -118,8 +120,37 @@ def test_liveness_check_goes_red_when_unwired_or_blind_and_is_in_the_law_gate(tm
                      flag=tmp_path / "none")
     assert off["verdict"] == "UNMEASURED" and not off["red"]
     rep = tmp_path / "E8_GOLD.json"
-    rep.write_text(json.dumps({"at": datetime.now(tz=UTC).isoformat()}), "utf-8")
+    rep.write_text(json.dumps({"at": datetime.now(tz=UTC).isoformat(), "status": "OK"}), "utf-8")
     out = chk.assess(today=date(2026, 10, 2), report=rep, flag=tmp_path / "none")
     assert any(r.startswith("SILENT") for r in out["red"])
     gate = (_ROOT / "scripts" / "run_law_gate.py").read_text("utf-8")
     assert '("check_news_fence_liveness.py", ())' in gate
+
+
+def test_gaps_cover_the_whole_month_and_nfp_holiday_moves() -> None:
+    assert nf.uncovered_families(date(2026, 10, 1), date(2026, 10, 1)) == \
+        nf.uncovered_families(date(2026, 10, 31), date(2026, 10, 31))
+    from mt5desk.calendar_us import releases
+    nfp = [r.when.date() for r in releases(date(2026, 7, 1), date(2026, 7, 31))
+           if r.family == "NFP"]
+    assert nfp == [date(2026, 7, 2)]                     # 07-03 is the observed holiday
+
+
+def test_the_flag_reads_with_a_bom_and_bounds_the_windows(tmp_path) -> None:
+    p = tmp_path / "f.json"
+    p.write_bytes(b"\xef\xbb\xbf" + b'{"enabled": true, "pre_min": 20}')
+    assert nf.read_flag(p)[:3] == (True, 20, 15)
+    for bad in ('{"pre_min": 1e999}', '{"post_min": 1000000000000}', '{"pre_min": true}'):
+        p.write_text(bad, "utf-8")
+        assert nf.read_flag(p)[0] is False and "malformed" in nf.read_flag(p)[3]
+
+
+def test_liveness_is_not_silent_red_on_a_no_bars_pass_but_is_red_on_an_error(tmp_path) -> None:
+    from scripts import check_news_fence_liveness as chk
+    rep = tmp_path / "E8_GOLD.json"
+    now = datetime.now(tz=UTC).isoformat()
+    rep.write_text(json.dumps({"at": now, "status": "NO_BARS"}), "utf-8")
+    assert not chk.assess(report=rep, flag=tmp_path / "none")["red"]
+    rep.write_text(json.dumps({"at": now, "status": "OK",
+                               "news_fence": {"error": "boom"}}), "utf-8")
+    assert any("FAILED OPEN" in r for r in chk.assess(report=rep, flag=tmp_path / "none")["red"])

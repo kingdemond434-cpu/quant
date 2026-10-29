@@ -22,13 +22,18 @@ shows what it would have held back, the exits show what it would have saved).
 
 THE FLAG. `desks/mt5/data/E8_NEWS_FENCE.json`:
     {"enabled": true, "pre_min": 15, "post_min": 15}
-Absent -> OFF with the defaults. Unreadable or malformed -> OFF, and `why` says so (the RED check
-in scripts/check_news_fence_liveness.py reports it). Windows are arguments, not constants fitted
+Absent -> OFF with the defaults. Unreadable or malformed (UTF-16, a window outside 0..240 min,
+1e999) -> OFF, and `why` says so; the RED check in scripts/check_news_fence_liveness.py reports
+it. A blind calendar (a month the table cannot see, any day of an absent year) or an error in the
+verdict FAILS OPEN when ON: nothing is blocked, calendar_ok/error are published, and the liveness
+check goes RED (v2; v1 failed closed for the whole day out of year and open in year). Windows are arguments, not constants fitted
 to one afternoon (calendar_us docstring).
 """
 from __future__ import annotations
 
+import calendar
 import json
+import math
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -42,6 +47,9 @@ RAIL = "e8_news_fence"
 SHADOW_STATUS = "SHADOW_FENCE"
 DEFAULT_PRE_MIN = 15
 DEFAULT_POST_MIN = 15
+#: A window wider than this is a typo, not a parameter (and 1e999 / 10**12 must never reach
+#: int() or timedelta): the flag is then MALFORMED and reads OFF.
+MAX_WINDOW_MIN = 240
 #: Families published every month; a month with none of them in the table is a calendar GAP.
 #: FOMC and its minutes meet eight times a year, so a month without them is not evidence.
 MONTHLY = ("NFP", "CPI", "PPI", "PCE", "GDP")
@@ -53,13 +61,16 @@ class FenceVerdict:
     in_window: bool                      # a known tier-1 release is inside the window now
     release: str | None
     why: str
-    calendar_ok: bool = True
+    calendar_ok: bool = True             # False: the table cannot see this month (fails OPEN)
     uncovered: tuple[str, ...] = field(default_factory=tuple)
+    error: str | None = None             # the flag or the verdict itself failed (fails OPEN)
 
     @property
     def blocks(self) -> bool:
-        """True when the fence REFUSES (enabled and in a window, or enabled and blind)."""
-        return self.enabled and (self.in_window or not self.calendar_ok)
+        """True only when enabled AND a KNOWN release is inside the window. A blind calendar or
+        an error never blocks (fail open, v2): it publishes calendar_ok/error and the liveness
+        check goes RED, so a gap costs a release, never a whole day of the book."""
+        return self.enabled and self.in_window
 
     @property
     def would_block(self) -> bool:
@@ -69,73 +80,91 @@ class FenceVerdict:
     def as_dict(self) -> dict[str, Any]:
         return {"enabled": self.enabled, "in_window": self.in_window, "blocks": self.blocks,
                 "release": self.release, "why": self.why, "calendar_ok": self.calendar_ok,
-                "uncovered": list(self.uncovered)}
+                "uncovered": list(self.uncovered), "error": self.error}
+
+
+def _minutes(doc: dict[str, Any], key: str, default: int) -> int:
+    v = doc.get(key, default)
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        raise ValueError(f"{key} is not a number")
+    if isinstance(v, float) and not math.isfinite(v):
+        raise ValueError(f"{key} is not finite")
+    if not 0 <= v <= MAX_WINDOW_MIN:
+        raise ValueError(f"{key} outside 0..{MAX_WINDOW_MIN}")
+    return int(v)
 
 
 def read_flag(path: Path | None = None) -> tuple[bool, int, int, str]:
-    """(enabled, pre_min, post_min, why). Absent or bad -> OFF; never raises."""
+    """(enabled, pre_min, post_min, why). Absent or bad -> OFF; NEVER raises (any exception,
+    a UTF-16 file or a 1e999 window included, reads OFF with its reason)."""
     p = FLAG if path is None else path
     try:
-        raw = p.read_text("utf-8")
-    except FileNotFoundError:
-        return False, DEFAULT_PRE_MIN, DEFAULT_POST_MIN, f"no {p.name}: fence OFF (default)"
-    except OSError as exc:
-        return False, DEFAULT_PRE_MIN, DEFAULT_POST_MIN, f"{p.name} unreadable ({exc}): OFF"
-    try:
-        doc = json.loads(raw)
+        if not p.exists():
+            return False, DEFAULT_PRE_MIN, DEFAULT_POST_MIN, f"no {p.name}: fence OFF (default)"
+        doc = json.loads(p.read_text("utf-8-sig"))
         if not isinstance(doc, dict):
             raise ValueError("not an object")
-        pre = int(doc.get("pre_min", DEFAULT_PRE_MIN))
-        post = int(doc.get("post_min", DEFAULT_POST_MIN))
-        if pre < 0 or post < 0:
-            raise ValueError("negative window")
+        pre = _minutes(doc, "pre_min", DEFAULT_PRE_MIN)
+        post = _minutes(doc, "post_min", DEFAULT_POST_MIN)
         enabled = doc.get("enabled") is True
-    except (ValueError, TypeError) as exc:
-        return False, DEFAULT_PRE_MIN, DEFAULT_POST_MIN, f"{p.name} malformed ({exc}): OFF"
+    except Exception as exc:                                    # by contract: never raises
+        return (False, DEFAULT_PRE_MIN, DEFAULT_POST_MIN,
+                f"{getattr(p, 'name', p)} malformed ({type(exc).__name__}: {exc})"[:200]
+                + ": OFF")
     return enabled, pre, post, f"{p.name}: enabled={enabled} pre={pre} post={post}"
 
 
 def uncovered_families(start: date, end: date) -> tuple[str, ...]:
-    """MONTHLY families with no release in the table for some month in [start, end], as
-    'FAMILY:YYYY-MM'. A gap is a blind spot of the fence, never a quiet month."""
-    try:
-        rel = releases(start, end)
-    except ValueError:
-        return tuple(f"ALL:{y}" for y in range(start.year, end.year + 1))
-    have = {(r.family, r.when.year, r.when.month) for r in rel}
+    """MONTHLY families with no release in the table for some month touched by [start, end]
+    (each WHOLE month, never month-to-date), as 'FAMILY:YYYY-MM'; 'ALL:YYYY' for a year the
+    table refuses. A gap is a blind spot of the fence, never a quiet month."""
+    lo = start.replace(day=1)
+    hi = end.replace(day=calendar.monthrange(end.year, end.month)[1])
     out: list[str] = []
-    y, m = start.year, start.month
-    while (y, m) <= (end.year, end.month):
-        out.extend(f"{f}:{y:04d}-{m:02d}" for f in MONTHLY if (f, y, m) not in have)
-        y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+    for y in range(lo.year, hi.year + 1):
+        a = lo if y == lo.year else date(y, 1, 1)
+        b = hi if y == hi.year else date(y, 12, 31)
+        try:
+            rel = releases(a, b)
+        except ValueError:
+            out.append(f"ALL:{y}")
+            continue
+        have = {(r.family, r.when.month) for r in rel}
+        for m in range(a.month, b.month + 1):
+            out.extend(f"{f}:{y:04d}-{m:02d}" for f in MONTHLY if (f, m) not in have)
     return tuple(out)
 
 
 def verdict(now: datetime, *, flag_path: Path | None = None,
             rel: list[Release] | None = None) -> FenceVerdict:
-    """The fence's decision at `now` (UTC). Never raises."""
+    """The fence's decision at `now` (UTC). NEVER raises: any failure is a fail-OPEN verdict
+    carrying `error`, which the liveness check reports RED."""
     enabled, pre, post, fwhy = read_flag(flag_path)
-    if now.tzinfo is None:
-        now = now.replace(tzinfo=UTC)
-    day = now.astimezone(UTC).date()
     try:
-        known = rel if rel is not None else releases(day - timedelta(days=1),
-                                                     day + timedelta(days=1))
-    except ValueError as exc:
-        return FenceVerdict(enabled, False, None,
-                            f"{fwhy}; calendar refused ({exc}); "
-                            + ("fail closed" if enabled else "UNMEASURED"),
-                            calendar_ok=False, uncovered=(f"ALL:{day.year}",))
-    hit = blackout(now, known, pre_min=pre, post_min=post, families=TIER1)
-    gaps = uncovered_families(day.replace(day=1), day)
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=UTC)
+        day = now.astimezone(UTC).date()
+        gaps = uncovered_families(day, day)
+        blind = bool(gaps)
+        try:
+            known = rel if rel is not None else releases(day - timedelta(days=1),
+                                                         day + timedelta(days=1))
+        except ValueError as exc:
+            known, blind = [], True
+            fwhy += f"; calendar refused ({exc})"
+        hit = blackout(now, known, pre_min=pre, post_min=post, families=TIER1)
+    except Exception as exc:                                    # by contract: never raises
+        return FenceVerdict(enabled, False, None, f"{fwhy}; verdict failed: fail OPEN",
+                            calendar_ok=False,
+                            error=f"{type(exc).__name__}: {exc}"[:200])
+    note = (f" (calendar blind to {', '.join(gaps)}: UNMEASURED, fail OPEN)" if blind else "")
     if hit is None:
-        why = f"{fwhy}; no known tier-1 release within -{pre}/+{post} min"
-        if gaps:
-            why += f" (calendar blind to {', '.join(gaps)}: UNMEASURED, not clear)"
-        return FenceVerdict(enabled, False, None, why, uncovered=gaps)
+        return FenceVerdict(enabled, False, None,
+                            f"{fwhy}; no known tier-1 release within -{pre}/+{post} min{note}",
+                            calendar_ok=not blind, uncovered=gaps)
     tag = f"{hit.when:%Y-%m-%d %H:%M}Z {hit.family}"
-    return FenceVerdict(enabled, True, tag,
-                        f"{fwhy}; inside -{pre}/+{post} min of {tag}", uncovered=gaps)
+    return FenceVerdict(enabled, True, tag, f"{fwhy}; inside -{pre}/+{post} min of {tag}{note}",
+                        calendar_ok=not blind, uncovered=gaps)
 
 
 def resting_entry_legs(state: dict[str, Any], open_ids: set[int],

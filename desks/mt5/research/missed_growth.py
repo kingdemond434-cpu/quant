@@ -817,8 +817,14 @@ def published_news_fence_lines() -> dict[str, Any]:
     """The news fence's bill, both sides. `held` is the risk the fence refused while ON; `shadow`
     is what it would have refused while OFF. Neither side is priced in log-wealth here -- the
     trades those legs would have made are not in the line -- so any line is UNMEASURED with its
-    dollars; no rows on a readable journal is NOT_BINDING; an unreadable journal is UNMEASURED."""
-    rows = _jsonl(E8_INTENTS) if E8_INTENTS.exists() else []
+    dollars; no rows on a readable journal is NOT_BINDING; an absent or unreadable journal is
+    UNMEASURED."""
+    if not E8_INTENTS.exists():
+        # The lane journals every pass's sends, so an ABSENT journal means this machine has not
+        # received it -- not that the fence never fired (L1.28a; audit v1 SHOULD).
+        return {"verdict": UNMEASURED, "source": f"data/{E8_INTENTS.name}",
+                "absent": [E8_INTENTS.name], "held": {"n": 0}, "shadow": {"n": 0}}
+    rows = _jsonl(E8_INTENTS)
     if rows is None:
         return {"verdict": UNMEASURED, "source": f"data/{E8_INTENTS.name}",
                 "unreadable": [E8_INTENTS.name], "held": {"n": 0}, "shadow": {"n": 0}}
