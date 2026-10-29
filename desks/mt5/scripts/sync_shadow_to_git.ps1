@@ -730,6 +730,8 @@ $relPaths = @(
     # DSR_INPUTS (hourly leg dsr_inputs): measured DSR variance + effective trials, with provenance
     "desks/mt5/reports/DSR_INPUTS.json",
     "desks/mt5/reports/OCCUPANCY_MAP.json",
+    # PRINCIPAL_STOPS_FENCE (leg principal_stops): stopped sleeves found LIVE, and who wrote them
+    "desks/mt5/reports/PRINCIPAL_STOPS_FENCE.json",
     "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
     "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json",
     # THE REST OF THE TIER S PROMOTION DOOR'S EVIDENCE (2026-09-30). `promotion_authority` reads
