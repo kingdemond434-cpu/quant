@@ -149,6 +149,8 @@ def _learned_signals(df: pd.DataFrame, *, model: str, config: dict[str, Any], sy
                      stop_atr: float, rr: float, tag: str) -> list[Signal]:
     if not symbol or not peer_symbols or "close" not in df.columns:
         return []
+    if str(config.get("refit", "clock")) not in ("clock", "regime"):
+        return []                             # an unknown schedule is a different model: refuse
     d = _h1(df)
     if len(d) < 300:
         return []
@@ -200,6 +202,17 @@ def _learned_signals(df: pd.DataFrame, *, model: str, config: dict[str, Any], sy
     return out
 
 
+def _with_refit(config: dict[str, Any], refit: str) -> dict[str, Any]:
+    """The model config with the refit schedule named only when it is not the clock, so every
+    clock-refit certificate keeps its exact config, cache key and tag. An unknown mode is passed
+    through and refused by `learned_propagation.predictions`, never mapped to the clock."""
+    return config if str(refit) == "clock" else {**config, "refit": str(refit)}
+
+
+def _refit_tag(refit: str) -> str:
+    return "" if str(refit) == "clock" else f":{refit}"
+
+
 def family_gnn_propagation(
     df: pd.DataFrame,
     *,
@@ -215,15 +228,17 @@ def family_gnn_propagation(
     atr_n: int = 20,
     stop_atr: float = 8.0,
     rr: float = 1.5,
+    refit: str = "clock",
 ) -> list[Signal]:
     """Cross-asset information diffusion: the graph says which markets move first for this one."""
     if adjacency not in ("lead_lag", "corr") or int(layers) not in (1, 2):
         return []
     return _learned_signals(
-        df, model="gnn", config={"adjacency": adjacency, "layers": int(layers)}, symbol=symbol,
+        df, model="gnn", config=_with_refit(
+            {"adjacency": adjacency, "layers": int(layers)}, refit), symbol=symbol,
         peer_symbols=peer_symbols, peers=peers, entry_z=entry_z, norm=norm, hold_bars=hold_bars,
         signal_hour=signal_hour, atr_n=atr_n, stop_atr=stop_atr, rr=rr,
-        tag=f"gnn_propagation:{adjacency}:{int(layers)}")
+        tag=f"gnn_propagation:{adjacency}:{int(layers)}" + _refit_tag(refit))
 
 
 def family_attention_ts(
@@ -241,15 +256,17 @@ def family_attention_ts(
     atr_n: int = 20,
     stop_atr: float = 8.0,
     rr: float = 1.5,
+    refit: str = "clock",
 ) -> list[Signal]:
     """State-dependent continuation/reversal learned by attention over the recent path."""
     if int(heads) not in (1, 2) or int(lookback) < 2:
         return []
     return _learned_signals(
-        df, model="attention", config={"heads": int(heads), "lookback": int(lookback)},
+        df, model="attention", config=_with_refit(
+            {"heads": int(heads), "lookback": int(lookback)}, refit),
         symbol=symbol, peer_symbols=peer_symbols, peers=peers, entry_z=entry_z, norm=norm,
         hold_bars=hold_bars, signal_hour=signal_hour, atr_n=atr_n, stop_atr=stop_atr, rr=rr,
-        tag=f"attention_ts:h{int(heads)}:L{int(lookback)}")
+        tag=f"attention_ts:h{int(heads)}:L{int(lookback)}" + _refit_tag(refit))
 
 
 def family_rocket_ts(
@@ -267,15 +284,17 @@ def family_rocket_ts(
     atr_n: int = 20,
     stop_atr: float = 8.0,
     rr: float = 1.5,
+    refit: str = "clock",
 ) -> list[Signal]:
     """Non-linear path shapes read by random dilated convolutions (ROCKET), ridge readout."""
     if int(kernels) not in (64, 128) or int(lookback) not in (16, 32):
         return []
     return _learned_signals(
-        df, model="rocket", config={"kernels": int(kernels), "lookback": int(lookback)},
+        df, model="rocket", config=_with_refit(
+            {"kernels": int(kernels), "lookback": int(lookback)}, refit),
         symbol=symbol, peer_symbols=peer_symbols, peers=peers, entry_z=entry_z, norm=norm,
         hold_bars=hold_bars, signal_hour=signal_hour, atr_n=atr_n, stop_atr=stop_atr, rr=rr,
-        tag=f"rocket_ts:k{int(kernels)}:L{int(lookback)}")
+        tag=f"rocket_ts:k{int(kernels)}:L{int(lookback)}" + _refit_tag(refit))
 
 
 def family_sig_path(
@@ -293,15 +312,17 @@ def family_sig_path(
     atr_n: int = 20,
     stop_atr: float = 8.0,
     rr: float = 1.5,
+    refit: str = "clock",
 ) -> list[Signal]:
     """Order and area of the recent own-vs-market path, read by its rough-path signature."""
     if int(depth) not in (2, 3) or int(lookback) not in (10, 20):
         return []
     return _learned_signals(
-        df, model="signature", config={"depth": int(depth), "lookback": int(lookback)},
+        df, model="signature", config=_with_refit(
+            {"depth": int(depth), "lookback": int(lookback)}, refit),
         symbol=symbol, peer_symbols=peer_symbols, peers=peers, entry_z=entry_z, norm=norm,
         hold_bars=hold_bars, signal_hour=signal_hour, atr_n=atr_n, stop_atr=stop_atr, rr=rr,
-        tag=f"sig_path:d{int(depth)}:L{int(lookback)}")
+        tag=f"sig_path:d{int(depth)}:L{int(lookback)}" + _refit_tag(refit))
 
 
 def family_ae_latent(
@@ -319,12 +340,14 @@ def family_ae_latent(
     atr_n: int = 20,
     stop_atr: float = 8.0,
     rr: float = 1.5,
+    refit: str = "clock",
 ) -> list[Signal]:
     """Non-linear latent cross-asset factors from a deep autoencoder over the whole panel."""
     if int(latent) not in (3, 6) or int(hidden) not in (16, 32):
         return []
     return _learned_signals(
-        df, model="autoencoder", config={"latent": int(latent), "hidden": int(hidden)},
+        df, model="autoencoder", config=_with_refit(
+            {"latent": int(latent), "hidden": int(hidden)}, refit),
         symbol=symbol, peer_symbols=peer_symbols, peers=peers, entry_z=entry_z, norm=norm,
         hold_bars=hold_bars, signal_hour=signal_hour, atr_n=atr_n, stop_atr=stop_atr, rr=rr,
-        tag=f"ae_latent:k{int(latent)}:h{int(hidden)}")
+        tag=f"ae_latent:k{int(latent)}:h{int(hidden)}" + _refit_tag(refit))
