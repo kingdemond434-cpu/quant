@@ -128,6 +128,7 @@ def _build(
                                                                 "line": None})
     monkeypatch.setattr(ph, "deadman_invariant", lambda **kw: None)
     monkeypatch.setattr(ph, "disk_state", lambda *a, **kw: {"verdict": "OK"})
+    monkeypatch.setattr(ph, "_realised_risk_row", lambda: None)
     doc = ph.build()
     return doc, {r["name"]: r for r in doc["processes"]}
 

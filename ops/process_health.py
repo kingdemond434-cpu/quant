@@ -684,7 +684,9 @@ def _realised_risk_row() -> dict[str, Any]:
     UNMEASURED and names it); RISK_BREACH on p95 above tolerance; FINDING when too many fills
     were priced from the requested stop because the position's own could not be read back."""
     try:
-        desk = str(ROOT / "desks" / "mt5")
+        # The CODE's own desk, never ROOT's: a moved ROOT (a test's temp box) holds no mt5desk,
+        # and an ImportError here would read UNMEASURED for a reason that is not the fills'.
+        desk = str(Path(__file__).resolve().parent.parent / "desks" / "mt5")
         if desk not in sys.path:
             sys.path.insert(0, desk)
         from mt5desk import risk_intent as _ri
@@ -898,7 +900,9 @@ def build() -> dict[str, Any]:
         })
 
     # The realised-risk invariant's fill ratio: a measurement row the gateway's fills feed.
-    rows.append(_realised_risk_row())
+    rr: dict[str, Any] | None = _realised_risk_row()    # a test may stub the row away (None)
+    if rr is not None:
+        rows.append(rr)
 
     order = {"DEADMAN_UNARMED": 0, "ALERTS_UNARMED": 0, "DISK_LOW": 0, "NOT_SCHEDULED": 0,
              "SCHEDULER_UNMEASURED": 0,

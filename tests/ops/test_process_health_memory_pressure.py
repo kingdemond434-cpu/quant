@@ -69,6 +69,7 @@ def box(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
                                                                 "line": None})
     monkeypatch.setattr(ph, "deadman_invariant", lambda **kw: None)
     monkeypatch.setattr(ph, "disk_state", lambda *a, **kw: {"verdict": "OK"})
+    monkeypatch.setattr(ph, "_realised_risk_row", lambda: None)
     monkeypatch.setattr(ph, "OUT", tmp_path / "reports" / "process_health.json")
     monkeypatch.setattr(ph, "_contracts", lambda: {"MT5-Hourly": ("fresh.json", 120, "hourly")})
     monkeypatch.setattr(ph, "memory_snapshot", lambda: dict(MEM))
