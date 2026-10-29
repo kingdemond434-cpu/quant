@@ -848,8 +848,10 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
             hit = empty_book_probe(solve_w, h_u, rules, phase, here, cont, cap, ks.BOOK_MARGIN)
             block["empty_book_probe"] = hit or "every probe size breaches the margin or is idle"
             if hit is not None:
+                prior = block["status"]
                 block["status"] = ("EMPTY_BOOK_SEARCH_DEFECT: a positive size within the margin "
-                                   "makes progress; not deployed")
+                                   "makes progress; not deployed"
+                                   + ("" if prior == "OK" else f" (also {prior})"))
         phases[phase] = block
         if phase != "funded" and phase != st.phase:
             cont = continuation(solve_w, h, rules, phase, cont, seed + 10 + i)
@@ -877,7 +879,29 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     doc["validation_score"] = (now_block["validation"]["score"]
                                if now_block["status"] == "OK" else 0.0)
     doc["deployable"] = bool(now_block["status"] == "OK" and st.measured)
+    # `book` and `executable` are the solve, never the deployed block: a reader that does not
+    # check `deployable` is told so in the file itself (audit 2026-10-29).
+    doc["book_deployed"] = doc["deployable"]
+    if str(doc["status"]).startswith("EMPTY_BOOK_SEARCH_DEFECT"):
+        doc["red"] = ("RED EMPTY_BOOK_SEARCH_DEFECT: the solve came back empty while a size within "
+                      "the margin makes progress; the standing ftmo block is left deployed")
     return doc
+
+
+def mark_defect(doc: dict[str, Any], prev: Any) -> None:
+    """Carry a standing EMPTY_BOOK_SEARCH_DEFECT's start across passes (from the last report), so
+    its RED line says how long the old block has stood; a sound pass drops both."""
+    if not str(doc.get("status")).startswith("EMPTY_BOOK_SEARCH_DEFECT"):
+        doc.pop("red", None)
+        doc.pop("defect_since", None)
+        return
+    was = isinstance(prev, dict) and str(prev.get("status")).startswith("EMPTY_BOOK_SEARCH_DEFECT")
+    since = (prev.get("defect_since") if was and isinstance(prev, dict) else None) \
+        or doc.get("generated_at")
+    doc["defect_since"] = since
+    doc["red"] = (f"RED EMPTY_BOOK_SEARCH_DEFECT since {since}: the solve came back empty while "
+                  f"a size within the margin makes progress; the standing ftmo block is left "
+                  f"deployed")
 
 
 def rail_blocks(uni: dict[str, Any]) -> list[dict[str, Any]]:
@@ -986,6 +1010,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=OUT)
     a = ap.parse_args(argv)
     doc = solve(a.venue, n_paths=a.paths, seed=a.seed)
+    mark_defect(doc, _read_json(a.out))
+    if doc.get("red"):
+        print(doc["red"], file=sys.stderr)
     if a.venue == "ftmo":
         try:
             doc["deploy"] = apply_book(doc)

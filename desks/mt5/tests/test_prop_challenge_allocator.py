@@ -378,8 +378,7 @@ def test_an_empty_book_with_a_feasible_size_is_a_search_defect_not_a_zero() -> N
 
 def test_a_search_defect_never_deploys(tmp_path: Path, monkeypatch) -> None:
     """The guard behind the fix: a phase block flagged EMPTY_BOOK_SEARCH_DEFECT is not deployable,
-    so apply_book leaves the principal's block as it stands."""
-    solve_w, never = _slow_world()
+    so apply_book leaves the principal's block as it stands, and it is RED from the first pass."""
     monkeypatch.setattr(pca, "search", lambda w, rules, phase, st, cont, cap, rng, margin: (
         (np.zeros(1), 0.0) if margin is not None else (np.array([0.009]), 0.13)))
     monkeypatch.setattr(pca, "build_universe", lambda seed: {
@@ -389,9 +388,27 @@ def test_a_search_defect_never_deploys(tmp_path: Path, monkeypatch) -> None:
     st = pca.AccountState(phase="phase2", status="MEASURED")
     doc = pca.solve("ftmo", n_paths=300, state=st)
     assert doc["status"].startswith("EMPTY_BOOK_SEARCH_DEFECT") and doc["deployable"] is False
+    assert doc["book_deployed"] is False and "RED" in doc["red"]
     armed = tmp_path / "ARMED"
     armed.touch()
     book = tmp_path / "CERT_BOOK_LIVE.json"
     book.write_text(json.dumps({"enabled": True, "ftmo": {"gold_asia": 0.009}}))
     assert pca.apply_book(doc, book, armed)["applied"] is False
     assert json.loads(book.read_text())["ftmo"] == {"gold_asia": 0.009}
+
+
+def test_a_standing_defect_is_red_with_its_age(tmp_path: Path, monkeypatch) -> None:
+    """Rule 23: a defect that persists keeps the old block deployed, so it is RED every pass
+    and carries when it began; a sound pass clears it."""
+    out = tmp_path / "FTMO_ALLOCATOR.json"
+    doc = {"status": "EMPTY_BOOK_SEARCH_DEFECT: x", "generated_at": "2026-10-29T16:00:00+00:00"}
+    pca.mark_defect(doc, {"status": "EMPTY_BOOK_SEARCH_DEFECT: x",
+                          "defect_since": "2026-10-29T15:00:00+00:00"})
+    assert doc["defect_since"] == "2026-10-29T15:00:00+00:00" and "since" in doc["red"]
+    fresh = {"status": "EMPTY_BOOK_SEARCH_DEFECT: x", "generated_at": "t1"}
+    pca.mark_defect(fresh, {"status": "OK"})
+    assert fresh["defect_since"] == "t1"
+    ok = {"status": "OK", "generated_at": "t2"}
+    pca.mark_defect(ok, {"status": "EMPTY_BOOK_SEARCH_DEFECT: x", "defect_since": "t0"})
+    assert "red" not in ok and "defect_since" not in ok
+    assert not out.exists()
