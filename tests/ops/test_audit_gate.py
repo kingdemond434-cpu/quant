@@ -2019,6 +2019,7 @@ _ROWS = (
         (_ROWS + 'TASK name="Quant-SignTrain" trigger="every 10 minutes" '
                  'runs="ops/box/sign_train_leg.ps1" lane="ops" also_runs="scripts/sign_train.py"\n',
          False),  # a gate clock's row
+        (_ROWS + 'TASK name="Quant-X" runs="ops/box/x.ps1"\n', True),  # no lane: never free
         (_ROWS.replace('lane="ops"', 'lane="ops" also_runs="scripts/watch.py"'), False),
         (_ROWS.replace('trigger="at logon"', 'trigger="never"'), True),  # a money task's row
         (_ROWS + 'TASK name="Quant-X" runs="ops/box/x.ps1" note="FTMO copy"\n', True),  # venue
@@ -2028,6 +2029,18 @@ _ROWS = (
         (_ROWS.replace("# the box's tasks\n", ""), False),
         (_ROWS + _ROWS.splitlines(keepends=True)[1], True),  # a row duplicated
         (None, True),  # gone
+        # #508 audit v3 MF1: only a plain repo path is compared as the file it names
+        (_ROWS + 'TASK name="Quant-X" runs="ops/../desks/mt5/mt5desk/b.py" lane="ops"\n', True),
+        (_ROWS + 'TASK name="Quant-X" runs="ops\\box\\x.ps1" lane="ops"\n', True),
+        (_ROWS + 'TASK name="Quant-X" runs="./ops/box/x.ps1" lane="ops"\n', True),
+        (_ROWS + 'TASK name="Quant-X" runs="%REPO%/ops/box/x.ps1" lane="ops"\n', True),
+        (_ROWS + 'TASK name="Quant-X" runs="powershell -c x" lane="ops"\n', True),
+        # MF2: a second row for a name, any case, rebinds that task
+        (_ROWS + 'TASK name="quant-workflowgate" runs="ops/box/x.ps1" lane="ops"\n', True),
+        # MF3: a money/prop row, or a control-plane row, never changes freely
+        (_ROWS + 'TASK name="Quant-P" runs="ops/box/x.ps1" lane="prop"\n', True),
+        (_ROWS + 'TASK name="MT5-ClockFixer" runs="ops/box/x.ps1" lane="ops"\n', True),
+        (_ROWS + 'TASK name="Quant-N" runs="ops/box/x.ps1"\n', True),  # no lane
     ],
 )  # fmt: skip
 def test_the_box_task_table_is_money_unless_only_gate_rows_change(
@@ -2037,6 +2050,10 @@ def test_the_box_task_table_is_money_unless_only_gate_rows_change(
     b, h = tmp_path / "b", tmp_path / "h"
     for t, text in ((b, _ROWS), (h, head)):
         (t / "desks/mt5/ops").mkdir(parents=True)
+        (t / rs.COMPONENTS).write_text(
+            'REQUIRED_TASKS: frozenset[str] = frozenset({"MT5-ClockFixer"})\n'
+            'TASK_CANONICAL: dict[str, str] = {"MT5-Hourly": "x"}\n', "utf-8"
+        )
         if text is not None:
             (t / rs.MANIFEST).write_text(text, "utf-8")
     scripts = {"desks/mt5/scripts/gw.ps1"}

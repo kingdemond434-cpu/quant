@@ -403,6 +403,39 @@ def exempt_scripts(
 #: the gate's own clocks (the sign train, the sweep's helpers) are not order code.
 MANIFEST = "desks/mt5/ops/box_tasks.manifest"
 _ATTR = re.compile(r'(\w+)="([^"]*)"')
+#: The only path a free row may name: repo-relative, plain (no `..`, `.`, `%VAR%`, `$x`, drive,
+#: backslash, quote or space), so the string compared here is the file the box runs (#508 v3 MF1).
+_PLAIN_PATH = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]*(/[A-Za-z0-9_][A-Za-z0-9_.-]*)*")
+#: Lanes whose rows may change without the manual path; money and prop rows never do (v3 MF3).
+_FREE_LANES = frozenset({"ops", "research", "data"})
+COMPONENTS = "desks/mt5/ops/components.py"
+
+
+def _held_tasks(tree: Path) -> set[str] | None:
+    """components.REQUIRED_TASKS and TASK_CANONICAL's keys, read by ast from `tree` (None when
+    unreadable): the control plane's own rows, which never change as free rows."""
+    try:
+        node = ast.parse(read(tree, COMPONENTS) or "")
+    except (SyntaxError, ValueError):
+        return None
+    out: set[str] = set()
+    for n in node.body:
+        if isinstance(n, ast.AnnAssign) and n.value is not None:
+            target, v = n.target, n.value
+        elif isinstance(n, ast.Assign) and len(n.targets) == 1:
+            target, v = n.targets[0], n.value
+        else:
+            continue
+        if not isinstance(target, ast.Name):
+            continue
+        try:
+            if target.id == "REQUIRED_TASKS" and isinstance(v, ast.Call) and v.args:
+                out |= {str(x) for x in ast.literal_eval(v.args[0])}
+            elif target.id == "TASK_CANONICAL":
+                out |= {str(x) for x in ast.literal_eval(v)}
+        except ValueError:
+            return None
+    return out or None
 
 
 def manifest_is_money(
@@ -433,6 +466,15 @@ def manifest_is_money(
     }
     names = (_money_names(base, closure) - dirs) | state_names(base, closure)
     names |= {n for m in money for n in (Path(m).name.lower(), Path(m).stem.lower())}
+    held = _held_tasks(base)
+    if held is None:
+        return True
+    held_cf = {t.casefold() for t in held}
+
+    def names_in(rows_: list[str]) -> list[str]:
+        return [dict(_ATTR.findall(x)).get("name", "").casefold() for x in rows_]
+
+    in_was, in_now = names_in(was), names_in(now)
     for line in changed:
         low = line.lower()
         if not line.startswith("TASK "):
@@ -440,9 +482,18 @@ def manifest_is_money(
         if MONEY_WORDS.search(low) or STATE_WORDS.search(low) or _names_any(low, names):
             return True
         attrs = dict(_ATTR.findall(line))
+        name = attrs.get("name", "").casefold()
+        # a row of a money or prop lane, or of the control plane, never changes freely (v3 MF3)
+        if not name or attrs.get("lane") not in _FREE_LANES or name in held_cf:
+            return True
+        # one row per name, any case, in each tree: a second row rebinds that task (v3 MF2)
+        if in_was.count(name) > 1 or in_now.count(name) > 1:
+            return True
         paths = [p.strip() for k in ("runs", "also_runs", "installer")
                  for p in attrs.get(k, "").split(",") if p.strip()]  # fmt: skip
         for p in paths:
+            if not _PLAIN_PATH.fullmatch(p) or any(seg in ("", ".", "..") for seg in p.split("/")):
+                return True  # only a plain repo path is compared as the file it names (v3 MF1)
             if p in closure or p in ENTRY_POINTS or p.startswith(MONEY_PATH) or p in money:
                 return True
             if is_script(p) and p not in exempt:
