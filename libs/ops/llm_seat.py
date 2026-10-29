@@ -372,10 +372,13 @@ def _discover(seat: Seat, *, timeout: float) -> tuple[str, str | None]:
         if guarded:
             return "", ("no ':free' model listed on OpenRouter, and paid ids are refused "
                         f"unless {openrouter_guard.PAID_ENV}=1")
-        # A FREE PIN OR THE FREE TIER NEVER FALLS THROUGH TO A PAID FLAGSHIP, guard or no guard:
-        # zero API cost is the rule, and the guard only covers OpenRouter's own URL.
-        return "", (f"no ':free' model listed on {seat.base_url}, and this seat is free-only "
-                    "(a free pin, or the free tier); a paid id is never substituted")
+        # A RETIRED FREE PIN NEVER FALLS THROUGH TO A PAID FLAGSHIP, guard or no guard: whoever
+        # pinned a free id chose the price, and the guard only covers OpenRouter's own URL. (An
+        # UNPINNED seat on a provider with no free ids still reaches its flagship -- that is the
+        # free tier's documented "never dark" rule, pinned by test_llm_seat_free_tier.)
+        if pin_dead and _is_free(seat.model):
+            return "", (f"{seat.model} is no longer served and {seat.base_url} lists no ':free' "
+                        "id; a free pin is never replaced by a paid one")
     ranked = [(r, i) for i in ids if (r := flagship_rank(i)) is not None]
     if ranked:
         return max(ranked)[1], None

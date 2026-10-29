@@ -315,10 +315,15 @@ class TestRunRole:
         import libs.ops.deepseek_cycle as ds_mod
         import libs.ops.llm_seat as llm_seat_mod
         self._pass_gates(monkeypatch, ds_mod)
+        monkeypatch.setattr(llm_seat_mod, "chat", lambda *a, **kw: ("", "HTTP 500: upstream"))
+        out = ds_mod.run_role("cold_alpha_inventor", "brief", deep=False,
+                              env=self._LIT_ENV, root=tmp_path)
+        assert out["status"] == "CALL_FAILED" and "upstream" in out["why"]
+        # A spent cap is a HOLD, not a failure (audit of #484, S4): reported, never raised.
         monkeypatch.setattr(llm_seat_mod, "chat", lambda *a, **kw: ("", "monthly cap reached"))
         out = ds_mod.run_role("cold_alpha_inventor", "brief", deep=False,
                               env=self._LIT_ENV, root=tmp_path)
-        assert out["status"] == "CALL_FAILED" and "monthly cap" in out["why"]
+        assert out["status"] == "BUDGET_EXHAUSTED" and "monthly cap" in out["why"]
 
     def test_a_malformed_response_yields_zero_findings_not_a_crash(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,

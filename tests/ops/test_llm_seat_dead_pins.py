@@ -228,7 +228,7 @@ def test_a_free_seat_never_falls_through_to_a_paid_flagship(monkeypatch):
     _listing(monkeypatch, ["openai/gpt-5", "deepseek/deepseek-v3.2"])
     llm_seat.note_dead(seat, DEAD, _404)
     model, err = llm_seat.discover_model(seat)
-    assert model == "" and err and "free-only" in err
+    assert model == "" and err and "never replaced by a paid one" in err
 
 
 def test_the_vendor_lock_holds_on_every_path(monkeypatch):
@@ -268,8 +268,9 @@ def test_a_swap_is_written_once_an_hour_not_once_a_call(monkeypatch):
 
 
 def test_a_failed_call_maps_to_a_hold_or_a_red_status():
-    from libs.ops.deepseek_cycle import call_status
     from scripts.run_deepseek_cycle import red_exit
+
+    from libs.ops.deepseek_cycle import call_status
     budget = "free-tier daily request budget exhausted: 50 call(s) today. This is a SKIP"
     assert call_status(budget) == "BUDGET_EXHAUSTED"
     assert call_status("monthly LLM spend cap reached ($20.00 of $20.00)") == "BUDGET_EXHAUSTED"
