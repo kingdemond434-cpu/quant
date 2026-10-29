@@ -11,11 +11,9 @@ long+short. Symbol mapping mirrors data.py _SYMBOL_SLUG.
 from __future__ import annotations
 
 import io
-import re
 import ssl
 import urllib.request
 import zipfile
-from pathlib import Path
 
 import pandas as pd
 
@@ -34,16 +32,23 @@ YEARS = list(range(2018, 2027))
 # Metals are NOT in TFF (financial futures only): gold/silver coverage comes
 # from the legacy (1986+) and disaggregated (2006+) COT reports instead.
 # DXY has no TFF entry (ICE dollar index not reported in this view).
+# (slug, CFTC_Contract_Market_Code). KEYED ON THE CODE (2026-10-14): this was a case-insensitive
+# SUBSTRING of the market name, so "EURO FX" also took "EURO FX/BRITISH POUND XRATE" (299741) and
+# "EURO FX/JAPANESE YEN XRATE" (399741), "BRITISH POUND" and "JAPANESE YEN" took the same crosses,
+# and "S&P 500"/"NASDAQ" took every micro, sector and dividend contract -- and the per-date
+# `drop_duplicates(keep="last")` below then kept WHICHEVER contract the file listed last. Codes
+# verified 2026-10-14 against publicreporting.cftc.gov (6dca-aqww, the same codes the TFF report
+# carries).
 TARGETS = [
-    ("jpy", "JAPANESE YEN"),
-    ("eur", "EURO FX"),
-    ("gbp", "BRITISH POUND"),
-    ("cad", "CANADIAN DOLLAR"),
-    ("aud", "AUSTRALIAN DOLLAR"),
-    ("nzd", "NEW ZEALAND DOLLAR"),
-    ("chf", "SWISS FRANC"),
-    ("sp500", "S&P 500"),
-    ("nasdaq100", "NASDAQ"),
+    ("jpy", "097741"),
+    ("eur", "099741"),
+    ("gbp", "096742"),
+    ("cad", "090741"),
+    ("aud", "232741"),
+    ("nzd", "112741"),
+    ("chf", "092741"),
+    ("sp500", "13874A"),
+    ("nasdaq100", "209742"),
 ]
 
 ctx = ssl.create_default_context()
@@ -70,10 +75,12 @@ def load_year(year: int) -> pd.DataFrame | None:
     return df
 
 
-def pick(df: pd.DataFrame, token: str) -> pd.DataFrame:
-    pat = re.compile(re.escape(token), re.IGNORECASE)
-    mask = df["Market_and_Exchange_Names"].astype(str).str.contains(
-        pat.pattern, regex=True, na=False)
+def pick(df: pd.DataFrame, code: str) -> pd.DataFrame:
+    """The rows of ONE contract, chosen by its CFTC contract market code -- never by its name."""
+    if "CFTC_Contract_Market_Code" not in df.columns:
+        return df.iloc[0:0]
+    mask = (df["CFTC_Contract_Market_Code"].astype(str).str.strip().str.strip('"').str.upper()
+            == code.upper())
     sub = df[mask].copy()
     if sub.empty:
         return sub

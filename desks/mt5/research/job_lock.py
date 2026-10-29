@@ -367,7 +367,8 @@ def free_mb() -> int | None:
 
 @contextmanager
 def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
-                  deadline_s: float | None = None, evsi: float | None = None) -> Iterator[bool]:
+                  deadline_s: float | None = None, evsi: float | None = None,
+                  account: bool = True) -> Iterator[bool]:
     """Yield True to one writer, False to duplicates OR when the box cannot fit this job.
 
     THE MEMORY PRECONDITION (2026-08-28). This desk box has 8GB and runs the LIVE MT5 terminal
@@ -385,12 +386,18 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
 
     The refusal is LOUD and names the number, because a silent stand-down is indistinguishable
     from the crash it prevents, and this desk has been burned by exactly that ambiguity.
+
+    `account=False` takes the SAME lock without touching `name`'s admission ledger (no spec, no
+    peak): for a short critical section run by a different process that must exclude the
+    writer -- `deepening_worker.purge_off_lane` rewriting the compiler's queue -- and whose own
+    footprint must never be recorded as the writer's.
     """
     # THE DECLARATION IS RECORDED BEFORE THE DECISION, not after it. I3: a spec that is only
     # written on success describes the jobs that got in, which is the population a ranker must
     # not be fitted on. Recording it here means a job that STANDS DOWN still leaves its four
     # declared fields for `admission_order` to rank next hour.
-    record_spec(name, mb=int(need_mb), cpu=cpu, deadline_s=deadline_s, evsi=evsi)
+    if account:
+        record_spec(name, mb=int(need_mb), cpu=cpu, deadline_s=deadline_s, evsi=evsi)
     if need_mb > 0:
         need_mb, need_why = measured_need_mb(name, need_mb)
         if need_mb > 0:
@@ -495,7 +502,7 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
     finally:
         # WHAT IT ACTUALLY USED, recorded before anything else, so the next admission is made on
         # measurement instead of on a comment. A job that overran its declaration says so.
-        _hwm = peak_rss_mb()
+        _hwm = peak_rss_mb() if account else None
         if _hwm:
             record_peak(name, _hwm)
             if need_mb and _hwm > need_mb:
@@ -505,7 +512,8 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
         # ranking inputs are what the job SAID about itself and they are true even where RSS is
         # unreadable. Recording them only alongside a peak would leave every job on a platform
         # without `getrusage` permanently unrankable.
-        record_spec(name, mb=int(need_mb), cpu=cpu, deadline_s=deadline_s, evsi=evsi)
+        if account:
+            record_spec(name, mb=int(need_mb), cpu=cpu, deadline_s=deadline_s, evsi=evsi)
         # Never delete a successor's lock after a stale-owner race.
         try:
             current = json.loads(path.read_text("utf-8"))

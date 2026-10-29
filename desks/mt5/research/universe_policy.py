@@ -145,6 +145,19 @@ def _registry() -> dict[str, dict]:
 _registry.cache_clear = _registry_at.cache_clear  # type: ignore[attr-defined]
 
 
+def registry_measured() -> bool:
+    """Is there a broker registry to route by at all? False when universe.json is missing,
+    unreadable, not an object, or caught mid-write (all of which `_registry_at` reads as `{}`).
+
+    AN EMPTY REGISTRY IS UNMEASURED, NOT "EVERY SYMBOL IS UNCLASSIFIED" (audit
+    COT_AXIS_DEEPENING_31eb89f3d MF1, L1.28a). `lane()` must still answer UNCLASSIFIED for each
+    symbol -- nothing is admitted on an absence -- but a caller about to write a DECISION from
+    that answer asks this first, because a refusal minted while the file was absent outlives the
+    absence.
+    """
+    return bool(_registry())
+
+
 def asset_class_of(symbol: str) -> str:
     """The instrument's class, from MetaTrader's registry first and the classifier second.
 
