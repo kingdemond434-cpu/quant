@@ -1,9 +1,13 @@
 """Read every Python organ a Windows wrapper or installer launches, statically.
 
-Shared by tests/ops/test_wrapper_organ_flags.py (flags vs the organ's argparse),
-tests/ops/test_mt5_tasks_run_interactive.py (MT5 organs vs the task principal) and
-scripts/task_time_limits.py (ExecutionTimeLimit vs measured run time). Nothing here imports or
-runs an organ: wrappers are tokenised, organs are read from their AST.
+Shared by tests/ops/test_wrapper_organ_flags.py (flags vs the organ's argparse) and
+tests/ops/test_mt5_tasks_run_interactive.py (MT5 organs vs the task principal). Nothing here
+imports or runs an organ: wrappers are tokenised, organs are read from their AST.
+
+A LIBRARY, NOT AN EXECUTABLE: it has no clock, no artifact and no `__main__` entry, so it lives
+under libs/ rather than scripts/ (check_birth_obligations reads every scripts/*.py that mentions
+`__main__` -- this file does, in a resolver string -- as an organ owing a clock and a
+runtime_state row, and it owes neither).
 """
 from __future__ import annotations
 
@@ -13,7 +17,7 @@ import subprocess
 from functools import cache
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 _WRAPPER_SUFFIXES = (".cmd", ".ps1", ".bat")
 _SKIP_PARTS = {"_retired", ".git", ".venv", "node_modules"}
 #: where `-m pkg.mod` resolves from: the repo root and the desk root (PYTHONPATH on the box).

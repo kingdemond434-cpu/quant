@@ -35,3 +35,14 @@ def test_every_component_contract_names_a_manifest_task() -> None:
     tasks = _manifest_tasks()
     orphans = sorted(k for k in CONTRACTS if " (" in k and k.split(" (", 1)[0] not in tasks)
     assert not orphans, orphans
+
+
+def test_no_scanned_file_names_the_phantom_task() -> None:
+    """Audit HOLD, 2026-10-29: the comment explaining the re-key spelled the old bare task name,
+    and scripts/check_box_tasks.py reads any task-shaped token in a .py as a reference the
+    manifest must cover -- so dropping the manifest row raised a BREACH. Prose must not spell it."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import check_box_tasks
+
+    refs = check_box_tasks.referenced_tasks()
+    assert "MT5-" + "CertHygiene" not in refs, refs.get("MT5-" + "CertHygiene")

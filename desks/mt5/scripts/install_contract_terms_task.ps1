@@ -37,8 +37,20 @@
 # every hour, and MT5-ContractTerms returned rc 1 (behind a NameError in tape.py's error path that
 # hid the real reason). Same rule as MT5-Gateway, E8-Gold and the FTMO reader: a task that
 # imports MetaTrader5 runs as the interactive user. The owner is read from MT5-TerminalBoot, as
-# Install-QuantWindows.ps1 does, or passed with -InteractiveUser. SYSTEM is refused outright.
+# Install-QuantWindows.ps1 does, or passed with -InteractiveUser. SYSTEM and any machine account
+# (a name ending in `$`) are refused outright.
 # tests/ops/test_mt5_tasks_run_interactive.py fences every installer for this.
+#
+# AN INTERACTIVE TASK DOES NOT FIRE WHILE ITS USER IS LOGGED OFF. That is the trade: the terminal
+# it reads is not running then either, so there is nothing to record, but a silent task must not
+# read as a healthy one. ops/organ_contract.py holds MT5-ContractTerms to
+# reports/BROKER_SWAPS_FRESHNESS.json, which tape.py rewrites every pass, so a logged-off desk (or
+# a task that never fires) ages into FAILING on the board instead of going quiet.
+#
+# THE BOX MUST RE-RUN THIS INSTALLER after adopting the change -- a principal is fixed at
+# registration, so the live task keeps its old SYSTEM/S4U identity until then. From an elevated
+# shell IN THE TERMINAL OWNER'S OWN DESKTOP SESSION (not as SYSTEM):
+#   powershell -NoProfile -ExecutionPolicy Bypass -File C:\opt\quant\desks\mt5\scripts\install_contract_terms_task.ps1
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File install_contract_terms_task.ps1 [-InteractiveUser <name>]
 
@@ -59,8 +71,14 @@ if (-not $InteractiveUser) {
         $InteractiveUser = $env:USERNAME
     }
 }
-if (-not $InteractiveUser -or $InteractiveUser -in @('SYSTEM', 'S-1-5-18')) {
-    throw "$TaskName needs the MT5 terminal's interactive desktop owner; pass -InteractiveUser"
+# A NAME ENDING IN `$` IS THE MACHINE ACCOUNT, NOT A DESKTOP USER (audit, 2026-10-29). Run as
+# SYSTEM (an elevated deploy step, a scheduled re-installer) $env:USERNAME is `HOST$`: the task
+# registers cleanly, LogonType Interactive never matches a logged-on session, and it never fires.
+# Refuse it with SYSTEM itself, however either is spelled.
+$bareUser = ($InteractiveUser -split '\\')[-1]
+if (-not $InteractiveUser -or $bareUser.EndsWith('$') -or
+        $bareUser -in @('SYSTEM', 'S-1-5-18', 'LOCAL SERVICE', 'NETWORK SERVICE')) {
+    throw "$TaskName needs the MT5 terminal's interactive desktop owner (got '$InteractiveUser'); pass -InteractiveUser"
 }
 
 # `-m mt5desk.tape` from the desk root, not a file path: the module resolves its own DATA root

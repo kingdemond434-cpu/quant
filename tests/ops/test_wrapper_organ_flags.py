@@ -28,7 +28,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.wrapper_invocations import _tokens_after, accepted, flag_ok, mismatches  # noqa: E402
+from libs.ops.wrapper_invocations import _tokens_after, accepted, flag_ok, mismatches  # noqa: E402
 
 
 def test_the_extractor_reads_the_measured_shapes() -> None:
@@ -52,3 +52,17 @@ def test_the_rule_rejects_the_measured_mismatch() -> None:
 def test_every_wrapper_passes_only_flags_its_organ_accepts() -> None:
     bad = mismatches()
     assert not bad, "wrapper flag the organ's argparse rejects:\n  " + "\n  ".join(bad)
+
+
+def test_the_shared_helper_is_a_library_not_an_unclocked_executable() -> None:
+    """Audit HOLD, 2026-10-29: as scripts/wrapper_invocations.py the helper was read by
+    check_birth_obligations as a new executable (it mentions `__main__`) owing a clock and a
+    runtime_state row it can never have. It is a library; it must sit outside every EXEC_AREA."""
+    from scripts.check_birth_obligations import EXEC_AREAS
+
+    from libs.ops import wrapper_invocations
+
+    rel = Path(wrapper_invocations.__file__).resolve().relative_to(ROOT).as_posix()
+    assert rel == "libs/ops/wrapper_invocations.py"
+    assert not any(rel.startswith(f"{area}/") for area in EXEC_AREAS), rel
+    assert not (ROOT / "scripts" / "wrapper_invocations.py").exists()

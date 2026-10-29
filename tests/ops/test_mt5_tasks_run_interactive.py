@@ -30,7 +30,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.wrapper_invocations import (  # noqa: E402
+from libs.ops.wrapper_invocations import (  # noqa: E402
     _join_continuations,
     _tracked,
     invocations,
@@ -121,3 +121,27 @@ def test_the_exemption_list_names_only_live_registrations() -> None:
             for t, s, i in registrations(rel) if talks_to_terminal(s) and not i}
     stale = sorted(set(KNOWN_HEADLESS) - live)
     assert not stale, f"no longer headless MT5 registrations, drop them: {stale}"
+
+
+def test_contract_terms_installer_refuses_the_machine_account() -> None:
+    """Audit, 2026-10-29: run as SYSTEM, $env:USERNAME is `HOST$`; registered under it the task
+    never fires. The installer must refuse a name ending in `$` as it refuses SYSTEM."""
+    text = (ROOT / "desks/mt5/scripts/install_contract_terms_task.ps1").read_text("utf-8")
+    assert re.search(r"\$bareUser\.EndsWith\('\$'\)", text)
+    assert re.search(r"'SYSTEM',\s*'S-1-5-18'", text)
+    guard = text.index("$bareUser.EndsWith")
+    assert guard < text.index("New-ScheduledTaskPrincipal"), "refuse before registering"
+
+
+def test_contract_terms_is_held_to_an_artifact() -> None:
+    """An Interactive task does not fire while its user is logged off: only an aging artifact
+    tells that silence from health, so MT5-ContractTerms must carry an organ contract on the
+    report tape.py rewrites every pass."""
+    sys.path.insert(0, str(ROOT / "ops"))
+    from organ_contract import CONTRACTS
+
+    artifact, max_age, _ = CONTRACTS["MT5-ContractTerms"]
+    assert artifact == "desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json"
+    assert 60 < max_age <= 180
+    tape = (ROOT / "desks/mt5/mt5desk/tape.py").read_text("utf-8")
+    assert '"BROKER_SWAPS_FRESHNESS.json"' in tape
