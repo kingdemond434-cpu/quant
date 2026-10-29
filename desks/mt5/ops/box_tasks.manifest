@@ -320,4 +320,4 @@ TASK name="Claude-Bridge-Watchdog" trigger="at logon + every 5 minutes" runs="op
 # label needed; .github/workflows PRs too, which the Actions gate cannot merge).
 TASK name="Quant-BootSession"  trigger="at logon"                    runs="ops/box/unattended_boot.ps1" installer="ops/box/install_unattended.ps1" lane="ops"
 TASK name="Quant-BootRecord"   trigger="every 10 minutes"            runs="ops/box/unattended_boot.ps1" installer="ops/box/install_unattended.ps1" lane="ops"
-TASK name="Quant-WorkflowGate" trigger="at logon + every 10 minutes" runs="ops/box/workflow_gate.ps1"   installer="ops/box/install_unattended.ps1" lane="ops"
+TASK name="Quant-WorkflowGate" trigger="at logon + every 10 minutes" runs="ops/box/workflow_gate.ps1"   installer="ops/box/install_unattended.ps1" lane="ops" also_runs="scripts/merge_pipeline_watch.py"

@@ -1,41 +1,41 @@
 {
- "at": "2026-10-29T15:16:05+00:00",
+ "at": "2026-10-29T21:31:03+00:00",
  "incidents": {
   "no_verdict": {
    "open": false,
-   "hours": 6.46,
-   "why": "no new verdict for 6.5h (last 2026-10-29T08:48:40+00:00, gate_verdict_ledger.jsonl); limit 36h"
+   "hours": 4.2,
+   "why": "no new verdict for 4.2h (last 2026-10-29T17:18:55+00:00, gate_verdict_ledger.jsonl); limit 36h"
   },
   "resident_dead": {
    "open": false,
-   "heartbeat_age_min": 0.4,
+   "heartbeat_age_min": 0.3,
    "pid_alive": true,
-   "why": "resident SWEEPING pid 21384: heartbeat 0.4 min old (limit 10), pid alive"
+   "why": "resident SWEEPING pid 21384: heartbeat 0.3 min old (limit 10), pid alive"
   },
   "sweep_overdue": {
    "open": false,
-   "hours": 6.19,
+   "hours": 4.06,
    "limit_h": 25.59,
-   "why": "6.2h since the last sweep ended (2026-10-29T09:04:46+00:00), status SWEEPING; limit 25.59h"
+   "why": "4.1h since the last sweep ended (2026-10-29T17:27:18+00:00), status SWEEPING; limit 25.59h"
   },
   "zero_judged_sweep": {
    "open": false,
-   "cells": 11383,
+   "cells": 20572,
    "basis": "n_judged",
    "read": "first 1048576 and last 262144 bytes",
-   "why": "the sweep that ended 2026-10-29T09:04:46+00:00 judged 11383 cell(s) (n_judged)"
+   "why": "the sweep that ended 2026-10-29T17:27:18+00:00 judged 20572 cell(s) (n_judged)"
   },
   "sweep_dead": {
    "open": false,
-   "pid": 29832,
-   "why": "sweep child pid 29832 alive"
+   "pid": 29928,
+   "why": "sweep child pid 29928 alive"
   },
   "phase_overrun": {
    "open": false,
-   "phase": "build_shards",
-   "hours": 3.52,
+   "phase": "collect_and_cut",
+   "hours": 0.04,
    "known_phase": true,
-   "why": "sweep phase build_shards has run 3.5h since 2026-10-29T11:44:52+00:00 (limit 18h)"
+   "why": "sweep phase collect_and_cut has run 0.0h since 2026-10-29T21:28:23+00:00 (limit 1h)"
   },
   "host_unreadable": {
    "open": false,
@@ -71,14 +71,14 @@
   }
  },
  "last_verdict": {
-  "at": "2026-10-29T08:48:40+00:00",
+  "at": "2026-10-29T17:18:55+00:00",
   "source": "gate_verdict_ledger.jsonl"
  },
  "resident": {
   "status": "SWEEPING",
   "pid": 21384,
-  "heartbeat_utc": "2026-10-29T15:15:39+00:00",
-  "last_sweep_ended_utc": "2026-10-29T09:04:46+00:00",
+  "heartbeat_utc": "2026-10-29T21:30:48+00:00",
+  "last_sweep_ended_utc": "2026-10-29T17:27:18+00:00",
   "last_rc": 0
  },
  "host": "trading box",
