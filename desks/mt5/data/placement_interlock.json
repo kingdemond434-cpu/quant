@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-14T01:50:21+00:00",
+  "generated": "2026-10-29T12:06:58+00:00",
   "root": "C:\\opt\\quant",
   "thresholds": {
     "trailing_refusals_max": 30,
@@ -8,9 +8,7 @@
     "run_max_age_hours": 24.0,
     "identity_max_age_hours": 3.0
   },
-  "problems": [
-    "the release identity currently refuses new risk (REFUSED): running d15cc56a4b19 carries 84 path(s) the sealed release ca669d8c2755 never named: ['.gitignore', 'REPO_MAP.md', 'desks/mt5/docs/MT5_DESK.md', 'desks/mt5/docs/MT5_DESK_STATE.json', 'desks/mt5/mt5desk/engine.py', 'desks"
-  ],
+  "problems": [],
   "notes": [
     "gold_afternoon: 4x 'margin_guard' is history, not a current halt (last row 2026-09-29T14:57:32+00:00 is older than 24h)",
     "gold_asia_v4: 307x 'release_identity_refused' is history, not a current halt (last row 2026-09-25T09:59:17+00:00 is older than 24h)",
@@ -23,7 +21,7 @@
       "first_at": "2026-09-28T14:49:57+00:00",
       "last_at": "2026-09-29T14:57:32+00:00",
       "span_h": 24.126,
-      "age_h": 346.881,
+      "age_h": 717.157,
       "venue_reason": true,
       "current": false,
       "not_current_because": "last row 2026-09-29T14:57:32+00:00 is older than 24h"
@@ -34,7 +32,7 @@
       "first_at": "2026-09-28T11:17:44+00:00",
       "last_at": "2026-09-28T11:17:44+00:00",
       "span_h": 0.0,
-      "age_h": 374.544,
+      "age_h": 744.821,
       "venue_reason": true,
       "current": false,
       "not_current_because": "last row 2026-09-28T11:17:44+00:00 is older than 24h"
@@ -45,7 +43,7 @@
       "first_at": "2026-09-11T10:26:59+00:00",
       "last_at": "2026-09-23T10:32:03+00:00",
       "span_h": 288.084,
-      "age_h": 495.305,
+      "age_h": 865.582,
       "venue_reason": false,
       "current": false,
       "not_current_because": "last row 2026-09-23T10:32:03+00:00 is older than 24h"
@@ -56,7 +54,7 @@
       "first_at": "2026-09-11T10:26:59+00:00",
       "last_at": "2026-09-11T10:38:46+00:00",
       "span_h": 0.196,
-      "age_h": 783.193,
+      "age_h": 1153.47,
       "venue_reason": false,
       "current": false,
       "not_current_because": "last row 2026-09-11T10:38:46+00:00 is older than 24h"
@@ -67,7 +65,7 @@
       "first_at": "2026-09-28T06:41:57+00:00",
       "last_at": "2026-09-28T06:41:57+00:00",
       "span_h": 0.0,
-      "age_h": 379.14,
+      "age_h": 749.417,
       "venue_reason": true,
       "current": false,
       "not_current_because": "last row 2026-09-28T06:41:57+00:00 is older than 24h"
@@ -78,7 +76,7 @@
       "first_at": "2026-09-28T06:41:57+00:00",
       "last_at": "2026-09-28T06:41:57+00:00",
       "span_h": 0.0,
-      "age_h": 379.14,
+      "age_h": 749.417,
       "venue_reason": true,
       "current": false,
       "not_current_because": "last row 2026-09-28T06:41:57+00:00 is older than 24h"
@@ -89,24 +87,24 @@
       "first_at": "2026-09-23T04:00:04+00:00",
       "last_at": "2026-09-25T09:59:17+00:00",
       "span_h": 53.987,
-      "age_h": 447.851,
+      "age_h": 818.128,
       "venue_reason": false,
       "current": false,
       "not_current_because": "last row 2026-09-25T09:59:17+00:00 is older than 24h"
     }
   },
-  "ok": false,
-  "verdict": "HALTED",
+  "ok": true,
+  "verdict": "OK",
   "applicable": true,
-  "ledger_newest_at": "2026-10-13T04:00:13+00:00",
-  "ledger_age_h": 21.836,
-  "rows_scanned": 3206,
+  "ledger_newest_at": "2026-10-29T04:24:44+00:00",
+  "ledger_age_h": 7.704,
+  "rows_scanned": 3954,
   "identity": {
-    "verdict": "REFUSED",
-    "allows_new_risk": false,
-    "at": "2026-10-14T01:50:04+00:00",
-    "reason": "running d15cc56a4b19 carries 84 path(s) the sealed release ca669d8c2755 never named: ['.gitignore', 'REPO_MAP.md', 'desks/mt5/docs/MT5_DESK.md', 'desks/mt5/docs/MT5_DESK_STATE.json', 'desks/mt5/mt5desk/engine.py', 'desks/mt5/mt5desk/gateway.py']; money path drifted on disk: ['desks/mt5/mt5desk/gateway.py', 'desks/mt5/mt5desk/engine.py', 'desks/mt5/research/pf_allocator.py']",
-    "age_h": 0.005
+    "verdict": "OK",
+    "allows_new_risk": true,
+    "at": "2026-10-29T12:01:13+00:00",
+    "reason": "running c5028e990a7d is the sealed code c0a45e0b7ddb plus seal/state commits only (1 path(s))",
+    "age_h": 0.096
   },
   "host": {
     "verdict": "UNMEASURED",

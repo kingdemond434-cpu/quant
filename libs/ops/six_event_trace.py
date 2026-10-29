@@ -37,6 +37,22 @@ DATA, REP = "desks/mt5/data", "desks/mt5/reports"
 LLM_SEAT = re.compile(r"chatgpt|gpt|deepseek|kimi|llm|claude|codex", re.I)
 
 
+
+def _account_key_of(root: str, d: dict[str, Any]) -> str | None:
+    """`mt5desk.provenance.row_key` for a deal row: its account_key, or a legacy raw login
+    hashed on read. The raw login never reaches the trace."""
+    try:
+        import sys
+        desk = os.path.join(root, "desks", "mt5")
+        if desk not in sys.path:
+            sys.path.insert(0, desk)
+        from mt5desk.provenance import row_key
+        got = row_key(d)
+        return got if isinstance(got, str) else None
+    except Exception:
+        key = d.get("account_key")
+        return key if isinstance(key, str) else None
+
 def _before(a: Any, b: Any) -> bool:
     """True when both parse and a is strictly earlier than b; an unparseable side is never true."""
     ta, tb = ts(a), ts(b)
@@ -381,7 +397,8 @@ def e5_live_fill(root: str) -> dict[str, Any]:
                     "requested": i.get("intended"),
                     "entry_fill": d.get("entry_price"),
                     "deal_recorded": d.get("time"),
-                    "account": d.get("account"),
+                    # the hashed key only, never the raw login (2026-10-20)
+                    "account_key": _account_key_of(root, d),
                     "sleeve_status_now": sl.get("status"),
                     "allocator_funded_now": sl.get("risk_frac_source") == "allocator_marginal"
                     and (sl.get("risk_frac") or 0) > 0,

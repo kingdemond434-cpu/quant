@@ -74,7 +74,7 @@ def test_installer_is_declared_idempotent_and_hooked_into_adoption() -> None:
 
     inst = INSTALLER.read_text("utf-8")
     assert "$TaskName = 'MT5-FrontierAudit'" in inst
-    assert "param([switch]$IfMissing)" in inst
+    assert "param([switch]$IfMissing, [switch]$EnsureSingleInstance)" in inst
     assert "run_frontier_audit.cmd" in inst
     assert "AddHours(5).AddMinutes(10)" in inst
     # -IfMissing returns before any Unregister, so a live task is never touched.
@@ -84,6 +84,6 @@ def test_installer_is_declared_idempotent_and_hooked_into_adoption() -> None:
     assert "install_frontier_audit_task.ps1" in adopt
     hook = adopt.index("install_frontier_audit_task.ps1")
     # After a SUCCESSFUL adoption (the partial branch exits first) and before the seal.
-    assert adopt.index('Done $adoptExit "adopt-release-partial"') < hook
+    assert adopt.index('$adoptExit "adopt-release-partial"') < hook
     assert hook < adopt.index("release.seal(by='Adopt-And-Seal')")
     assert "-IfMissing" in adopt[hook:hook + 800]
