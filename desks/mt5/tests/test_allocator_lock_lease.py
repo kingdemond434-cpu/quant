@@ -81,9 +81,16 @@ def test_the_allocator_refuses_to_publish_on_a_lost_lease(monkeypatch) -> None:
         pa._lease_guard("publish")
     monkeypatch.setattr(JL, "_HELD", {})
     pa._lease_guard("publish")                          # never took the lock: not stopped
-    src = (_DESK / "research" / "pf_allocator.py").read_text(encoding="utf-8")
-    assert '_lease_guard("certify")\n        certify(proof' in src.replace("\r\n", "\n")
-    assert '_lease_guard("publish")\n    OUT.write_text' in src.replace("\r\n", "\n")
+    src = (_DESK / "research" / "pf_allocator.py").read_text(encoding="utf-8").replace("\r\n", "\n")
+    # MF1: the certificate is written only after the final guard, beside the book, and both
+    # carry the pass's lock token; nothing certifies ~460 lines before the publish any more.
+    g = src.index('    _lease_guard("publish")\n')
+    tail = src[g:g + 1200]
+    assert "certify(cert_pending[0], root=ROOT, book=cert_pending[1])" in tail
+    assert 'art["lock_token"] = token' in tail and "os.replace(_tmp, OUT)" in tail
+    assert src.count("certify(") == 1
+    # MF2: a lost lease is never swallowed as a failed contest
+    assert "    except LeaseLost:\n        raise" in src
     assert "lease_s=HEAVY_LEASE_S if args.mode == \"heavy\" else None" in src
     assert "pass_deadline=t0 + HEAVY_ADMISSION_BUDGET_S" in src
 
@@ -103,6 +110,10 @@ def test_the_admission_scan_carries_the_rest_as_unscored_past_its_deadline() -> 
     assert set(doc["unscored"]) == {"s1", "s2", "s3"}
     assert all("pass deadline" in why for why in doc["unscored"].values())
     assert not doc.get("refused")
+    # MF3: a deadline-cut scan says it is incomplete, so the hourly cycle runs heavy again
+    assert doc["deadline_cut"] == 3 and doc["complete"] is False and doc["status"] == "MEASURED"
+    hc = (_DESK / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
+    assert hc.count('adm.get("complete") is False') == 2
 
 
 def test_liveness_is_red_past_twice_the_expected_heavy_run(tmp_path, monkeypatch) -> None:

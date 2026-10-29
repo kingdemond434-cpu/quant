@@ -273,7 +273,8 @@ def test_run_explores_before_the_proof_on_the_published_book_and_never_moves_the
     i_adm = src.index("admission = marginal_admission(")
     i_apply = src.index("explored, e_why = apply_explore(base_now, lend, adm_bounds)")
     i_proof = src.index("proof = contest(ev, funded, current_book()")
-    i_cert = src.index("certify(proof, root=ROOT, book=funded)")
+    # The certified book is captured at the contest and written beside the artifact (#529 MF1).
+    i_cert = src.index("cert_pending = (proof, dict(funded))")
     assert i_bind < i_adm < i_apply < i_proof < i_cert, (
         "exploration must be applied to the PUBLISHED book before the contest certifies it")
     assert "warm=prev_admission.get(\"warm\") or {}" in src, "partial solves must be carried"

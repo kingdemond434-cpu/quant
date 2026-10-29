@@ -270,8 +270,8 @@ def test_net_of_cost_is_multiplied_into_the_allocator_tilt() -> None:
 def test_pf_allocator_records_a_named_stand_down_on_every_silent_path() -> None:
     """A pass that ends without an allocation must say why, by name (L1.28a)."""
     src = (DESK / "research" / "pf_allocator.py").read_text(encoding="utf-8")
-    assert src.count("_record_stand_down(") == 5        # 4 call sites + the definition
-    for reason in ('"MEMORY"', '"LOCK"', '"FAILED"', '"LEASE_LOST"'):
+    assert src.count("_record_stand_down(") == 4        # 3 call sites + the definition
+    for reason in ('"MEMORY"', '"LOCK"', '"FAILED"'):
         assert reason in src
     assert "_clear_stand_down(args.mode)" in src
 

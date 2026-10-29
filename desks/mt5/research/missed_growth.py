@@ -1027,6 +1027,35 @@ def admission_cadence_line(alloc: dict[str, Any]) -> dict[str, Any]:
             "unpriced": "longer reuse of the heavy growth curve on normal/fast passes"}
 
 
+def measure_admission_deadline(r, alloc: dict, _fv: dict) -> dict[str, Any]:
+    """The heavy scan's 20-minute deadline, both ways: candidates it left unscored this pass (the
+    growth it may have DEFERRED -- each goes first next pass, never refused) against the fast lane
+    it kept within its 90-minute contract."""
+    adm = alloc.get("admission") or {}
+    if not isinstance(adm, dict) or "deadline_cut" not in adm:
+        return {"verdict": UNMEASURED, "why": "no heavy scan has recorded its deadline yet"}
+    cut = int(adm.get("deadline_cut") or 0)
+    if cut == 0:
+        return {"verdict": NOT_BINDING, "n": 0, "complete": True}
+    return {"verdict": UNMEASURED, "n": cut, "complete": False,
+            "why": (f"{cut} candidate(s) carried unscored to the next heavy pass; their dE[log W] "
+                    f"is deferred, not lost, and the fast lane stayed live")}
+
+
+def measure_lock_lease(r, alloc: dict, _fv: dict) -> dict[str, Any]:
+    """The allocator lock lease, both ways: a LEASE_LOST stand-down is a pass whose work was
+    discarded (growth it computed and could not publish) so a successor could publish fresher."""
+    p = BASE / "reports" / "ALLOCATOR_LEASE_LOST.json"
+    if not p.exists():
+        return {"verdict": NOT_BINDING, "n": 0}
+    try:
+        sd = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {"verdict": UNMEASURED, "why": "the lease-lost record is unreadable"}
+    return {"verdict": UNMEASURED, "n": 1, "at": (sd or {}).get("at"),
+            "why": "a heavy pass outlived its lease and published nothing; its successor did"}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
