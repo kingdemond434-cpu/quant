@@ -71,10 +71,10 @@ def _runs_on_push(changed: list[str]) -> bool:
 
 def test_ci_push_paths_are_exactly_the_state_classification() -> None:
     pats = _push_paths()
-    assert pats[0] == "**"
+    assert pats[:3] == ["**", ".github/**", ".*"]  # dot paths named outright (#521 audit)
     neg = {p[1:] for p in pats if p.startswith("!")}
     assert neg == {p + "**" for p in STATE_PREFIXES} | set(STATE_FILES)
-    pos = [p for p in pats[1:] if not p.startswith("!")]
+    pos = [p for p in pats[3:] if not p.startswith("!")]
     assert set(pos) == set(GOVERNED_STATE_FILES) | set(GOVERNED_STATE_GLOBS)
     assert pats.index(pos[0]) > max(i for i, p in enumerate(pats) if p.startswith("!"))
 
@@ -363,3 +363,54 @@ def test_the_box_sweep_never_exits_silently_on_a_held_mutex() -> None:
     assert "Say " in held and "Beat 4" in held and "exit 4" in held and "Watch" in held
     assert "exit 0 }" not in ps.split("$mutex = New-Object", 1)[1].split("\n", 2)[1]
     assert "merge_pipeline_watch.py" in ps and "--heartbeat $beat" in ps
+
+
+def test_the_box_sweep_skips_pending_prs_streams_and_stops_on_budget(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """2026-10-29: a full run for each of 231 PRs outlasted the task limit, so no line was ever
+    logged. A PR whose gating checks still run costs one read; the pass stops at its budget."""
+    prs = [{"number": n, "head": {"sha": f"{n:040d}"}} for n in (1, 2, 3)]
+    green = [{"name": j, "status": "completed", "conclusion": "success",
+              "started_at": "t"} for j in ag.GATING_JOBS]  # fmt: skip
+    pending = [dict(green[0], status="queued", conclusion=None), *green[1:]]
+
+    def gh(path: str, *a: Any, **k: Any) -> Any:
+        if path.startswith("repos/o/r/pulls?"):
+            return [prs]
+        if "/check-runs" in path:
+            return {
+                "check_runs": pending if path.split("/")[4].startswith("0" * 39 + "2") else green
+            }
+        raise AssertionError(path)
+
+    ran: list[int] = []
+    monkeypatch.setattr(ag, "_gh", gh)
+    monkeypatch.setattr(ag, "run", lambda repo, n, *a, **k: ran.append(n) or 0)
+    assert ag.sweep("o/r", ag.LIVE) == 0 and ran == [1, 3]
+    ticks = iter([0.0, 0.0, 10_000.0, 10_000.0])
+    ran.clear()
+    ag.sweep("o/r", ag.LIVE, budget_s=60, clock=lambda: next(ticks))
+    assert ran == [1]
+
+
+def test_the_watcher_runs_on_every_exit_of_the_box_sweep() -> None:
+    ps = (ROOT / "ops/box/workflow_gate.ps1").read_text(encoding="utf-8")
+    assert 'Beat 3 "gh not logged in" $false; Watch; exit 3' in ps
+    catch = ps.split("} catch {", 1)[1].split("} finally {", 1)[0]
+    assert "Watch" in catch
+    call = next(ln for ln in ps.splitlines() if "& $Python" in ln and "--sweep --box" in ln)
+    assert "ForEach-Object" in call and "Out-String" not in call  # streamed, never buffered
+
+
+def test_one_manifest_row_per_task_and_the_watcher_has_an_independent_contract() -> None:
+    import collections
+
+    rows = re.findall(r'^TASK name="([^"]+)"', (ROOT / "desks/mt5/ops/box_tasks.manifest")
+                      .read_text(encoding="utf-8"), flags=re.M)  # fmt: skip
+    gate = [r for r in rows if r == "Quant-WorkflowGate"]
+    assert len(gate) == 1
+    dup = [n for n, c in collections.Counter(rows).items() if c > 1 and n.startswith("Quant-")]
+    assert dup == []
+    oc = (ROOT / "ops/organ_contract.py").read_text(encoding="utf-8")
+    assert '"desks/mt5/reports/MERGE_PIPELINE.json", 45' in oc

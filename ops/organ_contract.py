@@ -373,6 +373,13 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     "MT5-FrontierAudit (market posteriors)": (
         "desks/mt5/reports/MARKET_POSTERIORS.json", 1560,
         "F3: nine market axes as posteriors, two estimators each, disagreement kept per axis"),
+    # #521 audit MF-B (2026-10-29): the merge-pipeline watcher runs inside Quant-WorkflowGate, so
+    # a task that stops firing would leave its report simply un-updated. This board runs on its
+    # own clock; 45 min = the watcher's 25-min re-read plus two 10-min sweep runs.
+    "Quant-WorkflowGate (merge pipeline)": (
+        "desks/mt5/reports/MERGE_PIPELINE.json", 45,
+        "queued-check ages, CLEARed or green work waiting, LIVE's last code, the box sweep's "
+        "heartbeat; owned by Quant-WorkflowGate, not a task of its own"),
     "MT5-FrontierAudit (chart allocation)": (
         "desks/mt5/reports/CHART_ALLOCATION.json", 1560,
         "research effort per chart, inverse to the docket share each chart already holds"),

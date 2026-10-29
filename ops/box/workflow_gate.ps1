@@ -107,7 +107,7 @@ try {
     $ErrorActionPreference = 'Continue'  # native stderr is data; exit codes are the verdict
     $status = (& $Gh auth status -h github.com 2>&1 | Out-String)
     $scopeLine = ($status -split "`n" | Where-Object { $_ -match 'Token scopes' } | Select-Object -First 1)
-    if ($LASTEXITCODE -ne 0) { Say "gh is not logged in: $($status.Trim())"; Beat 3 "gh not logged in" $false; exit 3 }
+    if ($LASTEXITCODE -ne 0) { Say "gh is not logged in: $($status.Trim())"; Beat 3 "gh not logged in" $false; Watch; exit 3 }
     $scope = $scopeLine -match "'workflow'"
     if (-not $scope) {
         Say "gh login lacks the workflow scope ($scopeLine); workflow-file PRs will fail to merge"
@@ -130,10 +130,16 @@ try {
 
     Push-Location -LiteralPath $Clone
     try {
-        $out = (& $Python -I -u (Join-Path $Clone ".github\scripts\audit_gate.py") --repo $Repo --base $Live --sweep --box 2>&1 | Out-String)
+        # Streamed, one log line per gate line as it comes (2026-10-29: a sweep killed by the
+        # task's time limit had buffered everything and left no line at all).
+        $lines = New-Object System.Collections.Generic.List[string]
+        & $Python -I -u (Join-Path $Clone ".github\scripts\audit_gate.py") --repo $Repo --base $Live --sweep --box 2>&1 | ForEach-Object {
+            $l = "$_"
+            if ($l) { Say "gate@$at $l"; $lines.Add($l) }
+        }
         $rc = $LASTEXITCODE
+        $out = $lines -join "`n"
     } finally { Pop-Location }
-    foreach ($l in ($out -split "`r?`n" | Where-Object { $_ })) { Say "gate@$at $l" }
     $merged = @($out -split "`r?`n" | Where-Object { $_ -match 'MERGED' }).Count
     $note = "gate@{0}: {1} merged" -f $at, $merged
     if (-not $scope) { $note += "; NO workflow scope: run once  gh auth refresh -h github.com -s workflow" }
@@ -143,6 +149,7 @@ try {
 } catch {
     Say "FAILED: $($_.Exception.Message)"
     Beat 1 "FAILED: $($_.Exception.Message)" $false
+    Watch  # a sweep that fails every run still writes its RED (#521 audit MF-A)
     exit 1
 } finally {
     $mutex.ReleaseMutex()

@@ -21,6 +21,8 @@ on:
     # tests/ops/test_ci_throughput.py fails on any drift.
     paths:
       - "**"
+      - ".github/**"
+      - ".*"
       - "!desks/mt5/data/**"
       - "!desks/mt5/reports/**"
       - "!desks/mt5/logs/**"

@@ -712,7 +712,7 @@ def _flat(pages: Any) -> list[Any]:
 
 
 def _summary(line: str) -> None:
-    print(line)
+    print(line, flush=True)  # the box streams these into its log as they come
     path = os.environ.get("GITHUB_STEP_SUMMARY")
     if path:
         with open(path, "a", encoding="utf-8") as fh:
@@ -947,18 +947,48 @@ def run(
     return 0
 
 
-def sweep(repo: str, base: str, approvals_issue: int = APPROVALS_ISSUE) -> int:
+#: How long one box sweep may run before it stops and leaves the rest to the next one.
+SWEEP_BUDGET_S = 15 * 60
+
+
+def sweep(
+    repo: str,
+    base: str,
+    approvals_issue: int = APPROVALS_ISSUE,
+    budget_s: float = SWEEP_BUDGET_S,
+    clock: Callable[[], float] = time.monotonic,
+) -> int:
     """The box's pass: every open PR into `base` gets one box-mode run (forks are refused inside).
-    One PR's failure never stops the others; the worst exit code is returned."""
+    One PR's failure never stops the others; the worst exit code is returned.
+
+    MEASURED 2026-10-29: with 231 PRs open, a full run for each outlasted the task's 30-minute
+    limit, so the sweep was killed before its first log line, every time, from 13:14Z. Now one
+    cheap read skips a PR whose gating checks are still running (a skip never merges anything),
+    each line is flushed as it is written, and the pass stops at `budget_s`."""
     pages = _gh(f"repos/{repo}/pulls?state=open&base={base}&per_page=100", "--paginate", "--slurp")
     rc = 0
+    deadline = clock() + budget_s
+    looked = skipped = 0
     for p in _flat(pages):
         n = int(p["number"])
+        if clock() > deadline:
+            _summary(f"sweep budget of {budget_s / 60:.0f} min spent after {looked} PRs; "
+                     "the next sweep goes on")  # fmt: skip
+            break
         try:
+            head = str((p.get("head") or {}).get("sha") or "")
+            if head:  # no sha in the listing: no shortcut, the full run decides
+                got = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")
+                runs = (got or {}).get("check_runs") or []
+                if checks(runs, GATING_JOBS, lambda r: True)[0] == "pending":
+                    skipped += 1
+                    continue
+            looked += 1
             rc = max(rc, run(repo, n, base, 0.0, box=True, approvals_issue=approvals_issue))
-        except (RuntimeError, subprocess.SubprocessError) as exc:
+        except (RuntimeError, subprocess.SubprocessError, KeyError, TypeError) as exc:
             _summary(f"#{n}: the box gate failed: {exc}")
             rc = 1
+    _summary(f"sweep: {looked} PR(s) looked at, {skipped} skipped with CI still running")
     return rc
 
 
