@@ -414,3 +414,26 @@ def test_one_manifest_row_per_task_and_the_watcher_has_an_independent_contract()
     assert dup == []
     oc = (ROOT / "ops/organ_contract.py").read_text(encoding="utf-8")
     assert '"desks/mt5/reports/MERGE_PIPELINE.json", 45' in oc
+
+
+def test_live_first_moves_pr_runs_queued_ahead_of_a_waiting_live_run_behind_it() -> None:
+    """2026-10-29 19:45Z: ~120 PR runs queued before LIVE's push runs held every runner."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("lf", ROOT / "scripts/live_first_ci.py")
+    assert spec and spec.loader
+    lf = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(lf)
+    live = {"id": 1, "event": "push", "head_branch": lf.LIVE, "created_at": _iso(30)}
+    old = {"id": 2, "event": "pull_request", "head_sha": "h1", "created_at": _iso(60)}
+    moved = {"id": 3, "event": "pull_request_target", "head_sha": "gone", "created_at": _iso(60)}
+    later = {"id": 4, "event": "pull_request", "head_sha": "h1", "created_at": _iso(10)}
+    # a re-run keeps created_at but joins the queue again: it is behind LIVE already
+    rerun = {**old, "id": 5, "run_started_at": _iso(1)}
+    waste, ahead = lf.plan(NOW, [live, old, moved, later, rerun], {"h1"})
+    assert waste == [3] and ahead == [2]
+    fresh = dict(live, created_at=_iso(2))  # LIVE queued under 5 min: nothing moves yet
+    assert lf.plan(NOW, [fresh, old, moved], {"h1"}) == ([3], [])
+    assert lf.plan(NOW, [old, moved], {"h1"}) == ([3], [])  # no LIVE run waiting
+    gate = (ROOT / "ops/box/workflow_gate.ps1").read_text(encoding="utf-8")
+    assert "scripts\\live_first_ci.py" in gate
