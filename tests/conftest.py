@@ -289,3 +289,15 @@ def _account_key_in_tmp(_account_key_file: Path, monkeypatch: pytest.MonkeyPatch
     test gets a throwaway key instead. A test about the absent key points the env elsewhere."""
     from libs.ops import provenance as _acct_prov
     monkeypatch.setenv(_acct_prov.KEY_ENV, str(_account_key_file))
+
+
+@pytest.fixture(autouse=True)
+def _model_swap_ledger_in_tmp(tmp_path_factory: pytest.TempPathFactory,
+                              monkeypatch: pytest.MonkeyPatch) -> None:
+    """No test reads or writes the box's retired-model ledger (`llm_seat.SWAP_LEDGER`): a real
+    dead row there would make a test's pinned id look retired and send discovery to the network.
+    `raising=False` so this fixture is harmless on a tree that predates the ledger."""
+    from libs.ops import llm_seat
+    monkeypatch.setattr(llm_seat, "SWAP_LEDGER",
+                        tmp_path_factory.mktemp("llm_swaps") / "llm_model_swaps.jsonl",
+                        raising=False)
