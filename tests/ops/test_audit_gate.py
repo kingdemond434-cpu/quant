@@ -118,13 +118,31 @@ def test_a_clear_for_another_head_needs_the_same_change() -> None:
 # ------------------------------------------------------------------------------- CI checks
 
 
+_RUN_IDS = [1000]
+
+
 def _r(
     name: str,
     status: str = "completed",
     conclusion: str | None = "success",
     at: str = "2026-10-28T10:00:00Z",
+    app: str = "github-actions",
+    suite: int | None = None,
 ) -> dict[str, Any]:
-    return {"name": name, "status": status, "conclusion": conclusion, "started_at": at}
+    """A check run, by default GitHub Actions' from the job's own workflow (suite 1 = ci.yml,
+    2 = release-gates.yml, in the fake hub)."""
+    if suite is None:
+        suite = 2 if name in ag.AUTO_JOBS else 1
+    _RUN_IDS[0] += 1
+    return {
+        "id": _RUN_IDS[0],
+        "name": name,
+        "status": status,
+        "conclusion": conclusion,
+        "started_at": at,
+        "app": {"slug": app},
+        "check_suite": {"id": suite},
+    }
 
 
 def _green() -> list[dict[str, Any]]:
@@ -261,6 +279,7 @@ class _Hub:
         self.comments = comments or []
         self.runs = runs if runs is not None else _green()
         self.writes: list[tuple[str, ...]] = []
+        self.suites = {1: ".github/workflows/ci.yml", 2: ".github/workflows/release-gates.yml"}
 
     def __call__(self, *args: str, data: Any = None) -> Any:
         path = args[0]
@@ -279,6 +298,20 @@ class _Hub:
             return [self.comments]
         if "/check-runs" in path:
             return {"check_runs": self.runs}
+        if "/actions/runs?check_suite_id=" in path:
+            sid = int(path.split("check_suite_id=")[1].split("&")[0])
+            wf = self.suites.get(sid)
+            run = {
+                "id": sid,
+                "path": wf,
+                "head_sha": self.pr["head"]["sha"],
+                "event": "pull_request",
+                "pull_requests": [{"number": 7}],
+            }
+            return {"workflow_runs": [run] if wf else []}
+        if "/actions/runs/" in path and "/jobs" in path:
+            # every run the test built is a real job of its suite's run, unless marked forged
+            return [{"jobs": [{"id": r["id"]} for r in self.runs if not r.get("forged")]}]
         if "/files?" in path:
             return [self.files]
         if "/pulls?" in path:
@@ -305,6 +338,7 @@ def hub(monkeypatch: pytest.MonkeyPatch) -> Any:
         h = _Hub(**kw)
         monkeypatch.setattr(ag, "_gh", h)
         monkeypatch.setattr(ag, "patch_id", lambda base, sha: {A: "p1", B: "p1"}.get(sha, sha))
+        monkeypatch.setattr(ag, "up_to_date", lambda base, head: (True, "up to date"))
         return h
 
     return make
@@ -532,9 +566,10 @@ def test_a_hold_after_the_approval_still_wins(hub: Any) -> None:
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
 
 
-# ------------------------------------------------------------------------------ the two tiers
+# ---------------------------------------------------------------------------- the three tiers
 
 DOC = "docs/research/notes_on_carry.md"
+CODE = "desks/mt5/research/x.py"
 
 
 def _f(name: str, **kw: Any) -> dict[str, Any]:
@@ -542,29 +577,47 @@ def _f(name: str, **kw: Any) -> dict[str, Any]:
 
 
 @pytest.mark.parametrize(
-    ("files", "changed", "read", "low"),
+    ("files", "changed", "read", "level"),
     [
-        ([_f(DOC)], 1, set(), True),
-        ([_f("context/decision_journal.jsonl")], 1, {"context/decision_journal.jsonl"}, True),
-        ([_f("context/decision_journal.jsonl", deletions=1)], 1, set(), False),  # not an append
-        ([_f(DOC)], 2, set(), False),  # the count does not add up
-        ([], 0, set(), False),
-        ([_f(DOC)], 1, {DOC}, False),  # a program reads it
-        ([_f("docs/LAWS.md")], 1, set(), False),  # a governing document
-        ([_f("docs/x/CLAUDE.md")], 1, set(), False),
-        ([_f("docs/ops/prompt_notes.md")], 1, set(), False),
-        ([_f("desks/mt5/research/x.py")], 1, set(), False),  # code
-        ([_f("docs/research/x.json")], 1, set(), False),  # data
-        ([_f("tests/test_x.py")], 1, set(), False),
-        ([_f(".github/scripts/audit_gate.py")], 1, set(), False),
-        ([_f(DOC, previous_filename="ops/x.py", status="renamed")], 1, set(), False),
-        ([_f(DOC), _f("libs/risk/x.py")], 2, set(), False),
+        ([_f(DOC)], 1, set(), "LOW"),
+        ([_f("context/decision_journal.jsonl")], 1, {"context/decision_journal.jsonl"}, "LOW"),
+        ([_f("context/decision_journal.jsonl", deletions=1)], 1, set(), "AUTO"),  # not an append
+        ([_f(DOC)], 2, set(), "PROTECTED"),  # the count does not add up
+        ([], 0, set(), "PROTECTED"),
+        ([_f(DOC)], 1, {DOC}, "AUTO"),  # a program reads it
+        ([_f("docs/LAWS.md")], 1, set(), "PROTECTED"),  # a governing document
+        ([_f("docs/ops/prompt_notes.md")], 1, set(), "PROTECTED"),
+        ([_f(CODE)], 1, set(), "AUTO"),  # code
+        ([_f("docs/research/x.json")], 1, set(), "AUTO"),  # data
+        ([_f("tests/test_x.py")], 1, set(), "AUTO"),
+        ([_f("libs/risk/sizing.py")], 1, set(), "AUTO"),  # risk and sizing are AUTO, not LOW
+        ([_f(DOC), _f("libs/risk/x.py")], 2, set(), "AUTO"),
+        # PROTECTED: the controller, workflows, ceilings, release machinery, agent instructions
+        ([_f(".github/scripts/audit_gate.py")], 1, set(), "PROTECTED"),
+        ([_f(".github/workflows/ci.yml")], 1, set(), "PROTECTED"),
+        ([_f("ops/release/ceilings.json")], 1, set(), "PROTECTED"),
+        ([_f("ops/box/workflow_gate.ps1")], 1, set(), "PROTECTED"),
+        ([_f("CODEOWNERS")], 1, set(), "PROTECTED"),
+        ([_f("docs/x/CLAUDE.md")], 1, set(), "PROTECTED"),
+        ([_f("desks/mt5/scripts/smoke_release.py")], 1, set(), "PROTECTED"),
+        ([_f("desks/mt5/mt5desk/release_identity.py")], 1, set(), "PROTECTED"),
+        ([_f("libs/ops/release_promotion.py")], 1, set(), "PROTECTED"),
+        ([_f("desks/mt5/data/secrets/k.txt")], 1, set(), "PROTECTED"),
+        ([_f(DOC), _f(CODE), _f(".github/CODEOWNERS")], 3, set(), "PROTECTED"),  # strictest wins
+        # a rename out of a protected path is protected
+        (
+            [_f(DOC, previous_filename="ops/release/x.json", status="renamed")],
+            1,
+            set(),
+            "PROTECTED",
+        ),
+        ([_f(DOC, previous_filename="ops/x.py", status="renamed")], 1, set(), "AUTO"),
     ],
 )
-def test_only_prose_no_program_reads_is_low_tier(
-    files: list[dict[str, Any]], changed: int, read: set[str], low: bool
+def test_the_strictest_file_decides_the_tier(
+    files: list[dict[str, Any]], changed: int, read: set[str], level: str
 ) -> None:
-    assert ag.tier(files, changed, lambda n: n in read)[0] is low
+    assert ag.tier(files, changed, lambda n: n in read)[0] == level
 
 
 @pytest.fixture
@@ -640,6 +693,118 @@ def test_zuck_can_switch_it_back_on_after_a_deactivate(low_hub: Any) -> None:
     assert len(_merges(h)) == 1
 
 
+# ------------------------------------------------------------------------------ the AUTO tier
+
+BOTH = [
+    _ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE),
+    _ok("2026-10-28T20:05:00Z", body=ag.ACTIVATE_AUTO),
+]
+
+
+def _auto_green() -> list[dict[str, Any]]:
+    return [*_green(), *(_r(j) for j in ag.AUTO_JOBS)]
+
+
+@pytest.fixture
+def auto_hub(hub: Any, monkeypatch: pytest.MonkeyPatch) -> Any:
+    def make(**kw: Any) -> Any:
+        kw.setdefault("files", (CODE,))
+        kw.setdefault("approvals", list(BOTH))
+        kw.setdefault("comments", [])
+        h = hub(**kw)
+        monkeypatch.setattr(ag, "referenced_by_code", lambda base, n: False)
+        return h
+
+    return make
+
+
+def test_an_auto_tier_pr_merges_with_no_comment_once_both_switches_and_all_jobs_pass(
+    auto_hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # replay-shadow has no source until step D; give it one to exercise the merge
+    monkeypatch.setitem(ag.WORKFLOW_OF, "replay-shadow", ".github/workflows/release-gates.yml")
+    h = auto_hub(runs=_auto_green(), labels=("quarantined",))
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    (merge,) = _merges(h)
+    assert f"sha={A}" in merge and "AUTO tier" in " ".join(merge)
+    # a new head passed: the old quarantine is lifted
+    assert any(w[0] == "DELETE" and w[1].endswith("/labels/quarantined") for w in h.writes)
+
+
+def test_until_step_d_no_auto_pr_can_merge(auto_hub: Any) -> None:
+    h = auto_hub(runs=_auto_green())  # even a replay-shadow "success" has no genuine source
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
+def test_an_auto_tier_pr_waits_while_any_auto_job_is_missing(auto_hub: Any) -> None:
+    """Step C has not built the AUTO jobs yet: a missing job is pending, never a pass."""
+    for drop in ag.AUTO_JOBS:
+        runs = [r for r in _auto_green() if r["name"] != drop]
+        h = auto_hub(runs=runs)
+        assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+        assert _merges(h) == [] and not any("labels" in w[1] for w in h.writes)
+
+
+@pytest.mark.parametrize(
+    "approvals",
+    [
+        [],
+        [_ok(body=ag.ACTIVATE)],  # the LOW switch alone does not open AUTO
+        [_ok(body=ag.ACTIVATE_AUTO)],  # nor the AUTO switch alone
+        [*BOTH, _ok("2026-10-28T21:00:00Z", body=ag.DEACTIVATE, app="claude")],  # switched off
+        [_ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE), _ok(body=ag.ACTIVATE_AUTO, app="claude")],
+        [_ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE), _ok(body=ag.ACTIVATE_AUTO, assoc="MEMBER")],
+        [
+            _ok("2026-10-28T20:00:00Z", body=ag.ACTIVATE),
+            _ok(body=ag.ACTIVATE_AUTO, updated_at="2026-10-28T23:30:00Z"),  # edited
+        ],
+    ],
+)
+def test_the_auto_tier_is_off_until_zuck_types_both_switches(
+    auto_hub: Any, approvals: list[dict[str, Any]]
+) -> None:
+    h = auto_hub(runs=_auto_green(), approvals=approvals)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
+def test_an_auto_tier_pr_with_a_hold_never_merges(auto_hub: Any) -> None:
+    h = auto_hub(runs=_auto_green(), comments=[_c(f"AUDIT HOLD {A}", "2026-10-28T10:00:00Z")])
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
+def test_a_protected_pr_never_takes_a_no_comment_path(auto_hub: Any) -> None:
+    for name in (".github/workflows/ci.yml", "ops/release/ceilings.json", "CLAUDE.md"):
+        h = auto_hub(files=(name,), runs=_auto_green())
+        assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+        assert _merges(h) == []
+
+
+@pytest.mark.parametrize("which", ["auto", "low"])
+def test_a_failing_no_comment_pr_is_quarantined(auto_hub: Any, low_hub: Any, which: str) -> None:
+    if which == "auto":
+        h = auto_hub(
+            runs=[
+                *_auto_green(),
+                _r("risk-invariants", conclusion="failure", at="2026-10-28T11:00:00Z"),
+            ]
+        )
+    else:
+        h = low_hub(comments=[], runs=[*_green(), _r("lint", conclusion="failure")])
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1
+    assert _merges(h) == []
+    assert any(w[1].endswith("/issues/7/labels") and "quarantined" in " ".join(w) for w in h.writes)
+    assert any("/statuses/" in w[1] and "state=failure" in w for w in h.writes)
+
+
+def test_a_failing_manual_path_pr_is_reported_not_quarantined(hub: Any) -> None:
+    h = hub(
+        comments=[_c(f"AUDIT CLEAR {A}", "2026-10-28T10:00:00Z")],
+        runs=[*_green(), _r("lint", conclusion="failure")],
+    )
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1
+    assert _merges(h) == [] and not any(w[1].endswith("/labels") for w in h.writes)
+
+
 # ------------------------------------------------------------------------ #454 audit fixes
 
 
@@ -673,7 +838,7 @@ def test_a_case_variant_of_a_code_named_path_is_read_by_code(
 )
 def test_preregistrations_registers_and_rulings_are_governing(name: str) -> None:
     """#454 audit MF2: a study's pre-registered bar never moves on the no-comment path."""
-    assert ag.tier([_f(name)], 1, lambda n: False)[0] is False
+    assert ag.tier([_f(name)], 1, lambda n: False)[0] != "LOW"
 
 
 def test_once_the_auditor_has_spoken_a_low_pr_takes_the_live_path(low_hub: Any) -> None:
@@ -733,3 +898,121 @@ def test_a_deactivate_between_the_reads_stops_the_low_merge(
     h.approvals = _Board()
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
     assert _merges(h) == [] and reads["n"] >= 3
+
+
+# ------------------------------------------------------------------------ #455 audit fixes
+
+
+@pytest.mark.parametrize(
+    "forged",
+    [
+        _r("risk-invariants", app="claude"),  # another App
+        _r("risk-invariants", suite=9),  # Actions, but no workflow run of the job's own file
+        _r("risk-invariants", suite=3),  # Actions, from a different workflow file
+        # #456 audit MF1: Actions, in the right suite, but POSTed by another workflow: no job
+        {**_r("risk-invariants"), "forged": True},
+    ],
+)
+def test_a_forged_same_name_run_counts_for_nothing(auto_hub: Any, forged: dict[str, Any]) -> None:
+    """#455 audit MF1: a run with the job's name, but not from the job's workflow on this head,
+    neither passes the job nor masks its real failure."""
+    real_fail = _r("risk-invariants", conclusion="failure", at="2026-10-28T09:00:00Z")
+    late = {**forged, "started_at": "2026-10-28T12:00:00Z"}
+    h = auto_hub(runs=[*_auto_green()[:-3], real_fail, late, *_auto_green()[-2:]])
+    h.suites[3] = ".github/workflows/other.yml"
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1  # the real failure
+    assert _merges(h) == []
+    only_forged = [r for r in _auto_green() if r["name"] != "risk-invariants"]
+    h = auto_hub(runs=[*only_forged, late])
+    h.suites[3] = ".github/workflows/other.yml"
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
+def test_a_stale_github_tree_takes_the_manual_path(
+    auto_hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setitem(ag.WORKFLOW_OF, "replay-shadow", ".github/workflows/release-gates.yml")
+    h = auto_hub(runs=_auto_green())
+    monkeypatch.setattr(ag, "up_to_date", lambda base, head: (False, "it is behind"))
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0 and _merges(h) == []
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "ops/Box/install_unattended.ps1",  # NTFS: these overwrite their protected twins
+        ".Claude/settings.json",
+        "claude.md",
+        "scripts/run_deadman_switch.py",
+        "ops/principal_doctrine.txt",
+        "scripts/check_constitution_core.py",
+        "ops/brain_env.sh",
+        "scripts/moneypath_precommit_guard.py",
+        "desks/mt5/research/tier_s.py",
+        "libs/ops/canonical_policy.py",
+        "desks/mt5/research/heat_policy.py",
+        "desks/mt5/data/ALLOCATOR_SOVEREIGN.json",
+        "desks/mt5/data/MARGIN_CLAUSE_DISABLED",
+        "desks/mt5/data/RECORDERS_OFF",
+        "desks/mt5/data/FTMO_COPY_PRINCIPAL.json",
+        "desks/mt5/data/GOLD_OCO_MODE.json",
+        "desks/mt5/GATEWAY_PAUSED",
+        "docs/RESEARCH.md",
+        "docs/cro/charter_notes.md",
+        "ops/memory/notes.md",
+        "ops/gates.sh",
+        "pyproject.toml",
+        "tests/conftest.py",
+        "docs/research/FULL_SWEEP_PREREGISTRATION.md",  # governing prose is PROTECTED, not AUTO
+        "desks/mt5/docs/ops_policy.txt",
+    ],
+)
+def test_what_only_zuck_may_change_is_protected(name: str) -> None:
+    assert ag.tier([_f(name)], 1, lambda n: False)[0] == "PROTECTED"
+
+
+def test_up_to_date_needs_the_base_tip_and_the_same_github_tree(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#456 audit MF3: the no-comment paths test and merge only a head that contains the base."""
+    origin, work = tmp_path / "origin", tmp_path / "work"
+    _git(tmp_path, "init", "-q", "-b", ag.LIVE, str(origin))
+    for k, v in (("user.name", "t"), ("user.email", "t@t")):
+        _git(origin, "config", k, v)
+    (origin / ".github").mkdir()
+    (origin / ".github" / "ci.yml").write_text("v1\n")
+    _git(origin, "add", ".")
+    _git(origin, "commit", "-qm", "base")
+    _git(origin, "checkout", "-qb", "pr")
+    (origin / "x.py").write_text("x = 1\n")
+    _git(origin, "add", ".")
+    _git(origin, "commit", "-qm", "pr")
+    fresh = _git(origin, "rev-parse", "HEAD")
+    _git(origin, "checkout", "-q", ag.LIVE)
+    (origin / ".github" / "ci.yml").write_text("v2\n")
+    _git(origin, "commit", "-qam", "live moves")
+    _git(tmp_path, "clone", "-q", str(origin), str(work))
+    monkeypatch.chdir(work)
+    ok, why = ag.up_to_date(ag.LIVE, fresh)
+    assert not ok and "behind" in why
+    _git(origin, "checkout", "-q", "pr")
+    _git(origin, "merge", "-q", "--no-edit", ag.LIVE)
+    merged = _git(origin, "rev-parse", "HEAD")
+    assert ag.up_to_date(ag.LIVE, merged) == (True, "up to date")
+    assert ag.up_to_date(ag.LIVE, "d" * 40)[0] is False
+
+
+def test_live_moving_before_the_merge_stops_a_no_comment_merge(
+    low_hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#455 delta audit: the merged tree must be the tested one up to the PUT."""
+    h = low_hub(comments=[])
+    calls = {"n": 0}
+
+    def fresh(base: str, head: str) -> tuple[bool, str]:
+        calls["n"] += 1
+        return (calls["n"] < 3, "up to date" if calls["n"] < 3 else "it is behind")
+
+    monkeypatch.setattr(ag, "up_to_date", fresh)
+    assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 0
+    assert _merges(h) == [] and calls["n"] >= 3

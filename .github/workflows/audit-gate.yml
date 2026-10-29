@@ -22,7 +22,7 @@ permissions:
   statuses: write        # the audit/clear commit status
   actions: write         # dispatch ci.yml on LIVE after the merge
   checks: read
-  issues: read
+  issues: write          # the quarantine label on a failing no-comment PR
 
 jobs:
   gate:

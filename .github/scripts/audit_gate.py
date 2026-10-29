@@ -78,6 +78,16 @@ Unsure is LIVE: a file count that does not add up, an unreadable tree, a grep th
 The allowlist lives here, in .github/scripts, which is itself LIVE tier: only a LIVE-tier merge
 (auditor CLEAR + zuck's comment) can widen it.
 
+THREE TIERS (step B). LIVE splits in two. PROTECTED -- this controller and every workflow, the
+ceilings and the release suite (ops/release/), the release and adopter machinery, the signed
+judge manifest, the box and bridge installers, secrets, agent instructions; and any PR the
+controller cannot classify for certain -- only ever takes the CLEAR + APPROVE MERGES path.
+AUTO -- everything else, execution, sizing, risk, allocation and the judge included -- merges with
+no comment once zuck has ALSO typed `ACTIVATE LIVE AUTO-MERGE` on #453 (after the box canary is
+ready), no HOLD stands, and the gating jobs AND the AUTO jobs (risk-invariants, replay-shadow,
+independent-review) all succeeded. A PR whose CI fails on the LOW or AUTO path is QUARANTINED:
+labelled `quarantined`, left open, never merged until a new head passes.
+
 Exit 0 when merged or when there is honestly nothing to do yet (no CLEAR); exit 1 when the gate
 refused or gave up, with the reason in the job summary and on the `audit/clear` commit status.
 """
@@ -85,6 +95,7 @@ refused or gave up, with the reason in the job summary and on the `audit/clear` 
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import hashlib
 import json
 import os
@@ -119,6 +130,48 @@ CODE_SPECS = (
     "*.py", "*.ps1", "*.sh", "*.cmd", "*.txt", "*.yml", "*.yaml", "*.toml", "*.manifest",
     "*.service", "ops/githooks/*",
 )  # fmt: skip
+#: PROTECTED: never merged without zuck. fnmatch patterns ("*" crosses "/").
+PROTECTED = (
+    ".github/*", "CODEOWNERS", "*/CODEOWNERS", "ops/release/*", "ops/box/*", "ops/bridge/*",
+    "ops/githooks/*", "IMMUTABLE_MANIFEST*", "*/IMMUTABLE_MANIFEST*", "data/secrets/*",
+    "*/data/secrets/*", "scripts/check_immutable_evaluator.py", "libs/ops/release.py",
+    "libs/ops/release_promotion.py", "desks/mt5/scripts/Adopt*", "desks/mt5/scripts/Seal-*",
+    "desks/mt5/scripts/smoke_release.py", "desks/mt5/mt5desk/release_identity.py",
+    "CLAUDE.md", "*/CLAUDE.md", "AGENTS.md", "*/AGENTS.md", ".claude/*", "*/.claude/*",
+    # what the checks execute (#455 audit MF3)
+    "ops/gates.sh", "pyproject.toml", "conftest.py", "*/conftest.py", "setup.cfg", "setup.py",
+    "pytest.ini", "tox.ini", "*sitecustomize.py", "*usercustomize.py", "*.pth",
+    ".pre-commit-config.yaml", "scripts/moneypath_precommit_guard.py",
+    # Tier-3 and the sealed core: never modified autonomously (LAWS 4)
+    "scripts/run_deadman_switch.py", "ops/principal_doctrine.txt",
+    "scripts/check_constitution_core.py", "ops/brain_env.sh",
+    # bars that never move without zuck
+    "desks/mt5/research/tier_s.py", "libs/ops/canonical_policy.py",
+    "desks/mt5/research/heat_policy.py",
+    # the principal's own switches and ceilings, and the kill files
+    "*allocator_sovereign*", "*margin_clause_disabled*", "*recorders_off*",
+    "*ftmo_copy_principal*", "*gold_oco_mode*", "*gateway_paused*", "*cashcarry_kill*",
+    "*deadman_fired*", "data/freeze", "*/data/freeze",
+    # governing prose
+    "docs/research.md", "docs/cro/*", "ops/memory/*", ".mcp.json", "*/.mcp.json",
+)  # fmt: skip
+#: Prose files: one whose name matches FORCED_LIVE is a governing document, so PROTECTED.
+DOC_EXTS = (".md", ".txt", ".rst")
+#: The jobs an AUTO-tier PR needs on top of the gating jobs (step C builds them; until then no
+#: AUTO-tier PR can merge, because a missing job is never a pass).
+AUTO_JOBS = ("risk-invariants", "replay-shadow", "independent-review")
+ACTIVATE_AUTO = "ACTIVATE LIVE AUTO-MERGE"
+#: The app every required check run must come from.
+CI_APP = "github-actions"
+#: The workflow file each required job must come from (#455 audit MF1: any workflow on any
+#: branch, or any App, can post a check run with any name on any sha). replay-shadow is the box's
+#: (step D) and has no source yet, so it can never pass.
+WORKFLOW_OF = {
+    **dict.fromkeys(("quality", "mt5-money-path", "coverage-floor"), ".github/workflows/ci.yml"),
+    "risk-invariants": ".github/workflows/release-gates.yml",
+    "independent-review": ".github/workflows/release-gates.yml",
+}
+QUARANTINE = "quarantined"
 #: The GitHub files API lists at most 3000 files; past that the PR is never LOW.
 MAX_FILES = 3000
 #: The label that starts a gate run (the CLEAR comment itself starts none).
@@ -198,29 +251,41 @@ def referenced_by_code(base_ref: str, path: str) -> bool:
     return p.returncode != 1  # 0 = found, 1 = not found, anything else = could not look
 
 
+def is_protected(name: str) -> bool:
+    """Case-blind (#455 audit MF2): on the box's NTFS checkout `claude.md` IS `CLAUDE.md`."""
+    low = name.lower()
+    if low.endswith(DOC_EXTS) and FORCED_LIVE.search(low):
+        return True  # a governing document
+    return any(fnmatch.fnmatchcase(low, pat.lower()) for pat in PROTECTED)
+
+
 def tier(
     files: list[Mapping[str, Any]], changed: int, referenced: Callable[[str], bool]
-) -> tuple[bool, str]:
-    """(is LOW tier, why). LIVE unless every file is provably prose no program reads."""
+) -> tuple[str, str]:
+    """("LOW" | "AUTO" | "PROTECTED", why). The strictest file decides; unsure is PROTECTED."""
     if not files or len(files) != changed or len(files) >= MAX_FILES:
-        return False, f"LIVE tier: {len(files)} of {changed} changed files listed"
-    for f in files:
-        names = [str(n) for n in (f.get("filename"), f.get("previous_filename")) if n]
-        for name in names:
-            if (
-                name in APPEND_ONLY
-                and f.get("status") == "modified"
-                and f.get("deletions") == 0
-                and not f.get("previous_filename")
-            ):
-                continue
-            if not (name.startswith(LOW_DIRS) and name.lower().endswith(LOW_EXTS)):
-                return False, f"LIVE tier: {name}"
-            if FORCED_LIVE.search(name.lower()):
-                return False, f"LIVE tier: {name} (a governing document)"
-            if referenced(name):
-                return False, f"LIVE tier: {name} is read by code"
-    return True, f"LOW tier: {len(files)} prose file(s) no program reads"
+        return "PROTECTED", f"PROTECTED: {len(files)} of {changed} changed files listed"
+    names = [
+        (str(n), f) for f in files for n in (f.get("filename"), f.get("previous_filename")) if n
+    ]
+    for name, _ in names:
+        if is_protected(name):
+            return "PROTECTED", f"PROTECTED: {name}"
+    for name, f in names:
+        if (
+            name in APPEND_ONLY
+            and f.get("status") == "modified"
+            and f.get("deletions") == 0
+            and not f.get("previous_filename")
+        ):
+            continue
+        if not (name.startswith(LOW_DIRS) and name.lower().endswith(LOW_EXTS)):
+            return "AUTO", f"AUTO tier: {name}"
+        if FORCED_LIVE.search(name.lower()):
+            return "AUTO", f"AUTO tier: {name} (a governing document)"
+        if referenced(name):
+            return "AUTO", f"AUTO tier: {name} is read by code"
+    return "LOW", f"LOW tier: {len(files)} prose file(s) no program reads"
 
 
 def _zuck_typed(c: Mapping[str, Any]) -> bool:
@@ -244,12 +309,12 @@ def approval_at(comments: Iterable[Mapping[str, Any]]) -> str | None:
     return best
 
 
-def activated(comments: Iterable[Mapping[str, Any]]) -> tuple[bool, str]:
-    """Is the tier controller on? The newest of zuck's own ACTIVATE and any trusted DEACTIVATE
-    decides; none at all is off. Fail safe: any EDITED trusted comment on the issue counts as a
-    DEACTIVATE at its edit time (an edit can hide what a comment said), and OFF wins a tie.
-    Limit: a DEACTIVATE that is DELETED leaves no trace in the API, so deleting one re-enables
-    the controller; deactivate by posting, never by removing an ACTIVATE."""
+def activated(comments: Iterable[Mapping[str, Any]], phrase: str = ACTIVATE) -> tuple[bool, str]:
+    """Is this switch on? The newest of zuck's own `phrase` and any trusted DEACTIVATE decides;
+    none at all is off. One DEACTIVATE switches off every switch. Fail safe: any EDITED trusted
+    comment on the issue counts as a DEACTIVATE at its edit time (an edit can hide what a comment
+    said), and OFF wins a tie. Limit: a DEACTIVATE that is DELETED leaves no trace in the API, so
+    deleting one re-enables the switches; deactivate by posting, never by removing an ACTIVATE."""
     last: tuple[str, bool] | None = None
     for c in comments:
         body = str(c.get("body") or "").strip()
@@ -258,7 +323,7 @@ def activated(comments: Iterable[Mapping[str, Any]]) -> tuple[bool, str]:
         edited = c.get("updated_at") not in (None, c.get("created_at"))
         if trusted and edited:
             on, at = False, str(c.get("updated_at"))
-        elif body == ACTIVATE and _zuck_typed(c):
+        elif body == phrase and _zuck_typed(c):
             on = True
         elif body == DEACTIVATE and trusted:
             on = False
@@ -267,8 +332,8 @@ def activated(comments: Iterable[Mapping[str, Any]]) -> tuple[bool, str]:
         if last is None or at > last[0] or (at == last[0] and not on):
             last = (at, on)
     if last is None:
-        return False, f"the release controller is not activated (zuck: `{ACTIVATE}` on #453)"
-    return last[1], f"the release controller is {'ON' if last[1] else 'OFF'} since {last[0]}"
+        return False, f"`{phrase}` has not been given (zuck, on #453)"
+    return last[1], f"`{phrase}` is {'ON' if last[1] else 'OFF'} since {last[0]}"
 
 
 def approved(clear: Mapping[str, str], at: str | None) -> tuple[bool, str]:
@@ -305,15 +370,26 @@ def cleared(
     )
 
 
+def _from_ci_app(r: Mapping[str, Any]) -> bool:
+    return str((r.get("app") or {}).get("slug") or "") == CI_APP
+
+
 def checks(
-    runs: Iterable[Mapping[str, Any]], gating: tuple[str, ...] = GATING_JOBS
+    runs: Iterable[Mapping[str, Any]],
+    gating: tuple[str, ...] = GATING_JOBS,
+    genuine: Callable[[Mapping[str, Any]], bool] = _from_ci_app,
 ) -> tuple[str, str]:
     """("pass" | "pending" | "fail", why) over the head's check runs. A job re-run keeps only
-    its newest run."""
+    its newest run. A required job counts only from a run `genuine` accepts (by default: posted
+    by GitHub Actions; the gate also checks which workflow file made it), so a forged
+    same-name success can neither pass a job nor mask a real failure. An AUTO job that is not
+    required here is ignored, so the manual path never waits on, or fails by, the AUTO jobs."""
     newest: dict[str, Mapping[str, Any]] = {}
     for r in runs:
         name = str(r.get("name") or "")
-        if name in SELF_NAMES:
+        if name in SELF_NAMES or (name in AUTO_JOBS and name not in gating):
+            continue
+        if name in gating and not genuine(r):
             continue
         prev = newest.get(name)
         if prev is None or str(r.get("started_at") or "") >= str(prev.get("started_at") or ""):
@@ -358,6 +434,84 @@ def _gh(*args: str, data: Mapping[str, Any] | None = None) -> Any:
 
 def _git(*args: str) -> str:
     return subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout.strip()
+
+
+def provenance(repo: str, pr: int, head: str) -> Callable[[Mapping[str, Any]], bool]:
+    """A `genuine` for checks(): the check run IS a job of a workflow run of the job's own
+    workflow file, on this very head, for this PR (or a push of it). The job id must equal the
+    check run id: a check run POSTed through the API by some other workflow (#456 audit MF1:
+    any same-repo PR can add one with `checks: write`) lands in a suite but is no job of any run.
+    Every lookup is cached; one that fails is a no."""
+    suites: dict[int, list[Mapping[str, Any]]] = {}
+    jobs: dict[int, set[int]] = {}
+
+    def runs_of(sid: int) -> list[Mapping[str, Any]]:
+        if sid not in suites:
+            try:
+                got = _gh(f"repos/{repo}/actions/runs?check_suite_id={sid}&per_page=10")
+                suites[sid] = list((got or {}).get("workflow_runs") or [])
+            except RuntimeError:
+                suites[sid] = []
+        return suites[sid]
+
+    def jobs_of(run_id: int) -> set[int]:
+        if run_id not in jobs:
+            try:
+                pages = _gh(
+                    f"repos/{repo}/actions/runs/{run_id}/jobs?per_page=100", "--paginate", "--slurp"
+                )
+                jobs[run_id] = {
+                    int(j["id"]) for page in _flat_pages(pages) for j in (page.get("jobs") or [])
+                }
+            except (RuntimeError, KeyError, TypeError, ValueError):
+                jobs[run_id] = set()
+        return jobs[run_id]
+
+    def genuine(r: Mapping[str, Any]) -> bool:
+        want = WORKFLOW_OF.get(str(r.get("name") or ""))
+        sid = (r.get("check_suite") or {}).get("id")
+        rid = r.get("id")
+        if not want or not _from_ci_app(r) or not isinstance(sid, int) or not isinstance(rid, int):
+            return False
+        for w in runs_of(sid):
+            if str(w.get("path") or "") != want or str(w.get("head_sha") or "") != head:
+                continue
+            event = str(w.get("event") or "")
+            prs = {int(x.get("number") or 0) for x in (w.get("pull_requests") or [])}
+            if not (event == "push" or (event == "pull_request" and pr in prs)):
+                continue
+            if isinstance(w.get("id"), int) and rid in jobs_of(int(w["id"])):
+                return True
+        return False
+
+    return genuine
+
+
+def up_to_date(base_ref: str, head: str) -> tuple[bool, str]:
+    """May a no-comment path test-and-merge this head? Only when the head already contains the
+    base's tip (#456 audit MF3: otherwise the tree that merges, base + PR, was never tested) and
+    carries exactly the base's .github (#455 audit MF1: a stale branch runs older checks under
+    the same job names). Any git error is a no."""
+    try:
+        _git("fetch", "-q", "--no-tags", "origin", base_ref)
+        _git("fetch", "-q", "--no-tags", "origin", head)
+    except subprocess.CalledProcessError:
+        return False, "the head or the base could not be fetched"
+    behind = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", f"origin/{base_ref}", head],
+        capture_output=True,
+        check=False,
+    )
+    if behind.returncode != 0:
+        return False, f"it is behind {base_ref} (merge {base_ref} in first)"
+    same = subprocess.run(
+        ["git", "diff", "--quiet", f"origin/{base_ref}", head, "--", ".github"],
+        capture_output=True,
+        check=False,
+    )
+    if same.returncode != 0:
+        return False, f"its .github differs from {base_ref}"
+    return True, "up to date"
 
 
 def patch_id(base_ref: str, sha: str) -> str | None:
@@ -461,20 +615,45 @@ def run(
     if str(p2["head"]["sha"]) != head:
         _summary(f"#{pr}: head moved while its files were read; the next run decides")
         return 0
-    low, twhy = tier(
+    level, twhy = tier(
         files, int(p2.get("changed_files") or 0), lambda n: referenced_by_code(base, n)
     )
 
-    def switch() -> tuple[bool, str]:
-        board = _gh(
-            f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100", "--paginate", "--slurp"
+    def switches() -> tuple[bool, str]:
+        board = _flat(
+            _gh(
+                f"repos/{repo}/issues/{approvals_issue}/comments?per_page=100",
+                "--paginate",
+                "--slurp",
+            )
         )
-        return activated(_flat(board))
+        on, owhy = activated(board)
+        if on and level == "AUTO":
+            on, owhy = activated(board, ACTIVATE_AUTO)
+        return on, owhy
 
-    if low:
-        on, owhy = switch()
+    def pr_verdicts() -> list[dict[str, str]]:
+        pages = _gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate", "--slurp")
+        return verdicts(_flat(pages))
+
+    # The path a PR takes: "low" / "auto" (no comment needed) or "manual" (CLEAR + APPROVE).
+    # Once the auditor has spoken on a PR (any CLEAR or HOLD, on any sha), the audit governs it:
+    # it takes the manual path.
+    mode = "manual"
+    if level in ("LOW", "AUTO"):
+        on, owhy = switches()
         if not on:
-            low, twhy = False, f"{twhy}, but {owhy}: it takes the LIVE-tier path"
+            twhy = f"{twhy}, but {owhy}: it takes the CLEAR + APPROVE path"
+        elif pr_verdicts():
+            twhy = f"{twhy}, but it carries an AUDIT verdict: it takes the CLEAR + APPROVE path"
+        else:
+            fresh, fwhy = up_to_date(base, head)
+            if fresh:
+                mode = level.lower()
+            else:
+                twhy = f"{twhy}, but {fwhy}: it takes the CLEAR + APPROVE path"
+    low = mode != "manual"  # no verdict or approval needed on this path
+    required = GATING_JOBS + (AUTO_JOBS if mode == "auto" else ())
     _summary(f"#{pr} @ {head[:9]}: {twhy}")
     wf = touches_workflows(files)
     if wf and not box:
@@ -498,15 +677,19 @@ def run(
         return ids["head"] is not None and patch_id(base, sha) == ids["head"]
 
     def verdict_now() -> tuple[dict[str, str] | None, str]:
-        pages = _gh(f"repos/{repo}/issues/{pr}/comments?per_page=100", "--paginate", "--slurp")
-        found = verdicts(_flat(pages))
-        # Once the auditor has spoken on a PR (any CLEAR or HOLD, on any sha), the audit governs
-        # it: it takes the LIVE-tier path below, never the no-comment one.
-        if low and not found:
-            on, owhy = switch()  # a DEACTIVATE since the first read is honoured
+        found = pr_verdicts()
+        if low:
+            if found:  # the auditor spoke mid-run: the next run takes the manual path
+                return None, f"{twhy}, but an AUDIT verdict arrived: the audit governs it now"
+            on, owhy = switches()  # a DEACTIVATE since the first read is honoured
             if not on:
                 return None, f"{twhy}, but {owhy}"
-            return {"verdict": "LOW", "sha": head, "method": "merge", "at": "", "by": ""}, twhy
+            fresh, fwhy = up_to_date(base, head)  # LIVE may have moved: the merged tree
+            if not fresh:  # must still be the tested one
+                return None, f"{twhy}, but {fwhy}"
+            return {"verdict": mode.upper(), "sha": head, "method": "merge", "at": "", "by": ""}, (
+                twhy
+            )
         clear, why = cleared(found, head, same_change)
         if clear is None:
             return None, why
@@ -539,11 +722,18 @@ def run(
             return 0
         pages = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100", "--paginate", "--slurp")
         runs = [r for page in _flat_pages(pages) for r in (page.get("check_runs") or [])]
-        state, cwhy = checks(runs)
+        state, cwhy = checks(runs, required, provenance(repo, pr, head) if low else _from_ci_app)
         if state == "pass":
             break
         if state == "fail":
             _summary(f"#{pr} @ {head[:9]}: not merged -- CI {cwhy}")
+            if low:  # the no-comment paths quarantine a failure; the manual path reports it
+                _status(repo, head, "failure", f"{QUARANTINE}: CI {cwhy}")
+                try:
+                    _gh(f"repos/{repo}/issues/{pr}/labels", "-X", "POST",
+                        data={"labels": [QUARANTINE]})  # fmt: skip
+                except RuntimeError as exc:
+                    _summary(f"(quarantine label not added: {exc})")
             return 1
         if box or low:  # a LOW-tier PR never holds a runner: the box sweep looks again
             _summary(f"#{pr} @ {head[:9]}: CI {cwhy}; the next sweep looks again")
@@ -558,6 +748,11 @@ def run(
         _status(repo, head, "pending", why)
         _summary(f"#{pr} @ {head[:9]}: not merged -- the verdict changed: {why}")
         return 0
+    if low and any(lb.get("name") == QUARANTINE for lb in p.get("labels") or []):
+        try:  # a new head passed: the quarantine of an older one is lifted
+            _gh(f"repos/{repo}/issues/{pr}/labels/{QUARANTINE}", "-X", "DELETE")
+        except RuntimeError as exc:
+            _summary(f"(quarantine label not removed: {exc})")
     if p.get("draft"):
         subprocess.run(["gh", "pr", "ready", str(pr), "-R", repo], check=True)
     _gh(
@@ -568,8 +763,8 @@ def run(
             "sha": head,
             "merge_method": clear["method"],
             "commit_title": (
-                f"Merge #{pr} (LOW tier: prose only)"
-                if clear["verdict"] == "LOW"
+                f"Merge #{pr} ({mode.upper()} tier, no comment: {twhy})"[:250]
+                if clear["verdict"] == mode.upper()
                 else f"Merge #{pr} ({clear['method']}): audit CLEAR {clear['sha'][:9]}"
             ),
         },
