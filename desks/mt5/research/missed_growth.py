@@ -1059,8 +1059,13 @@ def cross_account_fence_line(path: Path | None = None, *, min_n: int = FENCE_MIN
     if not path.exists():
         return {"verdict": UNMEASURED, "why": f"no reports/{path.name}: the organ has not run",
                 **xref}
+    try:
+        text = path.read_text("utf-8")
+    except OSError as exc:
+        return {"verdict": UNMEASURED, "why": f"reports/{path.name} unreadable "
+                f"({type(exc).__name__})", **xref}
     rows = []
-    for ln in path.read_text("utf-8").splitlines():
+    for ln in text.splitlines():
         try:
             r = json.loads(ln)
         except ValueError:

@@ -267,8 +267,14 @@ def test_events_past_gold_oco_keep_days_are_not_appended(tmp_path):
     doc = fmt.run(evs=[_ev()], bars_for=lambda s: _bars({}), out=tmp_path / "m.jsonl",
                   summary=tmp_path / "s.json", clock=bs, directions={}, cert={},
                   now=datetime.fromisoformat("2026-11-10T00:00:00+00:00"))
-    assert doc["appended"] == 0
-    assert doc["pending"][0]["status"] == "UNMEASURED_OCO_EXPIRED"
+    assert doc["appended"] == 1 and doc["pending_count"] == 0     # one terminal row
+    row = json.loads((tmp_path / "m.jsonl").read_text().splitlines()[0])
+    assert row["status"] == "UNMEASURED_OCO_EXPIRED" and row["terminal"]
+    again = fmt.run(evs=[_ev()], bars_for=lambda s: _bars({}), out=tmp_path / "m.jsonl",
+                    summary=tmp_path / "s.json", clock=bs, directions={}, cert={},
+                    now=datetime.fromisoformat("2026-11-10T00:00:00+00:00"))
+    assert again["appended"] == 0 and again["pending_count"] == 0
+    assert again["priced_rows"] == 0 and again["verdict"] == "UNMEASURED"
 
 
 @needs_anchor
@@ -334,7 +340,48 @@ def test_quiet_read_book_never_pages_or_clears(monkeypatch, tmp_path):
 
 def test_planner_window_metric_reads_fourteen_days(tmp_path):
     h = tmp_path / "h.jsonl"
-    rows = [{"day": f"2026-10-{d:02d}", "divergent_measured_symbol_days": 1} for d in range(1, 30)]
+    rows = [{"day": f"2026-10-{d:02d}", "divergent_measured_symbol_days": 1,
+             "measured_symbol_days": 1} for d in range(1, 30)]
     h.write_text("".join(json.dumps(r) + "\n" for r in rows))
     assert fp.window_metric(h, DAY) == 14
     assert fp.window_metric(tmp_path / "none.jsonl", DAY) is None
+
+
+# ------------------------------------------------------------------------------ v4 probes
+def test_window_with_rows_but_no_measured_plan_is_unmeasured_not_zero(tmp_path):
+    h = tmp_path / "h.jsonl"
+    rows = [{"day": f"2026-10-{d:02d}", "divergent_measured_symbol_days": 0,
+             "measured_symbol_days": 0} for d in range(16, 30)]
+    h.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    assert fp.window_metric(h, DAY) is None
+
+
+def test_e8_session_windows_map_to_the_gold_sleeves():
+    assert fp.base_sleeve("asia") == "gold_asia"
+    assert fp.base_sleeve("london_am") == "gold_london_am"
+    assert fp.base_sleeve("afternoon") == "gold_afternoon"
+    e8 = [{"at": "2026-10-29T04:00:00+00:00", "window": "asia", "side": s, "status": "PLACED",
+           "price": 4069.0, "sl": 4036.0, "tp": 4135.0} for s in ("buy_stop", "sell_stop")]
+    doc = fp.build(DAY, decisions=[], e8=e8, ftmo=[], cert={"e8": {"gold_asia": 0.006}},
+                   sleeves=[], ledger=_ledger(12, 12), books=EMPTY_BOOKS, today=DAY)
+    p = doc["plans"]["XAUUSD|2026-10-29"]
+    it = next(i for i in p["intents"] if i["account"] == "e8")
+    assert it["risk_frac"] == 0.006 and it["edge"]["short"] is not None
+    assert p["verdict"] == "PLANNED"
+
+
+def test_sum_missed_usd_is_split_by_kind(tmp_path):
+    out = tmp_path / "m.jsonl"
+    rows = [{"event_id": "a", "kind": "fence_block", "status": "MEASURED", "r": 1.0,
+             "missed_usd": 10.0},
+            {"event_id": "b", "kind": "fail_closed", "status": "MEASURED", "r": -1.0,
+             "missed_usd": -5.0}]
+    out.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    doc = fmt.run(evs=[], out=out, summary=tmp_path / "s.json", cert={})
+    assert doc["sum_missed_usd_by_kind"] == {"fence_block": 10.0, "fail_closed": -5.0}
+
+
+def test_missed_growth_unreadable_ledger_is_unmeasured(tmp_path):
+    d = tmp_path / "fence_missed_trades.jsonl"
+    d.mkdir()                                           # exists, but cannot be read as a file
+    assert mg.cross_account_fence_line(d)["verdict"] == mg.UNMEASURED

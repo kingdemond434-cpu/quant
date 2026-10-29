@@ -766,6 +766,7 @@ $reportPaths = @(
     "desks/mt5/reports/FENCE_PLAN.json",
     "desks/mt5/reports/FENCE_MISSED_TRADES.json",
     "desks/mt5/reports/fence_plan_history.jsonl",
+    "desks/mt5/reports/fence_missed_trades.jsonl",
     # the box's swap capture age (2026-10-06): a stopped MT5-ContractTerms reads STALE by name
     "desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json",
     "desks/mt5/reports/RESEARCH_BUDGET.json",

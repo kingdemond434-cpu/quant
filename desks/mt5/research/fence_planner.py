@@ -80,8 +80,13 @@ def side_dir(side: object) -> str | None:
     return "long" if s in LONG_SIDES else "short" if s in SHORT_SIDES else None
 
 
+#: E8-Gold names its windows by session; the sleeves (and the ledger's R) carry the gold_ name.
+E8_WINDOWS = {"asia": "gold_asia", "london_am": "gold_london_am", "afternoon": "gold_afternoon"}
+
+
 def base_sleeve(name: object) -> str:
-    return re.sub(r"_v\d+$", "", str(name or ""))
+    s = re.sub(r"_v\d+$", "", str(name or ""))
+    return E8_WINDOWS.get(s, s)
 
 
 def _num(x: object) -> float | None:
@@ -476,7 +481,9 @@ def window_metric(path: Path, day: str, days: int = 14) -> int | None:
         return None
     lo = (end - timedelta(days=days - 1)).isoformat()
     rows = [r for r in _jsonl(path, tail=100000) if lo <= str(r.get("day") or "") <= day]
-    if not rows:
+    # No MEASURED plan in the window is UNMEASURED, never a clean zero: `== 0` would read it as
+    # the falsifier tripping (audit v4).
+    if sum(int(r.get("measured_symbol_days") or 0) for r in rows) == 0:
         return None
     return sum(int(r.get("divergent_measured_symbol_days") or 0) for r in rows)
 

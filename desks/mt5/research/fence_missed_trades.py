@@ -64,7 +64,10 @@ FAIL_CLOSED_MARKS = ("fail closed", "placement lock", "unreadable", "absent", "n
                      "old (limit", "unknown now", "malformed", "another account")
 _NOT_READ = object()
 MAX_BAR_GAP = timedelta(minutes=75)
-OCO_KEEP_DAYS = 7                       # mt5desk.gold_oco.KEEP_DAYS
+try:
+    from mt5desk.gold_oco import KEEP_DAYS as OCO_KEEP_DAYS
+except Exception:                                   # pragma: no cover - import-time fallback
+    OCO_KEEP_DAYS = 7
 RETRY = ("PENDING", "UNMEASURED_NO_BARS", "UNMEASURED_NO_ANCHOR", "UNMEASURED_OCO",
          "UNMEASURED_BAR_GAP")
 
@@ -355,8 +358,13 @@ def run(*, evs: list[Row] | None = None, bars_for: Any = None, out: Path = OUT,
         t = _utc(ev.get("at"))
         if t is not None and now - t > timedelta(days=OCO_KEEP_DAYS):
             # gold_oco keeps KEEP_DAYS of direction state; past it the OCO cannot be judged.
-            pending.append({**ev, "status": "UNMEASURED_OCO_EXPIRED", "r": None,
-                            "why": f"older than gold_oco KEEP_DAYS={OCO_KEEP_DAYS}"})
+            # A TERMINAL row, written once (the done-set skips it after), so a leg that was
+            # never priced -- expired, or gapped until it expired -- stops re-entering pending.
+            appended.append({**ev, "status": "UNMEASURED_OCO_EXPIRED", "r": None,
+                             "terminal": True, "missed_usd": None,
+                             "why": f"older than gold_oco KEEP_DAYS={OCO_KEEP_DAYS}",
+                             "measured_utc": now.isoformat(timespec="seconds")})
+            gaps.append(ev["event_id"])
             continue
         sym = str(ev.get("symbol") or "XAUUSD").upper()
         if sym not in cache:
@@ -391,6 +399,10 @@ def run(*, evs: list[Row] | None = None, bars_for: Any = None, out: Path = OUT,
            "no_geometry": gaps, "no_geometry_count": len(gaps),
            "rows": len(rows), "priced_rows": len(priced), "priced_by_kind": by_kind,
            "sum_missed_usd": round(sum(usd), 4),
+           "sum_missed_usd_by_kind": {k: round(sum(float(r["missed_usd"]) for r in priced
+                                                   if str(r.get("kind")) == k
+                                                   and r.get("missed_usd") is not None), 4)
+                                      for k in by_kind},
            "sum_r": round(sum(float(r["r"]) for r in priced), 6),
            "verdict": "MEASURED" if priced else UNMEASURED}
     summary.parent.mkdir(parents=True, exist_ok=True)
