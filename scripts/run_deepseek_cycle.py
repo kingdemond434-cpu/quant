@@ -25,6 +25,7 @@ import random
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
@@ -177,7 +178,7 @@ def main(argv: list[str] | None = None) -> int:
     return red_exit(result)
 
 
-def red_exit(result: dict) -> int:
+def red_exit(result: dict[str, Any]) -> int:
     """1 when the cycle reached the model and came back with NOTHING, else 0.
 
     A CALL that fails, or an OK with zero findings, is a cycle that produced no proposal. From

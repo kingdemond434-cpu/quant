@@ -559,7 +559,7 @@ def test_no_key_anywhere_is_still_a_reported_dark_state(tmp_path) -> None:
 
 def test_the_request_uses_the_same_resolution_as_the_seat() -> None:
     src = (ROOT / "libs" / "ops" / "deepseek_cycle.py").read_text("utf-8")
-    assert "key=resolve_key(e)[0], model=model)" in src
+    assert "key=resolve_key(e)[0], model=model, lock_vendor=True)" in src
     assert 'key=e.get("OPENROUTER_API_KEY", "")' not in src
 
 
