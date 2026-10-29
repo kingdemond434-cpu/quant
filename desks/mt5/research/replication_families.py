@@ -228,8 +228,8 @@ def formula_refusal(expr: Any) -> str | None:
     if len(expr) != arity[op] + 1:
         return f"formula operator {op!r} given {len(expr) - 1} argument(s)"
     kids = expr[1:2] if op in F_UNARY or op in F_WINDOWED else expr[1:3]
-    if op in F_WINDOWED or op in F_BINARY_WINDOWED:
-        if not isinstance(expr[-1], int) or isinstance(expr[-1], bool):
+    if (op in F_WINDOWED or op in F_BINARY_WINDOWED) and (
+            not isinstance(expr[-1], int) or isinstance(expr[-1], bool)):
             return f"formula operator {op!r} window {expr[-1]!r} is not an integer"
     for k in kids:
         why = formula_refusal(k)

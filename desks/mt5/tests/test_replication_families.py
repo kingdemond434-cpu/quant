@@ -87,7 +87,9 @@ def test_cross_asset_residual_fades_a_planted_dislocation() -> None:
     noise = np.zeros(n)
     noise[1500:1510] = 0.02                         # the target alone jumps, then reverts
     y = 2.0 * np.exp(np.log(f) + np.cumsum(rng.normal(0, 0.0002, n)) + noise)
-    mk = (lambda c: rc.bars_from_arrays(t, c, c * 1.0005, c * 0.9995, c))
+    def mk(c: np.ndarray) -> rc.Bars:
+        return rc.bars_from_arrays(t, c, c * 1.0005, c * 0.9995, c)
+
     own, fac = mk(y), mk(f)
     p, why = rc.resolve_spec("cross_asset_residual",
                              {"factor_symbols": ["F"], "lookback": 240, "beta_win": 240,
@@ -108,7 +110,9 @@ def test_relative_value_target_is_written_with_abs_of_z_minus_exit() -> None:
     t = np.datetime64("2024-01-01T00:00:00", "ns").astype("int64") + np.arange(n) * HOUR
     a = 1.0 + np.cumsum(rng.normal(0, 0.002, n))
     peer = a * np.exp(rng.normal(0, 0.003, n))
-    mk = (lambda c: rc.bars_from_arrays(t, c, c * 1.001, c * 0.999, c))
+    def mk(c: np.ndarray) -> rc.Bars:
+        return rc.bars_from_arrays(t, c, c * 1.001, c * 0.999, c)
+
     p, why = rc.resolve_spec("relative_value", {"peer_symbol": "P"}, "asia", "LONG")
     assert p is not None, why
     p["_inputs"] = [mk(peer)]
