@@ -202,6 +202,7 @@ PROVIDER_WEIGHT: dict[str, float] = {
     "SNB": 3.0, "RBA": 3.0, "BOC": 3.0, "NB": 2.5, "RIKSBANK": 3.0, "NORGES": 3.0,
     "BUBA": 2.5, "BDF": 2.0, "Eurostat": 2.0, "WB": 1.5, "BLS": 2.5, "BEA": 2.0,
     "CFTC": 3.0, "FRED": 3.0, "TREASURY": 2.5, "BIS_BULK": 3.0, "DIRECT": 2.0,
+    "EIA": 3.0, "NOAA_CPC": 2.0,
 }
 
 #: Frequency -> (min finite observations, max staleness in days, exposure bonus).
@@ -737,6 +738,12 @@ def frame_from_payload(raw: bytes, mode: str, spec: dict[str, Any]) -> Any:
                                                 regex=True)
         df["value"] = pd.to_numeric(df["value"], errors="coerce")
         return df.dropna(subset=["value"])
+    if mode == "treasury_auctions":
+        return _treasury_auction_frame(raw)
+    if mode == "cpc_ascii":
+        return _cpc_ascii_frame(raw, str(spec.get("series_code") or "index"))
+    if mode == "eia_v2":
+        return _eia_v2_frame(raw, str(spec.get("series_code") or "value"))
     if mode == "json_records":
         doc = json.loads(raw.decode("utf-8", "replace"))
         recs = doc.get(spec["data_key"]) if spec.get("data_key") else doc
@@ -780,6 +787,128 @@ def frame_from_payload(raw: bytes, mode: str, spec: dict[str, Any]) -> Any:
     if not frames:
         raise FetchError("no_numeric_columns", spec.get("url", ""))
     return pd.concat(frames, ignore_index=True).dropna(subset=["value", "period"])
+
+
+# ------------------------------------------------------- data-class gap doors (2026-10-29) ----
+#: THREE DOORS FROM THE TIER-1 DATA-CLASS GAP LIST (research/data_class_gap.py, item 14 of the
+#: hourly pass). Each lands its series in this organ's store, so `build_exposure` maps them to the
+#: hypothesis-lane symbols and `world_macro_proposer` mints `world_macro_state` cells from them --
+#: the form the desk's cells already consume, no second lane. Each host's terms are a row of the
+#: one register (libs/data/terms_fence.SOURCE_POLICY: `us_treasury_fiscaldata`, `noaa_cpc`,
+#: `eia_api`) with the publisher's own clause quoted.
+_AUCTION_TERM = re.compile(r"^\s*(\d+)-(Week|Year)\b", re.I)
+
+
+def _num_or_none(v: Any) -> float | None:
+    try:
+        f = float(str(v).replace(",", ""))
+    except (TypeError, ValueError):
+        return None
+    return f if f == f and abs(f) != float("inf") else None
+
+
+def _treasury_auction_frame(raw: bytes) -> Any:
+    """FiscalData `auctions_query` -> one row per (security kind, original term, auction date) and
+    measure: bid-to-cover, the indirect / direct / primary-dealer share of competitive awards, the
+    stop-out yield (rate for bills) and the offering size. An announced auction whose results are
+    still "null" yields nothing, so a result is only ever read from the record that carries it.
+    Cash-management bills are skipped (irregular, off the calendar)."""
+    import pandas as pd
+
+    doc = json.loads(raw.decode("utf-8", "replace"))
+    rows: list[dict[str, Any]] = []
+    for r in (doc.get("data") or []) if isinstance(doc, dict) else []:
+        if not isinstance(r, dict) or str(r.get("cash_management_bill_cmb")) == "Yes":
+            continue
+        m = _AUCTION_TERM.match(str(r.get("original_security_term") or r.get("security_term")
+                                    or ""))
+        day = str(r.get("auction_date") or "")[:10]
+        if not m or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
+            continue
+        bucket = f"{int(m[1])}{m[2][0].lower()}"
+        kind = ("tips" if str(r.get("inflation_index_security")) == "Yes"
+                else "frn" if str(r.get("floating_rate")) == "Yes"
+                else str(r.get("security_type") or "x").strip().lower() or "x")
+        comp = _num_or_none(r.get("comp_accepted"))
+        vals: dict[str, float | None] = {
+            "bid_to_cover": _num_or_none(r.get("bid_to_cover_ratio")),
+            "stop_yield": (_num_or_none(r.get("high_yield"))
+                           if _num_or_none(r.get("high_yield")) is not None
+                           else _num_or_none(r.get("high_investment_rate"))),
+            "offering_bn": (None if _num_or_none(r.get("offering_amt")) is None
+                            else float(_num_or_none(r.get("offering_amt")) or 0.0) / 1e9),
+        }
+        for who in ("indirect_bidder", "direct_bidder", "primary_dealer"):
+            took = _num_or_none(r.get(f"{who}_accepted"))
+            vals[f"{who.split('_')[0]}_share"] = (took / comp if took is not None and comp
+                                                  else None)
+        if vals["bid_to_cover"] is None:
+            vals["offering_bn"] = None            # announced, not yet auctioned: no result
+        for measure, v in vals.items():
+            if v is not None:
+                rows.append({"series_code": f"{kind}_{bucket}_{measure}", "period": day,
+                             "value": v})
+    df = pd.DataFrame(rows, columns=["series_code", "period", "value"])
+    if df.empty:
+        raise FetchError("empty", "treasury auctions")
+    return df
+
+
+#: CPC three-month season -> the LAST calendar month it covers (offset in years for NDJ). A season
+#: is only known once its last month is over, so the period is that month, never the centre.
+_CPC_SEASONS = {s: (i + 2, 0) for i, s in enumerate(
+    ("DJF", "JFM", "FMA", "MAM", "AMJ", "MJJ", "JJA", "JAS", "ASO", "SON", "OND"))}
+_CPC_SEASONS["NDJ"] = (1, 1)
+
+
+def _cpc_ascii_frame(raw: bytes, code: str) -> Any:
+    """NOAA CPC whitespace tables: the ONI table (`SEAS YR TOTAL ANOM`, one row per running
+    season) or a monthly index (`YYYY M value`: NAO, AO, PNA). Missing values (<= -99) are
+    absent observations, never zeros."""
+    import pandas as pd
+
+    rows: list[dict[str, Any]] = []
+    for line in raw.decode("utf-8", "replace").splitlines():
+        tok = line.split()
+        if len(tok) >= 4 and tok[0].upper() in _CPC_SEASONS and tok[1].isdigit():
+            month, carry = _CPC_SEASONS[tok[0].upper()]
+            period = f"{int(tok[1]) + carry:04d}-{month:02d}"
+            for name, v in (("total", tok[2]), ("anom", tok[3])):
+                f = _num_or_none(v)
+                if f is not None and f > -99.0:
+                    rows.append({"series_code": f"{code}_{name}", "period": period, "value": f})
+        elif len(tok) == 3 and tok[0].isdigit() and tok[1].isdigit() and 1 <= int(tok[1]) <= 12:
+            f = _num_or_none(tok[2])
+            if f is not None and f > -99.0:
+                rows.append({"series_code": code,
+                             "period": f"{int(tok[0]):04d}-{int(tok[1]):02d}", "value": f})
+    df = pd.DataFrame(rows, columns=["series_code", "period", "value"])
+    if df.empty:
+        raise FetchError("unparseable", f"cpc table {code}")
+    return df
+
+
+def _eia_v2_frame(raw: bytes, code: str) -> Any:
+    """EIA API v2 (`/v2/seriesid/<v1 id>`): `response.data[]` rows of `period` and `value`
+    (values arrive as strings). An error document is a failure, never an empty series."""
+    import pandas as pd
+
+    doc = json.loads(raw.decode("utf-8", "replace"))
+    resp = doc.get("response") if isinstance(doc, dict) else None
+    if not isinstance(resp, dict):
+        raise FetchError("unparseable", "eia: no response block")
+    rows = []
+    for r in resp.get("data") or []:
+        if not isinstance(r, dict):
+            continue
+        f = _num_or_none(r.get("value"))
+        per = str(r.get("period") or "")[:10]
+        if f is not None and re.fullmatch(r"\d{4}-\d{2}(-\d{2})?", per):
+            rows.append({"series_code": code, "period": per, "value": f})
+    df = pd.DataFrame(rows, columns=["series_code", "period", "value"])
+    if df.empty:
+        raise FetchError("empty", f"eia {code}")
+    return df
 
 
 def series_from_long(df: Any, *, freq: str = "", hint: str = "") -> list[dict[str, Any]]:
@@ -828,10 +957,83 @@ def direct_sources(now: datetime | None = None) -> list[dict[str, Any]]:
          "url": ("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/"
                  "od/avg_interest_rates?sort=-record_date&page%5Bsize%5D=10000")},
     ]
+    out += gap_doors()
     for sid in _fred_ids():
         out.append({"provider": "FRED", "dataset": sid, "name": f"FRED {sid}", "mode": "csv",
                     "url": ("https://fred.stlouisfed.org/graph/fredgraph.csv?"
                             + urllib.parse.urlencode({"id": sid})), "currencies": ["USD"]})
+    return out
+
+
+_FISCAL_AUCTIONS = ("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/"
+                    "accounting/od/auctions_query?")
+#: (dataset, URL, series code, name). Monthly CPC indices; ONI is the running season. Written as
+#: whole URLs so a reader of this file (and `data_class_gap`) sees each data path in full.
+_CPC_FILES = (
+    ("ONI", "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt", "oni",
+     "NOAA CPC Oceanic Nino Index ENSO sea surface temperature anomaly"),
+    ("NAO", "https://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/"
+            "norm.nao.monthly.b5001.current.ascii", "nao",
+     "NOAA CPC North Atlantic Oscillation monthly index (European winter heating demand)"),
+    ("AO", "https://www.cpc.ncep.noaa.gov/products/precip/CWlink/daily_ao_index/"
+           "monthly.ao.index.b50.current.ascii", "ao",
+     "NOAA CPC Arctic Oscillation monthly index (northern hemisphere cold outbreaks)"),
+    ("PNA", "https://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/"
+            "norm.pna.monthly.b5001.current.ascii", "pna",
+     "NOAA CPC Pacific North American pattern monthly index (US winter temperature)"),
+)
+#: EIA weekly series by APIv1 id (served by the v2 `seriesid` route). The petroleum week ends on
+#: a Friday and is published the next Wednesday 10:30 ET (Thursday in holiday weeks); natural gas
+#: storage the next Thursday 10:30 ET (Friday in holiday weeks).
+_EIA_SERIES = (
+    ("PET.WCESTUS1.W", "crude_stocks_ex_spr", "petroleum",
+     "EIA weekly US commercial crude oil stocks excluding SPR"),
+    ("PET.WCSSTUS1.W", "crude_stocks_spr", "petroleum",
+     "EIA weekly US crude oil Strategic Petroleum Reserve stocks"),
+    ("PET.WGTSTUS1.W", "gasoline_stocks", "petroleum",
+     "EIA weekly US total motor gasoline stocks (crude oil product)"),
+    ("PET.WDISTUS1.W", "distillate_stocks", "petroleum",
+     "EIA weekly US distillate fuel oil stocks (crude oil product)"),
+    ("PET.WCRFPUS2.W", "crude_production", "petroleum",
+     "EIA weekly US field production of crude oil"),
+    ("PET.WPULEUS3.W", "refinery_utilisation", "petroleum",
+     "EIA weekly US percent utilisation of refinery operable capacity (crude oil)"),
+    ("NG.NW2_EPG0_SWO_R48_BCF.W", "natgas_storage_l48", "natural_gas",
+     "EIA weekly working natural gas in underground storage, lower 48"),
+)
+#: EIA stamps a week by its ENDING Friday, and `period_end` adds six days to a weekly period, so a
+#: value lands on the Thursday after; these lags push it to Friday 00:00 UTC (petroleum) and
+#: Saturday 00:00 UTC (gas), past even the holiday-week release. Late only costs edge; early
+#: would invent it.
+_EIA_LAG = {"petroleum": 1, "natural_gas": 2}
+_SOFTS_AND_GAS = ["COF", "COCOA", "SUGAR", "CORN", "WHEAT", "SOYBEAN", "COTTON", "XNG"]
+
+
+def gap_doors() -> list[dict[str, Any]]:
+    """The data-class gap doors (sovereign auctions, climate indices, energy inventories) as direct
+    specs. EIA rows carry `key_env`: the key is substituted at fetch time from the environment,
+    never written to a spec, an artifact or a log, and its absence is the named NEEDS_KEY."""
+    out: list[dict[str, Any]] = [
+        {"provider": "TREASURY", "dataset": "auctions",
+         "name": ("US Treasury securities auction results: bid-to-cover, indirect, direct and "
+                  "primary-dealer take-up, stop-out yield, size by security and term"),
+         "mode": "treasury_auctions", "freq": "event", "lag_days": 1, "currencies": ["USD"],
+         "url": _FISCAL_AUCTIONS + urllib.parse.urlencode(
+             {"filter": "auction_date:gte:2008-01-01", "sort": "-auction_date",
+              "page[size]": "10000"})}]
+    for ds, url, code, name in _CPC_FILES:
+        out.append({"provider": "NOAA_CPC", "dataset": ds, "name": name, "mode": "cpc_ascii",
+                    "series_code": code, "freq": "monthly", "lag_days": 15,
+                    "currencies": ["AUD"] if ds == "ONI" else [], "stems": _SOFTS_AND_GAS,
+                    "url": url})
+    for sid, code, kind, name in _EIA_SERIES:
+        out.append({"provider": "EIA", "dataset": sid, "name": name, "mode": "eia_v2",
+                    "series_code": code, "freq": "weekly", "lag_days": _EIA_LAG[kind],
+                    "key_env": "EIA_API_KEY",
+                    "stems": ["XNG"] if kind == "natural_gas" else ["XTI", "XBR"],
+                    "currencies": ["USD", "CAD"] if kind == "petroleum" else ["USD"],
+                    "url": (f"https://api.eia.gov/v2/seriesid/{sid}?"
+                            "api_key={api_key}&length=5000")})
     return out
 
 
@@ -1160,6 +1362,12 @@ def fetch_dbnomics(client: Client, cat: dict[str, Any], *, now: datetime, until:
 
 def _fetch_direct(client: Client, spec: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
     url = spec["url"].replace("{bday}", _last_business_day(now))
+    key_env = str(spec.get("key_env") or "")
+    if key_env:
+        key = os.environ.get(key_env) or ""
+        if not key:
+            raise FetchError("needs_key", key_env)        # named, never a silent skip or a zero
+        url = url.replace("{api_key}", urllib.parse.quote(key, safe=""))
     raw = client.get(url)
     mode = spec.get("mode", "csv")
     df = _lbma_frame(raw) if mode == "lbma_json" else frame_from_payload(raw, mode, {**spec,

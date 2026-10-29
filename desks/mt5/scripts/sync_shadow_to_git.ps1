@@ -679,6 +679,9 @@ $reportPaths = @(
     # Form 4 lane's fetch/cluster/cell summary (2026-10-14)
     "desks/mt5/reports/ALT_SEAT_CELLS.json",
     "desks/mt5/reports/FORM4_LANE.json",
+    # the tier-1 data-class gap list and the terms-basis census (2026-10-29): both report-only
+    "desks/mt5/reports/DATA_CLASS_GAP.json",
+    "desks/mt5/reports/TERMS_BASIS_CENSUS.json",
     "desks/mt5/reports/EFFECTIVE_BREADTH.json",
     "desks/mt5/reports/BREADTH_MANDATE.json",
     "desks/mt5/reports/TIER1_SCORECARD.json",
