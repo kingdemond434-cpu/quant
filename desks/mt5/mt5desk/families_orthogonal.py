@@ -2545,14 +2545,24 @@ FAMILY_INPUTS["amihud_illiquidity"] = (
 FAMILY_INPUTS["crypto_options_state"] = (
     "BTC/ETH option-surface vintages, read-only, as a PIT conditioner on the Fusion CFD",
     "desks/mt5/data/options_state/vintages.jsonl")
+# The three EVENT families run on ALL SEVEN charts. Nothing in them is an hourly construction:
+# the event is a UTC instant (`knowable_at`, or a vintage's `ts`) placed on the first bar OPENING
+# at or after it by `index.searchsorted`, which is the same causal statement on any bar clock
+# (finer on M5, coarser on D1); the side reads the bar's own close, ATR and a bar-relative
+# trailing move. The one count that is not bar-relative is the HOLD -- a margin hike's forced
+# flow, a swap change's carry and an options-state resolution are dated by the event, so
+# `hold_bars` is declared in WALL_CLOCK_PARAMS and rescaled by `scale_bars` (the identity at
+# H1, so no hourly cell moves). Restricting them to H1 "because the hold is counted in H1 bars"
+# was the narrowing `test_most_families_run_on_every_chart` exists to catch: that is what the
+# wall-clock declaration is for, not a reason the claim cannot be spoken on another chart.
 for _bs_name in ("broker_margin_event", "carry_swap_drift", "crypto_options_state"):
-    FAMILY_TIMEFRAMES[_bs_name] = (
-        ("H1",),
-        "an hourly-recorded venue state change: the event is placed on the first H1 bar opening "
-        "after the hourly record that showed it, and its hold is counted in H1 bars")
+    WALL_CLOCK_PARAMS[_bs_name] = ("hold_bars",)
 FAMILY_TIMEFRAMES["amihud_illiquidity"] = (
     ("H1",),
-    "normalised by hour of the week, which exists only on the hourly chart")
+    "normalised by hour of the week: the baseline is the PRIOR `norm_weeks` bars sharing the "
+    "bar's (weekday, hour) key, which on H1 is twelve weeks of that hour; on a sub-hourly chart "
+    "the same key holds several bars per hour per week, so the 'baseline' would be minutes of the "
+    "same hour, and on H4/D1 most hours of the week never occur")
 del _bs_name
 
 # THE SPREAD-RECOVERY FADE (P8-M2, 2026-10-14). Reads the bars' own `spread` column: at the week

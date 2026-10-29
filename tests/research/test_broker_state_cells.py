@@ -194,6 +194,41 @@ def test_swap_family_follows_the_event_direction(tmp_path, monkeypatch):
     assert [s.side for s in rev] == [1, -1]
 
 
+def _resample(df: pd.DataFrame, rule: str) -> pd.DataFrame:
+    return df.resample(rule, label="left", closed="left").agg(
+        {"open": "first", "high": "max", "low": "min", "close": "last",
+         "tick_volume": "sum"}).dropna()
+
+
+def test_event_families_speak_on_every_chart_with_a_wall_clock_hold(tmp_path, monkeypatch):
+    """The event is a UTC instant, so it is placed on the first bar OPENING at/after it on ANY
+    bar clock; only the hold is dated by the event, and it is the declared wall-clock count."""
+    from mt5desk import families_orthogonal as fo
+    from mt5desk.universe_registry import scale_bars
+    ladder = ("M1", "M5", "M15", "M30", "H1", "H4", "D1")
+    for f in ("broker_margin_event", "carry_swap_drift", "crypto_options_state"):
+        assert fo.timeframe_domain(f) == ladder, f
+        assert fo.WALL_CLOCK_PARAMS[f] == ("hold_bars",), f
+        assert fo.timeframe_overrides(f, "H1") == {}, f
+    assert fo.timeframe_overrides("broker_margin_event", "M5") == {"hold_bars": 6 * 12}
+    knowable = "2026-02-02T10:20:00+00:00"            # winter: broker stamp = UTC + 2h
+    _store(tmp_path, monkeypatch, [{"symbol": "XAUUSD", "kind": "margin_hike",
+                                    "knowable_at": knowable, "direction": 0}])
+    h1 = _bars()
+    m15 = h1.copy()
+    m15 = pd.concat([m15.shift(freq=f"{15 * k}min") for k in range(4)]).sort_index()
+    m15 = m15[~m15.index.duplicated()]
+    for frame, tf, first in ((m15, "M15", "2026-02-02T12:30:00Z"),
+                             (h1, "H1", "2026-02-02T13:00:00Z"),
+                             (_resample(h1, "4h"), "H4", "2026-02-02T16:00:00Z")):
+        hold = scale_bars(6, tf)
+        sig = fbs.family_broker_margin_event(frame, symbol="XAUUSD", event="margin_hike",
+                                             hold_bars=hold)
+        assert len(sig) == 1, tf
+        assert sig[0].time == pd.Timestamp(first), tf      # never a bar opening before 12:20
+        assert sig[0].ttl_bars == hold, tf
+
+
 def test_event_family_without_store_is_silent(tmp_path, monkeypatch):
     monkeypatch.setenv("QUANT_BROKER_STATE_STORE", str(tmp_path / "absent.jsonl"))
     assert fbs.family_carry_swap_drift(_bars(), symbol="EURUSD", event="swap_change") == []
