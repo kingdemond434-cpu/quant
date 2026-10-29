@@ -254,7 +254,10 @@ def late_windows(hour: float, state: dict) -> list[tuple[str, str]]:
     windows = state.get("windows") or {}
     for name, sig_hour, _rng in GOLD_WINDOWS:
         if name in windows or hour < float(sig_hour) or hour >= CANCEL_HOUR \
-                or window_session_ended(name, hour):
+                or window_session_ended(name, hour) \
+                or name in (state.get("news_deferred") or ()):
+            # A window the news fence deferred today is billed once, under e8_news_fence --
+            # never a second time as gold_late_send (v6). The mark dies at the rollover.
             continue
         why = gold_send_late(name, hour, window_grace(name, state))
         if why:
@@ -1456,6 +1459,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                          "missed_growth_risk_usd": round(risk_usd, 2), "armed": bool(armed)})
             if news.blocks:
                 blocker = news_hold = f"news fence: {news.why}"
+                _nd = state.setdefault("news_deferred", [])
+                if name not in _nd:
+                    _nd.append(name)
             else:
                 log(f"[{name}] news fence SHADOW (off): would defer -- {news.why}")
         if blocker is not None:

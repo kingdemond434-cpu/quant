@@ -129,3 +129,21 @@ def test_on_without_a_calendar_fails_open_in_and_out_of_year(tmp_path) -> None:
                  datetime(2026, 10, 14, 12, 30, tzinfo=UTC)):    # in year, CPI month blind
         v = nf.verdict(when, flag_path=fp)
         assert v.enabled and not v.blocks and v.calendar_ok is False and v.uncovered
+
+
+def test_a_fence_deferred_first_placement_is_billed_once_not_again_as_late(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """v6: ON defers the window (billed e8_news_fence); the next pass, past the send grace, must
+    not bill the same window again as gold_late_send."""
+    from mt5desk import decision_core as _dc
+    _setup(monkeypatch, tmp_path, '{"enabled": true}', release_now=True)
+    doc = g.run(h._Venue(), h._MT5(), armed=False)
+    assert h._placed(doc) == []
+    assert "afternoon" in json.loads(g.STATE.read_text("utf-8")).get("news_deferred", [])
+    monkeypatch.setattr(_dc, "GOLD_SEND_GRACE_MIN", 0.0)
+    monkeypatch.setattr(_dc, "E8_GOLD_SEND_GRACE_MIN", 0.0)
+    monkeypatch.setattr(nf, "releases", lambda a, b: [])     # the release has passed
+    g.run(h._Venue(), h._MT5(), armed=False)
+    rows = _rows(tmp_path)
+    assert [r["rail"] for r in rows if r.get("window") == "afternoon"
+            and r.get("rail") in ("e8_news_fence", "gold_late_send")] == ["e8_news_fence"]

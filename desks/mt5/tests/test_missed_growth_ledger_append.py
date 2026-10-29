@@ -1,7 +1,6 @@
 """The missed-growth ledger append (audit v3 SHOULD): one write, torn tails cut, failure named."""
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 

@@ -312,3 +312,47 @@ def test_a_report_that_is_not_an_object_is_no_verdict(tmp_path: Path,
     rep.write_text("[1, 2, 3]", "utf-8")
     out = mg.published_news_fence_lines()
     assert out["verdict"] == mg.UNMEASURED and "why_verdict" in out
+
+
+def test_a_real_hold_sets_the_mark(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    leg = dict(_LEG)
+    _retry_pass(tmp_path / "h", monkeypatch, on=True, legs={"buy_stop": leg})
+    assert leg.get("news_held")                                  # set by the pass, not by hand
+
+
+def test_a_real_send_clears_the_mark(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    leg = {**_LEG, "news_held": "2026-10-15T14:25:00+00:00"}
+    out = _retry_pass(tmp_path / "s", monkeypatch, on=False, legs={"buy_stop": leg})
+    assert "news_held" not in leg
+    assert [r["status"] for r in out[:-1]] == ["SHADOW_FENCE"]
+
+
+def test_an_unmarked_leg_is_still_billed_when_its_window_expires(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    sys.path.insert(0, str(_DESK / "tests"))
+    import test_e8_gold_guard_and_open_risk as h
+    from prop import e8_gold as g
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    h._sandbox(monkeypatch, tmp_path)
+    (tmp_path / "intents.json").write_text("", "utf-8")
+    st = {"date": "2026-10-15", "carried": {}, "windows": {"afternoon": {
+        "placed_hour": 17.0, "position_id": None, "shadow": False, "orders": {},
+        "failed": {"buy_stop": dict(_LEG)}}}}
+    g._retry_failed_legs(h._Venue(), st, {"actions": []}, hour=23.0,
+                         now=datetime(2026, 10, 15, 20, 0, tzinfo=UTC), open_orders=[],
+                         orders_ok=True, filled={}, xau_positions=[], positions_ok=True,
+                         stood_down=False, armed=True, hist_rows=[], history_ok=True,
+                         instrument_id=6102, mt5=h._MT5())
+    rows = [json.loads(x) for x in (tmp_path / "intents.json").read_text("utf-8").splitlines()
+            if x.strip()]
+    assert [r for r in rows if r.get("rail") in ("gold_retry_abandoned", "gold_late_send")]
+
+
+def test_late_windows_skips_a_window_the_fence_deferred() -> None:
+    from prop import e8_gold as g
+    hour = 19.0                              # afternoon, past the send grace, before cancel
+    base = {"windows": {}}
+    late = [n for n, _ in g.late_windows(hour, base)]
+    marked = [n for n, _ in g.late_windows(hour, {**base, "news_deferred": ["afternoon"]})]
+    assert "afternoon" in late and "afternoon" not in marked
+    assert set(late) - {"afternoon"} == set(marked) - {"afternoon"}

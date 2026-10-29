@@ -1146,7 +1146,7 @@ MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measu
 
 
 # --------------------------------------------------------------------------- the ledger
-def _rows_counted() -> tuple[list[dict], int]:
+def _rows_counted() -> tuple[list[dict[str, Any]], int]:
     """The ledger's rows and how many lines were skipped as torn or not a JSON object. Parsed
     line by line (v4 SHOULD): one bad line used to return [] for the whole ledger, so a repair
     run believed no day had been sampled and appended the same day again."""
@@ -1154,7 +1154,7 @@ def _rows_counted() -> tuple[list[dict], int]:
         text = LEDGER.read_text("utf-8", errors="replace")
     except OSError:
         return [], 0
-    rows: list[dict] = []
+    rows: list[dict[str, Any]] = []
     bad = 0
     for ln in text.splitlines():
         if not ln.strip():
@@ -1171,7 +1171,7 @@ def _rows_counted() -> tuple[list[dict], int]:
     return rows, bad
 
 
-def _rows() -> list[dict]:
+def _rows() -> list[dict[str, Any]]:
     return _rows_counted()[0]
 
 
@@ -1308,16 +1308,19 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
 def _last_line_tail(fh: Any, size: int, chunk: int = 65536) -> bytes:
     """The bytes after the file's LAST newline (the whole file when it has none), scanning back
     in chunks however long the final line is."""
-    pos, buf = size, b""
+    pos = size
+    parts: list[bytes] = []                 # newest chunk last; joined ONCE (linear, v6)
     while pos > 0:
         step = min(chunk, pos)
         pos -= step
         fh.seek(pos)
-        buf = fh.read(step) + buf
-        cut = buf.rfind(b"\n")
+        part = bytes(fh.read(step))
+        cut = part.rfind(b"\n")
         if cut >= 0:
-            return buf[cut + 1:]
-    return buf
+            parts.append(part[cut + 1:])
+            break
+        parts.append(part)
+    return b"".join(reversed(parts))
 
 
 def _append_ledger(new: list[dict[str, Any]]) -> tuple[str | None, int]:
