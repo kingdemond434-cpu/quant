@@ -121,3 +121,14 @@ def test_the_real_provenance_key_joins_keyed_rows(tmp_path: Path, monkeypatch) -
     led, acct = _mixed(tmp_path, key)
     rows, _ = fd.ledger_checked(led, acct)
     assert rows is not None and len(rows) == 2
+
+
+def test_a_lost_stamp_is_labelled_and_never_a_new_high(tmp_path: Path) -> None:
+    assert fd.peak_basis({"peak_equity": 0.0}, 457.74, True).startswith("STAMP LOST")
+    assert fd.peak_basis({"peak_equity": 400.0}, 457.74, False) == "new high this pass"
+    p = tmp_path / "s.json"
+    p.write_text("{}")
+    p.chmod(0o444)
+    fd.write_stamp_atomic(p, {"peak_equity": 1.0})
+    assert json.loads(p.read_text())["peak_equity"] == 1.0
+    assert not (tmp_path / "s.json.tmp").exists()

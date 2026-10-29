@@ -642,7 +642,9 @@ def main(dry_run: bool = True) -> int:
                "day_start_equity": st.get("day_start_equity")}
     positions = st.get("position") or []
     stamp = _read(STAMP, {"peak_equity": 0.0, "consecutive": 0, "halt_codes": [],
-                          "rearm_history": {}, "escalated": [], "cleared_at": None})
+                          "rearm_history": {}, "escalated": [], "cleared_at": None,
+                          "_stamp_lost": True})
+    stamp_lost = bool(stamp.pop("_stamp_lost", False))
     peak = max(float(stamp.get("peak_equity", 0.0)), float(account["equity"] or 0.0))
     expected = expected_lots(intent_rows())
     day = broker_day()
@@ -661,12 +663,9 @@ def main(dry_run: bool = True) -> int:
                         tuple(stamp.get('halt_codes') or ()), expected=expected)
     codes = [c for c, _ in breaches]
     messages = [m for _, m in breaches]
-    if peak > float(stamp.get("peak_equity", 0.0) or 0.0) or not stamp.get("peak_equity_ts"):
-        # A peak set before this field existed has no known instant: it is stamped when first
-        # recorded and says so, rather than inventing when the high-water mark was made.
-        stamp["peak_equity_ts_basis"] = ("new high this pass"
-                                         if peak > float(stamp.get("peak_equity", 0.0) or 0.0)
-                                         else "inherited; first recorded at this instant")
+    if stamp_lost or peak > float(stamp.get("peak_equity", 0.0) or 0.0) \
+            or not stamp.get("peak_equity_ts"):
+        stamp["peak_equity_ts_basis"] = peak_basis(stamp, peak, stamp_lost)
         stamp["peak_equity_ts"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
     stamp["peak_equity"] = peak
     stamp.pop("rearm_verdict", None)
@@ -737,9 +736,36 @@ def main(dry_run: bool = True) -> int:
     stamp["would"] = {"action": action, "executed": not dry_run, "reasons": messages,
                       "confirm": f"{stamp['consecutive']}/{CONFIRM_READS}",
                       "rearm": stamp.get("rearm_verdict")}
-    STAMP.parent.mkdir(parents=True, exist_ok=True)
-    STAMP.write_text(json.dumps(stamp, indent=1), "utf-8")
+    write_stamp_atomic(STAMP, stamp)
     return 1 if breaches else 0
+
+
+def peak_basis(stamp: dict, peak: float, stamp_lost: bool) -> str:
+    """Why `peak_equity_ts` is being set. A LOST or torn stamp is its own case: the peak then
+    restarts at current equity, which can move the anchor DOWN, and it must never read as a new
+    high. A peak set before the field existed is stamped when first recorded and says so."""
+    if stamp_lost:
+        return ("STAMP LOST OR UNREADABLE: peak restarted at current equity (the anchor may "
+                "have moved DOWN); the prior high-water mark is unknown")
+    if peak > float(stamp.get("peak_equity", 0.0) or 0.0):
+        return "new high this pass"
+    return "inherited; first recorded at this instant"
+
+
+def write_stamp_atomic(path: Path, stamp: dict) -> None:
+    """tmp then os.replace, so a reader never sees a torn stamp. On Windows os.replace onto a
+    read-only destination raises (WinError 5), so the read-only bit is cleared first."""
+    import os
+    import stat
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(stamp, indent=1), "utf-8")
+    try:
+        if path.exists() and not os.access(path, os.W_OK):
+            os.chmod(path, stat.S_IWRITE | stat.S_IREAD)
+    except OSError:
+        pass
+    os.replace(tmp, path)
 
 
 if __name__ == "__main__":

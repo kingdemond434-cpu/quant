@@ -2471,21 +2471,19 @@
    "clock": "run_law_gate.py",
    "cadence_s": 3600,
    "max_silence_s": 7200,
-   "state": "LIVE",
-   "why": "added by hand 2026-10-29 (fence planner pattern); attested on its first gate run",
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
    "artifact": "data/law_gate.json",
    "artifact_declared": "data/law_gate.json",
-   "artifact_resolved_by": "declared",
+   "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
-   "artifact_age_s": 31,
-   "artifact_bytes": 8436,
-   "artifact_sha256": "76f2c577e3082639f5aefbd0f129f272f24da46b28f9138d55f26016b2a8d1c9",
-   "summary": {
-    "ok": true
-   },
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
    "progress_metric": "gate_runs",
    "consumer": "desks/mt5/research/plumbing_watchdog.py"
   },
@@ -3795,7 +3793,7 @@
     "_": "UNMEASURED (not a readable JSON object)"
    },
    "progress_metric": "leg_completions",
-   "consumer": "desks/mt5/research/miner_candidate_compiler.py → desks/mt5/data/hypotheses/miner"
+   "consumer": "desks/mt5/research/miner_candidate_compiler.py \u2192 desks/mt5/data/hypotheses/miner"
   },
   {
    "organ": "leg:state_admission",
@@ -4264,7 +4262,7 @@
     "outcome": "exit_code=1"
    },
    "progress_metric": "leg_completions",
-   "consumer": "desks/mt5/research/state_vector_build.py:335 world_conditioning → StateVector.co"
+   "consumer": "desks/mt5/research/state_vector_build.py:335 world_conditioning \u2192 StateVector.co"
   },
   {
    "organ": "leg:dead_architecture",
@@ -4424,7 +4422,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "libs/research/bandit SOURCE_ARM → exit_improvement budget share; nothing reads e"
+   "consumer": "libs/research/bandit SOURCE_ARM \u2192 exit_improvement budget share; nothing reads e"
   },
   {
    "organ": "leg:experiment_cache",
@@ -4717,7 +4715,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "ML_LAYER.json is read by scripts/build_zentech_state.py (dashboard) — the repres"
+   "consumer": "ML_LAYER.json is read by scripts/build_zentech_state.py (dashboard) \u2014 the repres"
   },
   {
    "organ": "leg:model_league",
@@ -4742,7 +4740,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "desks/mt5/research/issue_board.py:74 tracks MODEL_ZOO.json freshness (3600s) — a"
+   "consumer": "desks/mt5/research/issue_board.py:74 tracks MODEL_ZOO.json freshness (3600s) \u2014 a"
   },
   {
    "organ": "leg:model_skill",
@@ -4875,7 +4873,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "promoter.allocation_view → admission_of → capital_verdict → reconcile_capital → "
+   "consumer": "promoter.allocation_view \u2192 admission_of \u2192 capital_verdict \u2192 reconcile_capital \u2192 "
   },
   {
    "organ": "leg:promoter",
