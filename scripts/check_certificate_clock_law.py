@@ -122,10 +122,12 @@ DECIDED_STATUSES = frozenset({"KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED",
 #: The lane state files that hold forward clock rows, in the order the engine writes them.
 #: The farm ledger is LAST so a promoting lane's row always wins a shared key. A certificate the
 #: integrity door holds out of every promoting lane (HELD_UNREPLICATED) is clocked there by
-#: `near_miss_farm` on the same engine with no promotion authority: it IS accumulating forward
-#: evidence, so it is a clock, and its row carries `lane` so the reader sees which kind.
+#: `near_miss_farm` with no promotion authority. That clock can never mature into a promotion, so
+#: it is judged FARM_ONLY, still a breach, but one the reader can tell from a certificate with
+#: no clock at all.
+FARM_LANE = "farm/near_miss_farm.json"
 LANES = ("shadow_state.json", "qquant_shadow_state.json", "scalp_shadow_state.json",
-         "external_shadow_state.json", "FAMILY_shadow_state.json", "farm/near_miss_farm.json")
+         "external_shadow_state.json", "FAMILY_shadow_state.json", FARM_LANE)
 
 UNMEASURED = "UNMEASURED"
 
@@ -386,6 +388,13 @@ def judge(cert: dict[str, Any], key: str | None, row: dict[str, Any] | None,
                      why="BREACH: certified and holds no forward clock at all, so it can never "
                          "mature and can never be promoted. Remedy: enrol it -- never withdraw "
                          "the certificate")
+        return entry
+
+    if row.get("lane") == FARM_LANE:
+        entry.update(verdict="FARM_ONLY", breach=True,
+                     why="BREACH: the only clock is the farm's, which accrues evidence with no "
+                         "promotion authority, so this certificate still cannot mature. Remedy: "
+                         "replicate it so the integrity door admits it to a promoting lane")
         return entry
 
     # ---- 2. did it get that clock IMMEDIATELY? ("immediate" is the principal's word)

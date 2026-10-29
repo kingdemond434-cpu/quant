@@ -457,9 +457,9 @@ def test_a_duplicate_whose_clock_is_broken_still_breaches(monkeypatch, tmp_path)
     assert doc["verdict"] == "BREACH"
 
 
-def test_a_farm_clock_is_a_clock_and_a_promoting_lane_wins_a_shared_key(tmp_path) -> None:
-    """A certificate the integrity door holds out of every promoting lane is clocked by the farm
-    on the same engine; that row is forward evidence accumulating, so it is read as a clock."""
+def test_a_farm_clock_is_read_and_a_promoting_lane_wins_a_shared_key(tmp_path) -> None:
+    """A certificate the integrity door holds out of every promoting lane is clocked by the farm;
+    the row is read, and a promoting lane's row for the same key always wins."""
     shadow = tmp_path / "reports" / "shadow"
     (shadow / "farm").mkdir(parents=True)
     (shadow / "farm" / "near_miss_farm.json").write_text(
@@ -475,3 +475,10 @@ def test_a_late_duplicate_is_late_not_a_duplicate_breach(monkeypatch, tmp_path) 
     monkeypatch.setattr(law, "LATENCY_BREACH_H", -1.0)
     doc = _dup_scan(monkeypatch, tmp_path, {"K": _row(n=3), "Z": _row(n=3)})
     assert not any("CANON_DUPLICATE" in p for p in doc["problems"])
+
+
+def test_a_farm_only_clock_is_its_own_breach_never_compliant() -> None:
+    """Audit on #487: a farm clock has no promotion authority, so it cannot mature; counting it
+    compliant would hide the certificates the integrity door still holds."""
+    e = law.judge(_cert(), "K", _row(n=4, lane=law.FARM_LANE), [], 72.0, "t", NOW)
+    assert e["verdict"] == "FARM_ONLY" and e["breach"] is True
