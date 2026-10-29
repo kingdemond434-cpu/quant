@@ -74,10 +74,12 @@ DEPLOYMENT. reports/FTMO_ALLOCATOR.json always. The `ftmo` block of data/CERT_BO
 rewritten ONLY when data/FTMO_ALLOCATOR_ARMED exists, the account state is MEASURED and fresh, the
 book validated, and only for keys an FTMO executor trades: the gold copy (`FTMO_EXECUTABLE`, the
 follower) and every non-gold sleeve whose certificate spec is published in `specs` (the sleeve
-executor, `prop/ftmo_executor.py`, 2026-10-29). A key that was in the block and is no longer
-executable is written 0 -- a sleeve the solve dropped is never left funded. A sized sleeve with no
-executor (a non-copy gold window: gold has one FTMO owner) is published as SIZED_NO_EXECUTOR with
-the J it would add.
+executor, `prop/ftmo_executor.py`, 2026-10-29). The deployed book is SOLVED over those keys alone
+(audit #489 MF1), so a column with no executor (a non-copy gold window: gold has one FTMO owner)
+can never pull risk away from one that trades; the joint solve over every admitted column is
+published as `joint_book`, its extra columns as SIZED_NO_EXECUTOR, and the J they would add as
+J_missed. A key that was in the block and is no longer executable is written 0 -- a sleeve the
+solve dropped is never left funded.
 
     python desks/mt5/research/prop_challenge_allocator.py [--venue ftmo] [--paths 1500]
 """
@@ -557,6 +559,13 @@ def sleeve_spec(cert_key: str) -> tuple[dict[str, Any] | None, str]:
                        if k not in ("symbol", "family", "selector", "is_universe", "hunt")}}, "ok"
 
 
+def executable_columns(cols: list[str], uni: dict[str, Any]) -> set[str]:
+    """The admitted columns an FTMO executor can send: the deployed book is solved over these
+    alone."""
+    specs = uni.get("specs") or {}
+    return {c for c in cols if executor_runs(c, specs)}
+
+
 def build_universe(seed: int = 0) -> dict[str, Any]:
     """Columns, world tensor and the screen, every gate fail-closed and named."""
     import kelly_survival as ks
@@ -812,13 +821,32 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
         doc["deployable"] = False
         doc["rail_blocks"] = rail_blocks(uni)
         return doc
-    cols, r = uni["cols"], uni["r"]
-    solve_w, valid_w = make_worlds(r, n_paths, SIM_DAYS, seed)
+    all_cols, r = uni["cols"], uni["r"]
+    full_w, full_valid = make_worlds(r, n_paths, SIM_DAYS, seed)
+    # THE DEPLOYED BOOK IS SOLVED OVER WHAT CAN BE SENT, AND NOTHING ELSE (audit #489 MF1). A joint
+    # solve over every admitted column lets the optimiser move risk from a column that trades to a
+    # correlated one with no executor, so the traded size would fall by side effect, never by
+    # evidence. The paths are drawn per row, independent of the columns, so the executable slice
+    # of the joint worlds IS the executable solve's input: adding a column with no executor can
+    # never move the deployed book. The joint solve is published beside it (`joint_book`) as the
+    # missed-growth view of the executors that do not exist yet.
+    exec_idx = [k for k, c in enumerate(all_cols) if c in executable_columns(all_cols, uni)]
+    if not exec_idx:
+        doc["status"] = "NO_EXECUTABLE_SLEEVE"
+        doc["validation_score"] = 0.0
+        doc["deployable"] = False
+        doc["sized_no_executor_columns"] = list(all_cols)
+        doc["rail_blocks"] = rail_blocks(uni)
+        return doc
+    cols = [all_cols[k] for k in exec_idx]
+    solve_w = World(full_w.est[:, :, exec_idx], full_w.halved[:, :, exec_idx])
+    valid_w = World(full_valid.est[:, :, exec_idx], full_valid.halved[:, :, exec_idx])
     rng = np.random.default_rng(seed)
     # Per-column ceiling: the venue's per-trade cap, and for the principal's copy the value the
     # principal set (an equity fraction, so in initial-balance units at today's equity).
-    cap = np.array([min(MAX_RISK_FRAC, uni["caps"][c] * st.equity) if c in uni["caps"]
-                    else MAX_RISK_FRAC for c in cols])
+    cap_all = np.array([min(MAX_RISK_FRAC, uni["caps"][c] * st.equity) if c in uni["caps"]
+                        else MAX_RISK_FRAC for c in all_cols])
+    cap = cap_all[exec_idx]
     # BACKWARD INDUCTION: the last challenge phase first (from a fresh account), so every earlier
     # phase is valued by what passing it is actually worth.
     chain = [st.phase]
@@ -859,23 +887,26 @@ def solve(venue: str = "ftmo", *, n_paths: int = N_PATHS, seed: int = 0,
     # THE EXECUTOR SIZES ON EQUITY (prop/ftmo_follower: fraction x equity); the solve sizes on the
     # initial balance. The written fraction carries the same dollars at today's equity.
     specs = uni.get("specs") or {}
-    doc["executable"] = {c: math.floor(v / st.equity * 1e5) / 1e5 for c, v in doc["book"].items()
-                         if executor_runs(c, specs)}
+    doc["executable"] = {c: math.floor(v / st.equity * 1e5) / 1e5 for c, v in doc["book"].items()}
     doc["specs"] = {c: specs[c] for c in doc["executable"] if c in specs}
-    doc["sized_no_executor"] = {c: v for c, v in doc["book"].items()
-                                if not executor_runs(c, specs)}
-    # Missed growth (Rule 1): what the missing executors cost, and every column a rail kept out.
-    if doc["sized_no_executor"] and now_block["status"] == "OK":
-        here = st
-        h_full = np.array([doc["book"].get(c, 0.0) for c in cols])
-        h_exec = np.array([doc["book"].get(c, 0.0) if executor_runs(c, specs) else 0.0
-                           for c in cols])
-        j_full = evaluate(valid_w, h_full, rules, st.phase, here, cont)["score"]
-        j_exec = evaluate(valid_w, h_exec, rules, st.phase, here, cont)["score"]
-        doc["missed_growth_no_executor"] = {"J_book": round(j_full, 5),
-                                            "J_executable_only": round(j_exec, 5),
-                                            "J_missed": round(j_full - j_exec, 5)}
+    doc["sized_no_executor"] = {}
+    # Missed growth (Rule 1): the joint solve over every admitted column, from the same account
+    # and the same continuation, against the deployed book -- what the missing executors cost.
+    if len(cols) < len(all_cols) and now_block["status"] == "OK":
+        h_j, v_j = search(full_w, rules, st.phase, st, cont, cap_all, rng, ks.BOOK_MARGIN)
+        if v_j > -math.inf:
+            j_joint = evaluate(full_valid, h_j, rules, st.phase, st, cont)["score"]
+            j_exec = now_block["validation"]["score"]
+            doc["joint_book"] = {c: round(float(h_j[k]), 4) for k, c in enumerate(all_cols)
+                                 if h_j[k] > 0}
+            doc["sized_no_executor"] = {c: v for c, v in doc["joint_book"].items()
+                                        if c not in cols}
+            doc["missed_growth_no_executor"] = {"J_joint": round(j_joint, 5),
+                                                "J_executable": round(j_exec, 5),
+                                                "J_missed": round(j_joint - j_exec, 5)}
     doc["rail_blocks"] = rail_blocks(uni)
+    doc["e8_overlap"] = sorted(c for c, row in (uni.get("columns") or {}).items()
+                               if row.get("e8_overlap"))
     doc["status"] = now_block["status"]
     doc["validation_score"] = (now_block["validation"]["score"]
                                if now_block["status"] == "OK" else 0.0)

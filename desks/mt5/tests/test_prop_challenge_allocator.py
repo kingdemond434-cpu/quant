@@ -340,6 +340,35 @@ def test_gap_requests_name_one_symbol_per_row(tmp_path: Path) -> None:
 
 def test_an_e8_overlap_sleeve_is_sized_never_sent_without_an_executor() -> None:
     # zuck's 2026-10-29 override admits E8's symbols; the opposite-side fence is the executor's.
-    # Until an FTMO executor carrying that fence exists, only the gold copy (behind the gold
-    # direction lock) is ever written to the traded book.
+    # The follower's key is the gold copy alone (behind the gold direction lock); every other
+    # key needs the sleeve executor's spec (prop/ftmo_executor.py, which carries the fence).
     assert frozenset({"gold_asia"}) == pca.FTMO_EXECUTABLE
+    assert not pca.executor_runs("AUDNZD_overnight_gap_decay_asia", {})
+
+
+def _synthetic_universe(extra: bool) -> dict:
+    g = np.random.default_rng(7)
+    gold = g.choice([-1.0, 0.0, 0.0, 0.0, 1.8], size=(8, 256))
+    cols, slices = ["gold_asia"], [gold]
+    if extra:   # a Tier S gold window the venue lists but no FTMO executor can send
+        cols.append("XAUUSD_session_range_breakout_london")
+        slices.append(np.where(g.random((8, 256)) < 0.8, gold, 0.0))
+    return {"status": "OK", "cols": cols, "r": np.stack(slices, axis=2),
+            "columns": {c: {"admitted": True} for c in cols}, "caps": {}, "costs": {},
+            "posterior": {}, "listing_source": "test", "unpriced": [], "screen": []}
+
+
+def test_a_column_with_no_executor_never_moves_the_deployed_book(tmp_path, monkeypatch) -> None:
+    # audit #489 MF1: the joint solve could shift risk from the column that trades to a correlated
+    # one that cannot, cutting the traded size by side effect. The deployed book is solved over
+    # the executable columns alone, so an extra column changes nothing that is sent.
+    monkeypatch.setattr(pca, "GAP_REQUESTS", tmp_path / "gaps.jsonl")
+    books = []
+    for extra in (False, True):
+        monkeypatch.setattr(pca, "build_universe", lambda seed=0, e=extra: _synthetic_universe(e))
+        doc = pca.solve("ftmo", n_paths=200, seed=3, state=pca.AccountState())
+        books.append(doc)
+    assert books[0]["executable"] == books[1]["executable"]
+    assert books[0]["book"] == books[1]["book"]
+    assert "XAUUSD_session_range_breakout_london" not in books[1]["book"]
+    assert "joint_book" in books[1] and "missed_growth_no_executor" in books[1]
