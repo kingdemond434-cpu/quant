@@ -1,5 +1,5 @@
 {
-  "swept_at": "2026-10-28T23:00:30.898698+00:00",
+  "swept_at": "2026-10-28T23:15:19.708353+00:00",
   "sleeves": {
     "AUDCAD|clock_transition_asia": {
       "n": 0,
@@ -19,8 +19,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 29,
-      "shadow_exp_r": -0.0108,
+      "shadow_n": 28,
+      "shadow_exp_r": -0.0918,
       "woke_on_shadow": false
     },
     "AUDCAD|cross_asset_residual_continuous": {
@@ -3099,8 +3099,8 @@
       "avg_loss_r": 0.0,
       "max_dd_r": 0.0,
       "flag": "ok",
-      "shadow_n": 35,
-      "shadow_exp_r": -0.0267,
+      "shadow_n": 46,
+      "shadow_exp_r": -0.1236,
       "woke_on_shadow": false
     },
     "NZDJPY|cross_asset_residual_continuous": {
@@ -3122,7 +3122,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": -0.1475,
+      "shadow_exp_r": -0.174,
       "woke_on_shadow": false
     },
     "NZDJPY|vol_transition_continuous": {
@@ -4849,7 +4849,7 @@
       "max_dd_r": 0.0,
       "flag": "ok",
       "shadow_n": 90,
-      "shadow_exp_r": 0.0654,
+      "shadow_exp_r": 0.068,
       "woke_on_shadow": false
     },
     "XAUEUR|macro_conditional_continuous": {
