@@ -716,8 +716,19 @@ def sharpe(fills: Sequence[Fill]) -> tuple[float | None, int]:
 # -------------------------------------------------------------------------------- rebuild
 def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | None,
                  side: str | int | None) -> tuple[dict[str, Any] | None, str]:
-    """The parameters the written rule names, with the selector's window (breakouts) or session
-    (everything else) applied, or the reason there is no written rule."""
+    """The parameters the written rule names, with the selector's window (breakouts) applied, and
+    the cell's session and side filtered EXACTLY as the desk's forward call filters them -- or the
+    reason there is no written rule.
+
+    THE DESK'S CALL IS THE SPEC FOR SIDE AND SESSION (2026-10-29, found by the cert hunt's
+    builder). `family_call.signals` passes no side on a LONG certificate, so a family emits every
+    signal it would emit; it passes side=-1 on a SHORT one; and it filters by the cell's own
+    `session` param, never by the selector. This function used to filter a LONG certificate to
+    longs and to the selector's session, so a fade family that trades both ways was rebuilt as a
+    different strategy and judged MISMATCH or UNMEASURED, and its clock stayed shut at the door.
+    A param the written rule does not name is refused by name, never dropped: dropping it rebuilds
+    a different strategy and calls the comparison a replication.
+    """
     spec = SPEC_BOOK.get(str(family or ""))
     if spec is None:
         return None, f"no written specification in the spec book for family {family!r}"
@@ -725,37 +736,33 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
     sel = str(selector or "").lower()
     if spec.selector_params and sel in WINDOWS:
         p.update(WINDOWS[sel])
-    for k, v in dict(params or {}).items():
+    raw = dict(params or {})
+    for k, v in raw.items():
         if k in p or k in ("range_start", "range_end", "signal_at", "wait_bars"):
             p[k] = v
-    if spec.params_own_session_and_side:
-        raw = dict(params or {})
-        for k, v in raw.items():
-            # AN UNKNOWN KEY IS REFUSED, NEVER DROPPED (audit on #487): a key the written rule
-            # does not name may change what trades, and dropping it would rebuild a different
-            # strategy and call the comparison a replication.
-            if (k not in spec.defaults and k not in LABEL_KEYS and k not in NO_OP_MODIFIERS
-                    and k not in VARIANT_KEYS):
-                return None, (f"param {k!r} is not named by the written rule for {family!r}")
-            val = str(v if v is not None else "").strip().lower()
-            if k in NO_OP_MODIFIERS and val not in NO_OP_MODIFIERS[k]:
+            continue
+        if k in LABEL_KEYS:
+            continue
+        val = str(v if v is not None else "").strip().lower()
+        if k in NO_OP_MODIFIERS:
+            if val not in NO_OP_MODIFIERS[k]:
                 return None, (f"variant {k}={v!r} has no written rule in the spec book for "
                               f"{family!r}")
-            if k in VARIANT_KEYS:
-                return None, f"variant {k}={v!r} has no written rule in the spec book"
+            continue
+        if k in VARIANT_KEYS:
+            return None, f"variant {k}={v!r} has no written rule in the spec book"
+        return None, f"param {k!r} is not named by the written rule for {family!r}"
+    if spec.params_own_session_and_side:
         try:
             p["side"] = int(p["side"])
         except (TypeError, ValueError):
             return None, f"side {p.get('side')!r} is not +1 or -1"
-        session = str(raw.get("session") or "all").strip().lower()
-        if session not in SESSIONS:
-            return None, f"session {session!r} has no written window"
-        p["_side"] = 0
-        p["_session"] = SESSIONS[session]
-        return p, "ok"
+    session = str(raw.get("session") or "all").strip().lower()
+    if session not in SESSIONS:
+        return None, f"session {session!r} has no written window"
+    p["_session"] = SESSIONS[session]
     s = str(side or "").upper()
-    p["_side"] = 1 if s in ("LONG", "1") else -1 if s in ("SHORT", "-1") else 0
-    p["_session"] = SESSIONS.get(sel) if not spec.selector_params else None
+    p["_side"] = -1 if s in ("SHORT", "-1") and not spec.params_own_session_and_side else 0
     return p, "ok"
 
 

@@ -360,3 +360,39 @@ def test_bars_per_day_is_measured_from_the_frame_not_its_declared_chart() -> Non
     irregular = rc.bars_from_arrays(np.array([0, 7, 19, 40, 77], dtype="int64") * 60_000_000_000,
                                     *([np.ones(5)] * 4))
     assert rc._bars_per_day(irregular) == 24
+
+
+def _frame(b: rc.Bars) -> Any:
+    import pandas as pd
+    idx = pd.to_datetime(b.t, utc=True)
+    return pd.DataFrame({"open": b.o, "high": b.h, "low": b.low, "close": b.c}, index=idx)
+
+
+@pytest.mark.parametrize("session", [None, "asia"])
+def test_a_long_certificate_is_rebuilt_as_the_desk_calls_it_both_sides_and_its_own_session(
+        session: str | None) -> None:
+    """The desk's forward call passes no side on a LONG certificate and filters by the cell's
+    `session` param; the rebuild used to keep longs only and filter by the selector, so a fade
+    that trades both ways was rebuilt as a different strategy (found 2026-10-29)."""
+    from mt5desk.families_orthogonal import family_overnight_gap_decay
+    from mt5desk.family_call import signals
+    bars = _gap_bars()
+    params = {"session": session} if session else {}
+    p, why = rc.resolve_spec("overnight_gap_decay", params, "london_am", "LONG")
+    assert p is not None, why
+    assert p["_side"] == 0 and p["_session"] == (rc.SESSIONS[session] if session else None)
+    orders, _ = rc.rebuild("overnight_gap_decay", bars, p, 0.0)
+    desk = signals(family_overnight_gap_decay, _frame(bars), side=1, params=params)
+    assert len(orders) == len(desk) > 20
+    assert sorted(o.side for o in orders) == sorted(s.side for s in desk)
+    assert {o.side for o in orders} == {1, -1}
+
+
+def test_a_short_certificate_is_filtered_short_and_an_unnamed_param_is_refused() -> None:
+    p, _ = rc.resolve_spec("overnight_gap_decay", {}, "asia", "SHORT")
+    assert p is not None and p["_side"] == -1
+    refused, why = rc.resolve_spec("overnight_gap_decay", {"lookback": 5}, "asia", "LONG")
+    assert refused is None and "lookback" in why
+    label, _ = rc.resolve_spec("overnight_gap_decay", {"representation": "x", "selector": "asia"},
+                               "asia", "LONG")
+    assert label is not None
