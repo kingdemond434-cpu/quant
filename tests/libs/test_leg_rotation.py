@@ -9,6 +9,7 @@ the cure is never "attempt less".
 from __future__ import annotations
 
 import json
+import math
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -276,21 +277,28 @@ def test_reproduces_and_ends_the_2026_10_29_starvation(tmp_path: Path) -> None:
     assert "clock_ledger" in first.admitted and "clock_ledger" in first.protected
     # The box adopts this code mid-flight: its last record predates `starve_passes`.
     adoption = {"generated": (now - timedelta(minutes=30)).isoformat(), "elapsed_s": 0.0}
-    decisions, _ = _simulate(roster, att, now, tmp_path, passes=12, prior=adoption)
+    decisions, _ = _simulate(roster, att, now, tmp_path, passes=16, prior=adoption)
+    # This roster is OVERSUBSCRIBED (6,000 s of organs, no budget left after the always-run set),
+    # and the rotation must SAY so rather than promise a bound it cannot keep ...
+    cap = decisions[0].capacity
+    assert cap["oversubscribed"] is True
+    bound = math.ceil(cap["passes_to_cover"]) + LR.MAX_DEFERRALS
     streak: dict[str, int] = dict.fromkeys(roster, 0)
     worst: dict[str, int] = dict.fromkeys(roster, 0)
     for dec in decisions:
         assert "clock_ledger" in dec.admitted, "a cheap leg must be admitted every pass"
+        assert dec.aged or not dec.queued, "the ageing queue must drain even with no budget"
         for leg in roster:
             streak[leg] = streak[leg] + 1 if leg in dec.deferred else 0
             worst[leg] = max(worst[leg], streak[leg])
-    over = {leg: n for leg, n in worst.items() if n > LR.MAX_DEFERRALS}
-    assert not over, f"legs deferred past the {LR.MAX_DEFERRALS}-pass bound: {over}"
+    # ... and still run every leg within the bound its own capacity line states: no livelock.
+    over = {leg: n for leg, n in worst.items() if n > bound}
+    assert not over, f"legs deferred past the stated {bound}-pass catch-up bound: {over}"
     ran = set().union(*(d.admitted for d in decisions))
-    assert ran == set(roster), f"never admitted in 12 passes: {set(roster) - ran}"
+    assert ran == set(roster), f"never admitted in 16 passes: {set(roster) - ran}"
     assert "prop_challenge_allocator" in decisions[0].admitted, "never run: aged in at once"
     assert "prop_challenge_allocator" in decisions[0].red, "and named RED until it has run"
-    assert not decisions[-1].red, f"steady state must be GREEN, got {decisions[-1].red}"
+    assert decisions[-1].red, "an oversubscribed plan is RED by name, never quietly late"
 
 
 def test_deferral_ages_into_unconditional_admission(tmp_path: Path) -> None:
@@ -368,9 +376,12 @@ def test_adoption_seeds_the_wait_from_attendance_age() -> None:
     old_format = {"generated": (now - timedelta(minutes=20)).isoformat(), "elapsed_s": 0.0,
                   "never_run": ["prop_challenge_allocator"]}
     dec = LR.plan_pass(roster, att, plan="core", budget_s=2640.0, now=now, prior=old_format)
-    assert {"clock_ledger_big", "prop_challenge_allocator"} <= set(dec.aged)
+    assert "clock_ledger_big" in dec.aged
+    assert "prop_challenge_allocator" in dec.admitted & dec.protected, "money-critical"
     assert "fresh" in dec.deferred
-    assert "prop_challenge_allocator" in dec.red
+    # The seed is not capped: 104 h dark is RED on the first pass that can see it.
+    assert {"clock_ledger_big", "prop_challenge_allocator"} <= set(dec.red)
+    assert dec.starve_passes["clock_ledger_big"] == 104
 
 
 def test_red_names_a_leg_starved_past_the_bound(tmp_path: Path) -> None:
@@ -454,3 +465,109 @@ def test_a_department_pass_cannot_reset_the_core_plans_wait(tmp_path: Path) -> N
     final = LR.record(d3, att, ["dept_leg"], path=out)
     assert final["plan"] == "dept:data" and final["liveness"]["verdict"] == "RED"
     assert final["liveness"]["red_by_plan"] == {"core": ["waiter"]}
+
+
+def test_money_critical_legs_have_a_hard_staleness_bound() -> None:
+    """decay_monitor & co. are admitted every pass, never yielded, RED after one missed pass."""
+    now = datetime(2026, 10, 29, tzinfo=UTC)
+    money = sorted(LR.MONEY_CRITICAL)
+    roster = ["tier_s", *money]
+    att = _att(dict.fromkeys(roster, 9), costs={"tier_s": 9000.0, **dict.fromkeys(money, 60.0)},
+               now=now)
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=100.0, now=now,
+                       prior=_prior(now - timedelta(hours=1), dict.fromkeys(money, 0), roster))
+    assert set(money) <= dec.admitted & dec.protected
+    for leg in money:
+        assert dec.should_run(leg, att, elapsed_s=99_999.0)[0], leg
+    for leg in money:
+        att.last_at[leg] = (now - timedelta(hours=5)).isoformat()
+    starved = _prior(now - timedelta(hours=1),
+                     dict.fromkeys(money, LR.MONEY_MAX_STALE_PASSES), roster)
+    red = LR.plan_pass(roster, att, plan="core", budget_s=100.0, now=now, prior=starved).red
+    assert set(red) == set(money), red
+    assert all("money-critical" in why for why in red.values())
+
+
+def test_cheap_legs_are_batched_and_still_bounded(tmp_path: Path) -> None:
+    """Sixty 10 s legs behind an always-run set already past budget: each pass admits a cheap
+    batch inside its allowance, and no cheap leg waits past the ageing bound."""
+    now = datetime(2026, 10, 29, tzinfo=UTC)
+    cheap = [f"cheap{i:02d}" for i in range(60)]
+    roster = ["tier_s", *cheap]
+    att = _att(dict.fromkeys(roster, 9), costs={"tier_s": 3749.0, **dict.fromkeys(cheap, 10.0)},
+               now=now)
+    decisions, _ = _simulate(roster, att, now, tmp_path, passes=6,
+                             prior=_prior(now - timedelta(hours=1), dict.fromkeys(roster, 0),
+                                          roster))
+    allowance = LR.CHEAP_BATCH_FILL * BOX_BUDGET_S
+    for dec in decisions:
+        assert sum(10.0 for leg in dec.cheap) <= allowance
+    streak = dict.fromkeys(cheap, 0)
+    for dec in decisions:
+        for leg in cheap:
+            streak[leg] = streak[leg] + 1 if leg in dec.deferred else 0
+            assert streak[leg] <= LR.MAX_DEFERRALS, (leg, streak[leg])
+
+
+def test_two_hundred_twenty_stale_legs_all_catch_up_under_a_killing_scheduler(
+        tmp_path: Path) -> None:
+    """THE BOX ON 2026-10-29: 220 roster legs older than 24 h. Adopt the fix, then run passes
+    in FILE ORDER under a scheduler that KILLS the pass at its limit. Every leg must run within a
+    bounded number of passes, the RED set must drain to empty, and the money legs must hold."""
+    now = datetime(2026, 10, 29, 15, 30, tzinfo=UTC)
+    money = sorted(LR.MONEY_CRITICAL)
+    stale = [f"stale{i:03d}" for i in range(220 - len(money))]
+    roster = ["tier_s", "smoke_release", *stale[:100], *money, *stale[100:]]
+    costs = {"tier_s": 1500.0, "smoke_release": 120.0, **dict.fromkeys(money, 8.0)}
+    for i, leg in enumerate(stale):                  # the box's mix: mostly seconds, some minutes
+        costs[leg] = (1.4, 4.8, 9.8, 15.0, 40.0)[i % 5]
+    att = _att(dict.fromkeys(roster, 9), costs=costs, now=now,
+               ages_h={**dict.fromkeys(roster, 30.0 + 24 * 20), "tier_s": 0.5,
+                       "smoke_release": 0.5})
+    limit_s = BOX_BUDGET_S / LR.BUDGET_FILL          # what the scheduler actually kills at
+    out = tmp_path / "LEG_ROTATION.json"
+    doc: dict = {"generated": (now - timedelta(minutes=50)).isoformat(), "elapsed_s": 0.0}
+    t = now
+    first_ran: dict[str, int] = {}
+    reds: list[int] = []
+    for n in range(16):
+        dec = LR.plan_pass(roster, att, plan="core", budget_s=BOX_BUDGET_S, now=t, prior=doc)
+        reds.append(len(dec.red))
+        clock, ran = 0.0, []
+        for leg in roster:                            # file order, killed at the limit
+            if leg not in dec.admitted:
+                continue
+            if not dec.should_run(leg, att, clock)[0]:
+                continue
+            if clock + costs[leg] > limit_s:
+                break
+            clock += costs[leg]
+            ran.append(leg)
+            att.runs[leg] = att.runs.get(leg, 0) + 1
+            att.last_at[leg] = (t + timedelta(seconds=clock)).isoformat(timespec="seconds")
+            first_ran.setdefault(leg, n)
+        doc = LR.record(dec, att, ran, path=out, started=t, now=t + timedelta(minutes=55),
+                        complete=False)
+        t += timedelta(hours=1)
+    assert reds[0] >= 220 - 2, "every stale roster leg is RED, by name, on adoption"
+    assert set(first_ran) == set(roster), f"never ran: {set(roster) - set(first_ran)}"
+    cover = doc["capacity"]["passes_to_cover"]
+    assert cover is not None and not doc["capacity"]["oversubscribed"]
+    # The whole backlog of 220 is aged at once on adoption; the queue serves it in order of wait.
+    backlog = sum(costs[leg] for leg in stale) / doc["capacity"]["per_pass_s"]
+    assert max(first_ran.values()) + 1 <= math.ceil(backlog) + 1, first_ran
+    for leg in money:
+        assert first_ran[leg] == 0, f"money-critical {leg} waited behind the backlog"
+    assert reds[-1] == 0, f"still RED after catch-up: {sorted(dec.red)}"
+    assert doc["liveness"]["n_red"] == 0
+    assert doc["capacity"]["passes_to_cover"] is not None
+
+
+def test_capacity_names_an_oversubscribed_plan() -> None:
+    roster = ["tier_s", *[f"big{i}" for i in range(10)]]
+    att = _att(dict.fromkeys(roster, 3),
+               costs={"tier_s": 2000.0, **{f"big{i}": 1000.0 for i in range(10)}})
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=2640.0)
+    assert dec.capacity["oversubscribed"] is True
+    assert dec.capacity["per_pass_s"] == pytest.approx(max(640.0, LR.AGED_MIN_FILL * 2640.0)
+                                                       + LR.CHEAP_BATCH_FILL * 2640.0)

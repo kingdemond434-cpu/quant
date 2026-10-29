@@ -1545,6 +1545,11 @@ def _rotation() -> Any:
         if dec.red:
             print(f"  LEG LIVENESS RED ({len(dec.red)}): {', '.join(sorted(dec.red)[:40])}",
                   flush=True)
+        if dec.capacity.get("oversubscribed"):
+            print(f"  OVERSUBSCRIBED: other legs {dec.capacity.get('other_legs_s')}s over "
+                  f"{dec.capacity.get('headroom_s')}s headroom = "
+                  f"{dec.capacity.get('passes_to_cover')} passes to cover against a bound of "
+                  f"{dec.capacity.get('bound_passes')}", flush=True)
         # PUBLISHED BEFORE THE FIRST LEG RUNS. A pass killed at its 40-minute limit never reaches
         # its own epilogue, which is precisely how the cycle came to hold no record of what it
         # could not reach. `never_run` is known here, so it is on disk here.
