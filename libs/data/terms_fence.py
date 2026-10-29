@@ -232,8 +232,12 @@ SOURCE_POLICY.update({
                                 "https://www.cpc.ncep.noaa.gov/information/disclaimer.shtml":
                                     "client_error to the reader on 2026-10-29"}}},
     "eia_api": {
-        "hosts": ("api.eia.gov",), "status": API_PERMITTED, "key_env": ("EIA_API_KEY",),
-        "sources": ("eia_api",),
+        "hosts": ("api.eia.gov",), "status": API_PERMITTED, "sources": ("eia_api",),
+        # The data routes need EIA_API_KEY, but the KEY is checked by the door that uses it
+        # (world_dataset_hunter raises the named `needs_key` and sends nothing), not here: a
+        # `key_env` would make this row NEEDS_KEY and hold the host's keyless discovery root
+        # (countries/atlantic_energy lists https://api.eia.gov/v2/), which no terms bar.
+        "key_checked_by": "desks/mt5/research/world_dataset_hunter.py (EIA_API_KEY)",
         "why": ("EIA Open Data API v2 with the desk's registered key, within its throttle; EIA "
                 "content is US-government public domain and the API terms permit retrieval "
                 "and analysis"),

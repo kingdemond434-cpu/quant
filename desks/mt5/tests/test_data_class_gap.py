@@ -90,12 +90,13 @@ def test_each_door_stands_on_a_quoted_row_of_the_one_register(monkeypatch):
         key = tf.source_of_url(d["url"].replace("{api_key}", "x"))
         assert key == rows[d["provider"]]
         assert tf.terms_state(key) == "READ"
-        assert tf.input_source(d["url"]) in (None, "eia_api")
+        assert tf.input_source(d["url"]) is None                    # live input permitted
     assert tf.live_input_status("us_treasury_fiscaldata") == tf.API_PERMITTED
     assert tf.live_input_status("noaa_cpc") == tf.PUBLIC_PAGE
-    assert tf.live_input_status("eia_api") == tf.NEEDS_KEY          # named, never a zero
-    monkeypatch.setenv("EIA_API_KEY", "k" * 20)
+    # the key is the door's to check (needs_key, below): the row never holds the keyless
+    # discovery root a country pack lists on the same host
     assert tf.live_input_status("eia_api") == tf.API_PERMITTED
+    assert tf.platform_of_url("https://api.eia.gov/v2/") is None
 
 
 @pytest.fixture()
