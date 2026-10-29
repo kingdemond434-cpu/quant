@@ -207,6 +207,16 @@ DENY: tuple[tuple[str, str], ...] = (
     # The paste's job-lock lines belong to job_lock_health (#526); see DEFERRED. Denied here so
     # this file can never become a second killer racing the first.
     ("merge_hypotheses", "deferred to job_lock's own wedged-owner stop (#526)"),
+    # check_job_locks.AUTO_STOP_JOBS (#526): its 2 h stop owns these research owners.
+    *((s, "a job_lock_health research owner (#526 AUTO_STOP_JOBS); its 2 h stop owns it")
+      for s in ("local_converter", "breadth_sweep", "session_chart_equivalents",
+                "miner_candidate_compiler", "style_novelty", "orthogonal_sweep",
+                "edge_search", "macro_desk", "falsifier_run", "backfill_coverage",
+                "warm_gauntlet_cache")),
+    # check_job_locks.NEVER_STOP (#526): the judge, the certifier, the terminal lane.
+    *((s, "never stopped automatically (#526 NEVER_STOP: judge, certifier, terminal lane)")
+      for s in ("external_gauntlet", "certification_lane", "fusion_terminal_research_lane",
+                "tape_features")),
     ("pf_allocator", "reads the live terminal and feeds the gateway's sizing; never auto-stopped"),
 )
 
@@ -321,7 +331,8 @@ class Box:
     task_running: Callable[[str], bool | None]
     end_task: Callable[[str], dict[str, Any]]
     run_task: Callable[[str], dict[str, Any]]
-    kill: Callable[[Proc, Sequence[Proc]], dict[str, Any]]
+    #: kill(target, table, allowed_images): freeze, re-verify and end the tree (`_kill_tree`).
+    kill: Callable[[Proc, Sequence[Proc], frozenset[str] | None], dict[str, Any]]
     host: str = field(default_factory=socket.gethostname)
     gate_beat: Path = GATE_BEAT
     windows: bool = sys.platform == "win32"
@@ -399,33 +410,65 @@ def _running_states() -> frozenset[str]:
         return frozenset({"running"})
 
 
-def _kill_tree(target: Proc, procs: Sequence[Proc]) -> dict[str, Any]:
-    """End `target` and its descendants -- re-verified against the LIVE process right now."""
+def _kill_tree(target: Proc, procs: Sequence[Proc],
+               allowed_images: frozenset[str] | None = None) -> dict[str, Any]:
+    """FREEZE the tree, re-verify it against the LIVE process table, then end it bottom-up.
+
+    The same pattern job_lock_health uses: a busy owner keeps spawning, so a tree enumerated once
+    and killed top-down leaves the children it started in between as orphans. Every member is
+    suspended first and the tree re-enumerated until no new member appears; only then is each one
+    checked (identity, deny list, gate-child image) and killed deepest-first, the target last.
+    Any refusal RESUMES everything it froze and stops nothing.
+    """
     try:
         import psutil  # type: ignore[import-untyped,unused-ignore]
     except ImportError:
         return {"ok": False, "why": "psutil absent: cannot verify identity, nothing stopped"}
+    frozen: list[Any] = []
+
+    def thaw() -> None:
+        for fp in reversed(frozen):
+            with contextlib.suppress(Exception):
+                fp.resume()
+
     try:
         live = psutil.Process(target.pid)
         if abs(float(live.create_time()) - target.create_time) > 1.0:
             return {"ok": False, "why": "pid was reused since it was judged; nothing stopped"}
-        kids = live.children(recursive=True)
-        for k in kids:
+        live.suspend()
+        frozen.append(live)
+        for _round in range(5):
+            fresh = [k for k in live.children(recursive=True)
+                     if k.pid not in {f.pid for f in frozen}]
+            if not fresh:
+                break
+            for k in fresh:
+                with contextlib.suppress(psutil.NoSuchProcess):
+                    k.suspend()
+                    frozen.append(k)
+        else:
+            thaw()
+            return {"ok": False, "why": "the tree kept growing while frozen; nothing stopped"}
+        for k in frozen[1:]:
             kp = Proc(k.pid, target.pid, k.name(), " ".join(k.cmdline()), k.create_time(), 0.0)
-            if denied(kp):
-                return {"ok": False, "why": f"descendant {k.pid} is denied ({denied(kp)}); "
-                                            f"nothing stopped"}
-        for k in kids:
+            bad = denied(kp) or (None if allowed_images is None or _image(kp) in allowed_images
+                                 else f"image {_image(kp)!r} is not allowed in this tree")
+            if bad:
+                thaw()
+                return {"ok": False, "why": f"descendant {k.pid} may not be stopped ({bad}); "
+                                            f"tree resumed, nothing stopped"}
+        for k in reversed(frozen):                 # deepest (latest found) first, target last
             with contextlib.suppress(psutil.NoSuchProcess):
                 k.kill()
-        live.kill()
-        gone, alive = psutil.wait_procs([*kids, live], timeout=10)
+        gone, alive = psutil.wait_procs(frozen, timeout=10)
         return {"ok": not alive, "killed": sorted(p.pid for p in gone),
-                "survived": sorted(p.pid for p in alive)}
+                "survived": sorted(p.pid for p in alive), "frozen_first": True}
     except psutil.NoSuchProcess:
+        thaw()
         return {"ok": True, "why": "already gone", "killed": []}
     except psutil.AccessDenied:
-        return {"ok": False, "why": "access denied (the task must run as SYSTEM)"}
+        thaw()
+        return {"ok": False, "why": "access denied (the task must run as SYSTEM); tree resumed"}
 
 
 def real_box() -> Box:
@@ -489,6 +532,14 @@ class Pass:
             self.red(rule.key, "REFUSED", f"pid {p.pid} is on the deny list: {why_denied}",
                      pid=p.pid, cmdline=p.cmdline[:300])
             return False
+        by_pid = {q.pid: q for q in self.procs}
+        for a in sorted(ancestors(p.pid, self.procs)):
+            anc = by_pid.get(a)
+            if anc is not None and denied(anc):
+                self.red(rule.key, "REFUSED", f"ancestor {a} is on the deny list "
+                         f"({denied(anc)}); a protected tree is never cut into",
+                         pid=p.pid, ancestor=a, cmdline=anc.cmdline[:300])
+                return False
         for d in descendants(p.pid, self.procs):
             bad = denied(d) or (None if children_only is None or _image(d) in children_only
                                 else f"image {_image(d)!r} is not a gate child")
@@ -500,7 +551,7 @@ class Pass:
         if not self.apply:
             self.red(rule.key, "WOULD_STOP", why, pid=p.pid, cmdline=p.cmdline[:300], dry_run=True)
             return False
-        res = self.box.kill(p, self.procs)
+        res = self.box.kill(p, self.procs, children_only)
         self.red(rule.key, "STOPPED" if res.get("ok") else "STOP_FAILED", why, pid=p.pid,
                  cmdline=p.cmdline[:300], result=res)
         return bool(res.get("ok"))

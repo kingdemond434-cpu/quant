@@ -71,7 +71,8 @@ class FakeBox:
                 NOW - beat_age_s, tz=UTC).isoformat(), "rc": 0}), "utf-8")
 
     def box(self) -> bsh.Box:
-        def kill(p: bsh.Proc, procs: Sequence[bsh.Proc]) -> dict[str, Any]:
+        def kill(p: bsh.Proc, procs: Sequence[bsh.Proc],
+                 allowed: frozenset[str] | None = None) -> dict[str, Any]:
             self.killed.append(p.pid)
             return {"ok": True, "killed": [p.pid]}
 
@@ -187,7 +188,12 @@ def test_a_non_allowlisted_command_line_is_never_stopped(tmp_path: Path, cmd: st
     assert fb.killed == []
 
 
-@pytest.mark.parametrize("cmd", [MERGE, HEAVY])
+@pytest.mark.parametrize("cmd", [
+    MERGE, HEAVY, r"python.exe C:\opt\quant\desks\mt5\research\local_converter.py",
+    r"python.exe C:\opt\quant\desks\mt5\research\edge_search.py",
+    r"python.exe C:\opt\quant\desks\mt5\scripts\external_gauntlet.py --sweep",
+    r"python.exe -m research.certification_lane",
+])
 def test_the_deferred_lock_jobs_are_denied_whatever_else_matches(cmd: str) -> None:
     """job_lock_health (#526) owns these; this file must never be a second killer."""
     assert bsh.denied(P(1, cmd))
@@ -219,6 +225,73 @@ def test_a_tree_with_a_denied_descendant_is_left_whole(tmp_path: Path) -> None:
     _, second = two_passes(tmp_path, fb)
     assert fb.killed == [] and fb.ended == []
     assert "descendant" in rows(second, "workflow_gate")[0]["why"]
+
+
+def test_a_target_under_a_denied_ancestor_is_never_cut_out(tmp_path: Path) -> None:
+    """An intake python whose ancestor is the gateway is part of a protected tree: refused."""
+    tree = [P(900, r"python.exe C:\opt\quant\desks\mt5\research\gateway_resident.py",
+              age_s=9 * 3600),
+            P(3100, INTAKE, ppid=900, age_s=96 * MIN, cpu=3.0)]
+    fb = FakeBox(tmp_path, tree, running={"MT5-IndependenceIntake": True})
+    _, second = two_passes(tmp_path, fb)
+    assert fb.killed == []
+    assert any(r.get("ancestor") == 900 for r in second["rows"])
+
+
+def test_the_real_stop_freezes_the_tree_before_killing_and_thaws_on_refusal(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every member is suspended before any is killed; a denied late child resumes them all."""
+    log: list[str] = []
+
+    class FP:
+        def __init__(self, pid: int, name: str, cmd: str, kids: list[FP] | None = None) -> None:
+            self.pid, self._name, self._cmd, self.kids = pid, name, cmd, kids or []
+
+        def create_time(self) -> float:
+            return NOW - 3600
+
+        def children(self, recursive: bool = False) -> list[FP]:
+            out: list[FP] = []
+            for k in self.kids:
+                out += [k, *k.children(recursive=True)]
+            return out
+
+        def name(self) -> str:
+            return self._name
+
+        def cmdline(self) -> list[str]:
+            return self._cmd.split()
+
+        def suspend(self) -> None:
+            log.append(f"suspend {self.pid}")
+
+        def resume(self) -> None:
+            log.append(f"resume {self.pid}")
+
+        def kill(self) -> None:
+            log.append(f"kill {self.pid}")
+
+    import types
+    gh = FP(3, "gh.exe", GH_PULLS)
+    py = FP(2, "python.exe", GATE_PY, [gh])
+    root = FP(1, "powershell.exe", GATE, [py])
+    table = {1: root, 2: py, 3: gh}
+    fake = types.SimpleNamespace(
+        Process=lambda pid: table[pid], NoSuchProcess=LookupError, AccessDenied=PermissionError,
+        wait_procs=lambda procs, timeout: (procs, []))
+    monkeypatch.setitem(sys.modules, "psutil", fake)
+    target = bsh.Proc(1, 0, "powershell.exe", GATE, NOW - 3600, 0.0)
+    res = bsh._kill_tree(target, [], bsh.GATE_CHILD_IMAGES)
+    assert res["ok"] and res["frozen_first"]
+    first_kill = next(i for i, x in enumerate(log) if x.startswith("kill"))
+    assert set(log[:first_kill]) == {"suspend 1", "suspend 2", "suspend 3"}
+    assert log[first_kill:] == ["kill 3", "kill 2", "kill 1"], "deepest first, target last"
+    log.clear()
+    gh.kids = [FP(4, "terminal64.exe", r"C:\MT5\terminal64.exe")]
+    res = bsh._kill_tree(target, [], bsh.GATE_CHILD_IMAGES)
+    assert not res["ok"] and not any(x.startswith("kill") for x in log)
+    assert {x for x in log if x.startswith("resume")} == {"resume 1", "resume 2", "resume 3",
+                                                          "resume 4"}
 
 
 def test_dry_run_decides_but_never_acts(tmp_path: Path) -> None:
