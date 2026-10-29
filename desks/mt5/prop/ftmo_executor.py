@@ -436,8 +436,7 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
         return doc
     positions, orders = list(positions), list(orders)
     own = [p for p in positions if int(getattr(p, "magic", 0) or 0) == MAGIC]
-    ref = mt5.symbol_info_tick("EURUSD")
-    server_epoch = float(getattr(ref, "time", 0) or 0) if ref is not None else 0.0
+    server_epoch = _fw.freshest_tick_epoch(mt5)
     try:
         manage(mt5, st, doc, own, cet=cet, armed=armed, now=now, server_epoch=server_epoch)
     except Exception as exc:                        # management never takes the pass down
@@ -465,7 +464,7 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
         _write_out(doc, st)
         return doc
     if not server_epoch:
-        doc.update(status="NO_TICK", why="no EURUSD tick to read the server clock from")
+        doc.update(status="NO_TICK", why="no tick on any clock symbol to read the server clock from")
         _veto(doc, now, armed, sleeves=[k for k, _, _ in sleeves])
         _write_out(doc, st)
         return doc

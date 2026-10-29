@@ -366,6 +366,25 @@ def cet_day(now: datetime) -> tuple[str, datetime]:
 TICK_SKEW_S = 300.0
 
 
+#: Liquid symbols whose freshest tick stands for the server clock: FX trades through gold's
+#: daily break, so one stale market never decides the offset alone.
+CLOCK_SYMBOLS = ("EURUSD", "GBPUSD", "USDJPY", "XAUUSD")
+
+
+def freshest_tick_epoch(mt5: Any, symbols: tuple[str, ...] = CLOCK_SYMBOLS) -> float:
+    """The latest tick time across `symbols` (server wall clock as an epoch), or 0.0."""
+    best = 0.0
+    for sym in symbols:
+        try:
+            t = mt5.symbol_info_tick(sym)
+        except Exception:
+            continue
+        v = getattr(t, "time", 0) if t is not None else 0
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and v > best:
+            best = float(v)
+    return best
+
+
 def server_offset_from_tick(server_epoch: float, now: datetime) -> int:
     """The server's UTC offset in hours, read off a tick's time (MT5 stamps server wall time as
     if it were UTC). RAISES ValueError when the tick cannot be the server clock: none, more than
@@ -393,15 +412,15 @@ def day_start_balance(mt5: Any, balance: float, since: datetime, now: datetime, 
     losses, the ones the daily-loss rail most needs). The query is wide (a day each side) and
     each deal is kept when its own server stamp is at or after CET midnight on the server clock.
 
-    THE OFFSET IS MEASURED, NEVER ASSUMED (audit 2026-10-29): read off `server_epoch` (a live
-    tick's time, the caller's own) or, absent, this account's XAUUSD tick. FTMO's server is not
+    THE OFFSET IS MEASURED, NEVER ASSUMED (audit 2026-10-29): read off the freshest of the
+    caller's `server_epoch` and the CLOCK_SYMBOLS ticks. FTMO's server is not
     asserted to be NY+7: on an EET server the two differ for a week each spring and autumn, and a
     loss in the first CET hour then fell out of today. A tick that cannot be the server clock
     (`server_offset_from_tick`) RAISES. A deal with no readable time RAISES too: counted as
     today's, a profit or a deposit among them would understate today's loss."""
-    if server_epoch is None:
-        tick = mt5.symbol_info_tick(SYMBOL)
-        server_epoch = float(getattr(tick, "time", 0) or 0) if tick is not None else 0.0
+    # the freshest of several liquid symbols (and the caller's own tick): a single tick cannot
+    # tell stale from a different offset, so the clock is read where the market is trading
+    server_epoch = max(float(server_epoch or 0.0), freshest_tick_epoch(mt5))
     try:
         off = server_offset_from_tick(float(server_epoch or 0.0), now)
     except ValueError as exc:

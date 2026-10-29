@@ -1082,13 +1082,13 @@ def test_a_fresh_tick_reads_the_server_offset(minutes_old: int, skew_s: int) -> 
     assert ff.server_offset_from_tick(epoch, NOW) == 3
 
 
-@pytest.mark.parametrize(("minutes_old", "skew_s"), [(6, 0), (40, 0), (54, -240), (56, 0),
-                                                     (70, 0), (0, 400)])
+@pytest.mark.parametrize(("minutes_old", "skew_s"), [(6, 0), (40, 0), (50, 0), (0, 400)])
 def test_a_stale_or_skewed_tick_is_never_read_as_the_server_clock(minutes_old: int,
                                                                    skew_s: int) -> None:
-    """Audit 2026-10-29: one tick cannot tell stale from skewed (70 minutes old on +3 reads as
-    10 minutes old on +2), so anything off a whole hour by more than TICK_SKEW_S refuses rather
-    than shift FTMO's CET day start (and the daily-loss anchor) by an hour."""
+    """Audit 2026-10-29: anything off a whole hour by more than TICK_SKEW_S refuses rather than
+    shift FTMO's CET day start (and the daily-loss anchor) by an hour. A tick 55-65 minutes old
+    reads like a fresh one an hour over: one tick cannot tell them apart, which is why the clock
+    is read off the freshest of several liquid symbols (next test)."""
     epoch = (NOW + timedelta(hours=3, minutes=-minutes_old, seconds=skew_s)).timestamp()
     with pytest.raises(ValueError):
         ff.server_offset_from_tick(epoch, NOW)
@@ -1099,3 +1099,25 @@ def test_a_stale_or_skewed_tick_is_never_read_as_the_server_clock(minutes_old: i
 def test_a_tick_that_cannot_be_the_server_clock_raises(epoch: float) -> None:
     with pytest.raises(ValueError):
         ff.server_offset_from_tick(epoch, NOW)
+
+
+def test_the_clock_is_read_off_the_freshest_liquid_tick() -> None:
+    """Gold's daily break leaves XAUUSD an hour stale -- read alone, an hour-old tick on UTC+3
+    looks like a fresh one on UTC+2 and moves FTMO's day start. EURUSD trades through it."""
+    stale = int((NOW + timedelta(hours=3, minutes=-58)).timestamp())
+    fresh = int((NOW + timedelta(hours=3)).timestamp())
+
+    class _Ticks(_MT5):
+        def symbol_info_tick(self, symbol: str) -> SimpleNamespace:
+            return SimpleNamespace(time=fresh if symbol == "EURUSD" else stale, bid=1.0, ask=1.0)
+
+    mt5 = _Ticks()
+    assert ff.freshest_tick_epoch(mt5) == fresh
+    _, midnight = ff.cet_day(NOW)
+    loss = SimpleNamespace(profit=-2000.0, commission=0.0, swap=0.0, fee=0.0,
+                           time=midnight.timestamp() + 3 * 3600 + 600)
+    mt5.deals = (loss,)
+    # read off the stale gold tick alone (+2), this loss would sit an hour later than midnight
+    # and still count; the freshest tick gives +3 and the same answer, with no hour's shift
+    assert ff.day_start_balance(mt5, 98_000.0, midnight, NOW, server_epoch=stale) == \
+        pytest.approx(100_000.0)
