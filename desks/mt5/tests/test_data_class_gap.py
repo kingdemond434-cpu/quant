@@ -296,6 +296,9 @@ def canon(tmp_path, monkeypatch):
     monkeypatch.setattr(C, "CANON", tmp_path / "canon.json")
     monkeypatch.setattr(C, "SURVIVORS", tmp_path / "survivors.json")
     monkeypatch.setattr(C, "WORLD_KEYS", tmp_path / "keys.json")
+    # the account's entity and the E8 book are host state: absent here unless a test writes them
+    monkeypatch.setattr(C, "ACCOUNT", tmp_path / "account_state.json")
+    monkeypatch.setattr(C, "E8_BOOK", tmp_path / "E8_BOOK.json")
 
     def write(survivors: dict, keys: dict | None = None) -> None:
         (tmp_path / "canon.json").write_text(json.dumps({"survivors": survivors}), "utf-8")
@@ -327,9 +330,9 @@ def test_every_input_resolves_to_a_word_and_none_unread_is_ok(canon):
           {"wabc": ["TREASURY", "auctions", "note_10y_bid_to_cover"]})
     doc = C.build(NOW)
     rows = {r["certificate"]: r for r in doc["certificates"]}
-    # the broker feed now has its quoted row (mt5_broker, clause 5.6): a broker-only
-    # certificate is OK and every other verdict is its third-party inputs' own
-    assert rows["a.XAUUSD.session_range_breakout"]["verdict"] == C.OK
+    # the broker row is quoted (clause 5.6) but scoped: with the account's entity and the E8
+    # book unreadable here, no certificate's broker input is OK
+    assert all(r["verdict"] != C.OK for r in rows.values())
     assert rows["a.XAUUSD.session_range_breakout"]["third_party_verdict"] == "BROKER_ONLY"
     assert rows["b.EURUSD.world_macro_state"]["third_party_verdict"] == C.OK
     assert rows["c.USDJPY.world_macro_state"]["third_party_verdict"] == C.TERMS_UNMEASURED
@@ -340,15 +343,19 @@ def test_every_input_resolves_to_a_word_and_none_unread_is_ok(canon):
     assert f[-1]["kind"] == "unresolved" and f[-1]["basis"] == C.TERMS_UNMEASURED
     for ln in doc["missed_growth"]:
         assert ln["delta_elogw"] == "UNMEASURED" and ln["cause"]
-    assert not any(x.get("input") == "mt5_broker" for x in doc["missed_growth"])
+    broker = next(x for x in doc["missed_growth"] if x["input"] == "mt5_broker")
+    assert broker["certificates"] == 6
 
 
 def test_a_quoted_broker_row_would_clear_the_broker_input(canon, monkeypatch):
     canon({"a.XAUUSD.session_range_breakout": _cert("XAUUSD", "session_range_breakout")})
     monkeypatch.setitem(tf.SOURCE_POLICY, "mt5_broker", {
         "hosts": (), "url_level": False, "status": tf.API_PERMITTED, "sources": ("mt5_broker",),
-        "why": "fixture", "terms": {"url": "https://broker.example/terms",
-                                    "clauses": {"x": "fixture clause"}}})
+        "why": "fixture", "scope": {"venue": "fusion", "entity": "Broker Ltd",
+                                    "use": "trading_with_fusion"},
+        "terms": {"url": "https://broker.example/terms", "clauses": {"x": "fixture clause"}}})
+    C.ACCOUNT.write_text(json.dumps({"venue": "Broker Limited"}), "utf-8")
+    C.E8_BOOK.write_text(json.dumps({"sleeves": []}), "utf-8")
     doc = C.build(NOW)
     assert doc["certificates"][0]["verdict"] == C.OK
 

@@ -374,15 +374,55 @@ SOURCE_POLICY.update({
         "why": ("the desk's own Fusion Markets MT5 price feed, used to decide the desk's trading "
                 "with Fusion Markets, the purpose clause 5.6 names; not for other venues or "
                 "redistribution"),
+        # THE AUDITOR'S SCOPE (ruling 2026-10-29): the clause is valid for this use only. The
+        # census counts a certificate's broker input OK only when its use falls inside it: the
+        # venue it trades at, the use, and the ACCOUNT's contracting entity equal to `entity`
+        # (the issuer of the document quoted, exactly as printed on its cover).
+        "scope": {"venue": "fusion",
+                  "entity": "Gleneagle Asset Management Limited trading as Fusion Markets",
+                  "use": "trading_with_fusion"},
         "use_scope": ("clause 5.6 confines platform information to the client's trading with "
                       "Fusion Markets: research that decides trades on the Fusion account is "
                       "inside it; using the feed to decide trades at another venue (E8, FTMO) "
-                      "or passing it on is not"),
-        "entity_match": ("UNMEASURED: the document read is issued by Gleneagle Asset Management "
-                         "Limited trading as Fusion Markets (AFSL 226199), version 1.0 of 1 June "
-                         "2019; the desk's terminal names its company 'Fusion Markets Pty Ltd' "
-                         "(data/account_state.json). Whether this is the agreement governing the "
-                         "account, or a later version supersedes it, was not measured"),
+                      "or passing it on is not. Publishing raw Fusion quotes off the box "
+                      "(reports, dashboards, bundles) is a separate question the census reports "
+                      "as its own UNMEASURED line"),
+        "entity_match": ("UNMEASURED: the account's terminal names its company 'Fusion Markets "
+                         "Pty Ltd' (data/account_state.json); no Fusion document read on "
+                         "2026-10-29 is issued by that name. Fusion's Regulations page names it "
+                         "only as the website owner, beside three licensed issuers: Fusion "
+                         "Markets International Ltd (FSA Seychelles SD096), Gleneagle Securities "
+                         "Pty Limited (VFSC 40256) and FMGP Trading Group Pty Ltd (ASIC AFSL "
+                         "385620). Which of them contracts the account was not measured"),
+        # E8 and FTMO: each venue's OWN terms on the use of its platform price data, as read. No
+        # permitting clause was found for either, so their use reads UNMEASURED in the census
+        # (with its missed-growth line) until a row quoting one is added. Evidence, not status.
+        "other_venues": {
+            "e8": {"terms_url": "https://e8markets.com/e8-markets-terms-and-conditions",
+                   "checked_at": "2026-10-29",
+                   "unread": {
+                       "https://e8markets.com/e8-markets-terms-and-conditions":
+                           "client_error to the reader on 2026-10-29: UNREAD",
+                       "https://e8markets.com/terms-and-conditions":
+                           "client_error to the reader on 2026-10-29: UNREAD",
+                       "https://e8markets.com/": "no footer or legal links in the page as read"},
+                   "read": {
+                       "https://intercom.help/E8futures/en/articles/10209270-trading-policies":
+                           ("E8 futures trading policies: no clause on price or market data; "
+                            "prohibits 'Semi-Automated or Fully-Automated Trading, such as "
+                            "trading bots, AI tools, HFT trading (more than 300 trades per "
+                            "day), etc.' (the futures programme; whether the CFD account the "
+                            "desk's E8 lane uses carries the same rule is UNMEASURED)")}},
+            "ftmo": {"terms_url": ("https://cdn.ftmo.com/docs%2Fterms-and-conditions%2F"
+                                   "b1d80f4da76c4bd4bcd42a5807727e34"),
+                     "checked_at": "2026-10-29",
+                     "unread": {
+                         "https://cdn.ftmo.com/docs%2Fterms-and-conditions%2F"
+                         "b1d80f4da76c4bd4bcd42a5807727e34":
+                             "ROBOTS_DISALLOWED to the reader on 2026-10-29: UNREAD",
+                         "https://ftmo.com/en/terms-and-conditions/":
+                             ("read 2026-10-29: links the General Terms PDF (FTMO s.r.o.) and "
+                              "says nothing on the use of its price data")}}},
         "terms": {"url": ("https://cdn.locomotive.works/sites/5e1f1e69d809e500a889fce4/assets/"
                           "5e257357e52cff00a7fa3d67/Fusion_Markets_Financial_Product_Service_"
                           "Terms_Version_1.0.pdf"),
@@ -398,6 +438,15 @@ SOURCE_POLICY.update({
                   "also_read": {
                       "https://fusionmarkets.com/legal":
                           "client_error to the reader on 2026-10-29: UNREAD",
+                      "https://fusionmarkets.com/static_images/V2_Financial_Product_Service_"
+                      "Terms_EN_VFSC_e35bd4a9e6.pdf":
+                          ("Gleneagle Securities Pty Limited trading as Fusion Markets, 28 "
+                           "February 2022: clause 5.5 carries the same words ('is to be used for "
+                           "the purpose of your trading with Fusion Markets only')"),
+                      "https://fusionmarkets.com/static_images/18_Dec_25_Client_Services_"
+                      "Agreement_35f44311be.pdf":
+                          ("Fusion Markets International Ltd, 18 December 2025: no clause on the "
+                           "use, redistribution or IP of platform prices"),
                       "silence": ("the document has no clause naming research, back-testing, "
                                   "automated access or Expert Advisors; the permitting basis is "
                                   "the purpose clause 5.6 alone")}}},

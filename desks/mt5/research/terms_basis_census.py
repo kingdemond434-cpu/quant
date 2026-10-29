@@ -47,6 +47,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from collections import Counter
 from datetime import UTC, datetime
@@ -65,6 +66,14 @@ REPORT = DESK / "reports" / "TERMS_BASIS_CENSUS.json"
 CANON = DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 SURVIVORS = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
 WORLD_KEYS = DESK / "data" / "world_datasets" / "keys.json"
+#: The account the terminal trades: its `venue` is the contracting entity's name as MT5 reports it.
+ACCOUNT = DESK / "data" / "account_state.json"
+#: The E8 lane's book: which certificates it trades (desks/mt5/prop/e8_book.py).
+E8_BOOK = DESK / "reports" / "E8_BOOK.json"
+#: Venue -> the broker-feed use a certificate traded there makes. Only `scope.use` of the
+#: mt5_broker row can be OK; every other use reads UNMEASURED until that venue's own row exists.
+VENUE_USE = {"fusion": "trading_with_fusion", "e8": "trading_with_e8",
+             "ftmo": "trading_with_ftmo"}
 UNMEASURED = "UNMEASURED"
 OK, NEEDS_KEY, REFUSED, TERMS_UNMEASURED = "OK", "NEEDS_KEY", "REFUSED", "TERMS_UNMEASURED"
 SEVERITY = {OK: 0, TERMS_UNMEASURED: 1, NEEDS_KEY: 2, REFUSED: 3}
@@ -173,20 +182,101 @@ def _spec(cert: dict[str, Any]) -> dict[str, Any]:
     return raw if isinstance(raw, dict) else {}
 
 
-def inputs_of(cert: dict[str, Any], *, world_keys: dict[str, Any] | None) -> list[dict[str, Any]]:
-    """The datasets one certificate reads, each with its basis. Declared resolution only."""
+def _norm_entity(name: Any) -> str:
+    t = re.sub(r"[^a-z0-9 ]+", " ", str(name or "").lower())
+    t = re.sub(r"\blimited\b", "ltd", t)
+    return " ".join(t.split())
+
+
+def account_entity() -> str:
+    """The account's contracting entity as the terminal names it, else UNMEASURED."""
+    doc = _read_json(ACCOUNT)
+    v = doc.get("venue") if isinstance(doc, dict) else None
+    return str(v) if isinstance(v, str) and v.strip() else UNMEASURED
+
+
+def e8_keys() -> set[str] | None:
+    """Certificate keys the E8 book trades; None when the book is unreadable on this host."""
+    doc = _read_json(E8_BOOK)
+    rows = doc.get("sleeves") if isinstance(doc, dict) else None
+    if not isinstance(rows, list):
+        return None
+    return {str(r.get("key")) for r in rows if isinstance(r, dict) and r.get("key")}
+
+
+def broker_use(venue: str, entity: str) -> dict[str, Any]:
+    """One USE of the broker feed, judged against the mt5_broker row's scope (auditor ruling
+    2026-10-29): OK only when the row is quoted and permitting AND the venue and use are the
+    scope's AND the account's contracting entity is the scope's entity. Anything else is
+    TERMS_UNMEASURED with its reason -- never OK."""
+    use = VENUE_USE.get(venue, f"trading_with_{venue}")
+    base = basis_of_ref(BROKER)
+    out: dict[str, Any] = {"venue": venue, "use": use, "policy_row": base.get("policy_row"),
+                           "status": base.get("status"), "terms_state": base.get("terms_state")}
+    if base["basis"] != OK:
+        return {**out, "basis": base["basis"], "why": base.get("why", "")}
+    row = tf.SOURCE_POLICY.get(BROKER) or {}
+    scope = row.get("scope") if isinstance(row.get("scope"), dict) else None
+    if not scope:
+        return {**out, "basis": TERMS_UNMEASURED,
+                "why": "the broker row quotes a clause but declares no scope"}
+    if venue != scope.get("venue") or use != scope.get("use"):
+        ev = (row.get("other_venues") or {}).get(venue) or {}
+        return {**out, "basis": TERMS_UNMEASURED,
+                "why": (f"use {use!r} is outside the quoted scope ({scope.get('use')} at "
+                        f"{scope.get('venue')}), and {venue} has no terms row of its own"
+                        + (f" (its terms read {ev.get('checked_at')}: UNREAD)" if ev else ""))}
+    if entity == UNMEASURED:
+        return {**out, "basis": TERMS_UNMEASURED,
+                "why": "the account's contracting entity is unreadable on this host"}
+    if _norm_entity(entity) != _norm_entity(scope.get("entity")):
+        return {**out, "basis": TERMS_UNMEASURED, "account_entity": entity,
+                "scope_entity": scope.get("entity"),
+                "why": (f"entity mismatch: the account is {entity!r}, the quoted terms are "
+                        f"issued by {scope.get('entity')!r}")}
+    return {**out, "basis": OK, "why": "inside the quoted scope: venue, use and entity match"}
+
+
+def broker_input(sym: str, uses: list[dict[str, Any]]) -> dict[str, Any]:
+    """The broker feed as one input of a certificate: its worst use is its basis."""
+    worst = max(uses, key=lambda u: SEVERITY[u["basis"]])
+    return {"input": f"{BROKER}:{sym}", "kind": "broker_bars", "policy_row": BROKER,
+            "status": worst.get("status"), "terms_state": worst.get("terms_state"),
+            "basis": worst["basis"], "why": worst.get("why", ""), "use": worst["use"],
+            "uses": uses}
+
+
+def uses_of(key: str, *, entity: str, e8: set[str] | None) -> list[dict[str, Any]]:
+    """Where a certificate's broker-fed decisions trade. Every certificate trades on the Fusion
+    account (the promoter writes it LIVE); one in the E8 book also trades at E8; an unreadable
+    E8 book leaves the E8 use UNMEASURED. No FTMO lane exists in this tree (reported per venue)."""
+    out = [broker_use("fusion", entity)]
+    if e8 is None:
+        out.append({"venue": "e8", "use": VENUE_USE["e8"], "policy_row": BROKER,
+                    "basis": TERMS_UNMEASURED, "membership": UNMEASURED,
+                    "why": "E8_BOOK.json unreadable on this host: whether the E8 lane trades "
+                           "this certificate is UNMEASURED"})
+    elif key in e8:
+        out.append(broker_use("e8", entity))
+    return out
+
+
+def inputs_of(cert: dict[str, Any], *, world_keys: dict[str, Any] | None,
+              uses: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    """The datasets one certificate reads, each with its basis. Declared resolution only.
+    `uses` are the broker feed's uses for this certificate (default: Fusion only)."""
     spec = _spec(cert)
     sym = str(spec.get("symbol") or cert.get("sym") or "?")
     family = str(spec.get("family") or "?")
     raw = spec.get("params")
     params: dict[str, Any] = raw if isinstance(raw, dict) else {}
     info = _classify(family)
-    out: list[dict[str, Any]] = [{"input": f"{BROKER}:{sym}", "kind": "broker_bars",
-                                  **basis_of_ref(BROKER)}]
+    uses = uses if uses is not None else [broker_use("fusion", account_entity())]
+    out: list[dict[str, Any]] = [broker_input(sym, uses)]
     seen_third = False
     other = params.get("input_symbol")
     if isinstance(other, str) and other and other != sym:
-        out.append({"input": f"{BROKER}:{other}", "kind": "broker_bars", **basis_of_ref(BROKER)})
+        out.append(broker_input(other, uses))
     sk = params.get("series_key")
     if isinstance(sk, str) and sk:
         seen_third = True
@@ -238,6 +328,8 @@ def missed_growth(inp: dict[str, Any], cert_key: str) -> dict[str, Any]:
                 "policy_row": key, "delta_elogw": UNMEASURED,
                 "cause": (f"{inp['basis']}: {inp.get('why', '')}; the growth at stake on this "
                           "input is UNMEASURED until its terms are quoted into its row")}
+    if inp.get("use"):
+        line["use"] = inp["use"]
     line["certificate"] = cert_key
     return line
 
@@ -246,6 +338,8 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     now = now or _now()
     certs, read_from = certificates()
     wk = _world_keys()
+    entity = account_entity()
+    e8 = e8_keys()
     rows = []
     by_verdict: Counter[str] = Counter()
     by_third: Counter[str] = Counter()
@@ -253,7 +347,8 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     lines = []
     for key in sorted(certs):
         cert = certs[key]
-        ins = inputs_of(cert, world_keys=wk)
+        uses = uses_of(key, entity=entity, e8=e8)
+        ins = inputs_of(cert, world_keys=wk, uses=uses)
         third = [i for i in ins if i["kind"] != "broker_bars"]
         verdict = _worst(ins)
         tv = _worst(third) if third else "BROKER_ONLY"
@@ -267,18 +362,23 @@ def build(now: datetime | None = None) -> dict[str, Any]:
         spec = _spec(cert)
         rows.append({"certificate": key, "symbol": spec.get("symbol") or cert.get("sym"),
                      "family": spec.get("family"), "verdict": verdict,
-                     "third_party_verdict": tv, "inputs": ins})
+                     "third_party_verdict": tv,
+                     "venues": [{"venue": u["venue"], "use": u["use"], "basis": u["basis"]}
+                                for u in uses],
+                     "inputs": ins})
     measured = bool(certs)
     # One missed-growth line per (input, basis): the same broker gap on 174 certificates is one
     # cause, not 174; the certificates it touches are counted on it.
     agg: dict[tuple[str, str], dict[str, Any]] = {}
     for ln in lines:
         k = (str(ln.get("policy_row") or str(ln.get("source", "")).split(":")[0]),
-             str(ln.get("kind")))
+             str(ln.get("kind")), str(ln.get("use") or ""))
         a = agg.setdefault(k, {**{x: y for x, y in ln.items()
                                   if x not in ("certificate", "source")},
                                "input": k[0], "certificates": 0})
         a["certificates"] += 1
+    venues = venue_lines(entity, e8)
+    publication = publication_line()
     return {
         "generated_at": now.isoformat(timespec="seconds"),
         "organ": "desks/mt5/research/terms_basis_census.py",
@@ -296,10 +396,59 @@ def build(now: datetime | None = None) -> dict[str, Any]:
             "terms_unmeasured": by_verdict.get(TERMS_UNMEASURED, 0) if measured else UNMEASURED,
             "refused": by_verdict.get(REFUSED, 0) if measured else UNMEASURED,
         },
+        "account_entity": entity,
+        "venues": venues,
+        # a separate check, never folded into a certificate's verdict and never OK here
+        "publication": publication,
         "by_input": {k: dict(v) for k, v in sorted(by_input.items())},
-        "missed_growth": sorted(agg.values(), key=lambda x: -x["certificates"]),
+        "missed_growth": sorted(agg.values(), key=lambda x: -x["certificates"])
+        + [v["missed_growth"] for v in venues if v.get("missed_growth")]
+        + [publication["missed_growth"]],
         "certificates": rows,
     }
+
+
+def venue_lines(entity: str, e8: set[str] | None) -> list[dict[str, Any]]:
+    """Per venue: the broker feed's use there and its basis; a non-OK venue carries its
+    missed-growth line (delta E[log W] UNMEASURED)."""
+    out = []
+    for venue in VENUE_USE:
+        u = broker_use(venue, entity)
+        row: dict[str, Any] = {"venue": venue, "use": u["use"], "basis": u["basis"],
+                               "why": u.get("why", "")}
+        if venue == "e8":
+            row["certificates_in_book"] = len(e8) if e8 is not None else UNMEASURED
+        if venue == "ftmo":
+            row["lane"] = "no FTMO lane in this tree (no book, no executor)"
+        if u["basis"] != OK:
+            row["missed_growth"] = {"input": f"{BROKER}:{venue}", "kind": "terms_unmeasured",
+                                    "policy_row": BROKER, "use": u["use"],
+                                    "delta_elogw": UNMEASURED,
+                                    "cause": (f"{u['basis']}: {u.get('why', '')}; the growth "
+                                              f"at stake at {venue} is UNMEASURED until a row "
+                                              "quoting a permitting clause for this use exists")}
+        out.append(row)
+    return out
+
+
+def publication_line() -> dict[str, Any]:
+    """RAW FUSION QUOTES LEAVING THE BOX (reports, dashboards, bundles) are a separate use from
+    trading on them (auditor ruling 2026-10-29, item 4). Clause 5.6 reads 'not for any other
+    purposes' and the website clause bars copying materials for any other purpose; no clause
+    permits publication, so this is its own UNMEASURED line, never OK and never a certificate's
+    verdict."""
+    row = tf.SOURCE_POLICY.get(BROKER) or {}
+    clause = ((row.get("terms") or {}).get("clauses") or {}).get("5.6", "")
+    return {"use": "publish_raw_fusion_quotes_off_box", "basis": TERMS_UNMEASURED,
+            "policy_row": BROKER if row else None, "clause": clause,
+            "why": ("no quoted clause permits publishing raw Fusion prices off the box; the "
+                    "census does not measure which reports, dashboards or bundles carry them"),
+            "missed_growth": {"input": f"{BROKER}:publication", "kind": "terms_unmeasured",
+                              "policy_row": BROKER, "use": "publish_raw_fusion_quotes_off_box",
+                              "delta_elogw": UNMEASURED,
+                              "cause": ("TERMS_UNMEASURED: publishing raw Fusion quotes off the "
+                                        "box has no permitting clause and its extent is not "
+                                        "measured; the growth at stake is UNMEASURED")}}
 
 
 def write(doc: dict[str, Any], path: Path = REPORT) -> None:

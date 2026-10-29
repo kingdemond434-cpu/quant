@@ -285,3 +285,82 @@ def test_the_central_bank_leg_is_wired_with_every_birth_row():
     rs = json.loads((ROOT / "docs" / "research" / "runtime_state.json").read_text("utf-8"))
     row = next(r for r in rs["organs"] if r.get("organ") == "leg:central_bank_miner")
     assert row["artifact_declared"] == "desks/mt5/reports/CENTRAL_BANK_MINER.json"
+
+
+# ------------------------------------------- the broker feed's scope (auditor 2026-10-29) ----
+from research import terms_basis_census as C  # noqa: E402
+
+
+@pytest.fixture()
+def census(tmp_path, monkeypatch):
+    import json
+    for name, attr in (("canon.json", "CANON"), ("surv.json", "SURVIVORS"),
+                       ("keys.json", "WORLD_KEYS"), ("account_state.json", "ACCOUNT"),
+                       ("E8_BOOK.json", "E8_BOOK")):
+        monkeypatch.setattr(C, attr, tmp_path / name)
+    scope = tf.SOURCE_POLICY["mt5_broker"]["scope"]
+    certs = {"a.XAUUSD.session_range_breakout":
+             {"sym": "XAUUSD", "shadow_spec": {"symbol": "XAUUSD",
+                                               "family": "session_range_breakout"}},
+             "b.EURUSD.session_range_breakout":
+             {"sym": "EURUSD", "shadow_spec": {"symbol": "EURUSD",
+                                               "family": "session_range_breakout"}}}
+    (tmp_path / "canon.json").write_text(json.dumps({"survivors": certs}), "utf-8")
+
+    def setup(entity: str | None, e8: list[str] | None) -> dict:
+        if entity is not None:
+            C.ACCOUNT.write_text(json.dumps({"venue": entity}), "utf-8")
+        if e8 is not None:
+            C.E8_BOOK.write_text(json.dumps({"sleeves": [{"key": k} for k in e8]}), "utf-8")
+        doc = C.build(NOW)
+        return {r["certificate"]: r for r in doc["certificates"]} | {"_doc": doc}
+    setup.scope = scope  # type: ignore[attr-defined]
+    return setup
+
+
+def test_in_scope_fusion_use_is_ok(census):
+    rows = census(census.scope["entity"].upper().replace("LIMITED", "Ltd"), [])
+    assert rows["a.XAUUSD.session_range_breakout"]["verdict"] == C.OK
+    assert rows["a.XAUUSD.session_range_breakout"]["venues"] == [
+        {"venue": "fusion", "use": "trading_with_fusion", "basis": C.OK}]
+
+
+def test_e8_use_is_unmeasured_and_an_unreadable_e8_book_is_too(census):
+    rows = census(census.scope["entity"], ["b.EURUSD.session_range_breakout"])
+    assert rows["a.XAUUSD.session_range_breakout"]["verdict"] == C.OK
+    b = rows["b.EURUSD.session_range_breakout"]
+    assert b["verdict"] == C.TERMS_UNMEASURED
+    e8 = next(v for v in b["venues"] if v["venue"] == "e8")
+    assert e8["basis"] == C.TERMS_UNMEASURED
+    venues = {v["venue"]: v for v in rows["_doc"]["venues"]}
+    assert venues["e8"]["basis"] == venues["ftmo"]["basis"] == C.TERMS_UNMEASURED
+    assert venues["ftmo"]["missed_growth"]["delta_elogw"] == "UNMEASURED"
+    C.E8_BOOK.unlink()
+    rows = C.build(NOW)["certificates"]
+    assert all(r["verdict"] == C.TERMS_UNMEASURED for r in rows)
+
+
+def test_entity_mismatch_and_unreadable_entity_are_unmeasured(census):
+    rows = census("Fusion Markets Pty Ltd", [])
+    a = rows["a.XAUUSD.session_range_breakout"]
+    assert a["verdict"] == C.TERMS_UNMEASURED
+    assert "entity mismatch" in a["inputs"][0]["why"]
+    C.ACCOUNT.unlink()
+    assert all(r["verdict"] == C.TERMS_UNMEASURED for r in C.build(NOW)["certificates"])
+
+
+def test_publication_off_the_box_is_its_own_unmeasured_line_never_ok(census):
+    doc = census(census.scope["entity"], [])["_doc"]
+    pub = doc["publication"]
+    assert pub["basis"] == C.TERMS_UNMEASURED and pub["use"] == "publish_raw_fusion_quotes_off_box"
+    assert any(m.get("use") == "publish_raw_fusion_quotes_off_box" for m in doc["missed_growth"])
+    assert doc["summary"]["ok"] == 2                  # publication never folds into a verdict
+
+
+def test_the_broker_row_carries_the_auditors_scope():
+    row = tf.SOURCE_POLICY["mt5_broker"]
+    assert row["scope"] == {"venue": "fusion",
+                            "entity": "Gleneagle Asset Management Limited trading as Fusion "
+                                      "Markets", "use": "trading_with_fusion"}
+    assert set(row["other_venues"]) == {"e8", "ftmo"}
+    assert row["entity_match"].startswith("UNMEASURED")
