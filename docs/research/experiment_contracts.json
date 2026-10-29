@@ -2,6 +2,21 @@
  "doc": "Experiment contracts: every registered hourly leg declares hypothesis, metric, falsifier, budget and owner (libs/tiers/experiment_contract.py). budget and owner are DERIVED from hourly_cycle.LEG_BUDGET_SEC / LEG_DEPARTMENT when absent; the metric half is DERIVED from tier_s_program.json leg_contracts when that programme wrote one. Fence: scripts/check_experiment_contracts.py (law gate). Hourly reading: leg experiment_contracts -> desks/mt5/reports/EXPERIMENT_CONTRACTS.json.",
  "schema": "experiment-contracts-registry/1",
  "legs": {
+  "judge_prescreen": {
+   "hypothesis": "A pre-build screen that decides from the cell's identity, its chart's calendar, its family's own input guard and its siblings' recorded verdicts can take cells away from the sealed judge before the signal build at ZERO true-survivor kills, measured by a time-ordered replay of the judge's own gate ledger, so the judge's scarce build seconds go to cells that can survive.",
+   "metric": {
+    "gain": "PRODUCTIVITY",
+    "metric": "sibling_dead.cells_replayed",
+    "better": "up",
+    "organ": "report:JUDGE_PRESCREEN.json"
+   },
+   "falsifier": {
+    "metric": "survivor_spec_audit.provable_rule_fired_on_certified",
+    "op": ">",
+    "threshold": 0,
+    "after": "a PROVABLE rule fired on a certified cell on this box's own bars: the proof is broken and the rule must stay shadow until it is fixed"
+   }
+  },
   "build_failure_bank": {
    "hypothesis": "Ranking every cell that failed to BUILD by cause class turns silently dropped cells into named fix work, so the failed-to-build count falls as the top causes are fixed.",
    "metric": {
@@ -189,6 +204,51 @@
     "op": ">=",
     "threshold": 20,
     "after": "30 days in which 20 or more of the drill rows stay UNMEASURED on the box: the scorecard grades nothing and the drills it reads are not running"
+   }
+  },
+  "bar_clock_probe": {
+   "hypothesis": "Reading broker server time (newest tick, confirmed by the current H1 bar's open) against the box's UTC clock every hour turns the bar clock from absent into dated measured spans, so the UTC-stamped calendar events the event lane can place rise from zero.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "evidence.n_instants",
+    "better": "up",
+    "organ": "report:BAR_CLOCK.json"
+   },
+   "falsifier": {
+    "metric": "evidence.n_instants",
+    "op": "==",
+    "threshold": 0,
+    "after": "48h on the trading box: no fresh capture instant, so the probe never reached the terminal and the clock is still unmeasured"
+   }
+  },
+  "input_ablation": {
+   "hypothesis": "Replaying the allocator with and without each input on history it had not seen tells which inputs add realized growth, so an input moves money only once it beats the plain solve out of sample.",
+   "metric": {
+    "gain": "FALSIFICATION",
+    "metric": "n_windows",
+    "better": "up",
+    "organ": "report:INPUT_ABLATION.json"
+   },
+   "falsifier": {
+    "metric": "n_windows",
+    "op": "==",
+    "threshold": 0,
+    "after": "72h window: no window was ever scored, so the replay is not reaching the desk's evidence"
+   }
+  },
+  "prop_challenge_allocator": {
+   "hypothesis": "Solving the FTMO book from the account's live phase over every Tier S sleeve FTMO lists, at FTMO's own hour costs, maximising expected funded days within the year (pass-speed x pass-probability) on the as-estimated and edges-halved worlds, raises the FTMO lane's expected funded days above the hand-set book while P(fail) stays under EPS_DEATH on both.",
+   "metric": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "validation_score",
+    "better": "up",
+    "organ": "report:FTMO_ALLOCATOR.json"
+   },
+   "falsifier": {
+    "metric": "validation_score",
+    "op": "==",
+    "threshold": 0,
+    "after": "72h on the trading box: no validated book (every pass NO_ADMISSIBLE_SLEEVE or VALIDATION_FAILED), so the solve buys the FTMO lane nothing"
    }
   }
  },

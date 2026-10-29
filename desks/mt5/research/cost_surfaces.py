@@ -48,7 +48,8 @@ from typing import Any
 DESK = Path(__file__).resolve().parents[1]
 DATA = DESK / "data"
 CORPUS = DATA / "fill_corpus.jsonl"
-LEDGER = DATA / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LEDGER = _audited_ledger_path(DATA / "live_ledger.jsonl")
 PRIOR = DATA / "cost_surface.json"
 UNIVERSE = DATA / "universe" / "universe.json"
 OUT = DESK / "reports" / "COST_SURFACES.json"
