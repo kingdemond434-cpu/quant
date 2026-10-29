@@ -310,3 +310,11 @@ TASK name="MT5-LawGate" trigger="hourly at :40" runs="scripts/run_law_gate.py --
 # THE BOX BRIDGE (2026-10-28). Keeps `claude remote-control` in C:\opt\bridge\quant alive so box steps
 # never wait on an RDP session; runs as the bridge user, interactive, from the admin-only C:\ProgramData\ClaudeBridge\bin.
 TASK name="Claude-Bridge-Watchdog" trigger="at logon + every 5 minutes" runs="ops/bridge/bridge_watchdog.ps1" installer="ops/bridge/install_bridge_watchdog.ps1" lane="ops"
+# THE UNATTENDED BOX (2026-10-28, zuck: "I wish we could make it so even these become automated
+# not needing me"). With Windows auto-logon on, a reboot logs this user in by itself; the boot
+# session restarts the MT5 terminals that were running before it and locks the console, and the
+# workflow gate merges the audit-CLEARed, CI-green PRs into LIVE with zuck's own gh login (no
+# label needed; .github/workflows PRs too, which the Actions gate cannot merge).
+TASK name="Quant-BootSession"  trigger="at logon"                    runs="ops/box/unattended_boot.ps1" installer="ops/box/install_unattended.ps1" lane="ops"
+TASK name="Quant-BootRecord"   trigger="every 10 minutes"            runs="ops/box/unattended_boot.ps1" installer="ops/box/install_unattended.ps1" lane="ops"
+TASK name="Quant-WorkflowGate" trigger="at logon + every 10 minutes" runs="ops/box/workflow_gate.ps1"   installer="ops/box/install_unattended.ps1" lane="ops"

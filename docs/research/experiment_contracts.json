@@ -206,6 +206,21 @@
     "after": "48h on the trading box: no fresh capture instant, so the probe never reached the terminal and the clock is still unmeasured"
    }
   },
+  "input_ablation": {
+   "hypothesis": "Replaying the allocator with and without each input on history it had not seen tells which inputs add realized growth, so an input moves money only once it beats the plain solve out of sample.",
+   "metric": {
+    "gain": "FALSIFICATION",
+    "metric": "n_windows",
+    "better": "up",
+    "organ": "report:INPUT_ABLATION.json"
+   },
+   "falsifier": {
+    "metric": "n_windows",
+    "op": "==",
+    "threshold": 0,
+    "after": "72h window: no window was ever scored, so the replay is not reaching the desk's evidence"
+   }
+  },
   "prop_challenge_allocator": {
    "hypothesis": "Solving the FTMO book from the account's live phase over every Tier S sleeve FTMO lists, at FTMO's own hour costs, maximising expected funded days within the year (pass-speed x pass-probability) on the as-estimated and edges-halved worlds, raises the FTMO lane's expected funded days above the hand-set book while P(fail) stays under EPS_DEATH on both.",
    "metric": {
