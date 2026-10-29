@@ -4159,6 +4159,14 @@ _TERMINAL_ARTIFACTS = {
         "that constrain one. Its conversion happened same-day: the walk-forward ran and the "
         "verdict is recorded in INTRADAY_ROTATION_RESULT.md. Editing it now would destroy the "
         "instrument.",
+    # Classified 2026-10-29 (alt-seat-cells landing): landed with no claim, which turned the
+    # artifact-ungoverned birth property red on the laws-only gate.
+    "docs/research/F1_IDIO_VOLUME_PREREGISTRATION.md":
+        "PRE-REGISTRATION (2026-10-14T03:16Z) of F1, the idiosyncratic tick-volume spike faded: "
+        "it freezes the family's parameters and the 21 cells against the gauntlet's own run, and "
+        "its header discloses the one direction measurement taken before it was written. "
+        "Immutable by design, like the other preregistrations; outcomes land in the trial "
+        "ledger and reports/, never back in this file.",
     "docs/research/INTRADAY_ROTATION_RESULT.md":
         "dated measurement record (25,036 + 565 OOS trades, NO-GO both strategies, cost-in-R "
         "1.1 at 5m scale, half-Kelly zero). Regenerable from scripts/run_intraday_rotation.py "
