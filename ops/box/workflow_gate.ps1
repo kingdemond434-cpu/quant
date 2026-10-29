@@ -134,6 +134,7 @@ try {
     try {
         $env:GH_BIN = $Gh
         & $Python -I -u (Join-Path $Clone "scripts\live_first_ci.py") --repo $Repo --base $Live --state (Join-Path $QuantRoot "desks\mt5\reports\LIVE_FIRST_CI.json") 2>&1 | ForEach-Object { Say "live-first $_" }
+        Say "live-first rc=$LASTEXITCODE"  # 2: a re-run was given up on; 1: it stopped on an API error
     } catch {
         Say "live-first failed: $($_.Exception.Message)"
     }
