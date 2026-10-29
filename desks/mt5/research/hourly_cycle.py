@@ -1207,7 +1207,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # citations point at, re-derived hourly so a stale number is visible as stale.
     "stop_geometry_derivation",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
-    "decay_monitor", "fill_markout",
+    "decay_monitor", "fill_markout", "drift_monitor", "forecast_scoring",
     # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
     # and the plain-English desk health check, each seconds, each writing a report that the
     # `publish_state` leg right after them carries to origin. Before this the fence rode only the
@@ -5606,6 +5606,18 @@ def main() -> None:
     # 2026-09-08 and never re-measured. `--step markout` runs that one step here, unchanged.
     fmk = _costed("fill_markout", lambda: _producer(
         "fill_markout", "research/daily_cycle.py", "--step", "markout"))
+    # THE HEALTH INPUT, HOURLY (DECAY-12, 2026-10-07). `reports/DRIFT.json` is the allocator's
+    # per-sleeve hazard and the change-point input `model_roles` holds critical with a one-day
+    # staleness budget, and its only writer was daily_cycle's feedback step -- so any day that
+    # step finished later than the day before, the input crossed 24h and the book was held. The
+    # monitor's hazard-history append is once per UTC day, so running hourly counts nothing twice.
+    drm = _costed("drift_monitor", lambda: _producer(
+        "drift_monitor", "research/drift_monitor.py", "--budget-s", "300"))
+    # FORECASTS SCORED AGAINST OUTCOMES, HOURLY (DATA-36 / ARCH-03): the allocator's own forecast
+    # log and every resolvable forecast-contract belief, by proper scoring rule, with pooled
+    # forecasts and each source's leave-one-out incremental value. Measures; adapts nothing.
+    fsc = _costed("forecast_scoring", lambda: _producer(
+        "forecast_scoring", "research/forecast_scoring.py"))
     # EACH ALLOCATOR INPUT AGAINST THE PLAIN SOLVE, OUT OF SAMPLE (zuck 2026-10-27). Its own leg:
     # the daily chain is killed at 900 s and its proposers alone measured 9,056 s. The organ
     # stops itself at 600 s inside the 720 s default cap and caches every solved window, so the
@@ -6248,7 +6260,8 @@ def main() -> None:
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls, "prop_challenge_allocator": fta,
                     "stop_geometry_derivation": sgd,
-                    "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
+                    "decay_monitor": dmo, "fill_markout": fmk, "drift_monitor": drm,
+                    "forecast_scoring": fsc, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "recovery_drills": rcd,
                     "forward_evidence_tracker": fet,

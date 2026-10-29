@@ -31,6 +31,31 @@ THE CONTRACT, and every field exists because its absence made a forecast unscore
     features     The information the belief was formed on, for P82's provenance graph and for
                  the leakage check: a feature stamped later than `at` is lookahead.
 
+THE TRAINING-CUTOFF AND FEATURE-AVAILABILITY CLAUSES (2026-10-06). `features` named the inputs but
+nothing said WHEN each became knowable, and nothing said what data the model was FITTED on -- so
+the two commonest leaks a forecast record can carry (a feature published after the forecast, and
+a model trained on the window it is being scored over) were both unprovable. Five more fields:
+
+    family                 Which registered model family (`model_roles.FAMILIES`) published it,
+                           and so which decision roles it may speak in.
+    role                   The decision role this belief speaks to. A role outside the family's
+                           declared set is REFUSED: a volatility model may not publish a mean.
+    training_cutoff        The latest timestamp of any data the model was fitted on. Must be
+                           STRICTLY before `at` and before the outcome window opens.
+    outcome_start          When the outcome window opens; defaults to `at`. A window opening
+                           before the belief is a forecast of something already partly seen.
+    feature_available_at   (feature, ISO time it became knowable) for EVERY declared feature.
+                           A stamp after `at` is lookahead and REFUSED. A declared feature with
+                           no stamp is REFUSED -- an unstamped input cannot be checked, and an
+                           uncheckable input is assumed to leak (L1.28a: absence is never a pass).
+
+VERIFIED, ACCEPTED, REFUSED ARE THREE THINGS. A belief that names a registered family must carry
+the whole contract or it is REFUSED. A belief with no family -- every row published before these
+fields existed, and any model not yet registered -- is still scoreable and still ACCEPTED, but it
+is recorded as `verification: UNVERIFIED` with the reason, and `contract_report` counts it
+separately. Old rows are never upgraded to VERIFIED by being read: a row earns VERIFIED only by
+carrying the stamps that prove it.
+
 WHAT THIS MODULE REFUSES. A belief that cannot be scored is rejected at publication rather than
 stored and quietly skipped later. `REFUSED` rows are kept with their reason, because a model
 whose beliefs are systematically malformed is a defect to fix, and deleting the evidence of it
@@ -38,13 +63,39 @@ is how that defect survives. Absence is never a pass (L1.28a).
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import math
 import sys
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from types import ModuleType
 from typing import Any, Literal
+
+
+def _load_roles() -> ModuleType:
+    """The sibling `model_roles`, whichever way this file was loaded.
+
+    Loaded BY PATH from beside this file, never by a bare `import`, because this module is itself
+    loaded three ways (as a script by hourly_cycle, by path in tests, as `research.*`) and only the
+    path is the same in all three. Registered under its own name so every later importer shares
+    one registry instead of each holding a private copy of the roles.
+    """
+    mod = sys.modules.get("model_roles")
+    if mod is not None:
+        return mod
+    spec = importlib.util.spec_from_file_location(
+        "model_roles", Path(__file__).resolve().parent / "model_roles.py")
+    if spec is None or spec.loader is None:
+        raise ImportError("model_roles.py is missing beside forecast_contract.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["model_roles"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_roles = _load_roles()
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
@@ -92,6 +143,12 @@ class Belief:
     confidence: float | None = None
     features: tuple[str, ...] = ()
     note: str = ""
+    # -- the 2026-10-06 clauses; all defaulted so every existing caller and row still reads.
+    family: str = ""
+    role: str = ""
+    training_cutoff: str | None = None
+    outcome_start: str | None = None
+    feature_available_at: tuple[tuple[str, str], ...] = ()
 
     def bucket(self) -> str:
         return bucket_of(self.horizon_s)
@@ -137,7 +194,141 @@ def defects(b: Belief) -> list[str]:
                                     or not 0.0 <= float(b.confidence) <= 1.0):
         out.append("confidence, when given, is a probability in [0, 1] and is scored too: a "
                    "model that is always certain is uncalibrated, not confident")
+    out.extend(_provenance_defects(b))
     return out
+
+
+def _ts(x: Any) -> datetime | None:
+    """ISO -> aware datetime. Naive stamps are read as UTC, the desk's clock for every ledger;
+    comparing a naive stamp to an aware one would otherwise raise instead of judging."""
+    try:
+        d = datetime.fromisoformat(str(x).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    return d if d.tzinfo else d.replace(tzinfo=UTC)
+
+
+def _stamps(b: Belief) -> tuple[dict[str, str], list[str]]:
+    out: dict[str, str] = {}
+    bad: list[str] = []
+    for pair in b.feature_available_at or ():
+        if not isinstance(pair, (list, tuple)) or len(pair) != 2:
+            bad.append(f"feature_available_at entry {pair!r} is not a (feature, time) pair")
+            continue
+        out[str(pair[0])] = str(pair[1])
+    return out, bad
+
+
+def _provenance_defects(b: Belief) -> list[str]:
+    """Family/role, training cutoff and feature availability. Empty list = nothing refused here.
+
+    WHAT IS REFUSED vs WHAT IS MERELY UNVERIFIED. Anything stated and WRONG is refused: a cutoff
+    at or after `at`, a feature available after `at`, a role the family does not hold. Anything
+    ABSENT is refused only when the belief names a registered family, because naming a family is
+    opting into the full contract; a family-less belief is reported UNVERIFIED by `verification`.
+    Declared features without stamps are refused WHATEVER the family: an unstamped input cannot
+    be checked, and that is true of a legacy model too.
+    """
+    out: list[str] = []
+    at = _ts(b.at)
+    fam = _roles.spec(b.family) if b.family else None
+    if b.family and fam is None:
+        out.append(f"family {b.family!r} is not registered in model_roles.FAMILIES -- an "
+                   "unregistered family has no declared role and may change nothing")
+    if b.role:
+        if b.role not in {str(r) for r in _roles.Role}:
+            out.append(f"role {b.role!r} is not a decision role; known roles are "
+                       f"{sorted(str(r) for r in _roles.Role)}")
+        elif fam is not None and not fam.may(b.role):
+            out.append(f"role violation: {b.family} may speak in "
+                       f"{sorted(str(r) for r in fam.roles)}, not {b.role}")
+    elif fam is not None:
+        out.append("a registered family must name the decision role its belief speaks to")
+    # -- the outcome window, then the training cutoff against it
+    window = at
+    if b.outcome_start is not None:
+        o_start = _ts(b.outcome_start)
+        if o_start is None:
+            out.append("outcome_start is not an ISO timestamp")
+        elif at is not None and o_start < at:
+            out.append("outcome window opens before the belief (outcome_start < at) -- part of "
+                       "the outcome was knowable when it was formed")
+        else:
+            window = o_start
+    if b.training_cutoff is not None:
+        tc = _ts(b.training_cutoff)
+        if tc is None:
+            out.append("training_cutoff is not an ISO timestamp -- a model whose fitting window "
+                       "cannot be read cannot be shown not to have trained on its own test")
+        else:
+            if at is not None and not tc < at:
+                out.append(f"training_cutoff {b.training_cutoff} is not strictly before `at` "
+                           f"{b.at} -- the model was fitted on data it claims to forecast")
+            if window is not None and not tc < window:
+                out.append(f"training_cutoff {b.training_cutoff} is not before the outcome "
+                           "window -- the model trained on the window it is scored over")
+    elif fam is not None:
+        out.append("no training_cutoff -- a registered family must state the end of the data "
+                   "it was fitted on, or its record cannot be shown free of training leakage")
+    # -- feature availability
+    stamps, bad = _stamps(b)
+    out.extend(bad)
+    feats = [str(f) for f in b.features or ()]
+    if fam is not None and not fam.uses_features and feats:
+        out.append(f"{b.family} is declared to use no features but this belief names {feats}")
+    if fam is not None and fam.uses_features and not feats:
+        out.append(f"{b.family} is a feature model but declares no features -- an empty list "
+                   "cannot be checked for lookahead")
+    for f in feats:
+        if f not in stamps:
+            out.append(f"feature {f!r} has no available_at stamp -- an unstamped input cannot "
+                       "be checked for lookahead and is assumed to leak")
+            continue
+        when = _ts(stamps[f])
+        if when is None:
+            out.append(f"feature {f!r} available_at {stamps[f]!r} is not an ISO timestamp")
+        elif at is not None and when > at:
+            out.append(f"lookahead: feature {f!r} became available {stamps[f]}, after the "
+                       f"belief at {b.at}")
+    for f in sorted(set(stamps) - set(feats)):
+        out.append(f"availability stamped for undeclared feature {f!r} -- the features list is "
+                   "incomplete, so the lookahead check would run on the wrong set")
+    return out
+
+
+def verification(b: Belief) -> tuple[str, list[str]]:
+    """REFUSED / UNVERIFIED / VERIFIED, with every reason. Only VERIFIED is a clean bill.
+
+    VERIFIED needs: no defects, a registered family and role, and a training cutoff (feature
+    stamps are already enforced by `defects`). Anything less that is still scoreable is
+    UNVERIFIED -- readable and usable as evidence, never reported as checked.
+    """
+    bad = defects(b)
+    if bad:
+        return "REFUSED", bad
+    missing: list[str] = []
+    if not b.family:
+        missing.append("no model family -- decision role and training cutoff were not checked")
+    if b.training_cutoff is None:
+        missing.append("no training_cutoff")
+    return ("UNVERIFIED", missing) if missing else ("VERIFIED", [])
+
+
+def verify_row(row: dict[str, Any]) -> tuple[str, list[str]]:
+    """Re-judge a register row, old or new, under the CURRENT contract.
+
+    A row written before the provenance fields existed is rebuilt with their defaults and comes
+    back UNVERIFIED (or REFUSED, if it was malformed) -- never VERIFIED by omission.
+    """
+    kw = {k: row[k] for k in Belief.__dataclass_fields__ if k in row}
+    kw["features"] = tuple(kw.get("features") or ())
+    kw["feature_available_at"] = tuple(tuple(p) if isinstance(p, (list, tuple)) else p
+                                       for p in kw.get("feature_available_at") or ())
+    try:
+        b = Belief(**kw)
+    except TypeError as exc:
+        return "REFUSED", [f"row cannot be read as a Belief: {exc}"]
+    return verification(b)
 
 
 @dataclass
@@ -160,9 +351,11 @@ def publish(beliefs: list[Belief], register: Path | None = None) -> Publication:
     pub = Publication()
     now = datetime.now(UTC).isoformat(timespec="seconds")
     for b in beliefs:
-        bad = defects(b)
+        status, why = verification(b)
+        bad = why if status == "REFUSED" else []
         row = asdict(b) | {"rule": RULES.get(b.kind), "bucket": b.bucket(),
-                           "published_at": now}
+                           "published_at": now, "verification": status,
+                           "unverified_because": why if status == "UNVERIFIED" else []}
         if bad:
             pub.refused.append(row | {"status": "REFUSED", "defects": bad})
         else:
@@ -199,18 +392,20 @@ def leakage(row: dict[str, Any], feature_stamps: dict[str, str]) -> str | None:
     is gone, so lookahead becomes unprovable in either direction -- and an unprovable forecast
     record is exactly as useful as no record. Run against point-in-time stamps at publication.
     """
-    try:
-        at = datetime.fromisoformat(str(row.get("at")))
-    except (TypeError, ValueError):
+    at = _ts(row.get("at"))
+    if at is None:
         return "belief has no readable timestamp"
+    # The row's OWN stamps are read too; the caller's point-in-time stamps outrank them.
+    own = {str(p[0]): str(p[1]) for p in row.get("feature_available_at") or ()
+           if isinstance(p, (list, tuple)) and len(p) == 2}
+    stamps_all = own | dict(feature_stamps)
     late = []
     for f in row.get("features") or ():
-        stamp = feature_stamps.get(f)
+        stamp = stamps_all.get(f)
         if not stamp:
             continue
-        try:
-            when = datetime.fromisoformat(str(stamp))
-        except (TypeError, ValueError):
+        when = _ts(stamp)
+        if when is None:
             continue
         if when > at:
             late.append(f"{f} stamped {stamp}")
@@ -224,7 +419,13 @@ def contract_report(register: Path | None = None) -> dict[str, Any]:
     models: dict[str, dict[str, Any]] = {}
     for r in rows:
         m = models.setdefault(str(r.get("model_id") or "unattributed"), {
-            "accepted": 0, "refused": 0, "buckets": {}, "kinds": {}, "defects": {}})
+            "accepted": 0, "refused": 0, "buckets": {}, "kinds": {}, "defects": {},
+            "verification": {"VERIFIED": 0, "UNVERIFIED": 0, "REFUSED": 0}})
+        # RE-JUDGED ON READ, not trusted from the row: a row stored before the provenance
+        # clauses carries no `verification` field, and a stored "VERIFIED" from an older rule
+        # set is only as good as that rule set. A stored REFUSED stays refused.
+        v = "REFUSED" if r.get("status") == "REFUSED" else verify_row(r)[0]
+        m["verification"][v] += 1
         if r.get("status") == "ACCEPTED":
             m["accepted"] += 1
             m["buckets"][r.get("bucket")] = m["buckets"].get(r.get("bucket"), 0) + 1
@@ -242,6 +443,9 @@ def contract_report(register: Path | None = None) -> dict[str, Any]:
         "beliefs": len(rows),
         "models": models,
         "rules": RULES,
+        "verification": {k: sum(m["verification"][k] for m in models.values())
+                         for k in ("VERIFIED", "UNVERIFIED", "REFUSED")},
+        "model_roles": _roles.roles_report(),
         "horizon_buckets": {n: [lo, hi] for n, lo, hi in HORIZON_BUCKETS},
         "contract": ("A model publishes BELIEFS and owns no position. A belief carries no lot "
                      "size and no authority; the capital allocator reads beliefs and decides "

@@ -23,7 +23,12 @@ def test_reconcile_before_exposure_is_judged_both_ways() -> None:
     for fault in gd.REFUSE_NEW_RISK:
         assert gd.judge(fault, {"new_risk": "NO_GATE"})[0].startswith("RECONCILE_BEFORE")
         assert gd.judge(fault, {"new_risk": True})[0].startswith("RECONCILE_BEFORE")
-        assert gd.judge(fault, {"new_risk": False}) == []
+        # REFUSED_FOR_THE_RIGHT_REASON: a refusal must name its own cause.
+        why = " / ".join(gd.EXPECTED_WHY.get(fault, ()))
+        assert gd.judge(fault, {"new_risk": False, "new_risk_why": why}) == []
+        if gd.EXPECTED_WHY.get(fault):
+            wrong = gd.judge(fault, {"new_risk": False, "new_risk_why": "release identity"})
+            assert wrong[0].startswith("REFUSED_FOR_THE_RIGHT_REASON")
     # a gate that refuses everything is a finding too: a healthy pass must still trade
     assert gd.judge("healthy", {"new_risk": False})[0].startswith("RECONCILE_BEFORE")
     assert gd.judge("healthy", {"new_risk": True}) == []

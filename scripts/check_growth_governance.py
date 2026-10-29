@@ -11,9 +11,13 @@ evidence, diversification, execution quality and ruin probability justify, and m
 opportunity set is unusually strong. Nothing done today or in the past may hold that back, and
 nothing added in future may be misread as licence to do less. This fence makes that mechanical:
 
-  G1  the utilisation floor is FLAT at HEAT_TARGET (20%) and growth is FREE above it to the
-      HEAT_HARD_CEILING (30%): `heat_policy.resolve` carries `floor = target if mandate`, the
-      allocator calls it with the mandate on, and nothing multiplies the floor by readiness
+  G1  the utilisation target (20%) holds the book up WHENEVER IT IS CERTIFIED FREE on the
+      measured growth curve, and growth is FREE above it to the measured ceilings:
+      `heat_policy.resolve` carries `floor = target if (mandate and ok)`, the allocator calls it
+      with the mandate on, and nothing multiplies the floor by readiness. TWO-SIDED SINCE
+      2026-10-06 (principal: "Cash is an allocation", "allow exposure to rise or fall when
+      justified"; thread approval 15:42Z): when the curve says the target gives up real growth,
+      the growth optimum runs, down to cash -- that reduction is Rule 1 satisfied by the curve
   G2  the resolved heat is FILLED, never reported short: `pf_allocator` carries the FLOOR FILL
   G3  the gateway is WIRED to the allocator: `cap_by_heat` budgets from `allocator_heat()`,
       `promoted_lot` deploys the book's fraction un-re-shrunk (`from_book`), and
@@ -68,8 +72,9 @@ def check() -> list[dict[str, str]]:
     dc = _src("desks/mt5/mt5desk/decision_core.py")
 
     # G1 -- flat floor, growth free above it
-    if "floor = target if mandate else 0.0" not in hp:
-        f.append({"check": "G1_FLAT_FLOOR", "why": "heat_policy.resolve no longer floors at the target"})
+    if "floor = target if (mandate and (ok or unmeasured)) else 0.0" not in hp:
+        f.append({"check": "G1_CERTIFIED_FLOOR",
+                  "why": "heat_policy.resolve no longer holds the target when it is certified free"})
     if re.search(r"floor\s*=\s*target\s*\*", hp):
         f.append({"check": "G1_FLAT_FLOOR", "why": "the floor is multiplied by something (readiness?)"})
     if "elif h > target:" not in hp:

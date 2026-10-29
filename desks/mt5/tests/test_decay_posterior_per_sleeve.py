@@ -1,13 +1,14 @@
-"""The drift monitor's hazard is each sleeve's OWN decay probability, capped at the blanket.
+"""The drift monitor's MECHANISM hazard is each sleeve's own decay probability -- two-sided.
 
 `robust_elog` decayed every sleeve's edge in 30% of worlds -- one constant, whatever the drift
 monitor had measured -- and the only per-sleeve decay input was a post-hoc shrink of the mean
-(`apply_hazard_shrink`). `pf_allocator.apply_decay_posterior` now writes `hazard_by_sleeve` onto
-each sleeve as `decay_prob_i = min(hazard, blanket)`, so a sleeve the monitor calls healthy stops
-paying the blanket and earns MORE heat, and a sleeve it calls breaking is charged exactly the
-blanket -- never more than every sleeve was charged before. The mean-shrink path stays available
-behind `HAZARD_MODE = "mean_shrink"` and its own rail. These pin the cap, the default, the
-single-charge rule, the missed-growth line, and the law: no sleeve sized below what it got.
+(`apply_hazard_shrink`). `pf_allocator.apply_decay_posterior` writes `hazard_by_sleeve` onto each
+sleeve as its `decay_prob_i`. From 2026-09-09 to 2026-10-06 that was `min(hazard, blanket)`
+(relief-only, under the 2026-09-08 order that nothing may size a sleeve below what it got); the
+principal's spec of 2026-10-06 made it TWO-SIDED: a sleeve measured above the blanket is charged
+MORE and sized down, one below it is relieved. These pin the two directions, the default, the
+single-charge rule (the hazard is decay OR a mean shrink, never both; execution cost goes to
+cost_bias_r, never to decay), the missed-growth line, and the decay-free Kelly reference.
 """
 from __future__ import annotations
 
@@ -52,35 +53,80 @@ def test_the_decay_posterior_is_the_default_and_the_mean_shrink_is_still_availab
     src = inspect.getsource(pa.run)
     assert 'if HAZARD_MODE == "mean_shrink":' in src
     assert "hazard_meta = apply_hazard_shrink(ev, _haz)" in src
-    assert "decay_meta = apply_decay_posterior(ev, _haz, _blanket)" in src
+    assert "decay_meta = apply_decay_posterior(" in src
     assert '"decay_posterior": decay_meta' in src, "the artifact must carry the block"
     assert '"decay": {' in src, "both values belong on the evidence block"
 
 
-def test_apply_decay_posterior_writes_the_hazard_capped_at_the_blanket() -> None:
+def test_apply_decay_posterior_writes_the_hazard_in_both_directions() -> None:
+    """2026-10-06: `breaking_b` at 0.90 was pinned to the blanket 0.30 here. Two-sided, it now
+    carries 0.90 and a NEGATIVE relief -- the charge above the blanket is on the artifact."""
     ev = [_sleeve("healthy_a", 0.05, 1), _sleeve("breaking_b", 0.05, 2), _sleeve("unknown_c",
                                                                                    0.05, 3)]
     meta = pa.apply_decay_posterior(ev, {"healthy_a": 0.05, "breaking_b": 0.90}, BLANKET)
     by = {e.name: e for e in ev}
     assert by["healthy_a"].decay_prob_i == pytest.approx(0.05)
-    assert by["breaking_b"].decay_prob_i == pytest.approx(BLANKET), "never above the blanket"
+    assert by["breaking_b"].decay_prob_i == pytest.approx(0.90), "above the blanket charges more"
     assert by["unknown_c"].decay_prob_i is None, "no hazard: the blanket, exactly as before"
     assert meta["mode"] == "decay_posterior" and meta["blanket"] == BLANKET
     assert meta["n_from_hazard"] == 2 and meta["n_blanket"] == 1
+    assert meta["n_charged_above_blanket"] == 1
     assert meta["by_sleeve"]["healthy_a"] == {"hazard": 0.05, "decay_prob_i": 0.05,
                                               "relief_vs_blanket": pytest.approx(BLANKET - 0.05)}
-    assert meta["by_sleeve"]["breaking_b"]["relief_vs_blanket"] == 0.0
-    assert "charged above the blanket" in meta["rule"] and "only relieve" in meta["rule"]
+    assert meta["by_sleeve"]["breaking_b"]["relief_vs_blanket"] == pytest.approx(BLANKET - 0.90)
+    assert "two-sided" in meta["rule"] and "each fact once" in meta["rule"]
 
 
-def test_a_breaking_sleeve_is_drawn_exactly_as_the_blanket_draws_it() -> None:
-    """The cap in arithmetic: a hazard of 0.9 produces the SAME world population the blanket
-    does, so the change cannot deepen any sleeve's haircut."""
-    base = [_sleeve("a", 0.05, 1), _sleeve("b", 0.05, 2)]
-    tilted = [_sleeve("a", 0.05, 1), _sleeve("b", 0.05, 2)]
-    pa.apply_decay_posterior(tilted, {"a": 0.9, "b": 0.75}, BLANKET)
-    cfg = WorldConfig(n_worlds=48, n_rows=128, seed=3)
-    np.testing.assert_array_equal(sample_worlds(base, cfg).r, sample_worlds(tilted, cfg).r)
+def test_a_breaking_sleeve_is_sized_down_below_what_the_blanket_gave_it() -> None:
+    """2026-10-06: this used to assert that a hazard of 0.9 produced the SAME population as the
+    blanket. Now it must decay the sleeve in more worlds and the solve must fund it less."""
+    base = [_sleeve("a", 0.06, 11), _sleeve("b", 0.05, 12)]
+    tilted = [_sleeve("a", 0.06, 11), _sleeve("b", 0.05, 12)]
+    pa.apply_decay_posterior(tilted, {"a": 0.9}, BLANKET)
+    cfg = WorldConfig(n_worlds=64, n_rows=128, seed=3)
+    w0, w1 = sample_worlds(base, cfg), sample_worlds(tilted, cfg)
+    assert float(w1.r[:, :, 0].mean()) < float(w0.r[:, :, 0].mean())
+    before = optimise(base, hard_cap=0.45, target=None, cfg=cfg)
+    after = optimise(tilted, hard_cap=0.45, target=None, cfg=cfg)
+    assert before.heat["a"] > 0.005, "fixture: the sleeve must be funded under the blanket"
+    assert after.heat["a"] < before.heat["a"] - 1e-6
+
+
+def test_hazard_by_sleeve_keeps_a_measured_zero_clamps_and_carries_the_causes() -> None:
+    drift = {"hazard_by_sleeve": {
+        "zero": {"hazard": 0.0, "causes": {"regime_mismatch": {"pressure": 0.4}}},
+        "high": {"hazard": 1.5}, "none": {"hazard": None}, "nan": {"hazard": float("nan")},
+        "bool": {"hazard": True}}}
+    haz = pa.hazard_by_sleeve(drift)
+    assert dict(haz) == {"zero": 0.0, "high": 1.0}
+    assert haz.causes["zero"]["regime_mismatch"]["pressure"] == 0.4
+
+
+def test_execution_cost_decay_goes_to_cost_once_and_never_to_decay() -> None:
+    """The twin's slip ratio becomes cost_bias_r at the LARGER of the two measurements of the
+    same under-charge -- never their sum -- and a sleeve whose only problem is cost carries no
+    decay_prob_i at all. Regime mismatch and data failure are named and charged nowhere here."""
+    from dataclasses import replace
+    e1 = replace(_sleeve("costly", 0.05, 1), cost_r=0.10, cost_bias_r=0.0)
+    e2 = replace(_sleeve("priced", 0.05, 2), cost_r=0.10, cost_bias_r=0.50)
+    e3 = _sleeve("drifting", 0.05, 3)
+    haz = pa.hazard_by_sleeve({"hazard_by_sleeve": {
+        "costly": {"hazard": None, "causes": {"execution_cost_decay":
+                                              {"slip_ratio": 3.0, "slip_n": 50}}},
+        "priced": {"hazard": None, "causes": {"execution_cost_decay":
+                                              {"slip_ratio": 3.0, "slip_n": 50}}},
+        "drifting": {"hazard": 0.1, "causes": {"regime_mismatch": {"pressure": 0.8},
+                                               "data_failure": {"flag": True}}}}})
+    ev = [e1, e2, e3]
+    meta = pa.apply_decay_posterior(ev, haz, BLANKET)
+    by = {e.name: e for e in ev}
+    assert by["costly"].cost_bias_r == pytest.approx(0.20)
+    assert by["costly"].decay_prob_i is None, "cost decay is not edge decay"
+    assert by["priced"].cost_bias_r == pytest.approx(0.50), "max, never the sum"
+    assert by["drifting"].decay_prob_i == pytest.approx(0.1)
+    assert by["drifting"].daily_r.mean() == pytest.approx(e3.daily_r.mean()), "mean untouched"
+    assert meta["regime_transient"] == ["drifting"] and meta["integrity_hold"] == ["drifting"]
+    assert set(meta["cost_routed"]) == {"costly", "priced"}
 
 
 # ---------------------------------------------------------------------------------- the law
@@ -101,20 +147,20 @@ def test_a_healthy_sleeve_earns_at_least_what_it_earned_and_the_book_no_less() -
     assert all(v <= 0.15 + 1e-9 for v in mandated.heat.values())
 
 
-def test_the_mean_shrink_path_is_the_one_that_could_lower_heat_and_it_no_longer_runs() -> None:
-    """Under the old path a hazard of 0.6 removed 60% of the sleeve's mean; under the default
-    the same sleeve keeps its mean and pays the blanket decay. The default can only be the
-    more generous of the two, which is the direction the standing order allows."""
+def test_the_hazard_is_charged_once_as_decay_or_as_a_mean_shrink_never_both() -> None:
+    """2026-10-06: this test also asserted the default was the more generous path (the 0.6
+    hazard was capped to the blanket). Two-sided, what remains is the single-charge rule: under
+    the default the mean is untouched and the sleeve carries its own 0.6; under the old path the
+    mean is shrunk and decay stays the blanket."""
     shrunk = [_sleeve("s", 0.06, 21), _sleeve("t", 0.05, 22)]
     pa.apply_hazard_shrink(shrunk, {"s": 0.6})
     posterior = [_sleeve("s", 0.06, 21), _sleeve("t", 0.05, 22)]
     pa.apply_decay_posterior(posterior, {"s": 0.6}, BLANKET)
-    assert posterior[0].daily_r.mean() > shrunk[0].daily_r.mean()
-    assert posterior[0].decay_prob_i == pytest.approx(BLANKET)
-    cfg = WorldConfig(n_worlds=64, n_rows=128, seed=4)
-    old = optimise(shrunk, hard_cap=0.45, target=None, cfg=cfg)
-    new = optimise(posterior, hard_cap=0.45, target=None, cfg=cfg)
-    assert new.heat["s"] >= old.heat["s"] - 1e-6
+    original = _sleeve("s", 0.06, 21)
+    assert posterior[0].daily_r.mean() == pytest.approx(original.daily_r.mean())
+    assert posterior[0].decay_prob_i == pytest.approx(0.6)
+    assert shrunk[0].daily_r.mean() < original.daily_r.mean()
+    assert shrunk[0].decay_prob_i is None
 
 
 # ------------------------------------------------------------------------------ the billing

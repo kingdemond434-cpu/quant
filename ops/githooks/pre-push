@@ -28,7 +28,10 @@ for cand in "$ROOT/.venv/bin/python" "$ROOT/.venv/Scripts/python.exe"; do
 done
 if [ -z "$PY" ]; then
     for cand in python3 python; do
-        if command -v "$cand" >/dev/null 2>&1 && "$cand" -c "import sys" >/dev/null 2>&1; then
+        # "STARTS" MEANS "CAN RUN THE FENCES" (2026-10-07): a bare interpreter that starts but
+        # lacks the repo's own dependencies (measured: the Store python3 3.14 on the laptop has
+        # no pandas or yaml) fails fences on ImportError, not on a breach. Probe for them.
+        if command -v "$cand" >/dev/null 2>&1                 && "$cand" -c "import numpy, pandas, yaml" >/dev/null 2>&1; then
             PY="$cand"; break
         fi
     done

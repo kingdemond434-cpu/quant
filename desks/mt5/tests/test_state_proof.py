@@ -208,17 +208,18 @@ def test_a_thin_state_bucket_uses_the_global_curve_and_says_which() -> None:
     assert h == pytest.approx(0.20), "GOOD peaks on its flat top at 20-25%; the band starts at 20%"
 
 
-def test_the_state_may_raise_the_target_and_may_never_cut_it() -> None:
-    """Growth governance in one test. Rule 2: a state whose curve says more, gets more. Rule 1: a
-    state whose curve says less does NOT get to cut, because a reduction is a rail and this one
-    has proved no dE[log W]."""
+def test_the_state_may_raise_the_target_and_may_cut_it_to_the_certified_floor() -> None:
+    """Growth governance in one test, TWO-SIDED SINCE 2026-10-06. Rule 2: a state whose curve says
+    more, gets more. Rule 1: a state whose own curve (80 worlds) says less IS the dE[log W]
+    measurement a reduction needs, so it cuts -- here to the 20% target, which GOOD certifies
+    free and therefore still holds."""
     up = {"regime=trend": StateCurve("regime=trend", _curve(0.27), 80)}
     down = {"regime=fused": StateCurve("regime=fused", _curve(0.02), 80)}
     v = resolve(0.21, curve=GOOD, state="regime=trend", curves=up)
     assert v.total_heat == pytest.approx(0.275) and v.binding == "state_growth"
     assert v.state == "regime=trend" and v.state_worlds == 80
     held = resolve(0.26, curve=GOOD, state="regime=fused", curves=down)
-    assert held.total_heat == pytest.approx(0.26) and held.binding == "growth"
+    assert held.total_heat == pytest.approx(HEAT_TARGET) and held.binding == "state_growth"
     # And the band is still the band, whatever the curve says.
     assert resolve(0.21, curve=GOOD, state="regime=trend",
                    curves={"regime=trend": StateCurve("regime=trend", _curve(0.9), 80)},
