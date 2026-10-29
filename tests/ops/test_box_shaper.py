@@ -1,6 +1,7 @@
 """The box bottleneck hunter's rails (libs/ops/box_shaper.py, desks/mt5/ops/CPU_SHAPE.json)."""
 from __future__ import annotations
 
+import contextlib
 import copy
 import json
 import os
@@ -554,6 +555,309 @@ def test_an_adopt_run_past_fifteen_minutes_with_no_seal_or_refusal_is_red() -> N
     assert h["verdict"] == "RED"
 
 
+# ------------------------------------------------------------------------------------ dedupe
+def _dupes() -> list[Proc]:
+    loop = r"python.exe C:\opt\quant\desks\mt5\research\some_loop.py"
+    procs = [
+        Proc(40, "python.exe", ppid=400, exe="py.exe", cmdline=loop, create_time=10),
+        Proc(41, "python.exe", ppid=401, exe="py.exe", cmdline=loop, create_time=20),
+        # pool siblings: one launcher, one command line -- never duplicates
+        Proc(50, "python.exe", ppid=500, exe="py.exe", cmdline="python.exe pool_child.py",
+             create_time=5),
+        Proc(51, "python.exe", ppid=500, exe="py.exe", cmdline="python.exe pool_child.py",
+             create_time=6),
+        # parent and child with one command line -- never duplicates
+        Proc(60, "python.exe", ppid=1, exe="py.exe", cmdline="python.exe nest.py", create_time=1),
+        Proc(61, "python.exe", ppid=60, exe="py.exe", cmdline="python.exe nest.py", create_time=2),
+        # protected writer and memecoin doubled: reported nowhere, stopped never
+        Proc(70, "python.exe", ppid=700, exe="py.exe", cmdline="python.exe moat_recorder.py"),
+        Proc(71, "python.exe", ppid=701, exe="py.exe", cmdline="python.exe moat_recorder.py"),
+        Proc(80, "node.exe", ppid=800, exe=r"C:\memecoin\node.exe", cmdline="node bot.js"),
+        Proc(81, "node.exe", ppid=801, exe=r"C:\memecoin\node.exe", cmdline="node bot.js"),
+    ]
+    for p in procs:     # one working directory and environment: the same loop (SF3)
+        p.cwd, p.env_sig = r"C:\opt\quant", "env-a"
+    bs.classify(procs, RULES["groups"])
+    return procs
+
+
+def test_dedupe_is_deny_by_default_and_reports_only_true_duplicates() -> None:
+    assert RULES["dedupe"]["allow"] == []
+    stops, seen = bs.plan_dedupe(_dupes(), RULES["dedupe"], previous_duplicates=["41:20"])
+    assert stops == []
+    assert [(d["keep"], d["duplicate"], d["allowed"]) for d in seen] == [("40:10", "41:20", False)]
+
+
+def test_an_allowed_duplicate_is_stopped_only_on_its_second_sighting_and_the_oldest_kept() -> None:
+    cfg = {"allow": ["some_loop.py"]}
+    first, seen = bs.plan_dedupe(_dupes(), cfg)
+    assert first == [] and seen[0]["allowed"] is True
+    second, _ = bs.plan_dedupe(_dupes(), cfg, previous_duplicates=[seen[0]["duplicate"]])
+    assert [(a.pid, a.kind, a.before) for a in second] == [(41, "stop", "41:20")]
+
+
+def test_no_allow_pattern_reaches_a_protected_group() -> None:
+    cfg = {"allow": ["moat_recorder", "node bot.js", "memecoin"]}
+    procs = _dupes()
+    _, seen = bs.plan_dedupe(procs, cfg)
+    keys = [d["duplicate"] for d in seen]
+    stops, _ = bs.plan_dedupe(procs, cfg, previous_duplicates=keys)
+    assert {a.pid for a in stops} <= {41}
+    assert not any(d["duplicate"].startswith(("71:", "81:")) for d in seen)
+
+
+def test_a_too_broad_allow_pattern_is_refused() -> None:
+    rules = copy.deepcopy(RULES)
+    rules["dedupe"]["allow"] = ["py"]
+    with pytest.raises(ValueError):
+        bs.validate_rules(rules)
+
+
+def _chain(psutil: Any, pid: int) -> list[str]:
+    return [f"{x.pid}:{int(x.create_time())}" for x in psutil.Process(pid).parents()]
+
+
+def test_a_stop_kills_the_verified_process_and_refuses_a_reused_pid(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """#482 SF1: the psutil.Process that passed the pid+create-time check is what is killed."""
+    psutil = pytest.importorskip("psutil")
+    import subprocess
+    import sys
+
+    from libs.ops import proctree
+    calls: list[Any] = []
+    real = proctree.kill_verified_tree
+
+    def spy(root: Any, **kw: Any) -> dict[str, Any]:
+        calls.append(root)
+        return real(root, **kw)
+
+    monkeypatch.setattr(proctree, "kill_verified_tree", spy)
+    monkeypatch.setattr(proctree, "kill_tree", lambda *a, **k: pytest.fail("pid-only kill"))
+    monkeypatch.setattr(bs, "IS_WINDOWS", True)
+    child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    try:
+        ct = int(psutil.Process(child.pid).create_time())
+        up = _chain(psutil, child.pid)
+        stale = bs.Action(child.pid, "python", "other", "dedupe", "stop", f"{child.pid}:{ct - 5}",
+                          "stopped", ancestors=up)
+        bs.apply([stale], N)
+        assert not stale.applied and "reused" in str(stale.error) and calls == []
+        good = bs.Action(child.pid, "python", "other", "dedupe", "stop", f"{child.pid}:{ct}",
+                         "stopped", ancestors=up)
+        bs.apply([good], N)
+        assert good.applied and len(calls) == 1
+        assert isinstance(calls[0], psutil.Process) and calls[0].pid == child.pid
+        assert child.wait(timeout=10) is not None
+    finally:
+        if child.poll() is None:
+            child.kill()
+
+
+def test_a_verified_kill_never_falls_back_to_a_bare_pid(monkeypatch: pytest.MonkeyPatch) -> None:
+    """#482 SF1: no taskkill /PID or os.kill by number once the process object failed."""
+    psutil = pytest.importorskip("psutil")
+    import subprocess
+
+    from libs.ops import proctree
+
+    class _Denied:
+        pid = 999999
+
+        def children(self, recursive: bool = False) -> list[Any]:
+            return []
+
+        def kill(self) -> None:
+            raise psutil.AccessDenied(self.pid)
+
+        def is_running(self) -> bool:
+            return True
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: pytest.fail("taskkill fallback"))
+    monkeypatch.setattr("libs.ops.proctree.os.kill", lambda *a: pytest.fail("os.kill fallback"))
+    out = proctree.kill_verified_tree(_Denied(), verified={}, timeout=0.1)
+    assert out["root_gone"] is False and "AccessDenied" in out["note"]
+
+
+def test_a_stop_is_refused_when_its_tree_holds_a_guarded_process() -> None:
+    """#482 S2: a tree kill never takes a money/judge/protected/memecoin/adopt process down."""
+    cfg = {"allow": ["some_loop.py"]}
+    for cmd in ("terminal64.exe /portable", "python.exe moat_recorder.py", "node memecoin.js",
+                "python.exe run_sharded_gauntlet.py", "powershell -File Adopt-And-Seal.ps1"):
+        procs = _dupes()
+        procs.append(Proc(90, "x.exe", ppid=41, cmdline=cmd, create_time=30))
+        bs.classify(procs, RULES["groups"])
+        keys = [d["duplicate"] for d in bs.plan_dedupe(procs, cfg)[1]]
+        stops, seen = bs.plan_dedupe(procs, cfg, previous_duplicates=keys)
+        assert stops == [], cmd
+        assert "refused" in seen[0] and "90" in seen[0]["refused"]
+    # an ordinary child is carried on the action as the measured tree
+    procs = _dupes()
+    procs.append(Proc(91, "python.exe", ppid=41, cmdline="python.exe helper.py", create_time=31))
+    bs.classify(procs, RULES["groups"])
+    stops, _ = bs.plan_dedupe(procs, cfg, previous_duplicates=["41:20"])
+    assert [(a.pid, a.tree) for a in stops] == [(41, ["91:31"])]
+
+
+def _sleeper() -> Any:
+    import subprocess
+    import sys
+    return subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+
+
+def test_a_stop_lands_only_when_the_root_is_gone(monkeypatch: pytest.MonkeyPatch) -> None:
+    """#482 SF2: children killed but the root alive is NOT a stop."""
+    psutil = pytest.importorskip("psutil")
+    from libs.ops import proctree
+    real = proctree.kill_verified_tree
+    monkeypatch.setattr(bs, "IS_WINDOWS", True)
+    child = _sleeper()
+    try:
+        key = f"{child.pid}:{int(psutil.Process(child.pid).create_time())}"
+        for gone, killed in ((False, 3), (True, 1)):
+            monkeypatch.setattr(proctree, "kill_verified_tree",
+                                lambda root, _g=gone, _k=killed, **kw: {
+                                    "pid": root.pid, "killed": _k, "root_gone": _g})
+            a = bs.Action(child.pid, "python", "other", "dedupe", "stop", key, "stopped",
+                          ancestors=_chain(psutil, child.pid))
+            bs.apply([a], N)
+            assert a.applied is gone, (gone, killed)
+            assert (a.error is None) is gone
+            if not gone:
+                assert "root is still running" in str(a.error)
+    finally:
+        child.kill()
+        child.wait(timeout=10)
+    # the real verified kill reports root_gone only once the root has exited
+    root = _sleeper()
+    out = real(psutil.Process(root.pid), verified={})
+    assert out["root_gone"] is True and root.wait(timeout=10) is not None
+
+
+def test_a_stop_refuses_an_ancestor_the_plan_never_saw(monkeypatch: pytest.MonkeyPatch) -> None:
+    """#482 MF1 at apply time: a live parent chain unlike the measured one refuses."""
+    psutil = pytest.importorskip("psutil")
+    from libs.ops import proctree
+    monkeypatch.setattr(proctree, "kill_verified_tree",
+                        lambda *a, **k: pytest.fail("must not kill"))
+    monkeypatch.setattr(bs, "IS_WINDOWS", True)
+    child = _sleeper()
+    try:
+        key = f"{child.pid}:{int(psutil.Process(child.pid).create_time())}"
+        a = bs.Action(child.pid, "python", "other", "dedupe", "stop", key, "stopped",
+                      ancestors=[])
+        bs.apply([a], N)
+        assert not a.applied and "ancestor chain changed" in str(a.error)
+    finally:
+        child.kill()
+        child.wait(timeout=10)
+
+
+def test_a_child_of_the_money_path_is_never_a_stoppable_duplicate() -> None:
+    """#482 MF1 repro: the gateway's own state_pusher_loop vs an older unrelated launcher."""
+    cfg = {"allow": ["state_pusher_loop.py"]}
+    loop = "python.exe state_pusher_loop.py"
+    procs = [
+        Proc(300, "python.exe", ppid=4, exe="py.exe", cmdline="python.exe stray_launcher.py",
+             create_time=1),
+        Proc(301, "python.exe", ppid=300, exe="py.exe", cmdline=loop, create_time=2),
+        Proc(400, "python.exe", ppid=4, exe="py.exe",
+             cmdline=r"python.exe C:\opt\quant\desks\mt5\run_gateway_loop.py", create_time=3),
+        Proc(401, "python.exe", ppid=400, exe="py.exe", cmdline=loop, create_time=4),
+    ]
+    for p in procs:
+        p.cwd, p.env_sig = r"C:\opt\quant", "env-a"
+    bs.classify(procs, RULES["groups"])
+    # the money path is a tree (#477 third audit MF1): the gateway's child is money itself and
+    # never a dedupe candidate at all
+    assert _by_pid(procs)[400].group == "money" and _by_pid(procs)[401].group == "money"
+    keys = [d["duplicate"] for d in bs.plan_dedupe(procs, cfg)[1]]
+    stops, seen = bs.plan_dedupe(procs, cfg, previous_duplicates=keys)
+    assert stops == [] and seen == []
+    # the ancestor guard still holds for a guarded parent whose children are not its group:
+    # a protected writer (matched by name only) launching the loop
+    procs[2].cmdline = r"python.exe C:\opt\quant\desks\mt5\moat\moat_recorder.py"
+    bs.classify(procs, RULES["groups"])
+    assert _by_pid(procs)[400].group == "protected" and _by_pid(procs)[401].group == "other"
+    keys = [d["duplicate"] for d in bs.plan_dedupe(procs, cfg)[1]]
+    stops, seen = bs.plan_dedupe(procs, cfg, previous_duplicates=keys)
+    assert stops == []
+    assert seen[0]["duplicate"] == "401:4" and "ancestor 400" in seen[0]["refused"]
+    assert "protected" in seen[0]["refused"]
+    # a stop that is allowed carries its measured parent chain for the apply-time re-check
+    stops, _ = bs.plan_dedupe(_dupes(), {"allow": ["some_loop.py"]},
+                              previous_duplicates=["41:20"])
+    assert [a.ancestors for a in stops] == [[]]
+
+
+def test_different_cwd_or_env_is_not_a_duplicate() -> None:
+    """#482 SF3: two loops for different accounts share a command line, not an identity."""
+    cfg = {"allow": ["some_loop.py"]}
+    procs = _dupes()
+    _by_pid(procs)[41].env_sig = "env-b"         # e.g. another MT5 account's environment
+    assert bs.plan_dedupe(procs, cfg, previous_duplicates=["41:20"]) == ([], [])
+    procs = _dupes()
+    _by_pid(procs)[41].cwd = r"C:\opt\quant-acct2"
+    assert bs.plan_dedupe(procs, cfg, previous_duplicates=["41:20"]) == ([], [])
+    procs = _dupes()
+    _by_pid(procs)[41].cwd = None                # unread: reported, never stopped
+    stops, seen = bs.plan_dedupe(procs, cfg, previous_duplicates=["41:20"])
+    assert stops == [] and "unread" in seen[0]["refused"]
+
+
+def test_read_identity_fills_only_compared_candidates(monkeypatch: pytest.MonkeyPatch) -> None:
+    psutil = pytest.importorskip("psutil")
+    import os as _os
+    me = psutil.Process(_os.getpid())
+    ct = me.create_time()
+    procs = [Proc(_os.getpid(), "python.exe", exe="py.exe", cmdline="python.exe x.py",
+                  create_time=ct),
+             Proc(_os.getpid(), "python.exe", exe="py.exe", cmdline="python.exe x.py",
+                  create_time=ct - 100),           # creation time differs: unread
+             Proc(_os.getpid(), "python.exe", exe="py.exe", cmdline="python.exe solo.py",
+                  create_time=ct)]
+    bs.read_identity(procs)
+    assert procs[0].cwd == me.cwd() and procs[0].env_sig
+    assert procs[1].cwd is None and procs[2].cwd is None
+
+
+def test_a_stop_refuses_a_descendant_born_after_the_measurement(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    psutil = pytest.importorskip("psutil")
+    import subprocess
+    import sys
+
+    from libs.ops import proctree
+    calls: list[int] = []
+    def spy(pid: int, **kw: Any) -> dict[str, Any]:
+        calls.append(pid)
+        return {}
+
+    monkeypatch.setattr(proctree, "kill_tree", spy)
+    monkeypatch.setattr(bs, "IS_WINDOWS", True)
+    parent = subprocess.Popen([sys.executable, "-c", (
+        "import subprocess, sys, time; "
+        "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)']); "
+        "time.sleep(60)")])
+    try:
+        pr = psutil.Process(parent.pid)
+        for _ in range(100):
+            if pr.children():
+                break
+            psutil.wait_procs([], timeout=0.05)
+        assert pr.children()
+        a = bs.Action(parent.pid, "python", "other", "dedupe", "stop",
+                      f"{parent.pid}:{int(pr.create_time())}", "stopped", tree=[])
+        bs.apply([a], N)
+        assert not a.applied and "tree changed" in str(a.error) and calls == []
+    finally:
+        kids = psutil.Process(parent.pid).children(recursive=True)
+        for c in kids:
+            c.kill()
+        psutil.wait_procs(kids, timeout=10)
+        parent.kill()
+        parent.wait(timeout=10)
+
+
 # ------------------------------------------------------------ second audit (#477), 2026-10-29
 class _FakePsutil:
     """Just enough of psutil for run_once with an injected measurement."""
@@ -959,6 +1263,130 @@ def test_a_failed_money_raise_lowers_an_adopt_tree_raised_earlier(
     assert [(a.pid, a.after) for a in extra] == [(500, "Normal")]
 
 
+# ------------------------------------------------------------ third audit (#482), 2026-10-29
+def _parent_with_child() -> Any:
+    import subprocess
+    import sys
+    return subprocess.Popen([sys.executable, "-c", (
+        "import subprocess, sys, time; "
+        "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)']); "
+        "time.sleep(60)")])
+
+
+def _wait_children(psutil: Any, pid: int) -> list[Any]:
+    pr = psutil.Process(pid)
+    for _ in range(200):
+        kids: list[Any] = pr.children(recursive=True)
+        if kids:
+            return kids
+        psutil.wait_procs([], timeout=0.05)
+    raise AssertionError("child never started")
+
+
+def _reap(psutil: Any, parent: Any) -> None:
+    try:
+        kids = psutil.Process(parent.pid).children(recursive=True)
+    except psutil.Error:
+        kids = []
+    for c in kids:
+        with contextlib.suppress(psutil.Error):
+            c.kill()
+    psutil.wait_procs(kids, timeout=10)
+    if parent.poll() is None:
+        parent.kill()
+    parent.wait(timeout=10)
+
+
+def test_the_verified_kill_refuses_a_child_born_after_verification() -> None:
+    """#482 probe: apply checked the tree, then kill_verified_tree re-enumerated children and
+    killed whatever was there -- a child born in between, never classified, went down with it.
+    The kill takes the verified set and refuses (killing nothing) when the tree is not it."""
+    psutil = pytest.importorskip("psutil")
+    from libs.ops import proctree
+    parent = _parent_with_child()
+    try:
+        kids = _wait_children(psutil, parent.pid)
+        root = psutil.Process(parent.pid)
+        # verified before the child existed: the tree changed, nothing is killed
+        out = proctree.kill_verified_tree(root, verified={}, timeout=0.5)
+        assert "tree changed" in str(out.get("refused")) and out["killed"] == 0
+        assert root.is_running() and all(k.is_running() for k in kids)
+        # the same pid with another creation time is not the verified child either
+        wrong = {k.pid: k.create_time() - 5 for k in kids}
+        out = proctree.kill_verified_tree(root, verified=wrong, timeout=0.5)
+        assert out.get("refused") and root.is_running()
+        # the set that was verified: the root and that child are killed
+        good = {k.pid: k.create_time() for k in kids}
+        out = proctree.kill_verified_tree(root, verified=good, timeout=10)
+        assert out.get("refused") is None and out["root_gone"] is True
+        assert out["killed"] == 1 + len(kids)
+    finally:
+        _reap(psutil, parent)
+
+
+def test_a_stop_passes_its_measured_tree_with_creation_times(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """#482 probe at apply: the stop's measured descendants (keys, pid + creation time) are the
+    set the kill verifies; a child whose key does not match refuses the stop."""
+    psutil = pytest.importorskip("psutil")
+    from libs.ops import proctree
+    seen: list[Any] = []
+    real = proctree.kill_verified_tree
+
+    def spy(root: Any, **kw: Any) -> dict[str, Any]:
+        seen.append(kw.get("verified"))
+        return real(root, **kw)
+    monkeypatch.setattr(proctree, "kill_verified_tree", spy)
+    monkeypatch.setattr(bs, "IS_WINDOWS", True)
+    parent = _parent_with_child()
+    try:
+        kids = _wait_children(psutil, parent.pid)
+        pr = psutil.Process(parent.pid)
+        key = f"{parent.pid}:{int(pr.create_time())}"
+        up = _chain(psutil, parent.pid)
+        stale = [f"{k.pid}:{int(k.create_time()) - 5}" for k in kids]
+        a = bs.Action(parent.pid, "python", "other", "dedupe", "stop", key, "stopped",
+                      tree=stale, ancestors=up)
+        bs.apply([a], N)
+        assert not a.applied and "tree changed" in str(a.error) and seen == []
+        assert pr.is_running()
+        a = bs.Action(parent.pid, "python", "other", "dedupe", "stop", key, "stopped",
+                      tree=[f"{k.pid}:{int(k.create_time())}" for k in kids], ancestors=up)
+        bs.apply([a], N)
+        assert a.applied and a.error is None
+        assert seen and set(seen[-1]) == {k.pid for k in kids}
+    finally:
+        _reap(psutil, parent)
+
+
+def test_a_dedupe_stop_bills_a_two_sided_missed_growth_line() -> None:
+    """#482 probe: a stopped duplicate is a throttle; its line names the share given up (the
+    duplicate and the tree it took down) and the judge share gained across it."""
+    assert "dedupe" in bs.throttle_mechanisms(RULES)
+    dup = Proc(41, "python.exe", cmdline="python.exe some_loop.py", create_time=20,
+               cpu_pct=300, group="other")
+    kid = Proc(91, "python.exe", ppid=41, cmdline="python.exe helper.py", create_time=31,
+               cpu_pct=60, group="other")
+    stop = bs.Action(41, "python.exe", "other", "dedupe", "stop", dup.key, "stopped; kept 40:10",
+                     applied=True, tree=[kid.key], died=[dup.key, kid.key])
+    led = bs.missed_growth_ledger(None, rules=RULES, procs=[dup, kid], actions=[stop], n_cpu=N,
+                                  at="t1", judge_share=0.10)
+    line = led["dedupe"]
+    assert line["two_sided"] and line["cost"] and line["gain"]
+    assert line["open"][0]["share_before"] == round(360 / 1800, 4)
+    led = bs.missed_growth_ledger(led, rules=RULES, procs=[], actions=[], n_cpu=N, at="t2",
+                                  judge_share=0.25, lives=lambda _k: False)
+    ev = led["dedupe"]["closed"][0]
+    assert ev["gone"] is True and ev["forgone_share"] == round(360 / 1800, 4)
+    assert ev["judge_gain_share"] == pytest.approx(0.15)
+    assert ev["net_share"] == round(0.15 - ev["forgone_share"], 4)
+    # a stop that did not land opens nothing
+    miss = bs.Action(41, "python.exe", "other", "dedupe", "stop", dup.key, "x", error="denied")
+    led = bs.missed_growth_ledger(None, rules=RULES, procs=[dup], actions=[miss], n_cpu=N,
+                                  at="t3", judge_share=0.1)
+    assert led["dedupe"]["open"] == []
+
+
 # ------------------------------------------------------------------------------------ fourth audit
 _MONEY_SCRIPTS = [
     # (command line, group it must read as)
@@ -1126,6 +1554,89 @@ def test_apply_never_writes_to_a_reused_pid(monkeypatch: pytest.MonkeyPatch) -> 
         child.wait(timeout=10)
 
 
+# ------------------------------------------------------------ fourth audit (#482), 2026-10-29
+@pytest.mark.parametrize("cmd", [c for c, _g in _MONEY_SCRIPTS])
+def test_a_duplicate_whose_child_is_a_money_process_is_never_stopped(cmd: str) -> None:
+    """MF1 through #482: a duplicate whose child is e8_gold, the deadman or an allocator."""
+    cfg = {"allow": ["some_loop.py"]}
+    procs = _dupes()
+    procs.append(Proc(90, "python.exe", ppid=41, cmdline=cmd, create_time=30))
+    bs.classify(procs, RULES["groups"])
+    assert _by_pid(procs)[90].group in bs.NEVER_IN_A_STOPPED_TREE
+    keys = [d["duplicate"] for d in bs.plan_dedupe(procs, cfg)[1]]
+    stops, seen = bs.plan_dedupe(procs, cfg, previous_duplicates=keys)
+    assert stops == [] and "descendant 90" in seen[0]["refused"]
+
+
+def test_an_orphaned_money_child_is_never_a_dedupe_candidate() -> None:
+    """MF2 through #482: the sticky money key keeps an orphan out of dedupe."""
+    cfg = {"allow": ["state_pusher_loop.py"]}
+    loop = "python.exe state_pusher_loop.py"
+    procs = [Proc(300, "python.exe", ppid=4, exe="py.exe", cmdline="python.exe stray.py",
+                  create_time=1),
+             Proc(301, "python.exe", ppid=300, exe="py.exe", cmdline=loop, create_time=2),
+             Proc(401, "python.exe", ppid=400, exe="py.exe", cmdline=loop, create_time=4)]
+    for p in procs:
+        p.cwd, p.env_sig = r"C:\opt\quant", "env-a"
+    bs.classify(procs, RULES["groups"], {"401:4"})       # its gateway (400) has died
+    assert _by_pid(procs)[401].group == "money"
+    keys = [d["duplicate"] for d in bs.plan_dedupe(procs, cfg)[1]]
+    assert bs.plan_dedupe(procs, cfg, previous_duplicates=keys) == ([], [])
+
+
+def test_a_partial_stop_bills_only_what_died() -> None:
+    """SF3 probe: children killed under a denied root opened no line; a denied child that still
+    lives was billed as forgone when the root died."""
+    dup = Proc(41, "python.exe", cmdline="python.exe some_loop.py", create_time=20,
+               cpu_pct=300, group="other")
+    k1 = Proc(91, "python.exe", ppid=41, create_time=31, cpu_pct=60, group="other")
+    k2 = Proc(92, "python.exe", ppid=41, create_time=32, cpu_pct=90, group="other")
+    procs = [dup, k1, k2]
+    # root denied, both children killed: not a landed stop, but 150% of a core died
+    a = bs.Action(41, "python.exe", "other", "dedupe", "stop", dup.key, "stopped",
+                  error="the duplicate's root is still running", tree=[k1.key, k2.key],
+                  died=[k1.key, k2.key])
+    led = bs.missed_growth_ledger(None, rules=RULES, procs=procs, actions=[a], n_cpu=N,
+                                  at="t1", judge_share=0.1)
+    ev = led["dedupe"]["open"][0]
+    assert ev["share_before"] == round(150 / 1800, 4) and ev["landed"] is False
+    led = bs.missed_growth_ledger(led, rules=RULES, procs=[dup], actions=[], n_cpu=N, at="t2",
+                                  judge_share=0.2)
+    ev = led["dedupe"]["closed"][0]
+    assert ev["gone"] is True and ev["forgone_share"] == round(150 / 1800, 4)
+    # root died, one child denied and alive: only the root and the dead child are billed
+    b = bs.Action(41, "python.exe", "other", "dedupe", "stop", dup.key, "stopped", applied=True,
+                  tree=[k1.key, k2.key], died=[dup.key, k1.key])
+    led = bs.missed_growth_ledger(None, rules=RULES, procs=procs, actions=[b], n_cpu=N,
+                                  at="t1", judge_share=0.1)
+    assert led["dedupe"]["open"][0]["share_before"] == round(360 / 1800, 4)
+    led = bs.missed_growth_ledger(led, rules=RULES, procs=[k2], actions=[], n_cpu=N, at="t2",
+                                  judge_share=0.2)
+    assert led["dedupe"]["closed"][0]["forgone_share"] == round(360 / 1800, 4)
+
+
+def test_the_verified_kill_reports_which_processes_died() -> None:
+    """SF3: kill_verified_tree names the dead by key, so a partial stop is billed exactly."""
+    psutil = pytest.importorskip("psutil")
+    from libs.ops import proctree
+    parent = _parent_with_child()
+    try:
+        kids = _wait_children(psutil, parent.pid)
+        root = psutil.Process(parent.pid)
+        rkey = f"{root.pid}:{int(root.create_time())}"
+        kkeys = {f"{k.pid}:{int(k.create_time())}" for k in kids}
+        out = proctree.kill_verified_tree(root, verified={k.pid: k.create_time() for k in kids},
+                                          timeout=10)
+        assert out["root_gone"] is True and set(out["dead"]) == kkeys | {rkey}
+    finally:
+        _reap(psutil, parent)
+
+
+def test_the_dedupe_why_names_the_verified_kill() -> None:
+    why = RULES["dedupe"]["why"]
+    assert "kill_verified_tree" in why and "proctree.kill_tree" not in why
+
+
 # ------------------------------------------------------------------------------------ fifth audit
 _ALLOCATOR_FORMS = [
     # (command line, group, pinned to 0xFF by pf_allocator_heavy)
@@ -1256,6 +1767,39 @@ def test_the_bridge_and_the_deadman_reconciliation_are_raise_only(cmd: str) -> N
     assert 70 not in moved_pids(acts) and p.key not in moved
 
 
+# ------------------------------------------------------------ fifth audit (#482), 2026-10-29
+@pytest.mark.parametrize(("cmd", "pinned"),
+                         [(c, p) for c, _g, p in _ALLOCATOR_FORMS]
+                         + [("python.exe research/pf_allocator.py --mode fast --mode heavy", True)])
+def test_a_duplicate_whose_child_is_any_allocator_form_is_never_stopped(cmd: str,
+                                                                        pinned: bool) -> None:
+    """MF-A through #482: a normal-mode (or -m, --mode=fast, bare) allocator under an
+    allow-listed duplicate read as "other" and went down with the tree. SF-b: so did the
+    pinned heavy run (group other), e.g. under a duplicate hourly_cycle."""
+    cfg = {"allow": ["some_loop.py"]}
+    procs = _dupes()
+    procs.append(Proc(90, "python.exe", ppid=41, cmdline=cmd, create_time=30))
+    bs.classify(procs, RULES["groups"])
+    g = _by_pid(procs)[90]
+    assert (g.group, g.pinned_mode) == (("other", True) if pinned else ("money_feed", False))
+    keys = [d["duplicate"] for d in bs.plan_dedupe(procs, cfg)[1]]
+    stops, seen = bs.plan_dedupe(procs, cfg, previous_duplicates=keys)
+    assert stops == [] and "descendant 90" in seen[0]["refused"]
+
+
+def test_two_allocator_runs_are_never_dedupe_candidates() -> None:
+    """MF-A: two identical pf_allocator --mode normal runs are money_feed, never compared."""
+    cmd = r"python.exe C:\opt\quant\desks\mt5\research\pf_allocator.py --mode normal"
+    procs = [Proc(40, "python.exe", ppid=400, exe="py.exe", cmdline=cmd, create_time=10),
+             Proc(41, "python.exe", ppid=401, exe="py.exe", cmdline=cmd, create_time=20)]
+    for p in procs:
+        p.cwd, p.env_sig = r"C:\opt\quant", "env-a"
+    bs.classify(procs, RULES["groups"])
+    assert bs.dedupe_candidates(procs) == []
+    assert bs.plan_dedupe(procs, {"allow": ["pf_allocator.py"]},
+                          previous_duplicates=["41:20"]) == ([], [])
+
+
 # ------------------------------------------------------------------------------------ sixth audit
 @pytest.mark.parametrize(("args", "mode"), [
     (["--mode", "fast", "--mode", "heavy"], "heavy"),
@@ -1283,3 +1827,25 @@ def test_the_last_mode_decides_pin_or_money_feed() -> None:
     assert [(a.pid, a.rule, a.after) for a in out.actions if a.kind == "affinity"] == [
         (70, "pf_allocator_heavy", "0xff")]
     assert [(a.pid, a.after) for a in bs.widen_money(procs, N, set())] == [(71, "0x3ffff")]
+
+
+def test_a_duplicate_hourly_cycle_running_the_heavy_allocator_is_never_stopped() -> None:
+    """SF-b probe: with a non-empty allow list, a duplicate hourly_cycle whose child is
+    pf_allocator --mode heavy was planned for STOP; and two heavy runs are never compared."""
+    loop = r"python.exe C:\opt\quant\desks\mt5\research\hourly_cycle.py"
+    heavy = r"pythonw.exe -u research\pf_allocator.py --mode heavy"
+    procs = [Proc(40, "python.exe", ppid=400, exe="py.exe", cmdline=loop, create_time=10),
+             Proc(41, "python.exe", ppid=401, exe="py.exe", cmdline=loop, create_time=20),
+             Proc(90, "pythonw.exe", ppid=41, exe="py.exe", cmdline=heavy, create_time=30)]
+    for p in procs:
+        p.cwd, p.env_sig = r"C:\opt\quant", "env-a"
+    cfg = {"allow": ["hourly_cycle.py"]}
+    bs.classify(procs, RULES["groups"])
+    keys = [d["duplicate"] for d in bs.plan_dedupe(procs, cfg)[1]]
+    stops, seen = bs.plan_dedupe(procs, cfg, previous_duplicates=keys)
+    assert stops == [] and "descendant 90" in seen[0]["refused"]
+    assert "pinned allocator" in seen[0]["refused"]
+    twins = [Proc(50, "pythonw.exe", ppid=500, exe="py.exe", cmdline=heavy, create_time=1),
+             Proc(51, "pythonw.exe", ppid=501, exe="py.exe", cmdline=heavy, create_time=2)]
+    bs.classify(twins, RULES["groups"])
+    assert bs.dedupe_candidates(twins) == []

@@ -33,7 +33,10 @@ re-run). It takes no arguments and reads no queue: what it may do is this file p
          UNMEASURED or RULES_REFUSED pass carries them and `judge_reserve.moved` forward);
        * the adopt tree never above the lowest money-path class; money raises land first;
        * every throttle bills a two-sided `missed_growth` line (cost and judge gain);
-       * nothing is killed, nothing is deleted.
+       * nothing is deleted, and nothing is killed EXCEPT an exact duplicate (same exe, same
+         command line, unrelated launchers) of a run-once loop that `dedupe.allow` names, seen on
+         two consecutive passes; the oldest instance is always kept (`plan_dedupe`). The allow
+         list is empty by default, so on a fresh rules file duplicates are only reported.
   2b. RESERVE JUDGE CORES (`plan_reserve`, owner override 2026-10-29): mining/other python
      processes always stay off `judge_reserve.base_mask` (cores 8-15); during the judge's serial
      phases (desks/mt5/reports/JUDGE_SWEEP_PHASE.json) or while it is starved they also leave
@@ -48,6 +51,7 @@ into data/stall_watch.json beside its other verdicts.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -88,6 +92,16 @@ _PSUTIL_CLASS = {
 RAISE_ONLY = frozenset({"money", "money_feed", "judge", "protected", "adopt"})
 #: Groups no rule or cap touches at all.
 UNTOUCHED = frozenset({"system"})
+#: The only groups an exact duplicate may be stopped in. Money, judge, memecoin, protected
+#: writers (tick recorders, ledgers, certificates, tape) and system processes never are.
+DEDUPE_GROUPS = frozenset({"mining", "other"})
+#: A stop is refused when any descendant of the duplicate is in one of these groups: a tree kill
+#: must never take a money, judge, protected, memecoin or adopt process down with a loop.
+NEVER_IN_A_STOPPED_TREE = frozenset({"money", "money_feed", "judge", "protected", "memecoin",
+                                     "adopt"})
+#: Pool workers share one command line by design; they are never duplicates.
+_WORKER_MARKERS: tuple[str, ...] = ("multiprocessing", "spawn_main", "joblib", "loky",
+                                    "shard_worker")
 TOP_N = 25
 #: Changes are applied on the Windows box only; read once, so a test can stand in for it.
 IS_WINDOWS = os.name == "nt"
@@ -113,6 +127,14 @@ class Proc:
     affinity: list[int] | None = None
     group: str = "other"
     money_root: bool = False      # matched a money token by name (not by tree or stickiness)
+    #: a feed script in a pinned mode (groups.money_feed_pinned: pf_allocator heavy). Its group
+    #: stays the one its pin rule governs, but it is never a dedupe candidate and never inside
+    #: a stopped tree (audit SF-b, 2026-10-29)
+    pinned_mode: bool = False
+    #: identity of a dedupe candidate (read only for those): working directory and a hash of the
+    #: environment. None = unread; a duplicate is never stopped on an unread identity.
+    cwd: str | None = None
+    env_sig: str | None = None
 
     @property
     def key(self) -> str:
@@ -134,6 +156,9 @@ class Action:
     after: Any
     applied: bool = False
     error: str | None = None
+    tree: list[str] = field(default_factory=list)   # a stop's measured descendants (keys)
+    ancestors: list[str] = field(default_factory=list)  # a stop's measured parent chain (keys)
+    died: list[str] = field(default_factory=list)  # a stop's processes that actually died (keys)
     #: the measured process key ("pid:create_time"); apply refuses to write to a pid whose
     #: creation time is no longer this one (a reused pid), and to an action that carries none
     key: str = ""
@@ -190,6 +215,9 @@ def validate_rules(data: Mapping[str, Any]) -> None:
         share = rule.get("max_box_share")
         if share is not None and not 0 < float(share) <= 1:
             raise ValueError(f"rule {name}: max_box_share {share!r} outside (0, 1]")
+    for pattern in (data.get("dedupe") or {}).get("allow", []):
+        if not isinstance(pattern, str) or len(pattern.strip()) < 6:
+            raise ValueError(f"dedupe.allow entry {pattern!r} is too broad (6+ characters)")
     reserve = data.get("judge_reserve") or {}
     if reserve:
         base = int(reserve["base_mask"], 16)
@@ -345,6 +373,7 @@ def classify(procs: Sequence[Proc], groups: Mapping[str, Sequence[str]],
     system = {s.lower() for s in groups.get("system_names", ())}
     for p in procs:
         p.money_root = hit(p, "money")
+        p.pinned_mode = is_pinned(p)
         if p.pid in money_tree:
             p.group = "money"
         elif p.pid in feed_tree:
@@ -906,7 +935,8 @@ _LEDGER_KEEP = 20
 
 def throttle_mechanisms(rules: Mapping[str, Any]) -> list[str]:
     """Every mechanism in the rules that can take CPU from a process: affinity rules, rules that
-    may lower a class (not raise-only), the share cap and the judge reserve."""
+    may lower a class (not raise-only), the share cap, the judge reserve and the dedupe stop
+    (a stopped duplicate is the hardest throttle there is: its whole share goes)."""
     ceiling = rules.get("priority_ceiling", "AboveNormal")
     out = [str(r["name"]) for r in rules.get("rules", [])
            if "affinity" in r or (r.get("priority") and r.get("group") not in RAISE_ONLY
@@ -915,12 +945,16 @@ def throttle_mechanisms(rules: Mapping[str, Any]) -> list[str]:
         out.append("share_cap")
     if rules.get("judge_reserve"):
         out.append("judge_reserve")
+    if rules.get("dedupe") is not None:
+        out.append("dedupe")
     # lowering the adopt tree under the money floor takes CPU class from it (audit MF3)
     out.append("adopt_under_money")
     return out
 
 
 def _narrows(a: Action) -> bool:
+    if a.kind == "stop":
+        return True
     if a.kind == "priority":
         # A class set from an UNREADABLE one may be a lowering, so it is billed as one (audit,
         # 2026-10-29): before, _rank(None) = -1 made every such set read as a raise.
@@ -962,12 +996,18 @@ def missed_growth_ledger(previous: Mapping[str, Any] | None, *, rules: Mapping[s
             if not isinstance(ev, Mapping):
                 continue
             ev = dict(ev)
-            p = by_key.get(str(ev.get("key")))
-            if p is None and lives is not None and lives(str(ev.get("key"))):
-                still_open.append(ev)   # alive but unread this pass: not closed as gone
-                continue
-            ev["share_after"] = round(p.cpu_pct / cap, 4) if p is not None else 0.0
-            ev["gone"] = p is None
+            if isinstance(ev.get("keys"), list):
+                # a stop bills the processes that died, read again by key (all gone, normally)
+                left = [by_key[str(k)] for k in ev["keys"] if str(k) in by_key]
+                ev["share_after"] = round(sum(q.cpu_pct for q in left) / cap, 4)
+                ev["gone"] = not left
+            else:
+                p = by_key.get(str(ev.get("key")))
+                if p is None and lives is not None and lives(str(ev.get("key"))):
+                    still_open.append(ev)   # alive but unread this pass: not closed as gone
+                    continue
+                ev["share_after"] = round(p.cpu_pct / cap, 4) if p is not None else 0.0
+                ev["gone"] = p is None
             ev["judge_share_after"] = judge_share
             ev["forgone_share"] = round(float(ev.get("share_before") or 0.0)
                                         - ev["share_after"], 4)
@@ -985,10 +1025,27 @@ def missed_growth_ledger(previous: Mapping[str, Any] | None, *, rules: Mapping[s
             totals["forgone_share"] = round(totals["forgone_share"] + ev["forgone_share"], 4)
             closed.append(ev)
         for a in actions:
-            if a.rule != name or not a.applied or a.error or not _narrows(a):
+            if a.rule != name or not _narrows(a):
                 continue
             p = next((q for q in procs if q.pid == a.pid), None)
             if p is None:
+                continue
+            if a.kind == "stop":
+                # A STOP BILLS WHAT ACTUALLY DIED (audit #482 SF3): the duplicate and the
+                # measured descendants that are gone -- children killed under a denied root
+                # are billed although the stop did not land; a denied child that still lives
+                # is not billed as forgone.
+                died = [k for k in a.died if k in by_key]
+                if not died:
+                    continue
+                still_open.append({"at": at, "key": p.key, "pid": p.pid, "name": p.name,
+                                   "group": p.group, "kind": a.kind, "before": a.before,
+                                   "after": a.after, "keys": died, "landed": a.applied,
+                                   "share_before": round(sum(by_key[k].cpu_pct for k in died)
+                                                         / cap, 4),
+                                   "judge_share_before": judge_share})
+                continue
+            if not a.applied or a.error:
                 continue
             still_open.append({"at": at, "key": p.key, "pid": p.pid, "name": p.name,
                                "group": p.group, "kind": a.kind, "before": a.before,
@@ -1098,6 +1155,164 @@ def track_wall(procs: Sequence[Proc], match: str | Mapping[str, Any],
     return {"running": running, "finished": finished[-10:]}
 
 
+def plan_dedupe(procs: Sequence[Proc], cfg: Mapping[str, Any],
+                previous_duplicates: Sequence[str] = (),
+                ) -> tuple[list[Action], list[dict[str, Any]]]:
+    """Exact duplicates of a run-once loop: report all, stop only the allow-listed. Pure.
+
+    A duplicate is a second live process with the SAME exe and the SAME full command line whose
+    launcher is unrelated to the first's: neither is the other's parent and no two share a
+    parent (a pool, or a launcher's own shards, share one -- and Task Scheduler's svchost parent
+    is shared by two scheduled starts, which IgnoreNew serialises -- so duplicates launched
+    straight by Task Scheduler are NOT REPORTED here at all). The oldest is kept. A stop is
+    planned only when an allow pattern names the command line AND the same duplicate (pid and
+    creation time) was already reported on the previous pass, AND no descendant AND no ancestor
+    of the duplicate is in NEVER_IN_A_STOPPED_TREE (a child of the gateway is the money path),
+    AND both share one working directory and environment (`read_identity`; unread is never
+    stopped). The refusal is reported on the row. At apply time the pid, the tree and the parent
+    chain are re-checked against the measurement, the verified process object itself is killed
+    (no pid-only fallback), and the stop counts only once the root is gone.
+
+    TORN OUTPUT (audit S3): on Windows psutil's terminate() and kill() are the same
+    TerminateProcess -- a detached SYSTEM-run loop has no console to send CTRL_BREAK to -- so
+    there is no graceful stop to wait on, and a duplicate stopped mid-write can leave a
+    half-written file. Allow-list only a loop whose writes are atomic (tmp file + os.replace),
+    whose surviving twin rewrites the same outputs on its next cycle.
+    """
+    allow = [str(a).lower() for a in cfg.get("allow", [])]
+    seen_before = set(previous_duplicates)
+    buckets: dict[tuple[str, str], list[Proc]] = {}
+    for p in dedupe_candidates(procs):
+        buckets.setdefault((p.exe.lower(), p.cmdline), []).append(p)
+    stops: list[Action] = []
+    report: list[dict[str, Any]] = []
+    children: dict[int, list[Proc]] = {}
+    by_pid = {p.pid: p for p in procs}
+    for p in procs:
+        children.setdefault(p.ppid, []).append(p)
+
+    def ancestors(p: Proc) -> list[Proc]:
+        """The measured parent chain, nearest first (audit #482 MF1)."""
+        out: list[Proc] = []
+        seen: set[int] = {p.pid}
+        cur = p
+        while cur.ppid in by_pid and cur.ppid not in seen and len(out) < 64:
+            cur = by_pid[cur.ppid]
+            seen.add(cur.pid)
+            out.append(cur)
+        return out
+
+    def descendants(pid: int) -> list[Proc]:
+        out: list[Proc] = []
+        seen: set[int] = {pid}
+        stack = [pid]
+        while stack:
+            for c in children.get(stack.pop(), ()):
+                if c.pid not in seen:
+                    seen.add(c.pid)
+                    out.append(c)
+                    stack.append(c.pid)
+        return out
+
+    for members in buckets.values():
+        if len(members) < 2:
+            continue
+        pids = {m.pid for m in members}
+        parents = [m.ppid for m in members]
+        if any(pp in pids for pp in parents) or len(set(parents)) < len(parents):
+            continue
+        # SAME LOOP, NOT JUST THE SAME COMMAND LINE (audit #482 SF3): two loops for different
+        # accounts can share exe and command line and differ only in working directory or
+        # environment. Members are grouped by (cwd, env hash) too; a member whose identity was
+        # not read is reported but never stopped.
+        unread = any(m.cwd is None or m.env_sig is None for m in members)
+        if unread:
+            sets = [members]
+        else:
+            groups: dict[tuple[str, str], list[Proc]] = {}
+            for m in members:
+                groups.setdefault((str(m.cwd).lower(), str(m.env_sig)), []).append(m)
+            sets = [g for g in groups.values() if len(g) > 1]
+        for same in sets:
+            same = sorted(same, key=lambda m: (m.create_time, m.pid))
+            keeper = same[0]
+            allowed = any(a in keeper.haystack for a in allow)
+            for dup in same[1:]:
+                tree = descendants(dup.pid)
+                chain = ancestors(dup)
+                guarded = [c for c in tree if _never_stopped(c)]
+                guarded_up = [c for c in chain if _never_stopped(c)]
+                row: dict[str, Any] = {"keep": keeper.key, "duplicate": dup.key,
+                                       "name": dup.name, "group": dup.group, "allowed": allowed,
+                                       "cmd": _short_cmd(dup)}
+                if guarded:
+                    row["refused"] = (f"descendant {guarded[0].pid} ({guarded[0].name}) is "
+                                      f"{_guard_label(guarded[0])}: a tree stop would take it "
+                                      "down")
+                elif guarded_up:
+                    # A CHILD OF THE MONEY PATH IS PART OF THE MONEY PATH (audit #482 MF1): the
+                    # gateway's own state_pusher_loop was planned for a stop because an older,
+                    # unrelated launcher ran the same command line.
+                    row["refused"] = (f"ancestor {guarded_up[0].pid} ({guarded_up[0].name}) is "
+                                      f"{_guard_label(guarded_up[0])}: its child is never "
+                                      "stopped")
+                elif unread:
+                    row["refused"] = ("cwd/environment unread: not shown to be the same loop "
+                                      "(different accounts can share one command line)")
+                report.append(row)
+                if allowed and dup.key in seen_before and "refused" not in row:
+                    stops.append(Action(dup.pid, dup.name, dup.group, "dedupe", "stop", dup.key,
+                                        f"stopped; kept {keeper.key}",
+                                        tree=sorted(c.key for c in tree),
+                                        ancestors=[c.key for c in chain]))
+    return stops, report
+
+
+def _never_stopped(p: Proc) -> bool:
+    """In a guarded group, or a feed script in its pinned mode (pf_allocator heavy, SF-b)."""
+    return p.group in NEVER_IN_A_STOPPED_TREE or p.pinned_mode
+
+
+def _guard_label(p: Proc) -> str:
+    if p.group in NEVER_IN_A_STOPPED_TREE:
+        return p.group
+    return "a pinned allocator (money_feed_pinned)"
+
+
+def dedupe_candidates(procs: Sequence[Proc]) -> list[Proc]:
+    """Processes that may be a duplicate: mining/other with a command line, no pool worker, not
+    a pinned allocator run."""
+    return [p for p in procs if p.group in DEDUPE_GROUPS and p.cmdline.strip()
+            and not p.pinned_mode
+            and not any(m in p.cmdline.lower() for m in _WORKER_MARKERS)]
+
+
+def read_identity(procs: Sequence[Proc]) -> None:
+    """Fill cwd / env_sig for every candidate whose exe + command line appears twice (the only
+    ones dedupe compares), from the SAME process (pid and creation time re-checked). An
+    unreadable one stays None, which dedupe never stops on."""
+    if psutil is None:
+        return
+    counts: dict[tuple[str, str], int] = {}
+    cands = dedupe_candidates(procs)
+    for p in cands:
+        counts[(p.exe.lower(), p.cmdline)] = counts.get((p.exe.lower(), p.cmdline), 0) + 1
+    for p in cands:
+        if counts[(p.exe.lower(), p.cmdline)] < 2:
+            continue
+        try:
+            pr = psutil.Process(p.pid)
+            if int(pr.create_time()) != int(p.create_time):
+                continue
+            cwd = pr.cwd()
+            env = pr.environ()
+        except Exception:  # access denied / gone: identity unread, never guessed
+            continue
+        p.cwd = str(cwd)
+        blob = json.dumps(sorted((str(k).upper(), str(v)) for k, v in env.items()))
+        p.env_sig = hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
+
+
 def _affinity_refusal(p: Proc, cpus: Sequence[int], judge_starved: bool,
                       floor_cores: int) -> str | None:
     if not cpus:
@@ -1173,6 +1388,26 @@ def measure(window_s: float) -> tuple[list[Proc], float | None]:
     return procs, box
 
 
+def _keys_to_ctimes(keys: Sequence[str]) -> dict[int, float]:
+    """Measured process keys ("pid:create_time") -> {pid: create_time}; a malformed key drops."""
+    out: dict[int, float] = {}
+    for k in keys:
+        pid_s, _sep, ct_s = str(k).partition(":")
+        try:
+            out[int(pid_s)] = float(ct_s)
+        except ValueError:
+            continue
+    return out
+
+
+def _ctime_of(pr: Any) -> int | None:
+    """A live psutil.Process's creation second, or None when it cannot be read."""
+    try:
+        return int(pr.create_time())
+    except Exception:  # gone / denied: unread, never guessed
+        return None
+
+
 def apply(actions: Sequence[Action], n_cpu: int) -> None:
     """Make each planned change on Windows; record the outcome on the action itself."""
     for a in actions:
@@ -1181,6 +1416,45 @@ def apply(actions: Sequence[Action], n_cpu: int) -> None:
             continue
         try:
             pr = psutil.Process(a.pid)
+            if a.kind == "stop":
+                # THE PID MUST STILL BE THE PROCESS THAT WAS MEASURED: a reused pid is refused.
+                if f"{a.pid}:{int(pr.create_time())}" != str(a.before):
+                    a.error = "pid reused since measurement; not stopped"
+                    continue
+                # THE TREE MUST STILL BE THE ONE THAT WAS CLASSIFIED: a descendant born since
+                # the measurement was never checked against the guarded groups, so it refuses.
+                verified = _keys_to_ctimes(a.tree)
+                unknown = sorted(c.pid for c in pr.children(recursive=True)
+                                 if c.pid not in verified
+                                 or _ctime_of(c) != int(verified[c.pid]))
+                if unknown:
+                    a.error = (f"tree changed since measurement (unclassified descendant(s) "
+                               f"{unknown[:5]}); not stopped")[:200]
+                    continue
+                # THE PARENT CHAIN MUST BE THE ONE THAT WAS CLASSIFIED (audit #482 MF1): a live
+                # ancestor the plan never saw was never checked against the guarded groups.
+                up = [f"{x.pid}:{int(x.create_time())}" for x in pr.parents()]
+                foreign = [k for k in up if k not in set(a.ancestors)]
+                if foreign:
+                    a.error = (f"ancestor chain changed since measurement (unclassified "
+                               f"{foreign[:3]}); not stopped")[:200]
+                    continue
+                # THE VERIFIED PROCESS IS WHAT IS KILLED (audit #482 SF1): never the bare pid,
+                # and no taskkill /PID fallback that could hit a pid reused since the check.
+                # LANDED ONLY WHEN THE ROOT IS GONE (SF2): its children dying is not a stop.
+                from libs.ops.proctree import kill_verified_tree
+                result = kill_verified_tree(pr, verified=verified)
+                # WHAT ACTUALLY DIED is what missed_growth bills (audit #482 SF3): children
+                # killed under a denied root, or a root gone with one child denied, are partial.
+                a.died = [str(k) for k in result.get("dead") or []]
+                if result.get("refused"):
+                    a.error = str(result["refused"])[:200]
+                    continue
+                if not result.get("root_gone"):
+                    a.error = f"the duplicate's root is still running: {result}"[:200]
+                    continue
+                a.applied = True
+                continue
             # THE PID MUST STILL BE THE PROCESS THAT WAS MEASURED (audit SF1, 2026-10-29): a
             # class or mask is never written to a pid reused since the measurement.
             if not a.key:
@@ -1357,6 +1631,12 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH,
     starved_now = bool(summary["judge"]["starved"])
     the_plan = plan(procs, rules, n_cpu, judge_starved=starved_now,
                     previous_heavy=list(prev.get("heavy") or []))
+    read_identity(procs)
+    stops, duplicates = plan_dedupe(
+        procs, rules.get("dedupe") or {},
+        [str(d.get("duplicate")) for d in prev.get("duplicates") or []
+         if isinstance(d, dict)])
+    the_plan.actions.extend(stops)
     reserve_cfg = rules.get("judge_reserve") or {}
     floor_cores = int(rules.get("mining_floor_cores", 1))
     serial = bool(reserve_cfg) and phase in set(reserve_cfg.get("serial_phases", []))
@@ -1395,7 +1675,7 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH,
         prev_res: dict[str, Any] = prev_res_raw if isinstance(prev_res_raw, dict) else {}
         prev_moved_raw = prev_res.get("moved")
         prev_moved: dict[str, str] = prev_moved_raw if isinstance(prev_moved_raw, dict) else {}
-        pinned = {a.pid for a in the_plan.actions if a.kind == "affinity"}
+        pinned = {a.pid for a in the_plan.actions if a.kind in ("affinity", "stop")}
         reserve_actions, moved, meta = plan_reserve(
             procs, reserve_cfg, n_cpu, boost=boost,
             floor_cores=floor_cores, skip_pids=pinned,
@@ -1447,16 +1727,16 @@ def run_once(*, rules_path: Path = RULES_PATH, report_path: Path = REPORT_PATH,
         disk_free_gb=_disk_free_gb(), **summary,
         top=[_row(p) for p in top],
         actions=[asdict(a) for a in the_plan.actions], refused=the_plan.refused,
-        heavy=the_plan.heavy, share_cap_moved=cap_moved, wall=wall, judge_reserve=reserve_doc,
-        money_keys=money_keys,
-        missed_growth=ledger,
+        heavy=the_plan.heavy, share_cap_moved=cap_moved, wall=wall, duplicates=duplicates,
+        judge_reserve=reserve_doc, money_keys=money_keys, missed_growth=ledger,
         health=hunter_health, judge_phase=phase, judge_phase_status=phase_st,
         line=(f"CPU SHAPE {hunter_health['verdict']}: box {box_pct}% on {n_cpu} cores; judge "
               f"{summary['judge']['share_of_box']:.0%} of box"
               f"{' (STARVED)' if summary['judge']['starved'] else ''}; memecoin "
               f"{summary['memecoin']['share_of_box']:.0%}; top {top[0].name if top else '-'} "
               f"{round(top[0].cpu_pct) if top else 0}%; {landed}/{len(the_plan.actions)} changes "
-              f"applied, {len(the_plan.refused)} refused; judge reserve "
+              f"applied, {len(the_plan.refused)} refused; {len(duplicates)} exact duplicate(s), "
+              f"{sum(1 for a in stops if a.applied)} stopped; judge reserve "
               f"{reserve_doc.get('mode', 'off')} {reserve_doc.get('reserve_mask') or ''}"
               f"{' phase ' + str(reserve_doc['phase']) if reserve_doc.get('phase') else ''}"))
     _write(report_path, report)
