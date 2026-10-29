@@ -46,6 +46,7 @@ import zlib
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -97,7 +98,13 @@ _NOT_A_VALUE = r"(?!(?:none|null|true|false|nil|undefined)\b)"
 _CRED_VALUE = (r"(?:[\"'][^\"'\s]+|" + _NOT_A_VALUE +
                r"(?=[^\s\"'()\[\]{},;$%]*[0-9+/~!@#^*])[A-Za-z0-9+/_~!@#^*-][^\s\"'()\[\]{},;$%]{2,}"
                r"(?=[\s\"',;}&]|$))")
-_SEP = r"[\"']?[ \t]*(?:[=:]|%3[ad])[ \t]*"
+#: The assignment separators: `=` and `:` (ini, env, JSON, YAML), the walrus and Pascal/Go `:=`,
+#: the PHP/Ruby/Perl hash arrow `=>`, and their %-encoded forms (`%3D`, `%3A`).
+_SEP = r"[\"']?[ \t]*(?::=|=>|[=:]|%3[ad])[ \t]*"
+#: Words that follow a colon as a TYPE, not a value (`token: str`, a dataclass field), so a YAML
+#: plain scalar rule never reads a Python annotation as a credential.
+_TYPE_WORD = (r"(?!(?:str|int|float|bool|bytes|object|any|none|null|true|false|nil|optional|dict"
+              r"|list|tuple|set|path|callable|sequence|mapping|iterable)\b)")
 _CI = re.IGNORECASE | re.M
 WEAK_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = (*(re.compile(p, _CI) for p in (
     # 0. A credential word as its own segment (snake_case, kebab, a JSON key, an env name:
@@ -119,6 +126,20 @@ WEAK_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = (*(re.compile(p, _CI) for p 
     r"[a-z0-9_-]*key" + _SEP + r"[\"']?(?=[A-Za-z0-9+/_=-]*[0-9])[A-Za-z0-9+/_=-]{16,}",
     # 8. A key in a query string: ?key=, &api_key=, &apikey= with any 8+ character value.
     r"[?&][a-z0-9_-]*key=[^&\s\"'#]{8,}",
+    # 9. A YAML PLAIN SCALAR (audit of #259): `password: hunter`, `- api_key: abcdef  # x`. One
+    #    unquoted word to the end of the line, so YAML prose (`secret: the reason it stays local`)
+    #    and Python annotations (`token: str`, `token: str | None`) stay out.
+    r"^[ \t]*(?:-[ \t]+)?(?:[a-z0-9]+[_-])*" + _CRED_WORD + r"(?:[_-][a-z0-9]+)*[ \t]*:[ \t]+"
+    + _NOT_A_VALUE + _TYPE_WORD + r"[^\s\"'$%(){}\[\],;|&*!<>]{3,}[ \t]*(?:#.*)?$",
+    # 10. A PowerShell / CLI parameter (audit of #259): `-Password 'x'`, `-Token:hunter`,
+    #    `--api-key abc123`. A variable (`-Credential $cred`), a subexpression or another flag is
+    #    not a value; a quoted literal or a bare word is.
+    #    The name prefix is one bounded class (`-AuthToken`, `--db-password`): a nested quantifier
+    #    here backtracked exponentially on long hyphenated lines. No suffix: `--password-file p`
+    #    names a file, not a password.
+    r"(?<![a-z0-9_-])--?[a-z0-9_-]{0,24}?" + _CRED_WORD + r"(?::|[ \t]+)"
+    + r"(?:[\"'][^\"'\s$]{3,}[\"']|" + _NOT_A_VALUE
+    + r"(?![-$@(])[^\s\"'$(){}\[\],;|&<>`]{3,}(?=[\s;|)]|$))",
 )),
     # 9. camelCase (case-SENSITIVE): $mt5Password, dbToken, myApiKey -- the word starts a new
     #    capitalised segment, so "authority" or "passed" never match.
@@ -131,6 +152,8 @@ WEAK_SECRET_PATTERNS: tuple[re.Pattern[str], ...] = (*(re.compile(p, _CI) for p 
 )
 #: An encoded run worth decoding and re-screening (base64 and its url-safe form).
 _B64_RUN = re.compile(r"[A-Za-z0-9+/_-]{20,}={0,2}")
+#: A %XX escape: a text carrying one is also screened %-decoded (see `_percent_decoded`).
+_PCT = re.compile(r"%[0-9A-Fa-f]{2}")
 #: Bytes that make a blob unscreenable as text: a NUL (utf-16, any binary), gzip, zip.
 _BINARY_MAGIC = (b"\x1f\x8b", b"PK\x03\x04")
 _MAX_INFLATE = 8_000_000
@@ -318,11 +341,33 @@ def _b64_decoded(text: str) -> list[str]:
     return found
 
 
+def _percent_decoded(text: str) -> list[str]:
+    """The %-decodings of a text that carries %XX escapes, once and twice (audit of #259): a value
+    written `p%40ssw0rd` or a name written `pass%77ord` is screened as the bytes it stands for,
+    and a double-encoded `%253D` too."""
+    out: list[str] = []
+    cur = text
+    for _ in range(2):
+        if not _PCT.search(cur):
+            break
+        nxt = unquote(cur, errors="replace")
+        if nxt == cur:
+            break
+        out.append(nxt)
+        cur = nxt
+    return out
+
+
 def secret_strength(text: str, _depth: int = 0) -> str | None:
-    """'strong', 'weak' or None for a blob's text (or a commit message), base64 runs included."""
+    """'strong', 'weak' or None for a blob's text (or a commit message), base64 runs and
+    %-encodings included."""
     level = _plain_strength(text)
     if level == "strong" or _depth >= 2:
         return level
+    for decoded in _percent_decoded(text):
+        level = _worse(level, _plain_strength(decoded))
+        if level == "strong":
+            return level
     for decoded in _b64_decoded(text):
         level = _worse(level, secret_strength(decoded, _depth + 1))
         if level == "strong":

@@ -399,3 +399,31 @@ def test_the_screen_withholds_few_of_this_repositorys_own_code_files() -> None:
             continue
         held += bb.screen_bytes(data) is not None
     assert held / len(files) < 0.05, f"{held}/{len(files)} withheld"
+
+
+# AUDIT OF #259: the four shapes the widened screen still passed.
+@pytest.mark.parametrize("text", [
+    # YAML plain scalars
+    "password: hunter", "  api_key: abcdefgh", "- token: abcdef  # rotated", "db_password: letmein",
+    "MT5_PASSWORD: hunter",
+    # %-encoding of the value, the name and the separator (once and twice)
+    "password=p%40ssw0rd", "pass%77ord=hunter2x", "token%253Dabcdef", "secret%3Dhunter",
+    # the walrus / Pascal := and the hash arrow =>
+    'password := "hunter2"', "token := s3cr3t!", "'password' => 'hunter2'", ":api_key => 'abc123'",
+    # PowerShell and CLI parameters
+    "Connect-Box -Password 'hunter2'", "Connect-Box -Password hunter2", "Invoke-X -Token:abcdef",
+    'New-Thing -ApiKey "abc123def"', "tool --password hunter", "tool --api-key abc123",
+])
+def test_the_audited_gaps_are_withheld(text: str) -> None:
+    assert bb.secret_strength(text) in ("weak", "strong"), text
+
+
+@pytest.mark.parametrize("text", [
+    "    token: str", "    token: str | None = None", "    password: Optional[str]",
+    "secret: the reason it stays local", "Connect-Box -Credential $cred",
+    "Invoke-X -Token $env:GITHUB_TOKEN", "tool --password-file path/to/f --verbose",
+    "gh auth login --with-token < tokenfile", "if ($x -eq 1) { re-auth }",
+    "x = 100%", "progress: 50%",
+])
+def test_the_new_shapes_do_not_read_ordinary_code(text: str) -> None:
+    assert bb.secret_strength(text) is None, text
