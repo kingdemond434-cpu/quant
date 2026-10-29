@@ -28,7 +28,8 @@ RED when any of these holds:
     LIVE_CI_QUEUED  a push run on LIVE itself has been queued over 30 min: the box cannot adopt
                     (Adopt-And-Seal waits for green) and the gate cannot see LIVE green
     SIGN_TRAIN_*    the sign train's heartbeat (logs/sign_train.json) is unread, over 30 min old,
-                    failed past two runs in a row, or found its mutex held past two (#541 MF3)
+                    failed past two runs in a row, found its mutex held past two (#541 MF3), or
+                    has waited on one open sign PR over 2 h
 
 Read-only on GitHub: it never cancels, re-runs, comments or merges. What to do about a RED is
 the owner's call (Autonomy thread), and the report names the stage so the call is quick.
@@ -208,6 +209,11 @@ def assess(
                 red.append(f"SIGN_TRAIN_FAILING: {sfails} runs in a row failed")
             if sheld > SWEEP_WEDGED_RUNS:
                 red.append(f"SIGN_TRAIN_WEDGED: its mutex refused {sheld} runs in a row")
+            wage = _age_min(now, str(sign_beat.get("waiting_since") or ""))
+            sign["waiting_on"], sign["waiting_min"] = sign_beat.get("waiting_on"), wage
+            if wage is not None and wage / 60.0 > CLEAR_RED_H:  # a sign PR open, never merged
+                red.append(f"SIGN_TRAIN_WAITING: {sign_beat.get('waiting_on')} open "
+                           f"{wage / 60.0:.1f} h")  # fmt: skip
     sweep: dict[str, Any] | None = None
     if beat_expected:
         if not beat:

@@ -7,6 +7,11 @@
 # that head, and when it signs, pushes claude/sign-train-<head> and opens its PR into LIVE with
 # zuck's gh login, so the PR's CI runs and the gate merges it like any other.
 #
+# THE BOX VOUCHES ONLY FOR BYTES IT SIGNED (#541 audit v2 MF1). Every run signs locally and
+# force-pushes its own commit to claude/sign-train-<head>: whatever was on that branch before
+# (a half-finished run, or anything planted there) is replaced, never reused. No text from git
+# or the train reaches gh's arguments: the PR body goes through --body-file (v2 MF2).
+#
 # It never signs on its own say: no CLEAR row, no sign, and every refusal of sign_train.py stands
 # (1aa4b33f is never signed, QB-002 must be green after). It never takes --principal or --expect.
 # A run while a sign-train PR is still open does nothing, so one sign waits for the last.
@@ -39,10 +44,11 @@ function Say([string] $line) {
 function Prev([string] $key) {
     try { return [int]((Get-Content -LiteralPath $beat -Raw | ConvertFrom-Json).$key) } catch { return 0 }
 }
-function Beat([int] $rc, [string] $note, [int] $held = 0) {
+function Beat([int] $rc, [string] $note, [int] $held = 0, [string] $waitingOn = '', [string] $waitingSince = '') {
     $fails = 0
     if ($rc -ne 0 -and $rc -ne 4) { $fails = (Prev 'fail_runs') + 1 } elseif ($rc -eq 4) { $fails = Prev 'fail_runs' }
     $doc = [ordered]@{ at = (Get-Date).ToUniversalTime().ToString('o'); rc = $rc; note = $note; fail_runs = $fails; mutex_held_runs = $held }
+    if ($waitingOn) { $doc.waiting_on = $waitingOn; $doc.waiting_since = $waitingSince }
     $doc | ConvertTo-Json -Compress | Set-Content -LiteralPath "$beat.tmp" -Encoding UTF8
     Move-Item -LiteralPath "$beat.tmp" -Destination $beat -Force
 }
@@ -82,14 +88,22 @@ try {
     if (-not (Test-Path -LiteralPath $Python)) { throw "no desk Python at $Python" }
     $ErrorActionPreference = 'Continue'  # native stderr is data; exit codes are the verdict
 
-    # One sign at a time: an open sign-train PR is waited for, never stacked on. Searched by head,
-    # never a bare list (30 PRs by default; #541 audit MF1); a full page is refused, not trusted.
-    $open = (& $Gh pr list -R $Repo --base $Live --state open --search "head:claude/sign-train-" --limit 100 --json headRefName --jq '.[].headRefName' 2>&1 | Out-String)
-    if ($LASTEXITCODE -ne 0) { throw "gh pr list failed: $($open.Trim())" }
-    $listed = @($open -split "`r?`n" | Where-Object { $_ })
-    if ($listed.Count -ge 100) { throw "100 or more PRs matched head:claude/sign-train-; the list may be cut" }
-    $waiting = @($listed | Where-Object { $_ -like 'claude/sign-train-*' })
-    if ($waiting.Count -gt 0) { Say "waiting on $($waiting -join ', ')"; Beat 0 "waiting on $($waiting[0])"; exit 0 }
+    # One sign at a time: an open sign-train PR is waited for, never stacked on. Every
+    # claude/sign-train-* branch is listed from git and each is asked for an open PR by its exact
+    # head (#541 audit MF1, v2 SF): no search prefix is trusted.
+    $refs = (& git ls-remote "https://github.com/$Repo.git" 'refs/heads/claude/sign-train-*' 2>$null)
+    if ($LASTEXITCODE -ne 0) { throw "git ls-remote failed ($LASTEXITCODE)" }
+    $trains = @($refs | ForEach-Object { if ("$_" -match 'refs/heads/(claude/sign-train-[0-9a-f]+)$') { $Matches[1] } })
+    foreach ($b in $trains) {
+        $n = (& $Gh pr list -R $Repo --head $b --state open --json number --jq 'length' 2>&1 | Out-String).Trim()
+        if ($LASTEXITCODE -ne 0) { throw "gh pr list failed for ${b}: $n" }
+        if ($n -ne '0') {
+            # how long it has waited rides in the beat, so a PR open forever goes RED (v2 SF)
+            $since = (Get-Date).ToUniversalTime().ToString('o')
+            try { $prev = Get-Content -LiteralPath $beat -Raw | ConvertFrom-Json; if ($prev.waiting_on -eq $b -and $prev.waiting_since) { $since = $prev.waiting_since } } catch { }
+            Say "waiting on $b"; Beat 0 "waiting on $b" 0 $b $since; exit 0
+        }
+    }
 
     # Full history (the CLEAR record must be proven append-only), blobs fetched as needed.
     if (-not (Test-Path -LiteralPath (Join-Path $Clone ".git"))) {
@@ -105,41 +119,33 @@ try {
     $branch = "claude/sign-train-$($head.Substring(0, 12))"
 
     $short = $head.Substring(0, 9)
-    # A branch the train already pushed for this head (its PR never opened: gh failed after the
-    # push) is reused, never re-signed: a second sign makes a new commit the push would refuse
-    # forever (#541 audit MF2). It must be the train's own commit, alone on this head.
-    $remote = (& git -C $Clone ls-remote origin "refs/heads/$branch" 2>&1 | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0) { throw "git ls-remote failed: $remote" }
-    if ($remote) {
-        & git -C $Clone fetch -q --no-tags origin "+refs/heads/${branch}:refs/remotes/origin/${branch}" 2>&1 | ForEach-Object { Say "fetch: $_" }
-        $parent = (& git -C $Clone rev-parse "origin/$branch~1").Trim()
-        $subject = (& git -C $Clone log -1 --format=%s "origin/$branch").Trim()
-        if ($parent -ne $head -or -not $subject.StartsWith("Sign train at $($head.Substring(0, 12))")) {
-            throw "$branch exists but is not the train's own commit on $short; not touched"
-        }
-        $out = "reused the pushed $branch ($subject)"
-        Say "train@$short $out"
-    } else {
-        Push-Location -LiteralPath $Clone
-        try {
-            $lines = New-Object System.Collections.Generic.List[string]
-            & $Python -u "scripts\sign_train.py" --target $head --push 2>&1 | ForEach-Object {
-                $l = "$_"
-                if ($l) { Say "train@$short $l"; $lines.Add($l) }
-            }
-            $rc = $LASTEXITCODE
-            $out = $lines -join "`n"
-        } finally { Pop-Location }
-        if ($rc -ne 0) { Beat $rc "train@$short rc=$rc"; exit $rc }
-        # Signed or not is read from git, not from the train's wording (#541 audit S3): a sign is
-        # exactly one new commit whose parent is the target.
-        $now = (& git -C $Clone rev-parse HEAD).Trim()
-        if ($now -eq $head) { Beat 0 "train@${short}: nothing to sign"; exit 0 }
-        if ((& git -C $Clone rev-parse "HEAD~1").Trim() -ne $head) { throw "HEAD $now does not sit on the target $short" }
-    }
+    # A sign PR a person closed unmerged is not opened again for the same head (v2 SF): the
+    # train waits for LIVE to move.
+    $closed = (& $Gh pr list -R $Repo --head $branch --state closed --json mergedAt --jq '[.[] | select(.mergedAt == null)] | length' 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) { throw "gh pr list (closed) failed: $closed" }
+    if ($closed -ne '0') { Beat 0 "a sign PR for $short was closed unmerged; waiting for LIVE to move"; exit 0 }
 
-    $body = "The sign train signed at $head from the CLEAR rows committed in desks/mt5/data/SEAL_CLEARS.jsonl (D-20261027-003).`n`n``````n$out`n``````n`nOpened by ops/box/sign_train_leg.ps1."
-    $pr = (& $Gh pr create -R $Repo --base $Live --head $branch --title "Sign train at $($head.Substring(0, 12))" --body $body 2>&1 | Out-String)
+    Push-Location -LiteralPath $Clone
+    try {
+        & $Python -u "scripts\sign_train.py" --target $head 2>&1 | ForEach-Object {
+            $l = "$_"
+            if ($l) { Say "train@$short $l" }
+        }
+        $rc = $LASTEXITCODE
+    } finally { Pop-Location }
+    if ($rc -ne 0) { Beat $rc "train@$short rc=$rc"; exit $rc }
+    # Signed or not is read from git, not from the train's wording (#541 audit S3): a sign is
+    # exactly one new commit whose parent is the target.
+    $now = (& git -C $Clone rev-parse HEAD).Trim()
+    if ($now -eq $head) { Beat 0 "train@${short}: nothing to sign"; exit 0 }
+    if ((& git -C $Clone rev-parse "HEAD~1").Trim() -ne $head) { throw "HEAD $now does not sit on the target $short" }
+    & git -C $Clone push -q --force origin "HEAD:refs/heads/$branch" 2>&1 | ForEach-Object { Say "push: $_" }
+    if ($LASTEXITCODE -ne 0) { throw "git push of $branch failed ($LASTEXITCODE)" }
+
+    # Fixed text only, through a file: nothing from git or the train reaches gh's argv (v2 MF2).
+    $bodyFile = Join-Path $LogDir "sign_train_body.md"
+    Set-Content -LiteralPath $bodyFile -Encoding UTF8 -Value ("The sign train signed LIVE at $head from the CLEAR rows committed in desks/mt5/data/SEAL_CLEARS.jsonl (D-20261027-003).`n`nOpened by ops/box/sign_train_leg.ps1; its log is logs\sign_train.log on the box.")
+    $pr = (& $Gh pr create -R $Repo --base $Live --head $branch --title "Sign train at $($head.Substring(0, 12))" --body-file $bodyFile 2>&1 | Out-String)
     if ($LASTEXITCODE -ne 0) { throw "gh pr create failed: $($pr.Trim())" }
     Say "opened $($pr.Trim())"
     Beat 0 "signed at $($head.Substring(0, 9)): $($pr.Trim())"

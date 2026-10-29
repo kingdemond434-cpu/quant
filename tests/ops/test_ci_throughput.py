@@ -445,14 +445,21 @@ def test_the_sign_train_heartbeat_reds_when_stale_failing_wedged_or_unread() -> 
     for beat, kind in cases:
         rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=beat, sign_expected=True)
         assert [r.split(":")[0] for r in rep["red"]] == [kind]
+    waiting = dict(ok, waiting_on="claude/sign-train-abc", waiting_since=_iso(150))
+    rep = mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=waiting, sign_expected=True)
+    assert [r.split(":")[0] for r in rep["red"]] == ["SIGN_TRAIN_WAITING"]
     two = dict(ok, rc=1, fail_runs=2)  # two in a row is not yet RED
     assert mp.assess(NOW, [], {}, {}, [], 0, live, sign_beat=two, sign_expected=True)["red"] == []
 
 
 def test_the_sign_train_leg_never_stacks_a_sign_and_is_watched() -> None:
     ps = (ROOT / "ops/box/sign_train_leg.ps1").read_text(encoding="utf-8")
-    assert '--search "head:claude/sign-train-" --limit 100' in ps  # #541 audit MF1
-    assert "ls-remote origin" in ps and "reused the pushed" in ps  # MF2: a pushed sign is reused
+    # #541 audit MF1/v2: every train branch from git, each asked by its exact head
+    assert "'refs/heads/claude/sign-train-*'" in ps and "--head $b --state open" in ps
+    # v2 MF1: never reuse a pushed branch; sign locally and force-push the box's own commit
+    assert "reused the" not in ps and "--push" not in ps and "push -q --force origin" in ps
+    assert "--body-file $bodyFile" in ps and "--body $" not in ps  # v2 MF2: nothing to argv
+    assert "--state closed" in ps  # a closed sign PR is not reopened for the same head
     assert "AbandonedMutexException" in ps and "mutex_held_runs" in ps  # S1, S2
     assert "--principal" not in ps.split("& $Python", 1)[1].split("\n", 1)[0]
     assert "signed \\d+ file" not in ps  # S3: read from git, not the wording
