@@ -128,14 +128,40 @@ def test_a_soft_door_zero_needs_the_sequential_live_test_else_it_is_flagged(desk
     _write(desk, roster, _trades(FREE[:27], DECAYED))                 # n=36: the edge is gone
     D.main(write_queue=False)
     doc = _zero(desk)
-    assert FREE[:27] in doc["zeros"] and "standard errors below" in doc["zeros"][FREE[:27]]["why"]
+    assert FREE[:27] in doc["zeros"] and "reliably below zero" in doc["zeros"][FREE[:27]]["why"]
+    # the whole live record is kept, once per deal: a second pass over the same trades adds none
+    assert doc["sequential"][FREE[:27]]["n"] == len(DECAYED)
+    D.main(write_queue=False)
+    assert _zero(desk)["sequential"][FREE[:27]]["n"] == len(DECAYED)
 
 
-def test_the_sequential_test_needs_two_judgments_a_gap_apart() -> None:
-    assert D.sequential_decay_verdict(LOSSES, "d")[0] == "FLAG"
-    assert D.sequential_decay_verdict(LOSSES * 2, "d")[0] == "HOLD"   # breaches 20..24 only
-    assert D.sequential_decay_verdict(LOSSES * 3, "d")[0] == "ZERO"   # 20 and 30
-    assert D.sequential_decay_verdict([1.0, -1.1] * 20, "d")[0] == "HOLD"
+def _st(rs: list[float], start: int = 0) -> dict:
+    return D.fold_sequential(None, [{"deal": start + i, "r_multiple": r}
+                                    for i, r in enumerate(rs)])
+
+
+def test_the_sequential_test_reads_the_whole_live_record_once_per_trade() -> None:
+    assert D.sequential_decay_verdict(_st(LOSSES), "d")[0] == "FLAG"
+    assert D.sequential_decay_verdict(_st(LOSSES * 2), "d")[0] == "ZERO"
+    assert D.sequential_decay_verdict(_st([1.0, -1.1] * 20), "d")[0] == "HOLD"
+    # #540 v3 audit MF-1: the record never forgets what left the trailing window. A good start
+    # followed by a window of losses is judged on everything it ever did, once per deal.
+    st = _st([0.6, -0.3] * 30)                                   # +9R over 60 trades
+    window = [{"deal": 1000 + i, "r_multiple": r} for i, r in enumerate([-0.3] * 30)]
+    st = D.fold_sequential(st, window)
+    st = D.fold_sequential(st, window)                           # re-judged next hour
+    assert st["n"] == 90 and abs(st["sum"] - 0.0) < 1e-9
+    assert D.sequential_decay_verdict(st, "d")[0] == "HOLD"
+    assert D._union_sequential({"k": {"n": 9}}, {"k": {"n": 4}})["k"]["n"] == 9
+
+
+def test_a_primary_that_lost_its_zeros_with_no_good_copy_is_red_not_rewritten(desk) -> None:
+    roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP", "family": "formula"},
+              {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"}]
+    _write(desk, roster, _trades(FREE[:27], DECAYED))
+    (desk / "DECAY_ZERO.json").write_text(json.dumps({"checked_at": "x"}), "utf-8")
+    assert D.main(write_queue=False) != 0
+    assert json.loads((desk / "DECAY_ZERO.json").read_text("utf-8")) == {"checked_at": "x"}
 
 
 def test_the_hard_drawdown_rail_is_read_before_any_soft_door(desk) -> None:
@@ -144,7 +170,7 @@ def test_the_hard_drawdown_rail_is_read_before_any_soft_door(desk) -> None:
     rs = [5.0] * 20 + [-1.0] * 26                                    # +74R, then -26R
     v, why, _ = D.book_key_verdict(rs)
     assert v == "ZERO" and why.startswith("live maxDD")
-    assert D.sequential_decay_verdict(rs, "d")[0] == "HOLD"
+    assert D.sequential_decay_verdict(_st(rs), "d")[0] == "HOLD"
     roster = [{"name": FREE, "status": "RETIRED", "symbol": "EURGBP", "family": "formula"},
               {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"}]
     _write(desk, roster, _trades(FREE[:27], rs))
@@ -409,4 +435,4 @@ def test_a_certificate_whose_own_forward_clock_has_no_edge_is_zeroed_when_live_l
               {"name": "eurgbp_other_cert", "status": "STANDBY", "symbol": "EURGBP"}]
     _write(desk, roster, _trades(FREE[:27], DECAYED))
     D.main(write_queue=False)
-    assert "standard errors below zero" in _zero(desk)["zeros"][FREE[:27]]["why"]
+    assert "reliably below zero" in _zero(desk)["zeros"][FREE[:27]]["why"]

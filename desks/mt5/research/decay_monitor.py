@@ -496,44 +496,73 @@ def _forward_r(name: str, row: dict | None, symbol: str) -> list[float]:
     return []
 
 
-#: THE SOFT-DOOR TEST (#540 audit MF-B). A promoter soft door (roll-20 <= 0, a weak 50-trade
-#: mean) zeroes only when the LIVE mean is below zero in its own standard errors -- z <= -DECAY_Z
-#: -- at two judgments at least DECAY_GAP trades apart, from DECAY_MIN_N trades on. DERIVATION:
-#: fitted by simulation (scratch sim540.py, unit-sd trades, every prefix judged as the hourly
-#: monitor would): z 0.84 (the one-sided 80% point) with a 10-trade confirmation gap gives a 4.9%
-#: false-zero rate on a +0.20R sleeve by n=120 and 81.8% detection of a -0.20R sleeve by n=60,
-#: the Auditor's targets (<=5%, >=80%). A true-zero-mean sleeve may be zeroed: it adds no
-#: E[log W], so Rule 1 loses nothing.
-DECAY_Z = 0.84
-DECAY_GAP = 10
+#: THE SOFT-DOOR TEST (#540 audit MF-B, re-fitted on the Auditor's v3 HOLD MF-1). A promoter soft
+#: door (roll-20 <= 0, a weak 50-trade mean) zeroes only when the key's WHOLE live record -- not
+#: the trailing window the doors read -- has a mean reliably below zero on a TIME-UNIFORM test:
+#: the normal-mixture confidence sequence  sum(r) <= -s * sqrt((n + RHO) * ln((n + RHO) /
+#: (RHO * ALPHA^2))). It is valid at every n at once, so judging it every hour adds no false
+#: zeros, and its state (n, sum r, sum r^2, the deals folded) is kept per key in DECAY_ZERO.json
+#: so a trade is counted exactly once and never ages out. v3 tested every prefix of the sliding
+#: 60-trade window, re-judged hourly: the Auditor measured 46-60% false zeros on a +0.10R sleeve
+#: by 120 trades. DERIVATION (scratch simc4.py, 2,000 paths per cell, normal and 1:1/2:1/3:1
+#: brackets): ALPHA 0.30, RHO 20 give false zeros of 1-8% on a +0.10R sleeve by 300 trades (the
+#: Auditor's bar, <= 10%) and detect a -0.20R sleeve 47-66% by 120 trades, 72-95% by 300. A
+#: true-zero-mean sleeve may be zeroed (10-18% by 300): it adds no E[log W], so Rule 1 loses
+#: nothing.
+DECAY_ALPHA = 0.30
+DECAY_RHO = 20.0
 #: Live trades before the soft doors may zero: N_MIN_VERDICT, the desk's own verdict count.
 DECAY_MIN_N = N_MIN_VERDICT
+#: Deal ids remembered per key, so a trade still in the window is never folded twice; well past
+#: the window's own TRAIL_MAX_TRADES.
+SEQ_KEEP_DEALS = 4 * TRAIL_MAX_TRADES
 
 
-def sequential_decay_verdict(live: list[float], door: str) -> tuple[str, str]:
-    """ZERO, HOLD or FLAG for a key a soft promoter door tripped, judged on its live record:
-    ZERO when the running mean's z-score against zero is <= -DECAY_Z at two judgments at least
-    DECAY_GAP trades apart (every prefix from DECAY_MIN_N is a judgment, as the hourly monitor
-    sees it); HOLD when it is not; FLAG below DECAY_MIN_N trades (too few to judge)."""
-    import statistics
-    n = len(live)
+def _deal_id(t: dict) -> str:
+    d = t.get("deal") or t.get("position_id") or t.get("order")
+    return str(d) if d not in (None, "") else f"{t.get('time')}|{t.get('r_multiple')}"
+
+
+def fold_sequential(state: dict | None, trades: list[dict]) -> dict:
+    """The key's cumulative live record with every trade in `trades` it has not yet seen folded in
+    once (by deal id): {"n", "sum", "sumsq", "deals"}. Never shrinks as trades leave the window."""
+    st = state if isinstance(state, dict) else {}
+    n, sx, sxx = int(st.get("n") or 0), float(st.get("sum") or 0.0), float(st.get("sumsq") or 0.0)
+    deals = [str(d) for d in (st.get("deals") or [])]
+    seen = set(deals)
+    for t in trades:
+        d = _deal_id(t)
+        if d in seen:
+            continue
+        r = float(t["r_multiple"])
+        n, sx, sxx = n + 1, sx + r, sxx + r * r
+        deals.append(d)
+        seen.add(d)
+    return {"n": n, "sum": round(sx, 10), "sumsq": round(sxx, 10),
+            "deals": deals[-SEQ_KEEP_DEALS:]}
+
+
+def sequential_decay_verdict(state: dict, door: str) -> tuple[str, str]:
+    """ZERO, HOLD or FLAG for a key a soft promoter door tripped, judged on its cumulative live
+    record (`fold_sequential`): ZERO when the sum of its R sits below the time-uniform boundary;
+    HOLD when it does not; FLAG below DECAY_MIN_N live trades (too few to judge)."""
+    import math
+    n = int(state.get("n") or 0)
     if n < DECAY_MIN_N:
         return "FLAG", (f"{door}, but n={n} < {DECAY_MIN_N} live trades: too few to test the live "
                         f"mean; flagged, not zeroed")
-    breaches: list[int] = []
-    for k in range(DECAY_MIN_N, n + 1):
-        x = live[:k]
-        sd = statistics.stdev(x)
-        z = statistics.fmean(x) / (sd / k ** 0.5) if sd > 0 else 0.0
-        if z <= -DECAY_Z:
-            breaches.append(k)
-            if any(k - b >= DECAY_GAP for b in breaches):
-                return "ZERO", (f"{door}; the live mean {statistics.fmean(live):+.3f}R sits "
-                                f"{DECAY_Z} standard errors below zero at trades {breaches[0]} "
-                                f"and {k} (>= {DECAY_GAP} apart): the edge is gone, not resting")
-    return "HOLD", (f"{door}, but the live mean {statistics.fmean(live):+.3f}R is not "
-                    f"{DECAY_Z} standard errors below zero on two judgments {DECAY_GAP} trades "
-                    f"apart: a bad stretch, not decay")
+    sx, sxx = float(state["sum"]), float(state["sumsq"])
+    sd = math.sqrt(max((sxx - sx * sx / n) / (n - 1), 0.09))
+    w = n + DECAY_RHO
+    bound = sd * math.sqrt(w * math.log(w / (DECAY_RHO * DECAY_ALPHA ** 2)))
+    mean = sx / n
+    if sx <= -bound:
+        return "ZERO", (f"{door}; over its whole live record (n={n}) the mean {mean:+.3f}R is "
+                        f"reliably below zero (sum {sx:+.2f}R <= -{bound:.2f}R, time-uniform "
+                        f"alpha {DECAY_ALPHA}): the edge is gone, not resting")
+    return "HOLD", (f"{door}, but over its whole live record (n={n}) the mean {mean:+.3f}R is not "
+                    f"reliably below zero (sum {sx:+.2f}R > -{bound:.2f}R): a bad stretch, not "
+                    f"decay")
 
 
 def cert_streak_band(forward: list[float]) -> float | None:
@@ -544,6 +573,18 @@ def cert_streak_band(forward: list[float]) -> float | None:
     means = sorted(sum(forward[i:i + w]) / w for i in range(len(forward) - w + 1))
     k = max(0, min(len(means) - 1, int(len(means) * STREAK_PCT / 100.0)))
     return means[k]
+
+
+def _union_sequential(a: object, b: object) -> dict:
+    """Both copies' cumulative live records, the longer one per key (a truncated primary can
+    never shorten a record the last good copy holds)."""
+    out: dict[str, dict] = {}
+    for src in (a, b):
+        for k, v in (src.items() if isinstance(src, dict) else ()):
+            if (isinstance(v, dict)
+                    and int(v.get("n") or 0) >= int((out.get(k) or {}).get("n") or 0)):
+                out[k] = v
+    return out
 
 
 def _traded_recently(name: str) -> bool:
@@ -579,6 +620,8 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
     """
     roster = roster or {}
     prev_zeros = dict((prev or {}).get("zeros") or {})
+    prev_seq = dict((prev or {}).get("sequential") or {})
+    sequential: dict[str, dict] = {k: v for k, v in prev_seq.items() if isinstance(v, dict)}
     exempt = {_stem(k) for k in TEMPORARY_EXEMPT}
     judged: dict[str, dict] = {}
     unmeasured: dict[str, dict] = {}
@@ -593,6 +636,8 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
                   if str(t.get("account_kind") or "live").lower() == "live"]
         rs = [float(t["r_multiple"]) for t in trades]
         v, why, facts = book_key_verdict(rs)
+        sequential[name] = fold_sequential(prev_seq.get(name), trades)
+        facts["live_record_n"] = sequential[name]["n"]
         symbol = next((str(t.get("symbol")) for t in reversed(trades) if t.get("symbol")), "")
         # The certificate's own forward bad-streak band is REPORTED beside the verdict (a fact for
         # the reader and for the regime work to come); the verdict is the live record's own test.
@@ -605,7 +650,7 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
             # <= 0 at n=10 zeroes a +0.20R sleeve with p~0.42; so a soft-door ZERO stands only when
             # the sequential live-mean test rejects (sequential_decay_verdict), and below
             # DECAY_MIN_N live trades the key is FLAGGED. The -25R drawdown stays a hard zero.
-            v, why = sequential_decay_verdict(rs, why)
+            v, why = sequential_decay_verdict(sequential[name], why)
         row = {**facts, "verdict": v, "why": why}
         if v == "UNMEASURED":
             unmeasured[name] = row
@@ -641,6 +686,7 @@ def decay_zero_doc(live: dict[str, dict], now: str, roster: dict[str, dict] | No
         flags.pop(k, None)
     return {"checked_at": now, "trail_days": TRAIL_DAYS, "zeros": zeros, "flags": flags,
             "lifted": lifted, "judged": judged, "unmeasured": unmeasured,
+            "sequential": sequential,
             "zeroed_heat_redeployed": False,
             "rule": (f"a key that closed a live trade in the last {TRAIL_DAYS} days and is not a "
                      f"LIVE roster row is judged on the promoter's retirement bars "
@@ -1088,7 +1134,14 @@ def main(write_queue: bool = True) -> int:
     # read: this pass refuses to rewrite it (the zeros it held would be lost), keeps the file for
     # inspection, publishes zero_file UNREADABLE (allocator liveness turns it RED) and exits
     # non-zero; the gateway keeps honouring the last good copy.
-    zero_unreadable = zero_path.exists() and not isinstance(_read_json(zero_path, None), dict)
+    _prim0 = _read_json(zero_path, None) if zero_path.exists() else None
+    _good0 = _read_json(zero_path.with_name(zero_path.stem + ".last_good.json"), None)
+    # A primary that is a dict but has LOST its `zeros` key, with no good copy holding them,
+    # is as unreadable as a torn one (#540 v3 audit SF): rewriting it would drop every zero.
+    zero_unreadable = zero_path.exists() and (
+        not isinstance(_prim0, dict)
+        or (not isinstance(_prim0.get("zeros"), dict)
+            and not (isinstance(_good0, dict) and isinstance(_good0.get("zeros"), dict))))
     if source != "UNMEASURED" and zero_unreadable:
         print(f"decay monitor: {zero_path.name} exists and is unreadable -- NOT rewritten; the "
               f"gateway reads {zero_path.name.replace('.json', '.last_good.json')}")
@@ -1104,7 +1157,9 @@ def main(write_queue: bool = True) -> int:
         prev_doc = {**good, **prim,
                     "zeros": {**(good.get("zeros") if isinstance(good.get("zeros"), dict) else {}),
                               **(prim.get("zeros") if isinstance(prim.get("zeros"), dict) else {})},
-                    "flags": prim.get("flags") or good.get("flags") or {}}
+                    "flags": prim.get("flags") or good.get("flags") or {},
+                    "sequential": _union_sequential(good.get("sequential"),
+                                                    prim.get("sequential"))}
         zero_doc = decay_zero_doc(live, now, roster_rows(doc), prev_doc)
         before_z, before_f = set(prev_doc.get("zeros") or {}), set(prev_doc.get("flags") or {})
         for k, z in zero_doc["zeros"].items():
