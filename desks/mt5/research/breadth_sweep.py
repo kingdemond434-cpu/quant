@@ -160,6 +160,19 @@ READY: dict[str, dict] = {
 # the input is NAMED on the cell (a peer panel, a leader, a measured store pair) and nothing is
 # claimed. `scripts/check_judge_coverage.py` fails RED on any live family that still holds none.
 
+#: Why a recipe family's targets came back EMPTY on the last `cells()` call, by family: its input
+#: measured absent, no lawful instrument holding it, or the loader itself failing. Published in
+#: BREADTH_SWEEP.json as `input_blocked`, so the unmined-family fence can tell a family blocked on
+#: its INPUT (amber, the remedy is data) from one nothing is wired to (red, the remedy is code).
+TARGET_NOTES: dict[str, str] = {}
+INPUT_BLOCKED: dict[str, str] = {}
+
+
+def _note(fam: str, why: str) -> list[tuple[str, dict]]:
+    TARGET_NOTES[fam] = why
+    return []
+
+
 def _learned_targets(fam: str) -> Any:
     """(symbol, params) for a learned family: each instrument of each declared panel against the
     rest of that panel, at the FIRST configuration the model grid declares (fixed before any
@@ -168,11 +181,11 @@ def _learned_targets(fam: str) -> Any:
     def targets(syms: list[str]) -> list[tuple[str, dict]]:
         try:
             from research import learned_miners as LM
-        except Exception:
-            return []
+        except Exception as exc:
+            return _note(fam, f"learned_miners unimportable ({type(exc).__name__}: {exc})")
         spec = next((m for m in LM.MINERS.values() if m.get("family") == fam), None)
         if not spec or not spec.get("grid"):
-            return []
+            return _note(fam, "learned_miners declares no model grid for this family")
         config = dict(spec["grid"][0])
         have = set(syms)
         out: list[tuple[str, dict]] = []
@@ -183,7 +196,7 @@ def _learned_targets(fam: str) -> Any:
             for sym in members:
                 out.append((sym, {**config, **LM.FIXED, "symbol": sym,
                                   "peer_symbols": [m for m in members if m != sym]}))
-        return out
+        return out or _note(fam, f"no declared panel holds {LM.MIN_PANEL}+ members with H1 bars")
     return targets
 
 
@@ -194,8 +207,8 @@ def _lead_targets(syms: list[str]) -> list[tuple[str, dict]]:
     rule the mass screen and the gauntlet share (`mt5desk/mass_screen_rules`)."""
     try:
         from research.mass_screen import LEADERS
-    except Exception:
-        return []
+    except Exception as exc:
+        return _note("mass_screen_lead", f"mass_screen unimportable ({type(exc).__name__}: {exc})")
     have = set(syms)
     out: list[tuple[str, dict]] = []
     for sym in (s for s in CORE if s in have):
@@ -207,7 +220,7 @@ def _lead_targets(syms: list[str]) -> list[tuple[str, dict]]:
                         out.append((sym, {"feat": f"lead_ret_{n}", "op": op, "thr": thr,
                                           "direction": direction, "hold": 6, "stop_atr": 1.5,
                                           "leader": leader}))
-    return out
+    return out or _note("mass_screen_lead", "no liquid-core follower and leader both hold H1 bars")
 
 
 def _analyst_targets(relation: str) -> Any:
@@ -216,13 +229,17 @@ def _analyst_targets(relation: str) -> Any:
     for, on an instrument this sweep may hypothesise on, followed and faded. The pairs are the
     store's own evidence, read point-in-time by the family; an absent store mints nothing."""
     def targets(syms: list[str]) -> list[tuple[str, dict]]:
+        fam = "analyst_revision_drift" if relation == "direct" else "analyst_cross_market_lead"
         try:
             from mt5desk import family_analyst_revision as far
 
             from libs.research import analyst_views as av
-            obs, _ = av.observations(far._rows(far.store_path()), basis="first_seen")
-        except Exception:
-            return []
+            path = far.store_path()
+            if not path.exists():
+                return _note(fam, f"input measured absent: {path.name} is not on this box")
+            obs, _ = av.observations(far._rows(path), basis="first_seen")
+        except Exception as exc:
+            return _note(fam, f"analyst store unreadable ({type(exc).__name__}: {exc})")
         counts: dict[tuple[str, str, str], int] = {}
         for o in av.daily_net([o for o in obs if o.relation == relation]):
             k = (o.target, o.source, o.lead)
@@ -237,7 +254,10 @@ def _analyst_targets(relation: str) -> Any:
                 if relation == "lead":
                     p["lead"] = lead
                 out.append((target, p))
-        return out
+        return out or _note(fam, (
+            f"zero lawful targets: no ({relation}) store pair holds {av.MIN_EVENTS}+ first-seen "
+            "daily observations on an instrument this sweep may hypothesise on (single-name "
+            "shares are the event lane's, never this sweep's)"))
     return targets
 
 
@@ -249,11 +269,15 @@ for _fam in ("gnn_propagation", "attention_ts", "rocket_ts", "ae_latent", "sig_p
         # A next-day forecast acted on once a day: finer charts and session slots re-emit the
         # same signal (`families_orthogonal.FAMILY_TIMEFRAMES`).
         "charts": ("H1", "D1"), "sessions": ("all",),
+        # The learned miner screens the same grid on the same bars; carried so a later pass can
+        # discount for the selection that already happened.
+        "provenance": "research/learned_miners screens this configuration (grid[0]) on these bars",
     }
 READY["mass_screen_lead"] = {
     "why": "cross-asset information transmission from a leader instrument had never reached "
            "the judge: the mass screen forwards FDR survivors only, and no lead cell survived",
-    "targets": _lead_targets, "grid": [{}], "charts": ("H1",),
+    "targets": _lead_targets, "grid": [{}], "charts": ("H1",), "sessions": ("all",),
+    "provenance": "research/mass_screen screens the lead grammar on the same H1 bars (FDR)",
 }
 READY["analyst_revision_drift"] = {
     "why": "slow diffusion of analyst revisions had never reached the judge",
@@ -518,13 +542,18 @@ def cells(only: str | None = None) -> list[dict]:
     syms = _with_bars()
     out: list[dict] = []
     LAST_SET_ASIDE.clear()
+    TARGET_NOTES.clear()
+    INPUT_BLOCKED.clear()
     for fam, spec in READY.items():
         if only and fam != only:
             continue
         if _banned(fam):
             continue
         charts = spec.get("charts")
-        for sym, extra in _targets(fam, spec, syms):
+        targets = _targets(fam, spec, syms)
+        if not targets and callable(spec.get("targets")):
+            INPUT_BLOCKED[fam] = TARGET_NOTES.get(fam) or "the recipe named no target"
+        for sym, extra in targets:
             for params in spec["grid"]:
                 for tf in [t for t in (_charts_for(sym) or ["H1"])
                            if not charts or t in charts]:
@@ -579,6 +608,9 @@ def write_report(new: list[dict], syms: list[str], added: int | None, total: int
         "set_aside_untestable": sorted(LAST_SET_ASIDE.values(),
                                        key=lambda r: (-int(r["cells"]), r["family"])),
         "set_aside_cells": sum(int(r["cells"]) for r in LAST_SET_ASIDE.values()),
+        # Recipe families whose targets came back empty, with the measured reason: read by
+        # scripts/check_judge_coverage.py, which ambers an unmined family blocked on its input.
+        "input_blocked": dict(sorted(INPUT_BLOCKED.items())),
         "rule": ("a cell the sealed gauntlet cannot build with its inputs, or on a chart its "
                  "family "
                  "declares it cannot express, is set aside BY NAME and counted here -- never "
@@ -661,6 +693,7 @@ def _cell(sym: str, fam: str, p: dict, spec: dict, now: str) -> dict:
         "first_seen": now, "pit_stamp": now,
         "why": (f"closing a NAMED breadth gap: {spec['why']}. No performance is "
                 f"claimed -- the gauntlet attaches the only numbers that attach."),
+        **({"screen_provenance": spec["provenance"]} if spec.get("provenance") else {}),
     }, "breadth_sweep", now=datetime.fromisoformat(now))
 
 

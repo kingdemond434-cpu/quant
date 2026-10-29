@@ -83,6 +83,7 @@ def test_analyst_targets_come_only_from_the_store(tmp_path, monkeypatch) -> None
     monkeypatch.setenv("QUANT_ALPHA_CAPTURE_STORE", str(tmp_path / "absent.jsonl"))
     for fam in ("analyst_revision_drift", "analyst_cross_market_lead"):
         assert bs._targets(fam, bs.READY[fam], list(bs.CORE)) == []
+        assert "input measured absent" in bs.TARGET_NOTES[fam]
 
 
 def test_unmined_families_go_first_under_the_cap(tmp_path, monkeypatch) -> None:
@@ -102,24 +103,71 @@ def test_unmined_families_go_first_under_the_cap(tmp_path, monkeypatch) -> None:
     assert [r["family"] for r in rows[1:]] == ["fresh", "held"]
 
 
-def _report(path: Path, unmined: list[str]) -> Path:
-    path.write_text(json.dumps({
-        "at": "2026-10-29T12:00:00+00:00",
-        "families": {"carry": {"mined": 5, "queued": 1, "unjudged": 1, "judged_window": 1}},
-        "totals": {"families_unmined": len(unmined)},
-        "unmined_live_families": unmined}))
+def _report(path: Path, unmined: list[str] | None, live: int | None = 100) -> Path:
+    doc: dict = {"at": "2026-10-29T12:00:00+00:00",
+                 "families": {"carry": {"mined": 5, "queued": 1, "unjudged": 1,
+                                        "judged_window": 1}},
+                 "totals": {"families_live": live}}
+    if unmined is not None:
+        doc["totals"]["families_unmined"] = len(unmined)
+        doc["unmined_live_families"] = unmined
+    path.write_text(json.dumps(doc))
     return path
+
+
+def _row(doc: dict, metric: str) -> dict:
+    return next(c for c in doc["checks"] if c["metric"] == metric)
+
+
+
+def _judge(cjc, path: Path, **kw):
+    from datetime import UTC, datetime
+    return cjc.judge(path, now=datetime(2026, 10, 29, 12, 30, tzinfo=UTC), liveness=False, **kw)
 
 
 def test_the_fence_fails_on_any_unmined_live_family(tmp_path, monkeypatch) -> None:
     import check_judge_coverage as cjc
     monkeypatch.delenv(cjc.SOURCE_VIEW_ENV, raising=False)
-    from datetime import UTC, datetime
-    now = datetime(2026, 10, 29, 12, 30, tzinfo=UTC)
-    doc = cjc.judge(_report(tmp_path / "r.json", ["dav_t3_trend", "sig_path"]), now=now,
-                    liveness=False)
-    row = next(c for c in doc["checks"] if c["metric"] == "families_unmined")
+    doc = _judge(cjc, _report(tmp_path / "r.json", ["dav_t3_trend", "sig_path"]))
+    row = _row(doc, "families_unmined")
     assert doc["verdict"] == "FAIL" and row["state"] == "FAIL"
     assert "dav_t3_trend" in row["why"] and "sig_path" in row["why"]
-    ok = cjc.judge(_report(tmp_path / "g.json", []), now=now, liveness=False)
-    assert next(c for c in ok["checks"] if c["metric"] == "families_unmined")["state"] == "OK"
+    ok = _judge(cjc, _report(tmp_path / "g.json", []))
+    assert _row(ok, "families_unmined")["state"] == "OK"
+
+
+def test_an_unmeasured_list_is_never_ok(tmp_path, monkeypatch) -> None:
+    import check_judge_coverage as cjc
+    monkeypatch.delenv(cjc.SOURCE_VIEW_ENV, raising=False)
+    for name, unmined, live in (("old.json", None, 100), ("empty.json", [], 0),
+                                ("nolive.json", [], None)):
+        p = _report(tmp_path / name, unmined, live)
+        assert _row(_judge(cjc, p), "families_unmined")["state"] == "UNMEASURED", name
+        boxed = _judge(cjc, p, require_state=True)
+        assert _row(boxed, "families_unmined")["state"] == "FAIL", name
+        assert boxed["verdict"] == "FAIL", name
+
+
+def test_a_family_blocked_on_its_input_is_amber_not_red(tmp_path, monkeypatch) -> None:
+    import check_judge_coverage as cjc
+    monkeypatch.delenv(cjc.SOURCE_VIEW_ENV, raising=False)
+    (tmp_path / "BREADTH_SWEEP.json").write_text(json.dumps(
+        {"input_blocked": {"analyst_revision_drift": "zero lawful targets"}}))
+    doc = _judge(cjc, _report(tmp_path / "r.json", ["analyst_revision_drift"]))
+    assert _row(doc, "families_unmined")["state"] == "OK"
+    assert _row(doc, "families_unmined_input_blocked")["state"] == "WARN"
+    assert "zero lawful targets" in _row(doc, "families_unmined_input_blocked")["why"]
+    mixed = _judge(cjc, _report(tmp_path / "m.json", ["analyst_revision_drift", "sig_path"]))
+    assert _row(mixed, "families_unmined")["state"] == "FAIL"
+    assert "sig_path" in _row(mixed, "families_unmined")["why"]
+    assert "analyst_revision_drift" not in _row(mixed, "families_unmined")["why"]
+
+
+def test_an_empty_recipe_publishes_why_it_is_input_blocked(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("QUANT_ALPHA_CAPTURE_STORE", str(tmp_path / "absent.jsonl"))
+    bs.cells("analyst_revision_drift")
+    assert "input measured absent" in bs.INPUT_BLOCKED["analyst_revision_drift"]
+    rows = bs.cells("mass_screen_lead")
+    assert "mass_screen_lead" not in bs.INPUT_BLOCKED
+    assert rows and all(r["screen_provenance"].startswith("research/mass_screen") for r in rows)
+    assert all("session" not in r["params"] for r in rows)
