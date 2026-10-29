@@ -75,6 +75,37 @@ def backfill(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str
     return out, counts
 
 
+
+def assert_unsealed_for_rewrite(path: Path) -> None:
+    """A declared backfill is not permission to replace already sealed evidence.
+
+    The historical whole-file repair remains available for explicit unsealed
+    imports. Canonical records with any sealed prefix require a versioned
+    correction/reconciliation procedure, even when the proposed R is better.
+    Absence or corruption of the canonical manifest never grants permission.
+    """
+    try:
+        relative = path.resolve().relative_to(ROOT.resolve()).as_posix()
+    except ValueError:
+        return  # explicit external import: no repository seal claims this path
+    manifest = ROOT / "desks/mt5/data/IMMUTABLE_MANIFEST.json"
+    try:
+        document = json.loads(manifest.read_text("utf-8"))
+        entries = document["append_only"]
+        if not isinstance(entries, dict):
+            raise ValueError("append_only must be a mapping")
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise RuntimeError("Cannot prove canonical ledger is unsealed; no rewrite performed") from exc
+    entry = entries.get(relative)
+    if entry is not None:
+        if not isinstance(entry, dict) or not isinstance(entry.get("records"), int):
+            raise RuntimeError("Malformed record seal; no rewrite performed")
+        if entry["records"] > 0:
+            raise RuntimeError(
+                f"Refusing to rewrite {relative}: {entry['records']} sealed records. "
+                "Preserve raw evidence and reconcile a versioned correction; do not reseal.")
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--ledger", default=str(LEDGER))
@@ -97,6 +128,7 @@ def main(argv: list[str] | None = None) -> int:
           f"{counts['kept']} kept, {counts['unreconstructible']} unreconstructible"
           f"{'' if a.apply else ' (dry run -- pass --apply)'}")
     if a.apply and counts["backfilled"]:
+        assert_unsealed_for_rewrite(p)
         tmp = p.with_suffix(".jsonl.tmp")
         with tmp.open("w", encoding="utf-8") as f:
             for r in rows:
