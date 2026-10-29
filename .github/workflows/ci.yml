@@ -10,6 +10,35 @@ on:
     # Only the two shared branches run on push; feature branches are gated by their
     # pull_request runs.
     branches: ["claude/llm-auto-upgrade-verify-gcjac3", "desk-sync-clean"]
+    # A push that changes ONLY box state starts no run (GitHub skips a push when every changed
+    # path matches). MEASURED 2026-10-29: the box publishes its state every 15 min and each
+    # publish ran the whole suite on LIVE, about a third of a runner queue 189 runs deep, for code
+    # that had not changed (`seal --if-needed` and promote have nothing to do on such a commit).
+    # A code merge still runs: the gate dispatches this workflow, and a code path never matches.
+    # The list IS libs.ops.release STATE_PREFIXES + STATE_FILES; tests/ops/test_ci_throughput.py
+    # fails on any drift.
+    paths-ignore:
+      - "desks/mt5/data/**"
+      - "desks/mt5/reports/**"
+      - "desks/mt5/logs/**"
+      - "desks/mt5/frontier_intel/data/**"
+      - "desks/mt5/side_channels/data/**"
+      - "data/**"
+      - "reports/**"
+      - "logs/**"
+      - "web/**"
+      - "docs/**"
+      - "context/decision_journal.jsonl"
+      - "desks/mt5/docs/TRADE_PATH_REPORT.md"
+      - "desks/mt5/gateway_state.json"
+      - "desks/mt5/hunt11.json"
+      - "desks/mt5/mech_battery.json"
+      - "desks/mt5/mech_split.json"
+      - "desks/mt5/portfolio_projection.json"
+      - "desks/mt5/regime_state.json"
+      - "desks/mt5/swap_exposure.json"
+      - "desks/mt5/sync_marker.json"
+      - "docs/desk_lessons.jsonl"
   pull_request:
   workflow_dispatch:
 

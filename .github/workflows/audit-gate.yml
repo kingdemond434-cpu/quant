@@ -35,7 +35,9 @@ jobs:
       group: audit-gate-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    # One look, never a wait (2026-10-29: gates polling up to 300 min held the runners their own
+    # checks were queued for). The box sweep, every 10 min, merges once the checks are green.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,4 +58,4 @@ jobs:
           --repo "${{ github.repository }}"
           --pr "${{ github.event.pull_request.number }}"
           --base "${{ github.event.pull_request.base.ref }}"
-          --wait-min 300
+          --wait-min 0

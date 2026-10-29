@@ -551,8 +551,12 @@ def up_to_date(base_ref: str, head: str) -> tuple[bool, str]:
         capture_output=True,
         check=False,
     )
+    lag = ""
     if behind.returncode != 0:
-        return False, f"it is behind {base_ref} (merge {base_ref} in first)"
+        state = state_only_lag(base_ref, head)
+        if state is None:
+            return False, f"it is behind {base_ref} (merge {base_ref} in first)"
+        lag = f" but for {state} box-state path(s)"
     same = subprocess.run(
         ["git", "diff", "--quiet", f"origin/{base_ref}", head, "--", ".github"],
         capture_output=True,
@@ -560,7 +564,49 @@ def up_to_date(base_ref: str, head: str) -> tuple[bool, str]:
     )
     if same.returncode != 0:
         return False, f"its .github differs from {base_ref}"
-    return True, "up to date"
+    return True, f"up to date{lag}"
+
+
+def _is_state_path() -> Callable[[str], bool] | None:
+    """libs.ops.release.is_state_path from THIS checkout (the base's, trusted code), loaded by
+    path so the gate needs no install; None (every path is code) when it cannot be loaded."""
+    import importlib.util
+
+    src = Path(__file__).resolve().parents[2] / "libs" / "ops" / "release.py"
+    try:
+        spec = importlib.util.spec_from_file_location("_gate_release", src)
+        if spec is None or spec.loader is None:
+            return None
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        fn = mod.is_state_path
+    except Exception:  # any failure is "code": the PR must merge the base in
+        return None
+    return fn if callable(fn) else None
+
+
+def state_only_lag(base_ref: str, head: str) -> int | None:
+    """How many paths the base gained since the head forked, when EVERY one is box state
+    (libs.ops.release.is_state_path); None when any is code, or on any error.
+
+    MEASURED 2026-10-29: the box publishes its state onto LIVE every 15 minutes, while a PR's
+    checks waited over two hours for a runner, so no no-comment PR was ever "up to date" by the
+    time its checks finished: merging LIVE in moved the head and restarted the checks, forever.
+    A state-only lag merges no untested CODE (#456 audit MF3 is about code): the files it adds
+    are the box's own records, already on LIVE without any PR's tests. Code on the base still
+    makes the PR merge the base in first."""
+    is_state = _is_state_path()
+    if is_state is None:
+        return None
+    try:
+        fork = _git("merge-base", f"origin/{base_ref}", head)
+        paths = _git("diff", "--name-only", "--no-renames", fork, f"origin/{base_ref}")
+    except subprocess.CalledProcessError:
+        return None
+    changed = [p for p in paths.splitlines() if p.strip()]
+    if not changed or not all(is_state(p) for p in changed):
+        return None
+    return len(changed)
 
 
 def queued_review(
@@ -841,7 +887,12 @@ def run(
                 except RuntimeError as exc:
                     _summary(f"(quarantine label not added: {exc})")
             return 1
-        if box or low:  # a LOW-tier PR never holds a runner: the box sweep looks again
+        # A LOW-tier PR never holds a runner, and with `wait_min` 0 no PR does: the box sweep
+        # looks again. MEASURED 2026-10-29: every CLEARed PR's gate polled for up to 300 min on
+        # a runner of the same free pool its own checks were queued for, so under a backlog the
+        # gates held the slots the checks needed (189 runs queued, oldest 14:05Z, nothing but box
+        # state reached LIVE for 4h). Holding a runner to wait for runners is the class.
+        if box or low or wait_min <= 0:
             _summary(f"#{pr} @ {head[:9]}: CI {cwhy}; the next sweep looks again")
             return 0
         if time.monotonic() > deadline:
