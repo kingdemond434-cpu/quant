@@ -318,6 +318,9 @@ def test_the_installer_refuses_system_and_a_registration_with_no_next_run() -> N
     src = _cro_installer()
     assert "is SYSTEM: neither claude nor codex is logged in" in src
     assert "registered with no next run time" in src and "exit 4" in src
+    # The noon lane can be armed alone (box-native noon pass) while midnight waits on its clone.
+    assert "[ValidateSet('noon', 'midnight', 'both')]" in src
+    assert "Where-Object { $Lane -eq 'both' -or $_.Lane -eq $Lane }" in src
 
 
 def test_the_codex_lane_gets_its_own_clone_and_never_the_live_git() -> None:

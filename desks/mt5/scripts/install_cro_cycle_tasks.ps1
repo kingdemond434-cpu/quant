@@ -29,11 +29,18 @@
 
 .PARAMETER NoStart
     Register only; do not fire a WhatIf check.
+
+.PARAMETER Lane
+    noon, midnight or both (default). The noon lane is the box-native noon CRO pass (2026-10-29:
+    it no longer rides a laptop Remote Control session); the midnight lane also needs its clone
+    (provision_midnight_lane_clone.ps1), so it can be armed separately when that is ready.
 #>
 [CmdletBinding()]
 param(
     [string] $RunAs = ("{0}\{1}" -f $env:USERDOMAIN, $env:USERNAME),
-    [switch] $NoStart
+    [switch] $NoStart,
+    [ValidateSet('noon', 'midnight', 'both')]
+    [string] $Lane = 'both'
 )
 $ErrorActionPreference = 'Stop'
 
@@ -57,7 +64,8 @@ $principal = New-ScheduledTaskPrincipal -UserId $RunAs -LogonType S4U -RunLevel 
 
 foreach ($lane in @(
         @{ Name = 'MT5-CycleNoon';     Lane = 'noon';     Desc = 'CRO cycle, Claude lane: docs\cro\CRO_CYCLE.md at 12:00 Europe/Dublin (window gated by the launcher).' },
-        @{ Name = 'MT5-CycleMidnight'; Lane = 'midnight'; Desc = 'CRO cycle, Codex lane: docs\cro\CRO_CYCLE.md at 00:00 Europe/Dublin (window gated by the launcher).' })) {
+        @{ Name = 'MT5-CycleMidnight'; Lane = 'midnight'; Desc = 'CRO cycle, Codex lane: docs\cro\CRO_CYCLE.md at 00:00 Europe/Dublin (window gated by the launcher).' }) |
+        Where-Object { $Lane -eq 'both' -or $_.Lane -eq $Lane }) {
     $action = New-ScheduledTaskAction -Execute $ps -WorkingDirectory $RepoRoot -Argument `
         ('-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}" -Lane {1}' -f $Launcher, $lane.Lane)
     # Minute 2 of every hour: clear of the :05/:12/:20 git writers' starts.
