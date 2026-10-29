@@ -1793,3 +1793,32 @@ def test_two_allocator_runs_are_never_dedupe_candidates() -> None:
     assert bs.dedupe_candidates(procs) == []
     assert bs.plan_dedupe(procs, {"allow": ["pf_allocator.py"]},
                           previous_duplicates=["41:20"]) == ([], [])
+
+
+# ------------------------------------------------------------------------------------ sixth audit
+@pytest.mark.parametrize(("args", "mode"), [
+    (["--mode", "fast", "--mode", "heavy"], "heavy"),
+    (["--mode=heavy", "--mode", "fast"], "fast"),
+    (["--mod", "heavy"], "heavy"), (["--mo=heavy"], "heavy"), (["--m", "fast"], "fast"),
+    (["--mode=fast", "--mo=heavy"], "heavy"), (["--seed", "3"], "normal"),
+    (["--", "--mode", "heavy"], "normal"), (["--model", "heavy"], "normal")])
+def test_the_mode_is_read_as_argparse_reads_it(args: list[str], mode: str) -> None:
+    """SF-a probe: argparse keeps the LAST --mode and accepts unambiguous prefixes."""
+    assert bs.parse_mode(args) == mode
+
+
+def test_the_last_mode_decides_pin_or_money_feed() -> None:
+    """SF-a: `--mode fast --mode heavy` is the pinned heavy run; `--mode=heavy --mode fast` is
+    money_feed and is widened to every core."""
+    side = bs.mask_to_cpus("0x300FF", N)
+    procs = [Proc(70, "python.exe", create_time=5, cpu_pct=900, affinity=list(range(N)),
+                  cmdline="python.exe research/pf_allocator.py --mode fast --mode heavy"),
+             Proc(71, "python.exe", create_time=6, cpu_pct=400, affinity=side,
+                  cmdline="python.exe research/pf_allocator.py --mode=heavy --mode fast")]
+    bs.classify(procs, RULES["groups"])
+    g = _by_pid(procs)
+    assert g[70].group == "other" and g[71].group == "money_feed"
+    out = bs.plan(procs, RULES, N, judge_starved=False)
+    assert [(a.pid, a.rule, a.after) for a in out.actions if a.kind == "affinity"] == [
+        (70, "pf_allocator_heavy", "0xff")]
+    assert [(a.pid, a.after) for a in bs.widen_money(procs, N, set())] == [(71, "0x3ffff")]
