@@ -8,11 +8,12 @@ from __future__ import annotations
 import hashlib
 import json
 from collections import Counter
+from collections.abc import Callable
+from copy import deepcopy
 from datetime import UTC, datetime
-from typing import Any, Callable
+from typing import Any
 
 from research import discovery_compiler as compiler
-
 
 FAMILIES = frozenset({*compiler.PEER_KEY_BY_FAMILY, *compiler.FACTOR_FAMILIES})
 VERSION = "family-input-descendant-v1"
@@ -45,6 +46,11 @@ def derive(rows: list[dict[str, Any]], *, identity: Callable[[dict[str, Any]], s
     present = {identity(row) for row in rows if isinstance(row, dict)}
     children: list[dict[str, Any]] = []
     unresolved: Counter[str] = Counter()
+    # Input selection depends on family, traded symbol, chart and this pass's context/meta,
+    # never on the parent's entry/exit variant. Cache ONLY the named added leg(s), not a whole
+    # completed params object: copying one variant's knobs onto its siblings changes the claim.
+    selections: dict[tuple[str, str, str], tuple[str, Any] | None] = {}
+    cache_hits = 0
     for row in targets:
         family = str(row.get("family") or "")
         symbol = str(row.get("symbol") or row.get("sym") or "")
@@ -54,10 +60,23 @@ def derive(rows: list[dict[str, Any]], *, identity: Callable[[dict[str, Any]], s
             unresolved["missing_symbol"] += 1
             continue
         try:
-            completed = compiler.complete_inputs({"symbol": symbol, "family": family,
-                                                  "chart": chart,
-                                                  "params": dict(row.get("params") or {})},
-                                                 ctx, meta)
+            selector = (family, symbol, chart)
+            original_params = dict(row.get("params") or {})
+            if selector in selections:
+                cache_hits += 1
+                selected = selections[selector]
+                completed = {"params": original_params}
+                if selected is not None:
+                    added, value = selected
+                    completed["params"][added] = deepcopy(value)
+                    completed["input_completed"] = added
+            else:
+                completed = compiler.complete_inputs({"symbol": symbol, "family": family,
+                                                      "chart": chart,
+                                                      "params": original_params}, ctx, meta)
+                added = completed.get("input_completed")
+                selections[selector] = ((added, deepcopy(completed["params"][added]))
+                                        if added else None)
         except Exception as exc:
             unresolved[f"compiler_error:{type(exc).__name__}"] += 1
             continue
@@ -90,6 +109,9 @@ def derive(rows: list[dict[str, Any]], *, identity: Callable[[dict[str, Any]], s
     report["created"] = len(children)
     report["unresolved"] = sum(unresolved.values())
     report["unresolved_by_reason"] = dict(unresolved)
+    report["input_selection"] = {
+        "unique_selections": len(selections), "cache_hits": cache_hits,
+        "basis": "one context/meta snapshot per pass; only added legs cached"}
     assert report["targets"] == (report["created"] + report["already_present"]
                                   + report["unresolved"])
     return children, report
