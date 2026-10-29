@@ -146,7 +146,7 @@ def _run_main(fence, tmp_path, monkeypatch, capsys, argv: list[str], rep: dict) 
     monkeypatch.setattr(fence, "REPORT", report)
     monkeypatch.setattr(fence, "ROOT", tmp_path)
     ch = Channel()
-    monkeypatch.setattr(fence, "_default_page_sender", lambda root: ch)
+    monkeypatch.setattr(fence, "_default_page_sender", lambda root, **_k: ch)
     audit = tmp_path / "audit.json"
     rc = fence.main([*argv, "--audit", str(audit), "--json"])
     printed = capsys.readouterr().out

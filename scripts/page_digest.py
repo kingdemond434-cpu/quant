@@ -77,7 +77,8 @@ def main() -> None:
             time.sleep(90)
         try:
             from libs.ops.alert_channels import send_all
-            res = send_all("Quant desk: daily digest", body, audience="desk")
+            # desk_row=False: a digest is information, never a problem to hold the desk RED
+            res = send_all("Quant desk: daily digest", body, audience="desk", desk_row=False)
         except Exception as exc:                    # a failed digest must never break a cycle
             print(f"digest page failed{' (after retry)' if attempt else ''}: {exc!r}")
             continue

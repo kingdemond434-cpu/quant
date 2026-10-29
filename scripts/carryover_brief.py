@@ -11,6 +11,7 @@ Always exits 0 -- this steers priority, it never blocks a cycle.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import time
 from pathlib import Path
@@ -115,6 +116,47 @@ def ledger_block() -> str:
     return "\n".join(lines)
 
 
+#: How many fresh desk alert rows to hand the brain (the true total is always stated).
+_DESK_ROWS = 12
+
+
+def desk_alerts_block(path: Path | None = None) -> str:
+    """DESK PAGES MUST REACH A READER ON THIS SIDE TOO (2026-10-29, audit SF2 on a072c7d7b).
+
+    A desk-audience page no longer rings the owner's phone: libs.ops.alert_channels.send_all
+    records it as a row in desks/mt5/reports/DESK_ALERTS.json instead, and on the box
+    check_desk_health turns fresh rows into a PROBLEM. On the VPS nothing read that file -- so
+    every VPS desk page (run_alerts' desk keys, brain plumbing, fences) landed in a ledger nobody
+    acts on. This brief is the FIRST thing in every VPS brain prompt (ops/run_cro_ai.sh), so the
+    fresh rows go here, as REDs the cycle owes a fix. The rule (which rows are fresh) is
+    `fresh_desk_alerts`, imported, never restated. Rows carry a key and a source, never a body.
+    """
+    from libs.ops import alert_channels as ac
+    p = path or (ROOT / "desks" / "mt5" / "reports" / "DESK_ALERTS.json")
+    if p.exists() and not ac.load_desk_alerts(p):
+        try:
+            json.loads(p.read_text("utf-8"))
+        except (OSError, ValueError) as exc:
+            # unreadable is UNMEASURED, never "no desk alert" (L1.41)
+            return (f"\n[DESK ALERTS] UNMEASURED -- {p.name} unreadable "
+                    f"({type(exc).__name__}). This is NOT 'no desk alert'.")
+    rows = ac.fresh_desk_alerts(path=p)
+    if not rows:
+        return (f"\n[DESK ALERTS] RED 0 -- no desk alert seen in the last "
+                f"{ac.DESK_ALERT_FRESH_H:g}h.")
+    lines = ["", f"[DESK ALERTS] RED {len(rows)} -- desk page(s) seen in the last "
+             f"{ac.DESK_ALERT_FRESH_H:g}h. Each is a condition a thread fixes (the owner was NOT "
+             "paged): follow the key to its source; a fixed condition clears its own row.", ""]
+    for r in rows[:_DESK_ROWS]:
+        label = str(r.get("title") or f"title sha {r.get('title_sha') or '?'}")[:100]
+        lines.append(f"  [RED] {r.get('key')}  {label}  (source {r.get('source') or '?'}, "
+                     f"first {r.get('first_seen')}, last {r.get('last_seen')})")
+    if len(rows) > _DESK_ROWS:
+        lines.append(f"  ... and {len(rows) - _DESK_ROWS} more (shown {_DESK_ROWS} of "
+                     f"{len(rows)} -- the rest are NOT excused).")
+    return "\n".join(lines)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--record", action="store_true",
@@ -146,6 +188,7 @@ def main() -> int:
 
     print(brief(carryover_state(load_sweeps(LEDGER), now=time.time())))
     print(ledger_block())
+    print(desk_alerts_block())
     return 0
 
 

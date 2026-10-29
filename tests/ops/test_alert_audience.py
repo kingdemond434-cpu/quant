@@ -411,8 +411,17 @@ NTFY_DIRECT_EXEMPT = {
 
 #: an ntfy.sh URL or bare host as a STRING LITERAL (a URL being built), not prose that mentions it
 _NTFY_URL = re.compile(r"^\s*(?:https?://)?ntfy\.sh(?:[/:]|$)")
-#: the same, in shell/PowerShell/batch source (comment lines are prose and are skipped)
-_NTFY_URL_SHELL = re.compile(r"(?:https?://)?\bntfy\.sh/")
+#: an ntfy.sh host ANYWHERE in a string that is a shell COMMAND (audit SF6, a072c7d7b): the
+#: anchored rule above misses f"curl -d {m} https://ntfy.sh/{t}" and os.system("curl ... ntfy.sh")
+_NTFY_HOST = r"(?<![\w./-])(?:https?://)?ntfy\.sh(?![\w-])"
+_NTFY_CMD = re.compile(r"(?:^|[\s;&|(\"'`])(?:curl|wget|http|Invoke-RestMethod|Invoke-WebRequest|"
+                       r"irm|iwr)\b.*?" + _NTFY_HOST)
+#: calls that run a STRING as a shell command: any ntfy.sh host in such a string argument is a post
+_SHELL_CALLS = frozenset({"system", "popen", "run", "call", "check_call", "check_output",
+                          "Popen", "getoutput", "getstatusoutput"})
+#: the same, in shell/PowerShell/batch source (comment lines are prose and are skipped). The bare
+#: host as a TOKEN, so a variable-held host -- `N=https://ntfy.sh; curl "$N/$t"` -- is caught too.
+_NTFY_URL_SHELL = re.compile(_NTFY_HOST)
 _SHELL_GLOBS = ("*.sh", "*.bash", "*.ps1", "*.psm1", "*.bat", "*.cmd")
 
 
@@ -441,8 +450,20 @@ def _ntfy_literals(tree: ast.AST) -> list[int]:
             text = node.value
         else:
             continue
-        if _NTFY_URL.search(text):
+        if _NTFY_URL.search(text) or _NTFY_CMD.search(text):
             hits.append(node.lineno)
+    for node in ast.walk(tree):                 # os.system / subprocess(..., shell) strings
+        if not isinstance(node, ast.Call):
+            continue
+        fn = node.func
+        name = fn.attr if isinstance(fn, ast.Attribute) else getattr(fn, "id", "")
+        if name not in _SHELL_CALLS:
+            continue
+        for arg in node.args:
+            for sub in ast.walk(arg):
+                if (isinstance(sub, ast.Constant) and isinstance(sub.value, str)
+                        and re.search(_NTFY_HOST, sub.value)):
+                    hits.append(node.lineno)
     return sorted(set(hits))
 
 
@@ -506,8 +527,30 @@ def test_the_direct_post_fence_sees_each_shape() -> None:
     assert _ntfy_literals(ast.parse(src)) == [3, 4, 5, 6]
     sh = ('# page via ntfy.sh/topic -- a comment is prose\n'
           'curl -d "$1" "https://ntfy.sh/$topic"\n'
-          'Invoke-RestMethod -Uri "https://ntfy.sh/$t" -Method Post\n')
+          'Invoke-RestMethod -Uri "https://ntfy.sh/$t" -Method Post\n'
+          'echo "see docs/send_ntfy.sh.md"\n')
     assert _shell_hits(sh) == [2, 3]
+
+
+def test_the_direct_post_fence_sees_commands_and_variable_held_hosts() -> None:
+    """Audit SF6 (a072c7d7b): the anchored literal rule missed a URL inside a COMMAND string and a
+    host held in a shell variable. Each line below is a real post and must be caught."""
+    src = ('import os, subprocess\n'
+           'os.system(f"curl -d {m} https://ntfy.sh/{t}")\n'                       # 2
+           'subprocess.run(f"curl -s -d x https://ntfy.sh/{t}", shell=True)\n'      # 3
+           'cmd = f"curl -H Title:x -d {m} ntfy.sh/{t}"\n'                          # 4
+           'os.system("wget -q --post-data=x " + "https://ntfy.sh/" + t)\n'         # 5
+           'os.popen("N=https://ntfy.sh; curl -d x $N/" + t)\n'                     # 6
+           'print(f"subscribe at: https://ntfy.sh/{t}")\n'                          # prose
+           'LOG = f"posted via curl earlier; see https://example.com/{t}"\n')       # no host
+    assert _ntfy_literals(ast.parse(src)) == [2, 3, 4, 5, 6]
+    sh = ('N=https://ntfy.sh; curl -d "$m" "$N/$t"\n'                                # 1
+          'NTFY_HOST=ntfy.sh\n'                                                     # 2
+          'curl -d "$m" "https://$NTFY_HOST/$t"\n'                         # host in a var
+          '$u = "https://ntfy.sh"; Invoke-RestMethod -Uri "$u/$t" -Method Post\n'   # 4
+          '# N=https://ntfy.sh  -- a comment is prose\n'
+          'source ops/send_ntfy.sh\n')                                              # a filename
+    assert _shell_hits(sh) == [1, 2, 4]
 
 
 # --- THE FORMER DIRECT POSTERS, NOW DESK ---------------------------------------------------------

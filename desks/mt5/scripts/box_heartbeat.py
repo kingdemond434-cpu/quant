@@ -26,8 +26,9 @@ success ping, and POSTs the failing checks to `<url>/log` (recorded on the check
 because every check here is DESK -- box health is a RED the threads fix (2026-10-29). Only a
 check in PRINCIPAL_CHECKS (none today) would POST `<url>/fail`. On the TRANSITION into failing,
 one desk page through `libs.ops.alert_channels.send_all` (ledger, hc /log, and a row in
-DESK_ALERTS.json; cleared on recovery). "The box is gone" is unchanged: the pings stop and
-healthchecks.io pages, which is the one alarm that needs nothing on the box.
+DESK_ALERTS.json; the row is refreshed on every failing run after that, and cleared on
+recovery). "The box is gone" is unchanged: the pings stop and healthchecks.io pages, which is
+the one alarm that needs nothing on the box.
 
 CREDENTIAL. The check's ping URL, in `data/secrets/box_heartbeat_url.json` (`{"url":
 "https://hc-ping.com/<uuid>"}`), a SEPARATE check from the VPS's `heartbeat_url.json` so the two
@@ -230,6 +231,14 @@ def run(*, dry_run: bool = False, out: Path = OUT, secrets: tuple[Path, ...] = S
             doc["paged"] = {k: v for k, v in res.items() if k in ("armed", "delivered", "status")}
         except Exception as exc:
             doc["paged"] = {"status": "ERROR", "detail": type(exc).__name__}
+    elif doc["verdict"] == "FAIL" and not dry_run:
+        # STILL FAILING: page once (above), but REFRESH the desk row on every failing run. The row
+        # holds the RED only while `last_seen` is inside DESK_ALERT_FRESH_H, so writing it on the
+        # transition alone let a box failing for more than a day age OUT of RED while still down.
+        with contextlib.suppress(Exception):
+            from libs.ops.alert_channels import record_desk_alert
+            record_desk_alert(DESK_ALERT_KEY, page_title(doc["failing"]),
+                              source="box_heartbeat", public_title=True)
     if (doc["verdict"] == "OK" and prev.get("verdict") == "FAIL" and not dry_run):
         with contextlib.suppress(Exception):    # recovered: stop holding the desk RED
             from libs.ops.alert_channels import clear_desk_alert

@@ -44,7 +44,8 @@ thread can handle itself is `"desk"`.
 
   `page_principal(title, body)` is THE sanctioned "needs zuck" path for a thread that must ping him
   once: it is `send_all(..., audience="principal")`, plus the desk ntfy topic from
-  data/secrets/ntfy.json when the registry arms no ntfy channel. Use it sparingly -- every
+  data/secrets/ntfy.json when the registry arms no ntfy channel, and hc /fail from
+  data/secrets/heartbeat_url.json when it arms no hc channel. Use it sparingly -- every
   principal page spends the credibility of the next one.
 
   WHERE A DESK PAGE GOES. Desk pages are not dropped, they are routed to something that acts: the
@@ -70,6 +71,7 @@ import json
 import os
 import smtplib
 import sys
+import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable
@@ -115,6 +117,34 @@ _DESK_ALERT_KEEP_D = 7.0
 _REPO = Path(__file__).resolve().parents[2]
 
 
+#: Every ledger/result detail is cut to this many characters -- AFTER redaction (`_redact`).
+_DETAIL_MAX = 200
+_REDACTED = "<redacted>"
+
+
+def _redact(text: str, *secrets: object, limit: int = _DETAIL_MAX,
+            mask: str = _REDACTED) -> str:
+    """`text` with every secret removed, cut to `limit` -- in THAT order (audit MF, a072c7d7b).
+
+    Cutting first and replacing second leaks: a secret straddling the cut survives as a prefix
+    the replace cannot match (probe: the ntfy topic at offsets 170/175/180 of a 200-char detail
+    leaked its first 30/25/20 characters into the ledger). So: replace every whole occurrence,
+    cut, then strip any trailing PREFIX of a secret left at the cut edge -- which also covers a
+    text that some upstream already cut mid-secret. The prefix strip may eat a few innocent tail
+    characters that happen to spell a secret's first letters; a shorter detail is the cheap side.
+    """
+    keys = sorted({str(x) for x in secrets if x and len(str(x)) >= 4}, key=len, reverse=True)
+    for k in keys:
+        text = text.replace(k, mask)
+    text = text[:limit]
+    for k in keys:
+        for n in range(min(len(k) - 1, len(text)), 0, -1):
+            if text.endswith(k[:n]):
+                text = text[:-n] + mask
+                break
+    return text
+
+
 def _log(channel: str, ok: bool, detail: str, title: str, ledger: Path = _LEDGER, *,
          routed: str | None = None) -> None:
     """One row per attempt. The title is HASHED, never stored: alert bodies can name positions,
@@ -124,7 +154,7 @@ def _log(channel: str, ok: bool, detail: str, title: str, ledger: Path = _LEDGER
         ledger.parent.mkdir(parents=True, exist_ok=True)
         row: dict[str, Any] = {
             "ts": datetime.now(tz=UTC).isoformat(), "channel": channel, "ok": ok,
-            "detail": detail[:200],
+            "detail": detail[:_DETAIL_MAX],
             "title_sha": sha256(title.encode("utf-8", "ignore")).hexdigest()[:12]}
         if routed:
             row["routed"] = routed
@@ -244,7 +274,8 @@ _CANARY_AWARE = frozenset(_CANARY_SENDERS)
 def send_all(title: str, body: str, *, config: Path = _CONFIG,
              ledger: Path = _LEDGER, canary: bool = False,
              audience: str = PRINCIPAL, key: str | None = None, source: str = "",
-             resolved: bool = False, public_title: bool = False) -> dict[str, Any]:
+             resolved: bool = False, public_title: bool = False,
+             desk_row: bool = True) -> dict[str, Any]:
     """Fire EVERY armed channel the audience allows; one channel's failure can never stop another's.
 
     Returns {"armed": n, "delivered": n, "routed": n, "audience": a, "results": [...]}. When
@@ -264,26 +295,36 @@ def send_all(title: str, body: str, *, config: Path = _CONFIG,
     A DESK send (not a canary) also upserts its row in the desk alert artifact under `key`
     (default: the calling file:function), tagged with `source` (default: the calling file);
     `resolved=True` removes that row instead, so a cleared condition stops holding the desk RED.
+    `desk_row=False` is for a desk send that is INFORMATION, not a problem (the daily digest, a
+    model auto-upgrade, "fell back and carried on"): it is ledgered and mirrored as usual but
+    writes no artifact row, so it never holds the desk RED for a day over nothing to fix.
+    A failed artifact write is never silent: it is ledgered (channel "desk_alerts", ok false) and
+    returned as `desk_alert_error`.
     The body is never written there, and the title only with `public_title=True`. The hc
     channel takes a desk send on its /log endpoint (recorded, notifies nobody) and only a
     principal send on /fail.
     """
     aud = audience if audience in AUDIENCES else PRINCIPAL
-    if aud == DESK and not canary:
+    desk_err: str | None = None
+    if aud == DESK and not canary and (desk_row or resolved):
         where = _caller()
         k = key or where
         if resolved:
-            clear_desk_alert(k, path=desk_alerts_path(ledger))
+            desk_err = clear_desk_alert(k, path=desk_alerts_path(ledger))
         else:
-            record_desk_alert(k, title, source=source or where.split(":", 1)[0],
-                              public_title=public_title, path=desk_alerts_path(ledger))
+            desk_err = record_desk_alert(k, title, source=source or where.split(":", 1)[0],
+                                         public_title=public_title,
+                                         path=desk_alerts_path(ledger))
+        if desk_err:                            # surfaced: ledgered and in the result
+            _log("desk_alerts", False, desk_err, title, ledger)
+    extra: dict[str, Any] = {"desk_alert_error": desk_err} if desk_err else {}
     channels = load_channels(config)
     if not channels:
         _log("none", False, "NOT-ARMED: data/secrets/alert_channels.json absent or empty",
              title, ledger)
         return {"armed": 0, "delivered": 0, "routed": 0, "audience": aud, "results": [],
                 "note": "second-channel arming is a HUMAN step: drop credentials at "
-                        "data/secrets/alert_channels.json on the box"}
+                        "data/secrets/alert_channels.json on the box", **extra}
     results = []
     for cfg in channels:
         kind = str(cfg.get("kind"))
@@ -299,43 +340,65 @@ def send_all(title: str, body: str, *, config: Path = _CONFIG,
             ok = True
         except (urllib.error.URLError, urllib.error.HTTPError, OSError, KeyError,
                 json.JSONDecodeError, smtplib.SMTPException, ValueError) as e:
-            ok, detail = False, f"{type(e).__name__}: {e}"[:200]
+            ok, detail = False, f"{type(e).__name__}: {e}"
+        # the channel's own credentials never reach a detail (redact BEFORE the cut)
+        detail = _redact(detail, *(cfg.get(f) for f in ("topic", "token", "password", "url")))
         _log(kind, ok, detail, title, ledger)
         results.append({"channel": kind, "ok": ok, "detail": detail})
     return {"armed": len(channels), "delivered": sum(1 for r in results if r["ok"]),
             "routed": sum(1 for r in results if r.get("routed")), "audience": aud,
-            "results": results}
+            "results": results, **extra}
 
 
 def page_principal(title: str, body: str, *, config: Path = _CONFIG,
-                   ledger: Path = _LEDGER, ntfy_secret: Path = _NTFY_SECRET) -> dict[str, Any]:
+                   ledger: Path = _LEDGER, ntfy_secret: Path = _NTFY_SECRET,
+                   heartbeat: Path = _HEARTBEAT) -> dict[str, Any]:
     """THE sanctioned "needs zuck" page: a thread that must have the owner's personal action pings
     him through this, and only for that (module docstring: a human action only he can take).
     Same failure semantics as `send_all` -- never raises, every attempt is ledgered.
 
-    THE PHONE IS NOT OPTIONAL HERE. The desk's ntfy topic lives in data/secrets/ntfy.json, which
-    the registry does not read, so on a box whose alert_channels.json arms no ntfy channel a
-    principal page would reach everything except the one channel he actually carries. When the
-    registry has no ntfy channel and that topic exists, it is sent there too (ledgered)."""
-    res = send_all(title, body, config=config, ledger=ledger, audience="principal")
-    if any(str(c.get("kind")) == "ntfy" for c in load_channels(config)):
-        return res
-    try:
-        topic = str(json.loads(ntfy_secret.read_text("utf-8")).get("topic") or "").strip()
-    except (OSError, ValueError, AttributeError):
-        topic = ""
-    if not topic:
-        return res
-    try:
-        detail, ok = _SENDERS["ntfy"]({"kind": "ntfy", "topic": topic}, title, body), True
-    except Exception as e:                      # never raises into the alert path
-        ok, detail = False, f"{type(e).__name__}: {e}"[:200]
-    detail = detail.replace(topic, "<topic>")   # the topic is the secret: never echo it
-    _log("ntfy", ok, detail, title, ledger)
-    res = dict(res)
-    res["results"] = [*res.get("results", []), {"channel": "ntfy", "ok": ok, "detail": detail,
-                                                 "via": "ntfy.json"}]
-    res["delivered"] = int(res.get("delivered", 0)) + (1 if ok else 0)
+    THE PHONE IS NOT OPTIONAL HERE, AND NEITHER IS THE SECOND PROVIDER. The desk's ntfy topic
+    lives in data/secrets/ntfy.json and the healthchecks.io ping URL in
+    data/secrets/heartbeat_url.json; the registry reads neither. So on a box whose
+    alert_channels.json arms no ntfy (or no hc) channel, a principal page would miss the one
+    channel he carries (or have no independent mirror if ntfy.sh itself is down). For each such
+    channel the registry lacks, and whose secret exists, it is sent there too (ledgered): ntfy
+    from ntfy.json, and hc /fail from heartbeat_url.json -- /fail because this IS a principal page
+    (the next 3-minute heartbeat ping clears the check)."""
+    res = dict(send_all(title, body, config=config, ledger=ledger, audience="principal"))
+    armed = {str(c.get("kind")) for c in load_channels(config)}
+    extra: list[dict[str, Any]] = []
+    if "ntfy" not in armed:
+        try:
+            topic = str(json.loads(ntfy_secret.read_text("utf-8")).get("topic") or "").strip()
+        except (OSError, ValueError, AttributeError):
+            topic = ""
+        if topic:
+            try:
+                detail, ok = _SENDERS["ntfy"]({"kind": "ntfy", "topic": topic}, title, body), True
+            except Exception as e:              # never raises into the alert path
+                ok, detail = False, f"{type(e).__name__}: {e}"
+            # the topic is the secret: redact FIRST, then cut, then strip a prefix left at the edge
+            detail = _redact(detail, topic, mask="<topic>")
+            _log("ntfy", ok, detail, title, ledger)
+            extra.append({"channel": "ntfy", "ok": ok, "detail": detail, "via": "ntfy.json"})
+    if "hc" not in armed:
+        try:
+            url = str(json.loads(heartbeat.read_text("utf-8")).get("url") or "").strip()
+        except (OSError, ValueError, AttributeError):
+            url = ""
+        if url:
+            try:
+                detail, ok = _SENDERS["hc"]({"kind": "hc", "url": url}, title, body), True
+            except Exception as e:              # never raises into the alert path
+                ok, detail = False, f"{type(e).__name__}: {e}"
+            detail = _redact(detail, url, url.rstrip("/").rsplit("/", 1)[-1])
+            _log("hc", ok, detail, title, ledger)
+            extra.append({"channel": "hc", "ok": ok, "detail": detail,
+                          "via": "heartbeat_url.json"})
+    if extra:
+        res["results"] = [*res.get("results", []), *extra]
+        res["delivered"] = int(res.get("delivered", 0)) + sum(1 for r in extra if r["ok"])
     return res
 
 
@@ -376,7 +439,22 @@ def load_desk_alerts(path: Path = _DESK_ALERTS) -> dict[str, dict[str, Any]]:
     return {str(r["key"]): r for r in rows if isinstance(r, dict) and "key" in r}
 
 
+#: os.replace attempts on PermissionError (Windows: the target is open in a reader) and the pause
+#: between them; the lock wait. A desk row is worth a short wait, never an unbounded one.
+_REPLACE_TRIES = 20
+_REPLACE_PAUSE_S = 0.05
+_DESK_LOCK_WAIT_S = 10.0
+
+
+def _desk_lock(path: Path) -> Path:
+    """The sidecar the desk-alert read-modify-write is serialized on (never deleted; gitignored
+    like everything under reports/)."""
+    return path.with_name(f".{path.name}.lock")
+
+
 def _write_desk_alerts(rows: dict[str, dict[str, Any]], path: Path) -> None:
+    """Prune, then write through a UNIQUE temp name and a retried os.replace. Caller holds the
+    lock. Raises on failure -- `_upsert_desk` turns that into a surfaced error, not silence."""
     floor = datetime.now(tz=UTC) - timedelta(days=_DESK_ALERT_KEEP_D)
     kept = []
     for r in rows.values():
@@ -389,20 +467,52 @@ def _write_desk_alerts(rows: dict[str, dict[str, Any]], path: Path) -> None:
     kept.sort(key=lambda r: str(r.get("last_seen")), reverse=True)
     doc = {"schema": "desk_alerts/1", "fresh_h": DESK_ALERT_FRESH_H, "alerts": kept}
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f"{path.name}.tmp")
-    tmp.write_text(json.dumps(doc, indent=1), "utf-8")
-    os.replace(tmp, path)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.{time.monotonic_ns()}.tmp")
+    try:
+        tmp.write_text(json.dumps(doc, indent=1), "utf-8")
+        for attempt in range(_REPLACE_TRIES):
+            try:
+                os.replace(tmp, path)
+                break
+            except PermissionError:
+                if attempt == _REPLACE_TRIES - 1:
+                    raise
+                time.sleep(_REPLACE_PAUSE_S)
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+
+
+def _upsert_desk(path: Path, edit: Callable[[dict[str, dict[str, Any]]], bool]) -> str | None:
+    """THE ONLY read-modify-write of the artifact: under a cross-process OS lock
+    (libs.ops.alert_ledger.os_lock -- msvcrt/flock on a sidecar), so concurrent pagers cannot
+    lose each other's rows or revive a row another process just cleared from a stale read
+    (audit SF1: 8 procs x 25 keys had kept 60/200). `edit` mutates the rows and says whether
+    anything changed. Never raises; returns the error text (None on success) so the caller can
+    surface it -- a desk row that silently failed to land is a RED nobody sees."""
+    try:
+        from libs.ops.alert_ledger import os_lock
+        with os_lock(_desk_lock(path), timeout_s=_DESK_LOCK_WAIT_S):
+            rows = load_desk_alerts(path)
+            if edit(rows):
+                _write_desk_alerts(rows, path)
+        return None
+    except Exception as e:                      # never raises into the alert path
+        err = f"desk alert write failed ({path.name}): {type(e).__name__}: {e}"[:_DETAIL_MAX]
+        with contextlib.suppress(Exception):
+            print(f"[alert_channels] {err}", file=sys.stderr)
+        return err
 
 
 def record_desk_alert(key: str, title: str, *, source: str = "", public_title: bool = False,
-                      path: Path = _DESK_ALERTS) -> None:
+                      path: Path = _DESK_ALERTS) -> str | None:
     """Upsert one desk alert row (first_seen kept, last_seen refreshed). Never raises: a failed
-    write must not kill the page that called it. The artifact is PUBLISHED: no body is stored,
+    write must not kill the page that called it -- it RETURNS the error (None = written), which
+    send_all ledgers and puts in its result. The artifact is PUBLISHED: no body is stored,
     the title is stored as its sha (exactly as the ledger does) and in clear only when the caller
     passes `public_title=True` for a title made of check names, never of values."""
-    with contextlib.suppress(Exception):
+    def edit(rows: dict[str, dict[str, Any]]) -> bool:
         now = datetime.now(tz=UTC).isoformat(timespec="seconds")
-        rows = load_desk_alerts(path)
         prev = rows.get(key, {})
         row: dict[str, Any] = {
             "key": key, "source": source or prev.get("source", ""),
@@ -411,15 +521,13 @@ def record_desk_alert(key: str, title: str, *, source: str = "", public_title: b
         if public_title:
             row["title"] = title[:160]
         rows[key] = row
-        _write_desk_alerts(rows, path)
+        return True
+    return _upsert_desk(path, edit)
 
 
-def clear_desk_alert(key: str, *, path: Path = _DESK_ALERTS) -> None:
-    """Drop a resolved alert's row. Never raises."""
-    with contextlib.suppress(Exception):
-        rows = load_desk_alerts(path)
-        if rows.pop(key, None) is not None:
-            _write_desk_alerts(rows, path)
+def clear_desk_alert(key: str, *, path: Path = _DESK_ALERTS) -> str | None:
+    """Drop a resolved alert's row. Never raises; returns the error text, None on success."""
+    return _upsert_desk(path, lambda rows: rows.pop(key, None) is not None)
 
 
 def fresh_desk_alerts(*, path: Path = _DESK_ALERTS, hours: float = DESK_ALERT_FRESH_H,

@@ -187,7 +187,8 @@ def _page(msg: str) -> None:
     ledgers it, mirrors it to the non-personal channels and records the phone as routed."""
     try:
         from libs.ops.alert_channels import send_all
-        send_all("MODEL UPGRADE", msg, audience="desk")
+        # desk_row=False: an upgrade notice is information; a broken chain fails other checks
+        send_all("MODEL UPGRADE", msg, audience="desk", desk_row=False)
     except Exception:                       # telemetry must never fail the upgrade run
         return
 

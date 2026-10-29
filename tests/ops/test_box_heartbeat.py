@@ -60,6 +60,7 @@ def test_unarmed_is_recorded_and_page_fires_once(tmp_path: Path,
     sent: list[str] = []
     import libs.ops.alert_channels as ac
     monkeypatch.setattr(ac, "send_all", lambda t, b, **k: sent.append(b) or {"status": "ok"})
+    monkeypatch.setattr(ac, "record_desk_alert", lambda *a, **k: None)   # no repo litter
     d1 = hb.run(out=out, secrets=(tmp_path / "absent.json",), reading=dict(reading))
     assert d1["ping"]["status"] == "NOT_ARMED" and len(sent) == 1
     hb.run(out=out, secrets=(tmp_path / "absent.json",), reading=dict(reading))

@@ -287,11 +287,11 @@ def test_page_principal_reaches_the_ntfy_json_topic_when_the_registry_has_none(
     secret.write_text(json.dumps({"topic": "quant-x"}), "utf-8")
     led = tmp_path / "l.jsonl"
     res = ac.page_principal("needs you", "b", config=_cfg(tmp_path, ["hc"]), ledger=led,
-                            ntfy_secret=secret)
+                            ntfy_secret=secret, heartbeat=tmp_path / "no_hb.json")
     assert quiet == [("hc", False), ("ntfy", False)] and res["delivered"] == 2
     quiet.clear()
     ac.page_principal("needs you", "b", config=_cfg(tmp_path, ["ntfy"]), ledger=led,
-                      ntfy_secret=secret)
+                      ntfy_secret=secret, heartbeat=tmp_path / "no_hb.json")
     assert quiet == [("ntfy", False)]                      # armed in the registry: sent once
 
 
@@ -306,7 +306,7 @@ def test_page_principal_never_echoes_the_topic(tmp_path: Path, monkeypatch: pyte
     monkeypatch.setitem(ac._SENDERS, "ntfy", boom)
     led = tmp_path / "l.jsonl"
     res = ac.page_principal("needs you", "b", config=tmp_path / "absent.json", ledger=led,
-                            ntfy_secret=secret)
+                            ntfy_secret=secret, heartbeat=tmp_path / "no_hb.json")
     out = capsys.readouterr()
     for blob in (json.dumps(res), led.read_text("utf-8"), out.out, out.err):
         assert "s3cret" not in blob
@@ -329,7 +329,7 @@ def test_brain_page_stamp_separates_principal_from_desk() -> None:
     assert "printf 'principal|%s'" in fn and "page_principal(" in fn
     # desk keeps the bare-message hash that libs/ops/lawful._page computes before spawning bash
     assert "stamp=\"$stampdir/$(printf '%s' \"$1\" | sha1sum | cut -c1-16)\"" in fn
-    assert '"BRAIN AUTH DOWN, cycle aborted:' in be and '"$_aud"' in be
+    assert '_what="BRAIN AUTH DOWN, cycle aborted"' in be and '"$_aud"' in be
 
 
 # --- SF6: the watchdog limit cannot drift below the manifest's cadence ---------------------------
@@ -342,3 +342,320 @@ def test_watchdog_limit_covers_the_manifest_cadence() -> None:
     m = re.search(r'TASK name="MT5-StallWatch"\s+trigger="every (\d+) minutes"', text)
     assert m, "MT5-StallWatch's trigger is no longer parseable from box_tasks.manifest"
     assert 2 * float(m.group(1)) + 5.0 <= hb.WATCHDOG_MAX_MIN
+
+
+# --- AUDIT HOLD on a072c7d7b ---------------------------------------------------------------------
+# MF: secret hygiene -- redact FIRST, then cut, then strip a prefix left at the cut edge.
+
+_TOPIC = "quant-Zq7Xv3kPw9Rt2LmNb8Yc4Hd6"
+
+
+def _leaks(blob: str, secret: str = _TOPIC, floor: int = 3) -> list[str]:
+    """Every prefix of the secret (>= floor chars) found anywhere in the blob."""
+    return [secret[:n] for n in range(floor, len(secret) + 1) if secret[:n] in blob]
+
+
+@pytest.mark.parametrize("offset", [150, 165, 170, 175, 180, 185, 190, 195, 199, 205])
+def test_page_principal_never_leaks_a_partial_topic_at_the_cut(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, offset: int) -> None:
+    """The probe that held a072c7d7b: the topic placed so it STRADDLES the 200-char cut. The old
+    code cut first and replaced second, so `replace` never matched and the prefix landed in the
+    returned detail and the ledger (offsets 170/175/180 leaked 30/25/20 characters)."""
+    secret = tmp_path / "ntfy.json"
+    secret.write_text(json.dumps({"topic": _TOPIC}), "utf-8")
+    pad = "x" * (offset - len("OSError: "))
+
+    def boom(_c: dict[str, Any], _t: str, _b: str) -> str:
+        raise OSError(pad + _c["topic"] + "/tail of the url and more")
+
+    monkeypatch.setitem(ac._SENDERS, "ntfy", boom)
+    led = tmp_path / "l.jsonl"
+    res = ac.page_principal("needs you", "b", config=tmp_path / "absent.json", ledger=led,
+                            ntfy_secret=secret, heartbeat=tmp_path / "no_hb.json")
+    detail = res["results"][-1]["detail"]
+    for blob in (detail, json.dumps(res), led.read_text("utf-8")):
+        assert not _leaks(blob), (offset, _leaks(blob))
+    assert len(detail) <= 200 + len("<topic>")
+
+
+@pytest.mark.parametrize("offset", [170, 175, 180, 195])
+def test_send_all_never_leaks_a_registry_credential_at_the_cut(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, offset: int) -> None:
+    """The same cut-then-replace shape, on the registry path: a channel's own topic/token/url
+    never survives into the detail, whole or as a prefix at the edge."""
+    def boom(c: dict[str, Any], _t: str, _b: str) -> str:
+        raise OSError("y" * (offset - len("OSError: ")) + str(c["topic"]) + "/more")
+
+    monkeypatch.setitem(ac._SENDERS, "ntfy", boom)
+    cfg = tmp_path / "ac.json"
+    cfg.write_text(json.dumps({"channels": [{"kind": "ntfy", "topic": _TOPIC}]}), "utf-8")
+    led = tmp_path / "l.jsonl"
+    res = ac.send_all("t", "b", config=cfg, ledger=led, audience="principal")
+    for blob in (json.dumps(res), led.read_text("utf-8")):
+        assert not _leaks(blob), (offset, _leaks(blob))
+
+
+def test_redact_orders_replace_before_cut_and_strips_an_edge_prefix() -> None:
+    s = "a" * 190 + _TOPIC + "b" * 40
+    out = ac._redact(s, _TOPIC, mask="<T>")
+    assert out == ("a" * 190 + "<T>" + "b" * 40)[:200] and not _leaks(out)
+    # an upstream that ALREADY cut mid-secret: the trailing prefix is still removed
+    pre = ("c" * 50 + _TOPIC)[:60]
+    assert ac._redact(pre, _TOPIC, mask="<T>") == "c" * 50 + "<T>"
+    assert ac._redact("plain detail", _TOPIC) == "plain detail"
+    assert ac._redact("x" * 500)[:200] == "x" * 200 and len(ac._redact("x" * 500)) == 200
+
+
+# --- SF1: the DESK_ALERTS upsert is locked, uniquely-tmp'd, retried, and its failure surfaced ----
+
+def _mp_writer(args: tuple[str, int, int]) -> None:
+    path, proc, n = args
+    from libs.ops import alert_channels as acm
+    for i in range(n):
+        assert acm.record_desk_alert(f"p{proc}:k{i}", "t", path=Path(path)) is None
+
+
+def test_concurrent_writers_keep_every_row(tmp_path: Path) -> None:
+    """The probe: 8 processes x 25 keys left 60/200 rows under the unlocked read-modify-write."""
+    import multiprocessing as mp
+    path = tmp_path / "DESK_ALERTS.json"
+    ctx = mp.get_context("spawn")
+    with ctx.Pool(8) as pool:
+        pool.map(_mp_writer, [(str(path), p, 25) for p in range(8)])
+    rows = ac.load_desk_alerts(path)
+    assert len(rows) == 200, len(rows)
+    assert not list(tmp_path.glob("*.tmp")), "a temp file was left behind"
+
+
+def _mp_clear_after(args: tuple[str, int]) -> None:
+    path, n = args
+    from libs.ops import alert_channels as acm
+    for i in range(n):
+        acm.record_desk_alert(f"other{i}", "t", path=Path(path))
+
+
+def test_a_clear_is_not_revived_by_a_concurrent_writer(tmp_path: Path) -> None:
+    """A late writer that read before a clear must not write the cleared row back: every
+    read-modify-write runs under the lock, so the clear is never overwritten by a stale read."""
+    import multiprocessing as mp
+    path = tmp_path / "DESK_ALERTS.json"
+    ac.record_desk_alert("victim", "t", path=path)
+    ctx = mp.get_context("spawn")
+    with ctx.Pool(4) as pool:
+        res = pool.map_async(_mp_clear_after, [(str(path), 30) for _ in range(4)])
+        assert ac.clear_desk_alert("victim", path=path) is None
+        res.get(timeout=120)
+    rows = ac.load_desk_alerts(path)
+    assert "victim" not in rows and len(rows) == 30
+
+
+def test_replace_is_retried_then_a_persistent_failure_is_surfaced(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        quiet: list[tuple[str, bool]]) -> None:
+    path = tmp_path / "DESK_ALERTS.json"
+    import os
+    real = os.replace
+    fails = {"n": 2}
+
+    def flaky(a: Any, b: Any) -> None:
+        if fails["n"] > 0:
+            fails["n"] -= 1
+            raise PermissionError("target open in a reader (Windows)")
+        real(a, b)
+
+    monkeypatch.setattr(os, "replace", flaky)
+    monkeypatch.setattr(ac, "_REPLACE_PAUSE_S", 0.0)
+    assert ac.record_desk_alert("k", "t", path=path) is None      # two refusals, then written
+    assert "k" in ac.load_desk_alerts(path)
+
+    def never(a: Any, b: Any) -> None:
+        raise PermissionError("still open")
+
+    monkeypatch.setattr(os, "replace", never)
+    err = ac.record_desk_alert("k2", "t", path=path)
+    assert err and "PermissionError" in err and "k2" not in ac.load_desk_alerts(path)
+    assert not list(tmp_path.glob("*.tmp"))
+    # through send_all: ledgered as a failed desk_alerts row and returned, never silent
+    led = tmp_path / "data" / "alert_delivery.jsonl"
+    monkeypatch.setattr(ac, "desk_alerts_path", lambda _l: path)
+    res = ac.send_all("t", "b", config=_cfg(tmp_path, ["hc"]), ledger=led, audience="desk",
+                      key="k3")
+    assert "PermissionError" in res["desk_alert_error"]
+    rows = [json.loads(ln) for ln in led.read_text("utf-8").splitlines()]
+    assert any(r["channel"] == "desk_alerts" and r["ok"] is False for r in rows)
+    assert ac.all_silent_since(24.0, ledger=led) is False         # the hc delivery still counts
+
+
+# --- SF2: the VPS brain reads the desk rows ------------------------------------------------------
+
+def test_the_vps_brain_brief_carries_fresh_desk_alerts_as_red(tmp_path: Path) -> None:
+    sys.path.insert(0, str(ROOT))
+    import scripts.carryover_brief as cb
+    path = tmp_path / "DESK_ALERTS.json"
+    assert "RED 0" in cb.desk_alerts_block(path)                   # absent: nothing recorded
+    ac.record_desk_alert("brain_down", "WARNING Quant desk: brain_down", source="run_alerts",
+                         public_title=True, path=path)
+    ac.record_desk_alert("ops/backup_state.py:send", "Restore drill STALE on box", path=path)
+    out = cb.desk_alerts_block(path)
+    assert "RED 2" in out and "[RED] brain_down" in out and "ops/backup_state.py:send" in out
+    assert "Restore drill" not in out                              # no public title: sha only
+    path.write_text("not json", "utf-8")
+    assert "UNMEASURED" in cb.desk_alerts_block(path)
+    src = (ROOT / "scripts" / "carryover_brief.py").read_text("utf-8")
+    assert "print(desk_alerts_block())" in src.split("def main(", 1)[1]
+    assert "carryover_brief.py --record" in (ROOT / "ops" / "run_cro_ai.sh").read_text("utf-8")
+
+
+# --- SF3: recoveries CLEAR the row; information writes none --------------------------------------
+
+def test_recovery_senders_clear_the_desk_row(tmp_path: Path,
+                                             monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[dict[str, Any]] = []
+    def fake_send(t: str, b: str, **k: Any) -> dict[str, Any]:
+        seen.append(k)
+        return {"delivered": 1}
+
+    monkeypatch.setattr(ac, "send_all", fake_send)
+    sys.path.insert(0, str(ROOT))
+    from libs.ops import login_fence as lf
+    bs = _load("ops/backup_state.py", "backup_state_resolved")
+    cjc = _load("scripts/check_judge_coverage.py", "check_judge_coverage_resolved")
+    for make in (lambda r: bs._default_sender(resolved=r),
+                 lambda r: lf._default_sender(tmp_path, resolved=r),
+                 lambda r: cjc._default_page_sender(tmp_path, resolved=r)):
+        make(False)("t", "b")
+        make(True)("t", "b")
+    assert [(k["audience"], k["resolved"]) for k in seen] == [("desk", False), ("desk", True)] * 3
+    # and each page() picks resolved for the recovery verdict only
+    assert "_default_sender(resolved=not open_)" in (ROOT / "ops/backup_state.py").read_text()
+    assert ('_default_sender(base, resolved=status == "OK")'
+            in (ROOT / "libs/ops/login_fence.py").read_text())
+    assert ("_default_page_sender(root, resolved=not now_open)"
+            in (ROOT / "scripts/check_judge_coverage.py").read_text())
+
+
+def test_login_fence_recovery_page_clears(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.ops import login_fence as lf
+    picked: list[bool] = []
+
+    def fake(_root: Path, *, resolved: bool = False) -> Any:
+        picked.append(resolved)
+        return lambda t, b: {"delivered": 1}
+
+    monkeypatch.setattr(lf, "_default_sender", fake)
+    lf.page({"status": "UNMEASURED"}, tmp_path)
+    lf.page({"status": "OK"}, tmp_path)
+    assert picked == [False, True]
+
+
+def test_information_desk_sends_write_no_row_but_still_ledger(
+        tmp_path: Path, quiet: list[tuple[str, bool]]) -> None:
+    led = tmp_path / "data" / "alert_delivery.jsonl"
+    res = ac.send_all("Quant desk: daily digest", "b", config=_cfg(tmp_path, ["hc", "ntfy"]),
+                      ledger=led, audience="desk", desk_row=False)
+    assert res["delivered"] == 2 and not ac.desk_alerts_path(led).exists()
+    assert led.read_text("utf-8").count("\n") == 2
+    for rel, needle in (("scripts/page_digest.py", 'audience="desk", desk_row=False'),
+                        ("scripts/run_model_upgrade.py", 'audience="desk", desk_row=False')):
+        assert needle in (ROOT / rel).read_text("utf-8"), rel
+    be = (ROOT / "ops" / "brain_env.sh").read_text("utf-8")
+    assert 'desk_row=aud != "info"' in be
+    for msg in ("model fallback ACTIVE: primary starved, organs running on $m\" info",
+                "cycles continue on metered spend\" info",
+                "then ONE retry\" info"):
+        assert msg in be, msg
+
+
+# --- SF4: a box failing for more than a day stays RED --------------------------------------------
+
+def test_box_heartbeat_refreshes_the_row_on_every_failing_run(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    sys.path.insert(0, str(ROOT / "desks" / "mt5" / "scripts"))
+    import box_heartbeat as hb
+    sent: list[str] = []
+    refreshed: list[tuple[str, str]] = []
+    cleared: list[str] = []
+    def fake_send(t: str, b: str, **k: Any) -> dict[str, Any]:
+        sent.append(t)
+        return {"delivered": 1}
+
+    def fake_record(k: str, t: str, **kw: Any) -> None:
+        refreshed.append((k, t))
+
+    def fake_clear(k: str, **kw: Any) -> None:
+        cleared.append(k)
+
+    monkeypatch.setattr(ac, "send_all", fake_send)
+    monkeypatch.setattr(ac, "record_desk_alert", fake_record)
+    monkeypatch.setattr(ac, "clear_desk_alert", fake_clear)
+    out = tmp_path / "BOX_HEARTBEAT.json"
+    fail = {"at": "x", "checks": {"disk": {"fail": True}}, "failing": ["disk"], "verdict": "FAIL"}
+    for _ in range(3):
+        hb.run(out=out, secrets=(tmp_path / "absent.json",), reading=dict(fail))
+    assert sent == ["MT5 box unhealthy: disk"]                      # paged once
+    assert refreshed == [(hb.DESK_ALERT_KEY, "MT5 box unhealthy: disk")] * 2   # row kept fresh
+    hb.run(out=out, secrets=(tmp_path / "absent.json",),
+           reading={"at": "y", "checks": {}, "failing": [], "verdict": "OK"})
+    assert cleared == [hb.DESK_ALERT_KEY]
+
+
+# --- SF5: credits are principal under their own name; R0360 is a one-time PRINCIPAL_ACTION -------
+
+def test_brain_credit_exhaustion_is_principal_with_an_accurate_title() -> None:
+    be = (ROOT / "ops" / "brain_env.sh").read_text("utf-8")
+    tail = be.split("# PRINCIPAL: an auth failure is fixed only", 1)[1].split("return 1", 1)[0]
+    code = "\n".join(ln for ln in tail.splitlines() if not ln.lstrip().startswith("#"))
+    assert '_aud=principal _what="BRAIN AUTH DOWN, cycle aborted"' in code
+    credit = code.split('"credit balance is too low|usage credits"', 1)[1].split("elif", 1)[0]
+    assert "CREDITS EXHAUSTED (top-up needed)" in credit and "_aud=desk" not in credit
+    assert '_aud=desk _what="BRAIN QUOTA LIMIT' in code.split("elif", 1)[1]
+    assert '_brain_page "$_what: ' in code and '"$_aud"' in code
+
+
+def _pa_snippet() -> str:
+    be = (ROOT / "ops" / "brain_env.sh").read_text("utf-8")
+    fn = be.split("brain_principal_action_once() {", 1)[1].split("\n}\n", 1)[0]
+    return fn.split("python3 -c '", 1)[1].split("\n')", 1)[0]
+
+
+def test_r0360_is_a_one_time_principal_action_entry(tmp_path: Path) -> None:
+    import os
+    import subprocess
+    be = (ROOT / "ops" / "brain_env.sh").read_text("utf-8")
+    assert 'brain_principal_action_once "R0360 METERED FALLBACK MISSING:"' in be
+    pa = tmp_path / "data" / "PRINCIPAL_ACTION.md"
+    pa.parent.mkdir(parents=True)
+    pa.write_text("URGENT TIER-3 ASK: something else\n", "utf-8")
+    env = {**os.environ, "PYTHONPATH": str(ROOT), "PA_MARKER": "R0360 X:",
+           "PA_MSG": "R0360 X: drop the key"}
+    for _ in range(3):
+        subprocess.run([sys.executable, "-c", _pa_snippet()], cwd=tmp_path, env=env,
+                       check=True, timeout=60)
+    text = pa.read_text("utf-8")
+    assert text.count("R0360 X:") == 1 and text.startswith("URGENT TIER-3 ASK")
+
+
+# --- SF7: page_principal mirrors to hc /fail when the registry has no hc -------------------------
+
+def test_page_principal_mirrors_to_hc_fail_from_the_heartbeat_url(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, quiet: list[tuple[str, bool]]) -> None:
+    hb = tmp_path / "heartbeat_url.json"
+    hb.write_text(json.dumps({"url": "https://hc-ping.com/sekrit-uuid-1234"}), "utf-8")
+    got: list[dict[str, Any]] = []
+
+    def hc(c: dict[str, Any], _t: str, _b: str) -> str:
+        got.append(c)
+        raise OSError(f"cannot reach {c['url']}/fail")
+
+    monkeypatch.setitem(ac._SENDERS, "hc", hc)
+    led = tmp_path / "l.jsonl"
+    res = ac.page_principal("needs you", "b", config=_cfg(tmp_path, ["ntfy"]), ledger=led,
+                            ntfy_secret=tmp_path / "no_ntfy.json", heartbeat=hb)
+    assert got == [{"kind": "hc", "url": "https://hc-ping.com/sekrit-uuid-1234"}]
+    assert [r["channel"] for r in res["results"]] == ["ntfy", "hc"]
+    for blob in (json.dumps(res), led.read_text("utf-8")):
+        assert "sekrit" not in blob
+    got.clear()
+    ac.page_principal("needs you", "b", config=_cfg(tmp_path, ["ntfy", "hc"]), ledger=led,
+                      ntfy_secret=tmp_path / "no_ntfy.json", heartbeat=hb)
+    assert got == [] and ("hc", False) in quiet                    # registry hc: /fail, once
