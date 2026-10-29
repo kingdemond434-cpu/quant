@@ -1,6 +1,92 @@
-# PROTECTED paths: a PR touching any of these never merges without zuck (auditor CLEAR plus his
-# APPROVE MERGES on #453). One fnmatch pattern per line, "*" crosses "/".
+# FORMERLY PROTECTED paths (the AUTO floor). Until 2026-10-29 a PR touching any of these never
+# merged without zuck. zuck then removed that ("remove all protected", "make all unprotected",
+# "always", "so i never have to approve"): these now merge with no comment, but always on the
+# AUTO path with every AUTO job, never LOW. One fnmatch pattern per line, "*" crosses "/".
+# What still needs zuck is only the controller's PROTECTED tuple (the checks that judge a PR).
 #
-# EMPTY since 2026-10-29 (zuck 18:44Z: "remove all protected", "make all unprotected", "always",
-# "so i never have to approve"). Every PR takes the AUTO path and its six checks; a HOLD still
-# wins. To protect a path again, add its pattern here and run ops/release/gen_protected_paths.py.
+# Edit protected_head.txt, then run ops/release/gen_protected_paths.py.
+
+# the controller, every workflow, the ceilings and this list
+.github/*
+ops/release/*
+CODEOWNERS
+*/CODEOWNERS
+
+# agent instructions
+CLAUDE.md
+*/CLAUDE.md
+AGENTS.md
+*/AGENTS.md
+.claude/*
+*/.claude/*
+
+# what decides how tests run: a PR could otherwise rewrite the checks from the side
+conftest.py
+*/conftest.py
+pyproject.toml
+setup.cfg
+setup.py
+pytest.ini
+tox.ini
+*sitecustomize.py
+*usercustomize.py
+*.pth
+.pre-commit-config.yaml
+
+# release, seal, adopt, signing
+libs/ops/release.py
+libs/ops/release_promotion.py
+ops/release_authority.py
+ops/run_release_authority.cmd
+ops/signing/*
+desks/mt5/scripts/Adopt*
+desks/mt5/scripts/Seal-*
+desks/mt5/scripts/smoke_release.py
+desks/mt5/mt5desk/release_identity.py
+scripts/rollback_guard.py
+IMMUTABLE_MANIFEST*
+*/IMMUTABLE_MANIFEST*
+
+# the rails' own definition and fences
+libs/research/immutable_rails.py
+scripts/check_immutable_rails.py
+scripts/check_immutable_evaluator.py
+
+# box, bridge, hooks
+ops/box/*
+ops/bridge/*
+ops/githooks/*
+desks/mt5/ops/box_tasks.manifest
+
+# kill switches and freezes: removing one re-arms trading
+*GATEWAY_PAUSED*
+*CASHCARRY_KILL*
+*DEADMAN_FIRED*
+*/data/FREEZE
+data/FREEZE
+ops/quant-deadman.service
+
+# the bars, switches and governing prose only zuck changes (the controller's floor lists them
+# too; repeated here so this file reads whole)
+.mcp.json
+*/.mcp.json
+ops/gates.sh
+ops/brain_env.sh
+scripts/moneypath_precommit_guard.py
+scripts/check_constitution_core.py
+desks/mt5/research/tier_s.py
+libs/ops/canonical_policy.py
+*allocator_sovereign*
+*margin_clause_disabled*
+*recorders_off*
+*ftmo_copy_principal*
+*gold_oco_mode*
+docs/research.md
+docs/growth_governance.md
+docs/cro/*
+context/delegation_protocol.md
+ops/memory/*
+
+# secrets
+data/secrets/*
+*/data/secrets/*

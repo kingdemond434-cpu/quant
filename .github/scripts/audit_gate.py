@@ -88,12 +88,15 @@ ready), no HOLD stands, and the gating jobs AND the AUTO jobs (risk-invariants, 
 independent-review) all succeeded. A PR whose CI fails on the LOW or AUTO path is QUARANTINED:
 labelled `quarantined`, left open, never merged until a new head passes.
 
-NO PROTECTED PATHS (2026-10-29, zuck: "remove all protected ... always ... so i never have to
-approve"). The PROTECTED floor is empty and so is ops/release/protected_paths.txt: the controller,
-workflows, ceilings, rails, kill switches and agent instructions all take the AUTO path, merging
-on green gating + AUTO jobs with no comment; a HOLD or any DEACTIVATE still stops them. A workflow
-PR is still merged only by the box (the workflow token cannot), and its green CI is still
-self-attested. The tiers below are kept as written for history and so patterns can be re-added.
+NO PROTECTED PATHS BUT THE SELF-JUDGED (2026-10-29, zuck: "remove all protected ... always ... so
+i never have to approve"). The rails, ceilings, kill switches, sealed manifest, box and bridge,
+agent instructions and governing prose (the old floor, now FORMERLY_PROTECTED, plus every pattern
+in ops/release/protected_paths.txt, which is read as that floor now) take the AUTO path: no
+comment, but every AUTO job, never LOW. A HOLD or any DEACTIVATE still stops them. What stays
+PROTECTED is only what defines or runs a check that judges the PR itself (.github/, ops/release/, test configuration): a `pull_request` run executes
+the PR's own copy of those, so the AUTO jobs would be self-attested; until a base-run lane judges
+such PRs, keeping them on the manual path is what keeps every gate above automatic and real.
+A secrets path never merges at all (REFUSED).
 
 STEP C. The PROTECTED floor above is widened by ops/release/protected_paths.txt (every LAWS 5m
 rail, test configuration, signing, kill switches); an unreadable list makes every PR PROTECTED.
@@ -151,11 +154,47 @@ CODE_SPECS = (
     "*.py", "*.ps1", "*.sh", "*.cmd", "*.txt", "*.yml", "*.yaml", "*.toml", "*.manifest",
     "*.service", "ops/githooks/*",
 )  # fmt: skip
-#: PROTECTED paths: none (2026-10-29 18:44Z, zuck: "remove all protected", "make all unprotected",
-#: "always", "so i never have to approve"). Every file takes the AUTO path and its six checks; a
-#: HOLD still wins. ops/release/protected_paths.txt can add patterns back. Only an unclassifiable
-#: PR (a file count that does not add up, an unreadable list) still falls to the manual path.
-PROTECTED: tuple[str, ...] = ()
+#: PROTECTED: what defines or runs a check that judges the PR itself (#532 audit MF2). A PR
+#: run by `pull_request` executes ITS OWN copy of these, so it could turn a gate into a no-op and
+#: read green; until a base-run lane judges such PRs, they take the manual path. Everything else
+#: zuck unprotected on 2026-10-29 18:44Z ("remove all protected", "make all unprotected",
+#: "always", "so i never have to approve"); ops/release/protected_paths.txt is now the AUTO floor.
+PROTECTED = (
+    ".github/*", "ops/release/*",
+    "ops/gates.sh", "pyproject.toml", "conftest.py", "*/conftest.py", "setup.cfg", "setup.py",
+    "pytest.ini", "tox.ini", "*sitecustomize.py", "*usercustomize.py", "*.pth",
+    ".pre-commit-config.yaml", "scripts/moneypath_precommit_guard.py",
+)  # fmt: skip
+#: Never merged by anyone: a secret in this public repo is leaked the moment it is pushed.
+SECRETS = ("data/secrets/*", "*/data/secrets/*")
+#: The PROTECTED floor before 2026-10-29. These now merge with no comment, but always on the AUTO
+#: path (every AUTO job), never LOW (#532 audit MF1).
+FORMERLY_PROTECTED = (
+    ".github/*", "CODEOWNERS", "*/CODEOWNERS", "ops/release/*", "ops/box/*", "ops/bridge/*",
+    "ops/githooks/*", "IMMUTABLE_MANIFEST*", "*/IMMUTABLE_MANIFEST*", "data/secrets/*",
+    "*/data/secrets/*", "scripts/check_immutable_evaluator.py", "libs/ops/release.py",
+    "libs/ops/release_promotion.py", "desks/mt5/scripts/Adopt*", "desks/mt5/scripts/Seal-*",
+    "desks/mt5/scripts/smoke_release.py", "desks/mt5/mt5desk/release_identity.py",
+    "CLAUDE.md", "*/CLAUDE.md", "AGENTS.md", "*/AGENTS.md", ".claude/*", "*/.claude/*",
+    # what the checks execute (#455 audit MF3)
+    "ops/gates.sh", "pyproject.toml", "conftest.py", "*/conftest.py", "setup.cfg", "setup.py",
+    "pytest.ini", "tox.ini", "*sitecustomize.py", "*usercustomize.py", "*.pth",
+    ".pre-commit-config.yaml", "scripts/moneypath_precommit_guard.py",
+    # Tier-3 and the sealed core: never modified autonomously (LAWS 4)
+    "scripts/run_deadman_switch.py", "ops/principal_doctrine.txt",
+    "scripts/check_constitution_core.py", "ops/brain_env.sh",
+    # bars that never move without zuck
+    "desks/mt5/research/tier_s.py", "libs/ops/canonical_policy.py",
+    "desks/mt5/research/heat_policy.py",
+    # the principal's own switches and ceilings, and the kill files
+    "*allocator_sovereign*", "*margin_clause_disabled*", "*recorders_off*",
+    "*ftmo_copy_principal*", "*gold_oco_mode*", "*gateway_paused*", "*cashcarry_kill*",
+    "*deadman_fired*", "data/freeze", "*/data/freeze",
+    # governing prose
+    "docs/research.md", "docs/cro/*", "ops/memory/*", ".mcp.json", "*/.mcp.json",
+)  # fmt: skip
+#: Prose files: one whose name matches FORCED_LIVE is a governing document, so AUTO, never LOW.
+DOC_EXTS = (".md", ".txt", ".rst")
 #: The jobs an AUTO-tier PR needs on top of the gating jobs (step C builds them; until then no
 #: AUTO-tier PR can merge, because a missing job is never a pass).
 AUTO_JOBS = ("risk-invariants", "replay-shadow", "independent-review")
@@ -279,7 +318,8 @@ def is_protected(name: str, extra: Iterable[str] = ()) -> bool:
 def tier(
     files: list[Mapping[str, Any]], changed: int, referenced: Callable[[str], bool]
 ) -> tuple[str, str]:
-    """("LOW" | "AUTO" | "PROTECTED", why). The strictest file decides; unsure is PROTECTED."""
+    """("LOW" | "AUTO" | "PROTECTED" | "REFUSED", why). The strictest file decides; unsure is
+    PROTECTED; a secrets path is REFUSED (never merged)."""
     if not files or len(files) != changed or len(files) >= MAX_FILES:
         return "PROTECTED", f"PROTECTED: {len(files)} of {changed} changed files listed"
     extra = protected_patterns()
@@ -289,8 +329,17 @@ def tier(
         (str(n), f) for f in files for n in (f.get("filename"), f.get("previous_filename")) if n
     ]
     for name, _ in names:
-        if is_protected(name, extra):
-            return "PROTECTED", f"PROTECTED: {name}"
+        if any(fnmatch.fnmatchcase(name.lower(), p) for p in SECRETS):
+            return "REFUSED", f"REFUSED: {name} is a secrets path; it never merges"
+    for name, _ in names:
+        if is_protected(name):
+            return "PROTECTED", f"PROTECTED: {name} (it changes a check that judges this PR)"
+    for name, _ in names:
+        low = name.lower()
+        if any(fnmatch.fnmatchcase(low, p.lower()) for p in (*FORMERLY_PROTECTED, *extra)) or (
+            low.endswith(DOC_EXTS) and FORCED_LIVE.search(low)
+        ):
+            return "AUTO", f"AUTO tier: {name} (formerly protected or governing; never LOW)"
     for name, f in names:
         if (
             name in APPEND_ONLY
@@ -696,6 +745,11 @@ def run(
     level, twhy = tier(
         files, int(p2.get("changed_files") or 0), lambda n: referenced_by_code(base, n)
     )
+    if level == "REFUSED":
+        _summary(f"#{pr} @ {head[:9]}: {twhy}")
+        if not box:
+            _status(repo, head, "failure", twhy)
+        return 1
 
     def switches() -> tuple[bool, str]:
         board = _flat(
