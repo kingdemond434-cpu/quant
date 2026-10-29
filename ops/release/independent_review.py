@@ -154,6 +154,7 @@ ADDRESSED = re.compile(
     r"|\b(pre-?approved|already\s+approved|owner\s+approved)\b"
     r"|\bapproved\s+by\s+(zuck|the\s+owner|owner|admin|the\s+maintainers?|maintainers?)\b"
     r"|\b(risk_increasing|touches_control)\b"
+    r"|\b(previous|prior|last|earlier)\s+answer\b|\banswer\s+again\b"  # VAGUE_NOTE (#538 SF3)
     r"|[\"']verdict[\"']\s*:\s*[\"'](pass|approve)",
     re.IGNORECASE,
 )
@@ -255,6 +256,17 @@ _HEDGE = re.compile(
     re.IGNORECASE,
 )
 _PLACE = re.compile(r"[\w/.-]+\.\w+:\d+|\bline \d+", re.IGNORECASE)
+#: A finding or summary that names a risk, a guard or money machinery is never boilerplate, however
+#: it hedges: "may bypass the daily loss guard" is a defect, not a vague FAIL (#538 audit MF1).
+_MECHANISM = re.compile(
+    r"\b(risk\w*|danger\w*|unsafe|lots?|max_?\w*|min_?\w*|size|sizing|sized|loss(es)?|guards?"
+    r"|heat|floors?|caps?|ceilings?|limits?|stops?|leverage|margin|exposure|drawdown|equity"
+    r"|account|deadman|kill\w*|rails?|fences?|checks?|thresholds?|orders?|positions?|trades?"
+    r"|hosts?|network|urls?|https?|endpoints?|secrets?|credentials?|tokens?|keys?|passwords?"
+    r"|bypass\w*|disabl\w*|remov\w*|delet\w*|skip\w*|weaken\w*|doubl\w*|blow\w*|raises?"
+    r"|lower\w*|loosen\w*|exec|eval|subprocess|shell)\b|\b[A-Z][A-Z0-9]*_[A-Z0-9_]*FRAC\b",
+    re.IGNORECASE,
+)
 #: Said to a model whose FAIL was vague, before its one re-ask (trusted text, never from the diff).
 VAGUE_NOTE = (
     "Your previous answer was FAIL, but no finding named a concrete defect. Answer again. FAIL "
@@ -266,11 +278,16 @@ VAGUE_NOTE = (
 
 def vague_fail(answer: dict[str, Any]) -> bool:
     """A FAIL on the risk flag alone whose every finding hedges and names no place. Never one
-    that flags control machinery: that stays a hard FAIL."""
+    that flags control machinery, says in its own words that risk goes up, or names a risk,
+    guard or money mechanism anywhere: those stay hard FAILs (#538 audit MF1). _PLACE takes
+    any file:line without checking it against the diff; that only errs toward keeping a FAIL."""
     if answer.get("touches_control") is not False or answer.get("verdict") == "PASS":
         return False
     found = [str(x) for x in answer.get("findings") or []]
-    return bool(found) and all(_HEDGE.search(f) and not _PLACE.search(f) for f in found)
+    words = " ".join([str(answer.get("summary", "")), *found])
+    if says_risk_up(words) or _MECHANISM.search(words) or _PLACE.search(words):
+        return False
+    return bool(found) and all(_HEDGE.search(f) for f in found)
 
 
 def decide(answer: dict[str, Any]) -> tuple[bool, str]:
@@ -484,6 +501,7 @@ def vote(
     passed: set[str] = set()
     dropped: set[str] = set()
     abstained: set[str] = set()  # vague FAIL twice: that family's vote does not count either way
+    families = {fam for fam, _, _ in ladder}
     deadline = clock() + budget_s
     pause = 60.0
     while clock() < deadline:
@@ -519,9 +537,23 @@ def vote(
             log.append(f"{mid}: {'PASS' if ok else 'FAIL'} ({why}) {json.dumps(answer)[:2000]}")
             if not ok and vague_fail(answer):  # one re-ask; the second answer stands (#525)
                 log.append(f"{mid}: REASKED (the FAIL named no defect)")
-                again = parse(
-                    ask(rubric, VAGUE_NOTE + "\n\n" + prompt(diff, files, secrets.token_hex(8)))
-                )
+                note = VAGUE_NOTE + "\n\n"
+                try:  # the re-ask fails the way the first ask does (#538 audit SF1)
+                    again = parse(ask(rubric, note + prompt(diff, files, secrets.token_hex(8))))
+                except TooLarge as exc:
+                    log.append(str(exc))
+                    dropped.add(mid)
+                    if len({f for f, m, _ in ladder if m not in dropped}) < VOTES:
+                        log.append("FAIL: too large for enough reviewer families to read whole")
+                        return "FAIL", log
+                    continue
+                except Unavailable as exc:  # asked afresh on the next round
+                    log.append(f"{mid}: unavailable on the re-ask ({exc})")
+                    continue
+                except (RuntimeError, KeyError, IndexError, TypeError, ValueError) as exc:
+                    log.append(f"{mid}: cannot be used ({type(exc).__name__}: {exc})")
+                    dropped.add(mid)
+                    continue
                 if again is None:
                     log.append(f"{mid}: no readable answer to the re-ask: FAIL")
                     return "FAIL", log
@@ -529,14 +561,19 @@ def vote(
                 log.append(
                     f"{mid}: re-ask {'PASS' if ok else 'FAIL'} ({why}) {json.dumps(again)[:2000]}"
                 )
-                if not ok and vague_fail(again):
+                if not ok and vague_fail(again):  # its other models are not asked either
                     log.append(f"{mid}: vague FAIL twice: {fam} abstains")
                     abstained.add(fam)
-                    continue
-            if not ok:
+            if not ok and fam not in abstained:
                 return "FAIL", log
-            passed.add(fam)
-            if len(passed) >= VOTES or (len(abstained) == 1 and len(passed) >= VOTES - 1):
+            if ok:
+                passed.add(fam)
+            # Re-checked after a PASS and after an abstention alike, so the order the families
+            # answer in never matters (#538 audit SF2). One abstention is excused only when every
+            # other family has passed, never on fewer votes than designed (#538 audit MF2).
+            if len(passed) >= VOTES or (
+                len(abstained) == 1 and passed and passed == families - abstained
+            ):
                 if abstained:
                     log.append(
                         f"PASS with {', '.join(sorted(abstained))} abstaining (vague FAIL twice)"
