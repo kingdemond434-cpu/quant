@@ -605,6 +605,7 @@ LEG_LAYER: dict[str, str] = {
     "unknown_census": "meta",
     "meta_rnd": "meta",
     "wiring_audit": "meta", "queue_cycle": "meta", "time_joins": "meta", "brain_ab": "meta",
+    "queue_consumers": "meta",
     # THE CONTROL PLANE is meta by construction: it measures whether the machine that runs the
     # machine is doing what desired state says, and it predicts, sizes and times nothing.
     "control_plane": "meta",
@@ -633,7 +634,7 @@ LEG_LAYER: dict[str, str] = {
     "source_experiment_census": "information", "world_dataset_hunt": "information",
     # CRO D18 measured on recorded consumer reads: a measurement of the desk's own wiring, meta.
     "dataset_use_census": "meta",
-    "catalog_routes": "information", "discovery_audit": "meta",
+    "catalog_routes": "information", "discovery_audit": "meta", "discovery_loop": "meta",
     "world_macro_proposer": "prediction",
     "cross_asset_graph": "information", "transmission_engine": "information",
     "excursions": "exit", "exit_accounts": "exit",

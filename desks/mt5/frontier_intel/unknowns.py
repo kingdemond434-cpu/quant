@@ -32,17 +32,56 @@ unknowns is how a miner becomes a search for confirmation.
 """
 from __future__ import annotations
 
+import argparse
 import json
+import os
 import re
-from collections import Counter
+import sys
+from collections import Counter, defaultdict
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from . import ontology, registry
+try:
+    from . import ontology, registry
+except ImportError:
+    # RUN AS A SCRIPT BY THE HOURLY LEG `frontier_unknowns`. The relative import alone made that
+    # leg exit 1 every hour ("attempted relative import with no known parent package", measured
+    # 2026-10-07), so nothing this module discovers had ever been recorded on a schedule.
+    _HERE = Path(__file__).resolve().parent
+    for _p in (str(_HERE.parent), str(_HERE.parents[2])):
+        if _p not in sys.path:
+            sys.path.insert(0, _p)
+    from frontier_intel import ontology, registry  # type: ignore[no-redef]
 
 BASE = Path(__file__).resolve().parent.parent
 CANDIDATES = BASE / "frontier_intel" / "data" / "firm_candidates.jsonl"
+#: THE ONTOLOGY EXTENSION (DATA-14): candidate classes that RECUR are promoted here automatically,
+#: with provenance. Rows use the class-row shape of the equivalence ontology's extension file
+#: (group / name / terms / layer / cadence / mandate_id / part) so that file's loader can merge it
+#: unchanged; the provenance and lifecycle keys ride beside them.
+EXTENSION = BASE / "frontier_intel" / "data" / "ontology_extension.json"
+LOOP_LEDGER = BASE / "data" / "discovery_loop" / "ledger.json"
+LOOP_REPORT = BASE / "reports" / "DISCOVERY_LOOP.json"
+FRONTIER_QUEUE = BASE / "frontier_intel" / "data" / "frontier_queue.jsonl"
+TASK_QUEUE = BASE / "data" / "task_queue.jsonl"
+REPORT = BASE / "reports" / "FRONTIER_UNKNOWNS.json"
+#: Distinct sources OR distinct countries a candidate class must be seen in before it is
+#: promoted. One source is an extraction; three independent ones are a category the ontology lacks.
+MIN_RECURRENCE = 3
+UNMEASURED = "UNMEASURED"
+#: Words that recur everywhere and name no class: never promoted however often they are seen.
+_CLASS_STOP = frozenset("""government ministry office department national statistics statistic
+official agency bureau authority institute portal service services report reports bulletin
+release releases publication publications survey surveys indicator indicators table tables
+dataset datasets database catalog catalogue register registry yearly monthly annual quarterly
+english french german spanish search results result title titles index about contact archive
+wikipedia wikip google category kategorie categoria market markets trading trader traders
+analysis economic economy interactive investing investment strategy strategies online
+download downloads website homepage welcome blog article articles news update updated
+""".split())
 
 #: Fraction of each cycle's attention reserved for the unknown lanes whatever they score.
 #: DERIVED FROM THE MANDATE'S OWN RANGE (5-15% for unknown-unknowns) and set at the middle of it.
@@ -223,3 +262,226 @@ def survey(texts: list[str] | None = None,
         "counts": {"firms": len(firms), "capabilities": len(caps),
                    "unaddressed": len(unaddressed)},
     }
+
+
+# ------------------------------------------------------------------ the ontology never closes
+def _host(url: str) -> str:
+    s = re.sub(r"^[a-z][a-z0-9+.-]*://", "", str(url or "").strip().lower())
+    s = s.split("/", 1)[0].split(":", 1)[0]
+    return s[4:] if s.startswith("www.") else s
+
+
+def _country(host: str) -> str:
+    tld = host.rsplit(".", 1)[-1] if "." in host else ""
+    if len(tld) == 2 and tld.isalpha() and tld not in {"io", "ai", "co", "tv", "me", "eu"}:
+        return "GB" if tld == "uk" else tld.upper()
+    return UNMEASURED
+
+
+def candidate_class_rows(loop_records: Mapping[str, Mapping[str, Any]] | None = None,
+                         frontier_rows: Iterable[Mapping[str, Any]] = ()
+                         ) -> list[dict[str, Any]]:
+    """Every observation of a class the ontology does not have, one row per (class, source).
+
+        information_class  salient words of an UNCLASSIFIED unseeded source (discovery loop)
+        capability         a frontier finding whose capability names no ontology group
+        actor              an organisation named in a finding that the registry does not know
+    """
+    rows: list[dict[str, Any]] = []
+    for host, r in (loop_records or {}).items():
+        # A DATA class needs a data source: a host that served at least one data endpoint. Pages
+        # with no endpoint are prose, and their words name topics, not information classes.
+        if str(r.get("data_type") or "") != "UNCLASSIFIED" or not int(r.get("endpoints") or 0):
+            continue
+        for w in r.get("candidate_words") or []:
+            w = str(w).lower()
+            if w in _CLASS_STOP or len(w) < 5:
+                continue
+            rows.append({"axis": "information_class", "name": w, "source": str(host),
+                         "country": str(r.get("country") or UNMEASURED),
+                         "at": (r.get("stages") or {}).get("DISCOVERED"),
+                         "evidence": (r.get("sample") or [""])[0][:160]})
+    for f in frontier_rows:
+        src = _host(str(f.get("source_url") or "")) or str(f.get("source_kind") or "")
+        if not src:
+            continue
+        cap = str(f.get("capability") or "").strip()
+        if cap and cap.upper() not in ontology.NAMES and not ontology.map_to_capabilities(cap):
+            rows.append({"axis": "capability", "name": cap.lower(), "source": src,
+                         "country": _country(src), "at": f.get("at"),
+                         "evidence": str(f.get("claim") or "")[:160]})
+        for u in unknown_firms([str(f.get("claim") or "")], min_mentions=1):
+            rows.append({"axis": "actor", "name": u.name, "source": src,
+                         "country": _country(src), "at": f.get("at"),
+                         "evidence": u.why[:160]})
+    return rows
+
+
+def _terms(name: str) -> str:
+    words = [re.escape(w) for w in re.findall(r"[A-Za-z0-9]+", name)]
+    return r"\b" + r"\W+".join(words) + r"\b" if words else re.escape(name)
+
+
+def _read_doc(path: Path) -> dict[str, Any]:
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return doc if isinstance(doc, dict) else {}
+
+
+def promote_recurring(rows: Iterable[Mapping[str, Any]], *, min_recurrence: int = MIN_RECURRENCE,
+                      path: Path | None = None, now: datetime | None = None,
+                      write: bool = True, met: Iterable[str] = ()) -> dict[str, Any]:
+    """Promote every candidate class seen in >= `min_recurrence` distinct sources OR countries.
+
+    AUTOMATIC AND ADDITIVE. A promoted class is appended to the extension file with its
+    provenance (the sources, countries, first sighting, evidence); a class already promoted has
+    its provenance widened, never removed -- the ontology is open and nothing here closes it.
+    """
+    at = (now or datetime.now(UTC)).isoformat(timespec="seconds")
+    p = EXTENSION if path is None else path
+    doc = _read_doc(p)
+    classes: list[dict[str, Any]] = [c for c in doc.get("classes") or [] if isinstance(c, dict)]
+    by_key = {f"{c.get('group')}:{c.get('name')}": c for c in classes}
+    groups: dict[tuple[str, str], dict[str, Any]] = defaultdict(
+        lambda: {"sources": set(), "countries": set(), "first": None, "evidence": []})
+    for r in rows:
+        g = groups[(str(r["axis"]), str(r["name"]))]
+        g["sources"].add(str(r["source"]))
+        if r.get("country") and r["country"] != UNMEASURED:
+            g["countries"].add(str(r["country"]))
+        if r.get("at") and (g["first"] is None or str(r["at"]) < g["first"]):
+            g["first"] = str(r["at"])
+        if r.get("evidence") and len(g["evidence"]) < 3:
+            g["evidence"].append(str(r["evidence"]))
+    promoted: list[str] = []
+    widened: list[str] = []
+    below: list[dict[str, Any]] = []
+    for (axis, name), g in sorted(groups.items()):
+        key = f"{axis}:{name}"
+        n_src, n_cty = len(g["sources"]), len(g["countries"])
+        if key in by_key:
+            prov = by_key[key].setdefault("provenance", {})
+            srcs = sorted(set(prov.get("sources") or []) | g["sources"])
+            if len(srcs) > len(prov.get("sources") or []):
+                widened.append(key)
+            prov.update({"sources": srcs[:50], "n_sources": max(len(srcs),
+                                                                int(prov.get("n_sources") or 0)),
+                         "countries": sorted(set(prov.get("countries") or []) | g["countries"]),
+                         "last_seen": at})
+            continue
+        if n_src < min_recurrence and n_cty < min_recurrence:
+            below.append({"key": key, "sources": n_src, "countries": n_cty})
+            continue
+        row = {"group": axis, "name": name, "terms": _terms(name), "layer": "auto",
+               "cadence": UNMEASURED, "mandate_id": "AUTO-DATA-14", "part": "auto",
+               "status": "PROMOTED_AUTO", "lifecycle": "MISSION_OPEN",
+               "provenance": {"sources": sorted(g["sources"])[:50], "n_sources": n_src,
+                              "countries": sorted(g["countries"]), "first_seen": g["first"],
+                              "promoted_at": at, "evidence": g["evidence"],
+                              "rule": (f"seen in >= {min_recurrence} distinct sources or "
+                                       f"countries (frontier_intel/unknowns.promote_recurring)")}}
+        classes.append(row)
+        by_key[key] = row
+        promoted.append(key)
+    # LIFECYCLE: a class whose mission the discovery loop saw met (an unseeded source matching it
+    # was acquired) moves MISSION_OPEN -> MISSION_MET; it stays in the ontology either way.
+    done = set(met)
+    for c in classes:
+        if f"{c.get('group')}:{c.get('name')}" in done:
+            c["lifecycle"] = "MISSION_MET"
+    out_doc = {"generated_at": at, "classes": classes, "known": list(doc.get("known") or []),
+               "rule": ("auto-extension: recurring candidate classes are promoted with provenance "
+                        "and routed to acquisition as missions; the same acquisition, PIT, "
+                        "validation, ROI and lifecycle rules apply to them as to every class")}
+    if write:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        tmp = p.with_suffix(".tmp")
+        tmp.write_text(json.dumps(out_doc, indent=1, ensure_ascii=False), "utf-8")
+        os.replace(tmp, p)
+    below.sort(key=lambda r: (-r["sources"], -r["countries"], r["key"]))
+    return {"candidates": len(groups), "promoted_now": promoted, "widened": widened,
+            "total_promoted": len(classes), "below_threshold_top": below[:20],
+            "min_recurrence": min_recurrence, "classes": classes}
+
+
+def route_missions(classes: Iterable[Mapping[str, Any]], queue: Any,
+                   met: Iterable[str] = ()) -> dict[str, Any]:
+    """Every promoted class with an open mission becomes an INFORMATION-lane `acquire_class` task
+    (deduped per class), linked to the strategy-lane `screen_class` its completion queues. The
+    discovery loop completes the task when an unseeded source matching the class is acquired."""
+    done = set(met)
+    queue.link("acquire_class", "screen_class")
+    queued, skipped = [], []
+    for c in classes:
+        key = f"{c.get('group')}:{c.get('name')}"
+        if key in done or c.get("lifecycle") == "MISSION_MET":
+            continue
+        got = queue.submit("acquire_class", lane="information",
+                           payload={"key": key, "terms": c.get("terms"), "axis": c.get("group")},
+                           priority=float((c.get("provenance") or {}).get("n_sources") or 0),
+                           dedupe_key=f"acquire_class|{key}")
+        (queued if got is not None else skipped).append(key)
+    return {"queued": queued, "already_open": skipped}
+
+
+def _frontier_rows(path: Path = FRONTIER_QUEUE) -> list[dict[str, Any]]:
+    try:
+        lines = path.read_text("utf-8").splitlines()
+    except OSError:
+        return []
+    out = []
+    for line in lines:
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict):
+            out.append(row)
+    return out
+
+
+def run(*, write: bool = True, now: datetime | None = None) -> dict[str, Any]:
+    """One pass: candidate classes -> promotion -> missions. The hourly `frontier_unknowns` leg."""
+    loop = _read_doc(LOOP_LEDGER).get("records") or {}
+    frontier = _frontier_rows()
+    rows = candidate_class_rows(loop, frontier)
+    met = [str(m.get("key")) for m in
+           ((_read_doc(LOOP_REPORT).get("missions") or {}).get("met") or [])]
+    promo = promote_recurring(rows, now=now, write=write, met=met)
+    missions: dict[str, Any] = {"queue": UNMEASURED}
+    if write:
+        try:
+            from libs.ops.task_queue import TaskQueue
+            missions = route_missions(promo["classes"], TaskQueue(TASK_QUEUE), met)
+        except Exception as exc:  # noqa: BLE001 - promotion stands even when routing cannot run
+            missions = {"queue": f"UNROUTED: {type(exc).__name__}: {exc}"[:200]}
+    surveyed = survey([str(f.get("claim") or "") for f in frontier], frontier)
+    out = {"generated_at": (now or datetime.now(UTC)).isoformat(timespec="seconds"),
+           "inputs": {"loop_records": len(loop), "frontier_rows": len(frontier),
+                      "candidate_rows": len(rows)},
+           "promotion": {k: v for k, v in promo.items() if k != "classes"},
+           "missions": missions, "missions_met": met,
+           "survey_counts": surveyed["counts"],
+           "extension": str(EXTENSION)}
+    if write:
+        REPORT.parent.mkdir(parents=True, exist_ok=True)
+        REPORT.write_text(json.dumps(out, indent=1, default=str), "utf-8")
+    return out
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="unknown unknowns: promote recurring classes")
+    ap.add_argument("--dry-run", action="store_true")
+    args = ap.parse_args(argv)
+    out = run(write=not args.dry_run)
+    pr = out["promotion"]
+    print(f"frontier unknowns: {out['inputs']['candidate_rows']} candidate row(s), "
+          f"{pr['candidates']} class(es); promoted now {len(pr['promoted_now'])}, "
+          f"total {pr['total_promoted']}; missions {out['missions']}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1187,7 +1187,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "experiment_cache", "opportunity_gap", "opportunity_forecast", "forecast_contract",
     "alpha_breadth", "alpha_periodic_table", "regime_coverage", "timeframe_coverage",
     "frontier_unknowns", "frontier_report", "frontier_ontology", "counterfactual_world",
-    "strategy_paths", "reclaim_disk", "archive_tape", "queue_cycle",
+    "strategy_paths", "reclaim_disk", "archive_tape", "queue_cycle", "queue_consumers",
     # THE 2026-09-16 BLUEPRINT ORGANS (phases C/D of the Tier-1 ledger), all cheap readers.
     "axis_registry", "tier1_scorecard", "tier1_gap", "novelty_gate", "forced_flow_calendar",
     "breadth_ladder",
@@ -1306,7 +1306,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "intake_catchup", "compile_candidates", "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
-                     "recertify_canon", "session_chart_expansion", "experiment_design",
+                     "recertify_canon", "queue_consumers", "session_chart_expansion",
+                     "experiment_design",
                      "experiment_cache", "probation", "axis_proposer", "program_alpha_lane",
                      "trajectory_evolution", "descendants", "card_explosion", "alpha_lineage",
                      "alpha_recombination", "graveyard_resurrection", "discovery_compiler",
@@ -1427,6 +1428,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     # world that would be mined seventeen times over if each region hunted them itself.
     **dict.fromkeys(("global_research_os", "acquire_datasets", "source_experiment_census",
                      "dataset_use_census", "catalog_routes", "discovery_audit",
+                     "discovery_loop",
                      *GLOBAL_FOREST_LEGS), "regions"),
     # the free stack (2026-09-30): app rankings, CN forums, JP IR, JP patents, trends, congress,
     # CoinPaprika (crypto CFDs only), Reddit/Telegram, AKShare/TuShare/BaoStock, catalogues --
@@ -1994,6 +1996,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "acquire_datasets": 1_100,
     # catalog_routes stops itself at DEFAULT_BUDGET_S=600 and writes its cursors; cap above it.
     "catalog_routes": 720,
+    # The discovery loop reads the discoveries, the registry and streams the gate verdict ledger
+    # once (3.3 s on the cloud checkout's 265 discovery files); the box's ledger is larger.
+    "discovery_loop": 600,
+    # queue_consumers: file reads and small rewrites per task, bounded by CONSUME_MAX.
+    "queue_consumers": 300,
     # THE WORLD DATASET HUNTER stops itself at --budget-s 900 and writes its catalog, registry
     # rows and DATASET_HUNT.json; the cap sits above so the write is never the part cut off.
     # Its per-dataset cursor means a short pass still advances the frontier.
@@ -3092,7 +3099,11 @@ def forward_reconcile_leg() -> dict:
 
 def _recertify_canon_claimed() -> dict:
     """`recertify_canon`, but only for a window the queue says is actually uncovered."""
-    q, task, why = _claim_one("recertify")
+    try:
+        from libs.ops.queue_cycle import RECERTIFY_CLAIMS
+    except Exception as exc:
+        return {"status": "ERROR", "why": f"queue_cycle unimportable ({type(exc).__name__})"}
+    q, task, why = _claim_one(RECERTIFY_CLAIMS[0])
     if task is None:
         return {"status": "STOOD_DOWN", "why": why,
                 "note": ("not a failure: the queue is the schedule now, and an empty queue means "
@@ -4909,6 +4920,12 @@ def main() -> None:
     # found, fetched and fed. Benchmark coverage, never world coverage.
     dau = _costed("discovery_audit", lambda: _producer(
         "discovery_audit", "research/discovery_audit.py"))
+    # THE DISCOVERY LOOP (ARCH-22/23, DATA-51, 2026-10-07): every UNSEEDED source carried from
+    # discovery through acquisition and gauntlet-judged uses to USEFUL / REJECTED / LIMITED; the
+    # outcomes become the measured prior the acquirer and catalog routes reorder by next hour,
+    # plus per-cohort loop performance and the discovery-vs-ingestion balance with its alarm.
+    dlp = _costed("discovery_loop", lambda: _producer(
+        "discovery_loop", "research/discovery_loop.py"))
     # THE FREE STACK (2026-09-30, asia gap rows 14-17, 20): every free alt source the gap report
     # measured MISSING, point-in-time, cursor-based, one yield row per source in
     # reports/FREE_STACK_YIELD.json; series land in data/lake/series/fs_<id>, catalogue finds
@@ -5401,6 +5418,10 @@ def main() -> None:
     # consume the work -- the lease expires and the next pass re-claims it, which is the property
     # the durable journal exists to provide and which nothing was using.
     rc = _costed("recertify_canon", _recertify_canon_claimed)
+    # THE OTHER TWO STRATEGY-LANE KINDS, claimed beside `recertify`: lineage invalidations and
+    # class screens. Without this leg both kinds piled up READY with no consumer.
+    qcons = _costed("queue_consumers", lambda: _producer(
+        "queue_consumers", "research/queue_consumers.py"))
     # ENROLMENT, ON THE MACHINE THAT MINTS THE CERTIFICATES. `heal_clocks` above repairs clocks
     # that EXIST and have gone IDENTITY_BROKEN; it does nothing whatever for a certificate that
     # has no clock at all, and those are two different failures that read the same on a dashboard.
@@ -6201,6 +6222,7 @@ def main() -> None:
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
                     "acquire_datasets": acq, "free_stack_hunt": fsh,
                     "catalog_routes": ctr, "discovery_audit": dau,
+                    "discovery_loop": dlp,
                     "free_stack_proposer": fsp, "factory_throughput": fxt,
                     "world_dataset_hunt": wdh,
                     "world_macro_proposer": wmp,
@@ -6333,7 +6355,7 @@ def main() -> None:
                     "fred_macro": fm,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
-                    "recertify_canon": rc, "hunt12": h12,
+                    "recertify_canon": rc, "queue_consumers": qcons, "hunt12": h12,
                     "state_admission": sad,
                     "pf_allocator": pa, "allocator_liveness": alv, "allocator_trigger": atg,
                     "promoter": pr,

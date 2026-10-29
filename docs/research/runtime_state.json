@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 798,
-  "UNMEASURED": 43
+  "NEVER": 799,
+  "UNMEASURED": 44
  },
  "scope": {
-  "attested": 1022,
+  "attested": 1024,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -478,6 +478,17 @@
      "leg:dataset_use_census",
      "leg:discovery_audit",
      "leg:forest_attempts"
+    ]
+   },
+   {
+    "at": "2026-10-29T15:24:51+00:00",
+    "host": "vm",
+    "machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:queue_consumers",
+     "leg:discovery_loop"
     ]
    }
   ]
@@ -26651,6 +26662,64 @@
    "measured_on": "vm",
    "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
    "measured_at": "2026-10-29T15:16:57+00:00"
+  },
+  {
+   "organ": "leg:queue_consumers",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/queue_consumers.py"
+   ],
+   "clock": "hourly_cycle:queue_consumers",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read STALE here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/QUEUE_CONSUMERS.json",
+   "artifact_declared": "desks/mt5/reports/QUEUE_CONSUMERS.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 1380020,
+   "artifact_bytes": 202,
+   "artifact_sha256": "688d500c0fd0a1af16ed61d240d604b4ccff58aff7ff23d3fb50c222d88f952a",
+   "summary": {
+    "status": "STOOD_DOWN"
+   },
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-29T15:24:51+00:00"
+  },
+  {
+   "organ": "leg:discovery_loop",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/discovery_loop.py"
+   ],
+   "clock": "hourly_cycle:discovery_loop",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/DISCOVERY_LOOP.json",
+   "artifact_declared": "desks/mt5/reports/DISCOVERY_LOOP.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "4c398f739c8447eb99d3fe100ad1b0fa",
+   "measured_at": "2026-10-29T15:24:51+00:00"
   }
  ],
  "ratchet": {
