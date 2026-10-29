@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-29T14:02:59.789494+00:00",
+ "generated_utc": "2026-10-29T17:56:05.114821+00:00",
  "rows": {
   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
    "verdict": "CHALLENGED",
@@ -7,8 +7,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -18,8 +18,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -29,8 +29,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -51,8 +51,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -62,8 +62,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -73,8 +73,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -84,8 +84,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -95,8 +95,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -106,8 +106,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -117,8 +117,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -161,8 +161,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -172,8 +172,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -227,8 +227,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -238,8 +238,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -249,8 +249,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -260,8 +260,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -271,8 +271,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -282,8 +282,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -293,8 +293,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -304,8 +304,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -5448,8 +5448,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -5459,8 +5459,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -5470,8 +5470,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -5481,8 +5481,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -5492,8 +5492,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -5503,8 +5503,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -5514,8 +5514,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -5525,8 +5525,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9094,8 +9094,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9259,8 +9259,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9270,8 +9270,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9281,8 +9281,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9292,8 +9292,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9303,8 +9303,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9589,8 +9589,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9600,8 +9600,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9611,8 +9611,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9622,8 +9622,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9633,8 +9633,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9644,8 +9644,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9655,8 +9655,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9666,8 +9666,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9677,8 +9677,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9688,8 +9688,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9699,8 +9699,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9710,8 +9710,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9721,8 +9721,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9732,8 +9732,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9743,8 +9743,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9754,8 +9754,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9765,8 +9765,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9776,8 +9776,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9787,8 +9787,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9798,8 +9798,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9809,8 +9809,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9820,8 +9820,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -9831,8 +9831,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11497,8 +11497,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11508,8 +11508,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11519,8 +11519,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11530,8 +11530,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11541,8 +11541,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11552,8 +11552,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11563,8 +11563,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11574,8 +11574,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11585,8 +11585,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11596,8 +11596,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11607,8 +11607,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11618,8 +11618,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11629,8 +11629,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11640,8 +11640,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11651,8 +11651,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11662,8 +11662,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11673,8 +11673,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11684,8 +11684,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11695,8 +11695,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11706,8 +11706,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11717,8 +11717,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11728,8 +11728,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11739,8 +11739,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11750,8 +11750,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11761,8 +11761,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11772,8 +11772,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11783,8 +11783,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11794,8 +11794,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11805,8 +11805,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11816,8 +11816,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11827,8 +11827,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11838,8 +11838,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11849,8 +11849,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11860,8 +11860,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11871,8 +11871,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11882,8 +11882,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11893,8 +11893,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11904,8 +11904,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11915,8 +11915,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11926,8 +11926,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11937,8 +11937,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11948,8 +11948,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11959,8 +11959,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11970,8 +11970,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11981,8 +11981,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -11992,8 +11992,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12003,8 +12003,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12014,8 +12014,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12025,8 +12025,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12036,8 +12036,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12047,8 +12047,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12058,8 +12058,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12069,8 +12069,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12080,8 +12080,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12091,8 +12091,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12102,107 +12102,107 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
   "external.AUDCAD.overnight_gap_decay.p=0dfa3f66cade1630": {
-   "verdict": "CLEAR",
-   "review_failed": [],
-   "family": "overnight_gap_decay",
-   "theory": {
-    "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
-    "status": "CONTESTED"
-   }
-  },
-  "external.AUDCAD.overnight_gap_decay.p=de9ed752775ac9b5": {
-   "verdict": "CLEAR",
-   "review_failed": [],
-   "family": "overnight_gap_decay",
-   "theory": {
-    "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
-    "status": "CONTESTED"
-   }
-  },
-  "external.AUDCHF.overnight_gap_decay.p=0dfa3f66cade1630": {
-   "verdict": "CLEAR",
-   "review_failed": [],
-   "family": "overnight_gap_decay",
-   "theory": {
-    "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
-    "status": "CONTESTED"
-   }
-  },
-  "external.AUDCHF.overnight_gap_decay.p=de9ed752775ac9b5": {
-   "verdict": "CLEAR",
-   "review_failed": [],
-   "family": "overnight_gap_decay",
-   "theory": {
-    "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
-    "status": "CONTESTED"
-   }
-  },
-  "external.AUDNZD.overnight_gap_decay.p=30ab3dd5ee95b097": {
-   "verdict": "CLEAR",
-   "review_failed": [],
-   "family": "overnight_gap_decay",
-   "theory": {
-    "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
-    "status": "CONTESTED"
-   }
-  },
-  "external.AUDSGD.overnight_gap_decay.p=30ab3dd5ee95b097": {
-   "verdict": "FAILED",
-   "review_failed": [],
-   "family": "overnight_gap_decay",
-   "theory": {
-    "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
-    "status": "CONTESTED"
-   }
-  },
-  "external.AUDSGD.overnight_gap_decay.p=aac0f7d701141aa8": {
-   "verdict": "FAILED",
-   "review_failed": [],
-   "family": "overnight_gap_decay",
-   "theory": {
-    "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
-    "status": "CONTESTED"
-   }
-  },
-  "external.CHFDKK.overnight_gap_decay.p=69e3f4baa606c55a": {
-   "verdict": "CLEAR",
-   "review_failed": [],
-   "family": "overnight_gap_decay",
-   "theory": {
-    "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
-    "status": "CONTESTED"
-   }
-  },
-  "external.CHFDKK.overnight_gap_decay.p=ba414addef550ea9": {
    "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDCAD.overnight_gap_decay.p=de9ed752775ac9b5": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 24,
+    "confidence": 0.47,
+    "sd": 0.0699,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDCHF.overnight_gap_decay.p=0dfa3f66cade1630": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 24,
+    "confidence": 0.47,
+    "sd": 0.0699,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDCHF.overnight_gap_decay.p=de9ed752775ac9b5": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 24,
+    "confidence": 0.47,
+    "sd": 0.0699,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDNZD.overnight_gap_decay.p=30ab3dd5ee95b097": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 24,
+    "confidence": 0.47,
+    "sd": 0.0699,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDSGD.overnight_gap_decay.p=30ab3dd5ee95b097": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 24,
+    "confidence": 0.47,
+    "sd": 0.0699,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDSGD.overnight_gap_decay.p=aac0f7d701141aa8": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 24,
+    "confidence": 0.47,
+    "sd": 0.0699,
+    "status": "CONTESTED"
+   }
+  },
+  "external.CHFDKK.overnight_gap_decay.p=69e3f4baa606c55a": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 24,
+    "confidence": 0.47,
+    "sd": 0.0699,
+    "status": "CONTESTED"
+   }
+  },
+  "external.CHFDKK.overnight_gap_decay.p=ba414addef550ea9": {
+   "verdict": "CLEAR",
+   "review_failed": [],
+   "family": "overnight_gap_decay",
+   "theory": {
+    "n_oos": 24,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12212,74 +12212,74 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
   "external.EURNOK.overnight_gap_decay.p=4e3e7963cfc9ce12": {
-   "verdict": "CHALLENGED",
+   "verdict": "CLEAR",
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
   "external.EURNOK.overnight_gap_decay.p=de9ed752775ac9b5": {
-   "verdict": "CHALLENGED",
+   "verdict": "CLEAR",
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
   "external.EURSEK.overnight_gap_decay.p=4e3e7963cfc9ce12": {
-   "verdict": "CHALLENGED",
+   "verdict": "CLEAR",
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
   "external.EURSEK.overnight_gap_decay.p=0dfa3f66cade1630": {
-   "verdict": "CHALLENGED",
+   "verdict": "CLEAR",
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
   "external.EURSEK.overnight_gap_decay.p=de9ed752775ac9b5": {
-   "verdict": "CHALLENGED",
+   "verdict": "CLEAR",
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
   "external.EURSGD.overnight_gap_decay.p=4e3e7963cfc9ce12": {
-   "verdict": "CHALLENGED",
+   "verdict": "CLEAR",
    "review_failed": [],
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12289,8 +12289,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12300,8 +12300,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12311,8 +12311,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12322,8 +12322,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12333,8 +12333,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12344,8 +12344,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12355,8 +12355,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12366,8 +12366,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12377,8 +12377,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12388,8 +12388,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12399,8 +12399,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12410,8 +12410,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12421,8 +12421,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12432,8 +12432,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12443,8 +12443,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12454,8 +12454,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12465,8 +12465,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12476,8 +12476,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12487,8 +12487,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12498,8 +12498,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12509,8 +12509,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12520,8 +12520,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12531,8 +12531,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12542,8 +12542,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12553,8 +12553,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12564,8 +12564,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12575,8 +12575,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12586,8 +12586,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12597,8 +12597,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12608,8 +12608,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12619,8 +12619,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12630,8 +12630,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12641,8 +12641,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12652,8 +12652,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12663,8 +12663,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12674,8 +12674,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12685,8 +12685,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12696,8 +12696,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12707,8 +12707,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12718,8 +12718,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12729,8 +12729,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12740,8 +12740,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12751,8 +12751,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12762,8 +12762,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12773,8 +12773,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12784,8 +12784,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12795,8 +12795,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -12806,8 +12806,8 @@
    "family": "overnight_gap_decay",
    "theory": {
     "n_oos": 24,
-    "confidence": 0.26,
-    "sd": 0.0614,
+    "confidence": 0.47,
+    "sd": 0.0699,
     "status": "CONTESTED"
    }
   },
@@ -13197,6 +13197,105 @@
    }
   },
   "external.NZDCHF.clock_transition.p=7f79288b204e4928": {
+   "verdict": "CHALLENGED",
+   "review_failed": [],
+   "family": "clock_transition",
+   "theory": {
+    "n_oos": 10,
+    "confidence": 0.3214,
+    "sd": 0.0867,
+    "status": "CONTESTED"
+   }
+  },
+  "external.AUDCHF@M30.formula.p=ad1f8fd5038730fc": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDCHF@M30.formula.p=2600f7dfe6026305": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDCHF@M30.formula.p=0a426be66fb8ce0d": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDCHF@M30.formula.p=79fe45a5e34b1162": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDSGD@M30.formula.p=c34c8b7c1641f77c": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDSGD@M30.formula.p=f8469e1a9642cfc9": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.AUDSGD@M30.formula.p=2bd736435f59d5e4": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.GBPCAD@M30.formula.p=409a211727a0d7cc": {
+   "verdict": "FAILED",
+   "review_failed": [],
+   "family": "formula",
+   "theory": {
+    "n_oos": 8,
+    "confidence": 0.1538,
+    "sd": 0.0694,
+    "status": "UNMEASURED"
+   }
+  },
+  "external.CHFNOK.clock_transition.p=29081cc874e59063": {
    "verdict": "CHALLENGED",
    "review_failed": [],
    "family": "clock_transition",

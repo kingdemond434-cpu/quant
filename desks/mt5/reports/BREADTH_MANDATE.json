@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-27T07:13:46+00:00",
+ "generated_utc": "2026-10-29T16:35:40+00:00",
  "law": "BREADTH IS MANDATORY. Every empty alpha cluster must receive at least 3 cells per sweep. ATTEMPTED AND FAILED is a measurement and is fine; NEVER ATTEMPTED is a defect. n_eff ratchets UP only.",
  "why_the_existing_floors_miss_it": "the bandit floors EXPLORATION at 40% of compute, and exploration inside an OCCUPIED cluster is still exploration -- a sweep can satisfy the floor entirely on its four-hundredth session-liquidity variant while eleven clusters get nothing. And bandit.breadth_credit prices new_mechanism at 1.2491 against combine_survivors at 0.8295, a 1.5x spread that cannot outbid a 3x declared cost difference.",
  "declared_clusters": 15,
@@ -23,21 +23,21 @@
   "positioning_flow"
  ],
  "cluster_cell_counts": {
-  "UNCLASSIFIED": 828443,
-  "trend": 38343,
-  "session_liquidity": 167750,
-  "fixing_roll_calendar": 22794,
-  "mean_reversion": 18408,
-  "relative_value": 253128,
-  "crisis_drawdown": 17613,
-  "macro_rates": 30037,
-  "cross_sectional_fx": 21451,
-  "volatility_transition": 75737,
+  "session_liquidity": 182109,
+  "UNCLASSIFIED": 844221,
+  "trend": 39793,
+  "fixing_roll_calendar": 24953,
+  "mean_reversion": 18600,
+  "relative_value": 253987,
+  "macro_rates": 30118,
+  "crisis_drawdown": 18601,
+  "cross_sectional_fx": 21454,
+  "volatility_transition": 79676,
   "cross_asset_lead_lag": 67549,
   "positioning_flow": 1570,
-  "event_surprise": 8252
+  "event_surprise": 8956
  },
- "counts_basis": "1551075 docket cell(s) classified",
+ "counts_basis": "1591587 docket cell(s) classified",
  "min_cells_per_empty_cluster": 3,
  "census": {
   "ATTEMPTED": 3,
@@ -78,9 +78,9 @@
   },
   {
    "cluster": "event_surprise",
-   "cells_in_docket": 8252,
+   "cells_in_docket": 8956,
    "verdict": "ATTEMPTED",
-   "why": "8252 cell(s) target this cluster and none has certified. That is a measurement -- the answer is allowed to be no."
+   "why": "8956 cell(s) target this cluster and none has certified. That is a measurement -- the answer is allowed to be no."
   },
   {
    "cluster": "execution_entry",
