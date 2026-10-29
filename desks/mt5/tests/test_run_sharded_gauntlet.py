@@ -431,6 +431,31 @@ def test_the_tree_kill_leaves_no_orphan_while_the_root_respawns(tmp_path) -> Non
             root.kill()
 
 
+def test_the_tree_kill_does_not_wait_on_corpses(tmp_path) -> None:
+    """CI flake 10-29 (killed 61, wall_s 5.09): a killed child of the SUSPENDED root stays a
+    zombie, and `wait_procs` counted it as running for its whole 5 s. The wait is zombie-aware."""
+    import subprocess
+    import sys as _sys
+    import time as _t
+
+    psutil = pytest.importorskip("psutil")
+    root = subprocess.Popen([_sys.executable, "-c",
+                             "import subprocess,sys,time;"
+                             "[subprocess.Popen([sys.executable,'-c','import time;time.sleep(60)'])"
+                             " for _ in range(3)];time.sleep(60)"])
+    try:
+        deadline = _t.monotonic() + 10
+        while len(psutil.Process(root.pid).children()) < 3 and _t.monotonic() < deadline:
+            _t.sleep(0.05)
+        rep = runner._kill_sweep_tree(root.pid)
+        root.wait(timeout=15)
+        assert rep["orphans"] == [] and rep["killed"] == 4, rep
+        assert rep["wall_s"] < 3.0, rep
+    finally:
+        with __import__("contextlib").suppress(Exception):
+            root.kill()
+
+
 def test_a_sweep_names_its_phase_and_a_kill_records_it(monkeypatch) -> None:
     """The 33h stall could not say which part of the sweep the core was in: each phase is now
     stamped, folded into the resident's heartbeat, and named on a hung kill."""
@@ -489,6 +514,178 @@ def test_shard_progress_counts_a_wave_with_one_failure_and_a_retry(monkeypatch, 
     assert st["sweep_phase"]["shards"]["done_ok"] == 4
     runner._phase("collect_and_cut")
     assert "shards" not in json.loads(runner.SWEEP_PHASE.read_text("utf-8"))
+
+
+def _overlapping_retries(monkeypatch, tmp_path, *, available_mb: float = 1e6,
+                         historic_peak_mb: float = 100.0,
+                         failed_rss_mb: float | None = None) -> int:
+    """Shards 1 and 3 fail once; returns the most retry children that ran at the same time.
+
+    `failed_rss_mb` makes each failed attempt leave a wall receipt with that sampled resident set
+    and NO peak receipt -- what a shard killed before its atexit hook leaves behind."""
+    import json
+    import threading
+    import time
+
+    failures_left = {1: 1, 3: 1}
+    live = {"now": 0, "max": 0}
+    lock = threading.Lock()
+
+    def fake_run(argv, **kwargs):
+        shard, attempt_log = int(argv[-2]), str(kwargs.get("stdout").name)
+        if failures_left.get(shard, 0):
+            failures_left[shard] -= 1
+            if failed_rss_mb is not None:
+                Path(kwargs["env"]["GAUNTLET_WALL_RECEIPT"]).write_text(json.dumps(
+                    {"phases": {"shard": {"process": {"rss_mb_max": failed_rss_mb}}}}),
+                    encoding="utf-8")
+            raise RuntimeError("transient")
+        if "attempt-1" in attempt_log:
+            with lock:
+                live["now"] += 1
+                live["max"] = max(live["max"], live["now"])
+            time.sleep(0.2)
+            with lock:
+                live["now"] -= 1
+
+    monkeypatch.setattr(runner, "run", fake_run)
+    monkeypatch.setattr(runner, "_shard_peak_mb", lambda phase=None: historic_peak_mb)
+    monkeypatch.setattr(runner, "_available_mb", lambda: available_mb)
+    monkeypatch.setattr(runner, "_wave_children_rss_mb", lambda phase: [])
+    monkeypatch.setattr(runner, "SHARD_ADMIT_POLL_S", 0.01)
+    runner._phase("build_shards")
+    runner.dispatch(tmp_path / "shards", 4, "build")
+    return live["max"]
+
+
+def test_a_shard_child_keeps_its_own_wall_profile_and_the_parent_folds_them(tmp_path):
+    """10-29: shards that built nothing fresh still took 3.2 h, and no artifact said on what."""
+    import json
+    import threading
+    import time
+
+    logs = tmp_path / "logs"
+    logs.mkdir()
+    stop = threading.Event()
+
+    def busy() -> None:          # stands in for the shard's main thread
+        while not stop.is_set():
+            time.sleep(0.001)
+
+    worker = threading.Thread(target=busy)
+    worker.start()
+    try:
+        for k in (0, 1):
+            sampler = runner.WallSampler(phase=lambda: "shard", every_s=60,
+                                         thread_id=worker.ident, depth=runner.SHARD_WALL_DEPTH)
+            for _ in range(3):
+                sampler.sample()
+            receipt = logs / f"inv-build-{k}-attempt-0.wall.json"
+            started = runner.start_shard_sampler(str(receipt))
+            assert started is not None
+            started._stop.set()
+            started.stacks, started.samples = sampler.stacks, sampler.samples
+            started.publish()
+            doc = json.loads(receipt.read_text(encoding="utf-8"))
+            assert sum(doc["stacks"].values()) == 3 and doc["depth"] == runner.SHARD_WALL_DEPTH
+    finally:
+        stop.set()
+        worker.join()
+    (logs / "inv-rule-0-attempt-0.wall.json").write_text("{}", encoding="utf-8")   # other phase
+    (logs / "inv-build-2-attempt-0.wall.json").write_text("torn", encoding="utf-8")
+    out = runner._record_shard_walls(logs, "inv", "build")
+    assert out is not None and out["receipts"] == 2 and out["samples"] == 6
+    assert "busy" in out["top"][0]["stack"] and out["authority"] == "report_only"
+    assert runner._PHASE_DOC["shard_wall_profile"]["build"] == out
+
+
+def test_no_wall_receipts_leaves_the_profile_alone(tmp_path):
+    assert runner._record_shard_walls(tmp_path, "inv", "build") is None
+    assert "shard_wall_profile" not in runner._PHASE_DOC
+    assert runner.start_shard_sampler("") is None
+
+
+def test_the_shard_child_starts_its_sampler_from_the_receipt_it_is_given(monkeypatch, tmp_path):
+    seen: list[dict] = []
+
+    def fake_run(argv, **kwargs):
+        seen.append({"code": argv[3], "wall": kwargs["env"].get("GAUNTLET_WALL_RECEIPT", "")})
+
+    monkeypatch.setattr(runner, "run", fake_run)
+    runner._phase("build_shards")
+    runner.dispatch(tmp_path / "shards", 1, "build")
+    assert "start_shard_sampler(os.environ.get('GAUNTLET_WALL_RECEIPT',''))" in seen[0]["code"]
+    assert seen[0]["wall"].endswith("-build-0-attempt-0.wall.json")
+
+
+def test_failed_shards_recover_side_by_side(monkeypatch, tmp_path):
+    """Measured 10-29: two failed build shards retried back to back, a full shard wall each."""
+    assert _overlapping_retries(monkeypatch, tmp_path) == 2
+    assert _shards_doc()["done_ok"] == 4
+
+
+def test_serial_recovery_is_the_revert_path(monkeypatch, tmp_path):
+    monkeypatch.setenv("GAUNTLET_SHARD_SERIAL_RETRY", "1")
+    assert _overlapping_retries(monkeypatch, tmp_path) == 1
+
+
+def test_a_killed_shard_with_no_peak_receipt_is_charged_its_sampled_size(monkeypatch, tmp_path):
+    """Audit MF1: the shard that died never wrote a peak receipt. At the historic 1,000 MB two
+    retries fit in 8,000 MB; at the 5,000 MB the dead shards' samplers last read, they do not."""
+    assert _overlapping_retries(monkeypatch, tmp_path / "light", available_mb=8000.0,
+                                historic_peak_mb=1000.0) == 2
+    assert _overlapping_retries(monkeypatch, tmp_path / "heavy", available_mb=8000.0,
+                                historic_peak_mb=1000.0, failed_rss_mb=5000.0) == 1
+
+
+def test_unmeasured_memory_recovers_one_at_a_time(monkeypatch, tmp_path):
+    assert _overlapping_retries(monkeypatch, tmp_path, available_mb=None) == 1
+
+
+def test_a_failed_parallel_retry_takes_its_remaining_attempts_serially(monkeypatch, tmp_path):
+    import threading
+    import time
+
+    events: list[tuple[str, int, int]] = []
+    lock = threading.Lock()
+    fails = {1: 2, 3: 2}                     # attempt 0 and the parallel attempt 1 both fail
+
+    def fake_run(argv, **kwargs):
+        shard = int(argv[-2])
+        attempt = int(str(kwargs["stdout"].name).rsplit("attempt-", 1)[1].split(".")[0])
+        with lock:
+            events.append(("start", shard, attempt))
+        time.sleep(0.05)
+        with lock:
+            events.append(("end", shard, attempt))
+        if fails.get(shard, 0):
+            fails[shard] -= 1
+            raise RuntimeError("transient")
+
+    monkeypatch.setattr(runner, "run", fake_run)
+    monkeypatch.setattr(runner, "_shard_peak_mb", lambda phase=None: 100.0)
+    monkeypatch.setattr(runner, "_available_mb", lambda: 1e6)
+    monkeypatch.setattr(runner, "_wave_children_rss_mb", lambda phase: [])
+    monkeypatch.setattr(runner, "SHARD_ADMIT_POLL_S", 0.01)
+    monkeypatch.setenv("GAUNTLET_SHARD_RETRIES", "2")
+    runner._phase("build_shards")
+    runner.dispatch(tmp_path / "shards", 4, "build")
+    second = [i for i, e in enumerate(events) if e[2] == 2]
+    assert [events[i][:2] for i in second] == [("start", 1), ("end", 1), ("start", 3), ("end", 3)]
+    last_first_retry_end = max(i for i, e in enumerate(events) if e[0] == "end" and e[2] == 1)
+    assert min(second) > last_first_retry_end
+
+
+def test_a_shard_that_never_recovers_still_refuses_the_merge(monkeypatch, tmp_path):
+    def fake_run(argv, **kwargs):
+        if int(argv[-2]) == 2:
+            raise RuntimeError("always")
+
+    monkeypatch.setattr(runner, "run", fake_run)
+    monkeypatch.setenv("GAUNTLET_SHARD_RETRIES", "1")
+    runner._phase("build_shards")
+    with pytest.raises(RuntimeError, match="shard 2 failed after 2 attempt"):
+        runner.dispatch(tmp_path / "shards", 4, "build")
 
 
 def test_shard_progress_writes_are_atomic_under_concurrency(monkeypatch, tmp_path):
