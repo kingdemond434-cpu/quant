@@ -1689,3 +1689,20 @@ def test_knobs_inside_guards_and_nested_functions_count() -> None:
     )
     assert {"Y", "Z", "f.g(d=)"} <= set(rs.knobs(src))
     assert rs.knobs(src)["Z"] == rs.knobs(src.replace("Z = 0", "Z = 0"))["Z"]
+
+
+def test_gh_output_is_read_as_utf8_whatever_the_locale(monkeypatch: pytest.MonkeyPatch) -> None:
+    # 2026-10-29: on the Windows box text=True decoded gh's UTF-8 as cp1252; one multibyte character
+    # in a PR body killed the reader thread, stdout came back None and every sweep crashed.
+    body = '[{"body": "before — after \u0081"}]'.encode("utf-8")
+    real = subprocess.run
+    seen: dict[str, Any] = {}
+
+    def fake(cmd: list[str], **kw: Any) -> Any:
+        seen.update(kw)
+        emit = [sys.executable, "-c", f"import sys; sys.stdout.buffer.write({body!r})"]
+        return real(emit, **kw)
+
+    monkeypatch.setattr(ag.subprocess, "run", fake)
+    assert ag._gh("repos/x/y/pulls") == [{"body": "before — after \u0081"}]
+    assert seen["encoding"] == "utf-8"
