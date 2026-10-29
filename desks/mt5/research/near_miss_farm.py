@@ -310,62 +310,6 @@ def evaluate(rows: list[tuple[Any, ...]]) -> Path:
     return farm_dir / LEDGER_NAME
 
 
-RETIRED_NOT_FARMED = "RETIRED_NOT_FARMED"
-
-
-def retire_dropped(ledger: Path, keep: set[str]) -> int:
-    """Mark every ACTIVE farm row this pass did not enrol as RETIRED_NOT_FARMED; return how many.
-
-    AUDIT ON #487 (2026-10-29). `shadow_forward._persist_state` keeps rows it did not touch from
-    disk, so a key the farm stops enrolling (its certificate entered a promoting lane, or left the
-    roster) stayed ACTIVE and silent forever: the lane fence read the farm STALE every hour and
-    counted the dead key as cover. A dropped row keeps its evidence and leaves the active set.
-    """
-    try:
-        doc = json.loads(ledger.read_text("utf-8"))
-    except (OSError, ValueError):
-        return 0
-    if not isinstance(doc, dict):
-        return 0
-    n = 0
-    now = _now()
-    for key, row in doc.items():
-        if (isinstance(row, dict) and "n" in row and key not in keep
-                and str(row.get("status") or "").upper() in ("ACTIVE", "PROMOTION CANDIDATE", "")):
-            row.update(status=RETIRED_NOT_FARMED, retired_at=now,
-                       retired_why="no longer enrolled by the farm on this pass")
-            n += 1
-    if n:
-        tmp = ledger.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(doc, indent=2, default=str), "utf-8")
-        tmp.replace(ledger)
-    return n
-
-
-def revive(ledger: Path, keys: set[str]) -> int:
-    """A key the farm enrols again resumes ACTIVE: the engine only advances ACTIVE rows, so a row
-    left RETIRED_NOT_FARMED would be enrolled and never evaluated."""
-    try:
-        doc = json.loads(ledger.read_text("utf-8"))
-    except (OSError, ValueError):
-        return 0
-    if not isinstance(doc, dict):
-        return 0
-    n = 0
-    for key in keys:
-        row = doc.get(key)
-        if isinstance(row, dict) and row.get("status") == RETIRED_NOT_FARMED:
-            row["status"] = "ACTIVE"
-            for k in ("retired_at", "retired_why"):
-                row.pop(k, None)
-            n += 1
-    if n:
-        tmp = ledger.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(doc, indent=2, default=str), "utf-8")
-        tmp.replace(ledger)
-    return n
-
-
 def _row_key(row: tuple[Any, ...]) -> str:
     from research import shadow_forward as sf
     return str(sf.sleeve_key(row[0], row[1], row[2], row[3], row[4]))
@@ -424,27 +368,26 @@ def run(*, dry_run: bool = False, out: Path | None = None) -> dict[str, Any]:
     cert_keys = {_row_key(r) for r in cert_rows}
     rows = cert_rows + [r for r in rows if _row_key(r) not in cert_keys]
     refused = cert_refused + refused
+    # THE KEYS THIS PASS ENROLS, published so a reader can tell a live farm row from one the farm
+    # has stopped enrolling (audit on #487). `_persist_state` keeps every row it did not touch;
+    # nothing here retires or rewrites one, because a row is evidence and absence is not a verdict.
+    enrolled = sorted({_row_key(r) for r in rows})
     doc: dict[str, Any] = {
         "generated_at": _now(), "producer": "desks/mt5/research/near_miss_farm.py",
         "source": source, "roster_rows": len(roster),
         "certificates_without_lane_clock": len(cert_rows), "certificate_source": cert_source,
         "refused": refused[:200],
         "n_refused": len(refused), "ledger": f"reports/shadow/{LEDGER_REL}",
+        "enrolled_keys": [] if dry_run else enrolled,
         "authority": ("NONE. Every farm row is passed with promotion_authority=False and "
                       f"admission {ADMISSION}; the ledger is outside every clock store the "
                       "promoter, enrolment census or allocator reads. Evidence, never a "
                       "certificate."),
     }
     if rows and not dry_run:
-        from research import shadow_forward as sf
-        revive(sf.SHADOW_DIR / LEDGER_REL, {_row_key(r) for r in rows})
         ledger = evaluate(rows)
-        doc["retired_not_farmed"] = retire_dropped(ledger, {_row_key(r) for r in rows})
         doc.update(summarise(ledger, rows))
     else:
-        if not dry_run:
-            from research import shadow_forward as sf
-            doc["retired_not_farmed"] = retire_dropped(sf.SHADOW_DIR / LEDGER_REL, set())
         doc.update({"cells_farmed": len(rows),
                     "status": "DRY_RUN" if dry_run else f"{UNMEASURED}: no runnable rows"})
     path = out or OUT

@@ -111,7 +111,12 @@ def test_hourly_leg_is_wired() -> None:
 
 
 def _fence_on(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, farm: dict[str, Any],
-              census: list[dict[str, Any]]) -> tuple[dict[str, Any], list[Any]]:
+              census: list[dict[str, Any]], enrolled: list[str] | None = None,
+              ) -> tuple[dict[str, Any], list[Any]]:
+    report = tmp_path / "NEAR_MISS_FARM.json"
+    if enrolled is not None:
+        report.write_text(json.dumps({"enrolled_keys": enrolled}))
+    monkeypatch.setattr(flf, "FARM_REPORT", report)
     shadow = tmp_path / "shadow"
     (shadow / "farm").mkdir(parents=True)
     (shadow / "farm" / "near_miss_farm.json").write_text(json.dumps(farm))
@@ -124,13 +129,14 @@ def _fence_on(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, farm: dict[str, A
     return flf.run(out=tmp_path / "out.json"), ran
 
 
-def test_a_row_the_farm_dropped_is_retired_not_stale_and_is_never_cover(
+def test_a_row_the_farm_stopped_enrolling_is_neither_stale_nor_cover(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The audit probe on #487: one row the farm stopped enrolling, last ticked 30h ago, read the
-    farm STALE, restarted it and went RED every hour, and counted as a certificate's cover."""
-    dropped = {**_clock(30.0), "status": "RETIRED_NOT_FARMED"}
-    doc, ran = _fence_on(tmp_path, monkeypatch, _lane(0.2, {"K": dropped}),
-                         [{"key": "K", "enrolled": False}])
+    farm STALE, restarted it and went RED every hour, and counted as a certificate's cover. The
+    row stays in the ledger untouched; only the keys the farm still enrols are judged."""
+    doc, ran = _fence_on(tmp_path, monkeypatch,
+                         _lane(0.2, {"K": _clock(30.0), "LIVE": _clock(0.5)}),
+                         [{"key": "K", "enrolled": False}], enrolled=["LIVE"])
     farm = next(ln for ln in doc["lanes"] if ln["lane"] == "farm")
     assert farm["verdict"] == flf.FRESH and ran == []
     assert doc["coverage"]["in_farm_only"] == 0
@@ -139,6 +145,6 @@ def test_a_row_the_farm_dropped_is_retired_not_stale_and_is_never_cover(
 def test_a_silent_active_row_in_a_fresh_farm_is_reported_never_restarted(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     doc, ran = _fence_on(tmp_path, monkeypatch, _lane(0.2, {"K": _clock(30.0)}),
-                         [{"key": "K", "enrolled": True}])
+                         [{"key": "K", "enrolled": True}], enrolled=["K"])
     assert ran == [] and doc["stale_lanes"] == ["farm"]
     assert [r["status"] for r in doc["repairs"]] == ["REPORTED"]

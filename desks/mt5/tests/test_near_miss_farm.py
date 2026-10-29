@@ -187,20 +187,6 @@ def test_a_replication_mismatch_is_quarantined_never_farmed(
     assert rows == [] and refused[0]["why"].startswith(admission_integrity.HELD_MISMATCH)
 
 
-def test_a_dropped_farm_row_retires_and_a_re_enrolled_one_revives(tmp_path: Path) -> None:
-    """Audit on #487: rows the farm stopped enrolling stayed ACTIVE and silent for ever."""
-    ledger = tmp_path / "near_miss_farm.json"
-    ledger.write_text(json.dumps({"updated_at": "x", "KEEP": {"n": 2, "status": "ACTIVE"},
-                                  "DROP": {"n": 1, "status": "ACTIVE"},
-                                  "DEAD": {"n": 0, "status": "KILL"}}))
-    assert nmf.retire_dropped(ledger, {"KEEP"}) == 1
-    doc = json.loads(ledger.read_text())
-    assert doc["DROP"]["status"] == nmf.RETIRED_NOT_FARMED and doc["DROP"]["n"] == 1
-    assert doc["KEEP"]["status"] == "ACTIVE" and doc["DEAD"]["status"] == "KILL"
-    assert nmf.revive(ledger, {"DROP"}) == 1
-    assert json.loads(ledger.read_text())["DROP"]["status"] == "ACTIVE"
-
-
 def test_an_unreadable_integrity_gate_farms_no_certificate(
         monkeypatch: pytest.MonkeyPatch) -> None:
     from research import admission_integrity, shadow_admission
