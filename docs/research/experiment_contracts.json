@@ -255,30 +255,30 @@
    "hypothesis": "Choosing one direction set per symbol and day across E8, FTMO and Fusion by combined E[log W] under the cross-account fence removes accidental half-brackets and raises combined forward E[log W] above the leg-by-leg fence outcome.",
    "metric": {
     "gain": "ALPHA_DISCOVERY",
-    "metric": "validation_score",
+    "metric": "divergent_measured_symbol_days",
     "better": "up",
     "organ": "report:FENCE_PLAN.json"
    },
    "falsifier": {
-    "metric": "validation_score",
+    "metric": "divergent_measured_symbol_days",
     "op": "==",
     "threshold": 0,
-    "after": "14d on the trading box: no fenced symbol-day on which the plan differs from what the accounts actually carried, so the planner buys nothing"
+    "after": "14d on the trading box: no symbol-day with a MEASURED plan differs from what the accounts actually carried, so the planner buys nothing"
    }
   },
   "fence_missed_trades": {
    "hypothesis": "Pricing every leg the cross-account fence refused from bars measures what the fence costs in forward growth, so the fence's design can be judged by Rule 1 rather than asserted.",
    "metric": {
     "gain": "ALPHA_DISCOVERY",
-    "metric": "validation_score",
+    "metric": "priced_rows",
     "better": "up",
     "organ": "report:FENCE_MISSED_TRADES.json"
    },
    "falsifier": {
-    "metric": "validation_score",
+    "metric": "priced_rows",
     "op": "==",
     "threshold": 0,
-    "after": "14d on the trading box: every refused leg stays UNMEASURED (no geometry or no bars), so the bill is never priced"
+    "after": "14d on the trading box: no refused leg is ever priced (no geometry, no anchor, no bars or no OCO state), so the bill is never measured"
    }
   }
  },
