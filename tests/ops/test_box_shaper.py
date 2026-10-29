@@ -176,11 +176,16 @@ def test_a_real_pass_measures_this_host_and_writes_the_report(tmp_path: Path) ->
     rules_path = tmp_path / "CPU_SHAPE.json"
     rules_path.write_text(json.dumps(rules))
     report_path = tmp_path / "BOX_BOTTLENECKS.json"
-    out = bs.run_once(rules_path=rules_path, report_path=report_path)
+    phase_path = tmp_path / "JUDGE_SWEEP_PHASE.json"
+    phase_path.write_text(json.dumps({"phase": "done", "pid": os.getpid()}))
+    out = bs.run_once(rules_path=rules_path, report_path=report_path, phase_path=phase_path,
+                      adopt_heartbeat_path=tmp_path / "ADOPTION_HEARTBEAT.json")
     assert out["verdict"] == "MEASURED" and out["n_processes"] > 0
     doc = json.loads(report_path.read_text())
-    assert {"top", "judge", "memecoin", "actions", "refused", "ram", "disk_free_gb"} <= set(doc)
+    assert {"top", "judge", "memecoin", "actions", "refused", "ram", "disk_free_gb",
+            "share_cap_moved", "judge_phase_status"} <= set(doc)
     assert doc["line"].startswith("CPU SHAPE ") and "box " in doc["line"]
+    assert doc["judge_phase_status"] == "done"
     assert doc["health"]["verdict"] in ("GREEN", "WATCH", "RED")
 
 
@@ -302,10 +307,23 @@ def test_the_judge_phase_is_believed_only_while_its_writer_lives() -> None:
 def test_every_switch_is_logged_with_the_judge_share_before_and_after() -> None:
     h = bs.log_switch([], at="t0", mode="base", phase=None, starved=False, judge_share=0.20)
     h = bs.log_switch(h, at="t1", mode="boost", phase="plan", starved=False, judge_share=0.21)
-    assert h[-1] == {"at": "t1", "from": "base", "mode": "boost", "phase": "plan",
-                     "starved": False, "judge_share_before": 0.21, "judge_share_after": None}
+    assert {k: h[-1][k] for k in ("at", "from", "mode", "phase", "starved",
+                                  "judge_share_before", "judge_share_after")} == {
+        "at": "t1", "from": "base", "mode": "boost", "phase": "plan", "starved": False,
+        "judge_share_before": 0.21, "judge_share_after": None}
     h = bs.log_switch(h, at="t2", mode="boost", phase="plan", starved=False, judge_share=0.35)
     assert len(h) == 2 and h[-1]["judge_share_after"] == 0.35
+
+
+def test_every_switch_logs_mining_share_and_its_donation() -> None:
+    h = bs.log_switch([], at="t0", mode="base", phase=None, starved=False, judge_share=0.20,
+                      mining_share=0.40, side_cores=10)
+    h = bs.log_switch(h, at="t1", mode="boost", phase="plan", starved=False, judge_share=0.21,
+                      mining_share=0.40, side_cores=6)
+    assert h[-1]["mining_share_before"] == 0.40 and h[-1]["side_cores"] == 6
+    h = bs.log_switch(h, at="t2", mode="boost", phase="plan", starved=False, judge_share=0.35,
+                      mining_share=0.28, side_cores=6)
+    assert h[-1]["mining_share_after"] == 0.28 and h[-1]["mining_donation"] == 0.12
 
 
 def test_the_reserve_holds_only_when_every_move_landed() -> None:
@@ -393,6 +411,146 @@ def test_desk_health_reads_a_red_hunter_as_a_problem(tmp_path: Path,
         mod._FINDINGS.clear()
         mod.check_cpu_shape()
         assert [f["level"] for f in mod._FINDINGS] == [level]
+
+
+# ------------------------------------------------------------------- audit fixes, 2026-10-29
+def test_a_share_cap_pin_is_released_once_the_judge_is_no_longer_starved() -> None:
+    """MF1: a 9-core miner pinned to 0x3000F must not stay on six cores after starvation."""
+    full = list(range(N))
+    base_side = bs.mask_to_cpus("0x300FF", N)
+    boost_side = bs.mask_to_cpus("0x3000F", N)
+    miner = Proc(31, "python.exe", cmdline="python.exe moat_miner.py", create_time=100,
+                 cpu_pct=900, affinity=full)
+    bs.classify([miner], RULES["groups"])
+    rules = {**RULES, "rules": []}
+    out = bs.plan([miner], rules, N, judge_starved=True, previous_heavy=[miner.key])
+    pin = [a for a in out.actions if a.rule == "share_cap"]
+    assert pin and pin[0].after == "0x3000f"
+    record = {miner.key: str(pin[0].after)}
+    miner.affinity = bs.mask_to_cpus("0x3000F", N)
+    miner.cpu_pct = 600
+    # still starved: the pin stands and stays recorded
+    acts, keep = bs.release_share_cap([miner], record, judge_starved=True, side_now=boost_side,
+                                      side_base=base_side, n_cpu=N, skip_pids=set())
+    assert acts == [] and keep == record
+    # starvation over but a serial-phase boost on: nothing wider allowed yet, record kept
+    acts, keep = bs.release_share_cap([miner], record, judge_starved=False,
+                                      side_now=boost_side, side_base=base_side, n_cpu=N,
+                                      skip_pids=set())
+    assert acts == [] and miner.key in keep
+    # the boost ends: widened back to the side mask, record dropped
+    acts, keep = bs.release_share_cap([miner], keep, judge_starved=False, side_now=base_side,
+                                      side_base=base_side, n_cpu=N, skip_pids=set())
+    assert [(a.pid, a.after, a.rule) for a in acts] == [(31, "0x300ff", "share_cap_release")]
+    assert keep == {}
+    # plan alone would never have done it: outside starvation it plans nothing for the miner
+    assert not [a for a in bs.plan([miner], rules, N, judge_starved=False).actions
+                if a.pid == 31]
+
+
+def test_an_unknown_judge_phase_is_an_unmeasured_strike_not_no_work() -> None:
+    """MF2: absent / unreadable / pid-less is UNKNOWN (RED after 2); dead / done is no work."""
+    alive = {4242}.__contains__
+    wait = ["done"]
+    assert bs.phase_status(None, "absent", alive, wait)[2] == "absent"
+    assert bs.phase_status(None, "unreadable", alive, wait)[2] == "unreadable"
+    assert bs.phase_status({}, "ok", alive, wait)[2] == "no_pid"
+    assert bs.phase_status({"phase": "plan"}, "ok", alive, wait)[2] == "no_pid"
+    assert bs.phase_status({"phase": "plan", "pid": 1}, "ok", alive, wait)[2] == "dead"
+    assert bs.phase_status({"phase": "done", "pid": 4242}, "ok", alive, wait)[2] == "done"
+    assert bs.phase_status({"phase": "plan", "pid": 4242}, "ok", alive, wait) == (
+        "plan", 4242, "live")
+    h = None
+    seen = []
+    for _ in range(3):
+        h = bs.health(h, measured=True, runnable=False, judge_share=0.0, min_share=0.15,
+                      phase_known=False, phase_status="absent")
+        seen.append(h["verdict"])
+    assert h is not None and seen == ["UNMEASURED", "UNMEASURED", "RED"]
+    assert "unknown" in h["why"]
+    # a known answer resets it; dead pid / done is GREEN, saying which case
+    h = bs.health(h, measured=True, runnable=False, judge_share=0.0, min_share=0.15,
+                  phase_known=True, phase_status="dead")
+    assert h["verdict"] == "GREEN" and h["phase_unknown_strikes"] == 0
+    assert h["why"].startswith("no runnable work")
+    h = bs.health(h, measured=True, runnable=True, judge_share=0.30, min_share=0.15,
+                  phase_known=True, phase_status="live")
+    assert h["verdict"] == "GREEN" and h["why"].startswith("at/above floor")
+
+
+def test_an_absent_phase_file_reads_unknown_in_the_report(tmp_path: Path) -> None:
+    pytest.importorskip("psutil")
+    rules = copy.deepcopy(RULES)
+    rules["window_s"] = 0.5
+    rules_path = tmp_path / "CPU_SHAPE.json"
+    rules_path.write_text(json.dumps(rules))
+    out = bs.run_once(rules_path=rules_path, report_path=tmp_path / "B.json",
+                      phase_path=tmp_path / "absent.json",
+                      adopt_heartbeat_path=tmp_path / "absent2.json")
+    assert out["judge_phase_status"] == "absent"
+    assert out["health"]["verdict"] == "UNMEASURED" and out["health"]["phase_unknown_strikes"] == 1
+
+
+def _adopt_box() -> list[Proc]:
+    full = list(range(N))
+    procs = [
+        Proc(500, "powershell.exe", ppid=4, cmdline=(
+            r"powershell.exe -NoProfile -File C:\opt\quant\desks\mt5\scripts\Adopt-And-Seal.ps1"),
+             create_time=1, cpu_pct=5, priority="Normal", affinity=full),
+        Proc(501, "powershell.exe", ppid=500, cmdline="powershell.exe -File Adopt-Release.ps1",
+             create_time=2, cpu_pct=5, priority="Normal", affinity=full),
+        Proc(502, "python.exe", ppid=501, cmdline="python.exe -m libs.ops.adopt_guard pre",
+             create_time=3, cpu_pct=900, priority="BelowNormal",
+             affinity=bs.mask_to_cpus("0x3000F", N)),
+        Proc(503, "git.exe", ppid=502, cmdline="git.exe checkout -- libs", create_time=4,
+             cpu_pct=700, priority="Normal", affinity=full),
+        Proc(504, "py.exe", ppid=500, cmdline="py -3 -m libs.ops.release seal", create_time=5,
+             cpu_pct=13, priority="Normal", affinity=full),
+    ]
+    bs.classify(procs, RULES["groups"])
+    return procs
+
+
+def test_the_adopt_tree_is_raised_and_never_narrowed() -> None:
+    """Rule 23: Adopt-And-Seal and every py/python/git under it ride with the money path."""
+    procs = _adopt_box()
+    assert {p.group for p in procs} == {"adopt"}
+    out = bs.plan(procs, RULES, N, judge_starved=True,
+                  previous_heavy=[p.key for p in procs])
+    raised = {a.pid for a in out.actions if a.kind == "priority" and a.after == "AboveNormal"}
+    assert raised == {500, 501, 502, 503, 504}
+    assert not [a for a in out.actions if a.kind == "affinity"]          # never share-capped
+    actions, moved, _ = bs.plan_reserve(procs, RES, N, boost=True, floor_cores=FLOOR,
+                                        skip_pids=set(), previous_moved={})
+    assert actions == [] and moved == {}                                  # never on the side
+    # narrowed earlier while it read as other: widened back to every core
+    p502 = _by_pid(procs)[502]
+    actions, _, _ = bs.plan_reserve(procs, RES, N, boost=True, floor_cores=FLOOR,
+                                    skip_pids=set(), previous_moved={p502.key: "0x3000f"})
+    assert [(a.pid, a.after) for a in actions] == [(502, "0x3ffff")]
+    acts, keep = bs.release_share_cap(procs, {p502.key: "0x3000f"}, judge_starved=True,
+                                      side_now=[0], side_base=[0], n_cpu=N, skip_pids=set())
+    assert [(a.pid, a.after) for a in acts] == [(502, "0x3ffff")] and keep == {}
+    with pytest.raises(ValueError):
+        bs.validate_rules({"rules": [{"name": "x", "group": "adopt", "affinity": "0xF"}]})
+
+
+def test_an_adopt_run_past_fifteen_minutes_with_no_seal_or_refusal_is_red() -> None:
+    now = bs._parse_ts("2026-10-29T15:00:00Z")
+    assert now is not None
+    running = {"started_at": "2026-10-29T14:40:00.1234567Z", "finished_at": None, "pid": 14000,
+               "stage": "started"}
+    why = bs.adopt_overdue(running, now, 900, lambda pid: True)
+    assert why and "14000" in why and "20 min" in why and "pid alive" in why
+    assert bs.adopt_overdue({**running, "started_at": "2026-10-29T14:50:00Z"}, now, 900) is None
+    assert bs.adopt_overdue({**running, "finished_at": "2026-10-29T14:59:00Z"}, now, 900) is None
+    assert bs.adopt_overdue(None, now, 900) is None
+    h = bs.health(None, measured=True, runnable=False, judge_share=0.0, min_share=0.15,
+                  adopt_why=why)
+    assert h["verdict"] == "RED" and "release path stalled" in h["why"]
+    h = bs.health(None, measured=False, runnable=False, judge_share=None, min_share=0.15,
+                  adopt_why=why)
+    assert h["verdict"] == "RED"
 
 
 # ------------------------------------------------------------------------------------ dedupe
