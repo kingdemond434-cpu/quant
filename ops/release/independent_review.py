@@ -908,6 +908,13 @@ def reads_whole(ladder: list[tuple[str, str, Asker]], local: set[str]) -> bool:
     return len({fam for fam, mid, _ in ladder if mid not in local}) >= VOTES
 
 
+def _annotate(reason: str) -> None:
+    """A FAIL's reason as a check-run annotation: the API serves it where the job log cannot be
+    read (a cloud session's blob host is blocked), so a failing review is never blind."""
+    one = " ".join(reason.split())[:900].replace("%", "%25")
+    print(f"::error title=REVIEW_FAIL::{one}")
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo", required=True)
@@ -924,16 +931,21 @@ def main(argv: list[str] | None = None) -> int:
     pr = json.loads(_gh(f"repos/{a.repo}/pulls/{a.pr}"))
     if pr["head"]["sha"] != a.head:
         print("FAIL: the head moved while the diff was read; the new head gets its own review")
+        _annotate("FAIL: the head moved while the diff was read; the new head gets its own review")
         return 1
     if len(diff) > MAX_DIFF_CHARS:
         print(f"FAIL: the diff is {len(diff)} characters, too large to review whole")
+        _annotate(f"FAIL: the diff is {len(diff)} characters, too large to review whole")
         return 1
     if _ODD_BREAKS.search(diff):
         print("FAIL: the diff carries a line break other than \\n (a lone CR, U+2028 ...)")
+        _annotate("FAIL: the diff carries a line break other than \\n (a lone CR, U+2028 ...)")
         return 1
     spoken = addressed_to_reviewer(diff)
     if spoken:  # never put in front of a model: one that obeys it is one PASS short of a merge
         print("FAIL: the diff addresses the reviewer; the manual path reads it")
+        # the count only: the lines themselves are the attacker's text
+        _annotate(f"FAIL: the diff addresses the reviewer ({len(spoken)} lines, in the log)")
         for line in spoken[:20]:
             print(f"  + {line}")
         return 1
@@ -942,6 +954,7 @@ def main(argv: list[str] | None = None) -> int:
     named = {line for line in diff.split("\n") if line.startswith("diff --git a/")}
     if len(named) != want:  # a truncated diff is never reviewed as if it were whole
         print(f"FAIL: the diff names {len(named)} files, the PR changes {want}")
+        _annotate(f"FAIL: the diff names {len(named)} files, the PR changes {want}")
         return 1
     ladder, notes = rungs(len(diff))
     closure, why = read_closure(a.repo, a.base_sha, a.head)
@@ -963,6 +976,8 @@ def main(argv: list[str] | None = None) -> int:
         # the controller reads this annotation: queued for a re-run, never a pass
         print("::error title=REVIEW_UNAVAILABLE::no free reviewer answered; queued for retry")
         return UNAVAILABLE
+    if verdict != "PASS":
+        _annotate(next((x for x in reversed(log) if "FAIL" in x), f"FAIL at {a.head[:9]}"))
     return 0 if verdict == "PASS" else 1
 
 

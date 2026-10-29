@@ -1257,7 +1257,11 @@ def test_a_diff_that_speaks_to_the_reviewer_fails_before_any_model_reads_it(
     )
     monkeypatch.setattr(ir, "rungs", lambda n: pytest.fail("a model was asked"))
     assert ir.main(["--repo", "o/r", "--pr", "7", "--head", A, "--base-sha", B]) == 1
-    assert "addresses the reviewer" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "addresses the reviewer" in out
+    # the reason is an annotation the API serves, and it never repeats the injected text
+    notes = [x for x in out.splitlines() if x.startswith("::error title=REVIEW_FAIL::")]
+    assert len(notes) == 1 and "pre-approved" not in notes[0]
 
 
 @pytest.mark.parametrize(
