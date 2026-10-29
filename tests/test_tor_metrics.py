@@ -106,18 +106,42 @@ def test_lag_is_measured_when_a_new_latest_date_appears() -> None:
     assert T.stamp_lag({}, "bridge") == (T.DECLARED_LAG_H, "declared")
 
 
-def test_pit_stamp_is_max_of_first_seen_and_date_end_plus_lag() -> None:
+def test_backfilled_row_is_stamped_date_end_plus_lag_not_fetch_time() -> None:
     st = {"rows": {
-        # a backfill row: seen long after its date -> available at the fetch
-        "relay|ru|2026-01-01": {"u": 1.0, "seen": "2026-10-29T14:00:00+00:00"},
-        # a live row: seen before date end + lag -> available at date end + lag
-        "relay|ru|2026-10-27": {"u": 1.0, "seen": "2026-10-28T01:00:00+00:00"}}}
+        # a history row read on a backfill pass, months after it was published
+        "relay|ru|2026-01-01": {"u": 1.0, "seen": "2026-10-29T14:00:00+00:00"}}}
+    p = T.build_points(st, {"relay": 62.0})[("relay", "ru")][0]
+    assert p["available_time"] == "2026-01-04T14:00:00+00:00"          # Jan 2 00:00 + 62h
+    assert p["available_time"] != "2026-10-29T14:00:00+00:00"
+    assert p["backfilled"] is True and p["pit_quality"] == "backfill"
+    assert "revised" in p["revision_risk"]
+
+
+def test_live_seen_row_uses_max_of_first_seen_and_date_end_plus_lag() -> None:
+    st = {"rows": {
+        # seen before date end + lag -> available at date end + lag
+        "relay|ru|2026-10-27": {"u": 1.0, "seen": "2026-10-28T01:00:00+00:00"},
+        # seen 30h after date end + lag (inside the slack) -> available at first_seen
+        "relay|ru|2026-10-20": {"u": 1.0, "seen": "2026-10-24T20:00:00+00:00"}}}
     pts = {p["d"]: p for p in T.build_points(st, {"relay": 62.0})[("relay", "ru")]}
-    assert pts["2026-01-01"]["available_time"] == "2026-10-29T14:00:00+00:00"
-    assert pts["2026-01-01"]["pit_quality"] == "backfill"
-    assert pts["2026-10-27"]["published_time"] == "2026-10-30T14:00:00+00:00"
     assert pts["2026-10-27"]["available_time"] == "2026-10-30T14:00:00+00:00"
-    assert pts["2026-10-27"]["pit_quality"] == "live"
+    assert pts["2026-10-20"]["published_time"] == "2026-10-23T14:00:00+00:00"
+    assert pts["2026-10-20"]["available_time"] == "2026-10-24T20:00:00+00:00"
+    assert not pts["2026-10-27"]["backfilled"] and not pts["2026-10-20"]["backfilled"]
+    assert pts["2026-10-20"]["revision_risk"] == ""
+
+
+def test_backfill_series_of_enough_points_is_ready_for_cells(monkeypatch) -> None:
+    base = date(2026, 1, 1)
+    st = {"rows": {f"relay|ru|{(base + timedelta(days=i)).isoformat()}":
+                   {"u": 1000.0 + i, "lo": 900.0, "hi": 2000.0,
+                    "seen": "2026-10-29T14:00:00+00:00"} for i in range(40)}}
+    pts = T.build_points(st, {"relay": 72.0})
+    # distinct available_times: the history does not collapse onto the fetch
+    assert len({p["available_time"] for p in pts[("relay", "ru")]}) == 40
+    res = T.emit_cells(pts, {"ru": {"USDRUB": 1}}, dry_run=True)
+    assert res["owed_points"] == {}
+    assert res["cells_ready"] in (0, len(T.SIGNALS["relay"]))      # 0 only if the lane refuses
 
 
 def test_revision_keeps_first_value() -> None:
@@ -148,9 +172,8 @@ def test_run_records_unmapped_and_owes_cells_until_live_points(tmp_path: Path) -
     rep = T.run(_paths(tmp_path), fixtures=FIX, now=NOW, onion=False)
     assert "(all)" in rep["unmapped"]
     assert rep["mapped"]["ru"] == {"USDRUB": 1}
-    # history read on the first pass is backfill: no cell is minted, each series is OWED
-    assert rep["cells"]["cells_ready"] == 0
-    assert "tor_metrics_relay_ru" in rep["cells"]["owed_live_points"]
+    # the fixture holds 26 RU relay days: below the conditioner's floor, so OWED with its count
+    assert rep["cells"]["owed_points"]["tor_metrics_relay_ru"] == 26
     lake = T.Paths(tmp_path).series / "tor_metrics_relay_ru.csv"
     with lake.open(encoding="utf-8") as fh:
         rows = list(csv.DictReader(fh))

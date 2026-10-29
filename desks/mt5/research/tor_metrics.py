@@ -23,13 +23,17 @@ costs edge, early invents it); until one exists the DECLARED_LAG_H seed is used 
 Each row is stamped
 
     published_time = date end + lag
-    available_time = max(first_seen_at, published_time)
+    available_time = max(first_seen_at, published_time)   for a row this leg saw go live
+    available_time = published_time                       for a BACKFILLED row
 
-so a row first read in a history backfill is available only from the fetch that read it. The
-history therefore collapses onto the first fetch and is labelled `pit_quality: backfill`; the
-conditioner needs MIN_LIVE_POINTS live points before a cell can be judged, and until then each
-cell is OWED with that reason. A later revised value is recorded as a revision beside the first
-value seen, never back-dated.
+A row is BACKFILLED when this leg first read it more than BACKFILL_SLACK_H after its
+published_time (a history pass). Tor Metrics publishes each day about three days after it ends
+and its archive was public from then, so the publication rule, not the fetch, says when the world
+could read it (coordinator ruling 2026-10-29). A backfilled row carries `backfilled: true` and a
+`revision_risk` note: the value read is the CURRENT vintage (the estimate can be revised as late
+relay reports arrive), not necessarily the one published three days after the date. A later
+revised value is recorded beside the first value seen, never back-dated. Cells are minted for a
+series once it holds MIN_POINTS points, so the gauntlet can judge the backfill now.
 
 FEATURES per (kind, country), each using only rows before it (strict prefix):
   users_z     z of log(users) against the trailing Z_WINDOW_D days (min Z_MIN_N)
@@ -104,7 +108,12 @@ STATE_WINDOW_D = 28
 ZSPIKE = 3.0
 #: Live points a lake series needs before its cells are minted -- the conditioner's own floor
 #: (`family_exogenous_conditioner.MIN_OBSERVATIONS`).
-MIN_LIVE_POINTS = 30
+MIN_POINTS = 30
+#: A row first read later than published_time + this is a history (backfill) row.
+BACKFILL_SLACK_H = 48.0
+REVISION_RISK = ("backfilled: first read after its publication, so the value is the vintage "
+                 "current at the fetch; Tor Metrics estimates for recent days can be revised as "
+                 "late relay reports arrive")
 CHART = "D1"
 FAMILY = "exogenous_conditioner"
 SIGNALS: dict[str, tuple[str, ...]] = {"relay": ("users_z", "flag_28d"),
@@ -376,12 +385,15 @@ def build_points(state: Mapping[str, Any], lag_h: Mapping[str, float]
             end = datetime(d.year, d.month, d.day, tzinfo=UTC) + timedelta(days=1)
             published = end + lag
             seen = _t(v.get("seen")) or published
-            available = max(seen, published)
+            backfilled = seen > published + timedelta(hours=BACKFILL_SLACK_H)
+            available = published if backfilled else max(seen, published)
             pts.append({
                 "d": d.isoformat(), "event_time": d.isoformat(),
                 "published_time": _iso(published), "available_time": _iso(available),
                 "retrieval_time": v.get("seen"), "revision_time": v.get("rev"),
-                "pit_quality": "live" if seen <= published + timedelta(days=2) else "backfill",
+                "pit_quality": "backfill" if backfilled else "live",
+                "backfilled": backfilled,
+                "revision_risk": REVISION_RISK if backfilled else "",
                 "users": users, "lower": v.get("lo"), "upper": v.get("hi"), "frac": v.get("fr"),
                 "users_z": None if z is None else round(z, 4),
                 "censor_flag": flag,
@@ -398,7 +410,7 @@ def lake_id(kind: str, cc: str) -> str:
 
 LAKE_COLUMNS = ("event_time", "published_time", "available_time", "retrieval_time",
                 "revision_time", "source_id", "vintage_id", "users", "users_z", "censor_flag",
-                "flag_28d", "zspike_28d", "frac", "pit_quality")
+                "flag_28d", "zspike_28d", "frac", "pit_quality", "backfilled", "revision_risk")
 
 
 def write_lake(paths: Paths, points: Mapping[tuple[str, str], list[dict[str, Any]]],
@@ -431,7 +443,8 @@ def axis_doc(points: Mapping[tuple[str, str], list[dict[str, Any]]], now: dateti
             keep = [{"d": p["d"], "v": p[col], "available_time": p["available_time"],
                      "published_time": p["published_time"], "event_time": p["event_time"],
                      "first_seen_at": p["retrieval_time"], "revision_time": p["revision_time"],
-                     "pit_quality": p["pit_quality"]} for p in pts if p.get(col) is not None]
+                     "pit_quality": p["pit_quality"], "backfilled": p["backfilled"]}
+                    for p in pts if p.get(col) is not None]
             if keep:
                 series[f"{kind}_{cc or 'all'}.{col}"] = {
                     "what": f"Tor Metrics {kind} users, {cc or 'all countries'}: {col}",
@@ -468,10 +481,9 @@ def latest_events(points: Mapping[tuple[str, str], list[dict[str, Any]]],
 
 def emit_cells(points: Mapping[tuple[str, str], list[dict[str, Any]]],
                mapped: Mapping[str, dict[str, int]], *, dry_run: bool) -> dict[str, Any]:
-    """Cells through the one door (`libs.moat.registry`), for series with enough LIVE points.
-
-    A series below MIN_LIVE_POINTS is OWED, with its count: its history is backfill stamped at
-    the first fetch, which the conditioner collapses to one point."""
+    """Cells through the one door (`libs.moat.registry`), for series with MIN_POINTS points
+    (backfilled rows count: they are stamped by the publication rule). A shorter series is OWED,
+    with its count."""
     try:
         from research import universe_policy
         lane_ok: Callable[[str], bool] = lambda s: bool(  # noqa: E731
@@ -485,9 +497,8 @@ def emit_cells(points: Mapping[tuple[str, str], list[dict[str, Any]]],
         inst = mapped.get(cc) or {}
         if not inst:
             continue
-        live = sum(1 for p in pts if p["pit_quality"] == "live")
-        if live < MIN_LIVE_POINTS:
-            owed[lake_id(kind, cc)] = live
+        if len(pts) < MIN_POINTS:
+            owed[lake_id(kind, cc)] = len(pts)
             continue
         for sym, sign in sorted(inst.items()):
             if not lane_ok(sym):
@@ -496,10 +507,9 @@ def emit_cells(points: Mapping[tuple[str, str], list[dict[str, Any]]],
             for sig in SIGNALS[kind]:
                 ready.append((kind, cc, sym, sig, sign))
     res: dict[str, Any] = {"cells_ready": len(ready), "enqueued": 0, "created": 0,
-                           "owed_live_points": dict(sorted(owed.items())),
-                           "owed_why": (f"fewer than {MIN_LIVE_POINTS} live points: history "
-                                        "rows are available only from the fetch that first read "
-                                        "them, so they collapse to one point"),
+                           "owed_points": dict(sorted(owed.items())),
+                           "owed_why": (f"fewer than {MIN_POINTS} points, the conditioner's own "
+                                        "floor (family_exogenous_conditioner.MIN_OBSERVATIONS)"),
                            "lane_refused": lane_refused[:50], "errors": []}
     if dry_run or not ready:
         return res
