@@ -172,7 +172,15 @@ ADDRESSED = re.compile(
     r"|\b(previous|prior|last|earlier)\s+answer\b|\banswer\s+again\b"  # VAGUE_NOTE (#538 SF3)
     r"|\bdo\s+not\s+fail\b|\bfail\s+only\s+(for|if|when)\b|\bno\s+finding\s+named\b"
     r"|\bnamed\s+a\s+concrete\s+defect\b"  # the note's other sentences (#538 audit SF-c)
-    r"|[\"']verdict[\"']\s*:\s*[\"'](pass|approve)",
+    r"|[\"']verdict[\"']\s*:\s*[\"'](pass|approve)"
+    # #547 audit v4 MF-D: a verdict that "should be" or "must be" output, or a PR to be "treated
+    # as" passing
+    r"|\b(verdict|answer|output|result|vote)\s+(should|must|shall|will)\s+be\s+[\"'`]?"
+    r"(pass|approved?)\b"
+    r"|\b(must|should|shall)\s+(output|return|print|emit|answer|say|respond|reply)\s+"
+    r"(with\s+)?[\"'`]?(pass|approve)\b"
+    r"|\btreat\w*\s+(this|it|the)(\s+(pr|change|diff|pull\s+request))?\s+as\s+[\"'`]?"
+    r"(pass|approved?)\b",  # "treating it as passed" is prose, not an ask
     re.IGNORECASE,
 )
 #: Letters that pass for Latin ones (#471 audit MF2), folded before matching.
@@ -304,6 +312,15 @@ def _finding_text(x: Any) -> str:
     if isinstance(x, dict):
         return " ".join(str(v) for k, v in x.items() if k not in _PLACE_KEYS)
     return str(x)
+
+
+def _all_text(x: Any) -> str:
+    """Every string inside an answer, raw (never repr: repr escapes U+200B and U+202E)."""
+    if isinstance(x, dict):
+        return " ".join(_all_text(v) for v in x.values())
+    if isinstance(x, list | tuple):
+        return " ".join(_all_text(v) for v in x)
+    return "" if x is None else str(x)
 
 
 def _names_place(x: Any) -> bool:
@@ -745,11 +762,15 @@ def is_money_file(path: str, closure: frozenset[str] | None = None) -> bool:
     """replay_shadow's always-money prefixes, the box's order entry points, and the import
     closure; `closure` None (the list could not be read) makes every non-test module under
     CLOSURE_ROOTS money."""
-    if path.startswith(_rs.MONEY_PATH) or path in _rs.ENTRY_POINTS:
+    # casefolded: the box checks out on NTFS, where Heat_Policy.py IS heat_policy.py (v4 SF3)
+    path = path.casefold()
+    if path.startswith(tuple(m.casefold() for m in _rs.MONEY_PATH)) or path in {
+        e.casefold() for e in _rs.ENTRY_POINTS
+    }:
         return True
     if closure is None:
         return path.startswith(CLOSURE_ROOTS) and not _TEST_FILE.search(path)
-    return path in closure
+    return path in {c.casefold() for c in closure}
 
 
 def read_closure(repo: str, base: str, head: str) -> tuple[frozenset[str] | None, str]:
@@ -763,6 +784,10 @@ def read_closure(repo: str, base: str, head: str) -> tuple[frozenset[str] | None
             roots = ", ".join(CLOSURE_ROOTS)
             return None, (f"the money closure could not be read at {sha[:9]} ({exc}): "
                            f"every module under {roots} counts as money")  # fmt: skip
+    odd = [r for r in rows if not (r.startswith(CLOSURE_ROOTS) and r.endswith(".py"))]
+    if not rows or odd:  # an empty or garbled list is no list (#547 audit v4 SF2)
+        return None, (f"the money closure list is empty or holds {len(odd)} odd rows: every "
+                      f"module under {', '.join(CLOSURE_ROOTS)} counts as money")  # fmt: skip
     return frozenset(rows), f"money closure: {len(rows)} files (base and head unioned)"
 
 
@@ -846,7 +871,8 @@ def review(
             return verdict, log
     told = "\n".join(_told(a) for a in answers)
     # a part's answer is model text going in front of the next model: same screen (v3 SF1)
-    if addressed_to_reviewer("\n".join("+" + x for x in told.split("\n"))):
+    raw = "\n".join(_all_text([a.get("findings"), a.get("summary")]) for a in answers)
+    if addressed_to_reviewer("\n".join("+" + x for x in (told + "\n" + raw).split("\n"))):
         return "FAIL", [*log, "FAIL: a part's review addresses the reviewer; the manual path "
                               "reads it"]  # fmt: skip
     final = head + "\nEVERY PART'S REVIEW:\n" + told + "\n"
@@ -868,7 +894,8 @@ TOLD_CAP = 600
 def _told(answer: dict[str, Any]) -> str:
     """One part's answer for the final vote, at most TOLD_CAP characters. The verdict is first
     and always whole; a cut is marked, never silent (v3 SF3)."""
-    body = json.dumps({k: answer.get(k) for k in ("findings", "summary")})
+    # ensure_ascii off: an escaped \\u0435 or \\u200b would pass the screen (#547 audit v4 MF-D)
+    body = json.dumps({k: answer.get(k) for k in ("findings", "summary")}, ensure_ascii=False)
     head = f"- verdict={json.dumps(answer.get('verdict'))} "
     room = TOLD_CAP - len(head)
     return head + (body if len(body) <= room else body[: room - 12] + " [truncated]")
@@ -977,7 +1004,12 @@ def main(argv: list[str] | None = None) -> int:
         print("::error title=REVIEW_UNAVAILABLE::no free reviewer answered; queued for retry")
         return UNAVAILABLE
     if verdict != "PASS":
-        _annotate(next((x for x in reversed(log) if "FAIL" in x), f"FAIL at {a.head[:9]}"))
+        why = next((x for x in reversed(log) if "FAIL" in x), f"FAIL at {a.head[:9]}")
+        # a model's vote line carries its findings, written after reading the PR: never relayed
+        # to whoever reads the annotation (#547 audit v4 SF1). Only our fixed words go out.
+        if " FAIL (" in why:
+            why = why.split(" FAIL (", 1)[0] + " voted FAIL (its findings are in the job log)"
+        _annotate(why)
     return 0 if verdict == "PASS" else 1
 
 
