@@ -1,12 +1,19 @@
 """THE STATE-GATE PROPOSER -- every hypothesis-lane H1 instrument, crossed with the price-only
-base families, minted as `sync_gated` and `entropy_gated` cells and donated to the one gauntlet.
+base families, minted as `sync_gated`, `entropy_gated`, `fisher_rao_gated` and `absorption_gated`
+cells and donated to the one gauntlet.
 
 WHAT IT MINTS, per (wrapper, base, symbol) on H1 -- ONE cell each, at registered defaults:
 
     sync_gated      the base kept where the FX+gold panel's Kuramoto R sits on the side the
-                    base's mechanism class fixes (trend/breakout high, reversion low). A base
-                    whose class is neither is not minted: it would return [] on every bar.
+                    base's mechanism class fixes (trend/breakout high, reversion low).
     entropy_gated   the base kept where the symbol's own permutation-entropy z is low.
+    fisher_rao_gated  the base kept in the tail of the symbol's own Fisher-Rao distribution
+                    velocity its class fixes (trend/breakout slow, reversion fast).
+    absorption_gated  the base kept in the tail of the hypothesis-lane panel's standardised
+                    absorption-ratio shift its class fixes (trend/breakout high, reversion low).
+
+A base whose class is none of trend, breakout or reversion is not minted for the three
+class-directed wrappers (CLASS_DIRECTED): it would return [] on every bar.
 
 NO PARAMETER SWEEP, ON PURPOSE. The gate direction is fixed by the mechanism (sync) or by the
 hypothesis itself (entropy "low"), and window / threshold sit at their registered defaults, so
@@ -29,8 +36,10 @@ NOT A SCREEN AND NOT A SECOND JUDGE. The whole grid is minted, at most MINT_ROWS
 cells per pass, so every cell reaches the gauntlet and the ten gates remain the only thing that
 certifies.
 
-SYNC IS NOT MINTED ON CRYPTO CFDs. They trade through the weekend, when every FX and gold member
-of the panel is closed: R would be read off phases up to MAX_STALE_HOURS old (audit of #395).
+SYNC AND ABSORPTION ARE NOT MINTED ON CRYPTO CFDs (PANEL_WRAPPERS). They trade through the
+weekend, when the panel's FX, metals and index members are closed: the state would be read off
+bars up to MAX_STALE_HOURS old (audit of #395). fisher_rao_gated reads only the symbol's own
+bars, so it is minted on crypto like entropy_gated.
 
 Share CFDs never appear: the symbol list is filtered by
 `research.universe_policy.may_hypothesise`, and `proposer_common.donate` refuses anything the
@@ -62,7 +71,12 @@ REPORT = DESK / "reports" / "STATE_GATE_PROPOSER.json"
 #: proposer_common._record_in_registry).
 MINT_ROWS_PER_PASS = 1500
 CHARTS: tuple[str, ...] = ("H1",)
-WRAPPERS: tuple[str, ...] = ("sync_gated", "entropy_gated")
+WRAPPERS: tuple[str, ...] = ("sync_gated", "entropy_gated", "fisher_rao_gated",
+                             "absorption_gated")
+#: Wrappers whose gate direction is read off the base's mechanism class.
+CLASS_DIRECTED: frozenset[str] = frozenset({"sync_gated", "fisher_rao_gated", "absorption_gated"})
+#: Wrappers whose state is a weekday-closed PANEL, so a weekend-trading class is not minted.
+PANEL_WRAPPERS: frozenset[str] = frozenset({"sync_gated", "absorption_gated"})
 #: Price-only base families each wrapper gates, at their registered defaults. The un-gated base
 #: cell is the control arm and is already an ordinary docket candidate.
 BASES: tuple[str, ...] = ("session_range_breakout", "trend_ma_cross", "volatility_squeeze",
@@ -72,6 +86,9 @@ BASES: tuple[str, ...] = ("session_range_breakout", "trend_ma_cross", "volatilit
 DEFAULTS: dict[str, dict[str, Any]] = {
     "sync_gated": {"window": 128, "tail": 1.0 / 3.0, "min_history": 30, "min_symbols": 12},
     "entropy_gated": {"order": 4, "window": 168, "z_window": 24 * 60, "threshold": 1.0},
+    "fisher_rao_gated": {"window": 120, "nu": 5.0, "tail": 1.0 / 3.0, "min_history": 30},
+    "absorption_gated": {"window": 360, "short": 24, "step": 6, "k_divisor": 5,
+                         "min_members": 20, "tail": 1.0 / 3.0, "min_history": 30},
 }
 
 
@@ -214,8 +231,9 @@ def mechanism_class(base: str) -> str:
 
 
 def bases_for(wrapper: str) -> list[str]:
-    """The bases `wrapper` can gate: sync only where the base's class fixes a direction."""
-    if wrapper != "sync_gated":
+    """The bases `wrapper` can gate: a class-directed wrapper only where the base's class fixes
+    a direction."""
+    if wrapper not in CLASS_DIRECTED:
         return list(BASES)
     from mt5desk.family_state_gates import SYNC_HIGH, SYNC_LOW
     return [b for b in BASES if mechanism_class(b) in SYNC_HIGH | SYNC_LOW]
@@ -232,6 +250,22 @@ def _row(wrapper: str, base: str, sym: str, chart: str) -> dict[str, Any]:
                   else "needs idiosyncratic, self-correcting noise"))
         falsifier = (f"{base} on {sym} {chart} kept in {side} panel synchronisation earns no more "
                      "out of sample than the ungated base")
+    elif wrapper == "fisher_rao_gated":
+        side = "slow" if mech in ("trend", "breakout") else "fast"
+        why = (f"{base} ({mech}) on {sym} pays only where the Fisher-Rao velocity of its own "
+               f"return distribution is {side}: a {mech} entry "
+               + ("rides a stable regime" if side == "slow"
+                  else "fades a distribution that has just dislocated"))
+        falsifier = (f"{base} on {sym} {chart} kept in {side} distribution drift earns no more "
+                     "out of sample than the ungated base")
+    elif wrapper == "absorption_gated":
+        side = "rising" if mech in ("trend", "breakout") else "falling"
+        why = (f"{base} ({mech}) on {sym} pays only where the hypothesis-lane panel's "
+               f"absorption ratio is {side} against its 15-day mean: a {mech} entry "
+               + ("needs a coupled, fragile market whose shocks propagate" if side == "rising"
+                  else "needs a decoupled market whose moves stay local and revert"))
+        falsifier = (f"{base} on {sym} {chart} kept where the absorption shift is {side} earns "
+                     "no more out of sample than the ungated base")
     else:
         why = (f"{base} ({mech}) on {sym} pays more inside low permutation-entropy windows, "
                "where the path's ordinal structure is predictable")
@@ -257,11 +291,11 @@ def build_grid(symbols: list[str]) -> tuple[list[dict[str, Any]], dict[str, int]
                 if not allowed(sym, wrapper):
                     refused[wrapper] = refused.get(wrapper, 0) + 1
                     continue
-                if wrapper == "sync_gated":
+                if wrapper in PANEL_WRAPPERS:
                     ok = sync_applies(sym)
                     if not ok:
-                        why = ("sync_gated:off_panel_session" if ok is False
-                               else "sync_gated:class_UNMEASURED")
+                        why = (f"{wrapper}:off_panel_session" if ok is False
+                               else f"{wrapper}:class_UNMEASURED")
                         refused[why] = refused.get(why, 0) + 1
                         continue
                 for chart in CHARTS:

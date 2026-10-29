@@ -572,7 +572,7 @@ NOT_SOURCED_HERE = {
     # The state-gated wrappers (mt5desk/family_state_gates.py). Their base family is named by
     # research/state_gate_proposer, one cell per (wrapper, base, symbol), and that proposer charges
     # its own grid through `tests_run`.
-    **dict.fromkeys(("sync_gated", "entropy_gated"),
+    **dict.fromkeys(("sync_gated", "entropy_gated", "fisher_rao_gated", "absorption_gated"),
                     "the base family is named by research/state_gate_proposer, one cell per "
                     "(wrapper, base, symbol) with no parameter sweep, and it charges its own grid; "
                     "called blind here it has no base and returns [] on every symbol"),

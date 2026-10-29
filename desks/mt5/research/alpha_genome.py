@@ -92,6 +92,7 @@ MECHANISM_CLASS: dict[str, str] = {
     # regime_transition. Their bases' classes are declared above (the 35-family block), and
     # family_state_gates.sync_gated reads the gate DIRECTION off them.
     "sync_gated": "regime", "entropy_gated": "regime",
+    "fisher_rao_gated": "regime", "absorption_gated": "regime",
 }
 
 DIRECTION_BIAS = {"trend": "with", "breakout": "with", "reversion": "against",

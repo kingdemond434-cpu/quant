@@ -200,7 +200,7 @@ def test_proposer_mints_one_cell_per_wrapper_base_symbol_and_charges_it(monkeypa
     keys = [(c["family"], c["params"]["base_family"], c["symbol"]) for c in grid]
     assert len(keys) == len(set(keys))
     expect = sum(len(P.bases_for(w)) for w in P.WRAPPERS) * 2
-    assert len(grid) == expect == 2 * 2 * len(P.BASES)
+    assert len(grid) == expect == 2 * len(P.WRAPPERS) * len(P.BASES)
     assert refused == {w: len(P.bases_for(w)) for w in P.WRAPPERS}
     assert {c["chart"] for c in grid} == {"H1"}
     for c in grid:
@@ -242,7 +242,9 @@ def _contracting(intel: Path, refuse: frozenset[str] = frozenset()):
             return None
         intel.mkdir(parents=True, exist_ok=True)
         n[0] += 1
-        path = intel / f"discoveries_2026101{n[0]:02d}.json"
+        # One past day for every contract, so a rollup packs them all whatever the grid's size
+        # (a day holding a single file is never rolled), and no name meets the SAME_MINUTE guard.
+        path = intel / f"discoveries_20200101_{n[0]:04d}.json"
         path.write_text(json.dumps({"source": source, "tests_run": tests_run,
                                     "discoveries": rows}, default=str), "utf-8")
         return path
@@ -379,7 +381,7 @@ def test_an_unreadable_asset_class_is_unmeasured_not_off_session(monkeypatch) ->
     monkeypatch.setattr(P, "allowed", lambda sym, fam: True)
     monkeypatch.setattr(P, "sync_applies", lambda sym: None)
     _, refused = P.build_grid(["EURUSD"])
-    assert refused == {"sync_gated:class_UNMEASURED": len(P.bases_for("sync_gated"))}
+    assert refused == {f"{w}:class_UNMEASURED": len(P.bases_for(w)) for w in P.PANEL_WRAPPERS}
 
 
 def test_sync_is_never_minted_on_a_weekend_trading_crypto_cfd(monkeypatch) -> None:
