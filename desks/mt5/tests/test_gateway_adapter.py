@@ -398,7 +398,10 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
                   # allocator book key and the shared order-comment helper.
                   "_sleeve_positions", "_book_key", "order_comment", "_exec_route", "_send_error",
                   # 2026-09-16: the per-symbol same-side cap and its refusal journal
-                  "same_side_count", "journal_refusal"), ns)
+                  "same_side_count", "journal_refusal",
+                  # OCO v2s MF-A: every XAU send asks the gold direction lock first
+                  "gold_oco_send_refusal", "gold_oco_after_send", "bill_gold_oco_send",
+                  "_order_risk_usd"), ns)
 
 
 def _run_family(ns: dict, st: dict, sleeves: list[dict], equity: float) -> None:
@@ -956,6 +959,103 @@ def test_filled_gold_sibling_cancel_is_shadow_only_when_disarmed() -> None:
     assert sent == []
 
 
+def _withdraw_world(monkeypatch, tmp_path, lanes: object) -> tuple[list, list, dict]:
+    """The gateway's gold lane holds one resting MAGIC XAUUSD entry (and a foreign order and a
+    MAGIC EURUSD order it must never touch); GOLD_OCO_MODE declares `lanes`."""
+    from mt5desk import fusion_rails, gold_oco
+    mode = tmp_path / "GOLD_OCO_MODE.json"
+    mode.write_text(lanes if isinstance(lanes, str) else json.dumps({"lanes": lanes}))
+    monkeypatch.setattr(gold_oco, "MODE_FILE", mode)
+    monkeypatch.setattr(fusion_rails, "LEDGER", tmp_path / "fusion_book_rails.jsonl")
+    monkeypatch.delenv("QUANT_GOLD_LANE", raising=False)
+    sent: list[dict] = []
+    orders = [
+        SimpleNamespace(ticket=21, symbol="XAUUSD", magic=341953, comment="DWgold_asia",
+                        volume_current=0.02, price_open=4000.0, sl=3990.0),
+        SimpleNamespace(ticket=22, symbol="XAUUSD", magic=999, comment="manual",
+                        volume_current=0.02, price_open=4000.0, sl=3990.0),
+        SimpleNamespace(ticket=23, symbol="EURUSD", magic=341953, comment="DWfx",
+                        volume_current=0.10, price_open=1.1, sl=1.09),
+    ]
+
+    def send(req: dict) -> SimpleNamespace:
+        sent.append(req)
+        orders[:] = [o for o in orders if o.ticket != req["order"]]
+        return SimpleNamespace(retcode=10009, comment="")
+
+    mt5 = SimpleNamespace(
+        orders_get=lambda symbol=None: [o for o in orders if symbol in (None, o.symbol)],
+        symbol_info=lambda sym: SimpleNamespace(trade_tick_value=1.0, trade_tick_size=0.01),
+        TRADE_ACTION_REMOVE=8, order_send=send)
+    ns = _exec(("withdraw_lane_gold", "_order_risk_usd"),
+               {"mt5": mt5, "log": lambda *_: None, "MAGIC": 341953, "GOLD_SYMBOL": "XAUUSD",
+                "datetime": datetime, "UTC": UTC})
+    return sent, orders, ns
+
+
+@pytest.mark.parametrize(("lanes", "armed"), [(["e8", "ftmo"], True), (["e8", "fusion"], False),
+                                              ("absent", True)])
+def test_a_removed_or_paused_gold_lane_withdraws_its_resting_gold_entries(
+        monkeypatch, tmp_path, lanes: object, armed: bool) -> None:
+    """2026-10-28, ticket 111616773: a lane taken out of GOLD_OCO_MODE (or paused) kept its
+    resting entry, which filled. The gateway's gold lane withdraws its own MAGIC gold entries on
+    the next pass -- sent although unarmed (a cancel opens nothing), billed at their own risk --
+    and touches nothing else. An ABSENT mode file means the default lanes; with "fusion" in
+    them the lane stays, so the absent case here uses QUANT_GOLD_LANE=ftmo, a lane the default
+    leaves out."""
+    sent, orders, ns = _withdraw_world(monkeypatch, tmp_path, lanes)
+    if lanes == "absent":
+        from mt5desk import gold_oco
+        gold_oco.MODE_FILE.unlink()
+        monkeypatch.setenv("QUANT_GOLD_LANE", "ftmo")
+    assert ns["withdraw_lane_gold"]({"armed": armed}) == 1
+    assert sent == [{"action": 8, "order": 21}]
+    assert sorted(o.ticket for o in orders) == [22, 23]
+    from mt5desk import fusion_rails
+    (bill,) = [json.loads(ln) for ln in fusion_rails.LEDGER.read_text().splitlines()]
+    assert bill["rail"] == "cancel_requested" and bill["reason"] == "lane_withdrawn"
+    assert bill["order"] == 21 and bill["missed_growth_risk_usd"] > 0
+    assert ns["withdraw_lane_gold"]({"armed": armed}) == 0 and len(sent) == 1
+
+
+@pytest.mark.parametrize(("lanes", "st"), [
+    ("{torn", {"armed": True}),                                  # MF1: unreadable mode file
+    ('{"lanes": "e8,fusion"}', {"armed": True}),                 # MF1: lanes not a list
+    (["e8", "fusion"], {"armed": False, "armed_default": True}),  # MF2: absent state's default
+])
+def test_an_unmeasured_read_never_withdraws_a_gold_entry(monkeypatch, tmp_path, lanes: object,
+                                                         st: dict) -> None:
+    """v14 audit MF1 + MF2: a mode file present but unreadable or malformed, and a disarm that
+    is only an absent gateway_state.json's default, are UNMEASURED, not declarations: nothing is
+    cancelled, and the pass is billed UNMEASURED once a day on the rails ledger."""
+    sent, orders, ns = _withdraw_world(monkeypatch, tmp_path, lanes)
+    if lanes == "{torn":
+        monkeypatch.setenv("QUANT_GOLD_LANE", "ftmo")   # a lane the default would leave out
+    assert ns["withdraw_lane_gold"](st) == 0 and sent == [] and len(orders) == 3
+    from mt5desk import fusion_rails
+    (line,) = [json.loads(ln) for ln in fusion_rails.LEDGER.read_text().splitlines()]
+    assert line["status"] == "UNMEASURED" and line["reason"] == "lane_withdrawn"
+    ns["withdraw_lane_gold"](st)                                 # once a day, not every pass
+    assert len(fusion_rails.LEDGER.read_text().splitlines()) == 1
+
+
+def test_the_absent_state_default_is_marked_and_a_human_arm_clears_it(tmp_path) -> None:
+    state = tmp_path / "gateway_state.json"
+    ns = _exec(("load_state",), {"STATE": state, "json": json})
+    st = ns["load_state"]()
+    assert st["armed"] is False and st["armed_default"] is True
+    state.write_text(json.dumps({**st, "armed": True}))
+    assert "armed_default" not in ns["load_state"]()
+    state.write_text(json.dumps({"armed": False}))                # a human's pause
+    assert "armed_default" not in ns["load_state"]()
+
+
+def test_a_declared_armed_gold_lane_keeps_its_resting_entries(monkeypatch, tmp_path) -> None:
+    sent, orders, ns = _withdraw_world(monkeypatch, tmp_path, ["e8", "fusion"])
+    assert ns["withdraw_lane_gold"]({"armed": True}) == 0
+    assert sent == [] and len(orders) == 3
+
+
 def test_live_ledger_sees_broker_wall_time_close_once_and_filters_other_magic(tmp_path) -> None:
     """An observed close labelled UTC+3 must be recorded now, rather than three hours late."""
     observed = datetime(2026, 10, 8, 22, 59, tzinfo=UTC)
@@ -1260,6 +1360,10 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
     """`main` and the placement path exec'd from the source, over the real core, with the
     pause file read by THE REAL READER (`mt5desk.config.gateway_paused`) pointed at a private
     data/ directory, and every venue read, file write and sibling adapter faked."""
+    # The clock is 09:30 server, 2.5h past asia's 07:00: the late-gold-send rule (r6,
+    # decision_core.GOLD_SEND_GRACE_MIN) is lifted for these mechanics tests and pinned in
+    # test_fusion_book_r6.py, which runs `main` with it back on.
+    monkeypatch.setattr(dc, "GOLD_SEND_GRACE_MIN", 24 * 60.0)
     data = tmp_path / "data"
     data.mkdir(exist_ok=True)
     # Keep the real staleness guard, but give this isolated fake venue its own
@@ -1290,6 +1394,9 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
         "sleeve_set": lambda: dc.roster({}, [])[0],
         "manage_open_positions": lambda st, sleeves: None,
         "release_gate": lambda: (True, "release identity ok (test)"),
+        # The armed-deadman gate (r6) is faked like the release gate; test_fusion_book_r6.py runs
+        # `main` with the REAL reader and no stamp, and pins that nothing is sent.
+        "fusion_deadman_armed": lambda: (True, "fusion deadman LIVE (test)"),
         "regime_hibernate": lambda sleeves: set(),
         "load_sleeves": lambda: [],
         "ledger_rows": lambda: [],
@@ -1309,6 +1416,7 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
         "_record_vetoed_bracket": lambda *a, **k: False,
         "_expiry_request": lambda symbol, sleeve="", window=None: {"type_time": 0},
         "expire_stale_brackets": lambda st: 0,
+        "cancel_requested": lambda st: 0,
         "cancel_filled_gold_siblings": lambda st: 0,
         "collapse_opposing_gold_positions": lambda st: 0,
         "cancel_pending": lambda st, symbol: None,
@@ -1341,7 +1449,10 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
     return _exec(("main", "_past_cancel_hour", "place_bracket", "note_placement",
                   "_rejection_streak_expired", "load_state", "save_state", "now",
                   "_sleeve_identity", "resolve_pending_bracket", "bracket_lane_lot",
-                  "_book_key", "order_comment", "_sleeve_positions", "close_sleeve_positions", "family_position_tags", "scalp_position_tags", "_send_error"), ns)
+                  "_book_key", "order_comment", "_sleeve_positions", "close_sleeve_positions", "family_position_tags", "scalp_position_tags", "_send_error",
+                  "gold_one_at_risk", "cancel_gold_against_direction",
+                  "flatten_gold_against_direction", "_missed_usd", "gold_follow_state",
+                  "gold_follow_grace_min", "_iso_utc"), ns)
 
 
 def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(
@@ -1379,7 +1490,11 @@ def test_a_second_pass_in_one_day_recovers_the_bracket_the_terminal_holds_and_se
     ns["main"]()                                          # same day, state intact: the guard
     assert len(mt5.sent) == 2
 
-    mt5.pending = [SimpleNamespace(ticket=i + 1, symbol="XAUUSD", price_open=r["price"])
+    # The resting legs carry the window's own comment, as the venue's do: the one-gold-at-risk
+    # guard (decision_core.gold_at_risk_block) lets a window's OWN pending bracket through to
+    # this recovery path and blocks only another window's, or an unlabelled one.
+    mt5.pending = [SimpleNamespace(ticket=i + 1, symbol="XAUUSD", price_open=r["price"],
+                                   comment=r["comment"])
                    for i, r in enumerate(mt5.sent)]
     ns["_state_file"].write_text(json.dumps({"armed": True, "brackets": {},
                                              "last_bracket_date": None}), "utf-8")
@@ -1397,10 +1512,12 @@ def test_fusion_suppresses_the_same_opposing_gold_leg_as_e8(tmp_path, monkeypatc
     mt5 = _Terminal(rows, *_quote(rows))
     # Any readable open long XAU exposure makes a new sell-stop a self-hedge.  The position is
     # deliberately manual (magic 0), proving the rule reads economic exposure rather than a
-    # fragile comment convention.
+    # fragile comment convention.  Its stop is at break-even (sl == entry): since the
+    # one-gold-trade-at-risk guard, a long still AT RISK blocks the whole window, so the
+    # self-hedge fence is exercised on the exposure that guard lets through.
     mt5.positions = [SimpleNamespace(symbol="XAUUSD", type=mt5.POSITION_TYPE_BUY,
                                      volume=0.01, magic=0, comment="manual", ticket=77,
-                                     price_open=2000.0, sl=1900.0, tp=2200.0,
+                                     price_open=2000.0, sl=2000.0, tp=2200.0,
                                      time=int(_WHEN.timestamp()))]
     ns = _main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
 
