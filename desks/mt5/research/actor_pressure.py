@@ -196,15 +196,26 @@ def _rebalancer(df: Any) -> dict[str, Any]:
                       "other session on this symbol; zero outside the window by construction")}
 
 
-def _carry_chaser(symbol: str, meta: dict[str, Any], trend: dict[str, Any]) -> dict[str, Any]:
+def _carry_chaser(symbol: str, meta: dict[str, Any], trend: dict[str, Any],
+                  price: float | None = None) -> dict[str, Any]:
     row = meta.get(symbol) if isinstance(meta, dict) else None
     if not isinstance(row, dict):
         return {"status": "UNMEASURED", "why": "no registry row for this symbol"}
     sl, ss = row.get("swap_long"), row.get("swap_short")
     try:
-        long_s, short_s = float(sl), float(ss)  # type: ignore[arg-type]
+        float(sl), float(ss)  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return {"status": "UNMEASURED", "why": "registry row carries no swap pair"}
+    # IN POINTS-EQUIVALENT, WHATEVER THE swap_mode (2026-10-07). The tanh scale below was set on
+    # points; 138 symbols quote an annual PERCENT, which read raw is a different dimension.
+    # `swap_night_points` is the identity on mode 1 and converts mode 5 at the last close.
+    from mt5desk.engine import swap_night_points
+    row = {**row, "symbol": row.get("symbol") or symbol}
+    long_p, why_l = swap_night_points(row, float(sl), price)  # type: ignore[arg-type]
+    short_p, why_s = swap_night_points(row, float(ss), price)  # type: ignore[arg-type]
+    if long_p is None or short_p is None:
+        return {"status": "UNMEASURED", "why": why_l or why_s}
+    long_s, short_s = long_p, short_p
     edge = long_s - short_s
     if not math.isfinite(edge) or edge == 0.0:
         return {"status": "UNMEASURED", "why": "swap differential is zero or non-finite"}
@@ -243,7 +254,8 @@ def judge_symbol(symbol: str, meta: dict[str, Any]) -> dict[str, Any]:
     actors["vol_control"] = _vol_control(close)
     actors["dealer_gamma"] = _dealer_gamma(close)
     actors["rebalancer"] = _rebalancer(df)
-    actors["carry_chaser"] = _carry_chaser(symbol, meta, actors["trend_follower"])
+    actors["carry_chaser"] = _carry_chaser(symbol, meta, actors["trend_follower"],
+                                           price=float(close.iloc[-1]))
     live = {k: v for k, v in actors.items() if v.get("status") in ("MEASURED", "PROXY")}
     net = sum(float(v.get("pressure") or 0.0) for v in live.values())
     side = _desk_side(symbol)

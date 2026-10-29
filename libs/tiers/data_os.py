@@ -912,6 +912,10 @@ READER_ROUTES: dict[str, dict[str, Any]] = {
         "route": "via_provider", "sources": ("cot_fx", "fred_macro"),
         "basis": "reads COT and FRED only through orthogonal_sweep._cot_frame/_macro_series, "
                  "which apply COT_RELEASE_LAG_DAYS and MACRO_PUBLICATION_LAG_D"},
+    "desks/mt5/research/fire_inputs.py": {
+        "route": "via_provider", "sources": ("cot_fx",),
+        "basis": "asks whether cot_positioning can fire by calling orthogonal_sweep._cot_frame, "
+                 "which applies COT_RELEASE_LAG_DAYS; it joins nothing to a bar itself"},
     "desks/mt5/research/asia_collector.py": {
         "route": "mention", "sources": ("sge_benchmark",),
         "basis": "names the source id in its CLI usage; the collector writes, never joins"},
@@ -924,6 +928,11 @@ READER_ROUTES: dict[str, dict[str, Any]] = {
     "desks/mt5/research/south_america_interaction.py": {
         "route": "mention", "sources": ("cot",),
         "basis": "lists axes/cot.json as a leg's evidence path; existence only"},
+    "libs/research/equivalence_ontology.py": {
+        "route": "mention", "sources": ("bis_eer", "cot_fx", "shfe_gold"),
+        "basis": "the equivalence ontology names source ids as known equivalents of a data "
+                 "class (catalogue rows for the parity map); it reads no values and joins "
+                 "nothing to a bar"},
     "libs/research/data_registry.py": {
         "route": "mention", "sources": ("cot_fx",), "basis": "moat prose naming the cache"},
     "libs/research/layers.py": {

@@ -74,6 +74,11 @@ class FactorSet:
     chol: np.ndarray
     sd: np.ndarray
     note: str = ""
+    #: macro factor -> why it is absent from `names` (audit #211, 2026-10-13). A held or empty
+    #: FRED archive used to drop d_vix / d_r10 with no status at all, so two VIX-driven sleeves
+    #: read as independent (factor-implied |corr| 0.757 -> 0) and nothing said why. Absent is
+    #: UNMEASURED, never "no exposure".
+    unmeasured: dict[str, str] = field(default_factory=dict)
 
     @property
     def n_days(self) -> int:
@@ -91,6 +96,8 @@ class Loadings:
     betas: dict[str, float] = field(default_factory=dict)
     explained: float = 0.0
     why: str = ""
+    #: macro factors this sleeve would carry but cannot, because they are UNMEASURED
+    unmeasured: tuple[str, ...] = ()
 
 
 # ------------------------------------------------------------------------------ factor returns
@@ -215,10 +222,26 @@ def daily_factor_returns(universe: Path = UNIVERSE, archive: Path | None = None,
     return frame
 
 
+def macro_unmeasured(columns: Iterable[Any], frame: Any = None) -> dict[str, str]:
+    """Every macro factor missing from (or empty in) a factor frame, with the reason."""
+    have = {str(c) for c in columns}
+    out: dict[str, str] = {}
+    for name, (sid, _how) in MACRO_FACTORS.items():
+        if name not in have:
+            out[name] = (f"UNMEASURED: no {sid} rows in the macro archive (empty, held or "
+                         "absent); sleeves that carry this factor have no loading on it")
+        elif frame is not None and not bool(np.isfinite(
+                frame[name].to_numpy(dtype=float)).any()):
+            out[name] = f"UNMEASURED: {sid} has no finite change on the factor calendar"
+    return out
+
+
 def factor_set(frame: Any) -> FactorSet | None:
     """Standardise the factor history and take the Cholesky root of its correlation."""
     if frame is None or len(frame) < 30:
         return None
+    unmeasured = macro_unmeasured(frame.columns, frame)
+    frame = frame.drop(columns=[c for c in unmeasured if c in frame.columns])
     names = tuple(str(c) for c in frame.columns)
     raw = frame.to_numpy(dtype=float)
     filled = np.where(np.isfinite(raw), raw, 0.0)
@@ -236,8 +259,11 @@ def factor_set(frame: Any) -> FactorSet | None:
         corr = (v * np.maximum(w, 1e-6)) @ v.T
         chol = np.linalg.cholesky(corr + 1e-6 * np.eye(len(names)))
     index = {str(d)[:10]: i for i, d in enumerate(frame.index)}
-    return FactorSet(names=names, index=index, values=z, chol=chol, sd=sd,
-                     note=f"{len(names)} factors over {len(index)} days")
+    note = f"{len(names)} factors over {len(index)} days"
+    if unmeasured:
+        note += f"; macro UNMEASURED: {', '.join(sorted(unmeasured))}"
+    return FactorSet(names=names, index=index, values=z, chol=chol, sd=sd, note=note,
+                     unmeasured=unmeasured)
 
 
 def _own_factors(symbol: str, names: Sequence[str]) -> list[str]:
@@ -268,9 +294,12 @@ def fit_loadings(r: np.ndarray, dates: Iterable[Any], fs: FactorSet, symbol: str
                      used=(), why="")
     if a.size != len(days):
         return Loadings(**{**empty.__dict__, "why": f"{a.size} returns vs {len(days)} dates"})
+    missing = tuple(m for m in MACRO_FACTORS if m in fs.unmeasured)
+    gap = f"; UNMEASURED {', '.join(missing)}" if missing else ""
+    empty = Loadings(**{**empty.__dict__, "unmeasured": missing})
     use = _own_factors(symbol, fs.names)
     if not use:
-        return Loadings(**{**empty.__dict__, "why": f"{symbol}: no factor it can carry"})
+        return Loadings(**{**empty.__dict__, "why": f"{symbol}: no factor it can carry{gap}"})
     cols = [fs.names.index(c) for c in use]
     rows: list[int] = []
     ys: list[float] = []
@@ -287,7 +316,7 @@ def fit_loadings(r: np.ndarray, dates: Iterable[Any], fs: FactorSet, symbol: str
     n = len(rows)
     if n < 3:
         return Loadings(**{**empty.__dict__, "n": n, "used": tuple(use),
-                           "why": f"{n} usable day(s) on the factor calendar"})
+                           "why": f"{n} usable day(s) on the factor calendar{gap}"})
     x = fs.values[np.asarray(rows), :][:, cols]                     # (n, p)
     y = np.asarray(ys, dtype=float)
     y_c = y - y.mean()
@@ -303,7 +332,8 @@ def fit_loadings(r: np.ndarray, dates: Iterable[Any], fs: FactorSet, symbol: str
     return Loadings(load=load, resid_var=resid_var, n=n, used=tuple(use),
                     betas={c: round(float(b), 6) for c, b in zip(use, beta, strict=True)},
                     explained=round(fvar / (fvar + resid_var), 4) if fvar + resid_var > 0 else 0.0,
-                    why=f"{n} days on {len(use)} factor(s), k_prior={k_prior:g}")
+                    why=f"{n} days on {len(use)} factor(s), k_prior={k_prior:g}{gap}",
+                    unmeasured=missing)
 
 
 def factor_corr_abs(loads: Sequence[np.ndarray | None],
