@@ -491,6 +491,59 @@ def test_shard_progress_counts_a_wave_with_one_failure_and_a_retry(monkeypatch, 
     assert "shards" not in json.loads(runner.SWEEP_PHASE.read_text("utf-8"))
 
 
+def _overlapping_retries(monkeypatch, tmp_path) -> int:
+    """Shards 1 and 3 fail once; returns the most retry children that ran at the same time."""
+    import threading
+    import time
+
+    failures_left = {1: 1, 3: 1}
+    live = {"now": 0, "max": 0}
+    lock = threading.Lock()
+
+    def fake_run(argv, **kwargs):
+        shard, attempt_log = int(argv[-2]), str(kwargs.get("stdout").name)
+        if failures_left.get(shard, 0):
+            failures_left[shard] -= 1
+            raise RuntimeError("transient")
+        if "attempt-1" in attempt_log:
+            with lock:
+                live["now"] += 1
+                live["max"] = max(live["max"], live["now"])
+            time.sleep(0.2)
+            with lock:
+                live["now"] -= 1
+
+    monkeypatch.setattr(runner, "run", fake_run)
+    monkeypatch.setattr(runner, "_parallelism", lambda n, phase=None: n)
+    runner._phase("build_shards")
+    runner.dispatch(tmp_path / "shards", 4, "build")
+    return live["max"]
+
+
+def test_failed_shards_recover_side_by_side(monkeypatch, tmp_path):
+    """Measured 10-29: two failed build shards retried back to back, a full shard wall each.
+    They now retry together, as wide as the memory rule allows."""
+    assert _overlapping_retries(monkeypatch, tmp_path) == 2
+    assert _shards_doc()["done_ok"] == 4
+
+
+def test_serial_recovery_is_the_revert_path(monkeypatch, tmp_path):
+    monkeypatch.setenv("GAUNTLET_SHARD_SERIAL_RETRY", "1")
+    assert _overlapping_retries(monkeypatch, tmp_path) == 1
+
+
+def test_a_shard_that_never_recovers_still_refuses_the_merge(monkeypatch, tmp_path):
+    def fake_run(argv, **kwargs):
+        if int(argv[-2]) == 2:
+            raise RuntimeError("always")
+
+    monkeypatch.setattr(runner, "run", fake_run)
+    monkeypatch.setenv("GAUNTLET_SHARD_RETRIES", "1")
+    runner._phase("build_shards")
+    with pytest.raises(RuntimeError, match="shard 2 failed after 2 attempt"):
+        runner.dispatch(tmp_path / "shards", 4, "build")
+
+
 def test_shard_progress_writes_are_atomic_under_concurrency(monkeypatch, tmp_path):
     """Sixteen concurrent children stamping at once never leave a torn or lost count, and a
     reader polling the file throughout always parses it."""

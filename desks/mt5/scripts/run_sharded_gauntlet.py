@@ -1413,30 +1413,63 @@ def dispatch(shard_dir: Path, n: int, phase: str) -> None:
     if _ABORT.is_set():
         raise RuntimeError(f"{phase} wave aborted by the sweep watchdog")
     failed = [(k, exc) for k, exc in first if exc is not None]
-    if failed:
-        print(f"SHARD RECOVERY: {len(failed)}/{n} {phase} shard(s) failed in parallel; "
-              "retrying only those shards serially after peer memory was released", flush=True)
-    for k, first_exc in failed:
+    if not failed:
+        return
+    # THE FAILED SHARDS RECOVER SIDE BY SIDE, NOT ONE AFTER ANOTHER (2026-10-29). Measured on the
+    # sweep of 10-28 23:44Z: 13 of 15 build shards finished in about 3.4 h and 2 failed; the
+    # serial retry then ran those two back to back, a full shard wall each, while the rest of the
+    # box sat free -- hours of sweep wall bought nothing. The retry wave is sized by the SAME
+    # memory rule as the first wave (`_parallelism`: half of what is available now, over the
+    # largest measured shard peak, which this wave has just refreshed), so it is only as wide as
+    # the memory released by the finished shards allows, and the first wave's historic 2 when
+    # nothing is measured.
+    # Each shard still retries its own attempts in order; the partition, the outputs and the
+    # fail-closed merge are unchanged, so no verdict, trial or gate input can move.
+    width = 1 if _serial_recovery() else _parallelism(len(failed), phase)
+    print(f"SHARD RECOVERY: {len(failed)}/{n} {phase} shard(s) failed in parallel; "
+          f"retrying them {width} at a time after peer memory was released", flush=True)
+
+    def recover(item: tuple[int, Exception | None]) -> BaseException | None:
+        k, first_exc = item
         assert first_exc is not None
-        last_exc = first_exc
+        last_exc: BaseException = first_exc
         for attempt in range(1, _retry_attempts() + 1):
+            if _ABORT.is_set() or abort_wave.is_set():
+                return RuntimeError(f"{phase} shard {k} retry not started: the wave was aborted")
             _progress_bump("retrying")
             try:
                 one(k, attempt)
                 print(f"SHARD RECOVERY: {phase} shard {k} recovered on retry {attempt}",
                       flush=True)
-                break
+                return None
             except ShardStalled as exc:
-                raise stalled(exc) from last_exc
+                abort_wave.set()
+                exc.__cause__ = last_exc
+                return exc
             except Exception as exc:
                 last_exc = exc
                 print(f"SHARD RECOVERY: {phase} shard {k} retry {attempt} failed: "
                       f"{type(exc).__name__}: {exc}", flush=True)
-        else:
-            attempts = _retry_attempts() + 1
-            raise RuntimeError(
-                f"{phase} shard {k} failed after {attempts} attempt(s); refusing partial merge"
-            ) from last_exc
+        attempts = _retry_attempts() + 1
+        err = RuntimeError(
+            f"{phase} shard {k} failed after {attempts} attempt(s); refusing partial merge")
+        err.__cause__ = last_exc
+        return err
+
+    with ThreadPoolExecutor(max_workers=width,
+                            thread_name_prefix=f"judge-{phase}-retry") as pool:
+        outcomes = list(pool.map(recover, failed))
+    stalls = [o for o in outcomes if isinstance(o, ShardStalled)]
+    if stalls:
+        raise stalled(stalls[0])
+    for o in outcomes:
+        if o is not None:
+            raise o
+
+
+def _serial_recovery() -> bool:
+    """GAUNTLET_SHARD_SERIAL_RETRY=1 restores the one-at-a-time recovery (the revert path)."""
+    return os.environ.get("GAUNTLET_SHARD_SERIAL_RETRY", "0").strip() in ("1", "true", "yes")
 
 
 def record_own_peak(path: str) -> None:
