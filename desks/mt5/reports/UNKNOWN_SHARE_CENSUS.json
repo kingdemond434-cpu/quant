@@ -2,15 +2,15 @@
   "label": "daily",
   "seed": 20260930,
   "docket": "C:\\opt\\quant\\desks\\mt5\\data\\hypotheses\\external_survivors.json",
-  "docket_unique_cells": 1623204,
+  "docket_unique_cells": 1550805,
   "sample": 6000,
   "overlay": [],
   "complete": false,
   "stage": "siblings_minted",
-  "utc_day": "2026-10-13",
-  "started_at": "2026-10-13T11:45:35+00:00",
-  "written_at": "2026-10-13T11:50:10+00:00",
-  "cells_planned": 6292,
+  "utc_day": "2026-10-28",
+  "started_at": "2026-10-28T01:35:18+00:00",
+  "written_at": "2026-10-28T01:39:19+00:00",
+  "cells_planned": 6164,
   "cells_visited": 0,
   "judge": {
     "named_unknowns": true,
@@ -20,25 +20,25 @@
   },
   "coarse_proxy": false,
   "memory": {
-    "available_mb": 55582,
-    "rss_cap_mb": 13896,
+    "available_mb": 70088,
+    "rss_cap_mb": 17522,
     "peak_rss_mb": 502
   },
   "lockbox_cut": null,
   "lockbox_frac": null,
   "cells_carved_at_own_tail": null,
-  "elapsed_s": 265.4,
+  "elapsed_s": 211.4,
   "siblings": {
     "status": "MEASURED",
-    "peerless_rows": 440,
-    "siblings": 292,
+    "peerless_rows": 277,
+    "siblings": 164,
     "unfilled_by_family": {
-      "correlation_regime": 15,
-      "triangle": 49,
-      "pca_residual": 18,
-      "cross_asset_residual": 35,
-      "relative_value": 15,
-      "lead_lag": 16
+      "correlation_regime": 8,
+      "pca_residual": 16,
+      "triangle": 42,
+      "cross_asset_residual": 22,
+      "lead_lag": 19,
+      "relative_value": 6
     }
   },
   "sampled_cells": {
