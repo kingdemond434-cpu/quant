@@ -814,6 +814,21 @@ def test_mf1_money_legs_that_fit_keep_their_file_order_place() -> None:
     assert dec.lifted == [] and dec.unreachable == []
 
 
+def test_mf_a_a_money_leg_finishing_between_budget_and_kill_line_is_not_lifted() -> None:
+    """Audit MF-A: lifting starts at the kill-side line, never at the budget. A money leg
+    projected to finish after the 2,640 s budget but inside the line runs fresh in file order,
+    after its producers, instead of reading last pass's inputs from the prelude."""
+    roster = ["smoke_release", "tier_s", "desk_health"]
+    att = _att(dict.fromkeys(roster, 3), costs={"smoke_release": 2600.0, "tier_s": 60.0,
+                                                "desk_health": 10.0})
+    dec = LR.plan_pass(roster, att, plan="core", budget_s=2640.0, kill_s=3300.0,
+                       liftable=set(roster))
+    line = 2640.0 + LR.OUT_OF_BUDGET_SHARE * (3300.0 - 2640.0)
+    assert 2640.0 < 2670.0 <= line
+    assert "desk_health" in dec.admitted
+    assert dec.lifted == [] and dec.unreachable == []
+
+
 def _stuck_att(legs: list[str], base: float = 300.0, n: int = 4) -> LR.Attendance:
     att = _att(dict.fromkeys(legs, n), costs=dict.fromkeys(legs, base))
     for leg in legs:

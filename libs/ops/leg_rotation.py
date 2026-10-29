@@ -1211,7 +1211,7 @@ def plan_pass(roster: list[str], att: Attendance, *, plan: str, budget_s: float 
                                          for leg, cap in dec.raise_grants.items()), 1)
     dec.capacity["raise_allowance_s"] = round(RAISE_PASS_SHARE * bud, 1)
     if liftable is not None:
-        _lift(dec, roster, liftable, bud, kill)
+        _lift(dec, roster, liftable, line, kill)
     return dec
 
 
