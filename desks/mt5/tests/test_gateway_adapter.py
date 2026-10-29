@@ -1083,7 +1083,7 @@ def test_live_ledger_sees_broker_wall_time_close_once_and_filters_other_magic(tm
                                                                  trade_tick_value=1,
                                                                  trade_tick_size=0.00001))
     ledger = tmp_path/"live_ledger.jsonl"
-    ns = _exec(("record_trades",), {
+    ns = _exec(("record_trades", "_broker_utc"), {
         "mt5":venue, "datetime":FrozenClock, "LEDGER":ledger, "log":lambda *_:None,
         "now":lambda:observed.isoformat(),
         "_prov":SimpleNamespace(current_account=lambda _:None, stamp=lambda _:{}),
@@ -1098,8 +1098,11 @@ def test_live_ledger_sees_broker_wall_time_close_once_and_filters_other_magic(tm
     rows = [json.loads(line) for line in ledger.read_text().splitlines()]
     assert len(rows) == 1 and rows[0]["deal"] == own.ticket
     assert rows[0]["position_id"] == 233700226
-    assert rows[0]["timestamp_basis"] == "broker_deal_epoch"
-    assert rows[0]["exit_time"] == datetime.fromtimestamp(own.time,UTC).isoformat()
+    # The deal's epoch is broker wall time (observed + 3 h); with no fresh tick the Fusion
+    # calendar rule converts it back to the true UTC instant (row 247/239).
+    assert rows[0]["timestamp_basis"] == "utc_from_broker_epoch:calendar_ny+7"
+    assert rows[0]["exit_time"] == observed.isoformat()
+    assert rows[0]["exit_epoch_broker"] == float(own.time)
     assert rows[0]["time"] == observed.isoformat()
     assert rows[0]["pl_quote"] == pytest.approx(0.95)
     assert rows[0]["entry_cost_allocated"] == pytest.approx(-0.81)
@@ -1136,7 +1139,7 @@ def test_partial_closes_allocate_entry_cost_once_proportionally(tmp_path, cost_m
         history_deals_get=lambda *_:closes,account_info=lambda:None,
         symbol_info=lambda _:SimpleNamespace(trade_contract_size=100000))
     ledger=tmp_path/"ledger.jsonl"
-    ns = _exec(("record_trades",), {"mt5":venue,"LEDGER":ledger,
+    ns = _exec(("record_trades", "_broker_utc"), {"mt5":venue,"LEDGER":ledger,
         "log":lambda *_:None,"now":lambda:"2026-10-09T00:00:00Z",
         "_prov":SimpleNamespace(current_account=lambda _:None,stamp=lambda _:{}),
         "_position_entry":lambda _:{"entry_price":1.2,"sl":1.19,"tp":1.22,

@@ -92,6 +92,8 @@ from mt5desk.decision_core import (  # noqa: E402
 )
 from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book  # noqa: E402
 
+from libs.ops import gateway_clock as _gc  # noqa: E402
+
 LANE = "ftmo"
 SYMBOL = "XAUUSD"
 WINDOW = "asia"
@@ -421,10 +423,16 @@ def history_spent(mt5: Any, today: str, now: datetime) -> tuple[bool | None, str
 
 # ------------------------------------------------------------------ the prop fills ledger
 
-def _iso_epoch(ts: object) -> str | None:
+def _iso_epoch(ts: object, offset_h: int | None = None) -> str | None:
+    """A broker-wall MT5 epoch as UTC (row 247/239): minus the offset MEASURED in this lane's own
+    session (`gateway_clock.measured_offset_h`). FTMO's server is not the Fusion calendar
+    (New York + 7 h), so an unmeasured offset leaves the stamp unconverted -- and the row's
+    `timestamp_basis` says so -- rather than guessing it."""
     if not isinstance(ts, (int, float)) or isinstance(ts, bool) or ts <= 0:
         return None
-    return datetime.fromtimestamp(float(ts), tz=UTC).isoformat(timespec="seconds")
+    from libs.ops.gateway_clock import broker_epoch_to_utc
+    iso, _basis = broker_epoch_to_utc(float(ts), offset_h, calendar=False)
+    return None if iso is None else datetime.fromisoformat(iso).isoformat(timespec="seconds")
 
 
 def deal_fees(deals: list[Any]) -> tuple[dict[str, float | None], list[str], str]:
@@ -453,7 +461,8 @@ def deal_fees(deals: list[Any]) -> tuple[dict[str, float | None], list[str], str
 
 
 def compose_fills(deals: Any, orders: Any, open_ids: set[int], *, account_key: str | None,
-                  contract: float | None, recorded_at: str) -> list[dict[str, Any]]:
+                  contract: float | None, recorded_at: str,
+                  offset_h: int | None = None) -> list[dict[str, Any]]:
     """prop-fills-v1 rows (the schema's field names; there is no prop/fills_ledger.py module --
     this writer IS the ledger's FTMO side) for every CLOSED FTMO position this lane opened: an
     entry deal (DEAL_ENTRY_IN) under MAGIC and at least one exit deal (OUT / OUT_BY) on its
@@ -511,11 +520,16 @@ def compose_fills(deals: Any, orders: Any, open_ids: set[int], *, account_key: s
         rows.append({
             "schema": PROP_SCHEMA, "book": LANE, "venue": "mt5", "lane": "ftmo_follower",
             "provenance": "ftmo_follower:mt5_deal_history", "recorded_at": recorded_at,
-            "time": _iso_epoch(getattr(last, "time", None)), "sleeve": CERT_KEY,
+            "time": _iso_epoch(getattr(last, "time", None), offset_h), "sleeve": CERT_KEY,
             "symbol": SYMBOL, "entry_side": 0 if dirn == 1 else 1, "side": 1 if dirn == 1 else 0,
-            "entry_time": _iso_epoch(getattr(e, "time", None)),
-            "exit_time": _iso_epoch(getattr(last, "time", None)),
-            "timestamp_basis": "mt5_server_epoch", "venue_clock_skew_ms": None,
+            "entry_time": _iso_epoch(getattr(e, "time", None), offset_h),
+            "exit_time": _iso_epoch(getattr(last, "time", None), offset_h),
+            "timestamp_basis": (_gc.BASIS_MEASURED if offset_h is not None
+                                else "mt5_server_epoch"),
+            "broker_utc_offset_h": offset_h,
+            "entry_epoch_broker": getattr(e, "time", None),
+            "exit_epoch_broker": getattr(last, "time", None),
+            "venue_clock_skew_ms": None,
             "entry_time_box_utc": None, "entry_price": entry_px,
             "intended_entry": (float(getattr(o, "price_open", 0.0) or 0.0) or None
                                if o is not None else None),
@@ -592,8 +606,15 @@ def record_fills(mt5: Any, key: str | None, open_ids: set[int], now: datetime) -
             return {"written": 0, "why": "the deal/order history is unreadable"}
         info = mt5.symbol_info(SYMBOL)
         contract = float(getattr(info, "trade_contract_size", 0.0) or 0.0) or None
+        # THE OFFSET IS MEASURED HERE, in this lane's own session, off a fresh tick (row 247).
+        offset_h = None
+        try:
+            tick = mt5.symbol_info_tick(SYMBOL)
+            offset_h = _gc.measured_offset_h(getattr(tick, "time", None), time.time())
+        except Exception:
+            offset_h = None
         rows = compose_fills(deals, orders, open_ids, account_key=key, contract=contract,
-                             recorded_at=now.isoformat(timespec="seconds"))
+                             recorded_at=now.isoformat(timespec="seconds"), offset_h=offset_h)
         return {"written": append_fills(rows), "closed_seen": len(rows)}
     except Exception as exc:
         return {"written": 0, "why": f"{type(exc).__name__}: {exc}"[:160]}

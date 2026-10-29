@@ -185,7 +185,7 @@ class _FakeMT5:
 def test_the_position_entry_returns_the_bridge_to_the_intent():
     """Executed, not pattern-matched: the closing deal's position id yields the entry order (the
     intent's ticket), the entry deal, the entry fill and the stop -- the whole key chain."""
-    env = _gateway_func("_position_entry", "_position_context", ns={"mt5": _FakeMT5})
+    env = _gateway_func("_position_entry", "_position_context", "_broker_utc", ns={"mt5": _FakeMT5})
     out = env["_position_entry"](7)
     assert out["entry_order"] == 7 and out["entry_deal"] == 71
     assert out["entry_price"] == 2000.5 and out["sl"] == 1981.4 and out["tp"] == 2038.2
@@ -208,10 +208,14 @@ def test_entry_context_keeps_execution_timestamp_and_opening_direction():
             return [SimpleNamespace(entry=0, price=2000.5, order=7, ticket=71,
                                     type=1, time_msc=1_790_000_000_123)]
 
-    env = _gateway_func("_position_entry", ns={"mt5": Venue, "datetime": datetime, "UTC": UTC})
+    env = _gateway_func("_position_entry", "_broker_utc",
+                        ns={"mt5": Venue, "datetime": datetime, "UTC": UTC})
     row = env["_position_entry"](7)
     assert row["entry_side"] == 1
-    assert datetime.fromisoformat(row["entry_time"]).timestamp() == 1_790_000_000.123
+    # time_msc is the broker's wall clock; the row stamps the true UTC instant (row 247/239).
+    from libs.ops.gateway_clock import broker_epoch_to_utc
+    assert row["entry_time"] == broker_epoch_to_utc(1_790_000_000.123)[0]
+    assert row["entry_epoch_broker"] == 1_790_000_000.123
     assert env["_position_entry"](None)["entry_time"] is None
 
 

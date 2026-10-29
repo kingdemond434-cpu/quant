@@ -2564,6 +2564,32 @@ def _position_context(deal: object) -> tuple[float, float, float, str]:
     return e["entry_price"], e["sl"], e["tp"], e["comment"]
 
 
+def _broker_utc(epoch: object, symbol: object) -> tuple[str | None, str, int | None]:
+    """(UTC ISO, basis, offset used) for a broker-wall epoch from this gateway's own session.
+
+    THE STAMPS ARE BROKER TIME (row 247/239): `deal.time` and `time_msc` count the venue's wall
+    clock. The offset is measured off a fresh tick of `symbol` against this host's real clock
+    (`gateway_clock.measured_offset_h`); with no fresh tick (market closed) the Fusion server's
+    calendar rule (New York + 7 h) answers, which is this venue's clock and is DST-aware."""
+    from libs.ops import gateway_clock as _gc
+    off: int | None = None
+    try:
+        tick = mt5.symbol_info_tick(str(symbol)) if symbol else None
+        if tick is not None:
+            off = _gc.measured_offset_h(getattr(tick, "time", None), time.time())
+    except Exception:
+        off = None
+    iso, basis = _gc.broker_epoch_to_utc(epoch, off, calendar=True)
+    return iso, basis, off
+
+
+#: MT5 `deal.reason` codes -> the exit a closing deal records, as documented in MetaQuotes'
+#: ENUM_DEAL_REASON table (the venue's own codes, not chosen here). A code not listed is
+#: written as its number, never dropped.
+_DEAL_REASON = {0: "client", 1: "mobile", 2: "web", 3: "expert", 4: "sl", 5: "tp", 6: "so",
+                7: "rollover", 8: "vmargin", 9: "split"}
+
+
 def _position_entry(pid) -> dict:
     """Everything the position's OPENING side knows, keyed so a closing deal can be joined back
     to the intent that caused it.
@@ -2588,6 +2614,7 @@ def _position_entry(pid) -> dict:
            "entry_cost_measured": False}
     if not pid:
         return out
+    _entry_symbol: object = None
     try:
         for o in (mt5.history_orders_get(position=pid) or ()):
             if not out["comment"]:
@@ -2610,8 +2637,16 @@ def _position_entry(pid) -> dict:
                 if stamp <= 0:
                     stamp = float(getattr(x, "time", 0) or 0)
                 if stamp > 0:
-                    out["entry_time"] = datetime.fromtimestamp(stamp, tz=UTC).isoformat()
+                    out["entry_epoch_broker"] = stamp
+                    _entry_symbol = getattr(x, "symbol", None)
         out["entry_cost_measured"] = out["entry_volume"] > 0.0
+        if out.get("entry_epoch_broker"):
+            # Converted once, after the loop: a clock that cannot answer leaves the stamp unset
+            # (UNMEASURED) and never costs the entry price, stop or cost this loop gathered.
+            try:
+                out["entry_time"] = _broker_utc(out["entry_epoch_broker"], _entry_symbol)[0]
+            except Exception as exc:
+                log(f"position {pid}: entry clock unconvertible ({type(exc).__name__})")
     except Exception as exc:
         log(f"position {pid}: context unreadable ({type(exc).__name__}); R left unmeasured")
     return out
@@ -2745,13 +2780,23 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                                                                 0.0) or 0.0),
                                        tick_size=float(getattr(sym_info, "trade_tick_size",
                                                                0.0) or 0.0))
+        # BROKER EPOCHS ARE CONVERTED TO UTC HERE, in this gateway's own session (row 247/239);
+        # the raw epochs ride along, and `timestamp_basis` names how. Rows before 2026-10-29
+        # carry "broker_deal_epoch" and are read through `gateway_clock.row_utc`, never rewritten.
+        _exit_iso, _basis, _off = _broker_utc(getattr(d, "time", 0), d.symbol)
+        _reason = getattr(d, "reason", None)
         rec = {"time": now(), "sleeve": sleeve, "symbol": d.symbol,
                # Preserve the legacy close-deal side, but expose the actual position side
                # separately: a closing BUY belongs to a SHORT position.
                "entry_side": ctx["entry_side"], "entry_time": ctx["entry_time"],
-               "exit_time": (datetime.fromtimestamp(float(d.time), tz=UTC).isoformat()
-                             if getattr(d, "time", 0) else None),
-               "timestamp_basis": "broker_deal_epoch",
+               "exit_time": _exit_iso,
+               "timestamp_basis": _basis, "broker_utc_offset_h": _off,
+               "entry_epoch_broker": ctx.get("entry_epoch_broker"),
+               "exit_epoch_broker": (float(d.time) if getattr(d, "time", 0) else None),
+               # WHY THE POSITION CLOSED: the venue's own deal reason (sl, tp, so for a stop-out,
+               # client/expert for a close this desk or a person sent).
+               "exit_reason": (_DEAL_REASON.get(int(_reason), str(_reason))
+                               if isinstance(_reason, int) else None),
                "side": d.type, "pl_quote": round(pl_quote, 2),
                "r_multiple": round(r, 4), "volume": d.volume,
                "commission": d.commission, "swap": d.swap, "deal": d.ticket,
