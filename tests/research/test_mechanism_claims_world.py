@@ -105,3 +105,20 @@ def test_false_instrument_words_stay_negative() -> None:
     # a script-bounded alias still matches at the start of text and after punctuation
     assert mc.resolve_instruments("طلا امروز")["analogues"] == ["XAUUSD"]
     assert mc.resolve_instruments("«طلا» امروز")["analogues"] == ["XAUUSD"]
+
+
+@pytest.mark.parametrize("text", [
+    "ارتفع عدد طلاب الجامعة هذا العام",        # students
+    "نفتح صفقة شراء على اليورو بعد الافتتاح",   # we open a buy trade on the euro
+    "نفتقد السيولة في جلسة آسيا",              # we miss liquidity
+    "نرخ طلاق در شهر بالا رفت",                # divorce (Persian)
+])
+def test_script_bounded_aliases_are_whole_words_never_prefixes(text: str) -> None:
+    inst = mc.resolve_instruments(text)
+    assert "XAUUSD" not in inst["analogues"] and "XTIUSD" not in inst["analogues"], text
+
+
+def test_inflected_forms_are_listed_and_match() -> None:
+    assert mc.resolve_instruments("قیمت طلای جهانی امروز بالا رفت")["analogues"] == ["XAUUSD"]
+    assert mc.resolve_instruments("سونے کی قیمت آج بڑھ گئی")["analogues"] == ["XAUUSD"]
+    assert mc.resolve_instruments("আজ সোনার দাম বেড়েছে")["analogues"] == ["XAUUSD"]

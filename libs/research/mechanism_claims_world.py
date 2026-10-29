@@ -167,23 +167,27 @@ URDU_LETTERS = "ٹڈڑںےۓ"
 PERSIAN_LETTERS = "پچژگکی"
 
 #: First symbol of an INSTRUMENT_ALIASES row -> the words for it in the new languages. The
-#: Arabic- and Indic-script ones must start a word (SCRIPT_BOUNDED below): bare "طلا" is inside
-#: Arabic "انطلاق" (launch), "نفت" inside "انفتاح" (openness), Urdu "تیل" inside "استیل" (steel).
+#: Arabic- and Indic-script ones are WHOLE WORDS of their script (SCRIPT_BOUNDED below), so each
+#: inflected form is listed (Persian ezafe طلای, Urdu oblique سونے, Bengali genitive সোনার):
+#: bare "طلا" is inside Arabic "انطلاق" (launch), "نفت" inside "انفتاح" (openness),
+#: Urdu "تیل" inside "استیل" (steel).
 #: Bengali oil is "তেলের"/crude, because bare "তেল" begins Telangana; Tamil silver is also Friday,
 #: so only "silver price" counts; Marathi's oblique gold avoids Hindi "to sleep"; Romanian bare
 #: "aur" is Hinglish and romanized Urdu "and", so only its inflected forms count.
 WORLD_ALIASES: dict[str, tuple[str, ...]] = {
-    "XAUUSD": ("طلا", "سونا", "সোনা", "স্বর্ণ", "தங்கம்", "బంగారం", "सोन्या", "सोनं",
-               "સોનું", "સોના", "ginto", "aurul", "aurului", "aur fizic", "zlato", "zlata",
-               "arany", "aranyat", "χρυσ"),
-    "XAGUSD": ("نقره", "چاندی", "রূপা", "வெள்ளி விலை", "వెండి", "ચાંદી", "pilak", "argint",
-               "stříbro", "ezüst", "ασήμι"),
-    "XTIUSD": ("نفت", "تیل", "তেলের", "অপরিশোধিত তেল", "கச்சா எண்ணெய்", "ముడి చమురు", "कच्चे तेल", "ક્રૂડ",
-               "langis", "țiței", "olaj", "πετρέλαιο"),
+    "XAUUSD": ("طلا", "طلای", "طلاها", "سونا", "سونے", "সোনা", "সোনার", "স্বর্ণ", "স্বর্ণের",
+               "தங்கம்", "தங்கத்தின்", "தங்க", "బంగారం", "బంగారు", "सोन्याचा", "सोन्याचे",
+               "सोन्याची", "सोनं", "સોનું", "સોના", "ginto", "aurul", "aurului", "aur fizic",
+               "zlato", "zlata", "arany", "aranyat", "χρυσ"),
+    "XAGUSD": ("نقره", "نقره‌ای", "چاندی", "রূপা", "রূপার", "வெள்ளி விலை", "వెండి", "ચાંદી",
+               "pilak", "argint", "stříbro", "ezüst", "ασήμι"),
+    "XTIUSD": ("نفت", "نفتی", "تیل", "তেলের", "অপরিশোধিত তেল", "கச்சா எண்ணெய்", "ముడి చమురు",
+               "कच्चे तेल", "ક્રૂડ", "langis", "țiței", "olaj", "πετρέλαιο"),
 }
 #: Arabic, Bengali, Tamil, Telugu, Gujarati and Devanagari, as regex character ranges.
 _SCRIPTS = ("؀-ۿ", "ঀ-৿", "஀-௿", "ఀ-౿", "઀-૿", "ऀ-ॿ")
-#: alias -> the script block it must not be preceded by (a letter of its own script).
+#: alias -> its script block: no letter of that script may precede or follow it (so "طلاب",
+#: students, and "نفتح", we open, never read as gold and oil).
 SCRIPT_BOUNDED: dict[str, str] = {
     a: block for terms in WORLD_ALIASES.values() for a in terms
     for block in _SCRIPTS if block[0] <= a[0] <= block[-1]}

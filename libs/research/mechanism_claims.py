@@ -1161,11 +1161,11 @@ _LATIN = "a-z0-9À-ɏ"
 def _alias_pattern(alias: str) -> str:
     """Substring for CJK/Thai/Arabic aliases; word-bounded for Latin ones, so `gold` does not
     match `golden` and `dow` does not match `download`. The thirteen-language additions in
-    Arabic and Indic scripts must START a word in their own script (`_world.SCRIPT_BOUNDED`), so
-    Persian gold is not found inside Arabic "انطلاق" or Urdu oil inside "استیل"."""
+    Arabic and Indic scripts are whole words of their own script (`_world.SCRIPT_BOUNDED`), so
+    Persian gold is not found inside Arabic "انطلاق" or "طلاب", nor Urdu oil inside "استیل"."""
     script = _world.SCRIPT_BOUNDED.get(alias)
     if script:
-        return rf"(?<![{script}])" + re.escape(alias)
+        return rf"(?<![{script}])" + re.escape(alias) + rf"(?![{script}])"
     starts = re.match(rf"[{_LATIN}]", alias) is not None
     ends = re.search(rf"[{_LATIN}]$", alias) is not None
     return ((rf"(?<![{_LATIN}])" if starts else "") + re.escape(alias)
