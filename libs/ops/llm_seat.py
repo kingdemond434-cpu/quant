@@ -619,7 +619,8 @@ def calls_today(now: datetime | None = None) -> int:
             row = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if str(row.get("utc", "")).startswith(stamp):
+        # The GitHub overflow seat has its own allowance; its rows are not OpenRouter's.
+        if str(row.get("utc", "")).startswith(stamp) and row.get("seat") != "github_models":
             n += 1
     return n
 
@@ -1055,7 +1056,8 @@ def calling_organ() -> str:
     return "unattributed"
 
 
-def _record_spend(seat: Seat, model: str, body: dict[str, Any]) -> None:
+def _record_spend(seat: Seat, model: str, body: dict[str, Any], *,
+                  free: bool | None = None) -> None:
     """Append-only, and it records what the PROVIDER reported rather than what we guessed.
 
     A FREE CALL COSTS ZERO, AND BOOKING IT AS SPEND BRICKS THE PAID LANE (fixed 2026-09-24).
@@ -1080,7 +1082,7 @@ def _record_spend(seat: Seat, model: str, body: dict[str, Any]) -> None:
     raw_usage = body.get("usage")
     usage: dict[str, Any] = raw_usage if isinstance(raw_usage, dict) else {}
     tok = int(usage.get("total_tokens") or 0)
-    free = is_free_model(model)
+    free = is_free_model(model) if free is None else free
     row: dict[str, Any] = {
         "utc": datetime.now(UTC).isoformat(timespec="seconds"), "seat": seat.name,
         "organ": calling_organ(), "model": model, "tokens": tok, "free": free,

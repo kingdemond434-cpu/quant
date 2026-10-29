@@ -176,6 +176,12 @@ def _param_rejects_in_tmp(tmp_path_factory, monkeypatch):
         return
     monkeypatch.setattr(llm_seat, "PARAM_REJECTS",
                         tmp_path_factory.mktemp("seat") / "llm_param_rejects.json")
+    from libs.ops import llm_overflow
+    d = tmp_path_factory.mktemp("overflow")
+    monkeypatch.setattr(llm_overflow, "STATE", d / "llm_overflow_state.json")
+    monkeypatch.setattr(llm_overflow, "TOKEN_FILE", str(d / "no_token"))
+    for var in llm_overflow.TOKEN_ENVS:
+        monkeypatch.delenv(var, raising=False)
     yield
 
 

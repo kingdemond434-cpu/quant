@@ -624,8 +624,8 @@ EXTRACT_MAX_TOKENS = int(os.environ.get("DEEPEN_EXTRACT_MAX_TOKENS", "3000"))
 def extract(task: dict, *, chat=None) -> tuple[dict, str]:
     """Ask the seat what the row's own text states. ({}, reason) on any doubt."""
     if chat is None:
-        from libs.ops import llm_seat
-        chat = llm_seat.chat
+        from libs.ops import llm_overflow
+        chat = llm_overflow.chat_with_overflow
     text = task_text(task)
     kind = str(task.get("kind") or "")
     system = _SYSTEM_BY_KIND.get(kind, _SYSTEM)
@@ -1656,17 +1656,26 @@ def _seat_budget() -> tuple[int, str]:
     THE CEILING IS EXTERNAL AND CANNOT BE WISHED AWAY. All fifteen configured seats are free
     OpenRouter models on ONE account key and the provider's free allowance is per-ACCOUNT per-day
     -- it refused at 458 calls on 2026-09-23 with `limit_source: openrouter_free_tier_daily` --
-    so adding models buys nothing. What asking here buys is the seventeen hours a day AFTER the
-    allowance is gone: they are now spent in the rule lane instead of on one refusal per row.
+    so adding OpenRouter models buys nothing. The GitHub free overflow (`libs/ops/llm_overflow.py`)
+    is a separate allowance counted per model, and carries the lane once OpenRouter's day is gone.
+
+    -1 also covers the overflow's UNMEASURED (no catalog read yet): the lane tries it.
 
     -1 means UNMEASURED (the seat module could not be read), which is never treated as zero: an
     unreadable counter must not silence a lane that might be working.
     """
     try:
-        from libs.ops import llm_seat
+        from libs.ops import llm_overflow, llm_seat
         left = int(llm_seat.free_budget_left())
-        return left, (f"{left} free request(s) left today of a {llm_seat.free_daily_max()} "
-                      f"ceiling ({llm_seat.calls_today()} used)")
+        why = (f"{left} free request(s) left today of a {llm_seat.free_daily_max()} "
+               f"ceiling ({llm_seat.calls_today()} used)")
+        if left > 0:
+            return left, why
+        # OPENROUTER'S DAY IS GONE: the GitHub free overflow carries the lane (2026-10-29).
+        # -1 is its UNMEASURED (no catalog read yet), which runs the lane rather than parks it.
+        extra = llm_overflow.budget_left()
+        return extra, (f"{why}; GitHub overflow "
+                       f"{'UNMEASURED, trying' if extra < 0 else f'{extra} left'}")
     except Exception as exc:
         return -1, (f"seat budget UNMEASURED ({type(exc).__name__}): the lane runs rather than "
                     f"stand down on an unreadable counter")
