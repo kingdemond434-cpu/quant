@@ -767,6 +767,10 @@ $reportPaths = @(
     "desks/mt5/reports/FENCE_MISSED_TRADES.json",
     "desks/mt5/reports/fence_plan_history.jsonl",
     "desks/mt5/reports/fence_missed_trades.jsonl",
+    # every stop exit against the econ calendar (2026-10-29, research/exit_news_tag.py, core leg
+    # exit_news_tag): per-exit tags and the summary its experiment contract judges
+    "desks/mt5/reports/EXIT_NEWS_TAGS.jsonl",
+    "desks/mt5/reports/EXIT_NEWS_TAGS_SUMMARY.json",
     # the box's swap capture age (2026-10-06): a stopped MT5-ContractTerms reads STALE by name
     "desks/mt5/reports/BROKER_SWAPS_FRESHNESS.json",
     "desks/mt5/reports/RESEARCH_BUDGET.json",

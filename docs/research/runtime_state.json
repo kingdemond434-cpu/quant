@@ -26510,6 +26510,33 @@
    "measured_at": "2026-10-29T01:09:30+00:00"
   },
   {
+   "organ": "leg:exit_news_tag",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/exit_news_tag.py"
+   ],
+   "clock": "hourly_cycle:exit_news_tag",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "born 2026-10-29 (exit_news_tag v2): no artifact and no run record here yet, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/EXIT_NEWS_TAGS_SUMMARY.json",
+   "artifact_declared": "desks/mt5/reports/EXIT_NEWS_TAGS_SUMMARY.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "experiment_contract:exit_news_tag",
+   "measured_on": "vm",
+   "measured_at": "2026-10-29T16:00:00+00:00"
+  },
+  {
    "organ": "leg:fence_planner",
    "kind": "leg",
    "code": [

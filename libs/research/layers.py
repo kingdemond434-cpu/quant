@@ -238,6 +238,7 @@ LEG_LAYER: dict[str, str] = {
     "kelly_survival": "sizing", "stop_geometry_derivation": "sizing",
     "prop_challenge_allocator": "sizing",
     "fence_planner": "sizing", "fence_missed_trades": "sizing",
+    "exit_news_tag": "execution",
     "decay_monitor": "portfolio", "fill_markout": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "recovery_drills": "meta",

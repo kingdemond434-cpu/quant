@@ -1206,6 +1206,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE CROSS-ACCOUNT FENCE, PLANNED AND PRICED (2026-10-29, report-only): one direction set
     # per symbol/day across E8/FTMO/Fusion, and the counterfactual R of every refused leg.
     "fence_planner", "fence_missed_trades",
+    # STOP EXITS AGAINST THE CALENDAR (2026-10-29, report-only): reports/EXIT_NEWS_TAGS.jsonl.
+    "exit_news_tag",
     # The two stop-geometry constants on the same solve (2026-09-30): a report the sizing fence's
     # citations point at, re-derived hourly so a stale number is visible as stale.
     "stop_geometry_derivation",
@@ -5990,6 +5992,10 @@ def main() -> None:
         "fence_planner", "research/fence_planner.py"))
     fmt = _costed("fence_missed_trades", lambda: _producer(
         "fence_missed_trades", "research/fence_missed_trades.py"))
+    # EVERY EXIT TAGGED WITH THE ECON CALENDAR (2026-10-29, row-244 slip tail): report-only,
+    # research-side; the gateway and the ledger writers are untouched.
+    ent = _costed("exit_news_tag", lambda: _producer(
+        "exit_news_tag", "research/exit_news_tag.py"))
     # THE STOP GEOMETRY ON THE SAME SOLVE (2026-09-30): MIN_STOP_SPREAD_MULT and
     # ENTRY_DRIFT_TOL_FRAC re-derived from the bars' spreads, the entry drift and the live edge.
     # A report only -- the money path carries the cited values. Each value passes a two-sided
@@ -6259,6 +6265,7 @@ def main() -> None:
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls, "prop_challenge_allocator": fta,
                     "fence_planner": fpl, "fence_missed_trades": fmt,
+                    "exit_news_tag": ent,
                     "stop_geometry_derivation": sgd,
                     "decay_monitor": dmo, "fill_markout": fmk, "input_ablation": iab,
                     "experimental_budget": xbg, "ops_redundancy": opr,
