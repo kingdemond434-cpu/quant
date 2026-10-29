@@ -705,6 +705,110 @@ def _six_event_trace() -> None:
         raise RuntimeError(f"six_event_trace returned {rc}")
 
 
+#: Ceiling on the box identity check run by `_vector_families_check`. It measured 14-65 s on the
+#: build containers; a run that hangs past this is UNMEASURED, never a verdict.
+VECTOR_CHECK_TIMEOUT_S = 900
+
+
+def _run_vector_check(script: Path, out: Path) -> int:
+    """Run `scripts/check_vector_families.py` in its own interpreter (audit v1.3 should-fix 2).
+
+    The check patches `mt5desk.families_vector` while it measures (engagement wrappers, the
+    switch, the proving flag); a child process means none of that can outlive it in the cycle.
+    The repo's convention for daily legs (`_capacity_watch`): `sys.executable`, cwd `BASE`, a
+    timeout. Not `-I`: that also drops user site-packages, and a box whose pandas lives there
+    would read UNMEASURED forever. Raises `subprocess.TimeoutExpired` / `OSError` to the caller.
+    """
+    import subprocess
+    r = subprocess.run([sys.executable, str(script), "--out", str(out), "--quiet"],
+                       cwd=str(BASE), capture_output=True, text=True,
+                       timeout=VECTOR_CHECK_TIMEOUT_S, check=False)
+    tail = (r.stdout or r.stderr or "").strip().splitlines()[-1:]
+    dlog(f"vector_families_check: child rc={r.returncode} {tail[0][:300] if tail else ''}")
+    return int(r.returncode)
+
+
+def _vector_families_check() -> None:
+    """DRIFT MONITOR AND FAIL-CLOSED SWITCH for the judge's speed path (`MT5_VECTOR_FAMILIES`).
+
+    `mt5desk.families_vector` makes the costliest families fast and must return the original
+    loops' Signal lists exactly -- on the live gateway's signal path too -- under whatever pandas
+    and numpy this box has today. `scripts/check_vector_families.py` re-proves that here, daily,
+    on real parquets, in a SUBPROCESS with a timeout, READ-ONLY apart from its report
+    reports/VECTOR_FAMILIES_CHECK.json (versions, the switch's mode, per-family engagement).
+
+    FAIL CLOSED (v1.4): the verdict drives `families_vector.MARKER`
+    (data/VECTOR_FAMILIES_MISMATCH.json), which `families_vector.enabled()` reads:
+
+        MISMATCH    marker written with the evidence -> every process takes the original loops
+        IDENTICAL   marker removed                   -> the fast path is back
+        UNMEASURED  marker left exactly as it was (a crash, a timeout, a stale or unreadable
+                    report, no parquets: no measurement either way)
+
+    A MISMATCH is only ever read from a report this run wrote (`generated_at` after the start);
+    the child's rc alone is not trusted, because 1 is also Python's code for an uncaught raise.
+
+    Still a SHADOW LEG: it never fails the cycle. IDENTICAL is quiet; anything else is a loud log
+    line and a `vector_families_drift` event on the event bus.
+    """
+    from mt5desk import families_vector
+    script = BASE / "scripts" / "check_vector_families.py"
+    out = BASE / "reports" / "VECTOR_FAMILIES_CHECK.json"
+    verdict, rc, detail, doc = "UNMEASURED", 2, "", {}
+    started = datetime.now(UTC)
+    try:
+        # Imported for its path and REPORT only (importing patches nothing; `run()` does, in
+        # the child). The import is also the edge the component registry reads as this clock.
+        import check_vector_families
+        script = Path(check_vector_families.__file__).resolve()
+        out = check_vector_families.REPORT
+        rc = _run_vector_check(script, out)
+        try:
+            doc = json.loads(out.read_text(encoding="utf-8"))
+            made = datetime.fromisoformat(str(doc.get("generated_at")))
+            if made < started:
+                raise ValueError(f"stale report (generated_at {made.isoformat()})")
+            verdict = str(doc.get("verdict") or verdict)
+            detail = "; ".join(str(x) for x in (doc.get("unmeasured_because") or []))
+            if doc.get("mismatches"):
+                detail = f"{len(doc['mismatches'])} mismatch(es); " + detail
+        except (OSError, ValueError, TypeError) as exc:
+            verdict, doc = "UNMEASURED", {}
+            detail = f"report unusable: {type(exc).__name__}: {exc}"
+    except Exception as exc:  # a crash or timeout in the monitor is a loud event, never a failure
+        verdict, rc, detail = "UNMEASURED", 2, f"check did not finish: {type(exc).__name__}: {exc}"
+    if verdict not in ("IDENTICAL", "MISMATCH"):
+        verdict = "UNMEASURED"
+    marker = "unchanged"
+    try:
+        if verdict == "MISMATCH":
+            families_vector.write_mismatch_marker({
+                "written_at": datetime.now(UTC).isoformat(), "verdict": verdict, "rc": rc,
+                "report": str(out), "generated_at": doc.get("generated_at"),
+                "host": doc.get("host"), "python": doc.get("python"),
+                "pandas": doc.get("pandas"), "numpy": doc.get("numpy"),
+                "cases": doc.get("cases"), "signals": doc.get("signals"),
+                "mismatches": (doc.get("mismatches") or [])[:50],
+                "cleared_by": "the next IDENTICAL daily_cycle:vector_families_check"})
+            marker = "written"
+        elif verdict == "IDENTICAL":
+            marker = "cleared" if families_vector.clear_mismatch_marker() else "absent"
+    except OSError as exc:
+        marker = f"marker update failed: {type(exc).__name__}: {exc}"
+    if verdict == "IDENTICAL" and not marker.startswith("marker update failed"):
+        dlog(f"vector_families_check: IDENTICAL (marker {marker})")
+        return
+    dlog(f"vector_families_check: !!! {verdict} (rc={rc}) -- {detail} -- marker {marker} -- "
+         + ("the fast families are FAILED CLOSED on this box until an IDENTICAL check"
+            if verdict == "MISMATCH" else "fail-closed state left as it was"))
+    try:
+        from libs.ops import events
+        events.emit("vector_families_drift", verdict=verdict, rc=rc, detail=detail[:500],
+                    report=str(out), marker=marker)
+    except Exception as exc:  # the event bus being down must not fail the cycle either
+        dlog(f"vector_families_check: event emit failed: {type(exc).__name__}: {exc}")
+
+
 #: ORDER IS LOAD-BEARING. The promoter reads the state shadow has just written, so running it
 #: first would decide today on yesterday's evidence. Markout runs last-but-one and
 #: unconditionally: it reads the live ledger, so it reports on the armed book whether or not
@@ -795,6 +899,7 @@ STEPS = (("weekly_hunt_refresh", _weekly_hunt_refresh),
          ("module_rent_research", _module_rent_research), ("build_allocator", _build_allocator),
          ("simplifier", _simplifier), ("capacity_watch", _capacity_watch),
          ("six_event_trace", _six_event_trace),
+         ("vector_families_check", _vector_families_check),
          ("export_aurum", _export_aurum), ("daily_research_os", _daily_research_os))
 
 def main(argv: list[str] | None = None) -> int:

@@ -1293,6 +1293,16 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                           f"${decision.room_to_daily_floor:.0f} left to today's floor")
             doc["sleeves"].append(row)
             continue
+        # THE ADOPTER'S HOLD (libs/ops/new_risk_hold): no new order while a release is being
+        # adopted or rolled back and not yet proved healthy. Closes and breakeven moves above
+        # still ran. A veto, so billed like the cross-account fence (missed_growth).
+        from libs.ops import new_risk_hold as _nrh
+        if (_hold := _nrh.reason()) is not None:
+            row["status"], row["rail"], row["why"] = "RAIL_BLOCKED", "adopt_new_risk_hold", _hold
+            row["missed_growth_risk_usd"] = round(row_risk_usd, 2)
+            doc["sleeves"].append(row)
+            _record(row, now, armed)
+            continue
         if armed:
             # THE CROSS-ACCOUNT OPPOSITE-SIDE FENCE (mt5desk.cross_account; audit HOLD
             # 2026-10-20): refused when the FUSION account holds or rests the opposite side of
