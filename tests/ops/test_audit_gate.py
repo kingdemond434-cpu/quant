@@ -2002,3 +2002,42 @@ def test_formerly_protected_files_merge_only_on_every_auto_check(auto_hub: Any, 
 def test_a_secrets_path_never_merges(auto_hub: Any) -> None:
     h = auto_hub(files=("data/secrets/k.txt",), runs=_auto_green())
     assert ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True) == 1 and _merges(h) == []
+
+
+_ROWS = (
+    "# the box's tasks\n"
+    'TASK name="Quant-WorkflowGate" trigger="every 10 minutes" runs="ops/box/workflow_gate.ps1" '
+    'installer="ops/box/install_unattended.ps1" lane="ops"\n'
+    'TASK name="MT5-Gateway" trigger="at logon" runs="desks/mt5/scripts/gw.ps1" lane="money"\n'
+)
+
+
+@pytest.mark.parametrize(
+    ("head", "money"),
+    [
+        (_ROWS + "# a new comment\n", False),  # prose only
+        (_ROWS + 'TASK name="Quant-SignTrain" trigger="every 10 minutes" '
+                 'runs="ops/box/sign_train_leg.ps1" lane="ops" also_runs="scripts/sign_train.py"\n',
+         False),  # a gate clock's row
+        (_ROWS.replace('lane="ops"', 'lane="ops" also_runs="scripts/watch.py"'), False),
+        (_ROWS.replace('trigger="at logon"', 'trigger="never"'), True),  # a money task's row
+        (_ROWS + 'TASK name="Quant-X" runs="ops/box/x.ps1" note="FTMO copy"\n', True),  # venue
+        (_ROWS + 'TASK name="Quant-X" runs="desks/mt5/scripts/new.ps1"\n', True),  # a script there
+        (_ROWS + 'TASK name="Quant-X" runs="desks/mt5/prop/e8_gold.py"\n', True),  # the closure
+        (_ROWS + "VERSION 2\n", True),  # not a TASK row
+        (_ROWS.replace("# the box's tasks\n", ""), False),
+        (_ROWS + _ROWS.splitlines(keepends=True)[1], True),  # a row duplicated
+        (None, True),  # gone
+    ],
+)  # fmt: skip
+def test_the_box_task_table_is_money_unless_only_gate_rows_change(
+    tmp_path: Path, head: str | None, money: bool
+) -> None:
+    """#541/#546: a row for the gate's own clock is not order code; any money row still is."""
+    b, h = tmp_path / "b", tmp_path / "h"
+    for t, text in ((b, _ROWS), (h, head)):
+        (t / "desks/mt5/ops").mkdir(parents=True)
+        if text is not None:
+            (t / rs.MANIFEST).write_text(text, "utf-8")
+    scripts = {"desks/mt5/scripts/gw.ps1"}
+    assert rs.manifest_is_money(b, h, set(), scripts, set()) is money

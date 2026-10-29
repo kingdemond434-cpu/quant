@@ -398,6 +398,58 @@ def exempt_scripts(
     return scripts - money_scripts(trees, closure, listed)
 
 
+#: The box's task table. A data file under MONEY_PATH, so any change to it is money path, unless
+#: every line it changes is a TASK row that names nothing money (manifest_is_money): the rows for
+#: the gate's own clocks (the sign train, the sweep's helpers) are not order code.
+MANIFEST = "desks/mt5/ops/box_tasks.manifest"
+_ATTR = re.compile(r'(\w+)="([^"]*)"')
+
+
+def manifest_is_money(
+    base: Path, head: Path, closure: set[str], money: set[str], exempt: set[str]
+) -> bool:
+    """Whether the change to MANIFEST is money path. Comments and blank lines are prose. Every
+    other added or removed line must be a TASK row whose raw text names no venue, state or
+    money-path name, and whose runs, also_runs and installer are each a file that is not money
+    path (a script under SCRIPT_DIRS only when `exempt` clears it). Anything else, or a tree
+    that cannot be read, is money (fail closed)."""
+    b, h = read(base, MANIFEST), read(head, MANIFEST)
+    if b is None or h is None:
+        return True
+
+    def rows(text: str) -> list[str]:
+        return [
+            x.strip() for x in text.splitlines() if x.strip() and not x.lstrip().startswith("#")
+        ]
+
+    was, now = rows(b), rows(h)
+    changed = [x for x in now if x not in was] + [x for x in was if x not in now]
+    if len(was) != len(now) and not changed:  # a row duplicated or dropped twice over
+        return True
+    # a package directory's bare name ("ops", "data") is no name here: every row's lane and path
+    # use those words, and a path inside such a package is caught below, file by file
+    dirs = {Path(f).parent.name.lower() for f in closure} - {
+        Path(f).stem.lower() for f in {*closure, *ENTRY_POINTS} if Path(f).name != "__init__.py"
+    }
+    names = (_money_names(base, closure) - dirs) | state_names(base, closure)
+    names |= {n for m in money for n in (Path(m).name.lower(), Path(m).stem.lower())}
+    for line in changed:
+        low = line.lower()
+        if not line.startswith("TASK "):
+            return True
+        if MONEY_WORDS.search(low) or STATE_WORDS.search(low) or _names_any(low, names):
+            return True
+        attrs = dict(_ATTR.findall(line))
+        paths = [p.strip() for k in ("runs", "also_runs", "installer")
+                 for p in attrs.get(k, "").split(",") if p.strip()]  # fmt: skip
+        for p in paths:
+            if p in closure or p in ENTRY_POINTS or p.startswith(MONEY_PATH) or p in money:
+                return True
+            if is_script(p) and p not in exempt:
+                return True
+    return False
+
+
 def is_money(path: str, closure: set[str], *, exempt: set[str] | None = None) -> bool:
     """A script under SCRIPT_DIRS is money unless `exempt` names it (fail closed, #508 audit)."""
     if is_script(path):
@@ -587,9 +639,13 @@ def compare(
         problems.append("UNMEASURED: the base tree placed nothing anywhere on the grid")
     closure = import_closure(base)
     exempt = exempt_scripts((base, head), closure)
+    money = money_scripts((base, head), closure)
+    rows_only = MANIFEST in changed and not manifest_is_money(base, head, closure, money, exempt)
     uncovered = sorted(
-        f for f in changed if is_money(f, closure, exempt=exempt) and f not in imported
-    )
+        f for f in changed
+        if is_money(f, closure, exempt=exempt) and f not in imported
+        and not (f == MANIFEST and rows_only)
+    )  # fmt: skip
     not_money = sorted(f for f in changed if is_script(f) and f in exempt)
     problems += [
         f"UNMEASURED money-path change (the replay never imported it): {f}" for f in uncovered
@@ -603,6 +659,8 @@ def compare(
         "problems": problems,
         # changed scripts that are reviewed exceptions (ops/release/not_money_scripts.txt)
         "not_money_scripts": not_money,
+        # the manifest changed only in TASK rows that name nothing money (manifest_is_money)
+        "not_money_manifest": rows_only,
     }
 
 
