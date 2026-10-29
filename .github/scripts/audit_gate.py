@@ -574,13 +574,35 @@ def provenance(repo: str, pr: int, head: str) -> Callable[[Mapping[str, Any]], b
     return genuine
 
 
-def bring_up(repo: str, pr: int, head: str) -> bool:
-    """Merge the base into a PR whose own gating checks pass, pinned to `head` (GitHub refuses
-    if the head moved). False when its checks do not pass (no CI is spent on a red head), on a
-    conflict (422: a merge by hand, Autonomy's) or any other refusal: the PR is left as it is."""
+#: Times the box may merge the base into one PR's branch (#552 audit SF1): past it the PR stops
+#: being brought up, and the watcher's CLEAR-unmerged RED names it.
+BRING_UP_CAP = 4
+#: Bring-ups per sweep (#552 audit SF2): each one starts a full CI run on the shared free pool,
+#: and the most merge-ready PRs come first, so a few per pass drain the queue without flooding it.
+BRING_UPS_PER_SWEEP = 2
+BEHIND = "it is behind"
+
+
+def bring_up(repo: str, pr: int, head: str, base: str = LIVE) -> bool:
+    """Merge the base into a PR whose own GENUINE gating checks pass (provenance, #552 audit
+    SF3: a forged success never spends a CI run), pinned to `head` (GitHub refuses if the head
+    moved). False when its checks do not pass, after BRING_UP_CAP earlier merges of the base,
+    on a conflict (422: a merge by hand, Autonomy's) or any other refusal: the PR is left as it
+    is."""
     try:
         got = _gh(f"repos/{repo}/commits/{head}/check-runs?per_page=100")
-        if checks((got or {}).get("check_runs") or [], GATING_JOBS, lambda r: True)[0] != "pass":
+        runs = (got or {}).get("check_runs") or []
+        if checks(runs, GATING_JOBS, provenance(repo, pr, head))[0] != "pass":
+            return False
+        cmp = _gh(f"repos/{repo}/compare/{base}...{head}")
+        mine = f"Merge branch '{base}' into "
+        done = sum(
+            1 for c in (cmp or {}).get("commits") or []
+            if str((c.get("commit") or {}).get("message") or "").startswith(mine)
+        )  # fmt: skip
+        if done >= BRING_UP_CAP:
+            _summary(f"RED BRING_UP_CAPPED #{pr} @ {head[:9]}: {base} was merged in {done} "
+                     "times and it still has not merged; it needs a look")  # fmt: skip
             return False
         _gh(f"repos/{repo}/pulls/{pr}/update-branch", "-X", "PUT",
             data={"expected_head_sha": head})  # fmt: skip
@@ -795,10 +817,12 @@ def run(
     poll_s: float = 60.0,
     box: bool = False,
     approvals_issue: int = APPROVALS_ISSUE,
+    bring_ups: list[int] | None = None,
 ) -> int:
     """Merge #pr when the rule holds. `box`: the box's run with a user token -- it needs no label,
     merges workflow-file PRs too (the Actions run, box=False, leaves those to it), posts no
-    pending status and dispatches nothing."""
+    pending status and dispatches nothing. `bring_ups`: the sweep's remaining bring-up budget,
+    one element, spent here (None: no limit, a single PR's run)."""
     p = _gh(f"repos/{repo}/pulls/{pr}")
     head = str(p["head"]["sha"])
     if p.get("state") != "open":
@@ -886,7 +910,18 @@ def run(
                 twhy = f"{twhy}, but it is audited and AUTO is off: the CLEAR + APPROVE path"
             elif fresh:  # an audited LOW PR runs every AUTO job (#454 audit S1)
                 mode = "auto" if audited else level.lower()
-            elif box and bring_up(repo, pr, head):
+            elif (
+                box
+                and fwhy.startswith(BEHIND)  # only behind: a fetch failure never loops (SF1)
+                # a session's branch only, and a draft only once audited: a merge commit on a
+                # branch someone is still pushing breaks their next push (#552 audit SF5)
+                and str(p["head"].get("ref") or "").startswith("claude/")
+                and (not p.get("draft") or bool(audited))
+                and (bring_ups is None or bring_ups[0] > 0)
+                and bring_up(repo, pr, head, base)
+            ):
+                if bring_ups is not None:
+                    bring_ups[0] -= 1
                 # BEHIND IS NOT A DEMOTION (Desk health 2026-10-29 20:20Z: AUTO PRs behind LIVE
                 # went to zuck's path and nothing merged for 40 min). The box merges LIVE into
                 # the branch with zuck's login, which starts the PR's CI on the new head; the
@@ -1058,10 +1093,16 @@ def sweep(
     looked = skipped = failed = 0
     # MERGE-READY FIRST (Desk health 2026-10-29 20:20Z: ~6 PRs a sweep, in listing order, so a
     # green PR waited behind dozens that could not merge). One cheap read per PR sorts them:
-    # every check green, then the gating ones; a PR whose gating checks are still running or
-    # failed cannot merge this pass and is skipped without its full run.
+    # every check green, then the gating ones, then a failed gating check (its full run still
+    # quarantines it and counts in rc; #552 audit SF4), then checks still running. The read is
+    # ORDER ONLY: no PR is dropped on it, so a forged check run can reorder but never hide one
+    # (#552 audit SF3); every merge and bring-up decides on provenance-checked runs.
     ready: list[tuple[int, int, int]] = []
+    bring_ups = [BRING_UPS_PER_SWEEP]
     for i, p in enumerate(_flat(pages)):
+        if clock() > deadline:  # the pre-read is inside the budget too (#552 audit SF6)
+            _summary("sweep budget spent while reading checks; the next sweep goes on")
+            break
         n = int(p["number"])
         head = str((p.get("head") or {}).get("sha") or "")
         rank = 1
@@ -1076,11 +1117,13 @@ def sweep(
             state = checks(runs, GATING_JOBS, lambda r: True)[0]
             if state == "pending":
                 skipped += 1
-                continue
-            if state == "fail":
+                rank = 3
+            elif state == "fail":
                 failed += 1
-                continue
-            rank = 0 if checks(runs, GATING_JOBS + AUTO_JOBS, lambda r: True)[0] == "pass" else 1
+                rank = 2
+            else:
+                every = checks(runs, GATING_JOBS + AUTO_JOBS, lambda r: True)[0]
+                rank = 0 if every == "pass" else 1
         ready.append((rank, i, n))
     for _rank, _i, n in sorted(ready):
         if clock() > deadline:
@@ -1089,12 +1132,14 @@ def sweep(
             break
         try:
             looked += 1
-            rc = max(rc, run(repo, n, base, 0.0, box=True, approvals_issue=approvals_issue))
+            rc = max(rc, run(repo, n, base, 0.0, box=True, approvals_issue=approvals_issue,
+                             bring_ups=bring_ups))  # fmt: skip
         except (RuntimeError, subprocess.SubprocessError, KeyError, TypeError) as exc:
             _summary(f"#{n}: the box gate failed: {exc}")
             rc = 1
-    _summary(f"sweep: {looked} PR(s) looked at, {skipped} skipped with CI still running, "
-             f"{failed} skipped with a gating check failed")  # fmt: skip
+    _summary(f"sweep: {looked} PR(s) looked at; {skipped} with CI still running and {failed} "
+             f"with a gating check failed went last; "
+             f"{BRING_UPS_PER_SWEEP - bring_ups[0]} brought up")  # fmt: skip
     return rc
 
 

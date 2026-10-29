@@ -262,11 +262,12 @@ class _Hub:
         labels: tuple[str, ...] = ("audit-clear",),
         files: tuple[str, ...] = ("scripts/x.py",),
         approvals: list[dict[str, Any]] | None = None,
+        ref: str = "claude/x",
     ) -> None:
         self.pr = {
             "state": "open",
             "draft": draft,
-            "head": {"sha": head, "repo": {"full_name": "o/fork" if fork else "o/r"}},
+            "head": {"sha": head, "ref": ref, "repo": {"full_name": "o/fork" if fork else "o/r"}},
             "base": {"ref": ag.LIVE},
             "labels": [{"name": n} for n in labels],
             "changed_files": len(files),
@@ -282,6 +283,7 @@ class _Hub:
         self.suites = {1: ".github/workflows/ci.yml", 2: ".github/workflows/release-gates.yml"}
         self.annotations: dict[int, list[dict[str, Any]]] = {}
         self.attempt = 1
+        self.merged_in = 0  # earlier merges of the base into the branch (#552 SF1)
 
     def __call__(self, *args: str, data: Any = None) -> Any:
         path = args[0]
@@ -322,6 +324,9 @@ class _Hub:
             return [self.files]
         if "/pulls?" in path:
             return [[{"number": 7}]]
+        if "/compare/" in path:
+            msg = f"Merge branch '{ag.LIVE}' into claude/x"
+            return {"commits": [{"commit": {"message": msg}}] * self.merged_in}
         return self.pr
 
 
@@ -967,6 +972,56 @@ def test_a_behind_auto_pr_gets_live_merged_in_never_the_manual_path(
         h = auto_hub(runs=runs)
         ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=box)
         assert not any(w[1].endswith("/update-branch") for w in h.writes)
+
+
+def _brought_up(h: Any) -> bool:
+    return any(w[1].endswith("/update-branch") for w in h.writes)
+
+
+def test_only_a_behind_session_branch_with_genuine_checks_is_brought_up_and_only_so_often(
+    auto_hub: Any, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """#552 audit SF1/SF3/SF5: a fetch failure never loops; a forged success spends no CI; a
+    human's branch or an unaudited draft is never pushed to; past the cap it stops, RED."""
+    behind = (False, f"it is behind {ag.LIVE} (merge {ag.LIVE} in first)")
+
+    def hub(why: tuple[bool, str] = behind, **kw: Any) -> Any:
+        h = auto_hub(**{"runs": _auto_green(), **kw})
+        monkeypatch.setattr(ag, "up_to_date", lambda base, head: why)  # after the hub's own
+        return h
+
+    def go(h: Any, **kw: Any) -> bool:
+        ag.run("o/r", 7, ag.LIVE, wait_min=0, poll_s=0, box=True, **kw)
+        return _brought_up(h)
+
+    assert go(hub())
+    assert not go(hub((False, "the head or the base could not be fetched")))
+    assert not go(hub(ref="zuck/hand-edit")) and not go(hub(draft=True))
+    assert not go(hub(runs=[{**r, "forged": True} for r in _auto_green()]))
+    h = hub()
+    h.merged_in = ag.BRING_UP_CAP
+    capsys.readouterr()
+    assert not go(h) and "RED BRING_UP_CAPPED #7" in capsys.readouterr().out
+    budget = [0]
+    assert not go(hub(), bring_ups=budget) and budget == [0]
+    budget = [1]
+    assert go(hub(), bring_ups=budget) and budget == [0]
+
+
+def test_a_refused_bring_up_leaves_the_pr_as_it_is(
+    auto_hub: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#552 audit SF6: a 422 (a conflict) is a False, and nothing else is written."""
+    h = auto_hub(runs=_auto_green())
+    inner = ag._gh
+
+    def gh(*args: str, data: Any = None) -> Any:
+        if args[0].endswith("/update-branch"):
+            raise RuntimeError("HTTP 422: merge conflict")
+        return inner(*args, data=data)
+
+    monkeypatch.setattr(ag, "_gh", gh)
+    assert ag.bring_up("o/r", 7, A) is False and h.writes == []
 
 
 @pytest.mark.parametrize(

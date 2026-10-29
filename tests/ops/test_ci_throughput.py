@@ -385,10 +385,15 @@ def test_the_box_sweep_skips_pending_prs_streams_and_stops_on_budget(
         raise AssertionError(path)
 
     ran: list[int] = []
+
+    def fake_run(repo: str, n: int, *a: Any, **k: Any) -> int:
+        ran.append(n)
+        return 0
+
     monkeypatch.setattr(ag, "_gh", gh)
-    monkeypatch.setattr(ag, "run", lambda repo, n, *a, **k: ran.append(n) or 0)
-    assert ag.sweep("o/r", ag.LIVE) == 0 and ran == [1, 3]
-    ticks = iter([0.0, 0.0, 10_000.0, 10_000.0])
+    monkeypatch.setattr(ag, "run", fake_run)
+    assert ag.sweep("o/r", ag.LIVE) == 0 and ran == [1, 3, 2]  # still running: last
+    ticks = iter([0.0] * 5 + [10_000.0] * 5)  # start, three pre-reads, one run, then out
     ran.clear()
     ag.sweep("o/r", ag.LIVE, budget_s=60, clock=lambda: next(ticks))
     assert ran == [1]
@@ -416,11 +421,11 @@ def test_one_manifest_row_per_task_and_the_watcher_has_an_independent_contract()
     assert '"desks/mt5/reports/MERGE_PIPELINE.json", 45' in oc
 
 
-def test_the_box_sweep_runs_merge_ready_prs_first_and_skips_failed_ones(
+def test_the_box_sweep_runs_merge_ready_prs_first_and_failed_ones_last(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Desk health 2026-10-29 20:20Z: in listing order, a green PR waited behind PRs that could
-    not merge. Every check green first, then gating green; a failed gating check is skipped."""
+    not merge. Every check green first, then gating green, then a failed gating check."""
     prs = [{"number": n, "head": {"sha": f"{n:040d}"}} for n in (1, 2, 3, 4)]
 
     def ok(j: str, c: str = "success") -> dict[str, Any]:
@@ -439,8 +444,18 @@ def test_the_box_sweep_runs_merge_ready_prs_first_and_skips_failed_ones(
         raise AssertionError(path)
 
     ran: list[int] = []
+    budgets: list[list[int]] = []
+
+    def fake_run(repo: str, n: int, *a: Any, **k: Any) -> int:
+        ran.append(n)
+        budgets.append(k["bring_ups"])
+        return 0
+
     monkeypatch.setattr(ag, "_gh", gh)
-    monkeypatch.setattr(ag, "run", lambda repo, n, *a, **k: ran.append(n) or 0)
-    assert ag.sweep("o/r", ag.LIVE) == 0 and ran == [3, 1, 4]
+    monkeypatch.setattr(ag, "run", fake_run)
+    # #552 audit SF4: a failed PR still gets its run (it quarantines and counts), last
+    assert ag.sweep("o/r", ag.LIVE) == 0 and ran == [3, 1, 4, 2]
+    # SF2: one bring-up budget for the whole pass
+    assert all(b is budgets[0] for b in budgets) and budgets[0] == [ag.BRING_UPS_PER_SWEEP]
     ps = (ROOT / "ops/box/workflow_gate.ps1").read_text(encoding="utf-8")
     assert "-cmatch ': MERGED \\('" in ps  # the count reads the gate's own word only
