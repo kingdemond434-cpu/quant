@@ -15,8 +15,9 @@ THE ORDER OF OPERATIONS IS THE RISK CONTROL (the E8 executor's, on the FTMO term
   1. THE ACCOUNT. The terminal must be the account data/FTMO_LIVE_ACCOUNT.json declares
      (`ftmo_follower.bound_account`), or the lane does nothing at all.
   2. MANAGEMENT FIRST. Every position this lane opened (MAGIC) is closed when its certified time
-     exit passes, or at once when the Fusion or E8 book shows the opposite side of its symbol (the
-     other lanes do not read an FTMO book, so this lane keeps the no-opposite rule both ways).
+     exit passes, or at once when the Fusion or E8 book shows the opposite side of its symbol. The
+     FTMO book is then PUBLISHED (data/xacct/ftmo_book.json, every pass, under the lock): the
+     gateway and the E8 executor refuse the opposite side of it (`cross_account.ftmo_block`).
   3. THE CLOCK. MT5 bars carry the server's wall clock; the certificates were judged on the
      broker clock (NY+7). The FTMO server's offset is measured off its own tick every pass and
      must equal that clock, or no signal is read (CLOCK_MISMATCH).
@@ -54,6 +55,7 @@ runs it every 5 minutes.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import math
 import re
@@ -394,6 +396,13 @@ def run(mt5: Any, *, armed: bool = False, now: datetime | None = None) -> dict[s
         manage(mt5, st, doc, own, cet=cet, armed=armed, now=now, server_epoch=server_epoch)
     except Exception as exc:                        # management never takes the pass down
         doc["manage_error"] = f"{type(exc).__name__}: {exc}"[:200]
+    # THE FTMO BOOK, FOR THE OTHER LANES' FENCE (zuck 2026-10-29: no account opposite another).
+    # Published every pass, armed or not, from a reading taken under the lock; a failure is
+    # recorded and the readers fail closed on its age while this lane is armed.
+    from mt5desk import cross_account as _xa
+    doc["book_published"] = _xa.publish_under_lock(
+        lambda: _xa.publish_mt5(mt5, source="ftmo_executor", account="ftmo"),
+        holder="ftmo_executor:pass") or "ok"
 
     from mt5desk.kelly_sizing import CERT_BOOK_FILE, load_cert_book
     cert = load_cert_book(CERT_BOOK_FILE, "ftmo")
@@ -754,15 +763,20 @@ def _send_locked(mt5: Any, st: dict[str, Any], doc: dict[str, Any], row: dict[st
         try:
             # BOUNDED UNDER THE LOCK, as the E8 executor's send: a hung call raises and is
             # recorded REJECTED (it may still have landed: the MAGIC history then holds the bar).
-            # No in-flight hold: no other lane reads an FTMO book yet (`cross_account.ACCOUNTS`
-            # has no "ftmo"), so a hold here would raise and send nothing.
+            # The symbol is held IN FLIGHT on the FTMO book first, so the gateway and the E8
+            # executor see both sides held until the send returns (or its hold expires).
             res = _xa.bounded(lambda: _send(mt5, st, req, cet=cet),
-                              what=f"ftmo_executor:{sym} send")
+                              what=f"ftmo_executor:{sym} send", account="ftmo", symbol=sym)
         except Exception as exc:
             row.update(status="REJECTED", why=f"{type(exc).__name__}: {exc}"[:200])
             doc["sleeves"].append(row)
             _record(row, now, True)
             return
+        finally:
+            with contextlib.suppress(Exception):     # the readers fail closed on its age
+                _xa.bounded(lambda: _xa.publish_mt5(mt5, source="ftmo_executor", account="ftmo"),
+                            timeout_s=_xa.LOCKED_PUBLISH_TIMEOUT_S,
+                            what="ftmo_executor publish")
         code = getattr(res, "retcode", None)
         row.update(status="SENT" if code in OK_CODES else "REJECTED", retcode=code,
                    order_id=getattr(res, "order", None),

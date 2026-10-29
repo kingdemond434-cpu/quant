@@ -387,3 +387,23 @@ def test_a_rail_journalled_under_its_own_status_is_billed_too(world, monkeypatch
     monkeypatch.setattr(mg, "FTMO_EXEC_INTENTS", Path(fx.INTENTS))
     line = mg.published_ftmo_executor_lines()["rails"]["venue_min_lot"]
     assert line["n"] == 1 and line["statuses"] == ["UNSIZEABLE"]
+
+
+def test_the_ftmo_book_is_published_for_the_other_lanes_fence(world, monkeypatch) -> None:
+    """zuck 2026-10-29: no account goes opposite another. The pass publishes the FTMO book every
+    pass, and the send holds its symbol in flight on it, so the gateway and the E8 executor
+    (`cross_account.ftmo_block`) see it before the send returns."""
+    from mt5desk import cross_account as xa
+    seen: dict[str, Any] = {"published": [], "inflight": []}
+    monkeypatch.setattr(xa, "publish_mt5", lambda mt5, *, source, account="fusion":
+                        seen["published"].append(account))
+    real_mark = xa.mark_inflight
+    monkeypatch.setattr(xa, "mark_inflight", lambda account, symbol, **k: (
+        seen["inflight"].append((account, symbol)), real_mark(account, symbol, **k))[1])
+    doc = fx.run(world.mt5, armed=True, now=NOW)
+    assert doc["book_published"] == "ok" and len(world.mt5.sent) == 1
+    assert seen["published"] == ["ftmo", "ftmo"]               # the pass, then after the send
+    assert seen["inflight"] == [("ftmo", "AUDNZD")]
+    fx.ALLOCATOR.unlink()
+    assert fx.run(world.mt5, armed=True, now=NOW)["status"] == "NO_BOOK"
+    assert seen["published"][-1] == "ftmo"                     # published with nothing to trade
