@@ -37,10 +37,22 @@ $RepoRoot = (Resolve-Path (Join-Path $DeskRoot '..\..')).Path
 $Script   = Join-Path $RepoRoot 'ops\box_self_heal.py'
 if (-not (Test-Path $Script)) { throw "box_self_heal.py missing at $Script" }
 
-if ($IfMissing -and (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue)) {
-    "{0}: already registered; -IfMissing leaves it exactly as it is" -f $TaskName
-    exit 0
-}
+# THE SYSTEM TASK RUNS AN ADMIN-ONLY COPY, NEVER THE REPO TREE (audit HOLD of 7a01c1b09). The repo
+# is writable by the non-elevated bridge and every cloud session; a SYSTEM task that executed a
+# file from it would run whatever was last written there with SYSTEM's rights. So this file and
+# the only two helpers it loads are copied into C:\ProgramData\QuantBox\bin, under
+# install_unattended.ps1's audited ACL (owned by Administrators/SYSTEM, no junction anywhere, no
+# ACE that grants anyone else more than read), and the task runs THAT copy. The installed copy
+# loads its helpers from beside itself only; the repo is just its working directory (where it
+# writes its report, ledger and state). Re-run this installer to deploy a new version.
+$Root   = 'C:\ProgramData\QuantBox'
+$BinDir = Join-Path $Root 'bin'
+$Copies = @(
+    @((Join-Path $RepoRoot 'ops\box_self_heal.py'),        'box_self_heal.py'),
+    @((Join-Path $RepoRoot 'ops\process_health.py'),       'process_health.py'),
+    @((Join-Path $RepoRoot 'libs\ops\alert_channels.py'),  'alert_channels.py')
+)
+$Installed = Join-Path $BinDir 'box_self_heal.py'
 
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -54,13 +66,59 @@ if (-not (Test-Path $Python)) {
 if ($LASTEXITCODE -ne 0) {
     "WARNING: psutil is not importable by $Python; the watchdog will report UNMEASURED (RED) and stop nothing until it is"
 }
+$adm = 'S-1-5-32-544'; $sys = 'S-1-5-18'; $usr = 'S-1-5-32-545'
+# THE ROOT IS ADMIN-ONLY FROM ITS FIRST BYTE (install_unattended.ps1's pattern, verbatim in effect):
+# a new root is created with its locked ACL in one call; an existing one that Administrators/SYSTEM
+# do not own is refused, never taken over; no junction is followed anywhere under it.
+if (-not (Test-Path -LiteralPath $Root)) {
+    $sec = New-Object System.Security.AccessControl.DirectorySecurity
+    $sec.SetAccessRuleProtection($true, $false)
+    $sec.SetOwner((New-Object System.Security.Principal.SecurityIdentifier $adm))
+    foreach ($ace in @(@($adm, 'FullControl'), @($sys, 'FullControl'), @($usr, 'ReadAndExecute'))) {
+        $sec.AddAccessRule((New-Object System.Security.AccessControl.FileSystemAccessRule(
+            (New-Object System.Security.Principal.SecurityIdentifier $ace[0]), $ace[1], 'ContainerInherit, ObjectInherit', 'None', 'Allow')))
+    }
+    $null = [System.IO.Directory]::CreateDirectory($Root, $sec)
+}
+$owner = (New-Object System.Security.Principal.NTAccount((Get-Acl -LiteralPath $Root).Owner)).Translate([System.Security.Principal.SecurityIdentifier]).Value
+if ($owner -notin @($adm, $sys)) { throw "$Root is owned by $owner, not Administrators/SYSTEM; delete it as an administrator and re-run" }
+foreach ($c in @(Get-Item -LiteralPath $Root -Force) + @(Get-ChildItem -LiteralPath $Root -Force -Recurse)) {
+    if ($c.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "$($c.FullName) is a junction or symlink; not installing" }
+}
+New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
+function Assert-AdminOnly {
+    foreach ($path in @($Root) + @(Get-ChildItem -LiteralPath $Root -Force -Recurse | ForEach-Object { $_.FullName })) {
+        foreach ($a in (Get-Acl -LiteralPath $path).Access | Where-Object { $_.AccessControlType -eq 'Allow' }) {
+            $sid = $a.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value
+            $write = [int64]$a.FileSystemRights -band ([int64][System.Security.AccessControl.FileSystemRights]"Write, Delete, ChangePermissions, TakeOwnership" -bor 0x50000000)
+            if ($sid -notin @($adm, $sys, $usr) -or ($sid -eq $usr -and $write -ne 0)) {
+                throw "$path grants $($a.IdentityReference) more than read; not installing"
+            }
+        }
+    }
+}
+Assert-AdminOnly
+foreach ($pair in $Copies) {
+    $src = $pair[0]; $dst = Join-Path $BinDir $pair[1]
+    if (-not (Test-Path -LiteralPath $src)) { throw "$($pair[1]) missing at $src" }
+    Remove-Item -LiteralPath $dst -Force -ErrorAction SilentlyContinue
+    Copy-Item -LiteralPath $src -Destination $dst
+    if ((Get-FileHash $dst -Algorithm SHA256).Hash -ne (Get-FileHash $src -Algorithm SHA256).Hash) {
+        throw "copy of $($pair[1]) does not match its source; not installing"
+    }
+    "copied {0} (sha256 {1})" -f $dst, (Get-FileHash $dst -Algorithm SHA256).Hash.ToLower().Substring(0, 12)
+}
+Assert-AdminOnly     # the copies inherit the root's ACL; proved, not assumed
+
 $LogDir = Join-Path $DeskRoot 'logs'
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir | Out-Null }
 $Log = Join-Path $LogDir 'Quant-BoxSelfHeal.log'
 
-# No arguments: the rule table is in the code, and the only flag it has is --dry-run.
+# No arguments: the rule table is in the code, and the only flag it has is --dry-run. The
+# INSTALLED copy, isolated (-I: no PYTHONPATH, no user site, no script-dir imports); the repo is
+# only the working directory, which is where the installed copy writes its report and state.
 $action = New-ScheduledTaskAction -Execute 'cmd.exe' -WorkingDirectory $RepoRoot -Argument `
-    ('/d /s /c ""{0}" -W ignore "{1}" >> "{2}" 2>&1"' -f $Python, $Script, $Log)
+    ('/d /s /c ""{0}" -I -W ignore "{1}" >> "{2}" 2>&1"' -f $Python, $Installed, $Log)
 
 # A DAILY trigger repeating every five minutes for one day, never a long -Once (one expired on
 # this box 2026-09-21 with Next Run Time N/A). Offset to :03 so it misses the :05/:12/:20 writers.
@@ -70,11 +128,15 @@ $trigger.Repetition = (New-ScheduledTaskTrigger -Once -At $at `
     -RepetitionInterval (New-TimeSpan -Minutes 5) `
     -RepetitionDuration (New-TimeSpan -Days 1)).Repetition
 
-# Four minutes: a pass is two schtasks queries and one process scan. A pass that takes longer is
-# itself the defect, and the report going stale is how desk health shows it (RED past 20 min).
+# FIFTEEN MINUTES, NOT FOUR (audit HOLD of 7a01c1b09). The scheduler kills a task at its limit
+# with no chance to run a `finally`, so a limit that can land inside a freeze leaves a tree
+# SUSPENDED -- a wedge this watchdog made. The worst pass is five 60 s schtasks calls (query,
+# end, end, end, run; schtasks has been measured hanging past two minutes on this box under
+# load), two 10 s kill waits and a 12 s-per-channel page: about 6.5 min. Fifteen is over twice
+# that, and still under the report's 20 min staleness, so a hung pass still reads RED.
 $settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
-    -ExecutionTimeLimit (New-TimeSpan -Minutes 4) -MultipleInstances IgnoreNew
+    -ExecutionTimeLimit (New-TimeSpan -Minutes 15) -MultipleInstances IgnoreNew
 
 $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
 
@@ -91,7 +153,7 @@ if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
 
 Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
     -Principal $principal -Settings $settings `
-    -Description "Closed self-heal table (ops\box_self_heal.py): a hung MT5-IndependenceIntake, a wedged or dead Quant-WorkflowGate only; never the terminal, the money path, the bridge or the miners. Every act and refusal is RED in reports\BOX_SELF_HEAL.json." | Out-Null
+    -Description "Closed self-heal table (C:\ProgramData\QuantBox\bin\box_self_heal.py, copied from ops\box_self_heal.py): a hung MT5-IndependenceIntake, a wedged or dead Quant-WorkflowGate only; never the terminal, the money path, the bridge or the miners. Every act and refusal is RED in reports\BOX_SELF_HEAL.json." | Out-Null
 
 $t = Get-ScheduledTask -TaskName $TaskName
 "installed {0}: state={1} user={2} interval={3}" -f $t.TaskName, $t.State, $t.Principal.UserId, $t.Triggers[0].Repetition.Interval

@@ -49,6 +49,18 @@ HEAVY = r"python.exe -W ignore C:\opt\quant\desks\mt5\research\pf_allocator.py -
 FAST = r"python.exe -W ignore C:\opt\quant\desks\mt5\research\pf_allocator.py --mode fast"
 INTAKE = (r'"C:\Program Files\Python314\python.exe" -W ignore '
           r"C:\opt\quant\desks\mt5\research\independence_intake.py --once --budget-s 600")
+INTAKE_CMD = (r'cmd.exe /d /s /c ""C:\Program Files\Python314\python.exe" -W ignore '
+              r'"C:\opt\quant\desks\mt5\research\independence_intake.py" --once --budget-s 600 '
+              r'>> "C:\opt\quant\desks\mt5\logs\IndependenceIntake.log" 2>&1"')
+
+
+def intake(pid: int = 3100, *, age_s: float = 96 * MIN, cpu: float = 3.0, ppid: int = 1,
+           cmd: str = INTAKE) -> list[bsh.Proc]:
+    """The intake as its task runs it: the task's cmd.exe, and the python under it."""
+    return [P(pid - 1, INTAKE_CMD, name="cmd.exe", ppid=ppid, age_s=age_s + 1, cpu=0.0),
+            P(pid, cmd, ppid=pid - 1, age_s=age_s, cpu=cpu)]
+
+
 GATE = (r"powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass "
         r'-File "C:\ProgramData\QuantBox\bin\workflow_gate.ps1"')
 GATE_PY = (r"python.exe -I -u C:\ProgramData\QuantBox\gate-repo\.github\scripts\audit_gate.py "
@@ -72,9 +84,12 @@ class FakeBox:
 
     def box(self) -> bsh.Box:
         def kill(p: bsh.Proc, procs: Sequence[bsh.Proc],
-                 allowed: frozenset[str] | None = None) -> dict[str, Any]:
+                 allowed: frozenset[str] | None = None,
+                 verify: Any = None) -> dict[str, Any]:
             self.killed.append(p.pid)
-            return {"ok": True, "killed": [p.pid]}
+            gone = {p.pid} | {d.pid for d in bsh.descendants(p.pid, self.table)}
+            self.table = [q for q in self.table if q.pid not in gone]
+            return {"ok": True, "target_gone": True, "killed": sorted(gone)}
 
         def end(t: str) -> dict[str, Any]:
             self.ended.append(t)
@@ -173,7 +188,7 @@ def test_money_terminal_bridge_and_miners_are_denied(cmd: str, name: str) -> Non
 
 def test_denial_beats_an_allowlist_match() -> None:
     """A gateway process that also names independence_intake.py is still never stopped."""
-    p = P(7, r"python.exe C:\opt\quant\desks\mt5\research\gateway.py independence_intake.py")
+    p = P(7, r"python.exe C:\gateway\desks\mt5\research\independence_intake.py --once")
     assert bsh.matches(bsh.RULE_BY_KEY["independence_intake"], p)
     assert bsh.allowlisted(p) is None
 
@@ -207,17 +222,16 @@ def test_the_deferred_lock_jobs_are_denied_whatever_else_matches(cmd: str) -> No
 
 
 def test_cpu_progress_vetoes_age(tmp_path: Path) -> None:
-    fb = FakeBox(tmp_path, [P(3100, INTAKE, age_s=96 * MIN, cpu=3.0)],
-                 running={"MT5-IndependenceIntake": True})
+    fb = FakeBox(tmp_path, intake(), running={"MT5-IndependenceIntake": True})
     _, second = two_passes(tmp_path, fb, cpu_after={3100: 400.0})
     assert fb.killed == [] and fb.ended == []
     assert rows(second, "independence_intake")[0]["verdict"] == "PROGRESSING"
 
 
 def test_child_cpu_counts_as_progress(tmp_path: Path) -> None:
-    fb = FakeBox(tmp_path, [P(3100, INTAKE, age_s=96 * MIN, cpu=3.0),
+    fb = FakeBox(tmp_path, [*intake(),
                             P(3101, "python.exe -c from multiprocessing.spawn import spawn_main",
-                              ppid=3100, cpu=5.0)],
+                              ppid=3100, age_s=90 * MIN, cpu=5.0)],
                  running={"MT5-IndependenceIntake": True})
     _, second = two_passes(tmp_path, fb, cpu_after={3101: 300.0})
     assert fb.killed == [] and fb.ended == []
@@ -225,7 +239,8 @@ def test_child_cpu_counts_as_progress(tmp_path: Path) -> None:
 
 
 def test_a_tree_with_a_denied_descendant_is_left_whole(tmp_path: Path) -> None:
-    tree = [*_gate_tree(), P(5, r"C:\MT5\terminal64.exe", name="terminal64.exe", ppid=8721)]
+    tree = [*_gate_tree(), P(5, r"C:\MT5\terminal64.exe", name="terminal64.exe", ppid=8721,
+                             age_s=10 * MIN)]
     fb = FakeBox(tmp_path, tree, beat_age_s=2 * 3600)
     _, second = two_passes(tmp_path, fb)
     assert fb.killed == [] and fb.ended == []
@@ -236,71 +251,142 @@ def test_a_target_under_a_denied_ancestor_is_never_cut_out(tmp_path: Path) -> No
     """An intake python whose ancestor is the gateway is part of a protected tree: refused."""
     tree = [P(900, r"python.exe C:\opt\quant\desks\mt5\research\gateway_resident.py",
               age_s=9 * 3600),
-            P(3100, INTAKE, ppid=900, age_s=96 * MIN, cpu=3.0)]
+            *intake(ppid=900)]
     fb = FakeBox(tmp_path, tree, running={"MT5-IndependenceIntake": True})
     _, second = two_passes(tmp_path, fb)
     assert fb.killed == []
     assert any(r.get("ancestor") == 900 for r in second["rows"])
 
 
-def test_the_real_stop_freezes_the_tree_before_killing_and_thaws_on_refusal(
-        monkeypatch: pytest.MonkeyPatch) -> None:
-    """Every member is suspended before any is killed; a denied late child resumes them all."""
-    log: list[str] = []
+class FakePs:
+    """A stand-in for psutil: a live table that suspend/resume/kill act on, with failures
+    injectable per process and per method. Nothing real is touched."""
 
-    class FP:
-        def __init__(self, pid: int, name: str, cmd: str, kids: list[FP] | None = None) -> None:
-            self.pid, self._name, self._cmd, self.kids = pid, name, cmd, kids or []
+    class NoSuchProcess(Exception):
+        pass
 
-        def create_time(self) -> float:
-            return NOW - 3600
+    class AccessDenied(Exception):
+        pass
 
-        def children(self, recursive: bool = False) -> list[FP]:
-            out: list[FP] = []
-            for k in self.kids:
-                out += [k, *k.children(recursive=True)]
-            return out
+    def __init__(self) -> None:
+        self.table: dict[int, FP] = {}
+        self.dead: set[int] = set()
+        self.log: list[str] = []
 
-        def name(self) -> str:
-            return self._name
+    def add(self, pid: int, name: str, cmd: str, *, parent: FP | None = None,
+            age_s: float = 3600.0, fail: dict[str, BaseException] | None = None) -> FP:
+        fp = FP(self, pid, name, cmd, parent.pid if parent else 0, NOW - age_s, fail or {})
+        self.table[pid] = fp
+        if parent is not None:
+            parent.kids.append(fp)
+        return fp
 
-        def cmdline(self) -> list[str]:
-            return self._cmd.split()
+    def Process(self, pid: int) -> FP:
+        if pid in self.dead or pid not in self.table:
+            raise self.NoSuchProcess(pid)
+        return self.table[pid]
 
-        def suspend(self) -> None:
-            log.append(f"suspend {self.pid}")
+    def wait_procs(self, procs: list[FP], timeout: float) -> tuple[list[FP], list[FP]]:
+        return ([p for p in procs if p.pid in self.dead],
+                [p for p in procs if p.pid not in self.dead])
 
-        def resume(self) -> None:
-            log.append(f"resume {self.pid}")
+    def suspended(self) -> set[int]:
+        """Pids suspended and neither resumed nor killed since."""
+        out: set[int] = set()
+        for x in self.log:
+            verb, pid = x.split()
+            if verb == "suspend":
+                out.add(int(pid))
+            else:
+                out.discard(int(pid))
+        return out
 
-        def kill(self) -> None:
-            log.append(f"kill {self.pid}")
 
-    import types
-    gh = FP(3, "gh.exe", GH_PULLS)
-    py = FP(2, "python.exe", GATE_PY, [gh])
-    root = FP(1, "powershell.exe", GATE, [py])
-    table = {1: root, 2: py, 3: gh}
-    fake = types.SimpleNamespace(
-        Process=lambda pid: table[pid], NoSuchProcess=LookupError, AccessDenied=PermissionError,
-        wait_procs=lambda procs, timeout: (procs, []))
+class FP:
+    def __init__(self, ps: FakePs, pid: int, name: str, cmd: str, ppid: int, ct: float,
+                 fail: dict[str, BaseException]) -> None:
+        self.ps, self.pid, self._name, self._cmd, self._ppid = ps, pid, name, cmd, ppid
+        self._ct, self.fail, self.kids = ct, fail, []
+
+    def _check(self, method: str) -> None:
+        if method in self.fail:
+            raise self.fail[method]
+        if self.pid in self.ps.dead:
+            raise self.ps.NoSuchProcess(self.pid)
+
+    def create_time(self) -> float:
+        self._check("create_time")
+        return self._ct
+
+    def ppid(self) -> int:
+        self._check("ppid")
+        return self._ppid
+
+    def name(self) -> str:
+        self._check("name")
+        return self._name
+
+    def cmdline(self) -> list[str]:
+        self._check("cmdline")
+        return bsh._argv(bsh.Proc(self.pid, 0, self._name, self._cmd, 0.0, 0.0))
+
+    def children(self, recursive: bool = False) -> list[FP]:
+        self._check("children")
+        out: list[FP] = []
+        for k in self.kids:
+            if k.pid in self.ps.dead:
+                continue
+            out += [k, *(k.children(recursive=True) if recursive else [])]
+        return out
+
+    def suspend(self) -> None:
+        self._check("suspend")
+        self.ps.log.append(f"suspend {self.pid}")
+
+    def resume(self) -> None:
+        if "resume" in self.fail:
+            raise self.fail["resume"]
+        self.ps.log.append(f"resume {self.pid}")
+
+    def kill(self) -> None:
+        self._check("kill")
+        self.ps.log.append(f"kill {self.pid}")
+        self.ps.dead.add(self.pid)
+
+
+@pytest.fixture
+def ps(monkeypatch: pytest.MonkeyPatch) -> FakePs:
+    fake = FakePs()
     monkeypatch.setitem(sys.modules, "psutil", fake)
-    target = bsh.Proc(1, 0, "powershell.exe", GATE, NOW - 3600, 0.0)
+    return fake
+
+
+def _gate_fp(ps: FakePs, **fail: dict[str, BaseException]) -> tuple[FP, FP, FP, bsh.Proc]:
+    root = ps.add(1, "powershell.exe", GATE, age_s=3600, fail=fail.get("root"))
+    py = ps.add(2, "python.exe", GATE_PY, parent=root, age_s=3500, fail=fail.get("py"))
+    gh = ps.add(3, "gh.exe", GH_PULLS, parent=py, age_s=3400, fail=fail.get("gh"))
+    return root, py, gh, bsh.Proc(1, 0, "powershell.exe", GATE, NOW - 3600, 0.0)
+
+
+def test_the_real_stop_freezes_the_tree_before_killing_and_thaws_on_refusal(ps: FakePs) -> None:
+    """Every member is suspended before any is killed; a denied late child resumes them all."""
+    _root, _py, gh, target = _gate_fp(ps)
     res = bsh._kill_tree(target, [], bsh.GATE_CHILD_IMAGES)
-    assert res["ok"] and res["frozen_first"]
-    first_kill = next(i for i, x in enumerate(log) if x.startswith("kill"))
-    assert set(log[:first_kill]) == {"suspend 1", "suspend 2", "suspend 3"}
-    assert log[first_kill:] == ["kill 3", "kill 2", "kill 1"], "deepest first, target last"
-    log.clear()
-    gh.kids = [FP(4, "terminal64.exe", r"C:\MT5\terminal64.exe")]
+    assert res["ok"] and res["frozen_first"] and res["target_gone"]
+    first_kill = next(i for i, x in enumerate(ps.log) if x.startswith("kill"))
+    assert set(ps.log[:first_kill]) == {"suspend 1", "suspend 2", "suspend 3"}
+    assert ps.log[first_kill:] == ["kill 3", "kill 2", "kill 1"], "deepest first, target last"
+    ps2 = FakePs()
+    sys.modules["psutil"] = ps2  # type: ignore[assignment]
+    _root, _py, gh, target = _gate_fp(ps2)
+    ps2.add(4, "terminal64.exe", r"C:\MT5\terminal64.exe", parent=gh, age_s=60)
     res = bsh._kill_tree(target, [], bsh.GATE_CHILD_IMAGES)
-    assert not res["ok"] and not any(x.startswith("kill") for x in log)
-    assert {x for x in log if x.startswith("resume")} == {"resume 1", "resume 2", "resume 3",
-                                                          "resume 4"}
+    assert not res["ok"] and not any(x.startswith("kill") for x in ps2.log)
+    assert ps2.suspended() == set()
 
 
 def test_dry_run_decides_but_never_acts(tmp_path: Path) -> None:
-    fb = FakeBox(tmp_path, [P(3100, INTAKE, age_s=96 * MIN, cpu=3.0)],
+    fb = FakeBox(tmp_path, intake(),
                  running={"MT5-IndependenceIntake": True}, beat_age_s=3 * 3600)
     _, second = two_passes(tmp_path, fb, apply=False)
     assert fb.killed == [] and fb.ended == [] and fb.started == []
@@ -310,17 +396,18 @@ def test_dry_run_decides_but_never_acts(tmp_path: Path) -> None:
 
 # ------------------------------------------------------------------------------- task rule
 def test_independence_intake_hung_past_its_limit_is_ended(tmp_path: Path) -> None:
-    fb = FakeBox(tmp_path, [P(3100, INTAKE, age_s=96 * MIN, cpu=3.0)],
+    fb = FakeBox(tmp_path, intake(),
                  running={"MT5-IndependenceIntake": True})
     _, second = two_passes(tmp_path, fb)
     assert fb.ended == ["MT5-IndependenceIntake"]
-    assert rows(second, "independence_intake")[0]["verdict"] == "ENDED"
+    assert [r["verdict"] for r in rows(second, "independence_intake")][:2] == ["ATTEMPT",
+                                                                                "ENDED"]
     # the process survived /End in the fake table, so its tree is stopped too
     assert fb.killed == [3100]
 
 
 def test_independence_intake_within_its_limit_is_left_alone(tmp_path: Path) -> None:
-    fb = FakeBox(tmp_path, [P(3100, INTAKE, age_s=10 * MIN, cpu=3.0)],
+    fb = FakeBox(tmp_path, intake(age_s=10 * MIN),
                  running={"MT5-IndependenceIntake": True})
     two_passes(tmp_path, fb)
     assert fb.ended == [] and fb.killed == []
@@ -350,7 +437,8 @@ def test_a_wedged_gate_run_is_stopped_and_its_task_ended(tmp_path: Path) -> None
 
 
 def test_a_gate_tree_holding_anything_but_gh_git_python_is_refused(tmp_path: Path) -> None:
-    tree = [*_gate_tree(), P(9000, "notepad.exe x", name="notepad.exe", ppid=8720)]
+    tree = [*_gate_tree(), P(9000, "notepad.exe x", name="notepad.exe", ppid=8720,
+                              age_s=10 * MIN)]
     fb = FakeBox(tmp_path, tree, beat_age_s=2 * 3600)
     _, second = two_passes(tmp_path, fb)
     assert fb.killed == [] and fb.ended == []
@@ -456,7 +544,7 @@ def test_it_pages_when_it_acts_and_once_a_day_when_it_gives_up(tmp_path: Path) -
         bsh.run(box=fb.box(), now=t, **kw)
     assert len(sent) == 4
     bsh.run(box=fb.box(), now=t + 3600, **kw)                  # the cap: one give-up page
-    assert len(sent) == 5 and "restarts already today" in sent[-1][1]
+    assert len(sent) == 5 and "attempts already today" in sent[-1][1]
     bsh.run(box=fb.box(), now=t + 7200, **kw)                  # ...and not again today
     assert len(sent) == 5
     bsh.run(apply=False, box=fb.box(), now=base + 24 * 3600, **kw)   # a dry run never pages
@@ -497,9 +585,9 @@ def test_an_unreadable_process_table_is_red_and_acts_on_nothing(tmp_path: Path) 
 
 
 def test_the_watchdog_never_stops_itself(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    me = P(31337, INTAKE, age_s=96 * MIN, cpu=1.0)
+    me = intake(31337, cpu=1.0)
     monkeypatch.setattr(bsh.os, "getpid", lambda: 31337)
-    fb = FakeBox(tmp_path, [me], running={"MT5-IndependenceIntake": True})
+    fb = FakeBox(tmp_path, me, running={"MT5-IndependenceIntake": True})
     two_passes(tmp_path, fb)
     assert 31337 not in fb.killed
 
@@ -550,3 +638,442 @@ def test_desk_health_is_red_when_the_watchdog_is_stale_absent_or_acted(
     dh.check_box_self_heal(path, now)
     levels = {f["level"] for f in dh._FINDINGS}
     assert (expect in levels) and (expect != "OK" or "PROBLEM" not in levels)
+
+
+# =============================================================================================
+# REGRESSIONS FOR THE AUDIT HOLD OF 7a01c1b09. Each failed against that head.
+# =============================================================================================
+def _kw(tmp: Path, **extra: Any) -> dict[str, Any]:
+    return {"report": tmp / "r.json", "ledger": tmp / "l.jsonl", "state": tmp / "s.json",
+            **extra}
+
+
+# --- MUST-FIX 1: the thaw is unconditional, and the freeze window is short ------------------
+@pytest.mark.parametrize("who,method,exc", [
+    ("gh", "suspend", OSError(299, "Only part of a ReadProcessMemory request was completed")),
+    ("gh", "cmdline", RuntimeError("cmdline() read a half-built PEB")),
+    ("gh", "name", RuntimeError("name() failed")),
+    ("py", "children", OSError(299, "WinError 299")),
+    ("gh", "kill", OSError(5, "kill refused")),
+    ("gh", "create_time", ValueError("odd")),
+])
+def test_any_exception_mid_stop_resumes_every_process_it_froze(
+        ps: FakePs, who: str, method: str, exc: BaseException) -> None:
+    _root, _py, _gh, target = _gate_fp(ps, **{who: {method: exc}})
+    res = bsh._kill_tree(target, [], bsh.GATE_CHILD_IMAGES)
+    assert res["ok"] is False and res["target_gone"] is False
+    assert ps.suspended() == set(), f"left suspended: {ps.suspended()} ({ps.log})"
+    assert 1 not in ps.dead, "the target is never killed after a failure"
+
+
+def test_a_freeze_that_overruns_its_window_resumes_and_stops_nothing(ps: FakePs) -> None:
+    _gate_fp(ps)
+    target = bsh.Proc(1, 0, "powershell.exe", GATE, NOW - 3600, 0.0)
+    ticks = iter([0.0, 0.0, bsh.FREEZE_MAX_S + 1, bsh.FREEZE_MAX_S + 2, 99.0, 99.0])
+    res = bsh._kill_tree(target, [], bsh.GATE_CHILD_IMAGES, None, clock=lambda: next(ticks))
+    assert not res["ok"] and "freeze took over" in res["why"]
+    assert ps.suspended() == set() and not ps.dead
+
+
+def test_the_task_limit_is_far_above_a_passes_worst_case() -> None:
+    """A SYSTEM task killed at its limit mid-freeze leaves the tree suspended, so the limit is at
+    least twice the worst case: five schtasks calls, two 10 s waits, one page."""
+    src = (ROOT / "desks" / "mt5" / "scripts" / "install_box_self_heal_task.ps1").read_text("utf-8")
+    m = __import__("re").search(r"-ExecutionTimeLimit \(New-TimeSpan -Minutes (\d+)\)", src)
+    assert m, "the installer names its ExecutionTimeLimit in minutes"
+    worst = 5 * bsh.SCHTASKS_TIMEOUT_S + 2 * 10 + 60
+    assert int(m.group(1)) * 60 >= 2 * worst
+    assert int(m.group(1)) * 60 < bsh.STALE_AFTER_S, "a hung pass still reads stale"
+    assert bsh.FREEZE_MAX_S <= 10
+
+
+# --- MUST-FIX 2: a recycled ppid never pulls a stranger into a tree ---------------------------
+SUPERVISOR = r"python.exe C:\opt\quant\desks\mt5\research\research_supervisor.py --resident"
+
+
+def test_descendants_and_ancestors_require_a_child_to_be_younger_than_its_parent() -> None:
+    gate = P(8720, GATE, name="powershell.exe", age_s=10 * MIN)
+    stranger = P(8800, SUPERVISOR, ppid=8720, age_s=9 * 3600)        # its real parent died
+    kid = P(8721, GATE_PY, ppid=8720, age_s=9 * MIN)
+    grandkid_of_stranger = P(8801, GH_PULLS, name="gh.exe", ppid=8800, age_s=MIN)
+    table = [gate, stranger, kid, grandkid_of_stranger]
+    assert {p.pid for p in bsh.descendants(8720, table)} == {8721}
+    assert bsh.ancestors(8800, table) == set(), "a NEWER process is never an ancestor"
+    assert bsh.ancestors(8721, table) == {8720}
+
+
+def test_a_stranger_with_a_recycled_gate_ppid_is_never_stopped_as_an_orphan(
+        tmp_path: Path) -> None:
+    """research_supervisor was STOPPED: its stale ppid named a later gate run, so the gate tree
+    took it in, and when that run ended it read as the gate's orphan."""
+    fb = FakeBox(tmp_path, [P(8720, GATE, name="powershell.exe", age_s=10 * MIN, cpu=4.0),
+                            P(8800, SUPERVISOR, ppid=8720, age_s=9 * 3600, cpu=1.0)],
+                 beat_age_s=60)
+    kw = _kw(tmp_path)
+    bsh.run(box=fb.box(), now=NOW, **kw)
+    fb.table = [p for p in fb.table if p.pid == 8800]                # the gate run ended
+    for k in range(1, 4):
+        bsh.run(box=fb.box(), now=NOW + k * 5 * MIN, **kw)
+    assert fb.killed == []
+    assert "8800" not in json.dumps(json.loads((tmp_path / "s.json").read_text())["gate_tree"])
+
+
+def test_a_live_child_older_than_the_target_is_neither_frozen_nor_killed(ps: FakePs) -> None:
+    root, _py, _gh, target = _gate_fp(ps)
+    old = ps.add(9, "python.exe", SUPERVISOR, parent=root, age_s=9 * 3600)
+    res = bsh._kill_tree(target, [], bsh.GATE_CHILD_IMAGES)
+    assert res["ok"]
+    assert old.pid not in ps.dead and f"suspend {old.pid}" not in ps.log
+
+
+# --- MUST-FIX 3: what cannot be read is never touched; the target is re-read live -------------
+@pytest.mark.parametrize("name,cmd", [("python.exe", ""), ("", INTAKE), ("gh.exe", "   ")])
+def test_an_unreadable_command_line_or_image_is_denied(name: str, cmd: str) -> None:
+    assert bsh.denied(P(1, cmd, name=name))
+    assert bsh.allowlisted(P(1, cmd, name=name)) is None
+
+
+def test_a_gate_tree_with_an_unreadable_descendant_is_left_whole(tmp_path: Path) -> None:
+    tree = [*_gate_tree(), P(14605, "", name="gh.exe", ppid=8721, age_s=MIN)]
+    fb = FakeBox(tmp_path, tree, beat_age_s=2 * 3600)
+    _, second = two_passes(tmp_path, fb)
+    assert fb.killed == [] and fb.ended == []
+    assert "unidentifiable" in rows(second, "workflow_gate")[0]["why"]
+
+
+def test_a_target_under_an_unreadable_ancestor_is_refused(tmp_path: Path) -> None:
+    tree = [P(900, "", name="python.exe", age_s=9 * 3600), *_gate_tree()]
+    tree[1] = P(8720, GATE, name="powershell.exe", ppid=900, age_s=2 * 3600, cpu=4.0)
+    fb = FakeBox(tmp_path, tree, beat_age_s=2 * 3600)
+    _, second = two_passes(tmp_path, fb)
+    assert fb.killed == []
+    assert any(r.get("ancestor") == 900 for r in second["rows"])
+
+
+def test_the_target_is_re_read_live_before_anything_is_frozen(ps: FakePs) -> None:
+    """The table said gate; the live process now reads as something denied: refused untouched."""
+    ps.add(1, "powershell.exe", r"powershell.exe -File C:\opt\quant\ops\bridge\bridge_watchdog.ps1")
+    target = bsh.Proc(1, 0, "powershell.exe", GATE, NOW - 3600, 0.0)
+    res = bsh._kill_tree(target, [], bsh.GATE_CHILD_IMAGES)
+    assert not res["ok"] and ps.log == []
+
+
+def test_an_unreadable_live_target_is_refused(ps: FakePs) -> None:
+    ps.add(1, "powershell.exe", GATE, fail={"cmdline": ps.AccessDenied(1)})
+    target = bsh.Proc(1, 0, "powershell.exe", GATE, NOW - 3600, 0.0)
+    res = bsh._kill_tree(target, [], bsh.GATE_CHILD_IMAGES)
+    assert not res["ok"] and ps.log == []
+
+
+def test_the_live_target_must_still_match_its_rule(ps: FakePs) -> None:
+    ps.add(1, "powershell.exe", r"powershell.exe -File C:\Users\x\other.ps1")
+    target = bsh.Proc(1, 0, "powershell.exe", GATE, NOW - 3600, 0.0)
+    rule = bsh.RULE_BY_KEY["workflow_gate"]
+    res = bsh._kill_tree(target, [], bsh.GATE_CHILD_IMAGES,
+                         lambda q: None if bsh.matches(rule, q) else "not the gate")
+    assert not res["ok"] and "not the gate" in res["why"] and ps.log == []
+
+
+# --- MUST-FIX 4: the intake is its exact script argument with --once, under its task --------
+@pytest.mark.parametrize("cmd", [
+    r"python.exe -m pytest desks\mt5\tests\test_independence_intake.py -q",
+    r"python.exe -m pytest -k independence_intake.py --once",
+    r"python.exe C:\opt\quant\scripts\check.py desks\mt5\research\independence_intake.py --once",
+    r"python.exe C:\opt\quant\desks\mt5\research\independence_intake.py --budget-s 600",
+    r"python.exe C:\opt\quant\desks\mt5\research\independence_intake.py.bak --once",
+    r"python.exe C:\opt\quant\desks\mt5\research\old_independence_intake.py --once",
+    r"python.exe -c import independence_intake.py --once",
+])
+def test_only_the_intake_script_itself_with_once_matches(cmd: str) -> None:
+    assert not bsh.matches(bsh.RULE_BY_KEY["independence_intake"], P(1, cmd))
+
+
+def test_the_installed_intake_command_line_matches() -> None:
+    rule = bsh.RULE_BY_KEY["independence_intake"]
+    assert bsh.matches(rule, P(1, INTAKE))
+    assert bsh.matches(rule, P(1, r"py.exe -I -u desks/mt5/research/independence_intake.py --once"))
+    argv = ("C:\\Program Files\\Python314\\python.exe", "-W", "ignore",
+            "C:\\opt\\quant\\desks\\mt5\\research\\independence_intake.py", "--once")
+    assert bsh.matches(rule, bsh.Proc(1, 0, "python.exe", " ".join(argv), 0.0, 0.0, argv))
+
+
+def test_a_pytest_run_naming_the_intake_is_never_stopped(tmp_path: Path) -> None:
+    py = P(3100, r"python.exe -m pytest desks\mt5\tests\test_independence_intake.py "
+                 r"desks\mt5\research\independence_intake.py --once", age_s=96 * MIN, cpu=3.0)
+    fb = FakeBox(tmp_path, [py], running={"MT5-IndependenceIntake": True})
+    two_passes(tmp_path, fb)
+    assert fb.killed == []
+
+
+def test_an_intake_not_under_its_tasks_cmd_is_never_stopped(tmp_path: Path) -> None:
+    """A hand run (an operator's powershell, an agent's shell) is not the task's run."""
+    fb = FakeBox(tmp_path, [P(3099, "powershell.exe -NoExit", name="powershell.exe",
+                              age_s=2 * 3600),
+                            P(3100, INTAKE, ppid=3099, age_s=96 * MIN, cpu=3.0)],
+                 running={"MT5-IndependenceIntake": True})
+    two_passes(tmp_path, fb)
+    assert fb.killed == []
+
+
+# --- MUST-FIX 5: the gate is exactly -File C:\ProgramData\QuantBox\bin\workflow_gate.ps1 ------
+@pytest.mark.parametrize("cmd,want", [
+    (GATE, True),
+    (r'pwsh.exe -NoProfile -file "c:\programdata\QUANTBOX\bin\workflow_gate.ps1"', True),
+    (r"powershell.exe -File C:/ProgramData/QuantBox/bin/./workflow_gate.ps1", True),
+    (r"powershell.exe -File C:\Users\Administrator\workflow_gate.ps1", False),
+    (r"powershell.exe -File C:\ProgramData\QuantBox\bin\workflow_gate.ps1.bak", False),
+    (r'powershell.exe -Command "& C:\ProgramData\QuantBox\bin\workflow_gate.ps1"', False),
+    (r"powershell.exe Get-Content C:\ProgramData\QuantBox\bin\workflow_gate.ps1", False),
+    (r"powershell.exe -File C:\opt\quant\ops\box\workflow_gate.ps1", False),
+    (r"powershell.exe -File", False),
+])
+def test_the_gate_identity_is_the_exact_file_argument(cmd: str, want: bool) -> None:
+    assert bsh.matches(bsh.RULE_BY_KEY["workflow_gate"], P(1, cmd, name="powershell.exe")) is want
+
+
+# --- MUST-FIX 6: every attempt counts, failed or not; a repeated failure pages once a day ----
+def _dead_gate(tmp: Path, base: float) -> FakeBox:
+    fb = FakeBox(tmp, [], beat_age_s=None)
+    fb.beat.write_text(json.dumps({"at": datetime.fromtimestamp(base - 6 * 3600, tz=UTC)
+                                   .isoformat(), "rc": 1}), "utf-8")
+    return fb
+
+
+def test_a_failed_start_is_an_attempt_under_the_backoff_and_the_cap(tmp_path: Path) -> None:
+    base = datetime(2026, 10, 29, 0, 30, tzinfo=UTC).timestamp()
+    fb = _dead_gate(tmp_path, base)
+    calls: list[float] = []
+    box = fb.box()
+    box.run_task = lambda t: (calls.append(1), {"rc": 1, "out": "access denied"})[1]
+    sent: list[str] = []
+    kw = _kw(tmp_path, alert=lambda t, b: sent.append(b))
+    for k in range(0, 24 * 12 - 6):                       # every 5 minutes, the whole UTC day
+        bsh.run(box=box, now=base + k * 5 * MIN, **kw)
+    assert len(calls) == bsh.MAX_RESTARTS_PER_DAY == 4
+    assert sum("START_FAILED" in b for b in sent) == 1, "a repeated failure pages once a day"
+    assert sum("attempts already today" in b for b in sent) == 1
+
+
+def test_a_failed_stop_is_an_attempt_and_is_not_retried_every_pass(tmp_path: Path) -> None:
+    fb = FakeBox(tmp_path, _gate_tree(), running={"Quant-WorkflowGate": True}, beat_age_s=60)
+    box = fb.box()
+    tries: list[int] = []
+    box.kill = lambda p, t, a=None, v=None: (tries.append(p.pid),
+                                             {"ok": False, "target_gone": False})[1]
+    kw = _kw(tmp_path)
+    for k in range(8):                                    # 40 minutes of passes
+        bsh.run(box=box, now=NOW + k * 5 * MIN, **kw)
+    assert tries == [8720, 8720], "once, then again only after the 30 min backoff"
+    assert fb.ended == [], "the gate task is never /Ended while its run is alive"
+
+
+def test_a_failed_end_is_an_attempt(tmp_path: Path) -> None:
+    fb = FakeBox(tmp_path, [], running={"MT5-IndependenceIntake": True})
+    box = fb.box()
+    ends: list[str] = []
+    box.end_task = lambda t: (ends.append(t), {"rc": 1})[1]
+    kw = _kw(tmp_path)
+    for k in range(6):
+        bsh.run(box=box, now=NOW + k * 5 * MIN, **kw)
+    assert ends == ["MT5-IndependenceIntake"]
+
+
+# --- MUST-FIX 7: the attempt is durable before the action; a lost history fails closed --------
+def test_the_attempt_is_on_disk_before_the_run(tmp_path: Path) -> None:
+    base = datetime(2026, 10, 29, 0, 30, tzinfo=UTC).timestamp()
+    fb = _dead_gate(tmp_path, base)
+    box = fb.box()
+    seen: dict[str, Any] = {}
+
+    def run_task(t: str) -> dict[str, Any]:
+        seen["state"] = json.loads((tmp_path / "s.json").read_text())
+        seen["ledger"] = (tmp_path / "l.jsonl").read_text()
+        return {"rc": 0}
+
+    box.run_task = run_task
+    bsh.run(box=box, now=base, **_kw(tmp_path))
+    assert seen["state"]["attempts"]["workflow_gate_restart"] == [base]
+    assert '"ATTEMPT"' in seen["ledger"]
+
+
+def test_a_corrupt_state_rebuilds_the_attempts_from_the_ledger(tmp_path: Path) -> None:
+    base = datetime(2026, 10, 29, 0, 30, tzinfo=UTC).timestamp()
+    fb = _dead_gate(tmp_path, base)
+    kw = _kw(tmp_path)
+    t = base
+    for wait in (0, 30 * MIN + 1, 60 * MIN + 1, 120 * MIN + 1):
+        t += wait
+        bsh.run(box=fb.box(), now=t, **kw)
+    assert len(fb.started) == 4
+    (tmp_path / "s.json").write_text("{torn", "utf-8")
+    doc = bsh.run(box=fb.box(), now=t + 6 * 3600, **kw)
+    assert len(fb.started) == 4, "the cap survives a corrupt state"
+    assert doc["attempt_history"] == "ledger"
+    (tmp_path / "s.json").write_text("[]", "utf-8")            # valid JSON, not a state
+    bsh.run(box=fb.box(), now=t + 7 * 3600, **kw)
+    assert len(fb.started) == 4
+
+
+def test_an_absent_state_also_rebuilds_from_the_ledger(tmp_path: Path) -> None:
+    base = datetime(2026, 10, 29, 0, 30, tzinfo=UTC).timestamp()
+    fb = _dead_gate(tmp_path, base)
+    kw = _kw(tmp_path)
+    bsh.run(box=fb.box(), now=base, **kw)
+    (tmp_path / "s.json").replace(tmp_path / "gone.json")
+    bsh.run(box=fb.box(), now=base + 10 * MIN, **kw)
+    assert len(fb.started) == 1, "the backoff survives a deleted state"
+
+
+def test_an_unreadable_state_and_ledger_act_on_nothing_and_page_once(tmp_path: Path) -> None:
+    base = datetime(2026, 10, 29, 0, 30, tzinfo=UTC).timestamp()
+    fb = FakeBox(tmp_path, _gate_tree(), running={"Quant-WorkflowGate": True},
+                 beat_age_s=None)
+    fb.beat.write_text(json.dumps({"at": datetime.fromtimestamp(base - 6 * 3600, tz=UTC)
+                                   .isoformat(), "rc": 1}), "utf-8")
+    (tmp_path / "s.json").write_text("{torn", "utf-8")
+    (tmp_path / "l.jsonl").write_text('{"ok": 1}\nnot json\n{"ok": 2}\n', "utf-8")
+    sent: list[str] = []
+    kw = _kw(tmp_path, alert=lambda t, b: sent.append(b))
+    docs = [bsh.run(box=fb.box(), now=base + k * 5 * MIN, **kw) for k in range(6)]
+    assert fb.killed == [] and fb.ended == [] and fb.started == []
+    assert len(sent) == 1 and "unreadable" in sent[0]
+    assert all(d["attempt_history"] == "UNREADABLE" for d in docs)
+
+
+def test_an_attempt_that_cannot_be_recorded_is_not_made(tmp_path: Path,
+                                                        monkeypatch: pytest.MonkeyPatch) -> None:
+    base = datetime(2026, 10, 29, 0, 30, tzinfo=UTC).timestamp()
+    fb = _dead_gate(tmp_path, base)
+
+    def no(*a: Any, **k: Any) -> None:
+        raise OSError(28, "No space left on device")
+
+    real_write = bsh._write_json
+    monkeypatch.setattr(bsh, "_append_ledger", no)
+    monkeypatch.setattr(bsh, "_write_json",
+                        lambda path, doc: no() if path.name == "s.json" else real_write(path, doc))
+    doc = bsh.run(box=fb.box(), now=base, **_kw(tmp_path))
+    assert fb.started == [] and fb.ended == []
+    assert any("could not be recorded" in r["why"] for r in doc["rows"])
+
+
+# --- SHOULD-FIX ------------------------------------------------------------------------------
+def test_a_denied_live_child_is_seen_before_anything_is_frozen(ps: FakePs) -> None:
+    _root, _py, gh, target = _gate_fp(ps)
+    ps.add(4, "terminal64.exe", r"C:\MT5\terminal64.exe", parent=gh, age_s=60)
+    res = bsh._kill_tree(target, [], bsh.GATE_CHILD_IMAGES)
+    assert not res["ok"] and ps.log == [], "nothing is suspended when a denied child is visible"
+
+
+def test_a_vanished_child_never_reports_a_live_target_stopped(ps: FakePs) -> None:
+    _gate_fp(ps, gh={"name": FakePs.NoSuchProcess(3)})
+    target = bsh.Proc(1, 0, "powershell.exe", GATE, NOW - 3600, 0.0)
+    res = bsh._kill_tree(target, [], bsh.GATE_CHILD_IMAGES)
+    assert res["ok"] is False and res["target_gone"] is False
+    assert ps.suspended() == set() and 1 not in ps.dead
+
+
+def test_a_target_still_alive_after_the_kill_is_stop_failed_and_the_gate_not_ended(
+        tmp_path: Path) -> None:
+    fb = FakeBox(tmp_path, _gate_tree(), running={"Quant-WorkflowGate": True}, beat_age_s=60)
+    box = fb.box()
+    box.kill = lambda p, t, a=None, v=None: {"ok": True, "target_gone": True}   # but it is not
+    _, second = (bsh.run(box=box, now=NOW, **_kw(tmp_path)),
+                 bsh.run(box=box, now=NOW + 5 * MIN, **_kw(tmp_path)))
+    assert "STOP_FAILED" in [r["verdict"] for r in rows(second, "workflow_gate")]
+    assert fb.ended == []
+
+
+def test_an_exiting_child_is_progress_not_a_stall(tmp_path: Path) -> None:
+    tree = [*_gate_tree(), P(14700, "git.exe fetch", name="git.exe", ppid=8721, age_s=MIN,
+                             cpu=50.0)]
+    fb = FakeBox(tmp_path, tree, running={"Quant-WorkflowGate": True}, beat_age_s=60)
+    kw = _kw(tmp_path)
+    bsh.run(box=fb.box(), now=NOW, **kw)
+    fb.table = [p for p in fb.table if p.pid != 14700]       # git finished: -50 s of tree cpu
+    doc = bsh.run(box=fb.box(), now=NOW + 5 * MIN, **kw)
+    assert fb.killed == []
+    assert rows(doc, "workflow_gate")[0]["verdict"] == "PROGRESSING"
+
+
+@pytest.mark.parametrize("cmd", [
+    r"python.exe C:\opt\quant\desks\mt5\research\promoter.py --reconcile",
+    r"python.exe C:\opt\quant\desks\mt5\research\shadow_forward.py",
+    r"python.exe C:\opt\quant\desks\mt5\research\scalp_shadow.py",
+    r"python.exe C:\opt\quant\desks\mt5\scripts\certifier_launcher.py",
+    r"python.exe C:\opt\quant\desks\mt5\research\hourly_cycle.py",
+])
+def test_the_research_organs_other_owners_run_are_denied(cmd: str) -> None:
+    assert bsh.denied(P(1, cmd))
+
+
+def test_a_gate_tree_using_the_credential_manager_and_sh_is_still_a_gate_tree(
+        tmp_path: Path) -> None:
+    tree = [*_gate_tree(),
+            P(14610, "git.exe fetch", name="git.exe", ppid=8721, age_s=MIN, cpu=0.1),
+            P(14611, "git-credential-manager.exe get", name="git-credential-manager.exe",
+              ppid=14610, age_s=MIN, cpu=0.1),
+            P(14612, "sh.exe -c hook", name="sh.exe", ppid=14610, age_s=MIN, cpu=0.1)]
+    fb = FakeBox(tmp_path, tree, running={"Quant-WorkflowGate": True}, beat_age_s=60)
+    two_passes(tmp_path, fb)
+    assert fb.killed == [8720] and fb.ended == ["Quant-WorkflowGate"]
+
+
+def test_an_intake_stop_publishes_a_two_sided_missed_growth_line(tmp_path: Path) -> None:
+    fb = FakeBox(tmp_path, intake(), running={"MT5-IndependenceIntake": True})
+    _, second = two_passes(tmp_path, fb)
+    lines = second["missed_growth"]
+    assert len(lines) == 1
+    line = lines[0]
+    assert line["rail"] == "box_self_heal_intake_stop" and line["verdict"] == "UNMEASURED"
+    assert line["cost"]["intake_wall_s_discarded"] == pytest.approx(96 * MIN + 5 * MIN)
+    assert line["benefit"]["slot_s_freed_past_budget"] > 0
+    third = bsh.run(box=fb.box(), now=NOW + 10 * MIN, **_kw(tmp_path))
+    assert len(third["missed_growth"]) == 1, "the history persists, one line per stop"
+
+
+def test_the_installer_runs_the_admin_only_copy_never_the_repo_tree() -> None:
+    src = (ROOT / "desks" / "mt5" / "scripts" / "install_box_self_heal_task.ps1").read_text("utf-8")
+    code = "\n".join(x for x in src.splitlines() if not x.lstrip().startswith("#"))
+    for name in ("box_self_heal.py", "process_health.py", "alert_channels.py"):
+        assert f"'{name}'" in code or f"\\{name}'" in code, name
+    assert "C:\\ProgramData\\QuantBox" in code and "Join-Path $Root 'bin'" in code
+    # install_unattended.ps1's ACL pattern: owner, no junction, nothing writable but admin/SYSTEM
+    for marker in ("'S-1-5-32-544'", "'S-1-5-18'", "ReparsePoint", "more than read",
+                   "SetAccessRuleProtection"):
+        assert marker in code, marker
+    action = next(x for x in code.splitlines() if "New-ScheduledTaskAction" in x)
+    nxt = code[code.index(action):code.index(action) + 400]
+    assert "$Installed" in nxt and "$Script" not in nxt.split("$Installed")[0]
+
+
+def test_the_installed_copy_loads_only_its_admin_only_siblings(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(bsh, "_IN_REPO", False)
+    monkeypatch.setattr(bsh, "_HERE", tmp_path)
+    assert bsh._dep("process_health.py", "ops/process_health.py") is None, \
+        "never falls back to the repo tree"
+    (tmp_path / "process_health.py").write_text("STATE_RUNNING = frozenset({'x'})\n", "utf-8")
+    assert bsh._dep("process_health.py", "ops/process_health.py") == tmp_path / "process_health.py"
+
+
+def test_the_watchdog_has_one_registry_organ_and_an_attestation_row() -> None:
+    """ops/ is outside the birth fence's executable areas, so the organ is declared by hand; the
+    manifest is protected, so until its line lands the organ is no second registration of it."""
+    name = "_box_self_heal_components"
+    spec = importlib.util.spec_from_file_location(
+        name, ROOT / "desks" / "mt5" / "ops" / "components.py")
+    assert spec and spec.loader
+    c = sys.modules.get(name) or importlib.util.module_from_spec(spec)
+    if name not in sys.modules:
+        sys.modules[name] = c
+        spec.loader.exec_module(c)
+    organ = next(s for s in c.explicit_specs()
+                 if s.component_id == "executable:ops/box_self_heal.py")
+    assert organ.schedule == "Quant-BoxSelfHeal" and organ.cadence_s == bsh.CADENCE_S
+    assert organ.code_paths[0] == "ops/box_self_heal.py"
+    assert "desks/mt5/reports/BOX_SELF_HEAL.json" in organ.outputs
+    gaps = c.task_canonical_gaps()
+    assert not any("Quant-BoxSelfHeal" in g for v in gaps.values() for g in v), gaps
+    att = json.loads((ROOT / "docs" / "research" / "runtime_state.json").read_text("utf-8"))
+    assert any(r.get("organ") == organ.component_id for r in att["organs"])
