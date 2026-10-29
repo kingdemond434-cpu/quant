@@ -245,6 +245,10 @@ _LOCALE: dict[str, tuple[str, str, str]] = {
     "tr": ("tr", "TR", "tr-tr"), "he": ("he", "IL", "il-he"), "pl": ("pl", "PL", "pl-pl"),
     "nl": ("nl", "NL", "nl-nl"), "sv": ("sv", "SE", "se-sv"), "da": ("da", "DK", "dk-da"),
     "no": ("nb", "NO", "no-no"), "fi": ("fi", "FI", "fi-fi"), "sw": ("sw", "KE", "ke-en"),
+    "fa": ("fa", "IR", "wt-wt"), "ur": ("ur", "PK", "pk-en"), "bn": ("bn", "BD", "wt-wt"),
+    "ta": ("ta", "IN", "in-en"), "te": ("te", "IN", "in-en"), "mr": ("mr", "IN", "in-en"),
+    "gu": ("gu", "IN", "in-en"), "tl": ("tl", "PH", "ph-tl"), "ro": ("ro", "RO", "ro-ro"),
+    "cs": ("cs", "CZ", "cz-cs"), "hu": ("hu", "HU", "hu-hu"), "el": ("el", "GR", "gr-el"),
 }
 _MARKET_KL: dict[str, str] = {
     "HK": "hk-tzh", "SG": "sg-en", "AU": "au-en", "NZ": "nz-en", "IN": "in-en", "ZA": "za-en",

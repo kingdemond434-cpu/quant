@@ -48,6 +48,7 @@ import hashlib
 import re
 from typing import Any
 
+from libs.research import mechanism_claims_world as _world
 from libs.research.claim_selection import selection_trials
 from libs.research.metric_fence import check_metrics as fence_metrics
 from libs.research.metric_fence import reason_class
@@ -670,6 +671,11 @@ _VOCAB: dict[str, tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]] = {
     "sw": (QUANTITY_SW, DIRECTION_SW, HORIZON_SW),
     "en": (QUANTITY_EN, DIRECTION_EN, HORIZON_EN),
 }
+# The next thirteen languages (libs/research/mechanism_claims_world.py). Malay sentences detect
+# as Indonesian (shared function words), so Indonesian is widened by Malay's words too.
+_VOCAB.update(_world.WORLD_VOCAB)
+_MS = _world.WORLD_VOCAB["ms"]
+_VOCAB["id"] = (QUANTITY_ID + _MS[0], DIRECTION_ID + _MS[1], HORIZON_ID + _MS[2])
 LANGUAGES: tuple[str, ...] = tuple(_VOCAB)
 
 #: How a language's vocabulary is matched. "sub": plain substring (scripts without spaces);
@@ -684,6 +690,11 @@ _CYRILLIC = re.compile(r"[Ѐ-ӿ]")
 _UKR_ONLY = re.compile(r"[іїєґІЇЄҐ]")
 _THAI = re.compile(r"[฀-๿]")
 _DEVANAGARI = re.compile(r"[ऀ-ॿ]")
+_BENGALI = re.compile(r"[ঀ-৿]")
+_GUJARATI = re.compile(r"[઀-૿]")
+_TAMIL = re.compile(r"[஀-௿]")
+_TELUGU = re.compile(r"[ఀ-౿]")
+_GREEK = re.compile(r"[Ͱ-Ͽἀ-῿]")
 _HEBREW = re.compile(r"[֐-׿]")
 _ARABIC = re.compile(r"[؀-ۿ]")
 #: Vietnamese-only letters: the horn/breve vowels and every dotted-below tone vowel. Portuguese
@@ -749,6 +760,8 @@ _LETTER_HINTS: tuple[tuple[str, str], ...] = (
     ("ß", "de"), ("ł", "pl"), ("ż", "pl"), ("ę", "pl"), ("ą", "pl"), ("ś", "pl"), ("ź", "pl"),
     ("ã", "pt"), ("õ", "pt"), ("ñ", "es"), ("¿", "es"), ("ı", "tr"), ("ğ", "tr"), ("ş", "tr"),
 )
+_STOPWORDS.update(_world.WORLD_STOPWORDS)
+_LETTER_HINTS = _LETTER_HINTS + _world.WORLD_LETTER_HINTS
 _STOP_RE: dict[str, re.Pattern[str]] = {
     lang: re.compile(r"(?<!\w)(?:" + "|".join(re.escape(w) for w in words) + r")(?!\w)")
     for lang, words in _STOPWORDS.items()
@@ -775,15 +788,25 @@ def language_of(text: str) -> str:
         return "zh-Hant" if trad > simp else "zh"
     if _THAI.search(t):
         return "th"
+    # Before Devanagari: Bengali and Gujarati text ends sentences with the Devanagari danda.
+    for rx, code in ((_BENGALI, "bn"), (_GUJARATI, "gu"), (_TAMIL, "ta"), (_TELUGU, "te"),
+                     (_GREEK, "el")):
+        if rx.search(t):
+            return code
     if _DEVANAGARI.search(t):
-        return "hi"
+        mr = sum(t.count(w) for w in _world.MARATHI_MARKERS)
+        return "mr" if mr > sum(t.count(w) for w in _world.HINDI_MARKERS) else "hi"
     if _HEBREW.search(t):
         return "he"
     if _ARABIC.search(t):
-        return "ar"
+        if any(ch in t for ch in _world.URDU_LETTERS):
+            return "ur"
+        return "fa" if any(ch in t for ch in _world.PERSIAN_LETTERS) else "ar"
     if _CYRILLIC.search(t):
         return "uk" if _UKR_ONLY.search(t) else "ru"
-    if len(_VIET.findall(t)) >= 2:
+    viet = _VIET.findall(t)
+    if len(viet) >= 2 and not (any(ch in t for ch in _world.ROMANIAN_ONLY)
+                               and len([c for c in viet if c not in "ăĂ"]) < 2):
         return "vi"
     low = t.lower()
     score: dict[str, int] = {lang: len(rx.findall(low)) for lang, rx in _STOP_RE.items()}
@@ -1023,6 +1046,9 @@ INSTRUMENT_ALIASES: tuple[tuple[tuple[str, ...], tuple[str, ...], str], ...] = (
     (("baltic dry", "bdi", "freight index", "運賃指数", "drewry", "world container index",
       "scfi", "fbx"), (), "shipping/freight -> commodity currencies"),
 )
+INSTRUMENT_ALIASES = tuple(
+    (aliases + _world.WORLD_ALIASES.get(syms[0], ()) if syms else aliases, syms, cls)
+    for aliases, syms, cls in INSTRUMENT_ALIASES)
 
 #: INDIRECT CHANNELS: a foreign dataset, event or institution that moves an MT5 instrument
 #: through an information shock rather than by naming it. The claim is recorded with
@@ -1381,6 +1407,8 @@ _DIR_BUCKET_TERMS: dict[str, tuple[str, ...]] = {
                "thu hẹp", "แคบลง", "menyempit", "verengt", "se resserre", "si restringe",
                "se estrecha", "estreita", "daral"),
 }
+for _b, _terms in _world.WORLD_DIR_BUCKETS.items():
+    _DIR_BUCKET_TERMS[_b] = _DIR_BUCKET_TERMS[_b] + _terms
 _HOR_BUCKET_TERMS: dict[str, tuple[str, ...]] = {
     "tick": ("tick", "秒级", "秒", "틱", "тик", "scalp", "スキャルピング", "스캘핑", "скальп"),
     "intraday": ("minute", "minutes", "hour", "hours", "hourly", "intraday", "session", "open",
