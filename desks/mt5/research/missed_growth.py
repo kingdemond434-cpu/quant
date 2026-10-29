@@ -1027,6 +1027,71 @@ def admission_cadence_line(alloc: dict[str, Any]) -> dict[str, Any]:
             "unpriced": "longer reuse of the heavy growth curve on normal/fast passes"}
 
 
+#: The fence's counterfactual ledger (research/fence_missed_trades.py), one row per refused leg.
+FENCE_MISSED = BASE / "reports" / "fence_missed_trades.jsonl"
+FENCE_MIN_N = 10
+
+
+def cross_account_fence_line(path: Path | None = None, *, min_n: int = FENCE_MIN_N,
+                             rails: Path | None = None) -> dict[str, Any]:
+    """What the cross-account opposite-side fence cost (or saved), as a published line.
+
+    Over every REAL fence block (kind `fence_block`; fail-closed refusals and FTMO's own follow
+    rule are counted apart) priced from bars with a known risk fraction f, the line is
+    sum(f*r - f^2 r^2 / 2) in log-wealth, with n. Below `min_n` priced rows it is UNMEASURED
+    (the partial sum is shown, never billed). Positive = the refused legs would have grown the
+    book (COSTS_GROWTH); negative = the fence avoided losses (EARNS_ITS_PLACE).
+
+    NEVER SUMMED WITH `fusion_book_rails`: that ledger's `cross_account_opposite` lines bill the
+    RISK the same refusals held back; this line bills their OUTCOME. The count of those rails
+    lines is carried here so the two are read side by side, not added."""
+    path = FENCE_MISSED if path is None else path
+    rails = FUSION_RAILS if rails is None else rails
+    n_rails = 0
+    try:
+        for ln in rails.read_text("utf-8").splitlines():
+            if '"cross_account_opposite"' in ln:
+                n_rails += 1
+    except OSError:
+        n_rails = 0
+    xref = {"fusion_book_rails_cross_account_opposite_lines": n_rails,
+            "not_summed_with": "published_gate_lines.fusion_book_rails (risk held back)"}
+    if not path.exists():
+        return {"verdict": UNMEASURED, "why": f"no reports/{path.name}: the organ has not run",
+                **xref}
+    try:
+        text = path.read_text("utf-8")
+    except OSError as exc:
+        return {"verdict": UNMEASURED, "why": f"reports/{path.name} unreadable "
+                f"({type(exc).__name__})", **xref}
+    rows = []
+    for ln in text.splitlines():
+        try:
+            r = json.loads(ln)
+        except ValueError:
+            continue
+        if isinstance(r, dict):
+            rows.append(r)
+    kinds: dict[str, int] = {}
+    for r in rows:
+        kinds[str(r.get("kind"))] = kinds.get(str(r.get("kind")), 0) + 1
+    priced = [(f, rr) for r in rows if r.get("kind") == "fence_block"
+              and r.get("status") == "MEASURED"
+              and (f := _num(r.get("risk_frac"))) is not None
+              and (rr := _num(r.get("r"))) is not None]
+    elog = sum(f * rr - 0.5 * f * f * rr * rr for f, rr in priced)
+    usd = sum(v for r in rows if r.get("kind") == "fence_block"
+              and (v := _num(r.get("missed_usd"))) is not None)
+    out = {"source": f"reports/{path.name}", "rows": len(rows), "rows_by_kind": kinds,
+           "n": len(priced), "min_n": min_n, "value_logw": round(elog, 12),
+           "missed_usd": round(usd, 4), **xref}
+    if len(priced) < min_n:
+        return {"verdict": UNMEASURED, **out,
+                "why": f"{len(priced)} priced fence blocks with a known risk fraction, below "
+                       f"the minimum {min_n}"}
+    verdict = COSTS if elog > 0 else EARNS if elog < 0 else NOT_BINDING
+    return {"verdict": verdict, **out}
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
@@ -1154,7 +1219,8 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
                                         unspilled=JUDGE_PRIORITY_RECORDS),
                                     "deepening_memory_guard": organ_published_lines(
                                         DEEPENING_GUARD),
-                                    "admission_scan_cadence": admission_cadence_line(alloc)},
+                                    "admission_scan_cadence": admission_cadence_line(alloc),
+                                    "cross_account_fence": cross_account_fence_line()},
            "aggression_verdict": aggression.get("verdict"),
            "unused_upside_heat": aggression.get("unused_upside_heat"),
            "rule": ("OpportunityCost(rail) = E[log W without] - E[log W with]; a rail that "
