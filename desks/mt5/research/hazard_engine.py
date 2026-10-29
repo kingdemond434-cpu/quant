@@ -47,7 +47,8 @@ import numpy as np
 
 BASE = Path(__file__).resolve().parent.parent
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
-LIVE_LEDGER = BASE / "data" / "live_ledger.jsonl"
+from libs.ops.live_ledger_view import ledger_path as _audited_ledger_path
+LIVE_LEDGER = _audited_ledger_path(BASE / "data" / "live_ledger.jsonl")
 DECAY_ACTIONS = BASE / "data" / "decay_actions.jsonl"
 SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_STATE = SHADOW_DIR / "shadow_state.json"
