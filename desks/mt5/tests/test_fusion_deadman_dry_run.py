@@ -236,7 +236,7 @@ def test_confirm_reads_one_breach_waits_two_halt_and_dry_run_writes_no_pause_fil
     assert s["would"]["executed"] is False and s["halt_codes"] == ["EQUITY_FLOOR"]
     assert any("EQUITY FLOOR" in r for r in s["would"]["reasons"])
     assert not fd.PAUSED.exists(), "dry-run must never write the gateway's pause file"
-    assert "DRY-RUN would halt" in fd.BREACH_LOG.read_text("utf-8")
+    assert "DRY-RUN would halt" in fd.pass_log().read_text("utf-8")
 
 
 def test_the_stamp_reads_the_intent_ledger_for_the_size_guard(fd) -> None:

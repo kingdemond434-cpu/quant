@@ -782,11 +782,15 @@ def now() -> str:
 
 
 def log(msg: str) -> None:
+    """Append to logs/gateway.log and echo. NEVER raises (2026-10-29): the gateway resident, the
+    hourly chain's regime leg and MT5-RegimeMonitor all write this file, and a Windows sharing
+    violation on a bare `open("a")` must not abort a gateway pass (or the resident's own
+    except-handler, which logs the pass's exception through here)."""
+    from libs.ops.safe_append import append_line
     line = f"{now()} {msg}"
-    LOG.parent.mkdir(parents=True, exist_ok=True)
-    with LOG.open("a", encoding="utf-8") as f:
-        f.write(line + "\n")
-    print(line)
+    append_line(LOG, line)
+    with contextlib.suppress(OSError, ValueError):
+        print(line)
 
 
 def load_state() -> dict:
