@@ -62,6 +62,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 from mt5desk.markout import echo_join, position_direction  # noqa: E402
+from mt5desk.provenance import row_key as _row_key  # noqa: E402
 
 from libs.execution import fill_corpus as fc  # noqa: E402
 
@@ -722,7 +723,8 @@ def build(budget_s: float = 120.0, *, dry_run: bool = False) -> dict[str, Any]:
         "mean_slip_r": (round(mean_r, 5) if mean_r is not None else None),
         "mean_slip_points": (round(sum(slip_pts) / len(slip_pts), 3) if slip_pts else None),
         "worst_slip_points": (round(max(slip_pts), 3) if slip_pts else None),
-        "accounts": sorted({str(d.get("account")) for d in deals if d.get("account")}),
+        # hashed keys (provenance.row_key), never the raw login: this report is published
+        "accounts": sorted({str(k) for k in (_row_key(d) for d in deals) if k}),
         "account_kinds": sorted({str(r.get("account_kind") or "unknown")
                                  for r in (*deals, *prop)}),
         "dry_run": bool(dry_run),
