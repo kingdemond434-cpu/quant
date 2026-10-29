@@ -108,3 +108,37 @@ def test_hourly_leg_is_wired() -> None:
     assert '_costed("forward_lane_fence"' in text
     from libs.research.layers import LEG_LAYER
     assert LEG_LAYER["forward_lane_fence"] == "timing"
+
+
+def _fence_on(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, farm: dict[str, Any],
+              census: list[dict[str, Any]]) -> tuple[dict[str, Any], list[Any]]:
+    shadow = tmp_path / "shadow"
+    (shadow / "farm").mkdir(parents=True)
+    (shadow / "farm" / "near_miss_farm.json").write_text(json.dumps(farm))
+    monkeypatch.setattr(flf, "SHADOW", shadow)
+    monkeypatch.setattr(flf, "_now", lambda: NOW)
+    monkeypatch.setattr(flf, "_running", lambda script: False)
+    monkeypatch.setattr(flf, "enrolment_census", lambda now: ({"certificates": census}, "test"))
+    ran: list[Any] = []
+    monkeypatch.setattr(flf.subprocess, "run", lambda cmd, **_: ran.append(cmd))
+    return flf.run(out=tmp_path / "out.json"), ran
+
+
+def test_a_row_the_farm_dropped_is_retired_not_stale_and_is_never_cover(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The audit probe on #487: one row the farm stopped enrolling, last ticked 30h ago, read the
+    farm STALE, restarted it and went RED every hour, and counted as a certificate's cover."""
+    dropped = {**_clock(30.0), "status": "RETIRED_NOT_FARMED"}
+    doc, ran = _fence_on(tmp_path, monkeypatch, _lane(0.2, {"K": dropped}),
+                         [{"key": "K", "enrolled": False}])
+    farm = next(ln for ln in doc["lanes"] if ln["lane"] == "farm")
+    assert farm["verdict"] == flf.FRESH and ran == []
+    assert doc["coverage"]["in_farm_only"] == 0
+
+
+def test_a_silent_active_row_in_a_fresh_farm_is_reported_never_restarted(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    doc, ran = _fence_on(tmp_path, monkeypatch, _lane(0.2, {"K": _clock(30.0)}),
+                         [{"key": "K", "enrolled": True}])
+    assert ran == [] and doc["stale_lanes"] == ["farm"]
+    assert [r["status"] for r in doc["repairs"]] == ["REPORTED"]

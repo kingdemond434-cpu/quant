@@ -5,6 +5,7 @@ import contextlib
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -122,8 +123,20 @@ def test_a_farm_pass_never_touches_the_global_registry_or_clock_ledger(
     import importlib
 
     from research import shadow_forward as sf
-    real_reg = importlib.import_module("sleeve_registry").REGISTRY
-    real_ledger = importlib.import_module("clock_ledger").LEDGER
+    # The "real" stores are tmp stand-ins, so a regression writes here, never into the tracked
+    # data/sleeve_registry.json.
+    real_reg = tmp_path / "real" / "sleeve_registry.json"
+    real_ledger = tmp_path / "real" / "forward_clock_ledger.json"
+    for name in nmf.REGISTRY_MODULES:
+        with contextlib.suppress(ImportError):
+            monkeypatch.setattr(importlib.import_module(name), "REGISTRY", real_reg)
+    for name in nmf.CLOCK_LEDGER_MODULES:
+        with contextlib.suppress(ImportError):
+            mod = importlib.import_module(name)
+            orig = mod.stamp
+            monkeypatch.setattr(mod, "stamp", lambda key, identity, proposed, *, path=real_ledger,
+                                _o=orig, **kw: _o(key, identity, proposed, path=path, **kw))
+            monkeypatch.setattr(mod, "LEDGER", real_ledger)
     before = (_bytes(real_reg), _bytes(real_ledger))
     monkeypatch.setattr(sf, "SHADOW_DIR", tmp_path / "shadow")
 
@@ -170,5 +183,49 @@ def test_a_replication_mismatch_is_quarantined_never_farmed(
     monkeypatch.setattr(admission_integrity, "lane_clock_keys", lambda d: set())
     monkeypatch.setattr(admission_integrity.IntegrityGate, "load", classmethod(
         lambda cls, **kw: cls(alarm={}, verdicts={"c1": {"fp": fp, "verdict": "MISMATCH"}})))
+    rows, refused, _ = nmf.clockless_cert_rows()
+    assert rows == [] and refused[0]["why"].startswith(admission_integrity.HELD_MISMATCH)
+
+
+def test_a_dropped_farm_row_retires_and_a_re_enrolled_one_revives(tmp_path: Path) -> None:
+    """Audit on #487: rows the farm stopped enrolling stayed ACTIVE and silent for ever."""
+    ledger = tmp_path / "near_miss_farm.json"
+    ledger.write_text(json.dumps({"updated_at": "x", "KEEP": {"n": 2, "status": "ACTIVE"},
+                                  "DROP": {"n": 1, "status": "ACTIVE"},
+                                  "DEAD": {"n": 0, "status": "KILL"}}))
+    assert nmf.retire_dropped(ledger, {"KEEP"}) == 1
+    doc = json.loads(ledger.read_text())
+    assert doc["DROP"]["status"] == nmf.RETIRED_NOT_FARMED and doc["DROP"]["n"] == 1
+    assert doc["KEEP"]["status"] == "ACTIVE" and doc["DEAD"]["status"] == "KILL"
+    assert nmf.revive(ledger, {"DROP"}) == 1
+    assert json.loads(ledger.read_text())["DROP"]["status"] == "ACTIVE"
+
+
+def test_an_unreadable_integrity_gate_farms_no_certificate(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import admission_integrity, shadow_admission
+    monkeypatch.setattr(shadow_admission, "authorized_runs", lambda base: [
+        {"certificate": "c1", "symbol": "EURUSD", "selector": "asia",
+         "family": "overnight_gap_decay", "side": "LONG", "params": {}}])
+
+    def boom(cls: Any, **kw: Any) -> Any:
+        raise OSError("gone")
+
+    monkeypatch.setattr(admission_integrity.IntegrityGate, "load", classmethod(boom))
+    rows, _, why = nmf.clockless_cert_rows()
+    assert rows == [] and why.startswith(nmf.UNMEASURED)
+
+
+def test_a_mismatch_is_quarantined_even_under_a_placebo_alarm(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    from research import admission_integrity, shadow_admission
+    run = {"certificate": "c1", "symbol": "EURUSD", "selector": "asia",
+           "family": "overnight_gap_decay", "side": "LONG", "params": {}}
+    fp = admission_integrity.spec_fingerprint("EURUSD", "overnight_gap_decay", "asia", "LONG", {})
+    monkeypatch.setattr(shadow_admission, "authorized_runs", lambda base: [run])
+    monkeypatch.setattr(admission_integrity, "lane_clock_keys", lambda d: set())
+    monkeypatch.setattr(admission_integrity.IntegrityGate, "load", classmethod(
+        lambda cls, **kw: cls(alarm={"blocks": True, "why": "trap"},
+                              verdicts={"c1": {"fp": fp, "verdict": "MISMATCH"}})))
     rows, refused, _ = nmf.clockless_cert_rows()
     assert rows == [] and refused[0]["why"].startswith(admission_integrity.HELD_MISMATCH)
