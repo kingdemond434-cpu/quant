@@ -155,6 +155,10 @@ CLASSES: tuple[dict[str, Any], ...] = (
                    "research/institutional_atlas.py"],
      "extra_urls": ["www.cboe.com", "cdn.cboe.com"],
      "catalogue_terms": r"option|implied vol|risk reversal|skew|\bvix\b", "max_age_h": 30,
+     # THE ONLY WIRED PRODUCER IS A PROXY (realized vol from the desk's own bars, 2026-10-29):
+     # no implied source is live input, so the class can read PRODUCER at most until one is.
+     "coverage_cap": ("PRODUCER", "proxy only: realized-vol PROXY family wired; no implied-vol "
+                                  "source is live input (every one IDEAS_ONLY or held)"),
      "candidates": [
          _c("cboe_vix_history", "Cboe VIX/VVIX/SKEW index history", "https://cdn.cboe.com/",
             "US", "en", note="held row cboe_delayed_index_values"),
@@ -909,12 +913,17 @@ def measure_class(spec: dict[str, Any], *, idx: dict[str, set[str]], legs: dict[
         level = "CATALOGUED"
     else:
         level = "NONE"
+    cap = spec.get("coverage_cap")
+    capped = None
+    if cap and COVERAGE[level] > COVERAGE[cap[0]]:
+        capped = {"from": level, "to": cap[0], "why": cap[1]}
+        level = cap[0]
     cov = COVERAGE[level]
     score = round(float(spec["weight"]) * (1.0 - cov) * (1.0 + math.log1p(open_lawful)), 3)
     return {
         "id": spec["id"], "name": spec["name"], "weight": spec["weight"], "mt5": spec["mt5"],
         "tier1_use": spec["tier1"], "owner": spec.get("owner") or "unowned",
-        "coverage": level, "coverage_value": cov,
+        "coverage": level, "coverage_value": cov, "coverage_capped": capped,
         "freshness_limit_h": spec.get("max_age_h") or FRESH_DEFAULT_H,
         "producers": producers,
         "hosts_in_code": {"fetchers": sorted(fetchers)[:12], "catalogues": sorted(catalogued)[:12],

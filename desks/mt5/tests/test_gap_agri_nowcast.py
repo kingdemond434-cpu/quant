@@ -406,3 +406,14 @@ def test_both_legs_are_wired_and_the_gap_module_names_them():
         url = next(c["url"] for c in spec["agri_supply"]["candidates"] if c["id"] == cid)
         exact, _ = G.url_files(url, idx)
         assert "desks/mt5/research/world_dataset_hunter.py" in exact, cid
+
+
+def test_a_proxy_only_class_never_reads_as_covered():
+    spec = next(c for c in G.CLASSES if c["id"] == "options_implied_vol")
+    assert spec["coverage_cap"][0] == "PRODUCER"
+    row = G.measure_class(spec, idx={}, legs={"research/options_implied.py": "options_implied"},
+                          clocks={}, runtime={"leg:options_implied": {
+                              "artifact": "desks/mt5/reports/OPTIONS_IMPLIED.json"}},
+                          catalogues={}, now=NOW, tracked=None)
+    assert row["coverage"] == "PRODUCER" and row["coverage_capped"]["to"] == "PRODUCER"
+    assert row["gap_score"] > 0
